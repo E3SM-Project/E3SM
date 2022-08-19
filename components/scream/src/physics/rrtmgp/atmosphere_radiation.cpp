@@ -95,18 +95,14 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("surf_lw_flux_up",scalar2d_layout,W/(m*m),grid_name);
   // Set of required gas concentration fields
   for (auto& it : m_gas_names) {
-    // Add gas MASS mixing ratios (kg/kg)
-    if (it == "h2o") { /* Special case where water vapor is called h2o in radiation */
-      // do nothing, qv has already been added.
-    } else if (it == "o3") {
+    // Add gas VOLUME mixing ratios (moles of gas / moles of air; what actually gets input to RRTMGP)
+    if (it == "o3") {
       // o3 is read from file, or computed by chemistry
-      add_field<Updated>(it, scalar3d_layout_mid, kgkg, grid_name, ps);
+      add_field<Updated >(it + "_volume_mix_ratio", scalar3d_layout_mid, molmol, grid_name, ps);
     } else {
       // the rest are computed from prescribed surface values
-      add_field<Computed>(it, scalar3d_layout_mid, kgkg, grid_name, ps);
+      add_field<Computed>(it + "_volume_mix_ratio", scalar3d_layout_mid, molmol, grid_name, ps);
     }
-    // Add gas VOLUME mixing ratios (moles of gas / moles of air; what actually gets input to RRTMGP)
-    add_field<Computed>(it + "_volume_mix_ratio", scalar3d_layout_mid, molmol, grid_name, ps);
   }
   // Required aerosol optical properties from SPA
   m_do_aerosol_rad = m_params.get<bool>("do_aerosol_rad",true);
