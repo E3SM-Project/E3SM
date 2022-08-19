@@ -99,11 +99,6 @@ public:
     RealAlloc      = 2
   };
 
-  struct RemapFwdTag {};
-  struct RemapBwdTag {};
-
-protected:
-
   // A container structure to hold the physically-shaped views for the fields.
   // Notice that only one of the vNd will be set, while the others will be empty.
   template<typename T>
@@ -129,6 +124,8 @@ protected:
     hviews_t  h_views;
     hcviews_t h_cviews;
   };
+
+protected:
 
   ViewsRepo   m_phys_repo;
   ViewsRepo   m_dyn_repo;
@@ -208,6 +205,9 @@ protected:
   void local_remap_bwd_3d (const MT& team) const;
 
 public:
+  struct RemapFwdTag {};
+  struct RemapBwdTag {};
+
   template<typename MT>
   KOKKOS_INLINE_FUNCTION
   void operator()(const RemapFwdTag&, const MT &team) const;
