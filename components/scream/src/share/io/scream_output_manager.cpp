@@ -136,16 +136,10 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       if (has_restart_data && m_output_control.nsteps_since_last_write>0) {
         auto output_restart_filename = find_filename_in_rpointer(hist_restart_casename,false,m_io_comm,m_run_t0);
 
-        ekat::ParameterList res_params("Input Parameters");
-        res_params.set<std::string>("Filename",output_restart_filename);
-        AtmosphereInput output_restart (m_io_comm,res_params);
-
         // Also restart each stream
         for (auto stream : m_output_streams) {
           stream->restart(output_restart_filename);
         }
-
-        output_restart.finalize();
       }
     }
   }
