@@ -101,7 +101,6 @@ void run(std::mt19937_64& engine)
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
   register_diagnostics();
   ekat::ParameterList params;
-  params.set<std::string>("Grid", "Point Grid");
   // Vapor
   params.set<std::string>("Diagnostic Name", "Vapor Water Path");
   auto diag_vap = diag_factory.create("VapWaterPath",comm,params);

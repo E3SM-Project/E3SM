@@ -87,7 +87,6 @@ void run(std::mt19937_64& engine)
   // Construct the Diagnostic
   ekat::ParameterList params;
   params.set<std::string>("Diagnostic Name", "Vertical Layer Interface");
-  params.set<std::string>("Grid", "Point Grid");
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
   auto diag = diag_factory.create("VerticalLayerInterface",comm,params);
