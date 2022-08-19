@@ -120,8 +120,8 @@ set_params(const ekat::ParameterList& atm_params)
   m_ad_status |= s_params_set;
 
 #ifdef SCREAM_CIME_BUILD
-  const auto hgn = "Physics PG2";
-  fvphyshack = m_atm_params.sublist("Grids Manager").get<std::string>("Reference Grid") == hgn;
+  const auto hgn = "PG2";
+  fvphyshack = m_atm_params.sublist("Grids Manager").get<std::string>("Physics Grid Type") == hgn;
   if (fvphyshack) {
     // See the [rrtmgp active gases] note in dynamics/homme/atmosphere_dynamics_fv_phys.cpp.
     fv_phys_rrtmgp_active_gases_init(m_atm_params);
