@@ -31,7 +31,7 @@ atmosphere_processes:
     Grid: Point Grid
     column_chunk_size: 123
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
-    Orbital Year: 1990
+    orbital_year: 1990
 
 grids_manager:
   Type: Mesh Free

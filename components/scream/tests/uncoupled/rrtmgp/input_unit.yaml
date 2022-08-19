@@ -9,7 +9,7 @@ atmosphere_processes:
     Grid: Point Grid
     Max column_chunk_size: 123
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
-    Orbital Year: 1990
+    orbital_year: 1990
     # Set orbital parameters to constants for consistency with RRTMGP test problem
     Orbital Eccentricity: 0
     Orbital Obliquity: 0

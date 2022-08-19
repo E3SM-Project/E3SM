@@ -277,10 +277,10 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   // Determine rad timestep, specified as number of atm steps
   m_rad_freq_in_steps = m_params.get<Int>("rad_frequency", 1);
 
-  // Determine orbital year. If Orbital Year is negative, use current year
+  // Determine orbital year. If orbital_year is negative, use current year
   // from timestamp for orbital year; if positive, use provided orbital year
   // for duration of simulation.
-  m_orbital_year = m_params.get<Int>("Orbital Year",-9999);
+  m_orbital_year = m_params.get<Int>("orbital_year",-9999);
   // Get orbital parameters from yaml file
   m_orbital_eccen = m_params.get<Int>("Orbital Eccentricity",-9999);
   m_orbital_obliq = m_params.get<Int>("Orbital Obliquity"   ,-9999);
