@@ -208,8 +208,8 @@ tweaking their $case/namelist_scream.xml file.
       <active_gases>h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
       <column_chunk_size>1280</column_chunk_size>
       <orbital_year>-9999</orbital_year>
-      <Orbital__Eccentricity>-9999</Orbital__Eccentricity>
-      <Orbital__Eccentricity COMPSET=".*SCREAM%AQUA.*">0</Orbital__Eccentricity>
+      <orbital_eccentricity>-9999</orbital_eccentricity>
+      <orbital_eccentricity COMPSET=".*SCREAM%AQUA.*">0</orbital_eccentricity>
       <Orbital__Obliquity>-9999</Orbital__Obliquity>
       <Orbital__Obliquity COMPSET=".*SCREAM%AQUA.*">0</Orbital__Obliquity>
       <Orbital__MVELP>-9999</Orbital__MVELP>
