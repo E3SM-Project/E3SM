@@ -58,7 +58,6 @@ create_gm (const ekat::Comm& comm) {
   const int num_global_cols = num_local_cols*comm.size();
 
   ekat::ParameterList gm_params;
-  gm_params.set<std::string>("Reference Grid", "Point Grid");
   gm_params.set<int>("Number of Global Columns", num_global_cols);
   gm_params.set<int>("Number of Local Elements", num_local_elems);
   gm_params.set<int>("Number of Vertical Levels", nlevs);
