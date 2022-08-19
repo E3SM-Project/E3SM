@@ -85,6 +85,7 @@ build_grids ()
     const int num_global_cols  = m_params.get<int>("Number of Global Columns");
     auto pt_grid = create_point_grid("Point Grid",num_global_cols,num_vertical_levels,m_comm);
     add_grid(pt_grid);
+    this->alias_grid("Point Grid", "Physics");
   }
 }
 
