@@ -25,7 +25,7 @@ ekat::ParameterList create_test_params ()
   // Create a parameter list for inputs
   ekat::ParameterList params ("Atmosphere Processes");
 
-  params.set<std::string>("Schedule Type","Sequential");
+  params.set<std::string>("schedule_type","Sequential");
   params.set<std::string>("atm_procs_list","(Foo,BarBaz)");
 
   auto& p0 = params.sublist("Foo");
@@ -35,7 +35,7 @@ ekat::ParameterList create_test_params ()
   auto& p1 = params.sublist("BarBaz");
   p1.set<std::string>("atm_procs_list","(Bar,Baz)");
   p1.set<std::string>("Type", "Group");
-  p1.set<std::string>("Schedule Type","Sequential");
+  p1.set<std::string>("schedule_type","Sequential");
 
   auto& p1_0 = p1.sublist("Bar");
   p1_0.set<std::string>("Type", "Bar");

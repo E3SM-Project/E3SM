@@ -22,18 +22,18 @@ initial_conditions:
 
 atmosphere_processes:
   atm_procs_list: (homme,physics)
-  Schedule Type: Sequential
+  schedule_type: Sequential
   homme:
     enable_precondition_checks: false
     Vertical Coordinate Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
     Moisture: moist
   physics:
     atm_procs_list: (mac_mic,rrtmgp)
-    Schedule Type: Sequential
+    schedule_type: Sequential
     Type: Group
     mac_mic:
       atm_procs_list: (shoc,CldFraction,p3)
-      Schedule Type: Sequential
+      schedule_type: Sequential
       Type: Group
       number_of_subcycles: ${MAC_MIC_SUBCYCLES}
       shoc:

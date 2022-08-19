@@ -10,7 +10,7 @@ Time Stepping:
   Number of Steps: ${NUM_STEPS}
 
 atmosphere_processes:
-  Schedule Type: Sequential
+  schedule_type: Sequential
   atm_procs_list: (shoc,p3)
   number_of_subcycles: ${NUM_SUBCYCLES}
   shoc:

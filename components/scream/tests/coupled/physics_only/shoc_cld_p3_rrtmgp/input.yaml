@@ -11,11 +11,11 @@ Time Stepping:
 
 atmosphere_processes:
   atm_procs_list: (mac_mic,rrtmgp)
-  Schedule Type: Sequential
+  schedule_type: Sequential
   mac_mic:
     atm_procs_list: (shoc,CldFraction,p3)
     Type: Group
-    Schedule Type: Sequential
+    schedule_type: Sequential
     number_of_subcycles: ${MAC_MIC_SUBCYCLES}
     shoc:
       Grid: Point Grid

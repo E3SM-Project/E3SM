@@ -9,7 +9,7 @@ Time Stepping:
 
 atmosphere_processes:
   atm_procs_list: (SurfaceCouplingImporter,SurfaceCouplingExporter)
-  Schedule Type: Sequential
+  schedule_type: Sequential
   SurfaceCouplingImporter:
     Grid: Point Grid
   SurfaceCouplingExporter:

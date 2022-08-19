@@ -18,7 +18,7 @@ initial_conditions:
 
 atmosphere_processes:
   atm_procs_list: (homme,physics)
-  Schedule Type: Sequential
+  schedule_type: Sequential
   homme:
     Process Name: Homme
     enable_precondition_checks: false
@@ -26,12 +26,12 @@ atmosphere_processes:
     Moisture: moist
   physics:
     atm_procs_list: (mac_aero_mic,rrtmgp)
-    Schedule Type: Sequential
+    schedule_type: Sequential
     Type: Group
     mac_aero_mic:
       atm_procs_list: (shoc,CldFraction,spa,p3)
       Type: Group
-      Schedule Type: Sequential
+      schedule_type: Sequential
       number_of_subcycles: ${MAC_MIC_SUBCYCLES}
       shoc:
         Grid: Physics GLL
