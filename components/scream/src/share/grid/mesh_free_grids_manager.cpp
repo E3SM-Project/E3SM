@@ -28,8 +28,6 @@ do_create_remapper (const grid_ptr_type from_grid,
 void MeshFreeGridsManager::
 build_grids ()
 {
-  std::string ref_grid = m_params.get<std::string>("Reference Grid","Point Grid");
-
   auto has_positive_int = [&](const std::string& n) -> bool {
     return m_params.isParameter(n) && (m_params.get<int>(n)>0);
   };

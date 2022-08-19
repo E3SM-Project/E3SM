@@ -46,7 +46,6 @@ HommeGridsManager (const ekat::Comm& comm,
   // Get the physics grid specs
   const auto& pg_type      = m_params.get<std::string>("Physics Grid Type");
   const auto& pg_rebalance = m_params.get<std::string>("Physics Grid Rebalance","None");
-  m_ref_grid_name = "Physics " + pg_type + (pg_rebalance!="None" ? " " + pg_rebalance : "");
 
   // Create the grid integer codes map (i.e., int->string
   build_pg_codes ();

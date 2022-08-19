@@ -333,7 +333,7 @@ TEST_CASE("surface-coupling", "") {
   ad.create_grids ();
   ad.create_fields ();
 
-  const int ncols = ad.get_grids_manager()->get_reference_grid()->get_num_local_dofs();
+  const int ncols = ad.get_grids_manager()->get_grid("Physics")->get_num_local_dofs();
 
   // Create test data for SurfaceCouplingDataManager
 

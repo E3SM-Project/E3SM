@@ -33,10 +33,6 @@ protected:
 
 protected:
 
-  std::string get_reference_grid_name () const {
-    return m_ref_grid_name;
-  }
-
   remapper_ptr_type
   do_create_remapper (const grid_ptr_type from_grid,
                       const grid_ptr_type to_grid) const;
@@ -46,8 +42,6 @@ protected:
   ekat::Comm            m_comm;
 
   ekat::ParameterList   m_params;
-
-  std::string           m_ref_grid_name;
 
   // For each admissible physics grid type/rebalance, store an integer code
   // We pass these codes to f90, rather than a bunch of strings

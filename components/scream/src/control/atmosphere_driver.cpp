@@ -70,7 +70,7 @@ namespace control {
  *     atm processes, which the user can inspect (to see what's missing in the IC file).
  *  7) All the atm process are initialized. During this call, atm process are able to set up
  *     all the internal structures that they were not able to init previously. For instance,
- *     they can set up remappers from the reference grid to the grid they operate on. They can
+ *     they can set up remappers from the physics grid to the grid they operate on. They can
  *     also utilize their input fields to perform initialization of some internal data structure.
  *
  * For more info see header comments in the proper files:
@@ -193,7 +193,7 @@ void AtmosphereDriver::create_grids()
   m_atm_logger->debug("  [EAMxx] Creating grid manager '" + gm_type + "' ... done!");
 
   // Tell the grid manager to build all the grids required
-  // by the atm processes, as well as the reference grid
+  // by the atm processes
   m_grids_manager->build_grids();
 
   m_atm_logger->debug("  [EAMxx] Grids created.");
@@ -212,7 +212,7 @@ void AtmosphereDriver::create_grids()
     using vos_t = std::vector<std::string>;
     using namespace ShortFieldTagsNames;
 
-    auto grid = m_grids_manager->get_reference_grid();
+    auto phys_grid = m_grids_manager->get_grid("Physics");
     const auto nlev = grid->get_num_vertical_levels();
 
     // Read vcoords into host views
@@ -316,7 +316,9 @@ void AtmosphereDriver::setup_surface_coupling_processes () const
 
 void AtmosphereDriver::set_precipitation_fields_to_zero () 
 {
-  const auto field_mgr = get_ref_grid_field_mgr();
+  auto phys_grid = m_grids_manager->get_grid("Physics");
+
+  const auto field_mgr = get_field_mgr(phy_grid->name());
   if (field_mgr->has_field("precip_ice_surf_mass")) {
     field_mgr->get_field("precip_ice_surf_mass").deep_copy(0.0);
   }
@@ -607,7 +609,7 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
   }
 
   // Check if lat/lon needs to be loaded
-  // Check whether we need to load latitude/longitude of reference grid dofs.
+  // Check whether we need to load latitude/longitude of physics grid dofs.
   // This option allows the user to set lat or lon in their own
   // test or run setup code rather than by file.
   auto& ic_pl = m_atm_params.sublist("Initial Conditions");
@@ -618,7 +620,7 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
     using namespace ShortFieldTagsNames;
     using view_d = AbstractGrid::geo_view_type;
     using view_h = view_d::HostMirror;
-    auto grid = m_grids_manager->get_reference_grid();
+    auto grid = m_grids_manager->get_grid("Physics");
     auto layout = grid->get_2d_scalar_layout();
 
     std::vector<std::string> fnames;
@@ -1194,15 +1196,6 @@ void AtmosphereDriver::finalize ( /* inputs? */ ) {
 #endif
 
   stop_timer("EAMxx::finalize");
-}
-
-AtmosphereDriver::field_mgr_ptr
-AtmosphereDriver::get_ref_grid_field_mgr () const {
-  EKAT_REQUIRE_MSG (m_ad_status & s_grids_created,
-      "Error! Field manager(s) are created *after* the grids.\n");
-
-  auto ref_grid = m_grids_manager->get_reference_grid();
-  return get_field_mgr(ref_grid->name());
 }
 
 AtmosphereDriver::field_mgr_ptr

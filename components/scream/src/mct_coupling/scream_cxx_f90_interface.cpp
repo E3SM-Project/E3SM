@@ -225,9 +225,9 @@ int scream_get_num_local_cols () {
   fpe_guard_wrapper([&]() {
     const auto& ad = get_ad();
     const auto& gm = ad.get_grids_manager();
-    const auto& ref_grid = gm->get_reference_grid();
+    const auto& phys_grid = gm->get_grid("Physics");
 
-    ncols = ref_grid->get_num_local_dofs();
+    ncols = phys_grid->get_num_local_dofs();
   });
 
   return ncols;
@@ -239,9 +239,9 @@ int scream_get_num_global_cols () {
   fpe_guard_wrapper([&]() {
     const auto& ad = get_ad();
     const auto& gm = ad.get_grids_manager();
-    const auto& ref_grid = gm->get_reference_grid();
+    const auto& phys_grid = gm->get_grid("Physics");
 
-    ncols = ref_grid->get_num_global_dofs();
+    ncols = phys_grid->get_num_global_dofs();
   });
 
   return ncols;
@@ -252,7 +252,7 @@ void scream_get_local_cols_gids (void* const ptr) {
   fpe_guard_wrapper([&]() {
     auto gids_f = reinterpret_cast<int* const>(ptr);
     const auto& ad = get_ad();
-    const auto& grid = ad.get_grids_manager()->get_reference_grid();
+    const auto& phys_grid = ad.get_grids_manager()->get_grid("Physics");
 
     auto gids_h = Kokkos::create_mirror_view(grid->get_dofs_gids());
     Kokkos::deep_copy(gids_h,grid->get_dofs_gids());
@@ -267,7 +267,7 @@ void scream_get_local_cols_gids (void* const ptr) {
 void scream_get_cols_latlon (double* const& lat_ptr, double* const& lon_ptr) {
   fpe_guard_wrapper([&]() {
     const auto& ad = get_ad();
-    const auto& grid = ad.get_grids_manager()->get_reference_grid();
+    const auto& grid = ad.get_grids_manager()->get_grid("Physics");
     const auto ncols = grid->get_num_local_dofs();
 
     auto lat_cxx = grid->get_geometry_data("lat");
@@ -285,7 +285,7 @@ void scream_get_cols_latlon (double* const& lat_ptr, double* const& lon_ptr) {
 void scream_get_cols_area (double* const& area_ptr) {
   fpe_guard_wrapper([&]() {
     const auto& ad = get_ad();
-    const auto& grid = ad.get_grids_manager()->get_reference_grid();
+    const auto& grid = ad.get_grids_manager()->get_grid("Physics");
     const auto ncols = grid->get_num_local_dofs();
 
     auto area_cxx = grid->get_geometry_data("area");

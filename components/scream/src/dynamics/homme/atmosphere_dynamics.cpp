@@ -66,10 +66,10 @@ HommeDynamics::~HommeDynamics ()
 
 void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_manager)
 {
-  // Grab dynamics and reference grid
+  // Grab dynamics, physics, and physicsGLL grids
   const auto dgn = "Dynamics";
   m_dyn_grid = grids_manager->get_grid(dgn);
-  m_phys_grid = grids_manager->get_reference_grid();
+  m_phys_grid = grids_manager->get_grid("Physics");
   m_cgll_grid = grids_manager->get_grid("Physics GLL");
 
   fv_phys_set_grids();

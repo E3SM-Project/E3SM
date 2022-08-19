@@ -34,10 +34,6 @@ public:
 
   grid_ptr_type get_grid (const std::string& name) const;
 
-  grid_ptr_type get_reference_grid () const {
-    return get_grid(get_reference_grid_name());
-  }
-
   // Check if the given grid has been built
   bool has_grid (const std::string& grid_name) const;
 
@@ -53,16 +49,6 @@ public:
     return create_remapper(get_grid(from_grid),get_grid(to_grid));
   }
 
-  remapper_ptr_type
-  create_remapper_from_ref_grid(const grid_ptr_type& grid) const {
-    return create_remapper(get_reference_grid(),grid);
-  }
-
-  remapper_ptr_type
-  create_remapper_to_ref_grid(const grid_ptr_type& grid) const {
-    return create_remapper(grid,get_reference_grid());
-  }
-
   const grid_repo_type& get_repo () const { return m_grids; }
 
 protected:
@@ -73,8 +59,6 @@ protected:
   nonconstgrid_ptr_type get_grid_nonconst (const std::string& name) const;
 
   void alias_grid (const std::string& grid_name, const std::string& grid_alias);
-
-  virtual std::string get_reference_grid_name () const = 0;
 
   virtual remapper_ptr_type
   do_create_remapper (const grid_ptr_type from_grid,
