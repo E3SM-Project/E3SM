@@ -241,7 +241,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     m_d2p_remapper = grids_manager->create_remapper(m_dyn_grid,m_phys_grid);
   }
   
-  // Create separate remapper for Initial Conditions
+  // Create separate remapper for initial_conditions
   m_ic_remapper = grids_manager->create_remapper(m_cgll_grid,m_dyn_grid);
 }
 

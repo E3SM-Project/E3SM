@@ -22,7 +22,7 @@ grids_manager:
   Number of Global Columns:   218
   Number of Vertical Levels:  72
 
-Initial Conditions:
+initial_conditions:
   # The name of the file containing the initial conditions for this test.
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
 

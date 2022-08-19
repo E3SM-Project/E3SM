@@ -29,7 +29,7 @@ grids_manager:
   Number of Vertical Levels: 72
 
 # Specifications for setting initial conditions
-Initial Conditions:
+initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   aero_g_sw: 0.0
   aero_ssa_sw: 0.0

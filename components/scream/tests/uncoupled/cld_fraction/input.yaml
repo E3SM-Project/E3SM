@@ -20,7 +20,7 @@ grids_manager:
   Number of Global Columns:   3
   Number of Vertical Levels:  128
 
-Initial Conditions:
+initial_conditions:
   cldfrac_liq: 0.0
   qi: 0.0
 ...

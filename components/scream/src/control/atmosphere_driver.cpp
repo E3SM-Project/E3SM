@@ -205,7 +205,7 @@ void AtmosphereDriver::create_grids()
   // Load reference/surface pressure fractions if needed. This
   // is done inside dynamics, however, for standalone runs
   // without dynamics, these values could be needed.
-  auto& ic_pl = m_atm_params.sublist("Initial Conditions");
+  auto& ic_pl = m_atm_params.sublist("initial_conditions");
   const bool load_hybrid_coeffs = ic_pl.get<bool>("Load Hybrid Coefficients",false);
   if (load_hybrid_coeffs) {
     using view_1d_host = AtmosphereInput::view_1d_host;
@@ -610,7 +610,7 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
   // Check whether we need to load latitude/longitude of reference grid dofs.
   // This option allows the user to set lat or lon in their own
   // test or run setup code rather than by file.
-  auto& ic_pl = m_atm_params.sublist("Initial Conditions");
+  auto& ic_pl = m_atm_params.sublist("initial_conditions");
   bool load_latitude  = ic_pl.get<bool>("Load Latitude",false);
   bool load_longitude = ic_pl.get<bool>("Load Longitude",false);
 
@@ -667,7 +667,7 @@ void AtmosphereDriver::restart_model ()
   m_atm_logger->info("  [EAMxx] restart_model ...");
 
   // First, figure out the name of the netcdf file containing the restart data
-  const auto& casename = m_atm_params.sublist("Initial Conditions").get<std::string>("Restart Casename");
+  const auto& casename = m_atm_params.sublist("initial_conditions").get<std::string>("Restart Casename");
   auto filename = find_filename_in_rpointer (casename,true,m_atm_comm,m_run_t0);
 
   // Restart the num steps counter in the atm time stamp
@@ -769,7 +769,7 @@ void AtmosphereDriver::set_initial_conditions ()
 {
   m_atm_logger->info("  [EAMxx] set_initial_conditions ...");
 
-  auto& ic_pl = m_atm_params.sublist("Initial Conditions");
+  auto& ic_pl = m_atm_params.sublist("initial_conditions");
 
   // Check which fields need to have an initial condition.
   std::map<std::string,std::vector<std::string>> ic_fields_names;

@@ -24,7 +24,7 @@ grids_manager:
   Number of Vertical Levels: 42
 
 # Specifications for setting initial conditions
-Initial Conditions:
+initial_conditions:
   p_mid: 0.0
   p_int: 0.0
   pseudo_density: 0.0

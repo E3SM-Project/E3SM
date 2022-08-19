@@ -11,7 +11,7 @@ Time Stepping:
   Case Start Time: [12, 00, 00]      # Hours, Minutes, Seconds
   Case Start Date: [2021, 10, 12]    # Year, Month, Day
 
-Initial Conditions:
+initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   Restart Run: false
   surf_evap: 0.0
