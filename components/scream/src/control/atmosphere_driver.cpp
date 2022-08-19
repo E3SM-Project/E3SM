@@ -213,7 +213,7 @@ void AtmosphereDriver::create_grids()
     using namespace ShortFieldTagsNames;
 
     auto phys_grid = m_grids_manager->get_grid("Physics");
-    const auto nlev = grid->get_num_vertical_levels();
+    const auto nlev = phys_grid->get_num_vertical_levels();
 
     // Read vcoords into host views
     ekat::ParameterList vcoord_reader_pl;
@@ -228,12 +228,12 @@ void AtmosphereDriver::create_grids()
       { "hybm", FieldLayout({LEV}, {nlev}) }
     };
 
-    AtmosphereInput vcoord_reader(vcoord_reader_pl, grid, host_views, layouts);
+    AtmosphereInput vcoord_reader(vcoord_reader_pl, phys_grid, host_views, layouts);
     vcoord_reader.read_variables();
     vcoord_reader.finalize();
 
-    Kokkos::deep_copy(grid->get_geometry_data("hyam"), host_views["hyam"]);
-    Kokkos::deep_copy(grid->get_geometry_data("hybm"), host_views["hybm"]);
+    Kokkos::deep_copy(phys_grid->get_geometry_data("hyam"), host_views["hyam"]);
+    Kokkos::deep_copy(phys_grid->get_geometry_data("hybm"), host_views["hybm"]);
   }
 
   m_ad_status |= s_grids_created;
@@ -318,7 +318,7 @@ void AtmosphereDriver::set_precipitation_fields_to_zero ()
 {
   auto phys_grid = m_grids_manager->get_grid("Physics");
 
-  const auto field_mgr = get_field_mgr(phy_grid->name());
+  const auto field_mgr = get_field_mgr(phys_grid->name());
   if (field_mgr->has_field("precip_ice_surf_mass")) {
     field_mgr->get_field("precip_ice_surf_mass").deep_copy(0.0);
   }
