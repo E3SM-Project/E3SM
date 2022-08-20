@@ -310,9 +310,6 @@ TEST_CASE("surface-coupling", "") {
   auto& ts              = ad_params.sublist("Time Stepping");
   const auto start_date = ts.get<std::vector<int>>("Start Date");
   const auto start_time = ts.get<std::vector<int>>("Start Time");
-  const auto grid_name  = ad_params.sublist("atmosphere_processes")
-                                   .sublist("SurfaceCouplingExporter")
-                                   .get<std::string>("Grid");
 
   util::TimeStamp t0 (start_date, start_time);
   EKAT_ASSERT_MSG (t0.is_valid(), "Error! Invalid start date.\n");
@@ -435,7 +432,7 @@ TEST_CASE("surface-coupling", "") {
   ad.initialize_output_managers ();
   ad.initialize_atm_procs ();
 
-  const auto fm = ad.get_field_mgr(grid_name);
+  const auto fm = ad.get_field_mgr("Physics");
 
   // Verify any initial imports/exports were done as expected
   test_imports(*fm, import_data_view, import_cpl_indices_view,
