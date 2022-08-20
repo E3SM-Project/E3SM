@@ -28,5 +28,5 @@ atmosphere_processes:
 
 grids_manager:
   Type: User Provided
-  Reference Grid: Point Grid
+  reference_grid: Point Grid
 ...

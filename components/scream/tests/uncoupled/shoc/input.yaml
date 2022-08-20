@@ -17,7 +17,7 @@ atmosphere_processes:
 
 grids_manager:
   Type: Mesh Free
-  Reference Grid: Point Grid
+  reference_grid: Point Grid
   Number of Global Columns:   218
   Number of Vertical Levels:  72  # Will want to change to 128 when a valid unit test is available.
 

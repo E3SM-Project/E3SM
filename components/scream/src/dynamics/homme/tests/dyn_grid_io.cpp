@@ -64,7 +64,7 @@ TEST_CASE("dyn_grid_io")
 
   // Create the grids
   ekat::ParameterList params;
-  params.set<std::string>("Reference Grid","Physics GLL");
+  params.set<std::string>("reference_grid","Physics GLL");
   auto gm = std::make_shared<DynamicsDrivenGridsManager>(comm,params);
   std::set<std::string> grids_names = {"Physics GLL","Dynamics"};
   gm->build_grids(grids_names);
