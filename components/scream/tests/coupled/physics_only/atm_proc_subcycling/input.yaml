@@ -13,10 +13,6 @@ atmosphere_processes:
   Schedule Type: Sequential
   atm_procs_list: (shoc,p3)
   Number of Subcycles: ${NUM_SUBCYCLES}
-  shoc:
-    Grid: Point Grid
-  p3:
-    Grid: Point Grid
 
 Grids Manager:
   Type: Mesh Free

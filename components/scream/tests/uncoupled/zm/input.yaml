@@ -11,8 +11,6 @@ Time Stepping:
 
 atmosphere_processes:
   atm_procs_list: (zm)
-  zm:
-    Grid: Point Grid
 
 Grids Manager:
   Type: Mesh Free

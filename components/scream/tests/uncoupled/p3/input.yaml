@@ -12,7 +12,6 @@ Time Stepping:
 atmosphere_processes:
   atm_procs_list: (p3)
   p3:
-    Grid: Point Grid
     do_prescribed_ccn: false
 
 Grids Manager:

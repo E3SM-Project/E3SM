@@ -17,15 +17,9 @@ atmosphere_processes:
     Type: Group
     Schedule Type: Sequential
     Number of Subcycles: ${MAC_MIC_SUBCYCLES}
-    shoc:
-      Grid: Point Grid
-    CldFraction:
-      Grid: Point Grid
     p3:
-      Grid: Point Grid
       do_prescribed_ccn: false
   rrtmgp:
-    Grid: Point Grid
     Column Chunk Size: 123
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
     Orbital Year: 1990

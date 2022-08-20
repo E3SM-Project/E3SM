@@ -10,10 +10,6 @@ Time Stepping:
 atmosphere_processes:
   atm_procs_list: (SurfaceCouplingImporter,SurfaceCouplingExporter)
   Schedule Type: Sequential
-  SurfaceCouplingImporter:
-    Grid: Point Grid
-  SurfaceCouplingExporter:
-    Grid: Point Grid
 
 Grids Manager:
   Type: Mesh Free
