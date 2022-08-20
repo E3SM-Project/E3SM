@@ -52,7 +52,7 @@ atmosphere_processes:
 grids_manager:
   Type: Dynamics Driven
   reference_grid: Physics GLL
-  Dynamics Namelist File Name: namelist.nl
+  dynamics_namelist_file_name: namelist.nl
 
 # The parameters for I/O control
 Scorpio:

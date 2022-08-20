@@ -245,7 +245,7 @@ tweaking their $case/namelist_scream.xml file.
     <Type>Dynamics Driven</Type>
     <reference_grid>Physics GLL</reference_grid>
     <reference_grid hgrid=".*pg2">Physics PG2</reference_grid>
-    <Dynamics__Namelist__File__Name>./data/namelist.nl</Dynamics__Namelist__File__Name>
+    <dynamics_namelist_file_name>./data/namelist.nl</dynamics_namelist_file_name>
   </grids_manager>
 
   <!-- List of nc files for loading inputs on specified grids -->
