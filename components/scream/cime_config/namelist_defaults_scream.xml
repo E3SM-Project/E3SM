@@ -212,8 +212,8 @@ tweaking their $case/namelist_scream.xml file.
       <orbital_eccentricity COMPSET=".*SCREAM%AQUA.*">0</orbital_eccentricity>
       <orbital_obliquity>-9999</orbital_obliquity>
       <orbital_obliquity COMPSET=".*SCREAM%AQUA.*">0</orbital_obliquity>
-      <Orbital__MVELP>-9999</Orbital__MVELP>
-      <Orbital__MVELP COMPSET=".*SCREAM%AQUA.*">0</Orbital__MVELP>
+      <orbital_mvelp>-9999</orbital_mvelp>
+      <orbital_mvelp COMPSET=".*SCREAM%AQUA.*">0</orbital_mvelp>
       <rad_frequency hgrid="ne4np4">1</rad_frequency>
       <rad_frequency hgrid="ne30np4">2</rad_frequency>
       <rad_frequency hgrid="ne120np4">4</rad_frequency>
