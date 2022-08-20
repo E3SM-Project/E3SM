@@ -1204,10 +1204,14 @@ AtmosphereDriver::get_field_mgr (const std::string& grid_name) const {
       "Error! Field manager(s) are created *after* the grids.\n");
   // map::at would throw, but you won't know which map threw.
   // With our own msg, we can tell you where the throw happened.
-  EKAT_REQUIRE_MSG(m_field_mgrs.find(grid_name)!=m_field_mgrs.end(),
+  EKAT_REQUIRE_MSG(m_grids_manager->has_grid(grid_name),
       "Error! Request for field manager on a non-existing grid '" + grid_name + "'.\n");
 
-  return m_field_mgrs.at(grid_name);
+  // Do not use $grid_name, since it might be an alias. Fetch grid,
+  // then get the actual name from the grid itself
+  auto grid = m_grids_manager->get_grid(grid_name);
+
+  return m_field_mgrs.at(grid->name());
 }
 
 void AtmosphereDriver::
