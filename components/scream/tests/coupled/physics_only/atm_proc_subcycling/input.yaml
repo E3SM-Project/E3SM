@@ -36,5 +36,5 @@ initial_conditions:
 
 # The parameters for I/O control
 Scorpio:
-  Output YAML Files: [output_${POSTFIX}.yaml]
+  output_yaml_files: [output_${POSTFIX}.yaml]
 ...

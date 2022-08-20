@@ -51,5 +51,5 @@ grids_manager:
 
 # List all the yaml files with the output parameters
 Scorpio:
-  Output YAML Files: ["model_restart_output.yaml"]
+  output_yaml_files: ["model_restart_output.yaml"]
 ...

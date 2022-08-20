@@ -535,7 +535,7 @@ void AtmosphereDriver::initialize_output_managers () {
   
   // Build one manager per output yaml file
   using vos_t = std::vector<std::string>;
-  const auto& output_yaml_files = io_params.get<vos_t>("Output YAML Files",vos_t{});
+  const auto& output_yaml_files = io_params.get<vos_t>("output_yaml_files",vos_t{});
   int om_tally = 0;
   for (const auto& fname : output_yaml_files) {
     ekat::ParameterList params;

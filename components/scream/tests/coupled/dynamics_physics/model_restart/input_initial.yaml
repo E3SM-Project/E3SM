@@ -64,5 +64,5 @@ Scorpio:
     Output Control:
       Frequency:       1
       Frequency Units: Steps
-  Output YAML Files: ["model_restart_output.yaml"]
+  output_yaml_files: ["model_restart_output.yaml"]
 ...

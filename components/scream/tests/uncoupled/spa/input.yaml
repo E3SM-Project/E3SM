@@ -28,5 +28,5 @@ initial_conditions:
 
 # The parameters for I/O control
 Scorpio:
-  Output YAML Files: ["spa_standalone_output.yaml"]
+  output_yaml_files: ["spa_standalone_output.yaml"]
 ...

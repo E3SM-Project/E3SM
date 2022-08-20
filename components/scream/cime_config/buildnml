@@ -751,10 +751,10 @@ def do_cime_vars_on_yaml_output_files(case,caseroot):
         eamxx_xml = ET.parse(fd).getroot()
 
     scorpio = get_child(eamxx_xml,'Scorpio')
-    out_files_xml = get_child(scorpio,"Output__YAML__Files",must_exist=False)
+    out_files_xml = get_child(scorpio,"output_yaml_files",must_exist=False)
     out_files = out_files_xml.text.split(",") if out_files_xml is not None else []
 
-    # We will also change the 'Output YAML Files' entry in scream_input.yaml,
+    # We will also change the 'output_yaml_files' entry in scream_input.yaml,
     # to point to the copied files in $rundir/data
     output_yaml_files = []
     scream_input_file = os.path.join(rundir,'data','scream_input.yaml')
@@ -783,12 +783,12 @@ def do_cime_vars_on_yaml_output_files(case,caseroot):
                      extra={'PHYSICS_GRID_TYPE': pgt})
         ordered_dump(content, open(dst_yaml, "w"))
 
-        output_yaml_files.append (dst_yaml)
+        output_yaml_files.append(dst_yaml)
 
     # Now update the output yaml files entry, and dump the new content
     # of the scream input to YAML file
     print ("out list: {}".format(",".join(output_yaml_files)))
-    scream_input["Scorpio"]["Output YAML Files"] = refine_type(",".join(output_yaml_files),"array(string)")
+    scream_input["Scorpio"]["output_yaml_files"] = refine_type(",".join(output_yaml_files),"array(string)")
     with open(scream_input_file, "w") as fd:
         fd.write(
 """################################################################

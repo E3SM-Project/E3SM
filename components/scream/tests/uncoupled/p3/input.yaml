@@ -29,5 +29,5 @@ initial_conditions:
 
 # The parameters for I/O control
 Scorpio:
-  Output YAML Files: ["p3_standalone_output.yaml"]
+  output_yaml_files: ["p3_standalone_output.yaml"]
 ...
