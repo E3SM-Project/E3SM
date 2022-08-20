@@ -667,7 +667,7 @@ void AtmosphereDriver::restart_model ()
   m_atm_logger->info("  [EAMxx] restart_model ...");
 
   // First, figure out the name of the netcdf file containing the restart data
-  const auto& casename = m_atm_params.sublist("initial_conditions").get<std::string>("Restart Casename");
+  const auto& casename = m_atm_params.sublist("initial_conditions").get<std::string>("restart_casename");
   auto filename = find_filename_in_rpointer (casename,true,m_atm_comm,m_run_t0);
 
   // Restart the num steps counter in the atm time stamp

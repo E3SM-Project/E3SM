@@ -13,7 +13,7 @@ Time Stepping:
   Case Start Date: [2021, 10, 12]    # Year, Month, Day
 
 initial_conditions:
-  Restart Casename: model_restart
+  restart_casename: model_restart
 
 atmosphere_processes:
   atm_procs_list: (homme,physics)
