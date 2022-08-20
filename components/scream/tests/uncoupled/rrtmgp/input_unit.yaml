@@ -12,7 +12,7 @@ atmosphere_processes:
     orbital_year: 1990
     # Set orbital parameters to constants for consistency with RRTMGP test problem
     orbital_eccentricity: 0
-    Orbital Obliquity: 0
+    orbital_obliquity: 0
     Orbital MVELP: 0
     Fixed Solar Zenith Angle: 0.86
     do_aerosol_rad: false

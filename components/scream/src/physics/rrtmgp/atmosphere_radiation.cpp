@@ -283,7 +283,7 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   m_orbital_year = m_params.get<Int>("orbital_year",-9999);
   // Get orbital parameters from yaml file
   m_orbital_eccen = m_params.get<Int>("orbital_eccentricity",-9999);
-  m_orbital_obliq = m_params.get<Int>("Orbital Obliquity"   ,-9999);
+  m_orbital_obliq = m_params.get<Int>("orbital_obliquity"   ,-9999);
   m_orbital_mvelp = m_params.get<Int>("Orbital MVELP"       ,-9999);
 
   // Determine whether or not we are using a fixed solar zenith angle (positive value)
