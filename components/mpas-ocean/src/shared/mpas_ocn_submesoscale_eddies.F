@@ -92,10 +92,13 @@ module ocn_submesoscale_eddies
      allocate(streamFunction(nVertLevels+1))
      allocate(zEdge(nVertLevels+1))
 
-     !compute the mixed layer average buoyancy gradient and bvf**2
-     !This is thickness weighted to allow for non uniform grid spacing
-     !NOTE, it is assumed that the value of bvf**2 at the bottom of cell 1 
-     !   applies to the entire first cell
+     !compute the mixed layer average buoyancy gradient and bvf
+     !This is thickness weighted to allow for non uniform grid spacing, 
+     !and centered on layer interfaces. The mixed layer goes from the 
+     !ocean top layer to mid-depth of layer(indMLDedge)
+     !NOTE, gradBuoyEddy and BFV are defined at the top cell interface 
+     !and not valid for minLevelCell, so properties for the top layer 
+     !rely on the values at (minLevelCell+1).
      !$omp parallel
      !$omp do schedule(runtime) &
      !$omp private(cell1,cell2,bvfML,zEdge,streamFunction,gradBuoyML,hML,bvfAv, &
@@ -109,6 +112,7 @@ module ocn_submesoscale_eddies
         bvfML = 0.0_RKIND
         gradBuoyML = 0.0_RKIND
         !the BFV is defined at cell interfaces in the vertical so there is an offset in index
+        !this is the top half layer, assuming homogeneity of top layer
         bvfAv = sqrt(0.5_RKIND*(max(BruntVaisalaFreqTop(minLevelCell(cell1)+1,cell1),1.0E-20_RKIND) + &
                        max(BruntVaisalaFreqTop(minLevelCell(cell2)+1,cell2),1.0E-20_RKIND)))
         hML = 0.5_RKIND*layerThickEdgeMean(minLevelEdgeBot(iEdge),iEdge)
