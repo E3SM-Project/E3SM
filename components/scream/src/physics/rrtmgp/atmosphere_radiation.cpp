@@ -330,22 +330,22 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
     } else if (gas_name == "n2") {
       // n2 prescribed as a constant value
       auto gas_view = get_field_out(gas_name + "_volume_mix_ratio").get_view<Real**>();
-      Kokkos::deep_copy(gas_view, m_params.get<Real>("n2vmr"));
+      Kokkos::deep_copy(gas_view, m_params.get<Real>("n2vmr", 0.7906));
     } else if (gas_name == "co") {
       // co prescribed as a constant value
       auto gas_view = get_field_out(gas_name + "_volume_mix_ratio").get_view<Real**>();
-      Kokkos::deep_copy(gas_view, m_params.get<Real>("covmr"));
+      Kokkos::deep_copy(gas_view, m_params.get<Real>("covmr", 1.0e-7));
     } else {
       // This gives (dry) mass mixing ratios
       auto gas_view = get_field_out(gas_name + "_volume_mix_ratio").get_view<Real**>();
       scream::physics::trcmix(
         gas_name, m_lat, pmid, gas_view,
-        m_params.get<Real>("co2vmr_rad"),
-        m_params.get<Real>("co2vmr"),
-        m_params.get<Real>("n2ovmr"),
-        m_params.get<Real>("ch4vmr"),
-        m_params.get<Real>("f11vmr"),
-        m_params.get<Real>("f12vmr")
+        m_params.get<Real>("co2vmr_rad", -1.0),
+        m_params.get<Real>("co2vmr", 388.717e-6),
+        m_params.get<Real>("n2ovmr", 323.141e-9),
+        m_params.get<Real>("ch4vmr", 1807.851e-9),
+        m_params.get<Real>("f11vmr", 768.7644e-12),
+        m_params.get<Real>("f12vmr", 531.2820e-12)
       );
       // Back out volume mixing ratios
       const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
