@@ -305,7 +305,7 @@ tweaking their $case/namelist_scream.xml file.
 
   <!-- Debug options for scream -->
   <Debug>
-    <Atmosphere__DAG__Verbosity__Level>0</Atmosphere__DAG__Verbosity__Level>
+    <atmosphere_dag_verbosity_level>0</atmosphere_dag_verbosity_level>
     <Atm__Log__Level valid_values="trace,debug,info,warn,error">info</Atm__Log__Level>
   </Debug>
 

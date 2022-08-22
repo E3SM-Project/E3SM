@@ -583,7 +583,7 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
   //       the IC file, and throw an error when the dag is created.
 
   auto& deb_pl = m_atm_params.sublist("Debug");
-  const int verb_lvl = deb_pl.get<int>("Atmosphere DAG Verbosity Level",-1);
+  const int verb_lvl = deb_pl.get<int>("atmosphere_dag_verbosity_level",-1);
   if (verb_lvl>0) {
     // Check the atm DAG for missing stuff
     AtmProcDAG dag;

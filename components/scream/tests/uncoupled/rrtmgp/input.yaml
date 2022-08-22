@@ -2,7 +2,7 @@
 ---
 # This input file is for a free-standing rrtmgp test that runs using initial conditions read from a SCREAMv0 run
 Debug:
-  Atmosphere DAG Verbosity Level: 5
+  atmosphere_dag_verbosity_level: 5
   Atm Log Level: debug
 
 Time Stepping:

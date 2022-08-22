@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 Debug:
-  Atmosphere DAG Verbosity Level: 5
+  atmosphere_dag_verbosity_level: 5
 
 initial_conditions:
   Filename: should_not_be_neeeded_and_code_will_throw_if_it_tries_to_open_this_nonexistent_file.nc
