@@ -40,7 +40,7 @@
  *     GRID_NAME_N:
  *        Field Names:            ARRAY OF STRINGS
  *        IO Grid Name:           STRING                (optional)
- *  Output Control:
+ *  output_control:
  *    Frequency:                  INT
  *    Frequency Units:            STRING                (default: Steps)
  *  Checkpoint Control:

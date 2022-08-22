@@ -9,7 +9,7 @@ Field Names:
   - aero_tau_lw
   - aero_tau_sw
   - nccn
-Output Control:
+output_control:
   Frequency: ${NUM_STEPS}
   Frequency Units: Steps
   Timestamp in Filename: false

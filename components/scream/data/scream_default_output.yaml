@@ -53,7 +53,7 @@ Fields:
       - surf_sens_flux
       # Diagnostics
       - PotentialTemperature
-Output Control:
+output_control:
   Frequency: ${HIST_N}
   Frequency Units: ${HIST_OPTION}
   MPI Ranks in Filename: false

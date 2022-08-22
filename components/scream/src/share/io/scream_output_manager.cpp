@@ -60,7 +60,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   set_params(params,field_mgrs);
 
   // Output control
-  auto& out_control_pl = m_params.sublist("Output Control");
+  auto& out_control_pl = m_params.sublist("output_control");
   m_output_control.frequency  = out_control_pl.get<int>("Frequency");
   m_output_control.frequency_units = out_control_pl.get<std::string>("Frequency Units");
   m_output_control.nsteps_since_last_write = 0;

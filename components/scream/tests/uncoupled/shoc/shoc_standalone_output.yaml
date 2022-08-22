@@ -14,7 +14,7 @@ Fields:
   - tke
   - inv_qc_relvar
   - pbl_height
-Output Control:
+output_control:
   Frequency: ${NUM_STEPS}
   Frequency Units: Steps
   Timestamp in Filename: false

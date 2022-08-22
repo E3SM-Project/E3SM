@@ -33,7 +33,7 @@ Field Names:
   - eff_radius_qc
   - eff_radius_qi
  
-Output Control:
+output_control:
   Frequency: ${NUM_STEPS}
   Frequency Units: Steps
   Timestamp in Filename: false

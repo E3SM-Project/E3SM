@@ -16,7 +16,7 @@ Field Names:
   # EXPORTER
   - precip_liq_surf_mass
   - precip_ice_surf_mass
-Output Control:
+output_control:
   Frequency: 1
   Frequency Units: Steps
   Timestamp in Filename: false

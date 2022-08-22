@@ -292,14 +292,14 @@ tweaking their $case/namelist_scream.xml file.
     <output_yaml_files type="array(string)">${SRCROOT}/components/scream/data/scream_default_output.yaml</output_yaml_files>
     <model_restart>
       <Casename>./${CASE}.scream</Casename>
-      <Output__Control>
+      <output_control>
         <Frequency>${REST_N}</Frequency>
         <Frequency REST_OPTION="none">0</Frequency>
         <Frequency__Units>INVALID</Frequency__Units>
         <Frequency__Units REST_OPTION="nstep*">Steps</Frequency__Units>
         <AVG__Type__in__Filename>false</AVG__Type__in__Filename>
         <Frequency__in__Filename>false</Frequency__in__Filename>
-      </Output__Control>
+      </output_control>
     </model_restart>
   </Scorpio>
 

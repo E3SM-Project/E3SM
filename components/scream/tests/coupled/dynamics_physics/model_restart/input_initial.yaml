@@ -61,7 +61,7 @@ grids_manager:
 Scorpio:
   model_restart:
     Casename: model_restart
-    Output Control:
+    output_control:
       Frequency:       1
       Frequency Units: Steps
   output_yaml_files: ["model_restart_output.yaml"]
