@@ -63,6 +63,6 @@ Scorpio:
     Casename: model_restart
     output_control:
       Frequency:       1
-      Frequency Units: Steps
+      frequency_units: Steps
   output_yaml_files: ["model_restart_output.yaml"]
 ...

@@ -71,9 +71,9 @@ Fields:
 output_control:
   MPI Ranks in Filename: true
   Frequency: 2
-  Frequency Units: Steps
+  frequency_units: Steps
 Checkpoint Control:
   MPI Ranks in Filename: true
   Frequency: 1
-  Frequency Units: Steps
+  frequency_units: Steps
 ...

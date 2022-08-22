@@ -62,7 +62,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   // Output control
   auto& out_control_pl = m_params.sublist("output_control");
   m_output_control.frequency  = out_control_pl.get<int>("Frequency");
-  m_output_control.frequency_units = out_control_pl.get<std::string>("Frequency Units");
+  m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");
   m_output_control.nsteps_since_last_write = 0;
 
   // File specs
@@ -98,7 +98,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       // Output control
       auto& pl = m_params.sublist("Checkpoint Control");
       m_checkpoint_control.frequency  = pl.get<int>("Frequency");
-      m_checkpoint_control.frequency_units = pl.get<std::string>("Frequency Units");
+      m_checkpoint_control.frequency_units = pl.get<std::string>("frequency_units");
       m_checkpoint_control.nsteps_since_last_write = 0;
 
       // File specs

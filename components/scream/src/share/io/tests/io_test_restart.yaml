@@ -7,9 +7,9 @@ Field Names: [field_1, field_2, field_3, field_4]
 output_control:
   MPI Ranks in Filename: true
   Frequency: 10
-  Frequency Units: Steps
+  frequency_units: Steps
 Checkpoint Control:
   MPI Ranks in Filename: true
   Frequency: 5
-  Frequency Units: Steps
+  frequency_units: Steps
 ...

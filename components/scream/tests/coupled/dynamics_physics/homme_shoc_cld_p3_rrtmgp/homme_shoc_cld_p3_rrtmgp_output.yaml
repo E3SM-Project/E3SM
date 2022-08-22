@@ -65,7 +65,7 @@ Fields:
  
 output_control:
   Frequency: ${NUM_STEPS}
-  Frequency Units: Steps
+  frequency_units: Steps
   Timestamp in Filename: false
   MPI Ranks in Filename: true
 ...
