@@ -297,7 +297,7 @@ tweaking their $case/namelist_scream.xml file.
         <Frequency REST_OPTION="none">0</Frequency>
         <frequency_units>INVALID</frequency_units>
         <frequency_units REST_OPTION="nstep*">Steps</frequency_units>
-        <AVG__Type__in__Filename>false</AVG__Type__in__Filename>
+        <avg_type_in_filename>false</avg_type_in_filename>
         <Frequency__in__Filename>false</Frequency__in__Filename>
       </output_control>
     </model_restart>
