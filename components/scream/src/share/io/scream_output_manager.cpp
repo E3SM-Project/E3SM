@@ -71,7 +71,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_output_file_specs.filename_with_time_string = out_control_pl.get("Timestamp in Filename",true);
   m_output_file_specs.filename_with_mpiranks    = out_control_pl.get("MPI Ranks in Filename",false);
   m_output_file_specs.filename_with_avg_type    = out_control_pl.get("avg_type_in_filename",true);
-  m_output_file_specs.filename_with_frequency   = out_control_pl.get("Frequency in Filename",true);
+  m_output_file_specs.filename_with_frequency   = out_control_pl.get("frequency_in_filename",true);
 
   // For each grid, create a separate output stream.
   if (field_mgrs.size()==1) {
@@ -107,7 +107,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       m_checkpoint_file_specs.filename_with_time_string = pl.get("Timestamp in Filename",true);
       m_checkpoint_file_specs.filename_with_mpiranks    = pl.get("MPI Ranks in Filename",false);
       m_checkpoint_file_specs.filename_with_avg_type    = pl.get("avg_type_in_filename",true);
-      m_checkpoint_file_specs.filename_with_frequency   = pl.get("Frequency in Filename",true);
+      m_checkpoint_file_specs.filename_with_frequency   = pl.get("frequency_in_filename",true);
     }
   }
 

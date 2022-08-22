@@ -298,7 +298,7 @@ tweaking their $case/namelist_scream.xml file.
         <frequency_units>INVALID</frequency_units>
         <frequency_units REST_OPTION="nstep*">Steps</frequency_units>
         <avg_type_in_filename>false</avg_type_in_filename>
-        <Frequency__in__Filename>false</Frequency__in__Filename>
+        <frequency_in_filename>false</frequency_in_filename>
       </output_control>
     </model_restart>
   </Scorpio>
