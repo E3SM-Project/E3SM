@@ -759,7 +759,7 @@ void AtmosphereDriver::create_logger () {
   // Record the CASENAME for this run, set default to EAMxx
   if (m_atm_params.isSublist("e3sm_parameters")) {
     auto e3sm_params = m_atm_params.sublist("e3sm_parameters");
-    m_casename = e3sm_params.get<std::string>("E3SM Casename","EAMxx");
+    m_casename = e3sm_params.get<std::string>("e3sm_casename","EAMxx");
   } else {
     m_casename = "EAMxx";
   }

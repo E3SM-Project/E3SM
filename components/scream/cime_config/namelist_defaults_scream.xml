@@ -311,7 +311,7 @@ tweaking their $case/namelist_scream.xml file.
 
   <!-- E3SM Simulation Settings -->
   <e3sm_parameters>
-    <E3SM__Casename>${CASE}</E3SM__Casename>
+    <e3sm_casename>${CASE}</e3sm_casename>
   </e3sm_parameters>
 
   <!--
