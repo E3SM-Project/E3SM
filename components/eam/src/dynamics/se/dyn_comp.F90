@@ -278,7 +278,7 @@ CONTAINS
              end do
           end if
        else if(ideal_phys) then
-          if(runtype == 0 .and. ideal_phys_analytic_ic == .true.) then
+          if(runtype == 0 .and. ideal_phys_analytic_ic) then
              do ie=nets,nete
                 elem(ie)%state%ps_v(:,:,:) =ps0
 

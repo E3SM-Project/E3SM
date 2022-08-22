@@ -40,7 +40,7 @@ module cldera_sai_tracers
   integer, parameter :: ncnst=5  ! number of constituents implemented by this module
 
   ! constituent names, indices
-  character(len=8), parameter :: c_names(ncnst) = (/'SO2', 'ASH', 'SULFATE','SAI_PT', 'SAI_PV'/)
+  character(len=7), parameter :: c_names(ncnst) = (/'SO2    ', 'ASH    ', 'SULFATE','SAI_PT ', 'SAI_PV '/)
   integer :: ifirst ! global index of first constituent
   integer :: ixso2  ! global index for SO2 tracer
   integer :: ixash  ! global index for ASH tracer
