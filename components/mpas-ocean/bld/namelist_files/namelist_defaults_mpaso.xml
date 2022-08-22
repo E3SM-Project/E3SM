@@ -199,8 +199,10 @@
 <config_GMRedi_Rossby_ramp_max>3.0</config_GMRedi_Rossby_ramp_max>
 
 <!-- eddy_parameterization -->
-<config_mixedLayerDepths_crit_dens_threshold>0.03</config_mixedLayerDepths_crit_dens_threshold>
-<config_mld_reference_depth>10</config_mld_reference_depth>
+<config_eddyMLD_dens_threshold>0.03</config_eddyMLD_dens_threshold>
+<config_eddyMLD_reference_depth>10</config_eddyMLD_reference_depth>
+<config_eddyMLD_reference_pressure>1.0e5</config_eddyMLD_reference_pressure>
+<config_eddyMLD_use_old>.true.</config_eddyMLD_use_old>
 
 <!-- Rayleigh_damping -->
 <config_Rayleigh_friction>.false.</config_Rayleigh_friction>

@@ -699,7 +699,7 @@ Default: Defined in namelist_defaults.xml
 
 <!-- eddy_parameterization -->
 
-<entry id="config_mixedLayerDepths_crit_dens_threshold" type="real"
+<entry id="config_eddyMLD_dens_threshold" type="real"
 	category="eddy_parameterization" group="eddy_parameterization">
 potential density change relative to surface for mixed layer depth threshold method.  This calculation is used for the Redi tapering, GM N2_dependent bolus kappa, and the submesoscale eddy parameterization
 
@@ -707,11 +707,27 @@ Valid values: suggested range 0.01 less than or equal to thresh less than or equ
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_mld_reference_depth" type="real"
+<entry id="config_eddyMLD_reference_depth" type="real"
 	category="eddy_parameterization" group="eddy_parameterization">
 reference depth for threshold computation
 
 Valid values: any positive real, near 10
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eddyMLD_reference_pressure" type="real"
+	category="eddy_parameterization" group="eddy_parameterization">
+reference pressure for original mixed layer depth calculation
+
+Valid values: positive reals around 1.0e5
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eddyMLD_use_old" type="logical"
+	category="eddy_parameterization" group="eddy_parameterization">
+switches from old dThreshMLD calculation to new (fixed one)
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 

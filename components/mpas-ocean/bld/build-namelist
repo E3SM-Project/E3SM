@@ -606,8 +606,10 @@ add_default($nl, 'config_GMRedi_Rossby_ramp_max');
 # Namelist group: eddy_parameterization #
 #########################################
 
-add_default($nl, 'config_mixedLayerDepths_crit_dens_threshold');
-add_default($nl, 'config_mld_reference_depth');
+add_default($nl, 'config_eddyMLD_dens_threshold');
+add_default($nl, 'config_eddyMLD_reference_depth');
+add_default($nl, 'config_eddyMLD_reference_pressure');
+add_default($nl, 'config_eddyMLD_use_old');
 
 ####################################
 # Namelist group: Rayleigh_damping #
