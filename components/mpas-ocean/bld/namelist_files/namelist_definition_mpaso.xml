@@ -529,7 +529,7 @@ Default: Defined in namelist_defaults.xml
 	category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
 minimum frontal width (meters)
 
-Valid values: between 500 and 2000m
+Valid values: between 200 and 5000m
 Default: Defined in namelist_defaults.xml
 </entry>
 
