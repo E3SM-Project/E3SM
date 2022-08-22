@@ -514,8 +514,8 @@ void AtmosphereDriver::initialize_output_managers () {
   // OM of all the requested outputs.
 
   // Check for model restart output
-  if (io_params.isSublist("Model Restart")) {
-    auto restart_pl = io_params.sublist("Model Restart");
+  if (io_params.isSublist("model_restart")) {
+    auto restart_pl = io_params.sublist("model_restart");
     // Signal that this is not a normal output, but the model restart one
     m_output_managers.emplace_back();
     auto& om = m_output_managers.back();

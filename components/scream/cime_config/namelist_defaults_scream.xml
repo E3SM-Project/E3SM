@@ -290,7 +290,7 @@ tweaking their $case/namelist_scream.xml file.
   <!-- List of yaml files containing I/O output specs -->
   <Scorpio>
     <output_yaml_files type="array(string)">${SRCROOT}/components/scream/data/scream_default_output.yaml</output_yaml_files>
-    <Model__Restart>
+    <model_restart>
       <Casename>./${CASE}.scream</Casename>
       <Output__Control>
         <Frequency>${REST_N}</Frequency>
@@ -300,7 +300,7 @@ tweaking their $case/namelist_scream.xml file.
         <AVG__Type__in__Filename>false</AVG__Type__in__Filename>
         <Frequency__in__Filename>false</Frequency__in__Filename>
       </Output__Control>
-    </Model__Restart>
+    </model_restart>
   </Scorpio>
 
   <!-- Debug options for scream -->
