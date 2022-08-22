@@ -20,6 +20,7 @@
 #include "diagnostics/shortwave_cloud_forcing.hpp"
 #include "diagnostics/longwave_cloud_forcing.hpp"
 #include "diagnostics/relative_humidity.hpp"
+#include "diagnostics/zonal_vapor_flux.hpp"
 
 
 namespace scream {
@@ -43,6 +44,7 @@ inline void register_diagnostics () {
   diag_factory.register_product("ShortwaveCloudForcing",&create_atmosphere_diagnostic<ShortwaveCloudForcingDiagnostic>);
   diag_factory.register_product("LongwaveCloudForcing",&create_atmosphere_diagnostic<LongwaveCloudForcingDiagnostic>);
   diag_factory.register_product("RelativeHumidity",&create_atmosphere_diagnostic<RelativeHumidityDiagnostic>);
+  diag_factory.register_product("ZonalVapFlux",&create_atmosphere_diagnostic<RelativeHumidityDiagnostic>);
 
 }
 

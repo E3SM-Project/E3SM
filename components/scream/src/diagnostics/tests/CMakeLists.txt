@@ -30,6 +30,7 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(longwave_cloud_forcing "longwave_cloud_forcing_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test Relative Humidity 
   CreateUnitTest(relative_humidity "relative_humidity_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-
+  # Test Zonal Vapor Flux
+  CreateUnitTest(zonal_vapor_flux "zonal_vapor_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 
 endif()
