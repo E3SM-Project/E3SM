@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-SPA Data File: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_scream.nc
+spa_data_file: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_scream.nc
 ncols: 866
 nlevs: 72
 nswbands: 14

@@ -45,7 +45,7 @@ TEST_CASE("spa-stand-alone", "") {
   gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
 
   // Create the grids manager
-  auto& gm_params = ad_params.sublist("Grids Manager");
+  auto& gm_params = ad_params.sublist("grids_manager");
   const std::string& gm_type = gm_params.get<std::string>("Type");
   auto gm = GridsManagerFactory::instance().create(gm_type,atm_comm,gm_params);
 

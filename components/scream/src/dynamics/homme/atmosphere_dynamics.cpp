@@ -241,7 +241,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     m_d2p_remapper = grids_manager->create_remapper(m_dyn_grid,m_phys_grid);
   }
   
-  // Create separate remapper for Initial Conditions
+  // Create separate remapper for initial_conditions
   m_ic_remapper = grids_manager->create_remapper(m_cgll_grid,m_dyn_grid);
 }
 
@@ -1282,7 +1282,7 @@ void HommeDynamics::init_homme_vcoord () {
 
   // Read vcoords into host views
   ekat::ParameterList vcoord_reader_pl;
-  vcoord_reader_pl.set("Filename",m_params.get<std::string>("Vertical Coordinate Filename"));
+  vcoord_reader_pl.set("Filename",m_params.get<std::string>("vertical_coordinate_filename"));
   vcoord_reader_pl.set<vos_t>("Field Names",{"hyai","hybi","hyam","hybm"});
   std::map<std::string,view_1d_host> host_views = {
     { "hyai", view_1d_host("hyai",nlev_int) },

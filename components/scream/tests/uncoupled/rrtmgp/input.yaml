@@ -2,8 +2,8 @@
 ---
 # This input file is for a free-standing rrtmgp test that runs using initial conditions read from a SCREAMv0 run
 Debug:
-  Atmosphere DAG Verbosity Level: 5
-  Atm Log Level: debug
+  atmosphere_dag_verbosity_level: 5
+  atm_log_level: debug
 
 Time Stepping:
   Time Step: ${ATM_TIME_STEP}
@@ -15,21 +15,21 @@ atmosphere_processes:
   atm_procs_list: (rrtmgp)
   rrtmgp:
     Grid: Point Grid
-    Column Chunk Size: ${COL_CHUNK_SIZE}
+    column_chunk_size: ${COL_CHUNK_SIZE}
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
-    Orbital Year: 1990
+    orbital_year: 1990
     Can Initialize All Inputs: true
     rad_frequency: 3
     do_aerosol_rad: false
 
-Grids Manager:
+grids_manager:
   Type: Mesh Free
-  Reference Grid: Point Grid
+  reference_grid: Point Grid
   Number of Global Columns: 218
   Number of Vertical Levels: 72
 
 # Specifications for setting initial conditions
-Initial Conditions:
+initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   aero_g_sw: 0.0
   aero_ssa_sw: 0.0
@@ -40,5 +40,5 @@ Initial Conditions:
 
 # The parameters for I/O control
 Scorpio:
-  Output YAML Files: ["rrtmgp_standalone_output${SUFFIX}.yaml"]
+  output_yaml_files: ["rrtmgp_standalone_output${SUFFIX}.yaml"]
 ...

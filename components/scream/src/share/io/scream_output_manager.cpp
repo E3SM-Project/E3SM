@@ -60,9 +60,9 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   set_params(params,field_mgrs);
 
   // Output control
-  auto& out_control_pl = m_params.sublist("Output Control");
+  auto& out_control_pl = m_params.sublist("output_control");
   m_output_control.frequency  = out_control_pl.get<int>("Frequency");
-  m_output_control.frequency_units = out_control_pl.get<std::string>("Frequency Units");
+  m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");
   m_output_control.nsteps_since_last_write = 0;
 
   // File specs
@@ -70,8 +70,8 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_output_file_specs.num_snapshots_in_file = 0;
   m_output_file_specs.filename_with_time_string = out_control_pl.get("Timestamp in Filename",true);
   m_output_file_specs.filename_with_mpiranks    = out_control_pl.get("MPI Ranks in Filename",false);
-  m_output_file_specs.filename_with_avg_type    = out_control_pl.get("AVG Type in Filename",true);
-  m_output_file_specs.filename_with_frequency   = out_control_pl.get("Frequency in Filename",true);
+  m_output_file_specs.filename_with_avg_type    = out_control_pl.get("avg_type_in_filename",true);
+  m_output_file_specs.filename_with_frequency   = out_control_pl.get("frequency_in_filename",true);
 
   // For each grid, create a separate output stream.
   if (field_mgrs.size()==1) {
@@ -98,7 +98,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       // Output control
       auto& pl = m_params.sublist("Checkpoint Control");
       m_checkpoint_control.frequency  = pl.get<int>("Frequency");
-      m_checkpoint_control.frequency_units = pl.get<std::string>("Frequency Units");
+      m_checkpoint_control.frequency_units = pl.get<std::string>("frequency_units");
       m_checkpoint_control.nsteps_since_last_write = 0;
 
       // File specs
@@ -106,8 +106,8 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       m_checkpoint_file_specs.num_snapshots_in_file = 0;
       m_checkpoint_file_specs.filename_with_time_string = pl.get("Timestamp in Filename",true);
       m_checkpoint_file_specs.filename_with_mpiranks    = pl.get("MPI Ranks in Filename",false);
-      m_checkpoint_file_specs.filename_with_avg_type    = pl.get("AVG Type in Filename",true);
-      m_checkpoint_file_specs.filename_with_frequency   = pl.get("Frequency in Filename",true);
+      m_checkpoint_file_specs.filename_with_avg_type    = pl.get("avg_type_in_filename",true);
+      m_checkpoint_file_specs.filename_with_frequency   = pl.get("frequency_in_filename",true);
     }
   }
 

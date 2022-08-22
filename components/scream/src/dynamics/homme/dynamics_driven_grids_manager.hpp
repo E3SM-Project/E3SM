@@ -18,7 +18,7 @@ public:
 
   ~DynamicsDrivenGridsManager ();
 
-  std::string name () const { return "Dynamics Driven Grids Manager"; }
+  std::string name () const { return "Dynamics Driven grids_manager"; }
 
   void build_grids (const std::set<std::string>& grid_names);
 

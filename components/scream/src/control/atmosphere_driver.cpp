@@ -121,7 +121,7 @@ set_params(const ekat::ParameterList& atm_params)
 
 #ifdef SCREAM_CIME_BUILD
   const auto hgn = "Physics PG2";
-  fvphyshack = m_atm_params.sublist("Grids Manager").get<std::string>("Reference Grid") == hgn;
+  fvphyshack = m_atm_params.sublist("grids_manager").get<std::string>("reference_grid") == hgn;
   if (fvphyshack) {
     // See the [rrtmgp active gases] note in dynamics/homme/atmosphere_dynamics_fv_phys.cpp.
     fv_phys_rrtmgp_active_gases_init(m_atm_params);
@@ -185,7 +185,7 @@ void AtmosphereDriver::create_grids()
   check_ad_status (s_procs_created | s_comm_set | s_params_set);
 
   // Create the grids manager
-  auto& gm_params = m_atm_params.sublist("Grids Manager");
+  auto& gm_params = m_atm_params.sublist("grids_manager");
   const std::string& gm_type = gm_params.get<std::string>("Type");
   m_atm_logger->debug("  [EAMxx] Creating grid manager '" + gm_type + "' ...");
   m_grids_manager = GridsManagerFactory::instance().create(gm_type,m_atm_comm,gm_params);
@@ -205,7 +205,7 @@ void AtmosphereDriver::create_grids()
   // Load reference/surface pressure fractions if needed. This
   // is done inside dynamics, however, for standalone runs
   // without dynamics, these values could be needed.
-  auto& ic_pl = m_atm_params.sublist("Initial Conditions");
+  auto& ic_pl = m_atm_params.sublist("initial_conditions");
   const bool load_hybrid_coeffs = ic_pl.get<bool>("Load Hybrid Coefficients",false);
   if (load_hybrid_coeffs) {
     using view_1d_host = AtmosphereInput::view_1d_host;
@@ -514,8 +514,8 @@ void AtmosphereDriver::initialize_output_managers () {
   // OM of all the requested outputs.
 
   // Check for model restart output
-  if (io_params.isSublist("Model Restart")) {
-    auto restart_pl = io_params.sublist("Model Restart");
+  if (io_params.isSublist("model_restart")) {
+    auto restart_pl = io_params.sublist("model_restart");
     // Signal that this is not a normal output, but the model restart one
     m_output_managers.emplace_back();
     auto& om = m_output_managers.back();
@@ -535,7 +535,7 @@ void AtmosphereDriver::initialize_output_managers () {
   
   // Build one manager per output yaml file
   using vos_t = std::vector<std::string>;
-  const auto& output_yaml_files = io_params.get<vos_t>("Output YAML Files",vos_t{});
+  const auto& output_yaml_files = io_params.get<vos_t>("output_yaml_files",vos_t{});
   int om_tally = 0;
   for (const auto& fname : output_yaml_files) {
     ekat::ParameterList params;
@@ -583,7 +583,7 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
   //       the IC file, and throw an error when the dag is created.
 
   auto& deb_pl = m_atm_params.sublist("Debug");
-  const int verb_lvl = deb_pl.get<int>("Atmosphere DAG Verbosity Level",-1);
+  const int verb_lvl = deb_pl.get<int>("atmosphere_dag_verbosity_level",-1);
   if (verb_lvl>0) {
     // Check the atm DAG for missing stuff
     AtmProcDAG dag;
@@ -610,7 +610,7 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
   // Check whether we need to load latitude/longitude of reference grid dofs.
   // This option allows the user to set lat or lon in their own
   // test or run setup code rather than by file.
-  auto& ic_pl = m_atm_params.sublist("Initial Conditions");
+  auto& ic_pl = m_atm_params.sublist("initial_conditions");
   bool load_latitude  = ic_pl.get<bool>("Load Latitude",false);
   bool load_longitude = ic_pl.get<bool>("Load Longitude",false);
 
@@ -667,7 +667,7 @@ void AtmosphereDriver::restart_model ()
   m_atm_logger->info("  [EAMxx] restart_model ...");
 
   // First, figure out the name of the netcdf file containing the restart data
-  const auto& casename = m_atm_params.sublist("Initial Conditions").get<std::string>("Restart Casename");
+  const auto& casename = m_atm_params.sublist("initial_conditions").get<std::string>("restart_casename");
   auto filename = find_filename_in_rpointer (casename,true,m_atm_comm,m_run_t0);
 
   // Restart the num steps counter in the atm time stamp
@@ -727,7 +727,7 @@ void AtmosphereDriver::create_logger () {
   auto& deb_pl = m_atm_params.sublist("Debug");
 
   ci_string log_fname = deb_pl.get<std::string>("Atm Log File","atm.log");
-  ci_string log_level_str = deb_pl.get<std::string>("Atm Log Level","info");
+  ci_string log_level_str = deb_pl.get<std::string>("atm_log_level","info");
   EKAT_REQUIRE_MSG (log_fname!="",
       "Invalid string for 'Atm Log File': '" + log_fname + "'.\n");
 
@@ -745,7 +745,7 @@ void AtmosphereDriver::create_logger () {
   } else if (log_level_str=="off") {
     log_level = LogLevel::off;
   } else {
-    EKAT_ERROR_MSG ("Invalid choice for 'Atm Log Level': " + log_level_str + "\n");
+    EKAT_ERROR_MSG ("Invalid choice for 'atm_log_level': " + log_level_str + "\n");
   }
 
   using logger_t = Logger<LogBasicFile,LogRootRank>;
@@ -757,9 +757,9 @@ void AtmosphereDriver::create_logger () {
   m_atm_logger = logger;
 
   // Record the CASENAME for this run, set default to EAMxx
-  if (m_atm_params.isSublist("E3SM Parameters")) {
-    auto e3sm_params = m_atm_params.sublist("E3SM Parameters");
-    m_casename = e3sm_params.get<std::string>("E3SM Casename","EAMxx");
+  if (m_atm_params.isSublist("e3sm_parameters")) {
+    auto e3sm_params = m_atm_params.sublist("e3sm_parameters");
+    m_casename = e3sm_params.get<std::string>("e3sm_casename","EAMxx");
   } else {
     m_casename = "EAMxx";
   }
@@ -769,7 +769,7 @@ void AtmosphereDriver::set_initial_conditions ()
 {
   m_atm_logger->info("  [EAMxx] set_initial_conditions ...");
 
-  auto& ic_pl = m_atm_params.sublist("Initial Conditions");
+  auto& ic_pl = m_atm_params.sublist("initial_conditions");
 
   // Check which fields need to have an initial condition.
   std::map<std::string,std::vector<std::string>> ic_fields_names;

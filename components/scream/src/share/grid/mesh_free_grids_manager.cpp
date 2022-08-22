@@ -38,15 +38,15 @@ build_grids (const std::set<std::string>& grid_names)
         "       Requested grid: " + gn + "\n");
   }
 
-  if (not m_params.isParameter("Reference Grid")) {
+  if (not m_params.isParameter("reference_grid")) {
     // Set a reference grid.
     if (ekat::contains(grid_names,"Point Grid")) {
-      m_params.set<std::string>("Reference Grid","Point Grid");
+      m_params.set<std::string>("reference_grid","Point Grid");
     } else {
-      m_params.set<std::string>("Reference Grid","SE Grid");
+      m_params.set<std::string>("reference_grid","SE Grid");
     }
   }
-  std::string ref_grid = m_params.get<std::string>("Reference Grid");
+  std::string ref_grid = m_params.get<std::string>("reference_grid");
 
   const bool build_pt = ekat::contains(grid_names,"Point Grid") || ref_grid=="Point Grid";
   const bool build_se = ekat::contains(grid_names,"SE Grid") || ref_grid=="SE Grid";
