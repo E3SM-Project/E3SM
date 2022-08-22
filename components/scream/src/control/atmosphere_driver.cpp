@@ -727,7 +727,7 @@ void AtmosphereDriver::create_logger () {
   auto& deb_pl = m_atm_params.sublist("Debug");
 
   ci_string log_fname = deb_pl.get<std::string>("Atm Log File","atm.log");
-  ci_string log_level_str = deb_pl.get<std::string>("Atm Log Level","info");
+  ci_string log_level_str = deb_pl.get<std::string>("atm_log_level","info");
   EKAT_REQUIRE_MSG (log_fname!="",
       "Invalid string for 'Atm Log File': '" + log_fname + "'.\n");
 
@@ -745,7 +745,7 @@ void AtmosphereDriver::create_logger () {
   } else if (log_level_str=="off") {
     log_level = LogLevel::off;
   } else {
-    EKAT_ERROR_MSG ("Invalid choice for 'Atm Log Level': " + log_level_str + "\n");
+    EKAT_ERROR_MSG ("Invalid choice for 'atm_log_level': " + log_level_str + "\n");
   }
 
   using logger_t = Logger<LogBasicFile,LogRootRank>;
