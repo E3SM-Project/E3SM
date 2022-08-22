@@ -81,7 +81,7 @@
       <value compset="_ELM%[^_]*BC"     >-bc_dep_to_snow_updates</value>
 
       <!-- Simple/idealized configurations -->
-      <value compset="_EAM%IDEAL"     >-phys ideal</value>
+      <value compset="_EAM%IDEAL"     >-phys ideal -nlev 72</value>
       <value compset="_EAM%ADIAB"     >-phys adiabatic</value>
 
       <!-- Aquaplanet -->

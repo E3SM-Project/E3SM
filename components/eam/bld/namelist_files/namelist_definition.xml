@@ -3492,6 +3492,12 @@ Type of idealized physics configuration to use if running cam_physpkg="ideal".
 Default: held-suarez
 </entry>
 
+<entry id="ideal_phys_analytic_ic" type="logical" group="phys_ctl_nl"
+       valid_values="">
+Whether or not to use analytic initial conditions if running cam_physpkg="ideal".
+Default: true
+</entry>
+
 <entry id="cam_chempkg" type="char*16" category="build"
        group="phys_ctl_nl" valid_values="waccm_mozart,waccm_ghg,trop_mozart,
                                          trop_ghg,trop_bam,trop_mam3,trop_mam4,trop_mam4_resus_soag,
@@ -4211,6 +4217,144 @@ Default: set by configure
        group="aoa_tracers_nl" valid_values="" >
 If true age of air tracers are read from the initial conditions file.
 If this is not specified then they are not read from IC file.
+Default: TRUE
+</entry>
+
+<!-- CLDERA SAI tracers -->
+
+<entry id="cldera_sai_tracers_flag" type="logical" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+If true CLDERA stratospheric aerosol injection tracers are included.  
+This variable should not be set by the user.  It will be set by build-namelist 
+to be consistent with the '-cldera_sai_trcs' argument specified to configure.
+Default: set by configure
+</entry>
+
+<entry id="cldera_sai_read_from_ic_file" type="logical" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+If true CLDERA stratospheric aerosol injection tracers are read from the initial 
+conditions file. If this is not specified then they are not read from IC file.
+Default: FALSE
+</entry>
+
+<entry id="cldera_sai_t0" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+Desired time of injection from simulation start, in hours.
+Default: 0 (injection occurs at first timestep)
+</entry>
+
+<entry id="cldera_sai_duration" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+Injection duration in hours. After the time cldera_sai_t0 + cldera_sai_duration, the injection 
+amplitude is set to zero.
+Default: 9
+</entry>
+
+<entry id="cldera_sai_lat0" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+Desired latitude of injection in degrees. The injection will occur at the grid point
+nearest this position.
+Default: 15.15
+</entry>
+
+<entry id="cldera_sai_lon0" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+Desired longitude of injection in degrees. The injection will occur at the grid point
+nearest this position.
+Default: 15.15
+</entry>
+
+<entry id="cldera_sai_MSO2" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+Total injected SO2 mass in Mt.
+Default: 17
+</entry>
+
+<entry id="cldera_sai_Mash" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+Total injected ash mass in Mt.
+Default: 50
+</entry>
+
+<entry id="cldera_sai_rkSO2" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+SO2 e-folding decay timescale in days (reciprocal of the model's k_SO2)
+Default: 25
+</entry>
+
+<entry id="cldera_sai_rkash" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+Ash e-folding decay timescale in days (reciprocal of the model's k_ash)
+Default: 1
+</entry>
+
+<entry id="cldera_sai_rksulf" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+Sulfate e-folding decay timescale in days (reciprocal of the model's k_sulfate)
+Default: 360
+</entry>
+
+<entry id="cldera_sai_w" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+SO2 to Sulfate reaction mass weighting. This gives the mass of sulfate
+produced per units mass of SO2 as a dimensionless ratio
+Default: 2.04
+</entry>
+
+<entry id="cldera_sai_dTstrat" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+Local temperature rate of change by sulfur species (SO2, as well as sulfate 
+if cldera_sai_formSulfate is true) in K/day
+Default: 0.35
+</entry>
+
+<entry id="cldera_sai_dTsurf" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+Local temperature rate of change by the net AOD species (from SO2, ash, and 
+sulfate if cldera_sai_formSulfate is true) in K/day
+Default: -0.012
+</entry>
+
+<entry id="cldera_sai_qstar" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+Mixing ratio normalization for local heating by sulfur species. This is the 
+dimensionless mixing ratio at which the local temperature rate of change will 
+be cldera_sai_dTstrat.
+Default: 1.2e-4
+</entry>
+
+<entry id="cldera_sai_taustar" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+AOD normalization for surface cooling. This is the dimensionless AOD at which 
+the local temperature rate of change will be cldera_sai_dTsurf.
+Default: 3.0e10
+</entry>
+
+<entry id="cldera_sai_zAOD" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+Maximum height above the surface at which to apply cooling by AOD in km
+Default: 5
+</entry>
+
+<entry id="cldera_sai_formSulfate" type="logical" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+If true, sulfate formation from SO2 decay is activated. If false, the SO2 decay is 
+unchanged, but no sulfate is produced.
+Default: TRUE
+</entry>
+
+<entry id="cldera_sai_stratHeating" type="logical" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+If true, sulfur species (SO2, as well as sulfate if cldera_sai_formSulfate is true) 
+cause local diabatic heating. If false, no heating occurs.
+Default: TRUE
+</entry>
+
+<entry id="cldera_sai_surfCooling" type="logical" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+If true, a net AOD due to SAI tracer species (SO2, ash, and sulfate if 
+cldera_sai_formSulfate is true) causes a negative diabatic heating near the surface.
+If false, no cooling occurs.
 Default: TRUE
 </entry>
 

@@ -112,6 +112,7 @@ OPTIONS
   effect whether running EAM as part of CCSM or running in a EAM standalone mode:
 
      -[no]age_of_air_trcs Switch on [off] age of air tracers. Default: on for waccm_phys, otherwise off
+     -cldera_sai_trcs   Switch on idealized stratospheric aerosol injection tracers. Default: off
      -aquaplanet        Switch on aqua-planet mode w/ SST controlled by data ocean component in CIME
      -rce               Use homogenous conditions for radiative-convective equilibrium (RCE), normally used with aquaplanet
      -chem <name>       Build EAM with specified prognostic chemistry package
@@ -161,7 +162,7 @@ OPTIONS
                         The user does not need to set this if one of the waccm chemistry options
                         is chosen.
      -waccmx            Build EAM/WACCM with WACCM upper Thermosphere/Ionosphere extended package
-
+     
 
   Options relevent to SCAM mode:
 
@@ -321,6 +322,7 @@ my %opts = (
 	    );
 GetOptions(
     "age_of_air_trcs!"          => \$opts{'age_of_air_trcs'},
+    "cldera_sai_trcs!"          => \$opts{'cldera_sai_trcs'},
     "aquaplanet"                => \$opts{'aquaplanet'},
     "cache=s"                   => \$opts{'cache'},
     "cachedir=s"                => \$opts{'cachedir'},
@@ -868,8 +870,14 @@ if (defined $opts{'age_of_air_trcs'}) {
     $cfg_ref->set('age_of_air_trcs', $opts{'age_of_air_trcs'});
 }
 my $age_of_air_trcs = $cfg_ref->get('age_of_air_trcs') ? "ON" : "OFF";
-
 if ($print>=2) { print "Age of air tracer package: $age_of_air_trcs$eol"; }
+
+# Allow user to turn on the cldera sai tracers
+if (defined $opts{'cldera_sai_trcs'}) {
+    $cfg_ref->set('cldera_sai_trcs', $opts{'cldera_sai_trcs'});
+}
+my $cldera_sai_trcs = $cfg_ref->get('cldera_sai_trcs') ? "ON" : "OFF";
+if ($print>=2) { print "CLDERA SAI tracer package: $cldera_sai_trcs$eol"; }
 
 # waccmx option
 if (defined $opts{'waccmx'}) {
@@ -1400,6 +1408,7 @@ if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_ma
 # Number of advected constituents
 my $nadv;
 if (defined $opts{'nadv'}) {
+
     $cfg_ref->set('nadv', $opts{'nadv'});
 }
 else {
@@ -1474,6 +1483,11 @@ else {
     if ($age_of_air_trcs eq "ON") {
 	$nadv += 4;
         if ($print>=2) { print "Advected constituents added by the age of air tracer package: 4$eol"; }
+    }
+    
+    if ($cldera_sai_trcs eq "ON") {
+	$nadv += 5;
+        if ($print>=2) { print "Advected constituents added by the CLDERA SAI tracer package: 5$eol"; }
     }
 
     $cfg_ref->set('nadv', $nadv);

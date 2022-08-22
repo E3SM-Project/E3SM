@@ -47,6 +47,7 @@ contains
     use chemistry,               only: chem_implements_cnst, chem_init_cnst
     use tracers,                 only: tracers_implements_cnst, tracers_init_cnst
     use aoa_tracers,             only: aoa_tracers_implements_cnst, aoa_tracers_init_cnst
+    use cldera_sai_tracers,      only: cldera_sai_tracers_implements_cnst, cldera_sai_tracers_init_cnst
     use clubb_intr,              only: clubb_implements_cnst, clubb_init_cnst
     use stratiform,              only: stratiform_implements_cnst, stratiform_init_cnst
     use microp_driver,           only: microp_driver_implements_cnst, microp_driver_init_cnst
@@ -367,6 +368,10 @@ contains
              call aoa_tracers_init_cnst(cnst_name(m_cnst), qtmp, gcid)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
                    ' initialized by "aoa_tracers_init_cnst"'
+          else if (cldera_sai_tracers_implements_cnst(cnst_name(m_cnst))) then
+             call cldera_sai_tracers_init_cnst(cnst_name(m_cnst), qtmp, gcid)
+              if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &
+                   ' initialized by "cldera_sai_tracers_init_cnst"'
           else if (co2_implements_cnst(cnst_name(m_cnst))) then
              call co2_init_cnst(cnst_name(m_cnst), qtmp, gcid)
               if(par%masterproc) write(iulog,*) '          ', cnst_name(m_cnst), &

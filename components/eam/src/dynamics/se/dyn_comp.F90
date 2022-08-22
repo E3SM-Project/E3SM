@@ -238,6 +238,7 @@ CONTAINS
     use comsrf,           only: sgh, sgh30
     use cam_instance,     only: inst_index
     use element_ops,      only: set_thermostate
+    use phys_control,     only: phys_getopts
 
     type (dyn_import_t), intent(inout) :: dyn_in
 
@@ -247,6 +248,9 @@ CONTAINS
     real(r8), parameter :: Tinit=300.0_r8
     type(hybrid_t) :: hybrid
     real(r8) :: temperature(np,np,nlev),ps(np,np)
+
+    logical  :: ideal_phys_analytic_ic
+    call phys_getopts(ideal_phys_analytic_ic_out=ideal_phys_analytic_ic)
 
     elem  => dyn_in%elem
 
@@ -274,7 +278,7 @@ CONTAINS
              end do
           end if
        else if(ideal_phys) then
-          if(runtype == 0) then
+          if(runtype == 0 .and. ideal_phys_analytic_ic) then
              do ie=nets,nete
                 elem(ie)%state%ps_v(:,:,:) =ps0
 
