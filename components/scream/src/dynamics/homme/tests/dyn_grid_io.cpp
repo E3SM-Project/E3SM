@@ -160,6 +160,7 @@ TEST_CASE("dyn_grid_io")
   io_params.sublist("Fields").sublist("Dynamics").set<std::string>("IO Grid Name","Physics GLL");
   io_params.sublist("Output Control").set<int>("Frequency",1);
   io_params.sublist("Output Control").set<std::string>("Frequency Units","Steps");
+  io_params.set<std::string>("Floating Point Precision","real");
 
   OutputManager output;
   // AtmosphereOutput output(comm,io_params,fm_dyn,gm);

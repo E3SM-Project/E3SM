@@ -498,7 +498,6 @@ void SPAFunctions<S,D>
   ekat::ParameterList spa_data_in_params;
   spa_data_in_params.set("Field Names",fnames);
   spa_data_in_params.set("Filename",spa_data_file_name);
-  spa_data_in_params.set<std::string>("Floating Point Precision","real");
   spa_data_in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
   AtmosphereInput spa_data_input(comm,spa_data_in_params);
 

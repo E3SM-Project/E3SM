@@ -415,7 +415,7 @@ void AtmosphereInput::register_variables()
   // dof decomposition across different ranks.
 
   // Cycle through all fields
-  const auto& fp_precision = m_params.get<std::string>("Floating Point Precision");;
+  const auto& fp_precision = "real";
   for (auto const& name : m_fields_names) {
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     auto vec_of_dims   = get_vec_of_dims(m_layouts.at(name));

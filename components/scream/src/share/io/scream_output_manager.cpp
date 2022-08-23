@@ -206,9 +206,13 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       set_variable_metadata (filename,"time","calendar","noleap");
 #endif
 
+      std::string fp_precision = is_checkpoint_step
+                               ? "real"
+                               : m_params.get<std::string>("Floating Point Precision");
+
       // Make all output streams register their dims/vars
       for (auto& it : m_output_streams) {
-        it->setup_output_file(filename);
+        it->setup_output_file(filename,fp_precision);
       }
 
       // Set degree of freedom for "time"

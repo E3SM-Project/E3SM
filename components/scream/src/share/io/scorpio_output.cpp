@@ -52,10 +52,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       "       Valid options: Instant, Max, Min, Average. Case insensitive.\n");
 
   set_field_manager (field_mgr);
-  m_fp_precision = params.get<std::string>("Floating Point Precision");
-
-  EKAT_REQUIRE_MSG (m_fp_precision=="single" || m_fp_precision=="double" || m_fp_precision=="real",
-      "Error! Invalid floating point precision '" + m_fp_precision + "'.\n");
 
   // By default, IO is done directly on the field mgr grid
   m_grids_manager = grids_mgr;
@@ -133,7 +129,6 @@ void AtmosphereOutput::restart (const std::string& filename)
   ekat::ParameterList res_params("Input Parameters");
   res_params.set<std::string>("Filename",filename);
   res_params.set("Field Names",m_fields_names);
-  res_params.set<std::string>("Floating Point Precision","real");
 
   AtmosphereInput hist_restart (res_params,m_io_grid,m_host_views_1d,m_layouts);
   hist_restart.read_variables();
@@ -460,7 +455,9 @@ void AtmosphereOutput::register_views()
   }
 }
 /* ---------------------------------------------------------- */
-void AtmosphereOutput::register_variables(const std::string& filename)
+void AtmosphereOutput::
+register_variables(const std::string& filename,
+                   const std::string& fp_precision)
 {
   using namespace scorpio;
 
@@ -496,7 +493,7 @@ void AtmosphereOutput::register_variables(const std::string& filename)
     // Currently the field_manager only stores Real variables so it is not an issue,
     // but in the future if non-Real variables are added we will want to accomodate that.
     register_variable(filename, name, name, units, vec_of_dims.size(),
-                      vec_of_dims, scorpio::nctype(m_fp_precision), io_decomp_tag);
+                      vec_of_dims, scorpio::nctype(fp_precision), io_decomp_tag);
   }
 } // register_variables
 /* ---------------------------------------------------------- */
@@ -601,7 +598,9 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
   */
 } // set_degrees_of_freedom
 /* ---------------------------------------------------------- */
-void AtmosphereOutput::setup_output_file(const std::string& filename)
+void AtmosphereOutput::
+setup_output_file(const std::string& filename,
+                  const std::string& fp_precision)
 {
   using namespace scream::scorpio;
 
@@ -611,7 +610,7 @@ void AtmosphereOutput::setup_output_file(const std::string& filename)
   }
 
   // Register variables with netCDF file.  Must come after dimensions are registered.
-  register_variables(filename);
+  register_variables(filename,fp_precision);
 
   // Set the offsets of the local dofs in the global vector.
   set_degrees_of_freedom(filename);

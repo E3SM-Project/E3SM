@@ -1315,7 +1315,6 @@ void HommeDynamics::init_homme_vcoord () {
   // Read vcoords into host views
   ekat::ParameterList vcoord_reader_pl;
   vcoord_reader_pl.set("Filename",m_params.get<std::string>("Vertical Coordinate Filename"));
-  vcoord_reader_pl.set<std::string>("Floating Point Precision","real");
   vcoord_reader_pl.set<vos_t>("Field Names",{"hyai","hybi","hyam","hybm"});
   std::map<std::string,view_1d_host> host_views = {
     { "hyai", view_1d_host("hyai",nlev_int) },
