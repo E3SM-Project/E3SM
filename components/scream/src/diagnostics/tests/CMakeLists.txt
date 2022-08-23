@@ -32,5 +32,7 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(relative_humidity "relative_humidity_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test Zonal Vapor Flux
   CreateUnitTest(zonal_vapor_flux "zonal_vapor_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test Meridional Vapor Flux
+  CreateUnitTest(meridional_vapor_flux "meridional_vapor_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 
 endif()

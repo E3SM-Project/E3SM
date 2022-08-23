@@ -17,6 +17,7 @@ set(DIAGNOSTIC_SRCS
   longwave_cloud_forcing.cpp
   relative_humidity.cpp
   zonal_vapor_flux.cpp
+  meridional_vapor_flux.cpp
 )
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})
