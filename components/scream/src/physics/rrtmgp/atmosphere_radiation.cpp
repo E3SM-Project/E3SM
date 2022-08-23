@@ -296,6 +296,16 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   // Determine whether or not we are using a fixed solar zenith angle (positive value)
   m_fixed_solar_zenith_angle = m_params.get<Real>("Fixed Solar Zenith Angle", -9999);
 
+  // Get prescribed surface values of greenhouse gases
+  m_co2vmr_rad = m_params.get<Real>("co2vmr_rad", -1.0);
+  m_co2vmr     = m_params.get<Real>("co2vmr", 388.717e-6);
+  m_n2ovmr     = m_params.get<Real>("n2ovmr", 323.141e-9);
+  m_ch4vmr     = m_params.get<Real>("ch4vmr", 1807.851e-9);
+  m_f11vmr     = m_params.get<Real>("f11vmr", 768.7644e-12);
+  m_f12vmr     = m_params.get<Real>("f12vmr", 531.2820e-12);
+  m_n2vmr      = m_params.get<Real>("n2vmr", 0.7906);
+  m_covmr      = m_params.get<Real>("covmr", 1.0e-7);
+
   // Whether or not to do MCICA subcolumn sampling
   m_do_subcol_sampling = m_params.get<bool>("do_subcol_sampling",false);
   EKAT_REQUIRE_MSG(not m_do_subcol_sampling, "Error! RRTMGP does not yet support do_subcol_sampling = true");
@@ -306,10 +316,8 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   // Names of active gases
   auto gas_names_yakl_offset = string1d("gas_names",m_ngas);
   m_gas_mol_weights          = view_1d_real("gas_mol_weights",m_ngas);
-  /* the lookup function for getting the gas mol weights doesn't work on device. */
+  // the lookup function for getting the gas mol weights doesn't work on device
   auto gas_mol_w_host = Kokkos::create_mirror_view(m_gas_mol_weights);
-  auto pmid = get_field_in("p_mid").get_view<const Real**>();
-  const auto air_mol_weight = PC::MWdry;
   for (int igas = 0; igas < m_ngas; igas++) {
     const auto& gas_name = m_gas_names[igas];
 
@@ -317,45 +325,6 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
     gas_names_yakl_offset(igas+1)   = gas_name;
     gas_mol_w_host[igas]            = PC::get_gas_mol_weight(gas_name);
 
-    // Init GHG
-    // h2o is taken from qv and requies no initialization here;
-    // o3 is computed elsewhere (either read from file or computed by chemistry);
-    // n2 and co are set to constants and are not handled by trcmix;
-    // the rest are handled by trcmix
-    auto d_qv = get_field_in("qv").get_view<const Real**>();
-    if (gas_name == "h2o") {
-      // Do nothing, h2o is already in the model as a wet mixing ratio
-    } else  if (gas_name == "o3") {
-      // Do nothing, we read o3 in as a vmr already
-    } else if (gas_name == "n2") {
-      // n2 prescribed as a constant value
-      auto gas_view = get_field_out(gas_name + "_volume_mix_ratio").get_view<Real**>();
-      Kokkos::deep_copy(gas_view, m_params.get<Real>("n2vmr", 0.7906));
-    } else if (gas_name == "co") {
-      // co prescribed as a constant value
-      auto gas_view = get_field_out(gas_name + "_volume_mix_ratio").get_view<Real**>();
-      Kokkos::deep_copy(gas_view, m_params.get<Real>("covmr", 1.0e-7));
-    } else {
-      // This gives (dry) mass mixing ratios
-      auto gas_view = get_field_out(gas_name + "_volume_mix_ratio").get_view<Real**>();
-      scream::physics::trcmix(
-        gas_name, m_lat, pmid, gas_view,
-        m_params.get<Real>("co2vmr_rad", -1.0),
-        m_params.get<Real>("co2vmr", 388.717e-6),
-        m_params.get<Real>("n2ovmr", 323.141e-9),
-        m_params.get<Real>("ch4vmr", 1807.851e-9),
-        m_params.get<Real>("f11vmr", 768.7644e-12),
-        m_params.get<Real>("f12vmr", 531.2820e-12)
-      );
-      // Back out volume mixing ratios
-      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
-      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-        const int i = team.league_rank();
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_nlay), [&] (const int& k) {
-          gas_view(i,k) = air_mol_weight / gas_mol_w_host[igas] * gas_view(i,k);
-        });
-      });
-    }
   }
   Kokkos::deep_copy(m_gas_mol_weights,gas_mol_w_host);
 
@@ -364,7 +333,6 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   rrtmgp::rrtmgp_initialize(m_gas_concs, m_atm_logger);
 
   // Set property checks for fields in this process
-
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,140.0, 500.0,false);
 }
 
@@ -641,36 +609,64 @@ void RRTMGPRadiation::run_impl (const int dt) {
     // set_vmr requires the input array size to have the correct size,
     // and the last chunk may have less columns, so create a temp of
     // correct size that uses m_buffer.tmp2d's pointer
+    //
+    // h2o is taken from qv and requies no initialization here;
+    // o3 is computed elsewhere (either read from file or computed by chemistry);
+    // n2 and co are set to constants and are not handled by trcmix;
+    // the rest are handled by trcmix
     real2d tmp2d = subview_2d(m_buffer.tmp2d);
+    const auto gas_mol_weights = m_gas_mol_weights;
     for (int igas = 0; igas < m_ngas; igas++) {
       auto name = m_gas_names[igas];
       auto d_vmr = get_field_out(name + "_volume_mix_ratio").get_view<Real**>();
       if (name == "h2o") {
         // h2o is (wet) mass mixing ratio in FM, otherwise known as "qv", which we've already read in above
         // Convert to vmr
-        const auto gas_mol_weights = m_gas_mol_weights;
         const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int i = team.league_rank();
           const int icol = i + beg;
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
             d_vmr(icol,k) = PF::calculate_vmr_from_mmr(gas_mol_weights[igas],d_qv(icol,k),d_qv(icol,k));
-            tmp2d(i+1,k+1) = d_vmr(icol,k); // Note that for YAKL arrays i and k start with index 1
           });
         });
         Kokkos::fence();
+      } else if (name == "o3") {
+        // We read o3 in as a vmr already
+      } else if (name == "n2") {
+        // n2 prescribed as a constant value
+        Kokkos::deep_copy(d_vmr, m_params.get<Real>("n2vmr", 0.7906));
+      } else if (name == "co") {
+        // co prescribed as a constant value
+        Kokkos::deep_copy(d_vmr, m_params.get<Real>("covmr", 1.0e-7));
       } else {
-        // No need to convert, but we still need to copy to YAKL array
-        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+        // This gives (dry) mass mixing ratios
+        scream::physics::trcmix(
+          name, m_lat, d_pmid, d_vmr,
+          m_co2vmr_rad, m_co2vmr, m_n2ovmr, m_ch4vmr, m_f11vmr, m_f12vmr
+        );
+        // Back out volume mixing ratios
+        const auto air_mol_weight = PC::MWdry;
+        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int i = team.league_rank();
-          const int icol = i + beg;
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
-            tmp2d(i+1,k+1) = d_vmr(icol,k); // Note that for YAKL arrays i and k start with index 1
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_nlay), [&] (const int& k) {
+            d_vmr(i,k) = air_mol_weight / gas_mol_weights[igas] * d_vmr(i,k);
           });
         });
-        Kokkos::fence();
       }
+
+      // Copy to YAKL
+      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+        const int i = team.league_rank();
+        const int icol = i + beg;
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+          tmp2d(i+1,k+1) = d_vmr(icol,k); // Note that for YAKL arrays i and k start with index 1
+        });
+      });
+      Kokkos::fence();
+
       // Populate GasConcs object
       m_gas_concs.set_vmr(name, tmp2d);
     }

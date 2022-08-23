@@ -83,6 +83,16 @@ public:
   view_1d_real             m_gas_mol_weights;
   GasConcs                 m_gas_concs;
 
+  // Prescribed greenhouse gas surface concentrations in moles / moles air
+  Real m_co2vmr_rad;
+  Real m_co2vmr;
+  Real m_n2ovmr;
+  Real m_ch4vmr;
+  Real m_f11vmr;
+  Real m_f12vmr;
+  Real m_n2vmr;
+  Real m_covmr;
+
   // Rad frequency in number of steps
   int m_rad_freq_in_steps;
 
