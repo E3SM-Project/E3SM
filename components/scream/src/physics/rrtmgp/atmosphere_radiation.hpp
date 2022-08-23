@@ -87,7 +87,7 @@ public:
   int m_ngas;
   std::vector<ci_string>   m_gas_names;
   view_1d_real             m_gas_mol_weights;
-  std::vector<GasConcs> gas_concs;
+  GasConcs                 m_gas_concs;
 
   // Rad frequency in number of steps
   int m_rad_freq_in_steps;
