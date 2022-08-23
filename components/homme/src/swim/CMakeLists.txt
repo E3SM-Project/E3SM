@@ -6,7 +6,6 @@ macro(swim_setup)
 INCLUDE_DIRECTORIES ( ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
 LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
 
-SET(UTILS_SHARE_DIR  ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR          ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR    ${HOMME_SOURCE_DIR}/src/share)
 SET(UTILS_TRILINOS_DIR ${HOMME_SOURCE_DIR}/utils/trilinos)
@@ -73,13 +72,6 @@ SET(SWIM_SRCS ${SRC_SHARE_DIR}/kinds.F90
                ${SRC_SHARE_DIR}/time_mod.F90
                ${SRC_SHARE_DIR}/viscosity_mod.F90
                ${SRC_SHARE_DIR}/unit_tests_mod.F90
-               ${UTILS_SHARE_DIR}/shr_file_mod.F90
-               ${UTILS_SHARE_DIR}/shr_kind_mod.F90
-               ${UTILS_SHARE_DIR}/shr_mpi_mod.F90
-               ${UTILS_SHARE_DIR}/shr_sys_mod.F90
-               ${UTILS_SHARE_DIR}/shr_vmath_mod.F90
-               ${UTILS_SHARE_DIR}/shr_const_mod.F90
-               ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
                ${SRC_SHARE_DIR}/perfmodel_mod.F90
                ${UTILS_TRILINOS_DIR}/trilinosNoxSolver.cpp
                ${UTILS_TRILINOS_DIR}/trilinosModelEvaluator.cpp

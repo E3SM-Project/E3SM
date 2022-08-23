@@ -229,6 +229,19 @@ IF (HOMME_STANDALONE)
   INCLUDE(${HOMME_SOURCE_DIR}/cmake/SetCompilerFlags.cmake)
 ENDIF()
 
+# Create CsmShare target needed for test execs. If Homme is built
+# inside another project, then the host project is in charge of
+# ensuring that a csm_share target exists at this point
+if (HOMME_STANDALONE)
+  add_subdirectory(utils/csm_share)
+elseif (NOT TARGET csm_share)
+  string (CONCAT msg
+    "Error! Homme needs to link against csm_share libraries.\n"
+    "       Please ensure that a csm_share target is built by\n"
+    "       the host project *before* entering the homme directory.\n")
+  message ("${msg}")
+  message (FATAL_ERROR "Aborting.")
+endif()
 
 OPTION(HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" FALSE)
 IF(HOMME_USE_MKL)
