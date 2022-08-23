@@ -31,7 +31,7 @@ DynamicsDrivenGridsManager (const ekat::Comm& comm,
 
   if (!is_params_inited_f90()) {
     // While we're here, we can init homme's parameters
-    auto nlname = p.get<std::string>("Dynamics Namelist File Name").c_str();
+    auto nlname = p.get<std::string>("dynamics_namelist_file_name").c_str();
     init_params_f90 (nlname);
   }
 
@@ -63,7 +63,7 @@ DynamicsDrivenGridsManager (const ekat::Comm& comm,
   // TODO: add other rebalancing?
 
   // Get the ref grid name
-  m_ref_grid_name = p.get<std::string>("Reference Grid");
+  m_ref_grid_name = p.get<std::string>("reference_grid");
   EKAT_REQUIRE_MSG (ekat::contains(gn,m_ref_grid_name),
       "Error! Invalid reference grid name: " + m_ref_grid_name + "\n");
 

@@ -4,8 +4,8 @@ Casename: io_output_test
 Averaging Type: Max
 Max Snapshots Per File: 1
 Field Names: [field_1, field_2, field_3, field_packed]
-Output Control:
+output_control:
   MPI Ranks in Filename: true
   Frequency: 10
-  Frequency Units: Steps
+  frequency_units: Steps
 ...

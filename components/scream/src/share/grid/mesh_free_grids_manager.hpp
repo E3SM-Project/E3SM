@@ -25,7 +25,7 @@ public:
 
   virtual ~MeshFreeGridsManager () = default;
 
-  std::string name () const { return "Mesh-Free Grids Manager"; }
+  std::string name () const { return "Mesh-Free grids_manager"; }
 
   std::set<std::string> supported_grids () const {
     std::set<std::string> gnames;
@@ -43,7 +43,7 @@ public:
 protected:
 
   std::string get_reference_grid_name () const {
-    return m_params.get<std::string>("Reference Grid");
+    return m_params.get<std::string>("reference_grid");
   }
 
   remapper_ptr_type

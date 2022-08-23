@@ -20,7 +20,7 @@ public:
 
   virtual ~UserProvidedGridsManager () = default;
 
-  std::string name () const { return "User Provided Grids Manager"; }
+  std::string name () const { return "User Provided grids_manager"; }
 
   std::set<std::string> supported_grids () const {
     std::set<std::string> gnames;

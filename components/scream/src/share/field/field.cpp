@@ -116,7 +116,9 @@ get_component (const int i, const bool dynamic) {
   EKAT_REQUIRE_MSG (i>=0 && i<layout.dim(idim),
       "Error! Component index out of bounds [0," + std::to_string(layout.dim(idim)) + ").\n");
 
-  return subfield (this->name()+"_"+std::to_string(i),idim,i,dynamic);
+  // Add _$idim to the field name, to avoid issues if the subfield is stored
+  // in some structure that requires unique names (e.g., a remapper)
+  return subfield (fname + "_" + std::to_string(i),idim,i,dynamic);
 }
 
 bool Field::equivalent(const Field& rhs) const

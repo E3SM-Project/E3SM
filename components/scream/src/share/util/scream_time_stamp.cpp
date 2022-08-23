@@ -1,7 +1,8 @@
 #include "share/util/scream_time_stamp.hpp"
 
-#include "ekat/ekat_assert.hpp"
 #include "share/util/scream_universal_constants.hpp"
+#include "share/scream_config.hpp"
+#include "ekat/ekat_assert.hpp"
 
 #include <limits>
 #include <numeric>

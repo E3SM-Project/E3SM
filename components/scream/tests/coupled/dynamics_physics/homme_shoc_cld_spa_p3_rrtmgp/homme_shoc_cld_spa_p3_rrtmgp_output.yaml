@@ -69,9 +69,9 @@ Fields:
       - sfc_flux_lw_dn
       - sfc_flux_sw_net
  
-Output Control:
+output_control:
   Frequency: ${NUM_STEPS}
-  Frequency Units: Steps
+  frequency_units: Steps
   Timestamp in Filename: false
   MPI Ranks in Filename: true
 ...

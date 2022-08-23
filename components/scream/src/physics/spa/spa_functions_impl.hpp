@@ -382,7 +382,7 @@ void SPAFunctions<S,D>
   scorpio::get_variable(remap_file_name, "row", "row", vec_of_dims.size(), vec_of_dims, PIO_INT, i_decomp);
   scorpio::get_variable(remap_file_name, "col", "col", vec_of_dims.size(), vec_of_dims, PIO_INT, i_decomp);
   // Set the dof's to read in variables, since we will have all mpi ranks read in the full set of data the dof's are the whole array
-  std::vector<int> var_dof(spa_horiz_interp.length);
+  std::vector<scorpio::offset_t> var_dof(spa_horiz_interp.length);
   std::iota(var_dof.begin(),var_dof.end(),0);
   scorpio::set_dof(remap_file_name,"S",var_dof.size(),var_dof.data());
   scorpio::set_dof(remap_file_name,"row",var_dof.size(),var_dof.data());

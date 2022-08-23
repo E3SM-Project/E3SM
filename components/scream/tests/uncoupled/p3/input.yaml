@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 Debug:
-  Atmosphere DAG Verbosity Level: 5
+  atmosphere_dag_verbosity_level: 5
 
 Time Stepping:
   Time Step: ${ATM_TIME_STEP}
@@ -15,13 +15,13 @@ atmosphere_processes:
     Grid: Point Grid
     do_prescribed_ccn: false
 
-Grids Manager:
+grids_manager:
   Type: Mesh Free
-  Reference Grid: Point Grid
+  reference_grid: Point Grid
   Number of Global Columns:   218
   Number of Vertical Levels:  72  # Will want to change to 128 when a valid unit test is available.
 
-Initial Conditions:
+initial_conditions:
   # The name of the file containing the initial conditions for this test.
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   precip_liq_surf_mass: 0.0
@@ -29,5 +29,5 @@ Initial Conditions:
 
 # The parameters for I/O control
 Scorpio:
-  Output YAML Files: ["p3_standalone_output.yaml"]
+  output_yaml_files: ["p3_standalone_output.yaml"]
 ...

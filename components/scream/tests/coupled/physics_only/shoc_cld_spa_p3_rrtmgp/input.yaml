@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 Debug:
-  Atmosphere DAG Verbosity Level: 5
+  atmosphere_dag_verbosity_level: 5
 
 Time Stepping:
   Time Step: ${ATM_TIME_STEP}
@@ -11,12 +11,12 @@ Time Stepping:
 
 atmosphere_processes:
   atm_procs_list: (mac_mic,rrtmgp)
-  Schedule Type: Sequential
+  schedule_type: Sequential
   mac_mic:
     atm_procs_list: (shoc,CldFraction,spa,p3)
     Type: Group
-    Schedule Type: Sequential
-    Number of Subcycles: ${MAC_MIC_SUBCYCLES}
+    schedule_type: Sequential
+    number_of_subcycles: ${MAC_MIC_SUBCYCLES}
     shoc:
       Grid: Point Grid
     CldFraction:
@@ -25,19 +25,20 @@ atmosphere_processes:
       Grid: Point Grid
     spa:
       Grid: Point Grid
-      SPA Remap File: ${SCREAM_DATA_DIR}/init/map_ne4np4_to_ne2np4_mono.nc
-      SPA Data File: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_20220428.nc
+      spa_remap_file: ${SCREAM_DATA_DIR}/init/map_ne4np4_to_ne2np4_mono.nc
+      spa_data_file: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_20220428.nc
   rrtmgp:
     Grid: Point Grid
+    column_chunk_size: 123
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
-    Orbital Year: 1990
+    orbital_year: 1990
 
-Grids Manager:
+grids_manager:
   Type: Mesh Free
   Number of Global Columns:   218
   Number of Vertical Levels:  72  # Will want to change to 128 when a valid unit test is available.
 
-Initial Conditions:
+initial_conditions:
   # The name of the file containing the initial conditions for this test.
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   surf_evap: 0.0
@@ -50,5 +51,5 @@ Initial Conditions:
 
 # The parameters for I/O control
 Scorpio:
-  Output YAML Files: ["shoc_cld_spa_p3_rrtmgp_output.yaml"]
+  output_yaml_files: ["shoc_cld_spa_p3_rrtmgp_output.yaml"]
 ...

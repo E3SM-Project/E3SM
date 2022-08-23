@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 Debug:
-  Atmosphere DAG Verbosity Level: 5
+  atmosphere_dag_verbosity_level: 5
 
 Time Stepping:
   Time Step: ${ATM_TIME_STEP}
@@ -9,7 +9,7 @@ Time Stepping:
   Start Date: [2021, 10, 12]    # Year, Month, Day
   Number of Steps: ${NUM_STEPS}
 
-Initial Conditions:
+initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   surf_evap: 0.0
   surf_sens_flux: 0.0
@@ -22,20 +22,20 @@ Initial Conditions:
 
 atmosphere_processes:
   atm_procs_list: (homme,physics)
-  Schedule Type: Sequential
+  schedule_type: Sequential
   homme:
-    Enable Precondition Checks: false
-    Vertical Coordinate Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+    enable_precondition_checks: false
+    vertical_coordinate_filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
     Moisture: moist
   physics:
     atm_procs_list: (mac_mic,rrtmgp)
-    Schedule Type: Sequential
+    schedule_type: Sequential
     Type: Group
     mac_mic:
       atm_procs_list: (shoc,CldFraction,p3)
-      Schedule Type: Sequential
+      schedule_type: Sequential
       Type: Group
-      Number of Subcycles: ${MAC_MIC_SUBCYCLES}
+      number_of_subcycles: ${MAC_MIC_SUBCYCLES}
       shoc:
         Grid: Physics GLL
       CldFraction:
@@ -45,15 +45,16 @@ atmosphere_processes:
         do_prescribed_ccn: false
     rrtmgp:
       Grid: Physics GLL
+      column_chunk_size: 123
       active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
       do_aerosol_rad: false
 
-Grids Manager:
+grids_manager:
   Type: Dynamics Driven
-  Reference Grid: Physics GLL
-  Dynamics Namelist File Name: namelist.nl
+  reference_grid: Physics GLL
+  dynamics_namelist_file_name: namelist.nl
 
 # The parameters for I/O control
 Scorpio:
-  Output YAML Files: ["homme_shoc_cld_p3_rrtmgp_output.yaml"]
+  output_yaml_files: ["homme_shoc_cld_p3_rrtmgp_output.yaml"]
 ...

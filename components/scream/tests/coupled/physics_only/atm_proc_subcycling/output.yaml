@@ -33,9 +33,9 @@ Field Names:
   - eff_radius_qc
   - eff_radius_qi
  
-Output Control:
+output_control:
   Frequency: ${NUM_STEPS}
-  Frequency Units: Steps
+  frequency_units: Steps
   Timestamp in Filename: false
   MPI Ranks in Filename: false
 ...

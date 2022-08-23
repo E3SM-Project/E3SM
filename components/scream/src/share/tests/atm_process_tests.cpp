@@ -25,7 +25,7 @@ ekat::ParameterList create_test_params ()
   // Create a parameter list for inputs
   ekat::ParameterList params ("Atmosphere Processes");
 
-  params.set<std::string>("Schedule Type","Sequential");
+  params.set<std::string>("schedule_type","Sequential");
   params.set<std::string>("atm_procs_list","(Foo,BarBaz)");
 
   auto& p0 = params.sublist("Foo");
@@ -35,7 +35,7 @@ ekat::ParameterList create_test_params ()
   auto& p1 = params.sublist("BarBaz");
   p1.set<std::string>("atm_procs_list","(Bar,Baz)");
   p1.set<std::string>("Type", "Group");
-  p1.set<std::string>("Schedule Type","Sequential");
+  p1.set<std::string>("schedule_type","Sequential");
 
   auto& p1_0 = p1.sublist("Bar");
   p1_0.set<std::string>("Type", "Bar");
@@ -58,7 +58,7 @@ create_gm (const ekat::Comm& comm) {
   const int num_global_cols = num_local_cols*comm.size();
 
   ekat::ParameterList gm_params;
-  gm_params.set<std::string>("Reference Grid", "Point Grid");
+  gm_params.set<std::string>("reference_grid", "Point Grid");
   gm_params.set<int>("Number of Global Columns", num_global_cols);
   gm_params.set<int>("Number of Local Elements", num_local_elems);
   gm_params.set<int>("Number of Vertical Levels", nlevs);
@@ -547,8 +547,8 @@ TEST_CASE("field_checks", "") {
     for (bool check_pre : {true, false}) {
       for (bool check_post : {true, false}) {
 
-        params.set("Enable Precondition Checks",check_pre);
-        params.set("Enable Postcondition Checks",check_post);
+        params.set("enable_precondition_checks",check_pre);
+        params.set("enable_postcondition_checks",check_post);
 
         // Create the process
         auto foo = create_atmosphere_process<Foo>(comm,params);
@@ -593,7 +593,7 @@ TEST_CASE ("subcycling") {
   params.set<std::string>("Grid Name", "Point Grid");
   params_sub.set<std::string>("Process Name", "AddOne");
   params_sub.set<std::string>("Grid Name", "Point Grid");
-  params_sub.set<int>("Number of Subcycles", 5);
+  params_sub.set<int>("number_of_subcycles", 5);
 
   // Create and init two atm procs, one subcycled and one not subcycled
   auto ap     = std::make_shared<AddOne>(comm,params);

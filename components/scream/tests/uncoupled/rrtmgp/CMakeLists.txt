@@ -19,6 +19,7 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(
       rrtmgp_standalone "rrtmgp_standalone.cpp" "${NEED_LIBS}" LABELS ${TEST_LABELS}
       MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+      EXE_ARGS "--ekat-test-params inputfile=input.yaml"
       PROPERTIES FIXTURES_SETUP rrtmgp_generate_output_nc_files
   )
 
@@ -35,26 +36,47 @@ if (NOT SCREAM_BASELINES_ONLY)
   set (ATM_TIME_STEP 1800)
 
   ## Copy (and configure) yaml files needed by tests
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
-                 ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
-  configure_file(rrtmgp_standalone_output.yaml rrtmgp_standalone_output.yaml)
+  configure_file (rrtmgp_standalone_output.yaml rrtmgp_standalone_output.yaml)
+  set (COL_CHUNK_SIZE 1000)
+  configure_file (input.yaml input.yaml)
+
+  ## Add a standalone test with chunked columns, and compare against non-chunked
+  set (SUFFIX "_chunked")
+  set (COL_CHUNK_SIZE 50)
+  configure_file (input.yaml input_chunked.yaml)
+  configure_file (rrtmgp_standalone_output.yaml rrtmgp_standalone_output_chunked.yaml)
+  CreateUnitTestFromExec(
+      rrtmgp_standalone_chunked rrtmgp_standalone
+      LABELS ${TEST_LABELS}
+      EXE_ARGS "--ekat-test-params inputfile=input_chunked.yaml"
+      PROPERTIES FIXTURES_SETUP rrtmgp_chunked_generate_output
+      PASS_REGULAR_EXPRESSION "(beg.end: 50, 100)"
+  )
+
+  # Compare chunked vs non-chunked radiation
+  include (BuildCprnc)
+  BuildCprnc()
+  set (SRC_FILE "rrtmgp_standalone_output_chunked.INSTANT.Steps_x${NUM_STEPS}.np1.nc")
+  set (TGT_FILE "rrtmgp_standalone_output.INSTANT.Steps_x${NUM_STEPS}.np1.nc")
+  set (TEST_NAME "rrtmgp_chunked_vs_monolithic_bfb")
+  add_test (NAME ${TEST_NAME}
+            COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
+            FIXTURES_REQUIRED "rrtmgp_generate_output_nc_files;rrtmgp_chunked_generate_output")
 
   ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
   ## Only if max mpi ranks is >1
   # This test requires CPRNC
   if (SCREAM_TEST_MAX_RANKS GREATER 1)
-    include (BuildCprnc)
-    BuildCprnc()
-    SET (BASE_TEST_NAME "rrtmgp")
     foreach (MPI_RANKS RANGE 2 ${SCREAM_TEST_MAX_RANKS})
-      set (SRC_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.Steps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
-      set (TGT_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.Steps_x${NUM_STEPS}.np1.nc")
-      set (TEST_NAME "${BASE_TEST_NAME}_np1_vs_np${MPI_RANKS}_bfb")
+      set (SRC_FILE "rrtmgp_standalone_output.INSTANT.Steps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
+      set (TGT_FILE "rrtmgp_standalone_output.INSTANT.Steps_x${NUM_STEPS}.np1.nc")
+      set (TEST_NAME "rrtmgp_np1_vs_np${MPI_RANKS}_bfb")
       add_test (NAME ${TEST_NAME}
                 COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
       set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
-                RESOURCE_LOCK ${BASE_TEST_NAME}
                 FIXTURES_REQUIRED rrtmgp_generate_output_nc_files)
     endforeach()
   endif()

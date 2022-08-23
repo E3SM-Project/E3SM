@@ -151,6 +151,24 @@ public:
     return reinterpret_cast<ST*>(get_view_impl<HD>().data());
   }
 
+  // WARNING: this is a power-user method. Its implementation, including assumptions
+  //          on pre/post conditions, may change in the future. Use at your own risk!
+  //          Read carefully the instructions below.
+  // Same as above, but does allows the field to be read-only. This is unsafe as one
+  // could alter data that should not be changed. An example of where this is needed
+  // is in SurfaceCoupling where exports need to access read-only fields via their
+  // view.data ptr.
+  template<typename ST, HostOrDevice HD = Device>
+  ST* get_internal_view_data_unsafe () const {
+    // Check that the scalar type is correct                                                                                                   
+    using nonconst_ST = typename std::remove_const<ST>::type;
+    EKAT_REQUIRE_MSG ((field_valid_data_types().at<nonconst_ST>()==m_header->get_identifier().data_type()
+                       or std::is_same<nonconst_ST,char>::value),
+		      "Error! Attempt to access raw field pointere with the wrong scalar type.\n");
+    
+    return reinterpret_cast<ST*>(get_view_impl<HD>().data());
+  }
+
   // If someone needs the host view, some sync routines might be needed.
   // Note: this class takes no responsibility in keeping track of whether
   //       a sync is required in either direction. Mainly because we expect

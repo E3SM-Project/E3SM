@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 Debug:
-  Atmosphere DAG Verbosity Level: 5
+  atmosphere_dag_verbosity_level: 5
 
 Time Stepping:
   Time Step: ${ATM_TIME_STEP}
@@ -14,13 +14,13 @@ atmosphere_processes:
   CldFraction:
     Grid: Point Grid
 
-Grids Manager:
+grids_manager:
   Type: Mesh Free
-  Reference Grid: Point Grid
+  reference_grid: Point Grid
   Number of Global Columns:   3
   Number of Vertical Levels:  128
 
-Initial Conditions:
+initial_conditions:
   cldfrac_liq: 0.0
   qi: 0.0
 ...

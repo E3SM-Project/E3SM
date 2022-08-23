@@ -74,6 +74,7 @@ module scream_scorpio_interface
             eam_pio_finalize,            & ! Run any final PIO commands
             register_file,               & ! Creates/opens a pio input/output file
             register_variable,           & ! Register a variable with a particular pio output file
+            set_variable_metadata,       & ! Sets a variable metadata (always char data)
             get_variable,                & ! Register a variable with a particular pio output file
             register_dimension,          & ! Register a dimension with a particular pio output file
             set_decomp,                  & ! Set the pio decomposition for all variables in file.
@@ -120,7 +121,7 @@ module scream_scorpio_interface
     integer          :: numdims               ! Number of dimensions in out field
     type(io_desc_t), pointer  :: iodesc       ! PIO decomp associated with this variable
     type(iodesc_list_t), pointer  :: iodesc_list ! PIO decomp list with metadata about PIO decomp
-    integer, allocatable :: compdof(:)        ! Global locations in output array for this process
+    integer(kind=pio_offset_kind), allocatable :: compdof(:)        ! Global locations in output array for this process
     integer, allocatable :: dimid(:)          ! array of PIO dimension id's for this variable
     integer, allocatable :: dimlen(:)         ! array of PIO dimension lengths for this variable
     logical              :: has_t_dim         ! true, if variable has a time dimension
@@ -567,6 +568,55 @@ contains
 
   end subroutine register_variable
 !=====================================================================!
+  subroutine set_variable_metadata(filename, varname, metaname, metaval)
+    use pionfatt_mod, only: PIO_put_att => put_att
+
+    character(len=256), intent(in) :: filename
+    character(len=256), intent(in) :: varname
+    character(len=256), intent(in) :: metaname
+    character(len=256), intent(in) :: metaval
+
+    ! Local variables
+    type(pio_atm_file_t),pointer :: pio_file
+    type(hist_var_t),    pointer :: var
+    integer                      :: ierr
+    logical                      :: found
+
+    type(hist_var_list_t), pointer :: curr
+
+    ! Find the pointer for this file
+    call lookup_pio_atm_file(trim(filename),pio_file,found)
+    if (.not.found ) then
+      call errorHandle("PIO ERROR: error setting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
+    endif
+
+    ! Find the variable in the file
+    curr => pio_file%var_list_top
+
+    found = .false.
+    do while (associated(curr))
+      if (associated(curr%var)) then
+        if (trim(curr%var%name)==trim(varname) .and. curr%var%is_set) then
+          found = .true.
+          var => curr%var
+          exit
+        endif
+      endif
+      curr => curr%next
+    end do
+    if (.not.found ) then
+      call errorHandle("PIO ERROR: error setting metadata for variable "//trim(varname)//" in file "//trim(filename)//".\n Variable not found.",-999)
+    endif
+
+    ierr = PIO_put_att(pio_file%pioFileDesc, var%piovar, metaname, metaval)
+    if (ierr .ne. 0) then
+      call errorHandle("Error setting attribute '" // trim(metaname) &
+                       // "' on variable '" // trim(varname) &
+                       // "' in pio file " // trim(filename) // ".", -999)
+    endif
+
+  end subroutine set_variable_metadata
+!=====================================================================!
   ! Update the time dimension for a specific PIO file.  This is needed when
   ! reading or writing multiple time levels.  Unlimited dimensions are treated
   ! differently in netCDF than typical static length variables.  Note, here
@@ -791,7 +841,7 @@ contains
 !=====================================================================!
   ! Helper function to debug list of decomps 
   subroutine print_decomp()
-    type(iodesc_list_t),   pointer :: iodesc_ptr, next, prev
+    type(iodesc_list_t),   pointer :: iodesc_ptr
 
     integer :: total
     integer :: cnt 
@@ -840,7 +890,7 @@ contains
   ! taken whenever a file is closed.
   subroutine free_decomp()
     use piolib_mod, only: PIO_freedecomp
-    type(iodesc_list_t),   pointer :: iodesc_ptr, next, prev
+    type(iodesc_list_t),   pointer :: iodesc_ptr, next
 
     ! Free all decompositions from PIO
     iodesc_ptr => iodesc_list_top
@@ -946,7 +996,7 @@ contains
     character(len=*)          :: tag              ! Unique tag string describing this output grid
     integer, intent(in)       :: dtype            ! Datatype associated with the output
     integer, intent(in)       :: dimension_len(:) ! Array of the dimension lengths for this decomp
-    integer, intent(in)       :: compdof(:)       ! The degrees of freedom this rank is responsible for
+    integer(kind=pio_offset_kind), intent(in) :: compdof(:)       ! The degrees of freedom this rank is responsible for
     type(iodesc_list_t), pointer :: iodesc_list   ! The pio decomposition list that holds this iodesc 
 
     logical                     :: found            ! Whether a decomp has been found among the previously defined decompositions
@@ -1023,15 +1073,15 @@ contains
   ! Rank 2: (4,5,6)
   ! Rank 3: (7,8,9,10)
   subroutine set_dof(filename,varname,dof_len,dof_vec)
-    character(len=*), intent(in)            :: filename
-    character(len=*), intent(in)            :: varname
-    integer, intent(in)                     :: dof_len
-    integer, intent(in), dimension(dof_len) :: dof_vec
+    character(len=*), intent(in)              :: filename
+    character(len=*), intent(in)              :: varname
+    integer, intent(in)                       :: dof_len
+    integer(kind=pio_offset_kind), intent(in) :: dof_vec(dof_len)
 
-    type(pio_atm_file_t),pointer            :: pio_atm_file
-    type(hist_var_t), pointer               :: var
-    logical                                 :: found
-    integer                                 :: ii
+    type(pio_atm_file_t),pointer              :: pio_atm_file
+    type(hist_var_t), pointer                 :: var
+    logical                                   :: found
+    integer                                   :: ii
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)

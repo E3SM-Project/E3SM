@@ -494,9 +494,10 @@ void AtmosphereOutput::register_variables(const std::string& filename)
   }
 } // register_variables
 /* ---------------------------------------------------------- */
-std::vector<int> AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
+std::vector<scorpio::offset_t>
+AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
 {
-  std::vector<int> var_dof(layout.size());
+  std::vector<scorpio::offset_t> var_dof(layout.size());
 
   // Gather the offsets of the dofs of this variable w.r.t. the *global* array.
   // Since we order the global array based on dof gid, and we *assume* (we actually
@@ -517,7 +518,7 @@ std::vector<int> AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
-    int col_size = layout.size() / num_cols;
+    scorpio::offset_t col_size = layout.size() / num_cols;
 
     auto dofs = m_io_grid->get_dofs_gids();
     auto dofs_h = Kokkos::create_mirror_view(dofs);
@@ -545,7 +546,7 @@ std::vector<int> AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
-    int col_size = layout.size() / num_cols;
+    scorpio::offset_t col_size = layout.size() / num_cols;
 
     auto dofs = m_io_grid->get_dofs_gids();
     auto dofs_h = Kokkos::create_mirror_view(dofs);

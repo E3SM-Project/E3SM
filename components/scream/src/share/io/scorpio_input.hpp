@@ -152,7 +152,7 @@ protected:
 
   std::vector<std::string> get_vec_of_dims (const FieldLayout& layout);
   std::string get_io_decomp (const FieldLayout& layout);
-  std::vector<int> get_var_dof_offsets (const FieldLayout& layout);
+  std::vector<scorpio::offset_t> get_var_dof_offsets (const FieldLayout& layout);
 
   // Internal variables
   ekat::Comm            m_comm;

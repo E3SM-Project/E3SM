@@ -8,6 +8,7 @@
 #include "share/util/scream_setup_random_test.hpp"
 
 #include "mpi/BoundaryExchange.hpp"
+#include "SimulationParams.hpp"
 
 #include "dynamics/homme/homme_dimensions.hpp"
 #include "dynamics/homme/dynamics_driven_grids_manager.hpp"
@@ -67,7 +68,7 @@ TEST_CASE("remap", "") {
 
   // Create the grids
   ekat::ParameterList params;
-  params.set<std::string>("Reference Grid","Physics GLL");
+  params.set<std::string>("reference_grid","Physics GLL");
   DynamicsDrivenGridsManager gm(comm,params);
   std::set<std::string> grids_names = {"Physics GLL","Dynamics"};
   gm.build_grids(grids_names);
@@ -96,15 +97,9 @@ TEST_CASE("remap", "") {
   const int nlc = num_local_cols;
   const auto units = ekat::units::m;  // Placeholder units (we don't care about units here)
 
-  const int np1 = IPDF(0,NTL-1)(engine);
+  const int n0 = IPDF(0,NTL-1)(engine);
 
-  c.create_if_not_there<Homme::TimeLevel>();
-  auto& tl = c.get<Homme::TimeLevel>();
-  tl.np1 = np1;
-  tl.nm1 = (np1+1) % NTL;
-  tl.n0  = (np1+2) % NTL;
-
-  // Note on prefixes: s=scalar, v=vector, ss=scalar state, vs=vector_state, ts=tracer state
+  // Note on prefixes: s=scalar, v=vector, ss=scalar state, vs=vector_state, tr=tracer array
 
   // Create tags and dimensions
   std::vector<FieldTag> s_2d_dyn_tags   = {EL,          GP, GP    };
@@ -210,8 +205,8 @@ TEST_CASE("remap", "") {
   remapper->register_field(v_2d_field_phys, v_2d_field_dyn);
   remapper->register_field(s_3d_field_phys, s_3d_field_dyn);
   remapper->register_field(v_3d_field_phys, v_3d_field_dyn);
-  remapper->register_field(ss_3d_field_phys, ss_3d_field_dyn);
-  remapper->register_field(vs_3d_field_phys, vs_3d_field_dyn);
+  remapper->register_field(ss_3d_field_phys, ss_3d_field_dyn.subfield("cmp",1,n0));
+  remapper->register_field(vs_3d_field_phys, vs_3d_field_dyn.subfield("cmp",1,n0));
   remapper->register_field(tr_3d_field_phys, tr_3d_field_dyn);
   remapper->registration_ends();
 
@@ -450,7 +445,6 @@ TEST_CASE("remap", "") {
 
       {
         // 3d scalar state
-        const int n0 = tl.n0;
         ss_3d_field_phys.sync_to_host();
         ss_3d_field_dyn.sync_to_host();
         auto phys = ss_3d_field_phys.get_view<Homme::Real**,Host>();
@@ -486,7 +480,6 @@ TEST_CASE("remap", "") {
 
       {
         // 3d vector state
-        const int n0 = tl.n0;
         vs_3d_field_phys.sync_to_host();
         vs_3d_field_dyn.sync_to_host();
         auto phys = vs_3d_field_phys.get_view<Homme::Real***,Host>();
@@ -612,7 +605,7 @@ TEST_CASE("combo_remap", "") {
 
   // Create the grids
   ekat::ParameterList params;
-  params.set<std::string>("Reference Grid","Physics GLL");
+  params.set<std::string>("reference_grid","Physics GLL");
   DynamicsDrivenGridsManager gm(comm,params);
   std::set<std::string> grids_names = {"Physics GLL","Dynamics"};
   gm.build_grids(grids_names);
@@ -641,13 +634,9 @@ TEST_CASE("combo_remap", "") {
   const int nlc = num_local_cols;
   const auto units = ekat::units::m;  // Placeholder units (we don't care about units here)
 
-  c.create_if_not_there<Homme::TimeLevel>();
-  auto& tl = c.get<Homme::TimeLevel>();
+  const int n0 = IPDF(0,NTL-1)(engine);
 
-  const int np1 = tl.np1 = IPDF(0,NTL-1)(engine);
-  const int n0  = tl.n0  = (np1+2) % NTL;
-
-  // Note on prefixes: s=scalar, v=vector, ss=scalar state, vs=vector_state, ts=tracer state
+  // Note on prefixes: s=scalar, v=vector, ss=scalar state, vs=vector_state, tr=tracer array
 
   // Create tags and dimensions
   std::vector<FieldTag> s_2d_dyn_tags   = {EL,          GP, GP     };
@@ -755,8 +744,8 @@ TEST_CASE("combo_remap", "") {
   remapper->register_field(v_2d_field_phys, v_2d_field_dyn);
   remapper->register_field(s_3d_field_phys, s_3d_field_dyn);
   remapper->register_field(v_3d_field_phys, v_3d_field_dyn);
-  remapper->register_field(ss_3d_field_phys, ss_3d_field_dyn);
-  remapper->register_field(vs_3d_field_phys, vs_3d_field_dyn);
+  remapper->register_field(ss_3d_field_phys, ss_3d_field_dyn.subfield("cmp",1,n0));
+  remapper->register_field(vs_3d_field_phys, vs_3d_field_dyn.subfield("cmp",1,n0));
   remapper->register_field(tr_3d_field_phys, tr_3d_field_dyn);
   remapper->registration_ends();
 
