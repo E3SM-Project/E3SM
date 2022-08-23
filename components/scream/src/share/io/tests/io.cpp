@@ -435,8 +435,8 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
 std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
 {
   ekat::ParameterList gm_params;
-  gm_params.set("Number of Global Columns",num_gcols);
-  gm_params.set("Number of Vertical Levels",num_levs);
+  gm_params.set("number_of_global_columns",num_gcols);
+  gm_params.set("number_of_vertical_levels",num_levs);
   auto gm = create_mesh_free_grids_manager(io_comm,gm_params);
   gm->build_grids();
   return gm;

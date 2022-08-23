@@ -56,7 +56,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   m_lon  = m_grid->get_geometry_data("lon");
 
   // Figure out radiation column chunks stats
-  m_col_chunk_size = std::min(m_params.get("Column Chunk Size", m_ncol),m_ncol);
+  m_col_chunk_size = std::min(m_params.get("column_chunk_size", m_ncol),m_ncol);
   m_num_col_chunks = (m_ncol+m_col_chunk_size-1) / m_col_chunk_size;
   m_col_chunk_beg.resize(m_num_col_chunks+1,0);
   for (int i=0; i<m_num_col_chunks; ++i) {
@@ -277,14 +277,14 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   // Determine rad timestep, specified as number of atm steps
   m_rad_freq_in_steps = m_params.get<Int>("rad_frequency", 1);
 
-  // Determine orbital year. If Orbital Year is negative, use current year
+  // Determine orbital year. If orbital_year is negative, use current year
   // from timestamp for orbital year; if positive, use provided orbital year
   // for duration of simulation.
-  m_orbital_year = m_params.get<Int>("Orbital Year",-9999);
+  m_orbital_year = m_params.get<Int>("orbital_year",-9999);
   // Get orbital parameters from yaml file
-  m_orbital_eccen = m_params.get<Int>("Orbital Eccentricity",-9999);
-  m_orbital_obliq = m_params.get<Int>("Orbital Obliquity"   ,-9999);
-  m_orbital_mvelp = m_params.get<Int>("Orbital MVELP"       ,-9999);
+  m_orbital_eccen = m_params.get<Int>("orbital_eccentricity",-9999);
+  m_orbital_obliq = m_params.get<Int>("orbital_obliquity"   ,-9999);
+  m_orbital_mvelp = m_params.get<Int>("orbital_mvelp"       ,-9999);
 
   // Determine whether or not we are using a fixed solar zenith angle (positive value)
   m_fixed_solar_zenith_angle = m_params.get<Real>("Fixed Solar Zenith Angle", -9999);

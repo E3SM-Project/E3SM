@@ -87,7 +87,6 @@ static void copy_prev (const int ncols, const int npacks,
       FT(icol,ilev) = T(icol,ilev);
       FM(icol,0,ilev) = uv(icol,0,ilev);
       FM(icol,1,ilev) = uv(icol,1,ilev);
-      FM(icol,2,ilev) = 0;
     });
   });
   Kokkos::fence();  
@@ -198,7 +197,7 @@ void HommeDynamics::remap_fv_phys_to_dyn () const {
   assert(m_helper_fields.at("FT_phys").get_view<const Real**>().extent_int(0) == nelem*npg);
 
   const auto uv_ndim = m_helper_fields.at("FM_phys").get_view<const Real***>().extent_int(1);
-  assert(uv_ndim == 2 or uv_ndim == 3);
+  assert(uv_ndim == 2);
 
   const auto T = Homme::GllFvRemap::CPhys2T(
     m_helper_fields.at("FT_phys").get_view<const Real**>().data(),

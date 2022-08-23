@@ -32,7 +32,7 @@ HommeGridsManager (const ekat::Comm& comm,
 
   if (!is_params_inited_f90()) {
     // While we're here, we can init homme's parameters
-    auto nlname = m_params.get<std::string>("Dynamics Namelist File Name").c_str();
+    auto nlname = m_params.get<std::string>("dynamics_namelist_file_name").c_str();
     init_params_f90 (nlname);
   }
 
@@ -42,10 +42,6 @@ HommeGridsManager (const ekat::Comm& comm,
       "       larger than the number of 2d elements in Homme.\n"
       "  - num MPI ranks: " + std::to_string(comm.size()) + "\n"
       "  - num 2d elems : " + std::to_string(get_homme_param<int>("nelem")) + "\n");
-
-  // Get the physics grid specs
-  const auto& pg_type      = m_params.get<std::string>("Physics Grid Type");
-  const auto& pg_rebalance = m_params.get<std::string>("Physics Grid Rebalance","None");
 
   // Create the grid integer codes map (i.e., int->string
   build_pg_codes ();
@@ -93,8 +89,8 @@ void HommeGridsManager::
 build_grids ()
 {
   // Get the physics grid specs
-  const ci_string& pg_type      = m_params.get<std::string>("Physics Grid Type");
-  const ci_string& pg_rebalance = m_params.get<std::string>("Physics Grid Rebalance","None");
+  const ci_string pg_type      = m_params.get<std::string>("physics_grid_type");
+  const ci_string pg_rebalance = m_params.get<std::string>("physics_grid_rebalance","None");
 
   // Get the physics grid code
   std::vector<int> pg_codes {

@@ -64,9 +64,8 @@ TEST_CASE("dyn_grid_io")
 
   // Create the grids
   ekat::ParameterList params;
-  params.set<std::string>("Physics Grid Type","GLL");
+  params.set<std::string>("physics_grid_type","GLL");
   auto gm = std::make_shared<HommeGridsManager>(comm,params);
-  gm->build_grids();
 
   auto dyn_grid  = gm->get_grid("Dynamics");
   auto phys_grid = gm->get_grid("Physics GLL");
@@ -157,8 +156,8 @@ TEST_CASE("dyn_grid_io")
   io_params.set<std::string>("Casename","dyn_grid_io_np" + std::to_string(comm.size()));
   io_params.sublist("Fields").sublist("Dynamics").set<std::vector<std::string>>("Field Names",fnames);
   io_params.sublist("Fields").sublist("Dynamics").set<std::string>("IO Grid Name","Physics GLL");
-  io_params.sublist("Output Control").set<int>("Frequency",1);
-  io_params.sublist("Output Control").set<std::string>("Frequency Units","Steps");
+  io_params.sublist("output_control").set<int>("Frequency",1);
+  io_params.sublist("output_control").set<std::string>("frequency_units","Steps");
 
   OutputManager output;
   // AtmosphereOutput output(comm,io_params,fm_dyn,gm);
