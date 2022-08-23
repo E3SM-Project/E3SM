@@ -254,8 +254,8 @@ void scream_get_local_cols_gids (void* const ptr) {
     const auto& ad = get_ad();
     const auto& phys_grid = ad.get_grids_manager()->get_grid("Physics");
 
-    auto gids_h = Kokkos::create_mirror_view(grid->get_dofs_gids());
-    Kokkos::deep_copy(gids_h,grid->get_dofs_gids());
+    auto gids_h = Kokkos::create_mirror_view(phys_grid->get_dofs_gids());
+    Kokkos::deep_copy(gids_h,phys_grid->get_dofs_gids());
 
     for (int i=0; i<gids_h.extent_int(0); ++i) {
       gids_f[i] = gids_h(i);
@@ -267,11 +267,11 @@ void scream_get_local_cols_gids (void* const ptr) {
 void scream_get_cols_latlon (double* const& lat_ptr, double* const& lon_ptr) {
   fpe_guard_wrapper([&]() {
     const auto& ad = get_ad();
-    const auto& grid = ad.get_grids_manager()->get_grid("Physics");
-    const auto ncols = grid->get_num_local_dofs();
+    const auto& phys_grid = ad.get_grids_manager()->get_grid("Physics");
+    const auto ncols = phys_grid->get_num_local_dofs();
 
-    auto lat_cxx = grid->get_geometry_data("lat");
-    auto lon_cxx = grid->get_geometry_data("lon");
+    auto lat_cxx = phys_grid->get_geometry_data("lat");
+    auto lon_cxx = phys_grid->get_geometry_data("lon");
 
     using geo_view_f90 = ekat::Unmanaged<decltype(lat_cxx)::HostMirror>;
     geo_view_f90 lat_f90(lat_ptr, ncols);
@@ -285,10 +285,10 @@ void scream_get_cols_latlon (double* const& lat_ptr, double* const& lon_ptr) {
 void scream_get_cols_area (double* const& area_ptr) {
   fpe_guard_wrapper([&]() {
     const auto& ad = get_ad();
-    const auto& grid = ad.get_grids_manager()->get_grid("Physics");
-    const auto ncols = grid->get_num_local_dofs();
+    const auto& phys_grid = ad.get_grids_manager()->get_grid("Physics");
+    const auto ncols = phys_grid->get_num_local_dofs();
 
-    auto area_cxx = grid->get_geometry_data("area");
+    auto area_cxx = phys_grid->get_geometry_data("area");
 
     using geo_view_f90 = ekat::Unmanaged<decltype(area_cxx)::HostMirror>;
     geo_view_f90  area_f90 (area_ptr, ncols);
