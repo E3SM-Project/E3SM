@@ -249,13 +249,13 @@ tweaking their $case/namelist_scream.xml file.
   <!-- List of nc files for loading inputs on specified grids -->
   <initial_conditions>
     <Filename>UNSET</Filename>
-    <Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220818.nc</Filename>
-    <Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220818.nc</Filename>
-    <Filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220818.nc</Filename>
-    <Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220819.nc</Filename> 
-    <Filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5_20131001_20220819.nc</Filename> 
-    <Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220819.nc</Filename>
-    <Filename hgrid="ne30np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne30np4L128_20220819.nc</Filename> <!-- This will need to be updated to the new nccn name -->
+    <Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</Filename>
+    <Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</Filename>
+    <Filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</Filename>
+    <Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</Filename> 
+    <Filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5_20131001_20220823.nc</Filename> 
+    <Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</Filename>
+    <Filename hgrid="ne30np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne30np4L128_20220823.nc</Filename> <!-- This will need to be updated to the new nccn name -->
     <restart_casename>${CASE}.scream</restart_casename>
     <!-- Fields that we need to initialize, but are not in an initial condition file need to be inited here -->
     <surf_evap>0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->
