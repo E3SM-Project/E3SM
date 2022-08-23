@@ -253,6 +253,7 @@ contains
    use tropopause,          only: tropopause_readnl
    use aoa_tracers,         only: aoa_tracers_readnl
    use cldera_sai_tracers,  only: cldera_sai_tracers_readnl
+   use cldera_clock_tracers,only: cldera_clock_tracers_readnl
    use prescribed_ozone,    only: prescribed_ozone_readnl
    use prescribed_aero,     only: prescribed_aero_readnl
    use prescribed_ghg,      only: prescribed_ghg_readnl
@@ -497,6 +498,7 @@ contains
    call tropopause_readnl(nlfilename)
    call aoa_tracers_readnl(nlfilename)
    call cldera_sai_tracers_readnl(nlfilename)
+   call cldera_clock_tracers_readnl(nlfilename)
    call aerodep_flx_readnl(nlfilename)
    call prescribed_ozone_readnl(nlfilename)
    call prescribed_aero_readnl(nlfilename)
