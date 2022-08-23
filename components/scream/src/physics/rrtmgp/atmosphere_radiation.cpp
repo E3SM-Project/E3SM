@@ -46,7 +46,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   Wm2.set_string("W/m2");
   auto nondim = m/m;  // dummy unit for non-dimensional fields
   auto micron = m / 1000000;
-  auto molmol = m/m;
+  auto molmol = mol/mol;
   molmol.set_string("mol/mol");
 
   using namespace ShortFieldTagsNames;
