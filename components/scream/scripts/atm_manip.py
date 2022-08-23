@@ -68,13 +68,27 @@ def find_node (root,name,recurse=True):
 
     for elem in root:
         if elem.tag==name:
-            return elem
+            return [elem]
         if recurse:
-            found = find_node(elem,name)
+            found = find_node(elem,name,recurse=True)
             if found is not None:
-                return found
+                return [elem]+found
 
     return None
+
+###############################################################################
+def get_xml_node_hierarchy (root,name):
+###############################################################################
+
+    for elem in root:
+        if elem.tag==name:
+            return [elem]
+        found = get_xml_node_hierarchy(elem,name)
+        if found is not None:
+            return [elem] + found
+
+    return None
+
 
 ###############################################################################
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
@@ -88,7 +102,7 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         raise exc_type(msg)
 
 ###############################################################################
-def get_xml_node(xml_root,name):
+def get_xml_node(xml_root,name,return_hierarchy=False):
 ###############################################################################
     """
 
@@ -137,7 +151,7 @@ def get_xml_node(xml_root,name):
     s = selectors[0]
     if s == '':
         # User started with ::
-        node = xml_root
+        nodes = [xml_root]
     else:
         expect (num_nodes_with_name(xml_root,s,recurse=True)>0,
             "Error! XML entry {} not found in section {}".format(s,xml_root.tag))
@@ -145,16 +159,16 @@ def get_xml_node(xml_root,name):
             "Error! Multiple XML entries with name {} found in section {}"
             .format(s,xml_root.tag), AmbiguousName)
 
-        node = find_node(xml_root,s,recurse=True)
+        nodes = find_node(xml_root,s,recurse=True)
 
     # If user specified selectors via namespace, recurse over them
     for s in selectors[1:]:
-        expect (num_nodes_with_name(node,s,recurse=False)>0,
-            "Error! XML entry {} not found in section {}".format(s,node.tag))
-        expect (num_nodes_with_name(node,s,recurse=False)==1,
+        expect (num_nodes_with_name(nodes[-1],s,recurse=False)>0,
+            "Error! XML entry {} not found in section {}".format(s,nodes[-1].tag))
+        expect (num_nodes_with_name(nodes[-1],s,recurse=False)==1,
             "Error! Multiple XML entries with name {} found in section {}"
-            .format(s,node.tag))
+            .format(s,nodes[-1].tag))
 
-        node = find_node(node,s,recurse=False)
+        nodes = nodes + find_node(nodes[-1],s,recurse=False)
 
-    return node
+    return nodes
