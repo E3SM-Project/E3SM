@@ -34,7 +34,7 @@ void MeridionalVapFluxDiagnostic::set_grids(const std::shared_ptr<const GridsMan
   // The fields required for this diagnostic to be computed
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name, ps);
   add_field<Required>("qv",             scalar3d_layout_mid, Q,  grid_name, "tracers", ps);
-  add_field<Required>("u",             scalar3d_layout_mid, m/s,  grid_name, ps);
+  add_field<Required>("v",             scalar3d_layout_mid, m/s,  grid_name, ps);
 
 
   // Construct and allocate the diagnostic field

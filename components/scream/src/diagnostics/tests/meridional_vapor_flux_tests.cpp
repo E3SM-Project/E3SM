@@ -71,8 +71,8 @@ void run(std::mt19937_64& engine)
           v("v",num_mid_packs);
 
 
-  auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
-    return rview_1d(reinterpret_cast<Real*>(v.data()),v.size()*packsize);
+  auto dview_as_real = [&] (const view_1d& vo) -> rview_1d {
+    return rview_1d(reinterpret_cast<Real*>(vo.data()),vo.size()*packsize);
   };
 
   // Construct random input data
