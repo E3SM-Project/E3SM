@@ -1372,6 +1372,12 @@ v=accumulatedLandIceFrazilSalinityFlux; write(m,"('LandIceFrazilSalinityFlux',es
 !
 !  routine carbon_conservation
 !
+!> \brief   Compute MPAS-Ocean analysis member
+!> \author  Kat Smith, Mathew Maltrud
+!> \date    August 2022
+!> \details
+!>  This routine calculates carbon conservation terms
+!
 !-----------------------------------------------------------------------
 
    subroutine carbon_conservation(domain, err)
