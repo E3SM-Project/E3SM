@@ -27,8 +27,8 @@ contains
     ! !USES:
     use elm_varctl       , only: co2_type, co2_ppmv, iulog, use_c13, create_glacier_mec_landunit, &
                                  metdata_type, metdata_bypass, metdata_biases, co2_file, aero_file, use_atm_downscaling_to_topunit
-    use elm_varctl       , only: const_climate_hist, add_temperature, add_co2, use_cn, use_fates
-    use elm_varctl       , only: startdate_add_temperature, startdate_add_co2
+    use elm_varctl       , only: const_climate_hist, add_temperature, add_co2, use_cn, use_fates, scale_rain, scale_snow
+    use elm_varctl       , only: startdate_add_temperature, startdate_add_co2, startdate_scale_rain, startdate_scale_snow
     use elm_varcon       , only: rair, o2_molar_const, c13ratio
     use clm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 
     use controlMod       , only: NLFilename
@@ -101,6 +101,8 @@ contains
     integer :: xtoget, ytoget, thisx, thisy, calday_start
     integer :: sdate_addt, sy_addt, sm_addt, sd_addt
     integer :: sdate_addco2, sy_addco2, sm_addco2, sd_addco2
+    integer :: sdate_sclr, sy_sclr, sm_sclr, sd_sclr
+    integer :: sdate_scls, sy_scls, sm_scls, sd_scls
     character(len=200) metsource_str, thisline
     character(len=*), parameter :: sub = 'lnd_import_mct'
     integer :: av, v, n, nummetdims, g3, gtoget, ztoget, line, mystart, tod_start, thistimelen  
@@ -1043,6 +1045,22 @@ contains
          end if
        end if
 
+       ! parse startedate for scaling precipitation
+       if (startdate_scale_rain .ne. '') then 
+        call get_curr_date( yr, mon, day, tod ) ! is this in the right place?
+        read(startdate_scale_rain,*) sdate_sclr
+        sy_sclr     = sdate_sclr/10000
+        sm_sclr     = (sdate_sclr-sy_sclr*10000)/100
+        sd_sclr     = sdate_sclr-sy_sclr*10000-sm_sclr*100
+       end if 
+       if (startdate_scale_snow .ne. '') then 
+        call get_curr_date( yr, mon, day, tod ) ! is this in the right place?
+        read(startdate_scale_snow,*) sdate_scls
+        sy_scls     = sdate_scls/10000
+        sm_scls     = (sdate_scls-sy_scls*10000)/100
+        sd_scls     = sdate_scls-sy_scls*10000-sm_scls*100
+       end if 
+
        !set the topounit-level atmospheric state and flux forcings (bypass mode)
        do topo = grc_pp%topi(g), grc_pp%topf(g)
          ! first, all the state forcings
@@ -1258,8 +1276,33 @@ contains
        atm2lnd_vars%forc_solar_grc(g) = atm2lnd_vars%forc_solad_grc(g,1) + atm2lnd_vars%forc_solai_grc(g,1) + &
                                         atm2lnd_vars%forc_solad_grc(g,2) + atm2lnd_vars%forc_solai_grc(g,2)
        
+      if (startdate_add_temperature .ne. '') then
+        if ((yr == sy_addt .and. mon == sm_addt .and. day >= sd_addt) .or. &
+            (yr == sy_addt .and. mon > sm_addt) .or. (yr > sy_addt)) then
+          atm2lnd_vars%forc_t_not_downscaled_grc(g) = atm2lnd_vars%forc_t_not_downscaled_grc(g) + add_temperature
+          atm2lnd_vars%forc_th_not_downscaled_grc(g) = atm2lnd_vars%forc_th_not_downscaled_grc(g) + add_temperature
+        end if
+      end if
+
        atm2lnd_vars%forc_rain_not_downscaled_grc(g)  = forc_rainc + forc_rainl
        atm2lnd_vars%forc_snow_not_downscaled_grc(g)  = forc_snowc + forc_snowl
+
+       ! rewrite atm2lnd_vars%forc_rain_not_downscaled_grc(g) if defined in namelist
+       if (startdate_scale_rain .ne. '') then
+        if ((yr == sy_sclr .and. mon == sm_sclr .and. day >= sd_sclr) .or. &
+            (yr == sy_sclr .and. mon > sm_sclr) .or. (yr > sy_sclr)) then
+          atm2lnd_vars%forc_rain_not_downscaled_grc(g) = atm2lnd_vars%forc_rain_not_downscaled_grc(g) * scale_rain
+        end if
+      end if
+
+      ! rewrite atm2lnd_vars%forc_snow_not_downscaled_grc(g) if defined in namelist
+      if (startdate_scale_snow .ne. '') then
+        if ((yr == sy_scls .and. mon == sm_scls .and. day >= sd_scls) .or. &
+            (yr == sy_scls .and. mon > sm_scls) .or. (yr > sy_scls)) then
+          atm2lnd_vars%forc_snow_not_downscaled_grc(g) = atm2lnd_vars%forc_snow_not_downscaled_grc(g) * scale_snow
+        end if
+      end if
+
        if (forc_t > SHR_CONST_TKFRZ) then
           e = esatw(tdc(forc_t))
        else

@@ -159,6 +159,26 @@ Amount of added temperature (K) to atmospheric forcing
 Amount of added CO2 (ppmv) to atmospheric forcing
 </entry>
 
+<entry id="startdate_scale_rain" type="char*8" category="elm_physics"
+       group="elm_inparm" valid_values="" >
+Set date for beginning of scaling rain to atmospheric forcing
+</entry>
+
+<entry id="scale_rain" type="real" category="elm_physics"
+       group="elm_inparm" valid_values="" >
+Scaling factor to apply to rain to atmospheric forcing
+</entry>
+
+<entry id="startdate_scale_snow" type="char*8" category="elm_physics"
+       group="elm_inparm" valid_values="" >
+Set date for beginning of scaling snow to atmospheric forcing
+</entry>
+
+<entry id="scale_snow" type="real" category="elm_physics"
+       group="elm_inparm" valid_values="" >
+Scaling factor to apply to snow to atmospheric forcing
+</entry>
+
 <entry id="use_pheno_flux_limiter" type="logical" category="elm_physics"
        group="elm_inparm" valid_values="" >
 If TRUE, apply flux limiter to phenology fluxes to avoid overextraction

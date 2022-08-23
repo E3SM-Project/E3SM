@@ -408,6 +408,11 @@ module elm_varctl
   character(len=8), public :: startdate_add_co2         ='99991231'
   real(r8), public         :: add_co2 = 0d0
   real(r8), public         :: add_temperature = 0d0
+  !precipitation scaling
+  character(len=8), public :: startdate_scale_rain          = '99991231'
+  character(len=8), public :: startdate_scale_snow          = '99991231'
+  real(r8), public         :: scale_rain          = 1._r8
+  real(r8), public         :: scale_snow          = 1._r8
 
   !-----------------------------------------------------------------------
   ! Lateral grid connectivity
