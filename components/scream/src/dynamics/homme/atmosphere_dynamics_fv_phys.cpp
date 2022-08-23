@@ -230,9 +230,10 @@ static TraceGasesWorkaround s_tgw;
 void fv_phys_rrtmgp_active_gases_init (const ekat::ParameterList& p) {
   const auto& v = p.sublist("atmosphere_processes").sublist("physics")
     .sublist("rrtmgp").get<std::vector<std::string>>("active_gases");
-  for (const auto& e : v)
-    if (e != "h2o")
-      s_tgw.active_gases.push_back(e);
+  for (const auto& e : v) {
+    if (e == "o3")
+      s_tgw.active_gases.push_back(e + "_volume_mix_ratio");
+  }
 }
 
 void fv_phys_rrtmgp_active_gases_set_restart (const bool restart) {
@@ -244,8 +245,8 @@ void HommeDynamics
   if (s_tgw.restart) return; // always false b/c it hasn't been set yet
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
-  auto kgkg = kg/kg;
-  kgkg.set_string("kg/kg");
+  auto molmol = mol/mol;
+  molmol.set_string("mol/mol");
   const auto& rgn = m_cgll_grid->name();
   const auto& pgn = m_phys_grid->name();
   const auto rnc = m_cgll_grid->get_num_local_dofs();
@@ -253,10 +254,10 @@ void HommeDynamics
   const auto nlev = m_cgll_grid->get_num_vertical_levels();
   constexpr int ps = SCREAM_SMALL_PACK_SIZE;
   for (const auto& e : s_tgw.active_gases) {
-    add_field<Required>(e, FieldLayout({COL,LEV},{rnc,nlev}), kgkg, rgn, ps);
+    add_field<Required>(e, FieldLayout({COL,LEV},{rnc,nlev}), molmol, rgn, ps);
     // 'Updated' rather than just 'Computed' so that it gets written to the
     // restart file.
-    add_field<Updated >(e, FieldLayout({COL,LEV},{pnc,nlev}), kgkg, pgn, ps);
+    add_field<Updated >(e, FieldLayout({COL,LEV},{pnc,nlev}), molmol, pgn, ps);
   }
   s_tgw.remapper = gm->create_remapper(m_cgll_grid, m_dyn_grid);
 }
