@@ -84,7 +84,6 @@ public:
   GasConcs                 m_gas_concs;
 
   // Prescribed greenhouse gas surface concentrations in moles / moles air
-  Real m_co2vmr_rad;
   Real m_co2vmr;
   Real m_n2ovmr;
   Real m_ch4vmr;

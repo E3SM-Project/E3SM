@@ -13,22 +13,12 @@ using scream::Int;
 namespace scream {
 namespace physics {
 
-namespace {
-
-// Translated from components/eam/src/physics/chem_surfvals.F90
-Real chem_surfvals_co2_rad(const Real rmwco2, const Real co2vmr, const Real co2vmr_rad)
-{
-  return co2vmr_rad > 0 ? rmwco2 * co2vmr_rad : rmwco2 * co2vmr;
-}
-
-}
-
 void trcmix(
   const std::string& name,
   trcmix_view1d<const Real> const& clat,  // latitude for columns in degrees
   trcmix_view2d<const Real> const& pmid,  // model pressures
   trcmix_view2d<Real>            & q,     // constituent mass mixing ratio (output)
-  const Real co2vmr_rad, const Real co2vmr, const Real n2ovmr, const Real ch4vmr, const Real f11vmr, const Real f12vmr)
+  const Real co2vmr, const Real n2ovmr, const Real ch4vmr, const Real f11vmr, const Real f12vmr)
 {
   using C = Constants<Real>;
   using KT = KokkosTypes<DefaultDevice>;
@@ -67,9 +57,7 @@ void trcmix(
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols, nlevs);
 
   if (name == "o2" || name == "co2") {
-    const auto val = name == "o2"
-      ? C::o2mmr : chem_surfvals_co2_rad(rmwco2, co2vmr, co2vmr_rad);
-
+    const auto val = name == "o2" ? C::o2mmr : rmwco2 * co2vmr;
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const Int i = team.league_rank();
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlevs), [&] (const Int& k) {

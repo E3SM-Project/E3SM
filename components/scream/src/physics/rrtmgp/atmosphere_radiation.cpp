@@ -297,7 +297,6 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   m_fixed_solar_zenith_angle = m_params.get<Real>("Fixed Solar Zenith Angle", -9999);
 
   // Get prescribed surface values of greenhouse gases
-  m_co2vmr_rad = m_params.get<Real>("co2vmr_rad", -1.0);
   m_co2vmr     = m_params.get<Real>("co2vmr", 388.717e-6);
   m_n2ovmr     = m_params.get<Real>("n2ovmr", 323.141e-9);
   m_ch4vmr     = m_params.get<Real>("ch4vmr", 1807.851e-9);
@@ -643,7 +642,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
         // This gives (dry) mass mixing ratios
         scream::physics::trcmix(
           name, m_lat, d_pmid, d_vmr,
-          m_co2vmr_rad, m_co2vmr, m_n2ovmr, m_ch4vmr, m_f11vmr, m_f12vmr
+          m_co2vmr, m_n2ovmr, m_ch4vmr, m_f11vmr, m_f12vmr
         );
         // Back out volume mixing ratios
         const auto air_mol_weight = PC::MWdry;
