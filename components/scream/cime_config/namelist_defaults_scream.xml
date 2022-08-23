@@ -378,6 +378,8 @@ tweaking their $case/namelist_scream.xml file.
     <dt_tracer_factor constraints="ge 1" hgrid=".*pg2">6</dt_tracer_factor>
     <hypervis_subcycle_q hgrid=".*pg2">6</hypervis_subcycle_q>
     <transport_alg hgrid=".*pg2">12</transport_alg>
+    <!-- Other settings that we'll trigger based on pg2 for convenience -->
+    <se_ftype valid_values="0,2" hgrid=".*pg2">2</se_ftype>
   </ctl_nl>
 
 </namelist_defaults>
