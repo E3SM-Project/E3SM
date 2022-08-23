@@ -53,11 +53,13 @@ namespace scorpio {
   // Read data for a specific variable from a specific file. To read data that
   // isn't associated with a time index, or to read data at the most recent
   // time, set time_index to -1. Otherwise use the proper zero-based time index.
+  template<typename T>
   void grid_read_data_array (const std::string &filename, const std::string &varname,
-                             const int time_index, void* hbuf);
+                             const int time_index, T* hbuf, const int buf_size);
   /* Write data for a specific variable to a specific file. */
+  template<typename T>
   void grid_write_data_array(const std::string &filename, const std::string &varname,
-                             const Real* hbuf);
+                             const T* hbuf, const int buf_size);
 
 extern "C" {
   /* Query whether the pio subsystem is inited or not */

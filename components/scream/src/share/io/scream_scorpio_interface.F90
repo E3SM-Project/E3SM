@@ -170,11 +170,15 @@ module scream_scorpio_interface
 
 !----------------------------------------------------------------------
   interface grid_read_data_array
-    module procedure grid_read_darray_1d
+    module procedure grid_read_darray_double
+    module procedure grid_read_darray_float
+    module procedure grid_read_darray_int
   end interface grid_read_data_array
 !----------------------------------------------------------------------
   interface grid_write_data_array
-    module procedure grid_write_darray_1d
+    module procedure grid_write_darray_float
+    module procedure grid_write_darray_double
+    module procedure grid_write_darray_int
   end interface
 !----------------------------------------------------------------------
 
@@ -1351,20 +1355,17 @@ contains
   !  grid_write_darray_1d: Write a variable defined on this grid
   !
   !---------------------------------------------------------------------------
-  subroutine grid_write_darray_1d(filename, varname, var_data_ptr)
+  subroutine grid_write_darray_float(filename, varname, buf, buf_size)
     use piolib_mod, only: PIO_setframe
     use piodarray,  only: PIO_write_darray
-    use iso_c_binding, only: c_ptr, c_f_pointer
 
     ! Dummy arguments
-    character(len=*),   intent(in) :: filename       ! PIO filename
-    character(len=*),   intent(in) :: varname
-    type (c_ptr),       intent(in) :: var_data_ptr
+    character(len=*),    intent(in) :: filename       ! PIO filename
+    character(len=*),    intent(in) :: varname
+    real(kind=c_float),  intent(in) :: buf(buf_size)
+    integer(kind=c_int), intent(in), value :: buf_size
 
     ! Local variables
-    real(c_float),       dimension(:), pointer :: var_data_float
-    real(c_double),      dimension(:), pointer :: var_data_double
-    integer(kind=c_int), dimension(:), pointer :: var_data_int
 
     type(pio_atm_file_t), pointer :: pio_atm_file
     type(hist_var_t), pointer     :: var
@@ -1381,22 +1382,77 @@ contains
     var_size = SIZE(var%compdof)
 
     ! Now we know the exact size of the array, and can shape the f90 pointer
+    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
+    call errorHandle( 'eam_grid_write_darray_float: Error writing variable '//trim(varname),ierr)
+  end subroutine grid_write_darray_float
+  subroutine grid_write_darray_double(filename, varname, buf, buf_size)
+    use piolib_mod, only: PIO_setframe
+    use piodarray,  only: PIO_write_darray
+
+    ! Dummy arguments
+    character(len=*),    intent(in) :: filename       ! PIO filename
+    character(len=*),    intent(in) :: varname
+    real(kind=c_double), intent(in) :: buf(buf_size)
+    integer(kind=c_int), intent(in), value :: buf_size
+
+    ! Local variables
+
+    real(kind=c_float) :: sbuf(buf_size)
+    type(pio_atm_file_t), pointer :: pio_atm_file
+    type(hist_var_t), pointer     :: var
+    integer                       :: ierr,var_size
+    logical                       :: found
+
+    print *, "write_darray_double"
+
+    call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
+    call get_var(pio_atm_file,varname,var)
+
+    ! Set the timesnap we are reading
+    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+
+    ! We don't want the extent along the 'time' dimension
+    var_size = SIZE(var%compdof)
+
+    ! Now we know the exact size of the array, and can shape the f90 pointer
     if (var%dtype .eq. PIO_FLOAT) then
-      call c_f_pointer (var_data_ptr, var_data_float, [var_size])
-      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_float, ierr)
-      call errorHandle( 'eam_grid_write_darray_1d: Error writing variable '//trim(varname),ierr)
-    else if (var%dtype .eq. PIO_DOUBLE) then
-      call c_f_pointer (var_data_ptr, var_data_double, [var_size])
-      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_double, ierr)
-      call errorHandle( 'eam_grid_write_darray_1d: Error writing variable '//trim(varname),ierr)
-    else if (var%dtype .eq. PIO_INT) then
-      call c_f_pointer (var_data_ptr, var_data_int, [var_size])
-      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_int, ierr)
-      call errorHandle( 'eam_grid_write_darray_1d: Error writing variable '//trim(varname),ierr)
+      sbuf = real(buf,c_float)
+      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, sbuf, ierr)
     else
-      call errorHandle( "eam_grid_write_darray_1d: Error writing variable "//trim(varname)//" unsupported dtype", -999)
-    end if
-  end subroutine grid_write_darray_1d
+      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
+    endif
+    call errorHandle( 'eam_grid_write_darray_double: Error writing variable '//trim(varname),ierr)
+  end subroutine grid_write_darray_double
+  subroutine grid_write_darray_int(filename, varname, buf, buf_size)
+    use piolib_mod, only: PIO_setframe
+    use piodarray,  only: PIO_write_darray
+
+    ! Dummy arguments
+    character(len=*),    intent(in) :: filename       ! PIO filename
+    character(len=*),    intent(in) :: varname
+    integer(kind=c_int), intent(in) :: buf(buf_size)
+    integer(kind=c_int), intent(in), value :: buf_size
+
+    ! Local variables
+
+    type(pio_atm_file_t), pointer :: pio_atm_file
+    type(hist_var_t), pointer     :: var
+    integer                       :: ierr,var_size
+    logical                       :: found
+
+    call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
+    call get_var(pio_atm_file,varname,var)
+
+    ! Set the timesnap we are reading
+    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+
+    ! We don't want the extent along the 'time' dimension
+    var_size = SIZE(var%compdof)
+
+    ! Now we know the exact size of the array, and can shape the f90 pointer
+    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
+    call errorHandle( 'eam_grid_write_darray_int: Error writing variable '//trim(varname),ierr)
+  end subroutine grid_write_darray_int
 !=====================================================================!
   ! Read output from file based on type (int or real)
   ! --Note-- that any dimensionality could be read if it is flattened to 1D
@@ -1414,15 +1470,15 @@ contains
   !  grid_read_darray_1d: Read a variable defined on this grid
   !
   !---------------------------------------------------------------------------
-  subroutine grid_read_darray_1d(filename, varname, var_data_ptr, time_index)
+  subroutine grid_read_darray_double(filename, varname, buf, buf_size, time_index)
     use piolib_mod, only: PIO_setframe
     use piodarray,  only: PIO_read_darray
-    use iso_c_binding, only: c_ptr, c_f_pointer
 
     ! Dummy arguments
-    character(len=*), intent(in) :: filename       ! PIO filename
-    character(len=*), intent(in) :: varname
-    type (c_ptr),     intent(in) :: var_data_ptr
+    character(len=*),     intent(in) :: filename       ! PIO filename
+    character(len=*),     intent(in) :: varname
+    real(kind=c_double),  intent(out) :: buf(buf_size)
+    integer (kind=c_int), intent(in), value :: buf_size
     integer, intent(in)          :: time_index
 
     ! Local variables
@@ -1430,9 +1486,6 @@ contains
     type(hist_var_t), pointer          :: var
     integer                            :: ierr, var_size
     logical                            :: found
-    real(c_float),       dimension(:), pointer :: var_data_float
-    real(c_double),      dimension(:), pointer :: var_data_double
-    integer(kind=c_int), dimension(:), pointer :: var_data_int
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)
@@ -1450,24 +1503,81 @@ contains
     var_size = SIZE(var%compdof)
 
     ! Now we know the exact size of the array, and can shape the f90 pointer
-    if (var%dtype .eq. PIO_DOUBLE) then
-      call c_f_pointer (var_data_ptr, var_data_double, [var_size])
-      call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_double, ierr)
-      call errorHandle( 'eam_grid_read_darray_1d: Error reading variable '//trim(varname),ierr)
-    else if (var%dtype .eq. PIO_FLOAT) then
-      call c_f_pointer (var_data_ptr, var_data_float, [var_size])
-      call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_float, ierr)
-      call errorHandle( 'eam_grid_read_darray_1d: Error reading variable '//trim(varname),ierr)
-    else if (var%dtype .eq. PIO_INT) then
-      call c_f_pointer (var_data_ptr, var_data_int, [var_size])
-      call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, var_data_int, ierr)
-      call errorHandle( 'eam_grid_read_darray_1d: Error reading variable '//trim(varname),ierr)
+    call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
+    call errorHandle( 'eam_grid_read_darray_double: Error reading variable '//trim(varname),ierr)
+  end subroutine grid_read_darray_double
+  subroutine grid_read_darray_float(filename, varname, buf, buf_size, time_index)
+    use piolib_mod, only: PIO_setframe
+    use piodarray,  only: PIO_read_darray
+
+    ! Dummy arguments
+    character(len=*),     intent(in) :: filename       ! PIO filename
+    character(len=*),     intent(in) :: varname
+    real(kind=c_float),  intent(out) :: buf(buf_size)
+    integer (kind=c_int), intent(in), value :: buf_size
+    integer, intent(in)          :: time_index
+
+    ! Local variables
+    type(pio_atm_file_t),pointer       :: pio_atm_file
+    type(hist_var_t), pointer          :: var
+    integer                            :: ierr, var_size
+    logical                            :: found
+
+    call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
+    call get_var(pio_atm_file,varname,var)
+
+    ! Set the timesnap we are reading
+    if (time_index .gt. 0) then
+      ! The user has set a valid time index to read from
+      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(time_index,kind=pio_offset_kind))
     else
-      call errorHandle( "eam_grid_read_darra_1d: Error reading variable "//trim(varname)//" unsupported dtype", -999)
+      ! Otherwise default to the last time_index in the file
+      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(pio_atm_file%numRecs,kind=pio_offset_kind))
     end if
+    
+    ! We don't want the extent along the 'time' dimension
+    var_size = SIZE(var%compdof)
 
+    ! Now we know the exact size of the array, and can shape the f90 pointer
+    call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
+    call errorHandle( 'eam_grid_read_darray_float: Error reading variable '//trim(varname),ierr)
+  end subroutine grid_read_darray_float
+  subroutine grid_read_darray_int(filename, varname, buf, buf_size, time_index)
+    use piolib_mod, only: PIO_setframe
+    use piodarray,  only: PIO_read_darray
 
-  end subroutine grid_read_darray_1d
+    ! Dummy arguments
+    character(len=*),     intent(in) :: filename       ! PIO filename
+    character(len=*),     intent(in) :: varname
+    integer (kind=c_int), intent(out) :: buf(buf_size)
+    integer (kind=c_int), intent(in), value :: buf_size
+    integer, intent(in)          :: time_index
+
+    ! Local variables
+    type(pio_atm_file_t),pointer       :: pio_atm_file
+    type(hist_var_t), pointer          :: var
+    integer                            :: ierr, var_size
+    logical                            :: found
+
+    call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
+    call get_var(pio_atm_file,varname,var)
+
+    ! Set the timesnap we are reading
+    if (time_index .gt. 0) then
+      ! The user has set a valid time index to read from
+      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(time_index,kind=pio_offset_kind))
+    else
+      ! Otherwise default to the last time_index in the file
+      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(pio_atm_file%numRecs,kind=pio_offset_kind))
+    end if
+    
+    ! We don't want the extent along the 'time' dimension
+    var_size = SIZE(var%compdof)
+
+    ! Now we know the exact size of the array, and can shape the f90 pointer
+    call pio_read_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
+    call errorHandle( 'eam_grid_read_darray_int: Error reading variable '//trim(varname),ierr)
+  end subroutine grid_read_darray_int
 !=====================================================================!
   subroutine convert_int_2_str(int_in,str_out)
     integer, intent(in)           :: int_in

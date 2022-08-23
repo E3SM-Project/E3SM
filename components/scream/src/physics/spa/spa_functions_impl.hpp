@@ -390,9 +390,9 @@ void SPAFunctions<S,D>
   scorpio::set_decomp(remap_file_name);
   
   // Now read all of the input
-  scorpio::grid_read_data_array(remap_file_name,"S",-1,S_global_h.data()); 
-  scorpio::grid_read_data_array(remap_file_name,"row",-1,row_global_h.data()); 
-  scorpio::grid_read_data_array(remap_file_name,"col",-1,col_global_h.data()); 
+  scorpio::grid_read_data_array(remap_file_name,"S",  -1,S_global_h.data(),S_global_h.size()); 
+  scorpio::grid_read_data_array(remap_file_name,"row",-1,row_global_h.data(),row_global_h.size()); 
+  scorpio::grid_read_data_array(remap_file_name,"col",-1,col_global_h.data(),col_global_h.size()); 
 
   // Finished, close the file
   scorpio::eam_pio_closefile(remap_file_name);

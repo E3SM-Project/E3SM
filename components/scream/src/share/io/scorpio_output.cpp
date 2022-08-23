@@ -292,7 +292,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
       // Bring data to host
       auto view_host = m_host_views_1d.at(name);
       Kokkos::deep_copy (view_host,view_dev);
-      grid_write_data_array(filename,name,view_host.data());
+      grid_write_data_array(filename,name,view_host.data(),view_host.size());
     }
   }
 } // run

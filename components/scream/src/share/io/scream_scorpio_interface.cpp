@@ -18,9 +18,13 @@ extern "C" {
   void register_file_c2f(const char*&& filename, const int& mode);
   void set_decomp_c2f(const char*&& filename);
   void set_dof_c2f(const char*&& filename,const char*&& varname,const Int dof_len,const std::int64_t *x_dof);
-  void grid_read_data_array_c2f(const char*&& filename, const char*&& varname, const Int time_index, void *&hbuf);
+  void grid_read_data_array_c2f_int(const char*&& filename, const char*&& varname, const Int time_index, int *buf, const int buf_size);
+  void grid_read_data_array_c2f_float(const char*&& filename, const char*&& varname, const Int time_index, float *buf, const int buf_size);
+  void grid_read_data_array_c2f_double(const char*&& filename, const char*&& varname, const Int time_index, double *buf, const int buf_size);
 
-  void grid_write_data_array_c2f_real(const char*&& filename, const char*&& varname, const Real*& hbuf);
+  void grid_write_data_array_c2f_int(const char*&& filename, const char*&& varname, const int* buf, const int buf_size);
+  void grid_write_data_array_c2f_float(const char*&& filename, const char*&& varname, const float* buf, const int buf_size);
+  void grid_write_data_array_c2f_double(const char*&& filename, const char*&& varname, const double* buf, const int buf_size);
   void eam_init_pio_subsystem_c2f(const int mpicom, const int atm_id);
   void eam_pio_finalize_c2f();
   void eam_pio_closefile_c2f(const char*&& filename);
@@ -137,13 +141,33 @@ void eam_pio_enddef(const std::string &filename) {
   eam_pio_enddef_c2f(filename.c_str());
 }
 /* ----------------------------------------------------------------- */
-void grid_read_data_array(const std::string &filename, const std::string &varname,
-                          const int time_index, void *hbuf) {
-  grid_read_data_array_c2f(filename.c_str(),varname.c_str(),time_index,hbuf);
+template<>
+void grid_read_data_array<int>(const std::string &filename, const std::string &varname,
+                          const int time_index, int *hbuf, const int buf_size) {
+  grid_read_data_array_c2f_int(filename.c_str(),varname.c_str(),time_index,hbuf,buf_size);
+}
+template<>
+void grid_read_data_array<float>(const std::string &filename, const std::string &varname,
+                                const int time_index, float *hbuf, const int buf_size) {
+  grid_read_data_array_c2f_float(filename.c_str(),varname.c_str(),time_index,hbuf,buf_size);
+}
+template<>
+void grid_read_data_array<double>(const std::string &filename, const std::string &varname,
+                                  const int time_index, double *hbuf, const int buf_size) {
+  grid_read_data_array_c2f_double(filename.c_str(),varname.c_str(),time_index,hbuf,buf_size);
 }
 /* ----------------------------------------------------------------- */
-void grid_write_data_array(const std::string &filename, const std::string &varname, const Real* hbuf) {
-  grid_write_data_array_c2f_real(filename.c_str(),varname.c_str(),hbuf);
+template<>
+void grid_write_data_array<int>(const std::string &filename, const std::string &varname, const int* hbuf, const int buf_size) {
+  grid_write_data_array_c2f_int(filename.c_str(),varname.c_str(),hbuf,buf_size);
+}
+template<>
+void grid_write_data_array<float>(const std::string &filename, const std::string &varname, const float* hbuf, const int buf_size) {
+  grid_write_data_array_c2f_float(filename.c_str(),varname.c_str(),hbuf,buf_size);
+}
+template<>
+void grid_write_data_array<double>(const std::string &filename, const std::string &varname, const double* hbuf, const int buf_size) {
+  grid_write_data_array_c2f_double(filename.c_str(),varname.c_str(),hbuf,buf_size);
 }
 /* ----------------------------------------------------------------- */
 } // namespace scorpio

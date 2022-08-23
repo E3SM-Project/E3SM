@@ -235,7 +235,8 @@ void AtmosphereInput::read_variables (const int time_index)
   for (auto const& name : m_fields_names) {
 
     // Read the data
-    scorpio::grid_read_data_array(m_filename,name,time_index,m_host_views_1d.at(name).data());
+    auto v1d = m_host_views_1d.at(name);
+    scorpio::grid_read_data_array(m_filename,name,time_index,v1d.data(),v1d.size());
 
     // If we have a field manager, make sure the data is correctly
     // synced to both host and device views of the field.
