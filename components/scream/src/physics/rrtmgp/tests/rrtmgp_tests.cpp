@@ -15,6 +15,13 @@
 
 using namespace scream;
 
+// Names of input files we will need.
+// NOTE: using old (full gpoint resolution) coefficient data for consistency with reference problem
+std::string coefficients_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-data-sw-g224-2018-12-04.nc";
+std::string coefficients_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-data-lw-g256-2018-12-04.nc";
+std::string cloud_optics_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-sw.nc";
+std::string cloud_optics_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-lw.nc";
+
 void expect_another_arg (int i, int argc) {
   EKAT_REQUIRE_MSG(i != argc-1, "Expected another cmd-line arg.");
 }
@@ -101,7 +108,7 @@ int run(int argc, char** argv) {
 
     // Initialize absorption coefficients
     logger->info("Initialize RRTMGP...\n");
-    scream::rrtmgp::rrtmgp_initialize(gas_concs,logger);
+    scream::rrtmgp::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw, cloud_optics_file_lw, logger);
 
     // Setup our dummy atmosphere based on the input data we read in
     logger->info("Setup dummy atmos...\n");

@@ -35,6 +35,8 @@ namespace scream {
          * Initialize data for RRTMGP driver
          */
         extern void rrtmgp_initialize(GasConcs &gas_concs,
+                                      const std::string coefficients_file_sw, const std::string coefficients_file_lw,
+                                      const std::string cloud_optics_file_sw, const std::string cloud_optics_file_lw,
                                       const std::shared_ptr<spdlog::logger>& logger);
         /*
          * Compute band-by-band surface albedos from broadband albedos.

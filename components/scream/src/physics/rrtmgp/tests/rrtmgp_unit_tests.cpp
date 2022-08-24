@@ -5,6 +5,12 @@
 #include "physics/share/physics_constants.hpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
 
+// Names of input files we will need.
+std::string coefficients_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-data-sw-g112-210809.nc";
+std::string coefficients_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-data-lw-g128-210809.nc";
+std::string cloud_optics_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-sw.nc";
+std::string cloud_optics_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-lw.nc";
+
 TEST_CASE("rrtmgp_test_heating") {
     // Initialize YAKL
     if (!yakl::isInitialized()) { yakl::init(); }
@@ -254,7 +260,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
     gas_names(8) = std::string("n2" );
     gas_concs.init(gas_names,ncol,nlay);
     logger->info("Init RRTMGP...\n");
-    scream::rrtmgp::rrtmgp_initialize(gas_concs,logger);
+    scream::rrtmgp::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw, cloud_optics_file_lw, logger);
 
     // Create simple test cases; We expect, given the input data, that band 10
     // will straddle the NIR and VIS, bands 1-9 will be purely NIR, and bands 11-14

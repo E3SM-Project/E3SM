@@ -191,6 +191,10 @@ tweaking their $case/namelist_scream.xml file.
 
     <!-- Radiation -->
     <rrtmgp inherit="atm_proc_base">
+      <rrtmgp_coefficients_file_sw>${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-sw-g112-210809.nc</rrtmgp_coefficients_file_sw>
+      <rrtmgp_coefficients_file_lw>${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-lw-g128-210809.nc</rrtmgp_coefficients_file_lw>
+      <rrtmgp_cloud_optics_file_sw>${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc</rrtmgp_cloud_optics_file_sw>
+      <rrtmgp_cloud_optics_file_lw>${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc</rrtmgp_cloud_optics_file_lw>
       <column_chunk_size>1280</column_chunk_size>
       <!-- Radiatively active gases; surface values set to F2010 settings taken from EAM  -->
       <!-- Note that h2o concentrations are just taken from qv, o3 is prescribed for now, -->
