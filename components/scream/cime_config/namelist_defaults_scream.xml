@@ -153,12 +153,12 @@ tweaking their $case/namelist_scream.xml file.
     <homme inherit="atm_proc_base">
       <Grid>Dynamics</Grid>
       <vertical_coordinate_filename>UNSET</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220524.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220701.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220524.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220525.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_20220713.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20220524.nc</vertical_coordinate_filename>
+      <vertical_coordinate_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</vertical_coordinate_filename>
+      <vertical_coordinate_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</vertical_coordinate_filename>
+      <vertical_coordinate_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</vertical_coordinate_filename>
+      <vertical_coordinate_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</vertical_coordinate_filename>
+      <vertical_coordinate_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5_20131001_20220823</vertical_coordinate_filename>
+      <vertical_coordinate_filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</vertical_coordinate_filename>
       <Moisture>moist</Moisture>
     </homme>
 
