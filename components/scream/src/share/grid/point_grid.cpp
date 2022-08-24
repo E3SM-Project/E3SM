@@ -63,7 +63,7 @@ PointGrid::get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag
   return FieldLayout({COL,vector_tag,VL},{get_num_local_dofs(),vector_dim,nvl});
 }
 
-std::shared_ptr<const PointGrid>
+std::shared_ptr<PointGrid>
 create_point_grid (const std::string& grid_name,
                    const int num_global_cols,
                    const int num_vertical_lev,

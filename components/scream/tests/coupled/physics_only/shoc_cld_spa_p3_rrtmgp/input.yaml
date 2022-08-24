@@ -17,26 +17,18 @@ atmosphere_processes:
     Type: Group
     schedule_type: Sequential
     number_of_subcycles: ${MAC_MIC_SUBCYCLES}
-    shoc:
-      Grid: Point Grid
-    CldFraction:
-      Grid: Point Grid
-    p3:
-      Grid: Point Grid
     spa:
-      Grid: Point Grid
       spa_remap_file: ${SCREAM_DATA_DIR}/init/map_ne4np4_to_ne2np4_mono.nc
       spa_data_file: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_20220428.nc
   rrtmgp:
-    Grid: Point Grid
     column_chunk_size: 123
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
     orbital_year: 1990
 
 grids_manager:
   Type: Mesh Free
-  Number of Global Columns:   218
-  Number of Vertical Levels:  72  # Will want to change to 128 when a valid unit test is available.
+  number_of_global_columns:   218
+  number_of_vertical_levels:  72  # Will want to change to 128 when a valid unit test is available.
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.

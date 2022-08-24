@@ -63,20 +63,13 @@ public:
 
   std::string name() const { return "DiagnosticTest"; }
 
-  // Get the required grid for the diagnostic
-  std::set<std::string> get_required_grids () const {
-    static std::set<std::string> s;
-    s.insert(m_params.get<std::string>("Grid"));
-    return s;
-  }
-
   void set_grids (const std::shared_ptr<const GridsManager> gm) {
     using namespace ekat::units;
     using namespace ShortFieldTagsNames;
     using FL = FieldLayout;
 
-    const auto& grid_name = m_params.get<std::string>("Grid");
-    const auto grid = gm->get_grid(grid_name);
+    const auto grid = gm->get_grid("Physics");
+    const auto& grid_name = grid->name();
     m_num_cols  = grid->get_num_local_dofs(); // Number of columns on this rank
     m_num_levs  = grid->get_num_vertical_levels();  // Number of levels per column
 
@@ -442,10 +435,10 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
 std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm& io_comm, const Int num_gcols, const Int num_levs)
 {
   ekat::ParameterList gm_params;
-  gm_params.set("Number of Global Columns",num_gcols);
-  gm_params.set("Number of Vertical Levels",num_levs);
+  gm_params.set("number_of_global_columns",num_gcols);
+  gm_params.set("number_of_vertical_levels",num_levs);
   auto gm = create_mesh_free_grids_manager(io_comm,gm_params);
-  gm->build_grids(std::set<std::string>{"Point Grid"});
+  gm->build_grids();
   return gm;
 }
 /*==================================================================================================*/

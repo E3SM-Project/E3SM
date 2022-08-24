@@ -14,7 +14,6 @@ Time Stepping:
 atmosphere_processes:
   atm_procs_list: (rrtmgp)
   rrtmgp:
-    Grid: Point Grid
     column_chunk_size: ${COL_CHUNK_SIZE}
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
     orbital_year: 1990
@@ -24,9 +23,8 @@ atmosphere_processes:
 
 grids_manager:
   Type: Mesh Free
-  reference_grid: Point Grid
-  Number of Global Columns: 218
-  Number of Vertical Levels: 72
+  number_of_global_columns: 218
+  number_of_vertical_levels: 72
 
 # Specifications for setting initial conditions
 initial_conditions:

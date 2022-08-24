@@ -6,8 +6,7 @@ Debug:
 atmosphere_processes:
   atm_procs_list: (rrtmgp)
   rrtmgp:
-    Grid: Point Grid
-    Max column_chunk_size: 123
+    column_chunk_size: 123
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
     orbital_year: 1990
     # Set orbital parameters to constants for consistency with RRTMGP test problem
@@ -19,9 +18,8 @@ atmosphere_processes:
 
 grids_manager:
   Type: Mesh Free
-  reference_grid: Point Grid
-  Number of Global Columns: 128
-  Number of Vertical Levels: 42
+  number_of_global_columns: 128
+  number_of_vertical_levels: 42
 
 # Specifications for setting initial conditions
 initial_conditions:

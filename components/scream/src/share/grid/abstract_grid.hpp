@@ -69,6 +69,8 @@ public:
   GridType type () const { return m_type; }
   const std::string& name () const { return m_name; }
   const ekat::Comm& get_comm () const { return m_comm; }
+  const std::vector<std::string>& aliases () const { return m_aliases; }
+  void add_alias (const std::string& alias);
 
   // Native layout of a dof. This is the natural way to index a dof in the grid.
   // E.g., for a scalar 2d field on a SE grid, this will be (nelem,np,np),
@@ -141,6 +143,8 @@ private:
   // The grid name and type
   GridType     m_type;
   std::string  m_name;
+
+  std::vector<std::string> m_aliases;
 
   // Counters
   int m_num_local_dofs;

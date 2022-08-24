@@ -13,9 +13,6 @@ namespace scream {
 
 TEST_CASE ("ad_tests","[!throws]")
 {
-  constexpr int num_cols = 4;
-  constexpr int num_vl   = 2;
-
   // Load ad parameter list
   std::string fname = "ad_tests.yaml";
   ekat::ParameterList ad_params("Atmosphere Driver");
@@ -25,7 +22,7 @@ TEST_CASE ("ad_tests","[!throws]")
   ekat::Comm atm_comm (MPI_COMM_WORLD);
 
   // Setup the atm factories and grid manager
-  dummy_atm_init(num_cols, num_vl, atm_comm);
+  dummy_atm_init();
 
   // Create the driver
   control::AtmosphereDriver ad;

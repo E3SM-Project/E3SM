@@ -11,12 +11,9 @@ Time Stepping:
 
 atmosphere_processes:
   atm_procs_list: (zm)
-  zm:
-    Grid: Point Grid
 
 grids_manager:
   Type: Mesh Free
-  reference_grid: Point Grid
-  Number of Global Columns:   32
-  Number of Vertical Levels: 128
+  number_of_global_columns:   32
+  number_of_vertical_levels: 128
 ...

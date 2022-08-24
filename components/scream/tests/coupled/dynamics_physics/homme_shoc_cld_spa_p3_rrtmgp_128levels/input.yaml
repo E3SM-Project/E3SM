@@ -33,24 +33,16 @@ atmosphere_processes:
       Type: Group
       schedule_type: Sequential
       number_of_subcycles: ${MAC_MIC_SUBCYCLES}
-      shoc:
-        Grid: Physics GLL
-      CldFraction:
-        Grid: Physics GLL
       spa:
-        Grid: Physics GLL
         spa_remap_file: ${SCREAM_DATA_DIR}/init/map_ne4np4_to_ne2np4_mono.nc
         spa_data_file: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_20220428.nc
-      p3:
-        Grid: Physics GLL
     rrtmgp:
-      Grid: Physics GLL
       column_chunk_size: 123
       active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
 
 grids_manager:
-  Type: Dynamics Driven
-  reference_grid: Physics GLL
+  Type: Homme
+  physics_grid_type: GLL
   dynamics_namelist_file_name: namelist.nl
 
 # The parameters for I/O control

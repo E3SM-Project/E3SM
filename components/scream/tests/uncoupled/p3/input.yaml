@@ -12,14 +12,12 @@ Time Stepping:
 atmosphere_processes:
   atm_procs_list: (p3)
   p3:
-    Grid: Point Grid
     do_prescribed_ccn: false
 
 grids_manager:
   Type: Mesh Free
-  reference_grid: Point Grid
-  Number of Global Columns:   218
-  Number of Vertical Levels:  72  # Will want to change to 128 when a valid unit test is available.
+  number_of_global_columns:   218
+  number_of_vertical_levels:  72  # Will want to change to 128 when a valid unit test is available.
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.

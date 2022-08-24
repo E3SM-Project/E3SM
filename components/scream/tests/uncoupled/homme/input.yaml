@@ -20,8 +20,8 @@ atmosphere_processes:
     Moisture: moist
 
 grids_manager:
-  Type: Dynamics Driven
-  reference_grid: Physics GLL
+  Type: Homme
+  physics_grid_type: GLL
   dynamics_namelist_file_name: namelist.nl
 
 # The parameters for I/O control

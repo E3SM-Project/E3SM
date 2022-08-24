@@ -55,7 +55,7 @@ public:
 
 // Create a point grid, with linear range of gids, evenly partitioned
 // among the ranks in the given communicator.
-std::shared_ptr<const PointGrid>
+std::shared_ptr<PointGrid>
 create_point_grid (const std::string& name,
                    const int num_global_cols,
                    const int num_vertical_lev,

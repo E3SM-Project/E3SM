@@ -145,31 +145,16 @@ tweaking their $case/namelist_scream.xml file.
       <schedule_type>Sequential</schedule_type>
     </atm_proc_group>
 
-    <!-- Basic options for each "physics" atm process -->
-    <physics_proc_base inherit="atm_proc_base">
-      <Grid>Physics GLL</Grid>
-      <Grid hgrid=".*pg2">Physics PG2</Grid>
-    </physics_proc_base>
-
-    <!-- SC Import -->
-    <sc_import>
-      <Grid>Physics GLL</Grid>
-      <Grid hgrid=".*pg2">Physics PG2</Grid>
-      <enable_postcondition_checks type="logical">true</enable_postcondition_checks>
-    </sc_import>
-
-    <!-- SC Export -->
-    <sc_export>
-      <Grid>Physics GLL</Grid>
-      <Grid hgrid=".*pg2">Physics PG2</Grid>
-    </sc_export>
+    <!-- Surface coupling (import and export) -->
+    <sc_import inherit="atm_proc_base"/>
+    <sc_export inherit="atm_proc_base"/>
 
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
       <Grid>Dynamics</Grid>
       <vertical_coordinate_filename>UNSET</vertical_coordinate_filename>
       <vertical_coordinate_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220524.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220524.nc</vertical_coordinate_filename>
+      <vertical_coordinate_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220701.nc</vertical_coordinate_filename>
       <vertical_coordinate_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220524.nc</vertical_coordinate_filename>
       <vertical_coordinate_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220525.nc</vertical_coordinate_filename>
       <vertical_coordinate_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_20220713.nc</vertical_coordinate_filename>
@@ -178,7 +163,7 @@ tweaking their $case/namelist_scream.xml file.
     </homme>
 
     <!-- P3 microphysics -->
-    <p3 inherit="physics_proc_base">
+    <p3 inherit="atm_proc_base">
       <do_prescribed_ccn>true</do_prescribed_ccn>
       <do_prescribed_ccn COMPSET=".*SCREAM.*noAero">false</do_prescribed_ccn>
       <do_predict_nc>true</do_predict_nc>
@@ -186,13 +171,13 @@ tweaking their $case/namelist_scream.xml file.
     </p3>
 
     <!-- SHOC macrophysics -->
-    <shoc inherit="physics_proc_base"/>
+    <shoc inherit="atm_proc_base"/>
 
     <!-- CLD fraction -->
-    <cldFraction inherit="physics_proc_base"/>
+    <cldFraction inherit="atm_proc_base"/>
 
     <!-- Simple Prescribed Aerosols (SPA) -->
-    <spa inherit="physics_proc_base">
+    <spa inherit="atm_proc_base">
       <spa_remap_file>UNSET</spa_remap_file>
       <spa_remap_file hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/map_ne30_to_ne4_mono_20220502.nc</spa_remap_file>
       <spa_remap_file hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne4pg2_mono.20220714.nc</spa_remap_file>
@@ -204,7 +189,7 @@ tweaking their $case/namelist_scream.xml file.
     </spa>
 
     <!-- Radiation -->
-    <rrtmgp inherit="physics_proc_base">
+    <rrtmgp inherit="atm_proc_base">
       <active_gases>h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
       <column_chunk_size>1280</column_chunk_size>
       <orbital_year>-9999</orbital_year>
@@ -242,9 +227,10 @@ tweaking their $case/namelist_scream.xml file.
 
   <!-- Grids manager specs -->
   <grids_manager>
-    <Type>Dynamics Driven</Type>
-    <reference_grid>Physics GLL</reference_grid>
-    <reference_grid hgrid=".*pg2">Physics PG2</reference_grid>
+    <Type>Homme</Type>
+    <physics_grid_type>GLL</physics_grid_type>
+    <physics_grid_type hgrid=".*pg2">PG2</physics_grid_type>
+    <physics_grid_rebalance>None</physics_grid_rebalance>
     <dynamics_namelist_file_name>./data/namelist.nl</dynamics_namelist_file_name>
   </grids_manager>
 
@@ -332,7 +318,7 @@ tweaking their $case/namelist_scream.xml file.
     ${DIN_LOC_ROOT}/atm/scream/init/map_ne30_to_ne4_mono_20220502.nc,
     <!-- ${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne120np4_mono_20220502.nc, -->
     <!-- ${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne512np4_mono_20220506.nc, -->
-    ${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220524.nc,
+    ${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220701.nc,
     ${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220524.nc,
     <!-- ${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220524.nc, -->
     <!-- ${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220525.nc, -->

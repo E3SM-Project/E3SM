@@ -27,6 +27,7 @@ atmosphere_processes:
     Grid Name: Point Grid
 
 grids_manager:
-  Type: User Provided
-  reference_grid: Point Grid
+  Type: Mesh Free
+  number_of_global_columns: 24
+  number_of_vertical_levels: 3
 ...

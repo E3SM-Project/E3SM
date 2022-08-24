@@ -12,15 +12,13 @@ Time Stepping:
 atmosphere_processes:
   atm_procs_list: (spa)
   spa:
-    Grid: Point Grid
     spa_remap_file: ${SCREAM_DATA_DIR}/init/map_ne4np4_to_ne2np4_mono.nc
     spa_data_file: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_20220428.nc
 
 grids_manager:
   Type: Mesh Free
-  reference_grid: Point Grid
-  Number of Global Columns:   218
-  Number of Vertical Levels:  72
+  number_of_global_columns:   218
+  number_of_vertical_levels:  72
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.

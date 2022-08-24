@@ -17,15 +17,9 @@ atmosphere_processes:
     Type: Group
     schedule_type: Sequential
     number_of_subcycles: ${MAC_MIC_SUBCYCLES}
-    shoc:
-      Grid: Point Grid
-    CldFraction:
-      Grid: Point Grid
     p3:
-      Grid: Point Grid
       do_prescribed_ccn: false
   rrtmgp:
-    Grid: Point Grid
     column_chunk_size: 123
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
     orbital_year: 1990
@@ -33,8 +27,8 @@ atmosphere_processes:
 
 grids_manager:
   Type: Mesh Free
-  Number of Global Columns:   218
-  Number of Vertical Levels:  72  # Will want to change to 128 when a valid unit test is available.
+  number_of_global_columns:   218
+  number_of_vertical_levels:  72  # Will want to change to 128 when a valid unit test is available.
 
 initial_conditions:
   # The name of the file containing the initial conditions for this test.

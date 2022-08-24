@@ -151,12 +151,12 @@ std::shared_ptr<GridsManager>
 get_test_gm(const ekat::Comm& io_comm, const int num_my_elems, const int np, const int num_levs)
 {
   ekat::ParameterList gm_params;
-  gm_params.set("Number of Local Elements",num_my_elems);
-  gm_params.set("Number of Gauss Points",np);
-  gm_params.set("Number of Vertical Levels",num_levs);
+  gm_params.set("number_of_local_elements",num_my_elems);
+  gm_params.set("number_of_gauss_points",np);
+  gm_params.set("number_of_vertical_levels",num_levs);
 
   auto gm = create_mesh_free_grids_manager(io_comm,gm_params);
-  gm->build_grids(std::set<std::string>{"SE Grid"});
+  gm->build_grids();
 
   return gm;
 }

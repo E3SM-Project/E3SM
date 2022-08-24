@@ -4,7 +4,6 @@
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "dynamics/register_dynamics.hpp"
 #include "dynamics/homme/atmosphere_dynamics.hpp"
-#include "dynamics/homme/dynamics_driven_grids_manager.hpp"
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
 
 #include "ekat/ekat_assert.hpp"

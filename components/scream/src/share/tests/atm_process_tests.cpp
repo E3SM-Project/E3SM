@@ -58,14 +58,13 @@ create_gm (const ekat::Comm& comm) {
   const int num_global_cols = num_local_cols*comm.size();
 
   ekat::ParameterList gm_params;
-  gm_params.set<std::string>("reference_grid", "Point Grid");
-  gm_params.set<int>("Number of Global Columns", num_global_cols);
-  gm_params.set<int>("Number of Local Elements", num_local_elems);
-  gm_params.set<int>("Number of Vertical Levels", nlevs);
-  gm_params.set<int>("Number of Gauss Points", np);
+  gm_params.set<int>("number_of_global_columns", num_global_cols);
+  gm_params.set<int>("number_of_local_elements", num_local_elems);
+  gm_params.set<int>("number_of_vertical_levels", nlevs);
+  gm_params.set<int>("number_of_gauss_points", np);
 
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
-  gm->build_all_grids();
+  gm->build_grids();
 
   return gm;
 }
@@ -80,13 +79,6 @@ public:
   {
     m_name = params.name();
     m_grid_name = params.get<std::string> ("Grid Name");
-  }
-
-  // The type of grids on which the diagnostic is defined
-  std::set<std::string> get_required_grids () const {
-    static std::set<std::string> s;
-    s.insert(m_grid_name);
-    return s;
   }
 
   // Return some sort of name, linked to PType
@@ -222,13 +214,6 @@ public:
   {
     m_name = params.name();
     m_grid_name = params.get<std::string> ("Grid Name");
-  }
-
-  // The type of grids on which the process is defined
-  std::set<std::string> get_required_grids () const {
-    static std::set<std::string> s;
-    s.insert(m_grid_name);
-    return s;
   }
 
   // Return some sort of name, linked to PType
