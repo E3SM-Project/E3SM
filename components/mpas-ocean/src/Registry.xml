@@ -330,7 +330,7 @@
 					description="Redi diagonal terms (2 and 3) are turned off from layer 1 through config_Redi_min_layers_diag_terms-1, and on from config_Redi_min_layers_diag_terms to nVertLevels. The Redi diagonal terms are not guaranteed to produce bounded tracer fields, and in practice produce growing temperatures in a few columns with fewer than 5 vertical cells. Redi is meant for isopycnal mixing in the deep ocean, so not applying Redi diagonal terms in very shallow regions is an acceptable solution."
 					possible_values="any integer between 0 (all layers on) and nVertLevels (all layers off)"
 		/>
-		<nml_option name="config_Redi_horizontal_taper" type="character" default_value="ramp" units="unitless"
+		<nml_option name="config_Redi_horizontal_taper" type="character" default_value="ramp"
 					description="Control how the Redi $\kappa$ value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
 					possible_values="'none', 'ramp', 'RossbyRadius'"
 		/>
@@ -421,7 +421,7 @@
 					description="factor multiplying the Rhines length in the scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)"
 					possible_values="small positive values less than equal to one"
 		/>
-		<nml_option name="config_GM_horizontal_taper" type="character" default_value="ramp" units="unitless"
+		<nml_option name="config_GM_horizontal_taper" type="character" default_value="ramp"
 					description="Control how the GM Bolus value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
 					possible_values="'none', 'ramp', 'RossbyRadius'"
 		/>
@@ -433,23 +433,23 @@
 					description="Maximum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_horizontal_taper is set to ramp."
 					possible_values="Any positive real value."
 		/>
-		<nml_option name="config_GMRedi_Rossby_ramp_min" type="real" default_value="0.5" units="unitless"
+		<nml_option name="config_GMRedi_Rossby_ramp_min" type="real" default_value="0.5"
 					description="Minimum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM and Redi $\kappa$ ramp functions. Used when config_GM_horizontal_taper and/or config_Redi_horizontal_taper are set to RossbyRadius."
 					possible_values="Any positive real value."
 		/>
-		<nml_option name="config_GMRedi_Rossby_ramp_max" type="real" default_value="3.0" units="unitless"
+		<nml_option name="config_GMRedi_Rossby_ramp_max" type="real" default_value="3.0"
 					description="Maximum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM and Redi $\kappa$ ramp functions. Used when config_GM_horizontal_taper and/or config_Redi_horizontal_taper are set to RossbyRadius."
 					possible_values="Any positive real value."
 		/>
 	</nml_record>
 	<nml_record name="eddy_parameterization" mode="forward">
-	    <nml_option name="config_eddyMLD_dens_threshold" type="real" default_value="0.03" units="kgm^-3"
-       			    description="potential density change relative to surface for mixed layer depth threshold method.  This calculation is used for the Redi tapering, GM N2_dependent bolus kappa, and the submesoscale eddy parameterization"
-              		possible_values="suggested range 0.01 less than or equal to thresh less than or equal to 0.5"
-        />
-        <nml_option name="config_eddyMLD_reference_depth" type="real" default_value="10" units="m"
-                    description="reference depth for threshold computation"
-                    possible_values="any positive real, near 10" 
+		<nml_option name="config_eddyMLD_dens_threshold" type="real" default_value="0.03" units="kg m^-3"
+					description="potential density change relative to surface for mixed layer depth threshold method.  This calculation is used for the Redi tapering, GM N2_dependent bolus kappa, and the submesoscale eddy parameterization"
+					possible_values="suggested range 0.01 less than or equal to thresh less than or equal to 0.5"
+		/>
+		<nml_option name="config_eddyMLD_reference_depth" type="real" default_value="10" units="m"
+					description="reference depth for threshold computation"
+					possible_values="any positive real, near 10" 
 		/>
 		<nml_option name="config_eddyMLD_reference_pressure" type="real" default_value="1.0e5" units="Pa"
 					description="reference pressure for original mixed layer depth calculation"
@@ -459,7 +459,7 @@
 					description="switches from old dThreshMLD calculation to new (fixed one)"
 					possible_values=".true. or .false."
 		/>
-    </nml_record>
+	</nml_record>
 	<nml_record name="Rayleigh_damping" mode="forward">
 		<nml_option name="config_Rayleigh_friction" type="logical" default_value=".false."
 					description="If true, Rayleigh friction is included in the momentum equation at every depth level."
@@ -2884,15 +2884,15 @@
 			description="Bolus velocity in fox-kemper mle parameterization, meridional-direction"
 			packages="gm;submeso"
 		/>
-		<var name="eddyVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="eddyVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			description="Bolus velocity in Gent-McWilliams eddy or submesoscale parameterization, x-direction"
 			packages="gm;submeso"
 		/>
-		<var name="eddyVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="eddyVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			description="Bolus velocity in Gent-McWilliams or submesoscale eddy parameterization, y-direction"
 			packages="gm;submeso"
 		/>
-		<var name="eddyVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+		<var name="eddyVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			description="eddy Bolus velocity in Gent-McWilliams or submesoscale eddy parameterization, z-direction"
 			packages="gm;submeso"
 		/>
@@ -3028,11 +3028,11 @@
 			 description="Redi Kappa value.  On output, it has already been multiplied by the horizontal taper array RediHorizontalTaper (as opposed to gmBolusKappa, which has not been multiplied by the horizontal taper)."
 			 packages="gm"
 		/>
-		<var name="RediHorizontalTaper" type="real" dimensions="nEdges Time" units="unitless"
+		<var name="RediHorizontalTaper" type="real" dimensions="nEdges Time"
 			 description="Horizontal tapering for Redi. Varies between 0 and 1."
 			 packages="gm"
 		/>
-		<var name="gmHorizontalTaper" type="real" dimensions="nEdges Time" units="unitless"
+		<var name="gmHorizontalTaper" type="real" dimensions="nEdges Time"
 			 description="Horizontal tapering for GM. Varies between 0 and 1."
 			 packages="gm"
 		/>
