@@ -64,6 +64,10 @@ def find_node (root,name,recurse=True):
     root,sub
     >>> print(a.text)
     2
+    >>> print(len(parents))
+    2
+    >>> print(f"{','.join(p.tag for p in parents)}")
+    root,sub
     >>> a,parents = find_node(tree,'a',recurse=False)
     >>> print(a)
     None
