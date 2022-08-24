@@ -888,11 +888,27 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         for t,s in tests_success.items():
             if not s:
-                print(f"Build type {t} failed. Here's a list of failed tests:")
                 test_dir = self.get_test_dir(self._work_dir,t)
-                test_results_dir = test_dir/"Testing"/"Temporary"
-                for result in test_results_dir.glob("LastTestsFailed*"):
-                    print(result.read_text())
+                test_results_dir = Path(test_dir,"Testing","Temporary")
+                files = test_results_dir.iterdir()
+                print (f"files: {','.join(str(file) for file in files)}")
+                last_failed = list(test_results_dir.glob("LastTests*"))
+                last_build  = list(test_results_dir.glob("LastBuild*"))
+                last_config = list(test_results_dir.glob("LastConfigure*"))
+                if len(last_failed)>0:
+                    print(f"Build type {t} failed at testing time. Here's a list of failed tests:")
+                    for file in last_failed:
+                        print (file.read_text())
+                elif len(last_build)>0:
+                    print(f"Build type {t} failed at build time. Here's the build log:")
+                    for file in last_build:
+                        print (file.read_text())
+                elif len(last_config)>0:
+                    print(f"Build type {t} failed at config time. Here's the config log:\n\n")
+                    for file in last_config:
+                        print (file.read_text())
+                else:
+                    print(f"Build type {t} failed before configure step.")
 
         return success
 
