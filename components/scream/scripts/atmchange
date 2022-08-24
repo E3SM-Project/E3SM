@@ -57,7 +57,7 @@ def atm_config_chg_impl(xml_root,changes):
 
         tokens = change.split('=')
         expect (len(tokens)==2, "Invalid change format. Expected A[::B[...]=value, got' {}'".format(change))
-        node = get_xml_node(xml_root,tokens[0])
+        node, __ = get_xml_node(xml_root,tokens[0])
         new_value = tokens[1]
 
         if node.text != new_value:
