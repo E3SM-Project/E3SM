@@ -147,7 +147,7 @@ subroutine phys_register
     use sslt_rebin,         only: sslt_rebin_register
     use aoa_tracers,        only: aoa_tracers_register
     use cldera_sai_tracers, only: cldera_sai_tracers_register
-    use cldera_clock_tracers, only: cldera_clock_tracers_register
+    use cldera_passive_tracers, only: cldera_passive_tracers_register
     use aircraft_emit,      only: aircraft_emit_register
     use cam_diagnostics,    only: diag_register
     use cloud_diagnostics,  only: cloud_diagnostics_register
@@ -318,8 +318,8 @@ subroutine phys_register
     ! Register age of air tracers
     call aoa_tracers_register()
 
-    ! Register CLDERA clock tracers
-    call cldera_clock_tracers_register()
+    ! Register CLDERA passive tracers
+    call cldera_passive_tracers_register()
     
     ! Register CLDERA stratospheric aerosol injection tracers
     call cldera_sai_tracers_register()
@@ -717,7 +717,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use tracers,            only: tracers_init
     use aoa_tracers,        only: aoa_tracers_init
     use cldera_sai_tracers, only: cldera_sai_tracers_init
-    use cldera_clock_tracers, only: cldera_clock_tracers_init
+    use cldera_passive_tracers, only: cldera_passive_tracers_init
     use rayleigh_friction,  only: rayleigh_friction_init
     use pbl_utils,          only: pbl_utils_init
     use vertical_diffusion, only: vertical_diffusion_init
@@ -788,8 +788,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! age of air tracers
     call aoa_tracers_init()
 
-    ! CLDERA clock tracers
-    call cldera_clock_tracers_init()
+    ! CLDERA passive tracers
+    call cldera_passive_tracers_init()
     
     ! CLDERA stratospheric aerosol injection tracers
     call cldera_sai_tracers_init()
@@ -1140,7 +1140,7 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
     use ppgrid,          only: pcols
     use constituents,    only: pcnst
     use cldera_sai_tracers,   only: cldera_sai_tracers_timestep_tend
-    use cldera_clock_tracers, only: cldera_clock_tracers_timestep_tend
+    use cldera_passive_tracers, only: cldera_passive_tracers_timestep_tend
 
     !
     ! Input arguments
@@ -1208,10 +1208,10 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
        ! Dump dynamics variables to history buffers
        call diag_phys_writeout(phys_state(c))
 
-       ! --JH--: Allow advecting of CLDERA clock tendencies if enabled
-       call cldera_clock_tracers_timestep_tend(phys_state(c), ptend(c), ztodt)
+       ! --JH--: Allow advecting of CLDERA passive tendencies if enabled
+       call cldera_passive_tracers_timestep_tend(phys_state(c), ptend(c), ztodt)
        call physics_update(phys_state(c), ptend(c), ztodt, phys_tend(c))
-       call check_tracers_chng(phys_state(c), tracerint, "cldera_clock_tracers_timestep_tend", &
+       call check_tracers_chng(phys_state(c), tracerint, "cldera_passive_tracers_timestep_tend", &
                                nstep, ztodt, dummy_cflx)
         
        ! --JH--: Allow advancing of CLDERA SAI tendencies if enabled
@@ -1482,7 +1482,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use ionosphere,         only: ionos_intr ! WACCM-X ionosphere
     use tracers,            only: tracers_timestep_tend
     use aoa_tracers,        only: aoa_tracers_timestep_tend
-    use cldera_clock_tracers, only: cldera_clock_tracers_timestep_tend
+    use cldera_passive_tracers, only: cldera_passive_tracers_timestep_tend
     use cldera_sai_tracers, only: cldera_sai_tracers_timestep_tend
     use physconst,          only: rhoh2o, latvap,latice, rga
     use aero_model,         only: aero_model_drydep
@@ -1686,9 +1686,9 @@ if (l_tracer_aero) then
     call check_tracers_chng(state, tracerint, "aoa_tracers_timestep_tend", nstep, ztodt,   &
          cam_in%cflx)
 
-    call cldera_clock_tracers_timestep_tend(state, ptend, ztodt)
+    call cldera_passive_tracers_timestep_tend(state, ptend, ztodt)
     call physics_update(state, ptend, ztodt, tend)
-    call check_tracers_chng(state, tracerint, "cldera_clock_tracers_timestep_tend", nstep, ztodt, &
+    call check_tracers_chng(state, tracerint, "cldera_passive_tracers_timestep_tend", nstep, ztodt, &
                             cam_in%cflx)
     
     call cldera_sai_tracers_timestep_tend(state, ptend, ztodt, ncol)      
@@ -2824,7 +2824,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use radiation,           only: radiation_do
   use tracers,             only: tracers_timestep_init
   use aoa_tracers,         only: aoa_tracers_timestep_init
-  use cldera_clock_tracers,only: cldera_clock_tracers_timestep_init
+  use cldera_passive_tracers,only: cldera_passive_tracers_timestep_init
   use cldera_sai_tracers,  only: cldera_sai_tracers_timestep_init
   use vertical_diffusion,  only: vertical_diffusion_ts_init
   use radheat,             only: radheat_timestep_init
@@ -2916,8 +2916,8 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   ! age of air tracers
   call aoa_tracers_timestep_init(phys_state)
 
-  ! CLDERA clock tracers
-  call cldera_clock_tracers_timestep_init(phys_state)
+  ! CLDERA passive tracers
+  call cldera_passive_tracers_timestep_init(phys_state)
   
   ! CLDERA stratopsheric aerosol injection tracers
   call cldera_sai_tracers_timestep_init(phys_state)

@@ -1,5 +1,5 @@
 !===============================================================================
-! CLDERA clock tracers
+! CLDERA passive tracers
 ! provides dissipation rates and sources for diagnostic constituents
 !
 ! AOA tracer implemented as defined in:
@@ -21,7 +21,7 @@
 !
 !===============================================================================
 
-module cldera_clock_tracers
+module cldera_passive_tracers
 
   use shr_kind_mod, only: r8 => shr_kind_r8
   use spmd_utils,   only: masterproc
@@ -35,13 +35,13 @@ module cldera_clock_tracers
   save
 
   ! Public interfaces
-  public :: cldera_clock_tracers_register         ! register constituents
-  public :: cldera_clock_tracers_implements_cnst  ! true if constituent is implemented by this package
-  public :: cldera_clock_tracers_init_cnst        ! initialize constituent field
-  public :: cldera_clock_tracers_init             ! initialize history fields, datasets
-  public :: cldera_clock_tracers_timestep_init    ! place to perform per timestep initialization
-  public :: cldera_clock_tracers_timestep_tend    ! calculate tendencies
-  public :: cldera_clock_tracers_readnl           ! read namelist options
+  public :: cldera_passive_tracers_register         ! register constituents
+  public :: cldera_passive_tracers_implements_cnst  ! true if constituent is implemented by this package
+  public :: cldera_passive_tracers_init_cnst        ! initialize constituent field
+  public :: cldera_passive_tracers_init             ! initialize history fields, datasets
+  public :: cldera_passive_tracers_timestep_init    ! place to perform per timestep initialization
+  public :: cldera_passive_tracers_timestep_tend    ! calculate tendencies
+  public :: cldera_passive_tracers_readnl           ! read namelist options
 
   ! Private module data
 
@@ -56,15 +56,15 @@ module cldera_clock_tracers
   integer :: ixst80 ! global index for ST80 tracer
 
   ! Data from namelist variables
-  logical :: cldera_clock_tracers_flag  = .false.    ! true => turn on test tracer code, namelist variable
-  logical :: cldera_clock_read_from_ic_file = .true. ! true => tracers initialized from IC file
+  logical :: cldera_passive_tracers_flag  = .false.    ! true => turn on test tracer code, namelist variable
+  logical :: cldera_passive_read_from_ic_file = .true. ! true => tracers initialized from IC file
 
 !===============================================================================
 contains
 !===============================================================================
 
 !================================================================================
-  subroutine cldera_clock_tracers_readnl(nlfile)
+  subroutine cldera_passive_tracers_readnl(nlfile)
 
     use namelist_utils, only: find_group_name
     use units,          only: getunit, freeunit
@@ -77,19 +77,19 @@ contains
 
     ! Local variables
     integer :: unitn, ierr
-    character(len=*), parameter :: subname = 'cldera_clock_tracers_readnl'
+    character(len=*), parameter :: subname = 'cldera_passive_tracers_readnl'
 
 
-    namelist /cldera_clock_tracers_nl/ cldera_clock_tracers_flag, cldera_clock_read_from_ic_file
+    namelist /cldera_passive_tracers_nl/ cldera_passive_tracers_flag, cldera_passive_read_from_ic_file
 
     !-----------------------------------------------------------------------------
 
     if (masterproc) then
        unitn = getunit()
        open( unitn, file=trim(nlfile), status='old' )
-       call find_group_name(unitn, 'cldera_clock_tracers_nl', status=ierr)
+       call find_group_name(unitn, 'cldera_passive_tracers_nl', status=ierr)
        if (ierr == 0) then
-          read(unitn, cldera_clock_tracers_nl, iostat=ierr)
+          read(unitn, cldera_passive_tracers_nl, iostat=ierr)
           if (ierr /= 0) then
              call endrun(subname // ':: ERROR reading namelist')
           end if
@@ -99,15 +99,15 @@ contains
     end if
 
 #ifdef SPMD
-    call mpibcast(cldera_clock_tracers_flag, 1, mpilog,  0, mpicom)
-    call mpibcast(cldera_clock_read_from_ic_file, 1, mpilog,  0, mpicom)
+    call mpibcast(cldera_passive_tracers_flag, 1, mpilog,  0, mpicom)
+    call mpibcast(cldera_passive_read_from_ic_file, 1, mpilog,  0, mpicom)
 #endif
 
-  endsubroutine cldera_clock_tracers_readnl
+  endsubroutine cldera_passive_tracers_readnl
 
 !================================================================================
 
-  subroutine cldera_clock_tracers_register
+  subroutine cldera_passive_tracers_register
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: register advected constituents
@@ -116,21 +116,21 @@ contains
     use physconst,  only: cpair, mwdry
     !-----------------------------------------------------------------------
 
-    if (.not. cldera_clock_tracers_flag) return
+    if (.not. cldera_passive_tracers_flag) return
 
-    call cnst_add(c_names(1), mwdry, cpair, 0._r8, ixaoa,  readiv=cldera_clock_read_from_ic_file, &
+    call cnst_add(c_names(1), mwdry, cpair, 0._r8, ixaoa,  readiv=cldera_passive_read_from_ic_file, &
                   longname='Age-of-air tracer')
     ifirst = ixaoa
-    call cnst_add(c_names(2), mwdry, cpair, 0._r8, ixe90,  readiv=cldera_clock_read_from_ic_file, &
+    call cnst_add(c_names(2), mwdry, cpair, 0._r8, ixe90,  readiv=cldera_passive_read_from_ic_file, &
                   longname='E90 tracer')
-    call cnst_add(c_names(3), mwdry, cpair, 0._r8, ixst80, readiv=cldera_clock_read_from_ic_file, &
+    call cnst_add(c_names(3), mwdry, cpair, 0._r8, ixst80, readiv=cldera_passive_read_from_ic_file, &
                   longname='ST80 tracer')
 
-  end subroutine cldera_clock_tracers_register
+  end subroutine cldera_passive_tracers_register
 
 !===============================================================================
 
-  function cldera_clock_tracers_implements_cnst(name)
+  function cldera_passive_tracers_implements_cnst(name)
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: return true if specified constituent is implemented by this package
@@ -138,28 +138,28 @@ contains
     !-----------------------------------------------------------------------
 
     character(len=*), intent(in) :: name   ! constituent name
-    logical :: cldera_clock_tracers_implements_cnst        ! return value
+    logical :: cldera_passive_tracers_implements_cnst        ! return value
 
     !---------------------------Local workspace-----------------------------
     integer :: m
     !-----------------------------------------------------------------------
 
-    cldera_clock_tracers_implements_cnst = .false.
+    cldera_passive_tracers_implements_cnst = .false.
 
-    if (.not. cldera_clock_tracers_flag) return
+    if (.not. cldera_passive_tracers_flag) return
 
     do m = 1, ncnst
        if (name == c_names(m)) then
-          cldera_clock_tracers_implements_cnst = .true.
+          cldera_passive_tracers_implements_cnst = .true.
           return
        end if
     end do
 
-  end function cldera_clock_tracers_implements_cnst
+  end function cldera_passive_tracers_implements_cnst
 
 !===============================================================================
 
-  subroutine cldera_clock_tracers_init_cnst(name, q, gcid)
+  subroutine cldera_passive_tracers_init_cnst(name, q, gcid)
 
     !----------------------------------------------------------------------- 
     !
@@ -175,7 +175,7 @@ contains
     integer :: m
     !-----------------------------------------------------------------------
 
-    if (.not. cldera_clock_tracers_flag) return
+    if (.not. cldera_passive_tracers_flag) return
 
     do m = 1, ncnst
        if (name ==  c_names(m))  then
@@ -184,11 +184,11 @@ contains
        endif
     end do
 
-  end subroutine cldera_clock_tracers_init_cnst
+  end subroutine cldera_passive_tracers_init_cnst
 
 !===============================================================================
 
-  subroutine cldera_clock_tracers_init
+  subroutine cldera_passive_tracers_init
 
     !----------------------------------------------------------------------- 
     ! 
@@ -201,7 +201,7 @@ contains
     integer :: m, mm
     !-----------------------------------------------------------------------
 
-    if (.not. cldera_clock_tracers_flag) return
+    if (.not. cldera_passive_tracers_flag) return
 
     ! Set names of tendencies and declare them as history variables
 
@@ -211,11 +211,11 @@ contains
        call add_default (cnst_name(mm), 1, ' ')
     end do
 
-  end subroutine cldera_clock_tracers_init
+  end subroutine cldera_passive_tracers_init
 
 !===============================================================================
 
-  subroutine cldera_clock_tracers_timestep_init( phys_state )
+  subroutine cldera_passive_tracers_timestep_init( phys_state )
     !-----------------------------------------------------------------------
     ! Provides a place to reinitialize diagnostic constituents
     ! Currently does nothing
@@ -232,7 +232,7 @@ contains
     integer yr, mon, day, tod
     !--------------------------------------------------------------------------
 
-    if (.not. cldera_clock_tracers_flag) return
+    if (.not. cldera_passive_tracers_flag) return
 
     call get_curr_date (yr,mon,day,tod)
 
@@ -253,11 +253,11 @@ contains
 
     end if
 
-  end subroutine cldera_clock_tracers_timestep_init
+  end subroutine cldera_passive_tracers_timestep_init
 
 !===============================================================================
 
-  subroutine cldera_clock_tracers_timestep_tend(state, ptend, dt)
+  subroutine cldera_passive_tracers_timestep_tend(state, ptend, dt)
 
     use physics_types, only: physics_state, physics_ptend, physics_ptend_init
     use phys_grid,     only: get_rlat_all_p , get_lat_all_p
@@ -293,9 +293,9 @@ contains
 
     !------------------------------------------------------------------
 
-    if (.not. cldera_clock_tracers_flag) then
+    if (.not. cldera_passive_tracers_flag) then
        !Initialize an empty ptend for use with physics_update
-       call physics_ptend_init(ptend,state%psetcols,'cldera_clock_trc_ts')
+       call physics_ptend_init(ptend,state%psetcols,'cldera_passive_trc_ts')
        return
     end if
 
@@ -303,7 +303,7 @@ contains
     lq(ixaoa)  = .TRUE.
     lq(ixe90)  = .TRUE.
     lq(ixst80) = .TRUE.
-    call physics_ptend_init(ptend,state%psetcols, 'cldera_clock_tracers', lq=lq)
+    call physics_ptend_init(ptend,state%psetcols, 'cldera_passive_tracers', lq=lq)
 
     nstep = get_nstep()
     lchnk = state%lchnk
@@ -382,7 +382,7 @@ contains
 
     end do
 
-  end subroutine cldera_clock_tracers_timestep_tend
+  end subroutine cldera_passive_tracers_timestep_tend
 
 !===========================================================================
 
@@ -424,4 +424,4 @@ contains
 !=====================================================================
 
 
-end module cldera_clock_tracers
+end module cldera_passive_tracers
