@@ -954,13 +954,15 @@ module ocn_time_integration_rk4
       call mpas_pool_get_array(provisStatePool, 'normalVelocity', normalVelocityProvis, 1)
       call mpas_pool_get_array(provisStatePool, 'highFreqThickness', highFreqThicknessProvis, 1)
 
-      !$omp parallel
-      !$omp do schedule(runtime)
-      do iEdge = 1, nEdges
-         normalTransportVelocity(:, iEdge) = normalVelocityProvis(:, iEdge)
-      end do
-      !$omp end do
-      !$omp end parallel
+      if (config_use_GM .or. config_submesoscale_enable) then
+         !$omp parallel
+         !$omp do schedule(runtime)
+         do iEdge = 1, nEdges
+            normalTransportVelocity(:, iEdge) = normalVelocityProvis(:, iEdge)
+         end do
+         !$omp end do
+         !$omp end parallel
+      end if
 
       ! add submesoscale and GM contributions if requested
       call ocn_GM_add_to_transport_vel(normalTransportVelocity, nEdges, nVertLevels)
@@ -1027,13 +1029,15 @@ module ocn_time_integration_rk4
       call mpas_pool_get_array(provisStatePool, 'normalVelocity', normalVelocityProvis, 1)
       call mpas_pool_get_array(provisStatePool, 'highFreqThickness', highFreqThicknessProvis, 1)
 
-      !$omp parallel
-      !$omp do schedule(runtime)
-      do iEdge = 1, nEdges
-         normalTransportVelocity(:, iEdge) = normalVelocityProvis(:, iEdge)
-      end do
-      !$omp end do
-      !$omp end parallel
+      if (config_use_GM .or. config_submesoscale_enable) then
+         !$omp parallel
+         !$omp do schedule(runtime)
+         do iEdge = 1, nEdges
+            normalTransportVelocity(:, iEdge) = normalVelocityProvis(:, iEdge)
+         end do
+         !$omp end do
+         !$omp end parallel
+      end if
 
       call ocn_GM_add_to_transport_vel(normalTransportVelocity, nEdges, nVertLevels)
       call ocn_MLE_add_to_transport_vel(normalTransportVelocity, nEdges)
