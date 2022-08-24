@@ -60,6 +60,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   set_params(params,field_mgrs);
 
   // Output control
+  EKAT_REQUIRE_MSG(m_params.isSublist("output_control"),"Error! The output control YAML file for " + m_casename + " is missing the sublist 'output_control'");
   auto& out_control_pl = m_params.sublist("output_control");
   m_output_control.frequency  = out_control_pl.get<int>("Frequency");
   m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");
@@ -100,7 +101,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     //       could query the restart control information and just use that. 
     auto& pl = m_params.sublist("Checkpoint Control");
     m_checkpoint_control.frequency                 = pl.get<int>("Frequency");
-    m_checkpoint_control.frequency_units           = pl.get<std::string>("Frequency Units");
+    m_checkpoint_control.frequency_units           = pl.get<std::string>("frequency_units");
     m_checkpoint_control.nsamples_since_last_write = 0;
     m_checkpoint_control.timestamp_of_last_write    = case_t0;
 

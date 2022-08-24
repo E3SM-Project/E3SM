@@ -164,8 +164,8 @@ void run_multisnap(const std::string& output_freq_units) {
     // Set up parameter list control for output
     ekat::ParameterList params;
     ekat::parse_yaml_file("io_test_" + output_type + ".yaml",params);
-    auto& params_sub = params.sublist("Output Control");
-    params_sub.set<std::string>("Frequency Units",output_freq_units);
+    auto& params_sub = params.sublist("output_control");
+    params_sub.set<std::string>("frequency_units",output_freq_units);
     io_control.frequency = params_sub.get<int>("Frequency");
     // Set up output manager.
     OutputManager om;
@@ -331,8 +331,8 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
     ekat::ParameterList params;
     ekat::parse_yaml_file("io_test_template.yaml",params);
     params.set<std::string>("Averaging Type",output_type);
-    auto& params_sub = params.sublist("Output Control");
-    params_sub.set<std::string>("Frequency Units",output_freq_units);
+    auto& params_sub = params.sublist("output_control");
+    params_sub.set<std::string>("frequency_units",output_freq_units);
     io_control.frequency = params_sub.get<int>("Frequency");
     // Set up output manager.
     OutputManager om;

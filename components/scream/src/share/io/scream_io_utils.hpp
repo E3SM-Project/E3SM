@@ -87,7 +87,7 @@ struct IOControl {
           }
         } 
       } else {
-        EKAT_REQUIRE_MSG(false,"Invalid frequency unit of [" + frequency_units + "] for output stream.  Please check that all outputs have Frequency Units of\n"
+        EKAT_REQUIRE_MSG(false,"Invalid frequency unit of [" + frequency_units + "] for output stream.  Please check that all outputs have frequency_units of\n"
                                "none, never, nsteps, nsecs, nmins, nhours, ndays, nmonths, nyears");
       }
     }
