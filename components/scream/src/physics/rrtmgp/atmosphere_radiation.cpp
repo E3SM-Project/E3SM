@@ -649,7 +649,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
         const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
           const int i = team.league_rank();
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, m_nlay), [&] (const int& k) {
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
             d_vmr(i,k) = air_mol_weight / gas_mol_weights[igas] * d_vmr(i,k);
           });
         });
@@ -728,7 +728,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
     // Compute band-by-band surface_albedos. This is needed since
     // the AD passes broadband albedos, but rrtmgp require band-by-band.
     rrtmgp::compute_band_by_band_surface_albedos(
-      ncol, m_nswbands,
+      ncol, nswbands,
       sfc_alb_dir_vis, sfc_alb_dir_nir,
       sfc_alb_dif_vis, sfc_alb_dif_nir,
       sfc_alb_dir, sfc_alb_dif);
@@ -804,13 +804,13 @@ void RRTMGPRadiation::run_impl (const int dt) {
     const int kbot = nlay+1;
 
     // Compute diffuse flux as difference between total and direct; use YAKL parallel_for here because these are YAKL objects
-    parallel_for(Bounds<3>(m_nswbands,m_nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilev, int icol) {
+    parallel_for(Bounds<3>(nswbands,nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilev, int icol) {
       sw_bnd_flux_dif(icol,ilev,ibnd) = sw_bnd_flux_dn(icol,ilev,ibnd) - sw_bnd_flux_dir(icol,ilev,ibnd);
     });
 
     // Compute surface fluxes
     rrtmgp::compute_broadband_surface_fluxes(
-        ncol, kbot, m_nswbands,
+        ncol, kbot, nswbands,
         sw_bnd_flux_dir, sw_bnd_flux_dif, 
         sfc_flux_dir_vis, sfc_flux_dir_nir, 
         sfc_flux_dif_vis, sfc_flux_dif_nir
