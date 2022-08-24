@@ -322,8 +322,8 @@ tweaking their $case/namelist_scream.xml file.
     CIME will automatically download them from the E3SM data server.
   -->
   <input_files>
-    ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-sw-g224-2018-12-04.nc,
-    ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-lw-g256-2018-12-04.nc,
+    ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-sw-g112-210809.nc,
+    ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-lw-g128-210809.nc,
     ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc,
     ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc,
     ${DIN_LOC_ROOT}/atm/scream/tables/p3_lookup_table_1.dat-v4.1.1,

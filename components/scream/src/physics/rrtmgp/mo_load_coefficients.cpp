@@ -103,7 +103,20 @@ void load_and_init(GasOpticsRRTMGP &kdist, std::string filename, GasConcs const 
   } else {
     // Otherwise, it's a shortwave type
     realHost1d solar_src;
-    io.read( solar_src , "solar_source" );
+    try {
+      if (io.varExists("solar_source")) {
+        io.read( solar_src , "solar_source" );
+      } else if (io.varExists("solar_source_quiet")) {
+        // Newer RRTMGP input data files include components of solar source function sufficient to
+        // compute solar variability; ignore this for now, and simply read in the baseline solar source.
+        // TODO: Ultimately, we probably want to use solar source data consistent with EAM.
+        io.read( solar_src , "solar_source_quiet" );
+      } else {
+        throw 1;
+      }
+    } catch (int err) {
+      std::cout << "ERROR: no solar_source variable found in input data.\n";
+    }
     kdist.load(available_gases, gas_names, key_species, band2gpt, band_lims, press_ref, press_ref_trop, 
                temp_ref, temp_ref_p, temp_ref_t, vmr_ref, kmajor, kminor_lower, kminor_upper, 
                gas_minor, identifier_minor, minor_gases_lower, minor_gases_upper, 
