@@ -1,0 +1,58 @@
+	<nml_record name="buttermilk_bay" mode="init" configuration=="buttermilk_bay">
+		<nml_option name="config_Buttermilk_bay_vert_levels" type="integer" default_value="1" units="unitless"
+			description="Number of vertical levels in Buttermilk bay problem."
+			possible_values="Any positive integer number greater than 1."
+	        />
+	        <nml_option name="config_Buttermilk_bay_adjust_domain" type="logical" default_value=".true." units="unitless"
+			description="Flag to adjust mesh coordinates"
+			possible_values='.true. or .false'
+		/>
+		<nml_option name="config_Buttermilk_bay_subgrid_refinement_level" type="integer" default_value="3" units="unitless"
+			description="Level of refinement to evaluate subgrid bathymety"
+			possible_values="Any positive integer number"
+	        />
+		<nml_option name="config_Buttermilk_bay_subgrid_edge_bathymetry_max_pixel" type="logical" default_value=".true." units="unitless"
+			description="Use maximum elevation pixels as subgrid bathymetry on cell edges"
+			possible_values=".true. or .false."
+	        />
+                <nml_option name="config_Buttermilk_bay_subgrid_table_levels" type="integer" default_value="10" units="unitless"
+                        description="Number of levels in suvgrid lookup tables"
+                        possible_values="Any positive integer number"
+                />
+                <nml_option name="config_Buttermilk_bay_subgrid_use_thin_layer" type="logical" default_value=".false." units="unitless"
+                        description="Whether to include thin layer in subgrid tables"
+                        possible_values=".true. or .false."
+                />
+		<nml_option name="config_Buttermilk_bay_topography_source" type="character" default_value="xy_file" units="unitless"
+			description="If 'latlon_file/xy_file', reads in topography from file specified in config_Buttermilk_bay_topography_file"
+			possible_values="'latlon_file' or 'xy_file'"
+		/>
+		<nml_option name="config_Buttermilk_bay_topography_file" type="character" default_value="none" units="unitless"
+			description="Path to the topography initial condition file."
+			possible_values="path/to/topography/file.nc"
+		/>
+		<nml_option name="config_Buttermilk_bay_topography_latlon_degrees"  type="logical" default_value=".false." units="unitless"
+			description="Logical flag that controls if the Lat/Lon fields for topography should be converted to radians. True means input is degrees, false means input is radians."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Buttermilk_bay_topography_nlat_dimname" type="character" default_value="y" units="unitless"
+			description="Dimension name for the latitude in the topography file."
+			possible_values="Dimension name from input file."
+		/>
+		<nml_option name="config_Buttermilk_bay_topography_nlon_dimname" type="character" default_value="x" units="unitless"
+			description="Dimension name for the longitude in the topography file."
+			possible_values="Dimension name from input file."
+		/>
+		<nml_option name="config_Buttermilk_bay_topography_lat_varname" type="character" default_value="y" units="unitless"
+			description="Variable name for the latitude in the topography file."
+			possible_values="Variable name from input file."
+		/>
+		<nml_option name="config_Buttermilk_bay_topography_lon_varname" type="character" default_value="x" units="unitless"
+			description="Variable name for the longitude in the topography file."
+			possible_values="Variable name from input file."
+		/>
+		<nml_option name="config_Buttermilk_bay_topography_varname" type="character" default_value="Band1" units="unitless"
+			description="Variable name for the topography in the topography file."
+			possible_values="Variable name from input file."
+		/>
+	</nml_record>

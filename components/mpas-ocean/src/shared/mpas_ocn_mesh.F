@@ -1631,7 +1631,7 @@ contains
 
                thickDepth = sum(layerThickness(kmin:kmax,iCell))
 
-               if (abs(thickDepth - bottomDepth(iCell)) > 20.0_RKIND) then
+               if (abs(thickDepth - bottomDepth(iCell)) > 100.0_RKIND) then
                   consistentSSH = .false.
 
                   call mpas_log_write( &

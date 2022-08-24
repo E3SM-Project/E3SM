@@ -110,6 +110,9 @@
 			description="Number of wavenumbers used to reconstruct Stokes drift depth profile"
 			definition="6"
 		/>
+		<dim name="nSubgridTableLevels" definition="namelist:config_subgrid_table_levels"
+			description="Number of subgrid look-up table levels"
+		/>
 	</dims>
 
 	<!--*************************************-->
@@ -1183,6 +1186,14 @@
 					description="Safety factor on minimum cell height to ensure the minimum height is not violated due to round-off."
 					possible_values="Real value greater or equal to 0."
 		/>
+		<nml_option name="config_use_subgrid_wetting_drying" type="logical" default_value=".false." units="unitless"
+					description="If true, use subgrid wetting and drying algorithm"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_modify_wetting_drying_implementation" type="logical" default_value=".false." units="unitless"
+					description="If true, use alternatove implementation of wetting and drying algorithm"
+					possible_values=".true. or .false."
+		/>
 	</nml_record>
 	<nml_record name="ocean_constants">
 		<nml_option name="config_density0" type="real" default_value="1026.0" units="kg m^-3"
@@ -1606,6 +1617,12 @@
 					possible_values="Any positive real number"
 		/>
 	</nml_record>
+	<nml_record name="init_mode_subgrid">
+		<nml_option name="config_subgrid_table_levels" type="integer" default_value="-1"
+					description=""
+					possible_values="Any positive non-zero integer. A value of -1 causes this to be overwritten with the configurations subgrid table levels definition."
+		/>
+	</nml_record>
 	<packages>
 		<package name="timeVaryingAtmosphericForcingPKG" description="This package includes variables required for time varying atmospheric forcing"/>
 		<package name="timeVaryingLandIceForcingPKG" description="This package includes variavles required for time varying land-ice forcing"/>
@@ -1637,6 +1654,7 @@
 		<package name="gotmPKG" description="This package is for GOTM variables, which are only needed when using GOTM for the vertical turbulence closure."/>
 		<package name="verticalRemapPKG" description="This package is for variables required for vertical Lagrangian remapping."/>
 		<package name="activeWavePKG" description="This package controls variables required for wave coupling"/>
+		<package name="subgridWetDryPKG" description="This package includes variables required for subgrid wetting and drying."/>
 	</packages>
 
 	<streams>
@@ -2612,6 +2630,67 @@
 		<var name="distanceToCoast" type="real" dimensions="nCells" units="m"
 			 description="Distance of each cell to nearest coastline cell."
 		/>
+                <!-- FIELDS FOR SUBGIRD WETTING AND DRYING-->
+		<var name="subgridWetVolumeCellTable" type="real" dimensions="nSubgridTableLevels nCells" units="m"
+			 description="Pre-computed wet volume per unit area for each cell at given ssh value"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridWetVolumeEdgeTable" type="real" dimensions="nSubgridTableLevels nEdges" units="m"
+			 description="Pre-computed wet volume per unit area for each edge at given ssh value"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridWetVolumeVertexTable" type="real" dimensions="nSubgridTableLevels nVertices" units="m"
+			 description="Pre-computed wet volume per unit area for each edge at given ssh value"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridSshCellTableRange" type="real" dimensions="R3 nCells" units="m"
+			 description="Range of ssh values used for cell lookup table"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridSshEdgeTableRange" type="real" dimensions="R3 nEdges" units="m"
+			 description="Range of ssh vaules used for edge lookup table"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridSshVertexTableRange" type="real" dimensions="R3 nVertices" units="m"
+			 description="Range of ssh vaules used for vertex lookup table"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridEdgeBathymetryMean" type="real" dimensions="nEdges" units="m"
+			 description="Mean bathymetry on edge from subgrid information"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridVertexBathymetryMean" type="real" dimensions="nVertices" units="m"
+			 description="Mean bathymetry on vertex from subgrid information"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridCellBathymetryMin" type="real" dimensions="nCells" units="m"
+			 description="Minimum bathymetry on cell from subgrid information"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridEdgeBathymetryMin" type="real" dimensions="nEdges" units="m"
+			 description="Minimum bathymetry on edge from subgrid information"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridVertexBathymetryMin" type="real" dimensions="nVertices" units="m"
+			 description="Minimum bathymetry on vertex from subgrid information"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridLayerThicknessDebug" type="real" dimensions="nCells" units="m"
+			 description="Debug field"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridWetFractionCellTable" type="real" dimensions="nSubgridTableLevels nCells" units="m"
+			 description="Pre-computed wet fraction for each cell at given ssh value"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridWetFractionEdgeTable" type="real" dimensions="nSubgridTableLevels nEdges" units="m"
+			 description="Pre-computed wet fraction for each edge at given ssh value"
+			 packages="subgridWetDryPKG"
+		/>
+		<var name="subgridWetFractionVertexTable" type="real" dimensions="nSubgridTableLevels nVertices" units="m"
+			 description="Pre-computed wet fraction for each edge at given ssh value"
+			 packages="subgridWetDryPKG"
+		/>
 	</var_struct>
 	<var_struct name="verticalMesh" time_levs="1">
 		<var name="restingThickness" type="real" dimensions="nVertLevels nCells" units="m"
@@ -3435,6 +3514,14 @@
 		<var name="CoriolisTermOld" type="real" dimensions="nVertLevels nEdges Time" units="m s^-2"
                         description="Coriolis term at the previous time step used in the split-explicit AB2 time stepping"
 			packages="splitAB2TimeIntegrator"
+		/>
+		<var name="layerThicknessCellWetDry" type="real" dimensions="nCells Time" units="m"
+			description="intermediate estimate total layer thickness for wetting/drying purposes"
+			packages="forwardMode"
+		/>
+		<var name="sshCellWetDry" type="real" dimensions="nCells Time" units="m"
+			description="intermediate estimate ssh for wetting/drying purposes"
+			packages="forwardMode"
 		/>
 	</var_struct>
 	<var_struct name="shortwave" time_levs="1">
