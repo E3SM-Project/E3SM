@@ -230,9 +230,8 @@ static TraceGasesWorkaround s_tgw;
 void fv_phys_rrtmgp_active_gases_init (const ekat::ParameterList& p) {
   const auto& v = p.sublist("atmosphere_processes").sublist("physics")
     .sublist("rrtmgp").get<std::vector<std::string>>("active_gases");
-  for (const auto& e : v) {
-    if (e == "o3")
-      s_tgw.active_gases.push_back(e + "_volume_mix_ratio");
+  if (ekat::contains(v, "o3")) {
+    s_tgw.active_gases.push_back("o3_volume_mix_ratio");
   }
 }
 
