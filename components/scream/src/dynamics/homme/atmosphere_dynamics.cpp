@@ -247,12 +247,6 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
 
 size_t HommeDynamics::requested_buffer_size_in_bytes() const
 {
-  constexpr int N = HOMMEXX_PACK_SIZE;
-  using Pack = ekat::Pack<Real,N>;
-  const int nlevs = m_dyn_grid->get_num_vertical_levels();
-  const int npacks = ekat::PackInfo<N>::num_packs(nlevs);
-  const size_t interface_request = Buffer::num_1d_scalar_nlev*npacks*sizeof(Pack);
-
   using namespace Homme;
 
   auto& c       = Context::singleton();
@@ -293,9 +287,7 @@ size_t HommeDynamics::requested_buffer_size_in_bytes() const
   }
   fv_phys_requested_buffer_size_in_bytes();
 
-  const size_t homme_request = fbm.allocated_size()*sizeof(Real);
-
-  return homme_request + interface_request;
+  return fbm.allocated_size()*sizeof(Real);
 }
 
 void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
@@ -303,19 +295,6 @@ void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(),
                    "Error! Buffers size not sufficient.\n");
 
-  // Local memory used by interface
-  constexpr int N = HOMMEXX_PACK_SIZE;
-  using Pack = ekat::Pack<Real,N>;
-  const int nlevs = m_dyn_grid->get_num_vertical_levels();
-  const int npacks = ekat::PackInfo<N>::num_packs(nlevs);
-  Pack* packed_mem = reinterpret_cast<Pack*>(buffer_manager.get_memory());
-
-  m_buffer.otau = decltype(m_buffer.otau)(packed_mem, npacks);
-  packed_mem += m_buffer.otau.size();
-
-  Real* mem = reinterpret_cast<Real*>(packed_mem);
-
-  // Memory used by homme buffer
   using namespace Homme;
   auto& c = Context::singleton();
   auto& fbm  = c.get<FunctorsBuffersManager>();
@@ -323,6 +302,8 @@ void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
   // Reset Homme buffer to use AD buffer memory.
   // Internally, homme will actually initialize its own buffers.
   EKAT_REQUIRE(buffer_manager.allocated_bytes()%sizeof(Real)==0); // Sanity check
+
+  Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
   fbm.allocate(mem, buffer_manager.allocated_bytes()/sizeof(Real));
   mem += fbm.allocated_size();
 

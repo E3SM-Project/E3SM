@@ -21,6 +21,11 @@ namespace scream
  */
 class HommeDynamics : public AtmosphereProcess
 {
+  using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+  using KT = KokkosTypes<DefaultDevice>;
+  template<typename ScalarT>
+  using view_1d = typename KT::template view_1d<ScalarT>;
+
 public:
 
   // Constructor(s) and Destructor
@@ -96,19 +101,6 @@ public:
   struct GllFvRemapTmp;
   void remap_dyn_to_fv_phys(GllFvRemapTmp* t = nullptr) const;
   void remap_fv_phys_to_dyn() const;
-
-  // Structure for storing local variables initialized using the ATMBufferManager
-  struct Buffer {
-    using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-    using KT = KokkosTypes<DefaultDevice>;
-    template<typename ScalarT>
-    using uview_1d = Unmanaged<typename KT::template view_1d<ScalarT>>;
-
-    static constexpr int num_1d_scalar_nlev = 1;
-
-    uview_1d<Pack> otau;
-  };
-
   
 protected:
   void run_impl        (const int dt);
@@ -119,7 +111,6 @@ protected:
   // requested_buffer_size_in_bytes, where Homme::ForcingFunctor queries
   // Homme::Tracers for qsize.
   void set_computed_group_impl (const FieldGroup& group);
-
 
   // Computes total number of bytes needed for local variables
   size_t requested_buffer_size_in_bytes() const;
@@ -149,8 +140,8 @@ protected:
   std::shared_ptr<const AbstractGrid> m_phys_grid; // Column parameterizations grid
   std::shared_ptr<const AbstractGrid> m_cgll_grid; // Unique CGLL
 
-  // Struct which contains local variables
-  Buffer m_buffer;
+  // Rayleigh friction decay rate profile
+  view_1d<Pack> m_otau;
 
   // Rayleigh friction paramaters
   int m_rayk0;      // Vertical level at which rayleigh friction term is centered.
