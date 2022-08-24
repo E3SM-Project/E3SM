@@ -710,6 +710,7 @@
 <drydep_srf_file hgrid="ne0np4_twpx4v1">atm/cam/chem/trop_mam/atmsrf_twpx4v1_170629.nc</drydep_srf_file>
 <!-- NOTE: ENA dry deposition file interpolated from existing rather than created new -->
 <drydep_srf_file hgrid="ne0np4_enax4v1">atm/cam/chem/trop_mam/atmsrf_enax4v1_170517.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_vr28natlref">atm/cam/chem/trop_mam/atmsrf_ne0np4natlanticref.ne30x4_190829.nc</drydep_srf_file>
 
 <!-- depvel data -->
 <depvel_file    >atm/cam/chem/trop_mozart/dvel/depvel_monthly.nc</depvel_file>
