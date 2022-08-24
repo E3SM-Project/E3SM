@@ -1569,7 +1569,7 @@ module ocn_time_integration_split
             allocate(uTemp(nVertLevels,nEdges))
 
             !Compute uTemp
-            ! velocity for normalVelocityCorrectionection is
+            ! velocity for normalVelocityCorrection is
             ! normalBarotropicVelocity +
             ! normalBaroclinicVelocity + uBolus
             !$omp parallel
@@ -1633,13 +1633,10 @@ module ocn_time_integration_split
                   ! normalTransportVelocity = normalBarotropicVelocity
                   !                         + normalBaroclinicVelocity
                   !                         + normalGMBolusVelocity
+                  !                         + normalMLEvelocity 
                   !                         + normalVelocityCorrection
-                  ! This is u used in advective terms for layerThickness
+                  ! This is the velocity used in advective terms for layerThickness
                   ! and tracers in tendency calls in stage 3.
-                  !mrp note: in QC version, there is an if
-                  !    (config_use_GM) on adding normalGMBolusVelocity
-                  !    I think it is not needed because
-                  !    normalGMBolusVelocity=0 when GM not on.
                   normalTransportVelocity(k,iEdge) = edgeMask(k,iEdge)*( &
                              normalTransportVelocity(k,iEdge) + &
                              normalVelocityCorrection)
