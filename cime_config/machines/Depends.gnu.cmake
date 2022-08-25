@@ -8,7 +8,7 @@ list(APPEND MPAS_ICE_SHORTWAVE
 if (NOT DEBUG)
   if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 9)
     foreach(ITEM IN LISTS MPAS_ICE_SHORTWAVE)
-      e3sm_add_flags("${ITEM}" "-fno-tree-pta") # avoids an error that shows up in solver with gnu9 and higher
+      e3sm_add_flags("${ITEM}" "-O0 -fno-tree-pta") # avoids an error that shows up in solver with gnu9 and higher
     endforeach()
   endif()
 endif()
