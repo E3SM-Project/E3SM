@@ -1017,6 +1017,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *vardefaultval, *varpackages;
 	const char *varname2, *vararrgroup2, *vararrname_in_code;
 	const char *varname_in_code;
+	const char *varname_in_output;
 	const char *streamname, *streamname2;
 	const char *packagename;
 	const char *vararrtimelevs;
@@ -1114,6 +1115,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 		varpackages = ezxml_attr(var_xml, "packages");
 		vararrgroup = ezxml_attr(var_xml, "array_group");
 		varname_in_code = ezxml_attr(var_xml, "name_in_code");
+		varname_in_output = ezxml_attr(var_xml, "name_in_output");
 		skip_var = 0;
 
 		if(!varname_in_code){
@@ -1280,7 +1282,9 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 		}
 		fortprintf(fd, "! Defining time level %d\n", time_lev);
 		fortprintf(fd, "      allocate( %s %% constituentNames(numConstituents) )\n", pointer_name_arr);
+		fortprintf(fd, "      allocate( %s %% outputConstituentNames(numConstituents) )\n", pointer_name_arr);
 		fortprintf(fd, "      %s %% fieldName = '%s'\n", pointer_name_arr , vararrname);
+		fortprintf(fd, "      %s %% outputFieldName = '%s'\n", pointer_name_arr , vararrname);
 		if (decomp != -1) {
 			fortprintf(fd, "      %s %% isDecomposed = .true.\n", pointer_name_arr);
 		} else {
@@ -1310,11 +1314,17 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 				varname_in_code = ezxml_attr(var_xml, "name");
 			}
 
+			varname_in_output = ezxml_attr(var_xml, "name_in_output");
+			if(!varname_in_output){
+				varname_in_output = ezxml_attr(var_xml, "name");
+			}
+
 			fortprintf(fd, "      if (associated(newSubPool)) then\n");
 			fortprintf(fd, "         call mpas_pool_get_dimension(newSubPool, 'index_%s', const_index)\n", varname_in_code);
 			fortprintf(fd, "      end if\n");
 			fortprintf(fd, "      if (const_index > 0) then\n", spacing);
 			fortprintf(fd, "         %s %% constituentNames(const_index) = '%s'\n", pointer_name_arr, varname);
+			fortprintf(fd, "         %s %% outputConstituentNames(const_index) = '%s'\n", pointer_name_arr, varname_in_output);
 			fortprintf(fd, "      end if\n", spacing);
 		}
 
@@ -1468,6 +1478,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *vardefaultval, *varpackages, *varmissingval;
 	const char *varname2, *vararrgroup2;
 	const char *varname_in_code;
+	const char *varname_in_output;
 	const char *streamname, *streamname2;
 	const char *packagename;
 
@@ -1507,6 +1518,11 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	if(!varname_in_code){
 		varname_in_code = ezxml_attr(var_xml, "name");
 	}
+
+    varname_in_output = ezxml_attr(var_xml, "name_in_output");
+    if(!varname_in_output){
+        varname_in_output = ezxml_attr(var_xml, "name");
+    }
 
 	if(!vartimelevs){
 		vartimelevs = ezxml_attr(superStruct, "time_levs");
@@ -1554,6 +1570,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 		fortprintf(fd, "\n");
 		fortprintf(fd, "! Setting up time level %d\n", time_lev);
 		fortprintf(fd, "      %s %% fieldName = '%s'\n", pointer_name_arr, varname);
+		fortprintf(fd, "      %s %% outputFieldName = '%s'\n", pointer_name_arr, varname_in_output);
 		fortprintf(fd, "      %s %% isVarArray = .false.\n", pointer_name_arr);
 		if (decomp != -1) {
 			fortprintf(fd, "      %s %% isDecomposed = .true.\n", pointer_name_arr);
@@ -1714,7 +1731,7 @@ int parse_struct(FILE *fd, ezxml_t registry, ezxml_t superStruct, int subpool, c
 
 	structname = ezxml_attr(superStruct, "name");
 	structnameincode = ezxml_attr(superStruct, "name_in_code");
-	
+
 	if(!structnameincode){
 		structnameincode = ezxml_attr(superStruct, "name");
 	}
@@ -1960,7 +1977,7 @@ int generate_immutable_streams(ezxml_t registry){/*{{{*/
 											fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', packages=packages, ierr=ierr)\n", optname, optvarname);
 										else
 											fortprintf(fd, "   call MPAS_stream_mgr_add_field(manager, \'%s\', \'%s\', ierr=ierr)\n", optname, optvarname);
-										
+
 									}
 
 									/* Loop over arrays of fields listed within the stream */
