@@ -411,6 +411,7 @@ contains
 
             ! GL migration flux
             blockRegionGLMigrationFlux(iRegion) = blockRegionGLMigrationFlux(iRegion) + &
+               real(regionCellMasks(iRegion,iCell),RKIND) * &
                groundedToFloatingThickness(iCell) * areaCell(iCell) * rhoi / (deltat / scyr)
 
            end do ! end loop over regions
