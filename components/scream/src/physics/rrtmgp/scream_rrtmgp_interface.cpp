@@ -14,6 +14,13 @@ namespace scream {
 
         OpticalProps2str get_cloud_optics_sw(const int ncol, const int nlay, CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei);
         OpticalProps1scl get_cloud_optics_lw(const int ncol, const int nlay, CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei);
+        OpticalProps2str get_subsampled_clouds(
+                const int ncol, const int nlay, const int nbnd, const int ngpt,
+                OpticalProps2str &cloud_optics, GasOpticsRRTMGP &kdist, real2d &cld);
+        OpticalProps1scl get_subsampled_clouds(
+                const int ncol, const int nlay, const int nbnd, const int ngpt,
+                OpticalProps1scl &cloud_optics, GasOpticsRRTMGP &kdist, real2d &cld);
+        int3d get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, real2d &cld);
 
         /* 
          * Objects containing k-distribution information need to be initialized
@@ -193,7 +200,7 @@ namespace scream {
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
-                real2d &lwp, real2d &iwp, real2d &rel, real2d &rei,
+                real2d &lwp, real2d &iwp, real2d &rel, real2d &rei, real2d &cldfrac,
                 real3d &aer_tau_sw, real3d &aer_ssa_sw, real3d &aer_asm_sw,
                 real3d &aer_tau_lw,
                 real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
@@ -277,6 +284,12 @@ namespace scream {
             // Convert cloud physical properties to optical properties for input to RRTMGP
             OpticalProps2str clouds_sw = get_cloud_optics_sw(ncol, nlay, cloud_optics_sw, k_dist_sw, lwp, iwp, rel, rei);
             OpticalProps1scl clouds_lw = get_cloud_optics_lw(ncol, nlay, cloud_optics_lw, k_dist_lw, lwp, iwp, rel, rei);        
+            // Do subcolumn sampling to map bands -> gpoints based on cloud fraction and overlap assumption;
+            // 1 subcolumn (cloud state) per gpoint
+            auto nswgpts = k_dist_sw.get_ngpt();
+            auto nlwgpts = k_dist_lw.get_ngpt();
+            OpticalProps2str clouds_sw_gpt = get_subsampled_clouds(ncol, nlay, nswbands, nswgpts, clouds_sw, k_dist_sw, cldfrac);
+            OpticalProps1scl clouds_lw_gpt = get_subsampled_clouds(ncol, nlay, nlwbands, nlwgpts, clouds_lw, k_dist_lw, cldfrac);
 
 #ifdef SCREAM_RRTMGP_DEBUG
             // Perform checks on optics; these would be caught by RRTMGP_EXPENSIVE_CHECKS in the RRTMGP code,
@@ -295,7 +308,7 @@ namespace scream {
             rrtmgp_sw(
                 ncol, nlay,
                 k_dist_sw, p_lay, t_lay, p_lev, t_lev, gas_concs, 
-                sfc_alb_dir, sfc_alb_dif, mu0, aerosol_sw, clouds_sw,
+                sfc_alb_dir, sfc_alb_dif, mu0, aerosol_sw, clouds_sw_gpt,
                 fluxes_sw, clrsky_fluxes_sw,
                 tsi_scaling, logger
             );
@@ -304,12 +317,69 @@ namespace scream {
             rrtmgp_lw(
                 ncol, nlay,
                 k_dist_lw, p_lay, t_lay, p_lev, t_lev, gas_concs,
-                aerosol_lw, clouds_lw,
+                aerosol_lw, clouds_lw_gpt,
                 fluxes_lw, clrsky_fluxes_lw
             );
             
-            // Calculate heating rates
         }
+
+        int3d get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, real2d &cld) {
+            auto subcolumn_mask = int3d("subcolumn_mask", ncol, nlay, ngpt);
+            // Dummy cloud mask, always ones
+            memset(subcolumn_mask, 1);
+            return subcolumn_mask;
+        }
+
+        OpticalProps2str get_subsampled_clouds(
+                const int ncol, const int nlay, const int nbnd, const int ngpt,
+                OpticalProps2str &cloud_optics, GasOpticsRRTMGP &kdist, real2d &cld) {
+            // Init and alloc subsampled_clouds output
+            OpticalProps2str subsampled_clouds;
+            subsampled_clouds.init(kdist.get_band_lims_wavenumber(), kdist.get_band_lims_gpoint(), "clouds_sw_gpt");
+            subsampled_clouds.alloc_2str(ncol, nlay);
+            // Get subcolumn cloud mask
+            auto cldmask = get_subcolumn_mask(ncol, nlay, ngpt, cld);
+            // Assign optical properties to subcolumns (note this implements MCICA)
+            auto gpoint_bands = kdist.get_gpoint_bands();
+            parallel_for(Bounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
+                auto ibnd = gpoint_bands(igpt);
+                if (cldmask(icol,ilay,igpt) == 1) {
+                    subsampled_clouds.tau(icol,ilay,igpt) = cloud_optics.tau(icol,ilay,ibnd);
+                    subsampled_clouds.ssa(icol,ilay,igpt) = cloud_optics.ssa(icol,ilay,ibnd);
+                    subsampled_clouds.g  (icol,ilay,igpt) = cloud_optics.g  (icol,ilay,ibnd);
+                } else {
+                    subsampled_clouds.tau(icol,ilay,igpt) = 0;
+                    subsampled_clouds.ssa(icol,ilay,igpt) = 0;
+                    subsampled_clouds.g  (icol,ilay,igpt) = 0;
+                } 
+            });
+            // Return subsampled clouds
+            return subsampled_clouds;
+        }
+
+        OpticalProps1scl get_subsampled_clouds(
+                const int ncol, const int nlay, const int nbnd, const int ngpt,
+                OpticalProps1scl &cloud_optics, GasOpticsRRTMGP &kdist, real2d &cld) {
+            // Init and alloc subsampled_clouds output
+            OpticalProps1scl subsampled_clouds;
+            subsampled_clouds.init(kdist.get_band_lims_wavenumber(), kdist.get_band_lims_gpoint(), "clouds_sw_gpt");
+            subsampled_clouds.alloc_1scl(ncol, nlay);
+            // Get subcolumn cloud mask
+            auto cldmask = get_subcolumn_mask(ncol, nlay, ngpt, cld);
+            // Assign optical properties to subcolumns (note this implements MCICA)
+            auto gpoint_bands = kdist.get_gpoint_bands();
+            parallel_for(Bounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
+                auto ibnd = gpoint_bands(igpt);
+                if (cldmask(icol,ilay,igpt) == 1) {
+                    subsampled_clouds.tau(icol,ilay,igpt) = cloud_optics.tau(icol,ilay,ibnd);
+                } else {
+                    subsampled_clouds.tau(icol,ilay,igpt) = 0;
+                }
+            });
+            // Return subsampled clouds
+            return subsampled_clouds;
+        }
+
 
         OpticalProps2str get_cloud_optics_sw(
                 const int ncol, const int nlay,
@@ -474,13 +544,14 @@ namespace scream {
             });
 
             // Subset cloud optics
+            // TODO: nbnd -> ngpt once we pass sub-sampled cloud state
             OpticalProps2str clouds_day;
-            clouds_day.init(k_dist.get_band_lims_wavenumber());
+            clouds_day.init(k_dist.get_band_lims_wavenumber(), k_dist.get_band_lims_gpoint());
             clouds_day.alloc_2str(nday, nlay);
-            parallel_for(Bounds<3>(nbnd,nlay,nday), YAKL_LAMBDA(int ibnd, int ilay, int iday) {
-                clouds_day.tau(iday,ilay,ibnd) = clouds.tau(dayIndices(iday),ilay,ibnd);
-                clouds_day.ssa(iday,ilay,ibnd) = clouds.ssa(dayIndices(iday),ilay,ibnd);
-                clouds_day.g  (iday,ilay,ibnd) = clouds.g  (dayIndices(iday),ilay,ibnd);
+            parallel_for(Bounds<3>(ngpt,nlay,nday), YAKL_LAMBDA(int igpt, int ilay, int iday) {
+                clouds_day.tau(iday,ilay,igpt) = clouds.tau(dayIndices(iday),ilay,igpt);
+                clouds_day.ssa(iday,ilay,igpt) = clouds.ssa(dayIndices(iday),ilay,igpt);
+                clouds_day.g  (iday,ilay,igpt) = clouds.g  (dayIndices(iday),ilay,igpt);
             });
 
             // RRTMGP assumes surface albedos have a screwy dimension ordering

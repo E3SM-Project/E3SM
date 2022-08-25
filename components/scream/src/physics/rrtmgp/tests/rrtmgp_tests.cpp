@@ -183,7 +183,7 @@ int run(int argc, char** argv) {
             ncol, nlay,
             p_lay, t_lay, p_lev, t_lev, gas_concs,
             sfc_alb_dir, sfc_alb_dif, mu0,
-            lwp, iwp, rel, rei,
+            lwp, iwp, rel, rei, cld,
             aer_tau_sw, aer_ssa_sw, aer_asm_sw,
             aer_tau_lw,
             sw_flux_up, sw_flux_dn, sw_flux_dir,

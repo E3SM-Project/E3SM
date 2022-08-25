@@ -749,7 +749,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
         p_lay, t_lay, p_lev, t_lev,
         m_gas_concs,
         sfc_alb_dir, sfc_alb_dif, mu0,
-        lwp, iwp, rel, rei,
+        lwp, iwp, rel, rei, cldfrac_tot, 
         aero_tau_sw, aero_ssa_sw, aero_g_sw, aero_tau_lw,
         sw_flux_up       , sw_flux_dn       , sw_flux_dn_dir       , lw_flux_up       , lw_flux_dn, 
         sw_clrsky_flux_up, sw_clrsky_flux_dn, sw_clrsky_flux_dn_dir, lw_clrsky_flux_up, lw_clrsky_flux_dn, 
