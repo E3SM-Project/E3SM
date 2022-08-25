@@ -38,11 +38,11 @@ def atm_config_chg_impl(xml_root,changes):
     >>> ################ INVALID TYPE #######################
     >>> atm_config_chg_impl(tree,['prop2=two'])
     Traceback (most recent call last):
-    eamxx_buildnml_impl.refine_type.<locals>.ForceTypeUnmet: Could not use 'two' as type 'integer'
+    ValueError: Could not use 'two' as type 'integer'
     >>> ################ INVALID VALUE #######################
     >>> atm_config_chg_impl(tree,['prop2=3'])
     Traceback (most recent call last):
-    eamxx_buildnml_impl.check_value.<locals>.ValidValueConstraintViolated: ERROR: Invalid value '3' for element 'prop2'. Value not in the valid list ('[1, 2]')
+    CIME.utils.CIMEError: ERROR: Invalid value '3' for element 'prop2'. Value not in the valid list ('[1, 2]')
     >>> ################ VALID USAGE #######################
     >>> atm_config_chg_impl(tree,['::prop1=two'])
     True
@@ -57,7 +57,7 @@ def atm_config_chg_impl(xml_root,changes):
 
         tokens = change.split('=')
         expect (len(tokens)==2, "Invalid change format. Expected A[::B[...]=value, got' {}'".format(change))
-        node = get_xml_node(xml_root,tokens[0])
+        node, __ = get_xml_node(xml_root,tokens[0])
         new_value = tokens[1]
 
         if node.text != new_value:
