@@ -921,7 +921,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
             # of tie, $IDX as tiebreaker
             for file in files:
                 file_no_path = file.name
-                tokens = re.split('_|-|\.',str(file_no_path))
+                tokens = re.split(r'_|-|\.',str(file_no_path))
                 if latest is None:
                     latest = file
                     curr_tag = int(tokens[1])
@@ -930,11 +930,11 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
                     if int(tokens[1])>curr_tag:
                         latest = file
                         curr_tag = int(tokens[1])
-                        curr_idx = int(tokesn[2])
+                        curr_idx = int(tokens[2])
                     elif int(tokens[1])==curr_tag and int(tokens[2])>curr_idx:
                         latest = file
                         curr_tag = int(tokens[1])
-                        curr_idx = int(tokesn[2])
+                        curr_idx = int(tokens[2])
                 
             return latest 
         else:
