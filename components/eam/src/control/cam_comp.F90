@@ -230,6 +230,11 @@ use iso_c_binding, only: c_loc
     nlcols = nlcols +  get_ncols_p(c)
    enddo
 
+   allocate(dims1(1))
+   dims1(1) = ncols
+   allocate(dims2(2))
+   dims2(1) = nlcols
+   dims2(2) = pver
 
    ! PBUF fields
    nfields = size(pbuf2d,1)
@@ -261,10 +266,6 @@ use iso_c_binding, only: c_loc
      enddo
    enddo
 
-   allocate(dims2(2))
-   dims2(1) = nlcols
-   dims2(2) = pver
-   rank = 2
    ! TRACERS fields
    do idx=1,pcnst
      fname = cnst_name(idx)
@@ -279,6 +280,13 @@ use iso_c_binding, only: c_loc
    enddo
 
    ! STATE fields
+
+   !1d, horizontal
+   call cldera_add_partitioned_field("lat",dims1,nparts,part_dim)
+   call cldera_add_partitioned_field("lon",dims1,nparts,part_dim)
+   call cldera_add_partitioned_field("ps", dims1,nparts,part_dim)
+   call cldera_add_partitioned_field("psdry", dims1,nparts,part_dim)
+   call cldera_add_partitioned_field("phis", dims1,nparts,part_dim)
 
    !2d, mid points
    call cldera_add_partitioned_field("T",dims2,nparts,part_dim)
@@ -300,8 +308,6 @@ use iso_c_binding, only: c_loc
    call cldera_add_partitioned_field("zi",dims2,nparts,part_dim)
 
    ! 1d, vertically integrated
-   allocate(dims1(1))
-   dims1(1) = ncols
    call cldera_add_partitioned_field("te",dims1,nparts,part_dim) ! total energy
    call cldera_add_partitioned_field("tw",dims1,nparts,part_dim) ! total water
 
@@ -310,42 +316,54 @@ use iso_c_binding, only: c_loc
      c = begchunk+ipart-1 ! Chunk
      ncols = phys_state(c)%ncol
 
+     ! 1d (horiz) fields
+     field2d => phys_state(c)%lat(:)
+     call cldera_set_field_partition("lat",ipart,ncols,field1d)
+     field2d => phys_state(c)%lon(:)
+     call cldera_set_field_partition("lon",ipart,ncols,field1d)
+     field2d => phys_state(c)%ps(:)
+     call cldera_set_field_partition("ps",ipart,ncols,field1d)
+     field2d => phys_state(c)%psdry(:)
+     call cldera_set_field_partition("psdry",ipart,ncols,field1d)
+     field2d => phys_state(c)%phis(:)
+     call cldera_set_field_partition("phis",ipart,ncols,field1d)
+
      ! 2d mid
-     field2d=>phys_state(c)%t(:,:)
+     field2d => phys_state(c)%t(:,:)
      call cldera_set_field_partition("T",ipart,ncols,field2d)
-     field2d=>phys_state(c)%u(:,:)
+     field2d => phys_state(c)%u(:,:)
      call cldera_set_field_partition("u",ipart,ncols,field2d)
-     field2d=>phys_state(c)%v(:,:)
+     field2d => phys_state(c)%v(:,:)
      call cldera_set_field_partition("v",ipart,ncols,field2d)
-     field2d=>phys_state(c)%s(:,:)
+     field2d => phys_state(c)%s(:,:)
      call cldera_set_field_partition("s",ipart,ncols,field2d)
-     field2d=>phys_state(c)%omega(:,:)
+     field2d => phys_state(c)%omega(:,:)
      call cldera_set_field_partition("omega",ipart,ncols,field2d)
-     field2d=>phys_state(c)%pmid(:,:)
+     field2d => phys_state(c)%pmid(:,:)
      call cldera_set_field_partition("pmid",ipart,ncols,field2d)
-     field2d=>phys_state(c)%pmiddry(:,:)
+     field2d => phys_state(c)%pmiddry(:,:)
      call cldera_set_field_partition("pmid_dry",ipart,ncols,field2d)
-     field2d=>phys_state(c)%pdel(:,:)
+     field2d => phys_state(c)%pdel(:,:)
      call cldera_set_field_partition("pdel",ipart,ncols,field2d)
-     field2d=>phys_state(c)%pdeldry(:,:)
+     field2d => phys_state(c)%pdeldry(:,:)
      call cldera_set_field_partition("pdel_dry",ipart,ncols,field2d)
-     field2d=>phys_state(c)%exner(:,:)
+     field2d => phys_state(c)%exner(:,:)
      call cldera_set_field_partition("exner",ipart,ncols,field2d)
-     field2d=>phys_state(c)%zm(:,:)
+     field2d => phys_state(c)%zm(:,:)
      call cldera_set_field_partition("zm",ipart,ncols,field2d)
 
      ! 2d int
-     field2d=>phys_state(c)%pint(:,:)
+     field2d => phys_state(c)%pint(:,:)
      call cldera_set_field_partition("pint",ipart,ncols,field2d)
-     field2d=>phys_state(c)%pintdry(:,:)
+     field2d => phys_state(c)%pintdry(:,:)
      call cldera_set_field_partition("pint_dry",ipart,ncols,field2d)
-     field2d=>phys_state(c)%zi(:,:)
+     field2d => phys_state(c)%zi(:,:)
      call cldera_set_field_partition("zi",ipart,ncols,field2d)
 
      ! 1d, vertically integrated
-     field1d=>phys_state(c)%te_cur(:)
+     field1d => phys_state(c)%te_cur(:)
      call cldera_set_field_partition("te",ipart,ncols,field1d)
-     field1d=>phys_state(c)%tw_cur(:)
+     field1d => phys_state(c)%tw_cur(:)
      call cldera_set_field_partition("tw",ipart,ncols,field1d)
    enddo
 
