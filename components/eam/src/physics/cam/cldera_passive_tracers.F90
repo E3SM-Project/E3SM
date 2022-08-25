@@ -14,7 +14,7 @@
 ! Journal of the Atmospheric Sciences,
 ! doi:10.1175/JAS-D-17-0135.1.
 ! 
-! ST80 tracer implemented as defined in
+! ST80_25 tracer implemented as defined in
 ! Eyring, V. et al. (2013)
 ! Overview of IGAC/SPARC Chemistry-Climate Model Initiative (CCMI) Community Simulations in 
 ! Support of Upcoming Ozone and Climate Assessments
@@ -48,12 +48,12 @@ module cldera_passive_tracers
   integer, parameter :: ncnst=3  ! number of constituents implemented by this module
 
   ! constituent names
-  character(len=8), parameter :: c_names(ncnst) = (/'AOA', 'E90', 'ST80'/)
+  character(len=8), parameter :: c_names(ncnst) = (/'AOA', 'E90', 'ST80_25'/)
 
   integer :: ifirst ! global index of first constituent
   integer :: ixaoa  ! global index for AOA tracer
   integer :: ixe90  ! global index for E90 tracer
-  integer :: ixst80 ! global index for ST80 tracer
+  integer :: ixst80 ! global index for ST80_25 tracer
 
   ! Data from namelist variables
   logical :: cldera_passive_tracers_flag  = .false.    ! true => turn on test tracer code, namelist variable
@@ -124,7 +124,7 @@ contains
     call cnst_add(c_names(2), mwdry, cpair, 0._r8, ixe90,  readiv=cldera_passive_read_from_ic_file, &
                   longname='E90 tracer')
     call cnst_add(c_names(3), mwdry, cpair, 0._r8, ixst80, readiv=cldera_passive_read_from_ic_file, &
-                  longname='ST80 tracer')
+                  longname='ST80_25 tracer')
 
   end subroutine cldera_passive_tracers_register
 
@@ -313,7 +313,7 @@ contains
     aoa_scaling = 1._r8/86400._r8
 
     ! ---- e-folding times for e90 (90 days in s), st80 (25 days in s)
-    ! (reciprocals match WACCM 'E90_tau' and 'ST80_tau', and table A2 in 
+    ! (reciprocals match WACCM 'E90_tau' and 'ST80_25_tau', and table A2 in 
     ! Tilmes+ (2016) Representation of CESM1 CAM4-chem within CCMI)
     efold_e90  = 90._r8 * 86400._r8
     efold_st80 = 25._r8 * 86400._r8
@@ -353,7 +353,7 @@ contains
                                      dt * gravit * 1._r8 / state%pdel(i, k) * sflx_e90
           end if
 
-          ! ============ ST80 ============
+          ! ============ ST80_25 ============
           ! dissipates with e-folding time of 25 days below ~80 hPa, 
           ! constant concentration of 200 ppbv above
           if (pref_mid_norm(k) >= 0.08) then
@@ -375,7 +375,7 @@ contains
        ! ====== E90 ======
        !cflx(i,ixe90) = sflx_e90
 
-       ! ====== ST80 ======
+       ! ====== ST80_25 ======
        ! no surface flux
        !cflx(i,ixst80) = 0._r8
        continue
@@ -412,7 +412,7 @@ contains
 
        q(:,:) = 0.0_r8
 
-    ! ====== ST80 ======
+    ! ====== ST80_25 ======
     else if (m == ixst80) then
 
        q(:,:) = 0.0_r8
