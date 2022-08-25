@@ -73,8 +73,7 @@ void HommeDynamics::rayleigh_friction_apply(const Real dt) const
   const auto horiz_winds_view = get_field_out("horiz_winds").get_view<Pack***>();
   const auto T_mid_view       = get_field_out("T_mid").get_view<Pack**>();
 
-  // locals for lambda captures to avoid issues on GPU
-  auto raytau0 = m_raytau0;
+  // local for lambda captures to avoid issues on GPU
   auto otau = m_otau;
 
   const auto policy = ESU::get_default_team_policy(ncols, npacks);
