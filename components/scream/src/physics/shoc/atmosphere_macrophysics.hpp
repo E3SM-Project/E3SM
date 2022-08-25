@@ -103,16 +103,17 @@ public:
        *SHOC].
        *----------------------------------------------------------------------------------
        */
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_qtracers-2), [&] (const Int& idx) {
-          int iq   = idx / nlev_packs;
-          int ilev = idx % nlev_packs; // make sure ilev strides faster, to ensure coalesced access on GPU
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_qtracers-2), [&] (const Int& iq) {
           //NOTE:Function calculate_drymmr_from_wetmmr takes 2 arguments: ( wet mmr and "wet"
           //water vapor mixing ratio)
           //Units of all tracers (except TKE and qv) will become [kg/kg(dry-air)] for mass and
           //[#/kg(dry-air)] for number after the following conversion. qv will be converted
           //to dry mmr in the next parallel for
-          PF::calculate_drymmr_from_wetmmr(qtracers(i,convert_wet_dry_idx_d(iq),ilev), qv(i,ilev));
-        });
+
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+              PF::calculate_drymmr_from_wetmmr(qtracers(i,convert_wet_dry_idx_d(iq),k), qv(i,k));
+          });
+      });
       team.team_barrier();
 
 
@@ -366,15 +367,16 @@ public:
        *---------------------------------------------------------------------------------
        */
 
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_qtracers-2), [&] (const Int& idx) {
-          int iq   = idx / nlev_packs;
-          int ilev = idx % nlev_packs; // make sure ilev strides faster, to ensure coalesced access on GPU
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, num_qtracers-2), [&] (const Int& iq) {
           //NOTE:Function calculate_wetmmr_from_drymmr takes 2 arguments: ( dry mmr and "dry"
           //water vapor mixing ratio)
           //Units of all tracers (except TKE and qv) will become [kg/kg(wet-air)] for mass and
           //[#/kg(wet-air)] for number after the following conversion. qv will be converted
           //to wet mmr in the next parallel for
-          PF::calculate_wetmmr_from_drymmr(qtracers(i,convert_wet_dry_idx_d(iq),ilev), qv(i,ilev));
+
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+              PF::calculate_wetmmr_from_drymmr(qtracers(i,convert_wet_dry_idx_d(iq),k), qv(i,k));
+             });
         });
       team.team_barrier();
 
