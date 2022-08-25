@@ -135,12 +135,9 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
      Additionally, Homme computes forcing as:
        - FT (temperature forcing): FT_dyn=PD( (T_phys_new - T_phys_old)/dt )
        - FM (momentum forcing): FM_dyn=PD( (v_phys_new-v_phys_old)/dt) )
-       - FQ (tracers forcing):
-          - ftype==FORCING_0(0): FQ_dyn =  PD(Q_phys_new) (used as a hard adjustment
-          - ftype==FORCING_2(2): FQ_dyn = PD(Q_phys_new - DP(Q_dyn_old)) (an increment for Q)
+       - FQ (tracers forcing): FQ_dyn =  PD(Q_phys_new) (used as a hard adjustment or in increment calc)
      Here, PD(x) is quantity x remapped from physics to dynamics grid (viceversa for DP(x)).
-     So for BFB restart, we need so store T_phys_old, [u,v,w]_phys_old, and, if
-     forcing type is FORCING_2, also Q_dyn_old.
+     So for BFB restart, we need so store T_phys_old, [u,v,w]_phys_old.
      However, Homme computes Q=Qdp/dp at the end of the time step, so for BFB restarts we need to
      save Qdp only, and recompute Q_dyn_old=Qdp/dp.
    */
@@ -378,21 +375,12 @@ void HommeDynamics::initialize_impl (const RunType run_type)
     m_d2p_remapper->registration_begins();
 
     // ftype==FORCING_0:
-    //  1) remap Q_rgn->Q_dyn
-    //  2) compute FQ_dyn=(Q_dyn-Q_dyn_old)/dt
+    //  1) remap Q_pgn->FQ_dyn
+    //  2) compute FQ_dyn=dp3d*(FQ_dyn-Q_dyn_old)/dt
     // ftype!=FORCING_0:
-    //  1) compute FQ_rgn=Q_rgn-Q_rgn_old
-    //  2) remap FQ_rgn->FQ_dyn
-    //  3) Q_dyn=Q_dyn_old+FQ_dyn
-    if (params.ftype==Homme::ForcingAlg::FORCING_2) {
-      // Need a tmp for dQ_phys
-      using namespace ShortFieldTagsNames;
-      create_helper_field("FQ_phys",{COL,CMP,LEV},{ncols,qsize,nlevs},pgn);
-      m_p2d_remapper->register_field(m_helper_fields.at("FQ_phys"),m_helper_fields.at("FQ_dyn"));
-    } else {
-      // Can remap Q directly into FQ, tendency computed in pre_process step
-      m_p2d_remapper->register_field(*get_group_out("Q",pgn).m_bundle,m_helper_fields.at("FQ_dyn"));
-    }
+    //  1) remap Q_pgn->FQ_dyn
+    // Remap Q directly into FQ, tendency computed in pre_process step
+    m_p2d_remapper->register_field(*get_group_out("Q",pgn).m_bundle,m_helper_fields.at("FQ_dyn"));
     m_p2d_remapper->register_field(m_helper_fields.at("FT_phys"),m_helper_fields.at("FT_dyn"));
 
     // FM has 3 components on dyn grid, but only 2 on phys grid
@@ -481,7 +469,7 @@ void HommeDynamics::run_impl (const int dt)
 
     for (int subiter=0; subiter<nsplit; ++subiter) {
       Kokkos::fence();
-      prim_run_f90 ();
+      prim_run_f90(/* nsplit_iteration = */ subiter+1);
     }
 
     // Update nstep in the restart extra data, so it can be written to restart if needed.
@@ -580,32 +568,11 @@ void HommeDynamics::homme_pre_process (const int dt) {
   if (fv_phys_active()) {
     fv_phys_pre_process();
   } else {
-    if (ftype==Homme::ForcingAlg::FORCING_2) {
-      const auto Q  = get_group_in("Q",pgn).m_bundle->get_view<const Pack***>();
-      const auto FQ = m_helper_fields.at("FQ_phys").get_view<Pack***>();
-      const int qsize = params.qsize;
-      Kokkos::parallel_for(Kokkos::RangePolicy<>(0,ncols*qsize*npacks),
-                           KOKKOS_LAMBDA (const int idx) {
-        const int icol =  idx / (qsize*npacks);
-        const int iq   = (idx / (npacks)) % qsize;
-        const int ilev = idx % npacks;
-        // Recall: at this point FQ stores Q_ref at the end of previous homme step
-        FQ(icol,iq,ilev) = Q(icol,iq,ilev) - FQ(icol,iq,ilev);
-      });
-    }
-    // Remap FT, FM, and Q (or FQ, depending on ftype)
+    // Remap FT, FM, and Q->FQ
     m_p2d_remapper->remap(true);
   }
 
   auto& tl = c.get<TimeLevel>();
-  auto& ff = c.get<ForcingFunctor>();
-
-  const auto& tracers = c.get<Tracers>();
-  const auto& state = c.get<ElementsState>();
-  auto Q    = tracers.Q;
-  auto FQ   = tracers.fq;
-  auto Qdp  = tracers.qdp;
-  auto dp3d = state.m_dp3d;
 
   // Note: np1_qdp and n0_qdp are 'deduced' from tl.nstep, so the
   //       following call may not even change them (i.e., they are
@@ -613,56 +580,38 @@ void HommeDynamics::homme_pre_process (const int dt) {
   //       the following call will do nothing.
   tl.update_tracers_levels(params.qsplit);
 
-  const auto n0 = tl.n0;  // The time level where pd coupling remapped into
-  constexpr int NVL = HOMMEXX_NUM_LEV;
-  const int qsize = params.qsize;
-  const auto n0_qdp = tl.n0_qdp;
-  const auto Q_dyn = m_helper_fields.at("Q_dyn").get_view<Homme::Scalar*****>();
-
   // At this point, FQ contains Qnew (coming from physics).
   // Depending on ftype, we are going to do different things:
   //  ftype=0: FQ = dp*(Qnew-Qold) / dt
-  //  ftype=2: qdp = dp*Qnew, with Qnew stored in FQ
-  switch(ftype) {
-    case ForcingAlg::FORCING_0:
-      // Back out tracers tendency for Qdp
-      Kokkos::parallel_for(Kokkos::RangePolicy<>(0,Q.size()),KOKKOS_LAMBDA(const int idx) {
-        const int ie = idx / (qsize*NP*NP*NVL);
-        const int iq = (idx / (NP*NP*NVL)) % qsize;
-        const int ip = (idx / (NP*NVL)) % NP;
-        const int jp = (idx / NVL) % NP;
-        const int k  =  idx % NVL;
+  //  ftype=2: nothing
+  if (ftype == ForcingAlg::FORCING_0) {
+    // Back out tracers tendency for Qdp
+    const auto& tracers = c.get<Tracers>();
+    const auto& state = c.get<ElementsState>();
+    auto Q    = tracers.Q;
+    auto FQ   = tracers.fq;
+    auto dp3d = state.m_dp3d;
+    const auto n0 = tl.n0;  // The time level where pd coupling remapped into
+    constexpr int NVL = HOMMEXX_NUM_LEV;
+    const int qsize = params.qsize;
+    const auto Q_dyn = m_helper_fields.at("Q_dyn").get_view<Homme::Scalar*****>();
+    Kokkos::parallel_for(Kokkos::RangePolicy<>(0,Q.size()),KOKKOS_LAMBDA(const int idx) {
+      const int ie = idx / (qsize*NP*NP*NVL);
+      const int iq = (idx / (NP*NP*NVL)) % qsize;
+      const int ip = (idx / (NP*NVL)) % NP;
+      const int jp = (idx / NVL) % NP;
+      const int k  =  idx % NVL;
 
-        // fq is currently storing q_new
-        const auto& q_prev = Q(ie,iq,ip,jp,k);
-        const auto& dp     = dp3d(ie,n0,ip,jp,k);
-              auto& fq     = FQ(ie,iq,ip,jp,k);
+      // fq is currently storing q_new
+      const auto& q_prev = Q(ie,iq,ip,jp,k);
+      const auto& dp     = dp3d(ie,n0,ip,jp,k);
+      auto& fq     = FQ(ie,iq,ip,jp,k);
 
-        fq -= q_prev;
-        fq /= dt;
-        fq *= dp;
-      });
-      Kokkos::fence();
-      break;
-    case ForcingAlg::FORCING_2:
-      if (not fv_phys_active()) {
-        Kokkos::parallel_for(Kokkos::RangePolicy<>(0,Q.size()),KOKKOS_LAMBDA(const int idx) {
-          const int ie = idx / (qsize*NP*NP*NVL);
-          const int iq = (idx / (NP*NP*NVL)) % qsize;
-          const int ip = (idx / (NP*NVL)) % NP;
-          const int jp = (idx / NVL) % NP;
-          const int k  =  idx % NVL;
-
-          // So far, FQ contains the remap of Q_ref_new - Q_ref_old. Add Q_dyn_old to get new state.
-          FQ(ie,iq,ip,jp,k) += Q_dyn(ie,iq,ip,jp,k);
-        });
-      }
-      // Hard adjustment of qdp
-      ff.tracers_forcing(dt,n0,n0_qdp,true,params.moisture);
-      break;
-    default:
-      EKAT_ERROR_MSG ("Error! Unexpected/unsupported forcing algorithm.\n"
-                      "  ftype: " + std::to_string(Homme::etoi(ftype)) + "\n");
+      fq -= q_prev;
+      fq /= dt;
+      fq *= dp;
+    });
+    Kokkos::fence();
   }
 }
 
@@ -774,13 +723,6 @@ void HommeDynamics::homme_post_process (const int dt) {
 
   // Apply Rayleigh friction to update temperature and horiz_winds
   rayleigh_friction_apply(dt);
-
-  // If ftype==FORCING_2, also set FQ_phys=Q_phys. Next step's Q_dyn will be set
-  // as Q_dyn = Q_dyn_old + PD_remap(Q_phys-Q_phys_old)
-  const auto ftype = params.ftype;
-  if (ftype==Homme::ForcingAlg::FORCING_2) {
-    m_helper_fields.at("FQ_phys").deep_copy(*get_group_out("Q",pgn).m_bundle);
-  }
 }
 
 void HommeDynamics::
@@ -951,7 +893,6 @@ void HommeDynamics::restart_homme_state () {
   // All internal fields should have been read from restart file.
   // We need to remap Q_dyn, v_dyn, w_dyn, T_dyn back to phys grid,
   // to handle the backing out of the tendencies
-  // Note: Q_ref only in case of ftype!=FORCING_0.
   // TODO: p2d remapper does not support subfields, so we need to create temps
   //       to remap v_dyn and w_dyn separately, then copy into v3d_prev.
   const auto& c = Homme::Context::singleton();
@@ -1018,10 +959,7 @@ void HommeDynamics::restart_homme_state () {
   auto qv_prev_ref = std::make_shared<Field>();
   auto Q_dyn = m_helper_fields.at("Q_dyn");
   if (params.ftype==Homme::ForcingAlg::FORCING_2) {
-    // Recall, we store Q_old in FQ_ref, and do FQ_ref = Q_new - FQ_ref during pre-process
-    // Q_old is the tracers at the end of last dyn step, which we can recompute by remapping
-    // Q_dyn (which was part of the restart file) to the ref grid.
-    auto Q_old = m_helper_fields.at("FQ_phys");  
+    auto Q_old = *get_group_in("Q",pgn).m_bundle;
     m_ic_remapper->register_field(Q_old,Q_dyn);
 
     // Grab qv_ref_old from Q_old
@@ -1211,9 +1149,6 @@ void HommeDynamics::initialize_homme_state () {
     //       we cannot (11/2021) subview 2 slices of FM together, so
     //       we'd need to also subview horiz_winds. Since we
     const auto& pgn = m_phys_grid->name();
-    if (params.ftype==Homme::ForcingAlg::FORCING_2) {
-      m_helper_fields.at("FQ_phys").deep_copy(*get_group_out("Q",pgn).m_bundle);
-    }
     m_helper_fields.at("FT_phys").deep_copy(get_field_in("T_mid",pgn));
     m_helper_fields.at("FM_phys").deep_copy(get_field_out("horiz_winds",pgn));
   }
