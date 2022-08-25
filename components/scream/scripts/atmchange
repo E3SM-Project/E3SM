@@ -55,12 +55,21 @@ def atm_config_chg_impl(xml_root,append,changes):
     any_change = False
     for change in changes:
 
-        tokens = change.split('=')
-        expect (len(tokens)==2, "Invalid change format. Expected A[::B[...]=value, got' {}'".format(change))
+        tokens = change.split('+=')
+        if len(tokens)==2:
+            append_this = True
+        else:
+            append_this = append
+            tokens = change.split('=')
+            
+        expect (len(tokens)==2,
+            f"Invalid change format '{change}'. Valid formats are:\n"
+            f"  - A[::B[...]=value\n"
+            f"  - A[::B[...]+=value  (implies append for this change)")
         node, __ = get_xml_node(xml_root,tokens[0])
         new_value = tokens[1]
 
-        if append:
+        if append_this:
             expect ("type" in node.attrib.keys(),
                     "Error! Missing type information for {}".format(tokens[0]))
             type = node.attrib["type"];
