@@ -7,5 +7,5 @@ Field Names: [field_1, field_2, field_3, field_packed]
 output_control:
   MPI Ranks in Filename: true
   Frequency: 1
-  frequency_units: Steps
+  frequency_units: DUMMY_UNITS
 ...

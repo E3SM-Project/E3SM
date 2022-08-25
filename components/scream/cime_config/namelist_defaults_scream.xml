@@ -280,9 +280,7 @@ tweaking their $case/namelist_scream.xml file.
       <Casename>./${CASE}.scream</Casename>
       <output_control>
         <Frequency>${REST_N}</Frequency>
-        <Frequency REST_OPTION="none">0</Frequency>
-        <frequency_units>INVALID</frequency_units>
-        <frequency_units REST_OPTION="nstep*">Steps</frequency_units>
+        <frequency_units>${REST_OPTION}</frequency_units>
         <avg_type_in_filename>false</avg_type_in_filename>
         <frequency_in_filename>false</frequency_in_filename>
       </output_control>

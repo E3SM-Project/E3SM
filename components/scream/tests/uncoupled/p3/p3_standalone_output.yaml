@@ -25,7 +25,7 @@ Field Names:
   - micro_vap_ice_exchange
 output_control:
   Frequency: ${NUM_STEPS}
-  frequency_units: Steps
+  frequency_units: nsteps
   Timestamp in Filename: false
   MPI Ranks in Filename: true
 ...

@@ -42,7 +42,7 @@
  *        IO Grid Name:           STRING                (optional)
  *  output_control:
  *    Frequency:                  INT
- *    frequency_units:            STRING                (default: Steps)
+ *    frequency_units:            STRING                (default: nsteps)
  *  Checkpoint Control:
  *    Frequency:                  INT                   (default: 0)
  *    frequency_units:            STRING                (default: ${Output->frequency_units})
@@ -67,7 +67,7 @@
  *  - Max Snapshots Per File: the maximum number of snapshots saved per file. After this many
  *  - Output: parameters for output control
  *    - Frequency: the frequency of output writes (in the units specified by ${Output frequency_units})
- *    - frequency_units: the units of output frequency (Steps, Months, Years, Hours, Days,...)
+ *    - frequency_units: the units of output frequency (nsteps, nmonths, nyears, nhours, ndays,...)
  *      snapshots have been written on a single nc file, the class will close the file, and open a new one
  *  - Checkpointing: parameters for checkpointing control
  *    - Frequency: the frequenct of checkpoints writes. This option is used/matters only if

@@ -47,6 +47,7 @@ namespace scream
  * locally create a parameter list.
  *
  * Adding output streams mid-simulation:
+ * TODO - This doesn't actually exist
  * It is possible to add an output stream after init has been called by calling
  * the internal function 'add_output_stream' which takes an EKAT parameter list as input.
  * See comments in add_output_stream below for more details.

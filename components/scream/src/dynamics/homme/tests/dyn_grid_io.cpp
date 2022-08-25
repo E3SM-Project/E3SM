@@ -158,7 +158,7 @@ TEST_CASE("dyn_grid_io")
   io_params.sublist("Fields").sublist("Dynamics").set<std::vector<std::string>>("Field Names",fnames);
   io_params.sublist("Fields").sublist("Dynamics").set<std::string>("IO Grid Name","Physics GLL");
   io_params.sublist("output_control").set<int>("Frequency",1);
-  io_params.sublist("output_control").set<std::string>("frequency_units","Steps");
+  io_params.sublist("output_control").set<std::string>("frequency_units","nsteps");
 
   OutputManager output;
   // AtmosphereOutput output(comm,io_params,fm_dyn,gm);
@@ -175,7 +175,7 @@ TEST_CASE("dyn_grid_io")
 
   // Next, let's load all fields from file directly into the dyn grid fm
   std::string filename = "dyn_grid_io_np" + std::to_string(comm.size())
-                       + ".INSTANT.Steps_x1." + t0.to_string() + ".nc";
+                       + ".INSTANT.nsteps_x1." + t0.to_string() + ".nc";
   filename.erase(std::remove(filename.begin(),filename.end(),':'),filename.end());
 
   io_params.set<std::string>("Filename",filename);
