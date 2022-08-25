@@ -148,6 +148,11 @@
 
   <!-- F compsets with climatological SST -->
   <compset>
+    <alias>F1950-MMF1</alias>
+    <lname>1950_EAM%MMF1_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>F2010-MMF1</alias>
     <lname>2010_EAM%MMF1_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
