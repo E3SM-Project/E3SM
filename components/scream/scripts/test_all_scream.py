@@ -922,10 +922,6 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
             for file in files:
                 file_no_path = file.name
                 tokens = re.split('_|-|\.',str(file_no_path))
-                print (tokens)
-                #  if len(tokens)!=4:
-                #      print (f"tokens: {','.join('{}'.format(t) for t in tokens)}")
-                #  expect (len(tokens)==4, "Error! Something went wrong while parsing ctest output files.")
                 if latest is None:
                     latest = file
                     curr_tag = int(tokens[1])
