@@ -95,7 +95,7 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
         raise exc_type(msg)
 
 ###############################################################################
-def get_xml_node(xml_root,name,return_hierarchy=False):
+def get_xml_node(xml_root,name):
 ###############################################################################
     """
     >>> xml = '''
