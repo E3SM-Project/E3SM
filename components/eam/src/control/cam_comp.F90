@@ -229,11 +229,10 @@ use iso_c_binding, only: c_loc
    do c = begchunk,endchunk
     nlcols = nlcols +  get_ncols_p(c)
    enddo
-   ! print *, "num my cols:",nlcols
 
-   nfields = size(pbuf2d,1)
 
    ! PBUF fields
+   nfields = size(pbuf2d,1)
    do ifield=1,nfields
      ! retrieve fields
      fname = pbuf_get_field_name(ifield)
@@ -303,8 +302,8 @@ use iso_c_binding, only: c_loc
    ! 1d, vertically integrated
    allocate(dims1(1))
    dims1(1) = ncols
-   call cldera_add_partitioned_field("te",dims2,nparts,part_dim) ! total energy
-   call cldera_add_partitioned_field("tw",dims2,nparts,part_dim) ! total water
+   call cldera_add_partitioned_field("te",dims1,nparts,part_dim) ! total energy
+   call cldera_add_partitioned_field("tw",dims1,nparts,part_dim) ! total water
 
    ! Set fields data
    do ipart = 1,nparts
