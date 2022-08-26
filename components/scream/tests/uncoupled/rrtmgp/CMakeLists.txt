@@ -18,7 +18,7 @@ if (NOT SCREAM_BASELINES_ONLY)
   ## Create free running rrtmgp stand alone test that runs from an initial condition file.
   CreateUnitTest(
       rrtmgp_standalone "rrtmgp_standalone.cpp" "${NEED_LIBS}" LABELS ${TEST_LABELS}
-      MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+      MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
       EXE_ARGS "--ekat-test-params inputfile=input.yaml"
       PROPERTIES FIXTURES_SETUP rrtmgp_generate_output_nc_files
   )
@@ -56,8 +56,8 @@ if (NOT SCREAM_BASELINES_ONLY)
   # Compare chunked vs non-chunked radiation
   include (BuildCprnc)
   BuildCprnc()
-  set (SRC_FILE "rrtmgp_standalone_output_chunked.INSTANT.nsteps_x${NUM_STEPS}.np1.nc")
-  set (TGT_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np1.nc")
+  set (SRC_FILE "rrtmgp_standalone_output_chunked.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
+  set (TGT_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
   set (TEST_NAME "rrtmgp_chunked_vs_monolithic_bfb")
   add_test (NAME ${TEST_NAME}
             COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
@@ -66,13 +66,13 @@ if (NOT SCREAM_BASELINES_ONLY)
             FIXTURES_REQUIRED "rrtmgp_generate_output_nc_files;rrtmgp_chunked_generate_output")
 
   ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
-  ## Only if max mpi ranks is >1
+  ## Only if running with 2+ ranks configurations
   # This test requires CPRNC
-  if (SCREAM_TEST_MAX_RANKS GREATER 1)
-    foreach (MPI_RANKS RANGE 2 ${SCREAM_TEST_MAX_RANKS})
+  if (TEST_RANK_START GREATER TEST_RANK_END)
+    foreach (MPI_RANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
       set (SRC_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
-      set (TGT_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np1.nc")
-      set (TEST_NAME "rrtmgp_np1_vs_np${MPI_RANKS}_bfb")
+      set (TGT_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
+      set (TEST_NAME "rrtmgp_np${TEST_RANK_START}_vs_np${MPI_RANKS}_bfb")
       add_test (NAME ${TEST_NAME}
                 COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})

@@ -19,10 +19,9 @@ set (NEED_LIBS cld_fraction shoc p3 scream_rrtmgp rrtmgp ${NETCDF_C} ${dynLibNam
 # We can use the same namelist for all tests, using 3 different input yaml files
 
 # Add _np1 only if we're running also with more than one rank. Otherwise, add nothing
-if (SCREAM_TEST_MAX_RANKS GREATER 1)
-  set (TEST_NRANKS 1 ${SCREAM_TEST_MAX_RANKS})
-else()
-  set (TEST_NRANKS 1)
+set (TEST_NRANKS ${TEST_RANK_START})
+if (TEST_RANK_START GREATER TEST_RANK_END)
+  list (APPEND TEST_NRANKS ${TEST_RANK_END})
 endif()
 
 # Create a single executable for all the 3 runs
