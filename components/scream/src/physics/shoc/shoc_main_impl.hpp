@@ -121,6 +121,12 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<Spack>&       brunt,
   const uview_1d<Spack>&       isotropy)
 {
+#if defined KOKKOS_ENABLE_HIP && defined __clang__
+  // 'tlr' is unused, but with hipcc and rocm/5.1.0, SHOC runs with -O0 and this
+  // next line but nothing else that I've tried.
+  const int tlr = team.league_rank();
+#endif
+  
   // Define temporary variables
   uview_1d<Spack> rho_zt, shoc_qv, dz_zt, dz_zi, tkh;
   workspace.template take_many_and_reset<5>(

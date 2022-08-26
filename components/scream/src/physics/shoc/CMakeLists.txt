@@ -72,11 +72,19 @@ if (NOT SCREAM_DEBUG)
   endif()
 endif()
 
+if (HIP_BUILD)
+  # Work around hipcc issues with SHOC as of late Aug 2022. SHOC builds but then
+  # fails when running in v1 with -O1 and higher.
+  set(SHOC_HIP_FLAGS "-O0")
+endif()
+
 add_library(shoc ${SHOC_SRCS})
 target_include_directories(shoc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../share)
 set_target_properties(shoc PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
 target_link_libraries(shoc physics_share scream_share)
-target_compile_options(shoc PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
+target_compile_options(shoc
+  PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>
+  PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${SCREAM_CXX_FLAGS} ${SHOC_HIP_FLAGS}>)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
