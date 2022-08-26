@@ -353,7 +353,13 @@ endif()
 # This is a meta-variable, which individual tests can use to set *different* degrees
 # of testing, in terms of resolutions. E.g., for SHORT use 3 timesteps, for MEDIUM use 10,
 # for LONG use 100. It is *completely* up to the test to decide what short, medium, and long mean.
-set(SCREAM_TEST_SIZE MEDIUM CACHE STRING "The kind of testing to perform: SHORT, MEDIUM, LONG. Only applies to certain tests and is generally used to reduce test length when valgrind/cuda-memcheck are on.")
+if (EKAT_ENABLE_COVERAGE OR EKAT_ENABLE_CUDA_MEMCHECK OR EKAT_ENABLE_VALGRIND)
+  set (SCREAM_TEST_SIZE_DEFAULT SHORT)
+else()
+  set (SCREAM_TEST_SIZE_DEFAULT MEDIUM)
+endif()
+
+set(SCREAM_TEST_SIZE ${SCREAM_TEST_SIZE_DEFAULT} CACHE STRING "The kind of testing to perform: SHORT, MEDIUM, LONG. Only applies to certain tests and is generally used to reduce test length when valgrind/cuda-memcheck are on.")
 set(SCREAM_TEST_VALID_SIZES "SHORT;MEDIUM;LONG" CACHE INTERNAL "List of valid values for SCREAM_TEST_SIZE")
 
 # Whether to use XYZ as a method to detect memory usage.
