@@ -21,6 +21,9 @@ int get_default_fpes () {
 
 void initialize_scream_session (bool print_config) {
   ekat::initialize_ekat_session(print_config);
+
+  // Make sure scream only has its FPEs
+  ekat::disable_all_fpes();
   ekat::enable_fpes(get_default_fpes());
 
   if (print_config) 
@@ -29,7 +32,11 @@ void initialize_scream_session (bool print_config) {
 
 void initialize_scream_session (int argc, char **argv, bool print_config) {
   ekat::initialize_ekat_session(argc,argv,print_config);
+
+  // Make sure scream only has its FPEs
+  ekat::disable_all_fpes();
   ekat::enable_fpes(get_default_fpes());
+
   if (print_config) 
     std::cout << scream_config_string() << "\n";
 }
