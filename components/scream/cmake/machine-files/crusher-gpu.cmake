@@ -9,6 +9,8 @@ include (${EKAT_MACH_FILES_PATH}/kokkos/hip.cmake)
 set(SCREAM_MPIRUN_EXE "srun" CACHE STRING "")
 set(SCREAM_MACHINE "crusher-gpu" CACHE STRING "")
 
+#set(CMAKE_BUILD_TYPE "debug" CACHE STRING "")
+
 #line needed
 #set(CMAKE_CXX_FLAGS "-I${MPICH_DIR}/include -L${MPICH_DIR}/lib -lmpi -L/opt/cray/pe/mpich/8.1.12/gtl/lib -lmpi_gtl_hsa" CACHE STRING "" FORCE)
 #set(CMAKE_EXE_LINKER_FLAGS "-I${MPICH_DIR}/include -L${MPICH_DIR}/lib" CACHE STRING "" FORCE)
