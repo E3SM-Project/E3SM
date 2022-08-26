@@ -3,9 +3,9 @@
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/ekat_session.hpp"
-#include "ekat/util/ekat_feutils.hpp"
 
 #include <iostream>
+#include <cfenv>
 
 namespace scream {
 
