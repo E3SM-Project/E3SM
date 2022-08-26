@@ -355,6 +355,10 @@ endif()
 # for LONG use 100. It is *completely* up to the test to decide what short, medium, and long mean.
 if (EKAT_ENABLE_COVERAGE OR EKAT_ENABLE_CUDA_MEMCHECK OR EKAT_ENABLE_VALGRIND)
   set (SCREAM_TEST_SIZE_DEFAULT SHORT)
+  # also set thread_ing=$max_thread - 1, so we test at most 2 threading configurations
+  if (SCREAM_TEST_MAX_THREADS GREATER 1)
+    math (EXPR SCREAM_TEST_THREAD_INC ${SCREAM_TEST_MAX_THREADS}-1)
+  endif()
 else()
   set (SCREAM_TEST_SIZE_DEFAULT MEDIUM)
 endif()
@@ -406,6 +410,9 @@ print_var(SCREAM_FPMODEL)
 print_var(SCREAM_MPIRUN_EXE)
 print_var(SCREAM_LIB_ONLY)
 print_var(SCREAM_TPL_LIBRARIES)
+print_var(SCREAM_TEST_MAX_THREADS)
+print_var(SCREAM_TEST_THREAD_INC)
+print_var(SCREAM_TEST_MAX_RANKS)
 
 # This must be done using add_definitions because it is used to determine
 # whether to include scream_config.h.
