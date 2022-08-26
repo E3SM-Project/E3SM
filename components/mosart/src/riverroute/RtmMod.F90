@@ -2312,12 +2312,14 @@ contains
           do idam = 1,ctlSubwWRM%LocalNumDam
              budget_terms(bv_dstor_i,nt) = budget_terms(bv_dstor_i,nt) + StorWater%storage(idam)
           enddo
-
-          do nt = 1,nt_rtm
-          do nr = rtmCTL%begr,rtmCTL%endr
-             budget_terms(bv_dstor_i,nt) = budget_terms(bv_dstor_i,nt) + Tres%wres(nr,nt)
-          enddo
-          enddo
+          
+		  if (sediflag) then
+             do nt = 1,nt_rtm
+             do nr = rtmCTL%begr,rtmCTL%endr
+                budget_terms(bv_dstor_i,nt) = budget_terms(bv_dstor_i,nt) + Tres%wres(nr,nt)
+             enddo
+             enddo
+		  end if
        endif
        call t_stopf('mosartr_budget')
     endif ! budget_check
@@ -2842,12 +2844,14 @@ contains
           do idam = 1,ctlSubwWRM%LocalNumDam
              budget_terms(bv_dstor_f,nt) = budget_terms(bv_dstor_f,nt) + StorWater%storage(idam)
           enddo
-
-          do nt = 1,nt_rtm
-          do nr = rtmCTL%begr,rtmCTL%endr
-             budget_terms(bv_dstor_f,nt) = budget_terms(bv_dstor_f,nt) + Tres%wres(nr,nt)
-          enddo
-          enddo
+          
+		  if(sediflag) then
+             do nt = 1,nt_rtm
+             do nr = rtmCTL%begr,rtmCTL%endr
+                budget_terms(bv_dstor_f,nt) = budget_terms(bv_dstor_f,nt) + Tres%wres(nr,nt)
+             enddo
+             enddo
+		  end if
        endif
 
        if (inundflag) then
@@ -3849,12 +3853,12 @@ contains
 
             if ( TUnit%area(n) .le. 0._r8 ) then
               write( iulog, * ) trim( subname ) // ' ERROR: TUnit%area(n) <= 0 for n=', n
-              call shr_sys_abort( trim( subname ) // ' ERROR: TUnit%area(n) <= 0 ')
+            !  call shr_sys_abort( trim( subname ) // ' ERROR: TUnit%area(n) <= 0 ')
             end if
 
             if ( TUnit%areaTotal(n) .le. 0._r8 ) then
               write( iulog, * ) trim( subname ) // ' ERROR: TUnit%areaTotal(n) <= 0 for n=', n
-              call shr_sys_abort( trim( subname ) // ' ERROR: TUnit%areaTotal(n) <= 0 ')
+            !  call shr_sys_abort( trim( subname ) // ' ERROR: TUnit%areaTotal(n) <= 0 ')
             end if
 
             if ( TUnit%nh(n) .le. 0._r8 ) then
