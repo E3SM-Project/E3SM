@@ -299,7 +299,14 @@ void HommeDynamics::init_buffers(const ATMBufferManager &buffer_manager)
   // Reset Homme buffer to use AD buffer memory.
   // Internally, homme will actually initialize its own buffers.
   EKAT_REQUIRE(buffer_manager.allocated_bytes()%sizeof(Real)==0); // Sanity check
-  fbm.allocate(buffer_manager.get_memory(), buffer_manager.allocated_bytes()/sizeof(Real));
+
+  Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
+  fbm.allocate(mem, buffer_manager.allocated_bytes()/sizeof(Real));
+  mem += fbm.allocated_size();
+
+  size_t used_mem = (mem - buffer_manager.get_memory())*sizeof(Real);
+  EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(),
+                   "Error! Used memory != requested memory for HommeDynamics.");
 }
 
 void HommeDynamics::initialize_impl (const RunType run_type)
@@ -437,6 +444,9 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   add_postcondition_check<Interval>(get_field_out("T_mid",pgn),m_phys_grid,140.0, 500.0,false);
   add_postcondition_check<Interval>(get_field_out("horiz_winds",pgn),m_phys_grid,-400.0, 400.0,false);
   add_postcondition_check<Interval>(get_field_out("ps"),m_phys_grid,40000.0, 120000.0,false);
+
+  // Initialize Rayleigh friction variables
+  rayleigh_friction_init();
 }
 
 void HommeDynamics::run_impl (const int dt)
@@ -469,7 +479,7 @@ void HommeDynamics::run_impl (const int dt)
 
     // Post process Homme's output, to produce what the rest of Atm expects
     Kokkos::fence();
-    homme_post_process ();
+    homme_post_process (dt);
   } catch (std::exception& e) {
     EKAT_ERROR_MSG(e.what());
   } catch (...) {
@@ -605,7 +615,7 @@ void HommeDynamics::homme_pre_process (const int dt) {
   }
 }
 
-void HommeDynamics::homme_post_process () {
+void HommeDynamics::homme_post_process (const int dt) {
   const auto& pgn = m_phys_grid->name();
   const auto& c = Homme::Context::singleton();
   const auto& params = c.get<Homme::SimulationParams>();
@@ -710,6 +720,9 @@ void HommeDynamics::homme_post_process () {
       T_prev(ilev) = T_val;
     });
   });
+
+  // Apply Rayleigh friction to update temperature and horiz_winds
+  rayleigh_friction_apply(dt);
 }
 
 void HommeDynamics::

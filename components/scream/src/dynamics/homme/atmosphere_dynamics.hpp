@@ -21,6 +21,11 @@ namespace scream
  */
 class HommeDynamics : public AtmosphereProcess
 {
+  using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+  using KT = KokkosTypes<DefaultDevice>;
+  template<typename ScalarT>
+  using view_1d = typename KT::template view_1d<ScalarT>;
+
 public:
 
   // Constructor(s) and Destructor
@@ -41,7 +46,7 @@ public:
 protected:
 #endif
   void homme_pre_process (const int dt);
-  void homme_post_process ();
+  void homme_post_process (const int dt);
 
 #ifndef KOKKOS_ENABLE_CUDA
   // Cuda requires methods enclosing __device__ lambda's to be public
@@ -85,6 +90,11 @@ protected:
   // See [rrtmgp active gases] in atmosphere_dynamics_fv_phys.cpp.
   void fv_phys_rrtmgp_active_gases_init(const std::shared_ptr<const GridsManager>& gm);
   void fv_phys_rrtmgp_active_gases_remap();
+
+  // Rayleigh friction functions
+  void rayleigh_friction_init ();
+  void rayleigh_friction_apply (const Real dt) const;
+
 public:
   // Fast boolean function returning whether Physics PGN is being used.
   bool fv_phys_active() const;
@@ -101,7 +111,6 @@ protected:
   // requested_buffer_size_in_bytes, where Homme::ForcingFunctor queries
   // Homme::Tracers for qsize.
   void set_computed_group_impl (const FieldGroup& group);
-
 
   // Computes total number of bytes needed for local variables
   size_t requested_buffer_size_in_bytes() const;
@@ -130,6 +139,15 @@ protected:
   std::shared_ptr<const AbstractGrid> m_dyn_grid;  // Dynamics DGLL
   std::shared_ptr<const AbstractGrid> m_phys_grid; // Column parameterizations grid
   std::shared_ptr<const AbstractGrid> m_cgll_grid; // Unique CGLL
+
+  // Rayleigh friction decay rate profile
+  view_1d<Pack> m_otau;
+
+  // Rayleigh friction paramaters
+  int m_rayk0;      // Vertical level at which rayleigh friction term is centered.
+  Real m_raykrange; // Range of rayleigh friction profile.
+  Real m_raytau0;   // Approximate value of decay time at model top (days)
+                    // if set to 0, no rayleigh friction is applied
 };
 
 } // namespace scream
