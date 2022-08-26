@@ -4006,24 +4006,24 @@
       </modules>
 
       <modules compiler="gnu">
-	<command name="load">gcc-11.1.0-gcc-4.8.5-bm2qpp7</command>
+	<command name="load">gcc-11.1.0</command>
       </modules>
 
       <modules mpilib="openmpi">
-	<command name="load">openmpi-4.1.1-gcc-11.1.0-rwg3d7c</command>
+	<command name="load">openmpi-gcc@11.1.0</command>
       </modules>
 
       <modules compiler="gnu">
 	<command name="load">cmake</command>
 	<command name="load">perl</command>
 	<command name="load">perl-xml-libxml</command>
-        <command name="load">netcdf-c-4.8.0-gcc-11.1.0-ffnax7c</command>
-        <command name="load">netcdf-cxx-4.2-gcc-11.1.0-hql6n2m</command>
-        <command name="load">netcdf-fortran-4.5.3-gcc-11.1.0-vtjohhj</command>
-        <command name="load">parallel-netcdf-1.12.2-gcc-11.1.0-tfgidaa</command>
-        <command name="load">hdf5-1.10.7-gcc-11.1.0-bwfd6bb</command>
-        <command name="load">netlib-lapack-3.9.1-gcc-11.1.0-gwvv6iz</command>
-        <command name="load">openblas-0.3.17-gcc-11.1.0-3iblhfh</command>
+        <command name="load">netcdf-c-gcc@11.1.0</command>
+        <command name="load">netcdf-cxx-gcc@11.1.0</command>
+        <command name="load">netcdf-fortran-gcc@11.1.0</command>
+        <command name="load">parallel-netcdf-gcc@11.1.0</command>
+        <command name="load">hdf5-gcc@11.1.0</command>
+        <command name="load">netlib-lapack-gcc@11.1.0</command>
+        <command name="load">openblas-gcc@11.1.0</command>
       </modules>
 
     </module_system>
