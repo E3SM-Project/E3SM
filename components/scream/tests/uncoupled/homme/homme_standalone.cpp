@@ -9,7 +9,6 @@
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
-#include "ekat/util/ekat_feutils.hpp"
 #include "ekat/ekat_assert.hpp"
 
 // Hommexx includes
