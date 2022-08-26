@@ -9,7 +9,7 @@
 
 namespace scream {
 
-static int get_default_fpes () {
+int get_default_fpes () {
 #ifdef SCREAM_FPE
   return (FE_DIVBYZERO |
           FE_INVALID   |

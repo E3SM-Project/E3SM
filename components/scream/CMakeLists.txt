@@ -364,6 +364,7 @@ option (SCREAM_ENABLE_STATM "Whether /proc/self/statm can be used to get memory 
 set (SCREAM_DISABLE_TPL_WARNINGS ON CACHE BOOL "")
 
 include(EkatBuildEkat)
+set (EKAT_ENABLE_FPE ON CACHE BOOL "Enable EKAT's FPE machinery.")
 set (EKAT_ENABLE_TESTS OFF CACHE BOOL "Whether to build EKAT's tests. Off by default.")
 BuildEkat(PREFIX "SCREAM")
 

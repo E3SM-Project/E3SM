@@ -45,7 +45,7 @@ void fpe_guard_wrapper (const Lambda& f) {
   // Store the mask, so we can restore before returning.
   int fpe_mask = ekat::get_enabled_fpes();
   ekat::disable_all_fpes ();
-  ekat::enable_default_fpes();
+  ekat::enable_fpes(get_default_fpes());
 
   // Execute wrapped function
   f();
