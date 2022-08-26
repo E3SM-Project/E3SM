@@ -155,8 +155,6 @@ def test_factory(user_req_tests, machine, mem_check):
     if mem_check:
         for test in result:
             test.longname += "_cuda_mem_check" if is_cuda_machine(machine) else "_valgrind"
-            test.uses_baselines = False
-
 
     return result
 
