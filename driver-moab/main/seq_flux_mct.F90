@@ -11,7 +11,7 @@ module seq_flux_mct
 
   use prep_aoflux_mod,   only: prep_aoflux_get_xao_omct, prep_aoflux_get_xao_amct
 
-  use iMOAB, only :  iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh
+  use iMOAB, only :  iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh, iMOAB_SetDoubleTagStorage
   use seq_comm_mct, only :  num_moab_exports ! for debugging
 
   use mct_mod
@@ -1658,15 +1658,32 @@ contains
 
 #ifdef MOABDEBUG
         ! debug out file
-    write(lnum,"(I0.2)")num_moab_exports
-    outfile = comp%oneletterid//'_flux_'//trim(lnum)//'.h5m'//C_NULL_CHAR
-    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-    ierr = iMOAB_WriteMesh(appId, outfile, wopts)
+      write(lnum,"(I0.2)")num_moab_exports
+      outfile = comp%oneletterid//'_flux_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(appId, outfile, wopts)
  
       if (ierr .ne. 0) then
          write(logunit,*) subname,' error in writing mesh '
          call shr_sys_abort(subname//' ERROR in writing mesh ')
       endif
+
+      if (comp%oneletterid == 'o') then ! for debugging, set the mct ocn grid values, to see if they are the same
+        appId = mbox2id  ! ocn on mct point cloud
+        ent_type = 0! vertices, it is point cloud
+        ierr = iMOAB_SetDoubleTagStorage( appId, tagname, arrSize , ent_type, local_xao_mct)
+        if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in setting local_xao_mct fluxes on mct grid for debugging  '
+         call shr_sys_abort(subname//' ERROR in setting local_xao_mct fluxes on mct grid for debugging')
+        endif
+        outfile = 'o_flux_mct_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+        ierr = iMOAB_WriteMesh(appId, outfile, wopts)
+ 
+        if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing mesh '
+            call shr_sys_abort(subname//' ERROR in writing mesh ')
+        endif
+     endif
 #endif
      
 

@@ -166,6 +166,7 @@ module seq_frac_mct
   use seq_comm_mct, only : mphaxid !            iMOAB app id for phys atm, on cpl pes
   use seq_comm_mct, only : mblxid !            iMOAB app id for lnd on cpl pes
   use seq_comm_mct, only : mblx2id !           iMOAB id for land mesh instanced from MCT on coupler pes
+  use seq_comm_mct, only : mbox2id !           iMOAB id for ocn mesh instanced from MCT on coupler pes
   use seq_comm_mct, only : mboxid !            iMOAB app id for ocn on cpl pes
   use seq_comm_mct, only : mbixid !            iMOAB for sea-ice migrated to coupler
   use seq_comm_mct, only : atm_pg_active !     flag if PG mesh instanced
@@ -537,12 +538,14 @@ contains
     end if
 
     ! Initialize fractions on ocean grid/decomp (initialize ice fraction to zero)
-    ! These are initialize the same as for ice
+    ! These are initialized the same as for ice
 
     if (ocn_present) then
        lSize = mct_aVect_lSize(dom_o%data)
        call mct_aVect_init(fractions_o,rList=fraclist_o,lsize=lsize)
        call mct_aVect_zero(fractions_o)
+       ! initialize ocn imoab app on mct grid 
+       call expose_mct_grid_moab(ocn, mbox2id) ! will use then to set the data on it , for debugging
        if (mboxid .ge. 0  ) then ! // 
          tagname = trim(fraclist_o)//C_NULL_CHAR
          tagtype = 1  ! dense, double
@@ -552,7 +555,6 @@ contains
             write(logunit,*) subname,' error in defining tags on ocn phys mesh on cpl '
             call shr_sys_abort(subname//' ERROR in defining tags on ocn phys mesh on cpl')
          endif
-         
        endif
        if (ice_present) then
           mapper_i2o => prep_ocn_get_mapper_SFi2o()

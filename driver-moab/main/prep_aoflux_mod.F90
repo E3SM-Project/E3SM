@@ -8,6 +8,7 @@ module prep_aoflux_mod
   use seq_comm_mct,     only: num_inst_xao, num_inst_frc, num_inst_ocn
   use seq_comm_mct,     only: CPLID, logunit
   use seq_comm_mct,     only : mbofxid ! iMOAB app id for ocn on cpl pes, the second copy of mboxid
+  use seq_comm_mct,     only : mbox2id !
   use seq_comm_mct,     only : mphaxid ! iMOAB app id for atm phys grid on cpl pes
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
   use seq_infodata_mod, only: seq_infodata_getdata, seq_infodata_type
@@ -78,6 +79,9 @@ contains
     ! module variables
     !
     use iMOAB, only : iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, iMOAB_GetMeshInfo
+#ifdef MOABDEBUG
+    use iMOAB, only : iMOAB_WriteMesh ! for writing debug file
+#endif
     ! Arguments
     type (seq_infodata_type) , intent(inout) :: infodata
     !
@@ -92,11 +96,14 @@ contains
     integer                     :: arrSize ! for the size of tagValues
     type(mct_list)              :: temp_list  ! used to count the number of strings / fields 
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! used to find out the size of local mesh, in moab
-
+#ifdef MOABDEBUG
+    character*100 outfile, wopts ! for writing debug file
+#endif
     character(CS)      :: aoflux_grid ! grid for atm ocn flux calc
     type(mct_avect) , pointer   :: a2x_ax
     type(mct_avect) , pointer   :: o2x_ox
     character(*)    , parameter :: subname = '(prep_aoflux_init)'
+
     !---------------------------------------------------------------
 
     call seq_infodata_getdata(infodata,  &
@@ -148,7 +155,8 @@ contains
        ! find out the number of local elements in moab mesh
        ierr  = iMOAB_GetMeshInfo ( mbofxid, nvert, nvise, nbl, nsurf, nvisBC ); ! could be different of lsize_o
       ! local size of vertices is different from lsize_o
-       arrSize = nvert(1) * size_list ! there are size_list tags that need to be zeroed out
+      ! nvsise(1) is the number of primary elements locally 
+       arrSize = nvise(1) * size_list ! there are size_list tags that need to be zeroed out
        allocate(tagValues(arrSize) )
        ent_type = 1 ! cell type
        tagValues = 0 
@@ -158,7 +166,41 @@ contains
          call shr_sys_abort(subname//' ERROR in zeroing out xao_fields in init ')
        endif
        allocate(xao_omct(lsize_o, size_list)) ! the transpose of xao_ox(size_list, lsize_o) 
+       ! create for debugging the tags on mbox2id (mct grid on coupler)
+       ierr = iMOAB_DefineTagStorage(mbox2id, tagname, tagtype, numco, tagindex )
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in defining tags on ocn mct mesh on cpl '
+          call shr_sys_abort(subname//' ERROR in defining tags on ocn mct mesh on cpl')
+       endif
+       xao_omct = 0.
+       ent_type = 0 ! cell type, this is point cloud mct
+       arrSize = lsize_o * size_list
+       ierr = iMOAB_SetDoubleTagStorage ( mbox2id, tagname, arrSize , ent_type, xao_omct)
+       if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in zeroing out xao_fields on mct instance ocn '
+         call shr_sys_abort(subname//' ERROR in zeroing out xao_fields on mct instance ocn ')
+       endif
        deallocate(tagValues)
+#ifdef MOABDEBUG
+        ! debug out file
+      outfile = 'o_flux.h5m'//C_NULL_CHAR
+      wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(mbofxid, outfile, wopts)
+ 
+      if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in writing o_flux mesh '
+         call shr_sys_abort(subname//' ERROR in writing o_flux mesh ')
+      endif
+       ! debug out file
+      outfile = 'ox_mct.h5m'//C_NULL_CHAR
+      ierr = iMOAB_WriteMesh(mbox2id, outfile, wopts)
+ 
+      if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in writing ox_mct mesh with 0 values '
+         call shr_sys_abort(subname//' ERROR in writing ox_mct mesh ')
+      endif
+
+#endif
     endif
 
 ! define atm-ocn flux tags on the moab atm mesh
