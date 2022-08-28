@@ -1607,7 +1607,7 @@ contains
       real (kind=RKIND), dimension(:), allocatable:: div_huGMBolus
 
 #ifdef MPAS_OPENACC
-      !$acc declare device_resident(div_hu, div_huTransport, div_huGMBolus, div_huMLEBolus)
+      !$acc declare device_resident(div_huGMBolus)
 #endif
 
       ! Need owned cells for relativeVorticityCell
@@ -1619,7 +1619,7 @@ contains
 #ifdef MPAS_OPENACC
       !$acc parallel loop gang vector &
       !$acc          present(nEdgesOnCell, edgesOnCell, edgeSignonCell, dcEdge, dvEdge, &
-      !$acc                  areaCell, layerThicknessEdgeFlux, normalGMBolusVelocity, &
+      !$acc                  normalGMBolusVelocity, &
       !$acc                  vertGMBolusVelocityTop, invAreaCell, minLevelCell) &
       !$acc          private(invAreaCell1, i, iEdge, edgeSignOnCell_temp, dcEdge_temp, &
       !$acc                  dvEdge_temp, k)
@@ -1718,7 +1718,7 @@ contains
 #ifdef MPAS_OPENACC
       !$acc parallel loop gang vector &
       !$acc          present(nEdgesOnCell, edgesOnCell, edgeSignonCell, dcEdge, dvEdge, &
-      !$acc                  areaCell, layerThicknessEdgeFlux, normalMLEVelocity, &
+      !$acc                  areaCell, normalMLEVelocity, &
       !$acc                  vertMLEBolusVelocityTop, invAreaCell, minLevelCell) &
       !$acc          private(invAreaCell1, i, iEdge, edgeSignOnCell_temp, dcEdge_temp, &
       !$acc                  dvEdge_temp, k)

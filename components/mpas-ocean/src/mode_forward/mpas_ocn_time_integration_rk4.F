@@ -1320,6 +1320,7 @@ module ocn_time_integration_rk4
       end if
       if (config_submesoscale_enable) then
          !$acc update device (normalMLEvelocity)
+      end if
       !$acc enter data copyin(atmosphericPressure, seaIcePressure)
       !$acc enter data copyin(sshCur)
       !$acc enter data copyin(activeTracersCur)
