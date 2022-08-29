@@ -325,21 +325,23 @@ contains
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalBaroclinicVelAt250m', meridionalBaroclinicVelAt250m)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalBaroclinicVelAtBottom', meridionalBaroclinicVelAtBottom)
 
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'normalGMBolusVelAtSFC', normalGMBolusVelAtSFC)
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'normalGMBolusVelAt250m', normalGMBolusVelAt250m)
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'normalGMBolusVelAtBottom', normalGMBolusVelAtBottom)
+         if (config_use_gm) then
+            call mpas_pool_get_array(highFrequencyOutputAMPool, 'normalGMBolusVelAtSFC', normalGMBolusVelAtSFC)
+            call mpas_pool_get_array(highFrequencyOutputAMPool, 'normalGMBolusVelAt250m', normalGMBolusVelAt250m)
+            call mpas_pool_get_array(highFrequencyOutputAMPool, 'normalGMBolusVelAtBottom', normalGMBolusVelAtBottom)
 
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'tangentialGMBolusVelAtSFC', tangentialGMBolusVelAtSFC)
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'tangentialGMBolusVelAt250m', tangentialGMBolusVelAt250m)
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'tangentialGMBolusVelAtBottom', tangentialGMBolusVelAtBottom)
+            call mpas_pool_get_array(highFrequencyOutputAMPool, 'tangentialGMBolusVelAtSFC', tangentialGMBolusVelAtSFC)
+            call mpas_pool_get_array(highFrequencyOutputAMPool, 'tangentialGMBolusVelAt250m', tangentialGMBolusVelAt250m)
+            call mpas_pool_get_array(highFrequencyOutputAMPool, 'tangentialGMBolusVelAtBottom', tangentialGMBolusVelAtBottom)
 
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalGMBolusVelAtSFC', zonalGMBolusVelAtSFC)
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalGMBolusVelAt250m', zonalGMBolusVelAt250m)
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalGMBolusVelAtBottom', zonalGMBolusVelAtBottom)
+            call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalGMBolusVelAtSFC', zonalGMBolusVelAtSFC)
+            call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalGMBolusVelAt250m', zonalGMBolusVelAt250m)
+            call mpas_pool_get_array(highFrequencyOutputAMPool, 'zonalGMBolusVelAtBottom', zonalGMBolusVelAtBottom)
 
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalGMBolusVelAtSFC', meridionalGMBolusVelAtSFC)
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalGMBolusVelAt250m', meridionalGMBolusVelAt250m)
-         call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalGMBolusVelAtBottom', meridionalGMBolusVelAtBottom)
+            call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalGMBolusVelAtSFC', meridionalGMBolusVelAtSFC)
+            call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalGMBolusVelAt250m', meridionalGMBolusVelAt250m)
+            call mpas_pool_get_array(highFrequencyOutputAMPool, 'meridionalGMBolusVelAtBottom', meridionalGMBolusVelAtBottom)
+         end if
 
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'BruntVaisalaFreqTopAtSFC', BruntVaisalaFreqTopAtSFC)
          call mpas_pool_get_array(highFrequencyOutputAMPool, 'BruntVaisalaFreqTopAt250m', BruntVaisalaFreqTopAt250m)
@@ -419,17 +421,49 @@ contains
          activeTracersAtSurface(2,:) = activeTracers(2,1,:)
          activeTracersAt250m(1,:) = activeTracers(1,iLevel0250,:)
          activeTracersAt250m(2,:) = activeTracers(2,iLevel0250,:)
-         vertGMvelocitySFC(:) = vertGMBolusVelocityTop(1,:)
          vertTransportVelocitySFC(:) = vertTransportVelocityTop(1,:)
          vertVelSFC(:) = vertVelocityTop(1,:)
-         vertGMvelocityAt250m(:) = vertGMBolusVelocityTop(iLevel0250,:)
          vertTransportVelocityAt250m(:) = vertTransportVelocityTop(iLevel0250,:)
          vertVelAt250m(:) = vertVelocityTop(iLevel0250,:)
 
+         if (config_use_gm) then
+            vertGMvelocitySFC(:) = vertGMBolusVelocityTop(1,:)
+            vertGMvelocityAt250m(:) = vertGMBolusVelocityTop(iLevel0250,:)
+            do iEdge = 1, nEdges
+               normalGMBolusVelAtSFC(iEdge) = normalGMBolusVelocity(1,iEdge)
+               normalGMBolusVelAt250m(iEdge) = normalGMBolusVelocity(iLevel0250,iEdge)
+               normalGMBolusVelAtBottom(iEdge) = normalGMBolusVelocity(maxLevelEdgeBot(iEdge),iEdge)
+            end do
+
+            do iEdge = 1, nEdges
+              tangentialGMBolusVelAtSFC(iEdge) = 0.0_RKIND
+              tangentialGMBolusVelAt250m(iEdge) = 0.0_RKIND
+              tangentialGMBolusVelAtBottom(iEdge) = 0.0_RKIND
+              do i = 1, nEdgesOnEdge(iEdge)
+                eoe = edgesOnEdge(i,iEdge)
+                tangentialGMBolusVelAtSFC(iEdge) = tangentialGMBolusVelAtSFC(iEdge) + weightsOnEdge(i,iEdge) * normalGMBolusVelAtSFC(eoe)
+                tangentialGMBolusVelAt250m(iEdge) = tangentialGMBolusVelAt250m(iEdge) + weightsOnEdge(i,iEdge) * normalGMBolusVelAt250m(eoe)
+                tangentialGMBolusVelAtBottom(iEdge) = tangentialGMBolusVelAtBottom(iEdge) + weightsOnEdge(i,iEdge) * normalGMBolusVelAtBottom(eoe)
+              end do
+
+              zonalGMBolusVelAtSFC(iEdge) = normalGMBolusVelAtSFC(iEdge)*cos(angleEdge(iEdge)) &
+                - tangentialGMBolusVelAtSFC(iEdge)*sin(angleEdge(iEdge))
+              meridionalGMBolusVelAtSFC(iEdge) = normalGMBolusVelAtSFC(iEdge)*sin(angleEdge(iEdge)) &
+                + tangentialGMBolusVelAtSFC(iEdge)*cos(angleEdge(iEdge))
+
+              zonalGMBolusVelAt250m(iEdge) = normalGMBolusVelAt250m(iEdge)*cos(angleEdge(iEdge)) &
+                - tangentialGMBolusVelAt250m(iEdge)*sin(angleEdge(iEdge))
+              meridionalGMBolusVelAt250m(iEdge) = normalGMBolusVelAt250m(iEdge)*sin(angleEdge(iEdge)) &
+                + tangentialGMBolusVelAt250m(iEdge)*cos(angleEdge(iEdge))
+
+              zonalGMBolusVelAtBottom(iEdge) = normalGMBolusVelAtBottom(iEdge)*cos(angleEdge(iEdge)) &
+                - tangentialGMBolusVelAtBottom(iEdge)*sin(angleEdge(iEdge))
+              meridionalGMBolusVelAtBottom(iEdge) = normalGMBolusVelAtBottom(iEdge)*sin(angleEdge(iEdge)) &
+                + tangentialGMBolusVelAtBottom(iEdge)*cos(angleEdge(iEdge))
+            end do
+         end if
+
          do iEdge = 1, nEdges
-           normalGMBolusVelAtSFC(iEdge) = normalGMBolusVelocity(1,iEdge)
-           normalGMBolusVelAt250m(iEdge) = normalGMBolusVelocity(iLevel0250,iEdge)
-           normalGMBolusVelAtBottom(iEdge) = normalGMBolusVelocity(maxLevelEdgeBot(iEdge),iEdge)
 
            tangentialVelAtSFC(iEdge) = tangentialVelocity(1,iEdge)
            tangentialVelAt250m(iEdge) = tangentialVelocity(iLevel0250,iEdge)
@@ -453,33 +487,6 @@ contains
                                   - tangentialVelAtBottom(iEdge)*sin(angleEdge(iEdge))
            meridionalVelAtBottom(iEdge) = normalVelAtBottom(iEdge)*sin(angleEdge(iEdge)) &
                                        + tangentialVelAtBottom(iEdge)*cos(angleEdge(iEdge))
-         end do
-
-         do iEdge = 1, nEdges
-           tangentialGMBolusVelAtSFC(iEdge) = 0.0_RKIND
-           tangentialGMBolusVelAt250m(iEdge) = 0.0_RKIND
-           tangentialGMBolusVelAtBottom(iEdge) = 0.0_RKIND
-           do i = 1, nEdgesOnEdge(iEdge)
-             eoe = edgesOnEdge(i,iEdge)
-             tangentialGMBolusVelAtSFC(iEdge) = tangentialGMBolusVelAtSFC(iEdge) + weightsOnEdge(i,iEdge) * normalGMBolusVelAtSFC(eoe)
-             tangentialGMBolusVelAt250m(iEdge) = tangentialGMBolusVelAt250m(iEdge) + weightsOnEdge(i,iEdge) * normalGMBolusVelAt250m(eoe)
-             tangentialGMBolusVelAtBottom(iEdge) = tangentialGMBolusVelAtBottom(iEdge) + weightsOnEdge(i,iEdge) * normalGMBolusVelAtBottom(eoe)
-           end do
-
-           zonalGMBolusVelAtSFC(iEdge) = normalGMBolusVelAtSFC(iEdge)*cos(angleEdge(iEdge)) &
-             - tangentialGMBolusVelAtSFC(iEdge)*sin(angleEdge(iEdge))
-           meridionalGMBolusVelAtSFC(iEdge) = normalGMBolusVelAtSFC(iEdge)*sin(angleEdge(iEdge)) &
-             + tangentialGMBolusVelAtSFC(iEdge)*cos(angleEdge(iEdge))
-
-           zonalGMBolusVelAt250m(iEdge) = normalGMBolusVelAt250m(iEdge)*cos(angleEdge(iEdge)) &
-             - tangentialGMBolusVelAt250m(iEdge)*sin(angleEdge(iEdge))
-           meridionalGMBolusVelAt250m(iEdge) = normalGMBolusVelAt250m(iEdge)*sin(angleEdge(iEdge)) &
-             + tangentialGMBolusVelAt250m(iEdge)*cos(angleEdge(iEdge))
-
-           zonalGMBolusVelAtBottom(iEdge) = normalGMBolusVelAtBottom(iEdge)*cos(angleEdge(iEdge)) &
-             - tangentialGMBolusVelAtBottom(iEdge)*sin(angleEdge(iEdge))
-           meridionalGMBolusVelAtBottom(iEdge) = normalGMBolusVelAtBottom(iEdge)*sin(angleEdge(iEdge)) &
-             + tangentialGMBolusVelAtBottom(iEdge)*cos(angleEdge(iEdge))
          end do
 
          do iCell=1,nCells

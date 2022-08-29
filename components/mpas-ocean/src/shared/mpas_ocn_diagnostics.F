@@ -61,7 +61,7 @@ module ocn_diagnostics
              ocn_vert_transport_velocity_top, &
              ocn_fuperp, &
              ocn_filter_btr_mode_tend_vel, &
-             ocn_reconstruct_gm_vectors, &
+             ocn_reconstruct_eddy_vectors, &
              ocn_compute_kpp_input_fields, &
              ocn_validate_state, &
              ocn_build_log_filename, &
@@ -232,13 +232,22 @@ contains
       ! inputs: relativeVorticity, layerThickEdgeFlux, normalVelocity, normalTransportVelocity, 
       !         normalGMBolusVelocity
       ! outputs: vertTransportVelocityTop, vertGMBolusVelocityTop, relativeVorticityCell, 
-      !          divergence, kineticEnergyCell, tangentialVelocity
+      !          divergence, kineticEnergyCell, tangentialVelocity, vertMLEBolusVelocityTop
       ! in and out: vertVelocityTop
       call ocn_diagnostic_solve_vortVel(relativeVorticity, &
              layerThickEdgeFlux, normalVelocity, normalTransportVelocity, &
-             normalGMBolusVelocity, vertVelocityTop, vertTransportVelocityTop, &
-             vertGMBolusVelocityTop, relativeVorticityCell, divergence, &
-             kineticEnergyCell, tangentialVelocity)
+             vertVelocityTop, vertTransportVelocityTop, relativeVorticityCell, &
+             divergence, kineticEnergyCell, tangentialVelocity)
+
+      !compute vertical velocity due to gm bolus velocity if requested
+      if (config_use_gm) then
+         call ocn_diagnostic_solve_GMvel(layerThickEdgeFlux, normalGMBolusVelocity, vertGMBolusVelocityTop)
+      end if
+
+      !compute vertical velocity due to submesoscale eddies (MLE) velocity if requested
+      if (config_submesoscale_enable) then
+         call ocn_diagnostic_solve_MLEvel(layerThickEdgeFlux, normalMLEVelocity, vertMLEBolusVelocityTop)
+      end if
 
       if ( configVertAdvMethod == vertAdvRemap ) then
 
@@ -1551,6 +1560,206 @@ contains
 
 !***********************************************************************
 !
+!  routine ocn_diagnostic_solve_GMvel
+!
+!> \brief   Computes vertical velocity from GM bolus velocity
+!> \author  Luke Van Roekel
+!> \date    August 2022
+!> \details
+!>  This routine computes the diagnostic vertical velocity from 
+!>    the normal velocity due to GM bolus velocity
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_diagnostic_solve_GMvel(layerThickEdgeFlux, normalGMBolusVelocity, &
+                                         vertGMBolusVelocityTop)!{{{
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         layerThickEdgeFlux,     &
+         normalGMBolusVelocity
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         vertGMBolusVelocityTop
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: nCells, nEdges
+      integer :: iCell, iVertex, iEdge
+      integer :: i, j, k
+      integer :: edgeSignOnCell_temp, eoe
+      real(kind=RKIND) :: invAreaCell1
+      real(kind=RKIND) :: dcEdge_temp, dvEdge_temp, r_tmp, weightsOnEdge_temp
+
+      real (kind=RKIND), dimension(:), allocatable:: div_huGMBolus
+
+#ifdef MPAS_OPENACC
+      !$acc declare device_resident(div_huGMBolus)
+#endif
+
+      ! Need owned cells for relativeVorticityCell
+      nCells = nCellsOwned
+
+      if (.not. config_use_gm) return
+
+      allocate(div_huGMBolus(nVertLevels))
+#ifdef MPAS_OPENACC
+      !$acc parallel loop gang vector &
+      !$acc          present(nEdgesOnCell, edgesOnCell, edgeSignonCell, dcEdge, dvEdge, &
+      !$acc                  normalGMBolusVelocity, &
+      !$acc                  vertGMBolusVelocityTop, invAreaCell, minLevelCell) &
+      !$acc          private(invAreaCell1, i, iEdge, edgeSignOnCell_temp, dcEdge_temp, &
+      !$acc                  dvEdge_temp, k)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime) &
+      !$omp private(i, iEdge, invAreaCell1, edgeSignOnCell_temp, dcEdge_temp, dvEdge_temp, &
+      !$omp         k, div_huGMBolus)
+#endif
+      do iCell = 1, nCells
+         div_huGMBolus(:) = 0.0_RKIND
+         invAreaCell1 = invAreaCell(iCell)
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
+            edgeSignOnCell_temp = edgeSignOnCell(i, iCell)
+            dcEdge_temp = dcEdge(iEdge)
+            dvEdge_temp = dvEdge(iEdge)
+            do k = minLevelCell(iCell), maxLevelCell(iCell)
+               ! Compute vertical velocity from the horizontal GM Bolus velocity
+               div_huGMBolus(k) = div_huGMBolus(k) &
+                                  - layerThickEdgeFlux(k, iEdge) * edgeSignOnCell_temp * dvEdge_temp &
+                                  * normalGMBolusVelocity(k, iEdge) * invAreaCell1
+            end do
+         end do
+         ! Vertical velocity at bottom (maxLevelCell(iCell)+1) is zero, initialized above.
+         vertGMBolusVelocityTop(1:minLevelCell(iCell)-1, iCell) = 0.0_RKIND
+         vertGMBolusVelocityTop(maxLevelCell(iCell)+1, iCell) = 0.0_RKIND
+         do k = maxLevelCell(iCell), 1, -1
+            vertGMBolusVelocityTop(k,iCell) = vertGMBolusVelocityTop(k+1,iCell) - div_huGMBolus(k)
+         end do
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+      deallocate(div_huGMBolus)
+
+   end subroutine ocn_diagnostic_solve_GMvel!}}}
+
+!***********************************************************************
+!
+!  routine ocn_diagnostic_solve_MLEvel
+!
+!> \brief   Computes vertical velocity from MLE bolus velocity
+!> \author  Luke Van Roekel
+!> \date    August 2022
+!> \details
+!>  This routine computes the diagnostic vertical velocity from 
+!>    the normal velocity due to MLE (submesoscale eddy) bolus velocity
+!
+!-----------------------------------------------------------------------
+   subroutine ocn_diagnostic_solve_MLEvel(layerThickEdgeFlux, normalMLEVelocity, &
+                                         vertMLEBolusVelocityTop)!{{{
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         layerThickEdgeFlux,     &
+         normalMLEVelocity
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), intent(out) :: &
+         vertMLEBolusVelocityTop
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: nCells, nEdges
+      integer :: iCell, iVertex, iEdge
+      integer :: i, j, k
+      integer :: edgeSignOnCell_temp, eoe
+      real(kind=RKIND) :: invAreaCell1
+      real(kind=RKIND) :: dcEdge_temp, dvEdge_temp, r_tmp, weightsOnEdge_temp
+
+      real (kind=RKIND), dimension(:), allocatable:: div_huMLEBolus
+
+#ifdef MPAS_OPENACC
+      !$acc declare device_resident(div_huMLEBolus)
+#endif
+
+      nCells = nCellsOwned
+      if (.not. config_submesoscale_enable) return
+
+      allocate(div_huMLEBolus(nVertLevels))
+#ifdef MPAS_OPENACC
+      !$acc parallel loop gang vector &
+      !$acc          present(nEdgesOnCell, edgesOnCell, edgeSignonCell, dcEdge, dvEdge, &
+      !$acc                  areaCell, normalMLEVelocity, &
+      !$acc                  vertMLEBolusVelocityTop, invAreaCell, minLevelCell) &
+      !$acc          private(invAreaCell1, i, iEdge, edgeSignOnCell_temp, dcEdge_temp, &
+      !$acc                  dvEdge_temp, k)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime) &
+      !$omp private(i, iEdge, invAreaCell1, edgeSignOnCell_temp, dcEdge_temp, dvEdge_temp, &
+      !$omp         k, div_huMLEBolus)
+#endif
+      do iCell = 1, nCells
+         div_huMLEBolus(:) = 0.0_RKIND
+         invAreaCell1 = invAreaCell(iCell)
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
+            edgeSignOnCell_temp = edgeSignOnCell(i, iCell)
+            dcEdge_temp = dcEdge(iEdge)
+            dvEdge_temp = dvEdge(iEdge)
+            do k = minLevelCell(iCell), maxLevelCell(iCell)
+               ! Compute vertical velocity from the horizontal MLE (submesoscale eddy)  Bolus velocity
+               div_huMLEBolus(k) = div_huMLEBolus(k) &
+                                   - layerThickEdgeFlux(k, iEdge) * edgeSignOnCell_temp * dvEdge_temp &
+                                   * normalMLEVelocity(k, iEdge) * invAreaCell1
+            end do
+         end do
+         ! Vertical velocity at bottom (maxLevelCell(iCell)+1) is zero, initialized above.
+         vertMLEBolusVelocityTop(1:minLevelCell(iCell)-1, iCell) = 0.0_RKIND
+         vertMLEBolusVelocityTop(maxLevelCell(iCell)+1, iCell) = 0.0_RKIND
+         do k = maxLevelCell(iCell), 1, -1
+            vertMLEBolusVelocityTop(k,iCell) = vertMLEBolusVelocityTop(k+1,iCell) - div_huMLEBolus(k)
+         end do
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+      deallocate(div_huMLEBolus)
+
+   end subroutine ocn_diagnostic_solve_MLEvel!}}}
+
+!***********************************************************************
+!
 !  routine ocn_diagnostic_solve_vortVel
 !
 !> \brief   Computes diagnostic variables for vorticity and velocity
@@ -1563,9 +1772,8 @@ contains
 !-----------------------------------------------------------------------
    subroutine ocn_diagnostic_solve_vortVel(relativeVorticity, &
                 layerThicknessEdgeFlux, normalVelocity, normalTransportVelocity, &
-                normalGMBolusVelocity, vertVelocityTop, vertTransportVelocityTop, &
-                vertGMBolusVelocityTop, relativeVorticityCell, divergence, &
-                kineticEnergyCell, tangentialVelocity)!{{{
+                vertVelocityTop, vertTransportVelocityTop, relativeVorticityCell, &
+                divergence, kineticEnergyCell, tangentialVelocity)!{{{
 
       implicit none
 
@@ -1583,8 +1791,6 @@ contains
          normalVelocity
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normalTransportVelocity
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalGMBolusVelocity
 
       !-----------------------------------------------------------------
       !
@@ -1596,8 +1802,6 @@ contains
          vertVelocityTop
       real (kind=RKIND), dimension(:,:), intent(out) :: &
          vertTransportVelocityTop
-      real (kind=RKIND), dimension(:,:), intent(out) :: &
-         vertGMBolusVelocityTop
       real (kind=RKIND), dimension(:,:), intent(out) :: &
          relativeVorticityCell
       real (kind=RKIND), dimension(:,:), intent(out) :: &
@@ -1620,9 +1824,10 @@ contains
       real(kind=RKIND) :: invAreaCell1
       real(kind=RKIND) :: dcEdge_temp, dvEdge_temp, r_tmp, weightsOnEdge_temp
 
-      real (kind=RKIND), dimension(:), allocatable:: div_hu,div_huTransport,div_huGMBolus
+      real (kind=RKIND), dimension(:), allocatable:: div_hu,div_huTransport
+
 #ifdef MPAS_OPENACC
-      !$acc declare device_resident(div_hu, div_huTransport, div_huGMBolus)
+      !$acc declare device_resident(div_hu, div_huTransport)
 #endif
 
       ! Need owned cells for relativeVorticityCell
@@ -1663,30 +1868,28 @@ contains
       !
       ! Compute divergence, kinetic energy, and vertical velocity
       !
-      allocate(div_hu(nVertLevels),div_huTransport(nVertLevels),div_huGMBolus(nVertLevels))
+      allocate(div_hu(nVertLevels),div_huTransport(nVertLevels))
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop gang vector &
       !$acc          present(divergence, kineticEnergyCell, &
       !$acc                  areaCell, nEdgesOnCell, edgesOnCell, edgeSignOnCell, dcEdge, dvEdge, &
       !$acc                  maxLevelCell, normalVelocity, divergence, layerThicknessEdgeFlux, &
-      !$acc                  normalTransportVelocity, normalGMBolusVelocity, vertVelocityTop, &
-      !$acc                  vertTransportVelocityTop, vertGMBolusVelocityTop, invAreaCell, &
-      !$acc                  minLevelCell) &
+      !$acc                  normalTransportVelocity, vertVelocityTop, vertTransportVelocityTop, &
+      !$acc                  invAreaCell, minLevelCell) &
       !$acc          private(invAreaCell1, i, iEdge, edgeSignOnCell_temp, dcEdge_temp, &
       !$acc                  dvEdge_temp, k, r_tmp)
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
       !$omp private(i, iEdge, invAreaCell1, edgeSignOnCell_temp, dcEdge_temp, dvEdge_temp, &
-      !$omp         k, r_tmp, div_hu, div_huTransport, div_huGMBolus)
+      !$omp         k, r_tmp, div_hu, div_huTransport)
 #endif
       do iCell = 1, nCells
          divergence(:, iCell) = 0.0_RKIND
          kineticEnergyCell(:, iCell) = 0.0_RKIND
          div_hu(:) = 0.0_RKIND
          div_huTransport(:) = 0.0_RKIND
-         div_huGMBolus(:) = 0.0_RKIND
          invAreaCell1 = invAreaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
@@ -1704,10 +1907,6 @@ contains
                div_huTransport(k) = div_huTransport(k) &
                                     - layerThicknessEdgeFlux(k, iEdge) * edgeSignOnCell_temp &
                                     * dvEdge_temp * normalTransportVelocity(k, iEdge) * invAreaCell1
-               ! Compute vertical velocity from the horizontal GM Bolus velocity
-               div_huGMBolus(k) = div_huGMBolus(k) &
-                                  - layerThicknessEdgeFlux(k, iEdge) * edgeSignOnCell_temp * dvEdge_temp &
-                                  * normalGMBolusVelocity(k, iEdge) * invAreaCell1
             end do
          end do
          ! Vertical velocity at bottom (maxLevelCell(iCell)+1) is zero, initialized above.
@@ -1716,7 +1915,6 @@ contains
          do k = maxLevelCell(iCell), 1, -1
             vertVelocityTop(k,iCell) = vertVelocityTop(k+1,iCell) - div_hu(k)
             vertTransportVelocityTop(k,iCell) = vertTransportVelocityTop(k+1,iCell) - div_huTransport(k)
-            vertGMBolusVelocityTop(k,iCell) = vertGMBolusVelocityTop(k+1,iCell) - div_huGMBolus(k)
          end do
       end do
 #ifndef MPAS_OPENACC
@@ -1724,7 +1922,7 @@ contains
       !$omp end parallel
 #endif
 
-      deallocate(div_hu,div_huTransport,div_huGMBolus)
+      deallocate(div_hu,div_huTransport)
 
       nEdges = nEdgesHalo( 2 )
 #ifdef MPAS_OPENACC
@@ -3083,7 +3281,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_reconstruct_gm_vectors
+!  routine ocn_reconstruct_eddy_vectors
 !
 !> \brief   Computes cell-centered vector diagnostics
 !> \author  Mark Petersen
@@ -3093,11 +3291,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_reconstruct_gm_vectors(meshPool) !{{{
+   subroutine ocn_reconstruct_eddy_vectors(meshPool) !{{{
 
       type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
 
-      call mpas_timer_start('reconstruct gm vecs')
+      call mpas_timer_start('reconstruct eddy vecs')
 
       call mpas_reconstruct(meshPool, normalTransportVelocity,          &
                        transportVelocityX,            &
@@ -3107,25 +3305,38 @@ contains
                        transportVelocityMeridional    &
                       )
 
-      call mpas_reconstruct(meshPool, normalGMBolusVelocity,          &
-                       GMBolusVelocityX,            &
-                       GMBolusVelocityY,            &
-                       GMBolusVelocityZ,            &
+      if(config_use_gm) then 
+         call mpas_reconstruct(meshPool, normalGMBolusVelocity,          &
+                       eddyVelocityX,            &
+                       eddyVelocityY,            &
+                       eddyVelocityZ,            &
                        GMBolusVelocityZonal,        &
                        GMBolusVelocityMeridional    &
                       )
 
-      call mpas_reconstruct(meshPool, gmStreamFuncTopOfEdge,          &
+         call mpas_reconstruct(meshPool, gmStreamFuncTopOfEdge,          &
                       GMStreamFuncX,            &
                       GMStreamFuncY,            &
                       GMStreamFuncZ,            &
                       GMStreamFuncZonal,        &
                       GMStreamFuncMeridional    &
                      )
+      end if
 
-      call mpas_timer_stop('reconstruct gm vecs')
+      if (config_submesoscale_enable) then
+         call mpas_reconstruct(meshPool, normalMLEvelocity,          &
+                       eddyVelocityX,            &
+                       eddyVelocityY,            &
+                       eddyVelocityZ,            &
+                       mleVelocityZonal,        &
+                       mleVelocityMeridional    &
+                      )
 
-   end subroutine ocn_reconstruct_gm_vectors!}}}
+      end if
+
+      call mpas_timer_stop('reconstruct eddy vecs')
+
+   end subroutine ocn_reconstruct_eddy_vectors!}}}
 
 
 !***********************************************************************
