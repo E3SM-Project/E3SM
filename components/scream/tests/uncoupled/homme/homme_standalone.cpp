@@ -5,10 +5,10 @@
 #include "dynamics/register_dynamics.hpp"
 #include "dynamics/homme/atmosphere_dynamics.hpp"
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
+#include "dynamics/homme/homme_dimensions.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
-#include "ekat/util/ekat_feutils.hpp"
 #include "ekat/ekat_assert.hpp"
 
 // Hommexx includes
@@ -16,25 +16,12 @@
 #include "FunctorsBuffersManager.hpp"
 #include "ElementsGeometry.hpp"
 #include "TimeLevel.hpp"
-#include "dynamics/homme/homme_dimensions.hpp"
 
 #include <iomanip>
-
-static int get_default_fpes () {
-#ifdef SCREAM_FPE
-  return (FE_DIVBYZERO |
-          FE_INVALID   |
-          FE_OVERFLOW);
-#else
-  return 0;
-#endif
-}
 
 TEST_CASE("scream_homme_standalone", "scream_homme_standalone") {
   using namespace scream;
   using namespace scream::control;
-
-  ekat::enable_fpes(get_default_fpes());
 
   // Create a comm
   ekat::Comm atm_comm (MPI_COMM_WORLD);
