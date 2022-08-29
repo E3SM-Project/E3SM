@@ -283,6 +283,14 @@ _TESTS = {
             )
         },
 
+    #e3sm MMF tests for development
+    "e3sm_v3atm_integration" : {
+        "tests" : (
+            "ERP_Ln9.ne4pg2_ne4pg2.F2010-P3",
+            "ERS_Ln9.ne4pg2_ne4pg2.F20TR-P3",
+            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850-P3.allactive-wcprod",
+            )
+        },
 
     #atmopheric tests for ftypes with 2 builds only
     #ftype2 is a default and tested in other suites for preqx
