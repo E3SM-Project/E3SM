@@ -1244,17 +1244,6 @@ contains
 
           end do
 
-          if(0) then
-            write(iulog,*) 'Area fraction FATES->ELM:', veg_pp%wt_ed
-            write(iulog,*) 'See which column?', veg_pp%column
-            write(iulog,*) 'Column Type?', col_pp%itype
-            write(iulog,*) 'Soil Column index?', istsoil
-            write(iulog,*) 'Check if activate?', col_pp%active
-            write(iulog,*) 'See which column?', veg_pp%column
-            write(iulog,*) 'Is veg?', veg_pp%is_veg
-            write(iulog,*) 'Is bg?', veg_pp%is_bareground
-          endif
-
           if(abs(areacheck - 1.0_r8).gt.1.e-9_r8)then
             write(iulog,*) 'area wrong in interface',areacheck - 1.0_r8
             call endrun(msg=errMsg(sourcefile, __LINE__))

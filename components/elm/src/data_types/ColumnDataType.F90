@@ -2071,15 +2071,15 @@ contains
                avgflag='A', long_name='pool for seeding new Patches', &
                ptr_col=this%seedc, default='inactive')
 
-          !this%prod10c(begc:endc) = spval
-          !call hist_addfld1d (fname='PROD10C', units='gC/m^2', &
-          !     avgflag='A', long_name='10-yr wood product C', &
-          !     ptr_col=this%prod10c, default='inactive')
+          this%prod10c(begc:endc) = spval
+          call hist_addfld1d (fname='PROD10C', units='gC/m^2', &
+               avgflag='A', long_name='10-yr wood product C', &
+               ptr_col=this%prod10c, default='inactive')
 
-          !this%prod100c(begc:endc) = spval
-          !call hist_addfld1d (fname='PROD100C', units='gC/m^2', &
-          !     avgflag='A', long_name='100-yr wood product C', &
-          !     ptr_col=this%prod100c, default='inactive')
+          this%prod100c(begc:endc) = spval
+          call hist_addfld1d (fname='PROD100C', units='gC/m^2', &
+               avgflag='A', long_name='100-yr wood product C', &
+               ptr_col=this%prod100c, default='inactive')
 
           this%prod1c(begc:endc) = spval
           call hist_addfld1d (fname='PROD1C', units='gC/m^2', &
@@ -7447,14 +7447,13 @@ contains
 
     if(.not.use_fates) return
 
-    ! Shijie: Bypass gpp, ar and LUC relayed C fluxes for now
      do fc = 1,num_soilc
-    !    c = filter_soilc(fc)
-    !    this%gpp(c) = 0._r8
-    !    this%ar(c) = 0._r8
+        c = filter_soilc(fc)
+        this%gpp(c) = 0._r8
+        this%ar(c) = 0._r8
         this%npp(c) = 0._r8
         this%vegfire(c) = 0._r8
-    !    this%wood_harvestc(c) = 0._r8
+        this%wood_harvestc(c) = 0._r8
         this%fire_closs_p2c(c) = 0._r8
         !this%litfall(c) = 0._r8 (overwritten)
         this%hrv_xsmrpool_to_atm(c) = 0._r8

@@ -340,15 +340,6 @@ contains
        do m = natpft_lb,natpft_ub
           call add_patch(pi=pi, ci=ci, ptype=m, wtcol=wt_nat_patch(gi,topo_ind,m))
        end do
-       ! Shijie: Here is just a test for the case npfts larger than numpft. 
-       ! Will change to another better way later to consider when npfts < numpft.
-       ! Not sure if the categorical variable <ptype> is defined somewhere or just
-       ! a number currrently. 
-       if ( npfts > (natpft_ub-natpft_lb+1) ) then
-          do m = natpft_ub+1,(natpft_lb+npfts-1)
-             call add_patch(pi=pi, ci=ci, ptype=m, wtcol=0.0_r8)
-          end do
-       endif
     end if
 
   end subroutine set_landunit_veg_compete
