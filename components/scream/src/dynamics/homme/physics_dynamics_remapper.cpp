@@ -461,10 +461,17 @@ do_remap_fwd() const
 #else
   const int team_size = std::min(1024, std::min(128*m_num_phys_cols,32*(concurrency/this->m_num_fields+31)/32));
 #endif
-#else
-  //const int team_size = (concurrency<this->m_num_fields ? 1 : concurrency/this->m_num_fields);
+#endif
+
+#ifdef KOKKOS_ENABLE_HIP
   const int team_size = std::min(256, std::min(128*m_num_phys_cols,32*(concurrency/this->m_num_fields+31)/32));
 #endif
+
+//should exclude above cases of CUDA and HIP
+#ifndef HOMMEXX_ENABLE_GPU
+  const int team_size = (concurrency<this->m_num_fields ? 1 : concurrency/this->m_num_fields);
+#endif
+
 
   // TeamPolicy over this->m_num_fields
   const TeamPolicy policy(this->m_num_fields,team_size);
