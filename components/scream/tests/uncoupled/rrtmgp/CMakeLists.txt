@@ -48,6 +48,7 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTestFromExec(
       rrtmgp_standalone_chunked rrtmgp_standalone
       LABELS ${TEST_LABELS}
+      MPI_RANKS ${TEST_RANK_END}
       EXE_ARGS "--ekat-test-params inputfile=input_chunked.yaml"
       PROPERTIES FIXTURES_SETUP rrtmgp_chunked_generate_output
       PASS_REGULAR_EXPRESSION "(beg.end: 50, 100)"
@@ -56,8 +57,8 @@ if (NOT SCREAM_BASELINES_ONLY)
   # Compare chunked vs non-chunked radiation
   include (BuildCprnc)
   BuildCprnc()
-  set (SRC_FILE "rrtmgp_standalone_output_chunked.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
-  set (TGT_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
+  set (SRC_FILE "rrtmgp_standalone_output_chunked.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.nc")
+  set (TGT_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.nc")
   set (TEST_NAME "rrtmgp_chunked_vs_monolithic_bfb")
   add_test (NAME ${TEST_NAME}
             COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
