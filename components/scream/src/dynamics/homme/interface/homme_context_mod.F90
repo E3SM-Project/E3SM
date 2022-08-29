@@ -16,7 +16,7 @@ module homme_context_mod
   use prim_driver_base,    only: deriv => deriv1
 
   implicit none
-  private 
+  private
 
   ! Making deriv (which is an alias to deriv1 in prim_driver_base) available
   public :: deriv
@@ -52,7 +52,7 @@ module homme_context_mod
   public :: close_homme_log
 
 contains
-  
+
   subroutine set_homme_log_file_name_f90(c_str) bind(c)
     use shr_file_mod, only: shr_file_getUnit
     use iso_c_binding, only: C_NULL_CHAR, c_ptr, c_f_pointer
@@ -63,12 +63,13 @@ contains
     !
     character(len=256), pointer :: full_name
     character(len=256) :: path, fname
-    integer :: len, slash
+    integer :: len, slash, ierr
 
     call c_f_pointer(c_str,full_name)
     len = index(full_name, C_NULL_CHAR) -1
     if (len>0) then
-      slash = index(full_name,'/',back=.true.)
+      ! Search last slash in the (trimmed) full name
+      slash = index(full_name(1:len),'/',back=.true.)
 
       ! Note: if there's no slash (relative filename),
       ! then slash=0, and path is the empty string.
@@ -78,10 +79,20 @@ contains
 
       homme_log_fname = trim(path)//"homme_"//fname
 
-      ! Create the log file
       iulog = shr_file_getunit()
-      open (unit=iulog,file=trim(homme_log_fname),status='REPLACE', &
-            action='WRITE', access='SEQUENTIAL', position="append")
+      if (masterproc) then
+        ! Create the homme log file on root rank...
+        open (unit=iulog,file=trim(homme_log_fname),status='REPLACE', &
+              action='WRITE', access='SEQUENTIAL', position="append")
+        write(iulog,*) " ---- HOMME LOG FILE ----"
+        flush(iulog)
+      endif
+      call mpi_barrier(par%comm,ierr)
+      if (.not. masterproc) then
+        ! ... and open it on all other ranks
+        open (unit=iulog,file=trim(homme_log_fname),status='OLD', &
+              action='WRITE', access='SEQUENTIAL', position="append")
+      endif
 
       homme_log_set = .true.
     endif
