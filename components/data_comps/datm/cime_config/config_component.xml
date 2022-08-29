@@ -10,7 +10,7 @@
        This file may have atm desc entries.
   -->
   <description modifier_mode="1">
-    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%ERA5][%ERA56HR][%GSWP3w5e5][%MOSARTTEST][%NLDAS2][%CPLHIST][%E3SMWCv2][%1PT][%NYF][%IAF][%JRA][%JRA-1p5][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304][%CFSv2][%CFSR]"> Data driven ATM </desc>
+    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%ERA5][%ERA56HR][%GSWP3w5e5][%MOSARTTEST][%NLDAS2][%CPLHIST][%E3SMWCv2][%CPLWCH][%1PT][%NYF][%IAF][%JRA][%JRA-1p5][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304][%CFSv2][%CFSR]"> Data driven ATM </desc>
     <desc option="QIA"> QIAN data set </desc>
     <desc option="WISOQIA">QIAN with water isotopes</desc>
     <desc option="CRU"> CRUNCEP data set </desc>
@@ -23,6 +23,7 @@
     <desc option="NLDAS2"> NLDAS2 regional 0.125 degree data set over the U.S. (25-53N, 235-293E). WARNING: Garbage data will be produced for runs extending beyond this regional domain. </desc>
     <desc option="CPLHIST"> Coupler hist data set (in this mode, it is strongly recommended that the model domain and the coupler history forcing are on the same domain)</desc>
     <desc option="E3SMWCv2"> Coupler hist data set (in this mode, it is strongly recommended that the model domain and the coupler history forcing are on the same domain)</desc>
+    <desc option="CPLWCH"> Coupler hist data set (in this mode, it is strongly recommended that the model domain and the coupler history forcing are on the same domain)</desc>
     <desc option="1PT">single point tower site data set </desc>
     <desc option="NYF">COREv2 normal year forcing</desc>
     <desc option="IAF">COREv2 interannual forcing</desc>
@@ -47,7 +48,7 @@
 
   <entry id="DATM_MODE">
     <type>char</type>
-    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,ELMERA5,ERA56HR,ELMGSWP3w5e5,CLMMOSARTTEST,CLMNLDAS2,CPLHIST,E3SMWCv2,CORE_IAF_JRA,IAF_JRA_1p5,CORE_IAF_JRA_1p4_2018,CORE_RYF8485_JRA,CORE_RYF9091_JRA,CORE_RYF0304_JRA,CFSv2,CFSR</valid_values>
+    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,ELMERA5,ERA56HR,ELMGSWP3w5e5,CLMMOSARTTEST,CLMNLDAS2,CPLHIST,E3SMWCv2,CPLWCH,CORE_IAF_JRA,IAF_JRA_1p5,CORE_IAF_JRA_1p4_2018,CORE_RYF8485_JRA,CORE_RYF9091_JRA,CORE_RYF0304_JRA,CFSv2,CFSR</valid_values>
     <default_value>CORE2_NYF</default_value>
     <group>run_component_datm</group>
     <file>env_run.xml</file>
@@ -82,12 +83,13 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value compset="%CFSv2">CFSv2</value>
       <value compset="%CFSR">CFSR</value>
       <value compset="%E3SMWCv2">E3SMWCv2</value>
+      <value compset="%CPLWCH">CPLWCH</value>
     </values>
   </entry>
 
   <entry id="DATM_PRESAERO">
     <type>char</type>
-    <valid_values>none,clim_1850,clim_2000,clim_2010,trans_1850-2000,SSP1-1.9,SSP1-2.6,SSP2-4.5,SSP3-7.0,SSP4-3.4,SSP4-6.0,SSP5-3.4,SSP5-8.5,cplhist,e3smwcv2</valid_values>
+    <valid_values>none,clim_1850,clim_2000,clim_2010,trans_1850-2000,SSP1-1.9,SSP1-2.6,SSP2-4.5,SSP3-7.0,SSP4-3.4,SSP4-6.0,SSP5-3.4,SSP5-8.5,cplhist,e3smwcv2,cplwch</valid_values>
     <default_value>clim_2000</default_value>
     <values match="last">
       <value compset="^1850_"   >clim_1850</value>
@@ -115,7 +117,7 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
 
   <entry id="DATM_TOPO">
     <type>char</type>
-    <valid_values>none,observed,cplhist,e3smwcv2</valid_values>
+    <valid_values>none,observed,cplhist,e3smwcv2,cplwch</valid_values>
     <default_value>observed</default_value>
     <values match="last">
       <!-- Only needed for compsets with active land; for other compsets, turn it off -->
@@ -251,7 +253,7 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
     <file>env_run.xml</file>
     <desc>directory for coupler history data mode (only used for when DATM_MODE is E3SMWCv2)</desc>
   </entry>
-
+  
   <entry id="DATM_E3SMWCv2_YR_ALIGN">
     <type>integer</type>
     <valid_values></valid_values>
@@ -295,6 +297,75 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
     <group>run_component_datm</group>
     <file>env_run.xml</file>
     <desc>ending year to loop data over (only used when DATM_MODE is E3SMWCv2)</desc>
+  </entry>
+
+  <entry id="DATM_CPLWCH_DOMAIN_FILE">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>null</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>
+      Full pathname for domain file for datm when DATM_MODE is
+      CPLWCH, NOTE: if this is set to 'null' (the default), then
+      domain information is read in from the first coupler history
+      file in the target stream and it is assumed that the first
+      coupler stream file that is pointed to contains the domain
+      information for that stream.
+    </desc>
+  </entry>
+
+  <entry id="DATM_CPLWCH_DIR">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>UNSET</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>directory for coupler history data mode (only used for when DATM_MODE is CPLWCH)</desc>
+  </entry>
+
+  <entry id="DATM_CPLWCH_YR_ALIGN">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>-999</default_value>
+    <values match="last">
+      <value   compset="1850.*_DATM%CPLWCH">1</value>
+      <value   compset="2000.*_DATM%CPLWCH">$DATM_CPLWCH_YR_START</value>
+      <value   compset="HIST.*_DATM%CPLWCH">$DATM_CPLWCH_YR_START</value>
+      <value   compset="20TR.*_DATM%CPLWCH">$DATM_CPLWCH_YR_START</value>
+    </values>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>year align</desc>
+  </entry>
+
+  <entry id="DATM_CPLWCH_YR_START">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>-999</default_value>
+    <values match="last">
+      <value   compset="1850.*_DATM%CPLWCH">1850</value>
+      <value   compset="2000.*_DATM%CPLWCH">1850</value>
+      <value   compset="HIST.*_DATM%CPLWCH">1850</value>
+      <value   compset="20TR.*_DATM%CPLWCH">1850</value>
+    </values>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>starting year to loop data over (only used when DATM_MODE is CPLWCH)</desc>
+  </entry>
+  <entry id="DATM_CPLWCH_YR_END">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>-999</default_value>
+    <values match="last">
+      <value   compset="1850.*_DATM%CPLWCH">1869</value>
+      <value   compset="2000.*_DATM%CPLWCH">2014</value>
+      <value   compset="HIST.*_DATM%CPLWCH">2014</value>
+      <value   compset="20TR.*_DATM%CPLWCH">2014</value>
+    </values>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>ending year to loop data over (only used when DATM_MODE is CPLWCH)</desc>
   </entry>
 
   <entry id="DATM_CLMNCEP_YR_ALIGN">
@@ -385,19 +456,19 @@ data (see cime issue #3653 -- https://github.com/ESMCI/cime/issues/3653).
       <value   compset="1850.*_DATM%QIA">1972</value>
       <value   compset="1850.*_DATM%CRU">1920</value>
       <value   compset="1850.*_DATM%GSW">1920</value>
-      <value   compset="1850.*_DATM%GSWP3w5e5">1925</value>
+      <value   compset="1850.*_DATM%GSWP3w5e5">1920</value>
       <value   compset="1850.*_DATM%NLDAS2">-1</value>  <!-- Unsupported -->
       <value   compset="2000.*_DATM%WISOQIA">2004</value>
       <value   compset="2000.*_DATM%QIA">2004</value>
       <value   compset="HIST.*_DATM%QIA">1972</value>
       <value   compset="HIST.*_DATM%CRU">1920</value>
       <value   compset="HIST.*_DATM%GSW">1920</value>
-      <value   compset="HIST.*_DATM%GSWP3w5e5">2014</value>
+      <value   compset="HIST.*_DATM%GSWP3w5e5">1920</value>
       <value   compset="HIST.*_DATM%NLDAS2">-1</value>  <!-- Unsupported -->
       <value   compset="20TR.*_DATM%QIA">1972</value>
       <value   compset="20TR.*_DATM%CRU">1920</value>
       <value   compset="20TR.*_DATM%GSW">1920</value>
-      <value   compset="20TR.*_DATM%GSWP3w5e5">2014</value>
+      <value   compset="20TR.*_DATM%GSWP3w5e5">1920</value>
       <value   compset="20TR.*_DATM%NLDAS2">-1</value>  <!-- Unsupported -->
       <value   compset="4804.*_DATM%QIA">2004</value>
       <value   compset="SSP.*_DATM%QIA">2004</value>
