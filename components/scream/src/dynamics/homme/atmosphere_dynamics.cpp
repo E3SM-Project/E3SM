@@ -646,6 +646,9 @@ void HommeDynamics::homme_post_process (const int dt) {
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;
 
+  // Apply Rayleigh friction to update temperature and horiz_winds
+  rayleigh_friction_apply(dt);
+
   if (fv_phys_active()) return;
   
   // Convert VTheta_dp->T, store T,uv, and possibly w in FT, FM,
@@ -720,9 +723,6 @@ void HommeDynamics::homme_post_process (const int dt) {
       T_prev(ilev) = T_val;
     });
   });
-
-  // Apply Rayleigh friction to update temperature and horiz_winds
-  rayleigh_friction_apply(dt);
 }
 
 void HommeDynamics::
