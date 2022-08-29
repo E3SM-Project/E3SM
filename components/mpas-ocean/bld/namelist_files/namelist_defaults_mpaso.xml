@@ -152,6 +152,13 @@
 <config_Redi_horizontal_ramp_max>30e3</config_Redi_horizontal_ramp_max>
 <config_Redi_horizontal_ramp_max ocn_grid="WCAtl12to45E2r4">40e3</config_Redi_horizontal_ramp_max>
 
+<!-- submesoscale_eddy_parameterization -->
+<config_submesoscale_enable>.false.</config_submesoscale_enable>
+<config_submesoscale_tau>172800</config_submesoscale_tau>
+<config_submesoscale_Ce>0.06</config_submesoscale_Ce>
+<config_submesoscale_Lfmin>1000.0</config_submesoscale_Lfmin>
+<config_submesoscale_ds_max>100000.0</config_submesoscale_ds_max>
+
 <!-- GM_eddy_parameterization -->
 <config_use_GM>.true.</config_use_GM>
 <config_use_GM ocn_grid="oRRS30to10v3">.false.</config_use_GM>
@@ -190,6 +197,12 @@
 <config_GM_horizontal_ramp_max ocn_grid="WCAtl12to45E2r4">40e3</config_GM_horizontal_ramp_max>
 <config_GMRedi_Rossby_ramp_min>0.5</config_GMRedi_Rossby_ramp_min>
 <config_GMRedi_Rossby_ramp_max>3.0</config_GMRedi_Rossby_ramp_max>
+
+<!-- eddy_parameterization -->
+<config_eddyMLD_dens_threshold>0.03</config_eddyMLD_dens_threshold>
+<config_eddyMLD_reference_depth>10</config_eddyMLD_reference_depth>
+<config_eddyMLD_reference_pressure>1.0e5</config_eddyMLD_reference_pressure>
+<config_eddyMLD_use_old>.true.</config_eddyMLD_use_old>
 
 <!-- Rayleigh_damping -->
 <config_Rayleigh_friction>.false.</config_Rayleigh_friction>
@@ -725,9 +738,7 @@
 <config_AM_mixedLayerDepths_write_on_startup>.false.</config_AM_mixedLayerDepths_write_on_startup>
 <config_AM_mixedLayerDepths_compute_on_startup>.true.</config_AM_mixedLayerDepths_compute_on_startup>
 <config_AM_mixedLayerDepths_Tthreshold>.true.</config_AM_mixedLayerDepths_Tthreshold>
-<config_AM_mixedLayerDepths_Dthreshold>.true.</config_AM_mixedLayerDepths_Dthreshold>
 <config_AM_mixedLayerDepths_crit_temp_threshold>0.2</config_AM_mixedLayerDepths_crit_temp_threshold>
-<config_AM_mixedLayerDepths_crit_dens_threshold>0.03</config_AM_mixedLayerDepths_crit_dens_threshold>
 <config_AM_mixedLayerDepths_reference_pressure>1.0E5</config_AM_mixedLayerDepths_reference_pressure>
 <config_AM_mixedLayerDepths_Tgradient>.false.</config_AM_mixedLayerDepths_Tgradient>
 <config_AM_mixedLayerDepths_Dgradient>.false.</config_AM_mixedLayerDepths_Dgradient>

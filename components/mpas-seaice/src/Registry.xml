@@ -2073,6 +2073,26 @@
 			<var name="oceanMixedLayerDepth"/>
 			<var name="oceanHeatFluxConvergence"/>
 		</stream>
+		<stream name="airHourlyVelocitiesForcing"
+				type="input"
+				filename_template="forcing.nc"
+				filename_interval="0001-00-00_00:00:00"
+				input_interval="none"
+				reference_time="2000-01-01_00:00:00"
+				immutable="true">
+			<var name="uAirVelocity"/>
+			<var name="vAirVelocity"/>
+		</stream>
+		<stream name="oceanHourlyVelocitiesForcing"
+				type="input"
+				filename_template="forcing.nc"
+				filename_interval="0001-00-00_00:00:00"
+				input_interval="none"
+				reference_time="2000-01-01_00:00:00"
+				immutable="true">
+			<var name="uOceanVelocity"/>
+			<var name="vOceanVelocity"/>
+		</stream>
 		<stream name="dataIcebergForcing"
 				type="input"
 				filename_template="forcing/data_icebergs.nc"

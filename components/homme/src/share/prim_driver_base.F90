@@ -26,12 +26,9 @@ module prim_driver_base
   use reduction_mod,    only: reductionbuffer_ordered_1d_t, red_min, red_max, red_max_int, &
                               red_sum, red_sum_int, red_flops, initreductionbuffer, &
                               red_max_index, red_min_index
-#ifndef CAM
-#ifndef SCREAM
+#if !defined(CAM) && !defined(SCREAM)
   use prim_restart_mod, only : initrestartfile
   use restart_io_mod ,  only : readrestart
-#endif
-! For SCREAM, we might do unit tests, so enable setting of initial conditions
   use test_mod,         only: set_test_initial_conditions, compute_test_forcing
 #endif
 
@@ -1113,7 +1110,7 @@ contains
     if (prim_step_type == 1) then
        call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
        ! compute HOMME test case forcing
        ! by calling it here, it mimics eam forcings computations in standalone
        ! homme.
@@ -1348,7 +1345,7 @@ contains
 
     call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     ! Compute test forcing over tracer time step.
     call compute_test_forcing(elem,hybrid,hvcoord,tl%n0,n0_qdp,dt_q,nets,nete,tl)
 #endif

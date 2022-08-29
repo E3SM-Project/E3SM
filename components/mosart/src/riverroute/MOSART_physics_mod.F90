@@ -13,7 +13,7 @@ MODULE MOSART_physics_mod
   use shr_kind_mod  , only : r8 => shr_kind_r8, SHR_KIND_CL
   use shr_const_mod , only : SHR_CONST_REARTH, SHR_CONST_PI
   use shr_sys_mod   , only : shr_sys_abort
-  use RtmVar        , only : iulog, barrier_timers, wrmflag, inundflag, sediflag, heatflag, rstraflag
+  use RtmVar        , only : iulog, barrier_timers, wrmflag, inundflag, sediflag, heatflag, rstraflag, use_ocn_rof_two_way
   use RunoffMod     , only : Tctl, TUnit, TRunoff, Theat, TPara, rtmCTL, &
                              SMatP_upstrm, avsrc_upstrm, avdst_upstrm, SMatP_dnstrm, avsrc_dnstrm, avdst_dnstrm
   use MOSART_heat_mod
@@ -333,6 +333,15 @@ MODULE MOSART_physics_mod
              end do
           enddo
 
+          ! add dstrm BC for rof ocn coupling
+          if (use_ocn_rof_two_way) then
+             do iunit=rtmCTL%begr,rtmCTL%endr
+                if ( (rtmCTL%mask(iunit) .eq. 3) .and. (TUnit%ocn_rof_coupling_ID(iunit) .eq. 1) ) then
+                   TRunoff%yr_dstrm(iunit) = rtmCTL%ssh(iunit) + Tunit%vdatum_conversion(iunit) ! assign ocn's water depth to the dstrm component of the specified outlet cell 
+                end if
+             end do
+          end if
+
        end if
 #endif
        call t_stopf('mosartr_SMeroutUp')    
@@ -626,7 +635,11 @@ MODULE MOSART_physics_mod
     if(Tctl%RoutingMethod == KW) then
        call Routing_KW(iunit, nt, theDeltaT)
     else if(Tctl%RoutingMethod == DW) then
-       call Routing_DW(iunit, nt, theDeltaT)
+       if ( use_ocn_rof_two_way ) then
+          call Routing_DW_ocn_rof_two_way(iunit, nt, theDeltaT)
+       else
+          call Routing_DW(iunit, nt, theDeltaT)
+       end if
     else
 	   call shr_sys_abort('Wrong routing method! There are only 2 methods available. 1==KW, 2==DW.')
     end if
@@ -856,6 +869,116 @@ MODULE MOSART_physics_mod
    ! end if     
    
   end subroutine Routing_DW
+
+!-----------------------------------------------------------------------
+
+  subroutine Routing_DW_ocn_rof_two_way(iunit, nt, theDeltaT)
+  ! !DESCRIPTION: diffusion wave routing method that considers coupling with ocn model
+    implicit none
+    integer, intent(in) :: iunit, nt
+    real(r8), intent(in) :: theDeltaT
+    character(len=*),parameter :: subname = '(Routing_DW_ocn_rof_two_way)'
+
+    integer  :: k, myflag
+    real(r8) :: temp_gwl, temp_dwr, temp_gwl0
+    real(r8) :: temp1, temp2, w_temp
+    real(r8 ) :: y_c, len_c, slp_c             ! Water depth (m), length (m) and bed slope (dimensionless) of the current channel.
+    real(r8 ) :: y_down, len_down, slp_down    ! Water depth (m), length (m) and bed slope (dimensionless) of the downstream channel.
+
+    ! estimate the inflow from upstream units
+    TRunoff%erin(iunit,nt) = 0._r8
+
+    TRunoff%erin(iunit,nt) = TRunoff%erin(iunit,nt) - TRunoff%eroutUp(iunit,nt)
+
+    ! estimate the outflow
+    if(TUnit%rlen(iunit) <= 0._r8) then ! no river network, no channel routing
+       TRunoff%vr(iunit,nt) = 0._r8
+       TRunoff%erout(iunit,nt) = -TRunoff%erin(iunit,nt)-TRunoff%erlateral(iunit,nt)
+    elseif(TUnit%areaTotal2(iunit)/TUnit%rwidth(iunit)/TUnit%rlen(iunit) > 1e6_r8) then ! skip the channel routing if possible numerical instability
+       TRunoff%vr(iunit,nt) = 0._r8
+       TRunoff%erout(iunit,nt) = -TRunoff%erin(iunit,nt)-TRunoff%erlateral(iunit,nt)
+    else
+       ! when ocn rof two-way coupling is on, use DW in the specified outlets
+       if ( .not. use_ocn_rof_two_way .and. rtmCTL%mask(iunit) .eq. 3 ) then !If this channel is at basin outlet (downstream is ocean), use the KW method
+          call Routing_KW(iunit, nt, theDeltaT)
+       elseif ( use_ocn_rof_two_way .and. rtmCTL%mask(iunit) .eq. 3 .and. TUnit%ocn_rof_coupling_ID(iunit) .eq. 0 ) then
+          call Routing_KW(iunit, nt, theDeltaT)
+       else
+!          TODO: conc_r
+!          if(nt == nt_nliq) then
+              if(TRunoff%rslp_energy(iunit) >= TINYVALUE) then ! flow is from current channel to downstream
+                TRunoff%vr(iunit,nt) = CRVRMAN(TRunoff%rslp_energy(iunit), TUnit%nr(iunit), TRunoff%rr(iunit,nt))
+                TRunoff%erout(iunit,nt) = -TRunoff%vr(iunit,nt) * TRunoff%mr(iunit,nt)
+                if(TRunoff%erin(iunit,nt)*theDeltaT + TRunoff%wr(iunit,nt) <= TINYVALUE) then! much negative inflow from upstream, 
+                   TRunoff%vr(iunit,nt) = 0._r8
+                   TRunoff%erout(iunit,nt) = 0._r8
+                elseif(TRunoff%erout(iunit,nt) <= -TINYVALUE .and. TRunoff%wr(iunit,nt) + &
+                   (TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt)) * theDeltaT < TINYVALUE) then
+                   TRunoff%erout(iunit,nt) = -(TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%wr(iunit,nt)*0.95_r8 / theDeltaT)
+                   if(TRunoff%mr(iunit,nt) > TINYVALUE) then
+                      TRunoff%vr(iunit,nt) = -TRunoff%erout(iunit,nt) / TRunoff%mr(iunit,nt)
+                   end if
+                end if
+              elseif(TRunoff%rslp_energy(iunit) <= -TINYVALUE) then ! flow is from downstream to current channel
+                 TRunoff%vr(iunit,nt) = -CRVRMAN(abs(TRunoff%rslp_energy(iunit)), TUnit%nr(iunit), TRunoff%rr(iunit,nt))
+                 TRunoff%erout(iunit,nt) = -TRunoff%vr(iunit,nt) * TRunoff%mr(iunit,nt)
+                 ! two-way coupling update: allow flow from ocn
+                 if(rtmCTL%nUp_dstrm(iunit) > 1) then
+                     if( TUnit%ocn_rof_coupling_ID(iunit) .ne. 1 .and. TRunoff%erin_dstrm(iunit,nt)*theDeltaT + TRunoff%wr_dstrm(iunit,nt)/rtmCTL%nUp_dstrm(iunit) <= TINYVALUE) then! much negative inflow from upstream,
+                         TRunoff%vr(iunit,nt) = 0._r8
+                         TRunoff%erout(iunit,nt) = 0._r8
+                     elseif( TUnit%ocn_rof_coupling_ID(iunit) .ne. 1 .and. TRunoff%erout(iunit,nt) >= TINYVALUE .and. TRunoff%wr_dstrm(iunit,nt)/rtmCTL%nUp_dstrm(iunit)- TRunoff%erout(iunit,nt) * theDeltaT < TINYVALUE) then
+                         TRunoff%erout(iunit,nt) = TRunoff%wr_dstrm(iunit,nt)*0.95_r8 / theDeltaT / rtmCTL%nUp_dstrm(iunit)
+                         if(TRunoff%mr(iunit,nt) > TINYVALUE) then
+                            TRunoff%vr(iunit,nt) = -TRunoff%erout(iunit,nt) / TRunoff%mr(iunit,nt)
+                         end if
+                     end if
+                 else
+                     if( TUnit%ocn_rof_coupling_ID(iunit) .ne. 1 .and. TRunoff%erin_dstrm(iunit,nt)*theDeltaT + TRunoff%wr_dstrm(iunit,nt) <= TINYVALUE) then! much negative inflow from upstream,
+                        TRunoff%vr(iunit,nt) = 0._r8
+                        TRunoff%erout(iunit,nt) = 0._r8
+                     elseif( TUnit%ocn_rof_coupling_ID(iunit) .ne. 1 .and. TRunoff%erout(iunit,nt) >= TINYVALUE .and. TRunoff%wr_dstrm(iunit,nt) &
+                       - TRunoff%erout(iunit,nt) * theDeltaT < TINYVALUE) then
+                        TRunoff%erout(iunit,nt) = TRunoff%wr_dstrm(iunit,nt)*0.95_r8 / theDeltaT
+                        if(TRunoff%mr(iunit,nt) > TINYVALUE) then
+                           TRunoff%vr(iunit,nt) = -TRunoff%erout(iunit,nt) / TRunoff%mr(iunit,nt)
+                        end if
+                     end if
+                 end if
+              else  ! no flow between current channel and downstream
+                TRunoff%vr(iunit,nt) = 0._r8
+                TRunoff%erout(iunit,nt) = 0._r8
+              end if
+       end if
+    end if
+
+    if(TRunoff%erin(iunit,nt) < -TINYVALUE .and. TRunoff%erout(iunit,nt) < -TINYVALUE) then
+       if((TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt)) * theDeltaT + TRunoff%wr(iunit,nt) < 0._r8) then
+           TRunoff%erout(iunit,nt) = 0._r8
+       end if
+    end if
+
+    temp_dwr = TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt)
+    temp_gwl = TRunoff%qgwl(iunit,nt) * TUnit%area(iunit) * TUnit%frac(iunit)
+    temp_gwl0 = temp_gwl
+    if(abs(temp_gwl) <= TINYVALUE) then
+       temp_gwl = 0._r8
+    end if
+    if(temp_gwl < -TINYVALUE) then
+       write(iulog,*) 'mosart: ERROR temp_gwl negative',iunit,nt,TRunoff%qgwl(iunit,nt)
+       call shr_sys_abort('mosart: ERROR temp_gwl negative ')
+       if(TRunoff%wr(iunit,nt) < TINYVALUE) then
+          temp_gwl = 0._r8
+       else
+          if(TRunoff%wr(iunit,nt)/theDeltaT + temp_dwr + temp_gwl < -TINYVALUE) then
+             temp_gwl = -(temp_dwr + TRunoff%wr(iunit,nt) / theDeltaT)
+          end if
+       end if
+    end if
+
+    TRunoff%dwr(iunit,nt) = TRunoff%erlateral(iunit,nt) + TRunoff%erin(iunit,nt) + TRunoff%erout(iunit,nt) + temp_gwl
+
+  end subroutine Routing_DW_ocn_rof_two_way
 
 !-----------------------------------------------------------------------
 

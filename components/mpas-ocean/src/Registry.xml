@@ -330,7 +330,7 @@
 					description="Redi diagonal terms (2 and 3) are turned off from layer 1 through config_Redi_min_layers_diag_terms-1, and on from config_Redi_min_layers_diag_terms to nVertLevels. The Redi diagonal terms are not guaranteed to produce bounded tracer fields, and in practice produce growing temperatures in a few columns with fewer than 5 vertical cells. Redi is meant for isopycnal mixing in the deep ocean, so not applying Redi diagonal terms in very shallow regions is an acceptable solution."
 					possible_values="any integer between 0 (all layers on) and nVertLevels (all layers off)"
 		/>
-		<nml_option name="config_Redi_horizontal_taper" type="character" default_value="ramp" units="unitless"
+		<nml_option name="config_Redi_horizontal_taper" type="character" default_value="ramp"
 					description="Control how the Redi $\kappa$ value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
 					possible_values="'none', 'ramp', 'RossbyRadius'"
 		/>
@@ -342,6 +342,28 @@
 					description="Maximum value in grid cell size for Redi $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_Redi_horizontal_taper is set to ramp."
 					possible_values="Any positive real value."
 		/>
+	</nml_record>
+	<nml_record name="submesoscale_eddy_parameterization" mode="forward">
+		<nml_option name="config_submesoscale_enable" type="logical" default_value=".false." 
+					description="flag to enable the FK2011 parameterization for submesoscale eddies"
+					possible_values=".true. or .false."
+					/>
+		<nml_option name="config_submesoscale_tau" type="real" default_value="172800" units="s"
+					description="timescale for frictional slumping of front (in seconds)"
+					possible_values="positive reals, between 1-10 days"
+					/>
+		<nml_option name="config_submesoscale_Ce" type="real" default_value="0.06"
+					description="efficiency of submesoscale eddies"
+					possible_values="0.06 - 0.08"
+					/>
+		<nml_option name="config_submesoscale_Lfmin" type="real" default_value="1000.0" units="m"
+					description="minimum frontal width (meters)"
+					possible_values="between 200 and 5000m"
+					/>
+		<nml_option name="config_submesoscale_ds_max" type="real" default_value="100000.0" units="m"
+					description="maximum grid scale to scale up buoyancy gradient"
+					possible_values="around 1 degree"
+					/>
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
 		<nml_option name="config_use_GM" type="logical" default_value=".false."
@@ -399,7 +421,7 @@
 					description="factor multiplying the Rhines length in the scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)"
 					possible_values="small positive values less than equal to one"
 		/>
-		<nml_option name="config_GM_horizontal_taper" type="character" default_value="ramp" units="unitless"
+		<nml_option name="config_GM_horizontal_taper" type="character" default_value="ramp"
 					description="Control how the GM Bolus value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007"
 					possible_values="'none', 'ramp', 'RossbyRadius'"
 		/>
@@ -411,13 +433,31 @@
 					description="Maximum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_horizontal_taper is set to ramp."
 					possible_values="Any positive real value."
 		/>
-		<nml_option name="config_GMRedi_Rossby_ramp_min" type="real" default_value="0.5" units="unitless"
+		<nml_option name="config_GMRedi_Rossby_ramp_min" type="real" default_value="0.5"
 					description="Minimum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM and Redi $\kappa$ ramp functions. Used when config_GM_horizontal_taper and/or config_Redi_horizontal_taper are set to RossbyRadius."
 					possible_values="Any positive real value."
 		/>
-		<nml_option name="config_GMRedi_Rossby_ramp_max" type="real" default_value="3.0" units="unitless"
+		<nml_option name="config_GMRedi_Rossby_ramp_max" type="real" default_value="3.0"
 					description="Maximum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM and Redi $\kappa$ ramp functions. Used when config_GM_horizontal_taper and/or config_Redi_horizontal_taper are set to RossbyRadius."
 					possible_values="Any positive real value."
+		/>
+	</nml_record>
+	<nml_record name="eddy_parameterization" mode="forward">
+		<nml_option name="config_eddyMLD_dens_threshold" type="real" default_value="0.03" units="kg m^-3"
+					description="potential density change relative to surface for mixed layer depth threshold method.  This calculation is used for the Redi tapering, GM N2_dependent bolus kappa, and the submesoscale eddy parameterization"
+					possible_values="suggested range 0.01 less than or equal to thresh less than or equal to 0.5"
+		/>
+		<nml_option name="config_eddyMLD_reference_depth" type="real" default_value="10" units="m"
+					description="reference depth for threshold computation"
+					possible_values="any positive real, near 10" 
+		/>
+		<nml_option name="config_eddyMLD_reference_pressure" type="real" default_value="1.0e5" units="Pa"
+					description="reference pressure for original mixed layer depth calculation"
+					possible_values="positive reals around 1.0e5"
+		/>
+		<nml_option name="config_eddyMLD_use_old" type="logical" default_value=".true."
+					description="switches from old dThreshMLD calculation to new (fixed one)"
+					possible_values=".true. or .false."
 		/>
 	</nml_record>
 	<nml_record name="Rayleigh_damping" mode="forward">
@@ -1487,6 +1527,7 @@
 		<package name="cullCells" description="This package controls variables that provide information on what cells should be culled."/>
 		<package name="tracerBudget" description="This package controls variables that record the tracer budget."/>
 		<package name="gm" description="This package is for GM variables, which are only needed at lower resolutions."/>
+		<package name="submeso" description="This package is for submesoscale eddy (MLE) variables, needed at resolutions greater than O(1km)"/>
 		<package name="tidalPotentialForcingPKG" description="This package controls variables required for tidal potential forcing"/>
 		<package name="topographicWaveDragPKG" description="This package controls variables required for topographic wave drag"/>
 		<package name="gotmPKG" description="This package is for GOTM variables, which are only needed when using GOTM for the vertical turbulence closure."/>
@@ -2078,8 +2119,8 @@
 
 			<stream name="mesh"/>
 			<var name="k33"/>
-			<var name="GMBolusVelocityX"/>
-			<var name="GMBolusVelocityY"/>
+			<var name="eddyVelocityX"/>
+			<var name="eddyVelocityY"/>
 			<var name="normalGMBolusVelocity"/>
 			<var name="vertGMBolusVelocityTop"/>
 			<var name="gmStreamFuncTopOfEdge"/>
@@ -2669,8 +2710,11 @@
 		/>
 		<var name="vertGMBolusVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^-1"
 			 description="vertical tracer-transport velocity defined at center (horizontally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal GM Bolus velocity."
-			 packages="forwardMode;analysisMode"
-
+			 packages="gm"
+		/>
+		<var name="vertMLEBolusVelocityTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^-1"
+			 description="vertical tracer-transport velocity defined at center (horizontally) and top (vertically) of cell.  This is not the vertical ALE transport, but is Eulerian (fixed-frame) in the vertical, and computed from the continuity equation from the horizontal MLE (submesoscale) Bolus velocity."
+			 packages="submeso"
 		/>
 		<var name="tangentialVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			 description="horizontal velocity, tangential to an edge"
@@ -2800,11 +2844,14 @@
 		/>
 		<var name="normalGMBolusVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization"
-			 packages="forwardMode;analysisMode"
+		/>
+		<var name="normalMLEvelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
+			description="Velocity from mixed layer eddies (fox kemper 2011 submesoscale parameterization)"
+			packages="submeso"
 		/>
 		<var name="cGMphaseSpeed" type="real" dimensions="nEdges Time" units="m s^-1"
 			description="phase speed for the bolus velocity calculation"
-			packages="forwardMode;analysisMode"
+			packages="gm"
 		/>
 		<var name="betaEdge" type="real" dimensions="nEdges Time" units="m^-1 s^-1"
 			description="meridional gradient of the coriolis parameter, used in the mesoscale eddy parameterization schemes"
@@ -2825,25 +2872,37 @@
 			description="count of times redi limiter is invoked on a timestep"
 			packages="gm"
 		/>
-		<var name="GMBolusVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
-			 description="Bolus velocity in Gent-McWilliams eddy parameterization, x-direction"
-			 packages="forwardMode;analysisMode"
+		<var name="gradBuoyEddy" type="real" dimensions="nVertLevelsP1 nEdges Time" units="s^-2"
+			description="horizontal gradient of buoyancy at cell edge and interfaces in vertical.  this is used for the GM parameterization and the submesoscale eddy parameterization"
+			 packages="gm;submeso"
 		/>
-		<var name="GMBolusVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
-			 description="Bolus velocity in Gent-McWilliams eddy parameterization, y-direction"
-			 packages="forwardMode;analysisMode"
+		<var name="mleVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
+			description="Bolus velocity in fox-kemper mle parameterization, zonal-direction"
+			packages="gm;submeso"
 		/>
-		<var name="GMBolusVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
-			 description="Bolus velocity in Gent-McWilliams eddy parameterization, z-direction"
-			 packages="forwardMode;analysisMode"
+		<var name="mleVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
+			description="Bolus velocity in fox-kemper mle parameterization, meridional-direction"
+			packages="gm;submeso"
+		/>
+		<var name="eddyVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
+			description="Bolus velocity in Gent-McWilliams eddy or submesoscale parameterization, x-direction"
+			packages="gm;submeso"
+		/>
+		<var name="eddyVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
+			description="Bolus velocity in Gent-McWilliams or submesoscale eddy parameterization, y-direction"
+			packages="gm;submeso"
+		/>
+		<var name="eddyVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
+			description="eddy Bolus velocity in Gent-McWilliams or submesoscale eddy parameterization, z-direction"
+			packages="gm;submeso"
 		/>
 		<var name="GMBolusVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, zonal-direction"
-			 packages="forwardMode;analysisMode"
+			 packages="gm;submeso"
 		/>
 		<var name="GMBolusVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, meridional-direction"
-			 packages="forwardMode;analysisMode"
+			 packages="gm;submeso"
 		/>
 		<var name="RiTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="1"
 			 description="gradient Richardson number defined at the center (horizontally) and top (vertically)"
@@ -2922,6 +2981,9 @@
 		<var name="indMLD" type="integer" dimensions="nCells Time"
 			description="index of model where mixed layer depth occurs (always one past)"
 		/>
+		<var name="dThreshMLD" type="real" dimensions="nCells Time" units="m"
+			description="mixed layer depth based on density threshold"
+		/>
 		<var name="slopeTriadUp" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional" default_value="0.0"
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
 			 packages="forwardMode;analysisMode"
@@ -2966,11 +3028,11 @@
 			 description="Redi Kappa value.  On output, it has already been multiplied by the horizontal taper array RediHorizontalTaper (as opposed to gmBolusKappa, which has not been multiplied by the horizontal taper)."
 			 packages="gm"
 		/>
-		<var name="RediHorizontalTaper" type="real" dimensions="nEdges Time" units="unitless"
+		<var name="RediHorizontalTaper" type="real" dimensions="nEdges Time"
 			 description="Horizontal tapering for Redi. Varies between 0 and 1."
 			 packages="gm"
 		/>
-		<var name="gmHorizontalTaper" type="real" dimensions="nEdges Time" units="unitless"
+		<var name="gmHorizontalTaper" type="real" dimensions="nEdges Time"
 			 description="Horizontal tapering for GM. Varies between 0 and 1."
 			 packages="gm"
 		/>
