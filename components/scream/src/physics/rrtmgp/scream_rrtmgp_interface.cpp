@@ -9,6 +9,8 @@
 #include "cpp/rte/mo_rte_sw.h"
 #include "cpp/rte/mo_rte_lw.h"
 
+#include <random>
+
 namespace scream {
     namespace rrtmgp {
 
@@ -20,7 +22,7 @@ namespace scream {
         OpticalProps1scl get_subsampled_clouds(
                 const int ncol, const int nlay, const int nbnd, const int ngpt,
                 OpticalProps1scl &cloud_optics, GasOpticsRRTMGP &kdist, real2d &cld);
-        int3d get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, real2d &cld);
+        int3d get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, real2d &cld, const int overlap_option=1, const unsigned seed=1);
 
         /* 
          * Objects containing k-distribution information need to be initialized
@@ -323,10 +325,78 @@ namespace scream {
             
         }
 
-        int3d get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, real2d &cld) {
+        int3d get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, real2d &cldf, const int overlap_option, const unsigned seed) {
+            
+            // Routine will return subcolumn mask with values of 0 indicating no cloud, 1 indicating cloud
             auto subcolumn_mask = int3d("subcolumn_mask", ncol, nlay, ngpt);
-            // Dummy cloud mask, always ones
-            memset(subcolumn_mask, 1);
+
+            // Subcolumn generators are a means for producing a variable x(i,j,k), where
+            //
+            //     c(i,j,k) = 1 for x(i,j,k) >  1 - cldf(i,j)
+            //     c(i,j,k) = 0 for x(i,j,k) <= 1 - cldf(i,j)
+            //
+            // I am going to call this "cldx" to be just slightly less ambiguous
+            auto cldx = real3d("cldx", ncol, nlay, ngpt);
+
+            // Apply overlap assumption to set cldx
+            if (overlap_option == 0) {  // Dummy mask, always cloudy
+                memset(cldx, 1);
+            } else {  // Default case, maximum-random overlap
+                // Maximum-random overlap:
+                // Uses essentially the algorithm described in eq (14) in Raisanen et al. 2004,
+                // https://rmets.onlinelibrary.wiley.com/doi/epdf/10.1256/qj.03.99. Also the same
+                // algorithm used in RRTMG implementation of maximum-random overlap (see
+                // https://github.com/AER-RC/RRTMG_SW/blob/master/src/mcica_subcol_gen_sw.f90)
+                //
+                // First, fill cldx with random numbers. For now, create pseudo-random numbers on host and copy to device
+                std::mt19937_64 generator(seed);
+                std::uniform_real_distribution<Real> distribution(0.0, 1.0);
+                auto cldx_host = cldx.createHostCopy();
+                for (int i = 0; i < cldx.totElems(); i++) {
+                    cldx_host.data()[i] = distribution(generator);
+                }
+                cldx_host.deep_copy_to(cldx);
+                // Step down columns and apply algorithm from eq (14)
+                // TODO: can we just set subcolumn_mask here directly?
+                // if (rnd(icol,1,igpt) > 1.0 - cldf(icol,1)) {
+                //   iscloudy(icol,1,igpt) = 1;
+                // } else {
+                //   iscloudy(icol,1,igpt) = 0;
+                // }
+                // if (iscloudy(icol,ilay-1,igpt)) {
+                //   iscloudy(icol,ilay,igpt) = 1;
+                // } else if ((1.0 - cldf(icol,ilay-1)) * rnd(icol,ilay,igpt) > 1.0 - cldf(icol,ilay)) {
+                //   iscloudy(icol,ilay,igpt) = 1;
+                // } else {
+                //   iscloud(icol,ilay,igpt) = 0;
+                // }
+                parallel_for(Bounds<2>(ngpt,ncol), YAKL_LAMBDA(int igpt, int icol) {
+                    for (int ilay = 2; ilay <= nlay; ilay++) {
+                        // Check cldx in level above and see if it satisfies conditions to create a cloudy subcolumn
+                        if (cldx(icol,ilay-1,igpt) > 1.0 - cldf(icol,ilay-1)) {
+                            // Cloudy subcolumn above, use same random number here so that clouds in these two adjacent
+                            // layers are maximimally overlapped
+                            cldx(icol,ilay,igpt) = cldx(icol,ilay-1,igpt);
+                        } else {
+                            // Cloud-less above, use new random number so that clouds are distributed
+                            // randomly in this layer. Need to scale new random number to range
+                            // [0, 1.0 - cldf(ilay-1)] because we have artifically changed the distribution
+                            // of random numbers in this layer with the above branch of the conditional,
+                            // which would otherwise inflate cloud fraction in this layer.
+                            cldx(icol,ilay,igpt) = cldx(icol,ilay  ,igpt) * (1.0 - cldf(icol,ilay-1));
+                        }
+                    }
+                });
+            }
+
+            // Use cldx array to create subcolumn mask
+            parallel_for(Bounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
+                if (cldx(icol,ilay,igpt) > 1.0 - cldf(icol,ilay)) {
+                    subcolumn_mask(icol,ilay,igpt) = 1;
+                } else {
+                    subcolumn_mask(icol,ilay,igpt) = 0;
+                }
+            });
             return subcolumn_mask;
         }
 
@@ -338,7 +408,7 @@ namespace scream {
             subsampled_clouds.init(kdist.get_band_lims_wavenumber(), kdist.get_band_lims_gpoint(), "clouds_sw_gpt");
             subsampled_clouds.alloc_2str(ncol, nlay);
             // Get subcolumn cloud mask
-            auto cldmask = get_subcolumn_mask(ncol, nlay, ngpt, cld);
+            auto cldmask = get_subcolumn_mask(ncol, nlay, ngpt, cld, 1, 0);
             // Assign optical properties to subcolumns (note this implements MCICA)
             auto gpoint_bands = kdist.get_gpoint_bands();
             parallel_for(Bounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
@@ -365,7 +435,7 @@ namespace scream {
             subsampled_clouds.init(kdist.get_band_lims_wavenumber(), kdist.get_band_lims_gpoint(), "clouds_sw_gpt");
             subsampled_clouds.alloc_1scl(ncol, nlay);
             // Get subcolumn cloud mask
-            auto cldmask = get_subcolumn_mask(ncol, nlay, ngpt, cld);
+            auto cldmask = get_subcolumn_mask(ncol, nlay, ngpt, cld, 1, 0);
             // Assign optical properties to subcolumns (note this implements MCICA)
             auto gpoint_bands = kdist.get_gpoint_bands();
             parallel_for(Bounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
