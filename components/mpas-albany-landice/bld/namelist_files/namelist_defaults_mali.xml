@@ -116,7 +116,7 @@
 <config_start_time>'0000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'0000-01-01_00:00:00'</config_stop_time>
 <config_run_duration>'none'</config_run_duration>
-<config_calendar_type CALENDAR="NO_LEAP">'gregorian_noleap'</config_calendar_type>
+<config_calendar_type CALENDAR="NO_LEAP">'noleap'</config_calendar_type>
 <config_calendar_type>'gregorian'</config_calendar_type>
 
 <!-- io -->
