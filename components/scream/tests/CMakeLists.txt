@@ -15,7 +15,6 @@ if (NOT DEFINED ENV{SCREAM_FAKE_ONLY})
     set (TEST_RANK_END   ${SCREAM_TEST_MAX_RANKS})
   endif()
 
-  message ("test ranks [start,end] = [${TEST_RANK_START}, ${TEST_RANK_END}]")
   # Testing individual atm processes
   add_subdirectory(uncoupled)
 

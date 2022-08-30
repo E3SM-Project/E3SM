@@ -42,22 +42,29 @@ if (NOT SCREAM_BASELINES_ONLY)
 
   ## Add a standalone test with chunked columns, and compare against non-chunked
   set (SUFFIX "_chunked")
-  set (COL_CHUNK_SIZE 50)
+  math (EXPR COL_PER_RANK "218 / ${TEST_RANK_END}")
+  math (EXPR COL_CHUNK_SIZE "${COL_PER_RANK} / 2")
+  if (COL_CHUNK_SIZE LESS 1)
+    message (FATAL_ERROR "Error! Chunk size for rrtmgp unit test is less than 1.")
+  endif()
+
   configure_file (input.yaml input_chunked.yaml)
   configure_file (rrtmgp_standalone_output.yaml rrtmgp_standalone_output_chunked.yaml)
+  # Compute the chunk size, given number or ranks
   CreateUnitTestFromExec(
       rrtmgp_standalone_chunked rrtmgp_standalone
       LABELS ${TEST_LABELS}
+      MPI_RANKS ${TEST_RANK_END}
       EXE_ARGS "--ekat-test-params inputfile=input_chunked.yaml"
       PROPERTIES FIXTURES_SETUP rrtmgp_chunked_generate_output
-      PASS_REGULAR_EXPRESSION "(beg.end: 50, 100)"
+      PASS_REGULAR_EXPRESSION "(beg.end: 0, ${COL_CHUNK_SIZE})"
   )
 
   # Compare chunked vs non-chunked radiation
   include (BuildCprnc)
   BuildCprnc()
-  set (SRC_FILE "rrtmgp_standalone_output_chunked.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
-  set (TGT_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
+  set (SRC_FILE "rrtmgp_standalone_output_chunked.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.nc")
+  set (TGT_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_END}.nc")
   set (TEST_NAME "rrtmgp_chunked_vs_monolithic_bfb")
   add_test (NAME ${TEST_NAME}
             COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
