@@ -41,7 +41,7 @@ module repro_sum_mod
 #else
    use shr_kind_mod,  only: r8 => shr_kind_r8, i8 => shr_kind_i8 
 #endif
-   use shr_sys_mod,   only: shr_sys_abort  
+   use shr_abort_mod,   only: shr_sys_abort=>shr_abort_abort
    use perf_mod  ! _EXTERNAL
    use parallel_mod, only : abortmp
 !-----------------------------------------------------------------------

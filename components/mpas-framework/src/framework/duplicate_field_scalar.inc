@@ -6,17 +6,17 @@
          else
             local_copy_only = .false.
          end if
-   
-         
+
+
          src_cursor => src
          if (.not. local_copy_only) then
             nullify(dst_cursor)
          else
             dst_cursor => dst
          end if
-   
+
 !        do while (associated(src_cursor))
-   
+
             if (.not. local_copy_only) then
                if (associated(dst_cursor)) then
                   allocate(dst_cursor % next)
@@ -29,14 +29,15 @@
                end if
                nullify(dst_cursor % next)
             end if
-   
-   
+
+
             !
             ! Fill in members of dst_cursor from src_cursor
             !
             if (.not. local_copy_only) then
                dst_cursor % block => src_cursor % block
                dst_cursor % fieldName = src_cursor % fieldName
+               dst_cursor % outputFieldName = src_cursor % outputFieldName
                dst_cursor % isVarArray = src_cursor % isVarArray
                dst_cursor % isActive = src_cursor % isActive
                dst_cursor % isDecomposed = src_cursor % isDecomposed
@@ -63,6 +64,6 @@
 !           if (.not. local_copy_only) then
 !              dst_cursor => dst_cursor % next
 !           end if
-     
+
 !        end do
       end if

@@ -1,37 +1,37 @@
 	<nml_record name="tracer_forcing_debugTracers">
-		<nml_option name="config_use_debugTracers" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_debugTracers" type="logical" default_value=".false."
 			description="if true, the 'debugTracers' category is enabled for the run"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_reset_debugTracers_near_surface" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_reset_debugTracers_near_surface" type="logical" default_value=".false."
 			description="if true, the reset 'debugTracers' in the top n layers, where n is set by config_reset_debugTracers_top_nLayers"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_reset_debugTracers_top_nLayers" type="integer" default_value="20" units="unitless"
+		<nml_option name="config_reset_debugTracers_top_nLayers" type="integer" default_value="20"
 					description="Integer specifying number of layers at top to reset 2 at end of each timestep. Default is 20, chosen to be near a typical mixed layer depth of 200m."
 					possible_values="Any positive integer value greater than or equal to 0."
 		/>
-		<nml_option name="config_use_debugTracers_surface_bulk_forcing" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_debugTracers_surface_bulk_forcing" type="logical" default_value=".false."
 			description="if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'debugTracers' category"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_debugTracers_surface_restoring" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_debugTracers_surface_restoring" type="logical" default_value=".false."
 			description="if true, surface restoring source is applied to tracers in 'debugTracers' category"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_debugTracers_interior_restoring" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_debugTracers_interior_restoring" type="logical" default_value=".false."
 			description="if true, interior restoring source is applied to tracers in 'debugTracers' category"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_debugTracers_exponential_decay" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_debugTracers_exponential_decay" type="logical" default_value=".false."
 			description="if true, exponential decay source is applied to tracers in 'debugTracers' category"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_debugTracers_idealAge_forcing" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_debugTracers_idealAge_forcing" type="logical" default_value=".false."
 			description="if true, idealAge forcing source is applied to tracers in 'debugTracers' category"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_use_debugTracers_ttd_forcing" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_use_debugTracers_ttd_forcing" type="logical" default_value=".false."
 			description="if true, transit time distribution forcing source is applied to tracers in 'debugTracers' category"
 			possible_values=".true. or .false."
 		/>
@@ -50,13 +50,13 @@
 	<var_struct name="state" time_levs="2">
 		<var_struct name="tracers" time_levs="2">
 			<var_array name="debugTracers" dimensions="nVertLevels nCells Time" type="real" packages="debugTracersPKG" default_value="1.0">
-				<var name="tracer1" array_group="debugGRP" units="tracer1"
+				<var name="tracer1" array_group="debugGRP"
 			 description="tracer for debugging purposes"
 				/>
-				<var name="tracer2" array_group="debugGRP" units="tracer2"
+				<var name="tracer2" array_group="debugGRP"
 			 description="tracer for debugging purposes"
 				/>
-				<var name="tracer3" array_group="debugGRP" units="tracer3"
+				<var name="tracer3" array_group="debugGRP"
 			 description="tracer for debugging purposes"
 				/>
 			</var_array>
@@ -66,13 +66,13 @@
 	<var_struct name="tend" time_levs="1">
 		<var_struct name="tracersTend" time_levs="1">
 			<var_array name="debugTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="debugTracersPKG">
-				<var name="tracer1Tend" array_group="debugGRP" units="tracer1"
+				<var name="tracer1Tend" array_group="debugGRP"
 			 description="Tendency for tracer1"
 				/>
-				<var name="tracer2Tend" array_group="debugGRP" units="tracer2"
+				<var name="tracer2Tend" array_group="debugGRP"
 			 description="Tendency for tracer2"
 				/>
-				<var name="tracer3Tend" array_group="debugGRP" units="tracer3"
+				<var name="tracer3Tend" array_group="debugGRP"
 			 description="Tendency for tracer3"
 				/>
 			</var_array>
@@ -82,59 +82,59 @@
    	<var_struct name="forcing" time_levs="1">
 		<var_struct name="tracersSurfaceFlux" time_levs="1">
 			<var_array name="debugTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="debugTracersPKG">
-				<var name="tracer1SurfaceFlux" array_group="debugTracerFluxGRP" units="tracer1 m s^{-1}"
+				<var name="tracer1SurfaceFlux" array_group="debugTracerFluxGRP" units="m s^-1"
 			 description="Flux of tracer1 through the ocean surface. Positive into ocean."
 				/>
-				<var name="tracer2SurfaceFlux" array_group="debugTracerFluxGRP" units="tracer2 m s^{-1}"
+				<var name="tracer2SurfaceFlux" array_group="debugTracerFluxGRP" units="m s^-1"
 			 description="Flux of tracer2 through the ocean surface. Positive into ocean."
 				/>
-				<var name="tracer3SurfaceFlux" array_group="debugTracerFluxGRP" units="tracer3 m s^{-1}"
+				<var name="tracer3SurfaceFlux" array_group="debugTracerFluxGRP" units="m s^-1"
 			 description="Flux of tracer3 through the ocean surface. Positive into ocean."
 				/>
 			</var_array>
 			<var_array name="debugTracersSurfaceFluxRunoff" type="real" dimensions="nCells Time" packages="debugTracersPKG">
-				<var name="tracer1SurfaceFluxRunoff" array_group="debugRunoffFluxGRP" units="tracer1 m s^{-1}"
+				<var name="tracer1SurfaceFluxRunoff" array_group="debugRunoffFluxGRP" units="m s^-1"
 			 description="Flux of tracer1 through the ocean surface due to river runoff. Positive into ocean."
 				/>
-				<var name="tracer2SurfaceFluxRunoff" array_group="debugRunoffFluxGRP" units="tracer2 m s^{-1}"
+				<var name="tracer2SurfaceFluxRunoff" array_group="debugRunoffFluxGRP" units="m s^-1"
 			 description="Flux of tracer2 through the ocean surface due to river runoff. Positive into ocean."
 				/>
-				<var name="tracer3SurfaceFluxRunoff" array_group="debugRunoffFluxGRP" units="tracer3 m s^{-1}"
+				<var name="tracer3SurfaceFluxRunoff" array_group="debugRunoffFluxGRP" units="m s^-1"
 			 description="Flux of tracer3 through the ocean surface due to river runoff. Positive into ocean."
 				/>
 			</var_array>
 			<var_array name="debugTracersSurfaceFluxRemoved" type="real" dimensions="nCells Time" packages="debugTracersPKG">
-				<var name="tracer1SurfaceFluxRemoved" array_group="debugRemovedFluxGRP" units="tracer1 m s^{-1}"
+				<var name="tracer1SurfaceFluxRemoved" array_group="debugRemovedFluxGRP" units="m s^-1"
 			 description="Flux of tracer1 that is ignored coming into the ocean. Positive into ocean."
 				/>
-				<var name="tracer2SurfaceFluxRemoved" array_group="debugRemovedFluxGRP" units="tracer2 m s^{-1}"
+				<var name="tracer2SurfaceFluxRemoved" array_group="debugRemovedFluxGRP" units="m s^-1"
 			 description="Flux of tracer2 that is ignored coming into the ocean. Positive into ocean."
 				/>
-				<var name="tracer3SurfaceFluxRemoved" array_group="debugRemovedFluxGRP" units="tracer3 m s^{-1}"
+				<var name="tracer3SurfaceFluxRemoved" array_group="debugRemovedFluxGRP" units="m s^-1"
 			 description="Flux of tracer3 that is ignored coming into the ocean. Positive into ocean."
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersSurfaceRestoringFields" time_levs="1">
 			<var_array name="debugTracersPistonVelocity" type="real" dimensions="nCells Time" packages="debugTracersSurfaceRestoringPKG">
-				<var name="tracer1PistonVelocity" array_group="debugGRP" units="m s^{-1}"
+				<var name="tracer1PistonVelocity" array_group="debugGRP" units="m s^-1"
 			 description="A non-negative field controlling the rate at which tracer1 is restored to tracer1SurfaceRestoringValue"
 				/>
-				<var name="tracer2PistonVelocity" array_group="debugGRP" units="m s^{-1}"
+				<var name="tracer2PistonVelocity" array_group="debugGRP" units="m s^-1"
 			 description="A non-negative field controlling the rate at which tracer2 is restored to tracer2SurfaceRestoringValue"
 				/>
-				<var name="tracer3PistonVelocity" array_group="debugGRP" units="m s^{-1}"
+				<var name="tracer3PistonVelocity" array_group="debugGRP" units="m s^-1"
 			 description="A non-negative field controlling the rate at which tracer3 is restored to tracer3SurfaceRestoringValue"
 				/>
 			</var_array>
 			<var_array name="debugTracersSurfaceRestoringValue" type="real" dimensions="nCells Time" packages="debugTracersSurfaceRestoringPKG">
-				<var name="tracer1SurfaceRestoringValue" array_group="debugGRP" units="^\circ C"
+				<var name="tracer1SurfaceRestoringValue" array_group="debugGRP" units="C"
 			 description="tracer1 is restored toward this field at a rate controlled by tracer1PistonVelocity."
 				/>
-				<var name="tracer2SurfaceRestoringValue" array_group="debugGRP" units="^\circ C"
+				<var name="tracer2SurfaceRestoringValue" array_group="debugGRP" units="C"
 			 description="tracer2 is restored toward this field at a rate controlled by tracer2PistonVelocity."
 				/>
-				<var name="tracer3SurfaceRestoringValue" array_group="debugGRP" units="^\circ C"
+				<var name="tracer3SurfaceRestoringValue" array_group="debugGRP" units="C"
 			 description="tracer3 is restored toward this field at a rate controlled by tracer3PistonVelocity."
 				/>
 			</var_array>
@@ -152,52 +152,52 @@
 				/>
 			</var_array>
 			<var_array name="debugTracersInteriorRestoringValue" type="real" dimensions="nVertLevels nCells Time" packages="debugTracersInteriorRestoringPKG">
-				<var name="tracer1InteriorRestoringValue" array_group="debugGRP" units="^\circ C"
+				<var name="tracer1InteriorRestoringValue" array_group="debugGRP" units="C"
 				 description="tracer1 is restored toward this field at a rate controlled by tracer1InteriorRestoringRate."
 				/>
-				<var name="tracer2InteriorRestoringValue" array_group="debugGRP" units="^\circ C"
+				<var name="tracer2InteriorRestoringValue" array_group="debugGRP" units="C"
 				 description="tracer2 is restored toward this field at a rate controlled by tracer2InteriorRestoringRate."
 				/>
-				<var name="tracer3InteriorRestoringValue" array_group="debugGRP" units="^\circ C"
+				<var name="tracer3InteriorRestoringValue" array_group="debugGRP" units="C"
 				 description="tracer3 is restored toward this field at a rate controlled by tracer3InteriorRestoringRate."
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersExponentialDecayFields" time_levs="1">
 			<var_array name="debugTracersExponentialDecayRate" type="real" dimensions="Time" packages="debugTracersExponentialDecayPKG">
-				<var name="tracer1ExponentialDecayRate" array_group="debugGRP" units="s^{-1}"
+				<var name="tracer1ExponentialDecayRate" array_group="debugGRP" units="s^-1"
 			 description="A non-negative field controlling the exponential decay of tracer1"
 				/>
-				<var name="tracer2ExponentialDecayRate" array_group="debugGRP" units="s^{-1}"
+				<var name="tracer2ExponentialDecayRate" array_group="debugGRP" units="s^-1"
 			 description="A non-negative field controlling the exponential decay of tracer2"
 				/>
-				<var name="tracer3ExponentialDecayRate" array_group="debugGRP" units="s^{-1}"
+				<var name="tracer3ExponentialDecayRate" array_group="debugGRP" units="s^-1"
 			 description="A non-negative field controlling the exponential decay of tracer3"
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersIdealAgeFields" time_levs="1">
 			<var_array name="debugTracersIdealAgeMask" type="real" dimensions="nCells Time" packages="debugTracersIdealAgePKG">
-				<var name="tracer1IdealAgeMask" array_group="debugGRP" units="unitless"
+				<var name="tracer1IdealAgeMask" array_group="debugGRP"
 			 description="In top layer, tracer1 is reset to tracer1 * tracer1IdealAgeMask, valid values of tracer1IdealAgeMask or 0 and 1"
 				/>
-				<var name="tracer2IdealAgeMask" array_group="debugGRP" units="unitless"
+				<var name="tracer2IdealAgeMask" array_group="debugGRP"
 			 description="In top layer, tracer2 is reset to tracer2 * tracer2IdealAgeMask, valid values of tracer2IdealAgeMask or 0 and 1"
 				/>
-				<var name="tracer3IdealAgeMask" array_group="debugGRP" units="unitless"
+				<var name="tracer3IdealAgeMask" array_group="debugGRP"
 			 description="In top layer, tracer3 is reset to tracer3 * tracer3IdealAgeMask, valid values of tracer3IdealAgeMask or 0 and 1"
 				/>
 			</var_array>
 		</var_struct>
 		<var_struct name="tracersTTDFields" time_levs="1">
 			<var_array name="debugTracersTTDMask" type="real" dimensions="nCells Time" packages="debugTracersTTDPKG">
-				<var name="tracer1TTDMask" array_group="debugGRP" units="unitless"
+				<var name="tracer1TTDMask" array_group="debugGRP"
 			 description="In top layer, tracer1 is reset to TTDMask, valid values of tracer1TTDMask or 0 and 1"
 				/>
-				<var name="tracer2TTDMask" array_group="debugGRP" units="unitless"
+				<var name="tracer2TTDMask" array_group="debugGRP"
 			 description="In top layer, tracer2 is reset to TTDMask, valid values of tracer2TTDMask or 0 and 1"
 				/>
-				<var name="tracer3TTDMask" array_group="debugGRP" units="unitless"
+				<var name="tracer3TTDMask" array_group="debugGRP"
 			 description="In top layer, tracer3 is reset to TTDMask, valid values of tracer3TTDMask or 0 and 1"
 				/>
 			</var_array>

@@ -510,6 +510,15 @@ module elm_varctl
    logical, public :: use_lnd_rof_two_way = .false.
    integer, public :: lnd_rof_coupling_nstep = 0
    
+   
+   !----------------------------------------------------------
+   ! SNICAR-AD
+   !----------------------------------------------------------
+   character(len=256), public :: snow_shape = 'sphere'
+   character(len=256), public :: snicar_atm_type = 'default'
+   logical, public :: use_dust_snow_internal_mixing = .false.
+
+
 contains
 
   !---------------------------------------------------------------------------

@@ -1987,4 +1987,25 @@ Toggle to turn on the soil erosion and OM pools feedback.
 Number of ELM time steps per ELM and MOSART coupling period
 </entry>
 
+<!-- ========================================================================================  -->
+<!-- Namelist options for SNICAR-AD                                                            -->
+<!-- ========================================================================================  -->
+<entry id="snow_shape" type="char*256" category="elm_physics"
+       group="elm_inparm" valid_values="sphere,spheroid,hexagonal_plate,koch_snowflake">
+Type of snow grain shape
+</entry>
+
+<entry id="snicar_atm_type" type="char*256" category="elm_physics"
+       group="elm_inparm" valid_values="default,mid-latitude_winter,mid-latitude_summer,sub-Arctic_winter,sub-Arctic_summer,summit_Greenland,high_mountain">
+Atmospheric types: 'default' represents the default mid-latitude winter type 
+without considering SZA dependenece of direct irradiance, and the other types 
+explain the SZA dependence of direct irradiance.
+</entry>
+
+<entry id="use_dust_snow_internal_mixing" type="logical" category="elm_physics"
+       group="elm_inparm" valid_values="" value=".false.">
+Toggle to turn on the internal mixing of dust-snow. 
+</entry>
+
+
 </namelist_definition>

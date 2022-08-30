@@ -12,7 +12,7 @@ module RtmMod
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_sys_mod     , only : shr_sys_flush
   use shr_const_mod   , only : SHR_CONST_PI, SHR_CONST_CDAY
-  use rof_cpl_indices , only : nt_rtm, rtm_tracers, KW, DW 
+  use rof_cpl_indices , only : nt_rtm, rtm_tracers, KW, DW
   use RtmSpmd         , only : masterproc, npes, iam, mpicom_rof, ROFID, mastertask, &
                                MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
   use RtmVar          , only : re, spval, rtmlon, rtmlat, iulog, ice_runoff, &
@@ -20,7 +20,7 @@ module RtmMod
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
                                inst_index, inst_suffix, inst_name, wrmflag, inundflag, &
                                smat_option, decomp_option, barrier_timers, heatflag, sediflag, &
-                               isgrid2d, data_bgc_fluxes_to_ocean_flag, use_lnd_rof_two_way
+                               isgrid2d, data_bgc_fluxes_to_ocean_flag, use_lnd_rof_two_way, use_ocn_rof_two_way
   use RtmFileUtils    , only : getfil, getavu, relavu
   use RtmTimeManager  , only : timemgr_init, get_nstep, get_curr_date, advance_timestep
   use RtmHistFlds     , only : RtmHistFldsInit, RtmHistFldsSet 
@@ -377,6 +377,7 @@ contains
     call mpi_bcast (inundflag,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (use_lnd_rof_two_way, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (heatflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (use_ocn_rof_two_way, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (barrier_timers, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (data_bgc_fluxes_to_ocean_flag, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
 
@@ -415,6 +416,10 @@ contains
     runtyp(nsrStartup  + 1) = 'initial'
     runtyp(nsrContinue + 1) = 'restart'
     runtyp(nsrBranch   + 1) = 'branch '
+
+    if ( use_ocn_rof_two_way ) then
+       RoutingMethod = DW
+    end if 
 
     Tctl%RoutingMethod = RoutingMethod
     Tctl%DLevelH2R     = DLevelH2R
@@ -3644,6 +3649,21 @@ contains
      call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%rdepth, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read rdepth ',minval(Tunit%rdepth),maxval(Tunit%rdepth)
      call shr_sys_flush(iulog)
+
+     ! define outlets and relevant parameters where ocn rof two-way coupling is on
+     if ( use_ocn_rof_two_way ) then
+        allocate(TUnit%ocn_rof_coupling_ID(begr:endr))
+        ier = pio_inq_varid(ncid, name='ocn_rof_coupling_ID', vardesc=vardesc)
+        call pio_read_darray(ncid, vardesc, iodesc_int, TUnit%ocn_rof_coupling_ID, ier)
+        if (masterproc) write(iulog,FORMR) trim(subname),' read ocn_rof_coupling_ID',minval(Tunit%ocn_rof_coupling_ID),maxval(Tunit%ocn_rof_coupling_ID)
+        call shr_sys_flush(iulog)
+
+        allocate(TUnit%vdatum_conversion(begr:endr))
+        ier = pio_inq_varid(ncid, name='vdatum_conversion', vardesc=vardesc)
+        call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%vdatum_conversion, ier)
+        if (masterproc) write(iulog,FORMR) trim(subname),' read vdatum_conversion',minval(Tunit%vdatum_conversion),maxval(Tunit%vdatum_conversion)
+        call shr_sys_flush(iulog)
+     end if
 
      allocate(TUnit%nr(begr:endr))
   
