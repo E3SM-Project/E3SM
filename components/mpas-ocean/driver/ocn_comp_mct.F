@@ -2587,8 +2587,6 @@ contains
 
    real (kind=RKIND) :: surfaceFreezingTemp
    
-   real (kind=RKIND), dimension(:), pointer :: ssh
-
    logical, pointer :: frazilIceActive,          &
                        config_use_ecosysTracers, &
                        config_use_DMSTracers,    &
@@ -2641,9 +2639,6 @@ contains
      call mpas_pool_get_array(forcingPool, 'filteredSSHGradientZonal', filteredSSHGradientZonal)
      call mpas_pool_get_array(forcingPool, 'filteredSSHGradientMeridional', filteredSSHGradientMeridional)
      call mpas_pool_get_array(forcingPool, 'avgTotalFreshWaterTemperatureFlux', avgTotalFreshWaterTemperatureFlux)
-     if (ocn_rof_two_way) then
-       call mpas_pool_get_array(statePool, 'ssh', ssh)
-     end if
      if ( frazilIceActive ) then
         call mpas_pool_get_array(forcingPool, 'seaIceEnergy', seaIceEnergy)
         call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
