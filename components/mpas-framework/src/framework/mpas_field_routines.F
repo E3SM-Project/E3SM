@@ -3303,14 +3303,14 @@ module mpas_field_routines
       if (any(maskArray == 1)) then
          if (fieldDims(1) == maskDims(1)) then
             maskArray  => mask % array
-            do j = 1, fieldDims(2)
+            do j = 1, SIZE(maskedField, dim=2)
                where (maskArray == 0)
                   maskedField(:, j) = field % missingValue
                endwhere
             enddo
          elseif (fieldDims(2) == maskDims(1)) then
             maskArray  => mask % array(1:blockLength)
-            do i = 1, fieldDims(1)
+            do i = 1, SIZE(maskedField, dim=1)
                where (maskArray == 0)
                   maskedField(i, :) = field % missingValue
                endwhere
@@ -3421,14 +3421,14 @@ module mpas_field_routines
          ! order in field
          if (fieldDims(3) == maskDims(2) .and. fieldDims(2) == maskDims(1)) then
             maskArray  => mask % array(:, 1:blockLength)
-            do i = 1, fieldDims(1)
+            do i = 1, SIZE(maskedField, dim=1)
                where (maskArray == 0)
                   maskedField(i, :, :) = field % missingValue
                endwhere
             enddo
          elseif (fieldDims(2) == maskDims(2) .and. fieldDims(1) == maskDims(1)) then
             maskArray  => mask % array
-            do k = 1, fieldDims(3)
+            do k = 1, SIZE(maskedField, dim=3)
                where (maskArray == 0)
                   maskedField(:, :, k) = field % missingValue
                endwhere
@@ -3483,8 +3483,8 @@ module mpas_field_routines
       if (any(mask % array == 1)) then
          if (fieldDims(1) == maskDims(1)) then
             maskArray  => mask % array
-            do j = 1, fieldDims(2)
-               do k = 1, fieldDims(3) 
+            do j = 1, SIZE(maskedField, dim=2)
+               do k = 1, SIZE(maskedField, dim=3)
                   where (maskArray == 0)
                      maskedField(:, j, k) = field % missingValue
                   endwhere
@@ -3492,8 +3492,8 @@ module mpas_field_routines
             enddo
          elseif (fieldDims(2) == maskDims(1)) then
             maskArray  => mask % array
-            do i = 1, fieldDims(1)
-               do k = 1, fieldDims(3)
+            do i = 1, SIZE(maskedField, dim=1)
+               do k = 1, SIZE(maskedField, dim=3)
                   where (maskArray == 0)
                      maskedField(i, :, k) = field % missingValue
                   endwhere
@@ -3501,8 +3501,8 @@ module mpas_field_routines
             enddo
          elseif (fieldDims(3) == maskDims(1)) then
             maskArray  => mask % array(1:blockLength)
-            do i = 1, fieldDims(1)
-               do j = 1, fieldDims(2) 
+            do i = 1, SIZE(maskedField, dim=1)
+               do j = 1, SIZE(maskedField, dim=2)
                   where (maskArray == 0)
                      maskedField(i, j, :) = field % missingValue
                   endwhere
@@ -3562,7 +3562,7 @@ module mpas_field_routines
              fieldDims(3) == maskDims(2) .and. &
              fieldDims(4) == maskDims(3) ) then
             maskArray => mask % array(:,:,1:blockLength)
-            do i = 1, fieldDims(1)
+            do i = 1, SIZE(maskedField, dim=1)
                where (maskArray == 0)
                   maskedField(i,:,:,:) = field % missingValue
                endwhere
@@ -3571,7 +3571,7 @@ module mpas_field_routines
                  fieldDims(2) == maskDims(2) .and. &
                  fieldDims(3) == maskDims(3) ) then
             maskArray => mask % array
-            do k = 1, fieldDims(4)
+            do k = 1, SIZE(maskedField, dim=4)
                where (maskArray == 0)
                   maskedField(:,:,:,k) = field % missingValue
                endwhere
@@ -3629,8 +3629,8 @@ module mpas_field_routines
          ! order in field
          if (fieldDims(2) == maskDims(2) .and. fieldDims(1) == maskDims(1)) then
             maskArray => mask % array
-            do j = 1, fieldDims(3)
-            do k = 1, fieldDims(4)
+            do j = 1, SIZE(maskedField, dim=3)
+            do k = 1, SIZE(maskedField, dim=4)
                where (maskArray == 0)
                   maskedField(:, :, j, k) = field % missingValue
                endwhere
@@ -3638,8 +3638,8 @@ module mpas_field_routines
             enddo
          elseif (fieldDims(3) == maskDims(2) .and. fieldDims(2) == maskDims(1)) then
             maskArray  => mask % array
-            do i = 1, fieldDims(1)
-            do k = 1, fieldDims(4)
+            do i = 1, SIZE(maskedField, dim=1)
+            do k = 1, SIZE(maskedField, dim=4)
                where (maskArray == 0)
                   maskedField(i, :, :, k) = field % missingValue
                endwhere
@@ -3647,8 +3647,8 @@ module mpas_field_routines
             enddo
          elseif (fieldDims(3) == maskDims(2) .and. fieldDims(4) == maskDims(1)) then
             maskArray => mask % array(:, 1:blockLength)
-            do i = 1, fieldDims(1)
-            do j = 1, fieldDims(2)
+            do i = 1, SIZE(maskedField, dim=1)
+            do j = 1, SIZE(maskedField, dim=2)
                where (maskArray == 0)
                   maskedField(i, j, :, :) = field % missingValue
                endwhere
@@ -3706,9 +3706,9 @@ module mpas_field_routines
          ! order in field
          if (fieldDims(1) == maskDims(1)) then
             maskArray => mask % array
-            do i = 1, fieldDims(2)
-            do j = 1, fieldDims(3)
-            do k = 1, fieldDims(4) 
+            do i = 1, SIZE(maskedField, dim=2)
+            do j = 1, SIZE(maskedField, dim=3)
+            do k = 1, SIZE(maskedField, dim=4)
                where (maskArray == 0)
                   maskedField(:, i, j, k) = field % missingValue
                endwhere
@@ -3717,9 +3717,9 @@ module mpas_field_routines
             enddo
          elseif (fieldDims(2) == maskDims(1)) then
             maskArray => mask % array
-            do i = 1, fieldDims(1)
-            do j = 1, fieldDims(3)
-            do k = 1, fieldDims(4)
+            do i = 1, SIZE(maskedField, dim=1)
+            do j = 1, SIZE(maskedField, dim=3)
+            do k = 1, SIZE(maskedField, dim=4)
                where (maskArray == 0)
                   maskedField(i, :, j, k) = field % missingValue
                endwhere
@@ -3728,9 +3728,9 @@ module mpas_field_routines
             enddo
          elseif (fieldDims(3) == maskDims(1)) then
             maskArray => mask % array
-            do i = 1, fieldDims(1)
-            do j = 1, fieldDims(2) 
-            do k = 1, fieldDims(4) 
+            do i = 1, SIZE(maskedField, dim=1)
+            do j = 1, SIZE(maskedField, dim=2)
+            do k = 1, SIZE(maskedField, dim=4)
                where (maskArray == 0)
                   maskedField(i, j, :, k) = field % missingValue
                endwhere
@@ -3739,9 +3739,9 @@ module mpas_field_routines
             enddo
          elseif (fieldDims(4) == maskDims(1)) then
             maskArray => mask % array(1:blockLength)
-            do i = 1, fieldDims(1)
-            do j = 1, fieldDims(2) 
-            do k = 1, fieldDims(3) 
+            do i = 1, SIZE(maskedField, dim=1)
+            do j = 1, SIZE(maskedField, dim=2)
+            do k = 1, SIZE(maskedField, dim=3)
                where (maskArray == 0)
                   maskedField(i, j, k, :) = field % missingValue
                endwhere
@@ -3802,8 +3802,8 @@ module mpas_field_routines
              fieldDims(2) == maskDims(2) .and. &
              fieldDims(3) == maskDims(3) ) then
             maskArray => mask % array
-            do i = 1, fieldDims(4)
-            do k = 1, fieldDims(5)
+            do i = 1, SIZE(maskedField, dim=4)
+            do k = 1, SIZE(maskedField, dim=5)
                where (maskArray == 0)
                   maskedField(:,:,:,i,k) = field % missingValue
                endwhere
@@ -3813,8 +3813,8 @@ module mpas_field_routines
                  fieldDims(3) == maskDims(2) .and. &
                  fieldDims(4) == maskDims(3) ) then
             maskArray => mask % array
-            do i = 1, fieldDims(1)
-            do k = 1, fieldDims(5)
+            do i = 1, SIZE(maskedField, dim=1)
+            do k = 1, SIZE(maskedField, dim=5)
                where (maskArray == 0)
                   maskedField(i,:,:,:,k) = field % missingValue
                endwhere
@@ -3824,8 +3824,8 @@ module mpas_field_routines
                  fieldDims(4) == maskDims(2) .and. &
                  fieldDims(5) == maskDims(3) ) then
             maskArray => mask % array(:,:,1:blockLength)
-            do i = 1, fieldDims(1)
-            do k = 1, fieldDims(2)
+            do i = 1, SIZE(maskedField, dim=1)
+            do k = 1, SIZE(maskedField, dim=2)
                where (maskArray == 0)
                   maskedField(i,k,:,:,:) = field % missingValue
                endwhere
@@ -3883,9 +3883,9 @@ module mpas_field_routines
          ! order in field
          if (fieldDims(2) == maskDims(2) .and. fieldDims(1) == maskDims(1)) then
             maskArray => mask % array
-            do i = 1, fieldDims(3)
-            do j = 1, fieldDims(4)
-            do k = 1, fieldDims(5)
+            do i = 1, SIZE(maskedField, dim=3)
+            do j = 1, SIZE(maskedField, dim=4)
+            do k = 1, SIZE(maskedField, dim=5)
                where (maskArray == 0)
                   maskedField(:,:,i,j,k) = field % missingValue
                endwhere
@@ -3894,9 +3894,9 @@ module mpas_field_routines
             enddo
          elseif (fieldDims(3) == maskDims(2) .and. fieldDims(2) == maskDims(1)) then
             maskArray => mask % array
-            do i = 1, fieldDims(1)
-            do j = 1, fieldDims(4)
-            do k = 1, fieldDims(5)
+            do i = 1, SIZE(maskedField, dim=1)
+            do j = 1, SIZE(maskedField, dim=4)
+            do k = 1, SIZE(maskedField, dim=5)
                where (maskArray == 0)
                   maskedField(i,:,:,j,k) = field % missingValue
                endwhere
@@ -3905,9 +3905,9 @@ module mpas_field_routines
             enddo
          elseif (fieldDims(4) == maskDims(2) .and. fieldDims(3) == maskDims(1)) then
             maskArray => mask % array
-            do i = 1, fieldDims(1)
-            do j = 1, fieldDims(2)
-            do k = 1, fieldDims(5)
+            do i = 1, SIZE(maskedField, dim=1)
+            do j = 1, SIZE(maskedField, dim=2)
+            do k = 1, SIZE(maskedField, dim=5)
                where (maskArray == 0)
                   maskedField(i,j,:,:,k) = field % missingValue
                endwhere
@@ -3916,9 +3916,9 @@ module mpas_field_routines
             enddo
          elseif (fieldDims(5) == maskDims(2) .and. fieldDims(4) == maskDims(1)) then
             maskArray => mask % array(:, 1:blockLength)
-            do i = 1, fieldDims(1)
-            do j = 1, fieldDims(2)
-            do k = 1, fieldDims(3)
+            do i = 1, SIZE(maskedField, dim=1)
+            do j = 1, SIZE(maskedField, dim=2)
+            do k = 1, SIZE(maskedField, dim=3)
                where (maskArray == 0)
                   maskedField(i,j,k,:,:) = field % missingValue
                endwhere
@@ -3977,10 +3977,10 @@ module mpas_field_routines
          ! order in field
          if (fieldDims(1) == maskDims(1)) then
             maskArray => mask % array
-            do i = 1, fieldDims(2)
-            do j = 1, fieldDims(3)
-            do k = 1, fieldDims(4) 
-            do p = 1, fieldDims(5) 
+            do i = 1, SIZE(maskedField, dim=2)
+            do j = 1, SIZE(maskedField, dim=3)
+            do k = 1, SIZE(maskedField, dim=4)
+            do p = 1, SIZE(maskedField, dim=5)
                where (maskArray == 0)
                   maskedField(:,i,j,k,p) = field % missingValue
                endwhere
@@ -3990,10 +3990,10 @@ module mpas_field_routines
             enddo
          elseif (fieldDims(2) == maskDims(1)) then
             maskArray => mask % array
-            do i = 1, fieldDims(1)
-            do j = 1, fieldDims(3)
-            do k = 1, fieldDims(4)
-            do p = 1, fieldDims(5) 
+            do i = 1, SIZE(maskedField, dim=1)
+            do j = 1, SIZE(maskedField, dim=3)
+            do k = 1, SIZE(maskedField, dim=4)
+            do p = 1, SIZE(maskedField, dim=5)
                where (maskArray == 0)
                   maskedField(i,:,j,k,p) = field % missingValue
                endwhere
@@ -4003,10 +4003,10 @@ module mpas_field_routines
             enddo
          elseif (fieldDims(3) == maskDims(1)) then
             maskArray => mask % array
-            do i = 1, fieldDims(1)
-            do j = 1, fieldDims(2) 
-            do k = 1, fieldDims(4) 
-            do p = 1, fieldDims(5) 
+            do i = 1, SIZE(maskedField, dim=1)
+            do j = 1, SIZE(maskedField, dim=2)
+            do k = 1, SIZE(maskedField, dim=4)
+            do p = 1, SIZE(maskedField, dim=5)
                where (maskArray == 0)
                   maskedField(i,j,:,k,p) = field % missingValue
                endwhere
@@ -4016,10 +4016,10 @@ module mpas_field_routines
             enddo
          elseif (fieldDims(4) == maskDims(1)) then
             maskArray => mask % array
-            do i = 1, fieldDims(1)
-            do j = 1, fieldDims(2) 
-            do k = 1, fieldDims(3) 
-            do p = 1, fieldDims(5) 
+            do i = 1, SIZE(maskedField, dim=1)
+            do j = 1, SIZE(maskedField, dim=2)
+            do k = 1, SIZE(maskedField, dim=3)
+            do p = 1, SIZE(maskedField, dim=5)
                where (maskArray == 0)
                   maskedField(i,j,k,:,p) = field % missingValue
                endwhere
@@ -4029,10 +4029,10 @@ module mpas_field_routines
             enddo
          elseif (fieldDims(5) == maskDims(1)) then
             maskArray => mask % array(1:blockLength)
-            do i = 1, fieldDims(1)
-            do j = 1, fieldDims(2) 
-            do k = 1, fieldDims(3) 
-            do p = 1, fieldDims(4) 
+            do i = 1, SIZE(maskedField, dim=1)
+            do j = 1, SIZE(maskedField, dim=2)
+            do k = 1, SIZE(maskedField, dim=3)
+            do p = 1, SIZE(maskedField, dim=4)
                where (maskArray == 0)
                   maskedField(i,j,k,p,:) = field % missingValue
                endwhere
