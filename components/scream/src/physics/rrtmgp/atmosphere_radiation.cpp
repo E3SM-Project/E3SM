@@ -2,6 +2,7 @@
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 #include "physics/rrtmgp/rrtmgp_utils.hpp"
 #include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
+#include "physics/share/scream_trcmix.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/util/scream_column_ops.hpp"
@@ -11,9 +12,9 @@
 
 namespace scream {
 
-  using KT = KokkosTypes<DefaultDevice>;
-  using ExeSpace = KT::ExeSpace;
-  using MemberType = KT::MemberType;
+using KT = KokkosTypes<DefaultDevice>;
+using ExeSpace = KT::ExeSpace;
+using MemberType = KT::MemberType;
 
 RRTMGPRadiation::
 RRTMGPRadiation (const ekat::Comm& comm, const ekat::ParameterList& params)
@@ -45,6 +46,8 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   Wm2.set_string("W/m2");
   auto nondim = m/m;  // dummy unit for non-dimensional fields
   auto micron = m / 1000000;
+  auto molmol = mol/mol;
+  molmol.set_string("mol/mol");
 
   using namespace ShortFieldTagsNames;
 
@@ -92,10 +95,13 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Required>("surf_lw_flux_up",scalar2d_layout,W/(m*m),grid_name);
   // Set of required gas concentration fields
   for (auto& it : m_gas_names) {
-    if (it == "h2o") { /* Special case where water vapor is called h2o in radiation */
-      // do nothing, qv has already been added.
+    // Add gas VOLUME mixing ratios (moles of gas / moles of air; what actually gets input to RRTMGP)
+    if (it == "o3") {
+      // o3 is read from file, or computed by chemistry
+      add_field<Updated >(it + "_volume_mix_ratio", scalar3d_layout_mid, molmol, grid_name, ps);
     } else {
-      add_field<Required>(it,scalar3d_layout_mid,kgkg,grid_name, ps);
+      // the rest are computed from prescribed surface values
+      add_field<Computed>(it + "_volume_mix_ratio", scalar3d_layout_mid, molmol, grid_name, ps);
     }
   }
   // Required aerosol optical properties from SPA
@@ -273,6 +279,7 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
 
 void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   using PC = scream::physics::Constants<Real>;
+  using PF = scream::PhysicsFunctions<DefaultDevice>;
 
   // Determine rad timestep, specified as number of atm steps
   m_rad_freq_in_steps = m_params.get<Int>("rad_frequency", 1);
@@ -289,6 +296,15 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   // Determine whether or not we are using a fixed solar zenith angle (positive value)
   m_fixed_solar_zenith_angle = m_params.get<Real>("Fixed Solar Zenith Angle", -9999);
 
+  // Get prescribed surface values of greenhouse gases
+  m_co2vmr     = m_params.get<Real>("co2vmr", 388.717e-6);
+  m_n2ovmr     = m_params.get<Real>("n2ovmr", 323.141e-9);
+  m_ch4vmr     = m_params.get<Real>("ch4vmr", 1807.851e-9);
+  m_f11vmr     = m_params.get<Real>("f11vmr", 768.7644e-12);
+  m_f12vmr     = m_params.get<Real>("f12vmr", 531.2820e-12);
+  m_n2vmr      = m_params.get<Real>("n2vmr", 0.7906);
+  m_covmr      = m_params.get<Real>("covmr", 1.0e-7);
+
   // Whether or not to do MCICA subcolumn sampling
   m_do_subcol_sampling = m_params.get<bool>("do_subcol_sampling",false);
   EKAT_REQUIRE_MSG(not m_do_subcol_sampling, "Error! RRTMGP does not yet support do_subcol_sampling = true");
@@ -299,12 +315,15 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   // Names of active gases
   auto gas_names_yakl_offset = string1d("gas_names",m_ngas);
   m_gas_mol_weights          = view_1d_real("gas_mol_weights",m_ngas);
-  /* the lookup function for getting the gas mol weights doesn't work on device. */
+  // the lookup function for getting the gas mol weights doesn't work on device
   auto gas_mol_w_host = Kokkos::create_mirror_view(m_gas_mol_weights);
-  for (int igas = 0; igas < m_ngas; igas++) {  
+  for (int igas = 0; igas < m_ngas; igas++) {
+    const auto& gas_name = m_gas_names[igas];
+
     /* Note: YAKL starts the index from 1 */
-    gas_names_yakl_offset(igas+1)   = m_gas_names[igas];
-    gas_mol_w_host[igas]            = PC::get_gas_mol_weight(m_gas_names[igas]);
+    gas_names_yakl_offset(igas+1)   = gas_name;
+    gas_mol_w_host[igas]            = PC::get_gas_mol_weight(gas_name);
+
   }
   Kokkos::deep_copy(m_gas_mol_weights,gas_mol_w_host);
 
@@ -313,8 +332,7 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   rrtmgp::rrtmgp_initialize(m_gas_concs, m_atm_logger);
 
   // Set property checks for fields in this process
-
-  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,140.0, 500.0,false);
+  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,130.0, 500.0,false);
 }
 
 // =========================================================================================
@@ -324,7 +342,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
   using PC = scream::physics::Constants<Real>;
   using CO = scream::ColumnOps<DefaultDevice,Real>;
 
-  // get a host copy of lat/lon 
+  // get a host copy of lat/lon
   auto h_lat  = Kokkos::create_mirror_view(m_lat);
   auto h_lon  = Kokkos::create_mirror_view(m_lon);
   Kokkos::deep_copy(h_lat,m_lat);
@@ -363,8 +381,8 @@ void RRTMGPRadiation::run_impl (const int dt) {
     Kokkos::deep_copy(d_aero_ssa_sw,0.0);
     Kokkos::deep_copy(d_aero_g_sw  ,0.0);
     Kokkos::deep_copy(d_aero_tau_lw,0.0);
-    
-  } 
+
+  }
   auto d_sw_flux_up = get_field_out("SW_flux_up").get_view<Real**>();
   auto d_sw_flux_dn = get_field_out("SW_flux_dn").get_view<Real**>();
   auto d_sw_flux_dn_dir = get_field_out("SW_flux_dn_dir").get_view<Real**>();
@@ -406,7 +424,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
     // compute orbital parameters based on current year
     orbital_year = ts.get_year();
   }
-  shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp, 
+  shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp,
                      &obliqr, &lambm0, &mvelpp);
   // Use the orbital parameters to calculate the solar declination and eccentricity factor
   double delta, eccf;
@@ -590,23 +608,65 @@ void RRTMGPRadiation::run_impl (const int dt) {
     // set_vmr requires the input array size to have the correct size,
     // and the last chunk may have less columns, so create a temp of
     // correct size that uses m_buffer.tmp2d's pointer
+    //
+    // h2o is taken from qv and requies no initialization here;
+    // o3 is computed elsewhere (either read from file or computed by chemistry);
+    // n2 and co are set to constants and are not handled by trcmix;
+    // the rest are handled by trcmix
     real2d tmp2d = subview_2d(m_buffer.tmp2d);
+    const auto gas_mol_weights = m_gas_mol_weights;
     for (int igas = 0; igas < m_ngas; igas++) {
       auto name = m_gas_names[igas];
-      auto fm_name = name=="h2o" ? "qv" : name;
-      auto d_temp  = get_field_in(fm_name).get_view<const Real**>();
-      const auto gas_mol_weights = m_gas_mol_weights;
+      auto d_vmr = get_field_out(name + "_volume_mix_ratio").get_view<Real**>();
+      if (name == "h2o") {
+        // h2o is (wet) mass mixing ratio in FM, otherwise known as "qv", which we've already read in above
+        // Convert to vmr
+        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+          const int i = team.league_rank();
+          const int icol = i + beg;
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+            d_vmr(icol,k) = PF::calculate_vmr_from_mmr(gas_mol_weights[igas],d_qv(icol,k),d_qv(icol,k));
+          });
+        });
+        Kokkos::fence();
+      } else if (name == "o3") {
+        // We read o3 in as a vmr already
+      } else if (name == "n2") {
+        // n2 prescribed as a constant value
+        Kokkos::deep_copy(d_vmr, m_params.get<Real>("n2vmr", 0.7906));
+      } else if (name == "co") {
+        // co prescribed as a constant value
+        Kokkos::deep_copy(d_vmr, m_params.get<Real>("covmr", 1.0e-7));
+      } else {
+        // This gives (dry) mass mixing ratios
+        scream::physics::trcmix(
+          name, m_lat, d_pmid, d_vmr,
+          m_co2vmr, m_n2ovmr, m_ch4vmr, m_f11vmr, m_f12vmr
+        );
+        // Back out volume mixing ratios
+        const auto air_mol_weight = PC::MWdry;
+        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(m_ncol, m_nlay);
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+          const int i = team.league_rank();
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+            d_vmr(i,k) = air_mol_weight / gas_mol_weights[igas] * d_vmr(i,k);
+          });
+        });
+      }
 
+      // Copy to YAKL
       const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
         const int i = team.league_rank();
         const int icol = i + beg;
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
-          tmp2d(i+1,k+1) = PF::calculate_vmr_from_mmr(gas_mol_weights[igas],d_qv(icol,k),d_temp(icol,k)); // Note that for YAKL arrays i and k start with index 1
+          tmp2d(i+1,k+1) = d_vmr(icol,k); // Note that for YAKL arrays i and k start with index 1
         });
       });
       Kokkos::fence();
 
+      // Populate GasConcs object
       m_gas_concs.set_vmr(name, tmp2d);
     }
 
@@ -668,7 +728,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
     // Compute band-by-band surface_albedos. This is needed since
     // the AD passes broadband albedos, but rrtmgp require band-by-band.
     rrtmgp::compute_band_by_band_surface_albedos(
-      ncol, m_nswbands,
+      ncol, nswbands,
       sfc_alb_dir_vis, sfc_alb_dir_nir,
       sfc_alb_dif_vis, sfc_alb_dif_nir,
       sfc_alb_dir, sfc_alb_dif);
@@ -744,13 +804,13 @@ void RRTMGPRadiation::run_impl (const int dt) {
     const int kbot = nlay+1;
 
     // Compute diffuse flux as difference between total and direct; use YAKL parallel_for here because these are YAKL objects
-    parallel_for(Bounds<3>(m_nswbands,m_nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilev, int icol) {
+    parallel_for(Bounds<3>(nswbands,nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilev, int icol) {
       sw_bnd_flux_dif(icol,ilev,ibnd) = sw_bnd_flux_dn(icol,ilev,ibnd) - sw_bnd_flux_dir(icol,ilev,ibnd);
     });
 
     // Compute surface fluxes
     rrtmgp::compute_broadband_surface_fluxes(
-        ncol, kbot, m_nswbands,
+        ncol, kbot, nswbands,
         sw_bnd_flux_dir, sw_bnd_flux_dif, 
         sfc_flux_dir_vis, sfc_flux_dir_nir, 
         sfc_flux_dif_vis, sfc_flux_dif_nir
@@ -811,6 +871,5 @@ void RRTMGPRadiation::finalize_impl  () {
   yakl::finalize();
 }
 // =========================================================================================
-
 
 }  // namespace scream

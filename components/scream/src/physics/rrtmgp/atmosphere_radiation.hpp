@@ -19,6 +19,7 @@ public:
   using view_1d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_1d<Real>;
   using view_2d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_2d<Real>;
   using view_3d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_3d<Real>;
+  using view_2d_real_const = typename ekat::KokkosTypes<DefaultDevice>::template view_2d<const Real>;
   using ci_string        = ekat::CaseInsensitiveString;
 
   using KT               = ekat::KokkosTypes<DefaultDevice>;
@@ -81,6 +82,15 @@ public:
   std::vector<ci_string>   m_gas_names;
   view_1d_real             m_gas_mol_weights;
   GasConcs                 m_gas_concs;
+
+  // Prescribed greenhouse gas surface concentrations in moles / moles air
+  Real m_co2vmr;
+  Real m_n2ovmr;
+  Real m_ch4vmr;
+  Real m_f11vmr;
+  Real m_f12vmr;
+  Real m_n2vmr;
+  Real m_covmr;
 
   // Rad frequency in number of steps
   int m_rad_freq_in_steps;

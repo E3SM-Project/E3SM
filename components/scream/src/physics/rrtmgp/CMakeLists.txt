@@ -14,11 +14,11 @@ add_subdirectory(${SCREAM_BASE_DIR}/../../externals/YAKL ${CMAKE_BINARY_DIR}/ext
 target_compile_options(yakl PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${YAKL_CXX_FLAGS}>)
 EkatDisableAllWarning(yakl)
 
-# For debug builds, set -DYAKL_DEBUG                                                                                       
-string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)                                                                
-if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")                                                                                  
-  target_compile_definitions(yakl PUBLIC YAKL_DEBUG)                                                                   
-endif()                                                                                                             
+# For debug builds, set -DYAKL_DEBUG
+string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
+if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+  target_compile_definitions(yakl PUBLIC YAKL_DEBUG)
+endif()
 
 set(EAM_RRTMGP_DIR ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp)
 # Build RRTMGP library; this builds the core RRTMGP external source as a library named "rrtmgp"
@@ -37,7 +37,7 @@ add_library(rrtmgp ${EXTERNAL_SRC})
 EkatDisableAllWarning(rrtmgp)
 SetCudaFlags(rrtmgp)
 target_link_libraries(rrtmgp PUBLIC yakl)
-target_include_directories(rrtmgp PUBLIC 
+target_include_directories(rrtmgp PUBLIC
     ${SCREAM_BASE_DIR}/../../externals/YAKL
     ${EAM_RRTMGP_DIR}/external/cpp
     ${EAM_RRTMGP_DIR}/external/cpp/rte

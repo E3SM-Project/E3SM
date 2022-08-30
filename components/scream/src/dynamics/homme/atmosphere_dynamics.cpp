@@ -441,7 +441,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   using LowerBound = FieldLowerBoundCheck;
 
   add_postcondition_check<LowerBound>(*get_group_out("Q",pgn).m_bundle,m_phys_grid,0,true);
-  add_postcondition_check<Interval>(get_field_out("T_mid",pgn),m_phys_grid,140.0, 500.0,false);
+  add_postcondition_check<Interval>(get_field_out("T_mid",pgn),m_phys_grid,130.0, 500.0,false);
   add_postcondition_check<Interval>(get_field_out("horiz_winds",pgn),m_phys_grid,-400.0, 400.0,false);
   add_postcondition_check<Interval>(get_field_out("ps"),m_phys_grid,40000.0, 120000.0,false);
 

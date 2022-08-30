@@ -246,13 +246,13 @@ namespace scream {
         auto d_cld = field_mgr.get_field("cldfrac_tot").get_view<Real**>();
 
         auto d_qv  = field_mgr.get_field("qv").get_view<Real**>();
-        auto d_co2 = field_mgr.get_field("co2").get_view<Real**>();
-        auto d_o3  = field_mgr.get_field("o3").get_view<Real**>();
-        auto d_n2o = field_mgr.get_field("n2o").get_view<Real**>();
-        auto d_co  = field_mgr.get_field("co").get_view<Real**>();
-        auto d_ch4 = field_mgr.get_field("ch4").get_view<Real**>();
-        auto d_o2  = field_mgr.get_field("o2").get_view<Real**>();
-        auto d_n2  = field_mgr.get_field("n2").get_view<Real**>();
+        auto d_co2 = field_mgr.get_field("co2_volume_mix_ratio").get_view<Real**>();
+        auto d_o3  = field_mgr.get_field("o3_volume_mix_ratio").get_view<Real**>();
+        auto d_n2o = field_mgr.get_field("n2o_volume_mix_ratio").get_view<Real**>();
+        auto d_co  = field_mgr.get_field("co_volume_mix_ratio").get_view<Real**>();
+        auto d_ch4 = field_mgr.get_field("ch4_volume_mix_ratio").get_view<Real**>();
+        auto d_o2  = field_mgr.get_field("o2_volume_mix_ratio").get_view<Real**>();
+        auto d_n2  = field_mgr.get_field("n2_volume_mix_ratio").get_view<Real**>();
 
         // Gather molecular weights of all the active gases in the test for conversion
         // to mass-mixing-ratio.
@@ -289,17 +289,18 @@ namespace scream {
               d_rei(i,k)  = rei(i+1,k+1);
               d_cld(i,k)  = cld(i+1,k+1);
               d_pint(i,k) = p_lev(i+1,k+1);
-              // Note that gas_vmr(i+1,k+1,1) should be the vmr for qv and since we need qv to calculate the mmr we derive qv separately.
+              // qv specified as a wet mixing ratio
               Real qv_dry = gas_vmr(i+1,k+1,1)*PC::ep_2;
               Real qv_wet = qv_dry/(1.0+qv_dry);
-              d_qv(i,k)  = qv_wet;//PF::calculate_mmr_from_vmr(h2o_mol, qv_wet, gas_vmr(i+1,k+1,1));
-              d_co2(i,k) = PF::calculate_mmr_from_vmr(co2_mol, qv_wet, gas_vmr(i+1,k+1,2));
-              d_o3(i,k)  = PF::calculate_mmr_from_vmr(o3_mol,  qv_wet, gas_vmr(i+1,k+1,3));
-              d_n2o(i,k) = PF::calculate_mmr_from_vmr(n2o_mol, qv_wet, gas_vmr(i+1,k+1,4));
-              d_co(i,k)  = PF::calculate_mmr_from_vmr(co_mol,  qv_wet, gas_vmr(i+1,k+1,5));
-              d_ch4(i,k) = PF::calculate_mmr_from_vmr(ch4_mol, qv_wet, gas_vmr(i+1,k+1,6));
-              d_o2(i,k)  = PF::calculate_mmr_from_vmr(o2_mol,  qv_wet, gas_vmr(i+1,k+1,7));
-              d_n2(i,k)  = PF::calculate_mmr_from_vmr(n2_mol,  qv_wet, gas_vmr(i+1,k+1,8));
+              d_qv(i,k)  = qv_wet;
+              // rest of active gases are specified as volume mixing ratios
+              d_co2(i,k) = gas_vmr(i+1,k+1,2);
+              d_o3(i,k)  = gas_vmr(i+1,k+1,3);
+              d_n2o(i,k) = gas_vmr(i+1,k+1,4);
+              d_co(i,k)  = gas_vmr(i+1,k+1,5);
+              d_ch4(i,k) = gas_vmr(i+1,k+1,6);
+              d_o2(i,k)  = gas_vmr(i+1,k+1,7);
+              d_n2(i,k)  = gas_vmr(i+1,k+1,8);
             });
 
             d_pint(i,nlay) = p_lev(i+1,nlay+1);

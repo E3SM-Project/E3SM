@@ -153,12 +153,12 @@ tweaking their $case/namelist_scream.xml file.
     <homme inherit="atm_proc_base">
       <Grid>Dynamics</Grid>
       <vertical_coordinate_filename>UNSET</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220524.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220701.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220524.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220525.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_20220713.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20220524.nc</vertical_coordinate_filename>
+      <vertical_coordinate_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</vertical_coordinate_filename>
+      <vertical_coordinate_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</vertical_coordinate_filename>
+      <vertical_coordinate_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</vertical_coordinate_filename>
+      <vertical_coordinate_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</vertical_coordinate_filename>
+      <vertical_coordinate_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5_20131001_20220823.nc</vertical_coordinate_filename>
+      <vertical_coordinate_filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</vertical_coordinate_filename>
       <Moisture>moist</Moisture>
     </homme>
 
@@ -190,8 +190,18 @@ tweaking their $case/namelist_scream.xml file.
 
     <!-- Radiation -->
     <rrtmgp inherit="atm_proc_base">
-      <active_gases>h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
       <column_chunk_size>1280</column_chunk_size>
+      <!-- Radiatively active gases; surface values set to F2010 settings taken from EAM  -->
+      <!-- Note that h2o concentrations are just taken from qv, o3 is prescribed for now, -->
+      <!-- o2 is hard-coded as a constant, CFCs are ignored                               -->
+      <active_gases>h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
+      <ch4vmr      > 1807.851e-9  </ch4vmr>
+      <co2vmr      > 388.717e-6   </co2vmr>
+      <n2ovmr      > 323.141e-9   </n2ovmr>
+      <f11vmr      > 768.7644e-12 </f11vmr>
+      <f12vmr      > 531.2820e-12 </f12vmr>
+      <n2vmr       > 0.7906       </n2vmr>
+      <covmr       > 1.0e-7       </covmr>
       <orbital_year>-9999</orbital_year>
       <orbital_eccentricity>-9999</orbital_eccentricity>
       <orbital_eccentricity COMPSET=".*SCREAM%AQUA.*">0</orbital_eccentricity>
@@ -237,13 +247,13 @@ tweaking their $case/namelist_scream.xml file.
   <!-- List of nc files for loading inputs on specified grids -->
   <initial_conditions>
     <Filename>UNSET</Filename>
-    <Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220701.nc</Filename>
-    <Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220701.nc</Filename>
-    <Filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220524.nc</Filename>
-    <Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220525.nc</Filename> 
-    <Filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_20220713.nc</Filename> 
-    <Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne4np4_L72_20220524.nc</Filename>
-    <Filename hgrid="ne30np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/scream-aquaplanet_init_ne30np4_L128_20211202.nc</Filename> <!-- This will need to be updated to the new nccn name -->
+    <Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</Filename>
+    <Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</Filename>
+    <Filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</Filename>
+    <Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</Filename> 
+    <Filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5_20131001_20220823.nc</Filename> 
+    <Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</Filename>
+    <Filename hgrid="ne30np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne30np4L128_20220823.nc</Filename> <!-- This will need to be updated to the new nccn name -->
     <restart_casename>${CASE}.scream</restart_casename>
     <!-- Fields that we need to initialize, but are not in an initial condition file need to be inited here -->
     <surf_evap>0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->
@@ -271,6 +281,13 @@ tweaking their $case/namelist_scream.xml file.
     <surf_sens_flux    >0.0</surf_sens_flux>
     <surf_lw_flux_up   >0.0</surf_lw_flux_up>
     <surf_mom_flux     >0.0,0.0</surf_mom_flux>
+    <!-- default ne1024 initial condition files do not have these, so init to zero here -->
+    <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
+    <qc hgrid="ne1024np4">0.0</qc>
+    <qi hgrid="ne1024np4">0.0</qi>
+    <nc hgrid="ne1024np4">0.0</nc>
+    <ni hgrid="ne1024np4">0.0</ni>
+
   </initial_conditions>
 
   <!-- List of yaml files containing I/O output specs -->
