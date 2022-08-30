@@ -167,7 +167,7 @@ ekat::ParameterList get_in_params(const ekat::Comm& comm,
   using vos_type = std::vector<std::string>;
   ekat::ParameterList in_params("Input Parameters");
 
-  std::string filename = "io_test_se_grid.INSTANT.Steps_x1.np"
+  std::string filename = "io_test_se_grid.INSTANT.nsteps_x1.np"
                        + std::to_string(comm.size())
                        + "." + t0.to_string() + ".nc";
 

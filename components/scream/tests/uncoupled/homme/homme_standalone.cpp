@@ -76,16 +76,6 @@ TEST_CASE("scream_homme_standalone", "scream_homme_standalone") {
     });
   }
 
-  // Add checks to verify AD memory buffer and Homme FunctorsBuffersManager
-  // are the same size and reference the same memory.
-  auto& fbm  = Homme::Context::singleton().get<Homme::FunctorsBuffersManager>();
-  auto& memory_buffer = ad.get_memory_buffer();
-  REQUIRE (memory_buffer);
-  EKAT_ASSERT_MSG(fbm.allocated_size()*sizeof(Real) == (long unsigned int)memory_buffer->allocated_bytes(),
-                  "Error! AD memory buffer and Homme FunctorsBuffersManager have mismatched sizes.");
-  EKAT_ASSERT_MSG(fbm.get_memory() == memory_buffer->get_memory(),
-                  "Error! AD memory buffer and Homme FunctorsBuffersManager reference different memory.");
-
   if (atm_comm.am_i_root()) {
     printf("Start time stepping loop...       [  0%%]\n");
   }

@@ -51,7 +51,7 @@ void prim_set_hvcoords_f90 (const double& ps0,
                             Homme::CF90Ptr& hyam_ptr,
                             Homme::CF90Ptr& hybm_ptr);
 void prim_init_model_f90 ();
-void prim_run_f90 ();
+void prim_run_f90 (const int nsplit_iteration);
 void prim_finalize_f90 ();
 
 // Grids specs
