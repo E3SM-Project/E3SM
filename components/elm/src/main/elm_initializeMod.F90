@@ -13,7 +13,7 @@ module elm_initializeMod
   use elm_varctl       , only : create_glacier_mec_landunit, iulog
   use elm_varctl       , only : use_lch4, use_cn, use_voc, use_c13, use_c14
   use elm_varctl       , only : use_fates, use_betr, use_fates_sp
-  use elm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec
+  use elm_varsur       , only : wt_lunit, urban_valid, wt_nat_patch, wt_cft, wt_glc_mec, topo_glc_mec,firrig,f_surf,f_grd 
   use elm_varsur       , only : fert_cft
   use elm_varsur       , only : wt_tunit, elv_tunit, slp_tunit,asp_tunit,num_tunit_per_grd
   use perf_mod         , only : t_startf, t_stopf
@@ -37,6 +37,7 @@ module elm_initializeMod
 
   use elm_instMod
   use WaterBudgetMod         , only : WaterBudget_Reset
+  use CNPBudgetMod           , only : CNPBudget_Reset
   use elm_varctl             , only : do_budgets
   !
   implicit none
@@ -267,6 +268,9 @@ contains
     allocate (slp_tunit (begg:endg,1:max_topounits  ))
     allocate (asp_tunit (begg:endg,1:max_topounits  ))
     allocate (num_tunit_per_grd (begg:endg))
+    allocate (firrig  (begg:endg,1:max_topounits  ))
+    allocate (f_surf  (begg:endg,1:max_topounits  ))
+    allocate (f_grd  (begg:endg,1:max_topounits  ))
 
     ! Read list of Patches and their corresponding parameter values
     ! Independent of model resolution, Needs to stay before surfrd_get_data
@@ -523,7 +527,12 @@ contains
 
     call t_startf('elm_init2')
 
-    if (do_budgets) call WaterBudget_Reset('all')
+    if (do_budgets) then
+       call WaterBudget_Reset('all')
+       if (use_cn) then
+          call CNPBudget_Reset('all')
+       endif
+    endif
 
     ! ------------------------------------------------------------------------
     ! Determine processor bounds and clumps for this processor
@@ -759,6 +768,12 @@ contains
                photosyns_vars, soilhydrology_vars,                          &
                soilstate_vars, solarabs_vars, surfalb_vars,                 &
                sedflux_vars, ep_betr, alm_fates, glc2lnd_vars, crop_vars)
+
+         call WaterBudget_Reset('all')
+         if (use_cn) then
+            call CNPBudget_Reset('all')
+         endif
+
        end if
 
     else if ((nsrest == nsrContinue) .or. (nsrest == nsrBranch)) then

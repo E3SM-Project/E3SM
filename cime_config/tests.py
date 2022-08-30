@@ -40,6 +40,7 @@ _TESTS = {
         "time"  : "0:45:00",
         "tests" : (
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
+            "ERS.hcru_hcru.I20TRGSWCNPRDCTCBC.elm-erosion",
             )
         },
 
@@ -67,7 +68,8 @@ _TESTS = {
             "SMS.r05_r05.IELM.elm-topounit",
             "ERS.ELM_USRDAT.I1850ELM.elm-usrdat",
             "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features",
-            "ERS.f09_f09.IELM.elm-solar_rad"
+            "ERS.f09_f09.IELM.elm-solar_rad",
+            "ERS.f09_f09.IELM.elm-lnd_rof_2way"
             )
         },
 
@@ -235,7 +237,7 @@ _TESTS = {
             "ERP_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_fixed_subcycle",
             "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_use_ESMT",
             "ERS_Ln9.ne4pg2_oQU480.F20TR-MMF1.eam-mmf_use_VT",
-            "ERS_Ln9.ne4pg2_ne4pg2.FRCE-MMF1",
+            "ERS_Ln9.ne4pg2_ne4pg2.FRCE-MMF1.eam-cosp_nhtfrq9",
             "SMS_Ln5.ne4_ne4.FSCM-ARM97-MMF1",
             )
         },
