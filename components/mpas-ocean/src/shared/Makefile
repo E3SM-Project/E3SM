@@ -227,15 +227,13 @@ mpas_ocn_vel_pressure_grad.o: mpas_ocn_constants.o
 
 mpas_ocn_vel_tidal_potential.o: mpas_ocn_diagnostics_variables.o
 
-<<<<<<< HEAD
 mpas_ocn_vertical_advection.o: mpas_ocn_config.o
 
 mpas_ocn_vertical_regrid.o: mpas_ocn_config.o mpas_ocn_constants.o mpas_ocn_mesh.o
 
 mpas_ocn_vertical_remap.o: mpas_ocn_config.o mpas_ocn_constants.o mpas_ocn_diagnostics_variables.o mpas_ocn_mesh.o mpas_ocn_vertical_regrid.o
-=======
+
 mpas_ocn_stokes_drift.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o mpas_ocn_mesh.o
->>>>>>> c50e0762f4... Subtree merge of Stokes drift MPAS-Ocean changes
 
 clean:
 	$(RM) *.o *.i *.mod *.f90
