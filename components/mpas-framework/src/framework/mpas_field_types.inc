@@ -18,6 +18,11 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      ! outputFieldName and outputConstituentNames are alternative names for the field or its constituents for use in
+      ! output files.  These should only be given names different from fieldName or constituentNames for pure output
+      ! variables such as diagnostic output and never for variables present in initial conditions or restart files.
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(5) :: dimNames
       integer, dimension(5) :: dimSizes
       real (kind=RKIND) :: defaultValue
@@ -52,6 +57,8 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(4) :: dimNames
       integer, dimension(4) :: dimSizes
       real (kind=RKIND) :: defaultValue
@@ -87,6 +94,8 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(3) :: dimNames
       integer, dimension(3) :: dimSizes
       real (kind=RKIND) :: defaultValue
@@ -121,6 +130,8 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(2) :: dimNames
       integer, dimension(2) :: dimSizes
       real (kind=RKIND) :: defaultValue
@@ -155,6 +166,8 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(1) :: dimNames
       integer, dimension(1) :: dimSizes
       real (kind=RKIND) :: defaultValue
@@ -189,6 +202,8 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       real (kind=RKIND) :: defaultValue
       real (kind=RKIND) :: missingValue
       logical :: isDecomposed
@@ -220,6 +235,8 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(3) :: dimNames
       integer :: defaultValue
       integer :: missingValue
@@ -254,6 +271,8 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(2) :: dimNames
       integer :: defaultValue
       integer :: missingValue
@@ -288,6 +307,8 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(1) :: dimNames
       integer :: defaultValue
       integer :: missingValue
@@ -322,6 +343,8 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       integer :: defaultValue
       integer :: missingValue
       logical :: isDecomposed
@@ -353,6 +376,8 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND), dimension(1) :: dimNames
       integer, dimension(1) :: dimSizes
       character (len=StrKIND) :: defaultValue
@@ -387,6 +412,8 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       character (len=StrKIND) :: defaultValue
       character (len=StrKIND) :: missingValue
       logical :: isDecomposed
@@ -418,6 +445,8 @@
       ! Information used by the I/O layer
       character (len=StrKIND) :: fieldName
       character (len=StrKIND), dimension(:), pointer :: constituentNames => null()
+      character (len=StrKIND) :: outputFieldName
+      character (len=StrKIND), dimension(:), pointer :: outputConstituentNames => null()
       logical :: defaultValue
       logical :: missingValue
       logical :: isDecomposed

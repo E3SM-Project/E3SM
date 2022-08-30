@@ -95,7 +95,6 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
     parse_yaml_file (input_yaml_file, scream_params);
 
     scream_params.sublist("Debug").set<std::string>("Atm Log File",atm_log_file);
-    scream_params.sublist("Debug").set<bool>("Standalone",false);
 
     // Need to register products in the factories *before* we attempt to create any.
     // In particular, register all atm processes, and all grids managers.

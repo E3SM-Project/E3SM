@@ -499,6 +499,49 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- submesoscale_eddy_parameterization -->
+
+<entry id="config_submesoscale_enable" type="logical"
+	category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+flag to enable the FK2011 parameterization for submesoscale eddies
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_submesoscale_tau" type="real"
+	category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+timescale for frictional slumping of front (in seconds)
+
+Valid values: positive reals, between 1-10 days
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_submesoscale_Ce" type="real"
+	category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+efficiency of submesoscale eddies
+
+Valid values: 0.06 - 0.08
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_submesoscale_Lfmin" type="real"
+	category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+minimum frontal width (meters)
+
+Valid values: between 200 and 5000m
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_submesoscale_ds_max" type="real"
+	category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+maximum grid scale to scale up buoyancy gradient
+
+Valid values: around 1 degree
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- GM_eddy_parameterization -->
 
 <entry id="config_use_GM" type="logical"
@@ -650,6 +693,41 @@ Default: Defined in namelist_defaults.xml
 Maximum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM and Redi $\kappa$ ramp functions. Used when config_GM_horizontal_taper and/or config_Redi_horizontal_taper are set to RossbyRadius.
 
 Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- eddy_parameterization -->
+
+<entry id="config_eddyMLD_dens_threshold" type="real"
+	category="eddy_parameterization" group="eddy_parameterization">
+potential density change relative to surface for mixed layer depth threshold method.  This calculation is used for the Redi tapering, GM N2_dependent bolus kappa, and the submesoscale eddy parameterization
+
+Valid values: suggested range 0.01 less than or equal to thresh less than or equal to 0.5
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eddyMLD_reference_depth" type="real"
+	category="eddy_parameterization" group="eddy_parameterization">
+reference depth for threshold computation
+
+Valid values: any positive real, near 10
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eddyMLD_reference_pressure" type="real"
+	category="eddy_parameterization" group="eddy_parameterization">
+reference pressure for original mixed layer depth calculation
+
+Valid values: positive reals around 1.0e5
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eddyMLD_use_old" type="logical"
+	category="eddy_parameterization" group="eddy_parameterization">
+switches from old dThreshMLD calculation to new (fixed one)
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -4020,27 +4098,11 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_mixedLayerDepths_Dthreshold" type="logical"
-	category="AM_mixedLayerDepths" group="AM_mixedLayerDepths">
-Logical flag that determines if MLDs are calculated using a critical density threshold
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_AM_mixedLayerDepths_crit_temp_threshold" type="real"
 	category="AM_mixedLayerDepths" group="AM_mixedLayerDepths">
 temperature change relative to surface for threshold method
 
 Valid values: all real positive values, suggested range 0.2 less than or equal to thresh less than or equal to 1
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_AM_mixedLayerDepths_crit_dens_threshold" type="real"
-	category="AM_mixedLayerDepths" group="AM_mixedLayerDepths">
-potential density change relative to surface for threshold method
-
-Valid values: suggested range 0.01 less than or equal to thresh less than or equal to 0.5
 Default: Defined in namelist_defaults.xml
 </entry>
 

@@ -750,12 +750,14 @@ void AtmosphereDriver::create_logger () {
   }
 
   using logger_t = Logger<LogBasicFile,LogRootRank>;
-  auto logger = std::make_shared<logger_t>(log_fname,log_level,m_atm_comm,"");
-  logger->set_no_format();
-  if (not m_atm_params.get<bool>("Standalone",true)) {
-    logger->set_console_level(LogLevel::off);
+  m_atm_logger = std::make_shared<logger_t>(log_fname,log_level,m_atm_comm,"");
+  m_atm_logger->set_no_format();
+
+  // In CIME runs, this is already set to false, so atm log does not pollute e3sm.loc.
+  // In standalone, we default to true, so we see output to screen.
+  if (not deb_pl.get<bool>("output_to_screen",true)) {
+     m_atm_logger->set_console_level(LogLevel::off);
   }
-  m_atm_logger = logger;
 
   // Record the CASENAME for this run, set default to EAMxx
   if (m_atm_params.isSublist("e3sm_parameters")) {

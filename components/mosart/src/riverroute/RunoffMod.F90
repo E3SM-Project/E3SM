@@ -156,6 +156,9 @@ module RunoffMod
      real(r8), pointer :: templand_Tqsub_nt2(:)
      real(r8), pointer :: templand_Ttrib_nt2(:)
      real(r8), pointer :: templand_Tchanr_nt2(:)
+
+     real(r8), pointer :: ssh(:)
+     real(r8), pointer :: yr_nt1(:)
      
   end type runoff_flow
 
@@ -245,6 +248,8 @@ module RunoffMod
      real(r8), pointer :: frac(:)      ! fraction of cell included in the study area, [-]
      real(r8), pointer :: domainfrac(:)! fraction of cell included in the study area from domain file, [-]
      logical , pointer :: euler_calc(:)! flag for calculating tracers in euler
+     integer , pointer :: ocn_rof_coupling_ID(:)  ! ocn rof 2-way coupling ID, 0=off, 1=on
+     real(r8), pointer :: vdatum_conversion(:)    ! ocn rof 2-way coupling vertical datum conversion
 
      ! hillslope properties
      real(r8), pointer :: nh(:)        ! manning's roughness of the hillslope (channel network excluded) 
@@ -578,6 +583,8 @@ contains
              rtmCTL%qgwl(begr:endr,nt_rtm),       &
              rtmCTL%qdto(begr:endr,nt_rtm),       &
              rtmCTL%qdem(begr:endr,nt_rtm),       & 
+             rtmCTL%yr_nt1(begr:endr),            &
+             rtmCTL%ssh(begr:endr),               &
              stat=ier)
     if (ier /= 0) then
        write(iulog,*)'Rtmini ERROR allocation of runoff local arrays'

@@ -40,6 +40,8 @@ module atm_comp_mct
   integer(IN)            :: ATM_ID              ! mct comp id
   integer(IN),parameter  :: master_task=0       ! task number of master task
 
+  integer                :: atm_log_unit
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -59,7 +61,6 @@ CONTAINS
                                   import_constant_multiple, export_constant_multiple, &
                                   do_import_during_init,    do_export_during_init
     use ekat_string_utils,  only: string_f2c
-    use kinds,              only: homme_iulog=>iulog
     use mct_mod,            only: mct_aVect_init, mct_gsMap_lsize
     use seq_flds_mod,       only: seq_flds_a2x_fields, seq_flds_x2a_fields
     use seq_infodata_mod,   only: seq_infodata_start_type_start, seq_infodata_start_type_cont
@@ -82,26 +83,16 @@ CONTAINS
     integer(IN)                      :: modelio_fid    ! file descriptor for atm_modelio.nml
     integer(IN)                      :: case_start_tod, case_start_ymd, cur_tod, cur_ymd
     integer                          :: lsize
-    character(CL)                    :: diri           ! Unused
-    character(CL)                    :: diro           ! directory where ATM log file is
-    character(CL)                    :: logfile        ! name of ATM log file
-    character(CS)                    :: run_type       ! name of ATM log file
+    character(CS)                    :: run_type       ! type of run
     type(c_ptr) :: x2a_ptr, a2x_ptr
+    character(len=256)               :: atm_log_fname  ! name of ATM log file
 
     ! TODO: read this from the namelist?
     character(len=256)                :: yaml_fname = "./data/scream_input.yaml"
-    character(kind=c_char,len=256), target :: yaml_fname_c, atm_log_fname_c, dyn_log_fname
+    character(kind=c_char,len=256), target :: yaml_fname_c, atm_log_fname_c
     logical (kind=c_bool) :: restarted_run
 
-    ! Note: diri is unused, but *is* in the nml file, and the nml read woud return
-    !       a nonzero err code if we don't add diri to the modelio nml
-    namelist / modelio / diri,diro,logfile
-
     !-------------------------------------------------------------------------------
-
-    diri = "."
-    diro = "."
-    logfile = ""
 
     ! Grab some data from the cdata structure (coming from the coupler)
     call seq_cdata_setptrs(cdata, &
@@ -124,34 +115,35 @@ CONTAINS
     ! Determine communicator group
     call mpi_comm_rank(mpicom_atm, my_task, ierr)
 
-    !--- Retrieve the name of the atm log file
+    !----------------------------------------------------------------------------
+    ! Init atm.log
+    !----------------------------------------------------------------------------
+
     if (my_task == master_task) then
-      modelio_fid = shr_file_getUnit()
-      open (modelio_fid,file='atm_modelio.nml'//trim(inst_suffix),action="READ")
-      read (modelio_fid,nml=modelio,iostat=ierr)
-      close(modelio_fid)
+      atm_log_unit = shr_file_getUnit()
+      call shr_file_setIO ('atm_modelio.nml'//trim(inst_suffix),atm_log_unit)
+      inquire(unit=atm_log_unit,name=atm_log_fname)
     endif
-    call mpi_bcast(ierr,1,MPI_INTEGER,master_task,mpicom_atm,mpi_ierr)
+
+    call mpi_bcast(atm_log_unit,1,MPI_INTEGER,master_task,mpicom_atm,mpi_ierr)
     if (ierr /= 0) then
-      print *,'[eamxx] ERROR reading ','atm_modelio.nml'//trim(inst_suffix),': iostat=',ierr
+      print *,'[eamxx] ERROR broadcasting atm.log unit'
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)
     end if
 
-    call mpi_bcast(diro,CL,MPI_CHARACTER,master_task,mpicom_atm,ierr)
-    call mpi_bcast(logfile,CL,MPI_CHARACTER,master_task,mpicom_atm,ierr)
+    call mpi_bcast(atm_log_fname,256,MPI_CHARACTER,master_task,mpicom_atm,ierr)
+    if (ierr /= 0) then
+      print *,'[eamxx] ERROR broadcasting atm.log file name'
+      call mpi_abort(mpicom_atm,ierr,mpi_ierr)
+    end if
 
     !----------------------------------------------------------------------------
     ! Initialize atm
     !----------------------------------------------------------------------------
 
-    ! Set Homme Output to ${diro}/${logfile}.dyn
-    dyn_log_fname = trim(diro)//"/homme_"//trim(logfile)
-    open (unit=homme_iulog,file=trim(dyn_log_fname),status='REPLACE', &
-          action='WRITE', access='SEQUENTIAL')
-
     ! Init the AD
     call string_f2c(yaml_fname,yaml_fname_c)
-    call string_f2c(trim(diro)//"/"//trim(logfile),atm_log_fname_c)
+    call string_f2c(trim(atm_log_fname),atm_log_fname_c)
     call scream_create_atm_instance (mpicom_atm, ATM_ID, yaml_fname_c, atm_log_fname_c)
 
     ! Init MCT gsMap
@@ -233,24 +225,18 @@ CONTAINS
   !===============================================================================
   subroutine atm_final_mct(EClock, cdata, x2a, a2x)
     use scream_f2c_mod, only: scream_finalize
-    use kinds,          only: homme_iulog=>iulog
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(ESMF_Clock)            ,intent(inout) :: EClock     ! clock
+    type(ESMF_Clock)            ,intent(inout) :: EClock  ! clock
     type(seq_cdata)             ,intent(inout) :: cdata
-    type(mct_aVect)             ,intent(inout) :: x2a        ! driver     -> atmosphere 
-    type(mct_aVect)             ,intent(inout) :: a2x        ! atmosphere -> driver
-
-    !-------------------------------------------------------------------------------
+    type(mct_aVect)             ,intent(inout) :: x2a     ! driver     -> atmosphere 
+    type(mct_aVect)             ,intent(inout) :: a2x     ! atmosphere -> driver
 
     !----------------------------------------------------------------------------
     ! Finish the rest of ATM model
     !----------------------------------------------------------------------------
 
     call scream_finalize()
-
-    ! Close homme's log file
-    close (homme_iulog)
 
   end subroutine atm_final_mct
   !===============================================================================

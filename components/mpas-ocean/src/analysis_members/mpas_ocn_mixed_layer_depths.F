@@ -30,6 +30,7 @@ module ocn_mixed_layer_depths
    use ocn_constants
    use ocn_config
    use ocn_diagnostics_variables
+   use ocn_eddy_parameterization_helpers
 
    implicit none
    private
@@ -174,13 +175,13 @@ contains
       real (kind=RKIND), dimension(:,:), allocatable :: pressureAdjustedForLandIce 
 
       real (kind=RKIND), dimension(:), pointer :: tThreshMLD, tGradientMLD, landIceDraft
-      real (kind=RKIND), dimension(:), pointer :: dThreshMLD, dGradientMLD, landIcePressure
+      real (kind=RKIND), dimension(:), pointer :: dGradientMLD, landIcePressure
       integer, dimension(:), pointer :: landIceMask
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       integer :: interp_local
       real (kind=RKIND), allocatable, dimension(:,:) :: densityGradient, temperatureGradient
-      real (kind=RKIND) :: mldTemp,dTempThres, dDenThres, dTempGrad, dDenGrad
-      real (kind=RKIND) :: dz,temp_ref_lev, den_ref_lev, dV, dVm1, dVp1, localVals(6)
+      real (kind=RKIND) :: mldTemp,dTempThres, dTempGrad, dDenGrad
+      real (kind=RKIND) :: dz,temp_ref_lev, dV, dVm1, dVp1, localVals(6)
       real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
       err = 0
 
@@ -216,6 +217,9 @@ contains
          call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
          call mpas_pool_get_array(meshPool, 'latCell', latCell)
          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+
+         !need to call the mixed layer depth computation for compute on startup 
+         call ocn_eddy_compute_mixed_layer_depth(statePool, forcingPool)
 
          nCells = nCellsArray( size(nCellsArray) )
          allocate(pressureAdjustedForLandIce(nVertLevels, size(pressure,2)))
@@ -293,73 +297,6 @@ contains
                end if
 
           end if !end tThresh MLD search
-
-         if(config_AM_mixedLayerDepths_Dthreshold) then
-            call mpas_pool_get_array(mixedLayerDepthsAMPool, 'dThreshMLD',dThreshMLD)
-
-            !$omp parallel
-            !$omp do schedule(runtime) &
-            !$omp private(refIndex, found_den_mld, k, localvals, den_ref_lev, dVp1, dV, mldTemp)
-            do iCell = 1,nCells
-
-               !Initialize RefIndex for cases of very shallow columns
-               refIndex = maxLevelCell(iCell)
-               found_den_mld = .false.
-
-               do k=1, maxLevelCell(iCell)-1
-                  if(pressureAdjustedForLandIce(k+1,iCell) > config_AM_mixedLayerDepths_reference_pressure) then
-                     localvals(2:3)=potentialDensity(k:k+1,iCell)
-                     localvals(5:6)=pressureAdjustedForLandIce(k:k+1,iCell)
-
-                     call interp_bw_levels(localVals(2),localVals(3),localVals(5),localVals(6), &
-                                   config_AM_mixedLayerDepths_reference_pressure,interp_local,den_ref_lev)
-                     refIndex=k
-                    exit
-                   end if
-               end do
-
-               do k=refIndex,maxLevelCell(iCell)-1
-
-                    if(.not. found_den_mld .and. abs(potentialDensity(k+1,iCell) - den_ref_lev) .ge. &
-                             config_AM_mixedLayerDepths_crit_dens_threshold) then
-                        dVp1 = abs(potentialDensity(k+1,iCell) - den_ref_lev)
-                        dV   = abs(potentialDensity(k  ,iCell) - den_ref_lev)
-                        localVals(2:3)=zMid(k:k+1,iCell)
-                        call interp_bw_levels(localVals(2),localVals(3), dV, dVp1, config_AM_mixedLayerDepths_crit_dens_threshold,     &
-                                   interp_local, mldTemp)!, dVm1, localVals(1))
-                        mldTemp=max(mldTemp,zMid(k+1,iCell)) !make sure MLD isn't deeper than zMid(k+1)
-                        dThreshMLD(iCell)=abs(min(mldTemp,zMid(k,iCell))) !MLD should be deeper than zMid(k)
-                        indMLD(iCell) = k+1
-                        found_den_mld = .true.
-                        exit
-                     end if
-               end do
-
-! if the mixed layer depth is not found, it is set to the depth of the bottom most level
-
-                    if(.not. found_den_mld) then
-                      dThreshMLD(iCell) = abs(zMid(maxLevelCell(iCell),iCell))
-                      indMLD(iCell) = maxLevelCell(iCell)
-                    end if
-             end do !iCell
-             !$omp end do
-             !$omp end parallel
-
-             if (associated(landIceMask) ) then
-               !$omp parallel
-               !$omp do schedule(runtime)
-               do iCell = 1, nCells
-                  dThreshMLD(iCell) = dThreshMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
-               end do
-               !$omp end do
-               !$omp end parallel
-
-
-             end if
-
-
-        end if !end dThresh MLD search
-
 
 ! Compute the mixed layer depth based on a gradient threshold in temperature and density
         if(config_AM_mixedLayerDepths_Tgradient) then

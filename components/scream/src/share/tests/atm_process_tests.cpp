@@ -342,14 +342,9 @@ protected:
 
 TEST_CASE("process_factory", "") {
   using namespace scream;
-  using namespace ekat::logger;
-  using logger_t = spdlog::logger;
-  using logger_impl_t = Logger<LogNoFile,LogRootRank>;
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
-  std::shared_ptr<logger_t> logger;
-  logger = std::make_shared<logger_impl_t>("",LogLevel::info,comm);
 
   // Create then factory, and register constructors
   auto& factory = AtmosphereProcessFactory::instance();
@@ -365,7 +360,6 @@ TEST_CASE("process_factory", "") {
     std::string fname = "atm_process_tests_parse_list.yaml";
     ekat::ParameterList params ("Atmosphere Processes");
     REQUIRE_NOTHROW ( parse_yaml_file(fname,params) );
-    params.set("Logger",logger);
 
     std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
 
@@ -393,7 +387,6 @@ TEST_CASE("process_factory", "") {
     std::string fname = "atm_process_tests_named_procs.yaml";
     ekat::ParameterList params ("Atmosphere Processes");
     REQUIRE_NOTHROW ( parse_yaml_file(fname,params) );
-    params.set("Logger",logger);
     std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
 
     // CHECKS

@@ -9,7 +9,9 @@ my @groups = qw(run_modes
                 hmix_del4
                 hmix_leith
                 redi_isopycnal_mixing
+                submesoscale_eddy_parameterization
                 gm_eddy_parameterization
+                eddy_parameterization
                 rayleigh_damping
                 cvmix
                 gotm

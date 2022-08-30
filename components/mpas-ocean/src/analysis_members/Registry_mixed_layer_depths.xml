@@ -23,17 +23,9 @@
 			description="Logical flag that determines if MLDs are calculated using a critical temperature threshold"
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_mixedLayerDepths_Dthreshold" type="logical" default_value=".true."
-			description="Logical flag that determines if MLDs are calculated using a critical density threshold"
-			possible_values=".true. or .false."
-		/>
 		<nml_option name="config_AM_mixedLayerDepths_crit_temp_threshold" type="real" default_value="0.2" units="C"
 			description="temperature change relative to surface for threshold method"
 			possible_values="all real positive values, suggested range 0.2 less than or equal to thresh less than or equal to 1"
-		/>
-		<nml_option name="config_AM_mixedLayerDepths_crit_dens_threshold" type="real" default_value="0.03" units="kg m^-3"
-			description="potential density change relative to surface for threshold method"
-			possible_values="suggested range 0.01 less than or equal to thresh less than or equal to 0.5"
 		/>
 		<nml_option name="config_AM_mixedLayerDepths_reference_pressure" type="real" default_value="1.0E5" units="N m^-2"
 			description="reference pressure for threshold computation"
@@ -67,9 +59,6 @@
 		<var name="tThreshMLD" type="real" dimensions="nCells Time" units="m"
 			 description="mixed layer depth based on temperature threshold"
 		/>
-		<var name="dThreshMLD" type="real" dimensions="nCells Time" units="m"
-			 description="mixed layer depth based on density threshold"
-    />
 		<var name="tGradMLD" type="real" dimensions="nCells Time" units="m"
 			 description="mixed layer depth based on gradient of temperature"
 		/>
@@ -101,7 +90,6 @@
 			<stream name="mesh"/>
 			<var name="xtime"/>
 			<var name="tThreshMLD"/>
-			<var name="dThreshMLD"/>
 			<var name="tGradMLD"/>
 			<var name="dGradMLD"/>
 		</stream>
