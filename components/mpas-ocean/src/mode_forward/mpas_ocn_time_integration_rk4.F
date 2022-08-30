@@ -1223,10 +1223,12 @@ module ocn_time_integration_rk4
 
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersCur, 1)
 
+      ! the loop below is on all vertlevels but we used edgemask to set
+      ! velocities to zero below topo (esp. edges between topo and ocean)
       !$omp parallel
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
-         do k = 1, nVertLevels !maxLevelEdgeTop(iEdge)
+         do k = 1, nVertLevels
             normalVelocityProvis(k, iEdge) = edgeMask(k, iEdge)*(normalVelocityCur(k, iEdge) + rkSubstepWeight &
                                            * normalVelocityTend(k, iEdge))
             normalVelocityProvis(k, iEdge) = normalVelocityProvis(k, iEdge) * (1.0_RKIND - wettingVelocity(k, iEdge))
@@ -1469,7 +1471,9 @@ module ocn_time_integration_rk4
          end do
       end do
       !$omp end do
-
+      
+      ! the loop below is on all vertlevels but we used edgemask to set
+      ! velocities to zero below topo (esp. edges between topo and ocean)
       !$omp do schedule(runtime)
       do iEdge = 1, nEdges
          do k = 1, nVertLevels
