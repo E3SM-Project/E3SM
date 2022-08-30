@@ -481,6 +481,12 @@ contains
 
       err = 0
 
+      if ((config_cvmix_kpp_use_active_wave .eqv. .true.) .and. (config_use_active_wave .eqv. .false.)) then
+           call mpas_log_write(&
+           "config_use_active_wave must be .true. for config_cvmix_kpp_use_active_wave = .true.")
+           err = 1
+      endif
+
       allocate(stokesDriftWavenumbers(config_n_stokes_drift_wavenumber_partitions))
 
       select case (config_n_stokes_drift_wavenumber_partitions)

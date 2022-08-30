@@ -660,13 +660,13 @@
 					possible_values="NONE, LWF16, LF17, RWHGK16"
 		/>
 		<nml_option name="config_cvmix_kpp_use_active_wave" type="logical" default_value=".false." units="NA"
-					description="Flag for Langmuir enchancement factor using prognostic waves"
+					description="Flag for Langmuir enchancement factor using prognostic waves. Requires config_use_active_wave = .true."
 					possible_values=""
 		/>
 	</nml_record>
 	<nml_record name="wave_coupling" mode="forward">
 		<nml_option name="config_use_active_wave" type="logical" default_value=".false." units="NA"
-					description="Flag for using prognostic waves"
+					description="Flag for using prognostic waves. Controls the allocation of wave arrays and computation of Stokes drift profiles."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_n_stokes_drift_wavenumber_partitions" type="integer" default_value="6" units="NA"
