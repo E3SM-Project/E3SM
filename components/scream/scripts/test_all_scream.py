@@ -16,6 +16,7 @@ import json
 
 ensure_psutil()
 import psutil
+import re
 
 from collections import OrderedDict
 from pathlib import Path
@@ -889,13 +890,56 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         for t,s in tests_success.items():
             if not s:
-                print(f"Build type {t} failed. Here's a list of failed tests:")
-                test_dir = self.get_test_dir(self._work_dir,t)
-                test_results_dir = test_dir/"Testing"/"Temporary"
-                for result in test_results_dir.glob("LastTestsFailed*"):
-                    print(result.read_text())
+                last_test = self.get_last_ctest_file(t,"Tests")
+                last_build  = self.get_last_ctest_file(t,"Build")
+                last_config = self.get_last_ctest_file(t,"Configure")
+                if last_test is not None:
+                    print(f"Build type {t} failed at testing time. Here's a list of failed tests:")
+                    print (last_test.read_text())
+                elif last_build is not None:
+                    print(f"Build type {t} failed at build time. Here's the build log:")
+                    print (last_build.read_text())
+                elif last_config is not None:
+                    print(f"Build type {t} failed at config time. Here's the config log:\n\n")
+                    print (last_config.read_text())
+                else:
+                    print(f"Build type {t} failed before configure step.")
 
         return success
+
+    ###############################################################################
+    def get_last_ctest_file(self,test,phase):
+    ###############################################################################
+        test_dir = self.get_test_dir(self._work_dir,test)
+        test_results_dir = Path(test_dir,"Testing","Temporary")
+        files = list(test_results_dir.glob(f"Last{phase}*"))
+        if len(files)>0:
+            curr_tag=0
+            curr_idx=0
+            latest = None
+            # ctest creates files of the form Last{phase}_$TIMESTAMP-$IDX.log
+            # we split the name, and sue $TIMESTAMP to pick the newest, and, in case
+            # of tie, $IDX as tiebreaker
+            for file in files:
+                file_no_path = file.name
+                tokens = re.split(r'_|-|\.',str(file_no_path))
+                if latest is None:
+                    latest = file
+                    curr_tag = int(tokens[1])
+                    curr_idx = int(tokens[2])
+                else:
+                    if int(tokens[1])>curr_tag:
+                        latest = file
+                        curr_tag = int(tokens[1])
+                        curr_idx = int(tokens[2])
+                    elif int(tokens[1])==curr_tag and int(tokens[2])>curr_idx:
+                        latest = file
+                        curr_tag = int(tokens[1])
+                        curr_idx = int(tokens[2])
+                
+            return latest 
+        else:
+            return None
 
     ###############################################################################
     def test_all_scream(self):
