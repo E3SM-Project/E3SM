@@ -170,6 +170,12 @@ void SPAFunctions<S,D>
 
   auto delta_t_fraction = (t_now-t_beg) / delta_t;
 
+  EKAT_REQUIRE_MSG (delta_t_fraction>=0 && delta_t_fraction<=1,
+      "Error! Convex interpolation with coefficient out of [0,1].\n"
+      "  t_now  : " + std::to_string(t_now) + "\n"
+      "  t_beg  : " + std::to_string(t_beg) + "\n"
+      "  delta_t: " + std::to_string(delta_t) + "\n");
+
   Kokkos::parallel_for("spa_time_interp_loop", policy,
     KOKKOS_LAMBDA(const MemberType& team) {
 
