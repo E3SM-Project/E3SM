@@ -698,9 +698,10 @@ void SPAFunctions<S,D>
   //        any other frequency.
   const auto month = ts.get_month();
   if (month != time_state.current_month or !time_state.inited) {
+
     // Update the SPA time state information
     time_state.current_month = month;
-    time_state.t_beg_month = util::TimeStamp({0,month,1}, {0,0,0}).frac_of_year_in_days();
+    time_state.t_beg_month = util::TimeStamp({ts.get_year(),month,1}, {0,0,0}).frac_of_year_in_days();
     time_state.days_this_month = util::days_in_month(ts.get_year(),month);
     // Update the SPA forcing data for this month and next month
     // Start by copying next months data to this months data structure.  
