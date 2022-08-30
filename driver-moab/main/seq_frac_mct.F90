@@ -172,6 +172,9 @@ module seq_frac_mct
   use seq_comm_mct, only : atm_pg_active !     flag if PG mesh instanced
   ! for tri grid, sameg_al would be false 
   use seq_comm_mct, only : sameg_al !          same grid atm and land; used throughout, initialized in lnd_init
+
+  use seq_comm_mct, only : mbrxid   !          iMOAB id of moab rof migrated to coupler pes 
+
   use iMOAB, only : iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, &
         iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh
   
@@ -488,6 +491,53 @@ contains
        kr = mct_aVect_indexRa(fractions_r,"rfrac",perrWith=subName)
        kf = mct_aVect_indexRA(dom_r%data ,"frac" ,perrWith=subName)
        fractions_r%rAttr(kr,:) = dom_r%data%rAttr(kf,:)
+       ! fractions needs to be set on river grid (that has a mask ?)
+       ! copy from land code; we have on coupler the river instance that comes from river-ocean map
+       if (mbrxid .ge. 0  ) then ! // 
+         ! set all to zero, and then modify rfrac
+         tagname = trim(fraclist_r)//C_NULL_CHAR ! 'lfrac:lfrin:rfrac'
+         tagtype = 1  ! dense, double
+         numco = 1 !   
+         ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags on rof phys mesh on cpl '
+            call shr_sys_abort(subname//' ERROR in defining tags on rof phys mesh on cpl')
+         endif
+         ierr  = iMOAB_GetMeshInfo ( mbrxid, nvert, nvise, nbl, nsurf, nvisBC );
+         arrSize = 3 * nVert(1) ! there are 3 tags 
+         allocate(tagValues(arrSize) )
+         ent_type = 0  ! vertex type, rof is point cloud
+         tagValues = 0. 
+         ierr = iMOAB_SetDoubleTagStorage ( mbrxid, tagname, arrSize , ent_type, tagValues)
+         deallocate(tagValues)
+         tagname = 'rfrac'//C_NULL_CHAR ! 'lfrin'
+         allocate(tagValues(lSize) )
+         tagValues = dom_r%data%rAttr(kf,:)
+         kgg = mct_aVect_indexIA(dom_r%data ,"GlobGridNum" ,perrWith=subName)
+         allocate(GlobalIds(lSize))
+         GlobalIds = dom_r%data%iAttr(kgg,:)
+         ! again, we are setting on the river instance that is also used for ocean coupling
+         ierr = iMOAB_SetDoubleTagStorageWithGid ( mbrxid, tagname, lSize , ent_type, tagValues, GlobalIds )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in setting rfrac on rof   '
+            call shr_sys_abort(subname//' ERROR in setting rfrac on rof ')
+         endif
+         deallocate(GlobalIds)
+         deallocate(tagValues)
+
+#ifdef MOABDEBUG
+        ! debug test
+        
+        outfile = 'rofCplFr.h5m'//C_NULL_CHAR
+        wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+ !      write out the mesh file to disk
+        ierr = iMOAB_WriteMesh(mbrxid, trim(outfile), trim(wopts))
+        if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing mesh '
+          call shr_sys_abort(subname//' ERROR in writing mesh ')
+        endif
+#endif
+       endif
     end if
 
     ! Initialize fractions on wav grid decomp, just an initial "guess", updated later
@@ -515,17 +565,6 @@ contains
        call mct_aVect_init(fractions_i,rList=fraclist_i,lsize=lsize)
        call mct_aVect_zero(fractions_i)
 
-       if (mphaxid .ge. 0  ) then ! // 
-         tagname = trim(fraclist_i)//C_NULL_CHAR
-         tagtype = 1  ! dense, double
-         numco = 1 !   
-         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags on ice phys mesh on cpl '
-            call shr_sys_abort(subname//' ERROR in defining tags on ice phys mesh on cpl')
-         endif
-         
-       endif
 
        ko = mct_aVect_indexRa(fractions_i,"ofrac",perrWith=subName)
        kf = mct_aVect_indexRA(dom_i%data ,"frac" ,perrWith=subName)
@@ -535,6 +574,55 @@ contains
           mapper_i2a => prep_atm_get_mapper_Fi2a()
           call seq_map_map(mapper_i2a,fractions_i,fractions_a,fldlist='ofrac',norm=.false.)
        endif
+
+       if (mbixid .ge. 0  ) then ! // 
+         tagname = trim(fraclist_i)//C_NULL_CHAR ! 'afrac:ifrac:ofrac'
+         tagtype = 1  ! dense, double
+         numco = 1 !   
+         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags on ice phys mesh on cpl '
+            call shr_sys_abort(subname//' ERROR in defining tags on ice phys mesh on cpl')
+         endif
+         ! start copy from rof
+         ierr  = iMOAB_GetMeshInfo ( mbixid, nvert, nvise, nbl, nsurf, nvisBC );
+         arrSize = 3 * nvise(1) ! there are 3 tags 'afrac:ifrac:ofrac'
+         allocate(tagValues(arrSize) )
+         ent_type = 1  ! cell type, ice is FV
+         tagValues = 0. 
+         ierr = iMOAB_SetDoubleTagStorage ( mbixid, tagname, arrSize , ent_type, tagValues)
+         deallocate(tagValues)
+         tagname = 'ofrac'//C_NULL_CHAR ! 'lfrin'
+         allocate(tagValues(lSize) )
+         tagValues = dom_i%data%rAttr(kf,:)
+         kgg = mct_aVect_indexIA(dom_i%data ,"GlobGridNum" ,perrWith=subName)
+         allocate(GlobalIds(lSize))
+         GlobalIds = dom_i%data%iAttr(kgg,:)
+
+         ierr = iMOAB_SetDoubleTagStorageWithGid ( mbixid, tagname, lSize , ent_type, tagValues, GlobalIds )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in setting ofrac on ice   '
+            call shr_sys_abort(subname//' ERROR in setting ofrac on ice ')
+         endif
+         deallocate(GlobalIds)
+         deallocate(tagValues)
+         ! TODO : project ice ofrac to atm , using the mapper i2a in MOAB (that we do not have yet)
+
+#ifdef MOABDEBUG
+        ! debug test
+        
+        outfile = 'iceCplFr.h5m'//C_NULL_CHAR
+        wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+ !      write out the mesh file to disk
+        ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
+        if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing mesh '
+          call shr_sys_abort(subname//' ERROR in writing mesh ')
+        endif
+#endif
+         ! end copy from rof
+       endif
+
     end if
 
     ! Initialize fractions on ocean grid/decomp (initialize ice fraction to zero)
@@ -547,7 +635,7 @@ contains
        ! initialize ocn imoab app on mct grid 
        call expose_mct_grid_moab(ocn, mbox2id) ! will use then to set the data on it , for debugging
        if (mboxid .ge. 0  ) then ! // 
-         tagname = trim(fraclist_o)//C_NULL_CHAR
+         tagname = trim(fraclist_o)//C_NULL_CHAR ! 'afrac:ifrac:ofrac:ifrad:ofrad'
          tagtype = 1  ! dense, double
          numco = 1 !   
          ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
@@ -555,11 +643,39 @@ contains
             write(logunit,*) subname,' error in defining tags on ocn phys mesh on cpl '
             call shr_sys_abort(subname//' ERROR in defining tags on ocn phys mesh on cpl')
          endif
+          ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC );
+         arrSize = 5 * nvise(1) ! there are 5 tags 'afrac:ifrac:ofrac:ifrad:ofrad'
+         allocate(tagValues(arrSize) )
+         ent_type = 1  ! cell type, ocn is FV
+         tagValues = 0. 
+         ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrSize , ent_type, tagValues)
+         deallocate(tagValues)
+
        endif
        if (ice_present) then
           mapper_i2o => prep_ocn_get_mapper_SFi2o()
           call seq_map_map(mapper_i2o,fractions_i,fractions_o,fldlist='ofrac',norm=.false.)
+          ! we can use the same logic as for ofrac on fractions_i, because ice and ocn is the same mesh
+          if (mboxid .ge. 0  ) then ! 
+            ! we are using data from ofrac freom ice mesh !!!!
+            lSize = mct_aVect_lSize(dom_i%data)
+            tagname = 'ofrac'//C_NULL_CHAR ! 'lfrin'
+            allocate(tagValues(lSize) )
+            tagValues = dom_i%data%rAttr(kf,:)
+            kgg = mct_aVect_indexIA(dom_i%data ,"GlobGridNum" ,perrWith=subName)
+            allocate(GlobalIds(lSize))
+            GlobalIds = dom_i%data%iAttr(kgg,:)
+
+            ierr = iMOAB_SetDoubleTagStorageWithGid ( mboxid, tagname, lSize , ent_type, tagValues, GlobalIds )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in setting ofrac on ocn from ice   '
+               call shr_sys_abort(subname//' ERROR in setting ofrac on ocn from ice  ')
+            endif
+            deallocate(GlobalIds)
+            deallocate(tagValues)
+          endif
        else
+       ! stil need to TODO moab case
           ko = mct_aVect_indexRa(fractions_o,"ofrac",perrWith=subName)
           kf = mct_aVect_indexRA(dom_o%data ,"frac" ,perrWith=subName)
           fractions_o%rAttr(ko,:) = dom_o%data%rAttr(kf,:)
@@ -570,7 +686,24 @@ contains
        if (atm_present) then
           mapper_a2o => prep_ocn_get_mapper_Fa2o()
           call seq_map_map(mapper_a2o, fractions_a, fractions_o, fldlist='afrac',norm=.false.)
+          ! TODO moab projection using a2o moab map 
        endif
+
+
+#ifdef MOABDEBUG
+        ! debug test
+        if (mboxid .ge. 0  ) then
+            outfile = 'ocnCplFr.h5m'//C_NULL_CHAR
+            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+      !      write out the mesh file to disk
+            ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in writing mesh '
+               call shr_sys_abort(subname//' ERROR in writing mesh ')
+            endif
+        endif
+#endif
+
        if (ice_present) then
           ! --- this should be an atm2ice call above, but atm2ice doesn't work
           mapper_o2i => prep_ice_get_mapper_SFo2i()

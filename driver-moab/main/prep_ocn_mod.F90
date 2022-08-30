@@ -366,7 +366,7 @@ contains
                'mapper_Rr2o_liq moab initialization',esmf_map_flag)
           appname = "ROF_COU"//C_NULL_CHAR
                ! rmapid  is a unique external number of MOAB app that identifies runoff on coupler side
-          rmapid = rof(1)%cplcompid 
+          rmapid = 100*rof(1)%cplcompid ! this is a special case, because we also have a regular coupler instance mbrxid
           ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, rmapid, mbrxoid)
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in registering rof on coupler in ocean context '

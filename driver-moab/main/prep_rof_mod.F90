@@ -408,7 +408,7 @@ contains
    !  it involves initial rof app;  mesh on coupler pes, 
    ! use seq_comm_mct,     only: mrofid ! id for rof comp 
    ! mbrmapro ! iMOAB id of moab instance of map read from rof2ocn map file 
-   ! mbrxoid  ! iMOAB id for rof instance on coupler for ocn ; it exists as a coverage mesh ! 
+   ! mbrxoid  ! iMOAB id for rof instance on coupler for ocn ; it exists as a coverage mesh, it receives data from ocean
 
    ! after this, the sending of tags from rof pes to coupler pes will use the par comm graph, that has more precise info about
    ! how to get mpicomm for joint rof + coupler
@@ -417,6 +417,9 @@ contains
 
    call seq_comm_getData(ID_join,mpicom=mpicom_join) ! this is the joint comm between rof and coupler
 
+   ! should id_join be multiplied by 100 ? because it is not corresponding to the regular mbrxid , it is mbroxid
+   ! no need, because id_join is used now only to get the communicator 
+   ! TODO understand better this
    ! we should do this only if ocn_present
    context_id = ocn(1)%cplcompid
    wgtIdef = 'map-from-file'//C_NULL_CHAR

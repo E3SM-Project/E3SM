@@ -23,6 +23,7 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : mphaxid !            iMOAB app id for phys atm, on cpl pes
   use seq_comm_mct, only : sameg_al ! same grid atm lnd, and land is point cloud
   use seq_comm_mct, only : MPSIID, mbixid  !  sea-ice on comp pes and on coupler pes
+  use seq_comm_mct, only : mrofid, mbrxid  ! iMOAB id of moab rof app on comp pes and on coupler too
   use shr_mpi_mod,  only: shr_mpi_max
   use dimensions_mod, only : np     ! for atmosphere
   use iso_c_binding
@@ -978,493 +979,533 @@ contains
 
   !=======================================================================
 
-  subroutine cplcomp_moab_Init(comp)
+   subroutine cplcomp_moab_Init(comp)
 
-    ! This routine initializes an iMOAB app on the coupler pes,
-    !  corresponding to the component pes. It uses send/receive 
-    !  from iMOAB to replicate the mesh on coupler pes
+      ! This routine initializes an iMOAB app on the coupler pes,
+      !  corresponding to the component pes. It uses send/receive 
+      !  from iMOAB to replicate the mesh on coupler pes
 
-    !-----------------------------------------------------
-    !
-   use iMOAB, only: iMOAB_RegisterApplication, iMOAB_ReceiveMesh, iMOAB_SendMesh, &
-     iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, &
-     iMOAB_SetIntTagStorage, iMOAB_FreeSenderBuffers
-    !
-    type(component_type), intent(inout) :: comp
-    !
-    ! Local Variables
-    !
-    integer                  :: mpicom_cplid
-    integer                  :: mpicom_old
-    integer                  :: mpicom_new
-    integer                  :: mpicom_join
-    integer                  :: ID_old
-    integer                  :: ID_new
-    integer                  :: ID_join
+      !-----------------------------------------------------
+      !
+      use iMOAB, only: iMOAB_RegisterApplication, iMOAB_ReceiveMesh, iMOAB_SendMesh, &
+      iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, &
+      iMOAB_SetIntTagStorage, iMOAB_FreeSenderBuffers
+      !
+      type(component_type), intent(inout) :: comp
+      !
+      ! Local Variables
+      !
+      integer                  :: mpicom_cplid
+      integer                  :: mpicom_old
+      integer                  :: mpicom_new
+      integer                  :: mpicom_join
+      integer                  :: ID_old
+      integer                  :: ID_new
+      integer                  :: ID_join
 
-    character(len=*),parameter :: subname = "(cplcomp_moab_Init) "
+      character(len=*),parameter :: subname = "(cplcomp_moab_Init) "
 
-    integer                  :: mpigrp_cplid ! coupler pes
-    integer                  :: mpigrp_old   !  component group pes
-    integer                  :: ierr, context_id
-    character*32             :: appname, outfile, wopts, tagnameProj
-    integer                  :: maxMH, maxMPO, maxMLID, maxMSID ! max pids for moab apps atm, ocn, lnd, sea-ice
-    integer                  :: tagtype, numco,  tagindex, partMethod
-    integer                  :: rank, ent_type
-    integer                  :: typeA, typeB, ATM_PHYS_CID ! used to compute par graph between atm phys
-    integer                  :: ID_JOIN_ATMPHYS ! 200 + 6
-    integer                  :: ID_OLD_ATMPHYS  ! 200 + 5
-                                                           ! and atm spectral on coupler
-    character(CXX)             :: tagname
+      integer                  :: mpigrp_cplid ! coupler pes
+      integer                  :: mpigrp_old   !  component group pes
+      integer                  :: ierr, context_id
+      character*32             :: appname, outfile, wopts, tagnameProj
+      integer                  :: maxMH, maxMPO, maxMLID, maxMSID, maxMRID ! max pids for moab apps atm, ocn, lnd, sea-ice, rof
+      integer                  :: tagtype, numco,  tagindex, partMethod
+      integer                  :: rank, ent_type
+      integer                  :: typeA, typeB, ATM_PHYS_CID ! used to compute par graph between atm phys
+      integer                  :: ID_JOIN_ATMPHYS ! 200 + 6
+      integer                  :: ID_OLD_ATMPHYS  ! 200 + 5
+                                                            ! and atm spectral on coupler
+      character(CXX)             :: tagname
 #ifdef MOABDEBUG
-    integer , dimension(1:3) :: nverts, nelem, nblocks, nsbc, ndbc
-    integer, dimension(:), allocatable ::  vgids
+      integer , dimension(1:3) :: nverts, nelem, nblocks, nsbc, ndbc
+      integer, dimension(:), allocatable ::  vgids
 #endif
 
-!-----------------------------------------------------
+   !-----------------------------------------------------
 
-    call seq_comm_getinfo(CPLID, mpicom=mpicom_CPLID, iam=rank)
+      call seq_comm_getinfo(CPLID, mpicom=mpicom_CPLID, iam=rank)
 
-    id_new  = cplid
-    id_old  = comp%compid
-    id_join = comp%cplcompid
+      id_new  = cplid
+      id_old  = comp%compid
+      id_join = comp%cplcompid
 
-    mpicom_new  = mpicom_cplid
-    mpicom_old  = comp%mpicom_compid
-    mpicom_join = comp%mpicom_cplcompid
+      mpicom_new  = mpicom_cplid
+      mpicom_old  = comp%mpicom_compid
+      mpicom_join = comp%mpicom_cplcompid
 
-    partMethod = 0 ! trivial partitioning
-    context_id = -1 ! original sends/receives, so the context is -1
-                    ! needed only to free send buffers
+      partMethod = 0 ! trivial partitioning
+      context_id = -1 ! original sends/receives, so the context is -1
+                     ! needed only to free send buffers
 #ifdef MOAB_HAVE_ZOLTAN
-    partMethod = 2 ! it is better to use RCB for atmosphere and ocean too
+      partMethod = 2 ! it is better to use RCB for atmosphere and ocean too
 #endif
 
-    call seq_comm_getinfo(ID_old ,mpicom=mpicom_old)
-    call seq_comm_getinfo(ID_new ,mpicom=mpicom_new)
-    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
+      call seq_comm_getinfo(ID_old ,mpicom=mpicom_old)
+      call seq_comm_getinfo(ID_new ,mpicom=mpicom_new)
+      call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
-    call shr_mpi_max(mhid, maxMH, mpicom_join, all=.true.) ! if on atm / cpl joint, maxMH /= -1
-    call shr_mpi_max(mpoid, maxMPO, mpicom_join, all=.true.)
-    call shr_mpi_max(mlnid, maxMLID, mpicom_join, all=.true.)
-    call shr_mpi_max(MPSIID, maxMSID, mpicom_join, all=.true.)
-    if (seq_comm_iamroot(CPLID) ) then
-       write(logunit, *) "MOAB coupling:  maxMH: ", maxMH, " maxMPO: ", maxMPO, &
-          " maxMLID: ", maxMLID
-    endif
-    ! this works now for atmosphere;
-    if ( comp%oneletterid == 'a' .and. maxMH /= -1) then
-      call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
-      call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
-      ! now, if on coupler pes, receive mesh; if on comp pes, send mesh
-      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
-        !  send mesh to coupler
-        if (atm_pg_active) then !  change : send the pg2 mesh, not coarse mesh, when atm pg active
-          ierr = iMOAB_SendMesh(mhpgid, mpicom_join, mpigrp_cplid, id_join, partMethod)
-        else
-          ! still use the mhid, original coarse mesh
-          ierr = iMOAB_SendMesh(mhid, mpicom_join, mpigrp_cplid, id_join, partMethod)
-        endif
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in sending mesh from atm comp '
-          call shr_sys_abort(subname//' ERROR in sending mesh from atm comp')
-        endif
+      call shr_mpi_max(mhid, maxMH, mpicom_join, all=.true.) ! if on atm / cpl joint, maxMH /= -1
+      call shr_mpi_max(mpoid, maxMPO, mpicom_join, all=.true.)
+      call shr_mpi_max(mlnid, maxMLID, mpicom_join, all=.true.)
+      call shr_mpi_max(MPSIID, maxMSID, mpicom_join, all=.true.)
+      call shr_mpi_max(mrofid, maxMRID, mpicom_join, all=.true.)
+      if (seq_comm_iamroot(CPLID) ) then
+         write(logunit, *) "MOAB coupling:  maxMH: ", maxMH, " maxMPO: ", maxMPO, &
+            " maxMLID: ", maxMLID
       endif
-      if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-        appname = "COUPLE_ATM"//C_NULL_CHAR
-        ! migrated mesh gets another app id, moab atm to coupler (mbax)
-        ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbaxid)
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in registering ', appname
-          call shr_sys_abort(subname//' ERROR registering '// appname)
-        endif
-        ierr = iMOAB_ReceiveMesh(mbaxid, mpicom_join, mpigrp_old, id_old)
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in receiving mesh on atm coupler '
-          call shr_sys_abort(subname//' ERROR in receiving mesh on atm coupler ')
-        endif
-#ifdef MOABDEBUG
-        ! debug test
-        if (atm_pg_active) then !
-          outfile = 'recMeshAtmPG.h5m'//C_NULL_CHAR
-        else
-          outfile = 'recMeshAtm.h5m'//C_NULL_CHAR
-        endif
-        wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
-!      write out the mesh file to disk
-        ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in writing mesh '
-          call shr_sys_abort(subname//' ERROR in writing mesh ')
-        endif
-#endif
-      endif
-      !  iMOAB_FreeSenderBuffers needs to be called after receiving the mesh
-
-      if (mhid .ge. 0) then  ! we are on component atm pes
-         context_id = id_join
-         if (atm_pg_active) then! we send mesh from mhpgid app
-           ierr = iMOAB_FreeSenderBuffers(mhpgid, context_id)
+      ! this works now for atmosphere;
+      if ( comp%oneletterid == 'a' .and. maxMH /= -1) then
+         call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
+         call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
+         ! now, if on coupler pes, receive mesh; if on comp pes, send mesh
+         if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
+         !  send mesh to coupler
+         if (atm_pg_active) then !  change : send the pg2 mesh, not coarse mesh, when atm pg active
+            ierr = iMOAB_SendMesh(mhpgid, mpicom_join, mpigrp_cplid, id_join, partMethod)
          else
-           ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
+            ! still use the mhid, original coarse mesh
+            ierr = iMOAB_SendMesh(mhid, mpicom_join, mpigrp_cplid, id_join, partMethod)
          endif
          if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in freeing send buffers '
-          call shr_sys_abort(subname//' ERROR in freeing send buffers')
-        endif
-      endif
-      
-      ! send also the phys grid to coupler, because it will be used for fractions
-      ! start copy for mphaid->mphaxid 
-      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
-        !  send mesh to coupler
-        if (atm_pg_active) then !  do not send again, mbaxid will be the same as mphaxid
-          mphaxid = mbaxid ! we already have pg mesh on coupler, as an FV mesh
-        else
-          ! still use the mhid, original coarse mesh
-          ID_JOIN_ATMPHYS = id_join + 200 ! somewhat arbitrary, just a different comp id
-          ierr = iMOAB_SendMesh(mphaid, mpicom_join, mpigrp_cplid, ID_JOIN_ATMPHYS, partMethod)
-          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in sending mesh from atm comp '
             call shr_sys_abort(subname//' ERROR in sending mesh from atm comp')
-          endif
-        endif
-        
-      endif
-      if (MPI_COMM_NULL /= mpicom_new  .and.  .not. atm_pg_active ) then !  we are on the coupler pes
-
-        appname = "COUPLE_ATMPH"//C_NULL_CHAR
-        ! migrated mesh gets another app id, moab atm to coupler (mbax)
-        ID_JOIN_ATMPHYS = id_join + 200 ! somewhat arbitrary, just a different comp id
-        ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, ID_JOIN_ATMPHYS, mphaxid)
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in registering ', appname
-          call shr_sys_abort(subname//' ERROR registering '// appname)
-        endif
-        ID_OLD_ATMPHYS = id_old + 200 ! kind of arbitrary
-        ierr = iMOAB_ReceiveMesh(mphaxid, mpicom_join, mpigrp_old, ID_OLD_ATMPHYS)
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in receiving mesh on atm coupler '
-          call shr_sys_abort(subname//' ERROR in receiving mesh on atm coupler ')
-        endif
+         endif
+         endif
+         if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+         appname = "COUPLE_ATM"//C_NULL_CHAR
+         ! migrated mesh gets another app id, moab atm to coupler (mbax)
+         ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbaxid)
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in registering ', appname
+            call shr_sys_abort(subname//' ERROR registering '// appname)
+         endif
+         ierr = iMOAB_ReceiveMesh(mbaxid, mpicom_join, mpigrp_old, id_old)
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in receiving mesh on atm coupler '
+            call shr_sys_abort(subname//' ERROR in receiving mesh on atm coupler ')
+         endif
 #ifdef MOABDEBUG
-        ! debug test
-        
-        outfile = 'recPhysAtm.h5m'//C_NULL_CHAR
-        wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
- !      write out the mesh file to disk
-        ierr = iMOAB_WriteMesh(mphaxid, trim(outfile), trim(wopts))
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in writing mesh '
-          call shr_sys_abort(subname//' ERROR in writing mesh ')
-        endif
+         ! debug test
+         if (atm_pg_active) then !
+            outfile = 'recMeshAtmPG.h5m'//C_NULL_CHAR
+         else
+            outfile = 'recMeshAtm.h5m'//C_NULL_CHAR
+         endif
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+   !      write out the mesh file to disk
+         ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing mesh '
+            call shr_sys_abort(subname//' ERROR in writing mesh ')
+         endif
 #endif
-      endif
-      !  iMOAB_FreeSenderBuffers needs to be called after receiving the mesh
-      if (MPI_COMM_NULL /= mpicom_old  .and. .not. atm_pg_active) then ! it means we are on the component pes (atmosphere)
-         context_id = ID_JOIN_ATMPHYS
-         ierr = iMOAB_FreeSenderBuffers(mphaid, context_id)
+         endif
+         !  iMOAB_FreeSenderBuffers needs to be called after receiving the mesh
+
+         if (mhid .ge. 0) then  ! we are on component atm pes
+            context_id = id_join
+            if (atm_pg_active) then! we send mesh from mhpgid app
+            ierr = iMOAB_FreeSenderBuffers(mhpgid, context_id)
+            else
+            ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
+            endif
+            if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in freeing send buffers '
+            call shr_sys_abort(subname//' ERROR in freeing send buffers')
+         endif
+         endif
          
+         ! send also the phys grid to coupler, because it will be used for fractions
+         ! start copy for mphaid->mphaxid 
+         if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
+         !  send mesh to coupler
+         if (atm_pg_active) then !  do not send again, mbaxid will be the same as mphaxid
+            mphaxid = mbaxid ! we already have pg mesh on coupler, as an FV mesh
+         else
+            ! still use the mhid, original coarse mesh
+            ID_JOIN_ATMPHYS = id_join + 200 ! somewhat arbitrary, just a different comp id
+            ierr = iMOAB_SendMesh(mphaid, mpicom_join, mpigrp_cplid, ID_JOIN_ATMPHYS, partMethod)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in sending mesh from atm comp '
+               call shr_sys_abort(subname//' ERROR in sending mesh from atm comp')
+            endif
+         endif
+         
+         endif
+         if (MPI_COMM_NULL /= mpicom_new  .and.  .not. atm_pg_active ) then !  we are on the coupler pes
+
+         appname = "COUPLE_ATMPH"//C_NULL_CHAR
+         ! migrated mesh gets another app id, moab atm to coupler (mbax)
+         ID_JOIN_ATMPHYS = id_join + 200 ! somewhat arbitrary, just a different comp id
+         ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, ID_JOIN_ATMPHYS, mphaxid)
          if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in freeing send buffers '
-          call shr_sys_abort(subname//' ERROR in freeing send buffers')
-        endif
-      endif
-     
-
-!  comment out now; we will not send directly to atm spectral on coupler; we need to send in the
-!  context of ocean intx;; or directly to land on coupler, for projection to land
-      ! now we have the spectral atm on coupler pes, and we want to send some data from
-      ! atm physics mesh to atm spectral on coupler side; compute a par comm graph between
-      ! atm phys and spectral atm mesh on coupler PEs
-      ! ierr = iMOAB_ComputeCommGraph(cmpAtmPID, physAtmPID, &joinComm, &atmPEGroup, &atmPhysGroup,
-      !    &typeA, &typeB, &cmpatm, &physatm);
-      ! graph between atm phys, mphaid, and atm dyn on coupler, mbaxid
-      ! phys atm group is mpigrp_old, coupler group is mpigrp_cplid
-      !!typeA = 2 ! point cloud
-      !!typeB = 1 ! spectral elements
-      !!ATM_PHYS_CID = 200 + id_old ! 200 + 5 for atm, see line  969   ATM_PHYS = 200 + ATMID ! in
-                                  ! components/cam/src/cpl/atm_comp_mct.F90
-      !!ierr = iMOAB_ComputeCommGraph( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
-      !!    typeA, typeB, ATM_PHYS_CID, id_join)
-!  comment out this above part
-
-      !  we also need to define the tags for receiving the physics data, on atm on coupler pes
-      ! corresponding to 'T_ph;u_ph;v_ph';
-      ! we can receive those tags only on coupler pes, when mbaxid exists
-      ! we have to check that before we can define the tag
-      if (mbaxid .ge. 0 .and. .not. (atm_pg_active) ) then
-        tagname = trim(seq_flds_a2x_ext_fields)//C_NULL_CHAR
-        tagtype = 1  ! dense, double
-        numco = np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
-        ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in defining tags '
-          call shr_sys_abort(subname//' ERROR in defining tags ')
-        endif
-      endif
-    endif
-    ! ocean
-    if (comp%oneletterid == 'o'  .and. maxMPO /= -1) then
-      call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
-      call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
-
-      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (ocean)
-           !     write out the mesh file to disk, in parallel
-#ifdef MOABDEBUG
-        outfile = 'wholeOcn.h5m'//C_NULL_CHAR
-        wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-        ierr = iMOAB_WriteMesh(MPOID, outfile, wopts)
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in writing ocean mesh '
-          call shr_sys_abort(subname//' ERROR in writing ocean mesh ')
-        endif
-#endif
-
-        !  send mesh to coupler
-        ierr = iMOAB_SendMesh(mpoid, mpicom_join, mpigrp_cplid, id_join, partMethod)
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in sending ocean mesh to coupler '
-          call shr_sys_abort(subname//' ERROR in sending ocean mesh to coupler ')
-        endif
-
-        ! define here the tag that will be projected back from atmosphere
-        !  TODO where do we want to define this?
-        tagnameProj = 'a2oTbot_proj'//C_NULL_CHAR
-        tagtype = 1  ! dense, double
-        numco = 1 !  one value per cell
-        ierr = iMOAB_DefineTagStorage(mpoid, tagnameProj, tagtype, numco,  tagindex )
-        ! define more tags
-        tagnameProj = 'a2oUbot_proj'//C_NULL_CHAR  ! U component of velocity
-        ierr = iMOAB_DefineTagStorage(mpoid, tagnameProj, tagtype, numco,  tagindex )
-        tagnameProj = 'a2oVbot_proj'//C_NULL_CHAR  ! V component of velocity
-        ierr = iMOAB_DefineTagStorage(mpoid, tagnameProj, tagtype, numco,  tagindex )
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in defining tags on ocean comp '
-          call shr_sys_abort(subname//' ERROR in defining tags on ocean comp ')
-        endif
-
-      endif
-      if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-        appname = "COUPLE_MPASO"//C_NULL_CHAR
-        ! migrated mesh gets another app id, moab ocean to coupler (mbox)
-        ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mboxid)
-        ierr = iMOAB_ReceiveMesh(mboxid, mpicom_join, mpigrp_old, id_old)
-
-        ! define here the tag that will be projected from atmosphere
-        tagnameProj = 'a2oTbot_proj'//C_NULL_CHAR  ! temperature
-        tagtype = 1  ! dense, double
-        numco = 1 !  one value per cell
-        ierr = iMOAB_DefineTagStorage(mboxid, tagnameProj, tagtype, numco,  tagindex )
-
-        ! define more tags
-        tagnameProj = 'a2oUbot_proj'//C_NULL_CHAR  ! U component of velocity
-        ierr = iMOAB_DefineTagStorage(mboxid, tagnameProj, tagtype, numco,  tagindex )
-        tagnameProj = 'a2oVbot_proj'//C_NULL_CHAR  ! V component of velocity
-        ierr = iMOAB_DefineTagStorage(mboxid, tagnameProj, tagtype, numco,  tagindex )
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in defining tags on ocean coupler '
-          call shr_sys_abort(subname//' ERROR in defining tags on ocean coupler ')
-        endif
-        tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR 
-        ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in defining tags o2x on coupler'
-          call shr_sys_abort(subname//' ERROR in defining tags o2x on coupler ')
-        endif
-#ifdef MOABDEBUG
-!      debug test
-        outfile = 'recMeshOcn.h5m'//C_NULL_CHAR
-        wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-!      write out the mesh file to disk
-        ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in writing ocean mesh coupler '
-          call shr_sys_abort(subname//' ERROR in writing ocean mesh coupler ')
-        endif
-#endif
-      endif
-      if (mpoid .ge. 0) then  ! we are on component ocn pes
-         context_id = id_join
-         ierr = iMOAB_FreeSenderBuffers(mpoid, context_id)
+            write(logunit,*) subname,' error in registering ', appname
+            call shr_sys_abort(subname//' ERROR registering '// appname)
+         endif
+         ID_OLD_ATMPHYS = id_old + 200 ! kind of arbitrary
+         ierr = iMOAB_ReceiveMesh(mphaxid, mpicom_join, mpigrp_old, ID_OLD_ATMPHYS)
          if (ierr .ne. 0) then
-           write(logunit,*) subname,' error in freeing buffers '
-           call shr_sys_abort(subname//' ERROR in freeing buffers ')
+            write(logunit,*) subname,' error in receiving mesh on atm coupler '
+            call shr_sys_abort(subname//' ERROR in receiving mesh on atm coupler ')
+         endif
+#ifdef MOABDEBUG
+         ! debug test
+         
+         outfile = 'recPhysAtm.h5m'//C_NULL_CHAR
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+   !      write out the mesh file to disk
+         ierr = iMOAB_WriteMesh(mphaxid, trim(outfile), trim(wopts))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing mesh '
+            call shr_sys_abort(subname//' ERROR in writing mesh ')
+         endif
+#endif
+         endif
+         !  iMOAB_FreeSenderBuffers needs to be called after receiving the mesh
+         if (MPI_COMM_NULL /= mpicom_old  .and. .not. atm_pg_active) then ! it means we are on the component pes (atmosphere)
+            context_id = ID_JOIN_ATMPHYS
+            ierr = iMOAB_FreeSenderBuffers(mphaid, context_id)
+            
+            if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in freeing send buffers '
+            call shr_sys_abort(subname//' ERROR in freeing send buffers')
+         endif
+         endif
+      
+
+   !  comment out now; we will not send directly to atm spectral on coupler; we need to send in the
+   !  context of ocean intx;; or directly to land on coupler, for projection to land
+         ! now we have the spectral atm on coupler pes, and we want to send some data from
+         ! atm physics mesh to atm spectral on coupler side; compute a par comm graph between
+         ! atm phys and spectral atm mesh on coupler PEs
+         ! ierr = iMOAB_ComputeCommGraph(cmpAtmPID, physAtmPID, &joinComm, &atmPEGroup, &atmPhysGroup,
+         !    &typeA, &typeB, &cmpatm, &physatm);
+         ! graph between atm phys, mphaid, and atm dyn on coupler, mbaxid
+         ! phys atm group is mpigrp_old, coupler group is mpigrp_cplid
+         !!typeA = 2 ! point cloud
+         !!typeB = 1 ! spectral elements
+         !!ATM_PHYS_CID = 200 + id_old ! 200 + 5 for atm, see line  969   ATM_PHYS = 200 + ATMID ! in
+                                    ! components/cam/src/cpl/atm_comp_mct.F90
+         !!ierr = iMOAB_ComputeCommGraph( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+         !!    typeA, typeB, ATM_PHYS_CID, id_join)
+   !  comment out this above part
+
+         !  we also need to define the tags for receiving the physics data, on atm on coupler pes
+         ! corresponding to 'T_ph;u_ph;v_ph';
+         ! we can receive those tags only on coupler pes, when mbaxid exists
+         ! we have to check that before we can define the tag
+         if (mbaxid .ge. 0 .and. .not. (atm_pg_active) ) then
+         tagname = trim(seq_flds_a2x_ext_fields)//C_NULL_CHAR
+         tagtype = 1  ! dense, double
+         numco = np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
+         ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags '
+            call shr_sys_abort(subname//' ERROR in defining tags ')
+         endif
          endif
       endif
-      ! start copy
-      ! do another ocean copy of the mesh on the coupler, just because So_fswpen field 
-      ! would appear twice on original mboxid, once from xao states, once from o2x states
-      id_join = id_join + 1000! kind of random 
-      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (ocean)
-        !  send mesh to coupler, the second time! a copy would be cheaper
-        ierr = iMOAB_SendMesh(mpoid, mpicom_join, mpigrp_cplid, id_join, partMethod)
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in sending ocean mesh to coupler the second time'
-          call shr_sys_abort(subname//' ERROR in sending ocean mesh to coupler the second time ')
-        endif
-      endif
-      if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-        appname = "COUPLE_MPASOF"//C_NULL_CHAR
-        ! migrated mesh gets another app id, moab ocean to coupler (mbox)
-        ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbofxid)
-        ierr = iMOAB_ReceiveMesh(mbofxid, mpicom_join, mpigrp_old, id_old)
-        
-      endif
-      if (mpoid .ge. 0) then  ! we are on component ocn pes again, release buffers 
-         context_id = id_join
-         ierr = iMOAB_FreeSenderBuffers(mpoid, context_id)
+      ! ocean
+      if (comp%oneletterid == 'o'  .and. maxMPO /= -1) then
+         call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
+         call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
+
+         if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (ocean)
+            !     write out the mesh file to disk, in parallel
+#ifdef MOABDEBUG
+         outfile = 'wholeOcn.h5m'//C_NULL_CHAR
+         wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+         ierr = iMOAB_WriteMesh(MPOID, outfile, wopts)
          if (ierr .ne. 0) then
-           write(logunit,*) subname,' error in freeing buffers '
-           call shr_sys_abort(subname//' ERROR in freeing buffers ')
+            write(logunit,*) subname,' error in writing ocean mesh '
+            call shr_sys_abort(subname//' ERROR in writing ocean mesh ')
          endif
+#endif
+
+         !  send mesh to coupler
+         ierr = iMOAB_SendMesh(mpoid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in sending ocean mesh to coupler '
+            call shr_sys_abort(subname//' ERROR in sending ocean mesh to coupler ')
+         endif
+
+         ! define here the tag that will be projected back from atmosphere
+         !  TODO where do we want to define this?
+         tagnameProj = 'a2oTbot_proj'//C_NULL_CHAR
+         tagtype = 1  ! dense, double
+         numco = 1 !  one value per cell
+         ierr = iMOAB_DefineTagStorage(mpoid, tagnameProj, tagtype, numco,  tagindex )
+         ! define more tags
+         tagnameProj = 'a2oUbot_proj'//C_NULL_CHAR  ! U component of velocity
+         ierr = iMOAB_DefineTagStorage(mpoid, tagnameProj, tagtype, numco,  tagindex )
+         tagnameProj = 'a2oVbot_proj'//C_NULL_CHAR  ! V component of velocity
+         ierr = iMOAB_DefineTagStorage(mpoid, tagnameProj, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags on ocean comp '
+            call shr_sys_abort(subname//' ERROR in defining tags on ocean comp ')
+         endif
+
+         endif
+         if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+         appname = "COUPLE_MPASO"//C_NULL_CHAR
+         ! migrated mesh gets another app id, moab ocean to coupler (mbox)
+         ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mboxid)
+         ierr = iMOAB_ReceiveMesh(mboxid, mpicom_join, mpigrp_old, id_old)
+
+         ! define here the tag that will be projected from atmosphere
+         tagnameProj = 'a2oTbot_proj'//C_NULL_CHAR  ! temperature
+         tagtype = 1  ! dense, double
+         numco = 1 !  one value per cell
+         ierr = iMOAB_DefineTagStorage(mboxid, tagnameProj, tagtype, numco,  tagindex )
+
+         ! define more tags
+         tagnameProj = 'a2oUbot_proj'//C_NULL_CHAR  ! U component of velocity
+         ierr = iMOAB_DefineTagStorage(mboxid, tagnameProj, tagtype, numco,  tagindex )
+         tagnameProj = 'a2oVbot_proj'//C_NULL_CHAR  ! V component of velocity
+         ierr = iMOAB_DefineTagStorage(mboxid, tagnameProj, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags on ocean coupler '
+            call shr_sys_abort(subname//' ERROR in defining tags on ocean coupler ')
+         endif
+         tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR 
+         ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags o2x on coupler'
+            call shr_sys_abort(subname//' ERROR in defining tags o2x on coupler ')
+         endif
+#ifdef MOABDEBUG
+   !      debug test
+         outfile = 'recMeshOcn.h5m'//C_NULL_CHAR
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+   !      write out the mesh file to disk
+         ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing ocean mesh coupler '
+            call shr_sys_abort(subname//' ERROR in writing ocean mesh coupler ')
+         endif
+#endif
+         endif
+         if (mpoid .ge. 0) then  ! we are on component ocn pes
+            context_id = id_join
+            ierr = iMOAB_FreeSenderBuffers(mpoid, context_id)
+            if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in freeing buffers '
+            call shr_sys_abort(subname//' ERROR in freeing buffers ')
+            endif
+         endif
+         ! start copy
+         ! do another ocean copy of the mesh on the coupler, just because So_fswpen field 
+         ! would appear twice on original mboxid, once from xao states, once from o2x states
+         id_join = id_join + 1000! kind of random 
+         if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (ocean)
+         !  send mesh to coupler, the second time! a copy would be cheaper
+         ierr = iMOAB_SendMesh(mpoid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in sending ocean mesh to coupler the second time'
+            call shr_sys_abort(subname//' ERROR in sending ocean mesh to coupler the second time ')
+         endif
+         endif
+         if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+         appname = "COUPLE_MPASOF"//C_NULL_CHAR
+         ! migrated mesh gets another app id, moab ocean to coupler (mbox)
+         ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbofxid)
+         ierr = iMOAB_ReceiveMesh(mbofxid, mpicom_join, mpigrp_old, id_old)
+         
+         endif
+         if (mpoid .ge. 0) then  ! we are on component ocn pes again, release buffers 
+            context_id = id_join
+            ierr = iMOAB_FreeSenderBuffers(mpoid, context_id)
+            if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in freeing buffers '
+            call shr_sys_abort(subname//' ERROR in freeing buffers ')
+            endif
+         endif
+         ! end copy 
       endif
-      ! end copy 
-    endif
 
-!   land
-    if (comp%oneletterid == 'l'  .and. maxMLID /= -1) then
-      call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
-      call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
+   !   land
+      if (comp%oneletterid == 'l'  .and. maxMLID /= -1) then
+         call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
+         call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
 
-      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (ocean)
-        !  send mesh to coupler
+         if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (ocean)
+         !  send mesh to coupler
 #ifdef MOAB_HAVE_ZOLTAN
-        partMethod = 2  !  RCB for point cloud
+         partMethod = 2  !  RCB for point cloud
 #endif
-        ierr = iMOAB_SendMesh(mlnid, mpicom_join, mpigrp_cplid, id_join, partMethod)
-        if (ierr .ne. 0) then
-           write(logunit,*) subname,' error in sending land mesh '
-           call shr_sys_abort(subname//' ERROR in sending land mesh ')
-        endif
-        ! create the receiver on land mesh too:
-        tagnameProj = 'a2lTbot_proj'//C_NULL_CHAR  ! temperature
-        tagtype = 1  ! dense, double
-        numco = 1 !  one value per vertex / entity
-        ierr = iMOAB_DefineTagStorage(mlnid, tagnameProj, tagtype, numco,  tagindex )
-
-        ! define more tags
-        tagnameProj = 'a2lUbot_proj'//C_NULL_CHAR  ! U component of velocity
-        ierr = iMOAB_DefineTagStorage(mlnid, tagnameProj, tagtype, numco,  tagindex )
-        tagnameProj = 'a2lVbot_proj'//C_NULL_CHAR  ! V component of velocity
-        ierr = iMOAB_DefineTagStorage(mlnid, tagnameProj, tagtype, numco,  tagindex )
-
-      endif
-      if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-        appname = "COUPLE_LAND"//C_NULL_CHAR
-        ! migrated mesh gets another app id, moab ocean to coupler (mbox)
-        ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mblxid)
-        if (ierr .ne. 0) then
-           write(logunit,*) subname,' error in registering coupler land '
-           call shr_sys_abort(subname//' ERROR in registering coupler land')
-        endif
-        ierr = iMOAB_ReceiveMesh(mblxid, mpicom_join, mpigrp_old, id_old)
-        if (ierr .ne. 0) then
-           write(logunit,*) subname,' error in receiving coupler land mesh'
-           call shr_sys_abort(subname//' ERROR in receiving coupler land mesh')
+         ierr = iMOAB_SendMesh(mlnid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in sending land mesh '
+            call shr_sys_abort(subname//' ERROR in sending land mesh ')
          endif
-        ! define here the tag that will be projected from atmosphere
-        tagnameProj = 'a2lTbot_proj'//C_NULL_CHAR  ! temperature
-        tagtype = 1  ! dense, double
-        numco = 1 !  one value per vertex / entity
-        ierr = iMOAB_DefineTagStorage(mblxid, tagnameProj, tagtype, numco,  tagindex )
+         ! create the receiver on land mesh too:
+         tagnameProj = 'a2lTbot_proj'//C_NULL_CHAR  ! temperature
+         tagtype = 1  ! dense, double
+         numco = 1 !  one value per vertex / entity
+         ierr = iMOAB_DefineTagStorage(mlnid, tagnameProj, tagtype, numco,  tagindex )
 
-        ! define more tags
-        tagnameProj = 'a2lUbot_proj'//C_NULL_CHAR  ! U component of velocity
-        ierr = iMOAB_DefineTagStorage(mblxid, tagnameProj, tagtype, numco,  tagindex )
-        tagnameProj = 'a2lVbot_proj'//C_NULL_CHAR  ! V component of velocity
-        ierr = iMOAB_DefineTagStorage(mblxid, tagnameProj, tagtype, numco,  tagindex )
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in defining tags on land coupler'
-          call shr_sys_abort(subname//' ERROR in defining tags on land coupler')
-        endif
-#ifdef MOABDEBUG
-        ! debug test
-        if (sameg_al) then
-          !there are no shared entities, but we will set a special partition tag, in order to see the
-          ! partitions ; it will be visible with a Pseudocolor plot in VisIt
-          tagname='partition'//C_NULL_CHAR
-          tagtype = 0  ! dense, integer
-          numco = 1 !  one value per cell
-          ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
-          ierr = iMOAB_GetMeshInfo(mblxid, nverts, nelem, nblocks, nsbc, ndbc)
-          allocate(vgids(nverts(1)))
-          vgids = rank
-          ent_type = 0 ! vertex type
-          ierr = iMOAB_SetIntTagStorage ( mblxid, tagname, nverts(1) , ent_type, vgids)
-        endif
-        outfile = 'recLand.h5m'//C_NULL_CHAR
-        wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-!       write out the mesh file to disk
-        ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in writing land coupler mesh'
-          call shr_sys_abort(subname//' ERROR in writing land coupler mesh')
-        endif
-#endif
-      endif
-      if (mlnid .ge. 0) then  ! we are on component land pes
-         context_id = id_join
-         ierr = iMOAB_FreeSenderBuffers(mlnid, context_id)
+         ! define more tags
+         tagnameProj = 'a2lUbot_proj'//C_NULL_CHAR  ! U component of velocity
+         ierr = iMOAB_DefineTagStorage(mlnid, tagnameProj, tagtype, numco,  tagindex )
+         tagnameProj = 'a2lVbot_proj'//C_NULL_CHAR  ! V component of velocity
+         ierr = iMOAB_DefineTagStorage(mlnid, tagnameProj, tagtype, numco,  tagindex )
+
+         endif
+         if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+         appname = "COUPLE_LAND"//C_NULL_CHAR
+         ! migrated mesh gets another app id, moab ocean to coupler (mbox)
+         ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mblxid)
          if (ierr .ne. 0) then
-           write(logunit,*) subname,' error in freeing buffers'
-           call shr_sys_abort(subname//' ERROR in freeing buffers')
-        endif
-      endif
-    endif
-
-    ! sea - ice
-    if (comp%oneletterid == 'i'  .and. maxMSID /= -1) then
-      call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
-      call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
-
-      if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component p
-#ifdef MOABDEBUG
-        outfile = 'wholeSeaIce.h5m'//C_NULL_CHAR
-        wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-        ierr = iMOAB_WriteMesh(MPSIID, outfile, wopts)
-        if (ierr .ne. 0) then
-           write(logunit,*) subname,' error in writing sea-ice'
-           call shr_sys_abort(subname//' ERROR in writing sea-ice')
-        endif
-#endif
-! start copy from ocean code
-        !  send sea ice mesh to coupler
-        ierr = iMOAB_SendMesh(MPSIID, mpicom_join, mpigrp_cplid, id_join, partMethod)
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in sending sea ice mesh to coupler '
-          call shr_sys_abort(subname//' ERROR in sending sea ice mesh to coupler ')
-        endif
-
-      endif
-      if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-        appname = "COUPLE_MPASSI"//C_NULL_CHAR
-        ! migrated mesh gets another app id, moab moab sea ice to coupler (mbox)
-        ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbixid)
-        ierr = iMOAB_ReceiveMesh(mbixid, mpicom_join, mpigrp_old, id_old)
-#ifdef MOABDEBUG
-!      debug test
-        outfile = 'recSeaIce.h5m'//C_NULL_CHAR
-        wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-!      write out the mesh file to disk
-        ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in writing sea ice mesh on coupler '
-          call shr_sys_abort(subname//' ERROR in writing sea ice mesh on coupler ')
-        endif
-#endif
-      endif
-      if (MPSIID .ge. 0) then  ! we are on component sea ice pes
-         context_id = id_join
-         ierr = iMOAB_FreeSenderBuffers(MPSIID, context_id)
+            write(logunit,*) subname,' error in registering coupler land '
+            call shr_sys_abort(subname//' ERROR in registering coupler land')
+         endif
+         ierr = iMOAB_ReceiveMesh(mblxid, mpicom_join, mpigrp_old, id_old)
          if (ierr .ne. 0) then
-           write(logunit,*) subname,' error in freeing buffers '
-           call shr_sys_abort(subname//' ERROR in freeing buffers ')
+            write(logunit,*) subname,' error in receiving coupler land mesh'
+            call shr_sys_abort(subname//' ERROR in receiving coupler land mesh')
+            endif
+         ! define here the tag that will be projected from atmosphere
+         tagnameProj = 'a2lTbot_proj'//C_NULL_CHAR  ! temperature
+         tagtype = 1  ! dense, double
+         numco = 1 !  one value per vertex / entity
+         ierr = iMOAB_DefineTagStorage(mblxid, tagnameProj, tagtype, numco,  tagindex )
+
+         ! define more tags
+         tagnameProj = 'a2lUbot_proj'//C_NULL_CHAR  ! U component of velocity
+         ierr = iMOAB_DefineTagStorage(mblxid, tagnameProj, tagtype, numco,  tagindex )
+         tagnameProj = 'a2lVbot_proj'//C_NULL_CHAR  ! V component of velocity
+         ierr = iMOAB_DefineTagStorage(mblxid, tagnameProj, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags on land coupler'
+            call shr_sys_abort(subname//' ERROR in defining tags on land coupler')
+         endif
+#ifdef MOABDEBUG
+         ! debug test
+         if (sameg_al) then
+            !there are no shared entities, but we will set a special partition tag, in order to see the
+            ! partitions ; it will be visible with a Pseudocolor plot in VisIt
+            tagname='partition'//C_NULL_CHAR
+            tagtype = 0  ! dense, integer
+            numco = 1 !  one value per cell
+            ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
+            ierr = iMOAB_GetMeshInfo(mblxid, nverts, nelem, nblocks, nsbc, ndbc)
+            allocate(vgids(nverts(1)))
+            vgids = rank
+            ent_type = 0 ! vertex type
+            ierr = iMOAB_SetIntTagStorage ( mblxid, tagname, nverts(1) , ent_type, vgids)
+         endif
+         outfile = 'recLand.h5m'//C_NULL_CHAR
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+   !       write out the mesh file to disk
+         ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing land coupler mesh'
+            call shr_sys_abort(subname//' ERROR in writing land coupler mesh')
+         endif
+#endif
+         endif
+         if (mlnid .ge. 0) then  ! we are on component land pes
+            context_id = id_join
+            ierr = iMOAB_FreeSenderBuffers(mlnid, context_id)
+            if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in freeing buffers'
+            call shr_sys_abort(subname//' ERROR in freeing buffers')
+         endif
          endif
       endif
-! end copy from ocean code
-    endif
 
-  end subroutine cplcomp_moab_Init
+      ! sea - ice
+      if (comp%oneletterid == 'i'  .and. maxMSID /= -1) then
+         call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
+         call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
+
+         if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component p
+#ifdef MOABDEBUG
+         outfile = 'wholeSeaIce.h5m'//C_NULL_CHAR
+         wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
+         ierr = iMOAB_WriteMesh(MPSIID, outfile, wopts)
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing sea-ice'
+            call shr_sys_abort(subname//' ERROR in writing sea-ice')
+         endif
+#endif
+   ! start copy from ocean code
+         !  send sea ice mesh to coupler
+         ierr = iMOAB_SendMesh(MPSIID, mpicom_join, mpigrp_cplid, id_join, partMethod)
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in sending sea ice mesh to coupler '
+            call shr_sys_abort(subname//' ERROR in sending sea ice mesh to coupler ')
+         endif
+
+         endif
+         if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+         appname = "COUPLE_MPASSI"//C_NULL_CHAR
+         ! migrated mesh gets another app id, moab moab sea ice to coupler (mbox)
+         ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbixid)
+         ierr = iMOAB_ReceiveMesh(mbixid, mpicom_join, mpigrp_old, id_old)
+#ifdef MOABDEBUG
+   !      debug test
+         outfile = 'recSeaIce.h5m'//C_NULL_CHAR
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+   !      write out the mesh file to disk
+         ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing sea ice mesh on coupler '
+            call shr_sys_abort(subname//' ERROR in writing sea ice mesh on coupler ')
+         endif
+#endif
+         endif
+         if (MPSIID .ge. 0) then  ! we are on component sea ice pes
+            context_id = id_join
+            ierr = iMOAB_FreeSenderBuffers(MPSIID, context_id)
+            if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in freeing buffers '
+            call shr_sys_abort(subname//' ERROR in freeing buffers ')
+            endif
+         endif
+      endif
+     ! rof
+      if (comp%oneletterid == 'r'  .and. maxMRID /= -1) then
+         call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
+         call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
+
+         if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component p
+
+         ierr = iMOAB_SendMesh(mrofid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in sending rof mesh to coupler '
+            call shr_sys_abort(subname//' ERROR in sending rof mesh to coupler ')
+         endif
+
+         endif
+         if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+         appname = "COUPLE_MROF"//C_NULL_CHAR
+         ! migrated mesh gets another app id, moab moab rof to coupler (mbox)
+         ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbrxid)
+         ierr = iMOAB_ReceiveMesh(mbrxid, mpicom_join, mpigrp_old, id_old)
+#ifdef MOABDEBUG
+   !      debug test
+         outfile = 'recRof.h5m'//C_NULL_CHAR
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+   !      write out the mesh file to disk
+         ierr = iMOAB_WriteMesh(mbrxid, trim(outfile), trim(wopts))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing rof mesh on coupler '
+            call shr_sys_abort(subname//' ERROR in writing rof mesh on coupler ')
+         endif
+#endif
+         endif
+         if (mrofid .ge. 0) then  ! we are on component sea ice pes
+            context_id = id_join
+            ierr = iMOAB_FreeSenderBuffers(mrofid, context_id)
+            if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in freeing buffers '
+            call shr_sys_abort(subname//' ERROR in freeing buffers ')
+            endif
+         endif
+      endif ! end for rof coupler send 
+
+   end subroutine cplcomp_moab_Init
 
 end module cplcomp_exchange_mod
