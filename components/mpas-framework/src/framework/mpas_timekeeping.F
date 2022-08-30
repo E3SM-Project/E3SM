@@ -89,14 +89,12 @@ module mpas_timekeeping
 
       character (len=*), intent(in) :: calendar
 
-      if ((trim(calendar) == 'gregorian') .or. (trim(calendar) == 'standard')) then
+      if (trim(calendar) == 'gregorian') then
          TheCalendar = MPAS_GREGORIAN
 #ifndef MPAS_NO_ESMF_INIT
          call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_GREGORIAN)
 #endif
-      else if ((trim(calendar) == 'gregorian_noleap') .or. &
-               (trim(calendar) == 'noleap') .or. &
-               (trim(calendar) == '365_day')) then
+      else if (trim(calendar) == 'noleap') then
          TheCalendar = MPAS_GREGORIAN_NOLEAP
 #ifndef MPAS_NO_ESMF_INIT
          call ESMF_Initialize(defaultCalendar=ESMF_CALKIND_NOLEAP)
