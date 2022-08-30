@@ -272,8 +272,23 @@ struct PhysicsFunctions
   KOKKOS_INLINE_FUNCTION
   static Real calculate_psl(const Real& T_ground, const Real& p_ground, const Real& phi_ground);
   
-
-
+  //-----------------------------------------------------------------------------------------------//
+  // Apply rayleigh friction. Given the decay rate profile, we compute the tendencies in u
+  // and v components of the horizontal wind using an Euler backward scheme, and then apply
+  // the negative of the kinetic energy tendency to the dry static energy.
+  // Note: We don't actually calculate dse since this is simply a tendancy of cp*T_mid.
+  // INPUTS:
+  // dt is the physics timestep
+  // otau is the decay rate
+  // INPUT/OUTPUTS:
+  // u_wind is u component of the horizontal wind (m/s)
+  // v_wind is v component of the horizontal wind (m/s)
+  // T_mid is the atmospheric temperature at the midpoints [K]
+  //-----------------------------------------------------------------------------------------------//
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static void apply_rayleigh_friction(const Real dt, const ScalarT& otau,
+                                      ScalarT& u_wind, ScalarT& v_wind, ScalarT& T_mid);
   
   // ---------------------------------------------------------------- //
   //                     Whole column Functions                       //
@@ -297,9 +312,9 @@ struct PhysicsFunctions
   // type.                                                            //
   //                                                                  //
   // Most of these routines simply call the homonymous routine that   //
-  // act on a single scalar, except for calculate_z_int, which only   //
-  // makes sense for a whole column (i.e., there is not single-scalar //
-  // version of compute_z_int).                                       //
+  // act on a single scalar, except for calculate_z_int/mid, which    //
+  // only makes sense for a whole column (i.e., there is not          //
+  // single-scalar version of compute_z_int/mid).                     //
   // ---------------------------------------------------------------- //
 
   using Device = DeviceT;
@@ -408,6 +423,15 @@ struct PhysicsFunctions
                                      const InputProviderQ& qv,
                                      const InputProviderX& vmr,
                                      const view_1d<ScalarT>& mmr);
+
+  template<typename ScalarT, typename InputProviderOtau, typename MT = Kokkos::MemoryManaged>
+  KOKKOS_INLINE_FUNCTION
+  static void apply_rayleigh_friction (const MemberType& team,
+                                       const Real dt,
+                                       const InputProviderOtau& otau,
+                                       const view_1d<ScalarT, MT>& u_wind,
+                                       const view_1d<ScalarT, MT>& v_wind,
+                                       const view_1d<ScalarT, MT>& T_mid);
 
   //-----------------------------------------------------------------------------------------------//
   // Determines the vertical layer interface height from the vertical layer thicknesses:

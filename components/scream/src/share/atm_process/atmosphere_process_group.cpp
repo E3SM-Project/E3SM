@@ -21,13 +21,13 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
   EKAT_REQUIRE_MSG (m_group_size>0, "Error! Invalid group size.\n");
 
   if (m_group_size>1) {
-    if (m_params.get<std::string>("Schedule Type") == "Sequential") {
+    if (m_params.get<std::string>("schedule_type") == "Sequential") {
       m_group_schedule_type = ScheduleType::Sequential;
-    } else if (m_params.get<std::string>("Schedule Type") == "Parallel") {
+    } else if (m_params.get<std::string>("schedule_type") == "Parallel") {
       m_group_schedule_type = ScheduleType::Parallel;
       ekat::error::runtime_abort("Error! Parallel schedule not yet implemented.\n");
     } else {
-      ekat::error::runtime_abort("Error! Invalid 'Schedule Type'. Available choices are 'Parallel' and 'Sequential'.\n");
+      ekat::error::runtime_abort("Error! Invalid 'schedule_type'. Available choices are 'Parallel' and 'Sequential'.\n");
     }
   } else {
     // Pointless to handle this group as parallel, if only one process is in it
@@ -122,11 +122,6 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
         "       Did you by chance register your own creator function in the AtmosphereProccessFactory class?\n"
         "       If so, don't. Instead, use the instantiation of create_atmosphere_process<T>,\n"
         "       with T = YourAtmProcessClassName.\n");
-
-    // Update the grid types of the group, given the needs of the newly created process
-    for (const auto& name : m_atm_processes.back()->get_required_grids()) {
-      m_required_grids.insert(name);
-    }
 
     // Store a copy of all the restart extra data of the atm proc.
     // NOTE: any uses std::shared_ptr internally, so if the atm proc updates

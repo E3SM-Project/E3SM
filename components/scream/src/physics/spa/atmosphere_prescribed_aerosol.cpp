@@ -32,8 +32,8 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   Q.set_string("kg/kg");
   auto nondim = Units::nondimensional();
 
-  const auto& grid_name = m_params.get<std::string>("Grid");
-  m_grid  = grids_manager->get_grid(grid_name);
+  m_grid = grids_manager->get_grid("Physics");
+  const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
   m_dofs_gids = m_grid->get_dofs_gids();
@@ -66,7 +66,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   // Note: only the number of levels associated with this data haven't been set.  We can
   //       take this information directly from the spa data file.
-  m_spa_data_file = m_params.get<std::string>("SPA Data File");
+  m_spa_data_file = m_params.get<std::string>("spa_data_file");
   scorpio::register_file(m_spa_data_file,scorpio::Read);
   m_num_src_levs = scorpio::get_dimlen_c2f(m_spa_data_file.c_str(),"lev");
   scorpio::eam_pio_closefile(m_spa_data_file);
@@ -160,9 +160,9 @@ void SPA::initialize_impl (const RunType /* run_type */)
   SPAData_out.AER_TAU_LW         = get_field_out("aero_tau_lw").get_view<Pack***>();
 
   // Retrieve the remap and data file locations from the parameter list:
-  EKAT_REQUIRE_MSG(m_params.isParameter("SPA Remap File"),"ERROR: SPA Remap File is missing from SPA parameter list.");
-  EKAT_REQUIRE_MSG(m_params.isParameter("SPA Data File"),"ERROR: SPA Data File is missing from SPA parameter list.");
-  m_spa_remap_file = m_params.get<std::string>("SPA Remap File");
+  EKAT_REQUIRE_MSG(m_params.isParameter("spa_remap_file"),"ERROR: spa_remap_file is missing from SPA parameter list.");
+  EKAT_REQUIRE_MSG(m_params.isParameter("spa_data_file"),"ERROR: spa_data_file is missing from SPA parameter list.");
+  m_spa_remap_file = m_params.get<std::string>("spa_remap_file");
 
   // Set the SPA remap weights.  
   // TODO: We may want to provide an option to calculate weights on-the-fly. 
@@ -171,7 +171,7 @@ void SPA::initialize_impl (const RunType /* run_type */)
   using ci_string = ekat::CaseInsensitiveString;
   ci_string no_filename = "none";
   if (m_spa_remap_file == no_filename) {
-    printf("WARNING: SPA Remap File has been set to 'NONE', assuming that SPA data and simulation are on the same grid - skipping horizontal interpolation\n");
+    printf("WARNING: spa_remap_file has been set to 'NONE', assuming that SPA data and simulation are on the same grid - skipping horizontal interpolation\n");
     SPAFunc::set_remap_weights_one_to_one(m_total_global_dofs,m_min_global_dof,m_dofs_gids,SPAHorizInterp);
   } else {
     SPAFunc::get_remap_weights_from_file(m_spa_remap_file,m_total_global_dofs,m_min_global_dof,m_dofs_gids,SPAHorizInterp);

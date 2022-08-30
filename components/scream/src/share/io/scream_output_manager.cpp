@@ -60,18 +60,20 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   set_params(params,field_mgrs);
 
   // Output control
-  auto& out_control_pl = m_params.sublist("Output Control");
+  EKAT_REQUIRE_MSG(m_params.isSublist("output_control"),"Error! The output control YAML file for " + m_casename + " is missing the sublist 'output_control'");
+  auto& out_control_pl = m_params.sublist("output_control");
   m_output_control.frequency  = out_control_pl.get<int>("Frequency");
-  m_output_control.frequency_units = out_control_pl.get<std::string>("Frequency Units");
-  m_output_control.nsteps_since_last_write = 0;
+  m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");
+  m_output_control.nsamples_since_last_write = 0;
+  m_output_control.timestamp_of_last_write   = m_case_t0;
 
   // File specs
   m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File");
   m_output_file_specs.num_snapshots_in_file = 0;
   m_output_file_specs.filename_with_time_string = out_control_pl.get("Timestamp in Filename",true);
   m_output_file_specs.filename_with_mpiranks    = out_control_pl.get("MPI Ranks in Filename",false);
-  m_output_file_specs.filename_with_avg_type    = out_control_pl.get("AVG Type in Filename",true);
-  m_output_file_specs.filename_with_frequency   = out_control_pl.get("Frequency in Filename",true);
+  m_output_file_specs.filename_with_avg_type    = out_control_pl.get("avg_type_in_filename",true);
+  m_output_file_specs.filename_with_frequency   = out_control_pl.get("frequency_in_filename",true);
 
   // For each grid, create a separate output stream.
   if (field_mgrs.size()==1) {
@@ -93,22 +95,30 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   }
 
   const auto has_restart_data = (m_avg_type!=OutputAvgType::Instant && m_output_control.frequency>1);
-  if (has_restart_data) {
-    if (m_params.isSublist("Checkpoint Control")) {
-      // Output control
-      auto& pl = m_params.sublist("Checkpoint Control");
-      m_checkpoint_control.frequency  = pl.get<int>("Frequency");
-      m_checkpoint_control.frequency_units = pl.get<std::string>("Frequency Units");
-      m_checkpoint_control.nsteps_since_last_write = 0;
+  if (has_restart_data && m_params.isSublist("Checkpoint Control")) {
+    // Output control
+    // TODO: It would be great if there was an option where, if Checkpoint Control was not a sublist, we
+    //       could query the restart control information and just use that. 
+    auto& pl = m_params.sublist("Checkpoint Control");
+    m_checkpoint_control.frequency                 = pl.get<int>("Frequency");
+    m_checkpoint_control.frequency_units           = pl.get<std::string>("frequency_units");
+    m_checkpoint_control.nsamples_since_last_write = 0;
+    m_checkpoint_control.timestamp_of_last_write    = case_t0;
 
-      // File specs
-      m_checkpoint_file_specs.max_snapshots_in_file = 1;
-      m_checkpoint_file_specs.num_snapshots_in_file = 0;
-      m_checkpoint_file_specs.filename_with_time_string = pl.get("Timestamp in Filename",true);
-      m_checkpoint_file_specs.filename_with_mpiranks    = pl.get("MPI Ranks in Filename",false);
-      m_checkpoint_file_specs.filename_with_avg_type    = pl.get("AVG Type in Filename",true);
-      m_checkpoint_file_specs.filename_with_frequency   = pl.get("Frequency in Filename",true);
-    }
+    // File specs
+    m_checkpoint_file_specs.max_snapshots_in_file = 1;
+    m_checkpoint_file_specs.num_snapshots_in_file = 0;
+    m_checkpoint_file_specs.filename_with_time_string = pl.get("Timestamp in Filename",true);
+    m_checkpoint_file_specs.filename_with_mpiranks    = pl.get("MPI Ranks in Filename",false);
+    m_checkpoint_file_specs.filename_with_avg_type    = pl.get("avg_type_in_filename",true);
+    m_checkpoint_file_specs.filename_with_frequency   = pl.get("frequency_in_filename",true);
+  } else {
+    // If there is no restart data or there is but no checkpoint control sublist then we initialize
+    // the checkpoint control so that it never writes checkpoints.
+    m_checkpoint_control.frequency  = 0;
+    m_checkpoint_control.frequency_units = "none";
+    m_checkpoint_control.nsamples_since_last_write = 0;
+    m_checkpoint_control.timestamp_of_last_write = case_t0;
   }
 
   // If this is normal output (not the model restart output) and the output specs
@@ -130,10 +140,10 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       // We can use the step counter in run_t0 to check at what point within an output interval
       // the previous simulation was stopped at.
       // NOTE: if you change the output frequency when you restart, this could lead to wonky behavior
-      m_output_control.nsteps_since_last_write = m_run_t0.get_num_steps() % m_output_control.frequency;
+      m_output_control.nsamples_since_last_write = m_run_t0.get_num_steps() % m_output_control.frequency;
 
       // If the type/freq of output needs restart data, we need to read in an output.
-      if (has_restart_data && m_output_control.nsteps_since_last_write>0) {
+      if (has_restart_data && m_output_control.nsamples_since_last_write>0) {
         auto output_restart_filename = find_filename_in_rpointer(hist_restart_casename,false,m_io_comm,m_run_t0);
 
         // Also restart each stream
@@ -162,12 +172,12 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   using namespace scorpio;
 
   // Check if we need to open a new file
-  ++m_output_control.nsteps_since_last_write;
-  ++m_checkpoint_control.nsteps_since_last_write;
+  ++m_output_control.nsamples_since_last_write;
+  ++m_checkpoint_control.nsamples_since_last_write;
 
   // Check if this is a write step (and what kind)
-  const bool is_output_step     = m_output_control.is_write_step();
-  const bool is_checkpoint_step = m_checkpoint_control.is_write_step() && not is_output_step;
+  const bool is_output_step     = m_output_control.is_write_step(timestamp);
+  const bool is_checkpoint_step = m_checkpoint_control.is_write_step(timestamp) && not is_output_step;
   const bool is_write_step      = is_output_step || is_checkpoint_step;
 
   // If neither output or checkpoint, these won't be used anyways,
@@ -252,7 +262,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     // Note: filename might reference an invalid string, but it's only used
     //       in case is_write_step=true, in which case it will *for sure* contain
     //       a valid file name.
-    it->run(filename,is_write_step,m_output_control.nsteps_since_last_write);
+    it->run(filename,is_write_step,m_output_control.nsamples_since_last_write);
   }
 
   if (is_write_step) {
@@ -278,7 +288,11 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     ++filespecs.num_snapshots_in_file;
 
     // Now that we've written output to this file we need reset the nsteps.
-    control.nsteps_since_last_write = 0;
+    control.nsamples_since_last_write = 0;
+
+    // Since we wrote to file we need to reset the nsamples_since_last_write and the timestamp
+    control.nsamples_since_last_write = 0;
+    control.timestamp_of_last_write = timestamp;
 
     // Check if we need to close the output file
     if (filespecs.file_is_full()) {
@@ -288,7 +302,8 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     }
 
     // Whether we wrote an output or a checkpoint, the checkpoint counter needs to be reset
-    m_checkpoint_control.nsteps_since_last_write = 0;
+    m_checkpoint_control.nsamples_since_last_write = 0;
+    m_checkpoint_control.timestamp_of_last_write = timestamp;
   }
 }
 /*===============================================================================================*/

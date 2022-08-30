@@ -14,7 +14,6 @@
 // EKAT headers
 #include "ekat/ekat_assert.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
-#include "ekat/util/ekat_feutils.hpp"
 #include "ekat/util/ekat_test_utils.hpp"
 #include "ekat/ekat_assert.hpp"
 
@@ -24,21 +23,9 @@
 #include "Types.hpp"
 #include "FunctorsBuffersManager.hpp"
 
-static int get_default_fpes () {
-#ifdef SCREAM_FPE
-  return (FE_DIVBYZERO |
-          FE_INVALID   |
-          FE_OVERFLOW);
-#else
-  return 0;
-#endif
-}
-
 TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   using namespace scream;
   using namespace scream::control;
-
-  ekat::enable_fpes(get_default_fpes());
 
   // Load ad parameter list
   const auto& session = ekat::TestSession::get();

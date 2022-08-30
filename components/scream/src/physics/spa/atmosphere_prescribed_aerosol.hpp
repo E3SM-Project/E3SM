@@ -47,13 +47,6 @@ public:
   // The name of the subcomponent
   std::string name () const { return "Simple Prescribed Aerosols (SPA)"; }
 
-  // Get the required grid for subcomponent
-  std::set<std::string> get_required_grids () const {
-    static std::set<std::string> s;
-    s.insert(m_params.get<std::string>("Grid"));
-    return s;
-  }
-
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 

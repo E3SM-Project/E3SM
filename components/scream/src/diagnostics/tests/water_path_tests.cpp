@@ -26,14 +26,13 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
   const int num_global_cols = ncols*comm.size();
 
   ekat::ParameterList gm_params;
-  gm_params.set<std::string>("Reference Grid", "Point Grid");
-  gm_params.set<int>("Number of Global Columns", num_global_cols);
-  gm_params.set<int>("Number of Local Elements", num_local_elems);
-  gm_params.set<int>("Number of Vertical Levels", nlevs);
-  gm_params.set<int>("Number of Gauss Points", np);
+  gm_params.set<int>("number_of_global_columns", num_global_cols);
+  gm_params.set<int>("number_of_local_elements", num_local_elems);
+  gm_params.set<int>("number_of_vertical_levels", nlevs);
+  gm_params.set<int>("number_of_gauss_points", np);
 
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
-  gm->build_all_grids();
+  gm->build_grids();
 
   return gm;
 }
@@ -102,7 +101,6 @@ void run(std::mt19937_64& engine)
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
   register_diagnostics();
   ekat::ParameterList params;
-  params.set<std::string>("Grid", "Point Grid");
   // Vapor
   params.set<std::string>("Diagnostic Name", "Vapor Water Path");
   auto diag_vap = diag_factory.create("VapWaterPath",comm,params);

@@ -38,9 +38,6 @@ public:
   // The type of the block (e.g., dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Group; }
 
-  // The type of grids on which the process is defined
-  std::set<std::string> get_required_grids () const { return m_required_grids; }
-
   // The name of the block
   std::string name () const { return m_group_name; }
 
@@ -106,9 +103,6 @@ protected:
 
   // The list of atm processes in this group
   std::vector<std::shared_ptr<atm_proc_type>>  m_atm_processes;
-
-  // The grids required by this process
-  std::set<std::string>  m_required_grids;
 
   // The schedule type: Parallel vs Sequential
   ScheduleType   m_group_schedule_type;

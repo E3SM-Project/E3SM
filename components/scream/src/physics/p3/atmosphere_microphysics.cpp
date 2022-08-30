@@ -38,8 +38,8 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   Units nondim(0,0,0,0,0,0,0);
   auto micron = m / 1000000;
 
-  const auto& grid_name = m_params.get<std::string>("Grid");
-  m_grid = grids_manager->get_grid(grid_name);
+  m_grid = grids_manager->get_grid("Physics");
+  const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
 

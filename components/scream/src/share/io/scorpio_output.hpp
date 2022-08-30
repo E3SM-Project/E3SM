@@ -40,12 +40,12 @@
  *     GRID_NAME_N:
  *        Field Names:            ARRAY OF STRINGS
  *        IO Grid Name:           STRING                (optional)
- *  Output Control:
+ *  output_control:
  *    Frequency:                  INT
- *    Frequency Units:            STRING                (default: Steps)
+ *    frequency_units:            STRING                (default: nsteps)
  *  Checkpoint Control:
  *    Frequency:                  INT                   (default: 0)
- *    Frequency Units:            STRING                (default: ${Output->Frequency Units})
+ *    frequency_units:            STRING                (default: ${Output->frequency_units})
  *  Restart:
  *    Casename:                   STRING                (default: ${Casename})
  *    Perform Restart:            BOOL                  (default: true)
@@ -57,8 +57,8 @@
  *      average - average of the field over some interval.
  *      min     - minimum value of the field over time interval.
  *      max     - maximum value of the field over time interval.
- *    Here, 'time interval' is described by ${Output Frequency} and ${Output Frequency Units}.
- *    E.g., with 'Output Frequency'=10 and 'Output Frequency Units'="Days", the time interval is 10 days.
+ *    Here, 'time interval' is described by ${Output Frequency} and ${Output frequency_units}.
+ *    E.g., with 'Output Frequency'=10 and 'Output frequency_units'="Days", the time interval is 10 days.
  *  - Fields: parameters specifying fields to output
  *     - GRID_NAME: parameters specifyign fields to output from grid $GRID_NAME
  *        - Field Names: names of fields defined on grid $grid_name that need to be outputed
@@ -66,13 +66,13 @@
  *                        SEGrid fields to PointGrid fields on the fly, to save on output size)
  *  - Max Snapshots Per File: the maximum number of snapshots saved per file. After this many
  *  - Output: parameters for output control
- *    - Frequency: the frequency of output writes (in the units specified by ${Output Frequency Units})
- *    - Frequency Units: the units of output frequency (Steps, Months, Years, Hours, Days,...)
+ *    - Frequency: the frequency of output writes (in the units specified by ${Output frequency_units})
+ *    - frequency_units: the units of output frequency (nsteps, nmonths, nyears, nhours, ndays,...)
  *      snapshots have been written on a single nc file, the class will close the file, and open a new one
  *  - Checkpointing: parameters for checkpointing control
  *    - Frequency: the frequenct of checkpoints writes. This option is used/matters only if
  *      if Averaging Type is *not* Instant. A value of 0 is interpreted as 'no checkpointing'.
- *    - Frequency Units: the units of restart history output.
+ *    - frequency_units: the units of restart history output.
  *  - Restart: parameters for history restart
  *    - Casename: the history restart filename root.
  *    - Perform Restart: if this is a restarted run, and Averaging Type is not Instant, this flag

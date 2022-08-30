@@ -24,8 +24,8 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
     m_atm_logger = std::make_shared<logger_impl_t>("",LogLevel::trace,m_comm);
   }
 
-  if (m_params.isParameter("Number of Subcycles")) {
-    m_num_subcycles = m_params.get<int>("Number of Subcycles");
+  if (m_params.isParameter("number_of_subcycles")) {
+    m_num_subcycles = m_params.get<int>("number_of_subcycles");
   }
   EKAT_REQUIRE_MSG (m_num_subcycles>0,
       "Error! Invalid number of subcycles in param list " + m_params.name() + ".\n"
@@ -48,7 +48,7 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
 
 void AtmosphereProcess::run (const int dt) {
   start_timer (m_timer_prefix + this->name() + "::run");
-  if (m_params.get("Enable Precondition Checks", true)) {
+  if (m_params.get("enable_precondition_checks", true)) {
     // Run 'pre-condition' property checks stored in this AP
     run_precondition_checks();
   }
@@ -65,7 +65,7 @@ void AtmosphereProcess::run (const int dt) {
     run_impl(dt_sub);
   }
 
-  if (m_params.get("Enable Postcondition Checks", true)) {
+  if (m_params.get("enable_postcondition_checks", true)) {
     // Run 'post-condition' property checks stored in this AP
     run_postcondition_checks();
   }

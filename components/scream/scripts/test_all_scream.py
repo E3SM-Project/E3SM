@@ -108,7 +108,8 @@ class FPE(TestProperty):
             self,
             "debug_nopack_fpe",
             "debug pksize=1 floating point exceptions on",
-            DBG.CMAKE_ARGS + [("SCREAM_PACK_SIZE", "1")],
+            DBG.CMAKE_ARGS + [("SCREAM_PACK_SIZE", "1"), ("SCREAM_FPE","True")],
+            uses_baselines=False
         )
 
 ###############################################################################

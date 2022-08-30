@@ -16,10 +16,10 @@ set(SHARE_SRC
   field/field_group.cpp
   field/field_manager.cpp
   grid/abstract_grid.cpp
+  grid/grids_manager.cpp
   grid/mesh_free_grids_manager.cpp
   grid/se_grid.cpp
   grid/point_grid.cpp
-  grid/user_provided_grids_manager.cpp
   grid/remap/abstract_remapper.cpp
   property_checks/property_check.cpp
   property_checks/field_nan_check.cpp

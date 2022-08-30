@@ -27,6 +27,13 @@ AbstractGrid (const std::string& name,
   m_comm.all_reduce(&m_num_local_dofs,&m_num_global_dofs,1,MPI_SUM);
 }
 
+void AbstractGrid::add_alias (const std::string& alias)
+{
+  if (not ekat::contains(m_aliases,alias) and alias!=m_name) {
+    m_aliases.push_back(alias);
+  }
+}
+
 bool AbstractGrid::is_unique () const {
   EKAT_REQUIRE_MSG (m_dofs_set,
       "Error! We cannot establish if this grid is unique before the dofs GIDs are set.\n");

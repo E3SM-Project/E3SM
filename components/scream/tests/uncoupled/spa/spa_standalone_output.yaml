@@ -9,9 +9,9 @@ Field Names:
   - aero_tau_lw
   - aero_tau_sw
   - nccn
-Output Control:
+output_control:
   Frequency: ${NUM_STEPS}
-  Frequency Units: Steps
+  frequency_units: nsteps
   Timestamp in Filename: false
   MPI Ranks in Filename: true
 ...

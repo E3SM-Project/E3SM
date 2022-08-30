@@ -98,7 +98,7 @@ if [ $skip_testing -eq 0 ]; then
     # Add a valgrind and coverage tests for mappy for nightlies
     if [[ $is_at_run == 0 ]]; then
       if [[ "$SCREAM_MACHINE" == "mappy" ]]; then
-        ./scripts/gather-all-data "./scripts/test-all-scream -t cov ${TAS_ARGS}" -l -m $SCREAM_MACHINE
+        ./scripts/gather-all-data "./scripts/test-all-scream -t cov ${TAS_ARGS} -c SCREAM_TEST_SIZE=SHORT" -l -m $SCREAM_MACHINE
         if [[ $? != 0 ]]; then
           fails=$fails+1;
           cov_fail=1
@@ -107,7 +107,7 @@ if [ $skip_testing -eq 0 ]; then
 
       # Add a memcheck test for mappy/weaver for nightlies
       if [[ "$SCREAM_MACHINE" == "mappy" || "$SCREAM_MACHINE" == "weaver" ]]; then
-        ./scripts/gather-all-data "./scripts/test-all-scream -t dbg --mem-check ${TAS_ARGS}" -l -m $SCREAM_MACHINE
+        ./scripts/gather-all-data "./scripts/test-all-scream -t dbg --mem-check ${TAS_ARGS} -c SCREAM_TEST_SIZE=SHORT" -l -m $SCREAM_MACHINE
         if [[ $? != 0 ]]; then
           fails=$fails+1;
           memcheck_fail=1
@@ -148,7 +148,9 @@ if [ $skip_testing -eq 0 ]; then
     # scripts-tests because the merge could change the state of the
     # repo and you never want to do that during testing. Also, CIME
     # V1 cases do not build with SCREAM_FAKE_ONLY on.
-    if [ -z "$SCREAM_FAKE_ONLY" ]; then
+    #
+    # Also, for the nightlies, we use a separate job to run CIME tests
+    if [[ -z "$SCREAM_FAKE_ONLY" && $is_at_run == 1 ]]; then
 
       if [[ $test_v0 == 1 || $test_v1 == 1 ]]; then
         # AT CIME runs may need an upstream merge in order to ensure that any DIFFs
@@ -171,13 +173,8 @@ if [ $skip_testing -eq 0 ]; then
       fi
 
       if [[ $test_v1 == 1 ]]; then
-        if [[ $is_at_run == 1 ]]; then
-          # AT runs should be fast. => run only low resolution
-          ../../cime/scripts/create_test e3sm_scream_v1_lowres --compiler=gnu9 -c -b master
-        else
-          # For nightlies, run both lowres and midres
-          ../../cime/scripts/create_test e3sm_scream_v1 --compiler=gnu9 -c -b master
-        fi
+        # AT runs should be fast. => run only low resolution
+        ../../cime/scripts/create_test e3sm_scream_v1_lowres --compiler=gnu9 -c -b master
         if [[ $? != 0 ]]; then
           fails=$fails+1;
           v1_fail=1
