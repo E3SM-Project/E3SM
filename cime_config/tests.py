@@ -454,7 +454,7 @@ _TESTS = {
 
     "e3sm_scream_v1" : {
         "time"    : "03:00:00",
-        "inherit" : ("e3sm_scream_v1_lowres", "e3sm_scream_v1_medres"),
+        "inherit" : ("e3sm_scream_v1_lowres", "e3sm_scream_v1_medres","e3sm_scream_v1_mpassi"),
     },
 
 
@@ -485,6 +485,19 @@ _TESTS = {
             "SMS_D_Ln12.ne120_r0125_oRRS18to6v3.F2010-SCREAMv1",
             "SMS_Ln12.ne120_ne120.F2010-SCREAMv1",
 #            "SMS_Ln12.ne120_r0125_oRRS18to6v3.F2000-SCREAMv1-AQP1", add when aquap 120 inputs available
+            )
+    },
+
+    "e3sm_scream_v1_mpassi" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "ERP_D_Ln9.ne4_oQU240.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
+            "SMS_D_Ln9.ne4_oQU240.F2010-SCREAMv1-MPASSI-noAero",
+            "ERP_Ln22.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
+            "ERS_D_Ln22.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
+            "ERS_Ln22.ne30_oECv3.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
+            "PEM_Ln90.ne30pg2_EC30to60E2r2.F2010-SCREAMv1-MPASSI",
+            "ERS_Ln22.ne30pg2_EC30to60E2r2.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
             )
     },
 
