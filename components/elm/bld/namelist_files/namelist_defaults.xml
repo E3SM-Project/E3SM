@@ -124,7 +124,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- ================================================================== -->
 <!-- FATES default parameter file                                       -->
 <!-- ================================================================== -->
-<fates_paramfile >lnd/clm2/paramdata/fates_params_api.22.1.0_12pft_c220307.nc</fates_paramfile>
+<fates_paramfile >lnd/clm2/paramdata/fates_params_api.24.0.0_12pft_c220719.nc</fates_paramfile>
 
 <!-- soil order related parameters (relative to {csmdata}) -->
 <fsoilordercon             >lnd/clm2/paramdata/CNP_parameters_c131108.nc</fsoilordercon>
@@ -1994,6 +1994,7 @@ this mask will have smb calculated over the entire global land surface
 <use_fates_fixed_biogeog       use_fates=".true.">.false.</use_fates_fixed_biogeog>
 <use_fates_nocomp              use_fates=".true.">.false.</use_fates_nocomp>
 <use_fates_planthydro          use_fates=".true.">.false.</use_fates_planthydro>
+<use_fates_tree_damage         use_fates=".true.">.false.</use_fates_tree_damage>
 <use_fates_ed_st3              use_fates=".true.">.false.</use_fates_ed_st3>
 <use_fates_ed_prescribed_phys  use_fates=".true.">.false.</use_fates_ed_prescribed_phys>
 <use_fates_logging             use_fates=".true.">.false.</use_fates_logging>
