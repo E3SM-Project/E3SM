@@ -220,20 +220,21 @@ public:
         Field& get_internal_field(const std::string& field_name);
 
   // Add a pre-built property check (PC) for precondition, postcondition, or invariant (i.e., pre+post) check.
-  template<CheckFailHandling CFH = CheckFailHandling::Fatal>
-  void add_precondition_check (const prop_check_ptr& prop_check);
-  template<CheckFailHandling CFH = CheckFailHandling::Fatal>
-  void add_postcondition_check (const prop_check_ptr& prop_check);
-  template<CheckFailHandling CFH = CheckFailHandling::Fatal>
-  void add_invariant_check (const prop_check_ptr& prop_check);
+  void add_precondition_check  (const prop_check_ptr& prop_check,
+                                const CheckFailHandling cfh = CheckFailHandling::Fatal);
+  void add_postcondition_check (const prop_check_ptr& prop_check,
+                                const CheckFailHandling cfh = CheckFailHandling::Fatal);
+  void add_invariant_check     (const prop_check_ptr& prop_check,
+                                const CheckFailHandling cfh = CheckFailHandling::Fatal);
 
   // Build a property check on the fly, then call the methods above
-  template<typename FPC, CheckFailHandling CFH = CheckFailHandling::Fatal, typename... Args>
+  template<typename FPC, typename... Args>
   void add_precondition_check (const Args... args);
-  template<typename FPC, CheckFailHandling CFH = CheckFailHandling::Fatal, typename... Args>
+  template<typename FPC, typename... Args>
   void add_postcondition_check (const Args... args);
-  template<typename FPC, CheckFailHandling CFH = CheckFailHandling::Fatal, typename... Args>
+  template<typename FPC, typename... Args>
   void add_invariant_check (const Args... args);
+  template<typename FPC, typename... Args>
 
   // For restarts, it is possible that some atm proc need to write/read some ad-hoc data.
   // E.g., some atm proc might need to read/write certain scalar values.
@@ -503,69 +504,24 @@ private:
 
 // ================= IMPLEMENTATION ================== //
 
-template<typename FPC, CheckFailHandling CFH, typename... Args>
+template<typename FPC, typename... Args>
 void AtmosphereProcess::
 add_precondition_check (const Args... args) {
   auto fpc = std::make_shared<FPC>(args...);
-  add_precondition_check<CFH>(fpc);
+  add_precondition_check(fpc);
 }
-template<typename FPC, CheckFailHandling CFH, typename... Args>
+template<typename FPC, typename... Args>
 void AtmosphereProcess::
 add_postcondition_check (const Args... args) {
   auto fpc = std::make_shared<FPC>(args...);
-  add_postcondition_check<CFH>(fpc);
+  add_postcondition_check(fpc);
 }
-template<typename FPC, CheckFailHandling CFH, typename... Args>
+template<typename FPC, typename... Args>
 void AtmosphereProcess::
 add_invariant_check (const Args... args) {
   auto fpc = std::make_shared<FPC>(args...);
-  add_invariant_check<CFH>(fpc);
+  add_invariant_check(fpc);
 }
-
-template<CheckFailHandling CFH>
-void AtmosphereProcess::
-add_invariant_check (const prop_check_ptr& pc)
-{
-  add_precondition_check<CFH> (pc);
-  add_postcondition_check<CFH> (pc);
-}
-template<CheckFailHandling CFH>
-void AtmosphereProcess::
-add_precondition_check (const prop_check_ptr& pc)
-{
-  // If a pc can repair, we need to make sure the repairable
-  // fields are among the computed fields of this atm proc.
-  // Otherwise, it would be possible for this AP to implicitly
-  // update a field, without that appearing in the dag.
-  for (const auto& ptr : pc->repairable_fields()) {
-    const auto& fid = ptr->get_header().get_identifier();
-    EKAT_REQUIRE_MSG (
-        has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
-        "Error! Input property check can repair a non-computed field.\n"
-        "  - Atmosphere process name: " + name() + "\n"
-        "  - Property check name: " + name() + "\n");
-  }
-  m_precondition_checks.push_back(std::make_pair(CFH,pc));
-}
-template<CheckFailHandling CFH>
-void AtmosphereProcess::
-add_postcondition_check (const prop_check_ptr& pc)
-{
-  // If a pc can repair, we need to make sure the repairable
-  // fields are among the computed fields of this atm proc.
-  // Otherwise, it would be possible for this AP to implicitly
-  // update a field, without that appearing in the dag.
-  for (const auto& ptr : pc->repairable_fields()) {
-    const auto& fid = ptr->get_header().get_identifier();
-    EKAT_REQUIRE_MSG (
-        has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
-        "Error! Input property check can repair a non-computed field.\n"
-        "  - Atmosphere process name: " + name() + "\n"
-        "  - Property check name: " + name() + "\n");
-  }
-  m_postcondition_checks.push_back(std::make_pair(CFH,pc));
-}
-
 
 // A short name for the factory for atmosphere processes
 // WARNING: you do not need to write your own creator function to register your atmosphere process in the factory.

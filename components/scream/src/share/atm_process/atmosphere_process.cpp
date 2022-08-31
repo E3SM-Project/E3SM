@@ -468,6 +468,49 @@ get_internal_field(const std::string& field_name) const {
   return get_internal_field_impl(field_name);
 }
 
+void AtmosphereProcess::
+add_invariant_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
+{
+  add_precondition_check (pc,cfh);
+  add_postcondition_check (pc,cfh);
+}
+
+void AtmosphereProcess::
+add_precondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
+{
+  // If a pc can repair, we need to make sure the repairable
+  // fields are among the computed fields of this atm proc.
+  // Otherwise, it would be possible for this AP to implicitly
+  // update a field, without that appearing in the dag.
+  for (const auto& ptr : pc->repairable_fields()) {
+    const auto& fid = ptr->get_header().get_identifier();
+    EKAT_REQUIRE_MSG (
+        has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
+        "Error! Input property check can repair a non-computed field.\n"
+        "  - Atmosphere process name: " + name() + "\n"
+        "  - Property check name: " + name() + "\n");
+  }
+  m_precondition_checks.push_back(std::make_pair(pc,cfh));
+}
+
+void AtmosphereProcess::
+add_postcondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
+{
+  // If a pc can repair, we need to make sure the repairable
+  // fields are among the computed fields of this atm proc.
+  // Otherwise, it would be possible for this AP to implicitly
+  // update a field, without that appearing in the dag.
+  for (const auto& ptr : pc->repairable_fields()) {
+    const auto& fid = ptr->get_header().get_identifier();
+    EKAT_REQUIRE_MSG (
+        has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
+        "Error! Input property check can repair a non-computed field.\n"
+        "  - Atmosphere process name: " + name() + "\n"
+        "  - Property check name: " + name() + "\n");
+  }
+  m_postcondition_checks.push_back(std::make_pair(pc,cfh));
+}
+
 void AtmosphereProcess::set_fields_and_groups_pointers () {
   for (auto& f : m_fields_in) {
     const auto& fid = f.get_header().get_identifier();
