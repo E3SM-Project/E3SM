@@ -307,7 +307,6 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
 
   // Whether or not to do MCICA subcolumn sampling
   m_do_subcol_sampling = m_params.get<bool>("do_subcol_sampling",false);
-  EKAT_REQUIRE_MSG(not m_do_subcol_sampling, "Error! RRTMGP does not yet support do_subcol_sampling = true");
 
   // Initialize yakl
   if(!yakl::isInitialized()) { yakl::init(); }
