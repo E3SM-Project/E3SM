@@ -656,7 +656,12 @@ void HommeDynamics::homme_post_process (const int dt) {
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;
 
-  if (fv_phys_active()) return;
+  if (fv_phys_active()) {
+    // Apply Rayleigh friction to update temperature and horiz_winds
+    rayleigh_friction_apply(dt);
+
+    return;
+  }
   
   // Convert VTheta_dp->T, store T,uv, and possibly w in FT, FM,
   // compute p_int on ref grid.
