@@ -1362,7 +1362,7 @@ contains
     ! Dummy arguments
     character(len=*),    intent(in) :: filename       ! PIO filename
     character(len=*),    intent(in) :: varname
-    integer(kind=c_int), intent(in), value :: buf_size
+    integer(kind=c_int), intent(in) :: buf_size
     real(kind=c_float),  intent(in) :: buf(buf_size)
 
     ! Local variables
@@ -1392,7 +1392,7 @@ contains
     ! Dummy arguments
     character(len=*),    intent(in) :: filename       ! PIO filename
     character(len=*),    intent(in) :: varname
-    integer(kind=c_int), intent(in), value :: buf_size
+    integer(kind=c_int), intent(in) :: buf_size
     real(kind=c_double), intent(in) :: buf(buf_size)
 
     ! Local variables
@@ -1430,7 +1430,7 @@ contains
     ! Dummy arguments
     character(len=*),    intent(in) :: filename       ! PIO filename
     character(len=*),    intent(in) :: varname
-    integer(kind=c_int), intent(in), value :: buf_size
+    integer(kind=c_int), intent(in) :: buf_size
     integer(kind=c_int), intent(in) :: buf(buf_size)
 
     ! Local variables
@@ -1477,7 +1477,7 @@ contains
     ! Dummy arguments
     character(len=*),     intent(in) :: filename       ! PIO filename
     character(len=*),     intent(in) :: varname
-    integer (kind=c_int), intent(in), value :: buf_size
+    integer (kind=c_int), intent(in) :: buf_size
     real(kind=c_double),  intent(out) :: buf(buf_size)
     integer, intent(in)          :: time_index
 
@@ -1513,7 +1513,7 @@ contains
     ! Dummy arguments
     character(len=*),     intent(in) :: filename       ! PIO filename
     character(len=*),     intent(in) :: varname
-    integer (kind=c_int), intent(in), value :: buf_size
+    integer (kind=c_int), intent(in) :: buf_size
     real(kind=c_float),  intent(out) :: buf(buf_size)
     integer, intent(in)          :: time_index
 
@@ -1549,7 +1549,7 @@ contains
     ! Dummy arguments
     character(len=*),     intent(in) :: filename       ! PIO filename
     character(len=*),     intent(in) :: varname
-    integer (kind=c_int), intent(in), value :: buf_size
+    integer (kind=c_int), intent(in) :: buf_size
     integer (kind=c_int), intent(out) :: buf(buf_size)
     integer, intent(in)          :: time_index
 
