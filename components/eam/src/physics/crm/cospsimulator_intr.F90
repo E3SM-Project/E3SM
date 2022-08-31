@@ -1994,6 +1994,8 @@ CONTAINS
         call packed_average(nc, nx, ny, cospOUTpacked%isccp_meanalbedocld, cospOUT%isccp_meanalbedocld)
         call packed_average(nc, nx, ny, cospOUTpacked%isccp_meanptop     , cospOUT%isccp_meanptop     )
         call packed_average(nc, nx, ny, cospOUTpacked%isccp_meantaucld   , cospOUT%isccp_meantaucld   )
+        call packed_average(nc, nx, ny, cospOUTpacked%isccp_meantb       , cospOUT%isccp_meantb       )
+        call packed_average(nc, nx, ny, cospOUTPacked%isccp_meantbclr    , cospout%isccp_meantbclr    )
       end if
 
       ! CALIPSO SIMULATOR OUTPUTS
