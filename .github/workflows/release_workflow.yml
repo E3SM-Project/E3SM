@@ -48,9 +48,9 @@ jobs:
           git clone https://github.com/E3SM-Project/e3sm_diags.git --branch gh-pages --single-branch gh-pages
 
           cd gh-pages
-          # Replace master docs to populate dropdown with latest tags
-          rm -r _build/html/master
-          # Only copy docs for master and current tag
+          # Replace main docs to populate dropdown with latest tags
+          rm -r _build/html/main
+          # Only copy docs for main and current tag
           cp -r -n ../docs/_build/html _build/
 
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
