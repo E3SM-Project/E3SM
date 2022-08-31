@@ -286,8 +286,8 @@ contains
 
     type(c_ptr), intent(in) :: filename_in
     type(c_ptr), intent(in) :: varname_in
-    integer(kind=c_int), intent(in) :: buf(buf_size)
     integer(kind=c_int), intent(in), value :: buf_size
+    integer(kind=c_int), intent(in) :: buf(buf_size)
 
     character(len=256) :: filename
     character(len=256) :: varname
@@ -302,8 +302,8 @@ contains
 
     type(c_ptr), intent(in) :: filename_in
     type(c_ptr), intent(in) :: varname_in
-    real(kind=c_float), intent(in) :: buf(buf_size)
     integer(kind=c_int), intent(in), value :: buf_size
+    real(kind=c_float), intent(in) :: buf(buf_size)
 
     character(len=256) :: filename
     character(len=256) :: varname
@@ -318,8 +318,8 @@ contains
 
     type(c_ptr), intent(in) :: filename_in
     type(c_ptr), intent(in) :: varname_in
-    real(kind=c_double), intent(in) :: buf(buf_size)
     integer(kind=c_int), intent(in), value :: buf_size
+    real(kind=c_double), intent(in) :: buf(buf_size)
 
     character(len=256) :: filename
     character(len=256) :: varname
@@ -336,8 +336,8 @@ contains
     type(c_ptr), intent(in) :: filename_in
     type(c_ptr), intent(in) :: varname_in
     integer(kind=c_int), value, intent(in) :: time_index ! zero-based
-    integer(kind=c_int), intent(out) :: buf(buf_size)
     integer(kind=c_int), intent(in), value :: buf_size
+    integer(kind=c_int), intent(out) :: buf(buf_size)
 
     character(len=256) :: filename
     character(len=256) :: varname
@@ -354,8 +354,8 @@ contains
     type(c_ptr), intent(in) :: filename_in
     type(c_ptr), intent(in) :: varname_in
     integer(kind=c_int), value, intent(in) :: time_index ! zero-based
-    real(kind=c_float), intent(out) :: buf(buf_size)
     integer(kind=c_int), intent(in), value :: buf_size
+    real(kind=c_float), intent(out) :: buf(buf_size)
 
     character(len=256) :: filename
     character(len=256) :: varname
@@ -372,8 +372,8 @@ contains
     type(c_ptr), intent(in) :: filename_in
     type(c_ptr), intent(in) :: varname_in
     integer(kind=c_int), value, intent(in) :: time_index ! zero-based
-    real(kind=c_double), intent(out) :: buf(buf_size)
     integer(kind=c_int), intent(in), value :: buf_size
+    real(kind=c_double), intent(out) :: buf(buf_size)
 
     character(len=256) :: filename
     character(len=256) :: varname

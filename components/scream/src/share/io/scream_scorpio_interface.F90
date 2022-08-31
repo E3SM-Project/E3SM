@@ -50,7 +50,7 @@ module scream_scorpio_interface
   use pio_nf,       only: PIO_enddef, PIO_inq_dimid, PIO_inq_dimlen, PIO_inq_varid
   use pionfatt_mod, only: PIO_put_att   => put_att
 
-  use mpi
+  use mpi, only: mpi_abort, mpi_comm_size, mpi_comm_rank
 
   use iso_c_binding, only: c_float, c_double, c_int
   implicit none
@@ -1362,8 +1362,8 @@ contains
     ! Dummy arguments
     character(len=*),    intent(in) :: filename       ! PIO filename
     character(len=*),    intent(in) :: varname
-    real(kind=c_float),  intent(in) :: buf(buf_size)
     integer(kind=c_int), intent(in), value :: buf_size
+    real(kind=c_float),  intent(in) :: buf(buf_size)
 
     ! Local variables
 
@@ -1392,8 +1392,8 @@ contains
     ! Dummy arguments
     character(len=*),    intent(in) :: filename       ! PIO filename
     character(len=*),    intent(in) :: varname
-    real(kind=c_double), intent(in) :: buf(buf_size)
     integer(kind=c_int), intent(in), value :: buf_size
+    real(kind=c_double), intent(in) :: buf(buf_size)
 
     ! Local variables
 
@@ -1430,8 +1430,8 @@ contains
     ! Dummy arguments
     character(len=*),    intent(in) :: filename       ! PIO filename
     character(len=*),    intent(in) :: varname
-    integer(kind=c_int), intent(in) :: buf(buf_size)
     integer(kind=c_int), intent(in), value :: buf_size
+    integer(kind=c_int), intent(in) :: buf(buf_size)
 
     ! Local variables
 
@@ -1477,8 +1477,8 @@ contains
     ! Dummy arguments
     character(len=*),     intent(in) :: filename       ! PIO filename
     character(len=*),     intent(in) :: varname
-    real(kind=c_double),  intent(out) :: buf(buf_size)
     integer (kind=c_int), intent(in), value :: buf_size
+    real(kind=c_double),  intent(out) :: buf(buf_size)
     integer, intent(in)          :: time_index
 
     ! Local variables
@@ -1513,8 +1513,8 @@ contains
     ! Dummy arguments
     character(len=*),     intent(in) :: filename       ! PIO filename
     character(len=*),     intent(in) :: varname
-    real(kind=c_float),  intent(out) :: buf(buf_size)
     integer (kind=c_int), intent(in), value :: buf_size
+    real(kind=c_float),  intent(out) :: buf(buf_size)
     integer, intent(in)          :: time_index
 
     ! Local variables
@@ -1549,8 +1549,8 @@ contains
     ! Dummy arguments
     character(len=*),     intent(in) :: filename       ! PIO filename
     character(len=*),     intent(in) :: varname
-    integer (kind=c_int), intent(out) :: buf(buf_size)
     integer (kind=c_int), intent(in), value :: buf_size
+    integer (kind=c_int), intent(out) :: buf(buf_size)
     integer, intent(in)          :: time_index
 
     ! Local variables
