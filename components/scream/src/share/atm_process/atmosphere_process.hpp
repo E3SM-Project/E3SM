@@ -496,6 +496,9 @@ private:
 
   // Whether we need to update time stamps at the end of the run method
   bool m_update_time_stamps = true;
+
+  // Log level for when property checks perform a repair
+  ekat::logger::LogLevel  m_repair_log_level;
 };
 
 // ================= IMPLEMENTATION ================== //

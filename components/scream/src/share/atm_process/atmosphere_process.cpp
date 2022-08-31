@@ -32,6 +32,21 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
       "  - Num subcycles: " + std::to_string(m_num_subcycles) + "\n");
 
   m_timer_prefix = m_params.get<std::string>("Timer Prefix","EAMxx::");
+
+  const auto& repair_log_level = m_params.get<std::string>("repair_log_level","warn");
+  if (repair_log_level=="off") {
+    m_repair_log_level = LogLevel::off;
+  } else if (repair_log_level=="trace") {
+    m_repair_log_level = LogLevel::trace;
+  } else if (repair_log_level=="debug") {
+    m_repair_log_level = LogLevel::debug;
+  } else if (repair_log_level=="info") {
+    m_repair_log_level = LogLevel::info;
+  } else if (repair_log_level=="warn") {
+    m_repair_log_level = LogLevel::warn;
+  } else {
+    EKAT_ERROR_MSG ("Invalid value for 'repair_log_level': " + repair_log_level + "\n");
+  }
 }
 
 void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type) {
@@ -182,6 +197,7 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
 
 void AtmosphereProcess::run_precondition_checks () const {
   // Run all pre-condition property checks
+
   for (const auto& it : m_precondition_checks) {
     const auto& pc = it.second;
 
@@ -191,10 +207,11 @@ void AtmosphereProcess::run_precondition_checks () const {
     } else if (res_and_msg.result==CheckResult::Repairable) {
       // Ok, we can fix this
       pc->repair();
-      std::cout << "WARNING: Pre-condition property check failed and repaired.\n"
+      log (m_repair_log_level,
+        "WARNING: Pre-condition property check failed and repaired.\n"
         "  - Atmosphere process name: " + name() + "\n"
         "  - Property check name: " + pc->name() + "\n"
-        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n";
+        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
     } else {
       // Ugh, the test failed badly, with no chance to repair it.
       if (it.first==CheckFailHandling::Warning) {
@@ -229,10 +246,11 @@ void AtmosphereProcess::run_postcondition_checks () const {
     } else if (res_and_msg.result==CheckResult::Repairable) {
       // Ok, we can fix this
       pc->repair();
-      std::cout << "WARNING: Post-condition property check failed and repaired.\n"
+      log (m_repair_log_level,
+        "WARNING: Post-condition property check failed and repaired.\n"
         "  - Property check name: " + pc->name() + "\n"
         "  - Atmosphere process name: " + name() + "\n"
-        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n";
+        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
     } else {
       // Ugh, the test failed badly, with no chance to repair it.
       if (it.first==CheckFailHandling::Warning) {
