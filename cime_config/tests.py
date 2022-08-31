@@ -454,7 +454,7 @@ _TESTS = {
 
     "e3sm_scream_v1" : {
         "time"    : "03:00:00",
-        "inherit" : ("e3sm_scream_v1_lowres", "e3sm_scream_v1_medres","e3sm_scream_v1_mpassi"),
+        "inherit" : ("e3sm_scream_v1_lowres", "e3sm_scream_v1_medres", "e3sm_scream_v1_mpassi"),
     },
 
 
