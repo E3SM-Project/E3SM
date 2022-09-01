@@ -12,6 +12,18 @@ endif()
 # RRTMGP++ requires YAKL
 add_subdirectory(${SCREAM_BASE_DIR}/../../externals/YAKL ${CMAKE_BINARY_DIR}/externals/YAKL)
 target_compile_options(yakl PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${YAKL_CXX_FLAGS}>)
+
+# If HAVE_MPI is defined, yakl needs to link against MPI. To be safe, we check
+# any CMake property that could make yakl see that CPP macro
+get_directory_property (DIR_DEFS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} COMPILE_DEFINITIONS )
+get_directory_property (DIR_FLAGS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} COMPILE_FLAGS )
+get_target_property(YAKL_FLAGS yakl COMPILE_FLAGS)
+get_target_property(YAKL_DEFS yakl COMPILE_DEFINITIONS)
+if ("${DIR_DEFS} ${DIR_FLAGS} ${YAKL_DEFS} ${YAKL_FLAGS} ${CMAKE_CXX_FLAGS}" MATCHES "HAVE_MPI")
+  cmake_policy (SET CMP0079 NEW)
+  find_package(MPI REQUIRED COMPONENTS C)
+  target_link_libraries (yakl PUBLIC MPI::MPI_C)
+endif()
 EkatDisableAllWarning(yakl)
 
 # For debug builds, set -DYAKL_DEBUG
