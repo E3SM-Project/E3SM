@@ -12,7 +12,16 @@ function(build_scream)
     set (CMAKE_C_FLAGS ${CFLAGS})
     set (CMAKE_CXX_FLAGS ${CXXFLAGS})
     set (CMAKE_Fortran_FLAGS ${FFLAGS})
-    add_compile_definitions (${CPPDEFS})
+
+    # Strip leading space, or else add_compile_definitions will add
+    # an empty definition '-D `, which will cause compiler errors
+    # string (REGEX REPLACE "^ " "" CPPDEFS "${CPPDEFS}")
+    # add_compile_definitions expects a list of definitinos, each
+    # one provided without -D. So 1) replace ' ' with ';', and
+    # 2) strip '-D'/
+    string (REPLACE " " ";" CPPDEFS "${CPPDEFS}")
+    string (REPLACE "-D" "" CPPDEFS "${CPPDEFS}")
+    add_compile_definitions ("${CPPDEFS}")
 
     # Include machine file here
     include(${CMAKE_SOURCE_DIR}/scream/cmake/machine-files/${MACH}.cmake)
