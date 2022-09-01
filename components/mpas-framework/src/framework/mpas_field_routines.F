@@ -3172,32 +3172,32 @@ module mpas_field_routines
 !> Masks the source field using a masking array.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_mask_field1d_mask1d_real(field, mask, maskedField) !{{{
+   subroutine mpas_mask_field1d_mask1d_real(field, mask, maskedArray) !{{{
 
       implicit none
 
       type (field1DReal), intent(in), pointer :: field
       type (field1DInteger), intent(in), pointer :: mask
-      real (kind=RKIND), dimension(:), intent(inout), pointer :: maskedField
+      real (kind=RKIND), dimension(:), intent(inout), pointer :: maskedArray
 
       real (kind=RKIND), dimension(:), pointer :: fieldArray
-      integer, dimension(:), pointer :: maskArray
+      integer, dimension(:), pointer :: maskingArray
 
       integer, dimension(1) :: fieldDims
       integer, dimension(1) :: maskDims
       integer :: blockLength
 
-      blockLength = SIZE(maskedField, dim=1)
+      blockLength = SIZE(maskedArray, dim=1)
       fieldArray => field % array(1:blockLength)
-      maskArray  => mask  % array(1:blockLength)
+      maskingArray  => mask  % array(1:blockLength)
 
       fieldDims = field % dimSizes
       maskDims = mask % dimSizes
 
-      if (any(maskArray == 1)) then
+      if (any(maskingArray == 1)) then
          if (fieldDims(1) == maskDims(1) ) then
-            where (maskArray == 0)
-               maskedField = field % missingValue
+            where (maskingArray == 0)
+               maskedArray = field % missingValue
             endwhere
          else
             call mpas_log_write('Masking array and field array do not have'// &
@@ -3223,34 +3223,34 @@ module mpas_field_routines
 !> Masks the source field using a masking array.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_mask_field2d_mask2d_real(field, mask, maskedField) !{{{
+   subroutine mpas_mask_field2d_mask2d_real(field, mask, maskedArray) !{{{
 
       implicit none
 
       type (field2DReal), intent(in), pointer :: field
       type (field2DInteger), intent(in), pointer :: mask
-      real (kind=RKIND), dimension(:,:), intent(inout), pointer :: maskedField
+      real (kind=RKIND), dimension(:,:), intent(inout), pointer :: maskedArray
 
       real (kind=RKIND), dimension(:,:), pointer :: fieldArray
-      integer, dimension(:,:), pointer :: maskArray
+      integer, dimension(:,:), pointer :: maskingArray
 
       integer, dimension(2) :: fieldDims
       integer, dimension(2) :: maskDims
       integer :: blockLength
       character(len=100) :: log_string
 
-      blockLength = SIZE(maskedField, dim=2)
+      blockLength = SIZE(maskedArray, dim=2)
       fieldArray => field % array(:, 1:blockLength)
-      maskArray  => mask  % array(:, 1:blockLength)
+      maskingArray  => mask  % array(:, 1:blockLength)
 
       fieldDims = field % dimSizes
       maskDims = mask % dimSizes
-      maskedField = fieldArray
+      maskedArray = fieldArray
 
-      if (any(maskArray == 1)) then
+      if (any(maskingArray == 1)) then
          if (fieldDims(1) == maskDims(1) .and. fieldDims(2) == maskDims(2)) then
-            where (maskArray == 0)
-               maskedField = field % missingValue
+            where (maskingArray == 0)
+               maskedArray = field % missingValue
             endwhere
          else
             call mpas_log_write('Masking array and field array do not share dimensions', &
@@ -3277,42 +3277,42 @@ module mpas_field_routines
 !> Masks the source field using a masking array.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_mask_field2d_mask1d_real(field, mask, maskedField) !{{{
+   subroutine mpas_mask_field2d_mask1d_real(field, mask, maskedArray) !{{{
 
       implicit none
 
       type (field2DReal), intent(in), pointer :: field
       type (field1DInteger), intent(in), pointer :: mask
-      real (kind=RKIND), dimension(:,:), intent(inout), pointer :: maskedField
+      real (kind=RKIND), dimension(:,:), intent(inout), pointer :: maskedArray
 
       real (kind=RKIND), dimension(:,:), pointer :: fieldArray
-      integer, dimension(:), pointer :: maskArray
+      integer, dimension(:), pointer :: maskingArray
       integer :: i, j
 
       integer, dimension(2) :: fieldDims
       integer, dimension(1) :: maskDims
       integer :: blockLength
 
-      blockLength = SIZE(maskedField, dim=2)
+      blockLength = SIZE(maskedArray, dim=2)
       fieldArray => field % array(:, 1:blockLength)
 
       fieldDims = field % dimSizes
       maskDims = mask % dimSizes
-      maskArray  => mask % array
+      maskingArray  => mask % array
 
-      if (any(maskArray == 1)) then
+      if (any(maskingArray == 1)) then
          if (fieldDims(1) == maskDims(1)) then
-            maskArray  => mask % array
-            do j = 1, SIZE(maskedField, dim=2)
-               where (maskArray == 0)
-                  maskedField(:, j) = field % missingValue
+            maskingArray  => mask % array
+            do j = 1, SIZE(maskedArray, dim=2)
+               where (maskingArray == 0)
+                  maskedArray(:, j) = field % missingValue
                endwhere
             enddo
          elseif (fieldDims(2) == maskDims(1)) then
-            maskArray  => mask % array(1:blockLength)
-            do i = 1, SIZE(maskedField, dim=1)
-               where (maskArray == 0)
-                  maskedField(i, :) = field % missingValue
+            maskingArray  => mask % array(1:blockLength)
+            do i = 1, SIZE(maskedArray, dim=1)
+               where (maskingArray == 0)
+                  maskedArray(i, :) = field % missingValue
                endwhere
             enddo
          else
@@ -3340,34 +3340,34 @@ module mpas_field_routines
 !> Masks the source field using a masking array.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_mask_field3d_mask3d_real(field, mask, maskedField) !{{{
+   subroutine mpas_mask_field3d_mask3d_real(field, mask, maskedArray) !{{{
 
       implicit none
 
       type (field3DReal), intent(in), pointer :: field
       type (field3DInteger), intent(in), pointer :: mask
-      real (kind=RKIND), dimension(:,:,:), intent(inout), pointer :: maskedField
+      real (kind=RKIND), dimension(:,:,:), intent(inout), pointer :: maskedArray
 
       real (kind=RKIND), dimension(:,:,:), pointer :: fieldArray
-      integer, dimension(:,:,:), pointer :: maskArray
+      integer, dimension(:,:,:), pointer :: maskingArray
 
       integer, dimension(3) :: fieldDims
       integer, dimension(3) :: maskDims
       integer :: blockLength
 
-      blockLength = SIZE(maskedField, dim=3)
+      blockLength = SIZE(maskedArray, dim=3)
       fieldArray => field % array(:, :, 1:blockLength)
-      maskArray  => mask  % array(:, :, 1:blockLength)
+      maskingArray  => mask  % array(:, :, 1:blockLength)
 
       fieldDims = field % dimSizes
       maskDims = mask % dimSizes
 
-      if (any(maskArray == 1)) then
+      if (any(maskingArray == 1)) then
          if (fieldDims(1) == maskDims(1) .and. &
              fieldDims(2) == maskDims(2) .and. &
              fieldDims(3) == maskDims(3) ) then
-            where (maskArray == 0)
-               maskedField = field % missingValue
+            where (maskingArray == 0)
+               maskedArray = field % missingValue
             endwhere
          else
             call mpas_log_write('Masking array and field array do not have the'// &
@@ -3393,16 +3393,16 @@ module mpas_field_routines
 !> Masks the source field using a masking array.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_mask_field3d_mask2d_real(field, mask, maskedField) !{{{
+   subroutine mpas_mask_field3d_mask2d_real(field, mask, maskedArray) !{{{
 
       implicit none
 
       type (field3DReal), intent(in), pointer :: field
       type (field2DInteger), intent(in), pointer :: mask
-      real (kind=RKIND), dimension(:,:,:), intent(inout) :: maskedField
+      real (kind=RKIND), dimension(:,:,:), intent(inout) :: maskedArray
 
       real (kind=RKIND), dimension(:,:,:), pointer :: fieldArray
-      integer, dimension(:,:), pointer :: maskArray
+      integer, dimension(:,:), pointer :: maskingArray
       integer :: i, k
 
       integer, dimension(3) :: fieldDims
@@ -3410,7 +3410,7 @@ module mpas_field_routines
       integer :: blockLength
       character(len=100) :: log_string
 
-      blockLength = SIZE(maskedField, dim=3)
+      blockLength = SIZE(maskedArray, dim=3)
       fieldArray => field % array(:, :, 1:blockLength)
 
       fieldDims = field % dimSizes
@@ -3420,17 +3420,17 @@ module mpas_field_routines
          ! Here we require that the dimension order in mask match the dimension
          ! order in field
          if (fieldDims(3) == maskDims(2) .and. fieldDims(2) == maskDims(1)) then
-            maskArray  => mask % array(:, 1:blockLength)
-            do i = 1, SIZE(maskedField, dim=1)
-               where (maskArray == 0)
-                  maskedField(i, :, :) = field % missingValue
+            maskingArray  => mask % array(:, 1:blockLength)
+            do i = 1, SIZE(maskedArray, dim=1)
+               where (maskingArray == 0)
+                  maskedArray(i, :, :) = field % missingValue
                endwhere
             enddo
          elseif (fieldDims(2) == maskDims(2) .and. fieldDims(1) == maskDims(1)) then
-            maskArray  => mask % array
-            do k = 1, SIZE(maskedField, dim=3)
-               where (maskArray == 0)
-                  maskedField(:, :, k) = field % missingValue
+            maskingArray  => mask % array
+            do k = 1, SIZE(maskedArray, dim=3)
+               where (maskingArray == 0)
+                  maskedArray(:, :, k) = field % missingValue
                endwhere
             enddo
          else
@@ -3458,23 +3458,23 @@ module mpas_field_routines
 !> Masks the source field using a masking array.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_mask_field3d_mask1d_real(field, mask, maskedField) !{{{
+   subroutine mpas_mask_field3d_mask1d_real(field, mask, maskedArray) !{{{
 
       implicit none
 
       type (field3DReal), intent(in), pointer :: field
       type (field1DInteger), intent(in), pointer :: mask
-      real (kind=RKIND), dimension(:,:,:), intent(inout) :: maskedField
+      real (kind=RKIND), dimension(:,:,:), intent(inout) :: maskedArray
 
       real (kind=RKIND), dimension(:,:,:), pointer :: fieldArray
-      integer, dimension(:), pointer :: maskArray
+      integer, dimension(:), pointer :: maskingArray
       integer :: i, j, k
 
       integer, dimension(3) :: fieldDims
       integer, dimension(1) :: maskDims
       integer :: blockLength
 
-      blockLength = SIZE(maskedField, dim=3)
+      blockLength = SIZE(maskedArray, dim=3)
       fieldArray => field % array(:, :, 1:blockLength)
 
       fieldDims = field % dimSizes
@@ -3482,29 +3482,29 @@ module mpas_field_routines
 
       if (any(mask % array == 1)) then
          if (fieldDims(1) == maskDims(1)) then
-            maskArray  => mask % array
-            do j = 1, SIZE(maskedField, dim=2)
-               do k = 1, SIZE(maskedField, dim=3)
-                  where (maskArray == 0)
-                     maskedField(:, j, k) = field % missingValue
+            maskingArray  => mask % array
+            do j = 1, SIZE(maskedArray, dim=2)
+               do k = 1, SIZE(maskedArray, dim=3)
+                  where (maskingArray == 0)
+                     maskedArray(:, j, k) = field % missingValue
                   endwhere
                enddo
             enddo
          elseif (fieldDims(2) == maskDims(1)) then
-            maskArray  => mask % array
-            do i = 1, SIZE(maskedField, dim=1)
-               do k = 1, SIZE(maskedField, dim=3)
-                  where (maskArray == 0)
-                     maskedField(i, :, k) = field % missingValue
+            maskingArray  => mask % array
+            do i = 1, SIZE(maskedArray, dim=1)
+               do k = 1, SIZE(maskedArray, dim=3)
+                  where (maskingArray == 0)
+                     maskedArray(i, :, k) = field % missingValue
                   endwhere
                enddo
             enddo
          elseif (fieldDims(3) == maskDims(1)) then
-            maskArray  => mask % array(1:blockLength)
-            do i = 1, SIZE(maskedField, dim=1)
-               do j = 1, SIZE(maskedField, dim=2)
-                  where (maskArray == 0)
-                     maskedField(i, j, :) = field % missingValue
+            maskingArray  => mask % array(1:blockLength)
+            do i = 1, SIZE(maskedArray, dim=1)
+               do j = 1, SIZE(maskedArray, dim=2)
+                  where (maskingArray == 0)
+                     maskedArray(i, j, :) = field % missingValue
                   endwhere
                enddo
             enddo
@@ -3533,23 +3533,23 @@ module mpas_field_routines
 !> Masks the source field using a masking array.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_mask_field4d_mask3d_real(field, mask, maskedField) !{{{
+   subroutine mpas_mask_field4d_mask3d_real(field, mask, maskedArray) !{{{
 
       implicit none
 
       type (field4DReal), intent(in), pointer :: field
       type (field3DInteger), intent(in), pointer :: mask
-      real (kind=RKIND), dimension(:,:,:,:), intent(inout), pointer :: maskedField
+      real (kind=RKIND), dimension(:,:,:,:), intent(inout), pointer :: maskedArray
 
       real (kind=RKIND), dimension(:,:,:,:), pointer :: fieldArray
-      integer, dimension(:,:,:), pointer :: maskArray
+      integer, dimension(:,:,:), pointer :: maskingArray
 
       integer, dimension(4) :: fieldDims
       integer, dimension(3) :: maskDims
       integer :: blockLength
       integer :: i, k
 
-      blockLength = SIZE(maskedField, dim=4)
+      blockLength = SIZE(maskedArray, dim=4)
       fieldArray => field % array(:,:,:,1:blockLength)
 
       fieldDims = field % dimSizes
@@ -3561,19 +3561,19 @@ module mpas_field_routines
          if (fieldDims(2) == maskDims(1) .and. &
              fieldDims(3) == maskDims(2) .and. &
              fieldDims(4) == maskDims(3) ) then
-            maskArray => mask % array(:,:,1:blockLength)
-            do i = 1, SIZE(maskedField, dim=1)
-               where (maskArray == 0)
-                  maskedField(i,:,:,:) = field % missingValue
+            maskingArray => mask % array(:,:,1:blockLength)
+            do i = 1, SIZE(maskedArray, dim=1)
+               where (maskingArray == 0)
+                  maskedArray(i,:,:,:) = field % missingValue
                endwhere
             enddo
          elseif (fieldDims(1) == maskDims(1) .and. &
                  fieldDims(2) == maskDims(2) .and. &
                  fieldDims(3) == maskDims(3) ) then
-            maskArray => mask % array
-            do k = 1, SIZE(maskedField, dim=4)
-               where (maskArray == 0)
-                  maskedField(:,:,:,k) = field % missingValue
+            maskingArray => mask % array
+            do k = 1, SIZE(maskedArray, dim=4)
+               where (maskingArray == 0)
+                  maskedArray(:,:,:,k) = field % missingValue
                endwhere
             enddo
          else
@@ -3601,16 +3601,16 @@ module mpas_field_routines
 !> Masks the source field using a masking array.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_mask_field4d_mask2d_real(field, mask, maskedField) !{{{
+   subroutine mpas_mask_field4d_mask2d_real(field, mask, maskedArray) !{{{
 
       implicit none
 
       type (field4DReal), intent(in), pointer :: field
       type (field2DInteger), intent(in), pointer :: mask
-      real (kind=RKIND), dimension(:,:,:,:), intent(inout) :: maskedField
+      real (kind=RKIND), dimension(:,:,:,:), intent(inout) :: maskedArray
 
       real (kind=RKIND), dimension(:,:,:,:), pointer :: fieldArray
-      integer, dimension(:,:), pointer :: maskArray
+      integer, dimension(:,:), pointer :: maskingArray
       integer :: i, j, k
 
       integer, dimension(4) :: fieldDims
@@ -3618,7 +3618,7 @@ module mpas_field_routines
       integer :: blockLength
       character(len=100) :: log_string
 
-      blockLength = SIZE(maskedField, dim=4)
+      blockLength = SIZE(maskedArray, dim=4)
       fieldArray => field % array(:, :, :, 1:blockLength)
 
       fieldDims = field % dimSizes
@@ -3628,29 +3628,29 @@ module mpas_field_routines
          ! Here we require that the dimension order in mask match the dimension
          ! order in field
          if (fieldDims(2) == maskDims(2) .and. fieldDims(1) == maskDims(1)) then
-            maskArray => mask % array
-            do j = 1, SIZE(maskedField, dim=3)
-            do k = 1, SIZE(maskedField, dim=4)
-               where (maskArray == 0)
-                  maskedField(:, :, j, k) = field % missingValue
+            maskingArray => mask % array
+            do j = 1, SIZE(maskedArray, dim=3)
+            do k = 1, SIZE(maskedArray, dim=4)
+               where (maskingArray == 0)
+                  maskedArray(:, :, j, k) = field % missingValue
                endwhere
             enddo
             enddo
          elseif (fieldDims(3) == maskDims(2) .and. fieldDims(2) == maskDims(1)) then
-            maskArray  => mask % array
-            do i = 1, SIZE(maskedField, dim=1)
-            do k = 1, SIZE(maskedField, dim=4)
-               where (maskArray == 0)
-                  maskedField(i, :, :, k) = field % missingValue
+            maskingArray  => mask % array
+            do i = 1, SIZE(maskedArray, dim=1)
+            do k = 1, SIZE(maskedArray, dim=4)
+               where (maskingArray == 0)
+                  maskedArray(i, :, :, k) = field % missingValue
                endwhere
             enddo
             enddo
          elseif (fieldDims(3) == maskDims(2) .and. fieldDims(4) == maskDims(1)) then
-            maskArray => mask % array(:, 1:blockLength)
-            do i = 1, SIZE(maskedField, dim=1)
-            do j = 1, SIZE(maskedField, dim=2)
-               where (maskArray == 0)
-                  maskedField(i, j, :, :) = field % missingValue
+            maskingArray => mask % array(:, 1:blockLength)
+            do i = 1, SIZE(maskedArray, dim=1)
+            do j = 1, SIZE(maskedArray, dim=2)
+               where (maskingArray == 0)
+                  maskedArray(i, j, :, :) = field % missingValue
                endwhere
             enddo
             enddo
@@ -3679,23 +3679,23 @@ module mpas_field_routines
 !> Masks the source field using a masking array.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_mask_field4d_mask1d_real(field, mask, maskedField) !{{{
+   subroutine mpas_mask_field4d_mask1d_real(field, mask, maskedArray) !{{{
 
       implicit none
 
       type (field4DReal), intent(in), pointer :: field
       type (field1DInteger), intent(in), pointer :: mask
-      real (kind=RKIND), dimension(:,:,:,:), intent(inout) :: maskedField
+      real (kind=RKIND), dimension(:,:,:,:), intent(inout) :: maskedArray
 
       real (kind=RKIND), dimension(:,:,:,:), pointer :: fieldArray
-      integer, dimension(:), pointer :: maskArray
+      integer, dimension(:), pointer :: maskingArray
       integer :: i, j, k
 
       integer, dimension(4) :: fieldDims
       integer, dimension(1) :: maskDims
       integer :: blockLength
 
-      blockLength = SIZE(maskedField, dim=4)
+      blockLength = SIZE(maskedArray, dim=4)
       fieldArray => field % array(:, :, :, 1:blockLength)
 
       fieldDims = field % dimSizes
@@ -3705,45 +3705,45 @@ module mpas_field_routines
          ! Here we require that the dimension order in mask match the dimension
          ! order in field
          if (fieldDims(1) == maskDims(1)) then
-            maskArray => mask % array
-            do i = 1, SIZE(maskedField, dim=2)
-            do j = 1, SIZE(maskedField, dim=3)
-            do k = 1, SIZE(maskedField, dim=4)
-               where (maskArray == 0)
-                  maskedField(:, i, j, k) = field % missingValue
+            maskingArray => mask % array
+            do i = 1, SIZE(maskedArray, dim=2)
+            do j = 1, SIZE(maskedArray, dim=3)
+            do k = 1, SIZE(maskedArray, dim=4)
+               where (maskingArray == 0)
+                  maskedArray(:, i, j, k) = field % missingValue
                endwhere
             enddo
             enddo
             enddo
          elseif (fieldDims(2) == maskDims(1)) then
-            maskArray => mask % array
-            do i = 1, SIZE(maskedField, dim=1)
-            do j = 1, SIZE(maskedField, dim=3)
-            do k = 1, SIZE(maskedField, dim=4)
-               where (maskArray == 0)
-                  maskedField(i, :, j, k) = field % missingValue
+            maskingArray => mask % array
+            do i = 1, SIZE(maskedArray, dim=1)
+            do j = 1, SIZE(maskedArray, dim=3)
+            do k = 1, SIZE(maskedArray, dim=4)
+               where (maskingArray == 0)
+                  maskedArray(i, :, j, k) = field % missingValue
                endwhere
             enddo
             enddo
             enddo
          elseif (fieldDims(3) == maskDims(1)) then
-            maskArray => mask % array
-            do i = 1, SIZE(maskedField, dim=1)
-            do j = 1, SIZE(maskedField, dim=2)
-            do k = 1, SIZE(maskedField, dim=4)
-               where (maskArray == 0)
-                  maskedField(i, j, :, k) = field % missingValue
+            maskingArray => mask % array
+            do i = 1, SIZE(maskedArray, dim=1)
+            do j = 1, SIZE(maskedArray, dim=2)
+            do k = 1, SIZE(maskedArray, dim=4)
+               where (maskingArray == 0)
+                  maskedArray(i, j, :, k) = field % missingValue
                endwhere
             enddo
             enddo
             enddo
          elseif (fieldDims(4) == maskDims(1)) then
-            maskArray => mask % array(1:blockLength)
-            do i = 1, SIZE(maskedField, dim=1)
-            do j = 1, SIZE(maskedField, dim=2)
-            do k = 1, SIZE(maskedField, dim=3)
-               where (maskArray == 0)
-                  maskedField(i, j, k, :) = field % missingValue
+            maskingArray => mask % array(1:blockLength)
+            do i = 1, SIZE(maskedArray, dim=1)
+            do j = 1, SIZE(maskedArray, dim=2)
+            do k = 1, SIZE(maskedArray, dim=3)
+               where (maskingArray == 0)
+                  maskedArray(i, j, k, :) = field % missingValue
                endwhere
             enddo
             enddo
@@ -3773,23 +3773,23 @@ module mpas_field_routines
 !> Masks the source field using a masking array.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_mask_field5d_mask3d_real(field, mask, maskedField) !{{{
+   subroutine mpas_mask_field5d_mask3d_real(field, mask, maskedArray) !{{{
 
       implicit none
 
       type (field5DReal), intent(in), pointer :: field
       type (field3DInteger), intent(in), pointer :: mask
-      real (kind=RKIND), dimension(:,:,:,:,:), intent(inout), pointer :: maskedField
+      real (kind=RKIND), dimension(:,:,:,:,:), intent(inout), pointer :: maskedArray
 
       real (kind=RKIND), dimension(:,:,:,:,:), pointer :: fieldArray
-      integer, dimension(:,:,:), pointer :: maskArray
+      integer, dimension(:,:,:), pointer :: maskingArray
 
       integer, dimension(5) :: fieldDims
       integer, dimension(3) :: maskDims
       integer :: blockLength
       integer :: i, k
 
-      blockLength = SIZE(maskedField, dim=5)
+      blockLength = SIZE(maskedArray, dim=5)
       fieldArray => field % array(:,:,:,:,1:blockLength)
 
       fieldDims = field % dimSizes
@@ -3801,33 +3801,33 @@ module mpas_field_routines
          if (fieldDims(1) == maskDims(1) .and. &
              fieldDims(2) == maskDims(2) .and. &
              fieldDims(3) == maskDims(3) ) then
-            maskArray => mask % array
-            do i = 1, SIZE(maskedField, dim=4)
-            do k = 1, SIZE(maskedField, dim=5)
-               where (maskArray == 0)
-                  maskedField(:,:,:,i,k) = field % missingValue
+            maskingArray => mask % array
+            do i = 1, SIZE(maskedArray, dim=4)
+            do k = 1, SIZE(maskedArray, dim=5)
+               where (maskingArray == 0)
+                  maskedArray(:,:,:,i,k) = field % missingValue
                endwhere
             enddo
             enddo
          elseif (fieldDims(2) == maskDims(1) .and. &
                  fieldDims(3) == maskDims(2) .and. &
                  fieldDims(4) == maskDims(3) ) then
-            maskArray => mask % array
-            do i = 1, SIZE(maskedField, dim=1)
-            do k = 1, SIZE(maskedField, dim=5)
-               where (maskArray == 0)
-                  maskedField(i,:,:,:,k) = field % missingValue
+            maskingArray => mask % array
+            do i = 1, SIZE(maskedArray, dim=1)
+            do k = 1, SIZE(maskedArray, dim=5)
+               where (maskingArray == 0)
+                  maskedArray(i,:,:,:,k) = field % missingValue
                endwhere
             enddo
             enddo
          elseif (fieldDims(3) == maskDims(1) .and. &
                  fieldDims(4) == maskDims(2) .and. &
                  fieldDims(5) == maskDims(3) ) then
-            maskArray => mask % array(:,:,1:blockLength)
-            do i = 1, SIZE(maskedField, dim=1)
-            do k = 1, SIZE(maskedField, dim=2)
-               where (maskArray == 0)
-                  maskedField(i,k,:,:,:) = field % missingValue
+            maskingArray => mask % array(:,:,1:blockLength)
+            do i = 1, SIZE(maskedArray, dim=1)
+            do k = 1, SIZE(maskedArray, dim=2)
+               where (maskingArray == 0)
+                  maskedArray(i,k,:,:,:) = field % missingValue
                endwhere
             enddo
             enddo
@@ -3856,23 +3856,23 @@ module mpas_field_routines
 !> Masks the source field using a masking array.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_mask_field5d_mask2d_real(field, mask, maskedField) !{{{
+   subroutine mpas_mask_field5d_mask2d_real(field, mask, maskedArray) !{{{
 
       implicit none
 
       type (field5DReal), intent(in), pointer :: field
       type (field2DInteger), intent(in), pointer :: mask
-      real (kind=RKIND), dimension(:,:,:,:,:), intent(inout) :: maskedField
+      real (kind=RKIND), dimension(:,:,:,:,:), intent(inout) :: maskedArray
 
       real (kind=RKIND), dimension(:,:,:,:,:), pointer :: fieldArray
-      integer, dimension(:,:), pointer :: maskArray
+      integer, dimension(:,:), pointer :: maskingArray
 
       integer, dimension(5) :: fieldDims
       integer, dimension(2) :: maskDims
       integer :: blockLength
       integer :: i, j, k
 
-      blockLength = SIZE(maskedField, dim=5)
+      blockLength = SIZE(maskedArray, dim=5)
       fieldArray => field % array(:,:,:,:,1:blockLength)
 
       fieldDims = field % dimSizes
@@ -3882,45 +3882,45 @@ module mpas_field_routines
          ! Here we require that the dimension order in mask match the dimension
          ! order in field
          if (fieldDims(2) == maskDims(2) .and. fieldDims(1) == maskDims(1)) then
-            maskArray => mask % array
-            do i = 1, SIZE(maskedField, dim=3)
-            do j = 1, SIZE(maskedField, dim=4)
-            do k = 1, SIZE(maskedField, dim=5)
-               where (maskArray == 0)
-                  maskedField(:,:,i,j,k) = field % missingValue
+            maskingArray => mask % array
+            do i = 1, SIZE(maskedArray, dim=3)
+            do j = 1, SIZE(maskedArray, dim=4)
+            do k = 1, SIZE(maskedArray, dim=5)
+               where (maskingArray == 0)
+                  maskedArray(:,:,i,j,k) = field % missingValue
                endwhere
             enddo
             enddo
             enddo
          elseif (fieldDims(3) == maskDims(2) .and. fieldDims(2) == maskDims(1)) then
-            maskArray => mask % array
-            do i = 1, SIZE(maskedField, dim=1)
-            do j = 1, SIZE(maskedField, dim=4)
-            do k = 1, SIZE(maskedField, dim=5)
-               where (maskArray == 0)
-                  maskedField(i,:,:,j,k) = field % missingValue
+            maskingArray => mask % array
+            do i = 1, SIZE(maskedArray, dim=1)
+            do j = 1, SIZE(maskedArray, dim=4)
+            do k = 1, SIZE(maskedArray, dim=5)
+               where (maskingArray == 0)
+                  maskedArray(i,:,:,j,k) = field % missingValue
                endwhere
             enddo
             enddo
             enddo
          elseif (fieldDims(4) == maskDims(2) .and. fieldDims(3) == maskDims(1)) then
-            maskArray => mask % array
-            do i = 1, SIZE(maskedField, dim=1)
-            do j = 1, SIZE(maskedField, dim=2)
-            do k = 1, SIZE(maskedField, dim=5)
-               where (maskArray == 0)
-                  maskedField(i,j,:,:,k) = field % missingValue
+            maskingArray => mask % array
+            do i = 1, SIZE(maskedArray, dim=1)
+            do j = 1, SIZE(maskedArray, dim=2)
+            do k = 1, SIZE(maskedArray, dim=5)
+               where (maskingArray == 0)
+                  maskedArray(i,j,:,:,k) = field % missingValue
                endwhere
             enddo
             enddo
             enddo
          elseif (fieldDims(5) == maskDims(2) .and. fieldDims(4) == maskDims(1)) then
-            maskArray => mask % array(:, 1:blockLength)
-            do i = 1, SIZE(maskedField, dim=1)
-            do j = 1, SIZE(maskedField, dim=2)
-            do k = 1, SIZE(maskedField, dim=3)
-               where (maskArray == 0)
-                  maskedField(i,j,k,:,:) = field % missingValue
+            maskingArray => mask % array(:, 1:blockLength)
+            do i = 1, SIZE(maskedArray, dim=1)
+            do j = 1, SIZE(maskedArray, dim=2)
+            do k = 1, SIZE(maskedArray, dim=3)
+               where (maskingArray == 0)
+                  maskedArray(i,j,k,:,:) = field % missingValue
                endwhere
             enddo
             enddo
@@ -3950,23 +3950,23 @@ module mpas_field_routines
 !> Masks the source field using a masking array.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_mask_field5d_mask1d_real(field, mask, maskedField) !{{{
+   subroutine mpas_mask_field5d_mask1d_real(field, mask, maskedArray) !{{{
 
       implicit none
 
       type (field5DReal), intent(in), pointer :: field
       type (field1DInteger), intent(in), pointer :: mask
-      real (kind=RKIND), dimension(:,:,:,:,:), intent(inout) :: maskedField
+      real (kind=RKIND), dimension(:,:,:,:,:), intent(inout) :: maskedArray
 
       real (kind=RKIND), dimension(:,:,:,:,:), pointer :: fieldArray
-      integer, dimension(:), pointer :: maskArray
+      integer, dimension(:), pointer :: maskingArray
       integer :: i, j, k, p
 
       integer, dimension(5) :: fieldDims
       integer, dimension(1) :: maskDims
       integer :: blockLength
 
-      blockLength = SIZE(maskedField, dim=5)
+      blockLength = SIZE(maskedArray, dim=5)
       fieldArray => field % array(:,:,:,:,1:blockLength)
 
       fieldDims = field % dimSizes
@@ -3976,65 +3976,65 @@ module mpas_field_routines
          ! Here we require that the dimension order in mask match the dimension
          ! order in field
          if (fieldDims(1) == maskDims(1)) then
-            maskArray => mask % array
-            do i = 1, SIZE(maskedField, dim=2)
-            do j = 1, SIZE(maskedField, dim=3)
-            do k = 1, SIZE(maskedField, dim=4)
-            do p = 1, SIZE(maskedField, dim=5)
-               where (maskArray == 0)
-                  maskedField(:,i,j,k,p) = field % missingValue
+            maskingArray => mask % array
+            do i = 1, SIZE(maskedArray, dim=2)
+            do j = 1, SIZE(maskedArray, dim=3)
+            do k = 1, SIZE(maskedArray, dim=4)
+            do p = 1, SIZE(maskedArray, dim=5)
+               where (maskingArray == 0)
+                  maskedArray(:,i,j,k,p) = field % missingValue
                endwhere
             enddo
             enddo
             enddo
             enddo
          elseif (fieldDims(2) == maskDims(1)) then
-            maskArray => mask % array
-            do i = 1, SIZE(maskedField, dim=1)
-            do j = 1, SIZE(maskedField, dim=3)
-            do k = 1, SIZE(maskedField, dim=4)
-            do p = 1, SIZE(maskedField, dim=5)
-               where (maskArray == 0)
-                  maskedField(i,:,j,k,p) = field % missingValue
+            maskingArray => mask % array
+            do i = 1, SIZE(maskedArray, dim=1)
+            do j = 1, SIZE(maskedArray, dim=3)
+            do k = 1, SIZE(maskedArray, dim=4)
+            do p = 1, SIZE(maskedArray, dim=5)
+               where (maskingArray == 0)
+                  maskedArray(i,:,j,k,p) = field % missingValue
                endwhere
             enddo
             enddo
             enddo
             enddo
          elseif (fieldDims(3) == maskDims(1)) then
-            maskArray => mask % array
-            do i = 1, SIZE(maskedField, dim=1)
-            do j = 1, SIZE(maskedField, dim=2)
-            do k = 1, SIZE(maskedField, dim=4)
-            do p = 1, SIZE(maskedField, dim=5)
-               where (maskArray == 0)
-                  maskedField(i,j,:,k,p) = field % missingValue
+            maskingArray => mask % array
+            do i = 1, SIZE(maskedArray, dim=1)
+            do j = 1, SIZE(maskedArray, dim=2)
+            do k = 1, SIZE(maskedArray, dim=4)
+            do p = 1, SIZE(maskedArray, dim=5)
+               where (maskingArray == 0)
+                  maskedArray(i,j,:,k,p) = field % missingValue
                endwhere
             enddo
             enddo
             enddo
             enddo
          elseif (fieldDims(4) == maskDims(1)) then
-            maskArray => mask % array
-            do i = 1, SIZE(maskedField, dim=1)
-            do j = 1, SIZE(maskedField, dim=2)
-            do k = 1, SIZE(maskedField, dim=3)
-            do p = 1, SIZE(maskedField, dim=5)
-               where (maskArray == 0)
-                  maskedField(i,j,k,:,p) = field % missingValue
+            maskingArray => mask % array
+            do i = 1, SIZE(maskedArray, dim=1)
+            do j = 1, SIZE(maskedArray, dim=2)
+            do k = 1, SIZE(maskedArray, dim=3)
+            do p = 1, SIZE(maskedArray, dim=5)
+               where (maskingArray == 0)
+                  maskedArray(i,j,k,:,p) = field % missingValue
                endwhere
             enddo
             enddo
             enddo
             enddo
          elseif (fieldDims(5) == maskDims(1)) then
-            maskArray => mask % array(1:blockLength)
-            do i = 1, SIZE(maskedField, dim=1)
-            do j = 1, SIZE(maskedField, dim=2)
-            do k = 1, SIZE(maskedField, dim=3)
-            do p = 1, SIZE(maskedField, dim=4)
-               where (maskArray == 0)
-                  maskedField(i,j,k,p,:) = field % missingValue
+            maskingArray => mask % array(1:blockLength)
+            do i = 1, SIZE(maskedArray, dim=1)
+            do j = 1, SIZE(maskedArray, dim=2)
+            do k = 1, SIZE(maskedArray, dim=3)
+            do p = 1, SIZE(maskedArray, dim=4)
+               where (maskingArray == 0)
+                  maskedArray(i,j,k,p,:) = field % missingValue
                endwhere
             enddo
             enddo
