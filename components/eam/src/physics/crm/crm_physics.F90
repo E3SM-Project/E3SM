@@ -871,17 +871,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          end if 
 #endif
          !------------------------------------------------------------------------------------------
-         ! zero output surface fluxes to avoid error in check_energy_chng()
+         ! zero output fluxes to avoid error in check_energy_chng()
          !------------------------------------------------------------------------------------------
-         call pbuf_get_field(pbuf_chunk, pbuf_get_index('QRL'), qrl)
-         call pbuf_get_field(pbuf_chunk, pbuf_get_index('QRS'), qrs)
-         mmf_rad_flux(c,:ncol) = 0.0_r8
          do i = 1,ncol
             mmf_qchk_prec_dp(c,i) = 0.0
             mmf_qchk_snow_dp(c,i) = 0.0
-            do k = 1,pver
-               mmf_rad_flux(c,i) = mmf_rad_flux(c,i) + ( qrs(i,k) + qrl(i,k) ) /gravit
-            end do
+            mmf_rad_flux(c,i) = 0.0
          end do ! i = 1,ncol
 
          !------------------------------------------------------------------------------------------
