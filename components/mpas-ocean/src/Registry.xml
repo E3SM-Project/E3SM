@@ -2844,6 +2844,7 @@
 		/>
 		<var name="normalGMBolusVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization"
+			 packages="gm"
 		/>
 		<var name="normalMLEvelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			description="Velocity from mixed layer eddies (fox kemper 2011 submesoscale parameterization)"
