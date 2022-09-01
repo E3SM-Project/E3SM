@@ -147,6 +147,49 @@ default variables. For each of the plot sets, the user needs to make a ``*_obs_v
 
 Viewing the Results
 -------------------
-Results from running all the examples can be found `here <https://portal.nersc.gov/project/e3sm/forsyth/examples/>`__.
-You can navigate to ``https://portal.nersc.gov/project/e3sm/forsyth/examples/<example directory>/viewer/`` to
+Results from running all the examples can be found `here <https://portal.nersc.gov/cfs/e3sm/forsyth/examples/>`__.
+You can navigate to ``https://portal.nersc.gov/cfs/e3sm/forsyth/examples/<example directory>/viewer/`` to
 see the viewer for a specific example.
+
+These were generated with the following script:
+
+    .. code::
+
+       #!/bin/bash
+       #SBATCH  --job-name=e3sm_diags_examples
+       #SBATCH  --account=e3sm
+       #SBATCH  --nodes=1
+       #SBATCH  --output=/global/homes/f/forsyth/e3sm_diags_examples.o%j
+       #SBATCH  --exclusive
+       #SBATCH  --time=1:00:00
+       #SBATCH  --qos=regular
+       #SBATCH  --constraint=haswell
+
+       cd /global/homes/f/forsyth/e3sm_diags/examples
+       # Edit `<your directory>` lines:
+       # emacs ex1-model_ts-vs-model_ts/ex1.py
+       # emacs ex2-model_ts-vs-model_ts-cmip/ex2.py
+       # emacs ex3-model_ts-vs-obs_ts-cmip/ex3.py
+       # emacs ex4-model-vs-model/ex4.py
+       # emacs ex5-model-vs-obs/ex5.py
+       # emacs ex6-model-vs-obs-custom/ex6.py
+       # emacs ex7-obs-vs-obs/ex7.py
+
+       source /global/common/software/e3sm/anaconda_envs/load_latest_e3sm_unified_cori-haswell.sh
+       cd ex1-model_ts-vs-model_ts
+       python ex1.py --multiprocessing --num_workers=32
+       cd ../ex2-model_ts-vs-model_ts-cmip
+       python ex2.py --multiprocessing --num_workers=32
+       cd ../ex3-model_ts-vs-obs_ts-cmip
+       python ex3.py --multiprocessing --num_workers=32
+       cd ../ex4-model-vs-model
+       python ex4.py --multiprocessing --num_workers=32 -d diags.cfg
+       cd ../ex5-model-vs-obs
+       python ex5.py --multiprocessing --num_workers=32 -d diags.cfg
+       cd ../ex6-model-vs-obs-custom
+       python ex6.py --multiprocessing --num_workers=32
+       cd ../ex7-obs-vs-obs
+       python ex7.py --multiprocessing --num_workers=32 -d diags.cfg
+       cd ../
+
+       chmod -R 755 /global/cfs/cdirs/e3sm/www/forsyth/examples
