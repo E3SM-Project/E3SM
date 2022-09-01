@@ -488,9 +488,9 @@ add_precondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
         has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
         "Error! Input property check can repair a non-computed field.\n"
         "  - Atmosphere process name: " + name() + "\n"
-        "  - Property check name: " + name() + "\n");
+        "  - Property check name: " + pc->name() + "\n");
   }
-  m_precondition_checks.push_back(std::make_pair(pc,cfh));
+  m_precondition_checks.push_back(std::make_pair(cfh,pc));
 }
 
 void AtmosphereProcess::
@@ -506,9 +506,9 @@ add_postcondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
         has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
         "Error! Input property check can repair a non-computed field.\n"
         "  - Atmosphere process name: " + name() + "\n"
-        "  - Property check name: " + name() + "\n");
+        "  - Property check name: " + pc->name() + "\n");
   }
-  m_postcondition_checks.push_back(std::make_pair(pc,cfh));
+  m_postcondition_checks.push_back(std::make_pair(cfh,pc));
 }
 
 void AtmosphereProcess::set_fields_and_groups_pointers () {

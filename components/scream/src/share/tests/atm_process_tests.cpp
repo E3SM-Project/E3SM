@@ -518,7 +518,6 @@ TEST_CASE("field_checks", "") {
   util::TimeStamp t0(1,1,1,1,1,1);
 
   constexpr auto Warning = CheckFailHandling::Warning;
-  constexpr auto Fatal   = CheckFailHandling::Fatal;
   auto pos_check_pre = std::make_shared<FieldLowerBoundCheck>(T_tend,grid,0,false);
   auto pos_check_post = std::make_shared<FieldLowerBoundCheck>(T,grid,0,false);
   for (bool allow_failure : {true,false}) {
@@ -537,11 +536,12 @@ TEST_CASE("field_checks", "") {
         foo->initialize(t0,RunType::Initial);
 
         if (allow_failure) {
-          foo->add_precondition_check<Warning>(pos_check_pre);
-          foo->add_postcondition_check<Warning>(pos_check_post);
+          foo->add_precondition_check(pos_check_pre,Warning);
+          foo->add_postcondition_check(pos_check_post,Warning);
         } else {
-          foo->add_precondition_check<Fatal>(pos_check_pre);
-          foo->add_postcondition_check<Fatal>(pos_check_post);
+          // Default CheckFailHandling is Fatal
+          foo->add_precondition_check(pos_check_pre);
+          foo->add_postcondition_check(pos_check_post);
         }
 
         if (not allow_failure && (check_pre || check_post)) {
