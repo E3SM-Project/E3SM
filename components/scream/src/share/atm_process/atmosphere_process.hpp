@@ -234,7 +234,6 @@ public:
   void add_postcondition_check (const Args... args);
   template<typename FPC, typename... Args>
   void add_invariant_check (const Args... args);
-  template<typename FPC, typename... Args>
 
   // For restarts, it is possible that some atm proc need to write/read some ad-hoc data.
   // E.g., some atm proc might need to read/write certain scalar values.
