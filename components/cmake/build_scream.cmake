@@ -12,7 +12,7 @@ function(build_scream)
     set (CMAKE_C_FLAGS ${CFLAGS})
     set (CMAKE_CXX_FLAGS ${CXXFLAGS})
     set (CMAKE_Fortran_FLAGS ${FFLAGS})
-    add_definitions (${CPPDEFS})
+    add_compile_definitions (${CPPDEFS})
 
     # Include machine file here
     include(${CMAKE_SOURCE_DIR}/scream/cmake/machine-files/${MACH}.cmake)
