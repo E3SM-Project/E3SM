@@ -223,6 +223,7 @@ use iso_c_binding, only: c_loc
    call intht()
 
 #if defined(CLDERA_PROFILING)
+   call t_startf('cldera_add_fields')
    nparts = endchunk - begchunk + 1
 
    ! All fields are partitioned over cols index, which is the first
@@ -405,6 +406,7 @@ use iso_c_binding, only: c_loc
    enddo
 
    call cldera_commit_all_fields()
+   call t_stopf('cldera_add_fields')
 #endif
 
 

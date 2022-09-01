@@ -179,7 +179,9 @@ CONTAINS
     if (first_time) then
 
 #if defined(CLDERA_PROFILING)
+       call t_startf('cldera_init')
        call cldera_init(mpicom_atm)
+       call t_stopf('cldera_init')
 #endif
        
        call cam_instance_init(ATMID)
@@ -668,7 +670,9 @@ CONTAINS
 #endif
 
 #if defined(CLDERA_PROFILING)
+    call t_startf('cldera_compute_stats')
     call cldera_compute_stats(ymd,tod)
+    call t_stopf('cldera_compute_stats')
 #endif
 
   end subroutine atm_run_mct
@@ -690,7 +694,9 @@ CONTAINS
     call t_stopf('cam_final')
 
 #if defined(CLDERA_PROFILING)
-   call cldera_clean_up ()
+    call t_startf('cldera_clean_up')
+    call cldera_clean_up ()
+    call t_stopf('cldera_clean_up')
 #endif
 
   end subroutine atm_final_mct
