@@ -23,6 +23,12 @@ if ("${DIR_DEFS} ${DIR_FLAGS} ${YAKL_DEFS} ${YAKL_FLAGS} ${CMAKE_CXX_FLAGS}" MAT
   cmake_policy (SET CMP0079 NEW)
   find_package(MPI REQUIRED COMPONENTS C)
   target_link_libraries (yakl PUBLIC MPI::MPI_C)
+  if (MPI_C_INCLUDE_DIRS)
+    target_include_directories (yakl PUBLIC ${MPI_C_INCLUDE_DIRS})
+  endif()
+  if (MPI_C_COMPILER_INCLUDE_DIRS)
+    target_include_directories (yakl PUBLIC ${MPI_C_COMPILER_INCLUDE_DIRS})
+  endif()
 endif()
 EkatDisableAllWarning(yakl)
 
