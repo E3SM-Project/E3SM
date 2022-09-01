@@ -9,6 +9,7 @@
 #include "share/util/scream_timing.hpp"
 #include "share/util/scream_utils.hpp"
 #include "share/io/scream_io_utils.hpp"
+#include "share/property_checks/mass_and_energy_conservation_check.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
@@ -312,6 +313,8 @@ void AtmosphereDriver::setup_surface_coupling_processes () const
     EKAT_ASSERT_MSG(exporter_found, "Error! SurfaceCoupling exporter data was setup, but no atm process "
                                     "of type AtmosphereProcessType::SurfaceCouplingExporter exists.\n");
   }
+  (void)importer_found;
+  (void)exporter_found;
 }
 
 void AtmosphereDriver::set_precipitation_fields_to_zero () 
@@ -325,6 +328,48 @@ void AtmosphereDriver::set_precipitation_fields_to_zero ()
   if (field_mgr->has_field("precip_liq_surf_mass")) {
     field_mgr->get_field("precip_liq_surf_mass").deep_copy(0.0);
   }
+}
+
+void AtmosphereDriver::setup_conservation_checks ()
+{
+  auto phys_grid = m_grids_manager->get_grid("Physics");
+  const auto phys_grid_name = phys_grid->name();
+  auto phys_field_mgr = m_field_mgrs[phys_grid_name];
+
+  // Get fields needed to compute total mass and energy. We only run
+  // energy checker if all fields exist to compute mass and energy.
+  const auto pseudo_density_ptr = phys_field_mgr->get_field_ptr("pseudo_density");
+  const auto ps_ptr             = phys_field_mgr->get_field_ptr("ps");
+  const auto phis_ptr           = phys_field_mgr->get_field_ptr("phis");
+  const auto horiz_winds_ptr    = phys_field_mgr->get_field_ptr("horiz_winds");
+  const auto T_mid_ptr          = phys_field_mgr->get_field_ptr("T_mid");
+  const auto qv_ptr             = phys_field_mgr->get_field_ptr("qv");
+  const auto qc_ptr             = phys_field_mgr->get_field_ptr("qc");
+  const auto qr_ptr             = phys_field_mgr->get_field_ptr("qr");
+  const auto qi_ptr             = phys_field_mgr->get_field_ptr("qi");
+  if (pseudo_density_ptr == nullptr || ps_ptr    == nullptr || phis_ptr == nullptr ||
+      horiz_winds_ptr    == nullptr || T_mid_ptr == nullptr || qv_ptr   == nullptr ||
+      qc_ptr             == nullptr || qr_ptr    == nullptr || qi_ptr   == nullptr) {
+    return;
+  }
+
+  // Get fields needed to compute mass and energy boundary fluxes.
+  const auto vapor_flux_ptr = phys_field_mgr->get_field_ptr("vapor_flux");
+  const auto water_flux_ptr = phys_field_mgr->get_field_ptr("water_flux");
+  const auto ice_flux_ptr   = phys_field_mgr->get_field_ptr("ice_flux");
+  const auto heat_flux_ptr  = phys_field_mgr->get_field_ptr("heat_flux");
+
+  // Create energy checker
+  auto conservation_check =
+    std::make_shared<MassAndEnergyConservationCheck>(phys_grid,
+                                                     pseudo_density_ptr, ps_ptr, phis_ptr,
+                                                     horiz_winds_ptr, T_mid_ptr, qv_ptr,
+                                                     qc_ptr, qr_ptr, qi_ptr,
+                                                     vapor_flux_ptr, water_flux_ptr,
+                                                     ice_flux_ptr, heat_flux_ptr);
+
+  // Pass energy checker to the process group
+  m_atm_process_group->add_conservation_checks(conservation_check);
 }
 
 void AtmosphereDriver::create_fields()
@@ -1061,6 +1106,9 @@ void AtmosphereDriver::initialize_atm_procs ()
 
   // Initialize the processes
   m_atm_process_group->initialize(m_current_ts, restarted_run ? RunType::Restarted : RunType::Initial);
+
+  // Create and add energy and mass conservation check to appropriate atm procs
+  setup_conservation_checks();
 
   if (fvphyshack) {
     // [CGLL ICs in pg2] See related notes in atmosphere_dynamics.cpp.

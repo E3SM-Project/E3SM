@@ -41,6 +41,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // Declare the set of fields used by rrtmgp
   auto kgkg = kg/kg;
   kgkg.set_string("kg/kg");
+  auto m2 = m * m;
   auto Wm2 = W / m / m;
   Wm2.set_string("W/m2");
   auto nondim = m/m;  // dummy unit for non-dimensional fields
@@ -152,6 +153,14 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("sfc_flux_dif_vis", scalar2d_layout, Wm2, grid_name);
   add_field<Computed>("sfc_flux_sw_net" , scalar2d_layout, Wm2, grid_name);
   add_field<Computed>("sfc_flux_lw_dn"  , scalar2d_layout, Wm2, grid_name);
+
+  // Boundary flux fields for energy and mass conservation checks
+  if (m_params.get("enable_postcondition_checks", true)) {
+    add_field<Computed>("vapor_flux", scalar2d_layout, kg/m2/s, grid_name);
+    add_field<Computed>("water_flux", scalar2d_layout, m/s,     grid_name);
+    add_field<Computed>("ice_flux",   scalar2d_layout, m/s,     grid_name);
+    add_field<Computed>("heat_flux",  scalar2d_layout, W/m2,    grid_name);
+  }
 }  // RRTMGPRadiation::set_grids
 
 size_t RRTMGPRadiation::requested_buffer_size_in_bytes() const
@@ -908,6 +917,32 @@ void RRTMGPRadiation::run_impl (const int dt) {
       });
     }
   } // loop over chunk
+
+  // Set appropriate boundary fluxes for energy and mass conservation checks.
+  // Any boundary fluxes not included in radiation interface are set to 0.
+  if (m_params.get("enable_postcondition_checks", true)) {
+    auto vapor_flux = get_field_out("vapor_flux").get_view<Real*>();
+    auto water_flux = get_field_out("water_flux").get_view<Real*>();
+    auto ice_flux   = get_field_out("ice_flux").get_view<Real*>();
+    auto heat_flux  = get_field_out("heat_flux").get_view<Real*>();
+    Kokkos::deep_copy(vapor_flux, 0.0);
+    Kokkos::deep_copy(water_flux, 0.0);
+    Kokkos::deep_copy(ice_flux, 0.0);
+
+    const int ncols = m_ncol;
+    const int nlays = m_nlay;
+    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols, nlays);
+    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+      const int icol = team.league_rank();
+
+      const auto fsns = d_sw_flux_dn(icol, nlays) - d_sw_flux_up(icol, nlays);
+      const auto fsnt = d_sw_flux_dn(icol, 0)     - d_sw_flux_up(icol, 0);
+      const auto flns = d_lw_flux_up(icol, nlays) - d_lw_flux_dn(icol, nlays);
+      const auto flnt = d_lw_flux_up(icol, 0)     - d_lw_flux_dn(icol, 0);
+
+      heat_flux(icol) = (fsnt - fsns) - (flnt - flns);
+    });
+  }
 
   // Restore the refCounted array.
   m_gas_concs.concs = gas_concs;

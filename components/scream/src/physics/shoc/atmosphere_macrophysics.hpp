@@ -358,6 +358,13 @@ public:
             qtracers(i,convert_wet_dry_idx_d(iq),k) = PF::calculate_wetmmr_from_drymmr(qtracers(i,convert_wet_dry_idx_d(iq),k), qv(i,k));
           qv(i,k) = PF::calculate_wetmmr_from_drymmr(qv(i,k), qv(i,k));
       });
+
+      // Set appropriate boundary fluxes for energy and mass conservation checks.
+      // Any boundary fluxes not included in SHOC interface are set to 0.
+      flx_vap(i) = surf_evap(i);
+      flx_cnd(i) = 0.0;
+      flx_ice(i) = 0.0;
+      flx_sen(i) = surf_sens_flux(i);
     } // operator
 
     // Local variables
@@ -373,6 +380,12 @@ public:
     view_2d T_mid;
     view_2d_const dse,z_mid;
     view_1d_const phis;
+    view_1d_const surf_evap;
+    view_1d_const surf_sens_flux;
+    view_1d flx_vap;
+    view_1d flx_cnd;
+    view_1d flx_ice;
+    view_1d flx_sen;
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
@@ -381,7 +394,9 @@ public:
                        const view_2d& qv_, const view_2d_const& qw_, const view_2d& qc_, const view_2d_const& qc_copy_,
                        const view_2d& tke_, const view_2d_const& tke_copy_, const view_3d& qtracers_, const view_2d_const& qc2_,
                        const view_2d& cldfrac_liq_, const view_2d& inv_qc_relvar_,
-                       const view_2d& T_mid_, const view_2d_const& dse_, const view_2d_const& z_mid_, const view_1d_const phis_)
+                       const view_2d& T_mid_, const view_2d_const& dse_, const view_2d_const& z_mid_, const view_1d_const phis_,
+                       const view_1d_const& surf_evap_, const view_1d_const surf_sens_flux_,
+                       const view_1d& flx_vap_, const view_1d& flx_cnd_, const view_1d& flx_ice_, const view_1d& flx_sen_)
     {
       ncol = ncol_;
       nlev = nlev_;
@@ -402,6 +417,12 @@ public:
       dse = dse_;
       z_mid = z_mid_;
       phis = phis_;
+      surf_evap = surf_evap_;
+      surf_sens_flux = surf_sens_flux_;
+      flx_vap = flx_vap_;
+      flx_cnd = flx_cnd_;
+      flx_ice = flx_ice_;
+      flx_sen = flx_sen_;
     } // set_variables
   }; // SHOCPostprocess
   /* --------------------------------------------------------------------------------------------*/

@@ -452,6 +452,10 @@ private:
   FieldGroup& get_group_out_impl(const std::string& group_name, const std::string& grid_name) const;
   FieldGroup& get_group_out_impl(const std::string& group_name) const;
 
+  // Setup mass and energy conservation postcondition check to store
+  // this processes dt and compute initial mass and energy.
+  void setup_conservation_checks_for_this_process (const int dt);
+
   // NOTE: all these members are private, so that derived classes cannot
   //       bypass checks from the base class by accessing the members directly.
   //       Instead, they are forced to use access function, which include

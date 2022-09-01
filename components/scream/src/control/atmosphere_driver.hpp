@@ -88,6 +88,10 @@ public:
   // Zero out precipitation flux
   void set_precipitation_fields_to_zero();
 
+  // Create and add energy and mass conservation checks
+  // and pass to m_atm_process_group.
+  void setup_conservation_checks ();
+
   // Load initial conditions for atm inputs
   void initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0);
 

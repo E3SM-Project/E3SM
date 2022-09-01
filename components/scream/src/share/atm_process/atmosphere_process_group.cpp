@@ -190,6 +190,57 @@ gather_internal_fields  () {
   }
 }
 
+void AtmosphereProcessGroup::
+add_conservation_checks (const std::shared_ptr<MassAndEnergyConservationCheck>& conservation_check) const
+{
+  // Loop over atm processes and add mass and energy checker where relevant
+  for (auto atm_proc : m_atm_processes) {
+
+    // We only want the check on an idividual processes. If
+    // atm_proc is a group, recursively call this function.
+    auto atm_proc_group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_proc);
+    if (atm_proc_group) {
+      atm_proc_group->add_conservation_checks(conservation_check);
+      continue;
+    }
+
+    // Since the checker is column-wise, only run if atm process is a Physics process.
+    if (atm_proc->type() != AtmosphereProcessType::Physics) continue;
+ 
+    // Query the computed fields for this atm process and see if either the mass or energy computation
+    // might be changed after the process has run.
+    const std::string phys_grid_name  = conservation_check->get_grid()->name();
+    const bool updates_static_energy  = atm_proc->has_computed_field("T_mid", phys_grid_name);
+    const bool updates_kinetic_energy = atm_proc->has_computed_field("horiz_winds", phys_grid_name);
+    const bool updates_water_vapor    = atm_proc->has_computed_field("qv", phys_grid_name);
+    const bool updates_water_liquid   = atm_proc->has_computed_field("qc", phys_grid_name) ||
+                                        atm_proc->has_computed_field("qr", phys_grid_name);
+    const bool updates_water_ice      = atm_proc->has_computed_field("qi", phys_grid_name);
+    const bool mass_or_energy_is_updated = updates_static_energy || updates_kinetic_energy ||
+                                           updates_water_vapor   || updates_water_liquid ||
+                                           updates_water_ice;
+
+    // If any field used in the mass or energy calculate is updated by this process,
+    // add postcondition check.
+    // Assert that, if a process adds the postcondition check, it also defines
+    // the boundary fluxes.
+    if (mass_or_energy_is_updated) {
+      const bool has_all_boundary_fluxes = atm_proc->has_computed_field("vapor_flux", phys_grid_name) &&
+                                           atm_proc->has_computed_field("water_flux", phys_grid_name) &&
+                                           atm_proc->has_computed_field("ice_flux",   phys_grid_name) &&
+                                           atm_proc->has_computed_field("heat_flux",  phys_grid_name);
+      EKAT_ASSERT_MSG(has_all_boundary_fluxes,
+                      "Error! Process " + atm_proc->name() + " adds the mass "
+                      "and energy conservation check, but does not define all "
+                      "the boundary fluxes required: vapor_flux, water_flux "
+                      "ice_flux, heat_flux.\n");
+      (void) has_all_boundary_fluxes;
+
+      atm_proc->add_postcondition_check(conservation_check);
+    }
+  }
+}
+
 void AtmosphereProcessGroup::initialize_impl (const RunType run_type) {
   for (auto& atm_proc : m_atm_processes) {
     atm_proc->initialize(timestamp(),run_type);

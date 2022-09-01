@@ -26,6 +26,7 @@ set(SHARE_SRC
   property_checks/property_check.cpp
   property_checks/field_nan_check.cpp
   property_checks/field_within_interval_check.cpp
+  property_checks/mass_and_energy_conservation_check.cpp
   util/scream_test_session.cpp
   util/scream_time_stamp.cpp
   util/scream_timing.cpp

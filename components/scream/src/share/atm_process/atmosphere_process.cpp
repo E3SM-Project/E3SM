@@ -1,5 +1,6 @@
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/util/scream_timing.hpp"
+#include "share/property_checks/mass_and_energy_conservation_check.hpp"
 
 #include "ekat/ekat_assert.hpp"
 
@@ -74,6 +75,13 @@ void AtmosphereProcess::run (const int dt) {
   if (m_params.get("enable_precondition_checks", true)) {
     // Run 'pre-condition' property checks stored in this AP
     run_precondition_checks();
+  }
+
+  // Mass and energy postcondition check requires the total mass and energy
+  // to be computed directly before the atm process is run, as well and store
+  // the correct timestep for the process.
+  if (m_params.get("enable_postcondition_checks", true)) {
+    setup_conservation_checks_for_this_process(dt);
   }
 
   EKAT_REQUIRE_MSG ( (dt % m_num_subcycles)==0,
@@ -816,6 +824,25 @@ void AtmosphereProcess
   };
   rmg(m_groups_in, m_groups_in_pointers);
   rmg(m_groups_out, m_groups_out_pointers);
+}
+
+void AtmosphereProcess::setup_conservation_checks_for_this_process (const int dt)
+{
+  const Real tol = m_params.get<Real>("conservation check tolerance",
+                                      std::numeric_limits<Real>::max());
+
+  // Loop through postcondition checks, if the MassAndEnergyConservationCheck
+  // exists, set dt and compute mass and energy
+  for (const auto& it : m_postcondition_checks) {
+    const auto& pc = it.second;
+    if (pc->name() == "Energy conservation check") {
+      const auto conservation_check = std::dynamic_pointer_cast<MassAndEnergyConservationCheck>(pc);
+      conservation_check->set_dt(dt);
+      conservation_check->set_tolerance(tol);
+      conservation_check->compute_current_mass();
+      conservation_check->compute_current_energy();
+    }
+  }
 }
 
 } // namespace scream
