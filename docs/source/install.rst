@@ -133,7 +133,7 @@ an SSL error unless you disable the SSL verification:
 
     ::
 
-        wget https://raw.githubusercontent.com/E3SM-Project/e3sm_diags/master/conda-env/prod.yml
+        wget https://raw.githubusercontent.com/E3SM-Project/e3sm_diags/main/conda-env/prod.yml
 
 
 3. Change ``prefix`` in that file to be your conda prefix. Typically, this will be ``~/miniconda3/envs/e3sm_diags_env``.
@@ -167,7 +167,7 @@ Instead, the developer will ``pip install .`` to build ``e3sm-diags`` with chang
 
 1. Follow :ref:`"Others/Local" <conda_environment_others>` section for installing conda.
 
-2. Clone your fork and keep it in sync with the main repo's ``master``
+2. Clone your fork and keep it in sync with the main repo's ``main``
 
     ::
 
@@ -183,7 +183,7 @@ Instead, the developer will ``pip install .`` to build ``e3sm-diags`` with chang
         # You should see your fork listed as `origin`
 
 
-   or if you already have a clone of your fork, rebase your fork on the main repo's ``master`` to keep it in sync:
+   or if you already have a clone of your fork, rebase your fork on the main repo's ``main`` to keep it in sync:
 
     ::
 
@@ -195,23 +195,23 @@ Instead, the developer will ``pip install .`` to build ``e3sm-diags`` with chang
         # Fetch all the branches of that remote into remote-tracking branches
         git fetch <upstream-origin>
 
-        # Make sure that you're on your master branch:
-        git checkout master
+        # Make sure that you're on your main branch:
+        git checkout main
 
-        # Rewrite your master branch so that any of your commits that
-        # aren't already in <upstream-origin>/master are replayed on top of that branch:
-        git rebase <upstream-origin>/master
+        # Rewrite your main branch so that any of your commits that
+        # aren't already in <upstream-origin>/main are replayed on top of that branch:
+        git rebase <upstream-origin>/main
 
-        # Push your master branch to your GitHub fork:
+        # Push your main branch to your GitHub fork:
         # Note that <fork-origin> should be `origin` if you cloned your fork as above.
-        git push -f <fork-origin> master
+        git push -f <fork-origin> main
 
 
-   Checkout a new branch from ``master``.
+   Checkout a new branch from ``main``.
 
     ::
 
-        git checkout -b <branch-name> master
+        git checkout -b <branch-name> main
 
 3. Remove any cached conda packages. This will ensure that you always get the latest packages.
 

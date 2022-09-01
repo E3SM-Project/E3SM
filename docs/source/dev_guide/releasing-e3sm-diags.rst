@@ -13,7 +13,7 @@ In this guide, we'll cover:
 Bumping the Version
 -------------------
 
-1. Checkout the latest ``master``.
+1. Checkout the latest ``main``.
 2. Checkout a branch with the name of the version.
 
     ::
@@ -56,11 +56,11 @@ Releasing on GitHub
 -------------------
 
 1. Draft a new release on the `releases page <https://github.com/E3SM-Project/e3sm_diags/releases>`_.
-2. Set `Tag version` to ``v<version>``, **including the "v"**. `@Target` should be ``master``.
+2. Set `Tag version` to ``v<version>``, **including the "v"**. `@Target` should be ``main``.
 3. Set `Release title` to ``v<version>``, **including the "v"**.
 4. Use `Describe this release` to summarize the changelog.
 
-   * You can scroll through `e3sm-diags commits <https://github.com/E3SM-Project/e3sm_diags/commits/master>`_ for a list of changes.
+   * You can scroll through `e3sm-diags commits <https://github.com/E3SM-Project/e3sm_diags/commits/main>`_ for a list of changes.
 
 5. If this version is a release candidate (``<version>`` appended with ``rc``), checkmark `This is a pre-release`.
 6. Click `Publish release`.

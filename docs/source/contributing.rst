@@ -30,7 +30,7 @@ This documentation is created using
 that makes it easy to create intelligent and beautiful documentation, written
 by Georg Brandl and licensed under the BSD license.
 
-The documentation is maintained in the ``master`` branch of the GitHub repository.
+The documentation is maintained in the ``main`` branch of the GitHub repository.
 You can include code and its corresponding documentation updates in a single pull request (PR).
 
 After merging a PR, GitHub Actions automates the documentation building process.
@@ -83,7 +83,7 @@ To begin editing:
 
       Docs version selector dropdown in the bottom left-hand corner
 
-7. Create a pull request from ``<your-fork>/e3sm_diags/branch-name`` to ``E3SM-Project/e3sm_diags/master``.
+7. Create a pull request from ``<your-fork>/e3sm_diags/branch-name`` to ``E3SM-Project/e3sm_diags/main``.
 
 Once this pull request is merged and GitHub Actions finishes building the docs, changes will be available on the
 `e3sm_diags documentation page <https://e3sm-project.github.io/e3sm_diags/>`_.

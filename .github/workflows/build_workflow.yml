@@ -50,7 +50,7 @@ jobs:
         shell: bash -l {0}
     strategy:
       matrix:
-        python-version: ["3.8", "3.9"]
+        python-version: ["3.8", "3.9", "3.10"]
     steps:
       - id: skip_check
         uses: fkirc/skip-duplicate-actions@master
@@ -139,11 +139,21 @@ jobs:
           # gh-pages branch must already exist
           git clone https://github.com/E3SM-Project/e3sm_diags.git --branch gh-pages --single-branch gh-pages
 
-          # Only replace main docs with latest changes. Docs for tags should be untouched.
+          # Make sure we're in the gh-pages directory.
           cd gh-pages
-          rm -r _build/html/main
-          cp -r ../docs/_build/html/main _build/html/main
 
+          # Create `.nojekyll` (if it doesn't already exist) for proper GH Pages configuration.
+          touch .nojekyll
+
+          # Add `index.html` to point to the `main` branch automatically.
+          printf '<meta http-equiv="refresh" content="0; url=./_build/html/main/index.html" />' > index.html
+
+          # Only replace `main` docs with latest changes. Docs for tags should be untouched.
+          rm -rf _build/html/main
+          mkdir -p _build/html/main
+          cp -r ../docs/_build/html/main _build/html
+
+          # Configure git using GitHub Actions credentials.
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
 

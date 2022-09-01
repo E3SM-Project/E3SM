@@ -43,7 +43,7 @@ After merging your pull request, edit ``README.md``.
 The version should be the version of E3SM Diags you ran ``./tests/test.sh`` with,
 the date should be the date you ran ``./tests/test.sh`` on,
 and the hash should be for the top commit shown by ``git log`` or on
-https://github.com/E3SM-Project/e3sm_diags/commits/master.
+https://github.com/E3SM-Project/e3sm_diags/commits/main.
 
 
 Automated tests
@@ -115,4 +115,4 @@ The version should be the version of E3SM Diags you ran
 ``python -m unittest tests/complete_run.py`` with,
 the date should be the date you ran ``python -m unittest tests/complete_run.py`` on,
 and the hash should be for the top commit shown by ``git log`` or on
-https://github.com/E3SM-Project/e3sm_diags/commits/master.
+https://github.com/E3SM-Project/e3sm_diags/commits/main.

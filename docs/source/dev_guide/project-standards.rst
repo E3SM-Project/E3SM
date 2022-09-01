@@ -16,19 +16,19 @@ The repository uses a fork-based Git workflow with tag releases.
 
 Guidelines
 ~~~~~~~~~~
-1. ``master`` must always be **deployable**
+1. ``main`` must always be **deployable**
 2. All changes are made through **support** branches on forks
-3. **Rebase** with ``master`` to avoid/resolve conflicts
+3. **Rebase** with ``main`` to avoid/resolve conflicts
 4. Make sure ``pre-commit`` checks pass when committing (enforced in CI/CD build)
 5. Open a pull-request (PR) early for discussion
 6. Once the CI/CD build passes and PR is approved, **squash and rebase** your
    commits
-7. Merge PR into ``master`` and **delete the branch**
+7. Merge PR into ``main`` and **delete the branch**
 
 Things to Avoid
 ~~~~~~~~~~~~~~~
 1. Don't merge in broken or commented out code
-2. Don't commit onto ``master`` directly
+2. Don't commit onto ``main`` directly
 3. Don't merge with conflicts (handle conflicts upon rebasing)
 
 Source: https://gist.github.com/jbenet/ee6c9ac48068889b0912
@@ -74,8 +74,8 @@ Run individual hook ::
 Squash and Rebase Commits
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Before you merge a support branch back into ``master``, the branch is typically
-squashed down to a single* buildable commit, and then rebased on top of the main repo's ``master`` branch.
+Before you merge a support branch back into ``main``, the branch is typically
+squashed down to a single* buildable commit, and then rebased on top of the main repo's ``main`` branch.
 
 \* *In some cases, it might be logical to have multiple squashed commits, as long as each commit passes the CI/CD build*
 
@@ -93,11 +93,11 @@ How to squash and rebase commits
 
 Assuming that you followed :ref:`"(b) Development Environment" <dev-env>`:
 
-1. Sync ``master`` with the main repo's ``master`` ::
+1. Sync ``main`` with the main repo's ``main`` ::
 
-    git checkout master
-    git rebase <upstream-origin>/master
-    git push -f <fork-origin> master
+    git checkout main
+    git rebase <upstream-origin>/main
+    git push -f <fork-origin> main
 
 2. Get the SHA of the commit OR number of commits to rebase to ::
 
@@ -111,10 +111,10 @@ Assuming that you followed :ref:`"(b) Development Environment" <dev-env>`:
 
     git rebase -i HEAD~[NUMBER OF COMMITS]
 
-4. Rebase branch onto ``master`` ::
+4. Rebase branch onto ``main`` ::
 
     git checkout <branch-name>
-    git rebase master
+    git rebase main
     git push -f <fork-origin> <branch-name>
 
 5. Make sure your squashed commit messages are refined
@@ -155,13 +155,13 @@ This project uses `GitHub Actions <https://github.com/E3SM-Project/e3sm_diags/ac
 
 1. CI/CD Build Workflow
 
-  This workflow is triggered by Git ``pull_request`` and ``push`` (merging PRs) events to the the main repo's ``master``.
+  This workflow is triggered by Git ``pull_request`` and ``push`` (merging PRs) events to the the main repo's ``main``.
 
   Jobs:
 
     1. Run ``pre-commit`` for formatting, linting, and type checking
     2. Run test suite in a conda environment
-    3. Publish latest `master` docs (only on `push`)
+    3. Publish latest `main` docs (only on `push`)
 
 2. CI/CD Release Workflow
 
