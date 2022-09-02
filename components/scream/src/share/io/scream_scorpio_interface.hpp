@@ -116,6 +116,12 @@ inline std::string get_nc_tag_name (const FieldTag& t, const int extent) {
     case LWBND:
       name = "lwband";
       break;
+    case SWGPT:
+      name = "swgpt";
+      break;
+    case LWGPT:
+      name = "lwgpt";
+      break;
     default:
       EKAT_ERROR_MSG("Error! Field tag not supported in netcdf files.");
   }
