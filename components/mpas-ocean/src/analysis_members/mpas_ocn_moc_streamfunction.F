@@ -508,10 +508,15 @@ contains
                      * 0.5_RKIND*(layerThickness(k,c1) + layerThickness(k,c2))
                end do
             end do
-            do k = 2, nVertLevels
+            !Integrate transport from bottom to top, which switches the sign of sumTransport
+            !there is also an implicit moc(nVertLevels+1,iTransect) = 0
+            k = nVertLevels
+            mocStreamValLatAndDepthRegionLocal(1, k, iTransect) = &
+               - sumTransport(k, iTransect)
+            do k = nVertLevels-1, 1, -1
                mocStreamValLatAndDepthRegionLocal(1, k, iTransect) = &
-                  mocStreamValLatAndDepthRegionLocal(1, k - 1, iTransect) &
-                  + sumTransport(k - 1, iTransect)
+                  mocStreamValLatAndDepthRegionLocal(1, k + 1, iTransect) &
+                  - sumTransport(k - 1, iTransect)
             end do
          end do
 
@@ -606,10 +611,15 @@ contains
                        * 0.5_RKIND*(layerThickness(k,c1) + layerThickness(k,c2))
                  end do
               end do
-              do k = 2, nVertLevels
+              !Integrate transport from bottom to top, which switches the sign of sumTransport
+              !there is also an implicit moc(nVertLevels+1,iTransect) = 0
+              k = nVertLevels
+              mocStreamValLatAndDepthRegionLocal(1, k, iTransect) = &
+                 - sumTransport(k, iTransect)
+              do k = nVertLevels - 1, 1, -1
                  mocStreamValLatAndDepthRegionLocal(1, k, iTransect) = &
-                    mocStreamValLatAndDepthRegionLocal(1, k - 1, iTransect) &
-                    + sumTransport(k - 1, iTransect)
+                    mocStreamValLatAndDepthRegionLocal(1, k + 1, iTransect) &
+                    - sumTransport(k + 1, iTransect)
               end do
            end do
 
@@ -712,10 +722,15 @@ contains
                        * 0.5_RKIND*(layerThickness(k,c1) + layerThickness(k,c2))
                  end do
               end do
-              do k = 2, nVertLevels
+              !Integrate transport from bottom to top, which switches the sign of sumTransport
+              !there is also an implicit moc(nVertLevels+1,iTransect) = 0
+              k = nVertLevels
+              mocStreamValLatAndDepthRegionLocal(1, k, iTransect) = &
+                 - sumTransport(k, iTransect)
+              do k = nVertLevels - 1, 1, -1
                  mocStreamValLatAndDepthRegionLocal(1, k, iTransect) = &
-                    mocStreamValLatAndDepthRegionLocal(1, k - 1, iTransect) &
-                    + sumTransport(k - 1, iTransect)
+                    mocStreamValLatAndDepthRegionLocal(1, k + 1, iTransect) &
+                    - sumTransport(k - 1, iTransect)
               end do
            end do
 
