@@ -91,6 +91,11 @@ void Functions<S,D>::update_prognostics_implicit(
   linear_interp(team,zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,0);
   linear_interp(team,zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,0);
   linear_interp(team,zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,0);
+  // A note on team_barrier after linear_interp: One does not need a barrier
+  // between two parallel_for loops with the same index set: e.g., two
+  // [0,nlev_pack) parallel_for ranges. But one does if e.g. a linear_interp is
+  // over nlevi_pack and the next parallel_for is over nlev_pack.
+  team.team_barrier();
 
   // Define the tmpi variable, which is really dt*(g*rho)**2/dp
   // at interfaces. Substitue dp = g*rho*dz in the above equation
