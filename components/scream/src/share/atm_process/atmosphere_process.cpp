@@ -32,6 +32,21 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
       "  - Num subcycles: " + std::to_string(m_num_subcycles) + "\n");
 
   m_timer_prefix = m_params.get<std::string>("Timer Prefix","EAMxx::");
+
+  const auto& repair_log_level = m_params.get<std::string>("repair_log_level","warn");
+  if (repair_log_level=="off") {
+    m_repair_log_level = LogLevel::off;
+  } else if (repair_log_level=="trace") {
+    m_repair_log_level = LogLevel::trace;
+  } else if (repair_log_level=="debug") {
+    m_repair_log_level = LogLevel::debug;
+  } else if (repair_log_level=="info") {
+    m_repair_log_level = LogLevel::info;
+  } else if (repair_log_level=="warn") {
+    m_repair_log_level = LogLevel::warn;
+  } else {
+    EKAT_ERROR_MSG ("Invalid value for 'repair_log_level': " + repair_log_level + "\n");
+  }
 }
 
 void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type) {
@@ -182,6 +197,7 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
 
 void AtmosphereProcess::run_precondition_checks () const {
   // Run all pre-condition property checks
+
   for (const auto& it : m_precondition_checks) {
     const auto& pc = it.second;
 
@@ -191,10 +207,11 @@ void AtmosphereProcess::run_precondition_checks () const {
     } else if (res_and_msg.result==CheckResult::Repairable) {
       // Ok, we can fix this
       pc->repair();
-      std::cout << "WARNING: Pre-condition property check failed and repaired.\n"
+      log (m_repair_log_level,
+        "WARNING: Pre-condition property check failed and repaired.\n"
         "  - Atmosphere process name: " + name() + "\n"
         "  - Property check name: " + pc->name() + "\n"
-        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n";
+        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
     } else {
       // Ugh, the test failed badly, with no chance to repair it.
       if (it.first==CheckFailHandling::Warning) {
@@ -229,10 +246,11 @@ void AtmosphereProcess::run_postcondition_checks () const {
     } else if (res_and_msg.result==CheckResult::Repairable) {
       // Ok, we can fix this
       pc->repair();
-      std::cout << "WARNING: Post-condition property check failed and repaired.\n"
+      log (m_repair_log_level,
+        "WARNING: Post-condition property check failed and repaired.\n"
         "  - Property check name: " + pc->name() + "\n"
         "  - Atmosphere process name: " + name() + "\n"
-        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n";
+        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
     } else {
       // Ugh, the test failed badly, with no chance to repair it.
       if (it.first==CheckFailHandling::Warning) {
@@ -448,6 +466,49 @@ get_internal_field(const std::string& field_name) {
 const Field& AtmosphereProcess::
 get_internal_field(const std::string& field_name) const {
   return get_internal_field_impl(field_name);
+}
+
+void AtmosphereProcess::
+add_invariant_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
+{
+  add_precondition_check (pc,cfh);
+  add_postcondition_check (pc,cfh);
+}
+
+void AtmosphereProcess::
+add_precondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
+{
+  // If a pc can repair, we need to make sure the repairable
+  // fields are among the computed fields of this atm proc.
+  // Otherwise, it would be possible for this AP to implicitly
+  // update a field, without that appearing in the dag.
+  for (const auto& ptr : pc->repairable_fields()) {
+    const auto& fid = ptr->get_header().get_identifier();
+    EKAT_REQUIRE_MSG (
+        has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
+        "Error! Input property check can repair a non-computed field.\n"
+        "  - Atmosphere process name: " + name() + "\n"
+        "  - Property check name: " + pc->name() + "\n");
+  }
+  m_precondition_checks.push_back(std::make_pair(cfh,pc));
+}
+
+void AtmosphereProcess::
+add_postcondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
+{
+  // If a pc can repair, we need to make sure the repairable
+  // fields are among the computed fields of this atm proc.
+  // Otherwise, it would be possible for this AP to implicitly
+  // update a field, without that appearing in the dag.
+  for (const auto& ptr : pc->repairable_fields()) {
+    const auto& fid = ptr->get_header().get_identifier();
+    EKAT_REQUIRE_MSG (
+        has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
+        "Error! Input property check can repair a non-computed field.\n"
+        "  - Atmosphere process name: " + name() + "\n"
+        "  - Property check name: " + pc->name() + "\n");
+  }
+  m_postcondition_checks.push_back(std::make_pair(cfh,pc));
 }
 
 void AtmosphereProcess::set_fields_and_groups_pointers () {
