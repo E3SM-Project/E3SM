@@ -275,7 +275,7 @@ contains
             do k = minLevelEdgeBot(iEdge) + 1, maxLevelEdgeTop(iEdge) - 1
 
                kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
-                                              RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))*0.25_RKIND
+                                              RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))
 
                do iTr = 1, nTracers
                   ! \kappa_2 \nabla \phi on edge
@@ -439,7 +439,7 @@ contains
                   tend(iTr, k, iCell) = tend(iTr, k, iCell) + rediKappaCell(iCell)*2.0_RKIND* &
                                         (RediKappaScaling(k, iCell)* &
                                          redi_term3_topOfCell(iTr, k, iCell) - &
-                                         *RediKappaScaling(k + 1, iCell)*redi_term3_topOfCell(iTr, k + 1, iCell))
+                                         RediKappaScaling(k + 1, iCell)*redi_term3_topOfCell(iTr, k + 1, iCell))
                end do
             end do
 
