@@ -80,7 +80,8 @@ CONTAINS
   ! Initialize the dynamical core
 
     use pio,                 only: file_desc_t
-    use hycoef,              only: hycoef_init, hyam, hybm, hyai, hybi, ps0
+    use hycoef,              only: hycoef_init, ailev, alev, &
+                                   hyai, hyam, hybi, hybm, ps0
     use ref_pres,            only: ref_pres_init
 
     use pmgrid,              only: dyndecomp_set
@@ -101,6 +102,9 @@ CONTAINS
     use time_mod,         only: tstep
     use cam_control_mod,  only: moist_physics
     use cam_abortutils,   only : endrun
+#ifdef FIVE
+    use five_intr,        only: init_five_heights, five_register_e3sm
+#endif
 
     ! PARAMETERS:
     type(file_desc_t),   intent(in)  :: fh       ! PIO file handle for initial or restart file
@@ -141,6 +145,14 @@ CONTAINS
     call t_startf('hycoef_init')
     call hycoef_init(fh)
     call t_stopf('hycoef_init')
+
+#ifdef FIVE
+   call init_five_heights(100._r8*ailev,100._r8*alev,&
+          hyai,hyam,hybi,hybm)
+   ! Register FIVE pbuf variables.  Technically, this should not be done here,
+   !  but has to be because we need to know how many FIVE levels there are
+   call five_register_e3sm()
+#endif
 
     ! Initialize physics grid reference pressures (needed by initialize_radbuffer)
     call ref_pres_init()
@@ -331,22 +343,36 @@ CONTAINS
   ! !ROUTINE:  RUN --- Driver for the 
   !
   ! !INTERFACE:
-  subroutine dyn_run( dyn_state, rc )
+  subroutine dyn_run( dyn_state, rc &
+#ifdef FIVE
+             ,t_five, q_five, u_five, v_five &
+#endif
+              )
 
     ! !USES:
     use scamMod,          only: single_column, use_3dfrc
     use se_single_column_mod, only: apply_SC_forcing
     use parallel_mod,     only : par
     use prim_driver_mod,  only: prim_run_subcycle
-    use dimensions_mod,   only : nlev
+    use dimensions_mod,   only : np, nelemd, nlev
     use time_mod,         only: tstep
     use hybrid_mod,       only: hybrid_create
+#ifdef FIVE
+    use constituents,     only: pcnst
+    use five_intr,        only: pver_five
+#endif
 !    use perf_mod, only : t_startf, t_stopf
     implicit none
 
 
     type (dyn_export_t), intent(inout)       :: dyn_state   !  container
     type(hybrid_t) :: hybrid
+#ifdef FIVE
+    real(r8), intent(in) :: t_five(np,np,pver_five,nelemd)
+    real(r8), intent(in) :: u_five(np,np,pver_five,nelemd)
+    real(r8), intent(in) :: v_five(np,np,pver_five,nelemd)
+    real(r8), intent(in) :: q_five(np,np,pver_five,pcnst,nelemd)
+#endif
 
     integer, intent(out)               :: rc      ! Return code
     integer ::  n
@@ -374,8 +400,14 @@ CONTAINS
          do n=1,se_nsplit
            ! forward-in-time RK, with subcycling
            call t_startf('prim_run_subcycle')
+#ifdef FIVE
+           call prim_run_subcycle(dyn_state%elem,hybrid,nets,nete,&
+               tstep, single_column, TimeLevel, hvcoord, n, &
+               t_five, q_five, u_five, v_five)
+#else
            call prim_run_subcycle(dyn_state%elem,hybrid,nets,nete,&
                tstep, single_column, TimeLevel, hvcoord, n)
+#endif
            call t_stopf('prim_run_subcycle')
          end do
        endif

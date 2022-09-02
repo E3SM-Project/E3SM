@@ -10,6 +10,8 @@ use spmd_utils,   only: masterproc
 use constituents, only: pcnst, cnst_name, cnst_longname
 use constituents, only: sflxnam, tendnam, fixcnam, tottnam, hadvnam, vadvnam, cnst_get_ind
 use pmgrid,       only: plev, plevp, dyndecomp_set
+use hycoef,       only: hycoef_init, ailev, alev, &
+                        hyai, hyam, hybi, hybm
 use hycoef,       only: hycoef_init
 use cam_history,  only: addfld, add_default, horiz_only
 use phys_control, only: phys_getopts
@@ -50,6 +52,9 @@ CONTAINS
 subroutine dyn_init(file, nlfilename)
    use dyn_grid,     only: define_cam_grids, initgrid
    use scamMod,      only: single_column
+#ifdef FIVE
+   use five_intr, only: init_five_heights, five_register_e3sm
+#endif
 
    ! ARGUMENTS:
    type(file_desc_t), intent(in) :: file       ! PIO file handle for initial or restart file
@@ -79,6 +84,15 @@ subroutine dyn_init(file, nlfilename)
 
    ! Initialize hybrid coordinate arrays
    call hycoef_init(file)
+
+#ifdef FIVE
+   call init_five_heights(100._r8*ailev,100._r8*alev,&
+          hyai,hyam,hybi,hybm)
+   ! Register FIVE pbuf variables.  This technically is not the right place
+   !  to call this, but has to be done here because we need to know how many
+   !  FIVE levels there are
+   call five_register_e3sm()
+#endif
 
    ! Run initgrid (the old initcom) which sets up coordinates and weights
    call initgrid()

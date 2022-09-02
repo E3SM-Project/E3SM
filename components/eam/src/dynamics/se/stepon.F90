@@ -13,7 +13,7 @@ module stepon
    use spmd_utils,     only: iam, masterproc, mpicom
    use constituents,   only: pcnst, cnst_name, cnst_longname
    use cam_abortutils, only: endrun
-   use ppgrid,         only: begchunk, endchunk
+   use ppgrid,         only: begchunk, endchunk, pcols, pver
    use physconst,      only: zvir, cappa, gravit
    use physics_types,  only: physics_state, physics_tend
    use dyn_comp,       only: dyn_import_t, dyn_export_t
@@ -491,16 +491,39 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    end subroutine stepon_run2
    
 
-subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
+subroutine stepon_run3(dtime, cam_out, phys_state, &
+#ifdef FIVE
+           pbuf2d, &
+#endif
+           dyn_in, dyn_out)
+ 
    use camsrfexch,  only: cam_out_t     
    use dyn_comp,    only: dyn_run
    use time_mod,    only: tstep
    use hycoef,      only: hyam, hybm
-   use dimensions_mod, only: nlev, nelemd, np, npsq
+   use dimensions_mod, only: nlev, nelemd, np, npsq, nelemdmax
    use se_single_column_mod, only: scm_setfield, scm_setinitial
    use dyn_comp, only: TimeLevel
    use cam_history,     only: outfld   
    use cam_logfile, only: iulog
+#ifdef FIVE
+   use dof_mod,        only: putUniquePoints
+   use edge_mod,       only: edge_g, edgeVpack_nlyr, &
+                             edgeVunpack_nlyr
+   use bndry_mod,      only: bndry_exchangeV
+   use parallel_mod,   only : par
+   use dyn_grid,       only: get_gcol_block_d
+   use phys_grid,      only: get_gcol_all_p, get_ncols_p, &
+                             transpose_chunk_to_block_five, &
+                             chunk_to_block_send_pters_five, & 
+                             chunk_to_block_recv_pters_five, &
+                             chunk_to_block_send_pters, chunk_to_block_recv_pters
+   use physics_buffer, only: physics_buffer_desc, pbuf_get_index, &
+                             pbuf_get_field, pbuf_get_chunk, dyn_time_lvls
+   use kinds,          only: int_kind
+   use five_intr,      only: pver_five
+   use spmd_dyn,       only: local_dp_map, block_buf_nrecs, chunk_buf_nrecs
+#endif
    real(r8), intent(in) :: dtime   ! Time-step
    real(r8) :: ftmp_temp(np,np,nlev,nelemd), ftmp_q(np,np,nlev,pcnst,nelemd)
    real(r8) :: out_temp(npsq,nlev), out_q(npsq,nlev), out_u(npsq,nlev), &
@@ -512,6 +535,42 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
    type (element_t), pointer :: elem(:)
+#ifdef FIVE
+   type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+
+   type(physics_buffer_desc), pointer :: pbuf_chnk(:)
+   real(r8), pointer, dimension(:,:) :: t_five
+   real(r8), pointer, dimension(:,:) :: u_five
+   real(r8), pointer, dimension(:,:) :: v_five
+   real(r8), pointer, dimension(:,:,:) :: q_five
+
+   real (r8)  :: t_five_global(npsq,pver_five,nelemd)
+   real (r8)  :: u_five_global(npsq,pver_five,nelemd)
+   real (r8)  :: v_five_global(npsq,pver_five,nelemd)
+   real (r8)  :: q_five_global(npsq,pver_five,pcnst,nelemd)
+
+   real (r8)  :: t_five_d(np,np,pver_five,nelemd)
+   real (r8)  :: u_five_d(np,np,pver_five,nelemd)
+   real (r8)  :: v_five_d(np,np,pver_five,nelemd)
+   real (r8)  :: q_five_d(np,np,pver_five,pcnst,nelemd)
+
+   integer (kind=int_kind)  :: lchnk, ioff, ilyr
+   integer :: nncols, ncols, n, m, icol, ierr, kptr, pvertot
+   integer :: pgcols(pcols), idmb1(1), idmb2(1), idmb3(1)
+
+   integer :: tsize                 ! amount of data per grid point passed to physics
+   integer :: cpter(pcols,0:pver_five)   ! offsets into chunk buffer for packing data
+   integer :: bpter(npsq,0:pver_five)    ! offsets into block buffer for unpacking data
+   integer :: block_buf_nrecs_five, chunk_buf_nrecs_five
+
+   real (r8), allocatable, dimension(:) :: bbuffer, cbuffer !transpose buffers
+
+   integer :: &
+   t_five_idx, &
+   q_five_idx, &
+   u_five_idx, &
+   v_five_idx
+#endif
    integer :: rc, i, j, k, p, ie, tl_f
 #if defined (E3SM_SCM_REPLAY)
    real(r8) :: forcing_temp(npsq,nlev), forcing_q(npsq,nlev,pcnst)
@@ -519,6 +578,207 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    
    elem => dyn_out%elem
    
+#ifdef FIVE
+
+   nullify(pbuf_chnk)
+   nullify(t_five)
+   nullify(q_five)
+   nullify(u_five)
+   nullify(v_five)
+
+   t_five_idx = pbuf_get_index('T_FIVE')
+   q_five_idx = pbuf_get_index('Q_FIVE')
+   u_five_idx = pbuf_get_index('U_FIVE')
+   v_five_idx = pbuf_get_index('V_FIVE')
+
+!goto 9999
+   if (local_dp_map) then
+     do lchnk=begchunk,endchunk
+
+       ncols=get_ncols_p(lchnk)
+       call get_gcol_all_p(lchnk,pcols,pgcols)
+
+       pbuf_chnk => pbuf_get_chunk(pbuf2d, lchnk)
+
+       !do n=1,dyn_time_lvls
+          call pbuf_get_field(pbuf_chnk, t_five_idx, t_five)!, start= (/1,1,1/),kount=(/ncols,pver_five,1/))
+          call pbuf_get_field(pbuf_chnk, q_five_idx, q_five)!, start=(/1,1,1,1/),kount=(/ncols,pver_five,pcnst,1/))
+          call pbuf_get_field(pbuf_chnk, u_five_idx, u_five)!, start=(/1,1,1/),kount=(/ncols,pver_five,1/))
+          call pbuf_get_field(pbuf_chnk, v_five_idx, v_five)!, start=(/1,1,1/),kount=(/ncols,pver_five,1/))
+       !end do
+       do icol=1,ncols
+           call get_gcol_block_d(pgcols(icol),1,idmb1,idmb2,idmb3)
+           ie   = idmb3(1)
+           ioff = idmb2(1)
+
+          do ilyr=1,pver_five
+             t_five_global(ioff,ilyr,ie) = t_five(icol,ilyr)
+             u_five_global(ioff,ilyr,ie) = u_five(icol,ilyr)
+             v_five_global(ioff,ilyr,ie) = v_five(icol,ilyr)
+
+             do m = 1, pcnst
+               q_five_global(ioff,ilyr,m,ie) = q_five(icol,ilyr,m)
+             end do
+
+          end do
+
+       end do
+     end do
+
+     do ie=1,nelemd
+         nncols = elem(ie)%idxP%NumUniquePts
+         call putUniquePoints(elem(ie)%idxP, pver_five, t_five_global(1:nncols,:,ie), t_five_d(:,:,:,ie))
+         call putUniquePoints(elem(ie)%idxP, pver_five, u_five_global(1:nncols,:,ie), u_five_d(:,:,:,ie))
+         call putUniquePoints(elem(ie)%idxP, pver_five, v_five_global(1:nncols,:,ie), v_five_d(:,:,:,ie))
+       do m = 1, pcnst
+         call putUniquePoints(elem(ie)%idxP, pver_five, q_five_global(1:nncols,:,m,ie), q_five_d(:,:,:,m,ie))
+       end do
+     end do
+
+   else
+! 9999 continue
+
+    tsize = 3 + pcnst
+
+    block_buf_nrecs_five = block_buf_nrecs/(pver+1)
+    block_buf_nrecs_five = block_buf_nrecs_five*(pver_five+1)
+    chunk_buf_nrecs_five = chunk_buf_nrecs/(pver+1)
+    chunk_buf_nrecs_five = chunk_buf_nrecs_five*(pver_five+1)
+
+    allocate( bbuffer(tsize*block_buf_nrecs_five) )
+    allocate( cbuffer(tsize*chunk_buf_nrecs_five) )
+
+!$omp parallel do private (lchnk, ncols, cpter, i, icol, ilyr, m)
+    do lchnk = begchunk,endchunk
+       ncols = get_ncols_p(lchnk)
+
+       call chunk_to_block_send_pters_five(lchnk,pcols,pver_five+1,tsize,cpter)
+
+       do i=1,ncols
+          cbuffer(cpter(i,0):cpter(i,0)+2+pcnst) = 0.0_r8
+       end do
+
+        pbuf_chnk => pbuf_get_chunk(pbuf2d, lchnk)
+
+     !do n=1,dyn_time_lvls
+        call pbuf_get_field(pbuf_chnk, t_five_idx, t_five)!, start=(/1,1,1/),kount=(/ncols,pver_five,1/))
+        call pbuf_get_field(pbuf_chnk, q_five_idx, q_five)!, start=(/1,1,1,1/),kount=(/ncols,pver_five,pcnst,1/))
+        call pbuf_get_field(pbuf_chnk, u_five_idx, u_five)!, start=(/1,1,1/),kount=(/ncols,pver_five,1/))
+        call pbuf_get_field(pbuf_chnk, v_five_idx, v_five)!, start=(/1,1,1/),kount=(/ncols,pver_five,1/))
+     !end do
+
+          do icol=1,ncols
+
+             do ilyr=1,pver_five
+                cbuffer   (cpter(icol,ilyr))     = t_five(icol,ilyr)
+                cbuffer   (cpter(icol,ilyr)+1)   = u_five(icol,ilyr)
+                cbuffer   (cpter(icol,ilyr)+2)   = v_five(icol,ilyr)
+
+                do m=1,pcnst
+                   cbuffer(cpter(icol,ilyr)+2+m) = q_five(icol,ilyr,m)
+                end do
+             end do
+
+          end do
+
+    end do
+
+       call t_barrierf('sync_chk_to_blk', mpicom)
+       call t_startf ('chunk_to_block')
+       call transpose_chunk_to_block_five(tsize, chunk_buf_nrecs_five,  &
+            block_buf_nrecs_five, cbuffer, bbuffer)
+       call t_stopf  ('chunk_to_block')
+
+       if(par%dynproc) then
+!$omp parallel do private (ie, bpter, icol, ilyr, m)
+          do ie=1,nelemd
+
+             call chunk_to_block_recv_pters_five(elem(ie)%GlobalID,npsq,pver_five+1,tsize,bpter)
+
+             do icol=1,elem(ie)%idxP%NumUniquePts
+
+                do ilyr=1,pver_five
+
+                   t_five_global(icol,ilyr,ie)  = bbuffer(bpter(icol,ilyr))
+                   u_five_global(icol,ilyr,ie)  = bbuffer(bpter(icol,ilyr)+1)
+                   v_five_global(icol,ilyr,ie)  = bbuffer(bpter(icol,ilyr)+2)
+
+                   do m=1,pcnst
+                      q_five_global(icol,ilyr,m,ie) = bbuffer(bpter(icol,ilyr)+2+m)
+                   end do
+
+                end do
+
+             end do
+
+          end do !ie
+       endif
+
+       deallocate( bbuffer )
+       deallocate( cbuffer )
+
+   call t_startf('putUniquePoints')
+   if (par%dynproc) then
+
+   do ie=1,nelemd
+       nncols = elem(ie)%idxP%NumUniquePts
+       call putUniquePoints(elem(ie)%idxP, pver_five, t_five_global(1:nncols,1:pver_five,ie), t_five_d(:,:,1:pver_five,ie))
+       call putUniquePoints(elem(ie)%idxP, pver_five, u_five_global(1:nncols,1:pver_five,ie), u_five_d(:,:,1:pver_five,ie))
+       call putUniquePoints(elem(ie)%idxP, pver_five, v_five_global(1:nncols,1:pver_five,ie), v_five_d(:,:,1:pver_five,ie))
+!     do m = 1, pcnst
+       call putUniquePoints(elem(ie)%idxP, pver_five, pcnst, q_five_global(1:nncols,1:pver_five,1:pcnst,ie), q_five_d(:,:,1:pver_five,1:pcnst,ie))
+!     end do
+   end do
+! Necessary for boundary points
+   do ie=1,nelemd
+       kptr = 0
+       call edgeVpack_nlyr(edge_g, elem(ie)%desc, t_five_d(:,:,:,ie), pver_five, kptr, pver_five)
+   end do
+   call bndry_exchangeV(par, edge_g)
+   do ie = 1, nelemd
+       kptr = 0
+       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, t_five_d(:,:,:,ie), pver_five, kptr, pver_five)
+   end do
+
+   do ie=1,nelemd
+       kptr = 0
+       call edgeVpack_nlyr(edge_g, elem(ie)%desc, u_five_d(:,:,:,ie), pver_five, kptr, pver_five)
+   end do
+   call bndry_exchangeV(par, edge_g)
+   do ie = 1, nelemd
+       kptr = 0
+       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, u_five_d(:,:,:,ie), pver_five, kptr, pver_five)
+   end do
+
+   do ie=1,nelemd
+       kptr = 0
+       call edgeVpack_nlyr(edge_g, elem(ie)%desc, v_five_d(:,:,:,ie), pver_five, kptr, pver_five)
+   end do
+   call bndry_exchangeV(par, edge_g)
+   do ie = 1, nelemd
+       kptr = 0
+       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, v_five_d(:,:,:,ie), pver_five, kptr, pver_five)
+   end do
+
+   do m = 1, pcnst
+   do ie=1,nelemd
+       kptr = 0
+       call edgeVpack_nlyr(edge_g, elem(ie)%desc, q_five_d(:,:,:,m,ie), pver_five, kptr, pver_five)
+   end do
+   call bndry_exchangeV(par, edge_g)
+   do ie = 1, nelemd
+       kptr = 0
+       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, q_five_d(:,:,:,m,ie), pver_five, kptr, pver_five)
+   end do
+   end do
+
+   endif
+   call t_stopf('putUniquePoints')
+
+   endif ! local_dp_map
+
+#endif
+
 #if (defined E3SM_SCM_REPLAY)   
 
    tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
