@@ -164,19 +164,22 @@ module seq_frac_mct
 
   use iMOAB, only: iMOAB_DefineTagStorage
   use seq_comm_mct, only : mphaxid !            iMOAB app id for phys atm, on cpl pes
+  use seq_comm_mct, only : mbaxid  !           iMOAB id for atm migrated mesh to coupler pes (for spectral, different than mphaxid)
   use seq_comm_mct, only : mblxid !            iMOAB app id for lnd on cpl pes
   use seq_comm_mct, only : mblx2id !           iMOAB id for land mesh instanced from MCT on coupler pes
   use seq_comm_mct, only : mbox2id !           iMOAB id for ocn mesh instanced from MCT on coupler pes
   use seq_comm_mct, only : mboxid !            iMOAB app id for ocn on cpl pes
   use seq_comm_mct, only : mbixid !            iMOAB for sea-ice migrated to coupler
   use seq_comm_mct, only : atm_pg_active !     flag if PG mesh instanced
+  use seq_comm_mct, only : mbintxao ! iMOAB id for intx mesh between ocean and atmosphere
   ! for tri grid, sameg_al would be false 
   use seq_comm_mct, only : sameg_al !          same grid atm and land; used throughout, initialized in lnd_init
 
   use seq_comm_mct, only : mbrxid   !          iMOAB id of moab rof migrated to coupler pes 
 
   use iMOAB, only : iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage, &
-        iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh
+        iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh, &
+        iMOAB_ApplyScalarProjectionWeights, iMOAB_SendElementTag, iMOAB_ReceiveElementTag
   
   use shr_kind_mod, only: CL => SHR_KIND_CL, CX => SHR_KIND_CX, CXX => SHR_KIND_CXX
   use iso_c_binding ! C_NULL_CHAR 
@@ -312,11 +315,15 @@ contains
 
     ! moab
     integer                  :: tagtype, numco,  tagindex, ent_type, ierr, arrSize
-    character(CXX)           :: tagname
+    character(CXX)           :: tagname, tagNameExt
+    character*32             ::  wgtIdef
     real(r8),    allocatable :: tagValues(:) ! used for setting some default tags
     integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
     integer kgg  ! index in global number attribute, used for global id in MOAB 
+    integer idintx ! used for context for intx atm - ocn
+    integer id_join ! used for example for atm%cplcompid
+    integer :: mpicom ! we are on coupler PES here
     character(30)            :: outfile, wopts
 
     !----- formats -----
@@ -392,6 +399,15 @@ contains
             call shr_sys_abort(subname//' ERROR in setting afrac tag on phys atm')
          endif
          deallocate(tagValues)
+#ifdef MOABDEBUG    
+         outfile = 'atmCplFr.h5m'//C_NULL_CHAR
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+         ierr = iMOAB_WriteMesh(mphaxid, trim(outfile), trim(wopts))
+         if (ierr .ne. 0) then
+           write(logunit,*) subname,' error in writing mesh '
+           call shr_sys_abort(subname//' ERROR in writing mesh ')
+         endif
+#endif
        endif
     endif
 
@@ -686,7 +702,74 @@ contains
        if (atm_present) then
           mapper_a2o => prep_ocn_get_mapper_Fa2o()
           call seq_map_map(mapper_a2o, fractions_a, fractions_o, fldlist='afrac',norm=.false.)
+
           ! TODO moab projection using a2o moab map 
+          ! first, send the field to atm on coupler
+          !  actually, afrac is 1 on all cells on mphaxid ; we need to project it to ocn
+          ! if on spectral mesh, we need to send it 
+          !  afrac ext tag that is not defined yet ? 
+          idintx = 100*atm%cplcompid + ocn%cplcompid ! something different, to differentiate it; ~ 618 !
+          mpicom = seq_comm_mpicom(CPLID) ! 
+          tagName = 'afrac'//C_NULL_CHAR
+          tagNameExt = 'afrac_ext'//C_NULL_CHAR
+          if (.not. atm_pg_active) then
+            tagtype = 1  ! dense, double
+            numco = 16 !    special case
+            ierr = iMOAB_DefineTagStorage(mbaxid, tagNameExt, tagtype, numco,  tagindex )
+            ! also, set it to 1.0, 16 times per cell
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining the afrac_ext tag    '
+               call shr_sys_abort(subname//' ERROR in setting ofrac_ext tag  ')
+            endif
+            ierr  = iMOAB_GetMeshInfo ( mbaxid, nvert, nvise, nbl, nsurf, nvisBC );
+            arrSize = nvise(1)*16 ! this assumes always np  = 4 
+            allocate(tagValues(arrSize) )
+            tagValues = 1.0
+            ent_type = 1 ! cells, actually spectral quads
+            ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagNameExt, arrSize , ent_type, tagValues)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in setting the afrac_ext tag    '
+               call shr_sys_abort(subname//' ERROR in setting ofracc_ext tag  ')
+            endif
+          endif
+          ! we have to send towards the coverage, because local mesh is not "covering" the target
+          ! we have to use the graph computed at the end of prep_atm_ocn_moab 
+          ! if (mphaxid .ge. 0) then
+          ! ierr = iMOAB_ComputeCommGraph( mphaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
+          !  typeA, typeB, id_join, idintx)
+          if ((mphaxid .ge. 0) .and. (mbintxao .ge. 0)) then
+            id_join = atm%cplcompid ! atm cpl ext id for moab (6) 
+            ierr = iMOAB_SendElementTag(mphaxid, tagName, mpicom, idintx) ! context is intx ao 
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in sending afrac tag    '
+               call shr_sys_abort(subname//' ERROR in sending afrac tag  ')
+            endif
+             ! now project to ocean grid; first receive, then project
+            wgtIdef = 'scalar'//C_NULL_CHAR
+            if (atm_pg_active) then
+              ierr = iMOAB_ReceiveElementTag(mbintxao, tagName, mpicom, id_join)
+              if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in receiving afrac tag    '
+                call shr_sys_abort(subname//' ERROR in receiving afrac tag  ')
+              endif
+              ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxao, wgtIdef, tagName, tagName)
+
+            else
+              ierr = iMOAB_ReceiveElementTag(mbintxao, tagNameExt, mpicom, id_join)
+              if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in receiving afrac_ext tag    '
+                call shr_sys_abort(subname//' ERROR in receiving afrac_ext tag  ')
+              endif
+              ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxao, wgtIdef, tagNameExt, tagName)
+            endif
+            if (ierr .ne. 0) then
+              write(logunit,*) subname,' error in applying weights for afrac on ocean calculation'
+              call shr_sys_abort(subname//' ERROR in applying weights')
+            endif
+            
+          endif
+   
+          
        endif
 
 

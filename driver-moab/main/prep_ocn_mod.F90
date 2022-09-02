@@ -19,6 +19,7 @@ module prep_ocn_mod
   use seq_comm_mct,     only : atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
   use seq_comm_mct,     only : mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   use seq_comm_mct,     only : mbintxao ! iMOAB id for intx mesh between ocean and atmosphere; output from this
+  use seq_comm_mct,     only : mphaxid  ! iMOAB id for atm phys grid, on cpl pes; for atm_pg_active it will be the same as mbaxid
   use seq_comm_mct,     only : mhid     ! iMOAB id for atm instance
   use seq_comm_mct,     only : mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   use dimensions_mod,   only : np     ! for atmosphere degree 
@@ -1823,6 +1824,37 @@ contains
    if (iamroot_CPLID) then
       write(logunit,*) 'finish iMOAB graph in atm-ocn prep  '
    end if
+
+   ! compute a second comm graph, used in a 2 hop migration, between phis grid on coupler and intx ao on coupler,
+   ! so first atm fields will be migrated to coupler, and then in another hop, distributed to the processors that actually need the
+   !  those degrees of freedom 
+   ! start copy
+     ! compute the comm graph between phys atm on coupler side  and intx-atm-ocn, to be able to project in a second hop
+     ! from atm to ocean
+
+     ! to project from atm to ocean, first send using this comm graph, then 
+     ! apply weights (map); send from 
+   if (iamroot_CPLID) then
+       ! mpicom_CPLID is a module local variable, already initialized
+       write(logunit,*) 'launch iMOAB computecommgraph with args ',  &
+        mphaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
+         typeA, typeB, id_join, idintx
+   end if
+   ! for these to work, we need to define the tags of size 16 (np x np) on coupler atm, 
+   !   corresponding to this phys grid graph
+   if (mphaxid .ge. 0) then
+      ierr = iMOAB_ComputeCommGraph( mphaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
+            typeA, typeB, id_join, idintx)
+      if (ierr .ne. 0) then
+      write(logunit,*) subname,' error in computing graph phys grid - atm/ocn intx '
+      call shr_sys_abort(subname//' ERROR  in computing graph phys grid - atm/ocn intx ')
+      endif
+      if (iamroot_CPLID) then
+         write(logunit,*) 'finish iMOAB graph in atm-ocn prep  '
+      end if
+   endif
+
+   ! end copy
  end subroutine prep_atm_ocn_moab
 
  subroutine prep_ice_ocn_moab(infodata)
