@@ -346,6 +346,8 @@ subroutine modal_aer_opt_init()
        cam_chempkg_is('trop_mam4_resus_soag').or.cam_chempkg_is('trop_mam7').or. &
        cam_chempkg_is('trop_mam9').or.cam_chempkg_is('trop_strat_mam7').or. &
        cam_chempkg_is('linoz_mam4_resus').or.cam_chempkg_is('linoz_mam4_resus_soag').or.&
+! ++ QZR for Explicit SOA 14 July 2022
+       cam_chempkg_is('linoz_mam4_resus_soa_mom_soag_vbs').or. &       
 ! ++MW
        cam_chempkg_is('trop_strat_mam4_resus_mom_soag').or.&
 ! --MW
@@ -863,6 +865,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                         hygroseasalt(i)  = vol(i)*hygro_aer
                       end do
                   end if
+#endif
+! QZR added missing #endif 13 July 2022 
 #if ( defined MODAL_AERO_4MODE_MOM || (defined MODAL_AERO_4MODE_SOA_MOM ))
                   if (trim(spectype) == 'm-organic') then
                      do i = 1, ncol

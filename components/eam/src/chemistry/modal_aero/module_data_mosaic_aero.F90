@@ -83,6 +83,14 @@ module module_data_mosaic_aero
   integer, parameter :: jsulf_rich_NUM = 71     !BSINGH - Number of entities in jsulf_rich array
   integer, parameter :: d_mdrh_DIM2    = 4      !BSINGH - Number of entities in d_MDRH 2nd dimension
   !     real(r8), parameter :: mass_cutoff = 1.e-3	! ng/m^3
+
+!-------VBS dynamic solver parameters----------------------
+  real(r8), parameter :: xsoa_dynam_alpha=0.01
+  real(r8), parameter :: xsoa_dynam_phimin=0.3
+  real(r8), parameter :: xsoa_dynam_dtsub_fixed=0.1
+  real(r8), parameter :: xsoa_dynam_dtsub_min=0.001
+!-----------------------------------------------------------
+
   real(r8), parameter :: mass_cutoff = 1.e-6	! new value on 02-mar-2010
   
   real(r8), parameter :: density_min_allow = 1.0	! minimum allowed density (g/cc)

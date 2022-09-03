@@ -1321,8 +1321,8 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
 #endif
  
       if (dmc > 0._r8 ) then
-
-#if ( ( defined (MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM ) &&  defined RAIN_EVAP_TO_COARSE_AERO  &&  defined MOSAIC_SPECIES )
+! QZR if edited 13 July 2022
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM ) &&  ( defined RAIN_EVAP_TO_COARSE_AERO )  &&  defined MOSAIC_SPECIES )
          dst3_num = (dmc+camc+co3mc)/(ssmc+dmc+bcmc+pommc+soamc+mommc+nh4mc+no3mc+camc+co3mc+clmc) * aer(ii,kk,num_coarse)*1.0e-6_r8 ! #/cm^3
 #elif ( (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM) && defined RAIN_EVAP_TO_COARSE_AERO )
          dst3_num = dmc/(ssmc+dmc+bcmc+pommc+soamc+mommc) * aer(ii,kk,num_coarse)*1.0e-6_r8 ! #/cm^3

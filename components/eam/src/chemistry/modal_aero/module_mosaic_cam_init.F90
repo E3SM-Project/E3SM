@@ -24,7 +24,8 @@ contains
     use spmd_utils,                   only: masterproc
     use cam_logfile,                  only: iulog
 
-    use modal_aero_amicphys,          only: max_mode, mam_amicphys_check_mosaic_mw
+    use modal_aero_data_amicphys,     only: max_mode
+    use modal_aero_amicphys,          only: mam_amicphys_check_mosaic_mw
 
     use modal_aero_data,              only: &
          modeptr_pcarbon, ntot_amode, &

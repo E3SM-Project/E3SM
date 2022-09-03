@@ -1572,8 +1572,8 @@ secant_in_bounds : &
     integer,  intent(in)    :: ncol                              ! no. of columns in current chunk
     real(r8), intent(in)    :: vmr(ncol,pver,gas_pcnst)          ! xported species vmr
     real(r8), intent(in)    :: pdel(pcols,pver)                  ! delta about midpoints
-    real(r8), intent(in)    :: col_delta(:,0:,:)                 ! layer column densities (molecules/cm^2)
-    real(r8), intent(out)   :: col_dens(:,:,:)                   ! column densities ( /cm**2 )
+    real(r8), intent(in)    :: col_delta(:,0:,:)   ! layer column densities (molecules/cm^2)
+    real(r8), intent(out)   :: col_dens(:,:,:)     ! column densities ( /cm**2 )
 
     !---------------------------------------------------------------
     !        the local variables

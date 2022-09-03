@@ -748,7 +748,18 @@ contains
        call outfld( rxn_names(i-phtcnt), reaction_rates(:,:,i), ncol, lchnk )
     enddo
 
+    if (masterproc) then
+                write(iulog,*) 'reaction_rates(49) =',reaction_rates(:,:,49),'reaction_rates(48) =', reaction_rates(:,:,48)
+    end if
     call adjrxt( reaction_rates, invariants, invariants(1,1,indexm), ncol )
+     
+    !if (masterproc) then
+     !           write(iulog,*) 'reaction_rates(49) =', reaction_rates(:,:,49) !, 'and inv(:,:,49) =', invariants(:,:,49)
+                != ',m,' n = ',n,'
+                !  gas_ac_name=',gas_ac_name(n),'solsym=',solsym(n),'
+                !  cnst_name=',trim(cnst_name(m))
+    !end if
+     
 
     !-----------------------------------------------------------------------
     !        ... Compute the photolysis rates at time = t(n+1)
@@ -926,8 +937,13 @@ contains
        call outfld( tag_names(i), reaction_rates(:ncol,:,rxt_tag_map(i)), ncol, lchnk )
     enddo
 
+    !if ( has_linoz_data .and. .not. &
+     !  (chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
+     !  .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' ) ) then
+    ! + QZR added linoz_mam4_resus_soa_mom_soag_vbs
     if ( has_linoz_data .and. .not. &
        (chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
+       .or.chem_name == 'linoz_mam4_resus_soa_mom_soag_vbs' &
        .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' ) ) then
        ltrop_sol(:ncol) = troplev(:ncol)
     else
@@ -957,10 +973,10 @@ contains
     !-----------------------------------------------------------------------
     !	... Solve for "Explicit" species
     !-----------------------------------------------------------------------
-    call t_startf('exp_sol')
-    call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol )
-    call t_stopf('exp_sol')
-
+    !call t_startf('exp_sol')
+    !call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol )
+    !call t_stopf('exp_sol')
+    ! QZR commented out Lines 960-962, no need current chemUCI-chemMZT-MOSAIC_AMIP Branch calls 'exp_sol' at Lines 1162-1165 below
     !-----------------------------------------------------------------------
     !	... Solve for "Implicit" species
     !-----------------------------------------------------------------------
@@ -1284,7 +1300,12 @@ contains
           if ( n > 0 ) then
              if ( .not. any( aer_species == n ) ) then
                if (trim(solsym(n))/='DMS' .and. trim(solsym(n))/='SO2' .and. &
-                   trim(solsym(n))/='H2SO4' .and. trim(solsym(n))/='SOAG') then
+                   trim(solsym(n))/='H2SO4' .and. trim(solsym(n))/='SOAG' .and. &
+                   trim(solsym(n))/='SOAG0' .and. trim(solsym(n))/='SOAG15' .and. &
+                   trim(solsym(n))/='SOAG24' .and. trim(solsym(n))/='SOAG31' .and. &
+                   trim(solsym(n))/='SOAG32' .and. trim(solsym(n))/='SOAG33' .and. & 
+                   trim(solsym(n))/='SOAG34' .and. trim(solsym(n))/='SOAG35' ) then
+                   !trim(solsym(n))/='H2SO4' .and. trim(solsym(n))/='SOAG') then
                    !write(iulog,*) 'n=',n,'solsym=',trim(solsym(n))
                    vmr(:ncol,:,n) = vmr_old2(:ncol,:,n)
                endif

@@ -2,6 +2,7 @@ module module_mosaic_box_aerchem
 
 use shr_kind_mod,  only: r8 => shr_kind_r8
 use physconst,     only: pi
+use modal_aero_data_amicphys, only: max_gas, max_aer, max_mode
 
 implicit none
 
@@ -67,7 +68,9 @@ contains
   ! update: dec 2004
   !-----------------------------------------------------------------------
 
-  subroutine mosaic_box_aerchemistry(        aH2O,               T_K,            &!Intent-ins
+  subroutine mosaic_box_aerchemistry( latndx,            lonndx,           lund, &!Intent-ins
+       jsub_in,                n_mode,       aircon,                             &
+       aH2O,                   T_K,                                              &
        P_atm,                  RH_pc,        dtchem,                             &
        mcall_load_mosaic_parameters,         mcall_print_aer_in, sigmag_a,       &
        kappa_nonelectro,                                                         &
@@ -76,10 +79,11 @@ contains
        gas_avg,                gas_netprod_otrproc,              Dp_dry_a,       &
        dp_wet_a,               jhyst_leg,                                        &
        mosaic_vars_aa,                                                           &
+       qgas_avg,    qgas_cur,   qaer_cur,     qnum_cur,           qwtr_cur,      &
        mass_dry_a_bgn,         mass_dry_a,                                       &!Intent-outs
        dens_dry_a_bgn,         dens_dry_a,   water_a_hyst,       aH2O_a,         &
-       uptkrate_h2so4,          gam_ratio,    jaerosolstate_bgn, Hconc_sav) ! to save aerosol pH (dsj+zlu)
-
+       uptkrate_h2so4,         uptkaer,      gam_ratio,                          &
+       jaerosolstate_bgn, Hconc_sav                                              ) ! to save aerosol pH (dsj+zlu)
 
     use module_data_mosaic_aero, only:                                             &
          nbin_a_max, ngas_aerchtot, ngas_volatile, naer, nsalt,                    &!Parameters
@@ -89,19 +93,25 @@ contains
          mw_aer_mac, zc, MW_c, za, MW_a, mw_comp_a, dens_comp_a, b_zsr,aw_min,     &
          mw_electrolyte, partial_molar_vol, a_zsr, d_mdrh, b_mtem, ref_index_a,    &
          Nmax_mesa, nmax_ASTEM, mosaic_vars_aa_type,jc_h ! pH dsj+zlu
-         
+
     implicit none
 
     !Intent-ins
+    integer,  intent(in) :: latndx, lonndx        ! lat and lon indices
+    integer,  intent(in) :: lund                  ! logical unit for diagnostic output
+    integer,  intent(in) :: jsub_in               ! subarea index
+    integer,  intent(in) :: n_mode           !current number of active modes
     integer, intent(in) :: mcall_load_mosaic_parameters, mcall_print_aer_in
 
+    real(r8), intent(in) :: aircon           !Air molar density (kmol/m3)
     real(r8), intent(in) :: aH2O
     real(r8), intent(in) :: T_K, P_atm, RH_pc
     real(r8), intent(in) :: dtchem
 
     real(r8), intent(in), dimension(nbin_a_max)        :: sigmag_a
     real(r8), intent(in), dimension(naer)              :: kappa_nonelectro
-                
+    real(r8), intent(in) :: uptkaer(:,:)
+
     !Intent-inouts
     integer, intent(inout), dimension(nbin_a_max) :: jaerosolstate
     integer, intent(inout), dimension(nbin_a_max) :: jhyst_leg
@@ -114,15 +124,21 @@ contains
     real(r8), intent(in),    dimension(ngas_aerchtot)     :: gas_netprod_otrproc
               ! gas_netprod_otrproc = gas net production rate from other processes
               !    such as gas-phase chemistry and emissions (nmol/m3/s)
-              ! this allows the condensation (gasaerexch) routine to apply production and condensation loss 
+              ! this allows the condensation (gasaerexch) routine to apply production and condensation loss
               !    together, which is more accurate numerically
               ! NOTE - must be >= zero, as numerical method can fail when it is negative
               ! NOTE - currently for mosaic, only the value for h2so4 can be non-zero
     real(r8), intent(inout), dimension(nbin_a_max)        :: Dp_dry_a, dp_wet_a
 
-    ! note - purpose of this data structure is to simplify passing new variables 
+    ! note - purpose of this data structure is to simplify passing new variables
     !        into and out of the many mosaic routines
     type (mosaic_vars_aa_type), intent(inout) :: mosaic_vars_aa
+
+    real(r8), intent(inout) :: qaer_cur(max_aer,max_mode) !Current aerosol mass mix ratios (mol/mol)
+    real(r8), intent(inout) :: qnum_cur(max_mode)         !Current aerosol number mix ratios (#/kmol)
+    real(r8), intent(inout) :: qwtr_cur(max_mode)         !Current aerosol water mix ratios (mol/mol)
+    real(r8), intent(inout) :: qgas_avg(max_gas)          !average gas conc. over dtchem time step (mol/mol)
+    real(r8), intent(inout) :: qgas_cur(max_gas)          !Current gas mix ratios (mol/mol)
 
     !Intent-outs
     integer, intent(out), dimension(nbin_a_max) :: jaerosolstate_bgn
@@ -169,15 +185,15 @@ contains
     real(r8), dimension(Nanion,nbin_a_max) :: ma
     real(r8), dimension(nelectrolyte,3,nbin_a_max) :: electrolyte
 
-    
-    call update_thermodynamic_constants(  aH2O,    T_K,                                & !intent-ins 
+
+    call update_thermodynamic_constants(  aH2O,    T_K,                                & !intent-ins
          sat_soa,    aH2O_a,   log_gamZ,  Keq_sl,  sigma_water,  Kp_nh4cl,             & !intent-outs
          Kp_nh4no3,  Kp_nh3,   Keq_ll,    Keq_gl,  Keq_sg,       MDRH_T,               &
          molality0                                                                     )
 
-! rc_easter 2013-07-30 - 
+! rc_easter 2013-07-30 -
 ! the purpose of the irepeat loop was to provide more accurate cpu timings
-! now that the cnn<-->gas,aer mapping is done earlier, you would have to 
+! now that the cnn<-->gas,aer mapping is done earlier, you would have to
 !    save the gas,aer,num_a,... arrays then restore them for each repeat cycle
     do irepeat_mosaic = 1, 1
        mcall_print_aer = mcall_print_aer_in
@@ -204,7 +220,9 @@ contains
             total_species, tot_so4_in, tot_no3_in, tot_cl_in, tot_nh4_in, tot_na_in,    & !intent-outs
             tot_ca_in, tot_lim2_in )
 
-       call MOSAIC_dynamic_solver(      mcall_print_aer,     dtchem,                    & !intent-ins
+       call MOSAIC_dynamic_solver(   latndx,                 lonndx,          lund,     &!Intent-ins
+            jsub_in,             n_mode,                     aircon,                    &
+            mcall_print_aer,     dtchem,                                                &
             aH2O,           T_K,        RH_pc,               P_atm,                     &
             irepeat_mosaic, tot_cl_in,  sigmag_a,            kappa_nonelectro,          &
             jaerosolstate,  flux_s,     flux_l,              volatile_s,                & !intent-inouts
@@ -216,8 +234,9 @@ contains
             gam,            log_gamZ,   gam_ratio,           Keq_ll,           Keq_gl,  &
             Keq_sg,         Keq_sl,     Kp_nh4cl,            Kp_nh4no3,        ma,      &
             sigma_water,    MDRH_T,     molality0,                                      &
-            total_species,  aH2O_a,     uptkrate_h2so4,                                 &
+            total_species,  aH2O_a,     uptkrate_h2so4,      uptkaer,                   &
             mosaic_vars_aa,                                                             &
+            qgas_avg, qgas_cur,   qaer_cur,   qnum_cur,      qwtr_cur,                  &
             iprint_input,                                                               & !intent-outs
             mass_dry_a_bgn, dens_dry_a_bgn,                                             &
             water_a_hyst,   jaerosolstate_bgn                                           )
@@ -225,7 +244,7 @@ contains
        if (mosaic_vars_aa%f_mos_fail > 0) then
           return
        endif
-       
+
        call overall_massbal_out( iprint_input, 0, mosaic_vars_aa%isteps_ASTEM, aer, gas, &
           tot_so4_in, tot_no3_in, tot_cl_in, tot_nh4_in, tot_na_in, tot_ca_in, tot_lim2_in, mosaic_vars_aa )
 
@@ -269,14 +288,14 @@ contains
          rtol_mesa, nmax_astem, nmax_mesa, mosaic_vars_aa_type
 
     use module_data_mosaic_asecthp, only: isize_of_ibin, itype_of_ibin,dcen_sect       ! TBD
-    
+
     use module_mosaic_ext,        only: aerosol_water_up, aerosol_phase_state, &
                                         calc_dry_n_wet_aerosol_props, conform_electrolytes
-    
+
     use module_mosaic_support, only: mosaic_err_mess
 
     implicit none
-    
+
     !Intent-ins
     real(r8), intent(in) :: dtchem
     real(r8), intent(in) :: aH2O, T_K, RH_pc, P_atm
@@ -296,10 +315,10 @@ contains
     real(r8), intent(inout), dimension(nbin_a_max) :: water_a
 
     type (mosaic_vars_aa_type), intent(inout) :: mosaic_vars_aa
-   
+
     !Intent-outs
 
-        
+
 
     !Local variables
     integer :: ibin, isize, itype, iv
@@ -362,7 +381,7 @@ contains
 
     gas_netprod_otrproc(1:ngas_volatile) = 0.0_r8
 
-    call update_thermodynamic_constants(  aH2O,    T_K,                                & !intent-ins 
+    call update_thermodynamic_constants(  aH2O,    T_K,                                & !intent-ins
          sat_soa,    aH2O_a,   log_gamZ,  Keq_sl,  sigma_water,  Kp_nh4cl,             & !intent-outs
          Kp_nh4no3,  Kp_nh3,   Keq_ll,    Keq_gl,  Keq_sg,       MDRH_T,               &
          molality0                                                                     )
@@ -395,17 +414,17 @@ contains
     do ibin = 1, nbin_a
        call check_aerosol_mass(ibin, jaerosolstate,jphase,aer,num_a, mass_dry_a)
        jaerosolstate_bgn(ibin) = jaerosolstate(ibin)
-       
+
        if(jaerosolstate(ibin) .ne. no_aerosol) then!goto 500
-          
+
           call conform_electrolytes(jtotal,ibin,XT,aer,gas,electrolyte,total_species,tot_cl_in)        ! conforms aer(jtotal) to a valid aerosol
           call check_aerosol_mass(ibin,jaerosolstate,jphase,aer,num_a, mass_dry_a) ! check mass again after conform_electrolytes
-          
+
           jaerosolstate_bgn(ibin) = jaerosolstate(ibin)
           if(jaerosolstate(ibin) .ne. no_aerosol)then !goto 500    ! ignore this bin
-             
+
              call conform_aerosol_number(ibin,jaerosolstate,aer,num_a,vol_dry_a,Dp_dry_a) ! adjusts number conc so that it conforms with bin mass and diameter
-             
+
              ! when mhyst_method = mhyst_uporlo_waterhyst,
              ! initialize water_a_hyst at first time step using the user-input jhyst_leg
              !BSINGH - 05/28/2013(RCE updates - if cond structure has been modified)
@@ -441,7 +460,7 @@ contains
           dens_dry_a_bgn(ibin) = max( density_min_allow, &
                min( density_max_allow, dens_dry_a_bgn(ibin) ) )
        end if
-       
+
        if (jaerosolstate(ibin) .eq. no_aerosol) then
           if (msize_framework == msectional) then
              isize = isize_of_ibin(ibin)
@@ -450,9 +469,9 @@ contains
              Dp_wet_a(ibin) = Dp_dry_a(ibin)
           end if
        end if
-       
+
     enddo
-    
+
 
 
   ! compute aerosol phase state
@@ -479,11 +498,11 @@ contains
            ri_shell_a, ri_core_a, ri_avg_a                                )  ! output
      endif
   enddo
-    
-    
+
+
     do ibin = 1, nbin_a
-       if(jaerosolstate(ibin).ne.no_aerosol) then 
-          
+       if(jaerosolstate(ibin).ne.no_aerosol) then
+
           if (mhyst_method == mhyst_uporlo_jhyst) then
              if(jhyst_leg(ibin) == jhyst_lo)then
                 water_a_hyst(ibin) = 0.0
@@ -512,7 +531,7 @@ contains
              write(tmp_str,*) '*** MOSAIC_aerosol_water - bad mhyst_method =', mhyst_method!BSINGH - 05/28/2013(RCE updates)
              call mosaic_err_mess( tmp_str )   ! write message then abort
           endif
-          
+
        endif
        if ( (jaerosolstate(ibin) .eq. no_aerosol) .or.   &
             (min(mass_dry_a(ibin),vol_dry_a(ibin)) .le. 1.0e-35) ) then
@@ -520,7 +539,7 @@ contains
        end if
        dens_dry_a(ibin) = max( density_min_allow, &
             min( density_max_allow, dens_dry_a(ibin) ) )
-       
+
     enddo
 
     return
@@ -534,8 +553,10 @@ contains
   ! author: Rahul A. Zaveri
   ! update: jan 2005
   !-----------------------------------------------------------------------
- 
-  subroutine MOSAIC_dynamic_solver( mcall_print_aer,    dtchem,                    & !intent-ins
+
+  subroutine MOSAIC_dynamic_solver(    latndx,         lonndx,           lund,     &!Intent-ins
+       jsub_in,            n_mode,                     aircon,                     &
+       mcall_print_aer,    dtchem,                                                 &
        aH2O,           T_K,        RH_pc,               P_atm,                     &
        irepeat_mosaic, tot_cl_in,  sigmag_a,                                       &
        kappa_nonelectro,                                                           &
@@ -548,12 +569,13 @@ contains
        gam,            log_gamZ,   gam_ratio,           Keq_ll,           Keq_gl,  &
        Keq_sg,         Keq_sl,     Kp_nh4cl,            Kp_nh4no3,        ma,      &
        sigma_water,    MDRH_T,     molality0,                                      &
-       total_species,  aH2O_a,     uptkrate_h2so4,                                 &
+       total_species,  aH2O_a,     uptkrate_h2so4,      uptkaer,                   &
        mosaic_vars_aa,                                                             &
+       qgas_avg, qgas_cur,      qaer_cur,   qnum_cur,            qwtr_cur,         &
        iprint_input,                                                               & !intent-outs
        mass_dry_a_bgn, dens_dry_a_bgn,                                             &
        water_a_hyst,   jaerosolstate_bgn                                           )
-       
+
     use module_data_mosaic_aero,  only: nbin_a_max, ngas_aerchtot, ngas_volatile,        &
          nelectrolyte,                                                                   &!Parameters
          Ncation, naer, no_aerosol, jtotal, mhyst_uporlo_waterhyst, jhyst_lo,            &!Parameters
@@ -568,25 +590,31 @@ contains
          mosaic_vars_aa_type
 
     use module_data_mosaic_asecthp, only: isize_of_ibin, itype_of_ibin, dcen_sect       ! TBD
-    
+
     use module_mosaic_astem,      only: ASTEM
-    
+
     use module_mosaic_ext,        only: aerosol_water_up,calc_dry_n_wet_aerosol_props,&
          conform_electrolytes
 !   use module_print_aer,         only: print_aer
     use module_mosaic_lsode,      only: mosaic_lsode
 
     use module_mosaic_support, only: mosaic_err_mess
-    
+
     implicit none
-    
+
     !Intent-ins
+    integer,  intent(in) :: latndx, lonndx        ! lat and lon indices
+    integer,  intent(in) :: lund                  ! logical unit for diagnostic output
+    integer,  intent(in) :: jsub_in               ! subarea index
+    integer,  intent(in) :: n_mode           !current number of active modes
     integer, intent(in) :: mcall_print_aer
     integer, intent(in) :: irepeat_mosaic
-    
+
+    real(r8), intent(in) :: aircon           !Air molar density (kmol/m3)
     real(r8), intent(in) :: dtchem
     real(r8), intent(in) :: aH2O, T_K, RH_pc, P_atm
 
+    real(r8), intent(in) :: uptkaer(:,:) 
     real(r8), intent(in), dimension(nbin_a_max) :: sigmag_a
     real(r8), intent(in), dimension(naer)       :: kappa_nonelectro
 
@@ -603,7 +631,7 @@ contains
     real(r8), intent(inout), dimension(nbin_a_max) :: num_a, Dp_dry_a
     real(r8), intent(inout), dimension(nbin_a_max) :: Dp_wet_a, gam_ratio
     real(r8), intent(inout), dimension(nbin_a_max) :: aH2O_a
-    
+
     real(r8), intent(inout), dimension(nbin_a_max) :: dens_dry_a
     real(r8), intent(inout), dimension(nbin_a_max) :: mass_dry_a
     real(r8), intent(inout), dimension(nbin_a_max) :: mass_soluble_a
@@ -611,10 +639,11 @@ contains
     real(r8), intent(inout), dimension(ngas_aerchtot) :: gas
     real(r8), intent(inout), dimension(ngas_volatile) :: sat_soa, total_species
     real(r8), intent(inout), dimension(ngas_aerchtot) :: gas_avg  ! average gas conc. over dtchem time step (nmol/m3)
+
     real(r8), intent(in),    dimension(ngas_aerchtot) :: gas_netprod_otrproc
               ! gas_netprod_otrproc = gas net production rate from other processes
               !    such as gas-phase chemistry and emissions (nmol/m3/s)
-              ! this allows the condensation (gasaerexch) routine to apply production and condensation loss 
+              ! this allows the condensation (gasaerexch) routine to apply production and condensation loss
               !    together, which is more accurate numerically
               ! NOTE - must be >= zero, as numerical method can fail when it is negative
               ! NOTE - currently for mosaic, only the value for h2so4 can be non-zero
@@ -628,7 +657,7 @@ contains
 
     real(r8), intent(inout), dimension(Ncation,nbin_a_max) :: mc
     real(r8), intent(inout), dimension(Nanion,nbin_a_max) :: ma
-    
+
     real(r8), intent(inout), dimension(ngas_volatile,nbin_a_max) :: flux_s,flux_l
     real(r8), intent(inout), dimension(ngas_volatile,nbin_a_max) :: volatile_s
     real(r8), intent(inout), dimension(ngas_volatile,nbin_a_max) :: phi_volatile_s
@@ -642,19 +671,25 @@ contains
     real(r8), intent(inout) :: uptkrate_h2so4  ! rate of h2so4 uptake by aerosols (1/s)
 
     type (mosaic_vars_aa_type), intent(inout) :: mosaic_vars_aa
-   
+
+    real(r8), intent(inout) :: qaer_cur(max_aer,max_mode) !Current aerosol mass mix ratios (mol/mol)
+    real(r8), intent(inout) :: qnum_cur(max_mode)         !Current aerosol number mix ratios (#/kmol)
+    real(r8), intent(inout) :: qwtr_cur(max_mode)         !Current aerosol water mix ratios (mol/mol)
+    real(r8), intent(inout) :: qgas_avg(max_gas)          !average gas conc. over dtchem time step (mol/mol)
+    real(r8), intent(inout) :: qgas_cur(max_gas)          !Current gas mix ratios (mol/mol)
+
     !Intent-outs
     integer, intent(out) :: iprint_input
     integer, intent(out), dimension(nbin_a_max) :: jaerosolstate_bgn
 
     real(r8), intent(out), dimension(nbin_a_max) :: water_a_hyst
     real(r8), intent(out), dimension(nbin_a_max) :: mass_dry_a_bgn,dens_dry_a_bgn
-        
+
     !Local variables
     integer ibin, isize, itype, iv
 
     real(r8) :: XT
-    
+
 
     real(r8), dimension(nbin_a_max) :: area_dry_a,water_a_up
     real(r8), dimension(nbin_a_max) :: area_wet_a,mass_wet_a,vol_wet_a,dens_wet_a
@@ -664,7 +699,7 @@ contains
     real(r8), dimension(nelectrolyte,3,nbin_a_max) :: epercent
 
     complex, dimension(nbin_a_max) :: ri_shell_a,ri_avg_a,ri_core_a
-    
+
     character(len=100) :: tmp_str
 
 
@@ -681,20 +716,20 @@ contains
     do ibin = 1, nbin_a
        call check_aerosol_mass(ibin, jaerosolstate,jphase,aer,num_a, mass_dry_a)
        jaerosolstate_bgn(ibin) = jaerosolstate(ibin)
-       
+
        if(jaerosolstate(ibin) .ne. no_aerosol) then!goto 500
-          
+
           !call conform_aerosol_number(ibin,jaerosolstate,aer,num_a,vol_dry_a, Dp_dry_a)     ! adjusts number conc so that it conforms with bin mass and diameter
-          
+
           call conform_electrolytes(jtotal,ibin,XT,aer,gas,electrolyte,total_species,tot_cl_in)        ! conforms aer(jtotal) to a valid aerosol
           call check_aerosol_mass(ibin,jaerosolstate,jphase,aer,num_a, mass_dry_a) ! check mass again after conform_electrolytes
-          
+
           jaerosolstate_bgn(ibin) = jaerosolstate(ibin)
           if(jaerosolstate(ibin) .ne. no_aerosol)then !goto 500    ! ignore this bin
-             
+
              ! *** moved "call conform_aerosol_number" here instead of above by RAZ
              call conform_aerosol_number(ibin,jaerosolstate,aer,num_a,vol_dry_a,Dp_dry_a) ! adjusts number conc so that it conforms with bin mass and diameter
-             
+
              ! when mhyst_method = mhyst_uporlo_waterhyst,
              ! initialize water_a_hyst at first time step using the user-input jhyst_leg
              !BSINGH - 05/28/2013(RCE updates - if cond structure has been modified)
@@ -730,7 +765,7 @@ contains
           dens_dry_a_bgn(ibin) = max( density_min_allow, &
                min( density_max_allow, dens_dry_a_bgn(ibin) ) )
        end if
-       
+
        if (jaerosolstate(ibin) .eq. no_aerosol) then
           if (msize_framework == msectional) then
              isize = isize_of_ibin(ibin)
@@ -739,7 +774,7 @@ contains
              Dp_wet_a(ibin) = Dp_dry_a(ibin)
           end if
        end if
-       
+
     enddo
 
     !cc        call save_pregrow_props !3D
@@ -748,12 +783,14 @@ contains
     !
     !-------------------------------------
     ! do dynamic gas-aerosol mass transfer for dtchem [s]
-    
+
     if(mGAS_AER_XFER .eq. mON)then
        !        call wall_loss(dtchem)
-       
+
        if(mDYNAMIC_SOLVER .eq. mASTEM)then
-          call ASTEM( mcall_print_aer,          dtchem,           &!intent-ins
+          call ASTEM(     latndx,            lonndx,           lund,                         &!Intent-ins
+               jsub_in,                  n_mode,              aircon,                        &
+               mcall_print_aer,          dtchem,                                             &
                sigmag_a,  aH2O,     T_K,         RH_pc,        P_atm,                        &
                kappa_nonelectro,                                                             &
                jaerosolstate, flux_s,            flux_l,       volatile_s, iprint_input,     &!intent -inout
@@ -765,7 +802,8 @@ contains
                water_a_up,    aH2O_a,            total_species,tot_cl_in, ma,       gam,     &
                log_gamZ,      gam_ratio,         Keq_ll,       Keq_gl,    Keq_sg,   Kp_nh4cl,&
                Kp_nh4no3,     sigma_water,       Keq_sl,       MDRH_T,    molality0,         &
-               uptkrate_h2so4,                   mosaic_vars_aa,                             &
+               uptkrate_h2so4,uptkaer,           mosaic_vars_aa,                             &
+               qgas_avg, qgas_cur,      qaer_cur,     qnum_cur,           qwtr_cur,          &
                area_dry_a,    area_wet_a,        mass_wet_a,vol_wet_a,                       &!intent-out
                dens_wet_a,    ri_shell_a,        ri_avg_a,     ri_core_a                     )
 
@@ -792,31 +830,31 @@ contains
           !     jsalt_index,jsulf_poor,jsulf_rich,Nmax_mesa, phi_salt_old,          &
           !     zero_water_flag                                                     )
        elseif(mDYNAMIC_SOLVER .eq. mLSODE)then
-          
+
           call MOSAIC_LSODE(dtchem)
-          
+
        endif
-       
+
     endif
-    
+
     !-------------------------------------
-    
+
     ! grows or shrinks size depending on mass increase or decrease
-    
+
     do ibin = 1, nbin_a
        if(jaerosolstate(ibin) .ne. no_aerosol)then
           call conform_aerosol_size( ibin,jaerosolstate,aer,num_a,       Dp_dry_a,  &
-               vol_dry_a,mw_aer_mac,dens_aer_mac, mosaic_vars_aa )    ! BOX 
+               vol_dry_a,mw_aer_mac,dens_aer_mac, mosaic_vars_aa )    ! BOX
           if (mosaic_vars_aa%f_mos_fail > 0) then
              return
           endif
        endif
     enddo
-    
-    
+
+
     do ibin = 1, nbin_a
-       if(jaerosolstate(ibin).ne.no_aerosol) then 
-          
+       if(jaerosolstate(ibin).ne.no_aerosol) then
+
           if (mhyst_method == mhyst_uporlo_jhyst) then
              if(jhyst_leg(ibin) == jhyst_lo)then
                 water_a_hyst(ibin) = 0.0
@@ -845,7 +883,7 @@ contains
              write(tmp_str,*) '*** MOSAIC_dynamic_solver - bad mhyst_method =', mhyst_method!BSINGH - 05/28/2013(RCE updates)
              call mosaic_err_mess( tmp_str )   ! write message then abort
           endif
-          
+
           ! compute final mass and density
           call calc_dry_n_wet_aerosol_props(                                &
                ibin, jaerosolstate, aer, electrolyte, water_a, num_a,         &  ! input
@@ -854,7 +892,7 @@ contains
                area_dry_a, area_wet_a, mass_dry_a, mass_wet_a,                &  ! output
                vol_dry_a, vol_wet_a, dens_dry_a, dens_wet_a,                  &  ! output
                ri_shell_a, ri_core_a, ri_avg_a                                )  ! output
-          
+
        endif
        if ( (jaerosolstate(ibin) .eq. no_aerosol) .or.   &
             (min(mass_dry_a(ibin),vol_dry_a(ibin)) .le. 1.0e-35) ) then
@@ -862,13 +900,13 @@ contains
        end if
        dens_dry_a(ibin) = max( density_min_allow, &
             min( density_max_allow, dens_dry_a(ibin) ) )
-       
+
     enddo
-    
+
     if (mcall_print_aer == 1 .or. mcall_print_aer == 2) then
        !call print_aer(1,jaerosolstate,isteps_ASTEM,iter_MESA,aer,gas,electrolyte,  &
        !     mc,num_a,Dp_dry_a,Dp_wet_a,area_dry_a,area_wet_a,mass_wet_a,mass_dry_a,&
-       !     water_a)      
+       !     water_a)
     end if
 
     return
@@ -1012,8 +1050,8 @@ contains
     use module_data_mosaic_aero, only: ngas_aerchtot, ngas_volatile,            &!
          naer, nbin_a_max, jtotal, nbin_a,                                      &!Input
          ih2so4_g, ihno3_g, ihcl_g, inh3_g, ilim2_g,                            &
-         iso4_a, ino3_a, icl_a, inh4_a, ina_a, ica_a, ilim2_a                   
-    
+         iso4_a, ino3_a, icl_a, inh4_a, ina_a, ica_a, ilim2_a
+
     implicit none
 
     !Subroutine Arguments
@@ -1256,7 +1294,7 @@ contains
   ! update: jan 2005
   !-----------------------------------------------------------------------
   subroutine conform_aerosol_number(ibin,jaerosolstate,aer,num_a,vol_dry_a, Dp_dry_a)
-    
+
     use module_data_mosaic_aero,  only: nbin_a_max,naer,mSECTIONAL,no_aerosol,  &!Parameters
          jtotal, mw_aer_mac,dens_aer_mac,                                       &!Parameters
          msize_framework,                                                       &!Input
@@ -1275,7 +1313,7 @@ contains
     real(r8), intent(in), dimension(naer,3,nbin_a_max) :: aer
 
     !intent-inout
-    real(r8), intent(inout), dimension(nbin_a_max) :: num_a,vol_dry_a    
+    real(r8), intent(inout), dimension(nbin_a_max) :: num_a,vol_dry_a
 
 
     !Local variables
@@ -1417,7 +1455,7 @@ contains
   ! update: oct 2005
   !-----------------------------------------------------------------------
   subroutine conform_aerosol_size( ibin, jaerosolstate, aer, num_a, Dp_dry_a,     &
-       vol_dry_a, mw_aer_mac, dens_aer_mac, mosaic_vars_aa )   ! TOUCH 
+       vol_dry_a, mw_aer_mac, dens_aer_mac, mosaic_vars_aa )   ! TOUCH
 
     !      include 'v33com9a'
     use module_data_mosaic_aero,  only : nbin_a_max, naer, no_aerosol, jtotal,       &!Parameters
@@ -1468,7 +1506,7 @@ contains
     ! update size
     !
     ! Box-model only
-    
+
     mosaic_vars_aa%f_mos_fail = -1
     if(vol_dry_a(ibin)<0.0_r8) then
        write(lunerr,*)'mosaic conform_aerosol_size EXITING due to negative vol_dry_a(',ibin,')=', &
@@ -1796,7 +1834,7 @@ contains
   ! author: Rahul A. Zaveri
   ! update: jan 2005
   !-----------------------------------------------------------------------
-  subroutine update_thermodynamic_constants(     aH2O,         T_K_in,               & !intent-ins 
+  subroutine update_thermodynamic_constants(     aH2O,         T_K_in,               & !intent-ins
        sat_soa,    aH2O_a,   log_gamZ,  Keq_sl,  sigma_water,  Kp_nh4cl,             & !intent-outs
        Kp_nh4no3,  Kp_nh3,   Keq_ll,    Keq_gl,  Keq_sg,       MDRH_T,               &
        molality0                                                                     )
@@ -2114,13 +2152,13 @@ contains
   ! update: jan 2005
   !-----------------------------------------------------------------------
   subroutine aerosol_optical_properties(                                 &
-          gas, aer, num_a, water_a,                                      & 
-          dens_comp_a, mw_comp_a, dens_aer_mac, mw_aer_mac, ref_index_a, & 
-          Dp_dry_a, Dp_wet_a, dp_core_a,                                 & 
+          gas, aer, num_a, water_a,                                      &
+          dens_comp_a, mw_comp_a, dens_aer_mac, mw_aer_mac, ref_index_a, &
+          Dp_dry_a, Dp_wet_a, dp_core_a,                                 &
           ri_shell_a, ri_core_a, ri_avg_a, jaerosolstate, jphase,        &
           tot_cl_in, tot_nh4_in, tot_no3_in, XT, area_dry_a, area_wet_a, &
           dens_dry_a, dens_wet_a, mass_dry_a, mass_wet_a, vol_dry_a,     &
-          vol_wet_a, total_species, electrolyte     ) 
+          vol_wet_a, total_species, electrolyte     )
 
     use module_data_mosaic_aero, only: &
        icl_a, inh4_a, ino3_a, ihcl_g, inh3_g, ihno3_g, jtotal, &
@@ -2132,7 +2170,7 @@ contains
     implicit none
 
     ! subr arguments
-    integer,  intent(inout), dimension(nbin_a_max) :: jaerosolstate, jphase 
+    integer,  intent(inout), dimension(nbin_a_max) :: jaerosolstate, jphase
 
     real(r8), intent(in), dimension(naer)       :: dens_aer_mac, mw_aer_mac
     real(r8), intent(in), dimension(naercomp)   :: dens_comp_a,mw_comp_a
@@ -2148,13 +2186,13 @@ contains
     real(r8), intent(inout), dimension(nbin_a_max) :: dens_dry_a, dens_wet_a
     real(r8), intent(inout), dimension(nbin_a_max) :: mass_dry_a, mass_wet_a
     real(r8), intent(inout), dimension(nbin_a_max) :: vol_dry_a, vol_wet_a
-    real(r8), intent(inout), dimension(ngas_volatile) :: total_species    
+    real(r8), intent(inout), dimension(ngas_volatile) :: total_species
     real(r8), intent(inout), dimension(nelectrolyte,3,nbin_a_max) :: electrolyte
 
 
     complex,  intent(in), dimension(naercomp)   :: ref_index_a
     complex,  intent(inout), dimension(nbin_a_max) :: ri_shell_a, ri_avg_a, ri_core_a
-    
+
     ! local variables
     integer iaer, ibin, je, k
 
@@ -2183,21 +2221,21 @@ contains
 
     ! calc properties for each bin
     do  ibin = 1, nbin_a
-       
+
        call check_aerosol_mass( ibin, jaerosolstate, jphase, aer, num_a, mass_dry_a )
-       
+
        if(jaerosolstate(ibin) .ne. no_aerosol) then
-          
+
           ! conforms aer(jtotal) to a valid aerosol
           call conform_electrolytes( jtotal, ibin, XT, aer, gas, electrolyte, total_species, tot_cl_in )
-          
+
           ! check mass again after conform_electrolytes
           call check_aerosol_mass( ibin, jaerosolstate, jphase, aer, num_a, mass_dry_a )
-          
+
           if(jaerosolstate(ibin) .ne. no_aerosol) then
              ! adjusts number conc so that it conforms with bin mass and diameter
              call conform_aerosol_number( ibin, jaerosolstate, aer, num_a, vol_dry_a, Dp_dry_a)
-             
+
              ! calc Dp_wet, ref index
              call calc_dry_n_wet_aerosol_props(                                &
                   ibin, jaerosolstate, aer, electrolyte, water_a, num_a,         &  ! input
@@ -2208,9 +2246,9 @@ contains
                   ri_shell_a, ri_core_a, ri_avg_a                                )  ! output
           endif
        endif
-       
+
     enddo
-    
+
     return
   end subroutine aerosol_optical_properties
 

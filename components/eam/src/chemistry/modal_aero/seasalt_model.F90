@@ -156,8 +156,9 @@ module seasalt_model
   !     fmoa=4 for Rinaldi et al. (JGR, 2013)
    integer             :: fmoa = 1
 
-! TODO SMB: Implement better mechanism for setting this switch.
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
+! TODO SMB: Implement better mechanism for setting this switch. 
+! QZR added MODAL_AERO_4MODE_SOA_MOM 13 July 2022
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_SOA_MOM)
    logical :: has_mam_mom = .true.
 #else
    logical :: has_mam_mom = .false.
@@ -166,6 +167,7 @@ module seasalt_model
 ! Order: mpoly, mprot, mlip
     real(r8), dimension(n_org_burrows), parameter :: & ! OM:OC mass ratios for input fields (mpoly, mprot, mlip)
          OM_to_OC_in = (/ 2.3_r8, 2.2_r8, 1.3_r8 /)
+         !OM_to_OC_in = (/ 2.3_r8, 2.2_r8, 1.3_r8 /) !duplication QZR commented
     real(r8), dimension(n_org_burrows), parameter :: & ! Langmuir parameters (inverse C_1/2)  [m3 mol-1]
          alpha_org = (/ 90.58_r8, 25175._r8, 18205._r8 /)
 ! Molecular weights needed for output of optional diagnostic variable F_eff
@@ -1266,7 +1268,6 @@ subroutine init_ocean_data()
 
        call addfld('mass_frac_bub_lip', horiz_only, 'A', ' ', 'total organic mass fraction (lip)' ) 
        call add_default ('mass_frac_bub_lip', 1, ' ')
-
        om_mode_loop: do m_om=1,nslt_om
 #if ( defined MODAL_AERO_9MODE )
           m = nslt+(n-1)*om_num_modes+m_om

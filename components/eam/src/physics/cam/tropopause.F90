@@ -59,12 +59,12 @@ module tropopause
   integer, parameter    :: TROP_ALG_HYBSTOB   = 7    ! Hybrid Stobie Algorithm
   integer, parameter    :: TROP_ALG_E90       = 8    ! E90 Algorithm
   
+  !logical ,parameter    :: output_all         = .False.       !-QZR (not needed causes compile error) output tropopause info from all algorithms
   integer, parameter    :: TROP_NALG          = 8    ! Number of Algorithms  
   character,parameter   :: TROP_LETTER(TROP_NALG) = (/ ' ', 'A', 'C', 'S', 'T', 'W', 'H', 'E' /)
                                                      ! unique identifier for output, don't use P
 
   ! These variables should probably be controlled by namelist entries.
-  logical ,parameter    :: output_all         = .False.              ! output tropopause info from all algorithms
   integer ,parameter    :: default_primary    = TROP_ALG_TWMO        ! default primary algorithm
   integer ,parameter    :: default_backup     = TROP_ALG_CLIMATE     ! default backup algorithm
 
@@ -113,7 +113,7 @@ contains
       !-----------------------------------------------------------------------------
 
       ! set default values, tropopause_climo_file is set by build-namelist.
-      tropopause_output_all = .False.
+      tropopause_output_all = .False. 
       tropopause_E90_thrd   = 100.e-9_r8
 
       if (masterproc) then

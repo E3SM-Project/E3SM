@@ -1387,7 +1387,7 @@ end function chem_is_active
     use mo_tracname,         only : solsym
     use physconst,           only : rga
     use phys_control,        only : phys_getopts
-    use mo_chem_utls,        only : get_spc_ndx
+    use mo_chem_utls,        only : get_spc_ndx !, get_rxt_ndx  !QZR added get_rxt_ndx from Qi's https://github.com/E3SM-Project/E3SM/commit/c82a94fca065985134e9348153689553e575a04c
     use cam_abortutils,      only: endrun
  
     implicit none
@@ -1449,6 +1449,7 @@ end function chem_is_active
     integer :: nstep
 
     integer :: tim_ndx
+    !integer :: uci1_ndx ! QZR from https://github.com/E3SM-Project/E3SM/commit/c82a94fca065985134e9348153689553e575a04c
     integer :: e90_ndx
 
     logical :: lq(pcnst)
@@ -1501,6 +1502,15 @@ end function chem_is_active
     else
       call tropopause_e90_3d(state, tmp_tropLev, tropLev, tropFlag, tropFlagInt)
     end if
+
+    !QZR added from
+    !https://github.com/E3SM-Project/E3SM/commit/c82a94fca065985134e9348153689553e575a04c
+    !uci1_ndx = get_rxt_ndx('uci1')
+    !if (uci1_ndx <= 0) then
+    !  call tropopause_find(state, tropLev, primary=TROP_ALG_E90, backup=TROP_ALG_CLIMATE)
+    !else
+    !  call tropopause_e90_3d(state, tmp_tropLev, tropLev, tropFlag)
+    !end if
 
     tim_ndx = pbuf_old_tim_idx()
     call pbuf_get_field(pbuf, ndx_pblh,       pblh)
@@ -1660,6 +1670,12 @@ end function chem_is_active
                           chem_name, drydepflx, cam_in%cflx, ptend%q, pbuf, ixcldliq, ixcldice, tropFlag=tropFlag, &
                           tropFlagInt=tropFlagInt)
 
+    !if (masterproc) then
+     !           write(iulog,*) 'm(49) =', m(49), 'and rate(:,:,49) =', rate(:,:,49)  
+                != ',m,' n = ',n,'
+                !  gas_ac_name=',gas_ac_name(n),'solsym=',solsym(n),'
+                !  cnst_name=',trim(cnst_name(m))
+    !end if
     call t_stopf( 'chemdr' )
 
 !-----------------------------------------------------------------------

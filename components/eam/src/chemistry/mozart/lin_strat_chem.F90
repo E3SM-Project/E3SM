@@ -994,8 +994,8 @@ end subroutine linoz_readnl
        mass(:ncol,k) = pdel(:ncol,k) * rgrav  ! air mass in kg/m2
     enddo
     
-    efactor  = (1.d0 - exp(-delta_t/o3_tau))
-    LOOP_COL: do i=1,ncol
+    !efactor  = (1.d0 - exp(-delta_t/o3_tau))
+    !LOOP_COL: do i=1,ncol !QZR not needed same as mingxuanwupnnl/atm/chemUCI-chemMZT-MOSAIC_AMIP
 
 !o3_tau is 2-days applied to all species    
     efactor  = 1.d0 - exp(-delta_t/o3_tau)
