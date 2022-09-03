@@ -1061,44 +1061,44 @@ contains
          ! now, if on coupler pes, receive mesh; if on comp pes, send mesh
          if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
          !  send mesh to coupler
-         if (atm_pg_active) then !  change : send the pg2 mesh, not coarse mesh, when atm pg active
-            ierr = iMOAB_SendMesh(mhpgid, mpicom_join, mpigrp_cplid, id_join, partMethod)
-         else
-            ! still use the mhid, original coarse mesh
-            ierr = iMOAB_SendMesh(mhid, mpicom_join, mpigrp_cplid, id_join, partMethod)
-         endif
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in sending mesh from atm comp '
-            call shr_sys_abort(subname//' ERROR in sending mesh from atm comp')
-         endif
+            if (atm_pg_active) then !  change : send the pg2 mesh, not coarse mesh, when atm pg active
+               ierr = iMOAB_SendMesh(mhpgid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+            else
+               ! still use the mhid, original coarse mesh
+               ierr = iMOAB_SendMesh(mhid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+            endif
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in sending mesh from atm comp '
+               call shr_sys_abort(subname//' ERROR in sending mesh from atm comp')
+            endif
          endif
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-         appname = "COUPLE_ATM"//C_NULL_CHAR
-         ! migrated mesh gets another app id, moab atm to coupler (mbax)
-         ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbaxid)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in registering ', appname
-            call shr_sys_abort(subname//' ERROR registering '// appname)
-         endif
-         ierr = iMOAB_ReceiveMesh(mbaxid, mpicom_join, mpigrp_old, id_old)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in receiving mesh on atm coupler '
-            call shr_sys_abort(subname//' ERROR in receiving mesh on atm coupler ')
-         endif
+            appname = "COUPLE_ATM"//C_NULL_CHAR
+            ! migrated mesh gets another app id, moab atm to coupler (mbax)
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbaxid)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in registering ', appname
+               call shr_sys_abort(subname//' ERROR registering '// appname)
+            endif
+            ierr = iMOAB_ReceiveMesh(mbaxid, mpicom_join, mpigrp_old, id_old)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in receiving mesh on atm coupler '
+               call shr_sys_abort(subname//' ERROR in receiving mesh on atm coupler ')
+            endif
 #ifdef MOABDEBUG
-         ! debug test
-         if (atm_pg_active) then !
-            outfile = 'recMeshAtmPG.h5m'//C_NULL_CHAR
-         else
-            outfile = 'recMeshAtm.h5m'//C_NULL_CHAR
-         endif
-         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
-   !      write out the mesh file to disk
-         ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in writing mesh '
-            call shr_sys_abort(subname//' ERROR in writing mesh ')
-         endif
+            ! debug test
+            if (atm_pg_active) then !
+               outfile = 'recMeshAtmPG.h5m'//C_NULL_CHAR
+            else
+               outfile = 'recMeshAtm.h5m'//C_NULL_CHAR
+            endif
+            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+      !      write out the mesh file to disk
+            ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in writing mesh '
+               call shr_sys_abort(subname//' ERROR in writing mesh ')
+            endif
 #endif
          endif
          !  iMOAB_FreeSenderBuffers needs to be called after receiving the mesh
@@ -1106,24 +1106,19 @@ contains
          if (mhid .ge. 0) then  ! we are on component atm pes
             context_id = id_join
             if (atm_pg_active) then! we send mesh from mhpgid app
-            ierr = iMOAB_FreeSenderBuffers(mhpgid, context_id)
+               ierr = iMOAB_FreeSenderBuffers(mhpgid, context_id)
             else
-            ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
+               ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
             endif
             if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in freeing send buffers '
-            call shr_sys_abort(subname//' ERROR in freeing send buffers')
-         endif
+               write(logunit,*) subname,' error in freeing send buffers '
+               call shr_sys_abort(subname//' ERROR in freeing send buffers')
+            endif
          endif
          
          ! send also the phys grid to coupler, because it will be used for fractions
          ! start copy for mphaid->mphaxid 
          if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
-         !  send mesh to coupler
-         if (atm_pg_active) then !  do not send again, mbaxid will be the same as mphaxid
-            mphaxid = mbaxid ! we already have pg mesh on coupler, as an FV mesh
-         else
-            ! still use the mhid, original coarse mesh
             ID_JOIN_ATMPHYS = id_join + 200 ! somewhat arbitrary, just a different comp id
             ierr = iMOAB_SendMesh(mphaid, mpicom_join, mpigrp_cplid, ID_JOIN_ATMPHYS, partMethod)
             if (ierr .ne. 0) then
@@ -1132,46 +1127,45 @@ contains
             endif
          endif
          
-         endif
-         if (MPI_COMM_NULL /= mpicom_new  .and.  .not. atm_pg_active ) then !  we are on the coupler pes
-
-         appname = "COUPLE_ATMPH"//C_NULL_CHAR
-         ! migrated mesh gets another app id, moab atm to coupler (mbax)
-         ID_JOIN_ATMPHYS = id_join + 200 ! somewhat arbitrary, just a different comp id
-         ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, ID_JOIN_ATMPHYS, mphaxid)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in registering ', appname
-            call shr_sys_abort(subname//' ERROR registering '// appname)
-         endif
-         ID_OLD_ATMPHYS = id_old + 200 ! kind of arbitrary
-         ierr = iMOAB_ReceiveMesh(mphaxid, mpicom_join, mpigrp_old, ID_OLD_ATMPHYS)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in receiving mesh on atm coupler '
-            call shr_sys_abort(subname//' ERROR in receiving mesh on atm coupler ')
-         endif
+         if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+            appname = "COUPLE_ATMPH"//C_NULL_CHAR
+            ! migrated mesh gets another app id, moab atm to coupler (mbax)
+            ID_JOIN_ATMPHYS = id_join + 200 ! somewhat arbitrary, just a different comp id
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, ID_JOIN_ATMPHYS, mphaxid)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in registering ', appname
+               call shr_sys_abort(subname//' ERROR registering '// appname)
+            endif
+            ID_OLD_ATMPHYS = id_old + 200 ! kind of arbitrary
+            ierr = iMOAB_ReceiveMesh(mphaxid, mpicom_join, mpigrp_old, ID_OLD_ATMPHYS)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in receiving mesh on atm coupler '
+               call shr_sys_abort(subname//' ERROR in receiving mesh on atm coupler ')
+            endif
 #ifdef MOABDEBUG
-         ! debug test
-         
-         outfile = 'recPhysAtm.h5m'//C_NULL_CHAR
-         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
-   !      write out the mesh file to disk
-         ierr = iMOAB_WriteMesh(mphaxid, trim(outfile), trim(wopts))
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in writing mesh '
-            call shr_sys_abort(subname//' ERROR in writing mesh ')
-         endif
+            ! debug test
+            
+            outfile = 'recPhysAtm.h5m'//C_NULL_CHAR
+            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+      !      write out the mesh file to disk
+            ierr = iMOAB_WriteMesh(mphaxid, trim(outfile), trim(wopts))
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in writing mesh '
+               call shr_sys_abort(subname//' ERROR in writing mesh ')
+            endif
 #endif
          endif
          !  iMOAB_FreeSenderBuffers needs to be called after receiving the mesh
-         if (MPI_COMM_NULL /= mpicom_old  .and. .not. atm_pg_active) then ! it means we are on the component pes (atmosphere)
+         if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
             context_id = ID_JOIN_ATMPHYS
             ierr = iMOAB_FreeSenderBuffers(mphaid, context_id)
             
             if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in freeing send buffers '
-            call shr_sys_abort(subname//' ERROR in freeing send buffers')
+               write(logunit,*) subname,' error in freeing send buffers '
+               call shr_sys_abort(subname//' ERROR in freeing send buffers')
+            endif
          endif
-         endif
+
       
 
    !  comment out now; we will not send directly to atm spectral on coupler; we need to send in the
@@ -1196,14 +1190,14 @@ contains
          ! we can receive those tags only on coupler pes, when mbaxid exists
          ! we have to check that before we can define the tag
          if (mbaxid .ge. 0 .and. .not. (atm_pg_active) ) then
-         tagname = trim(seq_flds_a2x_ext_fields)//C_NULL_CHAR
-         tagtype = 1  ! dense, double
-         numco = np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
-         ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags '
-            call shr_sys_abort(subname//' ERROR in defining tags ')
-         endif
+            tagname = trim(seq_flds_a2x_ext_fields)//C_NULL_CHAR
+            tagtype = 1  ! dense, double
+            numco = np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
+            ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags '
+               call shr_sys_abort(subname//' ERROR in defining tags ')
+            endif
          endif
       endif
       ! ocean

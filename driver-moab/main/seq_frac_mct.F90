@@ -383,7 +383,6 @@ contains
          arrSize = nvert(1) * 5 ! there are 5 tags that need to be zeroed out
          allocate(tagValues(arrSize) )
          ent_type = 0 ! vertex type
-         if (atm_pg_active) ent_type = 1 ! cells type then
          tagValues = 0 
          ierr = iMOAB_SetDoubleTagStorage ( mphaxid, tagname, arrSize , ent_type, tagValues)
          if (ierr .ne. 0) then
