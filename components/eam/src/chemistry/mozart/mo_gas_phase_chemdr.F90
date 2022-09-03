@@ -1325,7 +1325,9 @@ contains
           if ( n > 0 ) then
              if ( .not. any( aer_species == n ) ) then
                if (trim(solsym(n))/='DMS' .and. trim(solsym(n))/='SO2' .and. &
-                   trim(solsym(n))/='H2SO4' .and. trim(solsym(n))/='SOAG') then
+                   trim(solsym(n))/='H2SO4' .and. trim(solsym(n))/='SOAG' .and. &
+                   trim(solsym(n))/='HNO3' .and. trim(solsym(n))/='NH3' .and. & 
+                   trim(solsym(n))/='HCL' ) then
                    !write(iulog,*) 'n=',n,'solsym=',trim(solsym(n))
                    vmr(:ncol,:,n) = vmr_old2(:ncol,:,n)
                endif
