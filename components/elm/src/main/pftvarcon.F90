@@ -1282,6 +1282,16 @@ contains
     needleleaf(noveg+1:nndllf_tree) = 1
     woody(ntree+1:nshrub)= 2
 
+    if (masterproc) then
+          write(iulog,*)
+          write(iulog,*) 'Using PFT physiological parameters from: ', paramfile
+          write(iulog,*) '        -- index -- name                                    -- woody -- needleleaf -- nonvascaular -- crop -- nfixer --'
+          do i = 0, npft-1
+              write(iulog,*) i, pftname(i), int(woody(i)), needleleaf(i), nonvascular(i), int(crop(i)), nfixer(i)
+          end do
+          write(iulog,*)
+    end if
+
     ! 'mergetoclmpft' in the 'paramfile' is used as an indicator to user-defined parameter file
     else
        ! if 'nfixer' flag is defined for each PFT
@@ -1308,7 +1318,7 @@ contains
 
        ! the following assumed PFTs are arranged by blocks (NOT suggested to use):
        !    not-vegetated (0), trees (needleleaf, broadleaf), shrubs(needleleaf, broadleaf), graminoids, non-vasculars, and crops
-       nndllf_tree          = 0 ! index for last type of tree
+       nndllf_tree          = 0 ! index for last type of needle-leaf tree
        ntree                = 0 ! index for last type of tree
        nshrub               = 0 ! index for last type of shrub
        ngraminoid           = 0 ! index for last type of graminoid

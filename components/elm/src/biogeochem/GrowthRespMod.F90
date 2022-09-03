@@ -139,7 +139,7 @@ contains
              grperc(ivt(p)) * grpnow(ivt(p))
          transfer_livecroot_gr(p)      = livecrootc_xfer_to_livecrootc(p) * &
              grperc(ivt(p)) * (1._r8 - grpnow(ivt(p)))
-         if (woody(ivt(p)) == 1._r8) then
+         if (woody(ivt(p)) >= 1.0_r8) then
             cpool_livestem_gr(p)          = cpool_to_livestemc(p) * grperc(ivt(p))
             cpool_livestem_storage_gr(p)  = cpool_to_livestemc_storage(p) * &
                  grperc(ivt(p)) * grpnow(ivt(p))
