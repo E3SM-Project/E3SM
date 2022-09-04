@@ -22,7 +22,8 @@ module prep_atm_mod
   use seq_comm_mct, only : mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   use seq_comm_mct, only : mphaid   ! iMOAB id for phys atm on atm pes
   use seq_comm_mct, only : mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
-  use seq_comm_mct, only : mbintxao ! iMOAB id for intx mesh between ocean and atmosphere; output from this
+  use seq_comm_mct, only : mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere
+  use seq_comm_mct, only : mbintxao ! iMOAB id for intx mesh between atm and ocean
   use seq_comm_mct, only : mhid     ! iMOAB id for atm instance
   use seq_comm_mct, only : mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   use seq_comm_mct, only : atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
@@ -194,29 +195,29 @@ contains
 
           ! Call moab intx only if atm and ocn are init in moab
           if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
-            appname = "ATM_OCN_COU"//C_NULL_CHAR
-            ! idintx is a unique number of MOAB app that takes care of intx between ocn and atm mesh
-            idintx = 100*atm(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it
-            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxao)
+            appname = "OCN_ATM_COU"//C_NULL_CHAR
+            ! idintx is a unique number of MOAB app that takes care of intx between atm and ocn mesh
+            idintx = 100*ocn(1)%cplcompid + atm(1)%cplcompid ! something different, to differentiate it
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxoa)
             if (ierr .ne. 0) then
               write(logunit,*) subname,' error in registering atm ocn intx'
               call shr_sys_abort(subname//' ERROR in registering atm ocn intx')
             endif
-            ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbaxid, mboxid, mbintxao)
+            ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mboxid, mbaxid, mbintxoa)
             if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in computing atm ocn intx'
-              call shr_sys_abort(subname//' ERROR in computing atm ocn intx')
+              write(logunit,*) subname,' error in computing ocn atm intx'
+              call shr_sys_abort(subname//' ERROR in computing ocn atm intx')
             endif
             if (iamroot_CPLID) then
-              write(logunit,*) 'iMOAB intersection between atm and ocean with id:', idintx
+              write(logunit,*) 'iMOAB intersection between ocean and atm with id:', idintx
             end if
 #ifdef MOABDEBUG
             wopts = C_NULL_CHAR
             call shr_mpi_commrank( mpicom_CPLID, rank )
             if (rank .lt. 5) then
               write(lnum,"(I0.2)")rank !
-              outfile = 'intx'//trim(lnum)// '.h5m' // C_NULL_CHAR
-              ierr = iMOAB_WriteMesh(mbintxao, outfile, wopts) ! write local intx file
+              outfile = 'intx_oa_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+              ierr = iMOAB_WriteMesh(mbintxoa, outfile, wopts) ! write local intx file
               if (ierr .ne. 0) then
                 write(logunit,*) subname,' error in writing intx file '
                 call shr_sys_abort(subname//' ERROR in writing intx file ')

@@ -218,11 +218,12 @@ module seq_comm_mct
   integer, public :: mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   logical, public :: atm_pg_active = .false.  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
   integer, public :: mphaid   ! iMOAB id for atm phys grid, on atm pes
-  integer, public :: mphaxid   ! iMOAB id for atm phys grid, on cpl pes; for atm_pg_active it will be the same as mbaxid
-  integer, public :: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
+  integer, public :: mphaxid   ! iMOAB id for atm phys grid, on cpl pes; 
+  integer, public :: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes (migrate either mhid or mhpgid, depending on atm_pg_active)
   integer, public :: mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
   integer, public :: mbofxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
   integer, public :: mbintxao ! iMOAB id for intx mesh between ocean and atmosphere
+  integer, public :: mbintxoa ! iMOAB id for intx mesh between atmosphere and ocean
   integer, public :: mblxid   ! iMOAB id for land mesh migrated to coupler pes
   integer, public :: mblx2id   ! iMOAB id for land mesh instanced from MCT on coupler pes
   integer, public :: mbox2id   ! iMOAB id for ocn mesh instanced from MCT on coupler pes
@@ -634,6 +635,7 @@ contains
     mboxid = -1  ! iMOAB id for mpas ocean migrated mesh to coupler pes
     mbofxid = -1 ! iMOAB id for second mpas ocean migrated mesh to coupler pes, for flux calculations
     mbintxao = -1 ! iMOAB id for atm intx with mpas ocean
+    mbintxoa = -1 ! iMOAB id for  mpas ocean  intx with atm
     mblxid = -1   ! iMOAB id for land on coupler pes
     mbox2id = -1  ! iMOAB id for ocn from mct on coupler pes
     mbintxla = -1 ! iMOAB id for land intx with atm on coupler pes

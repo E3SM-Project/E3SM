@@ -18,8 +18,9 @@ module prep_ocn_mod
   use seq_comm_mct,     only: mbrxoid ! iMOAB id for rof on coupler in ocean context; 
   use seq_comm_mct,     only : atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
   use seq_comm_mct,     only : mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
-  use seq_comm_mct,     only : mbintxao ! iMOAB id for intx mesh between ocean and atmosphere; output from this
-  use seq_comm_mct,     only : mphaxid  ! iMOAB id for atm phys grid, on cpl pes; for atm_pg_active it will be the same as mbaxid
+  use seq_comm_mct,     only : mbintxao ! iMOAB id for intx mesh between atm and ocean
+  use seq_comm_mct,     only : mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere
+  use seq_comm_mct,     only : mphaxid  ! iMOAB id for atm phys grid, on cpl pes; it is a point cloud always
   use seq_comm_mct,     only : mhid     ! iMOAB id for atm instance
   use seq_comm_mct,     only : mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   use dimensions_mod,   only : np     ! for atmosphere degree 
@@ -151,7 +152,8 @@ contains
   subroutine prep_ocn_init(infodata, atm_c2_ocn, atm_c2_ice, ice_c2_ocn, rof_c2_ocn, &
        wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn)
 
-    use iMOAB, only: iMOAB_RegisterApplication
+    use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
+      iMOAB_WriteMesh 
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -194,6 +196,8 @@ contains
     character*32             :: appname ! to register moab app
     integer                  :: rmapid  ! external id to identify the moab app
     integer                  :: ierr, type_grid ! 
+    integer                  :: idintx, rank
+    character*32             :: outfile, wopts, lnum
     
     !---------------------------------------------------------------
 
@@ -303,6 +307,39 @@ contains
                'seq_maps.rc','atm2ocn_fmapname:','atm2ocn_fmaptype:',samegrid_ao, &
                'mapper_Fa2o initialization',esmf_map_flag)
           call shr_sys_flush(logunit)
+          ! Call moab intx only if atm and ocn are init in moab
+          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
+            appname = "ATM_OCN_COU"//C_NULL_CHAR
+            ! idintx is a unique number of MOAB app that takes care of intx between ocn and atm mesh
+            idintx = 100*atm(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxao)
+            if (ierr .ne. 0) then
+              write(logunit,*) subname,' error in registering atm ocn intx'
+              call shr_sys_abort(subname//' ERROR in registering atm ocn intx')
+            endif
+            ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbaxid, mboxid, mbintxao)
+            if (ierr .ne. 0) then
+              write(logunit,*) subname,' error in computing atm ocn intx'
+              call shr_sys_abort(subname//' ERROR in computing atm ocn intx')
+            endif
+            if (iamroot_CPLID) then
+              write(logunit,*) 'iMOAB intersection between atm and ocean with id:', idintx
+            end if
+#ifdef MOABDEBUG
+            wopts = C_NULL_CHAR
+            call shr_mpi_commrank( mpicom_CPLID, rank )
+            if (rank .lt. 5) then
+              write(lnum,"(I0.2)")rank !
+              outfile = 'intx_ao_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+              ierr = iMOAB_WriteMesh(mbintxao, outfile, wopts) ! write local intx file
+              if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in writing intx file '
+                call shr_sys_abort(subname//' ERROR in writing intx file ')
+              endif
+            endif
+#endif
+         end if
+
        end if
 
        ! atm_c2_ice flag is here because ice and ocn are constrained to be on the same
