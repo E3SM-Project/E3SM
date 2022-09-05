@@ -26,29 +26,45 @@ void Functions<S,D>
   using ExeSpaceUtils = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
   const auto ggr = C::gravit;
 
+  // The team_barriers protect what we think is unexpected behavior in
+  // Kokkos::parallel_reduce. We expect not to need these based on the semantics
+  // of parallel_reduce. However, we speculate that in the Cuda implementation
+  // of the team parallel_reduce, it's possible something in the bookkeeping at
+  // the end of one parallel_reduce may sometimes be affecting the start of the
+  // next, leading to nondeterminism. Then again, there might be something
+  // subtly wrong in our code, and we're just not seeing it. In any case, these
+  // team_barriers fix nondeterminism that was repeatedly and with high
+  // confidence traced to these energy integral computations. We checked that
+  // the view_reduction wrapper is not the cause by simplifying these to be bare
+  // Kokkos::parallel_reduce calls acting on doubles and saw the same results.
+  
   // Compute se_int
   ExeSpaceUtils::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
     return host_dse(k)*pdel(k)/ggr;
   }, se_int);
+  team.team_barrier();
 
   // Compute ke_int
   ExeSpaceUtils::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
     return sp(0.5)*(ekat::square(u_wind(k))+ekat::square(v_wind(k)))*pdel(k)/ggr;
   }, ke_int);
+  team.team_barrier();
 
   // Compute wv_int
   ExeSpaceUtils::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
     return (rtm(k)-rcm(k))*pdel(k)/ggr;
   }, wv_int);
+  team.team_barrier();
 
   // Compute wl_int
   ExeSpaceUtils::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
     return rcm(k)*pdel(k)/ggr;
   }, wl_int);
+  team.team_barrier();
 }
 
 } // namespace shoc
