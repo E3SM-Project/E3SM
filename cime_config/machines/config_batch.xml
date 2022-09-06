@@ -580,17 +580,6 @@
      </queues>
    </batch_system>
    
-  <!-- modex is PBS -->
-  <batch_system MACH="modex" type="pbs">
-    <directives>
-      <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-      <directive default="/bin/bash" > -S {{ shell }}  </directive>
-    </directives>
-    <queues>
-      <queue walltimemax="06:00:00" default="true">batch</queue>
-    </queues>
-  </batch_system>
-
    <batch_system MACH="tulip" type="slurm">
     <queues>
       <queue walltimemax="01:00:00" strict="true" nodemin="1" nodemax="2" default="true">v100</queue>

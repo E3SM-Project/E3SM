@@ -3417,68 +3417,6 @@
     </environment_variables>
   </machine>
 
-  <machine MACH="modex">
-      <DESC>Medium sized linux cluster at BNL, torque scheduler.</DESC>
-      <OS>LINUX</OS>
-      <COMPILERS>gnu</COMPILERS>
-      <MPILIBS>openmpi,mpi-serial</MPILIBS>
-      <CIME_OUTPUT_ROOT>/data/$ENV{USER}</CIME_OUTPUT_ROOT>
-      <DIN_LOC_ROOT>/data/Model_Data/cesm_input_datasets/</DIN_LOC_ROOT>
-      <DIN_LOC_ROOT_CLMFORC>/data/Model_Data/cesm_input_datasets/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-      <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/cesm_archive/$CASE</DOUT_S_ROOT>
-      <BASELINE_ROOT>$CIME_OUTPUT_ROOT/cesm_baselines</BASELINE_ROOT>
-      <CCSM_CPRNC>/data/software/cesm_tools/cprnc/cprnc</CCSM_CPRNC>
-      <GMAKE_J>4</GMAKE_J>
-      <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
-      <SUPPORTED_BY>sserbin@bnl.gov</SUPPORTED_BY>
-      <MAX_TASKS_PER_NODE>12</MAX_TASKS_PER_NODE>
-      <MAX_MPITASKS_PER_NODE>12</MAX_MPITASKS_PER_NODE>
-      <COSTPES_PER_NODE>12</COSTPES_PER_NODE>
-      <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-      <mpirun mpilib="mpi-serial">
-      		<executable></executable>
-      </mpirun>
-      <mpirun mpilib="default">
-          <executable>mpirun</executable>
-          <arguments>
-              <arg name="num_tasks">-np {{ total_tasks }}</arg>
-              <arg name="tasks_per_node">-npernode $MAX_TASKS_PER_NODE</arg>
-          </arguments>
-      </mpirun>
-      <module_system type="module">
-          <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
-          <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
-          <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
-          <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
-          <cmd_path lang="sh">module</cmd_path>
-          <cmd_path lang="csh">module</cmd_path>
-          <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
-          <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
-          <modules>
-              <command name="purge"/>
-              <command name="load">perl/5.22.1</command>
-              <command name="load">libxml2/2.9.2</command>
-              <command name="load">maui/3.3.1</command>
-              <command name="load">python/2.7.15</command>
-              <command name="load">python/3.6.2</command> 
-          </modules>
-          <modules compiler="gnu">
-              <command name="load">gcc/5.4.0</command>
-              <command name="load">gfortran/5.4.0</command>
-              <command name="load">hdf5/1.8.19fates</command>
-              <command name="load">netcdf/4.4.1.1-gnu540-fates</command>
-              <command name="load">openmpi/2.1.1-gnu540</command>
-          </modules>
-          <modules compiler="gnu" mpilib="!mpi-serial">
-              <command name="load">openmpi/2.1.1-gnu540</command>
-          </modules>
-       </module_system>
-       <environment_variables>
-         <env name="HDF5_HOME">/data/software/hdf5/1.8.19fates</env>
-         <env name="NETCDF_PATH">/data/software/netcdf/4.4.1.1-gnu540-fates</env>
-       </environment_variables>
-  </machine>
-
   <machine MACH="tulip">
     <DESC>ORNL experimental/evaluation cluster</DESC>
     <NODENAME_REGEX>tulip.*</NODENAME_REGEX>

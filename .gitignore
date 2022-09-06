@@ -27,3 +27,6 @@ buildlib_cmakec
 # Ignore emacs backup files
 *~
 buildlib_cmakec
+
+# Mac chaff
+.DS_Store
