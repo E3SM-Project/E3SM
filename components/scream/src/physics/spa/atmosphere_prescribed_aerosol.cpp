@@ -203,9 +203,9 @@ void SPA::initialize_impl (const RunType /* run_type */)
 void SPA::run_impl (const int dt)
 {
   /* Gather time and state information for interpolation */
-  auto ts = timestamp();
+  auto ts = timestamp()+dt;
   /* Update the SPATimeState to reflect the current time, note the addition of dt */
-  SPATimeState.t_now = ts.frac_of_year_in_days() + dt/86400.;
+  SPATimeState.t_now = ts.frac_of_year_in_days();
   /* Update time state and if the month has changed, update the data.*/
   SPAFunc::update_spa_timestate(m_spa_data_file,m_nswbands,m_nlwbands,ts,SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
 
