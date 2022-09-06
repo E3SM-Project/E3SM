@@ -27,12 +27,6 @@
 <config_explicit_proc_decomp>.false.</config_explicit_proc_decomp>
 <config_proc_decomp_file_prefix>'graph.info.part.'</config_proc_decomp_file_prefix>
 
-<!-- transport_tests -->
-<config_transport_tests_vert_levels>3</config_transport_tests_vert_levels>
-<config_transport_tests_temperature>15</config_transport_tests_temperature>
-<config_transport_tests_salinity>35</config_transport_tests_salinity>
-<config_transport_tests_flow_id>0</config_transport_tests_flow_id>
-
 <!-- time_integration -->
 <config_dt ocn_grid="oQU480">'02:00:00'</config_dt>
 <config_dt ocn_grid="oQU240">'01:00:00'</config_dt>
@@ -504,6 +498,12 @@
 <config_conduct_tests>.false.</config_conduct_tests>
 <config_test_tensors>.false.</config_test_tensors>
 <config_tensor_test_function>'sph_uCosCos'</config_tensor_test_function>
+
+<!-- transport_tests -->
+<config_transport_tests_vert_levels>3</config_transport_tests_vert_levels>
+<config_transport_tests_temperature>15.0</config_transport_tests_temperature>
+<config_transport_tests_salinity>35.0</config_transport_tests_salinity>
+<config_transport_tests_flow_id>0</config_transport_tests_flow_id>
 
 <!-- init_mode_vert_levels -->
 <config_vert_levels>-1</config_vert_levels>

@@ -182,41 +182,6 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- transport_tests -->
-
-<entry id="config_transport_tests_vert_levels" type="integer"
-	category="transport_tests" group="transport_tests">
-Number of vertical levels in transport_tests. Typical value is 3 for 2D tests.
-
-Valid values: Any positive integer number greater than 0.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_transport_tests_temperature" type="real"
-	category="transport_tests" group="transport_tests">
-Temperature of the ocean.
-
-Valid values: Any real number
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_transport_tests_salinity" type="real"
-	category="transport_tests" group="transport_tests">
-Salinity of the ocean.
-
-Valid values: Any real number
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_transport_tests_flow_id" type="integer"
-	category="transport_tests" group="transport_tests">
-integer id of transport test.
-
-Valid values: 1 = rotation, 2 = nondivergent2D, 3 = divergent2D, 4 = correlatedTracers2D
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
 <!-- time_integration -->
 
 <entry id="config_dt" type="char*1024"
@@ -2496,6 +2461,41 @@ Default: Defined in namelist_defaults.xml
 Character string to choose tensor test fuction
 
 Valid values: 'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- transport_tests -->
+
+<entry id="config_transport_tests_vert_levels" type="integer"
+	category="transport_tests" group="transport_tests">
+Number of vertical levels in transport_tests. Typical value is 3 for 2D tests.
+
+Valid values: Any positive integer number greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_transport_tests_temperature" type="real"
+	category="transport_tests" group="transport_tests">
+Temperature of the ocean.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_transport_tests_salinity" type="real"
+	category="transport_tests" group="transport_tests">
+Salinity of the ocean.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_transport_tests_flow_id" type="integer"
+	category="transport_tests" group="transport_tests">
+integer id of transport test.
+
+Valid values: 1 = rotation, 2 = nondivergent2D, 3 = divergent2D, 4 = correlatedTracers2D
 Default: Defined in namelist_defaults.xml
 </entry>
 
