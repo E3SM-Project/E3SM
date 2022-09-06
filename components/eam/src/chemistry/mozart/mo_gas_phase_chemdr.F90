@@ -1606,14 +1606,14 @@ contains
                   do i = 1,ncol
                     if ( sflx2(i,n) /= 0._r8 ) then
                       if ( wrk(i,k)*(1._r8-low_limit) >= sflx2(i,n)*delt ) then
-                        tmp = wrk(i,k) - sflx2(i,n)*delt
+                        tmp(1) = wrk(i,k) - sflx2(i,n)*delt
                         sflx2(i,n) = 0._r8
                       else
-                        tmp = wrk(i,k)*low_limit
+                        tmp(1) = wrk(i,k)*low_limit
                         sflx2(i,n) = sflx2(i,n) - wrk(i,k)*(1._r8-low_limit)*delt_inverse
                         j = j + 1
                       endif
-                      vmr(i,k,n) = tmp*mbar(i,k)/adv_mass(n)/pdeldry(i,k)/rga
+                      vmr(i,k,n) = tmp(1)*mbar(i,k)/adv_mass(n)/pdeldry(i,k)/rga
                     endif
                   end do
 
