@@ -169,9 +169,10 @@ module cime_comp_mod
   use component_mod,      only: component_run, component_final
   use component_mod,      only: component_init_areacor, component_init_aream
   use component_mod,      only: component_exch, component_diag
+  use component_mod,      only: component_exch_moab
 
 ! used to send from components to coupler instances
-  use component_mod,      only: ocn_cpl_moab
+  ! use component_mod,      only: ocn_cpl_moab
 
   ! prep routines (includes mapping routines between components and merging routines)
   use prep_lnd_mod
@@ -4137,6 +4138,8 @@ contains
 
   subroutine cime_run_ocn_recv_post()
 
+    use seq_flds_mod , only : seq_flds_o2x_fields
+     use seq_comm_mct , only : mboxid, mpoid !
     !----------------------------------------------------------
     ! ocn -> cpl
     !----------------------------------------------------------
@@ -4147,7 +4150,9 @@ contains
             timer_barrier='CPL:O2CT_BARRIER', timer_comp_exch='CPL:O2CT', &
             timer_map_exch='CPL:o2c_ocno2ocnx', timer_infodata_exch='CPL:o2c_infoexch')
        ! send from ocn pes to coupler
-       call ocn_cpl_moab(ocn)
+       ! call ocn_cpl_moab(ocn)
+       ! new way
+       call component_exch_moab(ocn(1), mpoid, mboxid, 0, seq_flds_o2x_fields)
     endif
 
     !----------------------------------------------------------
