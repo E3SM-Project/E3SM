@@ -17,7 +17,7 @@ module ice_comp_mct
    use seq_infodata_mod
    use seq_timemgr_mod
    use seq_comm_mct,      only : seq_comm_suffix, seq_comm_inst, seq_comm_name, info_taskmap_comp
-   use shr_file_mod 
+   use shr_file_mod
    use shr_cal_mod,       only : shr_cal_date2ymd
    use shr_sys_mod
    use shr_taskmap_mod,   only : shr_taskmap_write
@@ -91,8 +91,8 @@ module ice_comp_mct
 
    character(len=StrKIND) :: runtype, coupleTimeStamp
 
-   type(seq_infodata_type), pointer :: infodata   
-   type (iosystem_desc_t), pointer :: io_system 
+   type(seq_infodata_type), pointer :: infodata
+   type (iosystem_desc_t), pointer :: io_system
 
    integer :: iceLogUnit ! unit number for ice log
 
@@ -103,7 +103,7 @@ module ice_comp_mct
 
    ! prescribed ice mode
    type(shr_strdata_type) :: &
-        sdat ! prescribed data stream   
+        sdat ! prescribed data stream
 
 !=======================================================================
 
@@ -256,7 +256,7 @@ contains
 !   set cdata pointers
 !
 !-----------------------------------------------------------------------
-    errorCode = 0 
+    errorCode = 0
 
     call seq_cdata_setptrs(cdata_i, ID=ICEID, mpicom=mpicom_i, &
          gsMap=gsMap_i, dom=dom_i, infodata=infodata)
@@ -269,7 +269,7 @@ contains
 #if (defined _MEMTRACE)
     if(iam == 0) then
         lbnum=1
-        call memmon_dump_fort('memmon.out','ice_init_mct:start::',lbnum) 
+        call memmon_dump_fort('memmon.out','ice_init_mct:start::',lbnum)
     endif
 #endif
 
@@ -668,15 +668,15 @@ contains
 
     ! Initialize mct ice domain (needs ice initialization info)
     call ice_domain_mct( lsize, gsMap_i, dom_i )
-    
+
     ! Inialize mct attribute vectors
-    
+
     call mct_aVect_init(x2i_i, rList=seq_flds_x2i_fields, lsize=lsize)
     call mct_aVect_zero(x2i_i)
-    
-    call mct_aVect_init(i2x_i, rList=seq_flds_i2x_fields, lsize=lsize) 
+
+    call mct_aVect_init(i2x_i, rList=seq_flds_i2x_fields, lsize=lsize)
     call mct_aVect_zero(i2x_i)
-    
+
     nsend = mct_avect_nRattr(i2x_i)
     nrecv = mct_avect_nRattr(x2i_i)
 
@@ -745,7 +745,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    call ice_export_mct(i2x_i, errorCode)  
+    call ice_export_mct(i2x_i, errorCode)
     if (errorCode /= 0) then
        call mpas_log_write('Error in ice_export_mct', MPAS_LOG_CRIT)
     endif
@@ -760,7 +760,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    call ice_import_mct(x2i_i, errorCode)  
+    call ice_import_mct(x2i_i, errorCode)
     if (errorCode /= 0) then
        call mpas_log_write('Error in ice_import_mct', MPAS_LOG_CRIT)
     endif
@@ -771,7 +771,7 @@ contains
 
     itimestep = 0
 
-    call seaice_analysis_compute_startup(domain, ierr) 
+    call seaice_analysis_compute_startup(domain, ierr)
 
     ! Reset all output alarms, to prevent intial time step from writing any output, unless it's ringing.
     call mpas_stream_mgr_reset_alarms(domain % streamManager, direction=MPAS_STREAM_OUTPUT, ierr=ierr)
@@ -797,7 +797,7 @@ contains
 #if defined (_MEMTRACE)
     if(iam  == 0) then
         lbnum=1
-        call memmon_dump_fort('memmon.out','ice_init_mct:end::',lbnum) 
+        call memmon_dump_fort('memmon.out','ice_init_mct:end::',lbnum)
         call memmon_reset_addr()
     endif
 #endif
@@ -955,12 +955,12 @@ contains
 
        call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCellsSolve", nCellsSolve)
        call MPI_Allreduce(nCellsSolve, nCells, 1, MPI_Integer, MPI_SUM, domain % dminfo % comm, ierr)
-       
+
 
        call MPAS_pool_get_config(domain % configs, "config_calendar_type", config_calendar_type)
        if (trim(config_calendar_type) == "gregorian") then
           calendar_type = shr_cal_gregorian
-       else if (trim(config_calendar_type) == "gregorian_noleap") then
+       else if (trim(config_calendar_type) == "noleap") then
           calendar_type = shr_cal_noleap
        else
           call MPAS_log_write("ice_prescribed_init: Unknown calendar type: "//trim(config_calendar_type))
@@ -1054,7 +1054,7 @@ contains
 #ifdef MPAS_DEBUG
       debugOn = .true.
 #endif
- 
+
       ! Set MPAS Log module instance
       mpas_log_info => domain % logInfo
       if (debugOn) call mpas_log_write("=== Beginning ice_run_mct ===")
@@ -1108,7 +1108,7 @@ contains
         itimestep = itimestep + 1
         call mpas_advance_clock(domain % clock)
 
-        ! final initialization after clock advance 
+        ! final initialization after clock advance
         if (first) then
            call seaice_forcing_get(domain % streamManager, domain, domain % clock, .true.)
 
@@ -1285,7 +1285,7 @@ contains
 
     type (field1DReal), pointer :: &
          iceCoverageField
-    
+
     call MPAS_pool_get_config(domain % configs, "config_use_prescribed_ice", config_use_prescribed_ice)
     if (config_use_prescribed_ice) then
 
@@ -1431,7 +1431,7 @@ contains
 
     integer :: i, n, lsize, gsize, ier
 
-    type (block_type), pointer :: block_ptr 
+    type (block_type), pointer :: block_ptr
     type (mpas_pool_type), pointer :: meshPool
 
     integer, dimension(:), pointer :: indexToCellID
@@ -1499,7 +1499,7 @@ contains
 
     integer        , intent(in)    :: lsize
     type(mct_gsMap), intent(in)    :: gsMap_i
-    type(mct_ggrid), intent(inout) :: dom_i     
+    type(mct_ggrid), intent(inout) :: dom_i
 
 !EOP
 !BOC
@@ -1550,19 +1550,19 @@ contains
 
 !-------------------------------------------------------------------
 !
-! Determine domain 
+! Determine domain
 ! Initialize attribute vector with special value
 !
 !-------------------------------------------------------------------
 
-    data(:) = -9999.0_R8 
-    call mct_gGrid_importRAttr(dom_i,"lat"  ,data,lsize) 
-    call mct_gGrid_importRAttr(dom_i,"lon"  ,data,lsize) 
-    call mct_gGrid_importRAttr(dom_i,"area" ,data,lsize) 
-    call mct_gGrid_importRAttr(dom_i,"aream",data,lsize) 
-    data(:) = 1.0_R8     
-    call mct_gGrid_importRAttr(dom_i,"mask",data,lsize) 
-    call mct_gGrid_importRAttr(dom_i,"frac",data,lsize) 
+    data(:) = -9999.0_R8
+    call mct_gGrid_importRAttr(dom_i,"lat"  ,data,lsize)
+    call mct_gGrid_importRAttr(dom_i,"lon"  ,data,lsize)
+    call mct_gGrid_importRAttr(dom_i,"area" ,data,lsize)
+    call mct_gGrid_importRAttr(dom_i,"aream",data,lsize)
+    data(:) = 1.0_R8
+    call mct_gGrid_importRAttr(dom_i,"mask",data,lsize)
+    call mct_gGrid_importRAttr(dom_i,"frac",data,lsize)
 
 !-------------------------------------------------------------------
 !
@@ -1583,10 +1583,10 @@ contains
           n = n + 1
           data(n) = lonCell(i) * r2d
        end do
-       
+
        block_ptr => block_ptr % next
     end do
-    call mct_gGrid_importRattr(dom_i,"lon",data,lsize) 
+    call mct_gGrid_importRattr(dom_i,"lon",data,lsize)
 
     n = 0
     block_ptr => domain % blocklist
@@ -1603,7 +1603,7 @@ contains
        end do
        block_ptr => block_ptr % next
     end do
-    call mct_gGrid_importRattr(dom_i,"lat",data,lsize) 
+    call mct_gGrid_importRattr(dom_i,"lat",data,lsize)
 
     n = 0
     block_ptr => domain % blocklist
@@ -1621,7 +1621,7 @@ contains
        end do
        block_ptr => block_ptr % next
     end do
-    call mct_gGrid_importRattr(dom_i,"area",data,lsize) 
+    call mct_gGrid_importRattr(dom_i,"area",data,lsize)
 
     ! Build mask and frac based on landIceMask
     block_ptr => domain % blocklist
@@ -1650,8 +1650,8 @@ contains
        block_ptr => block_ptr % next
     end do
 
-    call mct_gGrid_importRattr(dom_i,"mask",data,lsize) 
-    call mct_gGrid_importRattr(dom_i,"frac",data,lsize) 
+    call mct_gGrid_importRattr(dom_i,"mask",data,lsize)
+    call mct_gGrid_importRattr(dom_i,"frac",data,lsize)
 
     deallocate(data)
     deallocate(idata)
@@ -1674,7 +1674,7 @@ contains
 !  This routine receives message from cpl7 driver
 !
 !    The following fields are always received from the coupler:
-! 
+!
 !    o  t        -- ocn layer temperature
 !    o  s        -- ocn salinity
 !    o  u        -- ocn u velocity
@@ -1690,15 +1690,15 @@ contains
 !    o  dhdx     -- ocn surface slope, zonal
 !    o  dhdy     -- ocn surface slope, meridional
 !    o  lwdn     -- downward lw heat flux
-!    o  rain     -- prec: liquid 
-!    o  snow     -- prec: frozen 
+!    o  rain     -- prec: liquid
+!    o  snow     -- prec: frozen
 !    o  swndr    -- sw: nir direct  downward
 !    o  swvdr    -- sw: vis direct  downward
 !    o  swndf    -- sw: nir diffuse downward
 !    o  swvdf    -- sw: vis diffuse downward
 !    o  swnet    -- sw: net
 !    o  q        -- ocn frazil heat flux(+) / melt potential(-)
-!    o  frazil   -- ocn frazil mass flux 
+!    o  frazil   -- ocn frazil mass flux
 !    o  bcphidry -- Black Carbon hydrophilic dry deposition flux
 !    o  bcphodry -- Black Carbon hydrophobic dry deposition flux
 !    o  bcphiwet -- Black Carbon hydrophilic wet deposition flux
@@ -1713,10 +1713,10 @@ contains
 !    o  dstdry2  -- Size 2 dust -- dry deposition flux
 !    o  dstdry3  -- Size 3 dust -- dry deposition flux
 !    o  dstdry4  -- Size 4 dust -- dry deposition flux
-! 
+!
 !    The following fields are sometimes received from the coupler,
 !      depending on model options:
-! 
+!
 !    o  algae1   --
 !    o  algae2   --
 !    o  algae3   --
@@ -1741,7 +1741,7 @@ contains
 !    o  zaer4    --
 !    o  zaer5    --
 !    o  zaer6    --
-! 
+!
 !-----------------------------------------------------------------------
 !
 ! !REVISION HISTORY:
@@ -1767,7 +1767,7 @@ contains
    character (len=StrKIND) :: &
       label,                  &
       message
- 
+
    integer ::  &
       i,n
 
@@ -1886,9 +1886,9 @@ contains
       atmosBlackCarbonFlux,        &
       atmosDustFlux
 
-!----------------------------------------------------------------------- 
+!-----------------------------------------------------------------------
 !
-!  zero out padded cells 
+!  zero out padded cells
 !
 !-----------------------------------------------------------------------
 
@@ -1987,8 +1987,8 @@ contains
         seaSurfaceTiltV(i)             = x2i_i % rAttr(index_x2i_So_dhdy, n)
 
         if (trim(config_ocean_surface_type) == "free") then ! free surface (MPAS-O)
-        
-           ! freezingMeltingPotential(i) is the ocean energy associated with frazil formation 
+
+           ! freezingMeltingPotential(i) is the ocean energy associated with frazil formation
            ! when it is positive and frazilMassFlux is positive. Conversely, freezingMeltingPotential(i)
            ! is negative when there is the melting potential in which case frazilMassFlux is zero.
 
@@ -1997,7 +1997,7 @@ contains
            frazilMassFlux              = x2i_i % rAttr(index_x2i_Fioo_frazil, n)
 
            ! Now determine the sea ice mass associated with the frazil heat flux given when
-           ! freezingMeltingPotential(i) is positive. This produces a revised mass flux, given 
+           ! freezingMeltingPotential(i) is positive. This produces a revised mass flux, given
            ! in frazilMassFluxRev for the given sea surface salinity. The resulting difference
            ! is assigned to frazilMassAdjust(i) which is exported to the ocean in the subsequent
            ! coupling step as a freshwater and salt flux. This step is required to balance mass
@@ -2006,7 +2006,7 @@ contains
            call frazil_mass(freezingMeltingPotential(i), frazilMassFluxRev, seaSurfaceSalinity(i), &
                                    config_thermodynamics_type)
 
-           frazilMassAdjust(i) = frazilMassFlux-frazilMassFluxRev 
+           frazilMassAdjust(i) = frazilMassFlux-frazilMassFluxRev
 
         else ! non-free surface (SOM)
 
@@ -2120,7 +2120,7 @@ contains
         endif
       end do
 
-!----------------------------------------------------------------------- 
+!-----------------------------------------------------------------------
 !
 !  unit conversions and any manipulation of coupled fields
 !
@@ -2382,7 +2382,7 @@ contains
       oceanParticulateIronFlux,    &
       oceanDissolvedIronFlux
 
-!----------------------------------------------------------------------- 
+!-----------------------------------------------------------------------
 
    errorCode = 0
    n = 0
@@ -2527,7 +2527,7 @@ contains
               sphere_radius,        &
               config_rotate_cartesian_grid)
 
-         !-------states-------------------- 
+         !-------states--------------------
          i2x_i % rAttr(index_i2x_Si_ifrac ,n)    = ailohi
 
          if (config_use_data_icebergs) then
@@ -2537,7 +2537,7 @@ contains
 
          if ( ailohi > 0.0_RKIND ) then
 
-            !-------states-------------------- 
+            !-------states--------------------
             i2x_i % rAttr(index_i2x_Si_t     ,n)  = Tsrf
             i2x_i % rAttr(index_i2x_Si_bpress,n)  = basalPressure
             i2x_i % rAttr(index_i2x_Si_u10   ,n)  = atmosReferenceSpeed10m(i)
@@ -2564,7 +2564,7 @@ contains
                i2x_i % rAttr(index_i2x_Faii_swnet,n) = absorbedShortwaveFlux(i)
             endif
 
-            ! i/o fluxes computed by ice, as well as additional freshwater and salt calculated at the last 
+            ! i/o fluxes computed by ice, as well as additional freshwater and salt calculated at the last
             ! coupling import and needed to grow sea ice from frazil passed from the ocean model in the
             ! field frazilMassAdjust.
             i2x_i % rAttr(index_i2x_Fioi_melth,n) = oceanHeatFlux(i)
@@ -2637,7 +2637,7 @@ contains
       else
           write(histAtt, '(A,I6,A,A,A)') 'mpirun -n ', domain % dminfo % nProcs, ' ./', trim(domain % core % coreName), '_model'
       end if
-     
+
 
       call MPAS_stream_mgr_add_att(domain % streamManager, 'on_a_sphere', domain % on_a_sphere)
       call MPAS_stream_mgr_add_att(domain % streamManager, 'sphere_radius', domain % sphere_radius)
@@ -2748,8 +2748,8 @@ contains
                                  config_thermodynamics_type)
 !
 ! !DESCRIPTION:
-! Calculate frazil mass based on on the sea surface salinity, and frazil heat flux 
-! from the ocean, otherwise referred to as to as the freeze-melt potential. When 
+! Calculate frazil mass based on on the sea surface salinity, and frazil heat flux
+! from the ocean, otherwise referred to as to as the freeze-melt potential. When
 ! freezingPotential is positive, it gives the heat flux, according to the ocean model
 ! associated with the frazil mass passed from the ocean.  This function calculates
 ! the frazil mass based on the freezingPotential according to sea ice model thermodynamics,
@@ -2823,7 +2823,7 @@ contains
    subroutine datetime(cdate, ctime)
 !
 ! !DESCRIPTION:
-! Calculate current date and time for metadata history 
+! Calculate current date and time for metadata history
 !
 ! !USES:
 
