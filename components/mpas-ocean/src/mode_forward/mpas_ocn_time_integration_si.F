@@ -2504,8 +2504,8 @@ module ocn_time_integration_si
 
       ! Update the effective desnity in land ice if we're coupling to
       ! land ice
-      call ocn_effective_density_in_land_ice_update(meshPool, &
-                                       forcingPool, statePool, err)
+      call ocn_effective_density_in_land_ice_update(forcingPool, &
+                                                    statePool, err)
 
       call mpas_timer_start('si final mpas reconstruct', .false.)
 

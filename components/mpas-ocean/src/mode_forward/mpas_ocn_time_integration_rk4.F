@@ -734,7 +734,8 @@ module ocn_time_integration_rk4
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, 2)
 
          ! Update the effective desnity in land ice if we're coupling to land ice
-         call ocn_effective_density_in_land_ice_update(meshPool, forcingPool, statePool, err)
+         call ocn_effective_density_in_land_ice_update(forcingPool, &
+                                                       statePool, err)
 
 #ifdef MPAS_OPENACC
          !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
