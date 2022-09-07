@@ -1396,8 +1396,8 @@ module li_advection
            thicknessTracerTendency, &! net thickness*tracer tendency for a cell
            newThicknessTracers       ! new values of thickness*tracer
 
-      real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND
-      ! This is ~300 million years in seconds, but it is small enough not to overflow
+      real (kind=RKIND), parameter :: bigNumber = 1.0e11_RKIND
+      ! This is ~5000 years in seconds, but it is small enough not to overflow
 
       real(kind=RKIND) :: velSign     ! = 1.0_RKIND or -1.0_RKIND depending on sign of velocity
       real(kind=RKIND) :: GLfluxSign
@@ -1675,8 +1675,8 @@ module li_advection
 
       integer :: iEdge, k
 
-      real (kind=RKIND), parameter :: bigNumber = 1.0e16_RKIND
-      ! This is ~300 million years in seconds, but is small enough not to overflow
+      real (kind=RKIND), parameter :: bigNumber = 1.0e11_RKIND
+      ! This is ~5000 years in seconds, but is small enough not to overflow
 
       err = 0
 

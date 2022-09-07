@@ -3835,8 +3835,20 @@ module li_calving
 
       call mpas_log_write("Iceberg-detection flood-fill initialization complete.")
       
-      where ( seedMask == 0 .and. li_mask_is_floating_ice(cellMask(:)) )
+      where ( (seedMask == 0) .and. li_mask_is_floating_ice(cellMask(:)) .and. li_mask_is_dynamic_ice(cellMask(:)) )
              growMask = 1
+      endwhere
+      call flood_fill(seedMask, growMask, domain)
+
+      ! Add floating non-dynamic fringe, but exclude dynamic ice isolated by
+      ! non-dynamic ice, which can cause velocity solver to fail to converge.
+      ! This is a bit of an expensive solution to this problem
+      ! that may only occur once in a while, so we might need to revisit this.
+      
+      where ( li_mask_is_floating_ice(cellMask(:)) .and. .not. li_mask_is_dynamic_ice(cellMask(:)) )
+             growMask = 1
+      elsewhere
+             growMask = 0
       endwhere
       call flood_fill(seedMask, growMask, domain)
       
