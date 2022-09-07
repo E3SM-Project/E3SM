@@ -136,7 +136,7 @@ public:
 
 protected:
 
-  void set_fields_and_grid_names (const std::string& grid_name);
+  void set_fields_and_grid_names (const std::vector<std::string>& grid_aliases);
   void build_remapper (const std::shared_ptr<const gm_type>& grids_mgr);
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
   void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr,
