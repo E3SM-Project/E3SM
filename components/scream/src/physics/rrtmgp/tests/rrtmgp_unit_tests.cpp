@@ -499,7 +499,7 @@ TEST_CASE("rrtmgp_test_subcol_gen") {
         cldfrac(1,4) = 0;
     });
     for (unsigned seed = 1; seed <= 10; seed++) {
-        cldmask = scream::rrtmgp::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, 1);
+        cldmask = scream::rrtmgp::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seed);
         auto cldmask_h = cldmask.createHostCopy();
         for (int igpt = 1; igpt <= ngpt; igpt++) {
             if (cldmask_h(1,1,igpt) == 1) {
