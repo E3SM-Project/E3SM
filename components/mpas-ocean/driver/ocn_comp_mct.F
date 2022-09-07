@@ -644,6 +644,11 @@ contains
    if ( ierrmb == 1 ) then
       call mpas_log_write('cannot define tags for MOAB o2x fields ' // trim(seq_flds_o2x_fields), MPAS_LOG_ERR)
    endif
+   tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
+   ierrmb = iMOAB_DefineTagStorage(MPOID, tagname, tagtype, numco,  tagindex )
+   if ( ierrmb == 1 ) then
+      call mpas_log_write('cannot define tags for MOAB x2o fields ' // trim(seq_flds_x2o_fields), MPAS_LOG_ERR)
+   endif
 #endif
 !-----------------------------------------------------------------------
 !

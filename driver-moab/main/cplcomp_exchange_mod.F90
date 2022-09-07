@@ -11,6 +11,7 @@ module cplcomp_exchange_mod
   use seq_flds_mod, only: seq_flds_dom_coord, seq_flds_dom_other
   use seq_flds_mod, only: seq_flds_a2x_ext_fields ! 
   use seq_flds_mod, only: seq_flds_o2x_fields ! needed for MOAB init of ocean fields o2x to be able to transfer to coupler
+  use seq_flds_mod, only: seq_flds_x2o_fields ! needed for MOAB init of ocean fields x2o to be able to transfer from coupler
   use seq_comm_mct, only: cplid, logunit
   use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs, seq_comm_iamin
   use seq_diag_mct
@@ -1267,6 +1268,13 @@ contains
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in defining tags o2x on coupler'
             call shr_sys_abort(subname//' ERROR in defining tags o2x on coupler ')
+         endif
+         ! need also to define seq_flds_x2o_fields on coupler instance, and on ocean comp instance
+         tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR 
+         ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags x2o on coupler'
+            call shr_sys_abort(subname//' ERROR in defining tags x2o on coupler ')
          endif
 #ifdef MOABDEBUG
    !      debug test
