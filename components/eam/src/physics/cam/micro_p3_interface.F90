@@ -589,8 +589,8 @@ end subroutine micro_p3_readnl
    call addfld('UMR', (/ 'lev' /), 'A',   'm/s', 'Mass-weighted rain  fallspeed'              )
 
    ! Record of inputs/outputs from p3_main
-   call addfld('P3_input',  (/ 'ilev',    'P3_input_dim ' /),    'I', 'N/A', 'Inputs for p3_main subroutine')
-   call addfld('P3_output', (/ 'ilev',    'P3_output_dim' /),    'I', 'N/A', 'Outputs for p3_main subroutine')
+   call addfld('P3_input',  (/ 'ilev         ',    'P3_input_dim ' /),    'I', 'N/A', 'Inputs for p3_main subroutine')
+   call addfld('P3_output', (/ 'ilev         ',    'P3_output_dim' /),    'I', 'N/A', 'Outputs for p3_main subroutine')
    ! Record of microphysics tendencies
    ! warm-phase process rates
    !call addfld('P3_qrcon',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain condensation   (Not in paper?)')
