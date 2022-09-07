@@ -129,9 +129,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("LW_clrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("rad_heating_pdel", scalar3d_layout_mid, Pa*K/s, grid_name, ps);
   // Cloud optical properties added as computed fields for diagnostic purposes
-  add_field<Computed>("cld_mask_sw_gpt", scalar3d_swgpts_layout, nondim, grid_name, ps);
   add_field<Computed>("cld_tau_sw_gpt", scalar3d_swgpts_layout, nondim, grid_name, ps);
-  add_field<Computed>("cld_mask_lw_gpt", scalar3d_lwgpts_layout, nondim, grid_name, ps);
   add_field<Computed>("cld_tau_lw_gpt", scalar3d_lwgpts_layout, nondim, grid_name, ps);
 
   // Translation of variables from EAM
@@ -282,14 +280,10 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   m_buffer.aero_tau_lw = decltype(m_buffer.aero_tau_lw)("aero_tau_lw", mem, m_col_chunk_size, m_nlay, m_nlwbands);
   mem += m_buffer.aero_tau_lw.totElems();
   // 3d arrays with extra ngpt dimension (cloud optics by gpoint; primarily for debugging)
-  m_buffer.cld_mask_sw_gpt = decltype(m_buffer.cld_mask_sw_gpt)("cld_mask_sw_gpt", mem, m_col_chunk_size, m_nlay, m_nswgpts);
-  mem += m_buffer.cld_mask_sw_gpt.totElems();
   m_buffer.cld_tau_sw_gpt = decltype(m_buffer.cld_tau_sw_gpt)("cld_tau_sw_gpt", mem, m_col_chunk_size, m_nlay, m_nswgpts);
   mem += m_buffer.cld_tau_sw_gpt.totElems();
   m_buffer.cld_tau_lw_gpt = decltype(m_buffer.cld_tau_lw_gpt)("cld_tau_lw_gpt", mem, m_col_chunk_size, m_nlay, m_nlwgpts);
   mem += m_buffer.cld_tau_lw_gpt.totElems();
-  m_buffer.cld_mask_lw_gpt = decltype(m_buffer.cld_mask_lw_gpt)("cld_mask_lw_gpt", mem, m_col_chunk_size, m_nlay, m_nlwgpts);
-  mem += m_buffer.cld_mask_lw_gpt.totElems();
 
   size_t used_mem = (reinterpret_cast<Real*>(mem) - buffer_manager.get_memory())*sizeof(Real);
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for RRTMGPRadiation.");
@@ -409,8 +403,6 @@ void RRTMGPRadiation::run_impl (const int dt) {
     Kokkos::deep_copy(d_aero_tau_lw,0.0);
 
   }
-  auto d_cld_mask_sw_gpt = get_field_out("cld_mask_sw_gpt").get_view<Real***>();
-  auto d_cld_mask_lw_gpt = get_field_out("cld_mask_lw_gpt").get_view<Real***>();
   auto d_cld_tau_sw_gpt = get_field_out("cld_tau_sw_gpt").get_view<Real***>();
   auto d_cld_tau_lw_gpt = get_field_out("cld_tau_lw_gpt").get_view<Real***>();
   auto d_sw_flux_up = get_field_out("SW_flux_up").get_view<Real**>();
@@ -533,8 +525,6 @@ void RRTMGPRadiation::run_impl (const int dt) {
     auto aero_ssa_sw     = subview_3d(m_buffer.aero_ssa_sw);
     auto aero_g_sw       = subview_3d(m_buffer.aero_g_sw);
     auto aero_tau_lw     = subview_3d(m_buffer.aero_tau_lw);
-    auto cld_mask_sw_gpt  = subview_3d(m_buffer.cld_mask_sw_gpt);
-    auto cld_mask_lw_gpt  = subview_3d(m_buffer.cld_mask_lw_gpt);
     auto cld_tau_sw_gpt  = subview_3d(m_buffer.cld_tau_sw_gpt);
     auto cld_tau_lw_gpt  = subview_3d(m_buffer.cld_tau_lw_gpt);
 
@@ -780,7 +770,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
         sfc_alb_dir, sfc_alb_dif, mu0,
         lwp, iwp, rel, rei, cldfrac_tot, 
         aero_tau_sw, aero_ssa_sw, aero_g_sw, aero_tau_lw,
-        cld_mask_sw_gpt, cld_tau_sw_gpt, cld_mask_lw_gpt, cld_tau_lw_gpt,
+        cld_tau_sw_gpt, cld_tau_lw_gpt,
         sw_flux_up       , sw_flux_dn       , sw_flux_dn_dir       , lw_flux_up       , lw_flux_dn, 
         sw_clrsky_flux_up, sw_clrsky_flux_dn, sw_clrsky_flux_dn_dir, lw_clrsky_flux_up, lw_clrsky_flux_dn, 
         sw_bnd_flux_up   , sw_bnd_flux_dn   , sw_bnd_flux_dir      , lw_bnd_flux_up   , lw_bnd_flux_dn, 
@@ -883,13 +873,11 @@ void RRTMGPRadiation::run_impl (const int dt) {
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nswgpts*nlay), [&] (const int&idx) {
             auto b = idx / nlay;
             auto k = idx % nlay;
-            d_cld_mask_sw_gpt(icol,b,k) = cld_mask_sw_gpt(i+1,k+1,b+1);
             d_cld_tau_sw_gpt(icol,b,k) = cld_tau_sw_gpt(i+1,k+1,b+1);
           });
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlwgpts*nlay), [&] (const int&idx) {
             auto b = idx / nlay;
             auto k = idx % nlay;
-            d_cld_mask_lw_gpt(icol,b,k) = cld_mask_lw_gpt(i+1,k+1,b+1);
             d_cld_tau_lw_gpt(icol,b,k) = cld_tau_lw_gpt(i+1,k+1,b+1);
           });
         });

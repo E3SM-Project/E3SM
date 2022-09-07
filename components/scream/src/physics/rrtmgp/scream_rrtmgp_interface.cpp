@@ -17,10 +17,10 @@ namespace scream {
         OpticalProps1scl get_cloud_optics_lw(const int ncol, const int nlay, CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei);
         OpticalProps2str get_subsampled_clouds(
                 const int ncol, const int nlay, const int nbnd, const int ngpt,
-                real3d &cldmask_real, OpticalProps2str &cloud_optics, GasOpticsRRTMGP &kdist, real2d &cld);
+                OpticalProps2str &cloud_optics, GasOpticsRRTMGP &kdist, real2d &cld);
         OpticalProps1scl get_subsampled_clouds(
                 const int ncol, const int nlay, const int nbnd, const int ngpt,
-                real3d &cldmask_real, OpticalProps1scl &cloud_optics, GasOpticsRRTMGP &kdist, real2d &cld);
+                OpticalProps1scl &cloud_optics, GasOpticsRRTMGP &kdist, real2d &cld);
         int3d get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, real2d &cldf, const int overlap_option, const unsigned seed);
 
         /* 
@@ -203,8 +203,8 @@ namespace scream {
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
                 real2d &lwp, real2d &iwp, real2d &rel, real2d &rei, real2d &cldfrac,
                 real3d &aer_tau_sw, real3d &aer_ssa_sw, real3d &aer_asm_sw, real3d &aer_tau_lw,
-                real3d &cld_mask_sw_gpt, real3d &cld_tau_sw_gpt,
-                real3d &cld_mask_lw_gpt, real3d &cld_tau_lw_gpt,
+                real3d &cld_tau_sw_gpt,
+                real3d &cld_tau_lw_gpt,
                 real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
                 real2d &lw_flux_up, real2d &lw_flux_dn,
                 real2d &sw_clrsky_flux_up, real2d &sw_clrsky_flux_dn, real2d &sw_clrsky_flux_dn_dir,
@@ -291,20 +291,14 @@ namespace scream {
             // This implements the Monte Carlo Independing Column Approximation by mapping only a single 
             // subcolumn (cloud state) to each gpoint
             auto nswgpts = k_dist_sw.get_ngpt();
-            auto clouds_sw_gpt = get_subsampled_clouds(ncol, nlay, nswbands, nswgpts, cld_mask_sw_gpt, clouds_sw, k_dist_sw, cldfrac);
+            auto clouds_sw_gpt = get_subsampled_clouds(ncol, nlay, nswbands, nswgpts, clouds_sw, k_dist_sw, cldfrac);
             // Longwave
             auto nlwgpts = k_dist_lw.get_ngpt();
-            auto clouds_lw_gpt = get_subsampled_clouds(ncol, nlay, nlwbands, nlwgpts, cld_mask_lw_gpt, clouds_lw, k_dist_lw, cldfrac);
+            auto clouds_lw_gpt = get_subsampled_clouds(ncol, nlay, nlwbands, nlwgpts, clouds_lw, k_dist_lw, cldfrac);
 
             // Copy cloud properties to outputs (is this needed, or can we just use pointers?)
             // Alternatively, just compute and output a subcolumn cloud mask
-            auto cld_mask_sw = real3d("cld_mask_sw", ncol, nlay, nswgpts);
             parallel_for(Bounds<3>(nswgpts, nlay, ncol), YAKL_LAMBDA (int igpt, int ilay, int icol) {
-                if (clouds_sw_gpt.tau(icol,ilay,igpt) > 0) {
-                    cld_mask_sw(icol,ilay,igpt) = 1.0;
-                } else {
-                    cld_mask_sw(icol,ilay,igpt) = 0.0;
-                }
                 cld_tau_sw_gpt(icol,ilay,igpt) = clouds_sw_gpt.tau(icol,ilay,igpt);
             });
             parallel_for(Bounds<3>(nlwgpts, nlay, ncol), YAKL_LAMBDA (int igpt, int ilay, int icol) {
@@ -408,7 +402,7 @@ namespace scream {
 
         OpticalProps2str get_subsampled_clouds(
                 const int ncol, const int nlay, const int nbnd, const int ngpt,
-                real3d &cldmask_real, OpticalProps2str &cloud_optics, GasOpticsRRTMGP &kdist, real2d &cld) {
+                OpticalProps2str &cloud_optics, GasOpticsRRTMGP &kdist, real2d &cld) {
             // Initialized subsampled optics
             OpticalProps2str subsampled_optics;
             subsampled_optics.init(kdist.get_band_lims_wavenumber(), kdist.get_band_lims_gpoint(), "subsampled_optics");
@@ -436,12 +430,10 @@ namespace scream {
             parallel_for(Bounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
                 auto ibnd = gpoint_bands(igpt);
                 if (cldmask(icol,ilay,igpt) == 1) {
-                    cldmask_real(icol,ilay,igpt) = 1.0;
                     subsampled_optics.tau(icol,ilay,igpt) = cloud_optics.tau(icol,ilay,ibnd);
                     subsampled_optics.ssa(icol,ilay,igpt) = cloud_optics.ssa(icol,ilay,ibnd);
                     subsampled_optics.g  (icol,ilay,igpt) = cloud_optics.g  (icol,ilay,ibnd);
                 } else {
-                    cldmask_real(icol,ilay,igpt) = 0.0;
                     subsampled_optics.tau(icol,ilay,igpt) = 0;
                     subsampled_optics.ssa(icol,ilay,igpt) = 0;
                     subsampled_optics.g  (icol,ilay,igpt) = 0;
@@ -454,7 +446,7 @@ namespace scream {
 
         OpticalProps1scl get_subsampled_clouds(
                 const int ncol, const int nlay, const int nbnd, const int ngpt,
-                real3d &cldmask_real, OpticalProps1scl &cloud_optics, GasOpticsRRTMGP &kdist, real2d &cld) {
+                OpticalProps1scl &cloud_optics, GasOpticsRRTMGP &kdist, real2d &cld) {
             // Initialized subsampled optics
             OpticalProps1scl subsampled_optics;
             subsampled_optics.init(kdist.get_band_lims_wavenumber(), kdist.get_band_lims_gpoint(), "subsampled_optics");
@@ -482,10 +474,8 @@ namespace scream {
             parallel_for(Bounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
                 auto ibnd = gpoint_bands(igpt);
                 if (cldmask(icol,ilay,igpt) == 1) {
-                    cldmask_real(icol,ilay,igpt) = 1.0;
                     subsampled_optics.tau(icol,ilay,igpt) = cloud_optics.tau(icol,ilay,ibnd);
                 } else {
-                    cldmask_real(icol,ilay,igpt) = 0.0;
                     subsampled_optics.tau(icol,ilay,igpt) = 0;
                 } 
             });

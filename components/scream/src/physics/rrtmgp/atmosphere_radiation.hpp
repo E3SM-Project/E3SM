@@ -110,8 +110,8 @@ public:
     static constexpr int num_3d_nlev_nlwbands = 2;
     static constexpr int num_3d_nlay_nswbands = 3;
     static constexpr int num_3d_nlay_nlwbands = 1;
-    static constexpr int num_3d_nlay_nswgpts = 2;
-    static constexpr int num_3d_nlay_nlwgpts = 2;
+    static constexpr int num_3d_nlay_nswgpts = 1;
+    static constexpr int num_3d_nlay_nlwgpts = 1;
 
     // 1d size (ncol)
     real1d mu0;
@@ -176,9 +176,7 @@ public:
     real3d aero_tau_lw;
 
     // 3d size (ncol, nlay, n[sw,lw]gpts)
-    real3d cld_mask_sw_gpt;
     real3d cld_tau_sw_gpt;
-    real3d cld_mask_lw_gpt;
     real3d cld_tau_lw_gpt;
   };
 
