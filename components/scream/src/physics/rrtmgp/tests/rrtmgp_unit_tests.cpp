@@ -470,7 +470,9 @@ TEST_CASE("rrtmgp_test_subcol_gen") {
     auto cldfrac_from_mask = real2d("cldfrac_from_mask", ncol, nlay);
     // Run subcol gen, make sure we get what we expect; do this for some different seed values
     for (unsigned seed = 1; seed <= 10; seed++) {
-        cldmask = scream::rrtmgp::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seed);
+        auto seeds = int1d("seeds", ncol);
+        memset(seeds, seed);
+        cldmask = scream::rrtmgp::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
         // Check answers by computing new cldfrac from mask
         memset(cldfrac_from_mask, 0.0);
         parallel_for(Bounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
@@ -499,7 +501,9 @@ TEST_CASE("rrtmgp_test_subcol_gen") {
         cldfrac(1,4) = 0;
     });
     for (unsigned seed = 1; seed <= 10; seed++) {
-        cldmask = scream::rrtmgp::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seed);
+        auto seeds = int1d("seeds", ncol);
+        memset(seeds, seed);
+        cldmask = scream::rrtmgp::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
         auto cldmask_h = cldmask.createHostCopy();
         for (int igpt = 1; igpt <= ngpt; igpt++) {
             if (cldmask_h(1,1,igpt) == 1) {

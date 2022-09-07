@@ -100,6 +100,11 @@ namespace scream {
                 GasConcs &gas_concs,
                 OpticalProps1scl &aerosol, OpticalProps1scl &clouds,
                 FluxesByband &fluxes, FluxesByband &clrsky_fluxes);
+        /*
+         * Return a subcolumn mask consistent with a specified overlap assumption
+         */
+        int3d get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, real2d &cldf, const int overlap_option, int1d &seeds);
+
         /* 
          * Provide a function to convert cloud (water and ice) mixing ratios to layer mass per unit area
          * (what E3SM refers to as "in-cloud water paths", a terminology we shun here to avoid confusion
