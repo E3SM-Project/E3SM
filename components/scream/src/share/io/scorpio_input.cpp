@@ -235,7 +235,8 @@ void AtmosphereInput::read_variables (const int time_index)
   for (auto const& name : m_fields_names) {
 
     // Read the data
-    scorpio::grid_read_data_array(m_filename,name,time_index,m_host_views_1d.at(name).data());
+    auto v1d = m_host_views_1d.at(name);
+    scorpio::grid_read_data_array(m_filename,name,time_index,v1d.data(),v1d.size());
 
     // If we have a field manager, make sure the data is correctly
     // synced to both host and device views of the field.
@@ -415,6 +416,7 @@ void AtmosphereInput::register_variables()
   // dof decomposition across different ranks.
 
   // Cycle through all fields
+  const auto& fp_precision = "real";
   for (auto const& name : m_fields_names) {
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     auto vec_of_dims   = get_vec_of_dims(m_layouts.at(name));
@@ -430,7 +432,7 @@ void AtmosphereInput::register_variables()
     //  but in the future if non-Real variables are added we will want to accomodate that.
     //TODO: Should be able to simply inquire from the netCDF the dimensions for each variable.
     scorpio::get_variable(m_filename, name, name, vec_of_dims.size(),
-                          vec_of_dims, PIO_REAL, io_decomp_tag);
+                          vec_of_dims, scorpio::nctype(fp_precision), io_decomp_tag);
   }
 }
 
