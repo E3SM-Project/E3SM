@@ -331,12 +331,12 @@ contains
       call mpas_pool_get_config(liConfigs, 'config_uplift_method', config_uplift_method)
       if (trim(config_uplift_method)=='sealevelmodel') then
          if (curProc.eq.0) then
-            deallocate(nCellsPerProc)
-            deallocate(nCellsDisplacement)
-            deallocate(indexToCellIDGathered)
             deallocate(toRowValues, toColValues, toSValues)
             deallocate(fromRowValues, fromColValues, fromSValues)
          endif
+         deallocate(nCellsPerProc)
+         deallocate(nCellsDisplacement)
+         deallocate(indexToCellIDGathered)
       endif
 #endif
    !--------------------------------------------------------------------
@@ -425,10 +425,8 @@ contains
       err = ior(err, err_tmp)
 
       ! perform the initialization on the head processor
-      if (curProc.eq.0) then
-         allocate(nCellsPerProc(nProcs))
-         allocate(nCellsDisplacement(nProcs))
-      endif
+      allocate(nCellsPerProc(nProcs))
+      allocate(nCellsDisplacement(nProcs))
 
       ! Gather nCellsOwned
       call MPI_GATHER( nCellsOwned, 1, MPI_INTEGER, nCellsPerProc, 1, MPI_INTEGER, &
@@ -445,6 +443,9 @@ contains
                nCellsDisplacement(iProc) = nCellsDisplacement(iProc-1) + nCellsPerProc(iProc-1)
             enddo
          endif
+      else
+         ! Intel requires this be allocated even though it is not meaningful on the non-destination procs
+         allocate(indexToCellIDGathered(1))
       endif
 
       ! Gather indexToCellID
@@ -460,6 +461,11 @@ contains
          allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
          allocate(globalArrayBedTopography(nCellsGlobal), gatheredArrayBedTopography(nCellsGlobal))
          allocate(meshMask(nCellsGlobal))
+      else
+         ! Intel requires these be allocated even though they are not meaningful on the non-destination procs
+         allocate(globalArrayThickness(1), gatheredArrayThickness(1))
+         allocate(globalArrayBedTopography(1), gatheredArrayBedTopography(1))
+         allocate(meshMask(1))
       endif
 
       ! Gather only the nCellsOwned from thickness and bedtopo (does not include Halos)
@@ -514,12 +520,12 @@ contains
          call sl_solver_init(itersl, starttime, ismIceload, ismBedtopo, ismMask)
          call sl_deallocate_array
 
-         deallocate(globalArrayThickness)
-         deallocate(gatheredArrayThickness)
-         deallocate(globalArrayBedTopography)
-         deallocate(gatheredArrayBedTopography)
-         deallocate(meshMask)
       endif
+      deallocate(globalArrayThickness)
+      deallocate(gatheredArrayThickness)
+      deallocate(globalArrayBedTopography)
+      deallocate(gatheredArrayBedTopography)
+      deallocate(meshMask)
 
 # else
       call mpas_log_write("The sea-level model needs to be included in the compilation with 'SLM=true'", &
@@ -613,6 +619,11 @@ contains
          allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
          allocate(globalArrayTopoChange(nCellsGlobal), gatheredArrayTopoChange(nCellsGlobal))
          allocate(meshMask(nCellsGlobal))
+      else
+         ! Intel requires these be allocated even though they are not meaningful on the non-destination procs
+         allocate(globalArrayThickness(1), gatheredArrayThickness(1))
+         allocate(globalArrayTopoChange(1), gatheredArrayTopoChange(1))
+         allocate(meshMask(1))
       endif
 
       ! Gather only the nCellsOwned from ice thickness (does not include Halos)
@@ -675,13 +686,11 @@ contains
       err = ior(err, err_tmp)
 
       ! deallocate memory
-      if (curProc.eq.0) then
-         deallocate(globalArrayThickness)
-         deallocate(gatheredArrayThickness)
-         deallocate(globalArrayTopoChange)
-         deallocate(gatheredArrayTopoChange)
-         deallocate(meshMask)
-      endif
+      deallocate(globalArrayThickness)
+      deallocate(gatheredArrayThickness)
+      deallocate(globalArrayTopoChange)
+      deallocate(gatheredArrayTopoChange)
+      deallocate(meshMask)
 #endif
 
    !--------------------------------------------------------------------
