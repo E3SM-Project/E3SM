@@ -1403,8 +1403,6 @@ contains
     integer                       :: ierr,var_size
     logical                       :: found
 
-    print *, "write_darray_double"
-
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)
 
