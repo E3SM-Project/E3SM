@@ -119,9 +119,6 @@ void run(std::mt19937_64& engine)
     for (int icol=0;icol<ncols;icol++) {
       const auto& LW_flux_up_sub      = ekat::subview(LW_flux_up_v,icol);
       const auto& LW_clrsky_flux_up_sub      = ekat::subview(LW_clrsky_flux_up_v,icol);
-//      const auto& dp_sub      = ekat::subview(pseudo_dens_v,icol);
-//      ekat::genRandArray(dview_as_real(pseudo_density),  engine, pdf_pseudodens);
-//      Kokkos::deep_copy(dp_sub,pseudo_density);
 
       ekat::genRandArray(dview_as_real(LW_flux_up),              engine, pdf_LW_flux_x);
       ekat::genRandArray(dview_as_real(LW_clrsky_flux_up),              engine, pdf_LW_flux_x);
@@ -129,7 +126,6 @@ void run(std::mt19937_64& engine)
       Kokkos::deep_copy(LW_clrsky_flux_up_sub,LW_clrsky_flux_up);
 
     }
-   // ekat::genRandArray(phis_v, engine, pdf_surface);
 
     // Run diagnostic and compare with manual calculation
     diag->compute_diagnostic();

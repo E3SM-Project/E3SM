@@ -103,7 +103,6 @@ void run(std::mt19937_64& engine)
     const auto name = f.name();
     f.get_header().get_tracking().update_time_stamp(t0);
     diag->set_required_field(f.get_const());
-//    REQUIRE_THROWS(diag->set_computed_field(f));
     input_fields.emplace(name,f);
   }
 
@@ -154,11 +153,6 @@ void run(std::mt19937_64& engine)
       const int jpack = idx / Pack::n;
       const int klev  = idx % Pack::n;
       lsum += v_v(icol,jpack)[klev] * qv_v(icol,jpack)[klev] * pseudo_density_v(icol,jpack)[klev]/gravit;
-    //Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
-    //  const int icol = team.league_rank();
-    //  Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& jpack, Pack& lsum){
-    //  lsum += u_v(icol,jpack) * qv_v(icol,jpack) * pseudo_density_v(icol,jpack)/gravit;
-      //lsum += pseudo_density(icol,jpack)[klev]/gravit;
     },qv_vert_integrated_flux_v_v(icol));
 
     });

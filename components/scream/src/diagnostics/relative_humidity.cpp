@@ -69,8 +69,6 @@ void RelativeHumidityDiagnostic::compute_diagnostic_impl()
       const int jpack = idx % npacks;
       const auto range_pack = ekat::range<Pack>(jpack*Pack::n);
       const auto range_mask = range_pack < m_num_levs;
-//      using Smask = ekat::Mask<Pack::n>;
-//      Smask range_mask(true);
       auto qv_sat_l = physics::qv_sat(T_mid(icol,jpack), p_mid(icol,jpack), false, range_mask);
       RH(icol,jpack) = qv_mid(icol,jpack)/qv_sat_l;
 

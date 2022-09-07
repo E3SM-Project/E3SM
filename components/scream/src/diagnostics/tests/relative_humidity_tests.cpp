@@ -149,7 +149,6 @@ void run(std::mt19937_64& engine)
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& jpack) {
       auto qv_sat_l = physics::qv_sat(T_mid_v(icol,jpack), p_mid_v(icol,jpack), false, range_mask);
         rh_v(icol,jpack) = qv_v(icol,jpack)/qv_sat_l;
-//        rh_v(icol,jpack) = PF::calculate_theta_from_T(T_mid_v(icol,jpack),p_mid_v(icol,jpack));
       });
       team.team_barrier();
     });
@@ -167,7 +166,6 @@ TEST_CASE("relative_humidity_test", "relative_humidity_test]"){
   using scream::Real;
   using Device = scream::DefaultDevice;
 
-//  using physics = scream::physics::Functions<Real, DefaultDevice>;
 
   constexpr int num_runs = 5;
 

@@ -102,7 +102,6 @@ void run(std::mt19937_64& engine)
     const auto name = f.name();
     f.get_header().get_tracking().update_time_stamp(t0);
     diag->set_required_field(f.get_const());
-//    REQUIRE_THROWS(diag->set_computed_field(f));
     input_fields.emplace(name,f);
   }
 
@@ -127,9 +126,6 @@ void run(std::mt19937_64& engine)
       const auto& SW_flux_up_sub      = ekat::subview(SW_flux_up_v,icol);
       const auto& SW_clrsky_flux_dn_sub      = ekat::subview(SW_clrsky_flux_dn_v,icol);
       const auto& SW_clrsky_flux_up_sub      = ekat::subview(SW_clrsky_flux_up_v,icol);
-//      const auto& dp_sub      = ekat::subview(pseudo_dens_v,icol);
-//      ekat::genRandArray(dview_as_real(pseudo_density),  engine, pdf_pseudodens);
-//      Kokkos::deep_copy(dp_sub,pseudo_density);
 
       ekat::genRandArray(dview_as_real(SW_flux_dn),              engine, pdf_SW_flux_x);
       ekat::genRandArray(dview_as_real(SW_flux_up),              engine, pdf_SW_flux_x);
@@ -141,7 +137,6 @@ void run(std::mt19937_64& engine)
       Kokkos::deep_copy(SW_clrsky_flux_up_sub,SW_clrsky_flux_up);
 
     }
-   // ekat::genRandArray(phis_v, engine, pdf_surface);
 
     // Run diagnostic and compare with manual calculation
     diag->compute_diagnostic();

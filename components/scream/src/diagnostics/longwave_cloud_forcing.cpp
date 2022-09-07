@@ -30,8 +30,6 @@ void LongwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const Grids
   // The fields required for this diagnostic to be computed
   add_field<Required>("LW_flux_up",          scalar3d_layout_mid, W/m2,  grid_name, ps);
   add_field<Required>("LW_clrsky_flux_up",          scalar3d_layout_mid, W/m2,  grid_name, ps);
-  //add_field<Required>("p_mid",          scalar3d_layout_mid, Pa, grid_name, ps);
-  //add_field<Required>("phis",           scalar2d_layout_col, m2/s2, grid_name, ps);
 
   // Construct and allocate the diagnostic field
   FieldIdentifier fid (name(), scalar2d_layout_col, W/m2, grid_name);
