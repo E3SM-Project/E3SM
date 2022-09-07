@@ -4309,6 +4309,9 @@ contains
           xao_ox => prep_aoflux_get_xao_ox()
           call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
 
+          ! moab version
+          call prep_ocn_mrg_moab(infodata, xao_ox)
+
           ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
           call prep_ocn_accum(timer='CPL:atmocnp_accum')
 #endif
