@@ -318,7 +318,7 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   m_covmr      = m_params.get<Real>("covmr", 1.0e-7);
 
   // Whether or not to do MCICA subcolumn sampling
-  m_do_subcol_sampling = m_params.get<bool>("do_subcol_sampling",false);
+  m_do_subcol_sampling = m_params.get<bool>("do_subcol_sampling",true);
 
   // Initialize yakl
   if(!yakl::isInitialized()) { yakl::init(); }
