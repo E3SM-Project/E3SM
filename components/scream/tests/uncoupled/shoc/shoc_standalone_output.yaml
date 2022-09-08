@@ -4,7 +4,7 @@ Casename: shoc_standalone_output
 Averaging Type: Instant
 Max Snapshots Per File: 1
 Fields:
-  Physics GLL:
+  Physics:
     Field Names:
       - T_mid
       - cldfrac_liq
