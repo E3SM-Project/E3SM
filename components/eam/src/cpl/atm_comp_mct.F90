@@ -105,7 +105,7 @@ CONTAINS
 
   subroutine atm_init_mct( EClock, cdata_a, x2a_a, a2x_a, NLFilename )
 #if defined(CLDERA_PROFILING)
-    use cldera_interface_mod, only: cldera_init
+    use cldera_interface_mod, only: cldera_init, cldera_set_log_unit, cldera_set_masterproc
 #endif
 
     !-----------------------------------------------------------------------
@@ -178,12 +178,6 @@ CONTAINS
 
     if (first_time) then
 
-#if defined(CLDERA_PROFILING)
-       call t_startf('cldera_init')
-       call cldera_init(mpicom_atm)
-       call t_stopf('cldera_init')
-#endif
-       
        call cam_instance_init(ATMID)
 
        ! Set filename specifier for restart surface file
@@ -212,6 +206,14 @@ CONTAINS
        call shr_file_getLogUnit (shrlogunit)
        call shr_file_getLogLevel(shrloglev)
        call shr_file_setLogUnit (iulog)
+
+#if defined(CLDERA_PROFILING)
+       call t_startf('cldera_init')
+       call cldera_init(mpicom_atm)
+       call cldera_set_log_unit (iulog)
+       call cldera_set_masterproc (masterproc)
+       call t_stopf('cldera_init')
+#endif
 
        ! Identify SMP nodes and process/SMP mapping for this instance
        ! (Assume that processor names are SMP node names on SMP clusters.)
