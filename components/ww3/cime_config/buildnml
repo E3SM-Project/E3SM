@@ -29,7 +29,9 @@ def buildnml(case, caseroot, compname):
     din_loc_root         = case.get_value("DIN_LOC_ROOT")
     ninst_wav            = case.get_value("NINST_WAV")
     get_refcase          = case.get_value("GET_REFCASE")
+    compset              = case.get_value("COMPSET")
     wav_grid             = case.get_value("WAV_GRID")
+    wav_only             = case.get_value("WAV_ONLY")
     ww3_bldnml_opts      = case.get_value("WW3_BLDNML_OPTS")
     ww3_namelist_opts    = case.get_value("WW3_NAMELIST_OPTS")
     rundir               = case.get_value("RUNDIR")
@@ -101,6 +103,7 @@ def buildnml(case, caseroot, compname):
         sysmod += " -scriptsroot {}".format(scriptsroot)
         sysmod += " -nml_type {}".format('ww3')
         sysmod += ' -inst_string "{}" '.format(inst_string)
+        sysmod += " -wav_only {}".format(wav_only)
         run_cmd_no_fail(sysmod, from_dir=wavconf_dir)
 
         # Namelist for ww3_grid preprocessing program
@@ -109,6 +112,7 @@ def buildnml(case, caseroot, compname):
         sysmod += " -scriptsroot {}".format(scriptsroot)
         sysmod += " -nml_type {}".format('ww3_grid')
         sysmod += ' -inst_string "{}" '.format(inst_string)
+        sysmod += " -wav_only {}".format(wav_only)
         run_cmd_no_fail(sysmod, from_dir=wavconf_dir)
 
         # Additional namelist for ww3_grid preprocessing program
@@ -117,6 +121,7 @@ def buildnml(case, caseroot, compname):
         sysmod += " -scriptsroot {}".format(scriptsroot)
         sysmod += " -nml_type {}".format('ww3_grid_nml')
         sysmod += ' -inst_string "{}" '.format(inst_string)
+        sysmod += " -wav_only {}".format(wav_only)
         run_cmd_no_fail(sysmod, from_dir=wavconf_dir)
 
         # -----------------------------------------------------
