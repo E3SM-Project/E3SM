@@ -30,9 +30,13 @@ extern "C" {
   void eam_pio_closefile_c2f(const char*&& filename);
   void pio_update_time_c2f(const char*&& filename,const double time);
   void register_dimension_c2f(const char*&& filename, const char*&& shortname, const char*&& longname, const int length);
-  void register_variable_c2f(const char*&& filename,const char*&& shortname, const char*&& longname, const char*&& units, const int numdims, const char** var_dimensions, const int dtype, const char*&& pio_decomp_tag);
+  void register_variable_c2f(const char*&& filename, const char*&& shortname, const char*&& longname,
+                             const char*&& units, const int numdims, const char** var_dimensions,
+                             const int dtype, const int nc_dtype, const char*&& pio_decomp_tag);
   void set_variable_metadata_c2f (const char*&& filename, const char*&& varname, const char*&& meta_name, const char*&& meta_val);
-  void get_variable_c2f(const char*&& filename,const char*&& shortname, const char*&& longname, const int numdims, const char** var_dimensions, const int dtype, const char*&& pio_decomp_tag);
+  void get_variable_c2f(const char*&& filename,const char*&& shortname, const char*&& longname,
+                        const int numdims, const char** var_dimensions,
+                        const int dtype, const char*&& pio_decomp_tag);
   void eam_pio_enddef_c2f(const char*&& filename);
 } // extern C
 
@@ -118,7 +122,7 @@ void get_variable(const std::string &filename, const std::string& shortname, con
 /* ----------------------------------------------------------------- */
 void register_variable(const std::string &filename, const std::string& shortname, const std::string& longname,
                        const std::string& units, const std::vector<std::string>& var_dimensions,
-                       const std::string& dtype, const std::string& pio_decomp_tag) {
+                       const std::string& dtype, const std::string& nc_dtype, const std::string& pio_decomp_tag) {
 
   /* Convert the vector of strings that contains the variable dimensions to a char array */
   const int numdims = var_dimensions.size();
@@ -129,7 +133,7 @@ void register_variable(const std::string &filename, const std::string& shortname
   }
   register_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(),
                         units.c_str(), numdims, var_dimensions_c.data(),
-                        nctype(dtype), pio_decomp_tag.c_str());
+                        nctype(dtype), nctype(nc_dtype), pio_decomp_tag.c_str());
 }
 /* ----------------------------------------------------------------- */
 void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const std::string& meta_val) {

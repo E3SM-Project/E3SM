@@ -171,7 +171,9 @@ contains
     call set_int_attribute(file_name,attr_name,val)
   end subroutine set_int_attribute_c2f
 !=====================================================================!
-  subroutine register_variable_c2f(filename_in, shortname_in, longname_in, units_in, numdims, var_dimensions_in, dtype, pio_decomp_tag_in) bind(c)
+  subroutine register_variable_c2f(filename_in, shortname_in, longname_in, &
+                                   units_in, numdims, var_dimensions_in,   &
+                                   dtype, nc_dtype, pio_decomp_tag_in) bind(c)
     use scream_scorpio_interface, only : register_variable
     type(c_ptr), intent(in)                :: filename_in
     type(c_ptr), intent(in)                :: shortname_in
@@ -179,7 +181,7 @@ contains
     type(c_ptr), intent(in)                :: units_in
     integer(kind=c_int), value, intent(in) :: numdims
     type(c_ptr), intent(in)                :: var_dimensions_in(numdims)
-    integer(kind=c_int), value, intent(in) :: dtype
+    integer(kind=c_int), value, intent(in) :: dtype, nc_dtype
     type(c_ptr), intent(in)                :: pio_decomp_tag_in
 
     character(len=256) :: filename
@@ -199,7 +201,7 @@ contains
       call convert_c_string(var_dimensions_in(ii), var_dimensions(ii))
     end do
 
-    call register_variable(filename,shortname,longname,units,numdims,var_dimensions,dtype,pio_decomp_tag)
+    call register_variable(filename,shortname,longname,units,numdims,var_dimensions,dtype,nc_dtype,pio_decomp_tag)
 
   end subroutine register_variable_c2f
 !=====================================================================!

@@ -108,7 +108,8 @@ module scream_scorpio_interface
     character(len=max_chars) :: pio_decomp_tag ! PIO decomposition label used by this variable.
     character(len=max_chars) :: units         ! 'units' attribute
     type(var_desc_t) :: piovar                ! netCDF variable ID
-    integer          :: dtype                 ! data type
+    integer          :: dtype                 ! data type used to pass data to read/write routines
+    integer          :: nc_dtype              ! data type used in the netcdf files
     integer          :: numdims               ! Number of dimensions in out field
     type(io_desc_t), pointer  :: iodesc       ! PIO decomp associated with this variable
     type(iodesc_list_t), pointer  :: iodesc_list ! PIO decomp list with metadata about PIO decomp
@@ -327,6 +328,7 @@ contains
   !                 the pio_decomp_tag for variables that have the same
   !                 dimensionality.  See get_decomp for more details.
   subroutine get_variable(filename,shortname,longname,numdims,var_dimensions,dtype,pio_decomp_tag)
+    use pio_nf, only: PIO_inq_vartype
     character(len=*), intent(in) :: filename         ! Name of the file to register this variable with
     character(len=*), intent(in) :: shortname,longname       ! short and long names for the variable.  Short: variable name in file, Long: more descriptive name
     integer, intent(in)          :: numdims                  ! Number of dimensions for this variable, including time dimension
@@ -394,6 +396,10 @@ contains
       ierr = PIO_inq_varid(pio_atm_file%pioFileDesc,trim(shortname),hist_var%piovar)
       call errorHandle("PIO ERROR: could not find variable "//trim(shortname)//" in file "//trim(filename),ierr)
 
+      ! Not really needed, but just in case, store var data type in the nc file
+      ierr = PIO_inq_vartype(pio_atm_file%pioFileDesc,hist_var%piovar,hist_var%nc_dtype)
+      call errorHandle("EAM PIO ERROR: Unable to retrieve dtype for variable "//shortname,ierr)
+
       ! Set that the new variable has been set
       hist_var%is_set = .true.
     else
@@ -447,7 +453,9 @@ contains
   !                 decomposition for reading this variable.  It is ok to reuse
   !                 the pio_decomp_tag for variables that have the same
   !                 dimensionality.  See get_decomp for more details.
-  subroutine register_variable(filename,shortname,longname,units,numdims,var_dimensions,dtype,pio_decomp_tag)
+  subroutine register_variable(filename,shortname,longname,units, &
+                               numdims,var_dimensions,            &
+                               dtype,nc_dtype,pio_decomp_tag)
     use pio_nf, only: PIO_def_var
 
     character(len=*), intent(in) :: filename         ! Name of the file to register this variable with
@@ -455,7 +463,8 @@ contains
     character(len=*), intent(in) :: units                    ! units for variable
     integer, intent(in)          :: numdims                  ! Number of dimensions for this variable, including time dimension
     character(len=*), intent(in) :: var_dimensions(numdims)  ! String array with shortname descriptors for each dimension of variable.
-    integer, intent(in)          :: dtype                    ! datatype for this variable, REAL, DOUBLE, INTEGER, etc.
+    integer, intent(in)          :: dtype                    ! datatype for arrays that will be passed to read/write routines
+    integer, intent(in)          :: nc_dtype                 ! datatype for this variable in nc files
     character(len=*), intent(in) :: pio_decomp_tag           ! Unique tag for this variables decomposition type, to be used to determine if the io-decomp already exists.
 
     ! Local variables
@@ -503,6 +512,7 @@ contains
       hist_var%units = trim(units)
       hist_var%numdims   = numdims
       hist_var%dtype     = dtype
+      hist_var%nc_dtype  = nc_dtype
       hist_var%pio_decomp_tag = trim(pio_decomp_tag)
       ! Determine the dimension id's saved in the netCDF file and associated with
       ! this variable, check if variable has a time dimension
@@ -518,7 +528,7 @@ contains
         hist_var%pio_decomp_tag = hist_var%pio_decomp_tag//"_"//trim(dimlen_str)
       end do
 
-      ierr = PIO_def_var(pio_atm_file%pioFileDesc, trim(shortname), hist_var%dtype, hist_var%dimid(:numdims), hist_var%piovar)
+      ierr = PIO_def_var(pio_atm_file%pioFileDesc, trim(shortname), hist_var%nc_dtype, hist_var%dimid(:numdims), hist_var%piovar)
       call errorHandle("PIO ERROR: could not define variable "//trim(shortname),ierr)
 
       !PMC
@@ -536,7 +546,7 @@ contains
      elseif ( trim(hist_var%units) .ne. trim(units) ) then
         ! Different units
         call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different units, in file: "//trim(filename),-999)
-      elseif (hist_var%dtype .ne. dtype) then
+      elseif (hist_var%nc_dtype .ne. nc_dtype .or. hist_var%dtype .ne. dtype) then
         ! Different data type
         call errorHandle("PIO Error: variable "//trim(shortname)//", already registered with different dtype, in file: "//trim(filename),-999)
       elseif (pio_atm_file%purpose .eq. file_purpose_out .and. & ! Out files must match the decomp tag
@@ -1397,7 +1407,6 @@ contains
 
     ! Local variables
 
-    real(kind=c_float) :: sbuf(buf_size)
     type(pio_atm_file_t), pointer :: pio_atm_file
     type(hist_var_t), pointer     :: var
     integer                       :: ierr,var_size
@@ -1413,12 +1422,7 @@ contains
     var_size = SIZE(var%compdof)
 
     ! Now we know the exact size of the array, and can shape the f90 pointer
-    if (var%dtype .eq. PIO_FLOAT) then
-      sbuf = real(buf,c_float)
-      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, sbuf, ierr)
-    else
-      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
-    endif
+    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
     call errorHandle( 'eam_grid_write_darray_double: Error writing variable '//trim(varname),ierr)
   end subroutine grid_write_darray_double
   subroutine grid_write_darray_int(filename, varname, buf, buf_size)

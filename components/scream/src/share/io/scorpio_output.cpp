@@ -493,7 +493,7 @@ register_variables(const std::string& filename,
     // Currently the field_manager only stores Real variables so it is not an issue,
     // but in the future if non-Real variables are added we will want to accomodate that.
     register_variable(filename, name, name, units, vec_of_dims,
-                      fp_precision, io_decomp_tag);
+                      "real",fp_precision, io_decomp_tag);
   }
 } // register_variables
 /* ---------------------------------------------------------- */
