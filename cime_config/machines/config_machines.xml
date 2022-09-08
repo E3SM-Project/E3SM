@@ -891,6 +891,7 @@
     <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
     <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
     <environment_variables>
+      <env name="CLDERA_PATH">/sems-data-store/ACME/cldera/cldera-tools/install</env>
       <env name="NETCDFROOT">$ENV{SEMS_NETCDF_ROOT}</env>
       <env name="OMP_STACKSIZE">64M</env>
       <env name="OMP_PROC_BIND">spread</env>
