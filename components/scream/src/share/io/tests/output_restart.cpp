@@ -70,7 +70,6 @@ TEST_CASE("output_restart","io")
   std::string param_filename = "io_test_restart.yaml";
   ekat::ParameterList output_params;
   ekat::parse_yaml_file(param_filename,output_params);
-  output_params.set<std::string>("Floating Point Precision","real");
   OutputManager output_manager;
   output_manager.setup(io_comm,output_params,field_manager,gm,t0,t0,false);
 
@@ -138,7 +137,6 @@ TEST_CASE("output_restart","io")
 
   ekat::ParameterList output_params_res;
   ekat::parse_yaml_file(param_filename_res,output_params_res);
-  output_params_res.set<std::string>("Floating Point Precision","real");
 
   OutputManager output_manager_res;
   output_manager_res.setup(io_comm,output_params_res,fm_res,gm,time_res,t0,false);

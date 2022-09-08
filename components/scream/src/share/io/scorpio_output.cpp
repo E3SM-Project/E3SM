@@ -292,7 +292,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
       // Bring data to host
       auto view_host = m_host_views_1d.at(name);
       Kokkos::deep_copy (view_host,view_dev);
-      grid_write_data_array(filename,name,view_host.data(),view_host.size());
+      grid_write_data_array(filename,name,view_host.data());
     }
   }
 } // run
@@ -455,9 +455,7 @@ void AtmosphereOutput::register_views()
   }
 }
 /* ---------------------------------------------------------- */
-void AtmosphereOutput::
-register_variables(const std::string& filename,
-                   const std::string& fp_precision)
+void AtmosphereOutput::register_variables(const std::string& filename)
 {
   using namespace scorpio;
 
@@ -492,8 +490,7 @@ register_variables(const std::string& filename,
      // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
     // but in the future if non-Real variables are added we will want to accomodate that.
-    register_variable(filename, name, name, units, vec_of_dims.size(),
-                      vec_of_dims, scorpio::nctype(fp_precision), io_decomp_tag);
+    register_variable(filename, name, name, units, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);
   }
 } // register_variables
 /* ---------------------------------------------------------- */
@@ -598,9 +595,7 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
   */
 } // set_degrees_of_freedom
 /* ---------------------------------------------------------- */
-void AtmosphereOutput::
-setup_output_file(const std::string& filename,
-                  const std::string& fp_precision)
+void AtmosphereOutput::setup_output_file(const std::string& filename)
 {
   using namespace scream::scorpio;
 
@@ -610,7 +605,7 @@ setup_output_file(const std::string& filename,
   }
 
   // Register variables with netCDF file.  Must come after dimensions are registered.
-  register_variables(filename,fp_precision);
+  register_variables(filename);
 
   // Set the offsets of the local dofs in the global vector.
   set_degrees_of_freedom(filename);
