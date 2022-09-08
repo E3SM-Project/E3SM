@@ -26,7 +26,7 @@ configure_file(shoc_standalone_output.yaml shoc_standalone_output.yaml)
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if running with 2+ ranks configurations
 # This test requires CPRNC
-if (TEST_RANK_START GREATER TEST_RANK_END)
+if (TEST_RANK_END GREATER TEST_RANK_START)
   include (BuildCprnc)
   BuildCprnc()
   SET (BASE_TEST_NAME "shoc")
