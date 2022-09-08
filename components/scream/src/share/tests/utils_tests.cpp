@@ -1,10 +1,189 @@
 #include <catch2/catch.hpp>
+#include <chrono>
+#include <iomanip>
+#include <iostream>
+#include <fstream>
 
 #include "share/util/scream_array_utils.hpp"
 #include "share/util/scream_universal_constants.hpp"
 #include "share/util/scream_utils.hpp"
 #include "share/util/scream_time_stamp.hpp"
 #include "share/util/scream_setup_random_test.hpp"
+#include "share/util/scream_vertical_interpolation.hpp"
+#include "ekat/ekat_parse_yaml_file.hpp"
+
+
+TEST_CASE("vertical_interpolation"){
+  using namespace scream;
+
+  ekat::Comm io_comm(MPI_COMM_WORLD);
+  using vos_type = std::vector<std::string>;
+  ekat::ParameterList params_f;
+  ekat::parse_yaml_file("io_vertical_interpolation_test.yaml",params_f);
+  std::string filename = params_f.get<std::string>("Filename");
+  //std::cout<<"Finn test name for filename: "<<filename<<std::endl;
+  vos_type sv = params_f.get<vos_type>("Field Names");
+  //std::cout<<"First Field name: "<<sv[0]<<std::endl;
+  //std::cout<<"Second Field name: "<<sv[1]<<std::endl;
+
+  
+  auto npacks_tgt_f = ekat::PackInfo<Spack::n>::num_packs(194);
+  auto npacks_src_f = ekat::PackInfo<Spack::n>::num_packs(128);
+  auto p_tgt_f = view_1d<Spack>("",npacks_tgt_f);
+  auto p_tgt_f_c = Kokkos::create_mirror_view(ekat::scalarize(p_tgt_f));
+  auto tmp_src_f = view_2d<Spack>("",866,npacks_src_f);
+  auto tmp_src_f_c = Kokkos::create_mirror_view(ekat::scalarize(tmp_src_f));
+  auto p_src_f = view_2d<Spack>("",866,npacks_src_f);
+  auto p_src_f_c = Kokkos::create_mirror_view(ekat::scalarize(p_src_f));
+  auto out_f = view_2d<Spack>("",866,npacks_tgt_f);
+  auto out_f_c = Kokkos::create_mirror_view(ekat::scalarize(out_f));
+  auto mask = view_2d<Smask>("",866,npacks_tgt_f);
+  //auto mask = view_2d<Spack>("",866,npacks_tgt_f);
+  //auto mask = view_2d<Sbool>("",866,npacks_tgt_f);
+  //auto mask = view_2d<Smask>("",866);
+  //auto mask_c = Kokkos::create_mirror_view(ekat::scalarize(mask));
+
+  std::string line;
+  //std::ifstream press_levels (filename);
+  std::ifstream press_levels ("press_tgt_levels.txt");
+  std::cout << "Get after press_levels.txt" << std::endl;
+  int i=0;
+  //std::cout<<"View size: "<<p_tgt_f.size()<<std::endl;
+  //Kokkos::deep_copy(p_tgt_f_c, ekat::scalarize(p_tgt_f_c));
+  if (press_levels.is_open()){
+    while ( getline(press_levels,line) ){
+      if (i < 194){
+	//std::cout<<line<<std::endl;
+	p_tgt_f_c(i) = log(std::stod(line));
+	//mirror.data[i] = std::stod(line);
+      }
+      i++;
+    }
+  }
+  press_levels.close();
+
+  //if(sv[0] != "temp" && sv[1] != "temp"){
+  //  return;
+  //}
+  
+  std::string line_t;
+  std::ifstream temp_levels ("temp_src_ne4_866col_128lay.txt");
+  int i_t=0;
+  int j_t=0;
+  if (temp_levels.is_open()){
+    while ( getline(temp_levels,line_t) ){
+      tmp_src_f_c(i_t,j_t) = log(std::stod(line_t));
+      j_t++;
+      if (j_t == 128){
+	i_t++;
+	j_t=0;
+      }
+    }
+  }
+  temp_levels.close();
+  
+  std::string line_p;
+  std::ifstream p_levels ("press_src_ne4_866col_128lay.txt");
+  //col
+  int i_p=0;
+  //lev
+  int j_p=0;
+  if (p_levels.is_open()){
+    while ( getline(p_levels,line_p) ){
+      //std::cout<<line<<std::endl;
+      p_src_f_c(i_p,j_p) = log(std::stod(line_p));
+      j_p++;
+      if (j_p == 128){
+	i_p++;
+	j_p=0;
+      }
+    }
+  }
+  p_levels.close();
+
+  const int n_layers_src = 128;
+  const int n_layers_tgt = 194;
+  
+  scream::perform_vertical_interpolation(p_src_f,
+					 p_tgt_f,
+					 tmp_src_f,
+					 out_f,
+					 mask,
+					 n_layers_src,
+					 n_layers_tgt);
+  
+  /*
+  scream::perform_vertical_interpolation(p_src_f,
+					 p_tgt_f,
+					 tmp_src_f,
+					 out_f,
+					 n_layers_src,
+					 n_layers_tgt);
+  */
+  
+  //Make output file
+  auto time_now = std::chrono::system_clock::now();
+  const std::time_t t_c = std::chrono::system_clock::to_time_t(time_now);
+  std::stringstream transTime;
+  transTime << std::put_time(std::localtime(&t_c), "%Y-%m-%d-%H-%M-%S");
+  std::string time = transTime.str();
+  //std::cout << std::put_time(std::localtime(&t_c), "%Y-%m-%d-%H-%M-%S.\n") << std::endl;
+  std::string fname = "output_" + time + ".txt";
+  std::string fname_mask = "output_mask_" + time + ".txt";
+  std::ofstream temp_new_file;
+  //myfile.open ("output_utils.txt");
+  temp_new_file.open (fname);
+  std::ofstream mask_file;
+  //myfile.open ("output_utils.txt");
+  mask_file.open (fname_mask);
+  
+  std::string line_t_o;
+  std::ifstream original_temp("output_log_original.txt"); 
+
+  for(int col=0; col<866; col++){
+    int ct = 0;
+    for(int lev=0; lev<13; lev++){
+      for (int p = 0; p<16;p++){
+        ct=ct+1;
+	if(ct == 195){break;}
+	mask_file << mask(col,lev)[p];
+	//mask_file << mask_tmp_1d(lev);
+	mask_file << "\n";
+      }
+    }
+  }
+    
+  for(int col=0; col<866; col++){
+    //const auto mask_tmp = ekat::subview(mask,col);
+    //const auto mask_tmp_1d = ekat::scalarize(mask_tmp);
+
+    for(int lev=0; lev<194; lev++){
+      getline(original_temp,line_t_o);
+      std::stringstream out_f_c_str;
+      out_f_c_str << exp(out_f_c(col,lev));
+      //REQUIRE(out_f_c_str.str() == line_t_o);
+      /*
+      if(out_f_c_str.str() != line_t_o)
+	{
+	  std::cout<<"Test fails, not exactly the same"<<std::endl;
+	  std::cout<<"out_f_c(col,lev): "<<out_f_c(col,lev)<<std::endl;
+	  std::cout<<"std::stod(line_t_o): "<<std::stod(line_t_o)<<std::endl;
+	}
+      */
+      temp_new_file << exp(out_f_c(col,lev));
+      temp_new_file << "\n";
+      //mask_file << mask(col,lev);
+      //mask_file << mask_tmp_1d(lev);
+      //mask_file << "\n";
+    }
+  }
+  temp_new_file.close();
+  original_temp.close();
+  //Compare output file to previous output file to make sure the same
+
+  std::string line_mask;
+  std::ifstream output_mask("output_mask.txt"); 
+}
 
 TEST_CASE("contiguous_superset") {
   using namespace scream;
