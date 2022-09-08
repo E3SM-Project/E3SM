@@ -58,6 +58,7 @@ TEST_CASE("se_grid_io")
   auto fm0 = get_test_fm(grid,t0,true);
   ekat::ParameterList params;
   ekat::parse_yaml_file("io_test_se_grid.yaml",params);
+  params.set<std::string>("Floating Point Precision","real");
 
   OutputManager om;
   om.setup(io_comm,params,fm0,gm,t0,t0,false);
@@ -173,6 +174,7 @@ ekat::ParameterList get_in_params(const ekat::Comm& comm,
 
   in_params.set<std::string>("Filename",filename);
   in_params.set<vos_type>("Field Names",{"field_1", "field_2", "field_3", "field_packed"});
+  in_params.set<std::string>("Floating Point Precision","real");
   return in_params;
 }
 

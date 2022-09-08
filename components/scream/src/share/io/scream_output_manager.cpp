@@ -146,16 +146,10 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       if (has_restart_data && m_output_control.nsamples_since_last_write>0) {
         auto output_restart_filename = find_filename_in_rpointer(hist_restart_casename,false,m_io_comm,m_run_t0);
 
-        ekat::ParameterList res_params("Input Parameters");
-        res_params.set<std::string>("Filename",output_restart_filename);
-        AtmosphereInput output_restart (m_io_comm,res_params);
-
         // Also restart each stream
         for (auto stream : m_output_streams) {
           stream->restart(output_restart_filename);
         }
-
-        output_restart.finalize();
       }
     }
   }
@@ -215,16 +209,20 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 
       // Register time as a variable.
       auto time_units="days since " + m_case_t0.get_date_string() + " " + m_case_t0.get_time_string();
-      register_variable(filename,"time","time",time_units,1,{"time"},  PIO_REAL,"time");
+      register_variable(filename,"time","time",time_units,1,{"time"}, scorpio::nctype("double"),"time");
 #ifdef SCREAM_HAS_LEAP_YEAR
       set_variable_metadata (filename,"time","calendar","gregorian");
 #else
       set_variable_metadata (filename,"time","calendar","noleap");
 #endif
 
+      std::string fp_precision = is_checkpoint_step
+                               ? "real"
+                               : m_params.get<std::string>("Floating Point Precision");
+
       // Make all output streams register their dims/vars
       for (auto& it : m_output_streams) {
-        it->setup_output_file(filename);
+        it->setup_output_file(filename,fp_precision);
       }
 
       // Set degree of freedom for "time"
@@ -383,6 +381,8 @@ set_params (const ekat::ParameterList& params,
       fields_pl.sublist(it.first).set("Field Names",fnames);
     }
     m_casename = m_params.get<std::string>("Casename");
+    // Match precision of Fields
+    m_params.set<std::string>("Floating Point Precision","real");
   } else {
     auto avg_type = m_params.get<std::string>("Averaging Type");
     m_avg_type = str2avg(avg_type);
@@ -392,6 +392,12 @@ set_params (const ekat::ParameterList& params,
 
     m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File");
     m_casename = m_params.get<std::string>("Casename");
+
+    // Allow user to ask for higher precision for normal model output,
+    // but default to single to save on storage
+    const auto& prec = m_params.get<std::string>("Floating Point Precision", "single");
+    EKAT_REQUIRE_MSG (prec=="single" || prec=="double" || prec=="real",
+        "Error! Invalid floating point precision '" + prec + "'.\n");
   }
 }
 /*===============================================================================================*/
