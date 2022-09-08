@@ -362,9 +362,10 @@ namespace scream {
                 // First, fill cldx with random numbers. For now, create pseudo-random numbers on host and copy to device
                 std::uniform_real_distribution<Real> distribution(0.0, 1.0);
                 auto cldx_host = cldx.createHostCopy();
+                auto seeds_host = seeds.createHostCopy();
                 for (int icol = 1; icol <= ncol; icol++) {
                     // Unique seed for each column
-                    std::mt19937_64 generator(seeds(icol));
+                    std::mt19937_64 generator(seeds_host(icol));
                     for (int igpt = 1; igpt <= ngpt; igpt++) {
                         for (int ilay = 1; ilay <= nlay; ilay++) {
                             cldx_host(icol,ilay,igpt) = distribution(generator);
