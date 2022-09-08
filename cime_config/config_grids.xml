@@ -1517,6 +1517,16 @@
       <mask>ICOS10</mask>
     </model_grid>
 
+    <model_grid alias="ne1024pg2_ne1024pg2">
+      <grid name="atm">ne1024np4.pg2</grid>
+      <grid name="lnd">ne1024np4.pg2</grid>
+      <grid name="ocnice">ne1024np4.pg2</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>ICOS10</mask>
+    </model_grid>
+
     <model_grid alias="ne1024np4_oRRS15to5" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne1024np4</grid>
       <grid name="lnd">ne1024np4</grid>
