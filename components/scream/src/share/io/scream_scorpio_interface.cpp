@@ -39,6 +39,7 @@ extern "C" {
 namespace scream {
 namespace scorpio {
 
+// Retrieve the int codes PIO uses to specify data types
 int nctype (const std::string& type) {
   if (type=="int") {
     return PIO_INT;
@@ -102,7 +103,7 @@ void register_dimension(const std::string &filename, const std::string& shortnam
 /* ----------------------------------------------------------------- */
 void get_variable(const std::string &filename, const std::string& shortname, const std::string& longname,
                   const std::vector<std::string>& var_dimensions,
-                  const int dtype, const std::string& pio_decomp_tag) {
+                  const std::string& dtype, const std::string& pio_decomp_tag) {
 
   /* Convert the vector of strings that contains the variable dimensions to a char array */
   const int numdims = var_dimensions.size();
@@ -112,12 +113,12 @@ void get_variable(const std::string &filename, const std::string& shortname, con
     var_dimensions_c[ii] = var_dimensions[ii].c_str();
   }
   get_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(),
-                   numdims, var_dimensions_c.data(), dtype, pio_decomp_tag.c_str());
+                   numdims, var_dimensions_c.data(), nctype(dtype), pio_decomp_tag.c_str());
 }
 /* ----------------------------------------------------------------- */
 void register_variable(const std::string &filename, const std::string& shortname, const std::string& longname,
                        const std::string& units, const std::vector<std::string>& var_dimensions,
-                       const int dtype, const std::string& pio_decomp_tag) {
+                       const std::string& dtype, const std::string& pio_decomp_tag) {
 
   /* Convert the vector of strings that contains the variable dimensions to a char array */
   const int numdims = var_dimensions.size();
@@ -128,7 +129,7 @@ void register_variable(const std::string &filename, const std::string& shortname
   }
   register_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(),
                         units.c_str(), numdims, var_dimensions_c.data(),
-                        dtype, pio_decomp_tag.c_str());
+                        nctype(dtype), pio_decomp_tag.c_str());
 }
 /* ----------------------------------------------------------------- */
 void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const std::string& meta_val) {

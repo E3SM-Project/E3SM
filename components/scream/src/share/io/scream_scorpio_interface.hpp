@@ -14,9 +14,6 @@ namespace scorpio {
 
   using offset_t = std::int64_t;
 
-  // Retrieve the int codes PIO uses to specify data types
-  int nctype (const std::string& type);
-
   // WARNING: these values must match the ones of file_purpose_in and file_purpose_out
   // in the scream_scorpio_interface F90 module
   enum FileMode {
@@ -40,12 +37,12 @@ namespace scorpio {
   /* Register a variable with a file.  Called during the file setup, for an output stream. */
   void register_variable(const std::string& filename, const std::string& shortname, const std::string& longname,
                          const std::string& units, const std::vector<std::string>& var_dimensions,
-                         const int dtype, const std::string& pio_decomp_tag);
+                         const std::string& dtype, const std::string& pio_decomp_tag);
   void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const std::string& meta_val);
   /* Register a variable with a file.  Called during the file setup, for an input stream. */
   void get_variable(const std::string& filename,const std::string& shortname, const std::string& longname,
                     const std::vector<std::string>& var_dimensions,
-                    const int dtype, const std::string& pio_decomp_tag);
+                    const std::string& dtype, const std::string& pio_decomp_tag);
   /* End the definition phase for a scorpio file.  Last thing called after all dimensions, variables, dof's and decomps have been set.  Called once per file.
    * Mandatory before writing or reading can happend on file. */
   void eam_pio_enddef(const std::string &filename);
