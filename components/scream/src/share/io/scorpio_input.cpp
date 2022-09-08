@@ -431,7 +431,7 @@ void AtmosphereInput::register_variables()
     //  Currently the field_manager only stores Real variables so it is not an issue,
     //  but in the future if non-Real variables are added we will want to accomodate that.
     //TODO: Should be able to simply inquire from the netCDF the dimensions for each variable.
-    scorpio::get_variable(m_filename, name, name, vec_of_dims.size(),
+    scorpio::get_variable(m_filename, name, name,
                           vec_of_dims, scorpio::nctype(fp_precision), io_decomp_tag);
   }
 }

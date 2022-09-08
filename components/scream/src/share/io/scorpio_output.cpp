@@ -492,8 +492,8 @@ register_variables(const std::string& filename,
      // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
     // but in the future if non-Real variables are added we will want to accomodate that.
-    register_variable(filename, name, name, units, vec_of_dims.size(),
-                      vec_of_dims, scorpio::nctype(fp_precision), io_decomp_tag);
+    register_variable(filename, name, name, units, vec_of_dims,
+                      scorpio::nctype(fp_precision), io_decomp_tag);
   }
 } // register_variables
 /* ---------------------------------------------------------- */
