@@ -516,7 +516,7 @@ contains
             do k = nVertLevels-1, 1, -1
                mocStreamValLatAndDepthRegionLocal(1, k, iTransect) = &
                   mocStreamValLatAndDepthRegionLocal(1, k + 1, iTransect) &
-                  - sumTransport(k + 1, iTransect)
+                  - sumTransport(k, iTransect)
             end do
          end do
 
@@ -619,7 +619,7 @@ contains
               do k = nVertLevels - 1, 1, -1
                  mocStreamValLatAndDepthRegionLocal(1, k, iTransect) = &
                     mocStreamValLatAndDepthRegionLocal(1, k + 1, iTransect) &
-                    - sumTransport(k + 1, iTransect)
+                    - sumTransport(k, iTransect)
               end do
            end do
 
@@ -730,7 +730,7 @@ contains
               do k = nVertLevels - 1, 1, -1
                  mocStreamValLatAndDepthRegionLocal(1, k, iTransect) = &
                     mocStreamValLatAndDepthRegionLocal(1, k + 1, iTransect) &
-                    - sumTransport(k + 1, iTransect)
+                    - sumTransport(k, iTransect)
               end do
            end do
 
