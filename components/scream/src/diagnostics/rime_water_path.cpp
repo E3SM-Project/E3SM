@@ -49,7 +49,7 @@ void RimeWaterPathDiagnostic::initialize_impl(const RunType /* run_type */)
 void RimeWaterPathDiagnostic::compute_diagnostic_impl()
 {
 
-  using PC         = scream::physics::Constants<Real>;
+  using PC = scream::physics::Constants<Real>;
   constexpr Real gravit = PC::gravit;
   const auto npacks         = ekat::npack<Pack>(m_num_levs);
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, npacks);

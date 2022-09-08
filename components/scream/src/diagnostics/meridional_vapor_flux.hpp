@@ -55,7 +55,7 @@ protected:
   Int m_num_cols; 
   Int m_num_levs;
 
-}; // class VapWaterPathDiagnostic
+}; // class MeridonalVapFluxDiagnostic
 
 } //namespace scream
 

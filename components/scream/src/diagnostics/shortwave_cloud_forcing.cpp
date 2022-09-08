@@ -52,14 +52,14 @@ void ShortwaveCloudForcingDiagnostic::initialize_impl(const RunType /* run_type 
 void ShortwaveCloudForcingDiagnostic::compute_diagnostic_impl()
 {
 
-  const auto npacks     = ekat::npack<Pack>(m_num_levs);
+  const auto npacks         = ekat::npack<Pack>(m_num_levs);
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols,1);
 
-  const auto& SWCF         = m_diagnostic_output.get_view<Real*>();
-  const auto& SW_flux_dn         = get_field_in("SW_flux_dn").get_view<const Pack**>();
-  const auto& SW_flux_up              = get_field_in("SW_flux_up").get_view<const Pack**>();
-  const auto& SW_clrsky_flux_dn         = get_field_in("SW_clrsky_flux_dn").get_view<const Pack**>();
-  const auto& SW_clrsky_flux_up              = get_field_in("SW_clrsky_flux_up").get_view<const Pack**>();
+  const auto& SWCF              = m_diagnostic_output.get_view<Real*>();
+  const auto& SW_flux_dn        = get_field_in("SW_flux_dn").get_view<const Pack**>();
+  const auto& SW_flux_up        = get_field_in("SW_flux_up").get_view<const Pack**>();
+  const auto& SW_clrsky_flux_dn = get_field_in("SW_clrsky_flux_dn").get_view<const Pack**>();
+  const auto& SW_clrsky_flux_up = get_field_in("SW_clrsky_flux_up").get_view<const Pack**>();
 
   Kokkos::parallel_for("ShortwaveCloudForcingDiagnostic",
                        default_policy,

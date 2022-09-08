@@ -53,9 +53,9 @@ void LongwaveCloudForcingDiagnostic::compute_diagnostic_impl()
   const auto npacks     = ekat::npack<Pack>(m_num_levs);
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols,1);
 
-  const auto& LWCF         = m_diagnostic_output.get_view<Real*>();
-  const auto& LW_flux_up              = get_field_in("LW_flux_up").get_view<const Pack**>();
-  const auto& LW_clrsky_flux_up              = get_field_in("LW_clrsky_flux_up").get_view<const Pack**>();
+  const auto& LWCF              = m_diagnostic_output.get_view<Real*>();
+  const auto& LW_flux_up        = get_field_in("LW_flux_up").get_view<const Pack**>();
+  const auto& LW_clrsky_flux_up = get_field_in("LW_clrsky_flux_up").get_view<const Pack**>();
 
   Kokkos::parallel_for("LongwaveCloudForcingDiagnostic",
                        default_policy,

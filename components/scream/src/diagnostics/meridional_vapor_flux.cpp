@@ -56,11 +56,11 @@ void MeridionalVapFluxDiagnostic::compute_diagnostic_impl()
 
   using PC         = scream::physics::Constants<Real>;
   constexpr Real gravit = PC::gravit;
-  const auto npacks         = ekat::npack<Pack>(m_num_levs);
-  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, npacks);
-  const auto& qv_vert_integrated_flux_v                = m_diagnostic_output.get_view<Real*>();
-  const auto& qv_mid             = get_field_in("qv").get_view<const Pack**>();
-  const auto& pseudo_density_mid = get_field_in("pseudo_density").get_view<const Pack**>();
+  const auto npacks                     = ekat::npack<Pack>(m_num_levs);
+  const auto default_policy             = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, npacks);
+  const auto& qv_vert_integrated_flux_v = m_diagnostic_output.get_view<Real*>();
+  const auto& qv_mid                    = get_field_in("qv").get_view<const Pack**>();
+  const auto& pseudo_density_mid        = get_field_in("pseudo_density").get_view<const Pack**>();
   const auto& v_mid = get_field_in("v").get_view<const Pack**>();
 
   const auto num_levs = m_num_levs;

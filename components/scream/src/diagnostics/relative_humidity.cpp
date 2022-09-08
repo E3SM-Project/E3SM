@@ -54,11 +54,11 @@ void RelativeHumidityDiagnostic::initialize_impl(const RunType /* run_type */)
 void RelativeHumidityDiagnostic::compute_diagnostic_impl()
 {
   const auto npacks  = ekat::npack<Pack>(m_num_levs);
-  auto theta = m_diagnostic_output.get_view<Pack**>();
-  auto T_mid = get_field_in("T_mid").get_view<const Pack**>();
-  auto p_mid = get_field_in("p_mid").get_view<const Pack**>();
-  auto qv_mid   = get_field_in("qv").get_view<const Pack**>();
-  const auto& RH         = m_diagnostic_output.get_view<Pack**>();
+  auto theta     = m_diagnostic_output.get_view<Pack**>();
+  auto T_mid     = get_field_in("T_mid").get_view<const Pack**>();
+  auto p_mid     = get_field_in("p_mid").get_view<const Pack**>();
+  auto qv_mid    = get_field_in("qv").get_view<const Pack**>();
+  const auto& RH = m_diagnostic_output.get_view<Pack**>();
 
   using physics = scream::physics::Functions<Real, DefaultDevice>;
 

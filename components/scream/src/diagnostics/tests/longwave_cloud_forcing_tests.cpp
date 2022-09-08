@@ -100,7 +100,6 @@ void run(std::mt19937_64& engine)
     const auto name = f.name();
     f.get_header().get_tracking().update_time_stamp(t0);
     diag->set_required_field(f.get_const());
-//    REQUIRE_THROWS(diag->set_computed_field(f));
     input_fields.emplace(name,f);
   }
 
