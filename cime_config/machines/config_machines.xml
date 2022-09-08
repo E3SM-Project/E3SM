@@ -4141,29 +4141,30 @@
       <cmd_path lang="csh">module</cmd_path>
 
       <modules>
+	<command name="use">/apps/spack/share/spack/modules/linux-centos7-cascadelake</command>
 	<command name="unload">gcc</command>
 	<command name="unload">openmpi</command>
       </modules>
 
       <modules compiler="gnu">
-	<command name="load">gcc/8.5.0-gcc@8.5.0</command>
+	<command name="load">gcc-11.1.0</command>
       </modules>
 
       <modules mpilib="openmpi">
-	<command name="load">openmpi/4.1.1-gcc@8.5.0</command>
+	<command name="load">openmpi-gcc@11.1.0</command>
       </modules>
 
       <modules compiler="gnu">
 	<command name="load">cmake</command>
 	<command name="load">perl</command>
 	<command name="load">perl-xml-libxml</command>
-	<command name="load">netcdf-c</command>
-	<command name="load">netcdf-cxx</command>
-	<command name="load">netcdf-fortran</command>
-	<command name="load">parallel-netcdf</command>
-	<command name="load">hdf5</command>
-	<command name="load">netlib-lapack</command>
-	<command name="load">openblas</command>
+        <command name="load">netcdf-c-gcc@11.1.0</command>
+        <command name="load">netcdf-cxx-gcc@11.1.0</command>
+        <command name="load">netcdf-fortran-gcc@11.1.0</command>
+        <command name="load">parallel-netcdf-gcc@11.1.0</command>
+        <command name="load">hdf5-gcc@11.1.0</command>
+        <command name="load">netlib-lapack-gcc@11.1.0</command>
+        <command name="load">openblas-gcc@11.1.0</command>
       </modules>
 
     </module_system>
@@ -4174,8 +4175,8 @@
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
       <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf-config))}</env>
-      <env name="OPENBLAS_PATH">/apps/spack/opt/spack/linux-centos7-skylake_avx512/gcc-8.5.0/openblas-0.3.17-avqlf5r7hpzvwesfqg25awhqrpypwgfe</env>
-      <env name="LAPACK_PATH">/apps/spack/opt/spack/linux-centos7-skylake_avx512/gcc-8.5.0/netlib-lapack-3.9.1-gton74muo2csn5l3bzf636276ig6h3yx</env>
+      <env name="OPENBLAS_PATH">/apps/spack/opt/spack/linux-centos7-cascadelake/gcc-11.1.0/openblas-0.3.17-3iblhfhhiatf52ydrj46e6z4luf2dny6</env>
+      <env name="LAPACK_PATH">/apps/spack/opt/spack/linux-centos7-cascadelake/gcc-11.1.0/netlib-lapack-3.9.1-gwvv6izoqvecz37demx42ivbasrobglu</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
     </environment_variables>
 
