@@ -112,11 +112,6 @@ void get_variable(const std::string &filename, const std::string& shortname, con
   delete[] var_dimensions_c;
 }
 /* ----------------------------------------------------------------- */
-void get_variable(const std::string &filename, const std::string& shortname, const std::string& longname, const int numdims, const char**&& var_dimensions, const int dtype, const std::string& pio_decomp_tag) {
-
-  get_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), numdims, var_dimensions, dtype, pio_decomp_tag.c_str());
-}
-/* ----------------------------------------------------------------- */
 void register_variable(const std::string &filename, const std::string& shortname, const std::string& longname, const std::string& units, const int numdims, const std::vector<std::string>& var_dimensions, const int dtype, const std::string& pio_decomp_tag) {
 
   /* Convert the vector of strings that contains the variable dimensions to a char array */
@@ -129,10 +124,6 @@ void register_variable(const std::string &filename, const std::string& shortname
   delete[] var_dimensions_c;
 }
 /* ----------------------------------------------------------------- */
-void register_variable(const std::string &filename, const std::string& shortname, const std::string& longname, const std::string& units, const int numdims, const char**&& var_dimensions, const int dtype, const std::string& pio_decomp_tag) {
-
-  register_variable_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), units.c_str(), numdims, var_dimensions, dtype, pio_decomp_tag.c_str());
-}
 void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const std::string& meta_val) {
   set_variable_metadata_c2f(filename.c_str(),varname.c_str(),meta_name.c_str(),meta_val.c_str());
 }

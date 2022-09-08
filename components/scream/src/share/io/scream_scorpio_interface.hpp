@@ -38,11 +38,9 @@ namespace scorpio {
   /* Register a dimension coordinate with a file. Called during the file setup. */
   void register_dimension(const std::string& filename,const std::string& shortname, const std::string& longname, const int length);
   /* Register a variable with a file.  Called during the file setup, for an output stream. */
-  void register_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const std::string& units, const int numdims, const char**&& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
   void register_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const std::string& units, const int numdims, const std::vector<std::string>& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
   void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const std::string& meta_val);
   /* Register a variable with a file.  Called during the file setup, for an input stream. */
-  void get_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const int numdims, const char**&& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
   void get_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const int numdims, const std::vector<std::string>& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
   /* End the definition phase for a scorpio file.  Last thing called after all dimensions, variables, dof's and decomps have been set.  Called once per file.
    * Mandatory before writing or reading can happend on file. */
