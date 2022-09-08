@@ -2606,8 +2606,8 @@ contains
 !> \details
 !>
 !> Snow physics improvements include:
-!> 1) Snow redistribution by wind (multiple options available).  
-!> Includes parametrizations for snow compaction, redistribution among categories/level ice 
+!> 1) Snow redistribution by wind (multiple options available).
+!> Includes parametrizations for snow compaction, redistribution among categories/level ice
 !> and loss to leads.
 !> 2) Tracking of snow liquid and ice content.  Liquid is stored in snow before passing to ponds.
 !> Effective snow density is also tracked.
@@ -3130,7 +3130,7 @@ contains
        if (trim(config_calendar_type) == "gregorian") then
           calendarType = "GREGORIAN"
        else
-          calendarType = "GREGORIAN_NOLEAP"
+          calendarType = "NOLEAP"
        endif
 
        ! aerosols array
@@ -4275,7 +4275,7 @@ contains
        else
           daysInYear = sum(daysInMonth)
        endif
-    case ("gregorian_noleap")
+    case ("noleap")
        daysInYear = sum(daysInMonth)
     end select
 
@@ -6083,7 +6083,7 @@ contains
        tracerObject % index_snowGrainRadius = nTracers + 1
        nTracers = nTracers + nSnowLayers
     endif
-    
+
     ! aerosols
     tracerObject % index_aerosols = indexMissingValue
     if (config_use_aerosols) then
@@ -9677,7 +9677,7 @@ contains
     !     nt_hpnd, &       ! melt pond depth
     !     nt_ipnd, &       ! melt pond refrozen lid thickness
     !     nt_aero, &       ! starting index for aerosols in ice
-    !     nt_smice, &      ! snow ice mass 
+    !     nt_smice, &      ! snow ice mass
     !     nt_smliq, &      ! snow liquid mass
     !     nt_rsnw, &       ! snow grain radius
     !     nt_rhos, &       ! snow density tracer
@@ -10058,7 +10058,7 @@ contains
     !     F_abs_chl_diatoms  , &
     !     F_abs_chl_sp       , &
     !     F_abs_chl_phaeo    , &
-    !     ratio_C2N_proteins 
+    !     ratio_C2N_proteins
 
     use ice_colpkg, only: &
          colpkg_init_parameters
@@ -11442,7 +11442,7 @@ contains
 
     ! windmin:
     ! minimum wind speed to compact snow (m/s)
-    ! windmin = config_minimum_wind_compaction 
+    ! windmin = config_minimum_wind_compaction
 
     ! drhosdwind:
     ! wind compaction factor (kg s/m^4)

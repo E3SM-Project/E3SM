@@ -2329,8 +2329,8 @@ end function radiation_nextsw_cday
 
                  call t_startf ('cosp_run')
                  call cospsimulator_intr_run(state,  pbuf, cam_in, emis, coszrs, &
-                      cld_swtau_in=cld_tau(rrtmg_sw_cloudsim_band,:,:),&
-                      snow_tau_in=gb_snow_tau,snow_emis_in=gb_snow_lw)
+                      cld_tau(rrtmg_sw_cloudsim_band,:,:),&
+                      snow_tau=gb_snow_tau,snow_emis=gb_snow_lw)
                  cosp_cnt(lchnk) = 0  !! reset counter
                  call t_stopf ('cosp_run')
 

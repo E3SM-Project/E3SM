@@ -23,7 +23,7 @@
 <config_dt ice_grid="WCAtl12to45E2r4">1800.0</config_dt>
 <config_dt ice_grid="SOwISC12to60E2r4">1800.0</config_dt>
 <config_dt ice_grid="ECwISC30to60E2r1">1800.0</config_dt>
-<config_calendar_type>'gregorian_noleap'</config_calendar_type>
+<config_calendar_type>'noleap'</config_calendar_type>
 <config_start_time>'2000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
 <config_run_duration>'00-00-01_00:00:00'</config_run_duration>

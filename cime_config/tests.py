@@ -245,7 +245,7 @@ _TESTS = {
             "ERP_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_fixed_subcycle",
             "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_use_ESMT",
             "ERS_Ln9.ne4pg2_oQU480.F20TR-MMF1.eam-mmf_use_VT",
-            "ERS_Ln9.ne4pg2_ne4pg2.FRCE-MMF1",
+            "ERS_Ln9.ne4pg2_ne4pg2.FRCE-MMF1.eam-cosp_nhtfrq9",
             "SMS_Ln5.ne4_ne4.FSCM-ARM97-MMF1",
             )
         },

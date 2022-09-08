@@ -349,6 +349,32 @@
         </nthrds>
       </pes>
     </mach>
+    <mach name="anvil">
+      <pes compset="JRA_ELM.+MPASSI.+MPASO.+MOSART" pesize="any">
+        <comment>"anvil, GPMPAS-JRA compset, 6 nodes"</comment>
+        <ntasks>
+          <ntasks_atm>-6</ntasks_atm>
+          <ntasks_lnd>-6</ntasks_lnd>
+          <ntasks_rof>-6</ntasks_rof>
+          <ntasks_ice>-6</ntasks_ice>
+          <ntasks_ocn>-6</ntasks_ocn>
+          <ntasks_cpl>-6</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+    <mach name="crusher">
+      <pes compset="JRA_ELM.+MPASSI.+MPASO.+MOSART" pesize="any">
+        <comment>"crusher, GPMPAS-JRA compset, 2 nodes"</comment>
+        <ntasks>
+          <ntasks_atm>-2</ntasks_atm>
+          <ntasks_lnd>-2</ntasks_lnd>
+          <ntasks_rof>-2</ntasks_rof>
+          <ntasks_ice>-2</ntasks_ice>
+          <ntasks_ocn>-2</ntasks_ocn>
+          <ntasks_cpl>-2</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
   </grid>
   <grid name="a%ne30np4_">
     <mach name="cori-haswell">
