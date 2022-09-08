@@ -2662,10 +2662,12 @@
       <value  stream="CFSv2.UV">
         U_GRD_L103  u
         V_GRD_L103  v
+        TBOT tbot
       </value>
       <value  stream="CFSR.UV">
         U_GRD_L103  u
         V_GRD_L103  v
+        TBOT tbot
       </value>
     </values>
   </entry>
