@@ -1179,7 +1179,7 @@ contains
     call ncd_io('pftcc',pftcc(0:npft-1), 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) pftcc(:) = 1._r8
        
-    call ncd_io('mergetoelmpft', mergetoelmpft(0:npft-1), 'read', ncid, readvar=readv)
+    call ncd_io('mergetoclmpft', mergetoelmpft(0:npft-1), 'read', ncid, readvar=readv)
     if ( .not. readv ) then
        do i = 0, mxpft
           mergetoelmpft(i) = i
@@ -1353,7 +1353,7 @@ contains
 
        end do
 
-       ! MUST re-do some constants which already set in 'clm_varpar.F90:clm_varpar_init()'
+       ! MUST re-do some constants which already set in 'elm_varpar.F90:elm_varpar_init()'
        numpft       = npft - 1                   ! actual # of patches (without bare)
        if (npcropmin < npft) then
           numcft    = npcropmax - npcropmin + 1  ! actual # of crops
