@@ -33,7 +33,6 @@ class SHOCMacrophysics : public scream::AtmosphereProcess
   using IntSmallPack         = typename SHF::IntSmallPack;
   using Smask                = typename SHF::Smask;
   using view_1d_int          = typename KT::template view_1d<Int>;
-  using view_1d_int_const    = typename KT::template view_1d<const Int>;
   using view_1d              = typename SHF::view_1d<Real>;
   using view_1d_const        = typename SHF::view_1d<const Real>;
   using view_2d              = typename SHF::view_2d<SHF::Spack>;
@@ -209,7 +208,7 @@ public:
     // Local variables
     int ncol, nlev, num_qtracers;
     Real z_surf;
-    view_1d_int_const convert_wet_dry_idx_d;
+    view_1d_int          convert_wet_dry_idx_d;
     view_1d_const        area;
     view_1d_const        lat;
     view_2d_const        T_mid;
@@ -250,8 +249,8 @@ public:
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
-                       const view_1d_int_const& convert_wet_dry_idx_d_,
-                        const Real z_surf_,
+                       const view_1d_int& convert_wet_dry_idx_d_,
+                       const Real z_surf_,
                        const view_1d_const& area_, const view_1d_const& lat_,
                        const view_2d_const& T_mid_, const view_2d_const& p_mid_, const view_2d_const& p_int_, const view_2d_const& pseudo_density_,
                        const view_2d_const& omega_,
@@ -390,7 +389,7 @@ public:
 
     // Local variables
     int ncol, nlev, num_qtracers;
-    view_1d_int_const convert_wet_dry_idx_d;
+    view_1d_int convert_wet_dry_idx_d;
     view_2d_const rrho;
     view_2d qv, qc, tke;
     view_2d_const tke_copy, qc_copy, qw;
@@ -404,7 +403,7 @@ public:
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
-                       const view_1d_int_const& convert_wet_dry_idx_d_,
+                       const view_1d_int& convert_wet_dry_idx_d_,
                        const view_2d_const& rrho_,
                        const view_2d& qv_, const view_2d_const& qw_, const view_2d& qc_, const view_2d_const& qc_copy_,
                        const view_2d& tke_, const view_2d_const& tke_copy_, const view_3d& qtracers_, const view_2d_const& qc2_,
