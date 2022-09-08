@@ -115,10 +115,10 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- The default filenames are given relative to the root directory
      for the CLM2 data in the CESM distribution -->
 <!-- Plant function types (relative to {csmdata}) -->
-<paramfile                 >lnd/clm2/paramdata/clm_params_c180524_phs.nc</paramfile>
+<paramfile                 >lnd/clm2/paramdata/clm_params_c180524.nc</paramfile>
 <paramfile use_crop=".true." >lnd/clm2/paramdata/clm_params_c220120.nc</paramfile>
 <paramfile nu_com="ECA"    >lnd/clm2/paramdata/clm_params.cbgc.c07292018.nc</paramfile>
-<paramfile nu_com="RD" use_crop=".false." >lnd/clm2/paramdata/clm_params_c180524_phs.nc</paramfile>
+<paramfile nu_com="RD" use_crop=".false." >lnd/clm2/paramdata/clm_params_c180524.nc</paramfile>
 
 
 <!-- ================================================================== -->
@@ -562,7 +562,7 @@ this mask will have smb calculated over the entire global land surface
 <flndtopo hgrid="0.9x1.25"  >lnd/clm2/griddata/topodata_0.9x1.25_USGS_070110.nc</flndtopo>
 <flndtopo hgrid="1.9x2.5"   >lnd/clm2/griddata/topodata_1.9x2.5_USGS_061130.nc</flndtopo>
 <flndtopo hgrid="48x96"     >lnd/clm2/griddata/topodata_48x96_USGS_070110.nc</flndtopo>
-<flndtopo hgrid="r05"       >/lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c211019.nc</flndtopo>
+<flndtopo hgrid="r05"       >lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c211019.nc</flndtopo>
 <flndtopo hgrid="r0125"     >lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</flndtopo>
 <flndtopo hgrid="ne30np4.pg2"      >lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr1850_c210402.nc</flndtopo>
 
