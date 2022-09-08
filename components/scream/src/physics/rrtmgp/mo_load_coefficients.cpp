@@ -109,26 +109,32 @@ void load_and_init(GasOpticsRRTMGP &kdist, std::string filename, GasConcs const 
       } else if (io.varExists("solar_source_quiet")) {
         // Newer RRTMGP input data files include components of solar source function sufficient to
         // compute solar variability; ignore this for now, and simply read in the baseline solar source.
-        // TODO: Ultimately, we probably want to use solar source data consistent with EAM.
-        realHost1d solar_source_quiet;
-        realHost1d solar_source_facular;
-        realHost1d solar_source_sunspot;
-        real mg_index;
-        real sb_index;
-        //io.read( solar_src , "solar_source_quiet" );
-        io.read( solar_source_quiet   , "solar_source_quiet" );
-        io.read( solar_source_facular , "solar_source_facular" );
-        io.read( solar_source_sunspot , "solar_source_sunspot" );
-        io.read( mg_index, "mg_default");
-        io.read( sb_index, "sb_default");
-        const real a_offset = 0.1495954;
-        const real b_offset = 0.00066696;
-        auto ngpt = solar_source_quiet.totElems();
-        parallel_for(Bounds<1>(ngpt), YAKL_LAMBDA(int igpt) {
-            solar_src(igpt) = solar_source_quiet(igpt) 
-                + (mg_index - a_offset) * solar_source_facular(igpt) 
-                + (sb_index - b_offset) * solar_source_sunspot(igpt);
-        });
+        // This seems to get us closer to the original average insolation from
+        // the full spectral resolution data, but there is disagreement between
+        // this and EAM RRTMG for some reason.
+        // TODO: Ultimately, we need to be able to use solar source data consistent with EAM (i.e., the
+        // input4MIPS data); this will require implementing a separate function
+        // here to read that data in and integrate the solar source over each
+        // wavelength/gpoint band
+        io.read( solar_src            , "solar_source_quiet" );
+        if (false) {
+          realHost1d solar_source_facular;
+          realHost1d solar_source_sunspot;
+          real mg_index;
+          real sb_index;
+          io.read( solar_source_facular , "solar_source_facular" );
+          io.read( solar_source_sunspot , "solar_source_sunspot" );
+          io.read( mg_index, "mg_default");
+          io.read( sb_index, "sb_default");
+          const real a_offset = 0.1495954;
+          const real b_offset = 0.00066696;
+          auto ngpt = solar_src.totElems();
+          parallel_for(Bounds<1>(ngpt), YAKL_LAMBDA(int igpt) {
+              solar_src(igpt) = solar_src(igpt)
+                  + (mg_index - a_offset) * solar_source_facular(igpt)
+                  + (sb_index - b_offset) * solar_source_sunspot(igpt);
+          });
+        }
       } else {
         throw 1;
       }
