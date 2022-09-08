@@ -475,8 +475,11 @@ TEST_CASE("rrtmgp_test_subcol_gen") {
         cldmask = scream::rrtmgp::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
         // Check answers by computing new cldfrac from mask
         memset(cldfrac_from_mask, 0.0);
-        parallel_for(Bounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
-            cldfrac_from_mask(icol,ilay) = cldfrac_from_mask(icol,ilay) + cldmask(icol,ilay,igpt);
+        parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
+            for (int igpt = 1; igpt <= ngpt; ++igpt) {
+                real cldmask_real = cldmask(icol,ilay,igpt);
+                cldfrac_from_mask(icol,ilay) += cldmask_real;
+            }
         });
         parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
             cldfrac_from_mask(icol,ilay) = cldfrac_from_mask(icol,ilay) / ngpt;
