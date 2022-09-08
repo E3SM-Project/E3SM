@@ -25,7 +25,7 @@ if (NOT SCREAM_BASELINES_ONLY)
 
   # Copy yaml input file to run directory
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input_unit.yaml
-                 ${CMAKE_CURRENT_BINARY_DIR}/input_unit.yaml COPYONLY)
+                 ${CMAKE_CURRENT_BINARY_DIR}/input_unit.yaml)
 
   # Ensure test input files are present in the data dir
   GetInputFile(init/${EAMxx_tests_IC_FILE_72lev})

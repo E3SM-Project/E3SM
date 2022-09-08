@@ -328,8 +328,17 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   Kokkos::deep_copy(m_gas_mol_weights,gas_mol_w_host);
 
   // Initialize GasConcs object to pass to RRTMGP initializer;
+  std::string coefficients_file_sw = m_params.get<std::string>("rrtmgp_coefficients_file_sw");
+  std::string coefficients_file_lw = m_params.get<std::string>("rrtmgp_coefficients_file_lw");
+  std::string cloud_optics_file_sw = m_params.get<std::string>("rrtmgp_cloud_optics_file_sw");
+  std::string cloud_optics_file_lw = m_params.get<std::string>("rrtmgp_cloud_optics_file_lw");
   m_gas_concs.init(gas_names_yakl_offset,m_col_chunk_size,m_nlay);
-  rrtmgp::rrtmgp_initialize(m_gas_concs, m_atm_logger);
+  rrtmgp::rrtmgp_initialize(
+          m_gas_concs,
+          coefficients_file_sw, coefficients_file_lw, 
+          cloud_optics_file_sw, cloud_optics_file_lw,
+          m_atm_logger
+  );
 
   // Set property checks for fields in this process
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,130.0, 500.0,false);

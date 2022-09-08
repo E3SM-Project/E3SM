@@ -15,14 +15,6 @@ namespace scream {
         OpticalProps2str get_cloud_optics_sw(const int ncol, const int nlay, CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei);
         OpticalProps1scl get_cloud_optics_lw(const int ncol, const int nlay, CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei);
 
-        /*
-         * Names of input files we will need.
-         */
-        std::string coefficients_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-data-sw-g224-2018-12-04.nc";
-        std::string coefficients_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-data-lw-g256-2018-12-04.nc";
-        std::string cloud_optics_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-sw.nc";
-        std::string cloud_optics_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-lw.nc";
-
         /* 
          * Objects containing k-distribution information need to be initialized
          * once and then persist throughout the life of the program, so we
@@ -55,6 +47,8 @@ namespace scream {
          * interface to radiation.
          */
         void rrtmgp_initialize(GasConcs &gas_concs,
+                               const std::string coefficients_file_sw, const std::string coefficients_file_lw,
+                               const std::string cloud_optics_file_sw, const std::string cloud_optics_file_lw,
                                const std::shared_ptr<spdlog::logger>& logger) {
 
             // If we've already initialized, just exit

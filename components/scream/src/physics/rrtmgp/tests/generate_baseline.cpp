@@ -15,6 +15,13 @@
 
 using namespace scream;
 
+// Names of input files we will need.
+// NOTE: use full spectral resolution absorption data for consistency with reference problem
+std::string coefficients_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-data-sw-g224-2018-12-04.nc";
+std::string coefficients_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-data-lw-g256-2018-12-04.nc";
+std::string cloud_optics_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-sw.nc";
+std::string cloud_optics_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-lw.nc";
+
 int main (int argc, char** argv) {
     MPI_Init(&argc,&argv);
 
@@ -69,7 +76,7 @@ int main (int argc, char** argv) {
     // Initialize the RRTMGP interface; this will read in the k-distribution
     // data that contains information about absorption coefficients for gases
     logger->info("rrtmgp_initialize...");
-    rrtmgp::rrtmgp_initialize(gas_concs,logger);
+    rrtmgp::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw, cloud_optics_file_lw, logger);
 
     // Setup dummy all-sky problem
     real1d sfc_alb_dir_vis ("sfc_alb_dir_vis", ncol);

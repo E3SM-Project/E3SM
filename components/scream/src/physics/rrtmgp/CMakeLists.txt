@@ -94,8 +94,8 @@ target_include_directories(scream_rrtmgp SYSTEM PUBLIC
 
 # Ensure RRTMGP lookup tables are present in the data dir
 set (RRTMGP_TABLES
-  init/rrtmgp-data-sw-g224-2018-12-04.nc
-  init/rrtmgp-data-lw-g256-2018-12-04.nc
+  init/rrtmgp-data-sw-g112-210809.nc
+  init/rrtmgp-data-lw-g128-210809.nc
   init/rrtmgp-allsky.nc
   init/rrtmgp-cloud-optics-coeffs-sw.nc
   init/rrtmgp-cloud-optics-coeffs-lw.nc
