@@ -141,6 +141,21 @@ module prep_ocn_mod
   logical       :: dummy_pgibugfix
 #endif
   !================================================================================================
+! for moab, local allocatable arrays for each field, size of local ocean mesh
+! these are the fields that are merged, in general
+! some fields are already on the ocean instance (coming from projection)
+!  (usually those on shared indices )
+! all the rest will be needed for computation
+! arrays will be allocated the first time, then filled with get tag values, merged, and set back to x2o ocean fields
+! kif = mct_aVect_indexRa(fractions_o,"ifrac",perrWith=subName)
+   !  kof = mct_aVect_indexRa(fractions_o,"ofrac",perrWith=subName)
+   !  kir = mct_aVect_indexRa(fractions_o,"ifrad",perrWith=subName)
+   !  kor = mct_aVect_indexRa(fractions_o,"ofrad",perrWith=subName)
+  real (kind=r8) , allocatable, private :: fo_kif_ifrac(:) ! ifrac from ocean instance
+  real (kind=r8) , allocatable, private :: fo_kof_ofrac(:) ! ofrac from ocean instance
+  real (kind=r8) , allocatable, private :: fo_kir_ifrad(:) ! ifrad from ocean instance
+  real (kind=r8) , allocatable, private :: fo_kor_ofrad(:) ! ofrad from ocean instance
+  ! number of primary cells will be local size for all these arrays
 
 #ifdef MOABDEBUG
   integer :: number_proj ! it is a static variable, used to count the number of projections
@@ -628,6 +643,8 @@ contains
 
 subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
+    use iMOAB , only : iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage 
+    use seq_comm_mct , only : mboxid, mbox2id ! ocean and atm-ocean flux instances
     !---------------------------------------------------------------
     ! Description
     ! Merge all ocn inputs
@@ -637,7 +654,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     type(mct_aVect)        , pointer , intent(in)    :: xao_ox(:) ! Atm-ocn fluxes, ocn grid, cpl pes; used here just for indexing
     
     ! temporary, to compile
-    type(mct_aVect)      :: fractions_o
+    ! type(mct_aVect)      :: fractions_o
 
     type(mct_avect) , pointer   :: a2x_o  ! used just for indexing 
     type(mct_avect) , pointer   :: i2x_o
@@ -747,6 +764,11 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     type(mct_aVect_sharedindices),save :: xao_sharedindices
     type(mct_aVect_sharedindices),save :: g2x_sharedindices
     logical, save :: first_time = .true.
+
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
+    character(CL) ::tagname
+    integer :: ent_type, ierr
+
     character(*),parameter :: subName = '(prep_ocn_merge_moab) '
     !-----------------------------------------------------------------------
 
@@ -755,7 +777,16 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
     call seq_comm_setptrs(CPLID, iamroot=iamroot)
 
+    ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC );
+    if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in getting info '
+         call shr_sys_abort(subname//' error in getting info ')
+    endif
+    lsize = nvise(1) ! number of active cells
+
     if (first_time) then
+       ! find out the number of local elements in moab mesh ocean instance on coupler
+       
        a2x_o => a2x_ox(1)
        i2x_o => i2x_ox(1)
        r2x_o => r2x_ox(1)
@@ -1105,14 +1136,28 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
                'a2x%Faxa_rainl_HDO)*flux_epbalfact'
        end if
     endif
+    ! allocate 
+    if (first_time) then ! allocate arrays for fractions
+       allocate(fo_kif_ifrac(lsize))
+       allocate(fo_kof_ofrac(lsize))
+       allocate(fo_kir_ifrad(lsize))
+       allocate(fo_kor_ofrad(lsize))
+    endif
+
+    ! fill with fractions from ocean instance
+    ent_type = 1 ! cells
+    tagname = 'ifrac'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, fo_kif_ifrac)
+    tagname = 'ofrac'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, fo_kof_ofrac)
+    tagname = 'ifrad'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, fo_kir_ifrad)
+    tagname = 'ofrad'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, fo_kor_ofrad)
+
+
 #ifdef NOTDEF
-    ! Compute input ocn state (note that this only applies to non-land portion of gridcell)
-    ! character(*),parameter :: fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
-    kif = mct_aVect_indexRa(fractions_o,"ifrac",perrWith=subName)
-    kof = mct_aVect_indexRa(fractions_o,"ofrac",perrWith=subName)
-    kir = mct_aVect_indexRa(fractions_o,"ifrad",perrWith=subName)
-    kor = mct_aVect_indexRa(fractions_o,"ofrad",perrWith=subName)
-    lsize = mct_aVect_lsize(x2o_o)
+    
     do n = 1,lsize
 
        ifrac = fractions_o%rAttr(kif,n)
