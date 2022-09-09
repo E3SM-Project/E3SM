@@ -366,7 +366,7 @@ contains
           layerThickness = min(layerThicknessProvis(k, iCell), layerThicknessCur(k, iCell))
           do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
-            if (k <= maxLevelEdgeBot(iEdge) .or. k >= minLevelEdgeTop(iEdge)) then
+            if (k <= maxLevelEdgeTop(iEdge) .and. k >= minLevelEdgeBot(iEdge)) then
               ! only consider divergence flux leaving the cell
               if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) < 0.0_RKIND ) then
                 divOutFlux = divOutFlux &
@@ -383,7 +383,7 @@ contains
 
             do i = 1, nEdgesOnCell(iCell)
               iEdge = edgesOnCell(i, iCell)
-              if (k <= maxLevelEdgeBot(iEdge) .or. k >= minLevelEdgeTop(iEdge)) then
+              if (k <= maxLevelEdgeBot(iEdge) .and. k >= minLevelEdgeTop(iEdge)) then
                 if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) <= 0.0_RKIND ) then
                   ! just go with simple boolean approach for zero wetting velocity for debugging purposes
                   wettingVelocityFactor(k, iEdge) = 1.0_RKIND
