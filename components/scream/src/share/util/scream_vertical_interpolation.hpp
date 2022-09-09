@@ -34,6 +34,8 @@ using view_1d = typename KT::template view_1d<S>;
 template <typename S>
 using view_2d = typename KT::template view_2d<S>;
 
+const Real masked_val = -9.99e17;
+  
 void perform_vertical_interpolation (const view_2d<const Spack>&,
 				     const view_1d<const Spack>&,
 				     const view_2d<const Spack>&,

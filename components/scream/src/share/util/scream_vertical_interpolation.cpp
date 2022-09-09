@@ -11,15 +11,11 @@ void perform_vertical_interpolation(const view_2d<const Spack>& x_src,
 				    const int                 & nlevs_tgt
 				    )
 {
-
 const view_2d<Smask> mask("",x_src.extent(0),x_tgt.extent(0));
-const Real masked_val = -999e15;
 perform_vertical_interpolation(x_src, x_tgt, input, output, mask,
 			       nlevs_src, nlevs_tgt, masked_val);
- 
 }
 
-//Function definition if no masked number is provided. Sets it to default to -999e
 void perform_vertical_interpolation(const view_2d<const Spack>& x_src,
 				    const view_1d<const Spack>& x_tgt,
 				    const view_2d<const Spack>& input,
@@ -29,11 +25,8 @@ void perform_vertical_interpolation(const view_2d<const Spack>& x_src,
 				    const int                 & nlevs_tgt
 				    )
 {
-
-const Real masked_val = -999e15;
 perform_vertical_interpolation(x_src, x_tgt, input, output, mask,
 			       nlevs_src, nlevs_tgt, masked_val);
-  
 }
   
 void perform_vertical_interpolation(const view_2d<const Spack>& x_src,
@@ -46,9 +39,8 @@ void perform_vertical_interpolation(const view_2d<const Spack>& x_src,
 				    const Real                & masked_val
 				    )
 {
-
   const int ncols = x_src.extent(0);
-  //Do a bunch of checks to make sure that 
+  //Do a bunch of checks to make sure that Spacks are consistent
   auto npacks_src = ekat::PackInfo<Spack::n>::num_packs(nlevs_src);
   auto npacks_tgt = ekat::PackInfo<Spack::n>::num_packs(nlevs_tgt);
   EKAT_REQUIRE(x_src.extent(0)==input.extent(0));
@@ -61,7 +53,6 @@ void perform_vertical_interpolation(const view_2d<const Spack>& x_src,
   LIV vert_interp(ncols,nlevs_src,nlevs_tgt);
 
   const int num_vert_packs = x_tgt.extent(0);
-
   const auto policy = ESU::get_default_team_policy(ncols, num_vert_packs);
   Kokkos::parallel_for("scream_vert_interp_setup_loop", policy,
     KOKKOS_LAMBDA(typename LIV::MemberType const& team) {
@@ -78,7 +69,6 @@ void perform_vertical_interpolation(const view_2d<const Spack>& x_src,
 
   });
   Kokkos::fence();   
-
 }
 
 void perform_vertical_interpolation(const view_1d<const Spack>& x_src,
@@ -94,7 +84,6 @@ void perform_vertical_interpolation(const view_1d<const Spack>& x_src,
 				    const LIV                 & vert_interp
 				    )
 {
-
   //Setup linear interpolation
   vert_interp.setup(team, x_src, x_tgt);
   //Run linear interpolation
@@ -102,14 +91,12 @@ void perform_vertical_interpolation(const view_1d<const Spack>& x_src,
   const auto x_src_s = ekat::scalarize(x_src);
   const auto x_tgt_s    = ekat::scalarize(x_tgt);
   Kokkos::parallel_for(KT::RangePolicy(0, x_tgt.extent(0)), [&] (const int & k) {
-
     const auto above_max = x_tgt[k] > x_src_s[nlevs_src-1];
     const auto below_min = x_tgt[k] < x_src_s[0];
     const auto combined_m = above_max || below_min;
     mask(k) = combined_m;
     output(k).set(combined_m,masked_val);
   });
-  
 }
 
 } // namespace scream
