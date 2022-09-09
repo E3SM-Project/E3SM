@@ -1,6 +1,4 @@
 #include <catch2/catch.hpp>
-#include <chrono>
-#include <iomanip>
 #include <iostream>
 #include <fstream>
 
