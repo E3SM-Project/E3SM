@@ -737,6 +737,9 @@ if ($rad_volcaero){
     }
 }
 
+# hybrown, Adding call for CLDERA prognostic stratospheric volcanic aerosol treatment
+my $cldera_strat_volc = $cfg->get('cldera_strat_volc'); #default should be no CLDERA treatment (0)
+
 #################
 # CAM namelists #
 #################
@@ -1111,7 +1114,7 @@ if ($prescribed_aero_model eq 'modal' or $chem =~ /_mam/) {
 if ($aer_model eq 'mam' ) {
 
   #hybrown - setting namelist flag for stratospheric aerosol renaming in mam
-  add_default($nl,'strat_accum_coarse_rename');
+  #add_default($nl,'cldera_prog');
 
   my $aero_modes = '3mode';
   if ($chem =~ /_mam4/) {$aero_modes = '4mode';}

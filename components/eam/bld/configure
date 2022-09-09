@@ -335,6 +335,9 @@ GetOptions(
     "ccsm_seq"                  => \$opts{'ccsm_seq'},
     "cflags=s"                  => \$opts{'cflags'},
     "chem=s"                    => \$opts{'chem'},
+#++hybrown
+    "cldera_strat_volc=s"         => \$opts{'cldera_strat_volc'},
+#--hybrown
     "cice_bsizex=s"             => \$opts{'cice_bsizex'},
     "cice_bsizey=s"             => \$opts{'cice_bsizey'},
     "cice_maxblocks=s"          => \$opts{'cice_maxblocks'},
@@ -899,6 +902,10 @@ my $rain_evap_to_coarse_aero = $rain_evap_to_coarse_aero_opt ? 1:0;
 
 if ($print>=2) { print "Is rain_evap_to_coarse_aero active (0-NO; 1-YES)?: $rain_evap_to_coarse_aero$eol"; }
 
+# hybrown, turning on CLDERA prognostic stratospheric aerosol 
+# my $cldera_strat_volc_opt = (defined $opts{'cldera_strat_volc'}) ? 1 : 0;
+# $cfg_ref->set('cldera_strat_volc', $cldera_strat_volc_opt);
+# my $cldera_strat_volc = $cldera_strat_volc_opt ? 1:0;
 
 #-----------------------------------------------------------------------------------------------
 
@@ -1387,9 +1394,27 @@ if (($chem_pkg ne 'none') || ($prog_species)) {
 if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_3MODE ';
 } elsif ($chem_pkg =~ '_mam4_mom' || $chem_pkg =~ '_mam4_resus_mom' ) {
+#++hybrown, for turning on CLDERA stratospheric volcanic aerosol treatment
+#    $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM ';
+    if (!defined $opts{'cldera_strat_volc'} ) {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM ';
+    }
+    else{
+    my $cldera_strat_volc = $opts{'cldera_strat_volc'};
+        $cfg_ref->set('cldera_strat_volc', $cldera_strat_volc);
+    $chem_cppdefs = " -DMODAL_AERO -DMODAL_AERO_4MODE_MOM -DCLDERA_STRAT_VOLC=$cldera_strat_volc";
+    }
 } elsif ($chem_pkg =~ '_mam4' ) {
+#    $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE ';
+    if (!defined $opts{'cldera_strat_volc'} ) {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE ';
+    }
+    else{
+    my $cldera_strat_volc = $opts{'cldera_strat_volc'};
+        $cfg_ref->set('cldera_strat_volc', $cldera_strat_volc);
+    $chem_cppdefs = " -DMODAL_AERO -DMODAL_AERO_4MODE -DCLDERA_STRAT_VOLC=$cldera_strat_volc";
+    }
+#--hybrown
 } elsif ($chem_pkg =~ '_mam7') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_7MODE ';
 } elsif ($chem_pkg =~ '_mam9') {
@@ -1403,6 +1428,12 @@ if ($bc_dep_to_snow_updates == 1) {
 if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg =~ '_mam3' || $chem_pkg =~ '_mam4' || $chem_pkg eq 'trop_mam4_resus' || $chem_pkg eq 'trop_mam4_resus_soag' || $chem_pkg eq 'trop_mam4_resus_mom')) {
     $chem_cppdefs = "$chem_cppdefs  -DRAIN_EVAP_TO_COARSE_AERO "
 }
+
+# hybrown, using namelist option 'strat_accum_coarse_rename' to turn on CLDERA stratospheric prognostic aerosol treatment
+# Can configure read namelist options?
+#if ($strat_accum_coarse_rename == .true. && ($chem_pkg =~ '_mam4_mom' || $chem_pkg =~ '_mam4_resus_mom' || $chem_pkg =~ '_mam4_resus_mom_soag' )) {
+#    $chem_cppdefs = "$chem_cppdefs  -DCLDERA_STRAT_VOLC "
+#}
 
 #-----------------------------------------------------------------------------------------------
 # Number of advected constituents

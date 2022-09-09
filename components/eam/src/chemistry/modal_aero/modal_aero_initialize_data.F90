@@ -370,7 +370,7 @@ contains
 
 
   !==============================================================
-  subroutine modal_aero_initialize(pbuf2d, imozart, species_class, strat_accum_coarse_rename_in) !hybrown
+  subroutine modal_aero_initialize(pbuf2d, imozart, species_class) !, strat_accum_coarse_rename_in) !hybrown
 
        use constituents,          only: pcnst
        use physconst,             only: rhoh2o, mwh2o
@@ -392,7 +392,7 @@ contains
        type(physics_buffer_desc), pointer :: pbuf2d(:,:)
        integer, intent(in) :: imozart  
        integer, intent(inout) :: species_class(:)  
-       logical, intent(in) :: strat_accum_coarse_rename_in !hybrown
+       !logical, intent(in) :: strat_accum_coarse_rename_in !hybrown
        !--------------------------------------------------------------
        ! ... local variables
        !--------------------------------------------------------------
@@ -608,7 +608,7 @@ loop:    do i = icldphy+1, pcnst
        if ( mam_amicphys_optaa > 0 ) then
           call modal_aero_calcsize_init( pbuf2d, species_class )
           call modal_aero_newnuc_init( mam_amicphys_optaa )
-          call modal_aero_amicphys_init( imozart, species_class,n_so4_monolayers_pcage_in, strat_accum_coarse_rename_in ) !hybrown
+          call modal_aero_amicphys_init( imozart, species_class,n_so4_monolayers_pcage_in) !, strat_accum_coarse_rename_in ) !hybrown
        else
           call modal_aero_rename_init
           !   calcsize call must follow rename call
