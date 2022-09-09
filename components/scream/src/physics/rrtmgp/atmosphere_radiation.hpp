@@ -76,8 +76,8 @@ public:
   // TODO: find a better way of configuring this
   const int m_nswbands = 14;
   const int m_nlwbands = 16;
-  const int m_nswgpts  = 224;
-  const int m_nlwgpts  = 256;
+  const int m_nswgpts  = 112;
+  const int m_nlwgpts  = 128;
 
   // These are the gases that we keep track of
   int m_ngas;
