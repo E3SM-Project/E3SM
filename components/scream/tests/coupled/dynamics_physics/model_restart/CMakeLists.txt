@@ -20,7 +20,7 @@ set (NEED_LIBS cld_fraction shoc p3 scream_rrtmgp rrtmgp ${NETCDF_C} ${dynLibNam
 
 # Add _np1 only if we're running also with more than one rank. Otherwise, add nothing
 set (TEST_NRANKS ${TEST_RANK_START})
-if (TEST_RANK_START GREATER TEST_RANK_END)
+if (TEST_RANK_END GREATER TEST_RANK_START)
   list (APPEND TEST_NRANKS ${TEST_RANK_END})
 endif()
 

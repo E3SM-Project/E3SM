@@ -75,7 +75,7 @@ if (NOT SCREAM_BASELINES_ONLY)
   ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
   ## Only if running with 2+ ranks configurations
   # This test requires CPRNC
-  if (TEST_RANK_START GREATER TEST_RANK_END)
+  if (TEST_RANK_END GREATER TEST_RANK_START)
     foreach (MPI_RANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
       set (SRC_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
       set (TGT_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
