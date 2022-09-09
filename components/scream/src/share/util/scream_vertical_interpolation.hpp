@@ -30,12 +30,9 @@ using LIV = ekat::LinInterp<Real,Spack::n>;
 
  
 template <typename S>
-using view_1d = typename KokkosTypes<DefaultDevice>::template view_1d<S>;
+using view_1d = typename KT::template view_1d<S>;
 template <typename S>
-using view_2d = typename KokkosTypes<DefaultDevice>::template view_2d<S>;
-
-template <typename S>
-using uview_1d = typename ekat::template Unmanaged<view_1d<S> >;
+using view_2d = typename KT::template view_2d<S>;
 
 void perform_vertical_interpolation (const view_2d<const Spack>&,
 				     const view_1d<const Spack>&,
@@ -44,7 +41,6 @@ void perform_vertical_interpolation (const view_2d<const Spack>&,
 				     const int&,
   				     const int&);
 
-  
 void perform_vertical_interpolation (const view_2d<const Spack>&,
 				     const view_1d<const Spack>&,
 				     const view_2d<const Spack>&,
