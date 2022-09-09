@@ -54,6 +54,40 @@ _TESTS = {
             )
         },
 
+    "e3sm_v3atm_developer_base" : {
+        "tests"   : (
+            "ERP_Ln18.ne4_oQU240.F2010",
+            "SMS_Ln9.ne4_oQU240.F2010.eam-outfrq9s",
+            "SMS.ne4_oQU240.F2010.eam-cosplite",
+            "SMS_R_Ld5.ne4_ne4.FSCM-ARM97.eam-scm",
+            "SMS_D_Ln5.ne4_oQU240.F2010",
+            "SMS_Ln5.ne4pg2_oQU480.F2010",
+            "ERS.ne4_oQU240.F2010.eam-hommexx"
+            )
+        },
+
+    "e3sm_v3atm_developer_f2010_chemmzt" : {
+        "tests"   : (
+            "ERP_Ln18.ne4_oQU240.F2010_chemMZT",
+            "SMS_Ln9.ne4_oQU240.F2010_chemMZT.eam-outfrq9s",
+            "SMS.ne4_oQU240.F2010_chemMZT.eam-cosplite",
+            "SMS_D_Ln5.ne4_oQU240.F2010_chemMZT",
+            "SMS_Ln5.ne4pg2_oQU480.F2010_chemMZT",
+            "ERS.ne4_oQU240.F2010_chemMZT.eam-hommexx"
+            )
+        },
+
+    "e3sm_v3atm_developer_f20tr_chemuci_linozv3" : {
+        "tests"   : (
+            "ERP_Ln18.ne4_oQU240.F20tr_chemUCI-Linozv3",
+            "SMS_Ln9.ne4_oQU240.F20tr_chemUCI-Linozv3.eam-outfrq9s",
+            "SMS.ne4_oQU240.F20tr_chemUCI-Linozv3.eam-cosplite",
+            "SMS_D_Ln5.ne4_oQU240.F20tr_chemUCI-Linozv3",
+            "SMS_Ln5.ne4pg2_oQU480.F20tr_chemUCI-Linozv3",
+            "ERS.ne4_oQU240.F2010_chemUCI-Linozv3.eam-hommexx"
+            )
+        },
+
     "e3sm_atm_integration" : {
         "inherit" : ("eam_preqx", "eam_theta"),
         "tests" : (
@@ -69,6 +103,57 @@ _TESTS = {
             "ERS_Ld5.ne4_ne4.FC5AV1C-L.eam-gust_param",
             "REP_Ln5.ne4_ne4.FC5AV1C-L",
             "SMS_Ld9.ne4pg2_ne4pg2.FC5AV1C-L.eam-thetahy_sl_pg2_mass",
+            )
+        },
+
+    "e3sm_v3atm_integration_base" : {
+        "tests"   : (
+            "ERP_Ln18.ne4_oQU240.F2010",
+            "PET_Ln5.ne4_oQU240.F2010.allactive-mach-pet",
+            "PEM_Ln5.ne4_oQU240.F2010",
+            "SMS.ne4_oQU240.F2010.eam-cosplite_nhtfrq5",
+            "SMS_Ln1.ne4_oQU240.F2010.eam-chem_pp",
+            "SMS_R_Ld5.ne4_ne4.FSCM-ARM97.eam-scm",
+            "SMS_Ln5.ne4pg2_oQU480.F2010",
+            "SMS_D_Ln5.ne4_oQU240.F2010.eam-clubb_sp",
+            "ERS_Ld5.ne4_oQU240.F2010.eam-rrtmgp",
+            "ERS_Ld5.ne4_oQU240.F2010.eam-rrtmgpxx",
+            "ERS.ne4_oQU240.F2010.eam-hommexx",
+            "SMS_Ln5.ne30pg2_r05_oECv3.F2010.eam-wcprod",
+            "SMS.ne30pg2_r05_oECv3.F20TR.eam-wcprod",
+            )
+        },
+
+    "e3sm_v3atm_integration_f2010_chemmzt" : {
+        "tests"   : (
+            "ERP_Ln18.ne4_oQU240.F2010_chemMZT",
+            "PET_Ln5.ne4_oQU240.F2010_chemMZT.allactive-mach-pet",
+            "PEM_Ln5.ne4_oQU240.F2010_chemMZT",
+            "SMS.ne4_oQU240.F2010_chemMZT.eam-cosplite_nhtfrq5",
+            "SMS_Ln1.ne4_oQU240.F2010_chemMZT.eam-chem_pp",
+            "SMS_Ln5.ne4pg2_oQU480.F2010_chemMZT",
+            "SMS_D_Ln5.ne4_oQU240.F2010_chemMZT.eam-clubb_sp",
+            "ERS_Ld5.ne4_oQU240.F2010_chemMZT.eam-rrtmgp",
+            "ERS_Ld5.ne4_oQU240.F2010_chemMZT.eam-rrtmgpxx",
+            "ERS.ne4_oQU240.F2010_chemMZT.eam-hommexx",
+            "SMS_Ln5.ne30pg2_r05_oECv3.F2010_chemMZT.eam-wcprod",
+            "SMS.ne30pg2_r05_oECv3.F20TR_chemMZT.eam-wcprod",
+            )
+        },
+
+    "e3sm_v3atm_integration_f20tr_chemuci_linozv3" : {
+        "tests"   : (
+            "ERP_Ln18.ne4_oQU240.F20TR_chemUCI-Linozv3",
+            "PET_Ln5.ne4_oQU240.F20TR_chemUCI-Linozv3.allactive-mach-pet",
+            "PEM_Ln5.ne4_oQU240.F20TR_chemUCI-Linozv3",
+            "SMS.ne4_oQU240.F20TR_chemUCI-Linozv3.eam-cosplite_nhtfrq5",
+            "SMS_Ln1.ne4_oQU240.F20TR_chemUCI-Linozv3.eam-chem_pp",
+            "SMS_Ln5.ne4pg2_oQU480.F20TR_chemUCI-Linozv3",
+            "SMS_D_Ln5.ne4_oQU240.F20TR_chemUCI-Linozv3.eam-clubb_sp",
+            "ERS_Ld5.ne4_oQU240.F20TR_chemUCI-Linozv3.eam-rrtmgp",
+            "ERS_Ld5.ne4_oQU240.F20TR_chemUCI-Linozv3.eam-rrtmgpxx",
+            "ERS.ne4_oQU240.F20TR_chemUCI-Linozv3.eam-hommexx",
+            "SMS.ne30pg2_r05_oECv3.F20TR_chemUCI-Linozv3.eam-wcprod",
             )
         },
 
