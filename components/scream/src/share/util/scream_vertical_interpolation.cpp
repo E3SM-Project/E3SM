@@ -2,7 +2,7 @@
 
 namespace scream {
 
-
+  
 void perform_vertical_interpolation(const view_2d<const Spack>& x_src,
 				    const view_1d<const Spack>& x_tgt,
 				    const view_2d<const Spack>& input,
@@ -16,9 +16,8 @@ const view_2d<Smask> mask("",x_src.extent(0),x_tgt.extent(0));
 const Real masked_val = -999e15;
 perform_vertical_interpolation(x_src, x_tgt, input, output, mask,
 			       nlevs_src, nlevs_tgt, masked_val);
-  
+ 
 }
-
 
 //Function definition if no masked number is provided. Sets it to default to -999e
 void perform_vertical_interpolation(const view_2d<const Spack>& x_src,
@@ -69,11 +68,11 @@ void perform_vertical_interpolation(const view_2d<const Spack>& x_src,
 			 
     const int icol = team.league_rank();
 
-    const view_1d<const Spack> x1=ekat::subview(x_src, icol);
-    const view_1d<const Spack> in=ekat::subview(input, icol);
-    const view_1d<Spack> out=ekat::subview(output, icol);
-    const view_1d<Smask> msk=ekat::subview(mask, icol);
-
+    auto x1=ekat::subview(x_src, icol);
+    auto in=ekat::subview(input, icol);
+    auto out=ekat::subview(output, icol);
+    auto msk=ekat::subview(mask, icol);
+    
     perform_vertical_interpolation(x1, x_tgt, in, out, msk, nlevs_src, nlevs_tgt,
 				   icol, masked_val, team, vert_interp);
 
