@@ -2980,6 +2980,105 @@
     </environment_variables>
   </machine>
 
+  <machine MACH="tahoma">
+    <DESC>EMSL, OS is Linux, SLURM</DESC>
+    <NODENAME_REGEX>tlogin</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>intel</COMPILERS>
+    <MPILIBS>impi,mvapich2</MPILIBS>
+    <SAVE_TIMING_DIR>/tahoma/emsls60153</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
+    <CIME_OUTPUT_ROOT>/tahoma/emsls60153/$USER/e3sm_scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/tahoma/emsls60153/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/tahoma/emsls60153/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>/tahoma/emsls60153/$USER/e3sm_scratch/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/tahoma/emsls60153/e3sm_baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/tahoma/emsls60153/e3sm_baselines/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE_J>8</GMAKE_J>
+    <TESTS>e3sm_integration</TESTS>	  
+    <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>balwinder.singh -at- pnnl.gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>36</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>36</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="mpi-serial">
+      <executable/>
+    </mpirun>
+    <mpirun mpilib="mvapich2">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="mpi">--mpi=none</arg>
+        <arg name="num_tasks">--ntasks={{ total_tasks }} --nodes={{ num_nodes }}</arg>
+        <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
+        <arg name="cpu_bind">-l --cpu_bind=cores -c $ENV{OMP_NUM_THREADS} -m plane=$SHELL{echo 40/$OMP_NUM_THREADS|bc}</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="impi">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="mpi">--mpi=pmi2</arg>
+        <arg name="num_tasks">--ntasks={{ total_tasks }} --nodes={{ num_nodes }}</arg>
+        <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
+        <arg name="cpu_bind">-l --cpu_bind=cores -c $ENV{OMP_NUM_THREADS} -m plane=$SHELL{echo 40/$OMP_NUM_THREADS|bc}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="python">/opt/lmod/7.8.4/init/env_modules_python.py</init_path>
+      <init_path lang="csh">/etc/profile.d/modules.csh</init_path>
+      <init_path lang="sh">/etc/profile.d/modules.sh</init_path>
+      <cmd_path lang="python">/opt/lmod/7.8.4/libexec/lmod python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+        <command name="purge"/>
+      </modules>
+      <modules>
+        <command name="load">cmake/3.19.5-intel</command>
+      </modules>
+      <modules compiler="intel">
+        <command name="load">gcc/10.2.0</command>
+        <command name="load">intel/ips_20_u2</command>
+      </modules>
+      <modules mpilib="mvapich2">
+        <command name="load">mvapich2~cuda/2.3.5-intel</command>
+      </modules>
+      <modules mpilib="impi" compiler="intel">
+	<command name="load">impi/ips_20_u2</command>
+      </modules>
+      <modules>
+	<command name="load">netcdf-c/4.7.4-intel-intel-mpi-2019.10.317</command>
+        <command name="load">netcdf-fortran/4.5.3-intel-intel-mpi-2019.10.317</command>
+        <command name="load">mkl/scalapack</command>
+      </modules>
+    </module_system>
+    <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
+    <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.05</TEST_TPUT_TOLERANCE>
+    <MAX_GB_OLD_TEST_DATA>0</MAX_GB_OLD_TEST_DATA>
+    <environment_variables>
+      <env name="HDF5_PATH">$SHELL{dirname $(dirname $(which h5diff))}</env>
+      <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
+      <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
+      <env name="MKL_PATH">$ENV{MKLROOT}</env>
+    </environment_variables>
+    <environment_variables mpilib="mvapich2">
+      <env name="MV2_ENABLE_AFFINITY">0</env>
+      <env name="MV2_SHOW_CPU_BINDING">1</env>
+    </environment_variables>
+    <environment_variables mpilib="impi">
+      <env name="I_MPI_ADJUST_ALLREDUCE">1</env>
+      <env name="I_MPI_PMI_LIBRARY">$SHELL{which libpmi2.so}</env>
+    </environment_variables>
+    <environment_variables mpilib="impi" DEBUG="TRUE">
+      <env name="I_MPI_DEBUG">10</env>
+    </environment_variables>
+    <environment_variables SMP_PRESENT="TRUE">
+      <env name="OMP_STACKSIZE">64M</env>
+      <env name="OMP_PLACES">cores</env>
+    </environment_variables>
+  </machine>
+
   <machine MACH="oic5">
     <DESC>ORNL XK6, os is Linux, 32 pes/node, batch system is PBS</DESC>
     <NODENAME_REGEX>oic5</NODENAME_REGEX>
