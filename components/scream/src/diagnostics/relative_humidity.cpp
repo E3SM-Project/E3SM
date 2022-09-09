@@ -62,13 +62,14 @@ void RelativeHumidityDiagnostic::compute_diagnostic_impl()
 
   using physics = scream::physics::Functions<Real, DefaultDevice>;
 
+  Int num_levs = m_num_levs;
   Kokkos::parallel_for("RelativeHumidityDiagnostic",
                        Kokkos::RangePolicy<>(0,m_num_cols*npacks),
                        KOKKOS_LAMBDA (const int& idx) {
       const int icol  = idx / npacks;
       const int jpack = idx % npacks;
       const auto range_pack = ekat::range<Pack>(jpack*Pack::n);
-      const auto range_mask = range_pack < m_num_levs;
+      const auto range_mask = range_pack < num_levs;
       auto qv_sat_l = physics::qv_sat(T_mid(icol,jpack), p_mid(icol,jpack), false, range_mask);
       RH(icol,jpack) = qv_mid(icol,jpack)/qv_sat_l;
 
