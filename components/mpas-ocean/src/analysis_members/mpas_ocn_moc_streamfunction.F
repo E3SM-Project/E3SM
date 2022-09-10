@@ -523,7 +523,7 @@ contains
          !!!! END TRANSECT CALCULATION
 
          do iCell = 1,nCellsSolve
-            iBin = MAX(int((latCell(iCell) - binBoundaryMocStreamfunction(1)) / binWidth), 2)
+            iBin = MAX(int((latCell(iCell) - binBoundaryMocStreamfunction(1)) / binWidth) + 2, 2)
             do k = 1,maxLevelCell(iCell)
                do i = 1, regionsInAddGroup
                   currentRegion = regionsInGroup(i, regionGroupNumber)
@@ -626,7 +626,7 @@ contains
            !!!! END TRANSECT CALCULATION
 
            do iCell = 1,nCellsSolve
-              iBin = MAX(int((latCell(iCell) - binBoundaryMocStreamfunction(1)) / binWidth), 2)
+              iBin = MAX(int((latCell(iCell) - binBoundaryMocStreamfunction(1)) / binWidth) + 2, 2)
               do k = 1,maxLevelCell(iCell)
                  do i = 1, regionsInAddGroup
                     currentRegion = regionsInGroup(i, regionGroupNumber)
@@ -737,7 +737,7 @@ contains
            !!!! END TRANSECT CALCULATION
 
            do iCell = 1,nCellsSolve
-              iBin = MAX(int((latCell(iCell) - binBoundaryMocStreamfunction(1)) / binWidth), 2)
+              iBin = MAX(int((latCell(iCell) - binBoundaryMocStreamfunction(1)) / binWidth) + 2, 2)
               do k = 1,maxLevelCell(iCell)
                  do i = 1, regionsInAddGroup
                     currentRegion = regionsInGroup(i, regionGroupNumber)
