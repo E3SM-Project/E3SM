@@ -20,7 +20,8 @@ module elm_initializeMod
   !use readParamsMod    , only : readParameters
   use readParamsMod    , only : readSharedParameters, readPrivateParameters
   use ncdio_pio        , only : file_desc_t
-
+  use ELMFatesInterfaceMod  , only : ELMFatesGlobals1,ELMFatesGlobals2
+  use CLMFatesParamInterfaceMod, only: FatesReadPFTs
   use BeTRSimulationELM, only : create_betr_simulation_elm
   !
   !-----------------------------------------
@@ -56,7 +57,10 @@ contains
     ! CLM initialization first phase
     !
     ! !USES:
-    use elm_varpar                , only: elm_varpar_init, natpft_lb, natpft_ub, cft_lb, cft_ub, maxpatch_glcmec
+    use elm_varpar                , only: elm_varpar_init, natpft_lb, natpft_ub
+    use elm_varpar                , only: cft_lb, cft_ub, maxpatch_glcmec
+    use elm_varpar                , only: update_pft_array_bounds
+    use elm_varpar                , only: surfpft_lb, surfpft_ub
     use elm_varcon                , only: elm_varcon_init
     use landunit_varcon           , only: landunit_varcon_init, max_lunit, istice_mec
     use column_varcon             , only: col_itype_to_icemec_class
@@ -71,7 +75,6 @@ contains
     use initGridCellsMod          , only: initGridCells, initGhostGridCells
     use CH4varcon                 , only: CH4conrd
     use UrbanParamsType           , only: UrbanInput
-    use CLMFatesParamInterfaceMod , only: FatesReadPFTs
     use surfrdMod                 , only: surfrd_get_grid_conn, surfrd_topounit_data
     use elm_varctl                , only: lateral_connectivity, domain_decomp_type
     use decompInitMod             , only: decompInit_lnd_using_gp, decompInit_ghosts
@@ -81,7 +84,6 @@ contains
     use dynSubgridControlMod      , only: dynSubgridControl_init
     use filterMod                 , only: allocFilters
     use reweightMod               , only: reweight_wrapup
-    use ELMFatesInterfaceMod      , only: ELMFatesGlobals
     use topounit_varcon           , only: max_topounits, has_topounit, topounit_varcon_init    
     use elm_varctl                , only: use_top_solar_rad
     !
@@ -128,6 +130,16 @@ contains
     call elm_varcon_init()
     call landunit_varcon_init()
     call ncd_pio_init()
+    if(use_fates) then
+       ! Allow FATES to dictate the number of patches per column.
+       ! We still use numcft as dictated by
+       ! the host model.
+       ! This call will override natpft_size (and its bounds
+       ! in the following call) for FATES runs
+       call ELMFatesGlobals1()
+       call update_pft_array_bounds()
+    end if    
+    
     call elm_petsc_init()
     call init_soil_temperature()
 
@@ -252,7 +264,7 @@ contains
 
     allocate (wt_lunit     (begg:endg,1:max_topounits, max_lunit           )) 
     allocate (urban_valid  (begg:endg,1:max_topounits                      ))
-    allocate (wt_nat_patch (begg:endg,1:max_topounits, natpft_lb:natpft_ub ))
+    allocate (wt_nat_patch (begg:endg,1:max_topounits, surfpft_lb:surfpft_ub ))
     allocate (wt_cft       (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
     allocate (fert_cft     (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
     if (create_glacier_mec_landunit) then
@@ -285,20 +297,21 @@ contains
     if (use_fates) then
        call FatesReadPFTs()
     end if
-
+    
     ! Read surface dataset and set up subgrid weight arrays
     call surfrd_get_data(begg, endg, ldomain, fsurdat)
 
-    ! ------------------------------------------------------------------------
-    ! Ask Fates to evaluate its own dimensioning needs.
-    !
-    ! (Note: fates_maxELementsPerSite is the critical variable used by CLM
-    ! to allocate space, determined in this routine)
-    ! ------------------------------------------------------------------------
+    if(use_fates) then
 
-    call ELMFatesGlobals()
+       ! Pass various control flags to FATES and setup
+       ! FATES allocations
+       ! --------------------------------------------------------------------
 
+       call ELMFatesGlobals2()
 
+    end if
+
+    
     ! ------------------------------------------------------------------------
     ! Determine decomposition of subgrid scale topounits, landunits, topounits, columns, patches
     ! ------------------------------------------------------------------------
