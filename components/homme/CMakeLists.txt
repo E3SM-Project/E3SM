@@ -229,6 +229,19 @@ IF (HOMME_STANDALONE)
   INCLUDE(${HOMME_SOURCE_DIR}/cmake/SetCompilerFlags.cmake)
 ENDIF()
 
+# Create CsmShare target needed for test execs. If Homme is built
+# inside another project, then the host project is in charge of
+# ensuring that a csm_share target exists at this point
+if (HOMME_STANDALONE)
+  add_subdirectory(utils/csm_share)
+elseif (NOT TARGET csm_share)
+  string (CONCAT msg
+    "Error! Homme needs to link against csm_share libraries.\n"
+    "       Please ensure that a csm_share target is built by\n"
+    "       the host project *before* entering the homme directory.\n")
+  message ("${msg}")
+  message (FATAL_ERROR "Aborting.")
+endif()
 
 OPTION(HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" FALSE)
 IF(HOMME_USE_MKL)
@@ -400,19 +413,19 @@ if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
     set(NETCDF_INCLUDE_DIR ${NetCDF_Fortran_INCLUDE_DIRS})
 
     # needed for CPRNC build system
-    set (cprnc_dummy_file "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake")
+    set (cprnc_dummy_file "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/cprnc/Macros.cmake")
     if (NOT EXISTS "${cprnc_dummy_file}")
       file(WRITE "${cprnc_dummy_file}" "#dummy Macros file for non-CIME machines")
     endif ()
 
     # cprnc's CMake system needs various nonstandard variables:
     set(FFLAGS ${CMAKE_Fortran_FLAGS})
-    set(BLDROOT ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc)
+    set(BLDROOT ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/cprnc)
     set(SFC ${CMAKE_Fortran_COMPILER})
     set(SCC ${CMAKE_C_COMPILER})
     
-    SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc)
-    SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
+    SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/cprnc)
+    SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/cprnc/cprnc)
     ADD_SUBDIRECTORY(utils/cime/CIME/non_py/cprnc)
   ENDIF ()
 ENDIF ()

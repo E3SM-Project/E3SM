@@ -4153,6 +4153,11 @@
       <map name="ROF2OCN_LIQ_RMAPNAME">cpl/cpl6/map_r01_to_gx1v6_120711.nc</map>
     </gridmap>
 
+    <!--- ocean to river mapping files -->
+    <gridmap rof_grid="r05" ocn_grid="EC30to60E2r2">
+      <map name="OCN2ROF_SMAPNAME">cpl/cpl6/map_EC30to60E2r2_to_r05_neareststod.220728.nc</map>
+    </gridmap>
+
     <!--- current MPAS grids -->
 
     <gridmap ocn_grid="oQU480" rof_grid="rx1">

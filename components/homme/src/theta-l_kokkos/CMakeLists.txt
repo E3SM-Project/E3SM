@@ -6,7 +6,6 @@ MACRO(THETAL_KOKKOS_SETUP)
 
   SET(THETA_SHARE_DIR   ${HOMME_SOURCE_DIR}/src/theta-l/share)
   SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/theta-l_kokkos)
-  SET(UTILS_SHARE_DIR   ${HOMME_SOURCE_DIR}/utils/csm_share)
   SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
   SET(SRC_SHARE_DIR     ${HOMME_SOURCE_DIR}/src/share)
   SET(TEST_SRC_DIR      ${HOMME_SOURCE_DIR}/src/test_src)
@@ -129,27 +128,8 @@ MACRO(THETAL_KOKKOS_SETUP)
   SET(THETAL_DEPS_F90
     ${TARGET_F90}
     ${SRC_SHARE_F90}
-    ${TEST_SRC_F90}
-    ${SRC_DIR}/checksum_mod.F90 
-    ${SRC_DIR}/common_io_mod.F90
-    ${SRC_DIR}/common_movie_mod.F90
-    ${SRC_DIR}/interpolate_driver_mod.F90
-    ${SRC_DIR}/interp_movie_mod.F90
-    ${SRC_DIR}/netcdf_io_mod.F90
-    ${SRC_DIR}/pio_io_mod.F90
-    ${SRC_DIR}/prim_movie_mod.F90
-    ${SRC_DIR}/theta_restart_mod.F90
+    ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90
     ${SRC_DIR}/repro_sum_mod.F90
-    ${SRC_DIR}/restart_io_mod.F90
-    ${SRC_DIR}/surfaces_mod.F90
-    ${SRC_DIR}/test_mod.F90
-    ${UTILS_SHARE_DIR}/shr_kind_mod.F90
-    ${UTILS_SHARE_DIR}/shr_mpi_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_sys_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_file_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_vmath_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_const_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
   )
 
   SET(THETAL_DEPS_CXX
@@ -193,14 +173,6 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/cxx/mpi/Connectivity.cpp
     ${SRC_SHARE_DIR}/cxx/mpi/MpiBuffersManager.cpp
     ${SRC_SHARE_DIR}/cxx/mpi/mpi_cxx_f90_interface.cpp
-  )
-
-  SET(THETAL_DEPS_F90
-    ${THETAL_DEPS_F90}
-    ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90
-  )
-  SET(THETAL_DEPS_CXX
-    ${THETAL_DEPS_CXX}
     ${SRC_SHARE_DIR}/cxx/utilities/BfbUtils.cpp
   )
 
@@ -234,7 +206,23 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${THETAL_DEPS_CXX}
   )
 
-  SET(EXEC_SOURCES ${THETAL_DEPS} ${SRC_DIR}/prim_main.F90)
+  SET(EXEC_SOURCES
+    ${THETAL_DEPS}
+    ${TEST_SRC_F90}
+    ${SRC_DIR}/checksum_mod.F90 
+    ${SRC_DIR}/common_io_mod.F90
+    ${SRC_DIR}/common_movie_mod.F90
+    ${SRC_DIR}/interpolate_driver_mod.F90
+    ${SRC_DIR}/interp_movie_mod.F90
+    ${SRC_DIR}/netcdf_io_mod.F90
+    ${SRC_DIR}/pio_io_mod.F90
+    ${SRC_DIR}/prim_movie_mod.F90
+    ${SRC_DIR}/theta_restart_mod.F90
+    ${SRC_DIR}/restart_io_mod.F90
+    ${SRC_DIR}/surfaces_mod.F90
+    ${SRC_DIR}/test_mod.F90
+    ${SRC_DIR}/prim_main.F90
+  )
 
   # Set up defaults
   IF (NOT PREQX_NP)

@@ -3,7 +3,6 @@ SET(SRC_SHARE_DIR    ${HOMME_SOURCE_DIR}/src/share)
 SET(SRC_THETA_DIR    ${HOMME_SOURCE_DIR}/src/theta-l_kokkos)
 SET(SHARE_UT_DIR     ${CMAKE_CURRENT_SOURCE_DIR}/../share_kokkos_ut)
 SET(THETA_UT_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
-SET(UTILS_SHARE_DIR  ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(UTILS_TIMING_SRC_DIR ${HOMME_SOURCE_DIR}/utils/cime/CIME/non_py/src/timing)
 SET(UTILS_TIMING_BIN_DIR ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
 
@@ -21,11 +20,26 @@ SET (QSIZE_D 4)
 SET (PIO_INTERP TRUE)
 HommeConfigFile (${THIS_CONFIG_IN} ${THIS_CONFIG_HC} ${THIS_CONFIG_H} )
 
-ADD_LIBRARY(thetal_kokkos_ut_lib ${THETAL_DEPS})
+ADD_LIBRARY(thetal_kokkos_ut_lib
+  ${THETAL_DEPS}
+  ${TEST_SRC_F90}
+  ${SRC_DIR}/checksum_mod.F90
+  ${SRC_DIR}/common_io_mod.F90
+  ${SRC_DIR}/common_movie_mod.F90
+  ${SRC_DIR}/interpolate_driver_mod.F90
+  ${SRC_DIR}/interp_movie_mod.F90
+  ${SRC_DIR}/netcdf_io_mod.F90
+  ${SRC_DIR}/pio_io_mod.F90
+  ${SRC_DIR}/prim_movie_mod.F90
+  ${SRC_DIR}/theta_restart_mod.F90
+  ${SRC_DIR}/restart_io_mod.F90
+  ${SRC_DIR}/surfaces_mod.F90
+  ${SRC_DIR}/test_mod.F90
+)
 TARGET_INCLUDE_DIRECTORIES(thetal_kokkos_ut_lib PUBLIC ${EXEC_INCLUDE_DIRS})
 TARGET_INCLUDE_DIRECTORIES(thetal_kokkos_ut_lib PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 TARGET_COMPILE_DEFINITIONS(thetal_kokkos_ut_lib PUBLIC "HAVE_CONFIG_H")
-TARGET_LINK_LIBRARIES(thetal_kokkos_ut_lib kokkos)
+TARGET_LINK_LIBRARIES(thetal_kokkos_ut_lib kokkos csm_share)
 TARGET_LINK_LIBRARIES(thetal_kokkos_ut_lib timing ${COMPOSE_LIBRARY_CPP} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 IF (HOMME_USE_MKL)
   TARGET_LINK_LIBRARIES (thetal_kokkos_ut_lib -mkl)

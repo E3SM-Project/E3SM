@@ -43,6 +43,7 @@ module ocn_time_integration_si
    use ocn_diagnostics_variables
    use ocn_diagnostics
    use ocn_gm
+   use ocn_submesoscale_eddies
 
    use ocn_equation_of_state
    use ocn_vmix
@@ -240,7 +241,7 @@ module ocn_time_integration_si
          fluxb2,           &
          fluxAx
 
-      real (kind=RKIND), dimension(:), allocatable:: &
+      real (kind=RKIND), dimension(:,:), allocatable:: &
          uTemp
 
       real (kind=RKIND), dimension(:), allocatable :: &
@@ -340,7 +341,7 @@ module ocn_time_integration_si
       ! barotropicForcing, barotropicThicknessFlux
       ! layerThickEdgeFlux, layerThickEdgeMean,
       ! normalTransportVelocity, normalGMBolusVelocity
-      ! vertAleTransportTop
+      ! vertAleTransportTop, normalMLEvelocity
       ! velocityX, velocityY, velocityZ
       ! velocityZonal, velocityMeridional
       ! gradSSH, gradSSHX, gradSSHY, gradSSHZ
@@ -813,47 +814,50 @@ module ocn_time_integration_si
             ! Only need to loop over owned cells, since there is a halo
             ! exchange immediately after this computation.
 
-            allocate(uTemp(nVertLevels))
+            allocate(uTemp(nVertLevels,nEdgesOwned))
 
-            !$omp parallel
-            !$omp do schedule(runtime) &
-            !$omp private(k, cell1, cell2, uTemp, &
-            !$omp         normalThicknessFluxSum, thicknessSum)
+            !$omp parallel 
+            !$omp do schedule(runtime)
             do iEdge = 1, nEdgesOwned
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
-               ! could put this after with 
-               ! uTemp(maxleveledgetop+1:nvertlevels)=0
-               uTemp = 0.0_RKIND
+               uTemp(:,iEdge) = 0.0_RKIND
                do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-
                   ! normalBaroclinicVelocityNew =
                   ! normalBaroclinicVelocityOld +
                   !                dt*(-f*normalBaroclinicVelocityPerp
                   !                    + T(u*,w*,p*) + g*grad(SSH*) )
                   ! Here uNew is a work variable containing
                   !  -fEdge(iEdge)*normalBaroclinicVelocityPerp(k,iEdge)
-                  uTemp(k) = normalBaroclinicVelocityCur(k,iEdge) &
+                  uTemp(k,iEdge) = normalBaroclinicVelocityCur(k,iEdge) &
                            + dt * (normalVelocityTend(k,iEdge) &
                            + normalVelocityNew(k,iEdge) &
                            + gravity * &
                              (sshNew(cell2) - sshNew(cell1)) &
                              /dcEdge(iEdge) )
-               enddo ! vertical
+               end do
+            end do
+            !$omp end do
+            !$omp end parallel
 
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(k, cell1, cell2, &
+            !$omp         normalThicknessFluxSum, thicknessSum)
+            do iEdge = 1, nEdgesOwned
                ! thicknessSum is initialized outside the loop because
                ! on land boundaries maxLevelEdgeTop=0, but we want to
                ! initialize thicknessSum with a nonzero value to avoid
                ! a NaN.
                normalThicknessFluxSum =                          &
                     layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge) &
-                  * uTemp(minLevelEdgeBot(iEdge))
+                  * uTemp(minLevelEdgeBot(iEdge),iEdge)
                thicknessSum = &
                     layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)
 
                do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                   normalThicknessFluxSum = normalThicknessFluxSum + &
-                                 layerThickEdgeFlux(k,iEdge)*uTemp(k)
+                                 layerThickEdgeFlux(k,iEdge)*uTemp(k,iEdge)
                   thicknessSum = thicknessSum + &
                                  layerThickEdgeFlux(k,iEdge)
                enddo
@@ -868,7 +872,7 @@ module ocn_time_integration_si
                   !        {\bf u}^{'}_{k,n} +{\bf u}'_{k,n+1}\right)
                   ! so that normalBaroclinicVelocityNew is at time n+1/2
                   normalBaroclinicVelocityNew(k,iEdge) = 0.5_RKIND*( &
-                  normalBaroclinicVelocityCur(k,iEdge) + uTemp(k) - &
+                  normalBaroclinicVelocityCur(k,iEdge) + uTemp(k,iEdge) - &
                          dt * barotropicForcing(iEdge))
                enddo
 
@@ -1663,21 +1667,47 @@ module ocn_time_integration_si
          ! {\bf u}_k^{avg} \right)
          ! \left/ \sum_{k=1}^{N^{edge}} h_{k,*}^{edge}   \right.
 
-         allocate(uTemp(nVertLevels))
          nEdges = nEdgesHalo(config_num_halos-1 )
+         allocate(uTemp(nVertLevels,nEdges))
 
          !$omp parallel
-         !$omp do schedule(runtime) &
-         !$omp private(k, uTemp, normalThicknessFluxSum, &
-         !$omp         thicknessSum, normalVelocityCorrection)
+         !$omp do schedule(runtime)
          do iEdge = 1, nEdges
-
             ! velocity for normalVelocityCorrectionection is
             ! normalBarotropicVelocity +
             ! normalBaroclinicVelocity + uBolus
-            uTemp(:) = normalBarotropicVelocityNew(iEdge) &
-                   + normalBaroclinicVelocityNew(:,iEdge) &
-                   +       normalGMBolusVelocity(:,iEdge)
+            uTemp(:,iEdge) = normalBarotropicVelocityNew(iEdge) &
+                         + normalBaroclinicVelocityNew(:,iEdge)
+         end do
+         !$omp end do
+         !$omp end parallel
+
+         !add GM and submesoscale contributions if requested
+         call ocn_GM_add_to_transport_vel(uTemp, nEdges, nVertLevels)
+         call ocn_MLE_add_to_transport_vel(uTemp, nEdges)
+
+         !$omp parallel
+         !$omp do schedule(runtime) &
+         !$omp private(k)
+         do iEdge = 1, nEdges
+            do k = 1, nVertLevels
+               normalTransportVelocity(k,iEdge) =  &
+                        normalBarotropicVelocityNew(iEdge)   + &
+                        normalBaroclinicVelocityNew(k,iEdge)
+            end do
+         end do
+         !$omp end do
+         !$omp end parallel
+
+         ! add GM and submesoscale contributions if requested
+         call ocn_GM_add_to_transport_vel(normalTransportVelocity, nEdges, nVertLevels)
+         call ocn_MLE_add_to_transport_vel(normalTransportVelocity, nEdges)
+
+         !$omp parallel
+         !$omp do schedule(runtime) &
+         !$omp private(k, normalThicknessFluxSum, &
+         !$omp         thicknessSum, normalVelocityCorrection)
+         do iEdge = 1, nEdges
 
             ! thicknessSum is initialized outside the loop because
             ! on land boundaries maxLevelEdgeTop=0, but I want to
@@ -1685,14 +1715,14 @@ module ocn_time_integration_si
             ! a NaN.
             normalThicknessFluxSum  &
                = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge) &
-               * uTemp(minLevelEdgeBot(iEdge))
+               * uTemp(minLevelEdgeBot(iEdge),iEdge)
             thicknessSum &
                = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)
 
             do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
                normalThicknessFluxSum = normalThicknessFluxSum + &
                                         layerThickEdgeFlux(k,iEdge)* &
-                                        uTemp(k)
+                                        uTemp(k,iEdge)
                thicknessSum = thicknessSum + &
                               layerThickEdgeFlux(k,iEdge)
             enddo
@@ -1714,9 +1744,7 @@ module ocn_time_integration_si
                !    I think it is not needed because
                !    normalGMBolusVelocity=0 when GM not on.
                normalTransportVelocity(k,iEdge) = edgeMask(k,iEdge) &
-                        *(normalBarotropicVelocityNew(iEdge)   + &
-                          normalBaroclinicVelocityNew(k,iEdge) + &
-                          normalGMBolusVelocity(k,iEdge) + &
+                        *(normalTransportVelocity(k,iEdge) + & 
                           normalVelocityCorrection )
             enddo
 
@@ -1874,8 +1902,13 @@ module ocn_time_integration_si
 
 #ifdef MPAS_OPENACC
             !$acc enter data copyin(layerThicknessNew, normalVelocityNew)
-            !$acc update device (normalTransportVelocity, &
-            !$acc                normalGMBolusVelocity)
+            !$acc update device (normalTransportVelocity)
+            if (config_use_gm) then
+               !$acc update device (normalGMBolusVelocity)
+            end if
+            if (config_submesoscale_enable) then
+               !$acc update device (normalMLEvelocity)
+            end if
             !$acc enter data copyin(atmosphericPressure, seaIcePressure)
             !$acc enter data copyin(sshNew)
             !$acc enter data copyin(activeTracersNew)
@@ -1970,8 +2003,13 @@ module ocn_time_integration_si
 #ifdef MPAS_OPENACC
             !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
             !$acc update host(relativeVorticity, circulation)
+            if (config_use_gm) then
+               !$acc update host(vertGMBolusVelocityTop)
+            end if
+            if (config_submesoscale_enable) then
+               !$acc update host(vertMLEBolusVelocityTop)
+            end if
             !$acc update host(vertTransportVelocityTop, &
-            !$acc             vertGMBolusVelocityTop, &
             !$acc             relativeVorticityCell, &
             !$acc             divergence, &
             !$acc             kineticEnergyCell, &
@@ -2275,8 +2313,13 @@ module ocn_time_integration_si
       ! implicit vmix routine that follows.
 #ifdef MPAS_OPENACC
       !$acc enter data copyin(layerThicknessNew, normalVelocityNew)
-      !$acc update device (normalTransportVelocity, &
-      !$acc                normalGMBolusVelocity)
+      !$acc update device (normalTransportVelocity)
+      if (config_use_gm) then
+         !$acc update device (normalGMBolusVelocity)
+      end if
+      if (config_submesoscale_enable) then
+         !$acc update device (normalMLEvelocity)
+      end if
       !$acc enter data copyin(atmosphericPressure, seaIcePressure)
       !$acc enter data copyin(sshNew)
       !$acc enter data copyin(activeTracersNew)
@@ -2294,8 +2337,13 @@ module ocn_time_integration_si
 #ifdef MPAS_OPENACC
       !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
       !$acc update host(relativeVorticity, circulation)
+      if (config_use_gm) then
+         !$acc update host (vertGMBolusVelocityTop)
+      end if
+      if (config_submesoscale_enable) then
+         !$acc update host (vertMLEBolusVelocityTop)
+      end if
       !$acc update host(vertTransportVelocityTop, &
-      !$acc             vertGMBolusVelocityTop, &
       !$acc             relativeVorticityCell, &
       !$acc             divergence, &
       !$acc             kineticEnergyCell, &
@@ -2333,12 +2381,6 @@ module ocn_time_integration_si
 
       call mpas_dmpar_field_halo_exch(domain, 'surfaceFrictionVelocity')
 
-      ! Compute normalGMBolusVelocity; it will be added to the
-      ! baroclinic modes in Stage 2 above.
-      !if (config_use_GM.or.config_use_Redi) then
-      !   call ocn_gm_compute_Bolus_velocity(statePool, &
-      !             meshPool, scratchPool, timeLevelIn=2)
-      !end if
       call ocn_vmix_implicit(dt, meshPool, statePool, forcingPool, &
                              scratchPool, err, 2)
 
@@ -2401,8 +2443,13 @@ module ocn_time_integration_si
       if (config_prescribe_thickness) then
          !$acc enter data copyin(layerThicknessCur)
       endif
-      !$acc update device (normalTransportVelocity, &
-      !$acc                normalGMBolusVelocity)
+      !$acc update device (normalTransportVelocity)
+      if (config_use_gm) then
+         !$acc update device (normalGMBolusVelocity)
+      end if
+      if (config_submesoscale_enable) then
+         !$acc update device (normalMLEvelocity)
+      end if
       !$acc enter data copyin(atmosphericPressure, seaIcePressure)
       !$acc enter data copyin(sshNew)
       !$acc enter data copyin(tracersGroupNew)
@@ -2460,13 +2507,6 @@ module ocn_time_integration_si
       call ocn_effective_density_in_land_ice_update(meshPool, &
                                        forcingPool, statePool, err)
 
-      !! Compute normalGMBolusVelocity; it will be added to
-      !! normalVelocity in Stage 2 of the next cycle.
-      !if (config_use_GM.or.config_use_Redi) then
-      !   call ocn_gm_compute_Bolus_velocity(statePool, diagnosticsPool,&
-      !                           meshPool, scratchPool, timeLevelIn=2)
-      !end if
-
       call mpas_timer_start('si final mpas reconstruct', .false.)
 
 #ifdef MPAS_OPENACC
@@ -2515,8 +2555,13 @@ module ocn_time_integration_si
 #ifdef MPAS_OPENACC
       !$acc update host(layerThickEdgeFlux, layerThickEdgeMean)
       !$acc update host(relativeVorticity, circulation)
+      if (config_use_gm) then
+         !$acc update host(vertGMBolusVelocityTop)
+      end if
+      if (config_submesoscale_enable) then
+         !$acc update host(vertMLEBolusVelocityTop)
+      end if
       !$acc update host(vertTransportVelocityTop, &
-      !$acc             vertGMBolusVelocityTop, &
       !$acc             relativeVorticityCell, &
       !$acc             divergence, &
       !$acc             kineticEnergyCell, &
@@ -2564,8 +2609,8 @@ module ocn_time_integration_si
 #endif
       call ocn_time_average_coupled_accumulate(statePool,forcingPool,2)
 
-      if (config_use_GM) then
-         call ocn_reconstruct_gm_vectors(meshPool)
+      if (config_use_GM .or. config_submesoscale_enable) then
+         call ocn_reconstruct_eddy_vectors(meshPool)
       end if
 
       if (trim(config_land_ice_flux_mode) == 'coupled') then

@@ -48,6 +48,11 @@
   </compset>
 
   <compset>
+    <alias>GPMPAS-JRA</alias>
+    <lname>2000_DATM%JRA_ELM%SPBC_MPASSI_MPASO%DATMFORCED_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>GMPAS-JRA1p4</alias>
     <lname>2000_DATM%JRA-1p4-2018_SLND_MPASSI_MPASO%DATMFORCED_DROF%JRA-1p4-2018_SGLC_SWAV</lname>
   </compset>

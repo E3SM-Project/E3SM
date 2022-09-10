@@ -568,6 +568,16 @@ add_default($nl, 'config_Redi_horizontal_taper');
 add_default($nl, 'config_Redi_horizontal_ramp_min');
 add_default($nl, 'config_Redi_horizontal_ramp_max');
 
+######################################################
+# Namelist group: submesoscale_eddy_parameterization #
+######################################################
+
+add_default($nl, 'config_submesoscale_enable');
+add_default($nl, 'config_submesoscale_tau');
+add_default($nl, 'config_submesoscale_Ce');
+add_default($nl, 'config_submesoscale_Lfmin');
+add_default($nl, 'config_submesoscale_ds_max');
+
 ############################################
 # Namelist group: GM_eddy_parameterization #
 ############################################
@@ -591,6 +601,15 @@ add_default($nl, 'config_GM_horizontal_ramp_min');
 add_default($nl, 'config_GM_horizontal_ramp_max');
 add_default($nl, 'config_GMRedi_Rossby_ramp_min');
 add_default($nl, 'config_GMRedi_Rossby_ramp_max');
+
+#########################################
+# Namelist group: eddy_parameterization #
+#########################################
+
+add_default($nl, 'config_eddyMLD_dens_threshold');
+add_default($nl, 'config_eddyMLD_reference_depth');
+add_default($nl, 'config_eddyMLD_reference_pressure');
+add_default($nl, 'config_eddyMLD_use_old');
 
 ####################################
 # Namelist group: Rayleigh_damping #
@@ -1291,9 +1310,7 @@ add_default($nl, 'config_AM_mixedLayerDepths_output_stream');
 add_default($nl, 'config_AM_mixedLayerDepths_write_on_startup');
 add_default($nl, 'config_AM_mixedLayerDepths_compute_on_startup');
 add_default($nl, 'config_AM_mixedLayerDepths_Tthreshold');
-add_default($nl, 'config_AM_mixedLayerDepths_Dthreshold');
 add_default($nl, 'config_AM_mixedLayerDepths_crit_temp_threshold');
-add_default($nl, 'config_AM_mixedLayerDepths_crit_dens_threshold');
 add_default($nl, 'config_AM_mixedLayerDepths_reference_pressure');
 add_default($nl, 'config_AM_mixedLayerDepths_Tgradient');
 add_default($nl, 'config_AM_mixedLayerDepths_Dgradient');
@@ -1681,7 +1698,9 @@ my @groups = qw(run_modes
                 hmix_del4
                 hmix_leith
                 redi_isopycnal_mixing
+                submesoscale_eddy_parameterization
                 gm_eddy_parameterization
+                eddy_parameterization
                 rayleigh_damping
                 cvmix
                 gotm
