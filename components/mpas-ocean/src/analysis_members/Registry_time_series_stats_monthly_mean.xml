@@ -134,6 +134,8 @@
 			<var name="atmosphericPressure"/>
 			<var name="normalGMBolusVelocity"/>
 			<var name="vertGMBolusVelocityTop"/>
+			<var name="normalMLEvelocity"/>
+			<var name="vertMLEVelocityTop"/>
 			<var name="GMBolusVelocityZonal"/>
 			<var name="GMBolusVelocityMeridional"/>
 			<var name="cGMphaseSpeed"/>

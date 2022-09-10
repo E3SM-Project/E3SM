@@ -1118,8 +1118,8 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="vertVelocityTop"/>')
         lines.append('    <var name="zMid"/>')
         lines.append('    <var name="atmosphericPressure"/>')
-		lines.append('    <var name="normalMLEvelocity"/>')
-		lines.append('    <var name="vertMLEVelocityTop"/>')
+        lines.append('    <var name="normalMLEvelocity"/>')
+        lines.append('    <var name="vertMLEVelocityTop"/>')
         if not ocn_grid.startswith("oRRS1"):
             lines.append('    <var name="normalGMBolusVelocity"/>')
             lines.append('    <var name="vertGMBolusVelocityTop"/>')
