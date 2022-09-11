@@ -1794,26 +1794,28 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofi)
     if (ierr .ne. 0) then
          call shr_sys_abort(subname//' error in getting Foxx_rofi field')
-    endif    
+    endif   
+    
+    if (seq_flds_i2o_per_cat) then 
           ! allocate(x2o_Sf_afrac(lsize))
-    tagname = 'Sf_afrac'//C_NULL_CHAR
-    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Sf_afrac)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Sf_afrac field')
-    endif    
-          ! allocate(x2o_Sf_afracr(lsize))
-    tagname = 'Sf_afracr'//C_NULL_CHAR
-    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Sf_afracr)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Sf_afracr field')
-    endif    
-          ! allocate(x2o_Foxx_swnet_afracr(lsize))
-    tagname = 'Foxx_swnet_afracr'//C_NULL_CHAR
-    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_swnet_afracr)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Foxx_swnet_afracr field')
-    endif    
-   
+      tagname = 'Sf_afrac'//C_NULL_CHAR
+      ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Sf_afrac)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Sf_afrac field')
+      endif    
+            ! allocate(x2o_Sf_afracr(lsize))
+      tagname = 'Sf_afracr'//C_NULL_CHAR
+      ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Sf_afracr)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Sf_afracr field')
+      endif    
+            ! allocate(x2o_Foxx_swnet_afracr(lsize))
+      tagname = 'Foxx_swnet_afracr'//C_NULL_CHAR
+      ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_swnet_afracr)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Foxx_swnet_afracr field')
+      endif    
+    endif 
 #ifdef NOTDEF
        do n = 1,lsize
           ifrac = fo_kif_ifrac(n) ! fractions_o%rAttr(kif,n)
