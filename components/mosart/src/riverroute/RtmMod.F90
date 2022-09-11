@@ -508,7 +508,7 @@ contains
        RETURN
     end if
 
-    if (wrmflag .and. inundflag) then
+    if (masterproc .and. wrmflag .and. inundflag) then
        write(iulog,*) subname,' MOSART wrmflag and inundflag both set to be true'
     endif
 
@@ -4415,17 +4415,16 @@ contains
            end if
            rlen_min = sqrt(TUnit%area(iunit))
            ! TODO: refine min channel length for numerical stability
-           !if(TUnit%rlen(iunit) < rlen_min .and. TUnit%mask(iunit)==1) then
-           !   TUnit%rlen(iunit) = rlen_min  ! the channel length should not be small if its has downstream grids
-           !else
-           !   if(TUnit%rlen(iunit) < rlen_min) then
-           !       TUnit%rlen(iunit) = 0.5_r8*rlen_min
-           !   end if
+           !if(sediflag) then
+		   if(TUnit%rlen(iunit) < rlen_min .and. TUnit%mask(iunit)==1) then
+              TUnit%rlen(iunit) = rlen_min  ! the channel length should not be small if its has downstream grids
+           else
+              if(TUnit%rlen(iunit) < rlen_min) then
+                  TUnit%rlen(iunit) = 0.5_r8*rlen_min
+              end if
+           end if
            !end if
-           !if(TUnit%rlen(iunit) < rlen_min .and. TUnit%mask(iunit)==1) then
-           !   TUnit%rlen(iunit) = rlen_min  ! the channel length should not be small if its has downstream grids
-           !end if
-
+		   
            if(TUnit%rlen(iunit) < rlen_min) then
               TUnit%tlen(iunit) = TUnit%area(iunit) / rlen_min / 2._r8 - TUnit%hlen(iunit)
            else
@@ -4470,6 +4469,7 @@ contains
         TUnit%tslpsqrt(iunit) = sqrt(Tunit%tslp(iunit))
         TUnit%hslpsqrt(iunit) = sqrt(Tunit%hslp(iunit))
      end do 
+	 
   end if  ! endr >= begr
 
   ! retrieve the downstream channel attributes after some post-processing above

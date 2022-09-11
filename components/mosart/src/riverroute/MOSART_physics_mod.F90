@@ -639,7 +639,6 @@ MODULE MOSART_physics_mod
              enddo
           end if
 
-
 !#endif
 
        end do ! iunit
@@ -768,10 +767,6 @@ MODULE MOSART_physics_mod
     end if
     TRunoff%dwh(iunit,nt) = (TRunoff%qsur(iunit,nt) + TRunoff%ehout(iunit,nt)) 
 
-    if(isnan(TRunoff%wh(iunit,nt)) .or. isnan(TRunoff%dwh(iunit,nt))) then
-        write(unit=2101,fmt="(i10, 3(e15.4), 2(f12.4))") iunit, TRunoff%qsur(iunit,nt), TRunoff%ehout(iunit,nt), TRunoff%yh(iunit,nt), TUnit%hslpsqrt(iunit), TUnit%nh(iunit) 
-    end if
-
   end subroutine hillslopeRouting
 
 !-----------------------------------------------------------------------
@@ -848,7 +843,7 @@ MODULE MOSART_physics_mod
     TRunoff%erin(iunit,nt) = 0._r8
 
     TRunoff%erin(iunit,nt) = TRunoff%erin(iunit,nt) - TRunoff%eroutUp(iunit,nt)
-
+    
     ! estimate the outflow
     if(TUnit%rlen(iunit) <= 0._r8) then ! no river network, no channel routing
        TRunoff%vr(iunit,nt) = 0._r8
@@ -966,7 +961,7 @@ MODULE MOSART_physics_mod
     real(r8) :: temp1, temp2, w_temp
     real(r8 ) :: y_c, len_c, slp_c             ! Water depth (m), length (m) and bed slope (dimensionless) of the current channel.
     real(r8 ) :: y_down, len_down, slp_down    ! Water depth (m), length (m) and bed slope (dimensionless) of the downstream channel.
-    
+	
     ! estimate the inflow from upstream units
     TRunoff%erin(iunit,nt) = 0._r8
 
@@ -974,7 +969,7 @@ MODULE MOSART_physics_mod
     !do k=1, rtmCTL%nUp(iunit)
     !    TRunoff%erin(iunit,nt) = TRunoff%erin(iunit,nt) - TRunoff%erout(rtmCTL%iUp(iunit,k),nt)
     !enddo
-
+    
     ! estimate the outflow
     if(TUnit%rlen(iunit) <= 0._r8) then ! no river network, no channel routing
        TRunoff%vr(iunit,nt) = 0._r8

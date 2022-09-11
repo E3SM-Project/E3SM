@@ -350,7 +350,10 @@ MODULE MOSARTinund_Core_MOD
             enddo
           
             ! Channel water storage between final water level and banktop :
-            wr_over = hf * TUnit%rwidth( iu ) * TUnit%rlen( iu )            
+            wr_over = hf * TUnit%rwidth( iu ) * TUnit%rlen( iu )
+            if(wr_over >= 0.95_r8*w_over) then ! don't deplete the storage in a single time step
+                wr_over = 0.95_r8*w_over
+            end if			
 
             ! Channel storage after exchange :
             TRunoff%wr_exchg( iu ) = TUnit%wr_bf( iu ) + wr_over        
