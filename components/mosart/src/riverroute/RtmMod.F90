@@ -425,7 +425,7 @@ contains
     Tctl%DLevelH2R     = DLevelH2R
     Tctl%DLevelR       = DLevelR
     if(.not.(Tctl%RoutingMethod==KW .or. Tctl%RoutingMethod==DW)) then 
-	   call shr_sys_abort('Error in routing method setup! There are only 2 options available: 1==KW, 2==DW')
+       call shr_sys_abort('Error in routing method setup! There are only 2 options available: 1==KW, 2==DW')
     end if
 
     if (inundflag) then
@@ -1826,7 +1826,7 @@ contains
        endif
        call t_stopf('mosarti_reservoir_sed_init')
     end if
-	
+    
     !-------------------------------------------------------
     ! Read restart/initial info
     !-------------------------------------------------------
@@ -2001,7 +2001,7 @@ contains
                                  TRunoff%wt_al(nr,nt) + TRunoff%wr_al(nr,nt))
         enddo
     enddo
-	end if
+    end if
 
     call t_stopf('mosarti_restart')
 
@@ -2313,13 +2313,13 @@ contains
              budget_terms(bv_dstor_i,nt) = budget_terms(bv_dstor_i,nt) + StorWater%storage(idam)
           enddo
           
-		  if (sediflag) then
+          if (sediflag) then
              do nt = 1,nt_rtm
              do nr = rtmCTL%begr,rtmCTL%endr
                 budget_terms(bv_dstor_i,nt) = budget_terms(bv_dstor_i,nt) + Tres%wres(nr,nt)
              enddo
              enddo
-		  end if
+          end if
        endif
        call t_stopf('mosartr_budget')
     endif ! budget_check
@@ -2845,13 +2845,13 @@ contains
              budget_terms(bv_dstor_f,nt) = budget_terms(bv_dstor_f,nt) + StorWater%storage(idam)
           enddo
           
-		  if(sediflag) then
+          if(sediflag) then
              do nt = 1,nt_rtm
              do nr = rtmCTL%begr,rtmCTL%endr
                 budget_terms(bv_dstor_f,nt) = budget_terms(bv_dstor_f,nt) + Tres%wres(nr,nt)
              enddo
              enddo
-		  end if
+          end if
        endif
 
        if (inundflag) then
@@ -4416,7 +4416,7 @@ contains
            rlen_min = sqrt(TUnit%area(iunit))
            ! TODO: refine min channel length for numerical stability
            !if(sediflag) then
-		   if(TUnit%rlen(iunit) < rlen_min .and. TUnit%mask(iunit)==1) then
+           if(TUnit%rlen(iunit) < rlen_min .and. TUnit%mask(iunit)==1) then
               TUnit%rlen(iunit) = rlen_min  ! the channel length should not be small if its has downstream grids
            else
               if(TUnit%rlen(iunit) < rlen_min) then
@@ -4424,7 +4424,7 @@ contains
               end if
            end if
            !end if
-		   
+           
            if(TUnit%rlen(iunit) < rlen_min) then
               TUnit%tlen(iunit) = TUnit%area(iunit) / rlen_min / 2._r8 - TUnit%hlen(iunit)
            else
@@ -4469,7 +4469,7 @@ contains
         TUnit%tslpsqrt(iunit) = sqrt(Tunit%tslp(iunit))
         TUnit%hslpsqrt(iunit) = sqrt(Tunit%hslp(iunit))
      end do 
-	 
+     
   end if  ! endr >= begr
 
   ! retrieve the downstream channel attributes after some post-processing above
