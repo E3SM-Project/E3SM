@@ -49,7 +49,8 @@ module mo_gas_phase_chemdr
   logical :: convproc_do_aer 
 
   real(r8), parameter :: low_limit = 0.1_r8 ! lower limit factor for dry deposition
-  real(r8), parameter :: up_limit  = 2.0_r8 ! upper limit factor for surface emission
+  !real(r8), parameter :: up_limit  = 2.0_r8 ! upper limit factor for surface emission
+  integer,  parameter :: srf_emit_nlayer = 3 ! number of layers adding surface emission
 
 contains
 
@@ -479,7 +480,8 @@ contains
     real(r8) :: vmr0(ncol,pver,gas_pcnst)
     real(r8) :: vmr_old(ncol,pver,gas_pcnst)
     real(r8) :: vmr_old2(ncol,pver,gas_pcnst)
-    real(r8) :: tmp
+    !real(r8) :: tmp
+    real(r8) :: tmp(ncol)
     
     ! for explicit chem prodcution and loss
     real(r8)     ::  chem_prod(ncol,pver,gas_pcnst)         ! xported species (vmr/delt)
@@ -1300,11 +1302,13 @@ contains
           if ( n > 0 ) then
              if ( .not. any( aer_species == n ) ) then
                if (trim(solsym(n))/='DMS' .and. trim(solsym(n))/='SO2' .and. &
-                   trim(solsym(n))/='H2SO4' .and. trim(solsym(n))/='SOAG' .and. &
+                   trim(solsym(n))/='H2SO4' .and. &   
                    trim(solsym(n))/='SOAG0' .and. trim(solsym(n))/='SOAG15' .and. &
                    trim(solsym(n))/='SOAG24' .and. trim(solsym(n))/='SOAG31' .and. &
                    trim(solsym(n))/='SOAG32' .and. trim(solsym(n))/='SOAG33' .and. & 
-                   trim(solsym(n))/='SOAG34' .and. trim(solsym(n))/='SOAG35' ) then
+                   trim(solsym(n))/='SOAG34' .and. trim(solsym(n))/='SOAG35' .and. &
+                   trim(solsym(n))/='HNO3' .and. trim(solsym(n))/='NH3' .and. &
+                   trim(solsym(n))/='HCL' ) then
                    !trim(solsym(n))/='H2SO4' .and. trim(solsym(n))/='SOAG') then
                    !write(iulog,*) 'n=',n,'solsym=',trim(solsym(n))
                    vmr(:ncol,:,n) = vmr_old2(:ncol,:,n)
@@ -1523,37 +1527,22 @@ contains
     !-----------------------------------------------------------------------      
     !         ... Surface emissions
     !----------------------------------------------------------------------- 
-    ! if chemUCI is used, apply surface emissions here
+    ! if chemUCI is used, apply surface emissions to the bottom (srf_emit_nlayer) layers here
     if (uci1_ndx > 0) then 
        do m = 1,pcnst
           n = map2chm( m )
           if ( n > 0 ) then
             if ( any( cflx(:ncol,m) /= 0._r8 ) ) then
               if ( .not. any( aer_species == n ) .and. adv_mass(n) /= 0._r8 ) then
-                do k = pver, 1, -1 ! loop from bottom to top
+                do k = pver, pver-srf_emit_nlayer+1, -1 ! loop from bottom to top
                   ! kg/m2, tracer mass
                   wrk(:ncol,k) = adv_mass(n)*vmr(:ncol,k,n)/mbar(:ncol,k) &
                                     *pdeldry(:ncol,k)*rga
-                  j = 0 ! number of columns will double concentration after adding surf. emission
-                  do i = 1,ncol
-                    if ( cflx(i,m) /= 0._r8 ) then
-                      if ( wrk(i,k)*(up_limit-1._r8) >= cflx(i,m)*delt ) then
-                        tmp = wrk(i,k) + cflx(i,m)*delt
-                        cflx(i,m) = 0._r8
-                      else
-                        tmp = wrk(i,k)*up_limit
-                        cflx(i,m) = cflx(i,m) - wrk(i,k)*(up_limit-1._r8)*delt_inverse
-                        j = j + 1
-                      endif
-                      vmr(i,k,n) = tmp*mbar(i,k)/adv_mass(n)/pdeldry(i,k)/rga
-                    endif
-                  end do
 
-                  if ( j == 0 ) then
-                    exit
-                  endif
-
+                  tmp(:ncol) = wrk(:ncol,k) + cflx(:ncol,m)*delt/dble(srf_emit_nlayer)
+                  vmr(:ncol,k,n) = tmp(:ncol)*mbar(:ncol,k)/adv_mass(n)/pdeldry(:ncol,k)/rga
                 end do
+                cflx(:ncol,m) = 0._r8
               endif
             endif
           endif
@@ -1664,14 +1653,14 @@ contains
                   do i = 1,ncol
                     if ( sflx2(i,n) /= 0._r8 ) then
                       if ( wrk(i,k)*(1._r8-low_limit) >= sflx2(i,n)*delt ) then
-                        tmp = wrk(i,k) - sflx2(i,n)*delt
+                        tmp(1) = wrk(i,k) - sflx2(i,n)*delt
                         sflx2(i,n) = 0._r8
                       else
-                        tmp = wrk(i,k)*low_limit
+                        tmp(1) = wrk(i,k)*low_limit
                         sflx2(i,n) = sflx2(i,n) - wrk(i,k)*(1._r8-low_limit)*delt_inverse
                         j = j + 1
                       endif
-                      vmr(i,k,n) = tmp*mbar(i,k)/adv_mass(n)/pdeldry(i,k)/rga
+                      vmr(i,k,n) = tmp(1)*mbar(i,k)/adv_mass(n)/pdeldry(i,k)/rga
                     endif
                   end do
 
