@@ -141,21 +141,7 @@ module prep_ocn_mod
   logical       :: dummy_pgibugfix
 #endif
   !================================================================================================
-! for moab, local allocatable arrays for each field, size of local ocean mesh
-! these are the fields that are merged, in general
-! some fields are already on the ocean instance (coming from projection)
-!  (usually those on shared indices )
-! all the rest will be needed for computation
-! arrays will be allocated the first time, then filled with get tag values, merged, and set back to x2o ocean fields
-! kif = mct_aVect_indexRa(fractions_o,"ifrac",perrWith=subName)
-   !  kof = mct_aVect_indexRa(fractions_o,"ofrac",perrWith=subName)
-   !  kir = mct_aVect_indexRa(fractions_o,"ifrad",perrWith=subName)
-   !  kor = mct_aVect_indexRa(fractions_o,"ofrad",perrWith=subName)
-  real (kind=r8) , allocatable, private :: fo_kif_ifrac(:) ! ifrac from ocean instance
-  real (kind=r8) , allocatable, private :: fo_kof_ofrac(:) ! ofrac from ocean instance
-  real (kind=r8) , allocatable, private :: fo_kir_ifrad(:) ! ifrad from ocean instance
-  real (kind=r8) , allocatable, private :: fo_kor_ofrad(:) ! ofrad from ocean instance
-  ! number of primary cells will be local size for all these arrays
+
 
 #ifdef MOABDEBUG
   integer :: number_proj ! it is a static variable, used to count the number of projections
@@ -753,6 +739,68 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     integer, save :: index_x2o_Faxa_rain_HDO
     integer, save :: index_x2o_Faxa_snow_HDO
     integer, save :: index_x2o_Faxa_prec_HDO
+    
+    real (kind=r8) , allocatable, save :: a2x_Faxa_swvdr(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_swvdf(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_swndr(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_swndf(:)
+    real (kind=r8) , allocatable, save :: i2x_Fioi_swpen(:)
+    real (kind=r8) , allocatable, save :: xao_So_avsdr(:)
+    real (kind=r8) , allocatable, save :: xao_So_anidr(:)
+    real (kind=r8) , allocatable, save :: xao_So_avsdf(:)
+    real (kind=r8) , allocatable, save :: xao_So_anidf(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_snowc(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_snowl(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_rainc(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_rainl(:)
+    real (kind=r8) , allocatable, save :: r2x_Forr_rofl(:)
+    real (kind=r8) , allocatable, save :: r2x_Forr_rofi(:)
+    real (kind=r8) , allocatable, save :: r2x_Forr_rofl_16O(:)
+    real (kind=r8) , allocatable, save :: r2x_Forr_rofi_16O(:)
+    real (kind=r8) , allocatable, save :: r2x_Forr_rofl_18O(:)
+    real (kind=r8) , allocatable, save :: r2x_Forr_rofi_18O(:)
+    real (kind=r8) , allocatable, save :: r2x_Forr_rofl_HDO(:)
+    real (kind=r8) , allocatable, save :: r2x_Forr_rofi_HDO(:)
+    real (kind=r8) , allocatable, save :: r2x_Flrr_flood(:)
+    real (kind=r8) , allocatable, save :: g2x_Fogg_rofl(:)
+    real (kind=r8) , allocatable, save :: g2x_Fogg_rofi(:)
+    real (kind=r8) , allocatable, save :: x2o_Foxx_swnet(:)
+    real (kind=r8) , allocatable, save :: x2o_Faxa_snow(:)
+    real (kind=r8) , allocatable, save :: x2o_Faxa_rain(:)
+    real (kind=r8) , allocatable, save :: x2o_Faxa_prec(:)
+    real (kind=r8) , allocatable, save :: x2o_Foxx_rofl(:)
+    real (kind=r8) , allocatable, save :: x2o_Foxx_rofi(:)
+    real (kind=r8) , allocatable, save :: x2o_Sf_afrac(:)
+    real (kind=r8) , allocatable, save :: x2o_Sf_afracr(:)
+    real (kind=r8) , allocatable, save :: x2o_Foxx_swnet_afracr(:)
+    real (kind=r8) , allocatable, save :: x2o_Foxx_rofl_16O(:)
+    real (kind=r8) , allocatable, save :: x2o_Foxx_rofi_16O(:)
+    real (kind=r8) , allocatable, save :: x2o_Foxx_rofl_18O(:)
+    real (kind=r8) , allocatable, save :: x2o_Foxx_rofi_18O(:)
+    real (kind=r8) , allocatable, save :: x2o_Foxx_rofl_HDO(:)
+    real (kind=r8) , allocatable, save :: x2o_Foxx_rofi_HDO(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_snowc_16O(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_snowl_16O(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_rainc_16O(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_rainl_16O(:)
+    real (kind=r8) , allocatable, save :: x2o_Faxa_rain_16O(:)
+    real (kind=r8) , allocatable, save :: x2o_Faxa_snow_16O(:)
+    real (kind=r8) , allocatable, save :: x2o_Faxa_prec_16O(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_snowc_18O(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_snowl_18O(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_rainc_18O(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_rainl_18O(:)
+    real (kind=r8) , allocatable, save :: x2o_Faxa_rain_18O(:)
+    real (kind=r8) , allocatable, save :: x2o_Faxa_snow_18O(:)
+    real (kind=r8) , allocatable, save :: x2o_Faxa_prec_18O(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_snowc_HDO(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_snowl_HDO(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_rainc_HDO(:)
+    real (kind=r8) , allocatable, save :: a2x_Faxa_rainl_HDO(:)
+    real (kind=r8) , allocatable, save :: x2o_Faxa_rain_HDO(:)
+    real (kind=r8) , allocatable, save :: x2o_Faxa_snow_HDO(:)
+    real (kind=r8) , allocatable, save :: x2o_Faxa_prec_HDO(:)
+
     logical :: iamroot
     logical, save, pointer :: amerge(:),imerge(:),xmerge(:)
     integer, save, pointer :: aindx(:), iindx(:), xindx(:)
@@ -768,6 +816,21 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
     character(CL) ::tagname
     integer :: ent_type, ierr
+! for moab, local allocatable arrays for each field, size of local ocean mesh
+! these are the fields that are merged, in general
+! some fields are already on the ocean instance (coming from projection)
+!  (usually those on shared indices )
+! all the rest will be needed for computation
+! arrays will be allocated the first time, then filled with get tag values, merged, and set back to x2o ocean fields
+! kif = mct_aVect_indexRa(fractions_o,"ifrac",perrWith=subName)
+   !  kof = mct_aVect_indexRa(fractions_o,"ofrac",perrWith=subName)
+   !  kir = mct_aVect_indexRa(fractions_o,"ifrad",perrWith=subName)
+   !  kor = mct_aVect_indexRa(fractions_o,"ofrad",perrWith=subName)
+  real (kind=r8) , allocatable, save :: fo_kif_ifrac(:) ! ifrac from ocean instance
+  real (kind=r8) , allocatable, save :: fo_kof_ofrac(:) ! ofrac from ocean instance
+  real (kind=r8) , allocatable, save :: fo_kir_ifrad(:) ! ifrad from ocean instance
+  real (kind=r8) , allocatable, save :: fo_kor_ofrad(:) ! ofrad from ocean instance
+  ! number of primary cells will be local size for all these arrays
 
     character(*),parameter :: subName = '(prep_ocn_merge_moab) '
     !-----------------------------------------------------------------------
@@ -1142,34 +1205,470 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        allocate(fo_kof_ofrac(lsize))
        allocate(fo_kir_ifrad(lsize))
        allocate(fo_kor_ofrad(lsize))
+       ! now real fields
+      allocate(a2x_Faxa_swvdr(lsize))
+      allocate(a2x_Faxa_swvdf(lsize))
+      allocate(a2x_Faxa_swndr(lsize))
+      allocate(a2x_Faxa_swndf(lsize))
+      allocate(i2x_Fioi_swpen(lsize))
+      allocate(xao_So_avsdr(lsize))
+      allocate(xao_So_anidr(lsize))
+      allocate(xao_So_avsdf(lsize))
+      allocate(xao_So_anidf(lsize))
+      allocate(a2x_Faxa_snowc(lsize))
+      allocate(a2x_Faxa_snowl(lsize))
+      allocate(a2x_Faxa_rainc(lsize))
+      allocate(a2x_Faxa_rainl(lsize))
+      allocate(r2x_Forr_rofl(lsize))
+      allocate(r2x_Forr_rofi(lsize))
+      allocate(r2x_Forr_rofl_16O(lsize))
+      allocate(r2x_Forr_rofi_16O(lsize))
+      allocate(r2x_Forr_rofl_18O(lsize))
+      allocate(r2x_Forr_rofi_18O(lsize))
+      allocate(r2x_Forr_rofl_HDO(lsize))
+      allocate(r2x_Forr_rofi_HDO(lsize))
+      allocate(r2x_Flrr_flood(lsize))
+      allocate(g2x_Fogg_rofl(lsize))
+      allocate(g2x_Fogg_rofi(lsize))
+      allocate(x2o_Foxx_swnet(lsize))
+      allocate(x2o_Faxa_snow(lsize))
+      allocate(x2o_Faxa_rain(lsize))
+      allocate(x2o_Faxa_prec(lsize))
+      allocate(x2o_Foxx_rofl(lsize))
+      allocate(x2o_Foxx_rofi(lsize))
+      allocate(x2o_Sf_afrac(lsize))
+      allocate(x2o_Sf_afracr(lsize))
+      allocate(x2o_Foxx_swnet_afracr(lsize))
+      allocate(x2o_Foxx_rofl_16O(lsize))
+      allocate(x2o_Foxx_rofi_16O(lsize))
+      allocate(x2o_Foxx_rofl_18O(lsize))
+      allocate(x2o_Foxx_rofi_18O(lsize))
+      allocate(x2o_Foxx_rofl_HDO(lsize))
+      allocate(x2o_Foxx_rofi_HDO(lsize))
+      allocate(a2x_Faxa_snowc_16O(lsize))
+      allocate(a2x_Faxa_snowl_16O(lsize))
+      allocate(a2x_Faxa_rainc_16O(lsize))
+      allocate(a2x_Faxa_rainl_16O(lsize))
+      allocate(x2o_Faxa_rain_16O(lsize))
+      allocate(x2o_Faxa_snow_16O(lsize))
+      allocate(x2o_Faxa_prec_16O(lsize))
+      allocate(a2x_Faxa_snowc_18O(lsize))
+      allocate(a2x_Faxa_snowl_18O(lsize))
+      allocate(a2x_Faxa_rainc_18O(lsize))
+      allocate(a2x_Faxa_rainl_18O(lsize))
+      allocate(x2o_Faxa_rain_18O(lsize))
+      allocate(x2o_Faxa_snow_18O(lsize))
+      allocate(x2o_Faxa_prec_18O(lsize))
+      allocate(a2x_Faxa_snowc_HDO(lsize))
+      allocate(a2x_Faxa_snowl_HDO(lsize))
+      allocate(a2x_Faxa_rainc_HDO(lsize))
+      allocate(a2x_Faxa_rainl_HDO(lsize))
+      allocate(x2o_Faxa_rain_HDO(lsize))
+      allocate(x2o_Faxa_snow_HDO(lsize))
+      allocate(x2o_Faxa_prec_HDO(lsize))
+
     endif
 
     ! fill with fractions from ocean instance
     ent_type = 1 ! cells
     tagname = 'ifrac'//C_NULL_CHAR
     ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, fo_kif_ifrac)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting ifrac ')
+    endif
     tagname = 'ofrac'//C_NULL_CHAR
     ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, fo_kof_ofrac)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting ofrac ')
+    endif
     tagname = 'ifrad'//C_NULL_CHAR
     ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, fo_kir_ifrad)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting ifrad ')
+    endif
     tagname = 'ofrad'//C_NULL_CHAR
     ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, fo_kor_ofrad)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting ofrad ')
+    endif
 
+    ! fill with values from various instances
+    tagname = 'Faxa_swvdr'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_swvdr)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_swvdr field')
+    endif
+    ! allocate(a2x_Faxa_swvdr(lsize))
+    !  allocate(a2x_Faxa_swvdf(lsize))
+    tagname = 'Faxa_swvdf'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_swvdf)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_swvdf field')
+    endif
+      ! allocate(a2x_Faxa_swndr(lsize))
+    tagname = 'Faxa_swndr'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_swndr)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_swndr field')
+    endif
+      ! allocate(a2x_Faxa_swndf(lsize))
+    tagname = 'Faxa_swndf'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_swndf)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_swndf field')
+    endif      
+      ! allocate(i2x_Fioi_swpen(lsize))
+    tagname = 'Fioi_swpen'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, i2x_Fioi_swpen)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Fioi_swpen field')
+    endif    
 
-#ifdef NOTDEF
+      ! allocate(xao_So_avsdr(lsize))
+    tagname = 'So_avsdr'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mbox2id, tagname, lsize , ent_type, xao_So_avsdr)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting So_avsdr field')
+    endif    
+      ! allocate(xao_So_anidr(lsize))
+     tagname = 'So_anidr'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mbox2id, tagname, lsize , ent_type, xao_So_anidr)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting So_anidr field')
+    endif    
+      ! allocate(xao_So_avsdf(lsize))
+     tagname = 'So_avsdf'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mbox2id, tagname, lsize , ent_type, xao_So_avsdf)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting So_avsdf field')
+    endif    
+         ! allocate(xao_So_anidf(lsize))
+    tagname = 'So_anidf'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mbox2id, tagname, lsize , ent_type, xao_So_anidf)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting So_anidf field')
+    endif    
+          ! allocate(a2x_Faxa_snowc(lsize))
+    tagname = 'Faxa_snowc'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowc)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_snowc field')
+    endif    
+          ! allocate(a2x_Faxa_snowl(lsize))
+    tagname = 'Faxa_snowl'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowl)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_snowl field')
+    endif    
+          ! allocate(a2x_Faxa_rainc(lsize))
+    tagname = 'Faxa_rainc'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainc)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_rainc field')
+    endif    
+          ! allocate(a2x_Faxa_rainl(lsize))
+    tagname = 'Faxa_rainl'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainl)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_rainl field')
+    endif    
+          ! allocate(r2x_Forr_rofl(lsize))
+    tagname = 'Forr_rofl'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofl)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Forr_rofl field')
+    endif    
+          ! allocate(r2x_Forr_rofi(lsize))
+    tagname = 'Forr_rofi'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofi)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Forr_rofi field')
+    endif    
+          ! allocate(r2x_Forr_rofl_16O(lsize))
+    tagname = 'Forr_rofl_16O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofl_16O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Forr_rofl_16O field')
+    endif    
+          ! allocate(r2x_Forr_rofi_16O(lsize))
+     tagname = 'Forr_rofi_16O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofi_16O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Forr_rofi_16O field')
+    endif    
+         ! allocate(r2x_Forr_rofl_18O(lsize))
+    tagname = 'Forr_rofl_18O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofl_18O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Forr_rofl_18O field')
+    endif    
+          ! allocate(r2x_Forr_rofi_18O(lsize))
+    tagname = 'Forr_rofi_18O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofi_18O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Forr_rofi_18O field')
+    endif    
+          ! allocate(r2x_Forr_rofi_18O(lsize))
+     tagname = 'Forr_rofi_18O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofi_18O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Forr_rofi_18O field')
+    endif    
+         ! allocate(r2x_Forr_rofi_HDO(lsize))
+     tagname = 'Forr_rofi_HDO'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofi_HDO)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Forr_rofi_HDO field')
+    endif    
+         ! allocate(r2x_Flrr_flood(lsize))
+    tagname = 'Flrr_flood'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Flrr_flood)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Flrr_flood field')
+    endif    
+   !        ! allocate(g2x_Fogg_rofl(lsize))
+   !  tagname = 'Faxa_swndf'//C_NULL_CHAR
+   !  ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_swndf)
+   !  if (ierr .ne. 0) then
+   !       call shr_sys_abort(subname//' error in getting Faxa_swndf field')
+   !  endif          
+   !  ! allocate(g2x_Fogg_rofi(lsize))
+   !  tagname = 'Faxa_swndf'//C_NULL_CHAR
+   !  ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_swndf)
+   !  if (ierr .ne. 0) then
+   !       call shr_sys_abort(subname//' error in getting Faxa_swndf field')
+   ! endif    
+      ! allocate(x2o_Foxx_swnet(lsize))
+    tagname = 'Foxx_swnet'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_swnet)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Foxx_swnet field')
+    endif    
+          ! allocate(x2o_Faxa_snow(lsize))
+    tagname = 'Faxa_snow'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_snow)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_snow field')
+    endif    
+          ! allocate(x2o_Faxa_rain(lsize))
+    tagname = 'Faxa_rain'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_rain)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_rain field')
+    endif    
+          ! allocate(x2o_Faxa_prec(lsize))
+    tagname = 'Faxa_prec'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_prec)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_prec field')
+    endif    
+          ! allocate(x2o_Foxx_rofl(lsize))
+    tagname = 'Foxx_rofl'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofl)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Foxx_rofl field')
+    endif    
+          ! allocate(x2o_Foxx_rofi(lsize))
+    tagname = 'Foxx_rofi'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofi)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Foxx_rofi field')
+    endif    
+          ! allocate(x2o_Sf_afrac(lsize))
+    tagname = 'Sf_afrac'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Sf_afrac)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Sf_afrac field')
+    endif    
+          ! allocate(x2o_Sf_afracr(lsize))
+    tagname = 'Sf_afracr'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Sf_afracr)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Sf_afracr field')
+    endif    
+          ! allocate(x2o_Foxx_swnet_afracr(lsize))
+    tagname = 'Foxx_swnet_afracr'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_swnet_afracr)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Foxx_swnet_afracr field')
+    endif    
+          ! allocate(x2o_Foxx_rofl_16O(lsize))
+    tagname = 'Foxx_rofl_16O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofl_16O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Foxx_rofl_16O field')
+    endif    
+          ! allocate(x2o_Foxx_rofi_16O(lsize))
+     tagname = 'Foxx_rofi_16O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofi_16O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Foxx_rofi_16O field')
+    endif    
+         ! allocate(x2o_Foxx_rofl_18O(lsize))
+     tagname = 'Foxx_rofl_18O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofl_18O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Foxx_rofl_18O field')
+    endif    
+         ! allocate(x2o_Foxx_rofi_18O(lsize))
+    tagname = 'Foxx_rofi_18O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofi_18O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Foxx_rofi_18O field')
+    endif    
+          ! allocate(x2o_Foxx_rofl_HDO(lsize))
+    tagname = 'Foxx_rofl_HDO'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofl_HDO)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Foxx_rofl_HDO field')
+    endif    
+          ! allocate(x2o_Foxx_rofi_HDO(lsize))
+    tagname = 'Foxx_rofi_HDO'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofi_HDO)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Foxx_rofi_HDO field')
+    endif    
+          ! allocate(a2x_Faxa_snowc_16O(lsize))
+     tagname = 'Faxa_snowc_16O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowc_16O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_snowc_16O field')
+    endif    
+         ! allocate(a2x_Faxa_snowl_16O(lsize))
+    tagname = 'Faxa_snowl_16O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowl_16O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_snowl_16O field')
+    endif    
+          ! allocate(a2x_Faxa_rainc_16O(lsize))
+    tagname = 'Faxa_rainc_16O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainc_16O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_rainc_16O field')
+    endif    
+          ! allocate(a2x_Faxa_rainl_16O(lsize))
+    tagname = 'Faxa_rainl_16O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainl_16O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_rainl_16O field')
+    endif    
+          ! allocate(x2o_Faxa_rain_16O(lsize))
+     tagname = 'Faxa_rain_16O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_rain_16O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_rain_16O field')
+    endif    
+         ! allocate(x2o_Faxa_snow_16O(lsize))
+    tagname = 'Faxa_snow_16O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_snow_16O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_snow_16O field')
+    endif    
+          ! allocate(x2o_Faxa_prec_16O(lsize))
+    tagname = 'Faxa_prec_16O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_prec_16O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_prec_16O field')
+    endif    
+          ! allocate(a2x_Faxa_snowc_18O(lsize))
+    tagname = 'Faxa_snowc_18O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowc_18O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_snowc_18O field')
+    endif    
+          ! allocate(a2x_Faxa_snowl_18O(lsize))
+    tagname = 'Faxa_snowl_18O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowl_18O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_snowl_18O field')
+    endif    
+          ! allocate(a2x_Faxa_rainc_18O(lsize))
+    tagname = 'Faxa_rainc_18O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainc_18O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_rainc_18O field')
+    endif    
+          ! allocate(a2x_Faxa_rainl_18O(lsize))
+    tagname = 'Faxa_rainl_18O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainl_18O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_rainl_18O field')
+    endif    
+          ! allocate(x2o_Faxa_rain_18O(lsize))
+    tagname = 'Faxa_rain_18O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_rain_18O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_rain_18O field')
+    endif    
+          ! allocate(x2o_Faxa_snow_18O(lsize))
+     tagname = 'Faxa_snow_18O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_snow_18O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_snow_18O field')
+    endif    
+         ! allocate(x2o_Faxa_prec_18O(lsize))
+     tagname = 'Faxa_prec_18O'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_prec_18O)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_prec_18O field')
+    endif        
+     ! allocate(a2x_Faxa_snowc_HDO(lsize))
+         tagname = 'Faxa_snowc_HDO'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowc_HDO)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_snowc_HDO field')
+    endif    
+     ! allocate(a2x_Faxa_snowl_HDO(lsize))
+    tagname = 'Faxa_snowl_HDO'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowl_HDO)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_snowl_HDO field')
+    endif    
+          ! allocate(a2x_Faxa_rainc_HDO(lsize))
+    tagname = 'Faxa_rainc_HDO'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainc_HDO)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_rainc_HDO field')
+    endif    
+          ! allocate(a2x_Faxa_rainl_HDO(lsize))
+        tagname = 'Faxa_rainl_HDO'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainl_HDO)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_rainl_HDO field')
+    endif    
+      ! allocate(x2o_Faxa_rain_HDO(lsize))
+       tagname = 'Faxa_rain_HDO'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_rain_HDO)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_rain_HDO field')
+    endif    
+       ! allocate(x2o_Faxa_snow_HDO(lsize))
+     tagname = 'Faxa_snow_HDO'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_snow_HDO)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_snow_HDO field')
+    endif         
+    ! allocate(x2o_Faxa_prec_HDO(lsize))
+       tagname = 'Faxa_prec_HDO'//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_prec_HDO)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_prec_HDO field')
+    endif    
+
+! #ifdef NOTDEF
     
     do n = 1,lsize
 
-       ifrac = fractions_o%rAttr(kif,n)
-       afrac = fractions_o%rAttr(kof,n)
+       ifrac = fo_kif_ifrac(n) ! fractions_o%rAttr(kif,n)
+       afrac = fo_kof_ofrac(n) ! fractions_o%rAttr(kof,n)
        frac_sum = ifrac + afrac
        if ((frac_sum) /= 0._r8) then
           ifrac = ifrac / (frac_sum)
           afrac = afrac / (frac_sum)
        endif
 
-       ifracr = fractions_o%rAttr(kir,n)
-       afracr = fractions_o%rAttr(kor,n)
+       ifracr = fo_kir_ifrad(n)  ! fractions_o%rAttr(kir,n)
+       afracr = fo_kor_ofrad(n) ! fractions_o%rAttr(kor,n)
        frac_sum = ifracr + afracr
        if ((frac_sum) /= 0._r8) then
           ifracr = ifracr / (frac_sum)
@@ -1177,103 +1676,103 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        endif
 
        ! Derived: compute net short-wave
-       avsdr = xao_o%rAttr(index_xao_So_avsdr,n)
-       anidr = xao_o%rAttr(index_xao_So_anidr,n)
-       avsdf = xao_o%rAttr(index_xao_So_avsdf,n)
-       anidf = xao_o%rAttr(index_xao_So_anidf,n)
-       fswabsv  =  a2x_o%rAttr(index_a2x_Faxa_swvdr,n) * (1.0_R8 - avsdr) &
-            + a2x_o%rAttr(index_a2x_Faxa_swvdf,n) * (1.0_R8 - avsdf)
-       fswabsi  =  a2x_o%rAttr(index_a2x_Faxa_swndr,n) * (1.0_R8 - anidr) &
-            + a2x_o%rAttr(index_a2x_Faxa_swndf,n) * (1.0_R8 - anidf)
-       x2o_o%rAttr(index_x2o_Foxx_swnet,n) = (fswabsv + fswabsi)                 * afracr + &
-            i2x_o%rAttr(index_i2x_Fioi_swpen,n) * ifrac
+       avsdr = xao_So_avsdr(n) ! xao_o%rAttr(index_xao_So_avsdr,n)
+       anidr = xao_So_anidr(n) !xao_o%rAttr(index_xao_So_anidr,n)
+       avsdf = xao_So_avsdf(n) !xao_o%rAttr(index_xao_So_avsdf,n)
+       anidf = xao_So_anidf(n)! xao_o%rAttr(index_xao_So_anidf,n)
+       fswabsv  = a2x_Faxa_swvdr(n) * (1.0_R8 - avsdr) & !a2x_o%rAttr(index_a2x_Faxa_swvdr,n) * (1.0_R8 - avsdr) &
+           + a2x_Faxa_swvdf(n) * (1.0_R8 - avsdf)  !+ a2x_o%rAttr(index_a2x_Faxa_swvdf,n) * (1.0_R8 - avsdf)
+       fswabsi  = a2x_Faxa_swndr(n) * (1.0_R8 - anidr)  & !a2x_o%rAttr(index_a2x_Faxa_swndr,n) * (1.0_R8 - anidr) &
+          + a2x_Faxa_swndf(n) * (1.0_R8 - anidf)  ! + a2x_o%rAttr(index_a2x_Faxa_swndf,n) * (1.0_R8 - anidf)
+       x2o_Foxx_swnet(n) = (fswabsv + fswabsi)  * afracr + & !x2o_o%rAttr(index_x2o_Foxx_swnet,n) = (fswabsv + fswabsi)                 * afracr + &
+          i2x_Fioi_swpen(n) * ifrac ! i2x_o%rAttr(index_i2x_Fioi_swpen,n) * ifrac
 
        if (seq_flds_i2o_per_cat) then
-          x2o_o%rAttr(index_x2o_Sf_afrac,n)          = afrac
-          x2o_o%rAttr(index_x2o_Sf_afracr,n)         = afracr
-          x2o_o%rAttr(index_x2o_Foxx_swnet_afracr,n) = (fswabsv + fswabsi)       * afracr
+          x2o_Sf_afrac(n)          = afrac ! x2o_o%rAttr(index_x2o_Sf_afrac,n)          = afrac
+          x2o_Sf_afracr(n)         = afracr !x2o_o%rAttr(index_x2o_Sf_afracr,n)         = afracr
+          x2o_Foxx_swnet_afracr(n) = (fswabsv + fswabsi)       * afracr ! x2o_o%rAttr(index_x2o_Foxx_swnet_afracr,n) = (fswabsv + fswabsi)       * afracr
        end if
 
        ! Derived: compute total precipitation - scale total precip and runoff
 
-       x2o_o%rAttr(index_x2o_Faxa_snow ,n) = a2x_o%rAttr(index_a2x_Faxa_snowc,n) * afrac + &
-            a2x_o%rAttr(index_a2x_Faxa_snowl,n) * afrac
-       x2o_o%rAttr(index_x2o_Faxa_rain ,n) = a2x_o%rAttr(index_a2x_Faxa_rainc,n) * afrac + &
-            a2x_o%rAttr(index_a2x_Faxa_rainl,n) * afrac
+       x2o_Faxa_snow (n) =  a2x_Faxa_snowc(n) * afrac + & ! x2o_o%rAttr(index_x2o_Faxa_snow ,n) = a2x_o%rAttr(index_a2x_Faxa_snowc,n) * afrac + &
+          a2x_Faxa_snowl(n) * afrac !  a2x_o%rAttr(index_a2x_Faxa_snowl,n) * afrac
+       x2o_Faxa_rain (n) = a2x_Faxa_rainc(n) * afrac + & !x2o_o%rAttr(index_x2o_Faxa_rain ,n) = a2x_o%rAttr(index_a2x_Faxa_rainc,n) * afrac + &
+         a2x_Faxa_rainl(n) * afrac !   a2x_o%rAttr(index_a2x_Faxa_rainl,n) * afrac
 
-       x2o_o%rAttr(index_x2o_Faxa_snow ,n) = x2o_o%rAttr(index_x2o_Faxa_snow ,n) * flux_epbalfact
-       x2o_o%rAttr(index_x2o_Faxa_rain ,n) = x2o_o%rAttr(index_x2o_Faxa_rain ,n) * flux_epbalfact
+       x2o_Faxa_snow (n) =  x2o_Faxa_snow (n) * flux_epbalfact! x2o_o%rAttr(index_x2o_Faxa_snow ,n) = x2o_o%rAttr(index_x2o_Faxa_snow ,n) * flux_epbalfact
+       x2o_Faxa_rain (n) =  x2o_Faxa_rain (n) * flux_epbalfact! x2o_o%rAttr(index_x2o_Faxa_rain ,n) = x2o_o%rAttr(index_x2o_Faxa_rain ,n) * flux_epbalfact
 
-       x2o_o%rAttr(index_x2o_Faxa_prec ,n) = x2o_o%rAttr(index_x2o_Faxa_rain ,n) + &
-            x2o_o%rAttr(index_x2o_Faxa_snow ,n)
+       x2o_Faxa_prec (n) = x2o_Faxa_rain (n) + & ! x2o_o%rAttr(index_x2o_Faxa_prec ,n) = x2o_o%rAttr(index_x2o_Faxa_rain ,n) + &
+           x2o_Faxa_snow (n) ! x2o_o%rAttr(index_x2o_Faxa_snow ,n)
 
-       x2o_o%rAttr(index_x2o_Foxx_rofl, n) = (r2x_o%rAttr(index_r2x_Forr_rofl , n) + &
-            r2x_o%rAttr(index_r2x_Flrr_flood, n) ) * flux_epbalfact
+       x2o_Foxx_rofl (n) = (r2x_Forr_rofl (n) + & ! x2o_o%rAttr(index_x2o_Foxx_rofl, n) = (r2x_o%rAttr(index_r2x_Forr_rofl , n) + &
+           r2x_Flrr_flood (n) ) * flux_epbalfact ! r2x_o%rAttr(index_r2x_Flrr_flood, n) ) * flux_epbalfact
            ! g2x_o%rAttr(index_g2x_Fogg_rofl , n)) * flux_epbalfact
-       x2o_o%rAttr(index_x2o_Foxx_rofi, n) = (r2x_o%rAttr(index_r2x_Forr_rofi , n) ) * flux_epbalfact
+       x2o_Foxx_rofi( n) = r2x_Forr_rofi (n)  * flux_epbalfact ! x2o_o%rAttr(index_x2o_Foxx_rofi, n) = (r2x_o%rAttr(index_r2x_Forr_rofi , n) ) * flux_epbalfact
            ! g2x_o%rAttr(index_g2x_Fogg_rofi , n)) * flux_epbalfact
 
 
        if ( index_x2o_Foxx_rofl_16O /= 0 ) then
-          x2o_o%rAttr(index_x2o_Foxx_rofl_16O, n) = (r2x_o%rAttr(index_r2x_Forr_rofl_16O, n) + &
-               r2x_o%rAttr(index_r2x_Flrr_flood, n) ) * flux_epbalfact
+          x2o_Foxx_rofl_16O (n) = (r2x_Forr_rofl_16O (n) + & ! x2o_o%rAttr(index_x2o_Foxx_rofl_16O, n) = (r2x_o%rAttr(index_r2x_Forr_rofl_16O, n) + &
+             r2x_Flrr_flood (n) ) * flux_epbalfact ! r2x_o%rAttr(index_r2x_Flrr_flood, n) ) * flux_epbalfact
               ! g2x_o%rAttr(index_g2x_Fogg_rofl , n)) * flux_epbalfact
-          x2o_o%rAttr(index_x2o_Foxx_rofi_16O, n) = (r2x_o%rAttr(index_r2x_Forr_rofi_16O , n) ) * flux_epbalfact
+          x2o_Foxx_rofi_16O (n) = (r2x_Forr_rofi_16O  (n) ) * flux_epbalfact ! x2o_o%rAttr(index_x2o_Foxx_rofi_16O, n) = (r2x_o%rAttr(index_r2x_Forr_rofi_16O , n) ) * flux_epbalfact
               ! g2x_o%rAttr(index_g2x_Fogg_rofi , n)) * flux_epbalfact
-          x2o_o%rAttr(index_x2o_Foxx_rofl_18O, n) = (r2x_o%rAttr(index_r2x_Forr_rofl_18O, n) + &
-               r2x_o%rAttr(index_r2x_Flrr_flood, n) ) * flux_epbalfact
+          x2o_Foxx_rofl_18O (n) = (r2x_Forr_rofl_18O (n) + & ! x2o_o%rAttr(index_x2o_Foxx_rofl_18O, n) = (r2x_o%rAttr(index_r2x_Forr_rofl_18O, n) + &
+               r2x_Flrr_flood (n) ) * flux_epbalfact! r2x_o%rAttr(index_r2x_Flrr_flood, n) ) * flux_epbalfact
                !g2x_o%rAttr(index_g2x_Fogg_rofl , n)) * flux_epbalfact
-          x2o_o%rAttr(index_x2o_Foxx_rofi_18O, n) = (r2x_o%rAttr(index_r2x_Forr_rofi_18O , n) ) * flux_epbalfact
+          x2o_Foxx_rofi_18O (n) = (r2x_Forr_rofi_18O  (n) ) * flux_epbalfact ! x2o_o%rAttr(index_x2o_Foxx_rofi_18O, n) = (r2x_o%rAttr(index_r2x_Forr_rofi_18O , n) ) * flux_epbalfact
                !g2x_o%rAttr(index_g2x_Fogg_rofi , n)) * flux_epbalfact
-          x2o_o%rAttr(index_x2o_Foxx_rofl_HDO, n) = (r2x_o%rAttr(index_r2x_Forr_rofl_HDO, n) + &
-               r2x_o%rAttr(index_r2x_Flrr_flood, n) ) * flux_epbalfact
+          x2o_Foxx_rofl_HDO (n) = (r2x_Forr_rofl_HDO (n) + & ! x2o_o%rAttr(index_x2o_Foxx_rofl_HDO, n) = (r2x_o%rAttr(index_r2x_Forr_rofl_HDO, n) + &
+               r2x_Flrr_flood (n) ) * flux_epbalfact ! r2x_o%rAttr(index_r2x_Flrr_flood, n) ) * flux_epbalfact
                !g2x_o%rAttr(index_g2x_Fogg_rofl , n)) * flux_epbalfact
-          x2o_o%rAttr(index_x2o_Foxx_rofi_HDO, n) = (r2x_o%rAttr(index_r2x_Forr_rofi_HDO , n) ) * flux_epbalfact
+          x2o_Foxx_rofi_HDO (n) = (r2x_Forr_rofi_HDO (n) ) * flux_epbalfact ! x2o_o%rAttr(index_x2o_Foxx_rofi_HDO, n) = (r2x_o%rAttr(index_r2x_Forr_rofi_HDO , n) ) * flux_epbalfact
                !g2x_o%rAttr(index_g2x_Fogg_rofi , n)) * flux_epbalfact
        end if
 
        ! Derived: water isotopes total preciptiation and scaling
 
        if ( index_x2o_Faxa_snow_16O /= 0 )then
-          x2o_o%rAttr(index_x2o_Faxa_snow_16O ,n) = a2x_o%rAttr(index_a2x_Faxa_snowc_16O,n) * afrac + &
-               a2x_o%rAttr(index_a2x_Faxa_snowl_16O,n) * afrac
-          x2o_o%rAttr(index_x2o_Faxa_rain_16O ,n) = a2x_o%rAttr(index_a2x_Faxa_rainc_16O,n) * afrac + &
-               a2x_o%rAttr(index_a2x_Faxa_rainl_16O,n) * afrac
+          x2o_Faxa_snow_16O (n) = a2x_Faxa_snowc_16O(n) * afrac + & !x2o_o%rAttr(index_x2o_Faxa_snow_16O ,n) = a2x_o%rAttr(index_a2x_Faxa_snowc_16O,n) * afrac + &
+            a2x_Faxa_snowl_16O(n) * afrac ! a2x_o%rAttr(index_a2x_Faxa_snowl_16O,n) * afrac
+          x2o_Faxa_rain_16O (n) = a2x_Faxa_rainc_16O(n) * afrac + & ! x2o_o%rAttr(index_x2o_Faxa_rain_16O ,n) = a2x_o%rAttr(index_a2x_Faxa_rainc_16O,n) * afrac + &
+               a2x_Faxa_rainl_16O(n) * afrac ! a2x_o%rAttr(index_a2x_Faxa_rainl_16O,n) * afrac
 
-          x2o_o%rAttr(index_x2o_Faxa_snow_16O ,n) = x2o_o%rAttr(index_x2o_Faxa_snow_16O ,n) * flux_epbalfact
-          x2o_o%rAttr(index_x2o_Faxa_rain_16O ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_16O ,n) * flux_epbalfact
+          x2o_Faxa_snow_16O (n) =  x2o_Faxa_snow_16O (n) * flux_epbalfact ! x2o_o%rAttr(index_x2o_Faxa_snow_16O ,n) = x2o_o%rAttr(index_x2o_Faxa_snow_16O ,n) * flux_epbalfact
+          x2o_Faxa_rain_16O (n) = x2o_Faxa_rain_16O (n) * flux_epbalfact ! x2o_o%rAttr(index_x2o_Faxa_rain_16O ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_16O ,n) * flux_epbalfact
 
-          x2o_o%rAttr(index_x2o_Faxa_prec_16O ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_16O ,n) + &
-               x2o_o%rAttr(index_x2o_Faxa_snow_16O ,n)
+          x2o_Faxa_prec_16O (n) = x2o_Faxa_rain_16O (n) + & ! x2o_o%rAttr(index_x2o_Faxa_prec_16O ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_16O ,n) + &
+              x2o_Faxa_snow_16O (n) ! x2o_o%rAttr(index_x2o_Faxa_snow_16O ,n)
        end if
 
        if ( index_x2o_Faxa_snow_18O /= 0 )then
-          x2o_o%rAttr(index_x2o_Faxa_snow_18O ,n) = a2x_o%rAttr(index_a2x_Faxa_snowc_18O,n) * afrac + &
-               a2x_o%rAttr(index_a2x_Faxa_snowl_18O,n) * afrac
-          x2o_o%rAttr(index_x2o_Faxa_rain_18O ,n) = a2x_o%rAttr(index_a2x_Faxa_rainc_18O,n) * afrac + &
-               a2x_o%rAttr(index_a2x_Faxa_rainl_18O,n) * afrac
+          x2o_Faxa_snow_18O (n) =  a2x_Faxa_snowc_18O(n) * afrac + & ! x2o_o%rAttr(index_x2o_Faxa_snow_18O ,n) = a2x_o%rAttr(index_a2x_Faxa_snowc_18O,n) * afrac + &
+             a2x_Faxa_snowl_18O(n) * afrac ! a2x_o%rAttr(index_a2x_Faxa_snowl_18O,n) * afrac
+          x2o_Faxa_rain_18O (n) = a2x_Faxa_rainc_18O(n) * afrac + & ! x2o_o%rAttr(index_x2o_Faxa_rain_18O ,n) = a2x_o%rAttr(index_a2x_Faxa_rainc_18O,n) * afrac + &
+             a2x_Faxa_rainl_18O(n) * afrac ! a2x_o%rAttr(index_a2x_Faxa_rainl_18O,n) * afrac
 
-          x2o_o%rAttr(index_x2o_Faxa_snow_18O ,n) = x2o_o%rAttr(index_x2o_Faxa_snow_18O ,n) * flux_epbalfact
-          x2o_o%rAttr(index_x2o_Faxa_rain_18O ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_18O ,n) * flux_epbalfact
+          x2o_Faxa_snow_18O (n) = x2o_Faxa_snow_18O (n) * flux_epbalfact ! x2o_o%rAttr(index_x2o_Faxa_snow_18O ,n) = x2o_o%rAttr(index_x2o_Faxa_snow_18O ,n) * flux_epbalfact
+          x2o_Faxa_rain_18O (n) = x2o_Faxa_rain_18O (n) * flux_epbalfact ! x2o_o%rAttr(index_x2o_Faxa_rain_18O ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_18O ,n) * flux_epbalfact
 
-          x2o_o%rAttr(index_x2o_Faxa_prec_18O ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_18O ,n) + &
-               x2o_o%rAttr(index_x2o_Faxa_snow_18O ,n)
+           x2o_Faxa_prec_18O (n) = X2o_Faxa_rain_18O (n) + & ! x2o_o%rAttr(index_x2o_Faxa_prec_18O ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_18O ,n) + &
+              x2o_Faxa_snow_18O (n) !  x2o_o%rAttr(index_x2o_Faxa_snow_18O ,n)
        end if
 
        if ( index_x2o_Faxa_snow_HDO /= 0 )then
-          x2o_o%rAttr(index_x2o_Faxa_snow_HDO ,n) = a2x_o%rAttr(index_a2x_Faxa_snowc_HDO,n) * afrac + &
-               a2x_o%rAttr(index_a2x_Faxa_snowl_HDO,n) * afrac
-          x2o_o%rAttr(index_x2o_Faxa_rain_HDO ,n) = a2x_o%rAttr(index_a2x_Faxa_rainc_HDO,n) * afrac + &
-               a2x_o%rAttr(index_a2x_Faxa_rainl_HDO,n) * afrac
+          x2o_Faxa_snow_HDO (n) = a2x_Faxa_snowc_HDO(n) * afrac + &  ! x2o_o%rAttr(index_x2o_Faxa_snow_HDO ,n) = a2x_o%rAttr(index_a2x_Faxa_snowc_HDO,n) * afrac + &
+             a2x_Faxa_snowl_HDO(n) * afrac !  a2x_o%rAttr(index_a2x_Faxa_snowl_HDO,n) * afrac
+          x2o_Faxa_rain_HDO (n) = a2x_Faxa_rainc_HDO(n) * afrac + & !x2o_o%rAttr(index_x2o_Faxa_rain_HDO ,n) = a2x_o%rAttr(index_a2x_Faxa_rainc_HDO,n) * afrac + &
+              a2x_Faxa_rainl_HDO(n) * afrac ! a2x_o%rAttr(index_a2x_Faxa_rainl_HDO,n) * afrac
 
-          x2o_o%rAttr(index_x2o_Faxa_snow_HDO ,n) = x2o_o%rAttr(index_x2o_Faxa_snow_HDO ,n) * flux_epbalfact
-          x2o_o%rAttr(index_x2o_Faxa_rain_HDO ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_HDO ,n) * flux_epbalfact
+          x2o_Faxa_snow_HDO (n) = x2o_Faxa_snow_HDO (n) * flux_epbalfact ! x2o_o%rAttr(index_x2o_Faxa_snow_HDO ,n) = x2o_o%rAttr(index_x2o_Faxa_snow_HDO ,n) * flux_epbalfact
+          x2o_Faxa_rain_HDO (n) = x2o_Faxa_rain_HDO (n) * flux_epbalfact ! x2o_o%rAttr(index_x2o_Faxa_rain_HDO ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_HDO ,n) * flux_epbalfact
 
-          x2o_o%rAttr(index_x2o_Faxa_prec_HDO ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_HDO ,n) + &
-               x2o_o%rAttr(index_x2o_Faxa_snow_HDO ,n)
+          x2o_Faxa_prec_HDO (n) = x2o_Faxa_rain_HDO (n) + & ! x2o_o%rAttr(index_x2o_Faxa_prec_HDO ,n) = x2o_o%rAttr(index_x2o_Faxa_rain_HDO ,n) + &
+              x2o_Faxa_snow_HDO (n) !  x2o_o%rAttr(index_x2o_Faxa_snow_HDO ,n)
        end if
     end do
-#endif 
+! #endif 
     do ko = 1,noflds
        !--- document merge ---
        if (first_time) then
@@ -1301,8 +1800,10 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        endif
 #ifdef NOTDEF
        do n = 1,lsize
-          ifrac = fractions_o%rAttr(kif,n)
-          afrac = fractions_o%rAttr(kof,n)
+          ifrac = fo_kif_ifrac(n) ! fractions_o%rAttr(kif,n)
+          afrac = fo_kof_ofrac(n) ! fractions_o%rAttr(kof,n)
+          ! ifrac = fractions_o%rAttr(kif,n)
+          ! afrac = fractions_o%rAttr(kof,n)
           frac_sum = ifrac + afrac
           if ((frac_sum) /= 0._r8) then
              ifrac = ifrac / (frac_sum)
