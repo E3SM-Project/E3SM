@@ -629,7 +629,7 @@ contains
 
 subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
-    use iMOAB , only : iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage 
+    use iMOAB , only : iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, iMOAB_SetDoubleTagStorage
     use seq_comm_mct , only : mboxid, mbox2id ! ocean and atm-ocean flux instances
     !---------------------------------------------------------------
     ! Description
@@ -1096,7 +1096,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     end if
 
     !call mct_aVect_zero(x2o_o)
-    ! replace with something else
+    ! replace with something else; make all x2o_fields 0 ? TODO
 
     !--- document copy operations ---
     if (first_time) then
@@ -1221,12 +1221,46 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
       allocate(a2x_Faxa_rainl(lsize))
       allocate(r2x_Forr_rofl(lsize))
       allocate(r2x_Forr_rofi(lsize))
-      allocate(r2x_Forr_rofl_16O(lsize))
-      allocate(r2x_Forr_rofi_16O(lsize))
-      allocate(r2x_Forr_rofl_18O(lsize))
-      allocate(r2x_Forr_rofi_18O(lsize))
-      allocate(r2x_Forr_rofl_HDO(lsize))
-      allocate(r2x_Forr_rofi_HDO(lsize))
+
+      if ( index_x2o_Foxx_rofl_16O /= 0 ) then ! also flds_wiso true
+        allocate(r2x_Forr_rofl_16O(lsize))
+        allocate(r2x_Forr_rofi_16O(lsize))
+        allocate(x2o_Foxx_rofl_16O(lsize))
+        allocate(x2o_Foxx_rofi_16O(lsize))
+        allocate(a2x_Faxa_snowc_16O(lsize))
+        allocate(a2x_Faxa_snowl_16O(lsize))
+        allocate(a2x_Faxa_rainc_16O(lsize))
+        allocate(a2x_Faxa_rainl_16O(lsize))
+        allocate(x2o_Faxa_rain_16O(lsize))
+        allocate(x2o_Faxa_snow_16O(lsize))
+        allocate(x2o_Faxa_prec_16O(lsize))
+        allocate(r2x_Forr_rofl_18O(lsize))
+        allocate(r2x_Forr_rofi_18O(lsize))
+        allocate(r2x_Forr_rofl_HDO(lsize))
+        allocate(r2x_Forr_rofi_HDO(lsize))
+        allocate(x2o_Foxx_rofl_18O(lsize))
+         allocate(x2o_Foxx_rofi_18O(lsize))
+         allocate(x2o_Foxx_rofl_HDO(lsize))
+         allocate(x2o_Foxx_rofi_HDO(lsize))
+         
+         
+         allocate(a2x_Faxa_snowc_18O(lsize))
+         allocate(a2x_Faxa_snowl_18O(lsize))
+         allocate(a2x_Faxa_rainc_18O(lsize))
+         allocate(a2x_Faxa_rainl_18O(lsize))
+         allocate(x2o_Faxa_rain_18O(lsize))
+         allocate(x2o_Faxa_snow_18O(lsize))
+         allocate(x2o_Faxa_prec_18O(lsize))
+         allocate(a2x_Faxa_snowc_HDO(lsize))
+         allocate(a2x_Faxa_snowl_HDO(lsize))
+         allocate(a2x_Faxa_rainc_HDO(lsize))
+         allocate(a2x_Faxa_rainl_HDO(lsize))
+         allocate(x2o_Faxa_rain_HDO(lsize))
+         allocate(x2o_Faxa_snow_HDO(lsize))
+         allocate(x2o_Faxa_prec_HDO(lsize))
+
+      endif
+      
       allocate(r2x_Flrr_flood(lsize))
       allocate(g2x_Fogg_rofl(lsize))
       allocate(g2x_Fogg_rofi(lsize))
@@ -1239,33 +1273,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
       allocate(x2o_Sf_afrac(lsize))
       allocate(x2o_Sf_afracr(lsize))
       allocate(x2o_Foxx_swnet_afracr(lsize))
-      allocate(x2o_Foxx_rofl_16O(lsize))
-      allocate(x2o_Foxx_rofi_16O(lsize))
-      allocate(x2o_Foxx_rofl_18O(lsize))
-      allocate(x2o_Foxx_rofi_18O(lsize))
-      allocate(x2o_Foxx_rofl_HDO(lsize))
-      allocate(x2o_Foxx_rofi_HDO(lsize))
-      allocate(a2x_Faxa_snowc_16O(lsize))
-      allocate(a2x_Faxa_snowl_16O(lsize))
-      allocate(a2x_Faxa_rainc_16O(lsize))
-      allocate(a2x_Faxa_rainl_16O(lsize))
-      allocate(x2o_Faxa_rain_16O(lsize))
-      allocate(x2o_Faxa_snow_16O(lsize))
-      allocate(x2o_Faxa_prec_16O(lsize))
-      allocate(a2x_Faxa_snowc_18O(lsize))
-      allocate(a2x_Faxa_snowl_18O(lsize))
-      allocate(a2x_Faxa_rainc_18O(lsize))
-      allocate(a2x_Faxa_rainl_18O(lsize))
-      allocate(x2o_Faxa_rain_18O(lsize))
-      allocate(x2o_Faxa_snow_18O(lsize))
-      allocate(x2o_Faxa_prec_18O(lsize))
-      allocate(a2x_Faxa_snowc_HDO(lsize))
-      allocate(a2x_Faxa_snowl_HDO(lsize))
-      allocate(a2x_Faxa_rainc_HDO(lsize))
-      allocate(a2x_Faxa_rainl_HDO(lsize))
-      allocate(x2o_Faxa_rain_HDO(lsize))
-      allocate(x2o_Faxa_snow_HDO(lsize))
-      allocate(x2o_Faxa_prec_HDO(lsize))
 
     endif
 
@@ -1384,42 +1391,208 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     if (ierr .ne. 0) then
          call shr_sys_abort(subname//' error in getting Forr_rofi field')
     endif    
-          ! allocate(r2x_Forr_rofl_16O(lsize))
-    tagname = 'Forr_rofl_16O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofl_16O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Forr_rofl_16O field')
-    endif    
-          ! allocate(r2x_Forr_rofi_16O(lsize))
-     tagname = 'Forr_rofi_16O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofi_16O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Forr_rofi_16O field')
-    endif    
-         ! allocate(r2x_Forr_rofl_18O(lsize))
-    tagname = 'Forr_rofl_18O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofl_18O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Forr_rofl_18O field')
-    endif    
-          ! allocate(r2x_Forr_rofi_18O(lsize))
-    tagname = 'Forr_rofi_18O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofi_18O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Forr_rofi_18O field')
-    endif    
-          ! allocate(r2x_Forr_rofi_18O(lsize))
-     tagname = 'Forr_rofi_18O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofi_18O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Forr_rofi_18O field')
-    endif    
-         ! allocate(r2x_Forr_rofi_HDO(lsize))
-     tagname = 'Forr_rofi_HDO'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofi_HDO)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Forr_rofi_HDO field')
-    endif    
+
+    if ( index_x2o_Foxx_rofl_16O /= 0 ) then ! also flds_wiso true
+            ! allocate(r2x_Forr_rofl_16O(lsize))
+      tagname = 'Forr_rofl_16O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofl_16O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Forr_rofl_16O field')
+      endif    
+            ! allocate(r2x_Forr_rofi_16O(lsize))
+      tagname = 'Forr_rofi_16O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofi_16O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Forr_rofi_16O field')
+      endif    
+            ! allocate(r2x_Forr_rofl_18O(lsize))
+      tagname = 'Forr_rofl_18O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofl_18O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Forr_rofl_18O field')
+      endif    
+            ! allocate(r2x_Forr_rofi_18O(lsize))
+      tagname = 'Forr_rofi_18O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofi_18O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Forr_rofi_18O field')
+      endif    
+            ! allocate(r2x_Forr_rofi_18O(lsize))
+      tagname = 'Forr_rofi_18O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofi_18O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Forr_rofi_18O field')
+      endif    
+            ! allocate(r2x_Forr_rofi_HDO(lsize))
+      tagname = 'Forr_rofi_HDO'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Forr_rofi_HDO)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Forr_rofi_HDO field')
+      endif    
+      ! allocate(x2o_Foxx_rofl_16O(lsize))
+      tagname = 'Foxx_rofl_16O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofl_16O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Foxx_rofl_16O field')
+      endif    
+            ! allocate(x2o_Foxx_rofi_16O(lsize))
+      tagname = 'Foxx_rofi_16O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofi_16O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Foxx_rofi_16O field')
+      endif    
+            ! allocate(x2o_Foxx_rofl_18O(lsize))
+      tagname = 'Foxx_rofl_18O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofl_18O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Foxx_rofl_18O field')
+      endif    
+            ! allocate(x2o_Foxx_rofi_18O(lsize))
+      tagname = 'Foxx_rofi_18O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofi_18O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Foxx_rofi_18O field')
+      endif    
+            ! allocate(x2o_Foxx_rofl_HDO(lsize))
+      tagname = 'Foxx_rofl_HDO'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofl_HDO)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Foxx_rofl_HDO field')
+      endif    
+            ! allocate(x2o_Foxx_rofi_HDO(lsize))
+      tagname = 'Foxx_rofi_HDO'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofi_HDO)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Foxx_rofi_HDO field')
+      endif    
+            ! allocate(a2x_Faxa_snowc_16O(lsize))
+      tagname = 'Faxa_snowc_16O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowc_16O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_snowc_16O field')
+      endif    
+            ! allocate(a2x_Faxa_snowl_16O(lsize))
+      tagname = 'Faxa_snowl_16O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowl_16O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_snowl_16O field')
+      endif    
+            ! allocate(a2x_Faxa_rainc_16O(lsize))
+      tagname = 'Faxa_rainc_16O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainc_16O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_rainc_16O field')
+      endif    
+            ! allocate(a2x_Faxa_rainl_16O(lsize))
+      tagname = 'Faxa_rainl_16O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainl_16O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_rainl_16O field')
+      endif    
+            ! allocate(x2o_Faxa_rain_16O(lsize))
+      tagname = 'Faxa_rain_16O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_rain_16O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_rain_16O field')
+      endif    
+            ! allocate(x2o_Faxa_snow_16O(lsize))
+      tagname = 'Faxa_snow_16O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_snow_16O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_snow_16O field')
+      endif    
+            ! allocate(x2o_Faxa_prec_16O(lsize))
+      tagname = 'Faxa_prec_16O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_prec_16O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_prec_16O field')
+      endif    
+            ! allocate(a2x_Faxa_snowc_18O(lsize))
+      tagname = 'Faxa_snowc_18O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowc_18O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_snowc_18O field')
+      endif    
+            ! allocate(a2x_Faxa_snowl_18O(lsize))
+      tagname = 'Faxa_snowl_18O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowl_18O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_snowl_18O field')
+      endif    
+            ! allocate(a2x_Faxa_rainc_18O(lsize))
+      tagname = 'Faxa_rainc_18O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainc_18O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_rainc_18O field')
+      endif    
+            ! allocate(a2x_Faxa_rainl_18O(lsize))
+      tagname = 'Faxa_rainl_18O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainl_18O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_rainl_18O field')
+      endif    
+            ! allocate(x2o_Faxa_rain_18O(lsize))
+      tagname = 'Faxa_rain_18O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_rain_18O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_rain_18O field')
+      endif    
+            ! allocate(x2o_Faxa_snow_18O(lsize))
+      tagname = 'Faxa_snow_18O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_snow_18O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_snow_18O field')
+      endif    
+            ! allocate(x2o_Faxa_prec_18O(lsize))
+      tagname = 'Faxa_prec_18O'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_prec_18O)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_prec_18O field')
+      endif        
+      ! allocate(a2x_Faxa_snowc_HDO(lsize))
+            tagname = 'Faxa_snowc_HDO'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowc_HDO)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_snowc_HDO field')
+      endif    
+      ! allocate(a2x_Faxa_snowl_HDO(lsize))
+      tagname = 'Faxa_snowl_HDO'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowl_HDO)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_snowl_HDO field')
+      endif    
+            ! allocate(a2x_Faxa_rainc_HDO(lsize))
+      tagname = 'Faxa_rainc_HDO'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainc_HDO)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_rainc_HDO field')
+      endif    
+            ! allocate(a2x_Faxa_rainl_HDO(lsize))
+         tagname = 'Faxa_rainl_HDO'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainl_HDO)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_rainl_HDO field')
+      endif    
+         ! allocate(x2o_Faxa_rain_HDO(lsize))
+         tagname = 'Faxa_rain_HDO'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_rain_HDO)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_rain_HDO field')
+      endif    
+         ! allocate(x2o_Faxa_snow_HDO(lsize))
+      tagname = 'Faxa_snow_HDO'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_snow_HDO)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_snow_HDO field')
+      endif         
+      ! allocate(x2o_Faxa_prec_HDO(lsize))
+         tagname = 'Faxa_prec_HDO'//C_NULL_CHAR
+      ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_prec_HDO)
+      if (ierr .ne. 0) then
+            call shr_sys_abort(subname//' error in getting Faxa_prec_HDO field')
+      endif    
+
+    endif
          ! allocate(r2x_Flrr_flood(lsize))
     tagname = 'Flrr_flood'//C_NULL_CHAR
     ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, r2x_Flrr_flood)
@@ -1438,223 +1611,8 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
    !  if (ierr .ne. 0) then
    !       call shr_sys_abort(subname//' error in getting Faxa_swndf field')
    ! endif    
-      ! allocate(x2o_Foxx_swnet(lsize))
-    tagname = 'Foxx_swnet'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_swnet)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Foxx_swnet field')
-    endif    
-          ! allocate(x2o_Faxa_snow(lsize))
-    tagname = 'Faxa_snow'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_snow)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_snow field')
-    endif    
-          ! allocate(x2o_Faxa_rain(lsize))
-    tagname = 'Faxa_rain'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_rain)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_rain field')
-    endif    
-          ! allocate(x2o_Faxa_prec(lsize))
-    tagname = 'Faxa_prec'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_prec)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_prec field')
-    endif    
-          ! allocate(x2o_Foxx_rofl(lsize))
-    tagname = 'Foxx_rofl'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofl)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Foxx_rofl field')
-    endif    
-          ! allocate(x2o_Foxx_rofi(lsize))
-    tagname = 'Foxx_rofi'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofi)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Foxx_rofi field')
-    endif    
-          ! allocate(x2o_Sf_afrac(lsize))
-    tagname = 'Sf_afrac'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Sf_afrac)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Sf_afrac field')
-    endif    
-          ! allocate(x2o_Sf_afracr(lsize))
-    tagname = 'Sf_afracr'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Sf_afracr)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Sf_afracr field')
-    endif    
-          ! allocate(x2o_Foxx_swnet_afracr(lsize))
-    tagname = 'Foxx_swnet_afracr'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_swnet_afracr)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Foxx_swnet_afracr field')
-    endif    
-          ! allocate(x2o_Foxx_rofl_16O(lsize))
-    tagname = 'Foxx_rofl_16O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofl_16O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Foxx_rofl_16O field')
-    endif    
-          ! allocate(x2o_Foxx_rofi_16O(lsize))
-     tagname = 'Foxx_rofi_16O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofi_16O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Foxx_rofi_16O field')
-    endif    
-         ! allocate(x2o_Foxx_rofl_18O(lsize))
-     tagname = 'Foxx_rofl_18O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofl_18O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Foxx_rofl_18O field')
-    endif    
-         ! allocate(x2o_Foxx_rofi_18O(lsize))
-    tagname = 'Foxx_rofi_18O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofi_18O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Foxx_rofi_18O field')
-    endif    
-          ! allocate(x2o_Foxx_rofl_HDO(lsize))
-    tagname = 'Foxx_rofl_HDO'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofl_HDO)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Foxx_rofl_HDO field')
-    endif    
-          ! allocate(x2o_Foxx_rofi_HDO(lsize))
-    tagname = 'Foxx_rofi_HDO'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofi_HDO)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Foxx_rofi_HDO field')
-    endif    
-          ! allocate(a2x_Faxa_snowc_16O(lsize))
-     tagname = 'Faxa_snowc_16O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowc_16O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_snowc_16O field')
-    endif    
-         ! allocate(a2x_Faxa_snowl_16O(lsize))
-    tagname = 'Faxa_snowl_16O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowl_16O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_snowl_16O field')
-    endif    
-          ! allocate(a2x_Faxa_rainc_16O(lsize))
-    tagname = 'Faxa_rainc_16O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainc_16O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_rainc_16O field')
-    endif    
-          ! allocate(a2x_Faxa_rainl_16O(lsize))
-    tagname = 'Faxa_rainl_16O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainl_16O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_rainl_16O field')
-    endif    
-          ! allocate(x2o_Faxa_rain_16O(lsize))
-     tagname = 'Faxa_rain_16O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_rain_16O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_rain_16O field')
-    endif    
-         ! allocate(x2o_Faxa_snow_16O(lsize))
-    tagname = 'Faxa_snow_16O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_snow_16O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_snow_16O field')
-    endif    
-          ! allocate(x2o_Faxa_prec_16O(lsize))
-    tagname = 'Faxa_prec_16O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_prec_16O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_prec_16O field')
-    endif    
-          ! allocate(a2x_Faxa_snowc_18O(lsize))
-    tagname = 'Faxa_snowc_18O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowc_18O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_snowc_18O field')
-    endif    
-          ! allocate(a2x_Faxa_snowl_18O(lsize))
-    tagname = 'Faxa_snowl_18O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowl_18O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_snowl_18O field')
-    endif    
-          ! allocate(a2x_Faxa_rainc_18O(lsize))
-    tagname = 'Faxa_rainc_18O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainc_18O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_rainc_18O field')
-    endif    
-          ! allocate(a2x_Faxa_rainl_18O(lsize))
-    tagname = 'Faxa_rainl_18O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainl_18O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_rainl_18O field')
-    endif    
-          ! allocate(x2o_Faxa_rain_18O(lsize))
-    tagname = 'Faxa_rain_18O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_rain_18O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_rain_18O field')
-    endif    
-          ! allocate(x2o_Faxa_snow_18O(lsize))
-     tagname = 'Faxa_snow_18O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_snow_18O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_snow_18O field')
-    endif    
-         ! allocate(x2o_Faxa_prec_18O(lsize))
-     tagname = 'Faxa_prec_18O'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_prec_18O)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_prec_18O field')
-    endif        
-     ! allocate(a2x_Faxa_snowc_HDO(lsize))
-         tagname = 'Faxa_snowc_HDO'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowc_HDO)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_snowc_HDO field')
-    endif    
-     ! allocate(a2x_Faxa_snowl_HDO(lsize))
-    tagname = 'Faxa_snowl_HDO'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_snowl_HDO)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_snowl_HDO field')
-    endif    
-          ! allocate(a2x_Faxa_rainc_HDO(lsize))
-    tagname = 'Faxa_rainc_HDO'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainc_HDO)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_rainc_HDO field')
-    endif    
-          ! allocate(a2x_Faxa_rainl_HDO(lsize))
-        tagname = 'Faxa_rainl_HDO'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, a2x_Faxa_rainl_HDO)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_rainl_HDO field')
-    endif    
-      ! allocate(x2o_Faxa_rain_HDO(lsize))
-       tagname = 'Faxa_rain_HDO'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_rain_HDO)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_rain_HDO field')
-    endif    
-       ! allocate(x2o_Faxa_snow_HDO(lsize))
-     tagname = 'Faxa_snow_HDO'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_snow_HDO)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_snow_HDO field')
-    endif         
-    ! allocate(x2o_Faxa_prec_HDO(lsize))
-       tagname = 'Faxa_prec_HDO'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_prec_HDO)
-    if (ierr .ne. 0) then
-         call shr_sys_abort(subname//' error in getting Faxa_prec_HDO field')
-    endif    
-
+  
+    
 ! #ifdef NOTDEF
     
     do n = 1,lsize
@@ -1798,6 +1756,64 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
              end if
           end if
        endif
+
+!
+  !   all x2o vars needs to be set, not get, after calculations !
+    ! allocate(x2o_Foxx_swnet(lsize))
+    tagname = 'Foxx_swnet'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_swnet)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Foxx_swnet field')
+    endif    
+          ! allocate(x2o_Faxa_snow(lsize))
+    tagname = 'Faxa_snow'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_snow)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_snow field')
+    endif    
+          ! allocate(x2o_Faxa_rain(lsize))
+    tagname = 'Faxa_rain'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_rain)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_rain field')
+    endif    
+          ! allocate(x2o_Faxa_prec(lsize))
+    tagname = 'Faxa_prec'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Faxa_prec)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Faxa_prec field')
+    endif    
+          ! allocate(x2o_Foxx_rofl(lsize))
+    tagname = 'Foxx_rofl'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofl)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Foxx_rofl field')
+    endif    
+          ! allocate(x2o_Foxx_rofi(lsize))
+    tagname = 'Foxx_rofi'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_rofi)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Foxx_rofi field')
+    endif    
+          ! allocate(x2o_Sf_afrac(lsize))
+    tagname = 'Sf_afrac'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Sf_afrac)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Sf_afrac field')
+    endif    
+          ! allocate(x2o_Sf_afracr(lsize))
+    tagname = 'Sf_afracr'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Sf_afracr)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Sf_afracr field')
+    endif    
+          ! allocate(x2o_Foxx_swnet_afracr(lsize))
+    tagname = 'Foxx_swnet_afracr'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, lsize , ent_type, x2o_Foxx_swnet_afracr)
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting Foxx_swnet_afracr field')
+    endif    
+   
 #ifdef NOTDEF
        do n = 1,lsize
           ifrac = fo_kif_ifrac(n) ! fractions_o%rAttr(kif,n)
