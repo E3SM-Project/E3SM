@@ -3366,16 +3366,16 @@ do_newnuc_if_block50: &
             accom_coef_gas(igas), gas_diffus(igas), gas_freepath(igas), &
             0.0_r8, ntot_amode, dgn_awet, alnsg_aer, uptkrate )
 
-         iaer = igas
+         !iaer = igas  !QZR -
          do n = 1, ntot_amode
-            if ( lmap_aer(iaer,n) > 0 .or. & 
-                 mode_aging_optaa(n) > 0 ) then
+            !if ( lmap_aer(iaer,n) > 0 .or. & 
+             !    mode_aging_optaa(n) > 0 ) then !QZR -
                ! uptkrate is for number = 1 #/m3, so mult. by number conc. (#/m3)
                uptkaer(igas,n) = uptkrate(n) * (qnum_cur(n) * aircon)
-            else
+            !else !QZR -
                ! mode does not contain this species
-               uptkaer(igas,n) = 0.0_r8
-            end if
+               !uptkaer(igas,n) = 0.0_r8 !QZR -
+            !end if !QZR -
          end do
       end do ! igas
 
@@ -6386,17 +6386,19 @@ implicit none
 
 
 ! gas-->aer condensation and resulting aging
-      do igas = 1, ngas
+      do igas = 1, ngas_cond !ngas !QZR 
          lmz = lmap_gas(igas)
          if (lmz <= 0) cycle
          do_q_coltendaa(lmz,iqtend_cond) = .true.
-         iaer = igas
+      end do ! igas !QZR +
+      do iaer = 1, naer_cond !QZR +
+         !iaer = igas !QZR -
          do n = 1, ntot_amode
             lmz = lmap_aer(iaer,n)
             if (lmz <= 0) cycle
             do_q_coltendaa(lmz,iqtend_cond) = .true.
          end do ! n
-      end do ! igas
+      end do ! iaer !QZR !end do ! igas
 
 #if ( defined MOSAIC_SPECIES )
       if (iaer_co3 > 0) then
