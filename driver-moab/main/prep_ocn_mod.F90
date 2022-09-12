@@ -146,6 +146,11 @@ module prep_ocn_mod
 #ifdef MOABDEBUG
   integer :: number_proj ! it is a static variable, used to count the number of projections
 #endif
+  real (kind=r8) , allocatable, private :: x2o_om (:,:)
+  real (kind=r8) , allocatable, private :: a2x_om (:,:)
+  real (kind=r8) , allocatable, private :: i2x_om (:,:)
+  real (kind=r8) , allocatable, private :: r2x_om (:,:)
+  real (kind=r8) , allocatable, private :: xao_om (:,:)
 
   logical                  :: iamin_CPLALLICEID     ! pe associated with CPLALLICEID
 contains
@@ -659,7 +664,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     integer  :: n,ka,ki,ko,kr,kw,kx,kir,kor,i,i1,o1
     integer  :: kof,kif
     integer  :: lsize, arrsize ! for double arrays 
-    integer  :: noflds,naflds,niflds,nrflds,nxflds!  ,ngflds,nwflds, no glacier or wave model
+    integer , save :: noflds,naflds,niflds,nrflds,nxflds!  ,ngflds,nwflds, no glacier or wave model
     real(r8) :: ifrac,ifracr
     real(r8) :: afrac,afracr
     real(r8) :: frac_sum
@@ -830,11 +835,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
   real (kind=r8) , allocatable, save :: fo_kof_ofrac(:) ! ofrac from ocean instance
   real (kind=r8) , allocatable, save :: fo_kir_ifrad(:) ! ifrad from ocean instance
   real (kind=r8) , allocatable, save :: fo_kor_ofrad(:) ! ofrad from ocean instance
-  real (kind=r8) , allocatable, save :: x2o_om (:,:)
-  real (kind=r8) , allocatable, save :: a2x_om (:,:)
-  real (kind=r8) , allocatable, save :: i2x_om (:,:)
-  real (kind=r8) , allocatable, save :: r2x_om (:,:)
-  real (kind=r8) , allocatable, save :: xao_om (:,:)
+  
 
   ! number of primary cells will be local size for all these arrays
 
@@ -845,35 +846,39 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
          flux_epbalfact=flux_epbalfact)
 
     call seq_comm_setptrs(CPLID, iamroot=iamroot)
-
+    
+ ! find out the number of local elements in moab mesh ocean instance on coupler
     ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC );
     if (ierr .ne. 0) then
          write(logunit,*) subname,' error in getting info '
          call shr_sys_abort(subname//' error in getting info ')
     endif
     lsize = nvise(1) ! number of active cells
+    
 
     if (first_time) then
-       ! find out the number of local elements in moab mesh ocean instance on coupler
+      
        ! mct avs are used just for their fields metadata, not the actual reals 
        ! (name of the fields)
+       ! need these always, not only the first time
+      a2x_o => a2x_ox(1)
+      i2x_o => i2x_ox(1)
+      r2x_o => r2x_ox(1)
+      xao_o => xao_ox(1) 
+      x2o_o => component_get_x2c_cx(ocn(1))
+      noflds = mct_aVect_nRattr(x2o_o) ! these are saved after first time
+      naflds = mct_aVect_nRattr(a2x_o)
+      niflds = mct_aVect_nRattr(i2x_o)
+      nrflds = mct_aVect_nRattr(r2x_o)
+   !nwflds = mct_aVect_nRattr(w2x_o)
+      nxflds = mct_aVect_nRattr(xao_o)
        
-       a2x_o => a2x_ox(1)
-       i2x_o => i2x_ox(1)
-       r2x_o => r2x_ox(1)
-       xao_o => xao_ox(1) 
-       x2o_o => component_get_x2c_cx(ocn(1))
        
        ! x2o_o => x2o_ox(1) 
        ! 
 
     
-       noflds = mct_aVect_nRattr(x2o_o)
-       naflds = mct_aVect_nRattr(a2x_o)
-       niflds = mct_aVect_nRattr(i2x_o)
-       nrflds = mct_aVect_nRattr(r2x_o)
-      !nwflds = mct_aVect_nRattr(w2x_o)
-       nxflds = mct_aVect_nRattr(xao_o)
+       
        !ngflds = mct_aVect_nRattr(g2x_o)
        allocate (x2o_om (lsize, noflds))
        allocate (a2x_om (lsize, naflds))
@@ -1828,14 +1833,14 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     endif
 
     tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
-    arrsize = naflds * lsize !        allocate (r2x_om (lsize, nrflds))
+    arrsize = nrflds * lsize !        allocate (r2x_om (lsize, nrflds))
     ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, r2x_om(1,1))
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting r2x_om array ')
     endif
       
     tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
-    arrsize = nxflds * lsize !        allocate (xao_om (lsize, nrflds))
+    arrsize = nxflds * lsize !        allocate (xao_om (lsize, nxflds))
     ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, arrsize , ent_type, xao_om(1,1))
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in getting xao_om array ')
