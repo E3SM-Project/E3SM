@@ -2940,56 +2940,87 @@ contains
 !
 !-----------------------------------------------------------------------
 
-    subroutine ocn_compute_KPP_input_fields(statePool, forcingPool, meshPool, timeLevelIn)!{{{
+    subroutine ocn_compute_KPP_input_fields(statePool, forcingPool, &
+                                            meshPool, timeLevelIn)!{{{
 
-      type (mpas_pool_type), intent(in) :: statePool !< Input/Output: State information
-      type (mpas_pool_type), intent(in) :: forcingPool !< Input: Forcing information
-      type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
-      integer, intent(in), optional :: timeLevelIn
+      !-----------------------------------------------------------------
+      ! Input variables
+      !-----------------------------------------------------------------
 
-      ! pool pointers
-      type (mpas_pool_type), pointer :: tracersSurfaceFluxPool
-      type (mpas_pool_type), pointer :: tracersPool
+      type (mpas_pool_type), intent(in) :: &
+         statePool,  &!< [in] State information
+         meshPool,   &!< [in] Mesh information (for pass to eq state)
+         forcingPool  !< [in] Forcing information
 
-      ! scalars
-      integer :: nCells
+      integer, intent(in), optional :: &
+         timeLevelIn  !< [in] optional time level for state variables
 
-      ! real pointers
-      real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, surfaceThicknessFlux, &
-           surfaceThicknessFluxRunoff, rainTemperatureFlux, evapTemperatureFlux, &
-           icebergTemperatureFlux, seaIceTemperatureFlux
+      !-----------------------------------------------------------------
+      ! Local variables
+      !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:), pointer :: surfaceStress, surfaceStressMagnitude
+      integer :: &
+         iCell, iEdge, i, &! loop indices for cell, edge, neighbors
+         kmin,            &! topmost active cell index
+         nCells,          &! number of cells
+         err,             &! local error code
+         indexTempFlux,   &! index of temperature in tracer array
+         indexSaltFlux,   &! index of salinity    in tracer array
+         timeLevel         ! time level for state variables (default 1)
+
+      real (kind=RKIND) :: &
+         fracAbsorbed,       &! fraction of sfc flux absorbed
+         fracAbsorbedRunoff, &! same for runoff
+         sumSurfaceStressSquared ! sum of sfc stress squared
+
+      ! pointers for variable/pool retrievals
+      type (mpas_pool_type), pointer :: &
+         tracersSurfaceFluxPool, &! pool of tracer surface fluxes
+         tracersPool              ! pool of tracers
+
+      real (kind=RKIND), dimension(:), pointer :: &
+         penetrativeTemperatureFlux, &! various sfc flux components
+         surfaceThicknessFlux, &
+         surfaceThicknessFluxRunoff, &
+         rainTemperatureFlux, &
+         evapTemperatureFlux, &
+         icebergTemperatureFlux, &
+         seaIceTemperatureFlux, &
+         surfaceStress, &
+         surfaceStressMagnitude
+
       real (kind=RKIND), dimension(:,:), pointer ::  &
-           layerThickness, &
-           normalVelocity, activeTracersSurfaceFlux, &
-           activeTracersSurfaceFluxRunoff, nonLocalSurfaceTracerFlux
+         layerThickness,           &! layer thickness
+         normalVelocity,           &! normal velocity
+         activeTracersSurfaceFlux, &! sfc flux of active tracers (T,S)
+         activeTracersSurfaceFluxRunoff, &! flx of tracers in runoff
+         nonLocalSurfaceTracerFlux  ! non-local flux of tracers
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
-           activeTracers
+         activeTracers  ! array of active tracers
 
-      ! local
-      integer :: iCell, iEdge, i, err, timeLevel
-      integer, pointer :: indexTempFlux, indexSaltFlux
-      real (kind=RKIND) :: turbulentVelocitySquared, fracAbsorbed, fracAbsorbedRunoff
-      real (kind=RKIND) :: sumSurfaceStressSquared
+      integer, pointer :: &
+         indexTempFluxPtr, indexSaltFluxPtr
 
       ! Scratch Arrays
-      ! densitySurfaceDisplaced: Density computed by displacing SST and SSS to every vertical
-      !                          layer within the column
-      !                   units: kg m^{-3}
-      real (kind=RKIND), dimension(:,:), allocatable :: densitySurfaceDisplaced
-#ifdef MPAS_OPENACC
-      !$acc declare device_resident(densitySurfaceDisplaced)
-#endif
-      ! thermalExpansionCoeff: Thermal expansion coefficient (alpha), defined as $-1/\rho
-      !                        d\rho/dT$ (note negative sign)
-      !                 units: C^{-1}
-      real (kind=RKIND), dimension(:,:), allocatable :: thermalExpansionCoeff
-      ! salineContractionCoeff: Saline contraction coefficient (beta), defined as $1/\rho
-      !                         d\rho/dS$.  This is also called the haline contraction coefficient.
-      !                  units: PSU^{-1}
-      real (kind=RKIND), dimension(:,:), allocatable :: salineContractionCoeff
+      ! densitySurfaceDisplaced: Density computed by displacing SST
+      !    and SSS to every vertical layer within the column
+      !    units: kg m^{-3}
+      ! thermalExpansionCoeff: Thermal expansion coefficient (alpha),
+      !    defined as $-1/\rho d\rho/dT$ (note negative sign)
+      !    units: C^{-1}
+      ! salineContractionCoeff: Saline contraction coefficient (beta),
+      !    defined as $1/\rho d\rho/dS$.  This is also called the
+      !    haline contraction coefficient.  units: PSU^{-1}
+
+      real (kind=RKIND), dimension(:,:), allocatable :: &
+         densitySurfaceDisplaced, &
+         thermalExpansionCoeff,   &
+         salineContractionCoeff
+
+      ! End preamble
+      !-----------------------------------------------------------------
+      ! Begin code
 
       call mpas_timer_start('KPP input fields')
 
@@ -2999,34 +3030,55 @@ contains
          timeLevel = 1
       end if
 
-      call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
+      ! Retrieve variables from pool
+      call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', &
+                                               tracersSurfaceFluxPool)
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-      call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
-      ! set the parameter turbulentVelocitySquared
-      turbulentVelocitySquared = 0.001_RKIND
 
-      ! set scalar values
-      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_temperatureSurfaceFlux', indexTempFlux)
-      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_salinitySurfaceFlux', indexSaltFlux)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, &
+                                  'index_temperatureSurfaceFlux', &
+                                   indexTempFluxPtr)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, &
+                                  'index_salinitySurfaceFlux', &
+                                   indexSaltFluxPtr)
+      indexTempFlux = indexTempFluxPtr
+      indexSaltFlux = indexSaltFluxPtr
 
-      ! set pointers into state, mesh, diagnostics and scratch
-      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
-      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
+      call mpas_pool_get_array(tracersSurfaceFluxPool, &
+                              'nonLocalSurfaceTracerFlux', &
+                               nonLocalSurfaceTracerFlux)
+      call mpas_pool_get_array(tracersSurfaceFluxPool, &
+                              'activeTracersSurfaceFlux', &
+                               activeTracersSurfaceFlux)
+      call mpas_pool_get_array(tracersSurfaceFluxPool, &
+                              'activeTracersSurfaceFluxRunoff', &
+                               activeTracersSurfaceFluxRunoff)
 
-      call mpas_pool_get_array(tracersSurfaceFluxPool, 'nonLocalSurfaceTracerFlux', nonLocalSurfaceTracerFlux)
+      call mpas_pool_get_array(tracersPool, 'activeTracers', &
+                                             activeTracers, timeLevel)
+      call mpas_pool_get_array(statePool, 'normalVelocity', &
+                                           normalVelocity, timeLevel)
+      call mpas_pool_get_array(statePool, 'layerThickness', &
+                                           layerThickness, timeLevel)
 
-      call mpas_pool_get_array(forcingPool, 'surfaceThicknessFlux', surfaceThicknessFlux)
-      call mpas_pool_get_array(forcingPool, 'surfaceThicknessFluxRunoff', surfaceThicknessFluxRunoff)
-      call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
-      call mpas_pool_get_array(forcingPool, 'surfaceStress', surfaceStress)
-      call mpas_pool_get_array(forcingPool, 'surfaceStressMagnitude', surfaceStressMagnitude)
-      call mpas_pool_get_array(forcingPool, 'rainTemperatureFlux', rainTemperatureFlux)
-      call mpas_pool_get_array(forcingPool, 'evapTemperatureFlux', evapTemperatureFlux)
-      call mpas_pool_get_array(forcingPool, 'seaIceTemperatureFlux', seaIceTemperatureFlux)
-      call mpas_pool_get_array(forcingPool, 'icebergTemperatureFlux', icebergTemperatureFlux)
-      call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
-      call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
-      call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFluxRunoff', activeTracersSurfaceFluxRunoff)
+      call mpas_pool_get_array(forcingPool, 'surfaceThicknessFlux', &
+                                             surfaceThicknessFlux)
+      call mpas_pool_get_array(forcingPool, 'surfaceThicknessFluxRunoff', &
+                                             surfaceThicknessFluxRunoff)
+      call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', &
+                                             penetrativeTemperatureFlux)
+      call mpas_pool_get_array(forcingPool, 'surfaceStress', &
+                                             surfaceStress)
+      call mpas_pool_get_array(forcingPool, 'surfaceStressMagnitude', &
+                                             surfaceStressMagnitude)
+      call mpas_pool_get_array(forcingPool, 'rainTemperatureFlux', &
+                                             rainTemperatureFlux)
+      call mpas_pool_get_array(forcingPool, 'evapTemperatureFlux', &
+                                             evapTemperatureFlux)
+      call mpas_pool_get_array(forcingPool, 'seaIceTemperatureFlux', &
+                                             seaIceTemperatureFlux)
+      call mpas_pool_get_array(forcingPool, 'icebergTemperatureFlux', &
+                                             icebergTemperatureFlux)
 
       ! allocate scratch space displaced density computation
       ncells = nCellsAll
@@ -3034,95 +3086,125 @@ contains
       allocate(densitySurfaceDisplaced(nVertLevels, nCells), &
                thermalExpansionCoeff(nVertLevels, nCells), &
                salineContractionCoeff(nVertLevels, nCells))
+      !$acc enter data create(thermalExpansionCoeff,  &
+      !$acc                   salineContractionCoeff, &
+      !$acc                   densitySurfaceDisplaced)
 
       ! Only need to compute over the 0 and 1 halos
       nCells = nCellsHalo( 2 )
 
-#ifdef MPAS_OPENACC
-      !$acc enter data create(thermalExpansionCoeff,   &
-      !$acc                   salineContractionCoeff)
-#endif
+      ! compute displaced density defined as density computed
+      ! from T, S that have been displaced (adiabatically) from surface
 
-      ! compute EOS by displacing SST/SSS to every vertical layer in column
+      call ocn_equation_of_state_density(statePool, meshPool, &
+                          activeTracers, tracersSurfaceValue, &
+                          nCells, 0, 'surfaceDisplaced', &
+                          densitySurfaceDisplaced, err, &
+                          thermalExpansionCoeff, &
+                          salineContractionCoeff, timeLevel)
 
-      ! inputs: activeTracers, tracersSurfaceValue,maxLevelCell,refBottomDepth 
-      ! outputs: densitySurfaceDisplayed, thermalExpansionCoeff, salineContractionCoeff
-      call ocn_equation_of_state_density(statePool, meshPool, activeTracers, tracersSurfaceValue, &
-                                         nCells, 0, 'surfaceDisplaced', densitySurfaceDisplaced, &
-                                         err, thermalExpansionCoeff, salineContractionCoeff, &
-                                         timeLevel)
+      !$acc exit data copyout(thermalExpansionCoeff,  &
+      !$acc                   salineContractionCoeff, &
+      !$acc                   densitySurfaceDisplaced)
 
-#ifdef MPAS_OPENACC
-      !$acc exit data copyout(thermalExpansionCoeff,   &
-      !$acc                   salineContractionCoeff)
-#endif
+      ! compute surface buoyancy forcing based on surface fluxes of
+      ! mass, temperature, salinity and frazil (frazil to be added later)
+      ! since this computation is confusing, variables, units and sign
+      ! convention is repeated here
+      ! everything below should be consistent with that specified in
+      !   Registry and with the CVMix/KPP documentation:
+      !    https://www.dropbox.com/s/6hqgc0rsoa828nf/cvmix_20aug2013.pdf
+      !
+      ! surfaceThicknessFlux: surface mass flux, m/s, positive into ocean
+      ! activeTracersSurfaceFlux(indexTempFlux): non-penetrative
+      !    temperature flux, C m/s, positive into ocean
+      ! penetrativeTemperatureFlux: penetrative surface temperature
+      !    flux at ocean surface, positive into ocean
+      ! activeTracersSurfaceFlux(indexSaltFlux): salinity flux, PSU m/s,
+      !    positive into ocean
+      ! penetrativeTemperatureFluxOBL: penetrative temperature flux
+      !    computed at z=OBL, positive down
+      !
+      ! note: the following fields used the CVMix/KPP computation of
+      !    buoyancy forcing are not included here
+      !    1. Tm: temperature associated with surfaceThicknessFlux,
+      !           C  (here we assume Tm == temperatureSurfaceValue)
+      !    2. Sm: salinity associated with surfaceThicknessFlux, PSU 
+      !           (here we assume Sm == salinitySurfaceValue and
+      !            account for salinity flux in
+      !            activeTracersSurfaceFlux array)
+      !
 
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp private(fracAbsorbed, fracAbsorbedRunoff, sumSurfaceStressSquared, i, iEdge)
+      !$omp private(kmin, fracAbsorbed, fracAbsorbedRunoff, &
+      !$omp         sumSurfaceStressSquared, i, iEdge)
       do iCell = 1, nCells
-         ! compute surface buoyancy forcing based on surface fluxes of mass, temperature, salinity and frazil
-         !                                (frazil to be added later)
-         ! since this computation is confusing, variables, units and sign convention is repeated here
-         ! everything below should be consistent with that specified in Registry
-         ! everything below should be consistent with the CVMix/KPP documentation:
-         !           https://www.dropbox.com/s/6hqgc0rsoa828nf/cvmix_20aug2013.pdf
-         !
-         !    surfaceThicknessFlux: surface mass flux, m/s, positive into ocean
-         !    activeTracersSurfaceFlux(indexTempFlux): non-penetrative temperature flux, C m/s, positive into ocean
-         !    penetrativeTemperatureFlux: penetrative surface temperature flux at ocean surface, positive into ocean
-         !    activeTracersSurfaceFlux(indexSaltFlux): salinity flux, PSU m/s, positive into ocean
-         !    penetrativeTemperatureFluxOBL: penetrative temperature flux computed at z=OBL, positive down
-         !
-         ! note: the following fields used the CVMix/KPP computation of buoyancy forcing are not included here
-         !    1. Tm: temperature associated with surfaceThicknessFlux, C  (here we assume Tm == temperatureSurfaceValue)
-         !    2. Sm: salinity associated with surfaceThicknessFlux, PSU (here we assume Sm == salinitySurfaceValue and account for
-         !           salinity flux in activeTracersSurfaceFlux array)
-         !
 
+         kmin = minLevelCell(iCell)
          ! Compute fraction of thickness flux that is in the top model layer
-         fracAbsorbed = 1.0_RKIND - exp( max(-layerThickness(minLevelCell(iCell), iCell) / config_flux_attenuation_coefficient, -100.0_RKIND) )
-         fracAbsorbedRunoff = 1.0_RKIND - exp( max(-layerThickness(minLevelCell(iCell), iCell) / config_flux_attenuation_coefficient_runoff, &
-                              -100.0_RKIND) )
-         ! Store the total tracer flux below in nonLocalSurfaceTemperatureFlux for use in the CVMix nonlocal
-         ! transport code.  This includes tracer forcing due to thickness
+         fracAbsorbed = 1.0_RKIND &
+                      - exp( max(-100.0_RKIND, &
+                                 -layerThickness(kmin, iCell)/ &
+                           config_flux_attenuation_coefficient))
+         fracAbsorbedRunoff = 1.0_RKIND &
+                      - exp( max(-100.0_RKIND, &
+                                 -layerThickness(kmin, iCell)/ &
+                           config_flux_attenuation_coefficient_runoff))
 
-         nonLocalSurfaceTracerFlux(indexTempFlux, iCell) = activeTracersSurfaceFlux(indexTempFlux,iCell) &
-                 + penetrativeTemperatureFlux(iCell) - penetrativeTemperatureFluxOBL(iCell)  &
-                 - fracAbsorbed * (rainTemperatureFlux(iCell) + evapTemperatureFlux(iCell) + &
-                                   seaIceTemperatureFlux(iCell) + icebergTemperatureFlux(iCell)) &
-                 - fracAbsorbedRunoff * activeTracersSurfaceFluxRunoff(indexTempFlux, iCell)
+         ! Store the total tracer flux below in
+         ! nonLocalSurfaceTemperatureFlux for use in the CVMix nonlocal
+         ! transport code. This includes tracer forcing due to thickness
 
-         nonLocalSurfaceTracerFlux(indexSaltFlux,iCell) = activeTracersSurfaceFlux(indexSaltFlux,iCell) &
-                 - fracAbsorbed * surfaceThicknessFlux(iCell) * activeTracers(indexSaltFlux,minLevelCell(iCell),iCell) &
-                 - fracAbsorbedRunoff * surfaceThicknessFluxRunoff(iCell) * activeTracers(indexSaltFlux,minLevelCell(iCell),iCell)
+         nonLocalSurfaceTracerFlux(indexTempFlux, iCell) = &
+                   activeTracersSurfaceFlux(indexTempFlux,iCell) &
+                 + penetrativeTemperatureFlux(iCell) &
+                 - penetrativeTemperatureFluxOBL(iCell)  &
+                 - fracAbsorbed* (rainTemperatureFlux(iCell) + &
+                                  evapTemperatureFlux(iCell) + &
+                                  seaIceTemperatureFlux(iCell) + &
+                                  icebergTemperatureFlux(iCell)) &
+                 - fracAbsorbedRunoff* &
+                   activeTracersSurfaceFluxRunoff(indexTempFlux,iCell)
 
-         surfaceBuoyancyForcing(iCell) =  thermalExpansionCoeff (minLevelCell(iCell),iCell) &
-                * nonLocalSurfaceTracerFlux(indexTempFlux,iCell) &
-                - salineContractionCoeff(minLevelCell(iCell),iCell) * nonLocalSurfaceTracerFlux(indexSaltFlux,iCell)
+         nonLocalSurfaceTracerFlux(indexSaltFlux,iCell) = &
+                   activeTracersSurfaceFlux(indexSaltFlux,iCell) &
+                 - fracAbsorbed*surfaceThicknessFlux(iCell)* &
+                   activeTracers(indexSaltFlux,kmin,iCell) &
+                 - fracAbsorbedRunoff*surfaceThicknessFluxRunoff(iCell)* &
+                   activeTracers(indexSaltFlux,kmin,iCell)
+
+         surfaceBuoyancyForcing(iCell) = &
+                  thermalExpansionCoeff(kmin,iCell)* &
+                  nonLocalSurfaceTracerFlux(indexTempFlux,iCell) &
+                - salineContractionCoeff(kmin,iCell)* &
+                  nonLocalSurfaceTracerFlux(indexSaltFlux,iCell)
 
          ! at this point, surfaceBuoyancyForcing has units of m/s
-         ! change into units of m^2/s^3 (which can be thought of as the flux of buoyancy, units of buoyancy * velocity )
-         surfaceBuoyancyForcing(iCell) = surfaceBuoyancyForcing(iCell) * gravity
+         ! change into units of m^2/s^3 (which can be thought of as
+         ! the flux of buoyancy, units of buoyancy * velocity )
+         surfaceBuoyancyForcing(iCell) = surfaceBuoyancyForcing(iCell)* &
+                                         gravity
 
          ! compute magnitude of surface stress
          sumSurfaceStressSquared = 0.0_RKIND
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
-            sumSurfaceStressSquared = sumSurfaceStressSquared + edgeAreaFractionOfCell(i,iCell) * surfaceStress(iEdge)**2
+            sumSurfaceStressSquared = sumSurfaceStressSquared &
+                                    + edgeAreaFractionOfCell(i,iCell)* &
+                                      surfaceStress(iEdge)**2
          enddo
-         ! NOTE that the factor of 2 is from averaging dot products to cell centers on a C-grid
-         surfaceStressMagnitude(iCell) = sqrt(2.0_RKIND * sumSurfaceStressSquared)
-         surfaceFrictionVelocity(iCell) = sqrt(surfaceStressMagnitude(iCell) / rho_sw)
+
+         ! NOTE that the factor of 2 is from averaging dot products
+         ! to cell centers on a C-grid
+         surfaceStressMagnitude(iCell) = &
+                           sqrt(2.0_RKIND * sumSurfaceStressSquared)
+         surfaceFrictionVelocity(iCell) = &
+                           sqrt(surfaceStressMagnitude(iCell) / rho_sw)
 
       enddo
       !$omp end do
       !$omp end parallel
-
-#ifdef MPAS_OPENACC
-      !$acc exit data delete(thermalExpansionCoeff,   &
-      !$acc                  salineContractionCoeff)
-#endif
 
       ! deallocate scratch space
       deallocate(thermalExpansionCoeff, &
@@ -3130,6 +3212,8 @@ contains
                  densitySurfaceDisplaced)
 
       call mpas_timer_stop('KPP input fields')
+
+    !-------------------------------------------------------------------
 
     end subroutine ocn_compute_KPP_input_fields!}}}
 
