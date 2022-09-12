@@ -130,6 +130,8 @@ public:
 
   virtual std::shared_ptr<AbstractGrid> clone (const std::string& clone_name,
                                                const bool shallow) const = 0;
+
+  void reset_num_vertical_lev (const int num_vertical_lev);
 protected:
 
   // Derived classes can override these methods, which are called inside the
