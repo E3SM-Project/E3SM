@@ -55,6 +55,9 @@ TEST_CASE("point_grid", "") {
   for (int i=0; i<grid->get_num_local_dofs(); ++i) {
     REQUIRE (deep_copy->get_dofs_gids_host()[i]==grid->get_dofs_gids_host()[i]);
   }
+
+  shallow_copy->reset_num_vertical_lev(4);
+  REQUIRE (shallow_copy->get_num_vertical_levels()==4);
 }
 
 TEST_CASE("se_grid", "") {

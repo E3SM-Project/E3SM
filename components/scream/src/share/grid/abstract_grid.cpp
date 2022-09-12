@@ -242,6 +242,13 @@ AbstractGrid::get_geometry_data_names () const
   return names;
 }
 
+void AbstractGrid::reset_num_vertical_lev (const int num_vertical_lev) {
+  m_num_vert_levs = num_vertical_lev;
+
+  // TODO: when the PR storing geo data as Field goes in, you should
+  //       invalidate all geo data whose FieldLayout contains LEV/ILEV
+}
+
 void AbstractGrid::copy_views (const AbstractGrid& src, const bool shallow)
 {
   if (src.m_dofs_set) {
