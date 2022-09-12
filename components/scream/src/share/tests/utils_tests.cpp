@@ -14,7 +14,6 @@
 TEST_CASE("vertical_interpolation"){
   using namespace scream;
 
-  ekat::Comm io_comm(MPI_COMM_WORLD);
   using vos_type = std::vector<std::string>;
   ekat::ParameterList params_f;
   ekat::parse_yaml_file("io_vertical_interpolation_test.yaml",params_f);
@@ -23,18 +22,22 @@ TEST_CASE("vertical_interpolation"){
   auto field_present = (sv[0] == "temp" || sv[1] == "temp");
   REQUIRE(field_present);
 
-  auto npacks_tgt_f = ekat::PackInfo<Spack::n>::num_packs(194);
-  auto npacks_src_f = ekat::PackInfo<Spack::n>::num_packs(128);
-  auto p_tgt = view_1d<Spack>("",npacks_tgt_f);
-  auto p_tgt_s = Kokkos::create_mirror_view(ekat::scalarize(p_tgt));
-  auto tmp_src = view_2d<Spack>("",866,npacks_src_f);
-  auto tmp_src_s = Kokkos::create_mirror_view(ekat::scalarize(tmp_src));
-  auto p_src = view_2d<Spack>("",866,npacks_src_f);
-  auto p_src_s = Kokkos::create_mirror_view(ekat::scalarize(p_src));
-  auto out = view_2d<Spack>("",866,npacks_tgt_f);
-  auto out_s = Kokkos::create_mirror_view(ekat::scalarize(out));
-  auto mask = view_2d<Smask>("",866,npacks_tgt_f);
+  const int n_layers_src = 128;
+  const int n_layers_tgt = 194;
   
+  auto npacks_src = ekat::PackInfo<Spack::n>::num_packs(n_layers_src);
+  auto npacks_tgt = ekat::PackInfo<Spack::n>::num_packs(n_layers_tgt);
+  auto p_tgt = view_1d<Spack>("",npacks_tgt);
+  auto p_tgt_s = Kokkos::create_mirror_view(ekat::scalarize(p_tgt));
+  auto tmp_src = view_2d<Spack>("",866,npacks_src);
+  auto tmp_src_s = Kokkos::create_mirror_view(ekat::scalarize(tmp_src));
+  auto p_src = view_2d<Spack>("",866,npacks_src);
+  auto p_src_s = Kokkos::create_mirror_view(ekat::scalarize(p_src));
+  auto out = view_2d<Spack>("",866,npacks_tgt);
+  auto out_s = Kokkos::create_mirror_view(ekat::scalarize(out));
+  auto mask = view_2d<Smask>("",866,npacks_tgt);
+
+  //Pull target pressure 194 values
   std::string line;
   std::ifstream press_levels (filename);
   int i=0;
@@ -48,22 +51,7 @@ TEST_CASE("vertical_interpolation"){
   }
   press_levels.close();
 
-  std::string line_t;
-  std::ifstream temp_levels ("temp_src_ne4_866col_128lay.txt");
-  int i_t=0;
-  int j_t=0;
-  if (temp_levels.is_open()){
-    while ( getline(temp_levels,line_t) ){
-      tmp_src_s(i_t,j_t) = std::stod(line_t);
-      j_t++;
-      if (j_t == 128){
-	i_t++;
-	j_t=0;
-      }
-    }
-  }
-  temp_levels.close();
-  
+  //Pull source pressure values for all 866 columns and 128 layers
   std::string line_p;
   std::ifstream p_levels ("press_src_ne4_866col_128lay.txt");
   //col
@@ -81,10 +69,24 @@ TEST_CASE("vertical_interpolation"){
     }
   }
   p_levels.close();
-
-  const int n_layers_src = 128;
-  const int n_layers_tgt = 194;
   
+  //Pull source temperature values for all 866 columns and 128 layers
+  std::string line_t;
+  std::ifstream temp_levels ("temp_src_ne4_866col_128lay.txt");
+  int i_t=0;
+  int j_t=0;
+  if (temp_levels.is_open()){
+    while ( getline(temp_levels,line_t) ){
+      tmp_src_s(i_t,j_t) = std::stod(line_t);
+      j_t++;
+      if (j_t == 128){
+	i_t++;
+	j_t=0;
+      }
+    }
+  }
+  temp_levels.close();
+
   scream::perform_vertical_interpolation(p_src,
 					 p_tgt,
 					 tmp_src,
@@ -96,6 +98,7 @@ TEST_CASE("vertical_interpolation"){
   std::string line_t_o;
   std::ifstream original_temp("output_log_original.txt"); 
 
+  //Loop over output and make sure it matches values in default output file
   for(int col=0; col<866; col++){
     for(int lev=0; lev<194; lev++){
       getline(original_temp,line_t_o);

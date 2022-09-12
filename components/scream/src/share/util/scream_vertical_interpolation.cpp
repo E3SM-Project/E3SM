@@ -89,14 +89,17 @@ void perform_vertical_interpolation(const view_1d<const Spack>& x_src,
   //Run linear interpolation
   vert_interp.lin_interp(team, x_src, x_tgt, input, output, icol);
   const auto x_src_s = ekat::scalarize(x_src);
-  const auto x_tgt_s    = ekat::scalarize(x_tgt);
-  Kokkos::parallel_for(KT::RangePolicy(0, x_tgt.extent(0)), [&] (const int & k) {
+  const auto x_tgt_s = ekat::scalarize(x_tgt);
+  const auto range_boundary = KT::RangePolicy(0, x_tgt.extent(0));
+  //Mask out values above (below) maximum (minimum) source grid
+  Kokkos::parallel_for(range_boundary, [&] (const int & k) {
     const auto above_max = x_tgt[k] > x_src_s[nlevs_src-1];
     const auto below_min = x_tgt[k] < x_src_s[0];
     const auto combined_m = above_max || below_min;
     mask(k) = combined_m;
     output(k).set(combined_m,masked_val);
   });
+  Kokkos::fence();
 }
 
 } // namespace scream
