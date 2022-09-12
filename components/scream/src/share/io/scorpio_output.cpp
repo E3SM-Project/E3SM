@@ -65,10 +65,12 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   } else if (params.isSublist("Fields")){
     const auto& f_pl = params.sublist("Fields");
     const auto& io_grid_aliases = io_grid->aliases();
+    bool names_found = false;
     for (const auto& grid_name : io_grid_aliases) {
       if (f_pl.isSublist(grid_name)) {
         const auto& pl = f_pl.sublist(grid_name);
         m_fields_names = pl.get<vos_t>("Field Names");
+        names_found = true;
 
         // Check if the user wants to remap fields on a different grid first
         if (pl.isParameter("IO Grid Name")) {
@@ -77,6 +79,8 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
         break;
       }
     }
+    EKAT_REQUIRE_MSG (names_found,
+        "Error! Bad formatting of output yaml file. Missing 'Fields->$grid_name` sublist.\n");
   }
 
   // Try to set the IO grid (checks will be performed)
