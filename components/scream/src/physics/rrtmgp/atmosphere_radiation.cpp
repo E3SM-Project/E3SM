@@ -71,6 +71,8 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
             "  - Number of chunks: " + std::to_string(m_num_col_chunks) + "\n");
 
   // Set up dimension layouts
+  m_nswgpts = m_params.get<int>("nswgpts",112);
+  m_nlwgpts = m_params.get<int>("nlwgpts",128);
   FieldLayout scalar2d_layout     { {COL   }, {m_ncol    } };
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_ncol,m_nlay} };
   FieldLayout scalar3d_layout_int { {COL,ILEV}, {m_ncol,m_nlay+1} };
