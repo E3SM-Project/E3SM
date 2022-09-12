@@ -51,6 +51,9 @@ public:
   int get_partitioned_dim_global_size () const override {
     return get_num_global_dofs();
   }
+
+  std::shared_ptr<AbstractGrid> clone (const std::string& clone_name,
+                                       const bool shallow) const override;
 };
 
 // Create a point grid, with linear range of gids, evenly partitioned
