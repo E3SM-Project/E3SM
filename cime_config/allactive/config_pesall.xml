@@ -148,7 +148,7 @@
         <comment>1 node default</comment>
         <ntasks>
           <ntasks_atm>32</ntasks_atm>
-          <ntasks_lnd>960</ntasks_lnd>
+          <ntasks_lnd>32</ntasks_lnd>
           <ntasks_rof>32</ntasks_rof>
           <ntasks_ice>32</ntasks_ice>
           <ntasks_ocn>32</ntasks_ocn>
