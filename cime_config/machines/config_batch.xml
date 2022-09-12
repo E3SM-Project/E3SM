@@ -328,7 +328,7 @@
      </directives>
      <queues>
        <queue walltimemax="00:30:00" nodemax="64" strict="true">debug</queue>
-       <queue walltimemax="24:00:00" default="true">regular</queue>
+       <queue walltimemax="01:00:00" default="true">regular</queue>
      </queues>
   </batch_system>
 
