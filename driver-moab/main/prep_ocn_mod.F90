@@ -630,7 +630,7 @@ contains
 subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
     use iMOAB , only : iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, iMOAB_SetDoubleTagStorage
-    use seq_comm_mct , only : mboxid, mbox2id ! ocean and atm-ocean flux instances
+    use seq_comm_mct , only : mboxid, mbofxid ! ocean and atm-ocean flux instances
     !---------------------------------------------------------------
     ! Description
     ! Merge all ocn inputs
@@ -658,7 +658,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
      ! Local variables
     integer  :: n,ka,ki,ko,kr,kw,kx,kir,kor,i,i1,o1
     integer  :: kof,kif
-    integer  :: lsize
+    integer  :: lsize, arrsize ! for double arrays 
     integer  :: noflds,naflds,niflds,nrflds,nxflds!  ,ngflds,nwflds, no glacier or wave model
     real(r8) :: ifrac,ifracr
     real(r8) :: afrac,afracr
@@ -814,7 +814,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     logical, save :: first_time = .true.
 
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
-    character(CL) ::tagname
+    character(CXX) ::tagname
     integer :: ent_type, ierr
 ! for moab, local allocatable arrays for each field, size of local ocean mesh
 ! these are the fields that are merged, in general
@@ -830,6 +830,12 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
   real (kind=r8) , allocatable, save :: fo_kof_ofrac(:) ! ofrac from ocean instance
   real (kind=r8) , allocatable, save :: fo_kir_ifrad(:) ! ifrad from ocean instance
   real (kind=r8) , allocatable, save :: fo_kor_ofrad(:) ! ofrad from ocean instance
+  real (kind=r8) , allocatable, save :: x2o_om (:,:)
+  real (kind=r8) , allocatable, save :: a2x_om (:,:)
+  real (kind=r8) , allocatable, save :: i2x_om (:,:)
+  real (kind=r8) , allocatable, save :: r2x_om (:,:)
+  real (kind=r8) , allocatable, save :: xao_om (:,:)
+
   ! number of primary cells will be local size for all these arrays
 
     character(*),parameter :: subName = '(prep_ocn_merge_moab) '
@@ -849,6 +855,8 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
     if (first_time) then
        ! find out the number of local elements in moab mesh ocean instance on coupler
+       ! mct avs are used just for their fields metadata, not the actual reals 
+       ! (name of the fields)
        
        a2x_o => a2x_ox(1)
        i2x_o => i2x_ox(1)
@@ -867,6 +875,11 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
       !nwflds = mct_aVect_nRattr(w2x_o)
        nxflds = mct_aVect_nRattr(xao_o)
        !ngflds = mct_aVect_nRattr(g2x_o)
+       allocate (x2o_om (lsize, noflds))
+       allocate (a2x_om (lsize, naflds))
+       allocate (i2x_om (lsize, niflds))
+       allocate (r2x_om (lsize, nrflds))
+       allocate (xao_om (lsize, nxflds))
 
        index_a2x_Faxa_swvdr     = mct_aVect_indexRA(a2x_o,'Faxa_swvdr')
        index_a2x_Faxa_swvdf     = mct_aVect_indexRA(a2x_o,'Faxa_swvdf')
@@ -1270,9 +1283,11 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
       allocate(x2o_Faxa_prec(lsize))
       allocate(x2o_Foxx_rofl(lsize))
       allocate(x2o_Foxx_rofi(lsize))
-      allocate(x2o_Sf_afrac(lsize))
-      allocate(x2o_Sf_afracr(lsize))
-      allocate(x2o_Foxx_swnet_afracr(lsize))
+      if (seq_flds_i2o_per_cat) then
+         allocate(x2o_Sf_afrac(lsize))
+         allocate(x2o_Sf_afracr(lsize))
+         allocate(x2o_Foxx_swnet_afracr(lsize))
+      endif 
 
     endif
 
@@ -1333,25 +1348,25 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
       ! allocate(xao_So_avsdr(lsize))
     tagname = 'So_avsdr'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mbox2id, tagname, lsize , ent_type, xao_So_avsdr)
+    ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, lsize , ent_type, xao_So_avsdr)
     if (ierr .ne. 0) then
          call shr_sys_abort(subname//' error in getting So_avsdr field')
     endif    
       ! allocate(xao_So_anidr(lsize))
      tagname = 'So_anidr'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mbox2id, tagname, lsize , ent_type, xao_So_anidr)
+    ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, lsize , ent_type, xao_So_anidr)
     if (ierr .ne. 0) then
          call shr_sys_abort(subname//' error in getting So_anidr field')
     endif    
       ! allocate(xao_So_avsdf(lsize))
      tagname = 'So_avsdf'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mbox2id, tagname, lsize , ent_type, xao_So_avsdf)
+    ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, lsize , ent_type, xao_So_avsdf)
     if (ierr .ne. 0) then
          call shr_sys_abort(subname//' error in getting So_avsdf field')
     endif    
          ! allocate(xao_So_anidf(lsize))
     tagname = 'So_anidf'//C_NULL_CHAR
-    ierr = iMOAB_GetDoubleTagStorage ( mbox2id, tagname, lsize , ent_type, xao_So_anidf)
+    ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, lsize , ent_type, xao_So_anidf)
     if (ierr .ne. 0) then
          call shr_sys_abort(subname//' error in getting So_anidf field')
     endif    
@@ -1731,33 +1746,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        end if
     end do
 ! #endif 
-    do ko = 1,noflds
-       !--- document merge ---
-       if (first_time) then
-          if (iindx(ko) > 0) then
-             if (imerge(ko)) then
-                mrgstr(ko) = trim(mrgstr(ko))//' + ifrac*i2x%'//trim(field_ice(iindx(ko)))
-             else
-                mrgstr(ko) = trim(mrgstr(ko))//' = ifrac*i2x%'//trim(field_ice(iindx(ko)))
-             end if
-          end if
-          if (aindx(ko) > 0) then
-             if (amerge(ko)) then
-                mrgstr(ko) = trim(mrgstr(ko))//' + afrac*a2x%'//trim(field_atm(aindx(ko)))
-             else
-                mrgstr(ko) = trim(mrgstr(ko))//' = afrac*a2x%'//trim(field_atm(aindx(ko)))
-             end if
-          end if
-          if (xindx(ko) > 0) then
-             if (xmerge(ko)) then
-                mrgstr(ko) = trim(mrgstr(ko))//' + afrac*xao%'//trim(field_xao(xindx(ko)))
-             else
-                mrgstr(ko) = trim(mrgstr(ko))//' = afrac*xao%'//trim(field_xao(xindx(ko)))
-             end if
-          end if
-       endif
 
-!
   !   all x2o vars needs to be set, not get, after calculations !
     ! allocate(x2o_Foxx_swnet(lsize))
     tagname = 'Foxx_swnet'//C_NULL_CHAR
@@ -1816,7 +1805,70 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
             call shr_sys_abort(subname//' error in getting Foxx_swnet_afracr field')
       endif    
     endif 
-#ifdef NOTDEF
+
+! fill the r2x_om, etc double array fields noflds
+    tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
+    arrsize = noflds * lsize
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, x2o_om(1,1))
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in getting x2o_om array ')
+    endif    
+    tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+    arrsize = naflds * lsize !        allocate (a2x_om (lsize, naflds))
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, a2x_om(1,1))
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in getting a2x_om array ')
+    endif
+
+    tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+    arrsize = niflds * lsize !        allocate (i2x_om (lsize, niflds))
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, i2x_om(1,1))
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in getting i2x_om array ')
+    endif
+
+    tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
+    arrsize = naflds * lsize !        allocate (r2x_om (lsize, nrflds))
+    ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, r2x_om(1,1))
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in getting r2x_om array ')
+    endif
+      
+    tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
+    arrsize = nxflds * lsize !        allocate (xao_om (lsize, nrflds))
+    ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, arrsize , ent_type, xao_om(1,1))
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in getting xao_om array ')
+    endif
+
+    do ko = 1,noflds
+       !--- document merge ---
+       if (first_time) then
+          if (iindx(ko) > 0) then
+             if (imerge(ko)) then
+                mrgstr(ko) = trim(mrgstr(ko))//' + ifrac*i2x%'//trim(field_ice(iindx(ko)))
+             else
+                mrgstr(ko) = trim(mrgstr(ko))//' = ifrac*i2x%'//trim(field_ice(iindx(ko)))
+             end if
+          end if
+          if (aindx(ko) > 0) then
+             if (amerge(ko)) then
+                mrgstr(ko) = trim(mrgstr(ko))//' + afrac*a2x%'//trim(field_atm(aindx(ko)))
+             else
+                mrgstr(ko) = trim(mrgstr(ko))//' = afrac*a2x%'//trim(field_atm(aindx(ko)))
+             end if
+          end if
+          if (xindx(ko) > 0) then
+             if (xmerge(ko)) then
+                mrgstr(ko) = trim(mrgstr(ko))//' + afrac*xao%'//trim(field_xao(xindx(ko)))
+             else
+                mrgstr(ko) = trim(mrgstr(ko))//' = afrac*xao%'//trim(field_xao(xindx(ko)))
+             end if
+          end if
+       endif
+
+!
+
        do n = 1,lsize
           ifrac = fo_kif_ifrac(n) ! fractions_o%rAttr(kif,n)
           afrac = fo_kof_ofrac(n) ! fractions_o%rAttr(kof,n)
@@ -1829,28 +1881,37 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
           endif
           if (iindx(ko) > 0) then
              if (imerge(ko)) then
-                x2o_o%rAttr(ko,n) = x2o_o%rAttr(ko,n) + i2x_o%rAttr(iindx(ko),n) * ifrac
+                x2o_om(n, ko) = x2o_om(n, ko) + i2x_om(n, iindx(ko)) * ifrac
              else
-                x2o_o%rAttr(ko,n) = i2x_o%rAttr(iindx(ko),n) * ifrac
+                x2o_om(n, ko) = i2x_om(n,iindx(ko)) * ifrac
              end if
           end if
           if (aindx(ko) > 0) then
              if (amerge(ko)) then
-                x2o_o%rAttr(ko,n) = x2o_o%rAttr(ko,n) + a2x_o%rAttr(aindx(ko),n) * afrac
+                x2o_om(n,ko) = x2o_om(n,ko) + a2x_om(n,aindx(ko)) * afrac
              else
-                x2o_o%rAttr(ko,n) = a2x_o%rAttr(aindx(ko),n) * afrac
+                x2o_om(n,ko) = a2x_om(n, aindx(ko)) * afrac
              end if
           end if
           if (xindx(ko) > 0) then
              if (xmerge(ko)) then
-                x2o_o%rAttr(ko,n) = x2o_o%rAttr(ko,n) + xao_o%rAttr(xindx(ko),n) * afrac
+                x2o_om(n,ko) = x2o_om(n,ko) + xao_om(n,xindx(ko)) * afrac
              else
-                x2o_o%rAttr(ko,n) = xao_o%rAttr(xindx(ko),n) * afrac
+                x2o_om(n,ko) = xao_om(n,xindx(ko)) * afrac
              end if
           end if
        end do
-#endif
+
     end do
+! after we aer done, set x2o_om to the mboxid
+
+    tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
+    arrsize = noflds * lsize
+    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, x2o_om(1,1))
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in setting x2o_om array ')
+    endif
+
     if (first_time) then
        if (iamroot) then
           write(logunit,'(A)') subname//' Summary:'

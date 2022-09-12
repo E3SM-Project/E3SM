@@ -4086,7 +4086,8 @@ contains
 !----------------------------------------------------------------------------------
 
   subroutine cime_run_ocn_setup_send()
-
+    use seq_flds_mod , only : seq_flds_x2o_fields
+    use seq_comm_mct , only : mboxid, mpoid !
     !----------------------------------------------------
     ! "startup" wait
     !----------------------------------------------------
@@ -4132,6 +4133,9 @@ contains
             mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
             timer_barrier='CPL:C2O_BARRIER', timer_comp_exch='CPL:C2O', &
             timer_map_exch='CPL:c2o_ocnx2ocno', timer_infodata_exch='CPL:c2o_infoexch')
+       ! will migrate the tag from component pes to coupler pes, on atm mesh
+       call component_exch_moab(ocn(1), mboxid, mpoid, 1, seq_flds_x2o_fields)
+
     endif
 
   end subroutine cime_run_ocn_setup_send
