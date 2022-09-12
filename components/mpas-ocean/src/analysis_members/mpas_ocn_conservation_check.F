@@ -1626,7 +1626,8 @@ v=accumulatedLandIceFrazilSalinityFlux; write(m,"('LandIceFrazilSalinityFlux',es
 
             if (config_use_ecosysTracers_sea_ice_coupling) then
               sumArray(6) = sumArray(6) + areaCell(iCell) * (iceFluxDOC(1,iCell) &
-                + iceFluxDOC(2,iCell) + iceFluxDOC(3,iCell) + iceFluxDOCr(iCell))
+                + iceFluxDOC(2,iCell) + iceFluxDOC(3,iCell) + iceFluxDOCr(iCell) &
+                + iceFluxPhytoC(1,iCell) + iceFluxPhytoC(2,iCell))
 
               sumArray(7) = sumArray(7) + areaCell(iCell) * iceFluxDIC(iCell)
             else
