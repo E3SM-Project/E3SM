@@ -39,6 +39,9 @@ public:
   void set_cg_dofs (const dofs_list_type& cg_dofs);
   const dofs_list_type& get_cg_dofs_gids () const;
 
+  std::shared_ptr<AbstractGrid> clone (const std::string& clone_name,
+                                       const bool shallow) const override;
+
 protected:
   bool valid_dofs_list (const dofs_list_type& dofs_gids)      const override;
   bool valid_lid_to_idx_map (const lid_to_idx_map_type& lid_to_idx) const override;

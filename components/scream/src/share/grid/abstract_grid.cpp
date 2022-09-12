@@ -239,4 +239,51 @@ AbstractGrid::get_geometry_data_names () const
   return names;
 }
 
+void AbstractGrid::copy_views (const AbstractGrid& src, const bool shallow)
+{
+  if (src.m_dofs_set) {
+    m_dofs_set = false;
+    if (shallow) {
+      set_dofs (src.m_dofs_gids);
+      // set_dof created a new host mirror, so assing that too
+      m_dofs_gids_host = src.m_dofs_gids_host;
+    } else {
+      decltype (src.m_dofs_gids) dofs ("",m_num_local_dofs);
+      Kokkos::deep_copy (dofs,src.get_dofs_gids());
+      set_dofs (dofs);
+    }
+  }
+
+  if (src.m_lid_to_idx_set) {
+    m_lid_to_idx_set = false;
+    if (shallow) {
+      set_lid_to_idx_map (src.get_lid_to_idx_map());
+    } else {
+      decltype (src.m_lid_to_idx) lid2idx ("",m_num_local_dofs,get_2d_scalar_layout().rank());
+      Kokkos::deep_copy (lid2idx,src.m_lid_to_idx);
+      set_lid_to_idx_map (lid2idx);
+    }
+  }
+
+  for (const auto& it : src.m_geo_views) {
+    const auto& name = it.first;
+    if (shallow) {
+      m_geo_views[name] = it.second;
+    } else {
+      m_geo_views[name] = geo_view_type("",it.second.size());
+      Kokkos::deep_copy (m_geo_views[name],it.second);
+    }
+  }
+
+  for (const auto& it : src.m_geo_views_host) {
+    const auto& name = it.first;
+    if (shallow) {
+      m_geo_views_host[name] = it.second;
+    } else {
+      m_geo_views_host[name] = geo_view_h_type("",it.second.size());
+      Kokkos::deep_copy (m_geo_views_host[name],it.second);
+    }
+  }
+}
+
 } // namespace scream

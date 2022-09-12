@@ -73,6 +73,25 @@ void SEGrid::set_cg_dofs (const dofs_list_type& cg_dofs)
   m_cg_dofs_set = true;
 }
 
+std::shared_ptr<AbstractGrid> SEGrid::clone (const std::string& clone_name, const bool shallow) const
+{
+  auto grid = std::make_shared<SEGrid>(clone_name,m_num_local_elem,m_num_gp,get_num_vertical_levels(),get_comm());
+
+  grid->copy_views(*this,shallow);
+
+  if (m_cg_dofs_set) {
+    if (shallow) {
+      grid->set_cg_dofs(m_cg_dofs_gids);
+    } else {
+      decltype(m_cg_dofs_gids) cg_dofs ("",m_cg_dofs_gids.size());
+      Kokkos::deep_copy(cg_dofs,m_cg_dofs_gids);
+      grid->set_cg_dofs(cg_dofs);
+    }
+  }
+
+  return grid;
+}
+
 bool SEGrid::valid_dofs_list (const dofs_list_type& /*dofs_gids*/) const
 {
   return is_unique();
