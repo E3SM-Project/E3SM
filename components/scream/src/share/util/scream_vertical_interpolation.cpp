@@ -92,7 +92,7 @@ void perform_vertical_interpolation(const view_1d<const Spack>& x_src,
   const auto x_tgt_s = ekat::scalarize(x_tgt);
   const auto range_boundary = KT::RangePolicy(0, x_tgt.extent(0));
   //Mask out values above (below) maximum (minimum) source grid
-  Kokkos::parallel_for(range_boundary, [&] (const int & k) {
+  Kokkos::parallel_for(range_boundary, [&] (const Int & k) {
     const auto above_max = x_tgt[k] > x_src_s[nlevs_src-1];
     const auto below_min = x_tgt[k] < x_src_s[0];
     const auto combined_m = above_max || below_min;
