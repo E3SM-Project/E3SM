@@ -1448,9 +1448,9 @@ v=accumulatedLandIceFrazilSalinityFlux; write(m,"('LandIceFrazilSalinityFlux',es
            daysSinceStartOfSim
 
       real(kind=RKIND) :: &
-           relativeErrorStepBounds,  &
-           relativeErrorBounds,     &
-           relativeErrorBoundsFac
+           relativeCarbonErrorStepBounds,  &
+           relativeCarbonErrorBounds,     &
+           relativeCarbonErrorBoundsFac
 
       logical ::  &
            conservationCheck_carbon_failure_abort = .true.
@@ -1703,10 +1703,10 @@ v=accumulatedLandIceFrazilSalinityFlux; write(m,"('LandIceFrazilSalinityFlux',es
          accumulatedRelativeCarbonError = accumulatedRelativeCarbonError + &
                                           relativeCarbonError
 
-         relativeErrorStepBounds = 1.0e-8
-         relativeErrorBoundsFac = 1.e-2
-         relativeErrorBounds =  &
-           relativeErrorStepBounds*relativeErrorBoundsFac*totalTimeSteps
+         relativeCarbonErrorStepBounds = 1.0e-8
+         relativeCarbonErrorBoundsFac = 1.e-2
+         relativeCarbonErrorBounds =  &
+           relativeCarbonErrorStepBounds*relativeCarbonErrorBoundsFac*totalTimeSteps
          
          !-------------------------------------------------------------
          ! Output to log file
@@ -1790,11 +1790,11 @@ v=accumulatedLandIceFrazilSalinityFlux; write(m,"('LandIceFrazilSalinityFlux',es
                        accumulatedRelativeCarbonError
             call mpas_log_write(m)
             write(m,"('Accumulated relative carbon error bounds =    ', es16.8)")  &
-                       relativeErrorBounds
+                       relativeCarbonErrorBounds
             call mpas_log_write(m)
             call mpas_log_write(' ')
 
-            if (abs(relativeCarbonError) > relativeErrorStepBounds) then
+            if (abs(relativeCarbonError) > relativeCarbonErrorStepBounds) then
               if (conservationCheck_carbon_failure_abort) then
                 call mpas_log_write(  &
                    'WARNING: relative carbon error exceeds bounds ', MPAS_LOG_CRIT)
@@ -1804,7 +1804,7 @@ v=accumulatedLandIceFrazilSalinityFlux; write(m,"('LandIceFrazilSalinityFlux',es
               endif
             endif
 
-            if (abs(accumulatedRelativeCarbonError) > relativeErrorBounds) then
+            if (abs(accumulatedRelativeCarbonError) > relativeCarbonErrorBounds) then
               if (conservationCheck_carbon_failure_abort) then
                 call mpas_log_write(  &
                    'WARNING: accumulated relative carbon error exceeds bounds ',  &
