@@ -1725,7 +1725,7 @@ v=accumulatedLandIceFrazilSalinityFlux; write(m,"('LandIceFrazilSalinityFlux',es
             s = 0.0_RKIND
             call mpas_log_write('CARBON FLUXES')
             call mpas_log_write(' ')
-            call mpas_log_write('MPAS-Ocean name             kg/s (raw sum)    coupler name    short name         kg/m^2/s (flux)')
+            call mpas_log_write('MPAS-Ocean name             kg/s (raw sum)    coupler name    short name         kg/m^2/s*1.e6 (flux)')
               v=accumulatedCarbonSourceSink*mmol_to_kg_C
               write(m,"('MarBL SrcSink+sedFlux     ',es16.8,'                                 ',f16.8)") v,v*c
               call mpas_log_write(m)
