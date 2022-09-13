@@ -1072,6 +1072,17 @@ Mapping method from Nitrogen deposition input file to the model resolution
     copy     = copy using the same indices
 </entry>
 
+<entry id="startdate_scale_ndep" type="char*8" category="elm_physics"
+       group="ndepdyn_nml" valid_values="" >
+Set date for beginning of scaling N deposition from atmospheric forcing
+</entry>
+
+<entry id="scale_ndep" type="real" category="elm_physics"
+       group="ndepdyn_nml" valid_values="" >
+Scaling factor to apply to N deposition from atmospheric forcing
+</entry>
+
+
 <!-- ========================================================================================  -->
 <!-- pdepdyn streams Namelist (only used when bgc=cn/cndv)                                     -->
 <!-- ========================================================================================  -->
@@ -1105,6 +1116,16 @@ Mapping method from Phosphorus deposition input file to the model resolution
     nnonj    = nearest neighbor on the "j" (latitude) axis
     spval    = set to special value
     copy     = copy using the same indices
+</entry>
+
+<entry id="startdate_scale_pdep" type="char*8" category="elm_physics"
+       group="pdepdyn_nml" valid_values="" >
+Set date for beginning of scaling P deposition from atmospheric forcing
+</entry>
+
+<entry id="scale_pdep" type="real" category="elm_physics"
+       group="pdepdyn_nml" valid_values="" >
+Scaling factor to apply to P deposition from atmospheric forcing
 </entry>
 
 
