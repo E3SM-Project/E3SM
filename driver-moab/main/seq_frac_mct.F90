@@ -876,11 +876,15 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_frac_set(infodata, ice, fractions_a, fractions_i, fractions_o)
+  subroutine seq_frac_set(infodata, ice, ocn, fractions_a, fractions_i, fractions_o)
+
+    use seq_comm_mct, only : mboxid !            iMOAB app id for ocn on cpl pes
+    use iMOAB, only :  iMOAB_SetDoubleTagStorageWithGid 
 
     ! !INPUT/OUTPUT PARAMETERS:
     type(seq_infodata_type) , intent(in)    :: infodata
     type(component_type)    , intent(in)    :: ice
+    type(component_type)    , intent(in)    :: ocn
     type(mct_aVect)         , intent(inout) :: fractions_a   ! Fractions on atm
     type(mct_aVect)         , intent(inout) :: fractions_i   ! Fractions on ice
     type(mct_aVect)         , intent(inout) :: fractions_o   ! Fractions on ocn
@@ -889,14 +893,23 @@ contains
     !----- local -----
     type(mct_aVect), pointer :: i2x_i
     type(mct_ggrid), pointer :: dom_i
+    type(mct_ggrid), pointer :: dom_o ! introduced just to update ocean moab fractions
     logical                  :: atm_present   ! true => atm is present
     logical                  :: ice_present   ! true => ice is present
     logical                  :: ocn_present   ! true => ocn is present
     integer                  :: n
     integer                  :: ki, kl, ko, kf
-    integer                  :: lsize
     real(r8),allocatable :: fcorr(:)
 
+    logical, save :: first_time = .true.
+! moab
+    integer                  ::   ierr, kgg
+    integer , save           ::   lSize, ent_type
+    character(CXX)           :: tagname
+    real(r8),    allocatable, save :: tagValues(:) ! used for setting some tags
+    integer ,    allocatable, save :: GlobalIds(:) ! used for setting values associated with ids
+
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
     !----- formats -----
     character(*),parameter :: subName = '(seq_frac_set) '
 
@@ -920,6 +933,8 @@ contains
     dom_i => component_get_dom_cx(ice)
     i2x_i => component_get_c2x_cx(ice)
 
+    dom_o => component_get_dom_cx(ocn) ! 
+
     if (ice_present) then
        call mct_aVect_copy(i2x_i, fractions_i, "Si_ifrac", "ifrac")
 
@@ -936,6 +951,36 @@ contains
           call seq_map_map(mapper_i2o, fractions_i, fractions_o, &
                fldlist='ofrac:ifrac',norm=.false.)
           call seq_frac_check(fractions_o, 'ocn set')
+          ! update ocean fractions on moab instance 
+          if (first_time) then  ! allocate some local arrays
+             lSize = mct_aVect_lSize(dom_o%data)
+             allocate(tagValues(lSize) )
+             allocate(GlobalIds(lSize) )
+             kgg = mct_aVect_indexIA(dom_o%data ,"GlobGridNum" ,perrWith=subName)
+             GlobalIds = dom_o%data%iAttr(kgg,:)
+             ent_type = 1 ! cells for mpas ocean
+          endif 
+          ! something like this:
+         
+         tagname = 'ofrac'//C_NULL_CHAR 
+         !   fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad' 
+         tagValues = fractions_o%rAttr(3,:)
+         ierr = iMOAB_SetDoubleTagStorageWithGid ( mboxid, tagname, lSize , ent_type, tagValues, GlobalIds )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in setting ofrac on ocn moab instance  '
+            call shr_sys_abort(subname//' ERROR in setting ofrac on ocn moab instance ')
+         endif
+         tagname = 'ifrac'//C_NULL_CHAR 
+         !   fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad' 
+         tagValues = fractions_o%rAttr(2,:)
+         ierr = iMOAB_SetDoubleTagStorageWithGid ( mboxid, tagname, lSize , ent_type, tagValues, GlobalIds )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in setting ofrac on ocn moab instance  '
+            call shr_sys_abort(subname//' ERROR in setting ofrac on ocn moab instance ')
+         endif
+
+         first_time = .false.
+
        endif
 
        if (atm_present) then
