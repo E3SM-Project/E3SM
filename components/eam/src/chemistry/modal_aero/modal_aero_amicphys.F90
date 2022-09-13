@@ -228,9 +228,10 @@
 
 !hybrown following is used to turn on stratospheric renaming for accumulation to coarse mode aerosol. 
 ! Included to represent rapid growth of sulfate aerosol following volcanic eruption
-  logical :: strat_accum_coarse_rename = .false.
 #if ( defined CLDERA_STRAT_VOLC )
   logical :: strat_accum_coarse_rename = .true.
+#else
+  logical :: strat_accum_coarse_rename = .false.
 #endif
 
 ! !DESCRIPTION: This module implements ...
@@ -1651,8 +1652,6 @@ main_jsub_loop: &
       real(r8) :: uptkaer(max_gas,max_mode)
       real(r8) :: uptkrate_h2so4
 
-
-
 ! air molar density (kmol/m3)
       aircon = pmid/(r_universal*temp)
 
@@ -1806,7 +1805,6 @@ do_rename_if_block30: &
 
       mtoo_renamexf(:) = 0
       mtoo_renamexf(nait) = nacc
-      write(iulog,*)'hybrown,modal_aero_amicphys, strat_accum_coarse_rename = ',strat_accum_coarse_rename
       if ( strat_accum_coarse_rename ) then
          mtoo_renamexf(nacc) = ncrs !hybrown
       end if
@@ -2086,7 +2084,6 @@ do_rename_if_block30: &
       real(r8) :: tmpa, tmpb, tmpc, tmpd, tmpe, tmpf
       real(r8) :: uptkaer(max_gas,max_mode)
       real(r8) :: uptkrate_h2so4
-
 
 
 ! air molar density (kmol/m3)
@@ -5146,7 +5143,7 @@ agepair_loop1: &
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
-      subroutine modal_aero_amicphys_init( imozart, species_class,n_so4_monolayers_pcage_in) !, strat_accum_coarse_rename_in) !hybrown
+      subroutine modal_aero_amicphys_init( imozart, species_class,n_so4_monolayers_pcage_in)
 
 !-----------------------------------------------------------------------
 !
@@ -5205,11 +5202,8 @@ implicit none
    character(128)                 :: msg, fmtaa
    character(2)                   :: tmpch2
 
-!   logical, optional, intent(in) :: strat_accum_coarse_rename_in !hybrown
    !-----------------------------------------------------------------------
  
-write(iulog,*)'hybrown, modal_aero_amicphys_init, strat_accum_coarse_rename = ',strat_accum_coarse_rename
-
 !namelist variables
 n_so4_monolayers_pcage  = n_so4_monolayers_pcage_in
 dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
@@ -5562,9 +5556,6 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       nufi = modeptr_ufine
 
 !++ hybrown, these lines turn on (ncrs>0) or off (ncrs=0) acc->crs renaming in stratosphere
-!#if ( defined CLDERA_STRAT_VOLC )
-!         strat_accum_coarse_rename = .true.
-!#endif
       if (strat_accum_coarse_rename) then
          ncrs = modeptr_coarse
       endif
