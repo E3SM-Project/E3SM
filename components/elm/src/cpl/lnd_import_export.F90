@@ -118,6 +118,8 @@ contains
     character(len=CL)  :: stream_fldFileName_lightng ! lightning stream filename to read
     character(len=CL)  :: stream_fldFileName_popdens ! poplulation density stream filename
     character(len=CL)  :: stream_fldFileName_ndep    ! nitrogen deposition stream filename
+    character(len=CL)  :: startdate_scale_ndep       ! ndep scaling options
+    real(r8)           :: scale_ndep
     logical :: use_sitedata, has_zonefile, use_daymet, use_livneh
     data caldaym / 1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 /    
 
