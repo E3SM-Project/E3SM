@@ -287,12 +287,15 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     // We're adding one snapshot to the file
     ++filespecs.num_snapshots_in_file;
 
-    // Now that we've written output to this file we need reset the nsteps.
-    control.nsamples_since_last_write = 0;
-
-    // Since we wrote to file we need to reset the nsamples_since_last_write and the timestamp
+    // Since we wrote to file we need to reset the nsamples_since_last_write, the timestamp
     control.nsamples_since_last_write = 0;
     control.timestamp_of_last_write = timestamp;
+    // and the local views - unless it is a checkpoint step, then we keep local views.
+    if (!is_checkpoint_step) {
+      for (auto& it : m_output_streams) {
+        it->initialize_dev_views();
+      }
+    }
 
     // Check if we need to close the output file
     if (filespecs.file_is_full()) {

@@ -434,23 +434,33 @@ void AtmosphereOutput::register_views()
       m_dev_views_1d.emplace(name,view_1d_dev("",size));
       m_host_views_1d.emplace(name,Kokkos::create_mirror(m_dev_views_1d[name]));
 
-      // Init dev view with an "identity" for avg_type
-      switch (m_avg_type) {
-        case OutputAvgType::Instant:
-          // No averaging
-          break;
-        case OutputAvgType::Max:
-          Kokkos::deep_copy(m_dev_views_1d[name],-std::numeric_limits<Real>::infinity());
-          break;
-        case OutputAvgType::Min:
-          Kokkos::deep_copy(m_dev_views_1d[name],std::numeric_limits<Real>::infinity());
-          break;
-        case OutputAvgType::Average:
-          Kokkos::deep_copy(m_dev_views_1d[name],0);
-          break;
-        default:
-          EKAT_ERROR_MSG ("Unrecognized averaging type.\n");
-      }
+    }
+  }
+  // Initialize the local views
+  initialize_dev_views();
+}
+/* ---------------------------------------------------------- */
+void AtmosphereOutput::
+initialize_dev_views()
+{
+  // Reset the local device views depending on the averaging type
+  // Init dev view with an "identity" for avg_type
+  for (auto const& name : m_fields_names) {
+    switch (m_avg_type) {
+      case OutputAvgType::Instant:
+        // No averaging
+        break;
+      case OutputAvgType::Max:
+        Kokkos::deep_copy(m_dev_views_1d[name],-std::numeric_limits<Real>::infinity());
+        break;
+      case OutputAvgType::Min:
+        Kokkos::deep_copy(m_dev_views_1d[name],std::numeric_limits<Real>::infinity());
+        break;
+      case OutputAvgType::Average:
+        Kokkos::deep_copy(m_dev_views_1d[name],0);
+        break;
+      default:
+        EKAT_ERROR_MSG ("Unrecognized averaging type.\n");
     }
   }
 }
