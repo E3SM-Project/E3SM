@@ -158,7 +158,9 @@ contains
         stream_year_last_ndep,   &
         model_year_align_ndep,   &
         ndepmapalgo,             &
-        stream_fldFileName_ndep
+        stream_fldFileName_ndep, &
+        startdate_scale_ndep,    &
+        scale_ndep
 
     stream_fldFileName_lightng = ' '
     stream_fldFileName_popdens = ' '
