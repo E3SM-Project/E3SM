@@ -211,7 +211,7 @@ def buildnml(case, caseroot, compname):
         decomp_date = '220730'
         decomp_prefix = 'mpas-o.graph.info.'
         restoring_file = 'sss.PHC3.0_monthlyClimatology.ARRM10to60E2r1.220802.nc'
-        analysis_mask_file = 'ARRM10to60E2r1_mocBasinsAndTransects220730.nc'
+        analysis_mask_file = 'ARRM10to60E2r1_mocBasinsAndTransects20210623.nc'
         ic_date = '220730'
         ic_prefix = 'mpaso.ARRM10to60E2r1'
         if ocn_ic_mode == 'spunup':
