@@ -2362,7 +2362,7 @@ do_lphase2_conditional: &
   !=============================================================================
   subroutine aero_model_gasaerexch( loffset, ncol, lchnk, delt, &
                                     latndx, lonndx, reaction_rates, &
-                                    tfld, pmid, pdel, troplev, mbar, relhum, & !hybrown, added troplev
+                                    tfld, pmid, pdel, troplev, mbar, relhum, &
                                     zm,  qh2o, cwat, cldfr, cldnum, &
                                     airdens, invariants, del_h2so4_gasprod,  &
                                     vmr0, vmr, pbuf )
@@ -2384,7 +2384,7 @@ do_lphase2_conditional: &
     integer,  intent(in) :: lchnk                  ! chunk index
     integer,  intent(in) :: latndx(pcols)          ! latitude indices
     integer,  intent(in) :: lonndx(pcols)          ! longitude indices
-    integer,  intent(in) :: troplev(pcols)         ! hybrown, tropopause level index
+    integer,  intent(in) :: troplev(pcols)         ! tropopause level index
     real(r8), intent(in) :: delt                   ! time step size (sec)
     real(r8), intent(in) :: reaction_rates(:,:,:)  ! reaction rates
     real(r8), intent(in) :: tfld(:,:)              ! temperature (K)
@@ -2591,7 +2591,7 @@ do_lphase2_conditional: &
             loffset,   delt,                         &
             latndx,    lonndx,                       &
             tfld,      pmid,    pdel,                &
-            troplev,                                 & !hybrown
+            troplev,                                 &
             zm,        pblh,                         &
             qh2o,      cldfr,                        &
             vmr,                vmrcw,               &

@@ -737,7 +737,7 @@ if ($rad_volcaero){
     }
 }
 
-# hybrown, Adding call for CLDERA prognostic stratospheric volcanic aerosol treatment
+# Adding call for CLDERA prognostic stratospheric volcanic aerosol treatment
 my $cldera_strat_volc = $cfg->get('cldera_strat_volc'); #default should be no CLDERA treatment (0)
 
 #################

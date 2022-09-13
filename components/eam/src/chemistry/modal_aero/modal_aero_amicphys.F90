@@ -171,7 +171,7 @@
   integer :: lmapcc_all(gas_pcnst)
   integer, parameter :: lmapcc_val_gas = 1, lmapcc_val_aer = 2, lmapcc_val_num = 3
   integer :: ngas, naer
-  integer :: nacc, nait, npca, nufi, ncrs, nmacc, nmait !hybrown, added ncrs
+  integer :: nacc, nait, npca, nufi, ncrs, nmacc, nmait
 
   integer :: n_agepair, n_coagpair
   integer :: modefrm_agepair(max_agepair), modetoo_agepair(max_agepair)
@@ -226,8 +226,8 @@
   real(r8) :: specdens2_amode(ntot_aspectype,ntot_amode)
   real(r8) :: spechygro2(ntot_aspectype,ntot_amode)
 
-!hybrown following is used to turn on stratospheric renaming for accumulation to coarse mode aerosol. 
-! Included to represent rapid growth of sulfate aerosol following volcanic eruption
+!following is used to turn on stratospheric renaming for accumulation to coarse mode aerosol. 
+!included to represent rapid growth of sulfate aerosol following volcanic eruption
 #if ( defined CLDERA_STRAT_VOLC )
   logical :: strat_accum_coarse_rename = .true.
 #else
@@ -262,7 +262,7 @@ subroutine modal_aero_amicphys_intr(                             &
                         loffset,  deltat,                        &
                         latndx,   lonndx,                        &
                         t,        pmid,     pdel,                &
-                        troplev,                                 & !hybrown
+                        troplev,                                 &
                         zm,       pblh,                          &
                         qv,       cld,                           &
                         q,                  qqcw,                &
@@ -309,7 +309,7 @@ implicit none
 
    real(r8), intent(in)    :: deltat               ! time step (s)
 
-   integer, intent(in)    :: troplev(pcols)       ! hybrown, tropopause level
+   integer, intent(in)    :: troplev(pcols)       ! tropopause level
 
    real(r8), intent(inout) :: q(ncol,pver,pcnstxx) ! current tracer mixing ratios (TMRs)
                                                    ! these values are updated (so out /= in)
@@ -912,7 +912,7 @@ main_i_loop: &
          nsubarea,  ncldy_subarea,                &
          iscldy_subarea,      afracsub,           &
          t(i,k),   pmid(i,k), pdel(i,k),          &
-         troplev(i),                              & !hybrown
+         troplev(i),                              &
          zm(i,k),  pblh(i),   relhumsub,          &
          dgn_a,    dgn_awet,  wetdens,            &
          qsub1,                                   &
@@ -1139,7 +1139,7 @@ main_i_loop: &
          nsubarea,  ncldy_subarea,                &
          iscldy_subarea,     afracsub,            &
          temp,     pmid,     pdel,                &
-         troplev,                                 & !hybrown
+         troplev,                                 &
          zmid,     pblh,     relhumsub,           &
          dgn_a,    dgn_awet, wetdens,             &
          qsub1,                                   &
@@ -1168,7 +1168,7 @@ main_i_loop: &
       real(r8), intent(in)    :: deltat                ! time step (s)
       real(r8), intent(in)    :: afracsub(maxsubarea)   ! sub-area fractional area (0-1)
 
-      integer, intent(in)    :: troplev               ! hybrown, tropopause index
+      integer, intent(in)    :: troplev               ! tropopause index
 
       real(r8), intent(in)    :: temp                  ! temperature at model levels (K)
       real(r8), intent(in)    :: pmid                  ! pressure at layer center (Pa)
@@ -1350,7 +1350,7 @@ main_jsub_loop: &
          jsub,                   nsubarea,           &
          iscldy_subarea(jsub),   afracsub(jsub),     &
          temp,       pmid,       pdel,               &
-         troplev,                                    & !hybrown
+         troplev,                                    &
          zmid,       pblh,       relhumsub(jsub),    &
          dgn_a,      dgn_awet,   wetdens,            &
          qgas1,      qgas3,      qgas4,              &
@@ -1377,7 +1377,7 @@ main_jsub_loop: &
          jsub,                   nsubarea,           &
          iscldy_subarea(jsub),   afracsub(jsub),     &
          temp,       pmid,       pdel,               &
-         troplev,                                    & !hybrown
+         troplev,                                    &
          zmid,       pblh,       relhumsub(jsub),    &
          dgn_a,      dgn_awet,   wetdens,            &
          qgas1,      qgas3,      qgas4,              &
@@ -1458,7 +1458,7 @@ main_jsub_loop: &
          jsub,                   nsubarea,           &
          iscldy_subarea,         afracsub,           &
          temp,       pmid,       pdel,               &
-         troplev,                                    & !hybrown
+         troplev,                                    &
          zmid,       pblh,       relhum,             &
          dgn_a,      dgn_awet,   wetdens,            &
          qgas1,      qgas3,      qgas4,              &
@@ -1505,7 +1505,7 @@ main_jsub_loop: &
       real(r8), intent(in)    :: afracsub              ! fractional area of sub-area (0-1)
       real(r8), intent(in)    :: deltat                ! time step (s)
 
-      integer, intent(in)    :: troplev               ! !hybrown, tropopause level index
+      integer, intent(in)    :: troplev               ! tropopause level index
 
       real(r8), intent(in)    :: temp                  ! temperature at model levels (K)
       real(r8), intent(in)    :: pmid                  ! pressure at layer center (Pa)
@@ -1806,7 +1806,7 @@ do_rename_if_block30: &
       mtoo_renamexf(:) = 0
       mtoo_renamexf(nait) = nacc
       if ( strat_accum_coarse_rename ) then
-         mtoo_renamexf(nacc) = ncrs !hybrown
+         mtoo_renamexf(nacc) = ncrs
       end if
 
 ! qaer_delsub_grow4rnam   = change in qaer from cloud chemistry and gas condensation
@@ -1822,7 +1822,7 @@ do_rename_if_block30: &
       call mam_rename_1subarea(                                      &
          nstep,             lchnk,                                   &
          i,                 k,                jsub,                  &
-         troplev,                                                    & !hybrown
+         troplev,                                                    &
          latndx,            lonndx,           lund,                  &
          iscldy_subarea,                                             &
          mtoo_renamexf,                                              &
@@ -1926,7 +1926,7 @@ do_rename_if_block30: &
          jsub,                   nsubarea,           &
          iscldy_subarea,         afracsub,           &
          temp,       pmid,       pdel,               &
-         troplev,                                    & !hybrown
+         troplev,                                    &
          zmid,       pblh,       relhum,             &
          dgn_a,      dgn_awet,   wetdens,            &
          qgas1,      qgas3,      qgas4,              &
@@ -1964,7 +1964,7 @@ do_rename_if_block30: &
       real(r8), intent(in)    :: afracsub              ! fractional area of sub-area (0-1)
       real(r8), intent(in)    :: deltat                ! time step (s)
 
-      integer, intent(in)    :: troplev               ! hybrown, tropopause level index
+      integer, intent(in)    :: troplev               ! tropopause level index
 
       real(r8), intent(in)    :: temp                  ! temperature at model levels (K)
       real(r8), intent(in)    :: pmid                  ! pressure at layer center (Pa)
@@ -2234,7 +2234,7 @@ do_rename_if_block30: &
       mtoo_renamexf(:) = 0
       mtoo_renamexf(nait) = nacc
       if ( strat_accum_coarse_rename ) then
-         mtoo_renamexf(nacc) = ncrs !hybrown
+         mtoo_renamexf(nacc) = ncrs 
       end if
       qnum_sv1 = qnum_cur
       qaer_sv1 = qaer_cur
@@ -3613,7 +3613,7 @@ time_loop: &
       subroutine mam_rename_1subarea(                               &
          nstep,             lchnk,                                  &
          i,                 k,                jsub,                 &
-         troplev,                                                   & !hybrown
+         troplev,                                                   &
          latndx,            lonndx,           lund,                 &
          iscldy_subarea,                                            &
          mtoo_renamexf,                                             &
@@ -3640,7 +3640,7 @@ time_loop: &
       integer,  intent(in)    :: mtoo_renamexf(max_mode)
       integer,  intent(in)    :: n_mode                ! current number of modes (including temporary)
 
-      integer,  intent(in)    :: troplev               ! hybrown, tropopause level index
+      integer,  intent(in)    :: troplev               ! tropopause level index
 
       real(r8), intent(inout), dimension( 1:max_mode ) :: &
          qnum_cur
@@ -3706,11 +3706,10 @@ time_loop: &
       real(r8) :: xferfrac_vol, xferfrac_num, xferfrac_max
       real(r8) :: yn_tail, yv_tail
 
-      !++hybrown, added to emulate CESM2 WACCM renaming code, which hardcodes
+      !added to emulate CESM2 WACCM renaming code, which hardcodes
       !coarse mode upper and lower bounds for renaming transfer 
       real(r8) :: dp_xferall_thresh(ntot_amode)
       real(r8) :: dp_xfernone_thresh(ntot_amode)
-      !--hybrown
 
       xferfrac_max = 1.0_r8 - 10.0_r8*epsilon(1.0_r8)   ! 1-eps
 
@@ -3741,7 +3740,6 @@ time_loop: &
          dp_cut(mfrm) = sqrt(   &
             dgnum_aer(mfrm)*exp(1.5*(alnsg_aer(mfrm)**2)) *   &
             dgnum_aer(mtoo)*exp(1.5*(alnsg_aer(mtoo)**2)) )
-         !++hybrown
          dp_xferall_thresh(mfrm) = dgnum_aer(mtoo)
          dp_xfernone_thresh(mfrm) = dgnum_aer(mfrm)
 
@@ -3750,7 +3748,6 @@ time_loop: &
             dp_xfernone_thresh(mfrm) = 1.6e-7_r8
             dp_xferall_thresh(mfrm)  = 4.7e-7_r8
          end if
-         !--hybrown
          lndp_cut(mfrm) = log( dp_cut(mfrm) )
          dp_belowcut(mfrm) = 0.99*dp_cut(mfrm)
       end do
@@ -3793,7 +3790,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
       mfrm = n
       mtoo = mtoo_renamexf(n)
       if (mtoo <= 0) cycle mainloop1_ipair
-      if (mtoo == ncrs .and. k >= troplev) cycle mainloop1_ipair !hybrown, only rename accum-coarse in stratosphere. Also only activated if ncrs>0
+      if (mtoo == ncrs .and. k >= troplev) cycle mainloop1_ipair !only rename accum-coarse in stratosphere. Also only activated if ncrs>0
 
 !   dryvol_t_old is the old total (a+c) dry-volume for the "from" mode 
 !      in m^3-AP/kmol-air
@@ -3825,7 +3822,7 @@ mainloop1_ipair:  do n = 1, ntot_amode
 
 !   no renaming if dgnum < "base" dgnum, 
       dgn_t_new = (dryvol_t_new/(num_t_oldbnd*factoraa(mfrm)))**onethird
-      if (dgn_t_new .le. dp_xfernone_thresh(mfrm)) cycle mainloop1_ipair  !hybrown
+      if (dgn_t_new .le. dp_xfernone_thresh(mfrm)) cycle mainloop1_ipair 
 
 !   compute new fraction of number and mass in the tail (dp > dp_cut)
       lndgn_new = log( dgn_t_new )
@@ -3847,11 +3844,10 @@ mainloop1_ipair:  do n = 1, ntot_amode
             dryvol_t_old = dryvol_t_old * (dp_belowcut(mfrm)/dgn_t_old)**3
             dgn_t_old = dp_belowcut(mfrm)
          end if
-!++hybrown, insert xferall_thresh variable condional for acc->crs and ait->acc
+            ! insert xferall_thresh variable condional for acc->crs and ait->acc
             if ( dgn_t_new .lt. dp_xferall_thresh(mfrm) ) then
                if ((dryvol_t_new-dryvol_t_old) .le. 1.0e-6_r8*dryvol_t_oldbnd) cycle mainloop1_ipair
             end if
-!--hybrown
       else if (dgn_t_new .ge. dp_cut(mfrm)) then
 !         if dgn_t_new exceeds dp_cut, use the minimum of dgn_t_old and 
 !         dp_belowcut to guarantee some transfer
@@ -3866,13 +3862,12 @@ mainloop1_ipair:  do n = 1, ntot_amode
 
 !   transfer fraction is difference between new and old tail-fractions
 !   transfer fraction for number cannot exceed that of mass
-!++hybrown, use xferall specification for acc->crs and ait->acc to emulate WACCM treatment
+         ! use xferall specification for acc->crs and ait->acc to emulate WACCM treatment
          if (dgn_t_new .ge. dp_xferall_thresh(mfrm)) then
             tmpa = dryvol_t_new
          else
             tmpa = tailfr_volnew*dryvol_t_new - tailfr_volold*dryvol_t_old
          end if
-!--hybrown
       if (tmpa .le. 0.0_r8) cycle mainloop1_ipair
 
       xferfrac_vol = min( tmpa, dryvol_t_new )/dryvol_t_new
@@ -5170,7 +5165,7 @@ use modal_aero_data, only : &
     cnst_name_cw, &
     dgnum_amode, dgnumlo_amode, dgnumhi_amode, &
     lmassptr_amode, lmassptrcw_amode, &
-    modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine, modeptr_coarse, & !hybrown, added modeptr_coarse
+    modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine, modeptr_coarse, &
     modeptr_maccum, modeptr_maitken, &
     nspec_amode, &
     numptr_amode, numptrcw_amode, sigmag_amode
@@ -5555,11 +5550,10 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       npca = modeptr_pcarbon
       nufi = modeptr_ufine
 
-!++ hybrown, these lines turn on (ncrs>0) or off (ncrs=0) acc->crs renaming in stratosphere
+      ! these lines turn on (ncrs>0) or off (ncrs=0) acc->crs renaming in stratosphere
       if (strat_accum_coarse_rename) then
          ncrs = modeptr_coarse
       endif
-!-- hybrown
 
 #if ( defined MODAL_AERO_9MODE )
       nmacc = modeptr_maccum
@@ -5835,7 +5829,7 @@ use phys_control,only  :  phys_getopts
 
 use modal_aero_data, only : &
     cnst_name_cw, &
-    modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine, modeptr_coarse !hybrown, added modeptr_coarse
+    modeptr_accum, modeptr_aitken, modeptr_pcarbon, modeptr_ufine, modeptr_coarse
 !use modal_aero_rename
 
 implicit none
@@ -5947,7 +5941,6 @@ implicit none
 ! renaming during gas-->aer condensation or cloud chemistry
       na = modeptr_aitken
       nb = modeptr_accum
-!++hybrown
       if (strat_accum_coarse_rename) then 
          nc = modeptr_coarse !for coarse mode renaming
       else
@@ -5955,8 +5948,7 @@ implicit none
          nc = 0
          lmzc = 0
       end if
-!--hybrown
-      if (na > 0 .and. nb > 0) then !hybrown
+      if (na > 0 .and. nb > 0) then
          lmza = lmap_num(na)
          lmzb = lmap_num(nb)
          do_q_coltendaa(lmza,iqtend_rnam) = .true.
@@ -5965,9 +5957,8 @@ implicit none
          lmzb = lmap_numcw(nb)
          do_qqcw_coltendaa(lmza,iqqcwtend_rnam) = .true.
          do_qqcw_coltendaa(lmzb,iqqcwtend_rnam) = .true.
-!++hybrown
-         if (nc > 0) then !hybrown, for coarse mode renaming
-            lmzc = lmap_num(nc) !hybrown
+         if (nc > 0) then ! for coarse mode renaming
+            lmzc = lmap_num(nc)
             do_q_coltendaa(lmzc,iqtend_rnam) = .true.
             lmzc = lmap_numcw(nc)
             do_qqcw_coltendaa(lmzc,iqqcwtend_rnam) = .true.
@@ -5975,26 +5966,23 @@ implicit none
          do iaer = 1, naer
             lmza = lmap_aer(iaer,na)
             lmzb = lmap_aer(iaer,nb)
-!++hybrown
             if (nc > 0) then
-               lmzc = lmap_aer(iaer,nc) !hybrown
+               lmzc = lmap_aer(iaer,nc)
             end if
             if (lmza > 0) then
                do_q_coltendaa(lmza,iqtend_rnam) = .true.
                if (lmzb > 0) do_q_coltendaa(lmzb,iqtend_rnam) = .true.
-               if (lmzc > 0) do_q_coltendaa(lmzc,iqtend_rnam) = .true. !hybrown
+               if (lmzc > 0) do_q_coltendaa(lmzc,iqtend_rnam) = .true.
             end if
             lmza = lmap_aercw(iaer,na)
             lmzb = lmap_aercw(iaer,nb)
-!++hybrown
             if (nc > 0) then
                lmzc = lmap_aercw(iaer,nc)
             end if
-!--hybrown
             if (lmza > 0) then
                do_qqcw_coltendaa(lmza,iqqcwtend_rnam) = .true.
                if (lmzb > 0) do_qqcw_coltendaa(lmzb,iqqcwtend_rnam) = .true.
-               if (lmzc > 0) do_qqcw_coltendaa(lmzc,iqqcwtend_rnam)  =.true. !hybrown
+               if (lmzc > 0) do_qqcw_coltendaa(lmzc,iqqcwtend_rnam)  =.true.
             end if
          end do ! iaer
       end if ! (na > 0 .and. nb > 0)

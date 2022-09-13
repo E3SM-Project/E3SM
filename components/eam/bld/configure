@@ -335,9 +335,7 @@ GetOptions(
     "ccsm_seq"                  => \$opts{'ccsm_seq'},
     "cflags=s"                  => \$opts{'cflags'},
     "chem=s"                    => \$opts{'chem'},
-#++hybrown
     "cldera_strat_volc=s"         => \$opts{'cldera_strat_volc'},
-#--hybrown
     "cice_bsizex=s"             => \$opts{'cice_bsizex'},
     "cice_bsizey=s"             => \$opts{'cice_bsizey'},
     "cice_maxblocks=s"          => \$opts{'cice_maxblocks'},
@@ -1389,7 +1387,7 @@ if (($chem_pkg ne 'none') || ($prog_species)) {
 if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_3MODE ';
 } elsif ($chem_pkg =~ '_mam4_mom' || $chem_pkg =~ '_mam4_resus_mom' ) {
-#++hybrown, for turning on CLDERA stratospheric volcanic aerosol treatment
+#for turning on CLDERA stratospheric volcanic aerosol treatment
 #    $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM ';
     if (!defined $opts{'cldera_strat_volc'} ) {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM ';
@@ -1409,7 +1407,6 @@ if ($chem_pkg =~ '_mam3') {
         $cfg_ref->set('cldera_strat_volc', $cldera_strat_volc);
     $chem_cppdefs = " -DMODAL_AERO -DMODAL_AERO_4MODE -DCLDERA_STRAT_VOLC=$cldera_strat_volc";
     }
-#--hybrown
 } elsif ($chem_pkg =~ '_mam4' ) {
 } elsif ($chem_pkg =~ '_mam7') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_7MODE ';

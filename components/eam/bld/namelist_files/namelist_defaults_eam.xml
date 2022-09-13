@@ -285,7 +285,7 @@
 <mam4_mode2_file rad="rrtmg">atm/cam/physprops/mam4_mode2_rrtmg_c130628.nc</mam4_mode2_file>
 <mam4_mode3_file rad="rrtmg">atm/cam/physprops/mam4_mode3_rrtmg_aeronetdust_c141106.nc</mam4_mode3_file>
 <mam4_mode4_file rad="rrtmg">atm/cam/physprops/mam4_mode4_rrtmg_c130628.nc</mam4_mode4_file>
-<!-- hybrown -->
+<!-- for CLDERA stratospheric aerosol treatment-->
 <mam4_mode1_file rad="rrtmg" cldera_strat_volc="1">/projects/cldera/data/E3SM/model_input/modal_optics/modal_optics_mode1_hb.nc</mam4_mode1_file>
 <mam4_mode3_file rad="rrtmg" cldera_strat_volc="1">/projects/cldera/data/E3SM/model_input/modal_optics/modal_optics_mode3_hb.nc</mam4_mode3_file>
 
@@ -1735,10 +1735,9 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <clubb_use_sgv phys="default"> .true.     </clubb_use_sgv>
 <seasalt_emis_scale phys="default" chem="linoz_mam4_resus_mom_soag"> 0.6        </seasalt_emis_scale>
 
-<!--hybrown -->
+<!-- for CLDERA stratospheric aerosol treatment-->
 <seasalt_emis_scale phys="default" chem="linoz_mam4_resus_mom_soag" cldera_strat_volc="1"> 0.36        </seasalt_emis_scale>
 <dust_emis_fact phys="default" cldera_strat_volc="1"> 3.255D0     </dust_emis_fact>
-<!--hybrown -->
 
 <zmconv_c0_lnd phys="default"> 0.0020     </zmconv_c0_lnd>
 <zmconv_c0_ocn phys="default"> 0.0020     </zmconv_c0_ocn>
