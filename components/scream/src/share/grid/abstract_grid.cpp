@@ -25,6 +25,9 @@ AbstractGrid (const std::string& name,
   EKAT_REQUIRE_MSG (m_num_vert_levs>=2, "Error! Number of vertical levels must be at least 2.\n");
 
   m_comm.all_reduce(&m_num_local_dofs,&m_num_global_dofs,1,MPI_SUM);
+
+  // This grid name is also an alias
+  m_aliases.push_back(m_name);
 }
 
 void AbstractGrid::add_alias (const std::string& alias)
