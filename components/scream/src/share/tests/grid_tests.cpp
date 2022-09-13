@@ -48,7 +48,7 @@ TEST_CASE("point_grid", "") {
   REQUIRE(layout.tag(0) == COL);
 
   auto shallow_copy = grid->clone("shallow",true);
-  auto deep_copy    = grid->clone("shallow",false);
+  auto deep_copy    = grid->clone("deep",false);
 
   REQUIRE (shallow_copy->get_dofs_gids().data()==grid->get_dofs_gids().data());
   REQUIRE (deep_copy->get_dofs_gids().data()!=grid->get_dofs_gids().data());
@@ -91,7 +91,7 @@ TEST_CASE("se_grid", "") {
   REQUIRE( (max_gid-min_gid+1)==se_grid->get_num_global_dofs() );
 
   auto shallow_copy = se_grid->clone("shallow",true);
-  auto deep_copy    = se_grid->clone("shallow",false);
+  auto deep_copy    = se_grid->clone("deep",false);
 
   REQUIRE (shallow_copy->get_dofs_gids().data()==se_grid->get_dofs_gids().data());
   REQUIRE (deep_copy->get_dofs_gids().data()!=se_grid->get_dofs_gids().data());
