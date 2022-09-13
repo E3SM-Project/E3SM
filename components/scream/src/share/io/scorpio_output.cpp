@@ -437,11 +437,11 @@ void AtmosphereOutput::register_views()
     }
   }
   // Initialize the local views
-  initialize_dev_views();
+  reset_dev_views();
 }
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::
-initialize_dev_views()
+reset_dev_views()
 {
   // Reset the local device views depending on the averaging type
   // Init dev view with an "identity" for avg_type

@@ -141,7 +141,7 @@ public:
   // Main Functions
   void restart (const std::string& filename);
   void init();
-  void initialize_dev_views();
+  void reset_dev_views();
   void setup_output_file (const std::string& filename, const std::string& fp_precision);
   void run (const std::string& filename, const bool write, const int nsteps_since_last_output);
   void finalize() {}
