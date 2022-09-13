@@ -35,7 +35,7 @@ struct Functions
   using BigPack = ekat::Pack<S,SCREAM_PACK_SIZE>;
   template <typename S>
   using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
-  
+
   using IntSmallPack = SmallPack<Int>;
   using Pack = BigPack<Scalar>;
   using Spack = SmallPack<Scalar>;
@@ -68,6 +68,11 @@ struct Functions
 
   using WorkspaceMgr = typename ekat::WorkspaceManager<Spack,  Device>;
   using Workspace    = typename WorkspaceMgr::Workspace;
+
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  using ScalarWorkspaceMgr = typename ekat::WorkspaceManager<Scalar,  Device>;
+  using ScalarWorkspace    = typename ScalarWorkspaceMgr::Workspace;
+#endif
 
   // This struct stores input views for shoc_main.
   struct SHOCInput {
@@ -295,6 +300,22 @@ struct Functions
     Scalar&                      ke_int,
     Scalar&                      wv_int,
     Scalar&                      wl_int);
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  static void shoc_energy_integrals_disp(
+    const ScalarWorkspaceMgr&      workspace_mgr_local,
+    const Int&                   shcol,
+    const Int&                   nlev,
+    const view_2d<const Spack>& host_dse,
+    const view_2d<const Spack>& pdel,
+    const view_2d<const Spack>& rtm,
+    const view_2d<const Spack>& rcm,
+    const uview_2d<const Spack>& u_wind,
+    const uview_2d<const Spack>& v_wind,
+    const Int& se_b_slot,
+    const Int& ke_b_slot,
+    const Int& wv_b_slot,
+    const Int& wl_b_slot);
+#endif
 
   KOKKOS_FUNCTION
   static void shoc_diag_second_moments_lbycond(
@@ -380,7 +401,7 @@ struct Functions
     const uview_1d<const Spack>& zt_grid,
     const uview_1d<const Spack>& zi_grid,
     const uview_1d<const Spack>& dz_zt,
-    const uview_1d<const Spack>& tke,    
+    const uview_1d<const Spack>& tke,
     const uview_1d<const Spack>& thv,
     const Workspace&             workspace,
     const uview_1d<Spack>&       brunt,
@@ -410,6 +431,32 @@ struct Functions
     const uview_1d<const Spack>& pint,
     const Workspace&             workspace,
     const uview_1d<Spack>&       host_dse);
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  static void shoc_energy_fixer_disp(
+    const Int&                   shcol,
+    const Int&                   nlev,
+    const Int&                   nlevi,
+    const Scalar&                dtime,
+    const Int&                   nadv,
+    const view_2d<const Spack>&  zt_grid,
+    const view_2d<const Spack>&  zi_grid,
+    const Int&                   se_b_slot,
+    const Int&                   ke_b_slot,
+    const Int&                   wv_b_slot,
+    const Int&                   wl_b_slot,
+    const Int&                   se_a_slot,
+    const Int&                   ke_a_slot,
+    const Int&                   wv_a_slot,
+    const Int&                   wl_a_slot,
+    const view_1d<const Scalar>& wthl_sfc,
+    const view_1d<const Scalar>& wqw_sfc,
+    const Int&                   rho_zt_slot,
+    const view_2d<const Spack>&  tke,
+    const view_2d<const Spack>&  pint,
+    const WorkspaceMgr&          workspace_mgr,
+    const ScalarWorkspaceMgr&    workspace_mgr_local,
+    const view_2d<Spack>&        host_dse);
+#endif
 
   KOKKOS_FUNCTION
   static void compute_shoc_vapor(
@@ -553,6 +600,7 @@ struct Functions
     const Int&                  ntop_shoc,
     const view_1d<const Spack>& pref_mid);
 
+#ifdef SCREAM_MONOLITHIC_KERNELS
   KOKKOS_FUNCTION
   static void shoc_main_internal(
     const MemberType&            team,
@@ -611,6 +659,65 @@ struct Functions
     const uview_1d<Spack>&       wqls_sec,
     const uview_1d<Spack>&       brunt,
     const uview_1d<Spack>&       isotropy);
+#else
+  static void shoc_main_internal(
+    const Int&                   shcol,        // Number of columns
+    const Int&                   nlev,         // Number of levels
+    const Int&                   nlevi,        // Number of levels on interface grid
+    const Int&                   npbl,         // Maximum number of levels in pbl from surface
+    const Int&                   nadv,         // Number of times to loop SHOC
+    const Int&                   num_qtracers, // Number of tracers
+    const Scalar&                dtime,        // SHOC timestep [s]
+    // Input Variables
+    const view_1d<const Scalar>& host_dx,
+    const view_1d<const Scalar>& host_dy,
+    const view_2d<const Spack>& zt_grid,
+    const view_2d<const Spack>& zi_grid,
+    const view_2d<const Spack>& pres,
+    const view_2d<const Spack>& presi,
+    const view_2d<const Spack>& pdel,
+    const view_2d<const Spack>& thv,
+    const view_2d<const Spack>& w_field,
+    const view_1d<const Scalar>& wthl_sfc,
+    const view_1d<const Scalar>& wqw_sfc,
+    const view_1d<const Scalar>& uw_sfc,
+    const view_1d<const Scalar>& vw_sfc,
+    const view_2d<const Spack>& wtracer_sfc,
+    const view_2d<const Spack>& inv_exner,
+    const view_1d<const Scalar>& phis,
+    // Workspace Manager
+    const WorkspaceMgr&      workspace_mgr,
+    // Input/Output Variables
+    const view_2d<Spack>&       host_dse,
+    const view_2d<Spack>&       tke,
+    const view_2d<Spack>&       thetal,
+    const view_2d<Spack>&       qw,
+    const uview_2d<Spack>&      u_wind,
+    const uview_2d<Spack>&      v_wind,
+    const view_2d<Spack>&       wthv_sec,
+    const view_3d<Spack>&       qtracers,
+    const view_2d<Spack>&       tk,
+    const view_2d<Spack>&       shoc_cldfrac,
+    const view_2d<Spack>&       shoc_ql,
+    // Output Variables
+    const view_1d<Scalar>&      pblh,
+    const view_2d<Spack>&       shoc_ql2,
+    // Diagnostic Output Variables
+    const view_2d<Spack>&       shoc_mix,
+    const view_2d<Spack>&       w_sec,
+    const view_2d<Spack>&       thl_sec,
+    const view_2d<Spack>&       qw_sec,
+    const view_2d<Spack>&       qwthl_sec,
+    const view_2d<Spack>&       wthl_sec,
+    const view_2d<Spack>&       wqw_sec,
+    const view_2d<Spack>&       wtke_sec,
+    const view_2d<Spack>&       uw_sec,
+    const view_2d<Spack>&       vw_sec,
+    const view_2d<Spack>&       w3,
+    const view_2d<Spack>&       wqls_sec,
+    const view_2d<Spack>&       brunt,
+    const view_2d<Spack>&       isotropy);
+#endif
 
   // Return microseconds elapsed
   static Int shoc_main(
@@ -641,7 +748,7 @@ struct Functions
     Scalar& pblh,
     const uview_1d<Spack>& rino,
     bool& check);
-  
+
   KOKKOS_FUNCTION
   static void vd_shoc_decomp(
     const MemberType&            team,

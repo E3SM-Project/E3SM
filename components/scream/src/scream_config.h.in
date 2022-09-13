@@ -50,4 +50,7 @@
 // Whether or not to run RRTMGP debug checks
 #cmakedefine SCREAM_RRTMGP_DEBUG
 
+// Whether monolithic kernels are on
+#cmakedefine SCREAM_MONOLITHIC_KERNELS
+
 #endif

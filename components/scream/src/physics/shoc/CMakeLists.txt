@@ -62,6 +62,14 @@ if (NOT CUDA_BUILD OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
   ) # SHOC ETI SRCS
 endif()
 
+# Add dispatch source files if monolithic kernels are off
+if (NOT SCREAM_MONOLITHIC_KERNELS)
+  list(APPEND SHOC_SRCS
+    shoc_energy_integrals_disp.cpp
+    shoc_energy_fixer_disp.cpp
+  )
+endif()
+
 if (NOT SCREAM_DEBUG)
   # Mods to compiler flags for individual files to resolve internal compiler errors.
   if ("${SCREAM_MACHINE}" STREQUAL "cori-knl")

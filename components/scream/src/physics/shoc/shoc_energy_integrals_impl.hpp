@@ -37,7 +37,7 @@ void Functions<S,D>
   // confidence traced to these energy integral computations. We checked that
   // the view_reduction wrapper is not the cause by simplifying these to be bare
   // Kokkos::parallel_reduce calls acting on doubles and saw the same results.
-  
+
   // Compute se_int
   ExeSpaceUtils::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
