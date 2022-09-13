@@ -2,8 +2,11 @@
 #define EAMXX_HORIZONTAL_REMAP_UTILITY_HPP
 
 #include "share/grid/abstract_grid.hpp"
+#include "share/io/scorpio_input.hpp"
 #include "share/scream_types.hpp"
 #include "ekat/kokkos/ekat_subview_utils.hpp"
+
+#include <numeric>
 
 namespace scream {
 
@@ -124,6 +127,7 @@ public:
   void set_dof_gids(const view_1d<gid_type>& dofs_gids, const gid_type min_dof);
   void set_unique_source_dofs();
   void add_remap_segment(const GSSegment& seg);
+  void set_remap_segments_from_file(const std::string& remap_filename);
 
   // Getter functions
   view_1d<gid_type>      get_unique_source_dofs() const { return m_unique_dofs; }

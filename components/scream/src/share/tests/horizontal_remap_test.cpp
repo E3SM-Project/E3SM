@@ -260,42 +260,43 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min
   // All done writing 
   scorpio::eam_pio_closefile(filename);
 
-//ASD//----------------------
-//ASD  // Step 4: Load remap information and source data from the file created in step 3
-//ASD  //         and use this data to test remapping from file.  Compare remapped data
-//ASD  //         against the baseline. 
-//ASD  GSMap remap_from_file;
-//ASD  remap_from_file.set_name("From File");
-//ASD  remap_from_file.set_segments_from_file(filename,comm,dofs_gids,tgt_min_dof);
-//ASD  remap_from_file.check();
-//ASD  remap_from_file.set_unique_source_dofs();
-//ASD  auto unique_dofs_from_file = remap_from_file.get_unique_dofs();
-//ASD  // Read source data at unique points
-//ASD  scorpio::register_file(filename,scorpio::Read);
-//ASD  scorpio::get_variable(filename,"src_data","src_data",1,vec_of_data_dims,PIO_REAL,data_decomp_tag_r);
-//ASD  var_dof.resize(unique_dofs_from_file.size());
-//ASD  for (int ii=0; ii<var_dof.size(); ii++) {
-//ASD    var_dof[ii] = unique_dofs_from_file[ii];
-//ASD  }
-//ASD  scorpio::set_dof(filename,"src_data",var_dof.size(),var_dof.data());
-//ASD  scorpio::set_decomp(filename);
-//ASD  view_1d<Real> x_data_from_file("",unique_dofs_from_file.size());
-//ASD  auto x_data_from_file_h = Kokkos::create_mirror_view(x_data_from_file);
-//ASD  scorpio::grid_read_data_array(filename,"src_data",0,x_data_from_file.data()); 
-//ASD  scorpio::eam_pio_closefile(filename);
-//ASD  Kokkos::deep_copy(x_data_from_file_h,x_data_from_file);
-//ASD  // Apply remap using the data
-//ASD  view_1d<Real> y_data_from_file("",num_loc_tgt_cols);
-//ASD  remap_from_file.apply_remap<Real>(x_data_from_file,y_data_from_file);
-//ASD  // The remapped values should match the y_baseline
-//ASD  auto y_data_from_file_h = Kokkos::create_mirror_view(y_data_from_file);
-//ASD  Kokkos::deep_copy(y_data_from_file_h,y_data_from_file);
-//ASD  for (int ii=0; ii<num_loc_tgt_cols; ii++) {
-//ASD    gid_type dof = dofs_gids_h(ii);
-//ASD    auto y_base = y_baseline[dof];
-//ASD    REQUIRE(std::abs(y_data_from_file_h(ii)-y_base)<tol);
-//ASD  } 
-//ASD
+//----------------------
+  // Step 4: Load remap information and source data from the file created in step 3
+  //         and use this data to test remapping from file.  Compare remapped data
+  //         against the baseline. 
+  GSMap remap_from_file(comm,"From File", dofs_gids, tgt_min_dof);
+  remap_from_file.set_remap_segments_from_file(filename);
+  remap_from_file.set_unique_source_dofs();
+  remap_from_file.check();
+  auto unique_dofs_from_file = remap_from_file.get_unique_source_dofs();
+  auto unique_dofs_from_file_h = Kokkos::create_mirror_view(unique_dofs_from_file);
+  Kokkos::deep_copy(unique_dofs_from_file_h,unique_dofs_from_file);
+  // Read source data at unique points
+  scorpio::register_file(filename,scorpio::Read);
+  scorpio::get_variable(filename,"src_data","src_data",vec_of_data_dims,"real",data_decomp_tag_r);
+  var_dof.resize(unique_dofs_from_file.size());
+  for (int ii=0; ii<var_dof.size(); ii++) {
+    var_dof[ii] = unique_dofs_from_file_h(ii);
+  }
+  scorpio::set_dof(filename,"src_data",var_dof.size(),var_dof.data());
+  scorpio::set_decomp(filename);
+  view_1d<Real> x_data_from_file("",var_dof.size());
+  auto x_data_from_file_h = Kokkos::create_mirror_view(x_data_from_file);
+  scorpio::grid_read_data_array(filename,"src_data",0,x_data_from_file.data(),x_data_from_file.size()); 
+  scorpio::eam_pio_closefile(filename);
+  Kokkos::deep_copy(x_data_from_file_h,x_data_from_file);
+  // Apply remap using the data
+  view_1d<Real> y_data_from_file("",num_loc_tgt_cols);
+  remap_from_file.apply_remap(x_data_from_file,y_data_from_file);
+  // The remapped values should match the y_baseline
+  auto y_data_from_file_h = Kokkos::create_mirror_view(y_data_from_file);
+  Kokkos::deep_copy(y_data_from_file_h,y_data_from_file);
+  for (int ii=0; ii<num_loc_tgt_cols; ii++) {
+    gid_type dof = dofs_gids_h(ii);
+    auto y_base = y_baseline[dof];
+    REQUIRE(std::abs(y_data_from_file_h(ii)-y_base)<tol);
+  } 
+
   // All Done with testing
   scorpio::eam_pio_finalize();
 
@@ -399,6 +400,12 @@ TEST_CASE("horizontal_remap_units", "") {
     RPDF pdf_seg_wgt(0,1);
     // Create a GSMap to test
     GSMap test_map(comm,"Test Map");
+    Int num_dofs = 2;
+    view_1d<gid_type> dof_gids("",num_dofs);
+    Kokkos::parallel_for("", num_dofs, KOKKOS_LAMBDA (const int& ii) {
+      dof_gids(ii) = ii;
+    });
+    test_map.set_dof_gids(dof_gids,0);
     // Create a remap segment
     Int len = pdf_seg_len(engine);
     GSSegment test_seg(1,len);
