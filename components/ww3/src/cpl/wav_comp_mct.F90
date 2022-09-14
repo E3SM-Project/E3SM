@@ -128,25 +128,6 @@
 !
 !     ----------------------------------------------------------------
 !
-!  9. Switches :
-!
-!       !/SHRD  Switch for shared / distributed memory architecture.
-!       !/DIST  Id.
-!       !/MPI   Id.
-!
-!       !/LLG   Spherical grid.
-!       !/XYG   Cartesian grid.
-!       !/MGW   Moving grid wind correction.
-!       !/MGP   Moving grid propagation correction.
-!
-!       !/T     Enable test output.
-!       !/O7    Echo input homogeneous fields.
-!
-!       !/NCO   NCEP NCO modifications for operational implementation.
-!
-!       !/F90   Timer function included for F90.
-!
-! 10. Source code :
 !
 !/ ------------------------------------------------------------------- /
       use w3gdatmd, only: dtmax, dtcfl, dtcfli, dtmin, &
@@ -163,7 +144,7 @@
       USE W3IDATMD, ONLY: TLN, WLEV
       use w3odatmd, only: w3nout, w3seto, naproc, iaproc, napout, naperr, ndse, ndso, &
                           nogrp, ngrpp, noge, idout, fnmpre, iostyp, notype, flout, &
-                          fnmpre, ifile4
+                          fnmpre, ifile4, ofiles
       use w3servmd, only: w3xyrtn
       use w3parall, only: init_get_isea
       use w3dispmd, only: wavnu1
@@ -225,7 +206,7 @@
       private :: wav_setgsmap_mct
       private :: wav_domain_mct
 
-      integer,save :: stdout
+      integer,target,save :: stdout
       integer,save :: odat(40)
       integer,save :: nds(13)
       integer,save :: mds(5)
@@ -283,12 +264,12 @@ CONTAINS
       integer             :: unitn            ! namelist unit number
       integer             :: ntrace(2), time0(2)
       integer             :: nu
-      integer             :: iproc
       integer             :: timen(2), nh(4), iprt(6)
       integer             :: i,j,npts
       integer             :: ierr
       integer             :: jsea,isea
       integer             :: pnt_out_freq, grd_out_freq
+      integer             :: iproc
       integer, allocatable:: maptst(:,:)
       real                :: a(nhmax,4)
       real, allocatable   :: x(:), y(:)
@@ -300,31 +281,16 @@ CONTAINS
       real                :: wlveff
       real                :: depth
 
-      character(len=3)    :: idstr(8), idtst
+      character(len=3)    :: idtst
       character(len=10)   :: pn
-      character(len=13)   :: idflds(8)
       character(len=15)   :: restart_timestamp
       character(len=20)   :: strng
       character(len=23)   :: dtme21
-      character(len=30)   :: idotyp(6)
       character(len=40), allocatable :: pnames(:)
       character(len=256) :: stafile
       character(len=1024) :: fldout, fldcou
 
       !/ ------------------------------------------------------------------- /
-
-      DATA IDFLDS / 'water levels ' , 'currents     ' ,               &
-                    'winds        ' , 'ice fields   ' ,               &
-                    'mean param.  ' , '1D spectra   ' ,               &
-                    '2D spectra   ' , 'moving grid  ' /
-      DATA IDOTYP / 'Fields of mean wave parameters' ,                &
-                    'Point output                  ' ,                &
-                    'Track point output            ' ,                &
-                    'Restart files                 ' ,                &
-                    'Nesting data                  ' ,                &
-                    'Partitioned wave field data   ' /
-      DATA IDSTR  / 'LEV', 'CUR', 'WND', 'ICE', 'DT0', 'DT1', 'DT2',  &
-                    'MOV' /
 
       namelist /ww3_inparm/ stafile, fldout, fldcou, pnt_out_freq, grd_out_freq
 
@@ -340,21 +306,32 @@ CONTAINS
       inst_suffix = seq_comm_suffix(compid)
       call ww3_cpl_indices_set()
 
+      call mpi_barrier ( mpi_comm, ierr )
+      call mpi_comm_rank(mpi_comm, iproc, ierr)
+      iproc = iproc + 1
+
+      if (iproc .eq. 1) then
+         call shr_file_setio('wav_modelio.nml'//trim(inst_suffix),stdout)
+      endif
+
+      ! Redirect share output to wav log
+      call shr_file_getLogUnit (shrlogunit)
+      call shr_file_getLogLevel(shrloglev)
+      call shr_file_setLogUnit(stdout)
     
       !--------------------------------------------------------------------
       ! Initialize WW3 grid
       !--------------------------------------------------------------------
 
-      call mpi_barrier ( mpi_comm, ierr )
-      call mpi_comm_rank(mpi_comm, iproc, ierr)
+      ndso   => stdout
+      ndse   => stdout
 
-      
       mds(1) = shr_file_getunit()
       mds(2) = shr_file_getunit()
       mds(3) = shr_file_getunit()
       mds(4) = shr_file_getunit()
-      mds(5) = shr_file_getunit()
-      if ( iproc .eq. 0 ) then
+      mds(5) = 10
+      if ( iproc .eq. 1) then
         call w3grid(mds)
       endif
 
@@ -364,13 +341,13 @@ CONTAINS
       ! Set up data structures
       !--------------------------------------------------------------------
       
-      if ( iproc .ne. 0) then
+      if ( iproc .ne. 1) then
         call w3nmod ( 1, 6, 6 ) ! this is called for iproc = 1 in w3grid
       endif
       call w3ndat (    6, 6 )
       call w3naux (    6, 6 )
-      if ( iproc .ne. 0 ) then
-        call w3nout (    6, 6 ) ! this is called for iproc = 1 in w3grid
+      if ( iproc .ne. 1) then
+        call w3nout (    6, 6, ndso) ! this is called for iproc = 1 in w3grid
       end if
       call w3ninp (    6, 6 )
 
@@ -380,11 +357,18 @@ CONTAINS
       call w3seto ( 1, 6, 6 )
       call w3seti ( 1, 6, 6 )
 
-      call mpi_comm_size(mpi_comm, naproc, ierr)
       call mpi_comm_rank(mpi_comm, iaproc, ierr)
+      call mpi_comm_size(mpi_comm, naproc, ierr)
       iaproc = iaproc + 1
+      napout = 1
+      naperr = 1
 
       call shr_mpi_bcast(usspf,mpi_comm)
+
+      ndso   => stdout
+      ndse   => stdout
+
+      ofiles = 0
 
       !--------------------------------------------------------------------
       ! Initialize run type
@@ -404,61 +388,32 @@ CONTAINS
       ! IO set-up
       !--------------------------------------------------------------------
 
-      napout = 1
-      naperr = 1
+      ! log units
+      nds( 1) = stdout               ! General output unit number ("log file")
+      nds( 2) = stdout               ! Error output unit number.
+      nds( 3) = stdout               ! Test output unit number.
+      nds( 4) = stdout               ! "screen", i.e., direct output location
 
-      ! 1.b For WAVEWATCH III (See W3INIT) ??? ask adrean if i am missing something
-      !
-      ! The following units are referenced in module w3initmd
-      ! NDS(1) ! OUTPUT LOG: General output unit number ("log file") (NDSO)
-      ! NDS(2) ! OUTPUT LOG: Error output unit number (NDSE)
-      ! NDS(3) ! OUTPUT LOG: Test output unit number (NDST)
-      ! NDS(4) ! OUTPUT LOG: Unit for 'direct' output (SCREEN)
-      !
-      ! NDS(5) ! INPUT: mod_def.ww3 file (model definition) unit number
-      ! NDS(9) ! INPUT: unit for read in boundary conditions (based on FLBPI)
-      !
-      ! The following units are referenced in module w3wavemd for output
-      ! NDS( 6) ! OUTPUT DATA: restart(N).ww3 file (model restart) unit number
-      ! NDS( 7) ! unit for output for FLOUT(1) flag
-      ! NDS( 8) ! unit for output for FLOUT(2) flag
-      ! NDS(11) ! unit for output for FLOUT(3) flag
-      ! NDS(12) ! unit for output for FLOUT(3) flag
-      ! NDS(13) ! unit for output for FLOUT(6) flag
-      ! NDS(10) ! unit for output for FLOUT(5) flag
+      ! input units
+      nds( 5) = shr_file_getunit()   ! Model definition file unit number.
+      nds( 9) = shr_file_getunit()   ! Input boundary data file unit number. (FLOUT(3) flag)
 
-      stdout = shr_file_getunit()
-      ndso   = stdout
-      ndse   = stdout
-
-      if (iaproc .eq. napout) then
-         call shr_file_setio('wav_modelio.nml'//trim(inst_suffix),stdout)
-      endif
-
-      nds( 1) = stdout
-      nds( 2) = stdout
-      nds( 3) = stdout
-      nds( 4) = stdout
-      nds( 5) = shr_file_getunit()
-      nds( 6) = shr_file_getunit()
-      nds( 7) = shr_file_getunit()
-      nds( 8) = shr_file_getunit()
-      nds( 9) = shr_file_getunit()
-      nds(10) = shr_file_getunit()
-      nds(11) = shr_file_getunit()
-      nds(12) = shr_file_getunit()
+      ! output units
+      nds( 6) = shr_file_getunit()   ! Restart file unit number.
+      nds( 7) = shr_file_getunit()   ! Grid output file unit number. (FLOUT(1) flag)
+      nds( 8) = shr_file_getunit()   ! Point output file unit number. (FLOUT(2) flag)
+      nds(10) = shr_file_getunit()   ! Output boundary data file unit number (FLOUT(4) flag)
+      nds(11) = shr_file_getunit()   ! Track information file unit number. (FLOUT(5) flag)
+      nds(12) = shr_file_getunit()   ! Track output file unit number. (FLOUT(6) flag)
       nds(13) = shr_file_getunit()
 
-      ntrace(1) =  nds(3)
-      ntrace(2) =  stdout
+      ntrace(1) =  nds(3)            ! Output unit number for trace.
+      ntrace(2) =  10                ! Maximum number of trace prints. 
 
-      ! Redirect share output to wav log
-      call shr_file_getLogUnit (shrlogunit)
-      call shr_file_getLogLevel(shrloglev)
-      call shr_file_setLogUnit (ndso)
-
-      if ( iaproc .eq. napout ) write (ndso,900)
-      call shr_sys_flush(ndso)
+      if ( iaproc .eq. napout ) then
+        write (ndso,900)
+        call shr_sys_flush(ndso)
+      endif
 
       if (     trim(starttype) == trim(seq_infodata_start_type_start)) then
          if ( iaproc .eq. napout ) write(ndso,*) 'starttype: initial'
@@ -472,6 +427,7 @@ CONTAINS
          write(ndso,*) trim(subname),' inst_index  = ',inst_index
          write(ndso,*) trim(subname),' inst_suffix = ',trim(inst_suffix)
       endif
+
       !--------------------------------------------------------------------
       ! Define input fields
       !--------------------------------------------------------------------
@@ -494,8 +450,10 @@ CONTAINS
       ! TIME0 = from ESMF clock
       ! NOTE - are not setting TIMEN here
 
-      if ( iaproc .eq. napout ) write (ndso,930)
-      call shr_sys_flush(ndso)
+      if ( iaproc .eq. napout ) then
+        write (ndso,930)
+        call shr_sys_flush(ndso)
+      endif
 
       if ( runtype == "continue" .or. runtype == "branch") then      
         call seq_timemgr_EClockGetData(EClock, &
@@ -523,8 +481,10 @@ CONTAINS
       timen(2) = hh*10000 + mm*100 + ss
 
       call stme21 ( time0 , dtme21 )
-      if ( iaproc .eq. napout ) write (ndso,931) dtme21
-      call shr_sys_flush(ndso)
+      if ( iaproc .eq. napout ) then 
+        write (ndso,931) dtme21
+        call shr_sys_flush(ndso)
+      endif
       time = time0
 
       !--------------------------------------------------------------------
@@ -553,11 +513,11 @@ CONTAINS
                 else
                    write(ndso,*) 'Restart file: '//trim(restart_timestamp)//'.restart.ww3'//' found'
                 endif
+                call shr_sys_flush(ndso)
          endif 
 
          call shr_mpi_bcast(restart_timestamp,mpi_comm)
       endif
-      call shr_sys_flush(ndso)
 
       !--------------------------------------------------------------------
       ! Read namelist
@@ -590,12 +550,11 @@ CONTAINS
       !--------------------------------------------------------------------
 
       iostyp = 2        ! gridded field
-      if ( iaproc .eq. napout ) write (ndso,940) 'no dedicated output process, any file system '
-      call shr_sys_flush(ndso)
+      if ( iaproc .eq. napout ) then
+        write (ndso,940) 'no dedicated output process, any file system '
+        call shr_sys_flush(ndso)
+      endif
 
-      ! TODO - need to enable restart files in run
-      ! Actually will need a new restart flag - since all of the ODAT
-      ! should be set to 0 - since they are initializated in w3initmd
       ! ODAT    I.A.   I   Output data, five parameters per output type
       !                     1-5  Data for OTYPE = 1; gridded fields.
       !                          1 YYYMMDD for first output.
@@ -614,7 +573,6 @@ CONTAINS
       ! NPT     Int.   I   Number of output points
       ! X/YPT   R.A.   I   Coordinates of output points.
       ! PNAMES  C.A.   I   Output point names.
-
 
       notype = 8
 
@@ -788,8 +746,6 @@ CONTAINS
       call w3flgrdflag(ndso,ndso,ndse,fldout,flgd, flgrd, iaproc,napout,ierr)
       call w3flgrdflag(ndso,ndso,ndse,fldcou,flgd2,flgrd2,iaproc,napout,ierr)
 
-      call shr_sys_flush(ndso)
-
       call read_stations_file(ndso,stafile,npts,x,y,pnames)
 
       !--------------------------------------------------------------------
@@ -803,10 +759,6 @@ CONTAINS
       ! For a continue run - the initfile vluae is created from the time(1:2)
       ! array set below
 
-      if ( iaproc .eq. napout ) write (ndso,950)
-      if ( iaproc .eq. napout ) write (ndso,951) 'wave model ...'
-      call shr_sys_flush(ndso)
-
 
       ! Set casename (in w3cesmmd)
       call seq_infodata_GetData(infodata,case_name=casename)
@@ -819,8 +771,6 @@ CONTAINS
       call w3init ( 1, .false., 'ww3', nds, ntrace, odat, flgrd, flgrd2, flgd, flgd2, npts, x, y,   &
            pnames, iprt, prtfrm, mpi_comm )
 
-
-      call shr_sys_flush(ndso)
 
       ! overwrite dt values with variables from coupler
       ! is this a problem with any things being set in w3init?
@@ -849,7 +799,6 @@ CONTAINS
 
       call wav_setgsmap_mct(mpi_comm, compid, gsmap)
       lsize = mct_gsmap_lsize(gsmap, mpi_comm)
-      call shr_sys_flush(ndso)
 
       ! initialize mct domain
 
@@ -894,7 +843,9 @@ CONTAINS
 
       ! end redirection of share output to wav log
 
-      call shr_sys_flush(ndso)
+      if ( iaproc .eq. napout ) then
+        call shr_sys_flush(ndso)
+      endif
       call shr_file_setlogunit (shrlogunit)
       call shr_file_setloglevel(shrloglev)
 
@@ -1270,7 +1221,9 @@ CONTAINS
       !----------------------------------------------------------------------------
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
-      call shr_sys_flush(stdout)
+      if ( iaproc .eq. napout ) then
+        call shr_sys_flush(stdout)
+      endif
 
       !----------------------------------------------------------------------------
       ! Restart file output 
