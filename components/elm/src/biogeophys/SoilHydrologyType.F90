@@ -494,6 +494,7 @@ contains
                          om_frac = 0._r8
                       endif
                    end if
+                   om_frac = min(1.0_r8, max(0.0_r8, om_frac))   ! if over 1.0, it may cause hydraulic-thermal properties NAN value.
 
                    if (lun_pp%urbpoi(l)) om_frac = 0._r8
                    claycol(c,lev)    = clay
