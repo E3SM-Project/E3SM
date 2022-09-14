@@ -366,7 +366,6 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(spa_horiz_interp.target_grid_loc, target_grid_loc_h);
   spa_horiz_interp.set_unique_cols();
   spa_horiz_interp.length            = num_local_cols; 
-  spa_horiz_interp.source_grid_ncols = ncols_scream;
   return; 
 
   // TODO: Below code is old, should be eventually removed.
@@ -409,7 +408,6 @@ void SPAFunctions<S,D>
   // This can be deleted once we switch SPA to using the gsmap to apply the remapper.
   auto map_seg = spa_gsmap.get_map_segments();
   Int total_length = 0;
-  Int n_a = 0;
   std::vector<Int> src_grid_loc, tgt_grid_loc;
   std::vector<Real> wgts;
   for (int iseg=0; iseg<map_seg.size(); iseg++) {
@@ -427,7 +425,6 @@ void SPAFunctions<S,D>
       src_grid_loc.push_back(seg_src_h(ii));
       tgt_grid_loc.push_back(seg_dof_idx);
       wgts.push_back(seg_wgt_h(ii));
-      n_a = std::max(n_a,src_grid_loc[ii]);
     }
   } 
   spa_horiz_interp.length          = total_length;
@@ -447,7 +444,6 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(spa_horiz_interp.target_grid_loc, target_grid_loc_h);
   spa_horiz_interp.set_unique_cols();
   spa_horiz_interp.length = total_length;
-  spa_horiz_interp.source_grid_ncols = n_a + 1;
   return; 
   
   // TODO: Below code is old, should be eventually removed.  Keeping here for debugging, allowing
@@ -660,8 +656,6 @@ void SPAFunctions<S,D>
   EKAT_REQUIRE(source_data_nlevs+2 == spa_data.data.nlevs);
   EKAT_REQUIRE_MSG(nswbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"swband"),"ERROR update_spa_data_from_file: Number of SW bands in simulation doesn't match the SPA data file");
   EKAT_REQUIRE_MSG(nlwbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lwband"),"ERROR update_spa_data_from_file: Number of LW bands in simulation doesn't match the SPA data file");
-  EKAT_REQUIRE_MSG(ncol==spa_horiz_interp.source_grid_ncols,"ERROR update_spa_data_from_file: Number of columns in remap data (" 
-                        + std::to_string(ncol) + " doesn't match the SPA data file (" + std::to_string(spa_horiz_interp.source_grid_ncols) + ").");
   // Done with the file for this step.
   scorpio::eam_pio_closefile(spa_data_file_name);
 

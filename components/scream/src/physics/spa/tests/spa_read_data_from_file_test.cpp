@@ -40,6 +40,7 @@ TEST_CASE("spa_read_data","spa")
   std::string spa_remap_file = SCREAM_DATA_DIR "/init/spa_data_for_testing.nc";
   Int max_time = 3;
   Int ncols    = 48;
+  Int ncols_src = 20;
   Int nlevs    = 4;
   Int nswbands = 2;
   Int nlwbands = 3;
@@ -92,19 +93,19 @@ TEST_CASE("spa_read_data","spa")
     Kokkos::deep_copy(aer_tau_sw_h,spa_data.data.AER_TAU_SW);
     Kokkos::deep_copy(aer_tau_lw_h,spa_data.data.AER_TAU_LW);
     for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
-      REQUIRE(ps_h(dof_i) == ps_func(time_index,spa_horiz_interp.source_grid_ncols));
+      REQUIRE(ps_h(dof_i) == ps_func(time_index,spa_horiz_interp.ncols_src));
       for (int kk=0;kk<nlevs;kk++) {
         // Recall, SPA data read from file is padded, so we need to offset the kk index for the data by 1.
         int kpack = (kk+1) / Spack::n;
         int kidx  = (kk+1) % Spack::n;
-        REQUIRE(ccn3_h(dof_i,kpack)[kidx] == ccn3_func(time_index, kk, spa_horiz_interp.source_grid_ncols));
+        REQUIRE(ccn3_h(dof_i,kpack)[kidx] == ccn3_func(time_index, kk, spa_horiz_interp.ncols_src));
         for (int n=0;n<nswbands;n++) {
-          REQUIRE(aer_g_sw_h(dof_i,n,kpack)[kidx]   == aer_func(time_index,n,kk,spa_horiz_interp.source_grid_ncols,0));
-          REQUIRE(aer_ssa_sw_h(dof_i,n,kpack)[kidx] == aer_func(time_index,n,kk,spa_horiz_interp.source_grid_ncols,1));
-          REQUIRE(aer_tau_sw_h(dof_i,n,kpack)[kidx] == aer_func(time_index,n,kk,spa_horiz_interp.source_grid_ncols,2));
+          REQUIRE(aer_g_sw_h(dof_i,n,kpack)[kidx]   == aer_func(time_index,n,kk,spa_horiz_interp.ncols_src,0));
+          REQUIRE(aer_ssa_sw_h(dof_i,n,kpack)[kidx] == aer_func(time_index,n,kk,spa_horiz_interp.ncols_src,1));
+          REQUIRE(aer_tau_sw_h(dof_i,n,kpack)[kidx] == aer_func(time_index,n,kk,spa_horiz_interp.ncols_src,2));
         }
         for (int n=0;n<nlwbands;n++) {
-          REQUIRE(aer_tau_lw_h(dof_i,n,kpack)[kidx] ==  aer_func(time_index,n,kk,spa_horiz_interp.source_grid_ncols,3));
+          REQUIRE(aer_tau_lw_h(dof_i,n,kpack)[kidx] ==  aer_func(time_index,n,kk,spa_horiz_interp.ncols_src,3));
         }
       }
     }
