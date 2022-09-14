@@ -80,6 +80,7 @@ void sgs_mom() {
 
 
 void sgs_scalars() {
+  YAKL_SCOPE( use_ESMT, :: use_ESMT );
   real2d dummy("dummy", nz, ncrms);
 
   diffuse_scalar(sgs_field_diag,1,t,fluxbt,fluxtt,tdiff,twsb);

@@ -167,6 +167,7 @@ void post_timeloop() {
   YAKL_SCOPE( q_vt_tend               , :: q_vt_tend );
   YAKL_SCOPE( u_vt_tend               , :: u_vt_tend );
   YAKL_SCOPE( use_VT                  , :: use_VT );
+  YAKL_SCOPE( use_ESMT                , :: use_ESMT );
 
   factor_xyt = factor_xy/((real) nstop);
   real tmp1 = crm_nx_rad_fac*crm_ny_rad_fac/((real) nstop);

@@ -155,6 +155,7 @@ void pre_timeloop() {
   YAKL_SCOPE( q_vt                    , :: q_vt );
   YAKL_SCOPE( u_vt                    , :: u_vt );
   YAKL_SCOPE( use_VT                  , :: use_VT );
+  YAKL_SCOPE( use_ESMT                , :: use_ESMT );
 
   crm_accel_ceaseflag = false;
 
