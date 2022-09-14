@@ -1,0 +1,62 @@
+#include "diagnostics/field_at_level.hpp"
+
+#include "ekat/std_meta/ekat_std_utils.hpp"
+
+namespace scream
+{
+
+// =========================================================================================
+FieldAtLevel::FieldAtLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
+  : AtmosphereDiagnostic(comm,params)
+  , m_field_layout(m_params.get<FieldLayout>("Field Layout"))
+{
+  m_field_name   = m_params.get<std::string>("Field Name");
+
+  using namespace ShortFieldTagsNames;
+  EKAT_REQUIRE_MSG (ekat::contains(std::vector<FieldTag>{LEV,ILEV},m_field_layout.tags().back()),
+      "Error! FieldAtLevel diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
+      " - field name  : " + m_field_name + "\n"
+      " - field layout: " + to_string(m_field_layout) + "\n");
+}
+
+// =========================================================================================
+void FieldAtLevel::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+{
+  const auto& gname  = m_params.get<std::string>("Grid Name");
+  constexpr auto units = ekat::units::Units::invalid();
+
+  add_field<Required>(m_field_name, m_field_layout, units, gname);
+}
+// =========================================================================================
+void FieldAtLevel::compute_diagnostic_impl()
+{
+  const auto& f = get_field_in(m_field_name);
+  auto f_data = f.get_internal_view_data<const Real>();
+  auto d_data = m_diagnostic_output.get_internal_view_data<Real>();
+  auto f_size = f.get_header().get_alloc_properties().get_num_scalars();
+  auto stride = f.get_header().get_alloc_properties().get_last_extent();
+  auto d_size = f_size/stride;
+  auto level  = m_field_level;
+  Kokkos::parallel_for(m_diagnostic_output.name(),
+                       Kokkos::RangePolicy<>(0,d_size),
+                       KOKKOS_LAMBDA(const int& idx) {
+    d_data[idx] = f_data[idx*stride + level];
+  });
+  Kokkos::fence();
+}
+
+void FieldAtLevel::set_required_field_impl (const Field& f)
+{
+  // Now that we have the exact units of f, we can build the diagnostic field
+  m_field_level  = m_params.get<int>("Field Level");
+  const auto& f_fid = f.get_header().get_identifier();
+  FieldIdentifier d_fid (f_fid.name() + "_lev" + std::to_string(m_field_level),
+                         m_field_layout.strip_dim(m_field_layout.rank()-1),
+                         f_fid.get_units(),
+                         f_fid.get_grid_name());
+
+  m_diagnostic_output = Field(d_fid);
+  m_diagnostic_output.allocate_view();
+}
+
+} //namespace scream

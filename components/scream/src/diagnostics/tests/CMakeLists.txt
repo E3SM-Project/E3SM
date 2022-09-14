@@ -4,6 +4,9 @@ if (NOT SCREAM_BASELINES_ONLY)
 
   set( NEED_LIBS scream_share diagnostics physics_share)
 
+  # Test extracting a single level of a field
+  CreateUnitTest(field_at_level "field_at_level_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+
   # Test potential temperature diagnostic
   CreateUnitTest(potential_temperature "potential_temperature_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test exner diagnostic
