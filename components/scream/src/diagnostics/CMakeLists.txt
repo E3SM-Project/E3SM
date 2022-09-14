@@ -18,6 +18,7 @@ set(DIAGNOSTIC_SRCS
   relative_humidity.cpp
   zonal_vapor_flux.cpp
   meridional_vapor_flux.cpp
+  ice_cloud_mask.cpp
 )
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})
