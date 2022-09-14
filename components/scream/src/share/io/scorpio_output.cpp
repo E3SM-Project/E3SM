@@ -492,6 +492,7 @@ register_variables(const std::string& filename,
      // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
     // but in the future if non-Real variables are added we will want to accomodate that.
+
     register_variable(filename, name, name, units, vec_of_dims,
                       "real",fp_precision, io_decomp_tag);
   }
@@ -643,9 +644,31 @@ void AtmosphereOutput::set_diagnostics()
     if (!m_field_mgr->has_field(fname)) {
       // Construct a diagnostic by this name
       ekat::ParameterList params;
-      const auto grid_name = m_io_grid->name(); 
-      params.set<std::string>("Grid", grid_name);
-      auto diag = diag_factory.create(fname,m_comm,params);
+
+      std::string diag_name;
+
+      // If the diagnostic is $field_lev$N/$field_bot/$field_top,
+      // then we need to set some params
+      auto tokens = ekat::split(fname,'@');
+      auto last = tokens.back();
+
+      auto lev_and_idx = ekat::split(last,'_');
+      if (last=="top" || last=="bot" || lev_and_idx.size()==2) {
+        diag_name = "FieldAtLevel";
+        tokens.pop_back();
+        auto fname = ekat::join(tokens,"_");
+        auto fid = get_field(fname).get_header().get_identifier();
+        params.set("Field Name", fname);
+        params.set("Grid Name",fid.get_grid_name());
+        params.set("Field Layout",fid.get_layout());
+
+        // If last is bot or top, will simply use that
+        params.set("Field Level", lev_and_idx.back());
+      } else {
+        diag_name = fname;
+      }
+
+      auto diag = diag_factory.create(diag_name,m_comm,params);
       diag->set_grids(m_grids_manager);
       m_diagnostics.emplace(fname,diag);
     }
