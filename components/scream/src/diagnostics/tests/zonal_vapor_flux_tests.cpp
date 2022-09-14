@@ -83,7 +83,6 @@ void run(std::mt19937_64& engine)
 
   // Construct the Diagnostic
   ekat::ParameterList params;
-  params.set<std::string>("Diagnostic Name", "Zonal Vapor Flux");
   params.set<std::string>("Grid", "Point Grid");
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();

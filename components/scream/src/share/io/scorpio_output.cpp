@@ -643,7 +643,6 @@ void AtmosphereOutput::set_diagnostics()
     if (!m_field_mgr->has_field(fname)) {
       // Construct a diagnostic by this name
       ekat::ParameterList params;
-      params.set<std::string>("Diagnostic Name", fname);
       const auto grid_name = m_io_grid->name(); 
       params.set<std::string>("Grid", grid_name);
       auto diag = diag_factory.create(fname,m_comm,params);
