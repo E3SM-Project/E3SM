@@ -42,8 +42,8 @@ struct GSSegment {
 
   // Applying a remap segment
   void apply_segment(const view_1d<const Real>& source_data, Real& remapped_value);
-//ASD  void apply_segment(const view_2d<const Real>& source_data, const view_1d<Real>& remapped_data);
-//ASD  void apply_segment(const view_3d<const Real>& source_data, const view_2d<Real>& remapped_data);
+  void apply_segment(const Int n1, const view_2d<const Real>& source_data, const view_1d<Real>& remapped_data);
+  void apply_segment(const Int n1, const Int n2, const view_3d<const Real>& source_data, const view_2d<Real>& remapped_data);
 
   // Helper Functions
   bool check() const;      // Check if this segment is valid
@@ -117,8 +117,8 @@ public:
  
   // Main remap functions
   void apply_remap(const view_1d<const Real>& source_data, const view_1d<Real>& remapped_data);
-//ASD  void apply_remap(const view_2d<const Real>& source_data, const view_2d<Real>& remapped_data);
-//ASD  void apply_remap(const view_3d<const Real>& source_data, const view_3d<Real>& remapped_data);
+  void apply_remap(const view_2d<const Real>& source_data, const view_2d<Real>& remapped_data);
+  void apply_remap(const view_3d<const Real>& source_data, const view_3d<Real>& remapped_data);
  
   // Helper functions
   void check() const;      // A check to make sure the map is valid

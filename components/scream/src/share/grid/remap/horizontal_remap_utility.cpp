@@ -374,8 +374,8 @@ void GSMap::print_map() const
     printf("\n=============================================\n");
 }
 /*-----------------------------------------------------------------------------------------------*/
-// This overload of apply remap assumes a single 2-D slice of source data being mapped onto
-// a 2-D slice of remapped data.  The assumption is that there are no levels in this data.
+// This overload of apply remap assumes a single horizontal slice of source data being mapped onto
+// a horizontal slice of remapped data.  The assumption is that there are no levels in this data.
 void GSMap::apply_remap(const view_1d<const Real>& source_data, const view_1d<Real>& remapped_data) {
   if (m_num_dofs==0) { return; } // This GSMap has nothing to do for this rank.
   auto remapped_data_h = Kokkos::create_mirror_view(remapped_data);
@@ -383,6 +383,39 @@ void GSMap::apply_remap(const view_1d<const Real>& source_data, const view_1d<Re
     auto seg = m_map_segments[iseg];
     auto seg_dof_idx = seg.get_dof_idx();
     seg.apply_segment(source_data, remapped_data_h(seg_dof_idx));
+  }
+  Kokkos::deep_copy(remapped_data,remapped_data_h);
+}
+/*-----------------------------------------------------------------------------------------------*/
+// This overload of apply remap assumes a set of horizontal slices of source data being mapped onto
+// a set horizontal slices of remapped data.  The assumption is that the second dimension is number
+// of levels
+void GSMap::apply_remap(const view_2d<const Real>& source_data, const view_2d<Real>& remapped_data) {
+  if (m_num_dofs==0) { return; } // This GSMap has nothing to do for this rank.
+  auto remapped_data_h = Kokkos::create_mirror_view(remapped_data);
+  Int num_levs = source_data.extent(1);
+  for (int iseg=0; iseg<m_num_segments; iseg++) {
+    auto seg = m_map_segments[iseg];
+    auto seg_dof_idx = seg.get_dof_idx();
+    auto remap_sub = Kokkos::subview(remapped_data_h,seg_dof_idx,Kokkos::ALL());
+    seg.apply_segment(num_levs, source_data, remap_sub);
+  }
+  Kokkos::deep_copy(remapped_data,remapped_data_h);
+}
+/*-----------------------------------------------------------------------------------------------*/
+// This overload of apply remap assumes a set of horizontal slices of source data being mapped onto
+// a set horizontal slices of remapped data.  The assumption is that there are levels and one other
+// dimension for this data.
+void GSMap::apply_remap(const view_3d<const Real>& source_data, const view_3d<Real>& remapped_data) {
+  if (m_num_dofs==0) { return; } // This GSMap has nothing to do for this rank.
+  auto remapped_data_h = Kokkos::create_mirror_view(remapped_data);
+  Int num_levs = source_data.extent(2);
+  Int num_bands = source_data.extent(1);
+  for (int iseg=0; iseg<m_num_segments; iseg++) {
+    auto seg = m_map_segments[iseg];
+    auto seg_dof_idx = seg.get_dof_idx();
+    auto remap_sub = Kokkos::subview(remapped_data_h,seg_dof_idx,Kokkos::ALL(),Kokkos::ALL());
+    seg.apply_segment(num_levs, num_bands, source_data, remap_sub);
   }
   Kokkos::deep_copy(remapped_data,remapped_data_h);
 }
@@ -427,6 +460,39 @@ void GSSegment::apply_segment(const view_1d<const Real>& source_data, Real& rema
     Int idx = m_source_idx(ii);
     loc += source_data(idx)*m_weights(ii);
   },remapped_value);
+  Kokkos::fence();
+}
+/*-----------------------------------------------------------------------------------------------*/
+// Apply a set of source data slices in 2D to a single column of output value.
+void GSSegment::apply_segment(const Int n1, const view_2d<const Real>& source_data, const view_1d<Real>& remapped_value)
+{
+  for (int kk=0; kk<n1; kk++) {
+    Real ret;
+    auto src_sub = Kokkos::subview(source_data,Kokkos::ALL(),kk);
+    Kokkos::parallel_reduce("", m_length, KOKKOS_LAMBDA (const int& ii, Real& loc) {
+      Int idx = m_source_idx(ii);
+      loc += src_sub(idx)*m_weights(ii);
+    },ret);
+    Kokkos::fence();
+    remapped_value(kk) = ret;
+  }
+}
+/*-----------------------------------------------------------------------------------------------*/
+// Apply a set of source data slices in 3D to a set of columns of  output values.
+void GSSegment::apply_segment(const Int n1, const Int n2, const view_3d<const Real>& source_data, const view_2d<Real>& remapped_value)
+{
+  for (int kk=0; kk<n1; kk++) {
+    for (int jj=0; jj<n2; jj++) {
+      Real ret;
+      auto src_sub = Kokkos::subview(source_data,Kokkos::ALL(),jj,kk);
+      Kokkos::parallel_reduce("", m_length, KOKKOS_LAMBDA (const int& ii, Real& loc) {
+        Int idx = m_source_idx(ii);
+        loc += src_sub(idx)*m_weights(ii);
+      },ret);
+      Kokkos::fence();
+      remapped_value(jj,kk) = ret;
+    }
+  }
 }
 /*-----------------------------------------------------------------------------------------------*/
 bool GSSegment::check() const

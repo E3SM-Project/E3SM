@@ -31,6 +31,9 @@ template <typename S>
 using view_2d = typename KT::template view_2d<S>;
 
 template <typename S>
+using view_3d = typename KT::template view_3d<S>;
+
+template <typename S>
 using view_1d_host = typename KT::template view_1d<S>::HostMirror;
 
 std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm& comm, const Int num_gcols, const Int num_levs);
@@ -302,26 +305,39 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min
   // All Done with testing
   scorpio::eam_pio_finalize();
 
-//ASD  // Dummy test to check that a 2D view  works
-//ASD  view_2d<Real> x_2d_data("",unique_dofs_from_file.size(),num_levels);
-//ASD  view_2d<Real> y_2d_data("",num_loc_tgt_cols,num_levels);
-//ASD  auto x_2d_data_h = Kokkos::create_mirror_view(x_2d_data);
-//ASD  for (int ii=0;ii<unique_dofs_from_file.size();ii++) {
-//ASD    for (int kk=0; kk<num_levels; kk++) {
-//ASD      x_2d_data_h(ii,kk) = x_data_from_file_h(ii)*(kk+1);
-//ASD    }
-//ASD  }
-//ASD  Kokkos::deep_copy(x_2d_data,x_2d_data_h);
-//ASD  remap_from_file.apply_remap(x_2d_data,y_2d_data);
-//ASD  auto y_2d_data_h = Kokkos::create_mirror_view(y_2d_data);
-//ASD  Kokkos::deep_copy(y_2d_data_h,y_2d_data);
-//ASD  for (int ii=0; ii<num_loc_tgt_cols; ii++) {
-//ASD    gid_type dof = dofs_gids_h(ii);
-//ASD    auto y_base = y_baseline[dof];
-//ASD    for (int kk=0; kk<num_levels; kk++) {
-//ASD      REQUIRE(std::abs(y_2d_data_h(ii,kk)-(kk+1)*y_base)<tol*10);
-//ASD    }
-//ASD  } 
+  // Test to check that a 2D and 3D views work
+  Int num_bands = 4;
+  view_2d<Real> x_2d_data("",unique_dofs_from_file.size(),num_levels);
+  view_2d<Real> y_2d_data("",num_loc_tgt_cols,num_levels);
+  view_3d<Real> x_3d_data("",unique_dofs_from_file.size(),num_bands,num_levels);
+  view_3d<Real> y_3d_data("",num_loc_tgt_cols,num_bands,num_levels);
+  auto x_2d_data_h = Kokkos::create_mirror_view(x_2d_data);
+  auto x_3d_data_h = Kokkos::create_mirror_view(x_3d_data);
+  for (int ii=0;ii<unique_dofs_from_file.size();ii++) {
+    for (int kk=0; kk<num_levels; kk++) {
+      x_2d_data_h(ii,kk) = x_data_from_file_h(ii)*(kk+1);
+      for (int nn=0; nn<num_bands; nn++) {
+        x_3d_data_h(ii,nn,kk) = x_data_from_file_h(ii)*(kk+1)*(nn+1);
+      }
+    }
+  }
+  Kokkos::deep_copy(x_2d_data,x_2d_data_h);
+  remap_from_file.apply_remap(x_2d_data,y_2d_data);
+  Kokkos::deep_copy(x_3d_data,x_3d_data_h);
+  remap_from_file.apply_remap(x_3d_data,y_3d_data);
+  auto y_2d_data_h = Kokkos::create_mirror_view(y_2d_data);
+  auto y_3d_data_h = Kokkos::create_mirror_view(y_3d_data);
+  Kokkos::deep_copy(y_2d_data_h,y_2d_data);
+  for (int ii=0; ii<num_loc_tgt_cols; ii++) {
+    gid_type dof = dofs_gids_h(ii);
+    auto y_base = y_baseline[dof];
+    for (int kk=0; kk<num_levels; kk++) {
+      REQUIRE(std::abs(y_2d_data_h(ii,kk)-(kk+1)*y_base)<tol*10);
+      for (int nn=0; nn<num_bands; nn++) {
+        REQUIRE(std::abs(y_3d_data_h(ii,nn,kk)-(nn+1)*(kk+1)*y_base)<tol*100);
+      }
+    }
+  } 
   
   
 } // end function run
