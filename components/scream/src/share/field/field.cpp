@@ -77,12 +77,7 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
         "Error! Subview dimension index must be either 0 or 1.\n");
 
   // Create identifier for subfield
-  std::vector<FieldTag> tags = lt.tags();
-  std::vector<int> dims = lt.dims();
-  tags.erase(tags.begin()+idim);
-  dims.erase(dims.begin()+idim);
-  FieldLayout sf_lt(tags,dims);
-  FieldIdentifier sf_id(sf_name,sf_lt,sf_units,id.get_grid_name());
+  FieldIdentifier sf_id(sf_name,lt.strip_dim(idim),sf_units,id.get_grid_name());
 
   // Create empty subfield, then set header and views
   // Note: we can access protected members, since it's the same type

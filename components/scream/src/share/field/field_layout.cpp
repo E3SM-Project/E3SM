@@ -54,6 +54,19 @@ int FieldLayout::get_vector_dim () const {
   return idim;
 }
 
+
+FieldLayout FieldLayout::strip_dim (const FieldTag tag) const {
+  return strip_dim (dim(tag));
+}
+
+FieldLayout FieldLayout::strip_dim (const int idim) const {
+  std::vector<FieldTag> t = tags();
+  std::vector<int>      d = dims();
+  t.erase(t.begin()+idim);
+  d.erase(d.begin()+idim);
+  return FieldLayout (t,d);
+}
+
 void FieldLayout::set_dimension (const int idim, const int dimension) {
   EKAT_REQUIRE_MSG(idim>=0 && idim<m_rank, "Error! Index out of bounds.");
   EKAT_REQUIRE_MSG(dimension>0, "Error! Dimensions must be positive.");
