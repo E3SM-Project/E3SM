@@ -56,7 +56,17 @@ int FieldLayout::get_vector_dim () const {
 
 
 FieldLayout FieldLayout::strip_dim (const FieldTag tag) const {
-  return strip_dim (dim(tag));
+  auto it = ekat::find(m_tags,tag);
+
+  // Check if found
+  EKAT_REQUIRE_MSG(it!=m_tags.end(), "Error! Tag '" + e2str(tag) + "' not found.\n");
+
+  // Check only one tag (no ambiguity)
+  EKAT_REQUIRE_MSG(ekat::count(m_tags,tag)==1,
+                     "Error! Tag '" + e2str(tag) + "' appears multiple times.\n"
+                     "       You must inspect tags() and dims() manually.\n");
+
+  return strip_dim (std::distance(m_tags.begin(),it));
 }
 
 FieldLayout FieldLayout::strip_dim (const int idim) const {
