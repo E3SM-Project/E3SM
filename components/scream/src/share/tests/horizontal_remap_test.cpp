@@ -245,8 +245,10 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min
   scorpio::set_dof(filename,"row",var_dof.size(),var_dof.data());
   scorpio::set_dof(filename,"S",var_dof.size(),var_dof.data());
   var_dof.resize(unique_dofs_from_views.size());
+  auto unique_dofs_from_views_h = Kokkos::create_mirror_view(unique_dofs_from_views);
+  Kokkos::deep_copy(unique_dofs_from_views_h,unique_dofs_from_views);
   for (int ii=0; ii<var_dof.size(); ii++) {
-    var_dof[ii] = unique_dofs_from_views[ii];
+    var_dof[ii] = unique_dofs_from_views_h(ii);
   }
   scorpio::set_dof(filename,"src_data",var_dof.size(),var_dof.data());
   scorpio::eam_pio_enddef(filename);
@@ -300,29 +302,24 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min
   // All Done with testing
   scorpio::eam_pio_finalize();
 
-//ASD  // Dummy test to check that a 2D view of Packs works
-//ASD  Int num_packs =  ekat::npack<Pack>(num_levels);
-//ASD  view_2d<Pack> x_pack_data("",unique_dofs_from_file.size(),num_packs);
-//ASD  view_2d<Pack> y_pack_data("",num_loc_tgt_cols,num_packs);
-//ASD  auto x_pack_data_h = Kokkos::create_mirror_view(x_pack_data);
+//ASD  // Dummy test to check that a 2D view  works
+//ASD  view_2d<Real> x_2d_data("",unique_dofs_from_file.size(),num_levels);
+//ASD  view_2d<Real> y_2d_data("",num_loc_tgt_cols,num_levels);
+//ASD  auto x_2d_data_h = Kokkos::create_mirror_view(x_2d_data);
 //ASD  for (int ii=0;ii<unique_dofs_from_file.size();ii++) {
 //ASD    for (int kk=0; kk<num_levels; kk++) {
-//ASD      int kpack = kk / SCREAM_PACK_SIZE;
-//ASD      int kidx  = kk % SCREAM_PACK_SIZE;
-//ASD      x_pack_data_h(ii,kpack)[kidx] = x_data_from_file_h(ii)*(kk+1);
+//ASD      x_2d_data_h(ii,kk) = x_data_from_file_h(ii)*(kk+1);
 //ASD    }
 //ASD  }
-//ASD  Kokkos::deep_copy(x_pack_data,x_pack_data_h);
-//ASD  remap_from_file.apply_remap(x_pack_data,y_pack_data);
-//ASD  auto y_pack_data_h = Kokkos::create_mirror_view(y_pack_data);
-//ASD  Kokkos::deep_copy(y_pack_data_h,y_pack_data);
+//ASD  Kokkos::deep_copy(x_2d_data,x_2d_data_h);
+//ASD  remap_from_file.apply_remap(x_2d_data,y_2d_data);
+//ASD  auto y_2d_data_h = Kokkos::create_mirror_view(y_2d_data);
+//ASD  Kokkos::deep_copy(y_2d_data_h,y_2d_data);
 //ASD  for (int ii=0; ii<num_loc_tgt_cols; ii++) {
 //ASD    gid_type dof = dofs_gids_h(ii);
 //ASD    auto y_base = y_baseline[dof];
 //ASD    for (int kk=0; kk<num_levels; kk++) {
-//ASD      int kpack = kk / SCREAM_PACK_SIZE;
-//ASD      int kidx  = kk % SCREAM_PACK_SIZE;
-//ASD      REQUIRE(std::abs(y_pack_data_h(ii,kpack)[kidx]-(kk+1)*y_base)<tol*10);
+//ASD      REQUIRE(std::abs(y_2d_data_h(ii,kk)-(kk+1)*y_base)<tol*10);
 //ASD    }
 //ASD  } 
   

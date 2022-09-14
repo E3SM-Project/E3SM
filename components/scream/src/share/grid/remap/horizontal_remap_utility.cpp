@@ -373,17 +373,19 @@ void GSMap::print_map() const
     printf("\n=============================================\n");
 }
 /*-----------------------------------------------------------------------------------------------*/
-void GSMap::apply_remap(const view_1d<Real>& source_data, view_1d<Real>& remapped_data) {
+// This overload of apply remap assumes a single 2-D slice of source data being mapped onto
+// a 2-D slice of remapped data.  The assumption is that there are no levels in this data.
+void GSMap::apply_remap(const view_1d<const Real>& source_data, const view_1d<Real>& remapped_data) {
   if (m_num_dofs==0) { return; } // This GSMap has nothing to do for this rank.
   auto remapped_data_h = Kokkos::create_mirror_view(remapped_data);
   for (int iseg=0; iseg<m_num_segments; iseg++) {
     auto seg = m_map_segments[iseg];
     auto seg_dof_idx = seg.get_dof_idx();
-    Real remap_val = seg.apply_segment(source_data);
-    remapped_data_h(seg_dof_idx) = remap_val;
+    seg.apply_segment(source_data, remapped_data_h(seg_dof_idx));
   }
   Kokkos::deep_copy(remapped_data,remapped_data_h);
 }
+
 //ASDtemplate <typename ScalarT>
 //ASDvoid GSMap::apply_remap(const view_2d<ScalarT>& source_data, const view_2d<ScalarT>& remapped_data)
 //ASD{
@@ -406,16 +408,6 @@ GSSegment::GSSegment(const gid_type dof_gid, const Int length)
   m_weights     = view_1d<Real>("",m_length);
 }
 /*-----------------------------------------------------------------------------------------------*/
-Real GSSegment::apply_segment(const view_1d<Real>& source_data)
-{
-  Real ret;
-  Kokkos::parallel_reduce("", m_length, KOKKOS_LAMBDA (const int& ii, Real& loc) {
-    Int idx = m_source_idx(ii);
-    loc += source_data(idx)*m_weights(ii);
-  },ret);
-  return ret;
-}
-/*-----------------------------------------------------------------------------------------------*/
 GSSegment::GSSegment(const gid_type dof_gid, const Int length,  const view_1d<gid_type>& source_dofs, const view_1d<Real>& weights)
   : m_dof         (dof_gid)
   , m_length      (length)
@@ -423,6 +415,15 @@ GSSegment::GSSegment(const gid_type dof_gid, const Int length,  const view_1d<gi
   , m_weights     (weights)
 {
   m_source_idx  = view_1d<Int>("",m_length);
+}
+/*-----------------------------------------------------------------------------------------------*/
+// Apply a single segment of source data to a single output value.
+void GSSegment::apply_segment(const view_1d<const Real>& source_data, Real& remapped_value)
+{
+  Kokkos::parallel_reduce("", m_length, KOKKOS_LAMBDA (const int& ii, Real& loc) {
+    Int idx = m_source_idx(ii);
+    loc += source_data(idx)*m_weights(ii);
+  },remapped_value);
 }
 /*-----------------------------------------------------------------------------------------------*/
 bool GSSegment::check() const

@@ -29,13 +29,21 @@ struct GSSegment {
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
   
+  template <typename S>
+  using view_2d = typename KT::template view_2d<S>;
+  
+  template <typename S>
+  using view_3d = typename KT::template view_3d<S>;
+  
   // Constructors/Destructor
   GSSegment() {};
   GSSegment(const gid_type dof_gid, const Int length);
   GSSegment(const gid_type dof_gid, const Int length, const view_1d<gid_type>& source_dofs, const view_1d<Real>& weights);
 
   // Applying a remap segment
-  Real apply_segment(const view_1d<Real>& source_data);
+  void apply_segment(const view_1d<const Real>& source_data, Real& remapped_value);
+//ASD  void apply_segment(const view_2d<const Real>& source_data, const view_1d<Real>& remapped_data);
+//ASD  void apply_segment(const view_3d<const Real>& source_data, const view_2d<Real>& remapped_data);
 
   // Helper Functions
   bool check() const;      // Check if this segment is valid
@@ -108,16 +116,9 @@ public:
   GSMap(const ekat::Comm& comm, const std::string& map_name, const view_1d<gid_type>& dofs_gids, const gid_type min_dof);
  
   // Main remap functions
-  void apply_remap(const view_1d<Real>& source_data, view_1d<Real>& remapped_data);
-  //TODO: Make templated apply remap functions
-//ASD  template <typename ScalarT>
-//ASD  void apply_remap(const view_1d<ScalarT>& source_data, view_1d<ScalarT>& remapped_data);
-//ASD
-//ASD  template <typename ScalarT>
-//ASD  void apply_remap(const view_2d<ScalarT>& source_data, const view_2d<ScalarT>& remapped_data);
-//ASD
-//ASD  template <typename ScalarT>
-//ASD  void apply_remap(const view_3d<ScalarT>& source_data, const view_3d<ScalarT>& remapped_data);
+  void apply_remap(const view_1d<const Real>& source_data, const view_1d<Real>& remapped_data);
+//ASD  void apply_remap(const view_2d<const Real>& source_data, const view_2d<Real>& remapped_data);
+//ASD  void apply_remap(const view_3d<const Real>& source_data, const view_3d<Real>& remapped_data);
  
   // Helper functions
   void check() const;      // A check to make sure the map is valid
