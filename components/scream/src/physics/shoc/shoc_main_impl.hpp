@@ -346,61 +346,37 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<Spack>&       brunt,
   const view_2d<Spack>&       isotropy)
 {
-  using ExeSpace = typename KT::ExeSpace;
+  // Create space for temporary scalars
+  view_1d<Scalar>
+    se_b("se_b", shcol),
+    ke_b("ke_b", shcol),
+    wv_b("wv_b", shcol),
+    wl_b("wl_b", shcol),
+    se_a("se_a", shcol),
+    ke_a("ke_a", shcol),
+    wv_a("wv_a", shcol),
+    wl_a("wl_a", shcol),
+    ustar("ustar", shcol),
+    kbfs("kbfs", shcol),
+    obklen("obklen", shcol),
+    ustar2("ustar2", shcol),
+    wstar("wstar", shcol);
 
-  static constexpr Int num_local_scalars = 13;
-  static constexpr Int num_local_ws      = 5;
-  static constexpr Int num_total_local   = num_local_scalars + num_local_ws;
-
-  // Need a second workspace for storing shcol local scalars. Need workspaces
-  // of size schol, not nlev, to store temporary scalars for small kernels
-  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, 1);
-  ScalarWorkspaceMgr wsm_local(shcol, num_local_scalars, policy, 1.e10); // huge overprovision => no ws sharing
-  EKAT_REQUIRE_MSG(wsm_local.get_max_slots() == shcol, "Local WSM is sharing workspaces");
-
-  // Make temp workspaces. These will be reused across kernels so we will store
-  // a handle to them via their slot id
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-
-    auto workspace       = workspace_mgr.get_workspace(team);
-    auto workspace_local = wsm_local.get_workspace(team);
-
-    // Make column temps
-    uview_1d<Spack> rho_zt, shoc_qv, dz_zt, dz_zi, tkh;
-    workspace.template take_many_and_reset<num_local_ws>(
-      {"rho_zt", "shoc_qv", "dz_zt", "dz_zi", "tkh"},
-      {&rho_zt, &shoc_qv, &dz_zt, &dz_zi, &tkh});
-
-    // Make shcol scalar temps
-    uview_1d<Scalar> se_b, ke_b, wv_b, wl_b, se_a, ke_a, wv_a, wl_a, ustar, kbfs, obklen, ustar2, wstar;
-    workspace_local.template take_many_and_reset<num_local_scalars>(
-      {"se_b", "ke_b", "wv_b", "wl_b", "se_a", "ke_a", "wv_a", "wl_a", "ustar", "kbfs", "obklen", "ustar2", "wstar"},
-      {&se_b, &ke_b, &wv_b, &wl_b, &se_a, &ke_a, &wv_a, &wl_a, &ustar, &kbfs, &obklen, &ustar2, &wstar});
-
-    // Sanity check. Slots should be 0-N for both workspace managers since we did a reset
-    EKAT_KERNEL_REQUIRE(workspace.get_slot(tkh)         == num_local_ws-1);
-    EKAT_KERNEL_REQUIRE(workspace_local.get_slot(wstar) == num_local_scalars-1);
-  });
-
-  // Initialize slots
-  Int se_b_slot, ke_b_slot, wv_b_slot, wl_b_slot, se_a_slot, ke_a_slot, wv_a_slot, wl_a_slot, rho_zt_slot, shoc_qv_slot, dz_zt_slot, dz_zi_slot, tkh_slot;
-  {
-    Int* slot_ptrs[num_total_local] = {&se_b_slot, &ke_b_slot, &wv_b_slot, &wl_b_slot, &se_a_slot, &ke_a_slot, &wv_a_slot, &wl_a_slot, &rho_zt_slot, &shoc_qv_slot, &dz_zt_slot, &dz_zi_slot, &tkh_slot};
-    for (Int i = 0; i < num_local_scalars; ++i) {
-      *(slot_ptrs[i]) = i;
-    }
-    for (Int i = num_local_scalars, j=0; i < num_total_local; ++i, ++j) {
-      *(slot_ptrs[i]) = j;
-    }
-  }
+  // Create space for temporary column vars
+  const auto nlevi_packs = ekat::npack<Spack>(nlevi);
+  view_2d<Spack>
+    rho_zt("rho_zt", shcol, nlevi_packs),
+    shoc_qv("shoc_qv", shcol, nlevi_packs),
+    dz_zt("dz_zt", shcol, nlevi_packs),
+    dz_zi("dz_zi", shcol, nlevi_packs),
+    tkh("tkh", shcol, nlevi_packs);
 
   // Compute integrals of static energy, kinetic energy, water vapor, and liquid water
   // for the computation of total energy before SHOC is called.  This is for an
   // effort to conserve energy since liquid water potential temperature (which SHOC
   // conserves) and static energy (which E3SM conserves) are not exactly equal.
-  shoc_energy_integrals_disp(wsm_local, shcol,nlev,host_dse,pdel,qw,shoc_ql,u_wind,v_wind,
-                             se_b_slot, ke_b_slot, wv_b_slot, wl_b_slot); // Input
-
+  shoc_energy_integrals_disp(shcol,nlev,host_dse,pdel,qw,shoc_ql,u_wind,v_wind,
+                             se_b, ke_b, wv_b, wl_b); // Input
 
 #if 0 // progress bar
 
@@ -511,10 +487,9 @@ void Functions<S,D>::shoc_main_internal(
 #endif
 
   shoc_energy_fixer_disp(shcol,nlev,nlevi,dtime,nadv,zt_grid,zi_grid, // Input
-                         se_b_slot,ke_b_slot,wv_b_slot,wl_b_slot,se_a_slot,ke_a_slot,wv_a_slot,wl_a_slot,    // Input
-                         wthl_sfc,wqw_sfc,rho_zt_slot,tke,presi,          // Input
+                         se_b,ke_b,wv_b,wl_b,se_a,ke_a,wv_a,wl_a,    // Input
+                         wthl_sfc,wqw_sfc,rho_zt,tke,presi,          // Input
                          workspace_mgr,                              // Workspace
-                         wsm_local,
                          host_dse);                                  // Output
 
 #if 0

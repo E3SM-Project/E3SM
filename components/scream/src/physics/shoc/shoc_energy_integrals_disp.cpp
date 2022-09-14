@@ -8,7 +8,6 @@ namespace shoc {
 template<>
 void Functions<Real,DefaultDevice>
 ::shoc_energy_integrals_disp(
-  const ScalarWorkspaceMgr&      workspace_mgr_local,
   const Int&                   shcol,
   const Int&                   nlev,
   const view_2d<const Spack>& host_dse,
@@ -17,10 +16,10 @@ void Functions<Real,DefaultDevice>
   const view_2d<const Spack>& rcm,
   const uview_2d<const Spack>& u_wind,
   const uview_2d<const Spack>& v_wind,
-  const Int& se_b_slot,
-  const Int& ke_b_slot,
-  const Int& wv_b_slot,
-  const Int& wl_b_slot)
+  const view_1d<Scalar>& se_b,
+  const view_1d<Scalar>& ke_b,
+  const view_1d<Scalar>& wv_b,
+  const view_1d<Scalar>& wl_b)
 {
   using ExeSpace = typename KT::ExeSpace;
 
@@ -28,14 +27,6 @@ void Functions<Real,DefaultDevice>
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const Int i = team.league_rank();
-
-    auto workspace = workspace_mgr_local.get_workspace(team);
-
-    uview_1d<Scalar> se_b, ke_b, wv_b, wl_b;
-    se_b = workspace.get_space_in_slot(se_b_slot);
-    ke_b = workspace.get_space_in_slot(ke_b_slot);
-    wv_b = workspace.get_space_in_slot(wv_b_slot);
-    wl_b = workspace.get_space_in_slot(wl_b_slot);
 
     shoc_energy_integrals(team, nlev,
                           ekat::subview(host_dse, i),

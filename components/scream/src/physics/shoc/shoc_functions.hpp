@@ -69,11 +69,6 @@ struct Functions
   using WorkspaceMgr = typename ekat::WorkspaceManager<Spack,  Device>;
   using Workspace    = typename WorkspaceMgr::Workspace;
 
-#ifndef SCREAM_MONOLITHIC_KERNELS
-  using ScalarWorkspaceMgr = typename ekat::WorkspaceManager<Scalar,  Device>;
-  using ScalarWorkspace    = typename ScalarWorkspaceMgr::Workspace;
-#endif
-
   // This struct stores input views for shoc_main.
   struct SHOCInput {
     SHOCInput() = default;
@@ -302,7 +297,6 @@ struct Functions
     Scalar&                      wl_int);
 #ifndef SCREAM_MONOLITHIC_KERNELS
   static void shoc_energy_integrals_disp(
-    const ScalarWorkspaceMgr&      workspace_mgr_local,
     const Int&                   shcol,
     const Int&                   nlev,
     const view_2d<const Spack>& host_dse,
@@ -311,10 +305,10 @@ struct Functions
     const view_2d<const Spack>& rcm,
     const uview_2d<const Spack>& u_wind,
     const uview_2d<const Spack>& v_wind,
-    const Int& se_b_slot,
-    const Int& ke_b_slot,
-    const Int& wv_b_slot,
-    const Int& wl_b_slot);
+    const view_1d<Scalar>& se_b_slot,
+    const view_1d<Scalar>& ke_b_slot,
+    const view_1d<Scalar>& wv_b_slot,
+    const view_1d<Scalar>& wl_b_slot);
 #endif
 
   KOKKOS_FUNCTION
@@ -440,21 +434,20 @@ struct Functions
     const Int&                   nadv,
     const view_2d<const Spack>&  zt_grid,
     const view_2d<const Spack>&  zi_grid,
-    const Int&                   se_b_slot,
-    const Int&                   ke_b_slot,
-    const Int&                   wv_b_slot,
-    const Int&                   wl_b_slot,
-    const Int&                   se_a_slot,
-    const Int&                   ke_a_slot,
-    const Int&                   wv_a_slot,
-    const Int&                   wl_a_slot,
+    const view_1d<const Scalar>& se_b,
+    const view_1d<const Scalar>& ke_b,
+    const view_1d<const Scalar>& wv_b,
+    const view_1d<const Scalar>& wl_b,
+    const view_1d<const Scalar>& se_a,
+    const view_1d<const Scalar>& ke_a,
+    const view_1d<const Scalar>& wv_a,
+    const view_1d<const Scalar>& wl_a,
     const view_1d<const Scalar>& wthl_sfc,
     const view_1d<const Scalar>& wqw_sfc,
-    const Int&                   rho_zt_slot,
+    const view_2d<const Spack>&  rho_zt,
     const view_2d<const Spack>&  tke,
     const view_2d<const Spack>&  pint,
     const WorkspaceMgr&          workspace_mgr,
-    const ScalarWorkspaceMgr&    workspace_mgr_local,
     const view_2d<Spack>&        host_dse);
 #endif
 
