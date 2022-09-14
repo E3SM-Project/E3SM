@@ -1,21 +1,4 @@
 #include "share/field/field_manager.hpp"
-// #include "share/grid/grids_manager.hpp"
-// #include "share/field/field_group.hpp"
-// #include "share/field/field_request.hpp"
-// #include "share/util/scream_utils.hpp"
-// #include "share/scream_types.hpp"
-
-// #include "ekat/ekat_assert.hpp"
-// #include "ekat/util/ekat_string_utils.hpp"
-// #include "ekat/std_meta/ekat_std_utils.hpp"
-// #include "ekat/util/ekat_units.hpp"
-
-// #include <algorithm>
-// #include <initializer_list>
-// #include <map>
-// #include <memory>
-// #include <set>
-// #include <string>
 
 namespace scream
 {
@@ -53,11 +36,15 @@ void FieldManager::register_field (const FieldRequest& req)
     m_fields[id.name()] = std::make_shared<Field>(id);
   } else {
     // Make sure the input field has the same layout and units as the field already stored.
+    // NOTE: we allow the input units to be "invalid", in case the customer requesting
+    //       does not really care about them. E.g., a diagnostic that deals with the
+    //       field in an agnostic way, like FieldAtLevel.
     // TODO: this is the easiest way to ensure everyone uses the same units.
     //       However, in the future, we *may* allow different units, providing
     //       the users with conversion routines perhaps.
     const auto id0 = m_fields[id.name()]->get_header().get_identifier();
-    EKAT_REQUIRE_MSG(id.get_units()==id0.get_units(),
+    constexpr auto invalid = ekat::units::Units::invalid();
+    EKAT_REQUIRE_MSG(id.get_units()==id0.get_units() || id.get_units()==invalid || id0.get_units()==invalid,
         "Error! Field '" + id.name() + "' already registered with different units:\n"
         "         - input field units:  " + to_string(id.get_units()) + "\n"
         "         - stored field units: " + to_string(id0.get_units()) + "\n"
@@ -69,6 +56,10 @@ void FieldManager::register_field (const FieldRequest& req)
         "         - stored id: " + id0.get_id_string() + "\n"
         "       Please, check and make sure all atmosphere processes use the same layout for a given field.\n");
 
+    // If the first registration was with invalid units, recreate with new fid (if new fid units are valid)
+    if (id0.get_units()==invalid && id.get_units()!=invalid) {
+      m_fields[id.name()] = std::make_shared<Field>(id);
+    }
   }
 
   if (req.subview_info.dim_idx>=0) {
@@ -589,8 +580,11 @@ void FieldManager::registration_ends ()
         const auto idx = std::distance(cluster_ordered_fields.begin(),pos);
 
         const auto& f = m_fields.at(fn);
-        const auto& fh = f->get_header();
-        auto fi = C->subfield(fn,fh.get_identifier().get_units(),idim,idx);
+        const auto& fid = f->get_header().get_identifier();
+        EKAT_REQUIRE_MSG (fid.get_units()!=ekat::units::Units::invalid(),
+            "Error! A field was registered without providing valid units.\n"
+            "  - field id: " + fid.get_id_string() + "\n");
+        auto fi = C->subfield(fn,fid.get_units(),idim,idx);
 
         // Overwrite existing field with subfield
         *f = fi;
