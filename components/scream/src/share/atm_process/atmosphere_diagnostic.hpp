@@ -40,6 +40,14 @@ public:
   // The type of subcomponent
   AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
 
+  // Most (all?) diagnostics will be defined on the physics grid, so we use that
+  // by default. Derived classes can, of course, override this.
+  std::set<std::string> get_required_grids () const {
+    static std::set<std::string> s;
+    s.insert("Physics");
+    return s;
+  }
+
   // Getting the diagnostic output
   Field get_diagnostic () const;
 
