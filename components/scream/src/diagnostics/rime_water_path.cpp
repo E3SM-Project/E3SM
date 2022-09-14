@@ -40,12 +40,6 @@ void RimeWaterPathDiagnostic::set_grids(const std::shared_ptr<const GridsManager
   m_diagnostic_output.allocate_view();
 }
 // =========================================================================================
-void RimeWaterPathDiagnostic::initialize_impl(const RunType /* run_type */)
-{
-  auto ts = timestamp(); 
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-}
-// =========================================================================================
 void RimeWaterPathDiagnostic::compute_diagnostic_impl()
 {
 
@@ -70,6 +64,8 @@ void RimeWaterPathDiagnostic::compute_diagnostic_impl()
     team.team_barrier();
   });
 
+  const auto ts = get_field_in("qm").get_header().get_tracking().get_time_stamp();
+  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 } //namespace scream

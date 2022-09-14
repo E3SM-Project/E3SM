@@ -42,12 +42,6 @@ void VerticalLayerInterfaceDiagnostic::set_grids(const std::shared_ptr<const Gri
   m_diagnostic_output.allocate_view();
 }
 // =========================================================================================
-void VerticalLayerInterfaceDiagnostic::initialize_impl(const RunType /* run_type */)
-{
-  auto ts = timestamp(); 
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-}
-// =========================================================================================
 void VerticalLayerInterfaceDiagnostic::compute_diagnostic_impl()
 {
   const auto npacks     = ekat::npack<Pack>(m_num_levs);
@@ -75,6 +69,8 @@ void VerticalLayerInterfaceDiagnostic::compute_diagnostic_impl()
     PF::calculate_z_int(team,num_levs,dz,surf_geopotential,z_int_s);
   });
 
+  const auto ts = get_field_in("qv").get_header().get_tracking().get_time_stamp();
+  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 } //namespace scream

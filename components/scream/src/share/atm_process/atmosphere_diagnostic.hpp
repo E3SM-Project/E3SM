@@ -51,7 +51,11 @@ protected:
 
   virtual void compute_diagnostic_impl () = 0;
 
+  // By default, diagnostic don't do any initialization/finalization stuff.
+  // Derived classes can override, of course
+  void initialize_impl (const RunType /*run_type*/) { /* Nothing to do */ }
   void run_impl (const int /* dt */);
+  void finalize_impl   () { /* Nothing to do */ }
 
   // Diagnostics are meant to return a field
   Field m_diagnostic_output;
