@@ -313,34 +313,79 @@ void SPAFunctions<S,D>
   auto spa_gsmap = spa_horiz_interp.gsmap;
   spa_gsmap = GSMap(spa_horiz_interp.m_comm,"SPA 1-1 Remap",dofs_gids,min_dof);
   view_1d<gid_type> src_dofs("",1);
-  view_1d<Real>     wgts("",1);
+  view_1d<Real>     src_wgts("",1);
   auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
   Kokkos::deep_copy(dofs_gids_h,dofs_gids);
   for (int ii=0;ii<num_local_cols;ii++) {
-    gid_type seg_dof = dofs_gids_h(ii);
-    Kokkos::deep_copy(src_dofs,seg_dof-min_dof);
-    Kokkos::deep_copy(wgts,   1.0);
-    GSSegment seg(seg_dof,1,src_dofs,wgts);
+    gid_type seg_dof = dofs_gids_h(ii)-min_dof;
+    Kokkos::deep_copy(src_dofs,seg_dof);
+    Kokkos::deep_copy(src_wgts,   1.0);
+    GSSegment seg(seg_dof,1,src_dofs,src_wgts);
     spa_gsmap.add_remap_segment(seg);
   }
   spa_gsmap.set_unique_source_dofs();
-  // TODO: Below code is old, should be eventually removed.
+  // HACK - Use gsmap information to populate the original spa horizontal remapping arrays.
+  // This can be deleted once we switch SPA to using the gsmap to apply the remapper.
+  auto map_seg = spa_gsmap.get_map_segments();
+  Int total_length = 0;
+  Int n_a = 0;
+  std::vector<Int> src_grid_loc, tgt_grid_loc;
+  std::vector<Real> wgts;
+  for (int iseg=0; iseg<map_seg.size(); iseg++) {
+    auto seg = map_seg[iseg];
+    total_length += seg.get_length();
+    auto seg_dof = seg.get_dof();
+    auto seg_dof_idx = seg.get_dof_idx();
+    auto seg_src = seg.get_source_dofs();
+    auto seg_wgt = seg.get_weights();
+    auto seg_src_h = Kokkos::create_mirror_view(seg_src);
+    auto seg_wgt_h = Kokkos::create_mirror_view(seg_wgt);
+    Kokkos::deep_copy(seg_src_h,seg_src);
+    Kokkos::deep_copy(seg_wgt_h,seg_wgt);
+    for (int ii=0; ii<seg.get_length(); ii++) {
+      src_grid_loc.push_back(seg_src_h(ii));
+      tgt_grid_loc.push_back(seg_dof_idx);
+      wgts.push_back(seg_wgt_h(ii));
+      n_a = std::max(n_a,src_grid_loc[ii]);
+    }
+  } 
+  spa_horiz_interp.length          = total_length;
+  spa_horiz_interp.weights         = view_1d<Real>("",total_length);
+  spa_horiz_interp.source_grid_loc = view_1d<Int> ("",total_length);
+  spa_horiz_interp.target_grid_loc = view_1d<Int> ("",total_length);
+  auto weights_h         = Kokkos::create_mirror_view(spa_horiz_interp.weights);
+  auto source_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.source_grid_loc);
+  auto target_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.target_grid_loc);
+  for (int ii=0;ii<total_length;ii++) {
+    weights_h(ii) = wgts[ii];
+    source_grid_loc_h(ii) = src_grid_loc[ii];
+    target_grid_loc_h(ii) = tgt_grid_loc[ii];
+  }
+  Kokkos::deep_copy(spa_horiz_interp.weights        , weights_h        );
+  Kokkos::deep_copy(spa_horiz_interp.source_grid_loc, source_grid_loc_h);
+  Kokkos::deep_copy(spa_horiz_interp.target_grid_loc, target_grid_loc_h);
+  spa_horiz_interp.set_unique_cols();
   spa_horiz_interp.length            = num_local_cols; 
   spa_horiz_interp.source_grid_ncols = ncols_scream;
-  spa_horiz_interp.weights           = view_1d<Real>("",spa_horiz_interp.length);
-  spa_horiz_interp.source_grid_loc   = view_1d<gid_type> ("",spa_horiz_interp.length);
-  spa_horiz_interp.target_grid_loc   = view_1d<gid_type> ("",spa_horiz_interp.length);
-  Kokkos::deep_copy(spa_horiz_interp.weights,1.0);
-  Kokkos::parallel_for("", num_local_cols, KOKKOS_LAMBDA(const int& ii) {
-    spa_horiz_interp.target_grid_loc(ii) = ii;
-    // Note we are interested in the vector index, not the actual global-id 
-    // Here we want the index in a the source data vector corresponding to this column
-    // which needs to be offset by the minimum degree of freedom in the whole grid.
-    // That way the first global-id will map to the 0th entry in the source grid data.
-    spa_horiz_interp.source_grid_loc(ii) = dofs_gids(ii) - min_dof;
-  });
-  // Determine the set of unique columns in this remapping
-  spa_horiz_interp.set_unique_cols();
+  return; 
+
+  // TODO: Below code is old, should be eventually removed.
+//ASD  spa_horiz_interp.length            = num_local_cols; 
+//ASD  spa_horiz_interp.source_grid_ncols = ncols_scream;
+//ASD  spa_horiz_interp.weights           = view_1d<Real>("",spa_horiz_interp.length);
+//ASD  spa_horiz_interp.source_grid_loc   = view_1d<gid_type> ("",spa_horiz_interp.length);
+//ASD  spa_horiz_interp.target_grid_loc   = view_1d<gid_type> ("",spa_horiz_interp.length);
+//ASD  Kokkos::deep_copy(spa_horiz_interp.weights,1.0);
+//ASD  Kokkos::parallel_for("", num_local_cols, KOKKOS_LAMBDA(const int& ii) {
+//ASD    spa_horiz_interp.target_grid_loc(ii) = ii;
+//ASD    // Note we are interested in the vector index, not the actual global-id 
+//ASD    // Here we want the index in a the source data vector corresponding to this column
+//ASD    // which needs to be offset by the minimum degree of freedom in the whole grid.
+//ASD    // That way the first global-id will map to the 0th entry in the source grid data.
+//ASD    spa_horiz_interp.source_grid_loc(ii) = dofs_gids(ii) - min_dof;
+//ASD  });
+//ASD  // Determine the set of unique columns in this remapping
+//ASD  spa_horiz_interp.set_unique_cols();
 } // END set_remap_weights_one_to_one
 /*-----------------------------------------------------------------*/
 // Function to read the weights for conducting horizontal remapping
@@ -356,113 +401,160 @@ void SPAFunctions<S,D>
   )
 {
 
+  auto spa_gsmap = spa_horiz_interp.gsmap;
+  spa_gsmap = GSMap(spa_horiz_interp.m_comm,"SPA File Remap", dofs_gids, min_dof);
+  spa_gsmap.set_remap_segments_from_file(remap_file_name);
+  spa_gsmap.set_unique_source_dofs();
+  // HACK - Use gsmap information to populate the original spa horizontal remapping arrays.
+  // This can be deleted once we switch SPA to using the gsmap to apply the remapper.
+  auto map_seg = spa_gsmap.get_map_segments();
+  Int total_length = 0;
+  Int n_a = 0;
+  std::vector<Int> src_grid_loc, tgt_grid_loc;
+  std::vector<Real> wgts;
+  for (int iseg=0; iseg<map_seg.size(); iseg++) {
+    auto seg = map_seg[iseg];
+    total_length += seg.get_length();
+    auto seg_dof = seg.get_dof();
+    auto seg_dof_idx = seg.get_dof_idx();
+    auto seg_src = seg.get_source_dofs();
+    auto seg_wgt = seg.get_weights();
+    auto seg_src_h = Kokkos::create_mirror_view(seg_src);
+    auto seg_wgt_h = Kokkos::create_mirror_view(seg_wgt);
+    Kokkos::deep_copy(seg_src_h,seg_src);
+    Kokkos::deep_copy(seg_wgt_h,seg_wgt);
+    for (int ii=0; ii<seg.get_length(); ii++) {
+      src_grid_loc.push_back(seg_src_h(ii));
+      tgt_grid_loc.push_back(seg_dof_idx);
+      wgts.push_back(seg_wgt_h(ii));
+      n_a = std::max(n_a,src_grid_loc[ii]);
+    }
+  } 
+  spa_horiz_interp.length          = total_length;
+  spa_horiz_interp.weights         = view_1d<Real>("",total_length);
+  spa_horiz_interp.source_grid_loc = view_1d<Int> ("",total_length);
+  spa_horiz_interp.target_grid_loc = view_1d<Int> ("",total_length);
+  auto weights_h         = Kokkos::create_mirror_view(spa_horiz_interp.weights);
+  auto source_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.source_grid_loc);
+  auto target_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.target_grid_loc);
+  for (int ii=0;ii<total_length;ii++) {
+    weights_h(ii) = wgts[ii];
+    source_grid_loc_h(ii) = src_grid_loc[ii];
+    target_grid_loc_h(ii) = tgt_grid_loc[ii];
+  }
+  Kokkos::deep_copy(spa_horiz_interp.weights        , weights_h        );
+  Kokkos::deep_copy(spa_horiz_interp.source_grid_loc, source_grid_loc_h);
+  Kokkos::deep_copy(spa_horiz_interp.target_grid_loc, target_grid_loc_h);
+  spa_horiz_interp.set_unique_cols();
+  spa_horiz_interp.length = total_length;
+  spa_horiz_interp.source_grid_ncols = n_a + 1;
+  return; 
+  
+  // TODO: Below code is old, should be eventually removed.  Keeping here for debugging, allowing
+  // me to go back and use the old approach for testing.
+
   // Note, the remap file doesn't follow a conventional grid setup so
   // here we manually go through all of the input steps rather than
   // use the scorpio_input class.
 
   // Open input file: 
-  scorpio::register_file(remap_file_name,scorpio::Read);
+//ASD  scorpio::register_file(remap_file_name,scorpio::Read);
+//ASD
+//ASD  // Gather the size of the remap data from file.
+//ASD  // NOTE, we are currently assuming the remap file was generated by NCO and thus follows
+//ASD  // NCO conventions.
+//ASD  // As such the dimensions have rather general names.  Here is an explanation:
+//ASD  //   n_s is the total number of nonzero remap weights.
+//ASD  //   n_a is the total number of columns in the SOURCE grid (i.e. in an ne2 -> ne4 remap this would have 218 columns)
+//ASD  //   n_b is the total number of columns in the TARGET grid (i.e. in an ne2 -> ne4 remap this would have 866 columns)
+//ASD  // Conceptually, if we wrote the remapping as y = W*x then W would be a matrix with n_a columns, n_b rows and n_s total nonzero entries.
+//ASD  // The data is stored in sparse format, so we have the following variables:
+//ASD  //   S   is a vector of length n_s that represents all of the nonzero remapping wieghts
+//ASD  //   col is a vector of length n_s that contains the indices of the SOURCE grid column associated with the appropriate weight in S
+//ASD  //   row is a vector of length n_s that contains the indices of the TARGET grid column associated with the appropriate weight in S
+//ASD  // Thus considering the matrix W described above.  If W[i,j] = w, and this was the n'th nonzero weight in W then
+//ASD  //   S[n]   = w
+//ASD  //   col[N] = j
+//ASD  //   row[N] = i
+//ASD  // TODO: provide infrastructure for using different horizontal remap files.
+//ASD  spa_horiz_interp.length = scorpio::get_dimlen_c2f(remap_file_name.c_str(),"n_s");
+//ASD  // And the number of columns that should be in the data source file
+//ASD  spa_horiz_interp.source_grid_ncols = scorpio::get_dimlen_c2f(remap_file_name.c_str(),"n_a");
+//ASD  // Check that the target grid size matches the remap file
+//ASD  Int target_ncols = scorpio::get_dimlen_c2f(remap_file_name.c_str(),"n_b");
+//ASD  EKAT_REQUIRE_MSG(target_ncols==ncols_scream,"ERROR: SPA get_remap_weights_from_file, remap target domain does not match simulation domain size");
+//ASD
+//ASD  // Construct local arrays to read data into
+//ASD  view_1d<Real> S_global("weights",spa_horiz_interp.length);
+//ASD  view_1d<Int>  row_global("row",spa_horiz_interp.length); 
+//ASD  view_1d<Int>  col_global("col",spa_horiz_interp.length); 
+//ASD  auto S_global_h   = Kokkos::create_mirror_view(S_global);
+//ASD  auto col_global_h = Kokkos::create_mirror_view(col_global); // Note, in remap files col -> row (src -> tgt)
+//ASD  auto row_global_h = Kokkos::create_mirror_view(row_global);
+//ASD
+//ASD  // Setup the scorpio structures needed for input
+//ASD  // Register variables for input
+//ASD  std::vector<std::string> vec_of_dims = {"n_s"};
+//ASD  std::string r_decomp = "Real-n_s";
+//ASD  std::string i_decomp = "Int-n_s";
+//ASD  scorpio::get_variable(remap_file_name, "S", "S", vec_of_dims, "real", r_decomp);
+//ASD  scorpio::get_variable(remap_file_name, "row", "row", vec_of_dims, "int", i_decomp);
+//ASD  scorpio::get_variable(remap_file_name, "col", "col", vec_of_dims, "int", i_decomp);
+//ASD  // Set the dof's to read in variables, since we will have all mpi ranks read in the full set of data the dof's are the whole array
+//ASD  std::vector<scorpio::offset_t> var_dof(spa_horiz_interp.length);
+//ASD  std::iota(var_dof.begin(),var_dof.end(),0);
+//ASD  scorpio::set_dof(remap_file_name,"S",var_dof.size(),var_dof.data());
+//ASD  scorpio::set_dof(remap_file_name,"row",var_dof.size(),var_dof.data());
+//ASD  scorpio::set_dof(remap_file_name,"col",var_dof.size(),var_dof.data());
+//ASD  scorpio::set_decomp(remap_file_name);
+//ASD  
+//ASD  // Now read all of the input
+//ASD  scorpio::grid_read_data_array(remap_file_name,"S",  -1,S_global_h.data(),S_global_h.size()); 
+//ASD  scorpio::grid_read_data_array(remap_file_name,"row",-1,row_global_h.data(),row_global_h.size()); 
+//ASD  scorpio::grid_read_data_array(remap_file_name,"col",-1,col_global_h.data(),col_global_h.size()); 
+//ASD
+//ASD  // Finished, close the file
+//ASD  scorpio::eam_pio_closefile(remap_file_name);
+//ASD
+//ASD  // Retain only the information needed on this rank. 
+//ASD  auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
+//ASD  Kokkos::deep_copy(dofs_gids_h,dofs_gids);
+//ASD  std::vector<int> local_idx;
+//ASD  std::vector<int> global_idx;
+//ASD  for (int idx=0;idx<spa_horiz_interp.length;idx++) {
+//ASD    int dof = row_global_h(idx) - (1-min_dof); // Note, the dof ids may start with 0 or 1.  In the data they certainly start with 1.  This maps 1 -> true min dof.
+//ASD    for (int id=0;id<dofs_gids_h.extent_int(0);id++) {
+//ASD      if (dof == dofs_gids_h(id)) {
+//ASD        global_idx.push_back(idx);
+//ASD        local_idx.push_back(id);
+//ASD        break;
+//ASD      }
+//ASD    }
+//ASD  }
+//ASD  // Now that we have the full list of indexs in the global remap data that correspond to local columns we can construct
+//ASD  // the spa_horiz_weights data.   Note: This is an important step when running with multiple MPI ranks.
+//ASD  spa_horiz_interp.length          = local_idx.size();
+//ASD  spa_horiz_interp.weights         = view_1d<Real>("",local_idx.size());
+//ASD  spa_horiz_interp.source_grid_loc = view_1d<Int>("",local_idx.size());
+//ASD  spa_horiz_interp.target_grid_loc = view_1d<Int>("",local_idx.size());
+//ASD  auto weights_h         = Kokkos::create_mirror_view(spa_horiz_interp.weights);
+//ASD  auto source_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.source_grid_loc);
+//ASD  auto target_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.target_grid_loc);
+//ASD  for (size_t idx=0;idx<local_idx.size();idx++) {
+//ASD      int ii = global_idx[idx];
+//ASD      weights_h(idx)         = S_global_h(ii);
+//ASD      target_grid_loc_h(idx) = local_idx[idx];
+//ASD      // Note that the remap column location starts with 1.
+//ASD      // Here we want the index in a the source data vector corresponding to this column
+//ASD      // which needs to start with 0 since cpp starts with 0.
+//ASD      source_grid_loc_h(idx) = col_global_h(ii) - 1;
+//ASD  }
+//ASD  Kokkos::deep_copy(spa_horiz_interp.weights        , weights_h        );
+//ASD  Kokkos::deep_copy(spa_horiz_interp.source_grid_loc, source_grid_loc_h);
+//ASD  Kokkos::deep_copy(spa_horiz_interp.target_grid_loc, target_grid_loc_h);
+//ASD  // Determine the set of unique columns in this remapping
+//ASD  spa_horiz_interp.set_unique_cols();
 
-  // Gather the size of the remap data from file.
-  // NOTE, we are currently assuming the remap file was generated by NCO and thus follows
-  // NCO conventions.
-  // As such the dimensions have rather general names.  Here is an explanation:
-  //   n_s is the total number of nonzero remap weights.
-  //   n_a is the total number of columns in the SOURCE grid (i.e. in an ne2 -> ne4 remap this would have 218 columns)
-  //   n_b is the total number of columns in the TARGET grid (i.e. in an ne2 -> ne4 remap this would have 866 columns)
-  // Conceptually, if we wrote the remapping as y = W*x then W would be a matrix with n_a columns, n_b rows and n_s total nonzero entries.
-  // The data is stored in sparse format, so we have the following variables:
-  //   S   is a vector of length n_s that represents all of the nonzero remapping wieghts
-  //   col is a vector of length n_s that contains the indices of the SOURCE grid column associated with the appropriate weight in S
-  //   row is a vector of length n_s that contains the indices of the TARGET grid column associated with the appropriate weight in S
-  // Thus considering the matrix W described above.  If W[i,j] = w, and this was the n'th nonzero weight in W then
-  //   S[n]   = w
-  //   col[N] = j
-  //   row[N] = i
-  // TODO: provide infrastructure for using different horizontal remap files.
-  spa_horiz_interp.length = scorpio::get_dimlen_c2f(remap_file_name.c_str(),"n_s");
-  // And the number of columns that should be in the data source file
-  spa_horiz_interp.source_grid_ncols = scorpio::get_dimlen_c2f(remap_file_name.c_str(),"n_a");
-  // Check that the target grid size matches the remap file
-  Int target_ncols = scorpio::get_dimlen_c2f(remap_file_name.c_str(),"n_b");
-  EKAT_REQUIRE_MSG(target_ncols==ncols_scream,"ERROR: SPA get_remap_weights_from_file, remap target domain does not match simulation domain size");
-
-  // Construct local arrays to read data into
-  view_1d<Real> S_global("weights",spa_horiz_interp.length);
-  view_1d<Int>  row_global("row",spa_horiz_interp.length); 
-  view_1d<Int>  col_global("col",spa_horiz_interp.length); 
-  auto S_global_h   = Kokkos::create_mirror_view(S_global);
-  auto col_global_h = Kokkos::create_mirror_view(col_global); // Note, in remap files col -> row (src -> tgt)
-  auto row_global_h = Kokkos::create_mirror_view(row_global);
-
-  // Setup the scorpio structures needed for input
-  // Register variables for input
-  std::vector<std::string> vec_of_dims = {"n_s"};
-  std::string r_decomp = "Real-n_s";
-  std::string i_decomp = "Int-n_s";
-  scorpio::get_variable(remap_file_name, "S", "S", vec_of_dims, "real", r_decomp);
-  scorpio::get_variable(remap_file_name, "row", "row", vec_of_dims, "int", i_decomp);
-  scorpio::get_variable(remap_file_name, "col", "col", vec_of_dims, "int", i_decomp);
-  // Set the dof's to read in variables, since we will have all mpi ranks read in the full set of data the dof's are the whole array
-  std::vector<scorpio::offset_t> var_dof(spa_horiz_interp.length);
-  std::iota(var_dof.begin(),var_dof.end(),0);
-  scorpio::set_dof(remap_file_name,"S",var_dof.size(),var_dof.data());
-  scorpio::set_dof(remap_file_name,"row",var_dof.size(),var_dof.data());
-  scorpio::set_dof(remap_file_name,"col",var_dof.size(),var_dof.data());
-  scorpio::set_decomp(remap_file_name);
-  
-  // Now read all of the input
-  scorpio::grid_read_data_array(remap_file_name,"S",  -1,S_global_h.data(),S_global_h.size()); 
-  scorpio::grid_read_data_array(remap_file_name,"row",-1,row_global_h.data(),row_global_h.size()); 
-  scorpio::grid_read_data_array(remap_file_name,"col",-1,col_global_h.data(),col_global_h.size()); 
-
-  // Finished, close the file
-  scorpio::eam_pio_closefile(remap_file_name);
-
-  // Retain only the information needed on this rank. 
-  auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
-  Kokkos::deep_copy(dofs_gids_h,dofs_gids);
-  std::vector<int> local_idx;
-  std::vector<int> global_idx;
-  for (int idx=0;idx<spa_horiz_interp.length;idx++) {
-    int dof = row_global_h(idx) - (1-min_dof); // Note, the dof ids may start with 0 or 1.  In the data they certainly start with 1.  This maps 1 -> true min dof.
-    for (int id=0;id<dofs_gids_h.extent_int(0);id++) {
-      if (dof == dofs_gids_h(id)) {
-        global_idx.push_back(idx);
-        local_idx.push_back(id);
-        break;
-      }
-    }
-  }
-  // Now that we have the full list of indexs in the global remap data that correspond to local columns we can construct
-  // the spa_horiz_weights data.   Note: This is an important step when running with multiple MPI ranks.
-  spa_horiz_interp.length          = local_idx.size();
-  spa_horiz_interp.weights         = view_1d<Real>("",local_idx.size());
-  spa_horiz_interp.source_grid_loc = view_1d<Int>("",local_idx.size());
-  spa_horiz_interp.target_grid_loc = view_1d<Int>("",local_idx.size());
-  auto weights_h         = Kokkos::create_mirror_view(spa_horiz_interp.weights);
-  auto source_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.source_grid_loc);
-  auto target_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.target_grid_loc);
-  for (size_t idx=0;idx<local_idx.size();idx++) {
-      int ii = global_idx[idx];
-      weights_h(idx)         = S_global_h(ii);
-      target_grid_loc_h(idx) = local_idx[idx];
-      // Note that the remap column location starts with 1.
-      // Here we want the index in a the source data vector corresponding to this column
-      // which needs to start with 0 since cpp starts with 0.
-      source_grid_loc_h(idx) = col_global_h(ii) - 1;
-  }
-  Kokkos::deep_copy(spa_horiz_interp.weights        , weights_h        );
-  Kokkos::deep_copy(spa_horiz_interp.source_grid_loc, source_grid_loc_h);
-  Kokkos::deep_copy(spa_horiz_interp.target_grid_loc, target_grid_loc_h);
-  // Determine the set of unique columns in this remapping
-  spa_horiz_interp.set_unique_cols();
-
-  // TODO: Above code is old, should be eventually removed.
-  auto spa_gsmap = spa_horiz_interp.gsmap;
-  spa_gsmap = GSMap(spa_horiz_interp.m_comm,"SPA File Remap", dofs_gids, min_dof);
-  spa_gsmap.set_remap_segments_from_file(remap_file_name);
-  spa_gsmap.set_unique_source_dofs();
 }  // END get_remap_weights_from_file
 /*-----------------------------------------------------------------*/
 /* Note: In this routine the SPA source data is padded in the vertical

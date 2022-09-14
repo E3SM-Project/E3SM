@@ -38,7 +38,7 @@ struct GSSegment {
   // Constructors/Destructor
   GSSegment() {};
   GSSegment(const gid_type dof_gid, const Int length);
-  GSSegment(const gid_type dof_gid, const Int length, const view_1d<gid_type>& source_dofs, const view_1d<Real>& weights);
+  GSSegment(const gid_type dof_gid, const Int length, const view_1d<const gid_type>& source_dofs, const view_1d<const Real>& weights);
 
   // Applying a remap segment
   void apply_segment(const view_1d<const Real>& source_data, Real& remapped_value);
@@ -125,7 +125,7 @@ public:
   void print_map() const;  // Useful for debuggingi
 
   // Builder functions - used to build the GSMap
-  void set_dof_gids(const view_1d<gid_type>& dofs_gids, const gid_type min_dof);
+  void set_dof_gids(const view_1d<const gid_type>& dofs_gids, const gid_type min_dof);
   void set_unique_source_dofs();
   void add_remap_segment(const GSSegment& seg);
   void set_remap_segments_from_file(const std::string& remap_filename);

@@ -179,10 +179,10 @@ void GSMap::set_remap_segments_from_file(const std::string& remap_filename)
 // We use the global dofs, offset by the minimum global dof to make everything zero based.  Note, when
 // gathering remap parameters from a file, depending on the algorithm that made the file the dof
 // indices may be 1-based or 0-based.  By offsetting everything to 0-based we avoid potential bugs.
-void GSMap::set_dof_gids(const view_1d<gid_type>& dofs_gids, const gid_type min_dof)
+void GSMap::set_dof_gids(const view_1d<const gid_type>& dofs_gids, const gid_type min_dof)
 {
   EKAT_REQUIRE(dofs_gids.size()>0);
-  m_dofs_gids = view_1d<gid_type>(dofs_gids);
+  m_dofs_gids = view_1d<gid_type>("",dofs_gids.size());
   m_num_dofs = m_dofs_gids.extent(0);
   Kokkos::parallel_for("", m_num_dofs, KOKKOS_LAMBDA (const int& ii) {
     m_dofs_gids(ii) = dofs_gids(ii)-min_dof;
@@ -408,13 +408,15 @@ GSSegment::GSSegment(const gid_type dof_gid, const Int length)
   m_weights     = view_1d<Real>("",m_length);
 }
 /*-----------------------------------------------------------------------------------------------*/
-GSSegment::GSSegment(const gid_type dof_gid, const Int length,  const view_1d<gid_type>& source_dofs, const view_1d<Real>& weights)
+GSSegment::GSSegment(const gid_type dof_gid, const Int length,  const view_1d<const gid_type>& source_dofs, const view_1d<const Real>& weights)
   : m_dof         (dof_gid)
   , m_length      (length)
-  , m_source_dofs (source_dofs)
-  , m_weights     (weights)
 {
+  m_source_dofs = view_1d<gid_type>("",m_length);
+  m_weights     = view_1d<Real>("",m_length);
   m_source_idx  = view_1d<Int>("",m_length);
+  Kokkos::deep_copy(m_source_dofs,source_dofs);
+  Kokkos::deep_copy(m_weights,weights);
 }
 /*-----------------------------------------------------------------------------------------------*/
 // Apply a single segment of source data to a single output value.
