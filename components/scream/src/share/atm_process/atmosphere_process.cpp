@@ -275,12 +275,7 @@ void AtmosphereProcess::run_postcondition_checks () const {
 }
 
 bool AtmosphereProcess::has_required_field (const FieldIdentifier& id) const {
-  for (const auto& it : m_required_field_requests) {
-    if (it.fid==id) {
-      return true;
-    }
-  }
-  return false;
+  return has_required_field(id.name(),id.get_grid_name());
 }
 
 bool AtmosphereProcess::has_required_field (const std::string& name, const std::string& grid_name) const {
@@ -293,12 +288,7 @@ bool AtmosphereProcess::has_required_field (const std::string& name, const std::
 }
 
 bool AtmosphereProcess::has_computed_field (const FieldIdentifier& id) const {
-  for (const auto& it : m_computed_field_requests) {
-    if (it.fid==id) {
-      return true;
-    }
-  }
-  return false;
+  return has_computed_field(id.name(),id.get_grid_name());
 }
 
 bool AtmosphereProcess::has_computed_field (const std::string& name, const std::string& grid_name) const {
