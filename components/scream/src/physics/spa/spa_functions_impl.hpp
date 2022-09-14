@@ -308,8 +308,23 @@ void SPAFunctions<S,D>
 {
   // There may be cases where the SPA data is defined on the same grid as the simulation
   // and thus no remapping is required.  This simple routine establishes a 1-1 horizontal
-  // mapping.
+  // mapping
   auto num_local_cols = dofs_gids.size();
+  auto spa_gsmap = spa_horiz_interp.gsmap;
+  spa_gsmap = GSMap(spa_horiz_interp.m_comm,"SPA 1-1 Remap",dofs_gids,min_dof);
+  view_1d<gid_type> src_dofs("",1);
+  view_1d<Real>     wgts("",1);
+  auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
+  Kokkos::deep_copy(dofs_gids_h,dofs_gids);
+  for (int ii=0;ii<num_local_cols;ii++) {
+    gid_type seg_dof = dofs_gids_h(ii);
+    Kokkos::deep_copy(src_dofs,seg_dof-min_dof);
+    Kokkos::deep_copy(wgts,   1.0);
+    GSSegment seg(seg_dof,1,src_dofs,wgts);
+    spa_gsmap.add_remap_segment(seg);
+  }
+  spa_gsmap.set_unique_source_dofs();
+  // TODO: Below code is old, should be eventually removed.
   spa_horiz_interp.length            = num_local_cols; 
   spa_horiz_interp.source_grid_ncols = ncols_scream;
   spa_horiz_interp.weights           = view_1d<Real>("",spa_horiz_interp.length);
@@ -335,11 +350,12 @@ void SPAFunctions<S,D>
 ::get_remap_weights_from_file(
     const std::string&       remap_file_name,
     const Int                ncols_scream,
-    gid_type                 min_dof,
+    const gid_type           min_dof,
     const view_1d<gid_type>& dofs_gids,
           SPAHorizInterp&    spa_horiz_interp
   )
 {
+
   // Note, the remap file doesn't follow a conventional grid setup so
   // here we manually go through all of the input steps rather than
   // use the scorpio_input class.
@@ -441,6 +457,12 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(spa_horiz_interp.target_grid_loc, target_grid_loc_h);
   // Determine the set of unique columns in this remapping
   spa_horiz_interp.set_unique_cols();
+
+  // TODO: Above code is old, should be eventually removed.
+  auto spa_gsmap = spa_horiz_interp.gsmap;
+  spa_gsmap = GSMap(spa_horiz_interp.m_comm,"SPA File Remap", dofs_gids, min_dof);
+  spa_gsmap.set_remap_segments_from_file(remap_file_name);
+  spa_gsmap.set_unique_source_dofs();
 }  // END get_remap_weights_from_file
 /*-----------------------------------------------------------------*/
 /* Note: In this routine the SPA source data is padded in the vertical

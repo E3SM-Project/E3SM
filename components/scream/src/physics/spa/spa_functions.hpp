@@ -2,6 +2,7 @@
 #define SPA_FUNCTIONS_HPP
 
 #include "share/grid/abstract_grid.hpp"
+#include "share/grid/remap/horizontal_remap_utility.hpp"
 #include "share/scream_types.hpp"
 #include "share/util/scream_time_stamp.hpp"
 
@@ -156,6 +157,8 @@ struct SPAFunctions
       source_grid_loc = view_1d<Int>("",length_);
       target_grid_loc = view_1d<Int>("",length_);
     }
+    // Horizontal Remap
+    GSMap gsmap;
     // Comm group used for SPA
     ekat::Comm m_comm;
     // Number of weights in remap data
