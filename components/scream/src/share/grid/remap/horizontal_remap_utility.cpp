@@ -278,9 +278,10 @@ void GSMap::set_unique_source_dofs()
   }
   std::sort(unique_dofs.begin(), unique_dofs.end());
   // Assign unique source dofs to internal view
-  m_unique_dofs = view_1d<gid_type>("",unique_dofs.size());
+  m_num_unique_dofs = unique_dofs.size();
+  m_unique_dofs = view_1d<gid_type>("",m_num_unique_dofs);
   auto temp_h = Kokkos::create_mirror_view(m_unique_dofs);
-  for (int ii=0; ii<unique_dofs.size(); ii++) {
+  for (int ii=0; ii<m_num_unique_dofs; ii++) {
     temp_h(ii) = unique_dofs[ii];
   }
   Kokkos::deep_copy(m_unique_dofs,temp_h);

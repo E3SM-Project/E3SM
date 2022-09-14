@@ -310,7 +310,7 @@ void SPAFunctions<S,D>
   // and thus no remapping is required.  This simple routine establishes a 1-1 horizontal
   // mapping
   auto num_local_cols = dofs_gids.size();
-  auto spa_gsmap = spa_horiz_interp.gsmap;
+  auto& spa_gsmap = spa_horiz_interp.gsmap;
   spa_gsmap = GSMap(spa_horiz_interp.m_comm,"SPA 1-1 Remap",dofs_gids,min_dof);
   view_1d<gid_type> src_dofs("",1);
   view_1d<Real>     src_wgts("",1);
@@ -401,7 +401,7 @@ void SPAFunctions<S,D>
   )
 {
 
-  auto spa_gsmap = spa_horiz_interp.gsmap;
+  auto& spa_gsmap = spa_horiz_interp.gsmap;
   spa_gsmap = GSMap(spa_horiz_interp.m_comm,"SPA File Remap", dofs_gids, min_dof);
   spa_gsmap.set_remap_segments_from_file(remap_file_name);
   spa_gsmap.set_unique_source_dofs();
@@ -613,6 +613,12 @@ void SPAFunctions<S,D>
   // Ensure all ranks are operating independently when reading the file, so there's a copy on all ranks
   auto comm = spa_horiz_interp.m_comm;
 
+  // Use GSMap to define the set of source column data we need to load
+  auto& spa_gsmap = spa_horiz_interp.gsmap; 
+  auto unique_src_dofs = spa_gsmap.get_unique_source_dofs();
+
+  // TODO: Below is the old code, will eventually delete.
+  //
   // We have enough info to start opening the file
   std::vector<std::string> fnames = {"hyam","hybm","PS","CCN3","AER_G_SW","AER_SSA_SW","AER_TAU_SW","AER_TAU_LW"};
   ekat::ParameterList spa_data_in_params;
@@ -628,15 +634,9 @@ void SPAFunctions<S,D>
   // To construct the grid we need to determine the number of columns and levels in the data file.
   scorpio::register_file(spa_data_file_name,scorpio::Read);
   Int ncol = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"ncol");
-  const int source_data_nlevs = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lev");
-  Int num_local_cols = spa_horiz_interp.num_unique_cols;
-  // Check that padding matches source size:
-  EKAT_REQUIRE(source_data_nlevs+2 == spa_data.data.nlevs);
+//ASD  const int source_data_nlevs = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lev");
+//ASD  Int num_local_cols = spa_horiz_interp.num_unique_cols;
   // while we have the file open, check that the dimensions map the simulation and the horizontal interpolation structure
-  EKAT_REQUIRE_MSG(nswbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"swband"),"ERROR update_spa_data_from_file: Number of SW bands in simulation doesn't match the SPA data file");
-  EKAT_REQUIRE_MSG(nlwbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lwband"),"ERROR update_spa_data_from_file: Number of LW bands in simulation doesn't match the SPA data file");
-  EKAT_REQUIRE_MSG(ncol==spa_horiz_interp.source_grid_ncols,"ERROR update_spa_data_from_file: Number of columns in remap data (" 
-                        + std::to_string(ncol) + " doesn't match the SPA data file (" + std::to_string(spa_horiz_interp.source_grid_ncols) + ").");
   scorpio::eam_pio_closefile(spa_data_file_name);
 
   // Construct local arrays to read data into
@@ -647,25 +647,52 @@ void SPAFunctions<S,D>
   //   then we will use the horizontal interpolation structure, spa_horiz_interp, to
   //   interpolate PS_v onto the simulation grid: PS_v -> spa_data.PS
   //   and so on for the other variables.
+  
+  // Construct the grid needed for input:
+  scorpio::register_file(spa_data_file_name,scorpio::Read);
+  const int source_data_nlevs = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lev");
+  const int num_local_cols = spa_gsmap.get_num_unique_dofs();
+
+  auto grid = std::make_shared<PointGrid>("grid",num_local_cols,source_data_nlevs,comm);
+  grid->set_dofs(unique_src_dofs);
+
+  // Check that padding matches source size:
+  EKAT_REQUIRE(source_data_nlevs+2 == spa_data.data.nlevs);
+  EKAT_REQUIRE_MSG(nswbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"swband"),"ERROR update_spa_data_from_file: Number of SW bands in simulation doesn't match the SPA data file");
+  EKAT_REQUIRE_MSG(nlwbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lwband"),"ERROR update_spa_data_from_file: Number of LW bands in simulation doesn't match the SPA data file");
+  EKAT_REQUIRE_MSG(ncol==spa_horiz_interp.source_grid_ncols,"ERROR update_spa_data_from_file: Number of columns in remap data (" 
+                        + std::to_string(ncol) + " doesn't match the SPA data file (" + std::to_string(spa_horiz_interp.source_grid_ncols) + ").");
+  // Done with the file for this step.
+  scorpio::eam_pio_closefile(spa_data_file_name);
+
+  // Constuct views to read source data in from file
   typename view_1d<Real>::HostMirror hyam_v_h("hyam",source_data_nlevs);
   typename view_1d<Real>::HostMirror hybm_v_h("hybm",source_data_nlevs);
-  typename view_1d<Real>::HostMirror PS_v_h("PS",num_local_cols);
-  typename view_2d<Real>::HostMirror CCN3_v_h("CCN3",num_local_cols,source_data_nlevs);
-  typename view_3d<Real>::HostMirror AER_G_SW_v_h("AER_G_SW",num_local_cols,nswbands,source_data_nlevs);
-  typename view_3d<Real>::HostMirror AER_SSA_SW_v_h("AER_SSA_SW",num_local_cols,nswbands,source_data_nlevs);
-  typename view_3d<Real>::HostMirror AER_TAU_SW_v_h("AER_TAU_SW",num_local_cols,nswbands,source_data_nlevs);
-  typename view_3d<Real>::HostMirror AER_TAU_LW_v_h("AER_TAU_LW",num_local_cols,nlwbands,source_data_nlevs);
+  view_1d<Real> PS_v("PS",num_local_cols);
+  view_2d<Real> CCN3_v("CCN3",num_local_cols,source_data_nlevs);
+  view_3d<Real> AER_G_SW_v("AER_G_SW",num_local_cols,nswbands,source_data_nlevs);
+  view_3d<Real> AER_SSA_SW_v("AER_SSA_SW",num_local_cols,nswbands,source_data_nlevs);
+  view_3d<Real> AER_TAU_SW_v("AER_TAU_SW",num_local_cols,nswbands,source_data_nlevs);
+  view_3d<Real> AER_TAU_LW_v("AER_TAU_LW",num_local_cols,nlwbands,source_data_nlevs);
 
-  // Construct the grid needed for input:
-  auto grid = std::make_shared<PointGrid>("grid",num_local_cols,source_data_nlevs,comm);
-  PointGrid::dofs_list_type dof_gids("",num_local_cols);
-  auto dof_gids_h = Kokkos::create_mirror_view(dof_gids);
-  for (const auto& nn : spa_horiz_interp.source_local_col_map) {
-    dof_gids_h(nn.second) = nn.first;
-  }
-  Kokkos::deep_copy(dof_gids,dof_gids_h);
-  grid->set_dofs(dof_gids);
+  auto PS_v_h         = Kokkos::create_mirror_view(PS_v);
+  auto CCN3_v_h       = Kokkos::create_mirror_view(CCN3_v);      
+  auto AER_G_SW_v_h   = Kokkos::create_mirror_view(AER_G_SW_v);
+  auto AER_SSA_SW_v_h = Kokkos::create_mirror_view(AER_SSA_SW_v);
+  auto AER_TAU_SW_v_h = Kokkos::create_mirror_view(AER_TAU_SW_v);
+  auto AER_TAU_LW_v_h = Kokkos::create_mirror_view(AER_TAU_LW_v);
 
+//ASD  // Construct the grid needed for input:
+//ASD  auto grid = std::make_shared<PointGrid>("grid",num_local_cols,source_data_nlevs,comm);
+//ASD  PointGrid::dofs_list_type dof_gids("",num_local_cols);
+//ASD  auto dof_gids_h = Kokkos::create_mirror_view(dof_gids);
+//ASD  for (const auto& nn : spa_horiz_interp.source_local_col_map) {
+//ASD    dof_gids_h(nn.second) = nn.first;
+//ASD  }
+//ASD  Kokkos::deep_copy(dof_gids,dof_gids_h);
+//ASD  grid->set_dofs(dof_gids);
+
+  // Set up input structure to read data from file.
   using namespace ShortFieldTagsNames;
   FieldLayout scalar1d_layout { {LEV}, {source_data_nlevs} };
   FieldLayout scalar2d_layout_mid { {COL}, {num_local_cols} };
@@ -704,10 +731,18 @@ void SPAFunctions<S,D>
   spa_data_input.read_variables(time_index);
   spa_data_input.finalize();
 
+  // Copy data from host back to the device views.
+  Kokkos::deep_copy(PS_v,PS_v_h);
+  Kokkos::deep_copy(CCN3_v      , CCN3_v_h);      
+  Kokkos::deep_copy(AER_G_SW_v  , AER_G_SW_v_h);
+  Kokkos::deep_copy(AER_SSA_SW_v, AER_SSA_SW_v_h);
+  Kokkos::deep_copy(AER_TAU_SW_v, AER_TAU_SW_v_h);
+  Kokkos::deep_copy(AER_TAU_LW_v, AER_TAU_LW_v_h);
+
   // Now that we have the data we can map the data onto the target data.
   auto hyam_h       = Kokkos::create_mirror_view(spa_data.hyam);
   auto hybm_h       = Kokkos::create_mirror_view(spa_data.hybm);
-  auto ps_h         = Kokkos::create_mirror_view(spa_data.PS);
+//ASD  auto ps_h         = Kokkos::create_mirror_view(spa_data.PS);
   auto ccn3_h       = Kokkos::create_mirror_view(spa_data.data.CCN3);
   auto aer_g_sw_h   = Kokkos::create_mirror_view(spa_data.data.AER_G_SW);
   auto aer_ssa_sw_h = Kokkos::create_mirror_view(spa_data.data.AER_SSA_SW);
@@ -715,7 +750,7 @@ void SPAFunctions<S,D>
   auto aer_tau_lw_h = Kokkos::create_mirror_view(spa_data.data.AER_TAU_LW);
   Kokkos::deep_copy(hyam_h,0.0);
   Kokkos::deep_copy(hybm_h,0.0);
-  Kokkos::deep_copy(ps_h,0.0);
+//ASD  Kokkos::deep_copy(ps_h,0.0);
   Kokkos::deep_copy(ccn3_h,0.0);
   Kokkos::deep_copy(aer_g_sw_h,0.0);
   Kokkos::deep_copy(aer_ssa_sw_h,0.0);
@@ -733,7 +768,7 @@ void SPAFunctions<S,D>
     int  src_col = spa_horiz_interp.source_local_col_map[source_grid_loc_h(idx)];
     int  tgt_col = target_grid_loc_h(idx);
     // PS is defined only over columns
-    ps_h(tgt_col) += PS_v_h(src_col)*src_wgt;
+//ASD    ps_h(tgt_col) += PS_v_h(src_col)*src_wgt;
     // CCN3 and all AER variables have levels
     for (int kk=0; kk<source_data_nlevs; kk++) {
       // Note, all variables we map to are packed, while all the data we just loaded as
@@ -784,7 +819,8 @@ void SPAFunctions<S,D>
   
   Kokkos::deep_copy(spa_data.hyam,hyam_h);
   Kokkos::deep_copy(spa_data.hybm,hybm_h);
-  Kokkos::deep_copy(spa_data.PS,ps_h);
+//ASD  Kokkos::deep_copy(spa_data.PS,ps_h);
+  spa_gsmap.apply_remap(PS_v,spa_data.PS);
   Kokkos::deep_copy(spa_data.data.CCN3,ccn3_h);
   Kokkos::deep_copy(spa_data.data.AER_G_SW,aer_g_sw_h);
   Kokkos::deep_copy(spa_data.data.AER_SSA_SW,aer_ssa_sw_h);

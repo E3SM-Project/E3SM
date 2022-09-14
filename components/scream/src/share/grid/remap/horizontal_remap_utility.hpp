@@ -132,6 +132,7 @@ public:
 
   // Getter functions
   view_1d<gid_type>      get_unique_source_dofs() const { return m_unique_dofs; }
+  Int                    get_num_unique_dofs() const { return m_num_unique_dofs; }
   Int                    get_num_of_dofs() const { return m_num_dofs; }
   std::vector<GSSegment> get_map_segments() const { return m_map_segments; }
   Int                    get_num_of_segments() const { return m_num_segments; }
@@ -144,6 +145,7 @@ protected:
   Int               m_num_dofs = 0;
   // Global degrees of freedom information on source grid
   view_1d<gid_type> m_unique_dofs;
+  Int               m_num_unique_dofs;
   bool              m_unique_set = false;
   // GSMap data
   std::string            m_name = "";
