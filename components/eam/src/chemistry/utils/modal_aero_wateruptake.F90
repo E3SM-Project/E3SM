@@ -31,7 +31,7 @@ public :: modal_aero_wateruptake_reg
 
 real(r8), parameter :: third = 1._r8/3._r8
 real(r8), parameter :: pi43  = pi*4.0_r8/3.0_r8
-
+real(r8), parameter :: huge_real = huge(1.0_r8)
 
 ! Physics buffer indices
 integer :: cld_idx        = 0
@@ -272,17 +272,17 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    call rad_cnst_get_info(list_idx, nmodes=nmodes)
 
    !initialize to an invalid value
-   naer   (1:pcols,1:pver,1:nmodes) = huge(1.0_r8)
-   dryvol (1:pcols,1:pver,1:nmodes) = huge(1.0_r8)
-   drymass(1:pcols,1:pver,1:nmodes) = huge(1.0_r8)
-   dryrad (1:pcols,1:pver,1:nmodes) = huge(1.0_r8)
-   wetrad (1:pcols,1:pver,1:nmodes) = huge(1.0_r8)
-   wetvol (1:pcols,1:pver,1:nmodes) = huge(1.0_r8)
-   wtrvol (1:pcols,1:pver,1:nmodes) = huge(1.0_r8)
+   naer   (1:pcols,1:pver,1:nmodes) = huge_real
+   dryvol (1:pcols,1:pver,1:nmodes) = huge_real
+   drymass(1:pcols,1:pver,1:nmodes) = huge_real
+   dryrad (1:pcols,1:pver,1:nmodes) = huge_real
+   wetrad (1:pcols,1:pver,1:nmodes) = huge_real
+   wetvol (1:pcols,1:pver,1:nmodes) = huge_real
+   wtrvol (1:pcols,1:pver,1:nmodes) = huge_real
 
-   rhcrystal (1:nmodes)  = huge(1.0_r8)
-   rhdeliques(1:nmodes)  = huge(1.0_r8)
-   specdens_1(1:nmodes)  = huge(1.0_r8)
+   rhcrystal (1:nmodes)  = huge_real
+   rhdeliques(1:nmodes)  = huge_real
+   specdens_1(1:nmodes)  = huge_real
 
    maer (1:pcols,1:pver,1:nmodes)   = 0._r8
    hygro(1:pcols,1:pver,1:nmodes)   = 0._r8
