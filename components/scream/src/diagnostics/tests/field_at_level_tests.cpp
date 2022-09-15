@@ -76,22 +76,26 @@ TEST_CASE("field_at_level")
   params_int.set("Field Layout",fid_int.get_layout());
   params_int.set("Grid Name",fid_int.get_grid_name());
 
-  for (const std::string& lev_loc : {"bot", "top", "rand"}) {
-    int lev,ilev;
+  using IPDF = std::uniform_int_distribution<int>;
+  IPDF ipdf (1,nlevs-2);
+  for (const std::string& lev_loc : {"top", "bot", "rand"}) {
+    int lev;
+    std::string lev_str;
     if (lev_loc=="bot") {
-      lev = ilev = 0;
-    } else if (lev_loc=="top") {
       lev = nlevs-1;
-      ilev = lev + 1;
+      lev_str = "bot";
+    } else if (lev_loc=="top") {
+      lev = 0;
+      lev_str = "top";
     } else {
-      using IPDF = std::uniform_int_distribution<int>;
-      IPDF ipdf (1,nlevs-2);
-      lev = ilev = ipdf(engine);
+      lev = ipdf(engine);
+      lev_str = std::to_string(lev);
     }
+    printf (" -> testing extraction at level: %s\n",lev_str.c_str());
 
     // Create and setup diagnostics
-    params_mid.set("Field Level",lev);
-    params_int.set("Field Level",ilev);
+    params_mid.set<std::string>("Field Level",lev_str);
+    params_int.set<std::string>("Field Level",lev_str);
     auto diag_mid = std::make_shared<FieldAtLevel>(comm,params_mid);
     auto diag_int = std::make_shared<FieldAtLevel>(comm,params_int);
 
@@ -118,7 +122,7 @@ TEST_CASE("field_at_level")
     auto d_int_v = d_int.get_view<const Real*,Host>();
     for (int icol=0; icol<ncols; ++icol) {
       REQUIRE (d_mid_v(icol)==f_mid_v(icol,lev));
-      REQUIRE (d_int_v(icol)==f_int_v(icol,ilev));
+      REQUIRE (d_int_v(icol)==f_int_v(icol,lev));
     }
   }
 }
