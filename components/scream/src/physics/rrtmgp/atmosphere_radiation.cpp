@@ -530,7 +530,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
         for (int i=0;i<ncol;i++) {
           double lat = h_lat(i+beg)*PC::Pi/180.0;  // Convert lat/lon to radians
           double lon = h_lon(i+beg)*PC::Pi/180.0;
-          h_mu0(i) = shr_orb_cosz_c2f(calday, lat, lon, delta, dt);
+          h_mu0(i) = shr_orb_cosz_c2f(calday, lat, lon, delta, m_rad_freq_in_steps * dt);
         }
       }
       Kokkos::deep_copy(d_mu0,h_mu0);
