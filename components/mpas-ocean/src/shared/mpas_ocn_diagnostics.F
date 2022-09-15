@@ -2606,91 +2606,81 @@ contains
 !>  cell.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_vert_transport_velocity_top(meshPool, verticalMeshPool, oldLayerThickness, layerThicknessEdgeFlux, &
-     normalVelocity, oldSSH, dt, vertAleTransportTop, err, newHighFreqThickness)!{{{
+
+   subroutine ocn_vert_transport_velocity_top(verticalMeshPool, &
+                     oldLayerThickness, layerThicknessEdgeFlux, &
+                     normalVelocity, oldSSH, dt, vertAleTransportTop, &
+                     err, newHighFreqThickness)!{{{
 
       !-----------------------------------------------------------------
-      !
       ! input variables
-      !
       !-----------------------------------------------------------------
 
       type (mpas_pool_type), intent(in) :: &
-         meshPool           !< Input: horizonal mesh information
-
-      type (mpas_pool_type), intent(in) :: &
-         verticalMeshPool   !< Input: vertical mesh information
-
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         oldLayerThickness    !< Input: layer thickness at old time
-
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdgeFlux     !< Input: layerThickness interpolated to an edge
-
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalVelocity     !< Input: transport
+         verticalMeshPool         !< [in] vertical mesh information
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         oldSSH     !< Input: sea surface height at old time
+         oldSSH                   !< [in] sea surface height at old time
 
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         oldLayerThickness,      &!< [in] layer thickness at old time
+         layerThicknessEdgeFlux, &!< [in] layerThickness at edge
+         normalVelocity           !< [in] transport
+
+      !  alters ALE thickness when freq-filtering
       real (kind=RKIND), dimension(:,:), intent(in), optional :: &
-         newHighFreqThickness   !< Input: high frequency thickness.  Alters ALE thickness.
+         newHighFreqThickness     !< [in] high frequency thickness
 
       real (kind=RKIND), intent(in) :: &
          dt     !< Input: time step
 
       !-----------------------------------------------------------------
-      !
       ! output variables
-      !
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(out) :: &
-         vertAleTransportTop     !< Output: vertical transport at top of cell
+         vertAleTransportTop     !< [out] vertical transport top of cell
 
-      integer, intent(out) :: err !< Output: error flag
+      integer, intent(out) :: err !< [out] error flag
 
       !-----------------------------------------------------------------
-      !
       ! local variables
-      !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, iCell, k, i, nCells, kmin, kmax
+      integer :: &
+         iEdge, iCell, k, i, &! edge, cell, vert, nbr indices
+         nCells,             &! number of cells
+         kmin, kmax           ! min/max layer indices for active layers
 
-      real (kind=RKIND) :: flux, invAreaCell1, div_hu_btr
-      integer, dimension(:,:), pointer :: edgeSignOnCell
+      real (kind=RKIND) :: &
+         flux,         &!
+         invAreaCell1, &! 1/cell area
+         div_hu_btr     ! divergence of h*u for barotropic u
 
-      ! Scratch Arrays
-      ! projectedSSH: projected SSH at a new time
-      !        units: none
-      real (kind=RKIND), dimension(:), allocatable ::  projectedSSH
-      ! div_hu: divergence of (thickness*velocity)
-      !  units: none
-      real (kind=RKIND), dimension(:,:), allocatable :: div_hu
-      ! ALE_Thickness: ALE thickness at new time
-      !         units: none
-      real (kind=RKIND), dimension(:,:), allocatable :: ALE_Thickness
-#ifdef MPAS_OPENACC
-      !$acc declare device_resident(div_hu)
-#endif
+      real (kind=RKIND), dimension(:), allocatable :: &
+         projectedSSH ! projectedSSH: projected SSH at a new time
+
+      real (kind=RKIND), dimension(:,:), allocatable :: &
+         div_hu,       &! divergence of (thickness*velocity)
+         ALE_Thickness  ! ALE thickness at new time
+
+      ! End preamble
+      !-----------------------------------------------------------------
+      ! Begin code
 
       err = 0
 
       if (config_vert_coord_movement == 'impermeable_interfaces' .or. &
           configVertAdvMethod == vertAdvRemap) then
-        vertAleTransportTop=0.0_RKIND
-        !$acc update device(vertAleTransportTop)
-        return
+         vertAleTransportTop = 0.0_RKIND
+         !$acc update device(vertAleTransportTop)
+         return
       end if
 
-      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
-
-      ncells = nCellsAll
-
-      allocate(div_hu(nVertLevels, nCells), &
-               projectedSSH(nCells), &
-               ALE_Thickness(nVertLevels, nCells))
+      allocate(div_hu(nVertLevels, nCellsAll), &
+               projectedSSH(nCellsAll), &
+               ALE_Thickness(nVertLevels, nCellsAll))
+      !$acc enter data create(projectedSSH, ALE_Thickness, div_hu)
 
       ! Only need to compute over 0 and 1 halos
       nCells = nCellsHalo( 1 )
@@ -2700,21 +2690,22 @@ contains
       !
       ! See Ringler et al. (2010) jcp paper, eqn 19, 21, and fig. 3.
 #ifdef MPAS_OPENACC
-      !$acc enter data create(projectedSSH, ALE_Thickness) &
-      !$acc            copyin(edgeSignOnCell)
-
       !$acc parallel loop &
-      !$acc          present(invAreaCell, nEdgesOnCell, edgesOnCell, maxLevelEdgeTop, &
-      !$acc                  layerThicknessEdgeFlux, normalVelocity, dvEdge, edgeSignOnCell, &
-      !$acc                  oldSSH, projectedSSH, minLevelEdgeBot) &
-      !$acc          private(div_hu_btr, invAreaCell1, i, iEdge, flux, k, kmin, kmax)
+      !$acc    present(projectedSSH, oldSSH, normalVelocity, div_hu, &
+      !$acc            layerThicknessEdgeFlux, dvEdge, invAreaCell, &
+      !$acc            nEdgesOnCell, edgesOnCell, edgeSignOnCell, &
+      !$acc            minLevelEdgeBot, maxLevelEdgeTop) &
+      !$acc    private(i, iEdge, k, kmin, kmax, div_hu_btr, &
+      !$acc            invAreaCell1, flux)
 #else
       !$omp parallel
-      !$omp do schedule(runtime) private(invAreaCell1, i, iEdge, k, flux, div_hu_btr, kmin, kmax)
+      !$omp do schedule(runtime) &
+      !$omp    private(i, iEdge, k, kmin, kmax, div_hu_btr, &
+      !$omp            invAreaCell1, flux)
 #endif
       do iCell = 1, nCells
          div_hu(:,iCell) = 0.0_RKIND
-         div_hu_btr = 0.0_RKIND
+         div_hu_btr      = 0.0_RKIND
          invAreaCell1 = invAreaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
@@ -2722,18 +2713,16 @@ contains
             kmax = maxLevelEdgeTop(iEdge)
 
             do k = kmin, kmax
-               flux = layerThicknessEdgeFlux(k, iEdge) * normalVelocity(k, iEdge) * dvEdge(iEdge) * edgeSignOnCell(i, iCell) &
-                    * invAreaCell1
+               flux = layerThicknessEdgeFlux(k,iEdge)* &
+                      normalVelocity(k,iEdge)*dvEdge(iEdge)* &
+                      edgeSignOnCell(i,iCell) * invAreaCell1
                div_hu(k,iCell) = div_hu(k,iCell) - flux
                div_hu_btr = div_hu_btr - flux
             end do
          end do
          projectedSSH(iCell) = oldSSH(iCell) - dt*div_hu_btr
       end do
-#ifdef MPAS_OPENACC
-      !$acc update host(projectedSSH)
-      !$acc exit data delete(edgeSignOnCell)
-#else
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
 #endif
@@ -2742,21 +2731,22 @@ contains
       ! Compute desired thickness at new time
       !
       if (present(newHighFreqThickness)) then
-        call ocn_ALE_thickness(meshPool, verticalMeshPool, projectedSSH, ALE_thickness, err, newHighFreqThickness)
+        call ocn_ALE_thickness(verticalMeshPool, projectedSSH, &
+                               ALE_thickness, err, newHighFreqThickness)
       else
-        call ocn_ALE_thickness(meshPool, verticalMeshPool, projectedSSH, ALE_thickness, err)
+        call ocn_ALE_thickness(verticalMeshPool, projectedSSH, &
+                               ALE_thickness, err)
       endif
 
       !
       ! Vertical transport through layer interfaces
       !
-      ! Vertical transport through layer interface at top and bottom is zero.
-      ! Here we are using solving the continuity equation for vertAleTransportTop ($w^t$),
-      ! and using ALE_Thickness for thickness at the new time.
+      ! Vertical transport through layer interface at top and
+      ! bottom is zero. Here we are using solving the continuity
+      ! equation for vertAleTransportTop ($w^t$), and using
+      ! ALE_Thickness for thickness at the new time.
 
 #ifdef MPAS_OPENACC
-      !$acc update device(ALE_Thickness)
-
       !$acc parallel loop gang vector &
       !$acc          present(vertAleTransportTop, maxLevelCell, ALE_Thickness, &
       !$acc                  oldLayerThickness, minLevelCell) &
@@ -2766,23 +2756,28 @@ contains
       !$omp do schedule(runtime) private(k)
 #endif
       do iCell = 1,nCells
+         kmin = minLevelCell(iCell)
+         kmax = maxLevelCell(iCell)
          vertAleTransportTop(1,iCell) = 0.0_RKIND
-         vertAleTransportTop(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
-         do k = maxLevelCell(iCell), minLevelCell(iCell)+1, -1
-            vertAleTransportTop(k,iCell) = vertAleTransportTop(k+1,iCell) - div_hu(k,iCell) &
-              - (ALE_Thickness(k,iCell) - oldLayerThickness(k,iCell))/dt
+         vertAleTransportTop(kmax+1,iCell) = 0.0_RKIND
+         do k = kmax, kmin+1, -1
+            vertAleTransportTop(k,iCell) = &
+                vertAleTransportTop(k+1,iCell) - div_hu(k,iCell) &
+                     - (ALE_Thickness(k,iCell) - &
+                        oldLayerThickness(k,iCell))/dt
          end do
       end do
-#ifdef MPAS_OPENACC
-      !$acc exit data delete(projectedSSH, ALE_Thickness)
-#else
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
 #endif
 
+      !$acc exit data delete(projectedSSH, ALE_Thickness, div_hu)
       deallocate(div_hu, &
                  projectedSSH, &
                  ALE_Thickness)
+
+   !--------------------------------------------------------------------
 
    end subroutine ocn_vert_transport_velocity_top!}}}
 

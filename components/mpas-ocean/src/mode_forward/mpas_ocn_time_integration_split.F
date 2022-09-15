@@ -684,12 +684,12 @@ module ocn_time_integration_split
          ! Use the most recent time level available.
 
          if (associated(highFreqThicknessNew)) then
-            call ocn_vert_transport_velocity_top(meshPool, &
+            call ocn_vert_transport_velocity_top( &
                  verticalMeshPool, layerThicknessCur, &
                  layerThickEdgeFlux, normalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, err, highFreqThicknessNew)
          else
-            call ocn_vert_transport_velocity_top(meshPool, &
+            call ocn_vert_transport_velocity_top( &
                  verticalMeshPool, layerThicknessCur, &
                  layerThickEdgeFlux, normalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, err)
@@ -1685,7 +1685,7 @@ module ocn_time_integration_split
 #ifdef MPAS_OPENACC
             !$acc enter data copyin(highFreqThicknessNew)
 #endif
-            call ocn_vert_transport_velocity_top(meshPool, &
+            call ocn_vert_transport_velocity_top( &
                  verticalMeshPool, layerThicknessCur, &
                  layerThickEdgeFlux, normalTransportVelocity, sshCur, &
                  dt, vertAleTransportTop, err, highFreqThicknessNew)
@@ -1693,7 +1693,7 @@ module ocn_time_integration_split
             !$acc exit data delete(highFreqThicknessNew)
 #endif
          else
-            call ocn_vert_transport_velocity_top(meshPool, &
+            call ocn_vert_transport_velocity_top( &
                  verticalMeshPool, layerThicknessCur, &
                  layerThickEdgeFlux, normalTransportVelocity, sshCur, &
                  dt, vertAleTransportTop, err)
