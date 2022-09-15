@@ -5,12 +5,10 @@
 ! Joe Hollowed
 ! June 2022
 ! This module written based on the structure of aoa_tracers, and enables the advection and
-! evolution of 5 tracers constituents:
+! evolution of 3 tracers constituents:
 ! - SO2
 ! - ASH
 ! - SULFATE
-! - SAI_PT  : potential temperature
-! _ SAI_PV  : potential vorticity
 !===============================================================================
 
 module cldera_sai_tracers
@@ -40,13 +38,11 @@ module cldera_sai_tracers
   integer, parameter :: ncnst=5  ! number of constituents implemented by this module
 
   ! constituent names, indices
-  character(len=7), parameter :: c_names(ncnst) = (/'SO2    ', 'ASH    ', 'SULFATE','SAI_PT ', 'SAI_PV '/)
+  character(len=7), parameter :: c_names(ncnst) = (/'SO2    ', 'ASH    ', 'SULFATE'/)
   integer :: ifirst ! global index of first constituent
   integer :: ixso2  ! global index for SO2 tracer
   integer :: ixash  ! global index for ASH tracer
   integer :: ixsulf ! global index for SULFATE tracer
-  integer :: ixpt   ! global index for SAI_PT tracer
-  integer :: ixpv   ! global index for SAI_PV tracer
 
   ! Data from namelist variables; defaults set in bld/namelist_files/namelist_defaults_eam.xml
   logical  :: cldera_sai_tracers_flag      ! true => activate module, set namelist variable
@@ -56,7 +52,7 @@ module cldera_sai_tracers
   real(r8) :: cldera_sai_MSO2              ! total SO2 mass (Mt)
   real(r8) :: cldera_sai_Mash              ! total ash mass (Mt)
   real(r8) :: cldera_sai_t0                ! desired time of injection after simulation start (hours)
-  real(r8) :: cldera_sai_duration                ! injection duration (hours)
+  real(r8) :: cldera_sai_duration          ! injection duration (hours)
   real(r8) :: cldera_sai_rkSO2             ! SO2 e-folding (1/day)
   real(r8) :: cldera_sai_rkash             ! ash e-folding (1/day)
   real(r8) :: cldera_sai_rksulf            ! ash e-folding (1/day)
@@ -97,7 +93,7 @@ module cldera_sai_tracers
   real(r8) :: zmin  = 17.0_r8 * km2m    ! lower plume truncation (m)
   real(r8) :: zmax  = 30.0_r8 * km2m    ! upper plume truncation (m)
   real(r8) :: rr_tmp                    ! great circle distance (m)
-  real(r8) :: source_cutoff            ! masking
+  real(r8) :: source_cutoff             ! masking
   
   ! for injected species 
   real(r8) :: M_so2                     ! total SO2 mass (kg)
@@ -121,7 +117,7 @@ module cldera_sai_tracers
   real(r8) :: b_so2  = 1.0_r8           ! SO2 mass extinction coeff. (1/kg)
   real(r8) :: b_ash  = 1.0_r8           ! ash mass extinction coeff. (1/kg)
   real(r8) :: b_sulf = 1.0_r8           ! sulfate mass extinction coeff. (1/kg)
-  real(r8) :: AOD_cutoff               ! masking
+  real(r8) :: AOD_cutoff                ! masking
   
 
 !===============================================================================
@@ -154,7 +150,8 @@ contains
     ! https://docs.oracle.com/cd/E19957-01/805-4939/6j4m0vnc6/index.html
     ! The default values must be constants, and cannot contain arithemtic operators
     namelist /cldera_sai_tracers_nl/ cldera_sai_tracers_flag, cldera_sai_read_from_ic_file, &
-                                     cldera_sai_lat0, cldera_sai_lon0, cldera_sai_t0, cldera_sai_duration, &
+                                     cldera_sai_lat0, cldera_sai_lon0, cldera_sai_t0, &
+                                     cldera_sai_duration, &
                                      cldera_sai_MSO2, cldera_sai_Mash, &
                                      cldera_sai_rkSO2, cldera_sai_rkash, cldera_sai_rksulf, &
                                      cldera_sai_dTsurf, cldera_sai_dTstrat, &
@@ -251,12 +248,6 @@ contains
                   longname='Stratospheric aerosol injection plume ash')
     call cnst_add(c_names(3), mwdry, cpair, 0._r8, ixsulf, readiv=cldera_sai_read_from_ic_file, &
                   longname='Stratospheric aerosol injection plume sulfate')
-    call cnst_add(c_names(4), mwdry, cpair, 0._r8, ixpt,   readiv=cldera_sai_read_from_ic_file, &
-                  longname='potential temperature at initial time of stratospheric aerosol injection')
-    call cnst_add(c_names(5), mwdry, cpair, 0._r8, ixpv,   readiv=cldera_sai_read_from_ic_file, &
-                  longname='potential vorticity at initial time of stratospheric aerosol injection')
-    !call cnst_add(c_names(6), mwdry, cpair, 0._r8, ixaoa,   readiv=cldera_sai_read_from_ic_file, &
-    !              longname='stratospheric aeosol injection plume clock tracer')
 
   end subroutine cldera_sai_tracers_register
 
@@ -333,7 +324,7 @@ contains
 
     !-----------------------------------------------------------------------
     !
-    ! Purpose: initialize age of air constituents
+    ! Purpose: initialize SAI constituents
     !          (declare history variables)
     !-----------------------------------------------------------------------
 
@@ -353,7 +344,7 @@ contains
     
     ! add other output fields
     
-    call addfld('AREA',  horiz_only, 'A', 'kg', 'area of grid cell' )
+    call addfld('AREA',  horiz_only, 'A', 'm2', 'area of grid cell' )
     call add_default('AREA', 1, ' ')
     call addfld('AIR_MASS',  (/ 'lev' /), 'A', 'kg', 'mass of grid box' )
     call add_default('AIR_MASS', 1, ' ')
@@ -455,31 +446,31 @@ contains
     real(r8) :: pp                ! midpoint pressure (Pa)
     
     ! for injection source localization
-    real(r8) :: V(ncol, pver)                 ! vertical profile (1/m)
-    real(r8) :: sVk   = 0.0_r8                ! vertical profile sum (1/m)
-    real(r8) :: rr    = 1.0e20                ! great circle distance (m)
-    integer  :: inj_owner                     ! MPI rank owning injection column
-    integer  :: inji                          ! injection column index within chunk
-    integer  :: injc                          ! injection local chunk index
-    real(r8) :: inj_dist                      ! distance of matched col from requested location (m)
-    logical  :: inject                        ! true => this rank contains the injection column
-    integer  :: myrank                        ! rank of this MPI process
-    integer  :: ier                           ! return error status
+    real(r8) :: V(ncol, pver)            ! vertical profile (1/m)
+    real(r8) :: sVk   = 0.0_r8           ! vertical profile sum (1/m)
+    real(r8) :: rr    = 1.0e20           ! great circle distance (m)
+    integer  :: inj_owner                ! MPI rank owning injection column
+    integer  :: inji                     ! injection column index within chunk
+    integer  :: injc                     ! injection local chunk index
+    real(r8) :: inj_dist                 ! distance of matched col from requested location (m)
+    logical  :: inject                   ! true => this rank contains the injection column
+    integer  :: myrank                   ! rank of this MPI process
+    integer  :: ier                      ! return error status
 
     ! for mass normalization
-    real(r8) :: A_so2 = 0.0                   ! SO2 normalization (kg m / s)
-    real(r8) :: A_ash = 0.0                   ! ash normalization (kg m / s)
+    real(r8) :: A_so2 = 0.0              ! SO2 normalization (kg m / s)
+    real(r8) :: A_ash = 0.0              ! ash normalization (kg m / s)
     
     ! for mass estimate
-    real(r8) :: area(ncol)                    ! column horizontal area (m^2)
-    real(r8) :: grid_mass(ncol,pver)          ! grid cell mass (kg)
-    real(r8) :: col_mass(ncol,pver)           ! cumulative column mass (kg)
+    real(r8) :: area(ncol)               ! column horizontal area (m^2)
+    real(r8) :: grid_mass(ncol,pver)     ! grid cell mass (kg)
+    real(r8) :: col_mass(ncol,pver)      ! cumulative column mass (kg)
     
     ! for stratospheric heating
-    real(r8) :: strat_heating(ncol,pver)      ! stratospheric heating (J/kg/s)
+    real(r8) :: strat_heating(ncol,pver) ! stratospheric heating (J/kg/s)
     
     ! for surface cooling
-    real(r8) :: surf_cooling(ncol,pver)       ! surface cooling (J/kg/s)
+    real(r8) :: surf_cooling(ncol,pver)  ! surface cooling (J/kg/s)
     real(r8) :: aod_so2(ncol,pver)       ! SO2 AOD (kg)
     real(r8) :: aod_ash(ncol,pver)       ! ash AOD (kg)
     real(r8) :: aod_sulf(ncol,pver)      ! sulfate AOD (kg)
@@ -496,8 +487,6 @@ contains
     lq(ixso2)   = .TRUE.
     lq(ixash)   = .TRUE.
     lq(ixsulf)  = .TRUE.
-    lq(ixpt)    = .TRUE.
-    lq(ixpv)    = .TRUE.
     call physics_ptend_init(ptend, state%psetcols, 'cldera_sai_tracers', lq=lq, ls=.true.)
 
     nstep = get_nstep()
@@ -563,12 +552,12 @@ contains
         
     ! =============== COMPUTE GRID, COLUMN MASS, AOD =============== 
     call get_area_all_p(lchnk, ncol, area)
-    area = area * rearth**2
+    area = area * rearth**2  ! rad^2 to m^2
     
     do i = 1, ncol
         do k = 1,pver
             ! mass in grid cell via hydrostatic approximation
-            ! pdel = Pa, area = rad^2, rearth = m, rgrav = s**2/m ===> mass = kg
+            ! pdel = Pa, area = m^2, rgrav = s**2/m ===> mass = kg
             grid_mass(i,k) = state%pdel(i,k) * area(i) * rgrav
             
             ! take cumulative sum for the column mass above position k
@@ -660,21 +649,7 @@ contains
           else
               ptend%q(i,k,ixsulf) = 0.0_r8
           endif
-
           
-          ! =============== POTENTIAL TEMP ===============
-          ! initialize within the first minute of the run
-          !if (t < 60.0_r8) then
-          !    state%q(i,k,ixpt) = state%t(i,k) * (P0 / state%pmid(i, k))**(rair/cpair)
-          !end if
-          ptend%q(i,k,ixpt) = 0.0_r8
-                   
-
-          ! =============== POTENTIAL VORT ===============
-          ! currently does nothing...
-          ptend%q(i,k,ixpv) = 0.0_r8
-
-
           ! =============== DIABATIC HEATING ===============
           ! ---- stratospheric heating
           if(cldera_sai_stratHeating) then 
@@ -735,10 +710,6 @@ contains
     else if (m == ixash) then
        q(:,:) = 0.0_r8
     else if (m == ixsulf) then
-       q(:,:) = 0.0_r8
-    else if (m == ixpt) then
-       q(:,:) = 0.0_r8
-    else if (m == ixpv) then
        q(:,:) = 0.0_r8
     end if
     
