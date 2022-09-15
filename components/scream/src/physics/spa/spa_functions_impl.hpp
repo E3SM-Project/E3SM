@@ -14,6 +14,7 @@
 
 #include <numeric>
 
+#include "share/util/scream_timing.hpp"
 /*-----------------------------------------------------------------
  * The main SPA routines used to convert SPA data into a format that
  * is usable by the rest of the atmosphere processes.
@@ -337,11 +338,12 @@ void SPAFunctions<S,D>
           SPAHorizInterp&    spa_horiz_interp
   )
 {
-
+  start_timer("EAMxx::SPA::get_remap_weights_from_file");
   auto& spa_gsmap = spa_horiz_interp.gsmap;
   spa_gsmap = GSMap(spa_horiz_interp.m_comm,"SPA File Remap", dofs_gids, min_dof);
   spa_gsmap.set_remap_segments_from_file(remap_file_name);
   spa_gsmap.set_unique_source_dofs();
+  stop_timer("EAMxx::SPA::get_remap_weights_from_file");
 
 }  // END get_remap_weights_from_file
 /*-----------------------------------------------------------------*/
@@ -398,6 +400,7 @@ void SPAFunctions<S,D>
           SPAHorizInterp&       spa_horiz_interp,
           SPAInput&             spa_data)
 {
+  start_timer("EAMxx::SPA::update_spa_data_from_file");
   // Ensure all ranks are operating independently when reading the file, so there's a copy on all ranks
   auto comm = spa_horiz_interp.m_comm;
 
@@ -590,6 +593,7 @@ void SPAFunctions<S,D>
   const int kidx = (source_data_nlevs+1) % Spack::n;
   hyam_h(pack)[kidx] = 1e5; 
   hybm_h(pack)[kidx] = 0.0;
+  stop_timer("EAMxx::SPA::update_spa_data_from_file");
 
 } // END update_spa_data_from_file
 

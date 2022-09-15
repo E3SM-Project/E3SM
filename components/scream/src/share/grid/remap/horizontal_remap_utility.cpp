@@ -1,4 +1,5 @@
 #include "share/grid/remap/horizontal_remap_utility.hpp"
+#include "share/util/scream_timing.hpp"
 
 namespace scream {
 
@@ -39,140 +40,142 @@ GSMap::GSMap(const ekat::Comm& comm, const std::string& map_name, const view_1d<
 //   S   - will be used to populate a segment's "weights"
 void GSMap::set_remap_segments_from_file(const std::string& remap_filename)
 {
-    // Open remap file and determine the amount of data to be read
-    scorpio::register_file(remap_filename,scorpio::Read);
-    const auto remap_size = scorpio::get_dimlen_c2f(remap_filename.c_str(),"n_s"); // Note, here we assume a standard format of col, row, S
-    // Step 1: Read in the "row" data from the file to figure out which mpi ranks care about which
-    //         chunk of the remap data.  This step reduces the memory footprint of reading in the
-    //         map data, which can be rather large.
-    // Distribute responsibility for reading remap data over all ranks
-    const int my_rank   = m_comm.rank();
-    const int num_ranks = m_comm.size();
-    // my_chunk will represent the chunk of data this rank will read from file.
-    int my_chunk        = remap_size/num_ranks;
-    int remainder       = remap_size - (my_chunk*num_ranks);
-    if (remainder != 0) {
-      my_chunk += my_rank<remainder ? 1 : 0;
+  start_timer("EAMxx::GSMap::set_remap_segments_from_file");
+  // Open remap file and determine the amount of data to be read
+  scorpio::register_file(remap_filename,scorpio::Read);
+  const auto remap_size = scorpio::get_dimlen_c2f(remap_filename.c_str(),"n_s"); // Note, here we assume a standard format of col, row, S
+  // Step 1: Read in the "row" data from the file to figure out which mpi ranks care about which
+  //         chunk of the remap data.  This step reduces the memory footprint of reading in the
+  //         map data, which can be rather large.
+  // Distribute responsibility for reading remap data over all ranks
+  const int my_rank   = m_comm.rank();
+  const int num_ranks = m_comm.size();
+  // my_chunk will represent the chunk of data this rank will read from file.
+  int my_chunk        = remap_size/num_ranks;
+  int remainder       = remap_size - (my_chunk*num_ranks);
+  if (remainder != 0) {
+    my_chunk += my_rank<remainder ? 1 : 0;
+  }
+  // now determine where this rank start reading the data.
+  int* chunks_glob = new int[num_ranks];
+  m_comm.all_gather(&my_chunk,chunks_glob,1);
+  int my_start = 0;
+  for (int ii=0; ii<my_rank;ii++) {
+    my_start += chunks_glob[ii];
+  }
+  // Check that the total set of chunks covers all the data
+  {
+    int chunk_check = 0;
+    for (int ii=0; ii<num_ranks; ii++) {
+      chunk_check += chunks_glob[ii];
     }
-    // now determine where this rank start reading the data.
-    int* chunks_glob = new int[num_ranks];
-    m_comm.all_gather(&my_chunk,chunks_glob,1);
-    int my_start = 0;
-    for (int ii=0; ii<my_rank;ii++) {
-      my_start += chunks_glob[ii];
+    EKAT_REQUIRE_MSG(chunk_check==remap_size,"ERROR: GSMap " + m_name +" get_remap_indices - Something went wrong distributing remap data among the MPI ranks");
+  }
+  // Using scream input routines, read remap data from file by chunk
+  view_1d<Int>  tgt_col("row",my_chunk); 
+  auto tgt_col_h = Kokkos::create_mirror_view(tgt_col);
+  std::vector<std::string> vec_of_dims = {"n_s"};
+  std::string i_decomp = "Int-n_s";
+  scorpio::get_variable(remap_filename, "row", "row", vec_of_dims, "int", i_decomp);
+  std::vector<int64_t> var_dof(my_chunk);
+  std::iota(var_dof.begin(),var_dof.end(),my_start);
+  scorpio::set_dof(remap_filename,"row",var_dof.size(),var_dof.data());
+  scorpio::set_decomp(remap_filename);
+  scorpio::grid_read_data_array(remap_filename,"row",0,tgt_col_h.data(),tgt_col_h.size()); 
+  scorpio::eam_pio_closefile(remap_filename);
+  // Step 2: Now that we have the data distributed among all ranks we organize the data
+  //         into sets of target column, start location in data and length of data.
+  //         At the same time, determine the min_dof for remap column indices.
+  std::vector<Int> chunk_dof, chunk_start, chunk_len;
+  chunk_dof.push_back(tgt_col_h(0));
+  chunk_start.push_back(my_start);
+  chunk_len.push_back(1);
+  int remap_min_dof = tgt_col_h(0);
+  for (int ii=1; ii<my_chunk; ii++) {
+    remap_min_dof = std::min(tgt_col_h(ii),remap_min_dof);
+    if (tgt_col_h(ii) == chunk_dof.back()) {
+      // Then we add one to the length for this chunk.
+      chunk_len.back() ++;
+    } else {
+      // Start a new chunk for a new DOF
+      chunk_dof.push_back(tgt_col_h(ii));
+      chunk_start.push_back(my_start+ii);
+      chunk_len.push_back(1);
     }
-    // Check that the total set of chunks covers all the data
-    {
-      int chunk_check = 0;
-      for (int ii=0; ii<num_ranks; ii++) {
-        chunk_check += chunks_glob[ii];
-      }
-      EKAT_REQUIRE_MSG(chunk_check==remap_size,"ERROR: GSMap " + m_name +" get_remap_indices - Something went wrong distributing remap data among the MPI ranks");
+  }
+  // Pass chunk information among all ranks so they can be consolidated.
+  int  num_chunks          = chunk_dof.size();
+  int* num_chunks_per_rank = new int[num_ranks];
+  int* chunk_displacement  = new int[num_ranks];
+  int  total_num_chunks;
+  int  global_remap_min_dof;
+  m_comm.all_gather(&num_chunks, num_chunks_per_rank,1);
+  m_comm.all_reduce(&remap_min_dof,&global_remap_min_dof,1,MPI_MIN);
+  chunk_displacement[0] = 0;
+  total_num_chunks = num_chunks_per_rank[0];
+  for (int ii=1; ii<num_ranks; ii++) {
+    chunk_displacement[ii] = total_num_chunks;
+    total_num_chunks += num_chunks_per_rank[ii];
+  }
+  int* buff_dof = (int*)calloc(total_num_chunks, sizeof(int));
+  int* buff_sta = (int*)calloc(total_num_chunks, sizeof(int));
+  int* buff_len = (int*)calloc(total_num_chunks, sizeof(int));
+  MPI_Allgatherv(chunk_dof.data(),  chunk_dof.size(),MPI_INT,buff_dof,num_chunks_per_rank,chunk_displacement,MPI_INT,m_comm.mpi_comm());
+  MPI_Allgatherv(chunk_start.data(),chunk_dof.size(),MPI_INT,buff_sta,num_chunks_per_rank,chunk_displacement,MPI_INT,m_comm.mpi_comm());
+  MPI_Allgatherv(chunk_len.data(),  chunk_dof.size(),MPI_INT,buff_len,num_chunks_per_rank,chunk_displacement,MPI_INT,m_comm.mpi_comm());
+  // Step 3: Now that all of the ranks are aware of all of the "sets" of source -> target mappings we
+  //         construct and add segments for just the DOF's this rank cares about.
+  std::vector<int> seg_dof, seg_start, seg_length;
+  var_dof.clear();
+  auto dofs_gids_h = Kokkos::create_mirror_view(m_dofs_gids);
+  Kokkos::deep_copy(dofs_gids_h,m_dofs_gids);
+  for (int ii=0; ii<total_num_chunks; ii++) {
+    // Search dofs to see if this chunk matches dofs on this rank
+    for (int jj=0; jj<dofs_gids_h.extent(0); jj++) {
+      if (buff_dof[ii]-global_remap_min_dof == dofs_gids_h(jj)) {
+        std::vector<int> var_tmp(buff_len[ii]);
+        std::iota(var_tmp.begin(),var_tmp.end(),buff_sta[ii]);
+        seg_dof.push_back(buff_dof[ii]);
+        seg_start.push_back(var_dof.size()); 
+        seg_length.push_back(buff_len[ii]);
+        var_dof.insert(var_dof.end(),var_tmp.begin(),var_tmp.end());
+      } 
     }
-    // Using scream input routines, read remap data from file by chunk
-    view_1d<Int>  tgt_col("row",my_chunk); 
-    auto tgt_col_h = Kokkos::create_mirror_view(tgt_col);
-    std::vector<std::string> vec_of_dims = {"n_s"};
-    std::string i_decomp = "Int-n_s";
-    scorpio::get_variable(remap_filename, "row", "row", vec_of_dims, "int", i_decomp);
-    std::vector<int64_t> var_dof(my_chunk);
-    std::iota(var_dof.begin(),var_dof.end(),my_start);
-    scorpio::set_dof(remap_filename,"row",var_dof.size(),var_dof.data());
-    scorpio::set_decomp(remap_filename);
-    scorpio::grid_read_data_array(remap_filename,"row",0,tgt_col_h.data(),tgt_col_h.size()); 
-    scorpio::eam_pio_closefile(remap_filename);
-    // Step 2: Now that we have the data distributed among all ranks we organize the data
-    //         into sets of target column, start location in data and length of data.
-    //         At the same time, determine the min_dof for remap column indices.
-    std::vector<Int> chunk_dof, chunk_start, chunk_len;
-    chunk_dof.push_back(tgt_col_h(0));
-    chunk_start.push_back(my_start);
-    chunk_len.push_back(1);
-    int remap_min_dof = tgt_col_h(0);
-    for (int ii=1; ii<my_chunk; ii++) {
-      remap_min_dof = std::min(tgt_col_h(ii),remap_min_dof);
-      if (tgt_col_h(ii) == chunk_dof.back()) {
-        // Then we add one to the length for this chunk.
-        chunk_len.back() ++;
-      } else {
-        // Start a new chunk for a new DOF
-        chunk_dof.push_back(tgt_col_h(ii));
-        chunk_start.push_back(my_start+ii);
-        chunk_len.push_back(1);
-      }
-    }
-    // Pass chunk information among all ranks so they can be consolidated.
-    int  num_chunks          = chunk_dof.size();
-    int* num_chunks_per_rank = new int[num_ranks];
-    int* chunk_displacement  = new int[num_ranks];
-    int  total_num_chunks;
-    int  global_remap_min_dof;
-    m_comm.all_gather(&num_chunks, num_chunks_per_rank,1);
-    m_comm.all_reduce(&remap_min_dof,&global_remap_min_dof,1,MPI_MIN);
-    chunk_displacement[0] = 0;
-    total_num_chunks = num_chunks_per_rank[0];
-    for (int ii=1; ii<num_ranks; ii++) {
-      chunk_displacement[ii] = total_num_chunks;
-      total_num_chunks += num_chunks_per_rank[ii];
-    }
-    int* buff_dof = (int*)calloc(total_num_chunks, sizeof(int));
-    int* buff_sta = (int*)calloc(total_num_chunks, sizeof(int));
-    int* buff_len = (int*)calloc(total_num_chunks, sizeof(int));
-    MPI_Allgatherv(chunk_dof.data(),  chunk_dof.size(),MPI_INT,buff_dof,num_chunks_per_rank,chunk_displacement,MPI_INT,m_comm.mpi_comm());
-    MPI_Allgatherv(chunk_start.data(),chunk_dof.size(),MPI_INT,buff_sta,num_chunks_per_rank,chunk_displacement,MPI_INT,m_comm.mpi_comm());
-    MPI_Allgatherv(chunk_len.data(),  chunk_dof.size(),MPI_INT,buff_len,num_chunks_per_rank,chunk_displacement,MPI_INT,m_comm.mpi_comm());
-    // Step 3: Now that all of the ranks are aware of all of the "sets" of source -> target mappings we
-    //         construct and add segments for just the DOF's this rank cares about.
-    std::vector<int> seg_dof, seg_start, seg_length;
-    var_dof.clear();
-    auto dofs_gids_h = Kokkos::create_mirror_view(m_dofs_gids);
-    Kokkos::deep_copy(dofs_gids_h,m_dofs_gids);
-    for (int ii=0; ii<total_num_chunks; ii++) {
-      // Search dofs to see if this chunk matches dofs on this rank
-      for (int jj=0; jj<dofs_gids_h.extent(0); jj++) {
-        if (buff_dof[ii]-global_remap_min_dof == dofs_gids_h(jj)) {
-          std::vector<int> var_tmp(buff_len[ii]);
-          std::iota(var_tmp.begin(),var_tmp.end(),buff_sta[ii]);
-          seg_dof.push_back(buff_dof[ii]);
-          seg_start.push_back(var_dof.size()); 
-          seg_length.push_back(buff_len[ii]);
-          var_dof.insert(var_dof.end(),var_tmp.begin(),var_tmp.end());
-        } 
-      }
-    }
-    // Now that we know which parts of the remap file this rank cares about we can construct segments
-    view_1d<Int>  col("col",var_dof.size()); 
-    view_1d<Real> S("S",var_dof.size()); 
-    auto col_h = Kokkos::create_mirror_view(col);
-    auto S_h = Kokkos::create_mirror_view(S);
-    vec_of_dims = {"n_s"};
-    i_decomp = "Int-n_s";
-    std::string r_decomp = "Real-n_s";
-    scorpio::register_file(remap_filename,scorpio::Read);
-    scorpio::get_variable(remap_filename, "col", "col", vec_of_dims, "int", i_decomp);
-    scorpio::get_variable(remap_filename, "S", "S", vec_of_dims, "real", r_decomp);
-    scorpio::set_dof(remap_filename,"col",var_dof.size(),var_dof.data());
-    scorpio::set_dof(remap_filename,"S",var_dof.size(),var_dof.data());
-    scorpio::set_decomp(remap_filename);
-    scorpio::grid_read_data_array(remap_filename,"col",0,col_h.data(),col_h.size()); 
-    scorpio::grid_read_data_array(remap_filename,"S",0,S_h.data(),S_h.size()); 
-    scorpio::eam_pio_closefile(remap_filename);
-    Kokkos::deep_copy(col,col_h);
-    Kokkos::deep_copy(S,S_h);
-    // Construct segments based on data just read from file
-    for (int ii=0; ii<seg_dof.size(); ii++) {
-      int seglength = seg_length[ii];
-      int segstart  = seg_start[ii];
-      view_1d<gid_type> source_dofs("",seglength);
-      view_1d<Real>     weights("",seglength);
-      Kokkos::parallel_for("", seglength, KOKKOS_LAMBDA (const int& jj) {
-        int idx = segstart + jj;
-        source_dofs(jj) = col(idx)-global_remap_min_dof;  // Offset to zero based dofs
-        weights(jj)     = S(idx);
-      });
-      GSSegment seg(seg_dof[ii]-global_remap_min_dof,seglength,source_dofs,weights);
-      add_remap_segment(seg);
-    }
+  }
+  // Now that we know which parts of the remap file this rank cares about we can construct segments
+  view_1d<Int>  col("col",var_dof.size()); 
+  view_1d<Real> S("S",var_dof.size()); 
+  auto col_h = Kokkos::create_mirror_view(col);
+  auto S_h = Kokkos::create_mirror_view(S);
+  vec_of_dims = {"n_s"};
+  i_decomp = "Int-n_s";
+  std::string r_decomp = "Real-n_s";
+  scorpio::register_file(remap_filename,scorpio::Read);
+  scorpio::get_variable(remap_filename, "col", "col", vec_of_dims, "int", i_decomp);
+  scorpio::get_variable(remap_filename, "S", "S", vec_of_dims, "real", r_decomp);
+  scorpio::set_dof(remap_filename,"col",var_dof.size(),var_dof.data());
+  scorpio::set_dof(remap_filename,"S",var_dof.size(),var_dof.data());
+  scorpio::set_decomp(remap_filename);
+  scorpio::grid_read_data_array(remap_filename,"col",0,col_h.data(),col_h.size()); 
+  scorpio::grid_read_data_array(remap_filename,"S",0,S_h.data(),S_h.size()); 
+  scorpio::eam_pio_closefile(remap_filename);
+  Kokkos::deep_copy(col,col_h);
+  Kokkos::deep_copy(S,S_h);
+  // Construct segments based on data just read from file
+  for (int ii=0; ii<seg_dof.size(); ii++) {
+    int seglength = seg_length[ii];
+    int segstart  = seg_start[ii];
+    view_1d<gid_type> source_dofs("",seglength);
+    view_1d<Real>     weights("",seglength);
+    Kokkos::parallel_for("", seglength, KOKKOS_LAMBDA (const int& jj) {
+      int idx = segstart + jj;
+      source_dofs(jj) = col(idx)-global_remap_min_dof;  // Offset to zero based dofs
+      weights(jj)     = S(idx);
+    });
+    GSSegment seg(seg_dof[ii]-global_remap_min_dof,seglength,source_dofs,weights);
+    add_remap_segment(seg);
+  }
+  stop_timer("EAMxx::GSMap::set_remap_segments_from_file");
 }
 /*-----------------------------------------------------------------------------------------------*/
 // This function is used to set the internal set of degrees of freedom (dof) this map is responsible for.
@@ -181,6 +184,7 @@ void GSMap::set_remap_segments_from_file(const std::string& remap_filename)
 // indices may be 1-based or 0-based.  By offsetting everything to 0-based we avoid potential bugs.
 void GSMap::set_dof_gids(const view_1d<const gid_type>& dofs_gids, const gid_type min_dof)
 {
+  start_timer("EAMxx::GSMap::set_dof_gids");
   EKAT_REQUIRE(dofs_gids.size()>0);
   m_dofs_gids = view_1d<gid_type>("",dofs_gids.size());
   m_num_dofs = m_dofs_gids.extent(0);
@@ -188,6 +192,7 @@ void GSMap::set_dof_gids(const view_1d<const gid_type>& dofs_gids, const gid_typ
     m_dofs_gids(ii) = dofs_gids(ii)-min_dof;
   });
   m_dofs_set = true;
+  stop_timer("EAMxx::GSMap::set_dof_gids");
 }
 /*-----------------------------------------------------------------------------------------------*/
 // This function adds a remap segment to a GSMap, note, we want each segment to represent a full
@@ -256,6 +261,7 @@ void GSMap::add_remap_segment(const GSSegment& seg)
 // the dofs the GSMap will use we can decrease the memory footprint.
 void GSMap::set_unique_source_dofs()
 {
+  start_timer("EAMxx::GSMap::set_unique_dofs");
   // Create a temporary vector of dofs which will be used for lookup
   std::vector<gid_type> unique_dofs;
   // Check all segments and add unique dofs.  Done on HOST so we can use a vector, only done once
@@ -327,6 +333,7 @@ void GSMap::set_unique_source_dofs()
     }
     Kokkos::deep_copy(src_idx,src_idx_h);
   }
+  stop_timer("EAMxx::GSMap::set_unique_dofs");
 }
 /*-----------------------------------------------------------------------------------------------*/
 /*-----------------------------------------------------------------------------------------------*/
@@ -377,6 +384,7 @@ void GSMap::print_map() const
 // This overload of apply remap assumes a single horizontal slice of source data being mapped onto
 // a horizontal slice of remapped data.  The assumption is that there are no levels in this data.
 void GSMap::apply_remap(const view_1d<const Real>& source_data, const view_1d<Real>& remapped_data) {
+  start_timer("EAMxx::GSMap::apply_remap_1d");
   if (m_num_dofs==0) { return; } // This GSMap has nothing to do for this rank.
   auto remapped_data_h = Kokkos::create_mirror_view(remapped_data);
   for (int iseg=0; iseg<m_num_segments; iseg++) {
@@ -385,12 +393,14 @@ void GSMap::apply_remap(const view_1d<const Real>& source_data, const view_1d<Re
     seg.apply_segment(source_data, remapped_data_h(seg_dof_idx));
   }
   Kokkos::deep_copy(remapped_data,remapped_data_h);
+  stop_timer("EAMxx::GSMap::apply_remap_1d");
 }
 /*-----------------------------------------------------------------------------------------------*/
 // This overload of apply remap assumes a set of horizontal slices of source data being mapped onto
 // a set horizontal slices of remapped data.  The assumption is that the second dimension is number
 // of levels
 void GSMap::apply_remap(const view_2d<const Real>& source_data, const view_2d<Real>& remapped_data) {
+  start_timer("EAMxx::GSMap::apply_remap_2d");
   if (m_num_dofs==0) { return; } // This GSMap has nothing to do for this rank.
   auto remapped_data_h = Kokkos::create_mirror_view(remapped_data);
   Int num_levs = source_data.extent(1);
@@ -401,12 +411,14 @@ void GSMap::apply_remap(const view_2d<const Real>& source_data, const view_2d<Re
     seg.apply_segment(num_levs, source_data, remap_sub);
   }
   Kokkos::deep_copy(remapped_data,remapped_data_h);
+  stop_timer("EAMxx::GSMap::apply_remap_2d");
 }
 /*-----------------------------------------------------------------------------------------------*/
 // This overload of apply remap assumes a set of horizontal slices of source data being mapped onto
 // a set horizontal slices of remapped data.  The assumption is that there are levels and one other
 // dimension for this data.
 void GSMap::apply_remap(const view_3d<const Real>& source_data, const view_3d<Real>& remapped_data) {
+  start_timer("EAMxx::GSMap::apply_remap_3d");
   if (m_num_dofs==0) { return; } // This GSMap has nothing to do for this rank.
   auto remapped_data_h = Kokkos::create_mirror_view(remapped_data);
   Int num_levs = source_data.extent(2);
@@ -418,19 +430,8 @@ void GSMap::apply_remap(const view_3d<const Real>& source_data, const view_3d<Re
     seg.apply_segment(num_levs, num_bands, source_data, remap_sub);
   }
   Kokkos::deep_copy(remapped_data,remapped_data_h);
+  stop_timer("EAMxx::GSMap::apply_remap_3d");
 }
-
-//ASDtemplate <typename ScalarT>
-//ASDvoid GSMap::apply_remap(const view_2d<ScalarT>& source_data, const view_2d<ScalarT>& remapped_data)
-//ASD{
-//ASD  // do nothing
-//ASD}
-//ASD
-//ASDtemplate <typename ScalarT>
-//ASDvoid GSMap::apply_remap(const view_3d<ScalarT>& source_data, const view_3d<ScalarT>& remapped_data)
-//ASD{
-//ASD  // do nothing
-//ASD}
 /*-----------------------------------------------------------------------------------------------*/
 /*-----------------------------------------------------------------------------------------------*/
 GSSegment::GSSegment(const gid_type dof_gid, const Int length)
