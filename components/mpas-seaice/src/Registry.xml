@@ -2113,7 +2113,7 @@
 			<var name="uOceanVelocity"/>
 			<var name="vOceanVelocity"/>
 		</stream>
-		<stream name="NCARFreeSurfaceMonthlyInitForcing"
+		<stream name="SOMVaryingThicknessInitForcing"
 				type="input"
 				filename_template="forcing/ocean_forcing_monthly.nc"
 				filename_interval="none"
@@ -2123,7 +2123,7 @@
                         <var name="seaSurfaceSalinity"/>
                         <var name="oceanMixedLayerDepth"/>
 		</stream>
-		<stream name="NCARFreeSurfaceMonthlyForcing"
+		<stream name="SOMVaryingThicknessMonthlyForcing"
 				type="input"
 				filename_template="forcing/ocean_forcing_monthly.nc"
 				filename_interval="none"

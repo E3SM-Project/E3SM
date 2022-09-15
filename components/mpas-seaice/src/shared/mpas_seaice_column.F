@@ -222,6 +222,9 @@ contains
        ! initialize the column package parameters
        call init_column_package_parameters(domain, ciceTracerObject)
 
+       ! initialize active column processes
+       call init_column_active_processes(domain)
+
     endif
 
   end subroutine seaice_init_column_physics_package_parameters
@@ -1325,10 +1328,7 @@ contains
          config_use_aerosols, &
          config_use_prescribed_ice, &
          config_use_snow_liquid_ponds, &
-         config_use_high_frequency_coupling, &
-         config_use_congelation_basal_melt, &
-         config_use_lateral_melt, &
-         config_use_latent_processes
+         config_use_high_frequency_coupling
 
     ! dimensions
     integer, pointer :: &
@@ -1528,9 +1528,6 @@ contains
        call MPAS_pool_get_config(block % configs, "config_use_prescribed_ice", config_use_prescribed_ice)
        call MPAS_pool_get_config(block % configs, "config_use_snow_liquid_ponds", config_use_snow_liquid_ponds)
        call MPAS_pool_get_config(block % configs, "config_use_high_frequency_coupling", config_use_high_frequency_coupling)
-       call MPAS_pool_get_config(block % configs, "config_use_congelation_basal_melt", config_use_congelation_basal_melt)
-       call MPAS_pool_get_config(block % configs, "config_use_lateral_melt", config_use_lateral_melt)
-       call MPAS_pool_get_config(block % configs, "config_use_latent_processes", config_use_latent_processes)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
@@ -1886,10 +1883,7 @@ contains
                dayOfYear, &
                abortFlag, &
                abortMessage, &
-               config_use_prescribed_ice, &
-               config_use_congelation_basal_melt, &
-               config_use_lateral_melt, &
-               config_use_latent_processes)
+               config_use_prescribed_ice)
           call column_write_warnings(abortFlag)
 
           ! code abort
@@ -5443,12 +5437,10 @@ contains
            landIceMask
 
     logical, pointer :: &
-         config_use_test_ice_shelf, &
-         config_use_latent_processes
+         config_use_test_ice_shelf
 
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
     call MPAS_pool_get_config(domain % configs, "config_ocean_mixed_layer_type", config_ocean_mixed_layer_type)
-    call MPAS_pool_get_config(domain % configs, "config_use_latent_processes", config_use_latent_processes)
 
     block => domain % blocklist
     do while (associated(block))
@@ -5531,8 +5523,7 @@ contains
                   latentTransferCoefficient, &
                   sensibleTransferCoefficient, &
                   airDragCoefficient(iCell), &
-                  airOceanDragCoefficientRatio(iCell), &
-                  latent_processes_active=config_use_latent_processes)
+                  airOceanDragCoefficientRatio(iCell))
 
              albedoVisibleDirectOcean(iCell)  = seaiceOceanAlbedo
              albedoIRDirectOcean(iCell)       = seaiceOceanAlbedo
@@ -5592,8 +5583,7 @@ contains
                   latentTransferCoefficient, &
                   sensibleTransferCoefficient, &
                   airDragCoefficient(iCell), &
-                  airOceanDragCoefficientRatio(iCell), &
-                  latent_processes_active=config_use_latent_processes)
+                  airOceanDragCoefficientRatio(iCell))
 
              albedoVisibleDirectOcean(iCell)  = seaiceOceanAlbedo
              albedoIRDirectOcean(iCell)       = seaiceOceanAlbedo
@@ -9880,6 +9870,41 @@ contains
     endif
 
   end subroutine check_column_package_configs
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_column_active_processes
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 14th September 2022
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_column_active_processes(domain)
+
+    use ice_colpkg, only: &
+         colpkg_init_active_processes
+
+    type(domain_type), intent(inout) :: domain
+
+    logical, pointer :: &
+         config_use_latent_processes, &
+         config_use_lateral_melt, &
+         config_use_congelation_basal_melt
+
+    call MPAS_pool_get_config(domain % configs, "config_use_latent_processes", config_use_latent_processes)
+    call MPAS_pool_get_config(domain % configs, "config_use_lateral_melt", config_use_lateral_melt)
+    call MPAS_pool_get_config(domain % configs, "config_use_congelation_basal_melt", config_use_congelation_basal_melt)
+
+    call colpkg_init_active_processes(&
+         config_use_latent_processes, &
+         config_use_lateral_melt, &
+         config_use_congelation_basal_melt)
+
+  end subroutine init_column_active_processes
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

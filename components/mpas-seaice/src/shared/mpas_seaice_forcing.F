@@ -1288,8 +1288,8 @@ contains
        call init_oceanic_forcing_ncar(domain)
     case ("hourly_velocities")
        call init_oceanic_forcing_hourly_velocities(domain)
-    case ("ncar_free_surface")
-       call init_oceanic_forcing_ncar_free_surface(domain)
+    case ("som_varying_thickness")
+       call init_oceanic_forcing_som_varying_thickness(domain)
     case default
        call mpas_log_write("Oceanic forcing type unknown: "//trim(config_forcing_sst_type), MPAS_LOG_CRIT)
     end select
@@ -1328,7 +1328,7 @@ contains
     ! create the sea surface temperature forcing group
     call MPAS_forcing_init_group(&
          seaiceForcingGroups, &
-         "seaice_sst_forcing_monthly", &
+         "seaice_oceanic_forcing_init", &
          domain, &
          '0000-01-01_00:00:00', &
          '0000-01-01_00:00:00', &
@@ -1339,7 +1339,7 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "seaice_sst_forcing_monthly", &
+         "seaice_oceanic_forcing_init", &
          "seaSurfaceTemperature", &
          "NCARMonthlySSTForcing", &
          "ocean_coupling", &
@@ -1350,7 +1350,7 @@ contains
 
     call MPAS_forcing_init_field_data(&
          seaiceForcingGroups, &
-         "seaice_sst_forcing_monthly", &
+         "seaice_oceanic_forcing_init", &
          domain % streamManager, &
          config_do_restart, &
          .false.)
@@ -1557,17 +1557,17 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  init_oceanic_forcing_ncar_free_surface
+!  init_oceanic_forcing_som_varying_thickness
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
-!> \date 17th Febuary 2015
+!> \date 14th September 2022
 !> \details
 !>
 !
 !-----------------------------------------------------------------------
 
-  subroutine init_oceanic_forcing_ncar_free_surface(domain)
+  subroutine init_oceanic_forcing_som_varying_thickness(domain)
 
     type (domain_type) :: domain
 
@@ -1587,7 +1587,7 @@ contains
     ! create the sea surface temperature forcing group
     call MPAS_forcing_init_group(&
          seaiceForcingGroups, &
-         "seaice_sst_forcing_monthly", &
+         "seaice_oceanic_forcing_init", &
          domain, &
          '0000-01-01_00:00:00', &
          '0000-01-01_00:00:00', &
@@ -1598,9 +1598,9 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "seaice_sst_forcing_monthly", &
+         "seaice_oceanic_forcing_init", &
          "seaSurfaceTemperature", &
-         "NCARFreeSurfaceMonthlyInitForcing", &
+         "SOMVaryingThicknessInitForcing", &
          "ocean_coupling", &
          "seaSurfaceTemperature", &
          "linear", &
@@ -1611,9 +1611,9 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "seaice_sst_forcing_monthly", &
+         "seaice_oceanic_forcing_init", &
          "seaSurfaceSalinity", &
-         "NCARFreeSurfaceMonthlyInitForcing", &
+         "SOMVaryingThicknessInitForcing", &
          "ocean_coupling", &
          "seaSurfaceSalinity", &
          "linear", &
@@ -1624,9 +1624,9 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "seaice_sst_forcing_monthly", &
+         "seaice_oceanic_forcing_init", &
          "oceanMixedLayerDepth", &
-         "NCARFreeSurfaceMonthlyInitForcing", &
+         "SOMVaryingThicknessInitForcing", &
          "ocean_coupling", &
          "oceanMixedLayerDepth", &
          "linear", &
@@ -1635,7 +1635,7 @@ contains
 
     call MPAS_forcing_init_field_data(&
          seaiceForcingGroups, &
-         "seaice_sst_forcing_monthly", &
+         "seaice_oceanic_forcing_init", &
          domain % streamManager, &
          config_do_restart, &
          .false.)
@@ -1656,7 +1656,7 @@ contains
          seaiceForcingGroups, &
          "seaice_oceanic_forcing_monthly", &
          "uOceanVelocity", &
-         "NCARFreeSurfaceMonthlyForcing", &
+         "SOMVaryingThicknessMonthlyForcing", &
          "ocean_coupling", &
          "uOceanVelocity", &
          "linear", &
@@ -1669,7 +1669,7 @@ contains
          seaiceForcingGroups, &
          "seaice_oceanic_forcing_monthly", &
          "vOceanVelocity", &
-         "NCARFreeSurfaceMonthlyForcing", &
+         "SOMVaryingThicknessMonthlyForcing", &
          "ocean_coupling", &
          "vOceanVelocity", &
          "linear", &
@@ -1682,7 +1682,7 @@ contains
          seaiceForcingGroups, &
          "seaice_oceanic_forcing_monthly", &
          "seaSurfaceTiltU", &
-         "NCARFreeSurfaceMonthlyForcing", &
+         "SOMVaryingThicknessMonthlyForcing", &
          "ocean_coupling", &
          "seaSurfaceTiltU", &
          "linear", &
@@ -1695,7 +1695,7 @@ contains
          seaiceForcingGroups, &
          "seaice_oceanic_forcing_monthly", &
          "seaSurfaceTiltV", &
-         "NCARFreeSurfaceMonthlyForcing", &
+         "SOMVaryingThicknessMonthlyForcing", &
          "ocean_coupling", &
          "seaSurfaceTiltV", &
          "linear", &
@@ -1708,7 +1708,7 @@ contains
          seaiceForcingGroups, &
          "seaice_oceanic_forcing_monthly", &
          "oceanHeatFluxConvergence", &
-         "NCARFreeSurfaceMonthlyForcing", &
+         "SOMVaryingThicknessMonthlyForcing", &
          "ocean_coupling", &
          "oceanHeatFluxConvergence", &
          "linear", &
@@ -1722,7 +1722,7 @@ contains
          config_do_restart, &
          .false.)
 
-  end subroutine init_oceanic_forcing_ncar_free_surface
+  end subroutine init_oceanic_forcing_som_varying_thickness
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1769,7 +1769,8 @@ contains
     call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
 
     ! use the forcing layer to get data
-    if (trim(config_forcing_sst_type) == 'ncar') then
+    if (trim(config_forcing_sst_type) == 'ncar' .or. &
+        trim(config_forcing_sst_type) == 'som_varying_thickness') then
 
        call MPAS_forcing_get_forcing(&
             seaiceForcingGroups, &
@@ -1782,7 +1783,7 @@ contains
 
           call MPAS_forcing_get_forcing(&
                seaiceForcingGroups, &
-               "seaice_sst_forcing_monthly", &
+               "seaice_oceanic_forcing_init", &
                streamManager, &
                config_dt)
 
@@ -1796,37 +1797,17 @@ contains
             streamManager, &
             config_dt)
 
-    else if (trim(config_forcing_sst_type) == 'ncar_free_surface') then
-
-       call MPAS_forcing_get_forcing(&
-            seaiceForcingGroups, &
-            "seaice_oceanic_forcing_monthly", &
-            streamManager, &
-            config_dt)
-
-       ! only get sst data on first timestep
-       if (firstTimeStep .and. .not. config_do_restart) then
-
-          call MPAS_forcing_get_forcing(&
-               seaiceForcingGroups, &
-               "seaice_sst_forcing_monthly", &
-               streamManager, &
-               config_dt)
-
-       endif
-
     endif
 
     block => domain % blocklist
     do while (associated(block))
 
-       ! convert the input forcing variables to the coupling variables
-       select case (trim(config_forcing_sst_type))
-       case ("ncar")
+       if (trim(config_forcing_sst_type) == 'ncar' .or. &
+           trim(config_forcing_sst_type) == 'som_varying_thickness') then
+
           call prepare_oceanic_coupling_variables_ncar(block, firstTimeStep)
-       case ("ncar_free_surface")
-          call prepare_oceanic_coupling_variables_ncar(block, firstTimeStep)
-       end select
+
+       endif
 
        call post_oceanic_coupling(block)
 

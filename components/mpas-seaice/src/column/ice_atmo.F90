@@ -26,6 +26,9 @@
       private
       public :: atmo_boundary_layer, atmo_boundary_const, neutral_drag_coeffs
 
+      real(kind=dbl_kind), public :: &
+           latentHeatActive = c1
+
 !=======================================================================
 
       contains
@@ -57,8 +60,7 @@
                                       Cdn_atm,            &
                                       Cdn_atm_ratio_n,    &
                                       uvel,     vvel,     &
-                                      Uref,               &
-                                      latent_processes_active)
+                                      Uref)
 
       character (len=3), intent(in) :: &
          sfctype      ! ice or ocean
@@ -106,9 +108,6 @@
 
       real (kind=dbl_kind), intent(out) :: &
          Uref         ! reference height wind speed (m/s)
-
-      logical (kind=log_kind), intent(in) :: &
-         latent_processes_active ! if true latent heat processes are active
 
       ! local variables
 
@@ -350,9 +349,7 @@
       !------------------------------------------------------------
 
       shcoef = rhoa * ustar * cp * rh + c1
-      if (latent_processes_active) then
-         lhcoef = rhoa * ustar * Lheat  * re
-      endif
+      lhcoef = rhoa * ustar * Lheat * re * latentHeatActive
 
       !------------------------------------------------------------
       ! Compute diagnostics: 2m ref T, Q, U
@@ -393,8 +390,7 @@
                                       Qa,                 &
                                       delt,     delq,     &
                                       lhcoef,   shcoef,   &
-                                      Cdn_atm,            &
-                                      latent_processes_active)
+                                      Cdn_atm)
 
       character (len=3), intent(in) :: &
          sfctype      ! ice or ocean
@@ -423,9 +419,6 @@
          delq     , & ! humidity difference      (kg/kg)
          shcoef   , & ! transfer coefficient for sensible heat
          lhcoef       ! transfer coefficient for latent heat
-
-      logical (kind=log_kind), intent(in) :: &
-         latent_processes_active ! if true latent heat processes are active
 
       ! local variables
 
@@ -487,9 +480,7 @@
       !------------------------------------------------------------
 
       shcoef = (1.20e-3_dbl_kind)*cp_air*rhoa*wind
-      if (latent_processes_active) then
-         lhcoef = (1.50e-3_dbl_kind)*Lheat *rhoa*wind
-      endif
+      lhcoef = (1.50e-3_dbl_kind)*Lheat *rhoa*wind*latentHeatActive
 
       end subroutine atmo_boundary_const
 
