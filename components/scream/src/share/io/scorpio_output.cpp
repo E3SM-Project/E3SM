@@ -653,7 +653,7 @@ void AtmosphereOutput::set_diagnostics()
       auto last = tokens.back();
 
       auto lev_and_idx = ekat::split(last,'_');
-      if (last=="top" || last=="bot" || lev_and_idx.size()==2) {
+      if (last=="tom" || last=="bot" || lev_and_idx.size()==2) {
         diag_name = "FieldAtLevel";
         tokens.pop_back();
         auto fname = ekat::join(tokens,"_");

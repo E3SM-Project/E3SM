@@ -265,13 +265,13 @@ void run_multisnap(const std::string& output_freq_units) {
   const auto& f3_lt = f3.get_header().get_identifier().get_layout();
   EKAT_REQUIRE_MSG (f3_lt.rank()>0,"WHAT?!?\n");
   const auto units = f3.get_header().get_identifier().get_units();
-  auto f3_top = Field(FID("field_3@top",f3_lt.strip_dim(LEV),units,grid->name()));
+  auto f3_tom = Field(FID("field_3@tom",f3_lt.strip_dim(LEV),units,grid->name()));
   auto f3_bot = Field(FID("field_3@bot",f3_lt.strip_dim(LEV),units,grid->name()));
   auto f3_lev_2 = Field(FID("field_3@lev_2",f3_lt.strip_dim(LEV),units,grid->name()));
-  f3_top.allocate_view();
+  f3_tom.allocate_view();
   f3_bot.allocate_view();
   f3_lev_2.allocate_view();
-  field_manager->add_field(f3_top);
+  field_manager->add_field(f3_tom);
   field_manager->add_field(f3_bot);
   field_manager->add_field(f3_lev_2);
 
@@ -280,7 +280,7 @@ void run_multisnap(const std::string& output_freq_units) {
   auto f2_host = f2.get_view<Real*,Host>();
   auto f3_host = f3.get_view<Real**,Host>();
   auto f4_host = f4.get_view<Real**,Host>();
-  auto f3_top_host = f3_top.get_view<Real*,Host>();
+  auto f3_tom_host = f3_tom.get_view<Real*,Host>();
   auto f3_bot_host = f3_bot.get_view<Real*,Host>();
   auto f3_lev_2_host = f3_lev_2.get_view<Real*,Host>();
 
@@ -292,7 +292,7 @@ void run_multisnap(const std::string& output_freq_units) {
     f2.sync_to_host();
     f3.sync_to_host();
     f4.sync_to_host();
-    f3_top.sync_to_host();
+    f3_tom.sync_to_host();
     f3_bot.sync_to_host();
     f3_lev_2.sync_to_host();
 
@@ -306,7 +306,7 @@ void run_multisnap(const std::string& output_freq_units) {
         REQUIRE(std::abs(f4_host(ii,jj)-check_data_xy(current_t,dt,ii,jj,"instant"))<tol);
       }
 
-      REQUIRE (f3_top_host(ii)==f3_host(ii,0));
+      REQUIRE (f3_tom_host(ii)==f3_host(ii,0));
       REQUIRE (f3_bot_host(ii)==f3_host(ii,num_levs-1));
       REQUIRE (f3_lev_2_host(ii)==f3_host(ii,2));
     }
@@ -459,13 +459,13 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
   const auto units = f3.get_header().get_identifier().get_units();
   const auto& f3_lt = f3.get_header().get_identifier().get_layout();
   EKAT_REQUIRE_MSG (f3_lt.rank()>0,"WHAT?!?\n");
-  auto f3_top = Field(FID("field_3@top",f3_lt.strip_dim(LEV),units,grid->name()));
+  auto f3_tom = Field(FID("field_3@tom",f3_lt.strip_dim(LEV),units,grid->name()));
   auto f3_bot = Field(FID("field_3@bot",f3_lt.strip_dim(LEV),units,grid->name()));
   auto f3_lev_2 = Field(FID("field_3@lev_2",f3_lt.strip_dim(LEV),units,grid->name()));
-  f3_top.allocate_view();
+  f3_tom.allocate_view();
   f3_bot.allocate_view();
   f3_lev_2.allocate_view();
-  field_manager->add_field(f3_top);
+  field_manager->add_field(f3_tom);
   field_manager->add_field(f3_bot);
   field_manager->add_field(f3_lev_2);
 
@@ -474,7 +474,7 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
   auto f2_host = f2.get_view<Real*,Host>();
   auto f3_host = f3.get_view<Real**,Host>();
   auto f4_host = f4.get_view<Real**,Host>();
-  auto f3_top_host = f3_top.get_view<Real*,Host>();
+  auto f3_tom_host = f3_tom.get_view<Real*,Host>();
   auto f3_bot_host = f3_bot.get_view<Real*,Host>();
   auto f3_lev_2_host = f3_lev_2.get_view<Real*,Host>();
 
@@ -487,7 +487,7 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
   f2.sync_to_host();
   f3.sync_to_host();
   f4.sync_to_host();
-  f3_top.sync_to_host();
+  f3_tom.sync_to_host();
   f3_bot.sync_to_host();
   f3_lev_2.sync_to_host();
 
@@ -509,7 +509,7 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
       REQUIRE(std::abs(f4_host(ii,jj)-check_data_xy(current_t,dt,ii,jj,output_type))<tol);
     }
 
-    REQUIRE (f3_top_host(ii)==f3_host(ii,0));
+    REQUIRE (f3_tom_host(ii)==f3_host(ii,0));
     REQUIRE (f3_bot_host(ii)==f3_host(ii,num_levs-1));
     REQUIRE (f3_lev_2_host(ii)==f3_host(ii,2));
   }
@@ -665,7 +665,7 @@ ekat::ParameterList get_in_params(const std::string& type,
 
   in_params.set<std::string>("Filename",filename);
   in_params.set<vos_type>("Field Names",
-      {"field_1", "field_2", "field_3", "field_packed", "field_3@top", "field_3@bot", "field_3@lev_2"});
+      {"field_1", "field_2", "field_3", "field_packed", "field_3@tom", "field_3@bot", "field_3@lev_2"});
   in_params.set<std::string>("Floating Point Precision","real");
 
   return in_params;

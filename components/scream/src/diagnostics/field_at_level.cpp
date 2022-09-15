@@ -51,7 +51,7 @@ void FieldAtLevel::set_required_field_impl (const Field& f)
 
   // Now that we have the exact units of f, we can build the diagnostic field
   const auto& lev_str = m_params.get<std::string>("Field Level");
-  if (lev_str=="top") {
+  if (lev_str=="tom") {
     m_field_level = 0;
   } else if (lev_str=="bot") {
     m_field_level = f_fid.get_layout().dims().back()-1;
@@ -60,7 +60,7 @@ void FieldAtLevel::set_required_field_impl (const Field& f)
       return s.find_first_not_of("0123456789")==std::string::npos;
     };
     EKAT_REQUIRE_MSG (is_int(lev_str),
-        "Error! Entry 'Field Level' must be 'top', 'bot', or a string representation of an integer.\n");
+        "Error! Entry 'Field Level' must be 'tom', 'bot', or a string representation of an integer.\n");
 
     m_field_level  = std::stoi(lev_str);
   }
