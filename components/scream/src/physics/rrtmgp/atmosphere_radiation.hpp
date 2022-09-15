@@ -100,7 +100,7 @@ public:
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
-    static constexpr int num_1d_ncol        = 10;
+    static constexpr int num_1d_ncol        = 9;
     static constexpr int num_2d_nlay        = 14;
     static constexpr int num_2d_nlay_p1     = 12;
     static constexpr int num_2d_nswbands    = 2;
@@ -115,7 +115,6 @@ public:
     real1d sfc_alb_dir_nir;
     real1d sfc_alb_dif_vis;
     real1d sfc_alb_dif_nir;
-    uview_1d<Real> cosine_zenith;
     real1d sfc_flux_dir_vis;
     real1d sfc_flux_dir_nir;
     real1d sfc_flux_dif_vis;

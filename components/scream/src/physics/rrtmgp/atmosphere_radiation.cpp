@@ -144,6 +144,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("sfc_flux_dif_vis", scalar2d_layout, Wm2, grid_name);
   add_field<Computed>("sfc_flux_sw_net" , scalar2d_layout, Wm2, grid_name);
   add_field<Computed>("sfc_flux_lw_dn"  , scalar2d_layout, Wm2, grid_name);
+  add_field<Computed>("cosine_solar_zenith_angle",scalar2d_layout,nondim,grid_name);
 }  // RRTMGPRadiation::set_grids
 
 size_t RRTMGPRadiation::requested_buffer_size_in_bytes() const
@@ -179,8 +180,6 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.sfc_alb_dif_vis.totElems();
   m_buffer.sfc_alb_dif_nir = decltype(m_buffer.sfc_alb_dif_nir)("sfc_alb_dif_nir", mem, m_col_chunk_size);
   mem += m_buffer.sfc_alb_dif_nir.totElems();
-  m_buffer.cosine_zenith = decltype(m_buffer.cosine_zenith)(mem, m_col_chunk_size);
-  mem += m_buffer.cosine_zenith.size();
   m_buffer.sfc_flux_dir_vis = decltype(m_buffer.sfc_flux_dir_vis)("sfc_flux_dir_vis", mem, m_col_chunk_size);
   mem += m_buffer.sfc_flux_dir_vis.totElems();
   m_buffer.sfc_flux_dir_nir = decltype(m_buffer.sfc_flux_dir_nir)("sfc_flux_dir_nir", mem, m_col_chunk_size);
@@ -409,6 +408,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
   auto d_sfc_flux_dif_nir = get_field_out("sfc_flux_dif_nir").get_view<Real*>();
   auto d_sfc_flux_sw_net = get_field_out("sfc_flux_sw_net").get_view<Real*>();
   auto d_sfc_flux_lw_dn  = get_field_out("sfc_flux_lw_dn").get_view<Real*>();
+  auto d_mu0 = get_field_out("cosine_solar_zenith_angle").get_view<Real*>();
 
   constexpr auto stebol = PC::stebol;
   const auto nlay = m_nlay;
@@ -437,7 +437,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
                      &obliqr, &lambm0, &mvelpp);
   // Use the orbital parameters to calculate the solar declination and eccentricity factor
   double delta, eccf;
-  auto calday = ts.frac_of_year_in_days();
+  auto calday = ts.frac_of_year_in_days() + 1;  // Want day + fraction; calday 1 == Jan 1 0Z
   shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
                    obliqr, &delta, &eccf);
 
@@ -520,7 +520,6 @@ void RRTMGPRadiation::run_impl (const int dt) {
       // Determine the cosine zenith angle
       // NOTE: Since we are bridging to F90 arrays this must be done on HOST and then
       //       deep copied to a device view.
-      auto d_mu0 = m_buffer.cosine_zenith;
       auto h_mu0 = Kokkos::create_mirror_view(d_mu0);
       if (m_fixed_solar_zenith_angle > 0) {
         for (int i=0; i<ncol; i++) {
