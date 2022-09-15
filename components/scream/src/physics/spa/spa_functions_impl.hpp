@@ -623,20 +623,20 @@ void SPAFunctions<S,D>
   spa_data_in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
   AtmosphereInput spa_data_input(comm,spa_data_in_params);
 
-  // Note that the SPA data follows a conventional GLL grid format, albeit at a different resolution than
-  // the simulation.  For simplicity we can use the scorpio_input object class but we must construct a
-  // local grid to match the size of the SPA data file.
+//ASD  // Note that the SPA data follows a conventional GLL grid format, albeit at a different resolution than
+//ASD  // the simulation.  For simplicity we can use the scorpio_input object class but we must construct a
+//ASD  // local grid to match the size of the SPA data file.
 
-  // To construct the grid we need to determine the number of columns and levels in the data file.
-  scorpio::register_file(spa_data_file_name,scorpio::Read);
-  Int ncol = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"ncol");
+//ASD  // To construct the grid we need to determine the number of columns and levels in the data file.
+//ASD  scorpio::register_file(spa_data_file_name,scorpio::Read);
+//ASD  Int ncol = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"ncol");
 //ASD  const int source_data_nlevs = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lev");
 //ASD  Int num_local_cols = spa_horiz_interp.num_unique_cols;
-  // while we have the file open, check that the dimensions map the simulation and the horizontal interpolation structure
-  scorpio::eam_pio_closefile(spa_data_file_name);
+//ASD  // while we have the file open, check that the dimensions map the simulation and the horizontal interpolation structure
+//ASD  scorpio::eam_pio_closefile(spa_data_file_name);
 
   // Construct local arrays to read data into
-  // Note, all of the views being created here are meant to hold the local "coarse" resolution
+  // Note, all of the views being created here are meant to hold the source resolution
   // data that will need to be horizontally interpolated to the simulation grid using the remap
   // data.  For example, 
   //   We will first define the data surface pressure PS_v and read that from file.
@@ -733,73 +733,89 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(AER_TAU_SW_v, AER_TAU_SW_v_h);
   Kokkos::deep_copy(AER_TAU_LW_v, AER_TAU_LW_v_h);
 
-  // Now that we have the data we can map the data onto the target data.
-  auto hyam_h       = Kokkos::create_mirror_view(spa_data.hyam);
-  auto hybm_h       = Kokkos::create_mirror_view(spa_data.hybm);
-//ASD  auto ps_h         = Kokkos::create_mirror_view(spa_data.PS);
-  auto ccn3_h       = Kokkos::create_mirror_view(spa_data.data.CCN3);
-  auto aer_g_sw_h   = Kokkos::create_mirror_view(spa_data.data.AER_G_SW);
-  auto aer_ssa_sw_h = Kokkos::create_mirror_view(spa_data.data.AER_SSA_SW);
-  auto aer_tau_sw_h = Kokkos::create_mirror_view(spa_data.data.AER_TAU_SW);
-  auto aer_tau_lw_h = Kokkos::create_mirror_view(spa_data.data.AER_TAU_LW);
-  Kokkos::deep_copy(hyam_h,0.0);
-  Kokkos::deep_copy(hybm_h,0.0);
-//ASD  Kokkos::deep_copy(ps_h,0.0);
-  Kokkos::deep_copy(ccn3_h,0.0);
-  Kokkos::deep_copy(aer_g_sw_h,0.0);
-  Kokkos::deep_copy(aer_ssa_sw_h,0.0);
-  Kokkos::deep_copy(aer_tau_sw_h,0.0);
-  Kokkos::deep_copy(aer_tau_lw_h,0.0);
-
-  auto weights_h         = Kokkos::create_mirror_view(spa_horiz_interp.weights);
-  auto source_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.source_grid_loc);
-  auto target_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.target_grid_loc);
-  Kokkos::deep_copy(weights_h,         spa_horiz_interp.weights);
-  Kokkos::deep_copy(source_grid_loc_h, spa_horiz_interp.source_grid_loc);
-  Kokkos::deep_copy(target_grid_loc_h, spa_horiz_interp.target_grid_loc);
-  for (int idx=0;idx<spa_horiz_interp.length;idx++) {
-    auto src_wgt = weights_h(idx);
-    int  src_col = spa_horiz_interp.source_local_col_map[source_grid_loc_h(idx)];
-    int  tgt_col = target_grid_loc_h(idx);
-    // PS is defined only over columns
-//ASD    ps_h(tgt_col) += PS_v_h(src_col)*src_wgt;
-    // CCN3 and all AER variables have levels
-    for (int kk=0; kk<source_data_nlevs; kk++) {
-      // Note, all variables we map to are packed, while all the data we just loaded as
-      // input are in real N-D views.  So we need to set the pack and index of the actual
-      // data ahead by one value.
-      // Note, we want to pad the actual source data such that
-      //   Y[0]   = 0.0, note this is handled by the deep copy above
-      //   Y[k+1] = y[k], k = 0,source_data_nlevs (y is the data from file)
-      //   Y[N+2] = y[N-1], N = source_data_nlevs
-      int pack = (kk+1) / Spack::n; 
-      int kidx = (kk+1) % Spack::n;
-      ccn3_h(tgt_col,pack)[kidx] += CCN3_v_h(src_col,kk)*src_wgt;
-      for (int n=0; n<nswbands; n++) {
-        aer_g_sw_h(tgt_col,n,pack)[kidx]   += AER_G_SW_v_h(src_col,n,kk)*src_wgt;
-        aer_ssa_sw_h(tgt_col,n,pack)[kidx] += AER_SSA_SW_v_h(src_col,n,kk)*src_wgt;
-        aer_tau_sw_h(tgt_col,n,pack)[kidx] += AER_TAU_SW_v_h(src_col,n,kk)*src_wgt;
-      }
-      for (int n=0; n<nlwbands; n++) {
-        aer_tau_lw_h(tgt_col,n,pack)[kidx] += AER_TAU_LW_v_h(src_col,n,kk)*src_wgt;
-      }
+  // Apply the remap to this data
+  spa_gsmap.apply_remap(PS_v,spa_data.PS); // Note PS is not padded, so remap can be applied right away
+  // For padded data we need create temporary arrays to store the direct remapped data, then we can add
+  // padding.
+  Int tgt_ncol = spa_data.data.ncols;
+  Int tgt_nlev = spa_data.data.nlevs;
+  view_2d<Real> CCN3_unpad("",tgt_ncol,tgt_nlev);
+  view_3d<Real> AER_G_SW_unpad("",tgt_ncol,nswbands,tgt_nlev);
+  view_3d<Real> AER_SSA_SW_unpad("",tgt_ncol,nswbands,tgt_nlev);
+  view_3d<Real> AER_TAU_SW_unpad("",tgt_ncol,nswbands,tgt_nlev);
+  view_3d<Real> AER_TAU_LW_unpad("",tgt_ncol,nlwbands,tgt_nlev);
+  // Apply remap to "unpadded" data
+  spa_gsmap.apply_remap(CCN3_v,CCN3_unpad);
+  spa_gsmap.apply_remap(AER_G_SW_v, AER_G_SW_unpad);
+  spa_gsmap.apply_remap(AER_SSA_SW_v, AER_SSA_SW_unpad);
+  spa_gsmap.apply_remap(AER_TAU_SW_v, AER_TAU_SW_unpad);
+  spa_gsmap.apply_remap(AER_TAU_LW_v, AER_TAU_LW_unpad);
+  // Copy unpadded data to SPA data structure, add padding.
+  // Note, all variables we map to are packed, while all the data we just loaded as
+  // input are in real N-D views.  So we need to set the pack and index of the actual
+  // data ahead by one value.
+  // Note, we want to pad the actual source data such that
+  //   Y[0]   = 0.0, note this is handled by the deep copy above
+  //   Y[k+1] = y[k], k = 0,source_data_nlevs (y is the data from file)
+  //   Y[N+2] = y[N-1], N = source_data_nlevs
+  Kokkos::deep_copy(spa_data.data.CCN3,0.0);
+  Kokkos::deep_copy(spa_data.data.AER_G_SW,0.0);
+  Kokkos::deep_copy(spa_data.data.AER_SSA_SW,0.0);
+  Kokkos::deep_copy(spa_data.data.AER_TAU_SW,0.0);
+  Kokkos::deep_copy(spa_data.data.AER_TAU_LW,0.0);
+  // 2D vars - CCN3
+  Kokkos::parallel_for("", tgt_ncol*tgt_nlev, KOKKOS_LAMBDA (const int& idx) {
+    Int icol  = idx / tgt_nlev;
+    Int klev1 = idx % tgt_nlev;
+    Int kpack = (klev1+1) / Spack::n;
+    Int klev2 = (klev1+1) % Spack::n;
+    spa_data.data.CCN3(icol,kpack)[klev2] = CCN3_unpad(icol,klev1);
+    if (klev1 == tgt_nlev-1) {
+      Int kpack = (tgt_nlev+1) / Spack::n;
+      Int klev2 = (tgt_nlev+1) % Spack::n;
+      spa_data.data.CCN3(icol,kpack)[klev2] = CCN3_unpad(icol,klev1);
     }
-    int kk = source_data_nlevs-1;
-    int pack = (kk+2) / Spack::n; 
-    int kidx = (kk+2) % Spack::n;
-    ccn3_h(tgt_col,pack)[kidx] += CCN3_v_h(src_col,kk)*src_wgt;
-    for (int n=0; n<nswbands; n++) {
-      aer_g_sw_h(tgt_col,n,pack)[kidx]   += AER_G_SW_v_h(src_col,n,kk)*src_wgt;
-      aer_ssa_sw_h(tgt_col,n,pack)[kidx] += AER_SSA_SW_v_h(src_col,n,kk)*src_wgt;
-      aer_tau_sw_h(tgt_col,n,pack)[kidx] += AER_TAU_SW_v_h(src_col,n,kk)*src_wgt;
+  });
+  Kokkos::fence();
+  // 3D vars - AER_G_SW, AER_SSA_SW, AER_TAU_SW, AER_TAU_LW
+  Kokkos::parallel_for("", tgt_ncol*tgt_nlev*nswbands, KOKKOS_LAMBDA (const int& idx) {
+    Int icol  = idx / (tgt_nlev*nswbands);
+    Int nband = (idx-icol*tgt_nlev*nswbands) / tgt_nlev;
+    Int klev1 = idx % tgt_nlev;
+    Int kpack = (klev1+1) / Spack::n;
+    Int klev2 = (klev1+1) % Spack::n;
+    spa_data.data.AER_G_SW(icol,nband,kpack)[klev2] = AER_G_SW_unpad(icol,nband,klev1);
+    spa_data.data.AER_SSA_SW(icol,nband,kpack)[klev2] = AER_SSA_SW_unpad(icol,nband,klev1);
+    spa_data.data.AER_TAU_SW(icol,nband,kpack)[klev2] = AER_TAU_SW_unpad(icol,nband,klev1);
+    if (klev1 == tgt_nlev-1) {
+      Int kpack = (tgt_nlev+1) / Spack::n;
+      Int klev2 = (tgt_nlev+1) % Spack::n;
+      spa_data.data.AER_G_SW(icol,nband,kpack)[klev2] = AER_G_SW_unpad(icol,nband,klev1);
+      spa_data.data.AER_SSA_SW(icol,nband,kpack)[klev2] = AER_SSA_SW_unpad(icol,nband,klev1);
+      spa_data.data.AER_TAU_SW(icol,nband,kpack)[klev2] = AER_TAU_SW_unpad(icol,nband,klev1);
     }
-    for (int n=0; n<nlwbands; n++) {
-      aer_tau_lw_h(tgt_col,n,pack)[kidx] += AER_TAU_LW_v_h(src_col,n,kk)*src_wgt;
+  });
+  Kokkos::parallel_for("", tgt_ncol*tgt_nlev*nlwbands, KOKKOS_LAMBDA (const int& idx) {
+    Int icol  = idx / (tgt_nlev*nlwbands);
+    Int nband = (idx-icol*tgt_nlev*nlwbands) / tgt_nlev;
+    Int klev1 = idx % tgt_nlev;
+    Int kpack = (klev1+1) / Spack::n;
+    Int klev2 = (klev1+1) % Spack::n;
+    spa_data.data.AER_TAU_LW(icol,nband,kpack)[klev2] = AER_TAU_LW_unpad(icol,nband,klev1);
+    if (klev1 == tgt_nlev-1) {
+      Int kpack = (tgt_nlev+1) / Spack::n;
+      Int klev2 = (tgt_nlev+1) % Spack::n;
+      spa_data.data.AER_TAU_LW(icol,nband,kpack)[klev2] = AER_TAU_LW_unpad(icol,nband,klev1);
     }
-  }
-  // We also need to pad the hyam and hybm views with
+  });
+  // The hybrid coordinates are just vertical data, so not remapped.  We still need to make
+  // a padded version of the data.
   //   hya/b[0] = 0.0, note this is handled by deep copy above
   //   hya/b[N+2] = BIG number so always bigger than likely pmid for target
+  auto hyam_h       = Kokkos::create_mirror_view(spa_data.hyam);
+  auto hybm_h       = Kokkos::create_mirror_view(spa_data.hybm);
+  Kokkos::deep_copy(hyam_h,0.0);
+  Kokkos::deep_copy(hybm_h,0.0);
   for (int kk=0; kk<source_data_nlevs; kk++) {
     int pack = (kk+1) / Spack::n; 
     int kidx = (kk+1) % Spack::n;
@@ -810,16 +826,93 @@ void SPAFunctions<S,D>
   const int kidx = (source_data_nlevs+1) % Spack::n;
   hyam_h(pack)[kidx] = 1e5; 
   hybm_h(pack)[kidx] = 0.0;
-  
-  Kokkos::deep_copy(spa_data.hyam,hyam_h);
-  Kokkos::deep_copy(spa_data.hybm,hybm_h);
+
+//ASD  // Now that we have the data we can map the data onto the target data.
+//ASD  auto hyam_h       = Kokkos::create_mirror_view(spa_data.hyam);
+//ASD  auto hybm_h       = Kokkos::create_mirror_view(spa_data.hybm);
+//ASD  auto ps_h         = Kokkos::create_mirror_view(spa_data.PS);
+//ASD  auto ccn3_h       = Kokkos::create_mirror_view(spa_data.data.CCN3);
+//ASD  auto aer_g_sw_h   = Kokkos::create_mirror_view(spa_data.data.AER_G_SW);
+//ASD  auto aer_ssa_sw_h = Kokkos::create_mirror_view(spa_data.data.AER_SSA_SW);
+//ASD  auto aer_tau_sw_h = Kokkos::create_mirror_view(spa_data.data.AER_TAU_SW);
+//ASD  auto aer_tau_lw_h = Kokkos::create_mirror_view(spa_data.data.AER_TAU_LW);
+//ASD  Kokkos::deep_copy(hyam_h,0.0);
+//ASD  Kokkos::deep_copy(hybm_h,0.0);
+//ASD  Kokkos::deep_copy(ps_h,0.0);
+//ASD  Kokkos::deep_copy(ccn3_h,0.0);
+//ASD  Kokkos::deep_copy(aer_g_sw_h,0.0);
+//ASD  Kokkos::deep_copy(aer_ssa_sw_h,0.0);
+//ASD  Kokkos::deep_copy(aer_tau_sw_h,0.0);
+//ASD  Kokkos::deep_copy(aer_tau_lw_h,0.0);
+
+//ASD  auto weights_h         = Kokkos::create_mirror_view(spa_horiz_interp.weights);
+//ASD  auto source_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.source_grid_loc);
+//ASD  auto target_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.target_grid_loc);
+//ASD  Kokkos::deep_copy(weights_h,         spa_horiz_interp.weights);
+//ASD  Kokkos::deep_copy(source_grid_loc_h, spa_horiz_interp.source_grid_loc);
+//ASD  Kokkos::deep_copy(target_grid_loc_h, spa_horiz_interp.target_grid_loc);
+//ASD  for (int idx=0;idx<spa_horiz_interp.length;idx++) {
+//ASD    auto src_wgt = weights_h(idx);
+//ASD    int  src_col = spa_horiz_interp.source_local_col_map[source_grid_loc_h(idx)];
+//ASD    int  tgt_col = target_grid_loc_h(idx);
+//ASD    // PS is defined only over columns
+//ASD    ps_h(tgt_col) += PS_v_h(src_col)*src_wgt;
+//ASD    // CCN3 and all AER variables have levels
+//ASD    for (int kk=0; kk<source_data_nlevs; kk++) {
+//ASD      // Note, all variables we map to are packed, while all the data we just loaded as
+//ASD      // input are in real N-D views.  So we need to set the pack and index of the actual
+//ASD      // data ahead by one value.
+//ASD      // Note, we want to pad the actual source data such that
+//ASD      //   Y[0]   = 0.0, note this is handled by the deep copy above
+//ASD      //   Y[k+1] = y[k], k = 0,source_data_nlevs (y is the data from file)
+//ASD      //   Y[N+2] = y[N-1], N = source_data_nlevs
+//ASD      int pack = (kk+1) / Spack::n; 
+//ASD      int kidx = (kk+1) % Spack::n;
+//ASD      ccn3_h(tgt_col,pack)[kidx] += CCN3_v_h(src_col,kk)*src_wgt;
+//ASD      for (int n=0; n<nswbands; n++) {
+//ASD        aer_g_sw_h(tgt_col,n,pack)[kidx]   += AER_G_SW_v_h(src_col,n,kk)*src_wgt;
+//ASD        aer_ssa_sw_h(tgt_col,n,pack)[kidx] += AER_SSA_SW_v_h(src_col,n,kk)*src_wgt;
+//ASD        aer_tau_sw_h(tgt_col,n,pack)[kidx] += AER_TAU_SW_v_h(src_col,n,kk)*src_wgt;
+//ASD      }
+//ASD      for (int n=0; n<nlwbands; n++) {
+//ASD        aer_tau_lw_h(tgt_col,n,pack)[kidx] += AER_TAU_LW_v_h(src_col,n,kk)*src_wgt;
+//ASD      }
+//ASD    }
+//ASD    int kk = source_data_nlevs-1;
+//ASD    int pack = (kk+2) / Spack::n; 
+//ASD    int kidx = (kk+2) % Spack::n;
+//ASD    ccn3_h(tgt_col,pack)[kidx] += CCN3_v_h(src_col,kk)*src_wgt;
+//ASD    for (int n=0; n<nswbands; n++) {
+//ASD      aer_g_sw_h(tgt_col,n,pack)[kidx]   += AER_G_SW_v_h(src_col,n,kk)*src_wgt;
+//ASD      aer_ssa_sw_h(tgt_col,n,pack)[kidx] += AER_SSA_SW_v_h(src_col,n,kk)*src_wgt;
+//ASD      aer_tau_sw_h(tgt_col,n,pack)[kidx] += AER_TAU_SW_v_h(src_col,n,kk)*src_wgt;
+//ASD    }
+//ASD    for (int n=0; n<nlwbands; n++) {
+//ASD      aer_tau_lw_h(tgt_col,n,pack)[kidx] += AER_TAU_LW_v_h(src_col,n,kk)*src_wgt;
+//ASD    }
+//ASD  }
+//ASD  // We also need to pad the hyam and hybm views with
+//ASD  //   hya/b[0] = 0.0, note this is handled by deep copy above
+//ASD  //   hya/b[N+2] = BIG number so always bigger than likely pmid for target
+//ASD  for (int kk=0; kk<source_data_nlevs; kk++) {
+//ASD    int pack = (kk+1) / Spack::n; 
+//ASD    int kidx = (kk+1) % Spack::n;
+//ASD    hyam_h(pack)[kidx] = hyam_v_h(kk);
+//ASD    hybm_h(pack)[kidx] = hybm_v_h(kk);
+//ASD  }
+//ASD  const int pack = (source_data_nlevs+1) / Spack::n;
+//ASD  const int kidx = (source_data_nlevs+1) % Spack::n;
+//ASD  hyam_h(pack)[kidx] = 1e5; 
+//ASD  hybm_h(pack)[kidx] = 0.0;
+//ASD  
+//ASD  Kokkos::deep_copy(spa_data.hyam,hyam_h);
+//ASD  Kokkos::deep_copy(spa_data.hybm,hybm_h);
 //ASD  Kokkos::deep_copy(spa_data.PS,ps_h);
-  spa_gsmap.apply_remap(PS_v,spa_data.PS);
-  Kokkos::deep_copy(spa_data.data.CCN3,ccn3_h);
-  Kokkos::deep_copy(spa_data.data.AER_G_SW,aer_g_sw_h);
-  Kokkos::deep_copy(spa_data.data.AER_SSA_SW,aer_ssa_sw_h);
-  Kokkos::deep_copy(spa_data.data.AER_TAU_SW,aer_tau_sw_h);
-  Kokkos::deep_copy(spa_data.data.AER_TAU_LW,aer_tau_lw_h);
+//ASD  Kokkos::deep_copy(spa_data.data.CCN3,ccn3_h);
+//ASD  Kokkos::deep_copy(spa_data.data.AER_G_SW,aer_g_sw_h);
+//ASD  Kokkos::deep_copy(spa_data.data.AER_SSA_SW,aer_ssa_sw_h);
+//ASD  Kokkos::deep_copy(spa_data.data.AER_TAU_SW,aer_tau_sw_h);
+//ASD  Kokkos::deep_copy(spa_data.data.AER_TAU_LW,aer_tau_lw_h);
 
 } // END update_spa_data_from_file
 
