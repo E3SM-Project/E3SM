@@ -37,7 +37,6 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
   m_dofs_gids = m_grid->get_dofs_gids();
-  m_total_global_dofs = m_grid->get_num_global_dofs();
   m_min_global_dof    = m_grid->get_global_min_dof_gid();
 
   // Define the different field layouts that will be used for this process
@@ -172,9 +171,9 @@ void SPA::initialize_impl (const RunType /* run_type */)
   ci_string no_filename = "none";
   if (m_spa_remap_file == no_filename) {
     printf("WARNING: spa_remap_file has been set to 'NONE', assuming that SPA data and simulation are on the same grid - skipping horizontal interpolation\n");
-    SPAFunc::set_remap_weights_one_to_one(m_total_global_dofs,m_min_global_dof,m_dofs_gids,SPAHorizInterp);
+    SPAFunc::set_remap_weights_one_to_one(m_min_global_dof,m_dofs_gids,SPAHorizInterp);
   } else {
-    SPAFunc::get_remap_weights_from_file(m_spa_remap_file,m_total_global_dofs,m_min_global_dof,m_dofs_gids,SPAHorizInterp);
+    SPAFunc::get_remap_weights_from_file(m_spa_remap_file,m_min_global_dof,m_dofs_gids,SPAHorizInterp);
   }
 
   // Initialize the size of the SPAData structures:  add 2 to number of levels for padding

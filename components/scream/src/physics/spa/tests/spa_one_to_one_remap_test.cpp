@@ -63,18 +63,12 @@ TEST_CASE("spa_one_to_one_remap","spa")
   // Set up the set of SPA structures needed to run the test
   SPAFunc::SPAHorizInterp spa_horiz_interp;
   spa_horiz_interp.m_comm = spa_comm;
-  SPAFunc::set_remap_weights_one_to_one(ncols,min_dof,dofs_gids,spa_horiz_interp);
+  SPAFunc::set_remap_weights_one_to_one(min_dof,dofs_gids,spa_horiz_interp);
   // Make sure one_to_one remap has the correct unique columns
-  REQUIRE(spa_horiz_interp.num_unique_cols==my_ncols);
+  auto spa_gsmap = spa_horiz_interp.gsmap;
+  REQUIRE(spa_gsmap.get_num_unique_dofs()==my_ncols);
   // Recall, SPA data is padded, so we initialize with 2 more levels than the source data file.
   SPAFunc::SPAInput spa_data(dofs_gids.size(), nlevs+2, nswbands, nlwbands);
-
-  // Check that the horizontal interpolation data is in fact a 1-1 mapping
-  Kokkos::parallel_for("", spa_horiz_interp.length, KOKKOS_LAMBDA(const int& ii) {
-    EKAT_KERNEL_ASSERT(spa_horiz_interp.weights(ii)==1.0);
-    EKAT_KERNEL_ASSERT(spa_horiz_interp.source_grid_loc(ii)==dofs_gids(ii)-min_dof);
-    EKAT_KERNEL_ASSERT(spa_horiz_interp.target_grid_loc(ii)==ii);
-  });
 
   // Verify that the interpolated values match the algorithm for the data and the weights.
   //       weights(i) = 1.0

@@ -300,7 +300,6 @@ perform_vertical_interpolation(
 template <typename S, typename D>
 void SPAFunctions<S,D>
 ::set_remap_weights_one_to_one(
-    const Int                ncols_scream,
     gid_type                 min_dof,
     const view_1d<gid_type>& dofs_gids,
           SPAHorizInterp&    spa_horiz_interp
@@ -324,67 +323,7 @@ void SPAFunctions<S,D>
     spa_gsmap.add_remap_segment(seg);
   }
   spa_gsmap.set_unique_source_dofs();
-  // HACK - Use gsmap information to populate the original spa horizontal remapping arrays.
-  // This can be deleted once we switch SPA to using the gsmap to apply the remapper.
-  auto map_seg = spa_gsmap.get_map_segments();
-  Int total_length = 0;
-  Int n_a = 0;
-  std::vector<Int> src_grid_loc, tgt_grid_loc;
-  std::vector<Real> wgts;
-  for (int iseg=0; iseg<map_seg.size(); iseg++) {
-    auto seg = map_seg[iseg];
-    total_length += seg.get_length();
-    auto seg_dof = seg.get_dof();
-    auto seg_dof_idx = seg.get_dof_idx();
-    auto seg_src = seg.get_source_dofs();
-    auto seg_wgt = seg.get_weights();
-    auto seg_src_h = Kokkos::create_mirror_view(seg_src);
-    auto seg_wgt_h = Kokkos::create_mirror_view(seg_wgt);
-    Kokkos::deep_copy(seg_src_h,seg_src);
-    Kokkos::deep_copy(seg_wgt_h,seg_wgt);
-    for (int ii=0; ii<seg.get_length(); ii++) {
-      src_grid_loc.push_back(seg_src_h(ii));
-      tgt_grid_loc.push_back(seg_dof_idx);
-      wgts.push_back(seg_wgt_h(ii));
-      n_a = std::max(n_a,src_grid_loc[ii]);
-    }
-  } 
-  spa_horiz_interp.length          = total_length;
-  spa_horiz_interp.weights         = view_1d<Real>("",total_length);
-  spa_horiz_interp.source_grid_loc = view_1d<Int> ("",total_length);
-  spa_horiz_interp.target_grid_loc = view_1d<Int> ("",total_length);
-  auto weights_h         = Kokkos::create_mirror_view(spa_horiz_interp.weights);
-  auto source_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.source_grid_loc);
-  auto target_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.target_grid_loc);
-  for (int ii=0;ii<total_length;ii++) {
-    weights_h(ii) = wgts[ii];
-    source_grid_loc_h(ii) = src_grid_loc[ii];
-    target_grid_loc_h(ii) = tgt_grid_loc[ii];
-  }
-  Kokkos::deep_copy(spa_horiz_interp.weights        , weights_h        );
-  Kokkos::deep_copy(spa_horiz_interp.source_grid_loc, source_grid_loc_h);
-  Kokkos::deep_copy(spa_horiz_interp.target_grid_loc, target_grid_loc_h);
-  spa_horiz_interp.set_unique_cols();
-  spa_horiz_interp.length            = num_local_cols; 
-  return; 
 
-  // TODO: Below code is old, should be eventually removed.
-//ASD  spa_horiz_interp.length            = num_local_cols; 
-//ASD  spa_horiz_interp.source_grid_ncols = ncols_scream;
-//ASD  spa_horiz_interp.weights           = view_1d<Real>("",spa_horiz_interp.length);
-//ASD  spa_horiz_interp.source_grid_loc   = view_1d<gid_type> ("",spa_horiz_interp.length);
-//ASD  spa_horiz_interp.target_grid_loc   = view_1d<gid_type> ("",spa_horiz_interp.length);
-//ASD  Kokkos::deep_copy(spa_horiz_interp.weights,1.0);
-//ASD  Kokkos::parallel_for("", num_local_cols, KOKKOS_LAMBDA(const int& ii) {
-//ASD    spa_horiz_interp.target_grid_loc(ii) = ii;
-//ASD    // Note we are interested in the vector index, not the actual global-id 
-//ASD    // Here we want the index in a the source data vector corresponding to this column
-//ASD    // which needs to be offset by the minimum degree of freedom in the whole grid.
-//ASD    // That way the first global-id will map to the 0th entry in the source grid data.
-//ASD    spa_horiz_interp.source_grid_loc(ii) = dofs_gids(ii) - min_dof;
-//ASD  });
-//ASD  // Determine the set of unique columns in this remapping
-//ASD  spa_horiz_interp.set_unique_cols();
 } // END set_remap_weights_one_to_one
 /*-----------------------------------------------------------------*/
 // Function to read the weights for conducting horizontal remapping
@@ -393,7 +332,6 @@ template <typename S, typename D>
 void SPAFunctions<S,D>
 ::get_remap_weights_from_file(
     const std::string&       remap_file_name,
-    const Int                ncols_scream,
     const gid_type           min_dof,
     const view_1d<gid_type>& dofs_gids,
           SPAHorizInterp&    spa_horiz_interp
@@ -404,152 +342,6 @@ void SPAFunctions<S,D>
   spa_gsmap = GSMap(spa_horiz_interp.m_comm,"SPA File Remap", dofs_gids, min_dof);
   spa_gsmap.set_remap_segments_from_file(remap_file_name);
   spa_gsmap.set_unique_source_dofs();
-  // HACK - Use gsmap information to populate the original spa horizontal remapping arrays.
-  // This can be deleted once we switch SPA to using the gsmap to apply the remapper.
-  auto map_seg = spa_gsmap.get_map_segments();
-  Int total_length = 0;
-  std::vector<Int> src_grid_loc, tgt_grid_loc;
-  std::vector<Real> wgts;
-  for (int iseg=0; iseg<map_seg.size(); iseg++) {
-    auto seg = map_seg[iseg];
-    total_length += seg.get_length();
-    auto seg_dof = seg.get_dof();
-    auto seg_dof_idx = seg.get_dof_idx();
-    auto seg_src = seg.get_source_dofs();
-    auto seg_wgt = seg.get_weights();
-    auto seg_src_h = Kokkos::create_mirror_view(seg_src);
-    auto seg_wgt_h = Kokkos::create_mirror_view(seg_wgt);
-    Kokkos::deep_copy(seg_src_h,seg_src);
-    Kokkos::deep_copy(seg_wgt_h,seg_wgt);
-    for (int ii=0; ii<seg.get_length(); ii++) {
-      src_grid_loc.push_back(seg_src_h(ii));
-      tgt_grid_loc.push_back(seg_dof_idx);
-      wgts.push_back(seg_wgt_h(ii));
-    }
-  } 
-  spa_horiz_interp.length          = total_length;
-  spa_horiz_interp.weights         = view_1d<Real>("",total_length);
-  spa_horiz_interp.source_grid_loc = view_1d<Int> ("",total_length);
-  spa_horiz_interp.target_grid_loc = view_1d<Int> ("",total_length);
-  auto weights_h         = Kokkos::create_mirror_view(spa_horiz_interp.weights);
-  auto source_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.source_grid_loc);
-  auto target_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.target_grid_loc);
-  for (int ii=0;ii<total_length;ii++) {
-    weights_h(ii) = wgts[ii];
-    source_grid_loc_h(ii) = src_grid_loc[ii];
-    target_grid_loc_h(ii) = tgt_grid_loc[ii];
-  }
-  Kokkos::deep_copy(spa_horiz_interp.weights        , weights_h        );
-  Kokkos::deep_copy(spa_horiz_interp.source_grid_loc, source_grid_loc_h);
-  Kokkos::deep_copy(spa_horiz_interp.target_grid_loc, target_grid_loc_h);
-  spa_horiz_interp.set_unique_cols();
-  spa_horiz_interp.length = total_length;
-  return; 
-  
-  // TODO: Below code is old, should be eventually removed.  Keeping here for debugging, allowing
-  // me to go back and use the old approach for testing.
-
-  // Note, the remap file doesn't follow a conventional grid setup so
-  // here we manually go through all of the input steps rather than
-  // use the scorpio_input class.
-
-  // Open input file: 
-//ASD  scorpio::register_file(remap_file_name,scorpio::Read);
-//ASD
-//ASD  // Gather the size of the remap data from file.
-//ASD  // NOTE, we are currently assuming the remap file was generated by NCO and thus follows
-//ASD  // NCO conventions.
-//ASD  // As such the dimensions have rather general names.  Here is an explanation:
-//ASD  //   n_s is the total number of nonzero remap weights.
-//ASD  //   n_a is the total number of columns in the SOURCE grid (i.e. in an ne2 -> ne4 remap this would have 218 columns)
-//ASD  //   n_b is the total number of columns in the TARGET grid (i.e. in an ne2 -> ne4 remap this would have 866 columns)
-//ASD  // Conceptually, if we wrote the remapping as y = W*x then W would be a matrix with n_a columns, n_b rows and n_s total nonzero entries.
-//ASD  // The data is stored in sparse format, so we have the following variables:
-//ASD  //   S   is a vector of length n_s that represents all of the nonzero remapping wieghts
-//ASD  //   col is a vector of length n_s that contains the indices of the SOURCE grid column associated with the appropriate weight in S
-//ASD  //   row is a vector of length n_s that contains the indices of the TARGET grid column associated with the appropriate weight in S
-//ASD  // Thus considering the matrix W described above.  If W[i,j] = w, and this was the n'th nonzero weight in W then
-//ASD  //   S[n]   = w
-//ASD  //   col[N] = j
-//ASD  //   row[N] = i
-//ASD  // TODO: provide infrastructure for using different horizontal remap files.
-//ASD  spa_horiz_interp.length = scorpio::get_dimlen_c2f(remap_file_name.c_str(),"n_s");
-//ASD  // And the number of columns that should be in the data source file
-//ASD  spa_horiz_interp.source_grid_ncols = scorpio::get_dimlen_c2f(remap_file_name.c_str(),"n_a");
-//ASD  // Check that the target grid size matches the remap file
-//ASD  Int target_ncols = scorpio::get_dimlen_c2f(remap_file_name.c_str(),"n_b");
-//ASD  EKAT_REQUIRE_MSG(target_ncols==ncols_scream,"ERROR: SPA get_remap_weights_from_file, remap target domain does not match simulation domain size");
-//ASD
-//ASD  // Construct local arrays to read data into
-//ASD  view_1d<Real> S_global("weights",spa_horiz_interp.length);
-//ASD  view_1d<Int>  row_global("row",spa_horiz_interp.length); 
-//ASD  view_1d<Int>  col_global("col",spa_horiz_interp.length); 
-//ASD  auto S_global_h   = Kokkos::create_mirror_view(S_global);
-//ASD  auto col_global_h = Kokkos::create_mirror_view(col_global); // Note, in remap files col -> row (src -> tgt)
-//ASD  auto row_global_h = Kokkos::create_mirror_view(row_global);
-//ASD
-//ASD  // Setup the scorpio structures needed for input
-//ASD  // Register variables for input
-//ASD  std::vector<std::string> vec_of_dims = {"n_s"};
-//ASD  std::string r_decomp = "Real-n_s";
-//ASD  std::string i_decomp = "Int-n_s";
-//ASD  scorpio::get_variable(remap_file_name, "S", "S", vec_of_dims, "real", r_decomp);
-//ASD  scorpio::get_variable(remap_file_name, "row", "row", vec_of_dims, "int", i_decomp);
-//ASD  scorpio::get_variable(remap_file_name, "col", "col", vec_of_dims, "int", i_decomp);
-//ASD  // Set the dof's to read in variables, since we will have all mpi ranks read in the full set of data the dof's are the whole array
-//ASD  std::vector<scorpio::offset_t> var_dof(spa_horiz_interp.length);
-//ASD  std::iota(var_dof.begin(),var_dof.end(),0);
-//ASD  scorpio::set_dof(remap_file_name,"S",var_dof.size(),var_dof.data());
-//ASD  scorpio::set_dof(remap_file_name,"row",var_dof.size(),var_dof.data());
-//ASD  scorpio::set_dof(remap_file_name,"col",var_dof.size(),var_dof.data());
-//ASD  scorpio::set_decomp(remap_file_name);
-//ASD  
-//ASD  // Now read all of the input
-//ASD  scorpio::grid_read_data_array(remap_file_name,"S",  -1,S_global_h.data(),S_global_h.size()); 
-//ASD  scorpio::grid_read_data_array(remap_file_name,"row",-1,row_global_h.data(),row_global_h.size()); 
-//ASD  scorpio::grid_read_data_array(remap_file_name,"col",-1,col_global_h.data(),col_global_h.size()); 
-//ASD
-//ASD  // Finished, close the file
-//ASD  scorpio::eam_pio_closefile(remap_file_name);
-//ASD
-//ASD  // Retain only the information needed on this rank. 
-//ASD  auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
-//ASD  Kokkos::deep_copy(dofs_gids_h,dofs_gids);
-//ASD  std::vector<int> local_idx;
-//ASD  std::vector<int> global_idx;
-//ASD  for (int idx=0;idx<spa_horiz_interp.length;idx++) {
-//ASD    int dof = row_global_h(idx) - (1-min_dof); // Note, the dof ids may start with 0 or 1.  In the data they certainly start with 1.  This maps 1 -> true min dof.
-//ASD    for (int id=0;id<dofs_gids_h.extent_int(0);id++) {
-//ASD      if (dof == dofs_gids_h(id)) {
-//ASD        global_idx.push_back(idx);
-//ASD        local_idx.push_back(id);
-//ASD        break;
-//ASD      }
-//ASD    }
-//ASD  }
-//ASD  // Now that we have the full list of indexs in the global remap data that correspond to local columns we can construct
-//ASD  // the spa_horiz_weights data.   Note: This is an important step when running with multiple MPI ranks.
-//ASD  spa_horiz_interp.length          = local_idx.size();
-//ASD  spa_horiz_interp.weights         = view_1d<Real>("",local_idx.size());
-//ASD  spa_horiz_interp.source_grid_loc = view_1d<Int>("",local_idx.size());
-//ASD  spa_horiz_interp.target_grid_loc = view_1d<Int>("",local_idx.size());
-//ASD  auto weights_h         = Kokkos::create_mirror_view(spa_horiz_interp.weights);
-//ASD  auto source_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.source_grid_loc);
-//ASD  auto target_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.target_grid_loc);
-//ASD  for (size_t idx=0;idx<local_idx.size();idx++) {
-//ASD      int ii = global_idx[idx];
-//ASD      weights_h(idx)         = S_global_h(ii);
-//ASD      target_grid_loc_h(idx) = local_idx[idx];
-//ASD      // Note that the remap column location starts with 1.
-//ASD      // Here we want the index in a the source data vector corresponding to this column
-//ASD      // which needs to start with 0 since cpp starts with 0.
-//ASD      source_grid_loc_h(idx) = col_global_h(ii) - 1;
-//ASD  }
-//ASD  Kokkos::deep_copy(spa_horiz_interp.weights        , weights_h        );
-//ASD  Kokkos::deep_copy(spa_horiz_interp.source_grid_loc, source_grid_loc_h);
-//ASD  Kokkos::deep_copy(spa_horiz_interp.target_grid_loc, target_grid_loc_h);
-//ASD  // Determine the set of unique columns in this remapping
-//ASD  spa_horiz_interp.set_unique_cols();
 
 }  // END get_remap_weights_from_file
 /*-----------------------------------------------------------------*/
@@ -612,28 +404,10 @@ void SPAFunctions<S,D>
   // Use GSMap to define the set of source column data we need to load
   auto& spa_gsmap = spa_horiz_interp.gsmap; 
   auto unique_src_dofs = spa_gsmap.get_unique_source_dofs();
-
-  // TODO: Below is the old code, will eventually delete.
-  //
-  // We have enough info to start opening the file
-  std::vector<std::string> fnames = {"hyam","hybm","PS","CCN3","AER_G_SW","AER_SSA_SW","AER_TAU_SW","AER_TAU_LW"};
-  ekat::ParameterList spa_data_in_params;
-  spa_data_in_params.set("Field Names",fnames);
-  spa_data_in_params.set("Filename",spa_data_file_name);
-  spa_data_in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
-  AtmosphereInput spa_data_input(comm,spa_data_in_params);
-
-//ASD  // Note that the SPA data follows a conventional GLL grid format, albeit at a different resolution than
-//ASD  // the simulation.  For simplicity we can use the scorpio_input object class but we must construct a
-//ASD  // local grid to match the size of the SPA data file.
-
-//ASD  // To construct the grid we need to determine the number of columns and levels in the data file.
-//ASD  scorpio::register_file(spa_data_file_name,scorpio::Read);
-//ASD  Int ncol = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"ncol");
-//ASD  const int source_data_nlevs = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lev");
-//ASD  Int num_local_cols = spa_horiz_interp.num_unique_cols;
-//ASD  // while we have the file open, check that the dimensions map the simulation and the horizontal interpolation structure
-//ASD  scorpio::eam_pio_closefile(spa_data_file_name);
+  const int num_local_cols = spa_gsmap.get_num_unique_dofs();
+  scorpio::register_file(spa_data_file_name,scorpio::Read);
+  const int source_data_nlevs = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lev");
+  scorpio::eam_pio_closefile(spa_data_file_name);
 
   // Construct local arrays to read data into
   // Note, all of the views being created here are meant to hold the source resolution
@@ -643,12 +417,14 @@ void SPAFunctions<S,D>
   //   then we will use the horizontal interpolation structure, spa_horiz_interp, to
   //   interpolate PS_v onto the simulation grid: PS_v -> spa_data.PS
   //   and so on for the other variables.
+  std::vector<std::string> fnames = {"hyam","hybm","PS","CCN3","AER_G_SW","AER_SSA_SW","AER_TAU_SW","AER_TAU_LW"};
+  ekat::ParameterList spa_data_in_params;
+  spa_data_in_params.set("Field Names",fnames);
+  spa_data_in_params.set("Filename",spa_data_file_name);
+  spa_data_in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
+  AtmosphereInput spa_data_input(comm,spa_data_in_params);
   
   // Construct the grid needed for input:
-  scorpio::register_file(spa_data_file_name,scorpio::Read);
-  const int source_data_nlevs = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lev");
-  const int num_local_cols = spa_gsmap.get_num_unique_dofs();
-
   auto grid = std::make_shared<PointGrid>("grid",num_local_cols,source_data_nlevs,comm);
   grid->set_dofs(unique_src_dofs);
 
@@ -656,8 +432,6 @@ void SPAFunctions<S,D>
   EKAT_REQUIRE(source_data_nlevs+2 == spa_data.data.nlevs);
   EKAT_REQUIRE_MSG(nswbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"swband"),"ERROR update_spa_data_from_file: Number of SW bands in simulation doesn't match the SPA data file");
   EKAT_REQUIRE_MSG(nlwbands==scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lwband"),"ERROR update_spa_data_from_file: Number of LW bands in simulation doesn't match the SPA data file");
-  // Done with the file for this step.
-  scorpio::eam_pio_closefile(spa_data_file_name);
 
   // Constuct views to read source data in from file
   typename view_1d<Real>::HostMirror hyam_v_h("hyam",source_data_nlevs);
@@ -675,16 +449,6 @@ void SPAFunctions<S,D>
   auto AER_SSA_SW_v_h = Kokkos::create_mirror_view(AER_SSA_SW_v);
   auto AER_TAU_SW_v_h = Kokkos::create_mirror_view(AER_TAU_SW_v);
   auto AER_TAU_LW_v_h = Kokkos::create_mirror_view(AER_TAU_LW_v);
-
-//ASD  // Construct the grid needed for input:
-//ASD  auto grid = std::make_shared<PointGrid>("grid",num_local_cols,source_data_nlevs,comm);
-//ASD  PointGrid::dofs_list_type dof_gids("",num_local_cols);
-//ASD  auto dof_gids_h = Kokkos::create_mirror_view(dof_gids);
-//ASD  for (const auto& nn : spa_horiz_interp.source_local_col_map) {
-//ASD    dof_gids_h(nn.second) = nn.first;
-//ASD  }
-//ASD  Kokkos::deep_copy(dof_gids,dof_gids_h);
-//ASD  grid->set_dofs(dof_gids);
 
   // Set up input structure to read data from file.
   using namespace ShortFieldTagsNames;
@@ -826,93 +590,6 @@ void SPAFunctions<S,D>
   const int kidx = (source_data_nlevs+1) % Spack::n;
   hyam_h(pack)[kidx] = 1e5; 
   hybm_h(pack)[kidx] = 0.0;
-
-//ASD  // Now that we have the data we can map the data onto the target data.
-//ASD  auto hyam_h       = Kokkos::create_mirror_view(spa_data.hyam);
-//ASD  auto hybm_h       = Kokkos::create_mirror_view(spa_data.hybm);
-//ASD  auto ps_h         = Kokkos::create_mirror_view(spa_data.PS);
-//ASD  auto ccn3_h       = Kokkos::create_mirror_view(spa_data.data.CCN3);
-//ASD  auto aer_g_sw_h   = Kokkos::create_mirror_view(spa_data.data.AER_G_SW);
-//ASD  auto aer_ssa_sw_h = Kokkos::create_mirror_view(spa_data.data.AER_SSA_SW);
-//ASD  auto aer_tau_sw_h = Kokkos::create_mirror_view(spa_data.data.AER_TAU_SW);
-//ASD  auto aer_tau_lw_h = Kokkos::create_mirror_view(spa_data.data.AER_TAU_LW);
-//ASD  Kokkos::deep_copy(hyam_h,0.0);
-//ASD  Kokkos::deep_copy(hybm_h,0.0);
-//ASD  Kokkos::deep_copy(ps_h,0.0);
-//ASD  Kokkos::deep_copy(ccn3_h,0.0);
-//ASD  Kokkos::deep_copy(aer_g_sw_h,0.0);
-//ASD  Kokkos::deep_copy(aer_ssa_sw_h,0.0);
-//ASD  Kokkos::deep_copy(aer_tau_sw_h,0.0);
-//ASD  Kokkos::deep_copy(aer_tau_lw_h,0.0);
-
-//ASD  auto weights_h         = Kokkos::create_mirror_view(spa_horiz_interp.weights);
-//ASD  auto source_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.source_grid_loc);
-//ASD  auto target_grid_loc_h = Kokkos::create_mirror_view(spa_horiz_interp.target_grid_loc);
-//ASD  Kokkos::deep_copy(weights_h,         spa_horiz_interp.weights);
-//ASD  Kokkos::deep_copy(source_grid_loc_h, spa_horiz_interp.source_grid_loc);
-//ASD  Kokkos::deep_copy(target_grid_loc_h, spa_horiz_interp.target_grid_loc);
-//ASD  for (int idx=0;idx<spa_horiz_interp.length;idx++) {
-//ASD    auto src_wgt = weights_h(idx);
-//ASD    int  src_col = spa_horiz_interp.source_local_col_map[source_grid_loc_h(idx)];
-//ASD    int  tgt_col = target_grid_loc_h(idx);
-//ASD    // PS is defined only over columns
-//ASD    ps_h(tgt_col) += PS_v_h(src_col)*src_wgt;
-//ASD    // CCN3 and all AER variables have levels
-//ASD    for (int kk=0; kk<source_data_nlevs; kk++) {
-//ASD      // Note, all variables we map to are packed, while all the data we just loaded as
-//ASD      // input are in real N-D views.  So we need to set the pack and index of the actual
-//ASD      // data ahead by one value.
-//ASD      // Note, we want to pad the actual source data such that
-//ASD      //   Y[0]   = 0.0, note this is handled by the deep copy above
-//ASD      //   Y[k+1] = y[k], k = 0,source_data_nlevs (y is the data from file)
-//ASD      //   Y[N+2] = y[N-1], N = source_data_nlevs
-//ASD      int pack = (kk+1) / Spack::n; 
-//ASD      int kidx = (kk+1) % Spack::n;
-//ASD      ccn3_h(tgt_col,pack)[kidx] += CCN3_v_h(src_col,kk)*src_wgt;
-//ASD      for (int n=0; n<nswbands; n++) {
-//ASD        aer_g_sw_h(tgt_col,n,pack)[kidx]   += AER_G_SW_v_h(src_col,n,kk)*src_wgt;
-//ASD        aer_ssa_sw_h(tgt_col,n,pack)[kidx] += AER_SSA_SW_v_h(src_col,n,kk)*src_wgt;
-//ASD        aer_tau_sw_h(tgt_col,n,pack)[kidx] += AER_TAU_SW_v_h(src_col,n,kk)*src_wgt;
-//ASD      }
-//ASD      for (int n=0; n<nlwbands; n++) {
-//ASD        aer_tau_lw_h(tgt_col,n,pack)[kidx] += AER_TAU_LW_v_h(src_col,n,kk)*src_wgt;
-//ASD      }
-//ASD    }
-//ASD    int kk = source_data_nlevs-1;
-//ASD    int pack = (kk+2) / Spack::n; 
-//ASD    int kidx = (kk+2) % Spack::n;
-//ASD    ccn3_h(tgt_col,pack)[kidx] += CCN3_v_h(src_col,kk)*src_wgt;
-//ASD    for (int n=0; n<nswbands; n++) {
-//ASD      aer_g_sw_h(tgt_col,n,pack)[kidx]   += AER_G_SW_v_h(src_col,n,kk)*src_wgt;
-//ASD      aer_ssa_sw_h(tgt_col,n,pack)[kidx] += AER_SSA_SW_v_h(src_col,n,kk)*src_wgt;
-//ASD      aer_tau_sw_h(tgt_col,n,pack)[kidx] += AER_TAU_SW_v_h(src_col,n,kk)*src_wgt;
-//ASD    }
-//ASD    for (int n=0; n<nlwbands; n++) {
-//ASD      aer_tau_lw_h(tgt_col,n,pack)[kidx] += AER_TAU_LW_v_h(src_col,n,kk)*src_wgt;
-//ASD    }
-//ASD  }
-//ASD  // We also need to pad the hyam and hybm views with
-//ASD  //   hya/b[0] = 0.0, note this is handled by deep copy above
-//ASD  //   hya/b[N+2] = BIG number so always bigger than likely pmid for target
-//ASD  for (int kk=0; kk<source_data_nlevs; kk++) {
-//ASD    int pack = (kk+1) / Spack::n; 
-//ASD    int kidx = (kk+1) % Spack::n;
-//ASD    hyam_h(pack)[kidx] = hyam_v_h(kk);
-//ASD    hybm_h(pack)[kidx] = hybm_v_h(kk);
-//ASD  }
-//ASD  const int pack = (source_data_nlevs+1) / Spack::n;
-//ASD  const int kidx = (source_data_nlevs+1) % Spack::n;
-//ASD  hyam_h(pack)[kidx] = 1e5; 
-//ASD  hybm_h(pack)[kidx] = 0.0;
-//ASD  
-//ASD  Kokkos::deep_copy(spa_data.hyam,hyam_h);
-//ASD  Kokkos::deep_copy(spa_data.hybm,hybm_h);
-//ASD  Kokkos::deep_copy(spa_data.PS,ps_h);
-//ASD  Kokkos::deep_copy(spa_data.data.CCN3,ccn3_h);
-//ASD  Kokkos::deep_copy(spa_data.data.AER_G_SW,aer_g_sw_h);
-//ASD  Kokkos::deep_copy(spa_data.data.AER_SSA_SW,aer_ssa_sw_h);
-//ASD  Kokkos::deep_copy(spa_data.data.AER_TAU_SW,aer_tau_sw_h);
-//ASD  Kokkos::deep_copy(spa_data.data.AER_TAU_LW,aer_tau_lw_h);
 
 } // END update_spa_data_from_file
 

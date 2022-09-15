@@ -62,7 +62,7 @@ TEST_CASE("spa_read_data","spa")
   // Set up the set of SPA structures needed to run the test
   SPAFunc::SPAHorizInterp spa_horiz_interp;
   spa_horiz_interp.m_comm = spa_comm;
-  SPAFunc::get_remap_weights_from_file(spa_remap_file,ncols,min_dof,dofs_gids,spa_horiz_interp);
+  SPAFunc::get_remap_weights_from_file(spa_remap_file,min_dof,dofs_gids,spa_horiz_interp);
   // Recall, SPA data is padded, so we initialize with 2 more levels than the source data file.
   SPAFunc::SPAInput spa_data(dofs_gids.size(), nlevs+2, nswbands, nlwbands);
 
