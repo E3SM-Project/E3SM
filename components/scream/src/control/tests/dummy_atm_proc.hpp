@@ -32,10 +32,6 @@ public:
   // The type of the block (dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
 
-  std::set<std::string> get_required_grids () const {
-    return std::set<std::string> {m_params.get<std::string>("Grid Name")};
-  }
-
   // Return some sort of name, linked to PType
   std::string name () const { return m_name; }
 

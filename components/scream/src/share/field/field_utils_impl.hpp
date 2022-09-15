@@ -3,6 +3,8 @@
 
 #include "share/field/field.hpp"
 
+#include "ekat/mpi/ekat_comm.hpp"
+
 #include <limits>
 #include <type_traits>
 
@@ -222,7 +224,7 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
     case 1:
       {
         auto v = f.template get_view<ST*,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
+        for (int i=0; i<fl.dim(0); ++i) {
           y = std::pow(v(i),2) - c;
           temp = norm + y;
           c = (temp - norm) - y;
@@ -233,8 +235,8 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
     case 2:
       {
         auto v = f.template get_view<ST**,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
             y = std::pow(v(i,j),2) - c;
             temp = norm + y;
             c = (temp - norm) - y;
@@ -245,9 +247,9 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
     case 3:
       {
         auto v = f.template get_view<ST***,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
               y = std::pow(v(i,j,k),2) - c;
               temp = norm + y;
               c = (temp - norm) - y;
@@ -258,10 +260,10 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
     case 4:
       {
         auto v = f.template get_view<ST****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              for (int l=0; l<fl.dim(3); ++l) {
                 y = std::pow(v(i,j,k,l),2) - c;
                 temp = norm + y;
                 c = (temp - norm) - y;
@@ -272,11 +274,11 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
     case 5:
       {
         auto v = f.template get_view<ST*****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              for (int l=0; l<fl.dim(3); ++l) {
+                for (int m=0; m<fl.dim(4); ++m) {
                   y = std::pow(v(i,j,k,l,m),2) - c;
                   temp = norm + y;
                   c = (temp - norm) - y;
@@ -287,12 +289,12 @@ ST frobenius_norm(const Field& f, const ekat::Comm* comm)
     case 6:
       {
         auto v = f.template get_view<ST******,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
-                  for (int n=0; n<v.extent_int(5); ++n) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              for (int l=0; l<fl.dim(3); ++l) {
+                for (int m=0; m<fl.dim(4); ++m) {
+                  for (int n=0; n<fl.dim(5); ++n) {
                     y = std::pow(v(i,j,k,l,m,n),2) - c;
                     temp = norm + y;
                     c = (temp - norm) - y;
@@ -329,7 +331,7 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
     case 1:
       {
         auto v = f.template get_view<ST*,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
+        for (int i=0; i<fl.dim(0); ++i) {
           y = v(i) - c;
           temp = sum + y;
           c = (temp - sum) - y;
@@ -340,8 +342,8 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
     case 2:
       {
         auto v = f.template get_view<ST**,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
             y = v(i,j) - c;
             temp = sum + y;
             c = (temp - sum) - y;
@@ -352,9 +354,9 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
     case 3:
       {
         auto v = f.template get_view<ST***,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
               y = v(i,j,k) - c;
               temp = sum + y;
               c = (temp - sum) - y;
@@ -365,10 +367,10 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
     case 4:
       {
         auto v = f.template get_view<ST****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              for (int l=0; l<fl.dim(3); ++l) {
                 y = v(i,j,k,l) - c;
                 temp = sum + y;
                 c = (temp - sum) - y;
@@ -379,11 +381,11 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
     case 5:
       {
         auto v = f.template get_view<ST*****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              for (int l=0; l<fl.dim(3); ++l) {
+                for (int m=0; m<fl.dim(4); ++m) {
                   y = v(i,j,k,l,m) - c;
                   temp = sum + y;
                   c = (temp - sum) - y;
@@ -394,12 +396,12 @@ ST field_sum(const Field& f, const ekat::Comm* comm)
     case 6:
       {
         auto v = f.template get_view<ST******,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
-                  for (int n=0; n<v.extent_int(5); ++n) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              for (int l=0; l<fl.dim(3); ++l) {
+                for (int m=0; m<fl.dim(4); ++m) {
+                  for (int n=0; n<fl.dim(5); ++n) {
                     y = v(i,j,k,l,m,n) - c;
                     temp = sum + y;
                     c = (temp - sum) - y;
@@ -433,7 +435,7 @@ ST field_max(const Field& f, const ekat::Comm* comm)
     case 1:
       {
         auto v = f.template get_view<ST*,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
+        for (int i=0; i<fl.dim(0); ++i) {
           max = std::max(max,v(i));
         }
       }
@@ -441,8 +443,8 @@ ST field_max(const Field& f, const ekat::Comm* comm)
     case 2:
       {
         auto v = f.template get_view<ST**,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
             max = std::max(max,v(i,j));
         }}
       }
@@ -450,9 +452,9 @@ ST field_max(const Field& f, const ekat::Comm* comm)
     case 3:
       {
         auto v = f.template get_view<ST***,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
               max = std::max(max,v(i,j,k));
         }}}
       }
@@ -460,10 +462,10 @@ ST field_max(const Field& f, const ekat::Comm* comm)
     case 4:
       {
         auto v = f.template get_view<ST****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              for (int l=0; l<fl.dim(3); ++l) {
                 max = std::max(max,v(i,j,k,l));
         }}}}
       }
@@ -471,11 +473,11 @@ ST field_max(const Field& f, const ekat::Comm* comm)
     case 5:
       {
         auto v = f.template get_view<ST*****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              for (int l=0; l<fl.dim(3); ++l) {
+                for (int m=0; m<fl.dim(4); ++m) {
                   max = std::max(max,v(i,j,k,l,m));
         }}}}}
       }
@@ -483,12 +485,12 @@ ST field_max(const Field& f, const ekat::Comm* comm)
     case 6:
       {
         auto v = f.template get_view<ST******,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
-                  for (int n=0; n<v.extent_int(5); ++n) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              for (int l=0; l<fl.dim(3); ++l) {
+                for (int m=0; m<fl.dim(4); ++m) {
+                  for (int n=0; n<fl.dim(5); ++n) {
                     max = std::max(max,v(i,j,k,l,m,n));
         }}}}}}
       }
@@ -519,7 +521,7 @@ ST field_min(const Field& f, const ekat::Comm* comm)
     case 1:
       {
         auto v = f.template get_view<ST*,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
+        for (int i=0; i<fl.dim(0); ++i) {
           min = std::min(min,v(i));
         }
       }
@@ -527,8 +529,8 @@ ST field_min(const Field& f, const ekat::Comm* comm)
     case 2:
       {
         auto v = f.template get_view<ST**,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
             min = std::min(min,v(i,j));
         }}
       }
@@ -536,9 +538,9 @@ ST field_min(const Field& f, const ekat::Comm* comm)
     case 3:
       {
         auto v = f.template get_view<ST***,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
               min = std::min(min,v(i,j,k));
         }}}
       }
@@ -546,10 +548,10 @@ ST field_min(const Field& f, const ekat::Comm* comm)
     case 4:
       {
         auto v = f.template get_view<ST****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              for (int l=0; l<fl.dim(3); ++l) {
                 min = std::min(min,v(i,j,k,l));
         }}}}
       }
@@ -557,11 +559,11 @@ ST field_min(const Field& f, const ekat::Comm* comm)
     case 5:
       {
         auto v = f.template get_view<ST*****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              for (int l=0; l<fl.dim(3); ++l) {
+                for (int m=0; m<fl.dim(4); ++m) {
                   min = std::min(min,v(i,j,k,l,m));
         }}}}}
       }
@@ -569,12 +571,12 @@ ST field_min(const Field& f, const ekat::Comm* comm)
     case 6:
       {
         auto v = f.template get_view<ST******,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
-                  for (int n=0; n<v.extent_int(5); ++n) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              for (int l=0; l<fl.dim(3); ++l) {
+                for (int m=0; m<fl.dim(4); ++m) {
+                  for (int n=0; n<fl.dim(5); ++n) {
                     min = std::min(min,v(i,j,k,l,m,n));
         }}}}}}
       }

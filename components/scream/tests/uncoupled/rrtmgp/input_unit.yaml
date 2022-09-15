@@ -1,29 +1,32 @@
 %YAML 1.1
 ---
 Debug:
-  Atmosphere DAG Verbosity Level: 5
+  atmosphere_dag_verbosity_level: 5
 
 atmosphere_processes:
   atm_procs_list: (rrtmgp)
   rrtmgp:
-    Grid: Point Grid
+    column_chunk_size: 123
     active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
-    Orbital Year: 1990
+    orbital_year: 1990
     # Set orbital parameters to constants for consistency with RRTMGP test problem
-    Orbital Eccentricity: 0
-    Orbital Obliquity: 0
-    Orbital MVELP: 0
+    orbital_eccentricity: 0
+    orbital_obliquity: 0
+    orbital_mvelp: 0
     Fixed Solar Zenith Angle: 0.86
     do_aerosol_rad: false
+    rrtmgp_coefficients_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-sw-g224-2018-12-04.nc
+    rrtmgp_coefficients_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-lw-g256-2018-12-04.nc
+    rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
+    rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
 
-Grids Manager:
+grids_manager:
   Type: Mesh Free
-  Reference Grid: Point Grid
-  Number of Global Columns: 128
-  Number of Vertical Levels: 42
+  number_of_global_columns: 128
+  number_of_vertical_levels: 42
 
 # Specifications for setting initial conditions
-Initial Conditions:
+initial_conditions:
   p_mid: 0.0
   p_int: 0.0
   pseudo_density: 0.0

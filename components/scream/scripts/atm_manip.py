@@ -59,22 +59,29 @@ def find_node (root,name,recurse=True):
     ... '''
     >>> import xml.etree.ElementTree as ET
     >>> tree = ET.fromstring(xml)
-    >>> a = find_node(tree,'a',recurse=True)
+    >>> a,parents = find_node(tree,'a')
+    >>> print(f"{','.join(p.tag for p in parents)}")
+    root,sub
     >>> print(a.text)
     2
-    >>> print(find_node(tree,'a',recurse=False))
+    >>> print(len(parents))
+    2
+    >>> print(f"{','.join(p.tag for p in parents)}")
+    root,sub
+    >>> a,parents = find_node(tree,'a',recurse=False)
+    >>> print(a)
     None
     """
 
     for elem in root:
         if elem.tag==name:
-            return elem
-        if recurse:
-            found = find_node(elem,name)
+            return elem, [root]
+        if len(elem)>0 and recurse:
+            found, parents = find_node(elem,name,recurse=True)
             if found is not None:
-                return found
+                return found, [root] + parents
 
-    return None
+    return None, []
 
 ###############################################################################
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
@@ -91,7 +98,6 @@ def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
 def get_xml_node(xml_root,name):
 ###############################################################################
     """
-
     >>> xml = '''
     ... <root>
     ...     <prop1>one</prop1>
@@ -116,14 +122,25 @@ def get_xml_node(xml_root,name):
     >>> ################ AMBIGUOUS ENTRY #######################
     >>> get_xml_node(tree,'prop1')
     Traceback (most recent call last):
-    SystemExit: ERROR: Error! Multiple XML entries with name prop1 found in section root
+    atm_manip.AmbiguousName: ERROR: Error! Multiple XML entries with name prop1 found in section root
     >>> ################ VALID USAGE #######################
-    >>> print(get_xml_node(tree,'::prop1').text)
+    >>> n,p = get_xml_node(tree,'::prop1')
+    >>> print(n.text)
     one
-    >>> print(get_xml_node(tree,'prop2').text)
+    >>> print(len(p))
+    1
+    >>> print(p[0].tag)
+    root
+    >>> n,p = get_xml_node(tree,'prop2')
+    >>> print(n.text)
     2
-    >>> print([k for k in get_xml_node(tree,'prop2').attrib.keys()])
+    >>> m,p = get_xml_node(tree,'prop2')
+    >>> print([k for k in n.attrib.keys()])
     ['type', 'valid_values']
+    >>> print(len(p))
+    2
+    >>> print(f"{','.join(e.tag for e in p)}")
+    root,sub
     """
 
     selectors = name.split("::")
@@ -138,6 +155,7 @@ def get_xml_node(xml_root,name):
     if s == '':
         # User started with ::
         node = xml_root
+        parents = []
     else:
         expect (num_nodes_with_name(xml_root,s,recurse=True)>0,
             "Error! XML entry {} not found in section {}".format(s,xml_root.tag))
@@ -145,7 +163,7 @@ def get_xml_node(xml_root,name):
             "Error! Multiple XML entries with name {} found in section {}"
             .format(s,xml_root.tag), AmbiguousName)
 
-        node = find_node(xml_root,s,recurse=True)
+        node, parents = find_node(xml_root,s,recurse=True)
 
     # If user specified selectors via namespace, recurse over them
     for s in selectors[1:]:
@@ -155,6 +173,6 @@ def get_xml_node(xml_root,name):
             "Error! Multiple XML entries with name {} found in section {}"
             .format(s,node.tag))
 
-        node = find_node(node,s,recurse=False)
+        node, parents = find_node(node,s,recurse=False)
 
-    return node
+    return node, parents

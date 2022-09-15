@@ -25,7 +25,7 @@ ekat::ParameterList create_test_params ()
   // Create a parameter list for inputs
   ekat::ParameterList params ("Atmosphere Processes");
 
-  params.set<std::string>("Schedule Type","Sequential");
+  params.set<std::string>("schedule_type","Sequential");
   params.set<std::string>("atm_procs_list","(Foo,BarBaz)");
 
   auto& p0 = params.sublist("Foo");
@@ -35,7 +35,7 @@ ekat::ParameterList create_test_params ()
   auto& p1 = params.sublist("BarBaz");
   p1.set<std::string>("atm_procs_list","(Bar,Baz)");
   p1.set<std::string>("Type", "Group");
-  p1.set<std::string>("Schedule Type","Sequential");
+  p1.set<std::string>("schedule_type","Sequential");
 
   auto& p1_0 = p1.sublist("Bar");
   p1_0.set<std::string>("Type", "Bar");
@@ -58,14 +58,13 @@ create_gm (const ekat::Comm& comm) {
   const int num_global_cols = num_local_cols*comm.size();
 
   ekat::ParameterList gm_params;
-  gm_params.set<std::string>("Reference Grid", "Point Grid");
-  gm_params.set<int>("Number of Global Columns", num_global_cols);
-  gm_params.set<int>("Number of Local Elements", num_local_elems);
-  gm_params.set<int>("Number of Vertical Levels", nlevs);
-  gm_params.set<int>("Number of Gauss Points", np);
+  gm_params.set<int>("number_of_global_columns", num_global_cols);
+  gm_params.set<int>("number_of_local_elements", num_local_elems);
+  gm_params.set<int>("number_of_vertical_levels", nlevs);
+  gm_params.set<int>("number_of_gauss_points", np);
 
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
-  gm->build_all_grids();
+  gm->build_grids();
 
   return gm;
 }
@@ -80,13 +79,6 @@ public:
   {
     m_name = params.name();
     m_grid_name = params.get<std::string> ("Grid Name");
-  }
-
-  // The type of grids on which the diagnostic is defined
-  std::set<std::string> get_required_grids () const {
-    static std::set<std::string> s;
-    s.insert(m_grid_name);
-    return s;
   }
 
   // Return some sort of name, linked to PType
@@ -224,13 +216,6 @@ public:
     m_grid_name = params.get<std::string> ("Grid Name");
   }
 
-  // The type of grids on which the process is defined
-  std::set<std::string> get_required_grids () const {
-    static std::set<std::string> s;
-    s.insert(m_grid_name);
-    return s;
-  }
-
   // Return some sort of name, linked to PType
   std::string name () const { return m_name; }
 
@@ -357,14 +342,9 @@ protected:
 
 TEST_CASE("process_factory", "") {
   using namespace scream;
-  using namespace ekat::logger;
-  using logger_t = spdlog::logger;
-  using logger_impl_t = Logger<LogNoFile,LogRootRank>;
 
   // A world comm
   ekat::Comm comm(MPI_COMM_WORLD);
-  std::shared_ptr<logger_t> logger;
-  logger = std::make_shared<logger_impl_t>("",LogLevel::info,comm);
 
   // Create then factory, and register constructors
   auto& factory = AtmosphereProcessFactory::instance();
@@ -380,7 +360,6 @@ TEST_CASE("process_factory", "") {
     std::string fname = "atm_process_tests_parse_list.yaml";
     ekat::ParameterList params ("Atmosphere Processes");
     REQUIRE_NOTHROW ( parse_yaml_file(fname,params) );
-    params.set("Logger",logger);
 
     std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
 
@@ -408,7 +387,6 @@ TEST_CASE("process_factory", "") {
     std::string fname = "atm_process_tests_named_procs.yaml";
     ekat::ParameterList params ("Atmosphere Processes");
     REQUIRE_NOTHROW ( parse_yaml_file(fname,params) );
-    params.set("Logger",logger);
     std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
 
     // CHECKS
@@ -540,15 +518,14 @@ TEST_CASE("field_checks", "") {
   util::TimeStamp t0(1,1,1,1,1,1);
 
   constexpr auto Warning = CheckFailHandling::Warning;
-  constexpr auto Fatal   = CheckFailHandling::Fatal;
   auto pos_check_pre = std::make_shared<FieldLowerBoundCheck>(T_tend,grid,0,false);
   auto pos_check_post = std::make_shared<FieldLowerBoundCheck>(T,grid,0,false);
   for (bool allow_failure : {true,false}) {
     for (bool check_pre : {true, false}) {
       for (bool check_post : {true, false}) {
 
-        params.set("Enable Precondition Checks",check_pre);
-        params.set("Enable Postcondition Checks",check_post);
+        params.set("enable_precondition_checks",check_pre);
+        params.set("enable_postcondition_checks",check_post);
 
         // Create the process
         auto foo = create_atmosphere_process<Foo>(comm,params);
@@ -559,11 +536,12 @@ TEST_CASE("field_checks", "") {
         foo->initialize(t0,RunType::Initial);
 
         if (allow_failure) {
-          foo->add_precondition_check<Warning>(pos_check_pre);
-          foo->add_postcondition_check<Warning>(pos_check_post);
+          foo->add_precondition_check(pos_check_pre,Warning);
+          foo->add_postcondition_check(pos_check_post,Warning);
         } else {
-          foo->add_precondition_check<Fatal>(pos_check_pre);
-          foo->add_postcondition_check<Fatal>(pos_check_post);
+          // Default CheckFailHandling is Fatal
+          foo->add_precondition_check(pos_check_pre);
+          foo->add_postcondition_check(pos_check_post);
         }
 
         if (not allow_failure && (check_pre || check_post)) {
@@ -593,7 +571,7 @@ TEST_CASE ("subcycling") {
   params.set<std::string>("Grid Name", "Point Grid");
   params_sub.set<std::string>("Process Name", "AddOne");
   params_sub.set<std::string>("Grid Name", "Point Grid");
-  params_sub.set<int>("Number of Subcycles", 5);
+  params_sub.set<int>("number_of_subcycles", 5);
 
   // Create and init two atm procs, one subcycled and one not subcycled
   auto ap     = std::make_shared<AddOne>(comm,params);

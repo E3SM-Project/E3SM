@@ -3,6 +3,7 @@
 
 namespace scream {
 
+int get_default_fpes ();
 void initialize_scream_session(bool print_config = true);
 void initialize_scream_session (int argc, char **argv, bool print_config = true);
 

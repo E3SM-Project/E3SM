@@ -225,6 +225,7 @@ module elm_varctl
   logical, public            :: use_fates_logging = .false.             ! true => turn on logging module
   logical, public            :: use_fates_planthydro = .false.          ! true => turn on fates hydro
   logical, public            :: use_fates_cohort_age_tracking = .false. ! true => turn on cohort age tracking
+  logical, public            :: use_fates_tree_damage = .false.         ! true => turn on tree damage module
   logical, public            :: use_fates_ed_st3   = .false.            ! true => static stand structure
   logical, public            :: use_fates_ed_prescribed_phys = .false.  ! true => prescribed physiology
   logical, public            :: use_fates_inventory_init = .false.      ! true => initialize fates from inventory
@@ -513,6 +514,15 @@ module elm_varctl
    logical, public :: use_lnd_rof_two_way = .false.
    integer, public :: lnd_rof_coupling_nstep = 0
    
+   
+   !----------------------------------------------------------
+   ! SNICAR-AD
+   !----------------------------------------------------------
+   character(len=256), public :: snow_shape = 'sphere'
+   character(len=256), public :: snicar_atm_type = 'default'
+   logical, public :: use_dust_snow_internal_mixing = .false.
+
+
 contains
 
   !---------------------------------------------------------------------------

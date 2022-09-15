@@ -21,25 +21,25 @@ void Functions<S,D>
   constexpr Scalar tmelt  = C::Tmelt;
 
   // set up masks
-  const auto t_is_negative        = temp < tmelt;
-  const auto qi_incld_gt_small = qi_incld > qsmall;
-  const auto qc_incld_gt_small    = qc_incld > qsmall;
-  const auto both_gt_small        = qi_incld_gt_small && qc_incld_gt_small && context;
-  const auto both_gt_small_pos_t  = both_gt_small && !t_is_negative;
+  const auto t_is_negative        = temp <= tmelt;
+  const auto qi_incld_ge_small    = qi_incld >= qsmall;
+  const auto qc_incld_ge_small    = qc_incld >= qsmall;
+  const auto both_ge_small        = qi_incld_ge_small && qc_incld_ge_small && context;
+  const auto both_ge_small_pos_t  = both_ge_small && !t_is_negative;
 
   constexpr auto eci = C::eci;
   constexpr auto inv_dropmass = C::ONE/C::dropmass;
 
-  qc2qi_collect_tend.set(both_gt_small && t_is_negative,
+  qc2qi_collect_tend.set(both_ge_small && t_is_negative,
             rhofaci*table_val_qc2qi_collect*qc_incld*eci*rho*ni_incld);
-  nc_collect_tend.set(both_gt_small, rhofaci*table_val_qc2qi_collect*nc_incld*eci*rho*ni_incld);
+  nc_collect_tend.set(both_ge_small, rhofaci*table_val_qc2qi_collect*nc_incld*eci*rho*ni_incld);
 
   // for T_atm > 273.15, assume cloud water is collected and shed as rain drops
   // sink for cloud water mass and number, note qcshed is source for rain mass
-  qc2qr_ice_shed_tend.set(both_gt_small_pos_t, rhofaci*table_val_qc2qi_collect*qc_incld*eci*rho*ni_incld);
-  nc_collect_tend.set(both_gt_small_pos_t, rhofaci*table_val_qc2qi_collect*nc_incld*eci*rho*ni_incld);
+  qc2qr_ice_shed_tend.set(both_ge_small_pos_t, rhofaci*table_val_qc2qi_collect*qc_incld*eci*rho*ni_incld);
+  nc_collect_tend.set(both_ge_small_pos_t, rhofaci*table_val_qc2qi_collect*nc_incld*eci*rho*ni_incld);
   // source for rain number, assume 1 mm drops are shed
-  ncshdc.set(both_gt_small_pos_t, qc2qr_ice_shed_tend*inv_dropmass);
+  ncshdc.set(both_ge_small_pos_t, qc2qr_ice_shed_tend*inv_dropmass);
 }
 
 template<typename S, typename D>
@@ -59,17 +59,17 @@ void Functions<S,D>
 
   // Set up masks
   const auto t_is_negative        = temp <= tmelt;
-  const auto qi_incld_ge_small = qi_incld >= qsmall;
+  const auto qi_incld_ge_small    = qi_incld >= qsmall;
   const auto qr_incld_ge_small    = qr_incld >= qsmall;
-  const auto both_gt_small        = qi_incld_ge_small && qr_incld_ge_small && context;
-  const auto both_gt_small_neg_t  = both_gt_small && t_is_negative;
+  const auto both_ge_small        = qi_incld_ge_small && qr_incld_ge_small && context;
+  const auto both_ge_small_neg_t  = both_ge_small && t_is_negative;
 
   constexpr Scalar ten = 10.0;
   constexpr auto eri = C::eri;
 
   // note: table_val_qr2qi_collect and logn0r are already calculated as log_10
-  qr2qi_collect_tend.set(both_gt_small_neg_t, pow(ten, table_val_qr2qi_collect+logn0r)*rho*rhofaci*eri*ni_incld);
-  nr_collect_tend.set(both_gt_small_neg_t, pow(ten, table_val_nr_collect+logn0r)*rho*rhofaci*eri*ni_incld);
+  qr2qi_collect_tend.set(both_ge_small_neg_t, pow(ten, table_val_qr2qi_collect+logn0r)*rho*rhofaci*eri*ni_incld);
+  nr_collect_tend.set(both_ge_small_neg_t, pow(ten, table_val_nr_collect+logn0r)*rho*rhofaci*eri*ni_incld);
 
   // rain number sink due to collection
   // for T_atm > 273.15, assume collected rain number is shed as
@@ -77,7 +77,7 @@ void Functions<S,D>
   // note that melting of ice number is scaled to the loss
   // rate of ice mass due to melting
   // collection of rain above freezing does not impact total rain mass
-  nr_collect_tend.set(both_gt_small && !t_is_negative,
+  nr_collect_tend.set(both_ge_small && !t_is_negative,
             pow(ten, table_val_nr_collect + logn0r)*rho*rhofaci*eri*ni_incld);
   // for now neglect shedding of ice collecting rain above freezing, since snow is
   // not expected to shed in these conditions (though more hevaily rimed ice would be
@@ -99,7 +99,7 @@ void Functions<S,D>
 
   // Set up masks
   const auto qm_incld_positive = qm_incld > zero && context;
-  const auto qi_incld_gt_small = qi_incld > qsmall && context;
+  const auto qi_incld_ge_small = qi_incld >= qsmall && context;
 
   Spack tmp1{0.0};
   Spack Eii_fact{0.0};
@@ -108,11 +108,11 @@ void Functions<S,D>
   Smask tmp1_lt_nine{0};
   Smask tmp1_ge_nine{0};
 
-  if (qi_incld_gt_small.any()) {
+  if (qi_incld_ge_small.any()) {
     // Determine additional collection efficiency factor to be applied to ice-ice collection.
     // The computed values of qicol and nicol are multipiled by Eii_fact to gradually shut off collection
     // if ice is highly rimed.
-    tmp1.set(qi_incld_gt_small && qm_incld_positive,
+    tmp1.set(qi_incld_ge_small && qm_incld_positive,
              qm_incld/qi_incld);   //rime mass fraction
     tmp1_lt_six  = tmp1 < sp(0.6);
     tmp1_ge_six  = tmp1 >= sp(0.6);
@@ -128,7 +128,7 @@ void Functions<S,D>
 
     Eii_fact.set(!qm_incld_positive && context, 1);
 
-    ni_selfcollect_tend.set(qi_incld_gt_small,
+    ni_selfcollect_tend.set(qi_incld_ge_small,
 	      table_val_ni_self_collect*rho*eii*Eii_fact*rhofaci*ni_incld*ni_incld );
   }
 }

@@ -51,11 +51,14 @@ public:
   int get_partitioned_dim_global_size () const override {
     return get_num_global_dofs();
   }
+
+  std::shared_ptr<AbstractGrid> clone (const std::string& clone_name,
+                                       const bool shallow) const override;
 };
 
 // Create a point grid, with linear range of gids, evenly partitioned
 // among the ranks in the given communicator.
-std::shared_ptr<const PointGrid>
+std::shared_ptr<PointGrid>
 create_point_grid (const std::string& name,
                    const int num_global_cols,
                    const int num_vertical_lev,

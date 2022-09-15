@@ -2,7 +2,7 @@
 if (NOT SCREAM_BASELINES_ONLY)
   include(ScreamUtils)
 
-  set( NEED_LIBS scream_share diagnostics )
+  set( NEED_LIBS scream_share diagnostics physics_share)
 
   # Test potential temperature diagnostic
   CreateUnitTest(potential_temperature "potential_temperature_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
@@ -24,5 +24,15 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(sea_level_pressure "sea_level_pressure_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test total water path
   CreateUnitTest(water_path "water_path_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test shortwave cloud forcing
+  CreateUnitTest(shortwave_cloud_forcing "shortwave_cloud_forcing_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test longwave cloud forcing
+  CreateUnitTest(longwave_cloud_forcing "longwave_cloud_forcing_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test Relative Humidity 
+  CreateUnitTest(relative_humidity "relative_humidity_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test Zonal Vapor Flux
+  CreateUnitTest(zonal_vapor_flux "zonal_vapor_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test Meridional Vapor Flux
+  CreateUnitTest(meridional_vapor_flux "meridional_vapor_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 
 endif()

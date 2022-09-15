@@ -7,11 +7,9 @@ BuildCprnc()
 
 ## Test output
 
-configure_file(io_test_instant.yaml io_test_instant.yaml)
-configure_file(io_test_average.yaml io_test_average.yaml)
-configure_file(io_test_max.yaml io_test_max.yaml)
-configure_file(io_test_min.yaml io_test_min.yaml)
 configure_file(io_test_multisnap.yaml io_test_multisnap.yaml)
+configure_file(io_test_template.yaml io_test_template.yaml)
+configure_file(io_test_control.yaml io_test_control.yaml)
 
 CreateUnitTest(io_test "io.cpp" scream_io LABELS "io"
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
@@ -36,8 +34,8 @@ CreateUnitTest(output_restart_test "output_restart.cpp" scream_io LABELS "io"
 )
 
 foreach (MPI_RANKS RANGE 1 ${SCREAM_TEST_MAX_RANKS})
-  set (SRC_FILE io_output_restart.AVERAGE.Steps_x10.np${MPI_RANKS}.2000-01-01-00020.nc)
-  set (TGT_FILE io_output_restart_check.AVERAGE.Steps_x10.np${MPI_RANKS}.2000-01-01-00020.nc)
+  set (SRC_FILE io_output_restart.AVERAGE.nsteps_x10.np${MPI_RANKS}.2000-01-01-00020.nc)
+  set (TGT_FILE io_output_restart_check.AVERAGE.nsteps_x10.np${MPI_RANKS}.2000-01-01-00020.nc)
   add_test (NAME io_test_restart_check_np${MPI_RANKS}
             COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})

@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 Debug:
-  Atmosphere DAG Verbosity Level: 5
+  atmosphere_dag_verbosity_level: 5
 
 Time Stepping:
   Time Step: ${ATM_TIME_STEP}
@@ -9,7 +9,7 @@ Time Stepping:
   Start Date: [2021, 10, 12]    # Year, Month, Day
   Number of Steps: ${NUM_STEPS}
 
-Initial Conditions:
+initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
   surf_evap: 0.0
   surf_sens_flux: 0.0
@@ -18,41 +18,36 @@ Initial Conditions:
 
 atmosphere_processes:
   atm_procs_list: (homme,physics)
-  Schedule Type: Sequential
+  schedule_type: Sequential
   homme:
-    Process Name: Homme
-    Enable Precondition Checks: false
-    Vertical Coordinate Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+    vertical_coordinate_filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
     Moisture: moist
   physics:
     atm_procs_list: (mac_aero_mic,rrtmgp)
-    Schedule Type: Sequential
+    schedule_type: Sequential
     Type: Group
     mac_aero_mic:
       atm_procs_list: (shoc,CldFraction,spa,p3)
       Type: Group
-      Schedule Type: Sequential
-      Number of Subcycles: ${MAC_MIC_SUBCYCLES}
-      shoc:
-        Grid: Physics GLL
-      CldFraction:
-        Grid: Physics GLL
+      schedule_type: Sequential
+      number_of_subcycles: ${MAC_MIC_SUBCYCLES}
       spa:
-        Grid: Physics GLL
-        SPA Remap File: ${SCREAM_DATA_DIR}/init/map_ne4np4_to_ne2np4_mono.nc
-        SPA Data File: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_20220428.nc
-      p3:
-        Grid: Physics GLL
+        spa_remap_file: ${SCREAM_DATA_DIR}/init/map_ne4np4_to_ne2np4_mono.nc
+        spa_data_file: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_20220428.nc
     rrtmgp:
-      Grid: Physics GLL
+      column_chunk_size: 123
       active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
+      rrtmgp_coefficients_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-sw-g112-210809.nc
+      rrtmgp_coefficients_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-lw-g128-210809.nc
+      rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
+      rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
 
-Grids Manager:
-  Type: Dynamics Driven
-  Reference Grid: Physics GLL
-  Dynamics Namelist File Name: namelist.nl
+grids_manager:
+  Type: Homme
+  physics_grid_type: GLL
+  dynamics_namelist_file_name: namelist.nl
 
 # The parameters for I/O control
 Scorpio:
-  Output YAML Files: ["homme_shoc_cld_spa_p3_rrtmgp_output.yaml"]
+  output_yaml_files: ["homme_shoc_cld_spa_p3_rrtmgp_output.yaml"]
 ...

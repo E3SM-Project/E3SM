@@ -63,7 +63,16 @@ PointGrid::get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag
   return FieldLayout({COL,vector_tag,VL},{get_num_local_dofs(),vector_dim,nvl});
 }
 
-std::shared_ptr<const PointGrid>
+std::shared_ptr<AbstractGrid>
+PointGrid::clone (const std::string& clone_name,
+                  const bool shallow) const
+{
+  auto grid = std::make_shared<PointGrid> (clone_name,get_num_local_dofs(),get_num_vertical_levels(),get_comm());
+  grid->copy_views(*this,shallow);
+  return grid;
+}
+
+std::shared_ptr<PointGrid>
 create_point_grid (const std::string& grid_name,
                    const int num_global_cols,
                    const int num_vertical_lev,

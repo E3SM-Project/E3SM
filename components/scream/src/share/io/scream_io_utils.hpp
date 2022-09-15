@@ -5,6 +5,7 @@
 #include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
 #include <string>
+#include "share/util/scream_time_stamp.hpp"
 
 namespace scream
 {
@@ -44,12 +45,54 @@ inline OutputAvgType str2avg (const std::string& s) {
 struct IOControl {
   // A non-positive frequency can be used to signal IO disabled
   int frequency = -1;
-  int nsteps_since_last_write;
-  std::string frequency_units;
+  int nsamples_since_last_write;  // Needed when updating output data, such as with the OAT::Average flag
+  util::TimeStamp timestamp_of_last_write;
+  std::string frequency_units = "none";
 
-  bool is_write_step () {
-    return frequency>0 && (nsteps_since_last_write % frequency == 0);
-  }
+  bool is_write_step (const util::TimeStamp& ts) {
+    // Mini-routine to determine if it is time to write output to file.
+    // The current allowable options are nsteps, nsecs, nmins, nhours, ndays, nmonths, nyears
+    // We query the frequency_units string value to determine which option it is.
+    bool ret = false;
+    if (frequency > 0 && frequency_units != "never" && frequency_units != "none") {
+      auto ts_diff = (ts-timestamp_of_last_write);
+      if (frequency_units == "nsteps") {
+        // Just use the num_steps from timestamps
+        return ((ts.get_num_steps()-timestamp_of_last_write.get_num_steps()) % frequency == 0);
+      // We will need to use timestamp information
+      } else if (frequency_units == "nsecs") {
+        ret = ((ts_diff > 0) && (ts_diff % frequency == 0));
+      } else if (frequency_units == "nmins") {
+        ret = (ts_diff >= 60) && (ts_diff % (frequency*60) == 0);
+      } else if (frequency_units == "nhours") {
+        ret = (ts_diff >= 3600) && (ts_diff % (frequency*3600) == 0);
+      } else if (frequency_units == "ndays") {
+        ret = (ts_diff >= 86400) && (ts_diff % (frequency*86400) == 0);
+      } else if (frequency_units == "nmonths" || frequency_units == "nyears") {
+        // For months and years we need to be careful, can't just divide ts_diff by a set value.
+        // First we make sure that if we are the same day of the month and at the same time of day.
+        if (ts.get_day() == timestamp_of_last_write.get_day() &&
+            ts.sec_of_day() == timestamp_of_last_write.sec_of_day()) {
+          auto diff = 0;
+          // Determine how many years have passed
+          diff += (ts.get_year()  - timestamp_of_last_write.get_year());
+          if  (frequency_units == "nyears") {
+            ret = (diff>0) && (diff % frequency == 0);
+          }
+          // Determine number of months that have passed
+          diff *= 12;
+          diff += (ts.get_month() - timestamp_of_last_write.get_month());
+          if  (frequency_units == "nmonths") {
+            ret = (diff>0) && (diff % frequency == 0);
+          }
+        } 
+      } else {
+        EKAT_REQUIRE_MSG(false,"Invalid frequency unit of [" + frequency_units + "] for output stream.  Please check that all outputs have frequency_units of\n"
+                               "none, never, nsteps, nsecs, nmins, nhours, ndays, nmonths, nyears");
+      }
+    }
+    return ret;
+  } // End function is_write_step
 };
 
 // Mini struct to hold some specs of an IO file

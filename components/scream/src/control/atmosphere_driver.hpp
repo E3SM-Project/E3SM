@@ -1,8 +1,7 @@
 #ifndef SCREAM_ATMOSPHERE_DRIVER_HPP
 #define SCREAM_ATMOSPHERE_DRIVER_HPP
 
-#include "control/surface_coupling.hpp"
-
+#include "control/surface_coupling_utils.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/grid/grids_manager.hpp"
 #include "share/util/scream_time_stamp.hpp"
@@ -10,6 +9,7 @@
 #include "share/io/scream_output_manager.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
+#include "share/atm_process/SCDataManager.hpp"
 
 #include "ekat/logging/ekat_logger.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
@@ -74,8 +74,19 @@ public:
   // Create fields as requested by all processes
   void create_fields ();
 
-  // Sets a pre-built SurfaceCoupling object in the driver (for CIME runs only)
-  void set_surface_coupling (const std::shared_ptr<SurfaceCoupling>& sc) { m_surface_coupling = sc; }
+  // Adds cpl import/export information to SCDataManager.
+  void setup_surface_coupling_data_manager(SurfaceCouplingTransferType transfer_type,
+                                           const int num_cpl_fields, const int num_scream_fields,
+                                           const int field_size, Real* data_ptr,
+                                           char* names_ptr, int* cpl_indices_ptr, int* vec_comps_ptr,
+                                           Real* constant_multiple_ptr, bool* do_transfer_during_init_ptr);
+
+  // Find surface coupling processes and have
+  // them setup internal SurfaceCoupling data.
+  void setup_surface_coupling_processes() const;
+
+  // Zero out precipitation flux
+  void set_precipitation_fields_to_zero();
 
   // Load initial conditions for atm inputs
   void initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0);
@@ -118,8 +129,6 @@ public:
   field_mgr_ptr get_ref_grid_field_mgr () const;
   field_mgr_ptr get_field_mgr (const std::string& grid_name) const;
 
-  const std::shared_ptr<SurfaceCoupling>& get_surface_coupling () const { return m_surface_coupling; }
-
   // Get atmosphere time stamp
   const util::TimeStamp& get_atm_time_stamp () const { return m_current_ts; }
 
@@ -158,9 +167,8 @@ protected:
   std::list<OutputManager>                  m_output_managers;
 
   std::shared_ptr<ATMBufferManager>         m_memory_buffer;
-
-  // Surface coupling stuff
-  std::shared_ptr<SurfaceCoupling>          m_surface_coupling;
+  std::shared_ptr<SCDataManager>            m_surface_coupling_import_data_manager;
+  std::shared_ptr<SCDataManager>            m_surface_coupling_export_data_manager;
 
   // This is the time stamp at the beginning of the time step.
   util::TimeStamp                           m_current_ts;
@@ -175,7 +183,7 @@ protected:
   ekat::Comm                                m_atm_comm;
 
   // The logger to be used throughout the ATM to log message
-  std::shared_ptr<spdlog::logger>           m_atm_logger;
+  std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
 
   // Some status flags, used to make sure we call the init functions in the right order
   static constexpr int s_comm_set       =   1;

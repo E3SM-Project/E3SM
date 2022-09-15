@@ -29,8 +29,8 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   Qunit.set_string("kg/kg");
   Units nondim(0,0,0,0,0,0,0);
 
-  const auto& grid_name = m_params.get<std::string>("Grid");
-  m_grid = grids_manager->get_grid(grid_name);
+  m_grid = grids_manager->get_grid("Physics");
+  const auto& grid_name = m_grid->name();
 
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
@@ -393,7 +393,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   auto eps = std::numeric_limits<Real>::epsilon();
   using Interval = FieldWithinIntervalCheck;
   using LowerBound = FieldLowerBoundCheck;
-  add_postcondition_check<Interval>(get_field_out("T_mid"),m_grid,140.0,500.0,false);
+  add_postcondition_check<Interval>(get_field_out("T_mid"),m_grid,130.0,500.0,false);
   add_postcondition_check<Interval>(get_field_out("qc"),m_grid,0.0,0.1,false);
   add_postcondition_check<Interval>(get_field_out("horiz_winds"),m_grid,-400.0,400.0,false);
   add_postcondition_check<LowerBound>(get_field_out("pbl_height"),m_grid,0);

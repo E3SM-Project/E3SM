@@ -64,16 +64,23 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     m_fields_names = params.get<vos_t>("Field Names");
   } else if (params.isSublist("Fields")){
     const auto& f_pl = params.sublist("Fields");
-    const auto& grid_name = io_grid->name(); 
-    if (f_pl.isSublist(grid_name)) {
-      const auto& pl = f_pl.sublist(grid_name);
-      m_fields_names = pl.get<vos_t>("Field Names");
+    const auto& io_grid_aliases = io_grid->aliases();
+    bool names_found = false;
+    for (const auto& grid_name : io_grid_aliases) {
+      if (f_pl.isSublist(grid_name)) {
+        const auto& pl = f_pl.sublist(grid_name);
+        m_fields_names = pl.get<vos_t>("Field Names");
+        names_found = true;
 
-      // Check if the user wants to remap fields on a different grid first
-      if (pl.isParameter("IO Grid Name")) {
-        io_grid = grids_mgr->get_grid(pl.get<std::string>("IO Grid Name"));
+        // Check if the user wants to remap fields on a different grid first
+        if (pl.isParameter("IO Grid Name")) {
+          io_grid = grids_mgr->get_grid(pl.get<std::string>("IO Grid Name"));
+        }
+        break;
       }
     }
+    EKAT_REQUIRE_MSG (names_found,
+        "Error! Bad formatting of output yaml file. Missing 'Fields->$grid_name` sublist.\n");
   }
 
   // Try to set the IO grid (checks will be performed)
@@ -292,7 +299,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
       // Bring data to host
       auto view_host = m_host_views_1d.at(name);
       Kokkos::deep_copy (view_host,view_dev);
-      grid_write_data_array(filename,name,view_host.data());
+      grid_write_data_array(filename,name,view_host.data(),view_host.size());
     }
   }
 } // run
@@ -434,28 +441,40 @@ void AtmosphereOutput::register_views()
       m_dev_views_1d.emplace(name,view_1d_dev("",size));
       m_host_views_1d.emplace(name,Kokkos::create_mirror(m_dev_views_1d[name]));
 
-      // Init dev view with an "identity" for avg_type
-      switch (m_avg_type) {
-        case OutputAvgType::Instant:
-          // No averaging
-          break;
-        case OutputAvgType::Max:
-          Kokkos::deep_copy(m_dev_views_1d[name],-std::numeric_limits<Real>::infinity());
-          break;
-        case OutputAvgType::Min:
-          Kokkos::deep_copy(m_dev_views_1d[name],std::numeric_limits<Real>::infinity());
-          break;
-        case OutputAvgType::Average:
-          Kokkos::deep_copy(m_dev_views_1d[name],0);
-          break;
-        default:
-          EKAT_ERROR_MSG ("Unrecognized averaging type.\n");
-      }
+    }
+  }
+  // Initialize the local views
+  reset_dev_views();
+}
+/* ---------------------------------------------------------- */
+void AtmosphereOutput::
+reset_dev_views()
+{
+  // Reset the local device views depending on the averaging type
+  // Init dev view with an "identity" for avg_type
+  for (auto const& name : m_fields_names) {
+    switch (m_avg_type) {
+      case OutputAvgType::Instant:
+        // No averaging
+        break;
+      case OutputAvgType::Max:
+        Kokkos::deep_copy(m_dev_views_1d[name],-std::numeric_limits<Real>::infinity());
+        break;
+      case OutputAvgType::Min:
+        Kokkos::deep_copy(m_dev_views_1d[name],std::numeric_limits<Real>::infinity());
+        break;
+      case OutputAvgType::Average:
+        Kokkos::deep_copy(m_dev_views_1d[name],0);
+        break;
+      default:
+        EKAT_ERROR_MSG ("Unrecognized averaging type.\n");
     }
   }
 }
 /* ---------------------------------------------------------- */
-void AtmosphereOutput::register_variables(const std::string& filename)
+void AtmosphereOutput::
+register_variables(const std::string& filename,
+                   const std::string& fp_precision)
 {
   using namespace scorpio;
 
@@ -490,13 +509,15 @@ void AtmosphereOutput::register_variables(const std::string& filename)
      // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
     // but in the future if non-Real variables are added we will want to accomodate that.
-    register_variable(filename, name, name, units, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);
+    register_variable(filename, name, name, units, vec_of_dims,
+                      "real",fp_precision, io_decomp_tag);
   }
 } // register_variables
 /* ---------------------------------------------------------- */
-std::vector<int> AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
+std::vector<scorpio::offset_t>
+AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
 {
-  std::vector<int> var_dof(layout.size());
+  std::vector<scorpio::offset_t> var_dof(layout.size());
 
   // Gather the offsets of the dofs of this variable w.r.t. the *global* array.
   // Since we order the global array based on dof gid, and we *assume* (we actually
@@ -517,7 +538,7 @@ std::vector<int> AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
-    int col_size = layout.size() / num_cols;
+    scorpio::offset_t col_size = layout.size() / num_cols;
 
     auto dofs = m_io_grid->get_dofs_gids();
     auto dofs_h = Kokkos::create_mirror_view(dofs);
@@ -545,7 +566,7 @@ std::vector<int> AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
-    int col_size = layout.size() / num_cols;
+    scorpio::offset_t col_size = layout.size() / num_cols;
 
     auto dofs = m_io_grid->get_dofs_gids();
     auto dofs_h = Kokkos::create_mirror_view(dofs);
@@ -594,7 +615,9 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
   */
 } // set_degrees_of_freedom
 /* ---------------------------------------------------------- */
-void AtmosphereOutput::setup_output_file(const std::string& filename)
+void AtmosphereOutput::
+setup_output_file(const std::string& filename,
+                  const std::string& fp_precision)
 {
   using namespace scream::scorpio;
 
@@ -604,7 +627,7 @@ void AtmosphereOutput::setup_output_file(const std::string& filename)
   }
 
   // Register variables with netCDF file.  Must come after dimensions are registered.
-  register_variables(filename);
+  register_variables(filename,fp_precision);
 
   // Set the offsets of the local dofs in the global vector.
   set_degrees_of_freedom(filename);

@@ -1,0 +1,38 @@
+#! /usr/bin/env python3
+
+"""
+A quick-and-dirty script for changing naming patterns of
+items in namelist_defaults_scream.xml.
+
+Run from root scream directory on mappy
+"""
+
+from utils import run_cmd_no_fail
+import re
+
+result = run_cmd_no_fail("echo hi")
+print(result)
+
+# Hardcoded things
+bad_pattern = "__"
+name_re = re.compile(r'([A-Za-z0-9]+__)([A-Za-z0-9]+__)?([A-Za-z0-9]+__)?([A-Za-z0-9]+__)?([A-Za-z0-9]+__)?([A-Za-z0-9]+)')
+
+raw_dbl_un = run_cmd_no_fail(f"git grep {bad_pattern} cime_config/namelist_defaults_scream.xml")
+bad_name_unders = []
+for m in name_re.finditer(raw_dbl_un):
+    name = "".join([item for item in m.groups() if item is not None])
+    if name not in bad_name_unders:
+        bad_name_unders.append(name)
+
+print("Found these:")
+print(bad_name_unders)
+
+for bad_name_under in bad_name_unders:
+    bad_name_ws = bad_name_under.replace("__", " ")
+    good_name = bad_name_ws.replace(" ", "_").lower()
+    print(f"  Replacing {bad_name_under} with {good_name}")
+    run_cmd_no_fail(f"sed -i -e 's/{bad_name_under}/{good_name}/g' $(git grep -l '{bad_name_under}')")
+    run_cmd_no_fail(f"sed -i -e 's/{bad_name_ws}/{good_name}/g'    $(git grep -l '{bad_name_ws}')")
+    run_cmd_no_fail(f"git commit -a -m '{bad_name_ws} -> {good_name}'")
+    print("  Testing")
+    run_cmd_no_fail("./create_test ERS_D_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1 --compiler=gnu9", from_dir="../../cime/scripts")

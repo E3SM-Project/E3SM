@@ -4,24 +4,15 @@
 #include "ekat/util/ekat_string_utils.hpp"
 #include "share/field/field_tag.hpp"
 #include "share/scream_types.hpp"
+
 #include <vector>
 
 /* C++/F90 bridge to F90 SCORPIO routines */
 
-// TODO, figure out a better way to define netCDF output type for fields
-#ifdef SCREAM_CONFIG_IS_CMAKE
-#  ifdef SCREAM_DOUBLE_PRECISION
-  static constexpr int PIO_REAL = 6;
-#  else
-  static constexpr int PIO_REAL = 5;
-#  endif // SCREAM_DOUBLE_PRECISION
-#else // SCREAM_CONFIG_IS_CMAKE
-  static constexpr int PIO_REAL = 6;
-#endif // SCREAM_CONFIG_IS_CMAKE
-static constexpr int PIO_INT = 4;
-
 namespace scream {
 namespace scorpio {
+
+  using offset_t = std::int64_t;
 
   // WARNING: these values must match the ones of file_purpose_in and file_purpose_out
   // in the scream_scorpio_interface F90 module
@@ -40,29 +31,34 @@ namespace scorpio {
   /* Sets the IO decompostion for all variables in a particular filename.  Required after all variables have been registered.  Called once per file. */
   void set_decomp(const std::string& filename);
   /* Sets the degrees-of-freedom for a particular variable in a particular file.  Called once for each variable, for each file. */
-  void set_dof(const std::string &filename, const std::string &varname, const Int dof_len, const Int* x_dof);
+  void set_dof(const std::string &filename, const std::string &varname, const Int dof_len, const offset_t* x_dof);
   /* Register a dimension coordinate with a file. Called during the file setup. */
   void register_dimension(const std::string& filename,const std::string& shortname, const std::string& longname, const int length);
   /* Register a variable with a file.  Called during the file setup, for an output stream. */
-  void register_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const std::string& units, const int numdims, const char**&& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
-  void register_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const std::string& units, const int numdims, const std::vector<std::string>& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
+  void register_variable(const std::string& filename, const std::string& shortname, const std::string& longname,
+                         const std::string& units, const std::vector<std::string>& var_dimensions,
+                         const std::string& dtype, const std::string& nc_dtype, const std::string& pio_decomp_tag);
+  void set_variable_metadata (const std::string& filename, const std::string& varname, const std::string& meta_name, const std::string& meta_val);
   /* Register a variable with a file.  Called during the file setup, for an input stream. */
-  void get_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const int numdims, const char**&& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
-  void get_variable(const std::string& filename,const std::string& shortname, const std::string& longname, const int numdims, const std::vector<std::string>& var_dimensions, const int dtype, const std::string& pio_decomp_tag);
+  void get_variable(const std::string& filename,const std::string& shortname, const std::string& longname,
+                    const std::vector<std::string>& var_dimensions,
+                    const std::string& dtype, const std::string& pio_decomp_tag);
   /* End the definition phase for a scorpio file.  Last thing called after all dimensions, variables, dof's and decomps have been set.  Called once per file.
    * Mandatory before writing or reading can happend on file. */
   void eam_pio_enddef(const std::string &filename);
   /* Called each timestep to update the timesnap for the last written output. */
-  void pio_update_time(const std::string &filename, const Real time);
+  void pio_update_time(const std::string &filename, const double time);
 
   // Read data for a specific variable from a specific file. To read data that
   // isn't associated with a time index, or to read data at the most recent
   // time, set time_index to -1. Otherwise use the proper zero-based time index.
+  template<typename T>
   void grid_read_data_array (const std::string &filename, const std::string &varname,
-                             const int time_index, void* hbuf);
+                             const int time_index, T* hbuf, const int buf_size);
   /* Write data for a specific variable to a specific file. */
+  template<typename T>
   void grid_write_data_array(const std::string &filename, const std::string &varname,
-                             const Real* hbuf);
+                             const T* hbuf, const int buf_size);
 
 extern "C" {
   /* Query whether the pio subsystem is inited or not */

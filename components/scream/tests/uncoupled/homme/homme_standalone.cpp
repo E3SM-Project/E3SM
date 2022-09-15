@@ -4,12 +4,11 @@
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "dynamics/register_dynamics.hpp"
 #include "dynamics/homme/atmosphere_dynamics.hpp"
-#include "dynamics/homme/dynamics_driven_grids_manager.hpp"
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
+#include "dynamics/homme/homme_dimensions.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/ekat_parse_yaml_file.hpp"
-#include "ekat/util/ekat_feutils.hpp"
 #include "ekat/ekat_assert.hpp"
 
 // Hommexx includes
@@ -17,25 +16,12 @@
 #include "FunctorsBuffersManager.hpp"
 #include "ElementsGeometry.hpp"
 #include "TimeLevel.hpp"
-#include "dynamics/homme/homme_dimensions.hpp"
 
 #include <iomanip>
-
-static int get_default_fpes () {
-#ifdef SCREAM_FPE
-  return (FE_DIVBYZERO |
-          FE_INVALID   |
-          FE_OVERFLOW);
-#else
-  return 0;
-#endif
-}
 
 TEST_CASE("scream_homme_standalone", "scream_homme_standalone") {
   using namespace scream;
   using namespace scream::control;
-
-  ekat::enable_fpes(get_default_fpes());
 
   // Create a comm
   ekat::Comm atm_comm (MPI_COMM_WORLD);
@@ -89,16 +75,6 @@ TEST_CASE("scream_homme_standalone", "scream_homme_standalone") {
       EKAT_KERNEL_ASSERT(phinh_i(ie,ip,jp,NVL) == phis(ie,ip,jp));
     });
   }
-
-  // Add checks to verify AD memory buffer and Homme FunctorsBuffersManager
-  // are the same size and reference the same memory.
-  auto& fbm  = Homme::Context::singleton().get<Homme::FunctorsBuffersManager>();
-  auto& memory_buffer = ad.get_memory_buffer();
-  REQUIRE (memory_buffer);
-  EKAT_ASSERT_MSG(fbm.allocated_size()*sizeof(Real) == (long unsigned int)memory_buffer->allocated_bytes(),
-                  "Error! AD memory buffer and Homme FunctorsBuffersManager have mismatched sizes.");
-  EKAT_ASSERT_MSG(fbm.get_memory() == memory_buffer->get_memory(),
-                  "Error! AD memory buffer and Homme FunctorsBuffersManager reference different memory.");
 
   if (atm_comm.am_i_root()) {
     printf("Start time stepping loop...       [  0%%]\n");

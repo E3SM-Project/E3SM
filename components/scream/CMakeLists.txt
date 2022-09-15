@@ -353,7 +353,17 @@ endif()
 # This is a meta-variable, which individual tests can use to set *different* degrees
 # of testing, in terms of resolutions. E.g., for SHORT use 3 timesteps, for MEDIUM use 10,
 # for LONG use 100. It is *completely* up to the test to decide what short, medium, and long mean.
-set(SCREAM_TEST_SIZE MEDIUM CACHE STRING "The kind of testing to perform: SHORT, MEDIUM, LONG. Only applies to certain tests and is generally used to reduce test length when valgrind/cuda-memcheck are on.")
+if (EKAT_ENABLE_COVERAGE OR EKAT_ENABLE_CUDA_MEMCHECK OR EKAT_ENABLE_VALGRIND)
+  set (SCREAM_TEST_SIZE_DEFAULT SHORT)
+  # also set thread_ing=$max_thread - 1, so we test at most 2 threading configurations
+  if (SCREAM_TEST_MAX_THREADS GREATER 1)
+    math (EXPR SCREAM_TEST_THREAD_INC ${SCREAM_TEST_MAX_THREADS}-1)
+  endif()
+else()
+  set (SCREAM_TEST_SIZE_DEFAULT MEDIUM)
+endif()
+
+set(SCREAM_TEST_SIZE ${SCREAM_TEST_SIZE_DEFAULT} CACHE STRING "The kind of testing to perform: SHORT, MEDIUM, LONG. Only applies to certain tests and is generally used to reduce test length when valgrind/cuda-memcheck are on.")
 set(SCREAM_TEST_VALID_SIZES "SHORT;MEDIUM;LONG" CACHE INTERNAL "List of valid values for SCREAM_TEST_SIZE")
 
 # Whether to use XYZ as a method to detect memory usage.
@@ -364,8 +374,10 @@ option (SCREAM_ENABLE_STATM "Whether /proc/self/statm can be used to get memory 
 set (SCREAM_DISABLE_TPL_WARNINGS ON CACHE BOOL "")
 
 include(EkatBuildEkat)
-set (EKAT_ENABLE_TESTS OFF CACHE BOOL "Whether to build EKAT's tests. Off by default.")
-BuildEkat(PREFIX "SCREAM")
+BuildEkat(PREFIX "SCREAM"
+  ENABLE_TESTS OFF
+  ENABLE_FPE   ON
+  ENABLE_FPE_DEFAULT_MASK OFF)
 
 # Set compiler-specific flags
 include(EkatSetCompilerFlags)
@@ -400,6 +412,9 @@ print_var(SCREAM_FPMODEL)
 print_var(SCREAM_MPIRUN_EXE)
 print_var(SCREAM_LIB_ONLY)
 print_var(SCREAM_TPL_LIBRARIES)
+print_var(SCREAM_TEST_MAX_THREADS)
+print_var(SCREAM_TEST_THREAD_INC)
+print_var(SCREAM_TEST_MAX_RANKS)
 
 # This must be done using add_definitions because it is used to determine
 # whether to include scream_config.h.

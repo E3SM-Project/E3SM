@@ -25,32 +25,19 @@ public:
 
   virtual ~MeshFreeGridsManager () = default;
 
-  std::string name () const { return "Mesh-Free Grids Manager"; }
+  std::string name () const { return "Mesh-Free grids_manager"; }
 
-  std::set<std::string> supported_grids () const {
-    std::set<std::string> gnames;
-
-    gnames.insert("Point Grid");
-    gnames.insert("SE Grid");
-
-    return gnames;
-  }
-
-  void build_grids (const std::set<std::string>& grid_names);
-
-  const grid_repo_type& get_repo () const { return m_grids; }
+  void build_grids ();
 
 protected:
 
   std::string get_reference_grid_name () const {
-    return m_params.get<std::string>("Reference Grid");
+    return m_params.get<std::string>("reference_grid");
   }
 
   remapper_ptr_type
   do_create_remapper (const grid_ptr_type from_grid,
                       const grid_ptr_type to_grid) const;
-
-  grid_repo_type      m_grids;
 
   remap_repo_type     m_remappers;
 

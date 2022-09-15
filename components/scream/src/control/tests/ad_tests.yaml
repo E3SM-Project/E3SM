@@ -1,9 +1,9 @@
 %YAML 1.1
 ---
 Debug:
-  Atmosphere DAG Verbosity Level: 5
+  atmosphere_dag_verbosity_level: 5
 
-Initial Conditions:
+initial_conditions:
   Filename: should_not_be_neeeded_and_code_will_throw_if_it_tries_to_open_this_nonexistent_file.nc
   A: 1.0
   V: [2.0, 3.0]
@@ -11,7 +11,7 @@ Initial Conditions:
 
 atmosphere_processes:
   atm_procs_list: (dummy1, dummy2, dummy3)
-  Schedule Type: Sequential
+  schedule_type: Sequential
 
   dummy1:
     Type: Dummy
@@ -26,7 +26,8 @@ atmosphere_processes:
     Sub Name: Group to A
     Grid Name: Point Grid
 
-Grids Manager:
-  Type: User Provided
-  Reference Grid: Point Grid
+grids_manager:
+  Type: Mesh Free
+  number_of_global_columns: 24
+  number_of_vertical_levels: 3
 ...

@@ -4,12 +4,12 @@
 #endif
 
 module homme_driver_mod
-  use iso_c_binding, only: c_ptr, c_int, c_double, c_bool, C_NULL_CHAR
+  use iso_c_binding,     only: c_ptr, c_int, c_double, c_bool, C_NULL_CHAR
 
   use parallel_mod,  only: abortmp
 
   implicit none
-  private 
+  private
 
   public :: prim_init_data_structures_f90
   public :: prim_complete_init1_phase_f90
@@ -28,6 +28,7 @@ contains
     use time_mod,             only: TimeLevel_init
     use homme_context_mod,    only: is_geometry_inited, is_data_structures_inited, &
                                     par, elem, tl, deriv, hvcoord
+    use kinds,                only: iulog
 
     if (is_data_structures_inited) then
       call abortmp ("Error! prim_init_data_structures_f90 was already called.\n")
@@ -35,7 +36,7 @@ contains
       call abortmp ("Error! 'homme_init_grids_f90 was not called yet.\n")
     endif
 
-    if (par%masterproc) print *, "Initing prim data structures..."
+    if (par%masterproc) write(iulog, *) "Initing prim data structures..."
 
     ! ==================================
     ! Initialize derivative structure
@@ -66,7 +67,7 @@ contains
     use homme_context_mod, only: par, elem
     use compose_mod,       only: compose_control_kokkos_init_and_fin
     use prim_driver_mod,   only: prim_init_grid_views
-    
+
     ! Compose is not in charge of init/finalize kokkos
     call compose_control_kokkos_init_and_fin(.false.)
 
@@ -126,7 +127,7 @@ contains
                                    elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v, &
                                    elem_state_Qdp, elem_state_Q, elem_derived_omega_p,   &
                                    elem_state_phis
-    
+
     !
     ! Inputs
     !
@@ -142,7 +143,7 @@ contains
     type (c_ptr) :: elem_state_phis_local_ptr, elem_derived_gradphis_local_ptr
     real (kind=real_kind), target, dimension(np,np)   :: elem_state_phis_local
     real (kind=real_kind), target, dimension(np,np,2) :: elem_gradphis_local
-    
+
     ! Set pointers to states
     elem_state_v_ptr         = c_loc(elem_state_v)
     elem_state_w_i_ptr       = c_loc(elem_state_w_i)
@@ -219,14 +220,15 @@ contains
 
     is_model_inited = .true.
 
-  end subroutine prim_init_model_f90 
+  end subroutine prim_init_model_f90
 
-  subroutine prim_run_f90 () bind(c)
+  subroutine prim_run_f90 (nsplit_iteration) bind(c)
     use dimensions_mod,    only: nelemd
     use prim_driver_mod,   only: prim_run_subcycle
-
     use time_mod,          only: tstep
     use homme_context_mod, only: is_model_inited, elem, hybrid, tl, hvcoord
+
+    integer(kind=c_int), value, intent(in) :: nsplit_iteration
 
     if (.not. is_model_inited) then
       call abortmp ("Error! prim_init_model_f90 was not called yet (or prim_finalize_f90 was already called).\n")
@@ -236,11 +238,11 @@ contains
       call abortmp ("Error! No time step was set in Homme yet.\n")
     endif
 
-    call prim_run_subcycle(elem,hybrid,1,nelemd,tstep,.false.,tl,hvcoord,1)
+    call prim_run_subcycle(elem,hybrid,1,nelemd,tstep,.false.,tl,hvcoord,nsplit_iteration)
   end subroutine prim_run_f90
 
   subroutine prim_finalize_f90 () bind(c)
-    use homme_context_mod,    only: is_model_inited, elem, dom_mt
+    use homme_context_mod,    only: is_model_inited, elem, dom_mt, close_homme_log
     use prim_cxx_driver_base, only: prim_finalize
 
     if (.not. is_model_inited) then
@@ -255,6 +257,8 @@ contains
     deallocate (dom_mt)
 
     is_model_inited = .false.
+
+    call close_homme_log()
 
   end subroutine prim_finalize_f90
 

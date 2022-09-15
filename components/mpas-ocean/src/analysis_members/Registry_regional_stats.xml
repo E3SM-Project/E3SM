@@ -11,19 +11,16 @@
 		<var name="regionalStatsOneString"
 			 type="text"
 			 dimensions="Time"
-			 units="unitless"
 			 description="a placeholder string so that regionalStats has a memory to duplicate per instance"
 		/>
 		<var name="regionalStatsOneInteger"
 			 type="integer"
 			 dimensions="Time"
-			 units="unitless"
 			 description="a placeholder integer so that regionalStats has a memory to duplicate per instance"
 		/>
 		<var name="regionalStatsOneReal"
 			 type="real"
 			 dimensions="Time"
-			 units="unitless"
 			 description="a placeholder real so that regionalStats has a memory to duplicate per instance"
 		/>
 	</var_struct>

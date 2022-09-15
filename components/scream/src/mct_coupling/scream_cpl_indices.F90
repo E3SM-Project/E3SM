@@ -1,29 +1,35 @@
 module scream_cpl_indices
 
-  use iso_c_binding, only: c_int, c_char, c_bool
+  use iso_c_binding, only: c_int, c_double, c_char, c_bool
 
   implicit none
   private
 
   ! Focus only on the ones that scream imports/exports (subsets of x2a and a2x)
-  integer, parameter, public :: num_scream_imports       = 9
-  integer, parameter, public :: num_scream_exports       = 16
-  integer, public :: num_cpl_imports, num_cpl_exports
-
-  ! cpl indices for import/export fields
-  integer(kind=c_int), public, allocatable, target :: index_x2a(:)
-  integer(kind=c_int), public, allocatable, target :: index_a2x(:)
+  integer, parameter, public :: num_scream_imports = 9
+  integer, parameter, public :: num_scream_exports = 17
+  integer, public :: num_cpl_imports, num_cpl_exports, import_field_size, export_field_size
 
   ! Names used by scream for import/export fields
-  character(len=32,kind=c_char), public, allocatable, target :: scr_names_a2x(:)
-  character(len=32,kind=c_char), public, allocatable, target :: scr_names_x2a(:)
+  character(len=32,kind=c_char), public, allocatable, target :: import_field_names(:)
+  character(len=32,kind=c_char), public, allocatable, target :: export_field_names(:)
+
+  ! cpl indices for import/export fields
+  integer(kind=c_int), public, allocatable, target :: import_cpl_indices(:)
+  integer(kind=c_int), public, allocatable, target :: export_cpl_indices(:)
 
   ! Vector component of import/export fields. If not a vector field, set to -1.
-  integer(kind=c_int), public, allocatable, target :: vec_comp_a2x(:)
-  integer(kind=c_int), public, allocatable, target :: vec_comp_x2a(:)
+  integer(kind=c_int), public, allocatable, target :: import_vector_components(:)
+  integer(kind=c_int), public, allocatable, target :: export_vector_components(:)
 
-  ! Stores whether or not field can be exported during initialization
-  logical(kind=c_bool), public, allocatable, target :: can_be_exported_during_init(:)
+  ! Constant multiple to apply to import/export fields. Currently used for fluxes
+  ! which have different interpretation of direction between cpl and scream
+  real(kind=c_double), public, allocatable, target :: import_constant_multiple(:)
+  real(kind=c_double), public, allocatable, target :: export_constant_multiple(:)
+
+  ! Stores whether or not field should/can be imported/exported during initialization
+  logical(kind=c_bool), public, allocatable, target :: do_import_during_init(:)
+  logical(kind=c_bool), public, allocatable, target :: do_export_during_init(:)
 
   public :: scream_set_cpl_indices
 
@@ -40,90 +46,147 @@ module scream_cpl_indices
     !
     ! Local(s)
     !
-    integer :: i,idx
+    integer :: i
 
-    ! total number of import/export var in data
+    ! total number of import/export fields in data
     num_cpl_imports = size(x2a%rAttr,1)
     num_cpl_exports = size(a2x%rAttr,1)
 
-    allocate (index_x2a(num_cpl_imports))
-    allocate (index_a2x(num_cpl_exports))
+    ! Size of import and export fields data
+    import_field_size = size(x2a%rAttr,2)
+    export_field_size = size(a2x%rAttr,2)
 
-    allocate (scr_names_x2a(num_cpl_imports))
-    allocate (scr_names_a2x(num_cpl_exports))
+    ! IMPORT
 
-    allocate (vec_comp_x2a(num_cpl_imports))
-    allocate (vec_comp_a2x(num_cpl_exports))
-
-    allocate (can_be_exported_during_init(num_cpl_exports))
+    ! Import info is of size num_scream_imports. Any additional imports are not touched.
+    allocate (import_field_names(num_scream_imports))
+    allocate (import_cpl_indices(num_scream_imports))
+    allocate (import_vector_components(num_scream_imports))
+    allocate (import_constant_multiple(num_scream_imports))
+    allocate (do_import_during_init(num_scream_imports))
 
     ! Initialize arrays
-    do i=1,num_cpl_imports
-      index_x2a(i) = i
-      scr_names_x2a(i) = 'unused'
-      vec_comp_x2a(i) = -1
-    enddo
-    do i=1,num_cpl_exports
-      index_a2x(i) = i
-      scr_names_a2x(i) = 'set_zero'
-      vec_comp_a2x(i) = -1
-      can_be_exported_during_init(i) = .true.
+    do i=1,num_scream_imports
+      import_vector_components(i) = -1
+      import_constant_multiple(i) = 1
+      do_import_during_init(i) = .true.
     enddo
 
-    ! The following are imported to SCREAM
-    scr_names_x2a(mct_avect_indexra(x2a,'Sx_avsdr'))  = 'sfc_alb_dir_vis'
-    scr_names_x2a(mct_avect_indexra(x2a,'Sx_anidr'))  = 'sfc_alb_dir_nir'
-    scr_names_x2a(mct_avect_indexra(x2a,'Sx_avsdf'))  = 'sfc_alb_dif_vis'
-    scr_names_x2a(mct_avect_indexra(x2a,'Sx_anidf'))  = 'sfc_alb_dif_nir'
-    scr_names_x2a(mct_avect_indexra(x2a,'Faxx_taux')) = 'surf_mom_flux'
-    scr_names_x2a(mct_avect_indexra(x2a,'Faxx_tauy')) = 'surf_mom_flux'
-    scr_names_x2a(mct_avect_indexra(x2a,'Faxx_sen'))  = 'surf_sens_flux'
-    scr_names_x2a(mct_avect_indexra(x2a,'Faxx_evap')) = 'surf_evap'
-    scr_names_x2a(mct_avect_indexra(x2a,'Faxx_lwup')) = 'surf_lw_flux_up'
+    ! SCREAM names
+    import_field_names(1) = 'sfc_alb_dir_vis'
+    import_field_names(2) = 'sfc_alb_dir_nir'
+    import_field_names(3) = 'sfc_alb_dif_vis'
+    import_field_names(4) = 'sfc_alb_dif_nir'
+    import_field_names(5) = 'surf_lw_flux_up'
+    import_field_names(6) = 'surf_mom_flux'
+    import_field_names(7) = 'surf_mom_flux'
+    import_field_names(8) = 'surf_sens_flux'
+    import_field_names(9) = 'surf_evap'
 
-    vec_comp_x2a(mct_avect_indexra(x2a,'Faxx_taux')) = 0
-    vec_comp_x2a(mct_avect_indexra(x2a,'Faxx_tauy')) = 1
+    ! CPL indices
+    import_cpl_indices(1) = mct_avect_indexra(x2a,'Sx_avsdr')
+    import_cpl_indices(2) = mct_avect_indexra(x2a,'Sx_anidr')
+    import_cpl_indices(3) = mct_avect_indexra(x2a,'Sx_avsdf')
+    import_cpl_indices(4) = mct_avect_indexra(x2a,'Sx_anidf')
+    import_cpl_indices(5) = mct_avect_indexra(x2a,'Faxx_lwup')
+    import_cpl_indices(6) = mct_avect_indexra(x2a,'Faxx_taux')
+    import_cpl_indices(7) = mct_avect_indexra(x2a,'Faxx_tauy')
+    import_cpl_indices(8) = mct_avect_indexra(x2a,'Faxx_sen')
+    import_cpl_indices(9) = mct_avect_indexra(x2a,'Faxx_evap')
 
-    ! The following are exported from SCREAM
-    scr_names_a2x(mct_avect_indexra(a2x,'Sa_z'))       = 'Sa_z'
-    scr_names_a2x(mct_avect_indexra(a2x,'Sa_u'))       = 'horiz_winds'
-    scr_names_a2x(mct_avect_indexra(a2x,'Sa_v'))       = 'horiz_winds'
-    scr_names_a2x(mct_avect_indexra(a2x,'Sa_tbot'))    = 'T_mid'
-    scr_names_a2x(mct_avect_indexra(a2x,'Sa_ptem'))    = 'Sa_ptem'
-    scr_names_a2x(mct_avect_indexra(a2x,'Sa_pbot'))    = 'p_mid'
-    scr_names_a2x(mct_avect_indexra(a2x,'Sa_shum'))    = 'qv'
-    scr_names_a2x(mct_avect_indexra(a2x,'Sa_dens'))    = 'Sa_dens'
-    scr_names_a2x(mct_avect_indexra(a2x,'Sa_pslv'))    = 'Sa_pslv'
-    scr_names_a2x(mct_avect_indexra(a2x,'Faxa_rainl')) = 'Faxa_rainl'
-    scr_names_a2x(mct_avect_indexra(a2x,'Faxa_snowl')) = 'Faxa_snowl'
-    scr_names_a2x(mct_avect_indexra(a2x,'Faxa_swndr')) = 'sfc_flux_dir_nir'
-    scr_names_a2x(mct_avect_indexra(a2x,'Faxa_swvdr')) = 'sfc_flux_dir_vis'
-    scr_names_a2x(mct_avect_indexra(a2x,'Faxa_swndf')) = 'sfc_flux_dif_nir'
-    scr_names_a2x(mct_avect_indexra(a2x,'Faxa_swvdf')) = 'sfc_flux_dif_vis'
-    scr_names_a2x(mct_avect_indexra(a2x,'Faxa_swnet')) = 'sfc_flux_sw_net'
-    scr_names_a2x(mct_avect_indexra(a2x,'Faxa_lwdn'))  = 'sfc_flux_lw_dn'
+    ! Vector components
+    import_vector_components(6) = 0
+    import_vector_components(7) = 1
 
-    vec_comp_a2x(mct_avect_indexra(a2x,'Sa_u')) = 0
-    vec_comp_a2x(mct_avect_indexra(a2x,'Sa_v')) = 1
+    ! Constant multiples
+    import_constant_multiple(5) = -1
+    import_constant_multiple(6) = -1
+    import_constant_multiple(7) = -1
+    import_constant_multiple(8) = -1
+    import_constant_multiple(9) = -1
 
-    ! SCREAM needs to run before this field can be exported as they
-    ! rely on fields computed by SCREAM
-    can_be_exported_during_init(mct_avect_indexra(a2x,'Faxa_rainl')) = .false.
-    can_be_exported_during_init(mct_avect_indexra(a2x,'Faxa_snowl')) = .false.
-    can_be_exported_during_init(mct_avect_indexra(a2x,'Faxa_swndr')) = .false.
-    can_be_exported_during_init(mct_avect_indexra(a2x,'Faxa_swvdr')) = .false.
-    can_be_exported_during_init(mct_avect_indexra(a2x,'Faxa_swndf')) = .false.
-    can_be_exported_during_init(mct_avect_indexra(a2x,'Faxa_swvdf')) = .false.
-    can_be_exported_during_init(mct_avect_indexra(a2x,'Faxa_swnet')) = .false.
-    can_be_exported_during_init(mct_avect_indexra(a2x,'Faxa_lwdn'))  = .false.
+    ! Does this field need to be imported during intialization
+    do_import_during_init(1) = .false.
+    do_import_during_init(2) = .false.
+    do_import_during_init(3) = .false.
+    do_import_during_init(4) = .false.
+    do_import_during_init(5) = .false.
+
+    ! EXPORT
+
+    ! Export info is of size num_cpl_imports. If SCREAM does not export a field, it is set to zero.
+    allocate (export_field_names(num_scream_exports))
+    allocate (export_cpl_indices(num_scream_exports))
+    allocate (export_vector_components(num_scream_exports))
+    allocate (export_constant_multiple(num_scream_exports))
+    allocate (do_export_during_init(num_scream_exports))
+
+    ! Initialize arrays
+    do i=1,num_scream_exports
+      export_vector_components(i) = -1
+      export_constant_multiple(i) = 1
+      do_export_during_init(i) = .true.
+    enddo
+
+    ! SCREAM names
+    export_field_names(1)  = 'Sa_z'
+    export_field_names(2)  = 'horiz_winds'
+    export_field_names(3)  = 'horiz_winds'
+    export_field_names(4)  = 'T_mid'
+    export_field_names(5)  = 'Sa_ptem'
+    export_field_names(6)  = 'p_mid'
+    export_field_names(7)  = 'qv'
+    export_field_names(8)  = 'Sa_dens'
+    export_field_names(9)  = 'Sa_pslv'
+    export_field_names(10) = 'Faxa_rainl'
+    export_field_names(11) = 'Faxa_snowl'
+    export_field_names(12) = 'sfc_flux_dir_nir'
+    export_field_names(13) = 'sfc_flux_dir_vis'
+    export_field_names(14) = 'sfc_flux_dif_nir'
+    export_field_names(15) = 'sfc_flux_dif_vis'
+    export_field_names(16) = 'sfc_flux_sw_net'
+    export_field_names(17) = 'sfc_flux_lw_dn'
+
+    ! CPL indices
+    export_cpl_indices(1)  = mct_avect_indexra(a2x,'Sa_z')
+    export_cpl_indices(2)  = mct_avect_indexra(a2x,'Sa_u')
+    export_cpl_indices(3)  = mct_avect_indexra(a2x,'Sa_v')
+    export_cpl_indices(4)  = mct_avect_indexra(a2x,'Sa_tbot')
+    export_cpl_indices(5)  = mct_avect_indexra(a2x,'Sa_ptem')
+    export_cpl_indices(6)  = mct_avect_indexra(a2x,'Sa_pbot')
+    export_cpl_indices(7)  = mct_avect_indexra(a2x,'Sa_shum')
+    export_cpl_indices(8)  = mct_avect_indexra(a2x,'Sa_dens')
+    export_cpl_indices(9)  = mct_avect_indexra(a2x,'Sa_pslv')
+    export_cpl_indices(10) = mct_avect_indexra(a2x,'Faxa_rainl')
+    export_cpl_indices(11) = mct_avect_indexra(a2x,'Faxa_snowl')
+    export_cpl_indices(12) = mct_avect_indexra(a2x,'Faxa_swndr')
+    export_cpl_indices(13) = mct_avect_indexra(a2x,'Faxa_swvdr')
+    export_cpl_indices(14) = mct_avect_indexra(a2x,'Faxa_swndf')
+    export_cpl_indices(15) = mct_avect_indexra(a2x,'Faxa_swvdf')
+    export_cpl_indices(16) = mct_avect_indexra(a2x,'Faxa_swnet')
+    export_cpl_indices(17) = mct_avect_indexra(a2x,'Faxa_lwdn')
+
+    ! Vector components
+    export_vector_components(2) = 0
+    export_vector_components(3) = 1
+
+    ! Does this field need to be imported during intialization
+    do_export_during_init(10) = .false.
+    do_export_during_init(11) = .false.
+    do_export_during_init(12) = .false.
+    do_export_during_init(13) = .false.
+    do_export_during_init(14) = .false.
+    do_export_during_init(15) = .false.
+    do_export_during_init(16) = .false.
+    do_export_during_init(17) = .false.
 
     ! Trim names
-    do i=1,num_cpl_imports
-      scr_names_x2a(i) = TRIM(scr_names_x2a(i)) // C_NULL_CHAR
+    do i=1,num_scream_imports
+      import_field_names(i) = TRIM(import_field_names(i)) // C_NULL_CHAR
     enddo
 
-    do i=1,num_cpl_exports
-      scr_names_a2x(i) = TRIM(scr_names_a2x(i)) // C_NULL_CHAR
+    do i=1,num_scream_exports
+      export_field_names(i) = TRIM(export_field_names(i)) // C_NULL_CHAR
     enddo
 
   end subroutine scream_set_cpl_indices

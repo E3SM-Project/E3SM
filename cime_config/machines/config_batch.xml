@@ -65,10 +65,11 @@
    </batch_system>
 
    <batch_system MACH="crusher" type="slurm">
+     <batch_submit>/gpfs/alpine/cli133/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
      <queues>
-       <queue strict="true" nodemin="1" nodemax="8" walltimemax="08:00:00" default="true">batch</queue>
-       <queue strict="true" nodemin="9" nodemax="64" walltimemax="04:00:00">batch</queue>
-       <queue strict="true" nodemin="65" nodemax="160" walltimemax="02:00:00">batch</queue>
+       <queue strict="true" nodemin="1" nodemax="8" walltimemax="01:00:00" default="true">batch</queue>
+       <queue strict="true" nodemin="9" nodemax="64" walltimemax="01:00:00">batch</queue>
+       <queue strict="true" nodemin="65" nodemax="160" walltimemax="01:00:00">batch</queue>
      </queues>
    </batch_system>
 
@@ -524,6 +525,16 @@
 	</queues>
     </batch_system>
 
+   <batch_system MACH="chicoma-cpu" type="slurm">
+    <directives>
+     <directive>--partition=standard </directive>
+     <directive>--qos=standard </directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" nodemax="560" default="true">standard</queue>
+    </queues>
+   </batch_system>
+
     <batch_system MACH="mesabi" type="pbs">
       <queues>
         <queue walltimemax="24:00" default="true">mesabi</queue>
@@ -579,6 +590,7 @@
    </batch_system>
 
    <batch_system MACH="ascent" type="lsf" >
+     <batch_submit>/gpfs/wolf/cli115/world-shared/e3sm/tools/bsub/throttle</batch_submit>
      <directives>
        <directive>-P {{ project }}</directive>
      </directives>
@@ -644,7 +656,7 @@
        <queue walltimemax="01:30:00" default="true">compute</queue>
      </queues>
    </batch_system>
-   
+
   <!-- modex is PBS -->
   <batch_system MACH="modex" type="pbs">
     <directives>

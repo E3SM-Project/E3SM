@@ -170,6 +170,12 @@ void SPAFunctions<S,D>
 
   auto delta_t_fraction = (t_now-t_beg) / delta_t;
 
+  EKAT_REQUIRE_MSG (delta_t_fraction>=0 && delta_t_fraction<=1,
+      "Error! Convex interpolation with coefficient out of [0,1].\n"
+      "  t_now  : " + std::to_string(t_now) + "\n"
+      "  t_beg  : " + std::to_string(t_beg) + "\n"
+      "  delta_t: " + std::to_string(delta_t) + "\n");
+
   Kokkos::parallel_for("spa_time_interp_loop", policy,
     KOKKOS_LAMBDA(const MemberType& team) {
 
@@ -378,11 +384,11 @@ void SPAFunctions<S,D>
   std::vector<std::string> vec_of_dims = {"n_s"};
   std::string r_decomp = "Real-n_s";
   std::string i_decomp = "Int-n_s";
-  scorpio::get_variable(remap_file_name, "S", "S", vec_of_dims.size(), vec_of_dims, PIO_REAL, r_decomp);
-  scorpio::get_variable(remap_file_name, "row", "row", vec_of_dims.size(), vec_of_dims, PIO_INT, i_decomp);
-  scorpio::get_variable(remap_file_name, "col", "col", vec_of_dims.size(), vec_of_dims, PIO_INT, i_decomp);
+  scorpio::get_variable(remap_file_name, "S", "S", vec_of_dims, "real", r_decomp);
+  scorpio::get_variable(remap_file_name, "row", "row", vec_of_dims, "int", i_decomp);
+  scorpio::get_variable(remap_file_name, "col", "col", vec_of_dims, "int", i_decomp);
   // Set the dof's to read in variables, since we will have all mpi ranks read in the full set of data the dof's are the whole array
-  std::vector<int> var_dof(spa_horiz_interp.length);
+  std::vector<scorpio::offset_t> var_dof(spa_horiz_interp.length);
   std::iota(var_dof.begin(),var_dof.end(),0);
   scorpio::set_dof(remap_file_name,"S",var_dof.size(),var_dof.data());
   scorpio::set_dof(remap_file_name,"row",var_dof.size(),var_dof.data());
@@ -390,9 +396,9 @@ void SPAFunctions<S,D>
   scorpio::set_decomp(remap_file_name);
   
   // Now read all of the input
-  scorpio::grid_read_data_array(remap_file_name,"S",-1,S_global_h.data()); 
-  scorpio::grid_read_data_array(remap_file_name,"row",-1,row_global_h.data()); 
-  scorpio::grid_read_data_array(remap_file_name,"col",-1,col_global_h.data()); 
+  scorpio::grid_read_data_array(remap_file_name,"S",  -1,S_global_h.data(),S_global_h.size()); 
+  scorpio::grid_read_data_array(remap_file_name,"row",-1,row_global_h.data(),row_global_h.size()); 
+  scorpio::grid_read_data_array(remap_file_name,"col",-1,col_global_h.data(),col_global_h.size()); 
 
   // Finished, close the file
   scorpio::eam_pio_closefile(remap_file_name);
@@ -692,9 +698,10 @@ void SPAFunctions<S,D>
   //        any other frequency.
   const auto month = ts.get_month();
   if (month != time_state.current_month or !time_state.inited) {
+
     // Update the SPA time state information
     time_state.current_month = month;
-    time_state.t_beg_month = util::TimeStamp({0,month,1}, {0,0,0}).frac_of_year_in_days();
+    time_state.t_beg_month = util::TimeStamp({ts.get_year(),month,1}, {0,0,0}).frac_of_year_in_days();
     time_state.days_this_month = util::days_in_month(ts.get_year(),month);
     // Update the SPA forcing data for this month and next month
     // Start by copying next months data to this months data structure.  

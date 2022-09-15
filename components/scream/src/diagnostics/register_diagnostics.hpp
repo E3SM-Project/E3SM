@@ -14,8 +14,15 @@
 #include "diagnostics/sea_level_pressure.hpp"
 #include "diagnostics/liquid_water_path.hpp"
 #include "diagnostics/ice_water_path.hpp"
+#include "diagnostics/rime_water_path.hpp"
 #include "diagnostics/vapor_water_path.hpp"
 #include "diagnostics/rain_water_path.hpp"
+#include "diagnostics/shortwave_cloud_forcing.hpp"
+#include "diagnostics/longwave_cloud_forcing.hpp"
+#include "diagnostics/relative_humidity.hpp"
+#include "diagnostics/zonal_vapor_flux.hpp"
+#include "diagnostics/meridional_vapor_flux.hpp"
+
 
 namespace scream {
 
@@ -34,6 +41,13 @@ inline void register_diagnostics () {
   diag_factory.register_product("IceWaterPath",&create_atmosphere_diagnostic<IceWaterPathDiagnostic>);
   diag_factory.register_product("VapWaterPath",&create_atmosphere_diagnostic<VapWaterPathDiagnostic>);
   diag_factory.register_product("RainWaterPath",&create_atmosphere_diagnostic<RainWaterPathDiagnostic>);
+  diag_factory.register_product("RimeWaterPath",&create_atmosphere_diagnostic<RimeWaterPathDiagnostic>);
+  diag_factory.register_product("ShortwaveCloudForcing",&create_atmosphere_diagnostic<ShortwaveCloudForcingDiagnostic>);
+  diag_factory.register_product("LongwaveCloudForcing",&create_atmosphere_diagnostic<LongwaveCloudForcingDiagnostic>);
+  diag_factory.register_product("RelativeHumidity",&create_atmosphere_diagnostic<RelativeHumidityDiagnostic>);
+  diag_factory.register_product("ZonalVapFlux",&create_atmosphere_diagnostic<ZonalVapFluxDiagnostic>);
+  diag_factory.register_product("MeridionalVapFlux",&create_atmosphere_diagnostic<MeridionalVapFluxDiagnostic>);
+
 }
 
 } // namespace scream

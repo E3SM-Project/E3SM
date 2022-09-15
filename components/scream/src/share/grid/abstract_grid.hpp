@@ -69,6 +69,8 @@ public:
   GridType type () const { return m_type; }
   const std::string& name () const { return m_name; }
   const ekat::Comm& get_comm () const { return m_comm; }
+  const std::vector<std::string>& aliases () const { return m_aliases; }
+  void add_alias (const std::string& alias);
 
   // Native layout of a dof. This is the natural way to index a dof in the grid.
   // E.g., for a scalar 2d field on a SE grid, this will be (nelem,np,np),
@@ -126,6 +128,10 @@ public:
 
   std::list<std::string> get_geometry_data_names () const;
 
+  virtual std::shared_ptr<AbstractGrid> clone (const std::string& clone_name,
+                                               const bool shallow) const = 0;
+
+  void reset_num_vertical_lev (const int num_vertical_lev);
 protected:
 
   // Derived classes can override these methods, which are called inside the
@@ -136,11 +142,15 @@ protected:
   virtual bool valid_dofs_list (const dofs_list_type& /*dofs_gids*/)      const { return true; }
   virtual bool valid_lid_to_idx_map (const lid_to_idx_map_type& /*lid_to_idx*/) const { return true; }
 
+  void copy_views (const AbstractGrid& src, const bool shallow = true);
+
 private:
 
   // The grid name and type
   GridType     m_type;
   std::string  m_name;
+
+  std::vector<std::string> m_aliases;
 
   // Counters
   int m_num_local_dofs;
