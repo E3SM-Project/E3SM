@@ -1709,6 +1709,7 @@ v=accumulatedLandIceFrazilSalinityFlux; write(m,"('LandIceFrazilSalinityFlux',es
          relativeCarbonErrorBoundsFac = 1.e-2
          relativeCarbonErrorBounds =  &
            relativeCarbonErrorStepBounds*relativeCarbonErrorBoundsFac*totalTimeSteps
+         relativeCarbonErrorPerTimeStep = relativeCarbonError/accumulatedFluxCounter
          
          !-------------------------------------------------------------
          ! Output to log file
@@ -1784,6 +1785,14 @@ v=accumulatedLandIceFrazilSalinityFlux; write(m,"('LandIceFrazilSalinityFlux',es
             call mpas_log_write(m)
             call mpas_log_write(' ')
             
+            write(m,"('Relative carbon error per timestep =    ', es16.8)")  &
+                       relativeCarbonErrorPerTimeStep
+            call mpas_log_write(m)
+            write(m,"('Relative carbon error per timestep bounds =    ', es16.8)")  &
+                       relativeCarbonErrorStepBounds
+            call mpas_log_write(m)
+            call mpas_log_write(' ')
+
             write(m,"('Accumulated absolute carbon error (kg) ', es16.8)")  &
                        accumulatedAbsoluteCarbonError*mmol_to_kg_C
             call mpas_log_write(m)
@@ -1796,7 +1805,6 @@ v=accumulatedLandIceFrazilSalinityFlux; write(m,"('LandIceFrazilSalinityFlux',es
             call mpas_log_write(m)
             call mpas_log_write(' ')
 
-            relativeCarbonErrorPerTimeStep = relativeCarbonError/accumulatedFluxCounter
             if (abs(relativeCarbonErrorPerTimeStep) > relativeCarbonErrorStepBounds) then
               if (conservationCheck_carbon_failure_abort) then
                 call mpas_log_write(  &
