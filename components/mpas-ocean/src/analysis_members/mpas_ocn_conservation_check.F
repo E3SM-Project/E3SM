@@ -1721,11 +1721,11 @@ v=accumulatedLandIceFrazilSalinityFlux; write(m,"('LandIceFrazilSalinityFlux',es
             call mpas_log_write('CARBON CONSERVATION CHECK')
             call mpas_log_write('')
             A = earthAreaE3SM
-            c = 1.0e6_RKIND/A
+            c = 1.0e10_RKIND/A
             s = 0.0_RKIND
             call mpas_log_write('CARBON FLUXES')
             call mpas_log_write(' ')
-            call mpas_log_write('MPAS-Ocean name             kg/s (raw sum)    coupler name    short name         kg/m^2/s*1.e6 (flux)')
+            call mpas_log_write('MPAS-Ocean name             kg/s (raw sum)    coupler name    short name         kg/m^2/s*1.e10 (flux)')
               v=accumulatedCarbonSourceSink*mmol_to_kg_C
               write(m,"('MarBL SrcSink+sedFlux     ',es16.8,'                                 ',f16.8)") v,v*c
               call mpas_log_write(m)
