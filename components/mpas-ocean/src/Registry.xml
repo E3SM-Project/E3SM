@@ -1140,9 +1140,13 @@
 					description="If true, ramp velocities and tendencies to zero rather than applying a simple on/off switch."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_zero_drying_velocity_ramp_hmin" type="real" default_value="1e-3"
+					description="Minimum layer thickness at which velocities and tendencies are ramped toward zero. Recommended value equal to config_drying_min_cell_height."
+					possible_values="Any positive real"
+		/>
 		<nml_option name="config_zero_drying_velocity_ramp_hmax" type="real" default_value="2e-3"
-					description="Maximum column thickness at which velocities and tendencies are ramped toward zero."
-					possible_values="Any positive real greater than config_drying_min_cell_height"
+					description="Maximum layer thickness at which velocities and tendencies are ramped toward zero. Recommended values between 2x and 10x config_drying_min_cell_height."
+					possible_values="Any positive real"
 		/>
 		<nml_option name="config_verify_not_dry" type="logical" default_value=".false." units="unitless"
 					description="If true, verify that cells are at least config_min_cell_height thick."
