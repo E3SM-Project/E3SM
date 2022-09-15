@@ -170,7 +170,9 @@ void SPA::initialize_impl (const RunType /* run_type */)
   using ci_string = ekat::CaseInsensitiveString;
   ci_string no_filename = "none";
   if (m_spa_remap_file == no_filename) {
-    printf("WARNING: spa_remap_file has been set to 'NONE', assuming that SPA data and simulation are on the same grid - skipping horizontal interpolation\n");
+    if (m_comm.am_i_root()) {
+      printf("WARNING: spa_remap_file has been set to 'NONE', assuming that SPA data and simulation are on the same grid - skipping horizontal interpolation\n");
+    }
     SPAFunc::set_remap_weights_one_to_one(m_min_global_dof,m_dofs_gids,SPAHorizInterp);
   } else {
     SPAFunc::get_remap_weights_from_file(m_spa_remap_file,m_min_global_dof,m_dofs_gids,SPAHorizInterp);

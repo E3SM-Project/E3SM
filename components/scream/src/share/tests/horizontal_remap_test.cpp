@@ -328,6 +328,7 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min
   auto y_2d_data_h = Kokkos::create_mirror_view(y_2d_data);
   auto y_3d_data_h = Kokkos::create_mirror_view(y_3d_data);
   Kokkos::deep_copy(y_2d_data_h,y_2d_data);
+  Kokkos::deep_copy(y_3d_data_h,y_3d_data);
   for (int ii=0; ii<num_loc_tgt_cols; ii++) {
     gid_type dof = dofs_gids_h(ii);
     auto y_base = y_baseline[dof];

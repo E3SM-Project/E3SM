@@ -593,6 +593,8 @@ void SPAFunctions<S,D>
   const int kidx = (source_data_nlevs+1) % Spack::n;
   hyam_h(pack)[kidx] = 1e5; 
   hybm_h(pack)[kidx] = 0.0;
+  Kokkos::deep_copy(spa_data.hyam,hyam_h);
+  Kokkos::deep_copy(spa_data.hybm,hybm_h);
   stop_timer("EAMxx::SPA::update_spa_data_from_file");
 
 } // END update_spa_data_from_file
