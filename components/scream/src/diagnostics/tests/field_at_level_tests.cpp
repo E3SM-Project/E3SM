@@ -115,6 +115,8 @@ TEST_CASE("field_at_level")
     // Check output
     auto d_mid = diag_mid->get_diagnostic();
     auto d_int = diag_int->get_diagnostic();
+    d_mid.sync_to_host();
+    d_int.sync_to_host();
 
     auto f_mid_v = f_mid.get_view<const Real**,Host>();
     auto f_int_v = f_int.get_view<const Real**,Host>();
