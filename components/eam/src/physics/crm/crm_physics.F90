@@ -563,7 +563,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    character(len=16) :: MMF_microphysics_scheme    ! CRM microphysics scheme
 
    logical(c_bool):: use_MMF_VT                    ! flag for MMF variance transport (for C++ CRM)
+   logical(c_bool):: use_MMF_ESMT                  ! flag for MMF scalar momentum transport (for C++ CRM)
    logical        :: use_MMF_VT_tmp                ! flag for MMF variance transport (for Fortran CRM)
+   logical        :: use_MMF_ESMT_tmp              ! flag for MMF scalar momentum transport (for Fortran CRM)
    integer        :: MMF_VT_wn_max                 ! wavenumber cutoff for filtered variance transport
 
    real(r8) :: tmp_e_sat                           ! temporary saturation vapor pressure
@@ -652,6 +654,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    call phys_getopts(use_MMF_VT_out = use_MMF_VT_tmp)
    call phys_getopts(MMF_VT_wn_max_out = MMF_VT_wn_max)
    use_MMF_VT = use_MMF_VT_tmp
+
+   ! CRM explicit scalar momentum transport (ESMT)
+   use_MMF_ESMT = .false.
+   call phys_getopts(use_MMF_ESMT_out = use_MMF_ESMT_tmp)
+   use_MMF_ESMT = use_MMF_ESMT_tmp
 
    ! CRM mean state acceleration (MSA) parameters
    use_crm_accel = .false.
@@ -1006,11 +1013,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             crm_input%ul(icrm,1:pver)     = state(c)%u(i,1:pver)
             crm_input%vl(icrm,1:pver)     = state(c)%v(i,1:pver)
             crm_input%ocnfrac(icrm)       = cam_in(c)%ocnfrac(i)
-#if defined( MMF_ESMT )
-            ! Set the input wind for ESMT
+            ! input wind for ESMT
             crm_input%ul_esmt(icrm,1:pver) = state(c)%u(i,1:pver)
             crm_input%vl_esmt(icrm,1:pver) = state(c)%v(i,1:pver)
-#endif /* MMF_ESMT */
             ! Variance transport
             if (use_MMF_VT) then
                crm_input%t_vt(icrm,:pver) = state(c)%q(i,:pver,idx_vt_t)
@@ -1123,9 +1128,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call crm(ncrms, ncrms, ztodt, pver, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, &
                crm_input%pmid, crm_input%pint, crm_input%pdel, crm_input%ul, crm_input%vl, &
                crm_input%tl, crm_input%qccl, crm_input%qiil, crm_input%ql, crm_input%tau00, &
-#ifdef MMF_ESMT
                crm_input%ul_esmt, crm_input%vl_esmt,                                        &
-#endif
                crm_input%t_vt, crm_input%q_vt, crm_input%u_vt, &
                crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, crm_state%temperature, &
                crm_state%qt, crm_state%qp, crm_state%qn, crm_rad%qrad, crm_rad%temperature, &
@@ -1142,18 +1145,13 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_output%sltend, crm_output%qltend, crm_output%qcltend, crm_output%qiltend, &
                crm_output%t_vt_tend, crm_output%q_vt_tend, crm_output%u_vt_tend, &
                crm_output%t_vt_ls, crm_output%q_vt_ls, crm_output%u_vt_ls, &
-#if defined(MMF_MOMENTUM_FEEDBACK)
                crm_output%ultend, crm_output%vltend, &
-#endif /* MMF_MOMENTUM_FEEDBACK */
                crm_output%tk, crm_output%tkh, crm_output%qcl, crm_output%qci, crm_output%qpl, crm_output%qpi, &
                crm_output%z0m, crm_output%taux, crm_output%tauy, crm_output%precc, crm_output%precl, crm_output%precsc, &
                crm_output%precsl, crm_output%prec_crm,                         &
-#ifdef MMF_ESMT
-               crm_output%u_tend_esmt, crm_output%v_tend_esmt,                 &
-#endif
                crm_clear_rh, &
                latitude0, longitude0, gcolp, nstep, &
-               use_MMF_VT, MMF_VT_wn_max, &
+               use_MMF_VT, MMF_VT_wn_max, use_MMF_ESMT, &
                use_crm_accel, crm_accel_factor, crm_accel_uv)
 
       call t_stopf('crm_call')
@@ -1339,15 +1337,15 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          ! CRM momentum tendencies
          !------------------------------------------------------------------------------------------
 
-#if defined( MMF_USE_ESMT )
-         ptend(c)%lu = .TRUE.
-         ptend(c)%lv = .TRUE.
-         do i = 1,ncol
-            icrm = ncol_sum + i
-            ptend(c)%u(i,1:pver)  = crm_output%u_tend_esmt(icrm,1:pver)
-            ptend(c)%v(i,1:pver)  = crm_output%v_tend_esmt(icrm,1:pver)
-         end do
-#else /* MMF_USE_ESMT not defined */  
+         if (use_MMF_ESMT) then
+            ptend(c)%lu = .TRUE.
+            ptend(c)%lv = .TRUE.
+            do i = 1,ncol
+               icrm = ncol_sum + i
+               ptend(c)%u(i,1:pver)  = crm_output%ultend(icrm,1:pver)
+               ptend(c)%v(i,1:pver)  = crm_output%vltend(icrm,1:pver)
+            end do
+         end if
 
 #if defined(MMF_MOMENTUM_FEEDBACK)
          ptend(c)%lu = .TRUE.
@@ -1359,8 +1357,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             ptend(c)%v(i,1:pver) = crm_output%vltend(icrm,1:pver) * cos( -1.*crm_angle(i) ) - crm_output%ultend(icrm,1:pver) * sin( -1.*crm_angle(i) )
          end do
 #endif /* MMF_MOMENTUM_FEEDBACK */
-
-#endif /* MMF_USE_ESMT */
 
          !------------------------------------------------------------------------------------------
          ! Write out data for history files

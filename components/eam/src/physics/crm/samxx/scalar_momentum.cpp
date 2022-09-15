@@ -16,8 +16,6 @@
 !---------------------------------------------------------------------------*/
 #include "scalar_momentum.h"
 
-#ifdef MMF_ESMT
-
 void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    /*!------------------------------------------------------------------
    ! Purpose: calculate pgf for scalar momentum transport
@@ -284,4 +282,3 @@ void scalar_momentum_tend() {
    });
 
 }
-#endif
