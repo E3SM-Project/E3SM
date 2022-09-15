@@ -505,7 +505,7 @@ void SPAFunctions<S,D>
   // For padded data we need create temporary arrays to store the direct remapped data, then we can add
   // padding.
   Int tgt_ncol = spa_data.data.ncols;
-  Int tgt_nlev = spa_data.data.nlevs;
+  Int tgt_nlev = spa_data.data.nlevs-2;  // Note, the spa data already accounts for padding in the nlevs, so we subtract 2
   view_2d<Real> CCN3_unpad("",tgt_ncol,tgt_nlev);
   view_3d<Real> AER_G_SW_unpad("",tgt_ncol,nswbands,tgt_nlev);
   view_3d<Real> AER_SSA_SW_unpad("",tgt_ncol,nswbands,tgt_nlev);
