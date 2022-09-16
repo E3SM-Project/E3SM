@@ -1013,7 +1013,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 
 	const char *structname, *structlevs, *structpackages;
 	const char *substructname;
-	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrdefaultval, *vararrpackages, *vararrmissingval;
+	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrdefaultval, *vararrpackages, *vararrmissingval, *vararrmissing_value_mask;
 	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *vardefaultval, *varpackages;
 	const char *varname2, *vararrgroup2, *vararrname_in_code;
 	const char *varname_in_code;
@@ -1055,6 +1055,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	vararrpackages = ezxml_attr(var_arr_xml, "packages");
 	vararrtimelevs = ezxml_attr(var_arr_xml, "time_levs");
 	vararrname_in_code = ezxml_attr(var_arr_xml, "name_in_code");
+	vararrmissing_value_mask= ezxml_attr(var_arr_xml, "missing_value_mask");
 
 	package_list[0] = '\0';
 	no_packages = build_struct_package_lists(varArray, package_list);
@@ -1079,6 +1080,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	persistence = check_persistence(vararrpersistence);
 
 	fortprintf(fd, "! Define var array %s\n", vararrname);
+
 	snprintf(spacing, 1024, "      ");
 
 	// Determine field type and default value.
@@ -1416,6 +1418,24 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 
 				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'units', '%s')\n", pointer_name_arr, temp_str);
 			}
+		        if ( vararrmissing_value_mask != NULL && vararrmissingval != NULL ) {
+				string = strdup(vararrmissing_value_mask);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+		                fortprintf(fd, "         %s %% maskName = '%s'\n", pointer_name_arr , temp_str);
+				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'missing_value_mask', '%s')\n", pointer_name_arr, temp_str);
+                        } else {
+                                fortprintf(fd, "         %s %% maskName = 'none'\n", pointer_name_arr , temp_str);
+		        }
 
 			if ( vararrmissingval ) {
 				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, '_FillValue', %s)\n", pointer_name_arr, missing_value);
@@ -1475,7 +1495,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	const char *structtimelevs, *vartimelevs;
 	const char *structname, *structlevs, *structpackages;
 	const char *substructname;
-	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *vardefaultval, *varpackages, *varmissingval;
+	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *vardefaultval, *varpackages, *varmissingval, *varmissing_value_mask;
 	const char *varname2, *vararrgroup2;
 	const char *varname_in_code;
 	const char *varname_in_output;
@@ -1514,6 +1534,7 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	varunits = ezxml_attr(var_xml, "units");
 	vardesc = ezxml_attr(var_xml, "description");
 	varmissingval = ezxml_attr(var_xml, "missing_value");
+	varmissing_value_mask = ezxml_attr(var_xml, "missing_value_mask");
 
 	if(!varname_in_code){
 		varname_in_code = ezxml_attr(var_xml, "name");
@@ -1649,6 +1670,25 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 			free(tofree);
 
 			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'long_name', '%s')\n", pointer_name_arr, temp_str);
+		}
+
+		if ( varmissing_value_mask != NULL && varmissingval != NULL ) {
+			string = strdup(varmissing_value_mask);
+			tofree = string;
+
+			token = strsep(&string, "'");
+			sprintf(temp_str, "%s", token);
+
+			while ( ( token = strsep(&string, "'") ) != NULL ) {
+				sprintf(temp_str, "%s''%s", temp_str, token);
+			}
+
+			free(tofree);
+
+		        fortprintf(fd, "      %s %% maskName = '%s'\n", pointer_name_arr , temp_str);
+			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'missing_value_mask', '%s')\n", pointer_name_arr, temp_str);
+                } else {
+                        fortprintf(fd, "      %s %% maskName = 'none'\n", pointer_name_arr , temp_str);
 		}
 
 		if ( varmissingval != NULL ) {
