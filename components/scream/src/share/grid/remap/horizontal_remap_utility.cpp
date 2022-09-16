@@ -413,7 +413,7 @@ void GSMap::apply_remap(const view_2d<const Real>& source_data, const view_2d<Re
 }
 /*-----------------------------------------------------------------------------------------------*/
 // This overload of apply remap assumes a set of horizontal slices of source data being mapped onto
-// a set horizontal slices of remapped data.  The assumption is that there are levels and one other
+// a set of horizontal slices of remapped data.  The assumption is that there are levels and one other
 // dimension for this data.
 void GSMap::apply_remap(const view_3d<const Real>& source_data, const view_3d<Real>& remapped_data) {
   start_timer("EAMxx::GSMap::apply_remap_3d");

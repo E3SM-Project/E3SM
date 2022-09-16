@@ -150,7 +150,7 @@ struct SPAFunctions
     // The weights stores the remapping weight to be applied to the source grid data for this location
     //   in the target data.
     SPAHorizInterp() = default;
-    SPAHorizInterp(const ekat::Comm& comm)
+    explicit SPAHorizInterp(const ekat::Comm& comm)
     {
       m_comm = comm;
     }

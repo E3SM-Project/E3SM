@@ -12,7 +12,7 @@ namespace scream {
 
 /*===============================================================================================*/
 /*                                        GSSegment
- * Lightwieght structure to represent a single remapping of source data to a single column.
+ * Lightweight structure to represent a single remapping of source data to a single target column.
  *     Y_target = sum_(n=1)^N ( w_n * Y_source_n )
  * See description of GSMap structure for more details on the mapping.
  *
@@ -109,7 +109,7 @@ class GSMap {
   
 public:
   // Constructors/Destructor
-  virtual ~GSMap() = default;
+  ~GSMap() = default;
   GSMap() {};
   GSMap(const ekat::Comm& comm);
   GSMap(const ekat::Comm& comm, const std::string& map_name);
@@ -138,7 +138,7 @@ public:
   Int                    get_num_of_segments() const { return m_num_segments; }
   
 
-protected: 
+private: 
 
   // Global degrees of freedom information on target grid
   view_1d<gid_type> m_dofs_gids;

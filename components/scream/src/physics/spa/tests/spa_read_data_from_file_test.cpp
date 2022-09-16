@@ -35,6 +35,7 @@ TEST_CASE("spa_read_data","spa")
   using SPAFunc = spa::SPAFunctions<Real, DefaultDevice>;
   using Spack = SPAFunc::Spack;
   using gid_type = SPAFunc::gid_type;
+  constexpr Real tol  = std::numeric_limits<Real>::epsilon()*1000;
 
   std::string spa_data_file  = SCREAM_DATA_DIR "/init/spa_data_for_testing.nc";
   std::string spa_remap_file = SCREAM_DATA_DIR "/init/spa_data_for_testing.nc";
@@ -93,12 +94,12 @@ TEST_CASE("spa_read_data","spa")
     Kokkos::deep_copy(aer_tau_sw_h,spa_data.data.AER_TAU_SW);
     Kokkos::deep_copy(aer_tau_lw_h,spa_data.data.AER_TAU_LW);
     for (size_t dof_i=0;dof_i<dofs_gids_h.size();dof_i++) {
-      REQUIRE(ps_h(dof_i) == ps_func(time_index,ncols_src));
+      REQUIRE(std::abs(ps_h(dof_i) - ps_func(time_index,ncols_src))<tol);
       for (int kk=0;kk<nlevs;kk++) {
         // Recall, SPA data read from file is padded, so we need to offset the kk index for the data by 1.
         int kpack = (kk+1) / Spack::n;
         int kidx  = (kk+1) % Spack::n;
-        REQUIRE(ccn3_h(dof_i,kpack)[kidx] == ccn3_func(time_index, kk, ncols_src));
+        REQUIRE(std::abs(ccn3_h(dof_i,kpack)[kidx] - ccn3_func(time_index, kk, ncols_src))<tol);
         for (int n=0;n<nswbands;n++) {
           REQUIRE(aer_g_sw_h(dof_i,n,kpack)[kidx]   == aer_func(time_index,n,kk,ncols_src,0));
           REQUIRE(aer_ssa_sw_h(dof_i,n,kpack)[kidx] == aer_func(time_index,n,kk,ncols_src,1));

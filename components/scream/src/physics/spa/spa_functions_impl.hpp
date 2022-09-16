@@ -296,8 +296,10 @@ perform_vertical_interpolation(
 }
 
 /*-----------------------------------------------------------------*/
-// Function to read the weights for conducting horizontal remapping
-// from a file.
+// Function to set the remap and weights for a one-to-one mapping.
+// This is used when the SPA data and the simulation grid are the
+// same and no remapping is needed.
+// Note: This function should be called only once during SPA::init
 template <typename S, typename D>
 void SPAFunctions<S,D>
 ::set_remap_weights_one_to_one(
@@ -327,8 +329,11 @@ void SPAFunctions<S,D>
 
 } // END set_remap_weights_one_to_one
 /*-----------------------------------------------------------------*/
-// Function to read the weights for conducting horizontal remapping
-// from a file.
+// Function to gather the remap and weights from a specific file.
+// This is used when the SPA data is not on the same grid as the
+// simulation, and so some remapping is needed.  In this case the
+// remapping is provided by file.
+// Note: This function should only be called once during SPA::init
 template <typename S, typename D>
 void SPAFunctions<S,D>
 ::get_remap_weights_from_file(
@@ -420,6 +425,7 @@ void SPAFunctions<S,D>
   //   then we will use the horizontal interpolation structure, spa_horiz_interp, to
   //   interpolate PS_v onto the simulation grid: PS_v -> spa_data.PS
   //   and so on for the other variables.
+  start_timer("EAMxx::SPA::update_spa_data_from_file::read_data");
   std::vector<std::string> fnames = {"hyam","hybm","PS","CCN3","AER_G_SW","AER_SSA_SW","AER_TAU_SW","AER_TAU_LW"};
   ekat::ParameterList spa_data_in_params;
   spa_data_in_params.set("Field Names",fnames);
@@ -491,7 +497,8 @@ void SPAFunctions<S,D>
   spa_data_input.init(grid,host_views,layouts);
   spa_data_input.read_variables(time_index);
   spa_data_input.finalize();
-
+  stop_timer("EAMxx::SPA::update_spa_data_from_file::read_data");
+  start_timer("EAMxx::SPA::update_spa_data_from_file::apply_remap");
   // Copy data from host back to the device views.
   Kokkos::deep_copy(PS_v,PS_v_h);
   Kokkos::deep_copy(CCN3_v      , CCN3_v_h);      
@@ -517,6 +524,8 @@ void SPAFunctions<S,D>
   spa_gsmap.apply_remap(AER_SSA_SW_v, AER_SSA_SW_unpad);
   spa_gsmap.apply_remap(AER_TAU_SW_v, AER_TAU_SW_unpad);
   spa_gsmap.apply_remap(AER_TAU_LW_v, AER_TAU_LW_unpad);
+  stop_timer("EAMxx::SPA::update_spa_data_from_file::apply_remap");
+  start_timer("EAMxx::SPA::update_spa_data_from_file::copy_and_pad");
   // Copy unpadded data to SPA data structure, add padding.
   // Note, all variables we map to are packed, while all the data we just loaded as
   // input are in real N-D views.  So we need to set the pack and index of the actual
@@ -575,6 +584,7 @@ void SPAFunctions<S,D>
       spa_data.data.AER_TAU_LW(icol,nband,kpack)[klev2] = AER_TAU_LW_unpad(icol,nband,klev1);
     }
   });
+  stop_timer("EAMxx::SPA::update_spa_data_from_file::copy_and_pad");
   // The hybrid coordinates are just vertical data, so not remapped.  We still need to make
   // a padded version of the data.
   //   hya/b[0] = 0.0, note this is handled by deep copy above
