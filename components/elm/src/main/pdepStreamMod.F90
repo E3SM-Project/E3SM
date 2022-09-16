@@ -31,9 +31,6 @@ module pdepStreamMod
   public :: pdep_init      ! position datasets for dynamic pdep
   public :: pdep_interp    ! interpolates between two years of pdep file data
   public :: elm_domain_mct ! Sets up MCT domain for this resolution
-  ! sensitivity testing
-  character(len=8), public :: startdate_scale_pdep
-  real(r8), public :: scale_pdep
 
   ! ! PRIVATE TYPES
   type(shr_strdata_type)  :: sdat         ! input data stream
@@ -78,17 +75,13 @@ contains
 	stream_year_last_pdep,   &
         model_year_align_pdep,   &
         pdepmapalgo,             &
-        stream_fldFileName_pdep, &
-        scale_pdep,              & ! sensitivity testing
-        startdate_scale_pdep
+        stream_fldFileName_pdep
 
    ! Default values for namelist
     stream_year_first_pdep  = 1                ! first year in stream to use
     stream_year_last_pdep   = 1                ! last  year in stream to use
     model_year_align_pdep   = 1                ! align stream_year_first_pdep with this model year
     stream_fldFileName_pdep = ' '
-    scale_pdep = 1.0_r8                        ! sensitivity testing
-    startdate_scale_pdep    = '99991231'       ! sensitivity testing 
 
    ! Read pdepdyn_nml namelist
    if (masterproc) then
@@ -109,8 +102,6 @@ contains
    call shr_mpi_bcast(stream_year_last_pdep, mpicom)
    call shr_mpi_bcast(model_year_align_pdep, mpicom)
    call shr_mpi_bcast(stream_fldFileName_pdep, mpicom)
-   call shr_mpi_bcast(scale_pdep, mpicom)
-   call shr_mpi_bcast(startdate_scale_pdep, mpicom)
 
    if (masterproc) then
       write(iulog,*) ' '
@@ -119,8 +110,6 @@ contains
       write(iulog,*) '  stream_year_last_pdep   = ',stream_year_last_pdep   
       write(iulog,*) '  model_year_align_pdep   = ',model_year_align_pdep   
       write(iulog,*) '  stream_fldFileName_pdep = ',stream_fldFileName_pdep
-      write(iulog,*) '  scale_pdep              = ',scale_pdep
-      write(iulog,*) '  startdate_scale_pdep    = ',startdate_scale_pdep
       write(iulog,*) ' '
    endif
 
@@ -178,38 +167,18 @@ contains
    integer :: sec     ! seconds into current date for nstep+1
    integer :: mcdate  ! Current model date (yyyymmdd)
    integer :: dayspyr ! days per year
-   ! scale pdep variables - sensitivity testing.
-   integer :: sdate_sclp, sy_sclp, sm_sclp, sd_sclp
    !-----------------------------------------------------------------------
-
-   ! get ndep scaling nml variables
-   namelist /pdepdyn_nml/        &
-     scale_pdep,                 &
-     startdate_scale_pdep
 
    call get_curr_date(year, mon, day, sec)
    mcdate = year*10000 + mon*100 + day
 
    call shr_strdata_advance(sdat, mcdate, sec, mpicom, 'pdepdyn')
 
-   if (startdate_scale_pdep .ne. '') then 
-      read(startdate_scale_pdep,*) sdate_sclp
-      sy_sclp     = sdate_sclp/10000
-      sm_sclp     = (sdate_sclp-sy_sclp*10000)/100
-      sd_sclp     = sdate_sclp-sy_sclp*10000-sm_sclp*100
-   end if 
-
    ig = 0
    dayspyr = get_days_per_year( )
    do g = bounds%begg,bounds%endg
       ig = ig+1
       atm2lnd_vars%forc_pdep_grc(g) = sdat%avs(1)%rAttr(1,ig) / (secspday * dayspyr)
-      if (startdate_scale_pdep .ne. '') then
-         if ((year == sy_sclp .and. mon == sm_sclp .and. day >= sd_sclp) .or. &
-            (year == sy_sclp .and. mon > sm_sclp) .or. (year > sy_sclp)) then
-            atm2lnd_vars%forc_pdep_grc(g) = scale_pdep * atm2lnd_vars%forc_pdep_grc(g)
-         end if 
-      end if
    end do
    
  end subroutine pdep_interp

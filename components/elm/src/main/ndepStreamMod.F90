@@ -31,16 +31,12 @@ module ndepStreamMod
   public :: ndep_init      ! position datasets for dynamic ndep
   public :: ndep_interp    ! interpolates between two years of ndep file data
   public :: elm_domain_mct ! Sets up MCT domain for this resolution
-  ! sensitivity testing
-  character(len=8), public :: startdate_scale_ndep
-  real(r8), public :: scale_ndep
 
   ! ! PRIVATE TYPES
   type(shr_strdata_type)  :: sdat         ! input data stream
   integer :: stream_year_first_ndep       ! first year in stream to use
   integer :: stream_year_last_ndep        ! last year in stream to use
   integer :: model_year_align_ndep        ! align stream_year_firstndep with 
-  
   !==============================================================================
 
 contains
@@ -76,20 +72,16 @@ contains
 
    namelist /ndepdyn_nml/        &
         stream_year_first_ndep,  &
-	     stream_year_last_ndep,   &
+	stream_year_last_ndep,   &
         model_year_align_ndep,   &
         ndepmapalgo,             &
-        stream_fldFileName_ndep, &
-        scale_ndep,              &
-        startdate_scale_ndep
+        stream_fldFileName_ndep
 
    ! Default values for namelist
     stream_year_first_ndep  = 1                ! first year in stream to use
     stream_year_last_ndep   = 1                ! last  year in stream to use
     model_year_align_ndep   = 1                ! align stream_year_first_ndep with this model year
     stream_fldFileName_ndep = ' '
-    scale_ndep = 1.0_r8
-    startdate_scale_ndep    = '99991231'
 
    ! Read ndepdyn_nml namelist
    if (masterproc) then
@@ -110,8 +102,6 @@ contains
    call shr_mpi_bcast(stream_year_last_ndep, mpicom)
    call shr_mpi_bcast(model_year_align_ndep, mpicom)
    call shr_mpi_bcast(stream_fldFileName_ndep, mpicom)
-   call shr_mpi_bcast(scale_ndep, mpicom)
-   call shr_mpi_bcast(startdate_scale_ndep, mpicom)
 
    if (masterproc) then
       write(iulog,*) ' '
@@ -120,8 +110,6 @@ contains
       write(iulog,*) '  stream_year_last_ndep   = ',stream_year_last_ndep   
       write(iulog,*) '  model_year_align_ndep   = ',model_year_align_ndep   
       write(iulog,*) '  stream_fldFileName_ndep = ',stream_fldFileName_ndep
-      write(iulog,*) '  scale_ndep              = ',scale_ndep
-      write(iulog,*) '  startdate_scale_ndep    = ',startdate_scale_ndep
       write(iulog,*) ' '
    endif
 
@@ -179,26 +167,12 @@ contains
    integer :: sec     ! seconds into current date for nstep+1
    integer :: mcdate  ! Current model date (yyyymmdd)
    integer :: dayspyr ! days per year
-   ! scale ndep variables
-   integer :: sdate_scln, sy_scln, sm_scln, sd_scln
    !-----------------------------------------------------------------------
-
-   ! get ndep scaling nml variables
-   namelist /ndepdyn_nml/        &
-     scale_ndep,                 &
-     startdate_scale_ndep
 
    call get_curr_date(year, mon, day, sec)
    mcdate = year*10000 + mon*100 + day
 
    call shr_strdata_advance(sdat, mcdate, sec, mpicom, 'ndepdyn')
-
-   if (startdate_scale_ndep .ne. '') then 
-      read(startdate_scale_ndep,*) sdate_scln
-      sy_scln     = sdate_scln/10000
-      sm_scln     = (sdate_scln-sy_scln*10000)/100
-      sd_scln     = sdate_scln-sy_scln*10000-sm_scln*100
-   end if 
 
    ig = 0
    dayspyr = get_days_per_year( )
@@ -206,16 +180,6 @@ contains
       ig = ig+1
       atm2lnd_vars%forc_ndep_grc(g) = sdat%avs(1)%rAttr(1,ig) / (secspday * dayspyr)
    end do
-   if (startdate_scale_ndep .ne. '') then
-      if ((year == sy_scln .and. mon == sm_scln .and. day >= sd_scln) .or. &
-          (year == sy_scln .and. mon > sm_scln) .or. (year > sy_scln)) then
-         do g = bounds%begg,bounds%endg
-           ig = ig+1
-           ! scale if necessary:
-           atm2lnd_vars%forc_ndep_grc(g) = scale_ndep * sdat%avs(1)%rAttr(1,ig) / (secspday * dayspyr)
-         end do
-      end if
-   end if
    
  end subroutine ndep_interp
 
