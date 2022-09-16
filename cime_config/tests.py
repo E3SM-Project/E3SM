@@ -59,7 +59,7 @@ _TESTS = {
             "ERP_Ln18.ne4_oQU240.F2010",
             "SMS_Ln9.ne4_oQU240.F2010.eam-outfrq9s",
             "SMS.ne4_oQU240.F2010.eam-cosplite",
-            "SMS_R_Ld5.ne4_ne4.FSCM-ARM97.eam-scm",
+            "SMS_R_Ld5.ne4_ne4.FSCM5A97.eam-scm",
             "SMS_D_Ln5.ne4_oQU240.F2010",
             "SMS_Ln5.ne4pg2_oQU480.F2010",
             "ERS.ne4_oQU240.F2010.eam-hommexx"
@@ -79,12 +79,12 @@ _TESTS = {
 
     "e3sm_v3atm_developer_f20tr_chemuci_linozv3" : {
         "tests"   : (
-            "ERP_Ln18.ne4_oQU240.F20tr_chemUCI-Linozv3",
-            "SMS_Ln9.ne4_oQU240.F20tr_chemUCI-Linozv3.eam-outfrq9s",
-            "SMS.ne4_oQU240.F20tr_chemUCI-Linozv3.eam-cosplite",
-            "SMS_D_Ln5.ne4_oQU240.F20tr_chemUCI-Linozv3",
-            "SMS_Ln5.ne4pg2_oQU480.F20tr_chemUCI-Linozv3",
-            "ERS.ne4_oQU240.F2010_chemUCI-Linozv3.eam-hommexx"
+            "ERP_Ln18.ne4_oQU240.F20TR_chemUCI-Linozv3",
+            "SMS_Ln9.ne4_oQU240.F20TR_chemUCI-Linozv3.eam-outfrq9s",
+            "SMS.ne4_oQU240.F20TR_chemUCI-Linozv3.eam-cosplite",
+            "SMS_D_Ln5.ne4_oQU240.F20TR_chemUCI-Linozv3",
+            "SMS_Ln5.ne4pg2_oQU480.F20TR_chemUCI-Linozv3",
+            "ERS.ne4_oQU240.F20TR_chemUCI-Linozv3.eam-hommexx"
             )
         },
 
