@@ -841,9 +841,6 @@ $cfg_ref->set('chem', $chem_pkg);
 
 # mosaic option in mam
 if (defined $opts{'mosaic'}) {
-   if ($chem_pkg !~ /_mam4/) {
-	    die "ERROR: The mosaic option is only valid with MAM4 aerosols.\n";
-   }
    $cfg_ref->set('mosaic', $opts{'mosaic'});
 }
 my $mosaic = $cfg_ref->get('mosaic');

@@ -501,9 +501,7 @@ contains
           endif
        enddo
 
-!!#if (defined MODAL_AERO_9MODE || MODAL_AERO_4MODE_MOM)  ! kzm-
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE)
-! kzm+
+#if ( defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE )
        dummy = 'SSTSFMBL_OM'
        call addfld (dummy,horiz_only, 'A','kg/m2/s','Mobilization flux of marine organic matter at surface')
        if (history_aerosol) then
@@ -856,6 +854,50 @@ contains
     index_tot_mass(4,3) = get_spc_ndx('mom_a4')
     index_chm_mass(4,1) = get_spc_ndx('bc_a4' )
     !
+#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
+    !
+    ! accumulation mode #1
+    !
+    index_tot_mass(1,1) = get_spc_ndx('so4_a1')
+    index_tot_mass(1,2) = get_spc_ndx('pom_a1')
+    index_tot_mass(1,3) = get_spc_ndx('soa_a1')
+    index_tot_mass(1,4) = get_spc_ndx('bc_a1' )
+    index_tot_mass(1,5) = get_spc_ndx('dst_a1')
+    index_tot_mass(1,6) = get_spc_ndx('ncl_a1')
+    index_tot_mass(1,7) = get_spc_ndx('mom_a1')
+    index_chm_mass(1,1) = get_spc_ndx('so4_a1')
+    index_chm_mass(1,2) = get_spc_ndx('soa_a1')
+    index_chm_mass(1,3) = get_spc_ndx('bc_a1' )
+    !
+    ! aitken mode
+    !
+    index_tot_mass(2,1) = get_spc_ndx('so4_a2')
+    index_tot_mass(2,2) = get_spc_ndx('soa_a2')
+    index_tot_mass(2,3) = get_spc_ndx('ncl_a2')
+    index_tot_mass(2,4) = get_spc_ndx('mom_a2')
+    index_chm_mass(2,1) = get_spc_ndx('so4_a2')
+    index_chm_mass(2,2) = get_spc_ndx('soa_a2')
+    !
+    ! coarse mode
+    !
+    index_tot_mass(3,1)  = get_spc_ndx('dst_a3')
+    index_tot_mass(3,2)  = get_spc_ndx('ncl_a3')
+    index_tot_mass(3,3)  = get_spc_ndx('so4_a3')
+    index_tot_mass(3,4)  = get_spc_ndx('bc_a3')
+    index_tot_mass(4,5)  = get_spc_ndx('pom_a3')
+    index_tot_mass(4,6)  = get_spc_ndx('soa_a3')
+    index_tot_mass(4,7)  = get_spc_ndx('mom_a3')
+    index_chm_mass(3,1)  = get_spc_ndx('so4_a3')
+    index_chm_mass(3,2)  = get_spc_ndx('soa_a3')
+    index_chm_mass(3,3)  = get_spc_ndx('bc_a3')
+    !
+    ! POM mode
+    !
+    index_tot_mass(4,1) = get_spc_ndx('pom_a4')
+    index_tot_mass(4,2) = get_spc_ndx('bc_a4')
+    index_tot_mass(4,3) = get_spc_ndx('mom_a4')
+    index_chm_mass(4,1) = get_spc_ndx('bc_a1' )
+    !
 #elif ( defined MODAL_AERO_4MODE_MOM )
     !
     ! accumulation mode #1
@@ -894,8 +936,75 @@ contains
     index_tot_mass(4,3) = get_spc_ndx('mom_a4')
     index_chm_mass(4,1) = get_spc_ndx('bc_a1' )
     !
-!kzm ++
-#elif ( defined MODAL_AERO_5MODE )
+#elif ( ( defined MODAL_AERO_5MODE ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) && ( defined MOSAIC_SPECIES ) )
+    !
+    ! accumulation mode #1
+    !
+    index_tot_mass(1,1)  = get_spc_ndx('so4_a1')
+    index_tot_mass(1,2)  = get_spc_ndx('pom_a1')
+    index_tot_mass(1,3)  = get_spc_ndx('soa_a1')
+    index_tot_mass(1,4)  = get_spc_ndx('bc_a1' )
+    index_tot_mass(1,5)  = get_spc_ndx('dst_a1')
+    index_tot_mass(1,6)  = get_spc_ndx('ncl_a1')
+    index_tot_mass(1,7)  = get_spc_ndx('mom_a1')
+    index_tot_mass(1,8)  = get_spc_ndx('nh4_a1')
+    index_tot_mass(1,9)  = get_spc_ndx('no3_a1')
+    index_tot_mass(1,10) = get_spc_ndx('ca_a1')
+    index_tot_mass(1,11) = get_spc_ndx('co3_a1')
+    index_tot_mass(1,12) = get_spc_ndx('cl_a1')
+    index_chm_mass(1,1)  = get_spc_ndx('so4_a1')
+    index_chm_mass(1,2)  = get_spc_ndx('nh4_a1')
+    index_chm_mass(1,3)  = get_spc_ndx('soa_a1')
+    index_chm_mass(1,4)  = get_spc_ndx('bc_a1' )
+    !
+    ! aitken mode
+    !
+    index_tot_mass(2,1) = get_spc_ndx('so4_a2')
+    index_tot_mass(2,2) = get_spc_ndx('soa_a2')
+    index_tot_mass(2,3) = get_spc_ndx('dst_a2')
+    index_tot_mass(2,4) = get_spc_ndx('ncl_a2')
+    index_tot_mass(2,5) = get_spc_ndx('mom_a2')
+    index_tot_mass(2,6) = get_spc_ndx('nh4_a2')
+    index_tot_mass(2,7) = get_spc_ndx('no3_a2')
+    index_tot_mass(2,8) = get_spc_ndx('ca_a2')
+    index_tot_mass(2,9) = get_spc_ndx('co3_a2')
+    index_tot_mass(2,10)= get_spc_ndx('cl_a2')
+    index_chm_mass(2,1) = get_spc_ndx('so4_a2')
+    index_chm_mass(2,2) = get_spc_ndx('nh4_a2')
+    index_chm_mass(2,3) = get_spc_ndx('soa_a2')
+    !
+    ! coarse mode
+    !
+    index_tot_mass(3,1)  = get_spc_ndx('dst_a3')
+    index_tot_mass(3,2)  = get_spc_ndx('ncl_a3')
+    index_tot_mass(3,3)  = get_spc_ndx('so4_a3')
+    index_tot_mass(3,4)  = get_spc_ndx('bc_a3')
+    index_tot_mass(4,5)  = get_spc_ndx('pom_a3')
+    index_tot_mass(4,6)  = get_spc_ndx('soa_a3')
+    index_tot_mass(4,7)  = get_spc_ndx('mom_a3')
+    index_tot_mass(3,8)  = get_spc_ndx('nh4_a3')
+    index_tot_mass(3,9)  = get_spc_ndx('no3_a3')
+    index_tot_mass(3,10) = get_spc_ndx('ca_a3')
+    index_tot_mass(3,11) = get_spc_ndx('co3_a3')
+    index_tot_mass(3,12) = get_spc_ndx('cl_a3')
+    index_chm_mass(3,1)  = get_spc_ndx('so4_a3')
+    index_chm_mass(3,2)  = get_spc_ndx('nh4_a3')
+    index_chm_mass(3,3)  = get_spc_ndx('soa_a3')
+    index_chm_mass(3,4)  = get_spc_ndx('bc_a3')
+    !
+    ! POM mode
+    !
+    index_tot_mass(4,1) = get_spc_ndx('pom_a4')
+    index_tot_mass(4,2) = get_spc_ndx('bc_a4')
+    index_tot_mass(4,3) = get_spc_ndx('mom_a4')
+    index_chm_mass(4,1) = get_spc_ndx('bc_a4' )
+    !
+    ! strat_coarse
+    index_tot_mass(5,1) = get_spc_ndx('so4_a5')
+    index_chm_mass(5,1) = get_spc_ndx('so4_a5')
+    !
+#elif ( ( defined MODAL_AERO_5MODE ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
+    !
     ! accumulation mode #1
     !
     index_tot_mass(1,1) = get_spc_ndx('so4_a1')
@@ -908,7 +1017,7 @@ contains
     index_chm_mass(1,1) = get_spc_ndx('so4_a1')
     index_chm_mass(1,2) = get_spc_ndx('soa_a1')
     index_chm_mass(1,3) = get_spc_ndx('bc_a1' )
-     !
+    !
     ! aitken mode
     !
     index_tot_mass(2,1) = get_spc_ndx('so4_a2')
@@ -917,6 +1026,56 @@ contains
     index_tot_mass(2,4) = get_spc_ndx('mom_a2')
     index_chm_mass(2,1) = get_spc_ndx('so4_a2')
     index_chm_mass(2,2) = get_spc_ndx('soa_a2')
+    !
+    ! coarse mode
+    !
+    index_tot_mass(3,1)  = get_spc_ndx('dst_a3')
+    index_tot_mass(3,2)  = get_spc_ndx('ncl_a3')
+    index_tot_mass(3,3)  = get_spc_ndx('so4_a3')
+    index_tot_mass(3,4)  = get_spc_ndx('bc_a3')
+    index_tot_mass(4,5)  = get_spc_ndx('pom_a3')
+    index_tot_mass(4,6)  = get_spc_ndx('soa_a3')
+    index_tot_mass(4,7)  = get_spc_ndx('mom_a3')
+    index_chm_mass(3,1)  = get_spc_ndx('so4_a3')
+    index_chm_mass(3,2)  = get_spc_ndx('soa_a3')
+    index_chm_mass(3,3)  = get_spc_ndx('bc_a3')
+    !
+    ! POM mode
+    !
+    index_tot_mass(4,1) = get_spc_ndx('pom_a4')
+    index_tot_mass(4,2) = get_spc_ndx('bc_a4')
+    index_tot_mass(4,3) = get_spc_ndx('mom_a4')
+    index_chm_mass(4,1) = get_spc_ndx('bc_a1' )
+    !
+    ! strat_coarse
+    !
+    index_tot_mass(5,1) = get_spc_ndx('so4_a5')
+    index_chm_mass(5,1) = get_spc_ndx('so4_a5')
+    !
+#elif ( defined MODAL_AERO_5MODE )
+    !
+    ! accumulation mode #1
+    !
+    index_tot_mass(1,1) = get_spc_ndx('so4_a1')
+    index_tot_mass(1,2) = get_spc_ndx('pom_a1')
+    index_tot_mass(1,3) = get_spc_ndx('soa_a1')
+    index_tot_mass(1,4) = get_spc_ndx('bc_a1' )
+    index_tot_mass(1,5) = get_spc_ndx('dst_a1')
+    index_tot_mass(1,6) = get_spc_ndx('ncl_a1')
+    index_tot_mass(1,7) = get_spc_ndx('mom_a1')
+    index_chm_mass(1,1) = get_spc_ndx('so4_a1')
+    index_chm_mass(1,2) = get_spc_ndx('soa_a1')
+    index_chm_mass(1,3) = get_spc_ndx('bc_a1' )
+    !
+    ! aitken mode
+    !
+    index_tot_mass(2,1) = get_spc_ndx('so4_a2')
+    index_tot_mass(2,2) = get_spc_ndx('soa_a2')
+    index_tot_mass(2,3) = get_spc_ndx('ncl_a2')
+    index_tot_mass(2,4) = get_spc_ndx('mom_a2')
+    index_chm_mass(2,1) = get_spc_ndx('so4_a2')
+    index_chm_mass(2,2) = get_spc_ndx('soa_a2')
+    !
     ! coarse mode
     !
     index_tot_mass(3,1) = get_spc_ndx('dst_a3')
@@ -932,8 +1091,10 @@ contains
     index_chm_mass(4,1) = get_spc_ndx('bc_a1' )
     !
     ! strat_coarse
+    !
     index_tot_mass(5,1) = get_spc_ndx('so4_a5')
     index_chm_mass(5,1) = get_spc_ndx('so4_a5')
+    !
 #elif ( defined MODAL_AERO_4MODE )
     !
     ! accumulation mode #1
@@ -1530,14 +1691,8 @@ contains
 
     if ( mam_prevap_resusp_optaa == 30 ) then
 
-#if ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM )
+#if ( ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || ( defined MODAL_AERO_5MODE ) || ( defined MODAL_AERO_7MODE_S ) )
        ntoo = modeptr_coarse
-!kzm ++
-#elif (defined MODAL_AERO_5MODE)
-       ntoo = modeptr_coarse
-#elif ( defined MODAL_AERO_7MODE_S )
-       ntoo = modeptr_coarse
-!kzm --
 #else
        call endrun( 'modal_aero_wetscav_init: new resuspension not implemented for 7-mode or 9-mode MAM.')
 #endif
