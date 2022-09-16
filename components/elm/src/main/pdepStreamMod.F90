@@ -204,17 +204,13 @@ contains
    do g = bounds%begg,bounds%endg
       ig = ig+1
       atm2lnd_vars%forc_pdep_grc(g) = sdat%avs(1)%rAttr(1,ig) / (secspday * dayspyr)
-   end do
-   if (startdate_scale_pdep .ne. '') then
-      if ((year == sy_sclp .and. mon == sm_sclp .and. day >= sd_sclp) .or. &
-          (year == sy_sclp .and. mon > sm_sclp) .or. (year > sy_sclp)) then
-         do g = bounds%begg,bounds%endg
-           ig = ig+1
-           ! scale if necessary:
-           atm2lnd_vars%forc_pdep_grc(g) = scale_pdep * sdat%avs(1)%rAttr(1,ig) / (secspday * dayspyr)
-         end do
+      if (startdate_scale_pdep .ne. '') then
+         if ((year == sy_sclp .and. mon == sm_sclp .and. day >= sd_sclp) .or. &
+            (year == sy_sclp .and. mon > sm_sclp) .or. (year > sy_sclp)) then
+            atm2lnd_vars%forc_pdep_grc(g) = scale_pdep * atm2lnd_vars%forc_pdep_grc(g)
+         end if 
       end if
-   end if
+   end do
    
  end subroutine pdep_interp
 
