@@ -8,8 +8,6 @@
 #include "cpp/rte/mo_rte_sw.h"
 #include "cpp/rte/mo_rte_lw.h"
 
-#include <random>
-
 namespace scream {
     namespace rrtmgp {
 
@@ -359,20 +357,15 @@ namespace scream {
                 // algorithm used in RRTMG implementation of maximum-random overlap (see
                 // https://github.com/AER-RC/RRTMG_SW/blob/master/src/mcica_subcol_gen_sw.f90)
                 //
-                // First, fill cldx with random numbers. For now, create pseudo-random numbers on host and copy to device
-                std::uniform_real_distribution<Real> distribution(0.0, 1.0);
-                auto cldx_host = cldx.createHostCopy();
-                auto seeds_host = seeds.createHostCopy();
-                for (int icol = 1; icol <= ncol; icol++) {
-                    // Unique seed for each column
-                    std::mt19937_64 generator(seeds_host(icol));
+                // First, fill cldx with random numbers. Need to use a unique seed for each column!
+                parallel_for(Bounds<1>(ncol), YAKL_LAMBDA(int icol) {
+                    yakl::Random rand(seeds(icol));
                     for (int igpt = 1; igpt <= ngpt; igpt++) {
                         for (int ilay = 1; ilay <= nlay; ilay++) {
-                            cldx_host(icol,ilay,igpt) = distribution(generator);
+                            cldx(icol,ilay,igpt) = rand.genFP<Real>();
                         }
                     }
-                }
-                cldx_host.deep_copy_to(cldx);
+                });
                 // Step down columns and apply algorithm from eq (14)
                 parallel_for(Bounds<2>(ngpt,ncol), YAKL_LAMBDA(int igpt, int icol) {
                     for (int ilay = 2; ilay <= nlay; ilay++) {
