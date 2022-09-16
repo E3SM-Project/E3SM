@@ -37,6 +37,9 @@ module pdepStreamMod
   integer :: stream_year_first_pdep       ! first year in stream to use
   integer :: stream_year_last_pdep        ! last year in stream to use
   integer :: model_year_align_pdep        ! align stream_year_firstpdep with 
+   ! sensitivity testing
+  character(len=8) :: startdate_scale_pdep
+  real(r8) :: scale_pdep
   !==============================================================================
 
 contains
@@ -75,13 +78,17 @@ contains
 	stream_year_last_pdep,   &
         model_year_align_pdep,   &
         pdepmapalgo,             &
-        stream_fldFileName_pdep
+        stream_fldFileName_pdep, &
+        scale_pdep,              & ! sensitivity testing
+        startdate_scale_pdep
 
    ! Default values for namelist
     stream_year_first_pdep  = 1                ! first year in stream to use
     stream_year_last_pdep   = 1                ! last  year in stream to use
     model_year_align_pdep   = 1                ! align stream_year_first_pdep with this model year
     stream_fldFileName_pdep = ' '
+    scale_pdep = 1.0_r8
+    startdate_scale_pdep    = '99991231'
 
    ! Read pdepdyn_nml namelist
    if (masterproc) then
@@ -102,6 +109,8 @@ contains
    call shr_mpi_bcast(stream_year_last_pdep, mpicom)
    call shr_mpi_bcast(model_year_align_pdep, mpicom)
    call shr_mpi_bcast(stream_fldFileName_pdep, mpicom)
+   call shr_mpi_bcast(scale_pdep, mpicom)
+   call shr_mpi_bcast(startdate_scale_pdep, mpicom)
 
    if (masterproc) then
       write(iulog,*) ' '
@@ -110,6 +119,8 @@ contains
       write(iulog,*) '  stream_year_last_pdep   = ',stream_year_last_pdep   
       write(iulog,*) '  model_year_align_pdep   = ',model_year_align_pdep   
       write(iulog,*) '  stream_fldFileName_pdep = ',stream_fldFileName_pdep
+      write(iulog,*) '  scale_pdep              = ',scale_pdep
+      write(iulog,*) '  startdate_scale_pdep    = ',startdate_scale_pdep
       write(iulog,*) ' '
    endif
 
