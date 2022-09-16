@@ -29,7 +29,6 @@ module prep_atm_mod
   use seq_comm_mct, only : atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
   use seq_comm_mct, only : mblxid   ! iMOAB id for land migrated to coupler pes !! old name : mlnxid
   use seq_comm_mct, only : mbintxla ! iMOAB id for intx mesh between land and atmosphere
-  use seq_comm_mct, only : sameg_al ! true by default, so land and atm on same mesh
   use seq_comm_mct, only : seq_comm_getinfo => seq_comm_setptrs
   use dimensions_mod, only : np     ! for atmosphere
 
@@ -93,9 +92,10 @@ module prep_atm_mod
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
   logical :: iamroot_CPLID ! .true. => CPLID masterproc
-
+  logical :: sameg_al ! saved for export / migrate
   save
   integer ::       num_proj ! to index the coupler projection calls
+  
   !================================================================================================
 
 contains
@@ -182,6 +182,7 @@ contains
        samegrid_al = .true.
        samegrid_ao = .true.
        if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
+       sameg_al = samegrid_al ! sameg_al is now a local, private variable; use it later for migrate 
        if (trim(atm_gnam) /= trim(ocn_gnam)) samegrid_ao = .false.
 
        if (ocn_c2_atm) then
@@ -285,7 +286,7 @@ contains
 
           ! important change: do not compute intx at all between atm and land when we have sameg_al 
           ! we will use just a comm graph to send data from phys grid to land on coupler
-          if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) .and. .not. sameg_al ) then
+          if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) .and. .not. samegrid_al ) then
             appname = "ATM_LND_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between lnd and atm mesh
             idintx = 100*atm(1)%cplcompid + lnd(1)%cplcompid ! something different, to differentiate it
@@ -350,7 +351,6 @@ contains
     integer                  :: context_id ! we will use ocean context or land context
     character*32             :: dm1, dm2, wgtIdef
     character*50             :: outfile, wopts, lnum
-    integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
     character(CXX)            :: tagName, tagnameProj, tagNameExt
 
 
@@ -502,7 +502,7 @@ contains
 
     if (atm_present .and. lnd_present) then
       wgtIdef = 'scalar'//C_NULL_CHAR ! from fv, need to be similar to ocean now
-      if (.not. sameg_al) then ! tri-grid case
+      if (.not. sameg_al) then ! tri-grid case 
         if (atm_pg_active ) then ! use mhpgid mesh
 
           if (mhpgid .ge. 0) then !  send because we are on atm pes

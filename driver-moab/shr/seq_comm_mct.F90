@@ -227,7 +227,7 @@ module seq_comm_mct
   integer, public :: mblxid   ! iMOAB id for land mesh migrated to coupler pes
   integer, public :: mblx2id   ! iMOAB id for land mesh instanced from MCT on coupler pes
   integer, public :: mbox2id   ! iMOAB id for ocn mesh instanced from MCT on coupler pes
-  logical, public :: sameg_al ! same grid atm and land; used throughout, initialized in lnd_init
+  logical, public :: sameg_al = .true. ! same grid atm and land; used throughout, initialized in lnd_init
   integer, public :: mbintxla ! iMOAB id for intx mesh between land and atmosphere
   integer, public :: mpsiid   ! iMOAB id for sea-ice, mpas model
   integer, public :: mbixid   ! iMOAB id for sea-ice migrated to coupler pes

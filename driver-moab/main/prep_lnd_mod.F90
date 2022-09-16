@@ -17,7 +17,6 @@ module prep_lnd_mod
   use seq_comm_mct,     only: mblxid ! iMOAB id for mpas ocean migrated mesh to coupler pes
   use seq_comm_mct,     only: mbintxla ! iMOAB id for intx mesh between land and atmosphere
   use seq_comm_mct,     only: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
-  use seq_comm_mct,     only: sameg_al ! true by default, so land and atm on same mesh
   use seq_comm_mct,     only: atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
   use dimensions_mod,   only: np     ! for atmosphere
   use seq_comm_mct,     only: seq_comm_getinfo => seq_comm_setptrs
@@ -103,6 +102,7 @@ module prep_lnd_mod
 #ifdef MOABDEBUG
   integer :: number_calls ! it is a static variable, used to count the number of projections
 #endif
+  logical :: sameg_al ! local private variable, store samegrid_al value 
 contains
 
   !================================================================================================
@@ -181,6 +181,7 @@ contains
        samegrid_lr = .true.
        samegrid_lg = .true.
        if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
+       sameg_al = samegrid_al ! save for future use
        if (trim(lnd_gnam) /= trim(rof_gnam)) samegrid_lr = .false.
        if (trim(lnd_gnam) /= trim(glc_gnam)) samegrid_lg = .false.
 
@@ -648,28 +649,27 @@ contains
    if (mbintxla .ge. 0 ) then ! weights are computed over coupler pes
      ! copy from atm - ocn  , it is now similar, as land is full mesh, not pc cloud
      wgtIdef = 'scalar'//C_NULL_CHAR
+     volumetric = 0 !  TODO: check this , for PC ; for imoab_coupler test, volumetric is 0
      if (atm_pg_active) then
        dm1 = "fv"//C_NULL_CHAR
        dofnameATM="GLOBAL_ID"//C_NULL_CHAR
        orderATM = 1 !  fv-fv
-       volumetric = 1 ! maybe volumetric ?
      else
        dm1 = "cgll"//C_NULL_CHAR
        dofnameATM="GLOBAL_DOFS"//C_NULL_CHAR
        orderATM = np !  it should be 4
-       volumetric = 0
+       volumetric = 1 
      endif
 
      dofnameLND="GLOBAL_ID"//C_NULL_CHAR
      orderLND = 1  !  not much arguing
+     
      ! is the land mesh explicit or point cloud ? based on sameg_al flag:
      if (sameg_al) then
        dm2 = "pcloud"//C_NULL_CHAR
        wgtIdef = 'scalar-pc'//C_NULL_CHAR
-       volumetric = 0 !  TODO: check this , for PC ; for imoab_coupler test, volumetric is 0
      else
        dm2 = "fv"//C_NULL_CHAR ! land is FV
-       volumetric = 1
      endif
      fNoBubble = 1
      monotonicity = 0 !

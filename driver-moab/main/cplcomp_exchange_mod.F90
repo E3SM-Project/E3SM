@@ -22,7 +22,6 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : mlnid , mblxid !    iMOAB app id for land , on land pes and coupler pes
   use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
   use seq_comm_mct, only : mphaxid !            iMOAB app id for phys atm, on cpl pes
-  use seq_comm_mct, only : sameg_al ! same grid atm lnd, and land is point cloud
   use seq_comm_mct, only : MPSIID, mbixid  !  sea-ice on comp pes and on coupler pes
   use seq_comm_mct, only : mrofid, mbrxid  ! iMOAB id of moab rof app on comp pes and on coupler too
   use shr_mpi_mod,  only: shr_mpi_max
@@ -1384,14 +1383,15 @@ contains
          endif
 #ifdef MOABDEBUG
          ! debug test
-         if (sameg_al) then
+         ! if only vertices, set a partition tag for help in visualizations
+         ierr = iMOAB_GetMeshInfo(mblxid, nverts, nelem, nblocks, nsbc, ndbc)
+         if (nelem(1) .eq. 0) then ! we have only vertices locally?
             !there are no shared entities, but we will set a special partition tag, in order to see the
             ! partitions ; it will be visible with a Pseudocolor plot in VisIt
             tagname='partition'//C_NULL_CHAR
             tagtype = 0  ! dense, integer
             numco = 1 !  one value per cell
             ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
-            ierr = iMOAB_GetMeshInfo(mblxid, nverts, nelem, nblocks, nsbc, ndbc)
             allocate(vgids(nverts(1)))
             vgids = rank
             ent_type = 0 ! vertex type

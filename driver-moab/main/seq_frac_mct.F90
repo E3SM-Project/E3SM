@@ -173,7 +173,6 @@ module seq_frac_mct
   use seq_comm_mct, only : atm_pg_active !     flag if PG mesh instanced
   use seq_comm_mct, only : mbintxao ! iMOAB id for intx mesh between ocean and atmosphere
   ! for tri grid, sameg_al would be false 
-  use seq_comm_mct, only : sameg_al !          same grid atm and land; used throughout, initialized in lnd_init
 
   use seq_comm_mct, only : mbrxid   !          iMOAB id of moab rof migrated to coupler pes 
 
@@ -438,11 +437,16 @@ contains
             call shr_sys_abort(subname//' ERROR in defining tags on lnd phys mesh on cpl')
          endif
          ierr  = iMOAB_GetMeshInfo ( mblxid, nvert, nvise, nbl, nsurf, nvisBC );
-         arrSize = 3 * nVert(1)
+         
+         if (nvise(1) .eq. 0)  then
+            ent_type = 0  ! vertex type, land on atm grid, no cells
+            arrSize = 3 * nVert(1)
+         else 
+            ent_type = 1 ! cell type, tri-grid case
+            arrSize = 3 * nvise(1) 
+         endif ! real land mesh
          allocate(tagValues(arrSize) )
-         ent_type = 1 ! cell type, tri-grid case
          tagValues = 0 
-         if (sameg_al) ent_type = 0  ! vertex type, land on atm grid
          ierr = iMOAB_SetDoubleTagStorage ( mblxid, tagname, arrSize , ent_type, tagValues)
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in setting fractions tags on lnd   '

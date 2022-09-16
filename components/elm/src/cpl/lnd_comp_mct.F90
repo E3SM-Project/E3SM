@@ -15,7 +15,7 @@ module lnd_comp_mct
   use iso_c_binding
 
 #ifdef HAVE_MOAB
-  use seq_comm_mct,       only: mlnid, sameg_al! id of moab land app
+  use seq_comm_mct,       only: mlnid! id of moab land app
 #endif
   !
   ! !public member functions:
@@ -37,6 +37,7 @@ module lnd_comp_mct
   private :: lnd_export_moab ! it should be part of lnd_import_export, but we will keep it here
   integer , private :: mblsize, totalmbls
   real (r8) , allocatable, private :: l2x_lm(:,:) ! for tags in MOAB
+  logical :: sameg_al ! save it for export :)  
 #endif
   !---------------------------------------------------------------------------
 
@@ -322,6 +323,7 @@ contains
                    lnd_gnam=lnd_gnam           )
     if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
     call init_land_moab(bounds, samegrid_al)
+    sameg_al = samegrid_al ! will use it for export too
 #endif
     call mct_aVect_init(x2l_l, rList=seq_flds_x2l_fields, lsize=lsz)
     call mct_aVect_zero(x2l_l)
@@ -816,7 +818,6 @@ contains
     integer, allocatable :: moabconn(:) ! will have the connectivity in terms of local index in verts
 
     dims  =3 ! store as 3d mesh
-    sameg_al = samegrid_al ! use a different name, but they do mean the same thing
     ! number the local grid
     lsz = bounds%endg - bounds%begg + 1
 
@@ -827,7 +828,7 @@ contains
     end do
     gsize = ldomain%ni * ldomain%nj ! size of the total grid
     ! if ldomain%nv > 3 , create mesh
-    if (ldomain%nv .ge. 3 .and.  .not.sameg_al) then
+    if (ldomain%nv .ge. 3 .and.  .not.samegrid_al) then
         ! number of vertices is nv * lsz !
         allocate(moab_vert_coords(lsz*dims*ldomain%nv))
         ! loop over ldomain
