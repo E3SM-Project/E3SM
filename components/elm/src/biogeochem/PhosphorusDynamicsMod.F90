@@ -69,27 +69,27 @@ contains
     integer :: g,c                    ! indices
 
     ! sensitivity testing
-    character(len=8), public :: startdate_scale_pdep
-    real(r8), public :: scale_pdep
+    character(len=8) :: startdate_scale_pdep
+    real(r8) :: scale_pdep
     integer :: sdate_sclp, sy_sclp, sm_sclp, sd_sclp ! scale pdep date componets
     integer :: year, mon, day, sec                   ! return variables for get_curr_date
     !-----------------------------------------------------------------------
+
+    namelist /pdepdyn_nml/    &
+    scale_pdep, startdate_scale_pdep
 
     associate(&
          forc_pdep     =>  atm2lnd_vars%forc_pdep_grc           , & ! Input:  [real(r8) (:)]  Phosphorus deposition rate (gP/m2/s)
          pdep_to_sminp =>  col_pf%pdep_to_sminp   & ! Output: [real(r8) (:)]
          )
 
-     namelist /pdepdyn_nml/    &
-        scale_pdep, startdate_scale_pdep
-
       call get_curr_date(year, mon, day, sec)
 
       if (startdate_scale_pdep .ne. '') then
-         read(startdate_scale_pdep,*) sdata_sclp
-         sy_sclp = sdata_sclp/10000
+         read(startdate_scale_pdep,*) sdate_sclp
+         sy_sclp = sdate_sclp/10000
          sm_sclp = (sdate_sclp-sy_sclp*10000)/100
-         sd_sclp = sdata_sclop-sy_sclp*1000-sm_sclp*100
+         sd_sclp = sdate_sclp-sy_sclp*1000-sm_sclp*100
       end if
       
       ! Loop through columns
