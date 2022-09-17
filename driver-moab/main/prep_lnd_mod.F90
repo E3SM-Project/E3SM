@@ -102,7 +102,6 @@ module prep_lnd_mod
 #ifdef MOABDEBUG
   integer :: number_calls ! it is a static variable, used to count the number of projections
 #endif
-  logical :: sameg_al ! local private variable, store samegrid_al value 
 contains
 
   !================================================================================================
@@ -181,7 +180,6 @@ contains
        samegrid_lr = .true.
        samegrid_lg = .true.
        if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
-       sameg_al = samegrid_al ! save for future use
        if (trim(lnd_gnam) /= trim(rof_gnam)) samegrid_lr = .false.
        if (trim(lnd_gnam) /= trim(glc_gnam)) samegrid_lg = .false.
 
@@ -601,11 +599,18 @@ contains
                                       ! used only for tri-grid case
    integer                  :: tagtype, numco, tagindex
    character*400            :: tagname    ! will store all seq_flds_a2x_fields
+   character(CL)            :: atm_gnam      ! atm grid
+   character(CL)            :: lnd_gnam      ! lnd grid
+   logical                  :: samegrid_al 
 
    call seq_infodata_getData(infodata, &
         atm_present=atm_present,       &
-        lnd_present=lnd_present)
+        lnd_present=lnd_present,       &
+         atm_gnam=atm_gnam,             &
+         lnd_gnam=lnd_gnam)
 
+    samegrid_al = .true.
+    if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
    !  it involves initial atm app; mhid; or pg2 mesh , in case atm_pg_active also migrate atm mesh on coupler pes, mbaxid
    !  intx lnd atm are in mbintxla ; remapper also has some info about coverage mesh
    ! after this, the sending of tags from atm pes to coupler pes, in land context will use the new par
@@ -617,7 +622,7 @@ contains
    ! we cannot use mbintxla because it may not exist on atm comp yet;
    context_id = lnd(1)%cplcompid
    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
-   if ( .not. sameg_al ) then
+   if ( .not. samegrid_al ) then
      if (atm_pg_active ) then ! use mhpgid mesh
        ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxla, atm_id, id_join, context_id);
      else
@@ -664,8 +669,8 @@ contains
      dofnameLND="GLOBAL_ID"//C_NULL_CHAR
      orderLND = 1  !  not much arguing
      
-     ! is the land mesh explicit or point cloud ? based on sameg_al flag:
-     if (sameg_al) then
+     ! is the land mesh explicit or point cloud ? based on samegrid_al flag:
+     if (samegrid_al) then
        dm2 = "pcloud"//C_NULL_CHAR
        wgtIdef = 'scalar-pc'//C_NULL_CHAR
      else
@@ -688,7 +693,7 @@ contains
      endif
    endif
    ! we will use intx atm-lnd mesh only when land is explicit
-   if (.not. sameg_al) then
+   if (.not. samegrid_al) then
      ! as with ocn, data is sent from atm ph to the intx atm/lnd, not from pg2 mesh anymore
      ! for that, we will use the comm graph between atm ph and atm pg2 intersected with land!
      ! copy from ocn logic, just replace with land
@@ -720,7 +725,7 @@ contains
        write(logunit,*) subname,' error in computing graph phys grid - atm/lnd intx '
        call shr_sys_abort(subname//' ERROR  in computing graph phys grid - atm/ocn intx ')
      endif
-   endif ! if (.not. sameg_al)
+   endif ! if (.not. samegrid_al)
 
    if (mblxid .ge. 0) then
       ! in any case, we need to define the tags on landx from the phys atm seq_flds_a2x_fields

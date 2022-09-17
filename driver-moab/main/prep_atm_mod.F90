@@ -92,7 +92,6 @@ module prep_atm_mod
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
   logical :: iamroot_CPLID ! .true. => CPLID masterproc
-  logical :: sameg_al ! saved for export / migrate
   save
   integer ::       num_proj ! to index the coupler projection calls
   
@@ -182,7 +181,6 @@ contains
        samegrid_al = .true.
        samegrid_ao = .true.
        if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
-       sameg_al = samegrid_al ! sameg_al is now a local, private variable; use it later for migrate 
        if (trim(atm_gnam) /= trim(ocn_gnam)) samegrid_ao = .false.
 
        if (ocn_c2_atm) then
@@ -284,7 +282,7 @@ contains
                'seq_maps.rc','lnd2atm_smapname:','lnd2atm_smaptype:',samegrid_al, &
                'mapper_Sl2a initialization',esmf_map_flag)
 
-          ! important change: do not compute intx at all between atm and land when we have sameg_al 
+          ! important change: do not compute intx at all between atm and land when we have samegrid_al 
           ! we will use just a comm graph to send data from phys grid to land on coupler
           if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) .and. .not. samegrid_al ) then
             appname = "ATM_LND_COU"//C_NULL_CHAR
@@ -352,13 +350,21 @@ contains
     character*32             :: dm1, dm2, wgtIdef
     character*50             :: outfile, wopts, lnum
     character(CXX)            :: tagName, tagnameProj, tagNameExt
+    character(CL)                    :: atm_gnam       ! atm grid
+    character(CL)                    :: lnd_gnam       ! lnd grid
+    logical  :: samegrid_al
 
 
     call seq_infodata_getData(infodata, &
       atm_present=atm_present,       &
       ocn_present=ocn_present,       &
       lnd_present=lnd_present,       &
+      atm_gnam=atm_gnam,             &
+      lnd_gnam=lnd_gnam,             &
       ocn_prognostic=ocn_prognostic)
+
+      samegrid_al = .true.
+      if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
 
     !  it involves initial atm app; mhid; also migrate atm mesh on coupler pes, mbaxid
     !  intx ocean atm are in mbintxao ; remapper also has some info about coverage mesh
@@ -502,7 +508,7 @@ contains
 
     if (atm_present .and. lnd_present) then
       wgtIdef = 'scalar'//C_NULL_CHAR ! from fv, need to be similar to ocean now
-      if (.not. sameg_al) then ! tri-grid case 
+      if (.not. samegrid_al) then ! tri-grid case 
         if (atm_pg_active ) then ! use mhpgid mesh
 
           if (mhpgid .ge. 0) then !  send because we are on atm pes
@@ -600,7 +606,7 @@ contains
 
         !CHECKRC(ierr, "cannot receive tag values")
         endif
-      else ! sameg_al, original lnd from atm grid
+      else ! samegrid_al, original lnd from atm grid
         ! major change; we do not have intx anymore, we just send from phys grid to land on coupler,
         !   using the comm graph computed at line prep_atm_lnd_moab , prep_lnd_mod.70:621
         ! ierr = iMOAB_ComputeCommGraph( mphaid, mblxid, mpicom_join, mpigrp_old, mpigrp_CPLID, &
@@ -655,7 +661,7 @@ contains
 #endif
         endif ! if on coupler procs
 
-      endif ! sameg_al, original
+      endif ! samegrid_al, original
     endif ! if (atm_present .and. lnd_present)
 
   end subroutine prep_atm_migrate_moab
