@@ -37,9 +37,10 @@ module pdepStreamMod
   integer :: stream_year_first_pdep       ! first year in stream to use
   integer :: stream_year_last_pdep        ! last year in stream to use
   integer :: model_year_align_pdep        ! align stream_year_firstpdep with 
-   ! sensitivity testing
-  character(len=8) :: startdate_scale_pdep
-  real(r8) :: scale_pdep
+
+  ! sensitivity testing
+  character(len=8), public :: startdate_scale_pdep
+  real(r8), public :: scale_pdep
   !==============================================================================
 
 contains

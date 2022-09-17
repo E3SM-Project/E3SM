@@ -59,6 +59,7 @@ contains
     !
 
     use clm_time_manager, only : get_curr_date
+    use pdepStreamMod,    only : startdate_scale_pdep, scale_pdep
 
     ! !ARGUMENTS:
       !$acc routine seq
@@ -69,15 +70,10 @@ contains
     integer :: g,c                    ! indices
 
     ! sensitivity testing
-    character(len=8) :: startdate_scale_pdep
-    real(r8) :: scale_pdep
     integer :: sdate_sclp, sy_sclp, sm_sclp, sd_sclp ! scale pdep date componets
     integer :: year, mon, day, sec                   ! return variables for get_curr_date
     !-----------------------------------------------------------------------
-
-    namelist /pdepdyn_nml/    &
-    scale_pdep, startdate_scale_pdep
-
+    
     call get_curr_date(year, mon, day, sec)
 
     if (startdate_scale_pdep .ne. '') then
