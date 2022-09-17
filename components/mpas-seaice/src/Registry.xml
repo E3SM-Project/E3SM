@@ -4676,6 +4676,26 @@
 		     dimensions="nCategories nCells Time"
 		     units="W m-2"
 		/>
+		<var name="penetratingShortwaveFluxVisibleDirect"
+		     type="real"
+		     dimensions="nCategories nCells Time"
+		     units="W m-2"
+		/>
+		<var name="penetratingShortwaveFluxVisibleDiffuse"
+		     type="real"
+		     dimensions="nCategories nCells Time"
+		     units="W m-2"
+		/>
+		<var name="penetratingShortwaveFluxIRDirect"
+		     type="real"
+		     dimensions="nCategories nCells Time"
+		     units="W m-2"
+		/>
+		<var name="penetratingShortwaveFluxIRDiffuse"
+		     type="real"
+		     dimensions="nCategories nCells Time"
+		     units="W m-2"
+		/>
 		<var name="shortwaveLayerPenetration"
 		     type="real"
 		     dimensions="nIceLayersP1 nCategories nCells Time"

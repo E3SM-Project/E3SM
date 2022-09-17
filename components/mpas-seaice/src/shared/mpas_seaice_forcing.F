@@ -1830,8 +1830,8 @@ contains
 
   subroutine prepare_oceanic_coupling_variables_ncar(block, firstTimeStep)
 
-    use ice_colpkg, only: &
-         colpkg_sea_freezing_temperature
+    use seaice_icepack, only: &
+         seaice_icepack_sea_freezing_temperature
 
     type (block_type), pointer :: block
 
@@ -1882,7 +1882,7 @@ contains
        oceanMixedLayerDepth(iCell) = max(oceanMixedLayerDepth(iCell), 0.0_RKIND)
 
        ! sea freezing temperature
-       seaFreezingTemperature(iCell) = colpkg_sea_freezing_temperature(seaSurfaceSalinity(iCell))
+       seaFreezingTemperature(iCell) = seaice_icepack_sea_freezing_temperature(seaSurfaceSalinity(iCell))
 
     enddo ! iCell
 

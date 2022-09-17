@@ -1343,8 +1343,8 @@ contains
 
   subroutine ice_strength(domain)
 
-    use ice_colpkg, only: &
-         colpkg_ice_strength
+    use seaice_icepack, only: &
+         seaice_icepack_ice_strength
 
     use seaice_constants, only: &
          seaiceIceStrengthConstantHiblerP, &
@@ -1446,7 +1446,7 @@ contains
              if (solveStress(iCell) == 1) then
 
                 ! this routine doesnt reset icePressure
-                call colpkg_ice_strength(&
+                call seaice_icepack_ice_strength(&
                      nCategories, &
                      iceAreaCell(iCell), &
                      iceVolumeCell(iCell), &

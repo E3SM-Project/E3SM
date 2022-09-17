@@ -53,9 +53,12 @@ contains
     use seaice_mesh, only: seaice_init_mesh
     use seaice_advection, only: seaice_init_advection
     use seaice_velocity_solver, only: seaice_init_velocity_solver
-    use seaice_column, only: &
-         seaice_init_column_physics_package_parameters, &
-         seaice_init_column_physics_package_variables
+    use seaice_icepack, only: &
+         seaice_init_icepack_constants, &
+         seaice_init_icepack_physics_package_parameters, &
+         seaice_init_icepack_physics_package_variables
+    use seaice_icepack, only: &
+         seaice_init_icepack_physics_package_variables
     use seaice_forcing, only: seaice_forcing_init, seaice_reset_coupler_fluxes
     use seaice_diagnostics, only: &
          seaice_set_testing_system_test_arrays
@@ -81,6 +84,9 @@ contains
 
     call mpas_log_write("seaice_init: Initialize sea-ice model")
 
+    ! set column constants
+    call seaice_init_icepack_constants()
+
     ! init testing system test arrays
     call seaice_set_testing_system_test_arrays(domain)
 
@@ -105,7 +111,7 @@ contains
 
     ! init the basic column physics package
     call mpas_log_write(" Initialize column parameters...")
-    call seaice_init_column_physics_package_parameters(domain)
+    call seaice_init_icepack_physics_package_parameters(domain)
 
     ! init coupler fluxes
     call mpas_log_write(" Initialize coupler fields...")
@@ -127,7 +133,7 @@ contains
 
     ! column physics initialization
     call mpas_log_write(" Initialize column variables...")
-    call seaice_init_column_physics_package_variables(domain, clock)
+    call seaice_init_icepack_physics_package_variables(domain, clock)
 
     ! init ice state
     call mpas_log_write(" Initialize ice state...")
@@ -162,8 +168,8 @@ contains
        domain, &
        clock)!{{{
 
-    use seaice_column, only: &
-         seaice_init_column_shortwave
+    use seaice_icepack, only: &
+         seaice_init_icepack_shortwave
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -181,7 +187,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
     if (config_use_column_package .and. config_use_column_shortwave .and. .not. config_do_restart) &
-         call seaice_init_column_shortwave(domain, clock)
+         call seaice_init_icepack_shortwave(domain, clock)
 
   end subroutine seaice_init_post_clock_advance
 
@@ -257,8 +263,8 @@ contains
     use seaice_testing, only: &
          seaice_init_square_test_case_hex, &
          seaice_init_square_point_test_case_hex
-    use seaice_column, only: &
-         seaice_column_aggregate
+    use seaice_icepack, only: &
+         seaice_icepack_aggregate
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -449,7 +455,7 @@ contains
     ! aggregate tracers even if restart
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
     if (config_use_column_package) &
-         call seaice_column_aggregate(domain)
+         call seaice_icepack_aggregate(domain)
 
   end subroutine init_ice_state!}}}
 
@@ -583,9 +589,9 @@ contains
     use seaice_constants, only: &
          seaiceDegreesToRadians
 
-    use ice_colpkg, only: &
-         colpkg_init_trcr, &
-         colpkg_enthalpy_snow
+    use seaice_icepack, only: &
+         seaice_icepack_init_trcr, &
+         seaice_icepack_enthalpy_snow
 
     type(block_type), intent(inout) :: &
          block !< Input/Output:
@@ -612,8 +618,8 @@ contains
          seaSurfaceTemperature, &
          seaFreezingTemperature
 
-      integer, dimension(:), pointer :: &
-           landIceMask
+    integer, dimension(:), pointer :: &
+         landIceMask
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          initialSalinityProfile, &
@@ -702,7 +708,7 @@ contains
              snowVolumeCategory(1,iCategory,iCell) = min(iceAreaCategory(1,iCategory,iCell) * initialCategorySnowThickness, &
                                                          0.2_RKIND * iceVolumeCategory(1,iCategory,iCell))
 
-             call colpkg_init_trcr(&
+             call seaice_icepack_init_trcr(&
                   airTemperature(iCell), &
                   seaFreezingTemperature(iCell), &
                   initialSalinityProfile(:,iCell), &
@@ -724,7 +730,7 @@ contains
 
           surfaceTemperature(1,:,iCell) = seaFreezingTemperature(iCell)
           do iSnowLayer = 1, nSnowLayers
-             snowEnthalpy(iSnowLayer,:,iCell) = colpkg_enthalpy_snow(0.0_RKIND)
+             snowEnthalpy(iSnowLayer,:,iCell) = seaice_icepack_enthalpy_snow(0.0_RKIND)
           end do
 
        endif
@@ -769,8 +775,8 @@ contains
     use seaice_constants, only: &
          seaicePuny
 
-    use ice_colpkg, only: &
-         colpkg_init_itd
+    use seaice_icepack, only: &
+         seaice_icepack_init_itd
 
     ! Note: the resulting average ice thickness
     ! tends to be less than hbar due to the
@@ -824,7 +830,7 @@ contains
 
     if (.not. config_use_column_package) then
 
-       call colpkg_init_itd(&
+       call seaice_icepack_init_itd(&
             nCategories, &
             categoryThicknessLimits, &
             abortFlag, &
@@ -1042,9 +1048,9 @@ contains
     use seaice_constants, only: &
          seaiceDegreesToRadians
 
-    use ice_colpkg, only: &
-         colpkg_init_trcr, &
-         colpkg_enthalpy_snow
+    use seaice_icepack, only: &
+         seaice_icepack_init_trcr, &
+         seaice_icepack_enthalpy_snow
 
     type(block_type), intent(inout) :: &
          block !< Input/Output:
@@ -1072,8 +1078,8 @@ contains
          seaFreezingTemperature, &
          categoryThicknessLimits
 
-      integer, dimension(:), pointer :: &
-           landIceMask
+    integer, dimension(:), pointer :: &
+         landIceMask
 
     real(kind=RKIND), dimension(:,:), pointer :: &
          initialSalinityProfile, &
@@ -1177,7 +1183,7 @@ contains
              snowVolumeCategory(1,iCategory,iCell) = min(iceAreaCategory(1,iCategory,iCell) * initialCategorySnowThickness, &
                                                          0.2_RKIND * iceVolumeCategory(1,iCategory,iCell))
 
-             call colpkg_init_trcr(&
+             call seaice_icepack_init_trcr(&
                   airTemperature(iCell), &
                   seaFreezingTemperature(iCell), &
                   initialSalinityProfile(:,iCell), &
@@ -1199,7 +1205,7 @@ contains
 
           surfaceTemperature(1,:,iCell) = seaFreezingTemperature(iCell)
           do iSnowLayer = 1, nSnowLayers
-             snowEnthalpy(iSnowLayer,:,iCell) = colpkg_enthalpy_snow(0.0_RKIND)
+             snowEnthalpy(iSnowLayer,:,iCell) = seaice_icepack_enthalpy_snow(0.0_RKIND)
           end do
 
        endif
@@ -2083,16 +2089,14 @@ contains
 
   subroutine initialize_coupler_fields(domain)
 
-    use ice_colpkg, only: &
-         colpkg_liquidus_temperature, &
-         colpkg_init_ocean_conc
+    use seaice_icepack, only: &
+         seaice_icepack_liquidus_temperature, &
+         seaice_icepack_init_ocean_conc, &
+         seaice_icepack_initial_air_drag_coefficient
 
     use seaice_constants, only: &
          seaiceStefanBoltzmann, &
          seaiceFreshWaterFreezingPoint
-
-    use seaice_column, only: &
-         seaice_column_initial_air_drag_coefficient
 
     type(domain_type) :: domain
 
@@ -2199,7 +2203,7 @@ contains
        call MPAS_pool_get_config(block % configs, "config_do_restart", config_do_restart)
 
        do iCell = 1, nCells
-          seaFreezingTemperature(iCell) = colpkg_liquidus_temperature(seaSurfaceSalinity(iCell))
+          seaFreezingTemperature(iCell) = seaice_icepack_liquidus_temperature(seaSurfaceSalinity(iCell))
        enddo ! iCell
 
        ! sea surface temperature is not initialized if we're restarting
@@ -2221,7 +2225,7 @@ contains
 
           call MPAS_pool_get_subpool(block % structs, "drag", drag)
           call MPAS_pool_get_array(drag, "airDragCoefficient", airDragCoefficient)
-          airDragCoefficient = seaice_column_initial_air_drag_coefficient()
+          airDragCoefficient = seaice_icepack_initial_air_drag_coefficient()
 
        endif
 
@@ -2290,7 +2294,7 @@ contains
 
           do iCell = 1, nCells
 
-             call colpkg_init_ocean_conc(&
+             call seaice_icepack_init_ocean_conc(&
                   oceanAmmoniumConc(iCell), &
                   oceanDMSPConc(iCell), &
                   oceanDMSConc(iCell), &

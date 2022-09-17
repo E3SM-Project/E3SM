@@ -3,7 +3,6 @@ module seaice_core
    use mpas_framework
    use mpas_timekeeping
    use seaice_analysis_driver
-   use seaice_column
    use mpas_threading
    use mpas_timer, only: mpas_timer_start, mpas_timer_stop
    use mpas_log, only: mpas_log_write
@@ -415,8 +414,8 @@ module seaice_core
 
       use mpas_derived_types
       use mpas_decomp
-      use seaice_column, only: &
-           seaice_column_finalize
+      use seaice_icepack, only: &
+           seaice_icepack_finalize
       use seaice_mesh_pool, only: &
            seaice_mesh_pool_destroy
 
@@ -431,7 +430,7 @@ module seaice_core
       call seaice_mesh_pool_destroy(iErr)
 
       ! finalize column
-      call seaice_column_finalize(domain)
+      call seaice_icepack_finalize(domain)
 
       call seaice_analysis_finalize(domain, ierr)
 
