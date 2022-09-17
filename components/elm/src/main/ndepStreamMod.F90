@@ -39,8 +39,8 @@ module ndepStreamMod
   integer :: model_year_align_ndep        ! align stream_year_firstndep with 
 
   ! sensitivity testing
-  character(len=8), public :: startdate_scale_pdep
-  real(r8), public :: scale_pdep
+  character(len=8), public :: startdate_scale_ndep
+  real(r8), public :: scale_ndep
   !==============================================================================
 
 contains
