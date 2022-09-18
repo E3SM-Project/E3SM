@@ -68,23 +68,13 @@ _TESTS = {
 
     "e3sm_v3atm_developer_f2010_chemmzt" : {
         "tests"   : (
-            "ERP_Ln18.ne4_oQU240.F2010_chemMZT",
-            "SMS_Ln9.ne4_oQU240.F2010_chemMZT.eam-outfrq9s",
-            "SMS.ne4_oQU240.F2010_chemMZT.eam-cosplite",
-            "SMS_D_Ln5.ne4_oQU240.F2010_chemMZT",
-            "SMS_Ln5.ne4pg2_oQU480.F2010_chemMZT",
-            "ERS.ne4_oQU240.F2010_chemMZT.eam-hommexx"
+            "SMS_Ln9.ne30pg2_EC30to60E2r2.F2010_chemMZT"
             )
         },
 
     "e3sm_v3atm_developer_f20tr_chemuci_linozv3" : {
         "tests"   : (
-            "ERP_Ln18.ne4_oQU240.F20TR_chemUCI-Linozv3",
-            "SMS_Ln9.ne4_oQU240.F20TR_chemUCI-Linozv3.eam-outfrq9s",
-            "SMS.ne4_oQU240.F20TR_chemUCI-Linozv3.eam-cosplite",
-            "SMS_D_Ln5.ne4_oQU240.F20TR_chemUCI-Linozv3",
-            "SMS_Ln5.ne4pg2_oQU480.F20TR_chemUCI-Linozv3",
-            "ERS.ne4_oQU240.F20TR_chemUCI-Linozv3.eam-hommexx"
+            "SMS_Ln9.ne30pg2_EC30to60E2r2.F20TR_chemUCI-Linozv3.eam-20tr_v3atm"
             )
         },
 
@@ -126,34 +116,19 @@ _TESTS = {
 
     "e3sm_v3atm_integration_f2010_chemmzt" : {
         "tests"   : (
-            "ERP_Ln18.ne4_oQU240.F2010_chemMZT",
-            "PET_Ln5.ne4_oQU240.F2010_chemMZT.allactive-mach-pet",
-            "PEM_Ln5.ne4_oQU240.F2010_chemMZT",
-            "SMS.ne4_oQU240.F2010_chemMZT.eam-cosplite_nhtfrq5",
-            "SMS_Ln1.ne4_oQU240.F2010_chemMZT.eam-chem_pp",
-            "SMS_Ln5.ne4pg2_oQU480.F2010_chemMZT",
-            "SMS_D_Ln5.ne4_oQU240.F2010_chemMZT.eam-clubb_sp",
-            "ERS_Ld5.ne4_oQU240.F2010_chemMZT.eam-rrtmgp",
-            "ERS_Ld5.ne4_oQU240.F2010_chemMZT.eam-rrtmgpxx",
-            "ERS.ne4_oQU240.F2010_chemMZT.eam-hommexx",
-            "SMS_Ln5.ne30pg2_r05_oECv3.F2010_chemMZT.eam-wcprod",
-            "SMS.ne30pg2_r05_oECv3.F20TR_chemMZT.eam-wcprod",
+            "ERP_Ln18.ne30pg2_EC30to60E2r2.F2010_chemUCI",
+            "PET_Ln5.ne30pg2_EC30to60E2r2.F2010_chemUCI",
+            "PEM_Ln5.ne30pg2_EC30to60E2r2.F2010_chemUCI",
+            "ERS_Ln9.ne30pg2_EC30to60E2r2.F2010_chemUCI",
             )
         },
 
     "e3sm_v3atm_integration_f20tr_chemuci_linozv3" : {
         "tests"   : (
-            "ERP_Ln18.ne4_oQU240.F20TR_chemUCI-Linozv3",
-            "PET_Ln5.ne4_oQU240.F20TR_chemUCI-Linozv3.allactive-mach-pet",
-            "PEM_Ln5.ne4_oQU240.F20TR_chemUCI-Linozv3",
-            "SMS.ne4_oQU240.F20TR_chemUCI-Linozv3.eam-cosplite_nhtfrq5",
-            "SMS_Ln1.ne4_oQU240.F20TR_chemUCI-Linozv3.eam-chem_pp",
-            "SMS_Ln5.ne4pg2_oQU480.F20TR_chemUCI-Linozv3",
-            "SMS_D_Ln5.ne4_oQU240.F20TR_chemUCI-Linozv3.eam-clubb_sp",
-            "ERS_Ld5.ne4_oQU240.F20TR_chemUCI-Linozv3.eam-rrtmgp",
-            "ERS_Ld5.ne4_oQU240.F20TR_chemUCI-Linozv3.eam-rrtmgpxx",
-            "ERS.ne4_oQU240.F20TR_chemUCI-Linozv3.eam-hommexx",
-            "SMS.ne30pg2_r05_oECv3.F20TR_chemUCI-Linozv3.eam-wcprod",
+            "ERP_Ln18.ne30pg2_EC30to60E2r2.F20TR_chemUCI-Linozv3.eam-20tr_v3atm",
+            "PET_Ln5.ne30pg2_EC30to60E2r2.F20TR_chemUCI-Linozv3.eam-20tr_v3atm",
+            "PEM_Ln5.ne30pg2_EC30to60E2r2.F20TR_chemUCI-Linozv3.eam-20tr_v3atm",
+            "ERS_Ln9.ne30pg2_EC30to60E2r2.F20TR_chemUCI-Linozv3.eam-20tr_v3atm",
             )
         },
 
