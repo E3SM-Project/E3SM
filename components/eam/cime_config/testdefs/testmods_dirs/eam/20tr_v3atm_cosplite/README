@@ -4,5 +4,6 @@ cannot be switched off. The code base has not been made back compatible with
 standard E3SM codes. As a result, E3SMv2 standard compset are not able to run.
 
 Therefore, to support developer and integration testings, the tests 
-set to use compset F20TR_chemUCI-Linozv3.  Settings specified in run 
-script by v3atm developers may also be included in this testmod. 
+set to use compset F20TR_chemUCI-Linozv3. cosp-lite is also enabled.
+Settings specified in run script by v3atm developers may also be included
+in this testmod. 

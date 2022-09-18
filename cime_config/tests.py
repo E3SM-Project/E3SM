@@ -74,7 +74,7 @@ _TESTS = {
 
     "e3sm_v3atm_developer_f20tr_chemuci_linozv3" : {
         "tests"   : (
-            "SMS_Ln9.ne30pg2_EC30to60E2r2.F20TR_chemUCI-Linozv3.eam-20tr_v3atm"
+            "SMS_Ln9.ne30pg2_EC30to60E2r2.F20TR_chemUCI-Linozv3.eam-20tr_v3atm_cosplite"
             )
         },
 
