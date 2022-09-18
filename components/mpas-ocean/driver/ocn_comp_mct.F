@@ -38,6 +38,7 @@ module ocn_comp_mct
    use mpas_constants
    use mpas_log
 #ifdef HAVE_MOAB
+   use shr_kind_mod    , only: cxx => SHR_KIND_CXX
    use mpas_moabmesh
    use seq_comm_mct, only: MPOID
    use iMOAB, only: iMOAB_DefineTagStorage
@@ -224,7 +225,7 @@ contains
 #ifdef HAVE_MOAB
     character*100 outfile, wopts
     integer :: ierrmb, numco, tagtype, tagindex
-    character(len=400) :: tagname
+    character(CXX) :: tagname
 #endif
     interface
        subroutine xml_stream_parser(xmlname, mgr_p, comm, ierr) bind(c)
@@ -2794,7 +2795,7 @@ contains
       integer, save :: num_mb_exports = 0  ! used for debugging
       integer :: ent_type, ierr
       character(len=100) :: outfile, wopts, localmeshfile, lnum
-      character(len=400) :: tagname
+      character(CXX) :: tagname
 
       integer :: i, n
       integer, pointer :: nCellsSolve, index_temperatureSurfaceValue, index_salinitySurfaceValue, &

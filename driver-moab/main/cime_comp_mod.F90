@@ -4676,9 +4676,6 @@ contains
 !----------------------------------------------------------------------------------
 
   subroutine cime_run_ice_setup_send()
-
-    use seq_flds_mod , only : seq_flds_i2x_fields
-    use seq_comm_mct , only : mpsiid, mbixid !
   
     !  Note that for atm->ice mapping below will leverage the assumption that the
     !  ice and ocn are on the same grid and that mapping of atm to ocean is
@@ -4724,7 +4721,6 @@ contains
             mpicom_barrier=mpicom_CPLALLICEID, run_barriers=run_barriers, &
             timer_barrier='CPL:C2I_BARRIER', timer_comp_exch='CPL:C2I', &
             timer_map_exch='CPL:c2i_icex2icei', timer_infodata_exch='CPL:ice_infoexch')
-       call component_exch_moab(ice(1), mpsiid, mbixid, 0, seq_flds_i2x_fields)
     endif
 
   end subroutine cime_run_ice_setup_send
@@ -4736,6 +4732,8 @@ contains
     !----------------------------------------------------------
     ! ice -> cpl
     !----------------------------------------------------------
+    use seq_flds_mod , only : seq_flds_i2x_fields
+    use seq_comm_mct , only : mpsiid, mbixid !
     if (iamin_CPLALLICEID) then
        call component_exch(ice, flow='c2x', &
             infodata=infodata, infodata_string='ice2cpl_run', &
@@ -4748,8 +4746,9 @@ contains
        ! it needs to be called on the joint comm between ice and coupler
        ! if we do a proper component_exch, then would need another hop, just on coupler pes
        !  TODO when do we need to send from ice to ocn? Usually after ice run ? 
+       call component_exch_moab(ice(1), mpsiid, mbixid, 0, seq_flds_i2x_fields) ! this migrates all fields from ice to coupler
        if (ice_c2_ocn ) then
-         call prep_ocn_calc_i2x_ox_moab()
+         call prep_ocn_calc_i2x_ox_moab() ! this does projection ice-ocn with one hop 
        endif
     endif
 

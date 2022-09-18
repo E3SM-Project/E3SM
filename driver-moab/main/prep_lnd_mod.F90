@@ -598,7 +598,7 @@ contains
    integer                  :: idintx ! in this case, id of moab intersection between atm and lnd, on coupler pes
                                       ! used only for tri-grid case
    integer                  :: tagtype, numco, tagindex
-   character*400            :: tagname    ! will store all seq_flds_a2x_fields
+   character(CXX)            :: tagname    ! will store all seq_flds_a2x_fields
    character(CL)            :: atm_gnam      ! atm grid
    character(CL)            :: lnd_gnam      ! lnd grid
    logical                  :: samegrid_al 

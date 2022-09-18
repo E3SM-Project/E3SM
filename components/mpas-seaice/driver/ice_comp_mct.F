@@ -44,6 +44,7 @@ module ice_comp_mct
    use mpas_moabmesh
    use seq_comm_mct, only: MPSIID
    use iMOAB, only: iMOAB_DefineTagStorage
+   use shr_kind_mod    , only: cxx => SHR_KIND_CXX
 #endif
 
    use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
@@ -216,7 +217,7 @@ contains
     character(len=strKIND) :: history
 #ifdef HAVE_MOAB
     integer :: ierrmb, numco, tagtype, tagindex
-    character(len=400) :: tagname
+    character(CXX) :: tagname
 #endif
     logical, pointer :: tempLogicalConfig
     character(len=StrKIND), pointer :: tempCharConfig
@@ -3009,7 +3010,7 @@ contains
       character(len=32), parameter :: sub = 'ice_export_moab'
    
       character(len=100) :: outfile, wopts, localmeshfile, lnum
-      character(len=400) :: tagname
+      character(CXX) :: tagname
    !----------------------------------------------------------------------- 
       call shr_file_setLogUnit (iceLogUnit)
       n = 0

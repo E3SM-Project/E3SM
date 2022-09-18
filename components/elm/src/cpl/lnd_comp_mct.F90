@@ -789,6 +789,7 @@ contains
 #ifdef HAVE_MOAB
   subroutine init_land_moab(bounds, samegrid_al)
     use seq_flds_mod     , only :  seq_flds_l2x_fields
+    use shr_kind_mod     , only : CXX => SHR_KIND_CXX
     use spmdMod     , only: iam  ! rank on the land communicator
     use domainMod   , only: ldomain ! ldomain is coming from module, not even passed
     use elm_varcon  , only: re
@@ -813,7 +814,7 @@ contains
     integer   dims, i, iv, ilat, ilon, igdx, ierr, tagindex
     integer tagtype, numco, ent_type, mbtype, block_ID
     character*100 outfile, wopts, localmeshfile
-    character*400 tagname ! hold all fields
+    character(CXX) ::  tagname ! hold all fields
 
     integer, allocatable :: moabconn(:) ! will have the connectivity in terms of local index in verts
 
