@@ -22,6 +22,7 @@
 #include "SphereOperators.hpp"
 #include "TimeLevel.hpp"
 #include "Tracers.hpp"
+#include "GllFvRemap.hpp"
 #include "VerticalRemapManager.hpp"
 #include "mpi/BoundaryExchange.hpp"
 #include "mpi/MpiBuffersManager.hpp"
@@ -44,7 +45,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
                                const int& ftype, const int& theta_adv_form, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
                                const bool& use_cpstar, const int& transport_alg, const bool& theta_hydrostatic_mode, const char** test_case,
                                const int& dt_remap_factor, const int& dt_tracer_factor,
-                               const double& rearth)
+                               const double& rearth, const int& nsplit)
 {
   // Check that the simulation options are supported. This helps us in the future, since we
   // are currently 'assuming' some option have/not have certain values. As we support for more
@@ -62,6 +63,14 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   Errors::check_option("init_simulation_params_c","nu",nu,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","nu_div",nu_div,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","theta_advection_form",theta_adv_form,{0,1});
+#ifndef SCREAM
+  Errors::check_option("init_simulation_params_c","nsplit",nsplit,1,Errors::ComparisonOp::GE);
+#else
+  if (nsplit<1 && Context::singleton().get<Comm>().root()) {
+    printf ("Note: nsplit=%d, while nsplit must be >=1. We know SCREAM does not know nsplit until runtime, so this is fine.\n"
+            "      Make sure nsplit is set to a valid value before calling prim_advance_subcycle!\n",nsplit);
+  }
+#endif
 
   // Get the simulation params struct
   SimulationParams& params = Context::singleton().create<SimulationParams>();
@@ -102,6 +111,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.transport_alg                 = transport_alg;
   params.theta_hydrostatic_mode        = theta_hydrostatic_mode;
   params.dcmip16_mu                    = dcmip16_mu;
+  params.nsplit                        = nsplit;
   params.rearth                        = rearth;
 
   if (time_step_type==5) {
@@ -142,7 +152,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   if (ftype == -1) {
     params.ftype = ForcingAlg::FORCING_OFF;
   } else if (ftype == 0) {
-    params.ftype = ForcingAlg::FORCING_DEBUG;
+    params.ftype = ForcingAlg::FORCING_0;
   } else if (ftype == 2) {
     params.ftype = ForcingAlg::FORCING_2;
   }
@@ -150,11 +160,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   // TODO Parse a fortran string and set this properly. For now, our code does
   // not depend on this except to throw an error in apply_test_forcing.
   std::string test_name(*test_case);
-  //if (test_name=="jw_baroclinic") {
-    params.test_case = TestCase::JW_BAROCLINIC;
-  //} else {
-  //  Errors::runtime_abort("Error! Unknown test case '" + test_name + "'.\n");
-  //}
+  //TEMP
+  params.test_case = TestCase::JW_BAROCLINIC;
 
   // Now this structure can be used safely
   params.params_set = true;
@@ -202,6 +209,8 @@ void cxx_push_results_to_f90(F90Ptr &elem_state_v_ptr,         F90Ptr &elem_stat
                    elem_Q_ptr, num_elems));
 }
 
+//currently, we do not need FVTheta and FPHI, because they are computed from FT and FQ
+//in applycamforcing_tracers inside xx
 void push_forcing_to_c (F90Ptr elem_derived_FM,
                         F90Ptr elem_derived_FVTheta,
                         F90Ptr elem_derived_FT,
@@ -226,7 +235,6 @@ void push_forcing_to_c (F90Ptr elem_derived_FM,
       elem_derived_FPHI, num_elems);
   sync_to_device(fphi_f90, forcing.m_fphi);
 
-  const SimulationParams &params = Context::singleton().get<SimulationParams>();
   Tracers &tracers = Context::singleton().get<Tracers>();
   if (tracers.fq.data() == nullptr) {
     tracers.fq = decltype(tracers.fq)("fq", num_elems, tracers.num_tracers());
@@ -409,6 +417,14 @@ void init_functors_c (const bool& allocate_buffer)
     auto& dirk = Context::singleton().get<DirkFunctor>();
     dirk.init_buffers(fbm);
   }
+  // The SCREAM-side Hommexx interface will initialize GllFvRemap if it's
+  // needed. But it expects the Homme-side Hommexx interface to init buffers, so
+  // do that here.
+  if (c.has<GllFvRemap>()) {
+    auto& gfr = c.get<GllFvRemap>();
+    gfr.setup();
+    gfr.init_buffers(fbm);
+  }
 }
 
 void init_elements_2d_c (const int& ie,
@@ -470,8 +486,10 @@ void init_elements_states_c (CF90Ptr& elem_state_v_ptr,       CF90Ptr& elem_stat
   const auto  qdp = tracers.qdp;
   const auto  q = tracers.Q;
   const auto  dp = state.m_dp3d;
-  const auto& tl = c.get<TimeLevel>();
+  auto& tl = c.get<TimeLevel>();
   const auto n0 = tl.n0;
+  const SimulationParams& params = c.get<SimulationParams>();
+  tl.update_tracers_levels(params.qsplit);
   const auto n0_qdp = tl.n0_qdp;
   const auto qsize = tracers.num_tracers();
   const auto size = tracers.num_elems()*tracers.num_tracers()*NP*NP*NUM_LEV;
@@ -556,6 +574,12 @@ void init_boundary_exchanges_c ()
   // HyperviscosityFunctor's BE's
   auto& hvf = c.get<HyperviscosityFunctor>();
   hvf.init_boundary_exchanges();
+
+  if (c.has<GllFvRemap>()) {
+    auto& gfr = c.get<GllFvRemap>();
+    gfr.reset(params);
+    gfr.init_boundary_exchanges();
+  }
 }
 
 } // extern "C"

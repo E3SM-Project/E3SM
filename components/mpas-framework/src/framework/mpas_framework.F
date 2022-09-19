@@ -61,7 +61,7 @@ module mpas_framework
 !> \author Michael Duda, Doug Jacobsen
 !> \date   03/26/13
 !> \details
-!>  This routine finalizes the initialization of the MPAS framework. It calls initializes 
+!>  This routine finalizes the initialization of the MPAS framework. It calls initializes
 !>  the time keeper, and the IO infrastructure.
 !
 !-----------------------------------------------------------------------
@@ -129,16 +129,20 @@ module mpas_framework
 !> \details
 !>  This routine finalizes the MPAS framework. It calls routines related to finalizing different parts of MPAS, that are housed within the framework.
 !
-!-----------------------------------------------------------------------  
+!-----------------------------------------------------------------------
    subroutine mpas_framework_finalize(dminfo, domain, io_system)!{{{
-  
+
       implicit none
 
       type (dm_info), pointer :: dminfo
       type (domain_type), pointer :: domain
       type (iosystem_desc_t), optional, pointer :: io_system
 
-      call MPAS_io_finalize(domain % ioContext, .false.)
+      logical :: finalize_iosystem
+
+      ! if there's an external PIO system so we don't want to finalize it here
+      finalize_iosystem = .not. present(io_system)
+      call MPAS_io_finalize(domain % ioContext, finalize_iosystem=finalize_iosystem)
 
       call mpas_deallocate_domain(domain)
 

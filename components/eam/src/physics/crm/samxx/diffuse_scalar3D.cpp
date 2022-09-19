@@ -2,18 +2,18 @@
 
 void diffuse_scalar3D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
                       int ind_tkh, real2d &flux) {
-  auto &dx     = ::dx;
-  auto &dy     = ::dy;
-  auto &rhow   = ::rhow;
-  auto &adzw   = ::adzw;
-  auto &adz    = ::adz;
-  auto &dz     = ::dz; 
-  auto &dtn    = ::dtn;
-  auto &rho    = ::rho;
-  auto &grdf_x = ::grdf_x;
-  auto &grdf_y = ::grdf_y;
-  auto &grdf_z = ::grdf_z;
-  auto &ncrms  = ::ncrms;
+  YAKL_SCOPE( dx     , ::dx );
+  YAKL_SCOPE( dy     , ::dy );
+  YAKL_SCOPE( rhow   , ::rhow );
+  YAKL_SCOPE( adzw   , ::adzw );
+  YAKL_SCOPE( adz    , ::adz );
+  YAKL_SCOPE( dz     , ::dz ); 
+  YAKL_SCOPE( dtn    , ::dtn );
+  YAKL_SCOPE( rho    , ::rho );
+  YAKL_SCOPE( grdf_x , ::grdf_x );
+  YAKL_SCOPE( grdf_y , ::grdf_y );
+  YAKL_SCOPE( grdf_z , ::grdf_z );
+  YAKL_SCOPE( ncrms  , ::ncrms );
 
   if (dosgs) {
     real4d flx_x("flx_x", nzm+1, ny+1, nx+1, ncrms);
@@ -82,7 +82,7 @@ void diffuse_scalar3D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       if (k <= nzm-2) {
         int kc=k+1;
         real rhoi = rhow(kc,icrm)/adzw(kc,icrm);
@@ -119,18 +119,18 @@ void diffuse_scalar3D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
 
 void diffuse_scalar3D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt, real5d &tkh,
                       int ind_tkh, real2d &flux) {
-  auto &dx     = ::dx;
-  auto &dy     = ::dy;
-  auto &rhow   = ::rhow;
-  auto &adzw   = ::adzw;
-  auto &adz    = ::adz;
-  auto &dz     = ::dz; 
-  auto &dtn    = ::dtn;
-  auto &rho    = ::rho;
-  auto &grdf_x = ::grdf_x;
-  auto &grdf_y = ::grdf_y;
-  auto &grdf_z = ::grdf_z;
-  auto &ncrms  = ::ncrms;
+  YAKL_SCOPE( dx     , ::dx );
+  YAKL_SCOPE( dy     , ::dy );
+  YAKL_SCOPE( rhow   , ::rhow );
+  YAKL_SCOPE( adzw   , ::adzw );
+  YAKL_SCOPE( adz    , ::adz );
+  YAKL_SCOPE( dz     , ::dz ); 
+  YAKL_SCOPE( dtn    , ::dtn );
+  YAKL_SCOPE( rho    , ::rho );
+  YAKL_SCOPE( grdf_x , ::grdf_x );
+  YAKL_SCOPE( grdf_y , ::grdf_y );
+  YAKL_SCOPE( grdf_z , ::grdf_z );
+  YAKL_SCOPE( ncrms  , ::ncrms );
   
   if (dosgs) {
     real4d flx_x("flx_x", nzm+1, ny+1, nx+1, ncrms);
@@ -200,7 +200,7 @@ void diffuse_scalar3D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       if (k <= nzm-2) {
         int kc=k+1;
         real rhoi = rhow(kc,icrm)/adzw(kc,icrm);
@@ -236,18 +236,18 @@ void diffuse_scalar3D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
 
 void diffuse_scalar3D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb, real4d &fluxt,
                       int ind_fluxt, real5d &tkh, int ind_tkh, real3d &flux, int ind_flux) {
-  auto &dx     = ::dx;
-  auto &dy     = ::dy;
-  auto &rhow   = ::rhow;
-  auto &adzw   = ::adzw;
-  auto &adz    = ::adz;
-  auto &dz     = ::dz; 
-  auto &dtn    = ::dtn;
-  auto &rho    = ::rho;
-  auto &grdf_x = ::grdf_x;
-  auto &grdf_y = ::grdf_y;
-  auto &grdf_z = ::grdf_z;
-  auto &ncrms  = ::ncrms;
+  YAKL_SCOPE( dx     , ::dx );
+  YAKL_SCOPE( dy     , ::dy );
+  YAKL_SCOPE( rhow   , ::rhow );
+  YAKL_SCOPE( adzw   , ::adzw );
+  YAKL_SCOPE( adz    , ::adz );
+  YAKL_SCOPE( dz     , ::dz ); 
+  YAKL_SCOPE( dtn    , ::dtn );
+  YAKL_SCOPE( rho    , ::rho );
+  YAKL_SCOPE( grdf_x , ::grdf_x );
+  YAKL_SCOPE( grdf_y , ::grdf_y );
+  YAKL_SCOPE( grdf_z , ::grdf_z );
+  YAKL_SCOPE( ncrms  , ::ncrms );
   
   if (dosgs) {
     real4d flx_x("flx_x", nzm+1, ny+1, nx+1, ncrms);
@@ -318,7 +318,7 @@ void diffuse_scalar3D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb
     //   for (int j=0; j<ny; j++) {
     //     for (int i=0; i<nx; i++) {
     //       for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       if (k <= nzm-2) {
         int kc=k+1;
         real rhoi = rhow(kc,icrm)/adzw(kc,icrm);

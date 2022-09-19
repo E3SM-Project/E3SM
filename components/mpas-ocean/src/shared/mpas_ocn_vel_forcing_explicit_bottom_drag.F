@@ -76,16 +76,16 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_vel_forcing_explicit_bottom_drag_tend(normVelocity, &
-                                 KECell, layerThickEdge, tend, err) !{{{
+                                 KECell, layerThickEdgeMean, tend, err) !{{{
 
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normVelocity,  &!< [in] normal velocity
-         KECell,        &!< [in] kinetic energy at cell
-         layerThickEdge  !< [in] layer thickness at edge
+         normVelocity,      &!< [in] normal velocity
+         KECell,            &!< [in] kinetic energy at cell
+         layerThickEdgeMean  !< [in] mean layer thickness at edge
 
       !-----------------------------------------------------------------
       ! input/output variables
@@ -130,7 +130,7 @@ contains
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(cellsOnEdge, maxLevelEdgeTop, KECell, &
-      !$acc            tend, normVelocity, layerThickEdge) &
+      !$acc            tend, normVelocity, layerThickEdgeMean) &
       !$acc    private(k, cell1, cell2)
 #else
       !$omp parallel
@@ -144,7 +144,7 @@ contains
         if (k > 0) then
            tend(k,iEdge) = tend(k,iEdge) - dragCoeff* &
                            sqrt(KECell(k,cell1) + KECell(k,cell2))* &
-                           normVelocity(k,iEdge)/layerThickEdge(k,iEdge)
+                           normVelocity(k,iEdge)/layerThickEdgeMean(k,iEdge)
         end if
 
       enddo

@@ -27,6 +27,7 @@ module ocn_tidal_forcing
    use mpas_timer
    use ocn_constants
    use ocn_config
+   use ocn_mesh
    use ocn_diagnostics_variables
 
    implicit none
@@ -73,14 +74,13 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tidal_forcing_layer_thickness(meshPool, forcingPool, layerThicknessTend, err)!{{{
+   subroutine ocn_tidal_forcing_layer_thickness(forcingPool, layerThicknessTend, err)!{{{
 
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
       type (mpas_pool_type), intent(in) :: forcingPool !< Input: Forcing information
 
       !-----------------------------------------------------------------
@@ -105,8 +105,6 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell, k, nCells
-      integer, dimension(:), pointer :: nCellsArray
-      integer, dimension(:), pointer :: minLevelCell, maxLevelCell
       real (kind=RKIND), dimension(:,:), pointer :: tidalLayerThicknessTendency
 
       err = 0
@@ -115,18 +113,23 @@ contains
 
       call mpas_timer_start("tidal thickness tendency")
 
-      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
-      call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
-      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(forcingPool, 'tidalLayerThicknessTendency', &
                                              tidalLayerThicknessTendency)
 
       ! frazil fields are needed only over 0 and 1 halos
-      nCells = nCellsArray( 2 )
+      nCells = nCellsHalo( 1 )
 
       ! Build surface fluxes at cell centers
+#ifdef MPAS_OPENACC
+      !$acc enter data copyin(tidalLayerThicknessTendency)
+
+      !$acc parallel loop present(layerThicknessTend, maxLevelCell, minLevelCell, &
+      !$acc     tidalLayerThicknessTendency) &
+      !$acc     private(k)
+#else
       !$omp parallel
       !$omp do schedule(runtime) private(k)
+#endif
       do iCell = 1, nCells
         do k = minLevelCell(iCell), maxLevelCell(iCell)
           layerThicknessTend(k,iCell) = layerThicknessTend(k,iCell) + &
@@ -134,8 +137,14 @@ contains
 
         end do
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
+
+#ifdef MPAS_OPENACC
+      !$acc exit data delete(tidalLayerThicknessTendency)
+#endif
 
       call mpas_timer_stop("tidal thickness tendency")
 

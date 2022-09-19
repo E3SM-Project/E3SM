@@ -980,7 +980,7 @@ contains
       ! calculate effective viscosity from strain rate and flow param.
       do iCell = 1, nCells
          eEff = sqrt(exx(iCell)**2 + eyy(iCell)**2 + exx(iCell)*eyy(iCell) + exy(iCell)**2) ! effective strain rate
-         if (eEff == 0.0_RKIND) then
+         if ( (eEff == 0.0_RKIND) .or. (meanFlowParamA(iCell) == 0.0_RKIND) ) then
             effectiveViscosity(iCell) = 0.0_RKIND
          else
             effectiveViscosity(iCell) = &

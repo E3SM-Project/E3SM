@@ -277,7 +277,7 @@ contains
 
      ! ensure cells stay wet by selectively damping cells with a damping tendency to make sure tendency doesn't dry cells
 
-     call ocn_wetting_drying_wettingVelocity(meshPool, layerThickEdge, layerThicknessCur, layerThicknessProvis, &
+     call ocn_wetting_drying_wettingVelocity(meshPool, layerThickEdgeFlux, layerThicknessCur, layerThicknessProvis, &
                                              normalTransportVelocity, rkSubstepWeight, wettingVelocity, err)
 
      ! prevent drying from happening with selective wettingVelocity
@@ -319,7 +319,7 @@ contains
 !>  to prevent cells from drying.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_wetting_drying_wettingVelocity(meshPool, layerThicknessEdge, layerThicknessCur, layerThicknessProvis, &
+   subroutine ocn_wetting_drying_wettingVelocity(meshPool, layerThickEdgeFlux, layerThicknessCur, layerThicknessProvis, &
 
        normalVelocity, dt, wettingVelocity, err)!{{{
 
@@ -339,7 +339,7 @@ contains
          layerThicknessProvis    !< Input: provisional layer thickness
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdge     !< Input: layerThickness interpolated to an edge
+         layerThickEdgeFlux  !< Input: flux-related layerThickness at an edge
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normalVelocity     !< Input: transport
@@ -413,7 +413,7 @@ contains
               ! only consider divergence flux leaving the cell
               if ( normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) < 0.0_RKIND ) then
                 divOutFlux = divOutFlux + normalVelocity(k, iEdge) * edgeSignOnCell(i, iCell) &
-                  * layerThicknessEdge(k, iEdge) * dvEdge(iEdge)  * invAreaCell
+                  * layerThickEdgeFlux(k, iEdge) * dvEdge(iEdge)  * invAreaCell
               end if
             end if
           end do

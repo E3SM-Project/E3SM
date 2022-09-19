@@ -125,7 +125,7 @@ contains
             write (fileID,'(i5,a)') i,'. layerThickness'; i=i+1
             write (fileID,'(i5,a)') i,'. normalVelocity'; i=i+1
             write (fileID,'(i5,a)') i,'. tangentialVelocity'; i=i+1
-            write (fileID,'(i5,a)') i,'. layerThicknessEdge'; i=i+1
+            write (fileID,'(i5,a)') i,'. layerThicknessEdgeMean'; i=i+1
             write (fileID,'(i5,a)') i,'. relativeVorticity'; i=i+1
             write (fileID,'(i5,a)') i,'. enstrophy = relativeVorticity**2'; i=i+1
             write (fileID,'(i5,a)') i,'. kineticEnergyCell'; i=i+1
@@ -409,7 +409,7 @@ contains
          variableIndex = variableIndex + 1
          call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nEdgesSolve, &
                               minLevelEdgeBot(1:nEdgesSolve), maxLevelEdgeTop(1:nEdgesSolve), areaEdge(1:nEdgesSolve), &
-                              layerThickEdge(:,1:nEdgesSolve), &
+                              layerThickEdgeMean(:,1:nEdgesSolve), &
                               normalVelocity(:,1:nEdgesSolve), sums_tmp(variableIndex), &
                               sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
                               maxes_tmp(variableIndex), &
@@ -426,7 +426,7 @@ contains
          variableIndex = variableIndex + 1
          call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nEdgesSolve, &
                               minLevelEdgeBot(1:nEdgesSolve), maxLevelEdgeTop(1:nEdgesSolve), areaEdge(1:nEdgesSolve), &
-                              layerThickEdge(:,1:nEdgesSolve), &
+                              layerThickEdgeMean(:,1:nEdgesSolve), &
                               tangentialVelocity(:,1:nEdgesSolve), &
                               sums_tmp(variableIndex), sumSquares_tmp(variableIndex), &
                               mins_tmp(variableIndex), maxes_tmp(variableIndex), &
@@ -439,11 +439,11 @@ contains
          verticalSumMins(variableIndex) = min(verticalSumMins(variableIndex), verticalSumMins_tmp(variableIndex))
          verticalSumMaxes(variableIndex) = max(verticalSumMaxes(variableIndex), verticalSumMaxes_tmp(variableIndex))
 
-         ! layerThicknessEdge
+         ! layerThicknessEdgeMean
          variableIndex = variableIndex + 1
          call ocn_compute_field_area_weighted_local_stats_max_level(dminfo, nVertLevels, nEdgesSolve, &
                             minLevelEdgeBot(1:nEdgesSolve), maxLevelEdgeTop(1:nEdgesSolve), areaEdge(1:nEdgesSolve), &
-                            layerThickEdge(:,1:nEdgesSolve), sums_tmp(variableIndex), &
+                            layerThickEdgeMean(:,1:nEdgesSolve), sums_tmp(variableIndex), &
                             sumSquares_tmp(variableIndex), mins_tmp(variableIndex), &
                             maxes_tmp(variableIndex), verticalSumMins_tmp(variableIndex), &
                             verticalSumMaxes_tmp(variableIndex))
@@ -514,7 +514,7 @@ contains
          variableIndex = variableIndex + 1
          call ocn_compute_field_volume_weighted_local_stats_max_level(dminfo, nVertLevels, nEdgesSolve, &
                               minLevelEdgeBot(1:nEdgesSolve), maxLevelEdgeTop(1:nEdgesSolve), areaEdge(1:nEdgesSolve), &
-                              layerThickEdge(:,1:nEdgesSolve), &
+                              layerThickEdgeMean(:,1:nEdgesSolve), &
                               normalizedAbsoluteVorticity(:,1:nEdgesSolve), &
                               sums_tmp(variableIndex), sumSquares_tmp(variableIndex), &
                               mins_tmp(variableIndex), maxes_tmp(variableIndex), &
@@ -1128,7 +1128,7 @@ contains
       averages(variableIndex) = sums(variableIndex)/volumeEdgeGlobal
       rms(variableIndex) = sqrt(sumSquares(variableIndex)/volumeEdgeGlobal)
 
-      ! layerThicknessEdge
+      ! layerThicknessEdgeMean
       variableIndex = variableIndex + 1
       averages(variableIndex) = sums(variableIndex)/(areaEdgeGlobal*nVertLevels)
       rms(variableIndex) = sqrt(sumSquares(variableIndex)/(areaEdgeGlobal*nVertLevels))

@@ -15,6 +15,7 @@
 ! SourceMods/src.mpaso/streams.ocean
 !----------------------------------------------------------------------------------
 
-config_gm_closure = 'constant'
- config_eddying_resolution_taper = 'ramp'
+ config_gm_closure = 'constant'
+ config_redi_horizontal_taper = 'ramp'
+ config_gm_horizontal_taper = 'ramp'
  config_use_redi = .true.

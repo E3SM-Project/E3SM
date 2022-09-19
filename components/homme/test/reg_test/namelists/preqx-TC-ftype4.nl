@@ -30,7 +30,6 @@
   se_ftype          = 4
 /
 &vert_nl
-  vform         = "ccm"
   vfile_mid     = "./vcoord/camm-30.ascii"
   vfile_int     = "./vcoord/cami-30.ascii"
 /

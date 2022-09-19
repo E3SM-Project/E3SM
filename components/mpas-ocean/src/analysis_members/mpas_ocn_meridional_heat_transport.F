@@ -460,7 +460,7 @@ contains
 
                   do k = 1, kMax
 
-                     ! Compute divergence of huT, i.e. layerThicknessEdge * normalTransportVelocity * temperature, at an edge
+                     ! Compute divergence of huT, i.e. layerThicknessEdgeFlux * normalTransportVelocity * temperature, at an edge
                      ! for meridional heat transport.  Here we use a centered difference to compute the temperature at
                      ! the edge, which is an approximation to the actual edge temperature used in the horizontal
                      ! advection scheme (for example, FCT).  We expect that the error in this approximation is small.
@@ -470,7 +470,7 @@ contains
                      div_huT = 0.0_RKIND
                      do i = 1, nEdgesOnCell(iCell)
                         iEdge = edgesOnCell(i, iCell)
-                        div_huT = div_huT - layerThickEdge(k, iEdge) * normalTransportVelocity(k, iEdge) &
+                        div_huT = div_huT - layerThickEdgeFlux(k, iEdge) * normalTransportVelocity(k, iEdge) &
                              * 0.5_RKIND * (activeTracers(indexTemperature,k,cellsOnEdge(1,iEdge)) &
                              + activeTracers(indexTemperature,k,cellsOnEdge(2,iEdge))) &
                              * edgeSignOnCell(i, iCell) * dvEdge(iEdge)

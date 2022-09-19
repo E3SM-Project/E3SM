@@ -52,7 +52,6 @@
   bubble_dT=0.5
 /
 &vert_nl
-  vform             = "ccm"                     ! vertical coordinate type "ccm"=hybrid pressure/terrain
   vanalytic         = 1                         ! set vcoords in initialization routine
   vtop              = 2.73919e-1                ! vertical coordinate at top of atm (z=10000m)
 /

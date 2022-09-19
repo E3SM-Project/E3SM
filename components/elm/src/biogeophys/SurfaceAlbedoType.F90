@@ -76,6 +76,13 @@ module SurfaceAlbedoType
      real(r8), pointer :: albsnd_hst_col       (:,:) => null() ! col snow albedo, direct , for history files (col,bnd) [frc]
      real(r8), pointer :: albsni_hst_col       (:,:) => null() ! col snow albedo, diffuse, for history files (col,bnd) [frc]
 
+     real(r8), pointer :: fd_top_adjust        (:,:) => null() !adjustment factor for direct flux (numrad)
+     real(r8), pointer :: fi_top_adjust        (:,:) => null() !adjustment factor for diffuse flux (numrad)
+     real(r8), pointer :: f_dir                (:,:) => null() !adjustment factor for direct flux (numrad)
+     real(r8), pointer :: f_rdir               (:,:) => null() !adjustment factor for reflected-direct flux (numrad)
+     real(r8), pointer :: f_dif                (:,:) => null() !adjustment factor for diffuse flux (numrad)
+     real(r8), pointer :: f_rdif               (:,:) => null() !adjustment factor for reflected-diffuse flux (numrad)
+     
      real(r8), pointer :: ftdd_patch           (:,:) => null() ! patch down direct flux below canopy per unit direct flx    (numrad)
      real(r8), pointer :: ftid_patch           (:,:) => null() ! patch down diffuse flux below canopy per unit direct flx   (numrad)
      real(r8), pointer :: ftii_patch           (:,:) => null() ! patch down diffuse flux below canopy per unit diffuse flx  (numrad)
@@ -265,6 +272,13 @@ contains
     allocate(this%albd_patch         (begp:endp,numrad))       ; this%albd_patch         (:,:) =spval
     allocate(this%albi_patch         (begp:endp,numrad))       ; this%albi_patch         (:,:) =spval
 
+    allocate(this%fd_top_adjust      (begp:endp,numrad))       ; this%fd_top_adjust      (:,:) =1._r8
+    allocate(this%fi_top_adjust      (begp:endp,numrad))       ; this%fi_top_adjust      (:,:) =1._r8
+    allocate(this%f_dir              (begp:endp,numrad))       ; this%f_dir              (:,:) =0._r8
+    allocate(this%f_rdir             (begp:endp,numrad))       ; this%f_rdir             (:,:) =0._r8
+    allocate(this%f_dif              (begp:endp,numrad))       ; this%f_dif              (:,:) =0._r8
+    allocate(this%f_rdif             (begp:endp,numrad))       ; this%f_rdif             (:,:) =0._r8
+    
     allocate(this%ftdd_patch         (begp:endp,numrad))       ; this%ftdd_patch         (:,:) =spval
     allocate(this%ftid_patch         (begp:endp,numrad))       ; this%ftid_patch         (:,:) =spval
     allocate(this%ftii_patch         (begp:endp,numrad))       ; this%ftii_patch         (:,:) =spval
@@ -339,7 +353,7 @@ contains
     call hist_addfld2d (fname='ALBI', units='proportion', type2d='numrad', &
          avgflag='A', long_name='surface albedo (indirect)', &
          ptr_patch=this%albi_patch, default='inactive', c2l_scale_type='urbanf')
-
+    
   end subroutine InitHistory
 
   !-----------------------------------------------------------------------
@@ -387,6 +401,12 @@ contains
     this%ftid_patch     (begp:endp, :) = 0.0_r8
     this%ftii_patch     (begp:endp, :) = 1.0_r8
 
+    this%fd_top_adjust  (begp:endp, :) = 1.0_r8
+    this%fi_top_adjust  (begp:endp, :) = 1.0_r8
+    this%f_dir          (begp:endp, :) = 0.0_r8
+    this%f_rdir         (begp:endp, :) = 0.0_r8
+    this%f_dif          (begp:endp, :) = 0.0_r8
+    this%f_rdif         (begp:endp, :) = 0.0_r8
   end subroutine InitCold
 
   !---------------------------------------------------------------------
@@ -744,6 +764,36 @@ contains
          dim1name='pft', dim2name='numrad', switchdim=.true., &
          long_name='down diffuse flux below veg per unit diffuse flux', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%ftii_patch)
+
+    call restartvar(ncid=ncid, flag=flag, varname='fd_top_adjust', xtype=ncd_double,  &
+         dim1name='pft', dim2name='numrad', switchdim=.true., &
+         long_name='sub-grid topographic factor for direct radiation', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%fd_top_adjust)
+         
+    call restartvar(ncid=ncid, flag=flag, varname='fi_top_adjust', xtype=ncd_double,  &
+         dim1name='pft', dim2name='numrad', switchdim=.true., &
+         long_name='sub-grid topographic factor for diffuse radiation', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%fi_top_adjust)
+
+    call restartvar(ncid=ncid, flag=flag, varname='f_dir', xtype=ncd_double,  &
+         dim1name='pft', dim2name='numrad', switchdim=.true., &
+         long_name='sub-grid topographic factor for direct radiation', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%f_dir)
+         
+    call restartvar(ncid=ncid, flag=flag, varname='f_rdir', xtype=ncd_double,  &
+         dim1name='pft', dim2name='numrad', switchdim=.true., &
+         long_name='sub-grid topographic factor for reflected-direct radiation', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%f_rdir)
+
+    call restartvar(ncid=ncid, flag=flag, varname='f_dif', xtype=ncd_double,  &
+         dim1name='pft', dim2name='numrad', switchdim=.true., &
+         long_name='sub-grid topographic factor for diffuse radiation', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%f_dif)
+         
+    call restartvar(ncid=ncid, flag=flag, varname='f_rdif', xtype=ncd_double,  &
+         dim1name='pft', dim2name='numrad', switchdim=.true., &
+         long_name='sub-grid topographic factor for reflected-diffuse radiation', units='', &
+         interpinic_flag='interp', readvar=readvar, data=this%f_rdif)
 
     !--------------------------------
     ! variables needed for SNICAR

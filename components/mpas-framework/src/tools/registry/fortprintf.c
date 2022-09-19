@@ -14,7 +14,7 @@
 #define MAX_LINE_LEN 132
 #endif
 
-char printbuf[MAX_LINE_LEN+2];
+char printbuf[MAX_LINE_LEN+3];
 char fbuffer[1024];
 int nbuf = 0;
 

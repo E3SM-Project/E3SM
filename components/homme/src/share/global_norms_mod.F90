@@ -258,7 +258,7 @@ contains
     use reduction_mod, only : ParallelMin,ParallelMax
     use physical_constants, only : scale_factor_inv, scale_factor,dd_pi
     use control_mod, only : nu, nu_q, nu_div, hypervis_order, nu_top,  &
-                            fine_ne, max_hypervis_courant, hypervis_scaling, dcmip16_mu,dcmip16_mu_s,dcmip16_mu_q
+                            hypervis_scaling, dcmip16_mu,dcmip16_mu_s,dcmip16_mu_q
     use control_mod, only : tstep_type
     use parallel_mod, only : abortmp, global_shared_buf, global_shared_sum
     use edgetype_mod, only : EdgeBuffer_t 

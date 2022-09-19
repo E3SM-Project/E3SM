@@ -2,16 +2,16 @@
 #include "sgs.h"
 
 void kurant_sgs(real &cfl) {
-  auto &sgs_field_diag = :: sgs_field_diag;
-  auto &dz             = :: dz;
-  auto &dy             = :: dy;
-  auto &dx             = :: dx;
-  auto &dt             = :: dt;
-  auto &adzw           = :: adzw;
-  auto &grdf_x         = :: grdf_x;
-  auto &grdf_y         = :: grdf_y;
-  auto &grdf_z         = :: grdf_z;
-  auto &ncrms          = :: ncrms;
+  YAKL_SCOPE( sgs_field_diag , :: sgs_field_diag );
+  YAKL_SCOPE( dz             , :: dz );
+  YAKL_SCOPE( dy             , :: dy );
+  YAKL_SCOPE( dx             , :: dx );
+  YAKL_SCOPE( dt             , :: dt );
+  YAKL_SCOPE( adzw           , :: adzw );
+  YAKL_SCOPE( grdf_x         , :: grdf_x );
+  YAKL_SCOPE( grdf_y         , :: grdf_y );
+  YAKL_SCOPE( grdf_z         , :: grdf_z );
+  YAKL_SCOPE( ncrms          , :: ncrms );
 
   real2d tkhmax("tkhmax",nzm,ncrms);
 
@@ -25,7 +25,7 @@ void kurant_sgs(real &cfl) {
   //   for (int j=0; j<ny; j++) {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int j, int i, int icrm) {
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     yakl::atomicMax( tkhmax(k,icrm) , sgs_field_diag(1,k,offy_d+j,offx_d+i,icrm) );
   });
 
@@ -47,11 +47,11 @@ void kurant_sgs(real &cfl) {
 
 
 void sgs_proc() {
-  auto &sgs_field      = :: sgs_field;
-  auto &sgs_field_diag = :: sgs_field_diag;
-  auto &tke2           = :: tke2;
-  auto &tk2            = :: tk2;
-  auto &ncrms          = :: ncrms;
+  YAKL_SCOPE( sgs_field      , :: sgs_field );
+  YAKL_SCOPE( sgs_field_diag , :: sgs_field_diag );
+  YAKL_SCOPE( tke2           , :: tke2 );
+  YAKL_SCOPE( tk2            , :: tk2 );
+  YAKL_SCOPE( ncrms          , :: ncrms );
 
   if (dosgs) {
     tke_full(sgs_field, 0, sgs_field_diag, 0, sgs_field_diag, 1);
@@ -80,6 +80,7 @@ void sgs_mom() {
 
 
 void sgs_scalars() {
+  YAKL_SCOPE( use_ESMT, :: use_ESMT );
   real2d dummy("dummy", nz, ncrms);
 
   diffuse_scalar(sgs_field_diag,1,t,fluxbt,fluxtt,tdiff,twsb);
@@ -96,24 +97,24 @@ void sgs_scalars() {
     }
   }
 
-#if defined(MMF_ESMT)
-  diffuse_scalar(sgs_field_diag,1,u_esmt,fluxb_u_esmt,fluxt_u_esmt,u_esmt_diff,u_esmt_sgs);
-  diffuse_scalar(sgs_field_diag,1,v_esmt,fluxb_v_esmt,fluxt_v_esmt,v_esmt_diff,v_esmt_sgs);
-#endif
+  if (use_ESMT) {
+    diffuse_scalar(sgs_field_diag,1,u_esmt,fluxb_u_esmt,fluxt_u_esmt,u_esmt_diff,u_esmt_sgs);
+    diffuse_scalar(sgs_field_diag,1,v_esmt,fluxb_v_esmt,fluxt_v_esmt,v_esmt_diff,v_esmt_sgs);
+  }
 }
 
 
 void sgs_init() {
-  auto &sgs_field      = ::sgs_field;
-  auto &sgs_field_diag = ::sgs_field_diag;
-  auto &grdf_x         = ::grdf_x;
-  auto &grdf_y         = ::grdf_y;
-  auto &grdf_z         = ::grdf_z;
-  auto &adz            = ::adz;
-  auto &dx             = ::dx;
-  auto &dy             = ::dy;
-  auto &dz             = ::dz;
-  auto &ncrms          = ::ncrms;
+  YAKL_SCOPE( sgs_field      , ::sgs_field );
+  YAKL_SCOPE( sgs_field_diag , ::sgs_field_diag );
+  YAKL_SCOPE( grdf_x         , ::grdf_x );
+  YAKL_SCOPE( grdf_y         , ::grdf_y );
+  YAKL_SCOPE( grdf_z         , ::grdf_z );
+  YAKL_SCOPE( adz            , ::adz );
+  YAKL_SCOPE( dx             , ::dx );
+  YAKL_SCOPE( dy             , ::dy );
+  YAKL_SCOPE( dz             , ::dz );
+  YAKL_SCOPE( ncrms          , ::ncrms );
 
   if (nrestart == 0) {
     // for (int l=0; l<nsgs_fields; l++) {

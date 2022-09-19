@@ -3,16 +3,16 @@
 
 void diffuse_scalar2D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
                       int ind_tkh, real2d &flux) {
-  auto &dx     = ::dx;
-  auto &rhow   = ::rhow;
-  auto &adzw   = ::adzw;
-  auto &adz    = ::adz; 
-  auto &dz     = ::dz; 
-  auto &dtn    = ::dtn;
-  auto &rho    = ::rho;
-  auto &grdf_x = ::grdf_x;
-  auto &grdf_z = ::grdf_z;
-  auto &ncrms  = ::ncrms;
+  YAKL_SCOPE( dx     , ::dx );
+  YAKL_SCOPE( rhow   , ::rhow );
+  YAKL_SCOPE( adzw   , ::adzw );
+  YAKL_SCOPE( adz    , ::adz ); 
+  YAKL_SCOPE( dz     , ::dz ); 
+  YAKL_SCOPE( dtn    , ::dtn );
+  YAKL_SCOPE( rho    , ::rho );
+  YAKL_SCOPE( grdf_x , ::grdf_x );
+  YAKL_SCOPE( grdf_z , ::grdf_z );
+  YAKL_SCOPE( ncrms  , ::ncrms );
 
   if (dosgs || docolumn) {
     real rdx2=1.0/(dx*dx);
@@ -59,7 +59,7 @@ void diffuse_scalar2D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       if (k <= nzm-2) {
         int kc=k+1;
         real rhoi = rhow(kc,icrm)/adzw(kc,icrm);
@@ -92,16 +92,16 @@ void diffuse_scalar2D(real4d &field, real3d &fluxb, real3d &fluxt, real5d &tkh,
 
 void diffuse_scalar2D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt,
                       real5d &tkh, int ind_tkh, real2d &flux) {
-  auto &dx     = ::dx;
-  auto &rhow   = ::rhow;
-  auto &adzw   = ::adzw;
-  auto &adz    = ::adz; 
-  auto &dz     = ::dz; 
-  auto &dtn    = ::dtn;
-  auto &rho    = ::rho;
-  auto &grdf_x = ::grdf_x;
-  auto &grdf_z = ::grdf_z;
-  auto &ncrms  = ::ncrms;
+  YAKL_SCOPE( dx     , ::dx );
+  YAKL_SCOPE( rhow   , ::rhow );
+  YAKL_SCOPE( adzw   , ::adzw );
+  YAKL_SCOPE( adz    , ::adz ); 
+  YAKL_SCOPE( dz     , ::dz ); 
+  YAKL_SCOPE( dtn    , ::dtn );
+  YAKL_SCOPE( rho    , ::rho );
+  YAKL_SCOPE( grdf_x , ::grdf_x );
+  YAKL_SCOPE( grdf_z , ::grdf_z );
+  YAKL_SCOPE( ncrms  , ::ncrms );
 
   if (dosgs || docolumn) {
     real rdx2=1.0/(dx*dx);
@@ -148,7 +148,7 @@ void diffuse_scalar2D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       if (k <= nzm-2) {
         int kc=k+1;
         real rhoi = rhow(kc,icrm)/adzw(kc,icrm);
@@ -181,16 +181,16 @@ void diffuse_scalar2D(real5d &field, int ind_field, real3d &fluxb, real3d &fluxt
 
 void diffuse_scalar2D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb, real4d &fluxt,
                       int ind_fluxt, real5d &tkh, int ind_tkh, real3d &flux, int ind_flux) {
-  auto &dx            = :: dx;
-  auto &rhow          = :: rhow;
-  auto &adzw          = :: adzw;
-  auto &adz           = :: adz; 
-  auto &dz            = :: dz; 
-  auto &dtn           = :: dtn;
-  auto &rho           = :: rho;
-  auto &grdf_x        = :: grdf_x;
-  auto &grdf_z        = :: grdf_z;
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( dx            , :: dx );
+  YAKL_SCOPE( rhow          , :: rhow );
+  YAKL_SCOPE( adzw          , :: adzw );
+  YAKL_SCOPE( adz           , :: adz ); 
+  YAKL_SCOPE( dz            , :: dz ); 
+  YAKL_SCOPE( dtn           , :: dtn );
+  YAKL_SCOPE( rho           , :: rho );
+  YAKL_SCOPE( grdf_x        , :: grdf_x );
+  YAKL_SCOPE( grdf_z        , :: grdf_z );
+  YAKL_SCOPE( ncrms         , :: ncrms );
 
   if (dosgs || docolumn) {
     real rdx2=1.0/(dx*dx);
@@ -237,7 +237,7 @@ void diffuse_scalar2D(real5d &field, int ind_field, real4d &fluxb, int ind_fluxb
     // for (int k=0; k<nzm; k++) {
     //  for (int i=0; i<nx; i++) {
     //    for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_DEVICE_LAMBDA (int k, int i, int icrm) {
+    parallel_for( SimpleBounds<3>(nzm,nx,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
       if (k <= nzm-2) {
         int kc=k+1;
         real rhoi = rhow(kc,icrm)/adzw(kc,icrm);

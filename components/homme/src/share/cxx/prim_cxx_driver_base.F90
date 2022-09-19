@@ -35,7 +35,7 @@ module prim_cxx_driver_base
                                  prim_init1_compose,                          &
                                  MetaVertex, GridEdge, deriv1
     use compose_mod,      only : compose_control_kokkos_init_and_fin
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     use prim_driver_base, only : prim_init1_no_cam
 #endif
 
@@ -67,7 +67,7 @@ module prim_cxx_driver_base
     ! Don't let any other components that use Kokkos control init/finalization.
     call compose_control_kokkos_init_and_fin(.false.)
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     call prim_init1_no_cam(par)
 #endif
 

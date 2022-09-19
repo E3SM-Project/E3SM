@@ -11,10 +11,22 @@ set(O1MODELSRC
   eam/src/chemistry/modal_aero/modal_aero_convproc.F90
   eam/src/chemistry/utils/modal_aero_calcsize.F90
   eam/src/physics/cam/zm_conv.F90)
+
+set(O0MODELSRC
+  ../driver-mct/main/component_mod.F90
+  ../driver-mct/main/cime_comp_mod.F90
+)
+
 if (NOT DEBUG)
   foreach(ITEM IN LISTS O1MODELSRC)
     e3sm_remove_flags("${ITEM}" "-O2")
     e3sm_add_flags("${ITEM}" "-O1 -Mnovect")
+  endforeach()
+
+  foreach(ITEM IN LISTS O0MODELSRC)
+    e3sm_remove_flags("${ITEM}" "-O2")
+    e3sm_remove_flags("${ITEM}" "-O1")
+    e3sm_add_flags("${ITEM}" "-O0 -Mnovect")
   endforeach()
 endif()
 
@@ -94,11 +106,28 @@ set(FILES_NEED_OPENACC_FLAGS
 # add accelerator/gpu flags for MPAS files
 set(CPPDEFS "${CPPDEFS} -DMPAS_OPENACC")
 list(APPEND MPAS_ADD_ACC_FLAGS
+  ${CMAKE_BINARY_DIR}/core_ocean/mode_analysis/mpas_ocn_analysis_mode.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/mode_forward/mpas_ocn_time_integration_rk4.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/mode_forward/mpas_ocn_time_integration_si.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/mode_forward/mpas_ocn_time_integration_split.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_diagnostics.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_effective_density_in_land_ice.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_diagnostics_variables.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_equation_of_state_jm.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_equation_of_state_linear.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_equation_of_state_wright.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_frazil_forcing.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_init_routines.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_mesh.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_surface_bulk_forcing.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_surface_land_ice_fluxes.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_tendency.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_thick_hadv.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_thick_surface_flux.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_thick_vadv.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_tidal_forcing.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_tracer_advection_mono.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_tracer_advection_std.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_forcing_explicit_bottom_drag.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_forcing_surface_stress.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_hadv_coriolis.f90
@@ -106,7 +135,12 @@ list(APPEND MPAS_ADD_ACC_FLAGS
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_hmix_del4.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_hmix_leith.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_pressure_grad.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_tidal_potential.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vel_vadv.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_vmix.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_tracer_advection_shared.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_tracer_advection_vert.f90
+  ${CMAKE_BINARY_DIR}/operators/mpas_vector_reconstruction.f90
   # seaice
   ${CMAKE_BINARY_DIR}/core_seaice/shared/mpas_seaice_mesh_pool.f90
   ${CMAKE_BINARY_DIR}/core_seaice/shared/mpas_seaice_velocity_solver_variational.f90
@@ -118,6 +152,10 @@ foreach(ITEM IN LISTS FILES_NEED_OPENACC_FLAGS)
 endforeach()
 
 foreach(ITEM IN LISTS MPAS_ADD_ACC_FLAGS)
-  e3sm_add_flags("${ITEM}" "-Minline -acc -ta=tesla:ccall,fastmath,loadcache:L1,unroll,fma,deepcopy,nonvvm -Minfo=accel")
+  if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 20)
+    e3sm_add_flags("${ITEM}" "-acc -gpu=cc70,cc60 -Minfo=accel")
+  else()
+    e3sm_add_flags("${ITEM}" "-acc -ta=tesla:cc70,cc60 -Minfo=accel")
+  endif()
 endforeach()
 

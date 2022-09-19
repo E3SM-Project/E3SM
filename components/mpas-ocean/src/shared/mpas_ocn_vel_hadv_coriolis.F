@@ -78,7 +78,7 @@ contains
 
    subroutine ocn_vel_hadv_coriolis_tend(normRelVortEdge, &
                                       normPlanetVortEdge, &
-                                      layerThickEdge, normalVelocity, &
+                                      layerThickEdgeFlux, normalVelocity, &
                                       kineticEnergyCell, tend, err)!{{{
 
       !-----------------------------------------------------------------
@@ -88,7 +88,7 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          normRelVortEdge,    &!< [in] relative vorticity/thickness at edge
          normPlanetVortEdge, &!< [in] planetary vorticity/thickness at edge
-         layerThickEdge,     &!< [in] layer thickness on edge
+         layerThickEdgeFlux,     &!< [in] layer thickness on edge
          normalVelocity,     &!< [in] Horizontal velocity
          kineticEnergyCell    !< [in] Kinetic Energy
 
@@ -189,7 +189,7 @@ contains
       !$acc parallel loop &
       !$acc    present(nEdgesOnEdge, edgesOnEdge, weightsOnEdge, &
       !$acc            minLevelEdgeBot, maxLevelEdgeTop, qArr, tmpVorticity, &
-      !$acc            normalVelocity, layerThickEdge) &
+      !$acc            normalVelocity, layerThickEdgeFlux) &
       !$acc    private(k, j, eoe, edgeWeight, avgVorticity, kmin, kmax)
 #else
       !$omp parallel
@@ -214,7 +214,7 @@ contains
                                tmpVorticity(k,eoe))
                qArr(k,iEdge) = qArr(k,iEdge) + &
                                edgeWeight*normalVelocity(k,eoe)* &
-                               avgVorticity*layerThickEdge(k,eoe)
+                               avgVorticity*layerThickEdgeFlux(k,eoe)
             end do
 
          end do

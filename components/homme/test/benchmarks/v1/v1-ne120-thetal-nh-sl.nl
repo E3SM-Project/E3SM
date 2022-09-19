@@ -44,7 +44,6 @@ limiter_option = 9 ! this is diff from what's for preqx
 vert_remap_q_alg = 1
 /
 &vert_nl
-vform         = "ccm"
 vfile_mid = './acme-72m.ascii'
 vfile_int = './acme-72i.ascii'
 /

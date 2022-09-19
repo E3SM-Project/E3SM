@@ -12,6 +12,7 @@ module lnd2atmMod
   use elm_varpar           , only : numrad, ndst, nlevgrnd, nlevsno, nlevsoi !ndst = number of dust bins.
   use elm_varcon           , only : rair, grav, cpair, hfus, tfrz, spval
   use elm_varctl           , only : iulog, use_c13, use_cn, use_lch4, use_voc, use_fates, use_atm_downscaling_to_topunit
+  use elm_varctl           , only : use_lnd_rof_two_way
   use tracer_varcon        , only : is_active_betr_bgc
   use seq_drydep_mod   , only : n_drydep, drydep_method, DD_XLND
   use decompMod            , only : bounds_type
@@ -227,7 +228,9 @@ contains
       zwt_col          =>   soilhydrology_vars%zwt_col , &
       zwt_grc          =>   lnd2atm_vars%zwt_grc,    &
       coszen_col       => surfalb_vars%coszen_col , &
-      coszen_str       => lnd2atm_vars%coszen_str &
+      coszen_str       => lnd2atm_vars%coszen_str , &
+      qflx_h2orof_drain     => col_wf%qflx_h2orof_drain , &
+      qflx_h2orof_drain_grc => lnd2atm_vars%qflx_h2orof_drain_grc &
       )
     !----------------------------------------------------
     ! lnd -> atm
@@ -409,6 +412,15 @@ contains
     do g = bounds%begg, bounds%endg
        qflx_rofice_grc(g) = qflx_rofice_grc(g) - grc_wf%qflx_ice_dynbal(g)
     enddo
+
+    ! land river two-way coupling
+    ! Average up  to gridcell for the inundation drainage
+    if (use_lnd_rof_two_way) then
+          call c2g( bounds, & 
+                     qflx_h2orof_drain(bounds%begc:bounds%endc)     , &
+                     qflx_h2orof_drain_grc(bounds%begg:bounds%endg) , &
+                     c2l_scale_type=unity,l2g_scale_type=unity )
+    endif
 
     call c2g( bounds, &
          col_ws%wslake_col(bounds%begc:bounds%endc), &

@@ -48,7 +48,7 @@ module dynTimeInfoMod
      procedure :: set_current_year !=> &   ! should be called every time step to update info with the current model year
 !          set_current_year_get_year, &
 !          set_current_year_from_year
-     procedure :: set_current_year_get_year  ! version of set_current_year that obtains current model year
+     procedure :: set_current_year_get_year  ! version of set_current_year that obtains current model year, with an optional offset
      procedure :: set_current_year_from_year ! version of set_current_year that assumes you already have obtained the current model year
      procedure :: get_time_index_lower               ! get lower bound index of current interval
      procedure :: get_time_index_upper               ! get upper bound index of current interval
@@ -144,7 +144,7 @@ contains
   ! ======================================================================
 
   !-----------------------------------------------------------------------
-  subroutine set_current_year_get_year(this)
+  subroutine set_current_year_get_year(this, offset)
     !
     ! !DESCRIPTION:
     ! Update time information (time_index_lower and time_index_upper)
@@ -154,7 +154,7 @@ contains
     ! This version of set_current_year obtains the current model year for you.
     !
     ! !USES:
-    use clm_time_manager , only : get_curr_date, get_prev_date
+    use clm_time_manager , only : get_curr_date, get_prev_date, get_days_per_year
     !
     ! !ARGUMENTS:
     class(time_info_type), intent(inout) :: this      ! this object
@@ -164,15 +164,25 @@ contains
     integer  :: mon              ! month (1, ..., 12) for nstep+1
     integer  :: day              ! day of month (1, ..., 31) for nstep+1
     integer  :: sec              ! seconds into current date for nstep+1
-    
+
+    integer, optional, intent(in) :: offset  ! offset in years from current year
+                                             ! positive values indicate future years
+                                             ! negative values indicate previous years
+
+    integer,parameter  :: seconds_per_day = 86400
+
     character(len=*), parameter :: subname = 'set_current_year_get_year'
     !-----------------------------------------------------------------------
-    
+
     select case (this%year_position%flag)
     case (YEAR_POSITION_START_OF_TIMESTEP%flag)
        call get_prev_date(year, mon, day, sec)
     case (YEAR_POSITION_END_OF_TIMESTEP%flag)
-       call get_curr_date(year, mon, day, sec)
+       if (present(offset)) then
+          call get_curr_date(year, mon, day, sec, offset * get_days_per_year() * seconds_per_day)
+       else
+          call get_curr_date(year, mon, day, sec)
+       end if
     case default
        write(iulog,*) subname, ': unknown year position: ', this%year_position%flag
        call endrun(msg=errMsg(__FILE__, __LINE__))

@@ -498,10 +498,7 @@ contains
     minjacerr=0
     if (hybrid%masterthread) write(iulog,*)'Running IMEX Jacobian unit test...'
     do ie=nets,nete
-       do k=1,nlev
-          dp3d(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-               ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem(ie)%state%ps_v(:,:,tl%n0)
-       enddo
+       dp3d(:,:,:) = elem(ie)%state%dp3d(:,:,:,tl%n0)
        vtheta_dp(:,:,:) = elem(ie)%state%vtheta_dp(:,:,:,tl%n0)
        phi_i(:,:,:)         = elem(ie)%state%phinh_i(:,:,:,tl%n0)
        phis(:,:)          = elem(ie)%state%phis(:,:)

@@ -12,7 +12,7 @@
 <config_start_time>'0001-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
 <config_run_duration>'0010_00:00:00'</config_run_duration>
-<config_calendar_type CALENDAR="NO_LEAP">'gregorian_noleap'</config_calendar_type>
+<config_calendar_type CALENDAR="NO_LEAP">'noleap'</config_calendar_type>
 <config_calendar_type>'gregorian'</config_calendar_type>
 
 <!-- io -->
@@ -130,13 +130,6 @@
 <config_Leith_dx>15000.0</config_Leith_dx>
 <config_Leith_visc2_max>2.5e3</config_Leith_visc2_max>
 
-<!-- mesoscale_eddy_parameterizations -->
-<config_eddying_resolution_taper>'ramp'</config_eddying_resolution_taper>
-<config_eddying_resolution_ramp_min>20e3</config_eddying_resolution_ramp_min>
-<config_eddying_resolution_ramp_min ocn_grid="WCAtl12to45E2r4">30e3</config_eddying_resolution_ramp_min>
-<config_eddying_resolution_ramp_max>30e3</config_eddying_resolution_ramp_max>
-<config_eddying_resolution_ramp_max ocn_grid="WCAtl12to45E2r4">40e3</config_eddying_resolution_ramp_max>
-
 <!-- Redi_isopycnal_mixing -->
 <config_use_Redi>.true.</config_use_Redi>
 <config_use_Redi ocn_grid="oRRS30to10v3">.false.</config_use_Redi>
@@ -152,6 +145,19 @@
 <config_Redi_N2_based_taper_enable>.true.</config_Redi_N2_based_taper_enable>
 <config_Redi_N2_based_taper_min>0.1</config_Redi_N2_based_taper_min>
 <config_Redi_N2_based_taper_limit_term1>.true.</config_Redi_N2_based_taper_limit_term1>
+<config_Redi_min_layers_diag_terms>6</config_Redi_min_layers_diag_terms>
+<config_Redi_horizontal_taper>'ramp'</config_Redi_horizontal_taper>
+<config_Redi_horizontal_ramp_min>20e3</config_Redi_horizontal_ramp_min>
+<config_Redi_horizontal_ramp_min ocn_grid="WCAtl12to45E2r4">30e3</config_Redi_horizontal_ramp_min>
+<config_Redi_horizontal_ramp_max>30e3</config_Redi_horizontal_ramp_max>
+<config_Redi_horizontal_ramp_max ocn_grid="WCAtl12to45E2r4">40e3</config_Redi_horizontal_ramp_max>
+
+<!-- submesoscale_eddy_parameterization -->
+<config_submesoscale_enable>.false.</config_submesoscale_enable>
+<config_submesoscale_tau>172800</config_submesoscale_tau>
+<config_submesoscale_Ce>0.06</config_submesoscale_Ce>
+<config_submesoscale_Lfmin>1000.0</config_submesoscale_Lfmin>
+<config_submesoscale_ds_max>100000.0</config_submesoscale_ds_max>
 
 <!-- GM_eddy_parameterization -->
 <config_use_GM>.true.</config_use_GM>
@@ -173,7 +179,8 @@
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="WCAtl12to45E2r4">600.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="SOwISC12to60E2r4">600.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="ECwISC30to60E2r1">600.0</config_GM_constant_kappa>
-<config_GM_constant_gravWaveSpeed>0.3</config_GM_constant_gravWaveSpeed>
+<config_GM_constant_bclModeSpeed>0.3</config_GM_constant_bclModeSpeed>
+<config_GM_minBclModeSpeed_method>'constant'</config_GM_minBclModeSpeed_method>
 <config_GM_spatially_variable_min_kappa>300.0</config_GM_spatially_variable_min_kappa>
 <config_GM_spatially_variable_max_kappa>1800.0</config_GM_spatially_variable_max_kappa>
 <config_GM_spatially_variable_baroclinic_mode>3.0</config_GM_spatially_variable_baroclinic_mode>
@@ -183,6 +190,19 @@
 <config_GM_EG_kappa_factor>3.0</config_GM_EG_kappa_factor>
 <config_GM_EG_Rossby_factor>2.0</config_GM_EG_Rossby_factor>
 <config_GM_EG_Rhines_factor>0.3</config_GM_EG_Rhines_factor>
+<config_GM_horizontal_taper>'ramp'</config_GM_horizontal_taper>
+<config_GM_horizontal_ramp_min>20e3</config_GM_horizontal_ramp_min>
+<config_GM_horizontal_ramp_min ocn_grid="WCAtl12to45E2r4">30e3</config_GM_horizontal_ramp_min>
+<config_GM_horizontal_ramp_max>30e3</config_GM_horizontal_ramp_max>
+<config_GM_horizontal_ramp_max ocn_grid="WCAtl12to45E2r4">40e3</config_GM_horizontal_ramp_max>
+<config_GMRedi_Rossby_ramp_min>0.5</config_GMRedi_Rossby_ramp_min>
+<config_GMRedi_Rossby_ramp_max>3.0</config_GMRedi_Rossby_ramp_max>
+
+<!-- eddy_parameterization -->
+<config_eddyMLD_dens_threshold>0.03</config_eddyMLD_dens_threshold>
+<config_eddyMLD_reference_depth>10</config_eddyMLD_reference_depth>
+<config_eddyMLD_reference_pressure>1.0e5</config_eddyMLD_reference_pressure>
+<config_eddyMLD_use_old>.true.</config_eddyMLD_use_old>
 
 <!-- Rayleigh_damping -->
 <config_Rayleigh_friction>.false.</config_Rayleigh_friction>
@@ -260,6 +280,19 @@
 <config_surface_buoyancy_depth>1</config_surface_buoyancy_depth>
 <config_enable_shortwave_energy_fixer>.true.</config_enable_shortwave_energy_fixer>
 
+<!-- self_attraction_loading -->
+<config_use_self_attraction_loading>.false.</config_use_self_attraction_loading>
+<config_self_attraction_loading_smoothing_width>1.0</config_self_attraction_loading_smoothing_width>
+<config_mpas_to_grid_weights_file>'mpas_to_grid.nc'</config_mpas_to_grid_weights_file>
+<config_grid_to_mpas_weights_file>'grid_to_mpas.nc'</config_grid_to_mpas_weights_file>
+<config_self_attraction_loading_compute_interval>'0000-00-00_00:30:00'</config_self_attraction_loading_compute_interval>
+<config_nLatitude>128</config_nLatitude>
+<config_nLongitude>256</config_nLongitude>
+<config_use_parallel_self_attraction_loading>.false.</config_use_parallel_self_attraction_loading>
+<config_parallel_self_attraction_loading_order>10</config_parallel_self_attraction_loading_order>
+<config_parallel_self_attraction_loading_n_cells_per_block>600</config_parallel_self_attraction_loading_n_cells_per_block>
+<config_parallel_self_attraction_loading_bfb>.true.</config_parallel_self_attraction_loading_bfb>
+
 <!-- tidal_potential_forcing -->
 <config_use_tidal_potential_forcing>.false.</config_use_tidal_potential_forcing>
 <config_tidal_potential_reference_time>'0001-01-01_00:00:00'</config_tidal_potential_reference_time>
@@ -322,11 +355,14 @@
 <config_land_ice_flux_jenkins_salt_transfer_coefficient ocn_grid="ECwISC30to60E2r1">8.42e-5</config_land_ice_flux_jenkins_salt_transfer_coefficient>
 
 <!-- advection -->
-<config_vert_tracer_adv>'stencil'</config_vert_tracer_adv>
-<config_vert_tracer_adv_order>3</config_vert_tracer_adv_order>
+<config_vert_advection_method>'flux-form'</config_vert_advection_method>
+<config_vert_remap_order>3</config_vert_remap_order>
+<config_vert_remap_interval>0</config_vert_remap_interval>
+<config_vert_tracer_adv_flux_order>3</config_vert_tracer_adv_flux_order>
 <config_horiz_tracer_adv_order>3</config_horiz_tracer_adv_order>
 <config_coef_3rd_order>0.25</config_coef_3rd_order>
-<config_monotonic>.true.</config_monotonic>
+<config_flux_limiter>'monotonic'</config_flux_limiter>
+<config_remap_limiter>'monotonic'</config_remap_limiter>
 
 <!-- bottom_drag -->
 <config_use_implicit_bottom_drag>.true.</config_use_implicit_bottom_drag>
@@ -702,9 +738,7 @@
 <config_AM_mixedLayerDepths_write_on_startup>.false.</config_AM_mixedLayerDepths_write_on_startup>
 <config_AM_mixedLayerDepths_compute_on_startup>.true.</config_AM_mixedLayerDepths_compute_on_startup>
 <config_AM_mixedLayerDepths_Tthreshold>.true.</config_AM_mixedLayerDepths_Tthreshold>
-<config_AM_mixedLayerDepths_Dthreshold>.true.</config_AM_mixedLayerDepths_Dthreshold>
 <config_AM_mixedLayerDepths_crit_temp_threshold>0.2</config_AM_mixedLayerDepths_crit_temp_threshold>
-<config_AM_mixedLayerDepths_crit_dens_threshold>0.03</config_AM_mixedLayerDepths_crit_dens_threshold>
 <config_AM_mixedLayerDepths_reference_pressure>1.0E5</config_AM_mixedLayerDepths_reference_pressure>
 <config_AM_mixedLayerDepths_Tgradient>.false.</config_AM_mixedLayerDepths_Tgradient>
 <config_AM_mixedLayerDepths_Dgradient>.false.</config_AM_mixedLayerDepths_Dgradient>

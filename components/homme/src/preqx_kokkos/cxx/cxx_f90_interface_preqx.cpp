@@ -109,7 +109,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   if (ftype == -1) {
     params.ftype = ForcingAlg::FORCING_OFF;
   } else if (ftype == 0) {
-    params.ftype = ForcingAlg::FORCING_DEBUG;
+    params.ftype = ForcingAlg::FORCING_0;
   } else if (ftype == 2) {
     params.ftype = ForcingAlg::FORCING_2;
   }
@@ -173,7 +173,7 @@ void cxx_push_forcing_to_f90(F90Ptr elem_derived_FM, F90Ptr elem_derived_FT,
   sync_to_host(elements.m_forcing.m_ft, ft_f90);
 
   const SimulationParams &params = Context::singleton().get<SimulationParams>();
-  if (params.ftype == ForcingAlg::FORCING_DEBUG) {
+  if (params.ftype == ForcingAlg::FORCING_0) {
     if (tracers.fq.data() == nullptr) {
       tracers.fq = decltype(tracers.fq)("fq", elements.num_elems());
     }
@@ -198,7 +198,7 @@ void f90_push_forcing_to_cxx(F90Ptr elem_derived_FM, F90Ptr elem_derived_FT,
 
   const SimulationParams &params = Context::singleton().get<SimulationParams>();
   Tracers &tracers = Context::singleton().get<Tracers>();
-  if (params.ftype == ForcingAlg::FORCING_DEBUG) {
+  if (params.ftype == ForcingAlg::FORCING_0) {
     if (tracers.fq.data() == nullptr) {
       tracers.fq = decltype(tracers.fq)("fq", elements.num_elems());
     }

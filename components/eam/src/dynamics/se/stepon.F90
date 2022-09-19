@@ -604,7 +604,7 @@ end subroutine stepon_run3
 subroutine stepon_final(dyn_in, dyn_out)
   use dyn_grid,         only: fv_physgrid_final, fv_nphys
   use cam_logfile, only: iulog
-  use prim_driver_base,only: prim_finalize
+  use prim_driver_mod,only: prim_finalize
 ! !PARAMETERS:
   ! WARNING: intent(out) here means that pointers in dyn_in and dyn_out
   ! are nullified. Unless this memory is released in some other routine,

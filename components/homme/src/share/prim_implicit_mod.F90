@@ -920,7 +920,7 @@ contains
     !          fp(:,:,:,:) = fp(:,:,:,:) +  nu_s*laplacian**order ( T )
     !
     use dimensions_mod, only : np, np, nlev
-    use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, psurf_vis
+    use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top
     use hybrid_mod, only : hybrid_t
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t
@@ -1151,7 +1151,7 @@ contains
     !          ft(:,:,:,np) = ft(:,:,:,np) +  nu_s*laplacian**order ( T )
     !
     use dimensions_mod, only : np, np, nlev, nc, max_corner_elem
-    use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, psurf_vis, swest
+    use control_mod, only : nu, nu_div, nu_s, hypervis_order, hypervis_subcycle, nu_p, nu_top, swest
     use hybrid_mod, only : hybrid_t
     use hybvcoord_mod, only : hvcoord_t
     use element_mod, only : element_t

@@ -40,8 +40,7 @@ enum class ComparisonOp {
 
 enum class ForcingAlg {
   FORCING_OFF,
-  FORCING_DEBUG,
-  FORCING_0, // Unsupported
+  FORCING_0, 
   FORCING_1, // Unsupported
   FORCING_2, // TODO: Rename FORCING_1 and FORCING_2 to something more descriptive
 };

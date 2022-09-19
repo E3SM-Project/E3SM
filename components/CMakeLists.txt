@@ -2,7 +2,7 @@
 #
 # Common CMakeLists.txt: a framework for building all CIME components and more
 #
-# This is a port of cime/scripts/Tools/Makefile. As more components are ported to
+# This is a port of cime/CIME/Tools/Makefile. As more components are ported to
 # CMake, the directory level of this file will rise to the top-level directory.
 #
 # We will prefer space-separated strings over lists
@@ -79,7 +79,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
 
 # Set global targets
 add_custom_target(genf90
-  DEPENDS ${CIMEROOT}/src/externals/genf90/genf90.pl)
+  DEPENDS ${CIMEROOT}/CIME/non_py/externals/genf90/genf90.pl)
 
 # Build E3SM components
 set(IDX 0)

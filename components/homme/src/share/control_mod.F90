@@ -68,6 +68,9 @@ module control_mod
   ! Default values make qsplit and rsplit control the time steps.
   integer, public :: dt_remap_factor = -1, dt_tracer_factor = -1
 
+  integer, public :: prim_step_type = -1 ! 1 = old code for EUL, 2 = prim_run_flexible for SL
+                                          ! -1 means it wasn't set, error
+
   integer, public :: LFTfreq=0            ! leapfrog-trapazoidal frequency (shallow water only)
                                           ! interspace a lf-trapazoidal step every LFTfreq leapfrogs    
                                           ! 0 = disabled
@@ -120,13 +123,11 @@ module control_mod
   character(len=MAX_STRING_LEN)    , public :: test_case
   !most tests don't have forcing
   logical                          , public :: test_with_forcing = .false. 
-  integer              , public :: tasknum
   integer              , public :: statefreq      ! output frequency of synopsis of system state (steps)
   integer              , public :: restartfreq
   integer              , public :: runtype 
   integer              , public :: timerdetail 
   integer              , public :: numnodes 
-  logical              , public :: uselapi
   character(len=MAX_STRING_LEN)    , public :: restartfile 
   character(len=MAX_STRING_LEN)    , public :: restartdir
 
@@ -148,19 +149,16 @@ module control_mod
 
   character(len=MAX_STRING_LEN)    ,public  :: vfile_int=""   ! vertical formulation (ecmwf,ccm1)
   character(len=MAX_STRING_LEN)    ,public  :: vfile_mid=""   ! vertical grid spacing (equal,unequal)
-  character(len=MAX_STRING_LEN)    ,public  :: vform = ""     ! vertical coordinate system (sigma,hybrid)
   integer,                          public  :: vanalytic = 0  ! if 1, test initializes vertical coords
   real (kind=real_kind),            public  :: vtop = 0.1     ! top coordinate level for analytic vcoords
 
-  integer              , public :: fine_ne = -1               ! set for refined exodus meshes (variable viscosity)
-  real (kind=real_kind), public :: max_hypervis_courant = 1d99! upper bound for Courant number
-                                                              ! (only used for variable viscosity, recommend 1.9 in namelist)
   real (kind=real_kind), public :: nu      = 7.0D5            ! viscosity (momentum equ)
   real (kind=real_kind), public :: nu_div  = -1               ! viscsoity (momentum equ, div component)
   real (kind=real_kind), public :: nu_s    = -1               ! default = nu   T equ. viscosity
   real (kind=real_kind), public :: nu_q    = -1               ! default = nu   tracer viscosity
   real (kind=real_kind), public :: nu_p    = -1               ! default = nu   ps equ. viscosity
   real (kind=real_kind), public :: nu_top  = 0.0D5            ! top-of-the-model viscosity
+  real (kind=real_kind), public :: tom_sponge_start=0         ! start of sponge layer, in hPa
 
   integer, public :: hypervis_subcycle=1                      ! number of subcycles for hyper viscsosity timestep
   integer, public :: hypervis_subcycle_tom=0                  ! number of subcycles for TOM diffusion
@@ -168,8 +166,6 @@ module control_mod
                                                               !   >1  apply timesplit from hyperviscosity
   integer, public :: hypervis_subcycle_q=1                    ! number of subcycles for hyper viscsosity timestep on TRACERS
   integer, public :: hypervis_order=0                         ! laplace**hypervis_order.  0=not used  1=regular viscosity, 2=grad**4
-  integer, public :: psurf_vis = 0                            ! 0 = use laplace on eta surfaces
-                                                              ! 1 = use (approx.) laplace on p surfaces
 
   real (kind=real_kind), public :: hypervis_scaling=0         ! use tensor hyperviscosity
 

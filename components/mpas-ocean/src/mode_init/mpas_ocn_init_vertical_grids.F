@@ -140,9 +140,10 @@ contains
    !
    !  routine ocn_generate_60layerPHC_vertical_grid
    !
-   !> \brief   60 layer PHC vertical grid generator
-   !> \author  Doug Jacobsen
-   !> \date    03/20/2015
+   !> \brief    60 layer PHC vertical grid generator
+   !> \author   Doug Jacobsen, Xylar Asay-Davis
+   !> \date     03/20/2015
+   !> \modified 01/11/2022
    !> \details
    !>  This routine generates a 60 layer vertical grid based on the PHC data set.
    !
@@ -163,66 +164,66 @@ contains
       end if
 
       interfaceLocations(1) = 0.0_RKIND
-      interfaceLocations(2) = 500_RKIND
-      interfaceLocations(3) = 1500_RKIND
-      interfaceLocations(4) = 2500_RKIND
-      interfaceLocations(5) = 3500_RKIND
-      interfaceLocations(6) = 4500_RKIND
-      interfaceLocations(7) = 5500_RKIND
-      interfaceLocations(8) = 6500_RKIND
-      interfaceLocations(9) = 7500_RKIND
-      interfaceLocations(10) = 8500_RKIND
-      interfaceLocations(11) = 9500_RKIND
-      interfaceLocations(12) = 10500_RKIND
-      interfaceLocations(13) = 11500_RKIND
-      interfaceLocations(14) = 12500_RKIND
-      interfaceLocations(15) = 13500_RKIND
-      interfaceLocations(16) = 14500_RKIND
-      interfaceLocations(17) = 15500_RKIND
-      interfaceLocations(18) = 16509.83984375_RKIND
-      interfaceLocations(19) = 17547.904296875_RKIND
-      interfaceLocations(20) = 18629.125_RKIND
-      interfaceLocations(21) = 19766.025390625_RKIND
-      interfaceLocations(22) = 20971.134765625_RKIND
-      interfaceLocations(23) = 22257.826171875_RKIND
-      interfaceLocations(24) = 23640.880859375_RKIND
-      interfaceLocations(25) = 25137.013671875_RKIND
-      interfaceLocations(26) = 26765.416015625_RKIND
-      interfaceLocations(27) = 28548.361328125_RKIND
-      interfaceLocations(28) = 30511.91796875_RKIND
-      interfaceLocations(29) = 32686.794921875_RKIND
-      interfaceLocations(30) = 35109.34375_RKIND
-      interfaceLocations(31) = 37822.75390625_RKIND
-      interfaceLocations(32) = 40878.4609375_RKIND
-      interfaceLocations(33) = 44337.765625_RKIND
-      interfaceLocations(34) = 48273.66796875_RKIND
-      interfaceLocations(35) = 52772.796875_RKIND
-      interfaceLocations(36) = 57937.28515625_RKIND
-      interfaceLocations(37) = 63886.2578125_RKIND
-      interfaceLocations(38) = 70756.328125_RKIND
-      interfaceLocations(39) = 78700.25_RKIND
-      interfaceLocations(40) = 87882.5234375_RKIND
-      interfaceLocations(41) = 98470.5859375_RKIND
-      interfaceLocations(42) = 110620.421875_RKIND
-      interfaceLocations(43) = 124456.6953125_RKIND
-      interfaceLocations(44) = 140049.71875_RKIND
-      interfaceLocations(45) = 157394.640625_RKIND
-      interfaceLocations(46) = 176400.328125_RKIND
-      interfaceLocations(47) = 196894.421875_RKIND
-      interfaceLocations(48) = 218645.65625_RKIND
-      interfaceLocations(49) = 241397.15625_RKIND
-      interfaceLocations(50) = 264900.125_RKIND
-      interfaceLocations(51) = 288938.46875_RKIND
-      interfaceLocations(52) = 313340.46875_RKIND
-      interfaceLocations(53) = 337979.375_RKIND
-      interfaceLocations(54) = 362767.0625_RKIND
-      interfaceLocations(55) = 387645.21875_RKIND
-      interfaceLocations(56) = 412576.84375_RKIND
-      interfaceLocations(57) = 437539.28125_RKIND
-      interfaceLocations(58) = 462519.0625_RKIND
-      interfaceLocations(59) = 487508.375_RKIND
-      interfaceLocations(60) = 512502.84375_RKIND
-      interfaceLocations(61) = 537500_RKIND
+      interfaceLocations(2) = 10.0_RKIND
+      interfaceLocations(3) = 20.0_RKIND
+      interfaceLocations(4) = 30.0_RKIND
+      interfaceLocations(5) = 40.0_RKIND
+      interfaceLocations(6) = 50.0_RKIND
+      interfaceLocations(7) = 60.0_RKIND
+      interfaceLocations(8) = 70.0_RKIND
+      interfaceLocations(9) = 80.0_RKIND
+      interfaceLocations(10) = 90.0_RKIND
+      interfaceLocations(11) = 100.0_RKIND
+      interfaceLocations(12) = 110.0_RKIND
+      interfaceLocations(13) = 120.0_RKIND
+      interfaceLocations(14) = 130.0_RKIND
+      interfaceLocations(15) = 140.0_RKIND
+      interfaceLocations(16) = 150.0_RKIND
+      interfaceLocations(17) = 160.0_RKIND
+      interfaceLocations(18) = 170.19677734375_RKIND
+      interfaceLocations(19) = 180.76129150390625_RKIND
+      interfaceLocations(20) = 191.82119750976562_RKIND
+      interfaceLocations(21) = 203.49929809570312_RKIND
+      interfaceLocations(22) = 215.92340087890625_RKIND
+      interfaceLocations(23) = 229.23312377929688_RKIND
+      interfaceLocations(24) = 243.58447265625_RKIND
+      interfaceLocations(25) = 259.1557922363281_RKIND
+      interfaceLocations(26) = 276.1524963378906_RKIND
+      interfaceLocations(27) = 294.8147277832031_RKIND
+      interfaceLocations(28) = 315.4236145019531_RKIND
+      interfaceLocations(29) = 338.3122863769531_RKIND
+      interfaceLocations(30) = 363.8746032714844_RKIND
+      interfaceLocations(31) = 392.5804748535156_RKIND
+      interfaceLocations(32) = 424.9887390136719_RKIND
+      interfaceLocations(33) = 461.7665710449219_RKIND
+      interfaceLocations(34) = 503.7067565917969_RKIND
+      interfaceLocations(35) = 551.7491760253906_RKIND
+      interfaceLocations(36) = 606.9965515136719_RKIND
+      interfaceLocations(37) = 670.7285461425781_RKIND
+      interfaceLocations(38) = 744.3980407714844_RKIND
+      interfaceLocations(39) = 829.6069641113281_RKIND
+      interfaceLocations(40) = 928.0434265136719_RKIND
+      interfaceLocations(41) = 1041.3681945800781_RKIND
+      interfaceLocations(42) = 1171.0402526855469_RKIND
+      interfaceLocations(43) = 1318.0935363769531_RKIND
+      interfaceLocations(44) = 1482.9008483886719_RKIND
+      interfaceLocations(45) = 1664.9919738769531_RKIND
+      interfaceLocations(46) = 1863.0146179199219_RKIND
+      interfaceLocations(47) = 2074.873809814453_RKIND
+      interfaceLocations(48) = 2298.039276123047_RKIND
+      interfaceLocations(49) = 2529.903594970703_RKIND
+      interfaceLocations(50) = 2768.098846435547_RKIND
+      interfaceLocations(51) = 3010.670196533203_RKIND
+      interfaceLocations(52) = 3256.138885498047_RKIND
+      interfaceLocations(53) = 3503.448516845703_RKIND
+      interfaceLocations(54) = 3751.892791748047_RKIND
+      interfaceLocations(55) = 4001.011505126953_RKIND
+      interfaceLocations(56) = 4250.525604248047_RKIND
+      interfaceLocations(57) = 4500.259552001953_RKIND
+      interfaceLocations(58) = 4750.121307373047_RKIND
+      interfaceLocations(59) = 5000.045684814453_RKIND
+      interfaceLocations(60) = 5250.010955810547_RKIND
+      interfaceLocations(61) = 5499.989044189453_RKIND
 
       maxInterfaceLocation = maxval(interfaceLocations)
 

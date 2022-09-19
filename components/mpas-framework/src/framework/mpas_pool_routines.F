@@ -95,6 +95,13 @@ module mpas_pool_routines
       module procedure mpas_pool_get_config_logical
    end interface
 
+   interface mpas_pool_get_config_scalar
+      module procedure mpas_pool_get_config_real_scalar
+      module procedure mpas_pool_get_config_int_scalar
+      module procedure mpas_pool_get_config_char_scalar
+      module procedure mpas_pool_get_config_logical_scalar
+   end interface
+
    interface mpas_pool_add_dimension
       module procedure mpas_pool_add_dimension_0d
       module procedure mpas_pool_add_dimension_1d
@@ -4917,6 +4924,179 @@ module mpas_pool_routines
 
 
 !-----------------------------------------------------------------------
+!  subroutine mpas_pool_get_config_real_scalar
+!
+!> \brief MPAS Pool Scalar Real Config Access Routine
+!> \author Bob Robey
+!> \creation date   11/16/2021
+!> \details
+!> This subroutine returns the scalar value associated with a config option with the
+!> name key in inPool. This subroutine is based on mpas_pool_get_config_real, but
+!> sets value to be a scalar real instead of a pointer to a real.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_pool_get_config_real_scalar(inPool, key, value, record)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+      real (kind=RKIND) :: value
+      character (len=*), intent(in), optional :: record
+      type (mpas_pool_type), pointer :: recordPool
+
+      type (mpas_pool_data_type), pointer :: mem
+
+      if ( present(record) ) then
+         call mpas_pool_get_subpool(inPool, record, recordPool)
+         mem => pool_get_member(recordPool, key, MPAS_POOL_CONFIG)
+      else
+         mem => pool_get_member(inPool, key, MPAS_POOL_CONFIG)
+      end if
+
+      if (associated(mem)) then
+         if (mem % contentsType /= MPAS_POOL_REAL) then
+            call pool_mesg('Error: Config '//trim(key)//' is not type real.')
+         end if
+         value = mem % simple_real
+      else
+         call pool_mesg('Error: Config '//trim(key)//' not found in pool.')
+      end if
+
+   end subroutine mpas_pool_get_config_real_scalar!}}}
+
+
+!-----------------------------------------------------------------------
+!  subroutine mpas_pool_get_config_int_scalar
+!
+!> \brief MPAS Pool Scalar Integer Config Access Routine
+!> \author Bob Robey
+!> \date   11/16/2021
+!> \details
+!> This subroutine returns the scalar value associated with a config option with the
+!> name key in inPool. This subroutine is based on mpas_pool_get_config_int, but
+!> sets value to be a scalar integer instead of a pointer to a integer.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_pool_get_config_int_scalar(inPool, key, value, record)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+      integer :: value
+      character (len=*), intent(in), optional :: record
+      type (mpas_pool_type), pointer :: recordPool
+
+      type (mpas_pool_data_type), pointer :: mem
+
+      if ( present(record) ) then
+         call mpas_pool_get_subpool(inPool, record, recordPool)
+         mem => pool_get_member(recordPool, key, MPAS_POOL_CONFIG)
+      else
+         mem => pool_get_member(inPool, key, MPAS_POOL_CONFIG)
+      end if
+
+      if (associated(mem)) then
+         if (mem % contentsType /= MPAS_POOL_INTEGER) then
+            call pool_mesg('Error: Config '//trim(key)//' is not type integer.')
+         end if
+         value = mem % simple_int
+      else
+         call pool_mesg('Error: Config '//trim(key)//' not found in pool.')
+      end if
+
+   end subroutine mpas_pool_get_config_int_scalar!}}}
+
+
+!-----------------------------------------------------------------------
+!  subroutine mpas_pool_get_config_char_scalar
+!
+!> \brief MPAS Pool Scalar Character Config Access Routine
+!> \author Bob Robey
+!> \date   11/16/2021
+!> \details
+!> This subroutine returns the scalar value associated with a config option with the
+!> name key in inPool. This subroutine is based on mpas_pool_get_config_char, but
+!> sets value to be a scalar character instead of a pointer to a character.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_pool_get_config_char_scalar(inPool, key, value, record)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+      character (len=StrKIND) :: value
+      character (len=*), intent(in), optional :: record
+      type (mpas_pool_type), pointer :: recordPool
+
+      type (mpas_pool_data_type), pointer :: mem
+
+      if ( present(record) ) then
+         call mpas_pool_get_subpool(inPool, record, recordPool)
+         mem => pool_get_member(recordPool, key, MPAS_POOL_CONFIG)
+      else
+         mem => pool_get_member(inPool, key, MPAS_POOL_CONFIG)
+      end if
+
+      if (associated(mem)) then
+         if (mem % contentsType /= MPAS_POOL_CHARACTER) then
+            call pool_mesg('Error: Config '//trim(key)//' is not type character.')
+         end if
+
+         value = mem % simple_char
+      else
+         call pool_mesg('Error: Config '//trim(key)//' not found in pool.')
+      end if
+
+   end subroutine mpas_pool_get_config_char_scalar!}}}
+
+
+!-----------------------------------------------------------------------
+!  subroutine mpas_pool_get_config_logical_scalar
+!
+!> \brief MPAS Pool Scalar Logical Config Access Routine
+!> \author Bob Robey
+!> \date   11/16/2021
+!> \details
+!> This subroutine returns the scalar value associated with a config option with the
+!> name key in inPool. This subroutine is based on mpas_pool_get_config_logical, but
+!> sets value to be a scalar logical instead of a pointer to a logical.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_pool_get_config_logical_scalar(inPool, key, value, record)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+      logical :: value
+      character (len=*), intent(in), optional :: record
+      type (mpas_pool_type), pointer :: recordPool
+
+      type (mpas_pool_data_type), pointer :: mem
+
+      if ( present(record) ) then
+         call mpas_pool_get_subpool(inPool, record, recordPool)
+         mem => pool_get_member(recordPool, key, MPAS_POOL_CONFIG)
+      else
+         mem => pool_get_member(inPool, key, MPAS_POOL_CONFIG)
+      end if
+
+      if (associated(mem)) then
+         if (mem % contentsType /= MPAS_POOL_LOGICAL) then
+            call pool_mesg('Error: Config '//trim(key)//' is not type logical.')
+         end if
+         value = mem % simple_logical
+      else
+         call pool_mesg('Error: Config '//trim(key)//' not found in pool.')
+      end if
+
+   end subroutine mpas_pool_get_config_logical_scalar!}}}
+
+
+!-----------------------------------------------------------------------
 !  routine mpas_pool_add_dimension_0d
 !
 !> \brief MPAS Pool 0D Dimension Insertion routine
@@ -5005,6 +5185,41 @@ module mpas_pool_routines
       end if
 
    end subroutine mpas_pool_add_dimension_1d!}}}
+
+!-----------------------------------------------------------------------
+!  subroutine mpas_pool_get_dimension_scalar
+!
+!> \brief MPAS Pool Scalar Dimension Access subroutine
+!> \author Michael Duda, Doug Jacobsen
+!> \date   03/27/2014
+!> \details
+!> This subroutine returns the scalar value of the 0D dimension associated with key in
+!>  inPool.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_pool_get_dimension_scalar(inPool, key, dim)!{{{
+
+      implicit none
+
+      type (mpas_pool_type), intent(in) :: inPool
+      character (len=*), intent(in) :: key
+      integer :: dim
+
+      type (mpas_pool_data_type), pointer :: mem
+
+      mem => pool_get_member(inPool, key, MPAS_POOL_DIMENSION)
+
+      if (associated(mem)) then
+         if (mem % contentsDims /= 0) then
+            call pool_mesg('Error: Dimension '//trim(key)//' is not a scalar.')
+         else
+            dim = mem % simple_int
+         end if
+      else
+         call pool_mesg('Error: Dimension '//trim(key)//' not found in pool.')
+      end if
+
+   end subroutine mpas_pool_get_dimension_scalar!}}}
 
 
 !-----------------------------------------------------------------------

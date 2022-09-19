@@ -112,6 +112,12 @@ CONTAINS
     integer :: npes_se
     integer :: npes_se_stride
 
+#ifdef KOKKOS_TARGET
+#if defined(HORIZ_OPENMP) || defined(COLUMN_OPENMP)
+    call endrun( 'in this EAM configuration, kokkos dycore does not run with threads yet')
+#endif
+#endif
+
     !----------------------------------------------------------------------
 
     ! Initialize dynamics grid variables
@@ -278,7 +284,7 @@ CONTAINS
 
                 elem(ie)%state%q(:,:,:,:)=0.0_r8
 
-                temperature(:,:,:)=0.0_r8
+                temperature(:,:,:)=300.0_r8
                 ps=ps0
                 call set_thermostate(elem(ie),ps,temperature,hvcoord)
 

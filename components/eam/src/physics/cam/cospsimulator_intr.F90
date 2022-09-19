@@ -2086,7 +2086,6 @@ CONTAINS
     cospstateIN%phalf(1:ncol,1)                = 0._r8
     cospstateIN%phalf(1:ncol,2:pver+1)         = pbot(1:ncol,pver:1:-1)  
     cospstateIN%hgt_matrix                     = zmid(1:ncol,1:pver) 
-    cospstateIN%hgt_matrix_half(1:ncol,pver+1) = 0._r8
     cospstateIN%hgt_matrix_half(1:ncol,1:pver) = zbot(1:ncol,pver:1:-1) 
     cospstateIN%surfelev(1:ncol)               = zbot(1:ncol,1)
     call t_stopf("construct_cospstateIN")
@@ -3334,7 +3333,7 @@ CONTAINS
              y%v_sfc(npoints),y%lat(npoints),y%lon(nPoints),y%emis_sfc(nchan),           &
              y%cloudIce(nPoints,nLevels),y%cloudLiq(nPoints,nLevels),y%surfelev(nPoints),&
              y%fl_snow(nPoints,nLevels),y%fl_rain(nPoints,nLevels),y%seaice(npoints),    &
-             y%tca(nPoints,nLevels),y%hgt_matrix_half(npoints,nlevels+1))
+             y%tca(nPoints,nLevels),y%hgt_matrix_half(npoints,nlevels))
 
   end subroutine construct_cospstateIN
   ! ######################################################################################
