@@ -1,0 +1,3 @@
+! F20TR_chemUCI-Linozv3 production run set this in run script
+! Here to allow the test to proceed.
+  check_dynpft_consistency = .false.
