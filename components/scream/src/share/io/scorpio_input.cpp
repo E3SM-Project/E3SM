@@ -53,7 +53,7 @@ init (const std::shared_ptr<const fm_type>& field_mgr,
       const std::shared_ptr<const gm_type>& grids_mgr)
 {
   // Set list of fields. Use grid name to potentially find correct sublist inside 'Fields' list.
-  set_fields_and_grid_names (field_mgr->get_grid()->name());
+  set_fields_and_grid_names (field_mgr->get_grid()->aliases());
 
   // Sets the internal field mgr, and possibly sets up the remapper
   set_field_manager(field_mgr,grids_mgr);
@@ -68,7 +68,7 @@ init (const std::shared_ptr<const grid_type>& grid,
       const std::map<std::string,FieldLayout>&  layouts)
 {
   // Set list of fields. Use grid name to potentially find correct sublist inside 'Fields' list.
-  set_fields_and_grid_names (grid->name());
+  set_fields_and_grid_names (grid->aliases());
 
   // Set the grid associated with the input views
   set_grid(grid);
@@ -83,7 +83,7 @@ init (const std::shared_ptr<const grid_type>& grid,
 /* ---------------------------------------------------------- */
 
 void AtmosphereInput::
-set_fields_and_grid_names (const std::string& grid_name) {
+set_fields_and_grid_names (const std::vector<std::string>& grid_aliases) {
   // The user might just want to read some global attributes (no fields),
   // so get the list of fields names only if present.
   using vos_t = std::vector<std::string>;
@@ -92,11 +92,16 @@ set_fields_and_grid_names (const std::string& grid_name) {
     if (m_params.isParameter("IO Grid Name")) {
       m_io_grid_name = m_params.get<std::string>("IO Grid Name");
     }
-  } else if (m_params.isSublist("Fields") && grid_name!="") {
-    const auto& pl = m_params.sublist("Fields").sublist(grid_name);
-    m_fields_names = pl.get<vos_t>("Field Names");
-    if (pl.isParameter("IO Grid Name")) {
-      m_io_grid_name = pl.get<std::string>("IO Grid Name");
+  } else {
+    for (const auto& grid_name : grid_aliases) {
+      if (m_params.isSublist("Fields") && grid_name!="") {
+        const auto& pl = m_params.sublist("Fields").sublist(grid_name);
+        m_fields_names = pl.get<vos_t>("Field Names");
+        if (pl.isParameter("IO Grid Name")) {
+          m_io_grid_name = pl.get<std::string>("IO Grid Name");
+        }
+      }
+      break;
     }
   }
 }

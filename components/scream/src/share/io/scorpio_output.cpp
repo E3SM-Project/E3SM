@@ -64,16 +64,23 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     m_fields_names = params.get<vos_t>("Field Names");
   } else if (params.isSublist("Fields")){
     const auto& f_pl = params.sublist("Fields");
-    const auto& grid_name = io_grid->name(); 
-    if (f_pl.isSublist(grid_name)) {
-      const auto& pl = f_pl.sublist(grid_name);
-      m_fields_names = pl.get<vos_t>("Field Names");
+    const auto& io_grid_aliases = io_grid->aliases();
+    bool names_found = false;
+    for (const auto& grid_name : io_grid_aliases) {
+      if (f_pl.isSublist(grid_name)) {
+        const auto& pl = f_pl.sublist(grid_name);
+        m_fields_names = pl.get<vos_t>("Field Names");
+        names_found = true;
 
-      // Check if the user wants to remap fields on a different grid first
-      if (pl.isParameter("IO Grid Name")) {
-        io_grid = grids_mgr->get_grid(pl.get<std::string>("IO Grid Name"));
+        // Check if the user wants to remap fields on a different grid first
+        if (pl.isParameter("IO Grid Name")) {
+          io_grid = grids_mgr->get_grid(pl.get<std::string>("IO Grid Name"));
+        }
+        break;
       }
     }
+    EKAT_REQUIRE_MSG (names_found,
+        "Error! Bad formatting of output yaml file. Missing 'Fields->$grid_name` sublist.\n");
   }
 
   // Try to set the IO grid (checks will be performed)
@@ -434,23 +441,33 @@ void AtmosphereOutput::register_views()
       m_dev_views_1d.emplace(name,view_1d_dev("",size));
       m_host_views_1d.emplace(name,Kokkos::create_mirror(m_dev_views_1d[name]));
 
-      // Init dev view with an "identity" for avg_type
-      switch (m_avg_type) {
-        case OutputAvgType::Instant:
-          // No averaging
-          break;
-        case OutputAvgType::Max:
-          Kokkos::deep_copy(m_dev_views_1d[name],-std::numeric_limits<Real>::infinity());
-          break;
-        case OutputAvgType::Min:
-          Kokkos::deep_copy(m_dev_views_1d[name],std::numeric_limits<Real>::infinity());
-          break;
-        case OutputAvgType::Average:
-          Kokkos::deep_copy(m_dev_views_1d[name],0);
-          break;
-        default:
-          EKAT_ERROR_MSG ("Unrecognized averaging type.\n");
-      }
+    }
+  }
+  // Initialize the local views
+  reset_dev_views();
+}
+/* ---------------------------------------------------------- */
+void AtmosphereOutput::
+reset_dev_views()
+{
+  // Reset the local device views depending on the averaging type
+  // Init dev view with an "identity" for avg_type
+  for (auto const& name : m_fields_names) {
+    switch (m_avg_type) {
+      case OutputAvgType::Instant:
+        // No averaging
+        break;
+      case OutputAvgType::Max:
+        Kokkos::deep_copy(m_dev_views_1d[name],-std::numeric_limits<Real>::infinity());
+        break;
+      case OutputAvgType::Min:
+        Kokkos::deep_copy(m_dev_views_1d[name],std::numeric_limits<Real>::infinity());
+        break;
+      case OutputAvgType::Average:
+        Kokkos::deep_copy(m_dev_views_1d[name],0);
+        break;
+      default:
+        EKAT_ERROR_MSG ("Unrecognized averaging type.\n");
     }
   }
 }

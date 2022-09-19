@@ -46,6 +46,18 @@ TEST_CASE("point_grid", "") {
   auto layout = grid->get_2d_scalar_layout();
   REQUIRE(layout.tags().size() == 1);
   REQUIRE(layout.tag(0) == COL);
+
+  auto shallow_copy = grid->clone("shallow",true);
+  auto deep_copy    = grid->clone("deep",false);
+
+  REQUIRE (shallow_copy->get_dofs_gids().data()==grid->get_dofs_gids().data());
+  REQUIRE (deep_copy->get_dofs_gids().data()!=grid->get_dofs_gids().data());
+  for (int i=0; i<grid->get_num_local_dofs(); ++i) {
+    REQUIRE (deep_copy->get_dofs_gids_host()[i]==grid->get_dofs_gids_host()[i]);
+  }
+
+  shallow_copy->reset_num_vertical_lev(4);
+  REQUIRE (shallow_copy->get_num_vertical_levels()==4);
 }
 
 TEST_CASE("se_grid", "") {
@@ -77,6 +89,15 @@ TEST_CASE("se_grid", "") {
   const auto max_gid = se_grid->get_global_max_dof_gid();
   const auto min_gid = se_grid->get_global_min_dof_gid();
   REQUIRE( (max_gid-min_gid+1)==se_grid->get_num_global_dofs() );
+
+  auto shallow_copy = se_grid->clone("shallow",true);
+  auto deep_copy    = se_grid->clone("deep",false);
+
+  REQUIRE (shallow_copy->get_dofs_gids().data()==se_grid->get_dofs_gids().data());
+  REQUIRE (deep_copy->get_dofs_gids().data()!=se_grid->get_dofs_gids().data());
+  for (int i=0; i<se_grid->get_num_local_dofs(); ++i) {
+    REQUIRE (deep_copy->get_dofs_gids_host()[i]==se_grid->get_dofs_gids_host()[i]);
+  }
 }
 
 } // anonymous namespace

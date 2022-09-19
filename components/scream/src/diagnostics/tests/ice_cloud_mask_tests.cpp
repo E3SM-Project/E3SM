@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
-#include "diagnostics/relative_humidity.hpp"
+#include "diagnostics/ice_cloud_mask.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
 #include "physics/share/physics_constants.hpp"
@@ -43,6 +43,7 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 template<typename DeviceT>
 void run(std::mt19937_64& engine)
 {
+  using PF         = scream::PhysicsFunctions<DeviceT>;
   using PC         = scream::physics::Constants<Real>;
   using Pack       = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using KT         = ekat::KokkosTypes<DeviceT>;
@@ -66,9 +67,7 @@ void run(std::mt19937_64& engine)
   auto policy = ekat::ExeSpaceUtils<ExecSpace>::get_default_team_policy(ncols, num_mid_packs);
 
   // Input (randomized) views
-  view_1d temperature("temperature",num_mid_packs),
-          pressure("pressure",num_mid_packs),
-          qv("qv",num_mid_packs);
+  view_1d qi("qi",num_mid_packs);
 
   auto dview_as_real = [&] (const view_1d& v) -> rview_1d {
     return rview_1d(reinterpret_cast<Real*>(v.data()),v.size()*packsize);
@@ -76,18 +75,18 @@ void run(std::mt19937_64& engine)
 
   // Construct random input data
   using RPDF = std::uniform_real_distribution<Real>;
-  RPDF pdf_pres(0.0,PC::P0),
-       pdf_temp(200.0,400.0),
-       pdf_qv(0.0,1e-2);
+  RPDF pdf_qi(0.0,1e-2);
 
   // A time stamp
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
   // Construct the Diagnostic
   ekat::ParameterList params;
+  params.set<std::string>("Diagnostic Name", "Ice Cloud Mask");
+  params.set<std::string>("Grid", "Point Grid");
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
-  auto diag = diag_factory.create("RelativeHumidity",comm,params);
+  auto diag = diag_factory.create("IceCloudMask",comm,params);
   diag->set_grids(gm);
 
 
@@ -112,45 +111,33 @@ void run(std::mt19937_64& engine)
   {
     // Construct random data to use for test
     // Get views of input data and set to random values
-    const auto& T_mid_f = input_fields["T_mid"];
-    const auto& T_mid_v = T_mid_f.get_view<Pack**>();
-    const auto& p_mid_f = input_fields["p_mid"];
-    const auto& p_mid_v = p_mid_f.get_view<Pack**>();
-    const auto& qv_f = input_fields["qv"];
-    const auto& qv_v = qv_f.get_view<Pack**>();
+    const auto& qi_f = input_fields["qi"];
+    const auto& qi_v = qi_f.get_view<Pack**>();
 
     for (int icol=0;icol<ncols;icol++) {
-      const auto& T_sub = ekat::subview(T_mid_v,icol);
-      const auto& p_sub = ekat::subview(p_mid_v,icol);
-      const auto& qv_sub = ekat::subview(qv_v,icol);
-      ekat::genRandArray(dview_as_real(temperature), engine, pdf_temp);
-      ekat::genRandArray(dview_as_real(pressure),    engine, pdf_pres);
-      ekat::genRandArray(dview_as_real(qv),    engine, pdf_qv);
-      Kokkos::deep_copy(T_sub,temperature);
-      Kokkos::deep_copy(p_sub,pressure);
-      Kokkos::deep_copy(qv_sub,qv);
+      const auto& qi_sub = ekat::subview(qi_v,icol);
+      ekat::genRandArray(dview_as_real(qi),    engine, pdf_qi);
     }
 
     // Run diagnostic and compare with manual calculation
     diag->compute_diagnostic();
     const auto& diag_out = diag->get_diagnostic();
-    Field rh_f = diag_out.clone();
-    rh_f.deep_copy<double,Host>(0.0);
-    rh_f.sync_to_dev();
-    const auto& rh_v = rh_f.get_view<Pack**>();
-    using physics = scream::physics::Functions<Real, DefaultDevice>;
-    using Smask = ekat::Mask<Pack::n>;
-    Smask range_mask(true);
+    Field ice_cld_mask_f = diag_out.clone();
+    ice_cld_mask_f.deep_copy<double,Host>(0.0);
+    ice_cld_mask_f.sync_to_dev();
+    const auto& ice_cld_mask_v = ice_cld_mask_f.get_view<Pack**>();
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& jpack) {
-      auto qv_sat_l = physics::qv_sat(T_mid_v(icol,jpack), p_mid_v(icol,jpack), false, range_mask);
-        rh_v(icol,jpack) = qv_v(icol,jpack)/qv_sat_l;
+        const Real ice_frac_threshold = 1e-5;
+        auto icecld = qi_v(icol,jpack) > ice_frac_threshold;
+        ice_cld_mask_v(icol,jpack) = 0.0;
+        ice_cld_mask_v(icol,jpack).set(icecld, 1.0);
       });
       team.team_barrier();
     });
     Kokkos::fence();
-    REQUIRE(views_are_equal(diag_out,rh_f));
+    REQUIRE(views_are_equal(diag_out,ice_cld_mask_f));
   }
  
   // Finalize the diagnostic
@@ -158,7 +145,7 @@ void run(std::mt19937_64& engine)
 
 } // run()
 
-TEST_CASE("relative_humidity_test", "relative_humidity_test]"){
+TEST_CASE("ice_cloud_mask_test", "ice_cloud_mask_test]"){
   // Run tests for both Real and Pack, and for (potentially) different pack sizes
   using scream::Real;
   using Device = scream::DefaultDevice;

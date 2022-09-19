@@ -157,6 +157,7 @@ tweaking their $case/namelist_scream.xml file.
       <vertical_coordinate_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</vertical_coordinate_filename>
       <vertical_coordinate_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</vertical_coordinate_filename>
       <vertical_coordinate_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</vertical_coordinate_filename>
+      <vertical_coordinate_filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</vertical_coordinate_filename>
       <vertical_coordinate_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</vertical_coordinate_filename>
       <vertical_coordinate_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5_20131001_20220823.nc</vertical_coordinate_filename>
       <vertical_coordinate_filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</vertical_coordinate_filename>
@@ -255,6 +256,7 @@ tweaking their $case/namelist_scream.xml file.
     <Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</Filename>
     <Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</Filename>
     <Filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</Filename>
+    <Filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</Filename>
     <Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</Filename> 
     <Filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5_20131001_20220823.nc</Filename> 
     <Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</Filename>
@@ -288,11 +290,10 @@ tweaking their $case/namelist_scream.xml file.
     <surf_mom_flux     >0.0,0.0</surf_mom_flux>
     <!-- default ne1024 initial condition files do not have these, so init to zero here -->
     <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
-    <qc hgrid="ne1024np4">0.0</qc>
-    <qi hgrid="ne1024np4">0.0</qi>
-    <nc hgrid="ne1024np4">0.0</nc>
-    <ni hgrid="ne1024np4">0.0</ni>
-
+    <qc hgrid="ne256np4|ne1024np4">0.0</qc>
+    <qi hgrid="ne256np4|ne1024np4">0.0</qi>
+    <nc hgrid="ne256np4|ne1024np4">0.0</nc>
+    <ni hgrid="ne256np4|ne1024np4">0.0</ni>
   </initial_conditions>
 
   <!-- List of yaml files containing I/O output specs -->
