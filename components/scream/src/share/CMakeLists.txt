@@ -35,6 +35,14 @@ target_include_directories(scream_share PUBLIC ${SCREAM_SRC_DIR} ${SCREAM_BIN_DI
 target_link_libraries(scream_share PUBLIC ekat gptl)
 set_target_properties(scream_share PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
 target_compile_options(scream_share PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
+
+# This used to be in `scream_config.h/scream_config.f`, but we did accidentally remove
+# the includes at least twice. To avoid this from happening again, we add this crucial
+# macro as a compile definition of the scream_share, which is linked to all other
+# scream libraries.
+if (SCREAM_CIME_BUILD)
+  target_compile_definitions (scream_share PUBLIC SCREAM_CIME_BUILD)
+endif()
 # We have some issues with RDC and repeated libraries in the link line.
 # It's a known issue, and nvcc_wrapper has a flag for handling this.
 if (Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
