@@ -131,7 +131,7 @@
 !
 !/ ------------------------------------------------------------------- /
       use w3gdatmd, only: dtmax, dtcfl, dtcfli, dtmin, &
-                          nx, ny, nsea, nseal, mapsf, mapfs, mapsta, mapst2, x0, y0, sx, sy, &
+                          nx, ny, nsea, nseal, mapsf, mapfs, mapsta, mapst2, x0, y0, sx, sy, xgrd, ygrd, &
                           w3nmod, w3setg, AnglD, &
                           sig, nk, zb, dmin, &
                           usspf
@@ -146,6 +146,7 @@
                           nogrp, ngrpp, noge, idout, fnmpre, iostyp, notype, flout, &
                           fnmpre, ifile4, ofiles
       use w3servmd, only: w3xyrtn
+      use wmscrpmd, only: grid_area
       use w3parall, only: init_get_isea
       use w3dispmd, only: wavnu1
       use w3triamd, only: SETUGIOBP
@@ -802,7 +803,7 @@ CONTAINS
 
       ! initialize mct domain
 
-      call wav_domain_mct(lsize, gsmap, dom)
+      call wav_domain_mct(lsize, gsmap, mpi_comm, dom)
 
       ! set flags in infodata
       ! wav_prognostic is set to .false. for debugging purposes only
@@ -1305,11 +1306,12 @@ CONTAINS
 !=====================================================================
 !=====================================================================
 
-    subroutine wav_domain_mct(lsize, gsmap, dom)
+    subroutine wav_domain_mct(lsize, gsmap, mpi_comm, dom)
 
       implicit none
       integer        , intent(in)   :: lsize
       type(mct_gsmap), intent(in)   :: gsmap
+      integer        , intent(in)  :: mpi_comm
       type(mct_ggrid), intent(inout):: dom
 
       integer  :: n,i,ix,iy,isea,jsea   ! indices
@@ -1351,12 +1353,16 @@ CONTAINS
       ! note aream will be filled in in the atm-lnd mapper
       ! sx, sy  real  i  grid increments (deg.).
 
+      if (iaproc .ne. 1) then
+        allocate(grid_area(nx))
+      endif
+      call shr_mpi_bcast(grid_area, mpi_comm)
 
       do jsea=1, nseal
          isea = iaproc + (jsea-1)*naproc
          ix = mapsf(isea,1)
          iy = mapsf(isea,2)
-         lon = x0 + real(ix-1)*sx
+         lon = xgrd(iy,ix) 
          data(jsea) = lon
          !write(stdout,*)' jsea= ',jsea,' lon is ',data(jsea)
       end do
@@ -1366,7 +1372,7 @@ CONTAINS
          isea = iaproc + (jsea-1)*naproc
          ix = mapsf(isea,1)
          iy = mapsf(isea,2)
-         lat = y0 + real(iy-1)*sy
+         lat = ygrd(iy,ix)
          data(jsea) = lat
          !write(stdout,*)' jsea= ',jsea,' lat is ',data(jsea)
       end do
@@ -1375,9 +1381,7 @@ CONTAINS
       do jsea = 1,nseal
          isea = iaproc + (jsea-1)*naproc
          ix = mapsf(isea,1)
-         iy = mapsf(isea,2)
-         lat = y0 + real(iy-1)*sy
-         data(jsea) = sx*deg2rad*sy*deg2rad*cos(lat*deg2rad)
+         data(jsea) = grid_area(ix)*deg2rad**2
          !write(stdout,*)' jsea= ',jsea,' area is ',data(jsea)
       end do
       call mct_ggrid_importrattr(dom,"area",data,lsize)
