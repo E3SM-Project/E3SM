@@ -9,8 +9,9 @@ namespace scream
 FieldAtLevel::FieldAtLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereDiagnostic(comm,params)
   , m_field_layout(m_params.get<FieldLayout>("Field Layout"))
+  , m_field_units(m_params.get<ekat::units::Units>("Field Units"))
 {
-  m_field_name   = m_params.get<std::string>("Field Name");
+  m_field_name  = m_params.get<std::string>("Field Name");
 
   using namespace ShortFieldTagsNames;
   EKAT_REQUIRE_MSG (ekat::contains(std::vector<FieldTag>{LEV,ILEV},m_field_layout.tags().back()),
@@ -23,9 +24,8 @@ FieldAtLevel::FieldAtLevel (const ekat::Comm& comm, const ekat::ParameterList& p
 void FieldAtLevel::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   const auto& gname  = m_params.get<std::string>("Grid Name");
-  constexpr auto units = ekat::units::Units::invalid();
 
-  add_field<Required>(m_field_name, m_field_layout, units, gname);
+  add_field<Required>(m_field_name, m_field_layout, m_field_units, gname);
 }
 // =========================================================================================
 void FieldAtLevel::compute_diagnostic_impl()

@@ -36,15 +36,11 @@ void FieldManager::register_field (const FieldRequest& req)
     m_fields[id.name()] = std::make_shared<Field>(id);
   } else {
     // Make sure the input field has the same layout and units as the field already stored.
-    // NOTE: we allow the input units to be "invalid", in case the customer requesting
-    //       does not really care about them. E.g., a diagnostic that deals with the
-    //       field in an agnostic way, like FieldAtLevel.
     // TODO: this is the easiest way to ensure everyone uses the same units.
     //       However, in the future, we *may* allow different units, providing
     //       the users with conversion routines perhaps.
     const auto id0 = m_fields[id.name()]->get_header().get_identifier();
-    constexpr auto invalid = ekat::units::Units::invalid();
-    EKAT_REQUIRE_MSG(id.get_units()==id0.get_units() || id.get_units()==invalid || id0.get_units()==invalid,
+    EKAT_REQUIRE_MSG(id.get_units()==id0.get_units(),
         "Error! Field '" + id.name() + "' already registered with different units:\n"
         "         - input field units:  " + to_string(id.get_units()) + "\n"
         "         - stored field units: " + to_string(id0.get_units()) + "\n"
@@ -55,11 +51,6 @@ void FieldManager::register_field (const FieldRequest& req)
         "         - input id:  " + id.get_id_string() + "\n"
         "         - stored id: " + id0.get_id_string() + "\n"
         "       Please, check and make sure all atmosphere processes use the same layout for a given field.\n");
-
-    // If the first registration was with invalid units, recreate with new fid (if new fid units are valid)
-    if (id0.get_units()==invalid && id.get_units()!=invalid) {
-      m_fields[id.name()] = std::make_shared<Field>(id);
-    }
   }
 
   if (req.subview_info.dim_idx>=0) {

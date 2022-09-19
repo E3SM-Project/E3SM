@@ -678,6 +678,7 @@ void AtmosphereOutput::set_diagnostics()
         params.set("Field Name", fname);
         params.set("Grid Name",fid.get_grid_name());
         params.set("Field Layout",fid.get_layout());
+        params.set("Field Units",fid.get_units());
 
         // If last is bot or top, will simply use that
         params.set("Field Level", lev_and_idx.back());

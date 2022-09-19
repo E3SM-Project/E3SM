@@ -34,9 +34,11 @@ protected:
   void set_required_field_impl (const Field& f);
 
   // Keep track of field dimensions
-  std::string     m_field_name;
-  FieldLayout     m_field_layout;
-  int             m_field_level;
+  std::string         m_field_name;
+  FieldLayout         m_field_layout;
+  ekat::units::Units  m_field_units;
+
+  int                 m_field_level;
 
 }; // class FieldAtLevel
 
