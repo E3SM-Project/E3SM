@@ -4,6 +4,8 @@
 
 #cmake -C ~/acme-fork-lb/components/homme/cmake/machineFiles/summit.cmake -DHOMMEXX_MPI_ON_DEVICE=FALSE ~/acme-fork-lb/components/homme/
 
+#cmake -C ~/acme-MASTER-GB/components/homme/cmake/machineFiles/crusher-gpumpi.cmake -DE3SM_KOKKOS_PATH=/ccs/home/onguba/kokkos-crusher-june2022/bld-hipcc ~/acme-MASTER-GB/components/homme/
+
 #SET (HOMMEXX_MPI_ON_DEVICE FALSE CACHE BOOL "")
 SET (HOMMEXX_CUDA_MAX_WARP_PER_TEAM "16" CACHE STRING  "")
 
