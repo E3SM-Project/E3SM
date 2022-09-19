@@ -19,7 +19,12 @@ template<typename S, typename D>
 Int Functions<S,D>::shoc_init(
   const Int&                  nbot_shoc,
   const Int&                  ntop_shoc,
-  const view_1d<const Spack>& pref_mid)
+  const view_1d<const Spack>& pref_mid
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  , const Int&       shcol
+  , SHOCTemporaries& temporaries
+#endif
+                              )
 {
   // This function calculates the maximum number of levels
   // in pbl from surface
@@ -57,6 +62,33 @@ Int Functions<S,D>::shoc_init(
 
   const auto host_view = Kokkos::create_mirror_view(npbl_d);
   Kokkos::deep_copy(host_view, npbl_d);
+
+  // Allocate temporaries if using small kernels
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  // Create space for temporary scalars
+  temporaries.se_b   = view_1d<Scalar>("se_b", shcol);
+  temporaries.ke_b   = view_1d<Scalar>("ke_b", shcol);
+  temporaries.wv_b   = view_1d<Scalar>("wv_b", shcol);
+  temporaries.wl_b   = view_1d<Scalar>("wl_b", shcol);
+  temporaries.se_a   = view_1d<Scalar>("se_a", shcol);
+  temporaries.ke_a   = view_1d<Scalar>("ke_a", shcol);
+  temporaries.wv_a   = view_1d<Scalar>("wv_a", shcol);
+  temporaries.wl_a   = view_1d<Scalar>("wl_a", shcol);
+  temporaries.ustar  = view_1d<Scalar>("ustar", shcol);
+  temporaries.kbfs   = view_1d<Scalar>("kbfs", shcol);
+  temporaries.obklen = view_1d<Scalar>("obklen", shcol);
+  temporaries.ustar2 = view_1d<Scalar>("ustar2", shcol);
+  temporaries.wstar  = view_1d<Scalar>("wstar", shcol);
+
+  // Create space for temporary column vars
+  const Int nlevi = (nbot_shoc - ntop_shoc) + 1;
+  const auto nlevi_packs = ekat::npack<Spack>(nlevi);
+  temporaries.rho_zt  = view_2d<Spack>("rho_zt",  shcol, nlevi_packs);
+  temporaries.shoc_qv = view_2d<Spack>("shoc_qv", shcol, nlevi_packs);
+  temporaries.dz_zt   = view_2d<Spack>("dz_zt",   shcol, nlevi_packs);
+  temporaries.dz_zi   = view_2d<Spack>("dz_zi",   shcol, nlevi_packs);
+  temporaries.tkh     = view_2d<Spack>("tkh",     shcol, nlevi_packs);
+#endif
 
   return host_view(0);
 }
@@ -344,33 +376,27 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<Spack>&       w3,
   const view_2d<Spack>&       wqls_sec,
   const view_2d<Spack>&       brunt,
-  const view_2d<Spack>&       isotropy)
+  const view_2d<Spack>&       isotropy,
+  // Temporaries
+  const view_1d<Scalar>& se_b,
+  const view_1d<Scalar>& ke_b,
+  const view_1d<Scalar>& wv_b,
+  const view_1d<Scalar>& wl_b,
+  const view_1d<Scalar>& se_a,
+  const view_1d<Scalar>& ke_a,
+  const view_1d<Scalar>& wv_a,
+  const view_1d<Scalar>& wl_a,
+  const view_1d<Scalar>& ustar,
+  const view_1d<Scalar>& kbfs,
+  const view_1d<Scalar>& obklen,
+  const view_1d<Scalar>& ustar2,
+  const view_1d<Scalar>& wstar,
+  const view_2d<Spack>& rho_zt,
+  const view_2d<Spack>& shoc_qv,
+  const view_2d<Spack>& dz_zt,
+  const view_2d<Spack>& dz_zi,
+  const view_2d<Spack>& tkh)
 {
-  // Create space for temporary scalars
-  view_1d<Scalar>
-    se_b("se_b", shcol),
-    ke_b("ke_b", shcol),
-    wv_b("wv_b", shcol),
-    wl_b("wl_b", shcol),
-    se_a("se_a", shcol),
-    ke_a("ke_a", shcol),
-    wv_a("wv_a", shcol),
-    wl_a("wl_a", shcol),
-    ustar("ustar", shcol),
-    kbfs("kbfs", shcol),
-    obklen("obklen", shcol),
-    ustar2("ustar2", shcol),
-    wstar("wstar", shcol);
-
-  // Create space for temporary column vars
-  const auto nlevi_packs = ekat::npack<Spack>(nlevi);
-  view_2d<Spack>
-    rho_zt("rho_zt", shcol, nlevi_packs),
-    shoc_qv("shoc_qv", shcol, nlevi_packs),
-    dz_zt("dz_zt", shcol, nlevi_packs),
-    dz_zi("dz_zi", shcol, nlevi_packs),
-    tkh("tkh", shcol, nlevi_packs);
-
   // Compute integrals of static energy, kinetic energy, water vapor, and liquid water
   // for the computation of total energy before SHOC is called.  This is for an
   // effort to conserve energy since liquid water potential temperature (which SHOC
@@ -536,7 +562,11 @@ Int Functions<S,D>::shoc_main(
   const SHOCInput&         shoc_input,          // Input
   const SHOCInputOutput&   shoc_input_output,   // Input/Output
   const SHOCOutput&        shoc_output,         // Output
-  const SHOCHistoryOutput& shoc_history_output) // Output (diagnostic)
+  const SHOCHistoryOutput& shoc_history_output  // Output (diagnostic)
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  , const SHOCTemporaries& shoc_temporaries     // Temporaries for small kernels
+#endif
+                              )
 {
   using ExeSpace = typename KT::ExeSpace;
 
@@ -633,7 +663,25 @@ Int Functions<S,D>::shoc_main(
     shoc_output.pblh, shoc_output.shoc_ql2, // Output
     shoc_history_output.shoc_mix, shoc_history_output.w_sec, shoc_history_output.thl_sec, shoc_history_output.qw_sec, shoc_history_output.qwthl_sec, // Diagnostic Output Variables
     shoc_history_output.wthl_sec, shoc_history_output.wqw_sec, shoc_history_output.wtke_sec, shoc_history_output.uw_sec, shoc_history_output.vw_sec, // Diagnostic Output Variables
-    shoc_history_output.w3, shoc_history_output.wqls_sec, shoc_history_output.brunt, shoc_history_output.isotropy); // Diagnostic Output Variables
+    shoc_history_output.w3, shoc_history_output.wqls_sec, shoc_history_output.brunt, shoc_history_output.isotropy, // Diagnostic Output Variables
+    shoc_temporaries.se_b,
+    shoc_temporaries.ke_b,
+    shoc_temporaries.wv_b,
+    shoc_temporaries.wl_b,
+    shoc_temporaries.se_a,
+    shoc_temporaries.ke_a,
+    shoc_temporaries.wv_a,
+    shoc_temporaries.wl_a,
+    shoc_temporaries.ustar,
+    shoc_temporaries.kbfs,
+    shoc_temporaries.obklen,
+    shoc_temporaries.ustar2,
+    shoc_temporaries.wstar,
+    shoc_temporaries.rho_zt,
+    shoc_temporaries.shoc_qv,
+    shoc_temporaries.dz_zt,
+    shoc_temporaries.dz_zi,
+    shoc_temporaries.tkh);
 #endif
 
   auto finish = std::chrono::steady_clock::now();

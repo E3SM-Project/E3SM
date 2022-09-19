@@ -435,11 +435,14 @@ protected:
   // Struct which contains local variables
   Buffer m_buffer;
 
-  // Store the structures for each arguement to shoc_main;
+  // Store the structures for each argument to shoc_main;
   SHF::SHOCInput input;
   SHF::SHOCInputOutput input_output;
   SHF::SHOCOutput output;
   SHF::SHOCHistoryOutput history_output;
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  SHF::SHOCTemporaries temporaries;
+#endif
 
   // Structures which compute pre/post process
   SHOCPreprocess shoc_preprocess;

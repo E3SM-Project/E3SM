@@ -179,6 +179,32 @@ struct Functions
     view_2d<Spack>  isotropy;
   };
 
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  struct SHOCTemporaries {
+    SHOCTemporaries() = default;
+
+    view_1d<Scalar> se_b;
+    view_1d<Scalar> ke_b;
+    view_1d<Scalar> wv_b;
+    view_1d<Scalar> wl_b;
+    view_1d<Scalar> se_a;
+    view_1d<Scalar> ke_a;
+    view_1d<Scalar> wv_a;
+    view_1d<Scalar> wl_a;
+    view_1d<Scalar> ustar;
+    view_1d<Scalar> kbfs;
+    view_1d<Scalar> obklen;
+    view_1d<Scalar> ustar2;
+    view_1d<Scalar> wstar;
+
+    view_2d<Spack> rho_zt;
+    view_2d<Spack> shoc_qv;
+    view_2d<Spack> dz_zt;
+    view_2d<Spack> dz_zi;
+    view_2d<Spack> tkh;
+  };
+#endif
+
   //
   // --------- Functions ---------
   //
@@ -591,7 +617,12 @@ struct Functions
   static Int shoc_init(
     const Int&                  nbot_shoc,
     const Int&                  ntop_shoc,
-    const view_1d<const Spack>& pref_mid);
+    const view_1d<const Spack>& pref_mid
+#ifndef SCREAM_MONOLITHIC_KERNELS
+    , const Int&       shcol
+    , SHOCTemporaries& temporaries
+#endif
+                       );
 
 #ifdef SCREAM_MONOLITHIC_KERNELS
   KOKKOS_FUNCTION
@@ -709,7 +740,26 @@ struct Functions
     const view_2d<Spack>&       w3,
     const view_2d<Spack>&       wqls_sec,
     const view_2d<Spack>&       brunt,
-    const view_2d<Spack>&       isotropy);
+    const view_2d<Spack>&       isotropy,
+    // Temporaries
+    const view_1d<Scalar>& se_b,
+    const view_1d<Scalar>& ke_b,
+    const view_1d<Scalar>& wv_b,
+    const view_1d<Scalar>& wl_b,
+    const view_1d<Scalar>& se_a,
+    const view_1d<Scalar>& ke_a,
+    const view_1d<Scalar>& wv_a,
+    const view_1d<Scalar>& wl_a,
+    const view_1d<Scalar>& ustar,
+    const view_1d<Scalar>& kbfs,
+    const view_1d<Scalar>& obklen,
+    const view_1d<Scalar>& ustar2,
+    const view_1d<Scalar>& wstar,
+    const view_2d<Spack>& rho_zt,
+    const view_2d<Spack>& shoc_qv,
+    const view_2d<Spack>& dz_zt,
+    const view_2d<Spack>& dz_zi,
+    const view_2d<Spack>& tkh);
 #endif
 
   // Return microseconds elapsed
@@ -725,7 +775,11 @@ struct Functions
     const SHOCInput&         shoc_input,           // Input
     const SHOCInputOutput&   shoc_input_output,    // Input/Output
     const SHOCOutput&        shoc_output,          // Output
-    const SHOCHistoryOutput& shoc_history_output); // Output (diagnostic)
+    const SHOCHistoryOutput& shoc_history_output   // Output (diagnostic)
+#ifndef SCREAM_MONOLITHIC_KERNELS
+    , const SHOCTemporaries& shoc_temporaries      // Temporaries for small kernels
+#endif
+                       );
 
   KOKKOS_FUNCTION
   static void pblintd_height(
