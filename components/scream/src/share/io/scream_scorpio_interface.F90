@@ -42,6 +42,7 @@ module scream_scorpio_interface
 ! Finalization:
 !==============================================================================!
 
+#include "scream_config.f"
   !------------
   use pio_types,    only: iosystem_desc_t, file_desc_t, var_desc_t, io_desc_t, &
                           pio_noerr, pio_global, &
