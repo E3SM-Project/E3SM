@@ -664,24 +664,12 @@ Int Functions<S,D>::shoc_main(
     shoc_history_output.shoc_mix, shoc_history_output.w_sec, shoc_history_output.thl_sec, shoc_history_output.qw_sec, shoc_history_output.qwthl_sec, // Diagnostic Output Variables
     shoc_history_output.wthl_sec, shoc_history_output.wqw_sec, shoc_history_output.wtke_sec, shoc_history_output.uw_sec, shoc_history_output.vw_sec, // Diagnostic Output Variables
     shoc_history_output.w3, shoc_history_output.wqls_sec, shoc_history_output.brunt, shoc_history_output.isotropy, // Diagnostic Output Variables
-    shoc_temporaries.se_b,
-    shoc_temporaries.ke_b,
-    shoc_temporaries.wv_b,
-    shoc_temporaries.wl_b,
-    shoc_temporaries.se_a,
-    shoc_temporaries.ke_a,
-    shoc_temporaries.wv_a,
-    shoc_temporaries.wl_a,
-    shoc_temporaries.ustar,
-    shoc_temporaries.kbfs,
-    shoc_temporaries.obklen,
-    shoc_temporaries.ustar2,
-    shoc_temporaries.wstar,
-    shoc_temporaries.rho_zt,
-    shoc_temporaries.shoc_qv,
-    shoc_temporaries.dz_zt,
-    shoc_temporaries.dz_zi,
-    shoc_temporaries.tkh);
+    // Temporaries
+    shoc_temporaries.se_b, shoc_temporaries.ke_b, shoc_temporaries.wv_b, shoc_temporaries.wl_b,
+    shoc_temporaries.se_a, shoc_temporaries.ke_a, shoc_temporaries.wv_a, shoc_temporaries.wl_a,
+    shoc_temporaries.ustar, shoc_temporaries.kbfs, shoc_temporaries.obklen, shoc_temporaries.ustar2,
+    shoc_temporaries.wstar, shoc_temporaries.rho_zt, shoc_temporaries.shoc_qv, shoc_temporaries.dz_zt,
+    shoc_temporaries.dz_zi, shoc_temporaries.tkh);
 #endif
 
   auto finish = std::chrono::steady_clock::now();
