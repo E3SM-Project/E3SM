@@ -2,12 +2,6 @@ module scream_scorpio_interface_iso_c2f
   use iso_c_binding, only: c_int, c_double, c_float, c_bool, c_ptr
   implicit none
 
-#include "scream_config.f"
-#ifdef SCREAM_DOUBLE_PRECISION
-# define c_real c_double
-#else
-# define c_real c_float
-#endif
 !
 ! This file contains bridges from scream c++ to shoc fortran.
 !
