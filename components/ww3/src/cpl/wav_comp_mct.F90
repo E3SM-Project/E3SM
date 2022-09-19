@@ -271,6 +271,8 @@ CONTAINS
       integer             :: jsea,isea
       integer             :: pnt_out_freq, grd_out_freq
       integer             :: iproc
+      integer             :: imod
+      integer             :: ndno
       integer, allocatable:: maptst(:,:)
       real                :: a(nhmax,4)
       real, allocatable   :: x(:), y(:)
@@ -278,10 +280,13 @@ CONTAINS
       logical             :: flgd(nogrp), flgd2(nogrp)
       logical             :: prtfrm, flt
       logical             :: exists
+      logical             :: IsMulti
+      logical             :: flagstidein(4)
       character(len=*),parameter :: subname = '(wav_init_mct)'
       real                :: wlveff
       real                :: depth
 
+      character(len=3)    :: fext
       character(len=3)    :: idtst
       character(len=10)   :: pn
       character(len=15)   :: restart_timestamp
@@ -336,6 +341,10 @@ CONTAINS
         call w3grid(mds)
       endif
 
+      do i=1,4
+         call shr_file_freeUnit(mds(i))
+      end do
+
       call mpi_barrier ( mpi_comm, ierr )
 
       !--------------------------------------------------------------------
@@ -348,7 +357,7 @@ CONTAINS
       call w3ndat (    6, 6 )
       call w3naux (    6, 6 )
       if ( iproc .ne. 1) then
-        call w3nout (    6, 6, ndso) ! this is called for iproc = 1 in w3grid
+        call w3nout (    6, 6) ! this is called for iproc = 1 in w3grid
       end if
       call w3ninp (    6, 6 )
 
@@ -389,6 +398,8 @@ CONTAINS
       ! IO set-up
       !--------------------------------------------------------------------
 
+      ndno = shr_file_getunit()
+
       ! log units
       nds( 1) = stdout               ! General output unit number ("log file")
       nds( 2) = stdout               ! Error output unit number.
@@ -397,16 +408,16 @@ CONTAINS
 
       ! input units
       nds( 5) = shr_file_getunit()   ! Model definition file unit number.
-      nds( 9) = shr_file_getunit()   ! Input boundary data file unit number. (FLOUT(3) flag)
+      nds( 9) = ndno                 ! Input boundary data file unit number. (FLOUT(3) flag)
 
       ! output units
       nds( 6) = shr_file_getunit()   ! Restart file unit number.
       nds( 7) = shr_file_getunit()   ! Grid output file unit number. (FLOUT(1) flag)
       nds( 8) = shr_file_getunit()   ! Point output file unit number. (FLOUT(2) flag)
-      nds(10) = shr_file_getunit()   ! Output boundary data file unit number (FLOUT(4) flag)
-      nds(11) = shr_file_getunit()   ! Track information file unit number. (FLOUT(5) flag)
-      nds(12) = shr_file_getunit()   ! Track output file unit number. (FLOUT(6) flag)
-      nds(13) = shr_file_getunit()
+      nds(10) = ndno                 ! Output boundary data file unit number (FLOUT(4) flag)
+      nds(11) = ndno                 ! Track information file unit number. (FLOUT(5) flag)
+      nds(12) = ndno                 ! Track output file unit number. (FLOUT(6) flag)
+      nds(13) = ndno
 
       ntrace(1) =  nds(3)            ! Output unit number for trace.
       ntrace(2) =  10                ! Maximum number of trace prints. 
@@ -764,13 +775,31 @@ CONTAINS
       ! Set casename (in w3cesmmd)
       call seq_infodata_GetData(infodata,case_name=casename)
 
+      call mpi_barrier ( mpi_comm, ierr )
+
+      if ( iaproc .eq. napout ) then
+        write (ndso,*) 'before w3init'
+        call shr_sys_flush(ndso)
+      endif
+
       ! Read in input data and initialize the model
       ! w3init calls w3iors which:
       ! - reads either the initfile if the run is startup or branch
       ! - constructs the filename from the casename variable and the time(:) array
       !   which is set above
-      call w3init ( 1, .false., 'ww3', nds, ntrace, odat, flgrd, flgrd2, flgd, flgd2, npts, x, y,   &
-           pnames, iprt, prtfrm, mpi_comm )
+      imod = 1
+      IsMulti = .false.
+      fext = 'ww3'
+      prtfrm = .false. 
+      iprt = 0
+      flagstidein = .false.
+      call w3init ( imod, IsMulti, fext, nds, ntrace, odat, flgrd, flgrd2, flgd, flgd2, npts, x, y,   &
+           pnames, iprt, prtfrm, mpi_comm, flagstidein)
+
+      if ( iaproc .eq. napout ) then
+        write (ndso,*) 'after w3init'
+        call shr_sys_flush(ndso)
+      endif
 
 
       ! overwrite dt values with variables from coupler
