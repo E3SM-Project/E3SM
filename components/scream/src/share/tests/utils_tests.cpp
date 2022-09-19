@@ -62,7 +62,7 @@ TEST_CASE("vertical_interpolation_fake_data"){
 					 n_layers_src,
 					 n_layers_tgt);
 
-  double correct_val[3][4];
+  Real correct_val[3][4];
   correct_val[0][0] = 260.0;
   correct_val[0][1] = 265.0;
   correct_val[0][2] = 255.0;
