@@ -111,7 +111,7 @@ TEST_CASE("property_checks", "") {
     std::string expected_msg =
       "FieldNaNCheck failed.\n"
       "  - field id: " + fid.get_id_string() + "\n"
-      "  - entry (1,1,2)\n"
+      "  - entry (1,2,3)\n"
       "  - lat/lon: (1.000000, -1.000000)\n";
     REQUIRE( res_and_msg.msg == expected_msg );
   }
@@ -149,7 +149,7 @@ TEST_CASE("property_checks", "") {
       "    - lat/lon: (0, 0)\n"
       "  - maximum:\n"
       "    - value: 2\n"
-      "    - entry: (1,1,2)\n"
+      "    - entry: (1,2,3)\n"
       "    - lat/lon: (1, -1)\n";
 
     REQUIRE(res_and_msg.msg == expected_msg);
@@ -193,11 +193,11 @@ TEST_CASE("property_checks", "") {
       "  - field id: " + fid.get_id_string() + "\n"
       "  - minimum:\n"
       "    - value: -2\n"
-      "    - entry: (0,1,2)\n"
+      "    - entry: (0,0,0)\n"
       "    - lat/lon: (0, 0)\n"
       "  - maximum:\n"
       "    - value: 3\n"
-      "    - entry: (1,1,2)\n"
+      "    - entry: (1,2,11)\n"
       "    - lat/lon: (1, -1)\n";
 
     REQUIRE(res_and_msg.msg == expected_msg);
