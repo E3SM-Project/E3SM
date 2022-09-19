@@ -70,9 +70,11 @@ TEST_CASE("field_at_level")
 
   ekat::ParameterList params_mid, params_int;
   params_mid.set("Field Name",f_mid.name());
+  params_mid.set("Field Units",fid_mid.get_units());
   params_mid.set("Field Layout",fid_mid.get_layout());
   params_mid.set("Grid Name",fid_mid.get_grid_name());
   params_int.set("Field Name",f_int.name());
+  params_int.set("Field Units",fid_int.get_units());
   params_int.set("Field Layout",fid_int.get_layout());
   params_int.set("Grid Name",fid_int.get_grid_name());
 
