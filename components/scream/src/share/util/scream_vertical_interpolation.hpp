@@ -8,11 +8,11 @@
 #include "ekat/kokkos/ekat_subview_utils.hpp"
 
 namespace scream {
-
-  //
-  // ------- Types --------
-  //
-
+namespace vinterp {
+  
+//
+// ------- Types --------
+//
 template <typename S>
 using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
 using Spack = SmallPack<Real>;
@@ -23,15 +23,13 @@ using KT = KokkosTypes<DefaultDevice>;
 using ExeSpace = typename KT::ExeSpace;
 using ESU = ekat::ExeSpaceUtils<ExeSpace>;
 using LIV = ekat::LinInterp<Real,Spack::n>;
-
  
 template <typename S>
 using view_1d = typename KT::template view_1d<S>;
 template <typename S>
 using view_2d = typename KT::template view_2d<S>;
-
     
-const Real masked_val = -9.99e17;
+const Real masked_val = -std::numeric_limits<Real>::max();
   
 void perform_vertical_interpolation (const view_2d<const Spack>& x_src,
 				     const view_1d<const Spack>& x_tgt,
@@ -68,7 +66,8 @@ void perform_vertical_interpolation (const view_1d<const Spack>& x_src,
                                      const Real& masked_val,
       				     const LIV::MemberType& team,
         			     const LIV& vert_interp);
-  
+
+} // namespace vinterp
 } // namespace scream
 
 #endif // SCREAM_VERTICAL_INTERPOLATION_HPP

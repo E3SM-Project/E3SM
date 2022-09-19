@@ -1,7 +1,7 @@
 #include "share/util/scream_vertical_interpolation.hpp"
 
 namespace scream {
-
+namespace vinterp {
   
 void perform_vertical_interpolation(const view_2d<const Spack>& x_src,
 				    const view_1d<const Spack>& x_tgt,
@@ -102,4 +102,5 @@ void perform_vertical_interpolation(const view_1d<const Spack>& x_src,
   Kokkos::fence();
 }
 
+} // namespace vinterp
 } // namespace scream
