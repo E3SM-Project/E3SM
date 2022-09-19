@@ -20,6 +20,8 @@ namespace scream
  *  Note: for now, scream is only going to accommodate P3 as microphysics
 */
 
+class P3Microphysics : public AtmosphereProcess
+{
   using namespace p3;
   using P3F          = Functions<Real, DefaultDevice>;
   using Spack        = typename P3F::Spack;
@@ -40,8 +42,6 @@ namespace scream
   using uview_2d  = Unmanaged<view_2d>;
   using suview_2d = Unmanaged<sview_2d>;
 
-class P3Microphysics : public AtmosphereProcess
-{
 public:
   // Constructors
   P3Microphysics (const ekat::Comm& comm, const ekat::ParameterList& params);
