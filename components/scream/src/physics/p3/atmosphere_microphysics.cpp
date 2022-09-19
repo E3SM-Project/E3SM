@@ -13,12 +13,6 @@
 namespace scream
 {
 
-  using namespace p3;
-
-  using view_1d  = typename P3F::view_1d<Real>;
-  using view_2d  = typename P3F::view_2d<Spack>;
-  using sview_2d = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
-
 // =========================================================================================
 P3Microphysics::P3Microphysics (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
