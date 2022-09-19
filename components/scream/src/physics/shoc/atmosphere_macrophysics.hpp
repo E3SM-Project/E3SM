@@ -103,7 +103,7 @@ public:
           //to dry mmr in the next parallel for
 
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-              PF::calculate_drymmr_from_wetmmr(qtracers(i,convert_wet_dry_idx_d(iq),k), qv(i,k));
+              qtracers(i,convert_wet_dry_idx_d(iq),k) = PF::calculate_drymmr_from_wetmmr(qtracers(i,convert_wet_dry_idx_d(iq),k), qv(i,k));
           });
       });
       team.team_barrier();
@@ -121,7 +121,7 @@ public:
         inv_exner(i,k).set(nonzero, 1/exner);
 
         //At this point, convert qv to dry mmr, the units will become kg/kg(dry air)
-        PF::calculate_drymmr_from_wetmmr(qv(i,k), qv(i,k));
+        qv(i,k) = PF::calculate_drymmr_from_wetmmr(qv(i,k), qv(i,k));
 
         tke(i,k) = ekat::max(sp(0.004), tke(i,k));
 
@@ -214,7 +214,7 @@ public:
     view_1d_const        surf_evap;
     sview_2d_const       surf_mom_flux;
     view_3d              qtracers;
-    view_2d_const        qv;
+    view_2d              qv;
     view_2d_const        qc;
     view_2d              qc_copy;
     view_2d              z_mid;
@@ -250,7 +250,7 @@ public:
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_evap_,
                        const sview_2d_const& surf_mom_flux_,
                        const view_3d& qtracers_,
-                       const view_2d_const& qv_, const view_2d_const& qc_, const view_2d& qc_copy_,
+                       const view_2d& qv_, const view_2d_const& qc_, const view_2d& qc_copy_,
                        const view_2d& tke_, const view_2d& tke_copy_,
                        const view_2d& z_mid_, const view_2d& z_int_,
                        const view_1d& cell_length_,
@@ -367,14 +367,14 @@ public:
           //to wet mmr in the next parallel for
 
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-              PF::calculate_wetmmr_from_drymmr(qtracers(i,convert_wet_dry_idx_d(iq),k), qv(i,k));
+              qtracers(i,convert_wet_dry_idx_d(iq),k) = PF::calculate_wetmmr_from_drymmr(qtracers(i,convert_wet_dry_idx_d(iq),k), qv(i,k));
              });
         });
       team.team_barrier();
 
       //Convert qv from dry mmr to wet mmr
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
-          PF::calculate_wetmmr_from_drymmr(qv(i,k), qv(i,k));
+          qv(i,k) = PF::calculate_wetmmr_from_drymmr(qv(i,k), qv(i,k));
         });
       team.team_barrier();
 
