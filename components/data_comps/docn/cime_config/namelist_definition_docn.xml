@@ -63,6 +63,7 @@
       <value docn_mode="rso">rso</value>
       <value docn_mode="som_aquap">som</value>
       <value docn_mode="interannual">interannual</value>
+      <value docn_mode="GTSM">GTSM</value>
     </values>
   </entry>
 
@@ -97,6 +98,7 @@
       <value stream="som">$DIN_LOC_ROOT/ocn/docn7/SOM</value>
       <value stream="rso">/</value> <!-- use this for $SSTICE_GRID_FILENAME -->
       <value stream="interannual">$DIN_LOC_ROOT/atm/cam/sst</value>
+      <value stream="GTSM">$DIN_LOC_ROOT/ocn/docn7/GTSM</value>
     </values>
   </entry>
 
@@ -111,6 +113,7 @@
       <value stream="som">$DOCN_SOM_FILENAME</value>
       <value stream="rso">$SSTICE_GRID_FILENAME</value>
       <value stream="interannual">sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</value>
+      <value stream="GTSM">$DOCN_GTSM_FILENAME</value>
     </values>
   </entry>
 
@@ -137,6 +140,14 @@
         lon     lon
         lat     lat
       </value>
+      <value stream="GTSM">
+        time    time
+        xc      lon
+        yc      lat
+        area    area
+        mask    mask
+        frac    frac
+      </value>
     </values>
   </entry>
 
@@ -151,6 +162,7 @@
       <value stream="som">$DIN_LOC_ROOT/ocn/docn7/SOM</value>
       <value stream="rso">/</value> <!-- use this for $SSTICE_DATA_FILENAME -->
       <value stream="interannual">$DIN_LOC_ROOT/atm/cam/sst</value>
+      <value stream="GTSM">$DIN_LOC_ROOT/ocn/docn7/GTSM</value>
     </values>
   </entry>
 
@@ -165,6 +177,7 @@
       <value stream="som">$DOCN_SOM_FILENAME</value>
       <value stream="rso">$SSTICE_DATA_FILENAME</value>
       <value stream="interannual">sst_HadOIBl_bc_1x1_1850_2014_c150416.nc</value>
+      <value stream="GTSM">coastal_inundation.%ym.nc</value>
     </values>
   </entry>
 
@@ -200,6 +213,10 @@
       <value stream="aquapfile">
         SST_cpl t
       </value>
+      <value stream="GTSM">
+        T t
+        Inund frac_h2oocn
+      </value>
     </values>
   </entry>
 
@@ -225,6 +242,7 @@
       <value stream="som">1</value>
       <value stream="rso">$SSTICE_YEAR_ALIGN</value>
       <value stream="interannual">1</value>
+      <value stream="GTSM">$SSTICE_YEAR_ALIGN</value>
     </values>
   </entry>
 
@@ -240,6 +258,7 @@
       <value stream="som">1</value>
       <value stream="rso">$SSTICE_YEAR_START</value>
       <value stream="interannual">1850</value>
+      <value stream="GTSM">$SSTICE_YEAR_START</value>
     </values>
   </entry>
 
@@ -255,6 +274,7 @@
       <value stream="som">1</value>
       <value stream="rso">$SSTICE_YEAR_END</value>
       <value stream="interannual">2014</value>
+      <value stream="GTSM">$SSTICE_YEAR_END</value>
     </values>
   </entry>
 
@@ -270,7 +290,7 @@
     <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
-    <valid_values>SSTDATA,SST_AQUAP1,SST_AQUAP2,SST_AQUAP3,SST_AQUAP4,SST_AQUAP5,SST_AQUAP6,SST_AQUAP7,SST_AQUAP8,SST_AQUAP9,SST_AQUAP10,SST_AQUAP11,SST_AQUAP12,SST_AQUAP13,SST_AQUAP14,SST_AQUAP15,SST_AQUAPFILE,SST_AQUAP_CONSTANT,SOM,RSO,SOM_AQUAP,IAF,NULL,COPYALL</valid_values>
+    <valid_values>SSTDATA,SST_AQUAP1,SST_AQUAP2,SST_AQUAP3,SST_AQUAP4,SST_AQUAP5,SST_AQUAP6,SST_AQUAP7,SST_AQUAP8,SST_AQUAP9,SST_AQUAP10,SST_AQUAP11,SST_AQUAP12,SST_AQUAP13,SST_AQUAP14,SST_AQUAP15,SST_AQUAPFILE,SST_AQUAP_CONSTANT,SOM,RSO,SOM_AQUAP,IAF,GTSM,NULL,COPYALL</valid_values>
     <desc>
       General method that operates on the data. This is generally
       implemented in the data models but is set in the strdata method for
@@ -347,6 +367,7 @@
       <value docn_mode="rso$">RSO</value>
       <value docn_mode="som_aquap">SOM_AQUAP</value>
       <value docn_mode="interannual">IAF</value>
+      <value docn_mode="GTSM">GTSM</value>
     </values>
   </entry>
 
