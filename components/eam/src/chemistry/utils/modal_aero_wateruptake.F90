@@ -17,6 +17,9 @@ use ref_pres,         only: top_lev => clim_modal_aero_top_lev
 use phys_control,     only: phys_getopts
 use cam_abortutils,       only: endrun
 
+use shr_sys_mod,       only: shr_sys_flush
+USE OMP_LIB
+
 implicit none
 private
 save
@@ -31,7 +34,7 @@ public :: modal_aero_wateruptake_reg
 
 real(r8), parameter :: third = 1._r8/3._r8
 real(r8), parameter :: pi43  = pi*4.0_r8/3.0_r8
-
+real(r8), parameter :: huge_real = huge(1.0_r8)
 
 ! Physics buffer indices
 integer :: cld_idx        = 0
@@ -42,21 +45,22 @@ integer :: qaerwat_idx    = 0
 
 logical :: pergro_mods         = .false.
 
-real(r8), allocatable :: maer(:,:,:)      ! aerosol wet mass MR (including water) (kg/kg-air)
-real(r8), allocatable :: hygro(:,:,:)     ! volume-weighted mean hygroscopicity (--)
-real(r8), allocatable :: naer(:,:,:)      ! aerosol number MR (bounded!) (#/kg-air)
-real(r8), allocatable :: dryvol(:,:,:)    ! single-particle-mean dry volume (m3)
-real(r8), allocatable :: drymass(:,:,:)   ! single-particle-mean dry mass  (kg)
-real(r8), allocatable :: dryrad(:,:,:)    ! dry volume mean radius of aerosol (m)
+! real(r8), allocatable :: maer(:,:,:)      ! aerosol wet mass MR (including water) (kg/kg-air)
+! real(r8), allocatable :: hygro(:,:,:)     ! volume-weighted mean hygroscopicity (--)
+! real(r8), allocatable :: naer(:,:,:)      ! aerosol number MR (bounded!) (#/kg-air)
+! real(r8), allocatable :: dryvol(:,:,:)    ! single-particle-mean dry volume (m3)
+! real(r8), allocatable :: drymass(:,:,:)   ! single-particle-mean dry mass  (kg)
+! real(r8), allocatable :: dryrad(:,:,:)    ! dry volume mean radius of aerosol (m)
 
-real(r8), allocatable :: wetrad(:,:,:)    ! wet radius of aerosol (m)
-real(r8), allocatable :: wetvol(:,:,:)    ! single-particle-mean wet volume (m3)
-real(r8), allocatable :: wtrvol(:,:,:)    ! single-particle-mean water volume in wet aerosol (m3)
+! real(r8), allocatable :: wetrad(:,:,:)    ! wet radius of aerosol (m)
+! real(r8), allocatable :: wetvol(:,:,:)    ! single-particle-mean wet volume (m3)
+! real(r8), allocatable :: wtrvol(:,:,:)    ! single-particle-mean water volume in wet aerosol (m3)
 
-real(r8), allocatable :: rhcrystal(:)
-real(r8), allocatable :: rhdeliques(:)
-real(r8), allocatable :: specdens_1(:)
-!$OMP THREADPRIVATE(maer, hygro, naer, dryvol, drymass, dryrad, wetrad, wetvol, wtrvol, rhcrystal, rhdeliques, specdens_1)
+! real(r8), allocatable :: rhcrystal(:)
+! real(r8), allocatable :: rhdeliques(:)
+! real(r8), allocatable :: specdens_1(:)
+
+! !$OMP THREADPRIVATE(maer, hygro, naer, dryvol, drymass, dryrad, wetrad, wetvol, wtrvol, rhcrystal, rhdeliques, specdens_1)
 
 !===============================================================================
 contains
@@ -102,32 +106,32 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
 
    call rad_cnst_get_info(0, nmodes=nmodes)
 
-   !$OMP PARALLEL
-   allocate(maer(pcols,pver,nmodes),stat=istat)
-   if (istat .ne. 0) call endrun("Unable to allocate maer:       "//errmsg(__FILE__,__LINE__) )
-   allocate(hygro(pcols,pver,nmodes),   stat=istat)
-   if (istat .ne. 0) call endrun("Unable to allocate hygro:      "//errmsg(__FILE__,__LINE__) )
-   allocate(naer(pcols,pver,nmodes),    stat=istat)
-   if (istat .ne. 0) call endrun("Unable to allocate naer:       "//errmsg(__FILE__,__LINE__) )
-   allocate(dryvol(pcols,pver,nmodes),  stat=istat)
-   if (istat .ne. 0) call endrun("Unable to allocate dryvol:     "//errmsg(__FILE__,__LINE__) )
-   allocate(drymass(pcols,pver,nmodes), stat=istat)
-   if (istat .ne. 0) call endrun("Unable to allocate drymass:    "//errmsg(__FILE__,__LINE__) )
-   allocate(dryrad(pcols,pver,nmodes),  stat=istat)
-   if (istat .ne. 0) call endrun("Unable to allocate dryradr:    "//errmsg(__FILE__,__LINE__) )
-   allocate(wetrad(pcols,pver,nmodes),  stat=istat)
-   if (istat .ne. 0) call endrun("Unable to allocate wetrad:     "//errmsg(__FILE__,__LINE__) )
-   allocate(wetvol(pcols,pver,nmodes),  stat=istat)
-   if (istat .ne. 0) call endrun("Unable to allocate wetvol:     "//errmsg(__FILE__,__LINE__) )
-   allocate(wtrvol(pcols,pver,nmodes),  stat=istat)
-   if (istat .ne. 0) call endrun("Unable to allocate wtrvol:     "//errmsg(__FILE__,__LINE__) )
-   allocate(rhcrystal(nmodes),          stat=istat)
-   if (istat .ne. 0) call endrun("Unable to allocate rhcrystal:  "//errmsg(__FILE__,__LINE__) )
-   allocate(rhdeliques(nmodes),         stat=istat)
-   if (istat .ne. 0) call endrun("Unable to allocate rhdeliques: "//errmsg(__FILE__,__LINE__) )
-   allocate(specdens_1(nmodes),         stat=istat)
-   if (istat .ne. 0) call endrun("Unable to allocate specdens_1: "//errmsg(__FILE__,__LINE__) )
-   !$OMP END PARALLEL
+   ! !$OMP PARALLEL
+   ! allocate(maer(pcols,pver,nmodes),stat=istat)
+   ! if (istat .ne. 0) call endrun("Unable to allocate maer:       "//errmsg(__FILE__,__LINE__) )
+   ! allocate(hygro(pcols,pver,nmodes),   stat=istat)
+   ! if (istat .ne. 0) call endrun("Unable to allocate hygro:      "//errmsg(__FILE__,__LINE__) )
+   ! allocate(naer(pcols,pver,nmodes),    stat=istat)
+   ! if (istat .ne. 0) call endrun("Unable to allocate naer:       "//errmsg(__FILE__,__LINE__) )
+   ! allocate(dryvol(pcols,pver,nmodes),  stat=istat)
+   ! if (istat .ne. 0) call endrun("Unable to allocate dryvol:     "//errmsg(__FILE__,__LINE__) )
+   ! allocate(drymass(pcols,pver,nmodes), stat=istat)
+   ! if (istat .ne. 0) call endrun("Unable to allocate drymass:    "//errmsg(__FILE__,__LINE__) )
+   ! allocate(dryrad(pcols,pver,nmodes),  stat=istat)
+   ! if (istat .ne. 0) call endrun("Unable to allocate dryradr:    "//errmsg(__FILE__,__LINE__) )
+   ! allocate(wetrad(pcols,pver,nmodes),  stat=istat)
+   ! if (istat .ne. 0) call endrun("Unable to allocate wetrad:     "//errmsg(__FILE__,__LINE__) )
+   ! allocate(wetvol(pcols,pver,nmodes),  stat=istat)
+   ! if (istat .ne. 0) call endrun("Unable to allocate wetvol:     "//errmsg(__FILE__,__LINE__) )
+   ! allocate(wtrvol(pcols,pver,nmodes),  stat=istat)
+   ! if (istat .ne. 0) call endrun("Unable to allocate wtrvol:     "//errmsg(__FILE__,__LINE__) )
+   ! allocate(rhcrystal(nmodes),          stat=istat)
+   ! if (istat .ne. 0) call endrun("Unable to allocate rhcrystal:  "//errmsg(__FILE__,__LINE__) )
+   ! allocate(rhdeliques(nmodes),         stat=istat)
+   ! if (istat .ne. 0) call endrun("Unable to allocate rhdeliques: "//errmsg(__FILE__,__LINE__) )
+   ! allocate(specdens_1(nmodes),         stat=istat)
+   ! if (istat .ne. 0) call endrun("Unable to allocate specdens_1: "//errmsg(__FILE__,__LINE__) )
+   ! !$OMP END PARALLEL
 
 
    ! determine default variables
@@ -203,7 +207,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    integer  :: lchnk              ! chunk index
    integer  :: ncol               ! number of columns
    integer  :: list_idx           ! radiative constituents list index
-   integer  :: stat
+   integer  :: istat
 
    integer :: i, k, l, m
    integer :: itim_old
@@ -240,6 +244,19 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    logical :: compute_wetdens
 
    character(len=3) :: trnum       ! used to hold mode number (as characters)
+
+   real(r8), allocatable :: naer(:,:,:)      ! aerosol number MR (bounded!) (#/kg-air)
+   real(r8), allocatable :: dryvol(:,:,:)    ! single-particle-mean dry volume (m3)
+   real(r8), allocatable :: drymass(:,:,:)   ! single-particle-mean dry mass  (kg)
+   real(r8), allocatable :: dryrad(:,:,:)    ! dry volume mean radius of aerosol (m)
+   real(r8), allocatable :: wetrad(:,:,:)    ! wet radius of aerosol (m)
+   real(r8), allocatable :: wetvol(:,:,:)    ! single-particle-mean wet volume (m3)
+   real(r8), allocatable :: wtrvol(:,:,:)    ! single-particle-mean water volume in wet aerosol (m3)
+   real(r8), allocatable :: rhcrystal(:)
+   real(r8), allocatable :: rhdeliques(:)
+   real(r8), allocatable :: specdens_1(:)
+   real(r8), allocatable :: maer(:,:,:)      ! aerosol wet mass MR (including water) (kg/kg-air)
+   real(r8), allocatable :: hygro(:,:,:)     ! volume-weighted mean hygroscopicity (--)
    !----------------------------------------------------------------------------
 
    lchnk = state%lchnk
@@ -271,21 +288,46 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    ! loop over all aerosol modes
    call rad_cnst_get_info(list_idx, nmodes=nmodes)
 
+   allocate(naer(pcols,pver,nmodes),    stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate naer:       "//errmsg(__FILE__,__LINE__) )
+   allocate(dryvol(pcols,pver,nmodes),  stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate dryvol:     "//errmsg(__FILE__,__LINE__) )
+   allocate(drymass(pcols,pver,nmodes), stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate drymass:    "//errmsg(__FILE__,__LINE__) )
+   allocate(dryrad(pcols,pver,nmodes),  stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate dryradr:    "//errmsg(__FILE__,__LINE__) )
+   allocate(wetrad(pcols,pver,nmodes),  stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate wetrad:     "//errmsg(__FILE__,__LINE__) )
+   allocate(wetvol(pcols,pver,nmodes),  stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate wetvol:     "//errmsg(__FILE__,__LINE__) )
+   allocate(wtrvol(pcols,pver,nmodes),  stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate wtrvol:     "//errmsg(__FILE__,__LINE__) )
+   allocate(rhcrystal(nmodes),          stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate rhcrystal:  "//errmsg(__FILE__,__LINE__) )
+   allocate(rhdeliques(nmodes),         stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate rhdeliques: "//errmsg(__FILE__,__LINE__) )
+   allocate(specdens_1(nmodes),         stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate specdens_1: "//errmsg(__FILE__,__LINE__) )
+   allocate(maer(pcols,pver,nmodes),stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate maer:       "//errmsg(__FILE__,__LINE__) )
+   allocate(hygro(pcols,pver,nmodes),   stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate hygro:      "//errmsg(__FILE__,__LINE__) )
+
    !initialize to an invalid value
-   naer(:,:,:)    = huge(1.0_r8)
-   dryvol(:,:,:)  = huge(1.0_r8)
-   drymass(:,:,:) = huge(1.0_r8)
-   dryrad(:,:,:)  = huge(1.0_r8)
-   wetrad(:,:,:)  = huge(1.0_r8)
-   wetvol(:,:,:)  = huge(1.0_r8)
-   wtrvol(:,:,:)  = huge(1.0_r8)
+   naer   (1:pcols,1:pver,1:nmodes) = huge_real
+   dryvol (1:pcols,1:pver,1:nmodes) = huge_real
+   drymass(1:pcols,1:pver,1:nmodes) = huge_real
+   dryrad (1:pcols,1:pver,1:nmodes) = huge_real
+   wetrad (1:pcols,1:pver,1:nmodes) = huge_real
+   wetvol (1:pcols,1:pver,1:nmodes) = huge_real
+   wtrvol (1:pcols,1:pver,1:nmodes) = huge_real
 
-   rhcrystal(:)   = huge(1.0_r8)
-   rhdeliques(:)  = huge(1.0_r8)
-   specdens_1(:)  = huge(1.0_r8)
+   rhcrystal (1:nmodes)  = huge_real
+   rhdeliques(1:nmodes)  = huge_real
+   specdens_1(1:nmodes)  = huge_real
 
-   maer(:,:,:)     = 0._r8
-   hygro(:,:,:)    = 0._r8
+   maer(1:pcols,1:pver,1:nmodes)   = 0._r8
+   hygro(1:pcols,1:pver,1:nmodes)  = 0._r8
 
    !by default set compute_wetdens to be true
    compute_wetdens = .true.
@@ -315,7 +357,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
    do m = 1, nmodes
 
-      dryvolmr(:,:) = 0._r8
+      dryvolmr(1:pcols,1:pver) = 0._r8
 
       ! get mode properties
       call rad_cnst_get_mode_props(list_idx, m, sigmag=sigmag,  &
@@ -486,6 +528,22 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
          call outfld( 'aero_water',  aerosol_water(:ncol,:),    ncol, lchnk)
 
    end if
+
+   !----------------------------------------------------------------------------
+   ! clean up
+
+   if (allocated(naer      )) deallocate(naer)
+   if (allocated(dryvol    )) deallocate(dryvol)
+   if (allocated(drymass   )) deallocate(drymass)
+   if (allocated(dryrad    )) deallocate(dryrad)
+   if (allocated(wetrad    )) deallocate(wetrad)
+   if (allocated(wetvol    )) deallocate(wetvol)
+   if (allocated(wtrvol    )) deallocate(wtrvol)
+   if (allocated(rhcrystal )) deallocate(rhcrystal)
+   if (allocated(rhdeliques)) deallocate(rhdeliques)
+   if (allocated(specdens_1)) deallocate(specdens_1)
+   if (allocated(maer      )) deallocate(maer)
+   if (allocated(hygro     )) deallocate(hygro)
 
 end subroutine modal_aero_wateruptake_dr
 
@@ -841,5 +899,4 @@ end subroutine modal_aero_wateruptake_sub
 !----------------------------------------------------------------------
 
    end module modal_aero_wateruptake
-
 
