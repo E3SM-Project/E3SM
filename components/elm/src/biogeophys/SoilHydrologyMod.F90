@@ -9,7 +9,7 @@ module SoilHydrologyMod
   use decompMod         , only : bounds_type
   use elm_varctl        , only : iulog, use_vichydro
   use elm_varctl        , only : use_lnd_rof_two_way, lnd_rof_coupling_nstep
-  use elm_varctl        , only : use_modified_infil
+  use elm_varctl        , only : use_modified_infil, use_ocn_lnd_one_way
   use elm_varcon        , only : e_ice, denh2o, denice, rpi
   use EnergyFluxType    , only : energyflux_type
   use SoilHydrologyType , only : soilhydrology_type
@@ -22,7 +22,7 @@ module SoilHydrologyMod
   use ColumnDataType    , only : col_es, col_ws, col_wf
   use VegetationType    , only : veg_pp
   use VegetationDataType, only : veg_wf
-  use abortutils      , only : endrun
+  use abortutils        , only : endrun
 
   !
   ! !PUBLIC TYPES:
@@ -291,7 +291,7 @@ contains
 
    !-----------------------------------------------------------------------
    subroutine Infiltration(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-        atm2lnd_vars, lnd2atm_vars, energyflux_vars, soilhydrology_vars, soilstate_vars, dtime)
+        atm2lnd_vars, ocn2lnd_vars, lnd2atm_vars, energyflux_vars, soilhydrology_vars, soilstate_vars, dtime)
      !
      ! !DESCRIPTION:
      ! Calculate infiltration into surface soil layer (minus the evaporation)
@@ -307,6 +307,7 @@ contains
      use landunit_varcon  , only : istsoil, istcrop, ilowcenpoly, iflatcenpoly, ihighcenpoly
      use elm_time_manager , only : get_step_size, get_nstep
      use atm2lndType      , only : atm2lnd_type ! land river two way coupling
+     use ocn2lndType      , only : ocn2lnd_type
      use lnd2atmType      , only : lnd2atm_type
      use subgridAveMod    , only : c2g
      !
@@ -317,6 +318,7 @@ contains
      integer                  , intent(in)    :: num_urbanc           ! number of column urban points in column filter
      integer                  , intent(in)    :: filter_urbanc(:)     ! column filter for urban points
      type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars         ! land river two way coupling
+     type(ocn2lnd_type)       , intent(in)    :: ocn2lnd_vars         ! ocean land one way coupling
      type(lnd2atm_type)       , intent(in)    :: lnd2atm_vars 
      type(energyflux_type)    , intent(in)    :: energyflux_vars
      type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
@@ -383,6 +385,7 @@ contains
           h2osfc               =>    col_ws%h2osfc               , & ! Output: [real(r8) (:)   ]  surface water (mm)
           h2orof               =>    col_ws%h2orof               , & ! Output:  [real(r8) (:)   ]  floodplain inudntion volume (mm)
           frac_h2orof          =>    col_ws%frac_h2orof          , & ! Output:  [real(r8) (:)   ]  floodplain inudntion fraction (-)
+          frac_h2oocn          =>    col_ws%frac_h2oocn          , & ! Output: [real(r8) (:)   ]  coastal inudntion fraction (-)
           iwp_microrel         =>    col_ws%iwp_microrel         , & ! Input:  [real(r8) (:)   ]  ice wedge polygon microtopographic relief (m)
           iwp_exclvol          =>    col_ws%iwp_exclvol          , & ! Input:  [real(r8) (:)   ]  ice wedge polygon excluded volume (m)
           iwp_ddep             =>    col_ws%iwp_ddep             , & ! Input:  [real(r8) (:)   ]  ice wedge polygon depression depth (m)
@@ -399,6 +402,7 @@ contains
           qflx_gross_infl_soil =>    col_wf%qflx_gross_infl_soil , & ! Output: [real(r8) (:)] gross infiltration (mm H2O/s)
           qflx_gross_evap_soil =>    col_wf%qflx_gross_evap_soil , & ! Output: [real(r8) (:)] gross evaporation (mm H2O/s)
           qflx_h2orof_drain    =>    col_wf%qflx_h2orof_drain    , & ! Output: [real(r8) (:)] drainange from floodplain inundation volume (mm H2O/s) 
+          qflx_h2oocn_drain    =>    col_wf%qflx_h2oocn_drain    , & ! Output: [real(r8) (:)] drainange from coastal inundation volume (mm H2O/s) 
 
           smpmin               =>    soilstate_vars%smpmin_col               , & ! Input:  [real(r8) (:)   ]  restriction for min of soil potential (mm)
           sucsat               =>    soilstate_vars%sucsat_col               , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)
@@ -455,7 +459,7 @@ contains
                 qflx_evap(c)=qflx_ev_soil(c)
              endif
 
-             !0. partition grid-level floodplain inundation volume and fraction to each column
+             !0. partition grid-level floodplain/coastal inundation volume and fraction to each column
              if (use_lnd_rof_two_way) then
                 if (mod(get_nstep(),lnd_rof_coupling_nstep) == 1 .or. get_nstep() <= 1 .or. lnd_rof_coupling_nstep == 1) then
                    h2orof(c)      = atm2lnd_vars%h2orof_grc(g) * wtgcell(c)
@@ -464,6 +468,13 @@ contains
                 ! TODO: add inundfrac from ocean 
                 if ( frac_h2orof(c) > 1.0_r8 - fsno - frac_h2osfc(c) ) then
                   frac_h2orof(c) = 1.0_r8 - fsno - frac_h2osfc(c)
+                endif
+             endif
+
+             if (use_ocn_lnd_one_way) then
+                frac_h2oocn(c) = ocn2lnd_vars%frac_h2oocn_grc(g) * wtgcell(c)
+                if ( frac_h2oocn(c) > 1.0_r8 - fsno - frac_h2osfc(c) ) then
+                  frac_h2oocn(c) = 1.0_r8 - fsno - frac_h2osfc(c)
                 endif
              endif
 
@@ -528,6 +539,8 @@ contains
              
              if (use_lnd_rof_two_way) then
                 qflx_infl_excess(c) = max(0._r8,qflx_in_soil(c) -  (1.0_r8 - frac_h2osfc(c) - frac_h2orof(c))*qinmax)
+             elseif (use_ocn_lnd_one_way) then
+                qflx_infl_excess(c) = max(0._r8,qflx_in_soil(c) -  (1.0_r8 - frac_h2osfc(c) - frac_h2oocn(c))*qinmax)
              else
                 qflx_infl_excess(c) = max(0._r8,qflx_in_soil(c) -  (1.0_r8 - frac_h2osfc(c))*qinmax)
              endif
@@ -665,6 +678,32 @@ contains
                qflx_gross_infl_soil(c) = qflx_gross_infl_soil(c) + qflx_h2osfc_drain(c)
              endif
 
+             !9. add drainage from coastal inundation to qflx_infl (ocean land one way coupling)
+             if (use_ocn_lnd_one_way) then
+
+               ! estimate the available volume [mm H2O] in the first soil layer for floodplain infiltration
+               h2osoi_left_vol1 = max(0._r8,(pondmx+watsat(c,1)*dz(c,1)*1.e3_r8-h2osoi_ice(c,1)-watmin)) - &
+                                  max(0._r8,h2osoi_liq(c,1)-watmin)
+               if (h2osoi_left_vol1 < 0._r8) then
+                   h2osoi_left_vol1 = 0._r8
+               endif
+
+               if (frac_h2oocn(c) > 0._r8 .and. frac_h2oocn(c) > fsat(c)) then
+                  h2osoi_left_vol1 = (frac_h2oocn(c) - fsat(c)) * h2osoi_left_vol1
+                  ! no drainage from ocn inundation if the 1st layer soil is saturated
+                  qflx_h2oocn_drain(c)=min((frac_h2oocn(c) - fsat(c))*qinmax, h2osoi_left_vol1/dtime)
+               else
+                  qflx_h2oocn_drain(c)=0._r8
+               endif
+
+               qflx_infl(c) = qflx_infl(c) + qflx_h2oocn_drain(c) 
+               qflx_gross_infl_soil(c) = qflx_gross_infl_soil(c) + qflx_h2osfc_drain(c) + qflx_h2oocn_drain(c) 
+
+             else
+               qflx_gross_infl_soil(c) = qflx_gross_infl_soil(c) + qflx_h2osfc_drain(c)
+             endif
+
+
           else
              ! non-vegetated landunits (i.e. urban) use original CLM4 code
              if (snl(c) >= 0) then
@@ -691,6 +730,9 @@ contains
              qflx_infl(c) = 0._r8
              if (use_lnd_rof_two_way) then
                 qflx_h2orof_drain(c) = 0._r8
+             endif
+             if (use_ocn_lnd_one_way) then
+                qflx_h2oocn_drain(c) = 0._r8
              endif
           end if
        end do
