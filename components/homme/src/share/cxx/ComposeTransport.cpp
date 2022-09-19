@@ -4,6 +4,7 @@
  * See the file 'COPYRIGHT' in the HOMMEXX/src/share/cxx directory
  *******************************************************************************/
 
+#include "Config.hpp"
 #ifdef HOMME_ENABLE_COMPOSE
 
 #include "ComposeTransport.hpp"
@@ -87,5 +88,4 @@ void ComposeTransport::test_2d (const bool bfb, const int nstep, std::vector<Rea
 
 } // Namespace Homme
 
-//ifdef compose
-#endif
+#endif // HOMME_ENABLE_COMPOSE
