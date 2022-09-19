@@ -11,6 +11,8 @@
 namespace scream
 {
 
+ using namespace p3;
+
 /*
  * The class responsible to handle the atmosphere microphysics
  *
@@ -22,7 +24,6 @@ namespace scream
 
 class P3Microphysics : public AtmosphereProcess
 {
-  using namespace p3;
   using P3F          = Functions<Real, DefaultDevice>;
   using Spack        = typename P3F::Spack;
   using Smask        = typename P3F::Smask;
