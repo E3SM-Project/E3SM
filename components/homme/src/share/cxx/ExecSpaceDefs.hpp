@@ -63,7 +63,7 @@ using Hommexx_Serial = void;
 
 // Selecting the execution space. If no specific request, use Kokkos default
 // exec space
-#if defined(HOMMEXX_CUDA_SPACE) || defined(HOMMEXX_HIP_SPACE)
+#ifdef HOMMEXX_ENABLE_GPU
 using ExecSpace = HommexxGPU;
 #elif defined(HOMMEXX_OPENMP_SPACE)
 using ExecSpace = Hommexx_OpenMP;
