@@ -66,13 +66,6 @@ integer :: qaerwat_idx  = -1
 character(len=4) :: diag(0:n_diag) = (/'    ','_d1 ','_d2 ','_d3 ','_d4 ','_d5 ', &
                                        '_d6 ','_d7 ','_d8 ','_d9 ','_d10'/)
 
-!Declare the following threadprivate variables to be used for calcsize and water uptake
-!These are defined as module level variables to aviod allocation-deallocation in a loop
-real(r8), allocatable :: dgnumdry_m(:,:,:) ! number mode dry diameter for all modes
-real(r8), allocatable, target :: dgnumwet_m(:,:,:) ! number mode wet diameter for all modes
-real(r8), allocatable, target :: qaerwat_m(:,:,:)  ! aerosol water (g/g) for all modes
-!$OMP THREADPRIVATE(dgnumdry_m, dgnumwet_m, qaerwat_m)
-
 logical :: clim_modal_aero ! true when radiatively constituents present (nmodes>0)
 logical :: prog_modal_aero ! Prognostic modal aerosols present
 
@@ -194,17 +187,6 @@ subroutine modal_aer_opt_init()
 
    !obtain nmodes for the climate (ilist = 0) list
    call rad_cnst_get_info(0, nmodes=nmodes)
-
-   !Allocate dry and wet size variables in an OMP PARRALLEL region as these
-   !arrays are private for each thread and needs to be allocated for each OMP thread
-   !$OMP PARALLEL
-   allocate(dgnumdry_m(pcols,pver,nmodes),stat=istat)
-   if (istat .ne. 0) call endrun("Unable to allocate dgnumdry_m: "//errmsg(__FILE__,__LINE__) )
-   allocate(dgnumwet_m(pcols,pver,nmodes),stat=istat)
-   if (istat .ne. 0) call endrun("Unable to allocate dgnumwet_m: "//errmsg(__FILE__,__LINE__) )
-   allocate(qaerwat_m(pcols,pver,nmodes),stat=istat)
-   if (istat .ne. 0) call endrun("Unable to allocate qaerwat_m: "//errmsg(__FILE__,__LINE__) )
-   !$OMP END PARALLEL
 
    ! Add diagnostic fields to history output.
 
@@ -536,7 +518,9 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    real(r8) :: polyaod(pcols), protaod(pcols), lipaod(pcols)
 #endif
 
-
+   real(r8), allocatable :: dgnumdry_m(:,:,:) ! number mode dry diameter for all modes
+   real(r8), allocatable, target :: dgnumwet_m(:,:,:) ! number mode wet diameter for all modes
+   real(r8), allocatable, target :: qaerwat_m(:,:,:)  ! aerosol water (g/g) for all modes
 
    logical :: savaervis ! true if visible wavelength (0.55 micron)
    logical :: savaernir ! true if near ir wavelength (~0.88 micron)
@@ -557,6 +541,16 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 
    lchnk = state%lchnk
    ncol  = state%ncol
+
+   ! loop over all aerosol modes
+   call rad_cnst_get_info(list_idx, nmodes=nmodes)
+
+   allocate(dgnumdry_m(pcols,pver,nmodes),stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate dgnumdry_m: "//errmsg(__FILE__,__LINE__) )
+   allocate(dgnumwet_m(pcols,pver,nmodes),stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate dgnumwet_m: "//errmsg(__FILE__,__LINE__) )
+   allocate(qaerwat_m(pcols,pver,nmodes),stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate qaerwat_m: "//errmsg(__FILE__,__LINE__) )
 
    ! initialize output variables
    tauxar(:ncol,:,:) = 0._r8
@@ -630,11 +624,6 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    ! clear_rh provides alternate estimate non-cloudy relative humidity
    call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
         qaerwat_m, clear_rh_in=clear_rh)
-   
-
-   ! loop over all aerosol modes
-   call rad_cnst_get_info(list_idx, nmodes=nmodes)
-
 
    do m = 1, nmodes
 
@@ -914,31 +903,31 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                      ! assume contribution is proportional to refractive index X volume
 
                      scath2o        = watervol(i)*real(crefwsw(isw))
-		     absh2o         = -watervol(i)*aimag(crefwsw(isw))
+           absh2o         = -watervol(i)*aimag(crefwsw(isw))
 #if ( defined MODAL_AERO_4MODE_MOM )
-		     sumscat        = scatso4(i) + scatpom(i) + scatsoa(i) + scatbc(i) + &
+           sumscat        = scatso4(i) + scatpom(i) + scatsoa(i) + scatbc(i) + &
                                       scatdust(i) + scatseasalt(i) + scath2o + &
                                       scatmom(i)
-		     sumabs         = absso4(i) + abspom(i) + abssoa(i) + absbc(i) + &
+           sumabs         = absso4(i) + abspom(i) + abssoa(i) + absbc(i) + &
                                       absdust(i) + absseasalt(i) + absh2o + &
                                       absmom(i)
                      sumhygro       = hygroso4(i) + hygropom(i) + hygrosoa(i) + hygrobc(i) + &
                                       hygrodust(i) + hygroseasalt(i) + &
                                       hygromom(i)
 #elif ( defined MODAL_AERO_9MODE )
-		     sumscat        = scatso4(i) + scatpom(i) + scatsoa(i) + scatbc(i) + &
+           sumscat        = scatso4(i) + scatpom(i) + scatsoa(i) + scatbc(i) + &
                                       scatdust(i) + scatseasalt(i) + scath2o + &
                                       scatpoly(i) + scatprot(i) + scatlip(i)
-		     sumabs         = absso4(i) + abspom(i) + abssoa(i) + absbc(i) + &
+           sumabs         = absso4(i) + abspom(i) + abssoa(i) + absbc(i) + &
                                       absdust(i) + absseasalt(i) + absh2o + &
                                       abspoly(i) + absprot(i) + abslip(i)
                      sumhygro       = hygroso4(i) + hygropom(i) + hygrosoa(i) + hygrobc(i) + &
                                       hygrodust(i) + hygroseasalt(i) + &
                                       hygropoly(i) + hygroprot(i) + hygrolip(i)
 #else
-		     sumscat        = scatso4(i) + scatpom(i) + scatsoa(i) + scatbc(i) + &
+           sumscat        = scatso4(i) + scatpom(i) + scatsoa(i) + scatbc(i) + &
                                       scatdust(i) + scatseasalt(i) + scath2o
-		     sumabs         = absso4(i) + abspom(i) + abssoa(i) + absbc(i) + &
+           sumabs         = absso4(i) + abspom(i) + abssoa(i) + absbc(i) + &
                                       absdust(i) + absseasalt(i) + absh2o
                      sumhygro       = hygroso4(i) + hygropom(i) + hygrosoa(i) + hygrobc(i) + &
                                       hygrodust(i) + hygroseasalt(i)
@@ -1214,6 +1203,11 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
 #endif
    end if
 
+   ! Clean up
+   if (allocated(dgnumdry_m)) deallocate(dgnumdry_m)
+   if (allocated(dgnumwet_m)) deallocate(dgnumwet_m)
+   if (allocated(qaerwat_m )) deallocate(qaerwat_m )
+
 end subroutine modal_aero_sw
 
 !===============================================================================
@@ -1277,11 +1271,25 @@ subroutine modal_aero_lw(list_idx, dt, state, pbuf, tauxar, clear_rh)
    integer  :: nerr_dopaer = 0
    real(r8) :: volf             ! volume fraction of insoluble aerosol
 
+   real(r8), allocatable :: dgnumdry_m(:,:,:) ! number mode dry diameter for all modes
+   real(r8), allocatable, target :: dgnumwet_m(:,:,:) ! number mode wet diameter for all modes
+   real(r8), allocatable, target :: qaerwat_m(:,:,:)  ! aerosol water (g/g) for all modes
+
    character(len=*), parameter :: subname = 'modal_aero_lw'
    !----------------------------------------------------------------------------
 
    lchnk = state%lchnk
    ncol  = state%ncol
+
+   ! loop over all aerosol modes
+   call rad_cnst_get_info(list_idx, nmodes=nmodes)
+
+   allocate(dgnumdry_m(pcols,pver,nmodes),stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate dgnumdry_m: "//errmsg(__FILE__,__LINE__) )
+   allocate(dgnumwet_m(pcols,pver,nmodes),stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate dgnumwet_m: "//errmsg(__FILE__,__LINE__) )
+   allocate(qaerwat_m(pcols,pver,nmodes),stat=istat)
+   if (istat .ne. 0) call endrun("Unable to allocate qaerwat_m: "//errmsg(__FILE__,__LINE__) )
 
    ! initialize output variables
    tauxar(:ncol,:,:) = 0._r8
@@ -1307,10 +1315,6 @@ subroutine modal_aero_lw(list_idx, dt, state, pbuf, tauxar, clear_rh)
    ! clear_rh provides alternate estimate non-cloudy relative humidity
    call modal_aero_wateruptake_dr(state, pbuf, list_idx, dgnumdry_m, dgnumwet_m, &
         qaerwat_m, clear_rh_in=clear_rh)
-   
-
-   ! loop over all aerosol modes
-   call rad_cnst_get_info(list_idx, nmodes=nmodes)
 
    do m = 1, nmodes
 
@@ -1450,6 +1454,11 @@ subroutine modal_aero_lw(list_idx, dt, state, pbuf, tauxar, clear_rh)
 
    end do ! m = 1, nmodes
 
+   ! Clean up
+   if (allocated(dgnumdry_m)) deallocate(dgnumdry_m)
+   if (allocated(dgnumwet_m)) deallocate(dgnumwet_m)
+   if (allocated(qaerwat_m )) deallocate(qaerwat_m )
+
 end subroutine modal_aero_lw
 
 !===============================================================================
@@ -1584,7 +1593,7 @@ end subroutine modal_size_parameters
           else
              t(ic)=0._r8
           endif
-	end do
+   end do
       else
         ix(:ncol)=1
         t(:ncol)=0._r8
@@ -1605,7 +1614,7 @@ end subroutine modal_size_parameters
           else
             u(ic)=0._r8
           endif
-	end do
+   end do
       else
         jy(:ncol)=1
         u(:ncol)=0._r8
@@ -1621,7 +1630,7 @@ end subroutine modal_size_parameters
          do k=1,km
             out(ic,k)=tcuc(ic)*table(k,ix(ic),jy(ic))+tuc(ic)*table(k,ip1,jy(ic))   &
                +tu(ic)*table(k,ip1,jp1)+tcu(ic)*table(k,ix(ic),jp1)
-	 end do
+    end do
       enddo
       return
       end subroutine binterp
