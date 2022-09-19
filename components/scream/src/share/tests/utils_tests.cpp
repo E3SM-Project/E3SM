@@ -11,7 +11,7 @@
 #include "ekat/ekat_parse_yaml_file.hpp"
 
 
-TEST_CASE("vertical_interpolation_fake_data"){
+TEST_CASE("vertical_interpolation"){
 
   using namespace scream;
   const int n_layers_src = 3;
@@ -28,8 +28,6 @@ TEST_CASE("vertical_interpolation_fake_data"){
   auto out = view_2d<Spack>("",3,npacks_tgt);
   auto out_s = Kokkos::create_mirror_view(ekat::scalarize(out));
   auto mask = view_2d<Smask>("",3,npacks_tgt);
-
-  
 
   p_tgt_s(0) = 20.0;
   p_tgt_s(1) = 25.0;
@@ -75,7 +73,6 @@ TEST_CASE("vertical_interpolation_fake_data"){
   correct_val[2][1] = 255.0;
   correct_val[2][2] = -9.99e17;
   correct_val[2][3] = -9.99e17;
-
   
   for(int col=0; col<3; col++){
     for(int lev=0; lev<4; lev++){
@@ -83,7 +80,6 @@ TEST_CASE("vertical_interpolation_fake_data"){
       //std::cout<<"out_s("<<col<<lev<<"):: "<<out_s(col,lev)<<std::endl;
     }
   }
-  
   
 }
 
