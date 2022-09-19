@@ -11,81 +11,48 @@
 #include "ekat/ekat_parse_yaml_file.hpp"
 
 
-TEST_CASE("vertical_interpolation"){
+TEST_CASE("vertical_interpolation_fake_data"){
+
   using namespace scream;
-
-  using vos_type = std::vector<std::string>;
-  ekat::ParameterList params_f;
-  ekat::parse_yaml_file("io_vertical_interpolation_test.yaml",params_f);
-  std::string filename = params_f.get<std::string>("Filename");
-  vos_type sv = params_f.get<vos_type>("Field Names");
-  auto field_present = (sv[0] == "temp" || sv[1] == "temp");
-  REQUIRE(field_present);
-
-  const int n_layers_src = 128;
-  const int n_layers_tgt = 194;
+  const int n_layers_src = 3;
+  const int n_layers_tgt = 4;
   
   auto npacks_src = ekat::PackInfo<Spack::n>::num_packs(n_layers_src);
   auto npacks_tgt = ekat::PackInfo<Spack::n>::num_packs(n_layers_tgt);
   auto p_tgt = view_1d<Spack>("",npacks_tgt);
   auto p_tgt_s = Kokkos::create_mirror_view(ekat::scalarize(p_tgt));
-  auto tmp_src = view_2d<Spack>("",866,npacks_src);
+  auto tmp_src = view_2d<Spack>("",3,npacks_src);
   auto tmp_src_s = Kokkos::create_mirror_view(ekat::scalarize(tmp_src));
-  auto p_src = view_2d<Spack>("",866,npacks_src);
+  auto p_src = view_2d<Spack>("",3,npacks_src);
   auto p_src_s = Kokkos::create_mirror_view(ekat::scalarize(p_src));
-  auto out = view_2d<Spack>("",866,npacks_tgt);
+  auto out = view_2d<Spack>("",3,npacks_tgt);
   auto out_s = Kokkos::create_mirror_view(ekat::scalarize(out));
-  auto mask = view_2d<Smask>("",866,npacks_tgt);
+  auto mask = view_2d<Smask>("",3,npacks_tgt);
 
-  //Pull target pressure 194 values
-  std::string line;
-  std::ifstream press_levels (filename);
-  int i=0;
-  if (press_levels.is_open()){
-    while ( getline(press_levels,line) ){
-      if (i < 194){
-	p_tgt_s(i) = log(std::stod(line));
-      }
-      i++;
-    }
-  }
-  press_levels.close();
-
-  //Pull source pressure values for all 866 columns and 128 layers
-  std::string line_p;
-  std::ifstream p_levels ("press_src_ne4_866col_128lay.txt");
-  //col
-  int i_p=0;
-  //lev
-  int j_p=0;
-  if (p_levels.is_open()){
-    while ( getline(p_levels,line_p) ){
-      p_src_s(i_p,j_p) = log(std::stod(line_p));
-      j_p++;
-      if (j_p == 128){
-	i_p++;
-	j_p=0;
-      }
-    }
-  }
-  p_levels.close();
   
-  //Pull source temperature values for all 866 columns and 128 layers
-  std::string line_t;
-  std::ifstream temp_levels ("temp_src_ne4_866col_128lay.txt");
-  int i_t=0;
-  int j_t=0;
-  if (temp_levels.is_open()){
-    while ( getline(temp_levels,line_t) ){
-      tmp_src_s(i_t,j_t) = std::stod(line_t);
-      j_t++;
-      if (j_t == 128){
-	i_t++;
-	j_t=0;
-      }
-    }
+
+  p_tgt_s(0) = 20.0;
+  p_tgt_s(1) = 25.0;
+  p_tgt_s(2) = 35.0;
+  p_tgt_s(3) = 45.0;
+
+  p_src_s(0,0) = 20.0;
+  p_src_s(0,1) = 30.0;
+  p_src_s(0,2) = 40.0;
+
+  p_src_s(1,0) = 30.0;
+  p_src_s(1,1) = 40.0;
+  p_src_s(1,2) = 50.0;
+
+  p_src_s(2,0) = 10.0;
+  p_src_s(2,1) = 20.0;
+  p_src_s(2,2) = 30.0;
+
+  for (int i=0; i<3; i++){
+    tmp_src_s(i,0)=260.;
+    tmp_src_s(i,1)=270.;
+    tmp_src_s(i,2)=240.;
   }
-  temp_levels.close();
 
   scream::perform_vertical_interpolation(p_src,
 					 p_tgt,
@@ -94,21 +61,30 @@ TEST_CASE("vertical_interpolation"){
 				         mask,
 					 n_layers_src,
 					 n_layers_tgt);
-  
-  std::string line_t_o;
-  std::ifstream original_temp("output_log_original.txt"); 
 
-  //Loop over output and make sure it matches values in default output file
-  for(int col=0; col<866; col++){
-    for(int lev=0; lev<194; lev++){
-      getline(original_temp,line_t_o);
-      std::stringstream out_s_str;
-      out_s_str << out_s(col,lev);
-      REQUIRE(out_s_str.str() == line_t_o);
+  double correct_val[3][4];
+  correct_val[0][0] = 260.0;
+  correct_val[0][1] = 265.0;
+  correct_val[0][2] = 255.0;
+  correct_val[0][3] = -9.99e17;
+  correct_val[1][0] = -9.99e17;
+  correct_val[1][1] = -9.99e17;
+  correct_val[1][2] = 265.0;
+  correct_val[1][3] = 255.0;
+  correct_val[2][0] = 270.0;
+  correct_val[2][1] = 255.0;
+  correct_val[2][2] = -9.99e17;
+  correct_val[2][3] = -9.99e17;
+
+  
+  for(int col=0; col<3; col++){
+    for(int lev=0; lev<4; lev++){
+      REQUIRE(out_s(col,lev) == correct_val[col][lev]);
+      //std::cout<<"out_s("<<col<<lev<<"):: "<<out_s(col,lev)<<std::endl;
     }
   }
-  original_temp.close();
-
+  
+  
 }
 
 TEST_CASE("contiguous_superset") {
