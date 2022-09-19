@@ -1126,6 +1126,10 @@ contains
       use modal_aero_data, only: ntot_amode
 #endif
 
+#ifdef MMF_SEDIMENTATION
+      use physconst,       only: cpair, cappa, rair, rhoh2o, pi
+#endif
+
       ! For running CFMIP Observation Simulator Package (COSP)
       use cospsimulator_intr, only: docosp, cospsimulator_intr_run, cosp_nradsteps
 
