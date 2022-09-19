@@ -208,7 +208,14 @@ tweaking their $case/namelist_scream.xml file.
       <f12vmr      > 531.2820e-12 </f12vmr>
       <n2vmr       > 0.7906       </n2vmr>
       <covmr       > 1.0e-7       </covmr>
+      <!-- Orbital parameters for solar zenith angle and TSI scaling. For F2010 compsets, -->
+      <!-- we set a fixed year for these parameters, but for other compsets we set to a   -->
+      <!-- negative value to force the code to get simulated year from the timestamp.     -->
+      <!-- TODO: these should probably be set (or overridden) by CIME or cpl settings.    -->
+      <!-- In E3SM/EAM, these appear to be controlled by the orb_iyear namelist variable  -->
+      <!-- in drv_in, and we should probably switch to allowing for that in the future.   -->
       <orbital_year>-9999</orbital_year>
+      <orbital_year COMPSET="2010_.*">2010</orbital_year>
       <orbital_eccentricity>-9999</orbital_eccentricity>
       <orbital_eccentricity COMPSET=".*SCREAM%AQUA.*">0</orbital_eccentricity>
       <orbital_obliquity>-9999</orbital_obliquity>
