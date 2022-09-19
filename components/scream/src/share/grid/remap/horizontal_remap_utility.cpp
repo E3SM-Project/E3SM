@@ -332,6 +332,8 @@ void GSMap::set_unique_source_dofs()
       src_idx_h(ii) = idx_ii;
     }
     Kokkos::deep_copy(src_idx,src_idx_h);
+    // Sync to Host
+    seg.sync_to_host();
   }
   stop_timer("EAMxx::GSMap::set_unique_dofs");
 }
@@ -387,10 +389,19 @@ void GSMap::apply_remap(const view_1d<const Real>& source_data, const view_1d<Re
   start_timer("EAMxx::GSMap::apply_remap_1d");
   if (m_num_dofs==0) { return; } // This GSMap has nothing to do for this rank.
   auto remapped_data_h = Kokkos::create_mirror_view(remapped_data);
+  auto source_data_h = Kokkos::create_mirror_view(source_data);
+  Kokkos::deep_copy(source_data_h,source_data);
+  Kokkos::deep_copy(remapped_data_h,0.0);
   for (int iseg=0; iseg<m_num_segments; iseg++) {
     auto seg = m_map_segments[iseg];
-    auto seg_dof_idx = seg.get_dof_idx();
-    seg.apply_segment(source_data, remapped_data_h(seg_dof_idx));
+    auto seg_dof_idx  = seg.get_dof_idx();
+    auto seg_length   = seg.get_length();
+    auto source_idx_h = seg.get_source_idx_on_host();
+    auto weights_h    = seg.get_weights_on_host();
+    for (int ii=0; ii<seg_length; ii++) {
+      Int idx = source_idx_h(ii);
+      remapped_data_h(seg_dof_idx) += source_data_h(idx)*weights_h(ii);
+    }
   }
   Kokkos::deep_copy(remapped_data,remapped_data_h);
   stop_timer("EAMxx::GSMap::apply_remap_1d");
@@ -403,12 +414,24 @@ void GSMap::apply_remap(const view_2d<const Real>& source_data, const view_2d<Re
   start_timer("EAMxx::GSMap::apply_remap_2d");
   if (m_num_dofs==0) { return; } // This GSMap has nothing to do for this rank.
   Int num_levs = source_data.extent(1);
+  auto remapped_data_h = Kokkos::create_mirror_view(remapped_data);
+  auto source_data_h = Kokkos::create_mirror_view(source_data);
+  Kokkos::deep_copy(source_data_h,source_data);
+  Kokkos::deep_copy(remapped_data_h,0.0);
   for (int iseg=0; iseg<m_num_segments; iseg++) {
     auto seg = m_map_segments[iseg];
-    auto seg_dof_idx = seg.get_dof_idx();
-    auto remap_sub = Kokkos::subview(remapped_data,seg_dof_idx,Kokkos::ALL);
-    seg.apply_segment(num_levs, source_data, remap_sub);
+    auto seg_dof_idx  = seg.get_dof_idx();
+    auto seg_length   = seg.get_length();
+    auto source_idx_h = seg.get_source_idx_on_host();
+    auto weights_h    = seg.get_weights_on_host();
+    for (int ii=0; ii<seg_length; ii++) {
+      for (int kk=0; kk<num_levs; kk++) {
+        Int idx = source_idx_h(ii);
+        remapped_data_h(seg_dof_idx,kk) += source_data_h(idx,kk)*weights_h(ii);
+      }
+    }
   }
+  Kokkos::deep_copy(remapped_data,remapped_data_h);
   stop_timer("EAMxx::GSMap::apply_remap_2d");
 }
 /*-----------------------------------------------------------------------------------------------*/
@@ -420,12 +443,26 @@ void GSMap::apply_remap(const view_3d<const Real>& source_data, const view_3d<Re
   if (m_num_dofs==0) { return; } // This GSMap has nothing to do for this rank.
   Int num_levs = source_data.extent(2);
   Int num_bands = source_data.extent(1);
+  auto remapped_data_h = Kokkos::create_mirror_view(remapped_data);
+  auto source_data_h = Kokkos::create_mirror_view(source_data);
+  Kokkos::deep_copy(source_data_h,source_data);
+  Kokkos::deep_copy(remapped_data_h,0.0);
   for (int iseg=0; iseg<m_num_segments; iseg++) {
     auto seg = m_map_segments[iseg];
-    auto seg_dof_idx = seg.get_dof_idx();
-    auto remap_sub = Kokkos::subview(remapped_data,seg_dof_idx,Kokkos::ALL,Kokkos::ALL);
-    seg.apply_segment(num_levs, num_bands, source_data, remap_sub);
+    auto seg_dof_idx  = seg.get_dof_idx();
+    auto seg_length   = seg.get_length();
+    auto source_idx_h = seg.get_source_idx_on_host();
+    auto weights_h    = seg.get_weights_on_host();
+    for (int ii=0; ii<seg_length; ii++) {
+      for (int nn=0; nn<num_bands; nn++) {
+        for (int kk=0; kk<num_levs; kk++) {
+          Int idx = source_idx_h(ii);
+          remapped_data_h(seg_dof_idx,nn,kk) += source_data_h(idx,nn,kk)*weights_h(ii);
+        }
+      }
+    }
   }
+  Kokkos::deep_copy(remapped_data,remapped_data_h);
   stop_timer("EAMxx::GSMap::apply_remap_3d");
 }
 /*-----------------------------------------------------------------------------------------------*/
@@ -434,9 +471,11 @@ GSSegment::GSSegment(const gid_type dof_gid, const Int length)
   : m_dof    (dof_gid)
   , m_length (length)
 {
-  m_source_dofs = view_1d<gid_type>("",m_length);
-  m_source_idx  = view_1d<Int>("",m_length);
-  m_weights     = view_1d<Real>("",m_length);
+  m_source_dofs  = view_1d<gid_type>("",m_length);
+  m_source_idx   = view_1d<Int>("",m_length);
+  m_weights      = view_1d<Real>("",m_length);
+  m_source_idx_h = Kokkos::create_mirror_view(m_source_idx);
+  m_weights_h    = Kokkos::create_mirror_view(m_weights);
 }
 /*-----------------------------------------------------------------------------------------------*/
 GSSegment::GSSegment(const gid_type dof_gid, const Int length,  const view_1d<const gid_type>& source_dofs, const view_1d<const Real>& weights)
@@ -448,52 +487,14 @@ GSSegment::GSSegment(const gid_type dof_gid, const Int length,  const view_1d<co
   m_source_idx  = view_1d<Int>("",m_length);
   Kokkos::deep_copy(m_source_dofs,source_dofs);
   Kokkos::deep_copy(m_weights,weights);
+  m_source_idx_h = Kokkos::create_mirror_view(m_source_idx);
+  m_weights_h    = Kokkos::create_mirror_view(m_weights);
 }
 /*-----------------------------------------------------------------------------------------------*/
-// Apply a single segment of source data to a single output value.
-void GSSegment::apply_segment(const view_1d<const Real>& source_data, Real& remapped_value)
+void GSSegment::sync_to_host()
 {
-  Kokkos::parallel_reduce("", m_length, KOKKOS_LAMBDA (const int& ii, Real& loc) {
-    Int idx = m_source_idx(ii);
-    loc += source_data(idx)*m_weights(ii);
-  },remapped_value);
-  Kokkos::fence();
-}
-/*-----------------------------------------------------------------------------------------------*/
-// Apply a set of source data slices in 2D to a single column of output value.
-void GSSegment::apply_segment(const Int n1, const view_2d<const Real>& source_data, const view_1d<Real>& remapped_value)
-{
-  auto remapped_h = Kokkos::create_mirror_view(remapped_value);
-  for (int kk=0; kk<n1; kk++) {
-    Real ret;
-    auto src_sub = Kokkos::subview(source_data,Kokkos::ALL(),kk);
-    Kokkos::parallel_reduce("", m_length, KOKKOS_LAMBDA (const int& ii, Real& loc) {
-      Int idx = m_source_idx(ii);
-      loc += src_sub(idx)*m_weights(ii);
-    },ret);
-    Kokkos::fence();
-    remapped_h(kk) = ret;
-  }
-  Kokkos::deep_copy(remapped_value,remapped_h);
-}
-/*-----------------------------------------------------------------------------------------------*/
-// Apply a set of source data slices in 3D to a set of columns of  output values.
-void GSSegment::apply_segment(const Int n1, const Int n2, const view_3d<const Real>& source_data, const view_2d<Real>& remapped_value)
-{
-  auto remapped_h = Kokkos::create_mirror_view(remapped_value);
-  for (int kk=0; kk<n1; kk++) {
-    for (int jj=0; jj<n2; jj++) {
-      Real ret;
-      auto src_sub = Kokkos::subview(source_data,Kokkos::ALL(),jj,kk);
-      Kokkos::parallel_reduce("", m_length, KOKKOS_LAMBDA (const int& ii, Real& loc) {
-        Int idx = m_source_idx(ii);
-        loc += src_sub(idx)*m_weights(ii);
-      },ret);
-      Kokkos::fence();
-      remapped_h(jj,kk) = ret;
-    }
-  }
-  Kokkos::deep_copy(remapped_value,remapped_h);
+  Kokkos::deep_copy(m_source_idx_h,m_source_idx);
+  Kokkos::deep_copy(m_weights_h,m_weights);
 }
 /*-----------------------------------------------------------------------------------------------*/
 bool GSSegment::check() const

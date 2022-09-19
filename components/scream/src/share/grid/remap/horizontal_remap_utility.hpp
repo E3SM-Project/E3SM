@@ -30,20 +30,12 @@ struct GSSegment {
   using view_1d = typename KT::template view_1d<S>;
   
   template <typename S>
-  using view_2d = typename KT::template view_2d<S>;
-  
-  template <typename S>
-  using view_3d = typename KT::template view_3d<S>;
+  using view_1d_host = typename KT::template view_1d<S>::HostMirror;
   
   // Constructors/Destructor
   GSSegment() {};
   GSSegment(const gid_type dof_gid, const Int length);
   GSSegment(const gid_type dof_gid, const Int length, const view_1d<const gid_type>& source_dofs, const view_1d<const Real>& weights);
-
-  // Applying a remap segment
-  void apply_segment(const view_1d<const Real>& source_data, Real& remapped_value);
-  void apply_segment(const Int n1, const view_2d<const Real>& source_data, const view_1d<Real>& remapped_data);
-  void apply_segment(const Int n1, const Int n2, const view_3d<const Real>& source_data, const view_2d<Real>& remapped_data);
 
   // Helper Functions
   bool check() const;      // Check if this segment is valid
@@ -51,14 +43,17 @@ struct GSSegment {
 
   // Setter Functions
   void set_dof_idx(const int idx) { m_dof_idx = idx; }
+  void sync_to_host();
 
   // Getter Functions
   gid_type get_dof()     const { return m_dof; }
   Int      get_dof_idx() const { return m_dof_idx; }
   Int      get_length()  const { return m_length; }
-  view_1d<gid_type> get_source_dofs() const { return m_source_dofs; }
-  view_1d<Int>      get_source_idx()  const { return m_source_idx; }
-  view_1d<Real>     get_weights()     const { return m_weights; }
+  view_1d<gid_type>  get_source_dofs()        const { return m_source_dofs; }
+  view_1d<Int>       get_source_idx()         const { return m_source_idx; }
+  view_1d<Real>      get_weights()            const { return m_weights; }
+  view_1d_host<Int>  get_source_idx_on_host() const { return m_source_idx_h; }
+  view_1d_host<Real> get_weights_on_host()    const { return m_weights_h; }
  
   // TODO: Not sure why, but this can't be set as private, otherwise `set_dof_idx` doesn't work. 
   Int      m_dof_idx = -999; // The degree of freedom w.r.t. to the local index for this map
@@ -68,6 +63,8 @@ private:
   view_1d<gid_type>  m_source_dofs;
   view_1d<Int>       m_source_idx;
   view_1d<Real>      m_weights;
+  view_1d_host<Int>  m_source_idx_h;
+  view_1d_host<Real> m_weights_h;
 
   // Segment ID
   gid_type m_dof;     // The global degree of freedom this segment maps to
