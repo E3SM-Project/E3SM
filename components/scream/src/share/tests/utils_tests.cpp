@@ -14,6 +14,7 @@
 TEST_CASE("vertical_interpolation"){
 
   using namespace scream;
+  using namespace vinterp;
   const int n_layers_src = 3;
   const int n_layers_tgt = 4;
   
@@ -52,32 +53,31 @@ TEST_CASE("vertical_interpolation"){
     tmp_src_s(i,2)=240.;
   }
 
-  scream::perform_vertical_interpolation(p_src,
-					 p_tgt,
-					 tmp_src,
-					 out,
-				         mask,
-					 n_layers_src,
-					 n_layers_tgt);
-
+  perform_vertical_interpolation(p_src,
+				 p_tgt,
+				 tmp_src,
+				 out,
+				 mask,
+				 n_layers_src,
+				 n_layers_tgt);
+  
   Real correct_val[3][4];
   correct_val[0][0] = 260.0;
   correct_val[0][1] = 265.0;
   correct_val[0][2] = 255.0;
-  correct_val[0][3] = -9.99e17;
-  correct_val[1][0] = -9.99e17;
-  correct_val[1][1] = -9.99e17;
+  correct_val[0][3] = masked_val;
+  correct_val[1][0] = masked_val;
+  correct_val[1][1] = masked_val;
   correct_val[1][2] = 265.0;
   correct_val[1][3] = 255.0;
   correct_val[2][0] = 270.0;
   correct_val[2][1] = 255.0;
-  correct_val[2][2] = -9.99e17;
-  correct_val[2][3] = -9.99e17;
+  correct_val[2][2] = masked_val;
+  correct_val[2][3] = masked_val;
   
   for(int col=0; col<3; col++){
     for(int lev=0; lev<4; lev++){
       REQUIRE(out_s(col,lev) == correct_val[col][lev]);
-      //std::cout<<"out_s("<<col<<lev<<"):: "<<out_s(col,lev)<<std::endl;
     }
   }
   
