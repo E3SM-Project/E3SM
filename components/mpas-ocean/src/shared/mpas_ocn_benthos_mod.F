@@ -1773,13 +1773,13 @@ contains
          oceanSedFlux(poca_ind) = pocFluxRate*fracHighlyReactive   ! mmol (m/kg)/s  (49% highy reactive, Westrich and Berner 1984)
       end if
       oceanSedFlux(pocb_ind) = pocFluxRate*fracLessReactive ! 15% moderately reactive
-      oceanSedFlux(pocc_ind) = pocFluxRate*fracRefractory ! 34% nonreactive
-      oceanSedFlux(popa_ind) = popFluxRate*fracHighlyReactive   ! mmol (m/kg)/s  (49% highy reactive, Westrich and Berner 1984)
-      oceanSedFlux(popb_ind) = popFluxRate*fracLessReactive ! 15% moderately reactive
-      oceanSedFlux(popc_ind) = popFluxRate*fracRefractory ! 34% nonreactive
-      oceanSedFlux(pona_ind) = ponFluxRate*fracHighlyReactive   ! mmol (m/kg)/s  (49% highy reactive, Westrich and Berner 1984)
-      oceanSedFlux(ponb_ind) = ponFluxRate*fracLessReactive ! 15% moderately reactive
-      oceanSedFlux(ponc_ind) = ponFluxRate*fracRefractory ! 34% nonreactive
+      oceanSedFlux(pocc_ind) = pocFluxRate*fracRefractory   ! 34% nonreactive
+      oceanSedFlux(popa_ind) = oceanSedFlux(poca_ind)/CtoP  !pocFluxRate/popFluxRate*fracHighlyReactive   ! mmol (m/kg)/s  (49% highy reactive, Westrich and Berner 1984)
+      oceanSedFlux(popb_ind) = oceanSedFlux(pocb_index)/CtoP_r !popFluxRate*fracLessReactive ! 15% moderately reactive
+      oceanSedFlux(popc_ind) = oceanSedFlux(pocc_index)/CtoP_r !popFluxRate*fracRefractory ! 34% nonreactive
+      oceanSedFlux(pona_ind) = oceanSedFlux(popa_index)*NtoP   !ponFluxRate*fracHighlyReactive   ! mmol (m/kg)/s  (49% highy reactive, Westrich and Berner 1984)
+      oceanSedFlux(ponb_ind) = oceanSedFlux(popb_index)*NtoP_r !ponFluxRate*fracLessReactive ! 15% moderately reactive
+      oceanSedFlux(ponc_ind) = oceanSedFlux(popc_index)*NtoP_r !ponFluxRate*fracRefractory ! 34% nonreactive
       oceanSedFlux(mno2a_ind) = 0.03_benthos_r8/sec_per_year/sediment_density !mmol/m2/y to mmol (m/kg)/s
       oceanSedFlux(mno2b_ind) = c0_benthos
       oceanSedFlux(feoh3a_ind) = ocean_feoh3aFlux
