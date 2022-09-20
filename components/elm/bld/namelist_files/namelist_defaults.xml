@@ -173,6 +173,9 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 <fsurdat hgrid="ne30np4.pg2"   sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_simyr1850_c201210.nc</fsurdat>
 
+<fsurdat hgrid="ne4np4.pg2"   sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne4pg2_simyr1850_c210722.nc</fsurdat>
+
 <!-- HOMME grid ne120 resolution -->
 
 <finidat hgrid="ne120np4"   maxpft="17"  mask="gx1v6" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
@@ -417,6 +420,8 @@ lnd/clm2/surfdata_map/surfdata_twpx4v1_simyr2000_c170706.nc</fsurdat>
  use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850-2015_c180306.nc</flanduse_timeseries>
  <flanduse_timeseries hgrid="ne30np4.pg2"  sim_year_range="1850-2000" 
  use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne30np4.pg2_hist_simyr1850-2015_c210113.nc</flanduse_timeseries>
+<flanduse_timeseries hgrid="ne4np4.pg2" sim_year_range="1850-2000"
+ use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne4pg2_hist_simyr1850-2015_c210722.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="ne16np4" sim_year_range="1850-2000"
  use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_ne16np4_hist_simyr1850-2005_c160803.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="ne11np4" sim_year_range="1850-2000"
