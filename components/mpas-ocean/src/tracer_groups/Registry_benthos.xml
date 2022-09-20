@@ -411,34 +411,34 @@
 			<var name="totalSedimentMassFlux" type="real" dimensions="nCells Time" units="kg m^{-3} m s^{-1}"
 				description="total sediment flux = 2.1 x biogenic Si + dust + PIC + 2x POC + lithogenic"
 			/>
-			<var name="oceanBenthosPOCFlux" type="real" dimensions="nCells Time" units="mmol(m kg^{-1}) s^{-1}"
+			<var name="oceanBenthosPOCFlux" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
 				description="total ocean particulate organic carbon sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPOCaFlux" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
+			<var name="oceanBenthosPOCaFlux" type="real" dimensions="nCells Time" units="mmol C (m kg^{-1}) s^{-1}"
 				description="labile ocean particulate organic carbon sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPOCbFlux" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
+			<var name="oceanBenthosPOCbFlux" type="real" dimensions="nCells Time" units="mmol C  (m kg^{-1}) s^{-1}"
 				description="semi-labile ocean particulate organic carbon sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPOCcFlux" type="real" dimensions="nCells Time" units="mmol C m^{-3} m s^{-1}"
+			<var name="oceanBenthosPOCcFlux" type="real" dimensions="nCells Time" units="mmol C  (m kg^{-1}) s^{-1}"
 				description="refractory ocean particulate organic carbon sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPOPaFlux" type="real" dimensions="nCells Time" units="mmol P m^{-3} m s^{-1}"
+			<var name="oceanBenthosPOPaFlux" type="real" dimensions="nCells Time" units="mmol P  (m kg^{-1}) s^{-1}"
 				description="labile ocean particulate organic phosphorus sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPOPbFlux" type="real" dimensions="nCells Time" units="mmol P m^{-3} m s^{-1}"
+			<var name="oceanBenthosPOPbFlux" type="real" dimensions="nCells Time" units="mmol P  (m kg^{-1}) s^{-1}"
 				description="semi-labile ocean particulate organic phosphorus sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPOPcFlux" type="real" dimensions="nCells Time" units="mmol P m^{-3} m s^{-1}"
+			<var name="oceanBenthosPOPcFlux" type="real" dimensions="nCells Time" units="mmol P  (m kg^{-1}) s^{-1}"
 				description="refractory ocean particulate organic phosphorus sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPONaFlux" type="real" dimensions="nCells Time" units="mmol N m^{-3} m s^{-1}"
+			<var name="oceanBenthosPONaFlux" type="real" dimensions="nCells Time" units="mmol N  (m kg^{-1}) s^{-1}"
 				description="labile ocean particulate organic nitrogen sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPONbFlux" type="real" dimensions="nCells Time" units="mmol N m^{-3} m s^{-1}"
+			<var name="oceanBenthosPONbFlux" type="real" dimensions="nCells Time" units="mmol N  (m kg^{-1}) s^{-1}"
 				description="semi-labile ocean particulate organic nitrogen sinking flux to the benthos"
 			/>
-			<var name="oceanBenthosPONcFlux" type="real" dimensions="nCells Time" units="mmol N m^{-3} m s^{-1}"
+			<var name="oceanBenthosPONcFlux" type="real" dimensions="nCells Time" units="mmol N  (m kg^{-1}) s^{-1}"
 				description="refractory ocean particulate organic nitrogen sinking flux to the benthos"
 			/>
 			<var name="oceanBenthosParticulateFeFlux" type="real" dimensions="nCells Time" units="mmol Fe m^{-3} m s^{-1}"
