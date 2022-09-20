@@ -322,7 +322,7 @@ void SPAFunctions<S,D>
     gid_type seg_dof = dofs_gids_h(ii)-min_dof;
     Kokkos::deep_copy(src_dofs,seg_dof);
     Kokkos::deep_copy(src_wgts,   1.0);
-    GSSegment seg(seg_dof,1,src_dofs,src_wgts);
+    HorizontalMapSegment seg(seg_dof,1,src_dofs,src_wgts);
     spa_horiz_map.add_remap_segment(seg);
   }
   spa_horiz_map.set_unique_source_dofs();

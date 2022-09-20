@@ -172,7 +172,7 @@ void HorizontalMap::set_remap_segments_from_file(const std::string& remap_filena
       source_dofs(jj) = col(idx)-global_remap_min_dof;  // Offset to zero based dofs
       weights(jj)     = S(idx);
     });
-    GSSegment seg(seg_dof[ii]-global_remap_min_dof,seglength,source_dofs,weights);
+    HorizontalMapSegment seg(seg_dof[ii]-global_remap_min_dof,seglength,source_dofs,weights);
     add_remap_segment(seg);
   }
   stop_timer("EAMxx::HorizontalMap::set_remap_segments_from_file");
@@ -199,7 +199,7 @@ void HorizontalMap::set_dof_gids(const view_1d<const gid_type>& dofs_gids, const
 // remapping.  This function also checks if a segment already exists for the degree of freedom
 // in question.  If it does then instead of add the segment to the end, this function finds that
 // segment and combines them into a new comprehensive segment.
-void HorizontalMap::add_remap_segment(const GSSegment& seg)
+void HorizontalMap::add_remap_segment(const HorizontalMapSegment& seg)
 {
   // First determine if a segment already exists in this map for the seg_dof.
   gid_type seg_dof = seg.get_dof();
@@ -220,7 +220,7 @@ void HorizontalMap::add_remap_segment(const GSSegment& seg)
     auto seg_match = m_map_segments[match_loc];
     // Combine this segment with the one already found
     int new_length = seg.get_length() + seg_match.get_length();
-    GSSegment new_seg(seg_dof,new_length);
+    HorizontalMapSegment new_seg(seg_dof,new_length);
     auto new_source_dofs = new_seg.get_source_dofs();
     auto new_source_idx  = new_seg.get_source_idx();
     auto new_weights     = new_seg.get_weights();
@@ -466,7 +466,7 @@ void HorizontalMap::apply_remap(const view_3d<const Real>& source_data, const vi
   stop_timer("EAMxx::HorizontalMap::apply_remap_3d");
 }
 /*-----------------------------------------------------------------------------------------------*/
-GSSegment::GSSegment(const gid_type dof_gid, const int length)
+HorizontalMapSegment::HorizontalMapSegment(const gid_type dof_gid, const int length)
   : m_dof    (dof_gid)
   , m_length (length)
 {
@@ -477,7 +477,7 @@ GSSegment::GSSegment(const gid_type dof_gid, const int length)
   m_weights_h    = Kokkos::create_mirror_view(m_weights);
 }
 /*-----------------------------------------------------------------------------------------------*/
-GSSegment::GSSegment(const gid_type dof_gid, const int length,  const view_1d<const gid_type>& source_dofs, const view_1d<const Real>& weights)
+HorizontalMapSegment::HorizontalMapSegment(const gid_type dof_gid, const int length,  const view_1d<const gid_type>& source_dofs, const view_1d<const Real>& weights)
   : m_dof         (dof_gid)
   , m_length      (length)
 {
@@ -490,13 +490,13 @@ GSSegment::GSSegment(const gid_type dof_gid, const int length,  const view_1d<co
   m_weights_h    = Kokkos::create_mirror_view(m_weights);
 }
 /*-----------------------------------------------------------------------------------------------*/
-void GSSegment::sync_to_host()
+void HorizontalMapSegment::sync_to_host()
 {
   Kokkos::deep_copy(m_source_idx_h,m_source_idx);
   Kokkos::deep_copy(m_weights_h,m_weights);
 }
 /*-----------------------------------------------------------------------------------------------*/
-bool GSSegment::check() const
+bool HorizontalMapSegment::check() const
 {
   // Basic check for bounds for arrays
   EKAT_REQUIRE_MSG(m_source_dofs.extent(0)==m_length,"Error remap segment for DOF: " + std::to_string(m_dof) + ", source_dofs view not the correct length");
@@ -517,7 +517,7 @@ bool GSSegment::check() const
   return true;
 }
 /*-----------------------------------------------------------------------------------------------*/
-void GSSegment::print_seg() const
+void HorizontalMapSegment::print_seg() const
 {
     printf("\n--------------------\n");
     printf("Printing information for segment with DOF = %d, DOF_idx for local decomp = %d\n",m_dof,m_dof_idx);

@@ -191,8 +191,8 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min
     }
     Kokkos::deep_copy(source_dofs,source_dofs_h);
     Kokkos::deep_copy(weights,weights_h);
-    // Create a GSSegment for this mapping
-    GSSegment seg(seg_dof,seg_len, source_dofs, weights);
+    // Create a HorizontalMapSegment for this mapping
+    HorizontalMapSegment seg(seg_dof,seg_len, source_dofs, weights);
     remap_from_views.add_remap_segment(seg);
   }
   remap_from_views.set_unique_source_dofs();
@@ -384,7 +384,7 @@ TEST_CASE("horizontal_remap_units", "") {
     IPDF pdf_seg_len(2,100);
     RPDF pdf_seg_wgt(0,1);
     Int len = pdf_seg_len(engine);
-    GSSegment test_segment(0,len);
+    HorizontalMapSegment test_segment(0,len);
     auto seg_weights = test_segment.get_weights();
     ekat::genRandArray(seg_weights,engine,pdf_seg_wgt);
     Real wgt_normalize = 0;
@@ -422,7 +422,7 @@ TEST_CASE("horizontal_remap_units", "") {
     test_map.set_dof_gids(dof_gids,0);
     // Create a remap segment
     Int len = pdf_seg_len(engine);
-    GSSegment test_seg(1,len);
+    HorizontalMapSegment test_seg(1,len);
     auto test_weights = test_seg.get_weights();
     ekat::genRandArray(test_weights,engine,pdf_seg_wgt);
     Real wgt_normalize = 0;
@@ -449,7 +449,7 @@ TEST_CASE("horizontal_remap_units", "") {
     Kokkos::deep_copy(check_wgts,weights_h);
     REQUIRE_THROWS(test_map.check());
     // Create a new segment that has the same DOF as the first segment
-    GSSegment new_seg(1,1);
+    HorizontalMapSegment new_seg(1,1);
     auto new_wgts = new_seg.get_weights();
     weights_h = Kokkos::create_mirror_view(new_wgts);
     weights_h(0)  = wgt_to_add;
@@ -460,7 +460,7 @@ TEST_CASE("horizontal_remap_units", "") {
     REQUIRE(test_map.get_num_of_segments()==1);
     test_map.check();
     // Create a completely new segment for a different DOF and check
-    GSSegment newer_seg(2,1);
+    HorizontalMapSegment newer_seg(2,1);
     auto newer_wgts = newer_seg.get_weights();
     Kokkos::deep_copy(newer_wgts,1.0);
     test_map.add_remap_segment(newer_seg);
@@ -482,7 +482,7 @@ TEST_CASE("horizontal_remap_units", "") {
     for (int iseg=0; iseg<num_of_segs; iseg++) {
       seg_len = pdf_seg_len(engine);
       dof_end = seg_start + seg_len;
-      GSSegment seg(iseg,seg_len);
+      HorizontalMapSegment seg(iseg,seg_len);
       auto source_dofs = seg.get_source_dofs();
       Kokkos::parallel_for("", seg_len, KOKKOS_LAMBDA (const int& ii) {
         source_dofs(ii) = seg_start + ii;

@@ -11,7 +11,7 @@
 namespace scream {
 
 /*===============================================================================================*/
-/*                                        GSSegment
+/*                                        HorizontalMapSegment
  * Lightweight structure to represent a single remapping of source data to a single target column.
  *     Y_target = sum_(n=1)^N ( w_n * Y_source_n )
  * See description of HorizontalMap structure for more details on the mapping.
@@ -21,7 +21,7 @@ namespace scream {
  * --------------------------------------
  *  A.S. Donahue (LLNL): 2022-09-07
  *===============================================================================================*/
-struct GSSegment {
+struct HorizontalMapSegment {
 
   using gid_type = AbstractGrid::gid_type;
   using KT = KokkosTypes<DefaultDevice>;
@@ -33,9 +33,9 @@ struct GSSegment {
   using view_1d_host = typename KT::template view_1d<S>::HostMirror;
   
   // Constructors/Destructor
-  GSSegment() {};
-  GSSegment(const gid_type dof_gid, const int length);
-  GSSegment(const gid_type dof_gid, const int length, const view_1d<const gid_type>& source_dofs, const view_1d<const Real>& weights);
+  HorizontalMapSegment() {};
+  HorizontalMapSegment(const gid_type dof_gid, const int length);
+  HorizontalMapSegment(const gid_type dof_gid, const int length, const view_1d<const gid_type>& source_dofs, const view_1d<const Real>& weights);
 
   // Helper Functions
   bool check() const;      // Check if this segment is valid
@@ -69,7 +69,7 @@ private:
   // Segment ID
   gid_type m_dof;     // The global degree of freedom this segment maps to
   int      m_length;
-}; // GSSegment
+}; // HorizontalMapSegment
 
 /*===============================================================================================*/
 /*                                        HorizontalMap
@@ -124,14 +124,14 @@ public:
   // Builder functions - used to build the HorizontalMap
   void set_dof_gids(const view_1d<const gid_type>& dofs_gids, const gid_type min_dof);
   void set_unique_source_dofs();
-  void add_remap_segment(const GSSegment& seg);
+  void add_remap_segment(const HorizontalMapSegment& seg);
   void set_remap_segments_from_file(const std::string& remap_filename);
 
   // Getter functions
   view_1d<gid_type>      get_unique_source_dofs() const { return m_unique_dofs; }
   int                    get_num_unique_dofs() const { return m_num_unique_dofs; }
   int                    get_num_of_dofs() const { return m_num_dofs; }
-  std::vector<GSSegment> get_map_segments() const { return m_map_segments; }
+  std::vector<HorizontalMapSegment> get_map_segments() const { return m_map_segments; }
   int                    get_num_of_segments() const { return m_num_segments; }
   
 
@@ -148,7 +148,7 @@ private:
   std::string            m_name = "";
   ekat::Comm             m_comm;
   bool                   m_dofs_set = false;
-  std::vector<GSSegment> m_map_segments;
+  std::vector<HorizontalMapSegment> m_map_segments;
   int                    m_num_segments = 0;
 
 }; // struct HorizontalMap
