@@ -1203,7 +1203,7 @@ contains
        ! or other modules that co-exist while FATES is on, we may want to preserve these pft definitions
        ! on non-fates columns.  For now, they are incompatible, and this check is warranted (rgk 04-2017)
 
-       ! avd - this should be independent of FATES because it fails for non-crop config otherwise
+       ! This should be independent of FATES because it fails for non-crop config otherwise
        if(.not. use_fates)then
           if ( trim(adjustl(pftname(i))) /= trim(expected_pftnames(i)) )then
              write(iulog,*)'pftconrd: pftname is NOT what is expected, name = ', &

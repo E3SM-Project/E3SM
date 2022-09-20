@@ -138,6 +138,9 @@ CONTAINS
 
   subroutine atm_init_mct( EClock, cdata_a, x2a_a, a2x_a, NLFilename )
 
+    use phys_control,     only: iac_present
+    use shr_log_mod      , only : errMsg => shr_log_errMsg
+
     !-----------------------------------------------------------------------
     !
     ! Arguments
@@ -311,8 +314,16 @@ CONTAINS
             single_column=single_column, scmlat=scmlat, scmlon=scmlon,                &
             scm_multcols=scm_multcols,                                                &
             orb_eccen=eccen, orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr, &
-            lnd_present=lnd_present, ocn_present=ocn_present,                         &
+            lnd_present=lnd_present, ocn_present=ocn_present, iac_present=iac_present, & 
             perpetual=perpetual_run, perpetual_ymd=perpetual_ymd)
+
+       ! Don't read in co2 data if iac is present
+       ! Currently, iac is always prognostic if it is present - may need to
+       ! check this if this changes
+       if (iac_present .and. co2_readFlux_fuel) then
+          call endrun('co2_readFlux_fuel should be false as it is not supported if EHC component is present'//errMsg(__FILE__, __LINE__))
+       end if
+
        !
        ! Get nsrest from startup type methods
        !
@@ -649,7 +660,7 @@ CONTAINS
 
     call t_startf ('CAM_import')
 ! move moab import after regular atm import, so it would be in charge
-    call atm_import( x2a_a%rattr, cam_in )
+    call atm_import( x2a_a%rattr, cam_in)
 #ifdef HAVE_MOAB
 
 #ifdef MOABCOMP
