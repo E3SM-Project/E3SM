@@ -1,21 +1,4 @@
 #include "share/field/field_manager.hpp"
-// #include "share/grid/grids_manager.hpp"
-// #include "share/field/field_group.hpp"
-// #include "share/field/field_request.hpp"
-// #include "share/util/scream_utils.hpp"
-// #include "share/scream_types.hpp"
-
-// #include "ekat/ekat_assert.hpp"
-// #include "ekat/util/ekat_string_utils.hpp"
-// #include "ekat/std_meta/ekat_std_utils.hpp"
-// #include "ekat/util/ekat_units.hpp"
-
-// #include <algorithm>
-// #include <initializer_list>
-// #include <map>
-// #include <memory>
-// #include <set>
-// #include <string>
 
 namespace scream
 {
@@ -68,7 +51,6 @@ void FieldManager::register_field (const FieldRequest& req)
         "         - input id:  " + id.get_id_string() + "\n"
         "         - stored id: " + id0.get_id_string() + "\n"
         "       Please, check and make sure all atmosphere processes use the same layout for a given field.\n");
-
   }
 
   if (req.subview_info.dim_idx>=0) {
@@ -589,8 +571,11 @@ void FieldManager::registration_ends ()
         const auto idx = std::distance(cluster_ordered_fields.begin(),pos);
 
         const auto& f = m_fields.at(fn);
-        const auto& fh = f->get_header();
-        auto fi = C->subfield(fn,fh.get_identifier().get_units(),idim,idx);
+        const auto& fid = f->get_header().get_identifier();
+        EKAT_REQUIRE_MSG (fid.get_units()!=ekat::units::Units::invalid(),
+            "Error! A field was registered without providing valid units.\n"
+            "  - field id: " + fid.get_id_string() + "\n");
+        auto fi = C->subfield(fn,fid.get_units(),idim,idx);
 
         // Overwrite existing field with subfield
         *f = fi;

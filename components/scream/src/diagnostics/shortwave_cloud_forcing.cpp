@@ -41,18 +41,8 @@ void ShortwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const Grid
   m_diagnostic_output.allocate_view();
 }
 // =========================================================================================
-void ShortwaveCloudForcingDiagnostic::initialize_impl(const RunType /* run_type */)
-{
-
-  auto ts = timestamp(); 
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-
-}
-// =========================================================================================
 void ShortwaveCloudForcingDiagnostic::compute_diagnostic_impl()
 {
-
-  const auto npacks         = ekat::npack<Pack>(m_num_levs);
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols,1);
 
   const auto& SWCF              = m_diagnostic_output.get_view<Real*>();
@@ -69,6 +59,8 @@ void ShortwaveCloudForcingDiagnostic::compute_diagnostic_impl()
   });
   Kokkos::fence();
 
+  const auto ts = get_field_in("SW_flux_dn").get_header().get_tracking().get_time_stamp();
+  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 } //namespace scream
