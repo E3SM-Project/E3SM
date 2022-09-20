@@ -589,7 +589,7 @@ end subroutine shr_scam_getCloseLatLonFile
 
 subroutine shr_scam_checkSurface(scmlon, scmlat, scm_multcols, scm_nx, scm_ny, &
      ocn_compid, ocn_mpicom, lnd_present, sno_present, ocn_present, ice_present, &
-     rof_present, flood_present, rofice_present)
+     rof_present, flood_present, rofice_present , iac_present)
 
 ! !USES:
    use shr_dmodel_mod    ! shr data model stuff

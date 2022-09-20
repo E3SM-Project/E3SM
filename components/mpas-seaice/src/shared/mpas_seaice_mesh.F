@@ -24,7 +24,8 @@ module seaice_mesh
 
   public :: &
        seaice_init_mesh, &
-       seaice_cell_vertices_at_vertex, &
+       seaice_wrapped_index, &
+       seaice_calc_local_coords, &
        seaice_normal_vectors, &
        seaice_normal_vectors_polygon, &
        seaice_dot_product_3space, &
@@ -614,12 +615,12 @@ contains
   end subroutine interior_edges
 
 !-----------------------------------------------------------------------
-! mesh searches
+! misc
 !-----------------------------------------------------------------------
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  seaice_cell_vertices_at_vertex
+!  seaice_wrapped_index
 !
 !> \brief
 !> \author Adrian K. Turner, LANL
@@ -629,60 +630,266 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_cell_vertices_at_vertex(&
-       cellVerticesAtVertex, &
-       nVertices, &
-       vertexDegree, &
-       nEdgesOnCell, &
-       verticesOnCell, &
-       cellsOnVertex)!{{{
-
-    integer, dimension(:,:), intent(out) :: &
-         cellVerticesAtVertex !< Output:
+  function seaice_wrapped_index(&
+       input, &
+       nelements) &
+       result(output)!{{{
 
     integer, intent(in) :: &
-         nVertices, & !< Input:
-         vertexDegree !< Input:
+         input, &  !< Input:
+         nelements !< Input:
+
+    integer :: output
+
+    output = modulo(input - 1, nelements) + 1
+
+  end function seaice_wrapped_index!}}}
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_calc_local_coords
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 22 October 2014
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_calc_local_coords(&
+       xLocal, &
+       yLocal, &
+       nCells, &
+       nEdgesOnCell, &
+       verticesOnCell, &
+       xVertex, &
+       yVertex, &
+       zVertex, &
+       xCell, &
+       yCell, &
+       zCell, &
+       rotateCartesianGrid, &
+       onASphere)!{{{
+
+    real(kind=RKIND), dimension(:,:), intent(out) :: &
+         xLocal, & !< Output:
+         yLocal    !< Output:
+
+    integer, intent(in) :: &
+         nCells !< Input:
 
     integer, dimension(:), intent(in) :: &
          nEdgesOnCell !< Input:
 
     integer, dimension(:,:), intent(in) :: &
-         cellsOnVertex, & !< Input:
-         verticesOnCell   !< Input:
+         verticesOnCell !< Input:
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         xVertex, & !< Input:
+         yVertex, & !< Input:
+         zVertex, & !< Input:
+         xCell, &   !< Input:
+         yCell, &   !< Input:
+         zCell      !< Input:
+
+    logical, intent(in) :: &
+         rotateCartesianGrid, & !< Input:
+         onASphere              !< Input:
+
+    if (onASphere) then
+       call calc_local_coords_spherical(&
+            xLocal, &
+            yLocal, &
+            nCells, &
+            nEdgesOnCell, &
+            verticesOnCell, &
+            xVertex, &
+            yVertex, &
+            zVertex, &
+            xCell, &
+            yCell, &
+            zCell, &
+            rotateCartesianGrid)
+    else
+       call calc_local_coords_planar(&
+            xLocal, &
+            yLocal, &
+            nCells, &
+            nEdgesOnCell, &
+            verticesOnCell, &
+            xVertex, &
+            yVertex, &
+            zVertex, &
+            xCell, &
+            yCell, &
+            zCell)
+    endif
+
+  end subroutine seaice_calc_local_coords!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  calc_local_coords_planar
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine calc_local_coords_planar(&
+       xLocal, &
+       yLocal, &
+       nCells, &
+       nEdgesOnCell, &
+       verticesOnCell, &
+       xVertex, &
+       yVertex, &
+       zVertex, &
+       xCell, &
+       yCell, &
+       zCell)!{{{
+
+    real(kind=RKIND), dimension(:,:), intent(out) :: &
+         xLocal, & !< Output:
+         yLocal    !< Output:
+
+    integer, intent(in) :: &
+         nCells !< Input:
+
+    integer, dimension(:), intent(in) :: &
+         nEdgesOnCell !< Input:
+
+    integer, dimension(:,:), intent(in) :: &
+         verticesOnCell !< Input:
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         xVertex, & !< Input:
+         yVertex, & !< Input:
+         zVertex, & !< Input:
+         xCell, &   !< Input:
+         yCell, &   !< Input:
+         zCell      !< Input:
 
     integer :: &
-         iVertex, &
-         iVertexDegree, &
          iCell, &
-         iVertexOnCell, &
-         jVertex
+         iVertex, &
+         iVertexOnCell
 
-    do iVertex = 1, nVertices
+    do iCell = 1, nCells
 
-       do iVertexDegree = 1, vertexDegree
+       do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
-          cellVerticesAtVertex(iVertexDegree,iVertex) = 0
+          iVertex = verticesOnCell(iVertexOnCell, iCell)
 
-          iCell = cellsOnVertex(iVertexDegree, iVertex)
+          xLocal(iVertexOnCell,iCell) = xVertex(iVertex) - xCell(iCell)
+          yLocal(iVertexOnCell,iCell) = yVertex(iVertex) - yCell(iCell)
 
-          do iVertexOnCell = 1, nEdgesOnCell(iCell)
+       enddo ! iVertexOnCell
 
-             jVertex = verticesOnCell(iVertexOnCell,iCell)
+    enddo ! iCell
 
-             if (iVertex == jVertex) then
+  end subroutine calc_local_coords_planar!}}}
 
-                cellVerticesAtVertex(iVertexDegree,iVertex) = iVertexOnCell
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  calc_local_coords_spherical
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 22 October 2014
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
 
-             endif
+  subroutine calc_local_coords_spherical(&
+       xLocal, &
+       yLocal, &
+       nCells, &
+       nEdgesOnCell, &
+       verticesOnCell, &
+       xVertex, &
+       yVertex, &
+       zVertex, &
+       xCell, &
+       yCell, &
+       zCell, &
+       rotateCartesianGrid)!{{{
 
-          enddo ! iVertexOnCell
+    real(kind=RKIND), dimension(:,:), intent(out) :: &
+         xLocal, & !< Output:
+         yLocal    !< Output:
 
-       enddo ! iVertexDegree
+    integer, intent(in) :: &
+         nCells !< Input:
 
-    enddo ! iVertex
+    integer, dimension(:), intent(in) :: &
+         nEdgesOnCell !< Input:
 
-  end subroutine seaice_cell_vertices_at_vertex!}}}
+    integer, dimension(:,:), intent(in) :: &
+         verticesOnCell !< Input:
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         xVertex, & !< Input:
+         yVertex, & !< Input:
+         zVertex, & !< Input:
+         xCell, &   !< Input:
+         yCell, &   !< Input:
+         zCell      !< Input:
+
+    logical, intent(in) :: &
+         rotateCartesianGrid !< Input:
+
+    real(kind=RKIND), dimension(3) :: &
+         normalVector3D
+
+    real(kind=RKIND), dimension(2) :: &
+         normalVector2D
+
+    integer :: &
+         iCell, &
+         iVertex, &
+         iVertexOnCell
+
+    real(kind=RKIND) :: &
+         xCellRotated, &
+         yCellRotated, &
+         zCellRotated
+
+    do iCell = 1, nCells
+
+       call seaice_grid_rotation_forward(&
+            xCellRotated, yCellRotated, zCellRotated, &
+            xCell(iCell), yCell(iCell), zCell(iCell), &
+            rotateCartesianGrid)
+
+       do iVertexOnCell = 1, nEdgesOnCell(iCell)
+
+          iVertex = verticesOnCell(iVertexOnCell, iCell)
+
+          call seaice_grid_rotation_forward(&
+               normalVector3D(1), normalVector3D(2), normalVector3D(3), &
+               xVertex(iVertex),  yVertex(iVertex),  zVertex(iVertex), &
+               rotateCartesianGrid)
+
+          call seaice_project_3D_vector_onto_local_2D(&
+               normalVector2D, &
+               normalVector3D, &
+               xCellRotated, &
+               yCellRotated, &
+               zCellRotated)
+
+          xLocal(iVertexOnCell,iCell) = normalVector2D(1)
+          yLocal(iVertexOnCell,iCell) = normalVector2D(2)
+
+       enddo ! iVertexOnCell
+
+    enddo ! iCell
+
+  end subroutine calc_local_coords_spherical!}}}
 
 !-----------------------------------------------------------------------
 ! normal vectors

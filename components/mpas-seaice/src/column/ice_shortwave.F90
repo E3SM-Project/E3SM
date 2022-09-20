@@ -4777,12 +4777,12 @@
                   nr = ceiling(rsnw(ksnow)) - 30 + 1
                   delr = (rsnw(ksnow) - floor(rsnw(ksnow))) / &
                          (ceiling(rsnw(ksnow)) - floor(rsnw(ksnow)))
-                  ks = ext_cff_mss_ice_drc(ns,nr-1)*(delr) + &
-                       ext_cff_mss_ice_drc(ns,nr)*(c1-delr)
-                  ws = ss_alb_ice_drc(ns,nr-1)*(delr) + &
-                       ss_alb_ice_drc(ns,nr)*(c1-delr)
-                  gs = asm_prm_ice_drc(ns,nr-1)*(delr) + &
-                       asm_prm_ice_drc(ns,nr)*(c1-delr)
+                  ks = ext_cff_mss_ice_drc(ns,nr-1)*(c1-delr) + &
+                       ext_cff_mss_ice_drc(ns,nr)*delr
+                  ws = ss_alb_ice_drc(ns,nr-1)*(c1-delr) + &
+                       ss_alb_ice_drc(ns,nr)* delr
+                  gs = asm_prm_ice_drc(ns,nr-1)*(c1-delr) + &
+                       asm_prm_ice_drc(ns,nr)*delr
               endif
               ! ks = Qs*((rhosnw(ksnow)/rhoi)*3._dbl_kind / &
               !      (4._dbl_kind*rsnw(ksnow)*1.0e-6_dbl_kind))

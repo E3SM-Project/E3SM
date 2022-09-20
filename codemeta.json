@@ -7,11 +7,11 @@
       "name": "E3SM Project",
     }
   ],
-  "identifier": "http://dx.doi.org/10.11578/E3SM/dc.20180418.36",
+  "identifier": "http://dx.doi.org/10.11578/E3SM/dc.20230110.5",
   "codeRepository": "https://github.com/E3SM-Project/E3SM",
-  "datePublished": "2018-04-20",
+  "datePublished": "2023-01-11",
   "keywords": "climate modeling",
   "license": "BSD",
   "title": "Energy Exascale Earth System Model",
-  "version": "v1.0.0"
+  "version": "v2.1.0"
 }

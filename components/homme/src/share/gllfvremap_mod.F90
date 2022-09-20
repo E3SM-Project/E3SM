@@ -2798,7 +2798,7 @@ contains
           call ref2sphere(corners, refin(1), refin(2), sphere)
           call sphere2ref(corners, sphere, refout(1), refout(2))
           err = abs(refin(1) - refout(1)) + abs(refin(2) - refout(2))
-          if (err > 10*eps .or. &
+          if (err > 15*eps .or. &
                maxval(abs(refout)) > 1 + 5*eps .or. &
                any(refout /= refout)) then
              write(iulog,*) refin(1), refin(2)

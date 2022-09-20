@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -627,7 +627,6 @@ contains
 
         ! MPI variables
         integer :: curProc
-        integer, dimension(:), pointer :: indexToCellID
         integer :: iProc, l, ilm, nProcs
 
         ! Alarm variables

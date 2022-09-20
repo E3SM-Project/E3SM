@@ -562,6 +562,22 @@
 			description="If true initialize variables that will fail the testing system tests."
 			possible_values="true or false"
 		/>
+		<nml_option name="config_use_congelation_basal_melt" type="logical" default_value="true" units="unitless"
+			description="If true congelation and basal melt processes are active."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_use_lateral_melt" type="logical" default_value="true" units="unitless"
+			description="If true lateral melt process is active."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_use_latent_processes" type="logical" default_value="true" units="unitless"
+			description="If true latent heat processes are active."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_limit_air_temperatures" type="logical" default_value="true" units="unitless"
+			description="If true limit air temperatures above"
+			possible_values="true or false"
+		/>
 	</nml_record>
 	<nml_record name="velocity_solver" in_defaults="true">
 		<nml_option name="config_dynamics_subcycle_number" type="integer" default_value="1" units="unitless"
@@ -976,7 +992,7 @@
 			icepack_name="fr_resp"
 		/>
 		<nml_option name="config_rapid_mobile_to_stationary_time" type="real" default_value="3600.0" units="seconds"
-			description="Rapid adsorption timescale  "
+			description="Rapid adsorption timescale"
 			possible_values="zero or positive real number"
 			icepack_name="tau_min"
 		/>
@@ -987,7 +1003,7 @@
 		/>
 		<nml_option name="config_algal_maximum_velocity" type="real" default_value="0.0000001" units="m/s"
 			description="Maximum speed at which diatoms can move"
-			possible_values="zero or positive real number "
+			possible_values="zero or positive real number"
 			icepack_name="algal_vel"
 		/>
 		<nml_option name="config_ratio_Fe_to_dust" type="real" default_value="0.035" units="mg iron/g dust"
@@ -1271,7 +1287,7 @@
 			icepack_name="fr_mort2min"
 		/>
 		<nml_option name="config_fraction_iron_remineralized" type="real" default_value="1.0" units="unitless"
-			description="Fraction of remineralized iron "
+			description="Fraction of remineralized iron"
 			possible_values="zero or positive real less than or equal to 1"
 			icepack_name="fr_dFe"
 		/>
@@ -1753,6 +1769,10 @@
 			possible_values="true or false"
 			icepack_name="oceanmixed_ice"
 		/>
+		<nml_option name="config_ocean_mixed_layer_type" type="character" default_value="cice" units="unitless"
+			description="Type of mixed layer slab ocean model to use"
+			possible_values="'cice', or 'e3sm'"
+		/>
 		<nml_option name="config_min_friction_velocity" type="real" default_value="0.0005" units=""
 			description="Minimum friction velocity for ice-ocean heat flux."
 			possible_values=""
@@ -2092,6 +2112,28 @@
 				immutable="true">
 			<var name="uOceanVelocity"/>
 			<var name="vOceanVelocity"/>
+		</stream>
+		<stream name="SOMVaryingThicknessInitForcing"
+				type="input"
+				filename_template="forcing/ocean_forcing_monthly.nc"
+				filename_interval="none"
+				input_interval="none"
+				immutable="true">
+		        <var name="seaSurfaceTemperature"/>
+                        <var name="seaSurfaceSalinity"/>
+                        <var name="oceanMixedLayerDepth"/>
+		</stream>
+		<stream name="SOMVaryingThicknessMonthlyForcing"
+				type="input"
+				filename_template="forcing/ocean_forcing_monthly.nc"
+				filename_interval="none"
+				input_interval="none"
+				immutable="true">
+			<var name="uOceanVelocity"/>
+			<var name="vOceanVelocity"/>
+			<var name="seaSurfaceTiltU"/>
+			<var name="seaSurfaceTiltV"/>
+			<var name="oceanHeatFluxConvergence"/>
 		</stream>
 		<stream name="dataIcebergForcing"
 				type="input"

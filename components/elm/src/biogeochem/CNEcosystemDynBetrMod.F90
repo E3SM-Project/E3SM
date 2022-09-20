@@ -9,7 +9,7 @@ module CNEcosystemDynBetrMod
   ! be enabled gradually.
   use shr_kind_mod              , only : r8 => shr_kind_r8
   use shr_sys_mod               , only : shr_sys_flush
-  use elm_varctl                , only : use_c13, use_c14, use_fates, use_dynroot
+  use elm_varctl                , only : use_c13, use_c14, use_fates, use_dynroot, iac_active
   use decompMod                 , only : bounds_type
   use perf_mod                  , only : t_startf, t_stopf
   use spmdMod                   , only : masterproc
@@ -395,7 +395,7 @@ module CNEcosystemDynBetrMod
        call PhosphorusStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             dt)
 
-       if (get_do_harvest()) then
+       if (get_do_harvest() .or. iac_active) then
           call CNHarvest(num_soilc, filter_soilc, num_soilp, filter_soilp, &
                cnstate_vars)
        end if

@@ -475,7 +475,12 @@ contains
        efi = mod((eri-1),num_inst_frc) + 1
 
        x2r_rx => component_get_x2c_cx(rof(eri))  ! This is actually modifying x2r_rx
-       call prep_rof_merge(l2r_rx(eri), a2r_rx(eri), o2r_rx(eri), fractions_rx(efi), x2r_rx, cime_model)
+       if(ocn_rof_two_way) then 
+         call prep_rof_merge(l2r_rx(eri), a2r_rx(eri), fractions_rx(efi), x2r_rx, cime_model, o2x_r=o2r_rx(eri))
+       else
+         call prep_rof_merge(l2r_rx(eri), a2r_rx(eri), fractions_rx(efi), x2r_rx, cime_model)
+       end if
+
     end do
     call t_drvstopf (trim(timer_mrg))
 
@@ -483,7 +488,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_rof_merge(l2x_r, a2x_r, o2x_r, fractions_r, x2r_r, cime_model)
+  subroutine prep_rof_merge(l2x_r, a2x_r, fractions_r, x2r_r, cime_model,o2x_r)
 
     !-----------------------------------------------------------------------
     ! Description
@@ -492,10 +497,10 @@ contains
     ! Arguments
     type(mct_aVect),intent(in)    :: l2x_r
     type(mct_aVect),intent(in)    :: a2x_r
-    type(mct_aVect),intent(in)    :: o2x_r
     type(mct_aVect),intent(in)    :: fractions_r
     type(mct_aVect),intent(inout) :: x2r_r
     character(len=*)        , intent(in)    :: cime_model
+    type(mct_aVect),intent(in),optional  :: o2x_r
     !
     ! Local variables
     integer       :: i

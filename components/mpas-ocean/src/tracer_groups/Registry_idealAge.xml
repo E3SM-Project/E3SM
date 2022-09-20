@@ -41,7 +41,7 @@
 
 	<var_struct name="state" time_levs="2">
 		<var_struct name="tracers" time_levs="2">
-			<var_array name="idealAgeTracers" dimensions="nVertLevels nCells Time" type="real" packages="idealAgeTracersPKG"  default_value="0.0">
+			<var_array name="idealAgeTracers" dimensions="nVertLevels nCells Time" type="real" packages="idealAgeTracersPKG"  default_value="0.0" missing_value="FILLVAL" missing_value_mask="cellMask">
 				<var name="iAge" array_group="iAgeGRP" units="seconds" description="tracer for ideal age"
 				/>
 			</var_array>
@@ -50,7 +50,7 @@
 
 	<var_struct name="tend" time_levs="1">
 		<var_struct name="tracersTend" time_levs="1">
-			<var_array name="idealAgeTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="idealAgeTracersPKG">
+			<var_array name="idealAgeTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="idealAgeTracersPKG" missing_value="FILLVAL" missing_value_mask="cellMask">
 				<var name="iAgeTend" array_group="iAgeGRP" units="seconds/second" description="Tendency for iAge"
 				/>
 			</var_array>

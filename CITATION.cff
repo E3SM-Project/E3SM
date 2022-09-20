@@ -1,0 +1,15 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Energy Exascale Earth System Model
+message: '  If you use this software, please cite it using the metadata from this file.'
+type: software
+authors:
+  - given-names: E3SM
+    family-names: Project
+version: 2.1.0
+doi: 10.11578/E3SM/dc.20230110.5
+repository-code: 'https://github.com/E3SM-Project/E3SM'
+url: 'https://e3sm.org'
+license: BSD-3-Clause

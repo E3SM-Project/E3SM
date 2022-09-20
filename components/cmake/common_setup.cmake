@@ -18,8 +18,10 @@ endif()
 # Determine whether any C++ code will be included in the build;
 # currently, C++ code is included if and only if we're linking to the
 # trilinos library or the Albany library.
+# C++ is also needed when the EHC is active
 set(USE_CXX FALSE)
-if (USE_TRILINOS OR USE_ALBANY OR USE_KOKKOS)
+
+if (USE_TRILINOS OR USE_ALBANY OR USE_KOKKOS OR USE_EHC)
   set(USE_CXX TRUE)
 endif()
 

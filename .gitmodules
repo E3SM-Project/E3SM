@@ -8,6 +8,9 @@
 [submodule "sbetr"]
 	path = components/elm/src/external_models/sbetr
 	url = git@github.com:BeTR-biogeochemistry-modeling/sbetr.git
+[submodule "components/mpas-source"]
+	path = components/mpas-source
+	url = git@github.com:MPAS-Dev/MPAS-Model.git
 [submodule "externals/kokkos"]
 	path = externals/kokkos
 	url = git@github.com:E3SM-Project/kokkos.git
@@ -32,6 +35,7 @@
 	path = cime
 	url = git@github.com:ESMCI/cime.git
 	branch = master
+        ignore = dirty
 [submodule "externals/YAKL"]
 	path = externals/YAKL
 	url = git@github.com:mrnorman/YAKL.git
@@ -61,6 +65,7 @@
 [submodule "components/mpas-ocean/src/FFTW"]
 	path = components/mpas-ocean/src/FFTW
 	url = https://github.com/knbarton/fftw-3.3.8.git
-[submodule "components/mpas-ocean/src/ppr"]
-	path = components/mpas-ocean/src/ppr
-	url = https://github.com/dengwirda/PPR.git
+[submodule "gcam"]
+	path = components/gcam/src
+	url = git@github.com:E3SM-Project/giac
+	branch = working

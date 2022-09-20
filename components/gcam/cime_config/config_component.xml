@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+
+<definitions_variables>
+
+  <entry id="COMP_IAC">
+     <type>char</type>
+     <valid_values>gcam</valid_values>
+     <default_value>gcam</default_value>
+     <group>case_comp</group>
+     <file>env_case.xml</file>
+     <desc>Name of integrated assessment component</desc>
+  </entry>
+
+   <entry id="USE_EHC">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>TRUE</default_value>
+    <group>build_component_gcam</group>
+    <file>env_build.xml</file>
+    <desc>TRUE sets USE_CXX to TRUE to enable CXX library compiling for GCAM</desc>
+  </entry>
+
+  <description>
+    <desc compset="_GCAM">GCAM active</desc>
+  </description>
+
+  <help>
+    =========================================
+    IAC naming conventions
+    =========================================
+  </help>
+
+</definitions_variables>

@@ -401,8 +401,8 @@ template class cedr::caas::CAAS<Kokkos::Serial>;
 #ifdef KOKKOS_ENABLE_OPENMP
 template class cedr::caas::CAAS<Kokkos::OpenMP>;
 #endif
-#ifdef KOKKOS_ENABLE_CUDA
-template class cedr::caas::CAAS<Kokkos::Cuda>;
+#ifdef CEDR_ENABLE_GPU
+template class cedr::caas::CAAS<CedrGpuExeSpace>;
 #endif
 #ifdef KOKKOS_ENABLE_THREADS
 template class cedr::caas::CAAS<Kokkos::Threads>;

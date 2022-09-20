@@ -89,7 +89,7 @@
 
 	<var_struct name="state" time_levs="2">
 		<var_struct name="tracers" time_levs="2">
-			<var_array name="ecosysTracers" dimensions="nVertLevels nCells Time" type="real" packages="ecosysTracersPKG" >
+			<var_array name="ecosysTracers" dimensions="nVertLevels nCells Time" type="real" packages="ecosysTracersPKG" missing_value="FILLVAL" missing_value_mask="cellMask">
 				<!-- Add constituents of tracer group -->
 				<var name="PO4" array_group="ecosysGRP" units="mmol P m^{-3}"
 					description="Dissolved Inorganic Phosphate"
@@ -193,7 +193,7 @@
 
 	<var_struct name="tend" time_levs="1">
 		<var_struct name="tracersTend" time_levs="1">
-			<var_array name="ecosysTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="ecosysTracersPKG">
+			<var_array name="ecosysTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="ecosysTracersPKG" missing_value="FILLVAL" missing_value_mask="cellMask">
 				<!-- Add constituents of tracer group -->
 				<var name="PO4Tend" array_group="ecosysGRP" units="mmol P m^{-3} s^{-1}"
 					description="Dissolved Inorganic Phosphate Tendency"

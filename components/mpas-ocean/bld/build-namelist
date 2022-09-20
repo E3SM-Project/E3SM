@@ -61,6 +61,7 @@ OPTIONS
                            (Needed to run build-namelist from SourceMods dir)
      -inst_string          inst_string variable
      -ocn_bgc              ocean BGC configuration
+     -ocn_wave             ocean wave coupling flag
      -ocn_co2_type         how atm co2 is set within MPASO
      -atm_co2_const_val    value of atm co2 if ocn_co2_type = constant
      -ice_bgc              check for coupling with sea ice BGC
@@ -111,6 +112,7 @@ my %opts = ( help          => 0,
              decomp_prefix => undef,
              date_stamp    => undef,
              ocn_bgc       => undef,
+             ocn_wave      => undef,
              ocn_co2_type      => undef,
              atm_co2_const_val => undef,
              ice_bgc       => undef,
@@ -135,6 +137,7 @@ GetOptions(
     "decomp_prefix=s" => \$opts{'decomp_prefix'},
     "date_stamp=s"    => \$opts{'date_stamp'},
     "ocn_bgc=s"       => \$opts{'ocn_bgc'},
+    "ocn_wave=s"      => \$opts{'ocn_wave'},
     "ocn_co2_type=s"      => \$opts{'ocn_co2_type'},
     "atm_co2_const_val=s" => \$opts{'atm_co2_const_val'},
     "ice_bgc=s"       => \$opts{'ice_bgc'},
@@ -176,6 +179,7 @@ my $OCN_ISMF      = $opts{'ocn_ismf'};
 my $decomp_prefix = $opts{'decomp_prefix'};
 my $date_stamp    = $opts{'date_stamp'};
 my $ocn_bgc       = $opts{'ocn_bgc'};
+my $ocn_wave      = $opts{'ocn_wave'};
 my $ocn_co2_type      = $opts{'ocn_co2_type'};
 my $atm_co2_const_val = $opts{'atm_co2_const_val'};
 my $ice_bgc       = $opts{'ice_bgc'};
@@ -656,9 +660,27 @@ add_default($nl, 'configure_cvmix_kpp_minimum_OBL_under_sea_ice');
 add_default($nl, 'config_cvmix_kpp_stop_OBL_search');
 add_default($nl, 'config_cvmix_kpp_use_enhanced_diff');
 add_default($nl, 'config_cvmix_kpp_nonlocal_with_implicit_mix');
-add_default($nl, 'config_cvmix_kpp_use_theory_wave');
-add_default($nl, 'config_cvmix_kpp_langmuir_mixing_opt');
-add_default($nl, 'config_cvmix_kpp_langmuir_entrainment_opt');
+if ($ocn_wave eq 'true' ) {
+	add_default($nl, 'config_cvmix_kpp_use_theory_wave', 'val'=>'.false.');
+	add_default($nl, 'config_cvmix_kpp_use_active_wave', 'val'=>'.true.');
+	add_default($nl, 'config_cvmix_kpp_langmuir_mixing_opt', 'val'=>'LWF16');
+	add_default($nl, 'config_cvmix_kpp_langmuir_entrainment_opt', 'val'=>'LWF16');
+} else {
+	add_default($nl, 'config_cvmix_kpp_use_theory_wave');
+	add_default($nl, 'config_cvmix_kpp_langmuir_mixing_opt');
+	add_default($nl, 'config_cvmix_kpp_langmuir_entrainment_opt');
+}
+
+#################################
+# Namelist group: wave coupling #
+#################################
+
+if ($ocn_wave eq 'true' ) {
+	add_default($nl, 'config_use_active_wave', 'val'=>'.true.');
+} else {
+	add_default($nl, 'config_use_active_wave', 'val'=>'.false.');
+}
+add_default($nl, 'config_n_stokes_drift_wavenumber_partitions');
 
 ########################
 # Namelist group: gotm #
@@ -1702,6 +1724,7 @@ my @groups = qw(run_modes
                 eddy_parameterization
                 rayleigh_damping
                 cvmix
+                wave_coupling
                 gotm
                 forcing
                 coupling
@@ -2130,34 +2153,31 @@ sub valid_date {
 # $$month by 1 (also incrementing $$year if going from Dec to Jan) and
 # then return 0.
 
-  use Switch;
-
   my $day = shift;
   my $month = shift;
   my $year = shift;
   my $cal = shift;
 
   my $maxday = -1;
-  switch ($$month) {
-    case 1 { $maxday = 31; }
-    case 2 {
-      if (($cal eq 'NO_LEAP') || (not leap($$year))) {
-        $maxday = 28;
-      } else {
-        $maxday = 29;
-      }
-    }
-    case 3 { $maxday = 31; }
-    case 4 { $maxday = 30; }
-    case 5 { $maxday = 31; }
-    case 6 { $maxday = 30; }
-    case 7 { $maxday = 31; }
-    case 8 { $maxday = 31; }
-    case 9 { $maxday = 30; }
-    case 10 { $maxday = 31; }
-    case 11 { $maxday = 30; }
-    case 12 { $maxday = 31; }
-  }
+  if ($$month == 1) { $maxday = 31; }
+  if ($$month == 2) {
+       if (($cal eq 'NO_LEAP') || (not leap($$year))) {
+         $maxday = 28;
+       } else {
+         $maxday = 29;
+       }
+     }
+  if ($$month == 3) { $maxday = 31; }
+  if ($$month == 4) { $maxday = 30; }
+  if ($$month == 5) { $maxday = 31; }
+  if ($$month == 6) { $maxday = 30; }
+  if ($$month == 7) { $maxday = 31; }
+  if ($$month == 8) { $maxday = 31; }
+  if ($$month == 9) { $maxday = 30; }
+  if ($$month == 10) { $maxday = 31; }
+  if ($$month == 11) { $maxday = 30; }
+  if ($$month == 12) { $maxday = 31; }
+
   if ($maxday == -1) {
     die "ERROR: can not figure out what month $$month is";
   }

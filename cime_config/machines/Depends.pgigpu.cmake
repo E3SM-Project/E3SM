@@ -123,6 +123,7 @@ list(APPEND MPAS_ADD_ACC_FLAGS
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_surface_land_ice_fluxes.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_tendency.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_thick_hadv.f90
+  ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_thick_ale.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_thick_surface_flux.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_thick_vadv.f90
   ${CMAKE_BINARY_DIR}/core_ocean/shared/mpas_ocn_tidal_forcing.f90

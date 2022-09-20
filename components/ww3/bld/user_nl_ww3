@@ -1,0 +1,4 @@
+!------------------------------------------------------------------------
+! the ww3 model doesn't use build-namelist yet.  modify ww3 namelist
+! directly in the ww3.buildnml.csh file.
+!------------------------------------------------------------------------

@@ -167,29 +167,6 @@ pgi-summit:
 	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = -DpgiFortran -D_MPI -DUNDERSCORE" )
 
-pgi-nersc:
-	( $(MAKE) all \
-	"FC_PARALLEL = ftn" \
-	"CC_PARALLEL = cc" \
-	"CXX_PARALLEL = CC" \
-	"FC_SERIAL = ftn" \
-	"CC_SERIAL = cc" \
-	"CXX_SERIAL = CC" \
-	"FFLAGS_FPIEEE = -Kieee" \
-	"FFLAGS_PROMOTION = -r8" \
-	"FFLAGS_OPT = -O3 -byteswapio -Mfree" \
-	"CFLAGS_OPT = -O3" \
-	"CXXFLAGS_OPT = -O3" \
-	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_OMP = -mp" \
-	"CFLAGS_OMP = -mp" \
-	"BUILD_TARGET = $(@)" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
-	"USE_SHTNS = $(USE_SHTNS)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI -DCPRPGI" )
 ifort:
 	( $(MAKE) all \
 	"FC_PARALLEL = mpif90" \
@@ -397,31 +374,7 @@ g95:
 	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
 
-cray-nersc:
-	( $(MAKE) all \
-	"FC_PARALLEL = ftn" \
-	"CC_PARALLEL = cc" \
-	"CXX_PARALLEL = CC" \
-	"FC_SERIAL = ftn" \
-	"CC_SERIAL = cc" \
-	"CXX_SERIAL = CC" \
-	"FFLAGS_FPIEEE = " \
-	"FFLAGS_PROMOTION = -default64" \
-	"FFLAGS_OPT = -O3 -f free" \
-	"CFLAGS_OPT = -O3" \
-	"CXXFLAGS_OPT = -O3" \
-	"LDFLAGS_OPT = -O3" \
-	"FFLAGS_OMP = " \
-	"CFLAGS_OMP = " \
-	"BUILD_TARGET = $(@)" \
-	"CORE = $(CORE)" \
-	"DEBUG = $(DEBUG)" \
-	"USE_PAPI = $(USE_PAPI)" \
-	"OPENMP = $(OPENMP)" \
-	"USE_SHTNS = $(USE_SHTNS)" \
-	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI" )
-
-gnu-nersc:
+gnu-cray:
 	GFORTRAN_GTE_10=$$(expr `ftn -dumpversion | cut -f1 -d.` \>= 10) ;\
 	if [ "$${GFORTRAN_GTE_10}" = "1" ]; then \
 	    EXTRA_FFLAGS="-fallow-argument-mismatch"; \
@@ -456,7 +409,7 @@ gnu-nersc:
 	"USE_SHTNS = $(USE_SHTNS)" \
 	"CPPFLAGS = $(MODEL_FORMULATION) -D_MPI $(FILE_OFFSET) $(ZOLTAN_DEFINE)" )
 
-intel-nersc:
+intel-cray:
 	( $(MAKE) all \
 	"FC_PARALLEL = ftn" \
 	"CC_PARALLEL = cc" \

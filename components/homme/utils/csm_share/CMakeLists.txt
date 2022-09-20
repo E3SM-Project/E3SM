@@ -28,7 +28,7 @@ if (NOT TARGET csm_share)
     add_custom_command (
       OUTPUT ${SRC_FILE_OUT}
       COMMAND ${GENF90} ${SRC_FILE} > ${SRC_FILE_OUT}
-      DEPENDS ${SRC_FILE} genf90)
+      DEPENDS ${SRC_FILE})
     list(APPEND CSM_SHARE_SOURCES ${SRC_FILE_OUT})
   endforeach ()
 

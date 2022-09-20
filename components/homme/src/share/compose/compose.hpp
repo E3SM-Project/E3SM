@@ -11,6 +11,22 @@
 # include <omp.h>
 #endif
 
+#if defined KOKKOS_ENABLE_CUDA || defined KOKKOS_ENABLE_HIP || defined KOKKOS_ENABLE_SYCL
+# define COMPOSE_ENABLE_GPU
+# if defined KOKKOS_ENABLE_CUDA
+typedef Kokkos::Cuda ComposeGpuExeSpace;
+typedef Kokkos::CudaSpace ComposeGpuSpace;
+# endif
+# if defined KOKKOS_ENABLE_HIP
+typedef Kokkos::Experimental::HIP ComposeGpuExeSpace;
+typedef Kokkos::Experimental::HIPSpace ComposeGpuSpace;
+# endif
+# if defined KOKKOS_ENABLE_SYCL
+typedef Kokkos::Experimental::SYCL ComposeGpuExeSpace;
+typedef Kokkos::Experimental::SYCL> ComposeGpuSpace;
+# endif
+#endif
+
 // Options
 
 #ifdef NDEBUG
@@ -42,11 +58,11 @@
 # if defined COMPOSE_HORIZ_OPENMP || defined COMPOSE_COLUMN_OPENMP
 "This should not happen."
 # endif
-# ifndef KOKKOS_ENABLE_CUDA
+# ifndef COMPOSE_ENABLE_GPU
 // Mimic GPU threading on host to debug race conditions on a regular CPU.
 //#  define COMPOSE_MIMIC_GPU
 # endif
-# if defined COMPOSE_MIMIC_GPU || defined KOKKOS_ENABLE_CUDA
+# if defined COMPOSE_MIMIC_GPU || defined COMPOSE_ENABLE_GPU
 // If defined, then certain buffers need explicit mirroring and copying.
 #  define COMPOSE_PORT_SEPARATE_VIEWS
 // If defined, do pass1 routines on host. This is for performance checking.

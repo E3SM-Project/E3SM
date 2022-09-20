@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 
 
@@ -283,6 +283,8 @@ module li_time_integration_fe
 
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocity
       real (kind=RKIND), dimension(:,:), pointer :: layerNormalVelocity
+      real (kind=RKIND), pointer :: calvingCFLdt
+      integer, pointer :: processLimitingTimestep
       integer, dimension(:), pointer :: edgeMask
 
       logical, pointer :: config_print_thickness_advection_info
@@ -503,7 +505,9 @@ module li_time_integration_fe
 
       ! Set adaptive timestep if needed
       if (config_adaptive_timestep) then
-         call set_timestep(allowableAdvecDtAllProcs, allowableDiffDtAllProcs, domain % clock, dtSeconds, err_tmp)
+         call mpas_pool_get_array(geometryPool, 'calvingCFLdt', calvingCFLdt)
+         call mpas_pool_get_array(meshPool, 'processLimitingTimestep', processLimitingTimestep)
+         call set_timestep(allowableAdvecDtAllProcs, allowableDiffDtAllProcs, calvingCFLdt, domain % clock, dtSeconds, processLimitingTimestep, err_tmp)
          err = ior(err,err_tmp)
          ! Set new value on all blocks
          block => domain % blocklist
@@ -831,7 +835,7 @@ module li_time_integration_fe
 !>  This routine sdjusts the time step based on the CFL condition.
 !
 !-----------------------------------------------------------------------
-   subroutine set_timestep(allowableAdvecDt, allowableDiffDt, clock, dtSeconds, err)
+   subroutine set_timestep(allowableAdvecDt, allowableDiffDt, calvingCFLdt, clock, dtSeconds, CFLprocess, err)
       use mpas_timekeeping
 
       !-----------------------------------------------------------------
@@ -839,21 +843,27 @@ module li_time_integration_fe
       !-----------------------------------------------------------------
       real (kind=RKIND), intent(in) :: allowableAdvecDt
       real (kind=RKIND), intent(in) :: allowableDiffDt
+      real (kind=RKIND), intent(in) :: calvingCFLdt
       type (MPAS_Clock_type), intent(in) :: clock
 
       !-----------------------------------------------------------------
       ! output variables
       !-----------------------------------------------------------------
       real (kind=RKIND), intent(out) :: dtSeconds  !< Output: time step in seconds determined by this routine
+      integer, intent(out) :: CFLprocess !< Output: flag for which process limits the CFL: 1=advective, 2=diffusive, 3=calving
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
       logical, pointer :: config_adaptive_timestep_include_DCFL
+      logical, pointer :: config_adaptive_timestep_include_calving
       real (kind=RKIND), pointer :: config_adaptive_timestep_CFL_fraction
+      real (kind=RKIND), pointer :: config_adaptive_timestep_calvingCFL_fraction
       real (kind=RKIND), pointer :: config_max_adaptive_timestep
       real (kind=RKIND), pointer :: config_min_adaptive_timestep
+      character (len=StrKIND), pointer :: config_calving
+      character (len=StrKIND), pointer :: config_damage_calving_method
       type (MPAS_Time_type) :: nextForceTime, currTime
       type (MPAS_TimeInterval_type) :: intervalToNextForceTime
       real (kind=RKIND) :: secondsToNextForceTime
@@ -869,19 +879,63 @@ module li_time_integration_fe
       call mpas_pool_get_config(liConfigs, 'config_max_adaptive_timestep', config_max_adaptive_timestep)
       call mpas_pool_get_config(liConfigs, 'config_min_adaptive_timestep', config_min_adaptive_timestep)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
+      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_calving', config_adaptive_timestep_include_calving)
+      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_calvingCFL_fraction', config_adaptive_timestep_calvingCFL_fraction)
+      call mpas_pool_get_config(liConfigs, 'config_calving', config_calving)
+      call mpas_pool_get_config(liConfigs, 'config_damage_calving_method', config_damage_calving_method)
 
+
+      allowableDt = allowableAdvecDt * config_adaptive_timestep_CFL_fraction
+      CFLprocess = 1
       if (config_adaptive_timestep_include_DCFL) then
-         allowableDt = min(allowableAdvecDt, allowableDiffDt)
-      else
-         allowableDt = allowableAdvecDt
+         ! todo: We currently do not have a namelist option for the diffusive CFL fraction
+         ! But that's ok - we rarely use it.  Could be added later if needed.
+         if (allowableDiffDt < allowableDt) then
+            allowableDt = allowableDiffDt
+            CFLprocess = 2
+         endif
+      endif
+
+      ! Only include calving CFL if requested and we are using a calving option that calculates it
+      if (config_adaptive_timestep_include_calving .and. ( &
+             trim(config_calving) == 'specified_calving_velocity' .or. &
+             trim(config_calving) == 'eigencalving' .or. &
+             trim(config_calving) == 'von_Mises_stress' .or. &
+             trim(config_calving) == 'ismip6_retreat' .or. &
+             (trim(config_calving) == 'damagecalving' .and. &
+              trim(config_damage_calving_method) == 'calving_rate'))) then
+         if (config_adaptive_timestep_calvingCFL_fraction * calvingCFLDt < allowableDt) then
+            allowableDt = config_adaptive_timestep_calvingCFL_fraction * calvingCFLDt
+            CFLprocess = 3
+         endif
+      endif
+
+      call mpas_log_write("CFL dt adjusted for fractions (days): advective=$r, diffusive=$r, calving=$r", &
+         realArgs=(/allowableAdvecDt*config_adaptive_timestep_CFL_fraction/86400.0_RKIND, &
+                    allowableDiffDt/86400.0_RKIND, &
+                    calvingCFLdt*config_adaptive_timestep_calvingCFL_fraction/86400.0_RKIND/))
+      if (CFLprocess == 1) then
+         call mpas_log_write("Timestep limited by advective CFL condition.")
+      elseif (CFLprocess == 2) then
+         call mpas_log_write("Timestep limited by diffusive CFL condition.")
+      elseif (CFLprocess == 3) then
+         call mpas_log_write("Timestep limited by calving CFL condition.")
       endif
 
       ! Take minimum of the max adaptive timestep setting and the allowable dt from the CFL condition
-      proposedDt = min(allowableDt * config_adaptive_timestep_CFL_fraction, config_max_adaptive_timestep)
+      proposedDt = min(allowableDt, config_max_adaptive_timestep)
+
       ! Round down the proposed dt to avoid complications with fractional seconds
       ! (some timekeeping-related functionality, like restarts, don't support them)
       ! (need to perform floor with an 8-bit integer to allow up 293 billion years in seconds)
       proposedDt = real(floor(proposedDt, KIND=8), RKIND)
+
+      ! Check if the proposed timestep is smaller than specified limit.
+      ! Do this prior to limiting the timestep for the force interval
+      if (proposedDt < config_min_adaptive_timestep) then
+         call mpas_log_write('New deltat is less than config_min_adaptive_timestep.', MPAS_LOG_ERR)
+         err = ior(err, 1)
+      endif
 
       ! Check if we need to force a timestep length to hit the target interval
       currTime = mpas_get_clock_time(clock, MPAS_NOW, err_tmp)
@@ -919,10 +973,6 @@ module li_time_integration_fe
       dtSeconds = min(proposedDt, secondsToNextForceTime)
 
       call mpas_log_write('  Setting time step (days) to: $r', realArgs=(/dtSeconds / (86400.0_RKIND)/))
-      if (dtSeconds < config_min_adaptive_timestep) then
-         call mpas_log_write('New deltat is less than config_min_adaptive_timestep.', MPAS_LOG_ERR)
-         err = ior(err, 1)
-      endif
 
    !--------------------------------------------------------------------
    end subroutine set_timestep

@@ -1,0 +1,6 @@
+string(APPEND FFLAGS " -fp-model consistent -fimf-use-svml")
+string(APPEND CXXFLAGS " -fp-model consistent")
+if (NOT DEBUG)
+  string(APPEND FFLAGS " -qno-opt-dynamic-align")
+endif()
+string(APPEND SLIBS " -mkl -lpthread")

@@ -145,6 +145,8 @@
 <config_Redi_min_layers_diag_terms>6</config_Redi_min_layers_diag_terms>
 <config_Redi_min_layers_diag_terms ocn_grid="ARRM10to60E2r1">15</config_Redi_min_layers_diag_terms>
 <config_Redi_horizontal_taper>'ramp'</config_Redi_horizontal_taper>
+<config_Redi_horizontal_taper ocn_grid="SOwISC12to60E2r4">'RossbyRadius'</config_Redi_horizontal_taper>
+<config_Redi_horizontal_taper ocn_grid="ECwISC30to60E2r1">'RossbyRadius'</config_Redi_horizontal_taper>
 <config_Redi_horizontal_ramp_min>20e3</config_Redi_horizontal_ramp_min>
 <config_Redi_horizontal_ramp_min ocn_grid="WCAtl12to45E2r4">30e3</config_Redi_horizontal_ramp_min>
 <config_Redi_horizontal_ramp_max>30e3</config_Redi_horizontal_ramp_max>
@@ -167,8 +169,8 @@
 <config_GM_closure ocn_grid="EC30to60E2r2">'constant'</config_GM_closure>
 <config_GM_closure ocn_grid="WC14to60E2r3">'constant'</config_GM_closure>
 <config_GM_closure ocn_grid="WCAtl12to45E2r4">'constant'</config_GM_closure>
-<config_GM_closure ocn_grid="SOwISC12to60E2r4">'constant'</config_GM_closure>
-<config_GM_closure ocn_grid="ECwISC30to60E2r1">'constant'</config_GM_closure>
+<config_GM_closure ocn_grid="SOwISC12to60E2r4">'N2_dependent'</config_GM_closure>
+<config_GM_closure ocn_grid="ECwISC30to60E2r1">'N2_dependent'</config_GM_closure>
 <config_GM_constant_kappa>900.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="oEC60to30v3wLI">600.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="ECwISC30to60E1r2">600.0</config_GM_constant_kappa>
@@ -182,6 +184,8 @@
 <config_GM_spatially_variable_min_kappa>300.0</config_GM_spatially_variable_min_kappa>
 <config_GM_spatially_variable_max_kappa>1800.0</config_GM_spatially_variable_max_kappa>
 <config_GM_spatially_variable_baroclinic_mode>3.0</config_GM_spatially_variable_baroclinic_mode>
+<config_GM_spatially_variable_baroclinic_mode ocn_grid="SOwISC12to60E2r4">1.0</config_GM_spatially_variable_baroclinic_mode>
+<config_GM_spatially_variable_baroclinic_mode ocn_grid="ECwISC30to60E2r1">1.0</config_GM_spatially_variable_baroclinic_mode>
 <config_GM_Visbeck_alpha>0.13</config_GM_Visbeck_alpha>
 <config_GM_Visbeck_max_depth>1000.0</config_GM_Visbeck_max_depth>
 <config_GM_EG_riMin>200.0</config_GM_EG_riMin>
@@ -189,6 +193,8 @@
 <config_GM_EG_Rossby_factor>2.0</config_GM_EG_Rossby_factor>
 <config_GM_EG_Rhines_factor>0.3</config_GM_EG_Rhines_factor>
 <config_GM_horizontal_taper>'ramp'</config_GM_horizontal_taper>
+<config_GM_horizontal_taper ocn_grid="SOwISC12to60E2r4">'RossbyRadius'</config_GM_horizontal_taper>
+<config_GM_horizontal_taper ocn_grid="ECwISC30to60E2r1">'RossbyRadius'</config_GM_horizontal_taper>
 <config_GM_horizontal_ramp_min>20e3</config_GM_horizontal_ramp_min>
 <config_GM_horizontal_ramp_min ocn_grid="WCAtl12to45E2r4">30e3</config_GM_horizontal_ramp_min>
 <config_GM_horizontal_ramp_max>30e3</config_GM_horizontal_ramp_max>
@@ -251,8 +257,14 @@
 <config_cvmix_kpp_use_enhanced_diff>.true.</config_cvmix_kpp_use_enhanced_diff>
 <config_cvmix_kpp_nonlocal_with_implicit_mix>.false.</config_cvmix_kpp_nonlocal_with_implicit_mix>
 <config_cvmix_kpp_use_theory_wave>.false.</config_cvmix_kpp_use_theory_wave>
+<config_cvmix_kpp_use_active_wave>.false.</config_cvmix_kpp_use_active_wave>
 <config_cvmix_kpp_langmuir_mixing_opt>'NONE'</config_cvmix_kpp_langmuir_mixing_opt>
 <config_cvmix_kpp_langmuir_entrainment_opt>'NONE'</config_cvmix_kpp_langmuir_entrainment_opt>
+
+
+<!-- wave coupling-->
+<config_use_active_wave>.false.</config_use_active_wave>
+<config_n_stokes_drift_wavenumber_partitions>6</config_n_stokes_drift_wavenumber_partitions>
 
 <!-- gotm -->
 <config_use_gotm>.false.</config_use_gotm>

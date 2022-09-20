@@ -13,36 +13,16 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
   
   int nwx = nx2-(filter_wn_max+1)*2;
   int nwy = ny2-(filter_wn_max+1)*2;
-  
-  yakl::RealFFT1D<nx> fftx;
-  yakl::RealFFT1D<fftySize> ffty;
-  fftx.init();
-  ffty.init();
 
   //----------------------------------------------------------------------------
   // Forward Fourier transform
-  
-  // for (int k=0; k<nzm; k++) {
-  //   for (int j=0; j<ny; j++) {
-  //     for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
-    SArray<real,1,nx+2> ftmp;
-    for (int i=0; i<nx ; i++) { ftmp(i) = f_in(k,j,i,icrm); }
-    fftx.forward(ftmp, fftx.trig, yakl::FFT_SCALE_ECMWF);
-    for (int i=0; i<nx2; i++) { fft_out(k,j,i,icrm) = ftmp(i); }
+
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    fft_out(k,j,i,icrm) = f_in(k,j,i,icrm);
   });
 
-  if (RUN3D) {
-    // for (int k=0; k<nzm; k++) {
-    //   for (int i=0; j<nx+1; i++) {
-    //     for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
-      SArray<real,1,ny+2> ftmp;
-      for (int j=0; j<ny ; j++) { ftmp(j) = fft_out(k,j,i,icrm); }
-      ffty.forward(ftmp, ffty.trig, yakl::FFT_SCALE_ECMWF);
-      for (int j=0; j<ny2; j++) { fft_out(k,j,i,icrm) = ftmp(j); }
-    });
-  }
+  vt_fftx.forward_real(fft_out, 2, nx);
+  if (RUN3D) { vt_ffty.forward_real(fft_out, 1, ny); }
 
   //----------------------------------------------------------------------------
   // Zero out the higher modes
@@ -70,26 +50,11 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
   //----------------------------------------------------------------------------
   // Backward Fourier transform
 
-  if (RUN3D) {
-    // for (int k=0; k<nzm; k++) {
-    //   for (int i=0; i<nx+1; i++) {
-    //     for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<3>(nzm,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
-      SArray<real,1,ny+2> ftmp;
-      for(int j=0; j<ny+2; j++) { ftmp(j) = fft_out(k,j,i,icrm); }
-      ffty.inverse(ftmp, ffty.trig, yakl::FFT_SCALE_ECMWF);
-      for(int j=0; j<ny  ; j++) { fft_out(k,j,i,icrm) = ftmp(j); }
-    });
-  }
+  if (RUN3D) { vt_ffty.inverse_real(fft_out); }
+  vt_fftx.inverse_real(fft_out);
 
-  // for (int k=0; k<nzm; k++) {
-  //   for (int j=0; i<ny; i++) {
-  //     for (int icrm=0; icrm<ncrms; icrm++) {
-  parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
-    SArray<real,1,nx+2> ftmp;
-    for(int i=0; i<nx+2; i++) { ftmp(i) = fft_out(k,j,i,icrm); }
-    fftx.inverse(ftmp, fftx.trig, yakl::FFT_SCALE_ECMWF);
-    for(int i=0; i<nx  ; i++) { f_out(k,j,i,icrm) = ftmp(i); }
+  parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+    f_out(k,j,i,icrm) = fft_out(k,j,i,icrm);
   });
 
 }

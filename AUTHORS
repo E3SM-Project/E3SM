@@ -1,0 +1,20 @@
+# This is the list of E3SM's significant contributing institutions in
+# alphabetical order.
+#
+# This does not list every person who has contributed code,
+# since many employees of one institution may be contributing.
+# To see the full list of contributors, see the revision history in
+# source control. Note that revision history for code imported
+# at the start of the repository was not retained.
+# Code in submodules is also not included.
+
+Argonne National Laboratory
+Brookhaven National Laboratory
+Lawrence Berkeley National Laboratory
+Lawrence Livermore National Laboratory
+Los Alamos National Laboratory
+National Center for Atmospheric Research
+Oak Ridge National Laboratory
+Pacific Northwest National Laboratory
+Sandia National Laboratory
+

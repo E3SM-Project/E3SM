@@ -37,6 +37,7 @@ theta_hydrostatic_mode = false
 theta_advect_form = 1
 tstep_type        = 10
 moisture          = 'notdry'
+pgrad_correction  = 1
 /
 &solver_nl
 precon_method = "identity"

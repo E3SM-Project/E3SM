@@ -67,7 +67,7 @@ module element_ops
 
   type(elem_state_t), dimension(:), allocatable :: state0 ! storage for save_initial_state routine
 
-  public get_field, get_field_i, get_state
+  public get_field, get_field_i, get_state, get_pottemp
   public get_temperature, get_phi, get_R_star, get_hydro_pressure
   public set_thermostate, set_state, set_state_i, set_elem_state
   public set_forcing_rayleigh_friction, set_theta_ref
@@ -75,7 +75,7 @@ module element_ops
   public state0
 
   ! promote this to _real_kind after V2 code freeze
-  real (kind=real_kind), public :: tref_lapse_rate=0.0065e0
+  real (kind=real_kind), public :: tref_lapse_rate=0.0065D0
 contains
 
 
@@ -716,7 +716,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
   ! Disable the following check in CUDA bfb builds,
   ! since the calls to pow are inexact
-#if !(defined(HOMMEXX_BFB_TESTING) && defined(CUDA_BUILD))
+#if !(defined(HOMMEXX_BFB_TESTING) && defined(HOMMEXX_ENABLE_GPU))
   ! verify discrete hydrostatic balance
   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),&
        elem%state%dp3d(:,:,:,tl),elem%state%phinh_i(:,:,:,tl),pnh,exner,dpnh_dp_i)

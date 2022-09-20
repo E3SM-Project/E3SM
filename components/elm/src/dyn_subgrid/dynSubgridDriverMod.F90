@@ -9,7 +9,6 @@ module dynSubgridDriverMod
   ! dynamic landunits).
   !
   ! !USES:
-  use shr_kind_mod           , only : r8 => shr_kind_r8
   use dynSubgridControlMod, only : get_flanduse_timeseries
   use dynSubgridControlMod, only : get_do_transient_pfts, get_do_transient_crops
   use dynSubgridControlMod, only : get_do_harvest
@@ -22,9 +21,10 @@ module dynSubgridDriverMod
   use EnergyFluxType      , only : energyflux_type
   use LakeStateType       , only : lakestate_type
   use PhotosynthesisType  , only : photosyns_type
-  use SoilHydrologyType   , only : soilhydrology_type
+  use SoilHydrologyType   , only : soilhydrology_type  
   use SoilStateType       , only : soilstate_type
   use glc2lndMod          , only : glc2lnd_type
+  use iac2lndMod          , only : iac2lnd_type
   use dynLandunitAreaMod  , only : update_landunit_weights
   use CropType            , only : crop_type
   use dyncropFileMod      , only : dyncrop_init, dyncrop_interp
@@ -35,6 +35,13 @@ module dynSubgridDriverMod
   use ColumnDataType      , only : col_ns, col_ps
   use VegetationDataType  , only : vegetation_carbon_state, veg_ns, veg_ps
 
+  use elm_varctl          , only : iac_active
+  use shr_log_mod         , only : errMsg => shr_log_errMsg
+  use decompMod           , only : bounds_type, BOUNDS_LEVEL_PROC
+  use shr_kind_mod        , only : r8 => shr_kind_r8
+  use ColumnType          , only : col_pp
+  use VegetationType      , only : veg_pp
+  use elm_varctl          , only : iulog
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -44,6 +51,11 @@ module dynSubgridDriverMod
   public :: dynSubgrid_init             ! initialize transient land cover
   public :: dynSubgrid_driver           ! top-level driver for transient land cover
   public :: dynSubgrid_wrapup_weight_changes ! reconcile various variables after subgrid weights change
+
+  ! !PRIVATE MEMBER FUNCTIONS:
+  private :: dyn_iac_init          ! init for iac instead of files
+  private :: set_iac_veg_weights   ! calc veg_pp weights with iac
+
   !
   ! !PRIVATE TYPES:
   ! saved weights from before the subgrid weight updates
@@ -65,7 +77,7 @@ contains
     ! Determine initial subgrid weights for prescribed transient Patches and/or
     ! dynamic landunits. Note that these weights will be overwritten in a restart run.
     !
-    ! This should be called from initialization.
+    ! This should be called from initialization. 
     !
     ! Note that dynpft_init / dynpft_interp need to be called from outside any loops over
     ! clumps - so this routine needs to be called from outside any loops over clumps.
@@ -112,6 +124,11 @@ contains
        call dyncrop_init(bounds, dyncrop_filename=get_flanduse_timeseries())
     end if
 
+    ! Initialize for iac instead of files
+    if (iac_active) then
+       call dyn_iac_init(bounds)
+    end if
+
     ! ------------------------------------------------------------------------
     ! Set initial subgrid weights for aspects that are read from file. This is relevant
     ! for cold start and use_init_interp-based initialization.
@@ -131,7 +148,7 @@ contains
        call dynSubgrid_wrapup_weight_changes(bounds_clump, glc2lnd_vars)
     end do
     !$OMP END PARALLEL DO
-
+    
   end subroutine dynSubgrid_init
 
   !-----------------------------------------------------------------------
@@ -140,7 +157,7 @@ contains
        energyflux_vars, canopystate_vars, photosyns_vars, cnstate_vars, &
        veg_cs, c13_veg_cs, c14_veg_cs, &
        col_cs, c13_col_cs, c14_col_cs, col_cf, &
-       grc_cs, grc_cf, glc2lnd_vars, crop_vars)
+       grc_cs, grc_cf, glc2lnd_vars, crop_vars, iac2lnd_vars)
     !
     ! !DESCRIPTION:
     ! Update subgrid weights for prescribed transient Patches and/or dynamic
@@ -153,7 +170,7 @@ contains
     ! OUTSIDE any loops over clumps in the driver.
     !
     ! !USES:
-    use elm_varctl           , only : use_cn, create_glacier_mec_landunit, use_fates
+    use elm_varctl           , only : use_cn, create_glacier_mec_landunit, use_fates, iac_active
     use decompMod            , only : bounds_type, get_proc_clumps, get_clump_bounds
     use decompMod            , only : BOUNDS_LEVEL_PROC
     use dynInitColumnsMod    , only : initialize_new_columns
@@ -166,11 +183,14 @@ contains
     use subgridWeightsMod    , only : compute_higher_order_weights, set_subgrid_diagnostic_fields
     use CarbonStateUpdate1Mod   , only : CarbonStateUpdateDynPatch
     use NitrogenStateUpdate1Mod   , only : NitrogenStateUpdateDynPatch
-    use PhosphorusStateUpdate1Mod , only : PhosphorusStateUpdateDynPatch
+    use PhosphorusStateUpdate1Mod     , only : PhosphorusStateUpdateDynPatch
     use dynPatchStateUpdaterMod   , only : set_old_patch_weights, set_new_patch_weights
     use dynColumnStateUpdaterMod  , only : set_old_column_weights, set_new_column_weights
     use dynPriorWeightsMod        , only : set_prior_weights
     use clm_time_manager , only : get_step_size
+    ! avd
+    use elm_varctl, only :  iulog
+
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds_proc  ! processor-level bounds
@@ -194,6 +214,8 @@ contains
     type(glc2lnd_type)       , intent(inout) :: glc2lnd_vars
 
     type(crop_type)          , intent(inout) :: crop_vars
+
+    type(iac2lnd_type)       , intent(inout) :: iac2lnd_vars
 
     !
     ! !LOCAL VARIABLES:
@@ -243,6 +265,15 @@ contains
     if (get_do_harvest()) then
        call dynHarvest_interp_harvest_types(bounds_proc)
     end if
+
+    ! pft and harvest come from iac when active
+    ! avd - the above namelist values are false in this case
+    !       may want to ensure this with namelist checks
+
+    if (iac_active) then
+       call iac2lnd_vars%update_iac2lnd(bounds_proc)
+    end if
+
 
     ! ==========================================================================
     ! Do everything else related to land cover change
@@ -346,6 +377,14 @@ contains
     call update_landunit_weights(bounds_clump)
 
     call compute_higher_order_weights(bounds_clump)
+
+    if (iac_active) then
+       ! make sure weights are all in order before applying the new pft wts
+       ! this is because the active elements need to be correct
+       call reweight_wrapup(bounds_clump, &
+            glc2lnd_vars%icemask_grc(bounds_clump%begg:bounds_clump%endg))
+       call set_iac_veg_weights(bounds_clump)
+    end if
 
     ! Here: filters are re-made
     !

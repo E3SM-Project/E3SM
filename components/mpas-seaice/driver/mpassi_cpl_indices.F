@@ -11,6 +11,7 @@ module mpassi_cpl_indices
   ! ice -> drv
 
   integer :: index_i2x_Si_ifrac        ! fractional ice coverage wrt ocean
+  integer :: index_i2x_Si_ithick       ! ice thickness (m)
   integer :: index_i2x_Si_snowh        ! snow height (m)
   integer :: index_i2x_Si_t            ! temperature                     
   integer :: index_i2x_Si_bpress       ! basal pressure                  
@@ -146,6 +147,7 @@ contains
     index_i2x_Si_tref       = mct_avect_indexra(i2x,'Si_tref')
     index_i2x_Si_qref       = mct_avect_indexra(i2x,'Si_qref')
     index_i2x_Si_ifrac      = mct_avect_indexra(i2x,'Si_ifrac')
+    index_i2x_Si_ithick     = mct_avect_indexra(i2x,'Si_ithick')
     index_i2x_Si_avsdr      = mct_avect_indexra(i2x,'Si_avsdr')
     index_i2x_Si_anidr      = mct_avect_indexra(i2x,'Si_anidr')
     index_i2x_Si_avsdf      = mct_avect_indexra(i2x,'Si_avsdf')

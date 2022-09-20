@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -473,11 +473,9 @@ contains
       integer :: iCell
       real(kind=RKIND), parameter :: secondsInYear = 365.0_RKIND * 24.0_RKIND * 3600.0_RKIND
          !< The value of seconds in a year assumed by external dycores
-      integer, target :: err_tmp
-      integer, pointer :: err_albany
+      integer, pointer :: albanyVelocityError
 
       err = 0
-      err_tmp = 0
 
       ! configs
       call mpas_pool_get_config(liConfigs, 'config_velocity_solver', config_velocity_solver)
@@ -522,6 +520,8 @@ contains
       call mpas_pool_get_array(velocityPool, 'dirichletMaskChanged', dirichletMaskChanged)
       call mpas_pool_get_array(velocityPool, 'dirichletVelocityMask', dirichletVelocityMask, timeLevel = 1)
       call mpas_pool_get_array(velocityPool, 'stiffnessFactor', stiffnessFactor)
+      call mpas_pool_get_array(velocityPool, 'albanyVelocityError', albanyVelocityError)
+      albanyVelocityError = 0
 
       ! Hydro variables
       call mpas_pool_get_array(hydroPool, 'effectivePressure', effectivePressure)
@@ -595,26 +595,24 @@ contains
 
 
           call mpas_timer_start("velocity_solver_solve_FO")
-          err_albany => err_tmp
           call velocity_solver_solve_FO(bedTopography, lowerSurface, thickness, &
                 betaSolve, sfcMassBal, temperature, stiffnessFactor, &
                 effectivePressureLimited, muFriction, &
                 uReconstructX, uReconstructY,  &  ! Dirichlet boundary values to apply where dirichletVelocityMask=1
                 normalVelocity, drivingStressVert, dissipationVertexField % array, uReconstructX, uReconstructY, &  ! return values
-                deltat, err_albany)  ! return values
+                deltat, albanyVelocityError)  ! return values
           call mpas_timer_stop("velocity_solver_solve_FO")
 
-          if (err_tmp == 1) then
+          if (albanyVelocityError == 1) then
              if (config_nonconvergence_error) then
                 call mpas_log_write("Albany velocity solve failed to converge!  " // &
                    "Check log.albany.0000.out for more information.", MPAS_LOG_ERR)
+                err = ior(err, albanyVelocityError)
              else
                 call mpas_log_write("Albany velocity solve failed to converge!  " // &
                    "Check log.albany.0000.out for more information.", MPAS_LOG_WARN)
-                err_tmp = 0
              endif
           endif
-          err = ior(err,err_tmp)
 
 
           ! Now interpolate from vertices to cell centers

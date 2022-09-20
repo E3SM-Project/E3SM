@@ -2,13 +2,13 @@
 #bsub -W 2:00 -nnodes 1 -P cli115 -Is /bin/bash
 
 
-#cmake -C ~/acme-fork-lb/components/homme/cmake/machineFiles/summit.cmake -DHOMMEXX_MPI_ON_DEVICE=FALSE ~/acme-fork-lb/components/homme/
-
 #SET (HOMMEXX_MPI_ON_DEVICE FALSE CACHE BOOL "")
 SET (HOMMEXX_CUDA_MAX_WARP_PER_TEAM "16" CACHE STRING  "")
 
-SET (NETCDF_DIR $ENV{OLCF_NETCDF_FORTRAN_ROOT} CACHE FILEPATH "")
-SET (HDF5_DIR $ENV{OLCF_HDF5_ROOT} CACHE FILEPATH "")
+#SET (NETCDF_DIR $ENV{OLCF_NETCDF_FORTRAN_ROOT} CACHE FILEPATH "")
+#SET (NetCDF_Fortran_PATH "/sw/summit/spack-envs/base/opt/linux-rhel8-ppc64le/gcc-7.5.0/netcdf-fortran-4.4.5-e2hkh7w3253wz5uubjxbbvh56a7xjl7n" CACHE STRING "")
+#SET(NetCDF_C_LIBRARY "/sw/summit/spack-envs/base/opt/linux-rhel8-ppc64le/gcc-7.5.0/netcdf-c-4.8.0-pwi4jbrnwv4lrrjxdu5czbos5uvvjgvr/lib" CACHE STRING "")
+#SET(NetCDF_C_INCLUDE_DIR "/sw/summit/spack-envs/base/opt/linux-rhel8-ppc64le/gcc-7.5.0/netcdf-c-4.8.0-pwi4jbrnwv4lrrjxdu5czbos5uvvjgvr/include" CACHE STRING "")
 
 SET(BUILD_HOMME_WITHOUT_PIOLIBRARY TRUE CACHE BOOL "")
 
@@ -18,11 +18,8 @@ SET(WITH_PNETCDF FALSE CACHE FILEPATH "")
 
 SET(USE_QUEUING FALSE CACHE BOOL "")
 
-SET(ENABLE_CUDA FALSE CACHE BOOL "")
-
 SET(BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")
 SET(BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")
-SET(HOMME_ENABLE_COMPOSE FALSE CACHE BOOL "")
 
 #SET (HOMMEXX_BFB_TESTING TRUE CACHE BOOL "")
 
@@ -36,7 +33,7 @@ SET(Kokkos_ENABLE_EXPLICIT_INSTANTIATION OFF CACHE BOOL "")
 
 SET(CMAKE_C_COMPILER "mpicc" CACHE STRING "")
 SET(CMAKE_Fortran_COMPILER "mpifort" CACHE STRING "")
-SET(CMAKE_CXX_COMPILER "/ccs/home/onguba/kokkos/bin/nvcc_wrapper" CACHE STRING "")
+SET(CMAKE_CXX_COMPILER "${CMAKE_CURRENT_SOURCE_DIR}/../../externals/kokkos/bin/nvcc_wrapper" CACHE STRING "")
 
 set (ENABLE_OPENMP OFF CACHE BOOL "")
 set (ENABLE_COLUMN_OPENMP OFF CACHE BOOL "")

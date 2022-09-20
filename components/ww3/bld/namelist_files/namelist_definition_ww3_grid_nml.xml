@@ -1,0 +1,1030 @@
+<?definition version="1.0"?>
+ 
+<?definition-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
+ 
+<namelist_definition>
+<!-- ========================================================================================  -->
+<!-- WAVEWATCHIII  Namelist -->
+<!-- ========================================================================================  -->
+ 
+<!-- SLN1 -->
+ 
+<entry id="clin"
+       type="real"
+       category="sln1"
+       group="sln1"
+       valid_values="">
+</entry>
+<entry id="rfpm"
+       type="real"
+       category="sln1"
+       group="sln1"
+       valid_values="">
+</entry>
+<entry id="rfhf"
+       type="real"
+       category="sln1"
+       group="sln1"
+       valid_values="">
+</entry>
+ 
+<!-- SIN4 -->
+ 
+<entry id="zwnd"
+       type="real"
+       category="sin4"
+       group="sin4"
+       valid_values="">
+</entry>
+<entry id="alpha0"
+       type="real"
+       category="sin4"
+       group="sin4"
+       valid_values="">
+</entry>
+<entry id="z0max"
+       type="real"
+       category="sin4"
+       group="sin4"
+       valid_values="">
+</entry>
+<entry id="betamax"
+       type="real"
+       category="sin4"
+       group="sin4"
+       valid_values="">
+</entry>
+<entry id="sinthp"
+       type="real"
+       category="sin4"
+       group="sin4"
+       valid_values="">
+</entry>
+<entry id="zalp"
+       type="real"
+       category="sin4"
+       group="sin4"
+       valid_values="">
+</entry>
+<entry id="tauwshelter"
+       type="real"
+       category="sin4"
+       group="sin4"
+       valid_values="">
+</entry>
+<entry id="swellfpar"
+       type="integer"
+       category="sin4"
+       group="sin4"
+       valid_values="">
+</entry>
+<entry id="swellf"
+       type="real"
+       category="sin4"
+       group="sin4"
+       valid_values="">
+</entry>
+<entry id="swellf2"
+       type="real"
+       category="sin4"
+       group="sin4"
+       valid_values="">
+</entry>
+<entry id="swellf3"
+       type="real"
+       category="sin4"
+       group="sin4"
+       valid_values="">
+</entry>
+<entry id="swellf4"
+       type="real"
+       category="sin4"
+       group="sin4"
+       valid_values="">
+</entry>
+<entry id="swellf5"
+       type="real"
+       category="sin4"
+       group="sin4"
+       valid_values="">
+</entry>
+<entry id="swellf6"
+       type="real"
+       category="sin4"
+       group="sin4"
+       valid_values="">
+</entry>
+<entry id="swellf7"
+       type="real"
+       category="sin4"
+       group="sin4"
+       valid_values="">
+</entry>
+<entry id="z0rat"
+       type="real"
+       category="sin4"
+       group="sin4"
+       valid_values="">
+</entry>
+<entry id="sinbr"
+       type="real"
+       category="sin4"
+       group="sin4"
+       valid_values="">
+</entry>
+ 
+<!-- SNL1 -->
+ 
+<entry id="lambda"
+       type="real"
+       category="snl1"
+       group="snl1"
+       valid_values="">
+</entry>
+<entry id="nlprop"
+       type="real"
+       category="snl1"
+       group="snl1"
+       valid_values="">
+</entry>
+<entry id="kdconv"
+       type="real"
+       category="snl1"
+       group="snl1"
+       valid_values="">
+</entry>
+<entry id="kdmin"
+       type="real"
+       category="snl1"
+       group="snl1"
+       valid_values="">
+</entry>
+<entry id="snlcs1"
+       type="real"
+       category="snl1"
+       group="snl1"
+       valid_values="">
+</entry>
+<entry id="snlcs2"
+       type="real"
+       category="snl1"
+       group="snl1"
+       valid_values="">
+</entry>
+<entry id="snlcs3"
+       type="real"
+       category="snl1"
+       group="snl1"
+       valid_values="">
+</entry>
+ 
+<!-- SDS4 -->
+ 
+<entry id="sdsc1"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsc2"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdscum"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsc4"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsc5"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsc6"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="wnmeanp"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="fxpm3"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="fxfm3"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="fxfmage"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="fxincut"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="fxdscut"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsbint"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsbck"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsabk"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdspbk"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdshck"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsbr"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsstrain"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsstraina"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsstrain2"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsbr2"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsp"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsiso"
+       type="integer"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdscos"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsdth"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsbrf1"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsbrfdf"
+       type="integer"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsbm0"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsbm1"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsbm2"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsbm3"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdsbm4"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="whitecapwidth"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdslfgen"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+<entry id="sdshfgen"
+       type="real"
+       category="sds4"
+       group="sds4"
+       valid_values="">
+</entry>
+ 
+<!-- SBT1 -->
+ 
+<entry id="gamma"
+       type="real"
+       category="sbt1"
+       group="sbt1"
+       valid_values="">
+</entry>
+ 
+<!-- SDB1 -->
+ 
+<entry id="bjalfa"
+       type="real"
+       category="sdb1"
+       group="sdb1"
+       valid_values="">
+</entry>
+<entry id="bjgam"
+       type="real"
+       category="sdb1"
+       group="sdb1"
+       valid_values="">
+</entry>
+<entry id="bjflag"
+       type="char*6"
+       category="sdb1"
+       group="sdb1"
+       valid_values="">
+</entry>
+ 
+<!-- PRO3 -->
+ 
+<entry id="cfltm"
+       type="real"
+       category="pro3"
+       group="pro3"
+       valid_values="">
+</entry>
+<entry id="wdthcg"
+       type="real"
+       category="pro3"
+       group="pro3"
+       valid_values="">
+</entry>
+<entry id="wdthth"
+       type="real"
+       category="pro3"
+       group="pro3"
+       valid_values="">
+</entry>
+ 
+<!-- UNST -->
+ 
+<entry id="ugobcauto"
+       type="logical"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="ugobcdepth"
+       type="real"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="ugobcfile"
+       type="char*5"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="expfsn"
+       type="logical"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="expfspsi"
+       type="logical"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="expfsfct"
+       type="logical"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="impfsn"
+       type="logical"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="exptotal"
+       type="logical"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="imptotal"
+       type="logical"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="imprefraction"
+       type="logical"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="impfreqshift"
+       type="logical"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="impsource"
+       type="logical"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="setup_apply_wlv"
+       type="logical"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="jgs_terminate_maxiter"
+       type="logical"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="jgs_terminate_difference"
+       type="logical"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="jgs_terminate_norm"
+       type="logical"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="jgs_limiter"
+       type="logical"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="jgs_use_jacobi"
+       type="logical"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="jgs_block_gauss_seidel"
+       type="logical"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="jgs_maxiter"
+       type="integer"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="jgs_pmin"
+       type="real"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="jgs_diff_thr"
+       type="real"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="jgs_norm_thr"
+       type="real"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="jgs_nlevel"
+       type="integer"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+<entry id="jgs_source_nonlinear"
+       type="logical"
+       category="unst"
+       group="unst"
+       valid_values="">
+</entry>
+ 
+<!-- OUTS -->
+ 
+<entry id="p2sf"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="i1p2sf"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="i2p2sf"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="us3d"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="i1us3d"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="i2us3d"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="ussp"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="iussp"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="stk_wn"
+       type="real(25)"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="e3d"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="i1e3d"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="i2e3d"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="th1mf"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="i1th1m"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="i2th1m"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="sth1mf"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="i1sth1m"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="i2sth1m"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="th2mf"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="i1th2m"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="i2th2m"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="sth2mf"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="i1sth2m"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+<entry id="i2sth2m"
+       type="integer"
+       category="outs"
+       group="outs"
+       valid_values="">
+</entry>
+ 
+<!-- UOST -->
+ 
+<entry id="uostfilelocal"
+       type="char*256"
+       category="uost"
+       group="uost"
+       valid_values="">
+</entry>
+<entry id="uostfileshadow"
+       type="char*256"
+       category="uost"
+       group="uost"
+       valid_values="">
+</entry>
+<entry id="uostfactorlocal"
+       type="real"
+       category="uost"
+       group="uost"
+       valid_values="">
+</entry>
+<entry id="uostfactorshadow"
+       type="real"
+       category="uost"
+       group="uost"
+       valid_values="">
+</entry>
+ 
+<!-- MISC -->
+ 
+<entry id="cice0"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="cicen"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="lice"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="pmove"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="xseed"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="flagtr"
+       type="integer"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="xp"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="xr"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="xfilt"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="ihm"
+       type="integer"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="hspm"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="wsm"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="wsc"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="flc"
+       type="char*6"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="nosw"
+       type="integer"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="fmiche"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="rwndc"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="wcor1"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="wcor2"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="facberg"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="gshift"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="stdx"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="stdy"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="stdt"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="icehmin"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="icehfac"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="icehinit"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="icedisp"
+       type="logical"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="icehdisp"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="icesln"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="icewind"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="icesnl"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="icesds"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="iceddisp"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="icefdisp"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="noleap"
+       type="logical"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="trckcmpr"
+       type="logical"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+<entry id="btbet"
+       type="real"
+       category="misc"
+       group="misc"
+       valid_values="">
+</entry>
+
+<!-- rotd -->
+
+<entry id="plat"
+       type="real"
+       category="rotd"
+       group="rotd"
+       valid_values="">
+</entry>
+<entry id="plon"
+       type="real"
+       category="rotd"
+       group="rotd"
+       valid_values="">
+</entry>
+<entry id="unrot"
+       type="logical"
+       category="rotd"
+       group="rotd"
+       valid_values="">
+</entry>
+ 
+</namelist_definition>

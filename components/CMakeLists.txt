@@ -15,6 +15,7 @@
 
 cmake_minimum_required(VERSION 3.9)
 cmake_policy(SET CMP0057 NEW)
+set(CMAKE_CXX_STANDARD 17)
 
 # Store caseroot in the cache, so that, if cmake re-runs,
 # we can still access ${CASEROOT}/Macros.cmake

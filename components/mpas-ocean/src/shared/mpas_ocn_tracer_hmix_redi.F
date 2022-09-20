@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -235,10 +235,8 @@ contains
             r_tmp = dvEdge(iEdge)/dcEdge(iEdge)
             coef = dvEdge(iEdge)
 
-            k = minLevelEdgeBot(iEdge)
-            kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
-                                           RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))
             k = 1
+            if (minLevelEdgeBot(iEdge) .ne. 1) k = minLevelEdgeBot(iEdge)
             kappaRediEdgeVal = 0.25_RKIND*(RediKappaScaling(k, cell1) + RediKappaScaling(k, cell2) + &
                                            RediKappaScaling(k + 1, cell1) + RediKappaScaling(k + 1, cell2))
 
@@ -259,13 +257,13 @@ contains
                              /(zMid(k, cell2) - zMid(k + 1, cell2)))
                if (minLevelCell(cell1) < minLevelEdgeBot(iEdge)) then
                   flux_term2 = flux_term2 + coef*RediKappa(iEdge)* &
-                               layerThickEdgeMean(minLevelEdgeBot(iEdge), iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadUp(minLevelEdgeBot(iEdge), 1, iEdge)* &
-                               (tracers(iTr, minLevelEdgeBot(iEdge) - 1, cell1) - tracers(iTr, minLevelEdgeBot(iEdge), cell1))/(zMid(minLevelEdgeBot(iEdge) - 1, cell1) - zMid(minLevelEdgeBot(iEdge), cell1))
+                               layerThickEdgeMean(k, iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadUp(k, 1, iEdge)* &
+                               (tracers(iTr, k - 1, cell1) - tracers(iTr, k, cell1))/(zMid(k - 1, cell1) - zMid(k, cell1))
                endif
                if (minLevelCell(cell2) < minLevelEdgeBot(iEdge)) then
                   flux_term2 = flux_term2 + coef*RediKappa(iEdge)* &
-                               layerThickEdgeMean(minLevelEdgeBot(iEdge), iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadUp(minLevelEdgeBot(iEdge), 2, iEdge)* &
-                               (tracers(iTr, minLevelEdgeBot(iEdge) - 1, cell2) - tracers(iTr, minLevelEdgeBot(iEdge), cell2))/(zMid(minLevelEdgeBot(iEdge) - 1, cell2) - zMid(minLevelEdgeBot(iEdge), cell2))
+                               layerThickEdgeMean(k, iEdge)*0.25_RKIND*kappaRediEdgeVal*slopeTriadUp(k, 2, iEdge)* &
+                               (tracers(iTr, k - 1, cell2) - tracers(iTr, k, cell2))/(zMid(k - 1, cell2) - zMid(k, cell2))
                endif
 
                redi_term2(iTr, k, iCell) = redi_term2(iTr, k, iCell) - edgeSignOnCell(i, iCell)*flux_term2*invAreaCell

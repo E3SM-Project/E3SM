@@ -4,6 +4,9 @@
  * See the file 'COPYRIGHT' in the HOMMEXX/src/share/cxx directory
  *******************************************************************************/
 
+#include "Config.hpp"
+#ifdef HOMME_ENABLE_COMPOSE
+
 #include "ComposeTransportImpl.hpp"
 #include "PhysicalConstants.hpp"
 
@@ -685,3 +688,5 @@ test_trajectory (Real t0, Real t1, const bool independent_time_steps) {
 }
 
 } // namespace Homme
+
+#endif // HOMME_ENABLE_COMPOSE

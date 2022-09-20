@@ -49,7 +49,7 @@
 
 	<var_struct name="state" time_levs="2">
 		<var_struct name="tracers" time_levs="2">
-			<var_array name="debugTracers" dimensions="nVertLevels nCells Time" type="real" packages="debugTracersPKG" default_value="1.0">
+			<var_array name="debugTracers" dimensions="nVertLevels nCells Time" type="real" packages="debugTracersPKG" default_value="1.0" missing_value="FILLVAL" missing_value_mask="cellMask">
 				<var name="tracer1" array_group="debugGRP"
 			 description="tracer for debugging purposes"
 				/>
@@ -65,7 +65,7 @@
 
 	<var_struct name="tend" time_levs="1">
 		<var_struct name="tracersTend" time_levs="1">
-			<var_array name="debugTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="debugTracersPKG">
+			<var_array name="debugTracersTend" type="real" dimensions="nVertLevels nCells Time" packages="debugTracersPKG" missing_value="FILLVAL" missing_value_mask="cellMask">
 				<var name="tracer1Tend" array_group="debugGRP"
 			 description="Tendency for tracer1"
 				/>

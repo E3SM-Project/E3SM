@@ -51,12 +51,12 @@ module physpkg
   private
 
   !  Physics buffer index
-  integer ::  teout_idx          = 0  
+  integer ::  teout_idx          = 0
 
-  integer ::  tini_idx           = 0 
-  integer ::  qini_idx           = 0 
-  integer ::  cldliqini_idx      = 0 
-  integer ::  cldiceini_idx      = 0 
+  integer ::  tini_idx           = 0
+  integer ::  qini_idx           = 0
+  integer ::  cldliqini_idx      = 0
+  integer ::  cldiceini_idx      = 0
   integer ::  static_ener_ac_idx = 0
   integer ::  water_vap_ac_idx   = 0
 
@@ -86,7 +86,7 @@ module physpkg
   ! Physics package options
   character(len=16) :: shallow_scheme
   character(len=16) :: macrop_scheme
-  character(len=16) :: microp_scheme 
+  character(len=16) :: microp_scheme
   integer           :: cld_macmic_num_steps    ! Number of macro/micro substeps
   logical           :: do_clubb_sgs
   logical           :: use_subcol_microp   ! if true, use subcolumns in microphysics
@@ -98,18 +98,18 @@ module physpkg
   logical           :: pergro_mods = .false.
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
 
-  !======================================================================= 
+  !=======================================================================
 contains
 
 subroutine phys_register
-    !----------------------------------------------------------------------- 
-    ! 
+    !-----------------------------------------------------------------------
+    !
     ! Purpose: Register constituents and physics buffer fields.
-    ! 
+    !
     ! Author:    CSM Contact: M. Vertenstein, Aug. 1997
     !            B.A. Boville, Oct 2001
     !            A. Gettelman, Nov 2010 - put micro/macro physics into separate routines
-    ! 
+    !
     !-----------------------------------------------------------------------
     use physics_buffer,     only: pbuf_init_time
     use physics_buffer,     only: pbuf_add_field, dtype_r8, pbuf_register_subcol
@@ -149,6 +149,7 @@ subroutine phys_register
     use sslt_rebin,         only: sslt_rebin_register
     use aoa_tracers,        only: aoa_tracers_register
     use aircraft_emit,      only: aircraft_emit_register
+    use iac_coupled_fields, only: iac_coupled_fields_register
     use cam_diagnostics,    only: diag_register
     use cloud_diagnostics,  only: cloud_diagnostics_register
     use cospsimulator_intr, only: cospsimulator_intr_register
@@ -160,7 +161,7 @@ subroutine phys_register
     !---------------------------Local variables-----------------------------
     !
     integer  :: m        ! loop index
-    integer  :: mm       ! constituent index 
+    integer  :: mm       ! constituent index
     !-----------------------------------------------------------------------
 
     integer :: nmodes
@@ -205,7 +206,7 @@ subroutine phys_register
     ! check energy package
     call check_energy_register
 
-    ! If using an ideal/adiabatic physics option, the CAM physics parameterizations 
+    ! If using an ideal/adiabatic physics option, the CAM physics parameterizations
     ! aren't called.
     if (moist_physics) then
 
@@ -222,10 +223,10 @@ subroutine phys_register
           call microp_aero_register()
           call microp_driver_register()
        end if
-       
+
        ! Register CLUBB_SGS here
        if (do_clubb_sgs) call clubb_register_cam()
-       
+
 
        call pbuf_add_field('PREC_STR',  'physpkg',dtype_r8,(/pcols/),prec_str_idx)
        call pbuf_add_field('SNOW_STR',  'physpkg',dtype_r8,(/pcols/),snow_str_idx)
@@ -242,13 +243,13 @@ subroutine phys_register
          call pbuf_register_subcol('SNOW_SED', 'phys_register', snow_sed_idx)
        end if
 
-    ! Who should add FRACIS? 
+    ! Who should add FRACIS?
     ! -- It does not seem that aero_intr should add it since FRACIS is used in convection
-    !     even if there are no prognostic aerosols ... so do it here for now 
+    !     even if there are no prognostic aerosols ... so do it here for now
        call pbuf_add_field('FRACIS','physpkg',dtype_r8,(/pcols,pver,pcnst/),m)
 
        call conv_water_register()
-       
+
        ! Determine whether its a 'modal' aerosol simulation  or not
        call rad_cnst_get_info(0, nmodes=nmodes)
        clim_modal_aero = (nmodes > 0)
@@ -293,6 +294,9 @@ subroutine phys_register
 
        call aircraft_emit_register()
 
+       ! Coupling co2 from iac
+       call iac_coupled_fields_register()
+
        ! deep convection
        call convect_deep_register
 
@@ -310,7 +314,7 @@ subroutine phys_register
        if (.not. do_clubb_sgs) call vd_register()
 
        if (do_aerocom_ind3) call output_aerocom_aie_register()
-    
+
     end if
 
     ! Register diagnostics PBUF
@@ -334,7 +338,7 @@ end subroutine phys_register
 
 
 
-  !======================================================================= 
+  !=======================================================================
 
 subroutine phys_inidat( cam_out, pbuf2d )
     use cam_abortutils, only : endrun
@@ -373,7 +377,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
 
     fh_ini=>initial_file_get_id()
 
-    !   dynamics variables are handled in dyn_init - here we read variables needed for physics 
+    !   dynamics variables are handled in dyn_init - here we read variables needed for physics
     !   but not dynamics
 
     grid_id = cam_grid_id('physgrid')
@@ -400,7 +404,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
        call infld('SGH30', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
             sgh30, found, gridname='physgrid')
        call t_stopf('phys_inidat_infld')
-       
+
        if(.not. found) then
           if (masterproc) write(iulog,*) 'Warning: Error reading SGH30 from topo file.'
           if (masterproc) write(iulog,*) 'The field SGH30 will be filled using data from SGH.'
@@ -414,7 +418,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
     call infld('PBLH', fh_ini, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
          tptr(:,:), found, gridname='physgrid')
     call t_stopf('phys_inidat_infld')
-    
+
     if(.not. found) then
        tptr(:,:) = 0._r8
        if (masterproc) write(iulog,*) 'PBLH initialized to 0.'
@@ -443,7 +447,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
     call pbuf_set_field(pbuf2d, vmag_gust_idx, tptr)
 
 
-    fieldname='QPERT'  
+    fieldname='QPERT'
     qpert_idx = pbuf_get_index( 'qpert',ierr)
     if (qpert_idx > 0) then
        call infld(fieldname, fh_ini, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
@@ -507,7 +511,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
                tptr3d, found, gridname='physgrid')
           if (found) then
              if (masterproc) write(iulog,*) trim(fieldname), ' initialized with Q'
-             if(dycore_is('LR')) call polar_average(pver, tptr3d) 	
+             if(dycore_is('LR')) call polar_average(pver, tptr3d)
           else
              call endrun('  '//trim(subname)//' Error:  Q must be on Initial File')
           end if
@@ -556,7 +560,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
              call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
           end do
        else
-          allocate(tptr3d_2(pcols,pver,begchunk:endchunk))     
+          allocate(tptr3d_2(pcols,pver,begchunk:endchunk))
           call infld('CLDICE',fh_ini,dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
                tptr3d, found, gridname='physgrid')
           call infld('CLDLIQ',fh_ini,dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
@@ -575,7 +579,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
              do n = 1, dyn_time_lvls
                 call pbuf_set_field(pbuf2d, m, tptr3d, (/1,1,n/),(/pcols,pver,1/))
              end do
-             if(dycore_is('LR')) call polar_average(pver, tptr3d) 	
+             if(dycore_is('LR')) call polar_average(pver, tptr3d)
           else
              call pbuf_set_field(pbuf2d, m, 0._r8)
              if (masterproc)  write(iulog,*) trim(fieldname), ' initialized to 0.0'
@@ -595,7 +599,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
        if(.not.found) then
           call infld('T', fh_ini, dim1name, 'lev', dim2name, 1, pcols, 1, pver, begchunk, endchunk, &
                tptr3d, found, gridname='physgrid')
-          if(dycore_is('LR')) call polar_average(pver, tptr3d) 	
+          if(dycore_is('LR')) call polar_average(pver, tptr3d)
           if (masterproc) write(iulog,*) trim(fieldname), ' initialized with T'
        end if
        do n = 1, dyn_time_lvls
@@ -665,16 +669,16 @@ end subroutine phys_inidat
 
 subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
-    !----------------------------------------------------------------------- 
-    ! 
+    !-----------------------------------------------------------------------
+    !
     ! Initialization of physics package.
-    ! 
+    !
     !-----------------------------------------------------------------------
 
     use physics_buffer,     only: physics_buffer_desc, pbuf_initialize, pbuf_get_index
     use physconst,          only: rair, cpair, gravit, stebol, tmelt, &
                                   latvap, latice, rh2o, rhoh2o, pstd, zvir, &
-                                  karman, rhodair, physconst_init 
+                                  karman, rhodair, physconst_init
     use ref_pres,           only: pref_edge, pref_mid
     use cloud_rad_props,    only: cloud_rad_props_init
     use cam_control_mod,    only: nsrest  ! restart flag
@@ -686,6 +690,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use seasalt_model,      only: init_ocean_data, has_mam_mom
     use aerodep_flx,        only: aerodep_flx_init
     use aircraft_emit,      only: aircraft_emit_init
+    use iac_coupled_fields, only: iac_coupled_fields_init
     use prescribed_volcaero,only: prescribed_volcaero_init
     use cloud_fraction,     only: cldfrc_init
     use cldfrc2m,           only: cldfrc2m_init
@@ -753,7 +758,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     !-------------------------------------------------------------------------------------------
     ! Initialize any variables in physconst which are not temporally and/or spatially constant
-    !------------------------------------------------------------------------------------------- 
+    !-------------------------------------------------------------------------------------------
     call physconst_init()
 
     ! Initialize debugging a physics column
@@ -788,10 +793,10 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     if (nsrest .eq. 0) then
        call t_startf ('phys_inidat')
-       call phys_inidat(cam_out, pbuf2d) 
+       call phys_inidat(cam_out, pbuf2d)
        call t_stopf ('phys_inidat')
     end if
-    
+
     ! wv_saturation is relatively independent of everything else and
     ! low level, so init it early. Must at least do this before radiation.
     call wv_sat_init
@@ -803,7 +808,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call t_startf ('rad_cnst_init')
     call rad_cnst_init()
     call t_stopf ('rad_cnst_init')
-    
+
     call aer_rad_props_init()
     call cloud_rad_props_init()
 
@@ -823,9 +828,12 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call prescribed_aero_init()
     call aerodep_flx_init()
     call aircraft_emit_init(phys_state,pbuf2d)
+
+    call iac_coupled_fields_init(phys_state)
+
     !when is_cmip6_volc is true ,cmip6 style volcanic file is read
     !Initialized to .false. here but it gets its values from prescribed_volcaero_init
-    is_cmip6_volc = .false. 
+    is_cmip6_volc = .false.
     call t_startf ('prescribed_volcaero_init')
     call prescribed_volcaero_init(is_cmip6_volc)
     call t_stopf ('prescribed_volcaero_init')
@@ -837,7 +845,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
        call t_stopf ('init_ocean_data')
     end if
 
-    ! co2 cycle            
+    ! co2 cycle
     if (co2_transport()) then
        call co2_init()
     end if
@@ -882,7 +890,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     if( microp_scheme == 'RK' ) then
        call stratiform_init()
-    elseif( microp_scheme == 'MG' ) then 
+    elseif( microp_scheme == 'MG' ) then
        if (.not. do_clubb_sgs) call macrop_driver_init(pbuf2d)
        call microp_aero_init()
        call microp_driver_init(pbuf2d)
@@ -900,7 +908,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call metdata_phys_init()
 #endif
     call sslt_rebin_init()
-    
+
     call t_startf ('tropopause_init')
     call tropopause_init()
     call t_stopf ('tropopause_init')
@@ -932,8 +940,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     !--------------------------------
     if(Nudge_Model) call nudging_init
 
-    
-   !BSINGH -  addfld and adddefault calls for perturb growth testing    
+
+   !BSINGH -  addfld and adddefault calls for perturb growth testing
     if(pergro_test_active)call add_fld_default_calls()
 
 end subroutine phys_init
@@ -943,11 +951,11 @@ end subroutine phys_init
   !
 
 subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
-    !----------------------------------------------------------------------- 
-    ! 
-    ! Purpose: 
+    !-----------------------------------------------------------------------
+    !
+    ! Purpose:
     ! First part of atmospheric physics package before updating of surface models
-    ! 
+    !
     !-----------------------------------------------------------------------
     use time_manager,   only: get_nstep
     use cam_diagnostics,only: diag_allocate, diag_physvar_ic
@@ -1015,7 +1023,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     call check_energy_gmean(phys_state, pbuf2d, ztodt, nstep)
     call t_stopf ('chk_en_gmean')
 
-    
+
     if ( adiabatic .or. ideal_phys )then
        call t_stopf ('physpkg_st1')
 
@@ -1056,7 +1064,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
        !call t_adj_detailf(+1)
 
        call system_clock(count=beg_proc_cnt)
-       
+
 !$OMP PARALLEL DO SCHEDULE(STATIC,1) &
 !$OMP PRIVATE (c, beg_chnk_cnt, phys_buffer_chunk, end_chnk_cnt, sysclock_rate, sysclock_max, chunk_cost)
        do c=begchunk, endchunk
@@ -1105,11 +1113,11 @@ end subroutine phys_run1
   !
 
 subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
-    !----------------------------------------------------------------------- 
-    ! 
-    ! Purpose: 
+    !-----------------------------------------------------------------------
+    !
+    ! Purpose:
     ! Physics for adiabatic or idealized physics case.
-    ! 
+    !
     !-----------------------------------------------------------------------
     use physics_buffer, only : physics_buffer_desc, pbuf_set_field, pbuf_get_chunk, pbuf_old_tim_idx
     use time_manager,     only: get_nstep
@@ -1212,26 +1220,26 @@ end subroutine phys_run1_adiabatic_or_ideal
 
 subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        cam_in )
-    !----------------------------------------------------------------------- 
-    ! 
-    ! Purpose: 
+    !-----------------------------------------------------------------------
+    !
+    ! Purpose:
     ! Second part of atmospheric physics package after updating of surface models
-    ! 
-    ! Modified by Kai Zhang 2017-03: add IEFLX fixer treatment 
+    !
+    ! Modified by Kai Zhang 2017-03: add IEFLX fixer treatment
     !-----------------------------------------------------------------------
     use physics_buffer,         only: physics_buffer_desc, pbuf_get_chunk, pbuf_deallocate, pbuf_update_tim_idx
     use mo_lightning,   only: lightning_no_prod
 
 
     use cam_diagnostics,only: diag_deallocate, diag_surf
-    use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds 
+    use comsrf,         only: trefmxav, trefmnav, sgh, sgh30, fsds
     use physconst,      only: stebol, latvap
 #if ( defined OFFLINE_DYN )
     use metdata,        only: get_met_srf2
 #endif
     use time_manager,   only: get_nstep, is_first_step, is_end_curr_month, &
                               is_first_restart_step, is_last_step
-    use check_energy,   only: ieflx_gmean, check_ieflx_fix 
+    use check_energy,   only: ieflx_gmean, check_ieflx_fix
     use phys_control,   only: ieflx_opt
     use co2_diagnostics,only: get_total_carbon, print_global_carbon_diags, &
                               co2_diags_store_fields, co2_diags_read_fields
@@ -1275,7 +1283,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 
     if ( adiabatic .or. ideal_phys ) return
     !-----------------------------------------------------------------------
-    ! Tendency physics after coupler 
+    ! Tendency physics after coupler
     ! Not necessary at terminal timestep.
     !-----------------------------------------------------------------------
     !
@@ -1297,7 +1305,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
     nstep = get_nstep()
 
 
-    !! calculate the global mean ieflx 
+    !! calculate the global mean ieflx
 
     if(ieflx_opt>0) then
        call ieflx_gmean(phys_state, phys_tend, pbuf2d, cam_in, cam_out, nstep)
@@ -1321,9 +1329,9 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        ncol = get_ncols_p(c)
        phys_buffer_chunk => pbuf_get_chunk(pbuf2d, c)
 
-       !! 
+       !!
        !! add the implied internal energy flux to sensible heat flux
-       !! 
+       !!
 
        if(ieflx_opt>0) then
           call check_ieflx_fix(c, ncol, nstep, cam_in(c)%shf)
@@ -1390,7 +1398,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 end subroutine phys_run2
 
   !
-  !----------------------------------------------------------------------- 
+  !-----------------------------------------------------------------------
   !
 
 subroutine phys_final( phys_state, phys_tend, pbuf2d )
@@ -1398,11 +1406,11 @@ subroutine phys_final( phys_state, phys_tend, pbuf2d )
     use chemistry, only : chem_final
     use wv_saturation, only : wv_sat_final
     use radiation, only: radiation_final
-    !----------------------------------------------------------------------- 
-    ! 
-    ! Purpose: 
+    !-----------------------------------------------------------------------
+    !
+    ! Purpose:
     ! Finalization of physics package
-    ! 
+    !
     !-----------------------------------------------------------------------
     ! Input/output arguments
     type(physics_state), pointer :: phys_state(:)
@@ -1439,21 +1447,21 @@ subroutine tphysac (ztodt,   cam_in,  &
        sgh,     sgh30,                                     &
        cam_out,  state,   tend,    pbuf,            &
        fsds    )
-    !----------------------------------------------------------------------- 
-    ! 
-    ! Purpose: 
+    !-----------------------------------------------------------------------
+    !
+    ! Purpose:
     ! Tendency physics after coupling to land, sea, and ice models.
     ! Computes the following:
     !   o Radon surface flux and decay (optional)
     !   o Vertical diffusion and planetary boundary layer
     !   o Multiple gravity wave drag
-    ! 
-    ! Method: 
-    ! <Describe the algorithm(s) used in the routine.> 
-    ! <Also include any applicable external references.> 
-    ! 
+    !
+    ! Method:
+    ! <Describe the algorithm(s) used in the routine.>
+    ! <Also include any applicable external references.>
+    !
     ! Author: CCM1, CMS Contact: J. Truesdale
-    ! 
+    !
     !-----------------------------------------------------------------------
     use physics_buffer, only: physics_buffer_desc, pbuf_set_field, pbuf_get_index, pbuf_get_field, pbuf_old_tim_idx
     use shr_kind_mod,       only: r8 => shr_kind_r8
@@ -1470,14 +1478,14 @@ subroutine tphysac (ztodt,   cam_in,  &
     use aoa_tracers,        only: aoa_tracers_timestep_tend
     use physconst,          only: rhoh2o, latvap,latice, rga
     use aero_model,         only: aero_model_drydep
-    use check_energy,       only: check_energy_chng, check_water, & 
+    use check_energy,       only: check_energy_chng, check_water, &
                                   check_prect, check_qflx , &
                                   check_tracers_data, check_tracers_init, &
                                   check_tracers_chng, check_tracers_fini
     use time_manager,       only: get_nstep, is_first_step, is_end_curr_month
     use cam_abortutils,         only: endrun
     use dycore,             only: dycore_is
-    use cam_control_mod,    only: aqua_planet 
+    use cam_control_mod,    only: aqua_planet
     use mo_gas_phase_chemdr,only: map2chm
     use clybry_fam,         only: clybry_fam_set
     use charge_neutrality,  only: charge_fix
@@ -1488,8 +1496,9 @@ subroutine tphysac (ztodt,   cam_in,  &
     use flux_avg,           only: flux_avg_run
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
     use phys_control,       only: use_qqflx_fixer
-    use co2_cycle,          only: co2_cycle_set_ptend, co2_transport
+    use co2_cycle,          only: co2_cycle_set_ptend, co2_transport, co2_cycle_iac_ptend, co2_readFlux_aircraft
     use co2_diagnostics,    only: get_carbon_sfc_fluxes, get_carbon_air_fluxes
+    use iac_coupled_fields, only: iac_present, iac_co2_name
 
     implicit none
 
@@ -1545,9 +1554,9 @@ subroutine tphysac (ztodt,   cam_in,  &
     real(r8), pointer, dimension(:,:) :: cldliqini
     real(r8), pointer, dimension(:,:) :: cldiceini
     real(r8), pointer, dimension(:,:) :: dtcore
-    real(r8), pointer, dimension(:,:) :: ast     ! relative humidity cloud fraction 
+    real(r8), pointer, dimension(:,:) :: ast     ! relative humidity cloud fraction
 
-    logical :: do_clubb_sgs 
+    logical :: do_clubb_sgs
 
     !DCAPE-ULL: physics buffer fields to compute tendencies for dcape
     real(r8), pointer, dimension(:,:) :: t_star   ! temperature
@@ -1571,7 +1580,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     ncol  = state%ncol
 
     nstep = get_nstep()
-    
+
     call phys_getopts( do_clubb_sgs_out       = do_clubb_sgs, &
                        state_debug_checks_out = state_debug_checks &
                       ,deep_scheme_out        = deep_scheme        &
@@ -1583,7 +1592,7 @@ subroutine tphysac (ztodt,   cam_in,  &
                      )
 
     ! Adjust the surface fluxes to reduce instabilities in near sfc layer
-    if (phys_do_flux_avg()) then 
+    if (phys_do_flux_avg()) then
        call flux_avg_run(state, cam_in,  pbuf, nstep, ztodt)
     endif
 
@@ -1636,7 +1645,7 @@ end if ! l_tracer_aero
 
     call check_qflx(state, tend, "PHYAC01", nstep, ztodt, cam_in%cflx(:,1))
 
-    if(.not.use_qqflx_fixer) then 
+    if(.not.use_qqflx_fixer) then
 
        ! Check if latent heat flux exceeds the total moisture content of the
        ! lowest model layer, thereby creating negative moisture.
@@ -1645,7 +1654,7 @@ end if ! l_tracer_aero
             state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf ,         &
             cam_in%lhf , cam_in%cflx )
 
-    end if 
+    end if
 
     call check_qflx(state, tend, "PHYAC02", nstep, ztodt, cam_in%cflx(:,1))
 
@@ -1660,20 +1669,28 @@ if (l_tracer_aero) then
     call t_startf('adv_tracer_src_snk')
     ! Test tracers
 
-    call tracers_timestep_tend(state, ptend, cam_in%cflx, cam_in%landfrac, ztodt)      
+    call tracers_timestep_tend(state, ptend, cam_in%cflx, cam_in%landfrac, ztodt)
     call physics_update(state, ptend, ztodt, tend)
     call check_tracers_chng(state, tracerint, "tracers_timestep_tend", nstep, ztodt,   &
          cam_in%cflx)
 
-    call aoa_tracers_timestep_tend(state, ptend, cam_in%cflx, cam_in%landfrac, ztodt)      
+    call aoa_tracers_timestep_tend(state, ptend, cam_in%cflx, cam_in%landfrac, ztodt)
     call physics_update(state, ptend, ztodt, tend)
     call check_tracers_chng(state, tracerint, "aoa_tracers_timestep_tend", nstep, ztodt,   &
          cam_in%cflx)
-    
-    ! add tendency from aircraft emissions
-    call co2_cycle_set_ptend(state, pbuf, ptend)
-    call physics_update(state, ptend, ztodt, tend)
-    call get_carbon_air_fluxes(state, pbuf, ztodt)
+
+    if(iac_present) then
+      ! add tendency from iac model component
+      call co2_cycle_iac_ptend(state, pbuf, ptend)
+      call physics_update(state, ptend, ztodt, tend)
+      ! Compute diagnostics (supply optional iac_co2_name to get_carbon_air_fluxes for iac)
+      call get_carbon_air_fluxes(state, pbuf, ztodt, iac_co2_name)
+    else if(co2_readFlux_aircraft) then
+      ! add tendency from aircraft emissions
+      call co2_cycle_set_ptend(state, pbuf, ptend)
+      call physics_update(state, ptend, ztodt, tend)
+      call get_carbon_air_fluxes(state, pbuf, ztodt)
+    endif
 
     ! Chemistry calculation
     if (chem_is_active()) then
@@ -1695,13 +1712,13 @@ end if ! l_tracer_aero
     !===================================================
 
     ! If CLUBB is called, do not call vertical diffusion, but obukov length and
-    !   surface friction velocity still need to be computed.  In addition, 
-    !   surface fluxes need to be updated here for constituents 
+    !   surface friction velocity still need to be computed.  In addition,
+    !   surface fluxes need to be updated here for constituents
     if (do_clubb_sgs) then
 
        call clubb_surface ( state, ptend, ztodt, cam_in, surfric, obklen)
-       
-       ! Update surface flux constituents 
+
+       ! Update surface flux constituents
        call physics_update(state, ptend, ztodt, tend)
 
     else
@@ -1722,7 +1739,7 @@ end if ! l_tracer_aero
 
        call physics_update(state, ptend, ztodt, tend)
        call t_stopf ('vertical_diffusion_tend')
-    
+
     end if ! l_vdiff
     endif
 
@@ -1745,7 +1762,7 @@ if (l_rayleigh) then
       call check_energy_chng(state, tend, "vdiff", nstep, ztodt, cam_in%cflx(:,1), zero, &
            zero, cam_in%shf)
     endif
-    
+
     call check_tracers_chng(state, tracerint, "vdiff", nstep, ztodt, cam_in%cflx)
 
 end if ! l_rayleigh
@@ -1817,7 +1834,7 @@ end if ! l_gw_drag
 if (l_ac_energy_chk) then
     !-------------- Energy budget checks vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 
-    call pbuf_set_field(pbuf, teout_idx, state%te_cur, (/1,itim_old/),(/pcols,1/))       
+    call pbuf_set_field(pbuf, teout_idx, state%te_cur, (/1,itim_old/),(/pcols,1/))
 
     tmp_t(:ncol,:pver) = state%t(:ncol,:pver)
 
@@ -1901,30 +1918,30 @@ subroutine tphysbc (ztodt,               &
        fsns,    fsnt,    flns,    flnt,    state,   &
        tend,    pbuf,     fsds,                     &
        sgh, sgh30, cam_out, cam_in )
-    !----------------------------------------------------------------------- 
-    ! 
-    ! Purpose: 
-    ! Evaluate and apply physical processes that are calculated BEFORE 
-    ! coupling to land, sea, and ice models.  
+    !-----------------------------------------------------------------------
     !
-    ! Processes currently included are: 
+    ! Purpose:
+    ! Evaluate and apply physical processes that are calculated BEFORE
+    ! coupling to land, sea, and ice models.
+    !
+    ! Processes currently included are:
     ! dry adjustment, moist convection, stratiform, wet deposition, radiation
     !
     ! Pass surface fields for separate surface flux calculations
     ! Dump appropriate fields to history file.
-    ! 
-    ! Method: 
+    !
+    ! Method:
     !
     ! Each parameterization should be implemented with this sequence of calls:
     !  1)  Call physics interface
     !  2)  Check energy
     !  3)  Call physics_update
-    ! See Interface to Column Physics and Chemistry Packages 
+    ! See Interface to Column Physics and Chemistry Packages
     !   http://www.ccsm.ucar.edu/models/atm-cam/docs/phys-interface/index.html
-    ! 
+    !
     ! Author: CCM1, CMS Contact: J. Truesdale
     !         modified by A. Gettelman and C. Craig Nov 2010 to separate micro/macro physics
-    ! 
+    !
     !-----------------------------------------------------------------------
 
     use physics_buffer,          only : physics_buffer_desc, pbuf_get_field
@@ -1946,7 +1963,7 @@ subroutine tphysbc (ztodt,               &
     use time_manager,    only: is_first_step, get_nstep
     use convect_shallow, only: convect_shallow_tend
     use check_energy,    only: check_energy_chng, check_energy_fix, &
-                               check_qflx, check_water, check_prect, & 
+                               check_qflx, check_water, check_prect, &
                                check_energy_timestep_init, &
                                check_tracers_data, check_tracers_init, &
                                check_tracers_chng, check_tracers_fini
@@ -2056,7 +2073,7 @@ subroutine tphysbc (ztodt,               &
     real(r8),pointer :: snow_pcw(:)     ! snow from prognostic cloud scheme
     real(r8),pointer :: prec_sed(:)     ! total precip from cloud sedimentation
     real(r8),pointer :: snow_sed(:)     ! snow from cloud ice sedimentation
-    real(r8) :: sh_e_ed_ratio(pcols,pver)       ! shallow conv [ent/(ent+det)] ratio  
+    real(r8) :: sh_e_ed_ratio(pcols,pver)       ! shallow conv [ent/(ent+det)] ratio
 
 
     ! Local copies for substepping
@@ -2081,27 +2098,27 @@ subroutine tphysbc (ztodt,               &
 
     character(len=fieldname_len)   :: varname, vsuffix
     !BSINGH - Following variables are from zm_conv_intr, which are moved here as they are now used
-    ! by aero_model_wetdep subroutine. 
+    ! by aero_model_wetdep subroutine.
 
-    real(r8):: mu(pcols,pver) 
+    real(r8):: mu(pcols,pver)
     real(r8):: eu(pcols,pver)
     real(r8):: du(pcols,pver)
     real(r8):: md(pcols,pver)
     real(r8):: ed(pcols,pver)
     real(r8):: dp(pcols,pver)
-    
+
     ! wg layer thickness in mbs (between upper/lower interface).
     real(r8):: dsubcld(pcols)
-    
-    ! wg layer thickness in mbs between lcl and maxi.    
+
+    ! wg layer thickness in mbs between lcl and maxi.
     integer :: jt(pcols)
-    
+
     ! wg top  level index of deep cumulus convection.
     integer :: maxg(pcols)
-    
+
     ! wg gathered values of maxi.
     integer :: ideep(pcols)
-    
+
     ! w holds position of gathered points vs longitude index
     integer :: lengath
 
@@ -2112,7 +2129,7 @@ subroutine tphysbc (ztodt,               &
     real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
     real(r8) :: CIDiff(pcols)            ! Difference in vertically integrated static energy
 
-    !HuiWan (2014/15): added for a short-term time step convergence test ++ 
+    !HuiWan (2014/15): added for a short-term time step convergence test ++
     logical :: l_bc_energy_fix
     logical :: l_dry_adj
     logical :: l_tracer_aero
@@ -2134,7 +2151,7 @@ subroutine tphysbc (ztodt,               &
                       ,l_st_mic_out           = l_st_mic           &
                       ,l_rad_out              = l_rad              &
                       )
-    
+
     !-----------------------------------------------------------------------
     call t_startf('bc_init')
 
@@ -2149,7 +2166,7 @@ subroutine tphysbc (ztodt,               &
 
     nstep = get_nstep()
 
-    if (pergro_test_active) then 
+    if (pergro_test_active) then
        !call outfld calls
        do ihist = 1 , nvars_prtrb_hist
           vsuffix  = trim(adjustl(hist_vars(ihist)))
@@ -2217,17 +2234,17 @@ subroutine tphysbc (ztodt,               &
     call check_water(state, tend, "PHYBC01", nstep, ztodt)
 
 
-    if(use_mass_borrower) then 
+    if(use_mass_borrower) then
 
       !! printout diagnostic information
       !!.................................................................
        call qneg3('TPHYSBCb',lchnk  ,ncol    ,pcols   ,pver    , &
             1, pcnst, qmin  ,state%q, .False.)
 
-      !! tracer borrower for mass conservation 
+      !! tracer borrower for mass conservation
       !!.................................................................
 
-       do m = 1, pcnst 
+       do m = 1, pcnst
           call massborrow("PHYBC01",lchnk,ncol,state%psetcols,m,m,qmin(m),state%q(1,1,m),state%pdel)
        end do
 
@@ -2241,7 +2258,7 @@ subroutine tphysbc (ztodt,               &
       call qneg3('TPHYSBCb',lchnk  ,ncol    ,pcols   ,pver    , &
            1, pcnst, qmin  ,state%q, .True. )
 
-    end if 
+    end if
 
 !!== KZ_WCON
 
@@ -2261,7 +2278,7 @@ subroutine tphysbc (ztodt,               &
        call qneg3('TPHYSBCc',lchnk  ,ncol    ,pcols   ,pver    , &
             1, pcnst, qmin  ,state%q, .False. )
 
-       !! tracer borrower for mass conservation 
+       !! tracer borrower for mass conservation
        !!.................................................................
        do m = 1, pcnst
           call massborrow("PHYBC02",lchnk,ncol,state%psetcols,m,m,qmin(m),state%q(1,1,m),state%pdel)
@@ -2377,7 +2394,7 @@ end if
          rliq,    &
          ztodt,   &
          state,   ptend, cam_in%landfrac, pbuf, mu, eu, du, md, ed, dp,   &
-         dsubcld, jt, maxg, ideep, lengath) 
+         dsubcld, jt, maxg, ideep, lengath)
     call t_stopf('convect_deep_tend')
 
     call physics_update(state, ptend, ztodt, tend)
@@ -2408,8 +2425,8 @@ end if
     call t_startf ('convect_shallow_tend')
 
     call convect_shallow_tend (ztodt   , cmfmc,  cmfmc2  ,&
-         dlf        , dlf2   ,  rliq   , rliq2, & 
-         state      , ptend  ,  pbuf   , sh_e_ed_ratio   , sgh, sgh30, cam_in) 
+         dlf        , dlf2   ,  rliq   , rliq2, &
+         state      , ptend  ,  pbuf   , sh_e_ed_ratio   , sgh, sgh30, cam_in)
     call t_stopf ('convect_shallow_tend')
 
     call physics_update(state, ptend, ztodt, tend)
@@ -2429,7 +2446,7 @@ if (l_tracer_aero) then
     ! from the stratiform interface has access to the same aerosols as the radiation
     ! code.
     call sslt_rebin_adv(pbuf,  state)
-    
+
 end if
 
 
@@ -2469,7 +2486,7 @@ end if
 
         if (l_st_mac) then
 
-          if (micro_do_icesupersat) then 
+          if (micro_do_icesupersat) then
 
             !===================================================
             ! Aerosol Activation
@@ -2481,7 +2498,7 @@ end if
             call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
 
             call physics_update(state, ptend, ztodt, tend)
-            call check_energy_chng(state, tend, "mp_aero_tend", nstep, ztodt, zero, zero, zero, zero)      
+            call check_energy_chng(state, tend, "mp_aero_tend", nstep, ztodt, zero, zero, zero, zero)
 
           endif
           !===================================================
@@ -2502,9 +2519,9 @@ end if
                   pbuf,            det_s,          det_ice,          &
                   lcldo)
 
-             !  Since we "added" the reserved liquid back in this routine, we need 
+             !  Since we "added" the reserved liquid back in this routine, we need
              !    to account for it in the energy checker
-             flx_cnd(:ncol) = -1._r8*rliq(:ncol) 
+             flx_cnd(:ncol) = -1._r8*rliq(:ncol)
              flx_heat(:ncol) = det_s(:ncol)
 
              ! Unfortunately, physics_update does not know what time period
@@ -2512,19 +2529,19 @@ end if
              ! with substeps correctly. For now, work around this by scaling
              ! ptend down by the number of substeps, then applying it for
              ! the full time (ztodt).
-             call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)          
+             call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
              call physics_update(state, ptend, ztodt, tend)
              call check_energy_chng(state, tend, "macrop_tend", nstep, ztodt, &
                   zero, flx_cnd/cld_macmic_num_steps, &
                   det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
-       
+
           else ! Calculate CLUBB macrophysics
 
 
-!!== KZ_WATCON 
+!!== KZ_WATCON
 
     !! qqflx fixer to avoid negative water vapor in the surface layer
-    !! due to strong negative qflx  
+    !! due to strong negative qflx
     !!.................................................................
 
     if(use_qqflx_fixer) then
@@ -2533,19 +2550,19 @@ end if
             cam_in%lhf , cam_in%cflx/cld_macmic_num_steps )
 
     end if
-!!== KZ_WATCON 
+!!== KZ_WATCON
 
              ! =====================================================
              !    CLUBB call (PBL, shallow convection, macrophysics)
-             ! =====================================================  
-   
+             ! =====================================================
+
              call clubb_tend_cam(state,ptend,pbuf,cld_macmic_ztodt,&
-                cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, & 
+                cmfmc, cam_in, sgh30, macmic_it, cld_macmic_num_steps, &
                 dlf, det_s, det_ice, lcldo)
 
-                !  Since we "added" the reserved liquid back in this routine, we need 
+                !  Since we "added" the reserved liquid back in this routine, we need
                 !    to account for it in the energy checker
-                flx_cnd(:ncol) = -1._r8*rliq(:ncol) 
+                flx_cnd(:ncol) = -1._r8*rliq(:ncol)
                 flx_heat(:ncol) = cam_in%shf(:ncol) + det_s(:ncol)
 
                 ! Unfortunately, physics_update does not know what time period
@@ -2554,25 +2571,25 @@ end if
                 ! ptend down by the number of substeps, then applying it for
                 ! the full time (ztodt).
                 call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
-                !    Update physics tendencies and copy state to state_eq, because that is 
-                !      input for microphysics              
+                !    Update physics tendencies and copy state to state_eq, because that is
+                !      input for microphysics
                 call physics_update(state, ptend, ztodt, tend)
                 call check_energy_chng(state, tend, "clubb_tend", nstep, ztodt, &
                      cam_in%cflx(:,1)/cld_macmic_num_steps, flx_cnd/cld_macmic_num_steps, &
                      det_ice/cld_macmic_num_steps, flx_heat/cld_macmic_num_steps)
- 
+
           endif
 
           call t_stopf('macrop_tend')
         end if ! l_st_mac
 
           !===================================================
-          ! Calculate cloud microphysics 
+          ! Calculate cloud microphysics
           !===================================================
         if (l_st_mic) then
 
           if (is_subcol_on()) then
-             ! Allocate sub-column structures. 
+             ! Allocate sub-column structures.
              call physics_state_alloc(state_sc, lchnk, psubcols*pcols)
              call physics_tend_alloc(tend_sc, psubcols*pcols)
 
@@ -2583,7 +2600,7 @@ end if
              call check_energy_timestep_init(state_sc, tend_sc, pbuf, col_type_subcol)
           end if
 
-          if (.not. micro_do_icesupersat) then 
+          if (.not. micro_do_icesupersat) then
 
             call t_startf('microp_aero_run')
             call microp_aero_run(state, ptend_aero, cld_macmic_ztodt, pbuf, lcldo)
@@ -2637,7 +2654,7 @@ end if
 
           call t_stopf('microp_tend')
 
-        else 
+        else
         ! If microphysics is off, set surface cloud liquid/ice and rain/snow fluxes to zero
 
           prec_sed = 0._r8
@@ -2699,7 +2716,7 @@ end if
    end if ! l_tracer_aero
 
     !===================================================
-    ! Moist physical parameteriztions complete: 
+    ! Moist physical parameteriztions complete:
     ! send dynamical variables, and derived variables to history file
     !===================================================
 
@@ -2751,7 +2768,7 @@ if (l_rad) then
 end if ! l_rad
 
     if(do_aerocom_ind3) then
-       call cloud_top_aerocom(state, pbuf) 
+       call cloud_top_aerocom(state, pbuf)
     end if
 
     if (trim(adjustl(precip_downscaling_method)) == "FNM") then
@@ -2810,6 +2827,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use prescribed_aero,     only: prescribed_aero_adv
   use aerodep_flx,         only: aerodep_flx_adv
   use aircraft_emit,       only: aircraft_emit_adv
+  use iac_coupled_fields, only: iac_coupled_fields_adv
   use prescribed_volcaero, only: prescribed_volcaero_adv
   use nudging,             only: Nudge_Model,nudging_timestep_init
 
@@ -2819,7 +2837,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
 
   type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state
   type(cam_out_t),     intent(inout), dimension(begchunk:endchunk) :: cam_out
-  
+
   type(physics_buffer_desc), pointer                 :: pbuf2d(:,:)
 
   !-----------------------------------------------------------------------------
@@ -2840,6 +2858,8 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   call prescribed_ghg_adv(phys_state, pbuf2d)
   call prescribed_aero_adv(phys_state, pbuf2d)
   call aircraft_emit_adv(phys_state, pbuf2d)
+
+  call iac_coupled_fields_adv(phys_state, pbuf2d)
 
   call t_startf('prescribed_volcaero_adv')
   call prescribed_volcaero_adv(phys_state, pbuf2d)
@@ -2865,7 +2885,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
 
   ! Upper atmosphere radiative processes
   call radheat_timestep_init(phys_state, pbuf2d)
- 
+
   ! Time interpolate for vertical diffusion upper boundary condition
   call vertical_diffusion_ts_init(pbuf2d, phys_state)
 
@@ -2914,18 +2934,18 @@ subroutine add_fld_default_calls()
 
   character(len=fieldname_len) :: varname
   character(len=1000)          :: s_lngname,stend_lngname,qv_lngname,qvtend_lngname,t_lngname
-  
+
   integer :: iv, ntot, ihist
 
   ntot = size(vlist)
 
   do ihist = 1 , nvars_prtrb_hist
-     do iv = 1, ntot   
-        
+     do iv = 1, ntot
+
         varname  = trim(adjustl(hist_vars(ihist)))//'_'//trim(adjustl(vlist(iv))) ! form variable name
 
         call addfld (trim(adjustl(varname)), (/ 'lev' /), 'A', 'prg_test_units', 'pergro_longname',flag_xyfill=.true.)!The units and longname are dummy as it is for a test only
-        call add_default (trim(adjustl(varname)), 1, ' ')        
+        call add_default (trim(adjustl(varname)), 1, ' ')
      enddo
   enddo
 

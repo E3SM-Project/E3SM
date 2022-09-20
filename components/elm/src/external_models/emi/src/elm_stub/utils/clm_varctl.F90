@@ -18,6 +18,7 @@ module clm_varctl
   public :: cnallocate_carbonphosphorus_only_set
   public :: cnallocate_carbonphosphorus_only
   public :: get_carbontag ! get the tag for carbon simulations  
+  public :: clm_varctl_set_iac_active_only
   !
   private
   save
@@ -141,6 +142,9 @@ module clm_varctl
   !----------------------------------------------------------
   ! BGC logic and datasets
   !----------------------------------------------------------
+
+  ! Couple with iac compontent
+  logical, public :: iac_active = .false.
 
   ! values of 'prognostic','diagnostic','constant'
   character(len=16), public :: co2_type = 'constant'    

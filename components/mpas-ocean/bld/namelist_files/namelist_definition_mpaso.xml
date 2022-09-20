@@ -1070,6 +1070,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_cvmix_kpp_use_active_wave" type="logical"
+	category="cvmix" group="cvmix">
+Flag for use of active WAVEWATCH III coupling to calculate the Langmuir number and enhancement factor
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_cvmix_kpp_langmuir_mixing_opt" type="char*1024"
 	category="cvmix" group="cvmix">
 Option of Langmuir enhanced mixing parameterization
@@ -1083,6 +1091,25 @@ Default: Defined in namelist_defaults.xml
 Option of Langmuir enhanced entrainment parameterization
 
 Valid values: NONE, LWF16, LF17, RWHGK16
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- wave coupling -->
+
+<entry id="config_use_active_wave" type="logical"
+	category="wave_coupling" group="wave_coupling">
+Flag for using prognostic waves
+
+Valid values: 
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_n_stokes_drift_wavenumber_partitions" type="integer"
+	category="wave_coupling" group="wave_coupling">
+Number of wavenumbers used to reconstruct Stokes drift profile
+
+Valid values: 3, 4, and 6
 Default: Defined in namelist_defaults.xml
 </entry>
 

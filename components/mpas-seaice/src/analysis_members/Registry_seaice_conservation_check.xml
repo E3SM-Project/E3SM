@@ -31,6 +31,10 @@
 			description="If true, abort if carbon conservation fails bounds check."
 			possible_values="true or false"
 		/>
+		<nml_option name="config_AM_conservationCheck_include_ocean" type="logical" default_value="false" units="unitless"
+			description="Include slab ocean in conservation calculation."
+			possible_values="true or false"
+		/>
 	</nml_record>
 	<packages>
 		<package name="conservationCheckAMPKG" description="This package includes variables required for the conservationCheck analysis member."/>
@@ -61,7 +65,13 @@
 		<var name="initialEnergy" type="real" dimensions="nHemispheres Time" units="J"
 			description="Total initial energy of ice and snow"
 		/>
+		<var name="initialEnergyOcean" type="real" dimensions="nHemispheres Time" units="J"
+			description="Total initial energy of ice and snow"
+		/>
 		<var name="finalEnergy" type="real" dimensions="nHemispheres Time" units="J"
+			description="Total final energy of ice and snow"
+		/>
+		<var name="finalEnergyOcean" type="real" dimensions="nHemispheres Time" units="J"
 			description="Total final energy of ice and snow"
 		/>
 		<var name="energyChange" type="real" dimensions="nHemispheres Time" units="J"
@@ -114,10 +124,28 @@
 		<var name="initialMass" type="real" dimensions="nHemispheres Time" units="kg"
 			description="Total initial mass of ice and snow"
 		/>
+                <var name="initialMassOcean" type="real" dimensions="nHemispheres Time" units="kg"
+			description="Total initial mass of ice and snow"
+		/>
 		<var name="finalMass" type="real" dimensions="nHemispheres Time" units="kg"
 			description="Total final mass of ice and snow"
 		/>
-		<var name="massChange" type="real" dimensions="nHemispheres Time" units="kg"
+                <var name="finalMassOcean" type="real" dimensions="nHemispheres Time" units="kg"
+			description="Total final mass of ice and snow"
+		/>
+                <var name="iceMassChange" type="real" dimensions="nHemispheres Time" units="kg"
+			description="Total mass change of ice and snow during time step"
+		/>
+		<var name="iceMassChangeFlux" type="real" dimensions="nHemispheres Time" units="kg/m2s"
+			description="Total mass change flux of ice and snow during time step"
+		/>
+                <var name="oceanMassChange" type="real" dimensions="nHemispheres Time" units="kg"
+			description="Total mass change of ice and snow during time step"
+		/>
+		<var name="oceanMassChangeFlux" type="real" dimensions="nHemispheres Time" units="kg/m2s"
+			description="Total mass change flux of ice and snow during time step"
+		/>
+                <var name="massChange" type="real" dimensions="nHemispheres Time" units="kg"
 			description="Total mass change of ice and snow during time step"
 		/>
 		<var name="massChangeFlux" type="real" dimensions="nHemispheres Time" units="kg/m2s"
@@ -152,7 +180,13 @@
 		<var name="initialSalt" type="real" dimensions="nHemispheres Time" units="kg"
 			description="Total initial salt of ice and snow"
 		/>
+		<var name="initialSaltOcean" type="real" dimensions="nHemispheres Time" units="kg"
+			description="Total initial salt of ice and snow"
+		/>
 		<var name="finalSalt" type="real" dimensions="nHemispheres Time" units="kg"
+			description="Total final salt of ice and snow"
+		/>
+		<var name="finalSaltOcean" type="real" dimensions="nHemispheres Time" units="kg"
 			description="Total final salt of ice and snow"
 		/>
 		<var name="saltChange" type="real" dimensions="nHemispheres Time" units="kg"

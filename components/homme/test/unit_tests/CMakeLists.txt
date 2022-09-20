@@ -15,7 +15,8 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
   #ENDIF()
   SET_TESTS_PROPERTIES(${target_name}_test PROPERTIES LABELS "unit")
 
-  TARGET_LINK_LIBRARIES(${target_name} timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES} kokkos)
+  TARGET_LINK_LIBRARIES(${target_name} timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
+  link_to_kokkos(${target_name})
   IF (HOMME_USE_MKL)
     TARGET_COMPILE_OPTIONS (${target_name} PUBLIC -mkl)
     TARGET_LINK_LIBRARIES (${target_name} -mkl)
@@ -38,6 +39,8 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
     ELSE ()
       TARGET_LINK_LIBRARIES(${target_name} pio)
     ENDIF ()
+  ELSE ()
+    ADD_DEFINITIONS(-DHOMME_WITHOUT_PIOLIBRARY)
   ENDIF ()
 
   IF (NOT "${target_f90_srcs}" EQUAL "")

@@ -19,10 +19,12 @@ template <typename View>
 using Const = typename View::const_type;
 
 // GPU-friendly replacements for std::*.
+#if KOKKOS_VERSION < 30700
 template <typename T> KOKKOS_INLINE_FUNCTION
 const T& min (const T& a, const T& b) { return a < b ? a : b; }
 template <typename T> KOKKOS_INLINE_FUNCTION
 const T& max (const T& a, const T& b) { return a > b ? a : b; }
+#endif
 template <typename T> KOKKOS_INLINE_FUNCTION
 void swap (T& a, T& b) { const auto tmp = a; a = b; b = tmp; }
 
@@ -31,7 +33,7 @@ template <typename Real> struct NumericTraits;
 template <> struct NumericTraits<double> {
   KOKKOS_INLINE_FUNCTION static double epsilon () {
     return
-#ifdef KOKKOS_ENABLE_CUDA
+#ifdef COMPOSE_ENABLE_GPU
       2.2204460492503131e-16
 #else
       std::numeric_limits<double>::epsilon()
@@ -43,7 +45,7 @@ template <> struct NumericTraits<double> {
 template <> struct NumericTraits<float> {
   KOKKOS_INLINE_FUNCTION static float epsilon () {
     return
-#ifdef KOKKOS_ENABLE_CUDA
+#ifdef COMPOSE_ENABLE_GPU
       1.1920928955078125e-07
 #else
       std::numeric_limits<float>::epsilon()
@@ -58,11 +60,11 @@ struct DeviceType {
                          typename ExeSpace::memory_space> type;
 };
 
-#ifdef KOKKOS_ENABLE_CUDA
-typedef Kokkos::Device<Kokkos::CudaSpace::execution_space,
-                       Kokkos::CudaSpace::memory_space> DefaultDeviceType;
+#ifdef COMPOSE_ENABLE_GPU
+typedef Kokkos::Device<ComposeGpuSpace::execution_space,
+                       ComposeGpuSpace::memory_space> DefaultDeviceType;
 
-template <> struct DeviceType<Kokkos::Cuda> {
+template <> struct DeviceType<ComposeGpuExeSpace> {
   typedef DefaultDeviceType type;
 };
 #else
@@ -92,8 +94,8 @@ template <typename ES> struct OnGpu {
 #endif
   };
 };
-#ifdef KOKKOS_ENABLE_CUDA
-template <> struct OnGpu<Kokkos::Cuda> { enum : bool { value = true }; };
+#ifdef COMPOSE_ENABLE_GPU
+template <> struct OnGpu<ComposeGpuExeSpace> { enum : bool { value = true }; };
 template <> struct OnGpu<MachineTraits> {}; // flag as an error at compile time
 #endif
 
@@ -140,7 +142,7 @@ template <typename View> const View& unmanaged (
 #endif
 
 // Copy by ref if not Cuda build.
-#if defined COMPOSE_PORT && defined KOKKOS_ENABLE_CUDA
+#if defined COMPOSE_PORT && defined COMPOSE_ENABLE_GPU
 # define COMPOSE_LAMBDA KOKKOS_LAMBDA
 # define COMPOSE_INLINE_FUNCTION KOKKOS_INLINE_FUNCTION
 # define COMPOSE_FORCEINLINE_FUNCTION KOKKOS_FORCEINLINE_FUNCTION

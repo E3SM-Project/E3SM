@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !-----------------------------------------------------------------------
 !  mpas_dmpar
@@ -970,6 +970,8 @@ include 'mpif.h'
       integer, intent(out) :: procout  !< Output: Processor on which rin resides
       integer :: mpi_ierr, threadNum
       real(kind=RKIND), dimension(2,1) :: recvbuf, sendbuf
+
+      threadNum = mpas_threading_get_thread_num()
 
       if ( threadNum == 0 ) then
 #ifdef _MPI
@@ -5032,7 +5034,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       type (field3DInteger), pointer :: fieldCursor, fieldCursor2
       type (mpas_exchange_list), pointer :: exchListPtr
       type (mpas_communication_list), pointer :: sendList, recvList, commListPtr
-      integer :: mpi_ierr, threadnum
+      integer :: mpi_ierr, threadNum
       integer :: nHaloLayers, iHalo, i, j, k
       integer :: bufferOffset, nAdded
       integer, dimension(:), pointer :: haloLayers

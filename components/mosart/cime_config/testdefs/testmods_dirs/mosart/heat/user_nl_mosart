@@ -1,0 +1,2 @@
+frivinp_rtm = '$DIN_LOC_ROOT/rof/mosart/MOSART_global_half_20180721a.nc'
+heatflag = .true.

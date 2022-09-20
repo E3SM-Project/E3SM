@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 
 module ocn_submesoscale_eddies
@@ -102,7 +102,7 @@ module ocn_submesoscale_eddies
      !$omp parallel
      !$omp do schedule(runtime) &
      !$omp private(cell1,cell2,bvfML,zEdge,streamFunction,gradBuoyML,hML,bvfAv, &
-     !$omp         zMLD,Lf,ds,mu,k)
+     !$omp         zMLD,Lf,ds,mu,k,indMLDedge,hAv)
      do iEdge=1,nEdges
         cell1 = cellsOnEdge(1,iEdge)
         cell2 = cellsOnEdge(2,iEdge)

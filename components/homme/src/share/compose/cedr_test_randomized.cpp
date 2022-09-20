@@ -395,7 +395,7 @@ Int TestRandomized
               local_violated.size(), MPI_MAX, p.root());
 
   if (p.amroot()) {
-    const Real tol = 1e2*std::numeric_limits<Real>::epsilon();
+    const Real tol = 5e2*std::numeric_limits<Real>::epsilon();
     for (size_t ti = 0; ti < ts.size(); ++ti) {
       // Check mass conservation.
       const Real desired_mass = glbl_mass[3*ti], actual_mass = glbl_mass[3*ti+1],

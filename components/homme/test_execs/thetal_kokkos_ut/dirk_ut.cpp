@@ -87,6 +87,8 @@ struct Session {
 
     nelemd = c.get<Connectivity>().get_num_local_elements();
     e = c.create<Elements>();
+    e.m_state = c.create<ElementsState>();
+    e.m_geometry = c.create<ElementsGeometry>();
   }
 
   void cleanup () {

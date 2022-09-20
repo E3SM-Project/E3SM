@@ -12,8 +12,7 @@
 
 #include "gptl.h"
 
-#if defined(HOMMEXX_CUDA_SPACE) || \
-  (defined(HOMMEXX_DEFAULT_SPACE) && defined(KOKKOS_ENABLE_CUDA)) // Can't use GPTL timers on CUDA
+#ifdef HOMMEXX_ENABLE_GPU
 #define start_timer(name) {}
 #define stop_timer(name) {}
 #else

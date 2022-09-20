@@ -32,7 +32,8 @@
            colpkg_init_parameters, &
            colpkg_init_tracer_flags, &
            colpkg_init_tracer_indices, &
-           colpkg_init_tracer_numbers
+           colpkg_init_tracer_numbers, &
+           colpkg_init_active_processes
 
       ! time stepping
       public :: &
@@ -2284,16 +2285,15 @@
          endif   ! aicen_init
 
       !-----------------------------------------------------------------
-      ! Transport liquid water in snow between layers and 
+      ! Transport liquid water in snow between layers and
       ! compute the meltpond contribution
       !-----------------------------------------------------------------
 
-       if (use_smliq_pnd) then
-         call drain_snow (dt,            nslyr,        &
-                          vsnon   (n) ,  aicen    (n), &
-                          smice  (:,n),  smliq  (:,n), &
-                          meltsliqn(n))
-       endif
+      call drain_snow (dt,            nslyr,        &
+                       vsnon   (n) ,  aicen    (n), &
+                       smice  (:,n),  smliq  (:,n), &
+                       meltsliqn(n),  use_smliq_pnd)
+
 
       !-----------------------------------------------------------------
       ! Melt ponds
@@ -5382,6 +5382,49 @@
          nbtrcr_sw = nbtrcr_sw_in
 
       end subroutine colpkg_init_tracer_numbers
+
+!=======================================================================
+! set active processes
+
+      subroutine colpkg_init_active_processes(&
+           latent_processes_active, &
+           lateral_melt_active, &
+           congel_basal_melt_active)
+
+        use ice_atmo, only: &
+             latentHeatActive
+
+        use ice_therm_vertical, only: &
+             lateralMeltActive, &
+             congelBasalMeltActive
+
+        use ice_constants_colpkg, only: &
+             c0, c1
+
+        logical (kind=log_kind), intent(in) :: &
+             latent_processes_active, &
+             lateral_melt_active, &
+             congel_basal_melt_active
+
+        if (latent_processes_active) then
+           latentHeatActive = c1
+        else
+           latentHeatActive = c0
+        endif
+
+        if (lateral_melt_active) then
+           lateralMeltActive = c1
+        else
+           lateralMeltActive = c0
+        endif
+
+        if (congel_basal_melt_active) then
+           congelBasalMeltActive = c1
+        else
+           congelBasalMeltActive = c0
+        endif
+
+      end subroutine colpkg_init_active_processes
 
 !=======================================================================
 

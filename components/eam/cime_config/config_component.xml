@@ -47,7 +47,9 @@
     <values modifier='additive'>
       <value compset=""                >-mach $MACH</value>
       <value compset="_EAM"            >-phys default</value>
-      <value compset="_EAM%CMIP6_"     >&eam_phys_defaults; &eam_chem_defaults;</value>
+      <value compset="_EAM%CMIP6_"      >&eam_phys_defaults; &eam_chem_defaults;</value>
+      <value compset="_EAM%CMIP6-1pctCO2" >&eam_phys_defaults; &eam_chem_defaults;</value>
+      <value compset="_EAM%CMIP6-4xCO2"   >&eam_phys_defaults; &eam_chem_defaults;</value>
       <value compset="_EAM%AR5sf"      >&eam_phys_defaults; -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero</value>
       <value compset="_ELM%[^_]*BC"    >-bc_dep_to_snow_updates</value>
       <value compset="_EAM.*_BGC%*"    >-co2_cycle</value>
@@ -105,6 +107,8 @@
       <value compset="20TR(?:SOI)?_EAM.*CMIP6.*_BGC*"   >20TR_eam_CMIP6_bgc</value>
       <value compset="SSP585(?:SOI)?_EAM.*CMIP6"        >SSP585_eam_CMIP6</value>
       <value compset="SSP370(?:SOI)?_EAM.*CMIP6"        >SSP370_eam_CMIP6</value>
+      <value compset="SSP370(?:SOI)?_EAM.*CMIP6.*_GCAM" >SSP370_eam_EHC</value>
+      <value compset="SSP245(?:SOI)?_EAM.*CMIP6.*_GCAM" >SSP245_eam_EHC</value>
       <value compset="SSP585(?:SOI)?_EAM.*CMIP6.*_BGC%B">SSP585_cam5_CMIP6_bgc</value>
       <value compset="20TR(?:SOI)?_EAM.*AR5sf"          >20TR_E3SMv1_superfast_ar5-emis</value>
       <value compset="20TRS_EAM.*AR5sf"                 >20TRS_E3SMv1_superfast_ar5-emis</value>

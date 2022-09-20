@@ -122,6 +122,20 @@
         <desc>Option to couple ocean bgc with sea ice bgc</desc>
  </entry>
 
+  <entry id="MPASO_WAVE">
+        <type>char</type>
+        <valid_values>false,true</valid_values>
+        <default_value>false</default_value>
+        <values>
+           <value compset="MPASO.*_SWAV">false</value>
+           <value compset="_MPASO.*_WW3">true</value>
+
+        </values>
+        <group>case_comp</group>
+        <file>env_case.xml</file>
+        <desc>Option to describe the MPASO wave coupling</desc>
+  </entry>
+
   <description>
     <desc compset="_MPASO">mpas ocean default:</desc>
   </description>

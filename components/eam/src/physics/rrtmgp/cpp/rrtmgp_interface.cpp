@@ -96,11 +96,11 @@ extern "C" int get_ngpt_lw() {
 }
 
 extern "C" double get_min_temperature() {
-    return min(k_dist_sw.temp_ref_min, k_dist_lw.temp_ref_min);
+    return std::min(k_dist_sw.temp_ref_min, k_dist_lw.temp_ref_min);
 }
 
 extern "C" double get_max_temperature() {
-    return max(k_dist_sw.temp_ref_max, k_dist_lw.temp_ref_max);
+    return std::max(k_dist_sw.temp_ref_max, k_dist_lw.temp_ref_max);
 }
 
 extern "C" void get_gpoint_bands_sw(int *gpoint_bands_p) {
@@ -129,6 +129,9 @@ extern "C" void rrtmgp_run_sw (
         double *clrsky_bnd_flux_up_p, double *clrsky_bnd_flux_dn_p, double *clrsky_bnd_flux_net_p, double *clrsky_bnd_flux_dn_dir_p,
         double tsi_scaling
         ) {
+
+    using yakl::fortran::parallel_for;
+    using yakl::fortran::Bounds;
 
     // Wrap pointers in YAKL arrays
     int nswbands = k_dist_sw.get_nband();
@@ -378,6 +381,9 @@ extern "C" void rrtmgp_run_lw (
         double *clrsky_flux_up_p    , double *clrsky_flux_dn_p    , double *clrsky_flux_net_p    ,
         double *clrsky_bnd_flux_up_p, double *clrsky_bnd_flux_dn_p, double *clrsky_bnd_flux_net_p
         ) {
+
+    using yakl::fortran::parallel_for;
+    using yakl::fortran::Bounds;
 
     // Wrap pointers in YAKL arrays
     int nlwbands = k_dist_lw.get_nband();

@@ -225,7 +225,6 @@ module elm_varctl
   logical, public            :: use_fates_logging = .false.             ! true => turn on logging module
   logical, public            :: use_fates_planthydro = .false.          ! true => turn on fates hydro
   logical, public            :: use_fates_cohort_age_tracking = .false. ! true => turn on cohort age tracking
-  logical, public            :: use_fates_tree_damage = .false.         ! true => turn on tree damage module
   logical, public            :: use_fates_ed_st3   = .false.            ! true => static stand structure
   logical, public            :: use_fates_ed_prescribed_phys = .false.  ! true => prescribed physiology
   logical, public            :: use_fates_inventory_init = .false.      ! true => initialize fates from inventory
@@ -426,8 +425,8 @@ module elm_varctl
 
   ! Soil erosion
   !-----------------------------------------------------------------------
-  logical, public :: use_erosion    = .false.   ! switch for turning on the soil erosion model
-  logical, public :: ero_ccycle     = .false.   ! switch for turning on soil C, N and P loss by erosion (only valid when user_erosion = .true.)
+  logical, public :: use_erosion    = .false.
+  logical, public :: ero_ccycle     = .false.
 
   !$acc declare copyin(use_pheno_flux_limiter)
   !$acc declare copyin(use_erosion)
@@ -504,22 +503,6 @@ module elm_varctl
    integer, public :: budget_ann   = 1
    integer, public :: budget_ltann = 1
    integer, public :: budget_ltend = 0
-
-   !----------------------------------------------------------
-   ! land river two way coupling
-   !----------------------------------------------------------
-   logical, public :: use_lnd_rof_two_way = .false.
-   integer, public :: lnd_rof_coupling_nstep = 0
-   
-   
-   !----------------------------------------------------------
-   ! SNICAR-AD
-   !----------------------------------------------------------
-   character(len=256), public :: snow_shape = 'sphere'
-   character(len=256), public :: snicar_atm_type = 'default'
-   logical, public :: use_dust_snow_internal_mixing = .false.
-
-
 contains
 
   !---------------------------------------------------------------------------
@@ -594,6 +577,12 @@ contains
   logical function CNAllocate_CarbonPhosphorus_only()
     cnallocate_carbonphosphorus_only = carbonphosphorus_only
   end function CNAllocate_CarbonPhosphorus_only
+
+  ! set module iac_active flag only
+  subroutine elm_varctl_set_iac_active_only(iac_active_in)
+    logical, intent(in) :: iac_active_in
+    iac_active = iac_active_in
+  end subroutine elm_varctl_set_iac_active_only
 
   function get_carbontag(carbon_type)result(ctag)
     !$acc routine seq

@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_defaults.xsl"?>
+
+<namelist_defaults>
+
+<!--
+Values to use by default for creation of WAVEWATCHIII model namelists.
+The element names are the same as the corresponding namelist
+variables.  Values that depend on the model configuration use
+attributes to express the dependency.  
+-->
+
+<spectrum%xfr>1.07</spectrum%xfr>
+<spectrum%freq1>0.035</spectrum%freq1>
+<spectrum%nk>50</spectrum%nk>
+
+<spectrum%nth>36</spectrum%nth>
+<spectrum%thoff>0.5</spectrum%thoff>
+
+<run%fldry>.false.</run%fldry>
+<run%flcx>.true.</run%flcx>
+<run%flcy>.true.</run%flcy>
+<run%flcth>.true.</run%flcth>
+<run%flck>.true.</run%flck>
+<run%flsou>.true.</run%flsou>
+
+<timesteps%dtmax>900.0</timesteps%dtmax>
+<timesteps%dtxy>300.0</timesteps%dtxy>
+<timesteps%dtkth>450.0</timesteps%dtkth>
+<timesteps%dtmin>30.0</timesteps%dtmin>
+
+<grid%name>wQU225EC30to60E2r2</grid%name>
+<grid%nml>ww3_grid_namelists.nml</grid%nml>
+<grid%type>UNST</grid%type>
+<grid%coord>SPHE</grid%coord>
+<grid%clos>SMPL</grid%clos>
+<grid%zlim>-0.10</grid%zlim>
+<grid%dmin>.25</grid%dmin>
+
+<unst%sf>-1.0</unst%sf>
+<unst%filename>mesh.msh</unst%filename>
+<unst%idf>20</unst%idf>
+<unst%idla>4</unst%idla>
+<unst%idfm>1</unst%idfm>
+<unst%format>(....)</unst%format>
+
+<inbnd_count%n_point>2</inbnd_count%n_point>
+
+<inbnd_point(1)%x_index>0</inbnd_point(1)%x_index>
+<inbnd_point(1)%y_index>0</inbnd_point(1)%y_index>
+<inbnd_point(1)%connect>.false.</inbnd_point(1)%connect>
+<inbnd_point(2)%x_index>0</inbnd_point(2)%x_index>
+<inbnd_point(2)%y_index>0</inbnd_point(2)%y_index>
+<inbnd_point(2)%connect>.false.</inbnd_point(2)%connect>
+
+</namelist_defaults>

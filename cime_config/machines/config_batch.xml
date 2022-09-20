@@ -210,7 +210,7 @@
       <directive>-t {{ job_wallclock_time }}</directive>
       <directive>-o {{ job_id }}.out</directive>
       <directive>-e {{ job_id }}.err</directive>
-      <directive> -A {{ project }} </directive>
+      <directive>-A {{ project }}</directive>
     </directives>
     <queues>
       <queue walltimemax="01:00:00" nodemax="270" default="true">pbatch</queue>
@@ -219,7 +219,7 @@
   </batch_system>
   <!-- for lawrence livermore computing -->
 
-  <!-- for NERSC machines: cori-haswell,cori-knl -->
+  <!-- for NERSC machines: perlmutter etc -->
   <batch_system type="nersc_slurm" >
     <batch_query per_job_arg="-j">squeue</batch_query>
     <batch_submit>sbatch</batch_submit>
@@ -342,26 +342,6 @@
       </queues>
     </batch_system>
 
-  <batch_system MACH="cori-haswell" type="nersc_slurm">
-     <directives>
-       <directive> --constraint=haswell</directive>
-     </directives>
-     <queues>
-       <queue walltimemax="00:30:00" nodemax="64" strict="true">debug</queue>
-       <queue walltimemax="01:00:00" default="true">regular</queue>
-     </queues>
-  </batch_system>
-
-  <batch_system MACH="cori-knl" type="nersc_slurm">
-    <directives>
-      <directive> --constraint=knl,quad,cache</directive>
-    </directives>
-    <queues>
-      <queue walltimemax="00:30:00" nodemax="512" strict="true">debug</queue>
-      <queue walltimemax="01:15:00" default="true">regular</queue>
-    </queues>
-  </batch_system>
-
   <batch_system MACH="miller" type="miller_slurm">
     <queues>
       <queue walltimemax="06:00:00" nodemax="800" default="true">collaboration</queue>
@@ -392,7 +372,8 @@
       <directive> -G 0</directive>
     </directives>
     <queues>
-      <queue walltimemax="00:45:00" nodemax="1500" default="true">regular</queue>
+      <queue walltimemax="00:45:00" nodemax="1600" default="true">regular</queue>
+      <queue walltimemax="00:45:00" nodemax="1600" strict="true">preempt</queue>
       <queue walltimemax="00:15:00" nodemax="4" strict="true">debug</queue>
     </queues>
   </batch_system>
@@ -402,8 +383,10 @@
       <directive> --constraint=cpu</directive>
     </directives>
     <queues>
-      <queue walltimemax="00:30:00" nodemax="1500" default="true">regular</queue>
-      <queue walltimemax="00:30:00" nodemax="4" strict="true">debug</queue>
+      <!-- Note: walltime is not the max walltime, but the default - see NERSC docs for Q limits, https://docs.nersc.gov/jobs/policy/ -->
+      <queue walltimemax="12:00:00" nodemax="3072" default="true">regular</queue>
+      <queue walltimemax="12:00:00" nodemax="3072" strict="true">preempt</queue>
+      <queue walltimemax="00:30:00" nodemax="8" strict="true">debug</queue>
     </queues>
   </batch_system>
 
@@ -679,5 +662,74 @@
        <queue walltimemax="1:00:00" default="true" strict="true">default</queue>
      </queues>
    </batch_system>
+
+  <batch_system MACH="onyx" type="pbs" >
+    <directives queue="debug">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+    </directives>
+    <directives queue="standard">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+    </directives>
+    <directives queue="transfer">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select=1:ncpus=1</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:59:00" nodemax="155" strict="true">debug</queue>
+      <queue walltimemax="04:00:00" default="true">standard</queue>
+      <queue default="true" walltimemax="12:00:00" jobmin="1" jobmax="1">transfer</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="narwhal" type="pbs" >
+    <directives queue="debug">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+    </directives>
+    <directives queue="standard">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+    </directives>
+    <directives queue="transfer">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select=1:ncpus=1</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" nodemax="64" strict="true">debug</queue>
+      <queue walltimemax="04:00:00" default="true">standard</queue>
+      <queue default="true" walltimemax="12:00:00" jobmin="1" jobmax="1">transfer</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="warhawk" type="pbs" >
+    <directives queue="debug">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+    </directives>
+    <directives queue="standard">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+    </directives>
+    <directives queue="transfer">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select=1:ncpus=1</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:59:00" nodemax="22" strict="true">debug</queue>
+      <queue walltimemax="04:00:00" default="true">standard</queue>
+      <queue default="true" walltimemax="12:00:00" jobmin="1" jobmax="1">transfer</queue>
+    </queues>
+  </batch_system>
 
 </config_batch>

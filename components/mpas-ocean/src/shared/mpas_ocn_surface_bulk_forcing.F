@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -519,8 +519,8 @@ contains
 
         ! Negative seaIceSalinityFlux is an extraction of salt from the ocean
         ! So, we negate seaIceSalinityFlux when determining how much salt this flux needs.
-        requiredSalt = - seaIceSalinityFlux(iCell) * sflux_factor * dt / layerThickness(1, iCell)
-        allowedSalt = min( 4.0_RKIND, tracerGroup(index_salinity_flux, 1, iCell) )
+        requiredSalt = - seaIceSalinityFlux(iCell) * sflux_factor * dt / layerThickness(minLevelCell(iCell), iCell)
+        allowedSalt = min( 4.0_RKIND, tracerGroup(index_salinity_flux, minLevelCell(iCell), iCell) )
 
         if ( allowedSalt < requiredSalt ) then
            tracersSurfaceFluxRemoved(index_salinity_flux, iCell) = tracersSurfaceFluxRemoved(index_salinity_flux, iCell)  &

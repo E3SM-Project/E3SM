@@ -571,6 +571,9 @@ contains
          latCell, &
          iceAreaCell
 
+    logical, pointer :: &
+         config_limit_air_temperatures
+
     type (MPAS_time_type) :: &
          currentForcingTime
 
@@ -589,6 +592,8 @@ contains
     call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
     call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCoupling)
     call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
+
+    call MPAS_pool_get_config(block % configs, "config_limit_air_temperatures", config_limit_air_temperatures)
 
     call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
 
@@ -631,7 +636,7 @@ contains
     do iCell = 1, nCellsSolve
 
        ! limit air temperature values where ice is present
-       if (iceAreaCell(iCell) > 0.1_RKIND) then
+       if (iceAreaCell(iCell) > 0.1_RKIND .and. config_limit_air_temperatures) then
           airTemperature(iCell) = min(airTemperature(iCell), seaiceFreshWaterFreezingPoint + 0.1_RKIND)
        endif
 
@@ -1283,6 +1288,8 @@ contains
        call init_oceanic_forcing_ncar(domain)
     case ("hourly_velocities")
        call init_oceanic_forcing_hourly_velocities(domain)
+    case ("som_varying_thickness")
+       call init_oceanic_forcing_som_varying_thickness(domain)
     case default
        call mpas_log_write("Oceanic forcing type unknown: "//trim(config_forcing_sst_type), MPAS_LOG_CRIT)
     end select
@@ -1321,7 +1328,7 @@ contains
     ! create the sea surface temperature forcing group
     call MPAS_forcing_init_group(&
          seaiceForcingGroups, &
-         "seaice_sst_forcing_monthly", &
+         "seaice_oceanic_forcing_init", &
          domain, &
          '0000-01-01_00:00:00', &
          '0000-01-01_00:00:00', &
@@ -1332,7 +1339,7 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "seaice_sst_forcing_monthly", &
+         "seaice_oceanic_forcing_init", &
          "seaSurfaceTemperature", &
          "NCARMonthlySSTForcing", &
          "ocean_coupling", &
@@ -1343,7 +1350,7 @@ contains
 
     call MPAS_forcing_init_field_data(&
          seaiceForcingGroups, &
-         "seaice_sst_forcing_monthly", &
+         "seaice_oceanic_forcing_init", &
          domain % streamManager, &
          config_do_restart, &
          .false.)
@@ -1550,6 +1557,175 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
+!  init_oceanic_forcing_som_varying_thickness
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 14th September 2022
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_oceanic_forcing_som_varying_thickness(domain)
+
+    type (domain_type) :: domain
+
+    logical, pointer :: &
+         config_do_restart
+
+    character(len=strKIND) :: &
+         forcingIntervalMonthly, &
+         forcingReferenceTimeMonthly
+
+    ! get oceanic forcing configuration options
+    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+
+    forcingIntervalMonthly = "00-01-00_00:00:00"
+    forcingReferenceTimeMonthly = "0001-01-15_00:00:00"
+
+    ! create the sea surface temperature forcing group
+    call MPAS_forcing_init_group(&
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_init", &
+         domain, &
+         '0000-01-01_00:00:00', &
+         '0000-01-01_00:00:00', &
+         '0001-00-00_00:00:00', &
+         config_do_restart)
+
+    ! sea surface temperature
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_init", &
+         "seaSurfaceTemperature", &
+         "SOMVaryingThicknessInitForcing", &
+         "ocean_coupling", &
+         "seaSurfaceTemperature", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! sea surface salinity
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_init", &
+         "seaSurfaceSalinity", &
+         "SOMVaryingThicknessInitForcing", &
+         "ocean_coupling", &
+         "seaSurfaceSalinity", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! ocean mixed layer depth
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_init", &
+         "oceanMixedLayerDepth", &
+         "SOMVaryingThicknessInitForcing", &
+         "ocean_coupling", &
+         "oceanMixedLayerDepth", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    call MPAS_forcing_init_field_data(&
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_init", &
+         domain % streamManager, &
+         config_do_restart, &
+         .false.)
+
+    ! create the monthly forcing group
+    call MPAS_forcing_init_group(&
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         domain, &
+         '0000-01-01_00:00:00', &
+         '0000-01-01_00:00:00', &
+         '0001-00-00_00:00:00', &
+         config_do_restart)
+
+    ! u ocean velocity
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "uOceanVelocity", &
+         "SOMVaryingThicknessMonthlyForcing", &
+         "ocean_coupling", &
+         "uOceanVelocity", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! v ocean velocity
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "vOceanVelocity", &
+         "SOMVaryingThicknessMonthlyForcing", &
+         "ocean_coupling", &
+         "vOceanVelocity", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! u surface tilt
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "seaSurfaceTiltU", &
+         "SOMVaryingThicknessMonthlyForcing", &
+         "ocean_coupling", &
+         "seaSurfaceTiltU", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! v surface tilt
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "seaSurfaceTiltV", &
+         "SOMVaryingThicknessMonthlyForcing", &
+         "ocean_coupling", &
+         "seaSurfaceTiltV", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! deep ocean heat flux convergence
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "oceanHeatFluxConvergence", &
+         "SOMVaryingThicknessMonthlyForcing", &
+         "ocean_coupling", &
+         "oceanHeatFluxConvergence", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    call MPAS_forcing_init_field_data(&
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         domain % streamManager, &
+         config_do_restart, &
+         .false.)
+
+  end subroutine init_oceanic_forcing_som_varying_thickness
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
 !  oceanic_forcing
 !
 !> \brief
@@ -1593,7 +1769,8 @@ contains
     call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
 
     ! use the forcing layer to get data
-    if (trim(config_forcing_sst_type) == 'ncar') then
+    if (trim(config_forcing_sst_type) == 'ncar' .or. &
+        trim(config_forcing_sst_type) == 'som_varying_thickness') then
 
        call MPAS_forcing_get_forcing(&
             seaiceForcingGroups, &
@@ -1606,7 +1783,7 @@ contains
 
           call MPAS_forcing_get_forcing(&
                seaiceForcingGroups, &
-               "seaice_sst_forcing_monthly", &
+               "seaice_oceanic_forcing_init", &
                streamManager, &
                config_dt)
 
@@ -1625,11 +1802,12 @@ contains
     block => domain % blocklist
     do while (associated(block))
 
-       ! convert the input forcing variables to the coupling variables
-       select case (trim(config_forcing_sst_type))
-       case ("ncar")
+       if (trim(config_forcing_sst_type) == 'ncar' .or. &
+           trim(config_forcing_sst_type) == 'som_varying_thickness') then
+
           call prepare_oceanic_coupling_variables_ncar(block, firstTimeStep)
-       end select
+
+       endif
 
        call post_oceanic_coupling(block)
 

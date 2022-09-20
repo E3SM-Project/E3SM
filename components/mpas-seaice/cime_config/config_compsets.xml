@@ -10,6 +10,11 @@
   <!-- E3SM D compsets -->
 
   <compset>
+    <alias>DMPAS-JRA1p5</alias>
+    <lname>2000_DATM%JRA-1p5_SLND_MPASSI_DOCN%SOM_DROF%JRA-1p5_SGLC_SWAV_TEST</lname>
+  </compset>
+
+  <compset>
     <alias>DTESTM</alias>
     <lname>2000_DATM%NYF_SLND_MPASSI_DOCN%SOM_DROF%NYF_SGLC_SWAV_TEST</lname>
   </compset>

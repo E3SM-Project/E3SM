@@ -824,7 +824,7 @@ CONTAINS
 
        enddo   ! lsize
 
-    case('CORE_IAF_JRA', 'CORE_RYF_JRA')
+    case('CORE_IAF_JRA', 'CORE_RYF_JRA', 'IAF_JRA_1p5')
        if (firstcall) then
           if (sprec < 1 .or. sswdn < 1) then
              write(logunit,F00) 'ERROR: prec and swdn must be in streams for IAF/RYF JRA'

@@ -699,7 +699,7 @@ contains
     &Mailing address: LLNL Climate Program, c/o David C. Bader, &
     &Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
     call ncd_putatt(lnfid, ncd_global, 'contact' ,  &
-             'e3sm-data-support@listserv.llnl.gov')
+             'e3sm-data-support@llnl.gov')
     call ncd_putatt(lnfid, ncd_global, 'Conventions', trim(conventions))
 
     str = get_filename(frivinp_rtm)

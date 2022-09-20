@@ -1,8 +1,8 @@
 set (F90_SRC rrtmgp_interface.F90)
 set (CXX_SRC
     rrtmgp_interface.cpp
+    mo_load_coefficients.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../external/cpp/extensions/fluxes_byband/mo_fluxes_byband_kernels.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../external/cpp/examples/mo_load_coefficients.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../external/cpp/examples/all-sky/mo_load_cloud_coefficients.cpp
 )
 

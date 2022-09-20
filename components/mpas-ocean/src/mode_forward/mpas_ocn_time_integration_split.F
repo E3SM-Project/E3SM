@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -191,7 +191,8 @@ module ocn_time_integration_split
          uTemp
 
       real (kind=RKIND), dimension(:), allocatable :: &
-         btrvel_temp
+         btrvel_temp, &
+         bottomDepthEdge
 
       ! State Array Pointers
       real (kind=RKIND), dimension(:), pointer :: &
@@ -381,6 +382,8 @@ module ocn_time_integration_split
                                           lowFreqDivergenceTend)
 
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersNew, 2)
+
+      allocate(bottomDepthEdge(nEdgesAll+1))
 
       if (config_transport_tests_flow_id > 0) then
         ! This is a transport test. Write advection velocity from prescribed
@@ -684,12 +687,12 @@ module ocn_time_integration_split
          ! Use the most recent time level available.
 
          if (associated(highFreqThicknessNew)) then
-            call ocn_vert_transport_velocity_top(meshPool, &
+            call ocn_vert_transport_velocity_top( &
                  verticalMeshPool, layerThicknessCur, &
                  layerThickEdgeFlux, normalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, err, highFreqThicknessNew)
          else
-            call ocn_vert_transport_velocity_top(meshPool, &
+            call ocn_vert_transport_velocity_top( &
                  verticalMeshPool, layerThicknessCur, &
                  layerThickEdgeFlux, normalVelocityCur, sshCur, dt, &
                  vertAleTransportTop, err)
@@ -782,6 +785,23 @@ module ocn_time_integration_split
 
                enddo
 
+            enddo ! iEdge
+            !$omp end do
+            !$omp end parallel
+
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(cell1, cell2, k, thicknessSum)
+            do iEdge = 1, nEdgesHalo(config_num_halos+1)
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               thicknessSum = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)
+               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
+                  thicknessSum = thicknessSum + &
+                                 layerThickEdgeFlux(k,iEdge)
+               enddo
+               bottomDepthEdge(iEdge) = thicknessSum &
+                  - 0.5_RKIND*(sshNew(cell1) + sshNew(cell2))
             enddo ! iEdge
             !$omp end do
             !$omp end parallel
@@ -1089,6 +1109,7 @@ module ocn_time_integration_split
                   sshTend(iCell) = 0.0_RKIND
                   do i = 1, nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(i, iCell)
+                     if (maxLevelEdgeTop(iEdge).eq.0) cycle
 
                      cell1 = cellsOnEdge(1, iEdge)
                      cell2 = cellsOnEdge(2, iEdge)
@@ -1096,20 +1117,9 @@ module ocn_time_integration_split
                      sshEdge = 0.5_RKIND*(sshSubcycleCur(cell1) + &
                                           sshSubcycleCur(cell2))
 
-                     ! method 0: orig, works only without pbc:
-                     !thicknessSum = sshEdge + &
-                     ! refBottomDepthTopOfCell(maxLevelEdgeTop(iEdge)+1)
-
-                     ! method 1, matches method 0 without pbcs, works with pbcs.
-                     thicknessSum = sshEdge + min(bottomDepth(cell1), &
-                                                  bottomDepth(cell2))
-
-                     ! method 2: may be better than method 1.
-                     ! Take average  of full thickness at two
-                     ! neighboring cells.
-                     !thicknessSum = sshEdge + 0.5* &
-                     !      (bottomDepth(cell1) + bottomDepth(cell2))
-
+                     ! Compute barotropic thickness at the edge. Note this
+                     ! matches the sum of baroclinic thicknesses at this edge.
+                     thicknessSum = sshEdge + bottomDepthEdge(iEdge)
 
                      flux = ((1.0-config_btr_gam1_velWt1)* &
                             normalBarotropicVelocitySubcycleCur(iEdge) &
@@ -1149,16 +1159,14 @@ module ocn_time_integration_split
                   !$omp do schedule(runtime) &
                   !$omp private(cell1, cell2, sshEdge,thicknessSum,flux)
                   do iEdge = 1, nEdges
+                     if (maxLevelEdgeTop(iEdge).eq.0) cycle
                      cell1 = cellsOnEdge(1,iEdge)
                      cell2 = cellsOnEdge(2,iEdge)
 
                      sshEdge = 0.5_RKIND*(sshSubcycleCur(cell1) + &
                                           sshSubcycleCur(cell2))
 
-                     ! method 1, matches method 0 without pbcs,
-                     !    works with pbcs.
-                     thicknessSum = sshEdge + min(bottomDepth(cell1), &
-                                                  bottomDepth(cell2))
+                     thicknessSum = sshEdge + bottomDepthEdge(iEdge)
 
                      flux = ((1.0-config_btr_gam1_velWt1)* &
                             normalBarotropicVelocitySubcycleCur(iEdge) &
@@ -1370,6 +1378,7 @@ module ocn_time_integration_split
                      sshTend(iCell) = 0.0_RKIND
                      do i = 1, nEdgesOnCell(iCell)
                         iEdge = edgesOnCell(i, iCell)
+                        if (maxLevelEdgeTop(iEdge).eq.0) cycle
 
                         cell1 = cellsOnEdge(1,iEdge)
                         cell2 = cellsOnEdge(2,iEdge)
@@ -1387,21 +1396,7 @@ module ocn_time_integration_split
 
                         sshEdge = 0.5_RKIND*(sshCell1 + sshCell2)
 
-                        ! method 0: orig, works only without pbc:
-                        !thicknessSum = sshEdge + &
-                        !refBottomDepthTopOfCell(maxLevelEdgeTop(iEdge)+1)
-
-                        ! method 1, matches method 0 without pbcs,
-                        !    but works with pbcs.
-                        thicknessSum = sshEdge + &
-                                       min(bottomDepth(cell1), &
-                                           bottomDepth(cell2))
-
-                        ! method 2: may be better than method 1.
-                        ! take average of full thickness at two
-                        !    neighboring cells
-                        !thicknessSum = sshEdge + 0.5* &
-                        !   (bottomDepth(cell1) + bottomDepth (cell2))
+                        thicknessSum = sshEdge + bottomDepthEdge(iEdge)
 
                         flux = ((1.0-config_btr_gam3_velWt2)* &
                            normalBarotropicVelocitySubcycleCur(iEdge) &
@@ -1441,21 +1436,7 @@ module ocn_time_integration_split
                                       sshSubcycleNew(cell2)
                      sshEdge = 0.5_RKIND * (sshCell1 + sshCell2)
 
-                     ! method 0: orig, works only without pbc:
-                     !thicknessSum = sshEdge + &
-                     !refBottomDepthTopOfCell(maxLevelEdgeTop(iEdge)+1)
-
-                     ! method 1, matches method 0 without pbcs,
-                     !           but works with pbcs.
-                     thicknessSum = sshEdge + min(bottomDepth(cell1),&
-                                                  bottomDepth(cell2))
-
-                     ! method 2, better, I think.
-                     !           take average of full thickness at two
-                     !           neighboring cells
-                     !thicknessSum = sshEdge + 0.5* &
-                     !               (bottomDepth(cell1) + &
-                     !                bottomDepth(cell2) )
+                     thicknessSum = sshEdge + bottomDepthEdge(iEdge)
 
                      flux = ((1.0-config_btr_gam3_velWt2) * &
                          normalBarotropicVelocitySubcycleCur(iEdge) &
@@ -1685,7 +1666,7 @@ module ocn_time_integration_split
 #ifdef MPAS_OPENACC
             !$acc enter data copyin(highFreqThicknessNew)
 #endif
-            call ocn_vert_transport_velocity_top(meshPool, &
+            call ocn_vert_transport_velocity_top( &
                  verticalMeshPool, layerThicknessCur, &
                  layerThickEdgeFlux, normalTransportVelocity, sshCur, &
                  dt, vertAleTransportTop, err, highFreqThicknessNew)
@@ -1693,7 +1674,7 @@ module ocn_time_integration_split
             !$acc exit data delete(highFreqThicknessNew)
 #endif
          else
-            call ocn_vert_transport_velocity_top(meshPool, &
+            call ocn_vert_transport_velocity_top( &
                  verticalMeshPool, layerThicknessCur, &
                  layerThickEdgeFlux, normalTransportVelocity, sshCur, &
                  dt, vertAleTransportTop, err)
@@ -2578,8 +2559,8 @@ module ocn_time_integration_split
 
       ! Update the effective desnity in land ice if we're coupling to
       ! land ice
-      call ocn_effective_density_in_land_ice_update(meshPool, &
-                                       forcingPool, statePool, err)
+      call ocn_effective_density_in_land_ice_update(forcingPool, &
+                                                    statePool, err)
 
       call mpas_timer_start('se final mpas reconstruct', .false.)
 
@@ -2695,6 +2676,7 @@ module ocn_time_integration_split
          call mpas_dmpar_exch_halo_field(effectiveDensityField)
          call mpas_timer_stop("se effective density halo")
       end if
+      deallocate(bottomDepthEdge)
 
       call mpas_timer_stop('se fini')
       call mpas_timer_stop("se timestep")

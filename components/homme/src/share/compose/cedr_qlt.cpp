@@ -807,8 +807,8 @@ template class cedr::qlt::QLT<Kokkos::Serial>;
 #ifdef KOKKOS_ENABLE_OPENMP
 template class cedr::qlt::QLT<Kokkos::OpenMP>;
 #endif
-#ifdef KOKKOS_ENABLE_CUDA
-template class cedr::qlt::QLT<Kokkos::Cuda>;
+#ifdef CEDR_ENABLE_GPU
+template class cedr::qlt::QLT<CedrGpuExeSpace>;
 #endif
 #ifdef KOKKOS_ENABLE_THREADS
 template class cedr::qlt::QLT<Kokkos::Threads>;

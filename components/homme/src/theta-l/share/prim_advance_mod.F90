@@ -50,6 +50,10 @@ module prim_advance_mod
     use, intrinsic :: iso_c_binding
 #endif
  
+#ifdef HOMMEXX_BFB_TESTING
+  use bfb_mod,        only: cxx_log
+#endif
+
   implicit none
   private
   save
@@ -1428,7 +1432,19 @@ contains
 
         if (pgrad_correction==1) then
            T0 = TREF-tref_lapse_rate*TREF*Cp/g     ! = 97  
+#ifdef HOMMEXX_BFB_TESTING
+           ! For BFB testing, calculate log(exner) using cxx_log()
+           ! and then call gradient sphere.
+           do j=1,np
+             do i=1,np
+               temp(i,j,k) = cxx_log(exner(i,j,k))
+             end do
+           end do
+
+           vtemp(:,:,:,k)=gradient_sphere(temp(:,:,k),deriv,elem(ie)%Dinv)
+#else
            vtemp(:,:,:,k)=gradient_sphere(log(exner(:,:,k)),deriv,elem(ie)%Dinv)
+#endif
            mgrad(:,:,1,k)=mgrad(:,:,1,k) + Cp*T0*(vtemp(:,:,1,k)-gradexner(:,:,1,k)/exner(:,:,k))
            mgrad(:,:,2,k)=mgrad(:,:,2,k) + Cp*T0*(vtemp(:,:,2,k)-gradexner(:,:,2,k)/exner(:,:,k))
         endif

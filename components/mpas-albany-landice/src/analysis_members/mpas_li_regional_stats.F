@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -174,9 +174,9 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  bedTopography
       real (kind=RKIND), dimension(:), pointer ::  sfcMassBalApplied
       real (kind=RKIND), dimension(:), pointer ::  groundedSfcMassBalApplied
-      real (kind=RKIND), dimension(:), pointer ::  basalMassBal
-      real (kind=RKIND), dimension(:), pointer ::  groundedBasalMassBal
-      real (kind=RKIND), dimension(:), pointer ::  floatingBasalMassBal
+      real (kind=RKIND), dimension(:), pointer ::  basalMassBalApplied
+      real (kind=RKIND), dimension(:), pointer ::  groundedBasalMassBalApplied
+      real (kind=RKIND), dimension(:), pointer ::  floatingBasalMassBalApplied
       real (kind=RKIND), dimension(:), pointer ::  calvingThickness
       real (kind=RKIND), dimension(:), pointer ::  surfaceSpeed
       real (kind=RKIND), dimension(:), pointer ::  basalSpeed
@@ -279,9 +279,9 @@ contains
          call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
          call mpas_pool_get_array(geometryPool, 'sfcMassBalApplied', sfcMassBalApplied)
          call mpas_pool_get_array(geometryPool, 'groundedSfcMassBalApplied', groundedSfcMassBalApplied)
-         call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
-         call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
-         call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
+         call mpas_pool_get_array(geometryPool, 'basalMassBalApplied', basalMassBalApplied)
+         call mpas_pool_get_array(geometryPool, 'groundedBasalMassBalApplied', groundedBasalMassBalApplied)
+         call mpas_pool_get_array(geometryPool, 'floatingBasalMassBalApplied', floatingBasalMassBalApplied)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
          call mpas_pool_get_array(geometryPool, 'groundedToFloatingThickness', groundedToFloatingThickness)
          call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
@@ -372,18 +372,15 @@ contains
 
             ! regional sum of basal mass balance (kg yr^{-1})
             blockSumRegionBasalMassBal(iRegion) = blockSumRegionBasalMassBal(iRegion) + &
-              ( real(regionCellMasks(iRegion,iCell),RKIND) * real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
-                * areaCell(iCell) * basalMassBal(iCell) * scyr )
+              ( real(regionCellMasks(iRegion,iCell),RKIND) * areaCell(iCell) * basalMassBalApplied(iCell) * scyr )
 
             ! regional sum of floating basal mass balance (kg yr^{-1})
             blockSumRegionFloatingBasalMassBal(iRegion) = blockSumRegionFloatingBasalMassBal(iRegion) + &
-              ( real(regionCellMasks(iRegion,iCell),RKIND) * real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
-                * areaCell(iCell) * floatingBasalMassBal(iCell) * scyr )
+              ( real(regionCellMasks(iRegion,iCell),RKIND) * areaCell(iCell) * floatingBasalMassBalApplied(iCell) * scyr )
 
             ! regional sum of grounded basal mass balance (kg yr^{-1})
             blockSumRegionGroundedBasalMassBal(iRegion) = blockSumRegionGroundedBasalMassBal(iRegion) + &
-              ( real(regionCellMasks(iRegion,iCell),RKIND) * real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) &
-                * areaCell(iCell) * groundedBasalMassBal(iCell) * scyr )
+              ( real(regionCellMasks(iRegion,iCell),RKIND) * areaCell(iCell) * groundedBasalMassBalApplied(iCell) * scyr )
 
             ! regional sum of mass lass due do calving (kg yr^{-1})
             blockSumRegionCalvingFlux(iRegion) = blockSumRegionCalvingFlux(iRegion) + &
@@ -414,6 +411,7 @@ contains
 
             ! GL migration flux
             blockRegionGLMigrationFlux(iRegion) = blockRegionGLMigrationFlux(iRegion) + &
+               real(regionCellMasks(iRegion,iCell),RKIND) * &
                groundedToFloatingThickness(iCell) * areaCell(iCell) * rhoi / (deltat / scyr)
 
            end do ! end loop over regions
