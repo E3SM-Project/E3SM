@@ -1712,7 +1712,7 @@ contains
   ! pocFluxRate = pocFluxRate_o/sediment_density
 
    if (useOceanBottomState .or. config_use_benthos_monthly_forcing) then
-      pocFluxRate = oceanPOCFlux/sediment_density/benthosSolidPorosityTop
+      pocFluxRate = (oceanPOCFlux+terraPOCFlux)/sediment_density/benthosSolidPorosityTop
       ponFluxRate = pocFluxRate/CtoP*NtoP
       popFluxRate = pocFluxRate/CtoP
       ocean_feoh3aFlux = oceanParticulateIronFlux/sediment_density/benthosSolidPorosityTop
