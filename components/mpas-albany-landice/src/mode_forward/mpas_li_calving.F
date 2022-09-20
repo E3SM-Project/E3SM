@@ -1661,7 +1661,7 @@ module li_calving
                       config_grounded_von_Mises_threshold_stress_source, MPAS_LOG_ERR)
           endif
 
-          if ( minval(groundedVonMisesThresholdStress(:)) <= 0.0_RKIND ) then
+          if ( minval(groundedVonMisesThresholdStress(1:nCells)) <= 0.0_RKIND ) then
                 err = 1
                 call mpas_log_write("groundedVonMisesThresholdStress must be >0.0", MPAS_LOG_ERR)
           endif
