@@ -4154,6 +4154,12 @@ Turn on MMF variance transport
 Default: false
 </entry>
 
+<entry id="use_MMF_ESMT" type="logical"  category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Turn on MMF explicit scalar momentum transport (ESMT)
+Default: false
+</entry>
+
 <entry id="use_ECPP" type="logical"  category="conv"
        group="phys_ctl_nl" valid_values="" >
 Turn on explicit cloud parameterized pollutants

@@ -811,13 +811,15 @@
 <!-- MMF -->
 <MMF_microphysics_scheme MMF_microphysics_scheme="sam1mom">sam1mom</MMF_microphysics_scheme>
 <MMF_microphysics_scheme MMF_microphysics_scheme="m2005">m2005</MMF_microphysics_scheme>
-<use_MMF                  > .false.</use_MMF>
-<use_MMF    use_MMF="1"   > .true. </use_MMF>
-<use_ECPP                 > .false.</use_ECPP>
-<use_ECPP   use_ECPP="1"  > .true. </use_ECPP>
-<use_MMF_VT               > .false.</use_MMF_VT>
-<use_MMF_VT use_MMF_VT="1"> .true. </use_MMF_VT>
-<MMF_VT_wn_max            > 0      </MMF_VT_wn_max>
+<use_MMF                      > .false.</use_MMF>
+<use_MMF    use_MMF="1"       > .true. </use_MMF>
+<use_ECPP                     > .false.</use_ECPP>
+<use_ECPP   use_ECPP="1"      > .true. </use_ECPP>
+<use_MMF_VT                   > .false.</use_MMF_VT>
+<use_MMF_VT use_MMF_VT="1"    > .true. </use_MMF_VT>
+<MMF_VT_wn_max                > 0      </MMF_VT_wn_max>
+<use_MMF_ESMT                 > .false.</use_MMF_ESMT>
+<use_MMF_ESMT use_MMF_ESMT="1"> .true. </use_MMF_ESMT>
 
 <MMF_orientation_angle yes3Dval=0 > 90.0 </MMF_orientation_angle>
 <MMF_orientation_angle yes3Dval=1 >  0.0 </MMF_orientation_angle>

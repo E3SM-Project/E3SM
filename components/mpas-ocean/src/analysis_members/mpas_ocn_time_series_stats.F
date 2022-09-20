@@ -2007,30 +2007,42 @@ subroutine copy_field_1r(inname, all_fields, amPool, outname)!{{{
 #include "time_series_inc/copy_field_1.inc"
   type (field1DReal), pointer :: src, dst
 #include "time_series_inc/copy_field_2.inc"
+  dst % missingValueMask1D => src % missingValueMask1D
 end subroutine copy_field_1r!}}}
 
 subroutine copy_field_2r(inname, all_fields, amPool, outname)!{{{
 #include "time_series_inc/copy_field_1.inc"
   type (field2DReal), pointer :: src, dst
 #include "time_series_inc/copy_field_2.inc"
+  dst % missingValueMask1D => src % missingValueMask1D
+  dst % missingValueMask2D => src % missingValueMask2D
 end subroutine copy_field_2r!}}}
 
 subroutine copy_field_3r(inname, all_fields, amPool, outname)!{{{
 #include "time_series_inc/copy_field_1.inc"
   type (field3DReal), pointer :: src, dst
 #include "time_series_inc/copy_field_2.inc"
+  dst % missingValueMask1D => src % missingValueMask1D
+  dst % missingValueMask2D => src % missingValueMask2D
+  dst % missingValueMask3D => src % missingValueMask3D
 end subroutine copy_field_3r!}}}
 
 subroutine copy_field_4r(inname, all_fields, amPool, outname)!{{{
 #include "time_series_inc/copy_field_1.inc"
   type (field4DReal), pointer :: src, dst
 #include "time_series_inc/copy_field_2.inc"
+  dst % missingValueMask1D => src % missingValueMask1D
+  dst % missingValueMask2D => src % missingValueMask2D
+  dst % missingValueMask3D => src % missingValueMask3D
 end subroutine copy_field_4r!}}}
 
 subroutine copy_field_5r(inname, all_fields, amPool, outname)!{{{
 #include "time_series_inc/copy_field_1.inc"
   type (field5DReal), pointer :: src, dst
 #include "time_series_inc/copy_field_2.inc"
+  dst % missingValueMask1D => src % missingValueMask1D
+  dst % missingValueMask2D => src % missingValueMask2D
+  dst % missingValueMask3D => src % missingValueMask3D
 end subroutine copy_field_5r!}}}
 
 
