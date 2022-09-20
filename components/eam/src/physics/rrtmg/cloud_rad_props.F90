@@ -76,6 +76,8 @@ real(r8), allocatable :: abs_lw_ice(:,:)
               icswp_five_idx
 #endif
 
+integer :: pverp_rad, pver_rad
+
 !==============================================================================
 contains
 !==============================================================================
@@ -133,7 +135,7 @@ subroutine cloud_rad_props_init()
    icswp_five_idx   = pbuf_get_index('ICSWP_FIVE')
 #endif
 
- #ifdef FIVE
+#ifdef FIVE
    pverp_rad = pverp_five
    pver_rad = pver_five
 #else

@@ -93,7 +93,7 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
 ! Output arguments
 !
    real(r8), intent(out) :: qrl (pcols,pver_rad)     ! Longwave heating rate
-   real(r8), intent(out) :: qrlc(pcols,pve_radr)     ! Clearsky longwave heating rate
+   real(r8), intent(out) :: qrlc(pcols,pver_rad)     ! Clearsky longwave heating rate
    real(r8), intent(out) :: flns(pcols)          ! Surface cooling flux
    real(r8), intent(out) :: flnt(pcols)          ! Net outgoing flux
    real(r8), intent(out) :: flut(pcols)          ! Upward flux at top of model

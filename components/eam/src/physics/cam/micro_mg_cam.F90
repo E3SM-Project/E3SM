@@ -1323,6 +1323,10 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8), pointer :: rndst(:,:,:)
    real(r8), pointer :: nacon(:,:,:)
 
+   real(r8), pointer :: am_evp_st_grid(:,:)    ! Evaporation area of stratiform precipitation. 0<= am_evp_st <=1.
+   real(r8), pointer :: evprain_st_grid(:,:)   ! Evaporation rate of stratiform rain [kg/kg/s]
+   real(r8), pointer :: evpsnow_st_grid(:,:)   ! Evaporation rate of stratiform snow [kg/kg/s]
+
    real(r8), pointer :: prec_str(:)          ! [Total] Sfc flux of precip from stratiform [ m/s ]
    real(r8), pointer :: snow_str(:)          ! [Total] Sfc flux of snow from stratiform   [ m/s ]
    real(r8), pointer :: prec_sed(:)          ! Surface flux of total cloud water from sedimentation
@@ -1859,6 +1863,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
 #ifdef FIVE
    integer :: top_lev_five(pcols)
 #endif
+   integer :: top_lev_micro
 
    real(r8), pointer :: cmeliq_grid(:,:)
 
@@ -2262,7 +2267,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call post_proc%add_field(p(qiten), p(packed_qitend))
    allocate(packed_nctend(mgncol,nlev_micro))
    call post_proc%add_field(p(ncten), p(packed_nctend))
-   allocate(packed_nitend(mgncol,nlev)_micro)
+   allocate(packed_nitend(mgncol,nlev_micro))
    call post_proc%add_field(p(niten), p(packed_nitend))
 
    if (micro_mg_version > 1) then
@@ -3474,7 +3479,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       des_grid        => des
 
       ! fields already on grids, so just assign
-      nvapr_grid      => nvapr
+      nevapr_grid      => nevapr
       prec_str_grid   => prec_str
       iclwpst_grid    => iclwpst
       cvreffliq_grid  => cvreffliq
@@ -3482,7 +3487,6 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
       mgflxprc_grid   => mgflxprc
       mgflxsnw_grid   => mgflxsnw
       qme_grid        => qme
-      nevapr_grid     => nevapr
       prain_grid      => prain
       
 #ifdef FIVE

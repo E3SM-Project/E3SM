@@ -50,7 +50,7 @@ CONTAINS
 !===============================================================================
 
 subroutine rad_rrtmg_sw(lchnk,ncol       ,rrtmg_levs   ,r_state      , &
-                    E_pmid   ,
+                    E_pmid   ,                               &
 #ifdef FIVE
                     E_pint   ,t_five     ,pmid_host  ,                         &
                     pint_host,                                                 &

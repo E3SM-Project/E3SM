@@ -357,7 +357,7 @@ subroutine remap1(Qdp,nx,nlev,qsize,dp1,dp2,remap_alg)
 
 end subroutine remap1
 
-subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
+subroutine remap1_nofilter(Qdp,nx,nlev,qsize,dp1,dp2)
   ! remap 1 field
   ! input:  Qdp   field to be remapped (NOTE: MASS, not MIXING RATIO)
   !         dp1   layer thickness (source)
@@ -366,7 +366,7 @@ subroutine remap1_nofilter(Qdp,nx,qsize,dp1,dp2)
   ! output: remaped Qdp, conserving mass
   !
   implicit none
-  integer, intent(in) :: nx,qsize
+  integer, intent(in) :: nx,qsize,nlev
   real (kind=real_kind), intent(inout) :: Qdp(nx,nx,nlev,qsize)
   real (kind=real_kind), intent(in) :: dp1(nx,nx,nlev),dp2(nx,nx,nlev)
   ! ========================
@@ -654,7 +654,7 @@ function compute_ppm_grids( nlev, dx )   result(rslt)
   implicit none
   real(kind=real_kind), intent(in) :: dx(-1:nlev+2)  !grid spacings
   real(kind=real_kind)             :: rslt(10,0:nlev+1)  !grid spacings
-  integer :: j
+  integer :: j, nlev
   integer :: indB, indE
 
   !Calculate grid-based coefficients for stage 1 of compute_ppm
@@ -683,6 +683,7 @@ end function compute_ppm_grids
 !This computes a limited parabolic interpolant using a net 5-cell stencil, but the stages of computation are broken up into 3 stages
 function compute_ppm( nlev, a , dx )    result(coefs)
   implicit none
+  integer :: j, nlev
   real(kind=real_kind), intent(in) :: a    (    -1:nlev+2)  !Cell-mean values
   real(kind=real_kind), intent(in) :: dx   (10,  0:nlev+1)  !grid spacings
   real(kind=real_kind) ::             coefs(0:2,   nlev  )  !PPM coefficients (for parabola)
@@ -692,7 +693,6 @@ function compute_ppm( nlev, a , dx )    result(coefs)
   ! Hold expressions based on the grid (which are cumbersome).
   real(kind=real_kind) :: dx1, dx2, dx3, dx4, dx5, dx6, dx7, dx8, dx9, dx10
   real(kind=real_kind) :: al, ar                            !Left and right interface values for cell-local limiting
-  integer :: j
   integer :: indB, indE
 
   ! Stage 1: Compute dma for each cell, allowing a 1-cell ghost stencil below and above the domain
