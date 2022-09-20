@@ -33,6 +33,7 @@ public co2_init                      ! initialize (history) variables
 public co2_time_interp_ocn           ! time interpolate co2 flux
 public co2_time_interp_fuel          ! time interpolate co2 flux
 public co2_cycle_set_ptend           ! set tendency from aircraft emissions
+public co2_cycle_iac_ptend           ! set tendency from iac model component
 public co2_cycle_set_cnst_type       ! set co2 tracers mixing type for local versions of cnst_type
 
 ! Public data
@@ -459,6 +460,64 @@ subroutine co2_cycle_set_ptend(state, pbuf, ptend)
    end do
 
 end subroutine co2_cycle_set_ptend
+
+
+!===============================================================================
+
+subroutine co2_cycle_iac_ptend(state, pbuf, ptend)
+
+   !-------------------------------------------------------------------------------
+   ! Purpose:
+   ! Compute ptend for using the interpolated values from the IAC model component
+   !
+   ! Called by:
+   !    physpkg.F90
+   !-------------------------------------------------------------------------------
+   
+      use physics_types,  only: physics_state, physics_ptend, physics_ptend_init
+      use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
+      use constituents,   only: pcnst
+      use ppgrid,         only: pver
+      use physconst,      only: gravit
+      use iac_coupled_fields,  only: iac_co2_name
+   
+      ! Arguments
+      type(physics_state), intent(in)    :: state
+      type(physics_buffer_desc), pointer :: pbuf(:)
+      type(physics_ptend), intent(out)   :: ptend     ! indivdual parameterization tendencies
+   
+      ! Local variables
+      logical :: lq(pcnst)
+      integer :: ifld, ncol, klev
+      real(r8), pointer :: iac_co2(:,:)
+      real(r8) :: co2_tend(state%ncol)
+   
+      !----------------------------------------------------------------------------
+      if (.not. co2_flag ) then
+         call physics_ptend_init(ptend, state%psetcols, 'co2_none')
+         return
+      end if
+   
+      ! Update ptend flags
+      lq(:)               = .false. ! by default, do not update any tendencies
+      lq(co2_fff_glo_ind) = .true.  ! update fossil fuel CO2 tendency
+      lq(co2_glo_ind)     = .true.  ! update total CO2 tendency
+   
+      call physics_ptend_init(ptend, state%psetcols, 'co2_cycle_iac_component', lq=lq)
+
+      ifld = pbuf_get_index(iac_co2_name)   
+      call pbuf_get_field(pbuf, ifld, iac_co2)
+   
+      ! [ac_CO2] = 'kg m-2 s-1'
+      ! [ptend%q] = 'kg kg-1 s-1'
+      ncol = state%ncol
+      do klev = 1, pver
+         co2_tend(:ncol) = gravit * state%rpdeldry(:ncol,klev) * iac_co2(:ncol,klev)
+         ptend%q(:ncol,klev,co2_fff_glo_ind) = co2_tend(:ncol)
+         ptend%q(:ncol,klev,co2_glo_ind)     = co2_tend(:ncol)
+      end do
+   end subroutine co2_cycle_iac_ptend
+
 
 !===============================================================================
 

@@ -1,11 +1,12 @@
 module atm_import_export
 
   use shr_kind_mod  , only: r8 => shr_kind_r8, cl=>shr_kind_cl
+  use cam_logfile      , only: iulog
   implicit none
 
 contains
 
-  subroutine atm_import( x2a, cam_in, restart_init )
+  subroutine atm_import( x2a, cam_in, restart_init , mon_spec, day_spec, tod_spec)
 
     !-----------------------------------------------------------------------
     use cam_cpl_indices
@@ -17,6 +18,7 @@ contains
     use co2_cycle     , only: c_i, co2_readFlux_ocn, co2_readFlux_fuel
     use co2_cycle     , only: co2_transport, co2_time_interp_ocn, co2_time_interp_fuel
     use co2_cycle     , only: data_flux_ocn, data_flux_fuel
+    use iac_coupled_fields, only: iac_coupled_timeinterp, iac_vertical_emiss, iac_present
     use physconst     , only: mwco2
     use time_manager  , only: is_first_step
     !
@@ -25,12 +27,19 @@ contains
     real(r8)      , intent(in)    :: x2a(:,:)
     type(cam_in_t), intent(inout) :: cam_in(begchunk:endchunk)
     logical, optional, intent(in) :: restart_init
+    ! For IAC monthly coupling fields
+    integer, intent(in), optional :: mon_spec        ! Simulation month
+    integer, intent(in), optional :: day_spec        ! Simulation day
+    integer, intent(in), optional :: tod_spec        ! Simulation time of day [s]
     !
     ! Local variables
     !		
     integer            :: i,lat,n,c,ig  ! indices
     integer            :: ncols         ! number of columns
     logical, save      :: first_time = .true.
+    integer            :: bnd_beg, bnd_end ! beginning and ending boundary month indices for IAC coupling
+    real(r8)           :: tfrac            ! time fraction between boundary months for the IAC coupling
+    real(r8)           :: tfrac_complement ! complement of tfrac (i.e., 1.0_r8-tfrac)
     integer, parameter :: ndst = 2
     integer, target    :: spc_ndx(ndst)
     integer, pointer   :: dst_a5_ndx, dst_a7_ndx
@@ -41,6 +50,18 @@ contains
     ! don't overwrite fields if invoked during the initialization phase 
     ! of a 'continue' or 'branch' run type with data from .rs file
     if (present(restart_init)) overwrite_flds = .not. restart_init
+
+    !------------------------------------------------------------------------
+    ! Calculate time fraction for interpolating IAC fields
+
+    ! NOTE: Time fractions for IAC fields should only be computed during the
+    ! runtime. We are checking the presence of "mon_spec" etc., which should only
+    ! be present if atm_import is called during the runtime
+    !------------------------------------------------------------------------
+    if (present(mon_spec) .and. present(day_spec) .and. present(tod_spec)) then
+       call iac_coupled_timeinterp (bnd_beg, bnd_end, tfrac)!out
+    endif
+
 
     ! ccsm sign convention is that fluxes are positive downward
 
@@ -136,6 +157,37 @@ contains
           if (index_x2a_Fall_fco2_lnd /= 0) then
              cam_in(c)%fco2_lnd(i) = -x2a(index_x2a_Fall_fco2_lnd,ig)
           end if
+
+          !------------------------------------------------------------------------------------------
+          ! Interpolate IAC fields: Interpolate one surface field and two vertical emissions field
+          !
+          ! NOTE: Interpolation should only be done during the runtime. We use the presence of
+          ! optional argument "mon_spec" to detect runtime as it should only be present if
+          ! atm_import is called during the runtime
+          !------------------------------------------------------------------------------------------
+          ! MUST FIXME:B- This should be controlled by a flag set to true by IAC, like "flux_from_iac" or something similar
+          ! we also need a flag to detect runtime
+          if (present(mon_spec) .and. iac_present) then
+             !if surface flux from IAC exists for this month, interpolate all IAC fields in time
+             if (index_x2a_Fazz_co2sfc_iac(mon_spec) /= 0) then
+
+                ! Compute the tfrac compliment for interpolation
+                tfrac_complement = 1.0_r8 - tfrac
+
+                ! Interpolate IAC to extract values at current simulation time using monthly boundaries (bnd_beg and bnd_end)
+                cam_in(c)%fco2_surface_iac(i) = -x2a(index_x2a_Fazz_co2sfc_iac(bnd_beg),ig) * tfrac_complement + &
+                     -x2a(index_x2a_Fazz_co2sfc_iac(bnd_end),ig) * tfrac
+
+                ! Interpolate IAC vertical emissions at high and low fields at the current simulation time
+                iac_vertical_emiss(c)%fco2_low_height(i) = &
+                     -x2a(index_x2a_Fazz_co2airlo_iac(bnd_beg),ig) * tfrac_complement + &
+                     -x2a(index_x2a_Fazz_co2airlo_iac(bnd_end),ig) * tfrac
+
+                iac_vertical_emiss(c)%fco2_high_height(i) = &
+                     -x2a(index_x2a_Fazz_co2airhi_iac(bnd_beg),ig) * tfrac_complement + &
+                     -x2a(index_x2a_Fazz_co2airhi_iac(bnd_end),ig) * tfrac
+             endif
+          end if
           if (index_x2a_Faoo_fco2_ocn /= 0) then
              cam_in(c)%fco2_ocn(i) = -x2a(index_x2a_Faoo_fco2_ocn,ig)
           end if
@@ -170,6 +222,7 @@ contains
              
              ! all co2 fluxes in unit kgCO2/m2/s ! co2 flux from ocn 
              if (index_x2a_Faoo_fco2_ocn /= 0) then
+                !FIXMEB: Instead of using hardwired numbers, 1,2 etc, can't we use integer parameters for c_i indices?
                 cam_in(c)%cflx(i,c_i(1)) = cam_in(c)%fco2_ocn(i)
              else if (co2_readFlux_ocn) then 
                 ! convert from molesCO2/m2/s to kgCO2/m2/s
@@ -192,14 +245,15 @@ contains
              end if
              
              ! co2 flux from fossil fuel
-             if (co2_readFlux_fuel) then
-!++BEH  vvv old implementation vvv
-!                cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,c)
-!       ^^^ old implementation ^^^   ///    vvv new implementation vvv
+             if ( present(mon_spec)) then
+               if( index_x2a_Fazz_co2sfc_iac(mon_spec) /= 0) then
+                  cam_in(c)%cflx(i,c_i(2)) = cam_in(c)%fco2_surface_iac(i) !FIXMEB: Verify this and the units!!
+               else if (co2_readFlux_fuel) then
                 cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,1,c)
 !--BEH  ^^^ new implementation ^^^
              else
                 cam_in(c)%cflx(i,c_i(2)) = 0._r8
+               end if
              end if
              
              ! co2 flux from land (cpl already multiplies flux by land fraction)

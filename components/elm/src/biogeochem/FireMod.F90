@@ -14,6 +14,7 @@ module FireMod
   ! !USES:
   use shr_kind_mod           , only : r8 => shr_kind_r8, CL => shr_kind_CL
   use shr_const_mod          , only : SHR_CONST_PI,SHR_CONST_TKFRZ
+  use shr_infnan_mod         , only : shr_infnan_isnan
   use shr_strdata_mod        , only : shr_strdata_type, shr_strdata_create, shr_strdata_print
   use shr_strdata_mod        , only : shr_strdata_advance
   use shr_log_mod            , only : errMsg => shr_log_errMsg
@@ -372,7 +373,26 @@ contains
               ! For non-crop -- natural vegetation and bare-soil
               if( (crop(veg_pp%itype(p)) == 0 .and. .not. iscft(veg_pp%itype(p))) .and. &
                   cropf_col(c)  <  1.0_r8 ) then
-                 if( btran2(p) .ne. spval) then
+                 ! TRS - I'm not sure what we are checking for with this:
+                 ! !(x != x) - it seems like even nans would get true
+                 ! here, since they fail every logical, so the interior
+                 ! would be false, as for any regular number.  Maybe infinities?
+                 ! But NaNs mung the debugger, so I'm putting a "not
+                 ! isnan" check back in.
+
+                 ! Huh - so, apparently, IEEE-754 says that "NaN .ne.
+                 ! NaN" should evaluate as true.  Basically, for all
+                 ! non-nan number, x=x is true, x!= is false - so you
+                 ! reverse both of them for NaN.  Thus, !(x != x)
+                 ! evaluates as false if x is finite and true if x is
+                 ! NaN.  But it still crashes under the debugger, which
+                 ! hates NaNs, so I need an actual isnan function call
+                 ! in there.
+
+                 ! Let me add it in addition to the other if, just in 
+                 ! if( .not. (btran2(p) .ne. btran2(p)))then !?shr_infnan_isnan(btran2(p))) then
+                 if( .not. shr_infnan_isnan(btran2(p)) .and. &
+			(btran2(p) .ne. spval)) then
                     if (btran2(p)  <=  1._r8 ) then
                        btran_col(c) = btran_col(c)+btran2(p)*veg_pp%wtcol(p)
                        wtlf(c)      = wtlf(c)+veg_pp%wtcol(p)

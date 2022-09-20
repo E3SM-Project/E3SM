@@ -10,7 +10,7 @@
        This file may have atm desc entries.
   -->
   <description modifier_mode="1">
-    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%ERA5][%ERA56HR][%GSWP3w5e5][%MOSARTTEST][%NLDAS2][%CPLHIST][%E3SMWCv2][%CPLWCH][%1PT][%NYF][%IAF][%JRA][%JRA-1p5][%JRA-1p5-2023][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304][%CFSv2][%CFSR]"> Data driven ATM </desc>
+    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%ERA5][%ERA56HR][%GSWP3w5e5][%MOSARTTEST][%NLDAS2][%CPLHIST][%1PT][%NYF][%IAF][%JRA][%JRA-1p5][%JRA-1p4-2018][%JRA-RYF8485][%JRA-RYF9091][%JRA-RYF0304][%CFSv2][%CFSR]"> Data driven ATM </desc>
     <desc option="QIA"> QIAN data set </desc>
     <desc option="WISOQIA">QIAN with water isotopes</desc>
     <desc option="CRU"> CRUNCEP data set </desc>

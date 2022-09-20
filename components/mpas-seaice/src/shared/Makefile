@@ -57,6 +57,10 @@ mpas_seaice_wachspress_basis.o: mpas_seaice_mesh.o
 
 mpas_seaice_triangle_quadrature.o:
 
+mpas_seaice_wachspress_basis.o: mpas_seaice_mesh.o
+
+mpas_seaice_triangle_quadrature.o:
+
 mpas_seaice_velocity_solver_weak.o: mpas_seaice_constants.o mpas_seaice_testing.o mpas_seaice_velocity_solver_constitutive_relation.o mpas_seaice_mesh_pool.o
 
 mpas_seaice_velocity_solver_variational_shared.o: mpas_seaice_constants.o

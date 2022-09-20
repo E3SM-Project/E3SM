@@ -55,6 +55,7 @@ module elm_varpar
   integer, parameter :: numveg      =  16     ! number of veg types (without specific crop)
   integer, parameter :: nlayer      =   3     ! number of VIC soil layer --Added by AWang
   integer            :: nlayert               ! number of VIC soil layer + 3 lower thermal layers
+  integer, parameter :: numharvest = 5 ! number of harvest fields
 
   integer :: numpft      =  50     ! actual # of patches (without bare), a total that spans LUs
   integer :: numcft      =  36     ! actual # of crops

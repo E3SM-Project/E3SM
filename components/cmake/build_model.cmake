@@ -165,6 +165,15 @@ macro(build_model COMP_CLASS COMP_NAME)
   endif()
 
   #-------------------------------------------------------------------------------
+  # iac needs specific compile flags and libraries
+  # try adding them here
+  #-------------------------------------------------------------------------------
+
+  if (COMP_NAME STREQUAL "gcam")
+    set(CXXFLAGS "${CXXFLAGS} -DGCAM_PARALLEL_ENABLED=0")
+  endif()
+
+  #-------------------------------------------------------------------------------
   # create list of component libraries - hard-wired for current e3sm components
   #-------------------------------------------------------------------------------
 
