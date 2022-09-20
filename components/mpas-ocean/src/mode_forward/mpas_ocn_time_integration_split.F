@@ -1083,12 +1083,13 @@ module ocn_time_integration_split
 
                !$omp parallel
                !$omp do schedule(runtime) &
-               !$omp private(i, iEdge, cell1, cell2, sshEdge, &
+               !$omp private(i, k, iEdge, cell1, cell2, sshEdge, &
                !$omp         thicknessSum, flux)
                do iCell = 1, nCells
                   sshTend(iCell) = 0.0_RKIND
                   do i = 1, nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(i, iCell)
+                     if (maxLevelEdgeTop(iEdge).eq.0) cycle
 
                      cell1 = cellsOnEdge(1, iEdge)
                      cell2 = cellsOnEdge(2, iEdge)
@@ -1096,20 +1097,14 @@ module ocn_time_integration_split
                      sshEdge = 0.5_RKIND*(sshSubcycleCur(cell1) + &
                                           sshSubcycleCur(cell2))
 
-                     ! method 0: orig, works only without pbc:
-                     !thicknessSum = sshEdge + &
-                     ! refBottomDepthTopOfCell(maxLevelEdgeTop(iEdge)+1)
-
-                     ! method 1, matches method 0 without pbcs, works with pbcs.
-                     thicknessSum = sshEdge + min(bottomDepth(cell1), &
-                                                  bottomDepth(cell2))
-
-                     ! method 2: may be better than method 1.
-                     ! Take average  of full thickness at two
-                     ! neighboring cells.
-                     !thicknessSum = sshEdge + 0.5* &
-                     !      (bottomDepth(cell1) + bottomDepth(cell2))
-
+                     ! Compute barotropic thickness at the edge. Note this
+                     ! must match the sum of baroclinic thicknesses at this
+                     ! edge.
+                     ! This version works with pbcs, but only for z-level and z-star
+                     k = maxLevelEdgeTop(iEdge)
+                     thicknessSum = sshEdge + 0.5_RKIND &
+                        *(  min(bottomDepth(cell1), refBottomDepth(k)) &
+                          + min(bottomDepth(cell2), refBottomDepth(k)) )
 
                      flux = ((1.0-config_btr_gam1_velWt1)* &
                             normalBarotropicVelocitySubcycleCur(iEdge) &
@@ -1147,18 +1142,23 @@ module ocn_time_integration_split
 
                   !$omp parallel
                   !$omp do schedule(runtime) &
-                  !$omp private(cell1, cell2, sshEdge,thicknessSum,flux)
+                  !$omp private(k, cell1, cell2, sshEdge,thicknessSum,flux)
                   do iEdge = 1, nEdges
+                     if (maxLevelEdgeTop(iEdge).eq.0) cycle
                      cell1 = cellsOnEdge(1,iEdge)
                      cell2 = cellsOnEdge(2,iEdge)
 
                      sshEdge = 0.5_RKIND*(sshSubcycleCur(cell1) + &
                                           sshSubcycleCur(cell2))
 
-                     ! method 1, matches method 0 without pbcs,
-                     !    works with pbcs.
-                     thicknessSum = sshEdge + min(bottomDepth(cell1), &
-                                                  bottomDepth(cell2))
+                     ! Compute barotropic thickness at the edge. Note this
+                     ! must match the sum of baroclinic thicknesses at this
+                     ! edge.
+                     ! This version works with pbcs, but only for z-level and z-star
+                     k = maxLevelEdgeTop(iEdge)
+                     thicknessSum = sshEdge + 0.5_RKIND &
+                        *(  min(bottomDepth(cell1), refBottomDepth(k)) &
+                          + min(bottomDepth(cell2), refBottomDepth(k)) )
 
                      flux = ((1.0-config_btr_gam1_velWt1)* &
                             normalBarotropicVelocitySubcycleCur(iEdge) &
@@ -1364,12 +1364,13 @@ module ocn_time_integration_split
 
                   !$omp parallel
                   !$omp do schedule(runtime) &
-                  !$omp private(i, iEdge, cell1, cell2, thicknessSum, &
+                  !$omp private(i, k, iEdge, cell1, cell2, thicknessSum, &
                   !$omp         sshCell1, sshCell2, sshEdge, flux)
                   do iCell = 1, nCells
                      sshTend(iCell) = 0.0_RKIND
                      do i = 1, nEdgesOnCell(iCell)
                         iEdge = edgesOnCell(i, iCell)
+                        if (maxLevelEdgeTop(iEdge).eq.0) cycle
 
                         cell1 = cellsOnEdge(1,iEdge)
                         cell2 = cellsOnEdge(2,iEdge)
@@ -1387,21 +1388,14 @@ module ocn_time_integration_split
 
                         sshEdge = 0.5_RKIND*(sshCell1 + sshCell2)
 
-                        ! method 0: orig, works only without pbc:
-                        !thicknessSum = sshEdge + &
-                        !refBottomDepthTopOfCell(maxLevelEdgeTop(iEdge)+1)
-
-                        ! method 1, matches method 0 without pbcs,
-                        !    but works with pbcs.
-                        thicknessSum = sshEdge + &
-                                       min(bottomDepth(cell1), &
-                                           bottomDepth(cell2))
-
-                        ! method 2: may be better than method 1.
-                        ! take average of full thickness at two
-                        !    neighboring cells
-                        !thicknessSum = sshEdge + 0.5* &
-                        !   (bottomDepth(cell1) + bottomDepth (cell2))
+                        ! Compute barotropic thickness at the edge. Note this
+                        ! must match the sum of baroclinic thicknesses at this
+                        ! edge.
+                        ! This version works with pbcs, but only for z-level and z-star
+                        k = maxLevelEdgeTop(iEdge)
+                        thicknessSum = sshEdge + 0.5_RKIND &
+                           *(  min(bottomDepth(cell1), refBottomDepth(k)) &
+                             + min(bottomDepth(cell2), refBottomDepth(k)) )
 
                         flux = ((1.0-config_btr_gam3_velWt2)* &
                            normalBarotropicVelocitySubcycleCur(iEdge) &
@@ -1424,7 +1418,7 @@ module ocn_time_integration_split
 
                   ! compute barotropic thickness flux on edges
                   !$omp do schedule(runtime) &
-                  !$omp private(cell1, cell2, thicknessSum, &
+                  !$omp private(k, cell1, cell2, thicknessSum, &
                   !$omp         sshCell1, sshCell2, sshEdge, flux)
                   do iEdge = 1, nEdges
                      cell1 = cellsOnEdge(1,iEdge)
@@ -1441,21 +1435,14 @@ module ocn_time_integration_split
                                       sshSubcycleNew(cell2)
                      sshEdge = 0.5_RKIND * (sshCell1 + sshCell2)
 
-                     ! method 0: orig, works only without pbc:
-                     !thicknessSum = sshEdge + &
-                     !refBottomDepthTopOfCell(maxLevelEdgeTop(iEdge)+1)
-
-                     ! method 1, matches method 0 without pbcs,
-                     !           but works with pbcs.
-                     thicknessSum = sshEdge + min(bottomDepth(cell1),&
-                                                  bottomDepth(cell2))
-
-                     ! method 2, better, I think.
-                     !           take average of full thickness at two
-                     !           neighboring cells
-                     !thicknessSum = sshEdge + 0.5* &
-                     !               (bottomDepth(cell1) + &
-                     !                bottomDepth(cell2) )
+                     ! Compute barotropic thickness at the edge. Note this
+                     ! must match the sum of baroclinic thicknesses at this
+                     ! edge.
+                     ! This version works with pbcs, but only for z-level and z-star
+                     k = maxLevelEdgeTop(iEdge)
+                     thicknessSum = sshEdge + 0.5_RKIND &
+                        *(  min(bottomDepth(cell1), refBottomDepth(k)) &
+                          + min(bottomDepth(cell2), refBottomDepth(k)) )
 
                      flux = ((1.0-config_btr_gam3_velWt2) * &
                          normalBarotropicVelocitySubcycleCur(iEdge) &
