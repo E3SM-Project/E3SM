@@ -76,11 +76,11 @@ module dynHarvestMod
 
   ! the units flag must match the units of harvest_varnames
   ! set this here because dynHarvest_init is called after alm_fates%init
-  ! this flag is accessed only if namelist do_harvest is TRUE
+  ! this flag is accessed only if namelist do_cn_harvest is TRUE
 
   integer, public, parameter    :: wood_harvest_units = 2    ! 1 = area fraction, 2 = carbon
   real(r8), allocatable, public :: harvest_rates(:,:) ! harvest rates
-  logical, private              :: do_harvest ! whether we're in a period when we should do harvest
+  logical, public               :: do_cn_harvest ! whether we're in a period when we should do harvest
   !---------------------------------------------------------------------------
 
 contains
@@ -174,12 +174,12 @@ contains
 
        if (dynHarvest_file%time_info%is_before_time_series()) then
           ! Turn off harvest before the start of the harvest time series
-          do_harvest = .false.
+          do_cn_harvest = .false.
        else
-          ! Note that do_harvest stays true even past the end of the time series. This
+          ! Note that do_cn_harvest stays true even past the end of the time series. This
           ! means that harvest rates will be maintained at the rate given in the last
           ! year of the file for all years past the end of this specified time series.
-          do_harvest = .true.
+          do_cn_harvest = .true.
           ! Right now we don't account for the topounit in plant harvest
           allocate(this_data(bounds%begg:bounds%endg))
           do varnum = 1, num_harvest_vars
@@ -189,8 +189,8 @@ contains
           deallocate(this_data)
        end if
 
-       ! FATES does not make use of the get_do_harvest mechanism.  Make sure this is always false for fates runs.
-       if (use_fates) do_harvest = .false.
+       ! FATES does not make use of the get_do_cn_harvest mechanism.  Make sure this is always false for fates runs.
+       if (use_fates) do_cn_harvest = .false.
     end if
   end subroutine dynHarvest_interp_harvest_types
 
@@ -380,7 +380,7 @@ contains
       ! and convert to rate per second
       if (woody(ivt(p)) == 1.0_r8) then
 
-         if (do_harvest) then
+         if (do_cn_harvest) then
             am = 0._r8
             do varnum = 1, num_harvest_vars
                am = am + harvest_rates(varnum,g)

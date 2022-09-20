@@ -120,6 +120,8 @@ contains
       call pbuf_add_field('tc_init',    'global', dtype_r8, (/pcols/), idx)
       call pbuf_add_field('tc_mnst',    'global', dtype_r8, (/pcols/), idx)
       call pbuf_add_field('tc_prev',    'global', dtype_r8, (/pcols/), idx)
+      call pbuf_add_field('c_flux_air', 'global', dtype_r8, (/pcols/), idx)
+
       ! monthly accumulated carbon emissions and fluxes
       call pbuf_add_field('c_mflx_sfc', 'global', dtype_r8, (/pcols/), idx)
       call pbuf_add_field('c_mflx_air', 'global', dtype_r8, (/pcols/), idx)
@@ -283,73 +285,83 @@ contains
 
 !-------------------------------------------------------------------------------
 
-   subroutine get_carbon_air_fluxes(state, pbuf, dtime)
+   subroutine get_carbon_air_fluxes(state, pbuf, dtime, pbuf_name)
       !-------------------------------------------------
-      ! Purpose: store aircraft CO2 emissions in state
+      ! Purpose: store fossil fluel (aircraft or form IAC) CO2 emissions in state
       ! Called by: tphysac
       !-------------------------------------------------
-      use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
+      use physics_buffer,     only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
+      use iac_coupled_fields, only: iac_present
 
       type(physics_state), intent(inout) :: state
       type(physics_buffer_desc), pointer :: pbuf(:)
       real(r8), intent(in)               :: dtime        ! physics time step
+      character(len=*), optional         :: pbuf_name
 
       ! local variables
       real(r8) :: tc(state%ncol)            ! vertical integral of total carbon
       integer ncol                          ! number of atmospheric columns
       integer i, k, m                       ! column, level, constant indices
-      integer index_ac_CO2                  ! pbuf index for aircraft emissions
-      real(r8), pointer :: ac_CO2(:,:)      ! aircraft emissions in pbuf
-      real(r8) :: air_flux(pcols)           ! aircraft carbon flux
+      integer index_fossil_CO2              ! pbuf index for fossil fuel emissions
+      real(r8), pointer :: fossil_CO2(:,:)  ! fossil fuel emissions in pbuf
+      real(r8) :: fossil_flux(pcols)        ! fossil fuel carbon flux
       !------------------------------------------------------------------------
+      !Update fluxes only if co2 transport is true and either we are reading
+      !the aircraft data or the data are provided IAC
+      if ( co2_transport() .and. (co2_readFlux_aircraft .or.  iac_present)) then
 
-      if ( .not. co2_transport() .or. .not. co2_readFlux_aircraft ) return
-
-      ! Set CO2 global index
-      do m = 1, ncnst
-         select case (trim(c_names(m)))
-         case ('CO2')
-            co2_glo_ind = c_i(m)
-         end select
-      end do
-
-      ! acquire aircraft fluxes from physics buffer
-      index_ac_CO2 = pbuf_get_index('ac_CO2')   
-      call pbuf_get_field(pbuf, index_ac_CO2, ac_CO2)
-
-      ! initialize arrays
-      ncol  = state%ncol
-      do i = 1, ncol
-         air_flux(i) = 0._r8
-      end do
-
-      ! gather aircraft fluxes
-      do k = 1, pver
-         do i = 1, ncol
-            air_flux(i) = air_flux(i) + ac_CO2(i,k)
+         ! Set CO2 global index
+         do m = 1, ncnst
+            select case (trim(c_names(m)))
+            case ('CO2')
+               co2_glo_ind = c_i(m)
+            end select
          end do
-      end do
 
-      ! put in state
-      do i = 1, ncol
-         state%c_flux_air(i) = air_flux(i)
-      end do
+         ! acquire fossil fuel fluxes from physics buffer
+         if (present(pbuf_name)) then !FIXME: do an explicit comparison with the iac pbuf name
+            ! acquire IAC fluxes from physics buffer
+            index_fossil_CO2 = pbuf_get_index(trim(pbuf_name))
+         else
+            ! acquire aircraft fluxes from physics buffer
+            index_fossil_CO2 = pbuf_get_index('ac_CO2')
+         endif
+         call pbuf_get_field(pbuf, index_fossil_CO2, fossil_CO2)
 
-      ! zero out monthly fluxes at start of each month
-      if ( is_start_curr_month() ) then
+         ! initialize arrays
+         ncol  = state%ncol
          do i = 1, ncol
-            state%c_mflx_air(i) = 0._r8
+            fossil_flux(i) = 0._r8
          end do
-      end if
 
-      if ( .not. is_first_step() ) then
+         ! gather aircraft fluxes
+         do k = 1, pver
+            do i = 1, ncol
+               fossil_flux(i) = fossil_flux(i) + fossil_CO2(i,k)
+            end do
+         end do
+
+         ! put in state
          do i = 1, ncol
-            state%c_iflx_air(i) = state%c_iflx_air(i) + (air_flux(i) * dtime)
-            state%c_mflx_air(i) = state%c_mflx_air(i) + (air_flux(i) * dtime)
+            state%c_flux_air(i) = fossil_flux(i)
          end do
-      end if
 
-   end subroutine get_carbon_air_fluxes
+         ! zero out monthly fluxes at start of each month
+         if ( is_start_curr_month() ) then
+            do i = 1, ncol
+               state%c_mflx_air(i) = 0._r8
+            end do
+         end if
+
+         if ( .not. is_first_step() ) then
+            do i = 1, ncol
+               state%c_iflx_air(i) = state%c_iflx_air(i) + (fossil_flux(i) * dtime)
+               state%c_mflx_air(i) = state%c_mflx_air(i) + (fossil_flux(i) * dtime)
+            end do
+         end if
+      endif ! co2 transport, aircraft and iac_co2
+
+       end subroutine get_carbon_air_fluxes
 
 !-------------------------------------------------------------------------------
 
@@ -705,6 +717,7 @@ contains
       real(r8), pointer, dimension(:) :: tmpptr_tc_init
       real(r8), pointer, dimension(:) :: tmpptr_tc_mnst
       real(r8), pointer, dimension(:) :: tmpptr_tc_prev
+      real(r8), pointer, dimension(:) :: tmpptr_c_flux_air
       real(r8), pointer, dimension(:) :: tmpptr_c_mflx_sfc
       real(r8), pointer, dimension(:) :: tmpptr_c_mflx_air
       real(r8), pointer, dimension(:) :: tmpptr_c_mflx_sff
@@ -718,6 +731,7 @@ contains
       integer :: tc_init_idx    = 0
       integer :: tc_mnst_idx    = 0
       integer :: tc_prev_idx    = 0
+      integer :: c_flux_air_idx  = 0
       integer :: c_mflx_sfc_idx = 0
       integer :: c_mflx_air_idx = 0
       integer :: c_mflx_sff_idx = 0
@@ -735,6 +749,7 @@ contains
       tc_init_idx    = pbuf_get_index('tc_init')
       tc_mnst_idx    = pbuf_get_index('tc_mnst')
       tc_prev_idx    = pbuf_get_index('tc_prev')
+      c_flux_air_idx = pbuf_get_index('c_flux_air')
       ! monthly fluxes
       c_mflx_sfc_idx = pbuf_get_index('c_mflx_sfc')
       c_mflx_air_idx = pbuf_get_index('c_mflx_air')
@@ -755,6 +770,7 @@ contains
          call pbuf_get_field(pbuf_chnk, tc_init_idx, tmpptr_tc_init )
          call pbuf_get_field(pbuf_chnk, tc_mnst_idx, tmpptr_tc_mnst )
          call pbuf_get_field(pbuf_chnk, tc_prev_idx, tmpptr_tc_prev )
+         call pbuf_get_field(pbuf_chnk, c_flux_air_idx, tmpptr_c_flux_air )
          ! monthly fluxes
          call pbuf_get_field(pbuf_chnk, c_mflx_sfc_idx, tmpptr_c_mflx_sfc )
          call pbuf_get_field(pbuf_chnk, c_mflx_air_idx, tmpptr_c_mflx_air )
@@ -772,6 +788,7 @@ contains
             tmpptr_tc_init(i)    = state(chnk)%tc_init(i)
             tmpptr_tc_mnst(i)    = state(chnk)%tc_mnst(i)
             tmpptr_tc_prev(i)    = state(chnk)%tc_prev(i)
+            tmpptr_c_flux_air(i)  = state(chnk)%c_flux_air(i)
             ! monthly fluxes
             tmpptr_c_mflx_sfc(i) = state(chnk)%c_mflx_sfc(i)
             tmpptr_c_mflx_air(i) = state(chnk)%c_mflx_air(i)
@@ -812,6 +829,7 @@ contains
       real(r8), pointer, dimension(:) :: tmpptr_tc_init
       real(r8), pointer, dimension(:) :: tmpptr_tc_mnst
       real(r8), pointer, dimension(:) :: tmpptr_tc_prev
+      real(r8), pointer, dimension(:) :: tmpptr_c_flux_air
       real(r8), pointer, dimension(:) :: tmpptr_c_mflx_sfc
       real(r8), pointer, dimension(:) :: tmpptr_c_mflx_air
       real(r8), pointer, dimension(:) :: tmpptr_c_mflx_sff
@@ -825,6 +843,7 @@ contains
       integer :: tc_init_idx    = 0
       integer :: tc_mnst_idx    = 0
       integer :: tc_prev_idx    = 0
+      integer :: c_flux_air_idx = 0
       integer :: c_mflx_sfc_idx = 0
       integer :: c_mflx_air_idx = 0
       integer :: c_mflx_sff_idx = 0
@@ -843,6 +862,7 @@ contains
       tc_init_idx    = pbuf_get_index('tc_init')
       tc_mnst_idx    = pbuf_get_index('tc_mnst')
       tc_prev_idx    = pbuf_get_index('tc_prev')
+      c_flux_air_idx = pbuf_get_index('c_flux_air')
       ! monthly fluxes
       c_mflx_sfc_idx = pbuf_get_index('c_mflx_sfc')
       c_mflx_air_idx = pbuf_get_index('c_mflx_air')
@@ -863,6 +883,7 @@ contains
          call pbuf_get_field(pbuf_chnk, tc_init_idx, tmpptr_tc_init )
          call pbuf_get_field(pbuf_chnk, tc_mnst_idx, tmpptr_tc_mnst )
          call pbuf_get_field(pbuf_chnk, tc_prev_idx, tmpptr_tc_prev )
+         call pbuf_get_field(pbuf_chnk, c_flux_air_idx, tmpptr_c_flux_air )
          ! monthly fluxes
          call pbuf_get_field(pbuf_chnk, c_mflx_sfc_idx, tmpptr_c_mflx_sfc )
          call pbuf_get_field(pbuf_chnk, c_mflx_air_idx, tmpptr_c_mflx_air )
@@ -880,6 +901,7 @@ contains
             state(chnk)%tc_init(i)    = tmpptr_tc_init(i)
             state(chnk)%tc_mnst(i)    = tmpptr_tc_mnst(i)
             state(chnk)%tc_prev(i)    = tmpptr_tc_prev(i)
+            state(chnk)%c_flux_air(i) = tmpptr_c_flux_air(i)
             ! monthly fluxes
             state(chnk)%c_mflx_sfc(i) = tmpptr_c_mflx_sfc(i)
             state(chnk)%c_mflx_air(i) = tmpptr_c_mflx_air(i)

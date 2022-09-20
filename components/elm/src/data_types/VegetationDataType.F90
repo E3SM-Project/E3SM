@@ -3648,10 +3648,12 @@ module VegetationDataType
          totvegc_abg_patch(bounds%begp:bounds%endp), &
          totvegc_abg_col(bounds%begc:bounds%endc))
 
-    call p2c(bounds, num_soilc, filter_soilc, &
-         cropseedc_deficit_patch(bounds%begp:bounds%endp), &
-         cropseedc_deficit_col(bounds%begc:bounds%endc))
-    end associate
+    if (use_crop) then
+       call p2c(bounds, num_soilc, filter_soilc, &
+            cropseedc_deficit_patch(bounds%begp:bounds%endp), &
+            cropseedc_deficit_col(bounds%begc:bounds%endc))
+    endif
+  end associate
 
   end subroutine veg_cs_summary
 
@@ -4305,10 +4307,11 @@ module VegetationDataType
         totpftn_patch(bounds%begp:bounds%endp) , &
         totpftn_col(bounds%begc:bounds%endc))
 
-   call p2c(bounds, num_soilc, filter_soilc, &
-        cropseedn_deficit_patch(bounds%begp:bounds%endp) , &
-        cropseedn_deficit_col(bounds%begc:bounds%endc))
-
+   if (use_crop) then
+      call p2c(bounds, num_soilc, filter_soilc, &
+           cropseedn_deficit_patch(bounds%begp:bounds%endp) , &
+           cropseedn_deficit_col(bounds%begc:bounds%endc))
+   endif
    end associate
 
   end subroutine veg_ns_summary
@@ -5050,9 +5053,11 @@ module VegetationDataType
         totpftp_patch(bounds%begp:bounds%endp) , &
         totpftp_col(bounds%begc:bounds%endc) )
 
-   call p2c(bounds, num_soilc, filter_soilc, &
-        cropseedp_deficit_patch(bounds%begp:bounds%endp) , &
-        cropseedp_deficit_col(bounds%begc:bounds%endc) )
+   if (use_crop) then
+      call p2c(bounds, num_soilc, filter_soilc, &
+           cropseedp_deficit_patch(bounds%begp:bounds%endp) , &
+           cropseedp_deficit_col(bounds%begc:bounds%endc) )
+   endif
    end associate
 
   end subroutine veg_ps_summary
@@ -9835,6 +9840,19 @@ module VegetationDataType
            this%hrv_deadcrootn_to_litter(p)        + &
            this%hrv_deadcrootn_storage_to_litter(p)+ &
            this%hrv_deadcrootn_xfer_to_litter(p)
+
+          !Exit if any of the litter N loss terms are NaN
+          if (isnan(this%sen_nloss_litter(p)) .or.  &
+               isnan(this%livestemn_to_litter(p)) .or. &
+               isnan(this%leafn_to_litter(p)) .or. &
+               isnan(this%frootn_to_litter(p))) then
+               call endrun(msg = 'veg_nf_summary: NaN in litter N loss terms: '//errMsg(__FILE__, __LINE__))
+          endif
+         this%sen_nloss_litter(p) = &
+              this%livestemn_to_litter(p)            + &
+              this%leafn_to_litter(p)                + &
+              this%frootn_to_litter(p)
+
       if (crop_prog) then
          this%sen_nloss_litter(p) = &
              this%livestemn_to_litter(p)            + &
@@ -10891,6 +10909,20 @@ module VegetationDataType
            this%hrv_deadcrootp_to_litter(p)       + &
            this%hrv_deadcrootp_storage_to_litter(p)+ &
            this%hrv_deadcrootp_xfer_to_litter(p)
+
+          ! Exit if any of the following are NaN
+          if (isnan(this%sen_ploss_litter(p)) .or. &
+              isnan(this%livestemp_to_litter(p)) .or. &
+              isnan(this%leafp_to_litter(p)) .or. &
+              isnan( this%frootp_to_litter(p))) then
+               call endrun(msg = 'veg_pf_summary: sen_ploss_litter, livestemp_to_litter, leafp_to_litter, or frootp_to_litter is NaN '//&
+               errMsg(__FILE__, __LINE__))
+          endif
+
+         this%sen_ploss_litter(p) = &
+              this%livestemp_to_litter(p)            + &
+              this%leafp_to_litter(p)                + &
+              this%frootp_to_litter(p)
 
       if (crop_prog) then
          this%sen_ploss_litter(p) = &

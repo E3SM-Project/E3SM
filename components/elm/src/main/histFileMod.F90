@@ -5263,4 +5263,3 @@ contains
   end subroutine hist_do_disp
 
 end module histFileMod
-
