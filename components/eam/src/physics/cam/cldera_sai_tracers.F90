@@ -35,7 +35,7 @@ module cldera_sai_tracers
 
   !----  Private module data
 
-  integer, parameter :: ncnst=5  ! number of constituents implemented by this module
+  integer, parameter :: ncnst=3  ! number of constituents implemented by this module
 
   ! constituent names, indices
   character(len=7), parameter :: c_names(ncnst) = (/'SO2    ', 'ASH    ', 'SULFATE'/)
@@ -92,8 +92,7 @@ module cldera_sai_tracers
   real(r8) :: sigma = 4.0_r8 * km2m     ! vertical width parameter (m)
   real(r8) :: zmin  = 17.0_r8 * km2m    ! lower plume truncation (m)
   real(r8) :: zmax  = 30.0_r8 * km2m    ! upper plume truncation (m)
-  real(r8) :: rr_tmp                    ! great circle distance (m)
-  real(r8) :: source_cutoff             ! masking
+  real(r8) :: source_toggle             ! masking
   
   ! for injected species 
   real(r8) :: M_so2                     ! total SO2 mass (kg)
@@ -446,14 +445,13 @@ contains
     real(r8) :: pp                ! midpoint pressure (Pa)
     
     ! for injection source localization
-    real(r8) :: V(ncol, pver)            ! vertical profile (1/m)
+    real(r8) :: V(pver)                  ! vertical profile (1/m)
     real(r8) :: sVk   = 0.0_r8           ! vertical profile sum (1/m)
-    real(r8) :: rr    = 1.0e20           ! great circle distance (m)
+    real(r8) :: inj_dist                 ! distance of matched col from requested location (m)
+    logical  :: inject                   ! true => this rank contains the injection column
     integer  :: inj_owner                ! MPI rank owning injection column
     integer  :: inji                     ! injection column index within chunk
     integer  :: injc                     ! injection local chunk index
-    real(r8) :: inj_dist                 ! distance of matched col from requested location (m)
-    logical  :: inject                   ! true => this rank contains the injection column
     integer  :: myrank                   ! rank of this MPI process
     integer  :: ier                      ! return error status
 
@@ -525,31 +523,26 @@ contains
    
 
     ! =============== COMPUTE VERTICAL PROFILE, NORMALIZATION ===============
-    ! all entires in V are initialized to zero, then update values at levels k
-    ! only for the injection column at inji of rank inj_owner. 
-    ! For myrank == inj_owner , V(:,k) will effectively serve as a 2d "mask" 
-    ! for the injection at level k on the local chunk of columns, where one
-    ! column at index inji will have nonzero values 
-    ! For myrank /= inj_owner, V(:,:) = 0, and also the normalization 
-    ! A_so2, A_ash is left as it's initialized value of 0.0
-    V(:,:) = 0.0_r8
+    ! Compute V(k) with input z(inji, k) for myrank == inj_owner
+    ! For myrank /= inj_owner, V(:), A_so2, A_ash, sVk = 0
+    V(:) = 0
     if(inject) then
         do k = 1,pver
             zz  = state%zm(inji, k)
             if(zz >= zmin .and. zz <= zmax) then
-                V(inji, k) = 1.0_r8/(SQRT(2.0_r8*pi)*sigma) * &
-                             EXP(-(zz - mu)**2.0_r8/(2.0_r8*sigma**2.0_r8)) * &
-                             (1.0_r8- ERF(alpha * (mu - zz)/(SQRT(2.0_r8)*sigma)))
+                V(k) = 1.0_r8/(SQRT(2.0_r8*pi)*sigma) * &
+                       EXP(-(zz - mu)**2.0_r8/(2.0_r8*sigma**2.0_r8)) * &
+                       (1.0_r8- ERF(alpha * (mu - zz)/(SQRT(2.0_r8)*sigma)))
             endif
         enddo
-        sVk = SUM(V(inji, :))
+        sVk = SUM(V(:))
         A_so2 = M_so2 / (dur * sVk) 
         A_ash = M_ash / (dur * sVk)
         write(iulog,*) "CLDERA_SAI_TRACERS normalization A (kg m / s)", A_so2
         write(iulog,*) "CLDERA_SAI_TRACERS normalization sVk (1/m)", sVk
     endif
-         
-        
+       
+
     ! =============== COMPUTE GRID, COLUMN MASS, AOD =============== 
     call get_area_all_p(lchnk, ncol, area)
     area = area * rearth**2  ! rad^2 to m^2
@@ -608,13 +601,15 @@ contains
           lat = state%lat(i)
           lon = state%lon(i)
           
-          ! ---- constrain injection to duration tf, bound AOD to zmax
+          ! ---- constrain injection to duration tf and to col inji, bound AOD to zmax
           ! t0 and tf expected to be divisible by timestep, so compare with tolerance ttol << dt
-          if( t > (t0-ttol) .and. t < (tf-ttol) ) then
-              source_cutoff = 1.0
+          if( t > (t0-ttol) .and. t < (tf-ttol) .and. &
+              inject .and. i == inji) then
+              source_toggle = 1.0
           else
-              source_cutoff = 0.0
+              source_toggle = 0.0
           end if
+          ! ---- bound AOD to zmax
           if(state%zm(i,k) > zAOD) then
               AOD_cutoff = 0.0
           else
@@ -626,7 +621,7 @@ contains
           ! ---- source + decay
           ptend%q(i,k,ixso2) = 1/grid_mass(i, k) * &
                                (-k_so2 * state%q(i, k, ixso2) * grid_mass(i, k) + &
-                                A_so2 * V(i, k) * source_cutoff)
+                                A_so2 * V(k) * source_toggle)
           ! for debugging
           !if(ptend%q(i, k, ixso2) * grid_mass(i,k) > 1) then
           !    write(iulog,*) "CLDERA_SAI_TRACERS PTENDSUM (kg/s) ", inject, myrank, lchnk, i, &
@@ -638,7 +633,7 @@ contains
           ! ---- source + decay
           ptend%q(i,k,ixash) = 1/grid_mass(i, k) * &
                                (-k_ash * state%q(i, k, ixash) * grid_mass(i, k) + &
-                                A_ash * V(i, k) * source_cutoff)
+                                A_ash * V(k) * source_toggle)
 
 
           ! =============== SULFATE ===============
