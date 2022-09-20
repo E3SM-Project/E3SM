@@ -2693,12 +2693,7 @@ int shoc_init_f(Int nlev, Real *pref_mid, Int nbot_shoc, Int ntop_shoc)
   ekat::host_to_device({pref_mid}, nlev, temp_d);
   view_1d pref_mid_d(temp_d[0]);
 
-#ifndef SCREAM_MONOLITHIC_KERNELS
-  SHF::SHOCTemporaries temporaries; // we won't keep these
-  return SHF::shoc_init(nbot_shoc,ntop_shoc,pref_mid_d,1 /*fake shcol*/, temporaries);
-#else
   return SHF::shoc_init(nbot_shoc,ntop_shoc,pref_mid_d);
-#endif
 }
 
 Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, Real* host_dx, Real* host_dy, Real* thv, Real* zt_grid,

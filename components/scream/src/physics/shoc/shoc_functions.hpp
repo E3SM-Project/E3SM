@@ -617,12 +617,7 @@ struct Functions
   static Int shoc_init(
     const Int&                  nbot_shoc,
     const Int&                  ntop_shoc,
-    const view_1d<const Spack>& pref_mid
-#ifndef SCREAM_MONOLITHIC_KERNELS
-    , const Int&       shcol
-    , SHOCTemporaries& temporaries
-#endif
-                       );
+    const view_1d<const Spack>& pref_mid);
 
 #ifdef SCREAM_MONOLITHIC_KERNELS
   KOKKOS_FUNCTION

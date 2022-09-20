@@ -349,10 +349,18 @@ public:
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
+#ifdef SCREAM_MONOLITHIC_KERNELS
     static constexpr int num_1d_scalar_ncol = 5;
+#else
+    static constexpr int num_1d_scalar_ncol = 18;
+#endif
     static constexpr int num_1d_scalar_nlev = 1;
     static constexpr int num_2d_vector_mid  = 18;
+#ifdef SCREAM_MONOLITHIC_KERNELS
     static constexpr int num_2d_vector_int  = 12;
+#else
+    static constexpr int num_2d_vector_int  = 17;
+#endif
     static constexpr int num_2d_vector_tr   = 1;
 
     uview_1d<Real> cell_length;
@@ -360,6 +368,21 @@ public:
     uview_1d<Real> wprtp_sfc;
     uview_1d<Real> upwp_sfc;
     uview_1d<Real> vpwp_sfc;
+#ifndef SCREAM_MONOLITHIC_KERNELS
+    uview_1d<Real> se_b;
+    uview_1d<Real> ke_b;
+    uview_1d<Real> wv_b;
+    uview_1d<Real> wl_b;
+    uview_1d<Real> se_a;
+    uview_1d<Real> ke_a;
+    uview_1d<Real> wv_a;
+    uview_1d<Real> wl_a;
+    uview_1d<Real> ustar;
+    uview_1d<Real> kbfs;
+    uview_1d<Real> obklen;
+    uview_1d<Real> ustar2;
+    uview_1d<Real> wstar;
+#endif
 
     uview_1d<Spack> pref_mid;
 
@@ -394,6 +417,13 @@ public:
     uview_2d<Spack> w3;
     uview_2d<Spack> wqls_sec;
     uview_2d<Spack> brunt;
+#ifndef SCREAM_MONOLITHIC_KERNELS
+    uview_2d<Spack> rho_zt;
+    uview_2d<Spack> shoc_qv;
+    uview_2d<Spack> dz_zt;
+    uview_2d<Spack> dz_zi;
+    uview_2d<Spack> tkh;
+#endif
 
     Spack* wsm_data;
   };
