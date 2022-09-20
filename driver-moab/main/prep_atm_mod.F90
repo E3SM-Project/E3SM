@@ -464,7 +464,7 @@ contains
         endif
 
         ! we can now free the sender buffers
-        if (mhid .ge. 0) then
+        if (mphaid .ge. 0) then
           context_id = 100*atm(1)%cplcompid + ocn(1)%cplcompid !send to atm/ocn intx ! ~ 618
           ierr = iMOAB_FreeSenderBuffers(mphaid, context_id)
           if (ierr .ne. 0) then
@@ -502,111 +502,130 @@ contains
     endif  ! if atm and ocn
 
     ! repeat this for land data, that is already on atm tag
-    tagNameProj = 'a2lTbot_proj:a2lUbot_proj:a2lVbot_proj:'//C_NULL_CHAR
-
     context_id = lnd(1)%cplcompid
 
     if (atm_present .and. lnd_present) then
       wgtIdef = 'scalar'//C_NULL_CHAR ! from fv, need to be similar to ocean now
       if (.not. samegrid_al) then ! tri-grid case 
-        if (atm_pg_active ) then ! use mhpgid mesh
+         if (atm_pg_active ) then ! use mhpgid mesh
 
-          if (mhpgid .ge. 0) then !  send because we are on atm pes
+            if (mhpgid .ge. 0) then !  send because we are on atm pes
 
-            ! basically, adjust the migration of the tag we want to project; it was sent initially with
-            ! original partitioning, now we need to adjust it for "coverage" mesh
-            ! as always, use nonblocking sends
-            tagName = 'T_ph:u_ph:v_ph:'//C_NULL_CHAR ! they are defined in initialize_moab_atm_phys in atm_comp_mct
-            context_id = 100*atm(1)%cplcompid + lnd(1)%cplcompid !send to atm/lnd intx !
-            ! use computed graph
-            ierr = iMOAB_SendElementTag(mphaid, tagName, mpicom_join, context_id)
-            if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in sending tag from atm to atm land intx '
-              call shr_sys_abort(subname//' ERROR in sending tag from atm to atm land intx')
+               ! basically, adjust the migration of the tag we want to project; it was sent initially with
+               ! original partitioning, now we need to adjust it for "coverage" mesh
+               ! as always, use nonblocking sends
+               tagName = trim(seq_flds_a2x_fields)//C_NULL_CHAR ! they are defined in initialize_moab_atm_phys in atm_comp_mct
+               context_id = 100*atm(1)%cplcompid + lnd(1)%cplcompid !send to atm/lnd intx !
+               ! use computed graph
+               ierr = iMOAB_SendElementTag(mphaid, tagName, mpicom_join, context_id)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in sending tag from atm to atm land intx '
+                  call shr_sys_abort(subname//' ERROR in sending tag from atm to atm land intx')
+               endif
+
+            endif
+            if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
+               ! receive on atm on coupler pes, that was redistributed according to coverage
+               tagName = trim(seq_flds_a2x_fields)//C_NULL_CHAR ! they are defined in initialize_moab_atm_phys
+               ierr = iMOAB_ReceiveElementTag(mbintxla, tagName, mpicom_join, atm_id)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in receiving tag from atm to atm land intx '
+                  call shr_sys_abort(subname//' ERROR in receiving tag from atm to atm land intx')
+               endif
             endif
 
-          endif
-          if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
-            ! receive on atm on coupler pes, that was redistributed according to coverage
-            tagName = 'T_ph:u_ph:v_ph:'//C_NULL_CHAR ! they are defined in initialize_moab_atm_phys
-            ierr = iMOAB_ReceiveElementTag(mbintxla, tagName, mpicom_join, atm_id)
-            if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in receiving tag from atm to atm land intx '
-              call shr_sys_abort(subname//' ERROR in receiving tag from atm to atm land intx')
-            endif
-          endif
-
-          ! we can now free the sender buffers
-          if (mhpgid .ge. 0) then
-            context_id = 100*atm(1)%cplcompid + lnd(1)%cplcompid !send to atm/lnd intx !
-            ierr = iMOAB_FreeSenderBuffers(mphaid, context_id)
-            if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in freeing buffer '
-              call shr_sys_abort(subname//' ERROR in freeing buffer')
-            endif
-          endif
-        else ! regular coarse homme mesh if (.not. atm_pg_active)
-          tagName = 'a2oTbot:a2oUbot:a2oVbot:'//C_NULL_CHAR
-          ! context_id = lnd(1)%cplcompid !
-          if (mhid .ge. 0) then !  send because we are on atm pes
-
-            ! basically, adjust the migration of the tag we want to project; it was sent initially with
-            ! original partitioning, now we need to adjust it for "coverage" mesh
-            ! as always, use nonblocking sends
-
-            ierr = iMOAB_SendElementTag(mhid, tagName, mpicom_join, context_id)
-            if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in sending tag from atm spectral to atm/lnd intx '
-              call shr_sys_abort(subname//' ERROR in sending tag from atm spectral to atm/lnd intx ')
+            ! we can now free the sender buffers
+            if (mphaid .ge. 0) then
+               context_id = 100*atm(1)%cplcompid + lnd(1)%cplcompid !send to atm/lnd intx !
+               ierr = iMOAB_FreeSenderBuffers(mphaid, context_id)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in freeing buffer '
+                  call shr_sys_abort(subname//' ERROR in freeing buffer')
+               endif
             endif
 
-          endif
-          if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
-            ! receive on atm on coupler pes, that was redistributed according to coverage
-            ierr = iMOAB_ReceiveElementTag(mbaxid, tagName, mpicom_join, context_id)
-            if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in receiving tag from atm spectral to atm/lnd intx '
-              call shr_sys_abort(subname//' ERROR in receiving tag from atm spectral to atm/lnd intx ')
-            endif
-          endif
+            if (mbintxla .ge. 0 ) then !  we are on coupler pes, for sure
+               ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
+               !  hard coded now, it should be a runtime option in the future
 
-          ! we can now free the sender buffers
-          if (mhid .ge. 0) then
-            ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
-            if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in freeing buffer '
-              call shr_sys_abort(subname//' ERROR in freeing buffer')
-            endif
-          endif
-        endif
-
-        ! we could do the projection now, on the land mesh, because we are on the coupler pes;
-        ! the actual migrate back could happen later , from coupler pes to the land pes
-        if (mbintxla .ge. 0 ) then !  we are on coupler pes, for sure
-          ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
-          !  hard coded now, it should be a runtime option in the future
-          ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxla, wgtIdef, tagName, tagNameProj)
-          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in projection on land '
-            call shr_sys_abort(subname//' ERROR in projection on land')
-          endif
-
+               ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxla, wgtIdef, tagName, tagName)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in applying weights '
+                  call shr_sys_abort(subname//' ERROR in applying weights')
+               endif
 #ifdef MOABDEBUG
-          ! we can also write the ocean mesh to file, just to see the projectd tag
-          !      write out the mesh file to disk
-            write(lnum,"(I0.2)")num_proj
-            outfile = 'lndCplProj'//trim(lnum)//'.h5m'//C_NULL_CHAR
-            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-            ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
-            if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in writing mesh on coupler land'
-              call shr_sys_abort(subname//' ERROR in writing mesh on coupler land')
-            endif
+               ! we can also write the lnd mesh to file, just to see the projectd tag
+               !      write out the mesh file to disk
+               write(lnum,"(I0.2)")num_proj
+               outfile = 'lndCplProj'//trim(lnum)//'.h5m'//C_NULL_CHAR
+               wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+               ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in writing ocn mesh after projection '
+                  call shr_sys_abort(subname//' ERROR in writing ocn mesh after projection')
+               endif
 #endif
+            endif ! if  (mbintxla .ge. 0 ) 
 
-        !CHECKRC(ierr, "cannot receive tag values")
-        endif
-      else ! samegrid_al, original lnd from atm grid
+         else ! regular coarse homme mesh if (.not. atm_pg_active)
+            tagName = trim(seq_flds_a2x_fields)//C_NULL_CHAR ! they are exported on phys grid directly
+            tagNameExt = trim(seq_flds_a2x_ext_fields)//C_NULL_CHAR ! these are special moab tags
+            !  the separator will be ':' as in mct
+
+            if (mphaid .ge. 0) then !  send because we are on atm pes
+               !
+               context_id = 100*atm(1)%cplcompid + lnd(1)%cplcompid !send to atm/lnd intx ! ~
+               ierr = iMOAB_SendElementTag(mphaid, tagName, mpicom_join, context_id)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in sending tag from atm spectral to ocn atm intx '
+                  call shr_sys_abort(subname//' ERROR  in sending tag from atm spectral to ocn atm intx')
+               endif
+            endif
+            if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
+               ! receive on atm on coupler pes, that was redistributed according to coverage
+               context_id =  atm(1)%compid ! atm_id
+               ierr = iMOAB_ReceiveElementTag(mbintxla, tagNameExt, mpicom_join, context_id)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in receiving tag from atm phys grid to lnd atm intx spectral '
+                  call shr_sys_abort(subname//' ERROR  in receiving tag from atm phys grid to lnd atm intx spectral')
+               endif
+            endif
+
+            ! we can now free the sender buffers
+            if (mphaid .ge. 0) then
+               context_id = 100*atm(1)%cplcompid + lnd(1)%cplcompid !send to atm/ocn intx ! ~ 618
+               ierr = iMOAB_FreeSenderBuffers(mphaid, context_id)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in freeing buffers '
+                  call shr_sys_abort(subname//' ERROR  in freeing buffers')
+               endif
+            endif
+            ! we could do the projection now, on the ocean mesh, because we are on the coupler pes;
+            ! the actual migrate could happen later , from coupler pes to the ocean pes
+            if (mbintxla .ge. 0 ) then !  we are on coupler pes, for sure
+               ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
+               !  hard coded now, it should be a runtime option in the future
+
+               ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxla, wgtIdef, tagNameExt, tagName)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in applying weights '
+                  call shr_sys_abort(subname//' ERROR in applying weights')
+               endif
+#ifdef MOABDEBUG
+               ! we can also write the lnd mesh to file, just to see the projectd tag
+               !      write out the mesh file to disk
+               write(lnum,"(I0.2)")num_proj
+               outfile = 'lndCplProj'//trim(lnum)//'.h5m'//C_NULL_CHAR
+               wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+               ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in writing ocn mesh after projection '
+                  call shr_sys_abort(subname//' ERROR in writing ocn mesh after projection')
+               endif
+#endif
+            endif ! if  (mbintxla .ge. 0 ) 
+         endif 
+      else ! sameg_al, original lnd from atm grid
         ! major change; we do not have intx anymore, we just send from phys grid to land on coupler,
         !   using the comm graph computed at line prep_atm_lnd_moab , prep_lnd_mod.70:621
         ! ierr = iMOAB_ComputeCommGraph( mphaid, mblxid, mpicom_join, mpigrp_old, mpigrp_CPLID, &
@@ -661,8 +680,8 @@ contains
 #endif
         endif ! if on coupler procs
 
-      endif ! samegrid_al, original
-    endif ! if (atm_present .and. lnd_present)
+      endif
+   endif ! if (atm_present .and. lnd_present)
 
   end subroutine prep_atm_migrate_moab
 

@@ -880,20 +880,6 @@ contains
     if (ierr > 0 )  &
       call shr_sys_abort( sub//' Error: fail to set mask tag ')
 
-   !  ! define tags for data that will be sent to coupler
-   !  ! they will be associated to point cloud vertices
-   !  ! seq_flds_r2x_fields 
-    
-   !  tagname='mbForr_rofl'//C_NULL_CHAR
-   !  tagtype = 1 ! dense, double
-   !  ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
-   !  if (ierr > 0 )  &
-   !    call shr_sys_abort( sub//' Error: fail to create mbForr_rofl tag ')
-   !  tagname='mbForr_rofi'//C_NULL_CHAR
-   !  ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
-   !  if (ierr > 0 )  &
-   !    call shr_sys_abort( sub//' Error: fail to create mbForr_rofi tag ')
-
     deallocate(moab_vert_coords)
     deallocate(vgids)
 #ifdef MOABDEBUG
@@ -927,7 +913,7 @@ subroutine rof_export_moab()
    character(len=32), parameter :: sub = 'rof_export_moab'
 
    character*100 outfile, wopts, localmeshfile, lnum
-   character*400 tagname
+   character(CXX) :: tagname
    !---------------------------------------------------------------------------
    nliq = 0
     nfrz = 0

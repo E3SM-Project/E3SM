@@ -13,7 +13,7 @@ module atm_comp_mct
   use seq_infodata_mod
   use seq_timemgr_mod
 
-  use shr_kind_mod     , only: r8 => shr_kind_r8, cl=>shr_kind_cl
+  use shr_kind_mod     , only: r8 => shr_kind_r8, cl=>shr_kind_cl, cxx=>shr_kind_cxx
   use shr_kind_mod     , only: cs => shr_kind_cs
   use shr_file_mod     , only: shr_file_getunit, shr_file_freeunit, &
                                shr_file_setLogUnit, shr_file_setLogLevel, &
@@ -1037,7 +1037,7 @@ CONTAINS
     !real(r8), parameter:: radtodeg = 180.0_r8/SHR_CONST_PI
 
     character*100 outfile, wopts
-    character*400 tagname ! will store all seq_flds_a2x_fields 
+    character(CXX) :: tagname ! will store all seq_flds_a2x_fields 
     character*32 appname
 
 
@@ -1138,38 +1138,8 @@ CONTAINS
     if (ierr > 0 )  &
       call endrun('Error: fail to set area tag ')
 
-   !  ! create some tags for T, u, v bottoms: not anymore
-
-   !  tagname='T_ph'//C_NULL_CHAR
-   !  ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
-   !  if (ierr > 0 )  &
-   !    call endrun('Error: fail to create temp on phys tag ')
-   !  tagname='u_ph'//C_NULL_CHAR
-   !  ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
-   !  if (ierr > 0 )  &
-   !    call endrun('Error: fail to create u velo on phys tag ')
-   !  tagname='v_ph'//C_NULL_CHAR
-   !  ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
-   !  if (ierr > 0 )  &
-   !    call endrun('Error: fail to create v velo on phys tag ')
-
-    ! need to identify that the mesh is indeed point cloud
-    !  this call will set the point_cloud to true inside iMOAB appData structure
     ierr = iMOAB_UpdateMeshInfo(mphaid)
 
-!    tagname='area'//C_NULL_CHAR
-!    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
-!    if (ierr > 0 )  &
-!      call endrun('Error: fail to create area tag ')
-!    do i = 1, lsz
-!      moab_vert_coords(i) = dom%data%rAttr(ixarea, i) ! use the same doubles for second tag :)
-!    enddo
-!
-!    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, lsz , ent_type, moab_vert_coords )
-!    if (ierr > 0 )  &
-!      call endrun('Error: fail to set area tag ')
-
-    !     write out the mesh file to disk, in parallel
 #ifdef MOABDEBUG
     outfile = 'AtmPhys.h5m'//C_NULL_CHAR
     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
@@ -1211,7 +1181,7 @@ CONTAINS
 
     integer tagtype, numco, ent_type
     character*100 outfile, wopts, lnum
-    character*400 tagname ! 
+    character(CXX) ::  tagname ! 
 
     integer ierr, c, nlcols, ig, i, ncols
 
