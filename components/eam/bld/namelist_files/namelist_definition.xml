@@ -4323,6 +4323,21 @@ be cldera_sai_dTstrat.
 Default: 1.2e-4
 </entry>
 
+<entry id="cldera_sai_q0" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+Mixing ratio zero-point for local stratospheric heating. This is the x-intercept of
+the log heating form that controls the heating strength; grid points with a combined
+SO2 and sulfur mixing ratio less than or equal to this value will contribute zero heating.
+Default: 1e-12
+</entry>
+
+<entry id="cldera_sai_gamma" type="real" category="test_tracers"
+       group="cldera_sai_tracers_nl" valid_values="" >
+Power of local stratospheric heating power law. Increasing this steepens the heating rate 
+response as a function of mixing ratio, while respecting cldera_sai_q0 and cldera_sai_qstar.
+Default: 3
+</entry>
+
 <entry id="cldera_sai_taustar" type="real" category="test_tracers"
        group="cldera_sai_tracers_nl" valid_values="" >
 AOD normalization for surface cooling. This is the dimensionless AOD at which 

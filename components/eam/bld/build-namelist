@@ -972,6 +972,8 @@ add_default($nl, 'cldera_sai_w');
 add_default($nl, 'cldera_sai_dTstrat');
 add_default($nl, 'cldera_sai_dTsurf');
 add_default($nl, 'cldera_sai_qstar');
+add_default($nl, 'cldera_sai_q0');
+add_default($nl, 'cldera_sai_gamma');
 add_default($nl, 'cldera_sai_taustar');
 add_default($nl, 'cldera_sai_zAOD');
 add_default($nl, 'cldera_sai_formSulfate');

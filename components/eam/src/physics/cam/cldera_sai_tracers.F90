@@ -60,6 +60,8 @@ module cldera_sai_tracers
   real(r8) :: cldera_sai_dTstrat           ! stratospheric heating rate (K/day)
   real(r8) :: cldera_sai_dTsurf            ! surface cooling rate (K/day)
   real(r8) :: cldera_sai_qstar             ! mixing ratio normalization for strat. heating
+  real(r8) :: cldera_sai_q0                ! mixing ratio of zero heating 
+  real(r8) :: cldera_sai_gamma             ! power of strat. heating function
   real(r8) :: cldera_sai_taustar           ! AOD normalizaxtion for surface cooling
   real(r8) :: cldera_sai_zAOD              ! max height to apply surface cooling by AOD (km)
   logical  :: cldera_sai_formSulfate       ! true => activate sulfate formation
@@ -107,7 +109,10 @@ module cldera_sai_tracers
   
   ! for stratospheric heating
   real(r8) :: dTstrat                   ! stratospheric heating rate (K/s)
+  real(r8) :: gama                      ! power of strat. heating function
   real(r8) :: qstar                     ! mixing ratio norm. for strat. heating
+  real(r8) :: q0                        ! mixing ratio of zero heating 
+                                        ! (x-intercept of log heating form)
   
   ! for surface cooling
   real(r8) :: dTsurf                    ! surface cooling rate (K/s) 
@@ -155,7 +160,7 @@ contains
                                      cldera_sai_rkSO2, cldera_sai_rkash, cldera_sai_rksulf, &
                                      cldera_sai_dTsurf, cldera_sai_dTstrat, &
                                      cldera_sai_w, cldera_sai_taustar, cldera_sai_zAOD, &
-                                     cldera_sai_qstar, & 
+                                     cldera_sai_qstar, cldera_sai_q0, cldera_sai_gamma, & 
                                      cldera_sai_formSulfate, cldera_sai_stratHeating, &
                                      cldera_sai_surfCooling
 
@@ -189,6 +194,8 @@ contains
        k_ash   = 1.0_r8 / (cldera_sai_rkash  * day2s)     
        k_sulf  = 1.0_r8 / (cldera_sai_rksulf * day2s)     
        qstar   = cldera_sai_qstar            
+       q0      = cldera_sai_q0
+       gama    = cldera_sai_gamma
        w       = cldera_sai_w                 
        taustar = cldera_sai_taustar          
 
@@ -215,6 +222,8 @@ contains
     call mpibcast(dTstrat,       1, mpir8, 0, mpicom)
     call mpibcast(dTsurf,        1, mpir8, 0, mpicom)
     call mpibcast(qstar,         1, mpir8, 0, mpicom)
+    call mpibcast(q0,            1, mpir8, 0, mpicom)
+    call mpibcast(gama,          1, mpir8, 0, mpicom)
     call mpibcast(taustar,       1, mpir8, 0, mpicom)
     call mpibcast(zAOD,          1, mpir8, 0, mpicom)
 #endif
@@ -465,6 +474,7 @@ contains
     real(r8) :: col_mass(ncol,pver)      ! cumulative column mass (kg)
     
     ! for stratospheric heating
+    real(r8) :: qtot                     ! combined so2 and sulfate mixing ratio (kg/kg)
     real(r8) :: strat_heating(ncol,pver) ! stratospheric heating (J/kg/s)
     
     ! for surface cooling
@@ -592,6 +602,8 @@ contains
     call outfld('AIR_MASS', grid_mass(:,:), ncol, lchnk)
     call outfld('COL_MASS', col_mass(:,:), ncol, lchnk)
     call outfld('SAI_AOD',  aod_so2(:,:) + aod_sulf(:,:) + aod_ash(:,:), ncol, lchnk)
+    
+    ! get combined mixing-ratio of SO2 and sulfate for stratospheric heating
 
 
     ! =============== COMPUTE TENDENCIES ===============
@@ -647,9 +659,15 @@ contains
           
           ! =============== DIABATIC HEATING ===============
           ! ---- stratospheric heating
-          if(cldera_sai_stratHeating) then 
-              strat_heating(i, k) = (state%q(i,k,ixso2) + state%q(i,k,ixsulf)) * &
-                                    (1/qstar) * cpair * dTstrat
+          qtot = state%q(i, k, ixso2) + state%q(i, k, ixsulf) 
+          if(cldera_sai_stratHeating .and. qtot > q0) then
+              strat_heating(i, k) = (1 - (LOG10(qtot/qstar) / LOG10(q0/qstar)))**gama &
+                                    * cpair * dTstrat
+              !if(i == inji .and. myrank == inj_owner) then
+                  ! debug
+              !    write(iulog,*) "CLDERA_SAI_TRACERS HEATING:", strat_heating(i, k), &
+              !                   "  Q: ", state%q(i, k, ixso2) + state%q(i, k,ixsulf)
+              !endif
           else
               strat_heating(i, k) = 0.0_r8
           endif
