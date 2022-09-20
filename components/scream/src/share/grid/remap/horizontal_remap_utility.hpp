@@ -14,10 +14,10 @@ namespace scream {
 /*                                        GSSegment
  * Lightweight structure to represent a single remapping of source data to a single target column.
  *     Y_target = sum_(n=1)^N ( w_n * Y_source_n )
- * See description of GSMap structure for more details on the mapping.
+ * See description of HorizontalMap structure for more details on the mapping.
  *
- * This structure is used to organize the overall horizontal remapping stored in the GSMap structure.
- * Each segment represents a single target column in the GSMap.
+ * This structure is used to organize the overall horizontal remapping stored in the HorizontalMap structure.
+ * Each segment represents a single target column in the HorizontalMap.
  * --------------------------------------
  *  A.S. Donahue (LLNL): 2022-09-07
  *===============================================================================================*/
@@ -34,8 +34,8 @@ struct GSSegment {
   
   // Constructors/Destructor
   GSSegment() {};
-  GSSegment(const gid_type dof_gid, const Int length);
-  GSSegment(const gid_type dof_gid, const Int length, const view_1d<const gid_type>& source_dofs, const view_1d<const Real>& weights);
+  GSSegment(const gid_type dof_gid, const int length);
+  GSSegment(const gid_type dof_gid, const int length, const view_1d<const gid_type>& source_dofs, const view_1d<const Real>& weights);
 
   // Helper Functions
   bool check() const;      // Check if this segment is valid
@@ -47,32 +47,32 @@ struct GSSegment {
 
   // Getter Functions
   gid_type get_dof()     const { return m_dof; }
-  Int      get_dof_idx() const { return m_dof_idx; }
-  Int      get_length()  const { return m_length; }
+  int      get_dof_idx() const { return m_dof_idx; }
+  int      get_length()  const { return m_length; }
   view_1d<gid_type>  get_source_dofs()        const { return m_source_dofs; }
-  view_1d<Int>       get_source_idx()         const { return m_source_idx; }
+  view_1d<int>       get_source_idx()         const { return m_source_idx; }
   view_1d<Real>      get_weights()            const { return m_weights; }
-  view_1d_host<Int>  get_source_idx_on_host() const { return m_source_idx_h; }
+  view_1d_host<int>  get_source_idx_on_host() const { return m_source_idx_h; }
   view_1d_host<Real> get_weights_on_host()    const { return m_weights_h; }
  
   // TODO: Not sure why, but this can't be set as private, otherwise `set_dof_idx` doesn't work. 
-  Int      m_dof_idx = -999; // The degree of freedom w.r.t. to the local index for this map
+  int      m_dof_idx = -999; // The degree of freedom w.r.t. to the local index for this map
 private:
 
   // Remap views
   view_1d<gid_type>  m_source_dofs;
-  view_1d<Int>       m_source_idx;
+  view_1d<int>       m_source_idx;
   view_1d<Real>      m_weights;
-  view_1d_host<Int>  m_source_idx_h;
+  view_1d_host<int>  m_source_idx_h;
   view_1d_host<Real> m_weights_h;
 
   // Segment ID
   gid_type m_dof;     // The global degree of freedom this segment maps to
-  Int      m_length;
+  int      m_length;
 }; // GSSegment
 
 /*===============================================================================================*/
-/*                                        GSMap
+/*                                        HorizontalMap
  * Structure which can be used to setup and control a horizontal remapping.  This structure
  * follows the basic premise that there are a set of source columns >=1 that will map to a
  * single target column with a specific set of weights.  Mapping follows the expression:
@@ -88,8 +88,8 @@ private:
  *  A.S. Donahue (LLNL): 2022-09-07
  *===============================================================================================*/
 
-class GSMap {
-  // Note: The name used for mapping in the component coupler is GSMap.  We could adopt a different
+class HorizontalMap {
+  // Note: The name used for mapping in the component coupler is HorizontalMap.  We could adopt a different
   // name if desired.
   using gid_type = AbstractGrid::gid_type;
   using KT = KokkosTypes<DefaultDevice>;
@@ -106,11 +106,11 @@ class GSMap {
   
 public:
   // Constructors/Destructor
-  ~GSMap() = default;
-  GSMap() {};
-  GSMap(const ekat::Comm& comm);
-  GSMap(const ekat::Comm& comm, const std::string& map_name);
-  GSMap(const ekat::Comm& comm, const std::string& map_name, const view_1d<gid_type>& dofs_gids, const gid_type min_dof);
+  ~HorizontalMap() = default;
+  HorizontalMap() {};
+  HorizontalMap(const ekat::Comm& comm);
+  HorizontalMap(const ekat::Comm& comm, const std::string& map_name);
+  HorizontalMap(const ekat::Comm& comm, const std::string& map_name, const view_1d<gid_type>& dofs_gids, const gid_type min_dof);
  
   // Main remap functions
   void apply_remap(const view_1d<const Real>& source_data, const view_1d<Real>& remapped_data);
@@ -121,7 +121,7 @@ public:
   void check() const;      // A check to make sure the map is valid
   void print_map() const;  // Useful for debuggingi
 
-  // Builder functions - used to build the GSMap
+  // Builder functions - used to build the HorizontalMap
   void set_dof_gids(const view_1d<const gid_type>& dofs_gids, const gid_type min_dof);
   void set_unique_source_dofs();
   void add_remap_segment(const GSSegment& seg);
@@ -129,29 +129,29 @@ public:
 
   // Getter functions
   view_1d<gid_type>      get_unique_source_dofs() const { return m_unique_dofs; }
-  Int                    get_num_unique_dofs() const { return m_num_unique_dofs; }
-  Int                    get_num_of_dofs() const { return m_num_dofs; }
+  int                    get_num_unique_dofs() const { return m_num_unique_dofs; }
+  int                    get_num_of_dofs() const { return m_num_dofs; }
   std::vector<GSSegment> get_map_segments() const { return m_map_segments; }
-  Int                    get_num_of_segments() const { return m_num_segments; }
+  int                    get_num_of_segments() const { return m_num_segments; }
   
 
 private: 
 
   // Global degrees of freedom information on target grid
   view_1d<gid_type> m_dofs_gids;
-  Int               m_num_dofs = 0;
+  int               m_num_dofs = 0;
   // Global degrees of freedom information on source grid
   view_1d<gid_type> m_unique_dofs;
-  Int               m_num_unique_dofs;
+  int               m_num_unique_dofs;
   bool              m_unique_set = false;
-  // GSMap data
+  // HorizontalMap data
   std::string            m_name = "";
   ekat::Comm             m_comm;
   bool                   m_dofs_set = false;
   std::vector<GSSegment> m_map_segments;
-  Int                    m_num_segments = 0;
+  int                    m_num_segments = 0;
 
-}; // struct GSMap
+}; // struct HorizontalMap
 
 /*===============================================================================================*/
 

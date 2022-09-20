@@ -312,8 +312,8 @@ void SPAFunctions<S,D>
   // and thus no remapping is required.  This simple routine establishes a 1-1 horizontal
   // mapping
   auto num_local_cols = dofs_gids.size();
-  auto& spa_gsmap = spa_horiz_interp.gsmap;
-  spa_gsmap = GSMap(spa_horiz_interp.m_comm,"SPA 1-1 Remap",dofs_gids,min_dof);
+  auto& spa_horiz_map = spa_horiz_interp.horiz_map;
+  spa_horiz_map = HorizontalMap(spa_horiz_interp.m_comm,"SPA 1-1 Remap",dofs_gids,min_dof);
   view_1d<gid_type> src_dofs("",1);
   view_1d<Real>     src_wgts("",1);
   auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
@@ -323,9 +323,9 @@ void SPAFunctions<S,D>
     Kokkos::deep_copy(src_dofs,seg_dof);
     Kokkos::deep_copy(src_wgts,   1.0);
     GSSegment seg(seg_dof,1,src_dofs,src_wgts);
-    spa_gsmap.add_remap_segment(seg);
+    spa_horiz_map.add_remap_segment(seg);
   }
-  spa_gsmap.set_unique_source_dofs();
+  spa_horiz_map.set_unique_source_dofs();
 
 } // END set_remap_weights_one_to_one
 /*-----------------------------------------------------------------*/
@@ -344,10 +344,10 @@ void SPAFunctions<S,D>
   )
 {
   start_timer("EAMxx::SPA::get_remap_weights_from_file");
-  auto& spa_gsmap = spa_horiz_interp.gsmap;
-  spa_gsmap = GSMap(spa_horiz_interp.m_comm,"SPA File Remap", dofs_gids, min_dof);
-  spa_gsmap.set_remap_segments_from_file(remap_file_name);
-  spa_gsmap.set_unique_source_dofs();
+  auto& spa_horiz_map = spa_horiz_interp.horiz_map;
+  spa_horiz_map = HorizontalMap(spa_horiz_interp.m_comm,"SPA File Remap", dofs_gids, min_dof);
+  spa_horiz_map.set_remap_segments_from_file(remap_file_name);
+  spa_horiz_map.set_unique_source_dofs();
   stop_timer("EAMxx::SPA::get_remap_weights_from_file");
 
 }  // END get_remap_weights_from_file
@@ -399,9 +399,9 @@ template<typename S, typename D>
 void SPAFunctions<S,D>
 ::update_spa_data_from_file(
     const std::string&          spa_data_file_name,
-    const Int                   time_index, // zero-based
-    const Int                   nswbands,
-    const Int                   nlwbands,
+    const int                   time_index, // zero-based
+    const int                   nswbands,
+    const int                   nlwbands,
           SPAHorizInterp&       spa_horiz_interp,
           SPAInput&             spa_data)
 {
@@ -409,10 +409,10 @@ void SPAFunctions<S,D>
   // Ensure all ranks are operating independently when reading the file, so there's a copy on all ranks
   auto comm = spa_horiz_interp.m_comm;
 
-  // Use GSMap to define the set of source column data we need to load
-  auto& spa_gsmap = spa_horiz_interp.gsmap; 
-  auto unique_src_dofs = spa_gsmap.get_unique_source_dofs();
-  const int num_local_cols = spa_gsmap.get_num_unique_dofs();
+  // Use HorizontalMap to define the set of source column data we need to load
+  auto& spa_horiz_map = spa_horiz_interp.horiz_map;
+  auto unique_src_dofs = spa_horiz_map.get_unique_source_dofs();
+  const int num_local_cols = spa_horiz_map.get_num_unique_dofs();
   scorpio::register_file(spa_data_file_name,scorpio::Read);
   const int source_data_nlevs = scorpio::get_dimlen_c2f(spa_data_file_name.c_str(),"lev");
   scorpio::eam_pio_closefile(spa_data_file_name);
@@ -508,22 +508,22 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(AER_TAU_LW_v, AER_TAU_LW_v_h);
 
   // Apply the remap to this data
-  spa_gsmap.apply_remap(PS_v,spa_data.PS); // Note PS is not padded, so remap can be applied right away
+  spa_horiz_map.apply_remap(PS_v,spa_data.PS); // Note PS is not padded, so remap can be applied right away
   // For padded data we need create temporary arrays to store the direct remapped data, then we can add
   // padding.
-  Int tgt_ncol = spa_data.data.ncols;
-  Int tgt_nlev = spa_data.data.nlevs-2;  // Note, the spa data already accounts for padding in the nlevs, so we subtract 2
+  int tgt_ncol = spa_data.data.ncols;
+  int tgt_nlev = spa_data.data.nlevs-2;  // Note, the spa data already accounts for padding in the nlevs, so we subtract 2
   view_2d<Real> CCN3_unpad("",tgt_ncol,tgt_nlev);
   view_3d<Real> AER_G_SW_unpad("",tgt_ncol,nswbands,tgt_nlev);
   view_3d<Real> AER_SSA_SW_unpad("",tgt_ncol,nswbands,tgt_nlev);
   view_3d<Real> AER_TAU_SW_unpad("",tgt_ncol,nswbands,tgt_nlev);
   view_3d<Real> AER_TAU_LW_unpad("",tgt_ncol,nlwbands,tgt_nlev);
   // Apply remap to "unpadded" data
-  spa_gsmap.apply_remap(CCN3_v,CCN3_unpad);
-  spa_gsmap.apply_remap(AER_G_SW_v, AER_G_SW_unpad);
-  spa_gsmap.apply_remap(AER_SSA_SW_v, AER_SSA_SW_unpad);
-  spa_gsmap.apply_remap(AER_TAU_SW_v, AER_TAU_SW_unpad);
-  spa_gsmap.apply_remap(AER_TAU_LW_v, AER_TAU_LW_unpad);
+  spa_horiz_map.apply_remap(CCN3_v,CCN3_unpad);
+  spa_horiz_map.apply_remap(AER_G_SW_v, AER_G_SW_unpad);
+  spa_horiz_map.apply_remap(AER_SSA_SW_v, AER_SSA_SW_unpad);
+  spa_horiz_map.apply_remap(AER_TAU_SW_v, AER_TAU_SW_unpad);
+  spa_horiz_map.apply_remap(AER_TAU_LW_v, AER_TAU_LW_unpad);
   stop_timer("EAMxx::SPA::update_spa_data_from_file::apply_remap");
   start_timer("EAMxx::SPA::update_spa_data_from_file::copy_and_pad");
   // Copy unpadded data to SPA data structure, add padding.
@@ -541,46 +541,46 @@ void SPAFunctions<S,D>
   Kokkos::deep_copy(spa_data.data.AER_TAU_LW,0.0);
   // 2D vars - CCN3
   Kokkos::parallel_for("", tgt_ncol*tgt_nlev, KOKKOS_LAMBDA (const int& idx) {
-    Int icol  = idx / tgt_nlev;
-    Int klev1 = idx % tgt_nlev;
-    Int kpack = (klev1+1) / Spack::n;
-    Int klev2 = (klev1+1) % Spack::n;
+    int icol  = idx / tgt_nlev;
+    int klev1 = idx % tgt_nlev;
+    int kpack = (klev1+1) / Spack::n;
+    int klev2 = (klev1+1) % Spack::n;
     spa_data.data.CCN3(icol,kpack)[klev2] = CCN3_unpad(icol,klev1);
     if (klev1 == tgt_nlev-1) {
-      Int kpack = (tgt_nlev+1) / Spack::n;
-      Int klev2 = (tgt_nlev+1) % Spack::n;
+      int kpack = (tgt_nlev+1) / Spack::n;
+      int klev2 = (tgt_nlev+1) % Spack::n;
       spa_data.data.CCN3(icol,kpack)[klev2] = CCN3_unpad(icol,klev1);
     }
   });
   Kokkos::fence();
   // 3D vars - AER_G_SW, AER_SSA_SW, AER_TAU_SW, AER_TAU_LW
   Kokkos::parallel_for("", tgt_ncol*tgt_nlev*nswbands, KOKKOS_LAMBDA (const int& idx) {
-    Int icol  = idx / (tgt_nlev*nswbands);
-    Int nband = (idx-icol*tgt_nlev*nswbands) / tgt_nlev;
-    Int klev1 = idx % tgt_nlev;
-    Int kpack = (klev1+1) / Spack::n;
-    Int klev2 = (klev1+1) % Spack::n;
+    int icol  = idx / (tgt_nlev*nswbands);
+    int nband = (idx-icol*tgt_nlev*nswbands) / tgt_nlev;
+    int klev1 = idx % tgt_nlev;
+    int kpack = (klev1+1) / Spack::n;
+    int klev2 = (klev1+1) % Spack::n;
     spa_data.data.AER_G_SW(icol,nband,kpack)[klev2] = AER_G_SW_unpad(icol,nband,klev1);
     spa_data.data.AER_SSA_SW(icol,nband,kpack)[klev2] = AER_SSA_SW_unpad(icol,nband,klev1);
     spa_data.data.AER_TAU_SW(icol,nband,kpack)[klev2] = AER_TAU_SW_unpad(icol,nband,klev1);
     if (klev1 == tgt_nlev-1) {
-      Int kpack = (tgt_nlev+1) / Spack::n;
-      Int klev2 = (tgt_nlev+1) % Spack::n;
+      int kpack = (tgt_nlev+1) / Spack::n;
+      int klev2 = (tgt_nlev+1) % Spack::n;
       spa_data.data.AER_G_SW(icol,nband,kpack)[klev2] = AER_G_SW_unpad(icol,nband,klev1);
       spa_data.data.AER_SSA_SW(icol,nband,kpack)[klev2] = AER_SSA_SW_unpad(icol,nband,klev1);
       spa_data.data.AER_TAU_SW(icol,nband,kpack)[klev2] = AER_TAU_SW_unpad(icol,nband,klev1);
     }
   });
   Kokkos::parallel_for("", tgt_ncol*tgt_nlev*nlwbands, KOKKOS_LAMBDA (const int& idx) {
-    Int icol  = idx / (tgt_nlev*nlwbands);
-    Int nband = (idx-icol*tgt_nlev*nlwbands) / tgt_nlev;
-    Int klev1 = idx % tgt_nlev;
-    Int kpack = (klev1+1) / Spack::n;
-    Int klev2 = (klev1+1) % Spack::n;
+    int icol  = idx / (tgt_nlev*nlwbands);
+    int nband = (idx-icol*tgt_nlev*nlwbands) / tgt_nlev;
+    int klev1 = idx % tgt_nlev;
+    int kpack = (klev1+1) / Spack::n;
+    int klev2 = (klev1+1) % Spack::n;
     spa_data.data.AER_TAU_LW(icol,nband,kpack)[klev2] = AER_TAU_LW_unpad(icol,nband,klev1);
     if (klev1 == tgt_nlev-1) {
-      Int kpack = (tgt_nlev+1) / Spack::n;
-      Int klev2 = (tgt_nlev+1) % Spack::n;
+      int kpack = (tgt_nlev+1) / Spack::n;
+      int klev2 = (tgt_nlev+1) % Spack::n;
       spa_data.data.AER_TAU_LW(icol,nband,kpack)[klev2] = AER_TAU_LW_unpad(icol,nband,klev1);
     }
   });
@@ -614,8 +614,8 @@ template<typename S, typename D>
 void SPAFunctions<S,D>
 ::update_spa_timestate(
   const std::string&     spa_data_file_name,
-  const Int              nswbands,
-  const Int              nlwbands,
+  const int              nswbands,
+  const int              nlwbands,
   const util::TimeStamp& ts,
         SPAHorizInterp&  spa_horiz_interp,
         SPATimeState&    time_state, 
@@ -640,7 +640,7 @@ void SPAFunctions<S,D>
     //       will proceed.
     // NOTE: we use zero-based time indexing here.
     update_spa_data_from_file(spa_data_file_name,time_state.current_month-1,nswbands,nlwbands,spa_horiz_interp,spa_beg);
-    Int next_month = time_state.current_month==12 ? 1 : time_state.current_month+1;
+    int next_month = time_state.current_month==12 ? 1 : time_state.current_month+1;
     update_spa_data_from_file(spa_data_file_name,next_month-1,nswbands,nlwbands,spa_horiz_interp,spa_end);
     // If time state was not initialized it is now:
     time_state.inited = true;

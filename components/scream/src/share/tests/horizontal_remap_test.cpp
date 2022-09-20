@@ -40,14 +40,14 @@ std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm& comm, const Int num_
 
 void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min_dof)
 {
-/* Testing for the GSMap structure and using it to apply a remap to data.
+/* Testing for the HorizontalMap structure and using it to apply a remap to data.
  * This test has three main parts:
  *   1. Construction of the remapping data, construction of the source data to be
  *      remapped, and the establishment of a baseline of remapped data.
- *   2. The construction of a GSMap where the remap data is gathered directly from
+ *   2. The construction of a HorizontalMap where the remap data is gathered directly from
  *      the views derived in part 1.  Apply the remap and compare against baseline.
  *   3. After writing the remapping data and source data to file, we construct a
- *      GSMap reampper with data gathered from the file.  We then apply the remap
+ *      HorizontalMap reampper with data gathered from the file.  We then apply the remap
  *      and compare against the baseline.
  *
  * By breaking the test into these parts we are able to make sure that each test
@@ -170,9 +170,9 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min
   Kokkos::deep_copy(map_wgts    , map_wgts_h    );
 
 //----------------------
-  // Step 2: Use GSMap with remap values and source data, and compare against baseline.
+  // Step 2: Use HorizontalMap with remap values and source data, and compare against baseline.
   std::map<gid_type,Real> y_from_views;
-  GSMap remap_from_views(comm,"From Views", dofs_gids, tgt_min_dof);
+  HorizontalMap remap_from_views(comm,"From Views", dofs_gids, tgt_min_dof);
   for (int iseg=0; iseg<num_loc_tgt_cols; iseg++) {
     gid_type seg_dof = dofs_gids_h(iseg);
     Int seg_len = num_src_to_tgt_cols.at(seg_dof+tgt_min_dof); // Need to offset dof index because this is a look up.
@@ -269,7 +269,7 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min
   // Step 4: Load remap information and source data from the file created in step 3
   //         and use this data to test remapping from file.  Compare remapped data
   //         against the baseline. 
-  GSMap remap_from_file(comm,"From File", dofs_gids, tgt_min_dof);
+  HorizontalMap remap_from_file(comm,"From File", dofs_gids, tgt_min_dof);
   remap_from_file.set_remap_segments_from_file(filename);
   remap_from_file.set_unique_source_dofs();
   remap_from_file.check();
@@ -412,8 +412,8 @@ TEST_CASE("horizontal_remap_units", "") {
   {
     IPDF pdf_seg_len(2,100);
     RPDF pdf_seg_wgt(0,1);
-    // Create a GSMap to test
-    GSMap test_map(comm,"Test Map");
+    // Create a HorizontalMap to test
+    HorizontalMap test_map(comm,"Test Map");
     Int num_dofs = 2;
     view_1d<gid_type> dof_gids("",num_dofs);
     Kokkos::parallel_for("", num_dofs, KOKKOS_LAMBDA (const int& ii) {
@@ -470,8 +470,8 @@ TEST_CASE("horizontal_remap_units", "") {
 
   // Test retrieving unique columns from a full map 
   {
-    // Create a GSMap to test
-    GSMap test_map(comm,"Test Map 2");
+    // Create a HorizontalMap to test
+    HorizontalMap test_map(comm,"Test Map 2");
     // Create a set of segments each with overlapping source dofs
     IPDF pdf_seg_len(4,10),
          pdf_num_seg(5,15);

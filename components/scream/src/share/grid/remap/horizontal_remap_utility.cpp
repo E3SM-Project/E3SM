@@ -4,20 +4,20 @@
 namespace scream {
 
 /*-----------------------------------------------------------------------------------------------*/
-GSMap::GSMap(const ekat::Comm& comm)
+HorizontalMap::HorizontalMap(const ekat::Comm& comm)
   : m_comm (comm)
 {
   m_dofs_set = false;
 }
 /*-----------------------------------------------------------------------------------------------*/
-GSMap::GSMap(const ekat::Comm& comm, const std::string& map_name)
+HorizontalMap::HorizontalMap(const ekat::Comm& comm, const std::string& map_name)
   : m_comm (comm)
   , m_name (map_name)
 {
   m_dofs_set = false;
 }
 /*-----------------------------------------------------------------------------------------------*/
-GSMap::GSMap(const ekat::Comm& comm, const std::string& map_name, const view_1d<gid_type>& dofs_gids, const gid_type min_dof)
+HorizontalMap::HorizontalMap(const ekat::Comm& comm, const std::string& map_name, const view_1d<gid_type>& dofs_gids, const gid_type min_dof)
   : m_comm (comm)
   , m_name (map_name)
 {
@@ -38,9 +38,9 @@ GSMap::GSMap(const ekat::Comm& comm, const std::string& map_name, const view_1d<
 //   col - will be used to populate a segment's "source_dofs"
 //   row - will be used to populate a segment's "m_dof"
 //   S   - will be used to populate a segment's "weights"
-void GSMap::set_remap_segments_from_file(const std::string& remap_filename)
+void HorizontalMap::set_remap_segments_from_file(const std::string& remap_filename)
 {
-  start_timer("EAMxx::GSMap::set_remap_segments_from_file");
+  start_timer("EAMxx::HorizontalMap::set_remap_segments_from_file");
   // Open remap file and determine the amount of data to be read
   scorpio::register_file(remap_filename,scorpio::Read);
   const auto remap_size = scorpio::get_dimlen_c2f(remap_filename.c_str(),"n_s"); // Note, here we assume a standard format of col, row, S
@@ -69,13 +69,13 @@ void GSMap::set_remap_segments_from_file(const std::string& remap_filename)
     for (int ii=0; ii<num_ranks; ii++) {
       chunk_check += chunks_glob[ii];
     }
-    EKAT_REQUIRE_MSG(chunk_check==remap_size,"ERROR: GSMap " + m_name +" get_remap_indices - Something went wrong distributing remap data among the MPI ranks");
+    EKAT_REQUIRE_MSG(chunk_check==remap_size,"ERROR: HorizontalMap " + m_name +" get_remap_indices - Something went wrong distributing remap data among the MPI ranks");
   }
   // Using scream input routines, read remap data from file by chunk
-  view_1d<Int>  tgt_col("row",my_chunk); 
+  view_1d<int>  tgt_col("row",my_chunk); 
   auto tgt_col_h = Kokkos::create_mirror_view(tgt_col);
   std::vector<std::string> vec_of_dims = {"n_s"};
-  std::string i_decomp = "Int-n_s";
+  std::string i_decomp = "int-n_s";
   scorpio::get_variable(remap_filename, "row", "row", vec_of_dims, "int", i_decomp);
   std::vector<int64_t> var_dof(my_chunk);
   std::iota(var_dof.begin(),var_dof.end(),my_start);
@@ -86,7 +86,7 @@ void GSMap::set_remap_segments_from_file(const std::string& remap_filename)
   // Step 2: Now that we have the data distributed among all ranks we organize the data
   //         into sets of target column, start location in data and length of data.
   //         At the same time, determine the min_dof for remap column indices.
-  std::vector<Int> chunk_dof, chunk_start, chunk_len;
+  std::vector<int> chunk_dof, chunk_start, chunk_len;
   chunk_dof.push_back(tgt_col_h(0));
   chunk_start.push_back(my_start);
   chunk_len.push_back(1);
@@ -143,12 +143,12 @@ void GSMap::set_remap_segments_from_file(const std::string& remap_filename)
     }
   }
   // Now that we know which parts of the remap file this rank cares about we can construct segments
-  view_1d<Int>  col("col",var_dof.size()); 
+  view_1d<int>  col("col",var_dof.size()); 
   view_1d<Real> S("S",var_dof.size()); 
   auto col_h = Kokkos::create_mirror_view(col);
   auto S_h = Kokkos::create_mirror_view(S);
   vec_of_dims = {"n_s"};
-  i_decomp = "Int-n_s";
+  i_decomp = "int-n_s";
   std::string r_decomp = "Real-n_s";
   scorpio::register_file(remap_filename,scorpio::Read);
   scorpio::get_variable(remap_filename, "col", "col", vec_of_dims, "int", i_decomp);
@@ -175,16 +175,16 @@ void GSMap::set_remap_segments_from_file(const std::string& remap_filename)
     GSSegment seg(seg_dof[ii]-global_remap_min_dof,seglength,source_dofs,weights);
     add_remap_segment(seg);
   }
-  stop_timer("EAMxx::GSMap::set_remap_segments_from_file");
+  stop_timer("EAMxx::HorizontalMap::set_remap_segments_from_file");
 }
 /*-----------------------------------------------------------------------------------------------*/
 // This function is used to set the internal set of degrees of freedom (dof) this map is responsible for.
 // We use the global dofs, offset by the minimum global dof to make everything zero based.  Note, when
 // gathering remap parameters from a file, depending on the algorithm that made the file the dof
 // indices may be 1-based or 0-based.  By offsetting everything to 0-based we avoid potential bugs.
-void GSMap::set_dof_gids(const view_1d<const gid_type>& dofs_gids, const gid_type min_dof)
+void HorizontalMap::set_dof_gids(const view_1d<const gid_type>& dofs_gids, const gid_type min_dof)
 {
-  start_timer("EAMxx::GSMap::set_dof_gids");
+  start_timer("EAMxx::HorizontalMap::set_dof_gids");
   EKAT_REQUIRE(dofs_gids.size()>0);
   m_dofs_gids = view_1d<gid_type>("",dofs_gids.size());
   m_num_dofs = m_dofs_gids.extent(0);
@@ -192,18 +192,18 @@ void GSMap::set_dof_gids(const view_1d<const gid_type>& dofs_gids, const gid_typ
     m_dofs_gids(ii) = dofs_gids(ii)-min_dof;
   });
   m_dofs_set = true;
-  stop_timer("EAMxx::GSMap::set_dof_gids");
+  stop_timer("EAMxx::HorizontalMap::set_dof_gids");
 }
 /*-----------------------------------------------------------------------------------------------*/
-// This function adds a remap segment to a GSMap, note, we want each segment to represent a full
+// This function adds a remap segment to a HorizontalMap, note, we want each segment to represent a full
 // remapping.  This function also checks if a segment already exists for the degree of freedom
 // in question.  If it does then instead of add the segment to the end, this function finds that
 // segment and combines them into a new comprehensive segment.
-void GSMap::add_remap_segment(const GSSegment& seg)
+void HorizontalMap::add_remap_segment(const GSSegment& seg)
 {
   // First determine if a segment already exists in this map for the seg_dof.
   gid_type seg_dof = seg.get_dof();
-  Int match_loc = -999;
+  int match_loc = -999;
   for (int iseg=0; iseg<m_num_segments; iseg++) {
     auto seg_ii = m_map_segments[iseg];
     if (seg_ii.get_dof()==seg_dof) {
@@ -219,13 +219,13 @@ void GSMap::add_remap_segment(const GSSegment& seg)
   } else {
     auto seg_match = m_map_segments[match_loc];
     // Combine this segment with the one already found
-    Int new_length = seg.get_length() + seg_match.get_length();
+    int new_length = seg.get_length() + seg_match.get_length();
     GSSegment new_seg(seg_dof,new_length);
     auto new_source_dofs = new_seg.get_source_dofs();
     auto new_source_idx  = new_seg.get_source_idx();
     auto new_weights     = new_seg.get_weights();
     // First copy old seg values:
-    Int match_len = seg_match.get_length();
+    int match_len = seg_match.get_length();
     auto match_source_dofs = seg_match.get_source_dofs();
     auto match_source_idx  = seg_match.get_source_idx();
     auto match_weights     = seg_match.get_weights();
@@ -235,7 +235,7 @@ void GSMap::add_remap_segment(const GSSegment& seg)
       new_weights(ii)     = match_weights(ii);
     });
     // Next add the new segment
-    Int seg_len = seg.get_length();
+    int seg_len = seg.get_length();
     auto seg_source_dofs = seg.get_source_dofs();
     auto seg_source_idx  = seg.get_source_idx();
     auto seg_weights     = seg.get_weights();
@@ -256,18 +256,18 @@ void GSMap::add_remap_segment(const GSSegment& seg)
   }
 } 
 /*-----------------------------------------------------------------------------------------------*/
-// This function defines the unqiue set of dofs associated with this GSMap.  This is important for
-// knowing just exactly which dofs in the source data this GSMap intends to use.  By just focusing on
-// the dofs the GSMap will use we can decrease the memory footprint.
-void GSMap::set_unique_source_dofs()
+// This function defines the unqiue set of dofs associated with this HorizontalMap.  This is important for
+// knowing just exactly which dofs in the source data this HorizontalMap intends to use.  By just focusing on
+// the dofs the HorizontalMap will use we can decrease the memory footprint.
+void HorizontalMap::set_unique_source_dofs()
 {
-  start_timer("EAMxx::GSMap::set_unique_dofs");
+  start_timer("EAMxx::HorizontalMap::set_unique_dofs");
   // Create a temporary vector of dofs which will be used for lookup
   std::vector<gid_type> unique_dofs;
   // Check all segments and add unique dofs.  Done on HOST so we can use a vector, only done once
   // per map so it's alright to not be optimized for performance.
-  Int min_gid = INT_MAX;
-  Int max_gid = INT_MIN;
+  int min_gid = INT_MAX;
+  int max_gid = INT_MIN;
   for (int iseg=0; iseg<m_num_segments; iseg++) {
     auto seg = m_map_segments[iseg];
     const auto& src_dofs = seg.get_source_dofs();
@@ -335,21 +335,21 @@ void GSMap::set_unique_source_dofs()
     // Sync to Host
     seg.sync_to_host();
   }
-  stop_timer("EAMxx::GSMap::set_unique_dofs");
+  stop_timer("EAMxx::HorizontalMap::set_unique_dofs");
 }
 /*-----------------------------------------------------------------------------------------------*/
 /*-----------------------------------------------------------------------------------------------*/
-void GSMap::check() const
+void HorizontalMap::check() const
 {
-  EKAT_REQUIRE_MSG(m_dofs_set,"Error in GSMap " + m_name + " on rank " + std::to_string(m_comm.rank()) +" - Global DOFS not yet set, need to call set_dof_gids."); 
+  EKAT_REQUIRE_MSG(m_dofs_set,"Error in HorizontalMap " + m_name + " on rank " + std::to_string(m_comm.rank()) +" - Global DOFS not yet set, need to call set_dof_gids."); 
   for (int iseg=0; iseg<m_map_segments.size(); iseg++) {
     auto seg = m_map_segments[iseg];
     bool seg_check = seg.check();
-    EKAT_REQUIRE_MSG(seg_check,"Error in GSMap " + m_name + " on rank " + std::to_string(m_comm.rank()) +" - problem with a remapping segment for dof = " + std::to_string(seg.get_dof()) + ".");
+    EKAT_REQUIRE_MSG(seg_check,"Error in HorizontalMap " + m_name + " on rank " + std::to_string(m_comm.rank()) +" - problem with a remapping segment for dof = " + std::to_string(seg.get_dof()) + ".");
   }
 }
 /*-----------------------------------------------------------------------------------------------*/
-void GSMap::print_map() const
+void HorizontalMap::print_map() const
 {
     // TODO - Make this print everything on ROOT, probably need to pass map info
     //        via MPI first.  That will make the print out information easier to
@@ -385,9 +385,9 @@ void GSMap::print_map() const
 /*-----------------------------------------------------------------------------------------------*/
 // This overload of apply remap assumes a single horizontal slice of source data being mapped onto
 // a horizontal slice of remapped data.  The assumption is that there are no levels in this data.
-void GSMap::apply_remap(const view_1d<const Real>& source_data, const view_1d<Real>& remapped_data) {
-  start_timer("EAMxx::GSMap::apply_remap_1d");
-  if (m_num_dofs==0) { return; } // This GSMap has nothing to do for this rank.
+void HorizontalMap::apply_remap(const view_1d<const Real>& source_data, const view_1d<Real>& remapped_data) {
+  start_timer("EAMxx::HorizontalMap::apply_remap_1d");
+  if (m_num_dofs==0) { return; } // This HorizontalMap has nothing to do for this rank.
   auto remapped_data_h = Kokkos::create_mirror_view(remapped_data);
   auto source_data_h = Kokkos::create_mirror_view(source_data);
   Kokkos::deep_copy(source_data_h,source_data);
@@ -399,21 +399,21 @@ void GSMap::apply_remap(const view_1d<const Real>& source_data, const view_1d<Re
     auto source_idx_h = seg.get_source_idx_on_host();
     auto weights_h    = seg.get_weights_on_host();
     for (int ii=0; ii<seg_length; ii++) {
-      Int idx = source_idx_h(ii);
+      int idx = source_idx_h(ii);
       remapped_data_h(seg_dof_idx) += source_data_h(idx)*weights_h(ii);
     }
   }
   Kokkos::deep_copy(remapped_data,remapped_data_h);
-  stop_timer("EAMxx::GSMap::apply_remap_1d");
+  stop_timer("EAMxx::HorizontalMap::apply_remap_1d");
 }
 /*-----------------------------------------------------------------------------------------------*/
 // This overload of apply remap assumes a set of horizontal slices of source data being mapped onto
 // a set horizontal slices of remapped data.  The assumption is that the second dimension is number
 // of levels
-void GSMap::apply_remap(const view_2d<const Real>& source_data, const view_2d<Real>& remapped_data) {
-  start_timer("EAMxx::GSMap::apply_remap_2d");
-  if (m_num_dofs==0) { return; } // This GSMap has nothing to do for this rank.
-  Int num_levs = source_data.extent(1);
+void HorizontalMap::apply_remap(const view_2d<const Real>& source_data, const view_2d<Real>& remapped_data) {
+  start_timer("EAMxx::HorizontalMap::apply_remap_2d");
+  if (m_num_dofs==0) { return; } // This HorizontalMap has nothing to do for this rank.
+  int num_levs = source_data.extent(1);
   auto remapped_data_h = Kokkos::create_mirror_view(remapped_data);
   auto source_data_h = Kokkos::create_mirror_view(source_data);
   Kokkos::deep_copy(source_data_h,source_data);
@@ -426,23 +426,23 @@ void GSMap::apply_remap(const view_2d<const Real>& source_data, const view_2d<Re
     auto weights_h    = seg.get_weights_on_host();
     for (int ii=0; ii<seg_length; ii++) {
       for (int kk=0; kk<num_levs; kk++) {
-        Int idx = source_idx_h(ii);
+        int idx = source_idx_h(ii);
         remapped_data_h(seg_dof_idx,kk) += source_data_h(idx,kk)*weights_h(ii);
       }
     }
   }
   Kokkos::deep_copy(remapped_data,remapped_data_h);
-  stop_timer("EAMxx::GSMap::apply_remap_2d");
+  stop_timer("EAMxx::HorizontalMap::apply_remap_2d");
 }
 /*-----------------------------------------------------------------------------------------------*/
 // This overload of apply remap assumes a set of horizontal slices of source data being mapped onto
 // a set of horizontal slices of remapped data.  The assumption is that there are levels and one other
 // dimension for this data.
-void GSMap::apply_remap(const view_3d<const Real>& source_data, const view_3d<Real>& remapped_data) {
-  start_timer("EAMxx::GSMap::apply_remap_3d");
-  if (m_num_dofs==0) { return; } // This GSMap has nothing to do for this rank.
-  Int num_levs = source_data.extent(2);
-  Int num_bands = source_data.extent(1);
+void HorizontalMap::apply_remap(const view_3d<const Real>& source_data, const view_3d<Real>& remapped_data) {
+  start_timer("EAMxx::HorizontalMap::apply_remap_3d");
+  if (m_num_dofs==0) { return; } // This HorizontalMap has nothing to do for this rank.
+  int num_levs = source_data.extent(2);
+  int num_bands = source_data.extent(1);
   auto remapped_data_h = Kokkos::create_mirror_view(remapped_data);
   auto source_data_h = Kokkos::create_mirror_view(source_data);
   Kokkos::deep_copy(source_data_h,source_data);
@@ -456,35 +456,34 @@ void GSMap::apply_remap(const view_3d<const Real>& source_data, const view_3d<Re
     for (int ii=0; ii<seg_length; ii++) {
       for (int nn=0; nn<num_bands; nn++) {
         for (int kk=0; kk<num_levs; kk++) {
-          Int idx = source_idx_h(ii);
+          int idx = source_idx_h(ii);
           remapped_data_h(seg_dof_idx,nn,kk) += source_data_h(idx,nn,kk)*weights_h(ii);
         }
       }
     }
   }
   Kokkos::deep_copy(remapped_data,remapped_data_h);
-  stop_timer("EAMxx::GSMap::apply_remap_3d");
+  stop_timer("EAMxx::HorizontalMap::apply_remap_3d");
 }
 /*-----------------------------------------------------------------------------------------------*/
-/*-----------------------------------------------------------------------------------------------*/
-GSSegment::GSSegment(const gid_type dof_gid, const Int length)
+GSSegment::GSSegment(const gid_type dof_gid, const int length)
   : m_dof    (dof_gid)
   , m_length (length)
 {
   m_source_dofs  = view_1d<gid_type>("",m_length);
-  m_source_idx   = view_1d<Int>("",m_length);
+  m_source_idx   = view_1d<int>("",m_length);
   m_weights      = view_1d<Real>("",m_length);
   m_source_idx_h = Kokkos::create_mirror_view(m_source_idx);
   m_weights_h    = Kokkos::create_mirror_view(m_weights);
 }
 /*-----------------------------------------------------------------------------------------------*/
-GSSegment::GSSegment(const gid_type dof_gid, const Int length,  const view_1d<const gid_type>& source_dofs, const view_1d<const Real>& weights)
+GSSegment::GSSegment(const gid_type dof_gid, const int length,  const view_1d<const gid_type>& source_dofs, const view_1d<const Real>& weights)
   : m_dof         (dof_gid)
   , m_length      (length)
 {
   m_source_dofs = view_1d<gid_type>("",m_length);
   m_weights     = view_1d<Real>("",m_length);
-  m_source_idx  = view_1d<Int>("",m_length);
+  m_source_idx  = view_1d<int>("",m_length);
   Kokkos::deep_copy(m_source_dofs,source_dofs);
   Kokkos::deep_copy(m_weights,weights);
   m_source_idx_h = Kokkos::create_mirror_view(m_source_idx);
@@ -510,7 +509,7 @@ bool GSSegment::check() const
   },wgt);
   Real tol = std::numeric_limits<Real>::epsilon() * 100.0;
   if (std::abs(wgt-1.0)>=tol) {
-    printf("ERROR: GSMAP: checking remap segment for DOF = %d, total weight = %e.\n",m_dof,wgt);
+    printf("ERROR: HorizontalMap: checking remap segment for DOF = %d, total weight = %e.\n",m_dof,wgt);
     return false;
   }
 

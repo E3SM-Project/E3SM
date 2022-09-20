@@ -65,7 +65,7 @@ struct SPAFunctions
     // Whether the timestate has been initialized.
     bool inited = false;
     // The current month
-    Int current_month = -1;
+    int current_month = -1;
     // Julian Date for the beginning of the month, as defined in
     //           /src/share/util/scream_time_stamp.hpp
     // See this file for definition of Julian Date.
@@ -102,10 +102,10 @@ struct SPAFunctions
     }
 
     // Basic spatial dimensions of the data
-    Int ncols;
-    Int nlevs;
-    Int nswbands;
-    Int nlwbands;
+    int ncols;
+    int nlevs;
+    int nswbands;
+    int nlwbands;
 
     view_2d<Spack> CCN3;        // CCN concentration at S=0.1: units = #/cm3, dimensions = (ncols,nlevs)
     view_3d<Spack> AER_G_SW;    // AER_G_SW:   units = #/cm3, dimensions = (ncols,nswbands,nlevs)
@@ -155,7 +155,7 @@ struct SPAFunctions
       m_comm = comm;
     }
     // Horizontal Remap
-    GSMap gsmap;
+    HorizontalMap horiz_map;
     // Comm group used for SPA
     ekat::Comm m_comm;
 
@@ -184,16 +184,16 @@ struct SPAFunctions
 
   static void update_spa_data_from_file(
     const std::string&    spa_data_file_name,
-    const Int             time_index,
-    const Int             nswbands,
-    const Int             nlwbands,
+    const int             time_index,
+    const int             nswbands,
+    const int             nlwbands,
           SPAHorizInterp& spa_horiz_interp,
           SPAInput&       spa_data);
 
   static void update_spa_timestate(
     const std::string&     spa_data_file_name,
-    const Int              nswbands,
-    const Int              nlwbands,
+    const int              nswbands,
+    const int              nlwbands,
     const util::TimeStamp& ts,
           SPAHorizInterp&  spa_horiz_interp,
           SPATimeState&    time_state,

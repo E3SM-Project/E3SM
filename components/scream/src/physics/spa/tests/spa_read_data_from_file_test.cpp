@@ -20,9 +20,9 @@ using namespace spa;
 template <typename S>
 using view_1d = typename KokkosTypes<DefaultDevice>::template view_1d<S>;
 
-Real ps_func(const Int t, const Int ncols);
-Real ccn3_func(const Int t, const Int klev, const Int ncols);
-Real aer_func(const Int t, const Int bnd, const Int klev, const Int ncols, const Int mode);
+Real ps_func(const int t, const int ncols);
+Real ccn3_func(const int t, const int klev, const int ncols);
+Real aer_func(const int t, const int bnd, const int klev, const int ncols, const int mode);
 
 TEST_CASE("spa_read_data","spa")
 {
@@ -39,12 +39,12 @@ TEST_CASE("spa_read_data","spa")
 
   std::string spa_data_file  = SCREAM_DATA_DIR "/init/spa_data_for_testing.nc";
   std::string spa_remap_file = SCREAM_DATA_DIR "/init/spa_data_for_testing.nc";
-  Int max_time = 3;
-  Int ncols    = 48;
-  Int ncols_src = 20;
-  Int nlevs    = 4;
-  Int nswbands = 2;
-  Int nlwbands = 3;
+  int max_time = 3;
+  int ncols    = 48;
+  int ncols_src = 20;
+  int nlevs    = 4;
+  int nswbands = 2;
+  int nlwbands = 3;
   // Break the test set of columns into local degrees of freedom per mpi rank
   auto comm_size = spa_comm.size();
   auto comm_rank = spa_comm.rank();
@@ -56,7 +56,7 @@ TEST_CASE("spa_read_data","spa")
     dofs_gids(ii) = min_dof + static_cast<gid_type>(comm_rank + ii*comm_size);
   });
   // Make sure that the total set of columns has been completely broken up.
-  Int test_total_ncols = 0;
+  int test_total_ncols = 0;
   spa_comm.all_reduce(&my_ncols,&test_total_ncols,1,MPI_SUM);
   REQUIRE(test_total_ncols == ncols);
 
@@ -117,7 +117,7 @@ TEST_CASE("spa_read_data","spa")
 } // run_property
 
 // Some helper functions for the require statements:
-Real ps_func(const Int t, const Int ncols)
+Real ps_func(const int t, const int ncols)
 {
   Real ps = 0.0;
   for (int i=1;i<=ncols;i++) {
@@ -128,7 +128,7 @@ Real ps_func(const Int t, const Int ncols)
   return ps;
 } // ps_func
 //
-Real ccn3_func(const Int t, const Int klev, const Int ncols)
+Real ccn3_func(const int t, const int klev, const int ncols)
 {
   Real ccn3 = 0.0;
   for (int i=1;i<=ncols;i++) {
@@ -139,7 +139,7 @@ Real ccn3_func(const Int t, const Int klev, const Int ncols)
   return ccn3;
 } // ccn3_func
 //
-Real aer_func(const Int t, const Int bnd, const Int klev, const Int ncols, const Int mode)
+Real aer_func(const int t, const int bnd, const int klev, const int ncols, const int mode)
 {
   Real aer_out = 0.0;
   for (int i=1;i<=ncols;i++) {

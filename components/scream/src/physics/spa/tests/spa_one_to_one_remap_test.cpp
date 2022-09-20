@@ -24,9 +24,9 @@ using SPAFunc = spa::SPAFunctions<Real, DefaultDevice>;
 using Spack = SPAFunc::Spack;
 using gid_type = SPAFunc::gid_type;
 
-Real ps_func  (const Int t, const gid_type icol);
-Real ccn3_func(const Int t, const gid_type icol, const Int klev);
-Real aer_func (const Int t, const gid_type icol, const Int bnd, const Int klev, const Int mode);
+Real ps_func  (const int t, const gid_type icol);
+Real ccn3_func(const int t, const gid_type icol, const int klev);
+Real aer_func (const int t, const gid_type icol, const int bnd, const int klev, const int mode);
 
 TEST_CASE("spa_one_to_one_remap","spa")
 {
@@ -37,11 +37,11 @@ TEST_CASE("spa_one_to_one_remap","spa")
 
   std::string spa_data_file = SCREAM_DATA_DIR "/init/spa_data_for_testing.nc";
 
-  Int max_time = 3;
-  Int ncols    = 20;
-  Int nlevs    = 4;
-  Int nswbands = 2;
-  Int nlwbands = 3;
+  int max_time = 3;
+  int ncols    = 20;
+  int nlevs    = 4;
+  int nswbands = 2;
+  int nlwbands = 3;
 
   // Break the test set of columns into local degrees of freedom per mpi rank
   auto comm_size = spa_comm.size();
@@ -56,7 +56,7 @@ TEST_CASE("spa_one_to_one_remap","spa")
   auto dofs_gids_h = Kokkos::create_mirror_view(dofs_gids);
   Kokkos::deep_copy(dofs_gids_h,dofs_gids);
   // Make sure that the total set of columns has been completely broken up.
-  Int test_total_ncols = 0;
+  int test_total_ncols = 0;
   spa_comm.all_reduce(&my_ncols,&test_total_ncols,1,MPI_SUM);
   REQUIRE(test_total_ncols == ncols);
 
@@ -65,8 +65,8 @@ TEST_CASE("spa_one_to_one_remap","spa")
   spa_horiz_interp.m_comm = spa_comm;
   SPAFunc::set_remap_weights_one_to_one(min_dof,dofs_gids,spa_horiz_interp);
   // Make sure one_to_one remap has the correct unique columns
-  auto spa_gsmap = spa_horiz_interp.gsmap;
-  REQUIRE(spa_gsmap.get_num_unique_dofs()==my_ncols);
+  auto spa_horiz_map = spa_horiz_interp.horiz_map;
+  REQUIRE(spa_horiz_map.get_num_unique_dofs()==my_ncols);
   // Recall, SPA data is padded, so we initialize with 2 more levels than the source data file.
   SPAFunc::SPAInput spa_data(dofs_gids.size(), nlevs+2, nswbands, nlwbands);
 
@@ -119,17 +119,17 @@ TEST_CASE("spa_one_to_one_remap","spa")
 } // run_property
 
 // Some helper functions for the require statements:
-Real ps_func(const Int t, const gid_type i)
+Real ps_func(const int t, const gid_type i)
 {
   return (t+1) * (i+1)*100.0;
 } // ps_func
 //
-Real ccn3_func(const Int t, const gid_type i, const Int klev)
+Real ccn3_func(const int t, const gid_type i, const int klev)
 {
   return (klev*1.0 + t*10.0 + (i+1)*100.0);
 } // ccn3_func
 //
-Real aer_func(const Int t, const gid_type i, const Int bnd, const Int klev, const Int mode)
+Real aer_func(const int t, const gid_type i, const int bnd, const int klev, const int mode)
 {
   if (mode==0) {  // G
     return  t;
