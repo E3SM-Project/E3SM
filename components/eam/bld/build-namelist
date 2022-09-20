@@ -3671,22 +3671,27 @@ if ($clubb_sgs  =~ /$TRUE/io) {
 
 }
 
-# MMF Microphysics scheme
-add_default($nl, 'MMF_microphysics_scheme');
-add_default($nl, 'use_MMF');
-add_default($nl, 'use_ECPP');
+if ($cfg->get('use_MMF')) {
+    # MMF Microphysics scheme
+    add_default($nl, 'MMF_microphysics_scheme');
+    add_default($nl, 'use_MMF');
+    add_default($nl, 'use_ECPP');
 
-# MMF Variance Transport
-add_default($nl, 'use_MMF_VT');
-add_default($nl, 'MMF_VT_wn_max');
+    # MMF Variance Transport
+    add_default($nl, 'use_MMF_VT');
+    add_default($nl, 'MMF_VT_wn_max');
 
-# MMF CRM mean-state acceleration
-add_default($nl, 'use_crm_accel');
-add_default($nl, 'crm_accel_uv');
-add_default($nl, 'crm_accel_factor');
+    # MMF Explicit Scalar Momentum Transport (ESMT)
+    add_default($nl, 'use_MMF_ESMT');
 
-# MMF CRM domain orientation
-add_default($nl, 'MMF_orientation_angle');
+    # MMF CRM mean-state acceleration
+    add_default($nl, 'use_crm_accel');
+    add_default($nl, 'crm_accel_uv');
+    add_default($nl, 'crm_accel_factor');
+
+    # MMF CRM domain orientation
+    add_default($nl, 'MMF_orientation_angle');
+}
 
 add_default($nl, 'do_aerocom_ind3');
 my $aerocom_ind3 = $nl->get_value('do_aerocom_ind3');
@@ -3776,10 +3781,6 @@ add_default($nl, 'zmconv_trigdcape_ull');
 # These no more needed for EAM, including uwshcu_rpen. No need to reset for 'cam5'
 #add_default($nl, 'hkconv_cmftau');
 #add_default($nl, 'hkconv_c0');
-#MMF still uses UW scheme in the background and check for this parameter during runtime
-if ($phys eq 'cam5' || $phys eq 'default') {
-  add_default($nl, 'uwshcu_rpen');
-}
 
 # cldwat ice coefficients
 add_default($nl, 'cldwat_icritc');

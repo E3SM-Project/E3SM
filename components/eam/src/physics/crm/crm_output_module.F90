@@ -71,16 +71,8 @@ module crm_output_module
       real(crm_rknd), allocatable :: dep_a (:,:)  ! ice, snow, graupel deposition (1/s)
       real(crm_rknd), allocatable :: con_a (:,:)  ! cloud water condensation(1/s)
 
-#if defined( MMF_MOMENTUM_FEEDBACK )
-      real(crm_rknd), allocatable :: ultend(:,:)            ! tendency of ul
-      real(crm_rknd), allocatable :: vltend(:,:)            ! tendency of vl
-#endif
-
-#if defined( MMF_ESMT )
-      real(crm_rknd), allocatable :: u_tend_esmt(:,:)       ! CRM scalar u-momentum tendency
-      real(crm_rknd), allocatable :: v_tend_esmt(:,:)       ! CRM scalar v-momentum tendency
-#endif
-
+      real(crm_rknd), allocatable :: ultend  (:,:)          ! CRM output tendency of zonal wind
+      real(crm_rknd), allocatable :: vltend  (:,:)          ! CRM output tendency of meridional wind
       real(crm_rknd), allocatable :: sltend  (:,:)          ! CRM output tendency of static energy
       real(crm_rknd), allocatable :: qltend  (:,:)          ! CRM output tendency of water vapor
       real(crm_rknd), allocatable :: qcltend (:,:)          ! CRM output tendency of cloud liquid water
@@ -236,16 +228,8 @@ contains
          if (.not. allocated(output%con_a )) allocate(output%con_a (ncol,nlev))
       end if
 
-#if defined( MMF_MOMENTUM_FEEDBACK )
-      if (.not. allocated(output%ultend )) allocate(output%ultend (ncol,nlev))
-      if (.not. allocated(output%vltend )) allocate(output%vltend (ncol,nlev))
-#endif
-
-#if defined( MMF_ESMT )
-      if (.not. allocated(output%u_tend_esmt )) allocate(output%u_tend_esmt (ncol,nlev))
-      if (.not. allocated(output%v_tend_esmt )) allocate(output%v_tend_esmt (ncol,nlev))
-#endif
-      
+      if (.not. allocated(output%ultend ))  allocate(output%ultend (ncol,nlev))
+      if (.not. allocated(output%vltend ))  allocate(output%vltend (ncol,nlev))      
       if (.not. allocated(output%sltend ))  allocate(output%sltend (ncol,nlev))
       if (.not. allocated(output%qltend ))  allocate(output%qltend (ncol,nlev))
       if (.not. allocated(output%qcltend))  allocate(output%qcltend(ncol,nlev))
@@ -405,16 +389,8 @@ contains
          output%con_a = 0
       end if
 
-#if defined( MMF_MOMENTUM_FEEDBACK )
-      output%ultend = 0
-      output%vltend = 0
-#endif
-
-#if defined( MMF_ESMT )
-      output%u_tend_esmt = 0
-      output%v_tend_esmt = 0
-#endif
-
+      output%ultend  = 0
+      output%vltend  = 0
       output%sltend  = 0
       output%qltend  = 0
       output%qcltend = 0
@@ -528,18 +504,10 @@ contains
          if (allocated(output%con_a)) deallocate(output%con_a)
       end if
 
-#if defined( MMF_MOMENTUM_FEEDBACK )
-      if (allocated(output%ultend)) deallocate(output%ultend)
-      if (allocated(output%vltend)) deallocate(output%vltend)
-#endif
-
-#if defined( MMF_ESMT )
-      if (allocated(output%u_tend_esmt)) deallocate(output%u_tend_esmt)
-      if (allocated(output%v_tend_esmt)) deallocate(output%v_tend_esmt)
-#endif
-
-      if (allocated(output%sltend)) deallocate(output%sltend)
-      if (allocated(output%qltend)) deallocate(output%qltend)
+      if (allocated(output%ultend))  deallocate(output%ultend)
+      if (allocated(output%vltend))  deallocate(output%vltend)
+      if (allocated(output%sltend))  deallocate(output%sltend)
+      if (allocated(output%qltend))  deallocate(output%qltend)
       if (allocated(output%qcltend)) deallocate(output%qcltend)
       if (allocated(output%qiltend)) deallocate(output%qiltend)
 

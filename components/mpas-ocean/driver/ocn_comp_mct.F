@@ -60,6 +60,8 @@ module ocn_comp_mct
    use ocn_tracer_surface_restoring
    use ocn_gm
    use ocn_config
+   use ocn_submesoscale_eddies
+   use ocn_eddy_parameterization_helpers
 !
 ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -971,6 +973,16 @@ contains
 
             call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, statePool, ierr)
 
+            call ocn_eddy_compute_mixed_layer_depth(statePool, forcingPool)
+            if (config_use_GM .or. config_submesoscale_enable) then
+                call ocn_eddy_compute_buoyancy_gradient()
+            end if
+
+            if (config_submesoscale_enable) then
+                call mpas_timer_start("submesoscale eddy velocity compute", .false.)
+                call ocn_submesoscale_compute_velocity()
+                call mpas_timer_stop("submesoscale eddy velocity compute")
+            end if
             ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
             if (config_use_Redi.or.config_use_GM) then
               call ocn_gm_compute_Bolus_velocity(statePool, meshPool, scratchPool, timeLevelIn=1)
@@ -2506,6 +2518,8 @@ contains
                                                  avgOceanSurfaceDOC, layerThickness
 
    real (kind=RKIND) :: surfaceFreezingTemp
+   
+   real (kind=RKIND), dimension(:), pointer :: ssh
 
    logical, pointer :: frazilIceActive,          &
                        config_use_ecosysTracers, &
@@ -2558,6 +2572,9 @@ contains
      call mpas_pool_get_array(forcingPool, 'filteredSSHGradientZonal', filteredSSHGradientZonal)
      call mpas_pool_get_array(forcingPool, 'filteredSSHGradientMeridional', filteredSSHGradientMeridional)
      call mpas_pool_get_array(forcingPool, 'avgTotalFreshWaterTemperatureFlux', avgTotalFreshWaterTemperatureFlux)
+     if (ocn_rof_two_way) then
+       call mpas_pool_get_array(statePool, 'ssh', ssh)
+     end if
      if ( frazilIceActive ) then
         call mpas_pool_get_array(forcingPool, 'seaIceEnergy', seaIceEnergy)
         call mpas_pool_get_array(forcingPool, 'frazilSurfacePressure', frazilSurfacePressure)
@@ -2613,6 +2630,10 @@ contains
        o2x_o % rAttr(index_o2x_So_dhdy, n) = filteredSSHGradientMeridional(i)
 
        o2x_o % rAttr(index_o2x_Faoo_h2otemp, n) = avgTotalFreshWaterTemperatureFlux(i) * rho_sw * cp_sw
+       
+       if (ocn_rof_two_way) then
+         o2x_o % rAttr(index_o2x_So_ssh, n)       = ssh(i)
+       end if
 
        if ( frazilIceActive ) then
           ! negative when frazil ice can be melted

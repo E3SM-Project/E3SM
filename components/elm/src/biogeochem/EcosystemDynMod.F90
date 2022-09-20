@@ -12,7 +12,7 @@ module EcosystemDynMod
   use perf_mod            , only : t_startf, t_stopf
   use spmdMod             , only : masterproc
   use elm_varctl          , only : use_century_decomp
-  use elm_varctl          , only : use_erosion
+  use elm_varctl          , only : ero_ccycle 
   use CNStateType         , only : cnstate_type
   use CanopyStateType     , only : canopystate_type
   use SoilStateType       , only : soilstate_type
@@ -716,7 +716,7 @@ contains
        event = 'CNGapMortality'
        call t_start_lnd(event)
        call GapMortality( num_soilc, filter_soilc, num_soilp, filter_soilp,&
-                              cnstate_vars )
+                              cnstate_vars, crop_vars)
        call t_stop_lnd(event)
 
        !--------------------------------------------
@@ -807,7 +807,7 @@ contains
 
    end if
 
-   if ( use_erosion ) then
+   if ( ero_ccycle ) then
        event = 'ErosionFluxes'
        call t_start_lnd(event)
        call ErosionFluxes(bounds, num_soilc, filter_soilc, soilstate_vars, sedflux_vars )

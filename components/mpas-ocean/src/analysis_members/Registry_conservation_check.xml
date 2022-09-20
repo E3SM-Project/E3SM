@@ -1,29 +1,29 @@
 	<nml_record name="AM_conservationCheck">
-		<nml_option name="config_AM_conservationCheck_enable" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_conservationCheck_enable" type="logical" default_value=".false."
 			description="If true, ocean analysis member conservationCheck is called."
 			possible_values="true or false"
 		/>
-		<nml_option name="config_AM_conservationCheck_compute_interval" type="character" default_value="dt" units="unitless"
+		<nml_option name="config_AM_conservationCheck_compute_interval" type="character" default_value="dt"
 			description="Timestamp determining how often analysis member computation should be performed."
 			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
 		/>
-		<nml_option name="config_AM_conservationCheck_output_stream" type="character" default_value="conservationCheckOutput" units="unitless"
+		<nml_option name="config_AM_conservationCheck_output_stream" type="character" default_value="conservationCheckOutput"
 			description="Name of the stream that the conservationCheck analysis member should be tied to."
 			possible_values="Any existing stream name or 'none'"
 		/>
-		<nml_option name="config_AM_conservationCheck_compute_on_startup" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_conservationCheck_compute_on_startup" type="logical" default_value=".false."
 			description="Logical flag determining if an analysis member computation occurs on start-up."
 			possible_values="true or false"
 		/>
-		<nml_option name="config_AM_conservationCheck_write_on_startup" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_conservationCheck_write_on_startup" type="logical" default_value=".false."
 			description="Logical flag determining if an analysis member write occurs on start-up."
 			possible_values="true or false"
 		/>
-		<nml_option name="config_AM_conservationCheck_write_to_logfile" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_conservationCheck_write_to_logfile" type="logical" default_value=".true."
 			description="Logical flag determining if the conservation check is written to the log file."
 			possible_values="true or false"
 		/>
-		<nml_option name="config_AM_conservationCheck_restart_stream" type="character" default_value="conservationCheckRestart" units="unitless"
+		<nml_option name="config_AM_conservationCheck_restart_stream" type="character" default_value="conservationCheckRestart"
 			description="Name of the restart stream the analysis member will use to initialize itself if restart is enabled."
 			possible_values="A restart stream with state of the conservation check."
 		/>
@@ -32,7 +32,7 @@
 		<package name="conservationCheckAMPKG" description="This package includes variables required for the conservationCheck analysis member."/>
 	</packages>
 	<var_struct name="conservationCheckAM" time_levs="1" packages="conservationCheckAMPKG">
-		<var name="performConservationPrecompute" type="integer" dimensions="" units=""
+		<var name="performConservationPrecompute" type="integer" dimensions=""
 			description="" default_value="1"
 		/>
 	</var_struct>
@@ -52,61 +52,61 @@
 		<var name="absoluteEnergyError" type="real" dimensions="Time" units="J"
 			description="Absolute energy conservation error"
 		/>
-		<var name="relativeEnergyError" type="real" dimensions="Time" units="None"
+		<var name="relativeEnergyError" type="real" dimensions="Time" units="1"
 			description="Relative energy conservation error"
 		/>
-		<var name="accumulatedLatentHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+		<var name="accumulatedLatentHeatFlux" type="real" dimensions="Time" units="W m^-2"
 			description="Latent heat flux from coupler, integrated in space and time. Positive into the ocean."
 		/>
-		<var name="accumulatedSensibleHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+		<var name="accumulatedSensibleHeatFlux" type="real" dimensions="Time" units="W m^-2"
 			description="Sensible heat flux from coupler, integrated in space and time. Positive into the ocean."
 		/>
-		<var name="accumulatedLongWaveHeatFluxUp" type="real" dimensions="Time" units="W m^{-2}"
+		<var name="accumulatedLongWaveHeatFluxUp" type="real" dimensions="Time" units="W m^-2"
 			description="Upward long Wave heat flux from coupler, integrated in space and time. Positive into the ocean."
 		/>
-		<var name="accumulatedLongWaveHeatFluxDown" type="real" dimensions="Time" units="W m^{-2}"
+		<var name="accumulatedLongWaveHeatFluxDown" type="real" dimensions="Time" units="W m^-2"
 			description="Downward long wave heat flux from coupler, integrated in space and time. Positive into the ocean."
 		/>
-		<var name="accumulatedShortWaveHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+		<var name="accumulatedShortWaveHeatFlux" type="real" dimensions="Time" units="W m^-2"
 			description="shortwave heat flux from coupler, integrated in space and time. Positive into the ocean."
 		/>
-		<var name="accumulatedSeaIceHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+		<var name="accumulatedSeaIceHeatFlux" type="real" dimensions="Time" units="W m^-2"
 			description="Sea ice heat flux from coupler, integrated in space and time. Positive into the ocean."
 		/>
-		<var name="accumulatedMeltingSnowHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+		<var name="accumulatedMeltingSnowHeatFlux" type="real" dimensions="Time" units="W m^-2"
 			description="This is snowFlux * latent_heat_fusion_mks. Positive into the ocean."
 		/>
-		<var name="accumulatedMeltingIceRunoffHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+		<var name="accumulatedMeltingIceRunoffHeatFlux" type="real" dimensions="Time" units="W m^-2"
 			description="This is iceRunoffFlux * latent_heat_fusion_mks. Positive into the ocean."
 		/>
-		<var name="accumulatedRemovedIceRunoffHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+		<var name="accumulatedRemovedIceRunoffHeatFlux" type="real" dimensions="Time" units="W m^-2"
 			description="This is iceRunoffFlux * latent_heat_fusion_mks. Positive into the ocean."
 		/>
-		<var name="accumulatedIcebergHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+		<var name="accumulatedIcebergHeatFlux" type="real" dimensions="Time" units="W m^-2"
 			description="Iceberg heat flux from coupler, integrated in space and time. Positive into the ocean."
 		/>
-		<var name="accumulatedFrazilHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+		<var name="accumulatedFrazilHeatFlux" type="real" dimensions="Time" units="W m^-2"
 			description="Heat flux from frazil, integrated in space and time, given to couipler. Positive into the ocean."
 		/>
-		<var name="accumulatedLandIceHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+		<var name="accumulatedLandIceHeatFlux" type="real" dimensions="Time" units="W m^-2"
 			description="Land ice heat flux, integrated in space and time. Positive into the ocean."
 		/>
-		<var name="accumulatedLandIceFrazilHeatFlux" type="real" dimensions="Time" units="W m^{-2}"
+		<var name="accumulatedLandIceFrazilHeatFlux" type="real" dimensions="Time" units="W m^-2"
 			description="Land ice heat flux from frazil, integrated in space and time, given to couipler. Positive into the ocean."
 		/>
-		<var name="accumulatedRainTemperatureFlux" type="real" dimensions="Time" units="degC m s^{-1}"
+		<var name="accumulatedRainTemperatureFlux" type="real" dimensions="Time" units="C m s^-1"
 			 description="Heat flux associated with rain. Positive into the ocean."
 		/>
-		<var name="accumulatedEvapTemperatureFlux" type="real" dimensions="Time" units="degC m s^{-1}"
+		<var name="accumulatedEvapTemperatureFlux" type="real" dimensions="Time" units="C m s^-1"
 			 description="Heat flux associated with Evaporation. Positive into the ocean."
 		/>
-		<var name="accumulatedSeaIceTemperatureFlux" type="real" dimensions="Time" units="degC m s^{-1}"
+		<var name="accumulatedSeaIceTemperatureFlux" type="real" dimensions="Time" units="C m s^-1"
 			 description="Heat flux associated with sea ice melt water. Positive into the ocean."
 		/>
-		<var name="accumulatedRiverRunoffTemperatureFlux" type="real" dimensions="Time" units="degC m s^{-1}"
+		<var name="accumulatedRiverRunoffTemperatureFlux" type="real" dimensions="Time" units="C m s^-1"
 			 description="Heat flux associated with river runoff. Positive into the ocean."
 		/>
-		<var name="accumulatedIcebergTemperatureFlux" type="real" dimensions="Time" units="degC m s^{-1}"
+		<var name="accumulatedIcebergTemperatureFlux" type="real" dimensions="Time" units="C m s^-1"
 			 description="Heat flux associated with iceberg melt. Positive into the ocean."
 		/>
 	</var_struct>
@@ -126,46 +126,46 @@
 		<var name="absoluteMassError" type="real" dimensions="Time" units="kg"
 			description="Absolute mass conservation error"
 		/>
-		<var name="relativeMassError" type="real" dimensions="Time" units="None"
+		<var name="relativeMassError" type="real" dimensions="Time" units="1"
 			description="Relative mass conservation error"
 		/>
-		<var name="accumulatedRainFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+		<var name="accumulatedRainFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
 			 description="Fresh water flux from rain from coupler. Positive into the ocean."
 		/>
-		<var name="accumulatedSnowFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+		<var name="accumulatedSnowFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
 			 description="Fresh water flux from snow from coupler. Positive into the ocean."
 		/>
-		<var name="accumulatedEvaporationFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+		<var name="accumulatedEvaporationFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
 			 description="Evaporation flux from coupler. Positive into the ocean."
 		/>
-		<var name="accumulatedSeaIceFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+		<var name="accumulatedSeaIceFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
 			 description="Fresh water flux from sea ice from coupler. Positive into the ocean."
 		/>
-		<var name="accumulatedRiverRunoffFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+		<var name="accumulatedRiverRunoffFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
 			 description="Fresh water flux from river runoff from coupler. Positive into the ocean."
 			 packages="thicknessBulkPKG"
 		/>
-		<var name="accumulatedIceRunoffFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+		<var name="accumulatedIceRunoffFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
 			 description="Fresh water flux from ice runoff from coupler. Positive into the ocean."
 		/>
-		<var name="accumulatedRemovedRiverRunoffFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+		<var name="accumulatedRemovedRiverRunoffFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
 			 description="Fresh water flux from river runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
 			 packages="thicknessBulkPKG"
 		/>
-		<var name="accumulatedRemovedIceRunoffFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+		<var name="accumulatedRemovedIceRunoffFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
 			 description="Fresh water flux from ice runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
 			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
 		/>
-		<var name="accumulatedIcebergFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+		<var name="accumulatedIcebergFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
 			 description="Fresh water flux from iceberg melt from coupler. Positive into the ocean."
 		/>
-		<var name="accumulatedFrazilFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+		<var name="accumulatedFrazilFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
 			 description="Fresh water flux from frazil freezing under sea ice. Positive into the ocean."
 		/>
-		<var name="accumulatedLandIceFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+		<var name="accumulatedLandIceFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
 			 description="Fresh water flux from land ice melt from coupler. Positive into the ocean."
 		/>
-		<var name="accumulatedLandIceFrazilFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+		<var name="accumulatedLandIceFrazilFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
 			 description="Fresh water flux from frazil freezing under land ice. Positive into the ocean."
 		/>
 	</var_struct>
@@ -185,16 +185,16 @@
 		<var name="absoluteSaltError" type="real" dimensions="Time" units="kg"
 			description="Absolute salt conservation error"
 		/>
-		<var name="relativeSaltError" type="real" dimensions="Time" units="None"
+		<var name="relativeSaltError" type="real" dimensions="Time" units="1"
 			description="Relative salt conservation error"
 		/>
-		<var name="accumulatedSeaIceSalinityFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+		<var name="accumulatedSeaIceSalinityFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
 			 description="Sea ice salinity flux from coupler. Positive into the ocean."
 		/>
-		<var name="accumulatedFrazilSalinityFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+		<var name="accumulatedFrazilSalinityFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
 			 description="Salinity flux from frazil to sea ice, given to coupler. Positive into the ocean."
 		/>
-		<var name="accumulatedLandIceFrazilSalinityFlux" type="real" dimensions="Time" units="kg m^{-2} s^{-1}"
+		<var name="accumulatedLandIceFrazilSalinityFlux" type="real" dimensions="Time" units="kg m^-2 s^-1"
 			 description="Salinity flux from frazil to Land Ice, given to coupler. Positive into the ocean."
 		/>
 	</var_struct>

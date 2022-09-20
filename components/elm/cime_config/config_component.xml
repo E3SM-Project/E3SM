@@ -112,7 +112,7 @@
       <value compset="_ELM%[^_]*BGCDV"     >-bgc bgc -dynamic_vegetation</value>
       <value compset="_ELM%[^_]*CNDV-CROP" >-bgc cn -dynamic_vegetation -crop</value>
       <value compset="_ELM%[^_]*BGCDV-CROP">-bgc bgc -dynamic_vegetation -crop</value>
-      <value compset="_ELM%[^_]*FATES"      >-bgc fates -no-megan</value>
+      <value compset="_ELM%[^_]*FATES"      >-bgc fates -no-megan -no-drydep</value>
       <value compset="_ELM%[^_]*CRDCTCBC"   >-bgc bgc -nutrient c   -nutrient_comp_pathway rd  -soil_decomp ctc -methane </value>
       <value compset="_ELM%[^_]*CNRDCTCBC"  >-bgc bgc -nutrient cn  -nutrient_comp_pathway rd  -soil_decomp ctc -methane </value>
       <value compset="_ELM%[^_]*CNPRDCTCBC" >-bgc bgc -nutrient cnp -nutrient_comp_pathway rd  -soil_decomp ctc -methane </value>

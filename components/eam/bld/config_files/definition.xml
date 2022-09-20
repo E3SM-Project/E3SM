@@ -323,10 +323,13 @@ for system-specific namelist defaults when the hostname does not return the
 desired name.
 </entry>
 <entry id="use_MMF" valid_values="0,1" value="0">
-Switch to enable or disable MMF/super-parameterization: 0=off, 1=on.
+Switch to enable Multi-scale Modelling Framework (MMF): 0=off, 1=on.
 </entry>
 <entry id="use_MMF_VT" valid_values="0,1" value="0">
-Switch to enable or disable MMF variance transport: 0=off, 1=on.
+Switch to enable CRM variance transport in E3SM-MMF: 0=off, 1=on.
+</entry>
+<entry id="use_MMF_ESMT" valid_values="0,1" value="0">
+Switch to enable explicit scalar momentum transport for 2D CRM in E3SM-MMF: 0=off, 1=on.
 </entry>
 <entry id="use_ECPP" valid_values="0,1" value="0">
 Switch to enable or disable ECPP in CAM: 0=off, 1=on.

@@ -12,7 +12,7 @@ module RtmMod
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_sys_mod     , only : shr_sys_flush
   use shr_const_mod   , only : SHR_CONST_PI, SHR_CONST_CDAY
-  use rof_cpl_indices , only : nt_rtm, rtm_tracers, KW, DW 
+  use rof_cpl_indices , only : nt_rtm, rtm_tracers, KW, DW
   use RtmSpmd         , only : masterproc, npes, iam, mpicom_rof, ROFID, mastertask, &
                                MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
   use RtmVar          , only : re, spval, rtmlon, rtmlat, iulog, ice_runoff, &
@@ -20,7 +20,7 @@ module RtmMod
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
                                inst_index, inst_suffix, inst_name, wrmflag, inundflag, &
                                smat_option, decomp_option, barrier_timers, heatflag, sediflag, &
-                               isgrid2d, data_bgc_fluxes_to_ocean_flag
+                               isgrid2d, data_bgc_fluxes_to_ocean_flag, use_lnd_rof_two_way, use_ocn_rof_two_way
   use RtmFileUtils    , only : getfil, getavu, relavu
   use RtmTimeManager  , only : timemgr_init, get_nstep, get_curr_date, advance_timestep
   use RtmHistFlds     , only : RtmHistFldsInit, RtmHistFldsSet 
@@ -266,7 +266,7 @@ contains
          rtmhist_fincl1,  rtmhist_fincl2, rtmhist_fincl3, &
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
          rtmhist_avgflag_pertape, decomp_option, wrmflag,rstraflag,ngeom,nlayers,rinittemp, &
-         inundflag, smat_option, delt_mosart, barrier_timers, &
+         inundflag, smat_option, delt_mosart, barrier_timers,          &
          RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag, data_bgc_fluxes_to_ocean_flag
 
     namelist /inund_inparm / opt_inund, &
@@ -347,6 +347,9 @@ contains
           end do
           call relavu( unitn )
        end if
+       if (.not. inundflag .and. use_lnd_rof_two_way) then
+          call shr_sys_abort(trim(subname)//' inundation model must be turned on for land river two way coupling')
+       end if
     end if
 
     call mpi_bcast (coupling_period,   1, MPI_INTEGER, 0, mpicom_rof, ier)
@@ -372,7 +375,9 @@ contains
     call mpi_bcast (ngeom,          1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (nlayers,        1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (inundflag,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (use_lnd_rof_two_way, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (heatflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (use_ocn_rof_two_way, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (barrier_timers, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (data_bgc_fluxes_to_ocean_flag, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
 
@@ -412,6 +417,10 @@ contains
     runtyp(nsrContinue + 1) = 'restart'
     runtyp(nsrBranch   + 1) = 'branch '
 
+    if ( use_ocn_rof_two_way ) then
+       RoutingMethod = DW
+    end if 
+
     Tctl%RoutingMethod = RoutingMethod
     Tctl%DLevelH2R     = DLevelH2R
     Tctl%DLevelR       = DLevelR
@@ -449,6 +458,7 @@ contains
        write(iulog,*) '   smat_option           = ',trim(smat_option)
        write(iulog,*) '   wrmflag               = ',wrmflag
        write(iulog,*) '   inundflag             = ',inundflag
+       write(iulog,*) '   use_lnd_rof_two_way   = ',use_lnd_rof_two_way
        write(iulog,*) '   heatflag              = ',heatflag
        write(iulog,*) '   barrier_timers        = ',barrier_timers
        write(iulog,*) '   RoutingMethod         = ',Tctl%RoutingMethod
@@ -2212,6 +2222,17 @@ contains
              !budget_terms(bv_fp_i, 1) = budget_terms(bv_fp_i, 1) + rtmCTL%inundwf(nr)        ! 17-6-7
            endif
 
+           ! land river two way coupling, update floodplain inundation volume with drainage from lnd
+           if (use_lnd_rof_two_way) then
+             TRunoff%wf_ini(nr) = TRunoff%wf_ini(nr) - rtmCTL%inundinf(nr) * coupling_period
+
+             if ( TRunoff%wf_ini(nr) < 0._r8 ) then
+               TRunoff%wr(nr, 1) = TRunoff%wr(nr, 1) + TRunoff%wf_ini(nr)
+               TRunoff%wf_ini(nr) = 0._r8
+               TRunoff%yr(nr, 1) = TRunoff%wr(nr, 1) / TUnit%rlen(nr) / TUnit%rwidth(nr)
+             endif
+           endif
+
          end do
        end if
 
@@ -3629,6 +3650,21 @@ contains
      if (masterproc) write(iulog,FORMR) trim(subname),' read rdepth ',minval(Tunit%rdepth),maxval(Tunit%rdepth)
      call shr_sys_flush(iulog)
 
+     ! define outlets and relevant parameters where ocn rof two-way coupling is on
+     if ( use_ocn_rof_two_way ) then
+        allocate(TUnit%ocn_rof_coupling_ID(begr:endr))
+        ier = pio_inq_varid(ncid, name='ocn_rof_coupling_ID', vardesc=vardesc)
+        call pio_read_darray(ncid, vardesc, iodesc_int, TUnit%ocn_rof_coupling_ID, ier)
+        if (masterproc) write(iulog,FORMR) trim(subname),' read ocn_rof_coupling_ID',minval(Tunit%ocn_rof_coupling_ID),maxval(Tunit%ocn_rof_coupling_ID)
+        call shr_sys_flush(iulog)
+
+        allocate(TUnit%vdatum_conversion(begr:endr))
+        ier = pio_inq_varid(ncid, name='vdatum_conversion', vardesc=vardesc)
+        call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%vdatum_conversion, ier)
+        if (masterproc) write(iulog,FORMR) trim(subname),' read vdatum_conversion',minval(Tunit%vdatum_conversion),maxval(Tunit%vdatum_conversion)
+        call shr_sys_flush(iulog)
+     end if
+
      allocate(TUnit%nr(begr:endr))
   
      if (inundflag) then
@@ -3773,8 +3809,9 @@ contains
           ! --------------------------------- 
           ! (assign elevation values to TUnit%e_eprof_in2( :, : ) ).
 
-          call read_elevation_profile(ncid, 'ele', TUnit%e_eprof_in2)
-     
+          if ( Tctl%OPT_elevProf .eq. 1 ) then 
+            call read_elevation_profile(ncid, 'ele', TUnit%e_eprof_in2)
+          endif
           ! --------------------------------- 
 
           allocate (TUnit%a_eprof(begr:endr,12))
@@ -4194,9 +4231,7 @@ contains
         if(TUnit%rslp(iunit) <= 0._r8) then
 
         if (inundflag) then
-           if (inundflag) then
-              TUnit%rslp(iunit) = Tctl%rslp_assume
-           endif
+           TUnit%rslp(iunit) = Tctl%rslp_assume
         else
            TUnit%rslp(iunit) = 0.0001_r8
         endif
