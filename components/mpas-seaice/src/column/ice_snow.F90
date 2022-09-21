@@ -421,8 +421,8 @@
                   call adjust_enthalpy (nslyr,                 &
                                         zs1(:),    zs2(:),     &
                                         hslyr,     hsn_new(n), &
-                                        zqsn(:,n), fhocn,      &
-                                        dt)
+                                        zqsn(:,n), dt,         &
+                                        fhocn)
                endif   ! nslyr > 1
             endif      ! |dhsn| > puny
          endif         ! ain > puny

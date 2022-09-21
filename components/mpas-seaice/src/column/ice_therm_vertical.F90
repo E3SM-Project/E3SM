@@ -395,7 +395,8 @@
                              flatn,       fsurfn,    &
                              fcondtopn,   fcondbot,  &
                              fsnow,       hsn_new,   &
-                             fhocnn,      evapn,     &
+                             fhocnn,      freshn,    &
+                             fsaltn,      evapn,     &
                              meltt,       melts,     &
                              meltsliq,    frain,     &
                              meltb,       iage,      &
@@ -1034,7 +1035,8 @@
                                     flatn,     fsurfn,   &
                                     fcondtopn, fcondbot, &
                                     fsnow,     hsn_new,  &
-                                    fhocnn,    evapn,    &
+                                    fhocnn,    freshn,   &
+                                    fsaltn,    evapn,    &
                                     meltt,     melts,    &
                                     meltsliq,  frain,    &
                                     meltb,     iage,     &
@@ -1101,6 +1103,8 @@
 
       real (kind=dbl_kind), intent(out):: &
          fhocnn      , & ! fbot, corrected for any surplus energy (W m-2)
+         freshn      , & ! flux of water, ice to ocean (kg/m^2/s)
+         fsaltn      , & ! flux of salt, ice to ocean (kg/m^2/s)
          evapn           ! ice/snow mass sublimated/condensed (kg m-2 s-1)
 
       real (kind=dbl_kind), intent(out):: &
@@ -1635,15 +1639,15 @@
          call adjust_enthalpy (nilyr,              &
                                zi1,      zi2,      &
                                hilyr,    hin,      &
-                               zqin,     fhocnn,   &
-                               dt)
+                               zqin,     dt,       &
+                               fhocnn)
 
          if (ktherm == 2) &
               call adjust_enthalpy (nilyr,              &
                                     zi1,      zi2,      &
                                     hilyr,    hin,      &
-                                    zSin,     fhocnn,   &
-                                    dt)
+                                    zSin,     dt,       &
+                                    fsaltn)
 
       else ! zero layer (nilyr=1)
 
@@ -1677,27 +1681,24 @@
          call adjust_enthalpy (nslyr,              &
                                zs1,      zs2,      &
                                hslyr,    hsn,      &
-                               zqsn,     fhocnn,   &
-                               dt)
+                               zqsn,     dt,       &
+                               fhocnn)
 
          if (tr_rsnw) &
                call adjust_enthalpy (nslyr,              &
                                      zs1(:),   zs2(:),   &
                                      hslyr,    hsn,      &
-                                     rsnw(:),  fhocnn,   &
-                                     dt)
+                                     rsnw(:),  dt)
 
         if (tr_snow) then
               call adjust_enthalpy (nslyr,              &
                                     zs1(:),   zs2(:),   &
                                     hslyr,    hsn,      &
-                                    smice(:), fhocnn,   &
-                                    dt)
+                                    smice(:), dt)
               call adjust_enthalpy (nslyr,              &
                                     zs1(:),   zs2(:),   &
                                     hslyr,    hsn,      &
-                                    smliq(:), fhocnn,   &
-                                    dt)
+                                    smliq(:), dt)
         endif
 
       endif   ! nslyr > 1
@@ -1873,8 +1874,8 @@
       subroutine adjust_enthalpy (nlyr,               &
                                   z1,       z2,       &
                                   hlyr,     hn,       &
-                                  qn,       fhocnn,   &
-                                  dt)
+                                  qn,       dt,       &
+                                  fhocnn)
 
       integer (kind=int_kind), intent(in) :: &
          nlyr            ! number of layers (nilyr or nslyr)
@@ -1892,11 +1893,11 @@
       real (kind=dbl_kind), dimension (:), intent(inout) :: &
          qn              ! layer quantity (enthalpy, salinity...)
 
-      real (kind=dbl_kind), intent(inout):: &
-         fhocnn          ! net heat flux to ocean (W/m^2)
-
       real (kind=dbl_kind), intent(in) :: &
          dt              ! time step (s)
+
+      real (kind=dbl_kind), optional, intent(inout):: &
+         fhocnn          ! net heat flux to ocean (W/m^2)
 
       ! local variables
 
@@ -1920,9 +1921,11 @@
          rhlyr = c1 / hlyr
       else
          rhlyr = c0
-         do k = 1, nlyr
-            fhocnn = fhocnn + qn(k)*hn/(real(nlyr,kind=dbl_kind)*dt)
-         enddo ! ilyr
+         if (present(fhocnn)) then
+            do k = 1, nlyr
+               fhocnn = fhocnn + qn(k)*hn/(real(nlyr,kind=dbl_kind)*dt)
+            enddo ! ilyr
+         endif
       endif
 
       !-----------------------------------------------------------------
