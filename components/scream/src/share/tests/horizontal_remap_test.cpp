@@ -197,7 +197,7 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min
   }
   remap_from_views.set_unique_source_dofs();
   remap_from_views.check();
-//  remap_from_views.print_map();  // Un-comment this line when debugging a failure.  Should give a comprehensive printing of the map
+//  remap_from_views.print();  // Un-comment this line when debugging a failure.  Should give a comprehensive printing of the map
   // We need to extract just that source data that is related to this ranks need.
   const auto& unique_dofs_from_views = remap_from_views.get_unique_source_dofs();
   Int num_unique_dofs_from_views = unique_dofs_from_views.extent(0);

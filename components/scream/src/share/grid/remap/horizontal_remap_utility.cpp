@@ -349,7 +349,7 @@ void HorizontalMap::check() const
   }
 }
 /*-----------------------------------------------------------------------------------------------*/
-void HorizontalMap::print_map() const
+void HorizontalMap::print() const
 {
     // TODO - Make this print everything on ROOT, probably need to pass map info
     //        via MPI first.  That will make the print out information easier to
@@ -358,7 +358,7 @@ void HorizontalMap::print_map() const
     printf("Printing map information for map: %s\n",m_name.c_str());
     for (int ii=0; ii<m_num_segments; ii++) {
       auto& seg = m_map_segments[ii];
-      seg.print_seg();
+      seg.print();
     }
  
     printf(" Unique dofs info\n");
@@ -517,7 +517,7 @@ bool HorizontalMapSegment::check() const
   return true;
 }
 /*-----------------------------------------------------------------------------------------------*/
-void HorizontalMapSegment::print_seg() const
+void HorizontalMapSegment::print() const
 {
     printf("\n--------------------\n");
     printf("Printing information for segment with DOF = %d, DOF_idx for local decomp = %d\n",m_dof,m_dof_idx);

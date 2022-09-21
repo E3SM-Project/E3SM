@@ -39,7 +39,7 @@ struct HorizontalMapSegment {
 
   // Helper Functions
   bool check() const;      // Check if this segment is valid
-  void print_seg() const;  // Useful for debugging, print the segment mapping info
+  void print() const;  // Useful for debugging, print the segment mapping info
 
   // Setter Functions
   void set_dof_idx(const int idx) { m_dof_idx = idx; }
@@ -108,7 +108,7 @@ public:
   // Constructors/Destructor
   ~HorizontalMap() = default;
   HorizontalMap() {};
-  HorizontalMap(const ekat::Comm& comm);
+  explicit HorizontalMap(const ekat::Comm& comm);
   HorizontalMap(const ekat::Comm& comm, const std::string& map_name);
   HorizontalMap(const ekat::Comm& comm, const std::string& map_name, const view_1d<gid_type>& dofs_gids, const gid_type min_dof);
  
@@ -119,7 +119,7 @@ public:
  
   // Helper functions
   void check() const;      // A check to make sure the map is valid
-  void print_map() const;  // Useful for debuggingi
+  void print() const;  // Useful for debugging
 
   // Builder functions - used to build the HorizontalMap
   void set_dof_gids(const view_1d<const gid_type>& dofs_gids, const gid_type min_dof);
@@ -134,8 +134,7 @@ public:
   std::vector<HorizontalMapSegment> get_map_segments() const { return m_map_segments; }
   int                    get_num_of_segments() const { return m_num_segments; }
   
-
-private: 
+private:
 
   // Global degrees of freedom information on target grid
   view_1d<gid_type> m_dofs_gids;
