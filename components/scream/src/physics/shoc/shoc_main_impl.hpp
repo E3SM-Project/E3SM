@@ -314,7 +314,7 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<const Spack>& inv_exner,
   const view_1d<const Scalar>& phis,
   // Workspace Manager
-  const WorkspaceMgr&      workspace_mgr,
+  WorkspaceMgr&      workspace_mgr,
   // Input/Output Variables
   const view_2d<Spack>&       host_dse,
   const view_2d<Spack>&       tke,
@@ -365,6 +365,8 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<Spack>& dz_zi,
   const view_2d<Spack>& tkh)
 {
+  workspace_mgr.reset_internals();
+
   // Scalarize some views for single entry access
   const auto s_thetal  = ekat::scalarize(thetal);
   const auto s_shoc_ql = ekat::scalarize(shoc_ql);
@@ -467,21 +469,17 @@ void Functions<S,D>::shoc_main_internal(
     check_tke_disp(shcol,nlev,tke);
   }
 
-#if 0 // progress bar
-
   // End SHOC parameterization
 
   // Use SHOC outputs to update the host model
   // temperature
-  update_host_dse(team,nlev,thetal,shoc_ql, // Input
-                  inv_exner,zt_grid,phis,   // Input
-                  host_dse);                // Output
+  update_host_dse_disp(shcol,nlev,thetal,shoc_ql, // Input
+                       inv_exner,zt_grid,phis,   // Input
+                       host_dse);                // Output
 
-  team.team_barrier();
-  shoc_energy_integrals(team,nlev,host_dse,pdel,  // Input
+  shoc_energy_integrals_disp(shcol,nlev,host_dse,pdel,  // Input
                         qw,shoc_ql,u_wind,v_wind, // Input
                         se_a,ke_a,wv_a,wl_a);     // Output
-#endif
 
   shoc_energy_fixer_disp(shcol,nlev,nlevi,dtime,nadv,zt_grid,zi_grid, // Input
                          se_b,ke_b,wv_b,wl_b,se_a,ke_a,wv_a,wl_a,    // Input
@@ -489,7 +487,6 @@ void Functions<S,D>::shoc_main_internal(
                          workspace_mgr,                              // Workspace
                          host_dse);                                  // Output
 
-#if 0
   // Remaining code is to diagnose certain quantities
   // related to PBL.  No answer changing subroutines
   // should be placed at this point onward.
@@ -498,25 +495,22 @@ void Functions<S,D>::shoc_main_internal(
   // may require this variable.
 
   // Update SHOC water vapor, to be used by the next two routines
-  compute_shoc_vapor(team,nlev,qw,shoc_ql, // Input
-                     shoc_qv);             // Output
+  compute_shoc_vapor_disp(shcol,nlev,qw,shoc_ql, // Input
+                          shoc_qv);             // Output
 
-  team.team_barrier();
-  shoc_diag_obklen(uw_sfc,vw_sfc,      // Input
-                   wthl_sfc,wqw_sfc,   // Input
-                   s_thetal(nlev-1),   // Input
-                   s_shoc_ql(nlev-1),  // Input
-                   s_shoc_qv(nlev-1),  // Input
-                   ustar,kbfs,obklen); // Output
+  shoc_diag_obklen_disp(shcol, nlev, uw_sfc,vw_sfc,      // Input
+                        wthl_sfc,wqw_sfc,   // Input
+                        s_thetal,   // Input
+                        s_shoc_ql,  // Input
+                        s_shoc_qv,  // Input
+                        ustar,kbfs,obklen); // Output
 
-  pblintd(team,nlev,nlevi,npbl,zt_grid,   // Input
-          zi_grid,thetal,shoc_ql,shoc_qv, // Input
-          u_wind,v_wind,ustar,obklen,     // Input
-          kbfs,shoc_cldfrac,              // Input
-          workspace,                      // Workspace
-          pblh);                          // Output
-
-#endif
+  pblintd_disp(shcol,nlev,nlevi,npbl,zt_grid,   // Input
+               zi_grid,thetal,shoc_ql,shoc_qv, // Input
+               u_wind,v_wind,ustar,obklen,     // Input
+               kbfs,shoc_cldfrac,              // Input
+               workspace_mgr,                  // Workspace mgr
+               pblh);                          // Output
 }
 #endif
 
@@ -529,7 +523,7 @@ Int Functions<S,D>::shoc_main(
   const Int&               nadv,                // Number of times to loop SHOC
   const Int&               num_qtracers,        // Number of tracers
   const Scalar&            dtime,               // SHOC timestep [s]
-  const WorkspaceMgr&      workspace_mgr,       // WorkspaceManager for local variables
+  WorkspaceMgr&            workspace_mgr,       // WorkspaceManager for local variables
   const SHOCInput&         shoc_input,          // Input
   const SHOCInputOutput&   shoc_input_output,   // Input/Output
   const SHOCOutput&        shoc_output,         // Output

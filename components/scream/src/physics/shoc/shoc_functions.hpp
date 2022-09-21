@@ -249,6 +249,17 @@ struct Functions
     const uview_1d<const Spack>& zt_grid,
     const Scalar& phis,
     const uview_1d<Spack>& host_dse);
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  static void update_host_dse_disp(
+    const Int& shcol,
+    const Int& nlev,
+    const view_2d<const Spack>& thlm,
+    const view_2d<const Spack>& shoc_ql,
+    const view_2d<const Spack>& inv_exner,
+    const view_2d<const Spack>& zt_grid,
+    const view_1d<const Scalar>& phis,
+    const view_2d<Spack>& host_dse);
+#endif
 
   KOKKOS_FUNCTION
   static void compute_diag_third_shoc_moment(
@@ -853,7 +864,7 @@ struct Functions
     const view_2d<const Spack>& inv_exner,
     const view_1d<const Scalar>& phis,
     // Workspace Manager
-    const WorkspaceMgr&      workspace_mgr,
+    WorkspaceMgr&               workspace_mgr,
     // Input/Output Variables
     const view_2d<Spack>&       host_dse,
     const view_2d<Spack>&       tke,
@@ -914,7 +925,7 @@ struct Functions
     const Int&               nadv,                 // Number of times to loop SHOC
     const Int&               num_q_tracers,        // Number of tracers
     const Scalar&            dtime,                // SHOC timestep [s]
-    const WorkspaceMgr&      workspace_mgr,        // WorkspaceManager for local variables
+    WorkspaceMgr&            workspace_mgr,        // WorkspaceManager for local variables
     const SHOCInput&         shoc_input,           // Input
     const SHOCInputOutput&   shoc_input_output,    // Input/Output
     const SHOCOutput&        shoc_output,          // Output

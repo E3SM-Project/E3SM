@@ -78,6 +78,7 @@ if (NOT SCREAM_MONOLITHIC_KERNELS)
     shoc_diag_second_shoc_moments_disp.cpp
     shoc_diag_third_shoc_moments_disp.cpp
     shoc_assumed_pdf_disp.cpp
+    shoc_update_host_dse_disp.cpp
   )
 endif()
 
