@@ -449,3 +449,74 @@ TEST_CASE("rrtmgp_test_check_range") {
     dummy.deallocate();
     if (yakl::isInitialized()) { yakl::finalize(); }
 }
+
+TEST_CASE("rrtmgp_test_subcol_gen") {
+    // Initialize YAKL
+    if (!yakl::isInitialized()) { yakl::init(); }
+    // Create dummy data
+    const int ncol = 1;
+    const int nlay = 4;
+    const int ngpt = 10;
+    auto cldfrac = real2d("cldfrac", ncol, nlay);
+    // Set cldfrac values
+    memset(cldfrac, 0.0);
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+        cldfrac(1,1) = 1;
+        cldfrac(1,2) = 0.5;
+        cldfrac(1,3) = 0;
+        cldfrac(1,4) = 1;
+    });
+    auto cldmask = int3d("cldmask", ncol, nlay, ngpt);
+    auto cldfrac_from_mask = real2d("cldfrac_from_mask", ncol, nlay);
+    // Run subcol gen, make sure we get what we expect; do this for some different seed values
+    for (unsigned seed = 1; seed <= 10; seed++) {
+        auto seeds = int1d("seeds", ncol);
+        memset(seeds, seed);
+        cldmask = scream::rrtmgp::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
+        // Check answers by computing new cldfrac from mask
+        memset(cldfrac_from_mask, 0.0);
+        parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
+            for (int igpt = 1; igpt <= ngpt; ++igpt) {
+                real cldmask_real = cldmask(icol,ilay,igpt);
+                cldfrac_from_mask(icol,ilay) += cldmask_real;
+            }
+        });
+        parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
+            cldfrac_from_mask(icol,ilay) = cldfrac_from_mask(icol,ilay) / ngpt;
+        });
+        // For cldfrac 1 we should get 1, for cldfrac 0 we should get 0, but in between we cannot be sure
+        // deterministically, since the computed cloud mask depends on pseudo-random numbers
+        REQUIRE(cldfrac_from_mask.createHostCopy()(1,1) == 1);
+        REQUIRE(cldfrac_from_mask.createHostCopy()(1,2) <= 1);
+        REQUIRE(cldfrac_from_mask.createHostCopy()(1,3) == 0);
+        REQUIRE(cldfrac_from_mask.createHostCopy()(1,4) == 1);
+    }
+
+    // For maximum-random overlap, vertically-contiguous layers maximimally overlap,
+    // thus if we have non-zero cloud fraction in two adjacent layers, then every subcolumn
+    // that has cloud in the layer above must also have cloud in the layer below; test
+    // this property by creating two layers with non-zero cloud fraction, creating subcolums,
+    // and verifying that every subcolumn with cloud in layer 1 has cloud in layer 2
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+        cldfrac(1,1) = 0.5;
+        cldfrac(1,2) = 0.5;
+        cldfrac(1,3) = 0;
+        cldfrac(1,4) = 0;
+    });
+    for (unsigned seed = 1; seed <= 10; seed++) {
+        auto seeds = int1d("seeds", ncol);
+        memset(seeds, seed);
+        cldmask = scream::rrtmgp::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
+        auto cldmask_h = cldmask.createHostCopy();
+        for (int igpt = 1; igpt <= ngpt; igpt++) {
+            if (cldmask_h(1,1,igpt) == 1) {
+                REQUIRE(cldmask_h(1,2,igpt) == 1);
+            }
+        }
+    }
+    // Clean up after test
+    cldfrac.deallocate();
+    cldmask.deallocate();
+    cldfrac_from_mask.deallocate();
+    yakl::finalize();
+}
