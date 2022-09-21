@@ -1213,7 +1213,7 @@ contains
          ! Modify PV edge with upstream bias.
          !
 #ifdef MPAS_OPENACC
-         !$acc parallel loop, &
+         !$acc parallel loop &
          !$acc    present(normalizedRelativeVorticityEdge,      &
          !$acc            vorticityGradientNormalComponent,     &
          !$acc            vorticityGradientTangentialComponent, &
@@ -2748,19 +2748,17 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop gang vector &
-      !$acc          present(vertAleTransportTop, maxLevelCell, ALE_Thickness, &
-      !$acc                  oldLayerThickness, minLevelCell) &
-      !$acc          private(k)
+      !$acc          present(vertAleTransportTop, ALE_Thickness, &
+      !$acc                  oldLayerThickness, div_hu, &
+      !$acc                  minLevelCell, maxLevelCell)
 #else
       !$omp parallel
       !$omp do schedule(runtime) private(k)
 #endif
       do iCell = 1,nCells
-         kmin = minLevelCell(iCell)
-         kmax = maxLevelCell(iCell)
          vertAleTransportTop(1,iCell) = 0.0_RKIND
-         vertAleTransportTop(kmax+1,iCell) = 0.0_RKIND
-         do k = kmax, kmin+1, -1
+         vertAleTransportTop(maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
+         do k = maxLevelCell(iCell), minLevelCell(iCell)+1, -1
             vertAleTransportTop(k,iCell) = &
                 vertAleTransportTop(k+1,iCell) - div_hu(k,iCell) &
                      - (ALE_Thickness(k,iCell) - &
@@ -2959,8 +2957,6 @@ contains
          kmin,            &! topmost active cell index
          nCells,          &! number of cells
          err,             &! local error code
-         indexTempFlux,   &! index of temperature in tracer array
-         indexSaltFlux,   &! index of salinity    in tracer array
          timeLevel         ! time level for state variables (default 1)
 
       real (kind=RKIND) :: &
@@ -2969,6 +2965,10 @@ contains
          sumSurfaceStressSquared ! sum of sfc stress squared
 
       ! pointers for variable/pool retrievals
+      integer, pointer :: &
+         indexTempFlux,   &! index of temperature in tracer array
+         indexSaltFlux     ! index of salinity    in tracer array
+
       type (mpas_pool_type), pointer :: &
          tracersSurfaceFluxPool, &! pool of tracer surface fluxes
          tracersPool              ! pool of tracers
@@ -2993,9 +2993,6 @@ contains
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
          activeTracers  ! array of active tracers
-
-      integer, pointer :: &
-         indexTempFluxPtr, indexSaltFluxPtr
 
       ! Scratch Arrays
       ! densitySurfaceDisplaced: Density computed by displacing SST
@@ -3030,14 +3027,21 @@ contains
                                                tracersSurfaceFluxPool)
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
+      !TODO: should be hard-wired?
+      call mpas_pool_get_array(tracersPool, 'activeTracers', &
+                                             activeTracers, 1)
+
       call mpas_pool_get_dimension(tracersSurfaceFluxPool, &
                                   'index_temperatureSurfaceFlux', &
-                                   indexTempFluxPtr)
+                                   indexTempFlux)
       call mpas_pool_get_dimension(tracersSurfaceFluxPool, &
                                   'index_salinitySurfaceFlux', &
-                                   indexSaltFluxPtr)
-      indexTempFlux = indexTempFluxPtr
-      indexSaltFlux = indexSaltFluxPtr
+                                   indexSaltFlux)
+
+      call mpas_pool_get_array(statePool, 'normalVelocity', &
+                                           normalVelocity, timeLevel)
+      call mpas_pool_get_array(statePool, 'layerThickness', &
+                                           layerThickness, timeLevel)
 
       call mpas_pool_get_array(tracersSurfaceFluxPool, &
                               'nonLocalSurfaceTracerFlux', &
@@ -3048,13 +3052,6 @@ contains
       call mpas_pool_get_array(tracersSurfaceFluxPool, &
                               'activeTracersSurfaceFluxRunoff', &
                                activeTracersSurfaceFluxRunoff)
-
-      call mpas_pool_get_array(tracersPool, 'activeTracers', &
-                                             activeTracers, timeLevel)
-      call mpas_pool_get_array(statePool, 'normalVelocity', &
-                                           normalVelocity, timeLevel)
-      call mpas_pool_get_array(statePool, 'layerThickness', &
-                                           layerThickness, timeLevel)
 
       call mpas_pool_get_array(forcingPool, 'surfaceThicknessFlux', &
                                              surfaceThicknessFlux)
@@ -3211,7 +3208,6 @@ contains
     !-------------------------------------------------------------------
 
     end subroutine ocn_compute_KPP_input_fields!}}}
-
 
 !***********************************************************************
 !
