@@ -1837,8 +1837,17 @@ contains
    !initialBenthicTracerBulk(dic_ind,:) = initialBenthicTracerBulk(hco3_ind,:) + initialBenthicTracerBulk(co2_ind,:)  +  initialBenthicTracerBulk(co3_ind,:)
    ! define ocean precipitation flux: ignore this right now
    if (useBGCSinkingFlux) then
-      oceanPrecipFlux(mno2a_ind) = 0.56_benthos_r8*oceanTracerConc(o2_ind) * k_s2 *  c2_benthos/sediment_density*benthosDepth
-      oceanPrecipFlux(feoh3a_ind) = 0.10_benthos_r8* oceanTracerConc(o2_ind)*k_s3 * 4.0_benthos_r8/sediment_density*benthosDepth
+      ! use secondary equation 2 in ocean bottom layer
+      oceanPrecipFlux(mno2a_ind) = oceanTracerConc(mn_ind) * oceanTracerConc(o2_ind) &
+         * k_s2 * c2_benthos/sediment_density/benthosSolidPorosityTop 
+      !Old spin-up fixes the ocean bottom manganese concentration at 0.0096 mmol mn/m3, i.e.
+      !0.56_benthos_r8*oceanTracerConc(o2_ind) * k_s2 *  c2_benthos/sediment_density*benthosDepth
+
+      ! use secondary equation 3 in ocean bottom layer
+      oceanPrecipFlux(feoh3a_ind) = oceanTracerConc(fe_ind) * oceanTracerConc(o2_ind) &
+         * k_s3 * 4.0_benthos_r8/sediment_density/benthosSolidPorosityTop
+      !Old spin-up fixes the ocean bottom iron concentration at 0.0017 mmol fe/m3 everywhere, i.e.
+      !0.10_benthos_r8* oceanTracerConc(o2_ind)*k_s3 * 4.0_benthos_r8/sediment_density*benthosDepth
       oceanPrecipFlux(fepa_ind) = oceanPrecipFlux(feoh3a_ind)*ironBoundPFraction
    end if
 
