@@ -245,7 +245,7 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
   if (has_col_info) {
     msg << "    - entry: (" << gids(min_col_lid);
     for (size_t i=1; i<idx_min.size(); ++i) {
-      msg << "," << i;
+      msg << "," << idx_min[i];
     }
     msg << ")\n";
     if (has_latlon) {
@@ -258,7 +258,7 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
   if (has_col_info) {
     msg << "    - entry: (" << gids(max_col_lid);
     for (size_t i=1; i<idx_max.size(); ++i) {
-      msg << "," << i;
+      msg << "," << idx_max[i];
     }
     msg << ")\n";
     if (has_latlon) {

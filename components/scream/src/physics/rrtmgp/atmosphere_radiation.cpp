@@ -179,8 +179,6 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.sfc_alb_dif_vis.totElems();
   m_buffer.sfc_alb_dif_nir = decltype(m_buffer.sfc_alb_dif_nir)("sfc_alb_dif_nir", mem, m_col_chunk_size);
   mem += m_buffer.sfc_alb_dif_nir.totElems();
-  m_buffer.cosine_zenith = decltype(m_buffer.cosine_zenith)(mem, m_col_chunk_size);
-  mem += m_buffer.cosine_zenith.size();
   m_buffer.sfc_flux_dir_vis = decltype(m_buffer.sfc_flux_dir_vis)("sfc_flux_dir_vis", mem, m_col_chunk_size);
   mem += m_buffer.sfc_flux_dir_vis.totElems();
   m_buffer.sfc_flux_dir_nir = decltype(m_buffer.sfc_flux_dir_nir)("sfc_flux_dir_nir", mem, m_col_chunk_size);
@@ -189,6 +187,8 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.sfc_flux_dif_vis.totElems();
   m_buffer.sfc_flux_dif_nir = decltype(m_buffer.sfc_flux_dif_nir)("sfc_flux_dif_nir", mem, m_col_chunk_size);
   mem += m_buffer.sfc_flux_dif_nir.totElems();
+  m_buffer.cosine_zenith = decltype(m_buffer.cosine_zenith)(mem, m_col_chunk_size);
+  mem += m_buffer.cosine_zenith.size();
 
   // 2d arrays
   m_buffer.p_lay = decltype(m_buffer.p_lay)("p_lay", mem, m_col_chunk_size, m_nlay);
@@ -425,7 +425,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
   auto obliq = m_orbital_obliq;
   auto mvelp = m_orbital_mvelp;
   if (eccen >= 0 && obliq >= 0 && mvelp >= 0) {
-    // use fixed oribal parameters; to force this, we need to set
+    // use fixed orbital parameters; to force this, we need to set
     // orbital_year to SHR_ORB_UNDEF_INT, which is exposed through
     // our c2f bridge as shr_orb_undef_int_c2f
     orbital_year = shr_orb_undef_int_c2f;
@@ -437,7 +437,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
                      &obliqr, &lambm0, &mvelpp);
   // Use the orbital parameters to calculate the solar declination and eccentricity factor
   double delta, eccf;
-  auto calday = ts.frac_of_year_in_days();
+  auto calday = ts.frac_of_year_in_days() + 1;  // Want day + fraction; calday 1 == Jan 1 0Z
   shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
                    obliqr, &delta, &eccf);
 
@@ -531,7 +531,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
         for (int i=0;i<ncol;i++) {
           double lat = h_lat(i+beg)*PC::Pi/180.0;  // Convert lat/lon to radians
           double lon = h_lon(i+beg)*PC::Pi/180.0;
-          h_mu0(i) = shr_orb_cosz_c2f(calday, lat, lon, delta, dt);
+          h_mu0(i) = shr_orb_cosz_c2f(calday, lat, lon, delta, m_rad_freq_in_steps * dt);
         }
       }
       Kokkos::deep_copy(d_mu0,h_mu0);

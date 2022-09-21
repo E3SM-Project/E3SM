@@ -45,12 +45,6 @@ void RelativeHumidityDiagnostic::set_grids(const std::shared_ptr<const GridsMana
   m_diagnostic_output.allocate_view();
 }
 // =========================================================================================
-void RelativeHumidityDiagnostic::initialize_impl(const RunType /* run_type */)
-{
-  auto ts = timestamp(); 
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-}
-// =========================================================================================
 void RelativeHumidityDiagnostic::compute_diagnostic_impl()
 {
   const auto npacks  = ekat::npack<Pack>(m_num_levs);
@@ -75,6 +69,9 @@ void RelativeHumidityDiagnostic::compute_diagnostic_impl()
 
   });
   Kokkos::fence();
+
+  const auto ts = get_field_in("qv").get_header().get_tracking().get_time_stamp();
+  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 

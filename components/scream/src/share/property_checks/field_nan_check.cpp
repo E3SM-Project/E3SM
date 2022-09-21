@@ -148,7 +148,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
 
       res_and_msg.msg += "  - entry (" + std::to_string(gids(col_lid));;
       for (size_t i=1; i<indices.size(); ++i) {
-        res_and_msg.msg += "," + std::to_string(i);
+        res_and_msg.msg += "," + std::to_string(indices[i]);
       }
       res_and_msg.msg += ")\n";
       if (has_latlon) {

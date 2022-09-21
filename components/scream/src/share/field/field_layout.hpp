@@ -93,6 +93,9 @@ public:
   // Note: throws if is_vector_layout()==false.
   int get_vector_dim () const;
 
+  FieldLayout strip_dim (const FieldTag tag) const;
+  FieldLayout strip_dim (const int idim) const;
+
   // ----- Setters ----- //
 
   // Note: as soon as a dimension is set, it cannot be changed.

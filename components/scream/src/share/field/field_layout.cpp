@@ -54,6 +54,29 @@ int FieldLayout::get_vector_dim () const {
   return idim;
 }
 
+
+FieldLayout FieldLayout::strip_dim (const FieldTag tag) const {
+  auto it = ekat::find(m_tags,tag);
+
+  // Check if found
+  EKAT_REQUIRE_MSG(it!=m_tags.end(), "Error! Tag '" + e2str(tag) + "' not found.\n");
+
+  // Check only one tag (no ambiguity)
+  EKAT_REQUIRE_MSG(ekat::count(m_tags,tag)==1,
+                     "Error! Tag '" + e2str(tag) + "' appears multiple times.\n"
+                     "       You must inspect tags() and dims() manually.\n");
+
+  return strip_dim (std::distance(m_tags.begin(),it));
+}
+
+FieldLayout FieldLayout::strip_dim (const int idim) const {
+  std::vector<FieldTag> t = tags();
+  std::vector<int>      d = dims();
+  t.erase(t.begin()+idim);
+  d.erase(d.begin()+idim);
+  return FieldLayout (t,d);
+}
+
 void FieldLayout::set_dimension (const int idim, const int dimension) {
   EKAT_REQUIRE_MSG(idim>=0 && idim<m_rank, "Error! Index out of bounds.");
   EKAT_REQUIRE_MSG(dimension>0, "Error! Dimensions must be positive.");

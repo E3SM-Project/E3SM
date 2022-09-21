@@ -159,7 +159,7 @@ tweaking their $case/namelist_scream.xml file.
       <vertical_coordinate_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</vertical_coordinate_filename>
       <vertical_coordinate_filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</vertical_coordinate_filename>
       <vertical_coordinate_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5_20131001_20220823.nc</vertical_coordinate_filename>
+      <vertical_coordinate_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5-20131001-topoadj-16x_20220914.nc</vertical_coordinate_filename>
       <vertical_coordinate_filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</vertical_coordinate_filename>
       <Moisture>moist</Moisture>
     </homme>
@@ -187,6 +187,7 @@ tweaking their $case/namelist_scream.xml file.
       <spa_remap_file hgrid="ne30np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne30pg2_mono.20220714.nc</spa_remap_file>
       <spa_remap_file hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne120np4_mono_20220502.nc</spa_remap_file>
       <spa_remap_file hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne512np4_mono_20220506.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/init/map_ne30np4_to_ne1024pg2_nco_idw.c20220910.nc</spa_remap_file>
       <spa_data_file>${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_20220428.nc</spa_data_file>
     </spa>
 
@@ -208,7 +209,14 @@ tweaking their $case/namelist_scream.xml file.
       <f12vmr      > 531.2820e-12 </f12vmr>
       <n2vmr       > 0.7906       </n2vmr>
       <covmr       > 1.0e-7       </covmr>
+      <!-- Orbital parameters for solar zenith angle and TSI scaling. For F2010 compsets, -->
+      <!-- we set a fixed year for these parameters, but for other compsets we set to a   -->
+      <!-- negative value to force the code to get simulated year from the timestamp.     -->
+      <!-- TODO: these should probably be set (or overridden) by CIME or cpl settings.    -->
+      <!-- In E3SM/EAM, these appear to be controlled by the orb_iyear namelist variable  -->
+      <!-- in drv_in, and we should probably switch to allowing for that in the future.   -->
       <orbital_year>-9999</orbital_year>
+      <orbital_year COMPSET="2010_.*">2010</orbital_year>
       <orbital_eccentricity>-9999</orbital_eccentricity>
       <orbital_eccentricity COMPSET=".*SCREAM%AQUA.*">0</orbital_eccentricity>
       <orbital_obliquity>-9999</orbital_obliquity>
@@ -258,7 +266,7 @@ tweaking their $case/namelist_scream.xml file.
     <Filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</Filename>
     <Filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</Filename>
     <Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</Filename> 
-    <Filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5_20131001_20220823.nc</Filename> 
+    <Filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5-20131001-topoadj-16x_20220914.nc</Filename>
     <Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</Filename>
     <Filename hgrid="ne30np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne30np4L128_20220823.nc</Filename> <!-- This will need to be updated to the new nccn name -->
     <restart_casename>${CASE}.scream</restart_casename>

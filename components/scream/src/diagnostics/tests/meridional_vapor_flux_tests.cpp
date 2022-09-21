@@ -41,7 +41,6 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 template<typename DeviceT>
 void run(std::mt19937_64& engine)
 {
-  using PF         = scream::PhysicsFunctions<DeviceT>;
   using PC         = scream::physics::Constants<Real>;
   using Pack       = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using KT         = ekat::KokkosTypes<DeviceT>;
@@ -85,8 +84,6 @@ void run(std::mt19937_64& engine)
 
   // Construct the Diagnostic
   ekat::ParameterList params;
-  params.set<std::string>("Diagnostic Name", "Meridional Vapor Flux");
-  params.set<std::string>("Grid", "Point Grid");
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
   auto diag = diag_factory.create("MeridionalVapFlux",comm,params);
@@ -142,10 +139,7 @@ void run(std::mt19937_64& engine)
     Field qv_vert_integrated_flux_v_f = diag_out.clone();
     qv_vert_integrated_flux_v_f.deep_copy<double,Host>(0.0);
     qv_vert_integrated_flux_v_f.sync_to_dev();
-    using PC         = scream::physics::Constants<Real>;
     const auto& qv_vert_integrated_flux_v_v = qv_vert_integrated_flux_v_f.get_view<Real*>();
-    const int pack_surf = std::min(num_levs / Pack::n, num_mid_packs-1);
-    const int idx_surf  = num_levs % Pack::n;
     constexpr Real gravit = PC::gravit;
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();

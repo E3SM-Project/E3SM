@@ -39,18 +39,8 @@ void LongwaveCloudForcingDiagnostic::set_grids(const std::shared_ptr<const Grids
   m_diagnostic_output.allocate_view();
 }
 // =========================================================================================
-void LongwaveCloudForcingDiagnostic::initialize_impl(const RunType /* run_type */)
-{
-
-  auto ts = timestamp(); 
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-
-}
-// =========================================================================================
 void LongwaveCloudForcingDiagnostic::compute_diagnostic_impl()
 {
-
-  const auto npacks     = ekat::npack<Pack>(m_num_levs);
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols,1);
 
   const auto& LWCF              = m_diagnostic_output.get_view<Real*>();
@@ -65,6 +55,8 @@ void LongwaveCloudForcingDiagnostic::compute_diagnostic_impl()
   });
   Kokkos::fence();
 
+  const auto ts = get_field_in("LW_flux_up").get_header().get_tracking().get_time_stamp();
+  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 } //namespace scream

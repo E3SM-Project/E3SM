@@ -43,14 +43,6 @@ void SeaLevelPressureDiagnostic::set_grids(const std::shared_ptr<const GridsMana
   m_diagnostic_output.allocate_view();
 }
 // =========================================================================================
-void SeaLevelPressureDiagnostic::initialize_impl(const RunType /* run_type */)
-{
-
-  auto ts = timestamp(); 
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-
-}
-// =========================================================================================
 void SeaLevelPressureDiagnostic::compute_diagnostic_impl()
 {
 
@@ -72,6 +64,8 @@ void SeaLevelPressureDiagnostic::compute_diagnostic_impl()
   });
   Kokkos::fence();
 
+  const auto ts = get_field_in("T_mid").get_header().get_tracking().get_time_stamp();
+  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 } //namespace scream
