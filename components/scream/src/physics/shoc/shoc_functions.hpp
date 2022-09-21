@@ -288,6 +288,12 @@ struct Functions
     const MemberType& team,
     const Int& nlev,
     const uview_1d<Spack>& tke);
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  static void check_tke_disp(
+    const Int& schol,
+    const Int& nlev,
+    const view_2d<Spack>& tke);
+#endif
 
   KOKKOS_FUNCTION
   static void clipping_diag_third_shoc_moments(
@@ -362,9 +368,41 @@ struct Functions
      const uview_1d<const Spack>& tkh, const uview_1d<const Spack>& tk, const uview_1d<const Spack>& dz_zi,
      const uview_1d<const Spack>& zt_grid, const uview_1d<const Spack>& zi_grid, const uview_1d<const Spack>& shoc_mix,
      const Scalar& wthl_sfc, const Scalar& wqw_sfc, const Scalar& uw_sfc, const Scalar& vw_sfc, Scalar& ustar2, Scalar& wstar,
-     const Workspace workspace, const uview_1d<Spack>& thl_sec,
+     const Workspace& workspace, const uview_1d<Spack>& thl_sec,
      const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& wthl_sec, const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& qwthl_sec,
      const uview_1d<Spack>& uw_sec, const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& wtke_sec, const uview_1d<Spack>& w_sec);
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  static void diag_second_shoc_moments_disp(
+    const Int& shcol, const Int& nlev, const Int& nlevi,
+    const view_2d<const Spack>& thetal,
+    const view_2d<const Spack>& qw,
+    const view_2d<const Spack>& u_wind,
+    const view_2d<const Spack>& v_wind,
+    const view_2d<const Spack>& tke,
+    const view_2d<const Spack>& isotropy,
+    const view_2d<const Spack>& tkh,
+    const view_2d<const Spack>& tk,
+    const view_2d<const Spack>& dz_zi,
+    const view_2d<const Spack>& zt_grid,
+    const view_2d<const Spack>& zi_grid,
+    const view_2d<const Spack>& shoc_mix,
+    const view_1d<const Scalar>& wthl_sfc,
+    const view_1d<const Scalar>& wqw_sfc,
+    const view_1d<const Scalar>& uw_sfc,
+    const view_1d<const Scalar>& vw_sfc,
+    const view_1d<Scalar>& ustar2,
+    const view_1d<Scalar>& wstar,
+    const WorkspaceMgr& workspace_mgr,
+    const view_2d<Spack>& thl_sec,
+    const view_2d<Spack>& qw_sec,
+    const view_2d<Spack>& wthl_sec,
+    const view_2d<Spack>& wqw_sec,
+    const view_2d<Spack>& qwthl_sec,
+    const view_2d<Spack>& uw_sec,
+    const view_2d<Spack>& vw_sec,
+    const view_2d<Spack>& wtke_sec,
+    const view_2d<Spack>& w_sec);
+#endif
 
   KOKKOS_FUNCTION
   static void compute_brunt_shoc_length(
@@ -405,6 +443,21 @@ struct Functions
     Scalar&       ustar,
     Scalar&       kbfs,
     Scalar&       obklen);
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  static void shoc_diag_obklen_disp(
+    const Int&                   shcol,
+    const Int&                   nlev,
+    const view_1d<const Scalar>& uw_sfc,
+    const view_1d<const Scalar>& vw_sfc,
+    const view_1d<const Scalar>& wthl_sfc,
+    const view_1d<const Scalar>& wqw_sfc,
+    const view_2d<const Scalar>& thl_sfc,
+    const view_2d<const Scalar>& cldliq_sfc,
+    const view_2d<const Scalar>& qv_sfc,
+    const view_1d<Scalar>&       ustar,
+    const view_1d<Scalar>&       kbfs,
+    const view_1d<Scalar>&       obklen);
+#endif
 
   KOKKOS_FUNCTION
   static void shoc_pblintd_cldcheck(
@@ -426,6 +479,22 @@ struct Functions
     const Workspace&             workspace,
     const uview_1d<Spack>&       brunt,
     const uview_1d<Spack>&       shoc_mix);
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  static void shoc_length_disp(
+    const Int&                   shcol,
+    const Int&                   nlev,
+    const Int&                   nlevi,
+    const view_1d<const Scalar>& dx,
+    const view_1d<const Scalar>& dy,
+    const view_2d<const Spack>&  zt_grid,
+    const view_2d<const Spack>&  zi_grid,
+    const view_2d<const Spack>&  dz_zt,
+    const view_2d<const Spack>&  tke,
+    const view_2d<const Spack>&  thv,
+    const WorkspaceMgr&          workspace_mgr,
+    const view_2d<Spack>&        brunt,
+    const view_2d<Spack>&        shoc_mix);
+#endif
 
   KOKKOS_FUNCTION
   static void shoc_energy_fixer(
@@ -484,6 +553,14 @@ struct Functions
     const uview_1d<const Spack>& qw,
     const uview_1d<const Spack>& ql,
     const uview_1d<Spack>&       qv);
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  static void compute_shoc_vapor_disp(
+    const Int&                  shcol,
+    const Int&                  nlev,
+    const view_2d<const Spack>& qw,
+    const view_2d<const Spack>& ql,
+    const view_2d<Spack>&       qv);
+#endif
 
   KOKKOS_FUNCTION
   static void update_prognostics_implicit(
@@ -511,6 +588,33 @@ struct Functions
     const uview_1d<Spack>&       tke,
     const uview_1d<Spack>&       u_wind,
     const uview_1d<Spack>&       v_wind);
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  static void update_prognostics_implicit_disp(
+    const Int&                   shcol,
+    const Int&                   nlev,
+    const Int&                   nlevi,
+    const Int&                   num_tracer,
+    const Scalar&                dtime,
+    const view_2d<const Spack>&  dz_zt,
+    const view_2d<const Spack>&  dz_zi,
+    const view_2d<const Spack>&  rho_zt,
+    const view_2d<const Spack>&  zt_grid,
+    const view_2d<const Spack>&  zi_grid,
+    const view_2d<const Spack>&  tk,
+    const view_2d<const Spack>&  tkh,
+    const view_1d<const Scalar>& uw_sfc,
+    const view_1d<const Scalar>& vw_sfc,
+    const view_1d<const Scalar>& wthl_sfc,
+    const view_1d<const Scalar>& wqw_sfc,
+    const view_2d<const Spack>&  wtracer_sfc,
+    const WorkspaceMgr&          workspace_mgr,
+    const view_2d<Spack>&        thetal,
+    const view_2d<Spack>&        qw,
+    const view_3d<Spack>&        tracer,
+    const view_2d<Spack>&        tke,
+    const view_2d<Spack>&        u_wind,
+    const view_2d<Spack>&        v_wind);
+#endif
 
   KOKKOS_FUNCTION
   static void diag_third_shoc_moments(
@@ -530,6 +634,25 @@ struct Functions
     const uview_1d<const Spack>& zi_grid,
     const Workspace&             workspace,
     const uview_1d<Spack>&       w3);
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  static void diag_third_shoc_moments_disp(
+    const Int&                  shcol,
+    const Int&                  nlev,
+    const Int&                  nlevi,
+    const view_2d<const Spack>& w_sec,
+    const view_2d<const Spack>& thl_sec,
+    const view_2d<const Spack>& wthl_sec,
+    const view_2d<const Spack>& isotropy,
+    const view_2d<const Spack>& brunt,
+    const view_2d<const Spack>& thetal,
+    const view_2d<const Spack>& tke,
+    const view_2d<const Spack>& dz_zt,
+    const view_2d<const Spack>& dz_zi,
+    const view_2d<const Spack>& zt_grid,
+    const view_2d<const Spack>& zi_grid,
+    const WorkspaceMgr&         workspace_mgr,
+    const view_2d<Spack>&       w3);
+#endif
 
   KOKKOS_FUNCTION
   static void adv_sgs_tke(
@@ -567,6 +690,31 @@ struct Functions
     const uview_1d<Spack>&       wqls,
     const uview_1d<Spack>&       wthv_sec,
     const uview_1d<Spack>&       shoc_ql2);
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  static void shoc_assumed_pdf_disp(
+    const Int&                  shcol,
+    const Int&                  nlev,
+    const Int&                  nlevi,
+    const view_2d<const Spack>& thetal,
+    const view_2d<const Spack>& qw,
+    const view_2d<const Spack>& w_field,
+    const view_2d<const Spack>& thl_sec,
+    const view_2d<const Spack>& qw_sec,
+    const view_2d<const Spack>& wthl_sec,
+    const view_2d<const Spack>& w_sec,
+    const view_2d<const Spack>& wqw_sec,
+    const view_2d<const Spack>& qwthl_sec,
+    const view_2d<const Spack>& w3,
+    const view_2d<const Spack>& pres,
+    const view_2d<const Spack>& zt_grid,
+    const view_2d<const Spack>& zi_grid,
+    const WorkspaceMgr&         workspace_mgr,
+    const view_2d<Spack>&       shoc_cldfrac,
+    const view_2d<Spack>&       shoc_ql,
+    const view_2d<Spack>&       wqls,
+    const view_2d<Spack>&       wthv_sec,
+    const view_2d<Spack>&       shoc_ql2);
+#endif
 
   KOKKOS_FUNCTION
   static void compute_shr_prod(
@@ -842,6 +990,26 @@ struct Functions
     const uview_1d<const Spack>& cldn,
     const Workspace&             workspace,
     Scalar&                      pblh);
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  static void pblintd_disp(
+    const Int&                   shcol,
+    const Int&                   nlev,
+    const Int&                   nlevi,
+    const Int&                   npbl,
+    const view_2d<const Spack>&  z,
+    const view_2d<const Spack>&  zi,
+    const view_2d<const Spack>&  thl,
+    const view_2d<const Spack>&  ql,
+    const view_2d<const Spack>&  q,
+    const view_2d<const Spack>&  u,
+    const view_2d<const Spack>&  v,
+    const view_1d<const Scalar>& ustar,
+    const view_1d<const Scalar>& obklen,
+    const view_1d<const Scalar>& kbfs,
+    const view_2d<const Spack>&  cldn,
+    const WorkspaceMgr&          workspace_mgr,
+    const view_1d<Scalar>&       pblh);
+#endif
 
   KOKKOS_FUNCTION
   static void shoc_grid(
@@ -854,6 +1022,18 @@ struct Functions
     const uview_1d<Spack>&       dz_zt,
     const uview_1d<Spack>&       dz_zi,
     const uview_1d<Spack>&       rho_zt);
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  static void shoc_grid_disp(
+    const Int&                  shcol,
+    const Int&                  nlev,
+    const Int&                  nlevi,
+    const view_2d<const Spack>& zt_grid,
+    const view_2d<const Spack>& zi_grid,
+    const view_2d<const Spack>& pdel,
+    const view_2d<Spack>&       dz_zt,
+    const view_2d<Spack>&       dz_zi,
+    const view_2d<Spack>&       rho_zt);
+#endif
 
   KOKKOS_FUNCTION
   static void eddy_diffusivities(
@@ -892,6 +1072,30 @@ struct Functions
     const uview_1d<Spack>&       tk,
     const uview_1d<Spack>&       tkh,
     const uview_1d<Spack>&       isotropy);
+#ifndef SCREAM_MONOLITHIC_KERNELS
+  static void shoc_tke_disp(
+    const Int&                   shcol,
+    const Int&                   nlev,
+    const Int&                   nlevi,
+    const Scalar&                dtime,
+    const view_2d<const Spack>&  wthv_sec,
+    const view_2d<const Spack>&  shoc_mix,
+    const view_2d<const Spack>&  dz_zi,
+    const view_2d<const Spack>&  dz_zt,
+    const view_2d<const Spack>&  pres,
+    const view_2d<const Spack>&  u_wind,
+    const view_2d<const Spack>&  v_wind,
+    const view_2d<const Spack>&  brunt,
+    const view_1d<const Scalar>& obklen,
+    const view_2d<const Spack>&  zt_grid,
+    const view_2d<const Spack>&  zi_grid,
+    const view_1d<const Scalar>& pblh,
+    const WorkspaceMgr&          workspace_mgr,
+    const view_2d<Spack>&        tke,
+    const view_2d<Spack>&        tk,
+    const view_2d<Spack>&        tkh,
+    const view_2d<Spack>&        isotropy);
+#endif
 }; // struct Functions
 
 } // namespace shoc

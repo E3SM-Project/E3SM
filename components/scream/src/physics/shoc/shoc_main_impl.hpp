@@ -297,8 +297,8 @@ void Functions<S,D>::shoc_main_internal(
   const Int&                   num_qtracers, // Number of tracers
   const Scalar&                dtime,        // SHOC timestep [s]
   // Input Variables
-  const view_1d<const Scalar>& host_dx,
-  const view_1d<const Scalar>& host_dy,
+  const view_1d<const Scalar>& dx,
+  const view_1d<const Scalar>& dy,
   const view_2d<const Spack>& zt_grid,
   const view_2d<const Spack>& zi_grid,
   const view_2d<const Spack>& pres,
@@ -365,6 +365,11 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<Spack>& dz_zi,
   const view_2d<Spack>& tkh)
 {
+  // Scalarize some views for single entry access
+  const auto s_thetal  = ekat::scalarize(thetal);
+  const auto s_shoc_ql = ekat::scalarize(shoc_ql);
+  const auto s_shoc_qv = ekat::scalarize(shoc_qv);
+
   // Compute integrals of static energy, kinetic energy, water vapor, and liquid water
   // for the computation of total energy before SHOC is called.  This is for an
   // effort to conserve energy since liquid water potential temperature (which SHOC
@@ -372,99 +377,97 @@ void Functions<S,D>::shoc_main_internal(
   shoc_energy_integrals_disp(shcol,nlev,host_dse,pdel,qw,shoc_ql,u_wind,v_wind,
                              se_b, ke_b, wv_b, wl_b); // Input
 
-#if 0 // progress bar
-
   for (Int t=0; t<nadv; ++t) {
     // Check TKE to make sure values lie within acceptable
     // bounds after host model performs horizontal advection
-    check_tke(team,nlev, // Input
-              tke);      // Input/Output
+    check_tke_disp(shcol,nlev, // Input
+                   tke);      // Input/Output
 
     // Define vertical grid arrays needed for
     // vertical derivatives in SHOC, also
     // define air density (rho_zt)
-    shoc_grid(team,nlev,nlevi,      // Input
-              zt_grid,zi_grid,pdel, // Input
-              dz_zt,dz_zi,rho_zt);  // Output
+    shoc_grid_disp(shcol,nlev,nlevi,      // Input
+                   zt_grid,zi_grid,pdel, // Input
+                   dz_zt,dz_zi,rho_zt);  // Output
 
     // Compute the planetary boundary layer height, which is an
     // input needed for the length scale calculation.
 
     // Update SHOC water vapor,
     // to be used by the next two routines
-    compute_shoc_vapor(team,nlev,qw,shoc_ql, // Input
-                       shoc_qv);             // Output
+    compute_shoc_vapor_disp(shcol,nlev,qw,shoc_ql, // Input
+                            shoc_qv);             // Output
 
-    team.team_barrier();
-    shoc_diag_obklen(uw_sfc,vw_sfc,     // Input
-                     wthl_sfc, wqw_sfc, // Input
-                     s_thetal(nlev-1),  // Input
-                     s_shoc_ql(nlev-1), // Input
-                     s_shoc_qv(nlev-1), // Input
-                     ustar,kbfs,obklen); // Output
+    shoc_diag_obklen_disp(shcol, nlev,
+                          uw_sfc,vw_sfc,     // Input
+                          wthl_sfc, wqw_sfc, // Input
+                          s_thetal,  // Input
+                          s_shoc_ql, // Input
+                          s_shoc_qv, // Input
+                          ustar,kbfs,obklen); // Output
 
-    pblintd(team,nlev,nlevi,npbl,     // Input
-            zt_grid,zi_grid,thetal,   // Input
-            shoc_ql,shoc_qv,u_wind,   // Input
-            v_wind,ustar,obklen,kbfs, // Input
-            shoc_cldfrac,             // Input
-            workspace,                // Workspace
-            pblh);                    // Output
+    pblintd_disp(shcol,nlev,nlevi,npbl,    // Input
+                 zt_grid,zi_grid,thetal,   // Input
+                 shoc_ql,shoc_qv,u_wind,   // Input
+                 v_wind,ustar,obklen,kbfs, // Input
+                 shoc_cldfrac,             // Input
+                 workspace_mgr,            // Workspace mgr
+                 pblh);                    // Output
 
     // Update the turbulent length scale
-    shoc_length(team,nlev,nlevi,dx,dy, // Input
-                zt_grid,zi_grid,dz_zt, // Input
-                tke,thv,               // Input
-                workspace,             // Workspace
-                brunt,shoc_mix);       // Output
+    shoc_length_disp(shcol,nlev,nlevi,dx,dy, // Input
+                     zt_grid,zi_grid,dz_zt, // Input
+                     tke,thv,               // Input
+                     workspace_mgr,         // Workspace mgr
+                     brunt,shoc_mix);       // Output
 
     // Advance the SGS TKE equation
-    shoc_tke(team,nlev,nlevi,dtime,wthv_sec,    // Input
-             shoc_mix,dz_zi,dz_zt,pres,u_wind,  // Input
-             v_wind,brunt,obklen,zt_grid,       // Input
-             zi_grid,pblh,                      // Input
-             workspace,                         // Workspace
-             tke,tk,tkh,                        // Input/Output
-             isotropy);                         // Output
+    shoc_tke_disp(shcol,nlev,nlevi,dtime,wthv_sec,   // Input
+                  shoc_mix,dz_zi,dz_zt,pres,u_wind,  // Input
+                  v_wind,brunt,obklen,zt_grid,       // Input
+                  zi_grid,pblh,                      // Input
+                  workspace_mgr,                     // Workspace mgr
+                  tke,tk,tkh,                        // Input/Output
+                  isotropy);                         // Output
 
     // Update SHOC prognostic variables here
     // via implicit diffusion solver
-    team.team_barrier();
-    update_prognostics_implicit(team,nlev,nlevi,num_qtracers,dtime,dz_zt,   // Input
-                                dz_zi,rho_zt,zt_grid,zi_grid,tk,tkh,uw_sfc, // Input
-                                vw_sfc,wthl_sfc,wqw_sfc,wtracer_sfc,        // Input
-                                workspace,                                  // Workspace
-                                thetal,qw,qtracers,tke,u_wind,v_wind);   // Input/Output
+    update_prognostics_implicit_disp(shcol,nlev,nlevi,num_qtracers,dtime,dz_zt,  // Input
+                                     dz_zi,rho_zt,zt_grid,zi_grid,tk,tkh,uw_sfc, // Input
+                                     vw_sfc,wthl_sfc,wqw_sfc,wtracer_sfc,        // Input
+                                     workspace_mgr,                              // Workspace mgr
+                                     thetal,qw,qtracers,tke,u_wind,v_wind);      // Input/Output
 
     // Diagnose the second order moments
-    diag_second_shoc_moments(team,nlev,nlevi,thetal,qw,u_wind,v_wind,   // Input
-                             tke,isotropy,tkh,tk,dz_zi,zt_grid,zi_grid, // Input
-                             shoc_mix,wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,   // Input
-                             ustar2,wstar,                              // Input/Output
-                             workspace,                                 // Workspace
-                             thl_sec,qw_sec,wthl_sec,wqw_sec,qwthl_sec, // Output
-                             uw_sec,vw_sec,wtke_sec,w_sec);             // Output
+    diag_second_shoc_moments_disp(shcol,nlev,nlevi,thetal,qw,u_wind,v_wind,  // Input
+                                  tke,isotropy,tkh,tk,dz_zi,zt_grid,zi_grid, // Input
+                                  shoc_mix,wthl_sfc,wqw_sfc,uw_sfc,vw_sfc,   // Input
+                                  ustar2,wstar,                              // Input/Output
+                                  workspace_mgr,                             // Workspace
+                                  thl_sec,qw_sec,wthl_sec,wqw_sec,qwthl_sec, // Output
+                                  uw_sec,vw_sec,wtke_sec,w_sec);             // Output
 
     // Diagnose the third moment of vertical velocity,
     //  needed for the PDF closure
-    diag_third_shoc_moments(team,nlev,nlevi,w_sec,thl_sec,wthl_sec, // Input
-                            isotropy,brunt,thetal,tke,dz_zt,dz_zi,  // Input
-                            zt_grid,zi_grid,                        // Input
-                            workspace,                              // Workspace
-                            w3);                                    // Output
+    diag_third_shoc_moments_disp(shcol,nlev,nlevi,w_sec,thl_sec,wthl_sec, // Input
+                                 isotropy,brunt,thetal,tke,dz_zt,dz_zi,  // Input
+                                 zt_grid,zi_grid,                        // Input
+                                 workspace_mgr,                          // Workspace mgr
+                                 w3);                                    // Output
 
     // Call the PDF to close on SGS cloud and turbulence
-    team.team_barrier();
-    shoc_assumed_pdf(team,nlev,nlevi,thetal,qw,w_field,thl_sec,qw_sec, // Input
-                     wthl_sec,w_sec,wqw_sec,qwthl_sec,w3,pres,         // Input
-                     zt_grid, zi_grid,                                 // Input
-                     workspace,                                        // Workspace
-                     shoc_cldfrac,shoc_ql,wqls_sec,wthv_sec,shoc_ql2); // Ouptut
+    shoc_assumed_pdf_disp(shcol,nlev,nlevi,thetal,qw,w_field,thl_sec,qw_sec, // Input
+                          wthl_sec,w_sec,wqw_sec,qwthl_sec,w3,pres,         // Input
+                          zt_grid, zi_grid,                                 // Input
+                          workspace_mgr,                                    // Workspace mgr
+                          shoc_cldfrac,shoc_ql,wqls_sec,wthv_sec,shoc_ql2); // Ouptut
 
     // Check TKE to make sure values lie within acceptable
     // bounds after vertical advection, etc.
-    check_tke(team,nlev,tke);
+    check_tke_disp(shcol,nlev,tke);
   }
+
+#if 0 // progress bar
 
   // End SHOC parameterization
 

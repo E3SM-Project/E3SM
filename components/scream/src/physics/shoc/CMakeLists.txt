@@ -67,6 +67,17 @@ if (NOT SCREAM_MONOLITHIC_KERNELS)
   list(APPEND SHOC_SRCS
     shoc_energy_integrals_disp.cpp
     shoc_energy_fixer_disp.cpp
+    shoc_check_tke_disp.cpp
+    shoc_grid_disp.cpp
+    shoc_compute_shoc_vapor_disp.cpp
+    shoc_diag_obklen_disp.cpp
+    shoc_pblintd_disp.cpp
+    shoc_length_disp.cpp
+    shoc_tke_disp.cpp
+    shoc_update_prognostics_implicit_disp.cpp
+    shoc_diag_second_shoc_moments_disp.cpp
+    shoc_diag_third_shoc_moments_disp.cpp
+    shoc_assumed_pdf_disp.cpp
   )
 endif()
 
