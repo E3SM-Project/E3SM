@@ -27,12 +27,14 @@ module mo_gas_phase_chemdr
 
   integer :: o3_ndx, synoz_ndx, so4_ndx, h2o_ndx, o2_ndx, o_ndx, hno3_ndx, dst_ndx, cldice_ndx, e90_ndx
   !integer :: o3lnz_ndx, n2olnz_ndx, noylnz_ndx, ch4lnz_ndx
-  integer :: o3lnz_ndx, ch4lnz_ndx
+  integer :: o3lnz_ndx,ch4lnz_ndx
   integer :: uci1_ndx
   integer :: het1_ndx
   integer :: ndx_cldfr, ndx_cmfdqr, ndx_nevapr, ndx_cldtop, ndx_prain, ndx_sadsulf
   integer :: ndx_h2so4
   integer :: inv_ndx_cnst_o3, inv_ndx_m
+  integer :: inv_ndx_cnst_oh, inv_ndx_cnst_no3, inv_ndx_cnst_ch4 !kzm ++
+  integer :: so2_ndx,dms_ndx !kzm to include stratosphere SO2
 ! for ozone budget 
   integer :: jo2_b_ndx, lch3o2_no_ndx, lno_ho2_ndx, lc2h5o2_no_ndx, lch3co3_no_ndx, lroho2_no_ndx, lisopo2_no_ndx, lmvko2_no_ndx
   integer :: jo1dU_ndx, jno2_ndx, jno3_a_ndx, jn2o5_b_ndx, po3_oh_ndx
@@ -48,8 +50,8 @@ module mo_gas_phase_chemdr
   character(len=fieldname_len),dimension(extcnt)        :: extfrc_name
   logical :: convproc_do_aer 
 
-  real(r8), parameter :: low_limit = 0.1_r8 ! lower limit factor for dry deposition
-  real(r8), parameter :: up_limit  = 2.0_r8 ! upper limit factor for surface emission
+  real(r8), parameter :: low_limit = 0.1_r8  ! lower limit factor for dry deposition
+  integer,  parameter :: srf_emit_nlayer = 3 ! number of layers adding surface emission
 
 contains
 
@@ -77,9 +79,11 @@ contains
 
     call phys_getopts( history_aerosol_out = history_aerosol, &
          convproc_do_aer_out = convproc_do_aer ) 
+
+    so2_ndx = get_spc_ndx('SO2')!kzm
+    dms_ndx = get_spc_ndx('DMS')!kzm
    
     ndx_h2so4 = get_spc_ndx('H2SO4')
-
     uci1_ndx= get_rxt_ndx('uci1')
     het1_ndx= get_rxt_ndx('het1')
     o3_ndx  = get_spc_ndx('O3')
@@ -229,6 +233,19 @@ contains
    
      inv_ndx_cnst_o3 = get_inv_ndx( 'cnst_O3' ) ! prescribed O3 oxidant field
      inv_ndx_m       = get_inv_ndx( 'M' )        ! airmass.  Elsewhere this variable is known as m_ndx
+     !kzm++  test
+     inv_ndx_cnst_no3       = get_inv_ndx( 'cnst_NO3' )
+     inv_ndx_cnst_oh       = get_inv_ndx( 'cnst_OH' )
+     inv_ndx_cnst_ch4      = get_inv_ndx( 'CH4' )
+     write(iulog,*), 'kzm_inv_ndx_no3 ', inv_ndx_cnst_no3
+     write(iulog,*), 'kzm_inv_ndx_oh', inv_ndx_cnst_oh
+     write(iulog,*), 'kzm_inv_ndx_ch4', inv_ndx_cnst_ch4
+     write(iulog,*), 'kzm_oh_ndx', oh_ndx
+     write(iulog,*), 'kzm_no3_ndx', no3_ndx
+     if ((inv_ndx_cnst_oh .gt. 0.0_r8) .and. (inv_ndx_cnst_no3 .gt. 0.0_r8)) then
+        write(iulog,*) 'kzm_prescribed_NO3_OH '
+     endif
+     !kzm--
      
      if ( chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
          .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag') then
@@ -322,7 +339,7 @@ contains
 ! for aqueous chemistry and aerosol growth
 !
     use aero_model,        only : aero_model_gasaerexch
-
+     use aero_model,        only : aero_model_strat_surfarea!kzm
     implicit none
 
     !-----------------------------------------------------------------------
@@ -477,7 +494,7 @@ contains
     real(r8) :: vmr0(ncol,pver,gas_pcnst)
     real(r8) :: vmr_old(ncol,pver,gas_pcnst)
     real(r8) :: vmr_old2(ncol,pver,gas_pcnst)
-    real(r8) :: tmp
+    real(r8) :: tmp(ncol)
     
     ! for explicit chem prodcution and loss
     real(r8)     ::  chem_prod(ncol,pver,gas_pcnst)         ! xported species (vmr/delt)
@@ -637,7 +654,10 @@ contains
           endif
        end do
     end do
-
+    !kzm add the prognostic strato_sad
+#if (defined MODAL_AERO_5MODE)    
+  call aero_model_strat_surfarea( ncol, mmr, pmid, tfld, troplev, pbuf, strato_sad)
+#endif
     if ( has_strato_chem ) then
        !-----------------------------------------------------------------------      
        !        ... initialize condensed and gas phases; all hno3 to gas
@@ -926,8 +946,12 @@ contains
 
     if ( has_linoz_data .and. .not. &
        (chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
-       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' ) ) then
-       ltrop_sol(:ncol) = troplev(:ncol)
+       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' )) then
+       ltrop_sol(:ncol) = troplev(:ncol) !kzm changed to 0 for test
+ !kzm note: this is a strange setting  
+     elseif (chem_name == 'trop_strat_mam5_resus_mom_soag') then !kzm
+       ltrop_sol(:ncol) = 0 ! apply solver to all levels
+
     else
        ltrop_sol(:ncol) = 0 ! apply solver to all levels
     endif
@@ -1037,6 +1061,7 @@ contains
     ! reset vmr to pre-imp_sol values for stratospheric boxes
     if (uci1_ndx > 0) then
        diags_reaction_rates(:,:,:) = reaction_rates(:,:,:)
+       !vmr_old2(:,:,so2_ndx) = vmr(:,:,so2_ndx) !kzm ++
        do i = 1,ncol
           do k = 1,pver
              if ( .not. tropFlag(i,k) ) then
@@ -1150,9 +1175,25 @@ contains
     if (uci1_ndx > 0) then
        vmr_old2(:ncol,:,:) = vmr(:ncol,:,:)
     endif
+!kzm ++
+#if (defined MODAL_AERO_5MODE)
+    ! attribute constant OH and NO3 above troppopause
+    ! will be set by after exp_sol
+    do i = 1,ncol
+        do k = 1,ltrop_sol(i) !above tropppause
+             if (k < ltrop_sol(i)) then !skip troppaupause
+                !write(iulog,*) 'kzm_prescribed_OH_NO3'     
+                vmr(i,k,oh_ndx) = invariants(i,k,inv_ndx_cnst_oh)/invariants(i,k,inv_ndx_m)
+                vmr(i,k,no3_ndx) = invariants(i,k,inv_ndx_cnst_no3)/invariants(i,k,inv_ndx_m)
+             endif
+        end do
+   end do     
+#endif   
+!kzm --
+
     call t_startf('exp_sol')
     call exp_sol( vmr, reaction_rates, het_rates, extfrc, delt, invariants(1,1,indexm), ncol, lchnk, ltrop_sol, &
-                  diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss)
+                  diags_reaction_rates, chem_prod, chem_loss, chemmp_prod, chemmp_loss, invariants)
     call t_stopf('exp_sol')
 
     if ( history_gaschmbudget .or. history_gaschmbudget_2D .or. history_gaschmbudget_2D_levels .or.&
@@ -1196,6 +1237,14 @@ contains
     if (uci1_ndx > 0) then
        ! exclude E90 from resetting
        vmr_old2(:,:,e90_ndx) = vmr(:,:,e90_ndx)
+       ! kzm ++ 
+#if (defined MODAL_AERO_5MODE)       
+       ! exclude SO2
+       vmr_old2(:,:,so2_ndx) = vmr(:,:,so2_ndx) 
+       vmr_old2(:,:,ndx_h2so4) = vmr(:,:,ndx_h2so4) 
+       vmr_old2(:,:,dms_ndx) = vmr(:,:,dms_ndx) 
+#endif       
+       ! kzm --
        do i = 1,ncol
           do k = 1,pver
              if ( .not. tropFlag(i,k) ) then
@@ -1255,16 +1304,17 @@ contains
 !
 ! Aerosol processes ...
 !
-
     if (uci1_ndx > 0) then
        vmr_old2(:ncol,:,:) = vmr(:ncol,:,:)
     endif
+
     call t_startf('aero_model_gasaerexch')
     call aero_model_gasaerexch( imozart-1, ncol, lchnk, delt, latndx, lonndx, reaction_rates, &
                                 tfld, pmid, pdel, mbar, relhum, &
                                 zm,  qh2o, cwat, cldfr, ncldwtr, &
                                 invariants(:,:,indexm), invariants, del_h2so4_gasprod,  &
-                                vmr0, vmr, pbuf )
+                                vmr0, vmr, pbuf, &
+                                troplev ) !kzm ++
     call t_stopf('aero_model_gasaerexch')
 !
 ! Remove the impact of aerosol processes on gas chemistry tracers ...
@@ -1276,6 +1326,7 @@ contains
              if ( .not. any( aer_species == n ) ) then
                if (trim(solsym(n))/='DMS' .and. trim(solsym(n))/='SO2' .and. &
                    trim(solsym(n))/='H2SO4' .and. trim(solsym(n))/='SOAG' .and. &
+                   yfenganl/atm/chemUCI-chemMZT-MOSAIC-dustemisK14_AMIP
                    trim(solsym(n))/='HNO3' .and. trim(solsym(n))/='NH3' .and. &
                    trim(solsym(n))/='HCL') then
                    !write(iulog,*) 'n=',n,'solsym=',trim(solsym(n))
@@ -1495,37 +1546,21 @@ contains
     !-----------------------------------------------------------------------      
     !         ... Surface emissions
     !----------------------------------------------------------------------- 
-    ! if chemUCI is used, apply surface emissions here
+    ! if chemUCI is used, apply surface emissions to the bottom (srf_emit_nlayer) layers here
     if (uci1_ndx > 0) then 
        do m = 1,pcnst
           n = map2chm( m )
           if ( n > 0 ) then
             if ( any( cflx(:ncol,m) /= 0._r8 ) ) then
               if ( .not. any( aer_species == n ) .and. adv_mass(n) /= 0._r8 ) then
-                do k = pver, 1, -1 ! loop from bottom to top
+                do k = pver, pver-srf_emit_nlayer+1, -1 ! loop from bottom to top
                   ! kg/m2, tracer mass
                   wrk(:ncol,k) = adv_mass(n)*vmr(:ncol,k,n)/mbar(:ncol,k) &
                                     *pdeldry(:ncol,k)*rga
-                  j = 0 ! number of columns will double concentration after adding surf. emission
-                  do i = 1,ncol
-                    if ( cflx(i,m) /= 0._r8 ) then
-                      if ( wrk(i,k)*(up_limit-1._r8) >= cflx(i,m)*delt ) then
-                        tmp = wrk(i,k) + cflx(i,m)*delt
-                        cflx(i,m) = 0._r8
-                      else
-                        tmp = wrk(i,k)*up_limit
-                        cflx(i,m) = cflx(i,m) - wrk(i,k)*(up_limit-1._r8)*delt_inverse
-                        j = j + 1
-                      endif
-                      vmr(i,k,n) = tmp*mbar(i,k)/adv_mass(n)/pdeldry(i,k)/rga
-                    endif
-                  end do
-
-                  if ( j == 0 ) then
-                    exit
-                  endif
-
+                  tmp(:ncol) = wrk(:ncol,k) + cflx(:ncol,m)*delt/dble(srf_emit_nlayer)
+                  vmr(:ncol,k,n) = tmp(:ncol)*mbar(:ncol,k)/adv_mass(n)/pdeldry(:ncol,k)/rga
                 end do
+                cflx(:ncol,m) = 0._r8
               endif
             endif
           endif
@@ -1624,14 +1659,14 @@ contains
                   do i = 1,ncol
                     if ( sflx2(i,n) /= 0._r8 ) then
                       if ( wrk(i,k)*(1._r8-low_limit) >= sflx2(i,n)*delt ) then
-                        tmp = wrk(i,k) - sflx2(i,n)*delt
+                        tmp(1) = wrk(i,k) - sflx2(i,n)*delt
                         sflx2(i,n) = 0._r8
                       else
-                        tmp = wrk(i,k)*low_limit
+                        tmp(1) = wrk(i,k)*low_limit
                         sflx2(i,n) = sflx2(i,n) - wrk(i,k)*(1._r8-low_limit)*delt_inverse
                         j = j + 1
                       endif
-                      vmr(i,k,n) = tmp*mbar(i,k)/adv_mass(n)/pdeldry(i,k)/rga
+                      vmr(i,k,n) = tmp(1)*mbar(i,k)/adv_mass(n)/pdeldry(i,k)/rga
                     endif
                   end do
 
@@ -1730,5 +1765,24 @@ contains
     call t_stopf('chemdr_diags')
 
   end subroutine gas_phase_chemdr
+!-----------------------------------------------
+!-----------------------------------------------
+   !-------------------------------------------------------------------------
+  subroutine comp_exp( x, y, n )
+
+    implicit none
+
+    real(r8), intent(out) :: x(:)
+    real(r8), intent(in)  :: y(:)
+    integer,  intent(in)  :: n
+
+#ifdef IBM
+    call vexp( x, y, n )
+#else
+    x(:n) = exp( y(:n) )
+#endif
+
+  end subroutine comp_exp
+
 
 end module mo_gas_phase_chemdr

@@ -954,7 +954,7 @@
       <mask>oQU480</mask>
     </model_grid>
 
-    <model_grid alias="ne4pg2_oQU480" compset="(EAM.+ELM.+MPASO)">
+    <model_grid alias="ne4pg2_oQU480">
       <grid name="atm">ne4np4.pg2</grid>
       <grid name="lnd">ne4np4.pg2</grid>
       <grid name="ocnice">oQU480</grid>

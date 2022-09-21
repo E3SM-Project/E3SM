@@ -103,8 +103,8 @@ integer :: coarse_ca_idx  = -1
 integer :: coarse_co3_idx = -1
 integer :: coarse_cl_idx  = -1
 #endif
-
-#if (defined MODAL_AERO_4MODE_MOM)
+integer :: mode_strat_sulfate1_idx = -1 !kzm
+#if (defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_5MODE)
 integer :: coarse_mom_idx = -1  ! index of mom in coarse mode
 #endif
 
@@ -264,6 +264,10 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
             mode_coarse_dst_idx = m
          case ('coarse_seasalt')
             mode_coarse_slt_idx = m
+         !kzm ++
+         case ('strat_sulfate1')
+            mode_strat_sulfate1_idx = m
+         !kzm --   
          end select
       end do
 
@@ -403,7 +407,7 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
          end if
       end if
 
-#if (defined MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_5MODE )
       call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)
       do n = 1, nspec
          call rad_cnst_get_info(0, mode_coarse_idx, n, spec_type=str32)
@@ -540,7 +544,7 @@ subroutine nucleate_ice_cam_calc( &
    real(r8), pointer :: coarse_cl(:,:)
 #endif
 
-#if (defined MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_5MODE)
    real(r8), pointer :: coarse_mom(:,:) ! mass m.r. of coarse mom
 #endif
 
@@ -653,7 +657,7 @@ subroutine nucleate_ice_cam_calc( &
          call rad_cnst_get_aer_mmr(0, mode_fine_dst_idx, fine_dust_idx, 'a', state, pbuf, fine_dust)
       end if
 
-#if (defined MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
       call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_mom_idx, 'a', state, pbuf, coarse_mom)
 #endif
 
@@ -782,7 +786,7 @@ subroutine nucleate_ice_cam_calc( &
                   so4mc  = coarse_so4(i,k)*rho(i,k)
                endif
 
-#if (defined MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
                mommc  = coarse_mom(i,k)*rho(i,k)
 #endif
 
@@ -800,9 +804,10 @@ subroutine nucleate_ice_cam_calc( &
                   else
                      ! 3-mode -- needs weighting for dust since dust and seasalt
                      !           are combined in the "coarse" mode type
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) && ( defined MOSAIC_SPECIES ) )
-                     wght = dmc/(ssmc + dmc + so4mc + no3mc + nh4mc + bcmc + pommc + soamc + mommc)
-#elif (defined MODAL_AERO_4MODE_MOM && defined RAIN_EVAP_TO_COARSE_AERO )
+#if (defined MODAL_AERO_4MODE_MOM && defined RAIN_EVAP_TO_COARSE_AERO )
+                     wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
+!kzm ++
+#elif (defined MODAL_AERO_5MODE && defined RAIN_EVAP_TO_COARSE_AERO )
                      wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
 #elif (defined MODAL_AERO_4MODE_MOM)
                      wght = dmc/(ssmc + dmc + so4mc + mommc)
