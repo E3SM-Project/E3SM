@@ -173,6 +173,8 @@ module ocn_time_integration_split
          edgeHaloComputeCounter, &! halo counters to reduce
          cellHaloComputeCounter   ! halo updates during cycling
 
+      integer, dimension(:), pointer :: nEdgesArray
+
       real (kind=RKIND) :: &
          normalThicknessFluxSum, &! sum of thickness flux in column
          thicknessSum,     &! sum of thicknesses in column
@@ -191,7 +193,8 @@ module ocn_time_integration_split
          uTemp
 
       real (kind=RKIND), dimension(:), allocatable :: &
-         btrvel_temp
+         btrvel_temp, &
+         bottomDepthEdge
 
       ! State Array Pointers
       real (kind=RKIND), dimension(:), pointer :: &
@@ -381,6 +384,10 @@ module ocn_time_integration_split
                                           lowFreqDivergenceTend)
 
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersNew, 2)
+
+      call mpas_pool_get_dimension(meshPool,'nEdgesArray', nEdgesArray)
+
+      allocate(bottomDepthEdge(nEdgesAll+1))
 
       if (config_transport_tests_flow_id > 0) then
         ! This is a transport test. Write advection velocity from prescribed
@@ -768,6 +775,8 @@ module ocn_time_integration_split
                enddo
                barotropicForcing(iEdge) = splitFact* &
                               normalThicknessFluxSum/thicknessSum/dt
+               bottomDepthEdge(iEdge) = thicknessSum &
+                  - 0.5_RKIND*(sshNew(cell1) + sshNew(cell2))
 
                do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                   ! These two steps are together here:
@@ -782,6 +791,25 @@ module ocn_time_integration_split
 
                enddo
 
+            enddo ! iEdge
+            !$omp end do
+            !$omp end parallel
+
+!mrp note, not sure if I need nEdgesAll here, or nEdgesArray(3)?
+!mrp note, if I have bfb partition problems, it could be this section.
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp private(k)
+            do iEdge = nEdgesOwned+1, nEdgesArray(3)
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               thicknessSum = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)
+               do k = minLevelEdgeBot(iEdge)+1, maxLevelEdgeTop(iEdge)
+                  thicknessSum = thicknessSum + &
+                                 layerThickEdgeFlux(k,iEdge)
+               enddo
+               bottomDepthEdge(iEdge) = thicknessSum &
+                  - 0.5_RKIND*(sshNew(cell1) + sshNew(cell2))
             enddo ! iEdge
             !$omp end do
             !$omp end parallel
@@ -2682,6 +2710,7 @@ module ocn_time_integration_split
          call mpas_dmpar_exch_halo_field(effectiveDensityField)
          call mpas_timer_stop("se effective density halo")
       end if
+      deallocate(bottomDepthEdge)
 
       call mpas_timer_stop('se fini')
       call mpas_timer_stop("se timestep")
