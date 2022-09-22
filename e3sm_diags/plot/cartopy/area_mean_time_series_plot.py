@@ -83,7 +83,7 @@ def plot(var, regions_to_data, parameter):
             stepsize = 1
         ax1.set_xticks(x[::stepsize])
         x_ticks_labels = np.arange(start_time, end_time + 1, stepsize)
-        ax1.set_xticklabels(x_ticks_labels, rotation="45", fontsize=8)
+        ax1.set_xticklabels(x_ticks_labels, rotation=45, fontsize=8)
         ax1.set_ylabel(var + " (" + test.units + ")")
         ax1.set_xlabel("Year")
         ax1.legend(loc="best", prop={"size": 7})

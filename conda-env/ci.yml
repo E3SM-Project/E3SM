@@ -8,10 +8,8 @@ channels:
 dependencies:
   # Base
   # ==================
-  - python>=3.8
+  - python >=3.8
   - pip
-  - numpy
-  - matplotlib
   - beautifulsoup4
   - cartopy
   - cartopy_offlinedata
@@ -21,9 +19,11 @@ dependencies:
   - cdutil
   - genutil
   - lxml
-  - netcdf4
-  - xarray
   - mache
+  - matplotlib-base
+  - netcdf4
+  - numpy
+  - xarray
   # Required in test suite
   - scipy
 prefix: /opt/miniconda3/envs/e3sm_diags_ci
