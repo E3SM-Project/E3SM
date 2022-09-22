@@ -2375,7 +2375,7 @@ sub setup_logic_surface_dataset {
   add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fsurdat',
   'hgrid'=>$nl_flags->{'res'},
   'sim_year'=>$nl_flags->{'sim_year'}, 'irrig'=>$nl_flags->{'irrig'},
-  'use_crop'=>$nl_flags->{'use_crop'}, 'glc_nec'=>$nl_flags->{'glc_nec'});
+  'use_crop'=>$nl_flags->{'use_crop'}, 'glc_nec'=>$nl_flags->{'glc_nec'},'use_cn'=>$nl_flags->{'use_cn'});
 }
 
 #-------------------------------------------------------------------------------
