@@ -166,7 +166,7 @@ module ocn_eddy_parameterization_helpers
      do iEdge = 1, nEdges
         if (maxLevelEdgeTop(iEdge) .GE. minLevelEdgeBot(iEdge)) then
            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)+1
-              gradBuoyEddy(k,iEdge) = (gradDensityTopOfEdge(k,iEdge) - dDensityDzTopOfEdge(k,iEdge) &
+              gradDensityEddy(k,iEdge) = (gradDensityTopOfEdge(k,iEdge) - dDensityDzTopOfEdge(k,iEdge) &
                                              * gradZMidTopOfEdge(k,iEdge))
            end do
         end if

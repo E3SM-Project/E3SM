@@ -96,7 +96,7 @@ module ocn_submesoscale_eddies
      !This is thickness weighted to allow for non uniform grid spacing, 
      !and centered on layer interfaces. The mixed layer goes from the 
      !ocean top layer to mid-depth of layer(indMLDedge)
-     !NOTE, gradBuoyEddy and BFV are defined at the top cell interface 
+     !NOTE, gradDensityEddy and BFV are defined at the top cell interface 
      !and not valid for minLevelCell, so properties for the top layer 
      !rely on the values at (minLevelCell+1).
      !$omp parallel
@@ -118,7 +118,7 @@ module ocn_submesoscale_eddies
         hML = 0.5_RKIND*layerThickEdgeMean(minLevelEdgeBot(iEdge),iEdge)
         bvfML = bvfML + hML*bvfAv
         if (minLevelEdgeTop(iEdge) .ge. 1) then
-           gradBuoyML = hML*gradBuoyEddy(minLevelEdgeTop(iEdge)+1,iEdge)
+           gradBuoyML = hML*gradDensityEddy(minLevelEdgeTop(iEdge)+1,iEdge)
            bvfML = hML*bvfAv
         else
            cycle
