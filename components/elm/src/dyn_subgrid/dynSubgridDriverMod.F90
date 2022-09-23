@@ -9,7 +9,6 @@ module dynSubgridDriverMod
   ! dynamic landunits).
   !
   ! !USES:
-  use shr_kind_mod           , only : r8 => shr_kind_r8
   use dynSubgridControlMod, only : get_flanduse_timeseries
   use dynSubgridControlMod, only : get_do_transient_pfts, get_do_transient_crops
   use dynSubgridControlMod, only : get_do_harvest
@@ -190,7 +189,7 @@ contains
     use dynPriorWeightsMod        , only : set_prior_weights
     use clm_time_manager , only : get_step_size
     ! avd
-    use clm_varctl, only :  iulog
+    use elm_varctl, only :  iulog
 
     !
     ! !ARGUMENTS:
@@ -404,8 +403,9 @@ contains
     ! Copies initial weights into iac weight array
     ! This should be called once, during model initialization.
     ! !USES:
-    use dynHarvestMod   , only : harvest, do_cn_harvest
-    use clm_varpar     , only : numpft, maxpatch_pft
+    use dynHarvestMod   , only : harvest_rates, num_harvest_vars
+    use dynHarvestMod   , only : do_cn_harvest
+    use elm_varpar     , only : numpft, maxpatch_pft
     use abortutils          , only : endrun
     !
     ! !ARGUMENTS:
@@ -421,13 +421,17 @@ contains
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // &
                      ': argument must be PROC-level bounds')
 
-    allocate(harvest(bounds%begg:bounds%endg),stat=ier)
+    ! TRS
+    ! We need to allocate if do_harvest = .false., befause then
+    ! dynHarvest_ini() has not been called but we still need
+    ! harvest_rates.  Should we switch on do_harvest == .false.?
+    allocate(harvest_rates(num_harvest_vars,bounds%begg:bounds%endg),stat=ier)
     if (ier /= 0) then
        call endrun(msg=' allocation error for harvest'//errMsg(__FILE__, &
                           __LINE__))
     end if
 
-    harvest(:) = 0._r8
+    harvest_rates(:,:) = 0._r8
 
     if ( maxpatch_pft /= numpft+1 ) then
        call endrun(msg=' maxpatch_pft does NOT equal numpft+1'// &

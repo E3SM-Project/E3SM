@@ -600,10 +600,10 @@ contains
   end function CNAllocate_CarbonPhosphorus_only
 
   ! set module iac_active flag only
-  subroutine clm_varctl_set_iac_active_only(iac_active_in)
+  subroutine elm_varctl_set_iac_active_only(iac_active_in)
     logical, intent(in) :: iac_active_in
     iac_active = iac_active_in
-  end subroutine clm_varctl_set_iac_active_only
+  end subroutine elm_varctl_set_iac_active_only
 
   function get_carbontag(carbon_type)result(ctag)
     !$acc routine seq

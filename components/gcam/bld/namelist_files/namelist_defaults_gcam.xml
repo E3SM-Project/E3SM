@@ -12,13 +12,46 @@ The default filenames are given relative to the root directory
 for the iac data in the e3sm distribution 
 -->
 
-<!-- Default mosart namelist -->
+<!-- Default gcam namelist -->
 
 <namelist_defaults>
-<iac_npft>17</iac_npft>
-<!--
-Grid files - for different grids, we can qualify in the attribute name
-i.e. <
--->
+
+<case_name>gcam_test</case_name>
+
+<!-- Grid and region size parameters -->
+<num_pft>17</num_pft>
+<num_lat>192</num_lat>
+<num_lon>288</num_lon>
+<num_gcam_energy_regions>32</num_gcam_energy_regions>
+<num_gcam_land_regions>392</num_gcam_land_regions>
+<num_iac2elm_landtypes>9</num_iac2elm_landtypes>
+<num_emiss_sectors>2</num_emiss_sectors>
+<num_emiss_regions>1</num_emiss_regions>
+
+<!-- gcam config and init files, hardcoded paths on compy for now -->
+<gcam_config>/compyfs/d3x132/gcam-e3sm/exe/configuration_ref.xml</gcam_config>
+<base_co2_surface_file>/compyfs/d3x132/gcam-e3sm/cpl/data/gcam_CO2-em-anthro_0.9x1.25_201401-201412_c20200406.txt</base_co2_surface_file>
+<base_co2_aircraft_file>/compyfs/d3x132/gcam-e3sm/cpl/data/gcam_CO2-em-AIR-anthro_0.9x1.25_201401-201412_c20200427.txt</base_co2_aircraft_file>
+<base_npp_file>/compyfs/d3x132/gcam-e3sm/cpl/data/base_npp_mean_pft.txt</base_npp_file>
+<base_hr_file>/compyfs/d3x132/gcam-e3sm/cpl/data/base_hr_mean_pft.txt</base_hr_file>
+<base_pft_file>/compyfs/d3x132/gcam-e3sm/cpl/data/base_pft_wt.txt</base_pft_file>
+<gcam2elm_co2_mapping_file>/qfs/people/d3a230/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cpl/mappings/co2.xml</gcam2elm_co2_mapping_file>
+<gcam2elm_luc_mapping_file>/qfs/people/d3a230/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cpl/mappings/luc.xml</gcam2elm_luc_mapping_file>
+<gcam2elm_woodharvest_mapping_file>/qfs/people/d3a230/E3SM_gcam_core_submodule/components/gcam/src/iac/gcam/cpl/mappings/woodharvest.xml</gcam2elm_woodharvest_mapping_file>
+
+<!-- Grid and mapping and initialization files with relative paths off
+     inputdata directory -->
 <gcam_gridfile>iac/giac/glm2iac/landuse.timeseries_0.9x1.25_template_simyr2015-2100_c201021.nc</gcam_gridfile>
+<elm2gcam_mapping_file>iac/giac/iac2gcam/elm0.9x1.25togcam_mapping.csv</elm2gcam_mapping_file>
+<gcam2glm_glumap>iac/giac/glm/inputs/gcam2glm_mapping.csv</gcam2glm_glumap>
+<gcam2glm_baselu>iac/giac/glm/inputs/initial/initial_state_LUH2_2015_v3.nc</gcam2glm_baselu>
+<gcam2glm_basebiomass>iac/giac/glm/inputs/vba_LUH1format.nc</gcam2glm_basebiomass>
+
+<!-- Runtime options -->
+<read_scalars>.false.</read_scalars>
+<write_scalars>.true.</write_scalars>
+<read_elm_from_file>.false.</read_elm_from_file>
+<write_co2>.true.</write_co2>
+<elm_iac_carbon_scaling>.false.</elm_iac_carbon_scaling>
+<iac_elm_co2_emissions>.true.</iac_elm_co2_emissions>
 </namelist_defaults>

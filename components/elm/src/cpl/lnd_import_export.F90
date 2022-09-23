@@ -1353,6 +1353,8 @@ contains
              end if
           end do
         endif
+
+     end do
 #ifdef CPL_BYPASS
     atm2lnd_vars%loaded_bypassdata = 1
 #endif

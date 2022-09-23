@@ -3070,12 +3070,11 @@ contains
             this%totprodc(c) + &
             this%ctrunc(c)
 
-       if (use_crop) then
+       if (use_crop) then 
           ! TRS we are seeing NaNs in cropseed deficit without the crop
           ! model, so we need to break these out
           this%totcolc(c) = this%totcolc(c) + this%cropseedc_deficit(c)
        endif
-
 
        this%totabgc(c) =       &
             this%totprodc(c) + &
@@ -4041,7 +4040,7 @@ contains
             this%ntrunc(c)+ &
             this%plant_n_buffer(c)
 
-       if (use_crop) then
+       if (use_crop) then 
           ! TRS we are seeing NaNs in cropseed deficit without the crop
           ! model, so we need to break these out
           this%totcoln(c) = this%totcoln(c) + this%cropseedn_deficit(c)
@@ -5088,12 +5087,11 @@ contains
            this%secondp(c) + &
            this%ptrunc(c)
 
-      if (use_crop) then
+       if (use_crop) then 
           ! TRS we are seeing NaNs in cropseed deficit without the crop
           ! model, so we need to break these out
           this%totcolp(c) = this%totcolp(c) + this%cropseedp_deficit(c)
-       endif
-
+       endif 
    end do
 
   end subroutine col_ps_summary

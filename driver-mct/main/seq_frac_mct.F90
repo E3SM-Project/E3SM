@@ -428,8 +428,10 @@ iamroot = seq_comm_iamroot(CPLID)
           call seq_map_map(mapper_z2a, fractions_z, fractions_a, &
                            fldlist='zfrac', norm=.false.)
           ! use the a2z mapper to get the atm fracs into fractions_z
-          call seq_map_map(mapper_a2z, fractions_a, fractions_z, &
-             fldlist='afrac', norm=.false.)
+          if (associated(mapper_a2z)) then
+             call seq_map_map(mapper_a2z, fractions_a, fractions_z, &
+                  fldlist='afrac', norm=.false.)
+          endif
        endif
 
     end if

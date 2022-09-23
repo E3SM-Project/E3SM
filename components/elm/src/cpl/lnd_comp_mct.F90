@@ -243,7 +243,7 @@ contains
     
     ! Determine if iac is active, and set flag
     call seq_infodata_GetData(infodata, iac_present=iac_present)
-    call clm_varctl_set_iac_active_only(iac_present)
+    call elm_varctl_set_iac_active_only(iac_present)
 
 ! avd
 write(iulog,*) sub//'iac_present is ',iac_present, &

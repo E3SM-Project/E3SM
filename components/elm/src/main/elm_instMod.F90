@@ -7,6 +7,7 @@ module elm_instMod
   use abortutils                 , only : endrun
   use decompMod                  , only : bounds_type, get_proc_bounds
   use elm_varctl                 , only : use_cn, use_voc, use_c13, use_c14, use_fates, use_betr
+  use elm_varctl                 , only : iulog
   !-----------------------------------------
   ! Definition of component types
   !-----------------------------------------
@@ -161,7 +162,6 @@ contains
     begc = bounds_proc%begc; endc = bounds_proc%endc
     begl = bounds_proc%begl; endl = bounds_proc%endl
     begg = bounds_proc%begg; endg = bounds_proc%endg
-
 
     if (use_voc ) then
        call vocemis_vars%Init(bounds_proc)
@@ -385,7 +385,7 @@ contains
 
     ! Initialize lnd2iac and iac2lnd
     call lnd2iac_vars%Init( bounds_proc )
-    call iac2lnd_vars%Init ( bounds_proc )
+    call iac2lnd_vars%Init( bounds_proc )
 
     ! If single-column determine closest latitude and longitude
 
