@@ -16,7 +16,6 @@ Full pathname of input gcam grid file
 <entry id="case_name"
 	type="char*256"
 	category="gcam"
-	input_pathname="abs"
 	group="gcam_inparm"
 	valid_values="">
 Gcam case name

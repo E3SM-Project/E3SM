@@ -26,8 +26,7 @@ module elm_cpl_indices
   integer , parameter, private :: iac_npft_max = 30  ! just for allocation
   integer, public :: iac_nharvest ! Number of harvest variables
   integer , parameter, private :: iac_nharvest_max = 5  ! just for allocation
-  integer , parameter, private :: glc_nec_max = 100
-
+  
   ! lnd -> drv (required)
 
   integer, public ::index_l2x_Flrl_rofsur     ! lnd->rtm input liquid surface fluxes

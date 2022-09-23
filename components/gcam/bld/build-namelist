@@ -308,15 +308,37 @@ my $DIN_LOC_ROOT    = $xmlvars{'DIN_LOC_ROOT'};
 # namelist group: gcam_inparm       #
 ####################################
 
-#if ($MOSART_MODE eq "NULL") {
-#    add_default($nl, 'rtm_mode', 'val'=>"$MOSART_MODE");
-#    add_default($nl, 'do_rtm', 'val'=>".false.");
-#}
-#else {
-    # Set Initial conditions if there is a file for this grid and sim-yr
-#    add_default($nl, 'do_rtm', 'val'=>".true.");
-#    add_default($nl, 'decomp_option');
-# ...
+add_default($nl, 'gcam_gridfile');
+
+add_default($nl, 'num_pft');
+add_default($nl, 'num_lat');
+add_default($nl, 'num_lon');
+add_default($nl, 'num_gcam_energy_regions');
+add_default($nl, 'num_gcam_land_regions');
+add_default($nl, 'num_iac2elm_landtypes');
+add_default($nl, 'num_emiss_sectors');
+add_default($nl, 'num_emiss_regions');
+add_default($nl, 'gcam_gridfile');
+add_default($nl, 'case_name');
+add_default($nl, 'gcam_config');
+add_default($nl, 'base_co2_surface_file');
+add_default($nl, 'base_co2_aircraft_file');
+add_default($nl, 'base_npp_file');
+add_default($nl, 'base_hr_file');
+add_default($nl, 'base_pft_file');
+add_default($nl, 'gcam2elm_co2_mapping_file');
+add_default($nl, 'gcam2elm_luc_mapping_file');
+add_default($nl, 'gcam2elm_woodharvest_mapping_file');
+add_default($nl, 'elm2gcam_mapping_file');
+add_default($nl, 'gcam2glm_glumap');
+add_default($nl, 'gcam2glm_baselu');
+add_default($nl, 'gcam2glm_basebiomass');
+add_default($nl, 'read_scalars');
+add_default($nl, 'write_scalars');
+add_default($nl, 'read_elm_from_file');
+add_default($nl, 'write_co2');
+add_default($nl, 'elm_iac_carbon_scaling');
+add_default($nl, 'iac_elm_co2_emissions');
 
 #-----------------------------------------------------------------------------------------------
 # Validate that the entire resultant namelist is valid
