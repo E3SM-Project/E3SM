@@ -176,24 +176,6 @@
 					possible_values="Any path/prefix to a processor decomposition file."
 		/>
 	</nml_record>
-  <nml_record name="transport_tests" mode="init;forward" configuration="transport_tests">
-    <nml_option name="config_transport_tests_vert_levels" type="integer" default_value="3"
-      description="Number of vertical levels in transport_tests. Typical value is 3 for 2D tests."
-      possible_values="Any positive integer number greater than 0."
-    />
-    <nml_option name="config_transport_tests_temperature" type="real" default_value="15.0" units="deg C"
-      description="Temperature of the ocean."
-      possible_values="Any real number"
-    />
-    <nml_option name="config_transport_tests_salinity" type="real" default_value="35.0" units="1.e-3"
-      description="Salinity of the ocean."
-      possible_values="Any real number"
-    />
-    <nml_option name="config_transport_tests_flow_id" type="integer" default_value="0"
-     description="integer id of transport test."
-     possible_values="1 = rotation, 2 = nondivergent2D, 3 = divergent2D, 4 = correlatedTracers2D"
-    />
-  </nml_record>
 
 
 	<!--*************************************-->
@@ -1496,6 +1478,24 @@
 		<nml_option name="config_tensor_test_function" type="character" default_value="sph_uCosCos"
 					description="Character string to choose tensor test fuction"
 					possible_values="'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'"
+		/>
+	</nml_record>
+	<nml_record name="transport_tests" mode="init;forward" configuration="transport_tests">
+		<nml_option name="config_transport_tests_vert_levels" type="integer" default_value="3"
+					description="Number of vertical levels in transport_tests. Typical value is 3 for 2D tests."
+					possible_values="Any positive integer number greater than 0."
+		/>
+		<nml_option name="config_transport_tests_temperature" type="real" default_value="15.0" units="deg C"
+					description="Temperature of the ocean."
+					possible_values="Any real number"
+		/>
+		<nml_option name="config_transport_tests_salinity" type="real" default_value="35.0" units="1.e-3"
+					description="Salinity of the ocean."
+					possible_values="Any real number"
+		/>
+		<nml_option name="config_transport_tests_flow_id" type="integer" default_value="0"
+					description="integer id of transport test."
+					possible_values="1 = rotation, 2 = nondivergent2D, 3 = divergent2D, 4 = correlatedTracers2D"
 		/>
 	</nml_record>
 	<nml_record name="init_mode_vert_levels">
