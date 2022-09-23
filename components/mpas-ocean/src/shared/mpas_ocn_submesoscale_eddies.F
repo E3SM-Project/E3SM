@@ -135,6 +135,7 @@ module ocn_submesoscale_eddies
         end do
         bvfML = bvfML / (1.0E-20_RKIND + hML)
         gradBuoyML = gradBuoyML / (1.0E-20_RKIND + hML)
+        gradBuoyML = gravity*gradBuoyML/rho_sw !convert from density unit to buoyancy
 
         !compute depths and shape function
 
