@@ -1391,7 +1391,7 @@ CONTAINS
     ! MODIS outputs
     character(len=max_fieldname_len),dimension(nf_modis) :: &
          fname_modis=(/'CLTMODIS    ','CLWMODIS    ','CLIMODIS    ','CLHMODIS    ','CLMMODIS    ',&
-                       'CLTMODISIC  ','CLWMODISIC  ','CLIMODISIC ',&
+                       'CLTMODISIC  ','CLWMODISIC  ','CLIMODISIC  ',&
                        'CLLMODIS    ','TAUTMODIS   ','TAUWMODIS   ','TAUIMODIS   ','TAUTLOGMODIS',&
                        'TAUWLOGMODIS','TAUILOGMODIS','REFFCLWMODIS','REFFCLIMODIS',&
                        'PCTMODIS    ','LWPMODIS    ','IWPMODIS    ','CLMODIS     ','CLRIMODIS   ',&
