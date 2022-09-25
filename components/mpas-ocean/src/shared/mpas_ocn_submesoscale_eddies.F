@@ -131,7 +131,7 @@ module ocn_submesoscale_eddies
                               max(BruntVaisalaFreqTop(k,cell2),1.0E-20_RKIND)))
            bvfML = bvfML + hAv*bvfAv
            hML = hML + hAv
-           gradBuoyML = gradBuoyML + hAv*gradBuoyEddy(k,iEdge)
+           gradBuoyML = gradBuoyML + hAv*gradDensityEddy(k,iEdge)
         end do
         bvfML = bvfML / (1.0E-20_RKIND + hML)
         gradBuoyML = gradBuoyML / (1.0E-20_RKIND + hML)
