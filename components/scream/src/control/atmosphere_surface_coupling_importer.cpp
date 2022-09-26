@@ -49,6 +49,10 @@ void SurfaceCouplingImporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Computed>("surf_evap",        scalar2d_layout, kg/m2/s, grid_name);
   add_field<Computed>("surf_mom_flux",    vector2d_layout, N/m2,    grid_name);
   add_field<Computed>("surf_radiative_T", scalar2d_layout, K,       grid_name);
+  add_field<Computed>("T_2m",             scalar2d_layout, K,       grid_name);
+  add_field<Computed>("qv_2m",            scalar2d_layout, Qunit,   grid_name);
+  add_field<Computed>("wind_speed_10m",   scalar2d_layout, m/s,     grid_name);
+  add_field<Computed>("snow_depth_land",  scalar2d_layout, m,       grid_name);
 }
 // =========================================================================================
   void SurfaceCouplingImporter::setup_surface_coupling_data(const SCDataManager &sc_data_manager)
