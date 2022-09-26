@@ -395,7 +395,8 @@
                              flatn,       fsurfn,    &
                              fcondtopn,   fcondbot,  &
                              fsnow,       hsn_new,   &
-                             fhocnn,      evapn,     &
+                             fhocnn,      fsaltn,    &
+                             evapn,                  &
                              meltt,       melts,     &
                              meltsliq,    frain,     &
                              meltb,       iage,      &
@@ -1034,7 +1035,8 @@
                                     flatn,     fsurfn,   &
                                     fcondtopn, fcondbot, &
                                     fsnow,     hsn_new,  &
-                                    fhocnn,    evapn,    &
+                                    fhocnn,    fsaltn,   &
+                                    evapn,               &
                                     meltt,     melts,    &
                                     meltsliq,  frain,    &
                                     meltb,     iage,     &
@@ -1101,6 +1103,7 @@
 
       real (kind=dbl_kind), intent(out):: &
          fhocnn      , & ! fbot, corrected for any surplus energy (W m-2)
+         fsaltn      , & ! flux of salt, ice to ocean (kg/m^2/s)
          evapn           ! ice/snow mass sublimated/condensed (kg m-2 s-1)
 
       real (kind=dbl_kind), intent(out):: &
@@ -1635,13 +1638,26 @@
          call adjust_enthalpy (nilyr,              &
                                zi1,      zi2,      &
                                hilyr,    hin,      &
-                               zqin)   
+                               zqin)
+         ! conserve energy
+         if (hin <= puny) then
+            do k = 1, nilyr
+               fhocnn = fhocnn + zqin(k)*hin/(real(nilyr,kind=dbl_kind)*dt)
+            enddo ! k
+         end if
 
-         if (ktherm == 2) &
+         if (ktherm == 2) then
               call adjust_enthalpy (nilyr,              &
                                     zi1,      zi2,      &
                                     hilyr,    hin,      &
                                     zSin)   
+              ! conserve salt
+              if (hin <= puny) then
+                 do k = 1, nilyr
+                    fsaltn = fsaltn + zSin(k)*hin/(real(nilyr,kind=dbl_kind)*dt)
+                 enddo ! k
+              end if
+           endif
 
       else ! zero layer (nilyr=1)
 
@@ -1675,7 +1691,13 @@
          call adjust_enthalpy (nslyr,              &
                                zs1,      zs2,      &
                                hslyr,    hsn,      &
-                               zqsn)   
+                               zqsn)
+         ! conserve energy
+         if (hsn <= puny) then
+            do k = 1, nslyr
+               fhocnn = fhocnn + zqsn(k)*hsn/(real(nslyr,kind=dbl_kind)*dt)
+            enddo ! k
+         end if
 
          if (tr_rsnw) &
                call adjust_enthalpy (nslyr,              &
