@@ -2009,6 +2009,7 @@ contains
       end do
 #ifndef MPAS_OPENACC
       !$omp end do
+      !$omp end parallel
 #endif
 
       !$acc exit data delete(div_hu, div_huTransport)
@@ -2025,6 +2026,7 @@ contains
       !$acc            minLevelEdgeBot, maxLevelEdgeTop) &
       !$acc    private(i, k, kmin, kmax, eoe, weightsOnEdge_temp)
 #else
+      !$omp parallel
       !$omp do schedule(runtime) &
       !$omp    private(i, k, kmin, kmax, eoe, weightsOnEdge_temp)
 #endif
