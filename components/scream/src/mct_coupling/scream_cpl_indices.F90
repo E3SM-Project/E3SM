@@ -6,7 +6,7 @@ module scream_cpl_indices
   private
 
   ! Focus only on the ones that scream imports/exports (subsets of x2a and a2x)
-  integer, parameter, public :: num_scream_imports = 9
+  integer, parameter, public :: num_scream_imports = 10
   integer, parameter, public :: num_scream_exports = 17
   integer, public :: num_cpl_imports, num_cpl_exports, import_field_size, export_field_size
 
@@ -73,26 +73,28 @@ module scream_cpl_indices
     enddo
 
     ! SCREAM names
-    import_field_names(1) = 'sfc_alb_dir_vis'
-    import_field_names(2) = 'sfc_alb_dir_nir'
-    import_field_names(3) = 'sfc_alb_dif_vis'
-    import_field_names(4) = 'sfc_alb_dif_nir'
-    import_field_names(5) = 'surf_lw_flux_up'
-    import_field_names(6) = 'surf_mom_flux'
-    import_field_names(7) = 'surf_mom_flux'
-    import_field_names(8) = 'surf_sens_flux'
-    import_field_names(9) = 'surf_evap'
+    import_field_names(1)  = 'sfc_alb_dir_vis'
+    import_field_names(2)  = 'sfc_alb_dir_nir'
+    import_field_names(3)  = 'sfc_alb_dif_vis'
+    import_field_names(4)  = 'sfc_alb_dif_nir'
+    import_field_names(5)  = 'surf_lw_flux_up'
+    import_field_names(6)  = 'surf_mom_flux'
+    import_field_names(7)  = 'surf_mom_flux'
+    import_field_names(8)  = 'surf_sens_flux'
+    import_field_names(9)  = 'surf_evap'
+    import_field_names(10) = 'surf_radiative_T'
 
     ! CPL indices
-    import_cpl_indices(1) = mct_avect_indexra(x2a,'Sx_avsdr')
-    import_cpl_indices(2) = mct_avect_indexra(x2a,'Sx_anidr')
-    import_cpl_indices(3) = mct_avect_indexra(x2a,'Sx_avsdf')
-    import_cpl_indices(4) = mct_avect_indexra(x2a,'Sx_anidf')
-    import_cpl_indices(5) = mct_avect_indexra(x2a,'Faxx_lwup')
-    import_cpl_indices(6) = mct_avect_indexra(x2a,'Faxx_taux')
-    import_cpl_indices(7) = mct_avect_indexra(x2a,'Faxx_tauy')
-    import_cpl_indices(8) = mct_avect_indexra(x2a,'Faxx_sen')
-    import_cpl_indices(9) = mct_avect_indexra(x2a,'Faxx_evap')
+    import_cpl_indices(1)  = mct_avect_indexra(x2a,'Sx_avsdr')
+    import_cpl_indices(2)  = mct_avect_indexra(x2a,'Sx_anidr')
+    import_cpl_indices(3)  = mct_avect_indexra(x2a,'Sx_avsdf')
+    import_cpl_indices(4)  = mct_avect_indexra(x2a,'Sx_anidf')
+    import_cpl_indices(5)  = mct_avect_indexra(x2a,'Faxx_lwup')
+    import_cpl_indices(6)  = mct_avect_indexra(x2a,'Faxx_taux')
+    import_cpl_indices(7)  = mct_avect_indexra(x2a,'Faxx_tauy')
+    import_cpl_indices(8)  = mct_avect_indexra(x2a,'Faxx_sen')
+    import_cpl_indices(9)  = mct_avect_indexra(x2a,'Faxx_evap')
+    import_cpl_indices(10) = mct_avect_indexra(x2a,'Sx_t')
 
     ! Vector components
     import_vector_components(6) = 0

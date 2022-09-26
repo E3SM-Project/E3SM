@@ -115,6 +115,7 @@ void test_imports(const FieldManager& fm,
   fm.get_field("surf_mom_flux"   ).sync_to_host();
   fm.get_field("surf_sens_flux"  ).sync_to_host();
   fm.get_field("surf_evap"       ).sync_to_host();
+  fm.get_field("surf_radiative_T").sync_to_host();
   const auto sfc_alb_dir_vis  = fm.get_field("sfc_alb_dir_vis" ).get_view<const Real*,  Host>();
   const auto sfc_alb_dir_nir  = fm.get_field("sfc_alb_dir_nir" ).get_view<const Real*,  Host>();
   const auto sfc_alb_dif_vis  = fm.get_field("sfc_alb_dif_vis" ).get_view<const Real*,  Host>();
@@ -122,7 +123,8 @@ void test_imports(const FieldManager& fm,
   const auto surf_lw_flux_up  = fm.get_field("surf_lw_flux_up" ).get_view<const Real*,  Host>();
   const auto surf_mom_flux    = fm.get_field("surf_mom_flux"   ).get_view<const Real**, Host>();
   const auto surf_sens_flux   = fm.get_field("surf_sens_flux"  ).get_view<const Real*,  Host>();
-  const auto surf_evap        = fm.get_field("surf_evap").get_view<const Real*,  Host>();
+  const auto surf_evap        = fm.get_field("surf_evap"       ).get_view<const Real*,  Host>();
+  const auto ts               = fm.get_field("surf_radiative_T").get_view<const Real*,  Host>();
 
   const int ncols = surf_evap.extent(0);
 
@@ -135,6 +137,8 @@ void test_imports(const FieldManager& fm,
     EKAT_REQUIRE(surf_mom_flux(i,1) == import_constant_multiple_view(6)*import_data_view(i, import_cpl_indices_view(6)));
     EKAT_REQUIRE(surf_sens_flux(i)  == import_constant_multiple_view(7)*import_data_view(i, import_cpl_indices_view(7)));
     EKAT_REQUIRE(surf_evap(i)       == import_constant_multiple_view(8)*import_data_view(i, import_cpl_indices_view(8)));
+    EKAT_REQUIRE(ts(i)              == import_constant_multiple_view(9)*import_data_view(i, import_cpl_indices_view(9)));
+
 
     // The following are only imported during run phase. If this test is called
     // during initialization, all values should still be 0.
@@ -344,7 +348,7 @@ TEST_CASE("surface-coupling", "") {
   // Setup views to test import/export. For this test we consider a random number of non-imported/exported
   // cpl fields (in addition to the required scream imports/exports), then assign a random, non-repeating
   // cpl index for each field in [0, num_cpl_fields).
-  const int num_scream_imports = 9;
+  const int num_scream_imports = 10;
   const int num_scream_exports = 17;
   KokkosTypes<HostDevice>::view_1d<int> additional_import_exports("additional_import_exports", 2);
   ekat::genRandArray(additional_import_exports, engine, pdf_int_additional_fields);
@@ -376,6 +380,8 @@ TEST_CASE("surface-coupling", "") {
   std::strcpy(import_names[6], "surf_mom_flux");
   std::strcpy(import_names[7], "surf_sens_flux");
   std::strcpy(import_names[8], "surf_evap");
+  std::strcpy(import_names[9], "surf_radiative_T");
+
   // Export data is of size num_cpl_exports, the rest of the views are size num_scream_exports.
   KokkosTypes<HostDevice>::view_2d<Real> export_data_view             ("export_data",
                                                                        ncols, num_cpl_exports);
@@ -408,6 +414,7 @@ TEST_CASE("surface-coupling", "") {
   std::strcpy(export_names[14], "sfc_flux_dif_vis");
   std::strcpy(export_names[15], "sfc_flux_sw_net");
   std::strcpy(export_names[16], "sfc_flux_lw_dn");
+
   // Setup the import/export data. This is meant to replicate the structures coming
   // from mct_coupling/scream_cpl_indices.F90
   setup_import_and_export_data(num_cpl_imports, num_scream_imports,
