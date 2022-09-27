@@ -74,12 +74,10 @@ void Functions<S,D>
                                  }, wl_tmp);
   team.team_barrier();
 
-  Kokkos::single(Kokkos::PerTeam(team), [&] () {
-      se_int = se_tmp;
-      ke_int = ke_tmp;
-      wv_int = wv_tmp;
-      wl_int = wl_tmp;
-  });
+  se_int = se_tmp;
+  ke_int = ke_tmp;
+  wv_int = wv_tmp;
+  wl_int = wl_tmp;
 }
 
 } // namespace shoc
