@@ -500,6 +500,26 @@
       <mask>oRRS18to6v3</mask>
     </model_grid>
 
+    <model_grid alias="TL319_surge25p25" compset="(DATM|XATM|SATM)">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">lnd-surge25p25</grid>
+      <grid name="ocnice">ocn-surge25p25</grid>
+      <grid name="rof">JRA025</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>ocn-surge25p25</mask>
+    </model_grid>
+
+    <model_grid alias="ne0vr28natlref_surge25p25" compset="(DATM|XATM|SATM)">
+      <grid name="atm">ne0np4_vr28natlref</grid>
+      <grid name="lnd">lnd-surge25p25</grid>
+      <grid name="ocnice">ocn-surge25p25</grid>
+      <grid name="rof">JRA025</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>ocn-surge25p25</mask>
+    </model_grid>
+
     <!-- finite volume grids -->
 
     <model_grid alias="f02_g16">
@@ -2270,6 +2290,8 @@
       <file grid="ice|ocn" mask="ECwISC30to60E2r1">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_ECwISC30to60E2r1.201007.nc</file>
       <file grid="atm|lnd" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_oRRS18to6v3.220124.nc</file>
       <file grid="ice|ocn" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_oRRS18to6v3.220124.nc</file>
+      <file grid="atm|lnd" mask="ocn-surge25p25">$DIN_LOC_ROOT/share/domains/domain.lnd.TL319_lnd-surge25p25.220712.nc</file>
+      <file grid="ice|ocn" mask="ocn-surge25p25">$DIN_LOC_ROOT/share/domains/domain.ocn.TL319_ocn-surge25p25.220712.nc</file>
       <desc>TL319 is JRA lat/lon grid:</desc>
     </domain>
 
@@ -2740,6 +2762,17 @@
       <desc>1-deg with 1/4-deg over Tropical West Pacific (version 1):</desc>
     </domain>
 
+    <domain name="ne0np4_vr28natlref">
+      <nx>119603</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.lnd.ne0np4natlanticref.ne30x4_tx01.180424.nc</file>
+      <file grid="ocnice"  mask="tx0.1v2">$DIN_LOC_ROOT/share/domains/domain.ocn.ne0np4natlanticref.ne30x4_tx01.180424.nc</file>
+      <file grid="atm|lnd" mask="ocn-surge25p25">$DIN_LOC_ROOT/share/domains/domain.lnd.ne0np4natlanticref_ocn-surge25p25.220818.nc</file>
+      <file grid="ocnice"  mask="ocn-surge25p25">$DIN_LOC_ROOT/share/domains/domain.ocn.ne0np4natlanticref_ocn-surge25p25.220818.nc</file>
+      <desc>ne0np4VR28.NATLREF is a Spectral Elem 1-deg grid with a 1/4 deg refined region over the Atlantic Ocean:</desc>
+      <support>Test support only</support>
+    </domain>
+
     <domain name="ne0np4_conus_x4v1_lowcon">
       <nx>89147</nx>
       <ny>1</ny>
@@ -2845,6 +2878,20 @@
       <ny>1</ny>
       <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.oRRS15to5.160207.nc</file>
       <desc>oRRS15to5 is an MPAS ocean grid with a mesh density function that is roughly proportional to the Rossby radius of deformation, with 15 km gridcells at low and 5 km gridcells at high latitudes:</desc>
+    </domain>
+
+    <domain name="ocn-surge25p25">
+      <nx>3739373</nx>
+      <ny>1</ny>
+      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn-surge25p25.220712.nc</file>
+      <desc>ocn-surge25p25 is an experimental MPAS ocean grid:</desc>
+    </domain>
+
+    <domain name="lnd-surge25p25">
+      <nx>3333047</nx>
+      <ny>1</ny>
+      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.lnd-surge25p25.220712.nc</file>
+      <desc>lnd-surge25p25 is an experimental ELM land grid:</desc>
     </domain>
 
   </domains>
@@ -3823,6 +3870,29 @@
       <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/TL319/map_TL319_to_oRRS18to6v3_patch.220124.nc</map>
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oRRS18to6v3/map_oRRS18to6v3_to_TL319_aave.220124.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oRRS18to6v3/map_oRRS18to6v3_to_TL319_aave.220124.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="TL319" ocn_grid="ocn-surge25p25">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_ocn-surge25p25_aave.220712.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_ocn-surge25p25_bilin.220712.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/TL319/map_TL319_to_ocn-surge25p25_patch.220712.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/surge25p25/map_ocn-surge25p25_to_TL319_aave.220712.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/surge25p25/map_ocn-surge25p25_to_TL319_aave.220712.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="TL319" lnd_grid="lnd-surge25p25">
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/TL319/map_TL319_to_lnd-surge25p25_aave.220712.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/TL319/map_TL319_to_lnd-surge25p25_bilin.220712.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/surge25p25/map_lnd-surge25p25_to_TL319_aave.220712.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/surge25p25/map_lnd-surge25p25_to_TL319_aave.220712.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne0np4_vr28natlref" ocn_grid="ocn-surge25p25">
+      <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/vr28natlref/map_ne0np4natlanticref_to_ocn-surge25p25_aave.220818.nc</map>
+      <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/vr28natlref/map_ne0np4natlanticref_to_ocn-surge25p25_bilin.220818.nc</map>
+      <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/vr28natlref/map_ne0np4natlanticref_to_ocn-surge25p25_patch.220818.nc</map>
+      <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/surge25p25/map_ocn-surge25p25_to_ne0np4natlanticref_aave.220818.nc</map>
+      <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/surge25p25/map_ocn-surge25p25_to_ne0np4natlanticref_aave.220818.nc</map>
     </gridmap>
 
     <gridmap atm_grid="T31" ocn_grid="gx3v7">

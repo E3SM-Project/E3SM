@@ -267,6 +267,15 @@ def buildnml(case, caseroot, compname):
             ic_date = '210414'
             ic_prefix = 'mpaso.ECwISC30to60E2r1.rstFromG-anvil'
 
+    elif ocn_grid == 'ocn-surge25p25':
+        decomp_date = '220712'
+        decomp_prefix = 'mpas-o.graph.info.'
+        ic_date = '220712'
+        ic_prefix = 'ocean.surge25p25'
+        if ocn_ic_mode == 'spunup':
+            logger.warning("WARNING: The specified compset is requesting ocean ICs spunup from a G-case")
+            logger.warning("         But no file available for this grid.")
+
 
 
     #--------------------------------------------------------------------
