@@ -178,6 +178,7 @@ protected:
   std::map<std::string,int>                             m_dofs;
   std::map<std::string,int>                             m_dims;
   std::map<std::string,std::shared_ptr<atm_diag_type>>  m_diagnostics;
+  std::map<std::string,std::vector<std::string>>        m_diag_depends_on_diags;
 
   // Local views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_1d_host>    m_host_views_1d;

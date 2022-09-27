@@ -646,6 +646,9 @@ Field AtmosphereOutput::get_field(const std::string& name, const bool eval_diagn
   } else if (m_diagnostics.find(name) != m_diagnostics.end()) {
     const auto& diag = m_diagnostics.at(name);
     if (eval_diagnostic) {
+      for (const auto& dep : m_diag_depends_on_diags.at(name)) {
+        get_field(dep,eval_diagnostic);
+      }
       diag->compute_diagnostic();
     }
     return diag->get_diagnostic();
@@ -704,6 +707,9 @@ create_diagnostic (const std::string& diag_field_name) {
     if (diag_factory.has_product(fname) and
         m_diagnostics.count(fname)==0) {
       create_diagnostic(fname);
+      m_diag_depends_on_diags[diag_field_name].push_back(fname);
+    } else {
+      m_diag_depends_on_diags[diag_field_name].resize(0);
     }
     auto fid = get_field(fname).get_header().get_identifier();
     params.set("Field Name", fname);
@@ -715,6 +721,7 @@ create_diagnostic (const std::string& diag_field_name) {
     params.set("Field Level", lev_and_idx.back());
   } else {
     diag_name = diag_field_name;
+    m_diag_depends_on_diags[diag_field_name].resize(0);
   }
 
   // Create the diagnostic
