@@ -187,12 +187,11 @@ void HorizontalMap::set_dof_gids(const view_1d<const gid_type>& dofs_gids, const
   start_timer("EAMxx::HorizontalMap::set_dof_gids");
   EKAT_REQUIRE(dofs_gids.size()>0);
   m_dofs_gids = view_1d<gid_type>("",dofs_gids.size());
-  view_1d<gid_type> l_dofs_gids("",dofs_gids.size());
+  const auto l_dofs_gids = m_dofs_gids;
   m_num_dofs = m_dofs_gids.extent(0);
   Kokkos::parallel_for("", m_num_dofs, KOKKOS_LAMBDA (const int& ii) {
     l_dofs_gids(ii) = dofs_gids(ii)-min_dof;
   });
-  Kokkos::deep_copy(m_dofs_gids,l_dofs_gids);
   m_dofs_set = true;
   stop_timer("EAMxx::HorizontalMap::set_dof_gids");
 }
