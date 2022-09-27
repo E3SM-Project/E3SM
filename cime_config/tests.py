@@ -513,7 +513,6 @@ _TESTS = {
         "time"  : "01:00:00",
         "tests" : (
             "ERP_D_Lh182.ne4pg2_ne4pg2.F2010-SCREAMv1",
-            "ERS_D_Ln182.ne4_ne4.F2010-SCREAMv1",
             "ERS_Ln362.ne30pg2_ne30pg2.F2010-SCREAMv1"
             )
     },
