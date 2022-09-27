@@ -23,7 +23,7 @@
  *
  *  At construction time ALL output instances require at least an EKAT comm group, an
  *  EKAT parameter list, and a pointer to the field manager.
- * 
+ *
  *  The EKAT parameter list contains the following options to control output behavior
  *  ------
  *  Casename:                     STRING
@@ -106,7 +106,7 @@
 namespace scream
 {
 
-class AtmosphereOutput 
+class AtmosphereOutput
 {
 public:
   using fm_type       = FieldManager;
@@ -134,7 +134,7 @@ public:
   //  - is_model_restart_output: if true, this Output is for model restart files.
   //    In this case, we have to also create an "rpointer.atm" file (which
   //    contains metadata, and is expected by the component coupled)
-  AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params, 
+  AtmosphereOutput(const ekat::Comm& comm, const ekat::ParameterList& params,
                    const std::shared_ptr<const fm_type>& field_mgr,
                    const std::shared_ptr<const gm_type>& grids_mgr);
 
@@ -157,8 +157,9 @@ protected:
   void set_degrees_of_freedom(const std::string& filename);
   std::vector<scorpio::offset_t> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
-  Field get_field(const std::string& name, const bool eval_diagnostic = false);
+  Field get_field(const std::string& name, const bool eval_diagnostic = false) const;
   void set_diagnostics();
+  void create_diagnostic (const std::string& diag_name);
 
   // --- Internal variables --- //
   ekat::Comm                          m_comm;
