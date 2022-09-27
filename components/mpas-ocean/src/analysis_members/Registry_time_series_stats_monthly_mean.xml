@@ -135,7 +135,7 @@
 			<var name="normalGMBolusVelocity"/>
 			<var name="vertGMBolusVelocityTop"/>
 			<var name="normalMLEvelocity"/>
-			<var name="vertMLEVelocityTop"/>
+			<var name="vertMLEBolusVelocityTop"/>
 			<var name="GMBolusVelocityZonal"/>
 			<var name="GMBolusVelocityMeridional"/>
 			<var name="cGMphaseSpeed"/>
