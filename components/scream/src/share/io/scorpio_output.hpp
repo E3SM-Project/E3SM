@@ -141,7 +141,8 @@ public:
   // Main Functions
   void restart (const std::string& filename);
   void init();
-  void setup_output_file (const std::string& filename);
+  void reset_dev_views();
+  void setup_output_file (const std::string& filename, const std::string& fp_precision);
   void run (const std::string& filename, const bool write, const int nsteps_since_last_output);
   void finalize() {}
 
@@ -152,7 +153,7 @@ protected:
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
 
   void register_dimensions(const std::string& name);
-  void register_variables(const std::string& filename);
+  void register_variables(const std::string& filename, const std::string& fp_precision);
   void set_degrees_of_freedom(const std::string& filename);
   std::vector<scorpio::offset_t> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();

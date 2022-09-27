@@ -4,6 +4,9 @@ if (NOT SCREAM_BASELINES_ONLY)
 
   set( NEED_LIBS scream_share diagnostics physics_share)
 
+  # Test extracting a single level of a field
+  CreateUnitTest(field_at_level "field_at_level_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+
   # Test potential temperature diagnostic
   CreateUnitTest(potential_temperature "potential_temperature_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test exner diagnostic
@@ -34,5 +37,6 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(zonal_vapor_flux "zonal_vapor_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test Meridional Vapor Flux
   CreateUnitTest(meridional_vapor_flux "meridional_vapor_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
-
+  # Test Meridional Vapor Flux
+  CreateUnitTest(ice_cloud_mask "ice_cloud_mask_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 endif()

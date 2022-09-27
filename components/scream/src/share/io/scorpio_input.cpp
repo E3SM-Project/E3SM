@@ -53,7 +53,7 @@ init (const std::shared_ptr<const fm_type>& field_mgr,
       const std::shared_ptr<const gm_type>& grids_mgr)
 {
   // Set list of fields. Use grid name to potentially find correct sublist inside 'Fields' list.
-  set_fields_and_grid_names (field_mgr->get_grid()->name());
+  set_fields_and_grid_names (field_mgr->get_grid()->aliases());
 
   // Sets the internal field mgr, and possibly sets up the remapper
   set_field_manager(field_mgr,grids_mgr);
@@ -68,7 +68,7 @@ init (const std::shared_ptr<const grid_type>& grid,
       const std::map<std::string,FieldLayout>&  layouts)
 {
   // Set list of fields. Use grid name to potentially find correct sublist inside 'Fields' list.
-  set_fields_and_grid_names (grid->name());
+  set_fields_and_grid_names (grid->aliases());
 
   // Set the grid associated with the input views
   set_grid(grid);
@@ -83,7 +83,7 @@ init (const std::shared_ptr<const grid_type>& grid,
 /* ---------------------------------------------------------- */
 
 void AtmosphereInput::
-set_fields_and_grid_names (const std::string& grid_name) {
+set_fields_and_grid_names (const std::vector<std::string>& grid_aliases) {
   // The user might just want to read some global attributes (no fields),
   // so get the list of fields names only if present.
   using vos_t = std::vector<std::string>;
@@ -92,11 +92,16 @@ set_fields_and_grid_names (const std::string& grid_name) {
     if (m_params.isParameter("IO Grid Name")) {
       m_io_grid_name = m_params.get<std::string>("IO Grid Name");
     }
-  } else if (m_params.isSublist("Fields") && grid_name!="") {
-    const auto& pl = m_params.sublist("Fields").sublist(grid_name);
-    m_fields_names = pl.get<vos_t>("Field Names");
-    if (pl.isParameter("IO Grid Name")) {
-      m_io_grid_name = pl.get<std::string>("IO Grid Name");
+  } else {
+    for (const auto& grid_name : grid_aliases) {
+      if (m_params.isSublist("Fields") && grid_name!="") {
+        const auto& pl = m_params.sublist("Fields").sublist(grid_name);
+        m_fields_names = pl.get<vos_t>("Field Names");
+        if (pl.isParameter("IO Grid Name")) {
+          m_io_grid_name = pl.get<std::string>("IO Grid Name");
+        }
+      }
+      break;
     }
   }
 }
@@ -235,7 +240,8 @@ void AtmosphereInput::read_variables (const int time_index)
   for (auto const& name : m_fields_names) {
 
     // Read the data
-    scorpio::grid_read_data_array(m_filename,name,time_index,m_host_views_1d.at(name).data());
+    auto v1d = m_host_views_1d.at(name);
+    scorpio::grid_read_data_array(m_filename,name,time_index,v1d.data(),v1d.size());
 
     // If we have a field manager, make sure the data is correctly
     // synced to both host and device views of the field.
@@ -415,6 +421,7 @@ void AtmosphereInput::register_variables()
   // dof decomposition across different ranks.
 
   // Cycle through all fields
+  const auto& fp_precision = "real";
   for (auto const& name : m_fields_names) {
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     auto vec_of_dims   = get_vec_of_dims(m_layouts.at(name));
@@ -429,8 +436,8 @@ void AtmosphereInput::register_variables()
     //  Currently the field_manager only stores Real variables so it is not an issue,
     //  but in the future if non-Real variables are added we will want to accomodate that.
     //TODO: Should be able to simply inquire from the netCDF the dimensions for each variable.
-    scorpio::get_variable(m_filename, name, name, vec_of_dims.size(),
-                          vec_of_dims, PIO_REAL, io_decomp_tag);
+    scorpio::get_variable(m_filename, name, name,
+                          vec_of_dims, fp_precision, io_decomp_tag);
   }
 }
 

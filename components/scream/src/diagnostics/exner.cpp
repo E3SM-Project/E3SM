@@ -37,12 +37,6 @@ void ExnerDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_
   m_diagnostic_output.allocate_view();
 }
 // =========================================================================================
-void ExnerDiagnostic::initialize_impl(const RunType /* run_type */)
-{
-  auto ts = timestamp(); 
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-}
-// =========================================================================================
 void ExnerDiagnostic::compute_diagnostic_impl()
 {
 
@@ -59,6 +53,8 @@ void ExnerDiagnostic::compute_diagnostic_impl()
   });
   Kokkos::fence();
 
+  const auto ts = get_field_in("p_mid").get_header().get_tracking().get_time_stamp();
+  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 } //namespace scream

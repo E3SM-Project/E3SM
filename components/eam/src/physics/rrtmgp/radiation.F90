@@ -677,21 +677,29 @@ contains
                         'Downwelling solar flux at surface', &
                         sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FUS'//diag(icall),  (/ 'ilev' /),  'A',  'W/m2', &
-                        'Shortwave upward flux')
+                        'Shortwave upward flux', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FDS'//diag(icall),  (/ 'ilev' /),  'A',  'W/m2', &
-                        'Shortwave downward flux')
+                        'Shortwave downward flux', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FDS_DIR'//diag(icall),  (/ 'ilev' /),  'A',  'W/m2', &
-                        'Shortwave direct-beam downward flux')
+                        'Shortwave direct-beam downward flux', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FNS'//diag(icall),  (/ 'ilev' /),  'A',  'W/m2', &
-                        'Shortwave net flux')
+                        'Shortwave net flux', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FUSC'//diag(icall),  (/ 'ilev' /), 'A',  'W/m2', &
-                        'Shortwave clear-sky upward flux')
+                        'Shortwave clear-sky upward flux', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FDSC'//diag(icall),  (/ 'ilev' /), 'A',  'W/m2', &
-                        'Shortwave clear-sky downward flux')
+                        'Shortwave clear-sky downward flux', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FDSC_DIR'//diag(icall),  (/ 'ilev' /), 'A',  'W/m2', &
-                        'Shortwave clear-sky direct-beam downward flux')
+                        'Shortwave clear-sky direct-beam downward flux', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FNSC'//diag(icall),  (/ 'ilev' /), 'A',  'W/m2', &
-                        'Shortwave clear-sky net flux')
+                        'Shortwave clear-sky net flux', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FSNIRTOA'//diag(icall), horiz_only, 'A', 'W/m2', &
                         'Net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', &
                         sampling_seq='rad_lwsw', flag_xyfill=.true.)

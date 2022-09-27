@@ -41,7 +41,6 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 template<typename DeviceT>
 void run(std::mt19937_64& engine)
 {
-  using PF         = scream::PhysicsFunctions<DeviceT>;
   using PC         = scream::physics::Constants<Real>;
   using Pack       = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using KT         = ekat::KokkosTypes<DeviceT>;
@@ -85,8 +84,6 @@ void run(std::mt19937_64& engine)
 
   // Construct the Diagnostic
   ekat::ParameterList params;
-  params.set<std::string>("Diagnostic Name", "Meridional Vapor Flux");
-  params.set<std::string>("Grid", "Point Grid");
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
   auto diag = diag_factory.create("MeridionalVapFlux",comm,params);
@@ -117,20 +114,23 @@ void run(std::mt19937_64& engine)
     const auto& qv_v          = qv_f.get_view<Pack**>();
     const auto& pseudo_density_f          = input_fields["pseudo_density"];
     const auto& pseudo_density_v          = pseudo_density_f.get_view<Pack**>();
-    const auto& v_f          = input_fields["v"];
-    const auto& v_v          = v_f.get_view<Pack**>();
+    const auto& horiz_winds_f = input_fields["horiz_winds"];
+    const auto& horiz_winds_v = horiz_winds_f.get_view<Pack***>();
 
 
     for (int icol=0;icol<ncols;icol++) {
       const auto& qv_sub      = ekat::subview(qv_v,icol);
       const auto& pseudo_density_sub      = ekat::subview(pseudo_density_v,icol);
-      const auto& v_sub      = ekat::subview(v_v,icol);
+      const auto& u_sub      = ekat::subview(horiz_winds_v,icol,0);
+      const auto& v_sub      = ekat::subview(horiz_winds_v,icol,1);
 
       ekat::genRandArray(dview_as_real(qv),              engine, pdf_qv);
       ekat::genRandArray(dview_as_real(pseudo_density),              engine, pdf_pseudo_density);
       ekat::genRandArray(dview_as_real(v),              engine, pdf_v);
       Kokkos::deep_copy(qv_sub,qv);
       Kokkos::deep_copy(pseudo_density_sub,pseudo_density);
+      // We shouldnt be using u, so make it a bad number.
+      Kokkos::deep_copy(u_sub,std::numeric_limits<Real>::quiet_NaN());
       Kokkos::deep_copy(v_sub,v);
 
     }
@@ -142,17 +142,14 @@ void run(std::mt19937_64& engine)
     Field qv_vert_integrated_flux_v_f = diag_out.clone();
     qv_vert_integrated_flux_v_f.deep_copy<double,Host>(0.0);
     qv_vert_integrated_flux_v_f.sync_to_dev();
-    using PC         = scream::physics::Constants<Real>;
     const auto& qv_vert_integrated_flux_v_v = qv_vert_integrated_flux_v_f.get_view<Real*>();
-    const int pack_surf = std::min(num_levs / Pack::n, num_mid_packs-1);
-    const int idx_surf  = num_levs % Pack::n;
     constexpr Real gravit = PC::gravit;
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
          Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, num_levs), [&] (const Int& idx, Real& lsum) {
       const int jpack = idx / Pack::n;
       const int klev  = idx % Pack::n;
-      lsum += v_v(icol,jpack)[klev] * qv_v(icol,jpack)[klev] * pseudo_density_v(icol,jpack)[klev]/gravit;
+      lsum += horiz_winds_v(icol,1,jpack)[klev] * qv_v(icol,jpack)[klev] * pseudo_density_v(icol,jpack)[klev]/gravit;
     },qv_vert_integrated_flux_v_v(icol));
 
     });

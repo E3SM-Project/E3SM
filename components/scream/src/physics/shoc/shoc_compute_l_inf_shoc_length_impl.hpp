@@ -25,6 +25,7 @@ void Functions<S,D>
                                 [&] (const int k) -> Spack {
     return ekat::sqrt(tke(k))*zt_grid(k)*dz_zt(k);
   }, numer);
+  team.team_barrier(); // see comment in shoc_energy_integrals_impl.hpp
 
   // Compute denominator
   Scalar denom = 0;

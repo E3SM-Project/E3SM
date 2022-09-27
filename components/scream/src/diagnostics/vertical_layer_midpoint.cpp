@@ -41,12 +41,6 @@ void VerticalLayerMidpointDiagnostic::set_grids(const std::shared_ptr<const Grid
   m_diagnostic_output.allocate_view();
 }
 // =========================================================================================
-void VerticalLayerMidpointDiagnostic::initialize_impl(const RunType /* run_type */)
-{
-  auto ts = timestamp(); 
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-}
-// =========================================================================================
 void VerticalLayerMidpointDiagnostic::compute_diagnostic_impl()
 {
 
@@ -78,6 +72,8 @@ void VerticalLayerMidpointDiagnostic::compute_diagnostic_impl()
     PF::calculate_z_mid(team,num_levs,z_int,z_mid_s);
   });
 
+  const auto ts = get_field_in("qv").get_header().get_tracking().get_time_stamp();
+  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 } //namespace scream

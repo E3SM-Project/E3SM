@@ -43,15 +43,8 @@ void AtmDensityDiagnostic::set_grids(const std::shared_ptr<const GridsManager> g
   m_diagnostic_output.allocate_view();
 }
 // =========================================================================================
-void AtmDensityDiagnostic::initialize_impl(const RunType /* run_type */)
-{
-  auto ts = timestamp(); 
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-}
-// =========================================================================================
 void AtmDensityDiagnostic::compute_diagnostic_impl()
 {
-
   const auto npacks  = ekat::npack<Pack>(m_num_levs);
   const auto& atm_dens           = m_diagnostic_output.get_view<Pack**>();
   const auto& T_mid              = get_field_in("T_mid").get_view<const Pack**>();
@@ -69,6 +62,8 @@ void AtmDensityDiagnostic::compute_diagnostic_impl()
   });
   Kokkos::fence();
 
+  const auto ts = get_field_in("T_mid").get_header().get_tracking().get_time_stamp();
+  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 } //namespace scream

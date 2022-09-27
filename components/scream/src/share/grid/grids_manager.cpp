@@ -16,8 +16,7 @@ has_grid (const std::string& grid_name) const
 {
   for (const auto& it : m_grids) {
     const auto& g = it.second;
-    if (g->name()==grid_name or
-        ekat::contains(g->aliases(),grid_name)) {
+    if (ekat::contains(g->aliases(),grid_name)) {
       return true;
     }
   }

@@ -3,7 +3,15 @@
 Casename: io_multisnap_test
 Averaging Type: Instant
 Max Snapshots Per File: 10
-Field Names: [field_1, field_2, field_3, field_packed]
+Field Names:
+  - field_1
+  - field_2
+  - field_3
+  - field_packed
+  - field_3@bot
+  - field_3@tom
+  - field_3@lev_2
+  - DummyDiagnostic
 output_control:
   MPI Ranks in Filename: true
   Frequency: 1

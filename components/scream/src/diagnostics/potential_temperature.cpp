@@ -39,12 +39,6 @@ void PotentialTemperatureDiagnostic::set_grids(const std::shared_ptr<const Grids
   m_diagnostic_output.allocate_view();
 }
 // =========================================================================================
-void PotentialTemperatureDiagnostic::initialize_impl(const RunType /* run_type */)
-{
-  auto ts = timestamp(); 
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-}
-// =========================================================================================
 void PotentialTemperatureDiagnostic::compute_diagnostic_impl()
 {
 
@@ -60,6 +54,9 @@ void PotentialTemperatureDiagnostic::compute_diagnostic_impl()
       theta(icol,jpack) = PF::calculate_theta_from_T(T_mid(icol,jpack),p_mid(icol,jpack));
   });
   Kokkos::fence();
+
+  const auto ts = get_field_in("T_mid").get_header().get_tracking().get_time_stamp();
+  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 

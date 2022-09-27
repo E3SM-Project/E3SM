@@ -36,6 +36,8 @@ using Pack         = ekat::Pack<Real,packsize>;
 using KT = KokkosTypes<DefaultDevice>;
 template <typename S>
 using view_2d = typename KT::template view_2d<S>;
+using FID = FieldIdentifier;
+using FL  = FieldLayout;
 
 std::shared_ptr<FieldManager>
 get_test_fm(std::shared_ptr<const AbstractGrid> grid);
@@ -138,6 +140,7 @@ void run_multisnap(const std::string& output_freq_units) {
   // Need to register the Test Diagnostic so that IO can access it
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
   diag_factory.register_product("DummyDiagnostic",&create_atmosphere_diagnostic<DiagTest>);
+  diag_factory.register_product("FieldAtLevel",&create_atmosphere_diagnostic<DiagTest>);
 
   // Construct a timestamp
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
@@ -161,12 +164,15 @@ void run_multisnap(const std::string& output_freq_units) {
     // Re-create the fm anew, so the fields are re-inited for each output type
     auto field_manager = get_test_fm(grid);
     field_manager->init_fields_time_stamp(t0);
+
     // Set up parameter list control for output
     ekat::ParameterList params;
     ekat::parse_yaml_file("io_test_" + output_type + ".yaml",params);
+    params.set<std::string>("Floating Point Precision","real");
     auto& params_sub = params.sublist("output_control");
     params_sub.set<std::string>("frequency_units",output_freq_units);
     io_control.frequency = params_sub.get<int>("Frequency");
+
     // Set up output manager.
     OutputManager om;
     om.setup(io_comm,params,field_manager,gm,t0,t0,false);
@@ -228,7 +234,6 @@ void run_multisnap(const std::string& output_freq_units) {
 
   // Get a fresh new field manager
   auto field_manager = get_test_fm(grid);
-  const auto& out_fields = field_manager->get_groups_info().at("output");
 
   // We can use the produced output files to simultaneously check output quality and the
   // ability to read input.
@@ -252,11 +257,32 @@ void run_multisnap(const std::string& output_freq_units) {
   auto f2 = field_manager->get_field("field_2");
   auto f3 = field_manager->get_field("field_3");
   auto f4 = field_manager->get_field("field_packed");
+
+  // Add field @ level. Note: cannot use subfield, since
+  //  - we don't want to alias f3
+  //  - we cannot use subfield along 2nd dim for rank-2 fields
+  using namespace ShortFieldTagsNames;
+  const auto& f3_lt = f3.get_header().get_identifier().get_layout();
+  EKAT_REQUIRE_MSG (f3_lt.rank()>0,"WHAT?!?\n");
+  const auto units = f3.get_header().get_identifier().get_units();
+  auto f3_tom = Field(FID("field_3@tom",f3_lt.strip_dim(LEV),units,grid->name()));
+  auto f3_bot = Field(FID("field_3@bot",f3_lt.strip_dim(LEV),units,grid->name()));
+  auto f3_lev_2 = Field(FID("field_3@lev_2",f3_lt.strip_dim(LEV),units,grid->name()));
+  f3_tom.allocate_view();
+  f3_bot.allocate_view();
+  f3_lev_2.allocate_view();
+  field_manager->add_field(f3_tom);
+  field_manager->add_field(f3_bot);
+  field_manager->add_field(f3_lev_2);
+
+  // Get host views
   auto f1_host = f1.get_view<Real*,Host>();
   auto f2_host = f2.get_view<Real*,Host>();
   auto f3_host = f3.get_view<Real**,Host>();
   auto f4_host = f4.get_view<Real**,Host>();
-
+  auto f3_tom_host = f3_tom.get_view<Real*,Host>();
+  auto f3_bot_host = f3_bot.get_view<Real*,Host>();
+  auto f3_lev_2_host = f3_lev_2.get_view<Real*,Host>();
 
   // Check multisnap output; note, tt starts at 1 instead of 0 to follow netcdf time dimension indexing.
   AtmosphereInput multi_input(input_params,field_manager);
@@ -266,6 +292,9 @@ void run_multisnap(const std::string& output_freq_units) {
     f2.sync_to_host();
     f3.sync_to_host();
     f4.sync_to_host();
+    f3_tom.sync_to_host();
+    f3_bot.sync_to_host();
+    f3_lev_2.sync_to_host();
 
     int tt1 = tt + 1;
     // Here tt1 is the snap, we need to figure out what time that is in seconds given the frequency units
@@ -276,6 +305,10 @@ void run_multisnap(const std::string& output_freq_units) {
         REQUIRE(std::abs(f3_host(ii,jj)-check_data_xy(current_t,dt,ii,jj,"instant"))<tol);
         REQUIRE(std::abs(f4_host(ii,jj)-check_data_xy(current_t,dt,ii,jj,"instant"))<tol);
       }
+
+      REQUIRE (f3_tom_host(ii)==f3_host(ii,0));
+      REQUIRE (f3_bot_host(ii)==f3_host(ii,num_levs-1));
+      REQUIRE (f3_lev_2_host(ii)==f3_host(ii,2));
     }
     for (int jj=0;jj<num_levs;++jj) {
       REQUIRE(std::abs(f2_host(jj)-check_data_xy(current_t,dt,0,jj,"instant"))<tol);
@@ -394,7 +427,6 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
 
   // Get a fresh new field manager
   auto field_manager = get_test_fm(grid);
-  const auto& out_fields = field_manager->get_groups_info().at("output");
 
   // We can use the produced output files to simultaneously check output quality and the
   // ability to read input.
@@ -419,10 +451,32 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
   auto f2 = field_manager->get_field("field_2");
   auto f3 = field_manager->get_field("field_3");
   auto f4 = field_manager->get_field("field_packed");
+
+  // Add field @ level. Note: cannot use subfield, since
+  //  - we don't want to alias f3
+  //  - we cannot use subfield along 2nd dim for rank-2 fields
+  using namespace ShortFieldTagsNames;
+  const auto units = f3.get_header().get_identifier().get_units();
+  const auto& f3_lt = f3.get_header().get_identifier().get_layout();
+  EKAT_REQUIRE_MSG (f3_lt.rank()>0,"WHAT?!?\n");
+  auto f3_tom = Field(FID("field_3@tom",f3_lt.strip_dim(LEV),units,grid->name()));
+  auto f3_bot = Field(FID("field_3@bot",f3_lt.strip_dim(LEV),units,grid->name()));
+  auto f3_lev_2 = Field(FID("field_3@lev_2",f3_lt.strip_dim(LEV),units,grid->name()));
+  f3_tom.allocate_view();
+  f3_bot.allocate_view();
+  f3_lev_2.allocate_view();
+  field_manager->add_field(f3_tom);
+  field_manager->add_field(f3_bot);
+  field_manager->add_field(f3_lev_2);
+
+  // Get host views
   auto f1_host = f1.get_view<Real*,Host>();
   auto f2_host = f2.get_view<Real*,Host>();
   auto f3_host = f3.get_view<Real**,Host>();
   auto f4_host = f4.get_view<Real**,Host>();
+  auto f3_tom_host = f3_tom.get_view<Real*,Host>();
+  auto f3_bot_host = f3_bot.get_view<Real*,Host>();
+  auto f3_lev_2_host = f3_lev_2.get_view<Real*,Host>();
 
   // Read data
   AtmosphereInput test_input(input_params,field_manager);
@@ -433,6 +487,9 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
   f2.sync_to_host();
   f3.sync_to_host();
   f4.sync_to_host();
+  f3_tom.sync_to_host();
+  f3_bot.sync_to_host();
+  f3_lev_2.sync_to_host();
 
   if (output_type == "instant") {
     // The diagnostic is not present in the field manager.  So we can't use the scorpio_input class
@@ -451,6 +508,10 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
       REQUIRE(std::abs(f3_host(ii,jj)-check_data_xy(current_t,dt,ii,jj,output_type))<tol);
       REQUIRE(std::abs(f4_host(ii,jj)-check_data_xy(current_t,dt,ii,jj,output_type))<tol);
     }
+
+    REQUIRE (f3_tom_host(ii)==f3_host(ii,0));
+    REQUIRE (f3_bot_host(ii)==f3_host(ii,num_levs-1));
+    REQUIRE (f3_lev_2_host(ii)==f3_host(ii,2));
   }
   for (int jj=0;jj<num_levs;++jj) {
     REQUIRE(std::abs(f2_host(jj)-check_data_xy(current_t,dt,0,jj,output_type))<tol);
@@ -603,7 +664,10 @@ ekat::ParameterList get_in_params(const std::string& type,
       + "." + t_first_write + ".nc";
 
   in_params.set<std::string>("Filename",filename);
-  in_params.set<vos_type>("Field Names",{"field_1", "field_2", "field_3", "field_packed"});
+  in_params.set<vos_type>("Field Names",
+      {"field_1", "field_2", "field_3", "field_packed", "field_3@tom", "field_3@bot", "field_3@lev_2"});
+  in_params.set<std::string>("Floating Point Precision","real");
+
   return in_params;
 }
 /*========================================================================================================*/
@@ -630,6 +694,7 @@ get_diagnostic_input(const ekat::Comm& comm, const std::shared_ptr<GridsManager>
   ekat::ParameterList in_params;
   in_params.set("Field Names",fnames);
   in_params.set("Filename",filename);
+  in_params.set<std::string>("Floating Point Precision","real");
   AtmosphereInput input(comm,in_params);
   input.init(grid,host_views,layouts);
   input.read_variables(time_index);

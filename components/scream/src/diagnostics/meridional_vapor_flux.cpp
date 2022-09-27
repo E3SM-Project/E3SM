@@ -29,12 +29,14 @@ void MeridionalVapFluxDiagnostic::set_grids(const std::shared_ptr<const GridsMan
 
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
   FieldLayout scalar2d_layout_mid { {COL},     {m_num_cols}            };
+  FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {m_num_cols,2,m_num_levs} };
   constexpr int ps = Pack::n;
 
   // The fields required for this diagnostic to be computed
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Pa, grid_name, ps);
   add_field<Required>("qv",             scalar3d_layout_mid, Q,  grid_name, "tracers", ps);
-  add_field<Required>("v",             scalar3d_layout_mid, m/s,  grid_name, ps);
+  // Note both u and v are packaged into the single field horiz_winds.
+  add_field<Required>("horiz_winds",    horiz_wind_layout,   m/s, grid_name, ps);
 
 
   // Construct and allocate the diagnostic field
@@ -43,12 +45,6 @@ void MeridionalVapFluxDiagnostic::set_grids(const std::shared_ptr<const GridsMan
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
   C_ap.request_allocation();
   m_diagnostic_output.allocate_view();
-}
-// =========================================================================================
-void MeridionalVapFluxDiagnostic::initialize_impl(const RunType /* run_type */)
-{
-  auto ts = timestamp(); 
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 void MeridionalVapFluxDiagnostic::compute_diagnostic_impl()
@@ -61,7 +57,7 @@ void MeridionalVapFluxDiagnostic::compute_diagnostic_impl()
   const auto& qv_vert_integrated_flux_v = m_diagnostic_output.get_view<Real*>();
   const auto& qv_mid                    = get_field_in("qv").get_view<const Pack**>();
   const auto& pseudo_density_mid        = get_field_in("pseudo_density").get_view<const Pack**>();
-  const auto& v_mid = get_field_in("v").get_view<const Pack**>();
+  const auto& horiz_winds               = get_field_in("horiz_winds").get_view<const Pack***>();
 
   const auto num_levs = m_num_levs;
   Kokkos::parallel_for("MeridionalVapFluxDiagnostic",
@@ -71,11 +67,14 @@ void MeridionalVapFluxDiagnostic::compute_diagnostic_impl()
     Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, num_levs), [&] (const Int& idx, Real& lsum) {
       const int jpack = idx / Pack::n;
       const int klev  = idx % Pack::n;
-      lsum += v_mid(icol,jpack)[klev] * qv_mid(icol,jpack)[klev] * pseudo_density_mid(icol,jpack)[klev]/gravit;
+      // Note, horiz_winds contains u (index 0) and v (index 1).  Here we want v
+      lsum += horiz_winds(icol,1,jpack)[klev] * qv_mid(icol,jpack)[klev] * pseudo_density_mid(icol,jpack)[klev]/gravit;
     },qv_vert_integrated_flux_v(icol));
     team.team_barrier();
   });
 
+  const auto ts = get_field_in("qv").get_header().get_tracking().get_time_stamp();
+  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 } //namespace scream

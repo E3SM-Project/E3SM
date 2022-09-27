@@ -1576,16 +1576,13 @@ module ocn_time_integration_split
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
                uTemp(:,iEdge) = normalBarotropicVelocityNew(iEdge) &
-                            + normalBaroclinicVelocityNew(:,iEdge) &
-                      +       normalGMBolusVelocity(:,iEdge)
+                            + normalBaroclinicVelocityNew(:,iEdge)
             end do
             !$omp end do
             !$omp end parallel
 
-            ! mrp turn off separate GM addition for bfb match.
-            ! normalGMBolusVelocity added in previous loop.
-            !call ocn_GM_add_to_transport_vel(uTemp, nEdges, &
-            !                                 nVertLevels)
+            call ocn_GM_add_to_transport_vel(uTemp, nEdges, &
+                                             nVertLevels)
             call ocn_MLE_add_to_transport_vel(uTemp, nEdges)
 
             !$omp parallel
@@ -1640,11 +1637,9 @@ module ocn_time_integration_split
                   !                         + normalVelocityCorrection
                   ! This is the velocity used in advective terms for layerThickness
                   ! and tracers in tendency calls in stage 3.
-                  normalTransportVelocity(k,iEdge) = edgeMask(k,iEdge) &
-                           *(normalBarotropicVelocityNew(iEdge)   + &
-                             normalBaroclinicVelocityNew(k,iEdge) + &
-                             normalGMBolusVelocity(k,iEdge) + &
-                             normalVelocityCorrection )
+                  normalTransportVelocity(k,iEdge) = edgeMask(k,iEdge)*( &
+                             normalTransportVelocity(k,iEdge) + &
+                             normalVelocityCorrection)
                enddo
 
             end do ! iEdge

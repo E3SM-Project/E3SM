@@ -1165,6 +1165,7 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:, :, :), pointer :: tracersGroupCur, tracersGroupProvis, tracersGroupTend
 
       integer, dimension(:), pointer :: minLevelCell, maxLevelCell, maxLevelEdgeTop
+      integer, dimension(:,:), pointer :: edgeMask
 
       logical, pointer :: config_use_tracerGroup
       type (mpas_pool_iterator_type) :: groupItr
@@ -1218,15 +1219,18 @@ module ocn_time_integration_rk4
       call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
+      call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
 
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersCur, 1)
 
+      ! the loop below is on all vertlevels but we used edgemask to set
+      ! velocities to zero below topo (esp. edges between topo and ocean)
       !$omp parallel
       !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges
-         do k = 1, maxLevelEdgeTop(iEdge)
-            normalVelocityProvis(k, iEdge) = normalVelocityCur(k, iEdge) + rkSubstepWeight &
-                                           * normalVelocityTend(k, iEdge)
+         do k = 1, nVertLevels
+            normalVelocityProvis(k, iEdge) = edgeMask(k, iEdge)*(normalVelocityCur(k, iEdge) + rkSubstepWeight &
+                                           * normalVelocityTend(k, iEdge))
             normalVelocityProvis(k, iEdge) = normalVelocityProvis(k, iEdge) * (1.0_RKIND - wettingVelocity(k, iEdge))
          end do
       end do
@@ -1405,7 +1409,7 @@ module ocn_time_integration_rk4
       real (kind=RKIND), intent(in) :: rkWeight
       integer, intent(out) :: err
 
-      integer, pointer :: nCells, nEdges
+      integer, pointer :: nCells, nEdges, nVertLevels
       integer :: iCell, iEdge, k
 
       type (mpas_pool_type), pointer :: statePool, tendPool, meshPool
@@ -1419,6 +1423,7 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:, :, :), pointer :: tracersGroupNew, tracersGroupTend
 
       integer, dimension(:), pointer :: minLevelCell, maxLevelCell
+      integer, dimension(:,:), pointer :: edgeMask
 
       logical, pointer :: config_use_tracerGroup
       type (mpas_pool_iterator_type) :: groupItr
@@ -1429,6 +1434,7 @@ module ocn_time_integration_rk4
 
       call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
       call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
+      call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
 
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
       call mpas_pool_get_subpool(block % structs, 'tend', tendPool)
@@ -1455,6 +1461,7 @@ module ocn_time_integration_rk4
 
       call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(meshPool, 'edgeMask', edgeMask)
 
       !$omp parallel
       !$omp do schedule(runtime) private(k)
@@ -1464,11 +1471,16 @@ module ocn_time_integration_rk4
          end do
       end do
       !$omp end do
-
+      
+      ! the loop below is on all vertlevels but we used edgemask to set
+      ! velocities to zero below topo (esp. edges between topo and ocean)
       !$omp do schedule(runtime)
       do iEdge = 1, nEdges
-         normalVelocityNew(:, iEdge) = normalVelocityNew(:, iEdge) + rkWeight * normalVelocityTend(:, iEdge)
-         normalVelocityNew(:, iEdge) = normalVelocityNew(:, iEdge) * (1.0_RKIND - wettingVelocity(:, iEdge))
+         do k = 1, nVertLevels
+            normalVelocityNew(k, iEdge) = edgeMask(k,iEdge) &
+                                      *(normalVelocityNew(k, iEdge) + rkWeight * normalVelocityTend(k, iEdge))
+            normalVelocityNew(k, iEdge) = normalVelocityNew(k, iEdge) * (1.0_RKIND - wettingVelocity(k, iEdge))
+         end do
       end do
       !$omp end do
       !$omp end parallel

@@ -1,5 +1,4 @@
 #include "share/util/scream_timing.hpp"
-#include "scream_config.h"
 
 #include <gptl.h>
 

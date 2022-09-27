@@ -2,12 +2,6 @@ module scream_scorpio_interface_iso_c2f
   use iso_c_binding, only: c_int, c_double, c_float, c_bool, c_ptr
   implicit none
 
-#include "scream_config.f"
-#ifdef SCREAM_DOUBLE_PRECISION
-# define c_real c_double
-#else
-# define c_real c_float
-#endif
 !
 ! This file contains bridges from scream c++ to shoc fortran.
 !
@@ -103,7 +97,7 @@ contains
   subroutine pio_update_time_c2f(filename_in,time) bind(c)
     use scream_scorpio_interface, only : eam_update_time
     type(c_ptr), intent(in) :: filename_in
-    real(kind=c_real), value, intent(in) :: time
+    real(kind=c_double), value, intent(in) :: time
 
     character(len=256)       :: filename
 
@@ -171,7 +165,9 @@ contains
     call set_int_attribute(file_name,attr_name,val)
   end subroutine set_int_attribute_c2f
 !=====================================================================!
-  subroutine register_variable_c2f(filename_in, shortname_in, longname_in, units_in, numdims, var_dimensions_in, dtype, pio_decomp_tag_in) bind(c)
+  subroutine register_variable_c2f(filename_in, shortname_in, longname_in, &
+                                   units_in, numdims, var_dimensions_in,   &
+                                   dtype, nc_dtype, pio_decomp_tag_in) bind(c)
     use scream_scorpio_interface, only : register_variable
     type(c_ptr), intent(in)                :: filename_in
     type(c_ptr), intent(in)                :: shortname_in
@@ -179,7 +175,7 @@ contains
     type(c_ptr), intent(in)                :: units_in
     integer(kind=c_int), value, intent(in) :: numdims
     type(c_ptr), intent(in)                :: var_dimensions_in(numdims)
-    integer(kind=c_int), value, intent(in) :: dtype
+    integer(kind=c_int), value, intent(in) :: dtype, nc_dtype
     type(c_ptr), intent(in)                :: pio_decomp_tag_in
 
     character(len=256) :: filename
@@ -199,7 +195,7 @@ contains
       call convert_c_string(var_dimensions_in(ii), var_dimensions(ii))
     end do
 
-    call register_variable(filename,shortname,longname,units,numdims,var_dimensions,dtype,pio_decomp_tag)
+    call register_variable(filename,shortname,longname,units,numdims,var_dimensions,dtype,nc_dtype,pio_decomp_tag)
 
   end subroutine register_variable_c2f
 !=====================================================================!
@@ -281,37 +277,107 @@ contains
 
   end subroutine convert_c_string
 !=====================================================================!
-  subroutine grid_write_data_array_c2f_real(filename_in,varname_in,var_data_ptr) bind(c)
+  subroutine grid_write_data_array_c2f_int(filename_in,varname_in,buf,buf_size) bind(c)
     use scream_scorpio_interface, only: grid_write_data_array
 
     type(c_ptr), intent(in) :: filename_in
     type(c_ptr), intent(in) :: varname_in
-    type(c_ptr), intent(in) :: var_data_ptr
+    integer(kind=c_int), intent(in), value :: buf_size
+    integer(kind=c_int), intent(in) :: buf(buf_size)
 
     character(len=256) :: filename
     character(len=256) :: varname
 
     call convert_c_string(filename_in,filename)
     call convert_c_string(varname_in,varname)
-    call grid_write_data_array(filename,varname,var_data_ptr)
+    call grid_write_data_array(filename,varname,buf,buf_size)
 
-  end subroutine grid_write_data_array_c2f_real
+  end subroutine grid_write_data_array_c2f_int
+  subroutine grid_write_data_array_c2f_float(filename_in,varname_in,buf,buf_size) bind(c)
+    use scream_scorpio_interface, only: grid_write_data_array
+
+    type(c_ptr), intent(in) :: filename_in
+    type(c_ptr), intent(in) :: varname_in
+    integer(kind=c_int), intent(in), value :: buf_size
+    real(kind=c_float), intent(in) :: buf(buf_size)
+
+    character(len=256) :: filename
+    character(len=256) :: varname
+
+    call convert_c_string(filename_in,filename)
+    call convert_c_string(varname_in,varname)
+    call grid_write_data_array(filename,varname,buf,buf_size)
+
+  end subroutine grid_write_data_array_c2f_float
+  subroutine grid_write_data_array_c2f_double(filename_in,varname_in,buf,buf_size) bind(c)
+    use scream_scorpio_interface, only: grid_write_data_array
+
+    type(c_ptr), intent(in) :: filename_in
+    type(c_ptr), intent(in) :: varname_in
+    integer(kind=c_int), intent(in), value :: buf_size
+    real(kind=c_double), intent(in) :: buf(buf_size)
+
+    character(len=256) :: filename
+    character(len=256) :: varname
+
+    call convert_c_string(filename_in,filename)
+    call convert_c_string(varname_in,varname)
+    call grid_write_data_array(filename,varname,buf,buf_size)
+
+  end subroutine grid_write_data_array_c2f_double
 !=====================================================================!
-  subroutine grid_read_data_array_c2f(filename_in,varname_in,time_index,var_data_ptr) bind(c)
+  subroutine grid_read_data_array_c2f_int(filename_in,varname_in,time_index,buf,buf_size) bind(c)
     use scream_scorpio_interface, only: grid_read_data_array
 
     type(c_ptr), intent(in) :: filename_in
     type(c_ptr), intent(in) :: varname_in
     integer(kind=c_int), value, intent(in) :: time_index ! zero-based
-    type(c_ptr), intent(in) :: var_data_ptr
+    integer(kind=c_int), intent(in), value :: buf_size
+    integer(kind=c_int), intent(out) :: buf(buf_size)
 
     character(len=256) :: filename
     character(len=256) :: varname
 
     call convert_c_string(filename_in,filename)
     call convert_c_string(varname_in,varname)
-    call grid_read_data_array(filename,varname,var_data_ptr,time_index+1)
+    call grid_read_data_array(filename,varname,buf,buf_size,time_index+1)
 
-  end subroutine grid_read_data_array_c2f
+  end subroutine grid_read_data_array_c2f_int
+!=====================================================================!
+  subroutine grid_read_data_array_c2f_float(filename_in,varname_in,time_index,buf,buf_size) bind(c)
+    use scream_scorpio_interface, only: grid_read_data_array
+
+    type(c_ptr), intent(in) :: filename_in
+    type(c_ptr), intent(in) :: varname_in
+    integer(kind=c_int), value, intent(in) :: time_index ! zero-based
+    integer(kind=c_int), intent(in), value :: buf_size
+    real(kind=c_float), intent(out) :: buf(buf_size)
+
+    character(len=256) :: filename
+    character(len=256) :: varname
+
+    call convert_c_string(filename_in,filename)
+    call convert_c_string(varname_in,varname)
+    call grid_read_data_array(filename,varname,buf,buf_size,time_index+1)
+
+  end subroutine grid_read_data_array_c2f_float
+!=====================================================================!
+  subroutine grid_read_data_array_c2f_double(filename_in,varname_in,time_index,buf,buf_size) bind(c)
+    use scream_scorpio_interface, only: grid_read_data_array
+
+    type(c_ptr), intent(in) :: filename_in
+    type(c_ptr), intent(in) :: varname_in
+    integer(kind=c_int), value, intent(in) :: time_index ! zero-based
+    integer(kind=c_int), intent(in), value :: buf_size
+    real(kind=c_double), intent(out) :: buf(buf_size)
+
+    character(len=256) :: filename
+    character(len=256) :: varname
+
+    call convert_c_string(filename_in,filename)
+    call convert_c_string(varname_in,varname)
+    call grid_read_data_array(filename,varname,buf,buf_size,time_index+1)
+
+  end subroutine grid_read_data_array_c2f_double
 !=====================================================================!
 end module scream_scorpio_interface_iso_c2f

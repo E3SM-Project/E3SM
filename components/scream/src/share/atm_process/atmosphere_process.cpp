@@ -10,6 +10,26 @@
 namespace scream
 {
 
+ekat::logger::LogLevel str2LogLevel (const std::string& s) {
+  using namespace ekat::logger;
+
+  ekat::logger::LogLevel log_level;
+  if (s=="off") {
+    log_level = LogLevel::off;
+  } else if (s=="trace") {
+    log_level = LogLevel::trace;
+  } else if (s=="debug") {
+    log_level = LogLevel::debug;
+  } else if (s=="info") {
+    log_level = LogLevel::info;
+  } else if (s=="warn") {
+    log_level = LogLevel::warn;
+  } else {
+    EKAT_ERROR_MSG ("Invalid string value for log level: " + s + "\n");
+  }
+  return log_level;
+}
+
 AtmosphereProcess::
 AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
   : m_comm       (comm)
@@ -21,7 +41,8 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
     // Create a console-only logger, that logs all ranks
     using namespace ekat::logger;
     using logger_impl_t = Logger<LogNoFile,LogAllRanks>;
-    m_atm_logger = std::make_shared<logger_impl_t>("",LogLevel::trace,m_comm);
+    auto log_level = m_params.get<std::string>("log_level","trace");
+    m_atm_logger = std::make_shared<logger_impl_t>("",str2LogLevel(log_level),m_comm);
   }
 
   if (m_params.isParameter("number_of_subcycles")) {
@@ -33,20 +54,7 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
 
   m_timer_prefix = m_params.get<std::string>("Timer Prefix","EAMxx::");
 
-  const auto& repair_log_level = m_params.get<std::string>("repair_log_level","warn");
-  if (repair_log_level=="off") {
-    m_repair_log_level = LogLevel::off;
-  } else if (repair_log_level=="trace") {
-    m_repair_log_level = LogLevel::trace;
-  } else if (repair_log_level=="debug") {
-    m_repair_log_level = LogLevel::debug;
-  } else if (repair_log_level=="info") {
-    m_repair_log_level = LogLevel::info;
-  } else if (repair_log_level=="warn") {
-    m_repair_log_level = LogLevel::warn;
-  } else {
-    EKAT_ERROR_MSG ("Invalid value for 'repair_log_level': " + repair_log_level + "\n");
-  }
+  m_repair_log_level = str2LogLevel(m_params.get<std::string>("repair_log_level","warn"));
 }
 
 void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type) {
@@ -275,12 +283,7 @@ void AtmosphereProcess::run_postcondition_checks () const {
 }
 
 bool AtmosphereProcess::has_required_field (const FieldIdentifier& id) const {
-  for (const auto& it : m_required_field_requests) {
-    if (it.fid==id) {
-      return true;
-    }
-  }
-  return false;
+  return has_required_field(id.name(),id.get_grid_name());
 }
 
 bool AtmosphereProcess::has_required_field (const std::string& name, const std::string& grid_name) const {
@@ -293,12 +296,7 @@ bool AtmosphereProcess::has_required_field (const std::string& name, const std::
 }
 
 bool AtmosphereProcess::has_computed_field (const FieldIdentifier& id) const {
-  for (const auto& it : m_computed_field_requests) {
-    if (it.fid==id) {
-      return true;
-    }
-  }
-  return false;
+  return has_computed_field(id.name(),id.get_grid_name());
 }
 
 bool AtmosphereProcess::has_computed_field (const std::string& name, const std::string& grid_name) const {
