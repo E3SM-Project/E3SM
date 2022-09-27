@@ -24,7 +24,7 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
 
   // The name of the diagnostic
-  std::string name () const { return "Potential Temperature"; } 
+  std::string name () const { return "PotentialTemperature"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
@@ -37,7 +37,7 @@ public:
 protected:
 
   // Keep track of field dimensions
-  Int m_num_cols; 
+  Int m_num_cols;
   Int m_num_levs;
 
 }; // class PotentialTemperatureDiagnostic

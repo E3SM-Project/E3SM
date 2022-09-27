@@ -29,7 +29,7 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
 
   // The name of the diagnostic
-  std::string name () const { return "Long Wave Cloud Forcing"; } 
+  std::string name () const { return "LongWaveCloudForcing"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
@@ -42,7 +42,7 @@ public:
 protected:
 
   // Keep track of field dimensions
-  Int m_num_cols; 
+  Int m_num_cols;
   Int m_num_levs;
 
 }; // class LongwaveCloudForcingDiagnostic

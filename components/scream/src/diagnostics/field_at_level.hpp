@@ -19,7 +19,7 @@ public:
   FieldAtLevel (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // The name of the diagnostic
-  std::string name () const { return m_field_name + " @ level " + std::to_string(m_field_level); }
+  std::string name () const { return m_field_name + "@lev_" + std::to_string(m_field_level); }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);

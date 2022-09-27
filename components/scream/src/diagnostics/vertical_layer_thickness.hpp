@@ -25,7 +25,7 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
 
   // The name of the diagnostic
-  std::string name () const { return "Vertical Layer Thickness"; } 
+  std::string name () const { return "VerticalLayerThickness"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
@@ -38,7 +38,7 @@ public:
 protected:
 
   // Keep track of field dimensions
-  Int m_num_cols; 
+  Int m_num_cols;
   Int m_num_levs;
 
 }; // class VerticalLayerThicknessDiagnostic
