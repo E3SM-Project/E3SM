@@ -31,6 +31,7 @@
 <tw_irr>.true.</tw_irr>
 <irrigate>.true.</irrigate>
 <create_crop_landunit>.true.</create_crop_landunit>
+<do_transient_crops>.true.</do_transient_crops>
 <firrig_data>.true.</firrig_data>
 <extra_gw_irr>.false.</extra_gw_irr>
 <stream_fldfilename_ndep>lnd/clm2/ndepdata/fndep_elm_cbgc_exp_simyr1849-2101_1.9x2.5_c190103.nc</stream_fldfilename_ndep>

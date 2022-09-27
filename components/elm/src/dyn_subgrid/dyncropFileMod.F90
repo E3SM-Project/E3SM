@@ -168,7 +168,7 @@ contains
     allocate(fertcft_cur(bounds%begg:bounds%endg,max_topounits, cft_lb:cft_ub))  
     call fertcft%get_current_data(fertcft_cur)
 
-    call collapse_crop_types(wtcft_cur, fertcft_cur, bounds%begg, bounds%endg, verbose = .false.)
+    !call collapse_crop_types(wtcft_cur, fertcft_cur, bounds%begg, bounds%endg, verbose = .false.)
 
     allocate(col_set(bounds%begc:bounds%endc))
     col_set(:) = .false.

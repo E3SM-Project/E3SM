@@ -29,6 +29,7 @@
 <flanduse_timeseries>lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_HIST_simyr1850-2015_c211019.nc</flanduse_timeseries>
 <use_hydrstress>.true.</use_hydrstress>
 <create_crop_landunit>.true.</create_crop_landunit>
+<do_transient_crops>.true.</do_transient_crops>
 <stream_fldfilename_ndep>lnd/clm2/ndepdata/fndep_elm_cbgc_exp_simyr1849-2101_1.9x2.5_c190103.nc</stream_fldfilename_ndep>
 <stream_year_first_ndep>1850</stream_year_first_ndep>
 <stream_year_last_ndep>2101</stream_year_last_ndep>
