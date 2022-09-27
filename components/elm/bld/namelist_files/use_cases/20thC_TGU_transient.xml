@@ -27,6 +27,7 @@
 
 <!-- BGCv2 compsets -->
 <create_crop_landunit>.true.</create_crop_landunit>
+<do_transient_crops>.true.</do_transient_crops>
 <fsurdat>lnd/clm2/surfdata_map/topounit_based_half_degree_merge_surfdata_0.5x0.5_simyr1850_c211019.20211108_ed20220204.nc</fsurdat>
 <flanduse_timeseries>lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_HIST_simyr1850-2015_c211019_TGU_with_surf_mask.20220312.nc</flanduse_timeseries>
 <stream_fldfilename_ndep>lnd/clm2/ndepdata/fndep_elm_cbgc_exp_simyr1849-2101_1.9x2.5_c190103.nc</stream_fldfilename_ndep>
