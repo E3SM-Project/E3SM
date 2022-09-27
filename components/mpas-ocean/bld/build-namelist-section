@@ -324,6 +324,18 @@ add_default($nl, 'config_explicit_bottom_drag_coeff');
 add_default($nl, 'config_use_topographic_wave_drag');
 add_default($nl, 'config_topographic_wave_drag_coeff');
 
+##################################
+# Namelist group: wetting_drying #
+##################################
+
+add_default($nl, 'config_use_wetting_drying');
+add_default($nl, 'config_prevent_drying');
+add_default($nl, 'config_drying_min_cell_height');
+add_default($nl, 'config_zero_drying_velocity');
+add_default($nl, 'config_verify_not_dry');
+add_default($nl, 'config_thickness_flux_type');
+add_default($nl, 'config_drying_safety_height');
+
 ###################################
 # Namelist group: ocean_constants #
 ###################################

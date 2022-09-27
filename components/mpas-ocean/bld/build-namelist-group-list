@@ -22,6 +22,7 @@ my @groups = qw(run_modes
                 land_ice_fluxes
                 advection
                 bottom_drag
+                wetting_drying
                 ocean_constants
                 pressure_gradient
                 eos
