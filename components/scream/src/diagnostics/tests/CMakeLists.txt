@@ -9,6 +9,8 @@ if (NOT SCREAM_BASELINES_ONLY)
 
  # Test vertically remapping of field
   CreateUnitTest(vertically_remapped_field "vertically_remapped_field_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test interpolating a field onto a single pressure level
+  CreateUnitTest(field_at_level "field_at_single_pressure_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 
   # Test potential temperature diagnostic
   CreateUnitTest(potential_temperature "potential_temperature_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
