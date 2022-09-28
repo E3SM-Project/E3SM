@@ -1484,6 +1484,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use qbo,                only: qbo_relax
     use iondrag,            only: iondrag_calc, do_waccm_ions
     use clubb_intr,         only: clubb_surface
+    use cflx,               only: cflx_tend
     use perf_mod
     use flux_avg,           only: flux_avg_run
     use nudging,            only: Nudge_Model,Nudge_ON,nudging_timestep_tend
@@ -1693,15 +1694,14 @@ end if ! l_tracer_aero
     ! Vertical diffusion/pbl calculation
     ! Call vertical diffusion code (pbl, free atmosphere and molecular)
     !===================================================
-
-    ! If CLUBB is called, do not call vertical diffusion, but obukov length and
-    !   surface friction velocity still need to be computed.  In addition, 
-    !   surface fluxes need to be updated here for constituents 
     if (do_clubb_sgs) then
 
-       call clubb_surface ( state, ptend, ztodt, cam_in, surfric, obklen)
-       
-       ! Update surface flux constituents 
+       ! If CLUBB is called, do not call vertical diffusion, but still
+       ! calculate surface friction velocity (ustar) and Obukhov length
+       call clubb_surface ( state, cam_in, surfric, obklen)
+
+       ! Diagnose tracer mixing ratio tendencies from surface fluxes, then update the mixing ratios
+       call cflx_tend( state, cam_in, ztodt, ptend)       
        call physics_update(state, ptend, ztodt, tend)
 
     else
