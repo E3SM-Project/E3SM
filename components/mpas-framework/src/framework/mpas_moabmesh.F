@@ -171,15 +171,6 @@ module mpas_moabmesh
        ierr = iMOAB_SetIntTagStorage ( pid, tagname, nCellsSolve, ent_type, indexToCellID)
        call errorout(ierr, 'fail to set global id tag for polygons')
        ! get next block
-!#ifdef MPAS_DEBUG
-!       if (proc_id.lt. 5) then
-!         write(lnum,"(I0.2)")proc_id
-!         localmeshfile = 'ownedOcn_'//trim(lnum)// '.h5m' // C_NULL_CHAR
-!         wopts = C_NULL_CHAR
-!         ierr = iMOAB_WriteMesh(pid, localmeshfile, wopts)
-!         call errorout(ierr, 'fail to write local mesh file')
-!       endif
-!#endif
        ierr = iMOAB_ResolveSharedEntities( pid, currentVertex, localIds );
        call errorout(ierr, 'fail to resolve shared entities')
 

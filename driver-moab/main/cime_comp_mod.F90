@@ -2460,6 +2460,7 @@ contains
     use seq_comm_mct,        only: glc_layout, rof_layout, ocn_layout
     use seq_comm_mct,        only: wav_layout, esp_layout, iac_layout, num_inst_driver
     use seq_comm_mct,        only: seq_comm_inst
+    use seq_comm_mct,        only: num_moab_exports  ! used to count the steps for moab files
     use seq_pauseresume_mod, only: seq_resume_store_comp, seq_resume_get_files
     use seq_pauseresume_mod, only: seq_resume_free
 
@@ -2680,6 +2681,7 @@ contains
     Time_bstep = mpi_wtime()
     do while ( .not. stop_alarm)
 
+       num_moab_exports = num_moab_exports + 1
        call t_startf('CPL:RUN_LOOP', hashint(1))
        call t_startf('CPL:CLOCK_ADVANCE')
 
@@ -4133,7 +4135,7 @@ contains
             mpicom_barrier=mpicom_CPLALLOCNID, run_barriers=run_barriers, &
             timer_barrier='CPL:C2O_BARRIER', timer_comp_exch='CPL:C2O', &
             timer_map_exch='CPL:c2o_ocnx2ocno', timer_infodata_exch='CPL:c2o_infoexch')
-       ! will migrate the tag from component pes to coupler pes, on atm mesh
+       ! will migrate the tag from coupler pes to component pes, on ocn mesh
        call component_exch_moab(ocn(1), mboxid, mpoid, 1, seq_flds_x2o_fields)
 
     endif

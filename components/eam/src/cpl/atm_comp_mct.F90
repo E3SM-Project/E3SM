@@ -1000,7 +1000,7 @@ CONTAINS
 #ifdef HAVE_MOAB
   subroutine initialize_moab_atm_phys( cdata_a )
 
-    use seq_comm_mct, only: mphaid, num_moab_exports ! imoab pid for atm physics
+    use seq_comm_mct, only: mphaid ! imoab pid for atm physics
     use shr_mpi_mod,       only: shr_mpi_commrank, shr_mpi_commsize
     use shr_const_mod, only: SHR_CONST_PI
 !-------------------------------------------------------------------
@@ -1156,7 +1156,6 @@ CONTAINS
        call endrun('Error: fail to define seq_flds_a2x_fields for atm physgrid moab mesh')
     endif
 
-    num_moab_exports = 0 ! will be used for counting number of calls
     deallocate(moab_vert_coords)
     deallocate(vgids)
     deallocate(areavals)
@@ -1246,7 +1245,6 @@ CONTAINS
       call endrun('Error: fail to set  seq_flds_a2x_fields for atm physgrid moab mesh')
     endif
 #ifdef MOABDEBUG
-    num_moab_exports = num_moab_exports + 1
     write(lnum,"(I0.2)")num_moab_exports
     outfile = 'AtmPhys_'//trim(lnum)//'.h5m'//C_NULL_CHAR
     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR

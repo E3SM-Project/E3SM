@@ -30,6 +30,8 @@ module prep_atm_mod
   use seq_comm_mct, only : mblxid   ! iMOAB id for land migrated to coupler pes !! old name : mlnxid
   use seq_comm_mct, only : mbintxla ! iMOAB id for intx mesh between land and atmosphere
   use seq_comm_mct, only : seq_comm_getinfo => seq_comm_setptrs
+  use seq_comm_mct, only : num_moab_exports
+
   use dimensions_mod, only : np     ! for atmosphere
 
   use iso_c_binding
@@ -92,8 +94,6 @@ module prep_atm_mod
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
   logical :: iamroot_CPLID ! .true. => CPLID masterproc
-  save
-  integer ::       num_proj ! to index the coupler projection calls
   
   !================================================================================================
 
@@ -222,7 +222,6 @@ contains
                 call shr_sys_abort(subname//' ERROR in writing intx file ')
               endif
             endif
-            num_proj = 0 ! to index projection files on coupler pes
 #endif
          end if
        end if
@@ -379,7 +378,6 @@ contains
 
     context_id = ocn(1)%cplcompid
     wgtIdef = 'scalar'//C_NULL_CHAR
-    num_proj = num_proj + 1
 
     if (atm_present .and. ocn_present .and. ocn_prognostic) then
       if (atm_pg_active ) then ! use data from AtmPhys mesh, but mesh from pg
@@ -426,7 +424,7 @@ contains
 #ifdef MOABDEBUG
           ! we can also write the ocean mesh to file, just to see the projectd tag
           !      write out the mesh file to disk
-          write(lnum,"(I0.2)")num_proj
+          write(lnum,"(I0.2)")num_moab_exports
           outfile = 'ocnCplProj'//trim(lnum)//'.h5m'//C_NULL_CHAR
           wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
           ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
@@ -486,7 +484,7 @@ contains
 #ifdef MOABDEBUG
           ! we can also write the ocean mesh to file, just to see the projectd tag
           !      write out the mesh file to disk
-          write(lnum,"(I0.2)")num_proj
+          write(lnum,"(I0.2)")num_moab_exports
           outfile = 'ocnCplProj'//trim(lnum)//'.h5m'//C_NULL_CHAR
           wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
           ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
@@ -556,7 +554,7 @@ contains
 #ifdef MOABDEBUG
                ! we can also write the lnd mesh to file, just to see the projectd tag
                !      write out the mesh file to disk
-               write(lnum,"(I0.2)")num_proj
+               write(lnum,"(I0.2)")num_moab_exports
                outfile = 'lndCplProj'//trim(lnum)//'.h5m'//C_NULL_CHAR
                wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
                ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
@@ -614,7 +612,7 @@ contains
 #ifdef MOABDEBUG
                ! we can also write the lnd mesh to file, just to see the projectd tag
                !      write out the mesh file to disk
-               write(lnum,"(I0.2)")num_proj
+               write(lnum,"(I0.2)")num_moab_exports
                outfile = 'lndCplProj'//trim(lnum)//'.h5m'//C_NULL_CHAR
                wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
                ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
@@ -669,7 +667,7 @@ contains
 #ifdef MOABDEBUG
           ! we can also write the land mesh to file, just to see the projectd tag
           !      write out the mesh file to disk
-            write(lnum,"(I0.2)")num_proj
+            write(lnum,"(I0.2)")num_moab_exports
             outfile = 'lndCplProj'//trim(lnum)//'.h5m'//C_NULL_CHAR
             wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
             ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))

@@ -3241,13 +3241,13 @@ contains
       endif
       
 
-#ifdef MOABDEBUG
+!#ifdef MOABDEBUG
       num_mb_exports = num_mb_exports +1
       write(lnum,"(I0.2)")num_mb_exports
       outfile = 'ice_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(MPSIID, outfile, wopts)
-#endif
+!#endif
    end subroutine ice_export_moab
 #endif
 end module ice_comp_mct

@@ -28,6 +28,7 @@ module prep_ocn_mod
   use seq_comm_mct,     only : mpsiid   ! iMOAB id for sea-ice, mpas model
   use seq_comm_mct,     only : CPLALLICEID
   use seq_comm_mct,     only : seq_comm_iamin
+  use seq_comm_mct,     only : num_moab_exports
 
   use seq_comm_mct,     only : seq_comm_getinfo => seq_comm_setptrs
 
@@ -143,9 +144,6 @@ module prep_ocn_mod
   !================================================================================================
 
 
-#ifdef MOABDEBUG
-  integer :: number_proj ! it is a static variable, used to count the number of projections
-#endif
   real (kind=r8) , allocatable, private :: fractions_om (:,:) ! will retrieve the fractions from ocean, and use them
   !  they were init with 
   ! character(*),parameter :: fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad' in moab, on the fractions 
@@ -491,9 +489,6 @@ contains
        call shr_sys_flush(logunit)
 
     end if
-#ifdef MOABDEBUG
-    number_proj = 0 ! it is a static variable, used to count the number of projections
-#endif
   end subroutine prep_ocn_init
 
   !================================================================================================
@@ -2185,8 +2180,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
 #ifdef MOABDEBUG
    if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
-     number_proj = number_proj +1 ! because it was commented out above
-     write(lnum,"(I0.2)") number_proj
+     write(lnum,"(I0.2)")num_moab_exports
      outfile = 'OcnCplAftIce'//trim(lnum)//'.h5m'//C_NULL_CHAR
      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
      ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))

@@ -902,6 +902,7 @@ subroutine rof_export_moab()
     !
     ! ARGUMENTS:
    use seq_comm_mct,      only: mrofid  ! id of moab rof app
+   use seq_comm_mct,      only: num_moab_exports
 
    use iMOAB,  only       : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
    implicit none
@@ -909,7 +910,6 @@ subroutine rof_export_moab()
    ! LOCAL VARIABLES
    integer :: ni, n, nt, nliq, nfrz, lsz, ierr, ent_type
    logical,save :: first_time = .true.
-   integer, save :: num_mb_exports = 0  ! used for debugging
    character(len=32), parameter :: sub = 'rof_export_moab'
 
    character*100 outfile, wopts, localmeshfile, lnum
@@ -1002,8 +1002,7 @@ subroutine rof_export_moab()
       call shr_sys_abort( sub//' Error: fail to set moab '// trim(seq_flds_r2x_fields) )
 
 #ifdef MOABDEBUG
-      num_mb_exports = num_mb_exports +1
-      write(lnum,"(I0.2)")num_mb_exports
+      write(lnum,"(I0.2)")num_moab_exports
       outfile = 'wholeRof_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(mrofid, outfile, wopts)

@@ -41,6 +41,7 @@ module ocn_comp_mct
    use shr_kind_mod    , only: cxx => SHR_KIND_CXX
    use mpas_moabmesh
    use seq_comm_mct, only: MPOID
+   use seq_comm_mct,      only: num_moab_exports
    use iMOAB, only: iMOAB_DefineTagStorage
 #endif
    use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
@@ -2792,7 +2793,6 @@ contains
       !  local variables
       !
       !-----------------------------------------------------------------------
-      integer, save :: num_mb_exports = 0  ! used for debugging
       integer :: ent_type, ierr
       character(len=100) :: outfile, wopts, localmeshfile, lnum
       character(CXX) :: tagname
@@ -3033,8 +3033,7 @@ contains
    !-----------------------------------------------------------------------
    !EOC
 #ifdef MOABDEBUG
-      num_mb_exports = num_mb_exports +1
-      write(lnum,"(I0.2)")num_mb_exports
+      write(lnum,"(I0.2)")num_moab_exports
       outfile = 'ocn_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(MPOID, outfile, wopts)
