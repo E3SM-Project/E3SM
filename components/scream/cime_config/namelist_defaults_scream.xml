@@ -154,13 +154,8 @@ tweaking their $case/namelist_scream.xml file.
     <homme inherit="atm_proc_base">
       <Grid>Dynamics</Grid>
       <vertical_coordinate_filename>UNSET</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5-20131001-topoadj-16x_20220914.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</vertical_coordinate_filename>
+      <vertical_coordinate_filename nlev="72">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L72_20220927.nc</vertical_coordinate_filename>
+      <vertical_coordinate_filename nlev="128">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L128_20220927.nc</vertical_coordinate_filename>
       <Moisture>moist</Moisture>
     </homme>
 
@@ -262,7 +257,8 @@ tweaking their $case/namelist_scream.xml file.
   <initial_conditions>
     <Filename>UNSET</Filename>
     <Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</Filename>
-    <Filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</Filename>
+    <Filename hgrid="ne30np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</Filename>
+    <Filename hgrid="ne30np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L128_20220913.nc</Filename>
     <Filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</Filename>
     <Filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</Filename>
     <Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</Filename> 
@@ -335,6 +331,8 @@ tweaking their $case/namelist_scream.xml file.
     CIME will automatically download them from the E3SM data server.
   -->
   <input_files>
+    ${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L72_20220927.nc,
+    ${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L128_20220927.nc,
     ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-sw-g112-210809.nc,
     ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-lw-g128-210809.nc,
     ${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc,
