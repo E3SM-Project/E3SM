@@ -61,7 +61,7 @@ Int Functions<S,D>::shoc_init(
   return host_view(0);
 }
 
-#ifdef SCREAM_MONOLITHIC_KERNELS
+#ifndef SCREAM_SMALL_KERNELS
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>::shoc_main_internal(
@@ -528,7 +528,7 @@ Int Functions<S,D>::shoc_main(
   const SHOCInputOutput&   shoc_input_output,   // Input/Output
   const SHOCOutput&        shoc_output,         // Output
   const SHOCHistoryOutput& shoc_history_output  // Output (diagnostic)
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
   , const SHOCTemporaries& shoc_temporaries     // Temporaries for small kernels
 #endif
                               )
@@ -538,7 +538,7 @@ Int Functions<S,D>::shoc_main(
   // Start timer
   auto start = std::chrono::steady_clock::now();
 
-#ifdef SCREAM_MONOLITHIC_KERNELS
+#ifndef SCREAM_SMALL_KERNELS
   // SHOC main loop
   const auto nlev_packs = ekat::npack<Spack>(nlev);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);

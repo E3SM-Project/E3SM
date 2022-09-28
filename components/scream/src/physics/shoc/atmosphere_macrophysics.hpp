@@ -3,7 +3,7 @@
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
-#include "physics/shoc/shoc_main_impl.hpp"
+//#include "physics/shoc/shoc_main_impl.hpp"
 #include "physics/shoc/shoc_functions.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
@@ -424,14 +424,14 @@ public:
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
-#ifdef SCREAM_MONOLITHIC_KERNELS
+#ifndef SCREAM_SMALL_KERNELS
     static constexpr int num_1d_scalar_ncol = 5;
 #else
     static constexpr int num_1d_scalar_ncol = 18;
 #endif
     static constexpr int num_1d_scalar_nlev = 1;
     static constexpr int num_2d_vector_mid  = 18;
-#ifdef SCREAM_MONOLITHIC_KERNELS
+#ifndef SCREAM_SMALL_KERNELS
     static constexpr int num_2d_vector_int  = 12;
 #else
     static constexpr int num_2d_vector_int  = 17;
@@ -443,7 +443,7 @@ public:
     uview_1d<Real> wprtp_sfc;
     uview_1d<Real> upwp_sfc;
     uview_1d<Real> vpwp_sfc;
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
     uview_1d<Real> se_b;
     uview_1d<Real> ke_b;
     uview_1d<Real> wv_b;
@@ -492,7 +492,7 @@ public:
     uview_2d<Spack> w3;
     uview_2d<Spack> wqls_sec;
     uview_2d<Spack> brunt;
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
     uview_2d<Spack> rho_zt;
     uview_2d<Spack> shoc_qv;
     uview_2d<Spack> dz_zt;
@@ -545,7 +545,7 @@ protected:
   SHF::SHOCInputOutput input_output;
   SHF::SHOCOutput output;
   SHF::SHOCHistoryOutput history_output;
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
   SHF::SHOCTemporaries temporaries;
 #endif
 

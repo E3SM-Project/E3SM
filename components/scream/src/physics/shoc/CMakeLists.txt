@@ -62,9 +62,8 @@ if (NOT CUDA_BUILD OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
   ) # SHOC ETI SRCS
 endif()
 
-# Add dispatch source files if monolithic kernels are off
-if (NOT SCREAM_MONOLITHIC_KERNELS)
-  list(APPEND SHOC_SRCS
+# List of dispatch source files if monolithic kernels are off
+set(SHOC_SK_SRCS
     shoc_energy_integrals_disp.cpp
     shoc_energy_fixer_disp.cpp
     shoc_check_tke_disp.cpp
@@ -79,8 +78,8 @@ if (NOT SCREAM_MONOLITHIC_KERNELS)
     shoc_diag_third_shoc_moments_disp.cpp
     shoc_assumed_pdf_disp.cpp
     shoc_update_host_dse_disp.cpp
-  )
-endif()
+    )
+
 
 if (NOT SCREAM_DEBUG)
   # Mods to compiler flags for individual files to resolve internal compiler errors.
@@ -93,10 +92,16 @@ if (NOT SCREAM_DEBUG)
 endif()
 
 add_library(shoc ${SHOC_SRCS})
-target_include_directories(shoc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../share)
-set_target_properties(shoc PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
-target_link_libraries(shoc physics_share scream_share)
-target_compile_options(shoc PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
+add_library(shoc_sk ${SHOC_SRCS} ${SHOC_SK_SRCS})
+foreach (SHOCLIB shoc;shoc_sk)
+  target_include_directories(${SHOCLIB} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../share)
+  set_target_properties(${SHOCLIB} PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
+  target_link_libraries(${SHOCLIB} physics_share scream_share)
+  target_compile_options(${SHOCLIB} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
+endforeach()
+
+# Always build shoc_sk with SCREAM_SMALL_KERNELS on
+add_compile_definitions(shoc_sk "SCREAM_SMALL_KERNELS")
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

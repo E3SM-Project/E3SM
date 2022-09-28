@@ -179,7 +179,7 @@ struct Functions
     view_2d<Spack>  isotropy;
   };
 
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
   struct SHOCTemporaries {
     SHOCTemporaries() = default;
 
@@ -249,7 +249,7 @@ struct Functions
     const uview_1d<const Spack>& zt_grid,
     const Scalar& phis,
     const uview_1d<Spack>& host_dse);
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
   static void update_host_dse_disp(
     const Int& shcol,
     const Int& nlev,
@@ -299,7 +299,7 @@ struct Functions
     const MemberType& team,
     const Int& nlev,
     const uview_1d<Spack>& tke);
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
   static void check_tke_disp(
     const Int& schol,
     const Int& nlev,
@@ -338,7 +338,7 @@ struct Functions
     Scalar&                      ke_int,
     Scalar&                      wv_int,
     Scalar&                      wl_int);
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
   static void shoc_energy_integrals_disp(
     const Int&                   shcol,
     const Int&                   nlev,
@@ -382,7 +382,7 @@ struct Functions
      const Workspace& workspace, const uview_1d<Spack>& thl_sec,
      const uview_1d<Spack>& qw_sec, const uview_1d<Spack>& wthl_sec, const uview_1d<Spack>& wqw_sec, const uview_1d<Spack>& qwthl_sec,
      const uview_1d<Spack>& uw_sec, const uview_1d<Spack>& vw_sec, const uview_1d<Spack>& wtke_sec, const uview_1d<Spack>& w_sec);
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
   static void diag_second_shoc_moments_disp(
     const Int& shcol, const Int& nlev, const Int& nlevi,
     const view_2d<const Spack>& thetal,
@@ -454,7 +454,7 @@ struct Functions
     Scalar&       ustar,
     Scalar&       kbfs,
     Scalar&       obklen);
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
   static void shoc_diag_obklen_disp(
     const Int&                   shcol,
     const Int&                   nlev,
@@ -490,7 +490,7 @@ struct Functions
     const Workspace&             workspace,
     const uview_1d<Spack>&       brunt,
     const uview_1d<Spack>&       shoc_mix);
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
   static void shoc_length_disp(
     const Int&                   shcol,
     const Int&                   nlev,
@@ -531,7 +531,7 @@ struct Functions
     const uview_1d<const Spack>& pint,
     const Workspace&             workspace,
     const uview_1d<Spack>&       host_dse);
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
   static void shoc_energy_fixer_disp(
     const Int&                   shcol,
     const Int&                   nlev,
@@ -564,7 +564,7 @@ struct Functions
     const uview_1d<const Spack>& qw,
     const uview_1d<const Spack>& ql,
     const uview_1d<Spack>&       qv);
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
   static void compute_shoc_vapor_disp(
     const Int&                  shcol,
     const Int&                  nlev,
@@ -599,7 +599,7 @@ struct Functions
     const uview_1d<Spack>&       tke,
     const uview_1d<Spack>&       u_wind,
     const uview_1d<Spack>&       v_wind);
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
   static void update_prognostics_implicit_disp(
     const Int&                   shcol,
     const Int&                   nlev,
@@ -645,7 +645,7 @@ struct Functions
     const uview_1d<const Spack>& zi_grid,
     const Workspace&             workspace,
     const uview_1d<Spack>&       w3);
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
   static void diag_third_shoc_moments_disp(
     const Int&                  shcol,
     const Int&                  nlev,
@@ -701,7 +701,7 @@ struct Functions
     const uview_1d<Spack>&       wqls,
     const uview_1d<Spack>&       wthv_sec,
     const uview_1d<Spack>&       shoc_ql2);
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
   static void shoc_assumed_pdf_disp(
     const Int&                  shcol,
     const Int&                  nlev,
@@ -778,7 +778,7 @@ struct Functions
     const Int&                  ntop_shoc,
     const view_1d<const Spack>& pref_mid);
 
-#ifdef SCREAM_MONOLITHIC_KERNELS
+#ifndef SCREAM_SMALL_KERNELS
   KOKKOS_FUNCTION
   static void shoc_main_internal(
     const MemberType&            team,
@@ -930,7 +930,7 @@ struct Functions
     const SHOCInputOutput&   shoc_input_output,    // Input/Output
     const SHOCOutput&        shoc_output,          // Output
     const SHOCHistoryOutput& shoc_history_output   // Output (diagnostic)
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
     , const SHOCTemporaries& shoc_temporaries      // Temporaries for small kernels
 #endif
                        );
@@ -1001,7 +1001,7 @@ struct Functions
     const uview_1d<const Spack>& cldn,
     const Workspace&             workspace,
     Scalar&                      pblh);
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
   static void pblintd_disp(
     const Int&                   shcol,
     const Int&                   nlev,
@@ -1033,7 +1033,7 @@ struct Functions
     const uview_1d<Spack>&       dz_zt,
     const uview_1d<Spack>&       dz_zi,
     const uview_1d<Spack>&       rho_zt);
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
   static void shoc_grid_disp(
     const Int&                  shcol,
     const Int&                  nlev,
@@ -1083,7 +1083,7 @@ struct Functions
     const uview_1d<Spack>&       tk,
     const uview_1d<Spack>&       tkh,
     const uview_1d<Spack>&       isotropy);
-#ifndef SCREAM_MONOLITHIC_KERNELS
+#ifdef SCREAM_SMALL_KERNELS
   static void shoc_tke_disp(
     const Int&                   shcol,
     const Int&                   nlev,

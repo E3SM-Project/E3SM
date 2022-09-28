@@ -48,6 +48,6 @@
 #cmakedefine SCREAM_RRTMGP_DEBUG
 
 // Whether monolithic kernels are on
-#cmakedefine SCREAM_MONOLITHIC_KERNELS
+#cmakedefine SCREAM_SMALL_KERNELS
 
 #endif
