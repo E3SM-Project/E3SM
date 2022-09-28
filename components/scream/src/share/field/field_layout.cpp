@@ -112,14 +112,14 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
   // Start from undefined/invalid
   LayoutType result = LayoutType::Invalid;
 
-  if (n_element>0 && ngp==2 && n_column==0) {
+  if (n_element==1 && ngp==2 && n_column==0) {
     // A Dynamics layout
 
     // Remove the Element and the two GaussPoint tags
     erase(tags,EL);
     erase(tags,GP);
     erase(tags,GP);
-  } else if (n_element==0 && ngp==0 && n_column>0) {
+  } else if (n_element==0 && ngp==0 && n_column==1) {
     // A Physics layout
 
     // Remove the column tag

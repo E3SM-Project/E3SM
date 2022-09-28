@@ -4,9 +4,12 @@
 #include "share/grid/se_grid.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/grid/grid_utils.hpp"
+#include "share/util/scream_setup_random_test.hpp"
 #include "share/scream_types.hpp"
 
 #include "ekat/ekat_pack.hpp"
+
+#include <algorithm>
 
 namespace {
 
@@ -98,6 +101,47 @@ TEST_CASE("se_grid", "") {
   for (int i=0; i<se_grid->get_num_local_dofs(); ++i) {
     REQUIRE (deep_copy->get_dofs_gids_host()[i]==se_grid->get_dofs_gids_host()[i]);
   }
+}
+
+TEST_CASE ("get_gid_owners") {
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  auto engine = setup_random_test(&comm);
+
+  const int num_local_dofs = 10;
+  const int num_global_dofs = num_local_dofs*comm.size();;
+  const int offset = num_local_dofs*comm.rank();
+  auto grid = std::make_shared<PointGrid>("grid",num_local_dofs,2,comm);
+
+  // Create dofs, shuffled them around across ranks.
+  using dofs_dev_t = AbstractGrid::dofs_list_type;
+  using dofs_host_t = AbstractGrid::dofs_list_h_type;
+  using gid_t = AbstractGrid::gid_type;
+
+  dofs_host_t all_dofs_h ("",num_global_dofs);
+  if (comm.am_i_root()) {
+    std::iota(all_dofs_h.data(),all_dofs_h.data()+all_dofs_h.size(),0);
+    std::shuffle(all_dofs_h.data(),all_dofs_h.data()+num_global_dofs,engine);
+  }
+  comm.broadcast(all_dofs_h.data(),num_global_dofs,comm.root_rank());
+
+  dofs_dev_t dofs_d ("",num_local_dofs);
+  auto dofs_h = Kokkos::create_mirror_view(dofs_d);
+  std::memcpy (dofs_h.data(),all_dofs_h.data()+offset,num_local_dofs*sizeof(gid_t));
+  Kokkos::deep_copy(dofs_d,dofs_h);
+
+  grid->set_dofs(dofs_d);
+
+  // Now, ask each rank to retrieve owners, and verify
+  auto dofs_owners = grid->get_gids_owners(all_dofs_h);
+  REQUIRE (dofs_owners.size()==all_dofs_h.size());
+
+  for (int i=0; i<num_global_dofs; ++i) {
+    const int owner = dofs_owners(i);
+    const int expected = i / num_local_dofs;
+    REQUIRE (owner==expected);
+  }
+
 }
 
 } // anonymous namespace

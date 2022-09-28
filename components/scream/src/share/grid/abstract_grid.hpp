@@ -132,6 +132,9 @@ public:
                                                const bool shallow) const = 0;
 
   void reset_num_vertical_lev (const int num_vertical_lev);
+
+  // WARNING: this is an expensive method.
+  dofs_list_h_type get_gids_owners (const dofs_list_h_type& gids) const;
 protected:
 
   // Derived classes can override these methods, which are called inside the
