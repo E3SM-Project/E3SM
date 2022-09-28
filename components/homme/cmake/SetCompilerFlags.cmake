@@ -19,6 +19,7 @@ ELSE ()
     ELSE ()
       SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -w -fallow-argument-mismatch -ffree-line-length-none")
     endif()
+    ADD_DEFINITIONS(-DCPRGNU)
   ELSEIF (CMAKE_Fortran_COMPILER_ID STREQUAL PGI)
     SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Mextend -Mflushz")
     # Needed by csm_share
