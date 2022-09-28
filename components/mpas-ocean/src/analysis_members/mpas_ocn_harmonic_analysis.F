@@ -748,7 +748,7 @@ contains
          do j=ire,mm
             ha(ir,j)=ha(ir,j)/ha(ir,ir)
          end do
-         if (ire.gt.mm) cycle
+         if (ire.gt.mm) exit
          do j=ire,mm
            do k=ire,mm
               ha(k,j)=ha(k,j)-ha(k,ir)*ha(ir,j)
