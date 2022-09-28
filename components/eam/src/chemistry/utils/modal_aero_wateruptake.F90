@@ -17,9 +17,6 @@ use ref_pres,         only: top_lev => clim_modal_aero_top_lev
 use phys_control,     only: phys_getopts
 use cam_abortutils,       only: endrun
 
-use shr_sys_mod,       only: shr_sys_flush
-USE OMP_LIB
-
 implicit none
 private
 save
@@ -44,23 +41,6 @@ integer :: wetdens_ap_idx = 0
 integer :: qaerwat_idx    = 0
 
 logical :: pergro_mods         = .false.
-
-! real(r8), allocatable :: maer(:,:,:)      ! aerosol wet mass MR (including water) (kg/kg-air)
-! real(r8), allocatable :: hygro(:,:,:)     ! volume-weighted mean hygroscopicity (--)
-! real(r8), allocatable :: naer(:,:,:)      ! aerosol number MR (bounded!) (#/kg-air)
-! real(r8), allocatable :: dryvol(:,:,:)    ! single-particle-mean dry volume (m3)
-! real(r8), allocatable :: drymass(:,:,:)   ! single-particle-mean dry mass  (kg)
-! real(r8), allocatable :: dryrad(:,:,:)    ! dry volume mean radius of aerosol (m)
-
-! real(r8), allocatable :: wetrad(:,:,:)    ! wet radius of aerosol (m)
-! real(r8), allocatable :: wetvol(:,:,:)    ! single-particle-mean wet volume (m3)
-! real(r8), allocatable :: wtrvol(:,:,:)    ! single-particle-mean water volume in wet aerosol (m3)
-
-! real(r8), allocatable :: rhcrystal(:)
-! real(r8), allocatable :: rhdeliques(:)
-! real(r8), allocatable :: specdens_1(:)
-
-! !$OMP THREADPRIVATE(maer, hygro, naer, dryvol, drymass, dryrad, wetrad, wetvol, wtrvol, rhcrystal, rhdeliques, specdens_1)
 
 !===============================================================================
 contains
@@ -105,34 +85,6 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
    ! assume for now that will compute wateruptake for climate list modes only
 
    call rad_cnst_get_info(0, nmodes=nmodes)
-
-   ! !$OMP PARALLEL
-   ! allocate(maer(pcols,pver,nmodes),stat=istat)
-   ! if (istat .ne. 0) call endrun("Unable to allocate maer:       "//errmsg(__FILE__,__LINE__) )
-   ! allocate(hygro(pcols,pver,nmodes),   stat=istat)
-   ! if (istat .ne. 0) call endrun("Unable to allocate hygro:      "//errmsg(__FILE__,__LINE__) )
-   ! allocate(naer(pcols,pver,nmodes),    stat=istat)
-   ! if (istat .ne. 0) call endrun("Unable to allocate naer:       "//errmsg(__FILE__,__LINE__) )
-   ! allocate(dryvol(pcols,pver,nmodes),  stat=istat)
-   ! if (istat .ne. 0) call endrun("Unable to allocate dryvol:     "//errmsg(__FILE__,__LINE__) )
-   ! allocate(drymass(pcols,pver,nmodes), stat=istat)
-   ! if (istat .ne. 0) call endrun("Unable to allocate drymass:    "//errmsg(__FILE__,__LINE__) )
-   ! allocate(dryrad(pcols,pver,nmodes),  stat=istat)
-   ! if (istat .ne. 0) call endrun("Unable to allocate dryradr:    "//errmsg(__FILE__,__LINE__) )
-   ! allocate(wetrad(pcols,pver,nmodes),  stat=istat)
-   ! if (istat .ne. 0) call endrun("Unable to allocate wetrad:     "//errmsg(__FILE__,__LINE__) )
-   ! allocate(wetvol(pcols,pver,nmodes),  stat=istat)
-   ! if (istat .ne. 0) call endrun("Unable to allocate wetvol:     "//errmsg(__FILE__,__LINE__) )
-   ! allocate(wtrvol(pcols,pver,nmodes),  stat=istat)
-   ! if (istat .ne. 0) call endrun("Unable to allocate wtrvol:     "//errmsg(__FILE__,__LINE__) )
-   ! allocate(rhcrystal(nmodes),          stat=istat)
-   ! if (istat .ne. 0) call endrun("Unable to allocate rhcrystal:  "//errmsg(__FILE__,__LINE__) )
-   ! allocate(rhdeliques(nmodes),         stat=istat)
-   ! if (istat .ne. 0) call endrun("Unable to allocate rhdeliques: "//errmsg(__FILE__,__LINE__) )
-   ! allocate(specdens_1(nmodes),         stat=istat)
-   ! if (istat .ne. 0) call endrun("Unable to allocate specdens_1: "//errmsg(__FILE__,__LINE__) )
-   ! !$OMP END PARALLEL
-
 
    ! determine default variables
    call phys_getopts(history_aerosol_out = history_aerosol, &
