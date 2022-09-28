@@ -235,7 +235,6 @@ void push_forcing_to_c (F90Ptr elem_derived_FM,
       elem_derived_FPHI, num_elems);
   sync_to_device(fphi_f90, forcing.m_fphi);
 
-  const SimulationParams &params = Context::singleton().get<SimulationParams>();
   Tracers &tracers = Context::singleton().get<Tracers>();
   if (tracers.fq.data() == nullptr) {
     tracers.fq = decltype(tracers.fq)("fq", num_elems, tracers.num_tracers());

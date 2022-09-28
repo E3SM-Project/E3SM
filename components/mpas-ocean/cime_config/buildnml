@@ -1125,6 +1125,8 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="mocStreamvalLatAndDepthGM"/>')
             lines.append('    <var name="mocStreamvalLatAndDepthRegionGM"/>')
 
+        lines.append('    <var name="mocStreamvalLatAndDepthMLE"/>')
+        lines.append('    <var name="mocStreamvalLatAndDepthRegionMLE"/>')
         lines.append('    <var_struct name="tracersSurfaceFlux"/>')
         lines.append('    <var name="penetrativeTemperatureFlux"/>')
         lines.append('    <var name="latentHeatFlux"/>')

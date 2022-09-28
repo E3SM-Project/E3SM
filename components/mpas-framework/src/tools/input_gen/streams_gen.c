@@ -105,7 +105,7 @@ int generate_streams(ezxml_t registry, FILE* fd, char *stream_file_prefix, int o
 
 	const char *name, *type, *immutable, *filename_template, *filename_interval, *packages, *record_interval;
 	const char *varpackages;
-	const char *reference_time, *clobber_mode, *precision, *input_interval, *output_interval;
+	const char *reference_time, *clobber_mode, *useMissingValMask, *precision, *input_interval, *output_interval;
 
 	const char *runtime, *subname;
 
@@ -319,7 +319,7 @@ int generate_streams(ezxml_t registry, FILE* fd, char *stream_file_prefix, int o
 
 void write_stream_header(ezxml_t stream_xml, FILE *fd){/*{{{*/
 	const char *name, *type, *immutable, *filename_template, *filename_interval, *packages, *record_interval;
-	const char *reference_time, *clobber_mode, *precision, *input_interval, *output_interval, *io_type;
+	const char *reference_time, *clobber_mode, *useMissingValMask, *precision, *input_interval, *output_interval, *io_type;
 
 	char spacing[1024];
 
@@ -329,6 +329,7 @@ void write_stream_header(ezxml_t stream_xml, FILE *fd){/*{{{*/
 	filename_interval = ezxml_attr(stream_xml, "filename_interval");
 	reference_time = ezxml_attr(stream_xml, "reference_time");
 	clobber_mode = ezxml_attr(stream_xml, "clobber_mode");
+	useMissingValMask = ezxml_attr(stream_xml, "useMissingValMask");
 	input_interval = ezxml_attr(stream_xml, "input_interval");
 	output_interval = ezxml_attr(stream_xml, "output_interval");
 	record_interval = ezxml_attr(stream_xml, "record_interval");
@@ -359,6 +360,9 @@ void write_stream_header(ezxml_t stream_xml, FILE *fd){/*{{{*/
 	}
 	if ( clobber_mode != NULL ){
 		fprintf(fd, "\n%sclobber_mode=\"%s\"", spacing, clobber_mode);
+	}
+	if ( useMissingValMask != NULL ){
+		fprintf(fd, "\n%suseMissingValMask=\"%s\"", spacing, useMissingValMask);
 	}
 	if ( precision != NULL ){
 		fprintf(fd, "\n%sprecision=\"%s\"", spacing, precision);

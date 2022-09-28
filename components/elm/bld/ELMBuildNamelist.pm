@@ -758,7 +758,7 @@ sub setup_cmdl_fates_mode {
   if ( $nl_flags->{'crop'} eq "on" ) {
     if ( $nl_flags->{$var} eq "fates" ) {
        # FATES should not be used with crop
-       fatal_error("** Cannot turn ed mode on with crop.\n" );
+       fatal_error("** Cannot turn fates mode on with crop.\n" );
     }
   } elsif ($nl_flags->{"bgc_mode"} eq "fates" && $nl_flags->{"use_fates"} ne ".true.") {
     fatal_error("DEV_ERROR: internal logic error: bgc_mode = fates and use_fates = false.\n");
@@ -786,9 +786,9 @@ sub setup_cmdl_fates_mode {
       # no need to set defaults, covered in a different routine
       my @list  = (  "fates_spitfire_mode", "use_vertsoilc", "use_century_decomp",
                      "use_fates_planthydro", "use_fates_ed_st3", "use_fates_ed_prescribed_phys",
-		                 "use_fates_inventory_init", "use_fates_fixed_biogeog", "use_fates_nocomp","use_fates_sp",
-                     "fates_inventory_ctrl_filename","use_fates_logging",
-		                 "use_fates_parteh_mode","use_fates_cohort_age_tracking","use_snicar_ad");
+		     "use_fates_inventory_init", "use_fates_fixed_biogeog", "use_fates_nocomp","use_fates_sp",
+                     "fates_inventory_ctrl_filename","use_fates_logging", "use_fates_tree_damage",
+		     "use_fates_parteh_mode","use_fates_cohort_age_tracking","use_snicar_ad");
       foreach my $var ( @list ) {
 	  if ( defined($nl->get_value($var))  ) {
 	      $nl_flags->{$var} = $nl->get_value($var);
@@ -807,7 +807,11 @@ sub setup_cmdl_fates_mode {
 
     } else {
 
-	   # we only dis-allow ed_spitfire with non-ed runs
+	# we only dis-allow various fates settings with non-fates runs
+       $var = "use_fates_tree_damage";
+       if ( defined($nl->get_value($var)) ) {
+           fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
+       }
        $var = "fates_spitfire_mode";
        if ( defined($nl->get_value($var)) ) {
            fatal_error("$var is being set, but can ONLY be set when -bgc fates option is used.\n");
@@ -3012,6 +3016,11 @@ sub setup_logic_dry_deposition {
   my ($opts, $nl_flags, $definition, $defaults, $nl) = @_;
 
   if ($opts->{'drydep'} ) {
+      if ( &value_is_true( $nl_flags->{'use_fates'}) && not &value_is_true( $nl_flags->{'use_fates_sp'}) ) {
+	  fatal_error("DryDeposition can NOT be on when FATES is also on, unless FATES-SP mode is on.\n" .
+		      "   Use the '--no-drydep' option when '-bgc fates' is activated");
+	  
+      }
     add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'drydep_list');
     add_default($opts->{'test'}, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'drydep_method');
   } else {
@@ -3160,6 +3169,7 @@ sub setup_logic_fates {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_cohort_age_tracking','use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_sp',                 'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_nocomp',             'use_fates'=>$nl_flags->{'use_fates'});
+    add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fates_tree_damage',        'use_fates'=>$nl_flags->{'use_fates'});
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'fates_paramfile', 'phys'=>$nl_flags->{'phys'});
 
   }

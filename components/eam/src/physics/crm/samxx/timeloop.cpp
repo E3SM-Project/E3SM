@@ -9,6 +9,8 @@ void timeloop() {
   YAKL_SCOPE( ncrms                    , :: ncrms );
   YAKL_SCOPE( na                       , :: na );
   YAKL_SCOPE( dt3                      , :: dt3 );
+  YAKL_SCOPE( use_VT                   , :: use_VT );
+  YAKL_SCOPE( use_ESMT                 , :: use_ESMT );
 
   nstep = 0;
 

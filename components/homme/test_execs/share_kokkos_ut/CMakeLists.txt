@@ -2,7 +2,6 @@ SET(SRC_DIR          ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR    ${HOMME_SOURCE_DIR}/src/share)
 SET(SRC_PREQX_DIR    ${HOMME_SOURCE_DIR}/src/preqx_kokkos)
 SET(SHARE_UT_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
-SET(UTILS_SHARE_DIR  ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(UTILS_TIMING_DIR ${HOMME_SOURCE_DIR}/utils/cime/CIME/non_py/src/timing)
 
 # Place common CPP definitions here.
@@ -80,9 +79,6 @@ SET (BOUNDARY_EXCHANGE_UT_F90_SRCS
   ${SRC_PREQX_DIR}/element_state.F90
   ${SHARE_UT_DIR}/boundary_exchange_ut.F90
   ${SHARE_UT_DIR}/geometry_interface.F90
-  ${UTILS_SHARE_DIR}/shr_kind_mod.F90
-  ${UTILS_SHARE_DIR}/shr_mpi_mod.F90
-  ${UTILS_SHARE_DIR}/shr_sys_mod.F90
 )
 SET (BOUNDARY_EXCHANGE_UT_CXX_SRCS
   ${SRC_SHARE_DIR}/cxx/Context.cpp

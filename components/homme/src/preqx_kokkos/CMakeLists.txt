@@ -9,7 +9,6 @@ MACRO(PREQX_KOKKOS_SETUP)
 
   SET(PREQX_SHARE_DIR       ${HOMME_SOURCE_DIR}/src/preqx/share)
   SET(TARGET_DIR            ${HOMME_SOURCE_DIR}/src/preqx_kokkos)
-  SET(UTILS_SHARE_DIR       ${HOMME_SOURCE_DIR}/utils/csm_share)
   SET(SRC_DIR               ${HOMME_SOURCE_DIR}/src)
   SET(SRC_SHARE_DIR         ${HOMME_SOURCE_DIR}/src/share)
   SET(TRILINOS_ZOLTAN_DIR   ${HOMME_SOURCE_DIR}/src/zoltan)
@@ -150,13 +149,6 @@ MACRO(PREQX_KOKKOS_SETUP)
     ${SRC_DIR}/restart_io_mod.F90
     ${SRC_DIR}/surfaces_mod.F90
     ${SRC_DIR}/test_mod.F90
-    ${UTILS_SHARE_DIR}/shr_const_mod.F90
-    ${UTILS_SHARE_DIR}/shr_file_mod.F90
-    ${UTILS_SHARE_DIR}/shr_kind_mod.F90
-    ${UTILS_SHARE_DIR}/shr_mpi_mod.F90
-    ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
-    ${UTILS_SHARE_DIR}/shr_sys_mod.F90
-    ${UTILS_SHARE_DIR}/shr_vmath_mod.F90
   )
 
   SET(PREQX_DEPS_CXX

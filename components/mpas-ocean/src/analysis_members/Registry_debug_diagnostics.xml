@@ -1,25 +1,25 @@
 	<nml_record name="AM_debugDiagnostics" mode="forward;analysis">
-		<nml_option name="config_AM_debugDiagnostics_enable" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_debugDiagnostics_enable" type="logical" default_value=".false."
 			description="If true, ocean analysis member debugDiagnostics is called."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_debugDiagnostics_compute_interval" type="character" default_value="output_interval" units="unitless"
+		<nml_option name="config_AM_debugDiagnostics_compute_interval" type="character" default_value="output_interval"
 			description="Timestamp determining how often analysis member computation should be performed."
 			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
 		/>
-		<nml_option name="config_AM_debugDiagnostics_output_stream" type="character" default_value="debugDiagnosticsOutput" units="unitless"
+		<nml_option name="config_AM_debugDiagnostics_output_stream" type="character" default_value="debugDiagnosticsOutput"
 			description="Name of the stream that the debugDiagnostics analysis member should be tied to."
 			possible_values="Any existing stream name or 'none'"
 		/>
-		<nml_option name="config_AM_debugDiagnostics_compute_on_startup" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_debugDiagnostics_compute_on_startup" type="logical" default_value=".true."
 			description="Logical flag determining if an analysis member computation occurs on start-up."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_debugDiagnostics_write_on_startup" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_debugDiagnostics_write_on_startup" type="logical" default_value=".true."
 			description="Logical flag determining if an analysis member write occurs on start-up."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_debugDiagnostics_check_state" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_debugDiagnostics_check_state" type="logical" default_value=".false."
 			description="Logical flag determining if state checking happens when the debug diagnostics AM is called."
 			possible_values=".true. or .false."
 		/>

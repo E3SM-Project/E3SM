@@ -6,7 +6,7 @@ module prep_rof_mod
   use shr_kind_mod,     only: cl => SHR_KIND_CL
   use shr_kind_mod,     only: cxx => SHR_KIND_CXX
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
-  use seq_comm_mct,     only: num_inst_lnd, num_inst_rof, num_inst_frc, num_inst_atm
+  use seq_comm_mct,     only: num_inst_lnd, num_inst_rof, num_inst_frc, num_inst_atm, num_inst_ocn
   use seq_comm_mct,     only: CPLID, ROFID, logunit
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
@@ -18,7 +18,7 @@ module prep_rof_mod
   use mct_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
-  use component_type_mod, only: rof, lnd, atm
+  use component_type_mod, only: rof, lnd, atm, ocn
   use prep_lnd_mod, only: prep_lnd_get_mapper_Fr2l
   use map_lnd2rof_irrig_mod, only: map_lnd2rof_irrig
 
@@ -35,13 +35,17 @@ module prep_rof_mod
 
   public :: prep_rof_accum_lnd
   public :: prep_rof_accum_atm
+  public :: prep_rof_accum_ocn
   public :: prep_rof_accum_avg
 
   public :: prep_rof_calc_l2r_rx
   public :: prep_rof_calc_a2r_rx
+  public :: prep_rof_calc_o2r_rx
 
   public :: prep_rof_get_l2racc_lx
   public :: prep_rof_get_l2racc_lx_cnt
+  public :: prep_rof_get_o2racc_ox
+  public :: prep_rof_get_o2racc_ox_cnt
   public :: prep_rof_get_mapper_Fl2r
   public :: prep_rof_get_a2racc_ax
   public :: prep_rof_get_a2racc_ax_cnt
@@ -62,16 +66,20 @@ module prep_rof_mod
   type(seq_map), pointer :: mapper_Sa2r
   type(seq_map), pointer :: mapper_Fa2r
   type(seq_map), pointer :: mapper_Fl2r
+  type(seq_map), pointer :: mapper_So2r
 
   ! attribute vectors
   type(mct_aVect), pointer :: l2r_rx(:)
   type(mct_aVect), pointer :: a2r_rx(:)
+  type(mct_aVect), pointer :: o2r_rx(:)
 
   ! accumulation variables
   type(mct_aVect), pointer :: l2racc_lx(:)   ! lnd export, lnd grid, cpl pes
   integer        , target  :: l2racc_lx_cnt  ! l2racc_lx: number of time samples accumulated
   type(mct_aVect), pointer :: a2racc_ax(:)   ! atm export, atm grid, cpl pes
   integer        , target  :: a2racc_ax_cnt  ! a2racc_ax: number of time samples accumulated
+  type(mct_aVect), pointer :: o2racc_ox(:)   ! ocn export, ocn grid, cpl pes
+  integer        , target  :: o2racc_ox_cnt  ! o2racc_ox: number of time samples accumulated
 
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
@@ -90,7 +98,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_rof_init(infodata, lnd_c2_rof, atm_c2_rof)
+  subroutine prep_rof_init(infodata, lnd_c2_rof, atm_c2_rof, ocn_c2_rof)
 
     !---------------------------------------------------------------
     ! Description
@@ -101,24 +109,30 @@ contains
     type(seq_infodata_type) , intent(in)    :: infodata
     logical                 , intent(in)    :: lnd_c2_rof ! .true.  => lnd to rof coupling on
     logical                 , intent(in)    :: atm_c2_rof ! .true.  => atm to rof coupling on
+    logical                 , intent(in)    :: ocn_c2_rof ! .true.  => ocn to rof coupling on
     !
     ! Local Variables
     integer                     :: lsize_r
     integer                     :: lsize_l
     integer                     :: lsize_a
-    integer                     :: eli, eri, eai
+    integer                     :: lsize_o
+    integer                     :: eli, eri, eai, eoi
     logical                     :: samegrid_lr   ! samegrid lnd and rof
     logical                     :: samegrid_ar   ! samegrid atm and rof
+    logical                     :: samegrid_ro   ! samegrid ocn and rof
     logical                     :: esmf_map_flag ! .true. => use esmf for mapping
     logical                     :: rof_present   ! .true.  => rof is present
     logical                     :: lnd_present   ! .true.  => lnd is present
     logical                     :: atm_present   ! .true.  => atm is present
+    logical                     :: ocn_present   ! .true.  => ocn is present
     logical                     :: iamroot_CPLID ! .true. => CPLID masterproc
     character(CL)               :: atm_gnam      ! atm grid
     character(CL)               :: lnd_gnam      ! lnd grid
     character(CL)               :: rof_gnam      ! rof grid
+    character(CL)               :: ocn_gnam      ! ocn grid
     type(mct_aVect) , pointer   :: l2x_lx
     type(mct_aVect) , pointer   :: a2x_ax
+    type(mct_aVect) , pointer   :: o2x_ox
     type(mct_aVect) , pointer   :: x2r_rx
     integer                     :: index_irrig
     character(*)    , parameter :: subname = '(prep_rof_init)'
@@ -130,6 +144,7 @@ contains
          rof_present=rof_present       , &
          lnd_present=lnd_present       , &
          atm_present=atm_present       , &
+         ocn_present=ocn_present       , &
          lnd_gnam=lnd_gnam             , &
          atm_gnam=atm_gnam             , &
          rof_gnam=rof_gnam             )
@@ -137,6 +152,7 @@ contains
     allocate(mapper_Sa2r)
     allocate(mapper_Fa2r)
     allocate(mapper_Fl2r)
+    allocate(mapper_So2r)
 
     if (rof_present) then
        x2r_rx => component_get_x2c_cx(rof(1))
@@ -250,6 +266,47 @@ contains
 
     end if
 
+    if (rof_present .and. ocn_present) then
+
+       call seq_comm_getData(CPLID, &
+            mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
+
+       lsize_r = mct_aVect_lsize(x2r_rx)
+
+       o2x_ox => component_get_c2x_cx(ocn(1))
+       lsize_o = mct_aVect_lsize(o2x_ox)
+
+       allocate(o2racc_ox(num_inst_ocn))
+       do eoi = 1,num_inst_ocn
+          call mct_aVect_initSharedFields(o2x_ox, x2r_rx, o2racc_ox(eoi), lsize=lsize_o)
+          call mct_aVect_zero(o2racc_ox(eoi))
+       end do
+       o2racc_ox_cnt = 0
+
+       allocate(o2r_rx(num_inst_rof))
+       do eri = 1,num_inst_rof
+          call mct_avect_init(o2r_rx(eri), rList=seq_flds_o2x_fields_to_rof, lsize=lsize_r)
+          call mct_avect_zero(o2r_rx(eri))
+       end do
+
+       samegrid_ro = .true.
+       if (trim(ocn_gnam) /= trim(rof_gnam)) samegrid_ro = .false.
+
+       if (ocn_c2_rof) then
+          if (iamroot_CPLID) then
+             write(logunit,*) ' '
+             write(logunit,F00) 'Initializing mapper_So2r'
+          end if
+          call seq_map_init_rcfile(mapper_So2r, ocn(1), rof(1), &
+               'seq_maps.rc','ocn2rof_smapname:','ocn2rof_smaptype:',samegrid_ro, &
+               string='mapper_So2r initialization', esmf_map=esmf_map_flag)
+
+       endif
+
+       call shr_sys_flush(logunit)
+
+    end if
+
   end subroutine prep_rof_init
 
   !================================================================================================
@@ -317,6 +374,38 @@ contains
   end subroutine prep_rof_accum_atm
 
   !================================================================================================
+  subroutine prep_rof_accum_ocn(timer)
+
+    !---------------------------------------------------------------
+    ! Description
+    ! Accumulate ocean input to river component
+    !
+    ! Arguments
+    character(len=*), intent(in) :: timer
+    !
+    ! Local Variables
+    integer :: eoi
+    type(mct_aVect), pointer :: o2x_ox
+    character(*), parameter  :: subname = '(prep_rof_accum_ocn)'
+    !---------------------------------------------------------------
+
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+
+    do eoi = 1,num_inst_ocn
+       o2x_ox => component_get_c2x_cx(ocn(eoi))
+       if (o2racc_ox_cnt == 0) then
+          call mct_avect_copy(o2x_ox, o2racc_ox(eoi))
+       else
+          call mct_avect_accum(o2x_ox, o2racc_ox(eoi))
+       endif
+    end do
+    o2racc_ox_cnt = o2racc_ox_cnt + 1
+
+    call t_drvstopf (trim(timer))
+
+  end subroutine prep_rof_accum_ocn
+
+  !================================================================================================
 
   subroutine prep_rof_accum_avg(timer)
 
@@ -328,7 +417,7 @@ contains
     character(len=*), intent(in) :: timer
     !
     ! Local Variables
-    integer :: eri, eli, eai
+    integer :: eri, eli, eai, eoi
     character(*), parameter :: subname = '(prep_rof_accum_avg)'
     !---------------------------------------------------------------
 
@@ -348,6 +437,15 @@ contains
        enddo
     endif
     a2racc_ax_cnt = 0
+
+    if(o2racc_ox_cnt > 1) then
+       do eri = 1,num_inst_rof
+          eoi = mod((eri-1),num_inst_ocn) + 1
+          call mct_avect_avg(o2racc_ox(eoi),o2racc_ox_cnt)
+       enddo
+    endif
+    o2racc_ox_cnt = 0
+
     call t_drvstopf (trim(timer))
 
   end subroutine prep_rof_accum_avg
@@ -367,7 +465,7 @@ contains
     character(len=*)        , intent(in)    :: cime_model
     !
     ! Local Variables
-    integer                  :: eri, efi
+    integer                  :: eri, efi, eoi
     type(mct_aVect), pointer :: x2r_rx
     character(*), parameter  :: subname = '(prep_rof_mrg)'
     !---------------------------------------------------------------
@@ -377,7 +475,7 @@ contains
        efi = mod((eri-1),num_inst_frc) + 1
 
        x2r_rx => component_get_x2c_cx(rof(eri))  ! This is actually modifying x2r_rx
-       call prep_rof_merge(l2r_rx(eri), a2r_rx(eri), fractions_rx(efi), x2r_rx, cime_model)
+       call prep_rof_merge(l2r_rx(eri), a2r_rx(eri), o2r_rx(eri), fractions_rx(efi), x2r_rx, cime_model)
     end do
     call t_drvstopf (trim(timer_mrg))
 
@@ -385,7 +483,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_rof_merge(l2x_r, a2x_r, fractions_r, x2r_r, cime_model)
+  subroutine prep_rof_merge(l2x_r, a2x_r, o2x_r, fractions_r, x2r_r, cime_model)
 
     !-----------------------------------------------------------------------
     ! Description
@@ -394,6 +492,7 @@ contains
     ! Arguments
     type(mct_aVect),intent(in)    :: l2x_r
     type(mct_aVect),intent(in)    :: a2x_r
+    type(mct_aVect),intent(in)    :: o2x_r
     type(mct_aVect),intent(in)    :: fractions_r
     type(mct_aVect),intent(inout) :: x2r_r
     character(len=*)        , intent(in)    :: cime_model
@@ -454,6 +553,8 @@ contains
 
     integer, save :: index_l2x_Flrl_inundinf
     integer, save :: index_x2r_Flrl_inundinf
+    integer, save :: index_x2r_So_ssh
+    integer, save :: index_o2x_So_ssh
     
     integer, save :: index_l2x_coszen_str
     integer, save :: index_x2r_coszen_str
@@ -615,6 +716,12 @@ contains
 
        endif 
 
+       if (ocn_rof_two_way) then
+          index_o2x_So_ssh = mct_aVect_indexRA(o2x_r,'So_ssh')
+          index_x2r_So_ssh = mct_aVect_indexRA(x2r_r,'So_ssh')
+          mrgstr(index_x2r_So_ssh)       = trim(mrgstr(index_x2r_So_ssh))//' = '//'o2x%So_ssh'
+       endif
+
     end if
 
     do i = 1,lsize
@@ -661,6 +768,12 @@ contains
        endif
 
     end do
+
+    if (ocn_rof_two_way) then
+       do i =1,lsize
+          x2r_r%rAttr(index_x2r_So_ssh,i)        = o2x_r%rAttr(index_o2x_So_ssh,i)
+       enddo
+    endif
 
     if (first_time) then
        if (iamroot) then
@@ -751,6 +864,31 @@ contains
   end subroutine prep_rof_calc_a2r_rx
 
   !================================================================================================
+  subroutine prep_rof_calc_o2r_rx(timer)
+    !---------------------------------------------------------------
+    ! Description
+    ! Create o2r_rx (note that o2r_rx is a local module variable)
+    !
+    ! Arguments
+    character(len=*), intent(in) :: timer
+    !
+    ! Local Variables
+    integer :: eri, eoi
+    type(mct_avect), pointer :: r2x_rx
+    character(*), parameter :: subname = '(prep_rof_calc_o2r_rx)'
+    !---------------------------------------------------------------
+
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+    do eri = 1,num_inst_rof
+       eoi = mod((eri-1),num_inst_ocn) + 1
+       r2x_rx => component_get_c2x_cx(rof(eri))
+       call seq_map_map(mapper_So2r, o2racc_ox(eoi), o2r_rx(eri), fldlist=seq_flds_o2x_states_to_rof, norm=.true.)
+    end do
+    call t_drvstopf  (trim(timer))
+
+  end subroutine prep_rof_calc_o2r_rx
+
+  !================================================================================================
 
   function prep_rof_get_l2racc_lx()
     type(mct_aVect), pointer :: prep_rof_get_l2racc_lx(:)
@@ -761,6 +899,16 @@ contains
     integer, pointer :: prep_rof_get_l2racc_lx_cnt
     prep_rof_get_l2racc_lx_cnt => l2racc_lx_cnt
   end function prep_rof_get_l2racc_lx_cnt
+
+  function prep_rof_get_o2racc_ox()
+    type(mct_aVect), pointer :: prep_rof_get_o2racc_ox(:)
+    prep_rof_get_o2racc_ox => o2racc_ox(:)
+  end function prep_rof_get_o2racc_ox
+
+  function prep_rof_get_o2racc_ox_cnt()
+    integer, pointer :: prep_rof_get_o2racc_ox_cnt
+    prep_rof_get_o2racc_ox_cnt => o2racc_ox_cnt
+  end function prep_rof_get_o2racc_ox_cnt
 
   function prep_rof_get_mapper_Fl2r()
     type(seq_map), pointer :: prep_rof_get_mapper_Fl2r

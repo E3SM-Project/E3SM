@@ -20,6 +20,13 @@ _TESTS = {
             )
         },
 
+    "e3sm_mosart_exenoshare": {
+        "time"  : "0:45:00",
+        "tests" : (
+            "ERS.ne30pg2_r05_EC30to60E2r2.GPMPAS-JRA.mosart-rof_ocn_2way",
+            )
+        },
+
     "e3sm_land_exeshare" : {
         "share" : True,
         "time"  : "0:45:00",
@@ -47,7 +54,7 @@ _TESTS = {
     "e3sm_land_developer" : {
         "share" : True,
         "time"  : "0:45:00",
-        "inherit" : ("e3sm_mosart_developer", "e3sm_land_exeshare", "e3sm_land_exenoshare"),
+        "inherit" : ("e3sm_mosart_developer", "e3sm_mosart_exenoshare", "e3sm_land_exeshare", "e3sm_land_exenoshare"),
         "tests" : (
             "ERS.f19_f19.IELM",
             "ERS.f19_f19.I1850ELMCN",
@@ -69,7 +76,8 @@ _TESTS = {
             "ERS.ELM_USRDAT.I1850ELM.elm-usrdat",
             "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features",
             "ERS.f09_f09.IELM.elm-solar_rad",
-            "ERS.f09_f09.IELM.elm-lnd_rof_2way"
+            "ERS.f09_f09.IELM.elm-lnd_rof_2way",
+            "ERS.f09_f09.IELM.elm-koch_snowflake"
             )
         },
 
@@ -140,7 +148,7 @@ _TESTS = {
     "e3sm_atm_nbfb" : {
         "tests" : (
             "PGN_P1x1.ne4_oQU240.F2010",
-            "TSC.ne4_oQU240.F2010",
+            "TSC.ne4_oQU240.F2010-CICE",
             "MVK_PS.ne4_oQU240.F2010",
             )
         },
@@ -235,7 +243,7 @@ _TESTS = {
     "e3sm_mmf_integration" : {
         "tests" : (
             "ERP_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_fixed_subcycle",
-            "ERS_Ln9.ne4pg2_ne4pg2.FRCE-MMF1",
+            "ERS_Ln9.ne4pg2_ne4pg2.FRCE-MMF1.eam-cosp_nhtfrq9",
             "SMS_Ln5.ne4_ne4.FSCM-ARM97-MMF1",
             )
         },

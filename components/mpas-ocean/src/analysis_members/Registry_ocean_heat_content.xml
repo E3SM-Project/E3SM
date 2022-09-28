@@ -1,21 +1,21 @@
 	<nml_record name="AM_oceanHeatContent" mode="forward;analysis">
-		<nml_option name="config_AM_oceanHeatContent_enable" type="logical" default_value=".false." units="unitless"
+		<nml_option name="config_AM_oceanHeatContent_enable" type="logical" default_value=".false."
 			description="If true, ocean analysis member ocean heat content is called."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_oceanHeatContent_compute_interval" type="character" default_value="output_interval" units="unitless"
+		<nml_option name="config_AM_oceanHeatContent_compute_interval" type="character" default_value="output_interval"
 			description="Timestamp determining how often analysis member computation should be performed."
 			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
 		/>
-		<nml_option name="config_AM_oceanHeatContent_output_stream" type="character" default_value="oceanHeatContentOutput" units="unitless"
+		<nml_option name="config_AM_oceanHeatContent_output_stream" type="character" default_value="oceanHeatContentOutput"
 			description="Name of the stream that the oceanHeatContent analysis member should be tied to."
 			possible_values="Any existing stream name or 'none'"
 		/>
-		<nml_option name="config_AM_oceanHeatContent_compute_on_startup" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_oceanHeatContent_compute_on_startup" type="logical" default_value=".true."
 			description="Logical flag determining if an analysis member computation occurs on start-up."
 			possible_values=".true. or .false."
 		/>
-		<nml_option name="config_AM_oceanHeatContent_write_on_startup" type="logical" default_value=".true." units="unitless"
+		<nml_option name="config_AM_oceanHeatContent_write_on_startup" type="logical" default_value=".true."
 			description="Logical flag determining if an analysis member write occurs on start-up."
 			possible_values=".true. or .false."
 		/>

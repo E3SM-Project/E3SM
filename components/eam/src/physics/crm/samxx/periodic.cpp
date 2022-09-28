@@ -2,9 +2,10 @@
 #include "periodic.h"
 
 void periodic(int flag) {
-  YAKL_SCOPE( w     , ::w );
-  YAKL_SCOPE( sstxy , ::sstxy );
-  YAKL_SCOPE( ncrms , ::ncrms );
+  YAKL_SCOPE( w       , :: w );
+  YAKL_SCOPE( sstxy   , :: sstxy );
+  YAKL_SCOPE( ncrms   , :: ncrms );
+  YAKL_SCOPE( use_ESMT, :: use_ESMT );
 
   if (flag == 0) {
     bound_exchange(u,nzm,1,1,1,1, 1);

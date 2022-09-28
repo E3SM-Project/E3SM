@@ -256,6 +256,18 @@
     </values>
   </entry>
 
+  <entry id="ocn_rof_two_way">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If set to .true., adds fields needed to calculate river-ocean two-way coupling
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
   <!-- =========================== -->
   <!-- -group seq_cplflds_custom   -->
   <!-- =========================== -->
@@ -4915,6 +4927,36 @@
     </desc>
     <values>
       <value>$IAC2LND_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2rof_smapname"    modify_via_xml="OCN2ROF_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to rof mapping file for states
+    </desc>
+    <values>
+      <value>$OCN2ROF_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2rof_smaptype"    modify_via_xml="OCN2ROF_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$OCN2ROF_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>

@@ -480,9 +480,9 @@
 		            description="Timestamp describing the length of the simulation. If it is set to 'none' the duration is determined from config_start_time and config_stop_time. config_run_duration overrides inconsistent values of config_stop_time. If a time value is specified for config_run_duration, it must be greater than 0."
 		            possible_values="'YYYY-MM-DD_HH:MM:SS' or 'none' (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
 		/>
-		<nml_option name="config_calendar_type" type="character" default_value="gregorian_noleap" units="unitless"
+		<nml_option name="config_calendar_type" type="character" default_value="noleap" units="unitless"
 		            description="Selection of the type of calendar that should be used in the simulation."
-		            possible_values="'gregorian', 'gregorian_noleap'"
+		            possible_values="'gregorian', 'noleap'"
 		/>
 	</nml_record>
 
@@ -588,7 +588,7 @@
 
                 <package name="ismip6ShelfMelt" description="This package includes variables required for the ISMIP6 ice-shelf melt parameterization developed for Antarctica."/>
 
-		<package name="ismip6GroundedFaceMelt" description="This package includes variables required for the ISMIP6 grounded glacier front melt parameterization developed for Greenland." />	
+		<package name="ismip6GroundedFaceMelt" description="This package includes variables required for the ISMIP6 grounded glacier front melt parameterization developed for Greenland." />
 
                 <package name="thermal" description="This package includes variables required for the thermal solver."/>
 
@@ -761,7 +761,7 @@
                         <!-- beta, effectivePressure and muFriction are only used for HO solvers -->
 			<var name="beta" packages="higherOrderVelocity"/>
 			<var name="effectivePressure" packages="higherOrderVelocity"/>
-                        <var name="muFriction" packages="higherOrderVelocity"/>      
+                        <var name="muFriction" packages="higherOrderVelocity"/>
                         <!-- dirichletVelocityMask is only used for HO solvers -->
                         <var name="dirichletVelocityMask" packages="higherOrderVelocity"/>
                         <!-- fields only needed by SGH -->
@@ -821,18 +821,18 @@
 			<var name="uReconstructX"/>
 			<var name="uReconstructY"/>
 		</stream>
-                <!-- input stream for regions masks files (currently only used by regional stats AM, and 
+                <!-- input stream for regions masks files (currently only used by regional stats AM, and
                      the only field used is the regionCellMasks field -->
                 <stream name="regionsInput" type="input"
                                 mode="forward;analysis"
                                 filename_template="regionMasks.nc"
                                 input_interval="initial_only"
                                 runtime_format="single_file">
-                        <var name="regionCellMasks"/> 
-                        <!--var name="nCellsInRegion"/>  
-                        <var name="regionVertexMasks"/>  
-                        <var name="nVerticesInRegion"/> 
-                        <var name="nRegionsInGroup"/> 
+                        <var name="regionCellMasks"/>
+                        <!--var name="nCellsInRegion"/>
+                        <var name="regionVertexMasks"/>
+                        <var name="nVerticesInRegion"/>
+                        <var name="nRegionsInGroup"/>
                         <var name="regionsInGroup"/>
                         <var name="regionMaskNames"/>
                         <var name="regionGroupNames"/-->
@@ -1196,7 +1196,7 @@ is the value of that variable from the *previous* time level!
                      units="m m^{-1}"  description="surface slope magnitude on edges" packages="SIAvelocity"
                />
                 <!-- Variables only needed by ISMIP6 ice-shelf melt method -->
-                <var name="ismip6shelfMelt_basin" type="integer" dimensions="nCells" units="" default_value="1" 
+                <var name="ismip6shelfMelt_basin" type="integer" dimensions="nCells" units="" default_value="1"
                      packages="ismip6ShelfMelt" description="basin number mask for ISMIP6 melt forcing, input to model"
                 />
                 <var name="ismip6shelfMelt_gamma0" type="real" dimensions="" units="m yr^{-1}" default_value="0.0"
@@ -1210,7 +1210,7 @@ is the value of that variable from the *previous* time level!
                 <var name="ismip6shelfMelt_TFdraft" type="real" dimensions="nCells Time" units="deg. C" packages="ismip6ShelfMelt"
                      description="thermal forcing at ice shelf draft used for ISMIP6 ice-shelf melting method, calculated by param."
                 />
-                <var name="ismip6shelfMelt_3dThermalForcing" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C" 
+                <var name="ismip6shelfMelt_3dThermalForcing" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C"
                      default_value="2.0" packages="ismip6ShelfMelt"
                      description="thermal forcing for ISMIP6 ice-shelf melting method, input to model"
                 />
@@ -1221,7 +1221,7 @@ is the value of that variable from the *previous* time level!
                      description="Optional field of offset that should be applied to the melt field calculated by the ISMIP6 melt method.  Can be used to run in anomaly mode, but this is not the anomaly.  See Registry.xml for details."
                 />
                 <!-- Variables needed for ISMIP6 grounded face melt parameterization -->
-                <var name="frontAblationMask" type="integer" dimensions="nCells Time" units="none" time_levs="1" 
+                <var name="frontAblationMask" type="integer" dimensions="nCells Time" units="none" time_levs="1"
                      description="mask of grid cells at which front ablation will be applied. Determined by settings of applyToGrounded, applyToFloating, and applyToGroundingLine in routines that call li_apply_front_ablation_velocity."
                 />
                 />
@@ -1229,7 +1229,7 @@ is the value of that variable from the *previous* time level!
 		     description="linear speed of submarine melting at grounded glacier front"
   		/>
                 <var name="ismip6Runoff" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}" packages="ismip6GroundedFaceMelt" default_value="0.0"
-                     description="Runoff forcing for ISMIP6 grounded ice melting method, input to model" 
+                     description="Runoff forcing for ISMIP6 grounded ice melting method, input to model"
                 />
 		<var name="ismip6_2dThermalForcing" type="real" dimensions="nCells Time" units="deg. C" packages="ismip6GroundedFaceMelt" default_value="2.0"
 	 	     description="thermal forcing for ISMIP6 grounded marine melt method, input to model"

@@ -228,6 +228,15 @@ subroutine crm_physics_register()
       call pbuf_add_field('CRM_QP',    'global', dtype_r8,dims_crm_3D,idx)
       call pbuf_add_field('CRM_QN',    'global', dtype_r8,dims_crm_3D,idx)
    end if
+   ! CRM rad stuff specific to COSP; this does not strictly need to be in
+   ! pbuf, we could compute it in rad and pass as optional arguments, but
+   ! this seemed to be the cleanest solution for the time being (in other
+   ! words, this is probably a lazy hack because I could not think of a
+   ! cleaner way of passing these)
+   call pbuf_add_field('CRM_DTAU', 'physpkg', dtype_r8,dims_crm_3D,idx)
+   call pbuf_add_field('CRM_EMIS', 'physpkg', dtype_r8,dims_crm_3D,idx)
+   call pbuf_add_field('CRM_REL' , 'physpkg', dtype_r8,dims_crm_3D,idx)
+   call pbuf_add_field('CRM_REI' , 'physpkg', dtype_r8,dims_crm_3D,idx)
 
    ! CRM mass flux
    call pbuf_add_field('MU_CRM',       'physpkg',dtype_r8,dims_gcm_2D,idx) ! mass flux up
