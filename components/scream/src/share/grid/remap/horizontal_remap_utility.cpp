@@ -187,9 +187,10 @@ void HorizontalMap::set_dof_gids(const view_1d<const gid_type>& dofs_gids, const
   start_timer("EAMxx::HorizontalMap::set_dof_gids");
   EKAT_REQUIRE(dofs_gids.size()>0);
   m_dofs_gids = view_1d<gid_type>("",dofs_gids.size());
+  const auto l_dofs_gids = m_dofs_gids;
   m_num_dofs = m_dofs_gids.extent(0);
   Kokkos::parallel_for("", m_num_dofs, KOKKOS_LAMBDA (const int& ii) {
-    m_dofs_gids(ii) = dofs_gids(ii)-min_dof;
+    l_dofs_gids(ii) = dofs_gids(ii)-min_dof;
   });
   m_dofs_set = true;
   stop_timer("EAMxx::HorizontalMap::set_dof_gids");
@@ -504,8 +505,9 @@ bool HorizontalMapSegment::check() const
   EKAT_REQUIRE_MSG(m_source_idx.extent(0)==m_length,"Error remap segment for DOF: " + std::to_string(m_dof) + ", source_idx view not the correct length");
   // Check that the segment weight adds up to 1.0 
   Real wgt = 0.0;
+  const auto weights = m_weights;
   Kokkos::parallel_reduce("", m_length, KOKKOS_LAMBDA (const int& ii, Real& lsum) {
-    lsum += m_weights(ii);
+    lsum += weights(ii);
   },wgt);
   Real tol = std::numeric_limits<Real>::epsilon() * 100.0;
   if (std::abs(wgt-1.0)>=tol) {
