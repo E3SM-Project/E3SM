@@ -806,14 +806,12 @@ contains
 
 !     solve for x by back-substituting for l(tr)*x=c
 
-      ir=mm
- 140  continue
-      hax(ir)=c(ir)
-      do jr=ir+1,mm
-         hax(ir)=hax(ir)-ha(ir,jr)*hax(jr)
+      do ir = mm,1,-1
+         hax(ir)=c(ir)
+         do jr=ir+1,mm
+            hax(ir)=hax(ir)-ha(ir,jr)*hax(jr)
+         end do
       end do
-      ir=ir-1
-      if(ir.ge.1) goto 140
 
       end subroutine least_squares_solve!}}}
 
