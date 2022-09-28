@@ -101,7 +101,7 @@ foreach (SHOCLIB shoc;shoc_sk)
 endforeach()
 
 # Always build shoc_sk with SCREAM_SMALL_KERNELS on
-add_compile_definitions(shoc_sk "SCREAM_SMALL_KERNELS")
+target_compile_definitions(shoc_sk PUBLIC "SCREAM_SMALL_KERNELS")
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
