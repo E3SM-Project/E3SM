@@ -250,8 +250,10 @@ void AbstractGrid::reset_num_vertical_lev (const int num_vertical_lev) {
   //       invalidate all geo data whose FieldLayout contains LEV/ILEV
 }
 
-AbstractGrid::dofs_list_h_type
-AbstractGrid::get_gids_owners (const dofs_list_h_type& gids) const {
+auto AbstractGrid::
+get_owners_and_lids (const dofs_list_h_type& gids) const
+ -> kokkos_types::view_2d<gid_type>
+{
   EKAT_REQUIRE_MSG (m_dofs_set,
       "Error! Cannot retrieve gids owners until dofs gids have been set.\n");
   // In order to ship information around across ranks, it is easier to use
@@ -295,7 +297,12 @@ AbstractGrid::get_gids_owners (const dofs_list_h_type& gids) const {
   // The idea is to create a "global" array (partitioned across ranks) of the
   // gids in the linear map, use it to store the owner of each dofs (in the original grid),
   // and finally read that global array for all the input gids.
-  std::map<int,std::vector<int>> rma_offsets, rma_data;
+  struct PidLid {
+    int pid;
+    int lid;
+  };
+  std::map<int,std::vector<PidLid>> rma_data;
+  std::map<int,std::vector<int>> rma_offsets;
   std::map<int,MPI_Datatype> rma_dtypes;
 
   auto clear_dtypes = [&] () {
@@ -306,30 +313,31 @@ AbstractGrid::get_gids_owners (const dofs_list_h_type& gids) const {
   };
 
   MPI_Win win;
-  int* owners_linear;
-  MPI_Win_allocate (nldofs_linear*sizeof(int),sizeof(int),
-                    MPI_INFO_NULL,comm.mpi_comm(),&owners_linear,&win);
+  PidLid* pids_lids_linear;
+  MPI_Win_allocate (nldofs_linear*sizeof(MPI_2INT),sizeof(MPI_2INT),
+                    MPI_INFO_NULL,comm.mpi_comm(),&pids_lids_linear,&win);
   MPI_Win_fence(0,win);
 
   // Step 1: each rank loops through its grid gids, and sets owners_linear=rank
   // for all its gids in the grid.
   MPI_Win_fence(0,win);
 
-  //  - 1.a Figure out what needs to be written on each rank
+  //  - 1.a Figure where each local dof specs will be written in the linearly
+  //        distributed global array
   for (int i=0; i<get_num_local_dofs(); ++i) {
     const auto gid = m_dofs_gids_host[i];
     const auto pidlid = pid_and_lid (gid);
     const auto pid = pidlid.first;
     const auto lid = pidlid.second;
+    rma_data[pid].push_back({comm.rank(),i});
     rma_offsets[pid].push_back(lid);
-    rma_data[pid].push_back(comm.rank());
   }
 
   //  - 1.b: build data types for writing all the data on each tgt rank at once
   for (const auto& it : rma_offsets) {
     auto& dtype = rma_dtypes[it.first];
     std::vector<int> ones(it.second.size(),1);
-    MPI_Type_indexed (it.second.size(),ones.data(),it.second.data(),MPI_INT,&dtype);
+    MPI_Type_indexed (it.second.size(),ones.data(),it.second.data(),MPI_2INT,&dtype);
     MPI_Type_commit (&dtype);
   }
 
@@ -338,7 +346,7 @@ AbstractGrid::get_gids_owners (const dofs_list_h_type& gids) const {
     const auto pid = it.first;
     const auto dtype = rma_dtypes.at(pid);
     // Note: the dtype already encodes offsets in the remote window, so tgt_disp=0
-    MPI_Put (it.second.data(),it.second.size(),MPI_INT,pid,
+    MPI_Put (it.second.data(),it.second.size(),MPI_2INT,pid,
              0,1,dtype,win);
   }
   clear_dtypes();
@@ -355,14 +363,14 @@ AbstractGrid::get_gids_owners (const dofs_list_h_type& gids) const {
     const auto pid = pidlid.first;
     const auto lid = pidlid.second;
     rma_offsets[pid].push_back(lid);
-    rma_data[pid].push_back(-1);
+    rma_data[pid].push_back({-1,-1});
   }
 
   //  - 1.b: build data types for reading all the data from each tgt rank at once
   for (const auto& it : rma_offsets) {
     auto& dtype = rma_dtypes[it.first];
     std::vector<int> ones(it.second.size(),1);
-    MPI_Type_indexed (it.second.size(),ones.data(),it.second.data(),MPI_INT,&dtype);
+    MPI_Type_indexed (it.second.size(),ones.data(),it.second.data(),MPI_2INT,&dtype);
     MPI_Type_commit (&dtype);
   }
 
@@ -371,7 +379,7 @@ AbstractGrid::get_gids_owners (const dofs_list_h_type& gids) const {
     const auto pid = it.first;
     const auto dtype = rma_dtypes.at(pid);
     // Note: the dtype already encodes offsets in the remote window, so tgt_disp=0
-    MPI_Get (it.second.data(),it.second.size(),MPI_INT,pid,
+    MPI_Get (it.second.data(),it.second.size(),MPI_2INT,pid,
              0,1,dtype,win);
   }
   clear_dtypes();
@@ -379,7 +387,7 @@ AbstractGrid::get_gids_owners (const dofs_list_h_type& gids) const {
   MPI_Win_fence(0,win);
 
   // Step 3: copy data in rma types into output view, making sure we keep correct order
-  dofs_list_h_type owners("owners",gids.size());
+  kokkos_types::view_2d<gid_type> pids_and_lids("",gids.size(),2);
   std::map<int,int> curr_data_index;
   for (int i=0; i<gids.extent_int(0); ++i) {
     const auto gid = gids[i];
@@ -387,7 +395,8 @@ AbstractGrid::get_gids_owners (const dofs_list_h_type& gids) const {
     const auto pid = pidlid.first;
     auto it_bool = curr_data_index.emplace(pid,0);
     auto& idx = it_bool.first->second;
-    owners[i] = rma_data[pid][idx];
+    pids_and_lids(i,0) = rma_data[pid][idx].pid;
+    pids_and_lids(i,1) = rma_data[pid][idx].lid;
     ++idx;
   }
   rma_data.clear();
@@ -395,7 +404,7 @@ AbstractGrid::get_gids_owners (const dofs_list_h_type& gids) const {
   // Clean up
   MPI_Win_free(&win);
 
-  return owners;
+  return pids_and_lids;
 }
 
 void AbstractGrid::copy_views (const AbstractGrid& src, const bool shallow)

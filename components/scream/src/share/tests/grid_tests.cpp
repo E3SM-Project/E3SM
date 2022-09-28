@@ -103,7 +103,7 @@ TEST_CASE("se_grid", "") {
   }
 }
 
-TEST_CASE ("get_gid_owners") {
+TEST_CASE ("get_pids_and_lids") {
   ekat::Comm comm(MPI_COMM_WORLD);
 
   auto engine = setup_random_test(&comm);
@@ -133,13 +133,17 @@ TEST_CASE ("get_gid_owners") {
   grid->set_dofs(dofs_d);
 
   // Now, ask each rank to retrieve owners, and verify
-  auto dofs_owners = grid->get_gids_owners(all_dofs_h);
-  REQUIRE (dofs_owners.size()==all_dofs_h.size());
+  auto dofs_pids_and_lids = grid->get_owners_and_lids(all_dofs_h);
+  REQUIRE (dofs_pids_and_lids.extent(0)==all_dofs_h.size());
+  REQUIRE (dofs_pids_and_lids.extent(1)==2);
 
   for (int i=0; i<num_global_dofs; ++i) {
-    const int owner = dofs_owners(i);
-    const int expected = i / num_local_dofs;
-    REQUIRE (owner==expected);
+    const int pid = dofs_pids_and_lids(i,0);
+    const int lid = dofs_pids_and_lids(i,1);
+    const int expected_pid = i / num_local_dofs;
+    const int expected_lid = i % num_local_dofs;
+    REQUIRE (pid==expected_pid);
+    REQUIRE (lid==expected_lid);
   }
 
 }

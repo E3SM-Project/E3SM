@@ -133,8 +133,11 @@ public:
 
   void reset_num_vertical_lev (const int num_vertical_lev);
 
+  // For each gid in the input list of gids, retrieve the process id that owns
+  // it, as well as the local id on that process.
   // WARNING: this is an expensive method.
-  dofs_list_h_type get_gids_owners (const dofs_list_h_type& gids) const;
+  kokkos_types::view_2d<gid_type>
+  get_owners_and_lids (const dofs_list_h_type& gids) const;
 protected:
 
   // Derived classes can override these methods, which are called inside the
