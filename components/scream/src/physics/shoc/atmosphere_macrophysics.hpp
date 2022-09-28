@@ -83,7 +83,7 @@ public:
 
       const int nlev_packs = ekat::npack<Spack>(nlev);
 
-
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
       /*---------------------------------------------------------------------------------
        *Wet to dry mixing ratios:
        *-------------------------
@@ -95,7 +95,6 @@ public:
        *SHOC].
        *----------------------------------------------------------------------------------
        */
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
           //NOTE:Function calculate_drymmr_from_wetmmr takes 2 arguments: ( wet mmr and "wet"
           //water vapor mixing ratio)
           //Units of all tracers (except TKE and qv) will become [kg/kg(dry-air)] for mass and
@@ -103,12 +102,7 @@ public:
           //to dry mmr in the next parallel for
           for (Int iq = 0; iq < num_qtracers-2; ++iq)
             qtracers(i,convert_wet_dry_idx_d(iq),k) = PF::calculate_drymmr_from_wetmmr(qtracers(i,convert_wet_dry_idx_d(iq),k), qv(i,k));
-      });
-      team.team_barrier();
 
-
-
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
         const auto range = ekat::range<IntSmallPack>(k*Spack::n);
         const Smask in_nlev_range = (range < nlev);
 
@@ -136,7 +130,7 @@ public:
         qw(i,k) = qv(i,k) + qc(i,k);
 
         // Temperature
-        const auto& theta_zt = PF::calculate_theta_from_T(T_mid(i,k),p_mid(i,k));
+        const auto theta_zt = PF::calculate_theta_from_T(T_mid(i,k),p_mid(i,k));
         thlm(i,k) = theta_zt-(theta_zt/T_mid(i,k))*(latvap/cpair)*qc(i,k);
         thv(i,k)  = theta_zt*(1 + zvir*qv(i,k) - qc(i,k));
 
@@ -149,9 +143,9 @@ public:
       team.team_barrier();
 
       // Compute vertical layer heights
-      const auto& dz_s    = ekat::subview(dz,    i);
-      const auto& z_int_s = ekat::subview(z_int, i);
-      const auto& z_mid_s = ekat::subview(z_mid, i);
+      const auto dz_s    = ekat::subview(dz,    i);
+      const auto z_int_s = ekat::subview(z_int, i);
+      const auto z_mid_s = ekat::subview(z_mid, i);
       PF::calculate_z_int(team,nlev,dz_s,z_surf,z_int_s);
       team.team_barrier();
       PF::calculate_z_mid(team,nlev,z_int_s,z_mid_s);
@@ -169,10 +163,10 @@ public:
       zi_grid(i,nlevi_v)[nlevi_p] = 0;
       team.team_barrier();
 
-      const auto& zt_grid_s = ekat::subview(zt_grid, i);
-      const auto& zi_grid_s = ekat::subview(zi_grid, i);
-      const auto& rrho_s    = ekat::subview(rrho, i);
-      const auto& rrho_i_s  = ekat::subview(rrho_i, i);
+      const auto zt_grid_s = ekat::subview(zt_grid, i);
+      const auto zi_grid_s = ekat::subview(zi_grid, i);
+      const auto rrho_s    = ekat::subview(rrho, i);
+      const auto rrho_i_s  = ekat::subview(rrho_i, i);
       SHF::linear_interp(team,zt_grid_s,zi_grid_s,rrho_s,rrho_i_s,nlev,nlev+1,0);
       team.team_barrier();
 
@@ -181,11 +175,10 @@ public:
       // if we have dy!=dx.
       cell_length(i) = PF::calculate_dx_from_area(area(i),lat(i));
 
-      const auto& exner_int = PF::exner_function(p_int(i,nlevi_v)[nlevi_p]);
-      const auto& inv_exner_int_surf = 1/exner_int;
+      const auto exner_int = PF::exner_function(p_int(i,nlevi_v)[nlevi_p]);
+      const auto inv_exner_int_surf = 1/exner_int;
 
-      wpthlp_sfc(i) = surf_sens_flux(i)/(cpair*rrho_i(i,nlevi_v)[nlevi_p]);
-      wpthlp_sfc(i) = wpthlp_sfc(i)*inv_exner_int_surf;
+      wpthlp_sfc(i) = (surf_sens_flux(i)/(cpair*rrho_i(i,nlevi_v)[nlevi_p]))*inv_exner_int_surf;
       wprtp_sfc(i)  = surf_evap(i)/rrho_i(i,nlevi_v)[nlevi_p];
       upwp_sfc(i)   = surf_mom_flux(i,0)/rrho_i(i,nlevi_v)[nlevi_p];
       vpwp_sfc(i)   = surf_mom_flux(i,1)/rrho_i(i,nlevi_v)[nlevi_p];
@@ -345,7 +338,7 @@ public:
         const Spack z_mid_ik(z_mid(i,k));
         const Real  phis_i(phis(i));
         T_mid(i,k) = PF::calculate_temperature_from_dse(dse_ik,z_mid_ik,phis_i);
-      });
+
 
       /*--------------------------------------------------------------------------------
        *DRY-TO-WET MMRs:
@@ -357,7 +350,6 @@ public:
        *---------------------------------------------------------------------------------
        */
 
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
           //NOTE:Function calculate_wetmmr_from_drymmr takes 2 arguments: ( dry mmr and "dry"
           //water vapor mixing ratio)
           //Units of all tracers (except TKE and qv) will become [kg/kg(wet-air)] for mass and
@@ -365,15 +357,8 @@ public:
           //to wet mmr in the next parallel for
           for (Int iq = 0; iq < num_qtracers-2; ++iq)
             qtracers(i,convert_wet_dry_idx_d(iq),k) = PF::calculate_wetmmr_from_drymmr(qtracers(i,convert_wet_dry_idx_d(iq),k), qv(i,k));
-        });
-      team.team_barrier();
-
-      //Convert qv from dry mmr to wet mmr
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
           qv(i,k) = PF::calculate_wetmmr_from_drymmr(qv(i,k), qv(i,k));
-        });
-      team.team_barrier();
-
+      });
     } // operator
 
     // Local variables
