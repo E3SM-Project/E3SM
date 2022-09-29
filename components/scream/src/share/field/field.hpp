@@ -178,11 +178,11 @@ public:
 
   // Set the field to a constant value (on host or device)
   template<typename T, HostOrDevice HD = Device>
-  void deep_copy (const T value);
+  void deep_copy (const T value) const;
 
   // Copy the data from one field to this field
   template<HostOrDevice HD = Device>
-  void deep_copy (const Field& field_src);
+  void deep_copy (const Field& field_src) const;
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
@@ -235,10 +235,10 @@ public:
 protected:
 
   template<typename ST, HostOrDevice HD = Device>
-  void deep_copy_impl (const ST value);
+  void deep_copy_impl (const ST value) const;
 
   template<typename ST, HostOrDevice HD = Device>
-  void deep_copy_impl (const Field& field_src);
+  void deep_copy_impl (const Field& field_src) const;
 
   template<HostOrDevice HD>
   const get_view_type<char*,HD>&
@@ -350,7 +350,7 @@ auto Field::get_view () const
 
 template<HostOrDevice HD>
 void Field::
-deep_copy (const Field& field_src) {
+deep_copy (const Field& field_src) const {
   EKAT_REQUIRE_MSG (not m_is_read_only,
       "Error! Cannot call deep_copy on read-only fields.\n");
 
@@ -374,7 +374,7 @@ deep_copy (const Field& field_src) {
 
 template<typename ST, HostOrDevice HD>
 void Field::
-deep_copy (const ST value) {
+deep_copy (const ST value) const {
   EKAT_REQUIRE_MSG (not m_is_read_only,
       "Error! Cannot call deep_copy on read-only fields.\n");
 
@@ -408,7 +408,7 @@ deep_copy (const ST value) {
 
 template<typename ST, HostOrDevice HD>
 void Field::
-deep_copy_impl (const Field& field_src) {
+deep_copy_impl (const Field& field_src) const {
 
   const auto& layout     = get_header().get_identifier().get_layout();
   const auto& layout_src = field_src.get_header().get_identifier().get_layout();
@@ -460,7 +460,7 @@ deep_copy_impl (const Field& field_src) {
 }
 
 template<typename ST, HostOrDevice HD>
-void Field::deep_copy_impl (const ST value) {
+void Field::deep_copy_impl (const ST value) const {
 
   // Note: we can't just do a deep copy on get_view_impl<HD>(), since this
   //       field might be a subfield of another. Instead, get the
