@@ -22,10 +22,7 @@ contains
 
 subroutine nucleati_conv(  &
    wbar, tair, relhum, cldn, qc,              &
-!<songxl 2014-11-20---------
-!   nfice, rhoair, so4_num, dst_num, soot_num, &
    nfice, rhoair, so4_num, dst_num, soot_num, zm_microp, &
-!>songxl 2014-11-20---------
    nuci, onihf, oniimm, onidep, onimey) 
 
    !---------------------------------------------------------------
@@ -51,9 +48,7 @@ subroutine nucleati_conv(  &
    real(r8), intent(in) :: so4_num     ! so4 aerosol number (#/cm^3)
    real(r8), intent(in) :: dst_num     ! total dust aerosol number (#/cm^3)
    real(r8), intent(in) :: soot_num    ! soot (hydrophilic) aerosol number (#/cm^3)
-!<songxl 2014-11-20------
    logical,  intent(in) :: zm_microp   ! true for in ZM convection scheme
-!>songxl 2014-11-20------
 
    ! Output Arguments
    real(r8), intent(out) :: nuci       ! ice number nucleated (#/kg)
@@ -90,14 +85,11 @@ subroutine nucleati_conv(  &
       C = 131.74_r8
       RHw=(A*tc*tc+B*tc+C)*0.01_r8   ! RHi ~ 120-130%
 
-!<songxl 2014-11-20----------
-!      subgrid = 1.2_r8
       if (zm_microp) then
          subgrid = 1.0_r8
       else
          subgrid = 1.2_r8
       end if
-!>songxl 2014-11-20----------
 
       if((tc.le.-35.0_r8) .and. ((relhum*svp_water(tair)/svp_ice(tair)*subgrid).ge.1.2_r8)) then ! use higher RHi threshold
 

@@ -57,9 +57,7 @@ module macrop_driver
   character(len=16) :: shallow_scheme
   logical           :: use_shfrc                       ! Local copy of flag from convect_shallow_use_shfrc
 
-!<songxl 2014-11-20----------
-  logical            :: zmconv_microp = .false.         ! true if ZM microphysics enabled
-!>songxl 2014-11-20----------
+  logical           :: zmconv_microp = .false.         ! true if ZM microphysics enabled
 
   integer :: &
     ixcldliq,     &! cloud liquid amount index
@@ -89,8 +87,6 @@ module macrop_driver
     fice_idx,     &  
     cmeliq_idx,   &  
     shfrc_idx,    &
-!<songxl 2014-11-20----------
-!    naai_idx 
     naai_idx,     &
     dlfzm_idx,    & ! index of ZM detrainment of convective cloud water mixing ratio.
     difzm_idx,    & ! index of ZM detrainment of convective cloud ice mixing ratio.
@@ -98,7 +94,6 @@ module macrop_driver
     dnlfzm_idx,   & ! index of ZM detrainment of convective cloud water num concen.
     dnifzm_idx,   & ! index of ZM detrainment of convective cloud ice num concen.
     dnsfzm_idx      ! index of ZM detrainment of convective snow num concen.
-!>songxl 2014-11-20----------
 
   logical :: liqcf_fix
 
@@ -217,9 +212,7 @@ end subroutine macrop_driver_readnl
                                                  ! liquid budgets.
     integer              :: history_budget_histfile_num ! output history file number for budget fields
     integer :: istat
-!<songxl 2014-11-20----------
     integer :: err
-!>songxl 2014-11-20----------
     character(len=*), parameter :: subname = 'macrop_driver_init'
     !-----------------------------------------------------------------------
 
@@ -337,7 +330,6 @@ end subroutine macrop_driver_readnl
     CC_ni_idx   = pbuf_get_index('CC_ni')
     CC_qlst_idx = pbuf_get_index('CC_qlst')
 
-!<songxl 2014-11-20----------
     dlfzm_idx = pbuf_get_index('DLFZM')
     difzm_idx = pbuf_get_index('DIFZM')
     dsfzm_idx = pbuf_get_index('DSFZM', err)
@@ -345,7 +337,6 @@ end subroutine macrop_driver_readnl
     dnifzm_idx = pbuf_get_index('DNIFZM', err)
     dnsfzm_idx = pbuf_get_index('DNSFZM', err)
     if (dnlfzm_idx > 0) zmconv_microp = .true.
-!>songxl 2014-11-20----------
 
     if (micro_do_icesupersat) then 
        naai_idx      = pbuf_get_index('NAAI')
@@ -484,7 +475,6 @@ end subroutine macrop_driver_readnl
 
   real(r8), pointer, dimension(:,:) :: naai         ! Number concentration of activated ice nuclei
 
-!<songxl 2014-11-20----------
   ! ZM microphysics
   real(r8), pointer :: dlfzm(:,:)  ! ZM detrainment of convective cloud water mixing ratio.
   real(r8), pointer :: difzm(:,:)  ! ZM detrainment of convective cloud ice mixing ratio.
@@ -492,7 +482,6 @@ end subroutine macrop_driver_readnl
   real(r8), pointer :: dnlfzm(:,:) ! ZM detrainment of convective cloud water num concen.
   real(r8), pointer :: dnifzm(:,:) ! ZM detrainment of convective cloud ice num concen.
   real(r8), pointer :: dnsfzm(:,:) ! ZM detrainment of convective snow num concen.  
-!>songxl 2014-11-20----------
  
   real(r8) :: latsub
 
@@ -690,7 +679,6 @@ end subroutine macrop_driver_readnl
      ! This is the key procesure generating upper-level cirrus clouds.
      ! The unit of dlf : [ kg/kg/s ]
 
-!<songxl 2014-11-20------
    if (zmconv_microp) then
       call pbuf_get_field(pbuf, dlfzm_idx, dlfzm)
       call pbuf_get_field(pbuf, difzm_idx, difzm)
@@ -699,7 +687,6 @@ end subroutine macrop_driver_readnl
       call pbuf_get_field(pbuf, dnifzm_idx, dnifzm)
       call pbuf_get_field(pbuf, dnsfzm_idx, dnsfzm)
    end if
-!>songxl 2014-11-20------
 
    det_s(:)   = 0._r8
    det_ice(:) = 0._r8
@@ -790,7 +777,6 @@ end subroutine macrop_driver_readnl
           dpdlft  (i,k)             = 0._r8
           shdlft  (i,k)             = 0._r8
        else
-!<songxl 2014-11-20------------
           if (zmconv_microp) then
              dpdlfliq(i,k) =  dlfzm(i,k)
              dpdlfice(i,k) =  difzm(i,k) + dsfzm(i,k)
@@ -800,12 +786,8 @@ end subroutine macrop_driver_readnl
              dpdlfliq(i,k) = ( dlf(i,k) - dlf2(i,k) ) * ( 1._r8 - dum1 )
              dpdlfice(i,k) = ( dlf(i,k) - dlf2(i,k) ) * ( dum1 )
           end if
-!          dpdlfliq(i,k) = ( dlf(i,k) - dlf2(i,k) ) * ( 1._r8 - dum1 )
-!          dpdlfice(i,k) = ( dlf(i,k) - dlf2(i,k) ) * ( dum1 )
-!>songxl 2014-11-20------------
           shdlfliq(i,k) = dlf2(i,k) * ( 1._r8 - dum1 )
           shdlfice(i,k) = dlf2(i,k) * ( dum1 )
-!songxl 2014-11-20          dpdlft  (i,k) = ( dlf(i,k) - dlf2(i,k) ) * dum1 * latice/cpair
           shdlft  (i,k) = dlf2(i,k) * dum1 * latice/cpair
       endif
    end do
