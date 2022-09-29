@@ -351,7 +351,7 @@ contains
        call add_default (cnst_name(mm), 1, ' ')
     end do
     
-    ! add other output fields 
+    ! add other output fields  
     call addfld('AREA',  horiz_only, 'A', 'kg', 'area of grid cell' )
     call add_default('AREA', 1, ' ')
     call addfld('AIR_MASS',  (/ 'lev' /), 'A', 'kg', 'mass of grid box' )

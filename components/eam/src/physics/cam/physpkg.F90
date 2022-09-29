@@ -1209,7 +1209,7 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
        call diag_phys_writeout(phys_state(c))
 
        ! --JH--: Allow advecting of CLDERA passive tendencies if enabled
-       call cldera_passive_tracers_timestep_tend(phys_state(c), ptend(c), ztodt, dummy_cflx, .false.)
+       call cldera_passive_tracers_timestep_tend(phys_state(c), ptend(c), ztodt, dummy_cflx)
        call physics_update(phys_state(c), ptend(c), ztodt, phys_tend(c))
        call check_tracers_chng(phys_state(c), tracerint, "cldera_passive_tracers_timestep_tend", &
                                nstep, ztodt, dummy_cflx)
@@ -1686,7 +1686,7 @@ if (l_tracer_aero) then
     call check_tracers_chng(state, tracerint, "aoa_tracers_timestep_tend", nstep, ztodt,   &
          cam_in%cflx)
 
-    call cldera_passive_tracers_timestep_tend(state, ptend, ztodt, cam_in%cflx, .true.)
+    call cldera_passive_tracers_timestep_tend(state, ptend, ztodt, cam_in%cflx)
     call physics_update(state, ptend, ztodt, tend)
     call check_tracers_chng(state, tracerint, "cldera_passive_tracers_timestep_tend", nstep, ztodt, &
                             cam_in%cflx)

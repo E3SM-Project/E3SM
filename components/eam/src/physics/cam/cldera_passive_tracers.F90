@@ -210,12 +210,6 @@ contains
        call add_default (cnst_name(mm), 1, ' ')
     end do
     
-    ! add other output fields 
-    call addfld('SFE90j',  horiz_only, 'A', 'kg/m2/s', 'E90j surface flux' )
-    call add_default('SFE90j', 1, ' ')
-    call addfld('SFE90j2',  horiz_only, 'A', 'kg/m2/s', 'E90j surface flux' )
-    call add_default('SFE90j2', 1, ' ')
-
   end subroutine cldera_passive_tracers_init
 
 !===============================================================================
@@ -262,7 +256,7 @@ contains
 
 !===============================================================================
 
-  subroutine cldera_passive_tracers_timestep_tend(state, ptend, dt, cflx, use_cflx)
+  subroutine cldera_passive_tracers_timestep_tend(state, ptend, dt, cflx)
 
     use physics_types, only: physics_state, physics_ptend, physics_ptend_init
     use phys_grid,     only: get_rlat_all_p , get_lat_all_p
@@ -277,12 +271,6 @@ contains
     type(physics_ptend), intent(out)   :: ptend              ! package tendencies
     real(r8),            intent(in)    :: dt                 ! timestep
     real(r8),            intent(inout) :: cflx(pcols,pcnst)  ! Surface constituent flux (kg/m^2/s)
-    logical,             intent(in)    :: use_cflx           ! If True, update surface flux through 
-                                                             ! input cflx structure. If False, assume
-                                                             ! input cflx was a dummy, and instead
-                                                             ! compute lowest-level tendency directly
-                                                             ! (needed for FIDEAL where cam_in has no
-                                                             ! cflx)
 
     !----------------- Local workspace-------------------------------
 
@@ -299,13 +287,8 @@ contains
 
     real(r8) :: efold_st80       ! e-folding timescale for e90 in s
     real(r8) :: efold_e90        ! e-folding timescale for e90 in s
-    real(r8) :: st80_tau         ! reciprocal e-folding timescale for e90 in s
-    real(r8) :: e90_tau          ! reciprocal e-folding timescale for e90 in s
     real(r8) :: mweight_e90      ! molecular weight of E90 in g/mol
     real(r8) :: sflx_e90         ! surface flux of E90 in mol cm^-2 s^-1
-    real(r8) :: amufac           ! 1.e4* kg / amu, constant taken 
-                                 ! from mo_srf_emissions.F90 
-    real(r8) :: sflx_e90_out(pcols,pcnst)
 
     !------------------------------------------------------------------
 
@@ -329,12 +312,8 @@ contains
     aoa_scaling = 1._r8/86400._r8
 
     ! ---- e-folding times for e90 (90 days in s), st80 (25 days in s)
-    ! (reciprocals match WACCM 'E90_tau' and 'ST80_25_tau', and table A2 in 
-    ! Tilmes+ (2016) Representation of CESM1 CAM4-chem within CCMI)
     efold_e90  = 90._r8 * 86400._r8
     efold_st80 = 25._r8 * 86400._r8
-    e90_tau    = 1.29e-7  ! approximated reciprocals of the above values to agree exactly
-    st80_tau   = 4.63e-7  ! with values used in WACCM... these used below 
 
     ! ---- molecular weight and surface flux for e90
     ! (surface flux matches Abalos+ (2017), molecular weight is for CO, matches
@@ -342,18 +321,9 @@ contains
     !  emissions_E90global_surface_1750-2100_0.9x1.25_c20170322.nc)
     mweight_e90 = 28._r8                                   ! molecular weight of CO [g/mole]
     sflx_e90    = 2.773063e11_r8                           ! [molecules cm^-2 s^-1]
-    
-    ! manually setting this to consistent with mozart after conversion...
-    sflx_e90 = 1.289235e-10_r8
-
-    !amufac      = 1.65979e-23_r8                           ! 1.e4* kg / amu
-    !sflx_e90    = sflx_e90 * mweight_e90 * amufac
-    
-    ! -- this is more correct on paper... but am going to switch to a scaling consistent
-    ! -- with the that used by mozart for reading in surface emissions
-    !sflx_e90    = sflx_e90 / (avogad / 1000)               ! [moles cm^-2 s^-1] 
+    sflx_e90    = sflx_e90 / (avogad / 1000)               ! [moles cm^-2 s^-1] 
     ! convert mol to g, g to kg, cm^-2 to m^-2, ==>  flux in [kg m^-2 s^-1]
-    !sflx_e90    = sflx_e90 * mweight_e90 * (1._r8/1000._r8) * 10000._r8
+    sflx_e90    = sflx_e90 * mweight_e90 * (1._r8/1000._r8) * 10000._r8
 
 
     ! -------------------- TRACER TENDENCIES --------------------
@@ -373,28 +343,21 @@ contains
 
           ! ============ E90 ============
           ! dissipates with e-folding time of 90 days
-          ptend%q(i,k,ixe90) =  -e90_tau * state%q(i, k, ixe90)
+          ptend%q(i,k,ixe90) =  -(1/efold_e90) * state%q(i, k, ixe90)
           ! apply surface flux to lowest model level
           ! this mimics behavior of vertical_diffusion_tend()
           ! last line adjusts for dry constituent
-          if(k == pver .and. use_cflx == .false. ) then
+          if(k == pver) then
               ptend%q(i, k, ixe90) = ptend%q(i, k, ixe90) + &
                                      gravit * state%rpdel(i, k) * sflx_e90 * & 
                                      state%pdel(i,k) / state%pdeldry(i, k)
-
-              sflx_e90_out(i,ixe90) = sflx_e90
-              !state%q(i, k, ixe90) = state%q(i, k, ixe90) + &
-              !                       dt * gravit * state%rpdel(i, k) * sflx_e90 * & 
-              !                       state%pdel(i,k) / state%pdeldry(i, k)
-              !write(iulog,*) 'E90_jh sflx: ' sflx_e90
-              !write(iulog,*) 'E90_jh surface tend: ' dt * gravit * state%rpdel(i, k) * sflx_e90
           end if
 
           ! ============ ST80_25 ============
           ! dissipates with e-folding time of 25 days below ~80 hPa, 
           ! constant concentration of 200 ppbv above
           if (state%pmid(i, k) >= 8000._r8) then
-              ptend%q(i,k,ixst80) =  -st80_tau * state%q(i, k, ixst80)
+              ptend%q(i,k,ixst80) =  -(1/efold_st80) * state%q(i, k, ixst80)
           else
               ptend%q(i, k,ixst80) = 0._r8
               state%q(i, k, ixst80) = 200e-9_r8  ! 200 ppbv to vmr
@@ -404,26 +367,19 @@ contains
 
     ! -------------------- TRACER FLUXES --------------------
     do i = 1, ncol
-       if (use_cflx == .true.) then
-           ! run only if the caller has provided cam_in%cflx (in which case use_cflx should be true)
+       ! ====== AOA ======
+       ! no surface flux
+       cflx(i,ixaoa) = 0._r8
 
-           ! ====== AOA ======
-           ! no surface flux
-           cflx(i,ixaoa) = 0._r8
+       ! ====== E90 ======
+       ! surface flux handled in tendency computation above
+       cflx(i,ixe90) = 0._r8
 
-           ! ====== E90 ======
-           cflx(i,ixe90) = sflx_e90
-           ! record E90 surface flux to history files
-
-           ! ====== ST80_25 ======
-           ! no surface flux
-           cflx(i,ixst80) = 0._r8
-       end if
+       ! ====== ST80_25 ======
+       ! no surface flux
+       cflx(i,ixst80) = 0._r8
     end do
            
-    call outfld('SFE90j',  cflx(:,ixe90), ncol, lchnk)
-    call outfld('SFE90j2', sflx_e90_out(:,ixe90), ncol, lchnk)
-    
 
   end subroutine cldera_passive_tracers_timestep_tend
 
