@@ -218,7 +218,7 @@ _TESTS = {
         "tests"   : (
             "SMS_D_Ln5.enax4v1_enax4v1.F2010-CICE",
             "SMS_D_Ln5.twpx4v1_twpx4v1.F2010-CICE",
-            "SMS.T62_oEC60to30v3_wQU225EC60to30.GMPAS-IAF-WW3",
+            "SMS_D_Ln3.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA-WW3",
             )
         },
 
