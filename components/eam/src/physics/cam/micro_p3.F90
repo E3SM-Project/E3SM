@@ -76,15 +76,19 @@ module micro_p3
   ! protected items should be treated as private for everyone except tests
 
   real(rtype), protected, dimension(densize,rimsize,isize,ice_table_size) :: ice_table_vals   !ice lookup table values
+  !$omp threadprivate (ice_table_vals)
 
   !ice lookup table values for ice-rain collision/collection
   real(rtype), protected, dimension(densize,rimsize,isize,rcollsize,collect_table_size) :: collect_table_vals
+  !$omp threadprivate (collect_table_vals)
 
   ! lookup table values for rain shape parameter mu_r
   real(rtype), protected, dimension(150) :: mu_r_table_vals
+  !$omp threadprivate (mu_r_table_vals)
 
   ! lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
   real(rtype), protected, dimension(300,10) :: vn_table_vals,vm_table_vals,revap_table_vals
+  !$omp threadprivate (vn_table_vals,vm_table_vals,revap_table_vals)
 
   type realptr
      real(rtype), dimension(:), pointer :: p
