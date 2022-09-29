@@ -851,7 +851,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
 
     // Compute diagnostic total cloud area (vertically-projected cloud cover)
     auto cldtot = real1d("cldtot", ncol);
-    rrtmgp::compute_cloud_area(ncol, nlay, nswgpts, cld_tau_sw_gpt, cldtot);
+    rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts, cld_tau_lw_gpt, cldtot);
 
     // Copy output data back to FieldManager
     if (update_rad) {
