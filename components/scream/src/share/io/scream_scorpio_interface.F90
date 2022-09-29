@@ -841,7 +841,9 @@ contains
     end if
 
     ! Final step, free any pio decompostion memory that is no longer needed.
-    call free_decomp()
+    !   Update: We are trying to reuse decompostions maximally, so we're
+    ! skipping this step.
+    !call free_decomp()
 
   end subroutine eam_pio_closefile
 !=====================================================================!
@@ -890,10 +892,12 @@ contains
     var%is_set = .false.
 
   end subroutine deallocate_hist_var_t
-!=====================================================================!
+  !=====================================================================!
   ! Free pio decomposition memory in PIO for any decompositions that are no
-  ! longer needed.  This is an important memory management step that should be
-  ! taken whenever a file is closed.
+  ! longer needed.  Previously, we thought that this is an important memory
+  ! management step that should be taken whenever a file is closed.  Now we're
+  ! trying to keep decomps persistent so they can be reused.  Thus, calling
+  ! this routine is optional.
   subroutine free_decomp()
     use piolib_mod, only: PIO_freedecomp
     type(iodesc_list_t),   pointer :: iodesc_ptr, next

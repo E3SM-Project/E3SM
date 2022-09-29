@@ -483,7 +483,7 @@ register_variables(const std::string& filename,
     auto field = get_field(name);
     auto& fid  = field.get_header().get_identifier();
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
-    std::string io_decomp_tag = "Real";  // Note, for now we only assume REAL variables.  This may change in the future.
+    std::string io_decomp_tag = fp_precision;
     std::vector<std::string> vec_of_dims;
     const auto& layout = fid.get_layout();
     std::string units = to_string(fid.get_units());
