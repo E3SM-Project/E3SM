@@ -4,7 +4,7 @@ module  zm_microphysics
 ! Purpose:
 !   CAM Interface for cumulus microphysics
 ! 
-! Author: Xialiang Song and Guang Jun Zhang, June 2010  
+! Author: Xialiang Song and Guang Zhang, June 2010  
 !---------------------------------------------------------------------------------
 
 use shr_kind_mod,      only: r8=>shr_kind_r8
@@ -64,7 +64,7 @@ real(r8) :: rhosu     !typical 850mn air density
 real(r8) :: mi0       ! new crystal mass
 real(r8) :: mg0       ! mass of embryo graupel
 real(r8) :: rin       ! radius of contact nuclei
-real(r8) :: pi       ! pi
+real(r8) :: pi        ! pi
 real(r8) :: mmult
 
 ! for Bergeron process (Rotstayn et al.2000)
@@ -140,18 +140,18 @@ end type zm_aero_t
 
 type :: zm_microp_st
 
-   real(r8),    allocatable :: wu(:,:)             ! vertical velocity
+   real(r8),    allocatable :: wu(:,:)        ! vertical velocity
 
-   real(r8),    allocatable :: qliq(:,:)           ! convective cloud liquid water.
-   real(r8),    allocatable :: qice(:,:)           ! convective cloud ice.
-   real(r8),    allocatable :: qrain(:,:)          ! convective rain water.
-   real(r8),    allocatable :: qsnow(:,:)          ! convective snow.
-   real(r8),    allocatable :: qgraupel(:,:)       ! convective graupel.
-   real(r8),    allocatable :: qnl(:,:)            ! convective cloud liquid water num concen.
-   real(r8),    allocatable :: qni(:,:)            ! convective cloud ice num concen.
-   real(r8),    allocatable :: qnr(:,:)            ! convective rain water num concen.
-   real(r8),    allocatable :: qns(:,:)            ! convective snow num concen.
-   real(r8),    allocatable :: qng(:,:)            ! convective graupel num concen.
+   real(r8),    allocatable :: qliq(:,:)      ! convective cloud liquid water.
+   real(r8),    allocatable :: qice(:,:)      ! convective cloud ice.
+   real(r8),    allocatable :: qrain(:,:)     ! convective rain water.
+   real(r8),    allocatable :: qsnow(:,:)     ! convective snow.
+   real(r8),    allocatable :: qgraupel(:,:)  ! convective graupel.
+   real(r8),    allocatable :: qnl(:,:)       ! convective cloud liquid water num concen.
+   real(r8),    allocatable :: qni(:,:)       ! convective cloud ice num concen.
+   real(r8),    allocatable :: qnr(:,:)       ! convective rain water num concen.
+   real(r8),    allocatable :: qns(:,:)       ! convective snow num concen.
+   real(r8),    allocatable :: qng(:,:)       ! convective graupel num concen.
 
    real(r8),    allocatable :: autolm(:,:)    !mass tendency due to autoconversion of droplets to rain
    real(r8),    allocatable :: accrlm(:,:)    !mass tendency due to accretion of droplets by rain
@@ -250,7 +250,6 @@ subroutine zm_mphyi
 ! density parameters (kg/m3)
 
       rhosn = 100._r8    ! bulk density snow
-!      rhosn = 250._r8  ! bulk density snow
       rhoi = 500._r8     ! bulk density ice
       rhow = 1000._r8    ! bulk density liquid
 
@@ -322,9 +321,6 @@ subroutine zm_mphyi
 
         ecg = 0.7_r8
 
-! autoconversion size threshold for cloud ice to snow (m)
-
-!        Dcs = 150.e-6_r8
 ! immersion freezing parameters, bigg 1953
 
 	bimm = 100._r8
@@ -447,8 +443,8 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
   real(r8), intent(out) :: frz(pcols,pver)      ! rate of freezing 
 
 
-  real(r8), intent(inout) :: lamc(pcols,pver)     ! slope of cloud liquid size distr
-  real(r8), intent(inout) :: pgam(pcols,pver)     ! spectral width parameter of droplet size distr
+  real(r8), intent(inout) :: lamc(pcols,pver)   ! slope of cloud liquid size distr
+  real(r8), intent(inout) :: pgam(pcols,pver)   ! spectral width parameter of droplet size distr
 
 ! tendency for output
   real(r8) :: autolm(pcols,pver)    !mass tendency due to autoconversion of droplets to rain
@@ -490,37 +486,37 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
   real(r8) :: dsfn  (pcols,pver)    !num tendency due to detrainment of snow
   real(r8) :: trspsn(pcols,pver)    !num tendency of snow due to convective transport
 !graupel
-  real(r8) :: accgrm(pcols,pver)          ! mass tendency due to collection of rain by graupel
-  real(r8) :: accglm(pcols,pver)          ! mass tendency due to collection of droplets by graupel
-  real(r8) :: accgslm(pcols,pver)         ! mass tendency of graupel due to collection of droplets by snow
-  real(r8) :: accgsrm(pcols,pver)         ! mass tendency of graupel due to collection of rain by snow
-  real(r8) :: accgirm(pcols,pver)         ! mass tendency of graupel due to collection of rain by ice
-  real(r8) :: accgrim(pcols,pver)         ! mass tendency of graupel due to collection of ice by rain
-  real(r8) :: accgrsm(pcols,pver)         ! mass tendency due to collection of snow by rain
+  real(r8) :: accgrm(pcols,pver)    ! mass tendency due to collection of rain by graupel
+  real(r8) :: accglm(pcols,pver)    ! mass tendency due to collection of droplets by graupel
+  real(r8) :: accgslm(pcols,pver)   ! mass tendency of graupel due to collection of droplets by snow
+  real(r8) :: accgsrm(pcols,pver)   ! mass tendency of graupel due to collection of rain by snow
+  real(r8) :: accgirm(pcols,pver)   ! mass tendency of graupel due to collection of rain by ice
+  real(r8) :: accgrim(pcols,pver)   ! mass tendency of graupel due to collection of ice by rain
+  real(r8) :: accgrsm(pcols,pver)   ! mass tendency due to collection of snow by rain
 
-  real(r8) :: accgsln(pcols,pver)         ! num tendency of graupel due to collection of droplets by snow
-  real(r8) :: accgsrn(pcols,pver)         ! num tendency of graupel due to collection of rain by snow
-  real(r8) :: accgirn(pcols,pver)         ! num tendency of graupel due to collection of rain by ice
+  real(r8) :: accgsln(pcols,pver)   ! num tendency of graupel due to collection of droplets by snow
+  real(r8) :: accgsrn(pcols,pver)   ! num tendency of graupel due to collection of rain by snow
+  real(r8) :: accgirn(pcols,pver)   ! num tendency of graupel due to collection of rain by ice
 
-  real(r8) :: accsrim(pcols,pver)         ! mass tendency of snow due to collection of ice by rain
-  real(r8) :: acciglm(pcols,pver)         ! mass tendency of ice mult(splintering) due to acc droplets by graupel
-  real(r8) :: accigrm(pcols,pver)         ! mass tendency of ice mult(splintering) due to acc rain by graupel
-  real(r8) :: accsirm(pcols,pver)         ! mass tendency of snow due to collection of rain by ice
+  real(r8) :: accsrim(pcols,pver)   ! mass tendency of snow due to collection of ice by rain
+  real(r8) :: acciglm(pcols,pver)   ! mass tendency of ice mult(splintering) due to acc droplets by graupel
+  real(r8) :: accigrm(pcols,pver)   ! mass tendency of ice mult(splintering) due to acc rain by graupel
+  real(r8) :: accsirm(pcols,pver)   ! mass tendency of snow due to collection of rain by ice
 
-  real(r8) :: accigln(pcols,pver)         ! num tendency of ice mult(splintering) due to acc droplets by graupel
-  real(r8) :: accigrn(pcols,pver)         ! num tendency of ice mult(splintering) due to acc rain by graupel
-  real(r8) :: accsirn(pcols,pver)         ! num tendency of snow due to collection of rain by ice
-  real(r8) :: accgln(pcols,pver)          ! num tendency due to collection of droplets by graupel
-  real(r8) :: accgrn(pcols,pver)          ! num tendency due to collection of rain by graupel
-  real(r8) :: accilm(pcols,pver)          ! mass tendency of cloud ice due to collection of droplet by cloud ice
-  real(r8) :: acciln(pcols,pver)          ! number conc tendency of cloud ice due to collection of droplet by cloud ice
+  real(r8) :: accigln(pcols,pver)   ! num tendency of ice mult(splintering) due to acc droplets by graupel
+  real(r8) :: accigrn(pcols,pver)   ! num tendency of ice mult(splintering) due to acc rain by graupel
+  real(r8) :: accsirn(pcols,pver)   ! num tendency of snow due to collection of rain by ice
+  real(r8) :: accgln(pcols,pver)    ! num tendency due to collection of droplets by graupel
+  real(r8) :: accgrn(pcols,pver)    ! num tendency due to collection of rain by graupel
+  real(r8) :: accilm(pcols,pver)    ! mass tendency of cloud ice due to collection of droplet by cloud ice
+  real(r8) :: acciln(pcols,pver)    ! number conc tendency of cloud ice due to collection of droplet by cloud ice
 
-  real(r8) :: fallrm(pcols, pver)         ! mass tendency of rain fallout 
-  real(r8) :: fallsm(pcols, pver)         ! mass tendency of snow fallout
-  real(r8) :: fallgm(pcols, pver)         ! mass tendency of graupel fallout
-  real(r8) :: fallrn(pcols, pver)         ! num tendency of rain fallout
-  real(r8) :: fallsn(pcols, pver)         ! num tendency of snow fallout
-  real(r8) :: fallgn(pcols, pver)         ! num tendency of graupel fallout
+  real(r8) :: fallrm(pcols, pver)   ! mass tendency of rain fallout 
+  real(r8) :: fallsm(pcols, pver)   ! mass tendency of snow fallout
+  real(r8) :: fallgm(pcols, pver)   ! mass tendency of graupel fallout
+  real(r8) :: fallrn(pcols, pver)   ! num tendency of rain fallout
+  real(r8) :: fallsn(pcols, pver)   ! num tendency of snow fallout
+  real(r8) :: fallgn(pcols, pver)   ! num tendency of graupel fallout
 
 ! output for ice nucleation
   real(r8) :: nimey(pcols,pver)     !number conc of ice nuclei due to meyers deposition (1/m3)
@@ -668,7 +664,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
   real(r8) :: ngtend(pcols,pver)    ! graupel number concentration source/sink term
 
 ! terms for Bergeron process
-  real(r8) :: bergtsf               !bergeron timescale to remove all liquid
+  real(r8) :: bergtsf               ! bergeron timescale to remove all liquid
   real(r8) :: plevap                ! cloud liquid water evaporation rate
   real(r8) :: a_prime
   real(r8) :: b_prime
@@ -768,9 +764,9 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
   logical niimp(pver)             ! true to solve ni with implicit formula
 
 ! tendency due to adjustment
-  real(r8) :: ncadj(pcols,pver)     !droplet num tendency due to adjustment
-  real(r8) :: niadj(pcols,pver)     !ice crystal num tendency due to adjustment
-  real(r8) :: nsadj(pcols,pver)     !snow num tendency due to adjustment
+  real(r8) :: ncadj(pcols,pver)   ! droplet num tendency due to adjustment
+  real(r8) :: niadj(pcols,pver)   ! ice crystal num tendency due to adjustment
+  real(r8) :: nsadj(pcols,pver)   ! snow num tendency due to adjustment
   real(r8) :: ncorg, niorg, nsorg, total
 
   real(r8) :: rhoh(pcols,pver)    ! air density (kg m-3) at interface 
@@ -838,19 +834,19 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
         qcde(i,k) = 0._r8
         qide(i,k) = 0._r8
         qnide(i,k) = 0._r8
-        rprd(i,k) = 0._r8
-        sprd(i,k) = 0._r8
-        frz(i,k)  = 0._r8
-        qcic(i,k) = 0._r8
-        qiic(i,k) = 0._r8
-        ncic(i,k) = 0._r8
-        niic(i,k) = 0._r8 
-        qr(i,k)   = 0._r8
-        qni(i,k)  = 0._r8
-        qg(i,k)  = 0._r8
-        nr(i,k)   = 0._r8
-        ns(i,k)   = 0._r8
-        ng(i,k)   = 0._r8
+        rprd(i,k)  = 0._r8
+        sprd(i,k)  = 0._r8
+        frz(i,k)   = 0._r8
+        qcic(i,k)  = 0._r8
+        qiic(i,k)  = 0._r8
+        ncic(i,k)  = 0._r8
+        niic(i,k)  = 0._r8 
+        qr(i,k)    = 0._r8
+        qni(i,k)   = 0._r8
+        qg(i,k)    = 0._r8
+        nr(i,k)    = 0._r8
+        ns(i,k)    = 0._r8
+        ng(i,k)    = 0._r8
         qric(i,k)  = 0._r8
         qniic(i,k) = 0._r8
         nric(i,k)  = 0._r8
@@ -1133,8 +1129,8 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
            ncimp(k) = .false.
            qiimp(k) = .false.
            niimp(k) = .false.
-           dum2l(i,k)=0._r8
-           dum2i(i,k)=0._r8
+           dum2l(i,k)  = 0._r8
+           dum2i(i,k)  = 0._r8
            autolm(i,k) = 0._r8
            accrlm(i,k) = 0._r8
            bergnm(i,k) = 0._r8
@@ -1298,7 +1294,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  if(k.le.kqi(i)) then
                    qiic(i,k) = qi(i,k)
                    niic(i,k) = ni(i,k)
-! consider snow falling from above
+                   ! consider snow falling from above
                    flxsm = 0._r8
                    mvtsm = 0._r8
                    flxsn = 0._r8
@@ -1325,9 +1321,8 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                    else
                       nsic(i,k) = ns(i,k)
                    end if
-!                 end if
 
-! consider graupel falling from above
+                   ! consider graupel falling from above
                    flxgm = 0._r8
                    mvtgm = 0._r8
                    flxgn = 0._r8
@@ -1372,6 +1367,9 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  kqc(i) = k
                  lcbase(i) = .false.
                  qcic(i,k) = dz(i,k)*cmel(i,k-1)/(mu(i,k-1)+dz(i,k)*du(i,k-1))
+                 ! Cloud water number concentration is mainly determined by the source (e.g., activation) 
+                 ! and sink terms in the budget equation. Sensitivity test shows that the cloud water number 
+                 ! concentration is not very sensitive to the boundary conditions.  
 !                 ncic(i,k) = qcic(i,k)/(4._r8/3._r8*pi*10.e-6_r8**3*rhow)
                  ncic(i,k) = qcic(i,k)/(4._r8/3._r8*pi*25.e-6_r8**3*rhow)  
               end if
@@ -1386,7 +1384,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  libase(i) = .false.
                  qiic(i,k) = dz(i,k)*cmei(i,k-1)/(mu(i,k-1)+dz(i,k)*du(i,k-1))
                  niic(i,k) = qiic(i,k)/(4._r8/3._r8*pi*15.e-6_r8**3*rhoi)               
-!                 niic(i,k) = qiic(i,k)/(4._r8/3._r8*pi*32.e-6_r8**3*rhoi)
               end if
 
               !***************************************************************************
@@ -1490,6 +1487,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  ! Khrouditnov and Kogan (2000) 
 !                 prc(k) = 1350._r8*qcic(i,k)**2.47_r8*    &
 !                    (ncic(i,k)/1.e6_r8*rho(i,k))**(-1.79_r8)
+                 ! parameters with updated values for 72 layer model 
                  prc(k) = auto_fac*30500._r8*qcic(i,k)**3.19_r8*    &
                     (ncic(i,k)/1.e6_r8*rho(i,k))**(-1.2_r8)
                  nprc1(k) = prc(k)/(qcic(i,k)/ncic(i,k))
@@ -1599,8 +1597,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  n0s(k) = nsic(i,k)*lams(k)
 
                  ! check for slope
-!                 lammax = 1._r8/10.e-6_r8
-!                 lammin = 1._r8/2000.e-6_r8
                  lammax = 1._r8/dcs
                  lammin = 1._r8/5000.e-6_r8
 
@@ -1731,7 +1727,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
 ! hobbs (1984)
 
            if (psacws(k).gt.0._r8 .and. qniic(i,k).ge.0.1e-3_r8.and.qcic(i,k).ge.0.5e-3_r8) then
-             if (ums(k).eq.0._r8) write(*,*) "!!! ums=0., k=",k,"i=",i
+!             if (ums(k).eq.0._r8) write(iulog,*) "ums=0., k=",k,"i=",i
 ! portion of riming converted to graupel (reisner et al. 1998, originally
 ! is1991)
              dt = dz(i,k)/ums(k)
@@ -1789,7 +1785,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                   psacwg(k) = 0._r8
                   npsacwg(k) = 0._r8
               end if
-!>songxl************************
+
 
               !.......................................................................
               ! accretion of rain water by snow
@@ -1811,7 +1807,7 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                     1._r8/(lamr(k)**2*lams(k)**2)+ &
                     1._r8/(lamr(k)*lams(k)**3))
 
-!<songxl**********************************
+
               ! collection of snow by rain - needed for graupel conversion calculations
               ! only calculate if snow and rain mixing ratios exceed 0.1 g/kg
 
@@ -1826,15 +1822,12 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                    psacr(k) = 0._r8
                  end if
 
-!>songxl***********************************
-
               else
                  pracs(k)=0._r8
                  npracs(k)=0._r8
                  psacr(k) = 0._r8
               end if
 
-!<songxl*********************
 
               ! conversion of rimed rainwater onto snow converted to graupel
 
@@ -1849,9 +1842,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                   dum=max(dum,0._r8)
                   pgracs(k) = (1._r8-dum)*pracs(k)
                   ngracs(k) = (1._r8-dum)*npracs(k)
-              ! limit max number converted to min of either rain or snow number concentration
-!                  ngracs(k) = min(ngracs(k),nric(i,k)/dt)
-!                  ngracs(k) = min(ngracs(k),nsic(i,k)/dt)
 
               ! amount left for snow production
                   pracs(k) = pracs(k) - pgracs(k)
@@ -1869,19 +1859,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
 ! used by reisner et al 1998
          if (qric(i,k).ge.1.e-8.and.qgic(i,k).ge.1.e-8) then
 
-!            umg = agn(k)*cons7/(lamg(k)**bg)
-!            umr = arn(k)*cons4/(lamr(k)**br)
-!            ung = agn(k)*cons8/lamg(k)**bg
-!            unr = arn(k)*cons6/lamr(k)**br
-
-! set reaslistic limits on fallspeeds
-! bug fix, 10/08/09
-!            dum=(rhosu/rho(k))**0.54
-!            umg=min(umg,20.*dum)
-!            ung=min(ung,20.*dum)
-!            umr=min(umr,9.1*dum)
-!            unr=min(unr,9.1*dum)
-
             pracg(k) = cons41*(((1.2_r8*umr(k)-0.95_r8*umg(k))**2+                   &
                   0.08_r8*umg(k)*umr(k))**0.5_r8*rho(i,k)*                      &
                   n0r(k)*n0g(k)/lamr(k)**3*                              &
@@ -1895,11 +1872,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  1._r8/(lamr(k)**2*lamg(k)**2)+                   &
                  1._r8/(lamr(k)*lamg(k)**3))
 
-! make sure pracg doesn't exceed total rain mixing ratio
-! as this may otherwise result in too much transfer of water during
-! rime-splintering
-
-!            pracg(k) = min(pracg(k),qr3d(k)/dt)
             else
               pracg(k) = 0._r8
               npracg(k) = 0._r8
@@ -1959,7 +1931,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
             end if
             end if
             end if
-!>songxl***********************
 
               !.......................................................................
               ! heterogeneous freezing of rain drops
@@ -1984,7 +1955,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
               ! gravitational collection kernel, droplet fall speed neglected
 
               if (qric(i,k).ge.qsmall .and. qcic(i,k).ge.qsmall) then
-!                 pra(k) = 67._r8*(qcic(i,k)*qric(i,k))**1.15_r8
                  pra(k) = accr_fac*67._r8*(qcic(i,k)*qric(i,k))**1.15_r8
                  npra(k) = pra(k)/(qcic(i,k)/ncic(i,k))
               else
@@ -2044,8 +2014,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                 /lamr(k)**(br+3._r8)/lamr(k)**3*rho(i,k)
             praci(k)=cons24*qiic(i,k)*n0r(k)*arn(i,k)/ &
                 lamr(k)**(br+3._r8)*rho(i,k)
-!            niacr(k)=min(niacr(k),nric(i,k)/dt)
-!            niacr(k)=min(niacr(k),niic(i,k)/dt)
             else
             niacrs(k)=cons24*niic(i,k)*n0r(k)*arn(i,k) &
                 /lamr(k)**(br+3._r8)*rho(i,k)
@@ -2053,11 +2021,8 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                 /lamr(k)**(br+3._r8)/lamr(k)**3*rho(i,k)
             pracis(k)=cons24*qiic(i,k)*n0r(k)*arn(i,k)/ &
                 lamr(k)**(br+3._r8)*rho(i,k)
-!            niacrs(k)=min(niacrs(k),nric(i,k)/dt)
-!            niacrs(k)=min(niacrs(k),niic(i,k)/dt)
             end if
          end if
-!>songxl*****************
 
               !.......................................................................
               ! fallout term
@@ -2296,15 +2261,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  nidep(i,k)=nidep(i,k)*rho(i,k)
                  nimey(i,k)=nimey(i,k)*rho(i,k)
 
-                 if (.false.) then
-                    ! cooper curve (factor of 1000 is to convert from L-1 to m-3)
-                    !dum2i(i,k)=0.005_r8*exp(0.304_r8*(273.15_r8-t(i,k)))*1000._r8
-
-                    ! put limit on number of nucleated crystals, set to number at T=-30 C
-                    ! cooper (limit to value at -35 C)
-                    !dum2i(i,k)=min(dum2i(i,k),208.9e3_r8)/rho(i,k) ! convert from m-3 to kg-1
-                 end if
-
               else
                  dum2i(i,k)=0._r8
               end if
@@ -2334,15 +2290,15 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
               ! Bergeron process
               ! If 0C< T <-40C and both ice and liquid exist
               if (.false.) then
-              if (t(i,k).le.273.15_r8 .and. t(i,k).gt.233.15_r8 .and.  &
-                 qiic(i,k).gt.0.5e-6_r8 .and. qcic(i,k).gt. qsmall)  then
-                 plevap = qcic(i,k)/bergtsf
-                 prb(k) = max(0._r8,plevap) 
-                 nprb(k) = prb(k)/(qcic(i,k)/ncic(i,k))
-              else
-                 prb(k)=0._r8
-                 nprb(k)=0._r8
-              end if
+                if (t(i,k).le.273.15_r8 .and. t(i,k).gt.233.15_r8 .and.  &
+                   qiic(i,k).gt.0.5e-6_r8 .and. qcic(i,k).gt. qsmall)  then
+                   plevap = qcic(i,k)/bergtsf
+                   prb(k) = max(0._r8,plevap) 
+                   nprb(k) = prb(k)/(qcic(i,k)/ncic(i,k))
+                else
+                   prb(k)=0._r8
+                   nprb(k)=0._r8
+                end if
               else
               !  Rotstayn et al.(2000)  
               if (t(i,k).le.273.15_r8 .and. t(i,k).gt.233.15_r8 .and.  &
@@ -2476,13 +2432,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
 
                  nnucct(k) = (dfaer1*nacon1+dfaer2*nacon2+dfaer3*nacon3+dfaer4*nacon4)*2._r8*pi*  &
                     cdist1(k)*gamma(pgam(i,k)+2._r8)/lamc(i,k)
-
-                 !              if (nnuccc(k).gt.nnuccd(k)) then
-                 !                 dum=nnuccd(k)/nnuccc(k)
-                 ! scale mixing ratio of droplet freezing with limit
-                 !                 mnuccc(k)=mnuccc(k)*dum
-                 !                 nnuccc(k)=nnuccd(k)
-                 !              end if
  
               else
                  mnuccc(k) = 0._r8
@@ -2531,7 +2480,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
               qce = mu(i,k)*qc(i,k)-fholm(i,k) +dz(i,k)*cmel(i,k-1)
               dum = arcf(i,k)*(pra(k)+prc(k)+prb(k)+mnuccc(k)+mnucct(k)+msacwi(k)+   &
                                psacws(k)+psacwg(k)+pgsacw(k) +qmultg(k)+psacwi(k) )*dz(i,k)
-!                               psacws(k))*dz(i,k)
               if( qce.lt.0._r8)  then
                  qcimp(k) = .true.              
                  prc(k) = 0._r8
@@ -2585,53 +2533,12 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  npsacwg(k)= npsacwg(k)*ratio
                  npsacwi(k)=npsacwi(k)*ratio
               end if
- 
-              ! conservation of qi
-!              qie = mu(i,k)*qi(i,k)+fholm(i,k) +dz(i,k)*(cmei(i,k-1) +  &
-!                    ( mnuccc(k)+mnucct(k)+msacwi(k)+prb(k)+qmultg(k)+qmultrg(k)+psacwi(k))*arcf(i,k) )
-!              dum = arcf(i,k)*(prci(k)+ prai(k)+praci(k)+pracis(k))*dz(i,k) 
-!!              dum = arcf(i,k)*(prci(k)+ prai(k))*dz(i,k)
-!              if (qie.lt.0._r8) then
-!                 qiimp(k) = .true.
-!                 prci(k) = 0._r8
-!                 prai(k) = 0._r8
-!                 praci(k)= 0._r8
-!                 pracis(k)= 0._r8
-!              else if (dum.gt.qie) then
-!                 ratio = qie/dum*omsm
-!                 prci(k) = prci(k)*ratio
-!                 prai(k) = prai(k)*ratio
-!                 praci(k)= praci(k)*ratio
-!                 pracis(k) = pracis(k)*ratio
-!              end if
-
-              ! conservation of ni
-!              nie = mu(i,k)*ni(i,k)+fholn(i,k) +dz(i,k)*(nnuccd(k)*mtime*arcf(i,k)   &
-!                    +(nnuccc(k)+ nnucct(k)+nmultg(k)+ nmultrg(k))*arcf(i,k) )
-!              dum = arcf(i,k)*dz(i,k)*(-nsacwi(k)+nprci(k)+ nprai(k)+niacr(k)+niacrs(k))
-!!              dum = arcf(i,k)*dz(i,k)*(-nsacwi(k)+nprci(k)+ nprai(k))
-!              if( nie.lt.0._r8) then
-!                 niimp(k) = .true.
-!                 nsacwi(k)= 0._r8
-!                 nprci(k) = 0._r8
-!                 nprai(k) = 0._r8
-!                 niacr(k) = 0._r8
-!                 niacrs(k)= 0._r8
-!              else  if (dum.gt.nie) then
-!                 ratio = nie/dum*omsm
-!                 nsacwi(k)= nsacwi(k)*ratio
-!                 nprci(k) = nprci(k)*ratio
-!                 nprai(k) = nprai(k)*ratio
-!                 niacr(k) = niacr(k)*ratio
-!                 niacrs(k)=niacrs(k)*ratio
-!              end if
 
               ! conservation of qr
 
               qre = mu(i,k)*qr(i,k)+dz(i,k)*(pra(k)+prc(k))*arcf(i,k)
               dum = arcf(i,k)*dz(i,k)*(pracs(k)+ mnuccr(k)-prf(k)+pracg(k)+pgracs(k)    &
                             +piacr(k)+piacrs(k)+qmultrg(k) ) 
-!              dum = arcf(i,k)*dz(i,k)*(pracs(k)+ mnuccr(k)-prf(k)) 
 
               if (qre.lt.0._r8) then
                  prf(k) = 0._r8
@@ -2719,9 +2626,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                                                                               
               ! conservation of qni
 
-!              qnie = mu(i,k)*qni(i,k)+dz(i,k)*( (prai(k)+psacws(k)+prci(k)+     &
-!                 pracs(k)+mnuccr(k))*arcf(i,k) )
-!              dum = arcf(i,k)*dz(i,k)*(-psf(k))
               qnie = mu(i,k)*qni(i,k)+dz(i,k)*( (prai(k)+psacws(k)+prci(k)+     &
                      pracs(k)+piacrs(k)+pracis(k) )*arcf(i,k) )
               dum = arcf(i,k)*dz(i,k)*(-psf(k)+ psacr(k) )
@@ -2736,8 +2640,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
               end if
 
               ! conservation of ns
-!              nse = mu(i,k)*ns(i,k)+dz(i,k)*(nprci(k)+nnuccr(k))*arcf(i,k)
-!              dum = arcf(i,k)*dz(i,k)*(-nsagg(k)-pnsf(k))
               nse = mu(i,k)*ns(i,k)+dz(i,k)*(nprci(k)+niacrs(k))*arcf(i,k)
               dum = arcf(i,k)*dz(i,k)*(-nsagg(k)-pnsf(k)+nscng(k)+ngracs(k))
               if (nse.lt.0._r8) then
@@ -2783,20 +2685,15 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
               !*****************************************************************************
 
               if (k.le.kqc(i))   then
-!                 qctend(i,k) = (-pra(k)-prc(k)-prb(k)-mnuccc(k)-mnucct(k)-msacwi(k)- &   
-!                                psacws(k))
                  qctend(i,k) = (-pra(k)-prc(k)-prb(k)-mnuccc(k)-mnucct(k)-msacwi(k)- &
                                 psacws(k))-psacwg(k) -pgsacw(k) -qmultg(k)-psacwi(k)
 
-!                 qitend(i,k) = (prb(k)+mnuccc(k)+mnucct(k)+msacwi(k)-prci(k)- prai(k))
                  qitend(i,k) = (prb(k)+mnuccc(k)+mnucct(k)+msacwi(k)-prci(k)- prai(k))  &
                                 -praci(k)-pracis(k)+qmultg(k)+ qmultrg(k)+psacwi(k) 
 
-!                qrtend(i,k) = (pra(k)+prc(k))+(-pracs(k)- mnuccr(k))
                  qrtend(i,k) = pra(k)+prc(k)-pracs(k)-mnuccr(k)-pracg(k)-pgracs(k)  &
                                -piacr(k)-piacrs(k) -qmultrg(k) 
 
-!                qnitend(i,k) = (prai(k)+psacws(k)+prci(k))+(pracs(k)+mnuccr(k))
                  qnitend(i,k) = (prai(k)+psacws(k)+prci(k))+pracs(k)-psacr(k)+piacrs(k)   &
                                  +pracis(k)
                  
@@ -2814,13 +2711,10 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
 
                  nctend(i,k) = npccn(k)*mtimec+(-nnuccc(k)-nnucct(k)-npsacws(k) &    
                                -npra(k)-nprc1(k)-nprb(k)- npsacwg(k)-npsacwi(k))                           
-!                              -npra(k)-nprc1(k)-nprb(k))
 
                  nitend(i,k) = nnuccd(k)*mtime+(nnuccc(k)+ nnucct(k)+nsacwi(k)-nprci(k)- &
                                nprai(k)) - niacr(k)-niacrs(k)+nmultg(k)+ nmultrg(k) 
-!                               nprai(k))
 
-!                 nstend(i,k) = nsagg(k)+nnuccr(k) + nprci(k)
                  nstend(i,k) = nsagg(k) + nprci(k)- nscng(k)-ngracs(k)+niacrs(k) 
 
                  nrtend(i,k) = nprc(k)+(-npracs(k)-nnuccr(k) +nragg(k))-niacr(k)-niacrs(k)  &
@@ -2915,7 +2809,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  ng(i,k-1) = 1._r8/mu(i,k-1)*                                        &
                     (mu(i,k)*ng(i,k)+dz(i,k)*(ngtend(i,k)+pngf(k))*arcf(i,k) )
                  ng(i,k-1) = max(ng(i,k-1),0._r8)    
-!                 if (ng(i,k-1) .lt. 0._r8) write(*,*) "ng(i,k-1)<0,k=",k,"i=",i
               else
                  qg(i,k-1)=0._r8
                  ng(i,k-1)=0._r8
@@ -2930,11 +2823,9 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
 
               ! snow
               if ( k.le.kqi(i) ) then
-!                 qni(i,k-1) = 1._r8/mu(i,k-1)*                                    &
                  qni(i,k-1) = 1._r8/(mu(i,k-1)+dz(i,k)*du(i,k-1) )*                &
                     (mu(i,k)*qni(i,k)+dz(i,k)*(qnitend(i,k)+psf(k))*arcf(i,k) )
                  
-!                 ns(i,k-1) = 1._r8/mu(i,k-1)*                                    &
                  ns(i,k-1) = 1._r8/(mu(i,k-1)+dz(i,k)*du(i,k-1)  )*                                    &
                     (mu(i,k)*ns(i,k)+dz(i,k)*(nstend(i,k)+pnsf(k))*arcf(i,k) )
                  ns(i,k-1) = max(ns(i,k-1),0._r8)
@@ -2997,7 +2888,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  qr(i,k-1)=(1._r8-dum)*qr(i,k-1)
                  nr(i,k-1)=(1._r8-dum)*nr(i,k-1)
                  nr(i,k-1) = max(nr(i,k-1),0._r8)
-!                 fhmrm(i,k-1) = -mu(i,k-1)*dum*qr(i,k-1)/dz(i,k)
               end if
 
               rprd(i,k-1)= (qnitend(i,k) + qrtend(i,k)+ qgtend(i,k) )*arcf(i,k) + dsfm(i,k-1)
@@ -3089,8 +2979,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
               end if            
 
 
-!              frz(i,k-1) = cmei(i,k-1) + arcf(i,k)*(prb(k)+mnuccc(k)+mnucct(k)+msacwi(k)+   &
-!                     pracs(k)+mnuccr(k)+psacws(k) )-fhmlm(i,k-1)-fhmrm(i,k-1)
               frz(i,k-1) = cmei(i,k-1) + arcf(i,k)*(prb(k)+mnuccc(k)+mnucct(k)+msacwi(k)+   &
                      pracs(k)+mnuccr(k)+psacws(k)+pracg(k)+psacwg(k)+pgsacw(k)+pgracs(k)+   &
                      piacr(k)+piacrs(k)+qmultg(k)+ qmultrg(k)+psacwi(k) )-fhmlm(i,k-1)-fhmrm(i,k-1)
@@ -3115,7 +3003,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  ! add upper limit to in-cloud number concentration to prevent numerical error
                  ni(i,k-1)=min(ni(i,k-1),qi(i,k-1)*1.e20_r8)
                  ! ni should be non-negative
-                 ! ni(i,k-1) = max(ni(i,k-1), 0._r8)
                  if (ni(i,k-1).lt. 0._r8) write(iulog,*) "ni(i,k-1)=",ni(i,k-1)
 
                  lami(k-1) = (gamma(1._r8+di)*ci* &
@@ -3182,7 +3069,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  ! add upper limit to in-cloud number concentration to prevent numerical error
                  nc(i,k-1)=min(nc(i,k-1),qc(i,k-1)*1.e20_r8)
                  ! and make sure it's non-negative
-                 ! nc(i,k-1) = max(nc(i,k-1), 0._r8)
                  if (nc(i,k-1).lt. 0._r8) write(iulog,*) "nc(i,k-1)=",nc(i,k-1) 
 
                  ! get pgam from fit to observations of martin et al. 1994
@@ -3305,8 +3191,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  n0s(k-1) = ns(i,k-1)*lams(k-1)
 
                  ! check for slope
-!                 lammax = 1._r8/10.e-6_r8
-!                 lammin = 1._r8/2000.e-6_r8
                  lammax = 1._r8/dcs
                  lammin = 1._r8/5000.e-6_r8
 
@@ -3345,10 +3229,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                  nsde(i,k-1)   = 0._r8
                  dsfm  (i,k-2) = 0._r8
                  dsfn  (i,k-2) = 0._r8
-!                 qnide(i,k-1)   = qni(i,k-1)
-!                 nsde(i,k-1)   = ns(i,k-1)
-!                 dsfm  (i,k-2) = -du(i,k-2)*qnide(i,k-1)
-!                 dsfn  (i,k-2) = -du(i,k-2)*nsde(i,k-1)                 
               
               end if
 
@@ -3384,13 +3264,6 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                   umg(k-1) = 0._r8
                   ung(k-1) = 0._r8
               end if
-
-!              rprd(i,k-1)= (qnitend(i,k) + qrtend(i,k))*arcf(i,k)
-!              sprd(i,k-1)=  qnitend(i,k) *arcf(i,k) -fhmrm(i,k-1)       
-!              rprd(i,k-1)= (qnitend(i,k) + qrtend(i,k)+ qgtend(i,k) )*arcf(i,k)
-!              sprd(i,k-1)= (qnitend(i,k)+qgtend(i,k)) *arcf(i,k) -fhmrm(i,k-1)
-!              rprd(i,k-1)= (qnitend(i,k) + qrtend(i,k)+ qgtend(i,k) )*arcf(i,k) + dsfm(i,k-1)
-!              sprd(i,k-1)= (qnitend(i,k)+qgtend(i,k)) *arcf(i,k) -fhmrm(i,k-1) + dsfm(i,k-1)
 
            end if  ! k<jlcl
 

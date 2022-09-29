@@ -67,12 +67,10 @@ real(r8), allocatable :: num_to_mass_aer(:)
 integer :: naer_all      ! number of aerosols affecting climate
 integer :: idxsul   = -1 ! index in aerosol list for sulfate
 
-!<songxl 2014-11-20-----------
 ! Both microp_aero_init and zm_conv_init can call ndrop_bam_init.  Use this
 ! logical so that it only gets called once.
 logical :: ndrop_bam_init_done = .false.
 
-!>songxl 2014-11-20-----------
 
 !===============================================================================
 contains
@@ -91,9 +89,7 @@ subroutine ndrop_bam_init
    real(r8) :: arg
    !-------------------------------------------------------------------------------
 
-!<songxl 2014-11-20---------
    if (ndrop_bam_init_done) return
-!>songxl 2014-11-20---------
 
    ! Access the physical properties of the bulk aerosols that are affecting the climate
    ! by using routines from the rad_constituents module.
@@ -210,9 +206,7 @@ subroutine ndrop_bam_init
 
    end do
 
-!<songxl 2014-11-20----
    ndrop_bam_init_done = .true.
-!>songxl 2014-11-20----
 
 end subroutine ndrop_bam_init
 
