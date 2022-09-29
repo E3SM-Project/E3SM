@@ -887,6 +887,15 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          end if 
 #endif
          !------------------------------------------------------------------------------------------
+         ! zero output fluxes to avoid error in check_energy_chng()
+         !------------------------------------------------------------------------------------------
+         do i = 1,ncol
+            mmf_qchk_prec_dp(c,i) = 0.0
+            mmf_qchk_snow_dp(c,i) = 0.0
+            mmf_rad_flux(c,i) = 0.0
+         end do ! i = 1,ncol
+
+         !------------------------------------------------------------------------------------------
          !------------------------------------------------------------------------------------------
       end do ! c=begchunk, endchunk
 
