@@ -34,7 +34,7 @@ void setup_import_and_export_data(
   // Default values
   Kokkos::deep_copy(import_vec_comps_view,         -1);
   Kokkos::deep_copy(import_constant_multiple_view,  1);
-  Kokkos::deep_copy(do_import_during_init_view,     true);
+  Kokkos::deep_copy(do_import_during_init_view,     false);
 
   // Set cpl indices. We do a random shuffle of [0, num_cpl_imports),
   // then assign the scream imports to the first num_scream_imports
@@ -49,29 +49,28 @@ void setup_import_and_export_data(
   }
 
   // Set vector components
-  import_vec_comps_view(5) = 0;
-  import_vec_comps_view(6) = 1;
+  import_vec_comps_view(10) = 0;
+  import_vec_comps_view(11) = 1;
 
   // Set constant multiples
-  import_constant_multiple_view(4) = -1;
-  import_constant_multiple_view(5) = -1;
-  import_constant_multiple_view(6) = -1;
-  import_constant_multiple_view(7) = -1;
-  import_constant_multiple_view(8) = -1;
+  import_constant_multiple_view(9)  = -1;
+  import_constant_multiple_view(10) = -1;
+  import_constant_multiple_view(11) = -1;
+  import_constant_multiple_view(12) = -1;
+  import_constant_multiple_view(13) = -1;
 
   // Set boolean for importing during intialization
-  do_import_during_init_view(0) = false;
-  do_import_during_init_view(1) = false;
-  do_import_during_init_view(2) = false;
-  do_import_during_init_view(3) = false;
-  do_import_during_init_view(4) = false;
+  do_import_during_init_view(10) = true;
+  do_import_during_init_view(11) = true;
+  do_import_during_init_view(12) = true;
+  do_import_during_init_view(13) = true;
 
   // EXPORTS
 
   // Default values
   Kokkos::deep_copy(export_vec_comps_view,         -1);
   Kokkos::deep_copy(export_constant_multiple_view,  1);
-  Kokkos::deep_copy(do_export_during_init_view,     true);
+  Kokkos::deep_copy(do_export_during_init_view,     false);
 
   // Set cpl indices. We do a random shuffle of [0, num_cpl_exports),
   // then assign the scream exports to the first num_scream_exports
@@ -90,14 +89,15 @@ void setup_import_and_export_data(
   export_vec_comps_view(2) = 1;
 
   // Set boolean for exporting during intialization
-  do_export_during_init_view(9 ) = false;
-  do_export_during_init_view(10) = false;
-  do_export_during_init_view(11) = false;
-  do_export_during_init_view(12) = false;
-  do_export_during_init_view(13) = false;
-  do_export_during_init_view(14) = false;
-  do_export_during_init_view(15) = false;
-  do_export_during_init_view(16) = false;
+  do_export_during_init_view(0) = true;
+  do_export_during_init_view(1) = true;
+  do_export_during_init_view(2) = true;
+  do_export_during_init_view(3) = true;
+  do_export_during_init_view(4) = true;
+  do_export_during_init_view(5) = true;
+  do_export_during_init_view(6) = true;
+  do_export_during_init_view(7) = true;
+  do_export_during_init_view(8) = true;
 }
 
 void test_imports(const FieldManager& fm,
@@ -111,6 +111,11 @@ void test_imports(const FieldManager& fm,
   fm.get_field("sfc_alb_dir_nir" ).sync_to_host();
   fm.get_field("sfc_alb_dif_vis" ).sync_to_host();
   fm.get_field("sfc_alb_dif_nir" ).sync_to_host();
+  fm.get_field("surf_radiative_T").sync_to_host();
+  fm.get_field("T_2m"            ).sync_to_host();
+  fm.get_field("qv_2m"           ).sync_to_host();
+  fm.get_field("wind_speed_10m"  ).sync_to_host();
+  fm.get_field("snow_depth_land" ).sync_to_host();
   fm.get_field("surf_lw_flux_up" ).sync_to_host();
   fm.get_field("surf_mom_flux"   ).sync_to_host();
   fm.get_field("surf_sens_flux"  ).sync_to_host();
@@ -119,10 +124,15 @@ void test_imports(const FieldManager& fm,
   const auto sfc_alb_dir_nir  = fm.get_field("sfc_alb_dir_nir" ).get_view<const Real*,  Host>();
   const auto sfc_alb_dif_vis  = fm.get_field("sfc_alb_dif_vis" ).get_view<const Real*,  Host>();
   const auto sfc_alb_dif_nir  = fm.get_field("sfc_alb_dif_nir" ).get_view<const Real*,  Host>();
+  const auto surf_radiative_T = fm.get_field("surf_radiative_T").get_view<const Real*,  Host>();
+  const auto T_2m             = fm.get_field("T_2m"            ).get_view<const Real*,  Host>();
+  const auto qv_2m            = fm.get_field("qv_2m"           ).get_view<const Real*,  Host>();
+  const auto wind_speed_10m   = fm.get_field("wind_speed_10m"  ).get_view<const Real*,  Host>();
+  const auto snow_depth_land  = fm.get_field("snow_depth_land" ).get_view<const Real*,  Host>();
   const auto surf_lw_flux_up  = fm.get_field("surf_lw_flux_up" ).get_view<const Real*,  Host>();
   const auto surf_mom_flux    = fm.get_field("surf_mom_flux"   ).get_view<const Real**, Host>();
   const auto surf_sens_flux   = fm.get_field("surf_sens_flux"  ).get_view<const Real*,  Host>();
-  const auto surf_evap        = fm.get_field("surf_evap").get_view<const Real*,  Host>();
+  const auto surf_evap        = fm.get_field("surf_evap"       ).get_view<const Real*,  Host>();
 
   const int ncols = surf_evap.extent(0);
 
@@ -131,25 +141,35 @@ void test_imports(const FieldManager& fm,
     // Check cpl data to scream fields
 
     // The following are imported both during initialization and run phase
-    EKAT_REQUIRE(surf_mom_flux(i,0) == import_constant_multiple_view(5)*import_data_view(i, import_cpl_indices_view(5)));
-    EKAT_REQUIRE(surf_mom_flux(i,1) == import_constant_multiple_view(6)*import_data_view(i, import_cpl_indices_view(6)));
-    EKAT_REQUIRE(surf_sens_flux(i)  == import_constant_multiple_view(7)*import_data_view(i, import_cpl_indices_view(7)));
-    EKAT_REQUIRE(surf_evap(i)       == import_constant_multiple_view(8)*import_data_view(i, import_cpl_indices_view(8)));
+    EKAT_REQUIRE(surf_mom_flux(i,0) == import_constant_multiple_view(10)*import_data_view(i, import_cpl_indices_view(10)));
+    EKAT_REQUIRE(surf_mom_flux(i,1) == import_constant_multiple_view(11)*import_data_view(i, import_cpl_indices_view(11)));
+    EKAT_REQUIRE(surf_sens_flux(i)  == import_constant_multiple_view(12)*import_data_view(i, import_cpl_indices_view(12)));
+    EKAT_REQUIRE(surf_evap(i)       == import_constant_multiple_view(13)*import_data_view(i, import_cpl_indices_view(13)));
 
     // The following are only imported during run phase. If this test is called
     // during initialization, all values should still be 0.
     if (called_directly_after_init) {
-      EKAT_REQUIRE(sfc_alb_dir_vis(i) == 0.0);
-      EKAT_REQUIRE(sfc_alb_dir_nir(i) == 0.0);
-      EKAT_REQUIRE(sfc_alb_dif_vis(i) == 0.0);
-      EKAT_REQUIRE(sfc_alb_dif_nir(i) == 0.0);
-      EKAT_REQUIRE(surf_lw_flux_up(i) == 0.0);
+      EKAT_REQUIRE(sfc_alb_dir_vis(i)  == 0.0);
+      EKAT_REQUIRE(sfc_alb_dir_nir(i)  == 0.0);
+      EKAT_REQUIRE(sfc_alb_dif_vis(i)  == 0.0);
+      EKAT_REQUIRE(sfc_alb_dif_nir(i)  == 0.0);
+      EKAT_REQUIRE(surf_radiative_T(i) == 0.0);
+      EKAT_REQUIRE(T_2m(i)             == 0.0);
+      EKAT_REQUIRE(qv_2m(i)            == 0.0);
+      EKAT_REQUIRE(wind_speed_10m(i)   == 0.0);
+      EKAT_REQUIRE(snow_depth_land(i)  == 0.0);
+      EKAT_REQUIRE(surf_lw_flux_up(i)  == 0.0);
     } else {
-      EKAT_REQUIRE(sfc_alb_dir_vis(i) == import_constant_multiple_view(0)*import_data_view(i, import_cpl_indices_view(0)));
-      EKAT_REQUIRE(sfc_alb_dir_nir(i) == import_constant_multiple_view(1)*import_data_view(i, import_cpl_indices_view(1)));
-      EKAT_REQUIRE(sfc_alb_dif_vis(i) == import_constant_multiple_view(2)*import_data_view(i, import_cpl_indices_view(2)));
-      EKAT_REQUIRE(sfc_alb_dif_nir(i) == import_constant_multiple_view(3)*import_data_view(i, import_cpl_indices_view(3)));
-      EKAT_REQUIRE(surf_lw_flux_up(i) == import_constant_multiple_view(4)*import_data_view(i, import_cpl_indices_view(4)));
+      EKAT_REQUIRE(sfc_alb_dir_vis(i)  == import_constant_multiple_view(0)*import_data_view(i, import_cpl_indices_view(0)));
+      EKAT_REQUIRE(sfc_alb_dir_nir(i)  == import_constant_multiple_view(1)*import_data_view(i, import_cpl_indices_view(1)));
+      EKAT_REQUIRE(sfc_alb_dif_vis(i)  == import_constant_multiple_view(2)*import_data_view(i, import_cpl_indices_view(2)));
+      EKAT_REQUIRE(sfc_alb_dif_nir(i)  == import_constant_multiple_view(3)*import_data_view(i, import_cpl_indices_view(3)));
+      EKAT_REQUIRE(surf_radiative_T(i) == import_constant_multiple_view(4)*import_data_view(i, import_cpl_indices_view(4)));
+      EKAT_REQUIRE(T_2m(i)             == import_constant_multiple_view(5)*import_data_view(i, import_cpl_indices_view(5)));
+      EKAT_REQUIRE(qv_2m(i)            == import_constant_multiple_view(6)*import_data_view(i, import_cpl_indices_view(6)));
+      EKAT_REQUIRE(wind_speed_10m(i)   == import_constant_multiple_view(7)*import_data_view(i, import_cpl_indices_view(7)));
+      EKAT_REQUIRE(snow_depth_land(i)  == import_constant_multiple_view(8)*import_data_view(i, import_cpl_indices_view(8)));
+      EKAT_REQUIRE(surf_lw_flux_up(i)  == import_constant_multiple_view(9)*import_data_view(i, import_cpl_indices_view(9)));
     }
   }
 }
@@ -344,7 +364,7 @@ TEST_CASE("surface-coupling", "") {
   // Setup views to test import/export. For this test we consider a random number of non-imported/exported
   // cpl fields (in addition to the required scream imports/exports), then assign a random, non-repeating
   // cpl index for each field in [0, num_cpl_fields).
-  const int num_scream_imports = 9;
+  const int num_scream_imports = 14;
   const int num_scream_exports = 17;
   KokkosTypes<HostDevice>::view_1d<int> additional_import_exports("additional_import_exports", 2);
   ekat::genRandArray(additional_import_exports, engine, pdf_int_additional_fields);
@@ -367,15 +387,21 @@ TEST_CASE("surface-coupling", "") {
   ekat::genRandArray(import_data_view, engine, pdf_real_import_data);
   // Set import names
   char import_names[num_scream_imports][32];
-  std::strcpy(import_names[0], "sfc_alb_dir_vis");
-  std::strcpy(import_names[1], "sfc_alb_dir_nir");
-  std::strcpy(import_names[2], "sfc_alb_dif_vis");
-  std::strcpy(import_names[3], "sfc_alb_dif_nir");
-  std::strcpy(import_names[4], "surf_lw_flux_up");
-  std::strcpy(import_names[5], "surf_mom_flux");
-  std::strcpy(import_names[6], "surf_mom_flux");
-  std::strcpy(import_names[7], "surf_sens_flux");
-  std::strcpy(import_names[8], "surf_evap");
+  std::strcpy(import_names[0],  "sfc_alb_dir_vis");
+  std::strcpy(import_names[1],  "sfc_alb_dir_nir");
+  std::strcpy(import_names[2],  "sfc_alb_dif_vis");
+  std::strcpy(import_names[3],  "sfc_alb_dif_nir");
+  std::strcpy(import_names[4],  "surf_radiative_T");
+  std::strcpy(import_names[5],  "T_2m");
+  std::strcpy(import_names[6],  "qv_2m");
+  std::strcpy(import_names[7],  "wind_speed_10m");
+  std::strcpy(import_names[8],  "snow_depth_land");
+  std::strcpy(import_names[9],  "surf_lw_flux_up");
+  std::strcpy(import_names[10], "surf_mom_flux");
+  std::strcpy(import_names[11], "surf_mom_flux");
+  std::strcpy(import_names[12], "surf_sens_flux");
+  std::strcpy(import_names[13], "surf_evap");
+
   // Export data is of size num_cpl_exports, the rest of the views are size num_scream_exports.
   KokkosTypes<HostDevice>::view_2d<Real> export_data_view             ("export_data",
                                                                        ncols, num_cpl_exports);
@@ -408,6 +434,7 @@ TEST_CASE("surface-coupling", "") {
   std::strcpy(export_names[14], "sfc_flux_dif_vis");
   std::strcpy(export_names[15], "sfc_flux_sw_net");
   std::strcpy(export_names[16], "sfc_flux_lw_dn");
+
   // Setup the import/export data. This is meant to replicate the structures coming
   // from mct_coupling/scream_cpl_indices.F90
   setup_import_and_export_data(num_cpl_imports, num_scream_imports,

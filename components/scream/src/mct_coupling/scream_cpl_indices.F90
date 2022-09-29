@@ -6,7 +6,7 @@ module scream_cpl_indices
   private
 
   ! Focus only on the ones that scream imports/exports (subsets of x2a and a2x)
-  integer, parameter, public :: num_scream_imports = 9
+  integer, parameter, public :: num_scream_imports = 14
   integer, parameter, public :: num_scream_exports = 17
   integer, public :: num_cpl_imports, num_cpl_exports, import_field_size, export_field_size
 
@@ -69,48 +69,57 @@ module scream_cpl_indices
     do i=1,num_scream_imports
       import_vector_components(i) = -1
       import_constant_multiple(i) = 1
-      do_import_during_init(i) = .true.
+      do_import_during_init(i) = .false.
     enddo
 
     ! SCREAM names
-    import_field_names(1) = 'sfc_alb_dir_vis'
-    import_field_names(2) = 'sfc_alb_dir_nir'
-    import_field_names(3) = 'sfc_alb_dif_vis'
-    import_field_names(4) = 'sfc_alb_dif_nir'
-    import_field_names(5) = 'surf_lw_flux_up'
-    import_field_names(6) = 'surf_mom_flux'
-    import_field_names(7) = 'surf_mom_flux'
-    import_field_names(8) = 'surf_sens_flux'
-    import_field_names(9) = 'surf_evap'
+    import_field_names(1)  = 'sfc_alb_dir_vis'
+    import_field_names(2)  = 'sfc_alb_dir_nir'
+    import_field_names(3)  = 'sfc_alb_dif_vis'
+    import_field_names(4)  = 'sfc_alb_dif_nir'
+    import_field_names(5)  = 'surf_radiative_T'
+    import_field_names(6)  = 'T_2m'
+    import_field_names(7)  = 'qv_2m'
+    import_field_names(8)  = 'wind_speed_10m'
+    import_field_names(9)  = 'snow_depth_land'
+    import_field_names(10) = 'surf_lw_flux_up'
+    import_field_names(11) = 'surf_mom_flux'
+    import_field_names(12) = 'surf_mom_flux'
+    import_field_names(13) = 'surf_sens_flux'
+    import_field_names(14) = 'surf_evap'
 
     ! CPL indices
-    import_cpl_indices(1) = mct_avect_indexra(x2a,'Sx_avsdr')
-    import_cpl_indices(2) = mct_avect_indexra(x2a,'Sx_anidr')
-    import_cpl_indices(3) = mct_avect_indexra(x2a,'Sx_avsdf')
-    import_cpl_indices(4) = mct_avect_indexra(x2a,'Sx_anidf')
-    import_cpl_indices(5) = mct_avect_indexra(x2a,'Faxx_lwup')
-    import_cpl_indices(6) = mct_avect_indexra(x2a,'Faxx_taux')
-    import_cpl_indices(7) = mct_avect_indexra(x2a,'Faxx_tauy')
-    import_cpl_indices(8) = mct_avect_indexra(x2a,'Faxx_sen')
-    import_cpl_indices(9) = mct_avect_indexra(x2a,'Faxx_evap')
+    import_cpl_indices(1)  = mct_avect_indexra(x2a,'Sx_avsdr')
+    import_cpl_indices(2)  = mct_avect_indexra(x2a,'Sx_anidr')
+    import_cpl_indices(3)  = mct_avect_indexra(x2a,'Sx_avsdf')
+    import_cpl_indices(4)  = mct_avect_indexra(x2a,'Sx_anidf')
+    import_cpl_indices(5)  = mct_avect_indexra(x2a,'Sx_t')
+    import_cpl_indices(6)  = mct_avect_indexra(x2a,'Sx_tref')
+    import_cpl_indices(7)  = mct_avect_indexra(x2a,'Sx_qref')
+    import_cpl_indices(8)  = mct_avect_indexra(x2a,'Sx_u10')
+    import_cpl_indices(9)  = mct_avect_indexra(x2a,'Sl_snowh')
+    import_cpl_indices(10) = mct_avect_indexra(x2a,'Faxx_lwup')
+    import_cpl_indices(11) = mct_avect_indexra(x2a,'Faxx_taux')
+    import_cpl_indices(12) = mct_avect_indexra(x2a,'Faxx_tauy')
+    import_cpl_indices(13) = mct_avect_indexra(x2a,'Faxx_sen')
+    import_cpl_indices(14) = mct_avect_indexra(x2a,'Faxx_evap')
 
     ! Vector components
-    import_vector_components(6) = 0
-    import_vector_components(7) = 1
+    import_vector_components(11) = 0
+    import_vector_components(12) = 1
 
     ! Constant multiples
-    import_constant_multiple(5) = -1
-    import_constant_multiple(6) = -1
-    import_constant_multiple(7) = -1
-    import_constant_multiple(8) = -1
-    import_constant_multiple(9) = -1
+    import_constant_multiple(10) = -1
+    import_constant_multiple(11) = -1
+    import_constant_multiple(12) = -1
+    import_constant_multiple(13) = -1
+    import_constant_multiple(14) = -1
 
     ! Does this field need to be imported during intialization
-    do_import_during_init(1) = .false.
-    do_import_during_init(2) = .false.
-    do_import_during_init(3) = .false.
-    do_import_during_init(4) = .false.
-    do_import_during_init(5) = .false.
+    do_import_during_init(11) = .true.
+    do_import_during_init(12) = .true.
+    do_import_during_init(13) = .true.
+    do_import_during_init(14) = .true.
 
     ! EXPORT
 
@@ -125,7 +134,7 @@ module scream_cpl_indices
     do i=1,num_scream_exports
       export_vector_components(i) = -1
       export_constant_multiple(i) = 1
-      do_export_during_init(i) = .true.
+      do_export_during_init(i) = .false.
     enddo
 
     ! SCREAM names
@@ -171,14 +180,15 @@ module scream_cpl_indices
     export_vector_components(3) = 1
 
     ! Does this field need to be imported during intialization
-    do_export_during_init(10) = .false.
-    do_export_during_init(11) = .false.
-    do_export_during_init(12) = .false.
-    do_export_during_init(13) = .false.
-    do_export_during_init(14) = .false.
-    do_export_during_init(15) = .false.
-    do_export_during_init(16) = .false.
-    do_export_during_init(17) = .false.
+    do_export_during_init(1) = .true.
+    do_export_during_init(2) = .true.
+    do_export_during_init(3) = .true.
+    do_export_during_init(4) = .true.
+    do_export_during_init(5) = .true.
+    do_export_during_init(6) = .true.
+    do_export_during_init(7) = .true.
+    do_export_during_init(8) = .true.
+    do_export_during_init(9) = .true.
 
     ! Trim names
     do i=1,num_scream_imports
