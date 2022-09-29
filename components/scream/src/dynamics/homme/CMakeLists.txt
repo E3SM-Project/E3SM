@@ -48,6 +48,9 @@ set (E3SM_INTERNAL_KOKKOS_ALREADY_BUILT TRUE)
 # Make Homme use the same pack size that scream does
 set (HOMMEXX_VECTOR_SIZE ${SCREAM_PACK_SIZE} CACHE STRING "")
 
+# Set Homme mpi on device option
+option (HOMMEXX_MPI_ON_DEVICE "Whether we want to use device pointers for MPI calls (relevant only for GPU builds)" ${SCREAM_MPI_ON_DEVICE})
+
 # configure Homme folder
 add_subdirectory(${HOMME_SOURCE_DIR} ${HOMME_BINARY_DIR})
 
