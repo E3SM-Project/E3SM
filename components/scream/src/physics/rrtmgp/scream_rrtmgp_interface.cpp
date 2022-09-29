@@ -841,6 +841,7 @@ namespace scream {
             });
             // Compute average over subcols
             auto ngpt_inv = 1.0 / ngpt;
+            memset(cldtot, 0);
             yakl::fortran::parallel_for(Bounds<1>(ncol), YAKL_LAMBDA(int icol) {
                 // This loop needs to be serial because of the atomic reduction
                 for (int igpt = 1; igpt <= ngpt; ++igpt) {

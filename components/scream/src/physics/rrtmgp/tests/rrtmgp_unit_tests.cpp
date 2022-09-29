@@ -520,3 +520,83 @@ TEST_CASE("rrtmgp_test_subcol_gen") {
     cldfrac_from_mask.deallocate();
     yakl::finalize();
 }
+
+
+TEST_CASE("rrtmgp_cloud_area") {
+    // Initialize YAKL
+    if (!yakl::isInitialized()) { yakl::init(); }
+    // Create dummy data
+    const int ncol = 1;
+    const int nlay = 2;
+    const int ngpt = 3;
+    auto cldtau = real3d("cldtau", ncol, nlay, ngpt);
+    auto cldtot = real1d("cldtot", ncol);
+
+    // Case:
+    //
+    // 0 0 0
+    // 0 0 0
+    //
+    // should give cldtot = 0.0
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+        cldtau(1,1,1) = 0;
+        cldtau(1,1,2) = 0;
+        cldtau(1,1,3) = 0;
+        cldtau(1,2,1) = 0;
+        cldtau(1,2,2) = 0;
+        cldtau(1,2,3) = 0;
+    });
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, cldtau, cldtot);
+    REQUIRE(cldtot.createHostCopy()(1) == 0.0);
+
+    // Case:
+    //
+    // 1 1 1
+    // 1 1 1
+    //
+    // should give cldtot = 1.0
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+        cldtau(1,1,1) = 1;
+        cldtau(1,1,2) = 1;
+        cldtau(1,1,3) = 1;
+        cldtau(1,2,1) = 1;
+        cldtau(1,2,2) = 1;
+        cldtau(1,2,3) = 1;
+    });
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, cldtau, cldtot);
+    REQUIRE(cldtot.createHostCopy()(1) == 1.0);
+
+    // Case:
+    //
+    // 1 1 0
+    // 0 0 1
+    //
+    // should give cldtot = 1.0
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+        cldtau(1,1,1) = 0.1;
+        cldtau(1,1,2) = 1.5;
+        cldtau(1,1,3) = 0;
+        cldtau(1,2,1) = 0;
+        cldtau(1,2,2) = 0;
+        cldtau(1,2,3) = 1.0;
+    });
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, cldtau, cldtot);
+    REQUIRE(cldtot.createHostCopy()(1) == 1.0);
+
+    // Case:
+    //
+    // 1 0 0
+    // 1 0 1
+    //
+    // should give cldtot = 2/3
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+        cldtau(1,1,1) = 1;
+        cldtau(1,1,2) = 0;
+        cldtau(1,1,3) = 0;
+        cldtau(1,2,1) = 1;
+        cldtau(1,2,2) = 0;
+        cldtau(1,2,3) = 1;
+    });
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, cldtau, cldtot);
+    REQUIRE(cldtot.createHostCopy()(1) == 2.0 / 3.0);
+}
