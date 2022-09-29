@@ -1634,30 +1634,30 @@
         !-----------------------------------------------------------------
         ! Conserving energy, compute the enthalpy of the new equal layers.
         !-----------------------------------------------------------------
-            
-         call adjust_enthalpy (nilyr,              &
-                               zi1,      zi2,      &
-                               hilyr,    hin,      &
-                               zqin)
+
          ! conserve energy
          if (hin <= puny) then
             do k = 1, nilyr
                fhocnn = fhocnn + zqin(k)*hin/(real(nilyr,kind=dbl_kind)*dt)
             enddo ! k
          end if
+         call adjust_enthalpy (nilyr,              &
+                               zi1,      zi2,      &
+                               hilyr,    hin,      &
+                               zqin)
 
          if (ktherm == 2) then
-              call adjust_enthalpy (nilyr,              &
-                                    zi1,      zi2,      &
-                                    hilyr,    hin,      &
-                                    zSin)   
-              ! conserve salt
-              if (hin <= puny) then
-                 do k = 1, nilyr
-                    fsaltn = fsaltn + zSin(k)*hin/(real(nilyr,kind=dbl_kind)*dt)
-                 enddo ! k
-              end if
-           endif
+            ! conserve salt
+            if (hin <= puny) then
+               do k = 1, nilyr
+                  fsaltn = fsaltn + zSin(k)*hin/(real(nilyr,kind=dbl_kind)*dt)
+               enddo ! k
+            end if
+            call adjust_enthalpy (nilyr,              &
+                                  zi1,      zi2,      &
+                                  hilyr,    hin,      &
+                                  zSin)
+         endif
 
       else ! zero layer (nilyr=1)
 
@@ -1688,16 +1688,16 @@
       ! Conserving energy, compute the enthalpy of the new equal layers.
       !-----------------------------------------------------------------
 
-         call adjust_enthalpy (nslyr,              &
-                               zs1,      zs2,      &
-                               hslyr,    hsn,      &
-                               zqsn)
          ! conserve energy
          if (hsn <= puny) then
             do k = 1, nslyr
                fhocnn = fhocnn + zqsn(k)*hsn/(real(nslyr,kind=dbl_kind)*dt)
             enddo ! k
          end if
+         call adjust_enthalpy (nslyr,              &
+                               zs1,      zs2,      &
+                               hslyr,    hsn,      &
+                               zqsn)
 
          if (tr_rsnw) &
                call adjust_enthalpy (nslyr,              &
