@@ -599,4 +599,7 @@ TEST_CASE("rrtmgp_cloud_area") {
     });
     scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, cldtau, cldtot);
     REQUIRE(cldtot.createHostCopy()(1) == 2.0 / 3.0);
+    cldtau.deallocate();
+    cldtot.deallocate();
+    yakl::finalize();
 }
