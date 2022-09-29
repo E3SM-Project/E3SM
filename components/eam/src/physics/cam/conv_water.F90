@@ -23,9 +23,7 @@ module conv_water
 
   use perf_mod
   use cam_logfile,   only: iulog
-!<songxl 2020-01-01---------
   use zm_conv,      only: zm_microp
-!>songxl 2020-01-01---------
 
   implicit none
   private
@@ -36,7 +34,7 @@ module conv_water
 ! pbuf indices
 
   integer :: icwmrsh_idx, icwmrdp_idx, fice_idx, sh_frac_idx, dp_frac_idx, &
-             ast_idx, sh_cldliq1_idx, sh_cldice1_idx, rei_idx,icimrdp_idx   !songxl 2020-01-01
+             ast_idx, sh_cldliq1_idx, sh_cldice1_idx, rei_idx,icimrdp_idx   
 
   integer :: ixcldice, ixcldliq
 
@@ -93,7 +91,7 @@ module conv_water
  
    icwmrsh_idx  = pbuf_get_index('ICWMRSH')
    icwmrdp_idx  = pbuf_get_index('ICWMRDP')
-   icimrdp_idx  = pbuf_get_index('ICIMRDP')    !songxl 2020-01-01
+   icimrdp_idx  = pbuf_get_index('ICIMRDP')    
    fice_idx     = pbuf_get_index('FICE')
    sh_frac_idx  = pbuf_get_index('SH_FRAC')
    dp_frac_idx  = pbuf_get_index('DP_FRAC')
@@ -160,7 +158,7 @@ module conv_water
    real(r8), pointer, dimension(:,:) ::  rei      ! Ice effective drop size (microns)
 
    real(r8), pointer, dimension(:,:) ::  dp_icwmr ! Deep conv. cloud water
-   real(r8), pointer, dimension(:,:) ::  dp_icimr ! Deep conv. cloud ice     songxl 2020-01-01
+   real(r8), pointer, dimension(:,:) ::  dp_icimr ! Deep conv. cloud ice     
    real(r8), pointer, dimension(:,:) ::  sh_icwmr ! Shallow conv. cloud water
    real(r8), pointer, dimension(:,:) ::  fice     ! Ice partitioning ratio
    real(r8), pointer, dimension(:,:) ::  sh_cldliq ! shallow convection gbx liq cld mixing ratio for COSP
@@ -182,7 +180,9 @@ module conv_water
    real(r8) :: kabs, kabsi, kabsl, alpha, dp0, sh0, ic_limit, frac_limit  
    real(r8) :: wrk1         
 
-   real(r8) :: sh_iclmr, sh_icimr, dp_iclmr        !songxl 2020-01-01 
+   real(r8) :: sh_iclmr                           ! Shallow convection in-cloud liquid water 
+   real(r8) :: sh_icimr                           ! Shallow convection in-cloud ice water
+   real(r8) :: dp_iclmr                           ! Deep convection in-cloud liquid water 
 
    integer :: lchnk
    integer :: ncol
@@ -204,7 +204,7 @@ module conv_water
 
    call pbuf_get_field(pbuf, icwmrsh_idx, sh_icwmr )
    call pbuf_get_field(pbuf, icwmrdp_idx, dp_icwmr )
-   call pbuf_get_field(pbuf, icimrdp_idx, dp_icimr )         !songxl2020-01-01
+   call pbuf_get_field(pbuf, icimrdp_idx, dp_icimr )         
    call pbuf_get_field(pbuf, fice_idx,    fice )
 
 
@@ -280,7 +280,6 @@ module conv_water
             kabs  = kabsl * ( 1._r8 - wrk1 ) + kabsi * wrk1
             alpha = -1.66_r8*kabs*state%pdel(i,k)/gravit*1000.0_r8
            if (zm_microp) then
-             ! Selecting cumulus in-cloud water.
              sh_iclmr = sh_icwmr(i,k)*(1-fice(i,k))
              sh_icimr = sh_icwmr(i,k)*fice(i,k)
              dp_iclmr = dp_icwmr(i,k)- dp_icimr(i,k)
@@ -325,7 +324,6 @@ module conv_water
 !               call endrun ('CONV_WATER_4_RAD: Unknown option for conv_water_in_rad - exiting')
             end select
 
-!      end if
       
       !BSINGH - Logic by Phil R. to account for insignificant condensate in large scale clouds
       if (ls_icwmr < 100._r8*ic_limit .and. pergro_mods) then ! if there is virtually  no stratiform condensate
@@ -352,7 +350,7 @@ module conv_water
       totg_ice(i,k) = tot0_frac * tot_icwmr * wrk1
       totg_liq(i,k) = tot0_frac * tot_icwmr * (1._r8-wrk1)
 
-       endif
+       endif  !zm_microp
       endif
    end do
    end do

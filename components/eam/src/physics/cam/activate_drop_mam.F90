@@ -229,11 +229,7 @@ subroutine actdrop_mam_calc(        &
    pres     = rair*rhoair*tair
    diff0    = 0.211e-4_r8*(p0/pres)*(tair/t0)**1.94_r8
    conduct0 = (5.69_r8 + 0.017_r8*(tair-t0))*4.186e2_r8*1.e-5_r8 ! convert to J/m/s/deg
-!<songxl 2014-11-20---------
-!   es    = estblf(tair)
-!   qs    = epsilo*es/(pres - (1.0_r8 - epsilo)*es)
    call qsat(tair, pres, es, qs)
-!>songxl 2014-11-20---------
    dqsdt = latvap/(rh2o*tair*tair)*qs
    alpha = gravit*(latvap/(cpair*rh2o*tair*tair) - 1._r8/(rair*tair))
    gamma = (1.0_r8 + latvap/cpair*dqsdt)/(rhoair*qs)
