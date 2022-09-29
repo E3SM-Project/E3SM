@@ -104,6 +104,10 @@ namespace scream {
          * Return a subcolumn mask consistent with a specified overlap assumption
          */
         int3d get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, real2d &cldf, const int overlap_option, int1d &seeds);
+        /*
+         * Compute cloud area from 3d subcol cloud property
+         */
+        void compute_cloud_area(int ncol, int nlay, int ngpt, const real3d& cld_tau_gpt, real1d& cldtot);
 
         /* 
          * Provide a function to convert cloud (water and ice) mixing ratios to layer mass per unit area

@@ -133,6 +133,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // Cloud optical properties added as computed fields for diagnostic purposes
   add_field<Computed>("cld_tau_sw_gpt", scalar3d_swgpts_layout, nondim, grid_name, ps);
   add_field<Computed>("cld_tau_lw_gpt", scalar3d_lwgpts_layout, nondim, grid_name, ps);
+  add_field<Computed>("cldtot"        , scalar2d_layout, nondim, grid_name);
 
   // Translation of variables from EAM
   // --------------------------------------------------------------
@@ -424,6 +425,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
   auto d_sfc_flux_dif_nir = get_field_out("sfc_flux_dif_nir").get_view<Real*>();
   auto d_sfc_flux_sw_net = get_field_out("sfc_flux_sw_net").get_view<Real*>();
   auto d_sfc_flux_lw_dn  = get_field_out("sfc_flux_lw_dn").get_view<Real*>();
+  auto d_cldtot = get_field_out("cldtot").get_view<Real*>();
 
   constexpr auto stebol = PC::stebol;
   const auto nlay = m_nlay;
@@ -847,6 +849,10 @@ void RRTMGPRadiation::run_impl (const int dt) {
         sfc_flux_dif_vis, sfc_flux_dif_nir
     );
 
+    // Compute diagnostic total cloud area (vertically-projected cloud cover)
+    auto cldtot = real1d("cldtot", ncol);
+    rrtmgp::compute_cloud_area(ncol, nlay, nswgpts, cld_tau_sw_gpt, cldtot);
+
     // Copy output data back to FieldManager
     if (update_rad) {
       {
@@ -860,6 +866,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
           d_sfc_flux_dif_vis(icol) = sfc_flux_dif_vis(i+1);
           d_sfc_flux_sw_net(icol)  = sw_flux_dn(i+1,kbot) - sw_flux_up(i+1,kbot);
           d_sfc_flux_lw_dn(icol)   = lw_flux_dn(i+1,kbot);
+          d_cldtot(icol) = cldtot(i+1);
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay+1), [&] (const int& k) {
             d_sw_flux_up(icol,k)            = sw_flux_up(i+1,k+1);
             d_sw_flux_dn(icol,k)            = sw_flux_dn(i+1,k+1);
