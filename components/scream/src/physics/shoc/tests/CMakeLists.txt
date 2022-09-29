@@ -75,7 +75,9 @@ set(SHOC_TESTS_SRCS
 # NOTE: tests inside this if statement won't be built in a baselines-only build
 if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(shoc_tests    "${SHOC_TESTS_SRCS}" "${NEED_LIBS}"    THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP shoc_tests_ut_np1_omp1)
-  CreateUnitTest(shoc_sk_tests "${SHOC_TESTS_SRCS}" "${SK_NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP shoc_tests_ut_np1_omp1 EXE_ARGS shoc_main_bfb)
+  if (NOT SCREAM_SMALL_KERNELS)
+    CreateUnitTest(shoc_sk_tests "${SHOC_TESTS_SRCS}" "${SK_NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP shoc_tests_ut_np1_omp1 EXE_ARGS shoc_main_bfb)
+  endif()
 endif()
 
 if (SCREAM_ENABLE_BASELINE_TESTS)
