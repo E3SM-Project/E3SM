@@ -5551,6 +5551,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       nufi = modeptr_ufine
 
       ! these lines turn on (ncrs>0) or off (ncrs=0) acc->crs renaming in stratosphere
+      ncrs = 0
       if (strat_accum_coarse_rename) then
          ncrs = modeptr_coarse
       endif
