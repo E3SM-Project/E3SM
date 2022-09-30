@@ -531,6 +531,13 @@ TEST_CASE("rrtmgp_cloud_area") {
     const int ngpt = 3;
     auto cldtau = real3d("cldtau", ncol, nlay, ngpt);
     auto cldtot = real1d("cldtot", ncol);
+    auto pmid = real2d("pmid", ncol, nlay);
+
+    // Set up pressure levels for test problem
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+        pmid(1,1) = 100;
+        pmid(1,2) = 200;
+    });
 
     // Case:
     //
@@ -546,7 +553,7 @@ TEST_CASE("rrtmgp_cloud_area") {
         cldtau(1,2,2) = 0;
         cldtau(1,2,3) = 0;
     });
-    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, cldtau, cldtot);
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(), pmid, cldtau, cldtot);
     REQUIRE(cldtot.createHostCopy()(1) == 0.0);
 
     // Case:
@@ -563,13 +570,13 @@ TEST_CASE("rrtmgp_cloud_area") {
         cldtau(1,2,2) = 1;
         cldtau(1,2,3) = 1;
     });
-    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, cldtau, cldtot);
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(), pmid, cldtau, cldtot);
     REQUIRE(cldtot.createHostCopy()(1) == 1.0);
 
     // Case:
     //
-    // 1 1 0
-    // 0 0 1
+    // 1 1 0  100
+    // 0 0 1  200
     //
     // should give cldtot = 1.0
     parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
@@ -580,8 +587,12 @@ TEST_CASE("rrtmgp_cloud_area") {
         cldtau(1,2,2) = 0;
         cldtau(1,2,3) = 1.0;
     });
-    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, cldtau, cldtot);
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(), pmid, cldtau, cldtot);
     REQUIRE(cldtot.createHostCopy()(1) == 1.0);
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, 150, pmid, cldtau, cldtot);
+    REQUIRE(cldtot.createHostCopy()(1) == 2.0 / 3.0);
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 110, 250, pmid, cldtau, cldtot);
+    REQUIRE(cldtot.createHostCopy()(1) == 1.0 / 3.0);
 
     // Case:
     //
@@ -597,8 +608,13 @@ TEST_CASE("rrtmgp_cloud_area") {
         cldtau(1,2,2) = 0;
         cldtau(1,2,3) = 1;
     });
-    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, cldtau, cldtot);
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(), pmid, cldtau, cldtot);
     REQUIRE(cldtot.createHostCopy()(1) == 2.0 / 3.0);
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, 100, pmid, cldtau, cldtot);
+    REQUIRE(cldtot.createHostCopy()(1) == 0.0);
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 100, 300, pmid, cldtau, cldtot);
+    REQUIRE(cldtot.createHostCopy()(1) == 2.0 / 3.0);
+    pmid.deallocate();
     cldtau.deallocate();
     cldtot.deallocate();
     yakl::finalize();

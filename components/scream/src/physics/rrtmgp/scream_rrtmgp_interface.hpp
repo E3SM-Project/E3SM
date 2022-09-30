@@ -107,7 +107,9 @@ namespace scream {
         /*
          * Compute cloud area from 3d subcol cloud property
          */
-        void compute_cloud_area(int ncol, int nlay, int ngpt, const real3d& cld_tau_gpt, real1d& cldtot);
+        void compute_cloud_area(
+                int ncol, int nlay, int ngpt, Real pmin, Real pmax,
+                const real2d& pmid, const real3d& cld_tau_gpt, real1d& cld_area);
 
         /* 
          * Provide a function to convert cloud (water and ice) mixing ratios to layer mass per unit area
