@@ -69,7 +69,7 @@ void perform_vertical_interpolation(
   const view_2d<Pmask<N>>& mask,
   const int& nlevs_src,
   const int& nlevs_tgt,
-  const Real& masked_val);
+  const Real& msk_val);
 
 template<typename T, int N> 
 void perform_vertical_interpolation_impl_2d(
@@ -80,7 +80,7 @@ void perform_vertical_interpolation_impl_2d(
   const view_2d<Pmask<N>>& mask,
   const int& nlevs_src,
   const int& nlevs_tgt,
-  const Real& masked_val);
+  const Real& msk_val);
 
 template<typename T, int N> 
 void perform_vertical_interpolation_impl_1d(
@@ -92,7 +92,7 @@ void perform_vertical_interpolation_impl_1d(
   const int& nlevs_src,
   const int& nlevs_tgt,
   const int& icol,
-  const Real& masked_val,
+  const Real& msk_val,
   const MemberType& team,
   const LIV<T,N>& vert_interp);
 

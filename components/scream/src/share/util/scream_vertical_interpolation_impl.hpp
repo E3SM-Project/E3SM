@@ -112,7 +112,7 @@ void perform_vertical_interpolation_impl_1d(
   const int& nlevs_src,
   const int& nlevs_tgt,
   const int& icol,
-  const Real& masked_val,
+  const Real& msk_val,
   const MemberType& team,
   const LIV<T,N>& vert_interp)
 {
@@ -129,7 +129,7 @@ void perform_vertical_interpolation_impl_1d(
     const auto below_min = x_tgt[k] < x_src_s[0];
     const auto combined_m = above_max || below_min;
     mask(k) = combined_m;
-    output(k).set(combined_m,masked_val);
+    output(k).set(combined_m,msk_val);
   });
   Kokkos::fence();
 }
