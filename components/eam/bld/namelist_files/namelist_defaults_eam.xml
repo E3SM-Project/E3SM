@@ -286,8 +286,8 @@
 <mam4_mode3_file rad="rrtmg">atm/cam/physprops/mam4_mode3_rrtmg_aeronetdust_c141106.nc</mam4_mode3_file>
 <mam4_mode4_file rad="rrtmg">atm/cam/physprops/mam4_mode4_rrtmg_c130628.nc</mam4_mode4_file>
 <!-- for CLDERA stratospheric aerosol treatment-->
-<mam4_mode1_file rad="rrtmg" cldera_strat_volc="1">/atm/cldera/modal_optics/modal_optics_mode1_hb.nc</mam4_mode1_file>
-<mam4_mode3_file rad="rrtmg" cldera_strat_volc="1">/atm/cldera/modal_optics/modal_optics_mode3_hb.nc</mam4_mode3_file>
+<mam4_mode1_file rad="rrtmg" cldera_strat_volc="1">atm/cldera/modal_optics/modal_optics_mode1_hb.nc</mam4_mode1_file>
+<mam4_mode3_file rad="rrtmg" cldera_strat_volc="1">atm/cldera/modal_optics/modal_optics_mode3_hb.nc</mam4_mode3_file>
 
 <mam7_mode1_file rad="rrtmg">atm/cam/physprops/mam7_mode1_rrtmg_c120904.nc</mam7_mode1_file>
 <mam7_mode2_file rad="rrtmg">atm/cam/physprops/mam7_mode2_rrtmg_c120904.nc</mam7_mode2_file>
@@ -404,6 +404,11 @@
 
 <!-- Volcanic Aerosol Mass -->
 <bndtvvolc>atm/cam/rad/VolcanicMass_1870-1999_64x1_L18_c040115.nc</bndtvvolc>
+
+<!-- Removing prescribed volcanic forcing for CLDERA -->
+<prescribed_volcaero_filetype cldera_strat_volc="1">VOLC_MIXING_RATIO</prescribed_volcaero_filetype>
+<prescribed_volcaero_datapath cldera_strat_volc="1">atm/cldera/emissions/volc/zero-presc-volc-mmr</prescribed_volcaero_datapath>
+<prescribed_volcaero_file cldera_strat_volc="1">BMW_volcanic_1850-3009_all_zero.nc</prescribed_volcaero_file>
 
 <!-- Tropopause climatology -->
 <tropopause_climo_file>atm/cam/chem/trop_mozart/ub/clim_p_trop.nc</tropopause_climo_file>
@@ -616,6 +621,8 @@
 <bc_a1_ext_file    ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_elev_2000_c120315.nc </bc_a1_ext_file>
 <bc_a3_ext_file    ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_elev_2000_c120315.nc </bc_a3_ext_file>
 <bc_a4_ext_file    ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_bc_elev_2000_c120315.nc </bc_a4_ext_file>
+<!-- CLDERA merged volcanic emission files -->
+<so2_ext_file  cldera_strat_volc="1">atm/cldera/emissions/volc/merge_cmip6_and_volc_so2/merged_cmip6_and_volc_so2.nc </so2_ext_file>
 
 <mam7_num_a1_emis_file >atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a1_surf_2000_c120716.nc</mam7_num_a1_emis_file>
 <mam7_num_a3_emis_file >atm/cam/chem/trop_mozart_aero/emis/ar5_mam7_num_a3_surf_2000_c120716.nc</mam7_num_a3_emis_file>

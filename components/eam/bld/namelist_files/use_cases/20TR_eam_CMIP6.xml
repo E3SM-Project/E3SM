@@ -17,6 +17,10 @@
 <prescribed_volcaero_file>CMIP_DOE-ACME_radiation_1850-2014_v3_c20171205.nc</prescribed_volcaero_file>
 <prescribed_volcaero_filetype>VOLC_CMIP6</prescribed_volcaero_filetype>
 <prescribed_volcaero_type>SERIAL</prescribed_volcaero_type>
+<!-- Removing prescribed volcanic forcing for CLDERA -->
+<prescribed_volcaero_filetype cldera_strat_volc="1">VOLC_MIXING_RATIO</prescribed_volcaero_filetype>
+<prescribed_volcaero_datapath cldera_strat_volc="1">atm/cldera/emissions/volc/zero-presc-volc-mmr</prescribed_volcaero_datapath>
+<prescribed_volcaero_file cldera_strat_volc="1">BMW_volcanic_1850-3009_all_zero.nc</prescribed_volcaero_file>
 
 <!-- For comprehensive history -->
 <history_amwg>.true.</history_amwg>
