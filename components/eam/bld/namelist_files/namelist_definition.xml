@@ -2644,6 +2644,12 @@ Do radiative transfer and heating/cooling calculation.
 Default: TRUE
 </entry>
 
+<entry id="cflx_cpl_opt" type="integer" category="process_coupling"
+       group="phys_ctl_nl" valid_values="" >
+Numerical scheme for coupling surface tracer fluxes with the rest of model.
+Default: 1 
+</entry>
+
 <!-- Physics sub-column switches -->
 
 <entry id="use_subcol_microp" type="logical" category="conv"
