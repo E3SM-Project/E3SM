@@ -12,9 +12,9 @@ const view_2d<Pack<T,N>>& output,
 const int& nlevs_src,
 const int& nlevs_tgt)
 {
-const view_2d<Smask<N>> mask("",x_src.extent(0),x_tgt.extent(0));
+const view_2d<Pmask<N>> mask("",x_src.extent(0),x_tgt.extent(0));
 perform_vertical_interpolation_impl_2d(x_src, x_tgt, input, output, mask,
-			       nlevs_src, nlevs_tgt, masked_val);
+                                       nlevs_src, nlevs_tgt, masked_val);
 }
 
 template<typename T, int N> 
@@ -28,7 +28,7 @@ void perform_vertical_interpolation(
   const int& nlevs_tgt)
 {
 perform_vertical_interpolation_impl_2d(x_src, x_tgt, input, output, mask,
-			       nlevs_src, nlevs_tgt, masked_val);
+                                       nlevs_src, nlevs_tgt, masked_val);
 }
 
 template<typename T, int N> 
@@ -43,7 +43,7 @@ void perform_vertical_interpolation(
   const Real& msk_val)
 {
 perform_vertical_interpolation_impl_2d(x_src, x_tgt, input, output, mask,
-			       nlevs_src, nlevs_tgt, msk_val);
+                                       nlevs_src, nlevs_tgt, msk_val);
 }
  
 
