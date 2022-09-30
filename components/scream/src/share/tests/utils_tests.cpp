@@ -1,87 +1,10 @@
 #include <catch2/catch.hpp>
-#include <iostream>
-#include <fstream>
 
 #include "share/util/scream_array_utils.hpp"
 #include "share/util/scream_universal_constants.hpp"
 #include "share/util/scream_utils.hpp"
 #include "share/util/scream_time_stamp.hpp"
 #include "share/util/scream_setup_random_test.hpp"
-#include "share/util/scream_vertical_interpolation.hpp"
-#include "ekat/ekat_parse_yaml_file.hpp"
-
-
-TEST_CASE("vertical_interpolation"){
-
-  using namespace scream;
-  using namespace vinterp;
-  const int n_layers_src = 3;
-  const int n_layers_tgt = 4;
-  
-  auto npacks_src = ekat::PackInfo<Spack::n>::num_packs(n_layers_src);
-  auto npacks_tgt = ekat::PackInfo<Spack::n>::num_packs(n_layers_tgt);
-  auto p_tgt = view_1d<Spack>("",npacks_tgt);
-  auto p_tgt_s = Kokkos::create_mirror_view(ekat::scalarize(p_tgt));
-  auto tmp_src = view_2d<Spack>("",3,npacks_src);
-  auto tmp_src_s = Kokkos::create_mirror_view(ekat::scalarize(tmp_src));
-  auto p_src = view_2d<Spack>("",3,npacks_src);
-  auto p_src_s = Kokkos::create_mirror_view(ekat::scalarize(p_src));
-  auto out = view_2d<Spack>("",3,npacks_tgt);
-  auto out_s = Kokkos::create_mirror_view(ekat::scalarize(out));
-  auto mask = view_2d<Smask>("",3,npacks_tgt);
-
-  p_tgt_s(0) = 20.0;
-  p_tgt_s(1) = 25.0;
-  p_tgt_s(2) = 35.0;
-  p_tgt_s(3) = 45.0;
-
-  p_src_s(0,0) = 20.0;
-  p_src_s(0,1) = 30.0;
-  p_src_s(0,2) = 40.0;
-
-  p_src_s(1,0) = 30.0;
-  p_src_s(1,1) = 40.0;
-  p_src_s(1,2) = 50.0;
-
-  p_src_s(2,0) = 10.0;
-  p_src_s(2,1) = 20.0;
-  p_src_s(2,2) = 30.0;
-
-  for (int i=0; i<3; i++){
-    tmp_src_s(i,0)=260.;
-    tmp_src_s(i,1)=270.;
-    tmp_src_s(i,2)=240.;
-  }
-
-  perform_vertical_interpolation(p_src,
-				 p_tgt,
-				 tmp_src,
-				 out,
-				 mask,
-				 n_layers_src,
-				 n_layers_tgt);
-  
-  Real correct_val[3][4];
-  correct_val[0][0] = 260.0;
-  correct_val[0][1] = 265.0;
-  correct_val[0][2] = 255.0;
-  correct_val[0][3] = masked_val;
-  correct_val[1][0] = masked_val;
-  correct_val[1][1] = masked_val;
-  correct_val[1][2] = 265.0;
-  correct_val[1][3] = 255.0;
-  correct_val[2][0] = 270.0;
-  correct_val[2][1] = 255.0;
-  correct_val[2][2] = masked_val;
-  correct_val[2][3] = masked_val;
-  
-  for(int col=0; col<3; col++){
-    for(int lev=0; lev<4; lev++){
-      REQUIRE(out_s(col,lev) == correct_val[col][lev]);
-    }
-  }
-  
-}
 
 TEST_CASE("contiguous_superset") {
   using namespace scream;
