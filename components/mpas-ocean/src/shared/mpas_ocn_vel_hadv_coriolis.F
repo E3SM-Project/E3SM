@@ -139,6 +139,9 @@ contains
 
       allocate(tmpVorticity(nVertLevels,nEdgesAll), &
                        qArr(nVertLevels,nEdgesAll))
+
+!$kgen begin_callsite mpas_ocn_coriolis
+
       !$acc enter data create(tmpVorticity, qArr)
 
 #ifndef MPAS_OPENACC
@@ -185,6 +188,7 @@ contains
          !$omp end parallel
 #endif
 
+
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
       !$acc    present(nEdgesOnEdge, edgesOnEdge, weightsOnEdge, &
@@ -196,6 +200,7 @@ contains
       !$omp do schedule(runtime) &
       !$omp    private(k, j, eoe, edgeWeight, avgVorticity, kmin, kmax)
 #endif
+!!$kgen begin_callsite mpas_ocn_coriolis
       do iEdge = 1, nEdgesOwned
          kmin = minLevelEdgeBot(iEdge)
          kmax = maxLevelEdgeTop(iEdge)
@@ -219,9 +224,11 @@ contains
 
          end do
       end do
+!!$kgen end_callsite mpas_ocn_coriolis
 #ifndef MPAS_OPENACC
       !$omp end do
 #endif
+
 
 #ifdef MPAS_OPENACC
       !$acc parallel loop &
@@ -252,6 +259,7 @@ contains
       !$omp end parallel
 #endif
 
+!$kgen end_callsite mpas_ocn_coriolis
       !$acc exit data delete(tmpVorticity, qArr)
       deallocate(qArr,tmpVorticity)
 
