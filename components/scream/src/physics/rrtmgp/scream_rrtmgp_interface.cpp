@@ -699,12 +699,16 @@ namespace scream {
             OpticalProps2str optics;
             optics.alloc_2str(nday, nlay, k_dist);
 
+            // Limit temperatures for gas optics look-up tables
+            auto t_lay_limited = real2d("t_lay_limited", nday, nlay);
+            limit_to_bounds(t_lay_day, k_dist_sw.get_temp_min(), k_dist_sw.get_temp_max(), t_lay_limited);
+
             // Do gas optics
             real2d toa_flux("toa_flux", nday, ngpt);
             auto p_lay_host = p_lay.createHostCopy();
             bool top_at_1 = p_lay_host(1, 1) < p_lay_host(1, nlay);
 
-            k_dist.gas_optics(nday, nlay, top_at_1, p_lay_day, p_lev_day, t_lay_day, gas_concs_day, optics, toa_flux);
+            k_dist.gas_optics(nday, nlay, top_at_1, p_lay_day, p_lev_day, t_lay_limited, gas_concs_day, optics, toa_flux);
 
 #ifdef SCREAM_RRTMGP_DEBUG
             // Check gas optics
@@ -807,9 +811,14 @@ namespace scream {
             gauss_Ds_host .deep_copy_to(gauss_Ds );
             gauss_wts_host.deep_copy_to(gauss_wts);
 
+            // Limit temperatures for gas optics look-up tables
+            auto t_lay_limited = real2d("t_lay_limited", ncol, nlay);
+            auto t_lev_limited = real2d("t_lev_limited", ncol, nlay+1);
+            limit_to_bounds(t_lay, k_dist_lw.get_temp_min(), k_dist_lw.get_temp_max(), t_lay_limited);
+            limit_to_bounds(t_lev, k_dist_lw.get_temp_min(), k_dist_lw.get_temp_max(), t_lev_limited);
 
             // Do gas optics
-            k_dist.gas_optics(ncol, nlay, top_at_1, p_lay, p_lev, t_lay, t_sfc, gas_concs, optics, lw_sources, real2d(), t_lev);
+            k_dist.gas_optics(ncol, nlay, top_at_1, p_lay, p_lev, t_lay_limited, t_sfc, gas_concs, optics, lw_sources, real2d(), t_lev_limited);
 
 #ifdef SCREAM_RRTMGP_DEBUG
             // Check gas optics
