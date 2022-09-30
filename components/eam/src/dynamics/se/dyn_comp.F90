@@ -2,7 +2,7 @@ Module dyn_comp
 
   use shr_kind_mod, only: r8 => shr_kind_r8
   use domain_mod, only : domain1d_t
-  use element_mod, only : tlement_t
+  use element_mod, only : element_t
   use time_mod, only : TimeLevel_t, se_nsplit=>nsplit
   use hybvcoord_mod, only : hvcoord_t, set_layer_locations
   use hybrid_mod, only : hybrid_t

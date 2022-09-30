@@ -63,6 +63,8 @@ module gllfvremap_mod
        gfr_dyn_to_fv_phys_topo, &
        gfr_fv_phys_to_dyn_topo, &
        gfr_dyn_to_fv_phys_topo_data, &
+       ! Remap potential vorticity
+       gfr_potvort_dyn_to_fv_phys, &
        ! If nphys == 1, reconstruct the field to boost the OOA. If
        ! nphys > 1, returns immediately.
        gfr_pg1_reconstruct_topo, & ! call after the gfr_fv_phys_to_dyn_topo and the DSS
@@ -139,8 +141,8 @@ module gllfvremap_mod
   end interface gfr_dyn_to_fv_phys
 
   interface gfr_potvort_dyn_to_fv_phys
-      module procedure grf_procedure_dyn_to_fv_phys_hybrid
-      module procedure grf_procedure_dyn_to_fv_phys_dom_mt
+      module procedure gfr_potvort_dyn_to_fv_phys_hybrid
+      module procedure gfr_potvort_dyn_to_fv_phys_dom_mt
   end interface
 
   interface gfr_fv_phys_to_dyn

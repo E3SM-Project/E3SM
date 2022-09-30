@@ -572,6 +572,8 @@ contains
     ! 2-D variables (at midpoints)
     call shr_assert_in_domain(state%t(:ncol,:),         is_nan=.false., &
          varname="state%t",         msg=msg)
+    call shr_assert_in_domain(state%pv(:ncol,:),        is_nan=.false., &
+         varname="state%pv",         msg=msg)
     call shr_assert_in_domain(state%u(:ncol,:),         is_nan=.false., &
          varname="state%u",         msg=msg)
     call shr_assert_in_domain(state%v(:ncol,:),         is_nan=.false., &
@@ -646,6 +648,8 @@ contains
     ! 2-D variables (at midpoints)
     call shr_assert_in_domain(state%t(:ncol,:),         lt=posinf_r8, gt=0._r8, &
          varname="state%t",         msg=msg)
+    call shr_assert_in_domain(state%pv(:ncol,:),        lt=posinf_r8, gt=0._r8, &
+         varname="state%pv",         msg=msg)
     call shr_assert_in_domain(state%u(:ncol,:),         lt=posinf_r8, gt=neginf_r8, &
          varname="state%u",         msg=msg)
     call shr_assert_in_domain(state%v(:ncol,:),         lt=posinf_r8, gt=neginf_r8, &
@@ -1325,6 +1329,7 @@ end subroutine physics_ptend_copy
     do k = 1, pver
        do i = 1, ncol
           state_out%t(i,k)         = state_in%t(i,k) 
+          state_out%pv(i,k)        = state_in%t(i,k) 
           state_out%u(i,k)         = state_in%u(i,k) 
           state_out%v(i,k)         = state_in%v(i,k) 
           state_out%s(i,k)         = state_in%s(i,k) 
@@ -1580,6 +1585,9 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   allocate(state%t(psetcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%t')
   
+  allocate(state%pv(psetcols,pver), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%pv')
+  
   allocate(state%u(psetcols,pver), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%u')
   
@@ -1669,6 +1677,7 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   state%psdry(:) = inf
   state%phis(:) = inf
   state%t(:,:) = inf
+  state%pv(:,:) = inf
   state%u(:,:) = inf
   state%v(:,:) = inf
   state%s(:,:) = inf
@@ -1729,6 +1738,9 @@ subroutine physics_state_dealloc(state)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%ulon')
   
   deallocate(state%t, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%t')
+  
+  deallocate(state%pv, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%t')
   
   deallocate(state%u, stat=ierr)

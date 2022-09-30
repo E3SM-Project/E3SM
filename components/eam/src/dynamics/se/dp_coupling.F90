@@ -40,7 +40,8 @@ CONTAINS
     use dyn_comp,                only: frontgf_idx, frontga_idx, hvcoord
     use phys_control,            only: use_gw_front
     use dyn_comp,                only: dom_mt
-    use gllfvremap_mod,          only: gfr_dyn_to_fv_phys
+    use gllfvremap_mod,          only: gfr_dyn_to_fv_phys, gfr_potvort_dyn_to_fv_phys
+    use spmd_utils,              only: masterproc
 
     implicit none
     !---------------------------------------------------------------------------
@@ -118,7 +119,7 @@ CONTAINS
         call t_startf('dyn_to_fv_phys')
         call gfr_dyn_to_fv_phys(par, dom_mt, tl_f, hvcoord, elem, ps_tmp, zs_tmp, &
              T_tmp, uv_tmp, om_tmp, q_tmp)
-        call gfr_potvort_dyn_to_phys(par, dom_mt, tl_f, hvcoord, elem, pv_tmp)
+        call gfr_potvort_dyn_to_fv_phys(par, dom_mt, tl_f, hvcoord, elem, pv_tmp)
         call t_stopf('dyn_to_fv_phys')
 
         !-----------------------------------------------------------------------
@@ -262,12 +263,12 @@ CONTAINS
         do icol = 1,ncols
           phys_state(lchnk)%ps  (icol) = cbuffer(cpter(icol,0))
           phys_state(lchnk)%phis(icol) = cbuffer(cpter(icol,0)+1)
-          do ilyr = 1,pver
+          do ilyr = 1,pver 
             phys_state(lchnk)%t    (icol,ilyr) = cbuffer(cpter(icol,ilyr))
             phys_state(lchnk)%u    (icol,ilyr) = cbuffer(cpter(icol,ilyr)+1)
             phys_state(lchnk)%v    (icol,ilyr) = cbuffer(cpter(icol,ilyr)+2)
             phys_state(lchnk)%omega(icol,ilyr) = cbuffer(cpter(icol,ilyr)+3)
-            phys_state(lchnk)%pv(icol,ilyr) = cbuffer(cpter(icol,ilyr)+4)
+            phys_state(lchnk)%pv   (icol,ilyr) = cbuffer(cpter(icol,ilyr)+4)
              if (use_gw_front) then
                 pbuf_frontgf(icol,ilyr) = cbuffer(cpter(icol,ilyr)+5)
                 pbuf_frontga(icol,ilyr) = cbuffer(cpter(icol,ilyr)+6)
@@ -316,7 +317,7 @@ CONTAINS
           call outfld('V&IC', elem(ie)%state%V(:,:,2,:,tl_f), ncol_d,ie)
           call get_temperature(elem(ie),temperature,hvcoord,tl_f)
           call outfld('T&IC',temperature,ncol_d,ie)
-          call get_potvort(elem(ie),potvort,hvcoord,tl_f)
+          call get_pot_vort(elem(ie),potvort,hvcoord,tl_f)
           call outfld('PV&IC',potvort,ncol_d,ie)
           do m = 1,pcnst
             call outfld(trim(cnst_name(m))//'&IC',elem(ie)%state%Q(:,:,:,m), ncol_d,ie)
