@@ -384,7 +384,7 @@ module li_calving
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: velocityPool
 
-      integer, pointer :: nCellsSolve, nVertLevels
+      integer, pointer :: nCells, nVertLevels
 
       logical, pointer :: &
            config_print_calving_info
@@ -448,7 +448,7 @@ module li_calving
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
          ! get dimensions
-         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
          ! get required fields from the mesh pool
@@ -514,7 +514,7 @@ module li_calving
          restoreThickness = 0.0_RKIND
 
          ! loop over locally owned cells
-         do iCell = 1, nCellsSolve
+         do iCell = 1, nCells
 
             if (bedTopography(iCell) < config_sea_level) then
 
