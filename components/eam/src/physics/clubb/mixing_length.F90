@@ -224,6 +224,8 @@ module mixing_length
     end if
 
 
+!$kgen begin_callsite clubb_compute_mixing_length
+
     ! Initialize arrays and precalculate values for computational efficiency
     do i = 1, gr%nz
 
@@ -747,6 +749,7 @@ module mixing_length
     ! model to take over deep convection.  13 Feb 2008.
     Lscale = min( Lscale, Lscale_max )
 
+!$kgen end_callsite clubb_compute_mixing_length
  
     ! Ensure that no Lscale values are NaN
     if ( clubb_at_least_debug_level( 1 ) ) then
