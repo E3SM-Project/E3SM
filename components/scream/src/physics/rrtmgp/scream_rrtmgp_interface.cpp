@@ -830,6 +830,25 @@ namespace scream {
 
         }
 
+        void compute_cloud_area(int ncol, int nlay, int ngpt, const real3d& cld_tau_gpt, real1d& cldtot) {
+            // Subcolumn binary cld mask; if any layers are cloudy, 2d subcol mask is 1
+            auto subcol_mask = real2d("subcol_mask", ncol, ngpt);
+            memset(subcol_mask, 0);
+            yakl::fortran::parallel_for(Bounds<3>(ngpt, nlay, ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
+                if (cld_tau_gpt(icol,ilay,igpt) > 0) {
+                    subcol_mask(icol,igpt) = 1;
+                }
+            });
+            // Compute average over subcols
+            auto ngpt_inv = 1.0 / ngpt;
+            memset(cldtot, 0);
+            yakl::fortran::parallel_for(Bounds<1>(ncol), YAKL_LAMBDA(int icol) {
+                // This loop needs to be serial because of the atomic reduction
+                for (int igpt = 1; igpt <= ngpt; ++igpt) {
+                    cldtot(icol) += subcol_mask(icol,igpt) * ngpt_inv;
+                }
+            });
+        }
 
     }  // namespace rrtmgp
 }  // namespace scream
