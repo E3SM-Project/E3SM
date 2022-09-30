@@ -639,13 +639,16 @@ setup_output_file(const std::string& filename,
 // manager.  If not it will next check to see if it is in the list
 // of available diagnostics.  If neither of these two options it
 // will throw an error.
-Field AtmosphereOutput::get_field(const std::string& name, const bool eval_diagnostic)
+Field AtmosphereOutput::get_field(const std::string& name, const bool eval_diagnostic) const
 {
   if (m_field_mgr->has_field(name)) {
     return m_field_mgr->get_field(name);
   } else if (m_diagnostics.find(name) != m_diagnostics.end()) {
-    const auto& diag = m_diagnostics[name];
+    const auto& diag = m_diagnostics.at(name);
     if (eval_diagnostic) {
+      for (const auto& dep : m_diag_depends_on_diags.at(name)) {
+        get_field(dep,eval_diagnostic);
+      }
       diag->compute_diagnostic();
     }
     return diag->get_diagnostic();
@@ -656,47 +659,20 @@ Field AtmosphereOutput::get_field(const std::string& name, const bool eval_diagn
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::set_diagnostics()
 {
-  auto& diag_factory = AtmosphereDiagnosticFactory::instance();
+  // Create all diagnostics
   for (const auto& fname : m_fields_names) {
     if (!m_field_mgr->has_field(fname)) {
-      // Construct a diagnostic by this name
-      ekat::ParameterList params;
-
-      std::string diag_name;
-
-      // If the diagnostic is $field_lev$N/$field_bot/$field_top,
-      // then we need to set some params
-      auto tokens = ekat::split(fname,'@');
-      auto last = tokens.back();
-
-      auto lev_and_idx = ekat::split(last,'_');
-      if (last=="tom" || last=="bot" || lev_and_idx.size()==2) {
-        diag_name = "FieldAtLevel";
-        tokens.pop_back();
-        auto fname = ekat::join(tokens,"_");
-        auto fid = get_field(fname).get_header().get_identifier();
-        params.set("Field Name", fname);
-        params.set("Grid Name",fid.get_grid_name());
-        params.set("Field Layout",fid.get_layout());
-        params.set("Field Units",fid.get_units());
-
-        // If last is bot or top, will simply use that
-        params.set("Field Level", lev_and_idx.back());
-      } else {
-        diag_name = fname;
-      }
-
-      auto diag = diag_factory.create(diag_name,m_comm,params);
-      diag->set_grids(m_grids_manager);
-      m_diagnostics.emplace(fname,diag);
+      create_diagnostic(fname);
     }
   }
+
   // Set required fields for all diagnostics
+  // NOTE: do this *after* creating all diags: in case the required
+  //       field of certain diagnostics is itself a diagnostic,
+  //       we want to make sure the required ones are all built.
   for (const auto& dd : m_diagnostics) {
     const auto& diag = dd.second;
     for (const auto& req : diag->get_required_field_requests()) {
-      // Any required fields should be in the field manager, so we can gather
-      // the TimeStamp for initialization from the first of these.
       const auto& req_field = get_field(req.fid.name());
       diag->set_required_field(req_field.get_const());
     }
@@ -705,6 +681,53 @@ void AtmosphereOutput::set_diagnostics()
     //       output the diagnostic without computing it, we'll get an error.
     diag->initialize(util::TimeStamp(),RunType::Initial);
   }
+}
+
+void AtmosphereOutput::
+create_diagnostic (const std::string& diag_field_name) {
+  auto& diag_factory = AtmosphereDiagnosticFactory::instance();
+
+  // Construct a diagnostic by this name
+  ekat::ParameterList params;
+  std::string diag_name;
+
+  // If the diagnostic is $field@lev$N/$field_bot/$field_top,
+  // then we need to set some params
+  auto tokens = ekat::split(diag_field_name,'@');
+  auto last = tokens.back();
+
+  auto lev_and_idx = ekat::split(last,'_');
+  if (last=="tom" || last=="bot" || lev_and_idx.size()==2) {
+    diag_name = "FieldAtLevel";
+    tokens.pop_back();
+    auto fname = ekat::join(tokens,"_");
+    // If the field is itself a diagnostic, make sure it's built
+    std::cout << "diag_field_name: " << diag_field_name << std::endl
+              << "fname: " << fname << "\n";
+    if (diag_factory.has_product(fname) and
+        m_diagnostics.count(fname)==0) {
+      create_diagnostic(fname);
+      m_diag_depends_on_diags[diag_field_name].push_back(fname);
+    } else {
+      m_diag_depends_on_diags[diag_field_name].resize(0);
+    }
+    auto fid = get_field(fname).get_header().get_identifier();
+    params.set("Field Name", fname);
+    params.set("Grid Name",fid.get_grid_name());
+    params.set("Field Layout",fid.get_layout());
+    params.set("Field Units",fid.get_units());
+
+    // If last is bot or top, will simply use that
+    params.set("Field Level", lev_and_idx.back());
+  } else {
+    diag_name = diag_field_name;
+    m_diag_depends_on_diags[diag_field_name].resize(0);
+  }
+
+  // Create the diagnostic
+  auto diag = diag_factory.create(diag_name,m_comm,params);
+  diag->set_grids(m_grids_manager);
+  m_diagnostics.emplace(diag_field_name,diag);
 }
 
 } // namespace scream
