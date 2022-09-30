@@ -87,7 +87,8 @@ module physics_types
           lnpmid,  &! ln(pmid)
           lnpmiddry,&! log midpoint pressure dry (Pa) 
           exner,   &! inverse exner function w.r.t. surface pressure (ps/p)^(R/cp)
-          zm        ! geopotential height above surface at midpoints (m)
+          zm,      &! geopotential height above surface at midpoints (m)
+          pv        ! potential vorticity (K m^2 kg^-1 s^-1)
 
      real(r8), dimension(:,:,:),allocatable      :: &
           q         ! constituent mixing ratio (kg/kg moist or dry air depending on type)

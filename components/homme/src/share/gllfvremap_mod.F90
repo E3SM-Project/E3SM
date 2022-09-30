@@ -138,6 +138,11 @@ module gllfvremap_mod
      module procedure gfr_dyn_to_fv_phys_dom_mt
   end interface gfr_dyn_to_fv_phys
 
+  interface gfr_potvort_dyn_to_fv_phys
+      module procedure grf_procedure_dyn_to_fv_phys_hybrid
+      module procedure grf_procedure_dyn_to_fv_phys_dom_mt
+  end interface
+
   interface gfr_fv_phys_to_dyn
      module procedure gfr_fv_phys_to_dyn_hybrid
      module procedure gfr_fv_phys_to_dyn_dom_mt
@@ -518,9 +523,8 @@ contains
     end do
   end subroutine gfr_dyn_to_fv_phys_topo_hybrid
 
-  subroutine gfr_potvort_dyn_to_phys(hybrid, nt, hvcoord, elem, nets, nete, &
-       potvort)
-    ! Remap ps, phis, T, uv, omega_p, q from GLL to FV grids.
+  subroutine gfr_potvort_dyn_to_fv_phys_hybrid(hybrid, nt, hvcoord, elem, nets, nete, potvort)
+    ! Remap potential vorticity from GLL to FV grids.
 
     use dimensions_mod, only: nlev
     use hybvcoord_mod, only: hvcoord_t
@@ -540,14 +544,42 @@ contains
     nf = gfr%nphys
     nf2 = nf*nf
 
-
     do ie = nets,nete
        call get_field(elem(ie), 'potvort', potvort_gll, hvcoord, nt, -1)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, potvort_gll, potvort_fv)
        potvort(:nf2, :, ie) = potvort_fv(:nf2, :)
     end do
 
-  end subroutine gfr_potvort_dyn_to_phys
+  end subroutine gfr_potvort_dyn_to_fv_phys_hybrid
+  
+  subroutine gfr_potvort_dyn_to_fv_phys_dom_mt(par, dom_mt, nt, hvcoord, elem, potvort)
+    ! Wrapper to the hybrid-threading main routine for potential voticity remapping 
+    
+    use parallel_mod, only: parallel_t
+    use domain_mod, only: domain1d_t
+    use hybvcoord_mod, only: hvcoord_t
+    use thread_mod, only: hthreads
+
+    type (parallel_t), intent(in) :: par
+    type (domain1d_t), intent(in) :: dom_mt(:)
+    integer, intent(in) :: nt
+    type (hvcoord_t), intent(in) :: hvcoord
+    type (element_t), intent(in) :: elem(:)
+    real(kind=real_kind), intent(out) :: potvort(:,:,:)
+
+    type (hybrid_t) :: hybrid
+    integer :: nets, nete
+
+    if (.not. par%dynproc) return
+#ifdef HORIZ_OPENMP
+    !$omp parallel num_threads(hthreads), default(shared), private(nets,nete,hybrid)
+#endif
+    call gfr_hybrid_create(par, dom_mt, hybrid, nets, nete)
+    call gfr_potvort_dyn_to_fv_phys_hybrid(hybrid, nt, hvcoord, elem, nets, nete, potvort)
+#ifdef HORIZ_OPENMP
+    !$omp end parallel
+#endif
+  end subroutine gfr_potvort_dyn_to_fv_phys_dom_mt
 
   subroutine gfr_dyn_to_fv_phys_topo_data(par, elem, nets, nete, g, gsz, p, psz, square, augment)
     ! Remap SGH, SGH30, phis, landm_coslat, landfrac from GLL to FV grids. For
