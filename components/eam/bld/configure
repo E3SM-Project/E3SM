@@ -1382,20 +1382,9 @@ if (($chem_pkg ne 'none') || ($prog_species)) {
 if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_3MODE ';
 } elsif ($chem_pkg =~ '_mam4_mom' || $chem_pkg =~ '_mam4_resus_mom' ) {
-#    if ($cldera_strat_volc == 1) {
-#        print "cldera_strat_volc: $cldera_strat_volc"
-#        $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM -DCLDERA_STRAT_VOLC ';
-#    } else {
-#        print "cldera_strat_volc: $cldera_strat_volc"
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM ';
-#    }   
-
 } elsif ($chem_pkg =~ '_mam4' ) {
-#    if ($cldera_strat_volc == 1) {
-#        $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE -DCLDERA_STRAT_VOLC ';
-#    } else {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE ';
-#    }
 } elsif ($chem_pkg =~ '_mam4' ) {
 } elsif ($chem_pkg =~ '_mam7') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_7MODE ';
