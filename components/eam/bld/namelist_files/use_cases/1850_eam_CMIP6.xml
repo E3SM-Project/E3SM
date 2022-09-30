@@ -22,6 +22,11 @@
 <prescribed_volcaero_filetype>VOLC_CMIP6					       </prescribed_volcaero_filetype>
 <prescribed_volcaero_type    >CYCLICAL						       </prescribed_volcaero_type    >
 <prescribed_volcaero_cycle_yr>1                                                        </prescribed_volcaero_cycle_yr>
+<!-- Removing prescribed volcanic forcing for CLDERA -->
+<prescribed_volcaero_filetype cldera_strat_volc="1">VOLC_MIXING_RATIO                            </prescribed_volcaero_filetype>
+<prescribed_volcaero_datapath cldera_strat_volc="1">atm/cldera/emissions/volc/zero-presc-volc-mmr</prescribed_volcaero_datapath>
+<prescribed_volcaero_file cldera_strat_volc="1">BMW_volcanic_1850-3009_all_zero.nc               </prescribed_volcaero_file>
+<prescribed_volcaero_cycle_yr cldera_strat_volc="1">1850                                         </prescribed_volcaero_cycle_yr>
 
 <!-- For comprehensive history -->
 <history_amwg       >.true.</history_amwg>
@@ -40,6 +45,8 @@
 <pom_a4_ext_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_pom_a4_elev_1850-2014_c180205.nc </pom_a4_ext_file>
 <so4_a1_ext_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_elev_1850-2014_c180205.nc </so4_a1_ext_file>
 <so4_a2_ext_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_elev_1850-2014_c180205.nc </so4_a2_ext_file>
+<!-- CLDERA merged volcanic emission files -->
+<so2_ext_file  cldera_strat_volc="1">atm/cldera/emissions/volc/merge_cmip6_and_volc_so2/merged_cmip6_and_volc_so2.nc </so2_ext_file>
 
 <!-- Surface emissions for MAM4.  CMIP6 input4mips data -->
 <srf_emis_type        >CYCLICAL</srf_emis_type>
