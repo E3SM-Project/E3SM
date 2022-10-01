@@ -1,5 +1,6 @@
 #include "field_layout.hpp"
-#include <Kokkos_CopyViews.hpp>
+
+#include <ekat/util/ekat_string_utils.hpp>
 
 namespace scream
 {
@@ -181,10 +182,7 @@ std::string to_string (const FieldLayout& layout)
   for (int dim=1; dim<layout.rank(); ++dim) {
     s += "," + e2str(layout.tags()[dim]);
   }
-  s += ">(" + std::to_string(layout.dims()[0]);
-  for (int dim=1; dim<layout.rank(); ++dim) {
-    s += "," + std::to_string(layout.dims()[dim]);
-  }
+  s += ">(" + ekat::join(layout.dims(),",") + ")";
 
   return s;
 }
