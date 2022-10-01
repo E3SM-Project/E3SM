@@ -23,7 +23,6 @@ AbstractGrid (const std::string& name,
 {
   // Sanity checks
   EKAT_REQUIRE_MSG (m_num_local_dofs>=0, "Error! Number of local dofs must be non-negative.\n");
-  EKAT_REQUIRE_MSG (m_num_vert_levs>=2, "Error! Number of vertical levels must be at least 2.\n");
 
   m_comm.all_reduce(&m_num_local_dofs,&m_num_global_dofs,1,MPI_SUM);
 
