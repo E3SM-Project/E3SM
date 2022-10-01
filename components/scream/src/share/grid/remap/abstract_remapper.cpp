@@ -6,16 +6,12 @@ namespace scream
 AbstractRemapper::
 AbstractRemapper (const grid_ptr_type& src_grid,
                   const grid_ptr_type& tgt_grid)
- : m_state                 (RepoState::Clean)
- , m_src_grid              (src_grid)
- , m_tgt_grid              (tgt_grid)
- , m_num_fields            (0)
- , m_num_registered_fields (0)
- , m_fields_are_bound      (0)
- , m_num_bound_fields      (0)
 {
   EKAT_REQUIRE_MSG(static_cast<bool>(src_grid), "Error! Invalid source grid pointer.\n");
   EKAT_REQUIRE_MSG(static_cast<bool>(tgt_grid), "Error! Invalid target grid pointer.\n");
+
+  m_src_grid = src_grid;
+  m_tgt_grid = tgt_grid;
 }
 
 void AbstractRemapper::
@@ -134,6 +130,5 @@ void AbstractRemapper::remap (const bool forward) const {
     }
   }
 }
-
 
 } // namespace scream
