@@ -610,8 +610,7 @@ namespace scream {
             // Copy data back to the device
             dayIndices_h.deep_copy_to(dayIndices);
             if (nday == 0) { 
-                if (logger)
-                  logger->warn("WARNING: no daytime columns found for this chunk!\n");
+                // No daytime columns in this chunk, skip the rest of this routine
                 return;
             }
 
