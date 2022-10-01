@@ -31,6 +31,13 @@ public:
   FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override;
   FieldLayout create_tgt_layout (const FieldLayout& src_layout) const override;
 
+  bool compatible_layouts (const layout_type& src,
+                           const layout_type& tgt) const override {
+    // Same type of layout, and same sizes except for possibly the first one
+    return get_layout_type(src.tags())==get_layout_type(tgt.tags()) &&
+           src.size()/src.dim(0) == tgt.size()/tgt.dim(0);
+  }
+
 protected:
   static grid_ptr_type create_tgt_grid (const std::string& map_file,
                                         const grid_ptr_type& src_grid);
@@ -78,6 +85,9 @@ protected:
   void create_ov_tgt_fields ();
   void setup_mpi_data_structures ();
 
+  void pack () const;
+  void unpack () const;
+
   view_1d<gid_t>::HostMirror
   get_my_triplets_gids (const std::string& map_file) const;
 
@@ -92,20 +102,19 @@ protected:
 
   static constexpr bool MpiOnDev = SCREAM_MPI_ON_DEVICE;
 
+  // If MpiOnDev=true, we can pass device pointers to MPI. Otherwise, we need host mirrors.
+  template<typename T>
+  using mpi_view_1d = typename std::conditional<
+                        MpiOnDev,
+                        view_1d<T>,
+                        typename view_1d<T>::HostMirror
+                      >::type;
+
   // An "overlapped" tgt grid, that is a version of the tgt grid where
   // ranks own all rows that are affected by local dofs in their src grid
   grid_ptr_type         m_ov_tgt_grid;
 
-  // std::vector<MPI_Datatype> m_col_dtypes;
-  std::vector<std::map<int,MPI_Datatype>> m_local_dtypes;
-  std::vector<std::map<int,MPI_Datatype>> m_remote_dtypes;
-  std::vector<int> m_remote_pids;
-
-  std::vector<MPI_Win>  m_tgt_fields_win;
-
-  MPI_Group             m_rma_post_group;
-  MPI_Group             m_rma_start_group;
-
+  // Source, target, and overlapped-target fields
   std::vector<Field>    m_src_fields;
   std::vector<Field>    m_ov_tgt_fields;
   std::vector<Field>    m_tgt_fields;
@@ -113,6 +122,59 @@ protected:
   // Sparse matrix representation in triplet form
   view_2d<int>    m_row_col_lids;
   view_1d<Real>   m_weights;
+
+  //  ------- MPI data structures -------- //
+
+  // The send/recv buf for pack/unpack
+  view_1d<Real>         m_send_buffer;
+  view_1d<Real>         m_recv_buffer;
+
+  // The send/recv buf to feed to MPI. If MpiOnDev=true, they alias the ones aboce
+  mpi_view_1d<Real>     m_mpi_send_buffer;
+  mpi_view_1d<Real>     m_mpi_recv_buffer;
+
+  // offset(I,J) = offset in send/recv buffor send/recv to/from pid J for field I
+  view_2d<int>          m_send_f_pid_offsets;
+  view_2d<int>          m_recv_f_pid_offsets; // DONE
+
+  // Offset of each PID in the send/recv buffer
+  view_1d<int>          m_send_pid_offsets;
+  view_1d<int>          m_recv_pid_offsets; // DONE
+
+  // Reorder the lids so that all lids to send/recv to/from pid N
+  // come before those for pid N+1. Also,
+  //   lids_pids(i,0): ith lid to send to pid=lids_pids(i,1)
+  // Note: send/recv lids are the lids of gids in the ov_tgt/tgt grids.
+  //       But here, dofs are ordered differently, so that all dofs to
+  //       send/recv to/from the same pid are contiguous.
+  view_2d<int>          m_send_lids_pids;
+  view_2d<int>          m_recv_lids_pids; // DONE
+
+  // Store the start of lids to send/recv to/from each pid in the views above
+  // Note: these are different form m_[send|recv]_pid_offsets. Those are
+  //       offsets in the full send/recv buffer, while these are offsets in
+  //       the views above.
+  view_1d<int>          m_send_pid_lids_start;
+  view_1d<int>          m_recv_pid_lids_start; // DONE
+
+  // Send/recv requests
+  std::vector<MPI_Request>  m_recv_req;
+  std::vector<MPI_Request>  m_send_req;
+
+  // Unfortunately, MPI's startall/waitall needs a ptr to nonconst requests.
+  // Since do_remap_fwd is a const method, calling m_recv_req.data() would
+  // return a pointer to const. So store the nonconst ptrs.
+  // Note: these are persistent requests, so startall/waitall should *not*
+  //       change them (recall that MPI_Request is an opaque pointer).
+  MPI_Request*              m_recv_req_ptr;
+  MPI_Request*              m_send_req_ptr;
+
+  // While the total number of gids in send ops matches the number of local
+  // dofs in m_ov_tgt_grid, the total number of gids in recv can be (and usually
+  // is) larger than the number of local dofs in m_tgt_grid. In fact, there
+  // can be more than 1 pid computing a contribution for the same tgt gid.
+  // Hence, we need to store this number
+  int m_total_num_recv_gids;
 };
 
 } // namespace scream

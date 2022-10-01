@@ -6,6 +6,8 @@
 #include <ekat/kokkos/ekat_kokkos_utils.hpp>
 #include <ekat/ekat_pack_utils.hpp>
 
+#include <numeric>
+
 namespace scream
 {
 
@@ -16,10 +18,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
  : AbstractRemapper(src_grid,create_tgt_grid(map_file,src_grid))
  , m_comm (src_grid->get_comm())
 {
-  using view_1d_host = AtmosphereInput::view_1d_host;
   using namespace ShortFieldTagsNames;
-
-  scorpio::register_file(map_file,scorpio::FileMode::Read);
 
   // Sanity checks
   EKAT_REQUIRE_MSG (src_grid->type()==GridType::Point,
@@ -32,48 +31,49 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   // This is a coarsening remapper. We only go in one direction
   m_bwd_allowed = false;
 
+  scorpio::register_file(map_file,scorpio::FileMode::Read);
+
   // Create io_grid, containing the indices of the triplets
   // in the map file that this rank has to read
   auto gids_h = get_my_triplets_gids (map_file);
   view_1d<gid_t> gids_d("",gids_h.size());
   Kokkos::deep_copy(gids_d,gids_h);
 
-  auto io_grid = std::make_shared<PointGrid>("",gids_h.size(),2,m_comm);
+  auto io_grid = std::make_shared<PointGrid>("",gids_h.size(),0,m_comm);
   io_grid->set_dofs(gids_d);
   const int nlweights = io_grid->get_num_local_dofs();
 
   // Read my row, col, S entries
   m_weights = view_1d<Real>("",nlweights);
   m_row_col_lids = view_2d<int>("",nlweights,2);
+
   view_1d<int> row("",nlweights);
   view_1d<int> col("",nlweights);
+  auto row_h = Kokkos::create_mirror_view(row);
+  auto col_h = Kokkos::create_mirror_view(col);
+  auto S_h   = Kokkos::create_mirror_view(m_weights);
 
-  // TODO: make AtmosphereInput accept view_1d_host<T>,
-  //       so we can read straight into views of ints
-  view_1d_host row_h_real("",nlweights), col_h_real("",nlweights);
-  auto S_h = Kokkos::create_mirror_view(m_weights);
-  ekat::ParameterList reader_params;
-  reader_params.set("Filename",map_file);
-  std::vector<std::string> fields = {"row","col","S"};
-  std::map<std::string,view_1d_host> views = {
-    {"row", row_h_real}, {"col", col_h_real}, {"S", S_h}
-  };
-  std::map<std::string,FieldLayout>  layouts = {
-    {"row", FieldLayout({COL},{nlweights})},
-    {"col", FieldLayout({COL},{nlweights})},
-    {"S", FieldLayout({COL},{nlweights})}
-  };
+  std::vector<scorpio::offset_t> dofs_offsets(nlweights);
+  for (int i=0; i<nlweights; ++i) {
+    dofs_offsets[i] = gids_h[i];
+  }
 
-  AtmosphereInput reader(reader_params,io_grid,views,layouts);
-  reader.read_variables();
-
+  scorpio::get_variable(map_file, "row", "row", {"n_s"}, "int", "int-nnz");
+  scorpio::get_variable(map_file, "col", "col", {"n_s"}, "int", "int-nnz");
+  scorpio::get_variable(map_file, "S", "S", {"n_s"}, "double", "double-nnz");
+  scorpio::set_dof(map_file,"row",nlweights,dofs_offsets.data());
+  scorpio::set_dof(map_file,"col",nlweights,dofs_offsets.data());
+  scorpio::set_dof(map_file,"S",nlweights,dofs_offsets.data());
+  scorpio::set_decomp(map_file);
+  scorpio::grid_read_data_array(map_file,"row",-1,row_h.data(),nlweights);
+  scorpio::grid_read_data_array(map_file,"col",-1,col_h.data(),nlweights);
+  scorpio::grid_read_data_array(map_file,"S",-1,S_h.data(),nlweights);
   scorpio::eam_pio_closefile(map_file);
 
   // Copy triplets to device views
   Kokkos::deep_copy(m_weights,S_h);
-  Kokkos::deep_copy(row,row_h_real);
-  Kokkos::deep_copy(col,col_h_real);
-
+  Kokkos::deep_copy(row,row_h);
+  Kokkos::deep_copy(col,col_h);
   auto row_col_lids = m_row_col_lids;
   Kokkos::parallel_for(typename KT::RangePolicy(0,nlweights),
                        KOKKOS_LAMBDA(const int& i){
@@ -84,30 +84,34 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   // Create an "overlapped" tgt grid, that is, a grid where each rank
   // owns all tgt rows that are affected by at least one of the cols
   // in its src_grid
-  auto ov_tgt_grid = std::make_shared<PointGrid>("ov_tgt_grid",nlweights,2,m_comm);
-  ov_tgt_grid->set_dofs(row);
+  std::set<gid_t> ov_tgt_gids;
+  for (int i=0; i<nlweights; ++i) {
+    ov_tgt_gids.insert(row_h(i));
+  }
+  const int num_ov_tgt_gids = ov_tgt_gids.size();
+  view_1d<int> ov_tgt_gids_d("",num_ov_tgt_gids);
+  auto ov_tgt_gids_h = Kokkos::create_mirror_view(ov_tgt_gids_d);
+  auto it = ov_tgt_gids.begin();
+  for (int i=0; i<num_ov_tgt_gids; ++i, ++it) {
+    ov_tgt_gids_h[i] = *it;
+  }
+  Kokkos::deep_copy(ov_tgt_gids_d,ov_tgt_gids_h);
+
+  auto ov_tgt_grid = std::make_shared<PointGrid>("ov_tgt_grid",num_ov_tgt_gids,0,m_comm);
+  ov_tgt_grid->set_dofs(ov_tgt_gids_d);
   m_ov_tgt_grid = ov_tgt_grid;
 }
 
 CoarseningRemapper::
 ~CoarseningRemapper ()
 {
-  // We need to free MPI windows and datatypes
-  for (auto& w : m_tgt_fields_win) {
-    MPI_Win_free(&w);
+  // We need to free MPI requests
+  for (size_t i=0; i<m_send_req.size(); ++i) {
+    MPI_Request_free(&m_send_req[i]);
   }
-
-  for (int i=0; i<m_num_fields; ++i) {
-    for (auto& it : m_local_dtypes[i]) {
-      MPI_Type_free (&it.second);
-    }
-    for (auto& it : m_remote_dtypes[i]) {
-      MPI_Type_free (&it.second);
-    }
+  for (size_t i=0; i<m_recv_req.size(); ++i) {
+    MPI_Request_free(&m_recv_req[i]);
   }
-
-  MPI_Group_free (&m_rma_post_group);
-  MPI_Group_free (&m_rma_start_group);
 }
 
 FieldLayout CoarseningRemapper::
@@ -173,7 +177,7 @@ create_tgt_grid (const std::string& map_file,
 
   scorpio::register_file(map_file,scorpio::FileMode::Read);
 
-  const int ncols_src = scorpio::get_dimlen_c2f(map_file.c_str(),"n_b");
+  const int ncols_src = scorpio::get_dimlen_c2f(map_file.c_str(),"n_a");
   const int ncols_tgt = scorpio::get_dimlen_c2f(map_file.c_str(),"n_b");
 
   // Ensure it is indeed a coarsening, and the src grid size matches the src grid
@@ -206,6 +210,14 @@ do_register_field (const identifier_type& src, const identifier_type& tgt)
 void CoarseningRemapper::
 do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
 {
+  EKAT_REQUIRE_MSG (
+      src.get_header().get_identifier().get_layout().rank()>1 ||
+      src.get_header().get_alloc_properties().get_padding()==0,
+      "Error! We don't support 2d scalar fields that are padded.\n");
+  EKAT_REQUIRE_MSG (
+      tgt.get_header().get_identifier().get_layout().rank()>1 ||
+      tgt.get_header().get_alloc_properties().get_padding()==0,
+      "Error! We don't support 2d scalar fields that are padded.\n");
   m_src_fields[ifield] = src;
   m_tgt_fields[ifield] = tgt;
 
@@ -227,35 +239,17 @@ void CoarseningRemapper::do_registration_ends ()
 
 void CoarseningRemapper::do_remap_fwd () const
 {
-  // // Fire the recv requests right away, so that if some other ranks
-  // // is done packing before us, we can start receiving their data
-  // if (not m_recv_req.empty()) {
-  //   int ierr = MPI_Startall(m_recv_req.size(),m_recv_req_ptr);
-  //   EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
-  //       "Error! Something whent wrong while starting persistent recv requests.\n"
-  //       "  - recv rank: " + std::to_string(m_comm.rank()) + "\n");
-  // }
-
-  // Expose our windows for writing, and tell other pids we could start
-  // writing any moment. We do this right away (rather than after
-  // completing local_mat_vec) so that
-  //  a) other ranks can start writing if they finish local_mat_vec before us
-  //  b) even if they finish both local_mat_vec AND rma ops before we finish
-  //     local_mat_vec, their MPI_Win_wait call will wait for us.
-  // Also, zero out the tgt field *before* the post.
-  for (int i=0; i<m_num_fields; ++i) {
-    const auto& f_tgt = m_ov_tgt_fields[i];
-
-    // Zero out to prepare for accumulation phase
-    f_tgt.deep_copy(0);
-
-    MPI_Win_start (m_rma_start_group,0,m_tgt_fields_win[i]);
-    MPI_Win_post  (m_rma_post_group, 0,m_tgt_fields_win[i]);
+  // Fire the recv requests right away, so that if some other ranks
+  // is done packing before us, we can start receiving their data
+  if (not m_recv_req.empty()) {
+    int ierr = MPI_Startall(m_recv_req.size(),m_recv_req_ptr);
+    EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
+        "Error! Something whent wrong while starting persistent recv requests.\n"
+        "  - recv rank: " + std::to_string(m_comm.rank()) + "\n");
   }
 
   // Loop over each field
   constexpr auto can_pack = SCREAM_PACK_SIZE>1;
-  constexpr HostOrDevice HD = MpiOnDev ? Device : Host;
   for (int i=0; i<m_num_fields; ++i) {
     // First, perform the local mat-vec. Recall that in these y=Ax products,
     // x is the src field, and y is the overlapped tgt field.
@@ -277,29 +271,34 @@ void CoarseningRemapper::do_remap_fwd () const
     } else {
       local_mat_vec<1>(f_src,f_ov_tgt);
     }
-  
-    // Now we can do our RMA ops, to transfer data from overlapped
-    // target fields to target fields
-    const auto& win = m_tgt_fields_win[i];
-    const auto ov_tgt_data = f_ov_tgt.get_internal_view_data<const Real,HD>();
-    for (const auto pid : m_remote_pids) {
-      const auto& loc_dtype = m_local_dtypes[i].at(pid);
-      const auto& rem_dtype = m_remote_dtypes[i].at(pid);
-      MPI_Accumulate (ov_tgt_data,1,loc_dtype,pid,
-                      0,1,rem_dtype,MPI_SUM,win);
-    }
-
-    // Let other pids know we're done writing on this window
-    MPI_Win_complete(win);
   }
 
-  // Wait for others to be done writing
-  // NOTE: there's no point in looping on windows and calling MPI_Win_test
-  //       first to not get stuck on a single wait, since we have to wait
-  //       on all windows, so we'll have to wait on the slowest anyways.
-  for (int i=0; i<m_num_fields; ++i) {
-    MPI_Win_wait (m_tgt_fields_win[i]);
+  // Pack, then fire off the sends
+  pack ();
+  if (not m_send_req.empty()) {
+    int ierr = MPI_Startall(m_send_req.size(),m_send_req_ptr);
+    EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
+        "Error! Something whent wrong while starting persistent send requests.\n"
+        "  - send rank: " + std::to_string(m_comm.rank()) + "\n");
   }
+
+  // Wait for all data to be received, then unpack
+  if (not m_recv_req.empty()) {
+    int ierr = MPI_Waitall(m_recv_req.size(),m_recv_req_ptr, MPI_STATUSES_IGNORE);
+    EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
+        "Error! Something whent wrong while waiting on persistent recv requests.\n"
+        "  - recv rank: " + std::to_string(m_comm.rank()) + "\n");
+  }
+  unpack ();
+
+  // Wait for all sends to be completed
+  if (not m_send_req.empty()) {
+    int ierr = MPI_Waitall(m_send_req.size(),m_send_req_ptr, MPI_STATUSES_IGNORE);
+    EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
+        "Error! Something whent wrong while waiting on persistent send requests.\n"
+        "  - send rank: " + std::to_string(m_comm.rank()) + "\n");
+  }
+
 }
 
 template<int PackSize>
@@ -363,7 +362,7 @@ local_mat_vec (const Field& x, const Field& y) const
         const auto row = row_col_lids(i,0);
         const auto col = row_col_lids(i,1);
         const auto w = weights(i);
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dim1),
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dim1*dim2),
                             [&](const int idx){
           const int j = idx / dim2;
           const int k = idx % dim2;
@@ -375,12 +374,222 @@ local_mat_vec (const Field& x, const Field& y) const
   }
 }
 
+void CoarseningRemapper::pack () const
+{
+  using RangePolicy = typename KT::RangePolicy;
+  using MemberType  = typename KT::MemberType;
+  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+
+  const int num_send_gids = m_ov_tgt_grid->get_num_local_dofs();
+  const auto pid_lid_start = m_send_pid_lids_start;
+  const auto lids_pids = m_send_lids_pids;
+  const auto buf = m_send_buffer;
+
+  for (int ifield=0; ifield<m_num_fields; ++ifield) {
+    const auto& f  = m_ov_tgt_fields[ifield];
+    const auto& fl = f.get_header().get_identifier().get_layout();
+    const auto lt = get_layout_type(fl.tags());
+    const auto f_pid_offsets = ekat::subview(m_send_f_pid_offsets,ifield);
+
+    switch (lt) {
+      case LayoutType::Scalar2D:
+      {
+        auto v = f.get_view<const Real*>();
+        Kokkos::parallel_for(RangePolicy(0,num_send_gids),
+                             KOKKOS_LAMBDA(const int& i){
+          const int lid = lids_pids(i,0);
+          const int pid = lids_pids(i,1);
+          const int lidpos = i - pid_lid_start(pid);
+          const int offset = f_pid_offsets(pid);
+
+          buf (offset + lidpos) = v(lid);
+        });
+                             
+      } break;
+      case LayoutType::Vector2D:
+      {
+        auto v = f.get_view<const Real**>();
+        const int ndims = fl.get_vector_dim();
+        auto policy = ESU::get_default_team_policy(num_send_gids,ndims);
+        Kokkos::parallel_for(policy,
+                             KOKKOS_LAMBDA(const MemberType& team){
+          const int i = team.league_rank();
+          const int lid = lids_pids(i,0);
+          const int pid = lids_pids(i,1);
+          const int lidpos = i - pid_lid_start(pid);
+          const int offset = f_pid_offsets(pid);
+
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team,ndims),
+                               [&](const int idim) {
+            buf(offset + lidpos*ndims + idim) = v(lid,idim);
+          });
+        });
+      } break;
+      case LayoutType::Scalar3D:
+      {
+        auto v = f.get_view<const Real**>();
+        const int nlevs = fl.dims().back();
+        auto policy = ESU::get_default_team_policy(num_send_gids,nlevs);
+        Kokkos::parallel_for(policy,
+                             KOKKOS_LAMBDA(const MemberType& team){
+          const int i = team.league_rank();
+          const int lid = lids_pids(i,0);
+          const int pid = lids_pids(i,1);
+          const int lidpos = i - pid_lid_start(pid);
+          const int offset = f_pid_offsets(pid);
+
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs),
+                               [&](const int ilev) {
+            buf(offset + lidpos*nlevs + ilev) = v(lid,ilev);
+          });
+        });
+      } break;
+      case LayoutType::Vector3D:
+      {
+        auto v = f.get_view<const Real***>();
+        const int ndims = fl.get_vector_dim();
+        const int nlevs = fl.dims().back();
+        auto policy = ESU::get_default_team_policy(num_send_gids,ndims*nlevs);
+        Kokkos::parallel_for(policy,
+                             KOKKOS_LAMBDA(const MemberType& team){
+          const int i = team.league_rank();
+          const int lid = lids_pids(i,0);
+          const int pid = lids_pids(i,1);
+          const int lidpos = i - pid_lid_start(pid);
+          const int offset = f_pid_offsets(pid);
+
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team,ndims*nlevs),
+                               [&](const int idx) {
+            const int idim = idx / nlevs;
+            const int ilev = idx % nlevs;
+            buf(offset + lidpos*ndims*nlevs + idim*nlevs + ilev) = v(lid,idim,ilev);
+          });
+        });
+      } break;
+
+      default:
+        EKAT_ERROR_MSG ("Unexpected field rank in CoarseningRemapper::pack.\n"
+            "  - MPI rank  : " + std::to_string(m_comm.rank()) + "\n"
+            "  - field rank: " + std::to_string(fl.rank()) + "\n");
+    }
+  }
+
+  // If MPI does not use dev pointers, we need to deep copy from dev to host
+  if (not MpiOnDev) {
+    Kokkos::deep_copy (m_mpi_send_buffer,m_send_buffer);
+  }
+}
+
+void CoarseningRemapper::unpack () const
+{
+  // If MPI does not use dev pointers, we need to deep copy from host to dev
+  if (not MpiOnDev) {
+    Kokkos::deep_copy (m_recv_buffer,m_mpi_recv_buffer);
+  }
+
+  using RangePolicy = typename KT::RangePolicy;
+  using MemberType  = typename KT::MemberType;
+  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+
+  const auto pid_lid_start = m_recv_pid_lids_start;
+  const auto lids_pids = m_recv_lids_pids;
+  const auto buf = m_recv_buffer;
+  for (int ifield=0; ifield<m_num_fields; ++ifield) {
+    const auto& f  = m_tgt_fields[ifield];
+    const auto& fl = f.get_header().get_identifier().get_layout();
+    const auto lt = get_layout_type(fl.tags());
+    const auto f_pid_offsets = ekat::subview(m_send_f_pid_offsets,ifield);
+
+    switch (lt) {
+      case LayoutType::Scalar2D:
+      {
+        auto v = f.get_view<Real*>();
+        Kokkos::parallel_for(RangePolicy(0,m_total_num_recv_gids),
+                             KOKKOS_LAMBDA(const int& i){
+          const int lid = lids_pids(i,0);
+          const int pid = lids_pids(i,1);
+          const int lidpos = i - pid_lid_start(pid);
+          const int offset = f_pid_offsets(pid);
+
+          v(lid) = buf (offset + lidpos);
+        });
+                             
+      } break;
+      case LayoutType::Vector2D:
+      {
+        auto v = f.get_view<Real**>();
+        const int ndims = fl.get_vector_dim();
+        auto policy = ESU::get_default_team_policy(m_total_num_recv_gids,ndims);
+        Kokkos::parallel_for(policy,
+                             KOKKOS_LAMBDA(const MemberType& team){
+          const int i = team.league_rank();
+          const int lid = lids_pids(i,0);
+          const int pid = lids_pids(i,1);
+          const int lidpos = i - pid_lid_start(pid);
+          const int offset = f_pid_offsets(pid);
+
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team,ndims),
+                               [&](const int idim) {
+            v(lid,idim) = buf (offset + lidpos*ndims + idim);
+          });
+        });
+      } break;
+      case LayoutType::Scalar3D:
+      {
+        auto v = f.get_view<Real**>();
+        const int nlevs = fl.dims().back();
+        auto policy = ESU::get_default_team_policy(m_total_num_recv_gids,nlevs);
+        Kokkos::parallel_for(policy,
+                             KOKKOS_LAMBDA(const MemberType& team){
+          const int i = team.league_rank();
+          const int lid = lids_pids(i,0);
+          const int pid = lids_pids(i,1);
+          const int lidpos = i - pid_lid_start(pid);
+          const int offset = f_pid_offsets(pid);
+
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs),
+                               [&](const int ilev) {
+            v(lid,ilev) = buf (offset + lidpos*nlevs + ilev);
+          });
+        });
+      } break;
+      case LayoutType::Vector3D:
+      {
+        auto v = f.get_view<Real***>();
+        const int ndims = fl.get_vector_dim();
+        const int nlevs = fl.dims().back();
+        auto policy = ESU::get_default_team_policy(m_total_num_recv_gids,nlevs*ndims);
+        Kokkos::parallel_for(policy,
+                             KOKKOS_LAMBDA(const MemberType& team){
+          const int i = team.league_rank();
+          const int lid = lids_pids(i,0);
+          const int pid = lids_pids(i,1);
+          const int lidpos = i - pid_lid_start(pid);
+          const int offset = f_pid_offsets(pid);
+
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs*ndims),
+                               [&](const int idx) {
+            const int idim = idx / nlevs;
+            const int ilev = idx % nlevs;
+            v(lid,idim,ilev) = buf (offset + lidpos*ndims*nlevs + idim*nlevs + ilev);
+          });
+        });
+      } break;
+
+      default:
+        EKAT_ERROR_MSG ("Unexpected field rank in CoarseningRemapper::pack.\n"
+            "  - MPI rank  : " + std::to_string(m_comm.rank()) + "\n"
+            "  - field rank: " + std::to_string(fl.rank()) + "\n");
+    }
+  }
+}
+
+
 auto CoarseningRemapper::
 get_my_triplets_gids (const std::string& map_file) const
   -> view_1d<gid_t>::HostMirror
 {
   using namespace ShortFieldTagsNames;
-  using view_1d_host = AtmosphereInput::view_1d_host;
 
   // Create a "fake" grid, with as many dofs as the number of triplets in the src file
   const int ngweights = scorpio::get_dimlen_c2f(map_file.c_str(),"n_s");
@@ -388,25 +597,20 @@ get_my_triplets_gids (const std::string& map_file) const
   const int nlweights = io_grid_linear->get_num_local_dofs();
   const auto& raw_comm = m_comm.mpi_comm();
 
-  ekat::ParameterList reader_params;
-  reader_params.set("Filename",map_file);
-  std::vector<std::string> fields = {"col"};
-  std::map<std::string,view_1d_host> views = {
-    {"col", view_1d_host("",nlweights)}
-  };
-  std::map<std::string,FieldLayout>  layouts = {
-    {"col", FieldLayout({COL},{nlweights})}
-  };
+  gid_t offset = nlweights;
+  m_comm.scan(&offset,1,MPI_SUM);
+  offset -= nlweights; // scan is inclusive, but we need exclusive
 
-  AtmosphereInput reader(reader_params,io_grid_linear,views,layouts);
-  reader.read_variables();
-
-  // TODO: make atm input accept view_1d_host<T>, so we can read directly
-  //       into a view of ints
-  AbstractGrid::dofs_list_h_type cols ("",nlweights);
-  for (int i=0; i<nlweights; ++i) {
-    cols(i) = views.at("cols")(i);
-  }
+  // Read chunk of triplets col indices
+  std::vector<gid_t> cols(nlweights);
+  scorpio::register_file(map_file,scorpio::FileMode::Read);
+  scorpio::get_variable(map_file, "col", "col", {"n_s"}, "int", "int-nnz");
+  std::vector<scorpio::offset_t> dofs_offsets(nlweights);
+  std::iota(dofs_offsets.begin(),dofs_offsets.end(),offset);
+  scorpio::set_dof(map_file,"col",nlweights,dofs_offsets.data());
+  scorpio::set_decomp(map_file);
+  scorpio::grid_read_data_array(map_file,"col",-1,cols.data(),cols.size());
+  scorpio::eam_pio_closefile(map_file);
 
   // Get owners of cols read in
   auto owners_lids = m_src_grid->get_owners_and_lids(cols);
@@ -415,8 +619,8 @@ get_my_triplets_gids (const std::string& map_file) const
   // (global) col array they need to read. Since the io_grid_linear
   // is partitioned linearly, we only need to add an offset to the
   // local id, in order to retrieve the global id
-  gid_t offset = 0;
-  MPI_Exscan (&nlweights,&offset,1,MPI_INT,MPI_SUM,raw_comm);
+  // gid_t offset = 0;
+  // MPI_Exscan (&nlweights,&offset,1,MPI_INT,MPI_SUM,raw_comm);
 
   std::map<int,std::vector<int>> pid_to_io_grid_gid;
   for (int i=0; i<nlweights; ++i) {
@@ -455,10 +659,12 @@ get_my_triplets_gids (const std::string& map_file) const
     MPI_Get_accumulate (&n,1,MPI_INT,&write_start,1,MPI_INT,pid,
                         0,1,MPI_INT,MPI_SUM,counter_win);
 
-    MPI_Accumulate (&n,1,MPI_INT,pid,write_start,1,MPI_INT,MPI_SUM,data_win);
+    MPI_Put (it.second.data(),n,MPI_INT,pid,write_start,n,MPI_INT,data_win);
   }
   MPI_Win_fence(0,data_win);
   MPI_Win_fence(0,counter_win);
+  EKAT_REQUIRE_MSG (write_offset==num_entries,
+      "Error! Something went wrong while fetching triplets indices.\n");
 
   // Copy from window to a view, before freeing window's memory
   view_1d<gid_t>::HostMirror my_triplets_gids("",num_entries);
@@ -500,91 +706,225 @@ void CoarseningRemapper::create_ov_tgt_fields ()
 
 void CoarseningRemapper::setup_mpi_data_structures ()
 {
-  const auto raw_comm = m_comm.mpi_comm();
+  using namespace ShortFieldTagsNames;
+
+  const auto mpi_comm  = m_comm.mpi_comm();
+  const auto mpi_real  = ekat::get_mpi_type<Real>();
+  const auto mpi_gid_t = ekat::get_mpi_type<gid_t>();
+  int pos;
+
+  auto tgt_lid = [&] (const gid_t gid) -> int {
+    const auto gids = m_tgt_grid->get_dofs_gids_host();
+    const auto beg = gids.data();
+    const auto end = gids.data()+m_tgt_grid->get_num_local_dofs();
+    const auto it = std::find(beg,end,gid);
+    return it==end ? -1 : std::distance(beg,it);
+  };
+
+  // Pre-compute the amount of data stored in each field on each dof
+  std::vector<int> field_col_size (m_num_fields);
+  int sum_fields_col_sizes = 0;
+  for (int i=0; i<m_num_fields; ++i) {
+    const auto& f  = m_ov_tgt_fields[i];  // Doesn't matter if tgt or ov_tgt
+    const auto& fl = f.get_header().get_identifier().get_layout();
+    field_col_size[i] = fl.size() / fl.dim(0);
+    sum_fields_col_sizes += field_col_size[i];
+  }
+
+  // --------------------------------------------------------- //
+  //                   Setup SEND structures                   //
+  // --------------------------------------------------------- //
 
   // 1. Retrieve pid (and associated lid) of all ov_tgt gids
   //    on the tgt grid
   const auto ov_gids = m_ov_tgt_grid->get_dofs_gids_host();
   auto pids_lids = m_tgt_grid->get_owners_and_lids (ov_gids);
 
-  // 2. Group dofs by remote pid (to issue a single RMA call per pid later)
-  const int num_ov_dofs = ov_gids.size();
-  std::map<int,std::vector<int>> local_offsets, remote_offsets;
-  for (int i=0; i<num_ov_dofs; ++i) {
+  // 2. Group dofs to send by remote pid
+  const int num_ov_gids = ov_gids.size();
+  std::map<int,std::vector<int>> send_lids;
+  std::map<int,std::vector<gid_t>> send_gids;
+  for (int i=0; i<num_ov_gids; ++i) {
     const int pid = pids_lids(i,0);
-    m_remote_pids.push_back(pid);
-    const int remote_lid = pids_lids(i,1);
-    local_offsets[pid].push_back(i);
-    remote_offsets[pid].push_back(remote_lid);
+    send_lids[pid].push_back(i);
+    send_gids[pid].push_back(ov_gids(i));
   }
-
-  // 3. Create MPI_Datatype for both local (ov_tgt_field)
-  //    and remote (tgt_field)
-  m_local_dtypes.resize(m_num_fields);
-  m_remote_dtypes.resize(m_num_fields);
-  // m_col_dtypes.resize(m_num_fields);
-  const auto mpi_real = ekat::get_mpi_type<Real>();
-  for (int i=0; i<m_num_fields; ++i) {
-    const auto& f = m_tgt_fields[i];
-    const auto& ov_f = m_tgt_fields[i];
-    const auto& fl  = f.get_header().get_identifier().get_layout();
-    const auto& fap = f.get_header().get_alloc_properties();
-    const auto& ov_fap = ov_f.get_header().get_alloc_properties();
-
-    int col_size = fl.rank() / fl.dim(0);
-
-    int col_disp = col_size;
-    int ov_col_disp = col_size;
-    if (fap.get_padding()>0) {
-      col_disp = fap.get_alloc_size() / sizeof(Real) / fl.dim(0);
-    }
-    if (ov_fap.get_padding()>0) {
-      ov_col_disp = ov_fap.get_alloc_size() / sizeof(Real) / fl.dim(0);
-    }
-    // MPI_Type_contiguous(col_size,get_mpi_type<Real>(),&m_col_dtypes[i]);
-    // MPI_Type_commit(&m_col_dtypes[i]);
-
-    for (const auto& it : local_offsets) {
-      const int pid = it.first;
-      auto loc_offsets = it.second;
-      auto rem_offsets = remote_offsets.at(pid);
-
-      // Multiply offsets by column displacement
-      for (auto& o : loc_offsets) {
-        o *= ov_col_disp;
-      }
-      for (auto& o : rem_offsets) {
-        o *= col_disp;
-      }
-      const std::vector<int> blocks_sizes (loc_offsets.size(),col_size);
-
-      auto& loc_dtype = m_local_dtypes[i][pid];
-      auto& rem_dtype = m_remote_dtypes[i][pid];
-
-      // MPI_Type_indexed (loc_offset.size(),ones.data(),loc_offsets.data(),m_col_dtypes[i],&loc_dtype);
-      // MPI_Type_indexed (rem_offset.size(),ones.data(),rem_offsets.data(),m_col_dtypes[i],&rem_dtype);
-      MPI_Type_indexed (loc_offsets.size(),blocks_sizes.data(),loc_offsets.data(),mpi_real,&loc_dtype);
-      MPI_Type_indexed (rem_offsets.size(),blocks_sizes.data(),rem_offsets.data(),mpi_real,&rem_dtype);
-      MPI_Type_commit(&loc_dtype);
-      MPI_Type_commit(&rem_dtype);
+  const int num_send_pids = send_lids.size();
+  m_send_lids_pids = view_2d<int>("",num_ov_gids,2);
+  m_send_pid_lids_start = view_1d<int>("",m_comm.size());
+  auto send_lids_pids_h = Kokkos::create_mirror_view(m_send_lids_pids);
+  auto send_pid_lids_start_h = Kokkos::create_mirror_view(m_send_pid_lids_start);
+  pos = 0;
+  for (int pid=0; pid<m_comm.size(); ++pid) {
+    send_pid_lids_start_h(pid) = pos;
+    for (auto lid : send_lids[pid]) {
+      send_lids_pids_h(pos,0) = lid;
+      send_lids_pids_h(pos++,1) = pid;
     }
   }
+  Kokkos::deep_copy(m_send_lids_pids,send_lids_pids_h);
+  Kokkos::deep_copy(m_send_pid_lids_start,send_pid_lids_start_h);
 
-  // 4. Create windows
-  m_tgt_fields_win.resize(m_num_fields);
-  constexpr HostOrDevice HD = MpiOnDev ? Device : Host;
-  for (int i=0; i<m_num_fields; ++i) {
-    const auto& f = m_tgt_fields[i];
-    const auto& fap = f.get_header().get_alloc_properties();
-    auto win_size = fap.get_alloc_size();
-    auto data = f.get_internal_view_data<Real,HD>();
-    MPI_Win_create (data,win_size,sizeof(Real),
-                    MPI_INFO_NULL,raw_comm,&m_tgt_fields_win[i]);
+  // 3. Compute offsets in send buffer for each pid/field pair
+  m_send_f_pid_offsets = view_2d<int>("",m_num_fields,m_comm.size());
+  m_send_pid_offsets = view_1d<int>("",m_comm.size());
+  auto send_f_pid_offsets_h = Kokkos::create_mirror_view(m_send_f_pid_offsets);
+  auto send_pid_offsets_h = Kokkos::create_mirror_view(m_send_pid_offsets);
+  pos = 0;
+  for (int pid=0; pid<m_comm.size(); ++pid) {
+    send_pid_offsets_h(pid) = pos;
+    for (int i=0; i<m_num_fields; ++i) {
+      send_f_pid_offsets_h(i,pid) = pos;
+      pos += field_col_size[i]*send_lids[pid].size();
+    }
+  }
+  EKAT_REQUIRE_MSG (pos==num_ov_gids*sum_fields_col_sizes,
+      "Error! Something went wrong in CoarseningRemapper::setup_mpi_structures.\n");
+  Kokkos::deep_copy (m_send_pid_offsets,send_pid_offsets_h);
+
+  // 4. Allocate send buffers
+  m_send_buffer = view_1d<Real>("",sum_fields_col_sizes*num_ov_gids);
+  m_mpi_send_buffer = Kokkos::create_mirror_view(decltype(m_mpi_send_buffer)::execution_space(),m_send_buffer);
+
+  // 5. Setup send requests
+  m_send_req.reserve(num_send_pids);
+  for (const auto& it : send_lids) {
+    const int n = it.second.size()*sum_fields_col_sizes;
+    if (n==0) {
+      continue;
+    }
+
+    const int pid = it.first;
+    const auto send_ptr = m_mpi_send_buffer.data() + send_pid_offsets_h(pid);
+
+    m_send_req.emplace_back();
+    auto& req = m_send_req.back();
+    MPI_Send_init (send_ptr, n, mpi_real, pid,
+                   0, mpi_comm, &req);
+  }
+  m_send_req_ptr = m_send_req.data();
+
+  // --------------------------------------------------------- //
+  //                   Setup RECV structures                   //
+  // --------------------------------------------------------- //
+
+  MPI_Win write_win, read_win;
+
+  // 1. Let each process know how many lids we need to send them
+  std::vector<int> num_recv_gids (m_comm.size(),0);
+  MPI_Win_create (num_recv_gids.data(),sizeof(int)*m_comm.size(),sizeof(int),
+                  MPI_INFO_NULL,mpi_comm,&write_win);
+  MPI_Win_fence(0,write_win);
+  for (const auto& it : send_gids) {
+    const int pid = it.first;
+    const int n   = it.second.size();
+    if (n>0) {
+      MPI_Put (&n,1,MPI_INT,pid,m_comm.rank(),1,MPI_INT,write_win);
+    }
+  }
+  MPI_Win_fence(0,write_win);
+  MPI_Win_free(&write_win);
+  
+  // 2. Allocate space for other pids to communicate the gids.
+  //    Then, communicate gids to all other procs.
+  m_total_num_recv_gids = 0;
+  m_recv_pid_lids_start = view_1d<int>("",m_comm.size()+1);
+  auto recv_pid_lids_start_h = Kokkos::create_mirror_view(m_recv_pid_lids_start);
+  int num_recv_pids = 0;
+  for (int pid=0; pid<m_comm.size(); ++pid) {
+    recv_pid_lids_start_h[pid] = m_total_num_recv_gids;
+    m_total_num_recv_gids += num_recv_gids[pid];
+    if (num_recv_gids[pid]>0) {
+      ++num_recv_pids;
+    }
+  }
+  recv_pid_lids_start_h[m_comm.size()] = m_total_num_recv_gids;
+  Kokkos::deep_copy(m_recv_pid_lids_start,recv_pid_lids_start_h);
+  std::vector<gid_t> recv_gids (m_total_num_recv_gids,-1);
+
+  // 3. Read from all other pids what MY offset is on their recv buffer
+  MPI_Win_create (recv_pid_lids_start_h.data(),sizeof(int)*m_comm.size(),sizeof(int),
+                  MPI_INFO_NULL,mpi_comm,&read_win);
+  std::vector<int> my_offset_on_pids (m_comm.size());
+  MPI_Win_fence(0,read_win);
+  for (int pid=0; pid<m_comm.size(); ++pid) {
+    MPI_Get (&my_offset_on_pids[pid],1,MPI_INT,pid,m_comm.rank(),1,MPI_INT,read_win);
+  }
+  MPI_Win_fence(0,read_win);
+  MPI_Win_free(&read_win);
+
+  // 4. Communicate gids we are sending to all pids
+  MPI_Win_create (recv_gids.data(),sizeof(gid_t)*m_total_num_recv_gids,sizeof(gid_t),
+                  MPI_INFO_NULL,mpi_comm,&write_win);
+  MPI_Win_fence(0,write_win);
+  for (const auto& it : send_gids) {
+    const int n = it.second.size();
+    if (n==0) {
+      continue;
+    }
+    const int pid = it.first;
+    MPI_Put (it.second.data(),n,mpi_gid_t,pid,my_offset_on_pids[pid],1,mpi_gid_t,write_win);
+  }
+  MPI_Win_fence(0,write_win);
+  MPI_Win_free(&write_win);
+
+  // 5. Now we know how many gids we recv from each pid, and what they are
+  //    Splice gids from all pids, and convert to lid
+  m_recv_lids_pids = view_2d<int>("",m_total_num_recv_gids,2);
+  auto recv_lids_pids_h = Kokkos::create_mirror_view(m_recv_lids_pids);
+  pos = 0;
+  for (int pid=0; pid<m_comm.size(); ++pid) {
+    const int start = recv_pid_lids_start_h[pid];
+    const int end   = recv_pid_lids_start_h[pid+1];
+    for (int i=start; i<end; ++i) {
+      const auto gid = recv_gids[i];
+      const auto lid = tgt_lid(gid);
+      EKAT_REQUIRE_MSG (lid>=0,
+          "Error! Something went wrong while converting gid->lid on tgt grid.\n"
+          "  - rank: " + std::to_string(m_comm.rank()) + "\n");
+      recv_lids_pids_h(pos,0)   = lid;
+      recv_lids_pids_h(pos++,1) = pid;
+    }
   }
 
-  // 5. Create groups for windows post/start calls
-  MPI_Comm_group(m_comm.mpi_comm(),&m_rma_post_group);
-  MPI_Group_incl(m_rma_post_group,m_remote_pids.size(),m_remote_pids.data(),&m_rma_start_group);
+  // 6. Compute offsets in recv buffer for each pid/field pair
+  m_recv_f_pid_offsets = view_2d<int>("",m_num_fields,m_comm.size());
+  m_recv_pid_offsets = view_1d<int>("",m_comm.size());
+  auto recv_f_pid_offsets_h = Kokkos::create_mirror_view(m_recv_f_pid_offsets);
+  auto recv_pid_offsets_h = Kokkos::create_mirror_view(m_recv_pid_offsets);
+  pos = 0;
+  for (int pid=0; pid<m_comm.size(); ++pid) {
+    recv_pid_offsets_h(pid) = pos;
+    for (int i=0; i<m_num_fields; ++i) {
+      recv_f_pid_offsets_h(i,pid) = pos;
+      pos += field_col_size[i]*num_recv_gids[pid];
+    }
+  }
+  EKAT_REQUIRE_MSG (pos==m_total_num_recv_gids*sum_fields_col_sizes,
+      "Error! Something went wrong in CoarseningRemapper::setup_mpi_structures.\n");
+  Kokkos::deep_copy (m_recv_f_pid_offsets,recv_f_pid_offsets_h);
+  Kokkos::deep_copy (m_recv_pid_offsets,recv_pid_offsets_h);
+
+  // 7. Allocate recv buffers
+  m_recv_buffer = view_1d<Real>("",sum_fields_col_sizes*m_total_num_recv_gids);
+  m_mpi_recv_buffer = Kokkos::create_mirror_view(decltype(m_mpi_recv_buffer)::execution_space(),m_recv_buffer);
+
+  // 8. Setup recv requests
+  m_recv_req.reserve(num_recv_pids);
+  for (int pid=0; pid<m_comm.size(); ++pid) {
+    const int n = num_recv_gids[pid]*sum_fields_col_sizes;
+    if (n==0) {
+      continue;
+    }
+
+    const auto recv_ptr = m_mpi_recv_buffer.data() + recv_pid_offsets_h(pid);
+
+    m_recv_req.emplace_back();
+    auto& req = m_recv_req.back();
+    MPI_Recv_init (recv_ptr, n, mpi_real, pid,
+                   0, mpi_comm, &req);
+  }
+  m_recv_req_ptr = m_recv_req.data();
 }
 
 } // namespace scream
