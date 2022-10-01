@@ -43,13 +43,17 @@ public:
   using gid_type            = int;           // TODO: use int64_t? int? template class on gid_type?
   using device_type         = DefaultDevice; // TODO: template class on device type
   using kokkos_types        = KokkosTypes<device_type>;
-  using geo_view_type       = kokkos_types::view_1d<Real>;
+
+  template<typename T>
+  using view_1d = kokkos_types::view_1d<T>;
+
+  using geo_view_type       = view_1d<Real>;
   using geo_view_h_type     = typename geo_view_type::HostMirror;
   using geo_view_map_type   = std::map<std::string,geo_view_type>;
   using geo_view_h_map_type = std::map<std::string,geo_view_h_type>;
 
   // The list of all dofs' gids
-  using dofs_list_type = kokkos_types::view_1d<gid_type>;
+  using dofs_list_type   = view_1d<gid_type>;
   using dofs_list_h_type = typename dofs_list_type::HostMirror;
 
   // Row i of this 2d view gives the indices of the ith local dof
@@ -137,7 +141,13 @@ public:
   // it, as well as the local id on that process.
   // WARNING: this is an expensive method.
   kokkos_types::view_2d<gid_type>
-  get_owners_and_lids (const dofs_list_h_type& gids) const;
+  get_owners_and_lids (const view_1d<const gid_type>& gids) const;
+
+  kokkos_types::view_2d<gid_type>
+  get_owners_and_lids (const std::vector<gid_type>& gids) const {
+    kokkos_types::view_1d<const gid_type> gids_v(gids.data(),gids.size());
+    return get_owners_and_lids(gids_v);
+  }
 protected:
 
   // Derived classes can override these methods, which are called inside the

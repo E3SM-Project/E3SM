@@ -250,7 +250,7 @@ void AbstractGrid::reset_num_vertical_lev (const int num_vertical_lev) {
 }
 
 auto AbstractGrid::
-get_owners_and_lids (const dofs_list_h_type& gids) const
+get_owners_and_lids (const view_1d<const gid_type>& gids) const
  -> kokkos_types::view_2d<gid_type>
 {
   EKAT_REQUIRE_MSG (m_dofs_set,
