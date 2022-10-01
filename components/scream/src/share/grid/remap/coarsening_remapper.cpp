@@ -409,7 +409,7 @@ void CoarseningRemapper::pack () const
       case LayoutType::Vector2D:
       {
         auto v = f.get_view<const Real**>();
-        const int ndims = fl.get_vector_dim();
+        const int ndims = fl.dim(1);
         auto policy = ESU::get_default_team_policy(num_send_gids,ndims);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
@@ -447,7 +447,7 @@ void CoarseningRemapper::pack () const
       case LayoutType::Vector3D:
       {
         auto v = f.get_view<const Real***>();
-        const int ndims = fl.get_vector_dim();
+        const int ndims = fl.dim(1);
         const int nlevs = fl.dims().back();
         auto policy = ESU::get_default_team_policy(num_send_gids,ndims*nlevs);
         Kokkos::parallel_for(policy,
@@ -518,7 +518,7 @@ void CoarseningRemapper::unpack () const
       case LayoutType::Vector2D:
       {
         auto v = f.get_view<Real**>();
-        const int ndims = fl.get_vector_dim();
+        const int ndims = fl.dim(1);
         auto policy = ESU::get_default_team_policy(m_total_num_recv_gids,ndims);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
@@ -556,7 +556,7 @@ void CoarseningRemapper::unpack () const
       case LayoutType::Vector3D:
       {
         auto v = f.get_view<Real***>();
-        const int ndims = fl.get_vector_dim();
+        const int ndims = fl.dim(1);
         const int nlevs = fl.dims().back();
         auto policy = ESU::get_default_team_policy(m_total_num_recv_gids,nlevs*ndims);
         Kokkos::parallel_for(policy,
