@@ -576,11 +576,12 @@ contains
 
       integer :: timeLevel, err_tmp
 
-      character (len=StrKIND) :: configName, timerName
-      character (len=StrKIND), pointer :: config_AM_output_stream
+      character (len=StrKIND) :: configName, alarmName, timerName
+      character (len=StrKIND), pointer :: config_AM_output_stream, config_AM_compute_interval
       logical, pointer :: config_AM_enable, config_AM_write_on_startup, config_AM_compute_on_startup
       type (mpas_pool_iterator_type) :: poolItr
       integer :: nameLength
+      type (MPAS_TimeInterval_type) :: computeInterval
 
       err = 0
 
@@ -600,20 +601,31 @@ contains
             configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_write_on_startup'
             call mpas_pool_get_config(domain % configs, configName, config_AM_write_on_startup)
 
+            configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_output_stream'
+            call mpas_pool_get_config(domain % configs, configName, config_AM_output_stream)
+
             if ( config_AM_compute_on_startup ) then
                timerName = trim(computeStartupTimerPrefix) // poolItr % memberName(1:nameLength)
 #ifdef MPAS_DEBUG
                call mpas_log_write( '      Computing AM ' // poolItr % memberName(1:nameLength))
 #endif
+               configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_compute_interval'
+               call mpas_pool_get_config(domain % configs, configName, config_AM_compute_interval)
+               if ( config_AM_compute_interval == 'output_interval') then
+                  computeInterval = MPAS_stream_mgr_get_stream_interval(domain % streamManager, &
+                     streamID=config_AM_output_stream, direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
+               else
+                  alarmName = poolItr % memberName(1:nameLength) // computeAlarmSuffix
+                  computeInterval = mpas_alarm_interval(domain % clock, alarmName, ierr=err_tmp)
+               end if
+
                call mpas_timer_start(timerName)
-               call ocn_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
+               call ocn_compute_analysis_members(domain, timeLevel, poolItr % memberName, computeInterval, err_tmp)
                call mpas_timer_stop(timerName)
                err = ior(err, err_tmp)
             end if
 
             if ( config_AM_write_on_startup ) then
-               configName = 'config_AM_' // poolItr % memberName(1:nameLength) // '_output_stream'
-               call mpas_pool_get_config(domain % configs, configName, config_AM_output_stream)
                if ( config_AM_output_stream /= 'none' ) then
 #ifdef MPAS_DEBUG
                   call mpas_log_write( '      Writing AM ' // poolItr % memberName(1:nameLength))
@@ -789,6 +801,7 @@ contains
       logical, pointer :: config_AM_enable
       type (mpas_pool_iterator_type) :: poolItr
       integer :: nameLength
+      type (MPAS_TimeInterval_type) :: computeInterval
 
       err = 0
 
@@ -819,8 +832,10 @@ contains
 #ifdef MPAS_DEBUG
                   call mpas_log_write( '      Computing AM ' // poolItr % memberName(1:nameLength))
 #endif
+                  computeInterval = MPAS_stream_mgr_get_stream_interval(domain % streamManager, streamID=config_AM_output_stream, &
+                     direction=MPAS_STREAM_OUTPUT, ierr=err_tmp)
                   call mpas_timer_start(timerName)
-                  call ocn_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
+                  call ocn_compute_analysis_members(domain, timeLevel, poolItr % memberName, computeInterval, err_tmp)
                   call mpas_timer_stop(timerName)
                end if
             else if ( mpas_is_alarm_ringing(domain % clock, alarmName, ierr=err_tmp) ) then
@@ -828,8 +843,9 @@ contains
 #ifdef MPAS_DEBUG
                call mpas_log_write( '      Computing AM ' // poolItr % memberName(1:nameLength))
 #endif
+               computeInterval = mpas_alarm_interval(domain % clock, alarmName, ierr=err_tmp)
                call mpas_timer_start(timerName)
-               call ocn_compute_analysis_members(domain, timeLevel, poolItr % memberName, err_tmp)
+               call ocn_compute_analysis_members(domain, timeLevel, poolItr % memberName, computeInterval, err_tmp)
                call mpas_timer_stop(timerName)
             end if
          end if
@@ -1319,11 +1335,12 @@ contains
 !>  This private routine calls the correct compute routine for each analysis member.
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_compute_analysis_members(domain, timeLevel, analysisMemberName, iErr)!{{{
+   subroutine ocn_compute_analysis_members(domain, timeLevel, analysisMemberName, computeInterval, iErr)!{{{
       type (domain_type), intent(inout) :: domain !< Input: Domain information
       integer, intent(in) :: timeLevel !< Input: Time level to compute with in analysis member
       character (len=*), intent(in) :: analysisMemberName !< Input: Name of analysis member
       integer, intent(out) :: iErr !< Output: Error code
+      type (MPAS_TimeInterval_type), intent(in) :: computeInterval
 
       integer :: nameLength, err_tmp
 
@@ -1396,22 +1413,22 @@ contains
       ! time is last
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsDaily' ) then
          call ocn_compute_time_series_stats(domain, timeLevel, &
-           timeSeriesDailyTAG, err_tmp)
+           timeSeriesDailyTAG, computeInterval, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthly' ) then
          call ocn_compute_time_series_stats(domain, timeLevel, &
-           timeSeriesMonthlyTAG, err_tmp)
+           timeSeriesMonthlyTAG, computeInterval, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsClimatology' ) then
          call ocn_compute_time_series_stats(domain, timeLevel, &
-           timeSeriesClimatologyTAG, err_tmp)
+           timeSeriesClimatologyTAG, computeInterval, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
          call ocn_compute_time_series_stats(domain, timeLevel, &
-           timeSeriesCustomTAG, err_tmp)
+           timeSeriesCustomTAG, computeInterval, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthlyMin' ) then
          call ocn_compute_time_series_stats(domain, timeLevel, &
-           timeSeriesMonthlyMinTAG, err_tmp)
+           timeSeriesMonthlyMinTAG, computeInterval, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthlyMax' ) then
          call ocn_compute_time_series_stats(domain, timeLevel, &
-           timeSeriesMonthlyMaxTAG, err_tmp)
+           timeSeriesMonthlyMaxTAG, computeInterval, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
