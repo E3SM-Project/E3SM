@@ -702,8 +702,6 @@ create_diagnostic (const std::string& diag_field_name) {
     tokens.pop_back();
     auto fname = ekat::join(tokens,"_");
     // If the field is itself a diagnostic, make sure it's built
-    std::cout << "diag_field_name: " << diag_field_name << std::endl
-              << "fname: " << fname << "\n";
     if (diag_factory.has_product(fname) and
         m_diagnostics.count(fname)==0) {
       create_diagnostic(fname);
