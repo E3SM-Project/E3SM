@@ -10,20 +10,43 @@
 namespace scream
 {
 
-// An abstract interface for a remapper
+/*
+ * A remapper to interpolate fields on a coarser grid
+ *
+ * This remapper loads an interpolation sparse matrix from a map file,
+ * and performs an interpolation form a fine to a coarse grid by means
+ * of a mat-vec product. The sparse matrix encodes the interpolation
+ * weights. So far, the map file is *assumed* to store the matrix in
+ * triplet format, with row/col indices starting from 1.
+ *
+ * The remapper takes a src grid and the name of the map file. From here,
+ * it creates the tgt grid, and all the internal structures needed for
+ * an efficient mat-vec product at runtime.
+ *
+ * The mat-vec is performed in two stages:
+ *   1. Perform a local mat-vec multiplication (on device), producing intermediate
+ *      output fields that have "duplicated" entries (that is, 2+ MPI
+ *      ranks could all own a piece of the result for the same dof).
+ *   2. Perform a pack-send-recv-unpack sequence via MPI, to accumulate
+ *      partial results on the rank that owns the dof in the tgt grid.
+ *
+ * The class has to create temporaries for the intermediate fields.
+ * An obvious future development would be to use some scratch memory
+ * for these fields, so to not increase memory pressure.
+ *
+ * The setup of the class uses a bunch of RMA mpi operations, since they
+ * are more convenient when ranks don't know where data is coming from
+ * or how much data is coming from each rank. The runtime operations,
+ * however, use the classic send/recv paradigm, where data is packed in
+ * a buffer, sent to the recv rank, and then unpacked and accumulated
+ * into the result.
+ */
 
-// A remapper is basically a functor, that, given two fields,
-// copies the first into the second, or viceversa. The copy must
-// account for different layouts and/or different mpi distributions.
-// This concept can be extended to remaps that involve interpolation,
-// but as of now (07/2019) it is not the intent and projected use
-// of this class in the scream framework
 class CoarseningRemapper : public AbstractRemapper
 {
 public:
 
   CoarseningRemapper (const grid_ptr_type& src_grid,
-                      // const grid_ptr_type& tgt_grid,
                       const std::string& map_file);
 
   ~CoarseningRemapper ();
