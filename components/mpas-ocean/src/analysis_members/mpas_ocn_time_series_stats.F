@@ -238,7 +238,7 @@ subroutine ocn_init_time_series_stats(domain, instance, err)!{{{
   integer :: v, b
   type (time_series_type) :: series
   type (time_series_alarms_type), allocatable, dimension(:) :: alarms
-  type (MPAS_Time_type) :: start_intv, start_time, reference_time
+  type (MPAS_Time_type) :: start_time, reference_time
   character (len=StrKIND) :: start_xtime
   real (kind=RKIND) :: Time
   character (len=StrKIND), pointer :: config_output_reference_time
@@ -262,10 +262,8 @@ subroutine ocn_init_time_series_stats(domain, instance, err)!{{{
 
   ! set xtime start if it is still unset, for very first time step
   ! (i.e., no restarts)
-  start_intv = mpas_get_clock_time(domain % clock, MPAS_NOW, err)
-  call mpas_get_time(start_intv, dateTimeString=start_xtime, ierr=err)
-
   start_time = mpas_get_clock_time(domain%clock, MPAS_START_TIME, err_tmp)
+  call mpas_get_time(start_time, dateTimeString=start_xtime, ierr=err_tmp)
   if (err_tmp /= 0) then
      call mpas_log_write('Error getting start time in init', &
           MPAS_LOG_ERR, masterOnly=.true., flushNow=.true.)
@@ -275,14 +273,15 @@ subroutine ocn_init_time_series_stats(domain, instance, err)!{{{
   call mpas_pool_get_config(domain % configs, 'config_output_reference_time', &
     config_output_reference_time)
   call mpas_set_time(reference_time, dateTimeString=config_output_reference_time)
-  call mpas_get_timeInterval(start_time - reference_time, dt=Time)
-  Time = Time*days_per_second
 
   do b = 1, series % number_of_buffers
     if (trim(series % buffers(b) % xtime_start) == '') then
       series % buffers(b) % xtime_start = start_xtime
-      series % buffers(b) % Time_bnds(1) = Time
     end if
+    call mpas_set_time(start_time, dateTimeString=series % buffers(b) % xtime_start)
+    call mpas_get_timeInterval(start_time - reference_time, dt=Time)
+    Time = Time*days_per_second
+    series % buffers(b) % Time_bnds(1) = Time
   end do
 
   ! clean up the instance memory
@@ -1264,11 +1263,8 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
     ! For CF compliance, output field name is the original field name, not the mangled one
     TimeField % outputFieldName = in_field_name
 
-    ! put it in the restart stream
-    if (restartStreamEnabled) then
-       call mpas_stream_mgr_add_field(domain % streamManager, &
-         restart_stream_name, out_field_name, ierr=err)
-    end if
+    ! do not put Time in the restart stream because it has a generic output name and will
+    ! interfere with Time from a normal restart file
 
     ! Time_bnds
     in_field_name = 'Time_bnds'
@@ -1290,11 +1286,8 @@ subroutine modify_stream(domain, instance, series, valid_input, err)!{{{
     call mpas_stream_mgr_add_field(domain % streamManager, &
       output_stream_name, out_field_name, ierr=err)
 
-    ! put it in the restart stream
-    if (restartStreamEnabled) then
-       call mpas_stream_mgr_add_field(domain % streamManager, &
-         restart_stream_name, out_field_name, ierr=err)
-    end if
+    ! do not put Time_bnds in the restart stream because it has a generic output name and will
+    ! interfere with Time_bnds from a normal restart file
 
     ! For CF compliance, output field name is the original field name, not the mangled one
     call mpas_pool_get_Field(domain % blocklist % allFields, out_field_name, TimeBndsField)
