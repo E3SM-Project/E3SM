@@ -1534,7 +1534,7 @@ is the value of that variable from the *previous* time level!
                 <var name="waterFrac" type="real" dimensions="nVertLevels nCells Time" units="unitless"
                      description="interior ice water fraction"
                 />
-                <var name="internalMeltRate" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-2} s^{-1}"
+                <var name="drainedInternalMeltRate" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-2} s^{-1}"
                      description="Excess internal melting drained to bed."
                 />
                 <var name="enthalpy" type="real" dimensions="nVertLevels nCells Time" units="J m^{-3}"

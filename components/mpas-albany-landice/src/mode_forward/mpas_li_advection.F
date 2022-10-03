@@ -154,7 +154,7 @@ module li_advection
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,           & ! interior ice temperature
            waterFrac,             & ! interior water fraction
-           internalMeltRate,      & ! excess internal melt drained to the bed
+           drainedInternalMeltRate,      & ! excess internal melt drained to the bed
            enthalpy                 ! interior ice enthalpy
 
       real (kind=RKIND), dimension(:,:), pointer :: &
@@ -281,7 +281,7 @@ module li_advection
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
       call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
       call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
-      call mpas_pool_get_array(thermalPool, 'internalMeltRate', internalMeltRate)
+      call mpas_pool_get_array(thermalPool, 'drainedInternalMeltRate', drainedInternalMeltRate)
 
       ! get config variables
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
@@ -484,7 +484,7 @@ module li_advection
             if (thickness(iCell) > config_thermal_thickness) then
                thermalCellMask(iCell) = 1
                do k = 1, nVertLevels
-                  basalMassBal(iCell) = basalMassBal(iCell) - internalMeltRate(k, iCell)
+                  basalMassBal(iCell) = basalMassBal(iCell) - drainedInternalMeltRate(k, iCell)
                enddo
             else
                thermalCellMask(iCell) = 0
