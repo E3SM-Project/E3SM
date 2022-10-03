@@ -109,14 +109,15 @@ TEST_CASE ("coarsening_remap") {
   scorpio::eam_pio_enddef(filename);
 
   // Create triplets: tgt entry K is the avg of src entries K and K+ngdofs_tgt
+  // NOTE: add 1 to row/col indices, since e3sm map files indices are 1-based
   std::vector<Real> col,row,S;
   for (int i=0; i<nldofs_tgt; ++i) {
-    row.push_back(i+nldofs_tgt*comm.rank());
-    col.push_back(i+nldofs_tgt*comm.rank());
+    row.push_back(1+i+nldofs_tgt*comm.rank());
+    col.push_back(1+i+nldofs_tgt*comm.rank());
     S.push_back(0.5);
 
-    row.push_back(i+nldofs_tgt*comm.rank());
-    col.push_back(i+nldofs_tgt*comm.rank() + ngdofs_tgt);
+    row.push_back(1+i+nldofs_tgt*comm.rank());
+    col.push_back(1+i+nldofs_tgt*comm.rank() + ngdofs_tgt);
     S.push_back(0.5);
   }
 

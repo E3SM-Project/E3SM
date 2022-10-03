@@ -73,7 +73,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   // in its src_grid
   std::set<gid_t> ov_tgt_gids;
   for (int i=0; i<nlweights; ++i) {
-    ov_tgt_gids.insert(row_gids_h(i));
+    ov_tgt_gids.insert(row_gids_h(i)-1);
   }
   const int num_ov_tgt_gids = ov_tgt_gids.size();
   view_1d<int> ov_tgt_gids_d("",num_ov_tgt_gids);
@@ -94,8 +94,9 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   auto row_lids_h = Kokkos::create_mirror_view(row_lids);
   auto col_lids_h = Kokkos::create_mirror_view(col_lids);
   for (int i=0; i<nlweights; ++i) {
-    row_lids_h(i) = gid2lid(row_gids_h(i),m_ov_tgt_grid);
-    col_lids_h(i) = gid2lid(col_gids_h(i),m_src_grid);
+    // Note: subtract 1 since map files use 1-based indices
+    row_lids_h(i) = gid2lid(row_gids_h(i)-1,m_ov_tgt_grid);
+    col_lids_h(i) = gid2lid(col_gids_h(i)-1,m_src_grid);
     EKAT_REQUIRE_MSG (row_lids_h(i)>=0,
         "Error! Something went wrong while computing row LIDs in CoarseningRemapper.\n");
     EKAT_REQUIRE_MSG (col_lids_h(i)>=0,
@@ -625,6 +626,11 @@ get_my_triplets_gids (const std::string& map_file) const
   scorpio::set_decomp(map_file);
   scorpio::grid_read_data_array(map_file,"col",-1,cols.data(),cols.size());
   scorpio::eam_pio_closefile(map_file);
+
+  // Subtract 1 to cols indices
+  for (auto& id : cols) {
+    --id;
+  }
 
   // Get owners of cols read in
   auto owners_lids = m_src_grid->get_owners_and_lids(cols);
