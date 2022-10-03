@@ -29,6 +29,10 @@ public:
   grid_ptr_type get_ov_tgt_grid () const {
     return m_ov_tgt_grid;
   }
+
+  int gid2lid (const gid_t gid, const grid_ptr_type& grid) const {
+    return CoarseningRemapper::gid2lid(gid,grid);
+  }
 };
 
 template<typename ViewT>
@@ -37,6 +41,25 @@ cmvc (const ViewT& v) {
   auto vh = Kokkos::create_mirror_view(v);
   Kokkos::deep_copy(vh,v);
   return vh;
+}
+
+template<typename ViewT>
+bool contains (const ViewT& v, const typename ViewT::traits::value_type& entry) {
+  const auto vh = cmvc (v);
+  const auto beg = vh.data();
+  const auto end = vh.data() + vh.size();
+  for (auto it=beg; it!=end; ++it) {
+    if (*it == entry) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void print (const std::string& msg, const ekat::Comm& comm) {
+  if (comm.am_i_root()) {
+    printf("%s",msg.c_str());
+  }
 }
 
 TEST_CASE ("coarsening_remap") {
@@ -64,7 +87,7 @@ TEST_CASE ("coarsening_remap") {
   //           Create a map file            //
   // -------------------------------------- //
 
-  printf ("creating map file ...\n");
+  print ("creating map file ...\n",comm);
 
   std::string filename = "coarsening_map_file_np" + std::to_string(comm.size()) + ".nc";
   scorpio::register_file(filename, scorpio::FileMode::Write);
@@ -85,9 +108,9 @@ TEST_CASE ("coarsening_remap") {
   
   scorpio::eam_pio_enddef(filename);
 
+  // Create triplets: tgt entry K is the avg of src entries K and K+ngdofs_tgt
   std::vector<Real> col,row,S;
   for (int i=0; i<nldofs_tgt; ++i) {
-    // Tgt entry K is the avg of src entries K and K+ngdofs_tgt
     row.push_back(i+nldofs_tgt*comm.rank());
     col.push_back(i+nldofs_tgt*comm.rank());
     S.push_back(0.5);
@@ -96,20 +119,20 @@ TEST_CASE ("coarsening_remap") {
     col.push_back(i+nldofs_tgt*comm.rank() + ngdofs_tgt);
     S.push_back(0.5);
   }
+
   scorpio::grid_write_data_array(filename,"row",row.data(),row.size());
   scorpio::grid_write_data_array(filename,"col",col.data(),row.size());
   scorpio::grid_write_data_array(filename,"S",S.data(),row.size());
 
   scorpio::eam_pio_closefile(filename);
-  printf ("creating map file ... done!\n");
+  print ("creating map file ... done!\n",comm);
 
   // -------------------------------------- //
   //      Build src grid and remapper       //
   // -------------------------------------- //
   
-  scorpio::register_file(filename, scorpio::FileMode::Read);
 
-  printf ("creating grid and remapper ...\n");
+  print ("creating grid and remapper ...\n",comm);
 
   AbstractGrid::dofs_list_type src_dofs("",nldofs_src);
   auto src_dofs_h = cmvc(src_dofs);
@@ -120,49 +143,65 @@ TEST_CASE ("coarsening_remap") {
   src_grid->set_dofs(src_dofs);
 
   auto remap = std::make_shared<CoarseningRemapperTester>(src_grid,filename);
-  printf ("creating grid and remapper ... done!\n");
+  print ("creating grid and remapper ... done!\n",comm);
 
-  // Test tgt grid
+  // Check tgt grid
   auto tgt_grid = remap->get_tgt_grid();
   REQUIRE (tgt_grid->get_num_local_dofs()==nldofs_tgt);
   REQUIRE (tgt_grid->get_num_global_dofs()==ngdofs_tgt);
 
-  // Test sparse matrix
+  // Check which triplets are read from map file
   auto my_triplets = remap->test_triplet_gids (filename);
   const int num_triplets = my_triplets.size();
-  REQUIRE (num_triplets==(nldofs_tgt*2));
+  REQUIRE (num_triplets==nldofs_src);
+  for (int i=0; i<nldofs_src; ++i) {
+    const auto src_gid = src_dofs_h(i);
+    const auto tgt_gid = src_gid % ngdofs_tgt;
+
+    REQUIRE (contains(my_triplets, 2*tgt_gid + src_gid/ngdofs_tgt));
+  }
+
+  // Check overlapped tgt grid
+  // NOTE: you need to treat the case of 1 rank separately, since in that case
+  //       there are 2 local src dofs impacting the same tgt dof, while with 2+
+  //       ranks every local src dof impacts a different tgt dof.
+  auto ov_tgt_grid = remap->get_ov_tgt_grid ();
+  int num_loc_ov_tgt_gids = ov_tgt_grid->get_num_local_dofs();
+  int expected_num_loc_ov_tgt_gids = ngdofs_tgt>=nldofs_src ? nldofs_src : ngdofs_tgt;
+  REQUIRE (num_loc_ov_tgt_gids==expected_num_loc_ov_tgt_gids);
+  auto ov_gids = ov_tgt_grid->get_dofs_gids_host();
+  for (int i=0; i<num_loc_ov_tgt_gids; ++i) {
+    if (comm.size()==1) {
+      REQUIRE(ov_gids[i]==i);
+    } else {
+      const auto src_gid = src_dofs_h[i];
+      REQUIRE (contains(ov_gids, src_gid % ngdofs_tgt));
+    }
+  }
+
+  // Check sparse matrix entries
   auto rowcol_h = cmvc(remap->get_row_col_lids());
   auto weights_h = cmvc(remap->get_weights());
+  auto ov_tgt_gids = ov_tgt_grid->get_dofs_gids_host();
+  auto src_gids    = remap->get_src_grid()->get_dofs_gids_host();
   for (int i=0; i<num_triplets; ++i) {
-    REQUIRE (my_triplets[i]==(comm.rank()*num_triplets + i));
-  }
-  for (int i=0; i<nldofs_tgt; ++i) {
-    const auto tgt_gid = comm.rank()*nldofs_tgt+i;
-    REQUIRE (rowcol_h(2*i  ,0)==tgt_gid);
-    REQUIRE (rowcol_h(2*i+1,0)==tgt_gid);
+    const auto row_lid = rowcol_h(i,0);
+    const auto col_lid = rowcol_h(i,1);
 
-    REQUIRE (rowcol_h(2*i  ,1)==tgt_gid);
-    REQUIRE (rowcol_h(2*i+1,1)==tgt_gid+ngdofs_tgt);
+    const auto triplet_id = my_triplets[i];
+    const auto tgt_gid = triplet_id/2;
+    const auto src_gid = tgt_gid + (triplet_id%2)*ngdofs_tgt;
 
-    REQUIRE (weights_h(2*i  )==0.5);
-    REQUIRE (weights_h(2*i+1)==0.5);
-  }
-
-  // Test overlapped tgt grid
-  auto ov_tgt_grid = remap->get_ov_tgt_grid ();
-  const int num_loc_ov_tgt_gids = ov_tgt_grid->get_num_local_dofs();
-  REQUIRE (num_loc_ov_tgt_gids==nldofs_tgt);
-  auto ov_gids = ov_tgt_grid->get_dofs_gids_host();
-  for (int i=0; i<nldofs_tgt; ++i) {
-    const auto tgt_gid = comm.rank()*nldofs_tgt+i;
-    REQUIRE (ov_gids[i]==tgt_gid);
+    REQUIRE (src_gids(col_lid)==src_gid);
+    REQUIRE (ov_tgt_gids(row_lid)==tgt_gid);
+    REQUIRE (weights_h(i  )==0.5);
   }
 
   // -------------------------------------- //
   //      Create src/tgt grid fields        //
   // -------------------------------------- //
 
-  printf ("creating fields ...\n");
+  print ("creating fields ...\n",comm);
   constexpr int vec_dim = 3;
   auto create_field = [&] (const std::string& name,
                            const std::shared_ptr<const AbstractGrid>& grid,
@@ -199,13 +238,13 @@ TEST_CASE ("coarsening_remap") {
   std::vector<Field> src_f = {src_s2d,src_v2d,src_s3d_m,src_s3d_i,src_v3d_m,src_v3d_i};
   std::vector<Field> tgt_f = {tgt_s2d,tgt_v2d,tgt_s3d_m,tgt_s3d_i,tgt_v3d_m,tgt_v3d_i};
 
-  printf ("creating fields ... done!\n");
+  print ("creating fields ... done!\n",comm);
 
   // -------------------------------------- //
   //     Register fields in the remapper    //
   // -------------------------------------- //
 
-  printf ("registering fields ...\n");
+  print ("registering fields ...\n",comm);
   remap->registration_begins();
   remap->register_field(src_s2d,  tgt_s2d);
   remap->register_field(src_v2d,  tgt_v2d);
@@ -217,16 +256,16 @@ TEST_CASE ("coarsening_remap") {
 
   // No bwd remap
   REQUIRE_THROWS(remap->remap(false));
-  printf ("registering fields ... done!\n");
+  print ("registering fields ... done!\n",comm);
 
   // -------------------------------------- //
   //       Generate data for src fields     //
   // -------------------------------------- //
 
+  print ("generate src fields data ...\n",comm);
   // Generate data in a deterministic way, so that when we check results,
   // we know a priori what the input data that generated the tgt field's
   // values was, even if that data was off rank.
-  auto src_gids = src_grid->get_dofs_gids_host();
   for (const auto& f : src_f) {
     const auto& l = f.get_header().get_identifier().get_layout();
     switch (get_layout_type(l.tags())) {
@@ -269,13 +308,17 @@ TEST_CASE ("coarsening_remap") {
     }
     f.sync_to_dev();
   }
+  print ("generate src fields data ... done!\n",comm);
 
+  print ("run remap ...\n",comm);
   remap->remap(true);
+  print ("run remap ... done!\n",comm);
 
   // -------------------------------------- //
   //          Check remapped fields         //
   // -------------------------------------- //
 
+  print ("check tgt fields ...\n",comm);
   // Recall, tgt gid K should be the avg of src gids K and K+ngdofs_tgt
   auto tgt_gids = tgt_grid->get_dofs_gids_host();
   for (size_t ifield=0; ifield<tgt_f.size(); ++ifield) {
@@ -338,9 +381,9 @@ TEST_CASE ("coarsening_remap") {
         EKAT_ERROR_MSG ("Unexpected layout.\n");
     }
   }
+  print ("check tgt fields ... done!\n",comm);
 
   // Clean up scorpio stuff
-  scorpio::eam_pio_closefile(filename);
   scorpio::eam_pio_finalize();
 }
 
