@@ -512,7 +512,7 @@ void CoarseningRemapper::unpack () const
     const auto& f  = m_tgt_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
     const auto lt = get_layout_type(fl.tags());
-    const auto f_pid_offsets = ekat::subview(m_send_f_pid_offsets,ifield);
+    const auto f_pid_offsets = ekat::subview(m_recv_f_pid_offsets,ifield);
 
     switch (lt) {
       case LayoutType::Scalar2D:
@@ -525,7 +525,7 @@ void CoarseningRemapper::unpack () const
           const int lidpos = i - pid_lid_start(pid);
           const int offset = f_pid_offsets(pid);
 
-          v(lid) = buf (offset + lidpos);
+          v(lid) += buf (offset + lidpos);
         });
                              
       } break;
@@ -544,7 +544,7 @@ void CoarseningRemapper::unpack () const
 
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team,ndims),
                                [&](const int idim) {
-            v(lid,idim) = buf (offset + lidpos*ndims + idim);
+            v(lid,idim) += buf (offset + lidpos*ndims + idim);
           });
         });
       } break;
@@ -563,7 +563,7 @@ void CoarseningRemapper::unpack () const
 
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs),
                                [&](const int ilev) {
-            v(lid,ilev) = buf (offset + lidpos*nlevs + ilev);
+            v(lid,ilev) += buf (offset + lidpos*nlevs + ilev);
           });
         });
       } break;
@@ -585,7 +585,7 @@ void CoarseningRemapper::unpack () const
                                [&](const int idx) {
             const int idim = idx / nlevs;
             const int ilev = idx % nlevs;
-            v(lid,idim,ilev) = buf (offset + lidpos*ndims*nlevs + idim*nlevs + ilev);
+            v(lid,idim,ilev) += buf (offset + lidpos*ndims*nlevs + idim*nlevs + ilev);
           });
         });
       } break;
