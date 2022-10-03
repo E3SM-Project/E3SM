@@ -46,7 +46,7 @@
 <so4_a1_ext_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_elev_1850-2014_c180205.nc </so4_a1_ext_file>
 <so4_a2_ext_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_elev_1850-2014_c180205.nc </so4_a2_ext_file>
 <!-- CLDERA merged volcanic emission files -->
-<so2_ext_file  cldera_strat_volc="1">atm/cldera/emissions/volc/merge_cmip6_and_volc_so2/merged_cmip6_and_volc_so2.nc </so2_ext_file>
+<so2_ext_file  cldera_strat_volc="1">atm/cldera/emissions/volc/merge_cmip6_and_volc_so2/merged_cmip6_and_VolcanEESMv3.10_piControl_SO2_1850-2014average_2deg_ZeroTrop_c190701.nc </so2_ext_file>
 
 <!-- Surface emissions for MAM4.  CMIP6 input4mips data -->
 <srf_emis_type        >CYCLICAL</srf_emis_type>
