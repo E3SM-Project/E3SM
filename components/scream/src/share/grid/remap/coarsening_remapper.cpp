@@ -31,8 +31,6 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   // This is a coarsening remapper. We only go in one direction
   m_bwd_allowed = false;
 
-  scorpio::register_file(map_file,scorpio::FileMode::Read);
-
   // Create io_grid, containing the indices of the triplets
   // in the map file that this rank has to read
   auto gids_h = get_my_triplets_gids (map_file);
@@ -47,10 +45,9 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   m_weights = view_1d<Real>("",nlweights);
   m_row_col_lids = view_2d<int>("",nlweights,2);
 
-  view_1d<int> row("",nlweights);
-  view_1d<int> col("",nlweights);
-  auto row_h = Kokkos::create_mirror_view(row);
-  auto col_h = Kokkos::create_mirror_view(col);
+  // We read in GIDs, which we later convert to LIDs
+  view_1d<gid_t>::HostMirror row_gids_h("",nlweights);
+  view_1d<gid_t>::HostMirror col_gids_h("",nlweights);
   auto S_h   = Kokkos::create_mirror_view(m_weights);
 
   std::vector<scorpio::offset_t> dofs_offsets(nlweights);
@@ -58,6 +55,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
     dofs_offsets[i] = gids_h[i];
   }
 
+  scorpio::register_file(map_file,scorpio::FileMode::Read);
   scorpio::get_variable(map_file, "row", "row", {"n_s"}, "int", "int-nnz");
   scorpio::get_variable(map_file, "col", "col", {"n_s"}, "int", "int-nnz");
   scorpio::get_variable(map_file, "S", "S", {"n_s"}, "double", "double-nnz");
@@ -65,28 +63,17 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   scorpio::set_dof(map_file,"col",nlweights,dofs_offsets.data());
   scorpio::set_dof(map_file,"S",nlweights,dofs_offsets.data());
   scorpio::set_decomp(map_file);
-  scorpio::grid_read_data_array(map_file,"row",-1,row_h.data(),nlweights);
-  scorpio::grid_read_data_array(map_file,"col",-1,col_h.data(),nlweights);
+  scorpio::grid_read_data_array(map_file,"row",-1,row_gids_h.data(),nlweights);
+  scorpio::grid_read_data_array(map_file,"col",-1,col_gids_h.data(),nlweights);
   scorpio::grid_read_data_array(map_file,"S",-1,S_h.data(),nlweights);
   scorpio::eam_pio_closefile(map_file);
-
-  // Copy triplets to device views
-  Kokkos::deep_copy(m_weights,S_h);
-  Kokkos::deep_copy(row,row_h);
-  Kokkos::deep_copy(col,col_h);
-  auto row_col_lids = m_row_col_lids;
-  Kokkos::parallel_for(typename KT::RangePolicy(0,nlweights),
-                       KOKKOS_LAMBDA(const int& i){
-    row_col_lids(i,0) = row(i);
-    row_col_lids(i,1) = col(i);
-  });
 
   // Create an "overlapped" tgt grid, that is, a grid where each rank
   // owns all tgt rows that are affected by at least one of the cols
   // in its src_grid
   std::set<gid_t> ov_tgt_gids;
   for (int i=0; i<nlweights; ++i) {
-    ov_tgt_gids.insert(row_h(i));
+    ov_tgt_gids.insert(row_gids_h(i));
   }
   const int num_ov_tgt_gids = ov_tgt_gids.size();
   view_1d<int> ov_tgt_gids_d("",num_ov_tgt_gids);
@@ -100,6 +87,33 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   auto ov_tgt_grid = std::make_shared<PointGrid>("ov_tgt_grid",num_ov_tgt_gids,0,m_comm);
   ov_tgt_grid->set_dofs(ov_tgt_gids_d);
   m_ov_tgt_grid = ov_tgt_grid;
+
+  // Convert gids to lids
+  view_1d<int> row_lids("",nlweights);
+  view_1d<int> col_lids("",nlweights);
+  auto row_lids_h = Kokkos::create_mirror_view(row_lids);
+  auto col_lids_h = Kokkos::create_mirror_view(col_lids);
+  for (int i=0; i<nlweights; ++i) {
+    row_lids_h(i) = gid2lid(row_gids_h(i),m_ov_tgt_grid);
+    col_lids_h(i) = gid2lid(col_gids_h(i),m_src_grid);
+    EKAT_REQUIRE_MSG (row_lids_h(i)>=0,
+        "Error! Something went wrong while computing row LIDs in CoarseningRemapper.\n");
+    EKAT_REQUIRE_MSG (col_lids_h(i)>=0,
+        "Error! Something went wrong while computing col LIDs in CoarseningRemapper.\n");
+  }
+
+  // Copy triplets to device views
+  Kokkos::deep_copy(m_weights,S_h);
+  Kokkos::deep_copy(row_lids,row_lids_h);
+  Kokkos::deep_copy(col_lids,col_lids_h);
+
+  // Compact row/col lids into a single 2d view
+  auto row_col_lids = m_row_col_lids;
+  Kokkos::parallel_for(typename KT::RangePolicy(0,nlweights),
+                       KOKKOS_LAMBDA(const int& i){
+    row_col_lids(i,0) = row_lids(i);
+    row_col_lids(i,1) = col_lids(i);
+  });
 }
 
 CoarseningRemapper::
@@ -713,14 +727,6 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   const auto mpi_gid_t = ekat::get_mpi_type<gid_t>();
   int pos;
 
-  auto tgt_lid = [&] (const gid_t gid) -> int {
-    const auto gids = m_tgt_grid->get_dofs_gids_host();
-    const auto beg = gids.data();
-    const auto end = gids.data()+m_tgt_grid->get_num_local_dofs();
-    const auto it = std::find(beg,end,gid);
-    return it==end ? -1 : std::distance(beg,it);
-  };
-
   // Pre-compute the amount of data stored in each field on each dof
   std::vector<int> field_col_size (m_num_fields);
   int sum_fields_col_sizes = 0;
@@ -878,7 +884,7 @@ void CoarseningRemapper::setup_mpi_data_structures ()
     const int end   = recv_pid_lids_start_h[pid+1];
     for (int i=start; i<end; ++i) {
       const auto gid = recv_gids[i];
-      const auto lid = tgt_lid(gid);
+      const auto lid = gid2lid(gid,m_tgt_grid);
       EKAT_REQUIRE_MSG (lid>=0,
           "Error! Something went wrong while converting gid->lid on tgt grid.\n"
           "  - rank: " + std::to_string(m_comm.rank()) + "\n");

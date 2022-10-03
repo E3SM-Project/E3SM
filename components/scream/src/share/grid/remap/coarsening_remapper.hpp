@@ -88,6 +88,14 @@ protected:
   void pack () const;
   void unpack () const;
 
+  int gid2lid (const gid_t gid, const grid_ptr_type& grid) const {
+    const auto gids = grid->get_dofs_gids_host();
+    const auto beg = gids.data();
+    const auto end = gids.data()+grid->get_num_local_dofs();
+    const auto it = std::find(beg,end,gid);
+    return it==end ? -1 : std::distance(beg,it);
+  }
+
   view_1d<gid_t>::HostMirror
   get_my_triplets_gids (const std::string& map_file) const;
 
