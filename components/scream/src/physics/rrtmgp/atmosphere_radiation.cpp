@@ -130,9 +130,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("LW_clrsky_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("LW_clrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("rad_heating_pdel", scalar3d_layout_mid, Pa*K/s, grid_name, ps);
-  // Cloud optical properties added as computed fields for diagnostic purposes
-  add_field<Computed>("cld_tau_sw_gpt", scalar3d_swgpts_layout, nondim, grid_name, ps);
-  add_field<Computed>("cld_tau_lw_gpt", scalar3d_lwgpts_layout, nondim, grid_name, ps);
+  // Cloud properties added as computed fields for diagnostic purposes
   add_field<Computed>("cldlow"        , scalar2d_layout, nondim, grid_name);
   add_field<Computed>("cldmed"        , scalar2d_layout, nondim, grid_name);
   add_field<Computed>("cldhgh"        , scalar2d_layout, nondim, grid_name);
@@ -409,8 +407,6 @@ void RRTMGPRadiation::run_impl (const int dt) {
     Kokkos::deep_copy(d_aero_tau_lw,0.0);
 
   }
-  auto d_cld_tau_sw_gpt = get_field_out("cld_tau_sw_gpt").get_view<Real***>();
-  auto d_cld_tau_lw_gpt = get_field_out("cld_tau_lw_gpt").get_view<Real***>();
   auto d_sw_flux_up = get_field_out("SW_flux_up").get_view<Real**>();
   auto d_sw_flux_dn = get_field_out("SW_flux_dn").get_view<Real**>();
   auto d_sw_flux_dn_dir = get_field_out("SW_flux_dn_dir").get_view<Real**>();
@@ -899,16 +895,6 @@ void RRTMGPRadiation::run_impl (const int dt) {
             d_sw_clrsky_flux_dn_dir(icol,k) = sw_clrsky_flux_dn_dir(i+1,k+1);
             d_lw_clrsky_flux_up(icol,k)     = lw_clrsky_flux_up(i+1,k+1);
             d_lw_clrsky_flux_dn(icol,k)     = lw_clrsky_flux_dn(i+1,k+1);
-          });
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nswgpts*nlay), [&] (const int&idx) {
-            auto b = idx / nlay;
-            auto k = idx % nlay;
-            d_cld_tau_sw_gpt(icol,b,k) = cld_tau_sw_gpt(i+1,k+1,b+1);
-          });
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlwgpts*nlay), [&] (const int&idx) {
-            auto b = idx / nlay;
-            auto k = idx % nlay;
-            d_cld_tau_lw_gpt(icol,b,k) = cld_tau_lw_gpt(i+1,k+1,b+1);
           });
         });
       }
