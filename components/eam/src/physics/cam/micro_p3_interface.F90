@@ -1085,7 +1085,7 @@ end subroutine micro_p3_readnl
     integer :: itim_old
 
     ! For rrtmg optics. specified distribution.
-    real(rtype), parameter :: dcon   = 25.e-6_rtype         ! Convective size distribution effective radius (um)
+    real(rtype), parameter :: dcon   = 25.e-6_rtype         ! Convective size distribution effective radius (m)
     real(rtype), parameter :: mucon  = 5.3_rtype            ! Convective size distribution shape parameter
     real(rtype), parameter :: deicon = 50._rtype            ! Convective ice effective diameter (um)
 

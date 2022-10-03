@@ -2189,13 +2189,13 @@ Default: 0.7_rtype
 
 <entry id="p3_max_mean_rain_size" type="real" category="microphysics"
 	group="micro_nl" valid_values="" >
-Maximal mean rain size in P3
+Maximal mean rain size in P3 in units of m
 Default: 0.005_rtype
 </entry>
 
 <entry id="p3_embryonic_rain_size" type="real" category="microphysics"
 	group="micro_nl" valid_values="" >
-Embryonic rain size from autoconversion in P3
+Embryonic rain size from autoconversion in P3 in units of m
 Default: 0.000025_rtype
 </entry>
 
