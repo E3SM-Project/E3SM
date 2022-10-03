@@ -605,6 +605,7 @@ get_my_triplets_gids (const std::string& map_file) const
 {
   using namespace ShortFieldTagsNames;
 
+  scorpio::register_file(map_file,scorpio::FileMode::Read);
   // Create a "fake" grid, with as many dofs as the number of triplets in the src file
   const int ngweights = scorpio::get_dimlen_c2f(map_file.c_str(),"n_s");
   const auto io_grid_linear = create_point_grid ("helper",ngweights,1,m_comm);
@@ -617,7 +618,6 @@ get_my_triplets_gids (const std::string& map_file) const
 
   // Read chunk of triplets col indices
   std::vector<gid_t> cols(nlweights);
-  scorpio::register_file(map_file,scorpio::FileMode::Read);
   scorpio::get_variable(map_file, "col", "col", {"n_s"}, "int", "int-nnz");
   std::vector<scorpio::offset_t> dofs_offsets(nlweights);
   std::iota(dofs_offsets.begin(),dofs_offsets.end(),offset);
@@ -643,49 +643,58 @@ get_my_triplets_gids (const std::string& map_file) const
   }
 
   MPI_Win counter_win, data_win;
-  int num_entries = 0;
-  MPI_Win_create (&num_entries,sizeof(int),sizeof(int),
+  std::vector<int> num_entries(m_comm.size(),0);
+  MPI_Win_create (num_entries.data(),sizeof(int),sizeof(int),
                   MPI_INFO_NULL,raw_comm,&counter_win);
   MPI_Win_fence(0,counter_win);
 
-  // First accumulate number of gids into the owner count
+  // 1. Communicate number of gids to each pid
   for (const auto& it : pid_to_io_grid_gid) {
     const int n = it.second.size();
     const int pid = it.first;
-    MPI_Accumulate (&n,1,MPI_INT,pid,0,1,MPI_INT,MPI_SUM,counter_win);
+    MPI_Put (&n,1,MPI_INT,pid,m_comm.rank(),1,MPI_INT,counter_win);
   }
   MPI_Win_fence(0,counter_win);
   MPI_Win_free(&counter_win);
 
-  // Second, communicate the gids to their owners
-  int write_offset = 0;
-  MPI_Win_create(&write_offset,sizeof(int),sizeof(int),
-                 MPI_INFO_NULL,raw_comm,&counter_win);
+  // 2. Compute offsets of each remote pid into our recv buffer
+  int total_num_entries = num_entries[0];
+  std::vector<int> pids_offset_in_my_buf (m_comm.size(),0);
+  for (int pid=1; pid<m_comm.size(); ++pid) {
+    pids_offset_in_my_buf[pid] = pids_offset_in_my_buf[pid-1] + num_entries[pid-1];
+    total_num_entries += num_entries[pid];
+  }
+
+  // 3. Read from all other pids what MY offset is on their recv buffer
+  std::vector<int> my_offset_on_pids (m_comm.size(),-1);
+  MPI_Win read_win;
+  MPI_Win_create (pids_offset_in_my_buf.data(),sizeof(int)*m_comm.size(),sizeof(int),
+                  MPI_INFO_NULL,raw_comm,&read_win);
+  MPI_Win_fence(0,read_win);
+  for (const auto& it : pid_to_io_grid_gid) {
+    const int pid = it.first;
+    MPI_Get (&my_offset_on_pids[pid],1,MPI_INT,pid,m_comm.rank(),1,MPI_INT,read_win);
+  }
+  MPI_Win_fence(0,read_win);
+  MPI_Win_free(&read_win);
+
+  // 4. Communicate all gids to their owners
   gid_t* my_triplets_gids_ptr;
-  MPI_Win_allocate(num_entries*sizeof(gid_t),sizeof(gid_t),
+  MPI_Win_allocate(total_num_entries*sizeof(gid_t),sizeof(gid_t),
                    MPI_INFO_NULL,raw_comm,&my_triplets_gids_ptr,&data_win);
   MPI_Win_fence(0,data_win);
-  MPI_Win_fence(0,counter_win);
   for (const auto& it : pid_to_io_grid_gid) {
     const int n = it.second.size();
     const int pid = it.first;
-    int write_start = -1;
-    MPI_Get_accumulate (&n,1,MPI_INT,&write_start,1,MPI_INT,pid,
-                        0,1,MPI_INT,MPI_SUM,counter_win);
-
-    MPI_Put (it.second.data(),n,MPI_INT,pid,write_start,n,MPI_INT,data_win);
+    MPI_Put (it.second.data(),n,MPI_INT,pid,my_offset_on_pids[pid],n,MPI_INT,data_win);
   }
   MPI_Win_fence(0,data_win);
-  MPI_Win_fence(0,counter_win);
-  EKAT_REQUIRE_MSG (write_offset==num_entries,
-      "Error! Something went wrong while fetching triplets indices.\n");
 
-  // Copy from window to a view, before freeing window's memory
-  view_1d<gid_t>::HostMirror my_triplets_gids("",num_entries);
-  std::memcpy(my_triplets_gids.data(),my_triplets_gids_ptr,num_entries*sizeof(int));
+  // 5. Copy from window to a view, before freeing window's memory
+  view_1d<gid_t>::HostMirror my_triplets_gids("",total_num_entries);
+  std::memcpy(my_triplets_gids.data(),my_triplets_gids_ptr,total_num_entries*sizeof(int));
 
-  // Clean up
-  MPI_Win_free(&counter_win);
+  // 6. Clean up
   MPI_Win_free(&data_win);
 
   return my_triplets_gids;
@@ -869,7 +878,7 @@ void CoarseningRemapper::setup_mpi_data_structures ()
       continue;
     }
     const int pid = it.first;
-    MPI_Put (it.second.data(),n,mpi_gid_t,pid,my_offset_on_pids[pid],1,mpi_gid_t,write_win);
+    MPI_Put (it.second.data(),n,mpi_gid_t,pid,my_offset_on_pids[pid],n,mpi_gid_t,write_win);
   }
   MPI_Win_fence(0,write_win);
   MPI_Win_free(&write_win);
