@@ -74,16 +74,16 @@ protected:
   void init_buffers(const ATMBufferManager &buffer_manager);
 
   // Keep track of field dimensions and the iteration count
-  Int m_num_cols; 
-  Int m_num_levs;
-  Int m_num_src_levs;
-  Int m_nk_pack;
-  Int m_nswbands = 14;
-  Int m_nlwbands = 16;
+  int m_num_cols; 
+  int m_num_levs;
+  int m_num_src_levs;
+  int m_nk_pack;
+  int m_nswbands = 14;
+  int m_nlwbands = 16;
 
   // DOF information
   view_1d_dof m_dofs_gids;
-  Int         m_total_global_dofs; // Needed to make sure that remap data matches grid.
+  int         m_total_global_dofs; // Needed to make sure that remap data matches grid.
   gid_type    m_min_global_dof;
 
   // Struct which contains temporary variables used during spa_main

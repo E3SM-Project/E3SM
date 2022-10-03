@@ -30,7 +30,7 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
 
   // The name of the diagnostic
-  std::string name () const { return "Ice cloud mask"; } 
+  std::string name () const { return "IceCloudMask"; }
 
   // Get the required grid for the diagnostic
   std::set<std::string> get_required_grids () const {
@@ -54,7 +54,7 @@ protected:
   void finalize_impl   () { /* Nothing to do */ }
 
   // Keep track of field dimensions
-  Int m_num_cols; 
+  Int m_num_cols;
   Int m_num_levs;
 
 }; // class IceCloudMaskDiagnostic

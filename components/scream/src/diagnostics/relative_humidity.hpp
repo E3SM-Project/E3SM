@@ -4,7 +4,7 @@
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
 #include "ekat/kokkos/ekat_subview_utils.hpp"
-#include "physics/share/physics_functions.hpp" 
+#include "physics/share/physics_functions.hpp"
 #include "physics/share/physics_saturation_impl.hpp"
 
 namespace scream
@@ -32,7 +32,7 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Diagnostic; }
 
   // The name of the diagnostic
-  std::string name () const { return "Relative Humidity"; } 
+  std::string name () const { return "RelativeHumidity"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
@@ -45,7 +45,7 @@ public:
 protected:
 
   // Keep track of field dimensions
-  Int m_num_cols; 
+  Int m_num_cols;
   Int m_num_levs;
 
 }; // class RelativeHumidityDiagnostic

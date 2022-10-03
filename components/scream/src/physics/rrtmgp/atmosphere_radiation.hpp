@@ -76,6 +76,8 @@ public:
   // TODO: find a better way of configuring this
   const int m_nswbands = 14;
   const int m_nlwbands = 16;
+  int m_nswgpts;
+  int m_nlwgpts;
 
   // These are the gases that we keep track of
   int m_ngas;
@@ -108,6 +110,8 @@ public:
     static constexpr int num_3d_nlev_nlwbands = 2;
     static constexpr int num_3d_nlay_nswbands = 3;
     static constexpr int num_3d_nlay_nlwbands = 1;
+    static constexpr int num_3d_nlay_nswgpts = 1;
+    static constexpr int num_3d_nlay_nlwgpts = 1;
 
     // 1d size (ncol)
     real1d mu0;
@@ -170,6 +174,10 @@ public:
     real3d aero_ssa_sw;
     real3d aero_g_sw;
     real3d aero_tau_lw;
+
+    // 3d size (ncol, nlay, n[sw,lw]gpts)
+    real3d cld_tau_sw_gpt;
+    real3d cld_tau_lw_gpt;
   };
 
 protected:

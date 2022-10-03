@@ -64,9 +64,9 @@ namespace scream {
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
-                real2d &lwp, real2d &iwp, real2d &rel, real2d &rei,
-                real3d &aer_tau_sw, real3d &aer_ssa_sw, real3d &aer_asm_sw,
-                real3d &aer_tau_lw,
+                real2d &lwp, real2d &iwp, real2d &rel, real2d &rei, real2d &cldfrac,
+                real3d &aer_tau_sw, real3d &aer_ssa_sw, real3d &aer_asm_sw, real3d &aer_tau_lw,
+                real3d &cld_tau_sw_gpt, real3d &cld_tau_lw_gpt,
                 real2d &sw_flux_up, real2d &sw_flux_dn, real2d &sw_flux_dn_dir,
                 real2d &lw_flux_up, real2d &lw_flux_dn,
                 real2d &sw_clrsky_flux_up, real2d &sw_clrsky_flux_dn, real2d &sw_clrsky_flux_dn_dir,
@@ -100,6 +100,17 @@ namespace scream {
                 GasConcs &gas_concs,
                 OpticalProps1scl &aerosol, OpticalProps1scl &clouds,
                 FluxesByband &fluxes, FluxesByband &clrsky_fluxes);
+        /*
+         * Return a subcolumn mask consistent with a specified overlap assumption
+         */
+        int3d get_subcolumn_mask(const int ncol, const int nlay, const int ngpt, real2d &cldf, const int overlap_option, int1d &seeds);
+        /*
+         * Compute cloud area from 3d subcol cloud property
+         */
+        void compute_cloud_area(
+                int ncol, int nlay, int ngpt, Real pmin, Real pmax,
+                const real2d& pmid, const real3d& cld_tau_gpt, real1d& cld_area);
+
         /* 
          * Provide a function to convert cloud (water and ice) mixing ratios to layer mass per unit area
          * (what E3SM refers to as "in-cloud water paths", a terminology we shun here to avoid confusion
@@ -140,6 +151,7 @@ namespace scream {
                 arr_out.data()[i] = min(max(arr_in.data()[i], lower), upper);
             });
         }
+
 
     } // namespace rrtmgp
 }  // namespace scream

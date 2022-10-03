@@ -38,8 +38,8 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
   BuildCprnc()
   SET (BASE_TEST_NAME "spa")
   foreach (MPI_RANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
-    set (SRC_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
-    set (TGT_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
+    set (SRC_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x1.np${MPI_RANKS}.nc")
+    set (TGT_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x1.np${TEST_RANK_START}.nc")
     set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_bfb")
     add_test (NAME ${TEST_NAME}
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
