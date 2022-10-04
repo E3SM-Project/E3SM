@@ -41,6 +41,7 @@
 <config_dt ocn_grid="oRRS15to5">'00:03:45'</config_dt>
 <config_dt ocn_grid="oARRM60to10">'00:10:00'</config_dt>
 <config_dt ocn_grid="oARRM60to6">'00:05:00'</config_dt>
+<config_dt ocn_grid="ARRM10to60E2r1">'00:10:00'</config_dt>
 <config_dt ocn_grid="EC30to60E2r2">'00:30:00'</config_dt>
 <config_dt ocn_grid="WC14to60E2r3">'00:10:00'</config_dt>
 <config_dt ocn_grid="WCAtl12to45E2r4">'00:10:00'</config_dt>
@@ -62,6 +63,7 @@
 <config_hmix_scaleWithMesh ocn_grid="oRRS15to5">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oARRM60to10">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oARRM60to6">.true.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="ARRM10to60E2r1">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="EC30to60E2r2">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="WC14to60E2r3">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="WCAtl12to45E2r4">.true.</config_hmix_scaleWithMesh>
@@ -109,6 +111,7 @@
 <config_mom_del4 ocn_grid="oRRS15to5">1.9e09</config_mom_del4>
 <config_mom_del4 ocn_grid="oARRM60to10">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oARRM60to6">3.2e09</config_mom_del4>
+<config_mom_del4 ocn_grid="ARRM10to60E2r1">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="EC30to60E2r2">1.2e11</config_mom_del4>
 <config_mom_del4 ocn_grid="WC14to60E2r3">1.18e10</config_mom_del4>
 <config_mom_del4 ocn_grid="WCAtl12to45E2r4">1.18e10</config_mom_del4>
@@ -140,6 +143,7 @@
 <config_Redi_N2_based_taper_min>0.1</config_Redi_N2_based_taper_min>
 <config_Redi_N2_based_taper_limit_term1>.true.</config_Redi_N2_based_taper_limit_term1>
 <config_Redi_min_layers_diag_terms>6</config_Redi_min_layers_diag_terms>
+<config_Redi_min_layers_diag_terms ocn_grid="ARRM10to60E2r1">15</config_Redi_min_layers_diag_terms>
 <config_Redi_horizontal_taper>'ramp'</config_Redi_horizontal_taper>
 <config_Redi_horizontal_ramp_min>20e3</config_Redi_horizontal_ramp_min>
 <config_Redi_horizontal_ramp_min ocn_grid="WCAtl12to45E2r4">30e3</config_Redi_horizontal_ramp_min>
@@ -421,6 +425,7 @@
 <config_btr_dt ocn_grid="oRRS15to5">'0000_00:00:11.25'</config_btr_dt>
 <config_btr_dt ocn_grid="oARRM60to10">'0000_00:00:24'</config_btr_dt>
 <config_btr_dt ocn_grid="oARRM60to6">'0000_00:00:10'</config_btr_dt>
+<config_btr_dt ocn_grid="ARRM10to60E2r1">'0000_00:00:24'</config_btr_dt>
 <config_btr_dt ocn_grid="EC30to60E2r2">'0000_00:01:00'</config_btr_dt>
 <config_btr_dt ocn_grid="WC14to60E2r3">'0000_00:00:15'</config_btr_dt>
 <config_btr_dt ocn_grid="WCAtl12to45E2r4">'0000_00:00:15'</config_btr_dt>
@@ -969,6 +974,7 @@
 <config_AM_mocStreamfunction_enable ocn_grid="oRRS15to5">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oARRM60to10">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oARRM60to6">.false.</config_AM_mocStreamfunction_enable>
+<config_AM_mocStreamfunction_enable ocn_grid="ARRM10to60E2r1">.true.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="EC30to60E2r2">.true.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="WC14to60E2r3">.true.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="WCAtl12to45E2r4">.true.</config_AM_mocStreamfunction_enable>
