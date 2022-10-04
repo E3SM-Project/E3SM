@@ -542,6 +542,7 @@ void CoarseningRemapper::unpack () const
     const auto lt = get_layout_type(fl.tags());
     const auto f_pid_offsets = ekat::subview(m_recv_f_pid_offsets,ifield);
 
+    f.deep_copy(0);
     switch (lt) {
       case LayoutType::Scalar2D:
       {
