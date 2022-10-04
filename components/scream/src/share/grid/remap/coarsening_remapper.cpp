@@ -41,31 +41,32 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   io_grid->set_dofs(gids_d);
   const int nlweights = io_grid->get_num_local_dofs();
 
-  // Read my row, col, S entries
-  m_weights = view_1d<Real>("",nlweights);
-  m_row_col_lids = view_2d<int>("",nlweights,2);
+  // Create CRS matrix views
 
-  // We read in GIDs, which we later convert to LIDs
-  view_1d<gid_t>::HostMirror row_gids_h("",nlweights);
-  view_1d<gid_t>::HostMirror col_gids_h("",nlweights);
-  auto S_h   = Kokkos::create_mirror_view(m_weights);
+  // Read in triplets.
+  view_1d<gid_t>::HostMirror  row_gids_h("",nlweights);
+  view_1d<gid_t>::HostMirror  col_gids_h("",nlweights);
+  view_1d<double>::HostMirror S_h ("",nlweights);
 
+  // scream's gids are of type int, while scorpio wants long int as offsets.
   std::vector<scorpio::offset_t> dofs_offsets(nlweights);
   for (int i=0; i<nlweights; ++i) {
     dofs_offsets[i] = gids_h[i];
   }
+  const std::string idx_decomp_tag = "int-nnz" + std::to_string(nlweights);
+  const std::string val_decomp_tag = "real-nnz" + std::to_string(nlweights);
 
   scorpio::register_file(map_file,scorpio::FileMode::Read);
-  scorpio::get_variable(map_file, "row", "row", {"n_s"}, "int", "int-nnz");
-  scorpio::get_variable(map_file, "col", "col", {"n_s"}, "int", "int-nnz");
-  scorpio::get_variable(map_file, "S", "S", {"n_s"}, "double", "double-nnz");
+  scorpio::get_variable(map_file, "row", "row", {"n_s"}, "int", idx_decomp_tag);
+  scorpio::get_variable(map_file, "col", "col", {"n_s"}, "int", idx_decomp_tag);
+  scorpio::get_variable(map_file, "S",   "S",   {"n_s"}, "real", val_decomp_tag);
   scorpio::set_dof(map_file,"row",nlweights,dofs_offsets.data());
   scorpio::set_dof(map_file,"col",nlweights,dofs_offsets.data());
   scorpio::set_dof(map_file,"S",nlweights,dofs_offsets.data());
   scorpio::set_decomp(map_file);
   scorpio::grid_read_data_array(map_file,"row",-1,row_gids_h.data(),nlweights);
   scorpio::grid_read_data_array(map_file,"col",-1,col_gids_h.data(),nlweights);
-  scorpio::grid_read_data_array(map_file,"S",-1,S_h.data(),nlweights);
+  scorpio::grid_read_data_array(map_file,"S",  -1,S_h.data(),       nlweights);
   scorpio::eam_pio_closefile(map_file);
 
   // Create an "overlapped" tgt grid, that is, a grid where each rank
@@ -87,34 +88,48 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   auto ov_tgt_grid = std::make_shared<PointGrid>("ov_tgt_grid",num_ov_tgt_gids,0,m_comm);
   ov_tgt_grid->set_dofs(ov_tgt_gids_d);
   m_ov_tgt_grid = ov_tgt_grid;
+  const int num_ov_row_gids = m_ov_tgt_grid->get_num_local_dofs();
 
-  // Convert gids to lids
-  view_1d<int> row_lids("",nlweights);
-  view_1d<int> col_lids("",nlweights);
-  auto row_lids_h = Kokkos::create_mirror_view(row_lids);
-  auto col_lids_h = Kokkos::create_mirror_view(col_lids);
+  // Now we have to create the weights CRS matrix
+  m_row_offsets = view_1d<int>("",num_ov_row_gids+1);
+  m_col_lids    = view_1d<int>("",nlweights);
+  m_weights     = view_1d<Real>("",nlweights);
+
+  // Sort col_gids_h and row_gids_h by row gid. It is easier to sort
+  // the array [0,...,n), and use it later to index the 
+  std::vector<int> id (nlweights);
+  std::iota(id.begin(),id.end(),0);
+  auto compare = [&] (const int i, const int j) -> bool {
+    return row_gids_h(i) < row_gids_h(j);
+  };
+  std::sort(id.begin(),id.end(),compare);
+
+  // Create mirror views
+  auto row_offsets_h = Kokkos::create_mirror_view(m_row_offsets);
+  auto col_lids_h    = Kokkos::create_mirror_view(m_col_lids);
+  auto weights_h     = Kokkos::create_mirror_view(m_weights);
+
   for (int i=0; i<nlweights; ++i) {
-    // Note: subtract 1 since map files use 1-based indices
-    row_lids_h(i) = gid2lid(row_gids_h(i)-1,m_ov_tgt_grid);
-    col_lids_h(i) = gid2lid(col_gids_h(i)-1,m_src_grid);
-    EKAT_REQUIRE_MSG (row_lids_h(i)>=0,
-        "Error! Something went wrong while computing row LIDs in CoarseningRemapper.\n");
-    EKAT_REQUIRE_MSG (col_lids_h(i)>=0,
-        "Error! Something went wrong while computing col LIDs in CoarseningRemapper.\n");
+    col_lids_h(i) = gid2lid(col_gids_h(id[i])-1,m_src_grid);
+    weights_h(i)  = S_h(id[i]);
   }
 
-  // Copy triplets to device views
-  Kokkos::deep_copy(m_weights,S_h);
-  Kokkos::deep_copy(row_lids,row_lids_h);
-  Kokkos::deep_copy(col_lids,col_lids_h);
+  Kokkos::deep_copy(m_weights,weights_h);
+  Kokkos::deep_copy(m_col_lids,col_lids_h);
 
-  // Compact row/col lids into a single 2d view
-  auto row_col_lids = m_row_col_lids;
-  Kokkos::parallel_for(typename KT::RangePolicy(0,nlweights),
-                       KOKKOS_LAMBDA(const int& i){
-    row_col_lids(i,0) = row_lids(i);
-    row_col_lids(i,1) = col_lids(i);
-  });
+  // Compute row offsets
+  std::vector<int> row_counts(num_ov_row_gids);
+  for (int i=0; i<nlweights; ++i) {
+    ++row_counts[gid2lid(row_gids_h(i)-1,m_ov_tgt_grid)];
+  }
+  std::partial_sum(row_counts.begin(),row_counts.end(),row_offsets_h.data()+1);
+  EKAT_REQUIRE_MSG (
+      row_offsets_h(num_ov_row_gids)==nlweights,
+      "Error! Something went wrong while computing row offsets.\n"
+      "  - local nnz       : " + std::to_string(nlweights) + "\n"
+      "  - row_offsets(end): " + std::to_string(row_offsets_h(num_ov_row_gids)) + "\n");
+
+  Kokkos::deep_copy(m_row_offsets,row_offsets_h);
 }
 
 CoarseningRemapper::
@@ -328,20 +343,26 @@ local_mat_vec (const Field& x, const Field& y) const
 
   const auto& src_layout = x.get_header().get_identifier().get_layout();
   const int rank = src_layout.rank();
-  const int nnz = m_weights.size();
-  auto row_col_lids = m_row_col_lids;
+  const int nrows = m_ov_tgt_grid->get_num_local_dofs();
+  auto row_offsets = m_row_offsets;
+  auto col_lids = m_col_lids;
   auto weights = m_weights;
   switch (rank) {
+    // Note: in each case, handle 1st contribution to each row separately,
+    //       using = instead of +=. This allows to avoid doing an extra
+    //       loop to zero out y before the mat-vec.
     case 1:
     {
       auto x_view = x.get_view<const Real*>();
       auto y_view = y.get_view<      Real*>();
-      Kokkos::parallel_for(RangePolicy(0,nnz),
-                           KOKKOS_LAMBDA(const int& i) {
-        const auto row = row_col_lids(i,0);
-        const auto col = row_col_lids(i,1);
-        const auto w = weights(i);
-        y_view(row) += w*x_view(col);
+      Kokkos::parallel_for(RangePolicy(0,nrows),
+                           KOKKOS_LAMBDA(const int& row) {
+        const auto beg = row_offsets(row);
+        const auto end = row_offsets(row+1);
+        y_view(row) = weights(beg)*x_view(col_lids(beg));
+        for (int icol=beg+1; icol<end; ++icol) {
+          y_view(row) += weights(icol)*x_view(col_lids(icol));
+        }
       });
       break;
     }
@@ -350,16 +371,19 @@ local_mat_vec (const Field& x, const Field& y) const
       auto x_view = x.get_view<const Pack**>();
       auto y_view = y.get_view<      Pack**>();
       const int dim1 = PackInfo::num_packs(src_layout.dim(1));
-      auto policy = ESU::get_default_team_policy(nnz,dim1);
+      auto policy = ESU::get_default_team_policy(nrows,dim1);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
-        const auto i   = team.league_rank();
-        const auto row = row_col_lids(i,0);
-        const auto col = row_col_lids(i,1);
-        const auto w = weights(i);
+        const auto row = team.league_rank();
+
+        const auto beg = row_offsets(row);
+        const auto end = row_offsets(row+1);
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dim1),
                             [&](const int j){
-          y_view(row,j) += w*x_view(col,j);
+          y_view(row,j) = weights(beg)*x_view(col_lids(beg),j);
+          for (int icol=beg+1; icol<end; ++icol) {
+            y_view(row,j) += weights(icol)*x_view(col_lids(icol),j);
+          }
         });
       });
       break;
@@ -370,18 +394,21 @@ local_mat_vec (const Field& x, const Field& y) const
       auto y_view = y.get_view<      Pack***>();
       const int dim1 = src_layout.dim(1);
       const int dim2 = PackInfo::num_packs(src_layout.dim(2));
-      auto policy = ESU::get_default_team_policy(nnz,dim1*dim2);
+      auto policy = ESU::get_default_team_policy(nrows,dim1*dim2);
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
-        const auto i   = team.league_rank();
-        const auto row = row_col_lids(i,0);
-        const auto col = row_col_lids(i,1);
-        const auto w = weights(i);
+        const auto row = team.league_rank();
+
+        const auto beg = row_offsets(row);
+        const auto end = row_offsets(row+1);
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dim1*dim2),
                             [&](const int idx){
           const int j = idx / dim2;
           const int k = idx % dim2;
-          y_view(row,j,k) += w*x_view(col,j,k);
+          y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k);
+          for (int icol=beg+1; icol<end; ++icol) {
+            y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k);
+          }
         });
       });
       break;
@@ -619,7 +646,8 @@ get_my_triplets_gids (const std::string& map_file) const
 
   // Read chunk of triplets col indices
   std::vector<gid_t> cols(nlweights);
-  scorpio::get_variable(map_file, "col", "col", {"n_s"}, "int", "int-nnz");
+  const std::string idx_decomp_tag = "int-nnz" + std::to_string(nlweights);
+  scorpio::get_variable(map_file, "col", "col", {"n_s"}, "int", idx_decomp_tag);
   std::vector<scorpio::offset_t> dofs_offsets(nlweights);
   std::iota(dofs_offsets.begin(),dofs_offsets.end(),offset);
   scorpio::set_dof(map_file,"col",nlweights,dofs_offsets.data());
@@ -650,7 +678,7 @@ get_my_triplets_gids (const std::string& map_file) const
 
   MPI_Win counter_win, data_win;
   std::vector<int> num_entries(m_comm.size(),0);
-  MPI_Win_create (num_entries.data(),sizeof(int),sizeof(int),
+  MPI_Win_create (num_entries.data(),m_comm.size()*sizeof(int),sizeof(int),
                   MPI_INFO_NULL,raw_comm,&counter_win);
   MPI_Win_fence(0,counter_win);
 

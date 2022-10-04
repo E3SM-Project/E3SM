@@ -151,7 +151,8 @@ protected:
   std::vector<Field>    m_tgt_fields;
 
   // Sparse matrix representation in triplet form
-  view_2d<int>    m_row_col_lids;
+  view_1d<int>    m_row_offsets;
+  view_1d<int>    m_col_lids;
   view_1d<Real>   m_weights;
 
   //  ------- MPI data structures -------- //
