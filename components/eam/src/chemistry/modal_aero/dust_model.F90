@@ -174,7 +174,9 @@ module dust_model
 
     col_loop: do i =1,ncol
 
-       soil_erod(i) = soil_erodibility( i, lchnk )
+        ! turn off the soil erodibility map in the source function by YF 20220816
+        ! soil_erod(i) = soil_erodibility( i, lchnk )
+        soil_erod(i) = 1._r8
 
        if( soil_erod(i) .lt. soil_erod_threshold ) soil_erod(i) = 0._r8
 

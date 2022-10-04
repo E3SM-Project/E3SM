@@ -921,7 +921,7 @@
 <molec_diff_bot_press> 50.D0 </molec_diff_bot_press>
 
 <!-- dust emission tuning factor -->
-<dust_emis_fact                                                         >2.76D0</dust_emis_fact>
+<dust_emis_fact                                                         >9.80D0</dust_emis_fact>
 <dust_emis_fact          hgrid="ne30np4"   phys="cam5"                  >1.38D0</dust_emis_fact>
 <dust_emis_fact          hgrid="ne45np4"   phys="cam5"                  >1.38D0</dust_emis_fact>
 <dust_emis_fact          hgrid="ne120np4"  phys="cam5"                  >1.2D0</dust_emis_fact>
