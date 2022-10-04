@@ -850,7 +850,7 @@ contains
     ! POM mode
     !
     index_tot_mass(4,1) = get_spc_ndx('pom_a4')
-    index_tot_mass(4,2) = get_spc_ndx('bc_a4')
+    index_tot_mass(4,2) = get_spc_ndx('bc_a4' )
     index_tot_mass(4,3) = get_spc_ndx('mom_a4')
     index_chm_mass(4,1) = get_spc_ndx('bc_a4' )
     !
@@ -894,9 +894,9 @@ contains
     ! POM mode
     !
     index_tot_mass(4,1) = get_spc_ndx('pom_a4')
-    index_tot_mass(4,2) = get_spc_ndx('bc_a4')
+    index_tot_mass(4,2) = get_spc_ndx('bc_a4' )
     index_tot_mass(4,3) = get_spc_ndx('mom_a4')
-    index_chm_mass(4,1) = get_spc_ndx('bc_a1' )
+    index_chm_mass(4,1) = get_spc_ndx('bc_a4' )
     !
 #elif ( defined MODAL_AERO_4MODE_MOM )
     !
@@ -932,9 +932,9 @@ contains
     ! POM mode
     !
     index_tot_mass(4,1) = get_spc_ndx('pom_a4')
-    index_tot_mass(4,2) = get_spc_ndx('bc_a4')
+    index_tot_mass(4,2) = get_spc_ndx('bc_a4' )
     index_tot_mass(4,3) = get_spc_ndx('mom_a4')
-    index_chm_mass(4,1) = get_spc_ndx('bc_a1' )
+    index_chm_mass(4,1) = get_spc_ndx('bc_a4' )
     !
 #elif ( ( defined MODAL_AERO_5MODE ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) && ( defined MOSAIC_SPECIES ) )
     !
@@ -995,7 +995,7 @@ contains
     ! POM mode
     !
     index_tot_mass(4,1) = get_spc_ndx('pom_a4')
-    index_tot_mass(4,2) = get_spc_ndx('bc_a4')
+    index_tot_mass(4,2) = get_spc_ndx('bc_a4' )
     index_tot_mass(4,3) = get_spc_ndx('mom_a4')
     index_chm_mass(4,1) = get_spc_ndx('bc_a4' )
     !
@@ -1043,9 +1043,9 @@ contains
     ! POM mode
     !
     index_tot_mass(4,1) = get_spc_ndx('pom_a4')
-    index_tot_mass(4,2) = get_spc_ndx('bc_a4')
+    index_tot_mass(4,2) = get_spc_ndx('bc_a4' )
     index_tot_mass(4,3) = get_spc_ndx('mom_a4')
-    index_chm_mass(4,1) = get_spc_ndx('bc_a1' )
+    index_chm_mass(4,1) = get_spc_ndx('bc_a4' )
     !
     ! strat_coarse
     !
@@ -1086,9 +1086,9 @@ contains
     ! POM mode
     !
     index_tot_mass(4,1) = get_spc_ndx('pom_a4')
-    index_tot_mass(4,2) = get_spc_ndx('bc_a4')
+    index_tot_mass(4,2) = get_spc_ndx('bc_a4' )
     index_tot_mass(4,3) = get_spc_ndx('mom_a4')
-    index_chm_mass(4,1) = get_spc_ndx('bc_a1' )
+    index_chm_mass(4,1) = get_spc_ndx('bc_a4' )
     !
     ! strat_coarse
     !
@@ -1127,8 +1127,8 @@ contains
     ! POM mode
     !
     index_tot_mass(4,1) = get_spc_ndx('pom_a4')
-    index_tot_mass(4,2) = get_spc_ndx('bc_a4')
-    index_chm_mass(4,1) = get_spc_ndx('bc_a1' )
+    index_tot_mass(4,2) = get_spc_ndx('bc_a4' )
+    index_chm_mass(4,1) = get_spc_ndx('bc_a4' )
     !
 #elif ( defined MODAL_AERO_7MODE )
     !
