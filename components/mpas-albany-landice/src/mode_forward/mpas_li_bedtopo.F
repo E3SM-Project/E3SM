@@ -461,6 +461,12 @@ contains
          allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
          allocate(globalArrayBedTopography(nCellsGlobal), gatheredArrayBedTopography(nCellsGlobal))
          allocate(meshMask(nCellsGlobal))
+         ismIceload(:,:) = 0.0
+         ismBedtopo(:,:) = 0.0
+         ismMask(:,:) = 0.0
+         bedtopoSLgrid1D(:) = 0.0
+         thicknessSLgrid1D(:) = 0.0
+         maskSLgrid1D(:) = 0.0
       else
          ! Intel requires these be allocated even though they are not meaningful on the non-destination procs
          allocate(globalArrayThickness(1), gatheredArrayThickness(1))
@@ -619,6 +625,12 @@ contains
          allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
          allocate(globalArrayTopoChange(nCellsGlobal), gatheredArrayTopoChange(nCellsGlobal))
          allocate(meshMask(nCellsGlobal))
+         ismIceload(:,:) = 0.0
+         ismMask(:,:) = 0.0
+         slmSLchange(:,:) = 0.0
+         slChangeSLgrid1D(:) = 0.0
+         thicknessSLgrid1D(:) = 0.0
+         maskSLgrid1D(:) = 0.0
       else
          ! Intel requires these be allocated even though they are not meaningful on the non-destination procs
          allocate(globalArrayThickness(1), gatheredArrayThickness(1))
