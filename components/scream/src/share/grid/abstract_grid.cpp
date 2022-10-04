@@ -250,8 +250,8 @@ void AbstractGrid::reset_num_vertical_lev (const int num_vertical_lev) {
 }
 
 auto AbstractGrid::
-get_owners_and_lids (const view_1d<const gid_type>& gids) const
- -> kokkos_types::view_2d<gid_type>
+get_owners_and_lids (const hview_1d<const gid_type>& gids) const
+ -> hview_2d<gid_type>
 {
   EKAT_REQUIRE_MSG (m_dofs_set,
       "Error! Cannot retrieve gids owners until dofs gids have been set.\n");
@@ -386,7 +386,7 @@ get_owners_and_lids (const view_1d<const gid_type>& gids) const
   MPI_Win_fence(0,win);
 
   // Step 3: copy data in rma types into output view, making sure we keep correct order
-  kokkos_types::view_2d<gid_type> pids_and_lids("",gids.size(),2);
+  hview_2d<gid_type> pids_and_lids("",gids.size(),2);
   std::map<int,int> curr_data_index;
   for (int i=0; i<gids.extent_int(0); ++i) {
     const auto gid = gids[i];

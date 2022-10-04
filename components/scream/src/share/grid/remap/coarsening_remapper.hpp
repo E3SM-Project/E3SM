@@ -108,9 +108,6 @@ protected:
   void create_ov_tgt_fields ();
   void setup_mpi_data_structures ();
 
-  void pack () const;
-  void unpack () const;
-
   int gid2lid (const gid_t gid, const grid_ptr_type& grid) const {
     const auto gids = grid->get_dofs_gids_host();
     const auto beg = gids.data();
@@ -127,6 +124,8 @@ public:
 #endif
   template<int N>
   void local_mat_vec (const Field& f_src, const Field& f_tgt) const;
+  void pack () const;
+  void unpack () const;
 
 protected:
   ekat::Comm            m_comm;
