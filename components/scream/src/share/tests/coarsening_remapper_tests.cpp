@@ -333,80 +333,82 @@ TEST_CASE ("coarsening_remap") {
   }
   print (" -> generate src fields data ... done!\n",comm);
 
-  print (" -> run remap ...\n",comm);
-  remap->remap(true);
-  print (" -> run remap ... done!\n",comm);
+  for (int irun=0; irun<5; ++irun) {
+    print (" -> run remap ...\n",comm);
+    remap->remap(true);
+    print (" -> run remap ... done!\n",comm);
 
-  // -------------------------------------- //
-  //          Check remapped fields         //
-  // -------------------------------------- //
+    // -------------------------------------- //
+    //          Check remapped fields         //
+    // -------------------------------------- //
 
-  print (" -> check tgt fields ...\n",comm);
-  // Recall, tgt gid K should be the avg of src gids K and K+ngdofs_tgt
-  auto tgt_gids = tgt_grid->get_dofs_gids_host();
-  for (size_t ifield=0; ifield<tgt_f.size(); ++ifield) {
-    const auto& f = tgt_f[ifield];
-    const auto& l = f.get_header().get_identifier().get_layout();
-    const auto ls = to_string(l);
-    std::string dots (25-ls.size(),'.');
-    print ("   -> Checking field with layout " + to_string(l) + " " + dots + "\n",comm);
+    print (" -> check tgt fields ...\n",comm);
+    // Recall, tgt gid K should be the avg of src gids K and K+ngdofs_tgt
+    auto tgt_gids = tgt_grid->get_dofs_gids_host();
+    for (size_t ifield=0; ifield<tgt_f.size(); ++ifield) {
+      const auto& f = tgt_f[ifield];
+      const auto& l = f.get_header().get_identifier().get_layout();
+      const auto ls = to_string(l);
+      std::string dots (25-ls.size(),'.');
+      print ("   -> Checking field with layout " + to_string(l) + " " + dots + "\n",comm);
 
-    f.sync_to_host();
+      f.sync_to_host();
 
-    switch (get_layout_type(l.tags())) {
-      case LayoutType::Scalar2D:
-      {
-        const auto v_tgt = f.get_view<const Real*,Host>();
-        for (int i=0; i<nldofs_tgt; ++i) {
-          const auto gid = tgt_gids(i);
-          const auto term1 = gid;
-          const auto term2 = gid+ngdofs_tgt;
-          REQUIRE ( v_tgt(i)== (term1 + term2)/2.0 );
-        }
-      } break;
-      case LayoutType::Vector2D:
-      {
-        const auto v_tgt = f.get_view<const Real**,Host>();
-        for (int i=0; i<nldofs_tgt; ++i) {
-          const auto gid = tgt_gids(i);
-          for (int j=0; j<vec_dim; ++j) {
-            const auto term1 = gid*vec_dim+j;
-            const auto term2 = (gid+ngdofs_tgt)*vec_dim+j;
-            REQUIRE ( v_tgt(i,j)== (term1 + term2)/2.0 );
-        }}
-      } break;
-      case LayoutType::Scalar3D:
-      {
-        const int nlevs = l.dims().back();
-        const auto v_tgt = f.get_view<const Real**,Host>();
-        for (int i=0; i<nldofs_tgt; ++i) {
-          const auto gid = tgt_gids(i);
-          for (int j=0; j<nlevs; ++j) {
-            const auto term1 = gid*nlevs+j;
-            const auto term2 = (gid+ngdofs_tgt)*nlevs+j;
-            REQUIRE ( v_tgt(i,j)== (term1 + term2)/2.0 );
-        }}
-      } break;
-      case LayoutType::Vector3D:
-      {
-        const int nlevs = l.dims().back();
-        const auto v_tgt = f.get_view<const Real***,Host>();
-        for (int i=0; i<nldofs_tgt; ++i) {
-          const auto gid = tgt_gids(i);
-          for (int j=0; j<vec_dim; ++j) {
-            for (int k=0; k<nlevs; ++k) {
-              const auto term1 = gid*vec_dim*nlevs+j*nlevs+k;
-              const auto term2 = (gid+ngdofs_tgt)*vec_dim*nlevs+j*nlevs+k;
-              REQUIRE ( v_tgt(i,j,k)== (term1 + term2)/2.0 );
-        }}}
-      } break;
-      default:
-        EKAT_ERROR_MSG ("Unexpected layout.\n");
+      switch (get_layout_type(l.tags())) {
+        case LayoutType::Scalar2D:
+        {
+          const auto v_tgt = f.get_view<const Real*,Host>();
+          for (int i=0; i<nldofs_tgt; ++i) {
+            const auto gid = tgt_gids(i);
+            const auto term1 = gid;
+            const auto term2 = gid+ngdofs_tgt;
+            REQUIRE ( v_tgt(i)== (term1 + term2)/2.0 );
+          }
+        } break;
+        case LayoutType::Vector2D:
+        {
+          const auto v_tgt = f.get_view<const Real**,Host>();
+          for (int i=0; i<nldofs_tgt; ++i) {
+            const auto gid = tgt_gids(i);
+            for (int j=0; j<vec_dim; ++j) {
+              const auto term1 = gid*vec_dim+j;
+              const auto term2 = (gid+ngdofs_tgt)*vec_dim+j;
+              REQUIRE ( v_tgt(i,j)== (term1 + term2)/2.0 );
+          }}
+        } break;
+        case LayoutType::Scalar3D:
+        {
+          const int nlevs = l.dims().back();
+          const auto v_tgt = f.get_view<const Real**,Host>();
+          for (int i=0; i<nldofs_tgt; ++i) {
+            const auto gid = tgt_gids(i);
+            for (int j=0; j<nlevs; ++j) {
+              const auto term1 = gid*nlevs+j;
+              const auto term2 = (gid+ngdofs_tgt)*nlevs+j;
+              REQUIRE ( v_tgt(i,j)== (term1 + term2)/2.0 );
+          }}
+        } break;
+        case LayoutType::Vector3D:
+        {
+          const int nlevs = l.dims().back();
+          const auto v_tgt = f.get_view<const Real***,Host>();
+          for (int i=0; i<nldofs_tgt; ++i) {
+            const auto gid = tgt_gids(i);
+            for (int j=0; j<vec_dim; ++j) {
+              for (int k=0; k<nlevs; ++k) {
+                const auto term1 = gid*vec_dim*nlevs+j*nlevs+k;
+                const auto term2 = (gid+ngdofs_tgt)*vec_dim*nlevs+j*nlevs+k;
+                REQUIRE ( v_tgt(i,j,k)== (term1 + term2)/2.0 );
+          }}}
+        } break;
+        default:
+          EKAT_ERROR_MSG ("Unexpected layout.\n");
+      }
+
+      print ("   -> Checking field with layout " + to_string(l) + " " + dots + " OK!\n",comm);
     }
-
-    print ("   -> Checking field with layout " + to_string(l) + " " + dots + " OK!\n",comm);
+    print ("check tgt fields ... done!\n",comm);
   }
-  print ("check tgt fields ... done!\n",comm);
 
   // Clean up scorpio stuff
   scorpio::eam_pio_finalize();
