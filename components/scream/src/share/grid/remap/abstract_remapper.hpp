@@ -30,6 +30,7 @@ public:
   using grid_ptr_type   = std::shared_ptr<const grid_type>;
   using ci_string       = ekat::CaseInsensitiveString;
 
+  AbstractRemapper () = default;
   AbstractRemapper (const grid_ptr_type& src_grid,
                     const grid_ptr_type& tgt_grid);
 
@@ -174,6 +175,9 @@ public:
   }
 
 protected:
+
+  void set_grids (const grid_ptr_type& src_grid,
+                  const grid_ptr_type& tgt_grid);
 
   virtual const identifier_type& do_get_src_field_id (const int ifield) const = 0;
   virtual const identifier_type& do_get_tgt_field_id (const int ifield) const = 0;

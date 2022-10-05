@@ -7,11 +7,7 @@ AbstractRemapper::
 AbstractRemapper (const grid_ptr_type& src_grid,
                   const grid_ptr_type& tgt_grid)
 {
-  EKAT_REQUIRE_MSG(static_cast<bool>(src_grid), "Error! Invalid source grid pointer.\n");
-  EKAT_REQUIRE_MSG(static_cast<bool>(tgt_grid), "Error! Invalid target grid pointer.\n");
-
-  m_src_grid = src_grid;
-  m_tgt_grid = tgt_grid;
+  set_grids (src_grid,tgt_grid);
 }
 
 void AbstractRemapper::
@@ -129,6 +125,17 @@ void AbstractRemapper::remap (const bool forward) const {
       do_remap_bwd ();
     }
   }
+}
+
+void AbstractRemapper::
+set_grids (const grid_ptr_type& src_grid,
+           const grid_ptr_type& tgt_grid)
+{
+  EKAT_REQUIRE_MSG(static_cast<bool>(src_grid), "Error! Invalid source grid pointer.\n");
+  EKAT_REQUIRE_MSG(static_cast<bool>(tgt_grid), "Error! Invalid target grid pointer.\n");
+
+  m_src_grid = src_grid;
+  m_tgt_grid = tgt_grid;
 }
 
 } // namespace scream
