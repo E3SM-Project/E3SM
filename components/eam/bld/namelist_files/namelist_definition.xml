@@ -4095,6 +4095,13 @@ Default: FALSE
        group="cam_inparm" valid_values="">
 Turn off microphysics computation.
 Default: FALSE
+</entry>                                                                        |
+                                                                                |
+<entry id="scm_zero_non_iop_tracers" type="logical" category="scam"
+       group="cam_inparm" valid_values="">
+Ignore all tracers from initial conditions file, and default all tracers not
+specified in IOP to minimum value (usually zero).
+Default: FALSE
 </entry>
 
 <!-- Solar Parameters -->
