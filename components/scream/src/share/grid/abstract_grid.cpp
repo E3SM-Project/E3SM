@@ -125,7 +125,7 @@ set_dofs (const dofs_list_type& dofs)
 const AbstractGrid::dofs_list_type&
 AbstractGrid::get_dofs_gids () const {
   // Sanity check
-  EKAT_REQUIRE_MSG (m_dofs_gids.size()>0, "Error! You must call 'set_dofs' first.\n");
+  EKAT_REQUIRE_MSG (m_dofs_set, "Error! You must call 'set_dofs' first.\n");
 
   return m_dofs_gids;
 }
@@ -133,7 +133,7 @@ AbstractGrid::get_dofs_gids () const {
 const AbstractGrid::dofs_list_h_type&
 AbstractGrid::get_dofs_gids_host () const {
   // Sanity check
-  EKAT_REQUIRE_MSG (m_dofs_gids_host.size()>0, "Error! You must call 'set_dofs' first.\n");
+  EKAT_REQUIRE_MSG (m_dofs_set>0, "Error! You must call 'set_dofs' first.\n");
 
   return m_dofs_gids_host;
 }
