@@ -17,7 +17,9 @@
   use chem_mods,       only:  gas_pcnst
   use physconst,       only:  pi
   use ppgrid,          only:  pcols, pver
-  use modal_aero_data, only:  ntot_aspectype, ntot_amode, nsoa, npoa, nbc
+!++hybrown
+  use modal_aero_data, only:  ntot_aspectype, ntot_amode, nsoa, npoa, nbc, nso4
+!--hybrown
 ! use ref_pres,        only:  top_lev => clim_modal_aero_top_lev  ! this is for gg02a
   use ref_pres,        only:  top_lev => trop_cloud_top_lev       ! this is for ee02c
 
@@ -89,17 +91,25 @@
 
 
 #if ( defined MODAL_AERO_3MODE )
-  integer, parameter :: max_gas = nsoa + 1
+!++hyrown
+!  integer, parameter :: max_gas = nsoa + 1
+  integer, parameter :: max_gas = nsoa + nso4
   ! the +3 in max_aer are dst, ncl, so4
-  integer, parameter :: max_aer = nsoa + npoa + nbc + 3
+!  integer, parameter :: max_aer = nsoa + npoa + nbc + 3
+  integer, parameter :: max_aer = nsoa + npoa + nbc + nso4 + 2
 #elif ( defined MODAL_AERO_4MODE )
-  integer, parameter :: max_gas = nsoa + 1
+!  integer, parameter :: max_gas = nsoa + 1
+  integer, parameter :: max_gas = nsoa + nso4
   ! the +3 in max_aer are dst, ncl, so4
-  integer, parameter :: max_aer = nsoa + npoa + nbc + 3
+!  integer, parameter :: max_aer = nsoa + npoa + nbc + 3
+  integer, parameter :: max_aer = nsoa + npoa + nbc + nso4 + 2
 #elif ( defined MODAL_AERO_4MODE_MOM )
-  integer, parameter :: max_gas = nsoa + 1
+!  integer, parameter :: max_gas = nsoa + 1
+  integer, parameter :: max_gas = nsoa + nso4
   ! the +4 in max_aer are dst, ncl, so4, mom
-  integer, parameter :: max_aer = nsoa + npoa + nbc + 4
+!  integer, parameter :: max_aer = nsoa + npoa + nbc + 4
+  integer, parameter :: max_aer = nsoa + npoa + nbc + nso4 + 3
+!--hybrown
 #elif ( ( defined MODAL_AERO_7MODE ) && ( defined MOSAIC_SPECIES ) )
   integer, parameter :: max_gas = nsoa + 4
   ! the +8 in max_aer are dst, ncl(=na), so4, no3, cl, nh4, ca, co3 
@@ -155,12 +165,17 @@
                       ! early versions of mam neglected the seasalt contribution
 
   ! species indices for various qgas_--- arrays
-  integer :: igas_soa, igas_h2so4, igas_nh3, igas_hno3, igas_hcl
+!++hybrown
+  integer :: igas_soa(nsoa), igas_h2so4(nso4), igas_nh3, igas_hno3, igas_hcl
+!--hybrown
   ! species indices for various qaer_--- arrays
   !    when nsoa > 1, igas_soa and iaer_soa are indices of the first soa species
   !    when nbc  > 1, iaer_bc  is index of the first bc  species
   !    when npom > 1, iaer_pom is index of the first pom species
-  integer :: iaer_bc, iaer_dst, iaer_ncl, iaer_nh4, iaer_pom, iaer_soa, iaer_so4, &
+!++hybrown
+!  integer :: iaer_bc, iaer_dst, iaer_ncl, iaer_nh4, iaer_pom, iaer_soa, iaer_so4, &
+  integer :: iaer_bc(nbc), iaer_dst, iaer_ncl, iaer_nh4, iaer_pom(npoa), iaer_soa(nsoa), iaer_so4(nso4), &
+!--hybrown
              iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc, iaer_mom, &
              iaer_no3, iaer_cl, iaer_ca, iaer_co3
   integer :: i_agepair_pca, i_agepair_macc, i_agepair_mait
@@ -222,12 +237,19 @@
   logical :: do_qqcw_coltendaa(gas_pcnst,nqqcwtendaa) = .false.
 
 ! *** following 3 variables should eventually be in modal_aero_data
-  real(r8) :: specmw2_amode(ntot_aspectype,ntot_amode)
-  real(r8) :: specdens2_amode(ntot_aspectype,ntot_amode)
-  real(r8) :: spechygro2(ntot_aspectype,ntot_amode)
+!++hybrown
+!  real(r8) :: specmw2_amode(ntot_aspectype,ntot_amode)
+!  real(r8) :: specdens2_amode(ntot_aspectype,ntot_amode)
+!  real(r8) :: spechygro2(ntot_aspectype,ntot_amode)
+  real(r8) :: specmw2_amode(max_aer,ntot_amode)
+  real(r8) :: specdens2_amode(max_aer,ntot_amode)
+  real(r8) :: spechygro2(max_aer,ntot_amode)
+!--hybrown
 
-!following is used to turn on stratospheric renaming for accumulation to coarse mode aerosol. 
-!included to represent rapid growth of sulfate aerosol following volcanic eruption
+!following is used to turn on stratospheric renaming for accumulation to coarse
+!mode aerosol. 
+!included to represent rapid growth of sulfate aerosol following volcanic
+!eruption
 #if ( defined CLDERA_STRAT_VOLC )
   logical :: strat_accum_coarse_rename = .true.
 #else
@@ -1581,6 +1603,10 @@ main_jsub_loop: &
       integer, parameter :: ntot_poaspec = npoa
       integer, parameter :: ntot_soaspec = nsoa
 
+!++hybrown
+      integer  :: ispec
+!--hybrown
+
       integer :: iaer, igas, ip
       integer :: jtsubstep
       integer :: ll
@@ -1640,8 +1666,12 @@ main_jsub_loop: &
          qwtr_cur
 
       real(r8) :: aircon                           ! air molar density (kmol/m3)
-      real(r8) :: del_h2so4_gasprod
-      real(r8) :: del_h2so4_aeruptk
+!++hybrown
+!      real(r8) :: del_h2so4_gasprod
+!      real(r8) :: del_h2so4_aeruptk
+      real(r8) :: del_h2so4_gasprod(nso4)
+      real(r8) :: del_h2so4_aeruptk(nso4)
+!--hybrown
       real(r8) :: dnclusterdt
       real(r8) :: dtsubstep                        ! time sub-step
       real(r8) :: gas_diffus(max_gas)              ! gas diffusivity at current temp and pres (m2/s)
@@ -1669,14 +1699,25 @@ main_jsub_loop: &
       if ( ( do_cond                         ) .and. &
            ( gaexch_h2so4_uptake_optaa == 2 ) ) then
          do igas = 1, ngas
-            if ((igas == igas_h2so4) .or. (igas == igas_nh3)) then
-! if gaexch_h2so4_uptake_optaa == 2, then
-!    if qgas increases from pre-gaschem to post-cldchem,
-!       start from the pre-gaschem mix-ratio and add in the production
-!       during the integration
-!    if it decreases, 
-!       start from post-cldchem mix-ratio
-! *** currently just do this for h2so4 and nh3
+!++hybrown
+!            if ((igas == igas_h2so4) .or. (igas == igas_nh3)) then
+!! if gaexch_h2so4_uptake_optaa == 2, then
+!!    if qgas increases from pre-gaschem to post-cldchem,
+!!       start from the pre-gaschem mix-ratio and add in the production
+!!       during the integration
+!!    if it decreases, 
+!!       start from post-cldchem mix-ratio
+!! *** currently just do this for h2so4 and nh3
+!               qgas_netprod_otrproc(igas) = (qgas3(igas) - qgas1(igas))/deltat
+!               if ( qgas_netprod_otrproc(igas) >= 0.0_r8 ) then
+!                  qgas_cur(igas) = qgas1(igas)
+!               else
+!                  qgas_netprod_otrproc(igas) = 0.0_r8
+!               end if
+!            end if
+            do ispec = 1, nso4
+!            write(iulog,*)'hybrown, modal_aero_amicphys->cloudy subarea do loop, ispec = ',ispec,' nso4 = ',nso4,' igas_h2so4 = ',igas_h2so4
+            if (igas == igas_h2so4(ispec)) then
                qgas_netprod_otrproc(igas) = (qgas3(igas) - qgas1(igas))/deltat
                if ( qgas_netprod_otrproc(igas) >= 0.0_r8 ) then
                   qgas_cur(igas) = qgas1(igas)
@@ -1684,9 +1725,19 @@ main_jsub_loop: &
                   qgas_netprod_otrproc(igas) = 0.0_r8
                end if
             end if
+            if (igas == igas_nh3) then
+               qgas_netprod_otrproc(igas) = (qgas3(igas) - qgas1(igas))/deltat
+               if ( qgas_netprod_otrproc(igas) >= 0.0_r8 ) then
+                  qgas_cur(igas) = qgas1(igas)
+               else
+                  qgas_netprod_otrproc(igas) = 0.0_r8
+               end if
+            end if
+            end do !ispec
+!--hybrown
          end do ! igas
       end if
-
+      
 
       qgas_del_cond = 0.0_r8
       qgas_del_nnuc = 0.0_r8
@@ -1714,7 +1765,12 @@ main_jsub_loop: &
       dtsubstep = deltat
       if (ntsubstep > 1) dtsubstep = deltat/ntsubstep
 
-      del_h2so4_gasprod = max( qgas3(igas_h2so4)-qgas1(igas_h2so4), 0.0_r8 )/ntsubstep
+!++hybrown
+!      del_h2so4_gasprod = max( qgas3(igas_h2so4)-qgas1(igas_h2so4), 0.0_r8 )/ntsubstep
+      do ispec = 1, nso4
+         del_h2so4_gasprod(ispec) = max( qgas3(igas_h2so4(ispec))-qgas1(igas_h2so4(ispec)), 0.0_r8 )/ntsubstep
+      end do
+!--hybrown
 
 !
 !
@@ -1770,11 +1826,25 @@ do_cond_if_block10: &
       end if
 #endif
 
+!++hybrown
+! newnuc_h2so4_conc_optaa == 2 in this code
+
+!      if (newnuc_h2so4_conc_optaa == 11) then
+!         qgas_avg(igas_h2so4) = 0.5_r8*(qgas_sv1(igas_h2so4) + qgas_cur(igas_h2so4))
+!      else if (newnuc_h2so4_conc_optaa == 12) then
+!         qgas_avg(igas_h2so4) = qgas_cur(igas_h2so4)
+!      end if
+
       if (newnuc_h2so4_conc_optaa == 11) then
-         qgas_avg(igas_h2so4) = 0.5_r8*(qgas_sv1(igas_h2so4) + qgas_cur(igas_h2so4))
+         do ispec = 1, nso4
+            qgas_avg(igas_h2so4(ispec)) = 0.5_r8*(qgas_sv1(igas_h2so4(ispec)) + qgas_cur(igas_h2so4(ispec)))
+         end do
       else if (newnuc_h2so4_conc_optaa == 12) then
-         qgas_avg(igas_h2so4) = qgas_cur(igas_h2so4)
+         do ispec = 1, nso4
+            qgas_avg(igas_h2so4(ispec)) = qgas_cur(igas_h2so4(ispec))
+         end do
       end if
+!--hybrown
 
       qgas_del_cond = qgas_del_cond + (qgas_cur - (qgas_sv1 + qgas_netprod_otrproc*dtsubstep))
       qnum_delsub_cond = qnum_cur - qnum_sv1
@@ -1782,16 +1852,25 @@ do_cond_if_block10: &
 ! qaer_delsub_grow4rnam = change in qaer_del_cond during latest condensation calculations
       qaer_delsub_grow4rnam = qaer_cur - qaer_sv1
 
-      del_h2so4_aeruptk = qgas_cur(igas_h2so4) &
-                       - (qgas_sv1(igas_h2so4) + qgas_netprod_otrproc(igas_h2so4)*dtsubstep)
+!++hybrown
+!      del_h2so4_aeruptk = qgas_cur(igas_h2so4) &
+!                       - (qgas_sv1(igas_h2so4) + qgas_netprod_otrproc(igas_h2so4)*dtsubstep)
+      do ispec = 1, nso4
+         del_h2so4_aeruptk(ispec) = qgas_cur(igas_h2so4(ispec)) &
+                          - (qgas_sv1(igas_h2so4(ispec)) + qgas_netprod_otrproc(igas_h2so4(ispec))*dtsubstep)
+      end do
+!--hybrown
 
       else ! do_cond_if_block10
 
       qgas_avg(1:ngas) = qgas_cur(1:ngas)
       qaer_delsub_grow4rnam(:,:) = 0.0_r8
 
-      del_h2so4_aeruptk = 0.0_r8
-
+!++hybrown
+!      del_h2so4_aeruptk = 0.0_r8
+      del_h2so4_aeruptk(:) = 0.0_r8
+!--hybrown
+ 
       end if do_cond_if_block10
 
 
@@ -2026,6 +2105,10 @@ do_rename_if_block30: &
       integer, parameter :: ntot_poaspec = npoa
       integer, parameter :: ntot_soaspec = nsoa
 
+!++hybrown
+      integer  :: ispec
+!--hybrown
+
       integer :: iaer, igas, ip
       integer :: jtsubstep
       integer :: ll
@@ -2074,8 +2157,12 @@ do_rename_if_block30: &
          qwtr_cur
 
       real(r8) :: aircon                           ! air molar density (kmol/m3)
-      real(r8) :: del_h2so4_gasprod
-      real(r8) :: del_h2so4_aeruptk
+!++hybrown
+!      real(r8) :: del_h2so4_gasprod
+!      real(r8) :: del_h2so4_aeruptk
+      real(r8) :: del_h2so4_gasprod(nso4)
+      real(r8) :: del_h2so4_aeruptk(nso4)
+!--hybrown
       real(r8) :: dnclusterdt, dnclusterdt_substep
       real(r8) :: dtsubstep                        ! time sub-step
       real(r8) :: gas_diffus(max_gas)              ! gas diffusivity at current temp and pres (m2/s)
@@ -2100,14 +2187,25 @@ do_rename_if_block30: &
       if ( ( do_cond                         ) .and. &
            ( gaexch_h2so4_uptake_optaa == 2 ) ) then
          do igas = 1, ngas
-            if ((igas == igas_h2so4) .or. (igas == igas_nh3)) then
-! if gaexch_h2so4_uptake_optaa == 2, then
-!    if qgas increases from pre-gaschem to post-cldchem,
-!       start from the pre-gaschem mix-ratio and add in the production
-!       during the integration
-!    if it decreases, 
-!       start from post-cldchem mix-ratio
-! *** currently just do this for h2so4 and nh3
+!++hybrown
+!            if ((igas == igas_h2so4) .or. (igas == igas_nh3)) then
+!! if gaexch_h2so4_uptake_optaa == 2, then
+!!    if qgas increases from pre-gaschem to post-cldchem,
+!!       start from the pre-gaschem mix-ratio and add in the production
+!!       during the integration
+!!    if it decreases, 
+!!       start from post-cldchem mix-ratio
+!! *** currently just do this for h2so4 and nh3
+!               qgas_netprod_otrproc(igas) = (qgas3(igas) - qgas1(igas))/deltat
+!               if ( qgas_netprod_otrproc(igas) >= 0.0_r8 ) then
+!                  qgas_cur(igas) = qgas1(igas)
+!               else
+!                  qgas_netprod_otrproc(igas) = 0.0_r8
+!               end if
+!            end if
+            do ispec = 1, nso4
+!            write(iulog,*)'hybrown, modal_aero_amicphys->clear subarea do loop, ispec = ',ispec,' nso4 = ',nso4,' igas_h2so4 = ',igas_h2so4
+            if (igas == igas_h2so4(ispec)) then
                qgas_netprod_otrproc(igas) = (qgas3(igas) - qgas1(igas))/deltat
                if ( qgas_netprod_otrproc(igas) >= 0.0_r8 ) then
                   qgas_cur(igas) = qgas1(igas)
@@ -2115,8 +2213,19 @@ do_rename_if_block30: &
                   qgas_netprod_otrproc(igas) = 0.0_r8
                end if
             end if
+            end do
+            if (igas == igas_nh3) then
+               qgas_netprod_otrproc(igas) = (qgas3(igas) - qgas1(igas))/deltat
+               if ( qgas_netprod_otrproc(igas) >= 0.0_r8 ) then
+                  qgas_cur(igas) = qgas1(igas)
+               else
+                  qgas_netprod_otrproc(igas) = 0.0_r8
+               end if
+            end if
+!--hybrown
          end do ! igas
       end if
+
 
       qgas_del_cond = 0.0_r8
       qgas_del_nnuc = 0.0_r8
@@ -2143,8 +2252,12 @@ do_rename_if_block30: &
       dtsubstep = deltat
       if (ntsubstep > 1) dtsubstep = deltat/ntsubstep
 
-      del_h2so4_gasprod = max( qgas3(igas_h2so4)-qgas1(igas_h2so4), 0.0_r8 )/ntsubstep
-
+!++hybrown
+!      del_h2so4_gasprod = max( qgas3(igas_h2so4)-qgas1(igas_h2so4), 0.0_r8 )/ntsubstep
+      do ispec = 1, nso4
+         del_h2so4_gasprod(ispec) = max( qgas3(igas_h2so4(ispec))-qgas1(igas_h2so4(ispec)), 0.0_r8 )/ntsubstep
+      end do
+!--hybrown
 !
 !
 ! loop over multiple time sub-steps
@@ -2198,11 +2311,24 @@ do_cond_if_block10: &
       end if
 #endif
          
+!++hybrown
+! newnuc_h2so4_conc_optaa == 2 in this code
+!      if (newnuc_h2so4_conc_optaa == 11) then
+!         qgas_avg(igas_h2so4) = 0.5_r8*(qgas_sv1(igas_h2so4) + qgas_cur(igas_h2so4))
+!      else if (newnuc_h2so4_conc_optaa == 12) then
+!         qgas_avg(igas_h2so4) = qgas_cur(igas_h2so4)
+!      end if
+
       if (newnuc_h2so4_conc_optaa == 11) then
-         qgas_avg(igas_h2so4) = 0.5_r8*(qgas_sv1(igas_h2so4) + qgas_cur(igas_h2so4))
+         do ispec = 1, nso4
+            qgas_avg(igas_h2so4(ispec)) = 0.5_r8*(qgas_sv1(igas_h2so4(ispec)) + qgas_cur(igas_h2so4(ispec)))
+         end do
       else if (newnuc_h2so4_conc_optaa == 12) then
-         qgas_avg(igas_h2so4) = qgas_cur(igas_h2so4)
+         do ispec = 1, nso4
+            qgas_avg(igas_h2so4(ispec)) = qgas_cur(igas_h2so4(ispec))
+         end do
       end if
+!--hybrown
 
       qgas_del_cond = qgas_del_cond + (qgas_cur - (qgas_sv1 + qgas_netprod_otrproc*dtsubstep))
       qnum_delsub_cond = qnum_cur - qnum_sv1
@@ -2210,16 +2336,23 @@ do_cond_if_block10: &
 ! qaer_del_grow4rnam = change in qaer_del_cond during latest condensation calculations
       qaer_delsub_grow4rnam = qaer_cur - qaer_sv1
 
-      del_h2so4_aeruptk = qgas_cur(igas_h2so4) &
-                       - (qgas_sv1(igas_h2so4) + qgas_netprod_otrproc(igas_h2so4)*dtsubstep)
-
+!++hybrown
+!      del_h2so4_aeruptk = qgas_cur(igas_h2so4) &
+!                       - (qgas_sv1(igas_h2so4) + qgas_netprod_otrproc(igas_h2so4)*dtsubstep)
+      do ispec = 1, nso4
+         del_h2so4_aeruptk(ispec) = qgas_cur(igas_h2so4(ispec)) &
+                          - (qgas_sv1(igas_h2so4(ispec)) + qgas_netprod_otrproc(igas_h2so4(ispec))*dtsubstep)
+      end do
+!--hybrown
       else ! do_cond_if_block10
 
       qgas_avg(1:ngas) = qgas_cur(1:ngas)
       qaer_delsub_grow4rnam(:,:) = 0.0_r8
 
-      del_h2so4_aeruptk = 0.0_r8
-
+!++hybrown
+!      del_h2so4_aeruptk = 0.0_r8
+      del_h2so4_aeruptk(:) = 0.0_r8
+!--hybrown
       end if do_cond_if_block10
 
 
@@ -3125,6 +3258,9 @@ do_newnuc_if_block50: &
       real(r8) :: tmp_qdel_cond
       real(r8) :: uptkrate(max_mode)
 
+!++hybrown
+      integer  :: ispec
+!--hybrown
 
       qgas_avg(1:ngas) = 0.0_r8
 
@@ -3163,10 +3299,20 @@ do_newnuc_if_block50: &
 
       do igas = 1, ngas
          ! use cam5.1.00 uptake rates
-         if (igas <= nsoa    ) uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4,1:ntot_amode)*0.81
-         if (igas == igas_nh3) uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4,1:ntot_amode)*2.08
+!++hybrown
+!         if (igas <= nsoa    ) uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4,1:ntot_amode)*0.81
+!         if (igas == igas_nh3) uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4,1:ntot_amode)*2.08
+         if (igas <= nsoa    ) uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4(1),1:ntot_amode)*0.81
+         if (igas == igas_nh3) uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4(1),1:ntot_amode)*2.08
+!--hybrown
       end do ! igas
-      uptkrate_h2so4 = sum( uptkaer(igas_h2so4,1:ntot_amode) )
+!++hybrown
+!      uptkrate_h2so4 = sum( uptkaer(igas_h2so4,1:ntot_amode) )
+      uptkrate_h2so4 = 0.0_r8
+      do ispec = 1, nso4
+         uptkrate_h2so4 = uptkrate_h2so4 + sum( uptkaer(igas_h2so4(ispec),1:ntot_amode) )
+      end do
+!--hybrown
 
 #if ( defined( CAMBOX_ACTIVATE_THIS ) )
       if ( k == pver .and. ldiagd1 ) write(lund,'(a,2i4,1p,10e11.3)') 'i,k,h2so4_uprt', i, k, uptkaer(igas_h2so4,1:ntot_amode)
@@ -3271,7 +3417,12 @@ do_newnuc_if_block50: &
          iaer = iaer_nh4 ; igas = igas_nh3
          do n = 1, n_mode
             if (uptkaer(igas,n) <= 0.0_r8) cycle
-            tmpa = qaer_cur(iaer,n) - 2.0_r8*qaer_cur(iaer_so4,n)
+!++hybrown
+!            tmpa = qaer_cur(iaer,n) - 2.0_r8*qaer_cur(iaer_so4,n)
+            do ispec = 1, nso4
+               tmpa = qaer_cur(iaer,n) - 2.0_r8*qaer_cur(iaer_so4(ispec),n)
+            end do
+!--hybrown
             if (tmpa > 0.0_r8) then
                qaer_cur(iaer,n) = qaer_cur(iaer,n) - tmpa
                qgas_cur(igas)   = qgas_cur(igas)   + tmpa
@@ -3495,7 +3646,10 @@ time_loop: &
          if ( skip_soamode(n) ) cycle
          a_opoa(n) = 0.0_r8
          do ll = 1, ntot_poaspec
-            a_opoa(n) = a_opoa(n) + opoa_frac(ll,n) * max( qaer_prv(iaer_pom+ll-1,n), 0.0_r8 )
+!++hybrown
+!            a_opoa(n) = a_opoa(n) + opoa_frac(ll,n) * max( qaer_prv(iaer_pom+ll-1,n), 0.0_r8 )
+            a_opoa(n) = a_opoa(n) + opoa_frac(ll,n) * max( qaer_prv(iaer_pom(1)+ll-1,n), 0.0_r8 )
+!--hybrown
          end do
       end do
 
@@ -4010,9 +4164,12 @@ mainloop1_ipair:  do n = 1, ntot_amode
       real(r8), intent(in) :: pblh             ! pbl height (m)
       real(r8), intent(in) :: relhum           ! relative humidity (0-1)
       real(r8), intent(in) :: uptkrate_h2so4
-      real(r8), intent(in) :: del_h2so4_gasprod
-      real(r8), intent(in) :: del_h2so4_aeruptk
-
+!++hybrown
+!      real(r8), intent(in) :: del_h2so4_gasprod
+!      real(r8), intent(in) :: del_h2so4_aeruptk
+      real(r8), intent(in) :: del_h2so4_gasprod(nso4)
+      real(r8), intent(in) :: del_h2so4_aeruptk(nso4)
+!--hybrown
       real(r8), intent(inout) :: dnclusterdt   ! cluster nucleation rate (#/m3/s)
 
       real(r8), intent(inout), dimension( 1:max_gas ) :: &
@@ -4069,17 +4226,29 @@ mainloop1_ipair:  do n = 1, ntot_amode
       real(r8) :: tmpa, tmpb, tmpc
       real(r8) :: tmp_q2, tmp_q3
       real(r8) :: tmp_q_del
+!++hybrown
+      real(r8) :: frac_to_j, tmp_q_del2
+!--hybrown
       real(r8) :: tmp_frso4, tmp_uptkrate
 
       character(len=1) :: tmpch1, tmpch2, tmpch3
 
+!++hybrown
+      integer  :: ispec
+!--hybrown
 
 ! begin
       dnclusterdt = 0.0_r8
 
 ! qh2so4_cur = current qh2so4, after aeruptk
 ! qh2so4_avg = average qh2so4 over time-step
-      qh2so4_cur = qgas_cur(igas_h2so4)
+!++hybrown
+!      qh2so4_cur = qgas_cur(igas_h2so4)
+      qh2so4_cur = 0.0_r8
+      do ispec = 1, nso4
+         qh2so4_cur = qh2so4_cur + qgas_cur(igas_h2so4(ispec))
+      end do
+!--hybrown
 
       if ( (gaexch_h2so4_uptake_optaa == 1) .and. &
            (newnuc_h2so4_conc_optaa   == 1) ) then
@@ -4088,12 +4257,17 @@ mainloop1_ipair:  do n = 1, ntot_amode
          ! skip if h2so4 vapor < qh2so4_cutoff
          if (qh2so4_cur <= qh2so4_cutoff) goto 80000
 
-         tmpa = max( 0.0_r8, del_h2so4_gasprod )
+!++hybrown
+!         tmpa = max( 0.0_r8, del_h2so4_gasprod )
+         tmpa = max( 0.0_r8, sum(del_h2so4_gasprod(:)) )
+!--hybrown
          tmp_q3 = qh2so4_cur
          ! tmp_q2 = qh2so4 before aeruptk
          ! (note tmp_q3, tmp_q2 both >= 0.0)
-         tmp_q2 = tmp_q3 + max( 0.0_r8, -del_h2so4_aeruptk )
-
+!++hybrown
+!         tmp_q2 = tmp_q3 + max( 0.0_r8, -del_h2so4_aeruptk )
+         tmp_q2 = tmp_q3 + max( 0.0_r8, -sum(del_h2so4_aeruptk(:)) )
+!--hybrown
          ! tmpb = log( tmp_q2/tmp_q3 ) BUT with some checks added
          if (tmp_q2 <= tmp_q3) then
             tmpb = 0.0_r8
@@ -4119,7 +4293,13 @@ mainloop1_ipair:  do n = 1, ntot_amode
          end if
       else
 ! use qh2so4_avg and first-order loss rate calculated in mam_gasaerexch_1subarea
-         qh2so4_avg = qgas_avg(igas_h2so4)
+!++hybrown
+!         qh2so4_avg = qgas_avg(igas_h2so4)
+         qh2so4_avg = 0.0_r8
+         do ispec = 1, nso4
+            qh2so4_avg = qh2so4_avg + qgas_avg(igas_h2so4(ispec))
+         end do
+!--hybrown
          tmp_uptkrate = uptkrate_h2so4
       end if
 
@@ -4295,13 +4475,35 @@ mainloop1_ipair:  do n = 1, ntot_amode
       dso4dt_ait = dmdt_ait*tmp_frso4/mw_so4a_host
       dnh4dt_ait = dmdt_ait*(1.0_r8 - tmp_frso4)/mw_nh4a_host
 
+!++hybrown
+!      if (dso4dt_ait > 0.0_r8) then
+!         tmp_q_del = dso4dt_ait*deltat
+!         qaer_cur(     iaer_so4,nait) = qaer_cur(     iaer_so4,nait) + tmp_q_del
+
+!         tmp_q_del = min( tmp_q_del, qgas_cur(igas_h2so4) )
+!         qgas_cur(     igas_h2so4) = qgas_cur(     igas_h2so4) - tmp_q_del
+!      end if
+
+!   partition the gas h2so4 loss and aitken so4 gain to the various tagged jso4
+!   since most of the dso4dt_ait comes from growing the
+!       fresh particles from 1 nm to aitken size, the partitioning
+!       is based on the contributions of each tagged jso4 to qh2so4_cur
+!       (as opposed to their contributions to qh2so4_avg)
+
       if (dso4dt_ait > 0.0_r8) then
          tmp_q_del = dso4dt_ait*deltat
-         qaer_cur(     iaer_so4,nait) = qaer_cur(     iaer_so4,nait) + tmp_q_del
+         do ispec = 1, nso4
 
-         tmp_q_del = min( tmp_q_del, qgas_cur(igas_h2so4) )
-         qgas_cur(     igas_h2so4) = qgas_cur(     igas_h2so4) - tmp_q_del
+                frac_to_j = max( 0.0_r8, qgas_cur(igas_h2so4(ispec)) ) / qh2so4_cur
+
+            tmp_q_del2 = tmp_q_del*frac_to_j
+            qaer_cur(iaer_so4(ispec),nait) = qaer_cur(iaer_so4(ispec),nait) + tmp_q_del2
+
+            tmp_q_del2 = min( tmp_q_del2, qgas_cur(igas_h2so4(ispec)) )
+            qgas_cur(igas_h2so4(ispec)) = qgas_cur(igas_h2so4(ispec)) - tmp_q_del2
+         end do
       end if
+!--hybrown
 
       if ((igas_nh3 > 0) .and. (dnh4dt_ait > 0.0_r8)) then
          tmp_q_del = dnh4dt_ait*deltat
@@ -4874,6 +5076,9 @@ mainloop1_ipair:  do n = 1, ntot_amode
       real(r8) :: vol_core, vol_shell
       real(r8) :: xferfrac_max, xferfrac_pcage
 
+!++hybrown
+      integer  :: ispec
+!--hybrown
 
 ! 
 agepair_loop1: &
@@ -4882,9 +5087,20 @@ agepair_loop1: &
       nfrm = modefrm_agepair(ipair)
       ntoo = modetoo_agepair(ipair)
 
-      vol_shell = qaer_cur(iaer_so4,nfrm)*fac_m2v_aer(iaer_so4)
-      tmp3 = qaer_del_cond(iaer_so4,nfrm)  *fac_m2v_aer(iaer_so4)
-      tmp4 = qaer_del_coag_in(iaer_so4,ipair)*fac_m2v_aer(iaer_so4)
+!++hybrown
+!      vol_shell = qaer_cur(iaer_so4,nfrm)*fac_m2v_aer(iaer_so4)
+!      tmp3 = qaer_del_cond(iaer_so4,nfrm)  *fac_m2v_aer(iaer_so4)
+!      tmp4 = qaer_del_coag_in(iaer_so4,ipair)*fac_m2v_aer(iaer_so4)
+
+      vol_shell = 0.0_r8
+      tmp3 = 0.0_r8
+      tmp4 = 0.0_r8
+      do ispec = 1, nso4
+         vol_shell = vol_shell + qaer_cur(iaer_so4(ispec),nfrm)*fac_m2v_aer(iaer_so4(ispec))
+         tmp3 = tmp3 + qaer_del_cond(iaer_so4(ispec),nfrm)*fac_m2v_aer(iaer_so4(ispec))
+         tmp4 = tmp4 + qaer_del_coag_in(iaer_so4(ispec),ipair)*fac_m2v_aer(iaer_so4(ispec))
+      end do
+!--hybrown
 
       do iaer = 1, naer
 !     species that contribute to aging are 
@@ -5194,7 +5410,10 @@ implicit none
    integer  :: j, jac, jsoa
    integer  :: l, l1, l2, lac
    integer  :: lmz, lmz2, loffset
-   integer  :: l_so4g, l_nh4g, l_msag
+!++hybrown
+!   integer  :: l_so4g, l_nh4g, l_msag
+   integer  :: l_so4g(nso4), l_nh4g, l_msag
+!--hybrown
    integer  :: m
    integer  :: n, na, nb, nc
    integer  :: nspec
@@ -5204,6 +5423,13 @@ implicit none
    character(len=fieldname_len)   :: tmpnamea, tmpnameb
    character(128)                 :: msg, fmtaa
    character(2)                   :: tmpch2
+
+!++hybrown
+  character(len=2) :: tagged_sulfur_suffix(30) = (/ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', &
+                                                     '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', &
+                                                     '21', '22', '23', '24', '25', '26', '27', '28', '29', '30'/)
+   integer :: tag_loop
+!--hybrown
 
    !-----------------------------------------------------------------------
  
@@ -5244,45 +5470,95 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       name_num    = "???"
       name_numcw  = "???"
 
-      igas_h2so4 = 0 ; igas_nh3 = 0
-      iaer_bc  = 0 ; iaer_dst = 0 
-      iaer_ncl = 0 ; iaer_nh4 = 0 
-      iaer_pom = 0 ; iaer_soa = 0 
-      iaer_so4 = 0
+!++hybrown
+!      igas_h2so4 = 0 ; igas_nh3 = 0
+!      iaer_bc  = 0 ; iaer_dst = 0 
+!      iaer_ncl = 0 ; iaer_nh4 = 0 
+!      iaer_pom = 0 ; iaer_soa = 0 
+!      iaer_so4 = 0
+
+      igas_h2so4(1:nso4) = 0 ; igas_nh3 = 0
+      iaer_bc(1:nbc)  = 0 ; iaer_dst = 0
+      iaer_ncl = 0 ; iaer_nh4 = 0
+      iaer_pom(1:npoa) = 0 ; iaer_soa(1:nsoa) = 0
+      iaer_so4(1:nso4) = 0
+!--hybrown
       iaer_no3 = 0 ; iaer_cl  = 0 
       iaer_ca  = 0 ; iaer_co3 = 0 
       iaer_mpoly = 0 ; iaer_mprot = 0 
       iaer_mlip  = 0 ; iaer_mhum = 0 
       iaer_mproc = 0 ; iaer_mom = 0
 
-      if (nsoa == 1) then
-         name_gas(1) = 'SOAG'
-         name_aerpfx(1) = 'soa'
-      else if (nsoa == 2) then
-         jsoa =      1 ; name_gas(jsoa) = 'SOAGa'  ; name_aerpfx(jsoa) = 'soaa'  ! jsoa=1
-         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGb'  ; name_aerpfx(jsoa) = 'soab'  ! jsoa=2
-      else if (nsoa == 6) then
-         jsoa =      1 ; name_gas(jsoa) = 'SOAGa1' ; name_aerpfx(jsoa) = 'soaa1' ! jsoa=1
-         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGa2' ; name_aerpfx(jsoa) = 'soaa2' ! jsoa=2
-         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGa3' ; name_aerpfx(jsoa) = 'soaa3' ! jsoa=3
-         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGb1' ; name_aerpfx(jsoa) = 'soab1' ! jsoa=4
-         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGb2' ; name_aerpfx(jsoa) = 'soab2' ! jsoa=5
-         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGb3' ; name_aerpfx(jsoa) = 'soab3' ! jsoa=6
-      else
-         call endrun( 'modal_aero_amicphys_init ERROR - bad nsoa' )
+!++hybrown
+!      if (nsoa == 1) then
+!         name_gas(1) = 'SOAG'
+!         name_aerpfx(1) = 'soa'
+!      else if (nsoa == 2) then
+!         jsoa =      1 ; name_gas(jsoa) = 'SOAGa'  ; name_aerpfx(jsoa) = 'soaa'  ! jsoa=1
+!         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGb'  ; name_aerpfx(jsoa) = 'soab'  ! jsoa=2
+!      else if (nsoa == 6) then
+!         jsoa =      1 ; name_gas(jsoa) = 'SOAGa1' ; name_aerpfx(jsoa) = 'soaa1' ! jsoa=1
+!         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGa2' ; name_aerpfx(jsoa) = 'soaa2' ! jsoa=2
+!         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGa3' ; name_aerpfx(jsoa) = 'soaa3' ! jsoa=3
+!         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGb1' ; name_aerpfx(jsoa) = 'soab1' ! jsoa=4
+!         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGb2' ; name_aerpfx(jsoa) = 'soab2' ! jsoa=5
+!         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGb3' ; name_aerpfx(jsoa) = 'soab3' ! jsoa=6
+!      else
+!         call endrun( 'modal_aero_amicphys_init ERROR - bad nsoa' )
+!      end if
+!      ngas = nsoa
+!      naer = nsoa
+!      igas_soa = 1
+!      iaer_soa = 1
+
+      ngas = 0
+      naer = 0
+
+      if (nsoa==1) then
+         ngas = ngas + 1
+         naer = naer + 1
+         name_gas(ngas) = 'SOAG'
+         name_aerpfx(naer) = 'soa'
+         igas_soa = ngas
+         iaer_soa = naer
+      else if (nsoa>1) then
+         do tag_loop = 1,nsoa
+            ngas = ngas + 1
+            naer = naer + 1
+            name_gas(ngas) = 'SOAG'//tagged_sulfur_suffix(tag_loop)
+            name_aerpfx(naer) = 'soa'//tagged_sulfur_suffix(tag_loop)
+            igas_soa(tag_loop) = ngas
+            iaer_soa(tag_loop) = naer
+         end do
       end if
-      ngas = nsoa
-      naer = nsoa
-      igas_soa = 1
-      iaer_soa = 1
+!--hybrown
 
-      ngas = ngas + 1
-      name_gas(ngas) = 'H2SO4'
-      naer = naer + 1
-      name_aerpfx(naer) = 'so4'
-      igas_h2so4 = ngas
-      iaer_so4 = naer
+!++hybrown
+!      ngas = ngas + 1
+!      name_gas(ngas) = 'H2SO4'
+!      naer = naer + 1
+!      name_aerpfx(naer) = 'so4'
+!      igas_h2so4 = ngas
+!      iaer_so4 = naer
 
+      if (nso4==1) then
+         ngas = ngas + 1
+         naer = naer + 1
+         name_gas(ngas) = 'H2SO4'
+         name_aerpfx(naer) = 'so4'
+         igas_h2so4 = ngas
+         iaer_so4 = naer
+      else if (nso4>1) then
+         do tag_loop = 1,nso4
+            ngas = ngas + 1
+            naer = naer + 1
+            name_gas(ngas) = 'H2SO4'//tagged_sulfur_suffix(tag_loop)
+            name_aerpfx(naer) = 'so4'//tagged_sulfur_suffix(tag_loop)
+            igas_h2so4(tag_loop) = ngas
+            iaer_so4(tag_loop) = naer
+         end do
+      end if
+!--hybrown
       if ( (ntot_amode==7) .or. &
            (ntot_amode==8) .or. &
            (ntot_amode==9) ) then
@@ -5310,31 +5586,59 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       iaer_cl = naer
 #endif
 
-      iaer_pom = naer + 1
-      if (npoa == 1) then
+!++hybrown
+!      iaer_pom = naer + 1
+!      if (npoa == 1) then
+!         naer = naer + 1
+!         name_aerpfx(naer) = 'pom'
+!      else if (npoa == 2) then
+!         naer = naer + 1
+!         name_aerpfx(naer) = 'poma'
+!         naer = naer + 1
+!         name_aerpfx(naer) = 'pomb'
+!      else
+!         call endrun( 'modal_aero_amicphys_init ERROR - bad npoa' )
+!      end if
+
+      if (npoa==1) then
          naer = naer + 1
          name_aerpfx(naer) = 'pom'
-      else if (npoa == 2) then
-         naer = naer + 1
-         name_aerpfx(naer) = 'poma'
-         naer = naer + 1
-         name_aerpfx(naer) = 'pomb'
-      else
-         call endrun( 'modal_aero_amicphys_init ERROR - bad npoa' )
+         iaer_pom = naer
+      else if (npoa>1) then
+         do tag_loop = 1,npoa
+            naer = naer + 1
+            name_aerpfx(naer) = 'pom'//tagged_sulfur_suffix(tag_loop)
+            iaer_pom(tag_loop) = naer
+         end do
       end if
+!--hybrown
 
-      iaer_bc = naer + 1
-      if (nbc == 1) then
+!++hybrown
+!      iaer_bc = naer + 1
+!      if (nbc == 1) then
+!         naer = naer + 1
+!         name_aerpfx(naer) = 'bc'
+!      else if (nbc == 2) then
+!         naer = naer + 1
+!         name_aerpfx(naer) = 'bca'
+!         naer = naer + 1
+!         name_aerpfx(naer) = 'bcb'
+!      else
+!         call endrun( 'modal_aero_amicphys_init ERROR - bad nbc' )
+!      end if
+
+      if (nbc==1) then
          naer = naer + 1
          name_aerpfx(naer) = 'bc'
-      else if (nbc == 2) then
-         naer = naer + 1
-         name_aerpfx(naer) = 'bca'
-         naer = naer + 1
-         name_aerpfx(naer) = 'bcb'
-      else
-         call endrun( 'modal_aero_amicphys_init ERROR - bad nbc' )
+         iaer_bc = naer
+      else if (nbc>1) then
+         do tag_loop = 1,nbc
+            naer = naer + 1
+            name_aerpfx(naer) = 'bc'//tagged_sulfur_suffix(tag_loop)
+            iaer_bc(tag_loop) = naer
+         end do
       end if
+!--hybrown
 
       naer = naer + 1
       name_aerpfx(naer) = 'ncl'
@@ -5415,7 +5719,10 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
          fcvt_gas(igas) = mwhost_gas(igas)/mw_gas(igas)
 
          if (igas <= nsoa) then
-            vol_molar_gas(igas) = vol_molar_gas(igas_h2so4) * (mw_gas(igas)/98.0_r8)
+!++hybrown
+!            vol_molar_gas(igas) = vol_molar_gas(igas_h2so4) * (mw_gas(igas)/98.0_r8)
+            vol_molar_gas(igas) = vol_molar_gas(igas_h2so4(1)) * (mw_gas(igas)/98.0_r8)
+!--hybrown
          else if (igas == igas_nh3) then
             vol_molar_gas(igas) = 14.90_r8
          else if (igas == igas_hno3) then
@@ -5493,7 +5800,10 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
                mwhost_aer(iaer) = specmw2_amode(l1,n)
                mw_aer(iaer) = mwhost_aer(iaer)
 
-               itmpa = iaer - iaer_pom + 1
+!++hybrown
+!               itmpa = iaer - iaer_pom + 1
+               itmpa = iaer - iaer_pom(1) + 1
+!--hybrown
                if (iaer <= nsoa) then
                   mw_aer(iaer) = mwuse_soa(iaer)
                else if ((1 <= itmpa) .and. (itmpa <= npoa)) then
@@ -5526,7 +5836,10 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       end do ! n
 
       do iaer = 1, naer
-         fac_eqvso4hyg_aer(iaer) = hygro_aer(iaer)/hygro_aer(iaer_so4)
+!++hybrown
+!         fac_eqvso4hyg_aer(iaer) = hygro_aer(iaer)/hygro_aer(iaer_so4)
+         fac_eqvso4hyg_aer(iaer) = hygro_aer(iaer)/hygro_aer(iaer_so4(1))
+!--hybrown
          fac_m2v_eqvhyg_aer(iaer) = fac_m2v_aer(iaer) * fac_eqvso4hyg_aer(iaer)
       end do ! naer
 
@@ -5544,8 +5857,12 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       ! converts number geometric_mean diameter to volume-mean diameter
       fcvt_dgnum_dvolmean(1:max_mode) = exp( 1.5_r8*(alnsg_aer(1:max_mode)**2) )
 
-      dens_so4a_host = dens_aer(iaer_so4)
-      mw_so4a_host = mwhost_aer(iaer_so4)
+!++hybrown
+!      dens_so4a_host = dens_aer(iaer_so4)
+!      mw_so4a_host = mwhost_aer(iaer_so4)
+      dens_so4a_host = dens_aer(iaer_so4(1))
+      mw_so4a_host = mwhost_aer(iaer_so4(1))
+!--hybrown
       if (iaer_nh4 > 0) then
          mw_nh4a_host = mwhost_aer(iaer_nh4)
       else
@@ -5797,8 +6114,11 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
          do n = 1, ntot_amode
             lptr2_soa_a_amode(n,jsoa) = lptr_soa_a_amode(n)
          end do
-      else
-         call endrun( 'mam_set_lptr2_and_specxxx2 ERROR - expecting nsoa = 1' )
+!++hybrown
+!Done in modal_aero_initialize_data
+!      else
+!         call endrun( 'mam_set_lptr2_and_specxxx2 ERROR - expecting nsoa = 1' )
+!--hybrown
       end if
 
       do n = 1, ntot_amode
@@ -5853,6 +6173,9 @@ implicit none
    integer  :: lmz, lmza, lmzb, lmzc
    integer  :: m
    integer  :: n, na, nb, nc
+!++hybrown
+   integer  :: ispec
+!--hybrown
 
    real(r8) :: tmp1, tmp2
 
@@ -6070,7 +6393,12 @@ implicit none
       n = modeptr_aitken
       do igas = 1, ngas
          iok = 0
-         if (igas == igas_h2so4) iok = 1
+!++hybrown
+!         if (igas == igas_h2so4) iok = 1
+         do ispec=1,nso4
+            if (igas == igas_h2so4(ispec)) iok = 1
+         enddo
+!--hybrown
          if (igas == igas_nh3  ) iok = 1
          if (iok <= 0) cycle
          lmz = lmap_gas(igas)

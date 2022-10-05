@@ -51,7 +51,9 @@ public :: &
    rad_cnst_get_call_list        ! return list of active climate/diagnostic calls to radiation
 
 integer, parameter :: cs1 = 256
-integer, public, parameter :: N_DIAG = 10
+!++hybrown
+integer, public, parameter :: N_DIAG = 99
+!--hybrown
 character(len=cs1), public :: iceopticsfile, liqopticsfile
 character(len=32),  public :: icecldoptics,liqcldoptics
 logical,            public :: oldcldoptics = .false.
@@ -59,7 +61,9 @@ logical,            public :: oldcldoptics = .false.
 ! Private module data
 
 ! max number of strings in mode definitions
-integer, parameter :: n_mode_str = 100    ! max number of strings in mode definitions
+!++hybrown
+integer, parameter :: n_mode_str = 99999    ! max number of strings in mode definitions
+!--hybrown
 
 ! max number of externally mixed entities in the climate/diag lists
 integer, parameter :: n_rad_cnst = N_RAD_CNST
@@ -77,6 +81,97 @@ character(len=cs1) :: rad_diag_7(n_rad_cnst) = ' '
 character(len=cs1) :: rad_diag_8(n_rad_cnst) = ' '
 character(len=cs1) :: rad_diag_9(n_rad_cnst) = ' '
 character(len=cs1) :: rad_diag_10(n_rad_cnst) = ' '
+!++hybrown
+character(len=cs1) :: rad_diag_11(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_12(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_13(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_14(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_15(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_16(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_17(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_18(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_19(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_20(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_21(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_22(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_23(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_24(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_25(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_26(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_27(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_28(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_29(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_30(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_31(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_32(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_33(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_34(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_35(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_36(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_37(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_38(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_39(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_40(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_41(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_42(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_43(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_44(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_45(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_46(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_47(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_48(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_49(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_50(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_51(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_52(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_53(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_54(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_55(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_56(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_57(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_58(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_59(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_60(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_61(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_62(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_63(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_64(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_65(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_66(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_67(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_68(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_69(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_70(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_71(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_72(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_73(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_74(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_75(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_76(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_77(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_78(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_79(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_80(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_81(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_82(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_83(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_84(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_85(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_86(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_87(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_88(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_89(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_90(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_91(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_92(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_93(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_94(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_95(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_96(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_97(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_98(n_rad_cnst) = ' '
+character(len=cs1) :: rad_diag_99(n_rad_cnst) = ' '
+!--hybrown
 
 ! type to provide access to the components of a mode
 type :: mode_component_t
@@ -271,6 +366,97 @@ subroutine rad_cnst_readnl(nlfile)
                           rad_diag_8,    &
                           rad_diag_9,    &
                           rad_diag_10,   &
+!++hybrown
+                          rad_diag_11,    &
+                          rad_diag_12,    &
+                          rad_diag_13,    &
+                          rad_diag_14,    &
+                          rad_diag_15,    &
+                          rad_diag_16,    &
+                          rad_diag_17,    &
+                          rad_diag_18,    &
+                          rad_diag_19,    &
+                          rad_diag_20,   &
+                          rad_diag_21,    &
+                          rad_diag_22,    &
+                          rad_diag_23,    &
+                          rad_diag_24,    &
+                          rad_diag_25,    &
+                          rad_diag_26,    &
+                          rad_diag_27,    &
+                          rad_diag_28,    &
+                          rad_diag_29,    &
+                          rad_diag_30,   &
+                          rad_diag_31,    &
+                          rad_diag_32,    &
+                          rad_diag_33,    &
+                          rad_diag_34,    &
+                          rad_diag_35,    &
+                          rad_diag_36,    &
+                          rad_diag_37,    &
+                          rad_diag_38,    &
+                          rad_diag_39,    &
+                          rad_diag_40,   &
+                          rad_diag_41,    &
+                          rad_diag_42,    &
+                          rad_diag_43,    &
+                          rad_diag_44,    &
+                          rad_diag_45,    &
+                          rad_diag_46,    &
+                          rad_diag_47,    &
+                          rad_diag_48,    &
+                          rad_diag_49,    &
+                          rad_diag_50,   &
+                          rad_diag_51,    &
+                          rad_diag_52,    &
+                          rad_diag_53,    &
+                          rad_diag_54,    &
+                          rad_diag_55,    &
+                          rad_diag_56,    &
+                          rad_diag_57,    &
+                          rad_diag_58,    &
+                          rad_diag_59,    &
+                          rad_diag_60,   &
+                          rad_diag_61,    &
+                          rad_diag_62,    &
+                          rad_diag_63,    &
+                          rad_diag_64,    &
+                          rad_diag_65,    &
+                          rad_diag_66,    &
+                          rad_diag_67,    &
+                          rad_diag_68,    &
+                          rad_diag_69,    &
+                          rad_diag_70,   &
+                          rad_diag_71,    &
+                          rad_diag_72,    &
+                          rad_diag_73,    &
+                          rad_diag_74,    &
+                          rad_diag_75,    &
+                          rad_diag_76,    &
+                          rad_diag_77,    &
+                          rad_diag_78,    &
+                          rad_diag_79,    &
+                          rad_diag_80,   &
+                          rad_diag_81,    &
+                          rad_diag_82,    &
+                          rad_diag_83,    &
+                          rad_diag_84,    &
+                          rad_diag_85,    &
+                          rad_diag_86,    &
+                          rad_diag_87,    &
+                          rad_diag_88,    &
+                          rad_diag_89,    &
+                          rad_diag_90,   &
+                          rad_diag_91,    &
+                          rad_diag_92,    &
+                          rad_diag_93,    &
+                          rad_diag_94,    &
+                          rad_diag_95,    &
+                          rad_diag_96,    &
+                          rad_diag_97,    &
+                          rad_diag_98,    &
+                          rad_diag_99,    &
+!--hybrown
                           iceopticsfile, &
                           liqopticsfile, &
                           icecldoptics,  &
@@ -307,6 +493,97 @@ subroutine rad_cnst_readnl(nlfile)
    call mpibcast (rad_diag_8,    len(rad_diag_8(1))*n_rad_cnst,    mpichar, 0, mpicom)
    call mpibcast (rad_diag_9,    len(rad_diag_9(1))*n_rad_cnst,    mpichar, 0, mpicom)
    call mpibcast (rad_diag_10,   len(rad_diag_10(1))*n_rad_cnst,   mpichar, 0, mpicom)
+!++hybrown
+   call mpibcast (rad_diag_11,   len(rad_diag_11(1))*n_rad_cnst,   mpichar, 0,mpicom)
+   call mpibcast (rad_diag_12,   len(rad_diag_12(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_13,   len(rad_diag_13(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_14,   len(rad_diag_14(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_15,   len(rad_diag_15(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_16,   len(rad_diag_16(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_17,   len(rad_diag_17(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_18,   len(rad_diag_18(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_19,   len(rad_diag_19(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_20,   len(rad_diag_20(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_21,   len(rad_diag_21(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_22,   len(rad_diag_22(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_23,   len(rad_diag_23(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_24,   len(rad_diag_24(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_25,   len(rad_diag_25(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_26,   len(rad_diag_26(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_27,   len(rad_diag_27(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_28,   len(rad_diag_28(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_29,   len(rad_diag_29(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_30,   len(rad_diag_30(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_31,   len(rad_diag_31(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_32,   len(rad_diag_32(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_33,   len(rad_diag_33(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_34,   len(rad_diag_34(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_35,   len(rad_diag_35(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_36,   len(rad_diag_36(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_37,   len(rad_diag_37(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_38,   len(rad_diag_38(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_39,   len(rad_diag_39(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_40,   len(rad_diag_40(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_41,   len(rad_diag_41(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_42,   len(rad_diag_42(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_43,   len(rad_diag_43(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_44,   len(rad_diag_44(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_45,   len(rad_diag_45(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_46,   len(rad_diag_46(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_47,   len(rad_diag_47(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_48,   len(rad_diag_48(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_49,   len(rad_diag_49(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_50,   len(rad_diag_50(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_51,   len(rad_diag_51(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_52,   len(rad_diag_52(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_53,   len(rad_diag_53(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_54,   len(rad_diag_54(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_55,   len(rad_diag_55(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_56,   len(rad_diag_56(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_57,   len(rad_diag_57(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_58,   len(rad_diag_58(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_59,   len(rad_diag_59(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_60,   len(rad_diag_60(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_61,   len(rad_diag_61(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_62,   len(rad_diag_62(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_63,   len(rad_diag_63(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_64,   len(rad_diag_64(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_65,   len(rad_diag_65(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_66,   len(rad_diag_66(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_67,   len(rad_diag_67(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_68,   len(rad_diag_68(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_69,   len(rad_diag_69(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_70,   len(rad_diag_70(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_71,   len(rad_diag_71(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_72,   len(rad_diag_72(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_73,   len(rad_diag_73(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_74,   len(rad_diag_74(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_75,   len(rad_diag_75(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_76,   len(rad_diag_76(1))*n_rad_cnst,   mpichar, 0,mpicom)
+   call mpibcast (rad_diag_77,   len(rad_diag_77(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_78,   len(rad_diag_78(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_79,   len(rad_diag_79(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_80,   len(rad_diag_80(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_81,   len(rad_diag_81(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_82,   len(rad_diag_82(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_83,   len(rad_diag_83(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_84,   len(rad_diag_84(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_85,   len(rad_diag_85(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_86,   len(rad_diag_86(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_87,   len(rad_diag_87(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_88,   len(rad_diag_88(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_89,   len(rad_diag_89(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_90,   len(rad_diag_90(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_91,   len(rad_diag_91(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_92,   len(rad_diag_92(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_93,   len(rad_diag_93(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_94,   len(rad_diag_94(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_95,   len(rad_diag_95(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_96,   len(rad_diag_96(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_97,   len(rad_diag_97(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_98,   len(rad_diag_98(1))*n_rad_cnst,   mpichar, 0, mpicom)
+   call mpibcast (rad_diag_99,   len(rad_diag_99(1))*n_rad_cnst,   mpichar, 0, mpicom)
+!--hybrown
    call mpibcast (iceopticsfile, len(iceopticsfile),               mpichar, 0, mpicom)
    call mpibcast (liqopticsfile, len(liqopticsfile),               mpichar, 0, mpicom)
    call mpibcast (liqcldoptics,  len(liqcldoptics),                mpichar, 0, mpicom)
@@ -344,6 +621,186 @@ subroutine rad_cnst_readnl(nlfile)
          call parse_rad_specifier(rad_diag_9, namelist(i))
       case (10)
          call parse_rad_specifier(rad_diag_10, namelist(i))
+!++hybrown
+      case (11)
+         call parse_rad_specifier(rad_diag_11, namelist(i))
+      case (12)
+         call parse_rad_specifier(rad_diag_12, namelist(i))
+      case (13)
+         call parse_rad_specifier(rad_diag_13, namelist(i))
+      case (14)
+         call parse_rad_specifier(rad_diag_14, namelist(i))
+      case (15)
+         call parse_rad_specifier(rad_diag_15, namelist(i))
+      case (16)
+         call parse_rad_specifier(rad_diag_16, namelist(i))
+      case (17)
+         call parse_rad_specifier(rad_diag_17, namelist(i))
+      case (18)
+         call parse_rad_specifier(rad_diag_18, namelist(i))
+      case (19)
+         call parse_rad_specifier(rad_diag_19, namelist(i))
+      case (20)
+         call parse_rad_specifier(rad_diag_20, namelist(i))
+      case (21)
+         call parse_rad_specifier(rad_diag_21, namelist(i))
+      case (22)
+         call parse_rad_specifier(rad_diag_22, namelist(i))
+      case (23)
+         call parse_rad_specifier(rad_diag_23, namelist(i))
+      case (24)
+         call parse_rad_specifier(rad_diag_24, namelist(i))
+      case (25)
+         call parse_rad_specifier(rad_diag_25, namelist(i))
+      case (26)
+         call parse_rad_specifier(rad_diag_26, namelist(i))
+      case (27)
+         call parse_rad_specifier(rad_diag_27, namelist(i))
+      case (28)
+         call parse_rad_specifier(rad_diag_28, namelist(i))
+      case (29)
+         call parse_rad_specifier(rad_diag_29, namelist(i))
+      case (30)
+         call parse_rad_specifier(rad_diag_30, namelist(i))
+      case (31)
+         call parse_rad_specifier(rad_diag_31, namelist(i))
+      case (32)
+         call parse_rad_specifier(rad_diag_32, namelist(i))
+      case (33)
+         call parse_rad_specifier(rad_diag_33, namelist(i))
+      case (34)
+         call parse_rad_specifier(rad_diag_34, namelist(i))
+      case (35)
+         call parse_rad_specifier(rad_diag_35, namelist(i))
+      case (36)
+         call parse_rad_specifier(rad_diag_36, namelist(i))
+      case (37)
+         call parse_rad_specifier(rad_diag_37, namelist(i))
+      case (38)
+         call parse_rad_specifier(rad_diag_38, namelist(i))
+      case (39)
+         call parse_rad_specifier(rad_diag_39, namelist(i))
+      case (40)
+         call parse_rad_specifier(rad_diag_40, namelist(i))
+      case (41)
+         call parse_rad_specifier(rad_diag_41, namelist(i))
+      case (42)
+         call parse_rad_specifier(rad_diag_42, namelist(i))
+      case (43)
+         call parse_rad_specifier(rad_diag_43, namelist(i))
+      case (44)
+         call parse_rad_specifier(rad_diag_44, namelist(i))
+      case (45)
+         call parse_rad_specifier(rad_diag_45, namelist(i))
+      case (46)
+         call parse_rad_specifier(rad_diag_46, namelist(i))
+      case (47)
+         call parse_rad_specifier(rad_diag_47, namelist(i))
+      case (48)
+         call parse_rad_specifier(rad_diag_48, namelist(i))
+      case (49)
+         call parse_rad_specifier(rad_diag_49, namelist(i))
+      case (50)
+         call parse_rad_specifier(rad_diag_50, namelist(i))
+      case (51)
+         call parse_rad_specifier(rad_diag_51, namelist(i))
+      case (52)
+         call parse_rad_specifier(rad_diag_52, namelist(i))
+      case (53)
+         call parse_rad_specifier(rad_diag_53, namelist(i))
+      case (54)
+         call parse_rad_specifier(rad_diag_54, namelist(i))
+      case (55)
+         call parse_rad_specifier(rad_diag_55, namelist(i))
+      case (56)
+         call parse_rad_specifier(rad_diag_56, namelist(i))
+      case (57)
+         call parse_rad_specifier(rad_diag_57, namelist(i))
+      case (58)
+         call parse_rad_specifier(rad_diag_58, namelist(i))
+      case (59)
+         call parse_rad_specifier(rad_diag_59, namelist(i))
+      case (60)
+         call parse_rad_specifier(rad_diag_60, namelist(i))
+      case (61)
+         call parse_rad_specifier(rad_diag_61, namelist(i))
+      case (62)
+         call parse_rad_specifier(rad_diag_62, namelist(i))
+      case (63)
+         call parse_rad_specifier(rad_diag_63, namelist(i))
+      case (64)
+         call parse_rad_specifier(rad_diag_64, namelist(i))
+      case (65)
+         call parse_rad_specifier(rad_diag_65, namelist(i))
+      case (66)
+         call parse_rad_specifier(rad_diag_66, namelist(i))
+      case (67)
+         call parse_rad_specifier(rad_diag_67, namelist(i))
+      case (68)
+         call parse_rad_specifier(rad_diag_68, namelist(i))
+      case (69)
+         call parse_rad_specifier(rad_diag_69, namelist(i))
+      case (70)
+         call parse_rad_specifier(rad_diag_70, namelist(i))
+      case (71)
+         call parse_rad_specifier(rad_diag_71, namelist(i))
+      case (72)
+         call parse_rad_specifier(rad_diag_72, namelist(i))
+      case (73)
+         call parse_rad_specifier(rad_diag_73, namelist(i))
+      case (74)
+         call parse_rad_specifier(rad_diag_74, namelist(i))
+      case (75)
+         call parse_rad_specifier(rad_diag_75, namelist(i))
+      case (76)
+         call parse_rad_specifier(rad_diag_76, namelist(i))
+      case (77)
+         call parse_rad_specifier(rad_diag_77, namelist(i))
+      case (78)
+         call parse_rad_specifier(rad_diag_78, namelist(i))
+      case (79)
+         call parse_rad_specifier(rad_diag_79, namelist(i))
+      case (80)
+         call parse_rad_specifier(rad_diag_80, namelist(i))
+      case (81)
+         call parse_rad_specifier(rad_diag_81, namelist(i))
+      case (82)
+         call parse_rad_specifier(rad_diag_82, namelist(i))
+      case (83)
+         call parse_rad_specifier(rad_diag_83, namelist(i))
+      case (84)
+         call parse_rad_specifier(rad_diag_84, namelist(i))
+      case (85)
+         call parse_rad_specifier(rad_diag_85, namelist(i))
+      case (86)
+         call parse_rad_specifier(rad_diag_86, namelist(i))
+      case (87)
+         call parse_rad_specifier(rad_diag_87, namelist(i))
+      case (88)
+         call parse_rad_specifier(rad_diag_88, namelist(i))
+      case (89)
+         call parse_rad_specifier(rad_diag_89, namelist(i))
+      case (90)
+         call parse_rad_specifier(rad_diag_90, namelist(i))
+      case (91)
+         call parse_rad_specifier(rad_diag_91, namelist(i))
+      case (92)
+         call parse_rad_specifier(rad_diag_92, namelist(i))
+      case (93)
+         call parse_rad_specifier(rad_diag_93, namelist(i))
+      case (94)
+         call parse_rad_specifier(rad_diag_94, namelist(i))
+      case (95)
+         call parse_rad_specifier(rad_diag_95, namelist(i))
+      case (96)
+         call parse_rad_specifier(rad_diag_96, namelist(i))
+      case (97)
+         call parse_rad_specifier(rad_diag_97, namelist(i))
+      case (98)
+         call parse_rad_specifier(rad_diag_98, namelist(i))
+      case (99)
+         call parse_rad_specifier(rad_diag_99, namelist(i))
+!--hybrown
       end select
    enddo
 

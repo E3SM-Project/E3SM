@@ -337,6 +337,12 @@ GetOptions(
     "cflags=s"                  => \$opts{'cflags'},
     "chem=s"                    => \$opts{'chem'},
     "cldera_strat_volc=s"       => \$opts{'cldera_strat_volc'},
+#++hybrown
+    "nSO4=s"                    => \$opts{'nSO4'},
+    "nSOA=s"                    => \$opts{'nSOA'},
+    "nPOA=s"                    => \$opts{'nPOA'},
+    "nBC=s"                     => \$opts{'nBC'},
+#--hybrown
     "cice_bsizex=s"             => \$opts{'cice_bsizex'},
     "cice_bsizey=s"             => \$opts{'cice_bsizey'},
     "cice_maxblocks=s"          => \$opts{'cice_maxblocks'},
@@ -1404,9 +1410,31 @@ if (($chem_pkg ne 'none') || ($prog_species)) {
 if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_3MODE ';
 } elsif ($chem_pkg =~ '_mam4_mom' || $chem_pkg =~ '_mam4_resus_mom' ) {
-    $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM ';
+#++hybrown
+#    $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM ';
+    if (!defined $opts{'nSO4'} ||!defined $opts{'nSOA'} || !defined $opts{'nPOA'} || !defined $opts{'nBC'} ) {
+    #If nSO4,nSOA,nPOA or nBC is not defined, throw an error
+    die("ERROR: nSO4 nSOA or nPOA or nBC is not defined ");
+    }
+    else{
+        #Get nSO4, nSOA, nPOA and nBC from the argument list
+        my $nSO4 = $opts{'nSO4'}; my $nSOA = $opts{'nSOA'}; my $nPOA = $opts{'nPOA'}; my $nBC = $opts{'nBC'};
+                $cfg_ref->set('nSO4', $nSO4);$cfg_ref->set('nSOA', $nSOA);$cfg_ref->set('nPOA', $nPOA);$cfg_ref->set('nBC', $nBC);
+        $chem_cppdefs = " -DMODAL_AERO -DMODAL_AERO_4MODE_MOM -DNSO4=$nSO4 -DNSOA=$nSOA -DNPOA=$nPOA -DNBC=$nBC";
+    }
 } elsif ($chem_pkg =~ '_mam4' ) {
-    $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE ';
+#    $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE ';
+    if (!defined $opts{'nSO4'} ||!defined $opts{'nSOA'} || !defined $opts{'nPOA'} || !defined $opts{'nBC'} ) {
+        #If nSO4,nSOA,nPOA or nBC is not defined, throw an error
+        die("ERROR: nSO4 nSOA or nPOA or nBC is not defined ");
+    }
+    else{
+        #Get nSO4, nSOA, nPOA and nBC from the argument list    
+        my $nSO4 = $opts{'nSO4'}; my $nSOA = $opts{'nSOA'}; my $nPOA = $opts{'nPOA'}; my $nBC = $opts{'nBC'};
+                $cfg_ref->set('nSO4', $nSO4);$cfg_ref->set('nSOA', $nSOA);$cfg_ref->set('nPOA', $nPOA);$cfg_ref->set('nBC', $nBC);
+        $chem_cppdefs = " -DMODAL_AERO -DMODAL_AERO_4MODE -DNSO4=$nSO4 -DNSOA=$nSOA -DNPOA=$nPOA -DNBC=$nBC";
+    }
+#--hybrown
 } elsif ($chem_pkg =~ '_mam7') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_7MODE ';
 } elsif ($chem_pkg =~ '_mam9') {

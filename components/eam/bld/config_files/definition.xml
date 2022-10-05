@@ -4,6 +4,18 @@
 
 <config_definition>
 
+<entry id="nSO4" valid_values="1,30" value="1">
+Explicit Aerosol Source Tagging.
+</entry>
+<entry id="nSOA" valid_values="1,30" value="1">
+Explicit Aerosol Source Tagging.
+</entry>
+<entry id="nPOA" valid_values="1,30" value="1">
+Explicit Aerosol Source Tagging.
+</entry>
+<entry id="nBC" valid_values="1,30" value="1">
+Explicit Aerosol Source Tagging.
+</entry>
 <entry id="cam_bld" value=".">
 CAM build directory; contains .o and .mod files.
 </entry>

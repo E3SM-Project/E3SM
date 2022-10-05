@@ -32,6 +32,9 @@ use cam_abortutils, only: endrun
 
 use nucleate_ice,   only: nucleati_init, nucleati
 
+!++hybrown
+use modal_aero_data,  only: nso4, nsoa, npoa, nbc
+!--hybrown
 
 implicit none
 private
@@ -94,16 +97,24 @@ integer :: mode_coarse_slt_idx = -1  ! index of coarse sea salt mode
 integer :: coarse_dust_idx = -1  ! index of dust in coarse mode
 integer :: coarse_nacl_idx = -1  ! index of nacl in coarse mode
 
-integer :: coarse_so4_idx = -1  ! index of so4 in coarse mode
+!++hybrown
+!integer :: coarse_so4_idx = -1  ! index of so4 in coarse mode
+integer :: coarse_so4_idx(1:nso4) = -1  ! index of so4 in coarse mode
+!--hybrown
 
 #if (defined MODAL_AERO_4MODE_MOM)
 integer :: coarse_mom_idx = -1  ! index of mom in coarse mode
 #endif
 
-#if (defined RAIN_EVAP_TO_COARSE_AERO) 
-integer :: coarse_bc_idx = -1  ! index of bc in coarse mode
-integer :: coarse_pom_idx = -1  ! index of pom in coarse mode
-integer :: coarse_soa_idx = -1  ! index of soa in coarse mode
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+!++hybrown 
+!integer :: coarse_bc_idx = -1  ! index of bc in coarse mode
+!integer :: coarse_pom_idx = -1  ! index of pom in coarse mode
+!integer :: coarse_soa_idx = -1  ! index of soa in coarse mode
+integer :: coarse_bc_idx(1:nbc) = -1  ! index of bc in coarse mode
+integer :: coarse_pom_idx(1:npoa) = -1  ! index of pom in coarse mode
+integer :: coarse_soa_idx(1:nsoa) = -1  ! index of soa in coarse mode
+!--hybrown
 #endif
 
 integer :: mode_fine_dst_idx = -1   ! index of dust in fine dust mode
@@ -183,7 +194,9 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
 
    ! local variables
    integer  :: iaer
-   integer  :: m, n, nspec
+!++hybrown
+   integer  :: m, n, nspec, ispec
+!--hybrown
 
    character(len=32) :: str32
    character(len=*), parameter :: routine = 'nucleate_ice_cam_init'
@@ -346,23 +359,34 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
       end if
 
       if (mode_coarse_idx > 0) then
-         call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)
+!++hybrown
+         ispec = 0
+!--hybrown
          do n = 1, nspec
             call rad_cnst_get_info(0, mode_coarse_idx, n, spec_type=str32)
             select case (trim(str32))
             case ('sulfate')
-               coarse_so4_idx = n
+!++hybrown
+!               coarse_so4_idx = n
+              ispec = ispec + 1
+              coarse_so4_idx(ispec) = n
             end select
          end do
+!--hybrown
       end if
 
       ! Check that required mode specie types were found
+
       if (mode_coarse_idx > 0) then
-         if ( coarse_so4_idx == -1) then
+!++hybrown
+!         if ( coarse_so4_idx == -1) then
+        if ( coarse_so4_idx(1) == -1) then
             write(iulog,*) routine//': ERROR required mode-species type not found - indicies:', &
-               coarse_so4_idx
+!               coarse_so4_idx
+            coarse_so4_idx(1)
             call endrun(routine//': ERROR required mode-species type not found')
-         end if
+        end if
+!--hybrown
       end if
 
 #if (defined MODAL_AERO_4MODE_MOM)
@@ -385,38 +409,63 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
 
 #if (defined RAIN_EVAP_TO_COARSE_AERO )
       call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)
+!++hybrown
+      ispec = 0
+!--hybrown
       do n = 1, nspec
          call rad_cnst_get_info(0, mode_coarse_idx, n, spec_type=str32)
          select case (trim(str32))
          case ('black-c')
-            coarse_bc_idx = n
+!++hybrown
+!            coarse_bc_idx = n
+            ispec = ispec + 1
+            coarse_bc_idx(ispec) = n
+!--hybrown
          end select
       end do
 
       call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)
+!++hybrown
+      ispec = 0
+!--hybrown
       do n = 1, nspec
          call rad_cnst_get_info(0, mode_coarse_idx, n, spec_type=str32)
          select case (trim(str32))
          case ('p-organic')
-            coarse_pom_idx = n
+!++hybrown
+!            coarse_pom_idx = n
+            ispec = ispec + 1
+            coarse_pom_idx(ispec) = n
+!--hybrown
          end select
       end do
 
       call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)
+!++hybrown
+      ispec = 0
+!--hybrown
       do n = 1, nspec
          call rad_cnst_get_info(0, mode_coarse_idx, n, spec_type=str32)
          select case (trim(str32))
          case ('s-organic')
-            coarse_soa_idx = n
+!++hybrown
+!            coarse_soa_idx = n
+            ispec = ispec + 1
+            coarse_soa_idx(ispec) = n
+!--hybrown
          end select
       end do
 
       ! Check that required mode specie types were found
-      if ( coarse_bc_idx == -1 .or. coarse_pom_idx == -1 .or. coarse_soa_idx == -1 ) then
+!++hybrown
+!      if ( coarse_bc_idx == -1 .or. coarse_pom_idx == -1 .or. coarse_soa_idx == -1 ) then
+      if ( coarse_bc_idx(1) == -1 .or. coarse_pom_idx(1) == -1 .or. coarse_soa_idx(1) == -1 ) then
          write(iulog,*) routine//': ERROR required mode-species type not found - indicies:', &
-            coarse_bc_idx, coarse_pom_idx, coarse_soa_idx 
+!            coarse_bc_idx, coarse_pom_idx, coarse_soa_idx 
+            coarse_bc_idx(1), coarse_pom_idx(1), coarse_soa_idx(1)
          call endrun(routine//': ERROR required mode-species type not found')
       end if
+!--hybrown
 #endif
 
       ! get specific mode properties
@@ -477,6 +526,9 @@ subroutine nucleate_ice_cam_calc( &
    integer :: lchnk, ncol
    integer :: itim_old
    integer :: i, k, m
+!++hybrown
+   integer :: ispec
+!--hybrown
 
    real(r8), pointer :: t(:,:)          ! input temperature (K)
    real(r8), pointer :: qn(:,:)         ! input water vapor mixing ratio (kg/kg)
@@ -493,6 +545,9 @@ subroutine nucleate_ice_cam_calc( &
    real(r8), pointer :: coarse_nacl(:,:) ! mass m.r. of coarse nacl
 
    real(r8), pointer :: coarse_so4(:,:) ! mass m.r. of coarse so4
+!++hybrown
+   real(r8) :: coarse_so4_sum(pcols,pver) ! mass m.r. of coarse so4
+!--hybrown
 
 #if (defined MODAL_AERO_4MODE_MOM)
    real(r8), pointer :: coarse_mom(:,:) ! mass m.r. of coarse mom
@@ -502,6 +557,11 @@ subroutine nucleate_ice_cam_calc( &
    real(r8), pointer :: coarse_bc(:,:) ! mass m.r. of coarse bc
    real(r8), pointer :: coarse_pom(:,:) ! mass m.r. of coarse pom
    real(r8), pointer :: coarse_soa(:,:) ! mass m.r. of coarse soa 
+!++hybrown
+   real(r8) :: coarse_bc_sum(pcols,pver) ! mass m.r. of coarse bc
+   real(r8) :: coarse_pom_sum(pcols,pver) ! mass m.r. of coarse pom
+   real(r8) :: coarse_soa_sum(pcols,pver) ! mass m.r. of coarse soa
+!--hybrown
 #endif
 
    real(r8), pointer :: aer_mmr(:,:)    ! aerosol mass mixing ratio
@@ -588,7 +648,14 @@ subroutine nucleate_ice_cam_calc( &
       call rad_cnst_get_aer_mmr(0, mode_coarse_slt_idx, coarse_nacl_idx, 'a', state, pbuf, coarse_nacl)
     
       if (mode_coarse_idx > 0) then
-         call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_so4_idx, 'a', state, pbuf, coarse_so4)
+!++hybrown
+!         call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_so4_idx, 'a', state, pbuf, coarse_so4)
+      coarse_so4_sum(1:ncol,1:pver) = 0._r8
+      do ispec = 1, nso4
+         call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_so4_idx(ispec), 'a', state, pbuf, coarse_so4)
+         coarse_so4_sum = coarse_so4_sum + coarse_so4
+      enddo
+!--hybrown
       end if
 
       if (use_nie_nucleate .or. use_dem_nucleate) then
@@ -600,9 +667,26 @@ subroutine nucleate_ice_cam_calc( &
 #endif
 
 #if (defined RAIN_EVAP_TO_COARSE_AERO) 
-      call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_bc_idx, 'a', state, pbuf, coarse_bc)
-      call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_pom_idx, 'a', state, pbuf, coarse_pom)
-      call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_soa_idx, 'a', state, pbuf, coarse_soa)
+!++hybrown
+!      call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_bc_idx, 'a', state, pbuf, coarse_bc)
+!      call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_pom_idx, 'a', state, pbuf, coarse_pom)
+!      call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_soa_idx, 'a', state, pbuf, coarse_soa)
+      coarse_bc_sum(1:ncol,1:pver) = 0._r8
+      do ispec = 1, nbc
+         call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_bc_idx(ispec), 'a', state, pbuf, coarse_bc)
+         coarse_bc_sum = coarse_bc_sum + coarse_bc
+      enddo
+      coarse_pom_sum(1:ncol,1:pver) = 0._r8
+      do ispec = 1, npoa
+         call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_pom_idx(ispec), 'a', state, pbuf, coarse_pom)
+         coarse_pom_sum = coarse_pom_sum + coarse_pom
+      enddo
+      coarse_soa_sum(1:ncol,1:pver) = 0._r8
+      do ispec = 1, nsoa
+         call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_soa_idx(ispec), 'a', state, pbuf, coarse_soa)
+         coarse_soa_sum = coarse_soa_sum + coarse_soa
+      enddo
+!--hybrown
 #endif
 
    else
@@ -714,17 +798,25 @@ subroutine nucleate_ice_cam_calc( &
                ssmc = coarse_nacl(i,k)*rho(i,k)
 
                if (mode_coarse_idx > 0) then
-                  so4mc  = coarse_so4(i,k)*rho(i,k)
+!++hybrown
+!                  so4mc  = coarse_so4(i,k)*rho(i,k)
+               so4mc  = coarse_so4_sum(i,k)*rho(i,k)
+!--hybrown
                endif
 
 #if (defined MODAL_AERO_4MODE_MOM)
                mommc  = coarse_mom(i,k)*rho(i,k)
 #endif
 
-#if (defined RAIN_EVAP_TO_COARSE_AERO) 
-               bcmc  = coarse_bc(i,k)*rho(i,k)
-               pommc  = coarse_pom(i,k)*rho(i,k)
-               soamc  = coarse_soa(i,k)*rho(i,k)
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+!++hybrown 
+!               bcmc  = coarse_bc(i,k)*rho(i,k)
+!               pommc  = coarse_pom(i,k)*rho(i,k)
+!               soamc  = coarse_soa(i,k)*rho(i,k)
+               bcmc  = coarse_bc_sum(i,k)*rho(i,k)
+               pommc  = coarse_pom_sum(i,k)*rho(i,k)
+               soamc  = coarse_soa_sum(i,k)*rho(i,k)
+!--hybrown
 #endif
 
                if (dmc > 0._r8) then

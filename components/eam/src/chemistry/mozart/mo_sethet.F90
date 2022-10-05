@@ -10,6 +10,9 @@ module mo_sethet
   use cam_logfile,     only: iulog
   use gas_wetdep_opts, only: gas_wetdep_cnt, gas_wetdep_method, gas_wetdep_list
   use phys_control,    only: phys_getopts
+!++hybrown
+use modal_aero_data,only:nso4
+!-hybrown
 
   private
   public :: sethet_inti, sethet
@@ -22,12 +25,16 @@ module mo_sethet
        c3h7ooh_ndx, rooh_ndx, isopno3_ndx, onit_ndx, Pb_ndx, &
        macrooh_ndx, isopooh_ndx, ch3oh_ndx, c2h5oh_ndx, hyac_ndx, hydrald_ndx
   integer :: spc_h2o2_ndx, spc_hno3_ndx
-  integer :: spc_so2_ndx
+!++hybrown
+  integer :: spc_so2_ndx(nso4)
+!--hybrown
   integer :: spc_sogm_ndx, spc_sogi_ndx, spc_sogt_ndx, spc_sogb_ndx, spc_sogx_ndx
 
   integer :: alkooh_ndx, mekooh_ndx, tolooh_ndx, terpooh_ndx, ch3cooh_ndx
-  integer :: so2_ndx, soa_ndx, so4_ndx, cb2_ndx, oc2_ndx, nh3_ndx, nh4no3_ndx, &
-             sa1_ndx, sa2_ndx, sa3_ndx, sa4_ndx, nh4_ndx, h2so4_ndx
+!++hybrown
+  integer :: so2_ndx(nso4), soa_ndx, so4_ndx, cb2_ndx, oc2_ndx, nh3_ndx, nh4no3_ndx, &
+             sa1_ndx, sa2_ndx, sa3_ndx, sa4_ndx, nh4_ndx, h2so4_ndx(nso4)
+!--hybrown
   integer :: xisopno3_ndx,xho2no2_ndx,xonitr_ndx,xhno3_ndx,xonit_ndx
   integer :: clono2_ndx, brono2_ndx, hcl_ndx, n2o5_ndx, hocl_ndx, hobr_ndx, hbr_ndx 
   integer :: ch3cn_ndx, hcn_ndx, hcooh_ndx
@@ -50,7 +57,13 @@ contains
     use cam_abortutils,   only : endrun
 
     integer :: k, m
-    
+!++hybrown
+    character(len=2) :: tagged_sulfur_suffix(30) = (/ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', &
+                                                      '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', &
+                                                      '21', '22', '23', '24', '25', '26', '27', '28', '29', '30'/)
+    integer :: tag_loop
+!--hybrown    
+
     do_wetdep = gas_wetdep_cnt>0 .and. gas_wetdep_method=='MOZ'
     if ( .not. do_wetdep) return
 
@@ -75,8 +88,15 @@ contains
 
     spc_h2o2_ndx = get_spc_ndx( 'H2O2' )
     spc_hno3_ndx = get_spc_ndx( 'HNO3' )
+!++hybrown
+ if (nso4==1) then
     spc_so2_ndx  = get_spc_ndx( 'SO2' )
-
+ else if (nso4>1) then
+    do tag_loop = 1,nso4
+       spc_so2_ndx(tag_loop) = get_spc_ndx('SO2'//tagged_sulfur_suffix(tag_loop))
+    end do
+ end if
+!--hybrown
     clono2_ndx = get_het_ndx( 'CLONO2' )
     brono2_ndx = get_het_ndx( 'BRONO2' )
     hcl_ndx    = get_het_ndx( 'HCL' )
@@ -116,7 +136,15 @@ contains
     tolooh_ndx  = get_het_ndx( 'TOLOOH' )
     terpooh_ndx = get_het_ndx( 'TERPOOH' )
     ch3cooh_ndx = get_het_ndx( 'CH3COOH' )
-    so2_ndx     = get_het_ndx( 'SO2' )
+!++hybrown
+ if (nso4==1) then
+    so2_ndx  = get_het_ndx( 'SO2' )
+ else if (nso4>1) then
+    do tag_loop = 1,nso4
+       so2_ndx(tag_loop) = get_het_ndx('SO2'//tagged_sulfur_suffix(tag_loop))
+    end do
+ end if
+!--hybrown
     soa_ndx     = get_het_ndx( 'SOA' )
     sogb_ndx    = get_het_ndx( 'SOGB' )
     sogi_ndx    = get_het_ndx( 'SOGI' )
@@ -129,7 +157,15 @@ contains
     nh3_ndx     = get_het_ndx( 'NH3' )
     nh4no3_ndx  = get_het_ndx( 'NH4NO3' )
     nh4_ndx     = get_het_ndx( 'NH4' )
-    h2so4_ndx   = get_het_ndx( 'H2SO4' )
+!++hybrown
+ if (nso4==1) then
+    h2so4_ndx  = get_het_ndx( 'H2SO4' )
+ else if (nso4>1) then
+    do tag_loop = 1,nso4
+       h2so4_ndx(tag_loop) = get_het_ndx('H2SO4'//tagged_sulfur_suffix(tag_loop))
+    end do
+ end if
+!--hybrown
     sa1_ndx     = get_het_ndx( 'SA1' )
     sa2_ndx     = get_het_ndx( 'SA2' )
     sa3_ndx     = get_het_ndx( 'SA3' )
@@ -211,13 +247,17 @@ contains
     real(r8), parameter ::  liter_per_gram = 1.e-3_r8
     real(r8), parameter ::  avo2  = avo * liter_per_gram * cm3_2_m3 ! (liter/gm/mol*(m/cm)^3)
 
-    integer  ::      i, m, k, kk                 ! indicies
+!++hybrown
+    integer  ::      i, m, k, kk, jso4                 ! indicies
+!--hybrown
     real(r8) ::      xkgm                        ! mass flux on rain drop
     real(r8) ::      all1, all2                  ! work variables
     real(r8) ::      stay                        ! fraction of layer traversed by falling drop in timestep delt
     real(r8) ::      xeqca1, xeqca2, xca1, xca2, xdtm
     real(r8) ::      xxx1, xxx2, yhno3, yh2o2
-    real(r8) ::      all3, xeqca3, xca3, xxx3, yso2, so2_diss
+!++hybrown
+    real(r8) ::      all3(nso4), xeqca3(nso4), xca3(nso4), xxx3(nso4), yso2(nso4), so2_diss(nso4)
+!--hybrown
     real(r8) ::      all4, xeqca4, xca4, xxx4
     real(r8) ::      all5, xeqca5, xca5, xxx5
     real(r8) ::      all6, xeqca6, xca6, xxx6
@@ -229,14 +269,19 @@ contains
          xk0, work1, work2, work3, zsurf
     real(r8), dimension(pver)  :: &
          xgas1, xgas2
-    real(r8), dimension(pver)  :: xgas3, xgas4, xgas5, xgas6, xgas7, xgas8
+!++hybrown
+    real(r8), dimension(pver)  :: xgas4, xgas5, xgas6, xgas7, xgas8
+    real(r8), dimension(pver,nso4)  :: xgas3
+!--hybrown
     real(r8), dimension(ncol)  :: &
          tmp0_rates, tmp1_rates
     real(r8), dimension(ncol,pver)  :: &
          delz, &              ! layer depth about interfaces (cm)
          xhno3, &             ! hno3 concentration (molecules/cm^3)
          xh2o2, &             ! h2o2 concentration (molecules/cm^3)
-         xso2, &              ! so2 concentration (molecules/cm^3)
+!++hybrown
+!         xso2, &              ! so2 concentration (molecules/cm^3)
+!--hybrown
          xsogm, &             ! sogm concentration (molecules/cm^3)
          xsogi, &             ! sogi concentration (molecules/cm^3)
          xsogt, &             ! sogt concentration (molecules/cm^3)
@@ -244,6 +289,9 @@ contains
          xsogx, &             ! sogx concentration (molecules/cm^3)
          xliq, &              ! liquid rain water content in a grid cell (gm/m^3)
          rain                 ! conversion rate of water vapor into rain water (molecules/cm^3/s)
+!++hybrown
+    real(r8), dimension(ncol,pver,nso4)  :: xso2
+!--hybrown
     real(r8), dimension(ncol,pver)  :: &
          xhen_hno3, xhen_h2o2, xhen_ch2o, xhen_ch3ooh, xhen_ch3co3h, &
          xhen_ch3cocho, xhen_xooh, xhen_onitr, xhen_ho2no2, xhen_glyald, &
@@ -251,8 +299,12 @@ contains
     real(r8), dimension(ncol,pver)  :: &
          xhen_nh3, xhen_ch3cooh
     real(r8), dimension(ncol,pver,8) :: tmp_hetrates
+!++hybrown
+    real(r8), dimension(ncol,pver,8,nso4) :: tmp_hetrates2
     real(r8), dimension(ncol,pver)  :: precip
-    real(r8), dimension(ncol,pver)  :: xhen_hcn, xhen_ch3cn, xhen_so2
+    real(r8), dimension(ncol,pver)  :: xhen_hcn, xhen_ch3cn
+    real(r8), dimension(ncol,pver,nso4)  :: xhen_so2
+!--hybrown
 
     integer    ::      ktop_all       
     integer    ::      ktop(ncol)                  ! 100 mb level
@@ -388,11 +440,15 @@ contains
        else
           xsogx(:ncol,k)  = 0._r8
        end if
-       if( spc_so2_ndx > 0 ) then
-          xso2(:ncol,k)  = qin(:ncol,k,spc_so2_ndx) * xhnm(:ncol,k)
+!++hybrown
+       do jso4 = 1, nso4
+       if( spc_so2_ndx(jso4) > 0 ) then
+          xso2(:ncol,k,jso4)  = qin(:ncol,k,spc_so2_ndx(jso4)) * xhnm(:ncol,k)
        else
-          xso2(:ncol,k)  = 0._r8
+          xso2(:ncol,k,jso4)  = 0._r8
        end if
+       end do !jso4
+!--hybrown
     end do
 
     zsurf(:ncol) = m2km * phis(:ncol) * rga
@@ -449,11 +505,18 @@ contains
        xhen_ch3cn(:,k)     = 50._r8 * exp( 4000._r8 * work1(:) )
        xhen_hcn(:,k)       = 12._r8 * exp( 5000._r8 * work1(:) )
        do i = 1, ncol
-          so2_diss        = 1.23e-2_r8 * exp( 1960._r8 * work1(i) )
-          xhen_so2(i,k)   = 1.23_r8 * exp( 3120._r8 * work1(i) ) * ( 1._r8 + so2_diss / xph0 )
+!++hybrown
+       do jso4 = 1,nso4
+          so2_diss(jso4)        = 1.23e-2_r8 * exp( 1960._r8 * work1(i) )
+          xhen_so2(i,k,jso4)   = 1.23_r8 * exp( 3120._r8 * work1(i) ) * ( 1._r8 + so2_diss(jso4) / xph0 )
+       end do !jso4
+!--hybrown
        end do
        !
        tmp_hetrates(:,k,:) = 0._r8
+!++hybrown
+       tmp_hetrates2(:,k,:,:) = 0._r8
+!--hybrown
     end do
 
     !-----------------------------------------------------------------
@@ -462,7 +525,9 @@ contains
     col_loop :  do i = 1,ncol
        xgas1(:) = xhno3(i,:)                     ! xgas will change during 
        xgas2(:) = xh2o2(i,:)                     ! different levels wash 
-       xgas3(:) = xso2 (i,:)
+!++hybrown
+       xgas3(:,:) = xso2 (i,:,:)
+!--hybrown
        xgas4(:) = xsogm(i,:)
        xgas5(:) = xsogi(i,:)
        xgas6(:) = xsogt(i,:)
@@ -473,7 +538,9 @@ contains
           if( rain(i,kk) /= 0._r8 ) then            ! finding rain cloud           
              all1 = 0._r8                           ! accumulation to justisfy saturation
              all2 = 0._r8 
-             all3 = 0._r8 
+!++hybrown
+             all3(:) = 0._r8 
+!--hybrown
              all4 = 0._r8 
              all5 = 0._r8 
              all6 = 0._r8 
@@ -491,9 +558,13 @@ contains
                 xeqca2 =  xgas2(k) &
                      / (xliq(i,kk)*avo2 + 1._r8/(xhen_h2o2(i,k)*const0*tfld(i,k))) &
                      *  xliq(i,kk)*avo2
-                xeqca3 =  xgas3(k) &
-                     / (xliq(i,kk)*avo2 + 1._r8/(xhen_so2( i,k)*const0*tfld(i,k))) &
+!++hybrown
+                do jso4 = 1,nso4
+                xeqca3 (jso4) =  xgas3(k,jso4) &
+                     / (xliq(i,kk)*avo2 + 1._r8/(xhen_so2( i,k,jso4)*const0*tfld(i,k))) &
                      *  xliq(i,kk)*avo2
+                end do !jso4
+!--hybrown
                 xeqca4 =  xgas4(k) &
                      / (xliq(i,kk)*avo2 + 1._r8/(xhen_sog(i,k)*const0*tfld(i,k))) &
                      *  xliq(i,kk)*avo2
@@ -515,7 +586,11 @@ contains
                 !-----------------------------------------------------------------
                 xca1 = geo_fac*xkgm*xgas1(k)/(xrm*xum)*delz(i,k) * xliq(i,kk) * cm3_2_m3
                 xca2 = geo_fac*xkgm*xgas2(k)/(xrm*xum)*delz(i,k) * xliq(i,kk) * cm3_2_m3
-                xca3 = geo_fac*xkgm*xgas3(k)/(xrm*xum)*delz(i,k) * xliq(i,kk) * cm3_2_m3
+!++hybrown
+                do jso4 = 1,nso4
+                xca3(jso4) = geo_fac*xkgm*xgas3(k,jso4)/(xrm*xum)*delz(i,k) * xliq(i,kk) * cm3_2_m3
+                end do !jso4
+!--hybrown
                 xca4 = geo_fac*xkgm*xgas4(k)/(xrm*xum)*delz(i,k) * xliq(i,kk) * cm3_2_m3
                 xca5 = geo_fac*xkgm*xgas5(k)/(xrm*xum)*delz(i,k) * xliq(i,kk) * cm3_2_m3
                 xca6 = geo_fac*xkgm*xgas6(k)/(xrm*xum)*delz(i,k) * xliq(i,kk) * cm3_2_m3
@@ -536,10 +611,14 @@ contains
                 if( all2 < xeqca2 ) then
                    xgas2(k) = max( xgas2(k) - xca2,0._r8 )
                 end if
-                all3 = all3 + xca3
-                if( all3 < xeqca3 ) then
-                   xgas3(k) = max( xgas3(k) - xca3,0._r8 )
+!++hybrown
+                do jso4 =1,nso4
+                all3(jso4) = all3(jso4) + xca3(jso4)
+                if( all3(jso4) < xeqca3(jso4) ) then
+                   xgas3(k,jso4) = max( xgas3(k,jso4) - xca3(jso4),0._r8 )
                 end if
+                end do !jso4
+!--hybrown
                 all4 = all4 + xca4
                 all5 = all5 + xca5
                 all6 = all6 + xca6
@@ -588,13 +667,17 @@ contains
           end if
           tmp_hetrates(i,kk,1) = max( 1._r8 / yh2o2,0._r8 ) * stay
           tmp_hetrates(i,kk,2) = max( 1._r8 / yhno3,0._r8 ) * stay
-          xxx3 = (xso2( i,kk) - xgas3(kk))
-          if( xxx3 /= 0._r8 ) then                       ! if no washout lifetime = 1.e29
-             yso2  = xso2( i,kk)/xxx3 * xdtm     
+!++hybrown
+          do jso4 =1,nso4
+          xxx3(jso4) = (xso2( i,kk,jso4) - xgas3(kk,jso4))
+          if( xxx3(jso4) /= 0._r8 ) then                       ! if no washout lifetime = 1.e29
+             yso2(jso4)  = xso2( i,kk,jso4)/xxx3(jso4) * xdtm
           else
-             yso2  = 1.e29_r8
+             yso2(jso4)  = 1.e29_r8
           end if
-          tmp_hetrates(i,kk,3) = max( 1._r8 / yso2, 0._r8 ) * stay
+          tmp_hetrates2(i,kk,3,jso4) = max( 1._r8 / yso2(jso4), 0._r8 ) * stay
+          end do !jso4
+!--hybrown
           xxx4 = (xsogm(i,kk) - xgas4(kk))
           xxx5 = (xsogi(i,kk) - xgas5(kk))
           xxx6 = (xsogt(i,kk) - xgas6(kk))
@@ -736,12 +819,16 @@ contains
              work3(i) = satf_h2o2 * max( rain(i,k) / (h2o_mol*(work1(i) + 1._r8/(xhen_h2o2(i,k)*work2(i)))),0._r8 )    
              het_rates(i,k,h2o2_ndx) =  work3(i) + tmp_hetrates(i,k,1)
           end if
-          if ( prog_modal_aero .and. so2_ndx>0 .and. h2o2_ndx>0 ) then
-             het_rates(i,k,so2_ndx) = het_rates(i,k,h2o2_ndx)
-          elseif( so2_ndx > 0 ) then
-             work3(i) = satf_so2 * max( rain(i,k) / (h2o_mol*(work1(i) + 1._r8/(xhen_so2( i,k)*work2(i)))),0._r8 )    
-             het_rates(i,k,so2_ndx ) =  work3(i) + tmp_hetrates(i,k,3)
+!++hybrown
+          do jso4 = 1,nso4
+          if ( prog_modal_aero .and. so2_ndx(jso4)>0 .and. h2o2_ndx>0 ) then
+             het_rates(i,k,so2_ndx(jso4)) = het_rates(i,k,h2o2_ndx)
+          elseif( so2_ndx(jso4) > 0 ) then
+             work3(i) = satf_so2 * max( rain(i,k) / (h2o_mol*(work1(i) + 1._r8/(xhen_so2( i,k,jso4)*work2(i)))),0._r8 )
+             het_rates(i,k,so2_ndx(jso4) ) =  work3(i) + tmp_hetrates2(i,k,3,jso4)
           endif
+          end do !jso4
+!--hybrown
 !
           work3(i) = satf_sog * max( rain(i,k) / (h2o_mol*(work1(i) + 1._r8/(xhen_sog(i,k)*work2(i)))),0._r8 )
           if( sogm_ndx > 0 ) then
@@ -833,9 +920,16 @@ contains
              het_rates(i,k,sa4_ndx) = tmp1_rates(i)
           end if
 
-          if( h2so4_ndx > 0 ) then
-             het_rates(i,k,h2so4_ndx) = tmp0_rates(i)
-          end if
+!++hybrown
+          do jso4 = 1,nso4
+          if ( h2so4_ndx(jso4) > 0 ) then
+             het_rates(i,k,h2so4_ndx(jso4)) = tmp0_rates(i)
+          endif
+          end do !jso4
+!          if( h2so4_ndx > 0 ) then
+!             het_rates(i,k,h2so4_ndx) = tmp0_rates(i)
+!          end if
+!--hybrown
           if( nh4_ndx > 0 ) then
              het_rates(i,k,nh4_ndx) = tmp0_rates(i)
           end if

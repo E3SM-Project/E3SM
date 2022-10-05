@@ -684,20 +684,26 @@ subroutine ma_convproc_dp_intr(                &
 
 ! change profiles of first 4 gases
    call cnst_get_ind('H2O2',   ixh2o2)
-   call cnst_get_ind('so4_a1', ixso4_a1)
-   call cnst_get_ind('bc_a1',  ixbc_a1)
+!++hybrown
+!   call cnst_get_ind('so4_a1', ixso4_a1)
+!   call cnst_get_ind('bc_a1',  ixbc_a1)
+!--hybrown
 
    if (idiag_aa > 0 .and. idiag_gg > 0) then
-   if (itmpa .gt. 0) then
-      write(lun,'(a,2i4,1p,e12.4,i9,i5)') 'qako ixh2o2, ixso4_a1, dt, lchnk, nstep ', &
-         ixh2o2, ixso4_a1, dt, lchnk, nstep
-   end if
+!++hybrown
+!   if (itmpa .gt. 0) then
+!      write(lun,'(a,2i4,1p,e12.4,i9,i5)') 'qako ixh2o2, ixso4_a1, dt, lchnk, nstep ', &
+!         ixh2o2, ixso4_a1, dt, lchnk, nstep
+!   end if
+!--hybrown
    if (ixh2o2   < 6 .or. ixh2o2   > pcnst-4) &
       call endrun( "*** ma_convproc_dp_intr -- bad ixh2o2" )
-   if (ixso4_a1 < 6 .or. ixso4_a1 > pcnst) &
-      call endrun( "*** ma_convproc_dp_intr -- bad ixso4_a1" )
-   if (ixbc_a1  < 6 .or. ixbc_a1  > pcnst) &
-      call endrun( "*** ma_convproc_dp_intr -- bad ixbc_a1" )
+!++hybrown
+!   if (ixso4_a1 < 6 .or. ixso4_a1 > pcnst) &
+!      call endrun( "*** ma_convproc_dp_intr -- bad ixso4_a1" )
+!   if (ixbc_a1  < 6 .or. ixbc_a1  > pcnst) &
+!      call endrun( "*** ma_convproc_dp_intr -- bad ixbc_a1" )
+!--hybrown
 
    do ll = 1, 4
       l = ixh2o2 + (ll-1)
@@ -761,20 +767,24 @@ subroutine ma_convproc_dp_intr(                &
             tmpf = tmpa / ( (state%pmid(i,k)/(state%t(i,k)*rair)) * tmpvecc(k) )
          end if
          if ((k > 15) .and. (mod(k,5) == 1)) write(lun,'(a)')
-         write(lun,'(a,i4,1p, 4e11.3, 2x,2e11.3, 2x,3e11.3, &
-              &2x,2e10.3, 2x,3e10.3)') 'qakq', k, &
-            state%zi(i,k+1), fracis(i,k,ixso4_a1), tmpa, tmpb, &
-            tmpveca(k), tmpvecb(k), tmpc, tmpd, tmpe, &
-            tmpf, dp_frac(i,k), icwmrdp(i,k), &
-            icwmrdp(i,k)*dp_frac(i,k), rprddp(i,k)*dt
+!++hybrown
+!         write(lun,'(a,i4,1p, 4e11.3, 2x,2e11.3, 2x,3e11.3, &
+!              &2x,2e10.3, 2x,3e10.3)') 'qakq', k, &
+!            state%zi(i,k+1), fracis(i,k,ixso4_a1), tmpa, tmpb, &
+!            tmpveca(k), tmpvecb(k), tmpc, tmpd, tmpe, &
+!            tmpf, dp_frac(i,k), icwmrdp(i,k), &
+!            icwmrdp(i,k)*dp_frac(i,k), rprddp(i,k)*dt
+!--hybrown
       end do
 
       tmpa = 0.0 ; tmpb = 0.0 ; tmpc = 0.0
       if (ii > 0) then
          do k = pver-5, pver
             tmpd = hund_ovr_g*eu(ii,k)*dp(ii,k)
-            tmpa = tmpa + tmpd*fracis(i,k,ixso4_a1)
-            tmpb = tmpb + tmpd*fracis(i,k,ixbc_a1)
+!++hybrown
+!            tmpa = tmpa + tmpd*fracis(i,k,ixso4_a1)
+!            tmpb = tmpb + tmpd*fracis(i,k,ixbc_a1)
+!--hybrown
             tmpc = tmpc + tmpd
          end do
          tmpa = tmpa/ max(tmpc,1.0e-35_r8)
@@ -881,9 +891,11 @@ subroutine ma_convproc_dp_intr(                &
             tmpa = hund_ovr_g*mu(ii,k) ; tmpb = hund_ovr_g*md(ii,k)
          end if
          if ((k > 15) .and. (mod(k,5) == 1)) write(lun,'(a)')
-         write(lun,'(a,i4,1p,4e11.3,5(2x,2e10.3))') 'qakp', k, &
-            state%zi(i,k+1), fracis(i,k,ixso4_a1), tmpa, tmpb, &
-            (qaa(i,k,l), (qbb(i,k,l)-qaa(i,k,l)), l=ixh2o2,ixh2o2+3)
+!++hybrown
+!         write(lun,'(a,i4,1p,4e11.3,5(2x,2e10.3))') 'qakp', k, &
+!            state%zi(i,k+1), fracis(i,k,ixso4_a1), tmpa, tmpb, &
+!            (qaa(i,k,l), (qbb(i,k,l)-qaa(i,k,l)), l=ixh2o2,ixh2o2+3)
+!--hybrown
       end do
 
       tmpveca(:) = 0.0 ; tmpa = 0.0
@@ -1209,20 +1221,26 @@ subroutine ma_convproc_sh_intr(                 &
 
 ! change profiles of first 4 gases
    call cnst_get_ind('H2O2',   ixh2o2)
-   call cnst_get_ind('so4_a1', ixso4_a1)
-   call cnst_get_ind('bc_a1',  ixbc_a1)
+!++hybrown
+!   call cnst_get_ind('so4_a1', ixso4_a1)
+!   call cnst_get_ind('bc_a1',  ixbc_a1)
+!--hybrown
 
    if (idiag_aa > 0 .and. idiag_gg > 0) then
-   if (itmpa .gt. 0) then
-      write(lun,'(a,2i4,1p,e12.4,i9,i5)') 'sqako ixh2o2, ixso4_a1, dt, lchnk, nstep ', &
-         ixh2o2, ixso4_a1, dt, lchnk, nstep
-   end if
+!++hybrown
+!   if (itmpa .gt. 0) then
+!      write(lun,'(a,2i4,1p,e12.4,i9,i5)') 'sqako ixh2o2, ixso4_a1, dt, lchnk, nstep ', &
+!         ixh2o2, ixso4_a1, dt, lchnk, nstep
+!   end if
+!--hybrown
    if (ixh2o2   < 6 .or. ixh2o2   > pcnst-4) &
       call endrun( "*** ma_convproc_sh_intr -- bad ixh2o2" )
-   if (ixso4_a1 < 6 .or. ixso4_a1 > pcnst) &
-      call endrun( "*** ma_convproc_sh_intr -- bad ixso4_a1" )
-   if (ixbc_a1  < 6 .or. ixbc_a1  > pcnst) &
-      call endrun( "*** ma_convproc_sh_intr -- bad ixbc_a1" )
+!++hybrown
+!   if (ixso4_a1 < 6 .or. ixso4_a1 > pcnst) &
+!      call endrun( "*** ma_convproc_sh_intr -- bad ixso4_a1" )
+!   if (ixbc_a1  < 6 .or. ixbc_a1  > pcnst) &
+!      call endrun( "*** ma_convproc_sh_intr -- bad ixbc_a1" )
+!--hybrown
 
    do ll = 1, 4
       l = ixh2o2 + (ll-1)

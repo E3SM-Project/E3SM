@@ -3822,12 +3822,14 @@ Approximate value of decay time at model top (days);
 Default: 0.0D0
 </entry>
 
-<entry id="mode_defs" type="char*256(100)"  category="radiation"
+<!----------hybrown---------->
+<entry id="mode_defs" type="char*256(99999)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >
 Definitions for the aerosol modes that may be used in the rad_climate and
 rad_diag_* variables.
 Default: set by build-namelist
 </entry>
+<!----------hybrown---------->
 
 <entry id="rad_climate" type="char*256(n_rad_cnst)"  category="radiation"
        group="rad_cnst_nl" valid_values="" >
@@ -3897,6 +3899,543 @@ Default: none
 Analogous to rad_diag_1, but for the 10th diagnostic calculation.
 Default: none
 </entry>
+
+
+<!----------hybrown---------->
+<entry id="rad_diag_11" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+Analogous to rad_diag_1, but for the 11th diagnostic calculation.
+Default: none
+</entry>
+
+<entry id="rad_diag_12" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+Analogous to rad_diag_1, but for the 12th diagnostic calculation.
+Default: none
+</entry>
+
+<entry id="rad_diag_13" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+Analogous to rad_diag_1, but for the 13th diagnostic calculation.
+Default: none
+</entry>
+
+<entry id="rad_diag_14" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+Analogous to rad_diag_1, but for the 14th diagnostic calculation.
+Default: none
+</entry>
+
+<entry id="rad_diag_15" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+Analogous to rad_diag_1, but for the 15th diagnostic calculation.
+Default: none
+</entry>
+
+<entry id="rad_diag_16" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+Analogous to rad_diag_1, but for the 16th diagnostic calculation.
+Default: none
+</entry>
+
+<entry id="rad_diag_17" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+Analogous to rad_diag_1, but for the 17th diagnostic calculation.
+Default: none
+</entry>
+
+<entry id="rad_diag_18" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+Analogous to rad_diag_1, but for the 18th diagnostic calculation.
+Default: none
+</entry>
+
+<entry id="rad_diag_19" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+Analogous to rad_diag_1, but for the 19th diagnostic calculation.
+Default: none
+</entry>
+
+<entry id="rad_diag_20" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+Analogous to rad_diag_1, but for the 20th diagnostic calculation.
+Default: none
+</entry>
+
+<entry id="rad_diag_21" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 11th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_22" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 12th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_23" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 13th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_24" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 14th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_25" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 15th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_26" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 16th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_27" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 17th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_28" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 18th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_29" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 19th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_30" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 20th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_31" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 11th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_32" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 12th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_33" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 13th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_34" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 14th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_35" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 15th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_36" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 16th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_37" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 17th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_38" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 18th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_39" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 19th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_40" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 20th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_41" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 11th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_42" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 12th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_43" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 13th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_44" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 14th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_45" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 15th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_46" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 16th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_47" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 17th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_48" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 18th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_49" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 19th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_50" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 20th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_51" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 11th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_52" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 12th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_53" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 13th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_54" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 14th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_55" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 15th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_56" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 16th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_57" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 17th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_58" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 18th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_59" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 19th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_60" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 20th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_61" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 11th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_62" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 12th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_63" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 13th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_64" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 14th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_65" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 15th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_66" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 16th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_67" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 17th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_68" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 18th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_69" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 19th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_70" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 20th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_71" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 11th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_72" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 12th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_73" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 13th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_74" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 14th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_75" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 15th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_76" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 16th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_77" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 17th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_78" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 18th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_79" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 19th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_80" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 20th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_81" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 11th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_82" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 12th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_83" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 13th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_84" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 14th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_85" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 15th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_86" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 16th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_87" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 17th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_88" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 18th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_89" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 19th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_90" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 20th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_91" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 11th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_92" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 12th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_93" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 13th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_94" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 14th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_95" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 15th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_96" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 16th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_97" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 17th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_98" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 18th diagnostic calculation.
+    Default: none
+</entry>
+
+<entry id="rad_diag_99" type="char*256(n_rad_cnst)"  category="radiation"
+    group="rad_cnst_nl" valid_values="" >
+    Analogous to rad_diag_1, but for the 19th diagnostic calculation.
+    Default: none
+</entry>
+<!----------hybrown---------->
 
 
 <entry id="rad_data_output" type="logical"   category="radiation"

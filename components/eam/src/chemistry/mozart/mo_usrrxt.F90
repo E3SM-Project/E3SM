@@ -29,6 +29,38 @@ module mo_usrrxt
   integer :: usr_MPAN_M_ndx
   integer :: usr_XOOH_OH_ndx
   integer :: usr_SO2_OH_ndx
+!++hybrown
+  integer :: usr_SO2_OH01_ndx
+  integer :: usr_SO2_OH02_ndx
+  integer :: usr_SO2_OH03_ndx
+  integer :: usr_SO2_OH04_ndx
+  integer :: usr_SO2_OH05_ndx
+  integer :: usr_SO2_OH06_ndx
+  integer :: usr_SO2_OH07_ndx
+  integer :: usr_SO2_OH08_ndx
+  integer :: usr_SO2_OH09_ndx
+  integer :: usr_SO2_OH10_ndx
+  integer :: usr_SO2_OH11_ndx
+  integer :: usr_SO2_OH12_ndx
+  integer :: usr_SO2_OH13_ndx
+  integer :: usr_SO2_OH14_ndx
+  integer :: usr_SO2_OH15_ndx
+  integer :: usr_SO2_OH16_ndx
+  integer :: usr_SO2_OH17_ndx
+  integer :: usr_SO2_OH18_ndx
+  integer :: usr_SO2_OH19_ndx
+  integer :: usr_SO2_OH20_ndx
+  integer :: usr_SO2_OH21_ndx
+  integer :: usr_SO2_OH22_ndx
+  integer :: usr_SO2_OH23_ndx
+  integer :: usr_SO2_OH24_ndx
+  integer :: usr_SO2_OH25_ndx
+  integer :: usr_SO2_OH26_ndx
+  integer :: usr_SO2_OH27_ndx
+  integer :: usr_SO2_OH28_ndx
+  integer :: usr_SO2_OH29_ndx
+  integer :: usr_SO2_OH30_ndx
+!-hybrown
   integer :: usr_DMS_OH_ndx
   integer :: usr_HO2_aer_ndx
   
@@ -160,6 +192,38 @@ contains
     usr_MPAN_M_ndx       = get_rxt_ndx( 'usr_MPAN_M' )
     usr_XOOH_OH_ndx      = get_rxt_ndx( 'usr_XOOH_OH' )
     usr_SO2_OH_ndx       = get_rxt_ndx( 'usr_SO2_OH' )
+!++hybrown
+    usr_SO2_OH01_ndx       = get_rxt_ndx( 'usr_SO2_OH01' )
+    usr_SO2_OH02_ndx       = get_rxt_ndx( 'usr_SO2_OH02' )
+    usr_SO2_OH03_ndx       = get_rxt_ndx( 'usr_SO2_OH03' )
+    usr_SO2_OH04_ndx       = get_rxt_ndx( 'usr_SO2_OH04' )
+    usr_SO2_OH05_ndx       = get_rxt_ndx( 'usr_SO2_OH05' )
+    usr_SO2_OH06_ndx       = get_rxt_ndx( 'usr_SO2_OH06' )
+    usr_SO2_OH07_ndx       = get_rxt_ndx( 'usr_SO2_OH07' )
+    usr_SO2_OH08_ndx       = get_rxt_ndx( 'usr_SO2_OH08' )
+    usr_SO2_OH09_ndx       = get_rxt_ndx( 'usr_SO2_OH09' )
+    usr_SO2_OH10_ndx       = get_rxt_ndx( 'usr_SO2_OH10' )
+    usr_SO2_OH11_ndx       = get_rxt_ndx( 'usr_SO2_OH11' )
+    usr_SO2_OH12_ndx       = get_rxt_ndx( 'usr_SO2_OH12' )
+    usr_SO2_OH13_ndx       = get_rxt_ndx( 'usr_SO2_OH13' )
+    usr_SO2_OH14_ndx       = get_rxt_ndx( 'usr_SO2_OH14' )
+    usr_SO2_OH15_ndx       = get_rxt_ndx( 'usr_SO2_OH15' )
+    usr_SO2_OH16_ndx       = get_rxt_ndx( 'usr_SO2_OH16' )
+    usr_SO2_OH17_ndx       = get_rxt_ndx( 'usr_SO2_OH17' )
+    usr_SO2_OH18_ndx       = get_rxt_ndx( 'usr_SO2_OH18' )
+    usr_SO2_OH19_ndx       = get_rxt_ndx( 'usr_SO2_OH19' )
+    usr_SO2_OH20_ndx       = get_rxt_ndx( 'usr_SO2_OH20' )
+    usr_SO2_OH21_ndx       = get_rxt_ndx( 'usr_SO2_OH21' )
+    usr_SO2_OH22_ndx       = get_rxt_ndx( 'usr_SO2_OH22' )
+    usr_SO2_OH23_ndx       = get_rxt_ndx( 'usr_SO2_OH23' )
+    usr_SO2_OH24_ndx       = get_rxt_ndx( 'usr_SO2_OH24' )
+    usr_SO2_OH25_ndx       = get_rxt_ndx( 'usr_SO2_OH25' )
+    usr_SO2_OH26_ndx       = get_rxt_ndx( 'usr_SO2_OH26' )
+    usr_SO2_OH27_ndx       = get_rxt_ndx( 'usr_SO2_OH27' )
+    usr_SO2_OH28_ndx       = get_rxt_ndx( 'usr_SO2_OH28' )
+    usr_SO2_OH29_ndx       = get_rxt_ndx( 'usr_SO2_OH29' )
+    usr_SO2_OH30_ndx       = get_rxt_ndx( 'usr_SO2_OH30' )
+!--hybrown
     usr_DMS_OH_ndx       = get_rxt_ndx( 'usr_DMS_OH' )
     usr_HO2_aer_ndx      = get_rxt_ndx( 'usr_HO2_aer' )
  !
@@ -686,6 +750,159 @@ contains
           ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8) 
           rxt(:,k,usr_SO2_OH_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
        end if
+!++hybrown
+       if( usr_SO2_OH01_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH01_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH02_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH02_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH03_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH03_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH04_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH04_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH05_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH05_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH06_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH06_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH07_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH07_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH08_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH08_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH09_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH09_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH10_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH10_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH11_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH11_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH12_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH12_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH13_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH13_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH14_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH14_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH15_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH15_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH16_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH16_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH17_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH17_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH18_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH18_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH19_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH19_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH20_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH20_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH21_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH21_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH22_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH22_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH23_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH23_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH24_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH24_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH25_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH25_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH26_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH26_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH27_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH27_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH28_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH28_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH29_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH29_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if
+       if( usr_SO2_OH30_ndx > 0 ) then
+          fc(:) = 3.0e-31_r8 *(300._r8*tinv(:))**3.3_r8
+          ko(:) = fc(:)*m(:,k)/(1._r8 + fc(:)*m(:,k)/1.5e-12_r8)
+          rxt(:,k,usr_SO2_OH30_ndx) = ko(:)*.6_r8**(1._r8 + (log10(fc(:)*m(:,k)/1.5e-12_r8))**2._r8)**(-1._r8)
+       end if   
+!--hybrown
+
 !
 ! reduced hydrocarbon scheme
 !

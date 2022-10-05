@@ -4968,6 +4968,9 @@ end subroutine print_active_fldlst
     !
     listentry => get_entry_by_name(masterlinkedlist, fname)
     if(associated(listentry)) then
+!++hybrown
+         write(iulog,*) fname, long_name
+!--hybrown
       call endrun ('ADDFLD:  '//fname//' already on list')
     end if
 

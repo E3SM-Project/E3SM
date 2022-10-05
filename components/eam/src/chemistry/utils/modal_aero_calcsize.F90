@@ -28,6 +28,10 @@ use modal_aero_data, only: ntot_amode, numptr_amode, modename_amode
 use modal_aero_data,  only: numptrcw_amode, mprognum_amode, qqcw_get_field, &
      modeptr_accum, modeptr_aitken, ntot_aspectype, cnst_name_cw
 
+!++hybrown
+use modal_aero_data,  only: nso4, nsoa, npoa, nbc
+!--hybrown
+
 #endif
 !---------------------------------------------------------------------------------------------------------
 !---------------------------------------------------------------------------------------------------------
@@ -54,7 +58,10 @@ integer :: dgnum_idx = -1 !pbuf id for dgnum
 
 integer, parameter :: maxpair_csizxf = N_DIAG
 #ifdef MODAL_AERO
-integer, parameter :: maxspec_csizxf = ntot_aspectype
+!++hybrown
+!integer, parameter :: maxspec_csizxf = ntot_aspectype
+integer, parameter, public :: maxspec_csizxf = nso4+nsoa+npoa+nbc+ntot_aspectype-4
+!--hybrown
 #else
 ! TODO: this is a kludge.  This value should probably be assigned
 ! elsewhere for the non-modal case.  S.M. Burrows.
@@ -820,7 +827,6 @@ subroutine modal_aero_calcsize_sub(state, deltat, pbuf, ptend, do_adjust_in, &
          if ((lsfrm > 0) .and. (lstoo > 0)) then
             tmpnamea = cnst_name_cw(lsfrm)
             tmpnameb = cnst_name_cw(lstoo)
-
             fieldname = trim(tmpnamea) // '_sfcsiz3'
             call outfld( fieldname, qsrflx(:,lsfrm,3,cld_brn_aero), pcols, lchnk)
 
