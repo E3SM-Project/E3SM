@@ -32,7 +32,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
 
   // Create io_grid, containing the indices of the triplets
   // in the map file that this rank has to read
-  auto gids_h = get_my_triplets_gids (map_file);
+  auto gids_h = get_my_triplets_gids (map_file,src_grid);
   view_1d<gid_t> gids_d("",gids_h.size());
   Kokkos::deep_copy(gids_d,gids_h);
 
@@ -109,7 +109,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   auto weights_h     = Kokkos::create_mirror_view(m_weights);
 
   for (int i=0; i<nlweights; ++i) {
-    col_lids_h(i) = gid2lid(col_gids_h(id[i])-1,m_src_grid);
+    col_lids_h(i) = gid2lid(col_gids_h(id[i])-1,src_grid);
     weights_h(i)  = S_h(id[i]);
   }
 
@@ -602,7 +602,8 @@ void CoarseningRemapper::unpack () const
 
 
 auto CoarseningRemapper::
-get_my_triplets_gids (const std::string& map_file) const
+get_my_triplets_gids (const std::string& map_file,
+                      const grid_ptr_type& src_grid) const
   -> view_1d<gid_t>::HostMirror
 {
   using namespace ShortFieldTagsNames;
@@ -633,7 +634,7 @@ get_my_triplets_gids (const std::string& map_file) const
   }
 
   // 3. Get the owners of the cols gids we read in, according to the src grid
-  auto owners = m_src_grid->get_owners(cols);
+  auto owners = src_grid->get_owners(cols);
 
   // 4. Group gids we read by the pid we need to send them to
   std::map<int,std::vector<int>> pid2gids_send;
@@ -723,11 +724,11 @@ recv_gids_from_pids (const std::map<int,std::vector<int>>& send_gids_to_pids) co
     const int pid = it.first;
     nsends[pid] = it.second.size();
     send_req.emplace_back();
-    MPI_Isend (&nsends[pid],1,MPI_INT,pid,MPI_ANY_TAG,comm,&send_req.back());
+    MPI_Isend (&nsends[pid],1,MPI_INT,pid,0,comm,&send_req.back());
   }
   for (auto pid : recv_from) {
     recv_req.emplace_back();
-    MPI_Irecv(&nrecvs[pid],1,MPI_INT,pid,MPI_ANY_TAG,comm,&recv_req.back());
+    MPI_Irecv(&nrecvs[pid],1,MPI_INT,pid,0,comm,&recv_req.back());
   }
   MPI_Waitall(send_req.size(),send_req.data(),MPI_STATUSES_IGNORE);
   MPI_Waitall(recv_req.size(),recv_req.data(),MPI_STATUSES_IGNORE);
@@ -739,7 +740,7 @@ recv_gids_from_pids (const std::map<int,std::vector<int>>& send_gids_to_pids) co
   for (const auto& it : send_gids_to_pids) {
     send_req.emplace_back();
     MPI_Isend(it.second.data(),it.second.size(),MPI_INT,
-              it.first,MPI_ANY_TAG,comm,&send_req.back());
+              it.first,0,comm,&send_req.back());
   }
   std::map<int,std::vector<int>> recv_gids_from_pids;
   for (const auto& it : nrecvs) {
@@ -748,7 +749,7 @@ recv_gids_from_pids (const std::map<int,std::vector<int>>& send_gids_to_pids) co
     recv_gids_from_pids[pid].resize(n);
     recv_req.emplace_back();
     MPI_Irecv(recv_gids_from_pids[pid].data(),n,MPI_INT,
-              pid,MPI_ANY_TAG,comm,&recv_req.back());
+              pid,0,comm,&recv_req.back());
   }
   MPI_Waitall(send_req.size(),send_req.data(),MPI_STATUSES_IGNORE);
   MPI_Waitall(recv_req.size(),recv_req.data(),MPI_STATUSES_IGNORE);

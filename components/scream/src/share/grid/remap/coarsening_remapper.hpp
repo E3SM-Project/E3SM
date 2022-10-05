@@ -57,8 +57,18 @@ public:
   bool compatible_layouts (const layout_type& src,
                            const layout_type& tgt) const override {
     // Same type of layout, and same sizes except for possibly the first one
+    // Note: we can't do tgt.size()/tgt.dim(0), since there may be 0 tgt gids
+    //       on some ranks, which means tgt.dim(0)=0.
+    int src_col_size = 1;
+    for (int i=1; i<src.rank(); ++i) {
+      src_col_size *= src.dim(i);
+    }
+    int tgt_col_size = 1;
+    for (int i=1; i<tgt.rank(); ++i) {
+      tgt_col_size *= tgt.dim(i);
+    }
     return get_layout_type(src.tags())==get_layout_type(tgt.tags()) &&
-           src.size()/src.dim(0) == tgt.size()/tgt.dim(0);
+           src_col_size == tgt_col_size;
   }
 
 protected:
@@ -115,7 +125,8 @@ protected:
   }
 
   view_1d<gid_t>::HostMirror
-  get_my_triplets_gids (const std::string& map_file) const;
+  get_my_triplets_gids (const std::string& map_file,
+                        const grid_ptr_type& src_grid) const;
 
   std::vector<int> get_pids_for_recv (const std::vector<int>& my_send_pids) const;
 

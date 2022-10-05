@@ -16,7 +16,7 @@ public:
   }
   view_1d<gid_t>::HostMirror
   test_triplet_gids (const std::string& map_file) const {
-    return CoarseningRemapper::get_my_triplets_gids (map_file);
+    return CoarseningRemapper::get_my_triplets_gids (map_file,m_src_grid);
   }
 
   view_1d<int> get_row_offsets () const {
@@ -152,7 +152,6 @@ TEST_CASE ("coarsening_remap") {
   print (" -> Checking remapper internal state ...\n",comm);
   // Check tgt grid
   auto tgt_grid = remap->get_tgt_grid();
-  REQUIRE (tgt_grid->get_num_local_dofs()==nldofs_tgt);
   REQUIRE (tgt_grid->get_num_global_dofs()==ngdofs_tgt);
 
   // Check which triplets are read from map file
@@ -345,6 +344,7 @@ TEST_CASE ("coarsening_remap") {
     print (" -> check tgt fields ...\n",comm);
     // Recall, tgt gid K should be the avg of src gids K and K+ngdofs_tgt
     auto tgt_gids = tgt_grid->get_dofs_gids_host();
+    const int ntgt_gids = tgt_gids.size();
     for (size_t ifield=0; ifield<tgt_f.size(); ++ifield) {
       const auto& f = tgt_f[ifield];
       const auto& l = f.get_header().get_identifier().get_layout();
@@ -358,7 +358,7 @@ TEST_CASE ("coarsening_remap") {
         case LayoutType::Scalar2D:
         {
           const auto v_tgt = f.get_view<const Real*,Host>();
-          for (int i=0; i<nldofs_tgt; ++i) {
+          for (int i=0; i<ntgt_gids; ++i) {
             const auto gid = tgt_gids(i);
             const auto term1 = gid;
             const auto term2 = gid+ngdofs_tgt;
@@ -368,7 +368,7 @@ TEST_CASE ("coarsening_remap") {
         case LayoutType::Vector2D:
         {
           const auto v_tgt = f.get_view<const Real**,Host>();
-          for (int i=0; i<nldofs_tgt; ++i) {
+          for (int i=0; i<ntgt_gids; ++i) {
             const auto gid = tgt_gids(i);
             for (int j=0; j<vec_dim; ++j) {
               const auto term1 = gid*vec_dim+j;
@@ -380,7 +380,7 @@ TEST_CASE ("coarsening_remap") {
         {
           const int nlevs = l.dims().back();
           const auto v_tgt = f.get_view<const Real**,Host>();
-          for (int i=0; i<nldofs_tgt; ++i) {
+          for (int i=0; i<ntgt_gids; ++i) {
             const auto gid = tgt_gids(i);
             for (int j=0; j<nlevs; ++j) {
               const auto term1 = gid*nlevs+j;
@@ -392,7 +392,7 @@ TEST_CASE ("coarsening_remap") {
         {
           const int nlevs = l.dims().back();
           const auto v_tgt = f.get_view<const Real***,Host>();
-          for (int i=0; i<nldofs_tgt; ++i) {
+          for (int i=0; i<ntgt_gids; ++i) {
             const auto gid = tgt_gids(i);
             for (int j=0; j<vec_dim; ++j) {
               for (int k=0; k<nlevs; ++k) {
