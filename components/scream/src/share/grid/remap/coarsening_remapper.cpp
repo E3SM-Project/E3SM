@@ -13,9 +13,8 @@ namespace scream
 
 CoarseningRemapper::
 CoarseningRemapper (const grid_ptr_type& src_grid,
-                    // const grid_ptr_type& tgt_grid,
                     const std::string& map_file)
- : AbstractRemapper(src_grid,create_tgt_grid(map_file,src_grid))
+ : AbstractRemapper()
  , m_comm (src_grid->get_comm())
 {
   using namespace ShortFieldTagsNames;
@@ -130,6 +129,13 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
       "  - row_offsets(end): " + std::to_string(row_offsets_h(num_ov_row_gids)) + "\n");
 
   Kokkos::deep_copy(m_row_offsets,row_offsets_h);
+
+  const int nlevs  = src_grid->get_num_vertical_levels();
+
+  auto tgt_grid_gids = m_ov_tgt_grid->get_unique_gids ();
+  auto tgt_grid = std::make_shared<PointGrid>("tgt_grid",tgt_grid_gids.size(),nlevs,m_comm);
+  tgt_grid->set_dofs(tgt_grid_gids);
+  this->set_grids(src_grid,tgt_grid);
 }
 
 CoarseningRemapper::
@@ -195,39 +201,6 @@ create_tgt_layout (const FieldLayout& src_layout) const
       EKAT_ERROR_MSG ("Layout not supported by CoarseningRemapper: " + e2str(lt) + "\n");
   }
   return tgt;
-}
-
-CoarseningRemapper::grid_ptr_type
-CoarseningRemapper::
-create_tgt_grid (const std::string& map_file,
-                 const grid_ptr_type& src_grid)
-{
-  EKAT_REQUIRE_MSG (scorpio::is_eam_pio_subsystem_inited(),
-      "Error! PIO subsystem was not yet inited.\n");
-
-  scorpio::register_file(map_file,scorpio::FileMode::Read);
-
-  const int ncols_src = scorpio::get_dimlen_c2f(map_file.c_str(),"n_a");
-  const int ncols_tgt = scorpio::get_dimlen_c2f(map_file.c_str(),"n_b");
-
-  // Ensure it is indeed a coarsening, and the src grid size matches the src grid
-  EKAT_REQUIRE_MSG (ncols_tgt<src_grid->get_num_global_dofs(),
-      "Error! CoarseningRemapper requires tgt grid to have less dofs.\n"
-      "  - src grid ncols: " + std::to_string(src_grid->get_num_global_dofs()) + "\n"
-      "  - map file tgt ncols: " + std::to_string(ncols_tgt) + "\n");
-  EKAT_REQUIRE_MSG (ncols_src==src_grid->get_num_global_dofs(),
-      "Error! Invalid src grid ncols in CoarseningRemapper map file.\n"
-      "  - src grid ncols: " + std::to_string(src_grid->get_num_global_dofs()) + "\n"
-      "  - map file src ncols: " + std::to_string(ncols_src) + "\n");
-
-  const int nlevs  = src_grid->get_num_vertical_levels();
-  const auto& comm = src_grid->get_comm();
-
-  auto grid = create_point_grid("",ncols_tgt,nlevs,comm);
-
-  scorpio::eam_pio_closefile(map_file);
-
-  return grid;
 }
 
 void CoarseningRemapper::
@@ -635,17 +608,17 @@ get_my_triplets_gids (const std::string& map_file) const
   using namespace ShortFieldTagsNames;
 
   scorpio::register_file(map_file,scorpio::FileMode::Read);
-  // Create a "fake" grid, with as many dofs as the number of triplets in the src file
+  // 1. Create a "helper" grid, with as many dofs as the number
+  //    of triplets in the map file, and divided linearly across ranks
   const int ngweights = scorpio::get_dimlen_c2f(map_file.c_str(),"n_s");
   const auto io_grid_linear = create_point_grid ("helper",ngweights,1,m_comm);
   const int nlweights = io_grid_linear->get_num_local_dofs();
-  const auto& raw_comm = m_comm.mpi_comm();
 
   gid_t offset = nlweights;
   m_comm.scan(&offset,1,MPI_SUM);
   offset -= nlweights; // scan is inclusive, but we need exclusive
 
-  // Read chunk of triplets col indices
+  // 2. Read a chunk of triplets col indices
   std::vector<gid_t> cols(nlweights);
   const std::string idx_decomp_tag = "int-nnz" + std::to_string(nlweights);
   scorpio::get_variable(map_file, "col", "col", {"n_s"}, "int", idx_decomp_tag);
@@ -655,84 +628,132 @@ get_my_triplets_gids (const std::string& map_file) const
   scorpio::set_decomp(map_file);
   scorpio::grid_read_data_array(map_file,"col",-1,cols.data(),cols.size());
   scorpio::eam_pio_closefile(map_file);
-
-  // Subtract 1 to cols indices
   for (auto& id : cols) {
-    --id;
+    --id; // Subtract 1 to get 0-based indices
   }
 
-  // Get owners of cols read in
-  auto owners_lids = m_src_grid->get_owners_and_lids(cols);
+  // 3. Get the owners of the cols gids we read in, according to the src grid
+  auto owners = m_src_grid->get_owners(cols);
 
-  // Now we need to communicate to each rank which entries of the
-  // (global) col array they need to read. Since the io_grid_linear
-  // is partitioned linearly, we only need to add an offset to the
-  // local id, in order to retrieve the global id
-  // gid_t offset = 0;
-  // MPI_Exscan (&nlweights,&offset,1,MPI_INT,MPI_SUM,raw_comm);
-
-  std::map<int,std::vector<int>> pid_to_io_grid_gid;
+  // 4. Group gids we read by the pid we need to send them to
+  std::map<int,std::vector<int>> pid2gids_send;
   for (int i=0; i<nlweights; ++i) {
-    const auto pid = owners_lids(i,0);
-    pid_to_io_grid_gid[pid].push_back(i+offset);
+    const auto pid = owners(i);
+    pid2gids_send[pid].push_back(i+offset);
   }
 
-  MPI_Win counter_win, data_win;
-  std::vector<int> num_entries(m_comm.size(),0);
-  MPI_Win_create (num_entries.data(),m_comm.size()*sizeof(int),sizeof(int),
-                  MPI_INFO_NULL,raw_comm,&counter_win);
-  MPI_Win_fence(0,counter_win);
+  // 5. Obtain the dual map of the one above: a list of gids we need to
+  //    receive, grouped by the pid we recv them from
+  auto pid2gids_recv = recv_gids_from_pids(pid2gids_send);
 
-  // 1. Communicate number of gids to each pid
-  for (const auto& it : pid_to_io_grid_gid) {
-    const int n = it.second.size();
-    const int pid = it.first;
-    MPI_Put (&n,1,MPI_INT,pid,m_comm.rank(),1,MPI_INT,counter_win);
+  // 6. Cat all the list of gids in one
+  int num_my_triplets = 0;
+  for (const auto& it : pid2gids_recv) {
+    num_my_triplets += it.second.size();
   }
-  MPI_Win_fence(0,counter_win);
-  MPI_Win_free(&counter_win);
-
-  // 2. Compute offsets of each remote pid into our recv buffer
-  int total_num_entries = num_entries[0];
-  std::vector<int> pids_offset_in_my_buf (m_comm.size(),0);
-  for (int pid=1; pid<m_comm.size(); ++pid) {
-    pids_offset_in_my_buf[pid] = pids_offset_in_my_buf[pid-1] + num_entries[pid-1];
-    total_num_entries += num_entries[pid];
+  view_1d<gid_t>::HostMirror my_triplets_gids("",num_my_triplets);
+  int num_copied = 0;
+  for (const auto& it : pid2gids_recv) {
+    auto dst = my_triplets_gids.data()+num_copied;
+    auto src = it.second.data();
+    std::memcpy (dst,src,it.second.size()*sizeof(int));
+    num_copied += it.second.size();
   }
-
-  // 3. Read from all other pids what MY offset is on their recv buffer
-  std::vector<int> my_offset_on_pids (m_comm.size(),-1);
-  MPI_Win read_win;
-  MPI_Win_create (pids_offset_in_my_buf.data(),sizeof(int)*m_comm.size(),sizeof(int),
-                  MPI_INFO_NULL,raw_comm,&read_win);
-  MPI_Win_fence(0,read_win);
-  for (const auto& it : pid_to_io_grid_gid) {
-    const int pid = it.first;
-    MPI_Get (&my_offset_on_pids[pid],1,MPI_INT,pid,m_comm.rank(),1,MPI_INT,read_win);
-  }
-  MPI_Win_fence(0,read_win);
-  MPI_Win_free(&read_win);
-
-  // 4. Communicate all gids to their owners
-  gid_t* my_triplets_gids_ptr;
-  MPI_Win_allocate(total_num_entries*sizeof(gid_t),sizeof(gid_t),
-                   MPI_INFO_NULL,raw_comm,&my_triplets_gids_ptr,&data_win);
-  MPI_Win_fence(0,data_win);
-  for (const auto& it : pid_to_io_grid_gid) {
-    const int n = it.second.size();
-    const int pid = it.first;
-    MPI_Put (it.second.data(),n,MPI_INT,pid,my_offset_on_pids[pid],n,MPI_INT,data_win);
-  }
-  MPI_Win_fence(0,data_win);
-
-  // 5. Copy from window to a view, before freeing window's memory
-  view_1d<gid_t>::HostMirror my_triplets_gids("",total_num_entries);
-  std::memcpy(my_triplets_gids.data(),my_triplets_gids_ptr,total_num_entries*sizeof(int));
-
-  // 6. Clean up
-  MPI_Win_free(&data_win);
 
   return my_triplets_gids;
+}
+
+std::vector<int>
+CoarseningRemapper::get_pids_for_recv (const std::vector<int>& my_send_pids) const
+{
+  // Figure out how many sends each PID is doing
+  std::vector<int> num_sends(m_comm.size(),0);
+  num_sends[m_comm.rank()] = my_send_pids.size();
+  m_comm.all_gather(num_sends.data(),1);
+
+  // Offsets for send_pids coming from each pid
+  // NOTE: the extra entry at the end if for ease of use later
+  std::vector<int> sends_offsets (m_comm.size()+1,0);
+  for (int pid=1; pid<=m_comm.size(); ++pid) {
+    sends_offsets[pid] = sends_offsets[pid-1] + num_sends[pid-1];
+  }
+
+  // Gather all the pids that each rank is sending data to
+  auto nglobal_sends = std::accumulate(num_sends.begin(),num_sends.end(),0);
+  std::vector<int> global_send_pids(nglobal_sends,-1);
+  MPI_Allgatherv (my_send_pids.data(),my_send_pids.size(),MPI_INT,
+                  global_send_pids.data(),num_sends.data(),sends_offsets.data(),
+                  MPI_INT, m_comm.mpi_comm());
+
+  // Loop over all the ranks, and all the pids they send to, and look for my pid
+  std::vector<int> recv_from_pids;
+  for (int pid=0; pid<m_comm.size(); ++pid) {
+    const int beg = sends_offsets[pid];
+    const int end = sends_offsets[pid+1];
+
+    for (int i=beg; i<end; ++i) {
+      if (global_send_pids[i]==m_comm.rank()) {
+        recv_from_pids.push_back(pid);
+        break;
+      }
+    }
+  }
+
+  return recv_from_pids;
+}
+
+std::map<int,std::vector<int>>
+CoarseningRemapper::
+recv_gids_from_pids (const std::map<int,std::vector<int>>& send_gids_to_pids) const
+{
+  const auto comm = m_comm.mpi_comm();
+
+  // First, figure out which PIDs I need to recv from
+  std::vector<int> send_to;
+  for (const auto& it : send_gids_to_pids) {
+    send_to.push_back(it.first);
+  }
+  auto recv_from = get_pids_for_recv (send_to);
+
+  // Send num of lids send to each send_pid, and recv num of lids
+  // recv from each recv_pid
+  std::map<int,int> nsends, nrecvs;
+  std::vector<MPI_Request> send_req, recv_req;
+  for (const auto& it : send_gids_to_pids) {
+    const int pid = it.first;
+    nsends[pid] = it.second.size();
+    send_req.emplace_back();
+    MPI_Isend (&nsends[pid],1,MPI_INT,pid,MPI_ANY_TAG,comm,&send_req.back());
+  }
+  for (auto pid : recv_from) {
+    recv_req.emplace_back();
+    MPI_Irecv(&nrecvs[pid],1,MPI_INT,pid,MPI_ANY_TAG,comm,&recv_req.back());
+  }
+  MPI_Waitall(send_req.size(),send_req.data(),MPI_STATUSES_IGNORE);
+  MPI_Waitall(recv_req.size(),recv_req.data(),MPI_STATUSES_IGNORE);
+
+  send_req.resize(0);
+  recv_req.resize(0);
+
+  // Now that we know how many gids we will get from each pid, we can send/recv them
+  for (const auto& it : send_gids_to_pids) {
+    send_req.emplace_back();
+    MPI_Isend(it.second.data(),it.second.size(),MPI_INT,
+              it.first,MPI_ANY_TAG,comm,&send_req.back());
+  }
+  std::map<int,std::vector<int>> recv_gids_from_pids;
+  for (const auto& it : nrecvs) {
+    const int pid = it.first;
+    const int n   = it.second;
+    recv_gids_from_pids[pid].resize(n);
+    recv_req.emplace_back();
+    MPI_Irecv(recv_gids_from_pids[pid].data(),n,MPI_INT,
+              pid,MPI_ANY_TAG,comm,&recv_req.back());
+  }
+  MPI_Waitall(send_req.size(),send_req.data(),MPI_STATUSES_IGNORE);
+  MPI_Waitall(recv_req.size(),recv_req.data(),MPI_STATUSES_IGNORE);
+
+  return recv_gids_from_pids;
 }
 
 void CoarseningRemapper::create_ov_tgt_fields ()
@@ -788,14 +809,14 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   // 1. Retrieve pid (and associated lid) of all ov_tgt gids
   //    on the tgt grid
   const auto ov_gids = m_ov_tgt_grid->get_dofs_gids_host();
-  auto pids_lids = m_tgt_grid->get_owners_and_lids (ov_gids);
+  auto gids_owners = m_tgt_grid->get_owners (ov_gids);
 
   // 2. Group dofs to send by remote pid
   const int num_ov_gids = ov_gids.size();
   std::map<int,std::vector<int>> send_lids;
   std::map<int,std::vector<gid_t>> send_gids;
   for (int i=0; i<num_ov_gids; ++i) {
-    const int pid = pids_lids(i,0);
+    const int pid = gids_owners(i);
     send_lids[pid].push_back(i);
     send_gids[pid].push_back(ov_gids(i));
   }

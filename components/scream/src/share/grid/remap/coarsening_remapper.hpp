@@ -62,8 +62,6 @@ public:
   }
 
 protected:
-  static grid_ptr_type create_tgt_grid (const std::string& map_file,
-                                        const grid_ptr_type& src_grid);
 
   const identifier_type& do_get_src_field_id (const int ifield) const override {
     return m_src_fields[ifield].get_header().get_identifier();
@@ -118,6 +116,11 @@ protected:
 
   view_1d<gid_t>::HostMirror
   get_my_triplets_gids (const std::string& map_file) const;
+
+  std::vector<int> get_pids_for_recv (const std::vector<int>& my_send_pids) const;
+
+  std::map<int,std::vector<int>>
+  recv_gids_from_pids (const std::map<int,std::vector<int>>& send_lids_to_pids) const;
 
 #ifdef KOKKOS_ENABLE_CUDA
 public:
