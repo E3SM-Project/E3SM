@@ -51,8 +51,6 @@ public:
   using hview_1d = kokkos_types_host::view_1d<T>;
   template<typename T>
   using view_2d = kokkos_types::view_2d<T>;
-  template<typename T>
-  using hview_2d = kokkos_types_host::view_2d<T>;
 
   using geo_view_type       = view_1d<Real>;
   using geo_view_h_type     = hview_1d<Real>;
@@ -144,14 +142,14 @@ public:
 
   void reset_num_vertical_lev (const int num_vertical_lev);
 
-  // For each gid in the input list of gids, retrieve the process id that owns
-  // it, as well as the local id on that process.
-  // WARNING: this is an expensive method.
-  hview_2d<gid_type> get_owners_and_lids (const hview_1d<const gid_type>& gids) const;
+  dofs_list_type get_unique_gids () const;
 
-  hview_2d<gid_type> get_owners_and_lids (const std::vector<gid_type>& gids) const {
+  // For each gid in the input list of gids, retrieve the process id that owns it
+  hview_1d<int> get_owners (const hview_1d<const gid_type>& gids) const;
+
+  hview_1d<int> get_owners (const std::vector<gid_type>& gids) const {
     hview_1d<const gid_type> gids_v(gids.data(),gids.size());
-    return get_owners_and_lids(gids_v);
+    return get_owners(gids_v);
   }
 protected:
 

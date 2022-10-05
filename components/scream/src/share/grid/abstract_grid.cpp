@@ -249,9 +249,51 @@ void AbstractGrid::reset_num_vertical_lev (const int num_vertical_lev) {
   //       invalidate all geo data whose FieldLayout contains LEV/ILEV
 }
 
+auto
+AbstractGrid::get_unique_gids () const
+ -> dofs_list_type
+{
+  // Gather local sizes across all ranks
+  std::vector<int> ngids (m_comm.size());
+  ngids[m_comm.rank()] = get_num_local_dofs();
+  m_comm.all_gather(ngids.data(),1);
+
+  std::vector<int> offsets (m_comm.size()+1,0);
+  for (int pid=1; pid<=m_comm.size(); ++pid) {
+    offsets[pid] = offsets[pid-1] + ngids[pid-1];
+  }
+  EKAT_REQUIRE_MSG (offsets[m_comm.size()]==m_num_global_dofs,
+      "Error! Something went wrong while computing offsets in AbstractGrid::get_unique_grid.\n");
+
+  // Gather all dofs
+  const auto mpi_gid_t = ekat::get_mpi_type<gid_type>();
+  std::vector<gid_type> all_gids (m_num_global_dofs);
+  MPI_Allgatherv (m_dofs_gids_host.data(),m_num_local_dofs,mpi_gid_t,
+                  all_gids.data(),ngids.data(),offsets.data(),
+                  mpi_gid_t,m_comm.mpi_comm());
+
+  // Figure out unique dofs
+  std::vector<gid_type> unique_dofs;
+  const auto all_gids_beg = all_gids.begin();
+  const auto all_gids_end = all_gids.begin() + offsets[m_comm.rank()];
+  const auto my_gids_beg = m_dofs_gids_host.data();
+  const auto my_gids_end = m_dofs_gids_host.data() + m_num_local_dofs;
+  for (auto it=my_gids_beg; it!=my_gids_end; ++it) {
+    if (std::find(all_gids_beg,all_gids_end,*it)==all_gids_end) {
+      unique_dofs.push_back(*it);
+    }
+  }
+
+  dofs_list_type unique_gids_d("",unique_dofs.size());
+  auto unique_gids_h = Kokkos::create_mirror_view(unique_gids_d);
+  std::memcpy(unique_gids_h.data(),unique_dofs.data(),sizeof(gid_type)*unique_dofs.size());
+  Kokkos::deep_copy(unique_gids_d,unique_gids_h);
+  return unique_gids_h;
+}
+
 auto AbstractGrid::
-get_owners_and_lids (const hview_1d<const gid_type>& gids) const
- -> hview_2d<gid_type>
+get_owners (const hview_1d<const gid_type>& gids) const
+ -> hview_1d<int>
 {
   EKAT_REQUIRE_MSG (m_dofs_set,
       "Error! Cannot retrieve gids owners until dofs gids have been set.\n");
@@ -386,7 +428,7 @@ get_owners_and_lids (const hview_1d<const gid_type>& gids) const
   MPI_Win_fence(0,win);
 
   // Step 3: copy data in rma types into output view, making sure we keep correct order
-  hview_2d<gid_type> pids_and_lids("",gids.size(),2);
+  hview_1d<int> owners("",gids.size());
   std::map<int,int> curr_data_index;
   for (int i=0; i<gids.extent_int(0); ++i) {
     const auto gid = gids[i];
@@ -394,8 +436,7 @@ get_owners_and_lids (const hview_1d<const gid_type>& gids) const
     const auto pid = pidlid.first;
     auto it_bool = curr_data_index.emplace(pid,0);
     auto& idx = it_bool.first->second;
-    pids_and_lids(i,0) = rma_data[pid][idx].pid;
-    pids_and_lids(i,1) = rma_data[pid][idx].lid;
+    owners(i) = rma_data[pid][idx].pid;
     ++idx;
   }
   rma_data.clear();
@@ -403,7 +444,7 @@ get_owners_and_lids (const hview_1d<const gid_type>& gids) const
   // Clean up
   MPI_Win_free(&win);
 
-  return pids_and_lids;
+  return owners;
 }
 
 void AbstractGrid::copy_views (const AbstractGrid& src, const bool shallow)

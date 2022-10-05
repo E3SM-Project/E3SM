@@ -133,19 +133,14 @@ TEST_CASE ("get_pids_and_lids") {
   grid->set_dofs(dofs_d);
 
   // Now, ask each rank to retrieve owners, and verify
-  auto dofs_pids_and_lids = grid->get_owners_and_lids(all_dofs_h);
-  REQUIRE (dofs_pids_and_lids.extent(0)==all_dofs_h.size());
-  REQUIRE (dofs_pids_and_lids.extent(1)==2);
+  auto dofs_owners = grid->get_owners(all_dofs_h);
+  REQUIRE (dofs_owners.extent(0)==all_dofs_h.size());
 
   for (int i=0; i<num_global_dofs; ++i) {
-    const int pid = dofs_pids_and_lids(i,0);
-    const int lid = dofs_pids_and_lids(i,1);
+    const int pid = dofs_owners(i);
     const int expected_pid = i / num_local_dofs;
-    const int expected_lid = i % num_local_dofs;
     REQUIRE (pid==expected_pid);
-    REQUIRE (lid==expected_lid);
   }
-
 }
 
 } // anonymous namespace
