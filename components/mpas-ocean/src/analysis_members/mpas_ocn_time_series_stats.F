@@ -23,6 +23,7 @@ module ocn_time_series_stats
   use mpas_stream_manager
 
   use ocn_constants
+  use ocn_diagnostics_variables
 
   implicit none
   private
@@ -269,7 +270,6 @@ subroutine ocn_init_time_series_stats(domain, instance, err)!{{{
           MPAS_LOG_ERR, masterOnly=.true., flushNow=.true.)
      err = ior(err, err_tmp)
   endif
-
   call mpas_pool_get_config(domain % configs, 'config_output_reference_time', &
     config_output_reference_time)
   call mpas_set_time(reference_time, dateTimeString=config_output_reference_time)
@@ -1813,8 +1813,8 @@ subroutine set_times(series, alarms, clock, which, config, ok, err)
     ! set the time
     if (which == START_TIMES) then
       if (time == INITIAL_TIME_TOKEN) then
-        alarms(b) % start_time = &
-          mpas_get_clock_time(clock, MPAS_START_TIME, err)
+        call mpas_set_time(alarms(b) % start_time, &
+          dateTimeString=simulationStartTime)
       else
         call mpas_set_time(alarms(b) % start_time, &
           dateTimeString=time, ierr=err)
