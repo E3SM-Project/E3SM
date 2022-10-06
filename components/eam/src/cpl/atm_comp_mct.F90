@@ -207,14 +207,6 @@ CONTAINS
        call shr_file_getLogLevel(shrloglev)
        call shr_file_setLogUnit (iulog)
 
-#if defined(CLDERA_PROFILING)
-       call t_startf('cldera_init')
-       call cldera_init(mpicom_atm)
-       call cldera_set_log_unit (iulog)
-       call cldera_set_masterproc (masterproc)
-       call t_stopf('cldera_init')
-#endif
-
        ! Identify SMP nodes and process/SMP mapping for this instance
        ! (Assume that processor names are SMP node names on SMP clusters.)
        write(c_inst_index,'(i8)') inst_index
@@ -316,6 +308,18 @@ CONTAINS
                perpetual_run=perpetual_run,               &
                perpetual_ymd=perpetual_ymd )
        end if
+
+#if defined(CLDERA_PROFILING)
+       ! Initialize CLDERA profiling *before* cam_init, since that's when
+       ! we'll try to register stuff in cldera, and if cldera is not inited,
+       ! all registration calls will return immediately
+       call t_startf('cldera_init')
+       call cldera_init(mpicom_atm,start_ymd,start_tod)
+       call cldera_set_log_unit (iulog)
+       call cldera_set_masterproc (masterproc)
+       call t_stopf('cldera_init')
+#endif
+
        !
        ! First phase of cam initialization 
        ! Initialize mpicom_atm, allocate cam_in and cam_out and determine 
@@ -389,7 +393,6 @@ CONTAINS
        call shr_file_setLogLevel(shrloglev)
 
        first_time = .false.
-
     else
        
        ! For initial run, run cam radiation/clouds and return
@@ -691,15 +694,15 @@ CONTAINS
     type(mct_aVect)             ,intent(inout) :: x2a_a
     type(mct_aVect)             ,intent(inout) :: a2x_a
 
-    call t_startf('cam_final')
-    call cam_final( cam_out, cam_in )
-    call t_stopf('cam_final')
-
 #if defined(CLDERA_PROFILING)
     call t_startf('cldera_clean_up')
     call cldera_clean_up ()
     call t_stopf('cldera_clean_up')
 #endif
+
+    call t_startf('cam_final')
+    call cam_final( cam_out, cam_in )
+    call t_stopf('cam_final')
 
   end subroutine atm_final_mct
 
