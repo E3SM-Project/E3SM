@@ -112,6 +112,7 @@ OPTIONS
   effect whether running EAM as part of CCSM or running in a EAM standalone mode:
 
      -[no]age_of_air_trcs Switch on [off] age of air tracers. Default: on for waccm_phys, otherwise off
+     -cldera_sai_trcs   Switch on idealized stratospheric aerosol injection tracers. Default: off
      -aquaplanet        Switch on aqua-planet mode w/ SST controlled by data ocean component in CIME
      -rce               Use homogenous conditions for radiative-convective equilibrium (RCE), normally used with aquaplanet
      -chem <name>       Build EAM with specified prognostic chemistry package
@@ -280,6 +281,9 @@ OPTIONS
      -crm_adv           CRM advection scheme [MPDATA | UM5]
      -crm <model>       CRM model [sam | samomp | samxx]
      -rrtmgpxx          Use RRTMGP++ code
+
+  Options for CLDERA-E3SM
+     -cldera_profiling  Build EAM with support for CLDERA profiling, linking to cldera-profiling
 EOF
 }
 
@@ -317,6 +321,7 @@ my %opts = (
 	    );
 GetOptions(
     "age_of_air_trcs!"          => \$opts{'age_of_air_trcs'},
+    "cldera_sai_trcs!"          => \$opts{'cldera_sai_trcs'},
     "aquaplanet"                => \$opts{'aquaplanet'},
     "cache=s"                   => \$opts{'cache'},
     "cachedir=s"                => \$opts{'cachedir'},
@@ -354,6 +359,7 @@ GetOptions(
     "crm_adv=s"                 => \$opts{'crm_adv'},
     "crm=s"                     => \$opts{'crm'},
     "rrtmgpxx"                  => \$opts{'rrtmgpxx'},
+    "cldera_profiling"          => \$opts{'cldera_profiling'},
     "debug"                     => \$opts{'debug'},
     "rain_evap_to_coarse_aero"  => \$opts{'rain_evap_to_coarse_aero'},
     "bc_dep_to_snow_updates"    => \$opts{'bc_dep_to_snow_updates'},
@@ -864,8 +870,14 @@ if (defined $opts{'age_of_air_trcs'}) {
     $cfg_ref->set('age_of_air_trcs', $opts{'age_of_air_trcs'});
 }
 my $age_of_air_trcs = $cfg_ref->get('age_of_air_trcs') ? "ON" : "OFF";
-
 if ($print>=2) { print "Age of air tracer package: $age_of_air_trcs$eol"; }
+
+# Allow user to turn on the cldera sai tracers
+if (defined $opts{'cldera_sai_trcs'}) {
+    $cfg_ref->set('cldera_sai_trcs', $opts{'cldera_sai_trcs'});
+}
+my $cldera_sai_trcs = $cfg_ref->get('cldera_sai_trcs') ? "ON" : "OFF";
+if ($print>=2) { print "CLDERA SAI tracer package: $cldera_sai_trcs$eol"; }
 
 # waccmx option
 if (defined $opts{'waccmx'}) {
@@ -1036,6 +1048,7 @@ my $rad_pkg = 'rrtmg';
 if (defined $opts{'rad'}) {
     $rad_pkg = lc($opts{'rad'});
 }
+if ($phys_pkg =~ /ideal|adiabatic/) { $rad_pkg = 'none'; }
 $cfg_ref->set('rad', $rad_pkg);
 
 if ($print>=2) { print "Radiation package: $rad_pkg$eol"; }
@@ -1348,7 +1361,7 @@ if (!defined $opts{'cldera_strat_volc'}) {
     $opts{'cldera_strat_volc'} = 0;
 }
 my $cldera_strat_volc = $opts{'cldera_strat_volc'};
-   $cfg_ref->set('cldera_strat_volc', $cldera_strat_volc);
+$cfg_ref->set('cldera_strat_volc', $cldera_strat_volc);
 
 
 if (($chem_pkg ne 'none') || ($prog_species)) {
@@ -1385,7 +1398,6 @@ if ($chem_pkg =~ '_mam3') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE_MOM ';
 } elsif ($chem_pkg =~ '_mam4' ) {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_4MODE ';
-} elsif ($chem_pkg =~ '_mam4' ) {
 } elsif ($chem_pkg =~ '_mam7') {
     $chem_cppdefs = ' -DMODAL_AERO -DMODAL_AERO_7MODE ';
 } elsif ($chem_pkg =~ '_mam9') {
@@ -1408,6 +1420,7 @@ if ($cldera_strat_volc == 1 && ($chem_pkg =~ '_mam4' || $chem_pkg =~ '_mam4_mom'
 # Number of advected constituents
 my $nadv;
 if (defined $opts{'nadv'}) {
+
     $cfg_ref->set('nadv', $opts{'nadv'});
 }
 else {
@@ -1482,6 +1495,11 @@ else {
     if ($age_of_air_trcs eq "ON") {
 	$nadv += 4;
         if ($print>=2) { print "Advected constituents added by the age of air tracer package: 4$eol"; }
+    }
+
+    if ($cldera_sai_trcs eq "ON") {
+	$nadv += 5;
+        if ($print>=2) { print "Advected constituents added by the CLDERA SAI tracer package: 5$eol"; }
     }
 
     $cfg_ref->set('nadv', $nadv);
@@ -2617,7 +2635,13 @@ sub write_filepath
     print $fh "$camsrcdir/eam/src/chemistry/utils\n";
 
     # Add source code directories for selected radiation package
-    if ($rad eq 'rrtmg') {
+    # Note: need to add rad code even for rad none because source code in CAM
+    # physics folder needs constants defined in radconstants.F90. A better
+    # approach would be to separate components/eam/src/physics/cam into
+    # something like physics/share, physics/eam, and physics/ideal, and then
+    # only include the modules actually needed by the code. This would remove
+    # the need to build a rad package when no rad package is used.
+    if ($rad eq 'rrtmg' or $rad eq 'none') {
         print $fh "$camsrcdir/eam/src/physics/rrtmg\n";
         print $fh "$camsrcdir/eam/src/physics/rrtmg/ext/rrtmg_mcica\n";
         print $fh "$camsrcdir/eam/src/physics/rrtmg/ext/rrtmg_lw\n";
