@@ -107,21 +107,14 @@
   integer, parameter :: max_gas = nsoa + 1
   ! the +3 in max_aer are dst, ncl, so4
   integer, parameter :: max_aer = nsoa + npoa + nbc + 3
-#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined MOSAIC_SPECIES ) )
   integer, parameter :: max_gas = nsoa + 4
   ! the +9 in max_aer are dst, ncl, so4, mom, nh4, no3, cl, ca, co3
   integer, parameter :: max_aer = nsoa + npoa + nbc + 9  
-#elif ( defined MODAL_AERO_4MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE )
   integer, parameter :: max_gas = nsoa + 1
   ! the +4 in max_aer are dst, ncl, so4, mom
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4
-#elif ( defined MODAL_AERO_5MODE)
-  integer, parameter :: max_gas = nsoa + 1
-  ! the +4 in max_aer are dst, ncl, so4, mom
-  integer, parameter :: max_aer = nsoa + npoa + nbc + 4
-!  logical, parameter :: kzm_nucleation_switch = .true.
-!  logical, parameter :: kzm_coag_switch = .true.
-!  logical, parameter :: kzm_renaming_switch = .true.
 #elif ( ( defined MODAL_AERO_7MODE ) && ( defined MOSAIC_SPECIES ) )
   integer, parameter :: max_gas = nsoa + 4
   ! the +8 in max_aer are dst, ncl(=na), so4, no3, cl, nh4, ca, co3 
@@ -140,12 +133,8 @@
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4 + 5
 #endif
 
-#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ))
-  integer, parameter :: ntot_amode_extd = ntot_amode
-!kzm ++
-#elif (defined MODAL_AERO_5MODE)
-  integer, parameter :: ntot_amode_extd = ntot_amode
-!kzm --  
+#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || ( defined MODAL_AERO_5MODE ) )
+  integer, parameter :: ntot_amode_extd = ntot_amode  
 #else
   integer, parameter :: ntot_amode_extd = ntot_amode + 1
 ! integer, parameter :: ntot_amode_extd = ntot_amode
@@ -5932,7 +5921,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
          iaer_nh4 = naer
       end if
 
-#if ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+#if ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined MOSAIC_SPECIES ) )
       ngas = ngas + 1
       name_gas(ngas) = 'NH3'
       naer = naer + 1
@@ -5941,7 +5930,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       iaer_nh4 = naer
 #endif
 
-#if ( ( defined MODAL_AERO_7MODE || defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+#if ( ( defined MODAL_AERO_7MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined MOSAIC_SPECIES ) )
       ngas = ngas + 1
       name_gas(ngas) = 'HNO3'
       naer = naer + 1
@@ -5990,7 +5979,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       name_aerpfx(naer) = 'dst'
       iaer_dst = naer
 
-#if ( ( defined MODAL_AERO_7MODE || defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+#if ( ( defined MODAL_AERO_7MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined MOSAIC_SPECIES ) )
       naer = naer + 1
       name_aerpfx(naer) = 'ca'
       iaer_ca = naer
@@ -5998,8 +5987,8 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       name_aerpfx(naer) = 'co3'
       iaer_co3 = naer
 #endif
-!kzm++
-#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE)
+
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_7MODE_S || defined MODAL_AERO_5MODE )
       naer = naer + 1
       name_aerpfx(naer) = 'mom'
       iaer_mom = naer

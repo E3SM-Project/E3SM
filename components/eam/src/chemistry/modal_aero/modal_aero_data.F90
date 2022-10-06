@@ -28,7 +28,7 @@
 #endif
 
 !kzm ++
-#if ((( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || (defined MODAL_AERO_5MODE_MOM) ) && ( defined RAIN_EVAP_TO_COARSE_AERO ))
+#if ((( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || (defined MODAL_AERO_5MODE) ) && ( defined RAIN_EVAP_TO_COARSE_AERO ))
 !kzm --
     logical, parameter :: rain_evap_to_coarse_aero = .true.
 #else
@@ -62,13 +62,13 @@
        'p-organic ', 's-organic ', 'black-c   ', &
        'seasalt   ', 'dust      ', &
        'm-poly    ', 'm-prot    ', 'm-lip     ' /)
-#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined MOSAIC_SPECIES ) )
   integer, parameter ::  ntot_aspectype = 12
   character(len=*),parameter ::  specname_amode(ntot_aspectype) = (/ 'sulfate   ', 'ammonium  ', 'nitrate   ', &
        'p-organic ', 's-organic ', 'black-c   ', &
        'seasalt   ', 'dust      ', 'm-organic ', &
        'calcium   ', 'carbonate ', 'chloride  ' /)
-#elif ( defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_5MODE)
+#elif ( defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_5MODE )
   integer, parameter ::  ntot_aspectype = 9
   character(len=*),parameter ::  specname_amode(ntot_aspectype) = (/ 'sulfate   ', 'ammonium  ', 'nitrate   ', &
        'p-organic ', 's-organic ', 'black-c   ', &
@@ -90,7 +90,7 @@
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/  96.0_r8,  18.0_r8,  62.0_r8, &
        12.0_r8,   12.0_r8,   12.0_r8,  58.5_r8, 135.0_r8, &
        250092.0_r8, 66528.0_r8,  284.0_r8 /)
-#elif ( ( defined MODAL_AERO_4MODE_MOM ) && ( defined MOSAIC_SPECIES ) )
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined MOSAIC_SPECIES ) )
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/  96.0_r8,  18.0_r8,  62.0_r8, &
        12.0_r8,   12.0_r8,   12.0_r8,  23.0_r8, 135.0_r8, &
        250092.0_r8,  40.0_r8, 60.0_r8, 35.5_r8 /)
@@ -125,9 +125,6 @@
          'coarse          ', &
          'primary_carbon  ', &
          'strat_coarse  '/)
-
-
-
 !kzm -- 
 #elif ( defined MODAL_AERO_9MODE )
     character(len=*), parameter :: modename_amode(ntot_amode) = (/ &
@@ -163,18 +160,12 @@
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 7, 3 /)
 #elif ( defined MODAL_AERO_4MODE_MOM )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 3, 3 /)
-
-!kzm ++
-#elif ( defined MODAL_AERO_5MODE )
-#if (defined RAIN_EVAP_TO_COARSE_AERO)
+#elif ( ( defined MODAL_AERO_5MODE ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) && ( defined MOSAIC_SPECIES ) )
+    integer, parameter :: nspec_amode(ntot_amode)           = (/12, 7,12, 3, 1 /)
+#elif ( ( defined MODAL_AERO_5MODE ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 7, 3, 1 /)
-#else
+#elif ( defined MODAL_AERO_5MODE )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 7, 4, 3, 3, 1 /)
-#endif
-
-
-!kzm --
-
 #elif ( defined MODAL_AERO_4MODE )
     integer, parameter :: nspec_amode(ntot_amode)           = (/ 6, 3, 3, 2 /)
 #elif ( ( defined MODAL_AERO_3MODE ) && ( defined RAIN_EVAP_TO_COARSE_AERO ) )
@@ -204,15 +195,13 @@
     integer, parameter ::     mdiagnum_amode(ntot_amode)   = (/ 0, 0, 0/)
     integer, parameter ::     mprogsfc_amode(ntot_amode)   = (/ 0, 0, 0/)
     integer, parameter ::     mcalcwater_amode(ntot_amode) = (/ 0, 0, 0/)
-
 !kzm ++
 #elif ( (defined MODAL_AERO_5MODE)  )
     integer, parameter ::     mprognum_amode(ntot_amode)   = (/ 1, 1, 1, 1, 1/)
     integer, parameter ::     mdiagnum_amode(ntot_amode)   = (/ 0, 0, 0, 0, 0/)
     integer, parameter ::     mprogsfc_amode(ntot_amode)   = (/ 0, 0, 0, 0, 0/)
     integer, parameter ::     mcalcwater_amode(ntot_amode) = (/ 0, 0, 0, 0, 0/)
-!kzm --
-    
+!kzm --    
 #endif
 
     !   input dgnum_amode, dgnumlo_amode, dgnumhi_amode (units = m)

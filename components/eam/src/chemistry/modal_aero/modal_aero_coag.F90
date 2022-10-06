@@ -25,12 +25,8 @@
 ! !PUBLIC DATA MEMBERS:
   integer, parameter :: pcnstxx = gas_pcnst
 
-#if ( defined MODAL_AERO_9MODE || defined MODAL_AERO_7MODE || defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM )
+#if ( defined MODAL_AERO_9MODE || defined MODAL_AERO_7MODE || defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM || MODAL_AERO_5MODE )
   integer, parameter, public :: pair_option_acoag = 3
-!kzm ++
-#elif (defined MODAL_AERO_5MODE)
-  integer, parameter, public :: pair_option_acoag = 3
-!kzm --  
 #elif ( defined MODAL_AERO_3MODE )
   integer, parameter, public :: pair_option_acoag = 1
 #endif
