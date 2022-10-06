@@ -24,6 +24,7 @@
 #include "diagnostics/meridional_vapor_flux.hpp"
 #include "diagnostics/ice_cloud_mask.hpp"
 #include "diagnostics/vertically_remapped_field.hpp"
+#include "diagnostics/field_at_single_pressure.hpp"
 
 namespace scream {
 
@@ -31,6 +32,7 @@ inline void register_diagnostics () {
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
   diag_factory.register_product("PotentialTemperature",&create_atmosphere_diagnostic<PotentialTemperatureDiagnostic>);
   diag_factory.register_product("FieldAtLevel",&create_atmosphere_diagnostic<FieldAtLevel>);
+  diag_factory.register_product("FieldAtSinglePressure",&create_atmosphere_diagnostic<FieldAtSinglePressure>);
   diag_factory.register_product("AtmosphereDensity",&create_atmosphere_diagnostic<AtmDensityDiagnostic>);
   diag_factory.register_product("Exner",&create_atmosphere_diagnostic<ExnerDiagnostic>);
   diag_factory.register_product("VirtualTemperature",&create_atmosphere_diagnostic<VirtualTemperatureDiagnostic>);

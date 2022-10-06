@@ -14,6 +14,10 @@ FieldAtSinglePressure::FieldAtSinglePressure (const ekat::Comm& comm, const ekat
 {
   m_field_name  = m_params.get<std::string>("Field Name");
 
+  const auto& pres_str = params.get<std::string>("Field Target Pressure");
+  m_pressure_level  = std::stoi(pres_str);
+  //std::cout<<"m_pressure_level: "<<m_pressure_level<<std::endl;
+
   using namespace ShortFieldTagsNames;
   EKAT_REQUIRE_MSG (ekat::contains(std::vector<FieldTag>{LEV,ILEV},m_field_layout.tags().back()),
       "Error! FieldAtSinglePressure diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
@@ -30,70 +34,71 @@ void FieldAtSinglePressure::set_grids(const std::shared_ptr<const GridsManager> 
   auto m_grid = grids_manager->get_grid(gname);
   const auto& grid_name = m_grid->name();
   int ncol = m_grid->get_num_local_dofs();
-  int nlev = m_grid->get_num_vertical_levels();
+  m_num_levs = m_grid->get_num_vertical_levels();
+
+  //std::cout<<"ncol: "<<ncol<<std::endl;
+  //std::cout<<"m_num_levs: "<<m_num_levs<<std::endl;
+
+  constexpr int ps = Pack::n;
 
   add_field<Required>(m_field_name, m_field_layout, m_field_units, gname);
   if (ekat::contains(std::vector<FieldTag>{LEV},m_field_layout.tags().back())) {
-    FieldLayout pres_layout { {COL,LEV}, {ncol,nlev} };
+    //std::cout<<"Get in here p_mid"<<std::endl;
+    FieldLayout pres_layout { {COL,LEV}, {ncol,m_num_levs} };
     m_pres_name = "p_mid";
     add_field<Required>(m_pres_name, pres_layout, Pa, gname);
+    FieldIdentifier fid (name(),pres_layout, m, gname);
+    m_diagnostic_output = Field(fid);
+    auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
+    C_ap.request_allocation(ps);
+    m_diagnostic_output.allocate_view();
+
   } else {
-    FieldLayout pres_layout { {COL,ILEV}, {ncol,nlev+1} };
+    FieldLayout pres_layout { {COL,ILEV}, {ncol,m_num_levs+1} };
     m_pres_name = "p_int";
     add_field<Required>(m_pres_name, pres_layout, Pa, gname);
+    FieldIdentifier fid (name(),pres_layout, m, gname);
+    m_diagnostic_output = Field(fid);
+    auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
+    C_ap.request_allocation(ps);
+    m_diagnostic_output.allocate_view();
   }
+
+  //Currently only works for p_mid, need to make it work for p_int
+  /*
+  FieldLayout pres_layout { {COL,LEV}, {ncol,1} };
+  // Construct and allocate the diagnostic field
+  FieldIdentifier fid (name(),pres_layout, m, gname);
+  m_diagnostic_output = Field(fid);
+  auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
+  C_ap.request_allocation(ps);
+  m_diagnostic_output.allocate_view();
+  */
 }
 // =========================================================================================
 void FieldAtSinglePressure::compute_diagnostic_impl()
 {
-  const auto& pressure = get_field_in(m_pres_name);
-  auto p_data = pressure.get_view<const Real**>();
+  using namespace scream::vinterp;
 
-  const auto& f = get_field_in(m_field_name);
-  auto f_data = f.get_internal_view_data<const Real>();
+  //This is 2D source pressure
+  Field& pressure = get_field_in(m_pres_name);
+  view_2d<Spack> p_data = pressure.get_view<Spack**>();
 
-  auto d_data = m_diagnostic_output.get_internal_view_data<Real>();
-  auto f_size = f.get_header().get_alloc_properties().get_num_scalars();
-  auto stride = f.get_header().get_alloc_properties().get_last_extent();
-  auto d_size = f_size/stride;
-  auto pres_level  = m_pressure_level;
+  //This is the 1D target pressure
+  view_1d<Spack> p_tgt = view_1d<Spack>("",1);
+  auto p_tgt_s = Kokkos::create_mirror_view(ekat::scalarize(p_tgt));
+  p_tgt_s(0) = m_pressure_level;
+  //p_tgt_s(0) = 500.;
 
-  // Here we use vertical interpolation to interpolate the field for each column onto a 
-  // particular pressure coordinate.
-  Kokkos::parallel_for(m_diagnostic_output.name(),
-                       Kokkos::RangePolicy<>(0,d_size),
-                       KOKKOS_LAMBDA(const int& idx) {
-//ASD <this is the old code from FieldAtLevel>    d_data[idx] = f_data[idx*stride + pressure];  // Need to insert an interpolation here.
-  });
-  Kokkos::fence();
-}
+  //input field
+  Field& f = get_field_in(m_field_name);
+  view_2d<Spack> f_data_src = f.get_view<Spack**>();
 
-void FieldAtSinglePressure::set_required_field_impl (const Field& f)
-{
-  const auto& f_fid = f.get_header().get_identifier();
+  //output field on new grid
+  view_2d<Spack> d_data_tgt = m_diagnostic_output.get_view<Spack**>();
 
-  // Now that we have the exact units of f, we can build the diagnostic field
-  const auto& pres_str = m_params.get<std::string>("Field Pressure");
-  auto is_int = [](const std::string& s) -> bool {
-    return s.find_first_not_of("0123456789")==std::string::npos;
-  };
-  EKAT_REQUIRE_MSG (is_int(pres_str),
-      "Error! Entry 'Field Pressure' must be a string representation of an integer.\n");
+  perform_vertical_interpolation(p_data,p_tgt,f_data_src,d_data_tgt,m_num_levs,1);
 
-  m_pressure_level  = std::stoi(pres_str);
-  EKAT_REQUIRE_MSG (m_pressure_level>=0,
-      "Error! Invalid value for 'Field Pressure' in FieldAtSinglePressure diagnostic.\n"
-      "  - field name  : " + f_fid.name() + "\n"
-      "  - field layout: " + to_string(f_fid.get_layout()) + "\n"
-      "  - field pressure : " + std::to_string(m_pressure_level) + "\n");
-
-  FieldIdentifier d_fid (f_fid.name() + "_" + std::to_string(m_pressure_level) + "hPa",
-                         m_field_layout.strip_dim(m_field_layout.rank()-1),
-                         f_fid.get_units(),
-                         f_fid.get_grid_name());
-
-  m_diagnostic_output = Field(d_fid);
-  m_diagnostic_output.allocate_view();
 }
 
 } //namespace scream

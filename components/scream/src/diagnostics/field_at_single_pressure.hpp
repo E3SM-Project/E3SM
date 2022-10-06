@@ -2,6 +2,7 @@
 #define EAMXX_FIELD_AT_SINGLE_PRESSURE_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
+#include "share/util/scream_vertical_interpolation.hpp"
 
 namespace scream
 {
@@ -31,7 +32,7 @@ public:
   void compute_diagnostic_impl ();
 protected:
 
-  void set_required_field_impl (const Field& f);
+
 
   // Keep track of field dimensions
   std::string         m_field_name;
@@ -40,6 +41,8 @@ protected:
   std::string         m_pres_name;
 
   Real                m_pressure_level;
+  int                 m_num_levs;
+  //scream::vinterp::view_1d<scream::vinterp::Spack> m_pressure_levels;
 
 }; // class FieldAtSinglePressure
 
