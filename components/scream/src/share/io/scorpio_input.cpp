@@ -462,7 +462,8 @@ get_io_decomp(const FieldLayout& layout)
   // Given a vector of dimensions names, create a unique decomp string to register with I/O
   // Note: We are hard-coding for only REAL input here.
   // TODO: would be to allow for other dtypes
-  std::string io_decomp_tag = "Real";
+  std::string io_decomp_tag = (std::string("Real-") + m_io_grid->name() + "-" +
+                               std::to_string(m_io_grid->get_num_global_dofs()));
   auto dims_names = get_vec_of_dims(layout);
   for (size_t i=0; i<dims_names.size(); ++i) {
     io_decomp_tag += "-" + dims_names[i];

@@ -482,8 +482,12 @@ register_variables(const std::string& filename,
   for (auto const& name : m_fields_names) {
     auto field = get_field(name);
     auto& fid  = field.get_header().get_identifier();
-    // Determine the IO-decomp and construct a vector of dimension ids for this variable:
-    std::string io_decomp_tag = fp_precision;
+    // Make a unique tag for each decomposition. To reuse decomps successfully,
+    // we must be careful to make the tags 1-1 with the intended decomp. Here we
+    // use the I/O grid name and its global #DOFs, then append the local
+    // dimension data.
+    std::string io_decomp_tag = (fp_precision + "-" + m_io_grid->name() + "-" +
+                                 std::to_string(m_io_grid->get_num_global_dofs()));
     std::vector<std::string> vec_of_dims;
     const auto& layout = fid.get_layout();
     std::string units = to_string(fid.get_units());

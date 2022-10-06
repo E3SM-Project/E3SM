@@ -843,9 +843,7 @@ contains
     ! Final step, free any pio decompostion memory that is no longer needed.
     !   Update: We are trying to reuse decompostions maximally, so we're
     ! skipping this step.
-    !   Update to the update: For now, we're keeping this. We need to fix all
-    ! the tag nonuniqueness issues in the driver before this will work robustly.
-    call free_decomp()
+    !call free_decomp()
 
   end subroutine eam_pio_closefile
 !=====================================================================!
