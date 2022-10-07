@@ -305,6 +305,11 @@ contains
 
        call shr_sys_flush(logunit)
 
+    else
+
+       allocate(o2r_rx(num_inst_rof))
+       allocate(o2racc_ox(num_inst_ocn))
+
     end if
 
   end subroutine prep_rof_init
