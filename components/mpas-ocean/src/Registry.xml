@@ -26,6 +26,9 @@
 		<dim name="nVerticesP1" definition="nVertices+1"
 			 description="The total number of cells in the dual grid. Also the number of corners in the primary grid."
 		/>
+		<dim name="bnds" definition="2"
+			 description="The number of coordinate bound"
+		/>
 		<dim name="TWO" definition="2"
 			 description="The number two as a dimension."
 		/>
@@ -136,6 +139,10 @@
 		<nml_option name="config_calendar_type" type="character" default_value="noleap"
 					description="Selection of the type of calendar that should be used in the simulation."
 					possible_values="'gregorian', 'noleap'"
+		/>
+		<nml_option name="config_output_reference_time" type="character" default_value="0001-01-01_00:00:00"
+					description="Reference time used in the units attribute of Time in output files."
+					possible_values="'YYYY-MM-DD_HH:MM:SS'"
 		/>
 	</nml_record>
 	<nml_record name="io" mode="forward;analysis">
@@ -326,7 +333,7 @@
 		/>
 	</nml_record>
 	<nml_record name="submesoscale_eddy_parameterization" mode="forward">
-		<nml_option name="config_submesoscale_enable" type="logical" default_value=".false." 
+		<nml_option name="config_submesoscale_enable" type="logical" default_value=".false."
 					description="flag to enable the FK2011 parameterization for submesoscale eddies"
 					possible_values=".true. or .false."
 					/>
@@ -431,7 +438,7 @@
 		/>
 		<nml_option name="config_eddyMLD_reference_depth" type="real" default_value="10" units="m"
 					description="reference depth for threshold computation"
-					possible_values="any positive real, near 10" 
+					possible_values="any positive real, near 10"
 		/>
 		<nml_option name="config_eddyMLD_reference_pressure" type="real" default_value="1.0e5" units="Pa"
 					description="reference pressure for original mixed layer depth calculation"
@@ -2529,6 +2536,12 @@
 	<var_struct name="diagnostics" time_levs="1">
 		<var name="xtime" type="text" dimensions="Time"
 			 description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
+		/>
+		<var name="Time" type="real" dimensions="Time" bounds="Time_bnds"
+			 description="time" standard_name="time"
+		/>
+		<var name="Time_bnds" type="real" dimensions="Time bnds"
+			 description="time bounds"
 		/>
 		<var name="simulationStartTime" type="text" dimensions="" default_value="'no_date_available'"
 			 description="start time of first simulation, with format 'YYYY-MM-DD_HH:MM:SS'"
