@@ -366,12 +366,12 @@
       <pes compset="JRA_ELM.+MPASSI.+MPASO.+MOSART" pesize="any">
         <comment>"crusher, GPMPAS-JRA compset, 2 nodes"</comment>
         <ntasks>
-          <ntasks_atm>-2</ntasks_atm>
-          <ntasks_lnd>-2</ntasks_lnd>
-          <ntasks_rof>-2</ntasks_rof>
-          <ntasks_ice>-2</ntasks_ice>
-          <ntasks_ocn>-2</ntasks_ocn>
-          <ntasks_cpl>-2</ntasks_cpl>
+          <ntasks_atm>-4</ntasks_atm>
+          <ntasks_lnd>-4</ntasks_lnd>
+          <ntasks_rof>-4</ntasks_rof>
+          <ntasks_ice>-4</ntasks_ice>
+          <ntasks_ocn>-4</ntasks_ocn>
+          <ntasks_cpl>-4</ntasks_cpl>
         </ntasks>
       </pes>
     </mach>
