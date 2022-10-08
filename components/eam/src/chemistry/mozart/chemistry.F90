@@ -1414,6 +1414,7 @@ end function chem_is_active
     integer  :: ncol                               ! number of atmospheric columns
     real(r8) :: calday                             ! current calendar day of year
     real(r8) :: cldw(pcols,pver)                   ! cloud water (kg/kg)
+    real(r8) :: cldw_liq(pcols,pver)               ! cloud liquid (kg/kg)
     real(r8) :: chem_dt              ! time step
     real(r8) :: drydepflx(pcols,pcnst)             ! dry deposition fluxes (kg/m2/s)
     integer  :: tropLev(pcols)
@@ -1643,19 +1644,20 @@ end function chem_is_active
 !-----------------------------------------------------------------------
     do k = 1,pver
        cldw(:ncol,k) = state%q(:ncol,k,ixcldliq) + state%q(:ncol,k,ixcldice)
+       cldw_liq(:ncol,k) = state%q(:ncol,k,ixcldliq)
        if (ixndrop>0) &
             ncldwtr(:ncol,k) = state%q(:ncol,k,ixndrop)
     end do
 
     call t_startf( 'chemdr' )
-    call gas_phase_chemdr(lchnk, ncol, imozart, state%q, &
-                          state%phis, state%zm, state%zi, calday, &
-                          state%t, state%pmid, state%pdel, state%pdeldry, state%pint, &
-                          cldw, tropLev, ncldwtr, state%u, state%v, &
-                          chem_dt, state%ps, xactive_prates, &
-                          do_cloudj_photolysis, do_cloudj_clouds, do_cloudj_aerosols, &
-                          do_cloudj_lookup_diag, do_cloudj_aerosol_diag, do_cloudj_nocloud_diag, &
-                          fsds, cam_in%ts, cam_in%asdir, cam_in%ocnfrac, cam_in%icefrac, &
+    call gas_phase_chemdr(lchnk, ncol, imozart, state%q,                                              &
+                          state%phis, state%zm, state%zi, calday,                                     &
+                          state%t, state%pmid, state%pdel, state%pdeldry, state%pint,                 &
+                          cldw, cldw_liq, tropLev, ncldwtr, state%u, state%v,                         &
+                          chem_dt, state%ps, xactive_prates,                                          &
+                          do_cloudj_photolysis, do_cloudj_clouds, do_cloudj_aerosols,                 &
+                          do_cloudj_lookup_diag, do_cloudj_aerosol_diag, do_cloudj_nocloud_diag,      &
+                          fsds, cam_in%ts, cam_in%asdir, cam_in%ocnfrac, cam_in%icefrac,              &
                           cam_out%precc, cam_out%precl, cam_in%snowhland, ghg_chem, state%latmapback, &
                           chem_name, drydepflx, cam_in%cflx, ptend%q, pbuf, ixcldliq, ixcldice, tropFlag=tropFlag, &
                           tropFlagInt=tropFlagInt)
