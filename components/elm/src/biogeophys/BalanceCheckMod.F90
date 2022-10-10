@@ -616,10 +616,10 @@ contains
        found = .false.
        do p = bounds%begp, bounds%endp
           if (veg_pp%active(p)) then
-             !if ( (errsol(p) /= spval) .and. (abs(errsol(p)) > 1.e-7_r8) ) then
              ! solar radiation balance error is high when running FATES
              ! adjust the threshold to 5.e-7
-             if ( (errsol(p) /= spval) .and. (abs(errsol(p)) > 5.e-7_r8) ) then
+             if ( ((errsol(p) /= spval) .and. (abs(errsol(p)) > 1.e-7_r8)) &
+                .or. ((veg_pp%is_fates(p)) .and. (errsol(p) /= spval) .and. (abs(errsol(p)) > 5.e-7_r8)) ) then
                 found = .true.
                 indexp = p
                 indext = veg_pp%topounit(indexp)
