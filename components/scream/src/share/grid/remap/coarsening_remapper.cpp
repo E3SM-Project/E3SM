@@ -52,8 +52,8 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   for (int i=0; i<nlweights; ++i) {
     dofs_offsets[i] = gids_h[i];
   }
-  const std::string idx_decomp_tag = "int-nnz" + std::to_string(nlweights);
-  const std::string val_decomp_tag = "real-nnz" + std::to_string(nlweights);
+  const std::string idx_decomp_tag = "coarsening_remapper::constructor_int_nnz" + std::to_string(nlweights);
+  const std::string val_decomp_tag = "coarsening_remapper::constructor_real_nnz" + std::to_string(nlweights);
 
   scorpio::register_file(map_file,scorpio::FileMode::Read);
   scorpio::get_variable(map_file, "row", "row", {"n_s"}, "int", idx_decomp_tag);
@@ -622,7 +622,7 @@ get_my_triplets_gids (const std::string& map_file,
 
   // 2. Read a chunk of triplets col indices
   std::vector<gid_t> cols(nlweights);
-  const std::string idx_decomp_tag = "int-nnz" + std::to_string(nlweights);
+  const std::string idx_decomp_tag = "coarsening_remapper::get_my_triplet_gids_int_dim" + std::to_string(nlweights);
   scorpio::get_variable(map_file, "col", "col", {"n_s"}, "int", idx_decomp_tag);
   std::vector<scorpio::offset_t> dofs_offsets(nlweights);
   std::iota(dofs_offsets.begin(),dofs_offsets.end(),offset);
