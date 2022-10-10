@@ -277,22 +277,10 @@ void CoarseningRemapper::do_remap_fwd () const
   }
 
   // Pack, then fire off the sends
-  pack ();
-  if (not m_send_req.empty()) {
-    int ierr = MPI_Startall(m_send_req.size(),m_send_req_ptr);
-    EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
-        "Error! Something whent wrong while starting persistent send requests.\n"
-        "  - send rank: " + std::to_string(m_comm.rank()) + "\n");
-  }
+  pack_and_send ();
 
   // Wait for all data to be received, then unpack
-  if (not m_recv_req.empty()) {
-    int ierr = MPI_Waitall(m_recv_req.size(),m_recv_req_ptr, MPI_STATUSES_IGNORE);
-    EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
-        "Error! Something whent wrong while waiting on persistent recv requests.\n"
-        "  - recv rank: " + std::to_string(m_comm.rank()) + "\n");
-  }
-  unpack ();
+  recv_and_unpack ();
 
   // Wait for all sends to be completed
   if (not m_send_req.empty()) {
@@ -389,7 +377,7 @@ local_mat_vec (const Field& x, const Field& y) const
   }
 }
 
-void CoarseningRemapper::pack () const
+void CoarseningRemapper::pack_and_send () const
 {
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
@@ -493,10 +481,23 @@ void CoarseningRemapper::pack () const
   if (not MpiOnDev) {
     Kokkos::deep_copy (m_mpi_send_buffer,m_send_buffer);
   }
+
+  if (not m_send_req.empty()) {
+    int ierr = MPI_Startall(m_send_req.size(),m_send_req_ptr);
+    EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
+        "Error! Something whent wrong while starting persistent send requests.\n"
+        "  - send rank: " + std::to_string(m_comm.rank()) + "\n");
+  }
 }
 
-void CoarseningRemapper::unpack () const
+void CoarseningRemapper::recv_and_unpack () const
 {
+  if (not m_recv_req.empty()) {
+    int ierr = MPI_Waitall(m_recv_req.size(),m_recv_req_ptr, MPI_STATUSES_IGNORE);
+    EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
+        "Error! Something whent wrong while waiting on persistent recv requests.\n"
+        "  - recv rank: " + std::to_string(m_comm.rank()) + "\n");
+  }
   // If MPI does not use dev pointers, we need to deep copy from host to dev
   if (not MpiOnDev) {
     Kokkos::deep_copy (m_recv_buffer,m_mpi_recv_buffer);
