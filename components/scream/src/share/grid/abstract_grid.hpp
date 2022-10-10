@@ -135,18 +135,26 @@ public:
     return m_geo_views.find(name)!=m_geo_views.end();
   }
 
+  // Get list of currently stored geometry data views
   std::list<std::string> get_geometry_data_names () const;
 
+  // Creates a copy of this grid. If shallow=true, the copy shares views with
+  // *this, otherwise each stored array is deep copied
   virtual std::shared_ptr<AbstractGrid> clone (const std::string& clone_name,
                                                const bool shallow) const = 0;
 
+  // Allows to change the number of vertical levels associated with this grid.
   void reset_num_vertical_lev (const int num_vertical_lev);
 
+  // Get a list of GIDs that are unique across all ranks in the grid comm. That is,
+  // if a dof is present on 2+ ranks, it will (globally) appear just once in the
+  // view returned by this method.
   dofs_list_type get_unique_gids () const;
 
-  // For each gid in the input list of gids, retrieve the process id that owns it
+  // For each entry in the input list of GIDs, retrieve the process id that owns it
   hview_1d<int> get_owners (const hview_1d<const gid_type>& gids) const;
 
+  // Handy version of the above method, to allow passing a std::vector
   hview_1d<int> get_owners (const std::vector<gid_type>& gids) const {
     hview_1d<const gid_type> gids_v(gids.data(),gids.size());
     return get_owners(gids_v);
