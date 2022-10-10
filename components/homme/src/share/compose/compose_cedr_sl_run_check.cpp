@@ -102,8 +102,8 @@ void check (CDR<MT>& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
                                  spheremp(ie,g));
             mass_hi(iprob,q) += (idx_qext(q_max,ie,q,g,k) * dp3d_c(ie,np1,g,k) *
                                  spheremp(ie,g));
-            q_lo(iprob,q) = std::min(q_lo(iprob,q), idx_qext(q_min,ie,q,g,k));
-            q_hi(iprob,q) = std::max(q_hi(iprob,q), idx_qext(q_max,ie,q,g,k));
+            q_lo(iprob,q) = std::min(q_lo(iprob,q), q_c(ie,q,g,k));
+            q_hi(iprob,q) = std::max(q_hi(iprob,q), q_c(ie,q,g,k));
             q_min_l(iprob,q) = std::min(q_min_l(iprob,q), idx_qext(q_min,ie,q,g,k));
             q_max_l(iprob,q) = std::max(q_max_l(iprob,q), idx_qext(q_max,ie,q,g,k));
           }

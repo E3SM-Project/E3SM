@@ -875,9 +875,9 @@ contains
           index_x2o_Faxa_ocphidry = mct_aVect_indexRA(x2o_o,'Faxa_ocphidry')
           index_x2o_Faxa_ocphodry = mct_aVect_indexRA(x2o_o,'Faxa_ocphodry')
           index_x2o_Faxa_ocphiwet = mct_aVect_indexRA(x2o_o,'Faxa_ocphiwet')
+          index_x2o_Fioi_algae1   = mct_aVect_indexRA(x2o_o,'Fioi_algae1',perrWith='quiet')
           if ( index_x2o_Fioi_algae1 /= 0 ) flds_c_oi = .true.
           if ( flds_c_oi ) then
-             index_x2o_Fioi_algae1   = mct_aVect_indexRA(x2o_o,'Fioi_algae1')
              index_x2o_Fioi_algae2   = mct_aVect_indexRA(x2o_o,'Fioi_algae2')
              index_x2o_Fioi_algae3   = mct_aVect_indexRA(x2o_o,'Fioi_algae3')
              index_x2o_Fioi_dic1     = mct_aVect_indexRA(x2o_o,'Fioi_dic1')
@@ -982,9 +982,9 @@ contains
 
     if (present(do_i2x)) then
        if (first_time) then
+          index_i2x_Fioi_algae1   = mct_aVect_indexRA(i2x_i,'Fioi_algae1',perrWith='quiet')
           if ( index_i2x_Fioi_algae1 /= 0 ) flds_c_oi = .true.
           if ( flds_c_oi ) then
-             index_i2x_Fioi_algae1   = mct_aVect_indexRA(i2x_i,'Fioi_algae1')
              index_i2x_Fioi_algae2   = mct_aVect_indexRA(i2x_i,'Fioi_algae2')
              index_i2x_Fioi_algae3   = mct_aVect_indexRA(i2x_i,'Fioi_algae3')
              index_i2x_Fioi_dic1     = mct_aVect_indexRA(i2x_i,'Fioi_dic1')

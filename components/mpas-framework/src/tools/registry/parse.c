@@ -80,9 +80,12 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 	const char *dimname, *dimunits, *dimdesc, *dimdef, *dimdecomp;
 	const char *nmlrecname, *nmlrecindef;
 	const char *nmloptname, *nmlopttype, *nmloptval, *nmloptunits, *nmloptdesc, *nmloptposvals, *nmloptindef;
+	const char *nmloptbounds, *nmloptcellmeasures, *nmloptcellmethod, *nmloptcoords, *nmloptstdname;
 	const char *structname, *structpackages, *structstreams;
 	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrpackages, *vararrstreams;
+	const char *vararrbounds, *vararrcellmeasures, *vararrcellmethod, *vararrcoords, *vararrstdname;
 	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *varpackages;
+	const char *varbounds, *varcellmeasures, *varcellmethod, *varcoords, *varstdname;
 	const char *varname_in_code, *varname_in_stream;
 	const char *const_model, *const_core, *const_version;
 	const char *streamname, *streamtype, *streamfilename, *streamrecords, *streaminterval_in, *streaminterval_out, *streampackages, *streamvarpackages;
@@ -125,6 +128,11 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			nmlopttype = ezxml_attr(nmlopt_xml, "type");
 			nmloptval = ezxml_attr(nmlopt_xml, "default_value");
 			nmloptunits = ezxml_attr(nmlopt_xml, "units");
+			nmloptbounds = ezxml_attr(nmlopt_xml, "bounds");
+			nmloptcellmeasures = ezxml_attr(nmlopt_xml, "cell_measures");
+			nmloptcellmethod = ezxml_attr(nmlopt_xml, "cell_method");
+			nmloptcoords = ezxml_attr(nmlopt_xml, "coordinates");
+			nmloptstdname = ezxml_attr(nmlopt_xml, "standard_name");
 			nmloptdesc = ezxml_attr(nmlopt_xml, "description");
 			nmloptposvals = ezxml_attr(nmlopt_xml, "possible_values");
 
@@ -250,6 +258,11 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			vararrtype = ezxml_attr(var_arr_xml, "type");
 			vararrdims = ezxml_attr(var_arr_xml, "dimensions");
 			vararrpersistence = ezxml_attr(var_arr_xml, "persistence");
+                        vararrbounds = ezxml_attr(var_arr_xml, "bounds");
+                        vararrcellmeasures = ezxml_attr(var_arr_xml, "cell_measures");
+                        vararrcellmethod = ezxml_attr(var_arr_xml, "cell_method");
+                        vararrcoords = ezxml_attr(var_arr_xml, "coordinates");
+                        vararrstdname = ezxml_attr(var_arr_xml, "standard_name");
 			vararrpackages = ezxml_attr(var_arr_xml, "packages");
 			vararrstreams = ezxml_attr(var_arr_xml, "streams");
 			time_levs = ezxml_attr(var_arr_xml, "time_levs");
@@ -342,6 +355,11 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			for(var_xml = ezxml_child(var_arr_xml, "var"); var_xml; var_xml = var_xml->next){
 				varname = ezxml_attr(var_xml, "name");
 				varunits = ezxml_attr(var_xml, "units");
+				varbounds = ezxml_attr(var_xml, "bounds");
+				varcellmeasures = ezxml_attr(var_xml, "cell_measures");
+				varcellmethod = ezxml_attr(var_xml, "cell_method");
+				varcoords = ezxml_attr(var_xml, "coordinates");
+				varstdname = ezxml_attr(var_xml, "standard_name");
 				vardesc = ezxml_attr(var_xml, "description");
 				vararrgroup = ezxml_attr(var_xml, "array_group");
 				varname_in_code = ezxml_attr(var_xml, "name_in_code");
@@ -399,6 +417,11 @@ int validate_reg_xml(ezxml_t registry)/*{{{*/
 			vartype = ezxml_attr(var_xml, "type");
 			vardims = ezxml_attr(var_xml, "dimensions");
 			varunits = ezxml_attr(var_xml, "units");
+			varbounds = ezxml_attr(var_xml, "bounds");
+			varcellmeasures = ezxml_attr(var_xml, "cell_measures");
+			varcellmethod = ezxml_attr(var_xml, "cell_method");
+			varcoords = ezxml_attr(var_xml, "coordinates");
+			varstdname = ezxml_attr(var_xml, "standard_name");
 			vardesc = ezxml_attr(var_xml, "description");
 			varname_in_code = ezxml_attr(var_xml, "name_in_code");
 			varpackages = ezxml_attr(var_xml, "packages");

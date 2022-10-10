@@ -478,6 +478,13 @@
     </queues>
    </batch_system>
 
+   <batch_system MACH="tahoma" type="slurm">
+    <queues>
+      <queue walltimemax="02:00:00" strict="true" nodemin="1" nodemax="36" default="true">normal</queue>
+      <queue walltimemax="06:00:00" nodemin="1" nodemax="460">slurm</queue>
+    </queues>
+   </batch_system>
+
    <batch_system MACH="sooty" type="slurm" >
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>

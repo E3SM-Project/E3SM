@@ -52,6 +52,8 @@
                dst_cursor % hasTimeDimension = src_cursor % hasTimeDimension
                dst_cursor % dimNames = src_cursor % dimNames
                dst_cursor % dimSizes = src_cursor % dimSizes
+               dst_cursor % maskName = src_cursor % maskName
+               dst_cursor % missingValue = src_cursor % missingValue
                dst_cursor % sendList => src_cursor % sendList
                dst_cursor % recvList => src_cursor % recvList
                dst_cursor % copyList => src_cursor % copyList

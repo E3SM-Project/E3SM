@@ -156,7 +156,7 @@ macro(createTestExec execName execType macroNP macroNC
   ENDIF ()
 
   IF (HOMME_USE_KOKKOS)
-    TARGET_LINK_LIBRARIES(${execName} kokkos)
+    link_to_kokkos(${execName})
   ENDIF ()
 
   # Move the module files out of the way so the parallel build

@@ -2,7 +2,6 @@ my @groups = qw(run_modes
                 time_management
                 io
                 decomposition
-                transport_tests
                 time_integration
                 hmix
                 hmix_del2
@@ -36,6 +35,7 @@ my @groups = qw(run_modes
                 ale_frequency_filtered_thickness
                 debug
                 testing
+                transport_tests
                 init_mode_vert_levels
                 tracer_forcing_activetracers
                 tracer_forcing_debugtracers

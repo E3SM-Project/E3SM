@@ -716,7 +716,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
   ! Disable the following check in CUDA bfb builds,
   ! since the calls to pow are inexact
-#if !(defined(HOMMEXX_BFB_TESTING) && defined(CUDA_BUILD))
+#if !(defined(HOMMEXX_BFB_TESTING) && defined(HOMMEXX_ENABLE_GPU))
   ! verify discrete hydrostatic balance
   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),&
        elem%state%dp3d(:,:,:,tl),elem%state%phinh_i(:,:,:,tl),pnh,exner,dpnh_dp_i)

@@ -66,6 +66,8 @@
       <value compset="_EAM%.*MMF"      >-crm_dt 10 -crm_dx 2000 -crm_nx 64 -crm_ny 1 </value>
       <value compset="_EAM%.*MMF"      >-crm_nx_rad 4 -crm_ny_rad 1 -rad rrtmgp -rrtmgpxx</value>
       <value compset="_EAM%.*MMF1"     >-MMF_microphysics_scheme sam1mom -chem none</value>
+      <value compset="_EAM%.*MMF"      >-use_MMF_VT</value>   <!-- CRM variance transport -->
+      <value compset="_EAM%.*MMF"      >-use_MMF_ESMT</value> <!-- explicit scalar momentum transport -->
       <value compset="_EAM%AQP-MMF.*"  >-aquaplanet</value>
       <value compset="_EAM%RCE-MMF.*"  >-aquaplanet -rce</value>
       <value compset="_EAM%SCM-MMF.*"  >-scam</value>

@@ -14,7 +14,7 @@
 namespace Homme {
 
 // Until whenever CUDA supports constexpr properly
-#ifdef CUDA_BUILD
+#ifdef HOMMEXX_ENABLE_GPU
 
   #ifdef CAM
     #define QSIZE_D PCNST
@@ -53,7 +53,7 @@ namespace Homme {
 
   static constexpr const int NUM_TIME_LEVELS = 3;
   static constexpr const int Q_NUM_TIME_LEVELS = 2;
-#endif // CUDA_BUILD
+#endif // GPU_BUILD
 
 template<int PHYSICAL_LENGTH>
 struct ColInfo {
