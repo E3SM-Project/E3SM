@@ -201,24 +201,16 @@ TEST_CASE ("coarsening_remap") {
   }
   REQUIRE (row_offsets_h(num_loc_ov_tgt_gids)==nldofs_src);
 
-  for (int i=0; i<nldofs_src; ++i) {
-    const auto src_gid = src_gids(i);
-    const auto tgt_gid = src_gid % ngdofs_tgt;
-    const auto irow = remap->gid2lid(tgt_gid,ov_tgt_grid);
-    if (comm.size()==1) {
-      if (src_gid==tgt_gid) {
-        REQUIRE(col_lids_h(2*irow)==remap->gid2lid(src_gid,src_grid));
+  for (int irow=0; irow<ov_tgt_gids.extent_int(0); ++irow) {
+    const auto row_gid = ov_tgt_gids(irow);
+    for (int innz=row_offsets_h(irow); innz<row_offsets_h(irow+1); ++innz) {
+      const auto col_lid = col_lids_h(innz);
+      const auto col_gid = src_gids(col_lid);
+      if (row_gid==col_gid) {
+        REQUIRE (weights_h(innz)==0.25);
       } else {
-        REQUIRE(col_lids_h(2*irow+1)==remap->gid2lid(src_gid,src_grid));
+        REQUIRE (weights_h(innz)==0.75);
       }
-    } else {
-      REQUIRE(col_lids_h(irow)==remap->gid2lid(src_gid,src_grid));
-    }
-
-    if (src_gid==tgt_gid) {
-      REQUIRE (weights_h(i  )==0.25);
-    } else {
-      REQUIRE (weights_h(i  )==0.75);
     }
   }
   print (" -> Checking remapper internal state ... OK!\n",comm);
