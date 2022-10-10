@@ -180,11 +180,11 @@ protected:
 
   // offset(I,J) = offset in send/recv buffor send/recv to/from pid J for field I
   view_2d<int>          m_send_f_pid_offsets;
-  view_2d<int>          m_recv_f_pid_offsets; // DONE
+  view_2d<int>          m_recv_f_pid_offsets;
 
   // Offset of each PID in the send/recv buffer
   view_1d<int>          m_send_pid_offsets;
-  view_1d<int>          m_recv_pid_offsets; // DONE
+  view_1d<int>          m_recv_pid_offsets;
 
   // Reorder the lids so that all lids to send/recv to/from pid N
   // come before those for pid N+1. Also,
@@ -193,14 +193,14 @@ protected:
   //       But here, dofs are ordered differently, so that all dofs to
   //       send/recv to/from the same pid are contiguous.
   view_2d<int>          m_send_lids_pids;
-  view_2d<int>          m_recv_lids_pids; // DONE
+  view_2d<int>          m_recv_lids_pids;
 
   // Store the start of lids to send/recv to/from each pid in the views above
   // Note: these are different form m_[send|recv]_pid_offsets. Those are
   //       offsets in the full send/recv buffer, while these are offsets in
   //       the views above.
   view_1d<int>          m_send_pid_lids_start;
-  view_1d<int>          m_recv_pid_lids_start; // DONE
+  view_1d<int>          m_recv_pid_lids_start;
 
   // Send/recv requests
   std::vector<MPI_Request>  m_recv_req;
