@@ -27,6 +27,18 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
 TEST_CASE("field_at_single_pressure")
 {
+
+  // Test that output at a single pressure level works as expected.
+  // For this test we set a field "M" to be defined as 100*i + k,
+  // where i=column and k=level
+  //
+  // We then set the pressure levels to be 100*k where again k=level.
+  //
+  // Lastly we define a pressure_at_single_level to be for p=150, thus
+  // the output should be (M_1+M_2)/2, or halfway between level 1 and level
+  // 2 of the data.  Given the formula above the output should be exactly
+  //   100*i + (1+2)/2 = 100*i + 1.5
+
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
   using FL = FieldLayout;
@@ -39,7 +51,7 @@ TEST_CASE("field_at_single_pressure")
 
   // Create a grids manager
   const int ncols = 3;
-  const int nlevs = packsize*2 + 1;
+  const int nlevs = packsize*2 + 1;  // Note, we need at least 3 levels for the test to work
   auto gm = create_gm(comm,ncols,nlevs);
   auto grid = gm->get_grid("Point Grid");
 
@@ -55,22 +67,12 @@ TEST_CASE("field_at_single_pressure")
   f_mid.allocate_view();
   f_mid.get_header().get_tracking().update_time_stamp(t0);
 
-  //Fill data to interpolate
-  auto f_mid_v = f_mid.get_view<Real**,Host>();
-  for (int icol=0; icol<ncols; icol++){
-    for (int ilev=0; ilev<nlevs; ilev++){
-      f_mid_v(icol,ilev) = icol*100 + ilev;
-      //f_p_v(icol,ilev) = 50*ilev;
-    }
-  }
-  
   ekat::ParameterList params_mid;
   params_mid.set("Field Name",f_mid.name());
-  std::cout<<"f_mid.name(): "<<f_mid.name()<<std::endl;
   params_mid.set("Field Units",fid_mid.get_units());
   params_mid.set("Field Layout",fid_mid.get_layout());
   params_mid.set("Grid Name",fid_mid.get_grid_name());
-  params_mid.set<std::string>("Field Target Pressure","500");
+  params_mid.set<std::string>("Field Target Pressure","150");
   //std::string location_pressure_file = "/usr/workspace/rebassoo/Climate/press_tgt_levels.txt";
   //params_mid.set<std::string>("Field Pressure file",location_pressure_file);
 
@@ -90,22 +92,26 @@ TEST_CASE("field_at_single_pressure")
     f.get_header().get_tracking().update_time_stamp(t0);
     //diag_mid->set_required_field(f.get_const());
     diag_mid->set_required_field(f);
-    REQUIRE_THROWS(diag_mid->set_computed_field(f));
+//    REQUIRE_THROWS(diag_mid->set_computed_field(f));
     input_fields.emplace(name,f);
   }
 
-
-  //Fill pressure fields
   Field p_mid_f = input_fields["p_mid"];
-  auto p_mid_v  = p_mid_f.get_view<Real**>();
-
-  for (int icol=0; icol<ncols; icol++){
-    for (int ilev=0; ilev<nlevs; ilev++){
-      //f_mid_v(icol,ilev) = icol*100 + ilev;
-      p_mid_v(icol,ilev) = 25+50*ilev;
+  //Fill data to interpolate
+  auto f_mid_v   = f_mid.get_view<Real**>();
+  auto p_mid_v   = p_mid_f.get_view<Real**>();
+  auto f_mid_v_h = Kokkos::create_mirror_view(f_mid_v);
+  auto p_mid_v_h = Kokkos::create_mirror_view(p_mid_v);
+  for (int ilev=0; ilev<nlevs; ilev++){
+    for (int icol=0; icol<ncols; icol++){
+      f_mid_v_h(icol,ilev) = icol*100 + ilev;
+      p_mid_v_h(icol,ilev) = 100*ilev;
     }
   }
+  Kokkos::deep_copy(f_mid_v, f_mid_v_h);
+  Kokkos::deep_copy(p_mid_v, p_mid_v_h);
   
+
   diag_mid->initialize(t0,RunType::Initial);
   
   // Run diagnostics
@@ -116,13 +122,10 @@ TEST_CASE("field_at_single_pressure")
 
   auto d_mid_v = d_mid.get_view<const Real**,Host>();
   
-  //auto d_int_v = d_int.get_view<const Real*,Host>();
+//  auto d_int_v = d_int.get_view<const Real*,Host>();
   for (int icol=0; icol<ncols; ++icol) {
-    std::cout<<"d_mid_v("<<icol<<"): "<<d_mid_v(icol,0)<<std::endl;
-    std::cout<<"d_mid_v("<<icol<<"): "<<d_mid_v(icol,0)<<std::endl;
-    //REQUIRE (d_mid_v(icol)==f_mid_v(icol,lev));
-    // REQUIRE (d_int_v(icol)==f_int_v(icol,lev));
-    }
+    REQUIRE (d_mid_v(icol,0)==icol*100 + 1.5);
+  }
   
 }
 

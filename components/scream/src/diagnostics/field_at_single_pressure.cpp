@@ -33,7 +33,7 @@ void FieldAtSinglePressure::set_grids(const std::shared_ptr<const GridsManager> 
   const auto& gname  = m_params.get<std::string>("Grid Name");
   auto m_grid = grids_manager->get_grid(gname);
   const auto& grid_name = m_grid->name();
-  int ncol = m_grid->get_num_local_dofs();
+  m_num_cols = m_grid->get_num_local_dofs();
   m_num_levs = m_grid->get_num_vertical_levels();
 
   //std::cout<<"ncol: "<<ncol<<std::endl;
@@ -44,7 +44,7 @@ void FieldAtSinglePressure::set_grids(const std::shared_ptr<const GridsManager> 
   add_field<Required>(m_field_name, m_field_layout, m_field_units, gname);
   if (ekat::contains(std::vector<FieldTag>{LEV},m_field_layout.tags().back())) {
     //std::cout<<"Get in here p_mid"<<std::endl;
-    FieldLayout pres_layout { {COL,LEV}, {ncol,m_num_levs} };
+    FieldLayout pres_layout { {COL,LEV}, {m_num_cols,m_num_levs} };
     m_pres_name = "p_mid";
     add_field<Required>(m_pres_name, pres_layout, Pa, gname);
     FieldIdentifier fid (name(),pres_layout, m, gname);
@@ -54,7 +54,7 @@ void FieldAtSinglePressure::set_grids(const std::shared_ptr<const GridsManager> 
     m_diagnostic_output.allocate_view();
 
   } else {
-    FieldLayout pres_layout { {COL,ILEV}, {ncol,m_num_levs+1} };
+    FieldLayout pres_layout { {COL,ILEV}, {m_num_cols,m_num_levs+1} };
     m_pres_name = "p_int";
     add_field<Required>(m_pres_name, pres_layout, Pa, gname);
     FieldIdentifier fid (name(),pres_layout, m, gname);
@@ -85,9 +85,9 @@ void FieldAtSinglePressure::compute_diagnostic_impl()
   view_2d<Spack> p_data = pressure.get_view<Spack**>();
 
   //This is the 1D target pressure
-  view_1d<Spack> p_tgt = view_1d<Spack>("",1);
-  auto p_tgt_s = Kokkos::create_mirror_view(ekat::scalarize(p_tgt));
-  p_tgt_s(0) = m_pressure_level;
+  view_1d<Spack> p_tgt = view_1d<Spack>("",m_num_cols);
+  Kokkos::deep_copy(p_tgt, m_pressure_level);
+//ASD  auto p_tgt_s = Kokkos::create_mirror_view(ekat::scalarize(p_tgt));
   //p_tgt_s(0) = 500.;
 
   //input field
