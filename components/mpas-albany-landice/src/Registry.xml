@@ -110,12 +110,16 @@
 	<nml_record name="advection" in_defaults="true">
 		<nml_option name="config_thickness_advection" type="character" default_value="fo" units="unitless"
 		            description="Selection of the method for advecting thickness ('fo' = first-order upwinding)."
-		            possible_values="'fo', 'none'"
+		            possible_values="'fo', 'fct', 'none'"
 		/>
 		<nml_option name="config_tracer_advection" type="character" default_value="none" units="unitless"
 		            description="Selection of the method for advecting tracers."
-		            possible_values="'fo', 'none'"
-                />
+		            possible_values="'fo', 'fct', 'none'"
+		/>
+		<nml_option name="config_advection_coef_3rd_order" type="real" default_value="0.25" units="unitless"
+					description="Reconstruction of 3rd-order reconstruction to blend with 4th-order reconstuction"
+					possible_values="any real between 0 and 1"
+		/>
 		<nml_option name="config_restore_thickness_after_advection" type="logical" default_value=".false." units="unitless"
 			    description="If true, reset thickness to values at previous timestep after advection occurs. This is used for spinning up tracer fields such as damage.  When this is true, geometry changes from surface and basal mass balance (grounded or floating) and facemelting are not retained, but changes from calving are."
 			    possible_values=".true. or .false."

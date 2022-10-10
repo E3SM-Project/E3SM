@@ -82,7 +82,8 @@ module li_advection
         advectTracersIn)
 
      use li_setup, only: li_calculate_layerThickness
-
+     use mpas_tracer_advection_helpers
+     use mpas_tracer_advection_mono
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -187,6 +188,16 @@ module li_advection
            cellMaskTemporaryField, & ! scratch field containing old values of cellMask
            thermalCellMaskField
 
+      ! Allocatable arrays need for flux-corrected transport advection
+      real(kind=RKIND), dimension(:,:,:), allocatable :: derivTwo
+      real (kind=RKIND), dimension(:,:), allocatable :: advCoefs
+      real (kind=RKIND), dimension(:,:), allocatable :: advCoefs3rd
+      integer, dimension(:), allocatable :: nAdvCellsForEdge
+      integer, dimension(:,:), allocatable :: advCellsForEdge
+      real (kind=RKIND), dimension(:,:), allocatable :: advMaskHighOrder
+      real (kind=RKIND), dimension(:,:), allocatable :: tendLayerThickness
+      real (kind=RKIND), dimension(:,:,:), allocatable :: tend
+
       integer, dimension(:), pointer :: &
            cellMask,              & ! integer bitmask for cells
            edgeMask,              & ! integer bitmask for edges
@@ -208,15 +219,23 @@ module li_advection
            config_ice_density,    & ! rhoi
            config_ocean_density,  & ! rhoo
            config_sea_level,      & ! sea level relative to z = 0
-           config_thermal_thickness
+           config_thermal_thickness, &
+           config_advection_coef_3rd_order
+
+      integer, pointer :: config_num_halos
 
       logical :: advectTracers     ! if true, then advect tracers as well as thickness
 
       integer :: iCell1, iCell2, theGroundedCell
+      integer, parameter :: horizAdvOrder = 4
+      integer, parameter :: vertAdvOrder = 1
 
       real(kind=RKIND) :: GLfluxSign, thicknessFluxEdge
 
       integer :: err_tmp
+      integer :: nTracers
+      integer, pointer :: maxEdges2
+      integer :: nAdvCellsMax
 
       !WHL - debug
       integer, dimension(:), pointer :: indexToCellID, indexToEdgeID
@@ -295,11 +314,12 @@ module li_advection
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
       call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+      call mpas_pool_get_config(liConfigs, 'config_num_halos', config_num_halos)
 
-      !WHL - debug
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+      call mpas_pool_get_dimension(meshPool, 'maxEdges2', maxEdges2)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
@@ -315,6 +335,7 @@ module li_advection
       call mpas_pool_get_field(scratchPool, 'workTracerLevelCell', advectedTracersField)
       call mpas_allocate_scratch_field(advectedTracersField, .true.)
       advectedTracers => advectedTracersField % array
+      nTracers = size(advectedTracers,1)
 
       call mpas_pool_get_field(scratchPool, 'workLevelCell', layerThicknessOldField)
       call mpas_allocate_scratch_field(layerThicknessOldField, .true.)
@@ -339,6 +360,28 @@ module li_advection
       call mpas_allocate_scratch_field(thermalCellMaskField, .true.)
       thermalCellMask => thermalCellMaskField % array
 
+      ! define max number of advection cells as max number of edges*2
+      nAdvCellsMax = maxEdges2
+
+      if (trim(config_thickness_advection) .eq. 'fct') then
+         allocate(nAdvCellsForEdge(nEdges))
+         nAdvCellsForEdge(:) = 0
+         allocate(advCellsForEdge (nAdvCellsMax,nEdges))
+         advCellsForEdge(:,:) = 0
+         allocate(advCoefs(nAdvCellsMax,nEdges))
+         advCoefs(:,:) = 0.0_RKIND
+         allocate(advCoefs3rd(nAdvCellsMax,nEdges))
+         advCoefs3rd(:,:) = 0.0_RKIND
+         allocate(advMaskHighOrder(nVertLevels,nEdges))
+         advMaskHighOrder(:,:) = 0.0_RKIND
+         allocate(tendLayerThickness(nVertLevels,nEdges))
+         tendLayerThickness(:,:) = 0.0_RKIND
+         allocate(tend(nAdvCellsMax,2,nEdges))
+         tend(:,:,:) = 0.0_RKIND
+         allocate(derivTwo(nAdvCellsMax,2,nEdges))
+         derivTwo(:,:,:) = 0.0_RKIND
+      endif
+
       ! given the old thickness, compute the thickness in each layer
       call li_calculate_layerThickness(meshPool, thickness, layerThickness)
 
@@ -353,9 +396,8 @@ module li_advection
       ! Horizontal transport of thickness and tracers
       !-----------------------------------------------------------------
 
-      select case (trim(config_thickness_advection))
-
-      case ('fo')
+      if ( (trim(config_thickness_advection) .eq. 'fo') .or. &
+          (trim(config_thickness_advection) .eq. 'fct') ) then
 
          if (config_print_thickness_advection_info) then
             call mpas_log_write('Using first-order upwind for thickness advection')
@@ -402,8 +444,10 @@ module li_advection
                        intArgs=(/iCell, indexToCellID(iCell)/), realArgs=(/thickness(iCell), advectedTracers(1,1,iCell)/))
                   do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                      iEdge = edgesOnCell(iEdgeOnCell,iCell)
-                     call mpas_log_write('iEdge (local=$i, global=$i), layerNormalVelocity=$r:', &
-                        intArgs=(/iEdge, indexToEdgeID(iEdge)/), realArgs=(/layerNormalVelocity(1,iEdge)/))
+                     call mpas_log_write('iEdge (local=$i, global=$i), &
+                             layerNormalVelocity=$r:', &
+                             intArgs=(/iEdge, indexToEdgeID(iEdge)/), &
+                             realArgs=(/layerNormalVelocity(1,iEdge)/))
                   enddo
                endif
             enddo
@@ -414,18 +458,61 @@ module li_advection
          advectedTracersOld(:,:,:) = advectedTracers(:,:,:)
 
          ! compute new values of layer thickness and tracers
-         call advect_thickness_tracers_upwind(&
-              dt,                      &
-              meshPool,                &
-              layerNormalVelocity,     &
-              layerThicknessEdge,      &
-              layerThicknessOld,       &
-              advectedTracersOld,      &
-              cellMask,                &
-              edgeMask,                &
-              layerThickness,          &
-              advectedTracers,         &
-              err)
+         if (trim(config_thickness_advection) .eq. 'fo') then
+             call advect_thickness_tracers_upwind(&
+                  dt,                      &
+                  meshPool,                &
+                  layerNormalVelocity,     &
+                  layerThicknessEdge,      &
+                  layerThicknessOld,       &
+                  advectedTracersOld,      &
+                  cellMask,                &
+                  edgeMask,                &
+                  layerThickness,          &
+                  advectedTracers,         &
+                  err)
+         elseif (trim(config_thickness_advection) .eq. 'fct') then
+             call mpas_initialize_deriv_two(meshPool, derivTwo, err)
+             call mpas_tracer_advection_coefficients(&
+                       meshPool,         &
+                       horizAdvOrder,    &
+                       derivTwo,         &
+                       advCoefs,         &
+                       advCoefs3rd,      &
+                       nAdvCellsForEdge, &
+                       advCellsForEdge,  &
+                       err)
+             call mpas_tracer_advection_mono_init(&
+                       config_num_halos,            &
+                       horizAdvOrder,               &
+                       vertAdvOrder,                &
+                       config_advection_coef_3rd_order, &
+                       dzdk_positive = .false.,     &
+                       check_monotonicity = .true., &
+                       err = err)
+             call mpas_tracer_advection_mono_tend(&
+                       advectedTracers,             &
+                       advcoefs,           &
+                       advCoefs3rd,       &
+                       nAdvCellsForEdge,    &
+                       advCellsForEdge,     &
+                       layerNormalVelocity * layerThicknessEdge, &
+                       layerNormalVelocity * 0.0_RKIND,          &
+                       layerThickness,      &
+                       layerThickness,    & ! TODO: decipher difference
+                                            ! between verticalCellSize 
+                                            ! and layerThickness
+                       dt,                  &
+                       meshPool,            &
+                       tendLayerThickness, &
+                       tend)
+                       ! optional: maxLevelCell_in, axLevelEdgeTop_in,
+                       !           highOrderAdvectionMask_in,
+                       !           verticalDivergenceFactor_in,
+                       !           edgeSignOnCell_in
+              ! Then apply tend and tend_layerThickness to tracer
+              ! fields?
+         endif
 
          if (config_print_thickness_advection_info) then
             do iCell = 1, nCells
@@ -604,17 +691,17 @@ module li_advection
 
          endif
 
-      case ('none')
+      elseif (trim(config_thickness_advection) .eq. 'none') then
 
          ! Do nothing
 
-      case default
+      else
 
          call mpas_log_write(trim(config_thickness_advection) // ' is not a valid option for thickness/tracer advection.', &
                  MPAS_LOG_ERR)
          err_tmp = 1
 
-      end select
+      end if ! config_thickness_advection
 
       err = ior(err,err_tmp)
 
