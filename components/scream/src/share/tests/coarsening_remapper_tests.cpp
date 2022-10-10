@@ -6,6 +6,14 @@
 
 namespace scream {
 
+template<typename ViewT>
+typename ViewT::HostMirror
+cmvc (const ViewT& v) {
+  auto vh = Kokkos::create_mirror_view(v);
+  Kokkos::deep_copy(vh,v);
+  return vh;
+}
+
 class CoarseningRemapperTester : public CoarseningRemapper {
 public:
   CoarseningRemapperTester (const grid_ptr_type& src_grid,
@@ -33,18 +41,38 @@ public:
     return m_ov_tgt_grid;
   }
 
+  view_2d<int>::HostMirror get_send_f_pid_offsets () const {
+    return cmvc(m_send_f_pid_offsets);
+  }
+  view_2d<int>::HostMirror get_recv_f_pid_offsets () const {
+    return cmvc(m_recv_f_pid_offsets);
+  }
+
+  view_1d<int>::HostMirror get_send_pid_offsets () const {
+    return cmvc(m_send_pid_offsets);
+  }
+  view_1d<int>::HostMirror get_recv_pid_offsets () const {
+    return cmvc(m_recv_pid_offsets);
+  }
+
+  view_2d<int>::HostMirror get_send_lids_pids () const {
+    return cmvc(m_send_lids_pids );
+  }
+  view_2d<int>::HostMirror get_recv_lids_pids () const {
+    return cmvc(m_recv_lids_pids);
+  }
+
+  view_1d<int>::HostMirror get_send_pid_lids_start () const {
+    return cmvc(m_send_pid_lids_start);
+  }
+  view_1d<int>::HostMirror get_recv_pid_lids_start () const {
+    return cmvc(m_recv_pid_lids_start);
+  }
+
   int gid2lid (const gid_t gid, const grid_ptr_type& grid) const {
     return CoarseningRemapper::gid2lid(gid,grid);
   }
 };
-
-template<typename ViewT>
-typename ViewT::HostMirror
-cmvc (const ViewT& v) {
-  auto vh = Kokkos::create_mirror_view(v);
-  Kokkos::deep_copy(vh,v);
-  return vh;
-}
 
 template<typename ViewT>
 bool contains (const ViewT& v, const typename ViewT::traits::value_type& entry) {
@@ -134,7 +162,6 @@ TEST_CASE ("coarsening_remap") {
   // -------------------------------------- //
   //      Build src grid and remapper       //
   // -------------------------------------- //
-  
 
   print (" -> creating grid and remapper ...\n",comm);
 
@@ -149,9 +176,86 @@ TEST_CASE ("coarsening_remap") {
   auto remap = std::make_shared<CoarseningRemapperTester>(src_grid,filename);
   print (" -> creating grid and remapper ... done!\n",comm);
 
-  print (" -> Checking remapper internal state ...\n",comm);
-  // Check tgt grid
+  // -------------------------------------- //
+  //      Create src/tgt grid fields        //
+  // -------------------------------------- //
+
+  print (" -> creating fields ...\n",comm);
+  constexpr int vec_dim = 3;
+  auto create_field = [&] (const std::string& name,
+                           const std::shared_ptr<const AbstractGrid>& grid,
+                           const bool twod, const bool vec, const bool mid = false, const int ps = 1) -> Field
+  {
+    constexpr auto CMP = FieldTag::Component;
+    constexpr auto units = ekat::units::Units::nondimensional();
+    auto fl = twod
+            ? (vec ? grid->get_2d_vector_layout (CMP,vec_dim)
+                   : grid->get_2d_scalar_layout ())
+            : (vec ? grid->get_3d_vector_layout (mid,CMP,vec_dim)
+                   : grid->get_3d_scalar_layout (mid));
+    FieldIdentifier fid(name,fl,units,grid->name());
+    Field f(fid);
+    f.get_header().get_alloc_properties().request_allocation(ps);
+    f.allocate_view();
+    return f;
+  };
+
   auto tgt_grid = remap->get_tgt_grid();
+
+  auto src_s2d   = create_field("s2d",  src_grid,true,false);
+  auto src_v2d   = create_field("v2d",  src_grid,true,true);
+  auto src_s3d_m = create_field("s3d_m",src_grid,false,false,true, 1);
+  auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,std::min(SCREAM_PACK_SIZE,4));
+  auto src_v3d_m = create_field("v3d_m",src_grid,false,true ,true, std::min(SCREAM_PACK_SIZE,8));
+  auto src_v3d_i = create_field("v3d_i",src_grid,false,true ,false,std::min(SCREAM_PACK_SIZE,16));
+
+  auto tgt_s2d   = create_field("s2d",  tgt_grid,true,false);
+  auto tgt_v2d   = create_field("v2d",  tgt_grid,true,true);
+  auto tgt_s3d_m = create_field("s3d_m",tgt_grid,false,false,true, 1);
+  auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,false,std::min(SCREAM_PACK_SIZE,4));
+  auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,true ,true, std::min(SCREAM_PACK_SIZE,8));
+  auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,true ,false,std::min(SCREAM_PACK_SIZE,16));
+
+  std::vector<Field> src_f = {src_s2d,src_v2d,src_s3d_m,src_s3d_i,src_v3d_m,src_v3d_i};
+  std::vector<Field> tgt_f = {tgt_s2d,tgt_v2d,tgt_s3d_m,tgt_s3d_i,tgt_v3d_m,tgt_v3d_i};
+
+  const int nfields = src_f.size();
+
+  std::vector<int> field_col_size (src_f.size());
+  std::vector<int> field_col_offset (src_f.size()+1,0);
+  int sum_fields_col_sizes = 0;
+  for (int i=0; i<nfields; ++i) {
+    const auto& f  = src_f[i];  // Doesn't matter if src or tgt
+    const auto& fl = f.get_header().get_identifier().get_layout();
+    field_col_size[i] = fl.size() / fl.dim(0);
+    sum_fields_col_sizes += field_col_size[i];
+    field_col_offset[i+1] = field_col_offset[i]+field_col_size[i];
+  }
+
+  print (" -> creating fields ... done!\n",comm);
+
+  // -------------------------------------- //
+  //     Register fields in the remapper    //
+  // -------------------------------------- //
+
+  print (" -> registering fields ...\n",comm);
+  remap->registration_begins();
+  remap->register_field(src_s2d,  tgt_s2d);
+  remap->register_field(src_v2d,  tgt_v2d);
+  remap->register_field(src_s3d_m,tgt_s3d_m);
+  remap->register_field(src_s3d_i,tgt_s3d_i);
+  remap->register_field(src_v3d_m,tgt_v3d_m);
+  remap->register_field(src_v3d_i,tgt_v3d_i);
+  remap->registration_ends();
+  print (" -> registering fields ... done!\n",comm);
+
+  // -------------------------------------- //
+  //        Check remapper internals        //
+  // -------------------------------------- //
+
+  print (" -> Checking remapper internal state ...\n",comm);
+
+  // Check tgt grid
   REQUIRE (tgt_grid->get_num_global_dofs()==ngdofs_tgt);
 
   // Check which triplets are read from map file
@@ -170,8 +274,8 @@ TEST_CASE ("coarsening_remap") {
   //       there are 2 local src dofs impacting the same tgt dof, while with 2+
   //       ranks every local src dof impacts a different tgt dof.
   auto ov_tgt_grid = remap->get_ov_tgt_grid ();
-  int num_loc_ov_tgt_gids = ov_tgt_grid->get_num_local_dofs();
-  int expected_num_loc_ov_tgt_gids = ngdofs_tgt>=nldofs_src ? nldofs_src : ngdofs_tgt;
+  const int num_loc_ov_tgt_gids = ov_tgt_grid->get_num_local_dofs();
+  const int expected_num_loc_ov_tgt_gids = ngdofs_tgt>=nldofs_src ? nldofs_src : ngdofs_tgt;
   REQUIRE (num_loc_ov_tgt_gids==expected_num_loc_ov_tgt_gids);
   auto ov_gids = ov_tgt_grid->get_dofs_gids_host();
   for (int i=0; i<num_loc_ov_tgt_gids; ++i) {
@@ -201,7 +305,7 @@ TEST_CASE ("coarsening_remap") {
   }
   REQUIRE (row_offsets_h(num_loc_ov_tgt_gids)==nldofs_src);
 
-  for (int irow=0; irow<ov_tgt_gids.extent_int(0); ++irow) {
+  for (int irow=0; irow<num_loc_ov_tgt_gids; ++irow) {
     const auto row_gid = ov_tgt_gids(irow);
     for (int innz=row_offsets_h(irow); innz<row_offsets_h(irow+1); ++innz) {
       const auto col_lid = col_lids_h(innz);
@@ -213,68 +317,92 @@ TEST_CASE ("coarsening_remap") {
       }
     }
   }
+
+  // Check internal MPI structures
+  const int num_loc_tgt_gids = tgt_grid->get_num_local_dofs();
+  std::map<int,std::vector<int>> pid2gids_send,pid2gids_recv;
+  if (comm.size()==1) {
+    std::vector<int> gids(ngdofs_tgt);
+    std::iota(gids.begin(),gids.end(),0);
+    pid2gids_send[0] = pid2gids_recv[0] = gids;
+  } else {
+    printf ("got %d src dofs on rank %d\n",nldofs_src,comm.rank());
+    printf ("got %d tgt dofs on rank %d\n",num_loc_tgt_gids,comm.rank());
+    std::stringstream ss;
+    for (int i=0; i<num_loc_tgt_gids; ++i) {
+      ss << " " << tgt_grid->get_dofs_gids_host()[i];
+    }
+    printf("on rank %d, tgt gids:%s\n",comm.rank(),ss.str().c_str());
+    for (int i=0; i<nldofs_src; ++i) {
+      const int tgt_gid = src_gids[i] % ngdofs_tgt;
+      const int pid = tgt_gid / nldofs_src;
+      printf("on rank %d, src dof %d, affects tgt dof %d, owned by %d\n",comm.rank(),src_gids[i],tgt_gid,pid);
+      pid2gids_send[pid].push_back(tgt_gid);
+    }
+
+    auto tgt_gids = tgt_grid->get_dofs_gids_host();
+    for (int i=0; i<num_loc_tgt_gids; ++i) {
+      const int src_1 = tgt_gids[i];
+      const int src_2 = src_1 + ngdofs_tgt;
+      const int pid_1 = src_1 / nldofs_src;
+      const int pid_2 = src_2 / nldofs_src;
+      pid2gids_recv[pid_1].push_back(tgt_gids[i]);
+      pid2gids_recv[pid_2].push_back(tgt_gids[i]);
+    }
+  }
+  std::vector<int> send_offset(comm.size()+1,0),recv_offset(comm.size()+1,0);
+  for (int pid=0; pid<comm.size(); ++pid) {
+    send_offset[pid+1] = send_offset[pid] + pid2gids_send[pid].size();
+    recv_offset[pid+1] = recv_offset[pid] + pid2gids_recv[pid].size();
+  }
+
+  auto send_f_pid_offsets = remap->get_send_f_pid_offsets();
+  auto recv_f_pid_offsets = remap->get_recv_f_pid_offsets();
+  auto send_pid_offsets = remap->get_send_pid_offsets();
+  auto recv_pid_offsets = remap->get_recv_pid_offsets();
+  auto send_lids_pids = remap->get_send_lids_pids();
+  auto recv_lids_pids = remap->get_recv_lids_pids();
+  auto send_pid_lids_start = remap->get_send_pid_lids_start();
+  auto recv_pid_lids_start = remap->get_recv_pid_lids_start();
+  REQUIRE (send_lids_pids.extent_int(0)==num_loc_ov_tgt_gids);
+  if (comm.size()==1) {
+    REQUIRE (recv_lids_pids.extent_int(0)==tgt_grid->get_num_local_dofs());
+  } else {
+    REQUIRE (recv_lids_pids.extent_int(0)==2*tgt_grid->get_num_local_dofs());
+  }
+  REQUIRE (send_lids_pids.extent(1)==2);
+  REQUIRE (recv_lids_pids.extent(1)==2);
+
+  // for (int i=0,send_cum_offset=0,recv_cum_offset=0; i<nfields; ++i) {
+  for (int pid=0; pid<comm.size(); ++pid) {
+    for (int i=0; i<nfields; ++i) {
+      const int expected_send_offset = send_offset[pid]*sum_fields_col_sizes + field_col_offset[i]*pid2gids_send[pid].size();
+      const int expected_recv_offset = recv_offset[pid]*sum_fields_col_sizes + field_col_offset[i]*pid2gids_recv[pid].size();
+      REQUIRE (send_f_pid_offsets(i,pid)==expected_send_offset);
+      REQUIRE (recv_f_pid_offsets(i,pid)==expected_recv_offset);
+      // REQUIRE (send_pid_offsets(pid)==sum_fields_col_sizes*send_offset[pid]);
+      // REQUIRE (recv_pid_offsets(pid)==sum_fields_col_sizes*recv_offset[pid]);
+    }
+  }
+  for (int pid=0; pid<comm.size(); ++pid) {
+    REQUIRE (send_pid_lids_start(pid)==send_offset[pid]);
+    REQUIRE (recv_pid_lids_start(pid)==recv_offset[pid]);
+    const int send_beg = send_offset[pid];
+    const int recv_beg = recv_offset[pid];
+    const int send_end = send_offset[pid+1];
+    const int recv_end = recv_offset[pid+1];
+    const int nsend = send_end - send_beg;
+    const int nrecv = recv_end - recv_beg;
+    for (int i=0; i<nsend; ++i) {
+      REQUIRE (send_lids_pids(i+send_beg,0) == remap->gid2lid(pid2gids_send[pid][i],ov_tgt_grid));
+      REQUIRE (send_lids_pids(i+send_beg,1) == pid);
+    }
+    for (int i=0; i<nrecv; ++i) {
+      REQUIRE (recv_lids_pids(i+recv_beg,0) == remap->gid2lid(pid2gids_recv[pid][i],tgt_grid));
+      REQUIRE (recv_lids_pids(i+recv_beg,1) == pid);
+    }
+  }
   print (" -> Checking remapper internal state ... OK!\n",comm);
-
-  // -------------------------------------- //
-  //      Create src/tgt grid fields        //
-  // -------------------------------------- //
-
-  print (" -> creating fields ...\n",comm);
-  constexpr int vec_dim = 3;
-  auto create_field = [&] (const std::string& name,
-                           const std::shared_ptr<const AbstractGrid>& grid,
-                           const bool twod, const bool vec, const bool mid = false, const int ps = 1) -> Field
-  {
-    constexpr auto CMP = FieldTag::Component;
-    constexpr auto units = ekat::units::Units::nondimensional();
-    auto fl = twod
-            ? (vec ? grid->get_2d_vector_layout (CMP,vec_dim)
-                   : grid->get_2d_scalar_layout ())
-            : (vec ? grid->get_3d_vector_layout (mid,CMP,vec_dim)
-                   : grid->get_3d_scalar_layout (mid));
-    FieldIdentifier fid(name,fl,units,grid->name());
-    Field f(fid);
-    f.get_header().get_alloc_properties().request_allocation(ps);
-    f.allocate_view();
-    return f;
-  };
-
-  auto src_s2d   = create_field("s2d",  src_grid,true,false);
-  auto src_v2d   = create_field("v2d",  src_grid,true,true);
-  auto src_s3d_m = create_field("s3d_m",src_grid,false,false,true, 1);
-  auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,std::min(SCREAM_PACK_SIZE,4));
-  auto src_v3d_m = create_field("v3d_m",src_grid,false,true ,true, std::min(SCREAM_PACK_SIZE,8));
-  auto src_v3d_i = create_field("v3d_i",src_grid,false,true ,false,std::min(SCREAM_PACK_SIZE,16));
-
-  auto tgt_s2d   = create_field("s2d",  tgt_grid,true,false);
-  auto tgt_v2d   = create_field("v2d",  tgt_grid,true,true);
-  auto tgt_s3d_m = create_field("s3d_m",tgt_grid,false,false,true, 1);
-  auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,false,std::min(SCREAM_PACK_SIZE,4));
-  auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,true ,true, std::min(SCREAM_PACK_SIZE,8));
-  auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,true ,false,std::min(SCREAM_PACK_SIZE,16));
-
-  std::vector<Field> src_f = {src_s2d,src_v2d,src_s3d_m,src_s3d_i,src_v3d_m,src_v3d_i};
-  std::vector<Field> tgt_f = {tgt_s2d,tgt_v2d,tgt_s3d_m,tgt_s3d_i,tgt_v3d_m,tgt_v3d_i};
-
-  print (" -> creating fields ... done!\n",comm);
-
-  // -------------------------------------- //
-  //     Register fields in the remapper    //
-  // -------------------------------------- //
-
-  print (" -> registering fields ...\n",comm);
-  remap->registration_begins();
-  remap->register_field(src_s2d,  tgt_s2d);
-  remap->register_field(src_v2d,  tgt_v2d);
-  remap->register_field(src_s3d_m,tgt_s3d_m);
-  remap->register_field(src_s3d_i,tgt_s3d_i);
-  remap->register_field(src_v3d_m,tgt_v3d_m);
-  remap->register_field(src_v3d_i,tgt_v3d_i);
-  remap->registration_ends();
-
-  // No bwd remap
-  REQUIRE_THROWS(remap->remap(false));
-  print (" -> registering fields ... done!\n",comm);
 
   // -------------------------------------- //
   //       Generate data for src fields     //
@@ -331,6 +459,10 @@ TEST_CASE ("coarsening_remap") {
   auto combine = [] (const Real lhs, const Real rhs) -> Real {
     return 0.25*lhs + 0.75*rhs;
   };
+
+  // No bwd remap
+  REQUIRE_THROWS(remap->remap(false));
+
   for (int irun=0; irun<5; ++irun) {
     print (" -> run remap ...\n",comm);
     remap->remap(true);
