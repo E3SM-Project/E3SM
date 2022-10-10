@@ -288,7 +288,7 @@ AbstractGrid::get_unique_gids () const
   auto unique_gids_h = Kokkos::create_mirror_view(unique_gids_d);
   std::memcpy(unique_gids_h.data(),unique_dofs.data(),sizeof(gid_type)*unique_dofs.size());
   Kokkos::deep_copy(unique_gids_d,unique_gids_h);
-  return unique_gids_h;
+  return unique_gids_d;
 }
 
 auto AbstractGrid::
