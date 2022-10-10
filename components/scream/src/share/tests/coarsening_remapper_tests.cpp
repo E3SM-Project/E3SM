@@ -117,11 +117,11 @@ TEST_CASE ("coarsening_remap") {
   for (int i=0; i<nldofs_tgt; ++i) {
     row.push_back(1+i+nldofs_tgt*comm.rank());
     col.push_back(1+i+nldofs_tgt*comm.rank());
-    S.push_back(0.5);
+    S.push_back(0.25);
 
     row.push_back(1+i+nldofs_tgt*comm.rank());
     col.push_back(1+i+nldofs_tgt*comm.rank() + ngdofs_tgt);
-    S.push_back(0.5);
+    S.push_back(0.75);
   }
 
   scorpio::grid_write_data_array(filename,"row",row.data(),row.size());
@@ -215,7 +215,11 @@ TEST_CASE ("coarsening_remap") {
       REQUIRE(col_lids_h(irow)==remap->gid2lid(src_gid,src_grid));
     }
 
-    REQUIRE (weights_h(i  )==0.5);
+    if (src_gid==tgt_gid) {
+      REQUIRE (weights_h(i  )==0.25);
+    } else {
+      REQUIRE (weights_h(i  )==0.75);
+    }
   }
   print (" -> Checking remapper internal state ... OK!\n",comm);
 
@@ -332,6 +336,9 @@ TEST_CASE ("coarsening_remap") {
   }
   print (" -> generate src fields data ... done!\n",comm);
 
+  auto combine = [] (const Real lhs, const Real rhs) -> Real {
+    return 0.25*lhs + 0.75*rhs;
+  };
   for (int irun=0; irun<5; ++irun) {
     print (" -> run remap ...\n",comm);
     remap->remap(true);
@@ -362,7 +369,7 @@ TEST_CASE ("coarsening_remap") {
             const auto gid = tgt_gids(i);
             const auto term1 = gid;
             const auto term2 = gid+ngdofs_tgt;
-            REQUIRE ( v_tgt(i)== (term1 + term2)/2.0 );
+            REQUIRE ( v_tgt(i)== combine(term1,term2) );
           }
         } break;
         case LayoutType::Vector2D:
@@ -373,7 +380,7 @@ TEST_CASE ("coarsening_remap") {
             for (int j=0; j<vec_dim; ++j) {
               const auto term1 = gid*vec_dim+j;
               const auto term2 = (gid+ngdofs_tgt)*vec_dim+j;
-              REQUIRE ( v_tgt(i,j)== (term1 + term2)/2.0 );
+              REQUIRE ( v_tgt(i,j)== combine(term1,term2) );
           }}
         } break;
         case LayoutType::Scalar3D:
@@ -385,7 +392,7 @@ TEST_CASE ("coarsening_remap") {
             for (int j=0; j<nlevs; ++j) {
               const auto term1 = gid*nlevs+j;
               const auto term2 = (gid+ngdofs_tgt)*nlevs+j;
-              REQUIRE ( v_tgt(i,j)== (term1 + term2)/2.0 );
+              REQUIRE ( v_tgt(i,j)== combine(term1,term2) );
           }}
         } break;
         case LayoutType::Vector3D:
@@ -398,7 +405,7 @@ TEST_CASE ("coarsening_remap") {
               for (int k=0; k<nlevs; ++k) {
                 const auto term1 = gid*vec_dim*nlevs+j*nlevs+k;
                 const auto term2 = (gid+ngdofs_tgt)*vec_dim*nlevs+j*nlevs+k;
-                REQUIRE ( v_tgt(i,j,k)== (term1 + term2)/2.0 );
+                REQUIRE ( v_tgt(i,j,k)== combine(term1,term2) );
           }}}
         } break;
         default:
