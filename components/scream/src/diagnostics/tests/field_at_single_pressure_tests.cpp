@@ -120,11 +120,11 @@ TEST_CASE("field_at_single_pressure")
   auto d_mid = diag_mid->get_diagnostic();
   d_mid.sync_to_host();
 
-  auto d_mid_v = d_mid.get_view<const Real**,Host>();
+  auto d_mid_v = d_mid.get_view<const Real*,Host>();
   
 //  auto d_int_v = d_int.get_view<const Real*,Host>();
   for (int icol=0; icol<ncols; ++icol) {
-    REQUIRE (d_mid_v(icol,0)==icol*100 + 1.5);
+    REQUIRE (d_mid_v(icol)==icol*100 + 1.5);
   }
   
 }

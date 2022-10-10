@@ -47,7 +47,9 @@ void FieldAtSinglePressure::set_grids(const std::shared_ptr<const GridsManager> 
     FieldLayout pres_layout { {COL,LEV}, {m_num_cols,m_num_levs} };
     m_pres_name = "p_mid";
     add_field<Required>(m_pres_name, pres_layout, Pa, gname);
-    FieldIdentifier fid (name(),pres_layout, m, gname);
+
+    FieldLayout diag_layout { {COL}, {m_num_cols} };
+    FieldIdentifier fid (name(),diag_layout, m, gname);
     m_diagnostic_output = Field(fid);
     auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
     C_ap.request_allocation(ps);
@@ -57,7 +59,9 @@ void FieldAtSinglePressure::set_grids(const std::shared_ptr<const GridsManager> 
     FieldLayout pres_layout { {COL,ILEV}, {m_num_cols,m_num_levs+1} };
     m_pres_name = "p_int";
     add_field<Required>(m_pres_name, pres_layout, Pa, gname);
-    FieldIdentifier fid (name(),pres_layout, m, gname);
+
+    FieldLayout diag_layout { {COL}, {m_num_cols} };
+    FieldIdentifier fid (name(),diag_layout, m, gname);
     m_diagnostic_output = Field(fid);
     auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
     C_ap.request_allocation(ps);
@@ -85,7 +89,7 @@ void FieldAtSinglePressure::compute_diagnostic_impl()
   view_2d<Spack> p_data = pressure.get_view<Spack**>();
 
   //This is the 1D target pressure
-  view_1d<Spack> p_tgt = view_1d<Spack>("",m_num_cols);
+  view_1d<Spack> p_tgt = view_1d<Spack>("",1);  // We only plan to map onto a single pressure level
   Kokkos::deep_copy(p_tgt, m_pressure_level);
 //ASD  auto p_tgt_s = Kokkos::create_mirror_view(ekat::scalarize(p_tgt));
   //p_tgt_s(0) = 500.;
@@ -95,9 +99,14 @@ void FieldAtSinglePressure::compute_diagnostic_impl()
   view_2d<Spack> f_data_src = f.get_view<Spack**>();
 
   //output field on new grid
-  view_2d<Spack> d_data_tgt = m_diagnostic_output.get_view<Spack**>();
+  auto d_data_tgt = m_diagnostic_output.get_view<Real*>();
+  view_2d<Spack> data_tgt_tmp("",m_num_cols,1);  // Note, vertical interp wants a 2D view, so we create a temporary one
 
-  perform_vertical_interpolation(p_data,p_tgt,f_data_src,d_data_tgt,m_num_levs,1);
+
+  perform_vertical_interpolation(p_data,p_tgt,f_data_src,data_tgt_tmp,m_num_levs,1);
+  Kokkos::parallel_for("", m_num_cols, KOKKOS_LAMBDA (const int& icol) {
+    d_data_tgt(icol) = data_tgt_tmp(icol,0)[0];
+  });
 
 }
 

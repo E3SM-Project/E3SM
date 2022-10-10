@@ -65,8 +65,8 @@ void perform_vertical_interpolation_impl_2d(
   EKAT_REQUIRE(x_src.extent(1)==input.extent(1));
   EKAT_REQUIRE(x_src.extent(1)==npacks_src);
   EKAT_REQUIRE(input.extent(1)==npacks_src);
-  EKAT_REQUIRE(x_tgt.extent(0)==output.extent(0));
-//ASD  EKAT_REQUIRE(x_tgt.extent(0)==npacks_tgt); 
+  EKAT_REQUIRE(x_tgt.extent(0)==output.extent(1));
+  EKAT_REQUIRE(x_tgt.extent(0)==npacks_tgt); 
   
   LIV<T,N> vert_interp(ncols,nlevs_src,nlevs_tgt);
 
