@@ -184,10 +184,13 @@ contains
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
+!$!kgen begin_callsite mpas_ocn_gm
+
       allocate (rightHandSide(nVertLevels))
       allocate (tridiagA(nVertLevels))
       allocate (tridiagB(nVertLevels))
       allocate (tridiagC(nVertLevels))
+
 
       nCells = nCellsArray(size(nCellsArray))
       nEdges = nEdgesArray(size(nEdgesArray))
@@ -769,6 +772,8 @@ contains
          deallocate (tridiagC)
 
       end if !end config_use_GM
+
+!$kgen end_callsite mpas_ocn_gm
 
       call mpas_timer_stop('gm bolus velocity')
 
