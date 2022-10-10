@@ -666,11 +666,11 @@ get_my_triplets_gids (const std::string& map_file,
 }
 
 std::vector<int>
-CoarseningRemapper::get_pids_for_recv (const std::vector<int>& my_send_pids) const
+CoarseningRemapper::get_pids_for_recv (const std::vector<int>& send_to_pids) const
 {
   // Figure out how many sends each PID is doing
   std::vector<int> num_sends(m_comm.size(),0);
-  num_sends[m_comm.rank()] = my_send_pids.size();
+  num_sends[m_comm.rank()] = send_to_pids.size();
   m_comm.all_gather(num_sends.data(),1);
 
   // Offsets for send_pids coming from each pid
@@ -683,7 +683,7 @@ CoarseningRemapper::get_pids_for_recv (const std::vector<int>& my_send_pids) con
   // Gather all the pids that each rank is sending data to
   auto nglobal_sends = std::accumulate(num_sends.begin(),num_sends.end(),0);
   std::vector<int> global_send_pids(nglobal_sends,-1);
-  MPI_Allgatherv (my_send_pids.data(),my_send_pids.size(),MPI_INT,
+  MPI_Allgatherv (send_to_pids.data(),send_to_pids.size(),MPI_INT,
                   global_send_pids.data(),num_sends.data(),sends_offsets.data(),
                   MPI_INT, m_comm.mpi_comm());
 
@@ -706,13 +706,13 @@ CoarseningRemapper::get_pids_for_recv (const std::vector<int>& my_send_pids) con
 
 std::map<int,std::vector<int>>
 CoarseningRemapper::
-recv_gids_from_pids (const std::map<int,std::vector<int>>& send_gids_to_pids) const
+recv_gids_from_pids (const std::map<int,std::vector<int>>& pid2gids_send) const
 {
   const auto comm = m_comm.mpi_comm();
 
   // First, figure out which PIDs I need to recv from
   std::vector<int> send_to;
-  for (const auto& it : send_gids_to_pids) {
+  for (const auto& it : pid2gids_send) {
     send_to.push_back(it.first);
   }
   auto recv_from = get_pids_for_recv (send_to);
@@ -721,7 +721,7 @@ recv_gids_from_pids (const std::map<int,std::vector<int>>& send_gids_to_pids) co
   // recv from each recv_pid
   std::map<int,int> nsends, nrecvs;
   std::vector<MPI_Request> send_req, recv_req;
-  for (const auto& it : send_gids_to_pids) {
+  for (const auto& it : pid2gids_send) {
     const int pid = it.first;
     nsends[pid] = it.second.size();
     send_req.emplace_back();
@@ -738,24 +738,24 @@ recv_gids_from_pids (const std::map<int,std::vector<int>>& send_gids_to_pids) co
   recv_req.resize(0);
 
   // Now that we know how many gids we will get from each pid, we can send/recv them
-  for (const auto& it : send_gids_to_pids) {
+  for (const auto& it : pid2gids_send) {
     send_req.emplace_back();
     MPI_Isend(it.second.data(),it.second.size(),MPI_INT,
               it.first,0,comm,&send_req.back());
   }
-  std::map<int,std::vector<int>> recv_gids_from_pids;
+  std::map<int,std::vector<int>> pid2gids_recv;
   for (const auto& it : nrecvs) {
     const int pid = it.first;
     const int n   = it.second;
-    recv_gids_from_pids[pid].resize(n);
+    pid2gids_recv[pid].resize(n);
     recv_req.emplace_back();
-    MPI_Irecv(recv_gids_from_pids[pid].data(),n,MPI_INT,
+    MPI_Irecv(pid2gids_recv[pid].data(),n,MPI_INT,
               pid,0,comm,&recv_req.back());
   }
   MPI_Waitall(send_req.size(),send_req.data(),MPI_STATUSES_IGNORE);
   MPI_Waitall(recv_req.size(),recv_req.data(),MPI_STATUSES_IGNORE);
 
-  return recv_gids_from_pids;
+  return pid2gids_recv;
 }
 
 void CoarseningRemapper::create_ov_tgt_fields ()
@@ -815,14 +815,14 @@ void CoarseningRemapper::setup_mpi_data_structures ()
 
   // 2. Group dofs to send by remote pid
   const int num_ov_gids = ov_gids.size();
-  std::map<int,std::vector<int>> send_lids;
-  std::map<int,std::vector<gid_t>> send_gids;
+  std::map<int,std::vector<int>> pid2lids_send;
+  std::map<int,std::vector<gid_t>> pid2gids_send;
   for (int i=0; i<num_ov_gids; ++i) {
     const int pid = gids_owners(i);
-    send_lids[pid].push_back(i);
-    send_gids[pid].push_back(ov_gids(i));
+    pid2lids_send[pid].push_back(i);
+    pid2gids_send[pid].push_back(ov_gids(i));
   }
-  const int num_send_pids = send_lids.size();
+  const int num_send_pids = pid2lids_send.size();
   m_send_lids_pids = view_2d<int>("",num_ov_gids,2);
   m_send_pid_lids_start = view_1d<int>("",m_comm.size());
   auto send_lids_pids_h = Kokkos::create_mirror_view(m_send_lids_pids);
@@ -830,7 +830,7 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   pos = 0;
   for (int pid=0; pid<m_comm.size(); ++pid) {
     send_pid_lids_start_h(pid) = pos;
-    for (auto lid : send_lids[pid]) {
+    for (auto lid : pid2lids_send[pid]) {
       send_lids_pids_h(pos,0) = lid;
       send_lids_pids_h(pos++,1) = pid;
     }
@@ -848,7 +848,7 @@ void CoarseningRemapper::setup_mpi_data_structures ()
     send_pid_offsets_h(pid) = pos;
     for (int i=0; i<m_num_fields; ++i) {
       send_f_pid_offsets_h(i,pid) = pos;
-      pos += field_col_size[i]*send_lids[pid].size();
+      pos += field_col_size[i]*pid2lids_send[pid].size();
     }
   }
   EKAT_REQUIRE_MSG (pos==num_ov_gids*sum_fields_col_sizes,
@@ -861,7 +861,7 @@ void CoarseningRemapper::setup_mpi_data_structures ()
 
   // 5. Setup send requests
   m_send_req.reserve(num_send_pids);
-  for (const auto& it : send_lids) {
+  for (const auto& it : pid2lids_send) {
     const int n = it.second.size()*sum_fields_col_sizes;
     if (n==0) {
       continue;
@@ -881,76 +881,30 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   //                   Setup RECV structures                   //
   // --------------------------------------------------------- //
 
-  MPI_Win write_win, read_win;
+  // 1. Obtain the dual map of send_gids: a list of gids we need to
+  //    receive, grouped by the pid we recv them from
+  auto pid2gids_recv = recv_gids_from_pids(pid2gids_send);
+  const int num_recv_pids = pid2gids_recv.size();
 
-  // 1. Let each process know how many lids we need to send them
-  std::vector<int> num_recv_gids (m_comm.size(),0);
-  MPI_Win_create (num_recv_gids.data(),sizeof(int)*m_comm.size(),sizeof(int),
-                  MPI_INFO_NULL,mpi_comm,&write_win);
-  MPI_Win_fence(0,write_win);
-  for (const auto& it : send_gids) {
-    const int pid = it.first;
-    const int n   = it.second.size();
-    if (n>0) {
-      MPI_Put (&n,1,MPI_INT,pid,m_comm.rank(),1,MPI_INT,write_win);
-    }
-  }
-  MPI_Win_fence(0,write_win);
-  MPI_Win_free(&write_win);
-  
-  // 2. Allocate space for other pids to communicate the gids.
-  //    Then, communicate gids to all other procs.
+  // 2. Count the total number of gids we recv
   m_total_num_recv_gids = 0;
+  for (const auto& it : pid2gids_recv) {
+    m_total_num_recv_gids += it.second.size();
+  }
+
+  // 3. Splice gids from all pids, and convert to lid, and compute the offset of each pid
+  //    in the spliced list of gids.
   m_recv_pid_lids_start = view_1d<int>("",m_comm.size()+1);
   auto recv_pid_lids_start_h = Kokkos::create_mirror_view(m_recv_pid_lids_start);
-  int num_recv_pids = 0;
-  for (int pid=0; pid<m_comm.size(); ++pid) {
-    recv_pid_lids_start_h[pid] = m_total_num_recv_gids;
-    m_total_num_recv_gids += num_recv_gids[pid];
-    if (num_recv_gids[pid]>0) {
-      ++num_recv_pids;
-    }
-  }
-  recv_pid_lids_start_h[m_comm.size()] = m_total_num_recv_gids;
-  Kokkos::deep_copy(m_recv_pid_lids_start,recv_pid_lids_start_h);
-  std::vector<gid_t> recv_gids (m_total_num_recv_gids,-1);
-
-  // 3. Read from all other pids what MY offset is on their recv buffer
-  MPI_Win_create (recv_pid_lids_start_h.data(),sizeof(int)*m_comm.size(),sizeof(int),
-                  MPI_INFO_NULL,mpi_comm,&read_win);
-  std::vector<int> my_offset_on_pids (m_comm.size());
-  MPI_Win_fence(0,read_win);
-  for (int pid=0; pid<m_comm.size(); ++pid) {
-    MPI_Get (&my_offset_on_pids[pid],1,MPI_INT,pid,m_comm.rank(),1,MPI_INT,read_win);
-  }
-  MPI_Win_fence(0,read_win);
-  MPI_Win_free(&read_win);
-
-  // 4. Communicate gids we are sending to all pids
-  MPI_Win_create (recv_gids.data(),sizeof(gid_t)*m_total_num_recv_gids,sizeof(gid_t),
-                  MPI_INFO_NULL,mpi_comm,&write_win);
-  MPI_Win_fence(0,write_win);
-  for (const auto& it : send_gids) {
-    const int n = it.second.size();
-    if (n==0) {
-      continue;
-    }
-    const int pid = it.first;
-    MPI_Put (it.second.data(),n,mpi_gid_t,pid,my_offset_on_pids[pid],n,mpi_gid_t,write_win);
-  }
-  MPI_Win_fence(0,write_win);
-  MPI_Win_free(&write_win);
-
-  // 5. Now we know how many gids we recv from each pid, and what they are
-  //    Splice gids from all pids, and convert to lid
   m_recv_lids_pids = view_2d<int>("",m_total_num_recv_gids,2);
   auto recv_lids_pids_h = Kokkos::create_mirror_view(m_recv_lids_pids);
   pos = 0;
   for (int pid=0; pid<m_comm.size(); ++pid) {
-    const int start = recv_pid_lids_start_h[pid];
-    const int end   = recv_pid_lids_start_h[pid+1];
-    for (int i=start; i<end; ++i) {
-      const auto gid = recv_gids[i];
+    recv_pid_lids_start_h[pid] = pos;
+
+    const auto& gids = pid2gids_recv[pid];
+
+    for (const auto gid : gids) {
       const auto lid = gid2lid(gid,m_tgt_grid);
       EKAT_REQUIRE_MSG (lid>=0,
           "Error! Something went wrong while converting gid->lid on tgt grid.\n"
@@ -959,8 +913,13 @@ void CoarseningRemapper::setup_mpi_data_structures ()
       recv_lids_pids_h(pos++,1) = pid;
     }
   }
+  EKAT_REQUIRE_MSG (pos==m_total_num_recv_gids,
+      "Error! Something went wrong in CoarseningRemapper::setup_mpi_structures.\n");
+  recv_pid_lids_start_h[m_comm.size()] = pos;
+  Kokkos::deep_copy(m_recv_pid_lids_start,recv_pid_lids_start_h);
+  Kokkos::deep_copy(m_recv_lids_pids,recv_lids_pids_h);
 
-  // 6. Compute offsets in recv buffer for each pid/field pair
+  // 4. Compute offsets in recv buffer for each pid/field pair
   m_recv_f_pid_offsets = view_2d<int>("",m_num_fields,m_comm.size());
   m_recv_pid_offsets = view_1d<int>("",m_comm.size());
   auto recv_f_pid_offsets_h = Kokkos::create_mirror_view(m_recv_f_pid_offsets);
@@ -968,9 +927,10 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   pos = 0;
   for (int pid=0; pid<m_comm.size(); ++pid) {
     recv_pid_offsets_h(pid) = pos;
+    const int num_recv_gids = recv_pid_lids_start_h[pid+1] - recv_pid_lids_start_h[pid];
     for (int i=0; i<m_num_fields; ++i) {
       recv_f_pid_offsets_h(i,pid) = pos;
-      pos += field_col_size[i]*num_recv_gids[pid];
+      pos += field_col_size[i]*num_recv_gids;
     }
   }
   EKAT_REQUIRE_MSG (pos==m_total_num_recv_gids*sum_fields_col_sizes,
@@ -978,14 +938,15 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   Kokkos::deep_copy (m_recv_f_pid_offsets,recv_f_pid_offsets_h);
   Kokkos::deep_copy (m_recv_pid_offsets,recv_pid_offsets_h);
 
-  // 7. Allocate recv buffers
+  // 5. Allocate recv buffers
   m_recv_buffer = view_1d<Real>("",sum_fields_col_sizes*m_total_num_recv_gids);
   m_mpi_recv_buffer = Kokkos::create_mirror_view(decltype(m_mpi_recv_buffer)::execution_space(),m_recv_buffer);
 
-  // 8. Setup recv requests
+  // 6. Setup recv requests
   m_recv_req.reserve(num_recv_pids);
   for (int pid=0; pid<m_comm.size(); ++pid) {
-    const int n = num_recv_gids[pid]*sum_fields_col_sizes;
+    const int num_recv_gids = recv_pid_lids_start_h[pid+1] - recv_pid_lids_start_h[pid];
+    const int n = num_recv_gids*sum_fields_col_sizes;
     if (n==0) {
       continue;
     }

@@ -128,10 +128,10 @@ protected:
   get_my_triplets_gids (const std::string& map_file,
                         const grid_ptr_type& src_grid) const;
 
-  std::vector<int> get_pids_for_recv (const std::vector<int>& my_send_pids) const;
+  std::vector<int> get_pids_for_recv (const std::vector<int>& send_to_pids) const;
 
   std::map<int,std::vector<int>>
-  recv_gids_from_pids (const std::map<int,std::vector<int>>& send_lids_to_pids) const;
+  recv_gids_from_pids (const std::map<int,std::vector<int>>& pid2gids_send) const;
 
 #ifdef KOKKOS_ENABLE_CUDA
 public:
