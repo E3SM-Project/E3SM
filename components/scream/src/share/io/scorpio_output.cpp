@@ -486,7 +486,9 @@ register_variables(const std::string& filename,
     // we must be careful to make the tags 1-1 with the intended decomp. Here we
     // use the I/O grid name and its global #DOFs, then append the local
     // dimension data.
-    std::string io_decomp_tag = (fp_precision + "-" + m_io_grid->name() + "-" +
+    //   We use real here because the data type for the decomp is the one used
+    // in the simulation and not the one used in the output file.
+    std::string io_decomp_tag = (std::string("Real-") + m_io_grid->name() + "-" +
                                  std::to_string(m_io_grid->get_num_global_dofs()));
     std::vector<std::string> vec_of_dims;
     const auto& layout = fid.get_layout();
