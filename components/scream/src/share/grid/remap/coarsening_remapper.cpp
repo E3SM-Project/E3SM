@@ -854,6 +854,7 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   EKAT_REQUIRE_MSG (pos==num_ov_gids*sum_fields_col_sizes,
       "Error! Something went wrong in CoarseningRemapper::setup_mpi_structures.\n");
   Kokkos::deep_copy (m_send_pid_offsets,send_pid_offsets_h);
+  Kokkos::deep_copy (m_send_f_pid_offsets,send_f_pid_offsets_h);
 
   // 4. Allocate send buffers
   m_send_buffer = view_1d<Real>("",sum_fields_col_sizes*num_ov_gids);
