@@ -42,9 +42,9 @@ struct SerialLimiter {
       const Array2GllLvl& irwrk);
 };
 // GPU doesn't have a serial impl.
-#if defined KOKKOS_ENABLE_CUDA
+#ifdef HOMMEXX_ENABLE_GPU
 template <>
-struct SerialLimiter<Kokkos::Cuda> {
+struct SerialLimiter<HommexxGPU> {
   template <int limiter_option, typename ArrayGll, typename ArrayGllLvl, typename Array2Lvl,
             typename Array2GllLvl>
   KOKKOS_INLINE_FUNCTION static void
@@ -55,6 +55,7 @@ struct SerialLimiter<Kokkos::Cuda> {
   }
 };
 #endif
+
 
 class EulerStepFunctorImpl {
   struct EulerStepData {
@@ -423,7 +424,9 @@ public:
     ExecSpace::impl_static_fence();
     m_kernel_will_run_limiters = true;
     Kokkos::parallel_for(
-      Homme::get_default_team_policy<ExecSpace, AALTracerPhase>(
+      //to play with launch bounds
+      //Homme::get_default_team_policy<ExecSpace, AALTracerPhase, Kokkos::LaunchBounds<128,1> >(
+      Homme::get_default_team_policy<ExecSpace, AALTracerPhase >(
         m_geometry.num_elems() * m_data.qsize, m_tpref),
       *this);
     ExecSpace::impl_static_fence();
