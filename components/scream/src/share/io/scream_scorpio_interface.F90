@@ -124,9 +124,8 @@ module scream_scorpio_interface
   ! The tag needs the dim lengths, the dtype and map id (+ optional permutation)
   ! Define a recursive structure because we do not know ahead of time how many
   ! decompositions will be require
-  integer, parameter      :: tag_len           = 48
   type iodesc_list_t
-    character(tag_len)           :: tag              ! Unique tag associated with this decomposition
+    character(max_chars)         :: tag              ! Unique tag associated with this decomposition
     type(io_desc_t),     pointer :: iodesc => NULL() ! PIO - decomposition
     type(iodesc_list_t), pointer :: next => NULL()   ! Needed for recursive definition, the next list
     type(iodesc_list_t), pointer :: prev => NULL()   ! Needed for recursive definition, the list that points to this one
