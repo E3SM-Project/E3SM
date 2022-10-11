@@ -16,14 +16,8 @@ namespace vinterp {
 template<typename T, int N>
 using Pack = ekat::Pack<T, N>;
 
-template <typename S>
-using SmallPack = Pack<S,SCREAM_SMALL_PACK_SIZE>;
-using Spack = SmallPack<Real>;
-
 template<int N>
-using Pmask = ekat::Mask<N>;
-
-using Smask = ekat::Mask<Spack::n>;
+using Mask = ekat::Mask<N>;
 
 using KT = KokkosTypes<DefaultDevice>;
 using ExeSpace = typename KT::ExeSpace;
@@ -47,8 +41,8 @@ void perform_vertical_interpolation(
   const view_1d<Pack<T,N>>& x_tgt,
   const view_2d<Pack<T,N>>& input,
   const view_2d<Pack<T,N>>& output,
-  const int& nlevs_src,
-  const int& nlevs_tgt);
+  const int nlevs_src,
+  const int nlevs_tgt);
 
 template<typename T, int N> 
 void perform_vertical_interpolation(
@@ -56,9 +50,9 @@ void perform_vertical_interpolation(
   const view_1d<Pack<T,N>>& x_tgt,
   const view_2d<Pack<T,N>>& input,
   const view_2d<Pack<T,N>>& output,
-  const view_2d<Pmask<N>>& mask,
-  const int& nlevs_src,
-  const int& nlevs_tgt);
+  const view_2d<Mask<N>>& mask,
+  const int nlevs_src,
+  const int nlevs_tgt);
 
 template<typename T, int N> 
 void perform_vertical_interpolation(
@@ -66,9 +60,9 @@ void perform_vertical_interpolation(
   const view_1d<Pack<T,N>>& x_tgt,
   const view_2d<Pack<T,N>>& input,
   const view_2d<Pack<T,N>>& output,
-  const view_2d<Pmask<N>>& mask,
-  const int& nlevs_src,
-  const int& nlevs_tgt,
+  const view_2d<Mask<N>>& mask,
+  const int nlevs_src,
+  const int nlevs_tgt,
   const Real& msk_val);
 
 template<typename T, int N> 
@@ -77,9 +71,9 @@ void perform_vertical_interpolation_impl_2d(
   const view_1d<Pack<T,N>>& x_tgt,
   const view_2d<Pack<T,N>>& input,
   const view_2d<Pack<T,N>>& output,
-  const view_2d<Pmask<N>>& mask,
-  const int& nlevs_src,
-  const int& nlevs_tgt,
+  const view_2d<Mask<N>>& mask,
+  const int nlevs_src,
+  const int nlevs_tgt,
   const Real& msk_val);
 
 template<typename T, int N> 
@@ -88,10 +82,10 @@ void perform_vertical_interpolation_impl_1d(
   const view_1d<Pack<T,N>>& x_tgt,
   const view_1d<Pack<T,N>>& input,
   const view_1d<Pack<T,N>>& output,
-  const view_1d<Pmask<N>>& mask,
-  const int& nlevs_src,
-  const int& nlevs_tgt,
-  const int& icol,
+  const view_1d<Mask<N>>& mask,
+  const int nlevs_src,
+  const int nlevs_tgt,
+  const int icol,
   const Real& msk_val,
   const MemberType& team,
   const LIV<T,N>& vert_interp);
