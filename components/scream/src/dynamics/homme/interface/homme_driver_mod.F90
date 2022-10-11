@@ -63,7 +63,7 @@ contains
   end subroutine prim_init_data_structures_f90
 
   subroutine prim_complete_init1_phase_f90 () bind(c)
-    use prim_driver_base,  only: prim_init1_buffers, prim_init1_cleanup
+    use prim_driver_base,  only: prim_init1_buffers, prim_init1_compose, prim_init1_cleanup
     use homme_context_mod, only: par, elem
     use compose_mod,       only: compose_control_kokkos_init_and_fin
     use prim_driver_mod,   only: prim_init_grid_views
