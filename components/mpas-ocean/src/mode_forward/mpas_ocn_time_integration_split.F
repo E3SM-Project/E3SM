@@ -797,7 +797,7 @@ module ocn_time_integration_split
 
             !$omp parallel
             !$omp do schedule(runtime) &
-            !$omp private(k, thicknessSum)
+            !$omp private(cell1, cell2, k, thicknessSum)
             do iEdge = nEdgesOwned+1, nEdgesArray(4)
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
