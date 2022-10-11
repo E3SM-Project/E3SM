@@ -18,16 +18,31 @@ endif()
 # RRTMGP++ requires YAKL
 add_subdirectory(${SCREAM_BASE_DIR}/../../externals/YAKL ${CMAKE_BINARY_DIR}/externals/YAKL)
 target_compile_options(yakl PUBLIC $<$<COMPILE_LANGUAGE:CXX>:${YAKL_CXX_FLAGS}>)
+
+# If HAVE_MPI is defined, yakl needs to link against MPI. To be safe, we check
+# any CMake property that could make yakl see that CPP macro
+get_directory_property (DIR_DEFS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} COMPILE_DEFINITIONS )
+get_directory_property (DIR_FLAGS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} COMPILE_FLAGS )
+get_target_property(YAKL_FLAGS yakl COMPILE_FLAGS)
+get_target_property(YAKL_DEFS yakl COMPILE_DEFINITIONS)
+if ("${DIR_DEFS} ${DIR_FLAGS} ${YAKL_DEFS} ${YAKL_FLAGS} ${CMAKE_CXX_FLAGS}" MATCHES "HAVE_MPI")
+  cmake_policy (SET CMP0079 NEW)
+  find_package(MPI REQUIRED COMPONENTS C)
+  target_link_libraries (yakl PUBLIC MPI::MPI_C)
+  if (MPI_C_INCLUDE_DIRS)
+    target_include_directories (yakl PUBLIC ${MPI_C_INCLUDE_DIRS})
+  endif()
+  if (MPI_C_COMPILER_INCLUDE_DIRS)
+    target_include_directories (yakl PUBLIC ${MPI_C_COMPILER_INCLUDE_DIRS})
+  endif()
+endif()
 EkatDisableAllWarning(yakl)
 
-# For debug builds, set -DYAKL_DEBUG                                                                                       
-string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)                                                                
-if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")                                                                                  
-  target_compile_definitions(yakl PUBLIC YAKL_DEBUG)                                                                   
-endif()                                                                                                             
-
-# We will need the shr_orb_mod source too; this builds library share_util
-add_subdirectory(share ${CMAKE_CURRENT_BINARY_DIR}/share_util)
+# For debug builds, set -DYAKL_DEBUG
+string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
+if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+  target_compile_definitions(yakl PUBLIC YAKL_DEBUG)
+endif()
 
 set(EAM_RRTMGP_DIR ${SCREAM_BASE_DIR}/../eam/src/physics/rrtmgp)
 # Build RRTMGP library; this builds the core RRTMGP external source as a library named "rrtmgp"
@@ -46,7 +61,7 @@ add_library(rrtmgp ${EXTERNAL_SRC})
 EkatDisableAllWarning(rrtmgp)
 SetCudaFlags(rrtmgp)
 target_link_libraries(rrtmgp PUBLIC yakl)
-target_include_directories(rrtmgp PUBLIC 
+target_include_directories(rrtmgp PUBLIC
     ${SCREAM_BASE_DIR}/../../externals/YAKL
     ${EAM_RRTMGP_DIR}/external/cpp
     ${EAM_RRTMGP_DIR}/external/cpp/rte
@@ -73,10 +88,11 @@ set(INTERFACE_SRC
   mo_load_coefficients.cpp
   mo_load_cloud_coefficients.cpp
   rrtmgp_test_utils.cpp
+  shr_orb_mod_c2f.F90
 )
 add_library(scream_rrtmgp ${INTERFACE_SRC})
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
-target_link_libraries(scream_rrtmgp PUBLIC ${NETCDF_C} rrtmgp yakl scream_share physics_share share_util)
+target_link_libraries(scream_rrtmgp PUBLIC ${NETCDF_C} rrtmgp yakl scream_share physics_share csm_share)
 target_include_directories(scream_rrtmgp SYSTEM PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${NetCDF_C_PATH}/include
@@ -84,8 +100,8 @@ target_include_directories(scream_rrtmgp SYSTEM PUBLIC
 
 # Ensure RRTMGP lookup tables are present in the data dir
 set (RRTMGP_TABLES
-  init/rrtmgp-data-sw-g224-2018-12-04.nc
-  init/rrtmgp-data-lw-g256-2018-12-04.nc
+  init/rrtmgp-data-sw-g112-210809.nc
+  init/rrtmgp-data-lw-g128-210809.nc
   init/rrtmgp-allsky.nc
   init/rrtmgp-cloud-optics-coeffs-sw.nc
   init/rrtmgp-cloud-optics-coeffs-lw.nc

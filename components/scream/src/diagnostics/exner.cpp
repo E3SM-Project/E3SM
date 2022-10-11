@@ -18,8 +18,8 @@ void ExnerDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_
 
   Units nondim(0,0,0,0,0,0,0);
 
-  const auto& grid_name = m_params.get<std::string>("Grid");
-  auto grid  = grids_manager->get_grid(grid_name);
+  auto grid  = grids_manager->get_grid("Physics");
+  const auto& grid_name = grid->name();
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
@@ -37,13 +37,7 @@ void ExnerDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_
   m_diagnostic_output.allocate_view();
 }
 // =========================================================================================
-void ExnerDiagnostic::initialize_impl(const RunType /* run_type */)
-{
-  auto ts = timestamp(); 
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-}
-// =========================================================================================
-void ExnerDiagnostic::run_impl(const int /* dt */)
+void ExnerDiagnostic::compute_diagnostic_impl()
 {
 
   const auto npacks  = ekat::npack<Pack>(m_num_levs);
@@ -59,6 +53,8 @@ void ExnerDiagnostic::run_impl(const int /* dt */)
   });
   Kokkos::fence();
 
+  const auto ts = get_field_in("p_mid").get_header().get_tracking().get_time_stamp();
+  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 } //namespace scream

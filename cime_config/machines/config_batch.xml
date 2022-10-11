@@ -64,19 +64,12 @@
      </queues>
    </batch_system>
 
-   <batch_system MACH="crusher-cpu" type="slurm">
+   <batch_system MACH="crusher" type="slurm">
+     <batch_submit>/gpfs/alpine/cli133/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
      <queues>
-       <queue strict="true" nodemin="1" nodemax="8" walltimemax="08:00:00" default="true">batch</queue>
-       <queue strict="true" nodemin="9" nodemax="64" walltimemax="04:00:00">batch</queue>
-       <queue strict="true" nodemin="65" nodemax="160" walltimemax="02:00:00">batch</queue>
-     </queues>
-   </batch_system>
-
-   <batch_system MACH="crusher-gpu" type="slurm">
-     <queues>
-       <queue strict="true" nodemin="1" nodemax="8" walltimemax="08:00:00" default="true">batch</queue>
-       <queue strict="true" nodemin="9" nodemax="64" walltimemax="04:00:00">batch</queue>
-       <queue strict="true" nodemin="65" nodemax="160" walltimemax="02:00:00">batch</queue>
+       <queue strict="true" nodemin="1" nodemax="8" walltimemax="01:00:00" default="true">batch</queue>
+       <queue strict="true" nodemin="9" nodemax="64" walltimemax="01:00:00">batch</queue>
+       <queue strict="true" nodemin="65" nodemax="160" walltimemax="01:00:00">batch</queue>
      </queues>
    </batch_system>
 
@@ -414,6 +407,16 @@
     </queues>
   </batch_system>
 
+  <batch_system MACH="alvarez" type="nersc_slurm">
+    <directives>
+      <directive> --constraint=cpu</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" nodemax="256" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="4" strict="true">debug</queue>
+    </queues>
+  </batch_system>
+
   <batch_system MACH="stampede2" type="slurm">
     <directives>
       <directive>-n {{ total_tasks }}</directive>
@@ -522,6 +525,16 @@
 	</queues>
     </batch_system>
 
+   <batch_system MACH="chicoma-cpu" type="slurm">
+    <directives>
+     <directive>--partition=standard </directive>
+     <directive>--qos=standard </directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" nodemax="560" default="true">standard</queue>
+    </queues>
+   </batch_system>
+
     <batch_system MACH="mesabi" type="pbs">
       <queues>
         <queue walltimemax="24:00" default="true">mesabi</queue>
@@ -558,25 +571,7 @@
      </queues>
    </batch_system>
 
-   <batch_system MACH="summit-cpu" type="lsf" >
-     <directives>
-       <directive>-P {{ project }}</directive>
-     </directives>
-     <directives compiler="!.*gpu">
-       <directive>-alloc_flags smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}</directive>
-     </directives>
-     <directives compiler=".*gpu">
-       <directive>-alloc_flags "gpumps smt$SHELL{echo "(`./xmlquery --value MAX_TASKS_PER_NODE`+41)/42"|bc}"</directive>
-     </directives>
-     <queues>
-       <queue walltimemax="02:00" nodemin="1" nodemax="4608" strict="true" default="true">batch</queue>
-       <queue walltimemax="02:00" nodemin="1" nodemax="54" strict="true" default="false">batch-hm</queue>
-       <queue walltimemax="02:00" nodemin="1" nodemax="91" strict="true" default="false">killable</queue>
-       <queue walltimemax="02:00" nodemin="1" nodemax="4608" strict="true" default="false">debug</queue>
-     </queues>
-   </batch_system>
-
-   <batch_system MACH="summit-gpu" type="lsf" >
+   <batch_system MACH="summit" type="lsf" >
      <directives>
        <directive>-P {{ project }}</directive>
      </directives>
@@ -595,6 +590,7 @@
    </batch_system>
 
    <batch_system MACH="ascent" type="lsf" >
+     <batch_submit>/gpfs/wolf/cli115/world-shared/e3sm/tools/bsub/throttle</batch_submit>
      <directives>
        <directive>-P {{ project }}</directive>
      </directives>
@@ -660,7 +656,7 @@
        <queue walltimemax="01:30:00" default="true">compute</queue>
      </queues>
    </batch_system>
-   
+
   <!-- modex is PBS -->
   <batch_system MACH="modex" type="pbs">
     <directives>

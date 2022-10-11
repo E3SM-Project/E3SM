@@ -256,7 +256,9 @@ def refine_type(entry, force_type=None):
                     elem = bool(int(entry))
 
             elif elem_type == "integer":
-                elem = int(entry)
+                tmp  = float(entry)
+                expect (float(int(tmp))==tmp, "Cannot interpret {} as int".format(entry))
+                elem = int(tmp)
             elif elem_type == "real":
                 elem = float(entry)
             elif elem_type == "string":

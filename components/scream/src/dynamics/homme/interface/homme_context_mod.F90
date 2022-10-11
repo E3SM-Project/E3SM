@@ -9,14 +9,14 @@ module homme_context_mod
   use domain_mod,          only: domain1d_t
   use derivative_mod_base, only: derivative_t
   use element_mod,         only: element_t
-  use parallel_mod,        only: parallel_t
+  use parallel_mod,        only: parallel_t, abortmp
   use time_mod,            only: timelevel_t
   use hybvcoord_mod,       only: hvcoord_t
   use hybrid_mod,          only: hybrid_t
   use prim_driver_base,    only: deriv => deriv1
 
   implicit none
-  private 
+  private
 
   ! Making deriv (which is an alias to deriv1 in prim_driver_base) available
   public :: deriv
@@ -31,6 +31,8 @@ module homme_context_mod
   integer, public :: npes        = 1
   integer, public :: iam         = 0
   logical, public :: masterproc  = .false.
+  character(len=256), public :: homme_log_fname = ""
+  logical :: homme_log_set = .false.
 
   logical, public :: is_parallel_inited          = .false.
   logical, public :: is_params_inited            = .false.
@@ -47,8 +49,66 @@ module homme_context_mod
   public :: is_data_structures_inited_f90
   public :: is_model_inited_f90
   public :: is_hommexx_functors_inited_f90
+  public :: close_homme_log
 
 contains
+
+  subroutine set_homme_log_file_name_f90(c_str) bind(c)
+    use shr_file_mod, only: shr_file_getUnit
+    use iso_c_binding, only: C_NULL_CHAR, c_ptr, c_f_pointer
+    use kinds, only: iulog
+    type (c_ptr), intent(in) :: c_str
+    !
+    ! Local(s)
+    !
+    character(len=256), pointer :: full_name
+    character(len=256) :: path, fname
+    integer :: len, slash, ierr
+
+    call c_f_pointer(c_str,full_name)
+    len = index(full_name, C_NULL_CHAR) -1
+    if (len>0) then
+      ! Search last slash in the (trimmed) full name
+      slash = index(full_name(1:len),'/',back=.true.)
+
+      ! Note: if there's no slash (relative filename),
+      ! then slash=0, and path is the empty string.
+      ! Otherwise, path ends with the slash
+      path = full_name(1:slash)
+      fname = full_name(slash+1:len)
+
+      homme_log_fname = trim(path)//"homme_"//fname
+
+      iulog = shr_file_getunit()
+      if (masterproc) then
+        ! Create the homme log file on root rank...
+        open (unit=iulog,file=trim(homme_log_fname),status='REPLACE', &
+              action='WRITE', access='SEQUENTIAL', position="append")
+        write(iulog,*) " ---- HOMME LOG FILE ----"
+        flush(iulog)
+      endif
+      call mpi_barrier(par%comm,ierr)
+      if (.not. masterproc) then
+        ! ... and open it on all other ranks
+        open (unit=iulog,file=trim(homme_log_fname),status='OLD', &
+              action='WRITE', access='SEQUENTIAL', position="append")
+      endif
+
+      homme_log_set = .true.
+    endif
+  end subroutine set_homme_log_file_name_f90
+
+  subroutine close_homme_log ()
+    use shr_file_mod, only: shr_file_freeUnit
+    use kinds, only: iulog
+
+    if (homme_log_set) then
+      close (iulog)
+      call shr_file_freeUnit(iulog)
+      homme_log_fname = ""
+      homme_log_set = .false.
+    endif
+  end subroutine close_homme_log
 
   subroutine init_parallel_f90 (f_comm) bind(c)
     use parallel_mod,   only: initmp_from_par, abortmp

@@ -58,6 +58,7 @@ TEST_CASE("se_grid_io")
   auto fm0 = get_test_fm(grid,t0,true);
   ekat::ParameterList params;
   ekat::parse_yaml_file("io_test_se_grid.yaml",params);
+  params.set<std::string>("Floating Point Precision","real");
 
   OutputManager om;
   om.setup(io_comm,params,fm0,gm,t0,t0,false);
@@ -151,12 +152,12 @@ std::shared_ptr<GridsManager>
 get_test_gm(const ekat::Comm& io_comm, const int num_my_elems, const int np, const int num_levs)
 {
   ekat::ParameterList gm_params;
-  gm_params.set("Number of Local Elements",num_my_elems);
-  gm_params.set("Number of Gauss Points",np);
-  gm_params.set("Number of Vertical Levels",num_levs);
+  gm_params.set("number_of_local_elements",num_my_elems);
+  gm_params.set("number_of_gauss_points",np);
+  gm_params.set("number_of_vertical_levels",num_levs);
 
   auto gm = create_mesh_free_grids_manager(io_comm,gm_params);
-  gm->build_grids(std::set<std::string>{"SE Grid"});
+  gm->build_grids();
 
   return gm;
 }
@@ -167,12 +168,13 @@ ekat::ParameterList get_in_params(const ekat::Comm& comm,
   using vos_type = std::vector<std::string>;
   ekat::ParameterList in_params("Input Parameters");
 
-  std::string filename = "io_test_se_grid.INSTANT.Steps_x1.np"
+  std::string filename = "io_test_se_grid.INSTANT.nsteps_x1.np"
                        + std::to_string(comm.size())
                        + "." + t0.to_string() + ".nc";
 
   in_params.set<std::string>("Filename",filename);
   in_params.set<vos_type>("Field Names",{"field_1", "field_2", "field_3", "field_packed"});
+  in_params.set<std::string>("Floating Point Precision","real");
   return in_params;
 }
 

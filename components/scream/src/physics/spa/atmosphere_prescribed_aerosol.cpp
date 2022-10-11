@@ -3,6 +3,7 @@
 #include "share/util/scream_time_stamp.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
+#include "share/property_checks/field_lower_bound_check.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -31,12 +32,11 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   Q.set_string("kg/kg");
   auto nondim = Units::nondimensional();
 
-  const auto& grid_name = m_params.get<std::string>("Grid");
-  m_grid  = grids_manager->get_grid(grid_name);
+  m_grid = grids_manager->get_grid("Physics");
+  const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
   m_dofs_gids = m_grid->get_dofs_gids();
-  m_total_global_dofs = m_grid->get_num_global_dofs();
   m_min_global_dof    = m_grid->get_global_min_dof_gid();
 
   // Define the different field layouts that will be used for this process
@@ -52,8 +52,6 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   // Set of fields used strictly as input
   constexpr int ps = Pack::n;
   add_field<Required>("p_mid"      , scalar3d_layout_mid, Pa,     grid_name, ps);
-  add_field<Required>("hyam"       , scalar1d_layout_mid, nondim, grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
-  add_field<Required>("hybm"       , scalar1d_layout_mid, nondim, grid_name, ps); // TODO: These fields should  be loaded from file and not registered with the field manager.
 
   // Set of fields used strictly as output
   add_field<Computed>("nccn",   scalar3d_layout_mid,    1/kg,   grid_name,ps);
@@ -67,7 +65,7 @@ void SPA::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   // Note: only the number of levels associated with this data haven't been set.  We can
   //       take this information directly from the spa data file.
-  m_spa_data_file = m_params.get<std::string>("SPA Data File");
+  m_spa_data_file = m_params.get<std::string>("spa_data_file");
   scorpio::register_file(m_spa_data_file,scorpio::Read);
   m_num_src_levs = scorpio::get_dimlen_c2f(m_spa_data_file.c_str(),"lev");
   scorpio::eam_pio_closefile(m_spa_data_file);
@@ -161,9 +159,9 @@ void SPA::initialize_impl (const RunType /* run_type */)
   SPAData_out.AER_TAU_LW         = get_field_out("aero_tau_lw").get_view<Pack***>();
 
   // Retrieve the remap and data file locations from the parameter list:
-  EKAT_REQUIRE_MSG(m_params.isParameter("SPA Remap File"),"ERROR: SPA Remap File is missing from SPA parameter list.");
-  EKAT_REQUIRE_MSG(m_params.isParameter("SPA Data File"),"ERROR: SPA Data File is missing from SPA parameter list.");
-  m_spa_remap_file = m_params.get<std::string>("SPA Remap File");
+  EKAT_REQUIRE_MSG(m_params.isParameter("spa_remap_file"),"ERROR: spa_remap_file is missing from SPA parameter list.");
+  EKAT_REQUIRE_MSG(m_params.isParameter("spa_data_file"),"ERROR: spa_data_file is missing from SPA parameter list.");
+  m_spa_remap_file = m_params.get<std::string>("spa_remap_file");
 
   // Set the SPA remap weights.  
   // TODO: We may want to provide an option to calculate weights on-the-fly. 
@@ -172,10 +170,12 @@ void SPA::initialize_impl (const RunType /* run_type */)
   using ci_string = ekat::CaseInsensitiveString;
   ci_string no_filename = "none";
   if (m_spa_remap_file == no_filename) {
-    printf("WARNING: SPA Remap File has been set to 'NONE', assuming that SPA data and simulation are on the same grid - skipping horizontal interpolation\n");
-    SPAFunc::set_remap_weights_one_to_one(m_total_global_dofs,m_min_global_dof,m_dofs_gids,SPAHorizInterp);
+    if (m_comm.am_i_root()) {
+      printf("WARNING: spa_remap_file has been set to 'NONE', assuming that SPA data and simulation are on the same grid - skipping horizontal interpolation\n");
+    }
+    SPAFunc::set_remap_weights_one_to_one(m_min_global_dof,m_dofs_gids,SPAHorizInterp);
   } else {
-    SPAFunc::get_remap_weights_from_file(m_spa_remap_file,m_total_global_dofs,m_min_global_dof,m_dofs_gids,SPAHorizInterp);
+    SPAFunc::get_remap_weights_from_file(m_spa_remap_file,m_min_global_dof,m_dofs_gids,SPAHorizInterp);
   }
 
   // Initialize the size of the SPAData structures:  add 2 to number of levels for padding
@@ -188,31 +188,25 @@ void SPA::initialize_impl (const RunType /* run_type */)
   SPATimeState.current_month = ts.get_month();
   SPAFunc::update_spa_timestate(m_spa_data_file,m_nswbands,m_nlwbands,ts,SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
 
-  // NOTE: we *assume* hybrid v coordinates don't change with time.
-  //       IF this ever ceases to be the case, you need to remove these
-  //       lines, and have spa_main interpolate those during the call
-  //       to performe_time_interpolation.
-  m_buffer.spa_temp.hyam = SPAData_start.hyam;
-  m_buffer.spa_temp.hybm = SPAData_start.hybm;
-
   // Set property checks for fields in this process
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nccn"),m_grid,0.0,1.0e11,false);
-  // upper bound set to 1.01 as max(g_sw)=1.00757 in current ne4 data assumingly due to remapping
-  // add an epslon to max possible upper bound of aero_ssa_sw
+  using Interval = FieldWithinIntervalCheck;
+  const auto eps = std::numeric_limits<double>::epsilon();
 
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_g_sw"),m_grid,0.0,1.0,true);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_ssa_sw"),m_grid,0.0,1.0,true);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_tau_sw"),m_grid,0.0,1.0,true);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("aero_tau_lw"),m_grid,0.0,1.0,true);
+  add_postcondition_check<Interval>(get_field_out("nccn"),m_grid,0,1e11,true,-1e11*eps);
+  // TODO: add an epslon to max possible upper bound of aero_ssa_sw?
+  add_postcondition_check<Interval>(get_field_out("aero_g_sw"),m_grid,0.0,1.0,true);
+  add_postcondition_check<Interval>(get_field_out("aero_ssa_sw"),m_grid,0.0,1.0,true);
+  add_postcondition_check<Interval>(get_field_out("aero_tau_sw"),m_grid,0.0,1.0,true);
+  add_postcondition_check<Interval>(get_field_out("aero_tau_lw"),m_grid,0.0,1.0,true);
 }
 
 // =========================================================================================
 void SPA::run_impl (const int dt)
 {
   /* Gather time and state information for interpolation */
-  auto ts = timestamp();
+  auto ts = timestamp()+dt;
   /* Update the SPATimeState to reflect the current time, note the addition of dt */
-  SPATimeState.t_now = ts.frac_of_year_in_days() + dt/86400.;
+  SPATimeState.t_now = ts.frac_of_year_in_days();
   /* Update time state and if the month has changed, update the data.*/
   SPAFunc::update_spa_timestate(m_spa_data_file,m_nswbands,m_nlwbands,ts,SPAHorizInterp,SPATimeState,SPAData_start,SPAData_end);
 

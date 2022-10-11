@@ -15,6 +15,13 @@
 
 using namespace scream;
 
+// Names of input files we will need.
+// NOTE: use full spectral resolution absorption data for consistency with reference problem
+std::string coefficients_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-data-sw-g224-2018-12-04.nc";
+std::string coefficients_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-data-lw-g256-2018-12-04.nc";
+std::string cloud_optics_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-sw.nc";
+std::string cloud_optics_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-lw.nc";
+
 int main (int argc, char** argv) {
     MPI_Init(&argc,&argv);
 
@@ -69,7 +76,7 @@ int main (int argc, char** argv) {
     // Initialize the RRTMGP interface; this will read in the k-distribution
     // data that contains information about absorption coefficients for gases
     logger->info("rrtmgp_initialize...");
-    rrtmgp::rrtmgp_initialize(gas_concs,logger);
+    rrtmgp::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw, cloud_optics_file_lw, logger);
 
     // Setup dummy all-sky problem
     real1d sfc_alb_dir_vis ("sfc_alb_dir_vis", ncol);
@@ -135,6 +142,13 @@ int main (int argc, char** argv) {
         aer_tau_lw(icol,ilay,ibnd) = 0;
     });
 
+    // These are returned as outputs now from rrtmgp_main
+    // TODO: provide as inputs consistent with how aerosol is treated?
+    const auto nswgpts = scream::rrtmgp::k_dist_sw.get_ngpt();
+    const auto nlwgpts = scream::rrtmgp::k_dist_lw.get_ngpt();
+    auto cld_tau_sw = real3d("cld_tau_sw", ncol, nlay, nswgpts);
+    auto cld_tau_lw = real3d("cld_tau_lw", ncol, nlay, nlwgpts);
+
     // Run RRTMGP standalone codes and compare with AD run
     // Do something interesting here...
     // NOTE: these will get replaced with AD stuff that handles these
@@ -144,9 +158,9 @@ int main (int argc, char** argv) {
         ncol, nlay,
         p_lay, t_lay, p_lev, t_lev, gas_concs,
         sfc_alb_dir, sfc_alb_dif, mu0,
-        lwp, iwp, rel, rei,
-        aer_tau_sw, aer_ssa_sw, aer_asm_sw,
-        aer_tau_lw,
+        lwp, iwp, rel, rei, cld,
+        aer_tau_sw, aer_ssa_sw, aer_asm_sw, aer_tau_lw,
+        cld_tau_sw, cld_tau_lw,  // outputs
         sw_flux_up, sw_flux_dn, sw_flux_dn_dir,
         lw_flux_up, lw_flux_dn,
         sw_clrsky_flux_up, sw_clrsky_flux_dn, sw_clrsky_flux_dn_dir,
@@ -188,6 +202,8 @@ int main (int argc, char** argv) {
     aer_ssa_sw.deallocate();
     aer_asm_sw.deallocate();
     aer_tau_lw.deallocate();
+    cld_tau_sw.deallocate();
+    cld_tau_lw.deallocate();
     sw_flux_up_ref.deallocate();
     sw_flux_dn_ref.deallocate();
     sw_flux_dn_dir_ref.deallocate();

@@ -3,6 +3,7 @@
 
 #include "share/atm_process/atmosphere_process_utils.hpp"
 #include "share/atm_process/ATMBufferManager.hpp"
+#include "share/atm_process/SCDataManager.hpp"
 #include "share/field/field_identifier.hpp"
 #include "share/field/field_manager.hpp"
 #include "share/property_checks/property_check.hpp"
@@ -16,6 +17,7 @@
 #include "ekat/util/ekat_factory.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/std_meta/ekat_std_enable_shared_from_this.hpp"
+#include "ekat/std_meta/ekat_std_any.hpp"
 #include "ekat/logging/ekat_logger.hpp"
 
 #include <memory>
@@ -73,8 +75,11 @@ class AtmosphereProcess : public ekat::enable_shared_from_this<AtmosphereProcess
 public:
   using TimeStamp   = util::TimeStamp;
   using ci_string   = ekat::CaseInsensitiveString;
-  using logger_t    = spdlog::logger;
+  using logger_t    = ekat::logger::LoggerBase;
   using LogLevel    = ekat::logger::LogLevel;
+  using str_any_pair_t = std::pair<std::string,ekat::any>;
+  template<typename T>
+  using strmap_t = std::map<std::string,T>;
 
   template<typename T>
   using str_map = std::map<std::string,T>;
@@ -88,9 +93,6 @@ public:
 
   // The type of the process (e.g., dynamics or physics)
   virtual AtmosphereProcessType type () const = 0;
-
-  // The type of grids needed by the process
-  virtual std::set<std::string> get_required_grids () const = 0;
 
   // The name of the process
   virtual std::string name () const = 0;
@@ -171,7 +173,9 @@ public:
 
   // Whether this atm proc requested the field/group as in/out, via a FieldRequest/GroupRequest.
   bool has_required_field (const FieldIdentifier& id) const;
+  bool has_required_field (const std::string& name, const std::string& grid_name) const;
   bool has_computed_field (const FieldIdentifier& id) const;
+  bool has_computed_field (const std::string& name, const std::string& grid_name) const;
   bool has_required_group (const std::string& name, const std::string& grid) const;
   bool has_computed_group (const std::string& name, const std::string& grid) const;
 
@@ -216,20 +220,28 @@ public:
         Field& get_internal_field(const std::string& field_name);
 
   // Add a pre-built property check (PC) for precondition, postcondition, or invariant (i.e., pre+post) check.
-  template<CheckFailHandling CFH = CheckFailHandling::Fatal>
-  void add_precondition_check (const prop_check_ptr& prop_check);
-  template<CheckFailHandling CFH = CheckFailHandling::Fatal>
-  void add_postcondition_check (const prop_check_ptr& prop_check);
-  template<CheckFailHandling CFH = CheckFailHandling::Fatal>
-  void add_invariant_check (const prop_check_ptr& prop_check);
+  void add_precondition_check  (const prop_check_ptr& prop_check,
+                                const CheckFailHandling cfh = CheckFailHandling::Fatal);
+  void add_postcondition_check (const prop_check_ptr& prop_check,
+                                const CheckFailHandling cfh = CheckFailHandling::Fatal);
+  void add_invariant_check     (const prop_check_ptr& prop_check,
+                                const CheckFailHandling cfh = CheckFailHandling::Fatal);
 
   // Build a property check on the fly, then call the methods above
-  template<typename FPC, CheckFailHandling CFH = CheckFailHandling::Fatal, typename... Args>
+  template<typename FPC, typename... Args>
   void add_precondition_check (const Args... args);
-  template<typename FPC, CheckFailHandling CFH = CheckFailHandling::Fatal, typename... Args>
+  template<typename FPC, typename... Args>
   void add_postcondition_check (const Args... args);
-  template<typename FPC, CheckFailHandling CFH = CheckFailHandling::Fatal, typename... Args>
+  template<typename FPC, typename... Args>
   void add_invariant_check (const Args... args);
+
+  // For restarts, it is possible that some atm proc need to write/read some ad-hoc data.
+  // E.g., some atm proc might need to read/write certain scalar values.
+  // Assumptions:
+  //  - these maps are: data_name -> (data_type, data_value)
+  //  - the data_name is unique across the whole atm
+  // The AD will take care of ensuring these are written/read to/from restart files.
+  const strmap_t<str_any_pair_t>& get_restart_extra_data () const { return m_restart_extra_data; }
 
 protected:
 
@@ -412,6 +424,16 @@ protected:
   //       logger, we might as well expose the member to all derived classes.
   std::shared_ptr<logger_t>  m_atm_logger;
 
+  // Extra data needed for restart
+  strmap_t<str_any_pair_t>  m_restart_extra_data;
+
+  // Use at your own risk. Motivation: Free up device memory for a field that is
+  // no longer used, such as a field read in the ICs used only to initialize
+  // other fields.
+  void remove_field(const std::string& field_name, const std::string& grid_name);
+  // Calls remove_field on each field in the group.
+  void remove_group(const std::string& group_name, const std::string& grid_name);
+
 private:
   // Called from initialize, this method creates the m_[fields|groups]_[in|out]_pointers
   // maps, which are used inside the get_[field|group]_[in|out] methods.
@@ -474,73 +496,31 @@ private:
 
   // Whether we need to update time stamps at the end of the run method
   bool m_update_time_stamps = true;
+
+  // Log level for when property checks perform a repair
+  ekat::logger::LogLevel  m_repair_log_level;
 };
 
 // ================= IMPLEMENTATION ================== //
 
-template<typename FPC, CheckFailHandling CFH, typename... Args>
+template<typename FPC, typename... Args>
 void AtmosphereProcess::
 add_precondition_check (const Args... args) {
   auto fpc = std::make_shared<FPC>(args...);
-  add_precondition_check<CFH>(fpc);
+  add_precondition_check(fpc);
 }
-template<typename FPC, CheckFailHandling CFH, typename... Args>
+template<typename FPC, typename... Args>
 void AtmosphereProcess::
 add_postcondition_check (const Args... args) {
   auto fpc = std::make_shared<FPC>(args...);
-  add_postcondition_check<CFH>(fpc);
+  add_postcondition_check(fpc);
 }
-template<typename FPC, CheckFailHandling CFH, typename... Args>
+template<typename FPC, typename... Args>
 void AtmosphereProcess::
 add_invariant_check (const Args... args) {
   auto fpc = std::make_shared<FPC>(args...);
-  add_invariant_check<CFH>(fpc);
+  add_invariant_check(fpc);
 }
-
-template<CheckFailHandling CFH>
-void AtmosphereProcess::
-add_invariant_check (const prop_check_ptr& pc)
-{
-  add_precondition_check<CFH> (pc);
-  add_postcondition_check<CFH> (pc);
-}
-template<CheckFailHandling CFH>
-void AtmosphereProcess::
-add_precondition_check (const prop_check_ptr& pc)
-{
-  // If a pc can repair, we need to make sure the repairable
-  // fields are among the computed fields of this atm proc.
-  // Otherwise, it would be possible for this AP to implicitly
-  // update a field, without that appearing in the dag.
-  for (const auto& ptr : pc->repairable_fields()) {
-    const auto& fid = ptr->get_header().get_identifier();
-    EKAT_REQUIRE_MSG (
-        has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
-        "Error! Input property check can repair a non-computed field.\n"
-        "  - Atmosphere process name: " + name() + "\n"
-        "  - Property check name: " + name() + "\n");
-  }
-  m_precondition_checks.push_back(std::make_pair(CFH,pc));
-}
-template<CheckFailHandling CFH>
-void AtmosphereProcess::
-add_postcondition_check (const prop_check_ptr& pc)
-{
-  // If a pc can repair, we need to make sure the repairable
-  // fields are among the computed fields of this atm proc.
-  // Otherwise, it would be possible for this AP to implicitly
-  // update a field, without that appearing in the dag.
-  for (const auto& ptr : pc->repairable_fields()) {
-    const auto& fid = ptr->get_header().get_identifier();
-    EKAT_REQUIRE_MSG (
-        has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
-        "Error! Input property check can repair a non-computed field.\n"
-        "  - Atmosphere process name: " + name() + "\n"
-        "  - Property check name: " + name() + "\n");
-  }
-  m_postcondition_checks.push_back(std::make_pair(CFH,pc));
-}
-
 
 // A short name for the factory for atmosphere processes
 // WARNING: you do not need to write your own creator function to register your atmosphere process in the factory.

@@ -26,37 +26,21 @@ do_create_remapper (const grid_ptr_type from_grid,
 }
 
 void MeshFreeGridsManager::
-build_grids (const std::set<std::string>& grid_names)
+build_grids ()
 {
-  if (grid_names.size()==0) {
-    return;
-  }
+  auto has_positive_int = [&](const std::string& n) -> bool {
+    return m_params.isParameter(n) && (m_params.get<int>(n)>0);
+  };
+  const bool build_pt = has_positive_int("number_of_global_columns");
+  const bool build_se = has_positive_int("number_of_local_elements") &&
+                        has_positive_int("number_of_gauss_points");
 
-  for (const auto& gn : grid_names) {
-    EKAT_REQUIRE_MSG (ekat::contains(supported_grids(),gn),
-        "Error! MeshFreeGridsManager only supports 'Point Grid' and 'SE Grid' grids.\n"
-        "       Requested grid: " + gn + "\n");
-  }
-
-  if (not m_params.isParameter("Reference Grid")) {
-    // Set a reference grid.
-    if (ekat::contains(grid_names,"Point Grid")) {
-      m_params.set<std::string>("Reference Grid","Point Grid");
-    } else {
-      m_params.set<std::string>("Reference Grid","SE Grid");
-    }
-  }
-  std::string ref_grid = m_params.get<std::string>("Reference Grid");
-
-  const bool build_pt = ekat::contains(grid_names,"Point Grid") || ref_grid=="Point Grid";
-  const bool build_se = ekat::contains(grid_names,"SE Grid") || ref_grid=="SE Grid";
-
-  const int num_vertical_levels = m_params.get<int>("Number of Vertical Levels");
+  const int num_vertical_levels = m_params.get<int>("number_of_vertical_levels");
 
   if (build_se) {
     // Build a set of completely disconnected spectral elements.
-    const int num_local_elems  = m_params.get<int>("Number of Local Elements");
-    const int num_gp           = m_params.get<int>("Number of Gauss Points");
+    const int num_local_elems  = m_params.get<int>("number_of_local_elements");
+    const int num_gp           = m_params.get<int>("number_of_gauss_points");
 
     // Set up the degrees of freedom.
     SEGrid::dofs_list_type dofs("", num_local_elems*num_gp*num_gp);
@@ -95,12 +79,13 @@ build_grids (const std::set<std::string>& grid_names)
     se_grid->set_dofs(dofs);
     se_grid->set_lid_to_idx_map(dofs_map);
 
-    m_grids["SE Grid"]    = se_grid;
+    add_grid(se_grid);
   }
   if (build_pt) {
-    const int num_global_cols  = m_params.get<int>("Number of Global Columns");
+    const int num_global_cols  = m_params.get<int>("number_of_global_columns");
     auto pt_grid = create_point_grid("Point Grid",num_global_cols,num_vertical_levels,m_comm);
-    m_grids["Point Grid"] = pt_grid;
+    add_grid(pt_grid);
+    this->alias_grid("Point Grid", "Physics");
   }
 }
 
@@ -110,10 +95,10 @@ create_mesh_free_grids_manager (const ekat::Comm& comm, const int num_local_elem
                                 const int num_global_cols)
 {
   ekat::ParameterList gm_params;
-  gm_params.set("Number of Global Columns",num_global_cols);
-  gm_params.set("Number of Local Elements",num_local_elems);
-  gm_params.set("Number of Gauss Points",num_gp);
-  gm_params.set("Number of Vertical Levels",num_vertical_levels);
+  gm_params.set("number_of_global_columns",num_global_cols);
+  gm_params.set("number_of_local_elements",num_local_elems);
+  gm_params.set("number_of_gauss_points",num_gp);
+  gm_params.set("number_of_vertical_levels",num_vertical_levels);
   auto gm = create_mesh_free_grids_manager(comm,gm_params);
   return gm;
 }

@@ -9,9 +9,9 @@ set (TEST_LABELS "dynamics;driver")
 set (NEED_LIBS ${dynLibName} scream_control scream_share)
 
 CreateUnitTest(homme_standalone "homme_standalone.cpp" "${NEED_LIBS}"
-               LABELS ${TEST_LABELS} 
-               MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
-               PROPERTIES FIXTURES_SETUP homme_generate_output_nc_files
+  LABELS ${TEST_LABELS} 
+  MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
+  PROPERTIES FIXTURES_SETUP homme_generate_output_nc_files
 )
 
 # Set AD configurable options
@@ -57,19 +57,19 @@ configure_file(${SCREAM_BASE_DIR}/src/dynamics/homme/tests/theta.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
 # Ensure test input files are present in the data dir
-GetInputFile(init/screami_ne2np4L72_20220524.nc)
+GetInputFile(init/${EAMxx_tests_IC_FILE_72lev})
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
-## Only if max mpi ranks is >1
+## Only if running with 2+ ranks configurations
 # This test requires CPRNC
-if (SCREAM_TEST_MAX_RANKS GREATER 1)
+if (TEST_RANK_END GREATER TEST_RANK_START)
   include (BuildCprnc)
   BuildCprnc()
   set (BASE_TEST_NAME "homme")
-  foreach (MPI_RANKS RANGE 2 ${SCREAM_TEST_MAX_RANKS})
-    set (SRC_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.Steps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
-    set (TGT_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.Steps_x${NUM_STEPS}.np1.nc")
-    set (TEST_NAME "${BASE_TEST_NAME}_np1_vs_np${MPI_RANKS}_bfb")
+  foreach (MPI_RANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
+    set (SRC_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
+    set (TGT_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
+    set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_bfb")
     add_test (NAME ${TEST_NAME} 
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})

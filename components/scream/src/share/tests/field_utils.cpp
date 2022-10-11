@@ -9,7 +9,6 @@
 #include "share/field/field_utils.hpp"
 
 #include "share/grid/point_grid.hpp"
-#include "share/grid/user_provided_grids_manager.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack_utils.hpp"

@@ -20,10 +20,9 @@ FieldGroup::get_const () const {
   FieldGroup gr(*m_info);
   if (m_info->m_bundled) {
     gr.m_bundle = std::make_shared<Field>(m_bundle->get_const());
-  } else {
-    for (const auto& it : m_fields) {
-      gr.m_fields[it.first] = std::make_shared<Field>(it.second->get_const());
-    }
+  }
+  for (const auto& it : m_fields) {
+    gr.m_fields[it.first] = std::make_shared<Field>(it.second->get_const());
   }
   return gr;
 }

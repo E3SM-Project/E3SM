@@ -130,6 +130,7 @@ module ocn_core_interface
       logical, pointer :: inSituEOSActive
       logical, pointer :: variableShortwaveActive
       logical, pointer :: gmActive
+      logical, pointer :: submesoActive
       logical, pointer :: timeVaryingAtmosphericForcingPKGActive
       logical, pointer :: timeVaryingLandIceForcingPKGActive
       logical, pointer :: gotmPKGActive
@@ -161,6 +162,7 @@ module ocn_core_interface
       logical, pointer :: config_use_tidal_potential_forcing
       logical, pointer :: config_use_topographic_wave_drag
       logical, pointer :: config_use_GM
+      logical, pointer :: config_submesoscale_enable
       logical, pointer :: config_use_Redi
       logical, pointer :: config_use_vegetation_drag
       logical, pointer :: config_use_time_varying_atmospheric_forcing
@@ -353,6 +355,15 @@ module ocn_core_interface
       call mpas_pool_get_config(configPool, 'config_use_Redi', config_use_Redi)
       if (config_use_GM.or.config_use_Redi) then
          gmActive = .true.
+      end if
+
+      !
+      ! test for use of gm
+      !
+      call mpas_pool_get_package(packagePool, 'submesoActive', submesoActive)
+      call mpas_pool_get_config(configPool, 'config_submesoscale_enable', config_submesoscale_enable)
+      if (config_submesoscale_enable) then
+         submesoActive = .true.
       end if
 
       ! test for time-varying forcing

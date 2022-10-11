@@ -4,12 +4,12 @@ Casename: io_output_restart
 Averaging Type: Average
 Max Snapshots Per File: 1
 Field Names: [field_1, field_2, field_3, field_4]
-Output Control:
+output_control:
   MPI Ranks in Filename: true
   Frequency: 10
-  Frequency Units: Steps
+  frequency_units: nsteps
 Checkpoint Control:
   MPI Ranks in Filename: true
   Frequency: 5
-  Frequency Units: Steps
+  frequency_units: nsteps
 ...

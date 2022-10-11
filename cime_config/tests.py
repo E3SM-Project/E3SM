@@ -20,6 +20,13 @@ _TESTS = {
             )
         },
 
+    "e3sm_mosart_exenoshare": {
+        "time"  : "0:45:00",
+        "tests" : (
+            "ERS.ne30pg2_r05_EC30to60E2r2.GPMPAS-JRA.mosart-rof_ocn_2way",
+            )
+        },
+
     "e3sm_land_exeshare" : {
         "share" : True,
         "time"  : "0:45:00",
@@ -40,13 +47,14 @@ _TESTS = {
         "time"  : "0:45:00",
         "tests" : (
             "ERS_Ld20.f45_f45.IELMFATES.elm-fates",
+            "ERS.hcru_hcru.I20TRGSWCNPRDCTCBC.elm-erosion",
             )
         },
 
     "e3sm_land_developer" : {
         "share" : True,
         "time"  : "0:45:00",
-        "inherit" : ("e3sm_mosart_developer", "e3sm_land_exeshare", "e3sm_land_exenoshare"),
+        "inherit" : ("e3sm_mosart_developer", "e3sm_mosart_exenoshare", "e3sm_land_exeshare", "e3sm_land_exenoshare"),
         "tests" : (
             "ERS.f19_f19.IELM",
             "ERS.f19_f19.I1850ELMCN",
@@ -67,7 +75,9 @@ _TESTS = {
             "SMS.r05_r05.IELM.elm-topounit",
             "ERS.ELM_USRDAT.I1850ELM.elm-usrdat",
             "ERS.r05_r05.IELM.elm-V2_ELM_MOSART_features",
-            "ERS.f09_f09.IELM.elm-solar_rad"
+            "ERS.f09_f09.IELM.elm-solar_rad",
+            "ERS.f09_f09.IELM.elm-lnd_rof_2way",
+            "ERS.f09_f09.IELM.elm-koch_snowflake"
             )
         },
 
@@ -101,6 +111,7 @@ _TESTS = {
             "ERS_Ld5.ne4_oQU240.F2010.eam-rrtmgpxx",
             "REP_Ln5.ne4_oQU240.F2010",
             "SMS_Ld9.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2_mass",
+            "ERP_Ld9.ne4_ne4.FIDEAL",
             )
         },
 
@@ -137,7 +148,7 @@ _TESTS = {
     "e3sm_atm_nbfb" : {
         "tests" : (
             "PGN_P1x1.ne4_oQU240.F2010",
-            "TSC.ne4_oQU240.F2010",
+            "TSC.ne4_oQU240.F2010-CICE",
             "MVK_PS.ne4_oQU240.F2010",
             )
         },
@@ -234,7 +245,7 @@ _TESTS = {
             "ERP_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_fixed_subcycle",
             "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_use_ESMT",
             "ERS_Ln9.ne4pg2_oQU480.F20TR-MMF1.eam-mmf_use_VT",
-            "ERS_Ln9.ne4pg2_ne4pg2.FRCE-MMF1",
+            "ERS_Ln9.ne4pg2_ne4pg2.FRCE-MMF1.eam-cosp_nhtfrq9",
             "SMS_Ln5.ne4_ne4.FSCM-ARM97-MMF1",
             )
         },
@@ -451,16 +462,18 @@ _TESTS = {
 
     "e3sm_scream_v1" : {
         "time"    : "03:00:00",
-        "inherit" : ("e3sm_scream_v1_lowres", "e3sm_scream_v1_medres"),
+        "inherit" : ("e3sm_scream_v1_lowres", "e3sm_scream_v1_medres", "e3sm_scream_v1_mpassi"),
     },
 
 
     "e3sm_scream_v1_lowres" : {
         "time"  : "01:00:00",
         "tests" : (
-            "ERP_D_Ln9.ne4_ne4.F2010-SCREAMv1",
+            "ERP_D_Lh4.ne4_ne4.F2010-SCREAMv1",
             "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1",
             "SMS_D_Ln9.ne4_ne4.F2010-SCREAMv1-noAero",
+            "ERP_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "ERS_D_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1",
             )
     },
 
@@ -469,7 +482,8 @@ _TESTS = {
         "tests" : (
             #  "SMS_D_Ln2.ne30_ne30.F2000-SCREAMv1-AQP1", # Uncomment once IC file for ne30 is ready
             "ERS_Ln22.ne30_ne30.F2010-SCREAMv1",
-            "PEM_Ln9.ne30_ne30.F2010-SCREAMv1"
+            "PEM_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1",
+            "ERS_Ln22.ne30pg2_ne30pg2.F2010-SCREAMv1",
             )
     },
 
@@ -479,6 +493,27 @@ _TESTS = {
             "SMS_D_Ln12.ne120_r0125_oRRS18to6v3.F2010-SCREAMv1",
             "SMS_Ln12.ne120_ne120.F2010-SCREAMv1",
 #            "SMS_Ln12.ne120_r0125_oRRS18to6v3.F2000-SCREAMv1-AQP1", add when aquap 120 inputs available
+            )
+    },
+
+    "e3sm_scream_v1_mpassi" : {
+        "time"  : "01:00:00",
+        "tests" : (
+         #  "ERP_D_Ln9.ne4_oQU240.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
+         #  "SMS_D_Ln9.ne4_oQU240.F2010-SCREAMv1-MPASSI-noAero",
+            "ERP_Ln22.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
+            "ERS_D_Ln22.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
+         #  "ERS_Ln22.ne30_oECv3.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
+            "PEM_Ln90.ne30pg2_EC30to60E2r2.F2010-SCREAMv1-MPASSI",
+         #  "ERS_Ln22.ne30pg2_EC30to60E2r2.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
+            )
+    },
+
+    "e3sm_scream_v1_long" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "ERP_D_Lh182.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "ERS_Ln362.ne30pg2_ne30pg2.F2010-SCREAMv1"
             )
     },
 

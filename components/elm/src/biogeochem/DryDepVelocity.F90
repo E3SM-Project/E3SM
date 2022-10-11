@@ -90,9 +90,17 @@ CONTAINS
   !------------------------------------------------------------------------
   subroutine Init(this, bounds)
 
+    use elm_varctl     , only : use_fates, use_fates_sp
+
     class(drydepvel_type) :: this
     type(bounds_type), intent(in) :: bounds
 
+    if ( (.not. use_fates_sp) .and. use_fates .and. &
+         (n_drydep > 0 .and. drydep_method == DD_XLND) )then
+       call endrun('ERROR: Dry-deposition currently does NOT work with FATES outside of FATES-SP mode'//&
+            errMsg(__FILE__, __LINE__))
+    end if
+    
     call this%InitAllocate(bounds)
 
   end subroutine Init
@@ -101,7 +109,7 @@ CONTAINS
   subroutine InitAllocate(this, bounds)
     !
     ! !USES:
-      use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
     use seq_drydep_mod , only : n_drydep, drydep_method, DD_XLND
     use elm_varcon , only : spval
     !

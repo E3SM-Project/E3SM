@@ -8,20 +8,15 @@ set(SCREAM_SCORPIO_SRCS
   scream_io_utils.cpp
 )
 
-# Create or import scorpio targets
-include (${SCREAM_BASE_DIR}/cmake/tpls/Scorpio.cmake)
-CreateScorpioTargets()
-
-set (SCREAM_CIME_LIBS
-     pioc
-     piof
-)
-
 # Create io lib
 add_library(scream_io ${SCREAM_SCORPIO_SRCS})
 set_target_properties(scream_io PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
-target_link_libraries(scream_io PUBLIC scream_share diagnostics ${SCREAM_CIME_LIBS})
+target_link_libraries(scream_io PUBLIC scream_share diagnostics piof pioc)
 target_compile_options(scream_io PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
+
+if (SCREAM_CIME_BUILD)
+  target_link_libraries(scream_io PUBLIC csm_share)
+endif()
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

@@ -63,13 +63,16 @@ PointGrid::get_3d_vector_layout (const bool midpoints, const FieldTag vector_tag
   return FieldLayout({COL,vector_tag,VL},{get_num_local_dofs(),vector_dim,nvl});
 }
 
-bool PointGrid::
-valid_geo_data (const std::string& name, const geo_view_type& /* data */) const {
-  // Sanity checks
-  return name=="lat" || name=="lon" || name=="area";
+std::shared_ptr<AbstractGrid>
+PointGrid::clone (const std::string& clone_name,
+                  const bool shallow) const
+{
+  auto grid = std::make_shared<PointGrid> (clone_name,get_num_local_dofs(),get_num_vertical_levels(),get_comm());
+  grid->copy_views(*this,shallow);
+  return grid;
 }
 
-std::shared_ptr<const PointGrid>
+std::shared_ptr<PointGrid>
 create_point_grid (const std::string& grid_name,
                    const int num_global_cols,
                    const int num_vertical_lev,
@@ -101,15 +104,16 @@ create_point_grid (const std::string& grid_name,
   using device_type       = DefaultDevice;
   using kokkos_types      = KokkosTypes<device_type>;
   using geo_view_type     = kokkos_types::view_1d<Real>;
-  using KT                = KokkosTypes<DefaultDevice>;
   using C                 = scream::physics::Constants<Real>;
 
-  // Store cell area, longitude, and latitude in geometry data.
-  // For  longitude and latitude, set values to NaN since they
-  // are currently not required from any application using PointGrid
+  // Store cell area, longitude, latitude and reference/surface pressure fractions
+  // in geometry data. For  longitude, latitude and pressure fractions, set values
+  // to NaN since they are not necessarily required from all application using PointGrid
   geo_view_type area("area", num_my_cols);
   geo_view_type lon ("lon",  num_my_cols);
   geo_view_type lat ("lat",  num_my_cols);
+  geo_view_type hyam("hyam", num_vertical_lev);
+  geo_view_type hybm("hybm", num_vertical_lev);
 
   // Estimate cell area for a uniform grid by taking the surface area
   // of the earth divided by the number of columns.  Note we do this in
@@ -117,16 +121,17 @@ create_point_grid (const std::string& grid_name,
   const Real pi        = C::Pi;
   const Real cell_area = 4.0*pi/num_my_cols;
 
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_my_cols, num_vertical_lev);
-  Kokkos::parallel_for("area_loop", policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
-    const int i = team.league_rank();
-    area(i) = cell_area;
-    lon(i) = std::nan("");
-    lat(i) = std::nan("");
-  });
+  Kokkos::deep_copy(area, cell_area);
+  Kokkos::deep_copy(lon,  std::nan(""));
+  Kokkos::deep_copy(lat,  std::nan(""));
+  Kokkos::deep_copy(hyam, std::nan(""));
+  Kokkos::deep_copy(hybm, std::nan(""));
+
   grid->set_geometry_data("area", area);
   grid->set_geometry_data("lon",  lon);
   grid->set_geometry_data("lat",  lat);
+  grid->set_geometry_data("hyam", hyam);
+  grid->set_geometry_data("hybm", hybm);
 
   return grid;
 }

@@ -2,6 +2,7 @@
 #define SCREAM_ATMOSPHERE_PROCESS_GROUP_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
+#include "control/surface_coupling_utils.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
 
@@ -37,9 +38,6 @@ public:
   // The type of the block (e.g., dynamics or physics)
   AtmosphereProcessType type () const { return AtmosphereProcessType::Group; }
 
-  // The type of grids on which the process is defined
-  std::set<std::string> get_required_grids () const { return m_required_grids; }
-
   // The name of the block
   std::string name () const { return m_group_name; }
 
@@ -50,6 +48,10 @@ public:
   int get_num_processes () const { return m_atm_processes.size(); }
 
   std::shared_ptr<const atm_proc_type> get_process (const int i) const {
+    return m_atm_processes.at(i);
+  }
+
+  std::shared_ptr<atm_proc_type> get_process_nonconst (const int i) const {
     return m_atm_processes.at(i);
   }
 
@@ -101,9 +103,6 @@ protected:
 
   // The list of atm processes in this group
   std::vector<std::shared_ptr<atm_proc_type>>  m_atm_processes;
-
-  // The grids required by this process
-  std::set<std::string>  m_required_grids;
 
   // The schedule type: Parallel vs Sequential
   ScheduleType   m_group_schedule_type;

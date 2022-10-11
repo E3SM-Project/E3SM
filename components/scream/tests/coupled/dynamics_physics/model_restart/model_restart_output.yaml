@@ -13,6 +13,9 @@ Fields:
       - omega
       - p_int
       - p_mid
+      - pseudo_density_dry
+      - p_dry_int
+      - p_dry_mid
       # SHOC
       - cldfrac_liq
       - eddy_diff_mom
@@ -65,12 +68,12 @@ Fields:
       - v_dyn
       - vtheta_dp_dyn
       - dp3d_dyn
-Output Control:
+output_control:
   MPI Ranks in Filename: true
   Frequency: 2
-  Frequency Units: Steps
+  frequency_units: nsteps
 Checkpoint Control:
   MPI Ranks in Filename: true
   Frequency: 1
-  Frequency Units: Steps
+  frequency_units: nsteps
 ...

@@ -2,6 +2,7 @@
 #define SPA_FUNCTIONS_HPP
 
 #include "share/grid/abstract_grid.hpp"
+#include "share/grid/remap/horizontal_remap_utility.hpp"
 #include "share/scream_types.hpp"
 #include "share/util/scream_time_stamp.hpp"
 
@@ -64,7 +65,7 @@ struct SPAFunctions
     // Whether the timestate has been initialized.
     bool inited = false;
     // The current month
-    Int current_month = -1;
+    int current_month = -1;
     // Julian Date for the beginning of the month, as defined in
     //           /src/share/util/scream_time_stamp.hpp
     // See this file for definition of Julian Date.
@@ -101,10 +102,10 @@ struct SPAFunctions
     }
 
     // Basic spatial dimensions of the data
-    Int ncols;
-    Int nlevs;
-    Int nswbands;
-    Int nlwbands;
+    int ncols;
+    int nlevs;
+    int nswbands;
+    int nlwbands;
 
     view_2d<Spack> CCN3;        // CCN concentration at S=0.1: units = #/cm3, dimensions = (ncols,nlevs)
     view_3d<Spack> AER_G_SW;    // AER_G_SW:   units = #/cm3, dimensions = (ncols,nswbands,nlevs)
@@ -149,46 +150,14 @@ struct SPAFunctions
     // The weights stores the remapping weight to be applied to the source grid data for this location
     //   in the target data.
     SPAHorizInterp() = default;
-    SPAHorizInterp(const int length_)
+    explicit SPAHorizInterp(const ekat::Comm& comm)
     {
-      length = length_;
-      weights = view_1d<Real>("",length_);
-      source_grid_loc = view_1d<Int>("",length_);
-      target_grid_loc = view_1d<Int>("",length_);
+      m_comm = comm;
     }
+    // Horizontal Remap
+    HorizontalMap horiz_map;
     // Comm group used for SPA
     ekat::Comm m_comm;
-    // Number of weights in remap data
-    Int length;
-    // Number of columns and levels on source grid
-    // Note, the number of columns on target grid should already be known.
-    //       these are given based on the simulation grid.
-    Int source_grid_ncols;
-    // 1D index of weights.  Needs decoder indexing, see below
-    view_1d<Real> weights;
-    // 1D index of source grid column.
-    view_1d<Int> source_grid_loc;
-    // 1D index of target grid column.
-    view_1d<Int> target_grid_loc;
-    // Organize unique source grid columns
-    Int               num_unique_cols;
-    std::map<Int,Int> source_local_col_map;
-
-    //  Helper function to organize the set of unique source data columns
-    void set_unique_cols()
-    {
-       view_1d_host<Int> source_grid_loc_h("",length);
-       Kokkos::deep_copy(source_grid_loc_h,source_grid_loc);
-       auto start = source_grid_loc_h.data();
-       auto end = start + source_grid_loc.size();
-       std::sort(start,end); // std::unique requires a sorted array
-       auto new_end = std::unique(start,end);
-       for (auto it = start; it!=new_end; ++it) { 
-         auto pos = it - start;
-         source_local_col_map.emplace(*it, pos);
-       }
-       num_unique_cols = source_local_col_map.size();
-    }
 
   }; // SPAHorizInterp
   /* ------------------------------------------------------------------------------------------- */
@@ -204,29 +173,27 @@ struct SPAFunctions
 
   static void get_remap_weights_from_file(
     const std::string&       remap_file_name,
-    const Int                ncols_scream,
     gid_type                 min_dof,
     const view_1d<gid_type>& dofs_gids,
           SPAHorizInterp&    spa_horiz_interp);
 
   static void set_remap_weights_one_to_one(
-    const Int                ncols_scream,
     gid_type                 min_dof,
     const view_1d<gid_type>& dofs_gids,
           SPAHorizInterp&    spa_horiz_interp);
 
   static void update_spa_data_from_file(
     const std::string&    spa_data_file_name,
-    const Int             time_index,
-    const Int             nswbands,
-    const Int             nlwbands,
+    const int             time_index,
+    const int             nswbands,
+    const int             nlwbands,
           SPAHorizInterp& spa_horiz_interp,
           SPAInput&       spa_data);
 
   static void update_spa_timestate(
     const std::string&     spa_data_file_name,
-    const Int              nswbands,
-    const Int              nlwbands,
+    const int              nswbands,
+    const int              nlwbands,
     const util::TimeStamp& ts,
           SPAHorizInterp&  spa_horiz_interp,
           SPATimeState&    time_state,

@@ -3,7 +3,13 @@
 #include "physics/rrtmgp/scream_rrtmgp_interface.hpp"
 #include "YAKL.h"
 #include "physics/share/physics_constants.hpp"
-#include "physics/rrtmgp/share/shr_orb_mod_c2f.hpp"
+#include "physics/rrtmgp/shr_orb_mod_c2f.hpp"
+
+// Names of input files we will need.
+std::string coefficients_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-data-sw-g112-210809.nc";
+std::string coefficients_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-data-lw-g128-210809.nc";
+std::string cloud_optics_file_sw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-sw.nc";
+std::string cloud_optics_file_lw = SCREAM_DATA_DIR "/init/rrtmgp-cloud-optics-coeffs-lw.nc";
 
 TEST_CASE("rrtmgp_test_heating") {
     // Initialize YAKL
@@ -254,7 +260,7 @@ TEST_CASE("rrtmgp_test_compute_broadband_surface_flux") {
     gas_names(8) = std::string("n2" );
     gas_concs.init(gas_names,ncol,nlay);
     logger->info("Init RRTMGP...\n");
-    scream::rrtmgp::rrtmgp_initialize(gas_concs,logger);
+    scream::rrtmgp::rrtmgp_initialize(gas_concs, coefficients_file_sw, coefficients_file_lw, cloud_optics_file_sw, cloud_optics_file_lw, logger);
 
     // Create simple test cases; We expect, given the input data, that band 10
     // will straddle the NIR and VIS, bands 1-9 will be purely NIR, and bands 11-14
@@ -442,4 +448,174 @@ TEST_CASE("rrtmgp_test_check_range") {
     REQUIRE(scream::rrtmgp::check_range(dummy, 0.0, 1.0, "dummy") == false);
     dummy.deallocate();
     if (yakl::isInitialized()) { yakl::finalize(); }
+}
+
+TEST_CASE("rrtmgp_test_subcol_gen") {
+    // Initialize YAKL
+    if (!yakl::isInitialized()) { yakl::init(); }
+    // Create dummy data
+    const int ncol = 1;
+    const int nlay = 4;
+    const int ngpt = 10;
+    auto cldfrac = real2d("cldfrac", ncol, nlay);
+    // Set cldfrac values
+    memset(cldfrac, 0.0);
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+        cldfrac(1,1) = 1;
+        cldfrac(1,2) = 0.5;
+        cldfrac(1,3) = 0;
+        cldfrac(1,4) = 1;
+    });
+    auto cldmask = int3d("cldmask", ncol, nlay, ngpt);
+    auto cldfrac_from_mask = real2d("cldfrac_from_mask", ncol, nlay);
+    // Run subcol gen, make sure we get what we expect; do this for some different seed values
+    for (unsigned seed = 1; seed <= 10; seed++) {
+        auto seeds = int1d("seeds", ncol);
+        memset(seeds, seed);
+        cldmask = scream::rrtmgp::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
+        // Check answers by computing new cldfrac from mask
+        memset(cldfrac_from_mask, 0.0);
+        parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
+            for (int igpt = 1; igpt <= ngpt; ++igpt) {
+                real cldmask_real = cldmask(icol,ilay,igpt);
+                cldfrac_from_mask(icol,ilay) += cldmask_real;
+            }
+        });
+        parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
+            cldfrac_from_mask(icol,ilay) = cldfrac_from_mask(icol,ilay) / ngpt;
+        });
+        // For cldfrac 1 we should get 1, for cldfrac 0 we should get 0, but in between we cannot be sure
+        // deterministically, since the computed cloud mask depends on pseudo-random numbers
+        REQUIRE(cldfrac_from_mask.createHostCopy()(1,1) == 1);
+        REQUIRE(cldfrac_from_mask.createHostCopy()(1,2) <= 1);
+        REQUIRE(cldfrac_from_mask.createHostCopy()(1,3) == 0);
+        REQUIRE(cldfrac_from_mask.createHostCopy()(1,4) == 1);
+    }
+
+    // For maximum-random overlap, vertically-contiguous layers maximimally overlap,
+    // thus if we have non-zero cloud fraction in two adjacent layers, then every subcolumn
+    // that has cloud in the layer above must also have cloud in the layer below; test
+    // this property by creating two layers with non-zero cloud fraction, creating subcolums,
+    // and verifying that every subcolumn with cloud in layer 1 has cloud in layer 2
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+        cldfrac(1,1) = 0.5;
+        cldfrac(1,2) = 0.5;
+        cldfrac(1,3) = 0;
+        cldfrac(1,4) = 0;
+    });
+    for (unsigned seed = 1; seed <= 10; seed++) {
+        auto seeds = int1d("seeds", ncol);
+        memset(seeds, seed);
+        cldmask = scream::rrtmgp::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
+        auto cldmask_h = cldmask.createHostCopy();
+        for (int igpt = 1; igpt <= ngpt; igpt++) {
+            if (cldmask_h(1,1,igpt) == 1) {
+                REQUIRE(cldmask_h(1,2,igpt) == 1);
+            }
+        }
+    }
+    // Clean up after test
+    cldfrac.deallocate();
+    cldmask.deallocate();
+    cldfrac_from_mask.deallocate();
+    yakl::finalize();
+}
+
+
+TEST_CASE("rrtmgp_cloud_area") {
+    // Initialize YAKL
+    if (!yakl::isInitialized()) { yakl::init(); }
+    // Create dummy data
+    const int ncol = 1;
+    const int nlay = 2;
+    const int ngpt = 3;
+    auto cldtau = real3d("cldtau", ncol, nlay, ngpt);
+    auto cldtot = real1d("cldtot", ncol);
+    auto pmid = real2d("pmid", ncol, nlay);
+
+    // Set up pressure levels for test problem
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+        pmid(1,1) = 100;
+        pmid(1,2) = 200;
+    });
+
+    // Case:
+    //
+    // 0 0 0
+    // 0 0 0
+    //
+    // should give cldtot = 0.0
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+        cldtau(1,1,1) = 0;
+        cldtau(1,1,2) = 0;
+        cldtau(1,1,3) = 0;
+        cldtau(1,2,1) = 0;
+        cldtau(1,2,2) = 0;
+        cldtau(1,2,3) = 0;
+    });
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(), pmid, cldtau, cldtot);
+    REQUIRE(cldtot.createHostCopy()(1) == 0.0);
+
+    // Case:
+    //
+    // 1 1 1
+    // 1 1 1
+    //
+    // should give cldtot = 1.0
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+        cldtau(1,1,1) = 1;
+        cldtau(1,1,2) = 1;
+        cldtau(1,1,3) = 1;
+        cldtau(1,2,1) = 1;
+        cldtau(1,2,2) = 1;
+        cldtau(1,2,3) = 1;
+    });
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(), pmid, cldtau, cldtot);
+    REQUIRE(cldtot.createHostCopy()(1) == 1.0);
+
+    // Case:
+    //
+    // 1 1 0  100
+    // 0 0 1  200
+    //
+    // should give cldtot = 1.0
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+        cldtau(1,1,1) = 0.1;
+        cldtau(1,1,2) = 1.5;
+        cldtau(1,1,3) = 0;
+        cldtau(1,2,1) = 0;
+        cldtau(1,2,2) = 0;
+        cldtau(1,2,3) = 1.0;
+    });
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(), pmid, cldtau, cldtot);
+    REQUIRE(cldtot.createHostCopy()(1) == 1.0);
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, 150, pmid, cldtau, cldtot);
+    REQUIRE(cldtot.createHostCopy()(1) == 2.0 / 3.0);
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 110, 250, pmid, cldtau, cldtot);
+    REQUIRE(cldtot.createHostCopy()(1) == 1.0 / 3.0);
+
+    // Case:
+    //
+    // 1 0 0
+    // 1 0 1
+    //
+    // should give cldtot = 2/3
+    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+        cldtau(1,1,1) = 1;
+        cldtau(1,1,2) = 0;
+        cldtau(1,1,3) = 0;
+        cldtau(1,2,1) = 1;
+        cldtau(1,2,2) = 0;
+        cldtau(1,2,3) = 1;
+    });
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, std::numeric_limits<scream::Real>::max(), pmid, cldtau, cldtot);
+    REQUIRE(cldtot.createHostCopy()(1) == 2.0 / 3.0);
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 0, 100, pmid, cldtau, cldtot);
+    REQUIRE(cldtot.createHostCopy()(1) == 0.0);
+    scream::rrtmgp::compute_cloud_area(ncol, nlay, ngpt, 100, 300, pmid, cldtau, cldtot);
+    REQUIRE(cldtot.createHostCopy()(1) == 2.0 / 3.0);
+    pmid.deallocate();
+    cldtau.deallocate();
+    cldtot.deallocate();
+    yakl::finalize();
 }

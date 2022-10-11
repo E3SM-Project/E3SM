@@ -53,7 +53,7 @@ init (const std::shared_ptr<const fm_type>& field_mgr,
       const std::shared_ptr<const gm_type>& grids_mgr)
 {
   // Set list of fields. Use grid name to potentially find correct sublist inside 'Fields' list.
-  set_fields_and_grid_names (field_mgr->get_grid()->name());
+  set_fields_and_grid_names (field_mgr->get_grid()->aliases());
 
   // Sets the internal field mgr, and possibly sets up the remapper
   set_field_manager(field_mgr,grids_mgr);
@@ -68,7 +68,7 @@ init (const std::shared_ptr<const grid_type>& grid,
       const std::map<std::string,FieldLayout>&  layouts)
 {
   // Set list of fields. Use grid name to potentially find correct sublist inside 'Fields' list.
-  set_fields_and_grid_names (grid->name());
+  set_fields_and_grid_names (grid->aliases());
 
   // Set the grid associated with the input views
   set_grid(grid);
@@ -83,7 +83,7 @@ init (const std::shared_ptr<const grid_type>& grid,
 /* ---------------------------------------------------------- */
 
 void AtmosphereInput::
-set_fields_and_grid_names (const std::string& grid_name) {
+set_fields_and_grid_names (const std::vector<std::string>& grid_aliases) {
   // The user might just want to read some global attributes (no fields),
   // so get the list of fields names only if present.
   using vos_t = std::vector<std::string>;
@@ -92,11 +92,16 @@ set_fields_and_grid_names (const std::string& grid_name) {
     if (m_params.isParameter("IO Grid Name")) {
       m_io_grid_name = m_params.get<std::string>("IO Grid Name");
     }
-  } else if (m_params.isSublist("Fields") && grid_name!="") {
-    const auto& pl = m_params.sublist("Fields").sublist(grid_name);
-    m_fields_names = pl.get<vos_t>("Field Names");
-    if (pl.isParameter("IO Grid Name")) {
-      m_io_grid_name = pl.get<std::string>("IO Grid Name");
+  } else {
+    for (const auto& grid_name : grid_aliases) {
+      if (m_params.isSublist("Fields") && grid_name!="") {
+        const auto& pl = m_params.sublist("Fields").sublist(grid_name);
+        m_fields_names = pl.get<vos_t>("Field Names");
+        if (pl.isParameter("IO Grid Name")) {
+          m_io_grid_name = pl.get<std::string>("IO Grid Name");
+        }
+      }
+      break;
     }
   }
 }
@@ -223,10 +228,10 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
 }
 
 /* ---------------------------------------------------------- */
-// Note: The time_index argument provides a way to control which
-//       time snap to read input from in the file.  If a negative
-//       number is provided the routine will read input at the
-//       last time level set by running eam_update_timesnap.
+// Note: The (zero-based) time_index argument provides a way to control which
+//       time step to read input from in the file.  If a negative number is
+//       provided the routine will read input at the last time level set by
+//       running eam_update_timesnap.
 void AtmosphereInput::read_variables (const int time_index)
 {
   EKAT_REQUIRE_MSG (m_inited_with_views || m_inited_with_fields,
@@ -235,7 +240,8 @@ void AtmosphereInput::read_variables (const int time_index)
   for (auto const& name : m_fields_names) {
 
     // Read the data
-    scorpio::grid_read_data_array(m_filename,name,time_index,m_host_views_1d.at(name).data());
+    auto v1d = m_host_views_1d.at(name);
+    scorpio::grid_read_data_array(m_filename,name,time_index,v1d.data(),v1d.size());
 
     // If we have a field manager, make sure the data is correctly
     // synced to both host and device views of the field.
@@ -415,6 +421,7 @@ void AtmosphereInput::register_variables()
   // dof decomposition across different ranks.
 
   // Cycle through all fields
+  const auto& fp_precision = "real";
   for (auto const& name : m_fields_names) {
     // Determine the IO-decomp and construct a vector of dimension ids for this variable:
     auto vec_of_dims   = get_vec_of_dims(m_layouts.at(name));
@@ -429,8 +436,8 @@ void AtmosphereInput::register_variables()
     //  Currently the field_manager only stores Real variables so it is not an issue,
     //  but in the future if non-Real variables are added we will want to accomodate that.
     //TODO: Should be able to simply inquire from the netCDF the dimensions for each variable.
-    scorpio::get_variable(m_filename, name, name, vec_of_dims.size(),
-                          vec_of_dims, PIO_REAL, io_decomp_tag);
+    scorpio::get_variable(m_filename, name, name,
+                          vec_of_dims, fp_precision, io_decomp_tag);
   }
 }
 
@@ -455,7 +462,8 @@ get_io_decomp(const FieldLayout& layout)
   // Given a vector of dimensions names, create a unique decomp string to register with I/O
   // Note: We are hard-coding for only REAL input here.
   // TODO: would be to allow for other dtypes
-  std::string io_decomp_tag = "Real";
+  std::string io_decomp_tag = (std::string("Real-") + m_io_grid->name() + "-" +
+                               std::to_string(m_io_grid->get_num_global_dofs()));
   auto dims_names = get_vec_of_dims(layout);
   for (size_t i=0; i<dims_names.size(); ++i) {
     io_decomp_tag += "-" + dims_names[i];
@@ -480,10 +488,10 @@ void AtmosphereInput::set_degrees_of_freedom()
 } // set_degrees_of_freedom
 
 /* ---------------------------------------------------------- */
-std::vector<int> AtmosphereInput::
-get_var_dof_offsets(const FieldLayout& layout)
+std::vector<scorpio::offset_t>
+AtmosphereInput::get_var_dof_offsets(const FieldLayout& layout)
 {
-  std::vector<int> var_dof(layout.size());
+  std::vector<scorpio::offset_t> var_dof(layout.size());
 
   // Gather the offsets of the dofs of this variable w.r.t. the *global* array.
   // Since we order the global array based on dof gid, and we *assume* (we actually
@@ -501,7 +509,7 @@ get_var_dof_offsets(const FieldLayout& layout)
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
-    int col_size = layout.size() / num_cols;
+    scorpio::offset_t col_size = layout.size() / num_cols;
 
     auto dofs = m_io_grid->get_dofs_gids();
     auto dofs_h = Kokkos::create_mirror_view(dofs);
@@ -518,7 +526,7 @@ get_var_dof_offsets(const FieldLayout& layout)
 
       // Compute start of the column offset, then fill column adding 1 to each entry
       auto gid = dofs_h(icol);
-      auto offset = (gid-min_gid)*col_size;
+      scorpio::offset_t offset = (gid-min_gid)*col_size;
       std::iota(start,end,offset);
     }
   } else if (layout.has_tag(ShortFieldTagsNames::EL)) {
@@ -529,7 +537,7 @@ get_var_dof_offsets(const FieldLayout& layout)
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
-    int col_size = layout.size() / num_cols;
+    scorpio::offset_t col_size = layout.size() / num_cols;
 
     auto dofs = m_io_grid->get_dofs_gids();
     auto dofs_h = Kokkos::create_mirror_view(dofs);

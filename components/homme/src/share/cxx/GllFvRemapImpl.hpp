@@ -80,13 +80,13 @@ struct GllFvRemapImpl {
     {}
   };
 
-  const HybridVCoord m_hvcoord;
-  const Elements m_elements;
-  const ElementsState m_state;
-  const ElementsDerivedState m_derived;
-  const ElementsForcing m_forcing;
-  const ElementsGeometry m_geometry;
-  const Tracers m_tracers;
+  HybridVCoord m_hvcoord;
+  Elements m_elements;
+  ElementsState m_state;
+  ElementsDerivedState m_derived;
+  ElementsForcing m_forcing;
+  ElementsGeometry m_geometry;
+  Tracers m_tracers;
   Data m_data;
 
   TeamPolicy m_tp_ne, m_tp_ne_qsize, m_tp_ne_dss;
@@ -95,6 +95,7 @@ struct GllFvRemapImpl {
   std::shared_ptr<BoundaryExchange> m_extrema_be, m_dss_be;
 
   GllFvRemapImpl();
+  void setup();
 
   KOKKOS_INLINE_FUNCTION
   size_t shmem_size (const int team_size) const {
@@ -112,10 +113,13 @@ struct GllFvRemapImpl {
 
   void run_dyn_to_fv_phys(const int time_idx, const Phys1T& ps, const Phys1T& phis,
                           const Phys2T& T, const Phys2T& omega, const Phys3T& uv,
-                          const Phys3T& q);
+                          const Phys3T& q, const Phys2T* dp);
   void run_fv_phys_to_dyn(const int time_idx, const CPhys2T& T, const CPhys3T& uv,
                           const CPhys3T& q);
   void run_fv_phys_to_dyn_dss();
+
+  void remap_tracer_dyn_to_fv_phys(const int time_idx, const int nq,
+                                   const CPhys3T& q_dyn, const Phys3T& q_fv);
 
   /* Compute pressure level increments on the FV grid given ps on the FV grid.
      Directly projecting dp_gll to dp_fv disagrees numerically with the loop in

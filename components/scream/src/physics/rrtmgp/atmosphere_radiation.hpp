@@ -19,6 +19,7 @@ public:
   using view_1d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_1d<Real>;
   using view_2d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_2d<Real>;
   using view_3d_real     = typename ekat::KokkosTypes<DefaultDevice>::template view_3d<Real>;
+  using view_2d_real_const = typename ekat::KokkosTypes<DefaultDevice>::template view_2d<const Real>;
   using ci_string        = ekat::CaseInsensitiveString;
 
   using KT               = ekat::KokkosTypes<DefaultDevice>;
@@ -34,13 +35,6 @@ public:
   // The name of the subcomponent
   std::string name () const { return "Radiation"; }
 
-  // Required grid for the subcomponent (??)
-  std::set<std::string> get_required_grids () const {
-      static std::set<std::string> s;
-      s.insert(m_params.get<std::string>("Grid"));
-      return s;
-  }
-
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grid_manager);
 
@@ -53,6 +47,9 @@ public:
 
   // Keep track of number of columns and levels
   int m_ncol;
+  int m_num_col_chunks;
+  int m_col_chunk_size;
+  std::vector<int> m_col_chunk_beg;
   int m_nlay;
   view_1d_real m_lat;
   view_1d_real m_lon;
@@ -79,12 +76,23 @@ public:
   // TODO: find a better way of configuring this
   const int m_nswbands = 14;
   const int m_nlwbands = 16;
+  int m_nswgpts;
+  int m_nlwgpts;
 
   // These are the gases that we keep track of
   int m_ngas;
   std::vector<ci_string>   m_gas_names;
   view_1d_real             m_gas_mol_weights;
-  GasConcs gas_concs;
+  GasConcs                 m_gas_concs;
+
+  // Prescribed greenhouse gas surface concentrations in moles / moles air
+  Real m_co2vmr;
+  Real m_n2ovmr;
+  Real m_ch4vmr;
+  Real m_f11vmr;
+  Real m_f12vmr;
+  Real m_n2vmr;
+  Real m_covmr;
 
   // Rad frequency in number of steps
   int m_rad_freq_in_steps;
@@ -102,6 +110,8 @@ public:
     static constexpr int num_3d_nlev_nlwbands = 2;
     static constexpr int num_3d_nlay_nswbands = 3;
     static constexpr int num_3d_nlay_nlwbands = 1;
+    static constexpr int num_3d_nlay_nswgpts = 1;
+    static constexpr int num_3d_nlay_nlwgpts = 1;
 
     // 1d size (ncol)
     real1d mu0;
@@ -164,6 +174,10 @@ public:
     real3d aero_ssa_sw;
     real3d aero_g_sw;
     real3d aero_tau_lw;
+
+    // 3d size (ncol, nlay, n[sw,lw]gpts)
+    real3d cld_tau_sw_gpt;
+    real3d cld_tau_lw_gpt;
   };
 
 protected:

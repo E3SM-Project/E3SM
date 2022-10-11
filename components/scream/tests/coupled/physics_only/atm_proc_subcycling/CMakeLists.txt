@@ -4,7 +4,7 @@ INCLUDE (ScreamUtils)
 CreateUnitTestExec (shoc_p3 shoc_p3.cpp "shoc;p3;scream_control")
 
 # Ensure test input files are present in the data dir
-GetInputFile(init/screami_ne2np4L72_20220524.nc)
+GetInputFile(init/${EAMxx_tests_IC_FILE_72lev})
 
 # Run a test with subcycling
 set (NUM_SUBCYCLES 3)
@@ -36,8 +36,8 @@ CreateUnitTestFromExec (shoc_p3_monolithic shoc_p3
 include (BuildCprnc)
 BuildCprnc()
 
-set (SRC_FILE "shoc_p3_monolithic.INSTANT.Steps_x3.nc")
-set (TGT_FILE "shoc_p3_subcycled.INSTANT.Steps_x1.nc")
+set (SRC_FILE "shoc_p3_monolithic.INSTANT.nsteps_x3.nc")
+set (TGT_FILE "shoc_p3_subcycled.INSTANT.nsteps_x1.nc")
 set (TEST_NAME check_subcycling)
 add_test (NAME ${TEST_NAME}
           COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}

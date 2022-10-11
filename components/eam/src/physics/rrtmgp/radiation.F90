@@ -677,21 +677,29 @@ contains
                         'Downwelling solar flux at surface', &
                         sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FUS'//diag(icall),  (/ 'ilev' /),  'A',  'W/m2', &
-                        'Shortwave upward flux')
+                        'Shortwave upward flux', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FDS'//diag(icall),  (/ 'ilev' /),  'A',  'W/m2', &
-                        'Shortwave downward flux')
+                        'Shortwave downward flux', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FDS_DIR'//diag(icall),  (/ 'ilev' /),  'A',  'W/m2', &
-                        'Shortwave direct-beam downward flux')
+                        'Shortwave direct-beam downward flux', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FNS'//diag(icall),  (/ 'ilev' /),  'A',  'W/m2', &
-                        'Shortwave net flux')
+                        'Shortwave net flux', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FUSC'//diag(icall),  (/ 'ilev' /), 'A',  'W/m2', &
-                        'Shortwave clear-sky upward flux')
+                        'Shortwave clear-sky upward flux', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FDSC'//diag(icall),  (/ 'ilev' /), 'A',  'W/m2', &
-                        'Shortwave clear-sky downward flux')
+                        'Shortwave clear-sky downward flux', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FDSC_DIR'//diag(icall),  (/ 'ilev' /), 'A',  'W/m2', &
-                        'Shortwave clear-sky direct-beam downward flux')
+                        'Shortwave clear-sky direct-beam downward flux', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FNSC'//diag(icall),  (/ 'ilev' /), 'A',  'W/m2', &
-                        'Shortwave clear-sky net flux')
+                        'Shortwave clear-sky net flux', &
+                        sampling_seq='rad_lwsw', flag_xyfill=.true.)
             call addfld('FSNIRTOA'//diag(icall), horiz_only, 'A', 'W/m2', &
                         'Net near-infrared flux (Nimbus-7 WFOV) at top of atmosphere', &
                         sampling_seq='rad_lwsw', flag_xyfill=.true.)
@@ -1389,12 +1397,12 @@ contains
                end if
 
                ! Check (and possibly clip) values before passing to RRTMGP driver
-               call handle_error(clip_values(cld_tau_gpt_sw,  0._r8, huge(cld_tau_gpt_sw), trim(subname) // ' cld_tau_gpt_sw', tolerance=1e-10_r8))
-               call handle_error(clip_values(cld_ssa_gpt_sw,  0._r8,                1._r8, trim(subname) // ' cld_ssa_gpt_sw', tolerance=1e-10_r8))
-               call handle_error(clip_values(cld_asm_gpt_sw, -1._r8,                1._r8, trim(subname) // ' cld_asm_gpt_sw', tolerance=1e-10_r8))
-               call handle_error(clip_values(aer_tau_bnd_sw,  0._r8, huge(aer_tau_bnd_sw), trim(subname) // ' aer_tau_bnd_sw', tolerance=1e-10_r8))
-               call handle_error(clip_values(aer_ssa_bnd_sw,  0._r8,                1._r8, trim(subname) // ' aer_ssa_bnd_sw', tolerance=1e-10_r8))
-               call handle_error(clip_values(aer_asm_bnd_sw, -1._r8,                1._r8, trim(subname) // ' aer_asm_bnd_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(cld_tau_gpt_sw(1:ncol,:,:),  0._r8, huge(cld_tau_gpt_sw), trim(subname) // ' cld_tau_gpt_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(cld_ssa_gpt_sw(1:ncol,:,:),  0._r8,                1._r8, trim(subname) // ' cld_ssa_gpt_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(cld_asm_gpt_sw(1:ncol,:,:), -1._r8,                1._r8, trim(subname) // ' cld_asm_gpt_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(aer_tau_bnd_sw(1:ncol,:,:),  0._r8, huge(aer_tau_bnd_sw), trim(subname) // ' aer_tau_bnd_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(aer_ssa_bnd_sw(1:ncol,:,:),  0._r8,                1._r8, trim(subname) // ' aer_ssa_bnd_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(aer_asm_bnd_sw(1:ncol,:,:), -1._r8,                1._r8, trim(subname) // ' aer_asm_bnd_sw', tolerance=1e-10_r8))
 
                ! Call the shortwave radiation driver
                call radiation_driver_sw( &
@@ -1482,8 +1490,8 @@ contains
                end if
 
                ! Check (and possibly clip) values before passing to RRTMGP driver
-               call handle_error(clip_values(cld_tau_gpt_lw,  0._r8, huge(cld_tau_gpt_lw), trim(subname) // ': cld_tau_gpt_lw', tolerance=1e-10_r8))
-               call handle_error(clip_values(aer_tau_bnd_lw,  0._r8, huge(aer_tau_bnd_lw), trim(subname) // ': aer_tau_bnd_lw', tolerance=1e-10_r8))
+               call handle_error(clip_values(cld_tau_gpt_lw(1:ncol,:,:),  0._r8, huge(cld_tau_gpt_lw), trim(subname) // ': cld_tau_gpt_lw', tolerance=1e-10_r8))
+               call handle_error(clip_values(aer_tau_bnd_lw(1:ncol,:,:),  0._r8, huge(aer_tau_bnd_lw), trim(subname) // ': aer_tau_bnd_lw', tolerance=1e-10_r8))
 
                ! Call the longwave radiation driver to calculate fluxes and heating rates
                call radiation_driver_lw( &

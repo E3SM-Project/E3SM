@@ -8,9 +8,9 @@ CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 set (TEST_LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
 set (NEED_LIBS cld_fraction shoc spa p3 scream_rrtmgp ${dynLibName} scream_control scream_share physics_share)
 CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp "homme_shoc_cld_spa_p3_rrtmgp.cpp" "${NEED_LIBS}"
-    LABELS ${TEST_LABELS}
-    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
-    PROPERTIES FIXTURES_SETUP homme_shoc_cld_spa_p3_rrtmgp_generate_output_nc_files
+  LABELS ${TEST_LABELS}
+  MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
+  PROPERTIES FIXTURES_SETUP homme_shoc_cld_spa_p3_rrtmgp_generate_output_nc_files
 )
 
 # Set AD configurable options
@@ -64,7 +64,7 @@ set (TEST_INPUT_FILES
   init/spa_init_ne2np4.nc
   init/map_ne4np4_to_ne2np4_mono.nc
   init/spa_file_unified_and_complete_ne4_20220428.nc
-  init/screami_ne2np4L72_20220524.nc
+  init/${EAMxx_tests_IC_FILE_72lev}
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
   GetInputFile(${file})
@@ -72,17 +72,17 @@ endforeach()
 
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
-## Only if max mpi ranks is >1
+## Only if running with 2+ ranks configurations
 # This test requires CPRNC
-if (SCREAM_TEST_MAX_RANKS GREATER 1)
+if (TEST_RANK_END GREATER TEST_RANK_START)
   include (BuildCprnc)
   BuildCprnc()
 
   set (BASE_TEST_NAME "homme_shoc_cld_spa_p3_rrtmgp")
-  foreach (MPI_RANKS RANGE 2 ${SCREAM_TEST_MAX_RANKS})
-    set (SRC_FILE "${BASE_TEST_NAME}_output.INSTANT.Steps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
-    set (TGT_FILE "${BASE_TEST_NAME}_output.INSTANT.Steps_x${NUM_STEPS}.np1.nc")
-    set (TEST_NAME "${BASE_TEST_NAME}_np1_vs_np${MPI_RANKS}_bfb")
+  foreach (MPI_RANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
+    set (SRC_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
+    set (TGT_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
+    set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_bfb")
     add_test (NAME ${TEST_NAME} 
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})

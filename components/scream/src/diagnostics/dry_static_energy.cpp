@@ -21,8 +21,8 @@ void DryStaticEnergyDiagnostic::set_grids(const std::shared_ptr<const GridsManag
   const auto m2 = m*m;
   const auto s2 = s*s;
 
-  const auto& grid_name = m_params.get<std::string>("Grid");
-  auto grid  = grids_manager->get_grid(grid_name);
+  auto grid  = grids_manager->get_grid("Physics");
+  const auto& grid_name = grid->name();
   m_num_cols = grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
@@ -45,15 +45,7 @@ void DryStaticEnergyDiagnostic::set_grids(const std::shared_ptr<const GridsManag
   m_diagnostic_output.allocate_view();
 }
 // =========================================================================================
-void DryStaticEnergyDiagnostic::initialize_impl(const RunType /* run_type */)
-{
-
-  auto ts = timestamp(); 
-  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
-
-}
-// =========================================================================================
-void DryStaticEnergyDiagnostic::run_impl(const int /* dt */)
+void DryStaticEnergyDiagnostic::compute_diagnostic_impl()
 {
 
   const auto npacks     = ekat::npack<Pack>(m_num_levs);
@@ -70,6 +62,7 @@ void DryStaticEnergyDiagnostic::run_impl(const int /* dt */)
   // Set surface geopotential for this diagnostic
   const Real surf_geopotential = 0.0;
 
+  const int num_levs = m_num_levs;
   view_1d dz("",npacks);
   view_1d z_int("",npacks_p1);
   view_1d z_mid("",npacks);
@@ -84,9 +77,9 @@ void DryStaticEnergyDiagnostic::run_impl(const int /* dt */)
       dz(jpack) = PF::calculate_dz(pseudo_density_mid(icol,jpack), p_mid(icol,jpack), T_mid(icol,jpack), qv_mid(icol,jpack));
     });
     team.team_barrier();
-    PF::calculate_z_int(team,m_num_levs,dz,surf_geopotential,z_int);
+    PF::calculate_z_int(team,num_levs,dz,surf_geopotential,z_int);
     team.team_barrier();
-    PF::calculate_z_mid(team,m_num_levs,z_int,z_mid);
+    PF::calculate_z_mid(team,num_levs,z_int,z_mid);
     team.team_barrier();
     const auto& dse_s = ekat::subview(dse,icol);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npacks), [&] (const Int& jpack) {
@@ -96,6 +89,8 @@ void DryStaticEnergyDiagnostic::run_impl(const int /* dt */)
   });
   Kokkos::fence();
 
+  const auto ts = get_field_in("T_mid").get_header().get_tracking().get_time_stamp();
+  m_diagnostic_output.get_header().get_tracking().update_time_stamp(ts);
 }
 // =========================================================================================
 } //namespace scream

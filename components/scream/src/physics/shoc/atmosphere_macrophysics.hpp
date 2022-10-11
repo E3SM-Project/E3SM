@@ -32,6 +32,7 @@ class SHOCMacrophysics : public scream::AtmosphereProcess
   using Spack                = typename SHF::Spack;
   using IntSmallPack         = typename SHF::IntSmallPack;
   using Smask                = typename SHF::Smask;
+  using view_1d_int          = typename KT::template view_1d<Int>;
   using view_1d              = typename SHF::view_1d<Real>;
   using view_1d_const        = typename SHF::view_1d<const Real>;
   using view_2d              = typename SHF::view_2d<SHF::Spack>;
@@ -59,13 +60,6 @@ public:
   // The name of the subcomponent
   std::string name () const { return "Macrophysics"; }
 
-  // Get the required grid for subcomponent
-  std::set<std::string> get_required_grids () const {
-    static std::set<std::string> s;
-    s.insert(m_params.get<std::string>("Grid"));
-    return s;
-  }
-
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
@@ -88,7 +82,27 @@ public:
       const Real inv_ggr = 1/ggr;
 
       const int nlev_packs = ekat::npack<Spack>(nlev);
+
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
+      /*---------------------------------------------------------------------------------
+       *Wet to dry mixing ratios:
+       *-------------------------
+       *Since tracers from the host model (or AD) are  wet mixing ratios and SHOC expects
+       *these tracers in dry mixing ratios, we convert the wet mixing ratios to dry mixing
+       *ratios for all the tracers *except* for qv [which is done after all the other tracers]
+       *and TKE [which is always defined in units of J/(kg of total air) and therefore
+       *should be considered to be "wet" when stored in the FM and also "wet" when used in
+       *SHOC].
+       *----------------------------------------------------------------------------------
+       */
+          //NOTE:Function calculate_drymmr_from_wetmmr takes 2 arguments: ( wet mmr and "wet"
+          //water vapor mixing ratio)
+          //Units of all tracers (except TKE and qv) will become [kg/kg(dry-air)] for mass and
+          //[#/kg(dry-air)] for number after the following conversion. qv will be converted
+          //to dry mmr in the next parallel for
+          for (Int iq = 0; iq < num_qtracers-2; ++iq)
+            qtracers(i,convert_wet_dry_idx_d(iq),k) = PF::calculate_drymmr_from_wetmmr(qtracers(i,convert_wet_dry_idx_d(iq),k), qv(i,k));
+
         const auto range = ekat::range<IntSmallPack>(k*Spack::n);
         const Smask in_nlev_range = (range < nlev);
 
@@ -97,6 +111,9 @@ public:
         const Smask nonzero = (exner != 0);
         EKAT_KERNEL_ASSERT((nonzero || !in_nlev_range).all());
         inv_exner(i,k).set(nonzero, 1/exner);
+
+        //At this point, convert qv to dry mmr, the units will become kg/kg(dry air)
+        qv(i,k) = PF::calculate_drymmr_from_wetmmr(qv(i,k), qv(i,k));
 
         tke(i,k) = ekat::max(sp(0.004), tke(i,k));
 
@@ -107,13 +124,13 @@ public:
         // to tracer group in postprocessing.
         // TODO: remove *_copy views once SHOC can request a subset of tracers.
         tke_copy(i,k) = tke(i,k);
-        qc_copy(i,k)  = qc(i,k);
+        qc_copy(i,k)  = qc(i,k); //at this point, qc should be dry mmr [kg/kg(dry air)]
 
 
         qw(i,k) = qv(i,k) + qc(i,k);
 
         // Temperature
-        const auto& theta_zt = PF::calculate_theta_from_T(T_mid(i,k),p_mid(i,k));
+        const auto theta_zt = PF::calculate_theta_from_T(T_mid(i,k),p_mid(i,k));
         thlm(i,k) = theta_zt-(theta_zt/T_mid(i,k))*(latvap/cpair)*qc(i,k);
         thv(i,k)  = theta_zt*(1 + zvir*qv(i,k) - qc(i,k));
 
@@ -126,9 +143,9 @@ public:
       team.team_barrier();
 
       // Compute vertical layer heights
-      const auto& dz_s    = ekat::subview(dz,    i);
-      const auto& z_int_s = ekat::subview(z_int, i);
-      const auto& z_mid_s = ekat::subview(z_mid, i);
+      const auto dz_s    = ekat::subview(dz,    i);
+      const auto z_int_s = ekat::subview(z_int, i);
+      const auto z_mid_s = ekat::subview(z_mid, i);
       PF::calculate_z_int(team,nlev,dz_s,z_surf,z_int_s);
       team.team_barrier();
       PF::calculate_z_mid(team,nlev,z_int_s,z_mid_s);
@@ -146,10 +163,10 @@ public:
       zi_grid(i,nlevi_v)[nlevi_p] = 0;
       team.team_barrier();
 
-      const auto& zt_grid_s = ekat::subview(zt_grid, i);
-      const auto& zi_grid_s = ekat::subview(zi_grid, i);
-      const auto& rrho_s    = ekat::subview(rrho, i);
-      const auto& rrho_i_s  = ekat::subview(rrho_i, i);
+      const auto zt_grid_s = ekat::subview(zt_grid, i);
+      const auto zi_grid_s = ekat::subview(zi_grid, i);
+      const auto rrho_s    = ekat::subview(rrho, i);
+      const auto rrho_i_s  = ekat::subview(rrho_i, i);
       SHF::linear_interp(team,zt_grid_s,zi_grid_s,rrho_s,rrho_i_s,nlev,nlev+1,0);
       team.team_barrier();
 
@@ -158,11 +175,10 @@ public:
       // if we have dy!=dx.
       cell_length(i) = PF::calculate_dx_from_area(area(i),lat(i));
 
-      const auto& exner_int = PF::exner_function(p_int(i,nlevi_v)[nlevi_p]);
-      const auto& inv_exner_int_surf = 1/exner_int;
+      const auto exner_int = PF::exner_function(p_int(i,nlevi_v)[nlevi_p]);
+      const auto inv_exner_int_surf = 1/exner_int;
 
-      wpthlp_sfc(i) = surf_sens_flux(i)/(cpair*rrho_i(i,nlevi_v)[nlevi_p]);
-      wpthlp_sfc(i) = wpthlp_sfc(i)*inv_exner_int_surf;
+      wpthlp_sfc(i) = (surf_sens_flux(i)/(cpair*rrho_i(i,nlevi_v)[nlevi_p]))*inv_exner_int_surf;
       wprtp_sfc(i)  = surf_evap(i)/rrho_i(i,nlevi_v)[nlevi_p];
       upwp_sfc(i)   = surf_mom_flux(i,0)/rrho_i(i,nlevi_v)[nlevi_p];
       vpwp_sfc(i)   = surf_mom_flux(i,1)/rrho_i(i,nlevi_v)[nlevi_p];
@@ -176,6 +192,7 @@ public:
     // Local variables
     int ncol, nlev, num_qtracers;
     Real z_surf;
+    view_1d_int          convert_wet_dry_idx_d;
     view_1d_const        area;
     view_1d_const        lat;
     view_2d_const        T_mid;
@@ -187,7 +204,8 @@ public:
     view_1d_const        surf_sens_flux;
     view_1d_const        surf_evap;
     sview_2d_const       surf_mom_flux;
-    view_2d_const        qv;
+    view_3d              qtracers;
+    view_2d              qv;
     view_2d_const        qc;
     view_2d              qc_copy;
     view_2d              z_mid;
@@ -214,13 +232,16 @@ public:
     view_2d              cloud_frac;
 
     // Assigning local variables
-    void set_variables(const int ncol_, const int nlev_, const int num_qtracers_, const Real z_surf_,
+    void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
+                       const view_1d_int& convert_wet_dry_idx_d_,
+                       const Real z_surf_,
                        const view_1d_const& area_, const view_1d_const& lat_,
                        const view_2d_const& T_mid_, const view_2d_const& p_mid_, const view_2d_const& p_int_, const view_2d_const& pseudo_density_,
                        const view_2d_const& omega_,
                        const view_1d_const& phis_, const view_1d_const& surf_sens_flux_, const view_1d_const& surf_evap_,
                        const sview_2d_const& surf_mom_flux_,
-                       const view_2d_const& qv_, const view_2d_const& qc_, const view_2d& qc_copy_,
+                       const view_3d& qtracers_,
+                       const view_2d& qv_, const view_2d_const& qc_, const view_2d& qc_copy_,
                        const view_2d& tke_, const view_2d& tke_copy_,
                        const view_2d& z_mid_, const view_2d& z_int_,
                        const view_1d& cell_length_,
@@ -232,6 +253,7 @@ public:
       ncol = ncol_;
       nlev = nlev_;
       num_qtracers = num_qtracers_;
+      convert_wet_dry_idx_d = convert_wet_dry_idx_d_;
       z_surf = z_surf_;
       // IN
       area = area_;
@@ -247,6 +269,7 @@ public:
       surf_mom_flux = surf_mom_flux_;
       qv = qv_;
       // OUT
+      qtracers = qtracers_;
       qc = qc_;
       qc_copy = qc_copy_;
       shoc_s = dse_;
@@ -284,10 +307,12 @@ public:
     void operator()(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) const {
       const int i = team.league_rank();
 
-      const Real cpair = C::Cpair;
       const Real inv_qc_relvar_max = 10;
       const Real inv_qc_relvar_min = 0.001;
 
+      //In the following loop, tke, qc and qv are updated. All these variables are slices of "qtracers" array
+      //After these updates, all tracers (except TKE) in the qtarcers array will be converted
+      //from dry mmr to wet mmr
       const int nlev_packs = ekat::npack<Spack>(nlev);
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_packs), [&] (const Int& k) {
         // See comment in SHOCPreprocess::operator() about the necessity of *_copy views
@@ -301,6 +326,7 @@ public:
         inv_qc_relvar(i,k) = 1;
         const auto condition = (qc(i,k) != 0 && qc2(i,k) != 0);
         if (condition.any()) {
+          //inv_qc_relvar is used in P3 and is computed here using qc and qc2, which are in dry mmr
           inv_qc_relvar(i,k).set(condition,
                                  ekat::min(inv_qc_relvar_max,
                                            ekat::max(inv_qc_relvar_min,
@@ -312,14 +338,36 @@ public:
         const Spack z_mid_ik(z_mid(i,k));
         const Real  phis_i(phis(i));
         T_mid(i,k) = PF::calculate_temperature_from_dse(dse_ik,z_mid_ik,phis_i);
+
+
+      /*--------------------------------------------------------------------------------
+       *DRY-TO-WET MMRs:
+       *-----------------
+       *Since the host model (or AD) expects wet mixing ratios, we need to convert dry
+       *mixing ratios from SHOC to wet mixing ratios except for qv[which will be converted
+       *in the following "parallel for" after all the other tracers] and TKE [which is
+       already in wet mmr].
+       *---------------------------------------------------------------------------------
+       */
+
+          //NOTE:Function calculate_wetmmr_from_drymmr takes 2 arguments: ( dry mmr and "dry"
+          //water vapor mixing ratio)
+          //Units of all tracers (except TKE and qv) will become [kg/kg(wet-air)] for mass and
+          //[#/kg(wet-air)] for number after the following conversion. qv will be converted
+          //to wet mmr in the next parallel for
+          for (Int iq = 0; iq < num_qtracers-2; ++iq)
+            qtracers(i,convert_wet_dry_idx_d(iq),k) = PF::calculate_wetmmr_from_drymmr(qtracers(i,convert_wet_dry_idx_d(iq),k), qv(i,k));
+          qv(i,k) = PF::calculate_wetmmr_from_drymmr(qv(i,k), qv(i,k));
       });
     } // operator
 
     // Local variables
-    int ncol, nlev;
+    int ncol, nlev, num_qtracers;
+    view_1d_int convert_wet_dry_idx_d;
     view_2d_const rrho;
     view_2d qv, qc, tke;
     view_2d_const tke_copy, qc_copy, qw;
+    view_3d qtracers;
     view_2d_const qc2;
     view_2d cldfrac_liq;
     view_2d inv_qc_relvar;
@@ -328,15 +376,18 @@ public:
     view_1d_const phis;
 
     // Assigning local variables
-    void set_variables(const int ncol_, const int nlev_,
+    void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
+                       const view_1d_int& convert_wet_dry_idx_d_,
                        const view_2d_const& rrho_,
                        const view_2d& qv_, const view_2d_const& qw_, const view_2d& qc_, const view_2d_const& qc_copy_,
-                       const view_2d& tke_, const view_2d_const& tke_copy_, const view_2d_const& qc2_,
+                       const view_2d& tke_, const view_2d_const& tke_copy_, const view_3d& qtracers_, const view_2d_const& qc2_,
                        const view_2d& cldfrac_liq_, const view_2d& inv_qc_relvar_,
                        const view_2d& T_mid_, const view_2d_const& dse_, const view_2d_const& z_mid_, const view_1d_const phis_)
     {
       ncol = ncol_;
       nlev = nlev_;
+      num_qtracers = num_qtracers_;
+      convert_wet_dry_idx_d = convert_wet_dry_idx_d_;
       rrho = rrho_;
       qv = qv_;
       qw = qw_;
@@ -344,6 +395,7 @@ public:
       qc_copy = qc_copy_;
       tke = tke_;
       tke_copy = tke_copy_;
+      qtracers = qtracers_;
       qc2 = qc2_;
       cldfrac_liq = cldfrac_liq_;
       inv_qc_relvar = inv_qc_relvar_;
@@ -357,16 +409,19 @@ public:
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
-    static constexpr int num_1d_scalar     = 5;
-    static constexpr int num_2d_vector_mid = 18;
-    static constexpr int num_2d_vector_int = 12;
-    static constexpr int num_2d_vector_tr  = 1;
+    static constexpr int num_1d_scalar_ncol = 5;
+    static constexpr int num_1d_scalar_nlev = 1;
+    static constexpr int num_2d_vector_mid  = 18;
+    static constexpr int num_2d_vector_int  = 12;
+    static constexpr int num_2d_vector_tr   = 1;
 
     uview_1d<Real> cell_length;
     uview_1d<Real> wpthlp_sfc;
     uview_1d<Real> wprtp_sfc;
     uview_1d<Real> upwp_sfc;
     uview_1d<Real> vpwp_sfc;
+
+    uview_1d<Spack> pref_mid;
 
     uview_2d<Spack> z_mid;
     uview_2d<Spack> z_int;
@@ -403,11 +458,15 @@ public:
     Spack* wsm_data;
   };
 
+#ifndef KOKKOS_ENABLE_CUDA
+  // Cuda requires methods enclosing __device__ lambda's to be public
+protected:
+#endif
+
+  void initialize_impl (const RunType run_type);
 
 protected:
 
-  // The three main interfaces for the subcomponent
-  void initialize_impl (const RunType run_type);
   void run_impl        (const int dt);
   void finalize_impl   ();
 

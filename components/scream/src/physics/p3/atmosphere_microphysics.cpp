@@ -38,8 +38,8 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   Units nondim(0,0,0,0,0,0,0);
   auto micron = m / 1000000;
 
-  const auto& grid_name = m_params.get<std::string>("Grid");
-  m_grid = grids_manager->get_grid(grid_name);
+  m_grid = grids_manager->get_grid("Physics");
+  const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
 
@@ -71,7 +71,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 
   // These variables are needed by the interface, but not actually passed to p3_main. 
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name, ps);
-  add_field<Required>("p_mid",       scalar3d_layout_mid, Pa,     grid_name, ps);
+  add_field<Required>("p_dry_mid",   scalar3d_layout_mid, Pa,     grid_name, ps);
   add_field<Updated> ("T_mid",       scalar3d_layout_mid, K,      grid_name, ps);  // T_mid is the only one of these variables that is also updated.
 
   // Prognostic State:  (all fields are both input and output)
@@ -92,7 +92,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   }
   add_field<Required>("ni_activated",       scalar3d_layout_mid, 1/kg,     grid_name, ps);
   add_field<Required>("inv_qc_relvar",      scalar3d_layout_mid, Q*Q,      grid_name, ps);
-  add_field<Required>("pseudo_density",     scalar3d_layout_mid, Pa,       grid_name, ps);
+  add_field<Required>("pseudo_density_dry", scalar3d_layout_mid, Pa,       grid_name, ps);
   add_field<Updated> ("qv_prev_micro_step", scalar3d_layout_mid, Q,        grid_name, ps);
   add_field<Updated> ("T_prev_micro_step",  scalar3d_layout_mid, K,        grid_name, ps);
 
@@ -198,15 +198,15 @@ void P3Microphysics::init_buffers(const ATMBufferManager &buffer_manager)
 void P3Microphysics::initialize_impl (const RunType /* run_type */)
 {
   // Set property checks for fields in this process
-  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,140.0,500.0,false);
+  add_invariant_check<FieldWithinIntervalCheck>(get_field_out("T_mid"),m_grid,130.0,500.0,false);
   add_invariant_check<FieldWithinIntervalCheck>(get_field_out("qv"),m_grid,1e-13,0.2,true);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qc"),m_grid,0.0,0.1,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qi"),m_grid,0.0,0.1,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qr"),m_grid,0.0,0.1,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("qm"),m_grid,0.0,0.1,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nc"),m_grid,0.0,1.e11,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nr"),m_grid,0.0,1.e9,false);
-  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("ni"),m_grid,0.0,1.e9,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("nr"),m_grid,0.0,1.e10,false);
+  add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("ni"),m_grid,0.0,1.e10,false);
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("bm"),m_grid,0.0,1.0,false);
   // The following checks on precip have been changed to lower bound checks, from an interval check.
   // TODO: Change back to interval check when it is possible to pass dt_atm for the check.  Because
@@ -224,8 +224,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   //       variables a local view is constructed.
   const Int nk_pack = ekat::npack<Spack>(m_num_levs);
   const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
-  const  auto& pmid           = get_field_in("p_mid").get_view<const Pack**>();
-  const  auto& pseudo_density = get_field_in("pseudo_density").get_view<const Pack**>();
+  const  auto& pmid           = get_field_in("p_dry_mid").get_view<const Pack**>();
+  const  auto& pseudo_density = get_field_in("pseudo_density_dry").get_view<const Pack**>();
   const  auto& T_atm          = get_field_out("T_mid").get_view<Pack**>();
   const  auto& cld_frac_t     = get_field_in("cldfrac_tot").get_view<const Pack**>();
   const  auto& qv             = get_field_out("qv").get_view<Pack**>();
@@ -273,7 +273,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   }
   diag_inputs.ni_activated    = get_field_in("ni_activated").get_view<const Pack**>();
   diag_inputs.inv_qc_relvar   = get_field_in("inv_qc_relvar").get_view<const Pack**>();
-  diag_inputs.pres            = get_field_in("p_mid").get_view<const Pack**>();
+  diag_inputs.pres            = get_field_in("p_dry_mid").get_view<const Pack**>();
   diag_inputs.dpres           = p3_preproc.pseudo_density;
   diag_inputs.qv_prev         = p3_preproc.qv_prev;
   auto t_prev                 = get_field_out("T_prev_micro_step").get_view<Pack**>();

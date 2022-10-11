@@ -64,16 +64,23 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     m_fields_names = params.get<vos_t>("Field Names");
   } else if (params.isSublist("Fields")){
     const auto& f_pl = params.sublist("Fields");
-    const auto& grid_name = io_grid->name(); 
-    if (f_pl.isSublist(grid_name)) {
-      const auto& pl = f_pl.sublist(grid_name);
-      m_fields_names = pl.get<vos_t>("Field Names");
+    const auto& io_grid_aliases = io_grid->aliases();
+    bool names_found = false;
+    for (const auto& grid_name : io_grid_aliases) {
+      if (f_pl.isSublist(grid_name)) {
+        const auto& pl = f_pl.sublist(grid_name);
+        m_fields_names = pl.get<vos_t>("Field Names");
+        names_found = true;
 
-      // Check if the user wants to remap fields on a different grid first
-      if (pl.isParameter("IO Grid Name")) {
-        io_grid = grids_mgr->get_grid(pl.get<std::string>("IO Grid Name"));
+        // Check if the user wants to remap fields on a different grid first
+        if (pl.isParameter("IO Grid Name")) {
+          io_grid = grids_mgr->get_grid(pl.get<std::string>("IO Grid Name"));
+        }
+        break;
       }
     }
+    EKAT_REQUIRE_MSG (names_found,
+        "Error! Bad formatting of output yaml file. Missing 'Fields->$grid_name` sublist.\n");
   }
 
   // Try to set the IO grid (checks will be performed)
@@ -292,7 +299,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
       // Bring data to host
       auto view_host = m_host_views_1d.at(name);
       Kokkos::deep_copy (view_host,view_dev);
-      grid_write_data_array(filename,name,view_host.data());
+      grid_write_data_array(filename,name,view_host.data(),view_host.size());
     }
   }
 } // run
@@ -434,28 +441,40 @@ void AtmosphereOutput::register_views()
       m_dev_views_1d.emplace(name,view_1d_dev("",size));
       m_host_views_1d.emplace(name,Kokkos::create_mirror(m_dev_views_1d[name]));
 
-      // Init dev view with an "identity" for avg_type
-      switch (m_avg_type) {
-        case OutputAvgType::Instant:
-          // No averaging
-          break;
-        case OutputAvgType::Max:
-          Kokkos::deep_copy(m_dev_views_1d[name],-std::numeric_limits<Real>::infinity());
-          break;
-        case OutputAvgType::Min:
-          Kokkos::deep_copy(m_dev_views_1d[name],std::numeric_limits<Real>::infinity());
-          break;
-        case OutputAvgType::Average:
-          Kokkos::deep_copy(m_dev_views_1d[name],0);
-          break;
-        default:
-          EKAT_ERROR_MSG ("Unrecognized averaging type.\n");
-      }
+    }
+  }
+  // Initialize the local views
+  reset_dev_views();
+}
+/* ---------------------------------------------------------- */
+void AtmosphereOutput::
+reset_dev_views()
+{
+  // Reset the local device views depending on the averaging type
+  // Init dev view with an "identity" for avg_type
+  for (auto const& name : m_fields_names) {
+    switch (m_avg_type) {
+      case OutputAvgType::Instant:
+        // No averaging
+        break;
+      case OutputAvgType::Max:
+        Kokkos::deep_copy(m_dev_views_1d[name],-std::numeric_limits<Real>::infinity());
+        break;
+      case OutputAvgType::Min:
+        Kokkos::deep_copy(m_dev_views_1d[name],std::numeric_limits<Real>::infinity());
+        break;
+      case OutputAvgType::Average:
+        Kokkos::deep_copy(m_dev_views_1d[name],0);
+        break;
+      default:
+        EKAT_ERROR_MSG ("Unrecognized averaging type.\n");
     }
   }
 }
 /* ---------------------------------------------------------- */
-void AtmosphereOutput::register_variables(const std::string& filename)
+void AtmosphereOutput::
+register_variables(const std::string& filename,
+                   const std::string& fp_precision)
 {
   using namespace scorpio;
 
@@ -463,8 +482,14 @@ void AtmosphereOutput::register_variables(const std::string& filename)
   for (auto const& name : m_fields_names) {
     auto field = get_field(name);
     auto& fid  = field.get_header().get_identifier();
-    // Determine the IO-decomp and construct a vector of dimension ids for this variable:
-    std::string io_decomp_tag = "Real";  // Note, for now we only assume REAL variables.  This may change in the future.
+    // Make a unique tag for each decomposition. To reuse decomps successfully,
+    // we must be careful to make the tags 1-1 with the intended decomp. Here we
+    // use the I/O grid name and its global #DOFs, then append the local
+    // dimension data.
+    //   We use real here because the data type for the decomp is the one used
+    // in the simulation and not the one used in the output file.
+    std::string io_decomp_tag = (std::string("Real-") + m_io_grid->name() + "-" +
+                                 std::to_string(m_io_grid->get_num_global_dofs()));
     std::vector<std::string> vec_of_dims;
     const auto& layout = fid.get_layout();
     std::string units = to_string(fid.get_units());
@@ -490,13 +515,16 @@ void AtmosphereOutput::register_variables(const std::string& filename)
      // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
     // but in the future if non-Real variables are added we will want to accomodate that.
-    register_variable(filename, name, name, units, vec_of_dims.size(), vec_of_dims, PIO_REAL, io_decomp_tag);
+
+    register_variable(filename, name, name, units, vec_of_dims,
+                      "real",fp_precision, io_decomp_tag);
   }
 } // register_variables
 /* ---------------------------------------------------------- */
-std::vector<int> AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
+std::vector<scorpio::offset_t>
+AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
 {
-  std::vector<int> var_dof(layout.size());
+  std::vector<scorpio::offset_t> var_dof(layout.size());
 
   // Gather the offsets of the dofs of this variable w.r.t. the *global* array.
   // Since we order the global array based on dof gid, and we *assume* (we actually
@@ -517,7 +545,7 @@ std::vector<int> AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
-    int col_size = layout.size() / num_cols;
+    scorpio::offset_t col_size = layout.size() / num_cols;
 
     auto dofs = m_io_grid->get_dofs_gids();
     auto dofs_h = Kokkos::create_mirror_view(dofs);
@@ -545,7 +573,7 @@ std::vector<int> AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
-    int col_size = layout.size() / num_cols;
+    scorpio::offset_t col_size = layout.size() / num_cols;
 
     auto dofs = m_io_grid->get_dofs_gids();
     auto dofs_h = Kokkos::create_mirror_view(dofs);
@@ -594,7 +622,9 @@ void AtmosphereOutput::set_degrees_of_freedom(const std::string& filename)
   */
 } // set_degrees_of_freedom
 /* ---------------------------------------------------------- */
-void AtmosphereOutput::setup_output_file(const std::string& filename)
+void AtmosphereOutput::
+setup_output_file(const std::string& filename,
+                  const std::string& fp_precision)
 {
   using namespace scream::scorpio;
 
@@ -604,7 +634,7 @@ void AtmosphereOutput::setup_output_file(const std::string& filename)
   }
 
   // Register variables with netCDF file.  Must come after dimensions are registered.
-  register_variables(filename);
+  register_variables(filename,fp_precision);
 
   // Set the offsets of the local dofs in the global vector.
   set_degrees_of_freedom(filename);
@@ -615,14 +645,17 @@ void AtmosphereOutput::setup_output_file(const std::string& filename)
 // manager.  If not it will next check to see if it is in the list
 // of available diagnostics.  If neither of these two options it
 // will throw an error.
-Field AtmosphereOutput::get_field(const std::string& name, const bool eval_diagnostic)
+Field AtmosphereOutput::get_field(const std::string& name, const bool eval_diagnostic) const
 {
   if (m_field_mgr->has_field(name)) {
     return m_field_mgr->get_field(name);
   } else if (m_diagnostics.find(name) != m_diagnostics.end()) {
-    const auto& diag = m_diagnostics[name];
+    const auto& diag = m_diagnostics.at(name);
     if (eval_diagnostic) {
-      diag->run();
+      for (const auto& dep : m_diag_depends_on_diags.at(name)) {
+        get_field(dep,eval_diagnostic);
+      }
+      diag->compute_diagnostic();
     }
     return diag->get_diagnostic();
   } else {
@@ -632,37 +665,73 @@ Field AtmosphereOutput::get_field(const std::string& name, const bool eval_diagn
 /* ---------------------------------------------------------- */
 void AtmosphereOutput::set_diagnostics()
 {
-  auto& diag_factory = AtmosphereDiagnosticFactory::instance();
+  // Create all diagnostics
   for (const auto& fname : m_fields_names) {
     if (!m_field_mgr->has_field(fname)) {
-      // Construct a diagnostic by this name
-      ekat::ParameterList params;
-      params.set<std::string>("Diagnostic Name", fname);
-      const auto grid_name = m_io_grid->name(); 
-      params.set<std::string>("Grid", grid_name);
-      auto diag = diag_factory.create(fname,m_comm,params);
-      diag->set_grids(m_grids_manager);
-      m_diagnostics.emplace(fname,diag);
+      create_diagnostic(fname);
     }
   }
+
   // Set required fields for all diagnostics
+  // NOTE: do this *after* creating all diags: in case the required
+  //       field of certain diagnostics is itself a diagnostic,
+  //       we want to make sure the required ones are all built.
   for (const auto& dd : m_diagnostics) {
     const auto& diag = dd.second;
-    // TimeStamp control
-    util::TimeStamp t0;
-    bool t0_set = false;
     for (const auto& req : diag->get_required_field_requests()) {
-      // Any required fields should be in the field manager, so we can gather
-      // the TimeStamp for initialization from the first of these.
       const auto& req_field = get_field(req.fid.name());
-      if (!t0_set) {
-        t0 = req_field.get_header().get_tracking().get_time_stamp();
-        t0_set = true;
-      }
       diag->set_required_field(req_field.get_const());
     }
-    diag->initialize(t0,RunType::Initial);
+
+    // Note: this inits with an invalid timestamp. If by any chance we try to
+    //       output the diagnostic without computing it, we'll get an error.
+    diag->initialize(util::TimeStamp(),RunType::Initial);
   }
+}
+
+void AtmosphereOutput::
+create_diagnostic (const std::string& diag_field_name) {
+  auto& diag_factory = AtmosphereDiagnosticFactory::instance();
+
+  // Construct a diagnostic by this name
+  ekat::ParameterList params;
+  std::string diag_name;
+
+  // If the diagnostic is $field@lev$N/$field_bot/$field_top,
+  // then we need to set some params
+  auto tokens = ekat::split(diag_field_name,'@');
+  auto last = tokens.back();
+
+  auto lev_and_idx = ekat::split(last,'_');
+  if (last=="tom" || last=="bot" || lev_and_idx.size()==2) {
+    diag_name = "FieldAtLevel";
+    tokens.pop_back();
+    auto fname = ekat::join(tokens,"_");
+    // If the field is itself a diagnostic, make sure it's built
+    if (diag_factory.has_product(fname) and
+        m_diagnostics.count(fname)==0) {
+      create_diagnostic(fname);
+      m_diag_depends_on_diags[diag_field_name].push_back(fname);
+    } else {
+      m_diag_depends_on_diags[diag_field_name].resize(0);
+    }
+    auto fid = get_field(fname).get_header().get_identifier();
+    params.set("Field Name", fname);
+    params.set("Grid Name",fid.get_grid_name());
+    params.set("Field Layout",fid.get_layout());
+    params.set("Field Units",fid.get_units());
+
+    // If last is bot or top, will simply use that
+    params.set("Field Level", lev_and_idx.back());
+  } else {
+    diag_name = diag_field_name;
+    m_diag_depends_on_diags[diag_field_name].resize(0);
+  }
+
+  // Create the diagnostic
+  auto diag = diag_factory.create(diag_name,m_comm,params);
+  diag->set_grids(m_grids_manager);
+  m_diagnostics.emplace(diag_field_name,diag);
 }
 
 } // namespace scream

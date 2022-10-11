@@ -39,7 +39,9 @@ enum class FieldTag {
   // Added for RRTMGP, TODO: Revisit this approach, is there a better way than adding more field tags?
   Gases,
   ShortWaveBand,
-  LongWaveBand
+  ShortWaveGpoint,
+  LongWaveBand,
+  LongWaveGpoint
 };
 
 inline std::string e2str (const FieldTag ft) {
@@ -85,8 +87,14 @@ inline std::string e2str (const FieldTag ft) {
     case FieldTag::ShortWaveBand:
       name = "SWBND";
       break;
+    case FieldTag::ShortWaveGpoint:
+      name = "SWGPT";
+      break;
     case FieldTag::LongWaveBand:
       name = "LWBND";
+      break;
+    case FieldTag::LongWaveGpoint:
+      name = "LWGPT";
       break;
     default:
       EKAT_ERROR_MSG("Error! Unrecognized field tag.");
@@ -115,6 +123,8 @@ namespace ShortFieldTagsNames {
   constexpr auto NGAS = FieldTag::Gases;
   constexpr auto SWBND = FieldTag::ShortWaveBand;
   constexpr auto LWBND = FieldTag::LongWaveBand;
+  constexpr auto SWGPT = FieldTag::ShortWaveGpoint;
+  constexpr auto LWGPT = FieldTag::LongWaveGpoint;
 }
 
 } // namespace scream

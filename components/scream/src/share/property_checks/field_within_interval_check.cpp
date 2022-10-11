@@ -13,9 +13,13 @@ FieldWithinIntervalCheck (const Field& f,
                           const std::shared_ptr<const AbstractGrid>& grid,
                           const double lower_bound,
                           const double upper_bound,
-                          const bool can_repair)
- : m_lower_bound(lower_bound)
- , m_upper_bound(upper_bound)
+                          const bool can_repair,
+                          const double lb_repairable,
+                          const double ub_repairable)
+ : m_lb(lower_bound)
+ , m_ub(upper_bound)
+ , m_lb_repairable(lower_bound)
+ , m_ub_repairable(upper_bound)
  , m_grid (grid)
 {
   // Sanity checks
@@ -37,18 +41,42 @@ FieldWithinIntervalCheck (const Field& f,
       "  - Input grid name: " + grid->name() + "\n");
 
   set_fields ({f},{can_repair});
+
+  if (can_repair) {
+    std::stringstream lb, lbrep;
+    lb << m_lb;
+    lbrep << lb_repairable;
+    EKAT_REQUIRE_MSG (lb_repairable<=m_lb,
+        "Error! The repairable lower bound is tighter than the lower bound.\n"
+        "       The idea is that the check fails, but it is still repairable\n"
+        "       if lb_repairable <= F < lb.\n"
+        "  - Lower bound: " + lb.str() + "\n"
+        "  - Repairable lower bound: " + lbrep.str() + "\n");
+    std::stringstream ub, ubrep;
+    ub << m_ub;
+    ubrep << ub_repairable;
+    EKAT_REQUIRE_MSG (ub_repairable>=m_ub,
+        "Error! The repairable upper bound is tighter than the upper bound.\n"
+        "       The idea is that the check fails, but it is still repairable\n"
+        "       if ub < F <= ub_repairable.\n"
+        "  - Upper bound: " + ub.str() + "\n"
+        "  - Repairable upper bound: " + ubrep.str() + "\n");
+
+    m_ub_repairable = ub_repairable;
+    m_lb_repairable = lb_repairable;
+  }
 }
 
 std::string FieldWithinIntervalCheck::name () const {
   // NOTE: std::to_string does not do a good job with small numbers (like 1e-9).
   std::stringstream ss;
   ss << fields().front().name()
-    << " within interval [" << m_lower_bound << ", " << m_upper_bound << "]";
+     << " within interval [" << m_lb << ", " << m_ub << "]";
   return ss.str();
 }
 
 template<typename ST>
-PropertyCheck::CheckResult FieldWithinIntervalCheck::check_impl () const
+PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
 {
   using const_ST    = typename std::add_const<ST>::type;
   using nonconst_ST = typename std::remove_const<ST>::type;
@@ -168,16 +196,24 @@ PropertyCheck::CheckResult FieldWithinIntervalCheck::check_impl () const
           "Internal error in FieldWithinIntervalCheck: unsupported field rank.\n"
           "You should not have reached this line. Please, contact developers.\n");
   }
-  PropertyCheck::CheckResult check_result;
-  check_result.pass = minmaxloc.min_val>=m_lower_bound && minmaxloc.max_val<=m_upper_bound;
-  if (not check_result.pass) {
-    check_result.msg  = "Check failed.\n";
-    check_result.msg += "  - check name: " + this->name() + "\n";
-    check_result.msg += "  - field id: " + f.get_header().get_identifier().get_id_string() + "\n";
+  PropertyCheck::ResultAndMsg res_and_msg;
+  
+  if (minmaxloc.min_val>=m_lb && minmaxloc.max_val<=m_ub) {
+    res_and_msg.result = CheckResult::Pass;
+  } else if  (minmaxloc.min_val<m_lb_repairable || minmaxloc.max_val>m_ub_repairable) {
+    res_and_msg.result = CheckResult::Fail;
   } else {
-    check_result.msg  = "Check passed.\n";
-    check_result.msg += "  - check name:" + this->name() + "\n";
-    check_result.msg += "  - field id: " + f.get_header().get_identifier().get_id_string() + "\n";
+    res_and_msg.result = CheckResult::Repairable;
+  }
+
+  if (res_and_msg.result == CheckResult::Pass) {
+    res_and_msg.msg  = "Check passed.\n";
+    res_and_msg.msg += "  - check name:" + this->name() + "\n";
+    res_and_msg.msg += "  - field id: " + f.get_header().get_identifier().get_id_string() + "\n";
+  } else {
+    res_and_msg.msg  = "Check failed.\n";
+    res_and_msg.msg += "  - check name: " + this->name() + "\n";
+    res_and_msg.msg += "  - field id: " + f.get_header().get_identifier().get_id_string() + "\n";
   }
 
   auto idx_min = unflatten_idx(layout.dims(),minmaxloc.min_loc);
@@ -209,7 +245,7 @@ PropertyCheck::CheckResult FieldWithinIntervalCheck::check_impl () const
   if (has_col_info) {
     msg << "    - entry: (" << gids(min_col_lid);
     for (size_t i=1; i<idx_min.size(); ++i) {
-      msg << "," << i;
+      msg << "," << idx_min[i];
     }
     msg << ")\n";
     if (has_latlon) {
@@ -222,7 +258,7 @@ PropertyCheck::CheckResult FieldWithinIntervalCheck::check_impl () const
   if (has_col_info) {
     msg << "    - entry: (" << gids(max_col_lid);
     for (size_t i=1; i<idx_max.size(); ++i) {
-      msg << "," << i;
+      msg << "," << idx_max[i];
     }
     msg << ")\n";
     if (has_latlon) {
@@ -230,12 +266,12 @@ PropertyCheck::CheckResult FieldWithinIntervalCheck::check_impl () const
     }
   }
 
-  check_result.msg += msg.str();
+  res_and_msg.msg += msg.str();
 
-  return check_result;
+  return res_and_msg;
 }
 
-PropertyCheck::CheckResult FieldWithinIntervalCheck::check() const {
+PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check() const {
   const auto& f = fields().front();
   switch (f.data_type()) {
     case DataType::IntType:
@@ -262,8 +298,8 @@ void FieldWithinIntervalCheck::repair_impl() const
   const auto extents = layout.extents();
   const auto size = layout.size();
 
-  ST lb = m_lower_bound;
-  ST ub = m_upper_bound;
+  ST lb = m_lb;
+  ST ub = m_ub;
   switch (layout.rank()) {
     case 1:
       {

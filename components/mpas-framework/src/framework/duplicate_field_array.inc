@@ -7,7 +7,7 @@
             local_copy_only = .false.
          end if
 
-         
+
          src_cursor => src
          if (.not. local_copy_only) then
             nullify(dst_cursor)
@@ -41,6 +41,10 @@
                if ( associated( src_cursor % constituentNames ) ) then
                   allocate(dst_cursor % constituentNames(size(src_cursor % constituentNames, dim=1)))
                   dst_cursor % constituentNames(:) = src_cursor % constituentNames(:)
+               end if
+               if ( associated( src_cursor % outputConstituentNames ) ) then
+                  allocate(dst_cursor % outputConstituentNames(size(src_cursor % outputConstituentNames, dim=1)))
+                  dst_cursor % outputConstituentNames(:) = src_cursor % outputConstituentNames(:)
                end if
                dst_cursor % isPersistent = src_cursor % isPersistent
                dst_cursor % isActive = src_cursor % isActive

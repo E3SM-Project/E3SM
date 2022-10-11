@@ -77,12 +77,7 @@ subfield (const std::string& sf_name, const ekat::units::Units& sf_units,
         "Error! Subview dimension index must be either 0 or 1.\n");
 
   // Create identifier for subfield
-  std::vector<FieldTag> tags = lt.tags();
-  std::vector<int> dims = lt.dims();
-  tags.erase(tags.begin()+idim);
-  dims.erase(dims.begin()+idim);
-  FieldLayout sf_lt(tags,dims);
-  FieldIdentifier sf_id(sf_name,sf_lt,sf_units,id.get_grid_name());
+  FieldIdentifier sf_id(sf_name,lt.strip_dim(idim),sf_units,id.get_grid_name());
 
   // Create empty subfield, then set header and views
   // Note: we can access protected members, since it's the same type
@@ -116,7 +111,9 @@ get_component (const int i, const bool dynamic) {
   EKAT_REQUIRE_MSG (i>=0 && i<layout.dim(idim),
       "Error! Component index out of bounds [0," + std::to_string(layout.dim(idim)) + ").\n");
 
-  return subfield (idim,i,dynamic);
+  // Add _$idim to the field name, to avoid issues if the subfield is stored
+  // in some structure that requires unique names (e.g., a remapper)
+  return subfield (fname + "_" + std::to_string(i),idim,i,dynamic);
 }
 
 bool Field::equivalent(const Field& rhs) const

@@ -48,9 +48,9 @@ struct ScreamDeepCopy {
 
   // Copy values from 1d scalar view on Device into host data
   template<typename ViewT>
-  static void copy_to_host(const std::vector<typename ViewT::value_type*>& data,
+  static void copy_to_host(const std::vector<typename ViewT::non_const_value_type*>& data,
                            const std::vector<int>&                         sizes,
-                           std::vector<ViewT>&                             views)
+                           const std::vector<ViewT>&                       views)
   {
     EKAT_ASSERT(ViewT::rank == 1);
     EKAT_ASSERT(data.size() == views.size());
@@ -69,9 +69,9 @@ struct ScreamDeepCopy {
 
   // Same as above function where all views have the same size
   template<typename ViewT>
-  static void copy_to_host(const std::vector<typename ViewT::value_type*>& data,
+  static void copy_to_host(const std::vector<typename ViewT::non_const_value_type*>& data,
                            const int&                                      size,
-                           std::vector<ViewT>&                             views)
+                           const std::vector<ViewT>&                       views)
   {
     std::vector<int> sizes(data.size(),size);
     copy_to_host(data,sizes,views);
@@ -79,6 +79,6 @@ struct ScreamDeepCopy {
 
 };
 
-} // namespace screa
+} // namespace scream
 
 #endif // SCREAM_DEEP_COPY_HPP

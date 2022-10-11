@@ -18,10 +18,13 @@ ScalarT PhysicsFunctions<DeviceT>::calculate_dx_from_area(const ScalarT& area, c
   static constexpr auto coeff_3 = C::earth_ellipsoid3;
   static constexpr auto pi      = C::Pi; 
 
+  // Compute latitude in radians
+  auto lat_in_rad = lat*(pi/180.0);
+
   // Now find meters per degree latitude
   // Below equation finds distance between two points on an ellipsoid, derived from expansion
   // taking into account ellipsoid using World Geodetic System (WGS84) reference 
-  auto m_per_degree_lat = coeff_1 - coeff_2 * std::cos(2.0*lat) + coeff_3 * std::cos(4.0*lat);
+  auto m_per_degree_lat = coeff_1 - coeff_2 * std::cos(2.0*lat_in_rad) + coeff_3 * std::cos(4.0*lat_in_rad);
   // Note, for the formula we need to convert area from radians to degrees.
   return m_per_degree_lat * std::sqrt(area)*(180.0/pi);
 
@@ -491,6 +494,45 @@ Real PhysicsFunctions<DeviceT>::calculate_psl(const Real& T_ground, const Real& 
   }
   
   return psl;
+}
+
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::apply_rayleigh_friction(const Real dt, const ScalarT& otau,
+                                                        ScalarT& u_wind, ScalarT& v_wind, ScalarT& T_mid)
+{
+  using C = scream::physics::Constants<Real>;
+  constexpr Real cp = C::CP;
+
+  const Real dt_inv = 1.0/dt;
+
+  const ScalarT c2 = 1.0/(1.0 + otau*dt);
+  const ScalarT c1 = -1.0*otau*c2;
+  const ScalarT c3 = 0.5*(1.0 - c2*c2)*dt_inv;
+
+  const ScalarT u2 = u_wind*u_wind;
+  const ScalarT v2 = v_wind*v_wind;
+
+  u_wind += c1*u_wind;
+  v_wind += c1*v_wind;
+  T_mid  += c3*(u2 + v2)/cp;
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderOtau, typename MT>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::apply_rayleigh_friction (const MemberType& team,
+                                                         const Real dt,
+                                                         const InputProviderOtau& otau,
+                                                         const view_1d<ScalarT, MT>& u_wind,
+                                                         const view_1d<ScalarT, MT>& v_wind,
+                                                         const view_1d<ScalarT, MT>& T_mid)
+{
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, T_mid.extent(0)),
+                       [&] (const int k) {
+    apply_rayleigh_friction(dt, otau(k), u_wind(k), v_wind(k), T_mid(k));
+  });
 }
 
 } // namespace scream

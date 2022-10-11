@@ -22,6 +22,7 @@
 #include "SphereOperators.hpp"
 #include "TimeLevel.hpp"
 #include "Tracers.hpp"
+#include "GllFvRemap.hpp"
 #include "VerticalRemapManager.hpp"
 #include "mpi/BoundaryExchange.hpp"
 #include "mpi/MpiBuffersManager.hpp"
@@ -234,7 +235,6 @@ void push_forcing_to_c (F90Ptr elem_derived_FM,
       elem_derived_FPHI, num_elems);
   sync_to_device(fphi_f90, forcing.m_fphi);
 
-  const SimulationParams &params = Context::singleton().get<SimulationParams>();
   Tracers &tracers = Context::singleton().get<Tracers>();
   if (tracers.fq.data() == nullptr) {
     tracers.fq = decltype(tracers.fq)("fq", num_elems, tracers.num_tracers());
@@ -425,6 +425,14 @@ void init_functors_c (const bool& allocate_buffer)
     auto& dirk = Context::singleton().get<DirkFunctor>();
     dirk.init_buffers(fbm);
   }
+  // The SCREAM-side Hommexx interface will initialize GllFvRemap if it's
+  // needed. But it expects the Homme-side Hommexx interface to init buffers, so
+  // do that here.
+  if (c.has<GllFvRemap>()) {
+    auto& gfr = c.get<GllFvRemap>();
+    gfr.setup();
+    gfr.init_buffers(fbm);
+  }
 }
 
 void init_elements_2d_c (const int& ie,
@@ -576,6 +584,12 @@ void init_boundary_exchanges_c ()
   // HyperviscosityFunctor's BE's
   auto& hvf = c.get<HyperviscosityFunctor>();
   hvf.init_boundary_exchanges();
+
+  if (c.has<GllFvRemap>()) {
+    auto& gfr = c.get<GllFvRemap>();
+    gfr.reset(params);
+    gfr.init_boundary_exchanges();
+  }
 }
 
 } // extern "C"

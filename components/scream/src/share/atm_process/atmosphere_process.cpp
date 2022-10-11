@@ -10,6 +10,26 @@
 namespace scream
 {
 
+ekat::logger::LogLevel str2LogLevel (const std::string& s) {
+  using namespace ekat::logger;
+
+  ekat::logger::LogLevel log_level;
+  if (s=="off") {
+    log_level = LogLevel::off;
+  } else if (s=="trace") {
+    log_level = LogLevel::trace;
+  } else if (s=="debug") {
+    log_level = LogLevel::debug;
+  } else if (s=="info") {
+    log_level = LogLevel::info;
+  } else if (s=="warn") {
+    log_level = LogLevel::warn;
+  } else {
+    EKAT_ERROR_MSG ("Invalid string value for log level: " + s + "\n");
+  }
+  return log_level;
+}
+
 AtmosphereProcess::
 AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
   : m_comm       (comm)
@@ -21,17 +41,20 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
     // Create a console-only logger, that logs all ranks
     using namespace ekat::logger;
     using logger_impl_t = Logger<LogNoFile,LogAllRanks>;
-    m_atm_logger = std::make_shared<logger_impl_t>("",LogLevel::trace,m_comm);
+    auto log_level = m_params.get<std::string>("log_level","trace");
+    m_atm_logger = std::make_shared<logger_impl_t>("",str2LogLevel(log_level),m_comm);
   }
 
-  if (m_params.isParameter("Number of Subcycles")) {
-    m_num_subcycles = m_params.get<int>("Number of Subcycles");
+  if (m_params.isParameter("number_of_subcycles")) {
+    m_num_subcycles = m_params.get<int>("number_of_subcycles");
   }
   EKAT_REQUIRE_MSG (m_num_subcycles>0,
       "Error! Invalid number of subcycles in param list " + m_params.name() + ".\n"
       "  - Num subcycles: " + std::to_string(m_num_subcycles) + "\n");
 
   m_timer_prefix = m_params.get<std::string>("Timer Prefix","EAMxx::");
+
+  m_repair_log_level = str2LogLevel(m_params.get<std::string>("repair_log_level","warn"));
 }
 
 void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type) {
@@ -48,7 +71,7 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
 
 void AtmosphereProcess::run (const int dt) {
   start_timer (m_timer_prefix + this->name() + "::run");
-  if (m_params.get("Enable Precondition Checks", true)) {
+  if (m_params.get("enable_precondition_checks", true)) {
     // Run 'pre-condition' property checks stored in this AP
     run_precondition_checks();
   }
@@ -65,7 +88,7 @@ void AtmosphereProcess::run (const int dt) {
     run_impl(dt_sub);
   }
 
-  if (m_params.get("Enable Postcondition Checks", true)) {
+  if (m_params.get("enable_postcondition_checks", true)) {
     // Run 'post-condition' property checks stored in this AP
     run_postcondition_checks();
   }
@@ -182,34 +205,40 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
 
 void AtmosphereProcess::run_precondition_checks () const {
   // Run all pre-condition property checks
+
   for (const auto& it : m_precondition_checks) {
     const auto& pc = it.second;
 
-    auto check_result = pc->check();
-    if (check_result.pass) {
+    auto res_and_msg = pc->check();
+    if (res_and_msg.result==CheckResult::Pass) {
       continue;
-    }
-
-    // Failed check.
-    if (pc->can_repair()) {
-      // Ok, just fix it
+    } else if (res_and_msg.result==CheckResult::Repairable) {
+      // Ok, we can fix this
       pc->repair();
-    } else if (it.first==CheckFailHandling::Warning) {
-      // Still ok, but warn the user
-      log (LogLevel::warn,
-        "WARNING: Pre-condition property check failed.\n"
-        "  - Property check name: " + pc->name() + "\n"
+      log (m_repair_log_level,
+        "WARNING: Pre-condition property check failed and repaired.\n"
         "  - Atmosphere process name: " + name() + "\n"
-        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
-        "  - Message: " + check_result.msg);
+        "  - Property check name: " + pc->name() + "\n"
+        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
     } else {
-      // No hope. Crash.
-      EKAT_ERROR_MSG(
-          "Error! Failed pre-condition check (cannot be repaired).\n"
-          "  - Atm process name: " + name() + "\n"
+      // Ugh, the test failed badly, with no chance to repair it.
+      if (it.first==CheckFailHandling::Warning) {
+        // Still ok, just but warn the user
+        log (LogLevel::warn,
+          "Warning! Failed pre-condition check (cannot be repaired).\n"
+          "  - Atmosphere process name: " + name() + "\n"
           "  - Property check name: " + pc->name() + "\n"
           "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
-          "  - Message: " + check_result.msg);
+          "  - Message: " + res_and_msg.msg);
+      } else {
+        // No hope. Crash.
+        EKAT_ERROR_MSG(
+            "Error! Failed pre-condition check (cannot be repaired).\n"
+            "  - Atmosphere process name: " + name() + "\n"
+            "  - Property check name: " + pc->name() + "\n"
+            "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
+            "  - Message: " + res_and_msg.msg);
+      }
     }
   }
 }
@@ -219,42 +248,47 @@ void AtmosphereProcess::run_postcondition_checks () const {
   for (const auto& it : m_postcondition_checks) {
     const auto& pc = it.second;
 
-    auto check_result = pc->check();
-    if (check_result.pass) {
+    auto res_and_msg = pc->check();
+    if (res_and_msg.result==CheckResult::Pass) {
       continue;
-    }
-
-    // Failed check.
-    if (pc->can_repair()) {
-      // Ok, just fix it
+    } else if (res_and_msg.result==CheckResult::Repairable) {
+      // Ok, we can fix this
       pc->repair();
-      std::cout << "WARNING: Post-condition property check failed and repaired.\n"
+      log (m_repair_log_level,
+        "WARNING: Post-condition property check failed and repaired.\n"
         "  - Property check name: " + pc->name() + "\n"
         "  - Atmosphere process name: " + name() + "\n"
-        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n";
-    } else if (it.first==CheckFailHandling::Warning) {
-      // Still ok, but warn the user
-      log (LogLevel::warn,
-        "WARNING: Post-condition property check failed.\n"
-        "  - Property check name: " + pc->name() + "\n"
-        "  - Atmosphere process name: " + name() + "\n"
-        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
-        "  - Error message: " + check_result.msg);
+        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
     } else {
-      // No hope. Crash.
-      EKAT_ERROR_MSG(
-          "Error! Failed post-condition check (cannot be repaired).\n"
-          "  - Atm process name: " + name() + "\n"
+      // Ugh, the test failed badly, with no chance to repair it.
+      if (it.first==CheckFailHandling::Warning) {
+        // Still ok, just warn the user
+        log (LogLevel::warn,
+          "Warning! Failed post-condition check (cannot be repaired).\n"
+          "  - Atmosphere process name: " + name() + "\n"
           "  - Property check name: " + pc->name() + "\n"
           "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
-          "  - Error message: " + check_result.msg);
+          "  - Message: " + res_and_msg.msg);
+      } else {
+        // No hope. Crash.
+        EKAT_ERROR_MSG(
+            "Error! Failed post-condition check (cannot be repaired).\n"
+            "  - Atmosphere process name: " + name() + "\n"
+            "  - Property check name: " + pc->name() + "\n"
+            "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
+            "  - Message: " + res_and_msg.msg);
+      }
     }
   }
 }
 
 bool AtmosphereProcess::has_required_field (const FieldIdentifier& id) const {
+  return has_required_field(id.name(),id.get_grid_name());
+}
+
+bool AtmosphereProcess::has_required_field (const std::string& name, const std::string& grid_name) const {
   for (const auto& it : m_required_field_requests) {
-    if (it.fid==id) {
+    if (it.fid.name()==name && it.fid.get_grid_name()==grid_name) {
       return true;
     }
   }
@@ -262,8 +296,12 @@ bool AtmosphereProcess::has_required_field (const FieldIdentifier& id) const {
 }
 
 bool AtmosphereProcess::has_computed_field (const FieldIdentifier& id) const {
+  return has_computed_field(id.name(),id.get_grid_name());
+}
+
+bool AtmosphereProcess::has_computed_field (const std::string& name, const std::string& grid_name) const {
   for (const auto& it : m_computed_field_requests) {
-    if (it.fid==id) {
+    if (it.fid.name()==name && it.fid.get_grid_name()==grid_name) {
       return true;
     }
   }
@@ -426,6 +464,49 @@ get_internal_field(const std::string& field_name) {
 const Field& AtmosphereProcess::
 get_internal_field(const std::string& field_name) const {
   return get_internal_field_impl(field_name);
+}
+
+void AtmosphereProcess::
+add_invariant_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
+{
+  add_precondition_check (pc,cfh);
+  add_postcondition_check (pc,cfh);
+}
+
+void AtmosphereProcess::
+add_precondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
+{
+  // If a pc can repair, we need to make sure the repairable
+  // fields are among the computed fields of this atm proc.
+  // Otherwise, it would be possible for this AP to implicitly
+  // update a field, without that appearing in the dag.
+  for (const auto& ptr : pc->repairable_fields()) {
+    const auto& fid = ptr->get_header().get_identifier();
+    EKAT_REQUIRE_MSG (
+        has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
+        "Error! Input property check can repair a non-computed field.\n"
+        "  - Atmosphere process name: " + name() + "\n"
+        "  - Property check name: " + pc->name() + "\n");
+  }
+  m_precondition_checks.push_back(std::make_pair(cfh,pc));
+}
+
+void AtmosphereProcess::
+add_postcondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
+{
+  // If a pc can repair, we need to make sure the repairable
+  // fields are among the computed fields of this atm proc.
+  // Otherwise, it would be possible for this AP to implicitly
+  // update a field, without that appearing in the dag.
+  for (const auto& ptr : pc->repairable_fields()) {
+    const auto& fid = ptr->get_header().get_identifier();
+    EKAT_REQUIRE_MSG (
+        has_computed_field(fid) || has_computed_group(fid.name(),fid.get_grid_name()),
+        "Error! Input property check can repair a non-computed field.\n"
+        "  - Atmosphere process name: " + name() + "\n"
+        "  - Property check name: " + pc->name() + "\n");
+  }
+  m_postcondition_checks.push_back(std::make_pair(cfh,pc));
 }
 
 void AtmosphereProcess::set_fields_and_groups_pointers () {
@@ -697,6 +778,44 @@ get_internal_field_impl(const std::string& field_name) const {
         "   atm proc name: " + this->name() + "\n"
         "   field name: " + field_name + "\n");
   }
+}
+
+void AtmosphereProcess
+::remove_field (const std::string& field_name, const std::string& grid_name) {
+  typedef std::list<Field>::iterator It;
+  const auto rmf = [&] (std::list<Field>& fields, str_map<str_map<Field*>>& ptrs) {
+    std::vector<It> rm_its;
+    for (It it = fields.begin(); it != fields.end(); ++it) {
+      const auto& fid = it->get_header().get_identifier();
+      if (fid.name() == field_name and fid.get_grid_name() == grid_name) {
+        rm_its.push_back(it);
+        ptrs[field_name][grid_name] = nullptr;
+      }
+    }
+    for (auto& it : rm_its) fields.erase(it);
+  };
+  rmf(m_fields_in, m_fields_in_pointers);
+  rmf(m_fields_out, m_fields_out_pointers);
+  rmf(m_internal_fields, m_internal_fields_pointers);
+}
+
+void AtmosphereProcess
+::remove_group (const std::string& group_name, const std::string& grid_name) {
+  typedef std::list<FieldGroup>::iterator It;
+  const auto rmg = [&] (std::list<FieldGroup>& fields, str_map<str_map<FieldGroup*>>& ptrs) {
+    std::vector<It> rm_its;
+    for (It it = fields.begin(); it != fields.end(); ++it) {
+      if (it->m_info->m_group_name == group_name and it->grid_name() == grid_name) {
+        rm_its.push_back(it);
+        ptrs[group_name][grid_name] = nullptr;
+        for (auto& kv : it->m_fields)
+          remove_field(kv.first, grid_name);
+      }
+    }
+    for (auto& it : rm_its) fields.erase(it);
+  };
+  rmg(m_groups_in, m_groups_in_pointers);
+  rmg(m_groups_out, m_groups_out_pointers);
 }
 
 } // namespace scream

@@ -1,23 +1,5 @@
 include (EkatSetCompilerFlags)
 
-# We need to link against GPTL.
-if (SCREAM_CIME_BUILD)
-  # In CIME builds, GPTL is built by CIME, during the sharedlib phase.
-  # So simply wrap the gptl lib in an imported target
-  include (GPTL)
-  CreateGPTLTarget()
-else ()
-  # In standalone builds, GPTL is built by Scorpio. Unfortunately,
-  # as of today (04/2022), there is no way to pre-build GPTL from
-  # scorpio, without scorpio trying to build it again.
-  # The only way scorpio skips GPTL is if there is an *installation*
-  # of GPTL somewhere, while we want to build it on the fly
-  # So simply process Scorpio now, so that we have GPTL available
-  # for scream_share to link against.
-  include (Scorpio)
-  CreateScorpioTargets()
-endif()
-
 set(SHARE_SRC
   scream_config.cpp
   scream_session.cpp
@@ -34,11 +16,12 @@ set(SHARE_SRC
   field/field_group.cpp
   field/field_manager.cpp
   grid/abstract_grid.cpp
+  grid/grids_manager.cpp
   grid/mesh_free_grids_manager.cpp
   grid/se_grid.cpp
   grid/point_grid.cpp
-  grid/user_provided_grids_manager.cpp
   grid/remap/abstract_remapper.cpp
+  grid/remap/horizontal_remap_utility.cpp
   property_checks/property_check.cpp
   property_checks/field_nan_check.cpp
   property_checks/field_within_interval_check.cpp
@@ -53,6 +36,14 @@ target_include_directories(scream_share PUBLIC ${SCREAM_SRC_DIR} ${SCREAM_BIN_DI
 target_link_libraries(scream_share PUBLIC ekat gptl)
 set_target_properties(scream_share PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
 target_compile_options(scream_share PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
+
+# This used to be in `scream_config.h/scream_config.f`, but we did accidentally remove
+# the includes at least twice. To avoid this from happening again, we add this crucial
+# macro as a compile definition of the scream_share, which is linked to all other
+# scream libraries.
+if (SCREAM_CIME_BUILD)
+  target_compile_definitions (scream_share PUBLIC SCREAM_CIME_BUILD)
+endif()
 # We have some issues with RDC and repeated libraries in the link line.
 # It's a known issue, and nvcc_wrapper has a flag for handling this.
 if (Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)

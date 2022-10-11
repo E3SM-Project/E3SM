@@ -24,6 +24,10 @@ void P3Microphysics::run_impl (const int dt)
   workspace_mgr.reset_internals();
 
   // Run p3 main
+  get_field_out("micro_liq_ice_exchange").deep_copy(0.0);
+  get_field_out("micro_vap_liq_exchange").deep_copy(0.0);
+  get_field_out("micro_vap_ice_exchange").deep_copy(0.0);
+
   P3F::p3_main(prog_state, diag_inputs, diag_outputs, infrastructure,
                history_only, lookup_tables, workspace_mgr, m_num_cols, m_num_levs);
 

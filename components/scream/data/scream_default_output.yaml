@@ -4,7 +4,7 @@ Casename: ${CASE}.scream.hi
 Averaging Type: Instant
 Max Snapshots Per File: 744 # One output every 31 days
 Fields:
-  Physics GLL:
+  Physics ${PHYSICS_GRID_TYPE}:
     Field Names:
       # HOMME
       - ps
@@ -48,16 +48,23 @@ Fields:
       - SW_flux_up
       - sfc_flux_lw_dn
       - sfc_flux_sw_net
+      - cldtot
+      - cldlow
+      - cldmed
+      - cldhgh
       # Surface Fluxes
       - surf_evap
       - surf_sens_flux
       # Diagnostics
       - PotentialTemperature
-Output Control:
+output_control:
   Frequency: ${HIST_N}
-  Frequency Units: ${HIST_OPTION}
+  frequency_units: ${HIST_OPTION}
   MPI Ranks in Filename: false
   Timestamp in Filename: true
-  AVG Type in Filename: false
-  Frequency in Filename: false
+  avg_type_in_filename: false
+  frequency_in_filename: false
+Checkpoint Control:
+  Frequency: ${REST_N}
+  frequency_units: ${REST_OPTION}
 ...

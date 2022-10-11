@@ -21,13 +21,13 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
   EKAT_REQUIRE_MSG (m_group_size>0, "Error! Invalid group size.\n");
 
   if (m_group_size>1) {
-    if (m_params.get<std::string>("Schedule Type") == "Sequential") {
+    if (m_params.get<std::string>("schedule_type") == "Sequential") {
       m_group_schedule_type = ScheduleType::Sequential;
-    } else if (m_params.get<std::string>("Schedule Type") == "Parallel") {
+    } else if (m_params.get<std::string>("schedule_type") == "Parallel") {
       m_group_schedule_type = ScheduleType::Parallel;
       ekat::error::runtime_abort("Error! Parallel schedule not yet implemented.\n");
     } else {
-      ekat::error::runtime_abort("Error! Invalid 'Schedule Type'. Available choices are 'Parallel' and 'Sequential'.\n");
+      ekat::error::runtime_abort("Error! Invalid 'schedule_type'. Available choices are 'Parallel' and 'Sequential'.\n");
     }
   } else {
     // Pointless to handle this group as parallel, if only one process is in it
@@ -123,9 +123,18 @@ AtmosphereProcessGroup (const ekat::Comm& comm, const ekat::ParameterList& param
         "       If so, don't. Instead, use the instantiation of create_atmosphere_process<T>,\n"
         "       with T = YourAtmProcessClassName.\n");
 
-    // Update the grid types of the group, given the needs of the newly created process
-    for (const auto& name : m_atm_processes.back()->get_required_grids()) {
-      m_required_grids.insert(name);
+    // Store a copy of all the restart extra data of the atm proc.
+    // NOTE: any uses std::shared_ptr internally, so if the atm proc updates
+    //       the extra data, it will be updated in this class too.
+    for (const auto& it : m_atm_processes.back()->get_restart_extra_data()) {
+      // We don't want to risk having two processes overwriting restart data, in case
+      // of a "common name" var (e.g., "num_steps"). Each process should try its best
+      // to provide names that are likely to be unique. Even if two procs *actyally need*
+      // the same var, we can write it twice to file.
+      EKAT_REQUIRE_MSG (m_restart_extra_data.find(it.first)==m_restart_extra_data.end(),
+          "Error! Cannot add restart extra data, since it was already added by another process.\n"
+          "  - extra data name: " + it.first + "\n");
+      m_restart_extra_data.emplace(it);
     }
   }
 }

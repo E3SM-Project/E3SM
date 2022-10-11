@@ -20,13 +20,13 @@ module shoc_intr
   use phys_control,  only: phys_getopts
   use physconst,     only: rair, cpair, gravit, latvap, latice, zvir, &
                            rh2o, karman, tms_orocnst, tms_z0fac  
-  use constituents,  only: pcnst, cnst_add
+  use constituents,  only: pcnst, cnst_add, stateq_names=>cnst_name
   use pbl_utils,     only: calc_ustar, calc_obklen
   use perf_mod,      only: t_startf, t_stopf
-  use spmd_utils,    only: masterproc
   use cam_logfile,   only: iulog 
   use shoc,          only: linear_interp, largeneg 
   use spmd_utils,    only: masterproc
+  use cam_abortutils, only: endrun
  
   implicit none	
 
@@ -60,10 +60,10 @@ module shoc_intr
              radf_idx, &
              tpert_idx, &
              fice_idx, &
-	     vmag_gust_idx 	     	     
+	     vmag_gust_idx, &
+             ixq                 ! water vapor index in state%q array
   
-  integer, public :: &
-    ixtke = 0
+  integer :: ixtke ! SHOC_TKE index in state%q array
 
   integer :: cmfmc_sh_idx = 0
     
@@ -81,11 +81,19 @@ module shoc_intr
       shoc_ice_sh = 50.e-6  
          
   logical      :: lq(pcnst)
-  logical      :: lq2(pcnst)
+
+  !lq_dry_wet_cnvr is true for all the water based scalars used  by SHOC.
+  !These water based scalars will participate in dry/wet mmr conversion
+  logical      :: lq_dry_wet_cnvr(pcnst)
  
   logical            :: history_budget
   integer            :: history_budget_histfile_num  
   logical            :: micro_do_icesupersat
+
+  !Store names of the state%q array scalars (as they appear in the state%q array)
+  !which should be "excluded" from wet<->dry mmr conversion
+  !NOTE: Scalar name should be exactly same as it appear in the state%q array
+  character(len=8), parameter :: dry_wet_exclude_scalars(1) = ['SHOC_TKE']
   
   character(len=16)  :: eddy_scheme      ! Default set in phys_control.F90
   character(len=16)  :: deep_scheme      ! Default set in phys_control.F90 
@@ -222,7 +230,6 @@ end function shoc_implements_cnst
 
     use units,           only: getunit, freeunit
     use namelist_utils,  only: find_group_name
-    use cam_abortutils,  only: endrun
     use mpishorthand
 
     character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
@@ -307,10 +314,11 @@ end function shoc_implements_cnst
     real(r8) :: dp1_in
     
     integer :: lptr
-    integer :: nmodes, nspec, m, l
+    integer :: nmodes, nspec, m, l, icnst, idw
     integer :: ixnumliq
     integer :: ntop_shoc
     integer :: nbot_shoc
+    integer :: sz_dw_sclr !size of dry<->wet conversion excluded scalar array
     character(len=128) :: errstring   
 
     logical :: history_amwg
@@ -320,6 +328,7 @@ end function shoc_implements_cnst
     
     !----- Begin Code -----
 
+    call cnst_get_ind('Q',ixq) ! get water vapor index from the state%q array
     ! ----------------------------------------------------------------- !
     ! Determine how many constituents SHOC will transport.  Note that  
     ! SHOC does not transport aerosol consituents.  Therefore, need to 
@@ -388,6 +397,23 @@ end function shoc_implements_cnst
        lq(ixnumliq) = .false.
        edsclr_dim = edsclr_dim-1
     endif 
+
+    !SHOC needs all its water based scalars in terms of "dry" mmr
+    !but the state vector has all its scalars in terms of "wet" mmr
+    !By default, we will include all scalars for dry<->wet conversion
+    !Identify scalars which should be "excluded" from the dry<->wet conversions
+
+    lq_dry_wet_cnvr(:) = .true. ! lets assume .true. (i.e., all scalars will participate in the conversion process) by default
+    sz_dw_sclr = size(dry_wet_exclude_scalars) !size of dry-wet excluded scalar array
+    do idw = 1, sz_dw_sclr
+       do icnst = 1, pcnst
+          if(trim(adjustl(stateq_names(icnst))) == trim(adjustl(dry_wet_exclude_scalars(idw))) )then
+             !This "icnst" scalar will NOT participate in dry<->wet conversion
+             lq_dry_wet_cnvr(icnst) = .false.
+             exit ! exit the loop if we found it!
+          endif
+       enddo
+    enddo
 
     ! Add SHOC fields
     call addfld('SHOC_TKE', (/'lev'/), 'A', 'm2/s2', 'TKE')
@@ -497,7 +523,6 @@ end function shoc_implements_cnst
     use camsrfexch,     only: cam_in_t
     use ref_pres,       only: top_lev => trop_cloud_top_lev  
     use time_manager,   only: is_first_step   
-    use cam_abortutils, only: endrun
     use wv_saturation,  only: qsat
     use micro_mg_cam,   only: micro_mg_version  
     use cldfrc2m,                  only: aist_vector 
@@ -505,6 +530,7 @@ end function shoc_implements_cnst
     use shoc,           only: shoc_main
     use cam_history,    only: outfld
     use scamMod,        only: single_column, dp_crm
+    use physics_utils,  only: calculate_drymmr_from_wetmmr, calculate_wetmmr_from_drymmr
  
     implicit none
     
@@ -542,6 +568,7 @@ end function shoc_implements_cnst
    ! Local Variables !
    ! --------------- !
 
+   logical::  convert_back_to_wet(edsclr_dim)! To track scalars which needs a conversion back to wet mmr
    integer :: shoctop(pcols)
    
 #ifdef SHOC_SGS
@@ -550,7 +577,7 @@ end function shoc_implements_cnst
    type(physics_ptend) :: ptend_loc             ! Local tendency from processes, added up to return as ptend_all
 
    integer :: i, j, k, t, ixind, nadv
-   integer :: ixcldice, ixcldliq, ixnumliq, ixnumice, ixq
+   integer :: ixcldice, ixcldliq, ixnumliq, ixnumice
    integer :: itim_old
    integer :: ncol, lchnk                       ! # of columns, and chunk identifier
    integer :: err_code                          ! Diagnostic, for if some calculation goes amiss.
@@ -561,6 +588,7 @@ end function shoc_implements_cnst
    real(r8) :: edsclr_in(pcols,pver,edsclr_dim)      ! Scalars to be diffused through SHOC         [units vary]   
    real(r8) :: edsclr_out(pcols,pver,edsclr_dim)
    real(r8) :: rcm_in(pcols,pver)
+   real(r8) :: qv_wet(pcols,pver), qv_dry(pcols,pver) ! wet [kg/kg-of-wet-air] and dry [kg/kg-of-dry-air] water vapor mmr
    real(r8) :: cloudfrac_shoc(pcols,pver)
    real(r8) :: newfice(pcols,pver)              ! fraction of ice in cloud at CLUBB start       [-]
    real(r8) :: inv_exner(pcols,pver)
@@ -665,7 +693,6 @@ end function shoc_implements_cnst
    ic_limit   = 1.e-12_r8
    frac_limit = 0.01_r8
    
-   call cnst_get_ind('Q',ixq)
    call cnst_get_ind('CLDLIQ',ixcldliq)
    call cnst_get_ind('CLDICE',ixcldice)
    call cnst_get_ind('NUMLIQ',ixnumliq)
@@ -679,6 +706,32 @@ end function shoc_implements_cnst
    ncol = state%ncol
    lchnk = state%lchnk    
    
+   !obtain wet mmr from the state vector
+   qv_wet (:,:) = state1%q(:,:,ixq)
+   icnt = 0
+   do ixind = 1, pcnst
+      if (lq(ixind))  then
+         icnt = icnt + 1
+
+         !Track which scalars need a conversion to wetmmr after SHOC main call
+         convert_back_to_wet(icnt) = .false.
+
+         if(lq_dry_wet_cnvr(ixind)) then !convert from wet to dry mmr if true
+            convert_back_to_wet(icnt) = .true.
+            !---------------------------------------------------------------------------------------
+            !Wet to dry mixing ratios:
+            !-------------------------
+            !Since state scalars from the host model are  wet mixing ratios and SHOC needs these
+            !scalars in dry mixing ratios, we convert the wet mixing ratios to dry mixing ratio
+            !if lq_dry_wet_cnvr is .true. for that scalar
+            !NOTE:Function calculate_drymmr_from_wetmmr takes 2 arguments: (wet mmr and "wet" water
+            !vapor mixing ratio)
+            !---------------------------------------------------------------------------------------
+            state1%q(:,:,ixind) = calculate_drymmr_from_wetmmr(ncol, pver,state1%q(:,:,ixind), qv_wet)
+         endif
+      endif
+   enddo
+
    !  Determine time step of physics buffer 
    itim_old = pbuf_old_tim_idx()     
    
@@ -873,15 +926,39 @@ end function shoc_implements_cnst
    
    do k=1,pver
      do i=1,ncol 
-     
        cloud_frac(i,k) = min(cloud_frac(i,k),1._r8)
-       
-       do ixind=1,edsclr_dim
-         edsclr_out(i,k,ixind) = edsclr_in(i,k,ixind)
-       enddo      
- 
-     enddo
+      enddo
    enddo
+       
+   !obtain water vapor mmr which is a "dry" mmr at this point from the SHOC output
+   qv_dry(:,:) = edsclr_in(:,:,ixq)
+   !----------------
+   !DRY-TO-WET MMRs:
+   !----------------
+   !Since the host model needs wet mixing ratio tendencies(state vector has wet mixing ratios),
+   !we need to convert dry mixing ratios from SHOC to wet mixing ratios before extracting tendencies
+   !NOTE:Function calculate_wetmmr_from_drymmr takes 2 arguments: (wet mmr and "dry" water vapor
+   !mixing ratio)
+       do ixind=1,edsclr_dim
+      if(convert_back_to_wet(ixind)) then
+         edsclr_out(:,:,ixind) = calculate_wetmmr_from_drymmr(ncol, pver, edsclr_in(:,:,ixind), qv_dry)
+      else
+         edsclr_out(:,:,ixind) = edsclr_in(:,:,ixind)
+      endif
+       enddo      
+   !convert state1%q to wet mixing ratios
+   qv_dry(:,:) = state1%q(:,:,ixq)
+   icnt = 0
+   do ixind = 1, pcnst
+      if (lq(ixind))  then
+         icnt = icnt + 1
+         if(convert_back_to_wet(icnt)) then !convert from wet to dry mmr if true
+            state1%q(:,:,ixind) = calculate_wetmmr_from_drymmr(ncol, pver, state1%q(:,:,ixind), qv_dry)
+         endif
+      endif
+     enddo
+   rcm(:,:) = calculate_wetmmr_from_drymmr(ncol, pver, rcm, qv_dry)
+   rtm(:,:) = calculate_wetmmr_from_drymmr(ncol, pver, rtm, qv_dry)
 
    ! Eddy diffusivities and TKE are needed for aerosol activation code.
    !   Linearly interpolate from midpoint grid and onto the interface grid.
@@ -1183,7 +1260,7 @@ end function shoc_implements_cnst
   real(r8), parameter :: earth_ellipsoid2 = 559.82_r8 ! second expansion coefficient for WGS84 ellipsoid
   real(r8), parameter :: earth_ellipsoid3 = 1.175_r8 ! third expansion coefficient for WGS84 ellipsoid
 
-  real(r8) :: mpdeglat, column_area, degree
+  real(r8) :: mpdeglat, column_area, degree, lat_in_rad
   integer  :: i
 
   do i=1,state%ncol
@@ -1191,11 +1268,14 @@ end function shoc_implements_cnst
       column_area = get_area_p(state%lchnk,i)
       ! convert to degrees
       degree = sqrt(column_area)*(180._r8/shr_const_pi)
+
+      ! convert latitude to radians
+      lat_in_rad = state%lat(i)*(shr_const_pi/180._r8)
        
       ! Now find meters per degree latitude
       ! Below equation finds distance between two points on an ellipsoid, derived from expansion
       !  taking into account ellipsoid using World Geodetic System (WGS84) reference 
-      mpdeglat = earth_ellipsoid1 - earth_ellipsoid2 * cos(2._r8*state%lat(i)) + earth_ellipsoid3 * cos(4._r8*state%lat(i))
+      mpdeglat = earth_ellipsoid1 - earth_ellipsoid2 * cos(2._r8*lat_in_rad) + earth_ellipsoid3 * cos(4._r8*lat_in_rad)
       grid_dx(i) = mpdeglat * degree
       grid_dy(i) = grid_dx(i) ! Assume these are the same
   enddo   
