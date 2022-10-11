@@ -56,11 +56,11 @@ const Real masked_val = -std::numeric_limits<Real>::max();
 //In addition, this function does not require a 2d mask from the user
 //so one is setup since this is what perform_vertical_interpolation_impl_2d
 //requires  
-template<typename SrcP, typename TgtP, typename InputP, typename T, int N> 
+template<typename Src, typename Tgt, typename Input, typename T, int N> 
 void perform_vertical_interpolation(
-  const SrcP& x_src,
-  const TgtP& x_tgt,
-  const InputP& input,
+  const Src& x_src,
+  const Tgt& x_tgt,
+  const Input& input,
   const view_2d<Pack<T,N>>& output,
   const int nlevs_src,
   const int nlevs_tgt);
@@ -68,11 +68,11 @@ void perform_vertical_interpolation(
 //This function call does not have a mask value provided by user
 //so uses the default masked value (masked_val) in the
 //scream_vertical_interpolation.hpp file
-template<typename SrcP, typename TgtP, typename InputP, typename T, int N> 
+template<typename Src, typename Tgt, typename Input, typename T, int N> 
 void perform_vertical_interpolation(
-  const SrcP& x_src,
-  const TgtP& x_tgt,
-  const InputP& input,
+  const Src& x_src,
+  const Tgt& x_tgt,
+  const Input& input,
   const view_2d<Pack<T,N>>& output,
   const view_2d<Mask<N>>& mask,
   const int nlevs_src,
@@ -82,33 +82,33 @@ void perform_vertical_interpolation(
 //which is then used as the mask value instead of the default
 //Also this function requires a 2d-mask from the user which is returned
 //based on what values were required to be masked
-template<typename SrcP, typename TgtP, typename InputP, typename T, int N> 
+template<typename Src, typename Tgt, typename Input, typename T, int N> 
 void perform_vertical_interpolation(
-  const SrcP& x_src,
-  const TgtP& x_tgt,
-  const InputP& input,
+  const Src& x_src,
+  const Tgt& x_tgt,
+  const Input& input,
   const view_2d<Pack<T,N>>& output,
   const view_2d<Mask<N>>& mask,
   const int nlevs_src,
   const int nlevs_tgt,
   const Real& msk_val);
 
-template<typename SrcP, typename TgtP, typename InputP, typename T, int N> 
+template<typename Src, typename Tgt, typename Input, typename T, int N> 
 void perform_vertical_interpolation_impl_2d(
-  const SrcP& x_src,
-  const TgtP& x_tgt,
-  const InputP& input,
+  const Src& x_src,
+  const Tgt& x_tgt,
+  const Input& input,
   const view_2d<Pack<T,N>>& output,
   const view_2d<Mask<N>>& mask,
   const int nlevs_src,
   const int nlevs_tgt,
   const Real& msk_val);
 
-template<typename SrcP, typename TgtP, typename InputP, typename T, int N> 
+template<typename Src, typename Tgt, typename Input, typename T, int N> 
 void perform_vertical_interpolation_impl_1d(
-  const SrcP& x_src,
-  const TgtP& x_tgt,
-  const InputP& input,
+  const Src& x_src,
+  const Tgt& x_tgt,
+  const Input& input,
   const view_1d<Pack<T,N>>& output,
   const view_1d<Mask<N>>& mask,
   const int nlevs_src,
