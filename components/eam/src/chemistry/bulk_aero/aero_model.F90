@@ -1012,7 +1012,7 @@ contains
   !=============================================================================
   !=============================================================================
   subroutine aero_model_gasaerexch( loffset, ncol, lchnk, delt, latndx, lonndx, reaction_rates, &
-                                    tfld, pmid, pdel, mbar, relhum, &
+                                    tfld, pmid, pdel, troplev, mbar, relhum, &
                                     zm,  qh2o, cwat, cldfr, cldnum, &
                                     airdens, invariants, del_h2so4_gasprod,  &
                                     vmr0, vmr, pbuf )
@@ -1029,6 +1029,7 @@ contains
     integer,  intent(in) :: ncol                   ! number columns in chunk
     integer,  intent(in) :: lchnk                  ! chunk index
     real(r8), intent(in) :: delt                   ! time step size (sec)
+    integer,  intent(in) :: troplev(pcols)         ! tropopause level index
     real(r8), intent(in) :: reaction_rates(:,:,:)  ! reaction rates
     real(r8), intent(in) :: tfld(:,:)              ! temperature (K)
     real(r8), intent(in) :: pmid(:,:)              ! pressure at model levels (Pa)
