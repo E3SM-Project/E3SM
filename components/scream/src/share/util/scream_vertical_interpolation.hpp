@@ -9,10 +9,25 @@
 
 namespace scream {
 namespace vinterp {
-  
-//
+
+/*This utility can perform vertical interpolation for a particular variable
+ *(for instance a field) from src levels to target levels
+ *The relevant function is perform_vertical_interpolation().
+ *A user can decide to use the function without a masked value
+ *in which case the default masked value (masked_val) will be used.
+ *Also a user can decide to provide a view_2d mask which will be filled
+ *based on whether each point is masked or not.
+ *Masking occurs when a value is out-of-bounds (i.e. requires an 
+ *extrapolation).
+ *Most of the functions call assume you are providing a 2d view (or lambda)
+ *for the src, and input, and a 1d view for the target.
+ *There is a function, perform_vertical_interpolation_impl_1d which 
+ *where what is provided is all 1d views (or lambdas). However, in this 
+ *case the user must provide the team and ekat::LinInterp as input as well.
+ */
+
 // ------- Types --------
-//
+
 template<typename T, int N>
 using Pack = ekat::Pack<T, N>;
 
@@ -34,53 +49,66 @@ template <typename S>
 using view_2d = typename KT::template view_2d<S>;
     
 const Real masked_val = -std::numeric_limits<Real>::max();
-  
-template<typename T, int N> 
+
+//This function call does not have a mask value provided by user
+//so uses the default masked value (masked_val) defined 
+//in the scream_vertical_interpolation.hpp file.
+//In addition, this function does not require a 2d mask from the user
+//so one is setup since this is what perform_vertical_interpolation_impl_2d
+//requires  
+template<typename SrcP, typename TgtP, typename InputP, typename T, int N> 
 void perform_vertical_interpolation(
-  const view_2d<Pack<T,N>>& x_src,
-  const view_1d<Pack<T,N>>& x_tgt,
-  const view_2d<Pack<T,N>>& input,
+  const SrcP& x_src,
+  const TgtP& x_tgt,
+  const InputP& input,
   const view_2d<Pack<T,N>>& output,
   const int nlevs_src,
   const int nlevs_tgt);
 
-template<typename T, int N> 
+//This function call does not have a mask value provided by user
+//so uses the default masked value (masked_val) in the
+//scream_vertical_interpolation.hpp file
+template<typename SrcP, typename TgtP, typename InputP, typename T, int N> 
 void perform_vertical_interpolation(
-  const view_2d<Pack<T,N>>& x_src,
-  const view_1d<Pack<T,N>>& x_tgt,
-  const view_2d<Pack<T,N>>& input,
+  const SrcP& x_src,
+  const TgtP& x_tgt,
+  const InputP& input,
   const view_2d<Pack<T,N>>& output,
   const view_2d<Mask<N>>& mask,
   const int nlevs_src,
   const int nlevs_tgt);
 
-template<typename T, int N> 
+//This function call has a mask value provided by the user (msk_val)
+//which is then used as the mask value instead of the default
+//Also this function requires a 2d-mask from the user which is returned
+//based on what values were required to be masked
+template<typename SrcP, typename TgtP, typename InputP, typename T, int N> 
 void perform_vertical_interpolation(
-  const view_2d<Pack<T,N>>& x_src,
-  const view_1d<Pack<T,N>>& x_tgt,
-  const view_2d<Pack<T,N>>& input,
+  const SrcP& x_src,
+  const TgtP& x_tgt,
+  const InputP& input,
   const view_2d<Pack<T,N>>& output,
   const view_2d<Mask<N>>& mask,
   const int nlevs_src,
   const int nlevs_tgt,
   const Real& msk_val);
 
-template<typename T, int N> 
+template<typename SrcP, typename TgtP, typename InputP, typename T, int N> 
 void perform_vertical_interpolation_impl_2d(
-  const view_2d<Pack<T,N>>& x_src,
-  const view_1d<Pack<T,N>>& x_tgt,
-  const view_2d<Pack<T,N>>& input,
+  const SrcP& x_src,
+  const TgtP& x_tgt,
+  const InputP& input,
   const view_2d<Pack<T,N>>& output,
   const view_2d<Mask<N>>& mask,
   const int nlevs_src,
   const int nlevs_tgt,
   const Real& msk_val);
 
-template<typename T, int N> 
+template<typename SrcP, typename TgtP, typename InputP, typename T, int N> 
 void perform_vertical_interpolation_impl_1d(
-  const view_1d<Pack<T,N>>& x_src,
-  const view_1d<Pack<T,N>>& x_tgt,
-  const view_1d<Pack<T,N>>& input,
+  const SrcP& x_src,
+  const TgtP& x_tgt,
+  const InputP& input,
   const view_1d<Pack<T,N>>& output,
   const view_1d<Mask<N>>& mask,
   const int nlevs_src,

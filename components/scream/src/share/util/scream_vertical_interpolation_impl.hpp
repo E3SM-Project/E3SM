@@ -3,18 +3,11 @@
 namespace scream {
 namespace vinterp {
 
-//This function call does not have a mask value provided by user
-//so uses the default masked value (masked_val) defined 
-//in the scream_vertical_interpolation.hpp file.
-//Masking occurs when a value is out-of-bounds (i.e. requires an extrapolation)
-//In addition, this function does not require a 2d mask from the user
-//so one is setup since this is what perform_vertical_interpolation_impl_2d
-//requires
-template<typename T, int N> 
+template<typename SrcP, typename TgtP, typename InputP, typename T, int N> 
 void perform_vertical_interpolation(
-const view_2d<Pack<T,N>>& x_src,
-const view_1d<Pack<T,N>>& x_tgt,
-const view_2d<Pack<T,N>>& input,
+const SrcP& x_src,
+const TgtP& x_tgt,
+const InputP& input,
 const view_2d<Pack<T,N>>& output,
 const int nlevs_src,
 const int nlevs_tgt)
@@ -24,15 +17,11 @@ perform_vertical_interpolation_impl_2d(x_src, x_tgt, input, output, mask,
                                        nlevs_src, nlevs_tgt, masked_val);
 }
 
-//This function call does not have a mask value provided by user
-//so uses the default masked value (masked_val) in the
-//scream_vertical_interpolation.hpp file
-//Masking occurs when a value is out-of-bounds (i.e. requires an extrapolation)
-template<typename T, int N> 
+template<typename SrcP, typename TgtP, typename InputP, typename T, int N> 
 void perform_vertical_interpolation(
-  const view_2d<Pack<T,N>>& x_src,
-  const view_1d<Pack<T,N>>& x_tgt,
-  const view_2d<Pack<T,N>>& input,
+  const SrcP& x_src,
+  const TgtP& x_tgt,
+  const InputP& input,
   const view_2d<Pack<T,N>>& output,
   const view_2d<Mask<N>>& mask,
   const int nlevs_src,
@@ -42,15 +31,11 @@ perform_vertical_interpolation_impl_2d(x_src, x_tgt, input, output, mask,
                                        nlevs_src, nlevs_tgt, masked_val);
 }
 
-//This function call has a mask value provided by the user (msk_val)
-//which is then use to mask in cases where value is out-of-bounds
-//Also this function requires a 2d-mask from the user which is returned
-//based on what values were required to be masked
-template<typename T, int N> 
+template<typename SrcP, typename TgtP, typename InputP, typename T, int N> 
 void perform_vertical_interpolation(
-  const view_2d<Pack<T,N>>& x_src,
-  const view_1d<Pack<T,N>>& x_tgt,
-  const view_2d<Pack<T,N>>& input,
+  const SrcP& x_src,
+  const TgtP& x_tgt,
+  const InputP& input,
   const view_2d<Pack<T,N>>& output,
   const view_2d<Mask<N>>& mask,
   const int nlevs_src,
@@ -62,18 +47,17 @@ perform_vertical_interpolation_impl_2d(x_src, x_tgt, input, output, mask,
 }
  
 
-template<typename T, int N> 
+template<typename SrcP, typename TgtP, typename InputP, typename T, int N> 
 void perform_vertical_interpolation_impl_2d(
-  const view_2d<Pack<T,N>>& x_src,
-  const view_1d<Pack<T,N>>& x_tgt,
-  const view_2d<Pack<T,N>>& input,
+  const SrcP& x_src,
+  const TgtP& x_tgt,
+  const InputP& input,
   const view_2d<Pack<T,N>>& output,
   const view_2d<Mask<N>>& mask,
   const int nlevs_src,
   const int nlevs_tgt,
   const Real& msk_val)
 {
-  //perform_vertical_interpolation_impl_1d_test(x_src);
   const int ncols = x_src.extent(0);
   //Do a bunch of checks to make sure that Pack<T,N>s are consistent
   auto npacks_src = ekat::PackInfo<Pack<T,N>::n>::num_packs(nlevs_src);
@@ -102,7 +86,6 @@ void perform_vertical_interpolation_impl_2d(
     vert_interp.lin_interp(team, x1, x_tgt, in, out, icol);
     const auto x_src_s = ekat::scalarize(x1);
     const auto x_tgt_s = ekat::scalarize(x_tgt);
-    //const auto range_boundary = KT::RangePolicy(0, x_tgt.extent(0));
     const auto range = Kokkos::TeamThreadRange(team, x_tgt.extent(0));
     //Mask out values above (below) maximum (minimum) source grid
     Kokkos::parallel_for(range, [&] (const Int & k) {
@@ -118,11 +101,11 @@ void perform_vertical_interpolation_impl_2d(
   Kokkos::fence();   
 }
 
-template<typename T, int N> 
+template<typename SrcP, typename TgtP, typename InputP, typename T, int N> 
 void perform_vertical_interpolation_impl_1d(
-  const view_1d<Pack<T,N>>& x_src,
-  const view_1d<Pack<T,N>>& x_tgt,
-  const view_1d<Pack<T,N>>& input,
+  const SrcP& x_src,
+  const TgtP& x_tgt,
+  const InputP& input,
   const view_1d<Pack<T,N>>& output,
   const view_1d<Mask<N>>& mask,
   const int nlevs_src,
@@ -138,7 +121,6 @@ void perform_vertical_interpolation_impl_1d(
   vert_interp.lin_interp(team, x_src, x_tgt, input, output, icol);
   const auto x_src_s = ekat::scalarize(x_src);
   const auto x_tgt_s = ekat::scalarize(x_tgt);
-  //const auto range_boundary = KT::RangePolicy(0, x_tgt.extent(0));
   const auto range = Kokkos::TeamThreadRange(team, x_tgt.extent(0));
   //Mask out values above (below) maximum (minimum) source grid
   Kokkos::parallel_for(range, [&] (const Int & k) {
