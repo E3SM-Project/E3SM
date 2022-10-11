@@ -2902,6 +2902,7 @@ contains
    !  This routine calls the routines necessary to send MPASSI fields to MOAB coupler
    !
      use iMOAB,  only       : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
+     use seq_comm_mct,      only: num_moab_exports
    !EOP
    !BOC
    !-----------------------------------------------------------------------
@@ -3005,7 +3006,6 @@ contains
          oceanParticulateIronFlux,    &
          oceanDissolvedIronFlux
 
-      integer, save :: num_mb_exports = 0  ! used for debugging
       integer :: ent_type, ierr
       character(len=32), parameter :: sub = 'ice_export_moab'
    
@@ -3242,8 +3242,7 @@ contains
       
 
 !#ifdef MOABDEBUG
-      num_mb_exports = num_mb_exports +1
-      write(lnum,"(I0.2)")num_mb_exports
+      write(lnum,"(I0.2)")num_moab_exports
       outfile = 'ice_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(MPSIID, outfile, wopts)
