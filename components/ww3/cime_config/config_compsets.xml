@@ -30,8 +30,8 @@
   </compset>
 
   <compset>
-    <alias>GMPAS-JRA-WW3</alias>
-    <lname>2000_DATM%JRA_SLND_MPASSI_MPASO%DATMFORCED_DROF%JRA_SGLC_WW3</lname>
+    <alias>GMPAS-JRA1p4-WW3</alias>
+    <lname>2000_DATM%JRA-1p4-2018_SLND_MPASSI_MPASO%DATMFORCED_DROF%JRA-1p4-2018_SGLC_WW3</lname>
   </compset>
 
   <compset>
