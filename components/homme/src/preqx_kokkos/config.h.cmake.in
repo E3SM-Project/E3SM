@@ -48,9 +48,6 @@
 /* Zoltan partitioning library */
 #cmakedefine01 HAVE_ZOLTAN
 
-/* Identifies whether this is a cuda/hip build */
-#cmakedefine HOMMEXX_ENABLE_GPU
-
 /* TRILINOS  library */
 #cmakedefine01 HAVE_TRILINOS
 
