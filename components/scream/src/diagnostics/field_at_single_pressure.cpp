@@ -14,9 +14,6 @@ FieldAtSinglePressure::FieldAtSinglePressure (const ekat::Comm& comm, const ekat
 {
   m_field_name  = m_params.get<std::string>("Field Name");
 
-  //ASDconst auto& pres_str = m_params.get<std::string>("Field Target Pressure");
-  //ASDm_pressure_level  = std::stoi(pres_str);
-  //std::cout<<"m_pressure_level: "<<m_pressure_level<<std::endl;
   m_pressure_level = m_params.get<int>("Field Target Pressure");
 
   using namespace ShortFieldTagsNames;
@@ -37,14 +34,10 @@ void FieldAtSinglePressure::set_grids(const std::shared_ptr<const GridsManager> 
   m_num_cols = m_grid->get_num_local_dofs();
   m_num_levs = m_grid->get_num_vertical_levels();
 
-  //std::cout<<"ncol: "<<ncol<<std::endl;
-  //std::cout<<"m_num_levs: "<<m_num_levs<<std::endl;
-
   constexpr int ps = Pack::n;
 
   add_field<Required>(m_field_name, m_field_layout, m_field_units, gname);
   if (ekat::contains(std::vector<FieldTag>{LEV},m_field_layout.tags().back())) {
-    //std::cout<<"Get in here p_mid"<<std::endl;
     FieldLayout pres_layout { {COL,LEV}, {m_num_cols,m_num_levs} };
     m_pres_name = "p_mid";
     add_field<Required>(m_pres_name, pres_layout, Pa, gname);
@@ -87,27 +80,19 @@ void FieldAtSinglePressure::compute_diagnostic_impl()
 
   //This is 2D source pressure
   Field& pressure = get_field_in(m_pres_name);
-  const auto p_data_real = pressure.get_view<const Spack**>();
-  view_2d<Spack> p_data("",m_num_cols,p_data_real.extent(1));
-  Kokkos::deep_copy(p_data,p_data_real);
+  const auto p_data = pressure.get_view<const Pack**>();
 
   //This is the 1D target pressure
-  view_1d<Spack> p_tgt = view_1d<Spack>("",1);  // We only plan to map onto a single pressure level
+  view_1d<Pack> p_tgt = view_1d<Pack>("",1);  // We only plan to map onto a single pressure level
   Kokkos::deep_copy(p_tgt, m_pressure_level);
-//ASD  auto p_tgt_s = Kokkos::create_mirror_view(ekat::scalarize(p_tgt));
-  //p_tgt_s(0) = 500.;
 
   //input field
   Field& f = get_field_in(m_field_name);
-//  view_2d<Spack> f_data_src = f.get_view<Spack**>();
-  const auto f_data_src_real = f.get_view<const Spack**>();
-  view_2d<Spack> f_data_src("",m_num_cols,f_data_src_real.extent(1));
-  Kokkos::deep_copy(f_data_src,f_data_src_real);
+  const auto f_data_src = f.get_view<const Pack**>();
 
   //output field on new grid
   auto d_data_tgt = m_diagnostic_output.get_view<Real*>();
-  view_2d<Spack> data_tgt_tmp("",m_num_cols,1);  // Note, vertical interp wants a 2D view, so we create a temporary one
-
+  view_2d<Pack> data_tgt_tmp("",m_num_cols,1);  // Note, vertical interp wants a 2D view, so we create a temporary one
 
   perform_vertical_interpolation(p_data,p_tgt,f_data_src,data_tgt_tmp,m_num_levs,1);
   Kokkos::parallel_for("", m_num_cols, KOKKOS_LAMBDA (const int& icol) {
