@@ -45,7 +45,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   const int nlweights = io_grid->get_num_local_dofs();
   view_1d<gid_t>::HostMirror  row_gids_h("",nlweights);
   view_1d<gid_t>::HostMirror  col_gids_h("",nlweights);
-  view_1d<double>::HostMirror S_h ("",nlweights);
+  view_1d<Real>::HostMirror S_h ("",nlweights);
 
   // scream's gids are of type int, while scorpio wants long int as offsets.
   std::vector<scorpio::offset_t> dofs_offsets(nlweights);
