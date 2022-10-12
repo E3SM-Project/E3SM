@@ -627,7 +627,6 @@ contains
 
         ! MPI variables
         integer :: curProc
-        integer, dimension(:), pointer :: indexToCellID
         integer :: iProc, l, ilm, nProcs
 
         ! Alarm variables
