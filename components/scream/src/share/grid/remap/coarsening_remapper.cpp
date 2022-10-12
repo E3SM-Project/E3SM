@@ -378,7 +378,7 @@ local_mat_vec (const Field& x, const Field& y) const
   }
 }
 
-void CoarseningRemapper::pack_and_send () const
+void CoarseningRemapper::pack_and_send ()
 {
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
@@ -491,7 +491,7 @@ void CoarseningRemapper::pack_and_send () const
   }
 }
 
-void CoarseningRemapper::recv_and_unpack () const
+void CoarseningRemapper::recv_and_unpack ()
 {
   if (not m_recv_req.empty()) {
     int ierr = MPI_Waitall(m_recv_req.size(),m_recv_req.data(), MPI_STATUSES_IGNORE);
@@ -515,7 +515,7 @@ void CoarseningRemapper::recv_and_unpack () const
   const auto recv_lids_end = m_recv_lids_end;
   const auto recv_lids_pidpos = m_recv_lids_pidpos;
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
-    const auto& f  = m_tgt_fields[ifield];
+          auto& f  = m_tgt_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
     const auto lt = get_layout_type(fl.tags());
     const auto f_pid_offsets = ekat::subview(m_recv_f_pid_offsets,ifield);
