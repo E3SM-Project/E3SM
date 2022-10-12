@@ -293,6 +293,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   real(r8), intent(in), optional       :: iop_nudge_tq_high_in
   real(r8), intent(in), optional       :: iop_nudge_tscale_in
   real(r8), intent(in), optional       :: iop_perturb_high_in
+  logical, intent(in), optional        :: scm_zero_non_iop_tracers_in
   integer ncid,latdimid,londimid,latsiz,lonsiz,latid,lonid,ret,i
   integer latidx,lonidx
   real(r8) ioplat,ioplon
