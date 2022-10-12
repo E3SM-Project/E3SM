@@ -103,7 +103,7 @@ TEST_CASE("se_grid", "") {
   }
 }
 
-TEST_CASE ("get_pids_and_lids") {
+TEST_CASE ("get_owners") {
   ekat::Comm comm(MPI_COMM_WORLD);
 
   auto engine = setup_random_test(&comm);

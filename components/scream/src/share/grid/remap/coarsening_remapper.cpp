@@ -95,7 +95,8 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   m_weights     = view_1d<Real>("",nlweights);
 
   // Sort col_gids_h and row_gids_h by row gid. It is easier to sort
-  // the array [0,...,n), and use it later to index the 
+  // the array [0,...,n), and use it later to index the row/col/weight
+  // views in the correct order.
   std::vector<int> id (nlweights);
   std::iota(id.begin(),id.end(),0);
   auto compare = [&] (const int i, const int j) -> bool {
