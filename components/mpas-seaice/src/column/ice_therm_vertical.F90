@@ -1647,12 +1647,6 @@
                                zqin)
 
          if (ktherm == 2) then
-            ! conserve salt
-            if (hin <= puny) then
-               do k = 1, nilyr
-                  fsaltn = fsaltn + zSin(k)*hin/(real(nilyr,kind=dbl_kind)*dt)
-               enddo ! k
-            end if
             call adjust_enthalpy (nilyr,              &
                                   zi1,      zi2,      &
                                   hilyr,    hin,      &
