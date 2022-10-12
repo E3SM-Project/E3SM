@@ -241,7 +241,7 @@ void CoarseningRemapper::do_registration_ends ()
   }
 }
 
-void CoarseningRemapper::do_remap_fwd () const
+void CoarseningRemapper::do_remap_fwd ()
 {
   // Fire the recv requests right away, so that if some other ranks
   // is done packing before us, we can start receiving their data

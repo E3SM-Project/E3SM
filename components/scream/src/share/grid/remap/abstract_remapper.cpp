@@ -101,7 +101,7 @@ registration_ends () {
   m_state = RepoState::Closed;
 }
 
-void AbstractRemapper::remap (const bool forward) const {
+void AbstractRemapper::remap (const bool forward) {
   EKAT_REQUIRE_MSG(m_state!=RepoState::Open,
                      "Error! Cannot perform remapping at this time.\n"
                      "       Did you forget to call 'registration_ends'?\n");

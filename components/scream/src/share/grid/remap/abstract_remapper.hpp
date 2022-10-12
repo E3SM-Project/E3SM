@@ -67,7 +67,7 @@ public:
   RepoState get_state () const { return m_state; }
 
   // The actual remap routine.
-  void remap (const bool forward) const;
+  void remap (const bool forward);
 
   // Getter methods
   grid_ptr_type get_src_grid () const { return m_src_grid; }
@@ -202,11 +202,11 @@ protected:
 
   // Override this method to implement the forward remapping process using
   // the protected data members of this class.
-  virtual void do_remap_fwd () const = 0;
+  virtual void do_remap_fwd () = 0;
 
   // Override this method to implement the backward/inverse remapping process
   // using the protected data members of this class.
-  virtual void do_remap_bwd () const = 0;
+  virtual void do_remap_bwd () = 0;
 
   // This helper function searches for a pair of source and target field
   // identifiers in the remapper's set of bound fields. It returns -1 if fields

@@ -94,9 +94,9 @@ protected:
 
   void do_registration_ends () override;
 
-  void do_remap_fwd () const override;
+  void do_remap_fwd () override;
 
-  void do_remap_bwd () const  override {
+  void do_remap_bwd () override {
     EKAT_ERROR_MSG ("CoarseningRemapper only supports fwd remapping.\n");
   }
 
@@ -214,8 +214,8 @@ protected:
   view_1d<int>          m_recv_lids_end;
 
   // Send/recv requests
-  mutable std::vector<MPI_Request>  m_recv_req;
-  mutable std::vector<MPI_Request>  m_send_req;
+  std::vector<MPI_Request>  m_recv_req;
+  std::vector<MPI_Request>  m_send_req;
 };
 
 } // namespace scream

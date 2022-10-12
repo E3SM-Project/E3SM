@@ -76,10 +76,10 @@ protected:
     // Do nothing
   }
 
-  void do_remap_fwd () const override {
+  void do_remap_fwd () override {
     // Do nothing
   }
-  void do_remap_bwd () const override {
+  void do_remap_bwd () override {
     // Do nothing
   }
 

@@ -387,7 +387,7 @@ set_dyn_to_zero(const MT& team) const
 }
 
 void PhysicsDynamicsRemapper::
-do_remap_fwd() const
+do_remap_fwd()
 {
   // When remapping from phys to dyn, we need to perform a BEX
   // on the dyn fields. The BEX is 'static', meaning that the stored
@@ -426,7 +426,7 @@ do_remap_fwd() const
 }
 
 void PhysicsDynamicsRemapper::
-do_remap_bwd() const
+do_remap_bwd()
 {
   // Check if we need to update the views for subfields
   update_subfields_views(m_subfield_info_dyn,m_dyn_repo,m_dyn_fields);
