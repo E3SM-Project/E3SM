@@ -3830,7 +3830,7 @@
     <DESC>ORNL Summit. Node: 2x POWER9 + 6x Volta V100, 22 cores/socket, 4 HW threads/core.</DESC>
     <NODENAME_REGEX>.*summit.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>ibm,pgi,gnu,ibmgpu,pgigpu,gnugpu</COMPILERS>
+    <COMPILERS>ibm,ibmgpu,pgi,pgigpu,gnu,gnugpu</COMPILERS>
     <MPILIBS>spectrum-mpi</MPILIBS>
     <PROJECT>cli115</PROJECT>
     <CHARGE_ACCOUNT>cli115</CHARGE_ACCOUNT>
@@ -3847,12 +3847,16 @@
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>42</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>84</MAX_TASKS_PER_NODE>
     <MAX_TASKS_PER_NODE compiler="pgigpu">18</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="gnugpu">42</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="ibmgpu">42</MAX_TASKS_PER_NODE>
 	<!-- Need to activate following attribute after CIME update from upstream -->
     <!-- <MAX_GPUS_PER_NODE>6</MAX_GPUS_PER_NODE> -->
-    <MAX_MPITASKS_PER_NODE>42</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>84</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="pgigpu">18</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="gnugpu">42</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="ibmgpu">42</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="spectrum-mpi">
       <executable>jsrun</executable>
@@ -3896,13 +3900,13 @@
         <command name="load">xl/16.1.1-10</command>
       </modules>
       <modules compiler="gnu.*">
-        <command name="load">gcc/7.5.0</command>
+        <command name="load">gcc/9.1.0</command>
       </modules>
       <modules compiler="pgigpu">
         <command name="load">cuda/10.1.243</command>
       </modules>
       <modules compiler="gnugpu">
-        <command name="load">cuda/10.1.168</command>
+        <command name="load">cuda/11.0.3</command>
       </modules>
       <modules compiler="ibmgpu">
         <command name="load">cuda/10.1.243</command>
