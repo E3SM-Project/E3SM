@@ -3844,8 +3844,12 @@ mainloop1_ipair:  do n = 1, ntot_amode
             dryvol_t_old = dryvol_t_old * (dp_belowcut(mfrm)/dgn_t_old)**3
             dgn_t_old = dp_belowcut(mfrm)
          end if
-            ! insert xferall_thresh variable condional for acc->crs and ait->acc
-            if ( dgn_t_new .lt. dp_xferall_thresh(mfrm) ) then
+            if (strat_accum_coarse_rename) then
+               ! insert xferall_thresh variable condional for acc->crs and ait->acc
+               if ( dgn_t_new .lt. dp_xferall_thresh(mfrm) ) then
+                  if ((dryvol_t_new-dryvol_t_old) .le. 1.0e-6_r8*dryvol_t_oldbnd) cycle mainloop1_ipair
+               end if
+            else
                if ((dryvol_t_new-dryvol_t_old) .le. 1.0e-6_r8*dryvol_t_oldbnd) cycle mainloop1_ipair
             end if
       else if (dgn_t_new .ge. dp_cut(mfrm)) then
@@ -3862,12 +3866,16 @@ mainloop1_ipair:  do n = 1, ntot_amode
 
 !   transfer fraction is difference between new and old tail-fractions
 !   transfer fraction for number cannot exceed that of mass
-         ! use xferall specification for acc->crs and ait->acc to emulate WACCM treatment
-         if (dgn_t_new .ge. dp_xferall_thresh(mfrm)) then
-            tmpa = dryvol_t_new
+         if (strat_accum_coarse_rename) then
+            ! use xferall specification for acc->crs and ait->acc to emulate WACCM treatment
+            if (dgn_t_new .ge. dp_xferall_thresh(mfrm)) then
+               tmpa = dryvol_t_new
+            else
+               tmpa = tailfr_volnew*dryvol_t_new - tailfr_volold*dryvol_t_old
+            end if
          else
             tmpa = tailfr_volnew*dryvol_t_new - tailfr_volold*dryvol_t_old
-         end if
+         end if 
       if (tmpa .le. 0.0_r8) cycle mainloop1_ipair
 
       xferfrac_vol = min( tmpa, dryvol_t_new )/dryvol_t_new
