@@ -38,46 +38,33 @@ void Functions<S,D>
   // the view_reduction wrapper is not the cause by simplifying these to be bare
   // Kokkos::parallel_reduce calls acting on doubles and saw the same results.
 
-  Scalar se_tmp = 0, ke_tmp = 0, wv_tmp = 0, wl_tmp = 0;
-  const auto shost_dse = ekat::scalarize(host_dse);
-  const auto spdel     = ekat::scalarize(pdel);
-  const auto srtm      = ekat::scalarize(rtm);
-  const auto srcm      = ekat::scalarize(rcm);
-  const auto su_wind   = ekat::scalarize(u_wind);
-
-  const auto sv_wind   = ekat::scalarize(v_wind);
   // Compute se_int
-  ExeSpaceUtils::parallel_reduce(team,0,nlev,
-                                 [&] (const int k, Scalar& local_sum) {
-                                   local_sum += shost_dse(k)*spdel(k)/ggr;
-                                 }, se_tmp);
+  ExeSpaceUtils::view_reduction(team,0,nlev,
+                                [&] (const int k) -> Spack {
+    return host_dse(k)*pdel(k)/ggr;
+  }, se_int);
   team.team_barrier();
 
   // Compute ke_int
-  ExeSpaceUtils::parallel_reduce(team,0,nlev,
-                                 [&] (const int k, Scalar& local_sum) {
-                                   local_sum += sp(0.5) * ((su_wind(k)*su_wind(k)) + (sv_wind(k)*sv_wind(k))) * spdel(k)/ggr;
-                                 }, ke_tmp);
+  ExeSpaceUtils::view_reduction(team,0,nlev,
+                                [&] (const int k) -> Spack {
+    return sp(0.5)*(ekat::square(u_wind(k))+ekat::square(v_wind(k)))*pdel(k)/ggr;
+  }, ke_int);
   team.team_barrier();
 
   // Compute wv_int
-  ExeSpaceUtils::parallel_reduce(team,0,nlev,
-                                 [&] (const int k, Scalar& local_sum) {
-                                   local_sum += (srtm(k)-srcm(k))*spdel(k)/ggr;
-                                 }, wv_tmp);
+  ExeSpaceUtils::view_reduction(team,0,nlev,
+                                [&] (const int k) -> Spack {
+    return (rtm(k)-rcm(k))*pdel(k)/ggr;
+  }, wv_int);
   team.team_barrier();
 
   // Compute wl_int
-  ExeSpaceUtils::parallel_reduce(team,0,nlev,
-                                 [&] (const int k, Scalar& local_sum) {
-                                   local_sum += srcm(k)*spdel(k)/ggr;
-                                 }, wl_tmp);
+  ExeSpaceUtils::view_reduction(team,0,nlev,
+                                [&] (const int k) -> Spack {
+    return rcm(k)*pdel(k)/ggr;
+  }, wl_int);
   team.team_barrier();
-
-  se_int = se_tmp;
-  ke_int = ke_tmp;
-  wv_int = wv_tmp;
-  wl_int = wl_tmp;
 }
 
 } // namespace shoc
