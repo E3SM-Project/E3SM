@@ -83,7 +83,10 @@
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_conusx4v1np4_L30_c141106.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_conusx4v1np4_L30_ape_c000000.nc</ncdata>
 
-<ncdata dyn="se" hgrid="ne0np4_CAx32v1"  nlev="128"                     >atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_CA_ne32_x32_v1_pg2_L128.nc</ncdata>
+<!-- use initial 2015-01-01 ERA5 HICCUP (zhang73) -->
+<!--<ncdata dyn="se" hgrid="ne0np4_CAx32v1"  nlev="128"                     >atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_CA_ne32_x32_v1_pg2_L128.nc</ncdata>-->
+<ncdata dyn="se" hgrid="ne0np4_CAx32v1"  nlev="128"                     >atm/cam/inic/homme/HICCUP.atm_era5.2015-01-01.ne0np4_CAx32v1_highorder.L128.nc</ncdata>
+
 
 <!-- Worked, and used to generate the inic below for northamerica:  ncdata dyn="se" hgrid="ne0np4_northamericax4v1" nlev="72"    >/global/cscratch1/sd/wlin/northamericax4v1/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_northamericax4v1_topoadj_L72.nc</ncdata-->
 <ncdata dyn="se" hgrid="ne0np4_northamericax4v1" nlev="72"    >atm/cam/inic/homme/cami_0001-01-01_northamericax4v1_c190709.nc</ncdata>

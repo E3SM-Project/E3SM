@@ -227,6 +227,12 @@ lnd/clm2/surfdata_map/surfdata_arcticx4v1pg2_simyr1850_c210707.nc</fsurdat>
 <!-- CAx32v1.pg2 -->
 <fsurdat hgrid="ne0np4_CAx32v1.pg2"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne0_CAx32.pg2_simyr2010_c220621.nc</fsurdat>
+<fsurdat hgrid="ne0np4_CAx32v1.pg2"   sim_year="1850" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne0_CAx32.pg2_rcp8.5_simyr1850_c220712.nc</fsurdat>
+<!--use new surfdata in simyr2015 produced by Peter for sim_year="2000" (def) (zhang73)-->
+<fsurdat hgrid="ne0np4_CAx32v1.pg2" sim_year="2000">
+lnd/clm2/surfdata_map/surfdata_ne0_CAx32.pg2_rcp8.5_simyr2015_c220914.nc</fsurdat>
+<!--lnd/clm2/surfdata_map/surfdata_ne0_CAx32.pg2_rcp8.5_simyr1850_c220712.nc</fsurdat>-->
 
 <!-- f10 resolution -->
 
@@ -280,8 +286,11 @@ lnd/clm2/surfdata_map/surfdata_10x15_simyr2000_c130927.nc</fsurdat>
 
 <fsurdat hgrid="ne30np4"     sim_year="2000" >
 lnd/clm2/surfdata_map/surfdata_ne30np4_simyr2000_c190730.nc</fsurdat>
+<!--set surfdata_simyr2015 for ne30pg2 & FSSP585-SCREAM-HR (zhang73) -->
 <fsurdat hgrid="ne30np4.pg2" sim_year="2000" >
-lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr2000_c190408.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_ne30np4.pg2_SSP5_RCP85_simyr2015_c220420.nc </fsurdat>
+<!--lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr2000_c210402.nc</fsurdat>-->
+
 <fsurdat hgrid="ne120np4"     sim_year="2000" >
 lnd/clm2/surfdata_map/surfdata_ne120np4_simyr2000_c160309.nc</fsurdat>
 <fsurdat hgrid="ne16np4"      sim_year="2000" use_crop=".false." >
@@ -428,6 +437,13 @@ lnd/clm2/surfdata_map/surfdata_twpx4v1_simyr2000_c170706.nc</fsurdat>
  use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850-2015_c180306.nc</flanduse_timeseries>
  <flanduse_timeseries hgrid="ne30np4.pg2"  sim_year_range="1850-2000" 
  use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne30np4.pg2_hist_simyr1850-2015_c210113.nc</flanduse_timeseries>
+<!--set flanduse_timeseries for ne30pg2 & FSSP585-SCREAM-HR (zhang73) -->
+ <flanduse_timeseries hgrid="ne30np4.pg2"  sim_year_range="2015-2100"  
+ use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne30pg2_SSP5_RCP85_simyr2015-2100_c220310.nc</flanduse_timeseries>
+ <flanduse_timeseries hgrid="ne4np4.pg2"  sim_year_range="1850-2000"
+ use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne4pg2_hist_simyr1850-2015_c210722.nc</flanduse_timeseries>
+ <flanduse_timeseries hgrid="ne0np4_northamericax4v1.pg2"  sim_year_range="1850-2000" 
+ use_crop=".false."  >lnd/clm2/surfdata_map/landuse.timeseries_ne0np4_northamericax4v1.pg2_hist_simyr1850-2015_c211015.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="ne16np4" sim_year_range="1850-2000"
  use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_ne16np4_hist_simyr1850-2005_c160803.nc</flanduse_timeseries>
 <flanduse_timeseries hgrid="ne11np4" sim_year_range="1850-2000"
