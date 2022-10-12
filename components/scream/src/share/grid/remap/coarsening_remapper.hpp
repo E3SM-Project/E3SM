@@ -163,44 +163,55 @@ protected:
   std::vector<Field>    m_ov_tgt_fields;
   std::vector<Field>    m_tgt_fields;
 
-  // Sparse matrix representation in triplet form
+  // ----- Sparse matrix CRS representation ---- //
   view_1d<int>    m_row_offsets;
   view_1d<int>    m_col_lids;
   view_1d<Real>   m_weights;
 
-  //  ------- MPI data structures -------- //
+  // ------- MPI data structures -------- //
 
   // The send/recv buf for pack/unpack
   view_1d<Real>         m_send_buffer;
   view_1d<Real>         m_recv_buffer;
 
-  // The send/recv buf to feed to MPI. If MpiOnDev=true, they alias the ones aboce
+  // The send/recv buf to feed to MPI.
+  // If MpiOnDev=true, they simply alias the ones above
   mpi_view_1d<Real>     m_mpi_send_buffer;
   mpi_view_1d<Real>     m_mpi_recv_buffer;
 
-  // offset(I,J) = offset in send/recv buffor send/recv to/from pid J for field I
+  // Offset of each field on each PID in send/recv buffers.
+  // E.g., offset(3,2)=10 means the offset of data from field 3
+  //       to be sent to PID 2 is 10.
   view_2d<int>          m_send_f_pid_offsets;
   view_2d<int>          m_recv_f_pid_offsets;
 
-  // Offset of each PID in the send/recv buffer
-  view_1d<int>          m_send_pid_offsets;
-  view_1d<int>          m_recv_pid_offsets;
-
-  // Reorder the lids so that all lids to send/recv to/from pid N
-  // come before those for pid N+1. Also,
-  //   lids_pids(i,0): ith lid to send to pid=lids_pids(i,1)
-  // Note: send/recv lids are the lids of gids in the ov_tgt/tgt grids.
+  // Reorder the lids so that all lids to send to PID n
+  // come before those for PID N+1. The meaning is
+  //   lids_pids(i,0) = ith lid to send to PID=lids_pids(i,1)
+  // Note: send lids are the lids of gids in the ov_tgt_grid.
   //       But here, dofs are ordered differently, so that all dofs to
-  //       send/recv to/from the same pid are contiguous.
+  //       send to the same PID are contiguous.
   view_2d<int>          m_send_lids_pids;
-  view_2d<int>          m_recv_lids_pids;
 
-  // Store the start of lids to send/recv to/from each pid in the views above
-  // Note: these are different form m_[send|recv]_pid_offsets. Those are
-  //       offsets in the full send/recv buffer, while these are offsets in
-  //       the views above.
+  // Store the start of lids to send to each PID in the view above
   view_1d<int>          m_send_pid_lids_start;
-  view_1d<int>          m_recv_pid_lids_start;
+
+  // Unlike the packing for sends, unpacking after the recv can cause
+  // race conditions. Hence, we ||ize of tgt lids, and process separate
+  // contributions from separate PIDs serially. To do so, we use the
+  // pidpos array that, for each contribution, it tells us the PID where it
+  // comes from, and the position of that dof in the list of dofs that
+  // this PID sends us. We sort this array by the lid of the dof, and
+  // use the beg/end arrays to store the begin/end of contributions for
+  // each tgt lid inside the pidpos view.
+  // E.g., if beg(2)=10 and end(2)=13, then tgt lid 2 has three contributions,
+  // stored in rows 10,11,and 12 of the pidpos view. Furthermore, if, say,
+  // pidpos(11,0)=3, and pidpos(11,1)=19, then the 2nd contribution for lid=2
+  // comes from pid 3, and pid 3 packed that dof as the 19th in the list of
+  // dofs it sent to us.
+  view_2d<int>          m_recv_lids_pidpos;
+  view_1d<int>          m_recv_lids_beg;
+  view_1d<int>          m_recv_lids_end;
 
   // Send/recv requests
   std::vector<MPI_Request>  m_recv_req;
@@ -213,13 +224,6 @@ protected:
   //       change them (recall that MPI_Request is an opaque pointer).
   MPI_Request*              m_recv_req_ptr;
   MPI_Request*              m_send_req_ptr;
-
-  // While the total number of gids in send ops matches the number of local
-  // dofs in m_ov_tgt_grid, the total number of gids in recv can be (and usually
-  // is) larger than the number of local dofs in m_tgt_grid. In fact, there
-  // can be more than 1 pid computing a contribution for the same tgt gid.
-  // Hence, we need to store this number
-  int m_total_num_recv_gids;
 };
 
 } // namespace scream

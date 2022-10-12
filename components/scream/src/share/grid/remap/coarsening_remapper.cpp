@@ -38,11 +38,11 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
 
   auto io_grid = std::make_shared<PointGrid>("",gids_h.size(),0,m_comm);
   io_grid->set_dofs(gids_d);
-  const int nlweights = io_grid->get_num_local_dofs();
 
   // Create CRS matrix views
 
   // Read in triplets.
+  const int nlweights = io_grid->get_num_local_dofs();
   view_1d<gid_t>::HostMirror  row_gids_h("",nlweights);
   view_1d<gid_t>::HostMirror  col_gids_h("",nlweights);
   view_1d<double>::HostMirror S_h ("",nlweights);
@@ -507,9 +507,12 @@ void CoarseningRemapper::recv_and_unpack () const
   using MemberType  = typename KT::MemberType;
   using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 
-  const auto pid_lid_start = m_recv_pid_lids_start;
-  const auto lids_pids = m_recv_lids_pids;
+  const int num_tgt_dofs = m_tgt_grid->get_num_local_dofs();
+
   const auto buf = m_recv_buffer;
+  const auto recv_lids_beg = m_recv_lids_beg;
+  const auto recv_lids_end = m_recv_lids_end;
+  const auto recv_lids_pidpos = m_recv_lids_pidpos;
   for (int ifield=0; ifield<m_num_fields; ++ifield) {
     const auto& f  = m_tgt_fields[ifield];
     const auto& fl = f.get_header().get_identifier().get_layout();
@@ -521,14 +524,16 @@ void CoarseningRemapper::recv_and_unpack () const
       case LayoutType::Scalar2D:
       {
         auto v = f.get_view<Real*>();
-        Kokkos::parallel_for(RangePolicy(0,m_total_num_recv_gids),
-                             KOKKOS_LAMBDA(const int& i){
-          const int lid = lids_pids(i,0);
-          const int pid = lids_pids(i,1);
-          const int lidpos = i - pid_lid_start(pid);
-          const int offset = f_pid_offsets(pid);
-
-          v(lid) += buf (offset + lidpos);
+        Kokkos::parallel_for(RangePolicy(0,num_tgt_dofs),
+                             KOKKOS_LAMBDA(const int& lid){
+          const int recv_beg = recv_lids_beg(lid);
+          const int recv_end = recv_lids_end(lid);
+          for (int irecv=recv_beg; irecv<recv_end; ++irecv) {
+            const int pid = recv_lids_pidpos(irecv,0);
+            const int lidpos = recv_lids_pidpos(irecv,1);
+            const int offset = f_pid_offsets(pid) + lidpos;
+            v(lid) += buf (offset);
+          }
         });
                              
       } break;
@@ -536,38 +541,43 @@ void CoarseningRemapper::recv_and_unpack () const
       {
         auto v = f.get_view<Real**>();
         const int ndims = fl.dim(1);
-        auto policy = ESU::get_default_team_policy(m_total_num_recv_gids,ndims);
+        auto policy = ESU::get_default_team_policy(num_tgt_dofs,ndims);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
-          const int i = team.league_rank();
-          const int lid = lids_pids(i,0);
-          const int pid = lids_pids(i,1);
-          const int lidpos = i - pid_lid_start(pid);
-          const int offset = f_pid_offsets(pid);
-
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team,ndims),
-                               [&](const int idim) {
-            v(lid,idim) += buf (offset + lidpos*ndims + idim);
-          });
+          const int lid = team.league_rank();
+          const int recv_beg = recv_lids_beg(lid);
+          const int recv_end = recv_lids_end(lid);
+          for (int irecv=recv_beg; irecv<recv_end; ++irecv) {
+            const int pid = recv_lids_pidpos(irecv,0);
+            const int lidpos = recv_lids_pidpos(irecv,1);
+            const int offset = f_pid_offsets(pid)+lidpos*ndims;
+            Kokkos::parallel_for(Kokkos::TeamThreadRange(team,ndims),
+                                 [&](const int idim) {
+              v(lid,idim) += buf (offset + idim);
+            });
+          }
         });
       } break;
       case LayoutType::Scalar3D:
       {
         auto v = f.get_view<Real**>();
         const int nlevs = fl.dims().back();
-        auto policy = ESU::get_default_team_policy(m_total_num_recv_gids,nlevs);
+        auto policy = ESU::get_default_team_policy(num_tgt_dofs,nlevs);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
-          const int i = team.league_rank();
-          const int lid = lids_pids(i,0);
-          const int pid = lids_pids(i,1);
-          const int lidpos = i - pid_lid_start(pid);
-          const int offset = f_pid_offsets(pid);
+          const int lid = team.league_rank();
+          const int recv_beg = recv_lids_beg(lid);
+          const int recv_end = recv_lids_end(lid);
+          for (int irecv=recv_beg; irecv<recv_end; ++irecv) {
+            const int pid = recv_lids_pidpos(irecv,0);
+            const int lidpos = recv_lids_pidpos(irecv,1);
+            const int offset = f_pid_offsets(pid) + lidpos*nlevs;
 
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs),
-                               [&](const int ilev) {
-            v(lid,ilev) += buf (offset + lidpos*nlevs + ilev);
-          });
+            Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs),
+                                 [&](const int ilev) {
+              v(lid,ilev) += buf (offset + ilev);
+            });
+          }
         });
       } break;
       case LayoutType::Vector3D:
@@ -575,21 +585,24 @@ void CoarseningRemapper::recv_and_unpack () const
         auto v = f.get_view<Real***>();
         const int ndims = fl.dim(1);
         const int nlevs = fl.dims().back();
-        auto policy = ESU::get_default_team_policy(m_total_num_recv_gids,nlevs*ndims);
+        auto policy = ESU::get_default_team_policy(num_tgt_dofs,nlevs*ndims);
         Kokkos::parallel_for(policy,
                              KOKKOS_LAMBDA(const MemberType& team){
-          const int i = team.league_rank();
-          const int lid = lids_pids(i,0);
-          const int pid = lids_pids(i,1);
-          const int lidpos = i - pid_lid_start(pid);
-          const int offset = f_pid_offsets(pid);
+          const int lid = team.league_rank();
+          const int recv_beg = recv_lids_beg(lid);
+          const int recv_end = recv_lids_end(lid);
+          for (int irecv=recv_beg; irecv<recv_end; ++irecv) {
+            const int pid = recv_lids_pidpos(irecv,0);
+            const int lidpos = recv_lids_pidpos(irecv,1);
+            const int offset = f_pid_offsets(pid) + lidpos*ndims*nlevs;
 
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs*ndims),
-                               [&](const int idx) {
-            const int idim = idx / nlevs;
-            const int ilev = idx % nlevs;
-            v(lid,idim,ilev) += buf (offset + lidpos*ndims*nlevs + idim*nlevs + ilev);
-          });
+            Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs*ndims),
+                                 [&](const int idx) {
+              const int idim = idx / nlevs;
+              const int ilev = idx % nlevs;
+              v(lid,idim,ilev) += buf (offset + idim*nlevs + ilev);
+            });
+          }
         });
       } break;
 
@@ -791,8 +804,8 @@ void CoarseningRemapper::setup_mpi_data_structures ()
 
   const auto mpi_comm  = m_comm.mpi_comm();
   const auto mpi_real  = ekat::get_mpi_type<Real>();
-  const auto mpi_gid_t = ekat::get_mpi_type<gid_t>();
-  int pos;
+
+  const int last_rank = m_comm.size()-1;
 
   // Pre-compute the amount of data stored in each field on each dof
   std::vector<int> field_col_size (m_num_fields);
@@ -827,8 +840,7 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   m_send_pid_lids_start = view_1d<int>("",m_comm.size());
   auto send_lids_pids_h = Kokkos::create_mirror_view(m_send_lids_pids);
   auto send_pid_lids_start_h = Kokkos::create_mirror_view(m_send_pid_lids_start);
-  pos = 0;
-  for (int pid=0; pid<m_comm.size(); ++pid) {
+  for (int pid=0,pos=0; pid<m_comm.size(); ++pid) {
     send_pid_lids_start_h(pid) = pos;
     for (auto lid : pid2lids_send[pid]) {
       send_lids_pids_h(pos,0) = lid;
@@ -840,20 +852,21 @@ void CoarseningRemapper::setup_mpi_data_structures ()
 
   // 3. Compute offsets in send buffer for each pid/field pair
   m_send_f_pid_offsets = view_2d<int>("",m_num_fields,m_comm.size());
-  m_send_pid_offsets = view_1d<int>("",m_comm.size());
   auto send_f_pid_offsets_h = Kokkos::create_mirror_view(m_send_f_pid_offsets);
-  auto send_pid_offsets_h = Kokkos::create_mirror_view(m_send_pid_offsets);
-  pos = 0;
-  for (int pid=0; pid<m_comm.size(); ++pid) {
-    send_pid_offsets_h(pid) = pos;
+  std::vector<int> send_pid_offsets(m_comm.size());
+  for (int pid=0,pos=0; pid<m_comm.size(); ++pid) {
+    send_pid_offsets[pid] = pos;
     for (int i=0; i<m_num_fields; ++i) {
       send_f_pid_offsets_h(i,pid) = pos;
       pos += field_col_size[i]*pid2lids_send[pid].size();
     }
+
+    // At the end, pos must match the total amount of data in the overlapped fields
+    if (pid==last_rank) {
+      EKAT_REQUIRE_MSG (pos==num_ov_gids*sum_fields_col_sizes,
+          "Error! Something went wrong in CoarseningRemapper::setup_mpi_structures.\n");
+    }
   }
-  EKAT_REQUIRE_MSG (pos==num_ov_gids*sum_fields_col_sizes,
-      "Error! Something went wrong in CoarseningRemapper::setup_mpi_structures.\n");
-  Kokkos::deep_copy (m_send_pid_offsets,send_pid_offsets_h);
   Kokkos::deep_copy (m_send_f_pid_offsets,send_f_pid_offsets_h);
 
   // 4. Allocate send buffers
@@ -869,7 +882,7 @@ void CoarseningRemapper::setup_mpi_data_structures ()
     }
 
     const int pid = it.first;
-    const auto send_ptr = m_mpi_send_buffer.data() + send_pid_offsets_h(pid);
+    const auto send_ptr = m_mpi_send_buffer.data() + send_pid_offsets[pid];
 
     m_send_req.emplace_back();
     auto& req = m_send_req.back();
@@ -884,75 +897,89 @@ void CoarseningRemapper::setup_mpi_data_structures ()
 
   // 1. Obtain the dual map of send_gids: a list of gids we need to
   //    receive, grouped by the pid we recv them from
+  const int num_tgt_dofs = m_tgt_grid->get_num_local_dofs();
   auto pid2gids_recv = recv_gids_from_pids(pid2gids_send);
   const int num_recv_pids = pid2gids_recv.size();
 
-  // 2. Count the total number of gids we recv
-  m_total_num_recv_gids = 0;
+  // 2. Convert the gids to lids, and arrange them by lid
+  std::vector<std::vector<int>> lid2pids_recv(num_tgt_dofs);
+  int num_total_recv_gids = 0;
   for (const auto& it : pid2gids_recv) {
-    m_total_num_recv_gids += it.second.size();
+    const int pid = it.first;
+    for (auto gid : it.second) {
+      const int lid = gid2lid(gid,m_tgt_grid);
+      lid2pids_recv[lid].push_back(pid);
+    }
+    num_total_recv_gids += it.second.size();
   }
+
+  // 3. Splice the vector-of-vectors above in a 1d view,
+  //    keeping track of where each lid starts/ends
+  m_recv_lids_pidpos = view_2d<int>("",num_total_recv_gids,2);
+  m_recv_lids_beg = view_1d<int>("",num_tgt_dofs);
+  m_recv_lids_end = view_1d<int>("",num_tgt_dofs);
+  auto recv_lids_pidpos_h = Kokkos::create_mirror_view(m_recv_lids_pidpos);
+  auto recv_lids_beg_h  = Kokkos::create_mirror_view(m_recv_lids_beg);
+  auto recv_lids_end_h  = Kokkos::create_mirror_view(m_recv_lids_end);
+
+  for (int i=0,pos=0; i<num_tgt_dofs; ++i) {
+    recv_lids_beg_h(i) = pos;
+    const int gid = m_tgt_grid->get_dofs_gids_host()[i];
+    for (auto pid : lid2pids_recv[i]) {
+      auto it = std::find(pid2gids_recv.at(pid).begin(),pid2gids_recv.at(pid).end(),gid);
+      EKAT_REQUIRE_MSG (it!=pid2gids_recv.at(pid).end(),
+          "Error! Something went wrong in CoarseningRemapper::setup_mpi_structures.\n");
+      recv_lids_pidpos_h(pos,0) = pid;
+      recv_lids_pidpos_h(pos++,1) = std::distance(pid2gids_recv.at(pid).begin(),it);
+    }
+    recv_lids_end_h(i) = pos;
+  }
+  Kokkos::deep_copy(m_recv_lids_pidpos,recv_lids_pidpos_h);
+  Kokkos::deep_copy(m_recv_lids_beg,recv_lids_beg_h);
+  Kokkos::deep_copy(m_recv_lids_end,recv_lids_end_h);
 
   // 3. Splice gids from all pids, and convert to lid, and compute the offset of each pid
   //    in the spliced list of gids.
-  m_recv_pid_lids_start = view_1d<int>("",m_comm.size()+1);
-  auto recv_pid_lids_start_h = Kokkos::create_mirror_view(m_recv_pid_lids_start);
-  m_recv_lids_pids = view_2d<int>("",m_total_num_recv_gids,2);
-  auto recv_lids_pids_h = Kokkos::create_mirror_view(m_recv_lids_pids);
-  pos = 0;
-  for (int pid=0; pid<m_comm.size(); ++pid) {
-    recv_pid_lids_start_h[pid] = pos;
-
-    const auto& gids = pid2gids_recv[pid];
-
-    for (const auto gid : gids) {
-      const auto lid = gid2lid(gid,m_tgt_grid);
-      EKAT_REQUIRE_MSG (lid>=0,
-          "Error! Something went wrong while converting gid->lid on tgt grid.\n"
-          "  - rank: " + std::to_string(m_comm.rank()) + "\n");
-      recv_lids_pids_h(pos,0)   = lid;
-      recv_lids_pids_h(pos++,1) = pid;
-    }
+  std::vector<int> recv_pid_start(m_comm.size()+1);
+  for (int pid=0,pos=0; pid<=m_comm.size(); ++pid) {
+    recv_pid_start[pid] = pos;
+    pos += pid2gids_recv[pid].size();
   }
-  EKAT_REQUIRE_MSG (pos==m_total_num_recv_gids,
-      "Error! Something went wrong in CoarseningRemapper::setup_mpi_structures.\n");
-  recv_pid_lids_start_h[m_comm.size()] = pos;
-  Kokkos::deep_copy(m_recv_pid_lids_start,recv_pid_lids_start_h);
-  Kokkos::deep_copy(m_recv_lids_pids,recv_lids_pids_h);
 
   // 4. Compute offsets in recv buffer for each pid/field pair
   m_recv_f_pid_offsets = view_2d<int>("",m_num_fields,m_comm.size());
-  m_recv_pid_offsets = view_1d<int>("",m_comm.size());
   auto recv_f_pid_offsets_h = Kokkos::create_mirror_view(m_recv_f_pid_offsets);
-  auto recv_pid_offsets_h = Kokkos::create_mirror_view(m_recv_pid_offsets);
-  pos = 0;
-  for (int pid=0; pid<m_comm.size(); ++pid) {
-    recv_pid_offsets_h(pid) = pos;
-    const int num_recv_gids = recv_pid_lids_start_h[pid+1] - recv_pid_lids_start_h[pid];
+  std::vector<int> recv_pid_offsets(m_comm.size());
+  for (int pid=0,pos=0; pid<m_comm.size(); ++pid) {
+    recv_pid_offsets[pid] = pos;
+    const int num_recv_gids = recv_pid_start[pid+1] - recv_pid_start[pid];
     for (int i=0; i<m_num_fields; ++i) {
       recv_f_pid_offsets_h(i,pid) = pos;
       pos += field_col_size[i]*num_recv_gids;
     }
+
+    // // At the end, pos must match the total amount of data received
+    if (pid==last_rank) {
+      EKAT_REQUIRE_MSG (pos==num_total_recv_gids*sum_fields_col_sizes,
+          "Error! Something went wrong in CoarseningRemapper::setup_mpi_structures.\n");
+    }
   }
-  EKAT_REQUIRE_MSG (pos==m_total_num_recv_gids*sum_fields_col_sizes,
-      "Error! Something went wrong in CoarseningRemapper::setup_mpi_structures.\n");
   Kokkos::deep_copy (m_recv_f_pid_offsets,recv_f_pid_offsets_h);
-  Kokkos::deep_copy (m_recv_pid_offsets,recv_pid_offsets_h);
 
   // 5. Allocate recv buffers
-  m_recv_buffer = view_1d<Real>("",sum_fields_col_sizes*m_total_num_recv_gids);
+  m_recv_buffer = view_1d<Real>("",sum_fields_col_sizes*num_total_recv_gids);
   m_mpi_recv_buffer = Kokkos::create_mirror_view(decltype(m_mpi_recv_buffer)::execution_space(),m_recv_buffer);
 
   // 6. Setup recv requests
   m_recv_req.reserve(num_recv_pids);
   for (int pid=0; pid<m_comm.size(); ++pid) {
-    const int num_recv_gids = recv_pid_lids_start_h[pid+1] - recv_pid_lids_start_h[pid];
+    const int num_recv_gids = recv_pid_start[pid+1] - recv_pid_start[pid];
     const int n = num_recv_gids*sum_fields_col_sizes;
     if (n==0) {
       continue;
     }
 
-    const auto recv_ptr = m_mpi_recv_buffer.data() + recv_pid_offsets_h(pid);
+    const auto recv_ptr = m_mpi_recv_buffer.data() + recv_pid_offsets[pid];
 
     m_recv_req.emplace_back();
     auto& req = m_recv_req.back();

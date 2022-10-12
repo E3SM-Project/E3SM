@@ -48,25 +48,22 @@ public:
     return cmvc(m_recv_f_pid_offsets);
   }
 
-  view_1d<int>::HostMirror get_send_pid_offsets () const {
-    return cmvc(m_send_pid_offsets);
+  view_1d<int>::HostMirror get_recv_lids_beg () const {
+    return cmvc(m_recv_lids_beg);
   }
-  view_1d<int>::HostMirror get_recv_pid_offsets () const {
-    return cmvc(m_recv_pid_offsets);
+  view_1d<int>::HostMirror get_recv_lids_end () const {
+    return cmvc(m_recv_lids_end);
   }
 
   view_2d<int>::HostMirror get_send_lids_pids () const {
     return cmvc(m_send_lids_pids );
   }
-  view_2d<int>::HostMirror get_recv_lids_pids () const {
-    return cmvc(m_recv_lids_pids);
+  view_2d<int>::HostMirror get_recv_lids_pidpos () const {
+    return cmvc(m_recv_lids_pidpos);
   }
 
   view_1d<int>::HostMirror get_send_pid_lids_start () const {
     return cmvc(m_send_pid_lids_start);
-  }
-  view_1d<int>::HostMirror get_recv_pid_lids_start () const {
-    return cmvc(m_recv_pid_lids_start);
   }
 
   int gid2lid (const gid_t gid, const grid_ptr_type& grid) const {
@@ -320,86 +317,32 @@ TEST_CASE ("coarsening_remap") {
 
   // Check internal MPI structures
   const int num_loc_tgt_gids = tgt_grid->get_num_local_dofs();
-  std::map<int,std::vector<int>> pid2gids_send,pid2gids_recv;
-  if (comm.size()==1) {
-    std::vector<int> gids(ngdofs_tgt);
-    std::iota(gids.begin(),gids.end(),0);
-    pid2gids_send[0] = pid2gids_recv[0] = gids;
-  } else {
-    printf ("got %d src dofs on rank %d\n",nldofs_src,comm.rank());
-    printf ("got %d tgt dofs on rank %d\n",num_loc_tgt_gids,comm.rank());
-    std::stringstream ss;
-    for (int i=0; i<num_loc_tgt_gids; ++i) {
-      ss << " " << tgt_grid->get_dofs_gids_host()[i];
-    }
-    printf("on rank %d, tgt gids:%s\n",comm.rank(),ss.str().c_str());
-    for (int i=0; i<nldofs_src; ++i) {
-      const int tgt_gid = src_gids[i] % ngdofs_tgt;
-      const int pid = tgt_gid / nldofs_src;
-      printf("on rank %d, src dof %d, affects tgt dof %d, owned by %d\n",comm.rank(),src_gids[i],tgt_gid,pid);
-      pid2gids_send[pid].push_back(tgt_gid);
-    }
+  const auto tgt_gids = tgt_grid->get_dofs_gids_host();
+  const auto recv_lids_beg = remap->get_recv_lids_beg();
+  const auto recv_lids_end = remap->get_recv_lids_end();
+  const auto recv_lids_pidpos = remap->get_recv_lids_pidpos();
+  // Rank 0 sends everything to itself
+  for (int i=0; i<num_loc_tgt_gids; ++i) {
+    if (comm.size()==1) {
+      // Each tgt dof has one ov_tgt contribution,
+      // since the matvec is fully local
+      REQUIRE (recv_lids_beg(i)==i);
+      REQUIRE (recv_lids_end(i)==(i+1));
 
-    auto tgt_gids = tgt_grid->get_dofs_gids_host();
-    for (int i=0; i<num_loc_tgt_gids; ++i) {
-      const int src_1 = tgt_gids[i];
-      const int src_2 = src_1 + ngdofs_tgt;
-      const int pid_1 = src_1 / nldofs_src;
-      const int pid_2 = src_2 / nldofs_src;
-      pid2gids_recv[pid_1].push_back(tgt_gids[i]);
-      pid2gids_recv[pid_2].push_back(tgt_gids[i]);
-    }
-  }
-  std::vector<int> send_offset(comm.size()+1,0),recv_offset(comm.size()+1,0);
-  for (int pid=0; pid<comm.size(); ++pid) {
-    send_offset[pid+1] = send_offset[pid] + pid2gids_send[pid].size();
-    recv_offset[pid+1] = recv_offset[pid] + pid2gids_recv[pid].size();
-  }
-
-  auto send_f_pid_offsets = remap->get_send_f_pid_offsets();
-  auto recv_f_pid_offsets = remap->get_recv_f_pid_offsets();
-  auto send_pid_offsets = remap->get_send_pid_offsets();
-  auto recv_pid_offsets = remap->get_recv_pid_offsets();
-  auto send_lids_pids = remap->get_send_lids_pids();
-  auto recv_lids_pids = remap->get_recv_lids_pids();
-  auto send_pid_lids_start = remap->get_send_pid_lids_start();
-  auto recv_pid_lids_start = remap->get_recv_pid_lids_start();
-  REQUIRE (send_lids_pids.extent_int(0)==num_loc_ov_tgt_gids);
-  if (comm.size()==1) {
-    REQUIRE (recv_lids_pids.extent_int(0)==tgt_grid->get_num_local_dofs());
-  } else {
-    REQUIRE (recv_lids_pids.extent_int(0)==2*tgt_grid->get_num_local_dofs());
-  }
-  REQUIRE (send_lids_pids.extent(1)==2);
-  REQUIRE (recv_lids_pids.extent(1)==2);
-
-  // for (int i=0,send_cum_offset=0,recv_cum_offset=0; i<nfields; ++i) {
-  for (int pid=0; pid<comm.size(); ++pid) {
-    for (int i=0; i<nfields; ++i) {
-      const int expected_send_offset = send_offset[pid]*sum_fields_col_sizes + field_col_offset[i]*pid2gids_send[pid].size();
-      const int expected_recv_offset = recv_offset[pid]*sum_fields_col_sizes + field_col_offset[i]*pid2gids_recv[pid].size();
-      REQUIRE (send_f_pid_offsets(i,pid)==expected_send_offset);
-      REQUIRE (recv_f_pid_offsets(i,pid)==expected_recv_offset);
-      // REQUIRE (send_pid_offsets(pid)==sum_fields_col_sizes*send_offset[pid]);
-      // REQUIRE (recv_pid_offsets(pid)==sum_fields_col_sizes*recv_offset[pid]);
-    }
-  }
-  for (int pid=0; pid<comm.size(); ++pid) {
-    REQUIRE (send_pid_lids_start(pid)==send_offset[pid]);
-    REQUIRE (recv_pid_lids_start(pid)==recv_offset[pid]);
-    const int send_beg = send_offset[pid];
-    const int recv_beg = recv_offset[pid];
-    const int send_end = send_offset[pid+1];
-    const int recv_end = recv_offset[pid+1];
-    const int nsend = send_end - send_beg;
-    const int nrecv = recv_end - recv_beg;
-    for (int i=0; i<nsend; ++i) {
-      REQUIRE (send_lids_pids(i+send_beg,0) == remap->gid2lid(pid2gids_send[pid][i],ov_tgt_grid));
-      REQUIRE (send_lids_pids(i+send_beg,1) == pid);
-    }
-    for (int i=0; i<nrecv; ++i) {
-      REQUIRE (recv_lids_pids(i+recv_beg,0) == remap->gid2lid(pid2gids_recv[pid][i],tgt_grid));
-      REQUIRE (recv_lids_pids(i+recv_beg,1) == pid);
+      REQUIRE (recv_lids_pidpos(i,0)==comm.rank());
+      REQUIRE (recv_lids_pidpos(i,1)==i);
+    } else {
+      // Each tgt dof has two ov_tgt contributions,
+      // since the mat vec happens on two different PIDs.
+      REQUIRE (recv_lids_beg(i)==2*i);
+      REQUIRE (recv_lids_end(i)==(2*i+2));
+      // Figure out where the contributions come from
+      const auto src1 = tgt_gids(i);
+      const auto src2 = src1 + ngdofs_tgt;
+      const auto pid1 = src1 / nldofs_src;
+      const auto pid2 = src2 / nldofs_src;
+      REQUIRE (recv_lids_pidpos(2*i,0)==pid1);
+      REQUIRE (recv_lids_pidpos(2*i+1,0)==pid2);
     }
   }
   print (" -> Checking remapper internal state ... OK!\n",comm);
@@ -474,7 +417,6 @@ TEST_CASE ("coarsening_remap") {
 
     print (" -> check tgt fields ...\n",comm);
     // Recall, tgt gid K should be the avg of src gids K and K+ngdofs_tgt
-    auto tgt_gids = tgt_grid->get_dofs_gids_host();
     const int ntgt_gids = tgt_gids.size();
     for (size_t ifield=0; ifield<tgt_f.size(); ++ifield) {
       const auto& f = tgt_f[ifield];
