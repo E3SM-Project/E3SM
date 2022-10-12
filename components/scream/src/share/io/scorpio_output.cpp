@@ -702,8 +702,14 @@ create_diagnostic (const std::string& diag_field_name) {
   auto tokens = ekat::split(diag_field_name,'@');
   auto last = tokens.back();
 
+  // FieldAtLevel          follows convention variable@lev_N (where N is some integer)
+  // FieldAtSinglePressure follows convention variable@999mb (where 999 is some integer)
   auto lev_and_idx = ekat::split(last,'_');
-  if (last=="tom" || last=="bot" || lev_and_idx.size()==2) {
+  auto pos = lev_and_idx[0].find_first_not_of("0123456789");
+  auto lev_str = lev_and_idx[0].substr(pos);
+  
+  if (last=="tom" || last=="bot" || lev_str=="lev") {
+    // Diagnostic is a horizontal slice at a specific level
     diag_name = "FieldAtLevel";
     tokens.pop_back();
     auto fname = ekat::join(tokens,"_");
@@ -723,6 +729,32 @@ create_diagnostic (const std::string& diag_field_name) {
 
     // If last is bot or top, will simply use that
     params.set("Field Level", lev_and_idx.back());
+  } else if (lev_str=="mb" || lev_str=="hPa" || lev_str=="Pa") {
+    // Diagnostic is a horizontal slice at a specific pressure level
+    diag_name = "FieldAtSinglePressure";
+    auto pres_str = lev_and_idx[0].substr(0,pos);
+    auto pres_units = lev_and_idx[0].substr(pos);
+    auto pres_level = std::stoi(pres_str);
+    // Convert pressure level to Pa, the units of pressure in the simulation
+    if (pres_units=="mb" || pres_units=="hPa") {
+      pres_level *= 100;
+    }
+    tokens.pop_back();
+    auto fname = ekat::join(tokens,"_");
+    // If the field is itself a diagnostic, make sure it's built
+    if (diag_factory.has_product(fname) and
+        m_diagnostics.count(fname)==0) {
+      create_diagnostic(fname);
+      m_diag_depends_on_diags[diag_field_name].push_back(fname);
+    } else {
+      m_diag_depends_on_diags[diag_field_name].resize(0);
+    }
+    auto fid = get_field(fname).get_header().get_identifier();
+    params.set("Field Name", fname);
+    params.set("Grid Name",fid.get_grid_name());
+    params.set("Field Layout",fid.get_layout());
+    params.set("Field Units",fid.get_units());
+    params.set<int>("Field Target Pressure", pres_level);
   } else {
     diag_name = diag_field_name;
     m_diag_depends_on_diags[diag_field_name].resize(0);

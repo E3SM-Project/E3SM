@@ -14,9 +14,10 @@ FieldAtSinglePressure::FieldAtSinglePressure (const ekat::Comm& comm, const ekat
 {
   m_field_name  = m_params.get<std::string>("Field Name");
 
-  const auto& pres_str = params.get<std::string>("Field Target Pressure");
-  m_pressure_level  = std::stoi(pres_str);
+  //ASDconst auto& pres_str = m_params.get<std::string>("Field Target Pressure");
+  //ASDm_pressure_level  = std::stoi(pres_str);
   //std::cout<<"m_pressure_level: "<<m_pressure_level<<std::endl;
+  m_pressure_level = m_params.get<int>("Field Target Pressure");
 
   using namespace ShortFieldTagsNames;
   EKAT_REQUIRE_MSG (ekat::contains(std::vector<FieldTag>{LEV,ILEV},m_field_layout.tags().back()),
@@ -86,7 +87,9 @@ void FieldAtSinglePressure::compute_diagnostic_impl()
 
   //This is 2D source pressure
   Field& pressure = get_field_in(m_pres_name);
-  view_2d<Spack> p_data = pressure.get_view<Spack**>();
+  const auto p_data_real = pressure.get_view<const Spack**>();
+  view_2d<Spack> p_data("",m_num_cols,p_data_real.extent(1));
+  Kokkos::deep_copy(p_data,p_data_real);
 
   //This is the 1D target pressure
   view_1d<Spack> p_tgt = view_1d<Spack>("",1);  // We only plan to map onto a single pressure level
@@ -96,7 +99,10 @@ void FieldAtSinglePressure::compute_diagnostic_impl()
 
   //input field
   Field& f = get_field_in(m_field_name);
-  view_2d<Spack> f_data_src = f.get_view<Spack**>();
+//  view_2d<Spack> f_data_src = f.get_view<Spack**>();
+  const auto f_data_src_real = f.get_view<const Spack**>();
+  view_2d<Spack> f_data_src("",m_num_cols,f_data_src_real.extent(1));
+  Kokkos::deep_copy(f_data_src,f_data_src_real);
 
   //output field on new grid
   auto d_data_tgt = m_diagnostic_output.get_view<Real*>();

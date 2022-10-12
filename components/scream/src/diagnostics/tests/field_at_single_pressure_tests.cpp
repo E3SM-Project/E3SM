@@ -72,7 +72,7 @@ TEST_CASE("field_at_single_pressure")
   params_mid.set("Field Units",fid_mid.get_units());
   params_mid.set("Field Layout",fid_mid.get_layout());
   params_mid.set("Grid Name",fid_mid.get_grid_name());
-  params_mid.set<std::string>("Field Target Pressure","150");
+  params_mid.set<int>("Field Target Pressure",150);
   //std::string location_pressure_file = "/usr/workspace/rebassoo/Climate/press_tgt_levels.txt";
   //params_mid.set<std::string>("Field Pressure file",location_pressure_file);
 
