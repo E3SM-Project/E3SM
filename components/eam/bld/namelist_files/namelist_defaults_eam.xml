@@ -1204,8 +1204,10 @@
 <cldera_sai_dTsurf> -0.012 </cldera_sai_dTsurf>
 <cldera_sai_qstar> 8.05E-7 </cldera_sai_qstar>
 <cldera_sai_q0> 1.0E-12 </cldera_sai_q0>
-<cldera_sai_gamma> 3 </cldera_sai_gamma>
+<cldera_sai_gammaq> 3 </cldera_sai_gammaq>
 <cldera_sai_taustar> 1.3E7 </cldera_sai_taustar>
+<cldera_sai_tau0> 1.0E4 </cldera_sai_tau0>
+<cldera_sai_gammatau> 3 </cldera_sai_gammatau>
 <cldera_sai_zAOD> 5.0 </cldera_sai_zAOD>
 <cldera_sai_formSulfate> .true. </cldera_sai_formSulfate>
 <cldera_sai_stratHeating> .true. </cldera_sai_stratHeating>

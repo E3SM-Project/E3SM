@@ -61,8 +61,10 @@ module cldera_sai_tracers
   real(r8) :: cldera_sai_dTsurf            ! surface cooling rate (K/day)
   real(r8) :: cldera_sai_qstar             ! mixing ratio normalization for strat. heating
   real(r8) :: cldera_sai_q0                ! mixing ratio of zero heating 
-  real(r8) :: cldera_sai_gamma             ! power of strat. heating function
+  real(r8) :: cldera_sai_gammaq            ! power of strat. heating function
   real(r8) :: cldera_sai_taustar           ! AOD normalizaxtion for surface cooling
+  real(r8) :: cldera_sai_tau0              ! AOD of zero cooling
+  real(r8) :: cldera_sai_gammatau          ! power of surface cooling function
   real(r8) :: cldera_sai_zAOD              ! max height to apply surface cooling by AOD (km)
   logical  :: cldera_sai_formSulfate       ! true => activate sulfate formation
   logical  :: cldera_sai_stratHeating      ! true => activate strat. heating
@@ -109,19 +111,22 @@ module cldera_sai_tracers
   
   ! for stratospheric heating
   real(r8) :: dTstrat                   ! stratospheric heating rate (K/s)
-  real(r8) :: gama                      ! power of strat. heating function
+  real(r8) :: gammaq                    ! power of strat. heating function
   real(r8) :: qstar                     ! mixing ratio norm. for strat. heating
   real(r8) :: q0                        ! mixing ratio of zero heating 
                                         ! (x-intercept of log heating form)
   
   ! for surface cooling
   real(r8) :: dTsurf                    ! surface cooling rate (K/s) 
-  real(r8) :: taustar                   ! AOD norm. for surface cooling 
   real(r8) :: zAOD                      ! max height to apply surf. cooling (m)
   real(r8) :: b_so2  = 1.0_r8           ! SO2 mass extinction coeff. (1/kg)
   real(r8) :: b_ash  = 1.0_r8           ! ash mass extinction coeff. (1/kg)
   real(r8) :: b_sulf = 1.0_r8           ! sulfate mass extinction coeff. (1/kg)
   real(r8) :: AOD_cutoff                ! masking
+  real(r8) :: gammatau                  ! power of surface cooling function
+  real(r8) :: taustar                   ! AOD norm. for surface cooling 
+  real(r8) :: tau0                      ! AOD of zero cooling
+                                        ! (x-intercept of log cooling form)
   
 
 !===============================================================================
@@ -159,8 +164,9 @@ contains
                                      cldera_sai_MSO2, cldera_sai_Mash, &
                                      cldera_sai_rkSO2, cldera_sai_rkash, cldera_sai_rksulf, &
                                      cldera_sai_dTsurf, cldera_sai_dTstrat, &
-                                     cldera_sai_w, cldera_sai_taustar, cldera_sai_zAOD, &
-                                     cldera_sai_qstar, cldera_sai_q0, cldera_sai_gamma, & 
+                                     cldera_sai_w, cldera_sai_zAOD, &
+                                     cldera_sai_qstar, cldera_sai_q0, cldera_sai_gammaq, & 
+                                     cldera_sai_taustar, cldera_sai_tau0, cldera_sai_gammatau, & 
                                      cldera_sai_formSulfate, cldera_sai_stratHeating, &
                                      cldera_sai_surfCooling
 
@@ -180,24 +186,27 @@ contains
        call freeunit(unitn)
     
        ! set local values, scale to SI units
-       lat0    = cldera_sai_lat0     * deg2rad     
-       lon0    = cldera_sai_lon0     * deg2rad     
-       M_so2   = cldera_sai_MSO2     * Mt2kg      
-       M_ash   = cldera_sai_Mash     * Mt2kg      
-       dTstrat = cldera_sai_dTstrat  / day2s  
-       dTsurf  = cldera_sai_dTsurf   / day2s   
-       zAOD    = cldera_sai_zAOD     * km2m
-       dur     = cldera_sai_duration * hr2s
-       t0      = cldera_sai_t0       * hr2s          
-       tf      = t0 + dur
-       k_so2   = 1.0_r8 / (cldera_sai_rkSO2  * day2s)
-       k_ash   = 1.0_r8 / (cldera_sai_rkash  * day2s)     
-       k_sulf  = 1.0_r8 / (cldera_sai_rksulf * day2s)     
-       qstar   = cldera_sai_qstar            
-       q0      = cldera_sai_q0
-       gama    = cldera_sai_gamma
-       w       = cldera_sai_w                 
-       taustar = cldera_sai_taustar          
+       lat0     = cldera_sai_lat0     * deg2rad     
+       lon0     = cldera_sai_lon0     * deg2rad     
+       M_so2    = cldera_sai_MSO2     * Mt2kg      
+       M_ash    = cldera_sai_Mash     * Mt2kg      
+       dTstrat  = cldera_sai_dTstrat  / day2s  
+       dTsurf   = cldera_sai_dTsurf   / day2s   
+       zAOD     = cldera_sai_zAOD     * km2m
+       dur      = cldera_sai_duration * hr2s
+       t0       = cldera_sai_t0       * hr2s          
+       tf       = t0 + dur
+       k_so2    = 1.0_r8 / (cldera_sai_rkSO2  * day2s)
+       k_ash    = 1.0_r8 / (cldera_sai_rkash  * day2s)     
+       k_sulf   = 1.0_r8 / (cldera_sai_rksulf * day2s)     
+       qstar    = cldera_sai_qstar            
+       q0       = cldera_sai_q0
+       gammaq   = cldera_sai_gammaq
+       taustar  = cldera_sai_taustar            
+       tau0     = cldera_sai_tau0
+       gammatau = cldera_sai_gammatau
+       w        = cldera_sai_w                 
+       taustar  = cldera_sai_taustar          
 
     end if
 
@@ -223,8 +232,10 @@ contains
     call mpibcast(dTsurf,        1, mpir8, 0, mpicom)
     call mpibcast(qstar,         1, mpir8, 0, mpicom)
     call mpibcast(q0,            1, mpir8, 0, mpicom)
-    call mpibcast(gama,          1, mpir8, 0, mpicom)
+    call mpibcast(gammaq,        1, mpir8, 0, mpicom)
     call mpibcast(taustar,       1, mpir8, 0, mpicom)
+    call mpibcast(tau0,          1, mpir8, 0, mpicom)
+    call mpibcast(gammatau,      1, mpir8, 0, mpicom)
     call mpibcast(zAOD,          1, mpir8, 0, mpicom)
 #endif
 
@@ -478,6 +489,7 @@ contains
     real(r8) :: strat_heating(ncol,pver) ! stratospheric heating (J/kg/s)
     
     ! for surface cooling
+    real(r8) :: aodtot                   ! combined so2, sulfate, ash AOD (dimensionless)
     real(r8) :: surf_cooling(ncol,pver)  ! surface cooling (J/kg/s)
     real(r8) :: aod_so2(ncol,pver)       ! SO2 AOD (kg)
     real(r8) :: aod_ash(ncol,pver)       ! ash AOD (kg)
@@ -634,19 +646,12 @@ contains
           ptend%q(i,k,ixso2) = 1/grid_mass(i, k) * &
                                (-k_so2 * state%q(i, k, ixso2) * grid_mass(i, k) + &
                                 A_so2 * V(k) * source_toggle)
-          ! for debugging
-          !if(ptend%q(i, k, ixso2) * grid_mass(i,k) > 1) then
-          !    write(iulog,*) "CLDERA_SAI_TRACERS PTENDSUM (kg/s) ", inject, myrank, lchnk, i, &
-          !                                         ptend%q(i, k, ixso2) * grid_mass(i,k), t, tf
-          !endif
-          
 
           ! =============== ASH ===============
           ! ---- source + decay
           ptend%q(i,k,ixash) = 1/grid_mass(i, k) * &
                                (-k_ash * state%q(i, k, ixash) * grid_mass(i, k) + &
                                 A_ash * V(k) * source_toggle)
-
 
           ! =============== SULFATE ===============
           if(cldera_sai_formSulfate) then 
@@ -661,28 +666,23 @@ contains
           ! ---- stratospheric heating
           qtot = state%q(i, k, ixso2) + state%q(i, k, ixsulf) 
           if(cldera_sai_stratHeating .and. qtot > q0) then
-              strat_heating(i, k) = (1 - (LOG10(qtot/qstar) / LOG10(q0/qstar)))**gama &
+              strat_heating(i, k) = (1 - (LOG10(qtot/qstar) / LOG10(q0/qstar)))**gammaq &
                                     * cpair * dTstrat
-              !if(i == inji .and. myrank == inj_owner) then
-                  ! debug
-              !    write(iulog,*) "CLDERA_SAI_TRACERS HEATING:", strat_heating(i, k), &
-              !                   "  Q: ", state%q(i, k, ixso2) + state%q(i, k,ixsulf)
-              !endif
           else
               strat_heating(i, k) = 0.0_r8
           endif
     
           ! ---- surface cooling
-          if(cldera_sai_surfCooling) then 
-              surf_cooling(i, k) = (aod_so2(i,k) + aod_sulf(i,k) + aod_ash(i,k)) * &
-                                   (1/taustar) * cpair * dTsurf * AOD_cutoff
+          aodtot = aod_so2(i,k) + aod_sulf(i,k) + aod_ash(i,k)
+          if(cldera_sai_surfCooling .and. aodtot > tau0) then 
+              surf_cooling(i, k) = (1 - (LOG10(aodtot/taustar) / LOG10(tau0/taustar)))**gammatau &
+                                    * cpair * dTsurf * AOD_cutoff
           else
               surf_cooling(i, k) = 0.0_r8
           endif
 
           ! --- total heating
           ptend%s(i, k) = strat_heating(i, k) + surf_cooling(i, k)
-
 
        end do
     end do
