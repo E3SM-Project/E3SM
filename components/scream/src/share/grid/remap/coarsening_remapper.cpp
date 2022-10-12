@@ -245,7 +245,7 @@ void CoarseningRemapper::do_remap_fwd () const
   // Fire the recv requests right away, so that if some other ranks
   // is done packing before us, we can start receiving their data
   if (not m_recv_req.empty()) {
-    int ierr = MPI_Startall(m_recv_req.size(),m_recv_req_ptr);
+    int ierr = MPI_Startall(m_recv_req.size(),m_recv_req.data());
     EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
         "Error! Something whent wrong while starting persistent recv requests.\n"
         "  - recv rank: " + std::to_string(m_comm.rank()) + "\n");
@@ -284,7 +284,7 @@ void CoarseningRemapper::do_remap_fwd () const
 
   // Wait for all sends to be completed
   if (not m_send_req.empty()) {
-    int ierr = MPI_Waitall(m_send_req.size(),m_send_req_ptr, MPI_STATUSES_IGNORE);
+    int ierr = MPI_Waitall(m_send_req.size(),m_send_req.data(), MPI_STATUSES_IGNORE);
     EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
         "Error! Something whent wrong while waiting on persistent send requests.\n"
         "  - send rank: " + std::to_string(m_comm.rank()) + "\n");
@@ -483,7 +483,7 @@ void CoarseningRemapper::pack_and_send () const
   }
 
   if (not m_send_req.empty()) {
-    int ierr = MPI_Startall(m_send_req.size(),m_send_req_ptr);
+    int ierr = MPI_Startall(m_send_req.size(),m_send_req.data());
     EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
         "Error! Something whent wrong while starting persistent send requests.\n"
         "  - send rank: " + std::to_string(m_comm.rank()) + "\n");
@@ -493,7 +493,7 @@ void CoarseningRemapper::pack_and_send () const
 void CoarseningRemapper::recv_and_unpack () const
 {
   if (not m_recv_req.empty()) {
-    int ierr = MPI_Waitall(m_recv_req.size(),m_recv_req_ptr, MPI_STATUSES_IGNORE);
+    int ierr = MPI_Waitall(m_recv_req.size(),m_recv_req.data(), MPI_STATUSES_IGNORE);
     EKAT_REQUIRE_MSG (ierr==MPI_SUCCESS,
         "Error! Something whent wrong while waiting on persistent recv requests.\n"
         "  - recv rank: " + std::to_string(m_comm.rank()) + "\n");
@@ -518,6 +518,7 @@ void CoarseningRemapper::recv_and_unpack () const
     const auto& fl = f.get_header().get_identifier().get_layout();
     const auto lt = get_layout_type(fl.tags());
     const auto f_pid_offsets = ekat::subview(m_recv_f_pid_offsets,ifield);
+
 
     f.deep_copy(0);
     switch (lt) {
@@ -889,7 +890,6 @@ void CoarseningRemapper::setup_mpi_data_structures ()
     MPI_Send_init (send_ptr, n, mpi_real, pid,
                    0, mpi_comm, &req);
   }
-  m_send_req_ptr = m_send_req.data();
 
   // --------------------------------------------------------- //
   //                   Setup RECV structures                   //
@@ -986,7 +986,6 @@ void CoarseningRemapper::setup_mpi_data_structures ()
     MPI_Recv_init (recv_ptr, n, mpi_real, pid,
                    0, mpi_comm, &req);
   }
-  m_recv_req_ptr = m_recv_req.data();
 }
 
 } // namespace scream

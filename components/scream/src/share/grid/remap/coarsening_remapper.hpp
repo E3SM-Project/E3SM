@@ -214,16 +214,8 @@ protected:
   view_1d<int>          m_recv_lids_end;
 
   // Send/recv requests
-  std::vector<MPI_Request>  m_recv_req;
-  std::vector<MPI_Request>  m_send_req;
-
-  // Unfortunately, MPI's startall/waitall needs a ptr to nonconst requests.
-  // Since do_remap_fwd is a const method, calling m_recv_req.data() would
-  // return a pointer to const. So store the nonconst ptrs.
-  // Note: these are persistent requests, so startall/waitall should *not*
-  //       change them (recall that MPI_Request is an opaque pointer).
-  MPI_Request*              m_recv_req_ptr;
-  MPI_Request*              m_send_req_ptr;
+  mutable std::vector<MPI_Request>  m_recv_req;
+  mutable std::vector<MPI_Request>  m_send_req;
 };
 
 } // namespace scream
