@@ -5,16 +5,17 @@ namespace vinterp {
 
 template<typename Src, typename Tgt, typename Input, typename T, int N> 
 void perform_vertical_interpolation(
-const Src& x_src,
-const Tgt& x_tgt,
-const Input& input,
-const view_2d<Pack<T,N>>& output,
-const int nlevs_src,
-const int nlevs_tgt)
+  const Src& x_src,
+  const Tgt& x_tgt,
+  const Input& input,
+  const view_2d<Pack<T,N>>& output,
+  const view_2d<Mask<N>>& mask,
+  const int nlevs_src,
+  const int nlevs_tgt,
+  const Real& msk_val)
 {
-const view_2d<Mask<N>> mask("",x_src.extent(0),x_tgt.extent(0));
 perform_vertical_interpolation_impl_2d(x_src, x_tgt, input, output, mask,
-                                       nlevs_src, nlevs_tgt, masked_val);
+                                       nlevs_src, nlevs_tgt, msk_val);
 }
 
 template<typename Src, typename Tgt, typename Input, typename T, int N> 
@@ -33,19 +34,17 @@ perform_vertical_interpolation_impl_2d(x_src, x_tgt, input, output, mask,
 
 template<typename Src, typename Tgt, typename Input, typename T, int N> 
 void perform_vertical_interpolation(
-  const Src& x_src,
-  const Tgt& x_tgt,
-  const Input& input,
-  const view_2d<Pack<T,N>>& output,
-  const view_2d<Mask<N>>& mask,
-  const int nlevs_src,
-  const int nlevs_tgt,
-  const Real& msk_val)
+const Src& x_src,
+const Tgt& x_tgt,
+const Input& input,
+const view_2d<Pack<T,N>>& output,
+const int nlevs_src,
+const int nlevs_tgt)
 {
+const view_2d<Mask<N>> mask("",x_src.extent(0),x_tgt.extent(0));
 perform_vertical_interpolation_impl_2d(x_src, x_tgt, input, output, mask,
-                                       nlevs_src, nlevs_tgt, msk_val);
+                                       nlevs_src, nlevs_tgt, masked_val);
 }
- 
 
 template<typename Src, typename Tgt, typename Input, typename T, int N> 
 void perform_vertical_interpolation_impl_2d(
@@ -95,13 +94,13 @@ void perform_vertical_interpolation_impl_2d(
       msk(k) = combined_m;
       out(k).set(combined_m,msk_val);
     });
-    Kokkos::fence();
-
+    team.team_barrier();
   });
   Kokkos::fence();   
 }
 
 template<typename Src, typename Tgt, typename Input, typename T, int N> 
+KOKKOS_FUNCTION
 void perform_vertical_interpolation_impl_1d(
   const Src& x_src,
   const Tgt& x_tgt,
@@ -130,7 +129,7 @@ void perform_vertical_interpolation_impl_1d(
     mask(k) = combined_m;
     output(k).set(combined_m,msk_val);
   });
-  Kokkos::fence();
+  team.team_barrier();
 }
   
 } // namespace vinterp
