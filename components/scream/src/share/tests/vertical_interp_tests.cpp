@@ -13,74 +13,134 @@ using Smask = ekat::Mask<Spack::n>;
 
 template<int N>
 void run(){
-  //This function is used to test 4 different scenarios:
+  //This function first tests cases where the output levels are the same
+  //as the input levels to make sure you get the same output as input
+  //In this case only two cases are investigated:
+  //1) n_layers_src = n_layers_tgt = 2*N
+  //2) n_layers_src = n_layers_tgt = 2*N+1
+  //where N is the pack size
+  //Then the function tests 4 different scenarios where the 
+  //the output levels are different from the input levels:
   //1) n_layers_src= 2*N,   n_layers_tgt= 2*N
   //2) n_layers_src= 2*N+1, n_layers_tgt= 2*N
   //3) n_layers_src= 2*N,   n_layers_tgt= 2*N-1
   //4) n_layers_src= 2*N+1, n_layers_tgt= 2*N-1
   //For each scenario target levels are at the midpoint and so should be the average
   //of the source layers. 
-  //However, the last target level is not at a midpoint. 
-  //For scenario 1) it is at the last source level
-  //For scenario 2) and 3) it is at the 2nd to last source level
-  //For scenario 4) it is at the 3rd to last source level
 
   int n_layers_src[4] = {2*N,2*N+1,2*N,2*N+1};
   int n_layers_tgt[4] = {2*N,2*N,2*N-1,2*N-1};
 
   printf (" -- Testing vertical interpolation with Pack size %d --\n",N);
-  for (int i=0; i<4; i++){
-    printf ("    -> Testing %d source layers, %d target layers\n",
-            n_layers_src[i],n_layers_tgt[i]);
-    auto npacks_src = ekat::PackInfo<N>::num_packs(n_layers_src[i]);
-    auto npacks_tgt = ekat::PackInfo<N>::num_packs(n_layers_tgt[i]);
-    auto p_tgt = view_1d<Pack<Real,N>>("",npacks_tgt);
-    auto p_tgt_s = Kokkos::create_mirror_view(ekat::scalarize(p_tgt));
-    auto tmp_src = view_2d<Pack<Real,N>>("",2,npacks_src);
-    auto tmp_src_s = Kokkos::create_mirror_view(ekat::scalarize(tmp_src));
-    auto p_src = view_2d<Pack<Real,N>>("",2,npacks_src);
-    auto p_src_s = Kokkos::create_mirror_view(ekat::scalarize(p_src));
-    auto out = view_2d<Pack<Real,N>>("",2,npacks_tgt);
-    auto out_s = Kokkos::create_mirror_view(ekat::scalarize(out));
-    auto mask = view_2d<Mask<N>>("",2,npacks_tgt);
 
-    for (int lev=0; lev<(n_layers_tgt[i]-1); lev++){
-      p_tgt_s(lev) = lev*2+1;
-    }
-    p_tgt_s(n_layers_tgt[i]-1) = 2*n_layers_tgt[i];
+  for (double perturb : {0, 1}){
+    printf ("    -> Target pressure levels: p_tgt = p_src + %f\n",perturb);
+    for (int i=0; i<4; i++){
+      if (perturb == 0){
+        //The 3rd and 4th test are redundant in the case of the
+        //same target levels as source levels
+        if(i > 1){ break;}
+        //In this case the target levels are the same as the source levels
+        n_layers_tgt[i] = n_layers_src[i];
 
-    for (int col=0; col<2; col++){
-      for (int lev=0; lev<n_layers_src[i]; lev++){
-        p_src_s(col,lev) = 2.*lev;
-        tmp_src_s(col,lev) = 100.*(col+1) + 2.*lev;
-      }//end of looping over levels
-    }//end of looping over columns
+        printf ("      -> Testing %d source layers, %d target layers\n",
+                n_layers_src[i],n_layers_tgt[i]);
+      }
+      else{
+        printf ("      -> Testing %d source layers, %d target layers\n",
+                n_layers_src[i],n_layers_tgt[i]);
+      }
+      auto npacks_src = ekat::PackInfo<N>::num_packs(n_layers_src[i]);
+      auto npacks_tgt = ekat::PackInfo<N>::num_packs(n_layers_tgt[i]);
+      auto p_tgt = view_1d<Pack<Real,N>>("",npacks_tgt);
+      auto p_tgt_s = Kokkos::create_mirror_view(ekat::scalarize(p_tgt));
+      auto tmp_src = view_2d<Pack<Real,N>>("",2,npacks_src);
+      auto tmp_src_s = Kokkos::create_mirror_view(ekat::scalarize(tmp_src));
+      auto p_src = view_2d<Pack<Real,N>>("",2,npacks_src);
+      auto p_src_s = Kokkos::create_mirror_view(ekat::scalarize(p_src));
+      auto out = view_2d<Pack<Real,N>>("",2,npacks_tgt);
+      auto out_s = Kokkos::create_mirror_view(ekat::scalarize(out));
+      auto mask = view_2d<Mask<N>>("",2,npacks_tgt);
+  
+      //Set target levels    
+      for (int lev=0; lev<(n_layers_tgt[i]-1); lev++){
+        p_tgt_s(lev) = 2*lev+perturb;
+      } 
+      //Set source levels and source input (tmp_src)
+      for (int col=0; col<2; col++){
+        for (int lev=0; lev<n_layers_src[i]; lev++){
+          p_src_s(col,lev) = 2.*lev;
+          tmp_src_s(col,lev) = 100.*(col+1) + 2.*lev;
+        }//end of looping over levels
+      }//end of looping over columns
+  
+      perform_vertical_interpolation(p_src,
+                                     p_tgt,
+                                     tmp_src,
+                                     out,
+                                     mask,
+                                     n_layers_src[i],
+                                     n_layers_tgt[i]);
 
-    perform_vertical_interpolation(p_src,
-    			           p_tgt,
-				   tmp_src,
-				   out,
-				   mask,
-				   n_layers_src[i],
-				   n_layers_tgt[i]);
+      //Check that output of interpolation is as expected
+      for(int col=0; col<2; col++){
+        for(int lev=0; lev<(n_layers_tgt[i]-1); lev++){
+          if (perturb == 0){
+            REQUIRE(out_s(col,lev) == tmp_src_s(col,lev));
+          }
+          else{
+            auto avg_val = (tmp_src_s(col,lev+1)+tmp_src_s(col,lev))/2.;
+            REQUIRE(out_s(col,lev) == avg_val);
+  	  }
+        }//end of looping over levels
+      }//end of looping over columns
+  
+      //Take subview and run through the 1d interpolator function 
+      //and make sure get same thing back
+      ekat::LinInterp<Real,N> vert_interp(2,n_layers_src[i],n_layers_tgt[i]);
+      const int num_vert_packs = p_tgt.extent(0);
+      const auto policy = ESU::get_default_team_policy(1, num_vert_packs);
+      Kokkos::parallel_for("scream_vert_interp_setup_loop", policy,
+         	       KOKKOS_LAMBDA(MemberType const& team) {
+          const int icol = team.league_rank();
+          view_1d<Pack<Real,N>> x1=ekat::subview(p_src, icol);
+          view_1d<Pack<Real,N>> in=ekat::subview(tmp_src, icol);
+          view_1d<Pack<Real,N>> out_1d=ekat::subview(out, icol);
+          view_1d<Mask<N>> msk=ekat::subview(mask, icol);
+          perform_vertical_interpolation_impl_1d(x1,
+                                                 p_tgt,
+                                                 in,
+                                                 out_1d,
+                                                 msk,
+                                                 n_layers_src[i],
+                                                 n_layers_tgt[i],
+                                                 icol,
+                                                 masked_val,
+                                                 team,
+                                                 vert_interp); 
+      });
+      Kokkos::fence();
 
-    for(int col=0; col<2; col++){
-      for(int lev=0; lev<(n_layers_tgt[i]-1); lev++){
-        auto avg_val = (tmp_src_s(col,lev+1)+tmp_src_s(col,lev))/2.;
-        if (lev < (n_layers_tgt[i]-1)){
-          REQUIRE(out_s(col,lev) == avg_val);
-        }
-        else if(lev == (n_layers_tgt[i]-1)){
-          REQUIRE(out_s(col,lev) == tmp_src_s(col,lev+1));
-        }
-      }//end of looping over levels
-    }//end of looping over columns
-  }//end of looping over tests
-
+      //Check that 1d interpolator output is consistent with what is expected
+      for(int col=0; col<2; col++){
+        for(int lev=0; lev<(n_layers_tgt[i]-1); lev++){
+          if (perturb == 0){
+            REQUIRE(out_s(col,lev) == tmp_src_s(col,lev));
+          }
+  	  else{
+            auto avg_val = (tmp_src_s(col,lev+1)+tmp_src_s(col,lev))/2.;
+            REQUIRE(out_s(col,lev) == avg_val);
+  	  }
+        }//end of looping over levels
+      }//end of looping over columns
+    }//end of looping over pack size tests
+  }//end of looping over perturbed or not
 }
 
-TEST_CASE("different_level_pack_size_tests"){
-  //Testing that get expected answer for nlevs % packsize==0 and nlevs%packsize!=0
+TEST_CASE("main_vertical_interpolation_test"){
+  //This test first checks that you get the same answer if source and target levels 
+  //are the same
+  //It then tests that you get the expected answer for nlevs % packsize==0 and nlevs%packsize!=0
   //and for different pack sizes. 
   run<1> ();
   if (SCREAM_PACK_SIZE>1) {
@@ -88,7 +148,7 @@ TEST_CASE("different_level_pack_size_tests"){
   }
 }
 
-TEST_CASE("main_vertical_interpolation_test"){
+TEST_CASE("testing_masking"){
   //This test performs 3 tests:
   //1) That the interpolation is working properly using 2d views, 
   //   including the masking of out-of-bounds values
@@ -156,7 +216,7 @@ TEST_CASE("main_vertical_interpolation_test"){
   correct_val[0][14] = 255.;
   correct_val[0][15] = 240.;
   correct_val[0][16] = masked_val;
-  correct_val[1][0] = masked_val;
+  correct_val[1][0]  = masked_val;
   correct_val[1][15] = 270.;
   correct_val[1][16] = 255.;
 
@@ -166,7 +226,8 @@ TEST_CASE("main_vertical_interpolation_test"){
     }
   }
 
-  //Test to see if get same answer when call 1D interpolation function instead of 2D interpolation function
+  //Test to see if get same answer when call 1D interpolation function 
+  //instead of 2D interpolation function
   auto out_1d_test = view_2d<Pack<Real,N>>("",2,npacks_tgt);
   auto out_1d_test_s = Kokkos::create_mirror_view(ekat::scalarize(out_1d_test));
   auto mask_1d_test = view_2d<Mask<N>>("",2,npacks_tgt);
@@ -220,83 +281,6 @@ TEST_CASE("main_vertical_interpolation_test"){
   for(int col=0; col<2; col++){
     for(int lev=0; lev<17; lev++){
       REQUIRE(out_same_s(col,lev) == correct_val[col][lev]);
-    }
-  }
-
-}
-
-TEST_CASE("same_output_grid_test"){
-  //This test checks to see if same levels for target and source returns same data
-  const int n_layers_src = 17;
-  const int n_layers_tgt = 17;
-
-  auto npacks_src = ekat::PackInfo<Spack::n>::num_packs(n_layers_src);
-  auto npacks_tgt = ekat::PackInfo<Spack::n>::num_packs(n_layers_tgt);
-  auto p_tgt = view_1d<Spack>("",npacks_tgt);
-  auto p_tgt_s = Kokkos::create_mirror_view(ekat::scalarize(p_tgt));
-  auto tmp_src = view_2d<Spack>("",2,npacks_src);
-  auto tmp_src_s = Kokkos::create_mirror_view(ekat::scalarize(tmp_src));
-  auto p_src = view_2d<Spack>("",2,npacks_src);
-  auto p_src_s = Kokkos::create_mirror_view(ekat::scalarize(p_src));
-  auto out = view_2d<Spack>("",2,npacks_tgt);
-  auto out_s = Kokkos::create_mirror_view(ekat::scalarize(out));
-  auto mask = view_2d<Smask>("",2,npacks_tgt);
-
-  //Set target levels
-  for (int i=0; i<17; i++){
-    p_tgt_s(i) = 20.0 + i*5.0;
-  }
-
-  //Set source levels and input view
-  for (int i=0; i<17; i++){
-    p_src_s(0,i) = 20.0 + i*5.0;
-    p_src_s(1,i) = 20.0 + i*5.0;
-    tmp_src_s(0,i) = 200.0 + i*5.0;
-    tmp_src_s(1,i) = 200.0 + i*5.0;
-  }
-
-  perform_vertical_interpolation(p_src,
-				 p_tgt,
-				 tmp_src,
-				 out,
-				 n_layers_src,
-				 n_layers_tgt);
-  
-  for(int col=0; col<2; col++){
-    for(int lev=0; lev<17; lev++){
-      REQUIRE(out_s(col,lev) == tmp_src_s(col,lev));
-    }
-  }
-
-  //Take subview and run through the 1d interpolator function and make sure get same thing back
-  ekat::LinInterp<Real,Spack::n> vert_interp(1,n_layers_src,n_layers_tgt);
-  const int num_vert_packs = p_tgt.extent(0);
-  const auto policy = ESU::get_default_team_policy(1, num_vert_packs);
-  Kokkos::parallel_for("scream_vert_interp_setup_loop", policy,
-     	       KOKKOS_LAMBDA(MemberType const& team) {
-      const int icol = team.league_rank();
-      view_1d<Spack> x1=ekat::subview(p_src, icol);
-      view_1d<Spack> in=ekat::subview(tmp_src, icol);
-      view_1d<Spack> out_1d=ekat::subview(out, icol);
-      view_1d<Smask> msk=ekat::subview(mask, icol);
-      perform_vertical_interpolation_impl_1d(x1,
-                                             p_tgt,
-                                             in,
-                                             out_1d,
-                                             msk,
-                                             n_layers_src,
-                                             n_layers_tgt,
-                                             icol,
-                                             masked_val,
-                                             team,
-                                             vert_interp);
-
-  });
-  Kokkos::fence();
-
-  for(int col=0; col<2; col++){
-    for(int lev=0; lev<17; lev++){
-      REQUIRE(out_s(col,lev) == tmp_src_s(col,lev));
     }
   }
 
