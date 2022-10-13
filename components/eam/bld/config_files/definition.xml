@@ -368,4 +368,8 @@ CRM number of averaged columns in x for radiation
 CRM number of averaged columns in y for radiation
 </entry>
 
+<entry id="cldera_strat_volc" valid_values="0,1" value="0">
+Switch to enable prognostic volcanic aerosol treatment in stratosphere in MAM4 simulations: 0=off, 1=on.
+</entry>
+
 </config_definition>

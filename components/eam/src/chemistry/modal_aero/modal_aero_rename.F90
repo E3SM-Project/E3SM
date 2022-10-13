@@ -510,7 +510,6 @@ mainloop1_ipair:  do ipair = 1, npair_renamexf
       	  lsfrma, lsfrmc, lstooa, lstooc, lunout,   &
       	  mfrm, mtoo, n1, n2, nsamefrm, nsametoo, nspec
 
-
 	lunout = 6
 !
 !   define "from mode" and "to mode" for each tail-xfer pairing

@@ -107,7 +107,6 @@ module aero_model
   logical :: drydep_lq(pcnst)
   logical :: wetdep_lq(pcnst)
 
-
 contains
   
   !=============================================================================
@@ -354,7 +353,7 @@ contains
     endif
     call rad_cnst_get_info(0, nmodes=nmodes)
 
-    call modal_aero_initialize(pbuf2d, imozart, species_class) 
+    call modal_aero_initialize(pbuf2d, imozart, species_class)
     call modal_aero_bcscavcoef_init()
     call mam_prevap_resusp_init( ) ! REASTER 08/04/2015
 
@@ -2363,7 +2362,7 @@ do_lphase2_conditional: &
   !=============================================================================
   subroutine aero_model_gasaerexch( loffset, ncol, lchnk, delt, &
                                     latndx, lonndx, reaction_rates, &
-                                    tfld, pmid, pdel, mbar, relhum, &
+                                    tfld, pmid, pdel, troplev, mbar, relhum, &
                                     zm,  qh2o, cwat, cldfr, cldnum, &
                                     airdens, invariants, del_h2so4_gasprod,  &
                                     vmr0, vmr, pbuf )
@@ -2385,6 +2384,7 @@ do_lphase2_conditional: &
     integer,  intent(in) :: lchnk                  ! chunk index
     integer,  intent(in) :: latndx(pcols)          ! latitude indices
     integer,  intent(in) :: lonndx(pcols)          ! longitude indices
+    integer,  intent(in) :: troplev(pcols)         ! tropopause level index
     real(r8), intent(in) :: delt                   ! time step size (sec)
     real(r8), intent(in) :: reaction_rates(:,:,:)  ! reaction rates
     real(r8), intent(in) :: tfld(:,:)              ! temperature (K)
@@ -2403,7 +2403,7 @@ do_lphase2_conditional: &
     real(r8), intent(in) :: vmr0(:,:,:)       ! initial mixing ratios (before gas-phase chem changes)
     real(r8), intent(inout) :: vmr(:,:,:)         ! mixing ratios ( vmr )
     type(physics_buffer_desc), pointer :: pbuf(:)
-    
+
     ! local vars 
     
     integer :: n, m
@@ -2591,6 +2591,7 @@ do_lphase2_conditional: &
             loffset,   delt,                         &
             latndx,    lonndx,                       &
             tfld,      pmid,    pdel,                &
+            troplev,                                 &
             zm,        pblh,                         &
             qh2o,      cldfr,                        &
             vmr,                vmrcw,               &
