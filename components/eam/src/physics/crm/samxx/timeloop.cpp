@@ -84,7 +84,6 @@ void timeloop() {
   YAKL_SCOPE( dt3                      , :: dt3 );
   YAKL_SCOPE( use_VT                   , :: use_VT );
   YAKL_SCOPE( use_ESMT                 , :: use_ESMT );
-// #ifdef MMF_LAGRANGIAN_RAD
 #ifdef MMF_RAD_SORT
   YAKL_SCOPE( CF3D                     , :: CF3D );
   YAKL_SCOPE( crm_rad_temperature      , :: crm_rad_temperature );
@@ -98,7 +97,7 @@ void timeloop() {
   // YAKL_SCOPE( sort_q                   , :: sort_q );
   YAKL_SCOPE( sort_i                   , :: sort_i );
   YAKL_SCOPE( sort_j                   , :: sort_j );
-  
+
   // start by populating rad sort indices
   update_sort_idx();
 #endif
