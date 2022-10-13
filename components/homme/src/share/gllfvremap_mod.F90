@@ -528,9 +528,9 @@ contains
   subroutine gfr_potvort_dyn_to_fv_phys_hybrid(hybrid, nt, hvcoord, elem, nets, nete, potvort)
     ! Remap potential vorticity from GLL to FV grids.
 
-    use dimensions_mod, only: nlev
-    use hybvcoord_mod, only: hvcoord_t
-    use element_ops, only:  get_field
+    use dimensions_mod,     only: nlev
+    use hybvcoord_mod,      only: hvcoord_t
+    use element_ops,        only:  get_field
     use physical_constants, only: p0, kappa
 
     type (hybrid_t), intent(in) :: hybrid
@@ -557,10 +557,10 @@ contains
   subroutine gfr_potvort_dyn_to_fv_phys_dom_mt(par, dom_mt, nt, hvcoord, elem, potvort)
     ! Wrapper to the hybrid-threading main routine for potential voticity remapping 
     
-    use parallel_mod, only: parallel_t
-    use domain_mod, only: domain1d_t
+    use parallel_mod,  only: parallel_t
+    use domain_mod,    only: domain1d_t
     use hybvcoord_mod, only: hvcoord_t
-    use thread_mod, only: hthreads
+    use thread_mod,    only: hthreads
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), intent(in) :: dom_mt(:)
