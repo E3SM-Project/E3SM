@@ -29,10 +29,8 @@ module zm_conv_intr
 !>songxl---------------
    use cam_history,  only: outfld, addfld, horiz_only, add_default
    use perf_mod
-   use cam_logfile,  only: iulog
-!++ MCSP 
+   use cam_logfile,  only: iulog 
    use zm_conv,      only: MCSP, MCSP_heat_coeff, MCSP_moisture_coeff, MCSP_uwind_coeff, MCSP_vwind_coeff
-!-- MCSP
 
    implicit none
    private
@@ -246,7 +244,6 @@ subroutine zm_conv_init(pref_edge)
     call addfld ('ZMICVU',     (/ 'lev' /), 'A', 'm/s', 'ZM in-cloud V updrafts')
     call addfld ('ZMICVD',     (/ 'lev' /), 'A', 'm/s', 'ZM in-cloud V downdrafts')
 
-!++ MCSP
     if( MCSP ) then 
     call addfld ('MCSP_DT',(/ 'lev' /), 'A','K/s','T tedency due to MCSP')
     call addfld ('MCSP_freq',horiz_only, 'A','1','frequency of MCSP activated')
@@ -256,7 +253,6 @@ subroutine zm_conv_init(pref_edge)
     call addfld ('ZM_depth',horiz_only,'A','Pa','ZM depth')
     call addfld ('MCSP_shear',horiz_only,'A','m/s','vertical zonal wind shear')
     end if
-!-- MCSP
 
 !<songxl 2014-11-20---------
 
@@ -645,10 +641,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    use constituents,  only: pcnst, cnst_get_ind, cnst_is_convtran1
    use physconst,     only: gravit
    use phys_control,  only: cam_physpkg_is
-!++ MCSP
    use time_manager,       only: get_curr_date
    use interpolate_data, only: vertinterp
-!-- MCSP
 
 
    ! Arguments
@@ -780,7 +774,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    integer  :: ii
 
    logical  :: lq(pcnst)
-!++ MCSP
+
    real(r8) :: alpha2, alpha_moisture, alphau, alphav, top, bottom
    real(r8) :: Q_dis(pcols), Qc_adjust, Qq_dis(pcols), Qcq_adjust
    real(r8) :: Qm(pcols,pver), Qmq(pcols,pver), Qmu(pcols,pver), Qmv(pcols,pver)
@@ -798,7 +792,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    logical  :: doslop_moisture
    logical  :: doslop_uwind
    logical  :: doslop_vwind
-!-- MCSP
+
 
 !<songxl 2014-11-20-----------
    real(r8) :: sprd(pcols,pver)
@@ -883,7 +877,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
 !>songxl 2014-11-20-----------
 
-!++ MCSP
    doslop_heat = .false.
    doslop_moisture = .false.
    doslop_uwind = .false.
@@ -910,7 +903,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    if (doslop_heat .or. doslop_moisture .or. doslop_uwind .or. doslop_vwind) then
      doslop = .true.
    endif
-!-- MCSP
 
 
    !----------------------------------------------------------------------
@@ -930,13 +922,13 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 
    lq(:) = .FALSE.
    lq(1) = .TRUE.
-!++ MCSP 
+ 
    if(doslop) then
         call physics_ptend_init(ptend_loc, state%psetcols, 'zm_convr', ls=.true., lu = doslop_uwind, lv = doslop_vwind, lq=lq)! initialize local ptend type
    else
         call physics_ptend_init(ptend_loc, state%psetcols, 'zm_convr', ls=.true., lq=lq)! initialize local ptend type
    end if
-!-- MCSP
+
 !
 ! Associate pointers with physics buffer fields
 !
@@ -1168,7 +1160,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
 ! End the MCSP parameterization here 
 !   
    
-!++ MCSP
+
   MCSP_DT(:ncol,:pver) = MCSP_DT(:ncol,:pver)/cpair
    call outfld('MCSP_DT    ',MCSP_DT           ,pcols   ,lchnk   )
    call outfld('MCSP_freq    ',MCSP_freq           ,pcols   ,lchnk   )
@@ -1176,7 +1168,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    call outfld('MCSP_DV    ',ptend_loc%v*86400._r8           ,pcols   ,lchnk   )
    call outfld('ZM_depth   ',ZM_depth                        ,pcols   ,lchnk   )
    call outfld('MCSP_shear ',MCSP_shear                      ,pcols   ,lchnk   )
-!-- MCSP
+
    end if
 !
 ! Output fractional occurance of ZM convection
