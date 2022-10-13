@@ -1644,17 +1644,16 @@ contains
     attname  = 'So_dhdx'
     call metadata_set(attname, longname, stdname, units)
 
-    if (ocn_rof_two_way) then
-      ! sea surface height
-      call seq_flds_add(o2x_states,"So_ssh")
-      call seq_flds_add(x2r_states,"So_ssh")
-      call seq_flds_add(o2x_states_to_rof,"So_ssh")
-      longname = 'Sea surface height'
-      stdname  = 'sea_surface_height'
-      units    = 'm'
-      attname  = 'So_ssh'
-      call metadata_set(attname, longname, stdname, units)
-    endif
+    ! sea surface height
+    call seq_flds_add(o2x_states,"So_ssh")
+    call seq_flds_add(x2r_states,"So_ssh")
+    call seq_flds_add(o2x_states_to_rof,"So_ssh")
+    call seq_flds_add(x2w_states,'So_ssh')
+    longname = 'Sea surface height'
+    stdname  = 'sea_surface_height'
+    units    = 'm'
+    attname  = 'So_ssh'
+    call metadata_set(attname, longname, stdname, units)
 
     ! Meridional sea surface slope
     call seq_flds_add(o2x_states,"So_dhdy")
@@ -2536,14 +2535,6 @@ contains
     stdname  = 'peak_wave_direction'
     units    = 'deg'
     attname  = 'Sw_Dp'
-    call metadata_set(attname, longname, stdname, units)
-
-    call seq_flds_add(o2x_states,'So_ssh')
-    call seq_flds_add(x2w_states,'So_ssh')
-    longname = 'Ocean sea surface height'
-    stdname  = 'ocean_sea_surface_height'
-    units    = 'm'
-    attname  = 'So_ssh'
     call metadata_set(attname, longname, stdname, units)
 
     !-----------------------------
