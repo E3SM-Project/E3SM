@@ -61,25 +61,36 @@ TEST_CASE("field_at_single_pressure")
   // Create input fields
   const auto units = ekat::units::Units::invalid();
 
-  FieldIdentifier fid_mid ("M",FL({COL,LEV},{ncols,nlevs}),units,grid->name());
+  FieldIdentifier fid_mid ("V_mid",FL({COL,LEV},{ncols,nlevs}),units,grid->name());
   Field f_mid (fid_mid);
   f_mid.get_header().get_alloc_properties().request_allocation(packsize);
   f_mid.allocate_view();
   f_mid.get_header().get_tracking().update_time_stamp(t0);
 
-  ekat::ParameterList params_mid;
+  FieldIdentifier fid_int ("V_int",FL({COL,ILEV},{ncols,nlevs+1}),units,grid->name());
+  Field f_int (fid_int);
+  f_int.get_header().get_alloc_properties().request_allocation(packsize);
+  f_int.allocate_view();
+  f_int.get_header().get_tracking().update_time_stamp(t0);
+
+  ekat::ParameterList params_mid, params_int;
   params_mid.set("Field Name",f_mid.name());
   params_mid.set("Field Units",fid_mid.get_units());
   params_mid.set("Field Layout",fid_mid.get_layout());
   params_mid.set("Grid Name",fid_mid.get_grid_name());
   params_mid.set<int>("Field Target Pressure",150);
-  //std::string location_pressure_file = "/usr/workspace/rebassoo/Climate/press_tgt_levels.txt";
-  //params_mid.set<std::string>("Field Pressure file",location_pressure_file);
+  params_int.set("Field Name",f_int.name());
+  params_int.set("Field Units",fid_int.get_units());
+  params_int.set("Field Layout",fid_int.get_layout());
+  params_int.set("Grid Name",fid_int.get_grid_name());
+  params_int.set<int>("Field Target Pressure",150);
 
   auto diag_mid = std::make_shared<FieldAtSinglePressure>(comm,params_mid);
   diag_mid->set_grids(gm);
-
   diag_mid->set_required_field(f_mid);
+  auto diag_int = std::make_shared<FieldAtSinglePressure>(comm,params_int);
+  diag_int->set_grids(gm);
+  diag_int->set_required_field(f_int);
 
   // Set the required fields for the diagnostic.
   std::map<std::string,Field> input_fields;
@@ -90,41 +101,64 @@ TEST_CASE("field_at_single_pressure")
     f.allocate_view();
     const auto name = f.name();
     f.get_header().get_tracking().update_time_stamp(t0);
-    //diag_mid->set_required_field(f.get_const());
     diag_mid->set_required_field(f);
-//    REQUIRE_THROWS(diag_mid->set_computed_field(f));
+    input_fields.emplace(name,f);
+  }
+  for (const auto& req : diag_int->get_required_field_requests()) {
+    Field f(req.fid);
+    auto & f_ap = f.get_header().get_alloc_properties();
+    f_ap.request_allocation(packsize);
+    f.allocate_view();
+    const auto name = f.name();
+    f.get_header().get_tracking().update_time_stamp(t0);
+    diag_int->set_required_field(f);
     input_fields.emplace(name,f);
   }
 
   Field p_mid_f = input_fields["p_mid"];
+  Field p_int_f = input_fields["p_int"];
   //Fill data to interpolate
   auto f_mid_v   = f_mid.get_view<Real**>();
   auto p_mid_v   = p_mid_f.get_view<Real**>();
   auto f_mid_v_h = Kokkos::create_mirror_view(f_mid_v);
   auto p_mid_v_h = Kokkos::create_mirror_view(p_mid_v);
+  auto f_int_v   = f_int.get_view<Real**>();
+  auto p_int_v   = p_int_f.get_view<Real**>();
+  auto f_int_v_h = Kokkos::create_mirror_view(f_int_v);
+  auto p_int_v_h = Kokkos::create_mirror_view(p_int_v);
   for (int ilev=0; ilev<nlevs; ilev++){
     for (int icol=0; icol<ncols; icol++){
       f_mid_v_h(icol,ilev) = icol*100 + ilev;
       p_mid_v_h(icol,ilev) = 100*ilev;
+      f_int_v_h(icol,ilev) = icol*100 + ilev;
+      p_int_v_h(icol,ilev) = 100*ilev;
+      f_int_v_h(icol,ilev+1) = icol*100 + ilev+1;
+      p_int_v_h(icol,ilev+1) = 100*(ilev+1);
     }
   }
   Kokkos::deep_copy(f_mid_v, f_mid_v_h);
   Kokkos::deep_copy(p_mid_v, p_mid_v_h);
+  Kokkos::deep_copy(f_int_v, f_int_v_h);
+  Kokkos::deep_copy(p_int_v, p_int_v_h);
   
 
   diag_mid->initialize(t0,RunType::Initial);
+  diag_int->initialize(t0,RunType::Initial);
   
   // Run diagnostics
   diag_mid->compute_diagnostic();
+  diag_int->compute_diagnostic();
 
   auto d_mid = diag_mid->get_diagnostic();
   d_mid.sync_to_host();
-
   auto d_mid_v = d_mid.get_view<const Real*,Host>();
+  auto d_int = diag_int->get_diagnostic();
+  d_int.sync_to_host();
+  auto d_int_v = d_int.get_view<const Real*,Host>();
   
-//  auto d_int_v = d_int.get_view<const Real*,Host>();
   for (int icol=0; icol<ncols; ++icol) {
     REQUIRE (d_mid_v(icol)==icol*100 + 1.5);
+    REQUIRE (d_int_v(icol)==icol*100 + 1.5);
   }
   
 }

@@ -41,37 +41,18 @@ void FieldAtSinglePressure::set_grids(const std::shared_ptr<const GridsManager> 
     FieldLayout pres_layout { {COL,LEV}, {m_num_cols,m_num_levs} };
     m_pres_name = "p_mid";
     add_field<Required>(m_pres_name, pres_layout, Pa, gname);
-
-    FieldLayout diag_layout { {COL}, {m_num_cols} };
-    FieldIdentifier fid (name(),diag_layout, m, gname);
-    m_diagnostic_output = Field(fid);
-    auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
-    C_ap.request_allocation(ps);
-    m_diagnostic_output.allocate_view();
-
   } else {
     FieldLayout pres_layout { {COL,ILEV}, {m_num_cols,m_num_levs+1} };
     m_pres_name = "p_int";
     add_field<Required>(m_pres_name, pres_layout, Pa, gname);
-
-    FieldLayout diag_layout { {COL}, {m_num_cols} };
-    FieldIdentifier fid (name(),diag_layout, m, gname);
-    m_diagnostic_output = Field(fid);
-    auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
-    C_ap.request_allocation(ps);
-    m_diagnostic_output.allocate_view();
   }
 
-  //Currently only works for p_mid, need to make it work for p_int
-  /*
-  FieldLayout pres_layout { {COL,LEV}, {ncol,1} };
-  // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(),pres_layout, m, gname);
+  FieldLayout diag_layout { {COL}, {m_num_cols} };
+  FieldIdentifier fid (name(),diag_layout, m, gname);
   m_diagnostic_output = Field(fid);
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
   C_ap.request_allocation(ps);
   m_diagnostic_output.allocate_view();
-  */
 }
 // =========================================================================================
 void FieldAtSinglePressure::compute_diagnostic_impl()
