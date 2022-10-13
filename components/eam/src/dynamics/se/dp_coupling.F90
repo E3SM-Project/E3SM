@@ -150,7 +150,7 @@ CONTAINS
 
       ps_tmp(:,:)      = 0._r8
       T_tmp(:,:,:)     = 0._r8
-      pv_tmp(:,:,:)     = 0._r8
+      pv_tmp(:,:,:)    = 0._r8
       uv_tmp(:,:,:,:)  = 0._r8
       om_tmp(:,:,:)    = 0._r8
       zs_tmp(:,:)      = 0._r8
@@ -188,7 +188,7 @@ CONTAINS
             phys_state(lchnk)%u(icol,ilyr)     = uv_tmp(ioff,1,ilyr,ie)
             phys_state(lchnk)%v(icol,ilyr)     = uv_tmp(ioff,2,ilyr,ie)
             phys_state(lchnk)%omega(icol,ilyr) = om_tmp(ioff,ilyr,ie)
-            phys_state(lchnk)%pv(icol,ilyr)     = pv_tmp(ioff,ilyr,ie)
+            phys_state(lchnk)%pv(icol,ilyr)    = pv_tmp(ioff,ilyr,ie)
             if (use_gw_front) then
               pbuf_frontgf(icol,ilyr) = frontgf(ioff,ilyr,ie)
               pbuf_frontga(icol,ilyr) = frontga(ioff,ilyr,ie)
@@ -263,7 +263,7 @@ CONTAINS
         do icol = 1,ncols
           phys_state(lchnk)%ps  (icol) = cbuffer(cpter(icol,0))
           phys_state(lchnk)%phis(icol) = cbuffer(cpter(icol,0)+1)
-          do ilyr = 1,pver 
+          do ilyr = 1,pver
             phys_state(lchnk)%t    (icol,ilyr) = cbuffer(cpter(icol,ilyr))
             phys_state(lchnk)%u    (icol,ilyr) = cbuffer(cpter(icol,ilyr)+1)
             phys_state(lchnk)%v    (icol,ilyr) = cbuffer(cpter(icol,ilyr)+2)
