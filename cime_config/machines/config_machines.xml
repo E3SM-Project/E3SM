@@ -1918,7 +1918,7 @@
     <DESC>ANL LCRC cluster 512-node AMD Epyc 7532 2-sockets 64-cores per node</DESC>
     <NODENAME_REGEX>chr.*</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel,gnu</COMPILERS>
+    <COMPILERS>intel,gnu,oneapi-ifx</COMPILERS>
     <MPILIBS>openmpi,impi</MPILIBS>
     <PROJECT>e3sm</PROJECT>
     <SAVE_TIMING_DIR>/lcrc/group/e3sm/PERF_Chrysalis</SAVE_TIMING_DIR>
@@ -2000,6 +2000,18 @@
         <command name="load">netcdf-cxx/4.2-ayxg4c7</command>
         <command name="load">netcdf-fortran/4.4.4-2lfr2lr</command>
         <command name="load">parallel-netcdf/1.11.0-ifdodru</command>
+      </modules>
+      <modules compiler="oneapi-ifx">
+        <command name="load">intel-oneapi-compilers/2022.1.0-m4wa4qg</command>
+        <command name="load">intel-oneapi-mkl/2022.1.0-iwhfz52</command>
+      </modules>
+      <modules compiler="oneapi-ifx" mpilib="openmpi">
+        <command name="load">openmpi/4.1.3-kh3sxfy</command>
+        <command name="load">hdf5/1.12.2-32tlttk</command>
+        <command name="load">netcdf-c/4.4.1-qyl64os</command>
+        <command name="load">netcdf-cxx/4.2-3lyrldx</command>
+        <command name="load">netcdf-fortran/4.4.4-q5okbzn</command>
+        <command name="load">parallel-netcdf/1.11.0-gtimetp</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
