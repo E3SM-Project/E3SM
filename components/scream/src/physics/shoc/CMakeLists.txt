@@ -62,6 +62,24 @@ if (NOT HOMMEXX_ENABLE_GPU)
   ) # SHOC ETI SRCS
 endif()
 
+# List of dispatch source files if monolithic kernels are off
+set(SHOC_SK_SRCS
+    shoc_energy_integrals_disp.cpp
+    shoc_energy_fixer_disp.cpp
+    shoc_check_tke_disp.cpp
+    shoc_grid_disp.cpp
+    shoc_compute_shoc_vapor_disp.cpp
+    shoc_diag_obklen_disp.cpp
+    shoc_pblintd_disp.cpp
+    shoc_length_disp.cpp
+    shoc_tke_disp.cpp
+    shoc_update_prognostics_implicit_disp.cpp
+    shoc_diag_second_shoc_moments_disp.cpp
+    shoc_diag_third_shoc_moments_disp.cpp
+    shoc_assumed_pdf_disp.cpp
+    shoc_update_host_dse_disp.cpp
+    )
+
 if (NOT SCREAM_DEBUG)
   # Mods to compiler flags for individual files to resolve internal compiler errors.
   if ("${SCREAM_MACHINE}" STREQUAL "cori-knl")
@@ -72,19 +90,33 @@ if (NOT SCREAM_DEBUG)
   endif()
 endif()
 
-if (HIP_BUILD)
-  # Work around hipcc issues with SHOC as of late Aug 2022. SHOC builds but then
-  # fails when running in v1 with -O1 and higher.
-  set(SHOC_HIP_FLAGS "-O0")
+set(SHOC_LIBS "shoc")
+if (SCREAM_SMALL_KERNELS)
+  add_library(shoc ${SHOC_SRCS} ${SHOC_SK_SRCS})
+else()
+
+  if (HIP_BUILD)
+    # Work around hipcc issues with SHOC as of late Aug 2022. SHOC builds but then
+    # fails when running in v1 with -O1 and higher.
+    set(SHOC_HIP_FLAGS "-O0")
+  endif()
+
+  add_library(shoc ${SHOC_SRCS})
+  if (NOT SCREAM_BASELINES_ONLY)
+    add_library(shoc_sk ${SHOC_SRCS} ${SHOC_SK_SRCS})
+    # Always build shoc_sk with SCREAM_SMALL_KERNELS on
+    target_compile_definitions(shoc_sk PUBLIC "SCREAM_SMALL_KERNELS")
+    list(APPEND SHOC_LIBS "shoc_sk")
+  endif()
 endif()
 
-add_library(shoc ${SHOC_SRCS})
-target_include_directories(shoc PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../share)
-set_target_properties(shoc PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
-target_link_libraries(shoc physics_share scream_share)
-target_compile_options(shoc
-  PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>
-  PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${SCREAM_CXX_FLAGS} ${SHOC_HIP_FLAGS}>)
+foreach (SHOC_LIB IN LISTS SHOC_LIBS)
+  target_include_directories(${SHOC_LIB} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../share)
+  set_target_properties(${SHOC_LIB} PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
+  target_link_libraries(${SHOC_LIB} physics_share scream_share)
+  target_compile_options(${SHOC_LIB} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>
+                                     PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${SCREAM_CXX_FLAGS} ${SHOC_HIP_FLAGS}>)
+endforeach()
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)
