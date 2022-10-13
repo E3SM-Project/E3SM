@@ -2846,15 +2846,48 @@ Int shoc_main_f(Int shcol, Int nlev, Int nlevi, Real dtime, Int nadv, Int npbl, 
                                              uw_sec_d,    vw_sec_d,   w3_d,      wqls_sec_d,
                                              brunt_d,     isotropy_d};
 
-  // Create local workspace
   const auto nlevi_packs = ekat::npack<Spack>(nlevi);
+
+#ifdef SCREAM_SMALL_KERNELS
+  view_1d
+    se_b   ("se_b", shcol),
+    ke_b   ("ke_b", shcol),
+    wv_b   ("wv_b", shcol),
+    wl_b   ("wl_b", shcol),
+    se_a   ("se_a", shcol),
+    ke_a   ("ke_a", shcol),
+    wv_a   ("wv_a", shcol),
+    wl_a   ("wl_a", shcol),
+    ustar  ("ustar", shcol),
+    kbfs   ("kbfs", shcol),
+    obklen ("obklen", shcol),
+    ustar2 ("ustar2", shcol),
+    wstar  ("wstar", shcol);
+
+  view_2d
+    rho_zt  ("rho_zt",  shcol, nlevi_packs),
+    shoc_qv ("shoc_qv", shcol, nlevi_packs),
+    dz_zt   ("dz_zt",   shcol, nlevi_packs),
+    dz_zi   ("dz_zi",   shcol, nlevi_packs),
+    tkhv    ("tkh",     shcol, nlevi_packs);
+
+  SHF::SHOCTemporaries shoc_temporaries{
+    se_b, ke_b, wv_b, wl_b, se_a, ke_a, wv_a, wl_a, ustar, kbfs, obklen, ustar2, wstar,
+    rho_zt, shoc_qv, dz_zt, dz_zi, tkhv};
+#endif
+
+  // Create local workspace
   const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
   const int n_trac_slots = ekat::npack<Spack>(num_qtracers+3)*Spack::n;
   ekat::WorkspaceManager<Spack, SHF::KT::Device> workspace_mgr(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy);
 
   const auto elapsed_microsec = SHF::shoc_main(shcol, nlev, nlevi, npbl, nadv, num_qtracers, dtime,
                                                workspace_mgr,
-                                               shoc_input, shoc_input_output, shoc_output, shoc_history_output);
+                                               shoc_input, shoc_input_output, shoc_output, shoc_history_output
+#ifdef SCREAM_SMALL_KERNELS
+                                               , shoc_temporaries
+#endif
+                                               );
 
   // Copy wind back into separate views and
   // Transpose tracers
