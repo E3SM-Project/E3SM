@@ -103,12 +103,10 @@ def update_submodules(repo=None):
     Updates submodules
     """
     rc, _, errput = run_cmd("git submodule update --init --recursive", from_dir=repo)
-    if rc == 0:
-        return
-    else:
+    if rc != 0:
         print("Warning: normal submodule update failed:\n{}".format(errput))
 
-        # Trying again without fetching
+        # Trying again without fetching because fetch can fail without ssh keys set up
         run_cmd_no_fail("git submodule update --no-fetch --init --recursive", from_dir=repo)
 
 ###############################################################################
