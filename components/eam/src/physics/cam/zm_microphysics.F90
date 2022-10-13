@@ -128,13 +128,37 @@ type :: zm_aero_t
    integer :: mode_accum_idx  = -1  ! index of accumulation mode
    integer :: mode_aitken_idx = -1  ! index of aitken mode
    integer :: mode_coarse_idx = -1  ! index of coarse mode
+   integer :: mode_coarse_dst_idx = -1  ! index of coarse dust mode
+   integer :: mode_coarse_slt_idx = -1  ! index of coarse sea salt mode
    integer :: coarse_dust_idx = -1  ! index of dust in coarse mode
    integer :: coarse_nacl_idx = -1  ! index of nacl in coarse mode
+
+   integer :: coarse_so4_idx = -1  ! index of so4 in coarse mode
+#if ( defined MOSAIC_SPECIES )
+   integer :: coarse_nh4_idx = -1
+   integer :: coarse_no3_idx = -1
+   integer :: coarse_ca_idx  = -1
+   integer :: coarse_co3_idx = -1
+   integer :: coarse_cl_idx  = -1
+#endif
+#if (defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_5MODE)
+   integer :: coarse_mom_idx = -1  ! index of mom in coarse mode
+#endif
+
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+   integer :: coarse_bc_idx = -1  ! index of bc in coarse mode
+   integer :: coarse_pom_idx = -1  ! index of pom in coarse mode
+   integer :: coarse_soa_idx = -1  ! index of soa in coarse mode
+#endif
+
+   logical  :: separate_dust = .false.
+   
 
    type(ptr2d), allocatable :: dgnum(:)        ! mode dry radius
    real(r8),    allocatable :: dgnumg(:,:,:)   ! gathered mode dry radius
 
    real(r8) :: sigmag_aitken
+
 
 end type zm_aero_t
 
@@ -684,6 +708,15 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
   real(r8) :: flux_fullact            ! flux of activated aerosol fraction assuming 100% activation (cm/s)
   real(r8) :: dmc
   real(r8) :: ssmc
+  real(r8) :: so4mc
+  real(r8) :: mommc
+  real(r8) :: bcmc
+  real(r8) :: pommc
+  real(r8) :: soamc
+  real(r8) :: nh4mc
+  real(r8) :: no3mc
+  real(r8) :: wght
+
   real(r8) :: dgnum_aitken
 
 ! bulk aerosol variables
@@ -2198,16 +2231,81 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                     ! since modal has internal mixtures.
                     soot_num = 0.5_r8*(aero%numg_a(i,k-1,aero%mode_accum_idx)             &
                                       +aero%numg_a(i,k,aero%mode_accum_idx))*rho(i,k)*1.0e-6_r8
-                    dmc  = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_dust_idx,aero%mode_coarse_idx)      &
-                                  +aero%mmrg_a(i,k,aero%coarse_dust_idx,aero%mode_coarse_idx))
-                    ssmc = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_nacl_idx,aero%mode_coarse_idx)      &
-                                  +aero%mmrg_a(i,k,aero%coarse_nacl_idx,aero%mode_coarse_idx))  
+
+#if ( defined MOSAIC_SPECIES )
+                    dmc   = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_dust_idx,aero%mode_coarse_dst_idx)    &
+                                   +aero%mmrg_a(i,k,aero%coarse_dust_idx,aero%mode_coarse_dst_idx)      &
+                                   +aero%mmrg_a(i,k-1,aero%coarse_ca_idx,aero%mode_coarse_dst_idx)      &
+                                   +aero%mmrg_a(i,k,aero%coarse_ca_idx,aero%mode_coarse_dst_idx)        &
+                                   +aero%mmrg_a(i,k-1,aero%coarse_co3_idx,aero%mode_coarse_dst_idx)     &
+                                   +aero%mmrg_a(i,k,aero%coarse_co3_idx,aero%mode_coarse_dst_idx))      
+
+                    ssmc  = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_nacl_idx,aero%mode_coarse_slt_idx)    &
+                                   +aero%mmrg_a(i,k,aero%coarse_nacl_idx,aero%mode_coarse_slt_idx)      &
+                                   +aero%mmrg_a(i,k-1,aero%coarse_cl_idx,aero%mode_coarse_dst_idx)      &
+                                   +aero%mmrg_a(i,k,aero%coarse_cl_idx,aero%mode_coarse_dst_idx))
+
+                    nh4mc = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_nh4_idx,aero%mode_coarse_dst_idx)     &
+                                   +aero%mmrg_a(i,k,aero%coarse_nh4_idx,aero%mode_coarse_dst_idx)) 
+
+                    no3mc = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_no3_idx,aero%mode_coarse_dst_idx)     &
+                                   +aero%mmrg_a(i,k,aero%coarse_no3_idx,aero%mode_coarse_dst_idx)) 
+
+#else
+                    dmc  = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_dust_idx,aero%mode_coarse_dst_idx)     &
+                                  +aero%mmrg_a(i,k,aero%coarse_dust_idx,aero%mode_coarse_dst_idx))
+                    ssmc = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_nacl_idx,aero%mode_coarse_slt_idx)     &
+                                  +aero%mmrg_a(i,k,aero%coarse_nacl_idx,aero%mode_coarse_slt_idx))  
+#endif
+                    if (aero%mode_coarse_idx > 0) then
+                       so4mc  = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_so4_idx,aero%mode_coarse_idx)     &
+                                   +aero%mmrg_a(i,k,aero%coarse_so4_idx,aero%mode_coarse_idx))
+                    endif
+
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
+                    mommc  = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_mom_idx,aero%mode_coarse_idx)     &
+                                   +aero%mmrg_a(i,k,aero%coarse_mom_idx,aero%mode_coarse_idx))
+#endif
+
+#if (defined RAIN_EVAP_TO_COARSE_AERO)
+                    bcmc   = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_bc_idx,aero%mode_coarse_idx)     &
+                                   +aero%mmrg_a(i,k,aero%coarse_bc_idx,aero%mode_coarse_idx))
+                    pommc  = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_pom_idx,aero%mode_coarse_idx)     &
+                                   +aero%mmrg_a(i,k,aero%coarse_pom_idx,aero%mode_coarse_idx))
+                    soamc  = 0.5_r8*(aero%mmrg_a(i,k-1,aero%coarse_soa_idx,aero%mode_coarse_idx)     &
+                                   +aero%mmrg_a(i,k,aero%coarse_soa_idx,aero%mode_coarse_idx))
+#endif
+
                     if (dmc > 0._r8) then
-                        dst_num = dmc/(ssmc + dmc) *(aero%numg_a(i,k-1,aero%mode_coarse_idx)         & 
+                       if ( aero%separate_dust ) then
+                          ! 7-mode -- has separate dust and seasalt mode types and
+                          !           no need for weighting
+                          wght = 1._r8
+                       else
+                          ! 3-mode -- needs weighting for dust since dust and seasalt
+                          !           are combined in the "coarse" mode type
+#if (defined MODAL_AERO_4MODE_MOM && defined RAIN_EVAP_TO_COARSE_AERO )
+                          wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
+#elif (defined MODAL_AERO_5MODE && defined RAIN_EVAP_TO_COARSE_AERO )
+                          wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
+#elif (defined MODAL_AERO_4MODE_MOM)
+                          wght = dmc/(ssmc + dmc + so4mc + mommc)
+#elif (defined RAIN_EVAP_TO_COARSE_AERO)
+                          wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc)
+#else
+                          wght = dmc/(ssmc + dmc) ! to keep FC5 binary identical
+#endif  
+                        endif
+                       
+                        dst3_num = wght *(aero%numg_a(i,k-1,aero%mode_coarse_idx)         & 
                                   + aero%numg_a(i,k,aero%mode_coarse_idx))*0.5_r8*rho(i,k)*1.0e-6_r8
-                    else 
-                       dst_num = 0.0_r8
+                        dst_num  = dst3_num
+                    else
+                        dst3_num = 0.0_r8 
+                        dst_num  = 0.0_r8
                     end if
+
+
                     dgnum_aitken = 0.5_r8*(aero%dgnumg(i,k,aero%mode_aitken_idx)+   &
                                            aero%dgnumg(i,k-1,aero%mode_aitken_idx))     
                     if (dgnum_aitken > 0._r8) then
