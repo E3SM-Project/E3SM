@@ -11,6 +11,7 @@ module mo_chm_diags
   use mo_jeuv,      only : neuv
 !++hybrown
   use modal_aero_data,only: nso4, nbc, npoa, nsoa
+  use cam_logfile,    only: iulog
 !--hybrown
 
   private
@@ -57,7 +58,6 @@ module mo_chm_diags
     character(len=2) :: tagged_suffix(30) = (/ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', &
                                                '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', &
                                                '21', '22', '23', '24', '25', '26', '27', '28', '29', '30'/)
-    integer :: tag_loop
 !--hybrown
 
 contains
@@ -71,6 +71,8 @@ contains
     use constituents, only : cnst_get_ind, cnst_longname
     use dyn_grid,     only : get_dyn_grid_parm, get_horiz_grid_d
     use phys_control, only: phys_getopts
+
+    use cam_logfile,    only: iulog !hybrown
 
     implicit none
 
@@ -92,6 +94,8 @@ contains
     logical :: history_amwg         ! output the variables used by the AMWG diag package
     logical :: history_verbose      ! produce verbose history output
     integer :: bulkaero_species(20)
+
+    integer :: tag_loop !hybrown
 
     !-----------------------------------------------------------------------
 
@@ -259,6 +263,7 @@ contains
 
        spc_name = trim(solsym(m))
 
+       !write(iulog,*)'hybrown, mo_chm_diags, m = ',m,' spec_name = ',spc_name
        call cnst_get_ind(spc_name, n, abrtf=.false. )
        if ( n > 0 ) then
           attr = cnst_longname(n)
@@ -421,6 +426,8 @@ contains
     use modal_aero_data,  only : cnst_name_cw, qqcw_get_field ! for calculate sum of aerosol masses
 #endif
 
+    use cam_logfile,    only: iulog !hybrown
+
     use phys_control, only: phys_getopts
     
     implicit none
@@ -466,6 +473,8 @@ contains
         real(r8), dimension(ncol,pver,npoa) :: mass_pom
         real(r8), dimension(ncol,pver,nso4) :: mass_so4
         real(r8), dimension(ncol,pver,nsoa) :: mass_soa
+
+    integer :: tag_loop        
 !--hybrown
 
     logical :: history_aerosol      ! output aerosol variables
@@ -634,9 +643,11 @@ contains
 !             case ('soa_a1','soa_a2','soa_a3')
 !                  mass_soa(:ncol,:) = mass_soa(:ncol,:) + mmr(:ncol,:,m)
              end select
+             !write(iulog,*)'hybrown, mo_chm_diags, n=1,gas_pcnst, gas_pcnst = ',gas_pcnst,' m = ',m
 
                          do tag_loop = 1, nbc
                                  if (trim(solsym(m)) == 'bc'//tagged_suffix(tag_loop)//'_a1' .or. trim(solsym(m)) == 'bc'//tagged_suffix(tag_loop)//'_a3' .or. trim(solsym(m)) == 'bc'//tagged_suffix(tag_loop)//'_a4') then
+                                          !write(iulog,*)'hybrown, mo_chm_diags, m=1,gas_cnst, m = ',m,' solsym(m) = ',trim(solsym(m))
                                          mass_bc(:ncol,:,nbc) = mass_bc(:ncol,:,nbc) + mmr(:ncol,:,m)
                                  endif
                          enddo
@@ -716,25 +727,29 @@ contains
 
                          do tag_loop = 1, nbc
                                  if (trim(cnst_name_cw(n)) == 'bc'//tagged_suffix(tag_loop)//'_c1' .or. trim(cnst_name_cw(n)) == 'bc'//tagged_suffix(tag_loop)//'_c3' .or. trim(cnst_name_cw(n)) == 'bc'//tagged_suffix(tag_loop)//'_c4') then
-                                         mass_bc(:ncol,:,nbc) = mass_bc(:ncol,:,nbc) + mmr(:ncol,:,m)
+                                         !write(iulog,*)'hybrown, mo_chm_diags, cnst_name_cw(n) = ',trim(cnst_name_cw(n)),' cnst_name_cw(m) (what mmr is but shoudlnt be?) = ',trim(cnst_name_cw(m))
+                                         mass_bc(:ncol,:,nbc) = mass_bc(:ncol,:,nbc) + fldcw(:ncol,:)
                                  endif
                          enddo
                         
                          do tag_loop = 1, npoa
                                  if (trim(cnst_name_cw(n)) == 'pom'//tagged_suffix(tag_loop)//'_c1' .or. trim(cnst_name_cw(n)) == 'pom'//tagged_suffix(tag_loop)//'_c3' .or. trim(cnst_name_cw(n)) == 'pom'//tagged_suffix(tag_loop)//'_c4') then
-                                         mass_pom(:ncol,:,npoa) = mass_pom(:ncol,:,npoa) + mmr(:ncol,:,m)
+                                         !write(iulog,*)'hybrown, mo_chm_diags, cnst_name_cw(n) = ',trim(cnst_name_cw(n)),' cnst_name_cw(m) (what mmr is but shoudlnt be?) = ',trim(cnst_name_cw(m))
+                                         mass_pom(:ncol,:,npoa) = mass_pom(:ncol,:,npoa) + fldcw(:ncol,:)
                                  endif
                          enddo
                         
                          do tag_loop = 1, nso4
                                  if (trim(cnst_name_cw(n)) == 'so4'//tagged_suffix(tag_loop)//'_c1' .or. trim(cnst_name_cw(n)) == 'so4'//tagged_suffix(tag_loop)//'_c2' .or. trim(cnst_name_cw(n)) == 'so4'//tagged_suffix(tag_loop)//'_c3') then
-                                         mass_so4(:ncol,:,nso4) = mass_so4(:ncol,:,nso4) + mmr(:ncol,:,m)
+                                         !write(iulog,*)'hybrown, mo_chm_diags, cnst_name_cw(n) = ',trim(cnst_name_cw(n)),' cnst_name_cw(m) (what mmr is but shoudlnt be?) = ',trim(cnst_name_cw(m))
+                                         mass_so4(:ncol,:,nso4) = mass_so4(:ncol,:,nso4) + fldcw(:ncol,:)
                                  endif
                          enddo
                         
                          do tag_loop = 1, nsoa
                                  if (trim(cnst_name_cw(n)) == 'soa'//tagged_suffix(tag_loop)//'_c1' .or. trim(cnst_name_cw(n)) == 'soa'//tagged_suffix(tag_loop)//'_c2' .or. trim(cnst_name_cw(n)) =='soa'//tagged_suffix(tag_loop)//'_c3') then
-                                         mass_soa(:ncol,:,nsoa) = mass_soa(:ncol,:,nsoa) + mmr(:ncol,:,m)
+                                         !write(iulog,*)'hybrown, mo_chm_diags, cnst_name_cw(n) = ',trim(cnst_name_cw(n)),' cnst_name_cw(m) (what mmr is but shoudlnt be?) = ',trim(cnst_name_cw(m))
+                                         mass_soa(:ncol,:,nsoa) = mass_soa(:ncol,:,nsoa) + fldcw(:ncol,:)
                                  endif
                          enddo
 !--hybrown

@@ -241,6 +241,15 @@
 <mam_ncl  rad="rrtmgp">atm/cam/physprops/ssam_rrtmg_c100508.nc</mam_ncl>
 <mam_nh4  rad="rrtmgp">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_nh4>
 
+<!-- hybrown, Optics for tagging species -->
+<mam_bc01   rad="rrtmgp">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc01>
+<mam_bc02   rad="rrtmgp">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc02>
+<mam_bc03   rad="rrtmgp">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc03>
+<mam_bc04   rad="rrtmgp">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc04>
+<mam_bc01   rad="rrtmg">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc01>
+<mam_bc02   rad="rrtmg">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc02>
+<mam_bc03   rad="rrtmg">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc03>
+<mam_bc04   rad="rrtmg">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc04>
 
 <!-- Marine organic matter optical properties -->
 <mam_mpoly  rad="rrtmg">atm/cam/physprops/poly_rrtmg_c130816.nc</mam_mpoly>

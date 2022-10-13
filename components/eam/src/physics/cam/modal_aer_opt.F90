@@ -84,7 +84,6 @@ character(len=4) :: diag(0:n_diag) = (/'    ','_d1 ','_d2 ','_d3 ','_d4 ','_d5 '
     character(len=2) :: tagged_carbon_suffix(30) = (/ '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', &
                                                       '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', &
                                                       '21', '22', '23', '24', '25', '26', '27', '28', '29', '30'/)
-    integer :: tag_loop
 !--hybrown
 
 !Declare the following threadprivate variables to be used for calcsize and water uptake
@@ -158,6 +157,8 @@ subroutine modal_aer_opt_init()
    logical :: call_list(0:n_diag)
    integer :: ilist, nmodes, m_ncoef, m_prefr, m_prefi
    integer :: errcode, istat
+
+   integer :: tag_loop !hybrown
 
    character(len=*), parameter :: routine='modal_aer_opt_init'
    !----------------------------------------------------------------------------
@@ -289,6 +290,8 @@ subroutine modal_aer_opt_init()
    end do
    end if
 
+
+   write(iulog,*)'hybrown, modal_aer_opt_init, npoa = ',npoa
    if (npoa>1) then
    do tag_loop = 1, npoa
       call addfld ('BURDENPOM'//tagged_carbon_suffix(tag_loop),horiz_only, 'A','kg/m2'      ,'Burden POM', flag_xyfill=.true.)
@@ -496,6 +499,7 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    integer :: istat
 !++hybrown
    character*32         :: spec_name
+   integer :: tag_loop
 !--hybrown
 
    real(r8) :: mass(pcols,pver)        ! layer mass
