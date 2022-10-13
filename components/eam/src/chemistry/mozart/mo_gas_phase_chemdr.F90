@@ -450,7 +450,7 @@ contains
     !        ... Xform from mmr to vmr
     !-----------------------------------------------------------------------      
     call mmr2vmr( mmr, vmr, mbar, ncol )
-    
+ 
     if (h2o_ndx>0) then
        !-----------------------------------------------------------------------      
        !        ... store water vapor in wrk variable

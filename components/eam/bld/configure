@@ -324,7 +324,7 @@ my %opts = (
 GetOptions(
     "age_of_air_trcs!"          => \$opts{'age_of_air_trcs'},
     "cldera_sai_trcs!"          => \$opts{'cldera_sai_trcs'},
-    "cldera_passive_trcs!"        => \$opts{'cldera_passive_trcs'},
+    "cldera_passive_trcs!"      => \$opts{'cldera_passive_trcs'},
     "aquaplanet"                => \$opts{'aquaplanet'},
     "cache=s"                   => \$opts{'cache'},
     "cachedir=s"                => \$opts{'cachedir'},

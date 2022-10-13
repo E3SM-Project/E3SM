@@ -1173,7 +1173,6 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
     ! --JH--: adding to allow custom tracer module tendencies
     type(check_tracers_data):: tracerint    ! tracer mass integrals and cummulative boundary fluxes
     real(r8) :: dummy_cflx(pcols, pcnst)    ! array of zeros
-    real(r8) :: dummy_landfrac(pcols)       ! array of zeros
 
     character(len=128)  :: ideal_phys_option
 
@@ -1185,7 +1184,6 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
     nstep = get_nstep()
     zero  = 0._r8
     dummy_cflx = 0._r8
-    dummy_landfrac = 0._r8
 
     ! Associate pointers with physics buffer fields
     if (first_exec_of_phys_run1_adiabatic_or_ideal) then
@@ -2824,7 +2822,6 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use radiation,           only: radiation_do
   use tracers,             only: tracers_timestep_init
   use aoa_tracers,         only: aoa_tracers_timestep_init
-  use cldera_passive_tracers,only: cldera_passive_tracers_timestep_init
   use cldera_sai_tracers,  only: cldera_sai_tracers_timestep_init
   use vertical_diffusion,  only: vertical_diffusion_ts_init
   use radheat,             only: radheat_timestep_init
@@ -2915,9 +2912,6 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
 
   ! age of air tracers
   call aoa_tracers_timestep_init(phys_state)
-
-  ! CLDERA passive tracers
-  call cldera_passive_tracers_timestep_init(phys_state)
   
   ! CLDERA stratopsheric aerosol injection tracers
   call cldera_sai_tracers_timestep_init(phys_state)

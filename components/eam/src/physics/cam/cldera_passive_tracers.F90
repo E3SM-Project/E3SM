@@ -39,7 +39,6 @@ module cldera_passive_tracers
   public :: cldera_passive_tracers_implements_cnst  ! true if constituent is implemented by this package
   public :: cldera_passive_tracers_init_cnst        ! initialize constituent field
   public :: cldera_passive_tracers_init             ! initialize history fields, datasets
-  public :: cldera_passive_tracers_timestep_init    ! place to perform per timestep initialization
   public :: cldera_passive_tracers_timestep_tend    ! calculate tendencies
   public :: cldera_passive_tracers_readnl           ! read namelist options
 
@@ -214,48 +213,6 @@ contains
 
 !===============================================================================
 
-  subroutine cldera_passive_tracers_timestep_init( phys_state )
-    !-----------------------------------------------------------------------
-    ! Provides a place to reinitialize diagnostic constituents
-    ! Currently does nothing
-    !-----------------------------------------------------------------------
-
-    use time_manager,   only: get_curr_date
-    use ppgrid,         only: begchunk, endchunk
-    use physics_types,  only: physics_state
-
-    type(physics_state), intent(inout), dimension(begchunk:endchunk), optional :: phys_state    
-
-
-    integer c, i, k, ncol
-    integer yr, mon, day, tod
-    !--------------------------------------------------------------------------
-
-    if (.not. cldera_passive_tracers_flag) return
-
-    call get_curr_date (yr,mon,day,tod)
-
-    if ( day == 1 .and. tod == 0) then
-       if (masterproc) then
-         write(iulog,*) 'CLDERA_CLOCK_CONSTITUENTS: RE-INITIALIZING CONSTITUENTS'
-       endif
-
-       do c = begchunk, endchunk
-          ncol = phys_state(c)%ncol
-          do k = 1, pver
-             do i = 1, ncol
-                ! does nothing currently
-                continue
-             end do
-          end do
-       end do
-
-    end if
-
-  end subroutine cldera_passive_tracers_timestep_init
-
-!===============================================================================
-
   subroutine cldera_passive_tracers_timestep_tend(state, ptend, dt, cflx)
 
     use physics_types, only: physics_state, physics_ptend, physics_ptend_init
@@ -329,8 +286,6 @@ contains
     ! -------------------- TRACER TENDENCIES --------------------
     do k = 1, pver
        do i = 1, ncol
-       ! the explicit horizontal looping is not currently needed; maintained 
-       ! in case spatial dependence in e.g. AOA is ever desired 
 
           ! ============ AOA ============
           ! clock tracer with a source of 1 day/day everywhere above ~700hPa
@@ -402,7 +357,7 @@ contains
     ! initialization below is on the DYNAMICS grid; length of gcol will 
     ! be number of GLL points, not number of physics columns
 
-    if (masterproc) write(iulog,*) 'CLDERA_CLOCK CONSTITUENTS: INITIALIZING ',cnst_name(m),m
+    if (masterproc) write(iulog,*) 'CLDERA PASSIVE CONSTITUENTS: INITIALIZING ',cnst_name(m),m
 
     ! ====== AOA ======
     if (m == ixaoa) then

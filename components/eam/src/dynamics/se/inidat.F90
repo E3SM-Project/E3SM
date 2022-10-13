@@ -49,7 +49,7 @@ contains
     use aoa_tracers,             only: aoa_tracers_implements_cnst, aoa_tracers_init_cnst
     use cldera_sai_tracers,      only: cldera_sai_tracers_implements_cnst, &
                                        cldera_sai_tracers_init_cnst
-    use cldera_passive_tracers,    only: cldera_passive_tracers_implements_cnst, &
+    use cldera_passive_tracers,  only: cldera_passive_tracers_implements_cnst, &
                                        cldera_passive_tracers_init_cnst
     use clubb_intr,              only: clubb_implements_cnst, clubb_init_cnst
     use stratiform,              only: stratiform_implements_cnst, stratiform_init_cnst
