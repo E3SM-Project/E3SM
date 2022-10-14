@@ -3430,15 +3430,17 @@ module mpas_io_streams
    end subroutine MPAS_readStream
 
 
-   subroutine MPAS_writeStream(stream, frame, ierr)
+   subroutine MPAS_writeStream(stream, frame, useMissingValMask, ierr)
 
       implicit none
 
       type (MPAS_Stream_type), intent(inout) :: stream
       integer, intent(in) :: frame
+      logical, intent(in), optional :: useMissingValMask
       integer, intent(out), optional :: ierr
 
       character (len=StrKIND) :: dimensionSuffix
+      logical :: local_useMissingValMask
       integer :: io_err
       integer :: i, j
       integer :: ncons
@@ -3459,13 +3461,20 @@ module mpas_io_streams
       integer                            :: int0d_temp
       integer, dimension(:),     pointer :: int1d_temp
       integer, dimension(:,:),   pointer :: int2d_temp
+      integer, dimension(:,:),   pointer :: maskArray
       integer, dimension(:,:,:), pointer :: int3d_temp
       real (kind=RKIND)                                :: real0d_temp
-      real (kind=RKIND), dimension(:),         pointer :: real1d_temp
-      real (kind=RKIND), dimension(:,:),       pointer :: real2d_temp
-      real (kind=RKIND), dimension(:,:,:),     pointer :: real3d_temp
-      real (kind=RKIND), dimension(:,:,:,:),   pointer :: real4d_temp
-      real (kind=RKIND), dimension(:,:,:,:,:), pointer :: real5d_temp
+      real (kind=RKIND), dimension(:),         pointer :: real1d_temp, real1d_temp_small
+      real (kind=RKIND), dimension(:,:),       pointer :: real2d_temp, real2d_temp_small
+      real (kind=RKIND), dimension(:,:,:),     pointer :: real3d_temp, real3d_temp_small
+      real (kind=RKIND), dimension(:,:,:,:),   pointer :: real4d_temp, real4d_temp_small
+      real (kind=RKIND), dimension(:,:,:,:,:), pointer :: real5d_temp, real5d_temp_small
+
+      if (present(useMissingValMask)) then
+         local_useMissingValMask = useMissingValMask
+      else
+         local_useMissingValMask = .false.
+      end if
 
       if (present(ierr)) ierr = MPAS_STREAM_NOERR
 
@@ -3508,6 +3517,10 @@ module mpas_io_streams
 
       !
       ! Loop over fields in the stream
+      !
+      ! -- Masking is supported for real fields with dimensions 1-5 and
+      ! -- real arrays with dimensions 3-5 with integer mask fields with
+      ! -- dimensions less than or equal to the field dimension, up to 3.
       !
       field_cursor => stream % fieldList
       do while (associated(field_cursor))
@@ -3763,10 +3776,25 @@ module mpas_io_streams
                      end if
 
                      if (field_cursor % real1dField % isVarArray) then
-! I suspect we will never hit this code, as it doesn't make sense, really
+                        ! I suspect we will never hit this code, as it doesn't make sense, really
                         real0d_temp = field_1dreal_ptr % array(j)
                      else
-                        real1d_temp(i:i+ownedSize-1) = field_1dreal_ptr % array(1:ownedSize)
+                        if (local_useMissingValMask .and. &
+                            ASSOCIATED( field_1dreal_ptr % missingValueMask1D )) then
+                           allocate(real1d_temp_small(ownedSize),stat=io_err)
+                           if (io_err /= 0) then
+                              call mpas_log_write('real1d_temp_small: $i', intArgs=(/ownedSize/) )
+                              if (present(ierr)) ierr = MPAS_IO_ERR
+                              return
+                           end if
+                           real1d_temp_small = field_1dreal_ptr % array(1:ownedSize)
+                           call mpas_mask_field(field_1dreal_ptr, &
+                              field_1dreal_ptr % missingValueMask1D, real1d_temp_small)
+                           real1d_temp(i:i+ownedSize-1) = real1d_temp_small
+                           deallocate(real1d_temp_small)
+                        else
+                           real1d_temp(i:i+ownedSize-1) = field_1dreal_ptr % array(1:ownedSize)
+                        end if
                      end if
                      i = i + ownedSize
                      if ( .not. stream % blockWrite ) then
@@ -3827,9 +3855,58 @@ module mpas_io_streams
                      end if
 
                      if (field_cursor % real2dField % isVarArray) then
-                        real1d_temp(i:i+ownedSize-1) = field_2dreal_ptr % array(j,1:ownedSize)
+                        if (local_useMissingValMask .and. &
+                            ASSOCIATED( field_2dreal_ptr % missingValueMask1D )) then
+                           allocate(real2d_temp_small(1,ownedSize),stat=io_err)
+                           if (io_err /= 0) then
+                              call mpas_log_write('real2d_temp_small: $i', intArgs=(/ownedSize/) )
+                              if (present(ierr)) ierr = MPAS_IO_ERR
+                              return
+                           end if
+
+                           real2d_temp_small(1,:) = field_2dreal_ptr % array(j,1:ownedSize)
+                           call mpas_mask_field(field_2dreal_ptr, &
+                              field_2dreal_ptr % missingValueMask1D, real2d_temp_small)
+                           real2d_temp(:,i:i+ownedSize-1) = real2d_temp_small
+                           deallocate(real2d_temp_small)
+                        else
+                           real1d_temp(i:i+ownedSize-1) = field_2dreal_ptr % array(j,1:ownedSize)
+                        end if
                      else
-                        real2d_temp(:,i:i+ownedSize-1) = field_2dreal_ptr % array(:,1:ownedSize)
+                        if (local_useMissingValMask) then
+                           if (ASSOCIATED( field_2dreal_ptr % missingValueMask2D )) then
+                              allocate(real2d_temp_small(field_cursor % real2dField % dimSizes(1), &
+                                                         ownedSize),stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('real2d_temp_small: $i', intArgs=(/field_cursor % real2dField % dimSizes(1)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+                              real2d_temp_small = field_2dreal_ptr % array(:,1:ownedSize)
+                              call mpas_mask_field(field_2dreal_ptr, &
+                                 field_2dreal_ptr % missingValueMask2D, real2d_temp_small)
+                              real2d_temp(:,i:i+ownedSize-1) = real2d_temp_small
+                              deallocate(real2d_temp_small)
+                           elseif (ASSOCIATED( field_2dreal_ptr % missingValueMask1D )) then
+                              allocate(real2d_temp_small(field_cursor % real2dField % dimSizes(1), &
+                                                         ownedSize),stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('real2d_temp_small: $i', intArgs=(/field_cursor % real2dField % dimSizes(1)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+                              real2d_temp_small = field_2dreal_ptr % array(:,1:ownedSize)
+                              call mpas_mask_field(field_2dreal_ptr, &
+                                 field_2dreal_ptr % missingValueMask1D, real2d_temp_small)
+                              real2d_temp(:,i:i+ownedSize-1) = real2d_temp_small
+                              deallocate(real2d_temp_small)
+                           else
+                              real2d_temp(:,i:i+ownedSize-1) = field_2dreal_ptr % array(:,1:ownedSize)
+                           end if
+                        else
+                           real2d_temp(:,i:i+ownedSize-1) = field_2dreal_ptr % array(:,1:ownedSize)
+                        end if
+
                      end if
                      i = i + ownedSize
                      if ( .not. stream % blockWrite ) then
@@ -3890,13 +3967,105 @@ module mpas_io_streams
                         call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, trim(field_3dreal_ptr % dimNames(3)) &
                                                      // trim(dimensionSuffix), ownedSize)
                      else
-                        call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, field_3dreal_ptr % dimNames(3), ownedSize)
+                        call mpas_pool_get_dimension(field_3dreal_ptr % block % dimensions, &
+                                                     field_3dreal_ptr % dimNames(3), ownedSize)
                      end if
 
                      if (field_cursor % real3dField % isVarArray) then
-                        real2d_temp(:,i:i+ownedSize-1) = field_3dreal_ptr % array(j,:,1:ownedSize)
+                        if (local_useMissingValMask) then
+                           if (ASSOCIATED( field_3dreal_ptr % missingValueMask2D )) then
+                              allocate(real3d_temp_small(1, &
+                                                         field_cursor % real3dField % dimSizes(2), &
+                                                         ownedSize),stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('real3d_temp_small: $i', intArgs=(/field_cursor % real3dField % dimSizes(2)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+
+                              real3d_temp_small(1,:,:) = field_3dreal_ptr % array(j,:,1:ownedSize)
+                              call mpas_mask_field(field_3dreal_ptr, &
+                                 field_3dreal_ptr % missingValueMask2D, real3d_temp_small)
+                              real2d_temp(:,i:i+ownedSize-1) = real3d_temp_small(1,:,:)
+                              deallocate(real3d_temp_small)
+                           elseif (ASSOCIATED( field_3dreal_ptr % missingValueMask1D )) then
+                              allocate(real3d_temp_small(1, &
+                                                         field_cursor % real3dField % dimSizes(2), &
+                                                         ownedSize),stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('real3d_temp_small: $i', intArgs=(/field_cursor % real3dField % dimSizes(2)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+
+                              real3d_temp_small(1,:,:) = field_3dreal_ptr % array(j,:,1:ownedSize)
+                              call mpas_mask_field(field_3dreal_ptr, &
+                                 field_3dreal_ptr % missingValueMask1D, real3d_temp_small)
+                              real2d_temp(:,i:i+ownedSize-1) = real3d_temp_small(1,:,:)
+                              deallocate(real3d_temp_small)
+                           else
+                              real2d_temp(:,i:i+ownedSize-1) = field_3dreal_ptr % array(j,:,1:ownedSize)
+                           endif
+                        else
+                           real2d_temp(:,i:i+ownedSize-1) = field_3dreal_ptr % array(j,:,1:ownedSize)
+                        endif
                      else
-                        real3d_temp(:,:,i:i+ownedSize-1) = field_3dreal_ptr % array(:,:,1:ownedSize)
+                        if (local_useMissingValMask) then
+                           if (ASSOCIATED( field_3dreal_ptr % missingValueMask3D )) then
+                              allocate(real3d_temp_small(field_cursor % real3dField % dimSizes(1), &
+                                                         field_cursor % real3dField % dimSizes(2), &
+                                                         ownedSize),stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('real3d_temp_small: $i', intArgs=(/field_cursor % real3dField % dimSizes(1)* &
+                                                                                        field_cursor % real3dField % dimSizes(2)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+
+                              real3d_temp_small = field_3dreal_ptr % array(:,:,1:ownedSize)
+                              call mpas_mask_field(field_3dreal_ptr, &
+                                 field_3dreal_ptr % missingValueMask3D, real3d_temp_small)
+                              real3d_temp(:,:,i:i+ownedSize-1) = real3d_temp_small
+                              deallocate(real3d_temp_small)
+                           elseif (ASSOCIATED( field_3dreal_ptr % missingValueMask2D )) then
+                              deallocate(real3d_temp_small)
+                              allocate(real3d_temp_small(field_cursor % real3dField % dimSizes(1), &
+                                                         field_cursor % real3dField % dimSizes(2), &
+                                                         ownedSize),stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('real3d_temp_small: $i', intArgs=(/field_cursor % real3dField % dimSizes(1)* &
+                                                                                        field_cursor % real3dField % dimSizes(2)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+
+                              real3d_temp_small = field_3dreal_ptr % array(:,:,1:ownedSize)
+                              call mpas_mask_field(field_3dreal_ptr, &
+                                 field_3dreal_ptr % missingValueMask2D, real3d_temp_small)
+                              real3d_temp(:,:,i:i+ownedSize-1) = real3d_temp_small
+                              deallocate(real3d_temp_small)
+                           elseif (ASSOCIATED( field_3dreal_ptr % missingValueMask1D )) then
+                              allocate(real3d_temp_small(field_cursor % real3dField % dimSizes(1), &
+                                                         field_cursor % real3dField % dimSizes(2), &
+                                                         ownedSize),stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('real3d_temp_small: $i', intArgs=(/field_cursor % real3dField % dimSizes(1)* &
+                                                                                        field_cursor % real3dField % dimSizes(2)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+
+                              real3d_temp_small = field_3dreal_ptr % array(:,:,1:ownedSize)
+                              call mpas_mask_field(field_3dreal_ptr, &
+                                 field_3dreal_ptr % missingValueMask1D, real3d_temp_small)
+                              real3d_temp(:,:,i:i+ownedSize-1) = real3d_temp_small
+                              deallocate(real3d_temp_small)
+                           else
+                              real3d_temp(:,:,i:i+ownedSize-1) = field_3dreal_ptr % array(:,:,1:ownedSize)
+                           end if
+                        else
+                           real3d_temp(:,:,i:i+ownedSize-1) = field_3dreal_ptr % array(:,:,1:ownedSize)
+                        end if
                      end if
                      i = i + ownedSize
                      if ( .not. stream % blockWrite ) then
@@ -3963,9 +4132,126 @@ module mpas_io_streams
                      end if
 
                      if (field_cursor % real4dField % isVarArray) then
-                        real3d_temp(:,:,i:i+ownedSize-1) = field_4dreal_ptr % array(j,:,:,1:ownedSize)
+                        if (local_useMissingValMask) then
+                           if (ASSOCIATED( field_4dreal_ptr % missingValueMask3D )) then
+                              allocate(real4d_temp_small(1, &
+                                                         field_cursor % real4dField % dimSizes(2), &
+                                                         field_cursor % real4dField % dimSizes(3), &
+                                                         ownedSize), stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('real4d_temp_small: $i', intArgs=(/field_cursor % real4dField % dimSizes(2)* &
+                                                                                        field_cursor % real4dField % dimSizes(3)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+
+                              real4d_temp_small(1,:,:,:) = field_4dreal_ptr % array(j,:,:,1:ownedSize)
+                              call mpas_mask_field(field_4dreal_ptr, &
+                                 field_4dreal_ptr % missingValueMask3D, real4d_temp_small)
+                              real3d_temp(:,:,i:i+ownedSize-1) = real4d_temp_small(1,:,:,:)
+                              deallocate(real4d_temp_small)
+                           elseif (ASSOCIATED( field_4dreal_ptr % missingValueMask2D )) then
+                              allocate(real4d_temp_small(1, &
+                                                         field_cursor % real4dField % dimSizes(2), &
+                                                         field_cursor % real4dField % dimSizes(3), &
+                                                         ownedSize), stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('real4d_temp_small: $i', intArgs=(/field_cursor % real4dField % dimSizes(2)* &
+                                                                                        field_cursor % real4dField % dimSizes(3)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+
+                              real4d_temp_small(1,:,:,:) = field_4dreal_ptr % array(j,:,:,1:ownedSize)
+                              call mpas_mask_field(field_4dreal_ptr, &
+                                 field_4dreal_ptr % missingValueMask2D, real4d_temp_small)
+                              real3d_temp(:,:,i:i+ownedSize-1) = real4d_temp_small(1,:,:,:)
+                              deallocate(real4d_temp_small)
+                           elseif (ASSOCIATED( field_4dreal_ptr % missingValueMask1D )) then
+                              allocate(real4d_temp_small(1, &
+                                                         field_cursor % real4dField % dimSizes(2), &
+                                                         field_cursor % real4dField % dimSizes(3), &
+                                                         ownedSize), stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('(real4d_temp_small: $i', intArgs=(/field_cursor % real4dField % dimSizes(2)* &
+                                                                                         field_cursor % real4dField % dimSizes(3)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+
+                              real4d_temp_small(1,:,:,:) = field_4dreal_ptr % array(j,:,:,1:ownedSize)
+                              call mpas_mask_field(field_4dreal_ptr, &
+                                 field_4dreal_ptr % missingValueMask1D, real4d_temp_small)
+                              real3d_temp(:,:,i:i+ownedSize-1) = real4d_temp_small(1,:,:,:)
+                              deallocate(real4d_temp_small)
+                           else
+                              real3d_temp(:,:,i:i+ownedSize-1) = field_4dreal_ptr % array(j,:,:,1:ownedSize)
+                           endif
+                        else
+                           real3d_temp(:,:,i:i+ownedSize-1) = field_4dreal_ptr % array(j,:,:,1:ownedSize)
+                        endif
                      else
-                        real4d_temp(:,:,:,i:i+ownedSize-1) = field_4dreal_ptr % array(:,:,:,1:ownedSize)
+                        if (local_useMissingValMask) then
+                           if (ASSOCIATED( field_4dreal_ptr % missingValueMask3D )) then
+                              allocate(real4d_temp_small(field_cursor % real4dField % dimSizes(1), &
+                                                         field_cursor % real4dField % dimSizes(2), &
+                                                         field_cursor % real4dField % dimSizes(3), &
+                                                         ownedSize), stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('(real4d_temp_small: $i', intArgs=(/field_cursor % real4dField % dimSizes(1)* &
+                                                                                         field_cursor % real4dField % dimSizes(2)* &
+                                                                                         field_cursor % real4dField % dimSizes(3)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+
+                              real4d_temp_small = field_4dreal_ptr % array(:,:,:,1:ownedSize)
+                              call mpas_mask_field(field_4dreal_ptr, &
+                                 field_4dreal_ptr % missingValueMask3D, real4d_temp_small)
+                              real4d_temp(:,:,:,i:i+ownedSize-1) = real4d_temp_small
+                              deallocate(real4d_temp_small)
+                           elseif (ASSOCIATED( field_4dreal_ptr % missingValueMask2D )) then
+                              allocate(real4d_temp_small(field_cursor % real4dField % dimSizes(1), &
+                                                         field_cursor % real4dField % dimSizes(2), &
+                                                         field_cursor % real4dField % dimSizes(3), &
+                                                         ownedSize), stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('(real4d_temp_small: $i', intArgs=(/field_cursor % real4dField % dimSizes(1)* &
+                                                                                         field_cursor % real4dField % dimSizes(2)* &
+                                                                                         field_cursor % real4dField % dimSizes(3)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+
+                              real4d_temp_small = field_4dreal_ptr % array(:,:,:,1:ownedSize)
+                              call mpas_mask_field(field_4dreal_ptr, &
+                                 field_4dreal_ptr % missingValueMask2D, real4d_temp_small)
+                              real4d_temp(:,:,:,i:i+ownedSize-1) = real4d_temp_small
+                              deallocate(real4d_temp_small)
+                           elseif (ASSOCIATED( field_4dreal_ptr % missingValueMask1D )) then
+                              allocate(real4d_temp_small(field_cursor % real4dField % dimSizes(1), &
+                                                         field_cursor % real4dField % dimSizes(2), &
+                                                         field_cursor % real4dField % dimSizes(3), &
+                                                         ownedSize), stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('(real4d_temp_small: $i', intArgs=(/field_cursor % real4dField % dimSizes(1)* &
+                                                                                         field_cursor % real4dField % dimSizes(2)* &
+                                                                                         field_cursor % real4dField % dimSizes(3)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+
+                              real4d_temp_small = field_4dreal_ptr % array(:,:,:,1:ownedSize)
+                              call mpas_mask_field(field_4dreal_ptr, &
+                                 field_4dreal_ptr % missingValueMask1D, real4d_temp_small)
+                              real4d_temp(:,:,:,i:i+ownedSize-1) = real4d_temp_small
+                              deallocate(real4d_temp_small)
+                           else
+                              real4d_temp(:,:,:,i:i+ownedSize-1) = field_4dreal_ptr % array(:,:,:,1:ownedSize)
+                           end if
+                        else
+                           real4d_temp(:,:,:,i:i+ownedSize-1) = field_4dreal_ptr % array(:,:,:,1:ownedSize)
+                        end if
                      end if
                      i = i + ownedSize
                      if ( .not. stream % blockWrite ) then
@@ -4034,9 +4320,138 @@ module mpas_io_streams
                      end if
 
                      if (field_cursor % real5dField % isVarArray) then
-                        real4d_temp(:,:,:,i:i+ownedSize-1) = field_5dreal_ptr % array(j,:,:,:,1:ownedSize)
+                        if (local_useMissingValMask) then
+                           if (ASSOCIATED( field_5dreal_ptr % missingValueMask3D )) then
+                              allocate(real5d_temp_small(1, &
+                                                         field_cursor % real5dField % dimSizes(2), &
+                                                         field_cursor % real5dField % dimSizes(3), &
+                                                         field_cursor % real5dField % dimSizes(4), &
+                                                         ownedSize), stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('real5d_temp_small: $i', intArgs=(/field_cursor % real5dField % dimSizes(2)* &
+                                                                                        field_cursor % real5dField % dimSizes(3)* &
+                                                                                        field_cursor % real5dField % dimSizes(4)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+
+                              real5d_temp_small(1,:,:,:,:) = field_5dreal_ptr % array(j,:,:,:,1:ownedSize)
+                              call mpas_mask_field(field_5dreal_ptr, &
+                                 field_5dreal_ptr % missingValueMask3D, real5d_temp_small)
+                              real4d_temp(:,:,:,i:i+ownedSize-1) = real5d_temp_small(1,:,:,:,:)
+                              deallocate(real5d_temp_small)
+                           elseif (ASSOCIATED( field_5dreal_ptr % missingValueMask2D )) then
+                              allocate(real5d_temp_small(1, &
+                                                         field_cursor % real5dField % dimSizes(2), &
+                                                         field_cursor % real5dField % dimSizes(3), &
+                                                         field_cursor % real5dField % dimSizes(4), &
+                                                         ownedSize), stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('real5d_temp_small: $i', intArgs=(/field_cursor % real5dField % dimSizes(2)* &
+                                                                                        field_cursor % real5dField % dimSizes(3)* &
+                                                                                        field_cursor % real5dField % dimSizes(4)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+
+                              real5d_temp_small(1,:,:,:,:) = field_5dreal_ptr % array(j,:,:,:,1:ownedSize)
+                              call mpas_mask_field(field_5dreal_ptr, &
+                                 field_5dreal_ptr % missingValueMask2D, real5d_temp_small)
+                              real4d_temp(:,:,:,i:i+ownedSize-1) = real5d_temp_small(1,:,:,:,:)
+                              deallocate(real5d_temp_small)
+                           elseif (ASSOCIATED( field_5dreal_ptr % missingValueMask1D )) then
+                              allocate(real5d_temp_small(1, &
+                                                         field_cursor % real5dField % dimSizes(2), &
+                                                         field_cursor % real5dField % dimSizes(3), &
+                                                         field_cursor % real5dField % dimSizes(4), &
+                                                         ownedSize), stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('real5d_temp_small: $i', intArgs=(/field_cursor % real5dField % dimSizes(2)* &
+                                                                                        field_cursor % real5dField % dimSizes(3)* &
+                                                                                        field_cursor % real5dField % dimSizes(4)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+
+                              real5d_temp_small(1,:,:,:,:) = field_5dreal_ptr % array(j,:,:,:,1:ownedSize)
+                              call mpas_mask_field(field_5dreal_ptr, &
+                                 field_5dreal_ptr % missingValueMask1D, real5d_temp_small)
+                              real4d_temp(:,:,:,i:i+ownedSize-1) = real5d_temp_small(1,:,:,:,:)
+                              deallocate(real5d_temp_small)
+                           else
+                              real4d_temp(:,:,:,i:i+ownedSize-1) = field_5dreal_ptr % array(j,:,:,:,1:ownedSize)
+                           endif
+                        else
+                           real4d_temp(:,:,:,i:i+ownedSize-1) = field_5dreal_ptr % array(j,:,:,:,1:ownedSize)
+                        endif
                      else
-                        real5d_temp(:,:,:,:,i:i+ownedSize-1) = field_5dreal_ptr % array(:,:,:,:,1:ownedSize)
+                        if (local_useMissingValMask) then
+                           if (ASSOCIATED( field_5dreal_ptr % missingValueMask3D )) then
+                              allocate(real5d_temp_small(field_cursor % real5dField % dimSizes(1), &
+                                                         field_cursor % real5dField % dimSizes(2), &
+                                                         field_cursor % real5dField % dimSizes(3), &
+                                                         field_cursor % real5dField % dimSizes(4), &
+                                                         ownedSize), stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('real5d_temp_small: $i', intArgs=(/field_cursor % real5dField % dimSizes(1)* &
+                                                                                        field_cursor % real5dField % dimSizes(2)* &
+                                                                                        field_cursor % real5dField % dimSizes(3)* &
+                                                                                        field_cursor % real5dField % dimSizes(4)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+
+                              real5d_temp_small = field_5dreal_ptr % array(:,:,:,:,1:ownedSize)
+                              call mpas_mask_field(field_5dreal_ptr, &
+                                 field_5dreal_ptr % missingValueMask3D, real5d_temp_small)
+                              real5d_temp(:,:,:,:,i:i+ownedSize-1) = real5d_temp_small
+                              deallocate(real5d_temp_small)
+                           elseif (ASSOCIATED( field_5dreal_ptr % missingValueMask2D )) then
+                              allocate(real5d_temp_small(field_cursor % real5dField % dimSizes(1), &
+                                                         field_cursor % real5dField % dimSizes(2), &
+                                                         field_cursor % real5dField % dimSizes(3), &
+                                                         field_cursor % real5dField % dimSizes(4), &
+                                                         ownedSize), stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('real5d_temp_small: $i', intArgs=(/field_cursor % real5dField % dimSizes(1)* &
+                                                                                        field_cursor % real5dField % dimSizes(2)* &
+                                                                                        field_cursor % real5dField % dimSizes(3)* &
+                                                                                        field_cursor % real5dField % dimSizes(4)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+
+                              real5d_temp_small = field_5dreal_ptr % array(:,:,:,:,1:ownedSize)
+                              call mpas_mask_field(field_5dreal_ptr, &
+                                 field_5dreal_ptr % missingValueMask2D, real5d_temp_small)
+                              real5d_temp(:,:,:,:,i:i+ownedSize-1) = real5d_temp_small
+                              deallocate(real5d_temp_small)
+                           elseif (ASSOCIATED( field_5dreal_ptr % missingValueMask1D )) then
+                              allocate(real5d_temp_small(field_cursor % real5dField % dimSizes(1), &
+                                                         field_cursor % real5dField % dimSizes(2), &
+                                                         field_cursor % real5dField % dimSizes(3), &
+                                                         field_cursor % real5dField % dimSizes(4), &
+                                                         ownedSize), stat=io_err)
+                              if (io_err /= 0) then
+                                 call mpas_log_write('real5d_temp_small: $i', intArgs=(/field_cursor % real5dField % dimSizes(1)* &
+                                                                                        field_cursor % real5dField % dimSizes(2)* &
+                                                                                        field_cursor % real5dField % dimSizes(3)* &
+                                                                                        field_cursor % real5dField % dimSizes(4)*ownedSize/) )
+                                 if (present(ierr)) ierr = MPAS_IO_ERR
+                                 return
+                              end if
+
+                              real5d_temp_small = field_5dreal_ptr % array(:,:,:,:,1:ownedSize)
+                              call mpas_mask_field(field_5dreal_ptr, &
+                                 field_5dreal_ptr % missingValueMask1D, real5d_temp_small)
+                              real5d_temp(:,:,:,:,i:i+ownedSize-1) = real5d_temp_small
+                              deallocate(real5d_temp_small)
+                           else
+                              real5d_temp(:,:,:,:,i:i+ownedSize-1) = field_5dreal_ptr % array(:,:,:,:,1:ownedSize)
+                           end if
+                        else
+                           real5d_temp(:,:,:,:,i:i+ownedSize-1) = field_5dreal_ptr % array(:,:,:,:,1:ownedSize)
+                        end if
                      end if
                      i = i + ownedSize
                      if ( .not. stream % blockWrite ) then

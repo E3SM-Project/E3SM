@@ -4334,6 +4334,13 @@ Default: FALSE
        group="cam_inparm" valid_values="">
 Turn off microphysics computation.
 Default: FALSE
+</entry>                                                                        |
+                                                                                |
+<entry id="scm_zero_non_iop_tracers" type="logical" category="scam"
+       group="cam_inparm" valid_values="">
+Ignore all tracers from initial conditions file, and default all tracers not
+specified in IOP to minimum value (usually zero).
+Default: FALSE
 </entry>
 
 <!-- Solar Parameters -->
@@ -4390,6 +4397,12 @@ Default: false
 <entry id="use_MMF_VT" type="logical"  category="conv"
        group="phys_ctl_nl" valid_values="" >
 Turn on MMF variance transport
+Default: false
+</entry>
+
+<entry id="use_MMF_ESMT" type="logical"  category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Turn on MMF explicit scalar momentum transport (ESMT)
 Default: false
 </entry>
 

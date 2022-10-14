@@ -17,7 +17,7 @@
           An abbreviation of the fortran declaration for the variable.
       Valid declarations are:
 
-          char*n
+          char*n  
           integer
           logical
           real
@@ -31,7 +31,7 @@
      input_pathname
           Only include this attribute to indicate that the variable
           contains the pathname of an input dataset that resides in the
-          CESM inputdata directory tree.
+          CESM inputdata directory tree.  
 
       The recognized values are "abs" to indicate that an absolute
           pathname is required, or "rel:var_name" to indicate that the
@@ -178,41 +178,6 @@ Default: Defined in namelist_defaults.xml
 Defines the prefix for the processor decomposition file. This file is only read if config_explicit_proc_decomp is .true. The number of processors is appended to the end of the prefix at run-time.
 
 Valid values: Any path/prefix to a processor decomposition file.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
-<!-- transport_tests -->
-
-<entry id="config_transport_tests_vert_levels" type="integer"
-	category="transport_tests" group="transport_tests">
-Number of vertical levels in transport_tests. Typical value is 3 for 2D tests.
-
-Valid values: Any positive integer number greater than 0.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_transport_tests_temperature" type="real"
-	category="transport_tests" group="transport_tests">
-Temperature of the ocean.
-
-Valid values: Any real number
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_transport_tests_salinity" type="real"
-	category="transport_tests" group="transport_tests">
-Salinity of the ocean.
-
-Valid values: Any real number
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_transport_tests_flow_id" type="integer"
-	category="transport_tests" group="transport_tests">
-integer id of transport test.
-
-Valid values: 1 = rotation, 2 = nondivergent2D, 3 = divergent2D, 4 = correlatedTracers2D
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1231,7 +1196,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_sw_absorption_type" type="char*1024"
 	category="shortwaveRadiation" group="shortwaveRadiation">
-Name of shortwave absorption type used in simulation.
+Name of shortwave absorption type used in simulation. 
 
 Valid values: 'jerlov' or 'ohlmann00' or 'none'
 Default: Defined in namelist_defaults.xml
@@ -2500,6 +2465,41 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- transport_tests -->
+
+<entry id="config_transport_tests_vert_levels" type="integer"
+	category="transport_tests" group="transport_tests">
+Number of vertical levels in transport_tests. Typical value is 3 for 2D tests.
+
+Valid values: Any positive integer number greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_transport_tests_temperature" type="real"
+	category="transport_tests" group="transport_tests">
+Temperature of the ocean.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_transport_tests_salinity" type="real"
+	category="transport_tests" group="transport_tests">
+Salinity of the ocean.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_transport_tests_flow_id" type="integer"
+	category="transport_tests" group="transport_tests">
+integer id of transport test.
+
+Valid values: 1 = rotation, 2 = nondivergent2D, 3 = divergent2D, 4 = correlatedTracers2D
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- init_mode_vert_levels -->
 
 <entry id="config_vert_levels" type="integer"
@@ -2595,7 +2595,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_salinity_restoring_max_difference" type="real"
 	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
-Maximum allowable difference between surface salinity and climatology.
+Maximum allowable difference between surface salinity and climatology, in grams salt per kilogram seawater.
 
 Valid values: any non-negative number
 Default: Defined in namelist_defaults.xml

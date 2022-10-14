@@ -15,9 +15,7 @@ namespace Homme
 {
 
 static void prim_advec_tracers_remap_RK2 (const Real dt);
-#ifdef MODEL_THETA_L
 static void prim_advec_tracers_remap_compose (const Real dt);
-#endif
 
 // ----------- IMPLEMENTATION ---------- //
 
@@ -25,12 +23,7 @@ void prim_advec_tracers_remap (const Real dt) {
   SimulationParams& params = Context::singleton().get<SimulationParams>();
 
   if (params.transport_alg > 0) {
-#ifdef MODEL_THETA_L
     prim_advec_tracers_remap_compose(dt);
-#else
-    Errors::runtime_abort("prim_advec_tracers_remap: "
-      "transport_alg > 0 not supported for non-theta-l builds.");
-#endif
   } else {
     prim_advec_tracers_remap_RK2(dt);
   }
@@ -96,8 +89,8 @@ static void prim_advec_tracers_remap_RK2 (const Real dt)
   GPTLstop("tl-at prim_advec_tracers_remap_RK2");
 }
 
-#ifdef MODEL_THETA_L
 static void prim_advec_tracers_remap_compose (const Real dt) {
+#if defined MODEL_THETA_L && defined HOMME_ENABLE_COMPOSE
   GPTLstart("tl-at prim_advec_tracers_compose");
   const auto& params = Context::singleton().get<SimulationParams>();
   assert(params.params_set);
@@ -107,7 +100,10 @@ static void prim_advec_tracers_remap_compose (const Real dt) {
   ct.reset(params);
   ct.run(tl, dt);
   GPTLstop("tl-at prim_advec_tracers_compose");
-}
+#else
+  Errors::runtime_abort("prim_advec_tracers_remap_compose: "
+                        "transport_alg > 0 not supported in this build.");
 #endif
+}
 
 } // namespace Homme

@@ -38,10 +38,8 @@ program driver
   real(crm_rknd), allocatable :: read_crm_input_pdel       (:,:)
   real(crm_rknd), allocatable :: read_crm_input_ul         (:,:)
   real(crm_rknd), allocatable :: read_crm_input_vl         (:,:)
-#ifdef MMF_ESMT
   real(crm_rknd), allocatable :: read_crm_input_ul_esmt    (:,:)
   real(crm_rknd), allocatable :: read_crm_input_vl_esmt    (:,:)
-#endif
   real(crm_rknd), allocatable :: read_crm_state_u_wind     (:,:,:,:)
   real(crm_rknd), allocatable :: read_crm_state_v_wind     (:,:,:,:)
   real(crm_rknd), allocatable :: read_crm_state_w_wind     (:,:,:,:)
@@ -114,10 +112,8 @@ program driver
   allocate( read_crm_input_pdel       (plev  ,ncrms))
   allocate( read_crm_input_ul         (plev  ,ncrms))
   allocate( read_crm_input_vl         (plev  ,ncrms))
-#ifdef MMF_ESMT
-  allocate( read_crm_input_ul_esmt    (plev, ncrms))
-  allocate( read_crm_input_vl_esmt    (plev, ncrms))
-#endif
+  allocate( read_crm_input_ul_esmt    (plev  ,ncrms))
+  allocate( read_crm_input_vl_esmt    (plev  ,ncrms))
   allocate( read_crm_state_u_wind     (crm_nx    ,crm_ny    ,crm_nz,ncrms) )
   allocate( read_crm_state_v_wind     (crm_nx    ,crm_ny    ,crm_nz,ncrms) )
   allocate( read_crm_state_w_wind     (crm_nx    ,crm_ny    ,crm_nz,ncrms) )
@@ -150,10 +146,8 @@ program driver
   call dmdf_read( read_crm_input_pdel        , fname_in , trim("in_pdel          ") , myTasks_beg , myTasks_end , .false. , .false. )
   call dmdf_read( read_crm_input_ul          , fname_in , trim("in_ul            ") , myTasks_beg , myTasks_end , .false. , .false. )
   call dmdf_read( read_crm_input_vl          , fname_in , trim("in_vl            ") , myTasks_beg , myTasks_end , .false. , .false. )
-#ifdef MMF_ESMT
   call dmdf_read( read_crm_input_ul_esmt     , fname_in , trim("in_ul_esmt       ") , myTasks_beg , myTasks_end , .false. , .false. )
   call dmdf_read( read_crm_input_vl_esmt     , fname_in , trim("in_vl_esmt       ") , myTasks_beg , myTasks_end , .false. , .false. )
-#endif
   call dmdf_read( read_crm_state_u_wind      , fname_in , trim("state_u_wind     ") , myTasks_beg , myTasks_end , .false. , .false. )
   call dmdf_read( read_crm_state_v_wind      , fname_in , trim("state_v_wind     ") , myTasks_beg , myTasks_end , .false. , .false. )
   call dmdf_read( read_crm_state_w_wind      , fname_in , trim("state_w_wind     ") , myTasks_beg , myTasks_end , .false. , .false. )
@@ -180,34 +174,32 @@ program driver
   call dmdf_read( crm_output%subcycle_factor   , fname_in , trim("out_subcycle_factor") , myTasks_beg , myTasks_end , .false. , .true.  )
 
   do icrm = 1 , ncrms
-    crm_input%zmid       (icrm,:)     = read_crm_input_zmid       (:    ,icrm)                       
-    crm_input%zint       (icrm,:)     = read_crm_input_zint       (:    ,icrm)                       
-    crm_input%tl         (icrm,:)     = read_crm_input_tl         (:    ,icrm)                       
-    crm_input%ql         (icrm,:)     = read_crm_input_ql         (:    ,icrm)                       
-    crm_input%qccl       (icrm,:)     = read_crm_input_qccl       (:    ,icrm)                       
-    crm_input%qiil       (icrm,:)     = read_crm_input_qiil       (:    ,icrm)                       
-    crm_input%pmid       (icrm,:)     = read_crm_input_pmid       (:    ,icrm)                       
-    crm_input%pint       (icrm,:)     = read_crm_input_pint       (:    ,icrm)                       
-    crm_input%pdel       (icrm,:)     = read_crm_input_pdel       (:    ,icrm)                       
-    crm_input%ul         (icrm,:)     = read_crm_input_ul         (:    ,icrm)                       
-    crm_input%vl         (icrm,:)     = read_crm_input_vl         (:    ,icrm)                      
-#ifdef MMF_ESMT
+    crm_input%zmid       (icrm,:)     = read_crm_input_zmid       (:    ,icrm)
+    crm_input%zint       (icrm,:)     = read_crm_input_zint       (:    ,icrm)
+    crm_input%tl         (icrm,:)     = read_crm_input_tl         (:    ,icrm)
+    crm_input%ql         (icrm,:)     = read_crm_input_ql         (:    ,icrm)
+    crm_input%qccl       (icrm,:)     = read_crm_input_qccl       (:    ,icrm)
+    crm_input%qiil       (icrm,:)     = read_crm_input_qiil       (:    ,icrm)
+    crm_input%pmid       (icrm,:)     = read_crm_input_pmid       (:    ,icrm)
+    crm_input%pint       (icrm,:)     = read_crm_input_pint       (:    ,icrm)
+    crm_input%pdel       (icrm,:)     = read_crm_input_pdel       (:    ,icrm)
+    crm_input%ul         (icrm,:)     = read_crm_input_ul         (:    ,icrm)
+    crm_input%vl         (icrm,:)     = read_crm_input_vl         (:    ,icrm)
     crm_input%ul_esmt    (icrm,:)     = read_crm_input_ul_esmt    (:    ,icrm)
     crm_input%vl_esmt    (icrm,:)     = read_crm_input_vl_esmt    (:    ,icrm)
-#endif  
-    crm_state%u_wind     (icrm,:,:,:) = read_crm_state_u_wind     (:,:,:,icrm) 
-    crm_state%v_wind     (icrm,:,:,:) = read_crm_state_v_wind     (:,:,:,icrm) 
-    crm_state%w_wind     (icrm,:,:,:) = read_crm_state_w_wind     (:,:,:,icrm) 
-    crm_state%temperature(icrm,:,:,:) = read_crm_state_temperature(:,:,:,icrm) 
-    crm_state%qt         (icrm,:,:,:) = read_crm_state_qt         (:,:,:,icrm) 
-    crm_state%qp         (icrm,:,:,:) = read_crm_state_qp         (:,:,:,icrm) 
-    crm_state%qn         (icrm,:,:,:) = read_crm_state_qn         (:,:,:,icrm) 
-    crm_rad%qrad         (icrm,:,:,:) = read_crm_rad_qrad         (:,:,:,icrm) 
-    crm_rad%temperature  (icrm,:,:,:) = read_crm_rad_temperature  (:,:,:,icrm) 
-    crm_rad%qv           (icrm,:,:,:) = read_crm_rad_qv           (:,:,:,icrm) 
-    crm_rad%qc           (icrm,:,:,:) = read_crm_rad_qc           (:,:,:,icrm) 
-    crm_rad%qi           (icrm,:,:,:) = read_crm_rad_qi           (:,:,:,icrm) 
-    crm_rad%cld          (icrm,:,:,:) = read_crm_rad_cld          (:,:,:,icrm) 
+    crm_state%u_wind     (icrm,:,:,:) = read_crm_state_u_wind     (:,:,:,icrm)
+    crm_state%v_wind     (icrm,:,:,:) = read_crm_state_v_wind     (:,:,:,icrm)
+    crm_state%w_wind     (icrm,:,:,:) = read_crm_state_w_wind     (:,:,:,icrm)
+    crm_state%temperature(icrm,:,:,:) = read_crm_state_temperature(:,:,:,icrm)
+    crm_state%qt         (icrm,:,:,:) = read_crm_state_qt         (:,:,:,icrm)
+    crm_state%qp         (icrm,:,:,:) = read_crm_state_qp         (:,:,:,icrm)
+    crm_state%qn         (icrm,:,:,:) = read_crm_state_qn         (:,:,:,icrm)
+    crm_rad%qrad         (icrm,:,:,:) = read_crm_rad_qrad         (:,:,:,icrm)
+    crm_rad%temperature  (icrm,:,:,:) = read_crm_rad_temperature  (:,:,:,icrm)
+    crm_rad%qv           (icrm,:,:,:) = read_crm_rad_qv           (:,:,:,icrm)
+    crm_rad%qc           (icrm,:,:,:) = read_crm_rad_qc           (:,:,:,icrm)
+    crm_rad%qi           (icrm,:,:,:) = read_crm_rad_qi           (:,:,:,icrm)
+    crm_rad%cld          (icrm,:,:,:) = read_crm_rad_cld          (:,:,:,icrm)
   enddo
 
   if (masterTask) then
@@ -232,9 +224,7 @@ program driver
   call crm(ncrms, ncrms, dt_gl(1), plev, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, &
            crm_input%pmid, crm_input%pint, crm_input%pdel, crm_input%ul, crm_input%vl, &
            crm_input%tl, crm_input%qccl, crm_input%qiil, crm_input%ql, crm_input%tau00, &
-#ifdef MMF_ESMT
            crm_input%ul_esmt, crm_input%vl_esmt,                                        &
-#endif
            crm_input%t_vt, crm_input%q_vt, crm_input%u_vt, &
            crm_state%u_wind, crm_state%v_wind, crm_state%w_wind, crm_state%temperature, &
            crm_state%qt, crm_state%qp, crm_state%qn, crm_rad%qrad, crm_rad%temperature, &
@@ -251,15 +241,10 @@ program driver
            crm_output%sltend, crm_output%qltend, crm_output%qcltend, crm_output%qiltend, &
            crm_output%t_vt_tend, crm_output%q_vt_tend, crm_output%u_vt_tend, &
            crm_output%t_vt_ls, crm_output%q_vt_ls, crm_output%u_vt_ls, &
-#if defined(MMF_MOMENTUM_FEEDBACK)
            crm_output%ultend, crm_output%vltend, &
-#endif /* MMF_MOMENTUM_FEEDBACK */
            crm_output%tk, crm_output%tkh, crm_output%qcl, crm_output%qci, crm_output%qpl, crm_output%qpi, &
            crm_output%z0m, crm_output%taux, crm_output%tauy, crm_output%precc, crm_output%precl, crm_output%precsc, &
            crm_output%precsl, crm_output%prec_crm,  &
-#ifdef MMF_ESMT
-           crm_output%u_tend_esmt, crm_output%v_tend_esmt,       &
-#endif
            crm_clear_rh, &
            lat0, long0, gcolp, 2, &
            use_MMF_VT, MMF_VT_wn_max, &
@@ -354,10 +339,6 @@ program driver
         call dmdf_write( crm_output%qp_src        (icrm,:)     , 1 , fprefix , trim('output_qp_src       ') , (/'nlev'/)                                 , .false. , .false. )
         call dmdf_write( crm_output%qp_evp        (icrm,:)     , 1 , fprefix , trim('output_qp_evp       ') , (/'nlev'/)                                 , .false. , .false. )
         call dmdf_write( crm_output%t_ls          (icrm,:)     , 1 , fprefix , trim('output_t_ls         ') , (/'nlev'/)                                 , .false. , .false. )
-#ifdef MMF_ESMT
-        call dmdf_write( crm_output%u_tend_esmt   (icrm,:)     , 1 , fprefix , trim('output_u_tend_esmt  ') , (/'nlev'/)                                 , .false. , .false. )
-        call dmdf_write( crm_output%v_tend_esmt   (icrm,:)     , 1 , fprefix , trim('output_v_tend_esmt  ') , (/'nlev'/)                                 , .false. , .false. )
-#endif
         call dmdf_write( crm_output%prectend      (icrm)       , 1 , fprefix , trim('output_prectend     ')                                              ,.false. , .false. )
         call dmdf_write( crm_output%precstend     (icrm)       , 1 , fprefix , trim('output_precstend    ')                                              , .false. , .false. )
         call dmdf_write( crm_output%taux          (icrm)       , 1 , fprefix , trim('output_taux         ')                                              , .false. , .false. )

@@ -524,11 +524,11 @@ struct RemapFunctor : public Remapper {
     Kokkos::parallel_for(get_default_team_policy<ExecSpace>(ne*nv), r);
   }
 
-  int requested_buffer_size () const {
+  int requested_buffer_size () const override {
     return m_fields_provider.requested_buffer_size();
   }
 
-  void init_buffers(const FunctorsBuffersManager& fbm) {
+  void init_buffers(const FunctorsBuffersManager& fbm) override {
     m_fields_provider.init_buffers(fbm);
   }
 

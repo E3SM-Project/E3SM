@@ -32,9 +32,13 @@ module prim_cxx_driver_base
     use time_mod,         only : TimeLevel_t, TimeLevel_init
     use prim_driver_base, only : prim_init1_geometry, prim_init1_elem_arrays, &
                                  prim_init1_cleanup, prim_init1_buffers,      &
-                                 prim_init1_compose,                          &
                                  MetaVertex, GridEdge, deriv1
+                         
+#ifdef HOMME_ENABLE_COMPOSE
+    use prim_driver_base, only : prim_init1_compose
     use compose_mod,      only : compose_control_kokkos_init_and_fin
+#endif
+
 #if !defined(CAM) && !defined(SCREAM)
     use prim_driver_base, only : prim_init1_no_cam
 #endif
@@ -65,7 +69,9 @@ module prim_cxx_driver_base
     ! Initialize kokkos before any environment changes from the Fortran
     call initialize_hommexx_session()
     ! Don't let any other components that use Kokkos control init/finalization.
+#ifdef HOMME_ENABLE_COMPOSE
     call compose_control_kokkos_init_and_fin(.false.)
+#endif    
 
 #if !defined(CAM) && !defined(SCREAM)
     call prim_init1_no_cam(par)
@@ -96,7 +102,9 @@ module prim_cxx_driver_base
     ! ==================================
     call prim_init1_elem_arrays(elem,par)
 
+#ifdef HOMME_ENABLE_COMPOSE
     call prim_init1_compose(par,elem)
+#endif
 
     ! ==================================
     ! Initialize the buffers for exchanges

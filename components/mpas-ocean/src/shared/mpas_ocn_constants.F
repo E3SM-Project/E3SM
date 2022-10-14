@@ -57,7 +57,9 @@ module ocn_constants
       latent_heat_fusion_mks,&! lat heat of fusion (J/kg)
       sea_ice_salinity      ,&! salinity of sea ice formed (psu)
       ocn_ref_salinity      ,&! ocean reference salinity (psu)
-      atm_ref_pressure        ! standard sea level pressure (Pa)
+      atm_ref_pressure      ,&! standard sea level pressure (Pa)
+      molecular_weight_C    ,&! molecular weight carbon
+      molecular_weight_O2     ! molecular weight oxygen
 
    !  conversion factors
 
@@ -76,7 +78,9 @@ module ocn_constants
       fwflux_factor    ,&! fw flux (kg/m^2/s) to salt((msu/psu)*m/s)
       salinity_factor  ,&! fw flux (kg/m^2/s) to salt flux (msu*m/s)
       sflux_factor     ,&! salt flux (kg/m^2/s) to salt flux (msu*m/s)
-      fwmass_to_fwflux   ! fw flux (kg/m^2/s) to fw flux (m/s)
+      fwmass_to_fwflux ,&! fw flux (kg/m^2/s) to fw flux (m/s)
+      mmol_to_kg_C     ,&! mmol-C to kg-C
+      mmol_to_kg_O2      ! mmol-O2 to kg-O2
 
 !***********************************************************************
 
@@ -129,6 +133,8 @@ contains
        sea_ice_salinity   =  4.0_RKIND        ! (psu)
        ocn_ref_salinity   = 34.7_RKIND        ! (psu)
        atm_ref_pressure   = 101325.0_RKIND    ! (Pa)
+       molecular_weight_C = 12.0107_RKIND     ! molecular weight carbon
+       molecular_weight_O2 = 15.9994_RKIND    ! molecular weight oxygen
 
 
        !-----------------------------------------------------------------------
@@ -165,6 +171,8 @@ contains
        latent_heat_fusion_mks = SHR_CONST_LATICE        ! J/kg
        ocn_ref_salinity       = SHR_CONST_OCN_REF_SAL   ! psu
        sea_ice_salinity       = SHR_CONST_ICE_REF_SAL   ! psu
+       molecular_weight_C     = SHR_CONST_MWC           ! molecular weight carbon
+       molecular_weight_O2    = SHR_CONST_MWO           ! molecular weight oxygen
 #endif
 
 !#ifdef ZERO_SEA_ICE_REF_SAL
@@ -261,6 +269,9 @@ contains
        !-----------------------------------------------------------------------
 
        fwmass_to_fwflux = 0.1_RKIND
+
+       mmol_to_kg_C  = molecular_weight_C  * 1.e-6_RKIND
+       mmol_to_kg_O2 = molecular_weight_O2 * 1.e-6_RKIND
 
    end subroutine ocn_constants_init!}}}
 

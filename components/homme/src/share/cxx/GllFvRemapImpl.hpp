@@ -389,7 +389,7 @@ struct GllFvRemapImpl {
     // coalesced memory access on the GPU. Kokkos doesn't expose the number of
     // threads in a team, so we have to go to the lower-level API here.
     const int nthr_per_team =
-#if defined __CUDA_ARCH__
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
       blockDim.x,
 #else
       1,

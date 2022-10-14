@@ -525,6 +525,7 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 	const char *const_core;
 	const char *nmlrecname, *nmlrecindef, *nmlrecinsub;
 	const char *nmloptname, *nmlopttype, *nmloptval, *nmloptunits, *nmloptdesc, *nmloptposvals, *nmloptindef;
+	const char *nmloptbounds, *nmloptcellmeasures, *nmloptcellmethod, *nmloptcoords, *nmloptstdname;
 
 	char pool_name[1024];
 	char core_string[1024];
@@ -608,6 +609,11 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 			nmlopttype = ezxml_attr(nmlopt_xml, "type");
 			nmloptval = ezxml_attr(nmlopt_xml, "default_value");
 			nmloptunits = ezxml_attr(nmlopt_xml, "units");
+			nmloptbounds = ezxml_attr(nmlopt_xml, "bounds");
+			nmloptcellmeasures = ezxml_attr(nmlopt_xml, "cell_measures");
+			nmloptcellmethod = ezxml_attr(nmlopt_xml, "cell_method");
+			nmloptcoords = ezxml_attr(nmlopt_xml, "coordinates");
+			nmloptstdname = ezxml_attr(nmlopt_xml, "standard_name");
 			nmloptdesc = ezxml_attr(nmlopt_xml, "description");
 			nmloptposvals = ezxml_attr(nmlopt_xml, "possible_values");
 			nmloptindef = ezxml_attr(nmlopt_xml, "in_defaults");
@@ -1013,8 +1019,10 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 
 	const char *structname, *structlevs, *structpackages;
 	const char *substructname;
-	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrdefaultval, *vararrpackages, *vararrmissingval;
+	const char *vararrname, *vararrtype, *vararrdims, *vararrpersistence, *vararrdefaultval, *vararrpackages, *vararrmissingval, *vararrmissing_value_mask;
+	const char *vararrbounds, *vararrcellmeasures, *vararrcellmethod, *vararrcoords, *vararrstdname;
 	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *vardefaultval, *varpackages;
+	const char *varbounds, *varcellmeasures, *varcellmethod, *varcoords, *varstdname;
 	const char *varname2, *vararrgroup2, *vararrname_in_code;
 	const char *varname_in_code;
 	const char *varname_in_output;
@@ -1055,6 +1063,12 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	vararrpackages = ezxml_attr(var_arr_xml, "packages");
 	vararrtimelevs = ezxml_attr(var_arr_xml, "time_levs");
 	vararrname_in_code = ezxml_attr(var_arr_xml, "name_in_code");
+	vararrmissing_value_mask= ezxml_attr(var_arr_xml, "missing_value_mask");
+	vararrbounds = ezxml_attr(var_arr_xml, "bounds");
+	vararrcellmeasures = ezxml_attr(var_arr_xml, "cell_measures");
+	vararrcellmethod = ezxml_attr(var_arr_xml, "cell_method");
+	vararrcoords = ezxml_attr(var_arr_xml, "coordinates");
+	vararrstdname = ezxml_attr(var_arr_xml, "standard_name");
 
 	package_list[0] = '\0';
 	no_packages = build_struct_package_lists(varArray, package_list);
@@ -1079,6 +1093,7 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 	persistence = check_persistence(vararrpersistence);
 
 	fortprintf(fd, "! Define var array %s\n", vararrname);
+
 	snprintf(spacing, 1024, "      ");
 
 	// Determine field type and default value.
@@ -1376,6 +1391,11 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 			varname_in_code = ezxml_attr(var_xml, "name_in_code");
 			vardesc = ezxml_attr(var_xml, "description");
 			varunits = ezxml_attr(var_xml, "units");
+			varbounds = ezxml_attr(var_xml, "bounds");
+			varcellmeasures = ezxml_attr(var_xml, "cell_measures");
+			varcellmethod = ezxml_attr(var_xml, "cell_method");
+			varcoords = ezxml_attr(var_xml, "coordinates");
+			varstdname = ezxml_attr(var_xml, "standard_name");
 
 			if(!varname_in_code){
 				varname_in_code = ezxml_attr(var_xml, "name");
@@ -1415,6 +1435,174 @@ int parse_var_array(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t var
 				free(tofree);
 
 				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'units', '%s')\n", pointer_name_arr, temp_str);
+			}
+		        if ( vararrmissing_value_mask != NULL && vararrmissingval != NULL ) {
+				string = strdup(vararrmissing_value_mask);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+		                fortprintf(fd, "         %s %% maskName = '%s'\n", pointer_name_arr , temp_str);
+				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'missing_value_mask', '%s')\n", pointer_name_arr, temp_str);
+                        } else {
+                                fortprintf(fd, "         %s %% maskName = 'none'\n", pointer_name_arr , temp_str);
+		        }
+
+			if ( varbounds != NULL ) {
+				string = strdup(varbounds);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'bounds', '%s')\n", pointer_name_arr, temp_str);
+			} else if ( vararrbounds != NULL ) {
+				string = strdup(vararrbounds);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'bounds', '%s')\n", pointer_name_arr, temp_str);
+			}
+
+			if ( varcellmeasures != NULL ) {
+				string = strdup(varcellmeasures);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'cell_measures', '%s')\n", pointer_name_arr, temp_str);
+			} else if ( vararrcellmeasures != NULL ) {
+				string = strdup(vararrcellmeasures);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'cell_measures', '%s')\n", pointer_name_arr, temp_str);
+			}
+
+			if ( varcellmethod != NULL ) {
+				string = strdup(varcellmethod);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'cell_method', '%s')\n", pointer_name_arr, temp_str);
+			} else if ( vararrcellmethod != NULL ) {
+				string = strdup(vararrcellmethod);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'cell_method', '%s')\n", pointer_name_arr, temp_str);
+			}
+
+			if ( varcoords != NULL ) {
+				string = strdup(varcoords);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'coordinates', '%s')\n", pointer_name_arr, temp_str);
+			} else if ( vararrcoords != NULL ) {
+				string = strdup(vararrcoords);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'coordinates', '%s')\n", pointer_name_arr, temp_str);
+			}
+
+			if ( varstdname != NULL ) {
+				string = strdup(varstdname);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'standard_name', '%s')\n", pointer_name_arr, temp_str);
+			} else if ( vararrstdname != NULL ) {
+				string = strdup(vararrstdname);
+				tofree = string;
+
+				token = strsep(&string, "'");
+				sprintf(temp_str, "%s", token);
+
+				while ( ( token = strsep(&string, "'") ) != NULL ) {
+					sprintf(temp_str, "%s''%s", temp_str, token);
+				}
+
+				free(tofree);
+
+				fortprintf(fd, "         call mpas_add_att(%s %% attLists(const_index) %% attList, 'standard_name', '%s')\n", pointer_name_arr, temp_str);
 			}
 
 			if ( vararrmissingval ) {
@@ -1475,7 +1663,8 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	const char *structtimelevs, *vartimelevs;
 	const char *structname, *structlevs, *structpackages;
 	const char *substructname;
-	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *vardefaultval, *varpackages, *varmissingval;
+	const char *varname, *varpersistence, *vartype, *vardims, *varunits, *vardesc, *vararrgroup, *varstreams, *vardefaultval, *varpackages, *varmissingval, *varmissing_value_mask;
+	const char *varbounds, *varcellmeasures, *varcellmethod, *varcoords, *varstdname;
 	const char *varname2, *vararrgroup2;
 	const char *varname_in_code;
 	const char *varname_in_output;
@@ -1512,8 +1701,14 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 	vartimelevs = ezxml_attr(var_xml, "time_levs");
 	varname_in_code = ezxml_attr(var_xml, "name_in_code");
 	varunits = ezxml_attr(var_xml, "units");
+	varbounds = ezxml_attr(var_xml, "bounds");
+	varcellmeasures = ezxml_attr(var_xml, "cell_measures");
+	varcellmethod = ezxml_attr(var_xml, "cell_method");
+	varcoords = ezxml_attr(var_xml, "coordinates");
+	varstdname = ezxml_attr(var_xml, "standard_name");
 	vardesc = ezxml_attr(var_xml, "description");
 	varmissingval = ezxml_attr(var_xml, "missing_value");
+	varmissing_value_mask = ezxml_attr(var_xml, "missing_value_mask");
 
 	if(!varname_in_code){
 		varname_in_code = ezxml_attr(var_xml, "name");
@@ -1635,6 +1830,86 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'units', '%s')\n", pointer_name_arr, temp_str);
 		}
 
+		if ( varbounds != NULL ) {
+			string = strdup(varbounds);
+			tofree = string;
+			token = strsep(&string, "'");
+
+			sprintf(temp_str, "%s", token);
+
+			while ( ( token = strsep(&string, "'") ) != NULL ) {
+				sprintf(temp_str, "%s''%s", temp_str, token);
+			}
+
+			free(tofree);
+
+			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'bounds', '%s')\n", pointer_name_arr, temp_str);
+		}
+
+		if ( varcellmeasures != NULL ) {
+			string = strdup(varcellmeasures);
+			tofree = string;
+			token = strsep(&string, "'");
+
+			sprintf(temp_str, "%s", token);
+
+			while ( ( token = strsep(&string, "'") ) != NULL ) {
+				sprintf(temp_str, "%s''%s", temp_str, token);
+			}
+
+			free(tofree);
+
+			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'cell_measures', '%s')\n", pointer_name_arr, temp_str);
+		}
+
+		if ( varcellmethod != NULL ) {
+			string = strdup(varcellmethod);
+			tofree = string;
+			token = strsep(&string, "'");
+
+			sprintf(temp_str, "%s", token);
+
+			while ( ( token = strsep(&string, "'") ) != NULL ) {
+				sprintf(temp_str, "%s''%s", temp_str, token);
+			}
+
+			free(tofree);
+
+			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'cell_method', '%s')\n", pointer_name_arr, temp_str);
+		}
+
+		if ( varcoords != NULL ) {
+			string = strdup(varcoords);
+			tofree = string;
+			token = strsep(&string, "'");
+
+			sprintf(temp_str, "%s", token);
+
+			while ( ( token = strsep(&string, "'") ) != NULL ) {
+				sprintf(temp_str, "%s''%s", temp_str, token);
+			}
+
+			free(tofree);
+
+			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'coordinates', '%s')\n", pointer_name_arr, temp_str);
+		}
+
+		if ( varstdname != NULL ) {
+			string = strdup(varstdname);
+			tofree = string;
+			token = strsep(&string, "'");
+
+			sprintf(temp_str, "%s", token);
+
+			while ( ( token = strsep(&string, "'") ) != NULL ) {
+				sprintf(temp_str, "%s''%s", temp_str, token);
+			}
+
+			free(tofree);
+
+			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'standard_name', '%s')\n", pointer_name_arr, temp_str);
+		}
+
 		if ( vardesc != NULL ) {
 			string = strdup(vardesc);
 			tofree = string;
@@ -1649,6 +1924,25 @@ int parse_var(FILE *fd, ezxml_t registry, ezxml_t superStruct, ezxml_t currentVa
 			free(tofree);
 
 			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'long_name', '%s')\n", pointer_name_arr, temp_str);
+		}
+
+		if ( varmissing_value_mask != NULL && varmissingval != NULL ) {
+			string = strdup(varmissing_value_mask);
+			tofree = string;
+
+			token = strsep(&string, "'");
+			sprintf(temp_str, "%s", token);
+
+			while ( ( token = strsep(&string, "'") ) != NULL ) {
+				sprintf(temp_str, "%s''%s", temp_str, token);
+			}
+
+			free(tofree);
+
+		        fortprintf(fd, "      %s %% maskName = '%s'\n", pointer_name_arr , temp_str);
+			fortprintf(fd, "      call mpas_add_att(%s %% attLists(1) %% attList, 'missing_value_mask', '%s')\n", pointer_name_arr, temp_str);
+                } else {
+                        fortprintf(fd, "      %s %% maskName = 'none'\n", pointer_name_arr , temp_str);
 		}
 
 		if ( varmissingval != NULL ) {
