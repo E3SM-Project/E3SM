@@ -1321,7 +1321,7 @@ die "ERROR: NBC = $nBC is not supported yet \n";
 	    );
 	@mode_spec_cw  = (
 	    [qw(so401_c1 so402_c1 so403_c1 so404_c1 pom_c1 soa_c1 bc_c1 dst_c1 ncl_c1)],
-	    [qw(so401_c2 so402_c1 so403_c1 so404_c1 soa_c2 ncl_c2)],
+	    [qw(so401_c2 so402_c2 so403_c2 so404_c2 soa_c2 ncl_c2)],
 	    [qw(dst_c3 ncl_c3 so401_c3 so402_c3 so403_c3 so404_c3)],
 	    [qw(pom_c4 bc_c4)],
 	    );	
