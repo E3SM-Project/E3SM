@@ -2,8 +2,7 @@
 <namelist_defaults>
 
 <!-- Set default output options for CMIP6 simulations -->
-
-<!-- <cosp_lite>.true.</cosp_lite> -->
+<cosp_lite>.true.</cosp_lite>
 
 <!-- Solar constant from CMIP6 input4MIPS -->
 <solar_data_file>atm/cam/solar/Solar_1950control_input4MIPS_c20171208.nc</solar_data_file>
@@ -38,6 +37,10 @@
 <prescribed_aero_type>CYCLICAL</prescribed_aero_type>
 <prescribed_aero_cycle_yr>01</prescribed_aero_cycle_yr>
 
+<!-- Stratospheric ozone (Linoz) updated using CMIP6 input4MIPS GHG concentrations -->
+<chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc</chlorine_loading_file>
+<chlorine_loading_type      >SERIAL</chlorine_loading_type>
+
 <!-- Prescribed Ozone -->
 <prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
 <prescribed_ozone_file    >ozone_1.9x2.5_L26_2000clim_c091112.nc</prescribed_ozone_file>
@@ -45,10 +48,10 @@
 <prescribed_ozone_type    >CYCLICAL</prescribed_ozone_type>
 <prescribed_ozone_cycle_yr>2000</prescribed_ozone_cycle_yr>>
 
+<!-- Turn off ozone dry deposition, as Linoz O3v2 and ozone are not separated for now. Need to turn on ozone dry deposition when interactive tropospheric chemistry is implemented -->
+<drydep_list            >'H2O2', 'H2SO4', 'SO2'</drydep_list>
 
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>1955</sim_year>
-
-<liqcf_fix>.false.</liqcf_fix>
 
 </namelist_defaults>
