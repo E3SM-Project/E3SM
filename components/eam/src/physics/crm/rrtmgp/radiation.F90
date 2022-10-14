@@ -940,7 +940,7 @@ contains
       endif
 
 #if defined(MMF_PRESCRIBED_QRL) || defined(MMF_PRESCRIBED_QRS)
-      ! prescribed_rad_path = '/global/cscratch1/sd/whannah/e3sm_scratch/init_files/prescribed_rad/E3SM.GNUGPU.ne30pg2.F-MMFXX-RCEROT.BVT.RADNX_1.03.global-mean-QR.nc'
+      ! prescribed_rad_path = '/global/cscratch1/sd/whannah/e3sm_scratch/init_files/prescribed_rad'
       prescribed_rad_path = '/pscratch/sd/w/whannah/e3sm_scratch/perlmutter/init_data/prescribed_rad'
       prescribed_rad_file = trim(prescribed_rad_path)//'/E3SM.GNUGPU.ne30pg2.F-MMFXX-RCEROT.BVT.RADNX_1.03.global-mean-QR.nc'
 #endif
@@ -963,7 +963,7 @@ contains
          pbuf_chunk => pbuf_get_chunk(pbuf2d, chnk)
          call pbuf_get_field(pbuf_chunk, pbuf_get_index('QRL_PRESCRIBED'), qrl_prescribed)
          do i = 1,ncol
-            qrl_prescribed(1,1:pver) = qrl_data(1:pver)
+            qrl_prescribed(i,1:pver) = qrl_data(1:pver)
          end do
       end do
 #endif
@@ -1802,14 +1802,16 @@ contains
                ! Note that the prescribed rad is derived from the QRL history variable,
                ! which is the same as qrl here, except it is divided by cpair
                ! in the outfld() call within output_fluxes*().
+               ! I accidently used K/day data, so need to convert back to K/s with 1/86400
                nstep = get_nstep()
                do ic = 1,ncol
                   do ilev = 1, pver
-                     qrs_tmp(ic,ilev) = qrs(ic,ilev)
+                     ! qrs_tmp(ic,ilev) = qrs(ic,ilev)
                      qrs(ic,ilev) = qrs_prescribed(ic,ilev) * cpair / 86400.
-write(iulog,4571) nstep, ic, ilev, qrs_tmp(ic,ilev), qrs(ic,ilev)
-call shr_sys_flush(iulog)
-4571 format('WHDEBUG - nstep=',i3,' i=',i3,' k=',i2,' QRS1:',f18.6,' QRS2:',f18.6)
+! ratio = qrs(ic,ilev) / qrs_tmp(ic,ilev)
+! write(iulog,4571) nstep, ic, ilev, qrs_tmp(ic,ilev), qrs(ic,ilev), ratio
+! call shr_sys_flush(iulog)
+! 4571 format('WHDEBUG - nstep=',i3,' i=',i3,' k=',i2,' QRS1:',f18.6,'     QRS2:',f18.6,'     ratio:',f18.6)
                   end do
                end do
 
@@ -1927,11 +1929,12 @@ call shr_sys_flush(iulog)
                ! in the outfld() call within output_fluxes*().
                do ic = 1,ncol
                   do ilev = 1, pver
-                     qrl_tmp(ic,ilev) = qrl(ic,ilev)
+                     ! qrl_tmp(ic,ilev) = qrl(ic,ilev)
                      qrl(ic,ilev) = qrl_prescribed(ic,ilev) * cpair / 86400.
-write(iulog,4572) nstep, ic, ilev, qrl_tmp(ic,ilev), qrl(ic,ilev)
-call shr_sys_flush(iulog)
-4572 format('WHDEBUG - nstep=',i3,' i=',i3,' k=',i2,' QRL1:',f18.6,' QRL2:',f18.6)
+! ratio = qrl(ic,ilev) / qrl_tmp(ic,ilev)
+! write(iulog,4572) nstep, ic, ilev, qrl_tmp(ic,ilev), qrl(ic,ilev), ratio
+! call shr_sys_flush(iulog)
+! 4572 format('WHDEBUG - nstep=',i3,' i=',i3,' k=',i2,' QRL1:',f18.6,'     QRL2:',f18.6,'     ratio:',f18.6)
                   end do
                end do
                if (use_MMF) then

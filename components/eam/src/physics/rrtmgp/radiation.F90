@@ -25,6 +25,9 @@ module radiation
       rrtmg_to_rrtmgp_swbands
    use physconst, only: cpair, cappa
 
+   use physics_buffer,     only: physics_buffer_desc, pbuf_get_field, pbuf_get_index, pbuf_get_chunk
+   use time_manager,       only: get_nstep
+
    ! RRTMGP interface to separate E3SM-specific data types from RRTMGP-specific
    ! data types, that may be in Fortran or C++
    use rrtmgp_interface, only: &
@@ -42,6 +45,10 @@ module radiation
                               handle_error, fluxes_t, &
                               initialize_fluxes, reset_fluxes, free_fluxes, expand_day_fluxes, &
                               get_gas_vmr
+
+#if defined(MMF_PRESCRIBED_QRL) || defined(MMF_PRESCRIBED_QRS)
+   use netcdf
+#endif
 
    implicit none
    private
@@ -307,6 +314,13 @@ contains
       call pbuf_add_field('QRS', 'global', dtype_r8, (/pcols,pver/), idx)
       call pbuf_add_field('QRL', 'global', dtype_r8, (/pcols,pver/), idx)
 
+#ifdef MMF_PRESCRIBED_QRL
+      call pbuf_add_field('QRL_PRESCRIBED', 'global', dtype_r8, (/pcols,pver/), idx)
+#endif
+#ifdef MMF_PRESCRIBED_QRS
+      call pbuf_add_field('QRS_PRESCRIBED', 'global', dtype_r8, (/pcols,pver/), idx)
+#endif
+
       ! If the namelist has been configured for preserving the spectral fluxes, then create
       ! physics buffer variables to store the results. These are fluxes per
       ! spectral band, as follows:
@@ -417,7 +431,7 @@ contains
 
    !================================================================================================
 
-   subroutine radiation_init(state)
+   subroutine radiation_init(state,pbuf2d)
    !-------------------------------------------------------------------------------
    ! Purpose: Initialize the radiation parameterization and add fields to the 
    ! history buffer
@@ -446,7 +460,8 @@ contains
       ! have yet to implement this in RRTMGP. It is a vector because at the point
       ! where this subroutine is called, physics_state has not subset for a
       ! specific chunk (i.e., state is a vector of all chunks, indexed by lchnk)
-      type(physics_state), intent(in) :: state(:)
+      type(physics_state), intent(in),dimension(begchunk:endchunk) :: state
+      type(physics_buffer_desc), pointer :: pbuf2d(:,:)
 
       integer :: icall, nmodes
       logical :: active_calls(0:N_DIAG)
@@ -464,6 +479,16 @@ contains
       character(len=128) :: error_message
 
       character(len=32) :: subname = 'radiation_init'
+
+#if defined(MMF_PRESCRIBED_QRL) || defined(MMF_PRESCRIBED_QRS)
+      real(r8), pointer :: qrl_prescribed(:,:), qrs_prescribed(:,:)
+      character(len=400) :: prescribed_rad_path, prescribed_rad_file
+      character(len=8) :: varName
+      integer :: ncid, dimid, nlev, varid, chnk, k, ncol, i
+      real(r8), dimension(pver) :: qrl_data, qrs_data
+      integer :: qrl_idx, qrs_idx
+      type(physics_buffer_desc), pointer :: pbuf_chunk(:) ! temporary pbuf pointer for single chunk
+#endif
 
       !-----------------------------------------------------------------------
 
@@ -867,6 +892,61 @@ contains
                      sampling_seq='rad_lwsw', flag_xyfill=.true.)
       endif
 
+#if defined(MMF_PRESCRIBED_QRL) || defined(MMF_PRESCRIBED_QRS)
+      ! prescribed_rad_path = '/global/cscratch1/sd/whannah/e3sm_scratch/init_files/prescribed_rad'
+      prescribed_rad_path = '/pscratch/sd/w/whannah/e3sm_scratch/perlmutter/init_data/prescribed_rad'
+      ! prescribed_rad_file = trim(prescribed_rad_path)//'/E3SM.GNUGPU.ne30pg2.F-MMFXX-RCEROT.BVT.RADNX_1.03.global-mean-QR.nc'
+      prescribed_rad_file = trim(prescribed_rad_path)//'/E3SM.GNUCPU.ne30pg2.F-EAM-RCEROT.04.global-mean-QR.nc'
+#endif
+      
+#ifdef MMF_PRESCRIBED_QRL
+      varName = 'QRL'
+      if(nf90_open(trim(prescribed_rad_file), NF90_NOWRITE, ncid) /= NF90_NOERR) &
+         call endrun("radiation_init(): can't open file " // trim(prescribed_rad_file))
+      if(nf90_inq_dimid(ncid, trim('lev'), dimid) == NF90_NOERR) then
+         if(nf90_inquire_dimension(ncid, dimid, len=nlev) /= NF90_NOERR) nlev = -1
+      else
+         nlev = -1
+      end if
+      if (nlev/=pver) call endrun('MMF_PRESCRIBED_QRL: number of vertical levels do not match file!')
+      if(nf90_inq_varid(ncid,trim(varName),varid) /= NF90_NOERR) call endrun("MMF_PRESCRIBED_QRL - nf90_inq_varid: can't find variable " // trim(varName))
+      if(nf90_get_var(ncid,varid,qrl_data)        /= NF90_NOERR) call endrun("MMF_PRESCRIBED_QRL - nf90_get_var: can't read variable " // trim(varName))
+      ncid = nf90_close(ncid)
+      do chnk=begchunk, endchunk
+         ncol = state(chnk)%ncol
+         pbuf_chunk => pbuf_get_chunk(pbuf2d, chnk)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('QRL_PRESCRIBED'), qrl_prescribed)
+         write(*,*) 'WHDEBUG - chnk: ',chnk,' ncol: ',ncol
+         do i = 1,ncol
+            write(*,*) 'WHDEBUG - i: ',i
+            qrl_prescribed(i,1:pver) = qrl_data(1:pver)
+         end do
+      end do
+#endif
+
+#ifdef MMF_PRESCRIBED_QRS
+      varName = 'QRS'
+      if(nf90_open(trim(prescribed_rad_file), NF90_NOWRITE, ncid) /= NF90_NOERR) &
+         call endrun("radiation_init(): can't open file " // trim(prescribed_rad_file))
+      if(nf90_inq_dimid(ncid, trim('lev'), dimid) == NF90_NOERR) then
+         if(nf90_inquire_dimension(ncid, dimid, len=nlev) /= NF90_NOERR) nlev = -1
+      else
+         nlev = -1
+      end if
+      if (nlev/=pver) call endrun('MMF_PRESCRIBED_QRS: number of vertical levels do not match file!')
+      if(nf90_inq_varid(ncid,trim(varName),varid) /= NF90_NOERR) call endrun("MMF_PRESCRIBED_QRS - nf90_inq_varid: can't find variable " // trim(varName))
+      if(nf90_get_var(ncid,varid,qrs_data)        /= NF90_NOERR) call endrun("MMF_PRESCRIBED_QRS - nf90_get_var: can't read variable " // trim(varName))
+      ncid = nf90_close(ncid)
+      do chnk=begchunk, endchunk
+         ncol = state(chnk)%ncol
+         pbuf_chunk => pbuf_get_chunk(pbuf2d, chnk)
+         call pbuf_get_field(pbuf_chunk, pbuf_get_index('QRS_PRESCRIBED'), qrs_prescribed)
+         do i = 1,ncol
+            qrs_prescribed(i,1:pver) = qrs_data(1:pver)
+         end do
+      end do
+#endif
+
    end subroutine radiation_init
 
    subroutine radiation_final()
@@ -1090,6 +1170,15 @@ contains
       real(r8), pointer :: qrs(:,:)  ! shortwave radiative heating rate 
       real(r8), pointer :: qrl(:,:)  ! longwave  radiative heating rate 
 
+#if defined(MMF_PRESCRIBED_QRL) || defined(MMF_PRESCRIBED_QRS)
+      real(r8), pointer :: qrl_prescribed(:,:)
+      real(r8), pointer :: qrs_prescribed(:,:)
+      integer :: nstep
+      real(r8) :: ratio
+      real(r8) :: qrs_tmp(pcols,pver)
+      real(r8) :: qrl_tmp(pcols,pver)
+#endif
+
       ! Pointers to fields on the physics buffer
       real(r8), pointer, dimension(:,:) :: &
          cld, cldfsnow, &
@@ -1169,6 +1258,13 @@ contains
       ! modified in this routine.
       call pbuf_get_field(pbuf, pbuf_get_index('QRS'), qrs)
       call pbuf_get_field(pbuf, pbuf_get_index('QRL'), qrl)
+
+#ifdef MMF_PRESCRIBED_QRL
+      call pbuf_get_field(pbuf, pbuf_get_index('QRL_PRESCRIBED'), qrl_prescribed)
+#endif
+#ifdef MMF_PRESCRIBED_QRS
+      call pbuf_get_field(pbuf, pbuf_get_index('QRS_PRESCRIBED'), qrs_prescribed)
+#endif
 
       ! Get fields from pbuf for optics
       call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cld)
@@ -1335,6 +1431,19 @@ contains
                   fluxes_allsky, fluxes_clrsky, qrs, qrsc &
                )
 
+#ifdef MMF_PRESCRIBED_QRS
+               ! Note that the prescribed rad is derived from the QRS history variable,
+               ! which is the same as qrs here, except it is divided by cpair
+               ! in the outfld() call within output_fluxes*().
+               ! I accidently used K/day data, so need to convert back to K/s with 1/86400
+               nstep = get_nstep()
+               do icol = 1,ncol
+                  do ilay = 1, pver
+                     qrs(icol,ilay) = qrs_prescribed(icol,ilay) * cpair / 86400.
+                  end do
+               end do
+#endif
+
                ! Send fluxes to history buffer
                call output_fluxes_sw(icall, state, fluxes_allsky, fluxes_clrsky, qrs,  qrsc)
             end if
@@ -1413,6 +1522,18 @@ contains
                   cld_tau_gpt_lw, aer_tau_bnd_lw, &
                   fluxes_allsky, fluxes_clrsky, qrl, qrlc &
                )
+
+#ifdef MMF_PRESCRIBED_QRL
+               ! Note that the prescribed rad is derived from the QRL history variable,
+               ! which is the same as qrl here, except it is divided by cpair
+               ! in the outfld() call within output_fluxes*().
+               do icol = 1,ncol
+                  do ilay = 1, pver
+                     qrl(icol,ilay) = qrl_prescribed(icol,ilay) * cpair / 86400.
+                  end do
+               end do
+#endif
+
                ! Send fluxes to history buffer
                call output_fluxes_lw(icall, state, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
             end if

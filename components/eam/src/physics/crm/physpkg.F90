@@ -89,6 +89,7 @@ subroutine phys_register
   use ghg_data,                 only: ghg_data_register
   use radiation,                only: radiation_register
   use co2_cycle,                only: co2_register
+  use co2_diagnostics,    only: co2_diags_register
   use flux_avg,                 only: flux_avg_register
   use ionosphere,               only: ionos_register
   use prescribed_ozone,         only: prescribed_ozone_register
@@ -166,6 +167,7 @@ subroutine phys_register
 
   ! co2 constituents
   call co2_register()
+  call co2_diags_register()
 
   call prescribed_volcaero_register()
   call prescribed_ozone_register()
@@ -527,6 +529,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   use aircraft_emit,      only: aircraft_emit_init
   use prescribed_volcaero,only: prescribed_volcaero_init
   use co2_cycle,          only: co2_init, co2_transport
+  use co2_diagnostics,    only: co2_diags_init
   use cam_diagnostics,    only: diag_init
   use gw_drag,            only: gw_init
   use radheat,            only: radheat_init
@@ -636,6 +639,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
   ! co2 cycle            
   if (co2_transport()) call co2_init()
+  call co2_diags_init(phys_state)
 
   call gw_init()
 
@@ -936,9 +940,13 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d, cam_out, cam_in )
   use cam_diagnostics,  only: diag_deallocate, diag_surf
   use comsrf,           only: trefmxav, trefmnav, sgh, sgh30, fsds 
   use physconst,        only: stebol, latvap
-  use time_manager,     only: get_nstep
+  use time_manager,     only: get_nstep, is_first_step, is_end_curr_month, &
+                              is_first_restart_step, is_last_step
   use check_energy,     only: ieflx_gmean, check_ieflx_fix 
   use phys_control,     only: ieflx_opt
+  use co2_diagnostics,  only: get_total_carbon, print_global_carbon_diags, &
+                              co2_diags_store_fields, co2_diags_read_fields
+  use co2_cycle,        only: co2_transport
   !-----------------------------------------------------------------------------
   ! Interface arguments
   !-----------------------------------------------------------------------------
@@ -982,6 +990,13 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d, cam_out, cam_in )
   !-----------------------------------------------------------------------------
   if(ieflx_opt>0) call ieflx_gmean(phys_state, phys_tend, pbuf2d, cam_in, cam_out, nstep)
 
+  ! Get carbon conservation fields from pbuf if restarting
+  if ( co2_transport() ) then
+     if ( is_first_restart_step() ) then
+        call co2_diags_read_fields(phys_state, pbuf2d)
+     end if
+  end if
+
 !$OMP PARALLEL DO PRIVATE (C, beg_count, NCOL, phys_buffer_chunk, end_count, chunk_cost)
   do c=begchunk,endchunk
 
@@ -1014,6 +1029,27 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d, cam_out, cam_in )
 #ifdef TRACER_CHECK
   call gmean_mass ('after tphysac FV:WET)', phys_state)
 #endif
+
+  ! Check for carbon conservation
+  if ( co2_transport() ) then
+     do c = begchunk, endchunk
+        call get_total_carbon(phys_state(c), 'wet')
+     end do
+     call print_global_carbon_diags(phys_state, ztodt, nstep)
+     do c = begchunk, endchunk
+        ncol = get_ncols_p(c)
+        phys_state(c)%tc_prev(:ncol) = phys_state(c)%tc_curr(:ncol)
+        if ( is_first_step() ) then
+           phys_state(c)%tc_init(:ncol) = phys_state(c)%tc_curr(:ncol)
+        end if
+        if ( is_end_curr_month() ) then
+           phys_state(c)%tc_mnst(:ncol) = phys_state(c)%tc_curr(:ncol)
+        end if
+     end do
+     if ( is_last_step() ) then
+        call co2_diags_store_fields(phys_state, pbuf2d)
+     end if
+  end if
 
   call pbuf_deallocate(pbuf2d, 'physpkg')
 
