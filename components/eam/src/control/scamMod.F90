@@ -196,6 +196,7 @@ module scamMod
   logical*4, public ::  iop_nudge_uv! use relaxation for u and v
   logical*4, public ::  scm_observed_aero ! use observed aerosols in SCM file
   logical*4, public ::  precip_off    ! turn off precipitation processes
+  logical*4, public ::  scm_zero_non_iop_tracers ! initialize non-IOP-specified tracers to zero
   logical*4, public ::  use_replay    ! use e3sm generated forcing 
   logical*4, public ::  use_3dfrc     ! use 3d forcing
   logical*4, public ::  have_heat_glob ! dataset contains global energy fixer
@@ -218,7 +219,8 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
         iop_nudge_tq_high_out, iop_nudge_tscale_out, &
         scm_diurnal_avg_out, scm_crm_mode_out, scm_observed_aero_out, &
         precip_off_out, scm_clubb_iop_name_out, &
-        scm_multcols_out, dp_crm_out, iop_perturb_high_out)
+        scm_multcols_out, dp_crm_out, iop_perturb_high_out, &
+        scm_zero_non_iop_tracers_out)
 !-----------------------------------------------------------------------
    real(r8), intent(out), optional :: scmlat_out,scmlon_out
    character*(max_path_len), intent(out), optional ::  iopfile_out
@@ -238,6 +240,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    real(r8), intent(out), optional ::  iop_nudge_tscale_out
    real(r8), intent(out), optional ::  iop_perturb_high_out
    character(len=*), intent(out), optional ::  scm_clubb_iop_name_out
+   logical, intent(out), optional ::  scm_zero_non_iop_tracers_out
 
    if ( present(scmlat_out) )           scmlat_out     = -999._r8
    if ( present(scmlon_out) )           scmlon_out     = -999._r8
@@ -258,6 +261,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    if ( present(scm_multcols_out))      scm_multcols_out = .false.
    if ( present(dp_crm_out))            dp_crm_out = .false.
    if ( present(scm_clubb_iop_name_out) ) scm_clubb_iop_name_out  = ' '
+   if ( present(scm_zero_non_iop_tracers_out) ) scm_zero_non_iop_tracers_out = .false.
 
 end subroutine scam_default_opts
 
@@ -268,7 +272,8 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                          iop_nudge_tq_high_in, iop_nudge_tscale_in, &
                          scm_diurnal_avg_in, scm_crm_mode_in, scm_observed_aero_in, &
                          precip_off_in, scm_clubb_iop_name_in, &
-                         scm_multcols_in, dp_crm_in, iop_perturb_high_in)
+                         scm_multcols_in, dp_crm_in, iop_perturb_high_in, &
+                         scm_zero_non_iop_tracers_in)
 !-----------------------------------------------------------------------
   real(r8), intent(in), optional       :: scmlon_in, scmlat_in
   character*(max_path_len), intent(in), optional :: iopfile_in
@@ -288,6 +293,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   real(r8), intent(in), optional       :: iop_nudge_tq_high_in
   real(r8), intent(in), optional       :: iop_nudge_tscale_in
   real(r8), intent(in), optional       :: iop_perturb_high_in
+  logical, intent(in), optional        :: scm_zero_non_iop_tracers_in
   integer ncid,latdimid,londimid,latsiz,lonsiz,latid,lonid,ret,i
   integer latidx,lonidx
   real(r8) ioplat,ioplon
@@ -354,6 +360,10 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
 
   if (present (scm_clubb_iop_name_in)) then
      scm_clubb_iop_name=scm_clubb_iop_name_in
+  endif
+
+  if (present (scm_zero_non_iop_tracers_in)) then
+     scm_zero_non_iop_tracers=scm_zero_non_iop_tracers_in
   endif
 
   if (present (iopfile_in)) then

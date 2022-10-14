@@ -288,6 +288,19 @@
         </ntasks>
       </pes>
     </mach>
+    <mach name="crusher">
+      <pes compset=".*ELM%CN.*" pesize="any">
+        <comment>elm: crusher PEs for grid l%360x720cru</comment>
+        <ntasks>
+          <ntasks_atm>-2</ntasks_atm>
+          <ntasks_lnd>-2</ntasks_lnd>
+          <ntasks_rof>-2</ntasks_rof>
+          <ntasks_ice>-2</ntasks_ice>
+          <ntasks_ocn>-2</ntasks_ocn>
+          <ntasks_cpl>-2</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
     <mach name="cori-knl">
       <pes compset="any" pesize="any">
         <comment>elm: cori-knl PEs for grid l%360x720cru, 16 nodes, 64x2</comment>

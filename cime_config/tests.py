@@ -111,7 +111,7 @@ _TESTS = {
             "ERS_Ld5.ne4_oQU240.F2010.eam-rrtmgpxx",
             "REP_Ln5.ne4_oQU240.F2010",
             "SMS_Ld9.ne4pg2_oQU480.F2010.eam-thetahy_sl_pg2_mass",
-            "ERP_Ld9.ne4_ne4.FIDEAL",
+            "ERP_Ld9.ne4_ne4.FIDEAL.allactive-pioroot1",
             )
         },
 
@@ -243,8 +243,6 @@ _TESTS = {
     "e3sm_mmf_integration" : {
         "tests" : (
             "ERP_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_fixed_subcycle",
-            "ERS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_use_ESMT",
-            "ERS_Ln9.ne4pg2_oQU480.F20TR-MMF1.eam-mmf_use_VT",
             "ERS_Ln9.ne4pg2_ne4pg2.FRCE-MMF1.eam-cosp_nhtfrq9",
             "SMS_Ln5.ne4_ne4.FSCM-ARM97-MMF1",
             )
@@ -533,9 +531,7 @@ _TESTS = {
 
     "e3sm_gpucxx" : {
         "tests"    : (
-                 "SMS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_fixed_subcycle",
-                 "SMS_Ln9.ne4pg2_ne4pg2.F2010-MMF1.eam-mmf_use_ESMT",
-                 "SMS_Ln9.ne4pg2_oQU480.F20TR-MMF1.eam-mmf_use_VT",
+                 "SMS_Ln9.ne4pg2_ne4pg2.F2010-MMF1",
                  )
     },
 

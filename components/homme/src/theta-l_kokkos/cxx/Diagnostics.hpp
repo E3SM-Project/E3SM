@@ -39,6 +39,7 @@ private:
     ExecViewUnmanaged<Scalar *[NP][NP][NUM_LEV_P]>  dpnh_dp_i;
   };
 
+//In debug regime with asserts default team sizes are too big.
 #if defined RESOLVE_ISSUE_WITH_ASSERTS
   template <typename FunctorTag>
   typename std::enable_if<OnGpu<ExecSpace>::value == false,

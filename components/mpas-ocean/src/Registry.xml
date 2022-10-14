@@ -26,6 +26,9 @@
 		<dim name="nVerticesP1" definition="nVertices+1"
 			 description="The total number of cells in the dual grid. Also the number of corners in the primary grid."
 		/>
+		<dim name="bnds" definition="2"
+			 description="The number of coordinate bound"
+		/>
 		<dim name="TWO" definition="2"
 			 description="The number two as a dimension."
 		/>
@@ -137,6 +140,10 @@
 					description="Selection of the type of calendar that should be used in the simulation."
 					possible_values="'gregorian', 'noleap'"
 		/>
+		<nml_option name="config_output_reference_time" type="character" default_value="0001-01-01_00:00:00"
+					description="Reference time used in the units attribute of Time in output files."
+					possible_values="'YYYY-MM-DD_HH:MM:SS'"
+		/>
 	</nml_record>
 	<nml_record name="io" mode="forward;analysis">
 		<nml_option name="config_write_output_on_startup" type="logical" default_value=".true."
@@ -176,24 +183,6 @@
 					possible_values="Any path/prefix to a processor decomposition file."
 		/>
 	</nml_record>
-  <nml_record name="transport_tests" mode="init;forward" configuration="transport_tests">
-    <nml_option name="config_transport_tests_vert_levels" type="integer" default_value="3"
-      description="Number of vertical levels in transport_tests. Typical value is 3 for 2D tests."
-      possible_values="Any positive integer number greater than 0."
-    />
-    <nml_option name="config_transport_tests_temperature" type="real" default_value="15.0" units="deg C"
-      description="Temperature of the ocean."
-      possible_values="Any real number"
-    />
-    <nml_option name="config_transport_tests_salinity" type="real" default_value="35.0" units="1.e-3"
-      description="Salinity of the ocean."
-      possible_values="Any real number"
-    />
-    <nml_option name="config_transport_tests_flow_id" type="integer" default_value="0"
-     description="integer id of transport test."
-     possible_values="1 = rotation, 2 = nondivergent2D, 3 = divergent2D, 4 = correlatedTracers2D"
-    />
-  </nml_record>
 
 
 	<!--*************************************-->
@@ -344,7 +333,7 @@
 		/>
 	</nml_record>
 	<nml_record name="submesoscale_eddy_parameterization" mode="forward">
-		<nml_option name="config_submesoscale_enable" type="logical" default_value=".false." 
+		<nml_option name="config_submesoscale_enable" type="logical" default_value=".false."
 					description="flag to enable the FK2011 parameterization for submesoscale eddies"
 					possible_values=".true. or .false."
 					/>
@@ -449,7 +438,7 @@
 		/>
 		<nml_option name="config_eddyMLD_reference_depth" type="real" default_value="10" units="m"
 					description="reference depth for threshold computation"
-					possible_values="any positive real, near 10" 
+					possible_values="any positive real, near 10"
 		/>
 		<nml_option name="config_eddyMLD_reference_pressure" type="real" default_value="1.0e5" units="Pa"
 					description="reference pressure for original mixed layer depth calculation"
@@ -1498,6 +1487,24 @@
 					possible_values="'linear_x', 'linear_y', 'linear_arb_rot', 'power_x', 'power_y', 'power_arb_rot', 'sin_arb_rot', 'sph_solid_body', 'sph_Williamson', 'sph_uCosCos', 'sph_vCosCos', 'sph_ELonLon_CosCos', 'sph_ELatLat_CosCos', 'sph_ELonLat_CosCos'"
 		/>
 	</nml_record>
+	<nml_record name="transport_tests" mode="init;forward" configuration="transport_tests">
+		<nml_option name="config_transport_tests_vert_levels" type="integer" default_value="3"
+					description="Number of vertical levels in transport_tests. Typical value is 3 for 2D tests."
+					possible_values="Any positive integer number greater than 0."
+		/>
+		<nml_option name="config_transport_tests_temperature" type="real" default_value="15.0" units="deg C"
+					description="Temperature of the ocean."
+					possible_values="Any real number"
+		/>
+		<nml_option name="config_transport_tests_salinity" type="real" default_value="35.0" units="1.e-3"
+					description="Salinity of the ocean."
+					possible_values="Any real number"
+		/>
+		<nml_option name="config_transport_tests_flow_id" type="integer" default_value="0"
+					description="integer id of transport test."
+					possible_values="1 = rotation, 2 = nondivergent2D, 3 = divergent2D, 4 = correlatedTracers2D"
+		/>
+	</nml_record>
 	<nml_record name="init_mode_vert_levels">
 		<nml_option name="config_vert_levels" type="integer" default_value="-1"
 					description="Number of vertical levels to create within the configuration."
@@ -2152,9 +2159,11 @@
 	<var_struct name="state" time_levs="2">
 		<var name="normalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			 description="horizontal velocity, normal component to an edge"
+			 missing_value="FILLVAL" missing_value_mask="edgeMask"
 		/>
 		<var name="layerThickness" type="real" dimensions="nVertLevels nCells Time" units="m"
 			 description="layer thickness"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 		/>
 		<var name="ssh" type="real" dimensions="nCells Time" units="m"
 			 description="sea surface height"
@@ -2528,6 +2537,12 @@
 		<var name="xtime" type="text" dimensions="Time"
 			 description="model time, with format 'YYYY-MM-DD_HH:MM:SS'"
 		/>
+		<var name="Time" type="real" dimensions="Time" bounds="Time_bnds"
+			 description="time" standard_name="time"
+		/>
+		<var name="Time_bnds" type="real" dimensions="Time bnds"
+			 description="time bounds"
+		/>
 		<var name="simulationStartTime" type="text" dimensions="" default_value="'no_date_available'"
 			 description="start time of first simulation, with format 'YYYY-MM-DD_HH:MM:SS'"
 		/>
@@ -2873,8 +2888,8 @@
 			description="count of times redi limiter is invoked on a timestep"
 			packages="gm"
 		/>
-		<var name="gradBuoyEddy" type="real" dimensions="nVertLevelsP1 nEdges Time" units="s^-2"
-			description="horizontal gradient of buoyancy at cell edge and interfaces in vertical.  this is used for the GM parameterization and the submesoscale eddy parameterization"
+		<var name="gradDensityEddy" type="real" dimensions="nVertLevelsP1 nEdges Time" units="kg m^-4"
+			description="horizontal gradient of density at cell edge and interfaces in vertical.  this is used for the GM parameterization and the submesoscale eddy parameterization"
 			 packages="gm;submeso"
 		/>
 		<var name="mleVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"

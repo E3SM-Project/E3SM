@@ -874,7 +874,7 @@ private:
 #endif
   }
 
-  // CUDA version
+  // GPU version
   template <typename ExecSpaceType>
   KOKKOS_INLINE_FUNCTION typename std::enable_if<
       std::is_same<ExecSpaceType, HommexxGPU>::value, void>::type
@@ -929,7 +929,7 @@ private:
     kv.team_barrier();
   }
 
-  // CUDA version
+  // GPU version
   template <typename ExecSpaceType>
   KOKKOS_INLINE_FUNCTION typename std::enable_if<
       std::is_same<ExecSpaceType, HommexxGPU>::value, void>::type
@@ -983,7 +983,7 @@ private:
 #endif
   }
 
-  // Non-CUDA version
+  // Non-GPU version
   template <typename ExecSpaceType>
   KOKKOS_INLINE_FUNCTION typename std::enable_if<
       !std::is_same<ExecSpaceType, HommexxGPU>::value, void>::type

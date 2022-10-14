@@ -39,15 +39,6 @@ add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
 
-###################################
-# Namelist group: transport_tests #
-###################################
-
-add_default($nl, 'config_transport_tests_vert_levels');
-add_default($nl, 'config_transport_tests_temperature');
-add_default($nl, 'config_transport_tests_salinity');
-add_default($nl, 'config_transport_tests_flow_id');
-
 ####################################
 # Namelist group: time_integration #
 ####################################
@@ -485,6 +476,15 @@ add_default($nl, 'config_read_nearest_restart');
 add_default($nl, 'config_conduct_tests');
 add_default($nl, 'config_test_tensors');
 add_default($nl, 'config_tensor_test_function');
+
+###################################
+# Namelist group: transport_tests #
+###################################
+
+add_default($nl, 'config_transport_tests_vert_levels');
+add_default($nl, 'config_transport_tests_temperature');
+add_default($nl, 'config_transport_tests_salinity');
+add_default($nl, 'config_transport_tests_flow_id');
 
 #########################################
 # Namelist group: init_mode_vert_levels #

@@ -122,7 +122,7 @@ module ocn_diagnostics_variables
    real(kind=RKIND), dimension(:,:), pointer :: RediKappaScaling
    real(kind=RKIND), dimension(:,:), pointer :: RediKappaSfcTaper
    real(kind=RKIND), dimension(:,:), pointer :: k33
-   real(kind=RKIND), dimension(:,:), pointer :: gradBuoyEddy
+   real(kind=RKIND), dimension(:,:), pointer :: gradDensityEddy
    real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa
    real(kind=RKIND), dimension(:), pointer   :: cGMphaseSpeed
    real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown
@@ -157,6 +157,8 @@ module ocn_diagnostics_variables
       activeTracerVertMixTendency
 
    real (kind=RKIND), pointer :: daysSinceStartOfSim
+   real (kind=RKIND), pointer :: Time
+   real (kind=RKIND), dimension(:), pointer :: Time_bnds
    character (len=StrKIND), pointer :: xtime, simulationStartTime
 
    real (kind=RKIND), dimension(:,:), pointer :: bulkRichardsonNumber
@@ -271,8 +273,8 @@ contains
       end if
 
       if (config_use_GM .or. config_submesoscale_enable) then
-         call mpas_pool_get_array(diagnosticsPool, 'gradBuoyEddy', &
-                   gradBuoyEddy)
+         call mpas_pool_get_array(diagnosticsPool, 'gradDensityEddy', &
+                   gradDensityEddy)
       end if
 
       if ( config_compute_active_tracer_budgets ) then
@@ -557,6 +559,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, &
                "daysSinceStartOfSim", &
                 daysSinceStartOfSim)
+      call mpas_pool_get_array(diagnosticsPool, 'Time', Time)
+      call mpas_pool_get_array(diagnosticsPool, 'Time_bnds', Time_bnds)
       call mpas_pool_get_array(diagnosticsPool, 'xtime', xtime)
       call mpas_pool_get_array(diagnosticsPool, 'simulationStartTime', &
                 simulationStartTime)
@@ -781,7 +785,7 @@ contains
          !$acc                   )
       end if
       if (config_use_GM.or.config_submesoscale_enable) then
-         !$acc enter data create(gradBuoyEddy)
+         !$acc enter data create(gradDensityEddy)
       end if
       if ( config_compute_active_tracer_budgets ) then
          !$acc enter data create(                                         &
@@ -853,6 +857,8 @@ contains
       !$acc                   pressureAdjustedSSH,                     &
       !$acc                   tracersSurfaceValue,                     &
       !$acc                   daysSinceStartOfSim,                     &
+      !$acc                   Time,                                    &
+      !$acc                   Time_bnds,                               &
       !$acc                   simulationStartTime,                     &
       !$acc                   boundaryLayerDepthSmooth,                &
       !$acc                   surfaceFluxAttenuationCoefficientRunoff  &
@@ -1029,7 +1035,7 @@ contains
          !$acc                   )
       end if
       if (config_use_GM.or.config_submesoscale_enable) then
-         !$acc exit data delete(gradBuoyEddy)
+         !$acc exit data delete(gradDensityEddy)
       end if
       if ( config_compute_active_tracer_budgets ) then
          !$acc exit data delete(                                          &
@@ -1101,6 +1107,8 @@ contains
       !$acc                   pressureAdjustedSSH,                     &
       !$acc                   tracersSurfaceValue,                     &
       !$acc                   daysSinceStartOfSim,                     &
+      !$acc                   Time,                                    &
+      !$acc                   Time_bnds,                               &
       !$acc                   simulationStartTime,                     &
       !$acc                   boundaryLayerDepthSmooth,                &
       !$acc                   surfaceFluxAttenuationCoefficientRunoff  &
@@ -1230,7 +1238,7 @@ contains
                  RossbyRadius)
       end if
       if (config_use_GM.or.config_submesoscale_enable) then
-         nullify(gradBuoyEddy)
+         nullify(gradDensityEddy)
       end if
       if ( config_compute_active_tracer_budgets ) then
          nullify(activeTracerHorMixTendency,              &
@@ -1298,6 +1306,8 @@ contains
               pressureAdjustedSSH,                     &
               tracersSurfaceValue,                     &
               daysSinceStartOfSim,                     &
+              Time,                                    &
+              Time_bnds,                               &
               simulationStartTime,                     &
               boundaryLayerDepthSmooth,                &
               surfaceFluxAttenuationCoefficientRunoff)
