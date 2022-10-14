@@ -27,5 +27,5 @@ string(APPEND CFLAGS " -O2 -hnoacc -hzero -hfp0 -hipa0")
 string(APPEND FFLAGS " -O2 -hnoacc -hzero -hfp0 -hipa0")
 endif()
 
-
+string(APPEND CPPDEFS " -DCPRCRAY")
 

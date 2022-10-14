@@ -50,6 +50,7 @@ IF (HOMME_BUILD_EXECS OR BUILD_HOMME_TOOL)
 ELSE ()
   SET(BUILD_HOMME_WITHOUT_PIOLIBRARY ON CACHE BOOL "")
 ENDIF ()
+
 IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
   MESSAGE(STATUS "This configuration builds without PIO library and NetCDF calls")
 ENDIF()
@@ -195,8 +196,6 @@ IF (${HOMME_USE_KOKKOS})
   ############################################
 
   SET (HOMMEXX_EXEC_SPACE "Default" CACHE STRING "Select the kokkos exec space")
-
-  #is HOMMEXX_EXEC_SPACE set anywhere? in scream?
 
   STRING (TOUPPER ${HOMMEXX_EXEC_SPACE} HOMMEXX_EXEC_SPACE_UPPER)
 
