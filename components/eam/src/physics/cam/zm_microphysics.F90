@@ -2297,8 +2297,8 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
 #endif  
                         endif
                        
-                        dst3_num = wght *(aero%numg_a(i,k-1,aero%mode_coarse_idx)         & 
-                                  + aero%numg_a(i,k,aero%mode_coarse_idx))*0.5_r8*rho(i,k)*1.0e-6_r8
+                        dst3_num = wght *(aero%numg_a(i,k-1,aero%mode_coarse_dst_idx)         & 
+                                  + aero%numg_a(i,k,aero%mode_coarse_dst_idx))*0.5_r8*rho(i,k)*1.0e-6_r8
                         dst_num  = dst3_num
                     else
                         dst3_num = 0.0_r8 
@@ -2500,13 +2500,8 @@ subroutine zm_mphy(su,    qu,   mu,   du,   eu,    cmel,  cmei,  zf,   pm,   te,
                     !  use size '3' for dust coarse mode...
                     !  scale by dust fraction in coarse mode
 
-                    dmc  = 0.5_r8*(aero%mmrg_a(i,k,aero%coarse_dust_idx,aero%mode_coarse_idx)     &
-                                  +aero%mmrg_a(i,k-1,aero%coarse_dust_idx,aero%mode_coarse_idx))
-                    ssmc = 0.5_r8*(aero%mmrg_a(i,k,aero%coarse_nacl_idx,aero%mode_coarse_idx)     &
-                                  +aero%mmrg_a(i,k-1,aero%coarse_nacl_idx,aero%mode_coarse_idx)) 
                     if (dmc > 0.0_r8) then
-                        nacon3 = dmc/(ssmc + dmc) * (aero%numg_a(i,k,aero%mode_coarse_idx)     &
-                                 + aero%numg_a(i,k-1,aero%mode_coarse_idx))*0.5_r8*rho(i,k)
+                         nacon3 = dst3_num*tcnt*1.0e6_r8 
                     end if
 
                  else if (aero%scheme == 'bulk') then
