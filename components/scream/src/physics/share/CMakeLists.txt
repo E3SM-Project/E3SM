@@ -20,8 +20,8 @@ add_library(physics_share ${PHYSICS_SHARE_SRCS})
 set_target_properties(physics_share PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
-target_include_directories(physics_share
-  Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
+target_include_directories(physics_share PUBLIC
+  ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
 target_link_libraries(physics_share scream_share)
 
