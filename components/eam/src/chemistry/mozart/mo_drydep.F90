@@ -175,6 +175,8 @@ contains
 
     do ispc = 1,nddvels
 
+       !write(iulog,*)'hybrown, mo_drydep, ispc = ',ispc,' get_spec_ndx(drydep_list(ispc)) = ',get_spc_ndx(drydep_list(ispc)),' drydep list = ',trim(drydep_list(ispc))
+
        spc_ndx(ispc) = get_spc_ndx(drydep_list(ispc))
        if (spc_ndx(ispc) < 1) then
           write(*,*) 'drydep_inti: '//trim(drydep_list(ispc))//' is not included in species set'

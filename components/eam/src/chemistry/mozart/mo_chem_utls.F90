@@ -15,6 +15,7 @@ contains
 
     use chem_mods,     only : gas_pcnst
     use mo_tracname,   only : tracnam => solsym
+    use cam_logfile,   only: iulog 
 
     implicit none
 
@@ -30,6 +31,7 @@ contains
 
     get_spc_ndx = -1
     do m = 1,gas_pcnst
+       !write(iulog,*)'hybrown, get_spc_ndx, trim(spc_name) = ',trim(spc_name),' trim (tracnam(m)) = ',trim(tracnam(m))
        if( trim( spc_name ) == trim( tracnam(m) ) ) then
           get_spc_ndx = m
           exit

@@ -60,7 +60,7 @@ contains
    if (nso4==1) then
     id_h2so4 = get_spc_ndx( 'H2SO4' )
     id_so2 = get_spc_ndx( 'SO2' )
-    else if (nso4>1) then
+   else if (nso4>1) then
     do tag_loop = 1, nso4
        id_h2so4(tag_loop) = get_spc_ndx( 'H2SO4'//tagged_sulfur_suffix(tag_loop) )
        id_so2(tag_loop) = get_spc_ndx( 'SO2'//tagged_sulfur_suffix(tag_loop) )
