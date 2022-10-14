@@ -87,10 +87,14 @@ set(INTERFACE_SRC
 add_library(scream_rrtmgp ${INTERFACE_SRC})
 find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
 target_link_libraries(scream_rrtmgp PUBLIC ${NETCDF_C} rrtmgp yakl scream_share physics_share csm_share)
+set_target_properties(scream_rrtmgp PROPERTIES
+  Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
+)
 target_include_directories(scream_rrtmgp SYSTEM PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${NetCDF_C_PATH}/include
-    ${EAM_RRTMGP_DIR}/external)
+    ${EAM_RRTMGP_DIR}/external
+    ${CMAKE_CURRENT_BINARY_DIR}/modules)
 
 # Ensure RRTMGP lookup tables are present in the data dir
 set (RRTMGP_TABLES

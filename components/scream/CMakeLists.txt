@@ -464,8 +464,6 @@ if (NOT ${SCREAM_DOUBLE_PRECISION})
 endif()
 print_var(SCREAM_DYNAMICS_DYCORE)
 
-set (SCREAM_F90_MODULES ${CMAKE_CURRENT_BINARY_DIR}/modules)
-
 file(MAKE_DIRECTORY ${SCREAM_TEST_DATA_DIR})
 
 add_custom_target(baseline)
