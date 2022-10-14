@@ -27,6 +27,7 @@ module radiation
    use physconst, only: cpair, cappa
    use shr_sys_mod,       only: shr_sys_flush
    use cam_logfile,       only: iulog
+
    use time_manager, only: get_nstep
 
 
@@ -323,10 +324,12 @@ contains
       call pbuf_add_field('QRL', 'global', dtype_r8, (/pcols,pver/), idx)
 
 #ifdef MMF_PRESCRIBED_QRL
-      call pbuf_add_field('QRL_PRESCRIBED', 'global', dtype_r8, (/pcols,pver/), idx)
+      ! call pbuf_add_field('QRL_PRESCRIBED', 'global', dtype_r8, (/pcols,pver/), idx)
+      call pbuf_add_field('QRL_PRESCRIBED', 'global', dtype_r8, (/pver/), idx)
 #endif
 #ifdef MMF_PRESCRIBED_QRS
-      call pbuf_add_field('QRS_PRESCRIBED', 'global', dtype_r8, (/pcols,pver/), idx)
+      ! call pbuf_add_field('QRS_PRESCRIBED', 'global', dtype_r8, (/pcols,pver/), idx)
+      call pbuf_add_field('QRS_PRESCRIBED', 'global', dtype_r8, (/pver/), idx)
 #endif
 
       ! If the namelist has been configured for preserving the spectral fluxes, then create
@@ -387,6 +390,9 @@ contains
                              .or. nstep <= irad_always
             end if
          case ('lw') ! do a longwave heating calc this timestep?
+! #ifdef MMF_PRESCRIBED_QRL
+!             radiation_do = .false.
+! #else
             if (iradlw==0) then
                radiation_do = .false.
             else
@@ -394,6 +400,7 @@ contains
                              .or. (mod(nstep-1,iradlw) == 0 .and. nstep /= 1) &
                              .or. nstep <= irad_always
             end if
+! #endif
          case default
             call endrun('radiation_do: unknown operation:'//op)
       end select
@@ -470,6 +477,8 @@ contains
       ! where this subroutine is called, physics_state has not subset for a
       ! specific chunk (i.e., state is a vector of all chunks, indexed by lchnk)
       type(physics_state), intent(in), dimension(begchunk:endchunk) :: state
+      ! type(physics_state), intent(in) :: state(:)
+
       ! Fields from other parameterizations that persist across timesteps
       type(physics_buffer_desc), pointer :: pbuf2d(:,:)
 
@@ -499,6 +508,11 @@ contains
       character(len=400) :: prescribed_rad_path, prescribed_rad_file
       character(len=8) :: varName
       integer :: ncid, dimid, nlev, varid, chnk, k, ncol, i
+      ! real(r8), pointer :: qrl_prescribed(:), qrs_prescribed(:)
+      ! character(len=256) :: prescribed_rad_path, prescribed_rad_file
+      ! character(len=8) :: varName
+      ! integer :: ncid, dimid, nlev, varid, chnk, k
+
       real(r8), dimension(pver) :: qrl_data, qrs_data
       integer :: qrl_idx, qrs_idx
       type(physics_buffer_desc), pointer :: pbuf_chunk(:) ! temporary pbuf pointer for single chunk
@@ -965,6 +979,7 @@ contains
          do i = 1,ncol
             qrl_prescribed(i,1:pver) = qrl_data(1:pver)
          end do
+         ! qrl_prescribed(1:pver) = qrl_data(1:pver)
       end do
 #endif
 
@@ -985,6 +1000,7 @@ contains
          ncol = state(chnk)%ncol
          pbuf_chunk => pbuf_get_chunk(pbuf2d, chnk)
          call pbuf_get_field(pbuf_chunk, pbuf_get_index('QRS_PRESCRIBED'), qrs_prescribed)
+         ! qrs_prescribed(1:pver) = qrs_data(1:pver)
          do i = 1,ncol
             qrs_prescribed(i,1:pver) = qrs_data(1:pver)
          end do
@@ -1246,6 +1262,8 @@ contains
 #if defined(MMF_PRESCRIBED_QRL) || defined(MMF_PRESCRIBED_QRS)
       real(r8), pointer :: qrl_prescribed(:,:)
       real(r8), pointer :: qrs_prescribed(:,:)
+      ! real(r8), pointer :: qrl_prescribed(:)
+      ! real(r8), pointer :: qrs_prescribed(:)
       integer :: nstep
       real(r8) :: ratio
       real(r8) :: qrs_tmp(pcols,pver)
@@ -1814,6 +1832,13 @@ contains
 ! 4571 format('WHDEBUG - nstep=',i3,' i=',i3,' k=',i2,' QRS1:',f18.6,'     QRS2:',f18.6,'     ratio:',f18.6)
                   end do
                end do
+! #if defined(MMF_PRESCRIBED_QRS)
+!                ! move this call down
+! #else
+!                ! Send fluxes to history buffer
+!                call output_fluxes_sw(icall, state, fluxes_allsky, fluxes_clrsky, qrs,  qrsc)
+! #endif
+
 
                if (use_MMF) then
                   do iy = 1,crm_ny_rad
@@ -1874,6 +1899,26 @@ contains
                end if
 
             end if  ! dosw
+
+#ifdef MMF_PRESCRIBED_QRS
+            ! Note that qrs_prescribed is derived from the QRs history variable,
+            ! which is the same as qrs here, except it is divided by cpair
+            ! in the outfld('QRS'...) call within output_fluxes_lw().
+            do ic = 1,ncol
+               do ilev = 1, pver
+                  qrs(ic,ilev) = qrs_prescribed(ilev) * cpair / 86400.
+               end do
+               do iy = 1,crm_ny_rad
+                  do ix = 1,crm_nx_rad
+                     do iz = 1,crm_nz
+                        ilev = pver - iz + 1
+                        crm_qrs(ic,ix,iy,iz) = qrs_prescribed(ilev) * cpair / 86400.
+                     end do
+                  end do
+               end do
+            end do
+            call output_fluxes_sw(0, state, fluxes_allsky, fluxes_clrsky, qrs, qrsc)
+#endif
 
             ! Do longwave stuff...
             if (radiation_do('lw')) then
@@ -1953,6 +1998,12 @@ contains
                   call outfld('CRM_QRLC', crm_qrlc(1:ncol,:,:,:)/cpair, ncol, state%lchnk)
                end if
 #else
+! #if defined(MMF_PRESCRIBED_QRL)
+!                ! move this call down
+! #else
+!                ! Send fluxes to history buffer
+!                call output_fluxes_lw(icall, state, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
+! #endif
                ! Map to CRM columns
                if (use_MMF) then
                   j = 1
@@ -1996,6 +2047,40 @@ contains
                end if
 
             end if  ! radiation_do('lw')
+
+#ifdef MMF_PRESCRIBED_QRL
+            ! Note that qrl_prescribed is derived from the QRL history variable,
+            ! which is the same as qrl here, except it is divided by cpair
+            ! in the outfld('QRL'...) call within output_fluxes_lw().
+
+            ! do ic = 1,ncol
+            !    do iz = 1,crm_nz
+            !       ilev = pver - iz + 1
+            !       ratio =  qrl_prescribed(ilev) / qrl(ic,ilev)
+            !       write(iulog,222) nstep, ic, ilev, qrl(ic,ilev), crm_qrl(ic,1,1,iz), qrl_prescribed(ilev), ratio
+            !    end do
+            ! end do
+            ! call shr_sys_flush(iulog)
+            ! call endrun('MMF_PRESCRIBED_QRL  stopping')
+
+            do ic = 1,ncol
+               do ilev = 1, pver
+                  qrl(ic,ilev) = qrl_prescribed(ilev) * cpair / 86400.
+               end do
+               do iy = 1,crm_ny_rad
+                  do ix = 1,crm_nx_rad
+                     do iz = 1,crm_nz
+                        ilev = pver - iz + 1
+                        crm_qrl(ic,ix,iy,iz) = qrl_prescribed(ilev) * cpair / 86400.
+                     end do
+                  end do
+               end do
+            end do
+
+            call output_fluxes_lw(0, state, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
+
+! 222 format('WHDEBUG-step:',i3,'  c:',i4,'  k:',i3,'  Gqrl:',f6.3,'  Cqrl:',f6.3,'  Pqrl:',f6.3,'  ratio:',f8.2)
+#endif
 
          end if  ! active calls
       end do  ! loop over diagnostic calls
