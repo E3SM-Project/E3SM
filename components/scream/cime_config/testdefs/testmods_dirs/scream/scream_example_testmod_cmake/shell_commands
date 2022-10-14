@@ -1,1 +1,1 @@
-./xmlchange SCREAM_CMAKE_OPTIONS='FOO BAR'
+./xmlchange --append SCREAM_CMAKE_OPTIONS='FOOVAR FOOVAL'

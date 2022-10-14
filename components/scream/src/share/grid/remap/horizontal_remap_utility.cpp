@@ -57,8 +57,8 @@ void HorizontalMap::set_remap_segments_from_file(const std::string& remap_filena
     my_chunk += my_rank<remainder ? 1 : 0;
   }
   // now determine where this rank start reading the data.
-  int* chunks_glob = new int[num_ranks];
-  m_comm.all_gather(&my_chunk,chunks_glob,1);
+  std::vector<int> chunks_glob(num_ranks);
+  m_comm.all_gather(&my_chunk,chunks_glob.data(),1);
   int my_start = 0;
   for (int ii=0; ii<my_rank;ii++) {
     my_start += chunks_glob[ii];
@@ -75,7 +75,7 @@ void HorizontalMap::set_remap_segments_from_file(const std::string& remap_filena
   view_1d<int>  tgt_col("row",my_chunk); 
   auto tgt_col_h = Kokkos::create_mirror_view(tgt_col);
   std::vector<std::string> vec_of_dims = {"n_s"};
-  std::string i_decomp = "int-n_s";
+  std::string i_decomp = std::string("int-row-n_s-") + std::to_string(my_chunk);
   scorpio::get_variable(remap_filename, "row", "row", vec_of_dims, "int", i_decomp);
   std::vector<int64_t> var_dof(my_chunk);
   std::iota(var_dof.begin(),var_dof.end(),my_start);
@@ -105,11 +105,10 @@ void HorizontalMap::set_remap_segments_from_file(const std::string& remap_filena
   }
   // Pass chunk information among all ranks so they can be consolidated.
   int  num_chunks          = chunk_dof.size();
-  int* num_chunks_per_rank = new int[num_ranks];
-  int* chunk_displacement  = new int[num_ranks];
+  std::vector<int> num_chunks_per_rank(num_ranks), chunk_displacement(num_ranks);
   int  total_num_chunks;
   int  global_remap_min_dof;
-  m_comm.all_gather(&num_chunks, num_chunks_per_rank,1);
+  m_comm.all_gather(&num_chunks, num_chunks_per_rank.data(),1);
   m_comm.all_reduce(&remap_min_dof,&global_remap_min_dof,1,MPI_MIN);
   chunk_displacement[0] = 0;
   total_num_chunks = num_chunks_per_rank[0];
@@ -117,12 +116,10 @@ void HorizontalMap::set_remap_segments_from_file(const std::string& remap_filena
     chunk_displacement[ii] = total_num_chunks;
     total_num_chunks += num_chunks_per_rank[ii];
   }
-  int* buff_dof = (int*)calloc(total_num_chunks, sizeof(int));
-  int* buff_sta = (int*)calloc(total_num_chunks, sizeof(int));
-  int* buff_len = (int*)calloc(total_num_chunks, sizeof(int));
-  MPI_Allgatherv(chunk_dof.data(),  chunk_dof.size(),MPI_INT,buff_dof,num_chunks_per_rank,chunk_displacement,MPI_INT,m_comm.mpi_comm());
-  MPI_Allgatherv(chunk_start.data(),chunk_dof.size(),MPI_INT,buff_sta,num_chunks_per_rank,chunk_displacement,MPI_INT,m_comm.mpi_comm());
-  MPI_Allgatherv(chunk_len.data(),  chunk_dof.size(),MPI_INT,buff_len,num_chunks_per_rank,chunk_displacement,MPI_INT,m_comm.mpi_comm());
+  std::vector<int> buff_dof(total_num_chunks), buff_sta(total_num_chunks), buff_len(total_num_chunks);
+  MPI_Allgatherv(chunk_dof.data(),  chunk_dof.size(),MPI_INT,buff_dof.data(),num_chunks_per_rank.data(),chunk_displacement.data(),MPI_INT,m_comm.mpi_comm());
+  MPI_Allgatherv(chunk_start.data(),chunk_dof.size(),MPI_INT,buff_sta.data(),num_chunks_per_rank.data(),chunk_displacement.data(),MPI_INT,m_comm.mpi_comm());
+  MPI_Allgatherv(chunk_len.data(),  chunk_dof.size(),MPI_INT,buff_len.data(),num_chunks_per_rank.data(),chunk_displacement.data(),MPI_INT,m_comm.mpi_comm());
   // Step 3: Now that all of the ranks are aware of all of the "sets" of source -> target mappings we
   //         construct and add segments for just the DOF's this rank cares about.
   std::vector<int> seg_dof, seg_start, seg_length;
@@ -148,8 +145,8 @@ void HorizontalMap::set_remap_segments_from_file(const std::string& remap_filena
   auto col_h = Kokkos::create_mirror_view(col);
   auto S_h = Kokkos::create_mirror_view(S);
   vec_of_dims = {"n_s"};
-  i_decomp = "int-n_s";
-  std::string r_decomp = "Real-n_s";
+  i_decomp = std::string("int-col-n_s-") + std::to_string(var_dof.size());
+  std::string r_decomp = std::string("Real-S-n_s-") + std::to_string(var_dof.size());
   scorpio::register_file(remap_filename,scorpio::Read);
   scorpio::get_variable(remap_filename, "col", "col", vec_of_dims, "int", i_decomp);
   scorpio::get_variable(remap_filename, "S", "S", vec_of_dims, "real", r_decomp);

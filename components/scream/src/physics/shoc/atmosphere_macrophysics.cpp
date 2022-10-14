@@ -131,7 +131,7 @@ size_t SHOCMacrophysics::requested_buffer_size_in_bytes() const
   const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
   const int n_wind_slots  = ekat::npack<Spack>(2)*Spack::n;
   const int n_trac_slots  = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
-  const size_t wsm_request   = WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy);
+  const size_t wsm_request= WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy);
 
   return interface_request + wsm_request;
 }
@@ -144,16 +144,19 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
 
   // 1d scalar views
-  m_buffer.cell_length = decltype(m_buffer.cell_length)(mem, m_num_cols);
-  mem += m_buffer.cell_length.size();
-  m_buffer.wpthlp_sfc = decltype(m_buffer.wpthlp_sfc)(mem, m_num_cols);
-  mem += m_buffer.wpthlp_sfc.size();
-  m_buffer.wprtp_sfc = decltype(m_buffer.wprtp_sfc)(mem, m_num_cols);
-  mem += m_buffer.wprtp_sfc.size();
-  m_buffer.upwp_sfc = decltype(m_buffer.upwp_sfc)(mem, m_num_cols);
-  mem += m_buffer.upwp_sfc.size();
-  m_buffer.vpwp_sfc = decltype(m_buffer.vpwp_sfc)(mem, m_num_cols);
-  mem += m_buffer.vpwp_sfc.size();
+  using scalar_view_t = decltype(m_buffer.cell_length);
+  scalar_view_t* _1d_scalar_view_ptrs[Buffer::num_1d_scalar_ncol] =
+    {&m_buffer.cell_length, &m_buffer.wpthlp_sfc, &m_buffer.wprtp_sfc, &m_buffer.upwp_sfc, &m_buffer.vpwp_sfc
+#ifdef SCREAM_SMALL_KERNELS
+     , &m_buffer.se_b, &m_buffer.ke_b, &m_buffer.wv_b, &m_buffer.wl_b
+     , &m_buffer.se_a, &m_buffer.ke_a, &m_buffer.wv_a, &m_buffer.wl_a
+     , &m_buffer.ustar, &m_buffer.kbfs, &m_buffer.obklen, &m_buffer.ustar2, &m_buffer.wstar
+#endif
+    };
+  for (int i = 0; i < Buffer::num_1d_scalar_ncol; ++i) {
+    *_1d_scalar_view_ptrs[i] = scalar_view_t(mem, m_num_cols);
+    mem += _1d_scalar_view_ptrs[i]->size();
+  }
 
   Spack* s_mem = reinterpret_cast<Spack*>(mem);
 
@@ -165,68 +168,33 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
   m_buffer.pref_mid = decltype(m_buffer.pref_mid)(s_mem, nlev_packs);
   s_mem += m_buffer.pref_mid.size();
 
-  m_buffer.z_mid = decltype(m_buffer.z_mid)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.z_mid.size();
-  m_buffer.z_int = decltype(m_buffer.z_int)(s_mem, m_num_cols, nlevi_packs);
-  s_mem += m_buffer.z_int.size();
-  m_buffer.rrho = decltype(m_buffer.rrho)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.rrho.size();
-  m_buffer.rrho_i = decltype(m_buffer.rrho_i)(s_mem, m_num_cols, nlevi_packs);
-  s_mem += m_buffer.rrho_i.size();
-  m_buffer.thv = decltype(m_buffer.thv)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.thv.size();
-  m_buffer.dz = decltype(m_buffer.dz)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.dz .size();
-  m_buffer.zt_grid = decltype(m_buffer.zt_grid)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.zt_grid.size();
-  m_buffer.zi_grid = decltype(m_buffer.zi_grid)(s_mem, m_num_cols, nlevi_packs);
-  s_mem += m_buffer.zi_grid.size();
+  using spack_2d_view_t = decltype(m_buffer.z_mid);
+  spack_2d_view_t* _2d_spack_mid_view_ptrs[Buffer::num_2d_vector_mid] = {
+    &m_buffer.z_mid, &m_buffer.rrho, &m_buffer.thv, &m_buffer.dz, &m_buffer.zt_grid, &m_buffer.wm_zt,
+    &m_buffer.inv_exner, &m_buffer.thlm, &m_buffer.qw, &m_buffer.dse, &m_buffer.tke_copy, &m_buffer.qc_copy,
+    &m_buffer.shoc_ql2, &m_buffer.shoc_mix, &m_buffer.isotropy, &m_buffer.w_sec, &m_buffer.wqls_sec, &m_buffer.brunt
+  };
+
+  spack_2d_view_t* _2d_spack_int_view_ptrs[Buffer::num_2d_vector_int] = {
+    &m_buffer.z_int, &m_buffer.rrho_i, &m_buffer.zi_grid, &m_buffer.thl_sec, &m_buffer.qw_sec,
+    &m_buffer.qwthl_sec, &m_buffer.wthl_sec, &m_buffer.wqw_sec, &m_buffer.wtke_sec, &m_buffer.uw_sec,
+    &m_buffer.vw_sec, &m_buffer.w3
+#ifdef SCREAM_SMALL_KERNELS
+    , &m_buffer.rho_zt, &m_buffer.shoc_qv, &m_buffer.dz_zt, &m_buffer.dz_zi, &m_buffer.tkh
+#endif
+  };
+
+  for (int i = 0; i < Buffer::num_2d_vector_mid; ++i) {
+    *_2d_spack_mid_view_ptrs[i] = spack_2d_view_t(s_mem, m_num_cols, nlev_packs);
+    s_mem += _2d_spack_mid_view_ptrs[i]->size();
+  }
+
+  for (int i = 0; i < Buffer::num_2d_vector_int; ++i) {
+    *_2d_spack_int_view_ptrs[i] = spack_2d_view_t(s_mem, m_num_cols, nlevi_packs);
+    s_mem += _2d_spack_int_view_ptrs[i]->size();
+  }
   m_buffer.wtracer_sfc = decltype(m_buffer.wtracer_sfc)(s_mem, m_num_cols, num_tracer_packs);
   s_mem += m_buffer.wtracer_sfc.size();
-  m_buffer.wm_zt = decltype(m_buffer.wm_zt)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.wm_zt.size();
-  m_buffer.inv_exner = decltype(m_buffer.inv_exner)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.inv_exner.size();
-  m_buffer.thlm = decltype(m_buffer.thlm)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.thlm.size();
-  m_buffer.qw = decltype(m_buffer.qw)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.qw.size();
-  m_buffer.dse = decltype(m_buffer.dse)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.dse.size();
-  m_buffer.tke_copy = decltype(m_buffer.tke_copy)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.tke_copy.size();
-  m_buffer.qc_copy = decltype(m_buffer.qc_copy)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.qc_copy.size();
-  m_buffer.shoc_ql2 = decltype(m_buffer.shoc_ql2)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.shoc_ql2.size();
-  m_buffer.shoc_mix = decltype(m_buffer.shoc_mix)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.shoc_mix.size();
-  m_buffer.isotropy = decltype(m_buffer.isotropy)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.isotropy.size();
-  m_buffer.w_sec = decltype(m_buffer.w_sec)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.w_sec.size();
-  m_buffer.thl_sec = decltype(m_buffer.thl_sec)(s_mem, m_num_cols, nlevi_packs);
-  s_mem += m_buffer.thl_sec.size();
-  m_buffer.qw_sec = decltype(m_buffer.qw_sec)(s_mem, m_num_cols, nlevi_packs);
-  s_mem += m_buffer.qw_sec.size();
-  m_buffer.qwthl_sec = decltype(m_buffer.qwthl_sec)(s_mem, m_num_cols, nlevi_packs);
-  s_mem += m_buffer.qwthl_sec.size();
-  m_buffer.wthl_sec = decltype(m_buffer.wthl_sec)(s_mem, m_num_cols, nlevi_packs);
-  s_mem += m_buffer.wthl_sec.size();
-  m_buffer.wqw_sec = decltype(m_buffer.wqw_sec)(s_mem, m_num_cols, nlevi_packs);
-  s_mem += m_buffer.wqw_sec.size();
-  m_buffer.wtke_sec = decltype(m_buffer.wtke_sec)(s_mem, m_num_cols, nlevi_packs);
-  s_mem += m_buffer.wtke_sec.size();
-  m_buffer.uw_sec = decltype(m_buffer.uw_sec)(s_mem, m_num_cols, nlevi_packs);
-  s_mem += m_buffer.uw_sec.size();
-  m_buffer.vw_sec = decltype(m_buffer.vw_sec)(s_mem, m_num_cols, nlevi_packs);
-  s_mem += m_buffer.vw_sec.size();
-  m_buffer.w3 = decltype(m_buffer.w3)(s_mem, m_num_cols, nlevi_packs);
-  s_mem += m_buffer.w3.size();
-  m_buffer.wqls_sec = decltype(m_buffer.wqls_sec)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.wqls_sec.size();
-  m_buffer.brunt = decltype(m_buffer.brunt)(s_mem, m_num_cols, nlev_packs);
-  s_mem += m_buffer.brunt.size();
 
   // WSM data
   m_buffer.wsm_data = s_mem;
@@ -384,6 +352,28 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   history_output.wqls_sec  = m_buffer.wqls_sec;
   history_output.brunt     = m_buffer.brunt;
 
+#ifdef SCREAM_SMALL_KERNELS
+  temporaries.se_b = m_buffer.se_b;
+  temporaries.ke_b = m_buffer.ke_b;
+  temporaries.wv_b = m_buffer.wv_b;
+  temporaries.wl_b = m_buffer.wl_b;
+  temporaries.se_a = m_buffer.se_a;
+  temporaries.ke_a = m_buffer.ke_a;
+  temporaries.wv_a = m_buffer.wv_a;
+  temporaries.wl_a = m_buffer.wl_a;
+  temporaries.ustar = m_buffer.ustar;
+  temporaries.kbfs = m_buffer.kbfs;
+  temporaries.obklen = m_buffer.obklen;
+  temporaries.ustar2 = m_buffer.ustar2;
+  temporaries.wstar = m_buffer.wstar;
+
+  temporaries.rho_zt = m_buffer.rho_zt;
+  temporaries.shoc_qv = m_buffer.shoc_qv;
+  temporaries.dz_zt = m_buffer.dz_zt;
+  temporaries.dz_zi = m_buffer.dz_zi;
+  temporaries.tkh = m_buffer.tkh;
+#endif
+
   shoc_postprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,convert_wet_dry_idx_d,
                                  rrho,qv,qw,qc,qc_copy,tke,tke_copy,qtracers,shoc_ql2,
                                  cldfrac_liq,inv_qc_relvar,
@@ -457,7 +447,11 @@ void SHOCMacrophysics::run_impl (const int dt)
 
   // Run shoc main
   SHF::shoc_main(m_num_cols, m_num_levs, m_num_levs+1, m_npbl, m_nadv, m_num_tracers, dt,
-                 workspace_mgr,input,input_output,output,history_output);
+                 workspace_mgr,input,input_output,output,history_output
+#ifdef SCREAM_SMALL_KERNELS
+                 , temporaries
+#endif
+                 );
 
   // Postprocessing of SHOC outputs
   Kokkos::parallel_for("shoc_postprocess",

@@ -180,6 +180,11 @@ if (DEFINED ENV{SCREAM_MACHINE})
   set(DEFAULT_SCREAM_MACHINE $ENV{SCREAM_MACHINE})
 endif()
 
+set(DEFAULT_SMALL_KERNELS FALSE)
+if (Kokkos_ENABLE_HIP)
+  set(DEFAULT_SMALL_KERNELS TRUE)
+endif()
+
 ### Set CACHE vars
 set(SCREAM_MIMIC_GPU ${DEFAULT_MIMIC_GPU} CACHE BOOL "Mimic GPU to correctness-test inter-column parallelism on non-GPU platform")
 set(SCREAM_PACK_CHECK_BOUNDS FALSE CACHE BOOL "If defined, scream::pack objects check indices against bounds")
@@ -193,6 +198,10 @@ set(NetCDF_Fortran_PATH ${DEFAULT_NetCDF_Fortran_PATH} CACHE FILEPATH "Path to n
 set(NetCDF_C_PATH ${DEFAULT_NetCDF_C_PATH} CACHE FILEPATH "Path to netcdf C installation")
 set(SCREAM_MACHINE ${DEFAULT_SCREAM_MACHINE} CACHE STRING "The CIME/SCREAM name for the current machine")
 option(SCREAM_MPI_ON_DEVICE "Whether to use device pointers for MPI calls" ON)
+set(SCREAM_SMALL_KERNELS ${DEFAULT_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels")
+if (NOT SCREAM_SMALL_KERNELS)
+  set(EKAT_DISABLE_WORKSPACE_SHARING TRUE CACHE STRING "")
+endif()
 
 # Handle input root
 if (SCREAM_MACHINE)

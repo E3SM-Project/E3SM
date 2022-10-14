@@ -1,6 +1,7 @@
 INCLUDE (ScreamUtils)
 
 SET (NEED_LIBS shoc physics_share scream_share)
+SET (SK_NEED_LIBS shoc_sk physics_share scream_share)
 set(SHOC_TESTS_SRCS
     shoc_tests.cpp
     shoc_grid_tests.cpp
@@ -73,7 +74,10 @@ set(SHOC_TESTS_SRCS
 
 # NOTE: tests inside this if statement won't be built in a baselines-only build
 if (NOT SCREAM_BASELINES_ONLY)
-  CreateUnitTest(shoc_tests "${SHOC_TESTS_SRCS}" "${NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP shoc_tests_ut_np1_omp1)
+  CreateUnitTest(shoc_tests    "${SHOC_TESTS_SRCS}" "${NEED_LIBS}"    THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP shoc_tests_ut_np1_omp1)
+  if (NOT SCREAM_SMALL_KERNELS)
+    CreateUnitTest(shoc_sk_tests "${SHOC_TESTS_SRCS}" "${SK_NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP shoc_tests_ut_np1_omp1 EXE_ARGS shoc_main_bfb)
+  endif()
 endif()
 
 if (SCREAM_ENABLE_BASELINE_TESTS)
