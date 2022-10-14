@@ -64,7 +64,6 @@ function(CreateUnitTestExec exec_name test_srcs scream_libs)
     ${SCREAM_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
-    ${SCREAM_F90_MODULES}
   )
 
   set(test_libs "${scream_libs}")

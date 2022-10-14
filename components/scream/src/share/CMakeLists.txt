@@ -32,10 +32,18 @@ set(SHARE_SRC
 )
 
 add_library(scream_share ${SHARE_SRC})
-target_include_directories(scream_share PUBLIC ${SCREAM_SRC_DIR} ${SCREAM_BIN_DIR}/src)
+set_target_properties(scream_share PROPERTIES
+  Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
+)
+target_include_directories(scream_share PUBLIC
+  ${SCREAM_SRC_DIR}
+  ${SCREAM_BIN_DIR}/src
+  ${CMAKE_CURRENT_BINARY_DIR}/modules
+)
 target_link_libraries(scream_share PUBLIC ekat gptl)
-set_target_properties(scream_share PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
-target_compile_options(scream_share PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
+target_compile_options(scream_share PUBLIC
+  $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>
+)
 
 # This used to be in `scream_config.h/scream_config.f`, but we did accidentally remove
 # the includes at least twice. To avoid this from happening again, we add this crucial

@@ -104,8 +104,13 @@ else()
 endif()
 
 foreach (SHOC_LIB IN LISTS SHOC_LIBS)
-  target_include_directories(${SHOC_LIB} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../share)
-  set_target_properties(${SHOC_LIB} PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
+  set_target_properties(${SHOC_LIB} PROPERTIES
+    Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${SHOC_LIB}_modules
+  )
+  target_include_directories(${SHOC_LIB} PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../share
+    ${CMAKE_CURRENT_BINARY_DIR}/${SHOC_LIB}_modules
+  )
   target_link_libraries(${SHOC_LIB} physics_share scream_share)
 endforeach()
 

@@ -57,8 +57,13 @@ if (NOT CUDA_BUILD OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
 endif()
 
 add_library(p3 ${P3_SRCS})
-target_include_directories(p3 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../share)
-set_target_properties(p3 PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
+set_target_properties(p3 PROPERTIES
+  Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
+)
+target_include_directories(p3 PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/../share
+  ${CMAKE_CURRENT_BINARY_DIR}/modules
+)
 target_link_libraries(p3 physics_share scream_share)
 
 # Ensure tables are present in the data dir

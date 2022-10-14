@@ -44,6 +44,7 @@ add_library(atm ${ATM_SRC})
 
 # Set f90 compiled modules dir
 set_target_properties(atm PROPERTIES Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/cmake/atm)
+target_include_directories (atm PUBLIC ${CMAKE_BINARY_DIR}/cmake/atm)
 
 # Link libraries
 target_link_libraries(atm PRIVATE ${SCREAM_LIBS} mct)
