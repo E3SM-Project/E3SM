@@ -86,7 +86,7 @@ protected:
 
   view_1d<int>  m_p2d;
 
-#ifdef HOMMEXX_ENABLE_GPU
+#ifdef KOKKOS_ENABLE_CUDA
 public:
   // These structs and function should be morally private, but CUDA complains that
   // they cannot be private/protected

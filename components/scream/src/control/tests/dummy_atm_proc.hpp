@@ -71,7 +71,7 @@ protected:
   }
 
 // CUDA needs top level lambdas to be enclosed by a method that is public.
-#ifdef HOMMEXX_ENABLE_GPU
+#ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
   void run_impl (const int /* dt */) {

@@ -30,7 +30,7 @@ public:
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
 protected:
-#ifdef HOMMEXX_ENABLE_GPU
+#ifdef KOKKOS_ENABLE_CUDA
 public:
 #endif
   void compute_diagnostic_impl ();
