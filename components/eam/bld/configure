@@ -2617,6 +2617,7 @@ sub write_filepath
     } elsif ($rad eq 'rrtmgp') {
         print $fh "$camsrcdir/eam/src/physics/rrtmgp\n";
         if (not defined $opts{'rrtmgpxx'} ) {
+            print $fh "$camsrcdir/eam/src/physics/rrtmgp/f90\n";
             print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/rte\n";
             print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/rte/kernels\n";
             print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/rrtmgp\n";
@@ -2624,7 +2625,6 @@ sub write_filepath
             print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/extensions\n";
             print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/extensions/rng\n";
             print $fh "$camsrcdir/eam/src/physics/rrtmgp/external/examples\n";
-            print $fh "$camsrcdir/eam/src/physics/rrtmgp/f90\n";
         }
     }
 
