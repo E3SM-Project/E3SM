@@ -177,7 +177,7 @@ TEST_CASE("main_vertical_interpolation_test"){
 }
 
 template<int N>
-void check_mask(const view_2d<Mask<N>>& mask,int col, int lev){
+void check_mask(const view_2d<Mask<N>>& mask, int col, int lev){
   const int ipack = lev / N;
   const int jpack  = lev % N;
   if ((col == 0 && lev == 16) || (col == 1 && lev == 0)){
@@ -186,7 +186,6 @@ void check_mask(const view_2d<Mask<N>>& mask,int col, int lev){
   else{
     REQUIRE(mask(col,ipack)[jpack] == false);
   }
-
 }
 
 TEST_CASE("testing_masking"){
