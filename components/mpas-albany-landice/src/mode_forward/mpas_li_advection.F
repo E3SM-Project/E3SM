@@ -200,7 +200,8 @@ module li_advection
 
       logical, pointer :: &
            config_print_thickness_advection_info, &  !TODO - change to config_print_advection_info?
-           config_print_thermal_info
+           config_print_thermal_info, &
+           config_thermal_calculate_bmb
 
       real (kind=RKIND), pointer :: &
            config_ice_density,    & ! rhoi
@@ -287,6 +288,7 @@ module li_advection
       call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
       call mpas_pool_get_config(liConfigs, 'config_print_thermal_info', config_print_thermal_info)
+      call mpas_pool_get_config(liConfigs, 'config_thermal_calculate_bmb', config_thermal_calculate_bmb)
       call mpas_pool_get_config(liConfigs, 'config_thermal_thickness', config_thermal_thickness)
       call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', config_ocean_density)
@@ -475,21 +477,23 @@ module li_advection
 
          end where
 
-         ! It is possible that internal melting was computed for floating ice and assigned
-         ! to the groundedBasalMassBal array in mpas_li_thermal.F.  If so, then add it to basalMassBal.
+         ! It is possible that excess internal melting was computed and assigned
+         ! to the drainedInternalMeltRate array in mpas_li_thermal.F.  If so, then add it to basalMassBal.
          ! floatingBasalMassBal should never be altered because it is an input variable.
          ! Note: Subroutine basal_melt_floating_ice should be called earlier in the time step, before adding this term.
                   ! calculate a mask to identify ice that is thick enough to be thermally active
-         do iCell = 1, nCells
-            if (thickness(iCell) > config_thermal_thickness) then
-               thermalCellMask(iCell) = 1
-               do k = 1, nVertLevels
-                  basalMassBal(iCell) = basalMassBal(iCell) - drainedInternalMeltRate(k, iCell)
-               enddo
-            else
-               thermalCellMask(iCell) = 0
-            endif
-         enddo
+         if (config_thermal_calculate_bmb) then
+            do iCell = 1, nCells
+               if (thickness(iCell) > config_thermal_thickness) then
+                  thermalCellMask(iCell) = 1
+                  do k = 1, nVertLevels
+                     basalMassBal(iCell) = basalMassBal(iCell) - drainedInternalMeltRate(k, iCell)
+                  enddo
+               else
+                  thermalCellMask(iCell) = 0
+               endif
+            enddo
+         endif
 
          call apply_mass_balance(&
               dt,                  &
