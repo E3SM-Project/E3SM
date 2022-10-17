@@ -179,8 +179,14 @@ void FieldAllocProp::commit (const layout_ptr_type& layout)
     m_last_extent = std::max(m_last_extent, num_st);
   }
 
-  m_alloc_size = (m_layout->size() / last_phys_extent) // All except the last dimension
-                 * m_last_extent * m_scalar_type_size;
+  // If we have a partitioned grid, with some ranks not owning any grid point,
+  // we may end up with a layout of size 0
+  if (m_layout->size()==0) {
+    m_alloc_size = 0;
+  } else {
+    m_alloc_size = (m_layout->size() / last_phys_extent) // All except the last dimension
+                   * m_last_extent * m_scalar_type_size;
+  }
 
   m_contiguous = true;
 

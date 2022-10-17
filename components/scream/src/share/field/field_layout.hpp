@@ -86,7 +86,7 @@ public:
   bool is_dimension_set  (const int idim) const;
   bool are_dimensions_set () const;
 
-  // Check if this layout is that of a vector fielt
+  // Check if this layout is that of a vector field
   bool is_vector_layout () const;
 
   // If this is the layout of a vector field, get the idx of the vector dimension

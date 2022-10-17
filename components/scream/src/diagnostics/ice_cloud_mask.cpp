@@ -54,16 +54,11 @@ void IceCloudMaskDiagnostic::compute_diagnostic_impl()
   auto qi_mid    = get_field_in("qi").get_view<const Pack**>();
   const auto& ice_cld_mask = m_diagnostic_output.get_view<Pack**>();
 
-  using physics = scream::physics::Functions<Real, DefaultDevice>;
-
-  Int num_levs = m_num_levs;
   Kokkos::parallel_for("IceCloudMaskDiagnostic",
                        Kokkos::RangePolicy<>(0,m_num_cols*npacks),
                        KOKKOS_LAMBDA (const int& idx) {
       const int icol  = idx / npacks;
       const int jpack = idx % npacks;
-      const auto range_pack = ekat::range<Pack>(jpack*Pack::n);
-      const auto range_mask = range_pack < num_levs;
       const Real ice_frac_threshold = 1e-5;
       auto icecld = qi_mid(icol,jpack) > ice_frac_threshold;
       ice_cld_mask(icol,jpack) = 0.0;

@@ -182,7 +182,7 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min
     auto source_dofs_h = Kokkos::create_mirror_view(source_dofs);
     auto weights_h     = Kokkos::create_mirror_view(weights);
     int idx = 0;
-    for (int ii=0; ii<map_src_cols_h.extent(0); ii++) {
+    for (int ii=0; ii<map_src_cols_h.extent_int(0); ii++) {
       if (map_tgt_cols_h(ii)-src_min_dof==seg_dof) {
         source_dofs_h(idx) = map_src_cols_h(ii)-src_min_dof;  // Make 0-based dof indexing
         weights_h(idx)     = map_wgts_h(ii);
@@ -250,7 +250,7 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min
   var_dof.resize(unique_dofs_from_views.size());
   auto unique_dofs_from_views_h = Kokkos::create_mirror_view(unique_dofs_from_views);
   Kokkos::deep_copy(unique_dofs_from_views_h,unique_dofs_from_views);
-  for (int ii=0; ii<var_dof.size(); ii++) {
+  for (size_t ii=0; ii<var_dof.size(); ii++) {
     var_dof[ii] = unique_dofs_from_views_h(ii);
   }
   scorpio::set_dof(filename,"src_data",var_dof.size(),var_dof.data());
@@ -280,7 +280,7 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min
   scorpio::register_file(filename,scorpio::Read);
   scorpio::get_variable(filename,"src_data","src_data",vec_of_data_dims,"real",data_decomp_tag_r);
   var_dof.resize(unique_dofs_from_file.size());
-  for (int ii=0; ii<var_dof.size(); ii++) {
+  for (size_t ii=0; ii<var_dof.size(); ii++) {
     var_dof[ii] = unique_dofs_from_file_h(ii);
   }
   scorpio::set_dof(filename,"src_data",var_dof.size(),var_dof.data());
@@ -313,7 +313,7 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min
   view_3d<Real> y_3d_data("",num_loc_tgt_cols,num_bands,num_levels);
   auto x_2d_data_h = Kokkos::create_mirror_view(x_2d_data);
   auto x_3d_data_h = Kokkos::create_mirror_view(x_3d_data);
-  for (int ii=0;ii<unique_dofs_from_file.size();ii++) {
+  for (size_t ii=0;ii<unique_dofs_from_file.size();ii++) {
     for (int kk=0; kk<num_levels; kk++) {
       x_2d_data_h(ii,kk) = x_data_from_file_h(ii)*(kk+1);
       for (int nn=0; nn<num_bands; nn++) {
@@ -347,7 +347,6 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min
 TEST_CASE("horizontal_remap_test", "[horizontal_remap_test]"){
 
   using scream::Real;
-  using Device = scream::DefaultDevice;
 
   ekat::Comm comm (MPI_COMM_WORLD);
   auto engine = scream::setup_random_test();
@@ -500,7 +499,7 @@ TEST_CASE("horizontal_remap_units", "") {
     // columns for all segments should be 0,1,...,seg_start+seg_len-1.  So we check that.
     test_map.set_unique_source_dofs();
     const auto& unique_dofs = test_map.get_unique_source_dofs();
-    REQUIRE(unique_dofs.extent(0) == dof_end);
+    REQUIRE(unique_dofs.extent_int(0) == dof_end);
     Kokkos::parallel_for("", dof_end, KOKKOS_LAMBDA (const int& ii) {
       EKAT_KERNEL_REQUIRE(unique_dofs(ii) == ii);
     });

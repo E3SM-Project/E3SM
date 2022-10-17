@@ -43,18 +43,27 @@ public:
   using gid_type            = int;           // TODO: use int64_t? int? template class on gid_type?
   using device_type         = DefaultDevice; // TODO: template class on device type
   using kokkos_types        = KokkosTypes<device_type>;
-  using geo_view_type       = kokkos_types::view_1d<Real>;
-  using geo_view_h_type     = typename geo_view_type::HostMirror;
+  using kokkos_types_host   = KokkosTypes<HostDevice>;
+
+  template<typename T>
+  using view_1d = kokkos_types::view_1d<T>;
+  template<typename T>
+  using hview_1d = kokkos_types_host::view_1d<T>;
+  template<typename T>
+  using view_2d = kokkos_types::view_2d<T>;
+
+  using geo_view_type       = view_1d<Real>;
+  using geo_view_h_type     = hview_1d<Real>;
   using geo_view_map_type   = std::map<std::string,geo_view_type>;
   using geo_view_h_map_type = std::map<std::string,geo_view_h_type>;
 
   // The list of all dofs' gids
-  using dofs_list_type = kokkos_types::view_1d<gid_type>;
-  using dofs_list_h_type = typename dofs_list_type::HostMirror;
+  using dofs_list_type   = view_1d<gid_type>;
+  using dofs_list_h_type = hview_1d<gid_type>;
 
   // Row i of this 2d view gives the indices of the ith local dof
   // in the native 2d layout
-  using lid_to_idx_map_type = kokkos_types::view<int**>;
+  using lid_to_idx_map_type = view_2d<int>;
 
   // Constructor(s) & Destructor
   AbstractGrid (const std::string& name,
@@ -126,12 +135,30 @@ public:
     return m_geo_views.find(name)!=m_geo_views.end();
   }
 
+  // Get list of currently stored geometry data views
   std::list<std::string> get_geometry_data_names () const;
 
+  // Creates a copy of this grid. If shallow=true, the copy shares views with
+  // *this, otherwise each stored array is deep copied
   virtual std::shared_ptr<AbstractGrid> clone (const std::string& clone_name,
                                                const bool shallow) const = 0;
 
+  // Allows to change the number of vertical levels associated with this grid.
   void reset_num_vertical_lev (const int num_vertical_lev);
+
+  // Get a list of GIDs that are unique across all ranks in the grid comm. That is,
+  // if a dof is present on 2+ ranks, it will (globally) appear just once in the
+  // view returned by this method.
+  dofs_list_type get_unique_gids () const;
+
+  // For each entry in the input list of GIDs, retrieve the process id that owns it
+  hview_1d<int> get_owners (const hview_1d<const gid_type>& gids) const;
+
+  // Handy version of the above method, to allow passing a std::vector
+  hview_1d<int> get_owners (const std::vector<gid_type>& gids) const {
+    hview_1d<const gid_type> gids_v(gids.data(),gids.size());
+    return get_owners(gids_v);
+  }
 protected:
 
   // Derived classes can override these methods, which are called inside the
