@@ -131,18 +131,18 @@ module seaice_advection_incremental_remap
 
    ! verbose options; set to true for extensive diagnostic output
    ! WHL: I often debug with verboseInit/Run/Construct/Geometry/Fluxes/Global set to true.
-!   logical, parameter :: verboseInit = .true.
-!   logical, parameter :: verboseRun = .true.
-!   logical, parameter :: verboseConstruct = .true.
-!   logical, parameter :: verboseGeometry = .true.
-!   logical, parameter :: verboseFluxes = .true.
-!   logical, parameter :: verboseGlobal = .true.
-   logical, parameter :: verboseInit = .false.
-   logical, parameter :: verboseRun = .false.
+   logical, parameter :: verboseInit = .true.
+   logical, parameter :: verboseRun = .true.
+   ! logical, parameter :: verboseConstruct = .true.
+   logical, parameter :: verboseGeometry = .true.
+   logical, parameter :: verboseFluxes = .true.
+   logical, parameter :: verboseGlobal = .true.
+!   logical, parameter :: verboseInit = .false.
+!   logical, parameter :: verboseRun = .false.
    logical, parameter :: verboseConstruct = .false.
-   logical, parameter :: verboseGeometry = .false.
-   logical, parameter :: verboseFluxes = .false.
-   logical, parameter :: verboseGlobal = .false.
+!   logical, parameter :: verboseGeometry = .false.
+!   logical, parameter :: verboseFluxes = .false.
+!   logical, parameter :: verboseGlobal = .false.
    logical, parameter :: verboseGeomAvg = .false.
 
    logical :: first_call = .true.  ! set to false after the first call
@@ -3974,7 +3974,7 @@ contains
              iCell = ctest
              call mpas_log_write('Limited center gradient: $r $r', &
                   realArgs=(/thisTracer % xGrad3D(iLayerTest,iCatTest,iCell), thisTracer % yGrad3D(iLayerTest,iCatTest,iCell)/))
-             call mpas_log_write('Center value: $r', realArgs=(/thisTracer % center3D(iLayer,iCat,iCell)/))
+             call mpas_log_write('Center value: $r', realArgs=(/thisTracer % center3D(iLayerTest,iCatTest,iCell)/))
           endif
 
           ! if this tracer has children, then compute its barycenter, as required for reconstruction of the child tracer
@@ -4691,6 +4691,9 @@ contains
 
     real(kind=RKIND) :: reciprocal, massTracerProd
 
+    ! real(kind=RKIND), parameter :: small = 0.0
+    real(kind=RKIND), parameter :: small = 1e-20
+
     ! compute the barycenter coordinates, depending on how many tracer types were passed in
     ! Note: These formulas become more complex as the tracer hierarchy deepens.  See the model documentation for details.
 
@@ -4706,7 +4709,8 @@ contains
        c0 = center0
        cx = xGrad0
        cy = yGrad0
-       if (abs(mean0) > 0.0_RKIND) then
+       ! if (abs(mean0) > 0.0_RKIND) then
+       if (abs(mean0) > small) then
           reciprocal = 1.0_RKIND / mean0
        else
           reciprocal = 0.0_RKIND
@@ -4731,7 +4735,8 @@ contains
        cyy = yGrad0  * yGrad1
 
        massTracerProd = mean0 * mean1
-       if (abs(massTracerProd) > 0.0_RKIND) then
+       ! if (abs(massTracerProd) > 0.0_RKIND) then
+       if (abs(massTracerProd) > small) then
           reciprocal = 1.0_RKIND / massTracerProd
        else
           reciprocal = 0.0_RKIND
@@ -4763,7 +4768,8 @@ contains
        cyyy  = yGrad0  * yGrad1  * yGrad2
 
        massTracerProd = mean0 * mean1 * mean2
-       if (abs(massTracerProd) > 0.0_RKIND) then
+       ! if (abs(massTracerProd) > 0.0_RKIND) then
+       if (abs(massTracerProd) > small) then
           reciprocal = 1.0_RKIND / massTracerProd
        else
           reciprocal = 0.0_RKIND
