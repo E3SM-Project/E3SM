@@ -12,7 +12,7 @@ void perform_vertical_interpolation(
   const view_2d<Mask<N>>& mask,
   const int nlevs_src,
   const int nlevs_tgt,
-  const Real& msk_val)
+  const Real msk_val)
 {
   perform_vertical_interpolation_impl_2d(x_src, x_tgt, input, output, mask,
                                          nlevs_src, nlevs_tgt, msk_val);
@@ -55,7 +55,7 @@ void perform_vertical_interpolation_impl_2d(
   const view_2d<Mask<N>>& mask,
   const int nlevs_src,
   const int nlevs_tgt,
-  const Real& msk_val)
+  const Real msk_val)
 {
   const int ncols = x_src.extent(0);
   //Do a bunch of checks to make sure that Pack<T,N>s are consistent
@@ -110,7 +110,7 @@ void perform_vertical_interpolation_impl_1d(
   const int nlevs_src,
   const int nlevs_tgt,
   const int icol,
-  const Real& msk_val,
+  const Real msk_val,
   const MemberType& team,
   const LIV<T,N>& vert_interp)
 {

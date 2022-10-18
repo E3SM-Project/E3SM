@@ -47,8 +47,10 @@ template <typename S>
 using view_1d = typename KT::template view_1d<S>;
 template <typename S>
 using view_2d = typename KT::template view_2d<S>;
+template <typename S>
+using view_2d_host = typename KT::template view_2d<S>::HostMirror;
     
-const Real masked_val = -std::numeric_limits<Real>::max();
+constexpr Real masked_val = -std::numeric_limits<Real>::max();
 
 //This is the generic function call where the user provides source levels, 
 //target levels, the input to interpolate, the output that has been interpolated,
@@ -66,7 +68,7 @@ void perform_vertical_interpolation(
   const view_2d<Mask<N>>& mask,
   const int nlevs_src,
   const int nlevs_tgt,
-  const Real& msk_val);
+  const Real msk_val);
 
 //This function call does not have a mask value provided by user
 //so uses the default masked value (masked_val) in the
@@ -105,7 +107,7 @@ void perform_vertical_interpolation_impl_2d(
   const view_2d<Mask<N>>& mask,
   const int nlevs_src,
   const int nlevs_tgt,
-  const Real& msk_val);
+  const Real msk_val);
 
 template<typename Src, typename Tgt, typename Input, typename T, int N> 
 KOKKOS_FUNCTION
@@ -118,7 +120,7 @@ void perform_vertical_interpolation_impl_1d(
   const int nlevs_src,
   const int nlevs_tgt,
   const int icol,
-  const Real& msk_val,
+  const Real msk_val,
   const MemberType& team,
   const LIV<T,N>& vert_interp);
 

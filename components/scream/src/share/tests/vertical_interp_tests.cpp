@@ -121,6 +121,8 @@ void run(){
       ekat::LinInterp<Real,N> vert_interp(2,n_layers_src[i],n_layers_tgt[i]);
       const int num_vert_packs = p_tgt.extent(0);
       const auto policy = ESU::get_default_team_policy(2, num_vert_packs);
+      auto loc_layers_src = n_layers_src[i];
+      auto loc_layers_tgt = n_layers_tgt[i];
       Kokkos::parallel_for("scream_vert_interp_setup_loop", policy,
          	       KOKKOS_LAMBDA(MemberType const& team) {
           const int icol = team.league_rank();
@@ -133,8 +135,8 @@ void run(){
                                                  in,
                                                  out_1d,
                                                  msk,
-                                                 n_layers_src[i],
-                                                 n_layers_tgt[i],
+                                                 loc_layers_src,
+                                                 loc_layers_tgt,
                                                  icol,
                                                  masked_val,
                                                  team,
@@ -177,7 +179,7 @@ TEST_CASE("main_vertical_interpolation_test"){
 }
 
 template<int N>
-void check_mask(const view_2d<Mask<N>>& mask, int col, int lev){
+void check_mask(const view_2d_host<Mask<N>>& mask, int col, int lev){
   const int ipack = lev / N;
   const int jpack  = lev % N;
   if ((col == 0 && lev == 16) || (col == 1 && lev == 0)){
@@ -189,6 +191,7 @@ void check_mask(const view_2d<Mask<N>>& mask, int col, int lev){
 }
 
 TEST_CASE("testing_masking"){
+  printf (" -- Testing Masking --\n");
   //This test performs 3 tests:
   //1) That the interpolation is working properly using 2d views, 
   //   including the masking of out-of-bounds values
@@ -200,22 +203,21 @@ TEST_CASE("testing_masking"){
   const int n_layers_tgt = 17;
   const int N = SCREAM_PACK_SIZE;
 
-  auto npacks_src = ekat::PackInfo<N>::num_packs(n_layers_src);
-  auto npacks_tgt = ekat::PackInfo<N>::num_packs(n_layers_tgt);
-  auto p_tgt = view_1d<Pack<Real,N>>("",npacks_tgt);
-  auto p_tgt_h = Kokkos::create_mirror_view(p_tgt);
-  auto p_tgt_h_s = ekat::scalarize(p_tgt_h);
-  auto tmp_src = view_2d<Pack<Real,N>>("",2,npacks_src);
-  auto tmp_src_h = Kokkos::create_mirror_view(tmp_src);
+  auto npacks_src  = ekat::PackInfo<N>::num_packs(n_layers_src);
+  auto npacks_tgt  = ekat::PackInfo<N>::num_packs(n_layers_tgt);
+  auto p_tgt       = view_1d<Pack<Real,N>>("",npacks_tgt);
+  auto p_tgt_h     = Kokkos::create_mirror_view(p_tgt);
+  auto p_tgt_h_s   = ekat::scalarize(p_tgt_h);
+  auto tmp_src     = view_2d<Pack<Real,N>>("",2,npacks_src);
+  auto tmp_src_h   = Kokkos::create_mirror_view(tmp_src);
   auto tmp_src_h_s = ekat::scalarize(tmp_src_h);
-  auto p_src = view_2d<Pack<Real,N>>("",2,npacks_src);
-  auto p_src_h = Kokkos::create_mirror_view(ekat::scalarize(p_src));
-  auto p_src_h_s = Kokkos::create_mirror_view(ekat::scalarize(p_src));
-  auto out = view_2d<Pack<Real,N>>("",2,npacks_tgt);
-  auto out_h = Kokkos::create_mirror_view(out);
-  auto out_h_s = ekat::scalarize(out_h);
-  auto mask = view_2d<Mask<N>>("",2,npacks_tgt);
-  auto mask_h = Kokkos::create_mirror_view(mask);
+  auto p_src       = view_2d<Pack<Real,N>>("",2,npacks_src);
+  auto p_src_h     = Kokkos::create_mirror_view(p_src);
+  auto p_src_h_s   = ekat::scalarize(p_src_h);
+  auto out         = view_2d<Pack<Real,N>>("",2,npacks_tgt);
+  auto out_h       = Kokkos::create_mirror_view(out);
+  auto mask        = view_2d<Mask<N>>("",2,npacks_tgt);
+  auto mask_h      = Kokkos::create_mirror_view(mask);
 
   //Fist test to see if interpolate properly using 2d views
   //Also test that when out-of-bounds returns masked values
@@ -272,6 +274,7 @@ TEST_CASE("testing_masking"){
   correct_val[1][15] = 270.;
   correct_val[1][16] = 255.;
 
+  auto out_h_s     = ekat::scalarize(out_h);
   for(int col=0; col<2; col++){
     for(int lev=0; lev<17; lev++){
       REQUIRE(out_h_s(col,lev) == correct_val[col][lev]);
