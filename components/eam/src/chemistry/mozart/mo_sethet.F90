@@ -28,6 +28,8 @@ module mo_sethet
   integer :: alkooh_ndx, mekooh_ndx, tolooh_ndx, terpooh_ndx, ch3cooh_ndx
   integer :: so2_ndx, soa_ndx, so4_ndx, cb2_ndx, oc2_ndx, nh3_ndx, nh4no3_ndx, &
              sa1_ndx, sa2_ndx, sa3_ndx, sa4_ndx, nh4_ndx, h2so4_ndx
+  integer :: soag0_ndx, soag15_ndx, soag24_ndx, soag31_ndx
+  integer :: soag32_ndx, soag33_ndx, soag34_ndx, soag35_ndx
   integer :: xisopno3_ndx,xho2no2_ndx,xonitr_ndx,xhno3_ndx,xonit_ndx
   integer :: clono2_ndx, brono2_ndx, hcl_ndx, n2o5_ndx, hocl_ndx, hobr_ndx, hbr_ndx 
   integer :: ch3cn_ndx, hcn_ndx, hcooh_ndx
@@ -137,9 +139,18 @@ contains
     ch3cn_ndx   = get_het_ndx( 'CH3CN' )
     hcn_ndx     = get_het_ndx( 'HCN' )
     hcooh_ndx   = get_het_ndx( 'HCOOH' )
+    soag0_ndx   = get_het_ndx( 'SOAG0' )
+    soag15_ndx  = get_het_ndx( 'SOAG15' )
+    soag24_ndx  = get_het_ndx( 'SOAG24' )
+    soag31_ndx  = get_het_ndx( 'SOAG31' )
+    soag32_ndx  = get_het_ndx( 'SOAG32' )
+    soag33_ndx  = get_het_ndx( 'SOAG33' )
+    soag34_ndx  = get_het_ndx( 'SOAG34' )
+    soag35_ndx  = get_het_ndx( 'SOAG35' )
 
     if (masterproc) then
        write(iulog,*) 'sethet_inti: new ndx ',so2_ndx,soa_ndx,so4_ndx,cb2_ndx,oc2_ndx, &
+            soag0_ndx,soag15_ndx,soag24_ndx,soag31_ndx,soag32_ndx,soag33_ndx,soag34_ndx,soag35_ndx, &
             nh3_ndx,nh4no3_ndx,sa1_ndx,sa2_ndx,sa3_ndx,sa4_ndx
        write(iulog,*) ' '
        write(iulog,*) 'sethet_inti: diagnotics '
@@ -668,6 +679,30 @@ contains
           if( ch3ooh_ndx > 0 ) then
              het_rates(i,k,ch3ooh_ndx)  = work3(i)
           end if
+          if( soag0_ndx > 0 ) then
+             het_rates(i,k,soag0_ndx)  = work3(i)
+          endif
+          if( soag15_ndx > 0 ) then
+             het_rates(i,k,soag15_ndx)  = work3(i)
+          endif
+          if( soag24_ndx > 0 ) then
+             het_rates(i,k,soag24_ndx)  = work3(i)
+          endif
+          if( soag31_ndx > 0 ) then
+             het_rates(i,k,soag31_ndx)  = work3(i)
+          endif
+          if( soag32_ndx > 0 ) then
+             het_rates(i,k,soag32_ndx)  = work3(i)
+          endif
+          if( soag33_ndx > 0 ) then
+             het_rates(i,k,soag33_ndx)  = work3(i)
+          endif
+          if( soag34_ndx > 0 ) then
+             het_rates(i,k,soag34_ndx)  = work3(i)
+          endif
+          if( soag35_ndx > 0 ) then
+             het_rates(i,k,soag35_ndx)  = work3(i)
+          endif
           if( pooh_ndx > 0 ) then
              het_rates(i,k,pooh_ndx)  = work3(i)
           end if

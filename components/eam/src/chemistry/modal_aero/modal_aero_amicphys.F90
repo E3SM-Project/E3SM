@@ -17,7 +17,7 @@
   use chem_mods,       only:  gas_pcnst
   use physconst,       only:  pi
   use ppgrid,          only:  pcols, pver
-  use modal_aero_data, only:  ntot_aspectype, ntot_amode, nsoa, npoa, nbc
+  use modal_aero_data, only:  ntot_aspectype, ntot_amode, nsoag, nsoa, npoa, nbc
 ! use ref_pres,        only:  top_lev => clim_modal_aero_top_lev  ! this is for gg02a
   use ref_pres,        only:  top_lev => trop_cloud_top_lev       ! this is for ee02c
 
@@ -110,7 +110,11 @@
 #elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined MOSAIC_SPECIES ) )
   integer, parameter :: max_gas = nsoa + 4
   ! the +9 in max_aer are dst, ncl, so4, mom, nh4, no3, cl, ca, co3
-  integer, parameter :: max_aer = nsoa + npoa + nbc + 9  
+  integer, parameter :: max_aer = nsoa + npoa + nbc + 9
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined VBS_SOA ) )
+  integer, parameter :: max_gas = nsoag + 1
+  ! the +4 in max_aer are dst, ncl, so4, mom
+  integer, parameter :: max_aer = nsoa + npoa + nbc + 4
 #elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE )
   integer, parameter :: max_gas = nsoa + 1
   ! the +4 in max_aer are dst, ncl, so4, mom
@@ -170,7 +174,7 @@
                       ! early versions of mam neglected the seasalt contribution
 
   ! species indices for various qgas_--- arrays
-  integer :: igas_soa, igas_h2so4, igas_nh3, igas_hno3, igas_hcl
+  integer :: igas_soa, igas_soag, igas_soag_end, igas_h2so4, igas_nh3, igas_hno3, igas_hcl
   ! species indices for various qaer_--- arrays
   !    when nsoa > 1, igas_soa and iaer_soa are indices of the first soa species
   !    when nbc  > 1, iaer_bc  is index of the first bc  species
@@ -214,7 +218,7 @@
   real(r8) :: mw_gas(max_gas), mw_aer(max_aer)
   real(r8) :: mwhost_gas(max_gas), mwhost_aer(max_aer), mwhost_num
   real(r8) :: mw_nh4a_host, mw_so4a_host
-  real(r8) :: mwuse_soa(nsoa), mwuse_poa(npoa)
+  real(r8) :: mwuse_soag(nsoag), mwuse_soa(nsoa), mwuse_poa(npoa)
   real(r8) :: sigmag_aer(max_mode)
   real(r8) :: vol_molar_gas(max_gas)
 
@@ -1075,7 +1079,11 @@ main_i_loop: &
       if ( history_aerocom ) then
          ! 3d soa tendency for aerocom
          ! note that flux units (kg/m2/s) are used here instead of tendency units (kg/kg/s or kg/m3/s)
+#if ( defined VBS_SOA )
+         do jsoa = 1, nsoag
+#else
          do jsoa = 1, nsoa
+#endif
             l = lptr2_soa_g_amode(jsoa) - loffset
             soag_3dtend_cond(i,k,jsoa) = qgcm_tendaa(l,iqtend_cond)*(adv_mass(l)/mwdry)*(pdel(i,k)/gravit)
          end do
@@ -1157,7 +1165,11 @@ main_i_loop: &
          end do ! l
 
          if ( ipass==1 .and. history_aerocom ) then
+#if ( defined VBS_SOA )
+            do jsoa = 1, nsoag
+#else
             do jsoa = 1, nsoa
+#endif
                l = lptr2_soa_g_amode(jsoa)
                fieldname = trim(cnst_name(l)) // '_sfgaex3d'
                call outfld( fieldname, soag_3dtend_cond(1:ncol,:,jsoa), ncol, lchnk )
@@ -3267,7 +3279,8 @@ do_newnuc_if_block50: &
          uptkaer,           uptkrate_h2so4                          )
 
 ! uses
-
+      use mam_soaexch_vbs, only: mam_soaexch_vbs_1subarea
+         
       implicit none
 
 ! arguments
@@ -3360,7 +3373,15 @@ do_newnuc_if_block50: &
             accom_coef_gas(igas), gas_diffus(igas), gas_freepath(igas), &
             0.0_r8, ntot_amode, dgn_awet, alnsg_aer, uptkrate )
 
+#if ( defined VBS_SOA )
+         if (igas <= nsoag) then
+            iaer = 1
+         else
+            iaer = igas - nsoag + 1
+         endif
+#else
          iaer = igas
+#endif
          do n = 1, ntot_amode
             if ( lmap_aer(iaer,n) > 0 .or. & 
                  mode_aging_optaa(n) > 0 ) then
@@ -3375,7 +3396,11 @@ do_newnuc_if_block50: &
 
       do igas = 1, ngas
          ! use cam5.1.00 uptake rates
+#if ( defined VBS_SOA )
+         if (igas <= nsoag   ) uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4,1:ntot_amode)*0.81
+#else
          if (igas <= nsoa    ) uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4,1:ntot_amode)*0.81
+#endif
          if (igas == igas_nh3) uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4,1:ntot_amode)*2.08
       end do ! igas
       uptkrate_h2so4 = sum( uptkaer(igas_h2so4,1:ntot_amode) )
@@ -3398,6 +3423,20 @@ do_newnuc_if_block50: &
 
 
 ! do soa
+#if ( defined VBS_SOA )
+      call mam_soaexch_vbs_1subarea(                                &
+         nstep,             lchnk,                                  &
+         i,                 k,                jsub,                 &
+         latndx,            lonndx,           lund,                 &
+         dtsubstep,                                                 &
+         temp,              pmid,             aircon,               &
+         n_mode,                                                    &
+         qgas_cur,          qgas_avg,                               &
+         qaer_cur,                                                  &
+         qnum_cur,                                                  &
+         qwtr_cur,                                                  &
+         uptkaer                                                    )
+#else
       call mam_soaexch_1subarea(                                    &
          nstep,             lchnk,                                  &
          i,                 k,                jsub,                 &
@@ -3410,17 +3449,27 @@ do_newnuc_if_block50: &
          qnum_cur,                                                  &
          qwtr_cur,                                                  &
          uptkaer                                                    )
-
+#endif
 
 ! do other gases (that are assumed non-volatile) with no time sub-stepping
+#if ( defined VBS_SOA )
+      do igas = nsoag+1, ngas
+         iaer = igas - nsoag + 1
+#else
       do igas = nsoa+1, ngas
          iaer = igas
+#endif
          qgas_prv(igas)          = qgas_cur(igas)
          qaer_prv(iaer,1:n_mode) = qaer_cur(iaer,1:n_mode)
       end do
 
+#if ( defined VBS_SOA )
+      do igas = nsoag+1, ngas
+         iaer = igas - nsoag + 1
+#else
       do igas = nsoa+1, ngas
          iaer = igas
+#endif
          if ( (igas == igas_hno3) .or. &
               (igas == igas_hcl ) ) cycle
 
@@ -5553,7 +5602,7 @@ agepair_loop1: &
       end if
       tmp4 = 1.0_r8 - tmp3
 
-      vol_core = 0.0
+      vol_core = 0.0_r8
       do iaer = 1, naer
          ! for core volume, only include the mapped species 
          !    which are primary and low hygroscopicity
@@ -5746,7 +5795,7 @@ agepair_loop1: &
          const  = tworootpi * exp( beta*lndpgn + 0.5_r8*(beta*lnsg(n))**2 )
          
 !   sum over gauss-hermite quadrature points
-         sumghq = 0.0
+         sumghq = 0.0_r8
          do iq = 1, nghq
             lndp = lndpgn + beta*lnsg(n)**2 + root2*lnsg(n)*xghq(iq)
             dp = exp(lndp)
@@ -5858,9 +5907,15 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
 
       call mam_set_lptr2_and_specxxx2
 
-
-      mwuse_soa(:) = 150.0_r8
-      mwuse_poa(:) = 150.0_r8
+#if ( defined VBS_SOA )
+      mwuse_soag(:) = 250.0_r8
+      mwuse_soa(:)  = 250.0_r8
+      mwuse_poa(:)  = 250.0_r8
+#else
+      mwuse_soag(:) = 150.0_r8
+      mwuse_soa(:)  = 150.0_r8
+      mwuse_poa(:)  = 150.0_r8
+#endif
 
 ! set ngas, name_gas, and igas_xxx
 ! set naer, name_aerpfx, and iaer_xxx
@@ -5872,6 +5927,8 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       name_numcw  = "???"
 
       igas_h2so4 = 0 ; igas_nh3 = 0
+      igas_hno3  = 0 ; igas_hcl = 0
+      igas_soag  = 0
       iaer_bc  = 0 ; iaer_dst = 0 
       iaer_ncl = 0 ; iaer_nh4 = 0 
       iaer_pom = 0 ; iaer_soa = 0 
@@ -5882,7 +5939,21 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       iaer_mlip  = 0 ; iaer_mhum = 0 
       iaer_mproc = 0 ; iaer_mom = 0
 
-      if (nsoa == 1) then
+#if ( defined VBS_SOA )
+      if (nsoa == 1 .and. nsoag == 7) then
+         jsoa =      1 ; name_gas(jsoa) = 'SOAG15'
+         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAG24'
+         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAG35'
+         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAG34'
+         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAG33'
+         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAG32'
+         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAG31'
+         igas_soag_end = jsoa     
+
+         name_aerpfx(1) = 'soa'
+#else
+      if (nsoa == 1 .and. nsoag == 1) then
+#endif
          name_gas(1) = 'SOAG'
          name_aerpfx(1) = 'soa'
       else if (nsoa == 2) then
@@ -5896,9 +5967,16 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
          jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGb2' ; name_aerpfx(jsoa) = 'soab2' ! jsoa=5
          jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAGb3' ; name_aerpfx(jsoa) = 'soab3' ! jsoa=6
       else
-         call endrun( 'modal_aero_amicphys_init ERROR - bad nsoa' )
+         write( msg, '(a,3(1x,i10))') &
+            'modal_aero_amicphys_init ERROR - bad soa, nsoa, nsoag =', nsoa, nsoag
+         call endrun( msg )
       end if
+#if ( defined VBS_SOA )
+      ngas = nsoag
+      igas_soag = 1
+#else
       ngas = nsoa
+#endif
       naer = nsoa
       igas_soa = 1
       iaer_soa = 1
@@ -6047,10 +6125,18 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
 
          mwhost_gas(igas) = adv_mass(lmz)
          mw_gas(igas) = mwhost_gas(igas)
+#if ( defined VBS_SOA )
+         if (igas <= nsoag) mw_gas(igas) = mwuse_soag(igas)
+#else
          if (igas <= nsoa) mw_gas(igas) = mwuse_soa(igas)
+#endif
          fcvt_gas(igas) = mwhost_gas(igas)/mw_gas(igas)
 
+#if ( defined VBS_SOA )
+         if (igas <= nsoag) then
+#else
          if (igas <= nsoa) then
+#endif
             vol_molar_gas(igas) = vol_molar_gas(igas_h2so4) * (mw_gas(igas)/98.0_r8)
          else if (igas == igas_nh3) then
             vol_molar_gas(igas) = 14.90_r8
@@ -6343,11 +6429,11 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
            'ngas, max_gas, naer, max_aer', &
             ngas, max_gas, naer, max_aer
          write(iulog,'(/a56,10i5)') &
-           'nsoa, npoa, nbc', &
-            nsoa, npoa, nbc
+            'nsoag,  nsoa, npoa, nbc', &
+             nsoag,  nsoa, npoa, nbc
          write(iulog,'(/a56,10i5)') &
-           'igas_soa, igas_h2so4, igas_nh3, igas_hno3, igas_hcl', &
-            igas_soa, igas_h2so4, igas_nh3, igas_hno3, igas_hcl
+           'igas_soag,   igas_soa, igas_h2so4, igas_nh3, igas_hno3, igas_hcl', &
+            igas_soag,   igas_soa, igas_h2so4, igas_nh3, igas_hno3, igas_hcl
          write(iulog,'(/a56,10i5)') &
            'iaer_soa, iaer_so4, iaer_nh4, iaer_no3, iaer_cl', &
             iaer_soa, iaer_so4, iaer_nh4, iaer_no3, iaer_cl
@@ -6590,13 +6676,23 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       integer :: l1, l2
       integer :: n
 
-
-      if (nsoa == 1) then
+#if ( defined VBS_SOA )     
+      if (nsoa == 1 .and. nsoag == 7) then
+         jsoa = 1
+         do igas = 1, nsoag
+            call cnst_get_ind( name_gas(igas), l1, .false. )
+            if (l1 < 1 .or. l1 > pcnst) &
+                call endrun( 'mam_set_lptr2_and_specxxx2 ERROR - no VBS' // name_gas(igas) )
+            lptr2_soa_g_amode(igas) = l1
+         end do
+#else
+      if (nsoa == 1 .and. nsoag == 1) then
          jsoa = 1
          call cnst_get_ind( 'SOAG', l1, .false. )
          if (l1 < 1 .or. l1 > pcnst) &
             call endrun( 'mam_set_lptr2_and_specxxx2 ERROR - no SOAG' )
          lptr2_soa_g_amode(jsoa) = l1
+#endif
          do n = 1, ntot_amode
             lptr2_soa_a_amode(n,jsoa) = lptr_soa_a_amode(n)
          end do
@@ -6695,7 +6791,15 @@ implicit none
          lmz = lmap_gas(igas)
          if (lmz <= 0) cycle
          do_q_coltendaa(lmz,iqtend_cond) = .true.
+#if ( defined VBS_SOA )
+         if (igas <= nsoag) then
+            iaer = 1
+         else
+            iaer = igas - nsoag + 1
+         endif
+#else
          iaer = igas
+#endif
          do n = 1, ntot_amode
             lmz = lmap_aer(iaer,n)
             if (lmz <= 0) cycle
@@ -6746,7 +6850,11 @@ implicit none
       end do ! lmz
 
 !  define history fields for 3d soa production for aerocom
+#if ( defined VBS_SOA )
+      do igas = 1, nsoag
+#else
       do igas = 1, nsoa
+#endif
          lmz = lmap_gas(igas)
          if (lmz <= 0) cycle
          if ( .not. do_q_coltendaa(lmz,iqtend_cond)) cycle
@@ -6900,7 +7008,15 @@ implicit none
          lmz = lmap_gas(igas)
          if (lmz > 0) then
             do_q_coltendaa(lmz,iqtend_nnuc) = .true.
+#if ( defined VBS_SOA )
+            if (igas <= nsoag) then
+               iaer = 1
+            else
+               iaer = igas - nsoag + 1
+            endif
+#else
             iaer = igas
+#endif
             lmz = lmap_aer(iaer,n)
             if (lmz > 0) do_q_coltendaa(lmz,iqtend_nnuc) = .true.
           end if

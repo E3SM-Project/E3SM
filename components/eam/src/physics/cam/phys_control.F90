@@ -457,16 +457,15 @@ subroutine phys_ctl_readnl(nlfile)
                       .or. cam_chempkg_is('linoz_mam4_resus_soag') &
                       .or. cam_chempkg_is('linoz_mam4_resus_mom') &
                       .or. cam_chempkg_is('linoz_mam4_resus_mom_soag') &
+                      .or. cam_chempkg_is('linoz_mam4_resus_mom_vbs') &
                       .or. cam_chempkg_is('superfast_mam4_resus_mom_soag') &
                       .or. cam_chempkg_is('super_fast_llnl_mam3') &
                       .or. cam_chempkg_is('trop_mozart_mam3') &
                       .or. cam_chempkg_is('trop_strat_mam3') &
-! ++MW
                       .or. cam_chempkg_is('trop_strat_mam4_resus_mom_soag') &
-! --MW
                       .or. cam_chempkg_is('trop_strat_mam7') &
-                      .or. cam_chempkg_is('linoz_mam5_resus_mom_soag') & !kzm
-                      .or. cam_chempkg_is('trop_strat_mam5_resus_mom_soag') &!kzm
+                      .or. cam_chempkg_is('linoz_mam5_resus_mom_soag') &
+                      .or. cam_chempkg_is('trop_strat_mam5_resus_mom_soag') &
                       .or. cam_chempkg_is('waccm_mozart_mam3'))
 end subroutine phys_ctl_readnl
 

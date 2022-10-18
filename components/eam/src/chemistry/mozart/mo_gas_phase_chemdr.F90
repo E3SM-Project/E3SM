@@ -248,7 +248,8 @@ contains
      !kzm--
      
      if ( chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
-         .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag') then
+         .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' &
+         .or.chem_name == 'linoz_mam4_resus_mom_vbs') then
        if ( inv_ndx_cnst_o3 < 1 ) then
           call endrun('ERROR: chem_name = '//trim(chem_name)//&
           ' requies cnst_O3 fixed oxidant field. Use cnst_O3:O3 in namelist tracer_cnst_specifier')
@@ -948,7 +949,8 @@ contains
 
     if ( has_linoz_data .and. .not. &
        (chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
-       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' )) then
+       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' &
+       .or.chem_name == 'linoz_mam4_resus_mom_vbs')) then
        ltrop_sol(:ncol) = troplev(:ncol) !kzm changed to 0 for test
  !kzm note: this is a strange setting  
      elseif (chem_name == 'trop_strat_mam5_resus_mom_soag') then !kzm
@@ -1326,9 +1328,13 @@ contains
           n = map2chm( m )
           if ( n > 0 ) then
              if ( .not. any( aer_species == n ) ) then
-               if (trim(solsym(n))/='DMS' .and. trim(solsym(n))/='SO2' .and. &
-                   trim(solsym(n))/='H2SO4' .and. trim(solsym(n))/='SOAG' .and. &
-                   trim(solsym(n))/='HNO3' .and. trim(solsym(n))/='NH3' .and. &
+               if (trim(solsym(n))/='DMS'    .and. trim(solsym(n))/='SO2' .and. &
+                   trim(solsym(n))/='H2SO4'  .and. trim(solsym(n))/='SOAG' .and. &
+                   trim(solsym(n))/='SOAG0'  .and. trim(solsym(n))/='SOAG15' .and. &
+                   trim(solsym(n))/='SOAG24' .and. trim(solsym(n))/='SOAG31' .and. &
+                   trim(solsym(n))/='SOAG32' .and. trim(solsym(n))/='SOAG33' .and. & 
+                   trim(solsym(n))/='SOAG34' .and. trim(solsym(n))/='SOAG35' .and. &
+                   trim(solsym(n))/='HNO3'   .and. trim(solsym(n))/='NH3' .and. &
                    trim(solsym(n))/='HCL') then
                    !write(iulog,*) 'n=',n,'solsym=',trim(solsym(n))
                    vmr(:ncol,:,n) = vmr_old2(:ncol,:,n)

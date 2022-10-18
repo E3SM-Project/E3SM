@@ -39,7 +39,11 @@
     integer, parameter :: nbc   = 1  ! number of differently tagged black-carbon      aerosol species
     integer, parameter :: npoa  = 1  ! number of differently tagged primary-organic   aerosol species
     integer, parameter :: nsoa  = 1  ! number of differently tagged secondary-organic aerosol species
+#if ( defined VBS_SOA )
+    integer, parameter :: nsoag = 7  ! number of differently tagged secondary-organic gas     species
+#else
     integer, parameter :: nsoag = 1  ! number of differently tagged secondary-organic gas     species
+#endif
 
 #if ( defined MOSAIC_SPECIES )
     ! when mosaic_aqchem_optaa <= 0, aqueous chem calcs do not affect hclg, cl_ax, no3_ax, and co3_ax species
@@ -94,7 +98,11 @@
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/  96.0_r8,  18.0_r8,  62.0_r8, &
        12.0_r8,   12.0_r8,   12.0_r8,  23.0_r8, 135.0_r8, &
        250092.0_r8,  40.0_r8, 60.0_r8, 35.5_r8 /)
-#elif ( defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_5MODE)
+#elif ( ( defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_5MODE ) && ( defined VBS_SOA ) )
+    real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/ 115.0_r8, 115.0_r8,  62.0_r8, &
+       12.0_r8,  250.0_r8,   12.0_r8,  58.5_r8, 135.0_r8, &
+       250092.0_r8 /)
+#elif ( defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_5MODE )
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/ 115.0_r8, 115.0_r8,  62.0_r8, &
        12.0_r8,   12.0_r8,   12.0_r8,  58.5_r8, 135.0_r8, &
        250092.0_r8 /)
