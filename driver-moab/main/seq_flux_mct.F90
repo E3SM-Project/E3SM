@@ -1641,11 +1641,11 @@ contains
      allocate(GlobalIds(nloc))
      GlobalIds = dom%data%iAttr(kgg,:)
 
-     do i = 1, nloc
-        do j = 1, listSize
-           local_xao_mct(i, j) = xao%rAttr(j, i)
-        enddo
+
+     do j = 1, listSize
+       local_xao_mct(:, j) = xao%rAttr(j, :)
      enddo
+
      tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
      arrSize = nloc * listSize
      ent_type = 1 ! cells

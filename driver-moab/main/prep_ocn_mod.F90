@@ -632,7 +632,8 @@ contains
 
 subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
-    use iMOAB , only : iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, iMOAB_SetDoubleTagStorage
+    use iMOAB , only : iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
+     iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
     use seq_comm_mct , only : mboxid, mbofxid ! ocean and atm-ocean flux instances
     !---------------------------------------------------------------
     ! Description
@@ -759,6 +760,10 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
     character(CXX) ::tagname
     integer :: ent_type, ierr
+#ifdef MOABDEBUG
+    character*32             :: outfile, wopts, lnum
+#endif 
+
 ! for moab, local allocatable arrays for each field, size of local ocean mesh
 ! these are the fields that are merged, in general
 ! some fields are already on the ocean instance (coming from projection)
@@ -1383,7 +1388,14 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting x2o_om array ')
     endif
-
+#ifdef MOABDEBUG
+    if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
+     write(lnum,"(I0.2)")num_moab_exports
+     outfile = 'OcnCplAftMm'//trim(lnum)//'.h5m'//C_NULL_CHAR
+     wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+     ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+   endif
+#endif
     if (first_time) then
        if (iamroot) then
           write(logunit,'(A)') subname//' Summary:'
@@ -1411,7 +1423,10 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        fractions_o, x2o_o )
 
     use prep_glc_mod, only: prep_glc_calculate_subshelf_boundary_fluxes
-
+#ifdef MOABDEBUG
+    use iMOAB, only :  iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh
+    use component_type_mod, only : component_get_dom_cx
+#endif
     !-----------------------------------------------------------------------
     !
     ! Arguments
@@ -1521,6 +1536,14 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     type(mct_aVect_sharedindices),save :: g2x_sharedindices
     logical, save :: first_time = .true.
     character(*),parameter :: subName = '(prep_ocn_merge) '
+#ifdef    MOABDEBUG
+    real(r8) , allocatable :: values(:)
+    type(mct_ggrid), pointer    :: dom
+    integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
+    character(CXX) ::tagname
+    integer :: kgg, ent_type, ierr
+    character*32             :: outfile, wopts, lnum
+#endif
     !-----------------------------------------------------------------------
 
     call seq_comm_setptrs(CPLID, iamroot=iamroot)
@@ -2063,6 +2086,36 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     endif
 
     first_time = .false.
+#ifdef MOABDEBUG
+    ! index_x2o_Foxx_swnet
+    ! DEBUGGING
+    allocate(values(lsize))
+    dom => component_get_dom_cx(ocn(1))
+     kgg = mct_aVect_indexIA(dom%data ,"GlobGridNum" ,perrWith=subName)
+
+     allocate(GlobalIds(lsize))
+     GlobalIds = dom%data%iAttr(kgg,:)
+     tagname = 'mct_Foxx_swnet'//C_NULL_CHAR
+     !arrSize = nloc * listSize
+     ent_type = 1 ! cells
+     values = x2o_o%rAttr(index_x2o_Foxx_swnet, :)
+     ierr = iMOAB_SetDoubleTagStorageWithGid ( mboxid, tagname, lsize , ent_type, values, GlobalIds )
+    if (ierr .ne. 0) then
+       write(logunit,*) subname,' error in setting debug tag  '
+       call shr_sys_abort(subname//' ERROR in setting debug tag')
+     endif
+    deallocate(values)
+    deallocate(GlobalIds)
+
+   if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
+     write(lnum,"(I0.2)")num_moab_exports
+     outfile = 'OcnCplAft_mrg'//trim(lnum)//'.h5m'//C_NULL_CHAR
+     wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+     ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+   endif
+#endif
+
+
 
   end subroutine prep_ocn_merge
 
