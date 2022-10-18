@@ -112,7 +112,6 @@ OPTIONS
   effect whether running EAM as part of CCSM or running in a EAM standalone mode:
 
      -[no]age_of_air_trcs Switch on [off] age of air tracers. Default: on for waccm_phys, otherwise off
-     -cldera_sai_trcs   Switch on idealized stratospheric aerosol injection tracers. Default: off
      -aquaplanet        Switch on aqua-planet mode w/ SST controlled by data ocean component in CIME
      -rce               Use homogenous conditions for radiative-convective equilibrium (RCE), normally used with aquaplanet
      -chem <name>       Build EAM with specified prognostic chemistry package
@@ -284,6 +283,8 @@ OPTIONS
 
   Options for CLDERA-E3SM
      -cldera_profiling  Build EAM with support for CLDERA profiling, linking to cldera-profiling
+     -cldera_sai_trcs   Switch on idealized stratospheric aerosol injection tracers. Default: off
+     -cldera_passive_trcs Switch on CLDERA passive tracers. Default: off
 EOF
 }
 
@@ -322,6 +323,7 @@ my %opts = (
 GetOptions(
     "age_of_air_trcs!"          => \$opts{'age_of_air_trcs'},
     "cldera_sai_trcs!"          => \$opts{'cldera_sai_trcs'},
+    "cldera_passive_trcs!"      => \$opts{'cldera_passive_trcs'},
     "aquaplanet"                => \$opts{'aquaplanet'},
     "cache=s"                   => \$opts{'cache'},
     "cachedir=s"                => \$opts{'cachedir'},
@@ -878,6 +880,13 @@ if (defined $opts{'cldera_sai_trcs'}) {
 }
 my $cldera_sai_trcs = $cfg_ref->get('cldera_sai_trcs') ? "ON" : "OFF";
 if ($print>=2) { print "CLDERA SAI tracer package: $cldera_sai_trcs$eol"; }
+
+# Allow user to turn on the cldera passive tracers
+if (defined $opts{'cldera_passive_trcs'}) {
+    $cfg_ref->set('cldera_passive_trcs', $opts{'cldera_passive_trcs'});
+}
+my $cldera_passive_trcs = $cfg_ref->get('cldera_passive_trcs') ? "ON" : "OFF";
+if ($print>=2) { print "CLDERA passive tracer package: $cldera_passive_trcs$eol"; }
 
 # waccmx option
 if (defined $opts{'waccmx'}) {
@@ -1500,6 +1509,11 @@ else {
     if ($cldera_sai_trcs eq "ON") {
 	$nadv += 5;
         if ($print>=2) { print "Advected constituents added by the CLDERA SAI tracer package: 5$eol"; }
+    }
+
+    if ($cldera_passive_trcs eq "ON") {
+	$nadv += 3;
+        if ($print>=2) { print "Advected constituents added by the CLDERA passive tracers package: 4$eol"; }
     }
 
     $cfg_ref->set('nadv', $nadv);
