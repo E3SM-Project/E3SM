@@ -244,12 +244,14 @@ public:
       precip_liq_surf_mass(icol) += precip_liq_surf_flux(icol) * PC::RHO_H2O * m_dt;
       precip_ice_surf_mass(icol) += precip_ice_surf_flux(icol) * PC::RHO_H2O * m_dt;
 
-      // Set appropriate boundary fluxes for energy and mass conservation checks.
+      // If necessary, set appropriate boundary fluxes for energy and mass conservation checks.
       // Any boundary fluxes not included in P3 interface are set to 0.
-      vapor_flux(icol) = 0.0;
-      water_flux(icol) = precip_liq_surf_flux(icol)+precip_ice_surf_flux(icol);
-      ice_flux(icol)   = precip_ice_surf_flux(icol);
-      heat_flux(icol)  = 0.0;
+      if (compute_mass_and_energy_fluxes) {
+        vapor_flux(icol) = 0.0;
+        water_flux(icol) = precip_liq_surf_flux(icol)+precip_ice_surf_flux(icol);
+        ice_flux(icol)   = precip_ice_surf_flux(icol);
+        heat_flux(icol)  = 0.0;
+      }
     } // operator
     // Local variables
     int m_ncol, m_npack, m_dt;
@@ -273,6 +275,7 @@ public:
     view_1d_const precip_ice_surf_flux;
     view_1d       precip_liq_surf_mass;
     view_1d       precip_ice_surf_mass;
+    bool          compute_mass_and_energy_fluxes = false;
     view_1d       vapor_flux;
     view_1d       water_flux;
     view_1d       ice_flux;
@@ -291,9 +294,7 @@ public:
                     const view_2d& qv_prev_, const view_2d& diag_eff_radius_qc_,
                     const view_2d& diag_eff_radius_qi_, 
                     const view_1d_const& precip_liq_surf_flux_, const view_1d_const& precip_ice_surf_flux_,
-                    const view_1d& precip_liq_surf_mass_, const view_1d& precip_ice_surf_mass_,
-                    const view_1d& vapor_flux_, const view_1d& water_flux_,
-                    const view_1d& ice_flux_, const view_1d& heat_flux_)
+                    const view_1d& precip_liq_surf_mass_, const view_1d& precip_ice_surf_mass_)
     {
       m_ncol  = ncol;
       m_npack = npack;
@@ -319,10 +320,6 @@ public:
       diag_eff_radius_qi   = diag_eff_radius_qi_;
       precip_liq_surf_mass = precip_liq_surf_mass_;
       precip_ice_surf_mass = precip_ice_surf_mass_;
-      vapor_flux           = vapor_flux_;
-      water_flux           = water_flux_;
-      ice_flux             = ice_flux_;
-      heat_flux            = heat_flux_;
       // TODO: This is a list of variables not yet defined for post-processing, but are
       // defined in the F90 p3 interface code.  So this list will need to be checked as
       // new processes come online to make sure their requirements from p3 are being met.
@@ -331,6 +328,16 @@ public:
       // RAD Vars: icinc, icwnc, icimrst, icwmrst
       // COSP Vars: flxprc, flxsnw, flxprc, flxsnw, cvreffliq, cvreffice, reffrain, reffsnow
     } // set_variables
+
+    void set_mass_and_energy_fluxes (const view_1d& vapor_flux_, const view_1d& water_flux_,
+				     const view_1d& ice_flux_, const view_1d& heat_flux_)
+    {
+      compute_mass_and_energy_fluxes = true;
+      vapor_flux = vapor_flux_;
+      water_flux = water_flux_;
+      ice_flux   = ice_flux_;
+      heat_flux  = heat_flux_;
+    }
   }; // p3_postamble
   /* --------------------------------------------------------------------------------------------*/
 

@@ -47,7 +47,9 @@ public:
 
   std::shared_ptr<const AbstractGrid> get_grid () const { return m_grid; }
 
-  // Set the timestep for the process running the check.
+  // Set the timestep for the process running the check. This 
+  // should be the timestep of the current subcycle, equiv to
+  // dt = model_dt/num_subcycles. 
   void set_dt (const int dt) { m_dt = dt; }
 
   // Set the tolerance for the check
@@ -100,9 +102,6 @@ public:
                                                const Real heat_flux) const;
 
 protected:
-
-  // Query if a nullptr was passed for field with name fname.
-  bool is_field_null (const std::string fname) const;
 
   std::shared_ptr<const AbstractGrid>                 m_grid;
   std::map<std::string, std::shared_ptr<const Field>> m_fields;

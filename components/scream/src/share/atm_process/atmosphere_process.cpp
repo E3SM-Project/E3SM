@@ -77,12 +77,10 @@ void AtmosphereProcess::run (const int dt) {
     run_precondition_checks();
   }
 
-  // Mass and energy postcondition check requires the total mass and energy
+  // Column-wise mass and energy checks requires the total mass and energy
   // to be computed directly before the atm process is run, as well and store
   // the correct timestep for the process.
-  if (m_params.get("enable_postcondition_checks", true)) {
-    setup_conservation_checks_for_this_process(dt);
-  }
+  setup_conservation_checks_for_this_process(dt);
 
   EKAT_REQUIRE_MSG ( (dt % m_num_subcycles)==0,
       "Error! The number of subcycle iterations does not exactly divide the time step.\n"
@@ -828,14 +826,23 @@ void AtmosphereProcess
 
 void AtmosphereProcess::setup_conservation_checks_for_this_process (const int dt)
 {
-  const Real tol = m_params.get<Real>("conservation check tolerance",
-                                      std::numeric_limits<Real>::max());
+  // Only setup the check if this process call it.
+  if (not m_params.get<bool>("enable_column_conservation_checks", false)) {
+    return;
+  }
 
-  // Loop through postcondition checks, if the MassAndEnergyConservationCheck
-  // exists, set dt and compute mass and energy
+  // Tolerance for the relative error.
+  const Real tol = m_params.get<Real>("column_conservation_check_tolerance",
+                                      1e-10);
+
+  // Loop through postcondition checks, find the MassAndEnergyConservationCheck,
+  // set dt and tolerance, and compute current mass and energy.
+  bool conservation_check_exists = false;
   for (const auto& it : m_postcondition_checks) {
     const auto& pc = it.second;
     if (pc->name() == "Energy conservation check") {
+      conservation_check_exists = true;
+
       const auto conservation_check = std::dynamic_pointer_cast<MassAndEnergyConservationCheck>(pc);
       conservation_check->set_dt(dt);
       conservation_check->set_tolerance(tol);
@@ -843,6 +850,11 @@ void AtmosphereProcess::setup_conservation_checks_for_this_process (const int dt
       conservation_check->compute_current_energy();
     }
   }
+
+  // If user sets enable_column_conservation_checks=true
+  // for this process, require that the check has been found.
+  EKAT_REQUIRE_MSG(conservation_check_exists, "Error! User set enable_column_conservation_checks=true, "
+                                              "but no conservation check exists.\n");
 }
 
 } // namespace scream

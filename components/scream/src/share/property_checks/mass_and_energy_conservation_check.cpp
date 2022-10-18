@@ -43,34 +43,25 @@ MassAndEnergyConservationCheck::MassAndEnergyConservationCheck (const std::share
   m_fields["ice_flux"]       = ice_flux_ptr;
   m_fields["heat_flux"]      = heat_flux_ptr;
 
-  // Assert that all fields needed for mass and energy computation are not null.
+  // Require that all fields needed for mass and energy computation are not null.
   const bool all_computation_fields_exist =
-      !is_field_null("pseudo_density") && !is_field_null("ps")          &&
-      !is_field_null("phis")           && !is_field_null("horiz_winds") &&
-      !is_field_null("T_mid")          && !is_field_null("qv")          &&
-      !is_field_null("qc")             && !is_field_null("qr")          &&
-      !is_field_null("qi");
-  EKAT_ASSERT_MSG(all_computation_fields_exist,
-                  "Error! Currently we require mass and energy conservation "
-                  "check to contain all fields related to the mass and energy "
-                  "computation.\n");
-  (void)all_computation_fields_exist;
+      pseudo_density_ptr && ps_ptr          &&
+      phis_ptr           && horiz_winds_ptr &&
+      T_mid_ptr          && qv_ptr          &&
+      qc_ptr             && qr_ptr          &&
+      qi_ptr;
+  EKAT_REQUIRE_MSG(all_computation_fields_exist,
+                   "Error! Currently we require mass and energy conservation "
+                   "check to contain all fields related to the mass and energy "
+                   "computation.\n");
 
   // Require any process that add this checker to define all fluxes.
   // Fluxes which are not relevant to a certain process should be set to 0.
-  EKAT_ASSERT_MSG(!is_field_null("vapor_flux") && !is_field_null("water_flux") &&
-                  !is_field_null("ice_flux")   && !is_field_null("heat_flux"),
-                  "Error! If a process adds this check, it must define all " 
-                  "boundary fluxes. Fluxes which are not relevant to a "
-                  "certain process should be set to 0.\n");
-}
-
-bool MassAndEnergyConservationCheck::is_field_null(const std::string fname) const
-{
-  EKAT_ASSERT_MSG(m_fields.find(fname) != m_fields.end(),
-                  "Error! Asking for field "+ fname +
-                  " which is not in the map m_fields.\n");
-  return (m_fields.at(fname) == nullptr);
+  EKAT_REQUIRE_MSG(vapor_flux_ptr && water_flux_ptr &&
+                   ice_flux_ptr   && heat_flux_ptr,
+                   "Error! If a process adds this check, it must define all "
+                   "boundary fluxes. Fluxes which are not relevant to a "
+                   "certain process should be set to 0.\n");
 }
 
 void MassAndEnergyConservationCheck::compute_current_mass ()
@@ -134,8 +125,8 @@ PropertyCheck::ResultAndMsg MassAndEnergyConservationCheck::check() const
   view_1d<Real> rel_err_mass  ("rel_err_mass",   m_num_cols);
   view_1d<Real> rel_err_energy("rel_err_energy", m_num_cols);
 
-  EKAT_ASSERT_MSG(!std::isnan(m_dt), "Error! Timestep dt must be set in MassAndEnergyConservationCheck "
-                                     "before running check().");
+  EKAT_REQUIRE_MSG(!std::isnan(m_dt), "Error! Timestep dt must be set in MassAndEnergyConservationCheck "
+                                      "before running check().");
   auto dt = m_dt;
 
   const auto pseudo_density = m_fields.at("pseudo_density")->get_view<const Real**> ();
@@ -170,7 +161,10 @@ PropertyCheck::ResultAndMsg MassAndEnergyConservationCheck::check() const
     const Real tm = compute_total_mass_on_column(team, pseudo_density_i, qv_i, qc_i, qi_i, qr_i);
     const Real previous_tm = mass(i);
 
-    // Calculate expected total mass
+    // Calculate expected total mass. Here, dt should be set to the timestep of the 
+    // subcycle for the process call this check. This effectively scales the boundary
+    // fluxes by 1/num_subcycles (dt = model_dt/num_subcycles) so that we only include
+    // the expected change after one substep (not a full timestep).
     const Real tm_exp = previous_tm +
                         compute_mass_boundary_flux_on_column(vapor_flux(i), water_flux(i))*dt;
 
@@ -183,7 +177,7 @@ PropertyCheck::ResultAndMsg MassAndEnergyConservationCheck::check() const
                                                    qv_i, qc_i, qr_i, ps(i), phis(i));
     const Real previous_te = energy(i);
 
-    // Calculate expected total energy
+    // Calculate expected total energy. See the comment above for an explanation of dt. 
     const Real te_exp = previous_te +
                         compute_energy_boundary_flux_on_column(vapor_flux(i), water_flux(i), ice_flux(i), heat_flux(i))*dt;
 

@@ -282,10 +282,10 @@ void AtmosphereDriver::setup_surface_coupling_processes () const
     if (atm_proc->type() == AtmosphereProcessType::SurfaceCouplingImporter) {
       importer_found = true;
 
-      EKAT_ASSERT_MSG(m_surface_coupling_import_data_manager != nullptr,
-                      "Error! SurfaceCouplingImporter atm process found, "
-                      "but m_surface_coupling_import_data_manager was not "
-                      "setup.\n");
+      EKAT_REQUIRE_MSG(m_surface_coupling_import_data_manager != nullptr,
+                       "Error! SurfaceCouplingImporter atm process found, "
+                       "but m_surface_coupling_import_data_manager was not "
+                       "setup.\n");
 
       std::shared_ptr<SurfaceCouplingImporter> importer = std::dynamic_pointer_cast<SurfaceCouplingImporter>(atm_proc);
       importer->setup_surface_coupling_data(*m_surface_coupling_import_data_manager);
@@ -293,10 +293,10 @@ void AtmosphereDriver::setup_surface_coupling_processes () const
     if (atm_proc->type() == AtmosphereProcessType::SurfaceCouplingExporter) {
       exporter_found = true;
 
-      EKAT_ASSERT_MSG(m_surface_coupling_export_data_manager != nullptr,
-                      "Error! SurfaceCouplingExporter atm process found, "
-                      "but m_surface_coupling_export_data_manager was not "
-                      "setup.\n");
+      EKAT_REQUIRE_MSG(m_surface_coupling_export_data_manager != nullptr,
+                       "Error! SurfaceCouplingExporter atm process found, "
+                       "but m_surface_coupling_export_data_manager was not "
+                       "setup.\n");
 
       std::shared_ptr<SurfaceCouplingExporter> exporter = std::dynamic_pointer_cast<SurfaceCouplingExporter>(atm_proc);
       exporter->setup_surface_coupling_data(*m_surface_coupling_export_data_manager);
@@ -306,15 +306,13 @@ void AtmosphereDriver::setup_surface_coupling_processes () const
   // If import or export data manager is defined,
   // ensure corresponding atm process was found.
   if (m_surface_coupling_import_data_manager) {
-    EKAT_ASSERT_MSG(importer_found, "Error! SurfaceCoupling importer data was setup, but no atm process "
-                                    "of type AtmosphereProcessType::SurfaceCouplingImporter exists.\n");
+    EKAT_REQUIRE_MSG(importer_found, "Error! SurfaceCoupling importer data was setup, but no atm process "
+                                     "of type AtmosphereProcessType::SurfaceCouplingImporter exists.\n");
   }
   if (m_surface_coupling_export_data_manager) {
-    EKAT_ASSERT_MSG(exporter_found, "Error! SurfaceCoupling exporter data was setup, but no atm process "
-                                    "of type AtmosphereProcessType::SurfaceCouplingExporter exists.\n");
+    EKAT_REQUIRE_MSG(exporter_found, "Error! SurfaceCoupling exporter data was setup, but no atm process "
+                                     "of type AtmosphereProcessType::SurfaceCouplingExporter exists.\n");
   }
-  (void)importer_found;
-  (void)exporter_found;
 }
 
 void AtmosphereDriver::set_precipitation_fields_to_zero () 
@@ -330,14 +328,20 @@ void AtmosphereDriver::set_precipitation_fields_to_zero ()
   }
 }
 
-void AtmosphereDriver::setup_conservation_checks ()
+void AtmosphereDriver::setup_column_conservation_checks ()
 {
+  // Query m_atm_process_group if any process enables the conservation check,
+  // and if not, return before creating and passing the check.
+  if (not m_atm_process_group->are_column_conservation_checks_enabled()) {
+    return;
+  }
+
   auto phys_grid = m_grids_manager->get_grid("Physics");
   const auto phys_grid_name = phys_grid->name();
   auto phys_field_mgr = m_field_mgrs[phys_grid_name];
 
-  // Get fields needed to compute total mass and energy. We only run
-  // energy checker if all fields exist to compute mass and energy.
+  // Get fields needed to run the mass and energy conservation checks. Require that
+  // all fields exist.
   const auto pseudo_density_ptr = phys_field_mgr->get_field_ptr("pseudo_density");
   const auto ps_ptr             = phys_field_mgr->get_field_ptr("ps");
   const auto phis_ptr           = phys_field_mgr->get_field_ptr("phis");
@@ -347,17 +351,25 @@ void AtmosphereDriver::setup_conservation_checks ()
   const auto qc_ptr             = phys_field_mgr->get_field_ptr("qc");
   const auto qr_ptr             = phys_field_mgr->get_field_ptr("qr");
   const auto qi_ptr             = phys_field_mgr->get_field_ptr("qi");
-  if (pseudo_density_ptr == nullptr || ps_ptr    == nullptr || phis_ptr == nullptr ||
-      horiz_winds_ptr    == nullptr || T_mid_ptr == nullptr || qv_ptr   == nullptr ||
-      qc_ptr             == nullptr || qr_ptr    == nullptr || qi_ptr   == nullptr) {
-    return;
-  }
-
-  // Get fields needed to compute mass and energy boundary fluxes.
-  const auto vapor_flux_ptr = phys_field_mgr->get_field_ptr("vapor_flux");
-  const auto water_flux_ptr = phys_field_mgr->get_field_ptr("water_flux");
-  const auto ice_flux_ptr   = phys_field_mgr->get_field_ptr("ice_flux");
-  const auto heat_flux_ptr  = phys_field_mgr->get_field_ptr("heat_flux");
+  const auto vapor_flux_ptr     = phys_field_mgr->get_field_ptr("vapor_flux");
+  const auto water_flux_ptr     = phys_field_mgr->get_field_ptr("water_flux");
+  const auto ice_flux_ptr       = phys_field_mgr->get_field_ptr("ice_flux");
+  const auto heat_flux_ptr      = phys_field_mgr->get_field_ptr("heat_flux");
+  EKAT_REQUIRE_MSG(pseudo_density_ptr != nullptr &&
+                   ps_ptr             != nullptr &&
+                   phis_ptr           != nullptr &&
+                   horiz_winds_ptr    != nullptr &&
+                   T_mid_ptr          != nullptr &&
+                   qv_ptr             != nullptr &&
+                   qc_ptr             != nullptr &&
+                   qr_ptr             != nullptr &&
+                   qi_ptr             != nullptr &&
+                   vapor_flux_ptr     != nullptr &&
+                   water_flux_ptr     != nullptr &&
+                   ice_flux_ptr       != nullptr &&
+                   heat_flux_ptr      != nullptr,
+                   "Error! enable_column_conservation_checks=true for some atm process, "
+                   "but not all fields needed for this check exist in the FieldManager.\n");
 
   // Create energy checker
   auto conservation_check =
@@ -368,7 +380,8 @@ void AtmosphereDriver::setup_conservation_checks ()
                                                      vapor_flux_ptr, water_flux_ptr,
                                                      ice_flux_ptr, heat_flux_ptr);
 
-  // Pass energy checker to the process group
+  // Pass energy checker to the process group to be added
+  // to postcondition checks of appropriate processes.
   m_atm_process_group->add_conservation_checks(conservation_check);
 }
 
@@ -1108,7 +1121,7 @@ void AtmosphereDriver::initialize_atm_procs ()
   m_atm_process_group->initialize(m_current_ts, restarted_run ? RunType::Restarted : RunType::Initial);
 
   // Create and add energy and mass conservation check to appropriate atm procs
-  setup_conservation_checks();
+  setup_column_conservation_checks();
 
   if (fvphyshack) {
     // [CGLL ICs in pg2] See related notes in atmosphere_dynamics.cpp.

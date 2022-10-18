@@ -155,7 +155,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("sfc_flux_lw_dn"  , scalar2d_layout, Wm2, grid_name);
 
   // Boundary flux fields for energy and mass conservation checks
-  if (m_params.get("enable_postcondition_checks", true)) {
+  if (m_params.get<bool>("enable_column_conservation_checks", false)) {
     add_field<Computed>("vapor_flux", scalar2d_layout, kg/m2/s, grid_name);
     add_field<Computed>("water_flux", scalar2d_layout, m/s,     grid_name);
     add_field<Computed>("ice_flux",   scalar2d_layout, m/s,     grid_name);
@@ -918,9 +918,9 @@ void RRTMGPRadiation::run_impl (const int dt) {
     }
   } // loop over chunk
 
-  // Set appropriate boundary fluxes for energy and mass conservation checks.
+  // If necessary, set appropriate boundary fluxes for energy and mass conservation checks.
   // Any boundary fluxes not included in radiation interface are set to 0.
-  if (m_params.get("enable_postcondition_checks", true)) {
+  if (m_params.get<bool>("enable_column_conservation_checks")) {
     auto vapor_flux = get_field_out("vapor_flux").get_view<Real*>();
     auto water_flux = get_field_out("water_flux").get_view<Real*>();
     auto ice_flux   = get_field_out("ice_flux").get_view<Real*>();

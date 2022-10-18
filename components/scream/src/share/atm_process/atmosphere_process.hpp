@@ -120,6 +120,9 @@ public:
   // Return the parameter list
   const ekat::ParameterList& get_params () const { return m_params; }
 
+  // Return non-const parameter list
+  ekat::ParameterList& get_params_non_const () { return m_params; }
+
   // Note: if we are being subcycled from the outside, the host will set
   //       do_update=false, and we will not update the timestamp of the AP
   //       or that of the output fields.

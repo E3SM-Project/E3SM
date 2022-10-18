@@ -112,7 +112,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Computed>("micro_vap_ice_exchange", scalar3d_layout_mid, Q, grid_name, ps);
 
   // Boundary flux fields for energy and mass conservation checks
-  if (m_params.get("enable_postcondition_checks", true)) {
+  if (m_params.get<bool>("enable_column_conservation_checks", false)) {
     add_field<Computed>("vapor_flux", scalar2d_layout, kg/m2/s, grid_name);
     add_field<Computed>("water_flux", scalar2d_layout, m/s,     grid_name);
     add_field<Computed>("ice_flux",   scalar2d_layout, m/s,     grid_name);
@@ -248,10 +248,6 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   auto qv_prev                = get_field_out("qv_prev_micro_step").get_view<Pack**>();
   const auto& precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real*>();
   const auto& precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real*>();
-  const auto& vapor_flux = get_field_out("vapor_flux").get_view<Real*>();
-  const auto& water_flux = get_field_out("water_flux").get_view<Real*>();
-  const auto& ice_flux   = get_field_out("ice_flux").get_view<Real*>();
-  const auto& heat_flux  = get_field_out("heat_flux").get_view<Real*>();
 
   // Alias local variables from temporary buffer
   auto inv_exner  = m_buffer.inv_exner;
@@ -318,8 +314,15 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
                             prog_state.qi, prog_state.qm, prog_state.ni,prog_state.bm,qv_prev,
                             diag_outputs.diag_eff_radius_qc,diag_outputs.diag_eff_radius_qi,
                             diag_outputs.precip_liq_surf,diag_outputs.precip_ice_surf,
-                            precip_liq_surf_mass,precip_ice_surf_mass,
-                            vapor_flux, water_flux, ice_flux, heat_flux);
+                            precip_liq_surf_mass,precip_ice_surf_mass);
+
+  if (m_params.get<bool>("enable_column_conservation_checks")) {
+    const auto& vapor_flux = get_field_out("vapor_flux").get_view<Real*>();
+    const auto& water_flux = get_field_out("water_flux").get_view<Real*>();
+    const auto& ice_flux   = get_field_out("ice_flux").get_view<Real*>();
+    const auto& heat_flux  = get_field_out("heat_flux").get_view<Real*>();
+    p3_postproc.set_mass_and_energy_fluxes(vapor_flux, water_flux, ice_flux, heat_flux);
+  }
 
   // Load tables
   P3F::init_kokkos_ice_lookup_tables(lookup_tables.ice_table_vals, lookup_tables.collect_table_vals);

@@ -77,9 +77,13 @@ public:
   //       of internal fields of the group.
   void gather_internal_fields ();
 
-  // Adds the mass and energy conservation postcondition
+  // Returns true if any internal processes enables
+  // the mass and energy conservation checks.
+  bool are_column_conservation_checks_enabled ();
+
+  // Adds the mass and energy conservation
   // checks to appropriate physics processes.
-  void add_conservation_checks (const std::shared_ptr<MassAndEnergyConservationCheck>& conservation_check) const;
+  void add_conservation_checks (const std::shared_ptr<MassAndEnergyConservationCheck>& conservation_check);
 
 protected:
 

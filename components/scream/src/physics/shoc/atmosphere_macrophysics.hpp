@@ -359,12 +359,14 @@ public:
           qv(i,k) = PF::calculate_wetmmr_from_drymmr(qv(i,k), qv(i,k));
       });
 
-      // Set appropriate boundary fluxes for energy and mass conservation checks.
+      // If necessary, set appropriate boundary fluxes for energy and mass conservation checks.
       // Any boundary fluxes not included in SHOC interface are set to 0.
-      flx_vap(i) = surf_evap(i);
-      flx_cnd(i) = 0.0;
-      flx_ice(i) = 0.0;
-      flx_sen(i) = surf_sens_flux(i);
+      if (compute_mass_and_energy_fluxes) {
+        vapor_flux(i) = surf_evap(i);
+        water_flux(i) = 0.0;
+        ice_flux(i)   = 0.0;
+        heat_flux(i)  = surf_sens_flux(i);
+      }
     } // operator
 
     // Local variables
@@ -380,12 +382,13 @@ public:
     view_2d T_mid;
     view_2d_const dse,z_mid;
     view_1d_const phis;
+    bool compute_mass_and_energy_fluxes = false;
     view_1d_const surf_evap;
     view_1d_const surf_sens_flux;
-    view_1d flx_vap;
-    view_1d flx_cnd;
-    view_1d flx_ice;
-    view_1d flx_sen;
+    view_1d vapor_flux;
+    view_1d water_flux;
+    view_1d ice_flux;
+    view_1d heat_flux;
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
@@ -394,9 +397,7 @@ public:
                        const view_2d& qv_, const view_2d_const& qw_, const view_2d& qc_, const view_2d_const& qc_copy_,
                        const view_2d& tke_, const view_2d_const& tke_copy_, const view_3d& qtracers_, const view_2d_const& qc2_,
                        const view_2d& cldfrac_liq_, const view_2d& inv_qc_relvar_,
-                       const view_2d& T_mid_, const view_2d_const& dse_, const view_2d_const& z_mid_, const view_1d_const phis_,
-                       const view_1d_const& surf_evap_, const view_1d_const surf_sens_flux_,
-                       const view_1d& flx_vap_, const view_1d& flx_cnd_, const view_1d& flx_ice_, const view_1d& flx_sen_)
+                       const view_2d& T_mid_, const view_2d_const& dse_, const view_2d_const& z_mid_, const view_1d_const phis_)
     {
       ncol = ncol_;
       nlev = nlev_;
@@ -417,13 +418,20 @@ public:
       dse = dse_;
       z_mid = z_mid_;
       phis = phis_;
+    } // set_variables
+
+    void set_mass_and_energy_fluxes (const view_1d_const& surf_evap_, const view_1d_const surf_sens_flux_,
+				     const view_1d& vapor_flux_, const view_1d& water_flux_,
+                                     const view_1d& ice_flux_, const view_1d& heat_flux_)
+    {
+      compute_mass_and_energy_fluxes = true;
       surf_evap = surf_evap_;
       surf_sens_flux = surf_sens_flux_;
-      flx_vap = flx_vap_;
-      flx_cnd = flx_cnd_;
-      flx_ice = flx_ice_;
-      flx_sen = flx_sen_;
-    } // set_variables
+      vapor_flux = vapor_flux_;
+      water_flux = water_flux_;
+      ice_flux = ice_flux_;
+      heat_flux = heat_flux_;
+    }
   }; // SHOCPostprocess
   /* --------------------------------------------------------------------------------------------*/
 
