@@ -46,7 +46,7 @@ module cldera_passive_tracers
   integer, parameter :: ncnst=3  ! number of constituents implemented by this module
 
   ! constituent names
-  character(len=8), parameter :: c_names(ncnst) = (/'AOA', 'E90j', 'ST80_25j'/)
+  character(len=8), parameter :: c_names(ncnst) = (/'AOA     ', 'E90j    ', 'ST80_25j'/)
 
   integer :: ifirst ! global index of first constituent
   integer :: ixaoa  ! global index for AOA tracer
