@@ -68,7 +68,7 @@ void run(){
       auto mask_h = Kokkos::create_mirror_view(mask);
   
       //Set target levels    
-      for (int lev=0; lev<(n_layers_tgt[i]-1); lev++){
+      for (int lev=0; lev<(n_layers_tgt[i]); lev++){
         p_tgt_h_s(lev) = 2*lev+perturb;
       } 
       //Set source levels and source input (tmp_src)
