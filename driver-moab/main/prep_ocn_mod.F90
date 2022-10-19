@@ -40,6 +40,9 @@ module prep_ocn_mod
   use mct_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
+#ifdef MOABDEBUG
+  use component_type_mod, only:  compare_mct_av_moab_tag
+#endif
   use component_type_mod, only: ocn, atm, ice, rof, wav, glc
   use iso_c_binding
 
@@ -758,10 +761,11 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     logical, save :: first_time = .true.
 
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
-    character(CXX) ::tagname
+    character(CXX) ::tagname, mct_field
     integer :: ent_type, ierr
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
+    real(r8)                 :: difference
 #endif 
 
 ! for moab, local allocatable arrays for each field, size of local ocean mesh
@@ -1389,6 +1393,12 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
       call shr_sys_abort(subname//' error in setting x2o_om array ')
     endif
 #ifdef MOABDEBUG
+  !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
+    mct_field = 'Foxx_swnet'
+    tagname= 'Foxx_swnet'//C_NULL_CHAR
+    x2o_o => component_get_x2c_cx(ocn(1))
+    call compare_mct_av_moab_tag(ocn(1), x2o_o, mct_field,  mboxid, tagname, ent_type, difference)
+
     if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
      write(lnum,"(I0.2)")num_moab_exports
      outfile = 'OcnCplAftMm'//trim(lnum)//'.h5m'//C_NULL_CHAR

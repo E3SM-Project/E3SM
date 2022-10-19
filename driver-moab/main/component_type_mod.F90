@@ -51,7 +51,9 @@ module component_type_mod
 
 ! this is to replicate mct grid of a cx   
   public :: expose_mct_grid_moab
-
+#ifdef MOABDEBUG
+  public :: compare_mct_av_moab_tag
+#endif
 
   !--------------------------------------------------------------------------
   ! Public data
@@ -403,5 +405,92 @@ contains
 
   end subroutine expose_mct_grid_moab
 
+#ifdef MOABDEBUG
+  ! assumes everything is on coupler pes here, to make sense
+  subroutine compare_mct_av_moab_tag(comp, attrVect, mct_field, appId, tagname, ent_type, difference)
+    
+    use shr_kind_mod,     only:  CXX => shr_kind_CXX
+    use iMOAB, only : iMOAB_DefineTagStorage,  iMOAB_GetDoubleTagStorage, &
+       iMOAB_SetDoubleTagStorageWithGid, iMOAB_GetMeshInfo
+    use iso_c_binding 
+        
 
+    type(component_type), intent(in) :: comp
+    integer , intent(in) :: appId, ent_type
+    type(mct_aVect) , intent(in), pointer       :: attrVect
+    character(*) , intent(in)       :: mct_field
+    character(*) , intent(in)       :: tagname
+
+    real(r8)      , intent(out)     :: difference
+    type(mct_ggrid), pointer    :: dom
+    integer   :: kgg, mbSize, nloc, index_avfield
+
+     ! moab
+     integer                  :: tagtype, numco,  tagindex, ierr
+     character(CXX)           :: tagname_mct
+     integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
+     
+     real(r8) , allocatable :: values(:), mct_values(:)
+     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+
+     character(*),parameter :: subName = '(compare_mct_av_moab_tag) '
+
+     nloc = mct_avect_lsize(attrVect)
+     allocate(GlobalIds(nloc))
+     allocate(values(nloc))
+     dom => component_get_dom_cx(comp)
+     kgg = mct_aVect_indexIA(dom%data ,"GlobGridNum" ,perrWith=subName)
+     GlobalIds = dom%data%iAttr(kgg,:)
+
+     index_avfield     = mct_aVect_indexRA(attrVect,trim(mct_field))
+     values(:) = attrVect%rAttr(index_avfield,:) 
+
+     tagname_mct = 'mct_'//trim(tagname)//C_NULL_CHAR
+
+     
+     tagtype = 1 ! dense, double
+     numco = 1
+     ierr = iMOAB_DefineTagStorage(appId, tagname_mct, tagtype, numco,  tagindex )
+     if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to define new tag for mct')
+
+     ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname_mct, nloc , ent_type, values, GlobalIds )
+     if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to set new tags')
+
+     deallocate(values)
+     ! now start comparing tags after set
+     ierr  = iMOAB_GetMeshInfo ( appId, nvert, nvise, nbl, nsurf, nvisBC );
+     if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to get mesh info')
+     if (ent_type .eq. 0) then
+        mbSize = nvert(1)
+     else if (ent_type .eq. 1) then
+        mbSize = nvise(1)
+     endif
+     allocate(values(mbSize))
+     allocate(mct_values(mbSize))
+
+     ierr = iMOAB_GetDoubleTagStorage ( appId, tagname_mct, mbSize , ent_type, mct_values)
+     if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to get mct tag values')
+     ierr = iMOAB_GetDoubleTagStorage ( appId, tagname, mbSize , ent_type, values)
+     if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to get moab tag values')
+      
+     values  = mct_values - values
+
+     difference = dot_product(values, values)
+     if (difference.gt.1.e-10) then
+        print * , 'difference = ', difference
+        call shr_sys_abort(subname//'differences between mct and moab values')
+     endif
+     deallocate(GlobalIds)
+     deallocate(values)
+     deallocate(mct_values)
+
+
+  end subroutine compare_mct_av_moab_tag
+
+#endif
 end module component_type_mod
