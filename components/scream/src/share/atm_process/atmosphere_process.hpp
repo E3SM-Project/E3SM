@@ -27,7 +27,6 @@
 
 namespace scream
 {
-
 /*
  *  The abstract interface of a process of the atmosphere (AP)
  *
@@ -120,9 +119,6 @@ public:
   // Return the parameter list
   const ekat::ParameterList& get_params () const { return m_params; }
 
-  // Return non-const parameter list
-  ekat::ParameterList& get_params_non_const () { return m_params; }
-
   // Note: if we are being subcycled from the outside, the host will set
   //       do_update=false, and we will not update the timestamp of the AP
   //       or that of the output fields.
@@ -153,6 +149,7 @@ public:
   // by this atm process, an error will be thrown.
   void run_precondition_checks () const;
   void run_postcondition_checks () const;
+  void run_column_conservation_check () const;
 
   // These methods allow the AD to figure out what each process needs, with very fine
   // grain detail. See field_request.hpp for more info on what FieldRequest and GroupRequest
@@ -222,13 +219,16 @@ public:
   const Field& get_internal_field(const std::string& field_name) const;
         Field& get_internal_field(const std::string& field_name);
 
-  // Add a pre-built property check (PC) for precondition, postcondition, or invariant (i.e., pre+post) check.
-  void add_precondition_check  (const prop_check_ptr& prop_check,
-                                const CheckFailHandling cfh = CheckFailHandling::Fatal);
-  void add_postcondition_check (const prop_check_ptr& prop_check,
-                                const CheckFailHandling cfh = CheckFailHandling::Fatal);
-  void add_invariant_check     (const prop_check_ptr& prop_check,
-                                const CheckFailHandling cfh = CheckFailHandling::Fatal);
+  // Add a pre-built property check (PC) for precondition, postcondition,
+  // invariant (i.e., pre+post), or column conservation check.
+  void add_precondition_check        (const prop_check_ptr& prop_check,
+                                      const CheckFailHandling cfh = CheckFailHandling::Fatal);
+  void add_postcondition_check       (const prop_check_ptr& prop_check,
+                                      const CheckFailHandling cfh = CheckFailHandling::Fatal);
+  void add_invariant_check           (const prop_check_ptr& prop_check,
+                                      const CheckFailHandling cfh = CheckFailHandling::Fatal);
+  void add_column_conservation_check (const prop_check_ptr& prop_check,
+                                      const CheckFailHandling cfh = CheckFailHandling::Fatal);
 
   // Build a property check on the fly, then call the methods above
   template<typename FPC, typename... Args>
@@ -245,6 +245,9 @@ public:
   //  - the data_name is unique across the whole atm
   // The AD will take care of ensuring these are written/read to/from restart files.
   const strmap_t<str_any_pair_t>& get_restart_extra_data () const { return m_restart_extra_data; }
+
+  // Boolean that dictates whether or not the conservation checks are run for this process
+  bool has_column_conservation_check () { return m_column_conservation_check_data.has_check; }
 
 protected:
 
@@ -455,9 +458,14 @@ private:
   FieldGroup& get_group_out_impl(const std::string& group_name, const std::string& grid_name) const;
   FieldGroup& get_group_out_impl(const std::string& group_name) const;
 
-  // Setup mass and energy conservation postcondition check to store
-  // this processes dt and compute initial mass and energy.
-  void setup_conservation_checks_for_this_process (const int dt);
+  // Compute/store data needed for this processes mass and energy conservation
+  // check: dt, tolerance, current mass and energy value per column.
+  void compute_column_conservation_checks_data (const int dt);
+
+  // Run an individual property check. The input property_check_category_name
+  void run_property_check (const prop_check_ptr&       property_check,
+                           const CheckFailHandling     check_fail_handling,
+                           const PropertyCheckCategory property_check_category) const;
 
   // NOTE: all these members are private, so that derived classes cannot
   //       bypass checks from the base class by accessing the members directly.
@@ -489,6 +497,19 @@ private:
   // List of property checks for fields
   std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_precondition_checks;
   std::list<std::pair<CheckFailHandling,prop_check_ptr>> m_postcondition_checks;
+
+  // Column local mass and energy conservation check
+  std::pair<CheckFailHandling,prop_check_ptr> m_column_conservation_check;
+
+  // Store data related to this processes conservation check.
+  struct ColumnConservationCheckData {
+    // Boolean which dictates whether or not this process
+    // contains the mass and energy conservation checks.
+    bool has_check;
+    // Tolerance used for the conservation check
+    Real tolerance;
+  };
+  ColumnConservationCheckData m_column_conservation_check_data;
 
   // This process's copy of the timestamp, which is set on initialization and
   // updated during stepping.

@@ -9,7 +9,7 @@
 #include "share/util/scream_timing.hpp"
 #include "share/util/scream_utils.hpp"
 #include "share/io/scream_io_utils.hpp"
-#include "share/property_checks/mass_and_energy_conservation_check.hpp"
+#include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
 
 #include "ekat/ekat_assert.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
@@ -373,16 +373,16 @@ void AtmosphereDriver::setup_column_conservation_checks ()
 
   // Create energy checker
   auto conservation_check =
-    std::make_shared<MassAndEnergyConservationCheck>(phys_grid,
-                                                     pseudo_density_ptr, ps_ptr, phis_ptr,
-                                                     horiz_winds_ptr, T_mid_ptr, qv_ptr,
-                                                     qc_ptr, qr_ptr, qi_ptr,
-                                                     vapor_flux_ptr, water_flux_ptr,
-                                                     ice_flux_ptr, heat_flux_ptr);
+    std::make_shared<MassAndEnergyColumnConservationCheck>(phys_grid,
+                                                           pseudo_density_ptr, ps_ptr, phis_ptr,
+                                                           horiz_winds_ptr, T_mid_ptr, qv_ptr,
+                                                           qc_ptr, qr_ptr, qi_ptr,
+                                                           vapor_flux_ptr, water_flux_ptr,
+                                                           ice_flux_ptr, heat_flux_ptr);
 
   // Pass energy checker to the process group to be added
   // to postcondition checks of appropriate processes.
-  m_atm_process_group->add_conservation_checks(conservation_check);
+  m_atm_process_group->setup_column_conservation_checks(conservation_check);
 }
 
 void AtmosphereDriver::create_fields()

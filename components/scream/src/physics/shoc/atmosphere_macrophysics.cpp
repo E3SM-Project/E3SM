@@ -94,7 +94,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   add_group<Updated>("tracers",grid_name,ps,Bundling::Required);
 
   // Boundary flux fields for energy and mass conservation checks
-  if (m_params.get<bool>("enable_column_conservation_checks", false)) {
+  if (has_column_conservation_check()) {
     add_field<Computed>("vapor_flux", scalar2d_layout_col, kg/m2/s, grid_name);
     add_field<Computed>("water_flux", scalar2d_layout_col, m/s,     grid_name);
     add_field<Computed>("ice_flux",   scalar2d_layout_col, m/s,     grid_name);
@@ -387,7 +387,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
                                  cldfrac_liq,inv_qc_relvar,
                                  T_mid, dse, z_mid, phis);
 
-  if (m_params.get<bool>("enable_column_conservation_checks")) {
+  if (has_column_conservation_check()) {
     const auto& vapor_flux = get_field_out("vapor_flux").get_view<Real*>();
     const auto& water_flux = get_field_out("water_flux").get_view<Real*>();
     const auto& ice_flux   = get_field_out("ice_flux").get_view<Real*>();

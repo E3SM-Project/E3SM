@@ -191,7 +191,7 @@ gather_internal_fields  () {
 }
 
 bool AtmosphereProcessGroup::
-are_column_conservation_checks_enabled ()
+are_column_conservation_checks_enabled () const
 {
   // Loop through processes and return true if an instance is found.
   for (auto atm_proc : m_atm_processes) {
@@ -209,7 +209,7 @@ are_column_conservation_checks_enabled ()
 
     // If this process is not a group, query enable_column_conservation_checks
     // and return true if true.
-    if (atm_proc->get_params_non_const().get<bool>("enable_column_conservation_checks", false)) {
+    if (atm_proc->has_column_conservation_check()) {
       return true;
     }
   }
@@ -219,7 +219,7 @@ are_column_conservation_checks_enabled ()
 }
 
 void AtmosphereProcessGroup::
-add_conservation_checks (const std::shared_ptr<MassAndEnergyConservationCheck>& conservation_check)
+setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConservationCheck>& conservation_check) const
 {
   // Loop over atm processes and add mass and energy checker where relevant
   for (auto atm_proc : m_atm_processes) {
@@ -232,18 +232,18 @@ add_conservation_checks (const std::shared_ptr<MassAndEnergyConservationCheck>& 
       // Individual processes are the only ones that can define
       // this check as there is currenty no concept of boundary
       // fluxes over multiple processes implemented in the model.
-      EKAT_REQUIRE_MSG(not atm_proc_group->get_params_non_const().get<bool>("enable_column_conservation_checks", false),
-                       "Error! The ATM process group " + atm_proc_group->name() + " attempted to enable "
+      EKAT_REQUIRE_MSG(not atm_proc_group->has_column_conservation_check(),
+                       "Error! The ATM process group \"" + atm_proc_group->name() + "\" attempted to enable "
                        "conservation checks. Should have enable_column_conservation_checks=false for all "
                        "process groups.\n");
 
-      atm_proc_group->add_conservation_checks(conservation_check);
+      atm_proc_group->setup_column_conservation_checks(conservation_check);
       continue;
     }
 
     // For individual processes, first query if the checks are enabled.
     // If not, continue to the next process.
-    if (not atm_proc->get_params_non_const().get<bool>("enable_column_conservation_checks", false)) {
+    if (not atm_proc->has_column_conservation_check()) {
       continue;
     }
 
@@ -251,7 +251,7 @@ add_conservation_checks (const std::shared_ptr<MassAndEnergyConservationCheck>& 
     // process that enables the check is a Physics process.
     EKAT_REQUIRE_MSG(atm_proc->type() == AtmosphereProcessType::Physics,
                      "Error! enable_column_conservation_checks=true "
-                     "for non-physics process " + atm_proc->name() + ". "
+                     "for non-physics process \"" + atm_proc->name() + "\". "
                      "This check is column local and therefore can only be run "
                      "on physics processes.\n");
  
@@ -269,7 +269,7 @@ add_conservation_checks (const std::shared_ptr<MassAndEnergyConservationCheck>& 
                                            updates_water_vapor   || updates_water_liquid ||
                                            updates_water_ice;
     EKAT_REQUIRE_MSG(mass_or_energy_is_updated, "Error! enable_column_conservation_checks=true for "
-                                                "process " + atm_proc->name() + " but mass or energy is "
+                                                "process \"" + atm_proc->name() + "\" but mass or energy is "
                                                 "not updated by the process. Set to false to avoid "
                                                 "unnecessary computation.\n");
 
@@ -280,13 +280,13 @@ add_conservation_checks (const std::shared_ptr<MassAndEnergyConservationCheck>& 
                                          atm_proc->has_computed_field("ice_flux",   phys_grid_name) &&
                                          atm_proc->has_computed_field("heat_flux",  phys_grid_name);
     EKAT_REQUIRE_MSG(has_all_boundary_fluxes,
-                     "Error! Process " + atm_proc->name() + " enables the mass "
+                     "Error! Process \"" + atm_proc->name() + "\" enables the mass "
                      "and energy conservation check, but does not define all "
                      "the boundary fluxes required: vapor_flux, water_flux "
                      "ice_flux, heat_flux.\n");
 
     // If all conditions are satisfied, add as postcondition_check
-    atm_proc->add_postcondition_check(conservation_check);
+    atm_proc->add_column_conservation_check(conservation_check, CheckFailHandling::Warning);
   }
 }
 

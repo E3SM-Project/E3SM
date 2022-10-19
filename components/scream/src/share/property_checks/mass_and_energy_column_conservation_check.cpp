@@ -1,24 +1,25 @@
-#include "share/property_checks/mass_and_energy_conservation_check.hpp"
+#include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
 #include "physics/share/physics_constants.hpp"
 #include <iomanip>
 
 namespace scream
 {
 
-MassAndEnergyConservationCheck::MassAndEnergyConservationCheck (const std::shared_ptr<const AbstractGrid>& grid,
-                                                                const std::shared_ptr<const Field>&        pseudo_density_ptr,
-                                                                const std::shared_ptr<const Field>&        ps_ptr,
-                                                                const std::shared_ptr<const Field>&        phis_ptr,
-                                                                const std::shared_ptr<const Field>&        horiz_winds_ptr,
-                                                                const std::shared_ptr<const Field>&        T_mid_ptr,
-                                                                const std::shared_ptr<const Field>&        qv_ptr,
-                                                                const std::shared_ptr<const Field>&        qc_ptr,
-                                                                const std::shared_ptr<const Field>&        qr_ptr,
-                                                                const std::shared_ptr<const Field>&        qi_ptr,
-                                                                const std::shared_ptr<const Field>&        vapor_flux_ptr,
-                                                                const std::shared_ptr<const Field>&        water_flux_ptr,
-                                                                const std::shared_ptr<const Field>&        ice_flux_ptr,
-                                                                const std::shared_ptr<const Field>&        heat_flux_ptr)
+MassAndEnergyColumnConservationCheck::
+MassAndEnergyColumnConservationCheck (const std::shared_ptr<const AbstractGrid>& grid,
+                                        const std::shared_ptr<const Field>&        pseudo_density_ptr,
+                                        const std::shared_ptr<const Field>&        ps_ptr,
+                                        const std::shared_ptr<const Field>&        phis_ptr,
+                                        const std::shared_ptr<const Field>&        horiz_winds_ptr,
+                                        const std::shared_ptr<const Field>&        T_mid_ptr,
+                                        const std::shared_ptr<const Field>&        qv_ptr,
+                                        const std::shared_ptr<const Field>&        qc_ptr,
+                                        const std::shared_ptr<const Field>&        qr_ptr,
+                                        const std::shared_ptr<const Field>&        qi_ptr,
+                                        const std::shared_ptr<const Field>&        vapor_flux_ptr,
+                                        const std::shared_ptr<const Field>&        water_flux_ptr,
+                                        const std::shared_ptr<const Field>&        ice_flux_ptr,
+                                        const std::shared_ptr<const Field>&        heat_flux_ptr)
   : m_grid (grid)
   , m_dt (std::nan(""))
   , m_tol (std::numeric_limits<Real>::max())
@@ -64,7 +65,7 @@ MassAndEnergyConservationCheck::MassAndEnergyConservationCheck (const std::share
                    "certain process should be set to 0.\n");
 }
 
-void MassAndEnergyConservationCheck::compute_current_mass ()
+void MassAndEnergyColumnConservationCheck::compute_current_mass ()
 {
   auto mass = m_current_mass;
 
@@ -88,7 +89,7 @@ void MassAndEnergyConservationCheck::compute_current_mass ()
   });
 }
 
-void MassAndEnergyConservationCheck::compute_current_energy ()
+void MassAndEnergyColumnConservationCheck::compute_current_energy ()
 {
   auto energy = m_current_energy;
 
@@ -117,7 +118,7 @@ void MassAndEnergyConservationCheck::compute_current_energy ()
   });
 }
 
-PropertyCheck::ResultAndMsg MassAndEnergyConservationCheck::check() const
+PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
 {
   auto mass   = m_current_mass;
   auto energy = m_current_energy;
@@ -162,7 +163,7 @@ PropertyCheck::ResultAndMsg MassAndEnergyConservationCheck::check() const
     const Real previous_tm = mass(i);
 
     // Calculate expected total mass. Here, dt should be set to the timestep of the 
-    // subcycle for the process call this check. This effectively scales the boundary
+    // subcycle for the process that called this check. This effectively scales the boundary
     // fluxes by 1/num_subcycles (dt = model_dt/num_subcycles) so that we only include
     // the expected change after one substep (not a full timestep).
     const Real tm_exp = previous_tm +
@@ -248,12 +249,12 @@ PropertyCheck::ResultAndMsg MassAndEnergyConservationCheck::check() const
 
 
 KOKKOS_INLINE_FUNCTION
-Real MassAndEnergyConservationCheck::compute_total_mass_on_column (const KT::MemberType&       team,
-                                                                   const uview_1d<const Real>& pseudo_density,
-                                                                   const uview_1d<const Real>& qv,
-                                                                   const uview_1d<const Real>& qc,
-                                                                   const uview_1d<const Real>& qi,
-                                                                   const uview_1d<const Real>& qr) const
+Real MassAndEnergyColumnConservationCheck::compute_total_mass_on_column (const KT::MemberType&       team,
+                                                                         const uview_1d<const Real>& pseudo_density,
+                                                                         const uview_1d<const Real>& qv,
+                                                                         const uview_1d<const Real>& qc,
+                                                                         const uview_1d<const Real>& qi,
+                                                                         const uview_1d<const Real>& qr) const
 {
   using PC = scream::physics::Constants<Real>;
   const Real gravit = PC::gravit;
@@ -271,8 +272,8 @@ Real MassAndEnergyConservationCheck::compute_total_mass_on_column (const KT::Mem
 }
 
 KOKKOS_INLINE_FUNCTION
-Real MassAndEnergyConservationCheck::compute_mass_boundary_flux_on_column (const Real vapor_flux,
-                                                                           const Real water_flux) const
+Real MassAndEnergyColumnConservationCheck::compute_mass_boundary_flux_on_column (const Real vapor_flux,
+                                                                                 const Real water_flux) const
 {
   using PC = scream::physics::Constants<Real>;
   const Real RHO_H2O  = PC::RHO_H2O;
@@ -281,15 +282,15 @@ Real MassAndEnergyConservationCheck::compute_mass_boundary_flux_on_column (const
 }
 
 KOKKOS_INLINE_FUNCTION
-Real MassAndEnergyConservationCheck::compute_total_energy_on_column (const KT::MemberType&       team,
-                                                                     const uview_1d<const Real>& pseudo_density,
-                                                                     const uview_1d<const Real>& T_mid,
-                                                                     const uview_2d<const Real>& horiz_winds,
-                                                                     const uview_1d<const Real>& qv,
-                                                                     const uview_1d<const Real>& qc,
-                                                                     const uview_1d<const Real>& qr,
-                                                                     const Real                  ps,
-                                                                     const Real                  phis) const
+Real MassAndEnergyColumnConservationCheck::compute_total_energy_on_column (const KT::MemberType&       team,
+                                                                           const uview_1d<const Real>& pseudo_density,
+                                                                           const uview_1d<const Real>& T_mid,
+                                                                           const uview_2d<const Real>& horiz_winds,
+                                                                           const uview_1d<const Real>& qv,
+                                                                           const uview_1d<const Real>& qc,
+                                                                           const uview_1d<const Real>& qr,
+                                                                           const Real                  ps,
+                                                                           const Real                  phis) const
 {
   using PC = scream::physics::Constants<Real>;
   const Real LatVap = PC::LatVap;
@@ -314,10 +315,10 @@ Real MassAndEnergyConservationCheck::compute_total_energy_on_column (const KT::M
 }
 
 KOKKOS_INLINE_FUNCTION
-Real MassAndEnergyConservationCheck::compute_energy_boundary_flux_on_column (const Real vapor_flux,
-                                                                             const Real water_flux,
-                                                                             const Real ice_flux,
-                                                                             const Real heat_flux) const
+Real MassAndEnergyColumnConservationCheck::compute_energy_boundary_flux_on_column (const Real vapor_flux,
+                                                                                   const Real water_flux,
+                                                                                   const Real ice_flux,
+                                                                                   const Real heat_flux) const
 {
   using PC = scream::physics::Constants<Real>;
   const Real LatVap = PC::LatVap;

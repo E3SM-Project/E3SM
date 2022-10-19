@@ -112,7 +112,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Computed>("micro_vap_ice_exchange", scalar3d_layout_mid, Q, grid_name, ps);
 
   // Boundary flux fields for energy and mass conservation checks
-  if (m_params.get<bool>("enable_column_conservation_checks", false)) {
+  if (has_column_conservation_check()) {
     add_field<Computed>("vapor_flux", scalar2d_layout, kg/m2/s, grid_name);
     add_field<Computed>("water_flux", scalar2d_layout, m/s,     grid_name);
     add_field<Computed>("ice_flux",   scalar2d_layout, m/s,     grid_name);
@@ -316,7 +316,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
                             diag_outputs.precip_liq_surf,diag_outputs.precip_ice_surf,
                             precip_liq_surf_mass,precip_ice_surf_mass);
 
-  if (m_params.get<bool>("enable_column_conservation_checks")) {
+  if (has_column_conservation_check()) {
     const auto& vapor_flux = get_field_out("vapor_flux").get_view<Real*>();
     const auto& water_flux = get_field_out("water_flux").get_view<Real*>();
     const auto& ice_flux   = get_field_out("ice_flux").get_view<Real*>();

@@ -1,5 +1,5 @@
-#ifndef SCREAM_ENERGY_CONSERVATION_CHECK_HPP
-#define SCREAM_ENERGY_CONSERVATION_CHECK_HPP
+#ifndef SCREAM_MASS_ENERGY_COLUMN_CONSERVATION_CHECK_HPP
+#define SCREAM_MASS_ENERGY_COLUMN_CONSERVATION_CHECK_HPP
 
 #include "share/property_checks/property_check.hpp"
 #include "share/grid/abstract_grid.hpp"
@@ -7,8 +7,9 @@
 
 namespace scream {
 
-// This property check ensures that energy has been conserved
-class MassAndEnergyConservationCheck: public PropertyCheck {
+// This property check ensures that energy has been conserved.
+// It is a column-local check meant only for column independant processes.
+class MassAndEnergyColumnConservationCheck: public PropertyCheck {
 
   using KT = KokkosTypes<DefaultDevice>;
 
@@ -25,24 +26,25 @@ class MassAndEnergyConservationCheck: public PropertyCheck {
 public:
 
   // Constructor
-  MassAndEnergyConservationCheck (const std::shared_ptr<const AbstractGrid>& grid,
-                                  const std::shared_ptr<const Field>&        pseudo_density_ptr,
-                                  const std::shared_ptr<const Field>&        ps_ptr,
-                                  const std::shared_ptr<const Field>&        phis_ptr,
-                                  const std::shared_ptr<const Field>&        horiz_winds_ptr,
-                                  const std::shared_ptr<const Field>&        T_mid_ptr,
-                                  const std::shared_ptr<const Field>&        qv_ptr,
-                                  const std::shared_ptr<const Field>&        qc_ptr,
-                                  const std::shared_ptr<const Field>&        qr_ptr,
-                                  const std::shared_ptr<const Field>&        qi_ptr,
-                                  const std::shared_ptr<const Field>&        vapor_flux_ptr,
-                                  const std::shared_ptr<const Field>&        water_flux_ptr,
-                                  const std::shared_ptr<const Field>&        ice_flux_ptr,
-                                  const std::shared_ptr<const Field>&        heat_flux_ptr);
+  MassAndEnergyColumnConservationCheck (const std::shared_ptr<const AbstractGrid>& grid,
+                                        const std::shared_ptr<const Field>&        pseudo_density_ptr,
+                                        const std::shared_ptr<const Field>&        ps_ptr,
+                                        const std::shared_ptr<const Field>&        phis_ptr,
+                                        const std::shared_ptr<const Field>&        horiz_winds_ptr,
+                                        const std::shared_ptr<const Field>&        T_mid_ptr,
+                                        const std::shared_ptr<const Field>&        qv_ptr,
+                                        const std::shared_ptr<const Field>&        qc_ptr,
+                                        const std::shared_ptr<const Field>&        qr_ptr,
+                                        const std::shared_ptr<const Field>&        qi_ptr,
+                                        const std::shared_ptr<const Field>&        vapor_flux_ptr,
+                                        const std::shared_ptr<const Field>&        water_flux_ptr,
+                                        const std::shared_ptr<const Field>&        ice_flux_ptr,
+                                        const std::shared_ptr<const Field>&        heat_flux_ptr);
 
   // The name of the property check
   std::string name () const override { return "Energy conservation check"; }
 
+  // Computes mass and energy and tests against a tolerance.
   ResultAndMsg check () const override;
 
   std::shared_ptr<const AbstractGrid> get_grid () const { return m_grid; }
@@ -52,7 +54,7 @@ public:
   // dt = model_dt/num_subcycles. 
   void set_dt (const int dt) { m_dt = dt; }
 
-  // Set the tolerance for the check
+  // Set the tolerance for the check.
   void set_tolerance (const Real tol) { m_tol = tol; }
 
   // Compute total mass and store into m_current_mass.
@@ -119,4 +121,4 @@ protected:
 
 } // namespace scream
 
-#endif //SCREAM_ENERGY_CONSERVATION_CHECK_HPP
+#endif //SCREAM_MASS_ENERGY_COLUMN_CONSERVATION_CHECK_HPP
