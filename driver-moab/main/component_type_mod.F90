@@ -482,8 +482,8 @@ contains
 
      difference = dot_product(values, values)
      if (difference.gt.1.e-10) then
-        print * , 'difference = ', difference
-        call shr_sys_abort(subname//'differences between mct and moab values')
+        print * , 'difference on tag ', tagname, ' = ', difference
+        !call shr_sys_abort(subname//'differences between mct and moab values')
      endif
      deallocate(GlobalIds)
      deallocate(values)

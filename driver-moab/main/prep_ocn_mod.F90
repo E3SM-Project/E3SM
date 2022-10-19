@@ -1384,7 +1384,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        end do
 
     end do
-! after we aer done, set x2o_om to the mboxid
+! after we are done, set x2o_om to the mboxid
 
     tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
     arrsize = noflds * lsize
