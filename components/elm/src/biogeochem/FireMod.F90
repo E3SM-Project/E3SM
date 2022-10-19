@@ -124,7 +124,7 @@ contains
       !$acc routine seq
     ! !USES:
     use elm_varpar           , only: max_patch_per_col
-    use elm_varcon           , only: secspday
+    use elm_varcon           , only: secspday, spval
     use elm_varctl           , only: use_nofire, spinup_state, spinup_mortality_factor
     use dynSubgridControlMod , only: run_has_transient_landcover
     use pftvarcon            , only: nc4_grass, nc3crop, ndllf_evr_tmp_tree
@@ -370,7 +370,7 @@ contains
 
               ! For non-crop -- natural vegetation and bare-soil
               if( veg_pp%itype(p)  <  nc3crop .and. cropf_col(c)  <  1.0_r8 )then
-                 if( .not. (btran2(p) .ne. btran2(p)))then !?shr_infnan_isnan(btran2(p))) then
+                 if( btran2(p) .ne. spval )then !?shr_infnan_isnan(btran2(p))) then
                     if (btran2(p)  <=  1._r8 ) then
                        btran_col(c) = btran_col(c)+btran2(p)*veg_pp%wtcol(p)
                        wtlf(c)      = wtlf(c)+veg_pp%wtcol(p)
