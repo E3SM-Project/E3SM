@@ -1952,8 +1952,8 @@ contains
     allocate(this%totcolc              (begc:endc))     ; this%totcolc              (:)     = nan
     allocate(this%totblgc              (begc:endc))     ; this%totblgc              (:)     = nan
     allocate(this%totvegc_abg          (begc:endc))     ; this%totvegc_abg          (:)     = nan
-    allocate(this%begcb                (begc:endc))     ; this%begcb                (:)     = nan
-    allocate(this%endcb                (begc:endc))     ; this%endcb                (:)     = nan
+    allocate(this%begcb                (begc:endc))     ; this%begcb                (:)     = spval 
+    allocate(this%endcb                (begc:endc))     ; this%endcb                (:)     = spval 
     allocate(this%errcb                (begc:endc))     ; this%errcb                (:)     = nan
     allocate(this%totpftc_beg          (begc:endc))     ; this%totpftc_beg          (:)     = nan
     allocate(this%cwdc_beg             (begc:endc))     ; this%cwdc_beg             (:)     = nan
@@ -9833,6 +9833,7 @@ contains
            ptr_col=this%secondp_to_labilep)
 
     if ( nlevdecomp_full > 1 ) then
+       print *, ""
        this%secondp_to_labilep_vr(begc:endc,:) = spval
         call hist_addfld_decomp (fname='SECONDP_TO_LABILEP'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
              avgflag='A', long_name='SECONDARY MINERAL P TO LABILE P', &

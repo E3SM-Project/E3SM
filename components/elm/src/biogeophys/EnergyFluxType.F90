@@ -248,7 +248,7 @@ contains
 
     allocate(this%rresis_patch             (begp:endp,1:nlevgrnd))  ; this%rresis_patch            (:,:) = nan
     allocate(this%btran_patch              (begp:endp))             ; this%btran_patch             (:)   = nan
-    allocate(this%btran2_patch             (begp:endp))             ; this%btran2_patch            (:)   = nan
+    allocate(this%btran2_patch             (begp:endp))             ; this%btran2_patch            (:)   = spval
     allocate( this%bsun_patch              (begp:endp))             ; this%bsun_patch              (:)   = nan
     allocate( this%bsha_patch              (begp:endp))             ; this%bsha_patch              (:)   = nan
 

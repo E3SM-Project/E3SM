@@ -249,6 +249,47 @@ contains
        call shr_sys_flush(logunit)
 
     end if
+    
+    if (rof_present .and. ocn_present) then
+
+       call seq_comm_getData(CPLID, &
+            mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
+
+       lsize_r = mct_aVect_lsize(x2r_rx)
+
+       o2x_ox => component_get_c2x_cx(ocn(1))
+       lsize_o = mct_aVect_lsize(o2x_ox)
+
+       allocate(o2racc_ox(num_inst_ocn))
+       do eoi = 1,num_inst_ocn
+          call mct_aVect_initSharedFields(o2x_ox, x2r_rx, o2racc_ox(eoi), lsize=lsize_o)
+          call mct_aVect_zero(o2racc_ox(eoi))
+       end do
+       o2racc_ox_cnt = 0
+      
+       allocate(o2r_rx(num_inst_rof))
+       do eri = 1,num_inst_rof
+          call mct_avect_init(o2r_rx(eri), rList=seq_flds_o2x_fields_to_rof, lsize=lsize_r)
+          call mct_avect_zero(o2r_rx(eri))
+       end do
+
+       samegrid_ro = .true.
+       if (trim(ocn_gnam) /= trim(rof_gnam)) samegrid_ro = .false.
+
+       if (ocn_c2_rof) then
+          if (iamroot_CPLID) then
+             write(logunit,*) ' '
+             write(logunit,F00) 'Initializing mapper_So2r'
+          end if
+          call seq_map_init_rcfile(mapper_So2r, ocn(1), rof(1), &
+               'seq_maps.rc','ocn2rof_smapname:','ocn2rof_smaptype:',samegrid_ro, &
+               string='mapper_So2r initialization', esmf_map=esmf_map_flag)
+
+       endif
+
+       call shr_sys_flush(logunit)
+
+    end if
 
   end subroutine prep_rof_init
 
@@ -371,7 +412,6 @@ contains
     type(mct_aVect), pointer :: x2r_rx
     character(*), parameter  :: subname = '(prep_rof_mrg)'
     !---------------------------------------------------------------
-
     call t_drvstartf (trim(timer_mrg), barrier=mpicom_CPLID)
     do eri = 1,num_inst_rof
        efi = mod((eri-1),num_inst_frc) + 1
@@ -467,7 +507,7 @@ contains
     character(*), parameter   :: subname = '(prep_rof_merge) '
 
     !-----------------------------------------------------------------------
-
+    
     call seq_comm_getdata(CPLID, iamroot=iamroot)
     lsize = mct_aVect_lsize(x2r_r)
 
