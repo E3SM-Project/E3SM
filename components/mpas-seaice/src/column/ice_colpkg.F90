@@ -2284,16 +2284,15 @@
          endif   ! aicen_init
 
       !-----------------------------------------------------------------
-      ! Transport liquid water in snow between layers and 
+      ! Transport liquid water in snow between layers and
       ! compute the meltpond contribution
       !-----------------------------------------------------------------
 
-       if (use_smliq_pnd) then
-         call drain_snow (dt,            nslyr,        &
-                          vsnon   (n) ,  aicen    (n), &
-                          smice  (:,n),  smliq  (:,n), &
-                          meltsliqn(n))
-       endif
+      call drain_snow (dt,            nslyr,        &
+                       vsnon   (n) ,  aicen    (n), &
+                       smice  (:,n),  smliq  (:,n), &
+                       meltsliqn(n),  use_smliq_pnd)
+
 
       !-----------------------------------------------------------------
       ! Melt ponds
