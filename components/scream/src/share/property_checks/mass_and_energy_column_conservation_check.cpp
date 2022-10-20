@@ -75,7 +75,7 @@ void MassAndEnergyColumnConservationCheck::compute_current_mass ()
   const auto qi = m_fields.at("qi")->get_view<const Real**>();
   const auto qr = m_fields.at("qr")->get_view<const Real**>();
 
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, m_num_levs);
+  const auto policy = ExeSpaceUtils::get_default_team_policy(m_num_cols, m_num_levs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
 
@@ -102,7 +102,7 @@ void MassAndEnergyColumnConservationCheck::compute_current_energy ()
   const auto ps = m_fields.at("ps")->get_view<const Real*>();
   const auto phis = m_fields.at("phis")->get_view<const Real*>();
 
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, m_num_levs);
+  const auto policy = ExeSpaceUtils::get_default_team_policy(m_num_cols, m_num_levs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
 
@@ -145,7 +145,7 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
   const auto ice_flux   = m_fields.at("ice_flux"  )->get_view<const Real*>();
   const auto heat_flux  = m_fields.at("heat_flux" )->get_view<const Real*>();
 
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, m_num_levs);
+  const auto policy = ExeSpaceUtils::get_default_team_policy(m_num_cols, m_num_levs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
 
     const int i = team.league_rank();
@@ -260,8 +260,8 @@ Real MassAndEnergyColumnConservationCheck::compute_total_mass_on_column (const K
   const Real gravit = PC::gravit;
 
   Real total_mass(0);
-  ekat::ExeSpaceUtils<typename KT::ExeSpace>::parallel_reduce(team, 0, m_num_levs,
-                                                              [&] (const int lev, Real& local_mass) {
+  ExeSpaceUtils::parallel_reduce(team, 0, m_num_levs,
+                                 [&] (const int lev, Real& local_mass) {
     local_mass += (qv(lev)+
                    qc(lev)+
                    qi(lev)+
@@ -299,8 +299,8 @@ Real MassAndEnergyColumnConservationCheck::compute_total_energy_on_column (const
   const Real Cpair  = PC::Cpair;
 
   Real total_energy(0);
-  ekat::ExeSpaceUtils<typename KT::ExeSpace>::parallel_reduce(team, 0, m_num_levs,
-                                                              [&] (const int lev, Real& local_energy) {
+  ExeSpaceUtils::parallel_reduce(team, 0, m_num_levs,
+                                 [&] (const int lev, Real& local_energy) {
     const auto u2 = horiz_winds(0,lev)*horiz_winds(0,lev);
     const auto v2 = horiz_winds(1,lev)*horiz_winds(1,lev);
 

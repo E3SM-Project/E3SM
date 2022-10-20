@@ -12,6 +12,7 @@ namespace scream {
 class MassAndEnergyColumnConservationCheck: public PropertyCheck {
 
   using KT = KokkosTypes<DefaultDevice>;
+  using ExeSpaceUtils = ekat::ExeSpaceUtils<KT::ExeSpace>;
 
   template<typename ScalarT>
   using view_1d = typename KT::template view_1d<ScalarT>;
