@@ -388,7 +388,7 @@ void AtmosphereDriver::setup_column_conservation_checks ()
 
   //Get fail handling type from driver_option parameters.
   const std::string fail_handling_type_str =
-      driver_option_pl.get<std::string>("column_conservation_checks_fail_handling_type", "Warning");
+      driver_options_pl.get<std::string>("column_conservation_checks_fail_handling_type", "Warning");
 
   CheckFailHandling fail_handling_type;
   if (fail_handling_type_str == "Warning") {
