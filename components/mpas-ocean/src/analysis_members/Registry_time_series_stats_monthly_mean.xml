@@ -8,7 +8,7 @@
 		<nml_option name="config_AM_timeSeriesStatsMonthly_compute_on_startup"
 			type="logical"
 			default_value=".false."
-			description="Logical flag determining if an analysis member computation occurs on start-up. You likely want this off for this (time series) analysis member because it will accumulate any state prior to time stepping (double counting the last time step)."
+			description="Logical flag determining if an analysis member computation occurs on start-up. This should be set to .false. for better efficiency in most cases because the results of this first call will simply be thrown away.  The exception is at the beginning of new E3SM simulations (CONTINUE_RUN = FALSE), where the first time step will be missing if this is not set to .true."
 			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_AM_timeSeriesStatsMonthly_write_on_startup"
