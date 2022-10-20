@@ -241,11 +241,18 @@ public:
         diag_eff_radius_qc(icol,ipack) *= 1e6;
         diag_eff_radius_qi(icol,ipack) *= 1e6;
       } // for ipack
+
+      // Microphysics can be subcycled together during a single physics timestep,
+      // therefore we must accumulate these fluxes
       precip_liq_surf_mass(icol) += precip_liq_surf_flux(icol) * PC::RHO_H2O * m_dt;
       precip_ice_surf_mass(icol) += precip_ice_surf_flux(icol) * PC::RHO_H2O * m_dt;
 
-      // If necessary, set appropriate boundary fluxes for energy and mass conservation checks.
-      // Any boundary fluxes not included in P3 interface are set to 0.
+      // If necessary, set appropriate boundary fluxes for energy and mass
+      // conservation checks. Any boundary fluxes not included in SHOC
+      // interface are set to 0.
+      // Unlike above, these fluxes do not need to be accumulated
+      // since the conservation checks are run after each
+      // Microphysics step.
       if (compute_mass_and_energy_fluxes) {
         vapor_flux(icol) = 0.0;
         water_flux(icol) = precip_liq_surf_flux(icol)+precip_ice_surf_flux(icol);
