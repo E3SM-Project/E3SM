@@ -7,22 +7,25 @@ namespace scream
 
 MassAndEnergyColumnConservationCheck::
 MassAndEnergyColumnConservationCheck (const std::shared_ptr<const AbstractGrid>& grid,
-                                        const std::shared_ptr<const Field>&        pseudo_density_ptr,
-                                        const std::shared_ptr<const Field>&        ps_ptr,
-                                        const std::shared_ptr<const Field>&        phis_ptr,
-                                        const std::shared_ptr<const Field>&        horiz_winds_ptr,
-                                        const std::shared_ptr<const Field>&        T_mid_ptr,
-                                        const std::shared_ptr<const Field>&        qv_ptr,
-                                        const std::shared_ptr<const Field>&        qc_ptr,
-                                        const std::shared_ptr<const Field>&        qr_ptr,
-                                        const std::shared_ptr<const Field>&        qi_ptr,
-                                        const std::shared_ptr<const Field>&        vapor_flux_ptr,
-                                        const std::shared_ptr<const Field>&        water_flux_ptr,
-                                        const std::shared_ptr<const Field>&        ice_flux_ptr,
-                                        const std::shared_ptr<const Field>&        heat_flux_ptr)
+                                      const Real                                 mass_error_tolerance,
+                                      const Real                                 energy_error_tolerance,
+                                      const std::shared_ptr<const Field>&        pseudo_density_ptr,
+                                      const std::shared_ptr<const Field>&        ps_ptr,
+                                      const std::shared_ptr<const Field>&        phis_ptr,
+                                      const std::shared_ptr<const Field>&        horiz_winds_ptr,
+                                      const std::shared_ptr<const Field>&        T_mid_ptr,
+                                      const std::shared_ptr<const Field>&        qv_ptr,
+                                      const std::shared_ptr<const Field>&        qc_ptr,
+                                      const std::shared_ptr<const Field>&        qr_ptr,
+                                      const std::shared_ptr<const Field>&        qi_ptr,
+                                      const std::shared_ptr<const Field>&        vapor_flux_ptr,
+                                      const std::shared_ptr<const Field>&        water_flux_ptr,
+                                      const std::shared_ptr<const Field>&        ice_flux_ptr,
+                                      const std::shared_ptr<const Field>&        heat_flux_ptr)
   : m_grid (grid)
   , m_dt (std::nan(""))
-  , m_tol (std::numeric_limits<Real>::max())
+  , m_mass_tol (mass_error_tolerance)
+  , m_energy_tol (energy_error_tolerance)
 {  
   m_num_cols = m_grid->get_num_local_dofs();
   m_num_levs = m_grid->get_num_vertical_levels();
@@ -208,8 +211,12 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
     }
   }, maxloc_t(maxloc_energy));
 
+  // Check if mass and/or energy values were below tolerance.
+  const bool mass_below_tol   = (maxloc_mass.val   < m_mass_tol);
+  const bool energy_below_tol = (maxloc_energy.val < m_energy_tol);
+
   PropertyCheck::ResultAndMsg res_and_msg;
-  if (maxloc_mass.val < m_tol && maxloc_energy.val < m_tol) {
+  if (mass_below_tol && energy_below_tol) {
     // If both vals are below the tolerance, the check passes.
     res_and_msg.result = CheckResult::Pass;
     return res_and_msg;
@@ -218,12 +225,7 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
   // If one or more values is above the tolerance, the check fails.
   res_and_msg.result = CheckResult::Fail;
 
-  std::stringstream msg;
-  msg << "Check failed.\n"
-      << "  - check name: " << this->name() << "\n"
-      << "  - error tolerance: " << m_tol << "\n";
-
-  // Output relative errors with lat/lon information (if available)
+  // We output relative errors with lat/lon information (if available)
   AbstractGrid::dofs_list_h_type gids = m_grid->get_dofs_gids_host();
   AbstractGrid::geo_view_h_type lat, lon;
   const bool has_latlon = m_grid->has_geometry_data("lat") && m_grid->has_geometry_data("lon");
@@ -231,16 +233,27 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
     lat = m_grid->get_geometry_data_host("lat");
     lon = m_grid->get_geometry_data_host("lon");
   }
-  msg << "  - mass relative error: " << maxloc_mass.val << "\n"
-      << "    - global dof: " << gids(maxloc_mass.loc) << "\n";
-  if (has_latlon) {
-    msg << "    - (lat, lon): (" << lat(maxloc_mass.loc) << ", " << lon(maxloc_mass.loc) << ")\n";
+
+  std::stringstream msg;
+  msg << "Check failed.\n"
+      << "  - check name: " << this->name() << "\n";
+  if (not mass_below_tol) {
+    msg << "  - mass error tolerance: " << m_mass_tol << "\n";
+    msg << "  - mass relative error: " << maxloc_mass.val << "\n"
+        << "    - global dof: " << gids(maxloc_mass.loc) << "\n";
+    if (has_latlon) {
+      msg << "    - (lat, lon): (" << lat(maxloc_mass.loc) << ", " << lon(maxloc_mass.loc) << ")\n";
+    }
   }
-  msg << "  - energy relative error: " << maxloc_energy.val << "\n"
-      << "    - global dof: " << gids(maxloc_energy.loc) << "\n";
-  if (has_latlon) {
-    msg << "    - (lat, lon): (" << lat(maxloc_energy.loc) << ", " << lon(maxloc_energy.loc) << ")\n";
+  if (not energy_below_tol) {
+    msg << "  - energy error tolerance: " << m_energy_tol << "\n";
+    msg << "  - energy relative error: " << maxloc_energy.val << "\n"
+        << "    - global dof: " << gids(maxloc_energy.loc) << "\n";
+    if (has_latlon) {
+      msg << "    - (lat, lon): (" << lat(maxloc_energy.loc) << ", " << lon(maxloc_energy.loc) << ")\n";
+    }
   }
+
   res_and_msg.msg = msg.str();
 
   return res_and_msg;

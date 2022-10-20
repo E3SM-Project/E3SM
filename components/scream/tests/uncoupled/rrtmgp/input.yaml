@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 # This input file is for a free-standing rrtmgp test that runs using initial conditions read from a SCREAMv0 run
-Debug:
+driver_options:
   atmosphere_dag_verbosity_level: 5
   atm_log_level: debug
 

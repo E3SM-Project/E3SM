@@ -60,8 +60,6 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
   // Info for mass and energy conservation checks
   m_column_conservation_check_data.has_check =
       m_params.get<bool>("enable_column_conservation_checks", false);
-  m_column_conservation_check_data.tolerance =
-      m_params.get<Real>("column_conservation_check_tolerance", 1e-10);
 }
 
 void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type) {
@@ -840,14 +838,10 @@ void AtmosphereProcess::compute_column_conservation_checks_data (const int dt)
                    "Error! User set enable_column_conservation_checks=true, "
                    "but no conservation check exists.\n");
 
-  // Tolerance for the relative error.
-  const Real tol = m_column_conservation_check_data.tolerance;
-
-  // Set dt and tolerance, and compute current mass and energy.
+  // Set dt and compute current mass and energy.
   const auto& conservation_check =
       std::dynamic_pointer_cast<MassAndEnergyColumnConservationCheck>(m_column_conservation_check.second);
   conservation_check->set_dt(dt);
-  conservation_check->set_tolerance(tol);
   conservation_check->compute_current_mass();
   conservation_check->compute_current_energy();
 }

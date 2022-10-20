@@ -371,18 +371,38 @@ void AtmosphereDriver::setup_column_conservation_checks ()
                    "Error! enable_column_conservation_checks=true for some atm process, "
                    "but not all fields needed for this check exist in the FieldManager.\n");
 
+  // Get tolerances for mass and energy checks from driver_option parameters.
+  auto& driver_options_pl = m_atm_params.sublist("driver_options");
+  const Real mass_error_tol   = driver_options_pl.get<Real>("mass_column_conservation_error_tolerance",   1e-10);
+  const Real energy_error_tol = driver_options_pl.get<Real>("energy_column_conservation_error_tolerance", 1e-14);
+
   // Create energy checker
   auto conservation_check =
     std::make_shared<MassAndEnergyColumnConservationCheck>(phys_grid,
+                                                           mass_error_tol, energy_error_tol,
                                                            pseudo_density_ptr, ps_ptr, phis_ptr,
                                                            horiz_winds_ptr, T_mid_ptr, qv_ptr,
                                                            qc_ptr, qr_ptr, qi_ptr,
                                                            vapor_flux_ptr, water_flux_ptr,
                                                            ice_flux_ptr, heat_flux_ptr);
 
+  //Get fail handling type from driver_option parameters.
+  const std::string fail_handling_type_str =
+      driver_option_pl.get<std::string>("column_conservation_checks_fail_handling_type", "Warning");
+
+  CheckFailHandling fail_handling_type;
+  if (fail_handling_type_str == "Warning") {
+    fail_handling_type = CheckFailHandling::Warning;
+  } else if (fail_handling_type_str == "Fatal") {
+    fail_handling_type = CheckFailHandling::Fatal;
+  } else {
+    EKAT_ERROR_MSG("Error! Unknown column_conservation_checks_fail_handling_type parameter. "
+                   "Acceptable types are \"Warning\" and \"Fatal\".\n");
+  }
+
   // Pass energy checker to the process group to be added
   // to postcondition checks of appropriate processes.
-  m_atm_process_group->setup_column_conservation_checks(conservation_check);
+  m_atm_process_group->setup_column_conservation_checks(conservation_check, fail_handling_type);
 }
 
 void AtmosphereDriver::create_fields()
@@ -642,8 +662,8 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
   //       mechanism set for them. That is, allow field XYZ to not be found in
   //       the IC file, and throw an error when the dag is created.
 
-  auto& deb_pl = m_atm_params.sublist("Debug");
-  const int verb_lvl = deb_pl.get<int>("atmosphere_dag_verbosity_level",-1);
+  auto& driver_options_pl = m_atm_params.sublist("driver_options");
+  const int verb_lvl = driver_options_pl.get<int>("atmosphere_dag_verbosity_level",-1);
   if (verb_lvl>0) {
     // Check the atm DAG for missing stuff
     AtmProcDAG dag;
@@ -783,10 +803,10 @@ void AtmosphereDriver::create_logger () {
   using namespace ekat::logger;
   using ci_string = ekat::CaseInsensitiveString;
 
-  auto& deb_pl = m_atm_params.sublist("Debug");
+  auto& driver_options_pl = m_atm_params.sublist("driver_options");
 
-  ci_string log_fname = deb_pl.get<std::string>("Atm Log File","atm.log");
-  ci_string log_level_str = deb_pl.get<std::string>("atm_log_level","info");
+  ci_string log_fname = driver_options_pl.get<std::string>("Atm Log File","atm.log");
+  ci_string log_level_str = driver_options_pl.get<std::string>("atm_log_level","info");
   EKAT_REQUIRE_MSG (log_fname!="",
       "Invalid string for 'Atm Log File': '" + log_fname + "'.\n");
 
@@ -813,7 +833,7 @@ void AtmosphereDriver::create_logger () {
 
   // In CIME runs, this is already set to false, so atm log does not pollute e3sm.loc.
   // In standalone, we default to true, so we see output to screen.
-  if (not deb_pl.get<bool>("output_to_screen",true)) {
+  if (not driver_options_pl.get<bool>("output_to_screen",true)) {
      m_atm_logger->set_console_level(LogLevel::off);
   }
 

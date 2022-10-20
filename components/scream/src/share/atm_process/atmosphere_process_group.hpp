@@ -83,7 +83,9 @@ public:
 
   // Adds the mass and energy conservation
   // checks to appropriate physics processes.
-  void setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConservationCheck>& conservation_check) const;
+  void setup_column_conservation_checks (
+      const std::shared_ptr<MassAndEnergyColumnConservationCheck>& conservation_check,
+      const CheckFailHandling                                      fail_handling_type) const;
 
 protected:
 

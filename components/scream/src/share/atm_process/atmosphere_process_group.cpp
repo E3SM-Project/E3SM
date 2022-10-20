@@ -219,7 +219,8 @@ are_column_conservation_checks_enabled () const
 }
 
 void AtmosphereProcessGroup::
-setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConservationCheck>& conservation_check) const
+setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConservationCheck>& conservation_check,
+                                  const CheckFailHandling                                      fail_handling_type) const
 {
   // Loop over atm processes and add mass and energy checker where relevant
   for (auto atm_proc : m_atm_processes) {
@@ -237,7 +238,7 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConse
                        "conservation checks. Should have enable_column_conservation_checks=false for all "
                        "process groups.\n");
 
-      atm_proc_group->setup_column_conservation_checks(conservation_check);
+      atm_proc_group->setup_column_conservation_checks(conservation_check, fail_handling_type);
       continue;
     }
 
@@ -287,7 +288,7 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConse
                      "within the process, set to 0.\n");
 
     // If all conditions are satisfied, add as postcondition_check
-    atm_proc->add_column_conservation_check(conservation_check, CheckFailHandling::Warning);
+    atm_proc->add_column_conservation_check(conservation_check, fail_handling_type);
   }
 }
 

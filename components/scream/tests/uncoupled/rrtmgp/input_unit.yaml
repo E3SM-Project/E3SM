@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-Debug:
+driver_options:
   atmosphere_dag_verbosity_level: 5
 
 atmosphere_processes:

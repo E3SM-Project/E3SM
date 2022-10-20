@@ -28,6 +28,8 @@ public:
 
   // Constructor
   MassAndEnergyColumnConservationCheck (const std::shared_ptr<const AbstractGrid>& grid,
+                                        const Real                                 mass_error_tolerance,
+                                        const Real                                 energy_error_tolerance,
                                         const std::shared_ptr<const Field>&        pseudo_density_ptr,
                                         const std::shared_ptr<const Field>&        ps_ptr,
                                         const std::shared_ptr<const Field>&        phis_ptr,
@@ -54,9 +56,6 @@ public:
   // should be the timestep of the current subcycle, equiv to
   // dt = model_dt/num_subcycles. 
   void set_dt (const int dt) { m_dt = dt; }
-
-  // Set the tolerance for the check.
-  void set_tolerance (const Real tol) { m_tol = tol; }
 
   // Compute total mass and store into m_current_mass.
   // Each process that calls this checker needs to
@@ -112,7 +111,8 @@ protected:
   int m_num_cols;
   int m_num_levs;
   Real m_dt;
-  Real m_tol;
+  Real m_mass_tol;
+  Real m_energy_tol;
 
   // Current value for total energy. These values
   // should be updated before a process is run.
