@@ -256,7 +256,7 @@ module li_iceshelf_melt
            nEdgesOnCell, &
            edgeMask
 
-      integer, dimension(:,:), pointer :: edgesOnCell
+      integer, dimension(:,:), pointer :: edgesOnCell, cellsOnCell
 
       type (field1dInteger), pointer :: thermalCellMaskField
 
@@ -275,7 +275,7 @@ module li_iceshelf_melt
 
       real(kind=RKIND), pointer :: daysSinceStart
 
-      integer :: iCell, iEdge, err_tmp
+      integer :: iCell, jCell, iEdge, iNeighbor, err_tmp
 
       ! Local variables for some melt methods
 
@@ -509,23 +509,27 @@ module li_iceshelf_melt
             call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
             call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
             call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+            call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
             call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
             call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
             call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
 
             ! If config_front_mass_bal_grounded is not none, only apply ice shelf melt to active cells
-            ! and stranded non-dynamic cells.
+            ! and stranded non-dynamic cells. i.e., if a floating non-dynamic
+            ! cell has a grounded neighbor, do not apply ice shelf melt to it.
             do iCell = 1, nCellsSolve
                if ( li_mask_is_floating_ice(cellMask(iCell)) .and. (.not. li_mask_is_dynamic_ice(cellMask(iCell))) ) then
-                  do iEdge = 1, nEdgesOnCell(iCell)
-                     if ( li_mask_is_grounding_line(edgeMask(edgesOnCell(iEdge,iCell))) ) then
+                  do iNeighbor = 1, nEdgesOnCell(iCell)
+                     jCell = cellsOnCell(iNeighbor, iCell)
+                     if ( li_mask_is_grounded_ice(cellMask(jCell)) ) then
 
                          floatingBasalMassBal(iCell) = 0.0_RKIND
-
+                         cycle ! No need to look over other neighbors
                       endif
                   enddo
                 endif
             enddo
+
             block => block % next
          enddo   ! associated(block)
       endif
