@@ -130,8 +130,7 @@ module zm_conv
    real(r8) :: accr_fac = unset_r8
    real(r8) :: micro_dcs= unset_r8
 
-!++ MCSP   
-   logical :: MCSP
+   logical  :: MCSP
    real(r8) :: MCSP_heat_coeff = unset_r8
    real(r8) :: MCSP_moisture_coeff = unset_r8
    real(r8) :: MCSP_uwind_coeff = unset_r8
@@ -178,32 +177,34 @@ subroutine zmconv_readnl(nlfile)
       call freeunit(unitn)
 
       ! set local variables
-      c0_lnd         = zmconv_c0_lnd
-      c0_ocn         = zmconv_c0_ocn
-      ke             = zmconv_ke
-      tau            = zmconv_tau
-      trigdcape_ull  = zmconv_trigdcape_ull
+      c0_lnd           = zmconv_c0_lnd
+      c0_ocn           = zmconv_c0_ocn
+      ke               = zmconv_ke
+      tau              = zmconv_tau
+      trigdcape_ull    = zmconv_trigdcape_ull
       trig_dcape_only  = zmconv_trig_dcape_only
-      trig_ull_only  = zmconv_trig_ull_only
-      zm_microp      = zmconv_microp
-      clos_dyn_adj   = zmconv_clos_dyn_adj
-      tpert_fix      = zmconv_tpert_fix
-      tiedke_add     = zmconv_tiedke_add
-      num_cin        = zmconv_cape_cin
-      mx_bot_lyr_adj = zmconv_mx_bot_lyr_adj
-      dmpdz          = zmconv_dmpdz
-      tp_fac         = zmconv_tp_fac
-      auto_fac       = zmconv_auto_fac
-      accr_fac       = zmconv_accr_fac
-      micro_dcs      = zmconv_micro_dcs
-!++ MCSP
-      MCSP_heat_coeff = zmconv_MCSP_heat_coeff
+      trig_ull_only    = zmconv_trig_ull_only
+      zm_microp        = zmconv_microp
+      clos_dyn_adj     = zmconv_clos_dyn_adj
+      tpert_fix        = zmconv_tpert_fix
+      tiedke_add       = zmconv_tiedke_add
+      num_cin          = zmconv_cape_cin
+      mx_bot_lyr_adj   = zmconv_mx_bot_lyr_adj
+      dmpdz            = zmconv_dmpdz
+      tp_fac           = zmconv_tp_fac
+      auto_fac         = zmconv_auto_fac
+      accr_fac         = zmconv_accr_fac
+      micro_dcs        = zmconv_micro_dcs
+      MCSP_heat_coeff  = zmconv_MCSP_heat_coeff
       MCSP_moisture_coeff = zmconv_MCSP_moisture_coeff
       MCSP_uwind_coeff = zmconv_MCSP_uwind_coeff
       MCSP_vwind_coeff = zmconv_MCSP_vwind_coeff     
  
-      if( abs(MCSP_heat_coeff)+abs(MCSP_moisture_coeff)+abs(MCSP_uwind_coeff)+abs(MCSP_vwind_coeff) > 0._r8 ) MCSP = .true.
-!-- MCSP
+      if( abs(MCSP_heat_coeff)+abs(MCSP_moisture_coeff)+abs(MCSP_uwind_coeff)+abs(MCSP_vwind_coeff) > 0._r8 ) then
+           MCSP = .true.
+      else
+           MCSP = .false.
+      end if 
 
       if ( zmconv_alfa /= unset_r8 ) then
            alfa_scalar = zmconv_alfa
