@@ -200,6 +200,13 @@ module cime_comp_mod
   use component_type_mod , only: expose_mct_grid_moab
 #endif
 
+#ifdef MOABDEBUG
+    use component_type_mod, only:  compare_mct_av_moab_tag
+    use seq_comm_mct , only : mboxid
+    use iso_c_binding
+#endif
+
+
   implicit none
 
   private
@@ -1388,6 +1395,13 @@ contains
 
   subroutine cime_init()
 
+#ifdef MOABDEBUG
+    real(r8) :: difference
+    character(20) :: mct_field, tagname
+    integer  :: ent_type
+#endif
+
+
 104 format( A, i10.8, i8)
 
   !-----------------------------------------------------------------------------
@@ -2151,7 +2165,17 @@ contains
                fractions_ax(efi), fractions_ix(efi), fractions_lx(efi), &
                fractions_ox(efi), fractions_gx(efi), fractions_rx(efi), &
                fractions_wx(efi), fractions_zx(efi))
-
+#ifdef MOABDEBUG
+               if (mboxid .ge. 0) then
+                  ent_type = 1 ! cells for ocean mesh
+                  mct_field = 'ifrad'
+                  tagname = 'ifrad'//C_NULL_CHAR
+                  call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
+                  mct_field = 'ofrad'
+                  tagname = 'ofrad'//C_NULL_CHAR
+                  call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
+               endif
+#endif
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              if (efi == 1) write(logunit,F00) 'Setting fractions'
@@ -2159,6 +2183,17 @@ contains
 
           call seq_frac_set(infodata, ice(eii), ocn(ens1), &
                fractions_ax(efi), fractions_ix(efi), fractions_ox(efi))
+#ifdef MOABDEBUG
+         if (mboxid .ge. 0) then
+            ent_type = 1 ! cells for ocean mesh
+            mct_field = 'ifrad'
+            tagname = 'ifrad'//C_NULL_CHAR
+            call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
+            mct_field = 'ofrad'
+            tagname = 'ofrad'//C_NULL_CHAR
+            call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
+         endif
+#endif
 
        enddo
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -2193,7 +2228,17 @@ contains
           if (trim(aoflux_grid) == 'ocn') then
 
              call seq_flux_init_mct(ocn(ens1), fractions_ox(ens1))
-
+#ifdef MOABDEBUG
+             if (mboxid .ge. 0) then
+                ent_type = 1 ! cells for ocean mesh
+                mct_field = 'ifrad'
+                tagname = 'ifrad'//C_NULL_CHAR
+                call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
+                mct_field = 'ofrad'
+                tagname = 'ofrad'//C_NULL_CHAR
+                call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
+             endif
+#endif
           elseif (trim(aoflux_grid) == 'atm') then
 
              call seq_flux_init_mct(atm(ens1), fractions_ax(ens1))
@@ -4272,11 +4317,6 @@ contains
   !----------------------------------------------------------------------------------
 
   subroutine cime_run_atmocn_setup(hashint)
-#ifdef MOABDEBUG
-    use component_type_mod, only:  compare_mct_av_moab_tag
-    use seq_comm_mct , only : mboxid
-    use iso_c_binding 
-#endif
     integer, intent(inout) :: hashint(:)
 #ifdef MOABDEBUG
     real(r8) :: difference

@@ -306,7 +306,7 @@ contains
     ! Local Variables
     type(seq_map), pointer :: mapper_Fa2o
     integer :: exi
-    character(*), parameter :: subname = '(prep_aoflux_calc_xao_ax)'
+    character(*), parameter :: subname = '(prep_aoflux_calc_xao_ox)'
     character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
 
