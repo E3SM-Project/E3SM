@@ -116,7 +116,7 @@ public:
 
         tke(i,k) = ekat::max(sp(0.004), tke(i,k));
 
-        // Tracers are updated as a group. The tracers tke and qc act as seperate inputs to shoc_main()
+        // Tracers are updated as a group. The tracers tke and qc act as separate inputs to shoc_main()
         // and are therefore updated differently to the bundled tracers. Here, we make a copy if each
         // of these tracers and pass to shoc_main() so that changes to the tracer group does not alter
         // tke or qc  values. Then during post processing, we copy back correct values of tke and qc
