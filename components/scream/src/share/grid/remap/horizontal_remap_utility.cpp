@@ -11,15 +11,15 @@ HorizontalMap::HorizontalMap(const ekat::Comm& comm)
 }
 /*-----------------------------------------------------------------------------------------------*/
 HorizontalMap::HorizontalMap(const ekat::Comm& comm, const std::string& map_name)
-  : m_comm (comm)
-  , m_name (map_name)
+  : m_name (map_name)
+  , m_comm (comm)
 {
   m_dofs_set = false;
 }
 /*-----------------------------------------------------------------------------------------------*/
 HorizontalMap::HorizontalMap(const ekat::Comm& comm, const std::string& map_name, const view_1d<gid_type>& dofs_gids, const gid_type min_dof)
-  : m_comm (comm)
-  , m_name (map_name)
+  : m_name (map_name)
+  , m_comm (comm)
 {
   set_dof_gids(dofs_gids,min_dof);
 }
@@ -128,7 +128,7 @@ void HorizontalMap::set_remap_segments_from_file(const std::string& remap_filena
   Kokkos::deep_copy(dofs_gids_h,m_dofs_gids);
   for (int ii=0; ii<total_num_chunks; ii++) {
     // Search dofs to see if this chunk matches dofs on this rank
-    for (int jj=0; jj<dofs_gids_h.extent(0); jj++) {
+    for (int jj=0; jj<dofs_gids_h.extent_int(0); jj++) {
       if (buff_dof[ii]-global_remap_min_dof == dofs_gids_h(jj)) {
         std::vector<int> var_tmp(buff_len[ii]);
         std::iota(var_tmp.begin(),var_tmp.end(),buff_sta[ii]);
@@ -159,7 +159,7 @@ void HorizontalMap::set_remap_segments_from_file(const std::string& remap_filena
   Kokkos::deep_copy(col,col_h);
   Kokkos::deep_copy(S,S_h);
   // Construct segments based on data just read from file
-  for (int ii=0; ii<seg_dof.size(); ii++) {
+  for (size_t ii=0; ii<seg_dof.size(); ii++) {
     int seglength = seg_length[ii];
     int segstart  = seg_start[ii];
     view_1d<gid_type> source_dofs("",seglength);
@@ -340,10 +340,8 @@ void HorizontalMap::set_unique_source_dofs()
 void HorizontalMap::check() const
 {
   EKAT_REQUIRE_MSG(m_dofs_set,"Error in HorizontalMap " + m_name + " on rank " + std::to_string(m_comm.rank()) +" - Global DOFS not yet set, need to call set_dof_gids."); 
-  for (int iseg=0; iseg<m_map_segments.size(); iseg++) {
-    auto seg = m_map_segments[iseg];
-    bool seg_check = seg.check();
-    EKAT_REQUIRE_MSG(seg_check,"Error in HorizontalMap " + m_name + " on rank " + std::to_string(m_comm.rank()) +" - problem with a remapping segment for dof = " + std::to_string(seg.get_dof()) + ".");
+  for (const auto& seg : m_map_segments) {
+    EKAT_REQUIRE_MSG(seg.check(),"Error in HorizontalMap " + m_name + " on rank " + std::to_string(m_comm.rank()) +" - problem with a remapping segment for dof = " + std::to_string(seg.get_dof()) + ".");
   }
 }
 /*-----------------------------------------------------------------------------------------------*/
@@ -363,8 +361,8 @@ void HorizontalMap::print() const
     if (m_unique_set) {
       auto unique_dofs_h = Kokkos::create_mirror_view(m_unique_dofs);
       Kokkos::deep_copy(unique_dofs_h,m_unique_dofs);
-      for (int ii=0; ii<m_unique_dofs.extent(0); ii++) {
-        printf("%10d: %10d\n",ii, unique_dofs_h(ii));
+      for (size_t ii=0; ii<m_unique_dofs.extent(0); ii++) {
+        printf("%10zu: %10d\n",ii, unique_dofs_h(ii));
       }
     } else {
       if (m_comm.am_i_root()) {
@@ -375,8 +373,8 @@ void HorizontalMap::print() const
     printf(" dofs_gids\n");
     auto dofs_gids_h = Kokkos::create_mirror_view(m_dofs_gids);
     Kokkos::deep_copy(dofs_gids_h,m_dofs_gids);
-    for (int ii=0; ii<dofs_gids_h.extent(0); ii++) {
-      printf("%10d: %10d\n",ii,dofs_gids_h(ii));
+    for (size_t ii=0; ii<dofs_gids_h.extent(0); ii++) {
+      printf("%10zu: %10d\n",ii,dofs_gids_h(ii));
     } 
     printf("\n=============================================\n");
 }
@@ -497,9 +495,9 @@ void HorizontalMapSegment::sync_to_host()
 bool HorizontalMapSegment::check() const
 {
   // Basic check for bounds for arrays
-  EKAT_REQUIRE_MSG(m_source_dofs.extent(0)==m_length,"Error remap segment for DOF: " + std::to_string(m_dof) + ", source_dofs view not the correct length");
-  EKAT_REQUIRE_MSG(m_weights.extent(0)==m_length,"Error remap segment for DOF: " + std::to_string(m_dof) + ", weightss view not the correct length");
-  EKAT_REQUIRE_MSG(m_source_idx.extent(0)==m_length,"Error remap segment for DOF: " + std::to_string(m_dof) + ", source_idx view not the correct length");
+  EKAT_REQUIRE_MSG(m_source_dofs.extent_int(0)==m_length,"Error remap segment for DOF: " + std::to_string(m_dof) + ", source_dofs view not the correct length");
+  EKAT_REQUIRE_MSG(m_weights.extent_int(0)==m_length,"Error remap segment for DOF: " + std::to_string(m_dof) + ", weightss view not the correct length");
+  EKAT_REQUIRE_MSG(m_source_idx.extent_int(0)==m_length,"Error remap segment for DOF: " + std::to_string(m_dof) + ", source_idx view not the correct length");
   // Check that the segment weight adds up to 1.0 
   Real wgt = 0.0;
   const auto weights = m_weights;

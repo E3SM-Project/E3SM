@@ -557,7 +557,7 @@ auto Field::get_ND_view () const ->
   Kokkos::LayoutRight kl;
   for (int i=0; i<N-1; ++i) {
     kl.dimension[i] = fl.dim(i);
-    num_values /= fl.dim(i);
+    num_values = fl.dim(i)==0 ? 0 : num_values/fl.dim(i);
   }
   kl.dimension[N-1] = num_values;
   auto ptr = reinterpret_cast<T*>(get_view_impl<HD>().data());

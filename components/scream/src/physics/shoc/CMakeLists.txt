@@ -107,7 +107,7 @@ else()
   endif()
 
   add_library(shoc ${SHOC_SRCS})
-  if (NOT SCREAM_BASELINES_ONLY)
+  if (NOT SCREAM_LIBS_ONLY AND NOT SCREAM_BASELINES_ONLY)
     add_library(shoc_sk ${SHOC_SRCS} ${SHOC_SK_SRCS})
     # Always build shoc_sk with SCREAM_SMALL_KERNELS on
     target_compile_definitions(shoc_sk PUBLIC "SCREAM_SMALL_KERNELS")
@@ -116,8 +116,13 @@ else()
 endif()
 
 foreach (SHOC_LIB IN LISTS SHOC_LIBS)
-  target_include_directories(${SHOC_LIB} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../share)
-  set_target_properties(${SHOC_LIB} PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
+  set_target_properties(${SHOC_LIB} PROPERTIES
+    Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${SHOC_LIB}_modules
+  )
+  target_include_directories(${SHOC_LIB} PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../share
+    ${CMAKE_CURRENT_BINARY_DIR}/${SHOC_LIB}_modules
+  )
   target_link_libraries(${SHOC_LIB} physics_share scream_share)
   target_compile_options(${SHOC_LIB} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>
                                      PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${SCREAM_CXX_FLAGS} ${SHOC_HIP_FLAGS}>)

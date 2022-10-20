@@ -6,16 +6,8 @@ namespace scream
 AbstractRemapper::
 AbstractRemapper (const grid_ptr_type& src_grid,
                   const grid_ptr_type& tgt_grid)
- : m_state                 (RepoState::Clean)
- , m_src_grid              (src_grid)
- , m_tgt_grid              (tgt_grid)
- , m_num_fields            (0)
- , m_num_registered_fields (0)
- , m_fields_are_bound      (0)
- , m_num_bound_fields      (0)
 {
-  EKAT_REQUIRE_MSG(static_cast<bool>(src_grid), "Error! Invalid source grid pointer.\n");
-  EKAT_REQUIRE_MSG(static_cast<bool>(tgt_grid), "Error! Invalid target grid pointer.\n");
+  set_grids (src_grid,tgt_grid);
 }
 
 void AbstractRemapper::
@@ -109,7 +101,7 @@ registration_ends () {
   m_state = RepoState::Closed;
 }
 
-void AbstractRemapper::remap (const bool forward) const {
+void AbstractRemapper::remap (const bool forward) {
   EKAT_REQUIRE_MSG(m_state!=RepoState::Open,
                      "Error! Cannot perform remapping at this time.\n"
                      "       Did you forget to call 'registration_ends'?\n");
@@ -135,5 +127,15 @@ void AbstractRemapper::remap (const bool forward) const {
   }
 }
 
+void AbstractRemapper::
+set_grids (const grid_ptr_type& src_grid,
+           const grid_ptr_type& tgt_grid)
+{
+  EKAT_REQUIRE_MSG(static_cast<bool>(src_grid), "Error! Invalid source grid pointer.\n");
+  EKAT_REQUIRE_MSG(static_cast<bool>(tgt_grid), "Error! Invalid target grid pointer.\n");
+
+  m_src_grid = src_grid;
+  m_tgt_grid = tgt_grid;
+}
 
 } // namespace scream

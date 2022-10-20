@@ -30,6 +30,7 @@ public:
   using grid_ptr_type   = std::shared_ptr<const grid_type>;
   using ci_string       = ekat::CaseInsensitiveString;
 
+  AbstractRemapper () = default;
   AbstractRemapper (const grid_ptr_type& src_grid,
                     const grid_ptr_type& tgt_grid);
 
@@ -66,7 +67,7 @@ public:
   RepoState get_state () const { return m_state; }
 
   // The actual remap routine.
-  void remap (const bool forward) const;
+  void remap (const bool forward);
 
   // Getter methods
   grid_ptr_type get_src_grid () const { return m_src_grid; }
@@ -174,6 +175,10 @@ public:
   }
 
 protected:
+
+  void set_grids (const grid_ptr_type& src_grid,
+                  const grid_ptr_type& tgt_grid);
+
   virtual const identifier_type& do_get_src_field_id (const int ifield) const = 0;
   virtual const identifier_type& do_get_tgt_field_id (const int ifield) const = 0;
   virtual const field_type& do_get_src_field (const int ifield) const = 0;
@@ -197,11 +202,11 @@ protected:
 
   // Override this method to implement the forward remapping process using
   // the protected data members of this class.
-  virtual void do_remap_fwd () const = 0;
+  virtual void do_remap_fwd () = 0;
 
   // Override this method to implement the backward/inverse remapping process
   // using the protected data members of this class.
-  virtual void do_remap_bwd () const = 0;
+  virtual void do_remap_bwd () = 0;
 
   // This helper function searches for a pair of source and target field
   // identifiers in the remapper's set of bound fields. It returns -1 if fields
@@ -228,7 +233,7 @@ protected:
   bool m_bwd_allowed = true;
 
   // The state of the remapper
-  RepoState     m_state;
+  RepoState     m_state = RepoState::Clean;
 
   // The grids associated with the src and tgt fields
   grid_ptr_type m_src_grid;
@@ -237,8 +242,8 @@ protected:
   // The number of fields to remap, and the number of fields currently registered.
   // The latter is guaranteed to be equal to the former only when registration is
   // not undergoing. During registration, m_num_fields=0<=m_num_registered_fields.
-  int           m_num_fields;
-  int           m_num_registered_fields;
+  int           m_num_fields = 0;
+  int           m_num_registered_fields = 0;
 
   // This vector maps the indices of registered fields to booleans that indicate
   // whether these fields have been bound to the remapper. This vector is
@@ -249,7 +254,7 @@ protected:
   // expected. Use caution when manipulating this member, and don't rely on the
   // usual assumptions about how the boolean elements are stored.
   std::vector<bool>   m_fields_are_bound;
-  int                 m_num_bound_fields;
+  int                 m_num_bound_fields = 0;
 };
 
 // A short name for an AbstractRemapper factory

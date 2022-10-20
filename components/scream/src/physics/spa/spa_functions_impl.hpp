@@ -311,7 +311,7 @@ void SPAFunctions<S,D>
   // There may be cases where the SPA data is defined on the same grid as the simulation
   // and thus no remapping is required.  This simple routine establishes a 1-1 horizontal
   // mapping
-  auto num_local_cols = dofs_gids.size();
+  int num_local_cols = dofs_gids.size();
   auto& spa_horiz_map = spa_horiz_interp.horiz_map;
   spa_horiz_map = HorizontalMap(spa_horiz_interp.m_comm,"SPA 1-1 Remap",dofs_gids,min_dof);
   view_1d<gid_type> src_dofs("",1);

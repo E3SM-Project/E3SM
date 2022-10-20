@@ -210,6 +210,7 @@ set(SCREAM_LIB_ONLY ${DEFAULT_LIB_ONLY} CACHE BOOL "Only build libraries, no exe
 set(NetCDF_Fortran_PATH ${DEFAULT_NetCDF_Fortran_PATH} CACHE FILEPATH "Path to netcdf fortran installation")
 set(NetCDF_C_PATH ${DEFAULT_NetCDF_C_PATH} CACHE FILEPATH "Path to netcdf C installation")
 set(SCREAM_MACHINE ${DEFAULT_SCREAM_MACHINE} CACHE STRING "The CIME/SCREAM name for the current machine")
+option(SCREAM_MPI_ON_DEVICE "Whether to use device pointers for MPI calls" ON)
 set(SCREAM_SMALL_KERNELS ${DEFAULT_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels")
 if (NOT SCREAM_SMALL_KERNELS)
   set(EKAT_DISABLE_WORKSPACE_SHARING TRUE CACHE STRING "")
@@ -482,8 +483,6 @@ if (NOT ${SCREAM_DOUBLE_PRECISION})
   endif()
 endif()
 print_var(SCREAM_DYNAMICS_DYCORE)
-
-set (SCREAM_F90_MODULES ${CMAKE_CURRENT_BINARY_DIR}/modules)
 
 file(MAKE_DIRECTORY ${SCREAM_TEST_DATA_DIR})
 

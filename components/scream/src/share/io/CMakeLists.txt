@@ -10,9 +10,11 @@ set(SCREAM_SCORPIO_SRCS
 
 # Create io lib
 add_library(scream_io ${SCREAM_SCORPIO_SRCS})
-set_target_properties(scream_io PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
+set_target_properties(scream_io PROPERTIES
+  Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
+)
+target_include_directories(scream_io PUBLIC ${CMAKE_CURRENT_BINARY_DIR}/modules)
 target_link_libraries(scream_io PUBLIC scream_share diagnostics piof pioc)
-target_compile_options(scream_io PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
 
 if (SCREAM_CIME_BUILD)
   target_link_libraries(scream_io PUBLIC csm_share)

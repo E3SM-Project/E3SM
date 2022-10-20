@@ -178,8 +178,8 @@ protected:
                                const std::vector<field_type>& fields) const;
 
   // Remap methods
-  void do_remap_fwd () const override;
-  void do_remap_bwd () const override;
+  void do_remap_fwd () override;
+  void do_remap_bwd () override;
 
   // phys->dyn requires a halo-exchange. Since not all entries in dyn
   // are overwritten before the exchange, to avoid leftover garbage,

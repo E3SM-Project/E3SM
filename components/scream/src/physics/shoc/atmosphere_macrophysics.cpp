@@ -380,7 +380,6 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
                                  T_mid, dse, z_mid, phis);
 
   // Set field property checks for the fields in this process
-  auto eps = std::numeric_limits<Real>::epsilon();
   using Interval = FieldWithinIntervalCheck;
   using LowerBound = FieldLowerBoundCheck;
   add_postcondition_check<Interval>(get_field_out("T_mid"),m_grid,130.0,500.0,false);

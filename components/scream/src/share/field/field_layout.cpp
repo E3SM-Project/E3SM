@@ -1,5 +1,6 @@
 #include "field_layout.hpp"
-#include <Kokkos_CopyViews.hpp>
+
+#include <ekat/util/ekat_string_utils.hpp>
 
 namespace scream
 {
@@ -79,7 +80,7 @@ FieldLayout FieldLayout::strip_dim (const int idim) const {
 
 void FieldLayout::set_dimension (const int idim, const int dimension) {
   EKAT_REQUIRE_MSG(idim>=0 && idim<m_rank, "Error! Index out of bounds.");
-  EKAT_REQUIRE_MSG(dimension>0, "Error! Dimensions must be positive.");
+  EKAT_REQUIRE_MSG(dimension>=0, "Error! Dimensions must be non-negative.");
   EKAT_REQUIRE_MSG(m_dims[idim] == -1, "Error! You cannot reset field dimensions once set.\n");
   m_dims[idim] = dimension;
 
@@ -112,14 +113,14 @@ LayoutType get_layout_type (const std::vector<FieldTag>& field_tags) {
   // Start from undefined/invalid
   LayoutType result = LayoutType::Invalid;
 
-  if (n_element>0 && ngp==2 && n_column==0) {
+  if (n_element==1 && ngp==2 && n_column==0) {
     // A Dynamics layout
 
     // Remove the Element and the two GaussPoint tags
     erase(tags,EL);
     erase(tags,GP);
     erase(tags,GP);
-  } else if (n_element==0 && ngp==0 && n_column>0) {
+  } else if (n_element==0 && ngp==0 && n_column==1) {
     // A Physics layout
 
     // Remove the column tag
@@ -181,10 +182,7 @@ std::string to_string (const FieldLayout& layout)
   for (int dim=1; dim<layout.rank(); ++dim) {
     s += "," + e2str(layout.tags()[dim]);
   }
-  s += ">(" + std::to_string(layout.dims()[0]);
-  for (int dim=1; dim<layout.rank(); ++dim) {
-    s += "," + std::to_string(layout.dims()[dim]);
-  }
+  s += ">(" + ekat::join(layout.dims(),",") + ")";
 
   return s;
 }

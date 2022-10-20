@@ -49,10 +49,10 @@ protected:
     return m_remapper->get_src_field(ifield);
   }
 
-  void do_remap_fwd () const override {
+  void do_remap_fwd () override {
     m_remapper->remap(false);
   }
-  void do_remap_bwd () const override {
+  void do_remap_bwd () override {
     m_remapper->remap(true);
   }
 

@@ -41,7 +41,6 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // Declare the set of fields used by rrtmgp
   auto kgkg = kg/kg;
   kgkg.set_string("kg/kg");
-  auto m3 = m * m * m;
   auto Wm2 = W / m / m;
   Wm2.set_string("W/m2");
   auto nondim = m/m;  // dummy unit for non-dimensional fields
@@ -295,7 +294,6 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
 
 void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   using PC = scream::physics::Constants<Real>;
-  using PF = scream::PhysicsFunctions<DefaultDevice>;
 
   // Determine rad timestep, specified as number of atm steps
   m_rad_freq_in_steps = m_params.get<Int>("rad_frequency", 1);
@@ -433,7 +431,6 @@ void RRTMGPRadiation::run_impl (const int dt) {
   const auto nlay = m_nlay;
   const auto nlwbands = m_nlwbands;
   const auto nswbands = m_nswbands;
-  const auto nswgpts = m_nswgpts;
   const auto nlwgpts = m_nlwgpts;
 
   // Compute orbital parameters; these are used both for computing

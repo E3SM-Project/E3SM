@@ -57,10 +57,14 @@ if (NOT HOMMEXX_ENABLE_GPU)
 endif()
 
 add_library(p3 ${P3_SRCS})
-target_include_directories(p3 PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../share)
-set_target_properties(p3 PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
+set_target_properties(p3 PROPERTIES
+  Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
+)
+target_include_directories(p3 PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/../share
+  ${CMAKE_CURRENT_BINARY_DIR}/modules
+)
 target_link_libraries(p3 physics_share scream_share)
-target_compile_options(p3 PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
 
 # Ensure tables are present in the data dir
 if (SCREAM_DOUBLE_PRECISION)

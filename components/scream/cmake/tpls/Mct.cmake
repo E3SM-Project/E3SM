@@ -1,5 +1,3 @@
-set (SCREAM_TPLS_MODULE_DIR ${CMAKE_CURRENT_LIST_DIR} CACHE INTERNAL "")
-
 macro (CreateMctTarget)
 
   # Some sanity checks

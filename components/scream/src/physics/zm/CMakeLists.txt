@@ -19,7 +19,11 @@ if (NOT HOMMEXX_ENABLE_GPU)
 endif()
 
 add_library(zm ${ZM_SRCS})
-target_include_directories(zm PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../common)
-set_target_properties(zm PROPERTIES Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
+set_target_properties(zm PROPERTIES
+  Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
+)
+target_include_directories(zm PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/../common
+  ${CMAKE_CURRENT_BINARY_DIR}/modules
+)
 target_link_libraries(zm physics_share scream_share)
-target_compile_options(zm PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>)
