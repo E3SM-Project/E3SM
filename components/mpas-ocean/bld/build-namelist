@@ -1429,7 +1429,11 @@ add_default($nl, 'config_AM_regionalStatsCustom_vertical_dimension');
 ###########################################
 
 add_default($nl, 'config_AM_timeSeriesStatsDaily_enable');
-add_default($nl, 'config_AM_timeSeriesStatsDaily_compute_on_startup');
+if ($CONTINUE_RUN eq 'TRUE') {
+	add_default($nl, 'config_AM_timeSeriesStatsDaily_compute_on_startup', 'val'=>".false.");
+} else {
+	add_default($nl, 'config_AM_timeSeriesStatsDaily_compute_on_startup', 'val'=>".true.");
+}
 add_default($nl, 'config_AM_timeSeriesStatsDaily_write_on_startup');
 add_default($nl, 'config_AM_timeSeriesStatsDaily_compute_interval');
 add_default($nl, 'config_AM_timeSeriesStatsDaily_output_stream');
@@ -1446,7 +1450,11 @@ add_default($nl, 'config_AM_timeSeriesStatsDaily_backward_output_offset');
 #############################################
 
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_enable');
-add_default($nl, 'config_AM_timeSeriesStatsMonthly_compute_on_startup');
+if ($CONTINUE_RUN eq 'TRUE') {
+	add_default($nl, 'config_AM_timeSeriesStatsMonthly_compute_on_startup', 'val'=>".false.");
+} else {
+	add_default($nl, 'config_AM_timeSeriesStatsMonthly_compute_on_startup', 'val'=>".true.");
+}
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_write_on_startup');
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_compute_interval');
 add_default($nl, 'config_AM_timeSeriesStatsMonthly_output_stream');
@@ -1463,7 +1471,11 @@ add_default($nl, 'config_AM_timeSeriesStatsMonthly_backward_output_offset');
 #################################################
 
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_enable');
-add_default($nl, 'config_AM_timeSeriesStatsClimatology_compute_on_startup');
+if ($CONTINUE_RUN eq 'TRUE') {
+	add_default($nl, 'config_AM_timeSeriesStatsClimatology_compute_on_startup', 'val'=>".false.");
+} else {
+	add_default($nl, 'config_AM_timeSeriesStatsClimatology_compute_on_startup', 'val'=>".true.");
+}
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_write_on_startup');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_compute_interval');
 add_default($nl, 'config_AM_timeSeriesStatsClimatology_output_stream');
@@ -1480,7 +1492,11 @@ add_default($nl, 'config_AM_timeSeriesStatsClimatology_backward_output_offset');
 ################################################
 
 add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_enable');
-add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_compute_on_startup');
+if ($CONTINUE_RUN eq 'TRUE') {
+	add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_compute_on_startup', 'val'=>".false.");
+} else {
+	add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_compute_on_startup', 'val'=>".true.");
+}
 add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_write_on_startup');
 add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_compute_interval');
 add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_output_stream');
@@ -1497,7 +1513,11 @@ add_default($nl, 'config_AM_timeSeriesStatsMonthlyMax_backward_output_offset');
 ################################################
 
 add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_enable');
-add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_compute_on_startup');
+if ($CONTINUE_RUN eq 'TRUE') {
+	add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_compute_on_startup', 'val'=>".false.");
+} else {
+	add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_compute_on_startup', 'val'=>".true.");
+}
 add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_write_on_startup');
 add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_compute_interval');
 add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_output_stream');
@@ -1514,7 +1534,11 @@ add_default($nl, 'config_AM_timeSeriesStatsMonthlyMin_backward_output_offset');
 ############################################
 
 add_default($nl, 'config_AM_timeSeriesStatsCustom_enable');
-add_default($nl, 'config_AM_timeSeriesStatsCustom_compute_on_startup');
+if ($CONTINUE_RUN eq 'TRUE') {
+	add_default($nl, 'config_AM_timeSeriesStatsCustom_compute_on_startup', 'val'=>".false.");
+} else {
+	add_default($nl, 'config_AM_timeSeriesStatsCustom_compute_on_startup', 'val'=>".true.");
+}
 add_default($nl, 'config_AM_timeSeriesStatsCustom_write_on_startup');
 add_default($nl, 'config_AM_timeSeriesStatsCustom_compute_interval');
 add_default($nl, 'config_AM_timeSeriesStatsCustom_output_stream');
