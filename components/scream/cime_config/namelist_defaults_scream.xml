@@ -47,7 +47,7 @@ tweaking their $case/namelist_scream.xml file.
       <sections>ctl_nl</sections>
     </file>
     <file name="data/scream_input.yaml" format="yaml">
-      <sections>Debug,atmosphere_processes,grids_manager,initial_conditions,Scorpio,e3sm_parameters</sections>
+      <sections>driver_options,atmosphere_processes,grids_manager,initial_conditions,Scorpio,e3sm_parameters</sections>
     </file>
   </generated_files>
 
@@ -165,10 +165,13 @@ tweaking their $case/namelist_scream.xml file.
       <do_prescribed_ccn COMPSET=".*SCREAM.*noAero">false</do_prescribed_ccn>
       <do_predict_nc>true</do_predict_nc>
       <do_predict_nc COMPSET=".*SCREAM.*noAero">false</do_predict_nc>
+      <enable_column_conservation_checks>false</enable_column_conservation_checks>
     </p3>
 
     <!-- SHOC macrophysics -->
-    <shoc inherit="atm_proc_base"/>
+    <shoc inherit="atm_proc_base">
+      <enable_column_conservation_checks>false</enable_column_conservation_checks>
+    </shoc>
 
     <!-- CLD fraction -->
     <cldFraction inherit="atm_proc_base"/>
@@ -229,6 +232,7 @@ tweaking their $case/namelist_scream.xml file.
       <rad_frequency hgrid="ne1024np4">3</rad_frequency>
       <do_aerosol_rad>true</do_aerosol_rad>
       <do_aerosol_rad COMPSET=".*SCREAM.*noAero">false</do_aerosol_rad>
+      <enable_column_conservation_checks>false</enable_column_conservation_checks>
     </rrtmgp>
 
     <mac_aero_mic inherit="atm_proc_group">
@@ -317,12 +321,15 @@ tweaking their $case/namelist_scream.xml file.
     </model_restart>
   </Scorpio>
 
-  <!-- Debug options for scream -->
-  <Debug>
+  <!-- driver_options options for scream -->
+  <driver_options>
     <atmosphere_dag_verbosity_level>0</atmosphere_dag_verbosity_level>
     <atm_log_level valid_values="trace,debug,info,warn,error">info</atm_log_level>
     <output_to_screen type="logical">false</output_to_screen>
-  </Debug>
+    <mass_column_conservation_error_tolerance>1e-10</mass_column_conservation_error_tolerance>
+    <energy_column_conservation_error_tolerance>1e-14</energy_column_conservation_error_tolerance>
+    <column_conservation_checks_fail_handling_type>Warning</column_conservation_checks_fail_handling_type>
+  </driver_options>
 
   <!-- E3SM Simulation Settings -->
   <e3sm_parameters>
