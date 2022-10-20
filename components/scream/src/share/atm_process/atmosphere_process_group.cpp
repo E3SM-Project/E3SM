@@ -283,7 +283,8 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConse
                      "Error! Process \"" + atm_proc->name() + "\" enables the mass "
                      "and energy conservation check, but does not define all "
                      "the boundary fluxes required: vapor_flux, water_flux "
-                     "ice_flux, heat_flux.\n");
+                     "ice_flux, heat_flux. If a flux does not have a natural definition "
+                     "within the process, set to 0.\n");
 
     // If all conditions are satisfied, add as postcondition_check
     atm_proc->add_column_conservation_check(conservation_check, CheckFailHandling::Warning);
