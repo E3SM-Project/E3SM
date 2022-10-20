@@ -409,11 +409,13 @@ contains
   ! assumes everything is on coupler pes here, to make sense
   subroutine compare_mct_av_moab_tag(comp, attrVect, mct_field, appId, tagname, ent_type, difference)
     
+    use shr_mpi_mod,       only: shr_mpi_sum
     use shr_kind_mod,     only:  CXX => shr_kind_CXX
+    use seq_comm_mct , only : CPLID, seq_comm_iamroot
     use iMOAB, only : iMOAB_DefineTagStorage,  iMOAB_GetDoubleTagStorage, &
        iMOAB_SetDoubleTagStorageWithGid, iMOAB_GetMeshInfo
+    
     use iso_c_binding 
-        
 
     type(component_type), intent(in) :: comp
     integer , intent(in) :: appId, ent_type
@@ -422,6 +424,8 @@ contains
     character(*) , intent(in)       :: tagname
 
     real(r8)      , intent(out)     :: difference
+
+    real(r8)  :: differenceg ! global, reduced diff
     type(mct_ggrid), pointer    :: dom
     integer   :: kgg, mbSize, nloc, index_avfield
 
@@ -432,8 +436,13 @@ contains
      
      real(r8) , allocatable :: values(:), mct_values(:)
      integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+     integer :: mpicom
+     logical   :: iamroot
+
 
      character(*),parameter :: subName = '(compare_mct_av_moab_tag) '
+
+     mpicom = comp%mpicom_cplcompid ! we are on the coupler side
 
      nloc = mct_avect_lsize(attrVect)
      allocate(GlobalIds(nloc))
@@ -481,8 +490,11 @@ contains
      values  = mct_values - values
 
      difference = dot_product(values, values)
-     if (difference.gt.1.e-10) then
-        print * , 'difference on tag ', tagname, ' = ', difference
+     call shr_mpi_sum(difference,differenceg,mpicom,subname)
+     difference = sqrt(differenceg)
+     iamroot = seq_comm_iamroot(CPLID)
+     if ( iamroot ) then
+        print * , trim(comp%ntype), ' comp, difference on tag ', trim(tagname), ' = ', difference
         !call shr_sys_abort(subname//'differences between mct and moab values')
      endif
      deallocate(GlobalIds)

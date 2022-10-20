@@ -813,12 +813,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
    !nwflds = mct_aVect_nRattr(w2x_o)
       nxflds = mct_aVect_nRattr(xao_o)
        
-       
-       ! x2o_o => x2o_ox(1) 
-       ! 
-
-    
-       
        !ngflds = mct_aVect_nRattr(g2x_o)
        allocate(x2o_om (lsize, noflds))
        allocate(a2x_om (lsize, naflds))
@@ -1169,7 +1163,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     if (ierr .ne. 0) then
          call shr_sys_abort(subname//' error in getting fractions_om from ocean instance ')
     endif
-  
    ! fill the r2x_om, etc double array fields noflds
     tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
     arrsize = noflds * lsize

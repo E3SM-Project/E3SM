@@ -4272,7 +4272,17 @@ contains
   !----------------------------------------------------------------------------------
 
   subroutine cime_run_atmocn_setup(hashint)
+#ifdef MOABDEBUG
+    use component_type_mod, only:  compare_mct_av_moab_tag
+    use seq_comm_mct , only : mboxid
+    use iso_c_binding 
+#endif
     integer, intent(inout) :: hashint(:)
+#ifdef MOABDEBUG
+    real(r8) :: difference
+    character(20) :: mct_field, tagname
+    integer  :: ent_type 
+#endif 
 
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCNP_BARRIER')
@@ -4315,6 +4325,27 @@ contains
           xao_ox => prep_aoflux_get_xao_ox()
           call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
 
+#ifdef MOABDEBUG
+         ! before calling moab merge, check that the fractions are the same
+         ! compare_mct_av_moab_tag(comp, attrVect, mct_field, appId, tagname, ent_type, difference)
+          ! fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
+          ent_type = 1
+          mct_field = 'afrac'
+          tagname = 'afrac'//C_NULL_CHAR
+          call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
+          mct_field = 'ifrac'
+          tagname = 'ifrac'//C_NULL_CHAR
+          call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
+          mct_field = 'ofrac'
+          tagname = 'ofrac'//C_NULL_CHAR
+          call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
+          mct_field = 'ifrad'
+          tagname = 'ifrad'//C_NULL_CHAR
+          call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
+          mct_field = 'ofrad'
+          tagname = 'ofrad'//C_NULL_CHAR
+          call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
+#endif
           ! moab version
           call prep_ocn_mrg_moab(infodata, xao_ox)
 
