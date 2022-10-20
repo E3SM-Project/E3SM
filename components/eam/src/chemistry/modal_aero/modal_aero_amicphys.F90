@@ -6020,7 +6020,7 @@ agepair_loop1: &
       end if
       tmp4 = 1.0_r8 - tmp3
 
-      vol_core = 0.0_r8
+      vol_core = 0.0
       do iaer = 1, naer
          ! for core volume, only include the mapped species 
          !    which are primary and low hygroscopicity
@@ -6213,7 +6213,7 @@ agepair_loop1: &
          const  = tworootpi * exp( beta*lndpgn + 0.5_r8*(beta*lnsg(n))**2 )
          
 !   sum over gauss-hermite quadrature points
-         sumghq = 0.0_r8
+         sumghq = 0.0
          do iq = 1, nghq
             lndp = lndpgn + beta*lnsg(n)**2 + root2*lnsg(n)*xghq(iq)
             dp = exp(lndp)
@@ -6329,7 +6329,6 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       mwuse_soa(:)  = 250.0_r8
       mwuse_poa(:)  = 250.0_r8
 #else
-      mwuse_soag(:) = 150.0_r8
       mwuse_soa(:)  = 150.0_r8
       mwuse_poa(:)  = 150.0_r8
 #endif
@@ -6370,7 +6369,7 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
          name_aerpfx(1) = 'soa'
       else if (nsoa == 1 .and. nsoag == 1) then
 #else
-      if (nsoa == 1 .and. nsoag == 1) then
+      if (nsoa == 1) then
 #endif
          name_gas(1) = 'SOAG'
          name_aerpfx(1) = 'soa'

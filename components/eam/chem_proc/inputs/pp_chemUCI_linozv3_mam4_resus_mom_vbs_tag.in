@@ -63,9 +63,9 @@ SPECIES
 * pom_a2 does not exist
   pom_a3 -> C
   pom_a4 -> C
-  soa_a1 -> C
-  soa_a2 -> C
-  soa_a3 -> C
+  soa_a1 -> C15H38O2
+  soa_a2 -> C15H38O2
+  soa_a3 -> C15H38O2
   bc_a1 -> C
 * bc_a2 does not exist
   bc_a3 -> C
