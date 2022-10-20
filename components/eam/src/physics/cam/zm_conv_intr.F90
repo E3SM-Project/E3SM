@@ -236,14 +236,14 @@ subroutine zm_conv_init(pref_edge)
     call addfld ('ZMICVU',     (/ 'lev' /), 'A', 'm/s', 'ZM in-cloud V updrafts')
     call addfld ('ZMICVD',     (/ 'lev' /), 'A', 'm/s', 'ZM in-cloud V downdrafts')
 
-    if( MCSP ) then 
-    call addfld ('MCSP_DT',(/ 'lev' /), 'A','K/s','T tedency due to MCSP')
-    call addfld ('MCSP_freq',horiz_only, 'A','1','frequency of MCSP activated')
-    call addfld ('MCSP_DU',(/ 'lev' /), 'A','m/s/day','U tedency due to MCSP')
-    call addfld ('MCSP_DV',(/ 'lev' /), 'A','m/s/day','V tedency due to MCSP')
-    call addfld ('ZM_freq',horiz_only, 'A','1','frequency for ZM to be activated')
-    call addfld ('ZM_depth',horiz_only,'A','Pa','ZM depth')
-    call addfld ('MCSP_shear',horiz_only,'A','m/s','vertical zonal wind shear')
+    if (MCSP) then 
+       call addfld ('MCSP_DT',(/ 'lev' /), 'A','K/s','T tedency due to MCSP')
+       call addfld ('MCSP_freq',horiz_only, 'A','1','frequency of MCSP activated')
+       call addfld ('MCSP_DU',(/ 'lev' /), 'A','m/s/day','U tedency due to MCSP')
+       call addfld ('MCSP_DV',(/ 'lev' /), 'A','m/s/day','V tedency due to MCSP')
+       call addfld ('ZM_freq',horiz_only, 'A','1','frequency for ZM to be activated')
+       call addfld ('ZM_depth',horiz_only,'A','Pa','ZM depth')
+       call addfld ('MCSP_shear',horiz_only,'A','m/s','vertical zonal wind shear')
     end if
 
 !Convective microphysics
@@ -968,10 +968,11 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
     end if
 
 
-   doslop_heat = .false.
+   doslop          = .false.
+   doslop_heat     = .false.
    doslop_moisture = .false.
-   doslop_uwind = .false.
-   doslop_vwind = .false.
+   doslop_uwind    = .false.
+   doslop_vwind    = .false.
    if( MCSP ) then
         if( MCSP_heat_coeff > 0._r8 ) then
                 doslop_heat = .true.
@@ -992,7 +993,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
     end if
 
    if (doslop_heat .or. doslop_moisture .or. doslop_uwind .or. doslop_vwind) then
-     doslop = .true.
+      doslop = .true.
    endif
 
 
@@ -1014,7 +1015,7 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    lq(:) = .FALSE.
    lq(1) = .TRUE.
  
-   if(doslop) then
+   if (doslop) then
         call physics_ptend_init(ptend_loc, state%psetcols, 'zm_convr', ls=.true., lu = doslop_uwind, lv = doslop_vwind, lq=lq)! initialize local ptend type
    else
         call physics_ptend_init(ptend_loc, state%psetcols, 'zm_convr', ls=.true., lq=lq)! initialize local ptend type
@@ -1116,34 +1117,32 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    call outfld('DCAPE', dcape, pcols, lchnk)
 
 
-   if( doslop ) then
-!   
-!  Begin MCSP parameterization here 
-!
-   du600 = 0._r8
-   dv600 = 0._r8
-   ZM_depth = 0._r8
-   MCSP_shear = 0._r8
-
-   call vertinterp(ncol, pcols, pver, state%pmid, 60000._r8, state%u,du600)
-   call vertinterp(ncol, pcols, pver, state%pmid, 60000._r8, state%v,dv600)
-
-   do i=1,ncol
-      if(state%pmid(i,pver).gt.60000._r8) then
-        du600(i) = du600(i)-state%u(i,pver)
-        dv600(i) = dv600(i)-state%v(i,pver)
-      else
-        du600(i) = -999._r8
-        dv600(i) = -999._r8
-      end if
-   end do
-
-   MCSP_shear = du600
-   do i=1,ncol
-      if( jctop(i).ne.pver ) ZM_depth(i) = state%pint(i,pver+1)-state%pmid(i,jctop(i))
-   end do
-
    if (doslop) then
+  !   
+  !  Begin MCSP parameterization here 
+  !
+     du600 = 0._r8
+     dv600 = 0._r8
+     ZM_depth = 0._r8
+     MCSP_shear = 0._r8
+
+     call vertinterp(ncol, pcols, pver, state%pmid, 60000._r8, state%u,du600)
+     call vertinterp(ncol, pcols, pver, state%pmid, 60000._r8, state%v,dv600)
+
+     do i=1,ncol
+        if(state%pmid(i,pver).gt.60000._r8) then
+          du600(i) = du600(i)-state%u(i,pver)
+          dv600(i) = dv600(i)-state%v(i,pver)
+        else
+          du600(i) = -999._r8
+          dv600(i) = -999._r8
+        end if
+     end do
+
+     MCSP_shear = du600
+     do i=1,ncol
+        if( jctop(i).ne.pver ) ZM_depth(i) = state%pint(i,pver+1)-state%pmid(i,jctop(i))
+     end do
 
      ! Define parameters
 
@@ -1240,19 +1239,19 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
        enddo
      enddo
 
-   endif
-!   
-! End the MCSP parameterization here 
-!   
    
+   !   
+   ! End the MCSP parameterization here 
+   !   
+      
 
-  MCSP_DT(:ncol,:pver) = MCSP_DT(:ncol,:pver)/cpair
-   call outfld('MCSP_DT    ',MCSP_DT           ,pcols   ,lchnk   )
-   call outfld('MCSP_freq    ',MCSP_freq           ,pcols   ,lchnk   )
-   call outfld('MCSP_DU    ',ptend_loc%u*86400._r8           ,pcols   ,lchnk   )
-   call outfld('MCSP_DV    ',ptend_loc%v*86400._r8           ,pcols   ,lchnk   )
-   call outfld('ZM_depth   ',ZM_depth                        ,pcols   ,lchnk   )
-   call outfld('MCSP_shear ',MCSP_shear                      ,pcols   ,lchnk   )
+      MCSP_DT(:ncol,:pver) = MCSP_DT(:ncol,:pver)/cpair
+      call outfld('MCSP_DT    ',MCSP_DT           ,pcols   ,lchnk   )
+      call outfld('MCSP_freq    ',MCSP_freq           ,pcols   ,lchnk   )
+      call outfld('MCSP_DU    ',ptend_loc%u*86400._r8           ,pcols   ,lchnk   )
+      call outfld('MCSP_DV    ',ptend_loc%v*86400._r8           ,pcols   ,lchnk   )
+      call outfld('ZM_depth   ',ZM_depth                        ,pcols   ,lchnk   )
+      call outfld('MCSP_shear ',MCSP_shear                      ,pcols   ,lchnk   )
 
    end if
 !
