@@ -43,7 +43,7 @@ public:
                                         const std::shared_ptr<const Field>&        heat_flux_ptr);
 
   // The name of the property check
-  std::string name () const override { return "Energy conservation check"; }
+  std::string name () const override { return "Mass and energy column conservation check"; }
 
   // Computes mass and energy and tests against a tolerance.
   ResultAndMsg check () const override;
