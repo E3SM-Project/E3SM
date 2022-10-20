@@ -2081,7 +2081,9 @@ subroutine tphysbc (ztodt,               &
     logical :: l_st_mic
     logical :: l_rad
     !HuiWan (2014/15): added for a short-term time step convergence test ==
-
+!<shanyp 07112022
+    real(r8):: wuc(pcols,pver)
+!shanyp 07112022>
 
     call phys_getopts( microp_scheme_out      = microp_scheme, &
                        macrop_scheme_out      = macrop_scheme, &
@@ -2340,7 +2342,10 @@ end if
          rliq,       rice, &
          ztodt,   &
          state,   ptend, cam_in%landfrac, pbuf, mu, eu, du, md, ed, dp,   &
-         dsubcld, jt, maxg, ideep, lengath) 
+         dsubcld, jt, maxg, ideep, lengath, &
+!<shanyp 07112022
+         wuc ) 
+!shanyp 07112022>
     call t_stopf('convect_deep_tend')
 
     call physics_update(state, ptend, ztodt, tend)
@@ -2646,7 +2651,10 @@ end if
          call aero_model_wetdep( ztodt, dlf, dlf2, cmfmc2, state,  & ! inputs
                 sh_e_ed_ratio, mu, md, du, eu, ed, dp, dsubcld,    &
                 jt, maxg, ideep, lengath, species_class,           &
-                cam_out, pbuf, ptend )                               ! outputs
+                cam_out, pbuf, ptend, &
+!<shanyp 07112022
+                wuc=wuc)                               ! outputs
+!shanyp 07112022>
          call physics_update(state, ptend, ztodt, tend)
 
          ! deep convective aerosol transport
