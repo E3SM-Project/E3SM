@@ -210,18 +210,17 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
 
   PropertyCheck::ResultAndMsg res_and_msg;
   if (maxloc_mass.val < m_tol && maxloc_energy.val < m_tol) {
+    // If both vals are below the tolerance, the check passes.
     res_and_msg.result = CheckResult::Pass;
-  } else {
-    res_and_msg.result = CheckResult::Fail;
+    return res_and_msg;
   }
 
+  // If one or more values is above the tolerance, the check fails.
+  res_and_msg.result = CheckResult::Fail;
+
   std::stringstream msg;
-  if (res_and_msg.result == CheckResult::Pass) {
-    msg << "Check passed.\n";
-  } else {
-    msg << "Check failed.\n";
-  }
-  msg << "  - check name: " << this->name() << "\n"
+  msg << "Check failed.\n"
+      << "  - check name: " << this->name() << "\n"
       << "  - error tolerance: " << m_tol << "\n";
 
   // Output relative errors with lat/lon information (if available)
