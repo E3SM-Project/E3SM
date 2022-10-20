@@ -925,15 +925,16 @@ void RRTMGPRadiation::run_impl (const int dt) {
     auto water_flux = get_field_out("water_flux").get_view<Real*>();
     auto ice_flux   = get_field_out("ice_flux").get_view<Real*>();
     auto heat_flux  = get_field_out("heat_flux").get_view<Real*>();
-    Kokkos::deep_copy(vapor_flux, 0.0);
-    Kokkos::deep_copy(water_flux, 0.0);
-    Kokkos::deep_copy(ice_flux, 0.0);
 
     const int ncols = m_ncol;
     const int nlays = m_nlay;
     const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols, nlays);
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
+
+      vapor_flux(icol) = 0;
+      water_flux(icol) = 0;
+      ice_flux(icol)   = 0;
 
       const auto fsns = d_sw_flux_dn(icol, nlays) - d_sw_flux_up(icol, nlays);
       const auto fsnt = d_sw_flux_dn(icol, 0)     - d_sw_flux_up(icol, 0);
