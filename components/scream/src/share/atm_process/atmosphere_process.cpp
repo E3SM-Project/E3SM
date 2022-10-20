@@ -83,11 +83,6 @@ void AtmosphereProcess::run (const int dt) {
     run_precondition_checks();
   }
 
-  // Column local mass and energy checks requires the total mass and energy
-  // to be computed directly before the atm process is run, as well and store
-  // the correct timestep for the process.
-  compute_column_conservation_checks_data(dt);
-
   EKAT_REQUIRE_MSG ( (dt % m_num_subcycles)==0,
       "Error! The number of subcycle iterations does not exactly divide the time step.\n"
       "  - Atm proc name: " + this->name() + "\n"
@@ -97,17 +92,25 @@ void AtmosphereProcess::run (const int dt) {
   // Let the derived class do the actual run
   auto dt_sub = dt / m_num_subcycles;
   for (m_subcycle_iter=0; m_subcycle_iter<m_num_subcycles; ++m_subcycle_iter) {
+
+    if (has_column_conservation_check()) {
+      // Column local mass and energy checks requires the total mass and energy
+      // to be computed directly before the atm process is run, as well and store
+      // the correct timestep for the process.
+      compute_column_conservation_checks_data(dt_sub);
+    }
+
     run_impl(dt_sub);
+
+    if (has_column_conservation_check()) {
+      // Run the column local mass and energy conservation checks
+      run_column_conservation_check();
+    }
   }
 
   if (m_params.get("enable_postcondition_checks", true)) {
     // Run 'post-condition' property checks stored in this AP
     run_postcondition_checks();
-  }
-
-  if (has_column_conservation_check()) {
-    // Run the column local mass and energy conservation checks
-    run_column_conservation_check();
   }
 
   m_time_stamp += dt;
@@ -833,11 +836,6 @@ void AtmosphereProcess
 
 void AtmosphereProcess::compute_column_conservation_checks_data (const int dt)
 {
-  // Only setup the check if this process call it.
-  if (not m_column_conservation_check_data.has_check) {
-    return;
-  }
-
   EKAT_REQUIRE_MSG(m_column_conservation_check.second != nullptr,
                    "Error! User set enable_column_conservation_checks=true, "
                    "but no conservation check exists.\n");
