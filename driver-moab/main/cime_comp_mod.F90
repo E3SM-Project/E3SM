@@ -2165,17 +2165,7 @@ contains
                fractions_ax(efi), fractions_ix(efi), fractions_lx(efi), &
                fractions_ox(efi), fractions_gx(efi), fractions_rx(efi), &
                fractions_wx(efi), fractions_zx(efi))
-#ifdef MOABDEBUG
-               if (mboxid .ge. 0) then
-                  ent_type = 1 ! cells for ocean mesh
-                  mct_field = 'ifrad'
-                  tagname = 'ifrad'//C_NULL_CHAR
-                  call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
-                  mct_field = 'ofrad'
-                  tagname = 'ofrad'//C_NULL_CHAR
-                  call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
-               endif
-#endif
+
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              if (efi == 1) write(logunit,F00) 'Setting fractions'
@@ -2183,17 +2173,6 @@ contains
 
           call seq_frac_set(infodata, ice(eii), ocn(ens1), &
                fractions_ax(efi), fractions_ix(efi), fractions_ox(efi))
-#ifdef MOABDEBUG
-         if (mboxid .ge. 0) then
-            ent_type = 1 ! cells for ocean mesh
-            mct_field = 'ifrad'
-            tagname = 'ifrad'//C_NULL_CHAR
-            call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
-            mct_field = 'ofrad'
-            tagname = 'ofrad'//C_NULL_CHAR
-            call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
-         endif
-#endif
 
        enddo
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -2228,17 +2207,7 @@ contains
           if (trim(aoflux_grid) == 'ocn') then
 
              call seq_flux_init_mct(ocn(ens1), fractions_ox(ens1))
-#ifdef MOABDEBUG
-             if (mboxid .ge. 0) then
-                ent_type = 1 ! cells for ocean mesh
-                mct_field = 'ifrad'
-                tagname = 'ifrad'//C_NULL_CHAR
-                call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
-                mct_field = 'ofrad'
-                tagname = 'ofrad'//C_NULL_CHAR
-                call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
-             endif
-#endif
+
           elseif (trim(aoflux_grid) == 'atm') then
 
              call seq_flux_init_mct(atm(ens1), fractions_ax(ens1))
@@ -2260,6 +2229,7 @@ contains
              xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
              a2x_ox => prep_ocn_get_a2x_ox()
              call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
+
           enddo
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -4365,27 +4335,6 @@ contains
           xao_ox => prep_aoflux_get_xao_ox()
           call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
 
-#ifdef MOABDEBUG
-         ! before calling moab merge, check that the fractions are the same
-         ! compare_mct_av_moab_tag(comp, attrVect, mct_field, appId, tagname, ent_type, difference)
-          ! fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
-          ent_type = 1
-          mct_field = 'afrac'
-          tagname = 'afrac'//C_NULL_CHAR
-          call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
-          mct_field = 'ifrac'
-          tagname = 'ifrac'//C_NULL_CHAR
-          call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
-          mct_field = 'ofrac'
-          tagname = 'ofrac'//C_NULL_CHAR
-          call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
-          mct_field = 'ifrad'
-          tagname = 'ifrad'//C_NULL_CHAR
-          call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
-          mct_field = 'ofrad'
-          tagname = 'ofrad'//C_NULL_CHAR
-          call compare_mct_av_moab_tag(ocn(1), fractions_ox(1), mct_field, mboxid, tagname, ent_type, difference)
-#endif
           ! moab version
           call prep_ocn_mrg_moab(infodata, xao_ox)
 

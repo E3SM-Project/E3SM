@@ -43,6 +43,8 @@ module prep_aoflux_mod
   public :: prep_aoflux_get_xao_ox
   public :: prep_aoflux_get_xao_ax
 
+  ! these are to expose the artificial arrays created for setting moab tag
+  ! these are the transpose of the AVs for fluxes;
   public :: prep_aoflux_get_xao_omct
   public :: prep_aoflux_get_xao_amct
 
@@ -56,8 +58,6 @@ module prep_aoflux_mod
 
   ! allocate xao_omct, but use lsize_o, size of the local mct ocn gsmap (and AVs)
   real(r8) ,  private, pointer :: xao_omct(:,:) ! atm-ocn fluxes, ocn grid, mct local sizes 
-  real(r8) ,  private, pointer :: xao_omoab(:,:) ! atm-ocn fluxes, ocn grid, moab local sizes 
-
   real(r8) ,  private, pointer :: xao_amct(:,:) ! atm-ocn fluxes, atm grid, mct local sizes 
 
   ! seq_comm_getData variables
