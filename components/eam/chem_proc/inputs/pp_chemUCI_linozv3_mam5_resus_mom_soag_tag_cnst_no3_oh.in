@@ -195,17 +195,18 @@ CHEMISTRY
 [lhno4]     HO2NO2 + OH -> NO2 + H2O + O2                  ; 1.300E-12, 380
 [lhno3]     HNO3 + OH -> NO3 + H2O                         ; 2.400E-14, 460
 *   fix needed to add this bimolec rate, missing from the one below
-[uci6] HNO3 + OH -> NO3 + H2O
+[uci6] HNO3 + OH -> NO3 + H2O                              ; 2.400E-14, 460
+* use as placeholder, the real uci6 coefficients are calculated in model
 *    k[uci6] = (k2*k3*[M])/(k2 + k3*[M])  k2=2.7e-17*exp(2199/T)  k3=6.5e-34*exp(1335/T)*[M]
 [lno2_oh]   NO2 + OH + M -> HNO3 + M              ; 1.80e-30, 3.0,  2.80e-11, 0.0, 0.6
 [HO2NO2f]  NO2 + HO2 + M -> HO2NO2 + M            ; 1.90e-31, 3.4,  4.00e-12, 0.3, 0.6
 [N2O5f]  NO2 + NO3 + M -> N2O5 + M                ; 2.40E-30, 3.0,  1.60E-12,-0.1, 0.6
 [PANf]   CH3CO3 + NO2 + M -> PAN + M              ; 9.70E-29, 5.6,  9.30E-12, 1.5, 0.6
-[uci7]   HO2NO2 -> HO2 + NO2                      ; 2.10E-27, 10900
+[uci7]   HO2NO2 + M -> HO2 + NO2                      ; 2.10E-27, 10900
 *     k[uci7] -> k[HO2NO2] / k[uci7]
-[uci8]   N2O5 -> NO2 + NO3                        ; 5.80E-27, 10840
+[uci8]   N2O5 + M -> NO2 + NO3                        ; 5.80E-27, 10840
 *     k[uci8] -> k[N2O5] / k[uci8]
-[uci9]   PAN -> CH3CO3 + NO2                      ; 9.00E-29, 14000
+[uci9]   PAN + M -> CH3CO3 + NO2                      ; 9.00E-29, 14000
 *     k[uci9] -> k[PAN] / k[uci9]
 [lch3o2_ho2]   CH3O2 + HO2 -> CH3OOH + O2                     ; 4.100E-13, 750
 [lch3o2_no]    CH3O2 + NO -> CH2O + HO2 + NO2                 ; 2.800E-12, 300
