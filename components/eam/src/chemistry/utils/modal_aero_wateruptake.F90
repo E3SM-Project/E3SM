@@ -358,7 +358,6 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    !kzm ++
 
    if (modal_strat_sulfate_aod) then
-     call pbuf_get_field(pbuf, dgnumwet_idx, dgncur_awet )      
       if (is_first_step()) then
          dgncur_awet(:,:,:) = dgncur_a(:,:,:)
          write(iulog,*)'kzm_strat_sulfate_aod_treatment_activiated'
@@ -412,9 +411,9 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
             alnsg = log(sigmag)
             do k = top_lev, pver
                do i = 1, ncol
-                  dmean = dgncur_awet(i,k,m)*exp(1.5_r8*alnsg**2)
+                  !dmean = dgncur_awet(i,k,m)*exp(1.5_r8*alnsg**2)
                   !if ( ieee_is_nan(dgncur_awet(i,k,m)) ) then
-                  !    dmean = dgncur_a(i,k,m)*exp(1.5_r8*alnsg**2)
+                  dmean = dgncur_a(i,k,m)*exp(1.5_r8*alnsg**2)
                   !endif    
                   !kzm: h2ommr has NaN values in restart run when using
                   !MAM5-FC,at the first step
