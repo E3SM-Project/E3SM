@@ -2,7 +2,7 @@ module ml_training
 
    ! TODO:
    ! - add physics state
-   ! - figure out how to handles prescribed aerosol, ozone, etc.
+   ! - figure out how to handles prescribed aerosol, ozone, etc. (see phys_timestep_init)
    ! - screen CRM variables from pbuf data
    ! - add calls in phys_run1() 
    ! - write "output" routines
@@ -26,10 +26,17 @@ module ml_training
    save
    
    ! Public interfaces
-   public :: init_ml_training_input
+   public :: get_ml_input_filename
+   public :: init_ml_training_input    ! define variables for output file
    public :: write_ml_training_input   ! write physics input data for ML training
    ! public :: init_ml_training_output
    ! public :: write_ml_training_output  ! write physics output data for ML verification
+
+   ! Filename specifiers for master restart filename
+   ! (%c = caseid, $y = year, $m = month, $d = day, $s = seconds in day, %t = number)
+   integer, parameter :: nlen = 256
+   character(len=nlen),public :: mli_filename_spec = '%c.eam.mli.%y-%m-%d-%s.nc'
+   character(len=nlen),public :: mlo_filename_spec = '%c.eam.mlo.%y-%m-%d-%s.nc'
    
    ! Private module data
    character(len=8)     :: num
@@ -56,7 +63,22 @@ module ml_training
 
 CONTAINS
    !------------------------------------------------------------------------------------------------
-   subroutine init_ml_training_input ( File, pbuf2d)
+   function get_ml_input_filename()
+      use seq_timemgr_mod,        only: seq_timemgr_EClockGetData
+
+      call seq_timemgr_EClockGetData( EClock, curr_ymd=ymd_sync, &
+                                      curr_tod=tod_sync, curr_yr=yr_sync, &
+                                      curr_mon=mon_sync, curr_day=day_sync)
+
+      fname = interpret_filename_spec( mli_filename_spec, yr_spec=yr_spec, &
+                                       mon_spec=mon_spec, day_spec=day_spec, &
+                                       sec_spec= sec_spec )
+
+      return fname
+   end subroutine get_ml_input_filename
+   !------------------------------------------------------------------------------------------------
+   subroutine init_ml_training_input(File, pbuf2d)
+#ifdef MMF_ML_TRAINING
       use physics_buffer,      only: pbuf_init_restart, physics_buffer_desc
       use ppgrid,              only: pver, pverp, pcols
       use chemistry,           only: chem_init_restart
@@ -126,23 +148,22 @@ CONTAINS
       ! ierr = pio_def_var(File, 'DSTDRY3',  pio_double, hdimids, dstdry3_desc)
       ! ierr = pio_def_var(File, 'DSTDRY4',  pio_double, hdimids, dstdry4_desc)
 
-      ! cam_import variables -- write the constituent surface fluxes as individual 2D arrays
-      ! rather than as a single variable with a pcnst dimension.  Note that the cflx components
-      ! are only needed for those constituents that are not passed to the coupler.  The restart
-      ! for constituents passed through the coupler are handled by the .rs. restart file.  But
-      ! we don't currently have a mechanism to know whether the constituent is handled by the
-      ! coupler or not, so we write all of cflx to the CAM restart file.
+      ! write the constituent surface fluxes as individual 2D arrays
+      ! rather than as a single variable with a pcnst dimension.  
+      ! (the constituent fluxes might not be needed for the 1-mom MMF)
       do i = 1, pcnst
        write(num,'(i4.4)') i
        ierr = pio_def_var(File, 'CFLX'//num,  pio_double, hdimids, cflx_desc(i))
       end do
-      ! Add LHF and SHF to restart file to fix non-BFB restart issue due to qneg4 correction at the restart time step
+      ! Add LHF and SHF due to qneg4 correction at the restart time step
       ierr = pio_def_var(File, 'SHF',  pio_double, hdimids, shf_desc)
-      ! ierr = pio_def_var(File, 'LHF',  pio_double, hdimids, lhf_desc)
+      ierr = pio_def_var(File, 'LHF',  pio_double, hdimids, lhf_desc)
 
+#endif /* MMF_ML_TRAINING */
    end subroutine init_ml_training_input
    !------------------------------------------------------------------------------------------------
-   subroutine write_ml_training_input (File, cam_in, cam_out, pbuf2d)
+   subroutine write_ml_training_input(File, cam_in, cam_out, pbuf2d)
+#ifdef MMF_ML_TRAINING
       use physics_buffer,      only: physics_buffer_desc, pbuf_write_restart
       use phys_grid,           only: phys_decomp
       use ppgrid,              only: begchunk, endchunk, pcols, pverp
@@ -282,11 +303,12 @@ CONTAINS
       end do
       call pio_write_darray(File, shf_desc, iodesc, tmpfield, ierr)
 
-      ! do i = begchunk, endchunk
-      !    tmpfield(:cam_in(i)%ncol, i) = cam_in(i)%lhf(:cam_in(i)%ncol)
-      ! end do
-      ! call pio_write_darray(File, lhf_desc, iodesc, tmpfield, ierr)
+      do i = begchunk, endchunk
+         tmpfield(:cam_in(i)%ncol, i) = cam_in(i)%lhf(:cam_in(i)%ncol)
+      end do
+      call pio_write_darray(File, lhf_desc, iodesc, tmpfield, ierr)
       
+#endif /* MMF_ML_TRAINING */
    end subroutine write_ml_training_input
    !------------------------------------------------------------------------------------------------
 end module ml_training
