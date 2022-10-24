@@ -1484,7 +1484,8 @@ contains
 
     logical :: &
          northernHemisphereMask, &
-         abortFlag
+         abortFlag, &
+         anyAbort
 
     character(len=strKIND) :: &
          abortMessage, &
@@ -1700,6 +1701,7 @@ contains
        ! code abort
        abortFlag = .false.
        abortMessage = ""
+       anyAbort = .false.
 
        !$omp parallel do default(shared) private(iCategory,iAerosol,northernHemisphereMask,&
        !$omp&  abortMessage) firstprivate(specificSnowAerosol,specificIceAerosol) &
@@ -1882,7 +1884,7 @@ contains
           call column_write_warnings(abortFlag)
 
           ! code abort
-          if (abortFlag) then
+          if (abortFlag .and. .not. anyAbort) then
              call mpas_log_write("column_vertical_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
 
@@ -2039,7 +2041,9 @@ contains
              call mpas_log_write("freezeOnset: $r", messageType=MPAS_LOG_ERR, realArgs=(/freezeOnset(iCell)/))
              call mpas_log_write("dayOfYear: $r", messageType=MPAS_LOG_ERR, realArgs=(/dayOfYear/))
              call mpas_log_write("config_use_prescribed_ice: $l", messageType=MPAS_LOG_ERR, logicArgs=(/config_use_prescribed_ice/))
-             exit
+             anyAbort = .true.
+             abortFlag = .false.
+             abortMessage = ""
           endif
 
           ! aerosol
@@ -2070,8 +2074,8 @@ contains
        enddo ! iCell
 
        ! code abort
-       call seaice_critical_error_write_block(domain, block, abortFlag)
-       call seaice_check_critical_error(domain, abortFlag)
+       call seaice_critical_error_write_block(domain, block, anyAbort)
+       call seaice_check_critical_error(domain, anyAbort)
 
        ! aerosols
        deallocate(specificSnowAerosol)
@@ -2211,6 +2215,7 @@ contains
 
     logical :: &
          abortFlag, &
+         anyAbort, &
          setGetPhysicsTracers, &
          setGetBGCTracers, &
          checkCarbon
@@ -2321,6 +2326,7 @@ contains
        ! code abort
        abortFlag = .false.
        abortMessage = ""
+       anyAbort = .false.
 
        !$omp parallel do default(shared) private(iCategory,iBioTracers,iBioData,&
        !$omp&   totalCarbonInitial,abortMessage,oceanBioFluxesTemp,totalCarbonFinal,&
@@ -2444,17 +2450,19 @@ contains
           endif
 
           ! code abort
-          if (abortFlag) then
+          if (abortFlag .and. .not. anyAbort) then
              call mpas_log_write("column_itd_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-             exit
+             abortFlag = .false.
+             abortMessage = ""
+             anyAbort = .true.
           endif
 
        enddo ! iCell
 
        ! code abort
-       call seaice_critical_error_write_block(domain, block, abortFlag)
-       call seaice_check_critical_error(domain, abortFlag)
+       call seaice_critical_error_write_block(domain, block, anyAbort)
+       call seaice_check_critical_error(domain, anyAbort)
 
        if (checkCarbon) then
           deallocate(totalCarbonCatFinal)
