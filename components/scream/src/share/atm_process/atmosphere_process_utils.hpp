@@ -43,6 +43,13 @@ enum class ScheduleType {
   Parallel
 };
 
+// Enum used for disinguishing between pre/postcondition
+// property checks for output.
+enum PropertyCheckCategory {
+  Precondition,
+  Postcondition
+};
+
 } // namespace scream
 
 #endif // SCREAM_ATMOSPHERE_PROCESS_UTILS_HPP

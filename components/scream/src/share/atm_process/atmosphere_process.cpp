@@ -1,5 +1,6 @@
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/util/scream_timing.hpp"
+#include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
 
 #include "ekat/ekat_assert.hpp"
 
@@ -55,6 +56,10 @@ AtmosphereProcess (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_timer_prefix = m_params.get<std::string>("Timer Prefix","EAMxx::");
 
   m_repair_log_level = str2LogLevel(m_params.get<std::string>("repair_log_level","warn"));
+
+  // Info for mass and energy conservation checks
+  m_column_conservation_check_data.has_check =
+      m_params.get<bool>("enable_column_conservation_checks", false);
 }
 
 void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type) {
@@ -85,7 +90,20 @@ void AtmosphereProcess::run (const int dt) {
   // Let the derived class do the actual run
   auto dt_sub = dt / m_num_subcycles;
   for (m_subcycle_iter=0; m_subcycle_iter<m_num_subcycles; ++m_subcycle_iter) {
+
+    if (has_column_conservation_check()) {
+      // Column local mass and energy checks requires the total mass and energy
+      // to be computed directly before the atm process is run, as well and store
+      // the correct timestep for the process.
+      compute_column_conservation_checks_data(dt_sub);
+    }
+
     run_impl(dt_sub);
+
+    if (has_column_conservation_check()) {
+      // Run the column local mass and energy conservation checks
+      run_column_conservation_check();
+    }
   }
 
   if (m_params.get("enable_postcondition_checks", true)) {
@@ -203,83 +221,69 @@ void AtmosphereProcess::set_computed_group (const FieldGroup& group) {
   set_computed_group_impl(group);
 }
 
-void AtmosphereProcess::run_precondition_checks () const {
-  // Run all pre-condition property checks
+void AtmosphereProcess::run_property_check (const prop_check_ptr&       property_check,
+                                            const CheckFailHandling     check_fail_handling,
+                                            const PropertyCheckCategory property_check_category) const {
+  auto res_and_msg = property_check->check();
 
-  for (const auto& it : m_precondition_checks) {
-    const auto& pc = it.second;
+  // string for output
+  std::string pre_post_str;
+  if (property_check_category == PropertyCheckCategory::Precondition)  pre_post_str = "pre-condition";
+  if (property_check_category == PropertyCheckCategory::Postcondition) pre_post_str = "post-condition";
 
-    auto res_and_msg = pc->check();
-    if (res_and_msg.result==CheckResult::Pass) {
-      continue;
-    } else if (res_and_msg.result==CheckResult::Repairable) {
-      // Ok, we can fix this
-      pc->repair();
-      log (m_repair_log_level,
-        "WARNING: Pre-condition property check failed and repaired.\n"
+  if (res_and_msg.result==CheckResult::Pass) {
+    // Do nothing
+  } else if (res_and_msg.result==CheckResult::Repairable) {
+    // Ok, we can fix this
+    property_check->repair();
+    log (m_repair_log_level,
+      "WARNING: Failed and repaired " + pre_post_str + " property check.\n"
+      "  - Atmosphere process name: " + name() + "\n"
+      "  - Property check name: " + property_check->name() + "\n"
+      "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
+  } else {
+    // Ugh, the test failed badly, with no chance to repair it.
+    if (check_fail_handling==CheckFailHandling::Warning) {
+      // Still ok, just warn the user
+      log (LogLevel::warn,
+        "Warning! Failed " + pre_post_str + " property check (cannot be repaired).\n"
         "  - Atmosphere process name: " + name() + "\n"
-        "  - Property check name: " + pc->name() + "\n"
-        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
+        "  - Property check name: " + property_check->name() + "\n"
+        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
+        "  - Message: " + res_and_msg.msg);
     } else {
-      // Ugh, the test failed badly, with no chance to repair it.
-      if (it.first==CheckFailHandling::Warning) {
-        // Still ok, just but warn the user
-        log (LogLevel::warn,
-          "Warning! Failed pre-condition check (cannot be repaired).\n"
+      // No hope. Crash.
+      EKAT_ERROR_MSG(
+          "Error! Failed " + pre_post_str + " property check (cannot be repaired).\n"
           "  - Atmosphere process name: " + name() + "\n"
-          "  - Property check name: " + pc->name() + "\n"
+          "  - Property check name: " + property_check->name() + "\n"
           "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
           "  - Message: " + res_and_msg.msg);
-      } else {
-        // No hope. Crash.
-        EKAT_ERROR_MSG(
-            "Error! Failed pre-condition check (cannot be repaired).\n"
-            "  - Atmosphere process name: " + name() + "\n"
-            "  - Property check name: " + pc->name() + "\n"
-            "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
-            "  - Message: " + res_and_msg.msg);
-      }
     }
+  }
+}
+
+void AtmosphereProcess::run_precondition_checks () const {
+  // Run all pre-condition property checks
+  for (const auto& it : m_precondition_checks) {
+    run_property_check(it.second, it.first,
+                       PropertyCheckCategory::Precondition);
   }
 }
 
 void AtmosphereProcess::run_postcondition_checks () const {
   // Run all post-condition property checks
   for (const auto& it : m_postcondition_checks) {
-    const auto& pc = it.second;
-
-    auto res_and_msg = pc->check();
-    if (res_and_msg.result==CheckResult::Pass) {
-      continue;
-    } else if (res_and_msg.result==CheckResult::Repairable) {
-      // Ok, we can fix this
-      pc->repair();
-      log (m_repair_log_level,
-        "WARNING: Post-condition property check failed and repaired.\n"
-        "  - Property check name: " + pc->name() + "\n"
-        "  - Atmosphere process name: " + name() + "\n"
-        "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n");
-    } else {
-      // Ugh, the test failed badly, with no chance to repair it.
-      if (it.first==CheckFailHandling::Warning) {
-        // Still ok, just warn the user
-        log (LogLevel::warn,
-          "Warning! Failed post-condition check (cannot be repaired).\n"
-          "  - Atmosphere process name: " + name() + "\n"
-          "  - Property check name: " + pc->name() + "\n"
-          "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
-          "  - Message: " + res_and_msg.msg);
-      } else {
-        // No hope. Crash.
-        EKAT_ERROR_MSG(
-            "Error! Failed post-condition check (cannot be repaired).\n"
-            "  - Atmosphere process name: " + name() + "\n"
-            "  - Property check name: " + pc->name() + "\n"
-            "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
-            "  - Message: " + res_and_msg.msg);
-      }
-    }
+    run_property_check(it.second, it.first,
+                       PropertyCheckCategory::Postcondition);
   }
+}
+
+void AtmosphereProcess::run_column_conservation_check () const {
+  // Conservation check is run as a postcondition check
+  run_property_check(m_column_conservation_check.second,
+                     m_column_conservation_check.first,
+                     PropertyCheckCategory::Postcondition);
 }
 
 bool AtmosphereProcess::has_required_field (const FieldIdentifier& id) const {
@@ -507,6 +511,16 @@ add_postcondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
         "  - Property check name: " + pc->name() + "\n");
   }
   m_postcondition_checks.push_back(std::make_pair(cfh,pc));
+}
+
+void AtmosphereProcess::
+add_column_conservation_check(const prop_check_ptr &prop_check, const CheckFailHandling cfh)
+{
+  EKAT_REQUIRE_MSG(m_column_conservation_check.second == nullptr,
+                   "Error! Conservation check for process \""+ name() +
+                   "\" has already been added.");
+
+  m_column_conservation_check = std::make_pair(cfh,prop_check);
 }
 
 void AtmosphereProcess::set_fields_and_groups_pointers () {
@@ -816,6 +830,20 @@ void AtmosphereProcess
   };
   rmg(m_groups_in, m_groups_in_pointers);
   rmg(m_groups_out, m_groups_out_pointers);
+}
+
+void AtmosphereProcess::compute_column_conservation_checks_data (const int dt)
+{
+  EKAT_REQUIRE_MSG(m_column_conservation_check.second != nullptr,
+                   "Error! User set enable_column_conservation_checks=true, "
+                   "but no conservation check exists.\n");
+
+  // Set dt and compute current mass and energy.
+  const auto& conservation_check =
+      std::dynamic_pointer_cast<MassAndEnergyColumnConservationCheck>(m_column_conservation_check.second);
+  conservation_check->set_dt(dt);
+  conservation_check->compute_current_mass();
+  conservation_check->compute_current_energy();
 }
 
 } // namespace scream

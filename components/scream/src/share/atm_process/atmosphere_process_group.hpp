@@ -2,6 +2,7 @@
 #define SCREAM_ATMOSPHERE_PROCESS_GROUP_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
+#include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
 #include "control/surface_coupling_utils.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
@@ -75,6 +76,16 @@ public:
   //       stores ZERO internal fields. In other words, this method populates the list
   //       of internal fields of the group.
   void gather_internal_fields ();
+
+  // Returns true if any internal processes enables
+  // the mass and energy conservation checks.
+  bool are_column_conservation_checks_enabled () const;
+
+  // Adds the mass and energy conservation
+  // checks to appropriate physics processes.
+  void setup_column_conservation_checks (
+      const std::shared_ptr<MassAndEnergyColumnConservationCheck>& conservation_check,
+      const CheckFailHandling                                      fail_handling_type) const;
 
 protected:
 

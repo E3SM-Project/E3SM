@@ -92,6 +92,14 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 
   // Tracer group
   add_group<Updated>("tracers",grid_name,ps,Bundling::Required);
+
+  // Boundary flux fields for energy and mass conservation checks
+  if (has_column_conservation_check()) {
+    add_field<Computed>("vapor_flux", scalar2d_layout_col, kg/m2/s, grid_name);
+    add_field<Computed>("water_flux", scalar2d_layout_col, m/s,     grid_name);
+    add_field<Computed>("ice_flux",   scalar2d_layout_col, m/s,     grid_name);
+    add_field<Computed>("heat_flux",  scalar2d_layout_col, W/m2,    grid_name);
+  }
 }
 
 // =========================================================================================
@@ -217,24 +225,24 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   // Initialize all of the structures that are passed to shoc_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
   //       variables a local view is constructed.
-  const auto& T_mid            = get_field_out("T_mid").get_view<Spack**>();
-  const auto& p_mid            = get_field_in("p_mid").get_view<const Spack**>();
-  const auto& p_int            = get_field_in("p_int").get_view<const Spack**>();
-  const auto& pseudo_density   = get_field_in("pseudo_density").get_view<const Spack**>();
-  const auto& omega            = get_field_in("omega").get_view<const Spack**>();
-  const auto& surf_sens_flux   = get_field_in("surf_sens_flux").get_view<const Real*>();
-  const auto& surf_evap        = get_field_in("surf_evap").get_view<const Real*>();
-  const auto& surf_mom_flux    = get_field_in("surf_mom_flux").get_view<const Real**>();
-  const auto& qtracers         = get_group_out("tracers").m_bundle->get_view<Spack***>();
-  const auto& qc               = get_field_out("qc").get_view<Spack**>();
-  const auto& qv               = get_field_out("qv").get_view<Spack**>();
-  const auto& tke              = get_field_out("tke").get_view<Spack**>();
-  const auto& cldfrac_liq      = get_field_out("cldfrac_liq").get_view<Spack**>();
-  const auto& sgs_buoy_flux    = get_field_out("sgs_buoy_flux").get_view<Spack**>();
-  const auto& tk               = get_field_out("eddy_diff_mom").get_view<Spack**>();
-  const auto& inv_qc_relvar    = get_field_out("inv_qc_relvar").get_view<Spack**>();
-  const auto& phis             = get_field_in("phis").get_view<const Real*>();
-  const auto& tracer_info      = get_group_out("tracers").m_info; // obtain tracer info structure
+  const auto& T_mid          = get_field_out("T_mid").get_view<Spack**>();
+  const auto& p_mid          = get_field_in("p_mid").get_view<const Spack**>();
+  const auto& p_int          = get_field_in("p_int").get_view<const Spack**>();
+  const auto& pseudo_density = get_field_in("pseudo_density").get_view<const Spack**>();
+  const auto& omega          = get_field_in("omega").get_view<const Spack**>();
+  const auto& surf_sens_flux = get_field_in("surf_sens_flux").get_view<const Real*>();
+  const auto& surf_evap      = get_field_in("surf_evap").get_view<const Real*>();
+  const auto& surf_mom_flux  = get_field_in("surf_mom_flux").get_view<const Real**>();
+  const auto& qtracers       = get_group_out("tracers").m_bundle->get_view<Spack***>();
+  const auto& qc             = get_field_out("qc").get_view<Spack**>();
+  const auto& qv             = get_field_out("qv").get_view<Spack**>();
+  const auto& tke            = get_field_out("tke").get_view<Spack**>();
+  const auto& cldfrac_liq    = get_field_out("cldfrac_liq").get_view<Spack**>();
+  const auto& sgs_buoy_flux  = get_field_out("sgs_buoy_flux").get_view<Spack**>();
+  const auto& tk             = get_field_out("eddy_diff_mom").get_view<Spack**>();
+  const auto& inv_qc_relvar  = get_field_out("inv_qc_relvar").get_view<Spack**>();
+  const auto& phis           = get_field_in("phis").get_view<const Real*>();
+  const auto& tracer_info    = get_group_out("tracers").m_info; // obtain tracer info structure
 
   // Alias local variables from temporary buffer
   auto z_mid       = m_buffer.z_mid;
@@ -378,6 +386,16 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
                                  rrho,qv,qw,qc,qc_copy,tke,tke_copy,qtracers,shoc_ql2,
                                  cldfrac_liq,inv_qc_relvar,
                                  T_mid, dse, z_mid, phis);
+
+  if (has_column_conservation_check()) {
+    const auto& vapor_flux = get_field_out("vapor_flux").get_view<Real*>();
+    const auto& water_flux = get_field_out("water_flux").get_view<Real*>();
+    const auto& ice_flux   = get_field_out("ice_flux").get_view<Real*>();
+    const auto& heat_flux  = get_field_out("heat_flux").get_view<Real*>();
+    shoc_postprocess.set_mass_and_energy_fluxes (surf_evap, surf_sens_flux,
+      					         vapor_flux, water_flux,
+                                                 ice_flux, heat_flux);
+  }
 
   // Set field property checks for the fields in this process
   using Interval = FieldWithinIntervalCheck;

@@ -241,8 +241,24 @@ public:
         diag_eff_radius_qc(icol,ipack) *= 1e6;
         diag_eff_radius_qi(icol,ipack) *= 1e6;
       } // for ipack
+
+      // Microphysics can be subcycled together during a single physics timestep,
+      // therefore we must accumulate these fluxes
       precip_liq_surf_mass(icol) += precip_liq_surf_flux(icol) * PC::RHO_H2O * m_dt;
       precip_ice_surf_mass(icol) += precip_ice_surf_flux(icol) * PC::RHO_H2O * m_dt;
+
+      // If necessary, set appropriate boundary fluxes for energy and mass
+      // conservation checks. Any boundary fluxes not included in SHOC
+      // interface are set to 0.
+      // Unlike above, these fluxes do not need to be accumulated
+      // since the conservation checks are run after each
+      // Microphysics step.
+      if (compute_mass_and_energy_fluxes) {
+        vapor_flux(icol) = 0.0;
+        water_flux(icol) = precip_liq_surf_flux(icol)+precip_ice_surf_flux(icol);
+        ice_flux(icol)   = precip_ice_surf_flux(icol);
+        heat_flux(icol)  = 0.0;
+      }
     } // operator
     // Local variables
     int m_ncol, m_npack, m_dt;
@@ -266,6 +282,12 @@ public:
     view_1d_const precip_ice_surf_flux;
     view_1d       precip_liq_surf_mass;
     view_1d       precip_ice_surf_mass;
+    bool          compute_mass_and_energy_fluxes = false;
+    view_1d       vapor_flux;
+    view_1d       water_flux;
+    view_1d       ice_flux;
+    view_1d       heat_flux;
+
     // Assigning local values
     void set_dt(const int dt)
     {
@@ -313,6 +335,16 @@ public:
       // RAD Vars: icinc, icwnc, icimrst, icwmrst
       // COSP Vars: flxprc, flxsnw, flxprc, flxsnw, cvreffliq, cvreffice, reffrain, reffsnow
     } // set_variables
+
+    void set_mass_and_energy_fluxes (const view_1d& vapor_flux_, const view_1d& water_flux_,
+				     const view_1d& ice_flux_, const view_1d& heat_flux_)
+    {
+      compute_mass_and_energy_fluxes = true;
+      vapor_flux = vapor_flux_;
+      water_flux = water_flux_;
+      ice_flux   = ice_flux_;
+      heat_flux  = heat_flux_;
+    }
   }; // p3_postamble
   /* --------------------------------------------------------------------------------------------*/
 

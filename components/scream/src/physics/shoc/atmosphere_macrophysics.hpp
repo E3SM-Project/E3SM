@@ -116,7 +116,7 @@ public:
 
         tke(i,k) = ekat::max(sp(0.004), tke(i,k));
 
-        // Tracers are updated as a group. The tracers tke and qc act as seperate inputs to shoc_main()
+        // Tracers are updated as a group. The tracers tke and qc act as separate inputs to shoc_main()
         // and are therefore updated differently to the bundled tracers. Here, we make a copy if each
         // of these tracers and pass to shoc_main() so that changes to the tracer group does not alter
         // tke or qc  values. Then during post processing, we copy back correct values of tke and qc
@@ -358,6 +358,15 @@ public:
             qtracers(i,convert_wet_dry_idx_d(iq),k) = PF::calculate_wetmmr_from_drymmr(qtracers(i,convert_wet_dry_idx_d(iq),k), qv(i,k));
           qv(i,k) = PF::calculate_wetmmr_from_drymmr(qv(i,k), qv(i,k));
       });
+
+      // If necessary, set appropriate boundary fluxes for energy and mass conservation checks.
+      // Any boundary fluxes not included in SHOC interface are set to 0.
+      if (compute_mass_and_energy_fluxes) {
+        vapor_flux(i) = surf_evap(i);
+        water_flux(i) = 0.0;
+        ice_flux(i)   = 0.0;
+        heat_flux(i)  = surf_sens_flux(i);
+      }
     } // operator
 
     // Local variables
@@ -373,6 +382,13 @@ public:
     view_2d T_mid;
     view_2d_const dse,z_mid;
     view_1d_const phis;
+    bool compute_mass_and_energy_fluxes = false;
+    view_1d_const surf_evap;
+    view_1d_const surf_sens_flux;
+    view_1d vapor_flux;
+    view_1d water_flux;
+    view_1d ice_flux;
+    view_1d heat_flux;
 
     // Assigning local variables
     void set_variables(const int ncol_, const int nlev_, const int num_qtracers_,
@@ -403,6 +419,19 @@ public:
       z_mid = z_mid_;
       phis = phis_;
     } // set_variables
+
+    void set_mass_and_energy_fluxes (const view_1d_const& surf_evap_, const view_1d_const surf_sens_flux_,
+				     const view_1d& vapor_flux_, const view_1d& water_flux_,
+                                     const view_1d& ice_flux_, const view_1d& heat_flux_)
+    {
+      compute_mass_and_energy_fluxes = true;
+      surf_evap = surf_evap_;
+      surf_sens_flux = surf_sens_flux_;
+      vapor_flux = vapor_flux_;
+      water_flux = water_flux_;
+      ice_flux = ice_flux_;
+      heat_flux = heat_flux_;
+    }
   }; // SHOCPostprocess
   /* --------------------------------------------------------------------------------------------*/
 
