@@ -462,13 +462,13 @@ contains
       ! mass budgets at grounded marine margins.
       do i=1,nCells
           if (li_mask_is_grounded_ice(cellMask(i))) then  ! only need to check grounded cells
-              do j=1,nEdgesOnCell(i) ! Check if any neighbors are floating or open ocean
+              do j=1,nEdgesOnCell(i) ! Check if any neighbors are floating dynamic ice
                  iCellNeighbor = cellsOnCell(j,i)
                  if ( li_mask_is_floating_ice(cellMask(iCellNeighbor)) .and. &
                       li_mask_is_dynamic_ice(cellMask(iCellNeighbor)) ) then
                     cellMask(i) = ior(cellMask(i), li_mask_ValueGroundingLine)
+                    exit  ! if we found a floating neighbor, no need to look at additional neighbors
                  endif
-                 cycle  ! no need to look at additional neighbors
               enddo
           endif
       enddo

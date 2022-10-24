@@ -522,9 +522,8 @@ module li_iceshelf_melt
                   do iNeighbor = 1, nEdgesOnCell(iCell)
                      jCell = cellsOnCell(iNeighbor, iCell)
                      if ( li_mask_is_grounded_ice(cellMask(jCell)) ) then
-
                          floatingBasalMassBal(iCell) = 0.0_RKIND
-                         cycle ! No need to look over other neighbors
+                         exit ! No need to look over other neighbors
                       endif
                   enddo
                 endif
