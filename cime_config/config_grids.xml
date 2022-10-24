@@ -2253,7 +2253,7 @@
       <file grid="atm|lnd" mask="WCAtl12to45E2r4">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_WCAtl12to45E2r4.210318.nc</file>
       <file grid="atm|lnd" mask="SOwISC12to60E2r4">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_SOwISC12to60E2r4.210119.nc</file>
       <file grid="atm|lnd" mask="ECwISC30to60E2r1">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_ECwISC30to60E2r1.201007.nc</file>
-      <file grid="atm|lnd" mask="GoM5to30E2r1">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_GoM5to30E2r11.221024.nc</file>
+      <file grid="atm|lnd" mask="GoM5to30E2r1">$DIN_LOC_ROOT/share/domains/domain.lnd.T62_GoM5to30E2r1.221024.nc</file>
       <desc>T62 is Gaussian grid:</desc>
     </domain>
 
