@@ -456,7 +456,7 @@ contains
 
       ! Identify the grounding line
       ! For a cell, we define the GL as a grounded cell with ice with at least one dynamic floating neighbor
-      ! Note that this is a different definition that prior to May 2022. Earlier
+      ! Note that this is a different definition that prior to Oct 2022. Earlier
       ! defined the grounding line as a grounded cell with at least one neighbor
       ! that was floating or open ocean, which caused issues with calculating
       ! mass budgets at grounded marine margins.
@@ -490,7 +490,7 @@ contains
       !       vertexMask to get information about triangles in the Delaunay triangulation.
       !       (This is done in a way which does not assume vertexMask==3.)
       ! Bit: GL is a vertex with at least one neighboring cell grounded ice and at least one neighboring cell dynamic floating ice
-      !      Note: this definition was changed May 2022 from one cell grounded and one cell floating
+      !      Note: this definition was changed Oct 2022 from one cell grounded and one cell floating
 
       !call mpas_timer_start('calculate mask vertex')
 
@@ -593,7 +593,7 @@ contains
       ! Bit: Edges on dynamic margin are edges with one neighboring cell with dynamic ice and
       !      one neighboring cell without dynamic ice
       ! Bit: GL is an edge with one cell grounded ice and one cell dynamic floating ice
-      !      Note: This was changed May 2022 from one cell grounded and one floating or open ocean
+      !      Note: This was changed Oct 2022 from one cell grounded and one floating or open ocean
 
       !call mpas_timer_start('calculate mask edge')
 
