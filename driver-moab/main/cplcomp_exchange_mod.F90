@@ -1276,14 +1276,6 @@ contains
             write(logunit,*) subname,' error in defining tags x2o on coupler'
             call shr_sys_abort(subname//' ERROR in defining tags x2o on coupler ')
          endif
-#ifdef MOABDEBUG
-         tagname='mct_Foxx_swnet'//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags mct_Foxx_swnet on coupler'
-            call shr_sys_abort(subname//' ERROR in defining tags mct_Foxx_swnet on coupler ')
-         endif
-#endif 
 
 #ifdef MOABDEBUG
    !      debug test

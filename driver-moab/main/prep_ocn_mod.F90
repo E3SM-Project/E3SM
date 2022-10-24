@@ -766,6 +766,9 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
     real(r8)                 :: difference
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list
+    type(mct_string)    :: mctOStr  !
 #endif 
 
 ! for moab, local allocatable arrays for each field, size of local ocean mesh
@@ -1387,10 +1390,20 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     endif
 #ifdef MOABDEBUG
   !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
-    mct_field = 'Foxx_swnet'
-    tagname= 'Foxx_swnet'//C_NULL_CHAR
     x2o_o => component_get_x2c_cx(ocn(1))
-    call compare_mct_av_moab_tag(ocn(1), x2o_o, mct_field,  mboxid, tagname, ent_type, difference)
+    ! loop over all fields in seq_flds_x2o_fields
+    call mct_list_init(temp_list ,seq_flds_x2o_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 1 ! cell for ocean
+    print *, num_moab_exports, trim(seq_flds_x2o_fields)
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call compare_mct_av_moab_tag(ocn(1), x2o_o, mct_field,  mboxid, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+
 
     if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
      write(lnum,"(I0.2)")num_moab_exports
@@ -2089,36 +2102,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     endif
 
     first_time = .false.
-#ifdef MOABDEBUG
-    ! index_x2o_Foxx_swnet
-    ! DEBUGGING
-    allocate(values(lsize))
-    dom => component_get_dom_cx(ocn(1))
-     kgg = mct_aVect_indexIA(dom%data ,"GlobGridNum" ,perrWith=subName)
-
-     allocate(GlobalIds(lsize))
-     GlobalIds = dom%data%iAttr(kgg,:)
-     tagname = 'mct_Foxx_swnet'//C_NULL_CHAR
-     !arrSize = nloc * listSize
-     ent_type = 1 ! cells
-     values = x2o_o%rAttr(index_x2o_Foxx_swnet, :)
-     ierr = iMOAB_SetDoubleTagStorageWithGid ( mboxid, tagname, lsize , ent_type, values, GlobalIds )
-    if (ierr .ne. 0) then
-       write(logunit,*) subname,' error in setting debug tag  '
-       call shr_sys_abort(subname//' ERROR in setting debug tag')
-     endif
-    deallocate(values)
-    deallocate(GlobalIds)
-
-   if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
-     write(lnum,"(I0.2)")num_moab_exports
-     outfile = 'OcnCplAft_mrg'//trim(lnum)//'.h5m'//C_NULL_CHAR
-     wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-     ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
-   endif
-#endif
-
-
 
   end subroutine prep_ocn_merge
 
