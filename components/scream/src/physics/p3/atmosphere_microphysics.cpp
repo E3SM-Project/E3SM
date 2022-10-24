@@ -13,12 +13,6 @@
 namespace scream
 {
 
-  using namespace p3;
-
-  using view_1d  = typename P3F::view_1d<Real>;
-  using view_2d  = typename P3F::view_2d<Spack>;
-  using sview_2d = typename KokkosTypes<DefaultDevice>::template view_2d<Real>;
-
 // =========================================================================================
 P3Microphysics::P3Microphysics (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
@@ -225,7 +219,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   add_postcondition_check<FieldWithinIntervalCheck>(get_field_out("eff_radius_qi"),m_grid,0.0,5.0e3,false);
 
   // Initialize p3
-  p3_init();
+  p3::p3_init();
 
   // Initialize all of the structures that are passed to p3_main in run_impl.
   // Note: Some variables in the structures are not stored in the field manager.  For these
