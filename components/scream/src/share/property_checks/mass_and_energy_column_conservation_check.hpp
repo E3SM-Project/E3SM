@@ -76,6 +76,7 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   Real compute_total_mass_on_column (const KT::MemberType&       team,
+                                     const int                   nlevs,
                                      const uview_1d<const Real>& pseudo_density,
                                      const uview_1d<const Real>& qv,
                                      const uview_1d<const Real>& qc,
@@ -88,6 +89,7 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   Real compute_total_energy_on_column (const KT::MemberType&       team,
+                                       const int                   nlevs,
                                        const uview_1d<const Real>& pseudo_density,
                                        const uview_1d<const Real>& T_mid,
                                        const uview_2d<const Real>& horiz_winds,
