@@ -1139,10 +1139,10 @@
 <zmconv_accr_fac                                                      >1.5D0 </zmconv_accr_fac>
 <zmconv_micro_dcs                                                     >150.E-6</zmconv_micro_dcs>
 <!-- MCSP -->
-<zmconv_MCSP_heat_coeff                                               >0.0</zmconv_MCSP_heat_coeff>
-<zmconv_MCSP_moisture_coeff                                           >0.0</zmconv_MCSP_moisture_coeff>
-<zmconv_MCSP_uwind_coeff                                              >0.0</zmconv_MCSP_uwind_coeff>
-<zmconv_MCSP_vwind_coeff                                              >0.0</zmconv_MCSP_vwind_coeff>
+<zmconv_MCSP_heat_coeff                                               >0.0D0</zmconv_MCSP_heat_coeff>
+<zmconv_MCSP_moisture_coeff                                           >0.0D0</zmconv_MCSP_moisture_coeff>
+<zmconv_MCSP_uwind_coeff                                              >0.0D0</zmconv_MCSP_uwind_coeff>
+<zmconv_MCSP_vwind_coeff                                              >0.0D0</zmconv_MCSP_vwind_coeff>
 
 <!-- Cloud sedimentation -->
 
