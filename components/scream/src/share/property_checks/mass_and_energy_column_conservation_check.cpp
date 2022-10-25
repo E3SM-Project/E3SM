@@ -132,9 +132,6 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
   const auto ncols = m_num_cols;
   const auto nlevs = m_num_levs;
 
-  view_1d<Real> rel_err_mass  ("rel_err_mass",   ncols);
-  view_1d<Real> rel_err_energy("rel_err_energy", ncols);
-
   EKAT_REQUIRE_MSG(!std::isnan(m_dt), "Error! Timestep dt must be set in MassAndEnergyConservationCheck "
                                       "before running check().");
   auto dt = m_dt;
@@ -154,14 +151,19 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
   const auto ice_flux   = m_fields.at("ice_flux"  )->get_view<const Real*>();
   const auto heat_flux  = m_fields.at("heat_flux" )->get_view<const Real*>();
 
-  const auto policy = ExeSpaceUtils::get_default_team_policy(ncols, nlevs);
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
+  // Use Kokkos::MaxLoc to find the largest error for both mass and energy
+  using maxloc_t = Kokkos::MaxLoc<Real, int>;
+  using maxloc_value_t = typename maxloc_t::value_type;
+  maxloc_value_t maxloc_mass;
+  maxloc_value_t maxloc_energy;
 
+  // Mass error calculation
+  const auto policy = ExeSpaceUtils::get_default_team_policy(ncols, nlevs);
+  Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA (const KT::MemberType& team,
+                                                 maxloc_value_t&       result) {
     const int i = team.league_rank();
 
     const auto pseudo_density_i = ekat::subview(pseudo_density, i);
-    const auto T_mid_i          = ekat::subview(T_mid, i);
-    const auto horiz_winds_i    = ekat::subview(horiz_winds, i);
     const auto qv_i             = ekat::subview(qv, i);
     const auto qc_i             = ekat::subview(qc, i);
     const auto qi_i             = ekat::subview(qi, i);
@@ -179,40 +181,43 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
                         compute_mass_boundary_flux_on_column(vapor_flux(i), water_flux(i))*dt;
 
     // Calculate relative error of total mass
-    const Real err_m = std::abs(tm-tm_exp);
-    rel_err_mass(i) = err_m/previous_tm;
+    const Real rel_err_mass = std::abs(tm-tm_exp)/previous_tm;
+
+    // Test relative error against current max value
+    if (rel_err_mass > result.val) {
+      result.val = rel_err_mass;
+      result.loc = i;
+    }
+  }, maxloc_t(maxloc_mass));
+
+  // Energy error calculation
+  Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA (const KT::MemberType& team,
+                                                 maxloc_value_t&       result) {
+
+    const int i = team.league_rank();
+
+    const auto pseudo_density_i = ekat::subview(pseudo_density, i);
+    const auto T_mid_i          = ekat::subview(T_mid, i);
+    const auto horiz_winds_i    = ekat::subview(horiz_winds, i);
+    const auto qv_i             = ekat::subview(qv, i);
+    const auto qc_i             = ekat::subview(qc, i);
+    const auto qr_i             = ekat::subview(qr, i);
 
     // Calculate total energy
     const Real te = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
                                                    qv_i, qc_i, qr_i, ps(i), phis(i));
     const Real previous_te = energy(i);
 
-    // Calculate expected total energy. See the comment above for an explanation of dt. 
+    // Calculate expected total energy. See the comment above for an explanation of dt.
     const Real te_exp = previous_te +
                         compute_energy_boundary_flux_on_column(vapor_flux(i), water_flux(i), ice_flux(i), heat_flux(i))*dt;
 
     // Calculate relative error of total energy
-    const Real err_e = std::abs(te-te_exp);
-    rel_err_energy(i) = err_e/previous_te;
-  });
+    const Real rel_err_energy = std::abs(te-te_exp)/previous_te;
 
-  // Use Kokkos::MaxLoc to find the largest error for both mass and energy
-  // and test that they are below the tolerance.
-  using maxloc_t = Kokkos::MaxLoc<Real, int>;
-  using maxloc_value_t = typename maxloc_t::value_type;
-  maxloc_value_t maxloc_mass;
-  maxloc_value_t maxloc_energy;
-
-  Kokkos::parallel_reduce("mass_reduce", ncols, KOKKOS_LAMBDA(int i, maxloc_value_t& result) {
-    if (rel_err_mass(i) > result.val) {
-      result.val = rel_err_mass(i);
-      result.loc = i;
-    }
-  }, maxloc_t(maxloc_mass));
-
-  Kokkos::parallel_reduce("energy_reduce", ncols, KOKKOS_LAMBDA(int i, maxloc_value_t& result) {
-    if (rel_err_energy(i) > result.val) {
-      result.val = rel_err_energy(i);
+    // Test relative error against current max value
+    if (rel_err_energy > result.val) {
+      result.val = rel_err_energy;
       result.loc = i;
     }
   }, maxloc_t(maxloc_energy));
