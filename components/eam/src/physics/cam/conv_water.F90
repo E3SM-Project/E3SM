@@ -323,8 +323,10 @@ module conv_water
             case default ! Area weighted 'arithmetic in emissivity' average.
 !               call endrun ('CONV_WATER_4_RAD: Unknown option for conv_water_in_rad - exiting')
             end select
+          end if  !zm_microp
+      end if
 
-      
+     if (.not.zm_microp) then     
       !BSINGH - Logic by Phil R. to account for insignificant condensate in large scale clouds
       if (ls_icwmr < 100._r8*ic_limit .and. pergro_mods) then ! if there is virtually  no stratiform condensate
          if (state%t(i,k) < 243._r8) then           ! if very cold assume convective condensate is ice
@@ -349,9 +351,8 @@ module conv_water
 
       totg_ice(i,k) = tot0_frac * tot_icwmr * wrk1
       totg_liq(i,k) = tot0_frac * tot_icwmr * (1._r8-wrk1)
-
-       endif  !zm_microp
-      endif
+    
+     endif
    end do
    end do
 
