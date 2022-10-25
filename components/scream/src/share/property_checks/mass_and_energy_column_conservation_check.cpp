@@ -71,6 +71,8 @@ MassAndEnergyColumnConservationCheck (const std::shared_ptr<const AbstractGrid>&
 void MassAndEnergyColumnConservationCheck::compute_current_mass ()
 {
   auto mass = m_current_mass;
+  const auto ncols = m_num_cols;
+  const auto nlevs = m_num_levs;
 
   const auto pseudo_density = m_fields.at("pseudo_density")->get_view<const Real**>();
   const auto qv = m_fields.at("qv")->get_view<const Real**>();
@@ -78,7 +80,7 @@ void MassAndEnergyColumnConservationCheck::compute_current_mass ()
   const auto qi = m_fields.at("qi")->get_view<const Real**>();
   const auto qr = m_fields.at("qr")->get_view<const Real**>();
 
-  const auto policy = ExeSpaceUtils::get_default_team_policy(m_num_cols, m_num_levs);
+  const auto policy = ExeSpaceUtils::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
 
@@ -88,13 +90,15 @@ void MassAndEnergyColumnConservationCheck::compute_current_mass ()
     const auto qi_i             = ekat::subview(qi, i);
     const auto qr_i             = ekat::subview(qr, i);
 
-    mass(i) = compute_total_mass_on_column(team, pseudo_density_i, qv_i, qc_i, qi_i, qr_i);
+    mass(i) = compute_total_mass_on_column(team, nlevs, pseudo_density_i, qv_i, qc_i, qi_i, qr_i);
   });
 }
 
 void MassAndEnergyColumnConservationCheck::compute_current_energy ()
 {
   auto energy = m_current_energy;
+  const auto ncols = m_num_cols;
+  const auto nlevs = m_num_levs;
 
   const auto pseudo_density = m_fields.at("pseudo_density")->get_view<const Real**>();
   const auto T_mid = m_fields.at("T_mid")->get_view<const Real**>();
@@ -105,7 +109,7 @@ void MassAndEnergyColumnConservationCheck::compute_current_energy ()
   const auto ps = m_fields.at("ps")->get_view<const Real*>();
   const auto phis = m_fields.at("phis")->get_view<const Real*>();
 
-  const auto policy = ExeSpaceUtils::get_default_team_policy(m_num_cols, m_num_levs);
+  const auto policy = ExeSpaceUtils::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int i = team.league_rank();
 
@@ -116,7 +120,7 @@ void MassAndEnergyColumnConservationCheck::compute_current_energy ()
     const auto qc_i             = ekat::subview(qc, i);
     const auto qr_i             = ekat::subview(qr, i);
 
-    energy(i) = compute_total_energy_on_column(team, pseudo_density_i, T_mid_i, horiz_winds_i,
+    energy(i) = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
                                                qv_i, qc_i, qr_i, ps(i), phis(i));
   });
 }
@@ -125,9 +129,11 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
 {
   auto mass   = m_current_mass;
   auto energy = m_current_energy;
+  const auto ncols = m_num_cols;
+  const auto nlevs = m_num_levs;
 
-  view_1d<Real> rel_err_mass  ("rel_err_mass",   m_num_cols);
-  view_1d<Real> rel_err_energy("rel_err_energy", m_num_cols);
+  view_1d<Real> rel_err_mass  ("rel_err_mass",   ncols);
+  view_1d<Real> rel_err_energy("rel_err_energy", ncols);
 
   EKAT_REQUIRE_MSG(!std::isnan(m_dt), "Error! Timestep dt must be set in MassAndEnergyConservationCheck "
                                       "before running check().");
@@ -148,7 +154,7 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
   const auto ice_flux   = m_fields.at("ice_flux"  )->get_view<const Real*>();
   const auto heat_flux  = m_fields.at("heat_flux" )->get_view<const Real*>();
 
-  const auto policy = ExeSpaceUtils::get_default_team_policy(m_num_cols, m_num_levs);
+  const auto policy = ExeSpaceUtils::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
 
     const int i = team.league_rank();
@@ -162,7 +168,7 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
     const auto qr_i             = ekat::subview(qr, i);
 
     // Calculate total mass
-    const Real tm = compute_total_mass_on_column(team, pseudo_density_i, qv_i, qc_i, qi_i, qr_i);
+    const Real tm = compute_total_mass_on_column(team, nlevs, pseudo_density_i, qv_i, qc_i, qi_i, qr_i);
     const Real previous_tm = mass(i);
 
     // Calculate expected total mass. Here, dt should be set to the timestep of the 
@@ -177,7 +183,7 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
     rel_err_mass(i) = err_m/previous_tm;
 
     // Calculate total energy
-    const Real te = compute_total_energy_on_column(team, pseudo_density_i, T_mid_i, horiz_winds_i,
+    const Real te = compute_total_energy_on_column(team, nlevs, pseudo_density_i, T_mid_i, horiz_winds_i,
                                                    qv_i, qc_i, qr_i, ps(i), phis(i));
     const Real previous_te = energy(i);
 
@@ -197,14 +203,14 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
   maxloc_value_t maxloc_mass;
   maxloc_value_t maxloc_energy;
 
-  Kokkos::parallel_reduce("mass_reduce", m_num_cols, KOKKOS_LAMBDA(int i, maxloc_value_t& result) {
+  Kokkos::parallel_reduce("mass_reduce", ncols, KOKKOS_LAMBDA(int i, maxloc_value_t& result) {
     if (rel_err_mass(i) > result.val) {
       result.val = rel_err_mass(i);
       result.loc = i;
     }
   }, maxloc_t(maxloc_mass));
 
-  Kokkos::parallel_reduce("energy_reduce", m_num_cols, KOKKOS_LAMBDA(int i, maxloc_value_t& result) {
+  Kokkos::parallel_reduce("energy_reduce", ncols, KOKKOS_LAMBDA(int i, maxloc_value_t& result) {
     if (rel_err_energy(i) > result.val) {
       result.val = rel_err_energy(i);
       result.loc = i;
@@ -262,6 +268,7 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
 
 KOKKOS_INLINE_FUNCTION
 Real MassAndEnergyColumnConservationCheck::compute_total_mass_on_column (const KT::MemberType&       team,
+                                                                         const int                   nlevs,
                                                                          const uview_1d<const Real>& pseudo_density,
                                                                          const uview_1d<const Real>& qv,
                                                                          const uview_1d<const Real>& qc,
@@ -272,7 +279,7 @@ Real MassAndEnergyColumnConservationCheck::compute_total_mass_on_column (const K
   const Real gravit = PC::gravit;
 
   Real total_mass(0);
-  ExeSpaceUtils::parallel_reduce(team, 0, m_num_levs,
+  ExeSpaceUtils::parallel_reduce(team, 0, nlevs,
                                  [&] (const int lev, Real& local_mass) {
     local_mass += (qv(lev)+
                    qc(lev)+
@@ -295,6 +302,7 @@ Real MassAndEnergyColumnConservationCheck::compute_mass_boundary_flux_on_column 
 
 KOKKOS_INLINE_FUNCTION
 Real MassAndEnergyColumnConservationCheck::compute_total_energy_on_column (const KT::MemberType&       team,
+                                                                           const int                   nlevs,
                                                                            const uview_1d<const Real>& pseudo_density,
                                                                            const uview_1d<const Real>& T_mid,
                                                                            const uview_2d<const Real>& horiz_winds,
@@ -311,7 +319,7 @@ Real MassAndEnergyColumnConservationCheck::compute_total_energy_on_column (const
   const Real Cpair  = PC::Cpair;
 
   Real total_energy(0);
-  ExeSpaceUtils::parallel_reduce(team, 0, m_num_levs,
+  ExeSpaceUtils::parallel_reduce(team, 0, nlevs,
                                  [&] (const int lev, Real& local_energy) {
     const auto u2 = horiz_winds(0,lev)*horiz_winds(0,lev);
     const auto v2 = horiz_winds(1,lev)*horiz_winds(1,lev);
