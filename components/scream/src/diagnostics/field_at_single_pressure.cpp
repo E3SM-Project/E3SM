@@ -32,20 +32,20 @@ void FieldAtSinglePressure::set_grids(const std::shared_ptr<const GridsManager> 
   auto m_grid = grids_manager->get_grid(gname);
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs();
-  m_num_levs = m_grid->get_num_vertical_levels();
+  auto num_levs = m_grid->get_num_vertical_levels();
 
   constexpr int ps = Pack::n;
 
   add_field<Required>(m_field_name, m_field_layout, m_field_units, gname);
   if (ekat::contains(std::vector<FieldTag>{LEV},m_field_layout.tags().back())) {
-    FieldLayout pres_layout { {COL,LEV}, {m_num_cols,m_num_levs} };
     m_pres_name = "p_mid";
-    add_field<Required>(m_pres_name, pres_layout, Pa, gname);
+    m_num_levs = num_levs;
   } else {
-    FieldLayout pres_layout { {COL,ILEV}, {m_num_cols,m_num_levs+1} };
     m_pres_name = "p_int";
-    add_field<Required>(m_pres_name, pres_layout, Pa, gname);
+    m_num_levs = num_levs+1;
   }
+  FieldLayout pres_layout { {COL,ILEV}, {m_num_cols,m_num_levs} };
+  add_field<Required>(m_pres_name, pres_layout, Pa, gname);
 
   FieldLayout diag_layout { {COL}, {m_num_cols} };
   FieldIdentifier fid (name(),diag_layout, m, gname);
