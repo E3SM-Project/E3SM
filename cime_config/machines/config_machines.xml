@@ -831,6 +831,7 @@
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
       <env name="MPIR_CVAR_GPU_EAGER_DEVICE_MEM">0</env>
       <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
+      <env name="PNETCDF_HINTS">romio_cb_read=disable</env>
     </environment_variables>
 
     <environment_variables SMP_PRESENT="TRUE">
