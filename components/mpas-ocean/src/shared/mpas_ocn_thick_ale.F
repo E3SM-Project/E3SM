@@ -127,11 +127,12 @@ contains
       real (kind=RKIND) :: &
          weightSum,       &! sum of weights in vertical
          columnThickness, &! total thickness from bottomDepth, SSH
-         thicknessSum,    &! total resting thickness
+         restingThicknessDiff,    &! total resting thickness
          remainder,       &! track remainder in mix/max alteration
          newThickness      ! temp used during min/max adjustment
 
       real (kind=RKIND), dimension(:), allocatable :: &
+         restingThicknessSum,    &! total resting thickness
          prelim_ALE_thickness,   & ! ALE thickness at new time
          min_ALE_thickness_down, & ! thickness alteration in min/max adj
          min_ALE_thickness_up      ! thickness alteration in min/max adj
@@ -168,43 +169,47 @@ contains
       ! restingThickness_times_weights
       case (ALEthickProportionThickTimesWgts)
 
+         allocate(restingThicknessSum(nCells))
+
 #ifdef MPAS_OPENACC
          !xacc parallel loop &
          !xacc    present(ALE_thickness, SSH, restingThickness, &
          !xacc            minLevelCell, maxLevelCell, &
          !xacc            vertCoordMovementWeights) &
-         !xacc    private(k, kMin, kMax, thicknessSum)
+         !xacc    private(k, kMin, kMax, restingThicknessDiff)
 #else
          !$omp parallel
          !$omp do schedule(runtime) &
-         !$omp    private(k, kMin, kMax, thicknessSum)
+         !$omp    private(k, kMin, kMax, restingThicknessDiff)
 #endif
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
             kMin = minLevelCell(iCell)
    
-            thicknessSum = 1e-14_RKIND
+            restingThicknessSum(iCell) = 0.0_RKIND
             do k = kMin, kMax
-               thicknessSum = thicknessSum &
+               restingThicknessSum(iCell) = restingThicknessSum(iCell) &
                             + vertCoordMovementWeights(k) &
                             * restingThickness(k,iCell)
             end do
-            columnThickness = bottomDepth(iCell) + SSH(iCell)
    
+            restingThicknessDiff = restingThicknessSum(iCell) - bottomDepth(iCell)
+            restingThicknessSum(iCell) = restingThicknessSum(iCell) + 1e-14_RKIND
             ! Note that restingThickness is nonzero, and remaining
             ! terms are perturbations about zero.
             ! This is equation 4 and 6 in Petersen et al 2015,
             ! but with eqn 6
             do k = kMin, kMax
                ALE_thickness(k, iCell) = restingThickness(k, iCell) &
-                  + ( (columnThickness - thicknessSum) * vertCoordMovementWeights(k) * &
-                      restingThickness(k, iCell) ) / thicknessSum
+                  + ( (SSH(iCell) + restingThicknessDiff) * vertCoordMovementWeights(k) * &
+                      restingThickness(k, iCell) ) / restingThicknessSum(iCell)
             end do
          enddo
 #ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
 #endif
+         deallocate(restingThicknessSum)
    
       ! weights_only
       case (ALEthickProportionWgtsOnly)
