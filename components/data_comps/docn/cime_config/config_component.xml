@@ -187,6 +187,7 @@
       <value compset="2010.*_" grid=".+"					        >$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_2010_clim_c20190821.nc</value>
       <value compset="20TR_CAM5%CMIP6" grid=".+"					>$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc</value>
       <value compset="20TR_EAM%CMIP6" grid=".+"					>$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc</value>
+      <value compset="20TR_EAM%CHEMMZT" grid=".+"                                 >$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc</value>
       <value compset="20TR_EAM%MMF.*CMIP6" grid=".+" >$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc</value>
       <value compset="DATM.*_DLND.*_DICE.*_DOCN.*_DROF" 				        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>
       <value compset="DATM.*_SLND.*_DICE.*_DOCN.*_DROF" 				        >$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.9x1.25_clim_c040926.nc</value>
@@ -246,6 +247,7 @@
       <value compset="20TR_CAM5%AV">1850</value>
       <value compset="20TR_CAM5%CMIP6">1869</value>
       <value compset="20TR_EAM%CMIP6">1869</value>
+      <value compset="20TR_EAM%CHEMMZT">1869</value>
       <value compset="20TR_EAM%MMF.*CMIP6">1869</value>
     </values>
     <group>run_component_cam_sstice</group>
@@ -272,6 +274,7 @@
       <value compset="20TR_CAM5%AV">1850</value>
       <value compset="20TR_CAM5%CMIP6">1869</value>
       <value compset="20TR_EAM%CMIP6">1869</value>
+      <value compset="20TR_EAM%CHEMMZT">1869</value>
       <value compset="20TR_EAM%MMF.*CMIP6">1869</value>
     </values>
     <group>run_component_cam_sstice</group>
@@ -292,6 +295,7 @@
       <value compset="20TR_CAM5%AV">2012</value>
       <value compset="20TR_CAM5%CMIP6">2016</value>
       <value compset="20TR_EAM%CMIP6">2016</value>
+      <value compset="20TR_EAM%CHEMMZT">2016</value>
       <value compset="20TR_EAM%MMF.*CMIP6">2016</value>
     </values>
     <group>run_component_cam_sstice</group>
