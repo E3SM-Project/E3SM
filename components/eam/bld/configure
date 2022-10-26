@@ -121,7 +121,7 @@ OPTIONS
                           trop_mam3 | trop_mam4 | trop_mam4_resus | trop_mam4_resus_soag | trop_mam4_mom |
 			  trop_mam7 | trop_mam9 | super_fast_llnl | super_fast_llnl_mam3 |
                           linoz_mam3 | linoz_mam4_resus | linoz_mam4_resus_soag |
-			  linoz_mam4_resus_mom | linoz_mam4_resus_mom_soag |
+			  linoz_mam4_resus_mom | linoz_mam4_resus_mom_soag | trop_strat_mam4_resus_mom_soag
                           trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | superfast_mam4_resus_mom_soag | 
                           linoz_mam5_resus_mom_soag | trop_strat_mam5_resus_mom_soag |
 			  none ].  Default: linoz_mam4_resus_mom_soag.
@@ -144,6 +144,7 @@ OPTIONS
      -max_n_rad_cnst <n> Maximum number of constituents that are either radiatively
                         active, or in any single diagnostic list for the radiation.
      -mosaic            Activate mosaic processes in the modal aerosol model.
+     -vbs               Activate vbs soa processes in the modal aerosol model.
      -microphys <name>  Specify the microphysics option [mg1 | mg1.5 | mg2 | rk | p3].
      -nadv <n>          Set total number of advected species to <n>.
      -nadv_tt <n>       Set number of advected test tracers <n>.
@@ -381,6 +382,7 @@ GetOptions(
     "mach=s"                    => \$opts{'mach'},
     "max_n_rad_cnst=s"          => \$opts{'max_n_rad_cnst'},
     "mosaic"                    => \$opts{'mosaic'},
+    "vbs"                       => \$opts{'vbs'},
     "microphys=s"               => \$opts{'microphys'},
     "mpi_inc=s"                 => \$opts{'mpi_inc'},
     "mpi_lib=s"                 => \$opts{'mpi_lib'},
@@ -845,6 +847,11 @@ if (defined $opts{'mosaic'}) {
 }
 my $mosaic = $cfg_ref->get('mosaic');
 
+# vbs option in mam
+if (defined $opts{'vbs'}) {
+   $cfg_ref->set('vbs', $opts{'vbs'});
+}
+my $vbs = $cfg_ref->get('vbs');
 
 # waccm physics
 if (defined $opts{'waccm_phys'}) {
@@ -1852,6 +1859,9 @@ $cfg_cppdefs .= $chem_cppdefs;
 
 # mosaic option in mam
 if ($mosaic) { $cfg_cppdefs .= ' -DMOSAIC_SPECIES'; }
+
+# vbs option in mam
+if ($vbs) { $cfg_cppdefs .= ' -DVBS_SOA'; }
 
 #WACCM-X extended thermosphere/ionosphere model
 if ($waccmx) { $cfg_cppdefs .= ' -DWACCMX'; }
