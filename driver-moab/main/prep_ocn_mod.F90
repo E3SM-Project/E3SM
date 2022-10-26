@@ -1395,7 +1395,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     call mct_list_init(temp_list ,seq_flds_x2o_fields)
     size_list=mct_list_nitem (temp_list)
     ent_type = 1 ! cell for ocean
-    print *, num_moab_exports, trim(seq_flds_x2o_fields)
+    if (iamroot) print *, num_moab_exports, trim(seq_flds_x2o_fields)
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)

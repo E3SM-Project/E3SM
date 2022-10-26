@@ -981,23 +981,23 @@ contains
             call shr_sys_abort(subname//' ERROR in setting ofrac on ocn moab instance ')
          endif
 
-         ! correct ifrad and ofrad too in this method; remove fraco_rad_moab
-          tagname = 'ifrad'//C_NULL_CHAR
-      !   fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
-         tagValues = fractions_o%rAttr(4,:)
-         ierr = iMOAB_SetDoubleTagStorageWithGid ( mboxid, tagname, lSize , ent_type, tagValues, GlobalIds )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in setting ifrad on ocn moab instance  '
-            call shr_sys_abort(subname//' ERROR in setting ifrad on ocn moab instance ')
-         endif
-         tagname = 'ofrad'//C_NULL_CHAR
-         !   fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
-         tagValues = fractions_o%rAttr(5,:)
-         ierr = iMOAB_SetDoubleTagStorageWithGid ( mboxid, tagname, lSize , ent_type, tagValues, GlobalIds )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in setting ofrad on ocn moab instance  '
-            call shr_sys_abort(subname//' ERROR in setting ofrad on ocn moab instance ')
-         endif
+      !    ! correct ifrad and ofrad too in this method; remove fraco_rad_moab
+      !     tagname = 'ifrad'//C_NULL_CHAR
+      ! !   fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
+      !    tagValues = fractions_o%rAttr(4,:)
+      !    ierr = iMOAB_SetDoubleTagStorageWithGid ( mboxid, tagname, lSize , ent_type, tagValues, GlobalIds )
+      !    if (ierr .ne. 0) then
+      !       write(logunit,*) subname,' error in setting ifrad on ocn moab instance  '
+      !       call shr_sys_abort(subname//' ERROR in setting ifrad on ocn moab instance ')
+      !    endif
+      !    tagname = 'ofrad'//C_NULL_CHAR
+      !    !   fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
+      !    tagValues = fractions_o%rAttr(5,:)
+      !    ierr = iMOAB_SetDoubleTagStorageWithGid ( mboxid, tagname, lSize , ent_type, tagValues, GlobalIds )
+      !    if (ierr .ne. 0) then
+      !       write(logunit,*) subname,' error in setting ofrad on ocn moab instance  '
+      !       call shr_sys_abort(subname//' ERROR in setting ofrad on ocn moab instance ')
+      !    endif
 
          first_time = .false.
 
