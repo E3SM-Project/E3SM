@@ -3,7 +3,7 @@ set(DIAGNOSTIC_SRCS
   dry_static_energy.cpp
   exner.cpp
   field_at_level.cpp
-  field_at_single_pressure.cpp
+  field_at_pressure_level.cpp
   ice_cloud_mask.cpp
   ice_water_path.cpp
   liquid_water_path.cpp

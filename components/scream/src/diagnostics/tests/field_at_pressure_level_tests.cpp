@@ -2,7 +2,7 @@
 
 #include "ekat/ekat_pack_utils.hpp"
 
-#include "diagnostics/field_at_single_pressure.hpp"
+#include "diagnostics/field_at_pressure_level.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/field/field_utils.hpp"
@@ -25,16 +25,16 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
   return gm;
 }
 
-TEST_CASE("field_at_single_pressure")
+TEST_CASE("field_at_pressure_level")
 {
 
-  // Test that output at a single pressure level works as expected.
+  // Test that output at a pressure level works as expected.
   // For this test we set a field "M" to be defined as 100*i + k,
   // where i=column and k=level
   //
   // We then set the pressure levels to be 100*k where again k=level.
   //
-  // Lastly we define a pressure_at_single_level to be for p=150, thus
+  // Lastly we define a pressure level to be for p=150, thus
   // the output should be (M_1+M_2)/2, or halfway between level 1 and level
   // 2 of the data.  Given the formula above the output should be exactly
   //   100*i + (1+2)/2 = 100*i + 1.5
@@ -85,10 +85,10 @@ TEST_CASE("field_at_single_pressure")
   params_int.set("Grid Name",fid_int.get_grid_name());
   params_int.set<int>("Field Target Pressure",150);
 
-  auto diag_mid = std::make_shared<FieldAtSinglePressure>(comm,params_mid);
+  auto diag_mid = std::make_shared<FieldAtPressureLevel>(comm,params_mid);
   diag_mid->set_grids(gm);
   diag_mid->set_required_field(f_mid);
-  auto diag_int = std::make_shared<FieldAtSinglePressure>(comm,params_int);
+  auto diag_int = std::make_shared<FieldAtPressureLevel>(comm,params_int);
   diag_int->set_grids(gm);
   diag_int->set_required_field(f_int);
 

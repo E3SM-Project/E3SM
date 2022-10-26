@@ -1,4 +1,4 @@
-#include "diagnostics/field_at_single_pressure.hpp"
+#include "diagnostics/field_at_pressure_level.hpp"
 
 #include "ekat/std_meta/ekat_std_utils.hpp"
 #include "ekat/util/ekat_units.hpp"
@@ -7,7 +7,7 @@ namespace scream
 {
 
 // =========================================================================================
-FieldAtSinglePressure::FieldAtSinglePressure (const ekat::Comm& comm, const ekat::ParameterList& params)
+FieldAtPressureLevel::FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereDiagnostic(comm,params)
   ,m_field_layout(m_params.get<FieldLayout>("Field Layout"))
   ,m_field_units(m_params.get<ekat::units::Units>("Field Units"))
@@ -16,13 +16,13 @@ FieldAtSinglePressure::FieldAtSinglePressure (const ekat::Comm& comm, const ekat
 {
   using namespace ShortFieldTagsNames;
   EKAT_REQUIRE_MSG (ekat::contains(std::vector<FieldTag>{LEV,ILEV},m_field_layout.tags().back()),
-      "Error! FieldAtSinglePressure diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
+      "Error! FieldAtPressureLevel diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
       " - field name  : " + m_field_name + "\n"
       " - field layout: " + to_string(m_field_layout) + "\n");
 }
 
 // =========================================================================================
-void FieldAtSinglePressure::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void FieldAtPressureLevel::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
@@ -52,7 +52,7 @@ void FieldAtSinglePressure::set_grids(const std::shared_ptr<const GridsManager> 
   m_diagnostic_output.allocate_view();
 }
 // =========================================================================================
-void FieldAtSinglePressure::compute_diagnostic_impl()
+void FieldAtPressureLevel::compute_diagnostic_impl()
 {
   using namespace scream::vinterp;
 
@@ -61,7 +61,7 @@ void FieldAtSinglePressure::compute_diagnostic_impl()
   const auto pressure = pressure_f.get_view<const Pack**>();
 
   //This is the 1D target pressure
-  view_1d<Pack> p_tgt = view_1d<Pack>("",1);  // We only plan to map onto a single pressure level
+  view_1d<Pack> p_tgt = view_1d<Pack>("",1);  // We only plan to map onto a pressure level
   Kokkos::deep_copy(p_tgt, m_pressure_level);
 
   //input field

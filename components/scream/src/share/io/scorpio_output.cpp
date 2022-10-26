@@ -703,7 +703,7 @@ create_diagnostic (const std::string& diag_field_name) {
   auto last = tokens.back();
 
   // FieldAtLevel          follows convention variable@lev_N (where N is some integer)
-  // FieldAtSinglePressure follows convention variable@999mb (where 999 is some integer)
+  // FieldAtPressureLevel follows convention variable@999mb (where 999 is some integer)
   auto lev_and_idx = ekat::split(last,'_');
   auto pos = lev_and_idx[0].find_first_not_of("0123456789");
   auto lev_str = lev_and_idx[0].substr(pos);
@@ -731,7 +731,7 @@ create_diagnostic (const std::string& diag_field_name) {
     params.set("Field Level", lev_and_idx.back());
   } else if (lev_str=="mb" || lev_str=="hPa" || lev_str=="Pa") {
     // Diagnostic is a horizontal slice at a specific pressure level
-    diag_name = "FieldAtSinglePressure";
+    diag_name = "FieldAtPressureLevel";
     auto pres_str = lev_and_idx[0].substr(0,pos);
     auto pres_units = lev_and_idx[0].substr(pos);
     auto pres_level = std::stoi(pres_str);

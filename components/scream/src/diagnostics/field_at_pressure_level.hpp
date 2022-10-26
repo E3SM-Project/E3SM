@@ -1,5 +1,5 @@
-#ifndef EAMXX_FIELD_AT_SINGLE_PRESSURE_HPP
-#define EAMXX_FIELD_AT_SINGLE_PRESSURE_HPP
+#ifndef EAMXX_FIELD_AT_PRESSURE_LEVEL_HPP
+#define EAMXX_FIELD_AT_PRESSURE_LEVEL_HPP
 
 #include "share/atm_process/atmosphere_diagnostic.hpp"
 #include "share/util/scream_vertical_interpolation.hpp"
@@ -11,13 +11,13 @@ namespace scream
  * This diagnostic will produce the potential temperature.
  */
 
-class FieldAtSinglePressure : public AtmosphereDiagnostic
+class FieldAtPressureLevel : public AtmosphereDiagnostic
 {
 public:
   using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
 
   // Constructors
-  FieldAtSinglePressure (const ekat::Comm& comm, const ekat::ParameterList& params);
+  FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // The name of the diagnostic
   std::string name () const { return m_field_name + " @ pressure " + std::to_string(m_pressure_level) + " hPa"; }
@@ -44,8 +44,8 @@ protected:
   int                 m_num_levs;
   int                 m_num_cols;
 
-}; // class FieldAtSinglePressure
+}; // class FieldAtPressureLevel
 
 } //namespace scream
 
-#endif // EAMXX_FIELD_AT_SINGLE_PRESSURE_HPP
+#endif // EAMXX_FIELD_AT_PRESSURE_LEVEL_HPP
