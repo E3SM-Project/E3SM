@@ -78,12 +78,12 @@ TEST_CASE("field_at_pressure_level")
   params_mid.set("Field Units",fid_mid.get_units());
   params_mid.set("Field Layout",fid_mid.get_layout());
   params_mid.set("Grid Name",fid_mid.get_grid_name());
-  params_mid.set<int>("Field Target Pressure",150);
+  params_mid.set<Real>("Field Target Pressure",150);
   params_int.set("Field Name",f_int.name());
   params_int.set("Field Units",fid_int.get_units());
   params_int.set("Field Layout",fid_int.get_layout());
   params_int.set("Grid Name",fid_int.get_grid_name());
-  params_int.set<int>("Field Target Pressure",150);
+  params_int.set<Real>("Field Target Pressure",150);
 
   auto diag_mid = std::make_shared<FieldAtPressureLevel>(comm,params_mid);
   diag_mid->set_grids(gm);
@@ -118,22 +118,18 @@ TEST_CASE("field_at_pressure_level")
   Field p_mid_f = input_fields["p_mid"];
   Field p_int_f = input_fields["p_int"];
   //Fill data to interpolate
-  auto f_mid_v   = f_mid.get_view<Real**>();
-  auto p_mid_v   = p_mid_f.get_view<Real**>();
-  auto f_mid_v_h = Kokkos::create_mirror_view(f_mid_v);
-  auto p_mid_v_h = Kokkos::create_mirror_view(p_mid_v);
-  auto f_int_v   = f_int.get_view<Real**>();
-  auto p_int_v   = p_int_f.get_view<Real**>();
-  auto f_int_v_h = Kokkos::create_mirror_view(f_int_v);
-  auto p_int_v_h = Kokkos::create_mirror_view(p_int_v);
+  auto f_mid_v_h   = f_mid.get_view<Real**, Host>();
+  auto p_mid_v_h   = p_mid_f.get_view<Real**, Host>();
+  auto f_int_v_h   = f_int.get_view<Real**, Host>();
+  auto p_int_v_h   = p_int_f.get_view<Real**, Host>();
   for (int ilev=0; ilev<nlevs; ilev++){
     for (int icol=0; icol<ncols; icol++){
-      f_mid_v_h(icol,ilev) = icol*100 + ilev;
-      p_mid_v_h(icol,ilev) = 100*ilev;
-      f_int_v_h(icol,ilev) = icol*100 + ilev;
-      p_int_v_h(icol,ilev) = 100*ilev;
-      f_int_v_h(icol,ilev+1) = icol*100 + ilev+1;
-      p_int_v_h(icol,ilev+1) = 100*(ilev+1);
+      f_mid_v_h(icol,ilev) = icol*100. + ilev;
+      p_mid_v_h(icol,ilev) = 100.*ilev;
+      f_int_v_h(icol,ilev) = icol*100. + ilev;
+      p_int_v_h(icol,ilev) = 100.*ilev;
+      f_int_v_h(icol,ilev+1) = icol*100. + ilev+1;
+      p_int_v_h(icol,ilev+1) = 100.*(ilev+1);
     }
   }
   f_mid.sync_to_dev();

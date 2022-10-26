@@ -12,7 +12,7 @@ FieldAtPressureLevel::FieldAtPressureLevel (const ekat::Comm& comm, const ekat::
   ,m_field_layout(m_params.get<FieldLayout>("Field Layout"))
   ,m_field_units(m_params.get<ekat::units::Units>("Field Units"))
   ,m_field_name(m_params.get<std::string>("Field Name"))
-  ,m_pressure_level(m_params.get<int>("Field Target Pressure"))
+  ,m_pressure_level(m_params.get<Real>("Field Target Pressure"))
 {
   using namespace ShortFieldTagsNames;
   EKAT_REQUIRE_MSG (ekat::contains(std::vector<FieldTag>{LEV,ILEV},m_field_layout.tags().back()),
