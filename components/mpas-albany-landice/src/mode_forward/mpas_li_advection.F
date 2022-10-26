@@ -149,7 +149,8 @@ module li_advection
            floatingBasalMassBalApplied,  & ! basal mass balance for floating ice limited by ice thickness
            dynamicThickening,     & ! dynamic thickening rate
            groundedToFloatingThickness, & ! thickness changing from grounded to floating or vice versa
-           fluxAcrossGroundingLine        ! magnitude of flux across GL
+           fluxAcrossGroundingLine, &     ! magnitude of flux across GL
+           fluxAcrossGroundingLineOnCells ! magnitude of flux across GL, calculated on cells
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,           & ! interior ice temperature
@@ -211,7 +212,7 @@ module li_advection
 
       logical :: advectTracers     ! if true, then advect tracers as well as thickness
 
-      integer :: iCell1
+      integer :: iCell1, iCell2, theGroundedCell
 
       real(kind=RKIND) :: GLfluxSign, thicknessFluxEdge
 
@@ -277,6 +278,7 @@ module li_advection
       ! get arrays from the velocity pool
       call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
       call mpas_pool_get_array(velocityPool, 'fluxAcrossGroundingLine', fluxAcrossGroundingLine)
+      call mpas_pool_get_array(velocityPool, 'fluxAcrossGroundingLineOnCells', fluxAcrossGroundingLineOnCells)
 
       ! get arrays from the thermal pool
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
@@ -423,7 +425,6 @@ module li_advection
               edgeMask,                &
               layerThickness,          &
               advectedTracers,         &
-              fluxAcrossGroundingLine,       &
               err)
 
          if (config_print_thickness_advection_info) then
@@ -545,19 +546,31 @@ module li_advection
          ! Calculate flux across grounding line
          ! Do this after new thickness & mask have been calculated, including SMB/BMB
          fluxAcrossGroundingLine(:) = 0.0_RKIND
+         fluxAcrossGroundingLineOnCells(:) = 0.0_RKIND
          do iEdge = 1, nEdges
             if (li_mask_is_grounding_line(edgeMask(iEdge))) then
                iCell1 = cellsOnEdge(1,iEdge)
-               !iCell2 = cellsOnEdge(2,iEdge)
+               iCell2 = cellsOnEdge(2,iEdge)
                if (li_mask_is_grounded_ice(cellMask(iCell1))) then
                   GLfluxSign = 1.0_RKIND ! edge sign convention is positive from iCell1 to iCell2 on an edge
+                  theGroundedCell = iCell1
                else
                   GLfluxSign = -1.0_RKIND
+                  theGroundedCell = iCell2
                endif
                do k = 1, nVertLevels
                   thicknessFluxEdge = layerNormalVelocity(k,iEdge) * dvEdge(iEdge) * layerThicknessEdge(k,iEdge)
                   fluxAcrossGroundingLine(iEdge) = fluxAcrossGroundingLine(iEdge) + GLfluxSign * thicknessFluxEdge / dvEdge(iEdge)
                enddo
+               ! assign to grounded cell in fluxAcrossGroundingLineOnCells
+               if (thickness(theGroundedCell) <= 0.0_RKIND) then
+                  ! This should never be the case, but checking to avoid possible divide by zero
+                  call mpas_log_write("thickness at a grounding line is unexepectedly <=0", MPAS_LOG_ERR)
+                  err = ior(err, 1)
+                  return
+               endif
+               fluxAcrossGroundingLineOnCells(theGroundedCell) = fluxAcrossGroundingLineOnCells(theGroundedCell) + &
+                       fluxAcrossGroundingLine(iEdge) / thickness(theGroundedCell) * config_ice_density  ! adjust to correct units
             endif
          enddo ! edges
 
@@ -1318,7 +1331,6 @@ module li_advection
          edgeMask,               &
          layerThicknessNew,      &
          tracersNew,             &
-         fluxAcrossGroundingLine,      &
          err,                    &
          advectTracersIn)
 
@@ -1371,9 +1383,6 @@ module li_advection
 
       real (kind=RKIND), dimension(:,:,:), intent(out) :: &
            tracersNew            !< Output: tracer values
-
-      real (kind=RKIND), dimension(:), intent(out) :: &
-           fluxAcrossGroundingLine     !< Output: ice flux at grounding lines
 
       integer, intent(out) :: &
            err                   !< Output: error flag

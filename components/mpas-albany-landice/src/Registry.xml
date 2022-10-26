@@ -1478,6 +1478,9 @@ is the value of that variable from the *previous* time level!
                 <var name="fluxAcrossGroundingLine" type="real" dimensions="nEdges Time" units="m^2 s^{-1}"
                      description="flux across grounding line per unit width.  Positive means flux goes from grounded to floating ice."
                 />
+                <var name="fluxAcrossGroundingLineOnCells" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+                     description="flux across grounding line per unit area normal to a vertical plan aligned with the grounding line.  This variable is calculated on cells and is for the purposes of reporting the ISMIP6 variable ligroundf.  Positive means flux goes from grounded to floating ice."
+                />
 		<var name="vonMisesStress" type="real" dimensions="nCells Time" units="Pa"
 		     description="von Mises stress used for calving law"
 		/>
