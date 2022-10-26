@@ -32,20 +32,21 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
 
   // Create io_grid, containing the indices of the triplets
   // in the map file that this rank has to read
-  auto gids_h = get_my_triplets_gids (map_file,src_grid);
-  view_1d<gid_t> gids_d("",gids_h.size());
-  Kokkos::deep_copy(gids_d,gids_h);
+  auto my_gids = get_my_triplets_gids (map_file,src_grid);
+  auto io_grid = std::make_shared<PointGrid>("",my_gids.size(),0,m_comm);
 
-  auto io_grid = std::make_shared<PointGrid>("",gids_h.size(),0,m_comm);
+  view_1d<gid_t> gids_d("",gids_h.size());
+  auto gids_h = Kokkos::create_mirror_view(gids_d);
+  std::memcpy(gids_h.data(),my_gids.data(),my_gids.size()*sizeof(gid_t));
   io_grid->set_dofs(gids_d);
 
   // Create CRS matrix views
 
   // Read in triplets.
   const int nlweights = io_grid->get_num_local_dofs();
-  view_1d<gid_t>::HostMirror  row_gids_h("",nlweights);
-  view_1d<gid_t>::HostMirror  col_gids_h("",nlweights);
-  view_1d<Real>::HostMirror S_h ("",nlweights);
+  std::vector<gid_t> row_gids_h(nlweights);
+  std::vector<gid_t> col_gids_h(nlweights);
+  std::vector<Real>  S_h (nlweights);
 
   // scream's gids are of type int, while scorpio wants long int as offsets.
   std::vector<scorpio::offset_t> dofs_offsets(nlweights);
@@ -72,7 +73,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   // Determine the min id among the cols array, we
   // also add the min_dof for the grid.
   // Note: The cols field is not guaranteed to have the
-  // min offset value, but the rows will be numbered 
+  // min offset value, but the rows will be numbered
   // by 1 from least to greatest.  So we use row_gids to calculate
   // the remap min.
   int remap_min_dof = std::numeric_limits<int>::max();  // Really big INT
@@ -84,7 +85,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
 
   gid_t col_offset = global_remap_min_dof - src_grid->get_global_min_dof_gid();
   for (int ii=0; ii<nlweights; ii++) {
-    col_gids_h(ii) -= col_offset; 
+    col_gids_h[ii] -= col_offset;
   }
 
   // Create an "overlapped" tgt grid, that is, a grid where each rank
@@ -92,7 +93,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   // in its src_grid
   std::set<gid_t> ov_tgt_gids;
   for (int i=0; i<nlweights; ++i) {
-    ov_tgt_gids.insert(row_gids_h(i)-1);
+    ov_tgt_gids.insert(row_gids_h[i]-1);
   }
   const int num_ov_tgt_gids = ov_tgt_gids.size();
   view_1d<int> ov_tgt_gids_d("",num_ov_tgt_gids);
@@ -119,7 +120,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   std::vector<int> id (nlweights);
   std::iota(id.begin(),id.end(),0);
   auto compare = [&] (const int i, const int j) -> bool {
-    return row_gids_h(i) < row_gids_h(j);
+    return row_gids_h[i] < row_gids_h[j];
   };
   std::sort(id.begin(),id.end(),compare);
 
@@ -129,8 +130,8 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   auto weights_h     = Kokkos::create_mirror_view(m_weights);
 
   for (int i=0; i<nlweights; ++i) {
-    col_lids_h(i) = gid2lid(col_gids_h(id[i]),src_grid);
-    weights_h(i)  = S_h(id[i]);
+    col_lids_h(i) = gid2lid(col_gids_h[id[i]],src_grid);
+    weights_h(i)  = S_h[id[i]];
   }
 
   Kokkos::deep_copy(m_weights,weights_h);
@@ -139,7 +140,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   // Compute row offsets
   std::vector<int> row_counts(num_ov_row_gids);
   for (int i=0; i<nlweights; ++i) {
-    ++row_counts[gid2lid(row_gids_h(i)-1,m_ov_tgt_grid)];
+    ++row_counts[gid2lid(row_gids_h[i]-1,m_ov_tgt_grid)];
   }
   std::partial_sum(row_counts.begin(),row_counts.end(),row_offsets_h.data()+1);
   EKAT_REQUIRE_MSG (
@@ -153,8 +154,16 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   const int nlevs  = src_grid->get_num_vertical_levels();
 
   auto tgt_grid_gids = m_ov_tgt_grid->get_unique_gids ();
-  auto tgt_grid = std::make_shared<PointGrid>("tgt_grid",tgt_grid_gids.size(),nlevs,m_comm);
-  tgt_grid->set_dofs(tgt_grid_gids);
+  const int ngids = tgt_grid_gids.size();
+
+  auto tgt_grid = std::make_shared<PointGrid>("tgt_grid",ngids,nlevs,m_comm);
+
+  view_1d<gid_t> tgt_grid_gids_d("",ngids);
+  auto tgt_grid_gids_h = Kokkos::create_mirror_view(tgt_grid_gids_d);
+  std::memcpy(tgt_grid_gids_h.data(),tgt_grid_gids.data(),ngids*sizeof(gid_t));
+  Kokkos::deep_copy(tgt_grid_gids_d,tgt_grid_gids_h);
+  tgt_grid->set_dofs(tgt_grid_gids_d);
+
   this->set_grids(src_grid,tgt_grid);
 }
 
@@ -427,7 +436,6 @@ void CoarseningRemapper::pack_and_send ()
 
           buf (offset + lidpos) = v(lid);
         });
-                             
       } break;
       case LayoutType::Vector2D:
       {
@@ -556,7 +564,6 @@ void CoarseningRemapper::recv_and_unpack ()
             v(lid) += buf (offset);
           }
         });
-                             
       } break;
       case LayoutType::Vector2D:
       {
@@ -636,10 +643,10 @@ void CoarseningRemapper::recv_and_unpack ()
 }
 
 
-auto CoarseningRemapper::
+std::vector<CoarseningRemapper::gid_t>
+CoarseningRemapper::
 get_my_triplets_gids (const std::string& map_file,
                       const grid_ptr_type& src_grid) const
-  -> view_1d<gid_t>::HostMirror
 {
   using namespace ShortFieldTagsNames;
 
@@ -681,7 +688,7 @@ get_my_triplets_gids (const std::string& map_file,
 
   gid_t col_offset = global_remap_min_dof - src_grid->get_global_min_dof_gid();
   for (auto& id : cols) {
-    id -= col_offset; 
+    id -= col_offset;
   }
 
   // 3. Get the owners of the cols gids we read in, according to the src grid
@@ -690,7 +697,7 @@ get_my_triplets_gids (const std::string& map_file,
   // 4. Group gids we read by the pid we need to send them to
   std::map<int,std::vector<int>> pid2gids_send;
   for (int i=0; i<nlweights; ++i) {
-    const auto pid = owners(i);
+    const auto pid = owners[i];
     pid2gids_send[pid].push_back(i+offset);
   }
 
@@ -703,7 +710,7 @@ get_my_triplets_gids (const std::string& map_file,
   for (const auto& it : pid2gids_recv) {
     num_my_triplets += it.second.size();
   }
-  view_1d<gid_t>::HostMirror my_triplets_gids("",num_my_triplets);
+  std::vector<gid_t> my_triplets_gids(num_my_triplets);
   int num_copied = 0;
   for (const auto& it : pid2gids_recv) {
     auto dst = my_triplets_gids.data()+num_copied;
@@ -872,7 +879,7 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   std::map<int,std::vector<int>> pid2lids_send;
   std::map<int,std::vector<gid_t>> pid2gids_send;
   for (int i=0; i<num_ov_gids; ++i) {
-    const int pid = gids_owners(i);
+    const int pid = gids_owners[i];
     pid2lids_send[pid].push_back(i);
     pid2gids_send[pid].push_back(ov_gids(i));
   }

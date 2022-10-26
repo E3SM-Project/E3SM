@@ -96,10 +96,15 @@ TEST_CASE("se_grid", "") {
   auto shallow_copy = se_grid->clone("shallow",true);
   auto deep_copy    = se_grid->clone("deep",false);
 
-  REQUIRE (shallow_copy->get_dofs_gids().data()==se_grid->get_dofs_gids().data());
-  REQUIRE (deep_copy->get_dofs_gids().data()!=se_grid->get_dofs_gids().data());
+  using gid_type = AbstractGrid::gid_type;
+
+  auto grid_gids = se_grid->get_dofs_gids().get_view<const gid_type*,Host>();
+  auto scopy_gids = shallow_copy->get_dofs_gids().get_view<const gid_type*,Host>();
+  auto dcopy_gids = deep_copy->get_dofs_gids().get_view<const gid_type*,Host>();
+  REQUIRE (scopy_gids.data()==grid_gids.data());
+  REQUIRE (dcopy_gids.data()!=grid_gids.data());
   for (int i=0; i<se_grid->get_num_local_dofs(); ++i) {
-    REQUIRE (deep_copy->get_dofs_gids_host()[i]==se_grid->get_dofs_gids_host()[i]);
+    REQUIRE (dcopy_gids[i]==grid_gids[i]);
   }
 }
 
@@ -134,10 +139,10 @@ TEST_CASE ("get_owners") {
 
   // Now, ask each rank to retrieve owners, and verify
   auto dofs_owners = grid->get_owners(all_dofs_h);
-  REQUIRE (dofs_owners.extent(0)==all_dofs_h.size());
+  REQUIRE (dofs_owners.size()==all_dofs_h.size());
 
   for (int i=0; i<num_global_dofs; ++i) {
-    const int pid = dofs_owners(i);
+    const int pid = dofs_owners[i];
     const int expected_pid = i / num_local_dofs;
     REQUIRE (pid==expected_pid);
   }

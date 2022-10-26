@@ -252,9 +252,8 @@ void AbstractGrid::reset_num_vertical_lev (const int num_vertical_lev) {
   //       invalidate all geo data whose FieldLayout contains LEV/ILEV
 }
 
-auto
+std::vector<AbstractGrid::gid_type>
 AbstractGrid::get_unique_gids () const
- -> dofs_list_type
 {
   // Gather local sizes across all ranks
   std::vector<int> ngids (m_comm.size());
@@ -287,16 +286,11 @@ AbstractGrid::get_unique_gids () const
     }
   }
 
-  dofs_list_type unique_gids_d("",unique_dofs.size());
-  auto unique_gids_h = Kokkos::create_mirror_view(unique_gids_d);
-  std::memcpy(unique_gids_h.data(),unique_dofs.data(),sizeof(gid_type)*unique_dofs.size());
-  Kokkos::deep_copy(unique_gids_d,unique_gids_h);
-  return unique_gids_d;
+  return unique_dofs;
 }
 
-auto AbstractGrid::
+std::vector<int> AbstractGrid::
 get_owners (const hview_1d<const gid_type>& gids) const
- -> hview_1d<int>
 {
   EKAT_REQUIRE_MSG (m_dofs_set,
       "Error! Cannot retrieve gids owners until dofs gids have been set.\n");
@@ -351,7 +345,7 @@ get_owners (const hview_1d<const gid_type>& gids) const
 
 
   // Now create and fill output view
-  hview_1d<int> result("",num_gids_in);
+  std::vector<int> result(num_gids_in);
   for (int i=0; i<num_gids_in; ++i) {
     result[i] = owners.at(gids[i]);
   }

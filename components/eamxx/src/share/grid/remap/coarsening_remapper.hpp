@@ -124,7 +124,7 @@ protected:
     return it==end ? -1 : std::distance(beg,it);
   }
 
-  view_1d<gid_t>::HostMirror
+  std::vector<gid_t>
   get_my_triplets_gids (const std::string& map_file,
                         const grid_ptr_type& src_grid) const;
 

@@ -22,7 +22,7 @@ public:
   {
     // Nothing to do
   }
-  view_1d<gid_t>::HostMirror
+  std::vector<gid_t>
   test_triplet_gids (const std::string& map_file) const {
     return CoarseningRemapper::get_my_triplets_gids (map_file,m_src_grid);
   }
