@@ -136,10 +136,10 @@ TEST_CASE("field_at_single_pressure")
       p_int_v_h(icol,ilev+1) = 100*(ilev+1);
     }
   }
-  Kokkos::deep_copy(f_mid_v, f_mid_v_h);
-  Kokkos::deep_copy(p_mid_v, p_mid_v_h);
-  Kokkos::deep_copy(f_int_v, f_int_v_h);
-  Kokkos::deep_copy(p_int_v, p_int_v_h);
+  f_mid.sync_to_dev();
+  p_mid_f.sync_to_dev();
+  f_int.sync_to_dev();
+  p_int_f.sync_to_dev();
   
 
   diag_mid->initialize(t0,RunType::Initial);

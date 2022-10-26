@@ -40,10 +40,9 @@ protected:
   ekat::units::Units  m_field_units;
   std::string         m_pres_name;
 
-  int                 m_pressure_level;
+  Real                m_pressure_level;
   int                 m_num_levs;
   int                 m_num_cols;
-  //scream::vinterp::view_1d<scream::vinterp::Spack> m_pressure_levels;
 
 }; // class FieldAtSinglePressure
 
