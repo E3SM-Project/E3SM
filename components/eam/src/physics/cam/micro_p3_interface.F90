@@ -1458,12 +1458,16 @@ end subroutine micro_p3_readnl
       do icol = 1, ncol
          ! Limits for in-cloud mixing ratios consistent with P3 microphysics
          ! in-cloud mixing ratio maximum limit of 0.005 kg/kg
-         icimrst(icol,k)   = min( state%q(icol,k,ixcldice) / max(mincld,cld_frac_i(icol,k)),0.005_rtype )
-         icwmrst(icol,k)   = min( state%q(icol,k,ixcldliq) / max(mincld,cld_frac_l(icol,k)),0.005_rtype )
-         icinc(icol,k)     = state%q(icol,k,ixnumice) / max(mincld,cld_frac_i(icol,k)) * &
-              state%pmid(icol,k) / (287.15_rtype*state%t(icol,k))
-         icwnc(icol,k)     = state%q(icol,k,ixnumliq) / max(mincld,cld_frac_l(icol,k)) * &
-              state%pmid(icol,k) / (287.15_rtype*state%t(icol,k))
+
+         ! The in-cloud properties should be outputted after the cloud microphysics
+         ! tendencies are taken into account, whereas they are outputted in P3 without
+         ! accounting for the microphysics calculations. This fix does not affect model
+         ! simulations, but will affect all of offline analysis where in-cloud
+         ! property is used.
+         icimrst(icol,k)   = min( ice(icol,k) / max(mincld,cld_frac_i(icol,k)),0.005_rtype )
+         icwmrst(icol,k)   = min( cldliq(icol,k) / max(mincld,cld_frac_l(icol,k)),0.005_rtype )
+         icinc(icol,k)     = numice(icol,k) / max(mincld,cld_frac_i(icol,k)) * rho(icol,k) !&
+         icwnc(icol,k)     = numliq(icol,k) / max(mincld,cld_frac_l(icol,k)) * rho(icol,k) !&
       end do                    
    end do
 
