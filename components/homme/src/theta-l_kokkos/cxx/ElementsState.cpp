@@ -11,6 +11,10 @@
 #include "utilities/SyncUtils.hpp"
 #include "utilities/TestUtils.hpp"
 #include "HybridVCoord.hpp"
+#include "ElementsGeometry.hpp"
+#include "Context.hpp"
+#include "mpi/Connectivity.hpp"
+#include "mpi/Comm.hpp"
 
 #include <limits>
 #include <random>
@@ -336,6 +340,122 @@ void ElementsState::push_to_f90_pointers (F90Ptr& state_v, F90Ptr& state_w_i, F9
   sync_to_host(m_vtheta_dp, state_vtheta_dp_f90);
   sync_to_host(m_phinh_i,   state_phinh_i_f90);
   sync_to_host(m_dp3d,      state_dp3d_f90);
+}
+
+static bool all_good_elems (const ElementsState& s, const int tlvl) {
+  using Kokkos::ALL;
+  using Kokkos::parallel_for;
+  
+  const int nelem = s.num_elems();
+  const int nplev = NUM_PHYSICAL_LEV;
+
+  const auto vtheta_dp = Kokkos::subview(s.m_vtheta_dp, ALL, tlvl, ALL, ALL, ALL);
+  const auto dp3d = Kokkos::subview(s.m_dp3d, ALL, tlvl, ALL, ALL, ALL);
+  const auto phinh_i = Kokkos::subview(s.m_phinh_i, ALL, tlvl, ALL, ALL, ALL);
+
+  // Write nerr = 1 if there is a problem; else do nothing.
+  const auto check = KOKKOS_LAMBDA (const TeamMember& team, int& nerr) {
+    const auto ie = team.league_rank();
+    const auto g = [&] (const int idx) {
+      const int igp = idx / NP;
+      const int jgp = idx % NP;
+      const Real* const v = reinterpret_cast<const Real*>(&vtheta_dp(ie,igp,jgp,0));
+      const Real* const p = reinterpret_cast<const Real*>(&     dp3d(ie,igp,jgp,0));
+      const Real* const h = reinterpret_cast<const Real*>(&  phinh_i(ie,igp,jgp,0));
+      // Write races but doesn't matter since any single nerr = 1 write is
+      // sufficient to conclude there is a problem.
+      const auto f1 = [&] (const int k) { if (v[k] < 0 || isnan(v[k])) nerr = 1; };
+      const auto f2 = [&] (const int k) { if (p[k] < 0 || isnan(p[k])) nerr = 1; };
+      // The isnan checks on k and k+1 are redundant except for the last k, but
+      // it's probably the fastest way to check all interface values.
+      const auto f3 = [&] (const int k) { if (h[k] < h[k+1] || isnan(h[k]) || isnan(h[k+1])) nerr = 1; };
+      const auto tvr = Kokkos::ThreadVectorRange(team, nplev);
+      parallel_for(tvr, f1);
+      parallel_for(tvr, f2);
+      parallel_for(tvr, f3);
+    };
+    parallel_for(Kokkos::TeamThreadRange(team, NP*NP), g);
+  };
+  int nerr;
+  parallel_reduce(get_default_team_policy<ExecSpace>(nelem), check, nerr);
+  
+  return nerr == 0;
+}
+
+void check_print_abort_on_bad_elems (const std::string& label, const int tlvl,
+                                     const int error_code) {
+  const auto& s = Context::singleton().get<ElementsState>();
+  
+  // On device and, thus, efficient.
+  if (all_good_elems(s, tlvl)) return;
+
+  // Now that we know there is an error, we can do the rest inefficiently.
+  const auto& geometry = Context::singleton().get<ElementsGeometry>();
+  const int nelem = s.num_elems();
+  const int nplev = NUM_PHYSICAL_LEV, ntl = NUM_TIME_LEVELS, vecsz = VECTOR_SIZE;
+  const auto& comm = Context::singleton().get<Connectivity>().get_comm();
+
+  const auto vtheta_dp_h = Kokkos::create_mirror_view(s.m_vtheta_dp);
+  Kokkos::deep_copy(vtheta_dp_h, s.m_vtheta_dp);
+  const auto dp3d_h = Kokkos::create_mirror_view(s.m_dp3d);
+  Kokkos::deep_copy(dp3d_h, s.m_dp3d);
+  const auto phinh_i_h = Kokkos::create_mirror_view(s.m_phinh_i);
+  Kokkos::deep_copy(phinh_i_h, s.m_phinh_i);
+  const auto sphere_latlon = Kokkos::create_mirror_view(geometry.m_sphere_latlon);
+  Kokkos::deep_copy(sphere_latlon, geometry.m_sphere_latlon);
+
+  HostView<Real*****>
+    vtheta_dp(reinterpret_cast<Real*>(&vtheta_dp_h(0,0,0,0,0)), nelem, ntl, NP, NP, NUM_LEV  *vecsz),
+    dp3d     (reinterpret_cast<Real*>(&dp3d_h     (0,0,0,0,0)), nelem, ntl, NP, NP, NUM_LEV  *vecsz),
+    phinh_i  (reinterpret_cast<Real*>(&phinh_i_h  (0,0,0,0,0)), nelem, ntl, NP, NP, NUM_LEV_P*vecsz);
+
+  bool first = true;
+  FILE* fid = nullptr;
+  std::string filename;
+  for (int ie = 0; ie < nelem; ++ie) {
+    for (int gi = 0; gi < NP; ++gi)
+      for (int gj = 0; gj < NP; ++gj) {
+        int k_bad = -1;
+        bool v = true, d = true, p = true;
+        for (int k = 0; k < nplev; ++k) {
+          v = std::isnan(vtheta_dp(ie,tlvl,gi,gj,k)) || vtheta_dp(ie,tlvl,gi,gj,k) < 0;
+          d = std::isnan(dp3d(ie,tlvl,gi,gj,k)) || dp3d(ie,tlvl,gi,gj,k) < 0;
+          p = (std::isnan(phinh_i(ie,tlvl,gi,gj,k)) || std::isnan(phinh_i(ie,tlvl,gi,gj,k+1)) ||
+               phinh_i(ie,tlvl,gi,gj,k) < phinh_i(ie,tlvl,gi,gj,k+1));
+          if (v || d || p) {
+            k_bad = k;
+            break;
+          }
+        }
+        if (k_bad >= 0) {
+          if (first) {
+            filename = (std::string("hommexx.errlog.") +
+                        std::to_string(comm.size()) + "." +
+                        std::to_string(comm.rank()));
+            fid = fopen(filename.c_str(), "w");
+            fprintf(fid, "label: %s\ntime-level %d\n", label.c_str(), tlvl);
+            first = false;
+          }
+          fprintf(fid, "lat %22.15e lon %22.15e\n",
+                  sphere_latlon(ie,gi,gj,0), sphere_latlon(ie,gi,gj,1));
+          fprintf(fid, "ie %d igll %d jgll %d lev %d:", ie, gi, gj, k_bad);
+          if (v) fprintf(fid, " bad vtheta_dp");
+          if (d) fprintf(fid, " bad dp3d");
+          if (p) fprintf(fid, " bad dphi");
+          fprintf(fid, "\n");
+          fprintf(fid, "level                   dphi                   dp3d              vtheta_dp\n");
+          for (int k = 0; k < nplev; ++k)
+            fprintf(fid, "%5d %22.15e %22.15e %22.15e\n",
+                    k, phinh_i(ie,tlvl,gi,gj,k+1) - phinh_i(ie,tlvl,gi,gj,k),
+                    dp3d(ie,tlvl,gi,gj,k), vtheta_dp(ie,tlvl,gi,gj,k));
+        }
+      }
+  }
+  if (fid) fclose(fid);
+
+  Errors::runtime_abort(std::string("Bad dphi, dp3d, or vtheta_dp; label: '") +
+                        label + "'; see " + filename,
+                        error_code < 0 ? Errors::err_bad_column_value : error_code);
 }
 
 } // namespace Homme

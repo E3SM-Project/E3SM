@@ -4663,6 +4663,9 @@ contains
        mean1, center1, xGrad1, yGrad1,  &
        mean2, center2, xGrad2, yGrad2)
 
+    use seaice_constants, only: &
+         seaicePuny
+
     type(geometric_avg_cell_type), pointer :: &
          geomAvgCell                       !< Input: derived type holding geometric averages
 
@@ -4706,7 +4709,7 @@ contains
        c0 = center0
        cx = xGrad0
        cy = yGrad0
-       if (abs(mean0) > 0.0_RKIND) then
+       if (abs(mean0) > seaicePuny) then
           reciprocal = 1.0_RKIND / mean0
        else
           reciprocal = 0.0_RKIND
@@ -4731,7 +4734,7 @@ contains
        cyy = yGrad0  * yGrad1
 
        massTracerProd = mean0 * mean1
-       if (abs(massTracerProd) > 0.0_RKIND) then
+       if (abs(massTracerProd) > seaicePuny) then
           reciprocal = 1.0_RKIND / massTracerProd
        else
           reciprocal = 0.0_RKIND
@@ -4763,7 +4766,7 @@ contains
        cyyy  = yGrad0  * yGrad1  * yGrad2
 
        massTracerProd = mean0 * mean1 * mean2
-       if (abs(massTracerProd) > 0.0_RKIND) then
+       if (abs(massTracerProd) > seaicePuny) then
           reciprocal = 1.0_RKIND / massTracerProd
        else
           reciprocal = 0.0_RKIND

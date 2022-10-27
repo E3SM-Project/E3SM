@@ -55,6 +55,7 @@ static constexpr int err_unknown_option               = 11;
 static constexpr int err_not_implemented              = 12;
 static constexpr int err_invalid_options_combination  = 13;
 static constexpr int err_negative_layer_thickness     = 101;
+static constexpr int err_bad_column_value             = 102;
 
 template<typename T>
 void option_error(const std::string& location,
