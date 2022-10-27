@@ -15,10 +15,8 @@
     !
 #if ( defined MODAL_AERO_7MODE )
     integer, parameter :: ntot_amode = 7
-!kzm  ++
 #elif ( defined MODAL_AERO_5MODE)
     integer, parameter :: ntot_amode = 5
-!kzm --    
 #elif ( defined MODAL_AERO_9MODE )
     integer, parameter :: ntot_amode = 9
 #elif (( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ))
@@ -27,9 +25,8 @@
     integer, parameter :: ntot_amode = 3
 #endif
 
-!kzm ++
+
 #if ((( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || (defined MODAL_AERO_5MODE) ) && ( defined RAIN_EVAP_TO_COARSE_AERO ))
-!kzm --
     logical, parameter :: rain_evap_to_coarse_aero = .true.
 #else
     logical, parameter :: rain_evap_to_coarse_aero = .false.
@@ -94,6 +91,10 @@
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/  96.0_r8,  18.0_r8,  62.0_r8, &
        12.0_r8,   12.0_r8,   12.0_r8,  58.5_r8, 135.0_r8, &
        250092.0_r8, 66528.0_r8,  284.0_r8 /)
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined MOSAIC_SPECIES ) && ( defined VBS_SOA) )
+    real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/  96.0_r8,  18.0_r8,  62.0_r8, &
+       12.0_r8,  250.0_r8,   12.0_r8,  23.0_r8, 135.0_r8, &
+       250092.0_r8,  40.0_r8, 60.0_r8, 35.5_r8 /)
 #elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined MOSAIC_SPECIES ) )
     real(r8), parameter :: specmw_amode(ntot_aspectype)   = (/  96.0_r8,  18.0_r8,  62.0_r8, &
        12.0_r8,   12.0_r8,   12.0_r8,  23.0_r8, 135.0_r8, &
@@ -125,7 +126,6 @@
          'fine_dust       ', &
          'coarse_seasalt  ', &
          'coarse_dust     '/)
-!kzm ++
 #elif ( defined MODAL_AERO_5MODE)
     character(len=*), parameter :: modename_amode(ntot_amode) = (/ &
          'accum           ', &
@@ -133,7 +133,6 @@
          'coarse          ', &
          'primary_carbon  ', &
          'strat_coarse  '/)
-!kzm -- 
 #elif ( defined MODAL_AERO_9MODE )
     character(len=*), parameter :: modename_amode(ntot_amode) = (/ &
          'accum           ', &
@@ -203,13 +202,11 @@
     integer, parameter ::     mdiagnum_amode(ntot_amode)   = (/ 0, 0, 0/)
     integer, parameter ::     mprogsfc_amode(ntot_amode)   = (/ 0, 0, 0/)
     integer, parameter ::     mcalcwater_amode(ntot_amode) = (/ 0, 0, 0/)
-!kzm ++
 #elif ( (defined MODAL_AERO_5MODE)  )
     integer, parameter ::     mprognum_amode(ntot_amode)   = (/ 1, 1, 1, 1, 1/)
     integer, parameter ::     mdiagnum_amode(ntot_amode)   = (/ 0, 0, 0, 0, 0/)
     integer, parameter ::     mprogsfc_amode(ntot_amode)   = (/ 0, 0, 0, 0, 0/)
     integer, parameter ::     mcalcwater_amode(ntot_amode) = (/ 0, 0, 0, 0, 0/)
-!kzm --    
 #endif
 
     !   input dgnum_amode, dgnumlo_amode, dgnumhi_amode (units = m)
@@ -278,11 +275,9 @@
           lptr_nacl_a_amode(ntot_amode), lptr_nacl_cw_amode(ntot_amode),&   !
           lptr_mom_a_amode(ntot_amode),  lptr_mom_cw_amode(ntot_amode), &   !
           lptr_dust_a_amode(ntot_amode), lptr_dust_cw_amode(ntot_amode),&   !
-! ++MW
           lptr_ca_a_amode(ntot_amode),   lptr_ca_cw_amode(ntot_amode),  &   !
           lptr_co3_a_amode(ntot_amode),  lptr_co3_cw_amode(ntot_amode), &   !
           lptr_cl_a_amode(ntot_amode),   lptr_cl_cw_amode(ntot_amode),  &   !
-! --MW
           lptr_mpoly_a_amode(ntot_amode),  lptr_mpoly_cw_amode(ntot_amode), &
           lptr_mprot_a_amode(ntot_amode),  lptr_mprot_cw_amode(ntot_amode), &
           lptr_mlip_a_amode(ntot_amode),   lptr_mlip_cw_amode(ntot_amode),  &
@@ -298,11 +293,9 @@
           lptr2_soa_a_amode(ntot_amode,nsoa), &
           lptr2_soa_g_amode(nsoag)
 
-! ++MW
       integer &
           lptr_h2so4_g_amode,   lptr_hno3_g_amode, &
           lptr_hcl_g_amode,     lptr_nh3_g_amode
-! --MW
 
       real(r8) ::             &
           specmw_so4_amode,     specdens_so4_amode,       &
@@ -313,11 +306,9 @@
           specmw_mpoly_amode,   specdens_mpoly_amode,     &
           specmw_mprot_amode,   specdens_mprot_amode,     &
           specmw_mlip_amode,    specdens_mlip_amode,      &
-! ++MW
           specmw_ca_amode,      specdens_ca_amode,        &
           specmw_co3_amode,     specdens_co3_amode,       &
           specmw_cl_amode,      specdens_cl_amode,        &
-! --MW
           specmw_bc_amode,      specdens_bc_amode,        &
           specmw_dust_amode,    specdens_dust_amode,      &
           specmw_seasalt_amode, specdens_seasalt_amode,   &

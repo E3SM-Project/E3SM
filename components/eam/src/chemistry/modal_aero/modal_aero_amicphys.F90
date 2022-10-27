@@ -107,6 +107,10 @@
   integer, parameter :: max_gas = nsoa + 1
   ! the +3 in max_aer are dst, ncl, so4
   integer, parameter :: max_aer = nsoa + npoa + nbc + 3
+#elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined MOSAIC_SPECIES ) && ( defined VBS_SOA ) )
+  integer, parameter :: max_gas = nsoag + 4
+  ! the +9 in max_aer are dst, ncl, so4, mom, nh4, no3, cl, ca, co3
+  integer, parameter :: max_aer = nsoa + npoa + nbc + 9
 #elif ( ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE ) && ( defined MOSAIC_SPECIES ) )
   integer, parameter :: max_gas = nsoa + 4
   ! the +9 in max_aer are dst, ncl, so4, mom, nh4, no3, cl, ca, co3
@@ -946,7 +950,6 @@ main_i_loop: &
 !        qsub4, qqcwsub4,                         &
 !        qsub_tendaa, qqcwsub_tendaa              )
 
-! ++MW
       call mam_amicphys_1gridcell(                &
          do_cond,             do_rename,          &
          do_newnuc,           do_coag,            &
@@ -966,7 +969,6 @@ main_i_loop: &
          misc_vars_aa,                            &
          Hconc_sav, awater,         & !!MW: to save aerosol pH (dsj+zlu)
          troplev(i)          ) !kzm: troplev for stratospheric aerosol cal.
-! --MW
 
 !
 ! form new grid-mean mix-ratios
@@ -1238,7 +1240,6 @@ main_i_loop: &
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
-! ++MW
       subroutine mam_amicphys_1gridcell(          &
          do_cond,            do_rename,           &
          do_newnuc,          do_coag,             &
@@ -1258,7 +1259,7 @@ main_i_loop: &
          misc_vars_aa,                            & 
          Hconc_sav, awater,                        & !MW: to save aerosol pH (dsj+zlu)
          troplev_i) !kzm: to calculate strat. aerosol
-! --MW
+
 
 !
 ! calculates changes to gas and aerosol sub-area TMRs (tracer mixing ratios)
@@ -1315,11 +1316,11 @@ main_i_loop: &
       real(r8), intent(inout), dimension( 1:gas_pcnst, 1:nqqcwtendaa, 1:maxsubarea ) :: &
          qqcwsub_tendaa
       type ( misc_vars_aa_type ), intent(inout) :: misc_vars_aa
-! ++MW
+
       ! to save aerosol pH (dsj+zlu)
       real(r8), intent(inout) :: Hconc_sav(1:max_mode)
       real(r8), intent(inout) :: awater(1:max_mode)
-! --MW
+
       integer,  intent(in)    ::  troplev_i   !kzm ++ tropopause level 
 ! local
       integer :: iaer, igas
@@ -1455,7 +1456,6 @@ main_jsub_loop: &
 
 
       if ( iscldy_subarea(jsub) .eqv. .true. ) then
-! ++MW
       call mam_amicphys_1subarea_cloudy(             &
          do_cond_sub,            do_rename_sub,      &
          do_newnuc_sub,          do_coag_sub,        &
@@ -1481,11 +1481,9 @@ main_jsub_loop: &
          misc_vars_aa_sub(jsub),                     &
          Hconc_sav , awater,                         & ! to save aerosol pH (dsj+zlu)
          troplev_i) !kzm:for strat. aerosol cal.
-! --MW
 
       else
 
-! ++MW
       call mam_amicphys_1subarea_clear(              &
          do_cond_sub,            do_rename_sub,      &
          do_newnuc_sub,          do_coag_sub,        &
@@ -1505,7 +1503,6 @@ main_jsub_loop: &
          misc_vars_aa_sub(jsub),                     & 
          Hconc_sav , awater,                          & !MW: to save aerosol pH (dsj+zlu)
          troplev_i) !kzm:for strat. aerosol cal.
-! --MW
 
       end if
 
@@ -1569,7 +1566,6 @@ main_jsub_loop: &
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
-! ++MW
       subroutine mam_amicphys_1subarea_cloudy(       &
          do_cond,                do_rename,          &
          do_newnuc,              do_coag,            &
@@ -1595,7 +1591,6 @@ main_jsub_loop: &
          misc_vars_aa_sub,                           &
          Hconc_sav, awater,                          &  ! to save aerosol pH (dsj+zlu)
          troplev_i) ! kzm:for strat. aerosol cal.
-! --MW
 
 !
 ! calculates changes to gas and aerosol sub-area TMRs (tracer mixing ratios)
@@ -1614,10 +1609,9 @@ main_jsub_loop: &
 !    new particle nucleation - because h2so4 gas conc. should be very low in cloudy air
 !    coagulation - because cloud-borne aerosol would need to be included
 !
-! ++MW
+
       use physconst, only:  r_universal, mwh2o !dsj+zlu
-! --MW
-       use time_manager,  only: is_first_step
+      use time_manager,  only: is_first_step
       logical,  intent(in)    :: do_cond, do_rename, do_newnuc, do_coag
       logical,  intent(in)    :: iscldy_subarea        ! true if sub-area is cloudy
       integer,  intent(in)    :: lchnk                 ! chunk identifier
@@ -1701,11 +1695,10 @@ main_jsub_loop: &
 
       type ( misc_vars_aa_type ), intent(inout) :: misc_vars_aa_sub
 
-! ++MW
       ! to save aerosol pH (dsj+zlu)
       real(r8), intent(inout) :: Hconc_sav(1:max_mode)
       real(r8), intent(inout) :: awater(1:max_mode)
-! --MW
+
       integer,  intent(in)    :: troplev_i !kzm++  
 ! local
       integer, parameter :: ntot_poaspec = npoa
@@ -1878,6 +1871,8 @@ do_cond_if_block10: &
          tmp_relhum = min( relhum, 0.98_r8 )
          call mosaic_gasaerexch_1subarea_intr(     nstep,                &!Intent(ins)
               lchnk,             i,                k,           jsub,    &
+              latndx,            lonndx,           lund,                 &
+              jtsubstep,                                                 &
               temp,              tmp_relhum,       pmid,                 &
               aircon,            dtsubstep,        n_mode,               &
               dgn_a,             dgn_awet,         qaer_cur,             &!Intent(inouts)
@@ -1971,10 +1966,8 @@ do_rename_if_block30: &
       qnumcw_sv1 = qnumcw_cur
       qaercw_sv1 = qaercw_cur
 
-!kzm ++
       if ( strat_sulfate_xfer ) then
-!      call mam_rename_1subarea(                                      &  !kzm switch to new rename scheme
-       call mam_rename_1subarea_strat(                                      &
+       call mam_rename_1subarea_strat(                               &
               nstep,             lchnk,                              &
          i,                 k,                jsub,                  &
          latndx,            lonndx,           lund,                  &
@@ -1985,7 +1978,7 @@ do_rename_if_block30: &
          qaer_cur,          qaer_delsub_grow4rnam,                   &
          qwtr_cur,                                                   &
          qnumcw_cur,                                                 &
-         qaercw_cur,        qaercw_delsub_grow4rnam               )
+         qaercw_cur,        qaercw_delsub_grow4rnam               )     !kzm switch to new rename scheme
       else
        call mam_rename_1subarea(                                     &
             nstep,             lchnk,                              &
@@ -2000,7 +1993,7 @@ do_rename_if_block30: &
          qnumcw_cur,                                                 &
          qaercw_cur,        qaercw_delsub_grow4rnam)
       end if
-!kzm --      
+
 
 
       qnum_del_rnam = qnum_del_rnam + (qnum_cur - qnum_sv1)
@@ -2087,7 +2080,6 @@ do_rename_if_block30: &
 
 !--------------------------------------------------------------------------------
 !--------------------------------------------------------------------------------
-! ++MW
       subroutine mam_amicphys_1subarea_clear(        &
          do_cond,                do_rename,          &
          do_newnuc,              do_coag,            &
@@ -2106,7 +2098,6 @@ do_rename_if_block30: &
          qwtr3,      qwtr4,                          &
          misc_vars_aa_sub, Hconc_sav, awater,        & ! to save aerosol pH (dsj+zlu)
          troplev_i )                                 !kzm++ 
-! --MW
 
 !
 ! calculates changes to gas and aerosol sub-area TMRs (tracer mixing ratios)
@@ -2122,9 +2113,7 @@ do_rename_if_block30: &
 !    transfer of particles from hydrophobic modes to hydrophilic modes (aging)
 !       due to condensation and coagulation
 !
-! ++MW
       use physconst, only:  r_universal, mwh2o !dsj+zlu
-! --MW
 
       logical,  intent(in)    :: do_cond, do_rename, do_newnuc, do_coag
       logical,  intent(in)    :: iscldy_subarea        ! true if sub-area is cloudy
@@ -2195,11 +2184,11 @@ do_rename_if_block30: &
          qwtr4
 
       type ( misc_vars_aa_type ), intent(inout) :: misc_vars_aa_sub
-! ++MW
+
       ! to save aerosol pH (dsj+zlu)
       real(r8), intent(inout) :: Hconc_sav(1:max_mode)
       real(r8), intent(inout) :: awater(1:max_mode)
-! --MW
+
 
 ! local
       integer, parameter :: ntot_poaspec = npoa
@@ -2353,6 +2342,8 @@ do_cond_if_block10: &
       if ( mosaic ) then
          call mosaic_gasaerexch_1subarea_intr(     nstep,                &!Intent(ins)
               lchnk,             i,                k,           jsub,    &
+              latndx,            lonndx,           lund,                 &
+              jtsubstep,                                                 &
               temp,              relhum,           pmid,                 &
               aircon,            dtsubstep,        n_mode,               &
               dgn_a,             dgn_awet,         qaer_cur,             &!Intent(inouts)
@@ -2423,19 +2414,16 @@ do_rename_if_block30: &
 
       qnum_sv1 = qnum_cur
       qaer_sv1 = qaer_cur
-      !kzm ++
+     
       strat_sulfate_xfer = .false.
       if (kzm_renaming_switch .and. (troplev_i >= k) .and. (ntot_amode==5) .and. (ncrsf > 0)) then
           mtoo_renamexf(nacc) = ncrsf !kzm reanme acc --> strat coarse
           !mtoo_renamexf(ncrsf) = nacc !kzm reanme shrink ncrsf --> acc
           strat_sulfate_xfer = .true.
       endif
-      !kzm --
 
-!kzm ++
+
       if (strat_sulfate_xfer) then
-
-      !call mam_rename_1subarea
          call mam_rename_1subarea_strat(                                &
               nstep,             lchnk,                                 &
                i,                 k,                jsub,               &
@@ -2445,7 +2433,7 @@ do_rename_if_block30: &
               n_mode,                                                   &
               qnum_cur,                                                 &
               qaer_cur,          qaer_delsub_grow4rnam,                 &
-              qwtr_cur)
+              qwtr_cur)                                                     !kzm switch to new rename scheme
       else
            call mam_rename_1subarea(                                    &
                               nstep,             lchnk,                 &
@@ -2457,8 +2445,7 @@ do_rename_if_block30: &
               qnum_cur,                                                 &
               qaer_cur,          qaer_delsub_grow4rnam,                 &
               qwtr_cur)
-      end if!kzm++
-!kzm
+      end if
 
 
       qnum_del_rnam = qnum_del_rnam + (qnum_cur - qnum_sv1)
@@ -2601,16 +2588,17 @@ do_newnuc_if_block50: &
 !---------------------------------------------------------------------
 !---------------------------------------------------------------------
 #if ( defined MOSAIC_SPECIES )
-! ++MW
       subroutine mosaic_gasaerexch_1subarea_intr(  nstep,                &!Intent(ins)
               lchnk,             i_in,             k_in,        jsub_in, &
+              latndx,            lonndx,           lund,                 &
+              jtsubstep,                                                 &
               temp,              relhum,           pmid,                 &
               aircon,            dtsubstep,        n_mode,               &
               dgn_a,             dgn_awet,         qaer_cur,             &!Intent(inouts)
               qgas_cur,          qnum_cur,         qwtr_cur,             &
               qgas_avg,          qgas_netprod_otrproc,                   &
               uptkrate_h2so4,    misc_vars_aa_sub, Hconc_sav     ) ! to save aerosol pH dsj+zlu
-! --MW
+
         !------------------------------------------------------------------------------!
         !Purpose: This routine acts as an interface between Mosaic and CAM
         !Future work:
@@ -2631,9 +2619,7 @@ do_newnuc_if_block50: &
         !------------------------------------------------------------------------------!
         !Use statements
         use module_mosaic_box_aerchem, only: mosaic_box_aerchemistry
-! ++MW
         use infnan,                    only: nan, assignment(=)
-! --MW
         use physconst,                 only: mwh2o
         use module_data_mosaic_aero,   only: naer_mosaic => naer, &
              inh4_a, ilim2_a, iso4_a, ina_a, icl_a, ibc_a, imom_a, ioin_a, ioc_a, &
@@ -2654,7 +2640,10 @@ do_newnuc_if_block50: &
         integer,  intent(in) :: nstep                 ! model time-step number
         integer,  intent(in) :: i_in, k_in            ! column and level indices
         integer,  intent(in) :: jsub_in               ! subarea index
-      
+        integer,  intent(in) :: latndx, lonndx        ! lat and lon indices
+        integer,  intent(in) :: lund                  ! logical unit for diagnostic output
+        integer,  intent(in) :: jtsubstep             ! time substep info from calling routine 
+
         real(r8), intent(in) :: temp             !Temperature at model levels (K)
         real(r8), intent(in) :: relhum           !Relative humidity (0-1)
         real(r8), intent(in) :: pmid             !Pressure at layer center (Pa)
@@ -2679,10 +2668,9 @@ do_newnuc_if_block50: &
                   ! NOTE - currently only the values for h2so4 and nh3 should be non-zero
         real(r8), intent(inout) :: uptkrate_h2so4  ! rate of h2so4 uptake by aerosols (1/s)
         type ( misc_vars_aa_type ), intent(inout) :: misc_vars_aa_sub
-! ++MW
-! to save aerosol pH (dsj+zlu)
+
+        ! to save aerosol pH (dsj+zlu)
         real(r8), intent(inout) :: Hconc_sav(max_mode)        
-! --MW
 
         !Local Variables - [To be sent as args to Mosaic code]
         integer  :: ierr
@@ -2775,6 +2763,18 @@ do_newnuc_if_block50: &
         logical,parameter ::  convergence_pt_trk = .true. !For tracking points where convergence failed, let the run proceed
 !       logical :: f_neg_vol_tmp
 
+! temporarily delcare some variables, should be removed
+#if ( defined VBS_SOA )
+        integer :: iaer, igas
+
+        real(r8), dimension(1:max_gas, 1:max_mode) :: uptkaer
+        real(r8), dimension(1:max_gas) :: gas_diffus     ! gas diffusivity at current temp and pres (m2/s) 
+        real(r8), dimension(1:max_gas) :: gas_freepath   ! gas mean free path at current temp and pres (m)
+        real(r8), dimension(max_mode) :: uptkrate
+        real(r8) tmpa, tmpb
+#endif
+
+
 
         ! allocate the allocatable parts of mosaic_vars_aa
         allocate( mosaic_vars_aa%iter_mesa(nbin_a_max), stat=ierr )
@@ -2848,7 +2848,7 @@ do_newnuc_if_block50: &
            !5. CAM units are (mol/mol of air) which are converted to Mosaic units (nano mol/m3).
            
            !Units conversion:qaer_cur[mol/mol] * cair_mol_m3[mol/m3] * 1.0e9[nmol/mol] 
-           aer(inh4_a,  jtotal, imode)  = qaer_cur(iaer_nh4, imode) * nano_mult_cair 
+           aer(inh4_a,  jtotal, imode)  = qaer_cur(iaer_nh4, imode) * nano_mult_cair
            aer(ilim2_a, jtotal, imode)  = qaer_cur(iaer_soa, imode) * nano_mult_cair
            aer(iso4_a,  jtotal, imode)  = qaer_cur(iaer_so4, imode) * nano_mult_cair 
            aer(ina_a,   jtotal, imode)  = qaer_cur(iaer_ncl, imode) * nano_mult_cair 
@@ -2884,7 +2884,18 @@ do_newnuc_if_block50: &
         gas_avg(:) = 0.0_r8
         
         !Units conversion:qgas_cur[mol/mol] * cair_mol_m3[mol/m3] * 10.0e9[nmol/mol] 
+
+#if ( defined VBS_SOA )
+        gas(iaro2_g)  = qgas_cur(igas_soag1)   * nano_mult_cair
+        gas(ialk1_g)  = qgas_cur(igas_soag2)   * nano_mult_cair
+        gas(iole1_g)  = qgas_cur(igas_soag3)   * nano_mult_cair
+        gas(iapi1_g)  = qgas_cur(igas_soag4)   * nano_mult_cair
+        gas(iapi2_g)  = qgas_cur(igas_soag5)   * nano_mult_cair
+        gas(ilim1_g)  = qgas_cur(igas_soag6)   * nano_mult_cair
+        gas(ilim2_g)  = qgas_cur(igas_soag7)   * nano_mult_cair
+#else
         gas(ilim2_g)  = qgas_cur(igas_soa)   * nano_mult_cair
+#endif
         gas(ih2so4_g) = qgas_cur(igas_h2so4) * nano_mult_cair 
         gas(inh3_g)   = qgas_cur(igas_nh3)   * nano_mult_cair 
         if (igas_hno3 > 0) &
@@ -2928,8 +2939,52 @@ do_newnuc_if_block50: &
         water_a_hyst(:)      = nan
         aH2O_a(:)            = nan
         gam_ratio(:)         = nan
-        
-        
+
+! temporarily put here for coupling with MOSAIC, should be removed later        
+#if ( defined VBS_SOA )
+        uptkaer(:,:) = 0.0_r8
+        uptkrate(:)  = 0.0_r8
+
+        ! calc gas uptake (mass transfer) rates
+        if (jtsubstep == 1) then
+
+           tmpa = pmid/1.013e5_r8
+           do igas = 1, ngas
+              gas_diffus(igas) = gas_diffusivity(temp, tmpa, mw_gas(igas), vol_molar_gas(igas))
+
+              tmpb = mean_molecular_speed(temp, mw_gas(igas))
+
+              gas_freepath(igas) = 3.0_r8 * gas_diffus(igas) / tmpb
+
+              call gas_aer_uptkrates_1box1gas( &
+                     accom_coef_gas(igas), gas_diffus(igas), gas_freepath(igas), &
+                     0.0_r8, ntot_amode, dgn_awet, alnsg_aer, uptkrate )
+
+              if (igas <= nsoag) then
+                 iaer = 1
+              else
+                 iaer = igas - nsoag + 1
+              endif
+
+              do imode = 1, ntot_amode
+                 if ( lmap_aer(iaer,imode) > 0 .or. &
+                      mode_aging_optaa(imode) > 0 ) then
+                    ! uptkrate is for number = 1 #/m3, so mult. by number conc. (#/m3)
+                    uptkaer(igas,imode) = uptkrate(imode) * (qnum_cur(imode) * aircon)
+                 else
+                    ! mode does not contain this species
+                    uptkaer(igas,imode) = 0.0_r8
+                 end if
+              end do
+           end do ! igas
+
+           do igas = 1, ngas
+           ! use cam5.1.00 uptake rates
+              if (igas <= nsoag   ) uptkaer(igas,1:ntot_amode) = uptkaer(igas_h2so4,1:ntot_amode)*0.81
+           end do ! igas
+
+        end if ! (jtsubstep == 1) 
+#endif 
         !------------------------------------------------------------!
         !------------------------------------------------------------!
         !END [Populate MOSAIC variables]
@@ -3053,23 +3108,6 @@ do_newnuc_if_block50: &
         !         arg list:
         !         gam_ratio, iter_mesa, aH2O_a,jaerosolstate, mass_dry_a_bgn, mass_dry_a, 
         !         dens_dry_a_bgn, dens_dry_a, water_a_hyst, jaerosolstate_bgn
-
-! *** ff03h version ***
-!       call mosaic_box_aerchemistry(                                                   &
-!            hostgridinfo,            it_mosaic,    aH2O,               T_K,            &!Intent-ins
-!            P_atm,                   RH_pc,        dtchem,                             &
-!            mcall_load_mosaic_parameters,          mcall_print_aer_in, sigmag_a,       &
-!            jaerosolstate,           aer,                                              &!Intent-inouts
-!            num_a,                   water_a,      gas,                                &
-!            gas_avg,                 gas_netprod_otrproc,              Dp_dry_a,       &
-!            dp_wet_a,                jhyst_leg,    zero_water_flag,    flag_itr_kel,   &
-!            mass_dry_a_bgn,          mass_dry_a,                                       &!Intent-outs
-!            dens_dry_a_bgn,          dens_dry_a,   water_a_hyst,       aH2O_a,         &
-!            gam_ratio,               jaerosolstate_bgn,                jASTEM_fail,    &
-!            iter_MESA,               f_neg_vol_tmp                                     )
-
-! *** ff04a version ***
-! ++MW
         call mosaic_box_aerchemistry(               aH2O,               T_K,            &!Intent-ins
              P_atm,                   RH_pc,        dtchem,                             &
              mcall_load_mosaic_parameters,          mcall_print_aer_in, sigmag_a,       &
@@ -3082,21 +3120,22 @@ do_newnuc_if_block50: &
              mass_dry_a_bgn,          mass_dry_a,                                       &!Intent-outs
              dens_dry_a_bgn,          dens_dry_a,   water_a_hyst,       aH2O_a,         &
              uptkrate_h2so4,          gam_ratio,    jaerosolstate_bgn,  Hconc_sav       ) ! to save aerosol pH (dsj+zlu)
-! --MW
 
-! *** ff04a version ***
-!  subr       mosaic_box_aerchemistry(        aH2O,               T_K,            &!Intent-ins
-!       P_atm,                  RH_pc,        dtchem,                             &
-!       mcall_load_mosaic_parameters,         mcall_print_aer_in, sigmag_a,       &
-!       kappa_nonelectro,                                                         &
-!       jaerosolstate,          aer,                                              &!Intent-inouts
-!       num_a,                  water_a,      gas,                                &
-!       gas_avg,                gas_netprod_otrproc,              Dp_dry_a,       &
-!       dp_wet_a,               jhyst_leg,                                        &
-!       mosaic_vars_aa,                                                           &
-!       mass_dry_a_bgn,         mass_dry_a,                                       &!Intent-outs
-!       dens_dry_a_bgn,         dens_dry_a,   water_a_hyst,       aH2O_a,         &
-!       uptkrate_h2so4,         gam_ratio,    jaerosolstate_bgn                   )
+! temporarily couple the SOA partition in this way, need to change later
+#if ( defined VBS_SOA )
+        call mam_soaexch_vbs_1subarea(                                   &
+                nstep,             lchnk,                                  &
+                i_in,              k_in,             jsub_in,              &
+                latndx,            lonndx,           lund,                 &
+                dtsubstep,                                                 &
+                temp,              pmid,             aircon,               &
+                n_mode,                                                    &
+                qgas_cur,          qgas_avg,                               &
+                qaer_cur,                                                  &
+                qnum_cur,                                                  &
+                qwtr_cur,                                                  &
+                uptkaer                                                    )
+#endif
 
         if (mosaic_vars_aa%flag_itr_kel) then
            misc_vars_aa_sub%max_kelvin_iter_1grid = misc_vars_aa_sub%max_kelvin_iter_1grid + 1.0_r8
@@ -3200,7 +3239,11 @@ do_newnuc_if_block50: &
            !5. CAM units are (mol/mol of air) and  Mosaic units are (nano mol/m3).
 
            qaer_cur(iaer_nh4, imode) = aer(inh4_a,  jtotal , imode) * nano_mult_cair_inv
+#if ( defined VBS_SOA )
+           ! temporarily not update soa from MOSAIC, should be removed later
+#else
            qaer_cur(iaer_soa, imode) = aer(ilim2_a, jtotal , imode) * nano_mult_cair_inv
+#endif
            qaer_cur(iaer_so4, imode) = aer(iso4_a,  jtotal , imode) * nano_mult_cair_inv
            qaer_cur(iaer_ncl, imode) = aer(ina_a,   jtotal , imode) * nano_mult_cair_inv
            if (iaer_cl  > 0) &
@@ -3226,7 +3269,19 @@ do_newnuc_if_block50: &
         !BSINGH - only 3 gases are avialble in CAM (SOAG, H2SO4, NH3). 
         !SOAG is stored in LIM2 gas species as of now
 
+#if ( defined VBS_SOA )
+!        qgas_cur(igas_soag1)   = gas(iaro2_g)  * nano_mult_cair_inv
+!        qgas_cur(igas_soag2)   = gas(ialk1_g)  * nano_mult_cair_inv
+!        qgas_cur(igas_soag3)   = gas(iole1_g)  * nano_mult_cair_inv
+!        qgas_cur(igas_soag4)   = gas(iapi1_g)  * nano_mult_cair_inv
+!        qgas_cur(igas_soag5)   = gas(iapi2_g)  * nano_mult_cair_inv
+!        qgas_cur(igas_soag6)   = gas(ilim1_g)  * nano_mult_cair_inv
+!        qgas_cur(igas_soag7)   = gas(ilim2_g)  * nano_mult_cair_inv
+
+! temporarily not update SOAG from MOSAIC
+#else
         qgas_cur(igas_soa)   = gas(ilim2_g)  * nano_mult_cair_inv
+#endif
         qgas_cur(igas_h2so4) = gas(ih2so4_g) * nano_mult_cair_inv 
         qgas_cur(igas_nh3)   = gas(inh3_g)   * nano_mult_cair_inv 
 
@@ -6342,9 +6397,16 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       name_num    = "???"
       name_numcw  = "???"
 
+! gas species index initialization
       igas_h2so4 = 0 ; igas_nh3 = 0
       igas_hno3  = 0 ; igas_hcl = 0
       igas_soag  = 0
+      igas_soag1 = 0 ; igas_soag2 = 0
+      igas_soag3 = 0 ; igas_soag4 = 0
+      igas_soag5 = 0 ; igas_soag6 = 0
+      igas_soag7 = 0
+
+! aerosol species index initialization
       iaer_bc  = 0 ; iaer_dst = 0 
       iaer_ncl = 0 ; iaer_nh4 = 0 
       iaer_pom = 0 ; iaer_soa = 0 
@@ -6357,13 +6419,13 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
 
 #if ( defined VBS_SOA )
       if (nsoa == 1 .and. nsoag == 7) then
-         jsoa =      1 ; name_gas(jsoa) = 'SOAG15'
-         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAG24'
-         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAG35'
-         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAG34'
-         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAG33'
-         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAG32'
-         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAG31'
+         jsoa =      1 ; name_gas(jsoa) = 'SOAG15' ; igas_soag1 = jsoa
+         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAG24' ; igas_soag2 = jsoa
+         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAG35' ; igas_soag3 = jsoa
+         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAG34' ; igas_soag4 = jsoa
+         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAG33' ; igas_soag5 = jsoa
+         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAG32' ; igas_soag6 = jsoa
+         jsoa = jsoa+1 ; name_gas(jsoa) = 'SOAG31' ; igas_soag7 = jsoa
          igas_soag_end = jsoa     
 
          name_aerpfx(1) = 'soa'
