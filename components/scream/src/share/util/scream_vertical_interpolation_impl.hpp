@@ -78,9 +78,9 @@ void perform_vertical_interpolation_impl_2d(
   auto npacks_tgt = ekat::PackInfo<Pack<T,N>::n>::num_packs(nlevs_tgt);
   EKAT_REQUIRE(x_src.extent(0)==input.extent(0));
   EKAT_REQUIRE(x_src.extent(1)==input.extent(1));
-  EKAT_REQUIRE(x_src.extent(1)*N >= nlevs_src);
+  EKAT_REQUIRE(x_src.extent_int(1)*N >= nlevs_src);
   EKAT_REQUIRE(x_tgt.extent(0)==output.extent(1));
-  EKAT_REQUIRE(x_tgt.extent(0)==npacks_tgt); 
+  EKAT_REQUIRE(x_tgt.extent_int(0)==npacks_tgt);
   
   LIV<T,N> vert_interp(ncols,nlevs_src,nlevs_tgt);
 
