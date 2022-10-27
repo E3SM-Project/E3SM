@@ -66,7 +66,7 @@ function(CreateUnitTestExec exec_name test_srcs scream_libs)
     ${CMAKE_CURRENT_BINARY_DIR}
   )
 
-  set(test_libs "${scream_libs}")
+  set(test_libs "${scream_libs};scream_test_support")
   list(APPEND test_libs "${SCREAM_TPL_LIBRARIES}")
 
   if (SCREAM_Fortran_FLAGS)
