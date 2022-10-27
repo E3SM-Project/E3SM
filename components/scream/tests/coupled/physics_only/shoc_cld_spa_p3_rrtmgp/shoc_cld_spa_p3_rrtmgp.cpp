@@ -3,6 +3,7 @@
 // Boiler plate, needed for all runs
 #include "control/atmosphere_driver.hpp"
 
+#include "diagnostics/register_diagnostics.hpp"
 #include "physics/register_physics.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 
@@ -35,6 +36,7 @@ TEST_CASE("shoc-stand-alone", "") {
 
   // Need to register products in the factory *before* we create any atm process or grids manager.
   register_physics();
+  register_diagnostics();
   register_mesh_free_grids_manager();
 
   // Create the driver

@@ -6,6 +6,7 @@
 
 #include "dynamics/register_dynamics.hpp"
 #include "physics/register_physics.hpp"
+#include "diagnostics/register_diagnostics.hpp"
 #include "control/register_surface_coupling.hpp"
 
 #include "mct_coupling/ScreamContext.hpp"
@@ -97,9 +98,10 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
     scream_params.sublist("driver_options").set<std::string>("Atm Log File",atm_log_file);
 
     // Need to register products in the factories *before* we attempt to create any.
-    // In particular, register all atm processes, and all grids managers.
+    // In particular, register all atm processes, grids managers, and diagnostics.
     register_dynamics();
     register_physics();
+    register_diagnostics();
     register_surface_coupling();
 
     // Create the bare ad, then start the initialization sequence
