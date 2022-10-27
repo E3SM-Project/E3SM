@@ -332,7 +332,7 @@ if ($NML_TYPE eq "ww3_grid") {
        add_default($nl, 'spectrum%nk', 'val'=>50);
        add_default($nl, 'spectrum%nth', 'val'=>36);
     }
-    else {
+    else { #default is spectral resolution of 36x36
        add_default($nl, 'spectrum%xfr');
        add_default($nl, 'spectrum%freq1');
        add_default($nl, 'spectrum%nk');
