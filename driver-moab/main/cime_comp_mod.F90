@@ -2845,6 +2845,10 @@ contains
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
           call t_drvstopf  ('CPL:OCNPRE1',cplrun=.true.,hashint=hashint(3))
        endif
+       ! is this really needed here ?
+       if ( atm_c2_ocn) then
+          call  prep_ocn_calc_a2x_ox_moab(timer='CPL:ocnpre1_atm2ocn_moab', infodata=infodata)
+       endif
 
        !----------------------------------------------------------
        !| ATM/OCN SETUP (rasm_option1)
@@ -4294,6 +4298,7 @@ contains
     integer  :: ent_type 
 #endif 
 
+    call prep_ocn_calc_i2x_ox_moab() ! this does projection from ice to ocean on coupler, by simply matching
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCNP_BARRIER')
        call t_drvstartf ('CPL:ATMOCNP',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(7))
@@ -4307,6 +4312,7 @@ contains
           ! Map to ocn
           if (ice_c2_ocn) then
             call prep_ocn_calc_i2x_ox(timer='CPL:atmocnp_ice2ocn')
+
           endif
           if (wav_c2_ocn) call prep_ocn_calc_w2x_ox(timer='CPL:atmocnp_wav2ocn')
           if (trim(cpl_seq_option(1:5)) == 'NUOPC') then
