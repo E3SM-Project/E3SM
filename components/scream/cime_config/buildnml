@@ -725,7 +725,7 @@ def get_file_parameters(caseroot):
     for item in raw_xml.findall('.//*[@type="array(file)"]'):
         result.extend(refine_type(item.text, force_type="array(file)"))
 
-    # Remove duplicates. Note sure if an error would be warranted if dupes exist
+    # Remove duplicates. Not sure if an error would be warranted if dupes exist
     return list(OrderedDict.fromkeys(result))
 
 ###############################################################################
@@ -747,12 +747,6 @@ def create_input_data_list_file(case, caseroot):
     with open(input_data_list_file, "w") as fd:
         for idx, file_path in enumerate(files_to_download):
             fd.write("scream_dl_input_{} = {}\n".format(idx, file_path))
-
-            # SCREAM is currently hardcoded to expect many inputs to be in $rundir/data
-            file_name = os.path.basename(file_path)
-            tgt_file = os.path.join(target, file_name)
-            if not os.path.exists(tgt_file) and not os.path.islink(tgt_file):
-                os.symlink(file_path, tgt_file)
 
 ###############################################################################
 def do_cime_vars_on_yaml_output_files(case,caseroot):

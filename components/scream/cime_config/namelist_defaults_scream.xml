@@ -90,7 +90,6 @@ tweaking their $case/namelist_scream.xml file.
              integer: will be inferred from any sequence of 0-9
              real   : will be inferred from any numeric expression with a decimal point or scientific notation
              file   : A string that denotes a file path that CIME should download
-                      NOTE: All file parameters will be symlinked to ${RUNDIR}/data from the download area.
              string : everything else
 
              array(one of the above): An array of one of the above types
