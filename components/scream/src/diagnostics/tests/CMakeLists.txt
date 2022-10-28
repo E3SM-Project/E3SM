@@ -7,6 +7,9 @@ if (NOT SCREAM_BASELINES_ONLY)
   # Test extracting a single level of a field
   CreateUnitTest(field_at_level "field_at_level_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 
+ # Test vertically remapping of field
+  CreateUnitTest(vertically_remapped_field "vertically_remapped_field_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+
   # Test potential temperature diagnostic
   CreateUnitTest(potential_temperature "potential_temperature_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test exner diagnostic
