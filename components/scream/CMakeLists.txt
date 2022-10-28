@@ -31,7 +31,6 @@ endif ()
 message("Kokkos_ENABLE_CUDA ${Kokkos_ENABLE_CUDA}")
 message("Kokkos_ENABLE_HIP  ${Kokkos_ENABLE_HIP}")
 
-#not sure this is needed for HIP?
 if (Kokkos_ENABLE_CUDA)
   if (Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
     if (Kokkos_ENABLE_DEBUG_BOUNDS_CHECK)
@@ -116,7 +115,6 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
   set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
 endif()
 
-#this is now a bad name as this macro will be needed in scream as well
 set (EAMXX_ENABLE_GPU FALSE CACHE BOOL "")
 set (CUDA_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?
 set (HIP_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?

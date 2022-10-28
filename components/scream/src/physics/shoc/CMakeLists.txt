@@ -99,13 +99,6 @@ set(SHOC_LIBS "shoc")
 if (SCREAM_SMALL_KERNELS)
   add_library(shoc ${SHOC_SRCS} ${SHOC_SK_SRCS})
 else()
-
-  if (HIP_BUILD)
-    # Work around hipcc issues with SHOC as of late Aug 2022. SHOC builds but then
-    # fails when running in v1 with -O1 and higher.
-    set(SHOC_HIP_FLAGS "-O0")
-  endif()
-
   add_library(shoc ${SHOC_SRCS})
   if (NOT SCREAM_LIBS_ONLY AND NOT SCREAM_BASELINES_ONLY)
     add_library(shoc_sk ${SHOC_SRCS} ${SHOC_SK_SRCS})
@@ -124,8 +117,6 @@ foreach (SHOC_LIB IN LISTS SHOC_LIBS)
     ${CMAKE_CURRENT_BINARY_DIR}/${SHOC_LIB}_modules
   )
   target_link_libraries(${SHOC_LIB} physics_share scream_share)
-  target_compile_options(${SHOC_LIB} PUBLIC $<$<COMPILE_LANGUAGE:Fortran>:${SCREAM_Fortran_FLAGS}>
-                                     PRIVATE $<$<COMPILE_LANGUAGE:CXX>:${SCREAM_CXX_FLAGS} ${SHOC_HIP_FLAGS}>)
 endforeach()
 
 if (NOT SCREAM_LIB_ONLY)
