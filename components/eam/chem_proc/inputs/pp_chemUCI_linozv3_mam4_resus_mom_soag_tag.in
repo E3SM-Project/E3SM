@@ -192,7 +192,9 @@ CHEMISTRY
 [lhno4]     HO2NO2 + OH -> NO2 + H2O + O2                  ; 1.300E-12, 380
 [lhno3]     HNO3 + OH -> NO3 + H2O                         ; 2.400E-14, 460
 *   fix needed to add this bimolec rate, missing from the one below
-[uci6] HNO3 + OH -> NO3 + H2O
+[uci6] HNO3 + OH -> NO3 + H2O                              ; 2.400E-14, 460
+* uci6 coefficients assigned here are to avoid debug issue
+* the real coefficients will calculated in the model
 *    k[uci6] = (k2*k3*[M])/(k2 + k3*[M])  k2=2.7e-17*exp(2199/T)  k3=6.5e-34*exp(1335/T)*[M]
 [lno2_oh]   NO2 + OH + M -> HNO3 + M              ; 1.80e-30, 3.0,  2.80e-11, 0.0, 0.6
 [HO2NO2f]  NO2 + HO2 + M -> HO2NO2 + M            ; 1.90e-31, 3.4,  4.00e-12, 0.3, 0.6
