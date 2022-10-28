@@ -2729,6 +2729,7 @@
 		/>
 		<var name="normalTransportVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			 description="horizontal velocity used to transport mass and tracers"
+			 missing_value="FILLVAL" missing_value_mask="edgeMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="wettingVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
@@ -2854,10 +2855,12 @@
 		/>
 		<var name="transportVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="component of horizontal velocity used to transport mass and tracers in the eastward direction"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="transportVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="component of horizontal velocity used to transport mass and tracers in the northward direction"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="gradSSH" type="real" dimensions="nEdges Time" units="1"
