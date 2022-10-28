@@ -2683,6 +2683,7 @@
 			/>
 		</var_array>
 		<var name="zMid" type="real" dimensions="nVertLevels nCells Time" units="m"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 description="z-coordinate of the mid-depth of the layer"
 		/>
 		<var name="zTop" type="real" dimensions="nVertLevels nCells Time" units="m"
@@ -2691,6 +2692,7 @@
 
 		<var name="density" type="real" dimensions="nVertLevels nCells Time" units="kg m^-3"
 			 description="density"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 		/>
 		<var name="displacedDensity" type="real" dimensions="nVertLevels nCells Time" units="kg m^-3"
 			 description="Density displaced adiabatically to the mid-depth one layer deeper.  That is, layer k has been displaced to the depth of layer k+1."
@@ -2698,6 +2700,7 @@
 		/>
 		<var name="potentialDensity" type="real" dimensions="nVertLevels nCells Time" units="kg m^-3"
 			 description="potential density: density displaced adiabatically to the mid-depth of top layer"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="inSituThermalExpansionCoeff"
@@ -2829,10 +2832,12 @@
 		/>
 		<var name="velocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="component of horizontal velocity in the eastward direction"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="velocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="component of horizontal velocity in the northward direction"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="transportVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
