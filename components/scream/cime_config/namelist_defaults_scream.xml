@@ -92,7 +92,8 @@ tweaking their $case/namelist_scream.xml file.
              file   : A string that denotes a file path that CIME should download
              string : everything else
 
-             array(one of the above): An array of one of the above types
+             array(one of the above): An array of one of the above types. The array type will be inferred
+                                      if the value is of the form (v1, v2, ...) or [v1, v2, ...]
 
         5) A parameter can be set to any value of the correct type unless
            the 'valid_values' metadata attribute is set. If desired, valid_values
