@@ -214,7 +214,7 @@ struct CaarFunctorImpl {
     profiling_resume();
     GPTLstart("caar compute");
     Kokkos::parallel_for("caar loop pre-boundary exchange", m_policy, *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     GPTLstop("caar compute");
 
     GPTLstart("caar_bexchV");
