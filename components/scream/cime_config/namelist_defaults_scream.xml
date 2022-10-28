@@ -74,29 +74,41 @@ tweaking their $case/namelist_scream.xml file.
            set of selectors. A parameter element with no selectors, which means it controls the default param value, must
            come before parameter elements with selectors. If multiple parameter elements
            are matched, then the match the occurs last takes precendence.
+
         2) The first matched parameter element encountered for a parameter will define the default metadata
            for that parameter. All subsequent parameter elements will assume the same
            metadata as the first unless an explicit override occurs.
            User changes to the case XML file must be compatible with the metadata.
+
         3) For a parameter whose elements all have selectors, if none of the selectors
            are matched, then the parameter will be omitted from the case XML
            file ($case/namelist_scream.xml).
+
         4) Parameter types will be inferred. You can override the inferred type
            via the 'type' metadata attribute. Types are:
              logical: will be inferred from any case of true/false
              integer: will be inferred from any sequence of 0-9
              real   : will be inferred from any numeric expression with a decimal point or scientific notation
+             file   : A string that denotes a file path that CIME should download
+                      NOTE: All file parameters will be symlinked to ${RUNDIR}/data from the download area.
              string : everything else
+
+             array(one of the above): An array of one of the above types
+
         5) A parameter can be set to any value of the correct type unless
            the 'valid_values' metadata attribute is set. If desired, valid_values
            should be set up as a comma-separated list of values, e.g. 'valid_values="1,2,3"'
            TODO support numeric checks (<, >, ...)??
+
         6) You can inline case values into parameter values via this syntax, e.g.:
            <init_file>scream_init_${ATM_GRID}.nc</init_file>
            This would result in parameter init_file' having the value 'scream_init_ne4np4.nc'
+
         7) Any parameter value with a comma will be assumed to be a list.
            TODO allow this behavior to be overridden?
+
         8) Every value in a list should be of the same type
+
         9) All local changes made to $case/namelist_scream.xml must conform
            to the structure and metadata derived from this file.
 
@@ -117,11 +129,6 @@ tweaking their $case/namelist_scream.xml file.
              - constraints="ge 0; ne 4" means the value V must satisfy V>=0 && V!=4.
              - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
              - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
-
-       13) The attribute 'file' denotes that the parameter should be added to the list of files
-           that need to be downloaded by CIME. Example
-           <init_file file="true">scream_init_${ATM_GRID}.nc</init_file>
-           NOTE: All file parameters will be symlinked to ${RUNDIR}/data from the download area.
   -->
 
   <atmosphere_processes_defaults>
@@ -158,7 +165,7 @@ tweaking their $case/namelist_scream.xml file.
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
       <Grid>Dynamics</Grid>
-      <vertical_coordinate_filename file="true">UNSET</vertical_coordinate_filename>
+      <vertical_coordinate_filename type="file">UNSET</vertical_coordinate_filename>
       <vertical_coordinate_filename nlev="72">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L72_20220927.nc</vertical_coordinate_filename>
       <vertical_coordinate_filename nlev="128">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L128_20220927.nc</vertical_coordinate_filename>
       <Moisture>moist</Moisture>
@@ -171,11 +178,13 @@ tweaking their $case/namelist_scream.xml file.
       <do_predict_nc>true</do_predict_nc>
       <do_predict_nc COMPSET=".*SCREAM.*noAero">false</do_predict_nc>
       <enable_column_conservation_checks>false</enable_column_conservation_checks>
-      <p3_lookup_table file="true">${DIN_LOC_ROOT}/atm/scream/tables/p3_lookup_table_1.dat-v4.1.1</p3_lookup_table>
-      <mu_r_table file="true">${DIN_LOC_ROOT}/atm/scream/tables/mu_r_table_vals.dat8</mu_r_table>
-      <revap_table file="true">${DIN_LOC_ROOT}/atm/scream/tables/revap_table_vals.dat8</revap_table>
-      <vn_table file="true">${DIN_LOC_ROOT}/atm/scream/tables/vn_table_vals.dat8</vn_table>
-      <vm_table file="true">${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals.dat8</vm_table>
+      <tables type="array(file)">
+        ${DIN_LOC_ROOT}/atm/scream/tables/p3_lookup_table_1.dat-v4.1.1,
+        ${DIN_LOC_ROOT}/atm/scream/tables/mu_r_table_vals.dat8,
+        ${DIN_LOC_ROOT}/atm/scream/tables/revap_table_vals.dat8,
+        ${DIN_LOC_ROOT}/atm/scream/tables/vn_table_vals.dat8,
+        ${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals.dat8
+      </tables>
     </p3>
 
     <!-- SHOC macrophysics -->
@@ -188,7 +197,7 @@ tweaking their $case/namelist_scream.xml file.
 
     <!-- Simple Prescribed Aerosols (SPA) -->
     <spa inherit="atm_proc_base">
-      <spa_remap_file file="true">UNSET</spa_remap_file>
+      <spa_remap_file type="file">UNSET</spa_remap_file>
       <spa_remap_file hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30_to_ne4_mono_20220502.nc</spa_remap_file>
       <spa_remap_file hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_ne4pg2_mono.20220714.nc</spa_remap_file>
       <spa_remap_file hgrid="ne30np4">none</spa_remap_file>
@@ -200,15 +209,15 @@ tweaking their $case/namelist_scream.xml file.
       <spa_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_ne512pg2_intbilin_20221012.nc</spa_remap_file>
       <spa_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_ne1024pg2_intbilin_20221012.nc</spa_remap_file>
 
-      <spa_data_file file="true">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_20220428.nc</spa_data_file>
+      <spa_data_file type="file">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_20220428.nc</spa_data_file>
     </spa>
 
     <!-- Radiation -->
     <rrtmgp inherit="atm_proc_base">
-      <rrtmgp_coefficients_file_sw file="true">${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-sw-g112-210809.nc</rrtmgp_coefficients_file_sw>
-      <rrtmgp_coefficients_file_lw file="true">${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-lw-g128-210809.nc</rrtmgp_coefficients_file_lw>
-      <rrtmgp_cloud_optics_file_sw file="true">${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc</rrtmgp_cloud_optics_file_sw>
-      <rrtmgp_cloud_optics_file_lw file="true">${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc</rrtmgp_cloud_optics_file_lw>
+      <rrtmgp_coefficients_file_sw type="file">${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-sw-g112-210809.nc</rrtmgp_coefficients_file_sw>
+      <rrtmgp_coefficients_file_lw type="file">${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-lw-g128-210809.nc</rrtmgp_coefficients_file_lw>
+      <rrtmgp_cloud_optics_file_sw type="file">${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc</rrtmgp_cloud_optics_file_sw>
+      <rrtmgp_cloud_optics_file_lw type="file">${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc</rrtmgp_cloud_optics_file_lw>
       <column_chunk_size>1280</column_chunk_size>
       <!-- Radiatively active gases; surface values set to F2010 settings taken from EAM  -->
       <!-- Note that h2o concentrations are just taken from qv, o3 is prescribed for now, -->
@@ -273,7 +282,7 @@ tweaking their $case/namelist_scream.xml file.
 
   <!-- List of nc files for loading inputs on specified grids -->
   <initial_conditions>
-    <Filename file="true">UNSET</Filename>
+    <Filename type="file">UNSET</Filename>
     <Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</Filename>
     <Filename hgrid="ne30np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</Filename>
     <Filename hgrid="ne30np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L128_20221004.nc</Filename>
