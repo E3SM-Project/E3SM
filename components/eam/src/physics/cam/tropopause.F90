@@ -1206,7 +1206,7 @@ contains
          do k = 2, pver
             ! Search starts at the top and stops the first time
             ! E90 greater than thrd.
-            tropLevU(i) = tropLevB(i) !added by kzm to avoid no value found at first step
+            tropLevU(i) = tropLevB(i) !to avoid no value if below situation can't be satisfied. 
             tropLevU(i) = max(2,tropLevU(i)) !added by kzm to avoid no value found at first step
             if (pstate%q(i,k,e90_ndx) > thrd_mmr) then
                tropLevU(i) = k - 1
