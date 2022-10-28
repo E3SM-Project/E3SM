@@ -19,10 +19,12 @@ template <typename View>
 using Const = typename View::const_type;
 
 // GPU-friendly replacements for std::*.
+#if KOKKOS_VERSION < 30700
 template <typename T> KOKKOS_INLINE_FUNCTION
 const T& min (const T& a, const T& b) { return a < b ? a : b; }
 template <typename T> KOKKOS_INLINE_FUNCTION
 const T& max (const T& a, const T& b) { return a > b ? a : b; }
+#endif
 template <typename T> KOKKOS_INLINE_FUNCTION
 void swap (T& a, T& b) { const auto tmp = a; a = b; b = tmp; }
 
