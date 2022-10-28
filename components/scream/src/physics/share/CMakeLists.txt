@@ -11,7 +11,7 @@ set(PHYSICS_SHARE_SRCS
 )
 
 # Add ETI source files if not on CUDA/HIP
-if (NOT HOMMEXX_ENABLE_GPU)
+if (NOT EAMXX_ENABLE_GPU)
   list(APPEND PHYSICS_SHARE_SRCS
   physics_saturation.cpp)
 endif()

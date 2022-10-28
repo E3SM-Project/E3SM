@@ -86,7 +86,7 @@ void Functions<S,D>::vd_shoc_solve(
 #ifdef EKAT_DEFAULT_BFB
   ekat::tridiag::bfb(team, dl, d, du, var);
 #else
-#ifdef HOMMEXX_ENABLE_GPU
+#ifdef EAMXX_ENABLE_GPU
   ekat::tridiag::cr(team, dl, d, du, ekat::scalarize(var));
 #else
   const auto f = [&] () { ekat::tridiag::thomas(dl, d, du, var); };

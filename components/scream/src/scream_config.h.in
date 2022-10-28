@@ -20,7 +20,7 @@
 #define SCREAM_NUM_VERTICAL_LEV ${SCREAM_NUM_VERTICAL_LEV}
 
 // Whether this is a CUDA/HIP build
-#cmakedefine HOMMEXX_ENABLE_GPU
+#cmakedefine EAMXX_ENABLE_GPU
 
 // Whether SCREAM has Homme enabled as dynamics dycore
 #cmakedefine SCREAM_HAS_HOMME

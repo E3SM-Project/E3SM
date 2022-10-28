@@ -109,7 +109,7 @@ struct Functions
 
 // If a GPU build, make all code available to the translation unit; otherwise,
 // ETI is used.
-#ifdef HOMMEXX_ENABLE_GPU
+#ifdef EAMXX_ENABLE_GPU
 # include "physics_saturation_impl.hpp"
 #endif
 

@@ -117,7 +117,7 @@ if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
 endif()
 
 #this is now a bad name as this macro will be needed in scream as well
-set (HOMMEXX_ENABLE_GPU FALSE CACHE BOOL "")
+set (EAMXX_ENABLE_GPU FALSE CACHE BOOL "")
 set (CUDA_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?
 set (HIP_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?
 
@@ -125,7 +125,7 @@ set (HIP_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visi
 if (Kokkos_ENABLE_CUDA)
   # Add CUDA as a language for CUDA builds
   enable_language(CUDA)
-  set (HOMMEXX_ENABLE_GPU TRUE  CACHE BOOL "" FORCE)
+  set (EAMXX_ENABLE_GPU TRUE  CACHE BOOL "" FORCE)
   set (CUDA_BUILD TRUE CACHE BOOL "" FORCE) #needed for yakl if kokkos vars are not visible there?
 endif ()
 
@@ -133,7 +133,7 @@ endif ()
 if (Kokkos_ENABLE_HIP)
   # Add CUDA as a language for CUDA builds
   enable_language(HIP)
-  set (HOMMEXX_ENABLE_GPU TRUE CACHE BOOL "" FORCE)
+  set (EAMXX_ENABLE_GPU TRUE CACHE BOOL "" FORCE)
   set (HIP_BUILD TRUE CACHE BOOL "" FORCE) #needed for yakl if kokkos vars are not visible there?
 endif ()
 
@@ -144,7 +144,7 @@ set(DEFAULT_MIMIC_GPU FALSE)
 set(DEFAULT_FPE FALSE)
 set(DEFAULT_PACK_SIZE 16)
 set(DEFAULT_POSSIBLY_NO_PACK FALSE)
-if (HOMMEXX_ENABLE_GPU)
+if (EAMXX_ENABLE_GPU)
   # On the GPU, the pack size must be 1
   set(DEFAULT_PACK_SIZE 1)
   set(DEFAULT_MAX_THREADS 1)
@@ -340,7 +340,7 @@ check_pack_size(${SCREAM_PACK_SIZE} ${SCREAM_POSSIBLY_NO_PACK_SIZE} "possibly no
 
 if (SCREAM_DEBUG)
   set(DEFAULT_FPMODEL "strict")
-  if (${SCREAM_PACK_SIZE} EQUAL 1 AND NOT ${HOMMEXX_ENABLE_GPU})
+  if (${SCREAM_PACK_SIZE} EQUAL 1 AND NOT ${EAMXX_ENABLE_GPU})
     set(DEFAULT_FPE TRUE)
   endif ()
 endif()
@@ -426,7 +426,7 @@ if (SCREAM_DOUBLE_PRECISION)
   endif()
 endif()
 
-print_var(HOMMEXX_ENABLE_GPU)
+print_var(EAMXX_ENABLE_GPU)
 print_var(CUDA_BUILD)
 print_var(HIP_BUILD)
 print_var(SCREAM_DOUBLE_PRECISION)

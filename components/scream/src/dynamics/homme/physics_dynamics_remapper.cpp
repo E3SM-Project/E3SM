@@ -419,7 +419,7 @@ do_remap_fwd()
 #endif
 
 //should exclude above cases of CUDA and HIP
-#ifndef HOMMEXX_ENABLE_GPU
+#ifndef EAMXX_ENABLE_GPU
   const int team_size = (concurrency<this->m_num_fields ? 1 : concurrency/this->m_num_fields);
 #endif
 

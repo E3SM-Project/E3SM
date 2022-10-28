@@ -9,7 +9,7 @@ set(P3_SRCS
 )
 
 # Add ETI source files if not on CUDA/HIP
-if (NOT HOMMEXX_ENABLE_GPU)
+if (NOT EAMXX_ENABLE_GPU)
   list(APPEND P3_SRCS
     p3_upwind.cpp
     p3_cloud_sed.cpp

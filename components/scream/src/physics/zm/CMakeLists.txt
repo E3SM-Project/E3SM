@@ -13,7 +13,7 @@ set(ZM_HEADERS
 )
 
 # Add ETI source files if not on CUDA/HIP
-if (NOT HOMMEXX_ENABLE_GPU)
+if (NOT EAMXX_ENABLE_GPU)
   list(APPEND ZM_SRCS
       )
 endif()
