@@ -1112,6 +1112,7 @@ def buildnml(case, caseroot, compname):
         else:
             lines.append('        io_type="{}"'.format(ocn_pio_typename))
 
+        lines.append('        useMissingValMask="true"')
         lines.append('        filename_template="{}.mpaso.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
