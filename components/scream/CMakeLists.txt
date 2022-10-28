@@ -111,9 +111,10 @@ option (SCREAM_RRTMGP_DEBUG "Turn on extra debug checks in RRTMGP" ${SCREAM_DEBU
 enable_testing()
 include(CTest)
 
-if (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+if (NOT HIP_BUILD)
   set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
 endif()
+
 
 set (EAMXX_ENABLE_GPU FALSE CACHE BOOL "")
 set (CUDA_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?
