@@ -1037,7 +1037,7 @@ contains
       wrk1d(:) = 0._r8
       do i = 1,ncol
          ! from top to surface
-         j = 2 !kzm added to initialize j
+         j = 1 ! to initialize j
          do k = 1,pver
             if (tropFlag(i,k)) then
                j = k ! index of highest tropospheric box
@@ -1501,9 +1501,8 @@ contains
 
     if ( .not. history_gaschmbudget .and. .not. history_gaschmbudget_2D .and. .not. history_gaschmbudget_2D_levels &
          .and. .not. history_UCIgaschmbudget_2D .and. .not. history_UCIgaschmbudget_2D_levels) return
- !kzm ++ 
-    !modification to avoid debug run issue
-    if (len(flag) >= 4) then !kzm ++
+    !modification to avoid issues with debug built
+    if (len(flag) >= 4) then 
             if (flag(1:4)=='2DCE' .or. flag(1:4)=='2DTE') then
                     start_index = id_co
                     end_index = id_co
@@ -1518,7 +1517,6 @@ contains
             start_index = 1
             end_index = gas_pcnst 
    endif
-!kzm --   
 
     do m = start_index,end_index
        
@@ -1535,7 +1533,7 @@ contains
             endif
             call outfld( trim(solsym(m))//'_'//flag, wrk(:ncol,:), ncol ,lchnk )
           else
-            if (len(flag) >=4) then !kzm ++       
+            if (len(flag) >=4) then        
             if (flag(1:4)=='2DMS' .or. flag(1:4)=='2DCE' .or. flag(1:4)=='2DCI' .or. flag(1:4)=='2DTI' &
                 .or. flag(1:4)=='2DTE' .or. flag(1:4)=='2DMP') then
                ! kg/m2
@@ -1546,15 +1544,15 @@ contains
                wrk(:ncol,:) = adv_mass(m)*(vmr(:ncol,:,m)-vmr_old(:ncol,:,m)) &
                                 /mbar(:ncol,:)*pdeldry(:ncol,:)*rgrav*rdelt
             endif
-            endif !kzm++
+            endif 
 
-            !kzm ++ 
+             
             !if (len(flag) >= 6 .and. flag(6:8) == '_LL') then
             if (len(flag) >= 8) then
                     if (flag(6:8) == '_LL') then
                     !this change is to let code not got to flag(6:8) when length is 5
                     !this change is to avoid debug run issue                
-            !kzm --                
+                           
                         wrk_sum(:ncol) = 0.0_r8
                         do k = gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e
                           wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
@@ -1578,14 +1576,14 @@ contains
                           wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
                        enddo
                        call outfld( trim(solsym(m))//'_'//flag(1:5)//'_L4', wrk_sum(:ncol), ncol ,lchnk )
-                   endif !kzm ++
-            !kzm ++       
+                   endif 
+                   
             !elseif (len(flag) >= 6 .and. flag(6:10) == '_trop') then
             elseif (len(flag) >= 10) then 
                     if (flag(6:10) == '_trop') then
                     !this change is to let code not got to flag(6:8) when length is 5
                     !this change is to avoid debug run issue        
-            !kzm --                
+                           
                          wrk_sum(:ncol) = 0.0_r8
                          if (trim(solsym(m))=='O3' .or. trim(solsym(m))=='O3LNZ' .or. &
                               trim(solsym(m))=='N2OLNZ' .or. trim(solsym(m))=='CH4LNZ') then
@@ -1594,7 +1592,7 @@ contains
                               enddo
                               call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
                          endif
-                   endif !kzm ++    
+                   endif     
             else
                do k=2,pver
                   wrk(:ncol,1) = wrk(:ncol,1) + wrk(:ncol,k)
