@@ -225,7 +225,7 @@ def refine_type(entry, force_type=None):
     # We want to preserve strings representing lists
     if (entry[0]=="(" and entry[-1]==")") or \
        (entry[0]=="[" and entry[-1]=="]") :
-        expect (force_type is None or force_type=="string",
+        expect (force_type is None or force_type == "string",
                 "Error! Invalid force type '{}' for a string representing a list"
                 .format(force_type))
         return entry
@@ -261,7 +261,7 @@ def refine_type(entry, force_type=None):
                 elem = int(tmp)
             elif elem_type == "real":
                 elem = float(entry)
-            elif elem_type == "string":
+            elif elem_type in ["string", "file"]:
                 elem = str(entry)
             else:
                 raise NameError ("Bad force_type: {}".format(force_type))
