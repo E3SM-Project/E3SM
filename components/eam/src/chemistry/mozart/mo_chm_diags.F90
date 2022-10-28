@@ -1503,18 +1503,6 @@ contains
          .and. .not. history_UCIgaschmbudget_2D .and. .not. history_UCIgaschmbudget_2D_levels) return
  !kzm ++ 
     !modification to avoid debug run issue
-
-    !if (flag(1:4)=='2DCE' .or. flag(1:4)=='2DTE') then 
-    !   start_index = id_co
-    !   end_index = id_co
-    !elseif (flag(1:4)=='2DCI' .or.flag(1:4)=='2DTI' .or. flag(1:4)=='2DMP') then
-    !   start_index = id_o3
-    !   end_index = id_o3
-    !else
-    !   start_index = 1
-    !   end_index = gas_pcnst
-    !endif
-
     if (len(flag) >= 4) then !kzm ++
             if (flag(1:4)=='2DCE' .or. flag(1:4)=='2DTE') then
                     start_index = id_co
@@ -1562,7 +1550,7 @@ contains
 
             !kzm ++ 
             !if (len(flag) >= 6 .and. flag(6:8) == '_LL') then
-            if (len(flag) >= 6) then
+            if (len(flag) >= 8) then
                     if (flag(6:8) == '_LL') then
                     !this change is to let code not got to flag(6:8) when length is 5
                     !this change is to avoid debug run issue                
@@ -1593,7 +1581,7 @@ contains
                    endif !kzm ++
             !kzm ++       
             !elseif (len(flag) >= 6 .and. flag(6:10) == '_trop') then
-            elseif (len(flag) >= 6) then 
+            elseif (len(flag) >= 10) then 
                     if (flag(6:10) == '_trop') then
                     !this change is to let code not got to flag(6:8) when length is 5
                     !this change is to avoid debug run issue        
