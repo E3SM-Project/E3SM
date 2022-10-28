@@ -338,6 +338,7 @@ end subroutine linoz_readnl
     noy_vmr =  xvmr(:,:,noylnz_ndx)
     ch4_vmr =  xvmr(:,:,ch4lnz_ndx)
     h2o_vmr =  xvmr(:,:,h2olnz_ndx)
+ 
     ! associate the field pointers
     !
     !Linoz climatological data 
@@ -595,12 +596,20 @@ end subroutine linoz_readnl
              end if
           !
           ! update vmr
-           xvmr(i,k,  o3lnz_ndx) =   o3_new
-           xvmr(i,k, n2olnz_ndx)   = n2o_new
-           xvmr(i,k, noylnz_ndx)   = noy_new
-           xvmr(i,k, ch4lnz_ndx)   = ch4_new
-           xvmr(i,k, h2olnz_ndx)   = h2o_new
-          
+           !kzm ++
+           !xvmr(i,k,  o3lnz_ndx) =   o3_new
+           !xvmr(i,k, n2olnz_ndx)   = n2o_new
+           !xvmr(i,k, noylnz_ndx)   = noy_new
+           !xvmr(i,k, ch4lnz_ndx)   = ch4_new
+           !xvmr(i,k, h2olnz_ndx)   = h2o_new
+           
+           if (o3lnz_ndx > 0) xvmr(i,k,  o3lnz_ndx) =   o3_new
+           if (n2olnz_ndx > 0) xvmr(i,k, n2olnz_ndx)   = n2o_new
+           if (noylnz_ndx > 0) xvmr(i,k, noylnz_ndx)   = noy_new
+           if (ch4lnz_ndx > 0) xvmr(i,k, ch4lnz_ndx)   = ch4_new
+           if (h2olnz_ndx > 0) xvmr(i,k, h2olnz_ndx)   = h2o_new
+           !kzm --
+
           !update real o3, ch4, n2o      
            if(o3_ndx  > 0) xvmr(i,k, o3_ndx ) =  delo3   + delo3_psc +  xvmr(i,k, o3_ndx )
            if(ch4_ndx > 0) xvmr(i,k, ch4_ndx) =  delch4  +  xvmr(i,k, ch4_ndx)
