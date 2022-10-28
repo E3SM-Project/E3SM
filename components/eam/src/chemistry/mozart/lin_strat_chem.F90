@@ -596,13 +596,9 @@ end subroutine linoz_readnl
              end if
           !
           ! update vmr
-           !kzm ++
-           !xvmr(i,k,  o3lnz_ndx) =   o3_new
-           !xvmr(i,k, n2olnz_ndx)   = n2o_new
-           !xvmr(i,k, noylnz_ndx)   = noy_new
-           !xvmr(i,k, ch4lnz_ndx)   = ch4_new
-           !xvmr(i,k, h2olnz_ndx)   = h2o_new
-           
+          !kzm ++
+          ! as a defense the assignments are only performed when the species are active. Otherwise the  
+          ! index would be an invalid value (-1)
            if (o3lnz_ndx > 0) xvmr(i,k,  o3lnz_ndx) =   o3_new
            if (n2olnz_ndx > 0) xvmr(i,k, n2olnz_ndx)   = n2o_new
            if (noylnz_ndx > 0) xvmr(i,k, noylnz_ndx)   = noy_new
