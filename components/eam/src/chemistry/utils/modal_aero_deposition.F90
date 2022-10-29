@@ -541,33 +541,33 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
       ! 1 of Liu et al (2012, doi:10.5194/gmd-5-709-2012).  In MAM3,
       ! accumulation-mode dust is assumed to resemble fine dust
 #if ( defined MOSAIC_SPECIES )
-      cam_out%dstdry1(i) = -(0.625_r8*(aerdepdryis(i,idx_dst1) + aerdepdrycw(i,idx_dst1)  + &
-                                       aerdepdryis(i,idx_ca1)  + aerdepdrycw(i,idx_ca1)   + &
-                                       aerdepdryis(i,idx_co31) + aerdepdrycw(i,idx_co31)) + &
-                             0.015_r8*(aerdepdryis(i,idx_dst3) + aerdepdrycw(i,idx_dst3)  + &
-                                       aerdepdryis(i,idx_ca3)  + aerdepdrycw(i,idx_ca3)   + &
-                                       aerdepdryis(i,idx_co33) + aerdepdrycw(i,idx_co33)))
+      cam_out%dstdry1(i) = (0.625_r8*(aerdepdryis(i,idx_dst1) + aerdepdrycw(i,idx_dst1)  + &
+                                      aerdepdryis(i,idx_ca1)  + aerdepdrycw(i,idx_ca1)   + &
+                                      aerdepdryis(i,idx_co31) + aerdepdrycw(i,idx_co31)) + &
+                            0.015_r8*(aerdepdryis(i,idx_dst3) + aerdepdrycw(i,idx_dst3)  + &
+                                      aerdepdryis(i,idx_ca3)  + aerdepdrycw(i,idx_ca3)   + &
+                                      aerdepdryis(i,idx_co33) + aerdepdrycw(i,idx_co33)))
 
-      cam_out%dstdry2(i) = -(0.345_r8*(aerdepdryis(i,idx_dst1) + aerdepdrycw(i,idx_dst1)  + &
-                                       aerdepdryis(i,idx_ca1)  + aerdepdrycw(i,idx_ca1)   + &
-                                       aerdepdryis(i,idx_co31) + aerdepdrycw(i,idx_co31)) + &
-                             0.252_r8*(aerdepdryis(i,idx_dst3) + aerdepdrycw(i,idx_dst3)  + &
-                                       aerdepdryis(i,idx_ca3)  + aerdepdrycw(i,idx_ca3)   + &
-                                       aerdepdryis(i,idx_co33) + aerdepdrycw(i,idx_co33)))
+      cam_out%dstdry2(i) = (0.345_r8*(aerdepdryis(i,idx_dst1) + aerdepdrycw(i,idx_dst1)  + &
+                                      aerdepdryis(i,idx_ca1)  + aerdepdrycw(i,idx_ca1)   + &
+                                      aerdepdryis(i,idx_co31) + aerdepdrycw(i,idx_co31)) + &
+                            0.252_r8*(aerdepdryis(i,idx_dst3) + aerdepdrycw(i,idx_dst3)  + &
+                                      aerdepdryis(i,idx_ca3)  + aerdepdrycw(i,idx_ca3)   + &
+                                      aerdepdryis(i,idx_co33) + aerdepdrycw(i,idx_co33)))
 
-      cam_out%dstdry3(i) = -(0.029_r8*(aerdepdryis(i,idx_dst1) + aerdepdrycw(i,idx_dst1)  + &
-                                       aerdepdryis(i,idx_ca1)  + aerdepdrycw(i,idx_ca1)   + &
-                                       aerdepdryis(i,idx_co31) + aerdepdrycw(i,idx_co31)) + &
-                             0.444_r8*(aerdepdryis(i,idx_dst3) + aerdepdrycw(i,idx_dst3)  + &
-                                       aerdepdryis(i,idx_ca3)  + aerdepdrycw(i,idx_ca3)   + &
-                                       aerdepdryis(i,idx_co33) + aerdepdrycw(i,idx_co33)))
+      cam_out%dstdry3(i) = (0.029_r8*(aerdepdryis(i,idx_dst1) + aerdepdrycw(i,idx_dst1)  + &
+                                      aerdepdryis(i,idx_ca1)  + aerdepdrycw(i,idx_ca1)   + &
+                                      aerdepdryis(i,idx_co31) + aerdepdrycw(i,idx_co31)) + &
+                            0.444_r8*(aerdepdryis(i,idx_dst3) + aerdepdrycw(i,idx_dst3)  + &
+                                      aerdepdryis(i,idx_ca3)  + aerdepdrycw(i,idx_ca3)   + &
+                                      aerdepdryis(i,idx_co33) + aerdepdrycw(i,idx_co33)))
 
-      cam_out%dstdry4(i) = -(0.001_r8*(aerdepdryis(i,idx_dst1) + aerdepdrycw(i,idx_dst1)  + &
-                                       aerdepdryis(i,idx_ca1)  + aerdepdrycw(i,idx_ca1)   + &
-                                       aerdepdryis(i,idx_co31) + aerdepdrycw(i,idx_co31)) + &
-                             0.289_r8*(aerdepdryis(i,idx_dst3) + aerdepdrycw(i,idx_dst3)  + &
-                                       aerdepdryis(i,idx_ca3)  + aerdepdrycw(i,idx_ca3)   + &
-                                       aerdepdryis(i,idx_co33) + aerdepdrycw(i,idx_co33)))
+      cam_out%dstdry4(i) = (0.001_r8*(aerdepdryis(i,idx_dst1) + aerdepdrycw(i,idx_dst1)  + &
+                                      aerdepdryis(i,idx_ca1)  + aerdepdrycw(i,idx_ca1)   + &
+                                      aerdepdryis(i,idx_co31) + aerdepdrycw(i,idx_co31)) + &
+                            0.289_r8*(aerdepdryis(i,idx_dst3) + aerdepdrycw(i,idx_dst3)  + &
+                                      aerdepdryis(i,idx_ca3)  + aerdepdrycw(i,idx_ca3)   + &
+                                      aerdepdryis(i,idx_co33) + aerdepdrycw(i,idx_co33)))
 #else
       cam_out%dstdry1(i) = (0.625_r8*(aerdepdryis(i,idx_dst1)+aerdepdrycw(i,idx_dst1))+ &
                             0.015_r8*(aerdepdryis(i,idx_dst3)+aerdepdrycw(i,idx_dst3)))
