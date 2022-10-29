@@ -179,6 +179,7 @@
 
   ! species indices for various qgas_--- arrays
   integer :: igas_soa, igas_soag, igas_soag_end, igas_h2so4, igas_nh3, igas_hno3, igas_hcl
+  integer :: igas_soag1, igas_soag2, igas_soag3, igas_soag4, igas_soag5, igas_soag6, igas_soag7
   ! species indices for various qaer_--- arrays
   !    when nsoa > 1, igas_soa and iaer_soa are indices of the first soa species
   !    when nbc  > 1, iaer_bc  is index of the first bc  species
@@ -2624,6 +2625,8 @@ do_newnuc_if_block50: &
         use module_data_mosaic_aero,   only: naer_mosaic => naer, &
              inh4_a, ilim2_a, iso4_a, ina_a, icl_a, ibc_a, imom_a, ioin_a, ioc_a, &
              ino3_a, icl_a,   ica_a,  ico3_a, &
+             iaro2_g, ialk1_g, iole1_g, &
+             iapi1_g, iapi2_g, ilim1_g, &
              ilim2_g, ih2so4_g, inh3_g, ihno3_g, ihcl_g, &
              jhyst_up, jtotal, &
              nbin_a, nbin_a_max, ngas_volatile, nmax_astem, nmax_mesa, nsalt, &
@@ -2765,8 +2768,6 @@ do_newnuc_if_block50: &
 
 ! temporarily delcare some variables, should be removed
 #if ( defined VBS_SOA )
-        integer :: iaer, igas
-
         real(r8), dimension(1:max_gas, 1:max_mode) :: uptkaer
         real(r8), dimension(1:max_gas) :: gas_diffus     ! gas diffusivity at current temp and pres (m2/s) 
         real(r8), dimension(1:max_gas) :: gas_freepath   ! gas mean free path at current temp and pres (m)
