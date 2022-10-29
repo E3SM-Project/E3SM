@@ -111,11 +111,6 @@ option (SCREAM_RRTMGP_DEBUG "Turn on extra debug checks in RRTMGP" ${SCREAM_DEBU
 enable_testing()
 include(CTest)
 
-if (NOT HIP_BUILD)
-  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
-endif()
-
-
 set (EAMXX_ENABLE_GPU FALSE CACHE BOOL "")
 set (CUDA_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?
 set (HIP_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?
@@ -135,6 +130,10 @@ if (Kokkos_ENABLE_HIP)
   set (EAMXX_ENABLE_GPU TRUE CACHE BOOL "" FORCE)
   set (HIP_BUILD TRUE CACHE BOOL "" FORCE) #needed for yakl if kokkos vars are not visible there?
 endif ()
+
+if (NOT HIP_BUILD)
+  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
+endif()
 
 ### Scream default configuration options
 set(DEFAULT_MAX_RANKS 4)
