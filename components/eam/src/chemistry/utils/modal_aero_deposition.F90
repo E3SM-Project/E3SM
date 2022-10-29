@@ -39,10 +39,15 @@ integer :: idx_soa1 = -1
 integer :: idx_soa2 = -1
 integer :: idx_dst1 = -1
 integer :: idx_dst3 = -1
+integer :: idx_ca1  = -1
+integer :: idx_ca3  = -1
+integer :: idx_co31 = -1
+integer :: idx_co33 = -1
 integer :: idx_ncl3 = -1
 integer :: idx_so43 = -1
 integer :: idx_bc4  = -1
 integer :: idx_pom4 = -1
+
 
 !mgf++ MAM7
 integer :: idx_bc3  = -1
@@ -59,8 +64,14 @@ logical :: initialized = .false.
 contains
 !==============================================================================
 
+#if ( defined MOSAIC_SPECIES )
+subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_ndx, &
+                            dst3_ndx,ncl3_ndx,so43_ndx,num3_ndx,bc4_ndx,pom4_ndx, &
+                            ca1_ndx,ca3_ndx,co31_ndx,co33_ndx)
+#else
 subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_ndx, &
                             dst3_ndx,ncl3_ndx,so43_ndx,num3_ndx,bc4_ndx,pom4_ndx)
+#endif
 
 ! set aerosol indices for re-mapping surface deposition fluxes:
 ! *_a1 = accumulation mode
@@ -72,6 +83,9 @@ subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_nd
 
    integer, optional, intent(in) :: bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_ndx,dst3_ndx,ncl3_ndx,so43_ndx,num3_ndx
    integer, optional, intent(in) :: bc4_ndx,pom4_ndx
+#if ( defined MOSAIC_SPECIES )
+   integer, optional, intent(in) :: ca1_ndx,ca3_ndx,co31_ndx,co33_ndx
+#endif
 
    ! if already initialized abort the run
    if (initialized) then
@@ -108,6 +122,28 @@ subroutine modal_aero_deposition_init(bc1_ndx,pom1_ndx,soa1_ndx,soa2_ndx,dst1_nd
    else
       call cnst_get_ind('dst_a3', idx_dst3,abrtf=.false.)
    endif
+#if ( defined MOSAIC_SPECIES )   
+   if (present(ca1_ndx)) then
+      idx_ca1 = ca1_ndx
+   else
+      call cnst_get_ind('ca_a1', idx_ca1, abrtf=.false.)
+   endif
+   if (present(ca3_ndx)) then
+      idx_ca3 = ca3_ndx
+   else
+      call cnst_get_ind('ca_a3', idx_ca3, abrtf=.false.)
+   endif
+   if (present(co31_ndx)) then
+      idx_co31 = co31_ndx
+   else
+      call cnst_get_ind('co3_a1', idx_co31, abrtf=.false.)
+   endif
+   if (present(co33_ndx)) then
+      idx_co33 = co33_ndx
+   else
+      call cnst_get_ind('co3_a3', idx_co33,abrtf=.false.)
+   endif
+#endif
    if (present(ncl3_ndx)) then
       idx_ncl3 = ncl3_ndx
    else
@@ -228,6 +264,7 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
 #endif
 
 #if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) )
+
       ! MAM4
 
       ! in SNICAR+MAM, bcphiwet represents BC mixed internally within
@@ -259,6 +296,36 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
       ! distributions of MAM7 fine dust and coarse dust shown in Table
       ! 1 of Liu et al (2012, doi:10.5194/gmd-5-709-2012).  In MAM3,
       ! accumulation-mode dust is assumed to resemble fine dust
+
+#if ( defined MOSAIC_SPECIES )
+      cam_out%dstwet1(i) = -(0.625_r8*(aerdepwetis(i,idx_dst1) + aerdepwetcw(i,idx_dst1)  + &
+                                       aerdepwetis(i,idx_ca1)  + aerdepwetcw(i,idx_ca1)   + &
+                                       aerdepwetis(i,idx_co31) + aerdepwetcw(i,idx_co31)) + &
+                             0.015_r8*(aerdepwetis(i,idx_dst3) + aerdepwetcw(i,idx_dst3)  + &
+                                       aerdepwetis(i,idx_ca3)  + aerdepwetcw(i,idx_ca3)   + &
+                                       aerdepwetis(i,idx_co33) + aerdepwetcw(i,idx_co33)))
+
+      cam_out%dstwet2(i) = -(0.345_r8*(aerdepwetis(i,idx_dst1) + aerdepwetcw(i,idx_dst1)  + &
+                                       aerdepwetis(i,idx_ca1)  + aerdepwetcw(i,idx_ca1)   + &
+                                       aerdepwetis(i,idx_co31) + aerdepwetcw(i,idx_co31)) + &
+                             0.252_r8*(aerdepwetis(i,idx_dst3) + aerdepwetcw(i,idx_dst3)  + &
+                                       aerdepwetis(i,idx_ca3)  + aerdepwetcw(i,idx_ca3)   + &
+                                       aerdepwetis(i,idx_co33) + aerdepwetcw(i,idx_co33)))
+
+      cam_out%dstwet3(i) = -(0.029_r8*(aerdepwetis(i,idx_dst1) + aerdepwetcw(i,idx_dst1)  + &
+                                       aerdepwetis(i,idx_ca1)  + aerdepwetcw(i,idx_ca1)   + &
+                                       aerdepwetis(i,idx_co31) + aerdepwetcw(i,idx_co31)) + &
+                             0.444_r8*(aerdepwetis(i,idx_dst3) + aerdepwetcw(i,idx_dst3)  + &
+                                       aerdepwetis(i,idx_ca3)  + aerdepwetcw(i,idx_ca3)   + &
+                                       aerdepwetis(i,idx_co33) + aerdepwetcw(i,idx_co33)))
+
+      cam_out%dstwet4(i) = -(0.001_r8*(aerdepwetis(i,idx_dst1) + aerdepwetcw(i,idx_dst1)  + &
+                                       aerdepwetis(i,idx_ca1)  + aerdepwetcw(i,idx_ca1)   + &
+                                       aerdepwetis(i,idx_co31) + aerdepwetcw(i,idx_co31)) + &
+                             0.289_r8*(aerdepwetis(i,idx_dst3) + aerdepwetcw(i,idx_dst3)  + &
+                                       aerdepwetis(i,idx_ca3)  + aerdepwetcw(i,idx_ca3)   + &
+                                       aerdepwetis(i,idx_co33) + aerdepwetcw(i,idx_co33)))
+#else
       cam_out%dstwet1(i) = -(0.625_r8*(aerdepwetis(i,idx_dst1)+aerdepwetcw(i,idx_dst1))+ &
                              0.015_r8*(aerdepwetis(i,idx_dst3)+aerdepwetcw(i,idx_dst3)))
 
@@ -270,6 +337,7 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
 
       cam_out%dstwet4(i) = -(0.001_r8*(aerdepwetis(i,idx_dst1)+aerdepwetcw(i,idx_dst1))+ &
                              0.289_r8*(aerdepwetis(i,idx_dst3)+aerdepwetcw(i,idx_dst3)))
+#endif
 
 #endif
 
@@ -442,6 +510,7 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
 #endif
 
 #if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) )
+
       ! MAM4
 
       ! in SNICAR+MAM, bcphodry represents BC mixed external to hydrometeors
@@ -471,6 +540,35 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
       ! distributions of MAM7 fine dust and coarse dust shown in Table
       ! 1 of Liu et al (2012, doi:10.5194/gmd-5-709-2012).  In MAM3,
       ! accumulation-mode dust is assumed to resemble fine dust
+#if ( defined MOSAIC_SPECIES )
+      cam_out%dstdry1(i) = (0.625_r8*(aerdepdryis(i,idx_dst1) + aerdepdrycw(i,idx_dst1)  + &
+                                      aerdepdryis(i,idx_ca1)  + aerdepdrycw(i,idx_ca1)   + &
+                                      aerdepdryis(i,idx_co31) + aerdepdrycw(i,idx_co31)) + &
+                            0.015_r8*(aerdepdryis(i,idx_dst3) + aerdepdrycw(i,idx_dst3)  + &
+                                      aerdepdryis(i,idx_ca3)  + aerdepdrycw(i,idx_ca3)   + &
+                                      aerdepdryis(i,idx_co33) + aerdepdrycw(i,idx_co33)))
+
+      cam_out%dstdry2(i) = (0.345_r8*(aerdepdryis(i,idx_dst1) + aerdepdrycw(i,idx_dst1)  + &
+                                      aerdepdryis(i,idx_ca1)  + aerdepdrycw(i,idx_ca1)   + &
+                                      aerdepdryis(i,idx_co31) + aerdepdrycw(i,idx_co31)) + &
+                            0.252_r8*(aerdepdryis(i,idx_dst3) + aerdepdrycw(i,idx_dst3)  + &
+                                      aerdepdryis(i,idx_ca3)  + aerdepdrycw(i,idx_ca3)   + &
+                                      aerdepdryis(i,idx_co33) + aerdepdrycw(i,idx_co33)))
+
+      cam_out%dstdry3(i) = (0.029_r8*(aerdepdryis(i,idx_dst1) + aerdepdrycw(i,idx_dst1)  + &
+                                      aerdepdryis(i,idx_ca1)  + aerdepdrycw(i,idx_ca1)   + &
+                                      aerdepdryis(i,idx_co31) + aerdepdrycw(i,idx_co31)) + &
+                            0.444_r8*(aerdepdryis(i,idx_dst3) + aerdepdrycw(i,idx_dst3)  + &
+                                      aerdepdryis(i,idx_ca3)  + aerdepdrycw(i,idx_ca3)   + &
+                                      aerdepdryis(i,idx_co33) + aerdepdrycw(i,idx_co33)))
+
+      cam_out%dstdry4(i) = (0.001_r8*(aerdepdryis(i,idx_dst1) + aerdepdrycw(i,idx_dst1)  + &
+                                      aerdepdryis(i,idx_ca1)  + aerdepdrycw(i,idx_ca1)   + &
+                                      aerdepdryis(i,idx_co31) + aerdepdrycw(i,idx_co31)) + &
+                            0.289_r8*(aerdepdryis(i,idx_dst3) + aerdepdrycw(i,idx_dst3)  + &
+                                      aerdepdryis(i,idx_ca3)  + aerdepdrycw(i,idx_ca3)   + &
+                                      aerdepdryis(i,idx_co33) + aerdepdrycw(i,idx_co33)))
+#else
       cam_out%dstdry1(i) = (0.625_r8*(aerdepdryis(i,idx_dst1)+aerdepdrycw(i,idx_dst1))+ &
                             0.015_r8*(aerdepdryis(i,idx_dst3)+aerdepdrycw(i,idx_dst3)))
 
@@ -482,6 +580,7 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
 
       cam_out%dstdry4(i) = (0.001_r8*(aerdepdryis(i,idx_dst1)+aerdepdrycw(i,idx_dst1))+ &
                             0.289_r8*(aerdepdryis(i,idx_dst3)+aerdepdrycw(i,idx_dst3)))
+#endif
 
 #endif
 
