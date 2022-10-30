@@ -145,6 +145,13 @@ contains
     end if
 
   end subroutine mosaic_cam_init
+
+#else
+  subroutine mosaic_cam_init
+  use cam_abortutils,  only:  endrun
+  call endrun( '*** error -- mosaic_cam_init should not have been called' )
+  end subroutine mosaic_cam_init
+
 #endif
 
 end module module_mosaic_cam_init
