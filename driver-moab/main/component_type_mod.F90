@@ -412,6 +412,7 @@ contains
     use shr_mpi_mod,       only: shr_mpi_sum
     use shr_kind_mod,     only:  CXX => shr_kind_CXX
     use seq_comm_mct , only : CPLID, seq_comm_iamroot
+    use seq_comm_mct, only:   seq_comm_setptrs
     use iMOAB, only : iMOAB_DefineTagStorage,  iMOAB_GetDoubleTagStorage, &
        iMOAB_SetDoubleTagStorageWithGid, iMOAB_GetMeshInfo
     
@@ -442,7 +443,7 @@ contains
 
      character(*),parameter :: subName = '(compare_mct_av_moab_tag) '
 
-     mpicom = comp%mpicom_cplcompid ! we are on the coupler side
+     call seq_comm_setptrs(CPLID, mpicom=mpicom)
 
      nloc = mct_avect_lsize(attrVect)
      allocate(GlobalIds(nloc))
