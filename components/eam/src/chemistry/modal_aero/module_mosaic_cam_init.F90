@@ -15,6 +15,7 @@ module module_mosaic_cam_init
 
 contains
 
+#if ( defined MOSAIC_SPECIES )
   subroutine mosaic_cam_init
     !---------------------------------------------------------------------------------------!
     !BSINGH: This subroutine initialzies some Mosaic conastans and inpput parameters
@@ -144,5 +145,6 @@ contains
     end if
 
   end subroutine mosaic_cam_init
+#endif
 
 end module module_mosaic_cam_init
