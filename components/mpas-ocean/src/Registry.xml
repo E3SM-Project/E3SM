@@ -2536,10 +2536,12 @@
 	<var_struct name="tend" time_levs="1">
 		<var name="tendNormalVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-2" name_in_code="normalVelocity"
 			 description="time tendency of normal component of velocity"
+			 missing_value="FILLVAL" missing_value_mask="edgeMask"
 			 packages="forwardMode"
 		/>
 		<var name="tendLayerThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^-1" name_in_code="layerThickness"
 			 description="time tendency of layer thickness"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode"
 		/>
 		<var name="tendSSH" type="real" dimensions="nCells Time" units="m s^-1" name_in_code="ssh"
@@ -2548,10 +2550,12 @@
 		/>
 		<var name="tendHighFreqThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^-1" name_in_code="highFreqThickness"
 			 description="time tendency of high frequency-filtered layer thickness"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="thicknessFilter"
 		/>
 		<var name="tendLowFreqDivergence" type="real" dimensions="nVertLevels nCells Time" units="m s^-1" name_in_code="lowFreqDivergence"
 			 description="time tendency of low frequency-filtered divergence"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="thicknessFilter"
 		/>
 	</var_struct>
