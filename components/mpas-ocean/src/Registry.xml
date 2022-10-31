@@ -2788,38 +2788,47 @@
 
 		<var name="kineticEnergyCell" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^-2"
 			 description="kinetic energy of horizontal velocity on cells"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="viscosity" type="real" dimensions="nVertLevels nEdges Time" units="m^2 s^-1"
 			 description="horizontal viscosity"
+			 missing_value="FILLVAL" missing_value_mask="edgeMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="divergence" type="real" dimensions="nVertLevels nCells Time" units="s^-1"
 			 description="divergence of horizontal velocity"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="circulation" type="real" dimensions="nVertLevels nVertices Time" units="m^2 s^-1"
 			 description="area-integrated vorticity"
+			 missing_value="FILLVAL" missing_value_mask="vertexMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="relativeVorticity" type="real" dimensions="nVertLevels nVertices Time" units="s^-1"
 			 description="curl of horizontal velocity, defined at vertices"
+			 missing_value="FILLVAL" missing_value_mask="vertexMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="relativeVorticityCell" type="real" dimensions="nVertLevels nCells Time" units="s^-1"
 			 description="curl of horizontal velocity, averaged from vertices to cell centers"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="normalizedRelativeVorticityEdge" type="real" dimensions="nVertLevels nEdges Time" units="s^-1"
 			 description="curl of horizontal velocity divided by layer thickness, averaged from vertices to edges"
+			 missing_value="FILLVAL" missing_value_mask="edgeMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="normalizedPlanetaryVorticityEdge" type="real" dimensions="nVertLevels nEdges Time" units="s^-1"
 			 description="earth's rotational rate (Coriolis parameter, f) divided by layer thickness, averaged from vertices to edges"
+			 missing_value="FILLVAL" missing_value_mask="edgeMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="normalizedRelativeVorticityCell" type="real" dimensions="nVertLevels nCells Time" units="s^-1"
 			 description="curl of horizontal velocity divided by layer thickness, averaged from vertices to cell centers"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="barotropicForcing" type="real" dimensions="nEdges Time" units="m s^-2"
@@ -2833,14 +2842,17 @@
 
 		<var name="velocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="component of horizontal velocity in the x-direction (cartesian)"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="velocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="component of horizontal velocity in the y-direction (cartesian)"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="velocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="component of horizontal velocity in the z-direction (cartesian)"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="velocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
@@ -2855,14 +2867,17 @@
 		/>
 		<var name="transportVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="component of horizontal velocity used to transport mass and tracers in the x-direction (cartesian)"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="transportVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="component of horizontal velocity used to transport mass and tracers in the y-direction (cartesian)"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="transportVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="component of horizontal velocity used to transport mass and tracers in the z-direction (cartesian)"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="transportVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
@@ -2906,6 +2921,7 @@
 		/>
 		<var name="normalMLEvelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			description="Velocity from mixed layer eddies (fox kemper 2011 submesoscale parameterization)"
+			missing_value="FILLVAL" missing_value_mask="edgeMask"
 			packages="submeso"
 		/>
 		<var name="cGMphaseSpeed" type="real" dimensions="nEdges Time" units="m s^-1"
@@ -2937,22 +2953,27 @@
 		/>
 		<var name="mleVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			description="Bolus velocity in fox-kemper mle parameterization, zonal-direction"
+			missing_value="FILLVAL" missing_value_mask="cellMask"
 			packages="gm;submeso"
 		/>
 		<var name="mleVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			description="Bolus velocity in fox-kemper mle parameterization, meridional-direction"
+			missing_value="FILLVAL" missing_value_mask="cellMask"
 			packages="gm;submeso"
 		/>
 		<var name="eddyVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			description="Bolus velocity in Gent-McWilliams eddy or submesoscale parameterization, x-direction"
+			missing_value="FILLVAL" missing_value_mask="cellMask"
 			packages="gm;submeso"
 		/>
 		<var name="eddyVelocityY" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			description="Bolus velocity in Gent-McWilliams or submesoscale eddy parameterization, y-direction"
+			missing_value="FILLVAL" missing_value_mask="cellMask"
 			packages="gm;submeso"
 		/>
 		<var name="eddyVelocityZ" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			description="eddy Bolus velocity in Gent-McWilliams or submesoscale eddy parameterization, z-direction"
+			missing_value="FILLVAL" missing_value_mask="cellMask"
 			packages="gm;submeso"
 		/>
 		<var name="GMBolusVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
@@ -2987,18 +3008,22 @@
 		/>
 		<var name="bulkRichardsonNumber" type="real" dimensions="nVertLevels nCells Time" units="1"
 			 description="CVMix/KPP: bulk Richardson number"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 			 />
 		<var name="bulkRichardsonNumberBuoy" type="real" dimensions="nVertLevels nCells Time" units="1"
 			 description="CVMix/KPP: contribution of buoyancy to bulk Richardson number"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="bulkRichardsonNumberShear" type="real" dimensions="nVertLevels nCells Time" units="1"
 			 description="CVMix/KPP: contribution of shear to bulk Richardson number"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="unresolvedShear" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="CVMix/KPP: contribution of unresolved velocity to vertical shear"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 		/>
 		<var name="boundaryLayerDepth" type="real" dimensions="nCells Time" units="m"
 			 description="CVMix/KPP: diagnosed depth of the ocean surface boundary layer"
