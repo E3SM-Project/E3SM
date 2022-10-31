@@ -222,17 +222,18 @@ void Functions<S,D>::shoc_assumed_pdf(
       }
 
       // Begin to compute cloud property statistics
+      const Spack Tl1_g = thl_first/(ekat::pow(basepres/pval,(rair/cp)));
       const Spack Tl1_1 = thl1_1/(ekat::pow(basepres/pval,(rair/cp)));
       const Spack Tl1_2 = thl1_2/(ekat::pow(basepres/pval,(rair/cp)));
 
       const auto index_range = ekat::range<IntSmallPack>(k*Spack::n);
       const Smask active_entries = (index_range < nlev);
 
-      // Check to ensure Tl1_1 and Tl1_2 are not negative, endrun otherwise
+      // Check to ensure Tl1_1 and Tl1_2 are not negative, temporarily set to grid mean value if so.
+      Tl1_1.set(Tl1_1<0, Tl1_g);
+      Tl1_2.set(Tl1_2<0, Tl1_g);
       const auto is_neg_Tl1_1 = (Tl1_1 <= 0) && active_entries;
       const auto is_neg_Tl1_2 = (Tl1_2 <= 0) && active_entries;
-      EKAT_KERNEL_REQUIRE_MSG(!(is_neg_Tl1_1.any()), "Error! Tl1_1 has <= 0 values.\n"); //exit with an error message
-      EKAT_KERNEL_REQUIRE_MSG(!(is_neg_Tl1_2.any()), "Error! Tl1_2 has <= 0 values.\n"); //exit with an error message
 
       // Compute qs and beta
       Spack qs1(0), qs2(0), beta1(0), beta2(0);
