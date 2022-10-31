@@ -42,7 +42,7 @@ SET(HOMME_TESTS
   thetanh-dry-bubble.cmake
 )
 
-IF (${HOMME_ENABLE_COMPOSE})
+IF (HOMME_ENABLE_COMPOSE)
   LIST(APPEND HOMME_TESTS
     thetah-sl-test11conv-r1t2-cdr20.cmake
     thetah-sl-test11conv-r0t1-cdr30-rrm.cmake
@@ -51,6 +51,7 @@ IF (${HOMME_ENABLE_COMPOSE})
 ENDIF()
 
 IF (${BUILD_HOMME_PREQX_KOKKOS})
+
   # Lists of test files for the HOMME kokkos regression tests.
   # These tests come in pairs, so that, besides checking
   # performance, we can compare the kokkos output with the
@@ -79,6 +80,13 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
 ENDIF()
 
 IF (BUILD_HOMME_THETA_KOKKOS)
+
+  IF (HOMME_ENABLE_COMPOSE)
+    LIST(APPEND HOMME_TESTS thetah-sl-test11conv-r0t1-cdr30-rrm-kokkos.cmake)
+    IF (HOMMEXX_BFB_TESTING)
+      include(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/thetah-sl-test11conv-r0t1-cdr30-rrm-cxx_vs_f90.cmake)
+    ENDIF()
+  ENDIF()
 
   #cmake/namelist will be built with create-... script
   SET(TESTS_WITH_AUTO
