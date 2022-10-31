@@ -122,6 +122,7 @@ void Functions<S,D>::shoc_main_internal(
   const uview_1d<Spack>&       brunt,
   const uview_1d<Spack>&       isotropy)
 {
+
   // Define temporary variables
   uview_1d<Spack> rho_zt, shoc_qv, dz_zt, dz_zi, tkh;
   workspace.template take_many_and_reset<5>(

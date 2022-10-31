@@ -14,8 +14,8 @@ set(SHOC_HEADERS
   shoc_constants.hpp
 )
 
-# Add ETI source files if not on CUDA
-if (NOT CUDA_BUILD OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
+# Add ETI source files if not on CUDA/HIP
+if (NOT EAMXX_ENABLE_GPU)
   list(APPEND SHOC_SRCS
     shoc_adv_sgs_tke.cpp
     shoc_assumed_pdf.cpp
@@ -88,6 +88,11 @@ if (NOT SCREAM_DEBUG)
       PROPERTIES COMPILE_FLAGS "-O1"
     )
   endif()
+endif()
+
+if (HIP_BUILD)
+  #this is needed for crusher even with small kernels
+  set_source_files_properties(shoc_diag_second_shoc_moments_disp.cpp  PROPERTIES COMPILE_FLAGS -O1)
 endif()
 
 set(SHOC_LIBS "shoc")

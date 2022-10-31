@@ -85,7 +85,10 @@ macro (CreateCsmShareTarget)
     # These CPP macros are needed in shr_infnan_mod
     target_compile_definitions(csm_share PUBLIC
       $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:GNU>>:CPRGNU>
-      $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:Intel>>:CPRINTEL>)
+      $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:Intel>>:CPRINTEL>
+      $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:Clang>>:CPRCRAY>
+      $<$<AND:$<COMPILE_LANGUAGE:Fortran>,$<CXX_COMPILER_ID:clang>>:CPRCRAY>)
+
 
     if (${CMAKE_SYSTEM} MATCHES "Linux")
       target_compile_definitions(csm_share PUBLIC LINUX)

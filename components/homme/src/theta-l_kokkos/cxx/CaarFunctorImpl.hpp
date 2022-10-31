@@ -112,8 +112,9 @@ struct CaarFunctorImpl {
 #endif
 
   TeamPolicyType<TagPreExchange>   m_policy_pre;
-  Kokkos::RangePolicy<ExecSpace, TagPostExchange> m_policy_post;
   TeamPolicyType<TagDp3dLimiter>   m_policy_dp3d_lim;
+
+  Kokkos::RangePolicy<ExecSpace, TagPostExchange> m_policy_post;
 
   TeamUtils<ExecSpace> m_tu;
 
@@ -334,24 +335,24 @@ struct CaarFunctorImpl {
 
     GPTLstart("caar compute");
     Kokkos::parallel_for("caar loop pre-boundary exchange", m_policy_pre, *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     GPTLstop("caar compute");
 
     GPTLstart("caar_bexchV");
     m_bes[data.np1]->exchange(m_geometry.m_rspheremp);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     GPTLstop("caar_bexchV");
 
     if (!m_theta_hydrostatic_mode) {
       GPTLstart("caar compute");
       Kokkos::parallel_for("caar loop post-boundary exchange", m_policy_post, *this);
-      ExecSpace::impl_static_fence();
+      Kokkos::fence();
       GPTLstop("caar compute");
     }
 
     GPTLstart("caar dp3d");
     Kokkos::parallel_for("caar loop dp3d limiter", m_policy_dp3d_lim, *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     GPTLstop("caar dp3d");
 
     profiling_pause();

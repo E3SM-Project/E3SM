@@ -55,7 +55,6 @@ void FunctorsBuffersManager::generate_random_data ()
   // them, a unit test would pass with zero-ed memory.
   // Therefore, we randomly initialize the buffer, to protect against false
   // positives.
-  generate_random_data();
   using rngalg = std::mt19937_64;
   using rpdf = std::uniform_real_distribution<Real>;
   std::random_device rd;

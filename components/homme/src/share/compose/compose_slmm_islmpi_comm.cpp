@@ -74,8 +74,8 @@ void isend (IslMpi<MT>& cm, const bool want_req, const bool skip_if_empty) {
       if (skip_if_empty && cm.sendcount_h(ri) == 0) continue;
 #ifdef COMPOSE_MPI_ON_HOST
       auto&& sendbuf = cm.sendbuf_h(ri);
-      typedef typename IslMpi<MT>::ArrayH<Real*> ArrayH;
-      typedef typename IslMpi<MT>::ArrayD<Real*> ArrayD;
+      typedef typename IslMpi<MT>::template ArrayH<Real*> ArrayH;
+      typedef typename IslMpi<MT>::template ArrayD<Real*> ArrayD;
       Kokkos::deep_copy(ArrayH(sendbuf.data(), cm.sendcount_h(ri)),
                         ArrayD(cm.sendbuf.get_h(ri).data(), cm.sendcount_h(ri)));
 #else
@@ -106,8 +106,8 @@ void wait_on_send (IslMpi<MT>& cm, const bool skip_if_empty) {
 template <typename MT>
 void wait_on_recv (IslMpi<MT>& cm) {
 #ifdef COMPOSE_MPI_ON_HOST
-  typedef typename IslMpi<MT>::ArrayH<Real*> ArrayH;
-  typedef typename IslMpi<MT>::ArrayD<Real*> ArrayD;
+  typedef typename IslMpi<MT>::template ArrayH<Real*> ArrayH;
+  typedef typename IslMpi<MT>::template ArrayD<Real*> ArrayD;
   const int nreq = cm.recvreq.n();
   for (Int i = 0; i < nreq; ++i) {
     Int reqi;

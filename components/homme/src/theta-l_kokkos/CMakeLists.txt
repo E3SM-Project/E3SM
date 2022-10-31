@@ -1,4 +1,5 @@
 # macro for building theta primitive equations executable using Kokkos for on-node parallelism
+
 MACRO(THETAL_KOKKOS_SETUP)
 
   SET (KOKKOS_TARGET TRUE)
@@ -16,8 +17,8 @@ MACRO(THETAL_KOKKOS_SETUP)
   # Make INCLUDE_DIRS global so the tests can access it
   SET (EXEC_LIB_INCLUDE_DIRS
     ${TARGET_DIR}/cxx
-    ${UTILS_TIMING_DIR}
     ${UTILS_TIMING_SRC_DIR}
+    ${UTILS_TIMING_DIR}
     ${SRC_SHARE_DIR}/cxx
     ${SRC_SHARE_DIR}/compose
     ${HOMME_BINARY_DIR}/src/share/cxx

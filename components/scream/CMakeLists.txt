@@ -29,6 +29,7 @@ if (SCREAM_CIME_BUILD)
 endif ()
 
 message("Kokkos_ENABLE_CUDA ${Kokkos_ENABLE_CUDA}")
+message("Kokkos_ENABLE_HIP  ${Kokkos_ENABLE_HIP}")
 
 if (Kokkos_ENABLE_CUDA)
   if (Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
@@ -110,18 +111,28 @@ option (SCREAM_RRTMGP_DEBUG "Turn on extra debug checks in RRTMGP" ${SCREAM_DEBU
 enable_testing()
 include(CTest)
 
-set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
+set (EAMXX_ENABLE_GPU FALSE CACHE BOOL "")
+set (CUDA_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?
+set (HIP_BUILD FALSE CACHE BOOL "") #needed for yakl if kokkos vars are not visible there?
 
 # Determine if this is a Cuda build.
 if (Kokkos_ENABLE_CUDA)
-  set(CUDA_BUILD TRUE)
-else()
-  set(CUDA_BUILD FALSE)
+  # Add CUDA as a language for CUDA builds
+  enable_language(CUDA)
+  set (EAMXX_ENABLE_GPU TRUE  CACHE BOOL "" FORCE)
+  set (CUDA_BUILD TRUE CACHE BOOL "" FORCE) #needed for yakl if kokkos vars are not visible there?
 endif ()
 
-# Add CUDA as a language for CUDA builds
-if (CUDA_BUILD)
-  enable_language(CUDA)
+# Determine if this is a Cuda build.
+if (Kokkos_ENABLE_HIP)
+  # Add CUDA as a language for CUDA builds
+  enable_language(HIP)
+  set (EAMXX_ENABLE_GPU TRUE CACHE BOOL "" FORCE)
+  set (HIP_BUILD TRUE CACHE BOOL "" FORCE) #needed for yakl if kokkos vars are not visible there?
+endif ()
+
+if (NOT HIP_BUILD)
+  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
 endif()
 
 ### Scream default configuration options
@@ -131,7 +142,7 @@ set(DEFAULT_MIMIC_GPU FALSE)
 set(DEFAULT_FPE FALSE)
 set(DEFAULT_PACK_SIZE 16)
 set(DEFAULT_POSSIBLY_NO_PACK FALSE)
-if (CUDA_BUILD)
+if (EAMXX_ENABLE_GPU)
   # On the GPU, the pack size must be 1
   set(DEFAULT_PACK_SIZE 1)
   set(DEFAULT_MAX_THREADS 1)
@@ -327,7 +338,7 @@ check_pack_size(${SCREAM_PACK_SIZE} ${SCREAM_POSSIBLY_NO_PACK_SIZE} "possibly no
 
 if (SCREAM_DEBUG)
   set(DEFAULT_FPMODEL "strict")
-  if (${SCREAM_PACK_SIZE} EQUAL 1 AND NOT ${CUDA_BUILD})
+  if (${SCREAM_PACK_SIZE} EQUAL 1 AND NOT ${EAMXX_ENABLE_GPU})
     set(DEFAULT_FPE TRUE)
   endif ()
 endif()
@@ -401,15 +412,21 @@ include(EkatMpiUtils)
 # (for openpmi; -lmpicxx for mpich) flag.
 DisableMpiCxxBindings()
 
+message("CMAKE_CXX_COMPILER_ID is ${CMAKE_CXX_COMPILER_ID}")
 if (SCREAM_DOUBLE_PRECISION)
   if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
     set(SCREAM_Fortran_FLAGS -real-size 64)
+  elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "[Cc]lang" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "HIPCC")
+    #find what is crayclang id in cmake
+    set(SCREAM_Fortran_FLAGS -s default32 -eZ)
   else()
     set(SCREAM_Fortran_FLAGS -fdefault-real-8 -fdefault-double-8)
   endif()
 endif()
 
+print_var(EAMXX_ENABLE_GPU)
 print_var(CUDA_BUILD)
+print_var(HIP_BUILD)
 print_var(SCREAM_DOUBLE_PRECISION)
 print_var(SCREAM_MIMIC_GPU)
 print_var(SCREAM_FPE)

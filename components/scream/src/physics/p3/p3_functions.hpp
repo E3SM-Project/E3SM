@@ -992,7 +992,8 @@ void init_tables_from_f90_c(Real* vn_table_vals_data, Real* vm_table_vals_data,
 
 // If a GPU build, without relocatable device code enabled, make all code available
 // to the translation unit; otherwise, ETI is used.
-#if defined(KOKKOS_ENABLE_CUDA) && !defined(KOKKOS_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
+#if defined(EAMXX_ENABLE_GPU) && !defined(KOKKOS_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE) \
+                                && !defined(KOKKOS_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
 # include "p3_table3_impl.hpp"
 # include "p3_table_ice_impl.hpp"
 # include "p3_back_to_cell_average_impl.hpp"
@@ -1034,5 +1035,5 @@ void init_tables_from_f90_c(Real* vn_table_vals_data, Real* vm_table_vals_data,
 # include "p3_nr_conservation_impl.hpp"
 # include "p3_ni_conservation_impl.hpp"
 # include "p3_prevent_liq_supersaturation_impl.hpp"
-#endif // KOKKOS_ENABLE_CUDA || !KOKKOS_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE
+#endif // GPU || !KOKKOS_ENABLE_*_RELOCATABLE_DEVICE_CODE
 #endif // P3_FUNCTIONS_HPP
