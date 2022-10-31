@@ -38,12 +38,14 @@ void FieldAtPressureLevel::set_grids(const std::shared_ptr<const GridsManager> g
   if (m_field_layout.tags().back()==LEV) {
     m_pres_name = "p_mid";
     m_num_levs = num_levs;
+    FieldLayout pres_layout { {COL,LEV}, {m_num_cols,m_num_levs} };
+    add_field<Required>(m_pres_name, pres_layout, Pa, gname, ps);
   } else {
     m_pres_name = "p_int";
     m_num_levs = num_levs+1;
+    FieldLayout pres_layout { {COL,ILEV}, {m_num_cols,m_num_levs} };
+    add_field<Required>(m_pres_name, pres_layout, Pa, gname, ps);
   }
-  FieldLayout pres_layout { {COL,ILEV}, {m_num_cols,m_num_levs} };
-  add_field<Required>(m_pres_name, pres_layout, Pa, gname, ps);
 
   FieldLayout diag_layout { {COL}, {m_num_cols} };
   FieldIdentifier fid (name(),diag_layout, m, gname);

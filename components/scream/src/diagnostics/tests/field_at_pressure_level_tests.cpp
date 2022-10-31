@@ -10,6 +10,9 @@
 
 namespace scream {
 
+const int packsize = SCREAM_SMALL_PACK_SIZE;
+using Pack         = ekat::Pack<Real,packsize>;
+
 std::shared_ptr<GridsManager>
 create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
@@ -25,138 +28,231 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
   return gm;
 }
 
-TEST_CASE("field_at_pressure_level")
+struct PressureBnds
 {
+  Real p_top  = 10000.0;  //  100mb
+  Real p_surf = 100000.0; // 1000mb
+};
 
-  // Test that output at a pressure level works as expected.
-  // For this test we set a field "M" to be defined as 100*i + k,
-  // where i=column and k=level
-  //
-  // We then set the pressure levels to be 100*k where again k=level.
-  //
-  // Lastly we define a pressure level to be for p=150, thus
-  // the output should be (M_1+M_2)/2, or halfway between level 1 and level
-  // 2 of the data.  Given the formula above the output should be exactly
-  //   100*i + (1+2)/2 = 100*i + 1.5
+std::shared_ptr<GridsManager>
+get_test_gm(const ekat::Comm& io_comm, const int num_gcols, const int num_levs);
 
+std::shared_ptr<FieldManager>
+get_test_fm(std::shared_ptr<const AbstractGrid> grid);
+
+std::shared_ptr<FieldAtPressureLevel>
+get_test_diag(const ekat::Comm& comm, std::shared_ptr<const FieldManager> fm, std::shared_ptr<const GridsManager> gm, const std::string& type, const Real plevel);
+
+Real get_test_pres(const int col, const int lev, const int num_lev, const int num_cols);
+Real get_test_data(const Real pres);
+
+TEST_CASE("field_at_pressure_level_p2")
+{
+  // Get an MPI comm group for test
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  // Random values to be used in test
+  PressureBnds pressure_bounds;
+  auto engine = scream::setup_random_test(&comm);
+  using RPDF = std::uniform_real_distribution<Real>;
+  RPDF pdf_plev(pressure_bounds.p_top,pressure_bounds.p_surf);
+  
+
+  // Create a grids manager w/ a point grid
+  int ncols = 3;
+  int nlevs = 10;
+  REQUIRE(2*nlevs>=ncols+1);
+  auto gm   = get_test_gm(comm,ncols,nlevs);
+
+  // Create a field manager for testing
+  auto grid = gm->get_grid("Point Grid");
+  auto fm   = get_test_fm(grid);
+  util::TimeStamp t0 ({2022,1,1},{0,0,0});
+
+  // Get a diagnostic factory
+  auto& diag_factory = AtmosphereDiagnosticFactory::instance();
+  diag_factory.register_product("FieldAtPressureLevel",&create_atmosphere_diagnostic<FieldAtPressureLevel>);
+
+  {
+    // Test 1: Take a slice at 500mb (50000Pa) for variable defined at midlevel.
+    Real plevel = 50000.0;
+    auto diag = get_test_diag(comm, fm, gm, "mid", plevel);
+    diag->initialize(t0,RunType::Initial);
+    diag->compute_diagnostic();
+    auto diag_f = diag->get_diagnostic();
+    diag_f.sync_to_host();
+    auto test1_diag_v = diag_f.get_view<const Real*, Host>();
+    for (int icol=0;icol<ncols;icol++) {
+      REQUIRE(test1_diag_v(icol)==get_test_data(50000.0));
+    }
+  } 
+  {
+    // Test 2: Take a slice at 500mb (50000Pa) for variable defined at interface.
+    Real plevel = 50000.0;
+    auto diag = get_test_diag(comm, fm, gm, "int", plevel);
+    diag->initialize(t0,RunType::Initial);
+    diag->compute_diagnostic();
+    auto diag_f = diag->get_diagnostic();
+    diag_f.sync_to_host();
+    auto test2_diag_v = diag_f.get_view<const Real*, Host>();
+    for (int icol=0;icol<ncols;icol++) {
+      REQUIRE(test2_diag_v(icol)==get_test_data(plevel));
+    }
+  } 
+  {
+    // Test 3: Take a slice at a random value for variable defined at midpoint.
+    Real plevel = pdf_plev(engine);
+    auto diag = get_test_diag(comm, fm, gm, "mid", plevel);
+    diag->initialize(t0,RunType::Initial);
+    diag->compute_diagnostic();
+    auto diag_f = diag->get_diagnostic();
+    diag_f.sync_to_host();
+    auto test3_diag_v = diag_f.get_view<const Real*, Host>();
+    for (int icol=0;icol<ncols;icol++) {
+      REQUIRE(test3_diag_v(icol)==get_test_data(plevel));
+    }
+  } 
+  {
+    // Test 4: Take a slice at a random value for variable defined at interface.
+    Real plevel = pdf_plev(engine);
+    auto diag = get_test_diag(comm, fm, gm, "int", plevel);
+    diag->initialize(t0,RunType::Initial);
+    diag->compute_diagnostic();
+    auto diag_f = diag->get_diagnostic();
+    diag_f.sync_to_host();
+    auto test4_diag_v = diag_f.get_view<const Real*, Host>();
+    for (int icol=0;icol<ncols;icol++) {
+      REQUIRE(test4_diag_v(icol)==get_test_data(plevel));
+    }
+  } 
+  
+} // TEST_CASE("field_at_pressure_level")
+/*==========================================================================================================*/
+std::shared_ptr<GridsManager> get_test_gm(const ekat::Comm& io_comm, const int num_gcols, const int num_levs)
+{
+  ekat::ParameterList gm_params;
+  gm_params.set("number_of_global_columns",num_gcols);
+  gm_params.set("number_of_vertical_levels",num_levs);
+  auto gm = create_mesh_free_grids_manager(io_comm,gm_params);
+  gm->build_grids();
+  return gm;
+}
+/*===================================================================================================*/
+std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> grid)
+{
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
   using FL = FieldLayout;
+  using FR = FieldRequest;
 
-  constexpr int packsize = SCREAM_PACK_SIZE;
+  // Create a fm
+  auto fm = std::make_shared<FieldManager>(grid);
 
-  ekat::Comm comm(MPI_COMM_WORLD);
+  const int num_lcols = grid->get_num_local_dofs();
+  const int num_levs  = grid->get_num_vertical_levels();
 
-  auto engine = scream::setup_random_test(&comm);
+  // Create some fields for this fm
+  std::vector<FieldTag> tag_mid = {COL,LEV};
+  std::vector<FieldTag> tag_int = {COL,ILEV};
 
-  // Create a grids manager
-  const int ncols = 3;
-  const int nlevs = packsize*2 + 1;  // Note, we need at least 3 levels for the test to work
-  auto gm = create_gm(comm,ncols,nlevs);
-  auto grid = gm->get_grid("Point Grid");
+  std::vector<int>     dims_mid = {num_lcols,num_levs};
+  std::vector<int>     dims_int = {num_lcols,num_levs+1};
 
-  // A time stamp
-  util::TimeStamp t0 ({2022,1,1},{0,0,0});
+  const std::string& gn = grid->name();
 
-  // Create input fields
-  const auto units = ekat::units::Units::invalid();
+  FieldIdentifier fid1("V_mid",FL{tag_mid,dims_mid},m,gn);
+  FieldIdentifier fid2("V_int",FL{tag_int,dims_int},kg,gn);
+  FieldIdentifier fid3("p_mid",FL{tag_mid,dims_mid},Pa,gn);
+  FieldIdentifier fid4("p_int",FL{tag_int,dims_int},Pa,gn);
 
-  FieldIdentifier fid_mid ("V_mid",FL({COL,LEV},{ncols,nlevs}),units,grid->name());
-  Field f_mid (fid_mid);
-  f_mid.get_header().get_alloc_properties().request_allocation(packsize);
-  f_mid.allocate_view();
-  f_mid.get_header().get_tracking().update_time_stamp(t0);
+  // Register fields with fm
+  // Make sure packsize isn't bigger than the packsize for this machine, but not so big that we end up with only 1 pack.
+  fm->registration_begins();
+  fm->register_field(FR{fid1,Pack::n});
+  fm->register_field(FR{fid2,Pack::n});
+  fm->register_field(FR{fid3,Pack::n});
+  fm->register_field(FR{fid4,Pack::n});
+  fm->registration_ends();
 
-  FieldIdentifier fid_int ("V_int",FL({COL,ILEV},{ncols,nlevs+1}),units,grid->name());
-  Field f_int (fid_int);
-  f_int.get_header().get_alloc_properties().request_allocation(packsize);
-  f_int.allocate_view();
-  f_int.get_header().get_tracking().update_time_stamp(t0);
+  // Initialize these fields
+  auto f1 = fm->get_field(fid1);
+  auto f2 = fm->get_field(fid2);
+  auto f3 = fm->get_field(fid3);
+  auto f4 = fm->get_field(fid4);
+  auto f1_host = f1.get_view<Pack**,Host>();
+  auto f2_host = f2.get_view<Pack**,Host>();
+  auto f3_host = f3.get_view<Pack**,Host>();
+  auto f4_host = f4.get_view<Pack**,Host>();
 
-  ekat::ParameterList params_mid, params_int;
-  params_mid.set("Field Name",f_mid.name());
-  params_mid.set("Field Units",fid_mid.get_units());
-  params_mid.set("Field Layout",fid_mid.get_layout());
-  params_mid.set("Grid Name",fid_mid.get_grid_name());
-  params_mid.set<Real>("Field Target Pressure",150);
-  params_int.set("Field Name",f_int.name());
-  params_int.set("Field Units",fid_int.get_units());
-  params_int.set("Field Layout",fid_int.get_layout());
-  params_int.set("Grid Name",fid_int.get_grid_name());
-  params_int.set<Real>("Field Target Pressure",150);
-
-  auto diag_mid = std::make_shared<FieldAtPressureLevel>(comm,params_mid);
-  diag_mid->set_grids(gm);
-  diag_mid->set_required_field(f_mid);
-  auto diag_int = std::make_shared<FieldAtPressureLevel>(comm,params_int);
-  diag_int->set_grids(gm);
-  diag_int->set_required_field(f_int);
-
-  // Set the required fields for the diagnostic.
-  std::map<std::string,Field> input_fields;
-  for (const auto& req : diag_mid->get_required_field_requests()) {
-    Field f(req.fid);
-    auto & f_ap = f.get_header().get_alloc_properties();
-    f_ap.request_allocation(packsize);
-    f.allocate_view();
-    const auto name = f.name();
-    f.get_header().get_tracking().update_time_stamp(t0);
-    diag_mid->set_required_field(f);
-    input_fields.emplace(name,f);
-  }
-  for (const auto& req : diag_int->get_required_field_requests()) {
-    Field f(req.fid);
-    auto & f_ap = f.get_header().get_alloc_properties();
-    f_ap.request_allocation(packsize);
-    f.allocate_view();
-    const auto name = f.name();
-    f.get_header().get_tracking().update_time_stamp(t0);
-    diag_int->set_required_field(f);
-    input_fields.emplace(name,f);
-  }
-
-  Field p_mid_f = input_fields["p_mid"];
-  Field p_int_f = input_fields["p_int"];
-  //Fill data to interpolate
-  auto f_mid_v_h   = f_mid.get_view<Real**, Host>();
-  auto p_mid_v_h   = p_mid_f.get_view<Real**, Host>();
-  auto f_int_v_h   = f_int.get_view<Real**, Host>();
-  auto p_int_v_h   = p_int_f.get_view<Real**, Host>();
-  for (int ilev=0; ilev<nlevs; ilev++){
-    for (int icol=0; icol<ncols; icol++){
-      f_mid_v_h(icol,ilev) = icol*100. + ilev;
-      p_mid_v_h(icol,ilev) = 100.*ilev;
-      f_int_v_h(icol,ilev) = icol*100. + ilev;
-      p_int_v_h(icol,ilev) = 100.*ilev;
-      f_int_v_h(icol,ilev+1) = icol*100. + ilev+1;
-      p_int_v_h(icol,ilev+1) = 100.*(ilev+1);
+  Real dpres_dz = 10000;
+  Real dpres_dx = 100;
+  for (int ii=0;ii<num_lcols;++ii) {
+    for (int jj=0;jj<num_levs;++jj) {
+      int ipack = jj / packsize;
+      int ivec  = jj % packsize;
+      Real p_mid = (get_test_pres(ii,jj,num_levs,num_lcols) + get_test_pres(ii,jj+1,num_levs,num_lcols)) / 2;
+      Real p_int = get_test_pres(ii,jj,num_levs,num_lcols);
+      f1_host(ii,ipack)[ivec] = get_test_data(p_mid); 
+      f2_host(ii,ipack)[ivec] = get_test_data(p_int); 
+      f3_host(ii,ipack)[ivec] = p_mid; 
+      f4_host(ii,ipack)[ivec] = p_int;
     }
+    // The interface values have one more vertical level
+    int ipack = num_levs / packsize;
+    int ivec  = num_levs % packsize;
+    Real p_int = get_test_pres(ii,num_levs,num_levs,num_lcols);
+    f2_host(ii,ipack)[ivec] = get_test_data(p_int); 
+    f4_host(ii,ipack)[ivec] = p_int;
   }
-  f_mid.sync_to_dev();
-  p_mid_f.sync_to_dev();
-  f_int.sync_to_dev();
-  p_int_f.sync_to_dev();
-  
+  // Update timestamp
+  util::TimeStamp time ({2000,1,1},{0,0,0});
+  fm->init_fields_time_stamp(time);
+  // Sync back to device
+  f1.sync_to_dev();
+  f2.sync_to_dev();
+  f3.sync_to_dev();
+  f4.sync_to_dev();
 
-  diag_mid->initialize(t0,RunType::Initial);
-  diag_int->initialize(t0,RunType::Initial);
-  
-  // Run diagnostics
-  diag_mid->compute_diagnostic();
-  diag_int->compute_diagnostic();
-
-  auto d_mid = diag_mid->get_diagnostic();
-  d_mid.sync_to_host();
-  auto d_mid_v = d_mid.get_view<const Real*,Host>();
-  auto d_int = diag_int->get_diagnostic();
-  d_int.sync_to_host();
-  auto d_int_v = d_int.get_view<const Real*,Host>();
-  
-  for (int icol=0; icol<ncols; ++icol) {
-    REQUIRE (d_mid_v(icol)==icol*100 + 1.5);
-    REQUIRE (d_int_v(icol)==icol*100 + 1.5);
-  }
-  
+  return fm;
+}
+/*===================================================================================================*/
+std::shared_ptr<FieldAtPressureLevel>
+get_test_diag(const ekat::Comm& comm, std::shared_ptr<const FieldManager> fm, std::shared_ptr<const GridsManager> gm, const std::string& type, const Real plevel)
+{
+    std::string fname = "V_"+type;
+    auto field = fm->get_field(fname);
+    auto fid = field.get_header().get_identifier();
+    ekat::ParameterList params;
+    params.set("Field Name",fname);
+    params.set("Field Units",fid.get_units());
+    params.set("Field Layout",fid.get_layout());
+    params.set("Grid Name",fid.get_grid_name());
+    params.set<Real>("Field Target Pressure",plevel);
+    auto diag = std::make_shared<FieldAtPressureLevel>(comm,params);
+    diag->set_grids(gm);
+    diag->set_required_field(field);
+    for (const auto& req : diag->get_required_field_requests()) {
+      auto req_field = fm->get_field(req.fid);
+      diag->set_required_field(req_field);
+    }
+    return diag;
+}
+/*===================================================================================================*/
+Real get_test_pres(const int col, const int lev, const int num_lev, const int num_cols)
+{
+  PressureBnds pressure_bounds;
+  Real p_surf = pressure_bounds.p_surf;  //100000; // 1000mb
+  Real p_top  = pressure_bounds.p_top;  //0;      //    0mb
+  Real dp_dz  = (p_surf-p_top)/(num_lev-1); // Make sure the max pressure at surface is the surf pressure
+  Real dp_dx  = p_top/(num_cols-1);          // Make sure that some column hits the min pressure as p_top
+  return p_top + lev*dp_dz - col*dp_dx;
 }
 
+Real get_test_data(const Real pres)
+{
+  // Have the data follow the linear curve
+  //   y = 100 + p, where p is the pressure
+  return 100.0 + pres;
+}
+/*===================================================================================================*/
 } // namespace scream
