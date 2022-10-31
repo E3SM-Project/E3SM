@@ -2889,6 +2889,7 @@
 		/>
 		<var name="normalGMBolusVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization"
+			 missing_value="FILLVAL" missing_value_mask="edgeMask"
 			 packages="gm"
 		/>
 		<var name="normalMLEvelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
@@ -2944,10 +2945,12 @@
 		/>
 		<var name="GMBolusVelocityZonal" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, zonal-direction"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="gm;submeso"
 		/>
 		<var name="GMBolusVelocityMeridional" type="real" dimensions="nVertLevels nCells Time" units="m s^-1"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, meridional-direction"
+			 missing_value="FILLVAL" missing_value_mask="cellMask"
 			 packages="gm;submeso"
 		/>
 		<var name="RiTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="1"
