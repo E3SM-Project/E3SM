@@ -20,19 +20,17 @@ void Functions<S,D>
   using ExeSpaceUtils = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 
   // Compute numerator
-  Scalar numer = 0;
-  ExeSpaceUtils::view_reduction(team,0,nlev,
+  Scalar numer = ExeSpaceUtils::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
     return ekat::sqrt(tke(k))*zt_grid(k)*dz_zt(k);
-  }, numer);
+  });
   team.team_barrier(); // see comment in shoc_energy_integrals_impl.hpp
 
   // Compute denominator
-  Scalar denom = 0;
-  ExeSpaceUtils::view_reduction(team,0,nlev,
+  Scalar denom = ExeSpaceUtils::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
     return ekat::sqrt(tke(k))*dz_zt(k);
-  }, denom);
+  });
   team.team_barrier();
 
   // Set l_inf
