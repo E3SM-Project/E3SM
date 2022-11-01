@@ -25,7 +25,6 @@ public:
                         int m_tgt_num_levs_);
 
   // The name of the diagnostic
-  //std::string name () const { return m_field_name + " @ pressure " + std::to_string(m_pressure_level) + " hPa"; }
   std::string name () const { return m_field_name; }
 
   // Set the grid
