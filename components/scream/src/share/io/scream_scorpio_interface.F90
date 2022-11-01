@@ -740,7 +740,7 @@ contains
 
     logical(kind=c_bool) :: is_it
 
-    is_it = associated(pio_subsystem)
+    is_it = LOGICAL(associated(pio_subsystem),kind=c_bool)
   end function is_eam_pio_subsystem_inited
 !=====================================================================!
   ! Create a pio netCDF file with the appropriate name.

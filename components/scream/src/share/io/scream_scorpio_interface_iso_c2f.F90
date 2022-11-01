@@ -34,7 +34,7 @@ contains
     call convert_c_string(filename_in,filename)
     call lookup_pio_atm_file(filename,atm_file,found)
     if (found) then
-      res = atm_file%purpose .eq. purpose
+      res = LOGICAL(atm_file%purpose .eq. purpose,kind=c_bool)
     else
       res = .false.
     endif
