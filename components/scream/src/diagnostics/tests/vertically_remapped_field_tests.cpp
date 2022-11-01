@@ -29,8 +29,9 @@ TEST_CASE("vertically_remapped_field")
 {
 
   // Test that can output onto new pressure levels as expected.
-  // For this test we set a field "V_mid" (or "V_int") to be defined as 100*i + k,
-  // where i=column and k=level
+  // For this test we set a field "V_mid" (or "V_int") to be defined as 100*(-i) + k,
+  // where i=column and k=level. The negative sign on the -i is so that both positive
+  // and negative field values are tested.
   //
   // We then set the source pressure levels to be 100*(k+1) where again k=level.
   //
@@ -42,7 +43,7 @@ TEST_CASE("vertically_remapped_field")
   // For the other output pressure levels the field value shou (M_{j-1}+M_{j})/2, or 
   // halfway between the levels of the data. Given the formula above
   // the output should be exactly:
-  // icol*100 + (j-1) + 0.5
+  // (-icol)*100 + (j-1) + 0.5
 
   using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using KT = KokkosTypes<DefaultDevice>;
@@ -149,11 +150,11 @@ TEST_CASE("vertically_remapped_field")
   auto p_int_v_h   = p_int_f.get_view<Real**>();
   for (int ilev=0; ilev<nlevs; ilev++){
     for (int icol=0; icol<ncols; icol++){
-      f_mid_v_h(icol,ilev) = icol*100 + ilev;
+      f_mid_v_h(icol,ilev) = (-icol)*100 + ilev;
       p_mid_v_h(icol,ilev) = 100*(ilev+1);
-      f_int_v_h(icol,ilev) = icol*100 + ilev;
+      f_int_v_h(icol,ilev) = (-icol)*100 + ilev;
       p_int_v_h(icol,ilev) = 100*(ilev+1);
-      f_int_v_h(icol,ilev+1) = icol*100 + ilev+1;
+      f_int_v_h(icol,ilev+1) = (-icol)*100 + ilev+1;
       p_int_v_h(icol,ilev+1) = 100*(ilev+2);
     }
   }
@@ -182,8 +183,8 @@ TEST_CASE("vertically_remapped_field")
         REQUIRE(d_mid_v(icol,ilev)==-std::numeric_limits<Real>::max());
       }
       else{
-        REQUIRE (d_mid_v(icol,ilev)==icol*100 + (ilev-1) + 0.5);
-        REQUIRE (d_int_v(icol,ilev)==icol*100 + (ilev-1) + 0.5);
+        REQUIRE (d_mid_v(icol,ilev)==(-icol)*100 + (ilev-1) + 0.5);
+        REQUIRE (d_int_v(icol,ilev)==(-icol)*100 + (ilev-1) + 0.5);
       }
     }
   }//end of for loops over column and levels
