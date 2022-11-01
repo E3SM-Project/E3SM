@@ -577,7 +577,172 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   call dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
 
-end subroutine
+end subroutine dcmip2016_test1_forcing
+
+
+
+
+!_______________________________________________________________________
+subroutine bubble_rj_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
+
+  type(element_t),    intent(inout), target :: elem(:)                  ! element array
+  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
+  type(hvcoord_t),    intent(in)            :: hvcoord                  ! hybrid vertical coordinates
+  integer,            intent(in)            :: nets,nete                ! start, end element index
+  integer,            intent(in)            :: nt, ntQ                  ! time level index
+  real(rl),           intent(in)            :: dt                       ! time-step size
+  type(TimeLevel_t),  intent(in)            :: tl                       ! time level structure
+
+  integer :: i,j,k,ie,qind                                              ! loop indices
+  real(rl), dimension(np,np,nlev) :: u,v,w,T,p,dp,rho,z,qv
+  real(rl), dimension(np,np,nlev) :: T0,qv0
+  real(rl), dimension(np,np)      :: ps 
+  real(rl), dimension(nlev)       :: p_c,qv_c,dp_c,T_c,pi
+  real(rl) :: max_w, max_precl, min_ps
+
+  real(rl) :: pi_upper,qsat,qsatdry,dp_loc,qv_loc,dpdry_loc,qvdry_loc,dq_loc,vapor_mass_change
+  real(rl) :: T_loc,p_loc,pi_loc,L_old,L_new,rstar_old,rstar_new,hold,cpstarTerm_new
+  real(rl) :: T_new
+
+  real(rl) :: zi(np,np,nlevp)
+!  integer, parameter :: test = 1
+
+  real(rl), parameter:: gravit = 9.80616, rair = 287.0, cpair = 1.0045e3, cpv = 1810.0, cl = 4188.0, &
+                        rvapor = 461.5, epsilo = rair/rvapor, &
+                        latvap=2.501e6, latice=3.337e5, e0=610.78, &
+                        T0const = 273.16, rhow = 1000.0
+
+  if (qsize .ne. 3) call abortmp('ERROR: moist bubble test requires qsize=3')
+
+  max_w     = -huge(rl)
+  max_precl = -huge(rl)
+  min_ps    = +huge(rl)
+
+  do ie = nets,nete
+
+    !precl(:,:,ie) = -1.0d0
+    precl(:,:,ie) = 0.0d0
+
+    ! get current element state
+    call get_state(u,v,w,T,p,dp,ps,rho,z,zi,gravit,elem(ie),hvcoord,nt,ntQ)
+
+    ! get mixing ratios
+    ! use qi to avoid compiler warnings when qsize_d<5
+    qind=1;  qv  = elem(ie)%state%Qdp(:,:,:,qind,ntQ)/dp
+
+    ! ensure positivity
+    where(qv<0); qv=0; endwhere
+
+    ! save un-forced prognostics
+    T0=T; qv0=qv;
+
+    ! apply forcing to columns
+    do j=1,np; do i=1,np
+
+      !column values
+      qv_c = qv(i,j,:); p_c = p(i,j,:); dp_c = dp(i,j,:); T_c = T(i,j,:);
+
+      pi_upper = hvcoord%hyai(1) * hvcoord%ps0
+      do k = 1, nlev
+        pi_upper = pi_upper + dp_c(k)
+        pi(k) = pi_upper - dp_c(k)/2
+      enddo
+
+      do k=1, nlev
+      qsat = epsilo * e0 / p_c(k) * exp(-(latvap/rh2o) * ((1.0/T_c(k))-(1.0/T0const)))
+
+      if (qv_c(k) > qsat) then
+
+!print *, 'HEY RAIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+!stop
+      !condensation happens
+#if 0
+      !compute dry values
+        dp_loc = dp_c(k)
+        qv_loc = qv_c(k)
+        dpdry_loc = dp_loc * (1.0 - qv_loc)
+        qvdry_loc = qv_loc * dp_loc / dpdry_loc
+        qsatdry = qsat * dp_loc / dpdry_loc     ! qv_new
+        dq_loc = qvdry_loc - qsatdry            ! > 0 , is qliq_dry_new
+        vapor_mass_change = dpdry_loc*dq_loc
+        T_loc = T_c(k)
+        p_loc = p_c(k)
+        pi_loc = pi(k)
+
+        !new Q will be qsatdry
+        L_old = (latvap + latice) * qvdry_loc
+        L_new = (latvap + latice) * qsatdry   + latice * dq_loc
+
+        rstar_old = rair * 1.0 + rvapor * qv_loc
+        rstar_new = rair * 1.0 + rvapor * qsatdry
+
+        !dpnew_loc = dpdry_loc * (1.0 + qsatdry) 
+
+        hold = T_loc*( cpair*dpdry_loc + cpv*(dp_loc - dpdry_loc) ) + &
+               (pi_loc/p_loc - 1) * rstar_old * T_loc + L_old
+
+        cpstarTerm_new = cpair*dpdry_loc + cpv*qsatdry*dpdry_loc + cl*dpdry_loc*dq_loc
+
+        !hnew = T_new * (   cpstarTerm_new + ( (pi_loc - vapor_mass_change)/(p_loc - vapor_mass_change) - 1)*rstar_new   ) + &
+        !       L_new
+        !     = hold
+
+        T_new = (hold - L_new)/ &
+        (   cpstarTerm_new + ( (pi_loc - vapor_mass_change)/(p_loc - vapor_mass_change) - 1)*rstar_new   )  
+
+        T_c(k)  = T_new
+        qv_c(k) = qsat
+        precl(i,j,ie) = precl(i,j,ie) + vapor_mass_change / dt / rhow / gravit
+
+
+#else
+!original RJ
+        dq_loc = (qv_c(k) - qsat) &
+          / (1.0 + (latvap/cpair) * epsilo * latvap * qsat / (rair*T_c(k)*T_c(k)))
+
+        T_c(k) = T_c(k) + latvap / cpair * dq_loc
+        qv_c(k) = qv_c(k) - dq_loc
+        precl = precl + dq_loc * dp_c(k) / (dt * rhow) / gravit
+#endif
+
+      endif ! if prect happened
+      enddo ! k loop
+
+      !now update 3d fields here
+      T(i,j,:)  = T_c(:)
+      qv(i,j,:) = qv_c(:)
+ 
+    enddo; enddo;
+
+    ! set dynamics forcing
+    elem(ie)%derived%FM(:,:,1,:) = 0.0 !(u - u0)/dt
+    elem(ie)%derived%FM(:,:,2,:) = 0.0 !(v - v0)/dt
+    elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
+
+    ! set tracer-mass forcing. conserve tracer mass
+    elem(ie)%derived%FQ(:,:,:,:) = 0.0
+    elem(ie)%derived%FQ(:,:,:,1) = (qv - qv0)/dt !(rho_dry/rho)*dp*(qv-qv0)/dt
+
+    ! perform measurements of max w, and max prect
+    max_w     = max( max_w    , maxval(w    ) )
+    max_precl = max( max_precl, maxval(precl(:,:,ie)) )
+    min_ps    = min( min_ps,    minval(ps) )
+
+  enddo
+
+  call dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
+
+end subroutine bubble_rj_forcing
+
+
+
+
+
+
+
+
+
+
 
 subroutine toy_init(rcd)
   real(rl), intent(inout) :: rcd(6)

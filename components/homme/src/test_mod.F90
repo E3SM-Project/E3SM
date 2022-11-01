@@ -24,7 +24,8 @@ use dcmip12_wrapper,      only: dcmip2012_test1_1, dcmip2012_test1_2, dcmip2012_
                                 dcmip2012_test4_init, mtest_init, dcmip2012_test1_1_conv
 use dcmip16_wrapper,      only: dcmip2016_test1, dcmip2016_test2, dcmip2016_test3, &
                                 dcmip2016_test1_forcing, dcmip2016_test2_forcing, dcmip2016_test3_forcing, &
-                                dcmip2016_test1_pg, dcmip2016_test1_pg_forcing, dcmip2016_init
+                                dcmip2016_test1_pg, dcmip2016_test1_pg_forcing, dcmip2016_init, &
+                                bubble_rj_forcing
 use held_suarez_mod,      only: hs0_init_state
 
 use dry_planar_tests,     only: planar_hydro_gravity_wave_init, planar_nonhydro_gravity_wave_init
@@ -242,7 +243,8 @@ subroutine compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
     case('dcmip2016_test3');    call dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     case('planar_rising_bubble');  
-            if (bubble_moist) call dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
+            !if (bubble_moist) call dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
+            if (bubble_moist) call bubble_rj_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     case('held_suarez0');
        do ie=nets,nete
