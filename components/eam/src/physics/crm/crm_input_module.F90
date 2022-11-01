@@ -23,6 +23,7 @@ module crm_input_module
       real(crm_rknd), allocatable :: qccl(:,:)           ! Global grid cloud liquid water (g/g)
       real(crm_rknd), allocatable :: qiil(:,:)           ! Global grid cloud ice (g/g)
       real(crm_rknd), allocatable :: ps(:)               ! Global grid surface pressure (Pa)
+      real(crm_rknd), allocatable :: ts(:)               ! Global grid surface temperature (K)
       real(crm_rknd), allocatable :: pmid(:,:)           ! Global grid pressure (Pa)
       real(crm_rknd), allocatable :: pint(:,:)           ! Global grid pressure (Pa)
       real(crm_rknd), allocatable :: pdel(:,:)           ! Layer's pressure thickness (Pa)
@@ -67,6 +68,7 @@ contains
       if (.not. allocated(input%qccl))     allocate(input%qccl(ncrms,nlev))
       if (.not. allocated(input%qiil))     allocate(input%qiil(ncrms,nlev))
       if (.not. allocated(input%ps))       allocate(input%ps(ncrms))
+      if (.not. allocated(input%ts))       allocate(input%ts(ncrms))
       if (.not. allocated(input%pmid))     allocate(input%pmid(ncrms,nlev))
       if (.not. allocated(input%pint))     allocate(input%pint(ncrms,nlev+1))
       if (.not. allocated(input%pdel))     allocate(input%pdel(ncrms,nlev))
@@ -89,6 +91,7 @@ contains
       call prefetch(input%qccl)
       call prefetch(input%qiil)
       call prefetch(input%ps)
+      call prefetch(input%ts)
       call prefetch(input%pmid)
       call prefetch(input%pint)
       call prefetch(input%pdel)
@@ -131,6 +134,7 @@ contains
       input%qccl    = 0
       input%qiil    = 0
       input%ps      = 0
+      input%ts      = 0
       input%pmid    = 0
       input%pint    = 0
       input%pdel    = 0
@@ -173,6 +177,7 @@ contains
       if (allocated(input%qccl))    deallocate(input%qccl)
       if (allocated(input%qiil))    deallocate(input%qiil)
       if (allocated(input%ps))      deallocate(input%ps)
+      if (allocated(input%ts))      deallocate(input%ps)
       if (allocated(input%pmid))    deallocate(input%pmid)
       if (allocated(input%pint))    deallocate(input%pint)
       if (allocated(input%pdel))    deallocate(input%pdel)

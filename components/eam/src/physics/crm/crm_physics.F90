@@ -1015,6 +1015,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             crm_input%qccl(icrm,1:pver)   = state(c)%q(i,1:pver,ixcldliq)
             crm_input%qiil(icrm,1:pver)   = state(c)%q(i,1:pver,ixcldice)
             crm_input%ps(icrm)            = state(c)%ps(i)
+            crm_input%ts(icrm)            = cam_in(c)%ts(i)
             crm_input%pmid(icrm,1:pver)   = state(c)%pmid(i,1:pver)
             crm_input%pint(icrm,1:pver+1) = state(c)%pint(i,1:pver+1)
             crm_input%pdel(icrm,1:pver)   = state(c)%pdel(i,1:pver)
