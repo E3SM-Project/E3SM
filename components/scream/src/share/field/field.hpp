@@ -10,7 +10,6 @@
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "ekat/kokkos/ekat_subview_utils.hpp"
 
-#include <Kokkos_MemoryTraits.hpp>
 #include <memory>   // For std::shared_ptr
 #include <string>
 #include <type_traits>

@@ -1,5 +1,3 @@
-#include <Kokkos_CopyViews.hpp>
-#include <Kokkos_Parallel.hpp>
 #include <catch2/catch.hpp>
 
 #include "ekat/kokkos/ekat_kokkos_types.hpp"
