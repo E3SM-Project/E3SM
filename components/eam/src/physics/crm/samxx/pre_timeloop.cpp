@@ -17,6 +17,9 @@ void pre_timeloop() {
   YAKL_SCOPE( bflx                     , :: bflx );
   YAKL_SCOPE( wnd                      , :: wnd );
   YAKL_SCOPE( crm_input_bflxls         , :: crm_input_bflxls );
+  YAKL_SCOPE( crm_input_fluxt00        , :: crm_input_fluxt00 );
+  YAKL_SCOPE( crm_input_fluxq00        , :: crm_input_fluxq00 );
+  YAKL_SCOPE( crm_input_ts             , :: crm_input_ts );
   YAKL_SCOPE( crm_input_wndls          , :: crm_input_wndls );
   YAKL_SCOPE( fcor                     , :: fcor );
   YAKL_SCOPE( fcorz                    , :: fcorz );
@@ -309,6 +312,18 @@ void pre_timeloop() {
       v(k,j+offy_v,i+offx_v,icrm) = min( UMAX, max(-UMAX,v(k,j+offy_v,i+offx_v,icrm)) )*YES3D;
     }
   });
+
+#ifdef SFLX2CRM
+  // Add surface heat fluxes (sensible & latent) to CRM
+  // for (int j=0; j<ny; j++) {
+  //  for (int i=0; i<nx; i++) {
+  //    for (int icrm=0; icrm<ncrms; icrm++) {
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
+    fluxbt(j,i,icrm) = crm_input_fluxq00(icrm)/rho(0,icrm);
+    fluxbq(j,i,icrm) = crm_input_fluxt00(icrm)/rho(0,icrm);
+    sstxy(j,i,icrm)  = crm_input_ts(icrm);
+  });
+#endif
 
   // Populate microphysics array from crm_state
   // for (int k=0; k<nzm; k++) {

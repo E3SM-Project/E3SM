@@ -9,7 +9,9 @@ module cpp_interface_mod
 
   interface
 
-    subroutine crm(ncrms_in, pcols_in, dt_gl, plev, crm_input_bflxls, crm_input_wndls, crm_input_zmid, crm_input_zint, &
+    subroutine crm(ncrms_in, pcols_in, dt_gl, plev, crm_input_bflxls, &
+                   crm_input_fluxt00, crm_input_fluxq00, crm_input_ts, &
+                   crm_input_wndls, crm_input_zmid, crm_input_zint, &
                    crm_input_pmid, crm_input_pint, crm_input_pdel, crm_input_ul, crm_input_vl, &
                    crm_input_tl, crm_input_qccl, crm_input_qiil, crm_input_ql, crm_input_tau00, &
                    crm_input_ul_esmt, crm_input_vl_esmt, &
@@ -47,7 +49,8 @@ module cpp_interface_mod
       integer(crm_iknd), value :: ncrms_in, pcols_in, plev, igstep
       real(crm_rknd), value :: dt_gl, crm_accel_factor
       integer(crm_iknd), dimension(*) :: gcolp
-      real(crm_rknd), dimension(*) :: crm_input_bflxls, crm_input_wndls, crm_input_zmid, crm_input_zint, &
+      real(crm_rknd), dimension(*) :: crm_input_bflxls, crm_input_fluxt00, crm_input_fluxq00, crm_input_ts, crm_input_wndls, &
+                                      crm_input_zmid, crm_input_zint, &
                                       crm_input_pmid, crm_input_pint, crm_input_pdel, crm_input_ul, crm_input_vl, &
                                       crm_input_tl, crm_input_qccl, crm_input_qiil, crm_input_ql, crm_input_tau00, &
                                       crm_input_ul_esmt, crm_input_vl_esmt, &

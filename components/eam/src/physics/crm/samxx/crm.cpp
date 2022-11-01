@@ -5,7 +5,8 @@
 #include "vars.h"
 
 
-extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_input_bflxls_p, 
+extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_input_bflxls_p,
+                    real *crm_input_fluxt00_p, real *crm_input_fluxq00_p, real *crm_input_ts_p,
                     real *crm_input_wndls_p, real *crm_input_zmid_p, real *crm_input_zint_p, 
                     real *crm_input_pmid_p, real *crm_input_pint_p, real *crm_input_pdel_p, 
                     real *crm_input_ul_p, real *crm_input_vl_p, 
@@ -61,7 +62,8 @@ extern "C" void crm(int ncrms_in, int pcols_in, real dt_gl, int plev, real *crm_
   crm_accel_factor = crm_accel_factor_in;
   crm_accel_uv = crm_accel_uv_in;
 
-  create_and_copy_inputs(crm_input_bflxls_p, crm_input_wndls_p, crm_input_zmid_p, crm_input_zint_p, 
+  create_and_copy_inputs(crm_input_bflxls_p, crm_input_fluxt00_p, crm_input_fluxq00_p, crm_input_ts_p, 
+                         crm_input_wndls_p, crm_input_zmid_p, crm_input_zint_p, 
                          crm_input_pmid_p, crm_input_pint_p, crm_input_pdel_p, crm_input_ul_p, crm_input_vl_p, 
                          crm_input_tl_p, crm_input_qccl_p, crm_input_qiil_p, crm_input_ql_p, crm_input_tau00_p,
                          crm_input_ul_esmt_p, crm_input_vl_esmt_p,

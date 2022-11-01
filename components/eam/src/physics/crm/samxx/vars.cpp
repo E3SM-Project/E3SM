@@ -672,7 +672,8 @@ void finalize() {
 
 
 
-void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, real *crm_input_zmid_p, real *crm_input_zint_p, 
+void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_fluxt00_p, real *crm_input_fluxq00_p,real *crm_input_ts_p, real *crm_input_wndls_p, 
+                            real *crm_input_zmid_p, real *crm_input_zint_p, 
                             real *crm_input_pmid_p, real *crm_input_pint_p, real *crm_input_pdel_p, real *crm_input_ul_p, real *crm_input_vl_p, 
                             real *crm_input_tl_p, real *crm_input_qccl_p, real *crm_input_qiil_p, real *crm_input_ql_p, real *crm_input_tau00_p, 
                             real *crm_input_ul_esmt_p, real *crm_input_vl_esmt_p,
@@ -684,6 +685,9 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, r
 
   // Wrap the pointers we're going to copy to device Arrays
   realHost1d crm_input_bflxls          = realHost1d( "crm_input_bflxls        ",crm_input_bflxls_p                                         , pcols);
+  realHost1d crm_input_fluxt00         = realHost1d( "crm_input_fluxt00       ",crm_input_fluxt00_p                                        , pcols);
+  realHost1d crm_input_fluxq00         = realHost1d( "crm_input_fluxq00       ",crm_input_fluxq00_p                                        , pcols);
+  realHost1d crm_input_ts              = realHost1d( "crm_input_ts            ",crm_input_ts_p                                             , pcols);
   realHost1d crm_input_wndls           = realHost1d( "crm_input_wndls         ",crm_input_wndls_p                                          , pcols);
   realHost2d crm_input_zmid            = realHost2d( "crm_input_zmid          ",crm_input_zmid_p                              , plev       , pcols); 
   realHost2d crm_input_zint            = realHost2d( "crm_input_zint          ",crm_input_zint_p                              , plev+1     , pcols); 
@@ -721,6 +725,9 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, r
 
   // Allocate space for all of the variables
   ::crm_input_bflxls          = real1d( "crm_input_bflxls        "                                , pcols);
+  ::crm_input_fluxt00         = real1d( "crm_input_fluxt00       "                                , pcols);
+  ::crm_input_fluxq00         = real1d( "crm_input_fluxq00       "                                , pcols);
+  ::crm_input_ts              = real1d( "crm_input_ts            "                                , pcols);
   ::crm_input_wndls           = real1d( "crm_input_wndls         "                                , pcols);
   ::crm_input_zmid            = real2d( "crm_input_zmid          "                   , plev       , pcols); 
   ::crm_input_zint            = real2d( "crm_input_zint          "                   , plev+1     , pcols); 
@@ -832,6 +839,9 @@ void create_and_copy_inputs(real *crm_input_bflxls_p, real *crm_input_wndls_p, r
 
   // Copy inputs from host Array to device Array
   crm_input_bflxls        .deep_copy_to(::crm_input_bflxls        );
+  crm_input_fluxt00       .deep_copy_to(::crm_input_fluxt00       );
+  crm_input_fluxq00       .deep_copy_to(::crm_input_fluxq00       );
+  crm_input_ts            .deep_copy_to(::crm_input_ts       );
   crm_input_wndls         .deep_copy_to(::crm_input_wndls         );
   crm_input_zmid          .deep_copy_to(::crm_input_zmid          );
   crm_input_zint          .deep_copy_to(::crm_input_zint          );
@@ -1259,6 +1269,9 @@ void copy_outputs_and_destroy(real *crm_state_u_wind_p, real *crm_state_v_wind_p
 
   // Deallocate data
   ::crm_input_bflxls          = real1d();
+  ::crm_input_fluxt00         = real1d();
+  ::crm_input_fluxq00         = real1d();
+  ::crm_input_ts              = real1d();
   ::crm_input_wndls           = real1d();
   ::crm_input_zmid            = real2d();
   ::crm_input_zint            = real2d();
@@ -1713,6 +1726,9 @@ real1d colprecs        ;
 real1d bflx            ;
 
 real1d crm_input_bflxls; 
+real1d crm_input_fluxt00; 
+real1d crm_input_fluxq00; 
+real1d crm_input_ts; 
 real1d crm_input_wndls ;
 real2d crm_input_zmid  ;
 real2d crm_input_zint  ;
