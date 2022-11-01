@@ -28,18 +28,21 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 TEST_CASE("vertically_remapped_field")
 {
 
-  // Test that output at a single pressure level works as expected.
-  // For this test we set a field "M" to be defined as 100*i + k,
+  // Test that can output onto new pressure levels as expected.
+  // For this test we set a field "V_mid" (or "V_int") to be defined as 100*i + k,
   // where i=column and k=level
   //
-  // We then set the pressure levels to be 100*k where again k=level.
+  // We then set the source pressure levels to be 100*(k+1) where again k=level.
   //
-  // Lastly we define pressure levels to be for p=100*j+50., where 
-  // j are the output pressure levels that are 1 less than the source
-  // pressure levels. The output should be (M_{j}+M_{j+1})/2, or 
+  // Lastly we define the output pressure levels to be p=100*j+50., where
+  // the first output pressure level is below the minimum source pressure level
+  // and the last output pressure level is above the maximum source pressure level
+  // In this case the vertical interpolation should return -std::numeric_limits<Real>::max()
+  // for the first and last output pressure levels
+  // For the other output pressure levels the field value shou (M_{j-1}+M_{j})/2, or 
   // halfway between the levels of the data. Given the formula above
   // the output should be exactly:
-  // icol*100 + j + 0.5
+  // icol*100 + (j-1) + 0.5
 
   using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using KT = KokkosTypes<DefaultDevice>;
@@ -65,16 +68,16 @@ TEST_CASE("vertically_remapped_field")
   // A time stamp
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
-  int num_tgt_levels= nlevs-1;
-  auto npacks_tgt = ekat::PackInfo<SCREAM_PACK_SIZE>::num_packs(num_tgt_levels);
-  view_1d m_pressure_levels = view_1d("",npacks_tgt);
-  auto m_pressure_levels_h = Kokkos::create_mirror_view(m_pressure_levels);
-  auto m_pressure_levels_h_s = ekat::scalarize(m_pressure_levels_h);
-  for (int j=0; j<num_tgt_levels;j++){
-    m_pressure_levels_h_s(j) = 50.+j*100;
+  int num_tgt_levs= nlevs+1;
+  auto npacks_tgt = ekat::PackInfo<SCREAM_PACK_SIZE>::num_packs(num_tgt_levs);
+  view_1d m_pressure_levs = view_1d("",npacks_tgt);
+  auto m_pressure_levs_h = Kokkos::create_mirror_view(m_pressure_levs);
+  auto m_pressure_levs_h_s = ekat::scalarize(m_pressure_levs_h);
+  for (int j=0; j<num_tgt_levs;j++){
+    m_pressure_levs_h_s(j) = 50.+j*100;
   }
 
-  const view_1d_const m_pressure_test = m_pressure_levels;
+  Kokkos::deep_copy(m_pressure_levs, m_pressure_levs_h);
 
   // Create input fields
   const auto units = ekat::units::Units::invalid();
@@ -100,13 +103,17 @@ TEST_CASE("vertically_remapped_field")
   params_int.set("Field Units",fid_int.get_units());
   params_int.set("Field Layout",fid_int.get_layout());
   params_int.set("Grid Name",fid_int.get_grid_name());
-
-  Kokkos::deep_copy(m_pressure_levels, m_pressure_levels_h);
   
-  auto diag_mid = std::make_shared<VerticallyRemappedField>(comm,params_mid,m_pressure_test,num_tgt_levels);
+  auto diag_mid = std::make_shared<VerticallyRemappedField>(comm,
+                                                            params_mid,
+                                                            m_pressure_levs,
+                                                            num_tgt_levs);
   diag_mid->set_grids(gm);
   diag_mid->set_required_field(f_mid);
-  auto diag_int = std::make_shared<VerticallyRemappedField>(comm,params_int,m_pressure_test,num_tgt_levels);
+  auto diag_int = std::make_shared<VerticallyRemappedField>(comm,
+                                                            params_int,
+                                                            m_pressure_levs,
+                                                            num_tgt_levs);
   diag_int->set_grids(gm);
   diag_int->set_required_field(f_int);
 
@@ -136,28 +143,20 @@ TEST_CASE("vertically_remapped_field")
   Field p_mid_f = input_fields["p_mid"];
   Field p_int_f = input_fields["p_int"];
   //Fill data to interpolate
-  auto f_mid_v   = f_mid.get_view<Real**>();
-  auto p_mid_v   = p_mid_f.get_view<Real**>();
-  auto f_mid_v_h = Kokkos::create_mirror_view(f_mid_v);
-  auto p_mid_v_h = Kokkos::create_mirror_view(p_mid_v);
-  auto f_int_v   = f_int.get_view<Real**>();
-  auto p_int_v   = p_int_f.get_view<Real**>();
-  auto f_int_v_h = Kokkos::create_mirror_view(f_int_v);
-  auto p_int_v_h = Kokkos::create_mirror_view(p_int_v);
+  auto f_mid_v_h   = f_mid.get_view<Real**>();
+  auto p_mid_v_h   = p_mid_f.get_view<Real**>();
+  auto f_int_v_h   = f_int.get_view<Real**>();
+  auto p_int_v_h   = p_int_f.get_view<Real**>();
   for (int ilev=0; ilev<nlevs; ilev++){
     for (int icol=0; icol<ncols; icol++){
       f_mid_v_h(icol,ilev) = icol*100 + ilev;
-      p_mid_v_h(icol,ilev) = 100*ilev;
+      p_mid_v_h(icol,ilev) = 100*(ilev+1);
       f_int_v_h(icol,ilev) = icol*100 + ilev;
-      p_int_v_h(icol,ilev) = 100*ilev;
+      p_int_v_h(icol,ilev) = 100*(ilev+1);
       f_int_v_h(icol,ilev+1) = icol*100 + ilev+1;
-      p_int_v_h(icol,ilev+1) = 100*(ilev+1);
+      p_int_v_h(icol,ilev+1) = 100*(ilev+2);
     }
   }
-  //Kokkos::deep_copy(f_mid_v, f_mid_v_h);
-  //Kokkos::deep_copy(p_mid_v, p_mid_v_h);
-  //Kokkos::deep_copy(f_int_v, f_int_v_h);
-  //Kokkos::deep_copy(p_int_v, p_int_v_h);
   f_mid.sync_to_dev();
   p_mid_f.sync_to_dev();
   f_int.sync_to_dev();
@@ -178,11 +177,16 @@ TEST_CASE("vertically_remapped_field")
   auto d_int_v = d_int.get_view<const Real**,Host>();
   
   for (int icol=0; icol<ncols; ++icol) {
-    for (int ilev=0; ilev<num_tgt_levels; ++ilev) {
-      REQUIRE (d_mid_v(icol,ilev)==icol*100 + ilev + 0.5);
-      REQUIRE (d_int_v(icol,ilev)==icol*100 + ilev + 0.5);
+    for (int ilev=0; ilev<num_tgt_levs; ++ilev) {
+      if (ilev == 0 || ilev == (num_tgt_levs-1) ){
+        REQUIRE(d_mid_v(icol,ilev)==-std::numeric_limits<Real>::max());
+      }
+      else{
+        REQUIRE (d_mid_v(icol,ilev)==icol*100 + (ilev-1) + 0.5);
+        REQUIRE (d_int_v(icol,ilev)==icol*100 + (ilev-1) + 0.5);
+      }
     }
-  }
+  }//end of for loops over column and levels
   
 }
 

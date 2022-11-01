@@ -41,7 +41,6 @@ void VerticallyRemappedField::set_grids(const std::shared_ptr<const GridsManager
 
   constexpr int ps = Pack::n;
   add_field<Required>(m_field_name, m_field_layout, m_field_units, gname);
-  //  if (ekat::contains(std::vector<FieldTag>{LEV},m_field_layout.tags().back())) {
   if (m_field_layout.tags().back()==LEV) {
     FieldLayout pres_layout { {COL,LEV}, {m_num_cols,m_num_levs} };
     m_pres_name = "p_mid";
@@ -56,7 +55,7 @@ void VerticallyRemappedField::set_grids(const std::shared_ptr<const GridsManager
   FieldIdentifier fid (name(),diag_layout, m, gname);
   m_diagnostic_output = Field(fid);
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
-  //C_ap.request_allocation(ps);
+  C_ap.request_allocation(ps);
   m_diagnostic_output.allocate_view();
 }
 // =========================================================================================
@@ -74,7 +73,12 @@ void VerticallyRemappedField::compute_diagnostic_impl()
 
   //output field on new grid
   auto d_data_tgt = m_diagnostic_output.get_view<Pack**>();
-  perform_vertical_interpolation(pressure,m_tgt_pres_levs,f_data_src,d_data_tgt,m_num_levs,m_tgt_num_levs);
+  perform_vertical_interpolation(pressure,
+                                 m_tgt_pres_levs,
+                                 f_data_src, 
+                                 d_data_tgt,
+                                 m_num_levs,
+                                 m_tgt_num_levs);
 
 }
 
