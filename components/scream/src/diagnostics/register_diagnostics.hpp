@@ -49,6 +49,7 @@ inline void register_diagnostics () {
   diag_factory.register_product("ZonalVapFlux",&create_atmosphere_diagnostic<ZonalVapFluxDiagnostic>);
   diag_factory.register_product("MeridionalVapFlux",&create_atmosphere_diagnostic<MeridionalVapFluxDiagnostic>);
   diag_factory.register_product("IceCloudMask",&create_atmosphere_diagnostic<IceCloudMaskDiagnostic>);
+  diag_factory.register_product("VerticallyRemappedField",&create_atmosphere_diagnostic<VerticallyRemappedField>);
 
 }
 
