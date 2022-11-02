@@ -58,6 +58,66 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
     a_prod_bu_vert(nzm,j,i,icrm) = 0.0;
     buoy_sgs_vert(nzm,j,i,icrm) = 0.0;
   });
+#if defined( SFLX2CRM )
+  if ( nstep == 1 && icycle == 1 ) {
+  //bloss(2016-05-09): 
+  // At start of simulation, make sure that subgrid TKE
+  // is non-zero at surface if surface buoyancy fluxes are positive.
+  // If they are, compute the TKE implied by local equilibrium between
+  // turbulence production by the surface fluxes and dissipation. Take
+  // the initial TKE in the lowest level to be the larger of that and the 
+  // initial value. Since the present values of TKE, eddy viscosity and eddy
+  // diffusivity are used in computing the new values, it is
+  // important for them not to be zero initially if the buoyancy
+  // flux is non-zero initially.
+     
+     k = 1;
+     //  for (int j=0; j<ny; j++) {
+     //   for (int i=0; i<nx; i++) {
+     //     for (int icrm=0; icrm<ncrms; icrm++) {
+     parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {  
+       real bbb,grd,Ce1,Ce2,Cee;
+       //bloss: compute surface buoyancy flux
+       bbb = 1.+epsv*qv(k,j,i,crm);
+       a_prod_bu_vert(0,j,i,crm) = bbb*bet(k,icrm)*fluxbt(j,i,icrm) + &
+                                   bet(k,icrm)*epsv*sstxy(j,i,icrm)*fluxbq(j,i,icrm);
+       grd = dz(icrm)*adz(k,icrm);                            
+       Ce1 = Ce/0.7*0.19;
+       Ce2 = Ce/0.7*0.51;
+       Cee = Ce1 + Ce2;
+       // Choose the subgrid TKE to be the larger of the initial value or
+       // that which satisfies local equilibrium, buoyant production = dissipation
+       // or a_prod_bu = Cee/grd * tke^(3/2).
+       // NOTE: We're ignoring shear production here.
+       tke(1,j,i,icrm) = max( tke(1,j,i,icrm), &
+                            ( grd/Cee * max( 1.D-20,   &
+                              0.5D0*a_prod_bu_vert(0,j,i,icrm) ) )**(2.D0/3.D0) );
+       // eddy viscosity = Ck*grd * sqrt(tke) --- analogous for Smagorinksy.
+       tk(1,j,i,icrm) = Ck*grd * sqrt( tke(1,j,i,icrm) );
+       // eddy diffusivity = Pr * eddy viscosity
+       tkh(1,j,i,icrm) = Pr*tk(1,j,i,icrm);
+     });
+  } // if(nstep.eq.1).AND.(icycle.eq.1)
+  
+  //-----------------------------------------------------------------------
+  // compute subgrid buoyancy flux at w-levels, starting with surface buoyancy flux
+  //-----------------------------------------------------------------------
+  k = 1;
+  // for (int j=0; j<ny; j++) {
+  //   for (int i=0; i<nx; i++) {
+  //     for (int icrm=0; icrm<ncrms; icrm++) {
+  parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {  
+     real bbb;
+     //bloss: 
+     // Use surface temperature and vapor mixing ratio. This is slightly inconsistent, 
+     // but the error is small, and it's cheaper than another saturation mixing ratio computation.
+     bbb = 1.+epsv*qv(k,j,i,icrm);
+     a_prod_bu_vert(0,j,i,icrm) = bbb*bet(k,icrm)*fluxbt(j,i,icrm) + &
+                                      bet(k,icrm)*epsv*(sstxy(j,i,icrm))*fluxbq(j,i,icrm);
+     // back buoy_sgs out from buoyancy flux, a_prod_bu = - (tkh(icrm,i,j,k)+0.001)*buoy_sgs
+     buoy_sgs_vert(0,j,i,icrm) = - a_prod_bu_vert(0,j,i,icrm)/(tkh(k,j,i,icrm)+0.001D0);
+   });
+#endif
 
   // for (int k=0; k<nzm-1; k++) {
   //   for (int j=0; j<ny; j++) {
@@ -70,7 +130,7 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
          qsatw, qsati, dtqsatw, dtqsati;
 
     if (k<nzm-1) {
-      //k always less than nzm-1??????
+      //k always less than nzm-1?????? 
       kc = k+1;
       kb = k;
     } else {
