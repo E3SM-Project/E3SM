@@ -708,7 +708,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
   use crm_ecpp_output_module, only: crm_ecpp_output_type, crm_ecpp_output_initialize, &
                                     crm_ecpp_output_copy, crm_ecpp_output_finalize
   
-  use ml_training,            only: init_ml_training_input, write_ml_training_input, get_ml_input_filename
   !-----------------------------------------------------------------------------
   ! Interface arguments
   !-----------------------------------------------------------------------------
@@ -783,19 +782,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 #ifdef TRACER_CHECK
   call gmean_mass ('before tphysbc DRY', phys_state)
 #endif
-
-  !-----------------------------------------------------------------------------
-  ! write data for ML training
-  !-----------------------------------------------------------------------------
-#ifdef MMF_ML_TRAINING
-  
-  type(file_desc_t) :: File
-
-  call cam_pio_createfile(File, trim(get_ml_input_filename()))
-
-  call init_ml_training_input(File, pbuf2d)
-  call write_ml_training_input(File, cam_in, cam_out, pbuf2d)
-#endif /* MMF_ML_TRAINING */
 
   !-----------------------------------------------------------------------------
   ! Physics tendency before coupler - Phase 1
