@@ -1368,8 +1368,8 @@ contains
     allocate(this%wf                 (begc:endc))                     ; this%wf                 (:)   = nan
     allocate(this%wf2                (begc:endc))                     ; this%wf2                (:)   = nan
     allocate(this%finundated         (begc:endc))                     ; this%finundated         (:)   = nan
-    allocate(this%begwb              (begc:endc))                     ; this%begwb              (:)   = nan
-    allocate(this%endwb              (begc:endc))                     ; this%endwb              (:)   = nan
+    allocate(this%begwb              (begc:endc))                     ; this%begwb              (:)   = spval
+    allocate(this%endwb              (begc:endc))                     ; this%endwb              (:)   = spval
     allocate(this%errh2o             (begc:endc))                     ; this%errh2o             (:)   = nan
     allocate(this%errh2osno          (begc:endc))                     ; this%errh2osno          (:)   = nan
     allocate(this%h2osoi_liq_depth_intg(begc:endc))                   ; this%h2osoi_liq_depth_intg(:) = nan
