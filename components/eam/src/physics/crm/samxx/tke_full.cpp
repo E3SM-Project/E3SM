@@ -61,6 +61,8 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
     buoy_sgs_vert(nzm,j,i,icrm) = 0.0;
   });
 #if defined( SFLX2CRM )
+  real k_bot = 0;
+
   if ( nstep == 1 && icycle == 1 ) {
   //bloss(2016-05-09): 
   // At start of simulation, make sure that subgrid TKE
@@ -73,7 +75,6 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
   // important for them not to be zero initially if the buoyancy
   // flux is non-zero initially.
      
-     k_bot = 0;
      //  for (int j=0; j<ny; j++) {
      //   for (int i=0; i<nx; i++) {
      //     for (int icrm=0; icrm<ncrms; icrm++) {
@@ -104,7 +105,6 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
   //-----------------------------------------------------------------------
   // compute subgrid buoyancy flux at w-levels, starting with surface buoyancy flux
   //-----------------------------------------------------------------------
-  k_bot = 0;
   // for (int j=0; j<ny; j++) {
   //   for (int i=0; i<nx; i++) {
   //     for (int icrm=0; icrm<ncrms; icrm++) {
