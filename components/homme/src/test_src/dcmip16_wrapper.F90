@@ -656,7 +656,7 @@ subroutine bubble_rj_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 !print *, 'HEY RAIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
 !stop
       !condensation happens
-#if 1
+#if 0
       !compute dry values
         dp_loc = dp_c(k)
         qv_loc = qv_c(k)
@@ -673,13 +673,13 @@ subroutine bubble_rj_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
         L_old = (latvap + latice) * qvdry_loc
         L_new = (latvap + latice) * qsatdry   + latice * dq_loc
 
-        rstar_old = rair * 1.0 + rvapor * qv_loc
+        rstar_old = rair * 1.0 + rvapor * qvdry_loc
         rstar_new = rair * 1.0 + rvapor * qsatdry
 
         !dpnew_loc = dpdry_loc * (1.0 + qsatdry) 
 
-#define HYY
-!#undef HYY
+!#define HYY
+#undef HYY
 #ifndef HYY
         ! L and Rstar are in terms of q, so, enthalpy too
         hold = T_loc*( cpair*1.0 + cpv*qvdry_loc ) + &
@@ -695,7 +695,7 @@ subroutine bubble_rj_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
         !     = hold
 #ifndef HYY
         T_new = (hold - L_new)/ &
-        (   cpstarTerm_new + ( (pi_loc - vapor_mass_change)/(p_loc - vapor_mass_change) - 1)*rstar_new   )  
+        (   cpstarTerm_new + ( pi_loc/p_loc - 1)*rstar_new   )  
 #else
         T_new = (hold - L_new)/ &
         (   cpstarTerm_new   )
@@ -703,6 +703,16 @@ subroutine bubble_rj_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
 print *, 'T_new - T_c', T_new - T_c(k)
 
+#if 0
+if( (T_new - T_c(k)) < 0 )then
+print *, 'dq_loc', dq_loc
+print *, 'T_loc, T_c', T_loc, T_c(k)
+print *, 'qvdry_loc', qvdry_loc
+print *, 'dq_loc', dq_loc
+print *, 'dq_loc', dq_loc
+stop
+endif
+#endif
 
         T_c(k)  = T_new
         qv_c(k) = qsat
@@ -716,7 +726,7 @@ print *, 'T_new - T_c', T_new - T_c(k)
 
         T_c(k) = T_c(k) + latvap / cpair * dq_loc
         qv_c(k) = qv_c(k) - dq_loc
-        precl = precl + dq_loc * dp_c(k) / (dt * rhow) / gravit
+        precl(i,j,ie) = precl(i,j,ie) + dq_loc * dp_c(k) / (dt * rhow) / gravit
 #endif
 
       endif ! if prect happened
