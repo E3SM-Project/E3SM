@@ -15,6 +15,9 @@ void pre_timeloop() {
   YAKL_SCOPE( crm_clear_rh             , :: crm_clear_rh );
   YAKL_SCOPE( crm_clear_rh_cnt         , :: crm_clear_rh_cnt );
   YAKL_SCOPE( bflx                     , :: bflx );
+  YAKL_SCOPE( fluxbt                   , :: fluxbt );
+  YAKL_SCOPE( fluxbq                   , :: fluxbq );
+  YAKL_SCOPE( sstxy                    , :: sstxy );
   YAKL_SCOPE( wnd                      , :: wnd );
   YAKL_SCOPE( crm_input_bflxls         , :: crm_input_bflxls );
   YAKL_SCOPE( crm_input_fluxt00        , :: crm_input_fluxt00 );
@@ -319,8 +322,8 @@ void pre_timeloop() {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
-    fluxbt(j,i,icrm) = crm_input_fluxq00(icrm)/rhow(0,icrm);
-    fluxbq(j,i,icrm) = crm_input_fluxt00(icrm)/rhow(0,icrm);
+    fluxbt(j,i,icrm) = crm_input_fluxt00(icrm)/rhow(0,icrm);
+    fluxbq(j,i,icrm) = crm_input_fluxq00(icrm)/rhow(0,icrm);
     sstxy(j,i,icrm)  = crm_input_ts(icrm);
   });
 #endif

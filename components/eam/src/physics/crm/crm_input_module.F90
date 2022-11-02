@@ -177,7 +177,7 @@ contains
       if (allocated(input%qccl))    deallocate(input%qccl)
       if (allocated(input%qiil))    deallocate(input%qiil)
       if (allocated(input%ps))      deallocate(input%ps)
-      if (allocated(input%ts))      deallocate(input%ps)
+      if (allocated(input%ts))      deallocate(input%ts)
       if (allocated(input%pmid))    deallocate(input%pmid)
       if (allocated(input%pint))    deallocate(input%pint)
       if (allocated(input%pdel))    deallocate(input%pdel)

@@ -19,6 +19,9 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
   YAKL_SCOPE( t              , :: t );
   YAKL_SCOPE( epsv           , :: epsv );
   YAKL_SCOPE( presi          , :: presi );
+  YAKL_SCOPE( fluxbt         , :: fluxbt);
+  YAKL_SCOPE( fluxbq         , :: fluxbq);
+  YAKL_SCOPE( sstxy          , :: sstxy);
   YAKL_SCOPE( tkelediss      , :: tkelediss );
   YAKL_SCOPE( tkesbdiss      , :: tkesbdiss );
   YAKL_SCOPE( tkesbshear     , :: tkesbshear );
@@ -43,8 +46,6 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
   real4d buoy_sgs_vert("buoy_sgs_vert", nzm+1,ny,nx,ncrms);
   real4d a_prod_bu_vert("buoy_sgs_vert", nzm+1,ny,nx,ncrms);
   
-  real k_bot;
-
   if (RUN3D) {
     shear_prod3D(def2);
   } else {
@@ -81,9 +82,9 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
      parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {  
        real bbb,grd,Ce1,Ce2,Cee;
        //bloss: compute surface buoyancy flux
-       bbb = 1.+epsv*qv(k_bot,j,i,crm);
-       a_prod_bu_vert(k_bot,j,i,crm) = bbb*bet(k_bot,icrm)*fluxbt(j,i,icrm) + &
-                                   bet(k_bot,icrm)*epsv*sstxy(j,i,icrm)*fluxbq(j,i,icrm);
+       bbb = 1.+epsv*qv(k_bot,j,i,icrm);
+       a_prod_bu_vert(k_bot,j,i,icrm) = bbb*bet(k_bot,icrm)*fluxbt(j,i,icrm)
+                                       +bet(k_bot,icrm)*epsv*sstxy(j,i,icrm)*fluxbq(j,i,icrm);
        grd = dz(icrm)*adz(k_bot,icrm);                            
        Ce1 = Ce/0.7*0.19;
        Ce2 = Ce/0.7*0.51;
@@ -92,9 +93,9 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
        // that which satisfies local equilibrium, buoyant production = dissipation
        // or a_prod_bu = Cee/grd * tke^(3/2).
        // NOTE: We're ignoring shear production here.
-       tke(ind_tke,k_bot,j,i,icrm) = max( tke(ind_tke,k_bot,j,i,icrm), &
-                            ( grd/Cee * max( 1.D-20,   &
-                              0.5D0*a_prod_bu_vert(k_bot,j,i,icrm) ) )**(2.D0/3.D0) );
+       tke(ind_tke,k_bot,j,i,icrm) = max( tke(ind_tke,k_bot,j,i,icrm),
+                            pow( grd/Cee*max( pow(1.0,-20),
+                              0.5*a_prod_bu_vert(k_bot,j,i,icrm) ),(2./3.) ));
        // eddy viscosity = Ck*grd * sqrt(tke) --- analogous for Smagorinksy.
        tk(ind_tk,k_bot,j,i,icrm) = Ck*grd * sqrt( tke(ind_tke,k_bot,j,i,icrm) );
        // eddy diffusivity = Pr * eddy viscosity
@@ -114,10 +115,10 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
      // Use surface temperature and vapor mixing ratio. This is slightly inconsistent, 
      // but the error is small, and it's cheaper than another saturation mixing ratio computation.
      bbb = 1.+epsv*qv(k_bot,j,i,icrm);
-     a_prod_bu_vert(k_bot,j,i,icrm) = bbb*bet(k_bot,icrm)*fluxbt(j,i,icrm) + &
-                                      bet(k_bot,icrm)*epsv*(sstxy(j,i,icrm))*fluxbq(j,i,icrm);
+     a_prod_bu_vert(k_bot,j,i,icrm) = bbb*bet(k_bot,icrm)*fluxbt(j,i,icrm)
+                                     +bet(k_bot,icrm)*epsv*(sstxy(j,i,icrm))*fluxbq(j,i,icrm);
      // back buoy_sgs out from buoyancy flux, a_prod_bu = - (tkh(icrm,i,j,k)+0.001)*buoy_sgs
-     buoy_sgs_vert(k_bot,j,i,icrm) = - a_prod_bu_vert(k_bot,j,i,icrm)/(tkh(ind_tkh,k_bot,j,i,icrm)+0.001D0);
+     buoy_sgs_vert(k_bot,j,i,icrm) = -1.0*a_prod_bu_vert(k_bot,j,i,icrm)/(tkh(ind_tkh,k_bot,j,i,icrm)+0.001);
    });
 #endif
 
