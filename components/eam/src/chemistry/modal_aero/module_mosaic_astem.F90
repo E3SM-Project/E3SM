@@ -245,11 +245,16 @@
                                 mosaic_vars_aa%fix_astem_negative, aer, gas )
 
   ! condense secondary organic gases (8 sorgam species)
-
+#if ( defined VBS_SOA )
+  ! call ASTEM_VBS_secondary_organics(dtchem,jaerosolstate,sfc_a,Heff,phi_volatile_l,  &
+  !     integrate,aer,kg,gas,sat_soa,total_species)
+  
+#else
   call ASTEM_secondary_organics(dtchem,jaerosolstate,sfc_a,Heff,phi_volatile_l,  &
        integrate,aer,kg,gas,sat_soa,total_species) ! semi-implicit euler
   call check_astem_negative( 4, mosaic_vars_aa%xnerr_astem_negative, &
                                 mosaic_vars_aa%fix_astem_negative, aer, gas )
+#endif
 
   do iv = 1, ngas_aerchtot
      if (iv == ih2so4_g) cycle
