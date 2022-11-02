@@ -479,6 +479,7 @@ module cime_comp_mod
   character(CL) :: rof_gnam          ! rof grid
   character(CL) :: glc_gnam          ! glc grid
   character(CL) :: wav_gnam          ! wav grid
+  character(CL) :: wav_snam          ! wav spectra
   character(CL) :: iac_gnam          ! iac grid
 
   logical  :: samegrid_ao            ! samegrid atm and ocean
@@ -1161,6 +1162,7 @@ contains
          rof_gnam=rof_gnam                         , &
          glc_gnam=glc_gnam                         , &
          wav_gnam=wav_gnam                         , &
+         wav_snam=wav_snam                         , &
          iac_gnam=iac_gnam                         , &
          tfreeze_option = tfreeze_option           , &
          cpl_decomp=seq_mctext_decomp              , &
