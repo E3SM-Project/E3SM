@@ -230,10 +230,28 @@ void Functions<S,D>::shoc_assumed_pdf(
       const Smask active_entries = (index_range < nlev);
 
       // Check to ensure Tl1_1 and Tl1_2 are not negative, temporarily set to grid mean value if so.
-      Tl1_1.set(Tl1_1<0, Tl1_g);
-      Tl1_2.set(Tl1_2<0, Tl1_g);
       const auto is_neg_Tl1_1 = (Tl1_1 <= 0) && active_entries;
       const auto is_neg_Tl1_2 = (Tl1_2 <= 0) && active_entries;
+      Tl1_1.set(is_neg_Tl1_1, Tl1_g);
+      Tl1_2.set(is_neg_Tl1_2, Tl1_g);
+      if( is_neg_Tl1_1.any() ) {
+        int n_mask = 0;
+        for (int i=0; i<is_neg_Tl1_1.n; i++) {
+          if (is_neg_Tl1_1[i]) {
+            n_mask++;
+          }
+        }
+        printf("WARNING: Tl1_1 has %d values <= 0.  Resetting to minimum value.\n",n_mask);
+      }
+      if( is_neg_Tl1_2.any() ) {
+        int n_mask = 0;
+        for (int i=0; i<is_neg_Tl1_2.n; i++) {
+          if (is_neg_Tl1_2[i]) {
+            n_mask++;
+          }
+        }
+        printf("WARNING: Tl1_2 has %d values <= 0.  Resetting to minimum value.\n",n_mask);
+      }
 
       // Compute qs and beta
       Spack qs1(0), qs2(0), beta1(0), beta2(0);
