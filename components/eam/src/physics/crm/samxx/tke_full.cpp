@@ -42,6 +42,8 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
   real4d def2("def2", nzm, ny, nx, ncrms);
   real4d buoy_sgs_vert("buoy_sgs_vert", nzm+1,ny,nx,ncrms);
   real4d a_prod_bu_vert("buoy_sgs_vert", nzm+1,ny,nx,ncrms);
+  
+  real k_bot;
 
   if (RUN3D) {
     shear_prod3D(def2);
@@ -71,17 +73,17 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
   // important for them not to be zero initially if the buoyancy
   // flux is non-zero initially.
      
-     k = 1;
+     k_bot = 0;
      //  for (int j=0; j<ny; j++) {
      //   for (int i=0; i<nx; i++) {
      //     for (int icrm=0; icrm<ncrms; icrm++) {
      parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {  
        real bbb,grd,Ce1,Ce2,Cee;
        //bloss: compute surface buoyancy flux
-       bbb = 1.+epsv*qv(k,j,i,crm);
-       a_prod_bu_vert(0,j,i,crm) = bbb*bet(k,icrm)*fluxbt(j,i,icrm) + &
-                                   bet(k,icrm)*epsv*sstxy(j,i,icrm)*fluxbq(j,i,icrm);
-       grd = dz(icrm)*adz(k,icrm);                            
+       bbb = 1.+epsv*qv(k_bot,j,i,crm);
+       a_prod_bu_vert(k_bot,j,i,crm) = bbb*bet(k_bot,icrm)*fluxbt(j,i,icrm) + &
+                                   bet(k_bot,icrm)*epsv*sstxy(j,i,icrm)*fluxbq(j,i,icrm);
+       grd = dz(icrm)*adz(k_bot,icrm);                            
        Ce1 = Ce/0.7*0.19;
        Ce2 = Ce/0.7*0.51;
        Cee = Ce1 + Ce2;
@@ -89,20 +91,20 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
        // that which satisfies local equilibrium, buoyant production = dissipation
        // or a_prod_bu = Cee/grd * tke^(3/2).
        // NOTE: We're ignoring shear production here.
-       tke(1,j,i,icrm) = max( tke(1,j,i,icrm), &
+       tke(ind_tke,k_bot,j,i,icrm) = max( tke(ind_tke,k_bot,j,i,icrm), &
                             ( grd/Cee * max( 1.D-20,   &
-                              0.5D0*a_prod_bu_vert(0,j,i,icrm) ) )**(2.D0/3.D0) );
+                              0.5D0*a_prod_bu_vert(k_bot,j,i,icrm) ) )**(2.D0/3.D0) );
        // eddy viscosity = Ck*grd * sqrt(tke) --- analogous for Smagorinksy.
-       tk(1,j,i,icrm) = Ck*grd * sqrt( tke(1,j,i,icrm) );
+       tk(ind_tk,k_bot,j,i,icrm) = Ck*grd * sqrt( tke(ind_tke,k_bot,j,i,icrm) );
        // eddy diffusivity = Pr * eddy viscosity
-       tkh(1,j,i,icrm) = Pr*tk(1,j,i,icrm);
+       tkh(ind_tkh,k_bot,j,i,icrm) = Pr*tk(ind_tk,k_bot,j,i,icrm);
      });
   } // if(nstep.eq.1).AND.(icycle.eq.1)
   
   //-----------------------------------------------------------------------
   // compute subgrid buoyancy flux at w-levels, starting with surface buoyancy flux
   //-----------------------------------------------------------------------
-  k = 1;
+  k_bot = 0;
   // for (int j=0; j<ny; j++) {
   //   for (int i=0; i<nx; i++) {
   //     for (int icrm=0; icrm<ncrms; icrm++) {
@@ -111,11 +113,11 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
      //bloss: 
      // Use surface temperature and vapor mixing ratio. This is slightly inconsistent, 
      // but the error is small, and it's cheaper than another saturation mixing ratio computation.
-     bbb = 1.+epsv*qv(k,j,i,icrm);
-     a_prod_bu_vert(0,j,i,icrm) = bbb*bet(k,icrm)*fluxbt(j,i,icrm) + &
-                                      bet(k,icrm)*epsv*(sstxy(j,i,icrm))*fluxbq(j,i,icrm);
+     bbb = 1.+epsv*qv(k_bot,j,i,icrm);
+     a_prod_bu_vert(k_bot,j,i,icrm) = bbb*bet(k_bot,icrm)*fluxbt(j,i,icrm) + &
+                                      bet(k_bot,icrm)*epsv*(sstxy(j,i,icrm))*fluxbq(j,i,icrm);
      // back buoy_sgs out from buoyancy flux, a_prod_bu = - (tkh(icrm,i,j,k)+0.001)*buoy_sgs
-     buoy_sgs_vert(0,j,i,icrm) = - a_prod_bu_vert(0,j,i,icrm)/(tkh(k,j,i,icrm)+0.001D0);
+     buoy_sgs_vert(k_bot,j,i,icrm) = - a_prod_bu_vert(k_bot,j,i,icrm)/(tkh(ind_tkh,k_bot,j,i,icrm)+0.001D0);
    });
 #endif
 
@@ -130,7 +132,7 @@ void tke_full(real5d &tke, int ind_tke, real5d &tk, int ind_tk, real5d &tkh, int
          qsatw, qsati, dtqsatw, dtqsati;
 
     if (k<nzm-1) {
-      //k always less than nzm-1?????? 
+      //k always less than nzm-1??????
       kc = k+1;
       kb = k;
     } else {
