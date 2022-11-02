@@ -56,12 +56,13 @@ TEST_CASE("field_at_pressure_level_p2")
   auto engine = scream::setup_random_test(&comm);
   using RPDF = std::uniform_real_distribution<Real>;
   RPDF pdf_plev(pressure_bounds.p_top,pressure_bounds.p_surf);
-  
+ 
+  // For any random case, set a number of iterations of that test
+  int num_checks = 10; 
 
   // Create a grids manager w/ a point grid
   int ncols = 3;
   int nlevs = 10;
-  REQUIRE(2*nlevs>=ncols+1);
   auto gm   = get_test_gm(comm,ncols,nlevs);
 
   // Create a field manager for testing
@@ -74,55 +75,33 @@ TEST_CASE("field_at_pressure_level_p2")
   diag_factory.register_product("FieldAtPressureLevel",&create_atmosphere_diagnostic<FieldAtPressureLevel>);
 
   {
-    // Test 1: Take a slice at 500mb (50000Pa) for variable defined at midlevel.
-    Real plevel = 50000.0;
-    auto diag = get_test_diag(comm, fm, gm, "mid", plevel);
-    diag->initialize(t0,RunType::Initial);
-    diag->compute_diagnostic();
-    auto diag_f = diag->get_diagnostic();
-    diag_f.sync_to_host();
-    auto test1_diag_v = diag_f.get_view<const Real*, Host>();
-    for (int icol=0;icol<ncols;icol++) {
-      REQUIRE(test1_diag_v(icol)==get_test_data(50000.0));
+    // Test 1: Take a slice at a random value for variable defined at midpoint.
+    for (int test_itr=0;test_itr<num_checks;test_itr++) {
+      Real plevel = pdf_plev(engine);
+      auto diag = get_test_diag(comm, fm, gm, "mid", plevel);
+      diag->initialize(t0,RunType::Initial);
+      diag->compute_diagnostic();
+      auto diag_f = diag->get_diagnostic();
+      diag_f.sync_to_host();
+      auto test3_diag_v = diag_f.get_view<const Real*, Host>();
+      for (int icol=0;icol<ncols;icol++) {
+        REQUIRE(test3_diag_v(icol)==get_test_data(plevel));
+      }
     }
   } 
   {
-    // Test 2: Take a slice at 500mb (50000Pa) for variable defined at interface.
-    Real plevel = 50000.0;
-    auto diag = get_test_diag(comm, fm, gm, "int", plevel);
-    diag->initialize(t0,RunType::Initial);
-    diag->compute_diagnostic();
-    auto diag_f = diag->get_diagnostic();
-    diag_f.sync_to_host();
-    auto test2_diag_v = diag_f.get_view<const Real*, Host>();
-    for (int icol=0;icol<ncols;icol++) {
-      REQUIRE(test2_diag_v(icol)==get_test_data(plevel));
-    }
-  } 
-  {
-    // Test 3: Take a slice at a random value for variable defined at midpoint.
-    Real plevel = pdf_plev(engine);
-    auto diag = get_test_diag(comm, fm, gm, "mid", plevel);
-    diag->initialize(t0,RunType::Initial);
-    diag->compute_diagnostic();
-    auto diag_f = diag->get_diagnostic();
-    diag_f.sync_to_host();
-    auto test3_diag_v = diag_f.get_view<const Real*, Host>();
-    for (int icol=0;icol<ncols;icol++) {
-      REQUIRE(test3_diag_v(icol)==get_test_data(plevel));
-    }
-  } 
-  {
-    // Test 4: Take a slice at a random value for variable defined at interface.
-    Real plevel = pdf_plev(engine);
-    auto diag = get_test_diag(comm, fm, gm, "int", plevel);
-    diag->initialize(t0,RunType::Initial);
-    diag->compute_diagnostic();
-    auto diag_f = diag->get_diagnostic();
-    diag_f.sync_to_host();
-    auto test4_diag_v = diag_f.get_view<const Real*, Host>();
-    for (int icol=0;icol<ncols;icol++) {
-      REQUIRE(test4_diag_v(icol)==get_test_data(plevel));
+    // Test 2: Take a slice at a random value for variable defined at interface.
+    for (int test_itr=0;test_itr<num_checks;test_itr++) {
+      Real plevel = pdf_plev(engine);
+      auto diag = get_test_diag(comm, fm, gm, "int", plevel);
+      diag->initialize(t0,RunType::Initial);
+      diag->compute_diagnostic();
+      auto diag_f = diag->get_diagnostic();
+      diag_f.sync_to_host();
+      auto test4_diag_v = diag_f.get_view<const Real*, Host>();
+      for (int icol=0;icol<ncols;icol++) {
+        REQUIRE(test4_diag_v(icol)==get_test_data(plevel));
+      }
     }
   } 
   
