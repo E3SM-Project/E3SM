@@ -225,7 +225,7 @@
 
       <modules compiler="nvidia">
         <command name="load">PrgEnv-nvidia</command>
-        <command name="load">nvidia/21.11</command>
+        <command name="load">nvidia/22.5</command>
       </modules>
 
       <modules compiler="amdclang">
@@ -237,10 +237,10 @@
         <command name="load">craype-accel-host</command>
         <command name="load">cray-libsci</command>
         <command name="load">craype</command>
-        <command name="load">cray-mpich/8.1.15</command>
-        <command name="load">cray-hdf5-parallel/1.12.1.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.8.1.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.2.1</command>
+        <command name="load">cray-mpich/8.1.17</command>
+        <command name="load">cray-hdf5-parallel/1.12.1.5</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.8.1.5</command>
+        <command name="load">cray-parallel-netcdf/1.12.2.5</command>
         <command name="load">cmake/3.22.0</command>
       </modules>
     </module_system>
@@ -334,7 +334,7 @@
 
       <modules compiler="nvidia.*">
         <command name="load">PrgEnv-nvidia</command>
-        <command name="load">nvidia/21.11</command>
+        <command name="load">nvidia/22.5</command>
       </modules>
 
       <modules compiler="gnugpu">
@@ -358,10 +358,10 @@
       <modules>
         <command name="load">cray-libsci</command>
         <command name="load">craype</command>
-        <command name="load">cray-mpich/8.1.15</command>
-        <command name="load">cray-hdf5-parallel/1.12.1.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.8.1.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.2.1</command>
+        <command name="load">cray-mpich/8.1.17</command>
+        <command name="load">cray-hdf5-parallel/1.12.1.5</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.8.1.5</command>
+        <command name="load">cray-parallel-netcdf/1.12.2.5</command>
         <command name="load">cmake/3.22.0</command>
       </modules>
     </module_system>
@@ -456,7 +456,7 @@
 
       <modules compiler="nvidia">
         <command name="load">PrgEnv-nvidia</command>
-        <command name="load">nvidia/21.11</command>
+        <command name="load">nvidia/22.5</command>
       </modules>
 
       <modules compiler="amdclang">
@@ -468,7 +468,7 @@
         <command name="load">craype-accel-host</command>
         <command name="load">cray-libsci</command>
         <command name="load">craype</command>
-        <command name="load">cray-mpich/8.1.15</command>
+        <command name="load">cray-mpich/8.1.17</command>
         <command name="load">cray-hdf5-parallel/1.12.1.5</command>
         <command name="load">cray-netcdf-hdf5parallel/4.8.1.5</command>
         <command name="load">cray-parallel-netcdf/1.12.2.5</command>
