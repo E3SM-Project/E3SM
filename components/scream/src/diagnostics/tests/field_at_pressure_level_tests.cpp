@@ -243,9 +243,9 @@ Real get_test_pres(const int col, const int lev, const int num_lev, const int nu
   PressureBnds pressure_bounds;
   Real p_surf = pressure_bounds.p_surf;  //100000; // 1000mb
   Real p_top  = pressure_bounds.p_top;  //0;      //    0mb
-  Real dp_dz  = (p_surf-p_top)/(num_lev-1); // Make sure the max pressure at surface is the surf pressure
-  Real dp_dx  = p_top/(num_cols-1);          // Make sure that some column hits the min pressure as p_top
-  return p_top + lev*dp_dz - col*dp_dx;
+  Real dp_dx  = p_top/(num_cols);         // Make sure that some column hits the min pressure as tom
+  Real dp_dz  = (p_surf-(p_top-col*dp_dx))/(num_lev); // Make sure the max pressure at surface is the surf pressure
+  return (p_top - col*dp_dx) + lev*dp_dz;
 }
 
 Real get_test_data(const Real pres)

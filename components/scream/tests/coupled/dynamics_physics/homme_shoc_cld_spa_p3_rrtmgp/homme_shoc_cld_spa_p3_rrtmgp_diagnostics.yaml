@@ -16,10 +16,10 @@ Fields:
       - AtmosphereDensity
       - Exner
       - VirtualTemperature
-      - VerticalLayerInterface
+#      - VerticalLayerInterface
       - VerticalLayerThickness
-      - VerticalLayerMidpoint
-      - DryStaticEnergy
+#      - VerticalLayerMidpoint
+#      - DryStaticEnergy
       - SeaLevelPressure
       - LiqWaterPath
       - IceWaterPath
