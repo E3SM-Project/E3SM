@@ -29,9 +29,7 @@ module ml_training
    
    ! Public interfaces
    public :: get_ml_input_filename
-   public :: init_ml_training_input    ! define variables for output file
    public :: write_ml_training_input   ! write physics input data for ML training
-   ! public :: init_ml_training_output
    ! public :: write_ml_training_output  ! write physics output data for ML verification
 
    ! filename specifiers for master restart filename
@@ -88,120 +86,6 @@ CONTAINS
 
       ! return fname
    end function get_ml_input_filename
-   !------------------------------------------------------------------------------------------------
-   subroutine init_ml_training_input(file, pbuf2d, yr, mn, dy, sec )
-#ifdef MMF_ML_TRAINING
-      use physics_buffer,      only: pbuf_init_restart, physics_buffer_desc
-      use time_manager,        only: timemgr_init_restart
-      use ppgrid,              only: pver, pverp, pcols
-      use chemistry,           only: chem_init_restart
-      use prescribed_ozone,    only: init_prescribed_ozone_restart
-      use prescribed_ghg,      only: init_prescribed_ghg_restart
-      use prescribed_aero,     only: init_prescribed_aero_restart
-      use prescribed_volcaero, only: init_prescribed_volcaero_restart
-      use cam_grid_support,    only: cam_grid_write_attr, cam_grid_id
-      use cam_grid_support,    only: cam_grid_header_info_t
-      use cam_pio_utils,       only: cam_pio_def_dim, cam_pio_createfile
-      use phys_control,        only: phys_getopts
-      use hycoef,              only: init_restart_hycoef
-      use pio,                 only: pio_unlimited
-      ! use dimensions_mod,      only: np, ne, nelem
-      use dyn_grid,            only: get_horiz_grid_d
-      !-------------------------------------------------------------------------
-      ! Input arguments
-      type(file_desc_t), intent(inout) :: file
-      type(physics_buffer_desc), pointer :: pbuf2d(:,:)
-      integer, intent(in) :: yr   ! Simulation year
-      integer, intent(in) :: mn   ! Simulation month
-      integer, intent(in) :: dy   ! Simulation day
-      integer, intent(in) :: sec  ! Seconds into current simulation day
-      !-------------------------------------------------------------------------
-      ! Local workspace
-      integer                      :: hdim1_d,hdim2_d,ngcols ! number of physics grid columns
-      integer                      :: ierr
-      integer                      :: i
-      integer                      :: hdimcnt
-      integer                      :: dimids(4)
-      integer, allocatable         :: hdimids(:)
-      integer                      :: ndims, pver_id, pverp_id
-      integer                      :: ncol_dimid
-      ! integer                      :: lev_dimid(2)
-      integer                      :: grid_id
-      type(cam_grid_header_info_t) :: header_info ! A structure to hold the horz dims and coord info
-      !-------------------------------------------------------------------------
-
-      call cam_pio_createfile(file, trim(get_ml_input_filename(yr,mn,dy,sec)))
-
-      ! call pio_seterrorhandling(file, PIO_BCAST_ERROR)
-
-      ! call timemgr_init_restart(file)
-
-      ! call init_restart_hycoef(File, vdimids)
-
-      ! call PIO_Setdebuglevel(0)
-      ! ierr = PIO_Def_Dim(File,'ncol', nelem*np*np*npg*npg, ncol_dimid)
-      
-      ! call get_horiz_grid_dim_d(hdim1_d,hdim2_d)
-      ! ngcols = hdim1_d*hdim2_d
-
-      ! call cam_pio_def_dim(file, 'ncol', ngcols, ncol_dimid)
-      ! call cam_pio_def_dim(file, 'lev',  pver,  pver_id)
-      ! call cam_pio_def_dim(file, 'ilev', pverp, pverp_id)
-      
-      grid_id = cam_grid_id('physgrid')
-      call cam_grid_write_attr(file, grid_id, header_info)
-      
-      hdimcnt = header_info%num_hdims()
-      do i = 1, hdimcnt
-         dimids(i) = header_info%get_hdimid(i)
-      end do
-      allocate(hdimids(hdimcnt))
-      hdimids(1:hdimcnt) = dimids(1:hdimcnt)
-
-      ndims = hdimcnt
-      ndims = hdimcnt+1
-
-      ! call pbuf_init_restart(file, pbuf2d)
-
-      ! call chem_init_restart(file)
-
-      ! call init_prescribed_ozone_restart(file)
-      ! call init_prescribed_ghg_restart(file)
-      ! call init_prescribed_aero_restart(file)
-      ! call init_prescribed_volcaero_restart(file)
-
-      call cam_pio_def_dim(file, 'pcnst', pcnst, dimids(hdimcnt+1), existOK=.true.)
-
-      ! ierr = pio_def_var(file, 'FLWDS', pio_double, hdimids, flwds_desc)
-      ! ierr = pio_def_var(file, 'SOLS', pio_double, hdimids, sols_desc)
-      ! ierr = pio_def_var(file, 'SOLL', pio_double, hdimids, soll_desc)
-      ! ierr = pio_def_var(file, 'SOLSD', pio_double, hdimids, solsd_desc)
-      ! ierr = pio_def_var(file, 'SOLLD', pio_double, hdimids, solld_desc)
-
-      ! ierr = pio_def_var(file, 'BCPHIDRY', pio_double, hdimids, bcphidry_desc)
-      ! ierr = pio_def_var(file, 'BCPHODRY', pio_double, hdimids, bcphodry_desc)
-      ! ierr = pio_def_var(file, 'OCPHIDRY', pio_double, hdimids, ocphidry_desc)
-      ! ierr = pio_def_var(file, 'OCPHODRY', pio_double, hdimids, ocphodry_desc)
-      ! ierr = pio_def_var(file, 'DSTDRY1',  pio_double, hdimids, dstdry1_desc)
-      ! ierr = pio_def_var(file, 'DSTDRY2',  pio_double, hdimids, dstdry2_desc)
-      ! ierr = pio_def_var(file, 'DSTDRY3',  pio_double, hdimids, dstdry3_desc)
-      ! ierr = pio_def_var(file, 'DSTDRY4',  pio_double, hdimids, dstdry4_desc)
-
-      ! write the constituent surface fluxes as individual 2D arrays
-      ! rather than as a single variable with a pcnst dimension.  
-      ! (the constituent fluxes might not be needed for the 1-mom MMF)
-      ! do i = 1, pcnst
-      !    write(num,'(i4.4)') i
-      !    ierr = pio_def_var(file, 'CFLX'//num,  pio_double, hdimids, cflx_desc(i))
-      ! end do
-      ! Add LHF and SHF due to qneg4 correction at the restart time step
-      ierr = pio_def_var(file, 'SHF',  pio_double, hdimids, shf_desc)
-      ! ierr = pio_def_var(file, 'LHF',  pio_double, hdimids, lhf_desc)
-
-      if (allocated(hdimids)) deallocate(hdimids)
-
-#endif /* MMF_ML_TRAINING */
-   end subroutine init_ml_training_input
    !------------------------------------------------------------------------------------------------
    ! subroutine write_ml_training_input(file, cam_in, cam_out, pbuf2d)
    subroutine write_ml_training_input( pbuf2d, cam_in, cam_out, yr, mn, dy, sec )
