@@ -4,13 +4,11 @@ module ml_training
    ! - add physics state
    ! - figure out how to handles prescribed aerosol, ozone, etc. (see phys_timestep_init)
    ! - screen CRM variables from pbuf data
-   ! - add calls in phys_run1() 
-   ! - write "output" routines
+   ! - write "output" routines and add calls in cam_run1()
 
    use shr_kind_mod,       only: r8 => shr_kind_r8
    use spmd_utils,         only: masterproc
    use constituents,       only: pcnst
-   use iofileMod
    use cam_abortutils,     only: endrun
    use camsrfexch,         only: cam_in_t, cam_out_t
    use cam_logfile,        only: iulog
@@ -18,7 +16,6 @@ module ml_training
    use pio,                only: file_desc_t, io_desc_t, var_desc_t, &
                                  pio_double, pio_int, pio_noerr, &
                                  pio_seterrorhandling, pio_bcast_error, &
-                                 ! pio_inq_varid, pio_get_var,  &
                                  pio_def_var, pio_def_dim, pio_enddef, &
                                  pio_put_var, pio_write_darray
    use perf_mod,           only: t_startf, t_stopf
@@ -63,7 +60,6 @@ module ml_training
 
 CONTAINS
    !------------------------------------------------------------------------------------------------
-   ! character(len=filename_len) function get_ml_input_filename() result(fname)
    function get_ml_input_filename(yr,mn,dy,sec) result(fname)
       use seq_timemgr_mod, only: seq_timemgr_EClockGetData
       use filenames,       only: interpret_filename_spec
@@ -72,22 +68,13 @@ CONTAINS
       integer, intent(in) :: mn         ! current month
       integer, intent(in) :: dy         ! current day
       integer, intent(in) :: sec        ! current time of day (sec)
-      ! integer :: yr         ! current year
-      ! integer :: mon        ! current month
-      ! integer :: day        ! current day
-      ! integer :: sec        ! current time of day (sec)
-
-      ! call seq_timemgr_EClockGetData( EClock, curr_yr=yr, curr_mon=mon, &
-      !                                 curr_day=day,curr_tod=sec)
 
       fname = interpret_filename_spec( mli_filename_spec, &
                                        yr_spec=yr, mon_spec=mn, &
                                        day_spec=dy, sec_spec=sec )
 
-      ! return fname
    end function get_ml_input_filename
    !------------------------------------------------------------------------------------------------
-   ! subroutine write_ml_training_input(file, cam_in, cam_out, pbuf2d)
    subroutine write_ml_training_input( pbuf2d, cam_in, cam_out, yr, mn, dy, sec )
 #ifdef MMF_ML_TRAINING
 
