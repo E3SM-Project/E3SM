@@ -597,7 +597,7 @@ CONTAINS
        ! Run cam radiation/clouds (run1)
           
        call t_startf ('CAM_run1')
-       call cam_run1 ( cam_in, cam_out ) 
+       call cam_run1 ( cam_in, cam_out, yr=yr_sync, mn=mon_sync, dy=day_sync, sec=tod_sync ) 
        call t_stopf  ('CAM_run1')
        
        ! Map output from cam to mct data structures

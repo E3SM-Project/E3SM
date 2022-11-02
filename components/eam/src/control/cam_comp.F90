@@ -210,7 +210,7 @@ end subroutine cam_init
 !
 !-----------------------------------------------------------------------
 !
-subroutine cam_run1(cam_in, cam_out)
+subroutine cam_run1(cam_in, cam_out, yr, mn, dy, sec )
 !-----------------------------------------------------------------------
 !
 ! Purpose:   First phase of atmosphere model run method.
@@ -226,9 +226,17 @@ subroutine cam_run1(cam_in, cam_out)
 #endif
    use time_manager,     only: get_nstep
    use iop_data_mod,     only: single_column
+#ifdef MMF_ML_TRAINING
+   use ml_training,      only: init_ml_training_input, write_ml_training_input, get_ml_input_filename
+#endif /* MMF_ML_TRAINING */
 
    type(cam_in_t)  :: cam_in(begchunk:endchunk)
    type(cam_out_t) :: cam_out(begchunk:endchunk)
+
+   integer, intent(in), optional :: yr   ! Simulation year
+   integer, intent(in), optional :: mn   ! Simulation month
+   integer, intent(in), optional :: dy   ! Simulation day
+   integer, intent(in), optional :: sec  ! Seconds into current simulation day
 
 #if ( defined SPMD )
    real(r8) :: mpi_wtime
@@ -254,6 +262,15 @@ subroutine cam_run1(cam_in, cam_out)
    if (single_column) then
      call scam_use_iop_srf( cam_in)
    endif
+
+   !-----------------------------------------------------------------------------
+   ! write data for ML training
+   !-----------------------------------------------------------------------------
+#ifdef MMF_ML_TRAINING
+   if (present(yr).and.present(mn).and.present(dy).and.present(sec)) then
+      call write_ml_training_input(pbuf2d, cam_in, cam_out, yr, mn, dy, sec)
+   end if
+#endif /* MMF_ML_TRAINING */
 
    !
    !----------------------------------------------------------
