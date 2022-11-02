@@ -514,7 +514,7 @@
       <grid name="atm">ne0np4_vr28natlref</grid>
       <grid name="lnd">lnd-surge25p25</grid>
       <grid name="ocnice">ocn-surge25p25</grid>
-      <grid name="rof">JRA025</grid>
+      <grid name="rof">r0125</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
       <mask>ocn-surge25p25</mask>
