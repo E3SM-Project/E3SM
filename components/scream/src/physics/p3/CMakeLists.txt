@@ -1,12 +1,18 @@
 set(P3_SRCS
   p3_f90.cpp
-  p3_functions_f90.cpp
   p3_ic_cases.cpp
   p3_iso_c.f90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/micro_p3.F90
   atmosphere_microphysics.cpp
   atmosphere_microphysics_run.cpp
 )
+
+if (NOT SCREAM_LIB_ONLY)
+  list(APPEND P3_SRCS
+    p3_functions_f90.cpp
+    p3_main_wrap.cpp
+    ) # Add f90 bridges needed for testing
+endif()
 
 # Add ETI source files if not on CUDA/HIP
 if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
