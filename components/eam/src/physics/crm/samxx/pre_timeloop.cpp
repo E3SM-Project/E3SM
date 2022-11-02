@@ -319,8 +319,8 @@ void pre_timeloop() {
   //  for (int i=0; i<nx; i++) {
   //    for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<3>(ny,nx,ncrms) , YAKL_LAMBDA (int j, int i, int icrm) {
-    fluxbt(j,i,icrm) = crm_input_fluxq00(icrm)/rho(0,icrm);
-    fluxbq(j,i,icrm) = crm_input_fluxt00(icrm)/rho(0,icrm);
+    fluxbt(j,i,icrm) = crm_input_fluxq00(icrm)/rhow(0,icrm);
+    fluxbq(j,i,icrm) = crm_input_fluxt00(icrm)/rhow(0,icrm);
     sstxy(j,i,icrm)  = crm_input_ts(icrm);
   });
 #endif
