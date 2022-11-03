@@ -88,7 +88,7 @@ TEST_CASE("field_at_pressure_level_p2")
   {
     // Test 1: Take a slice at a random value for variable defined at midpoint.
     for (int test_itr=0;test_itr<num_checks;test_itr++) {
-      Real plevel = pdf_pmid(engine);
+      Real plevel = std::round(pdf_pmid(engine));
       auto diag = get_test_diag(comm, fm, gm, "mid", plevel);
       diag->initialize(t0,RunType::Initial);
       diag->compute_diagnostic();
@@ -103,7 +103,7 @@ TEST_CASE("field_at_pressure_level_p2")
   {
     // Test 2: Take a slice at a random value for variable defined at interface.
     for (int test_itr=0;test_itr<num_checks;test_itr++) {
-      Real plevel = pdf_pint(engine);
+      Real plevel = std::round(pdf_pint(engine));
       auto diag = get_test_diag(comm, fm, gm, "int", plevel);
       diag->initialize(t0,RunType::Initial);
       diag->compute_diagnostic();
