@@ -1568,7 +1568,7 @@ subroutine tphysbc1(ztodt, fsns, fsnt, flns, flnt, &
   !-----------------------------------------------------------------------------
   ! MMF surface flux bypass
   !-----------------------------------------------------------------------------
-#if defined( MMF_FLUX_BYPASS )
+#if defined( MMF_FLUX_BYPASS ) || defined( SFLX2CRM )
 
   ! Check if LHF exceeds the total moisture content of the lowest layer
   call qneg4('TPHYSBC ', lchnk, ncol, ztodt, &
