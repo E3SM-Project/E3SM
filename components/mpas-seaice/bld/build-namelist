@@ -1603,34 +1603,31 @@ sub valid_date {
 # $$month by 1 (also incrementing $$year if going from Dec to Jan) and 
 # then return 0.
 
-  use Switch;
-
   my $day = shift;
   my $month = shift;
   my $year = shift;
   my $cal = shift;
 
   my $maxday = -1;
-  switch ($$month) {
-    case 1 { $maxday = 31; }
-    case 2 {
-      if (($cal eq 'NO_LEAP') || (not leap($$year))) {
-        $maxday = 28;
-      } else {
-        $maxday = 29;
-      }
-    }
-    case 3 { $maxday = 31; }
-    case 4 { $maxday = 30; }
-    case 5 { $maxday = 31; }
-    case 6 { $maxday = 30; }
-    case 7 { $maxday = 31; }
-    case 8 { $maxday = 31; }
-    case 9 { $maxday = 30; }
-    case 10 { $maxday = 31; }
-    case 11 { $maxday = 30; }
-    case 12 { $maxday = 31; }
-  }
+  if ($$month == 1) { $maxday = 31; }
+  if ($$month == 2) {
+       if (($cal eq 'NO_LEAP') || (not leap($$year))) {
+         $maxday = 28;
+       } else {
+         $maxday = 29;
+       }
+     }
+  if ($$month == 3) { $maxday = 31; }
+  if ($$month == 4) { $maxday = 30; }
+  if ($$month == 5) { $maxday = 31; }
+  if ($$month == 6) { $maxday = 30; }
+  if ($$month == 7) { $maxday = 31; }
+  if ($$month == 8) { $maxday = 31; }
+  if ($$month == 9) { $maxday = 30; }
+  if ($$month == 10) { $maxday = 31; }
+  if ($$month == 11) { $maxday = 30; }
+  if ($$month == 12) { $maxday = 31; }
+
   if ($maxday == -1) {
     die "ERROR: can not figure out what month $$month is";
   }
