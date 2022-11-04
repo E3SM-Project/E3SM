@@ -7,22 +7,16 @@
 namespace scream
 {
 
-/*
- * This diagnostic will produce the potential temperature.
- */
-
 class VerticallyRemappedField : public AtmosphereDiagnostic
 {
 public:
   using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using KT = KokkosTypes<DefaultDevice>;
   using view_1d_const = typename KT::template view_1d<const Pack>;
+  using view_1d = typename KT::template view_1d<Pack>;
 
   // Constructors
-  VerticallyRemappedField (const ekat::Comm& comm, 
-                        const ekat::ParameterList& params, 
-                        const view_1d_const & m_tgt_pres_levs, 
-                        int m_tgt_num_levs_);
+  VerticallyRemappedField (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // The name of the diagnostic
   std::string name () const { return m_field_name; }
@@ -37,15 +31,12 @@ public:
   void compute_diagnostic_impl ();
 protected:
 
-
-
   // Keep track of field dimensions
   std::string         m_field_name;
   FieldLayout         m_field_layout;
   ekat::units::Units  m_field_units;
   std::string         m_pres_name;
 
-  //int                 m_pressure_level;
   int                 m_num_levs;
   int                 m_num_cols;
   int                 m_tgt_num_levs;

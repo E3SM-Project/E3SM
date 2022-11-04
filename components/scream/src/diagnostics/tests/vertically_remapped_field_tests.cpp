@@ -38,10 +38,11 @@ TEST_CASE("vertically_remapped_field")
   // Lastly we define the output pressure levels to be p=100*j+50., where
   // the first output pressure level is below the minimum source pressure level
   // and the last output pressure level is above the maximum source pressure level
-  // In this case the vertical interpolation should return -std::numeric_limits<Real>::max()
-  // for the first and last output pressure levels
-  // For the other output pressure levels the field value shou (M_{j-1}+M_{j})/2, or 
-  // halfway between the levels of the data. Given the formula above
+  // In the case of extrapolation the vertical interpolation should return 
+  // -std::numeric_limits<Real>::max(), thus this is what should be returned
+  // for the first and last output pressure levels.
+  // For the other output pressure levels the field value should be (M_{j-1}+M_{j})/2, 
+  // or halfway between the levels of the data. Given the formula above 
   // the output should be exactly:
   // (-icol)*100 + (j-1) + 0.5
 
@@ -94,27 +95,29 @@ TEST_CASE("vertically_remapped_field")
   f_int.get_header().get_alloc_properties().request_allocation(packsize);
   f_int.allocate_view();
   f_int.get_header().get_tracking().update_time_stamp(t0);
-
+  std::cout<<"Get before parameter list"<<std::endl;
   ekat::ParameterList params_mid, params_int;
   params_mid.set("Field Name",f_mid.name());
   params_mid.set("Field Units",fid_mid.get_units());
   params_mid.set("Field Layout",fid_mid.get_layout());
   params_mid.set("Grid Name",fid_mid.get_grid_name());
+  params_mid.set<view_1d_const>("press_levels",m_pressure_levs);
+  params_mid.set<int>("tgt_num_levs",num_tgt_levs);
   params_int.set("Field Name",f_int.name());
   params_int.set("Field Units",fid_int.get_units());
   params_int.set("Field Layout",fid_int.get_layout());
   params_int.set("Grid Name",fid_int.get_grid_name());
+  params_int.set<view_1d_const>("press_levels",m_pressure_levs);
+  params_int.set<int>("tgt_num_levs",num_tgt_levs);
+  std::cout<<"Get after parameter list"<<std::endl;
   
-  auto diag_mid = std::make_shared<VerticallyRemappedField>(comm,
-                                                            params_mid,
-                                                            m_pressure_levs,
-                                                            num_tgt_levs);
+  auto diag_mid = std::make_shared<VerticallyRemappedField>(comm,params_mid);
+  std::cout<<"Get after make_shared 1"<<std::endl;
   diag_mid->set_grids(gm);
   diag_mid->set_required_field(f_mid);
-  auto diag_int = std::make_shared<VerticallyRemappedField>(comm,
-                                                            params_int,
-                                                            m_pressure_levs,
-                                                            num_tgt_levs);
+  std::cout<<"Get before make_shared 2"<<std::endl;
+  auto diag_int = std::make_shared<VerticallyRemappedField>(comm,params_int);
+  std::cout<<"Get after make_shared 2"<<std::endl;
   diag_int->set_grids(gm);
   diag_int->set_required_field(f_int);
 
@@ -140,7 +143,7 @@ TEST_CASE("vertically_remapped_field")
     diag_int->set_required_field(f);
     input_fields.emplace(name,f);
   }
-
+  std::cout<<"Get before fill data"<<std::endl;
   Field p_mid_f = input_fields["p_mid"];
   Field p_int_f = input_fields["p_int"];
   //Fill data to interpolate
@@ -165,11 +168,11 @@ TEST_CASE("vertically_remapped_field")
 
   diag_mid->initialize(t0,RunType::Initial);
   diag_int->initialize(t0,RunType::Initial);
-
+  std::cout<<"Get before compute diagnostic"<<std::endl;
   // Run diagnostics
   diag_mid->compute_diagnostic();
   diag_int->compute_diagnostic();
-
+  std::cout<<"Get after compute diagnostic"<<std::endl;
   auto d_mid = diag_mid->get_diagnostic();
   d_mid.sync_to_host();
   auto d_mid_v = d_mid.get_view<const Real**,Host>();

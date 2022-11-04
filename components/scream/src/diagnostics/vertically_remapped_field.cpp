@@ -10,16 +10,13 @@ namespace scream
 {
 
 // =========================================================================================
-VerticallyRemappedField::VerticallyRemappedField (const ekat::Comm& comm, 
-                                            const ekat::ParameterList& params,
-                                            const view_1d_const& m_tgt_pres_levs_, 
-                                            int m_tgt_num_levs_)
+VerticallyRemappedField::VerticallyRemappedField (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereDiagnostic(comm,params)
   , m_field_layout(m_params.get<FieldLayout>("Field Layout"))
   , m_field_units(m_params.get<ekat::units::Units>("Field Units")) 
   , m_field_name(m_params.get<std::string>("Field Name"))
-  , m_tgt_pres_levs(m_tgt_pres_levs_)
-  , m_tgt_num_levs(m_tgt_num_levs_)
+  , m_tgt_pres_levs(m_params.get<view_1d_const>("press_levels"))
+  , m_tgt_num_levs(m_params.get<int>("tgt_num_levs"))
 {
   using namespace ShortFieldTagsNames;
   EKAT_REQUIRE_MSG (ekat::contains(std::vector<FieldTag>{LEV,ILEV},m_field_layout.tags().back()),
