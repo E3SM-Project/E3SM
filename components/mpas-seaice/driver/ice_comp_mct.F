@@ -634,7 +634,7 @@ contains
     if (runtype == 'initial') then
        call seq_timemgr_EClockGetData(EClock, ECurrTime=currTime % t)
        call mpas_set_clock_time(domain % clock, currTime, MPAS_START_TIME, ierr)
-       call mpas_set_clock_time(domain % clock, currTime, MPAS_NOW, ierr)
+       call mpas_set_clock_time(domain % clock, currTime, MPAS_NOW, ierr, calibrate_alarms=.false.)
 
        currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
        call mpas_get_time(curr_time=currTime, YYYY=iyear0, MM=imonth0, ierr=ierr)
@@ -650,7 +650,7 @@ contains
     else if (runtype == 'continue' .or. runtype == 'branch') then
        call seq_timemgr_EClockGetData(EClock, ECurrTime=currTime % t)
        call mpas_set_clock_time(domain % clock, currTime, MPAS_START_TIME, ierr)
-       call mpas_set_clock_time(domain % clock, currTime, MPAS_NOW, ierr)
+       call mpas_set_clock_time(domain % clock, currTime, MPAS_NOW, ierr, calibrate_alarms=.false.)
     end if
 
 !-----------------------------------------------------------------------
