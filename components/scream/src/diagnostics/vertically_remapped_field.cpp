@@ -34,20 +34,14 @@ void VerticallyRemappedField::set_grids(const std::shared_ptr<const GridsManager
   auto m_grid = grids_manager->get_grid(gname);
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs();
-  m_num_levs = m_grid->get_num_vertical_levels();
+
+  add_field<Required>(m_field_name, m_field_layout, m_field_units, gname);
+
+  m_pres_name = m_field_layout.tags().back()==LEV ? "p_mid" : "p_int";
+  add_field<Required>(m_pres_name, m_field_layout, Pa, gname);
+  m_num_levs = m_field_layout.dims().back();
 
   constexpr int ps = Pack::n;
-  add_field<Required>(m_field_name, m_field_layout, m_field_units, gname);
-  if (m_field_layout.tags().back()==LEV) {
-    FieldLayout pres_layout { {COL,LEV}, {m_num_cols,m_num_levs} };
-    m_pres_name = "p_mid";
-    add_field<Required>(m_pres_name, pres_layout, Pa, gname);
-  } else {
-    FieldLayout pres_layout { {COL,ILEV}, {m_num_cols,m_num_levs+1} };
-    m_pres_name = "p_int";
-    add_field<Required>(m_pres_name, pres_layout, Pa, gname);
-  }
-
   FieldLayout diag_layout { {COL,LEV}, {m_num_cols,m_tgt_num_levs} };
   FieldIdentifier fid (name(),diag_layout, m, gname);
   m_diagnostic_output = Field(fid);
@@ -63,11 +57,11 @@ void VerticallyRemappedField::compute_diagnostic_impl()
   //This is 2D source pressure
   const Field& pressure_f = get_field_in(m_pres_name);
   const auto pressure = pressure_f.get_view<const Pack**>();
-
+ 
   //input field
   const Field& f = get_field_in(m_field_name);
   const auto f_data_src = f.get_view<const Pack**>();
-
+ 
   //output field on new grid
   auto d_data_tgt = m_diagnostic_output.get_view<Pack**>();
   perform_vertical_interpolation(pressure,

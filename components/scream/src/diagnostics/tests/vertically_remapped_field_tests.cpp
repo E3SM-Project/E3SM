@@ -56,7 +56,7 @@ TEST_CASE("vertically_remapped_field")
   using FL = FieldLayout;
 
   constexpr int packsize = SCREAM_PACK_SIZE;
-
+  std::cout<<"packsize: "<<packsize<<std::endl;
   ekat::Comm comm(MPI_COMM_WORLD);
 
   auto engine = scream::setup_random_test(&comm);
@@ -95,7 +95,7 @@ TEST_CASE("vertically_remapped_field")
   f_int.get_header().get_alloc_properties().request_allocation(packsize);
   f_int.allocate_view();
   f_int.get_header().get_tracking().update_time_stamp(t0);
-  std::cout<<"Get before parameter list"<<std::endl;
+
   ekat::ParameterList params_mid, params_int;
   params_mid.set("Field Name",f_mid.name());
   params_mid.set("Field Units",fid_mid.get_units());
@@ -109,15 +109,11 @@ TEST_CASE("vertically_remapped_field")
   params_int.set("Grid Name",fid_int.get_grid_name());
   params_int.set<view_1d_const>("press_levels",m_pressure_levs);
   params_int.set<int>("tgt_num_levs",num_tgt_levs);
-  std::cout<<"Get after parameter list"<<std::endl;
   
   auto diag_mid = std::make_shared<VerticallyRemappedField>(comm,params_mid);
-  std::cout<<"Get after make_shared 1"<<std::endl;
   diag_mid->set_grids(gm);
   diag_mid->set_required_field(f_mid);
-  std::cout<<"Get before make_shared 2"<<std::endl;
   auto diag_int = std::make_shared<VerticallyRemappedField>(comm,params_int);
-  std::cout<<"Get after make_shared 2"<<std::endl;
   diag_int->set_grids(gm);
   diag_int->set_required_field(f_int);
 
@@ -143,14 +139,14 @@ TEST_CASE("vertically_remapped_field")
     diag_int->set_required_field(f);
     input_fields.emplace(name,f);
   }
-  std::cout<<"Get before fill data"<<std::endl;
+
   Field p_mid_f = input_fields["p_mid"];
   Field p_int_f = input_fields["p_int"];
   //Fill data to interpolate
-  auto f_mid_v_h   = f_mid.get_view<Real**>();
-  auto p_mid_v_h   = p_mid_f.get_view<Real**>();
-  auto f_int_v_h   = f_int.get_view<Real**>();
-  auto p_int_v_h   = p_int_f.get_view<Real**>();
+  auto f_mid_v_h   = f_mid.get_view<Real**, Host>();
+  auto p_mid_v_h   = p_mid_f.get_view<Real**, Host>();
+  auto f_int_v_h   = f_int.get_view<Real**, Host>();
+  auto p_int_v_h   = p_int_f.get_view<Real**, Host>();
   for (int ilev=0; ilev<nlevs; ilev++){
     for (int icol=0; icol<ncols; icol++){
       f_mid_v_h(icol,ilev) = (-icol)*100 + ilev;
@@ -168,11 +164,11 @@ TEST_CASE("vertically_remapped_field")
 
   diag_mid->initialize(t0,RunType::Initial);
   diag_int->initialize(t0,RunType::Initial);
-  std::cout<<"Get before compute diagnostic"<<std::endl;
+
   // Run diagnostics
   diag_mid->compute_diagnostic();
   diag_int->compute_diagnostic();
-  std::cout<<"Get after compute diagnostic"<<std::endl;
+
   auto d_mid = diag_mid->get_diagnostic();
   d_mid.sync_to_host();
   auto d_mid_v = d_mid.get_view<const Real**,Host>();
@@ -182,8 +178,13 @@ TEST_CASE("vertically_remapped_field")
   
   for (int icol=0; icol<ncols; ++icol) {
     for (int ilev=0; ilev<num_tgt_levs; ++ilev) {
-      if (ilev == 0 || ilev == (num_tgt_levs-1) ){
+      if (ilev == 0){
         REQUIRE(d_mid_v(icol,ilev)==-std::numeric_limits<Real>::max());
+        REQUIRE(d_int_v(icol,ilev)==-std::numeric_limits<Real>::max());
+      }
+      else if (ilev == (num_tgt_levs-1) ){
+        REQUIRE(d_mid_v(icol,ilev)==-std::numeric_limits<Real>::max());
+        REQUIRE(d_int_v(icol,ilev)==(-icol)*100 + (ilev-1) + 0.5);
       }
       else{
         REQUIRE (d_mid_v(icol,ilev)==(-icol)*100 + (ilev-1) + 0.5);
