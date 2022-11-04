@@ -7,7 +7,7 @@
 namespace scream {
 
 // Until whenever CUDA supports constexpr properly
-#ifdef CUDA_BUILD
+#ifdef EAMXX_ENABLE_GPU
 
 #define HOMMEXX_QSIZE_D             QSIZE_D
 #define HOMMEXX_NP                  NP

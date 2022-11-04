@@ -1,7 +1,7 @@
 #include "share/scream_types.hpp"
 #include "share/scream_session.hpp"
 
-#include "physics/p3/p3_f90.hpp"
+#include "physics/p3/p3_main_wrap.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 #include "physics/p3/p3_ic_cases.hpp"
 
@@ -151,7 +151,7 @@ struct Baseline {
         }
 
         for (int it=0; it<ps.nsteps; it++) {
-          Int current_microsec = p3_main(*d, use_fortran);
+          Int current_microsec = p3_main_wrap(*d, use_fortran);
 
           if (r != -1 && ps.repeat > 0) { // do not count the "cold" run
             total_duration_microsec += current_microsec;
@@ -191,7 +191,7 @@ struct Baseline {
         for (int it=0; it<ps.nsteps; it++) {
           std::cout << "--- checking case # " << case_num << ", timestep # " << it+1 << " of " << ps.nsteps << " ---\n" << std::flush;
           read(fid, d_ref);
-          p3_main(*d, use_fortran);
+          p3_main_wrap(*d, use_fortran);
           ne = compare(tol, d_ref, d);
           if (ne) std::cout << "Ref impl failed.\n";
           nerr += ne;

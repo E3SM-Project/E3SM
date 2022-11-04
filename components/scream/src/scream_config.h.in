@@ -19,8 +19,8 @@
 // How many levels to use for the vertical grid
 #define SCREAM_NUM_VERTICAL_LEV ${SCREAM_NUM_VERTICAL_LEV}
 
-// Whether this is a CUDA build
-#cmakedefine CUDA_BUILD
+// Whether this is a CUDA/HIP build
+#cmakedefine EAMXX_ENABLE_GPU
 
 // Whether SCREAM has Homme enabled as dynamics dycore
 #cmakedefine SCREAM_HAS_HOMME

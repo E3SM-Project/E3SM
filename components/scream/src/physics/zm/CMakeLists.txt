@@ -12,8 +12,8 @@ set(ZM_HEADERS
   scream_zm_interface.hpp
 )
 
-# Add ETI source files if not on CUDA
-if (NOT CUDA_BUILD)
+# Add ETI source files if not on CUDA/HIP
+if (NOT EAMXX_ENABLE_GPU)
   list(APPEND ZM_SRCS
       )
 endif()

@@ -40,7 +40,7 @@ public:
   ResultAndMsg check() const override;
 
 // CUDA requires the parent fcn of a KOKKOS_LAMBDA to have public access
-#ifndef KOKKOS_ENABLE_CUDA
+#ifndef EAMXX_ENABLE_GPU
 protected:
 #endif
 

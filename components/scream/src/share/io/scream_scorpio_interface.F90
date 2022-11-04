@@ -669,7 +669,14 @@ contains
     retval=pio_put_att (File, PIO_GLOBAL, 'product', 'model-output')
     retval=pio_put_att (File, PIO_GLOBAL, 'realm','atmos')
     retval=pio_put_att (File, PIO_GLOBAL, 'Conventions','None yet')
-    retval=pio_put_att (File, PIO_GLOBAL, 'institution', 'LLNL (Lawrence Livermore National Laboratory, Livermore, CA 94550, USA); ANL (Argonne National Laboratory, Argonne, IL 60439, USA); BNL (Brookhaven National Laboratory, Upton, NY 11973, USA); LANL (Los Alamos National Laboratory, Los Alamos, NM 87545, USA); LBNL (Lawrence Berkeley National Laboratory, Berkeley, CA 94720, USA); ORNL (Oak Ridge National Laboratory, Oak Ridge, TN 37831, USA); PNNL (Pacific Northwest National Laboratory, Richland, WA 99352, USA); SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA). Mailing address: LLNL Climate Program, c/o David C. Bader, Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
+    retval=pio_put_att (File, PIO_GLOBAL, 'institution', 'LLNL (Lawrence Livermore National Laboratory, &
+    &Livermore, CA 94550, USA); ANL (Argonne National Laboratory, Argonne, IL 60439, USA); BNL (Brookhaven &
+    &National Laboratory, Upton, NY 11973, USA); LANL (Los Alamos National Laboratory, Los Alamos, &
+    &NM 87545, USA); LBNL (Lawrence Berkeley National Laboratory, Berkeley, CA 94720, USA); ORNL (Oak &
+    &Ridge National Laboratory, Oak Ridge, TN 37831, USA); PNNL (Pacific Northwest National Laboratory, &
+    &Richland, WA 99352, USA); SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA). Mailing &
+    &address: LLNL Climate Program, c/o David C. Bader, Principal Investigator, L-103, 7000 East Avenue, &
+    &Livermore, CA 94550, USA')
 
   end subroutine eam_pio_createHeader
 !=====================================================================!

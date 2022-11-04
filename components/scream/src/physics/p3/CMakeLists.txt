@@ -1,6 +1,5 @@
 set(P3_SRCS
   p3_f90.cpp
-  p3_functions_f90.cpp
   p3_ic_cases.cpp
   p3_iso_c.f90
   ${SCREAM_BASE_DIR}/../eam/src/physics/cam/micro_p3.F90
@@ -8,8 +7,15 @@ set(P3_SRCS
   atmosphere_microphysics_run.cpp
 )
 
-# Add ETI source files if not on CUDA
-if (NOT CUDA_BUILD OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE)
+if (NOT SCREAM_LIB_ONLY)
+  list(APPEND P3_SRCS
+    p3_functions_f90.cpp
+    p3_main_wrap.cpp
+    ) # Add f90 bridges needed for testing
+endif()
+
+# Add ETI source files if not on CUDA/HIP
+if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
   list(APPEND P3_SRCS
     p3_upwind.cpp
     p3_cloud_sed.cpp
@@ -88,6 +94,11 @@ endforeach()
 # This executable can be used to re-generate tables in ${SCREAM_DATA_DIR}
 add_executable(p3_tables_setup EXCLUDE_FROM_ALL p3_tables_setup.cpp)
 target_link_libraries(p3_tables_setup p3)
+
+#crusher change
+if (Kokkos_ENABLE_HIP)
+set_source_files_properties(p3_functions_f90.cpp  PROPERTIES COMPILE_FLAGS -O0)
+endif()
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

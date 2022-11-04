@@ -70,9 +70,6 @@ private:
 // Initialize SHOC with the given number of levels.
 void shoc_init(Int nlev, bool use_fortran=false, bool force_reinit=false);
 
-// Run SHOC subroutines, populating inout and out fields of d.
-ekat::Int shoc_main(FortranData& d, bool use_fortran);
-
 // We will likely want to remove these checks in the future, as we're not tied
 // to the exact implementation or arithmetic in SHOC. For now, these checks are
 // here to establish that the initial regression-testing code gives results that
@@ -81,11 +78,6 @@ Int check_against_python(const FortranData& d);
 
 int test_FortranData();
 int test_shoc_init(bool use_fortran);
-
-// Test SHOC by running initial conditions for a number of steps and comparing
-// against reference data. If gen_plot_scripts is true, Python scripts are
-// emitted that plot initial and final conditions.
-int test_shoc_ic(bool use_fortran, bool gen_plot_scripts = false);
 
 }  // namespace shoc
 }  // namespace scream

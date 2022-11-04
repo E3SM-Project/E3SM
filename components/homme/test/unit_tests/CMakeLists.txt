@@ -14,9 +14,6 @@ macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs con
     ADD_TEST(${target_name}_test ${USE_MPIEXEC} -n ${NUM_CPUS} ${TMP} ./${target_name})
   #ENDIF()
   SET_TESTS_PROPERTIES(${target_name}_test PROPERTIES LABELS "unit")
-  IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
-    TARGET_COMPILE_DEFINITIONS(${target_name} PUBLIC HOMME_WITHOUT_PIOLIBRARY)
-  ENDIF()
 
   TARGET_LINK_LIBRARIES(${target_name} timing ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
   link_to_kokkos(${target_name})

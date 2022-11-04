@@ -61,29 +61,6 @@ void ElementsGeometry::init(const int num_elems, const bool consthv, const bool 
 }
 
 void ElementsGeometry::
-set_phis (const int ie, CF90Ptr& phis) {
-  // Check geometry was inited
-  assert (m_num_elems>0);
-
-  // Check input
-  assert (ie>=0 && ie<m_num_elems);
-
-  using ScalarView    = ExecViewUnmanaged<Real [NP][NP]>;
-  using ScalarViewF90 = HostViewUnmanaged<const Real [NP][NP]>;
-
-  ScalarViewF90           h_phis_f90 (phis);
-  ScalarView::HostMirror  h_phis = Kokkos::create_mirror_view(Homme::subview(m_phis,ie));
-
-  for (int igp = 0; igp < NP; ++igp) {
-    for (int jgp = 0; jgp < NP; ++jgp) {
-      h_phis (igp, jgp) = h_phis_f90 (igp,jgp);
-    }
-  }
-
-  Kokkos::deep_copy(Homme::subview(m_phis,ie), h_phis);
-}
-
-void ElementsGeometry::
 set_elem_data (const int ie,
                CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
                CF90Ptr& spheremp, CF90Ptr& rspheremp,
@@ -193,6 +170,29 @@ set_elem_data (const int ie,
     const auto fsl = HostViewUnmanaged<const Real [NP][NP][2]>(sphere_latlon);
     Kokkos::deep_copy(Homme::subview(m_sphere_latlon, ie), fsl);
   }
+}
+
+void ElementsGeometry::
+set_phis (const int ie, CF90Ptr& phis) {
+  // Check geometry was inited
+  assert (m_num_elems>0);
+
+  // Check input
+  assert (ie>=0 && ie<m_num_elems);
+
+  using ScalarView    = ExecViewUnmanaged<Real [NP][NP]>;
+  using ScalarViewF90 = HostViewUnmanaged<const Real [NP][NP]>;
+
+  ScalarViewF90           h_phis_f90 (phis);
+  ScalarView::HostMirror  h_phis = Kokkos::create_mirror_view(Homme::subview(m_phis,ie));
+
+  for (int igp = 0; igp < NP; ++igp) {
+    for (int jgp = 0; jgp < NP; ++jgp) {
+      h_phis (igp, jgp) = h_phis_f90 (igp,jgp);
+    }
+  }
+
+  Kokkos::deep_copy(Homme::subview(m_phis,ie), h_phis);
 }
 
 void ElementsGeometry::randomize(const int seed) {

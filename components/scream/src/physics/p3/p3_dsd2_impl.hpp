@@ -72,6 +72,7 @@ get_cloud_dsd2(
 }
 
 template <typename S, typename D>
+KOKKOS_FUNCTION
 void Functions<S,D>::
 get_rain_dsd2 (
   const Spack& qr, Spack& nr, Spack& mu_r,

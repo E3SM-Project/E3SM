@@ -63,9 +63,6 @@ private:
 
 void p3_init(const bool write_tables = false);
 
-// Returns number of microseconds of p3_main execution
-Int p3_main(const FortranData& d, bool use_fortran=false);
-
 // We will likely want to remove these checks in the future, as we're not tied
 // to the exact implementation or arithmetic in P3. For now, these checks are
 // here to establish that the initial regression-testing code gives results that
@@ -73,8 +70,6 @@ Int p3_main(const FortranData& d, bool use_fortran=false);
 Int check_against_python(const FortranData& d);
 
 int test_FortranData();
-int test_p3_init();
-int test_p3_ic(bool use_fortran);
 
 }  // namespace p3
 }  // namespace scream

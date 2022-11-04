@@ -37,7 +37,7 @@ from CIME.buildnml import parse_input
 
 # SCREAM imports
 from eamxx_buildnml_impl import get_valid_selectors, get_child, refine_type, \
-        resolve_all_inheritances, gen_atm_proc_group, find_node, check_all_values
+        resolve_all_inheritances, gen_atm_proc_group, check_all_values
 
 from utils import ensure_yaml
 ensure_yaml()
@@ -341,7 +341,6 @@ def _create_raw_xml_file_impl(case, xml):
     >>> xml = '''
     ... <namelist_defaults>
     ...     <selectors/>
-    ...     <input_files/>
     ...     <generated_files/>
     ...     <atmosphere_processes_defaults>
     ...         <atm_procs_list>(P1,P2)</atm_procs_list>
@@ -379,7 +378,6 @@ def _create_raw_xml_file_impl(case, xml):
     ...     <selectors>
     ...       <selector name="grid" case_env="ATM_GRID"/>
     ...     </selectors>
-    ...     <input_files/>
     ...     <generated_files/>
     ...     <atmosphere_processes_defaults>
     ...         <atm_procs_list>(P1,P2)</atm_procs_list>
@@ -418,7 +416,6 @@ def _create_raw_xml_file_impl(case, xml):
     ...     <selectors>
     ...       <selector name='grid' case_env='ATM_GRID'/>
     ...     </selectors>
-    ...     <input_files/>
     ...     <generated_files/>
     ...     <atmosphere_processes_defaults>
     ...       <atm_procs_list locked="true">(P1,P2)</atm_procs_list>
@@ -473,7 +470,6 @@ def _create_raw_xml_file_impl(case, xml):
     # 0. Remove internal sections, that are not to appear in the
     #    processed xml file.
     #    Note: get_valid_selectors also removes the section
-    get_child(xml,"input_files",remove=True)
     get_child(xml,"generated_files",remove=True)
     selectors = get_valid_selectors(xml)
 
@@ -490,7 +486,7 @@ def _create_raw_xml_file_impl(case, xml):
     # 4. Form the nested list of atm procs needed, append to atmosphere_driver section
     atm_procs = gen_atm_proc_group (atm_procs_list.text, atm_procs_defaults)
     atm_procs.tag = "atmosphere_processes"
-    xml.append(atm_procs);
+    xml.append(atm_procs)
 
     return xml
 
@@ -507,7 +503,7 @@ def create_raw_xml_file(case, caseroot):
     raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
     with open(src, "r") as fd:
         defaults = ET.parse(fd)
-        raw_xml = _create_raw_xml_file_impl(case,defaults.getroot())
+        raw_xml = _create_raw_xml_file_impl(case, defaults.getroot())
 
     if os.path.exists(raw_xml_file):
         print("{} already exists, will not overwrite. Remove to regenerate".format(raw_xml_file))
@@ -675,13 +671,13 @@ def create_input_files(caseroot, screamroot, rundir):
         generated_files = get_child(tree.getroot(),"generated_files")
 
     result = {}
-    for file in generated_files:
-        expect("name" in file.attrib, "file element missing required 'name' attribute")
-        expect("format" in file.attrib, "file element missing required 'format' attribute")
-        filename    = os.path.join(rundir, file.attrib["name"])
-        file_format = file.attrib["format"]
+    for file_ in generated_files:
+        expect("name" in file_.attrib, "file element missing required 'name' attribute")
+        expect("format" in file_.attrib, "file element missing required 'format' attribute")
+        filename    = os.path.join(rundir, file_.attrib["name"])
+        file_format = file_.attrib["format"]
 
-        xml_sections = get_child(file,"sections").text.split(",")
+        xml_sections = get_child(file_,"sections").text.split(",")
 
         dict_contents = {}
         for section_name in xml_sections:
@@ -706,40 +702,48 @@ def create_input_files(caseroot, screamroot, rundir):
         else:
             expect(False, "Unknown input file format '{}'".format(file_format))
 
-        result[file.attrib["name"]] = dict_contents
+        result[file_.attrib["name"]] = dict_contents
 
     return result
 
 ###############################################################################
-def create_input_data_list_file(case,caseroot,screamroot,ic_section):
+def get_file_parameters(caseroot):
 ###############################################################################
+    """
+    Find all XML elements with file="true" attribute. Returns a list
+    of file paths.
+    """
+    raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
+    with open(raw_xml_file, "r") as fd:
+        tree    = ET.parse(fd)
+        raw_xml = tree.getroot()
 
-    rundir   = case.get_value("RUNDIR")
-    target   = os.path.join(rundir, "data")
+    result = []
+    for item in raw_xml.findall('.//*[@type="file"]'):
+        result.append(item.text.strip())
+
+    for item in raw_xml.findall('.//*[@type="array(file)"]'):
+        result.extend(refine_type(item.text, force_type="array(file)"))
+
+    # Remove duplicates. Not sure if an error would be warranted if dupes exist
+    return list(OrderedDict.fromkeys(result))
+
+###############################################################################
+def create_input_data_list_file(caseroot):
+###############################################################################
+    """
+    Create the scream.input_data_list file for this case. This will tell CIME
+    what to download.
+    """
+    files_to_download = get_file_parameters(caseroot)
 
     input_data_list_file = "{}/Buildconf/scream.input_data_list".format(caseroot)
     if os.path.exists(input_data_list_file):
         os.remove(input_data_list_file)
 
-    def_xml_file = os.path.join(screamroot, "cime_config/namelist_defaults_scream.xml")
-    with open(def_xml_file, "r") as fd:
-        tree = ET.parse(fd)
-        root = tree.getroot()
-        tables = get_child(root,"input_files").text.split(',')
-
     with open(input_data_list_file, "w") as fd:
-        fd.write("ic_file_0 = {}\n".format(ic_section["Filename"]))
-        for idx, table in enumerate(tables):
-            fd.write("table_{} = {}\n".format(idx, table.strip()))
-
-    # SCREAM is currently hardcoded to expect tables to be in $rundir/data
-    for table in tables:
-        src_table = do_cime_vars(table.strip(),case)
-        table_name = os.path.basename(src_table)
-        tgt_table = os.path.join(target, table_name)
-        if not os.path.exists(tgt_table) and not os.path.islink(tgt_table):
-            os.symlink(src_table, tgt_table)
-
+        for idx, file_path in enumerate(files_to_download):
+            fd.write("scream_dl_input_{} = {}\n".format(idx, file_path))
 
 ###############################################################################
 def do_cime_vars_on_yaml_output_files(case,caseroot):
@@ -828,15 +832,13 @@ def buildnml(case, caseroot, compname):
     # from it.
     #
     create_raw_xml_file(case, caseroot)
-    files_as_dicts = create_input_files(caseroot, screamroot, rundir)
+    create_input_files(caseroot, screamroot, rundir)
 
     #
     # Create input data list. This is the list of files that CIME needs
     # to ensure are present on the machine (possibly downloading them)
     #
-    scream_input = files_as_dicts["data/scream_input.yaml"]
-    ic_section = scream_input["initial_conditions"]
-    create_input_data_list_file(case,caseroot,screamroot,ic_section)
+    create_input_data_list_file(caseroot)
 
     # For all YAML files listed in the XML for model output, expand CIME vars (if any)
     do_cime_vars_on_yaml_output_files(case,caseroot)
