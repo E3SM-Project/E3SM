@@ -23,6 +23,7 @@
 #include "diagnostics/zonal_vapor_flux.hpp"
 #include "diagnostics/meridional_vapor_flux.hpp"
 #include "diagnostics/ice_cloud_mask.hpp"
+#include "diagnostics/vertically_remapped_field.hpp"
 
 namespace scream {
 
