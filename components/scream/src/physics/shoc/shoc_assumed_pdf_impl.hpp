@@ -222,17 +222,36 @@ void Functions<S,D>::shoc_assumed_pdf(
       }
 
       // Begin to compute cloud property statistics
-      const Spack Tl1_1 = thl1_1/(ekat::pow(basepres/pval,(rair/cp)));
-      const Spack Tl1_2 = thl1_2/(ekat::pow(basepres/pval,(rair/cp)));
+      const Spack Tl1_g = thl_first/(ekat::pow(basepres/pval,(rair/cp)));
+            Spack Tl1_1 = thl1_1/(ekat::pow(basepres/pval,(rair/cp)));
+            Spack Tl1_2 = thl1_2/(ekat::pow(basepres/pval,(rair/cp)));
 
       const auto index_range = ekat::range<IntSmallPack>(k*Spack::n);
       const Smask active_entries = (index_range < nlev);
 
-      // Check to ensure Tl1_1 and Tl1_2 are not negative, endrun otherwise
-      const auto is_neg_Tl1_1 = (Tl1_1 <= 0) && active_entries;
-      const auto is_neg_Tl1_2 = (Tl1_2 <= 0) && active_entries;
-      EKAT_KERNEL_REQUIRE_MSG(!(is_neg_Tl1_1.any()), "Error! Tl1_1 has <= 0 values.\n"); //exit with an error message
-      EKAT_KERNEL_REQUIRE_MSG(!(is_neg_Tl1_2.any()), "Error! Tl1_2 has <= 0 values.\n"); //exit with an error message
+      // Check to ensure Tl1_1 and Tl1_2 are not negative, temporarily set to grid mean value if so.
+      const Smask is_neg_Tl1_1 = (Tl1_1 <= 0) && active_entries;
+      const Smask is_neg_Tl1_2 = (Tl1_2 <= 0) && active_entries;
+      if( is_neg_Tl1_1.any() ) {
+        Tl1_1.set(is_neg_Tl1_1,Tl1_g);
+        int n_mask = 0;
+        for (int i=0; i<is_neg_Tl1_1.n; i++) {
+          if (is_neg_Tl1_1[i]) {
+            n_mask++;
+          }
+        }
+        printf("WARNING: Tl1_1 has %d values <= 0.  Resetting to minimum value.\n",n_mask);
+      }
+      if( is_neg_Tl1_2.any() ) {
+        Tl1_2.set(is_neg_Tl1_2,Tl1_g);
+        int n_mask = 0;
+        for (int i=0; i<is_neg_Tl1_2.n; i++) {
+          if (is_neg_Tl1_2[i]) {
+            n_mask++;
+          }
+        }
+        printf("WARNING: Tl1_2 has %d values <= 0.  Resetting to minimum value.\n",n_mask);
+      }
 
       // Compute qs and beta
       Spack qs1(0), qs2(0), beta1(0), beta2(0);

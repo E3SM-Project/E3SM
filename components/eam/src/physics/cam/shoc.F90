@@ -2267,7 +2267,7 @@ subroutine shoc_assumed_pdf(&
   real(rtype) s1,s2,std_s1,std_s2,C1,C2
   real(rtype) ql1,ql2
   real(rtype) thl_first,qw_first,w_first
-  real(rtype) Tl1_1,Tl1_2,pval
+  real(rtype) Tl1_1,Tl1_2,Tl1_g,pval
   real(rtype) thlsec,qwsec,qwthlsec,wqwsec,wthlsec
   real(rtype) qn1,qn2
   real(rtype) beta1, beta2, qs1, qs2
@@ -2390,21 +2390,22 @@ subroutine shoc_assumed_pdf(&
       !  BEGIN TO COMPUTE CLOUD PROPERTY STATISTICS
 
       call shoc_assumed_pdf_compute_temperature(&
+        thl_first,basepres,pval,& ! Input
+        Tl1_g)                    ! Output
+      call shoc_assumed_pdf_compute_temperature(&
         thl1_1,basepres,pval,& ! Input
         Tl1_1)                 ! Output
       call shoc_assumed_pdf_compute_temperature(&
         thl1_2,basepres,pval,& ! Input
         Tl1_2)                 ! Output
 
-      ! Check to ensure Tl1_1 and Tl1_2 are not negative. endrun otherwise
+      ! Check to ensure Tl1_1 and Tl1_2 are not negative. temporarily set to grid mean value if so.
       if (Tl1_1 .le. 0._rtype) then
-         write(err_msg,*)'ERROR: Tl1_1 is .le. 0 before shoc_assumed_pdf_compute_qs in shoc. Tl1_1 is:',Tl1_1
-         call endscreamrun(err_msg)
+         Tl1_1 = Tl1_g
       endif
 
       if (Tl1_2 .le. 0._rtype) then
-         write(err_msg,*)'ERROR: Tl1_2 is .le. 0 before shoc_assumed_pdf_compute_qs in shoc. Tl1_2 is:',Tl1_2
-         call endscreamrun(err_msg)
+         Tl1_2 = Tl1_g
       endif
 
       ! Now compute qs
