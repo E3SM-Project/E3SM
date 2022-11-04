@@ -503,4 +503,82 @@
       </pes>
     </mach>
   </grid>
+  <grid name="oi%ECwISC30to60E2r1">
+    <mach name="chrysalis">
+      <pes compset="DATM.+MPASO.+SWAV" pesize="any">
+        <comment>mpas-ocean+chrysalis: standard-res, compset=DATM+MPASO, 18 nodes, ~22 SYPD </comment>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>384</ntasks_atm>
+          <ntasks_lnd>384</ntasks_lnd>
+          <ntasks_rof>384</ntasks_rof>
+          <ntasks_ice>384</ntasks_ice>
+          <ntasks_ocn>768</ntasks_ocn>
+          <ntasks_glc>1</ntasks_glc>
+          <ntasks_cpl>384</ntasks_cpl>
+        </ntasks>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_lnd>0</rootpe_lnd>
+          <rootpe_rof>0</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>384</rootpe_ocn>
+          <rootpe_glc>0</rootpe_glc>
+          <rootpe_cpl>0</rootpe_cpl>
+        </rootpe>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="oi%SOwISC12to60E2r4">
+    <mach name="chrysalis">
+      <pes compset="DATM.+MPASO.+SWAV" pesize="S">
+        <comment>mpas-ocean+chrysalis: SO RRM, compset=DATM+MPASO, 20 nodes, ~7 SYPD</comment>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>256</ntasks_atm>
+          <ntasks_lnd>256</ntasks_lnd>
+          <ntasks_rof>256</ntasks_rof>
+          <ntasks_ice>256</ntasks_ice>
+          <ntasks_ocn>1024</ntasks_ocn>
+          <ntasks_glc>1</ntasks_glc>
+          <ntasks_cpl>256</ntasks_cpl>
+        </ntasks>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_lnd>0</rootpe_lnd>
+          <rootpe_rof>0</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>256</rootpe_ocn>
+          <rootpe_glc>0</rootpe_glc>
+          <rootpe_cpl>0</rootpe_cpl>
+        </rootpe>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="oi%SOwISC12to60E2r4">
+    <mach name="chrysalis">
+      <pes compset="DATM.+MPASO.+SWAV" pesize="M">
+        <comment>mpas-ocean+chrysalis: SO RRM, compset=DATM+MPASO, 38 nodes, ~11 SYPD</comment>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>512</ntasks_atm>
+          <ntasks_lnd>512</ntasks_lnd>
+          <ntasks_rof>512</ntasks_rof>
+          <ntasks_ice>512</ntasks_ice>
+          <ntasks_ocn>1920</ntasks_ocn>
+          <ntasks_glc>1</ntasks_glc>
+          <ntasks_cpl>512</ntasks_cpl>
+        </ntasks>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_lnd>0</rootpe_lnd>
+          <rootpe_rof>0</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>512</rootpe_ocn>
+          <rootpe_glc>0</rootpe_glc>
+          <rootpe_cpl>0</rootpe_cpl>
+        </rootpe>
+      </pes>
+    </mach>
+  </grid>
 </config_pes>
