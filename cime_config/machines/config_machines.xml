@@ -250,6 +250,7 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
 
     <environment_variables>
+      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>  <!-- Fix for PM hanging problems -->
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="OMP_STACKSIZE">128M</env>
@@ -371,6 +372,7 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
 
     <environment_variables>
+      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>  <!-- Fix for PM hanging problems -->
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="OMP_STACKSIZE">128M</env>
