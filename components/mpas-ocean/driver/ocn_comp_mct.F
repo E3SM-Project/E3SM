@@ -580,11 +580,11 @@ contains
     if (runtype == 'initial') then
        call seq_timemgr_EClockGetData(EClock, ECurrTime=currTime % t)
        call mpas_set_clock_time(domain_ptr % clock, currTime, MPAS_START_TIME, ierr)
-       call mpas_set_clock_time(domain_ptr % clock, currTime, MPAS_NOW, ierr)
+       call mpas_set_clock_time(domain_ptr % clock, currTime, MPAS_NOW, ierr, calibrate_alarms=.false.)
     else if (runtype == 'continue' .or. runtype == 'branch') then
        call seq_timemgr_EClockGetData(EClock, ECurrTime=currTime % t)
        call mpas_set_clock_time(domain_ptr % clock, currTime, MPAS_START_TIME, ierr)
-       call mpas_set_clock_time(domain_ptr % clock, currTime, MPAS_NOW, ierr)
+       call mpas_set_clock_time(domain_ptr % clock, currTime, MPAS_NOW, ierr, calibrate_alarms=.false.)
     end if
     ! Doublecheck that clocks are synced here.
     ! (Note that if this is an initial run, a section below will advance the ocean clock
