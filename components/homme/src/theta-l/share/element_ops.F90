@@ -206,24 +206,18 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   do j=1,np
       do i=1,np
         ! f ~ elem%fcor(i, j)
-        pot_vort(i, j, :) = cos(elem%spherep(i,j)%lat) * (rel_vort(i, j, :) + elem%fcor(i, j)) * partial_eta(pottemp(i, j, :), hvcoord%etam)
-        pot_vort(i, j, :) = pot_vort(i, j, :) - (1.0_real_kind / rearth) * (&
-                                                 partial_eta(elem%state%v(i,j,2,:,nt), hvcoord%etam) * &
-                                                 grad_theta(i, j, :, 1))
-        pot_vort(i, j, :) = pot_vort(i, j, :) + cos(elem%spherep(i,j)%lat) * (1.0_real_kind / rearth) * (&
-                                                partial_eta(elem%state%v(i,j,1,:,nt), hvcoord%etam) * &
-                                                grad_theta(i, j, :, 2))
-        pot_vort(i, j, :) = pot_vort(i, j, :) * -1.0_real_kind * (g / &
-                                                                 (hvcoord%ps0 *da_deta + &
-                                                                  elem%state%ps_v(i,j,nt) * &
-                                                                  db_deta))
-        do k=1,nlev
-            !if (abs(pot_vort(i, j, k)) < eps .and. cos(elem%spherep(i,j)%lat) < eps) then
-            !  pot_vort(i, j, k) = 0.0_real_kind
-            !else
-            pot_vort(i, j, k) = pot_vort(i, j, k) / cos(elem%spherep(i,j)%lat)
-            !end if
-        end do
+        pot_vort(i, j, :) =  (rel_vort(i, j, :) + &
+                             elem%fcor(i, j)) * partial_eta(pottemp(i, j, :), hvcoord%etam)
+        pot_vort(i, j, :) = pot_vort(i, j, :) + &
+                            (partial_eta(elem%state%v(i,j,1,:,nt), hvcoord%etam) * & 
+                             grad_theta(i, j, :, 2)) 
+        pot_vort(i, j, :) = pot_vort(i, j, :) - &  
+                            (partial_eta(elem%state%v(i,j,2,:,nt), hvcoord%etam) * & 
+                             grad_theta(i, j, :, 1)) 
+        pot_vort(i, j, :) = pot_vort(i, j, :) * -1.0_real_kind * (g / & 
+                                                                 (hvcoord%ps0 *da_deta + & 
+                                                                  elem%state%ps_v(i,j,nt) * & 
+                                                                 db_deta))
       end do
   end do
 
