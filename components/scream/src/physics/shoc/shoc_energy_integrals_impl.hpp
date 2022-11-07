@@ -38,43 +38,33 @@ void Functions<S,D>
   // the view_reduction wrapper is not the cause by simplifying these to be bare
   // Kokkos::parallel_reduce calls acting on doubles and saw the same results.
 
-  Scalar se_tmp = 0;
-  Scalar ke_tmp = 0;
-  Scalar wv_tmp = 0;
-  Scalar wl_tmp = 0;
-
   // Compute se_int
-  ExeSpaceUtils::view_reduction(team,0,nlev,
+  se_int = ExeSpaceUtils::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
     return host_dse(k)*pdel(k)/ggr;
-  }, se_tmp);
+  });
   team.team_barrier();
 
   // Compute ke_int
-  ExeSpaceUtils::view_reduction(team,0,nlev,
+  ke_int = ExeSpaceUtils::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
     return sp(0.5)*(ekat::square(u_wind(k))+ekat::square(v_wind(k)))*pdel(k)/ggr;
-  }, ke_tmp);
+  });
   team.team_barrier();
 
   // Compute wv_int
-  ExeSpaceUtils::view_reduction(team,0,nlev,
+  wv_int = ExeSpaceUtils::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
     return (rtm(k)-rcm(k))*pdel(k)/ggr;
-  }, wv_tmp);
+  });
   team.team_barrier();
 
   // Compute wl_int
-  ExeSpaceUtils::view_reduction(team,0,nlev,
+  wl_int = ExeSpaceUtils::view_reduction(team,0,nlev,
                                 [&] (const int k) -> Spack {
     return rcm(k)*pdel(k)/ggr;
-  }, wl_tmp);
+  });
   team.team_barrier();
-
-  se_int = se_tmp;
-  ke_int = ke_tmp;
-  wv_int = wv_tmp;
-  wl_int = wl_tmp;
 }
 
 } // namespace shoc

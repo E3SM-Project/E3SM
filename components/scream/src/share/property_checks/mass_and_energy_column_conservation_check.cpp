@@ -272,32 +272,32 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
 
 
 KOKKOS_INLINE_FUNCTION
-Real MassAndEnergyColumnConservationCheck::compute_total_mass_on_column (const KT::MemberType&       team,
-                                                                         const int                   nlevs,
-                                                                         const uview_1d<const Real>& pseudo_density,
-                                                                         const uview_1d<const Real>& qv,
-                                                                         const uview_1d<const Real>& qc,
-                                                                         const uview_1d<const Real>& qi,
-                                                                         const uview_1d<const Real>& qr) const
+Real MassAndEnergyColumnConservationCheck::
+compute_total_mass_on_column (const KT::MemberType&       team,
+                              const int                   nlevs,
+                              const uview_1d<const Real>& pseudo_density,
+                              const uview_1d<const Real>& qv,
+                              const uview_1d<const Real>& qc,
+                              const uview_1d<const Real>& qi,
+                              const uview_1d<const Real>& qr) const
 {
   using PC = scream::physics::Constants<Real>;
+
   const Real gravit = PC::gravit;
 
-  Real total_mass(0);
-  ExeSpaceUtils::parallel_reduce(team, 0, nlevs,
-                                 [&] (const int lev, Real& local_mass) {
+  return ExeSpaceUtils::parallel_reduce<Real>(team, 0, nlevs,
+                                              [&] (const int lev, Real& local_mass) {
     local_mass += (qv(lev)+
                    qc(lev)+
                    qi(lev)+
                    qr(lev))*pseudo_density(lev)/gravit;
-  }, total_mass);
-
-  return total_mass;
+  });
 }
 
 KOKKOS_INLINE_FUNCTION
-Real MassAndEnergyColumnConservationCheck::compute_mass_boundary_flux_on_column (const Real vapor_flux,
-                                                                                 const Real water_flux) const
+Real MassAndEnergyColumnConservationCheck::
+compute_mass_boundary_flux_on_column (const Real vapor_flux,
+                                      const Real water_flux) const
 {
   using PC = scream::physics::Constants<Real>;
   const Real RHO_H2O  = PC::RHO_H2O;
@@ -306,16 +306,17 @@ Real MassAndEnergyColumnConservationCheck::compute_mass_boundary_flux_on_column 
 }
 
 KOKKOS_INLINE_FUNCTION
-Real MassAndEnergyColumnConservationCheck::compute_total_energy_on_column (const KT::MemberType&       team,
-                                                                           const int                   nlevs,
-                                                                           const uview_1d<const Real>& pseudo_density,
-                                                                           const uview_1d<const Real>& T_mid,
-                                                                           const uview_2d<const Real>& horiz_winds,
-                                                                           const uview_1d<const Real>& qv,
-                                                                           const uview_1d<const Real>& qc,
-                                                                           const uview_1d<const Real>& qr,
-                                                                           const Real                  ps,
-                                                                           const Real                  phis) const
+Real MassAndEnergyColumnConservationCheck::
+compute_total_energy_on_column (const KT::MemberType&       team,
+                                const int                   nlevs,
+                                const uview_1d<const Real>& pseudo_density,
+                                const uview_1d<const Real>& T_mid,
+                                const uview_2d<const Real>& horiz_winds,
+                                const uview_1d<const Real>& qv,
+                                const uview_1d<const Real>& qc,
+                                const uview_1d<const Real>& qr,
+                                const Real                  ps,
+                                const Real                  phis) const
 {
   using PC = scream::physics::Constants<Real>;
   const Real LatVap = PC::LatVap;
@@ -323,9 +324,9 @@ Real MassAndEnergyColumnConservationCheck::compute_total_energy_on_column (const
   const Real gravit = PC::gravit;
   const Real Cpair  = PC::Cpair;
 
-  Real total_energy(0);
-  ExeSpaceUtils::parallel_reduce(team, 0, nlevs,
-                                 [&] (const int lev, Real& local_energy) {
+  Real total_energy =
+    ExeSpaceUtils::parallel_reduce<Real>(team, 0, nlevs,
+                                         [&] (const int lev, Real& local_energy) {
     const auto u2 = horiz_winds(0,lev)*horiz_winds(0,lev);
     const auto v2 = horiz_winds(1,lev)*horiz_winds(1,lev);
 
@@ -333,17 +334,18 @@ Real MassAndEnergyColumnConservationCheck::compute_total_energy_on_column (const
                      0.5*(u2+v2) +
                      (LatVap+LatIce)*qv(lev) +
                      LatIce*(qc(lev)+qr(lev)))*pseudo_density(lev)/gravit;
-  }, total_energy);
+  });
   total_energy += phis*ps/gravit;
 
   return total_energy;
 }
 
 KOKKOS_INLINE_FUNCTION
-Real MassAndEnergyColumnConservationCheck::compute_energy_boundary_flux_on_column (const Real vapor_flux,
-                                                                                   const Real water_flux,
-                                                                                   const Real ice_flux,
-                                                                                   const Real heat_flux) const
+Real MassAndEnergyColumnConservationCheck::
+compute_energy_boundary_flux_on_column (const Real vapor_flux,
+                                        const Real water_flux,
+                                        const Real ice_flux,
+                                        const Real heat_flux) const
 {
   using PC = scream::physics::Constants<Real>;
   const Real LatVap = PC::LatVap;

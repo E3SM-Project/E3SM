@@ -43,7 +43,6 @@ namespace scream {
     TEST_CASE("rrtmgp_scream_standalone", "") {
         using namespace scream;
         using namespace scream::control;
-        using PF = scream::PhysicsFunctions<DefaultDevice>;
         using PC = scream::physics::Constants<Real>;
 
         // Get baseline name (needs to be passed as an arg)
@@ -256,13 +255,6 @@ namespace scream {
 
         // Gather molecular weights of all the active gases in the test for conversion
         // to mass-mixing-ratio.
-        auto co2_mol = PC::get_gas_mol_weight("co2");
-        auto o3_mol  = PC::get_gas_mol_weight("o3");
-        auto n2o_mol = PC::get_gas_mol_weight("n2o");
-        auto co_mol  = PC::get_gas_mol_weight("co");
-        auto ch4_mol = PC::get_gas_mol_weight("ch4");
-        auto o2_mol  = PC::get_gas_mol_weight("o2");
-        auto n2_mol  = PC::get_gas_mol_weight("n2");
         {
           const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, nlay);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {

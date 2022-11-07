@@ -1,7 +1,5 @@
 #include "share/grid/abstract_grid.hpp"
 
-#include <Kokkos_CopyViews.hpp>
-#include <Kokkos_ExecPolicy.hpp>
 #include <algorithm>
 #include <cstring>
 #include <string>

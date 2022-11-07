@@ -23,7 +23,7 @@ TEST_CASE("FortranDataIterator", "shoc") {
   REQUIRE(f.extent[1] == 1);
   REQUIRE(f.extent[2] == 1);
   REQUIRE(f.data == d->host_dx.data());
-  REQUIRE(f.size == d->shcol);
+  REQUIRE(static_cast<int>(f.size) == d->shcol);
 }
 
 TEST_CASE("shoc_init_f", "shoc") {

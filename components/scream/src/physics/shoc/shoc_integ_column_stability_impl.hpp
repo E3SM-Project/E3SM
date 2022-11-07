@@ -22,9 +22,8 @@ void Functions<S,D>
 
   using ExeSpaceUtils = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
 
-
-  ExeSpaceUtils::view_reduction(team,0,nlev,
-                                [&] (const int k) -> Spack {
+  brunt_int = ExeSpaceUtils::view_reduction(team,0,nlev,
+                                            [&] (const int k) -> Spack {
 
     //calculate only when pressure is > troposphere pressure
     auto press_gt_troppress = (pres(k) > troppres);
@@ -34,8 +33,7 @@ void Functions<S,D>
 
     return return_val ;
 
-    }, brunt_int);
-
+    });
 }
 
 } // namespace shoc
