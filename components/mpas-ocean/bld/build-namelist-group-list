@@ -3,7 +3,6 @@ my @groups = qw(run_modes
                 io
                 decomposition
                 time_integration
-                lts
                 hmix
                 hmix_del2
                 hmix_del4
@@ -27,6 +26,7 @@ my @groups = qw(run_modes
                 rayleigh_damping
                 vegetation_drag
                 ocean_constants
+                lts
                 pressure_gradient
                 eos
                 eos_linear
