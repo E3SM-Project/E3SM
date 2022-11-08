@@ -204,7 +204,15 @@ Default: Defined in namelist_defaults.xml
 	category="time_integration" group="time_integration">
 Time integration method.
 
-Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit'
+Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit', 'LTS'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_number_of_time_levels" type="integer"
+	category="time_integration" group="time_integration">
+The number of time levels in the time-stepping scheme. This is used for array allocation.
+
+Valid values: Any integer greater than or equal to 2.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1866,6 +1874,17 @@ Default: Defined in namelist_defaults.xml
 Density used as a coefficient of the pressure gradient terms, $\rho_0$. This is a constant due to the Boussinesq approximation.
 
 Valid values: any positive real, but typically 1000-1035
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- lts -->
+
+<entry id="config_dt_scaling_LTS" type="integer"
+	category="lts" group="lts">
+This is the positive integer M that defines dtFine for LTS, dtFine = dt / M
+
+Valid values: Any positive integer
 Default: Defined in namelist_defaults.xml
 </entry>
 
