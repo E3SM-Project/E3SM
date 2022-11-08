@@ -2587,7 +2587,7 @@ contains
          cell1 = cellsOnEdge(1, iEdge)
          cell2 = cellsOnEdge(2, iEdge)
 
-         gradSSH(iEdge) = edgeMask(1, iEdge) * ( pressureAdjustedSSH(cell2) - pressureAdjustedSSH(cell1) ) / dcEdge(iEdge)
+         gradSSH(iEdge) = edgeMask(minLevelEdgeBot(iEdge), iEdge) * ( pressureAdjustedSSH(cell2) - pressureAdjustedSSH(cell1) ) / dcEdge(iEdge)
       end do
 #ifndef MPAS_OPENACC
       !$omp end do

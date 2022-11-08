@@ -189,7 +189,7 @@ mpas_ocn_transport_tests.o: mpas_ocn_config.o
 
 mpas_ocn_effective_density_in_land_ice.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
-mpas_ocn_forcing_restoring.o: mpas_ocn_constants.o mpas_ocn_config.o
+mpas_ocn_forcing_restoring.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
 mpas_ocn_tracer_surface_restoring.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_framework_forcing.o mpas_ocn_diagnostics_variables.o
 
