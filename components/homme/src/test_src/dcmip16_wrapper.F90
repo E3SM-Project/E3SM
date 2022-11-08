@@ -656,7 +656,7 @@ subroutine bubble_rj_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 !print *, 'HEY RAIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
 !stop
       !condensation happens
-#if 0
+#if 1
       !compute dry values
         dp_loc = dp_c(k)
         qv_loc = qv_c(k)
@@ -717,6 +717,7 @@ endif
         T_c(k)  = T_new
         qv_c(k) = qsat
         precl(i,j,ie) = precl(i,j,ie) + vapor_mass_change / dt / rhow / gravit
+print *, 'precl',  precl(i,j,ie), vapor_mass_change, rhow
 
 
 #else
@@ -736,7 +737,7 @@ endif
       T(i,j,:)  = T_c(:)
       qv(i,j,:) = qv_c(:)
  
-    enddo; enddo;
+    enddo; enddo; !j,i loop
 
     ! set dynamics forcing
     elem(ie)%derived%FM(:,:,1,:) = 0.0 !(u - u0)/dt
@@ -752,7 +753,7 @@ endif
     max_precl = max( max_precl, maxval(precl(:,:,ie)) )
     min_ps    = min( min_ps,    minval(ps) )
 
-  enddo
+  enddo !ie loop
 
   call dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
 
