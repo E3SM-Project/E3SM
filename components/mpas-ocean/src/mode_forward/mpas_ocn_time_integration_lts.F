@@ -486,7 +486,7 @@ module ocn_time_integration_lts
     call mpas_timer_start("lts compute tendencies")
 
     ! TENDENCIES COMPUTATION ---
-    call ocn_lts_tends(statePool, meshPool, LTSPool, meshPool, tendPool, 3, 0, 0, 1, 1)
+    call ocn_lts_tends(statePool, meshPool, LTSPool, tendPool, 3, 0, 0, 1, 1)
            
     call mpas_timer_stop("lts compute tendencies")
 
@@ -599,7 +599,7 @@ module ocn_time_integration_lts
        call mpas_timer_start("lts compute tendencies")
 
        ! --- compute tendencies for thickness and fast tendencies only for velocity
-       call ocn_lts_tends(statePool, meshPool, LTSPool, meshPool, tendPool, 1, 1, 1, 0, 1)
+       call ocn_lts_tends(statePool, meshPool, LTSPool, tendPool, 1, 1, 1, 0, 1)
 
        call mpas_timer_stop("lts compute tendencies")
 
@@ -713,7 +713,7 @@ module ocn_time_integration_lts
        call mpas_timer_start("lts compute tendencies")
 
        ! TENDENCIES COMPUTATION ---
-       call ocn_lts_tends(statePool, meshPool, diagnosticsPool, LTSPool, meshPool, tendPool, 3, 1, 1, 0, 1)
+       call ocn_lts_tends(statePool, meshPool, LTSPool, tendPool, 3, 1, 1, 0, 1)
 
        call mpas_timer_stop("lts compute tendencies")
 
@@ -1419,12 +1419,9 @@ module ocn_time_integration_lts
    implicit none
 
    ! pressure gradient tendency terms
-   config_pressure_gradient_split_ssh = .false. !this has the ssh terms (also SAL)
-   config_pressure_gradient_split_other_terms = .true. !this has atmos pressure and tidal potential
-   ! this below has to be true if config_pressure_gradient_split_other_terms = true
+   config_split_ssh_terms = .false. !this has the ssh terms 
+   config_split_non_ssh_terms = .true. !this has the non ssh terms
    config_use_tidal_potential_forcing = .true. !computes the tidal potential
-   ! time varying forcing term computes wind speed and atmos pressure
-   ! so it has to be true if config_pressure_gradient_split_other_terms = true or config_disable_vel_surface_stress = false
    config_use_time_varying_atmospheric_forcing = .true.
 
    ! Coriolis and kinetic energy grad tendency term
@@ -1447,20 +1444,15 @@ module ocn_time_integration_lts
 
    implicit none
 
-   ! pressure gradient tendency terms
-   config_pressure_gradient_split_ssh = .true. !this has the ssh terms (also SAL)
-   config_pressure_gradient_split_other_terms = .false. !this has atmospressure and tidal potential
-   ! this below has to be true if config_pressure_gradient_split_other_terms = true
+   config_split_ssh_terms = .true. !this has the ssh terms 
+   config_split_non_ssh_terms = .false. !this has the non ssh terms
    config_use_tidal_potential_forcing = .false. !computes the tidal potential
-   ! time varying forcing term computes wind speed and atmos pressure
-   ! so it has to be true if config_pressure_gradient_split_other_terms = true or config_disable_vel_surface_stress = false
    config_use_time_varying_atmospheric_forcing = .false.
 
    ! Coriolis and kinetic energy grad tendency term
    config_disable_vel_coriolis = .true.
 
-   ! this computes the surface stress needs to be true if
-   ! config_disable_vel_surface_stress = false
+   ! this computes the surface stress needs to be true if config_disable_vel_surface_stress = false
    config_use_bulk_wind_stress = .false.
    ! surface stress tendency term
    config_disable_vel_surface_stress = .true.
@@ -1477,8 +1469,8 @@ module ocn_time_integration_lts
 
    implicit none
 
-   config_pressure_gradient_split_ssh = .true.
-   config_pressure_gradient_split_other_terms = .true.
+   config_split_ssh_terms= .true.
+   config_split_non_ssh_terms = .true.
    config_use_time_varying_atmospheric_forcing = .true.
    config_disable_vel_coriolis = .false.
    config_disable_vel_surface_stress = .false.

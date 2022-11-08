@@ -176,9 +176,9 @@ contains
 
          potentialGrad = - gravity*invdcEdge* &
             (  nonSshTermsSplit * tidalPotEta(cell2) - tidalPotEta(cell1) &
-             + sshTermsSplit * (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * ((ssh(cell2) - ssh(cell1)) & 
+             + sshTermSplit * (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * ((ssh(cell2) - ssh(cell1)) & 
              + nonSshTermsSplit * rho0gInv*(surfacePressure(cell2) - surfacePressure(cell1))) &
-             + sshTermsSplit * ssh_sal_on * (ssh_sal(cell2) - ssh_sal(cell1)) )
+             + nonSshTermsSplit * ssh_sal_on * (ssh_sal(cell2) - ssh_sal(cell1)) )
 
          do k=1,kMax
             tend(k,iEdge) = tend(k,iEdge) - &
