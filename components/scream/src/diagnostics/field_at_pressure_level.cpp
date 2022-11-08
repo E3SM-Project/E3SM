@@ -19,6 +19,9 @@ FieldAtPressureLevel::FieldAtPressureLevel (const ekat::Comm& comm, const ekat::
       "Error! FieldAtPressureLevel diagnostic expects a layout ending with 'LEV'/'ILEV' tag.\n"
       " - field name  : " + m_field_name + "\n"
       " - field layout: " + to_string(m_field_layout) + "\n");
+
+  m_p_tgt = view_1d<mPack>("",1);
+  Kokkos::deep_copy(m_p_tgt, m_pressure_level);
 }
 
 // =========================================================================================
@@ -47,25 +50,20 @@ void FieldAtPressureLevel::set_grids(const std::shared_ptr<const GridsManager> g
 void FieldAtPressureLevel::compute_diagnostic_impl()
 {
   using namespace scream::vinterp;
-  using P = ekat::Pack<Real,1>;
 
   //This is 2D source pressure
   const Field& pressure_f = get_field_in(m_pres_name);
-  const auto pressure = pressure_f.get_view<const P**>();
-
-  //This is the 1D target pressure
-  view_1d<P> p_tgt = view_1d<P>("",1);  // We only plan to map onto a pressure level
-  Kokkos::deep_copy(p_tgt, m_pressure_level);
+  const auto pressure = pressure_f.get_view<const mPack**>();
 
   //input field
   const Field& f = get_field_in(m_field_name);
-  const auto f_data_src = f.get_view<const P**>();
+  const auto f_data_src = f.get_view<const mPack**>();
 
   //output field on new grid
   auto d_data_tgt = m_diagnostic_output.get_view<Real*>();
-  view_2d<P> data_tgt_tmp(reinterpret_cast<P*>(d_data_tgt.data()),m_num_cols,1);  // Note, vertical interp wants a 2D view, so we create a temporary one
+  view_2d<mPack> data_tgt_tmp(reinterpret_cast<mPack*>(d_data_tgt.data()),m_num_cols,1);  // Note, vertical interp wants a 2D view, so we create a temporary one
 
-  perform_vertical_interpolation(pressure,p_tgt,f_data_src,data_tgt_tmp,m_num_levs,1);
+  perform_vertical_interpolation(pressure,m_p_tgt,f_data_src,data_tgt_tmp,m_num_levs,1);
 
 }
 

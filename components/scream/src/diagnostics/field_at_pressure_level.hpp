@@ -14,7 +14,11 @@ namespace scream
 class FieldAtPressureLevel : public AtmosphereDiagnostic
 {
 public:
-  using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+  using mPack = ekat::Pack<Real,1>;
+
+  using KT = KokkosTypes<DefaultDevice>;
+  template <typename S>
+  using view_1d = typename KT::template view_1d<S>;
 
   // Constructors
   FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -40,6 +44,7 @@ protected:
   ekat::units::Units  m_field_units;
   std::string         m_pres_name;
 
+  view_1d<mPack>      m_p_tgt;
   Real                m_pressure_level;
   int                 m_num_levs;
   int                 m_num_cols;
