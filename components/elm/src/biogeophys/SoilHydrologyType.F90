@@ -323,7 +323,9 @@ contains
                 this%frost_table_col(c) = spval
              else
                 this%wa_col(c)  = 4000._r8
-                this%zwt_col(c) = (25._r8 + col_pp%zi(c,nlevsoi)) - this%wa_col(c)/0.2_r8 /1000._r8  ! One meter below soil column
+                !this%zwt_col(c) = (25._r8 + col_pp%zi(c,nlevsoi)) - this%wa_col(c)/0.2_r8 /1000._r8  ! One meter below soil column
+                this%zwt_col(c) = 29._r8 - this%wa_col(c)/0.2_r8 /1000._r8  ! Han Qiu : 9 meter below land surface
+                print *, 'zwt1', this%zwt_col(c) 
                 ! initialize frost_table, zwt_perched to bottom of soil column
                 this%zwt_perched_col(c) = col_pp%zi(c,nlevsoi)
                 this%frost_table_col(c) = col_pp%zi(c,nlevsoi)
@@ -708,6 +710,7 @@ contains
 
        !calculate other parameters based on teh percentages
        soilhydrology_vars%porosity_col(c, i) = 0.489_r8 - 0.00126_r8*sandvic(i)
+
        soilhydrology_vars%expt_col(c, i)     = 3._r8+ 2._r8*(2.91_r8 + 0.159_r8*clayvic(i))
        xksat = 0.0070556 *( 10.**(-0.884+0.0153*sandvic(i)) )
 
@@ -716,7 +719,7 @@ contains
             (1._r8 - om_fracvic(i))*soilhydrology_vars%expt_col(c, i)    + om_fracvic(i)*om_expt
        soilhydrology_vars%porosity_col(c,i) = &
             (1._r8 - om_fracvic(i))*soilhydrology_vars%porosity_col(c,i) + om_watsat*om_fracvic(i)
-
+       soilhydrology_vars%porosity_col(c,i) = soilhydrology_vars%porosity_col(c,i)*0.8_r8   ! Han Qiu modify here 
        ! perc_frac is zero unless perf_frac greater than percolation threshold
        if (om_fracvic(i) > pc) then
           perc_norm=(1._r8 - pc)**(-pcbeta)

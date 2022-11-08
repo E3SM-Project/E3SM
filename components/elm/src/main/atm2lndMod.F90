@@ -131,7 +131,8 @@ contains
          tbot_c  = tbot_g-lapse_glcmec*(hsurf_c-hsurf_g) ! sfc temp for column
          Hbot    = rair*0.5_r8*(tbot_g+tbot_c)/grav      ! scale ht at avg temp
          pbot_c  = pbot_g*exp(-(hsurf_c-hsurf_g)/Hbot)   ! column sfc press
-
+         
+         print *, 'hsurf',hsurf_g    !Han Qiu
          ! Derivation of potential temperature calculation:
          ! 
          ! The textbook definition would be:

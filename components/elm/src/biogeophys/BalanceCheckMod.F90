@@ -355,7 +355,7 @@ contains
        do c = bounds%begc, bounds%endc
           
           if (abs(errh2o(c)) > 1.e-7_r8) then
-             found = .true.
+             !found = .true.
              indexc = c             
           end if
        end do
@@ -519,7 +519,7 @@ contains
        do c = bounds%begc,bounds%endc
           if (col_pp%active(c)) then
              if (abs(errh2osno(c)) > 1.0e-7_r8) then
-                found = .true.
+                !found = .true.
                 indexc = c
              end if
           end if
@@ -717,7 +717,7 @@ contains
        do c = bounds%begc,bounds%endc
           if (col_pp%active(c)) then
              if (abs(errsoi_col(c)) > 1.0e-5_r8 ) then
-                found = .true.
+                !found = .true.
                 indexc = c
              end if
           end if

@@ -730,6 +730,7 @@ contains
 
                 this%bd_col(c,lev)        = (1._r8 - this%watsat_col(c,lev))*2.7e3_r8
                 this%watsat_col(c,lev)    = (1._r8 - om_frac) * this%watsat_col(c,lev) + om_watsat*om_frac
+                this%watsat_col(c,lev)    = 0.8_r8*this%watsat_col(c,lev)  !Han Qiu modify
                 tkm                       = (1._r8-om_frac) * (8.80_r8*sand+2.92_r8*clay)/(sand+clay)+om_tkm*om_frac ! W/(m K)
                 this%bsw_col(c,lev)       = (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b
                 this%sucsat_col(c,lev)    = (1._r8-om_frac) * this%sucsat_col(c,lev) + om_sucsat*om_frac
@@ -784,6 +785,7 @@ contains
 
                 this%watmin_col(c,lev) = &
                      this%watsat_col(c,lev)*(-min_liquid_pressure/this%sucsat_col(c,lev))**(-1._r8/this%bsw_col(c,lev))
+                !print *, 'watmin',this%watmin_col(c,lev)  !Han Qiu
 
              end if
           end do

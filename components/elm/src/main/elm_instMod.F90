@@ -75,6 +75,7 @@ module elm_instMod
   use BeTRSimulationELM          , only : betr_simulation_elm_type
   use PlantMicKineticsMod        , only : PlantMicKinetics_type
   use ELMFatesInterfaceMod       , only : hlm_fates_interface_type
+  use ConnectionSetType          , only : conn
 
   ! instances declared in their own modules
   use UrbanParamsType            , only : urbanparams_vars
@@ -464,6 +465,9 @@ contains
     call cnstate_vars%Init(bounds_proc)
 
     call sedflux_vars%Init(bounds_proc)
+
+    call conn%Init(bounds_proc)
+
     ! --------------------------------------------------------------
     ! Initialise the BeTR
     ! --------------------------------------------------------------

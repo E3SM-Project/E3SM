@@ -1612,7 +1612,28 @@ contains
 		               if (use_fates_planthydro .or. use_hydrstress) then
                       this%h2osoi_vol(c,j) = 0.70_r8*watsat_input(c,j) !0.15_r8 to avoid very dry conditions that cause errors in FATES HYDRO
                    else
-                      this%h2osoi_vol(c,j) = 0.15_r8
+                           !this%h2osoi_vol(c,j) = 0.15_r8  !Han Qiu
+                        !this%h2osoi_vol(c,j) = 0.69_r8*watsat_input(c,j)
+                         !this%h2osoi_vol(c,1) = 0.5443*watsat_input(c,j)  !for 1m
+                       !this%h2osoi_vol(c,2) = 0.5590*watsat_input(c,j)
+                       !this%h2osoi_vol(c,3) = 0.5769*watsat_input(c,j)
+                       !this%h2osoi_vol(c,4) = 0.5996*watsat_input(c,j)
+                       !this%h2osoi_vol(c,5) = 0.6302*watsat_input(c,j)
+                       !this%h2osoi_vol(c,6) = 0.6760*watsat_input(c,j)
+                       !this%h2osoi_vol(c,7) = 0.7621*watsat_input(c,j)
+                        this%h2osoi_vol(c,1) = 0.3154*watsat_input(c,j)
+                        this%h2osoi_vol(c,2) = 0.3253*watsat_input(c,j)
+                        this%h2osoi_vol(c,3) = 0.3373*watsat_input(c,j)
+                        this%h2osoi_vol(c,4) = 0.3726*watsat_input(c,j)
+                        this%h2osoi_vol(c,5) = 0.4031*watsat_input(c,j)
+                        this%h2osoi_vol(c,6) = 0.4139*watsat_input(c,j)
+                        this%h2osoi_vol(c,7) = 0.4917*watsat_input(c,j)
+                        this%h2osoi_vol(c,8) = 0.5821*watsat_input(c,j)
+                        this%h2osoi_vol(c,9) = 0.6521*watsat_input(c,j)
+                        this%h2osoi_vol(c,10) = 0.7121*watsat_input(c,j)
+                        this%h2osoi_vol(c,11) = 0.8221*watsat_input(c,j)
+                        this%h2osoi_vol(c,12) = 0.8621*watsat_input(c,j)
+                       this%h2osoi_vol(c,13:15) = 1.0*watsat_input(c,j)
                    endif
                 endif
              end do

@@ -5511,12 +5511,12 @@ module VegetationDataType
             ptr_patch=this%qflx_evap_veg, default='inactive', c2l_scale_type='urbanf')
     end if
 
-    if (use_cn) then
+    !if (use_cn) then
        this%qflx_evap_tot(begp:endp) = spval
        call hist_addfld1d (fname='QFLX_EVAP_TOT', units='mm H2O/s', &
             avgflag='A', long_name='qflx_evap_soi + qflx_evap_can + qflx_tran_veg', &
             ptr_patch=this%qflx_evap_tot, default='inactive', c2l_scale_type='urbanf')
-    end if
+    !end if
 
     if (use_cn) then
        this%qflx_dew_grnd(begp:endp) = spval

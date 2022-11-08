@@ -57,6 +57,7 @@ contains
     character(len=256)    :: locfn             ! local filename
     real(r8) ,pointer     :: std (:)           ! read in - topo_std 
     real(r8) ,pointer     :: tslope (:)        ! read in - topo_slope 
+    real(r8) ,pointer     :: topo_ele (:)        ! read in - topo_ele !Han qiu add elevation
     real(r8) ,pointer     :: hslp_p10 (:,:,:)    ! read in - hillslope slope percentiles
     real(r8) ,pointer     :: dtb (:,:)           ! read in - DTB
     real(r8)              :: beddep            ! temporary
@@ -119,6 +120,7 @@ contains
        ! and biogeochemical dynamics at the base of the active layer
        do j = 1, toplev_equalspace
           zsoi(j) = scalez*(exp(0.5_r8*(j-0.5_r8))-1._r8)    !node depths
+          !zsoi(j) = j*1._r8-0.5_r8  !Han Qiu test
        enddo
 
        do j = toplev_equalspace+1,toplev_equalspace + nlev_equalspace
@@ -132,7 +134,11 @@ contains
 
        do j = 1, nlevgrnd
           zsoi(j) = scalez*(exp(0.5_r8*(j-0.5_r8))-1._r8)    !node depths
+          !zsoi(j) = j*10._r8-5._r8 !Han Qiu test
+          !zsoi(j) = j*1._r8-0.5_r8 !Han Qiu test
        enddo
+       zsoi(14) = zsoi(14)+10._r8
+       zsoi(15) = zsoi(15)+20._r8
     end if
 
     dzsoi(1) = 0.5_r8*(zsoi(1)+zsoi(2))             !thickness b/n two interfaces
@@ -584,6 +590,22 @@ contains
          col_pp%topo_std(c) = std(g)
       end do
       deallocate(std)
+       
+      allocate(topo_ele(bounds%begg:bounds%endg))
+      call ncd_io(ncid=ncid, varname='TOPO', flag='read', data=topo_ele, dim1name=grlnd, readvar=readvar)
+      if (.not. readvar) then
+         call shr_sys_abort(' ERROR: TOPOGRAPHIC STDdev (TOPO_ELEV) NOT on surfdata file'//&
+              errMsg(__FILE__, __LINE__)) 
+      end if
+      do c = begc,endc
+         g = col_pp%gridcell(c)
+         ! Topographic variables
+         col_pp%topo_ele(c) = topo_ele(g)
+      end do
+      print *, 'ele' ,col_pp%topo_ele
+      deallocate(topo_ele)
+
+       
 
       if (use_erosion) then
          allocate(hslp_p10(bounds%begg:bounds%endg,1:max_topounits,nlevslp))
