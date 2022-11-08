@@ -369,7 +369,7 @@ contains
     event = 'CNFixation'
     if ( (.not. nu_com_nfix) .or. use_fates) then
       call t_start_lnd(event)
-       call NitrogenFixation( num_soilc, filter_soilc, dayspyr)
+       call NitrogenFixation( bounds, num_soilc, filter_soilc, dayspyr)
        call t_stop_lnd(event)
     else
        ! nu_com_nfix is true
