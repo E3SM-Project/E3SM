@@ -404,6 +404,7 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,d
   real (kind=real_kind), dimension(nlev) :: domain_q, domain_t, domain_u, domain_v, rtau
   real (kind=real_kind), dimension(nlev) :: relax_t, relax_q, relax_u, relax_v, iop_pres
   real (kind=real_kind), dimension(np,np,nlev) :: temperature, Rstar, pnh, exner, dp
+  real (kind=real_kind) :: uref, vref
   integer :: ie, i, j, k
 
   ! Compute pressure for IOP observations
@@ -454,9 +455,18 @@ subroutine iop_domain_relaxation(elem,hvcoord,hybrid,t1,dp,nelemd_todo,np_todo,d
     rtau(k) = iop_nudge_tscale
     rtau(k) = max(dt,rtau(k))
 
+    ! If LS/geostropic winds are available then nudge to those
+    if (have_uls .and. have_vls) then
+      uref = uls(k)
+      vref = vls(k)
+    else
+      uref = uobs(k)
+      vref = vobs(k)
+    endif
+
     ! Compute relaxation for winds
-    relax_u(k) = -(domain_u(k) - uobs(k))/rtau(k)
-    relax_v(k) = -(domain_v(k) - vobs(k))/rtau(k)
+    relax_u(k) = -(domain_u(k) - uref)/rtau(k)
+    relax_v(k) = -(domain_v(k) - vref)/rtau(k)
 
     ! Restrict nudging of T and Q to certain levels if requested by user
     ! pmidm1 variable is in unitis of [Pa], while iop_nudge_tq_low/high

@@ -123,8 +123,10 @@ module scamMod
   real(r8), public ::      tsair(1)            ! air temperature at the surface
   real(r8), public ::      udiff(plev)         ! model minus observed uwind
   real(r8), public ::      uobs(plev)          ! actual u wind
+  real(r8), public ::      uls(plev)           ! large scale / geostropic u wind
   real(r8), public ::      vdiff(plev)         ! model minus observed vwind
   real(r8), public ::      vobs(plev)          ! actual v wind
+  real(r8), public ::      vls(plev)           ! large scale / geostropic v wind
   real(r8), public ::      cldobs(plev)        ! observed cld
   real(r8), public ::      clwpobs(plev)       ! observed clwp
   real(r8), public ::      aldirobs(1)         ! observed aldir
@@ -180,6 +182,8 @@ module scamMod
   logical*4, public ::  have_tsair    ! dataset contains tsair
   logical*4, public ::  have_u        ! dataset contains u 
   logical*4, public ::  have_v        ! dataset contains v 
+  logical*4, public ::  have_uls      ! dataset contains large scale u
+  logical*4, public ::  have_vls      ! dataset contains large scale v
   logical*4, public ::  have_cld      ! dataset contains cld
   logical*4, public ::  have_cldliq   ! dataset contains cldliq
   logical*4, public ::  have_cldice   ! dataset contains cldice
@@ -1434,6 +1438,16 @@ endif !scm_observed_aero
        have_u = .true.
      endif
 
+     ! large scale / geostropic horizontal wind (for nudging)
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
+       'u_ls', have_srf, srf(1), .true. , scm_crm_mode, &
+       dplevs, nlev,psobs, hyam, hybm, uls, status )
+     if ( status .ne. nf90_noerr ) then
+       have_uls = .false.
+     else
+       have_uls = .true.
+     endif
+
      status = nf90_inq_varid( ncid, 'vsrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
@@ -1452,6 +1466,16 @@ endif !scm_observed_aero
        have_v = .true.
      endif
      call shr_sys_flush( iulog )
+
+     ! large scale / geostropic meridional wind (for nudging)
+     call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
+       'v_ls', have_srf, srf(1), .true. , scm_crm_mode, &
+       dplevs, nlev,psobs, hyam, hybm, vls, status )
+     if ( status .ne. nf90_noerr ) then
+       have_vls = .false.
+     else
+       have_vls = .true.
+     endif
 
      status = nf90_inq_varid( ncid, 'Prec', varid   )
      if ( status .ne. nf90_noerr ) then
