@@ -3,6 +3,7 @@ my @groups = qw(run_modes
                 io
                 decomposition
                 time_integration
+                lts
                 hmix
                 hmix_del2
                 hmix_del4

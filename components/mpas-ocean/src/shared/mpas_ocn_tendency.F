@@ -399,6 +399,7 @@ contains
       call mpas_timer_start("ocn_tend_vel")
 
       ! Compute bulk forcing surface stress
+      call ocn_surface_bulk_forcing_init(err)
       call ocn_surface_bulk_forcing_vel( &
                                     forcingPool, sfcStress, &
                                     sfcStressMag, err)
@@ -409,6 +410,7 @@ contains
 
       ! Add nonlinear Coriolis term and horizontal advection of
       ! momentum, formulated as grad of kinetic energy
+      call ocn_vel_hadv_coriolis_init(err)
       call ocn_vel_hadv_coriolis_tend(normRelVortEdge, &
                                       normPlanetVortEdge, &
                                       layerThickEdgeFlux, normalVelocity, &
@@ -419,6 +421,7 @@ contains
                              vertAleTransportTop, tendVel, err)
 
       ! Add pressure gradient
+      call ocn_vel_pressure_grad_init(err)
       call ocn_vel_pressure_grad_tend(ssh, pressure, surfacePressure, &
                                montgomeryPotential, zMid, &
                                density, potentialDensity, &
@@ -438,8 +441,9 @@ contains
 
       ! Add tidal potential (if needed) 
       call ocn_compute_tidal_potential_forcing(err)
-      if (config_time_integrator == 'RK4') then
+      if (config_time_integrator == ('RK4' .or. 'LTS')) then
         ! for split explicit, tidal forcing is added in barotropic subcycles
+        call ocn_vel_tidal_potential_init(domain,err)
         call ocn_vel_tidal_potential_tend(ssh,surfacePressure, tendVel, err)
       endif
 
@@ -447,6 +451,7 @@ contains
       call ocn_vel_hmix_tend(divergence, relativeVorticity, tendVel,err)
 
       ! Add forcing and bottom drag
+      call ocn_vel_forcing_init(err)
       call ocn_vel_forcing_tend(normalVelocity, sfcFlxAttCoeff, &
                                 sfcStress, kineticEnergyCell, &
                                 layerThickEdgeDrag, &

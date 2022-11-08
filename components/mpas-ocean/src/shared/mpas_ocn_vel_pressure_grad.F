@@ -14,7 +14,7 @@
 !> \date   September 2011
 !> \details
 !>  This module contains the routine for computing
-!>  tendencie from the horizontal pressure gradient.
+!>  tendencies from the horizontal pressure gradient.
 !>
 !
 !-----------------------------------------------------------------------
@@ -74,7 +74,9 @@ module ocn_vel_pressure_grad
       density0Inv,      &! 1/density0
       gdensity0Inv,     &! g/density0
       inv12,            &! 1/12
-      pGradLvlWgt        ! weighting for levels in Jacobian formulations
+      pGradLvlWgt,      &! weighting for levels in Jacobian formulations
+      sshTermSplit,     &! this isolates the ssh terms in the ssh gradient to enable splitting of fast and slow tendencies 
+      nonSshTermsSplit    ! this isolates the non ssh terms in the ssh gradient to enable splitting of fast and slow tendencies 
 
 !***********************************************************************
 
@@ -177,7 +179,7 @@ contains
       !*** start timer if turned on
 
       err = 0
-      if (pgradOff) return
+      if (pGradOff) return
       call mpas_timer_start("pressure grad")
 
       meridSshGrad = config_meridional_ssh_grad
@@ -210,8 +212,8 @@ contains
             do k=kMin,kMax
                tend(k,iEdge) = tend(k,iEdge) - &
                                edgeMask(k,iEdge)*invdcEdge* &
-                               (  gravity*(ssh(cell2) - ssh(cell1)) &
-                                + density0Inv*(  surfacePressure(cell2) &
+                               (  sshTermSplit * gravity*(ssh(cell2) - ssh(cell1)) &
+                                + nonSshTermsSplit * density0Inv*(  surfacePressure(cell2) &
                                                - surfacePressure(cell1)) )
             end do
          end do
@@ -628,6 +630,9 @@ contains
       gdensity0Inv = gravity / rho_sw
       inv12 = 1.0_RKIND / 12.0_RKIND
 
+      sshTermSplit = 1.0_RKIND
+      nonSshTermsSplit = 1.0_RKIND
+
       !*** Now reset variables based on input configuration
 
       if (config_disable_vel_pgrad) then
@@ -643,6 +648,8 @@ contains
       case ('ssh_gradient')
          pGradType = pGradTypeSSHgrad
          call mpas_log_write(' Pressure type is: ssh_gradient')
+         if (.not. config_split_ssh_terms) sshTermSplit = 0.0_RKIND
+         if (.not. config_split_non_ssh_terms) nonSshTermsSplit = 0.0_RKIND
 
       case ('pressure_and_zmid')
          pGradType = pGradTypePZmid
