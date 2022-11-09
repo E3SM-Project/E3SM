@@ -40,10 +40,7 @@ subroutine col_connect_init(this, bounds)
    class(connection_set_type)       :: this 
    Integer                          :: n, nn, iconn,begc,endc,begg, endg,ii,jj 
    Integer                          :: g,nx,ny
-   !Real(r8)                         :: x(ny+1,nx+1),y(ny+1,nx+1),zh(ny+1,nx+1),dx(ny,nx-1),dy(ny-1,nx),dz(ny,nx),slopex(ny,nx-1),slopey(ny-1,nx)
-   !Real(r8)                         :: x(2,11),y(2,11),zh(2,11),dx(1,9),dy(9,10),dz(1,10),slopex(1,9),slopey(9,10)
-   !Real(r8)                         :: x(16,33),y(16,33),zh(16,33),dx(15,31),dy(14,32),dz(15,32),slopex(15,31),slopey(14,32),slopexx(15,32),slopeyy(15,32)
-   Real(r8)                         :: x(36,51),y(36,51),zh(36,51),dx(35,49),dy(34,50),dz(35,50),slopex(35,49),slopey(34,50),slopexx(35,50),slopeyy(35,50)
+   Real(r8)                         :: x(36,51),y(36,51),zhc(35,50),zh(36,51),dx(35,49),dy(34,50),dz(35,50),slopex(35,49),slopey(34,50),slopexx(35,50),slopeyy(35,50)
    !Real(r8)                         :: x(3,51),y(3,51),zh(3,51),dx(2,49),dy(1,50),dz(2,50),slopex(2,49),slopey(1,50),slopexx(2,50),slopeyy(2,50)
    begc = bounds%begc;  endc = bounds%endc
    begg = bounds%begg;  endg = bounds%endg
@@ -77,19 +74,40 @@ subroutine col_connect_init(this, bounds)
         y (jj , ii) = jj*1000-1000         
      end do
    end do
-   print *, 'x', x
-   print *, 'y', y   
 
    nn = 0
-   do jj = 1,ny
+   do jj = 1, ny
    do ii = 1, nx
             nn = nn+1
-            zh(jj,ii) = col_pp%topo_ele(nn)
+            zhc(jj,ii) = col_pp%topo_ele(nn)  !zhc is cell centered elevation
      end do
    end do
-   zh(ny+1,:)=zh(ny,:);
-   zh(:,nx+1)=zh(:,nx);
+
+   do jj = 2, ny
+   do ii = 2, nx
+            !zh is cell edge elevation calculated by averaging neighbouring cells
+            zh(jj,ii) = (zhc(jj-1,ii-1) + zhc(jj,ii) + zhc(jj,ii-1) + zhc(jj-1,ii))/4._r8   
+     end do
+   end do
+
+  !define boundary edge elevation
+   do jj = 2,ny 
+       zh(jj,1) = (zhc(jj-1, 1) + zhc(jj, 1)) / 2._r8
+       zh(jj,nx+1) = (zhc(jj-1, nx) + zhc(jj, nx)) / 2._r8
+   enddo
+
+   do ii = 2,nx 
+       zh(1,ii) = (zhc(1, ii-1) + zhc(1,ii)) / 2._r8
+       zh(ny+1,ii) = (zhc(ny, ii-1) + zhc(ny, jj-1)) / 2._r8
+   enddo
+
+   zh(1, 1) = zhc (1,1)
+   zh(ny+1,nx+1) = zhc (ny,nx)
+   zh(1,nx+1) = zhc (1,nx)
+   zh(ny+1,1) = zhc (ny,1)
+
    print *, 'zh', zh
+
    do ii = 1, ny           
      do jj = 1,nx-1
       slopex(ii,jj) = (zh(ii,jj+2)+zh(ii+1,jj+2)-zh(ii,jj)-zh(ii+1,jj))/(x(ii,jj+2)+x(ii+1,jj+2)-x(ii,jj)-x(ii+1,jj))
