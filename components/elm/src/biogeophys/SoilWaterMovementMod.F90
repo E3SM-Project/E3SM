@@ -918,7 +918,7 @@ contains
         depth_m = (depth_up+depth_down)/2._r8 ! average depth between up down strem
         zwt_m = (zwt(col_id_up)+zwt(col_id_dn))/2._r8
         ko = sqrt(hksat(col_id_up,8)*hksat(col_id_dn,8))*1000._r8   ! 1.5 m locates in the 8th layer
-        anis  = 10.0_r8   ! will adapt this based on the clay sand ratio
+        anis  = 15.0_r8   ! will adapt this based on the clay sand ratio
         !trans = anis*sqrt(hksat(col_id_up,15)*hksat(col_id_dn,15))*(depth_up+depth_down)/2._r8*1000._r8 ! (mm2/s) 
         call calcu_transmissivity(depth_m, zwt_m, ko, conn%slope(iconn), hksat(col_id_up,j), hksat(col_id_up,j),anis,trans)
         qflx_up_to_dn = -trans*(depth_down-depth_up+conn%dzg(iconn))*1000._r8/den  ! (mm2/s) 
