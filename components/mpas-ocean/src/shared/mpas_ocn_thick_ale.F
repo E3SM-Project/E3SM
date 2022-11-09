@@ -191,7 +191,6 @@ contains
             end do
    
             restingThicknessDiff = restingThicknessSum - bottomDepth(iCell)
-            restingThicknessSum = restingThicknessSum + 1e-14_RKIND
             ! Note that restingThickness is nonzero, and remaining
             ! terms are perturbations about zero.
             ! This is equation 4 and 6 in Petersen et al 2015,
@@ -199,7 +198,7 @@ contains
             do k = kMin, kMax
                ALE_thickness(k, iCell) = restingThickness(k, iCell) &
                   + ( (SSH(iCell) + restingThicknessDiff) * vertCoordMovementWeights(k) * &
-                      restingThickness(k, iCell) ) / restingThicknessSum
+                      restingThickness(k, iCell) ) / max(1e-14_RKIND, restingThicknessSum)
             end do
          enddo
 #ifndef MPAS_OPENACC
