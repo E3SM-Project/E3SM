@@ -317,6 +317,12 @@ contains
                   block, &
                   domain % configs)
 
+          else if (trim(config_initial_condition_type) == "uniform_1D") then
+
+             call init_ice_state_uniform_1D(&
+                  block, &
+                  domain % configs)
+
           else if (trim(config_initial_condition_type) == "special") then
 
              call init_ice_state_special(&
@@ -557,6 +563,124 @@ contains
     enddo ! iCell
 
   end subroutine init_ice_state_uniform_ice!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_ice_state_uniform_1D
+!
+!> \brief
+!> \author Nicole Jeffery, LANL
+!> \date November, 2022
+!> \details
+!> Initializes sea ice in the first category only with constant
+!> values and latitude bounds defined in the namelist.
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_ice_state_uniform_1D(&
+       block, &
+       configs)!{{{
+
+    use seaice_constants, only: &
+         seaiceDegreesToRadians
+
+    type(block_type), intent(inout) :: &
+         block !< Input/Output:
+
+    type (MPAS_pool_type), pointer, intent(in) :: &
+         configs !< Input:
+
+    type (MPAS_pool_type), pointer :: &
+         mesh, &
+         tracers, &
+         tracers_aggregate
+
+    integer, pointer :: &
+         nCellsSolve
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         latCell
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         iceAreaCategory, &
+         iceVolumeCategory, &
+         snowVolumeCategory, &
+         surfaceTemperature
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         iceAreaCell, &
+         surfaceTemperatureCell
+
+    real(kind=RKIND), pointer :: &
+         config_initial_ice_area, &
+         config_initial_ice_volume, &
+         config_initial_snow_volume, &
+         config_initial_latitude_north, &
+         config_initial_latitude_south
+
+    integer :: &
+         iCell
+
+    call MPAS_pool_get_config(configs, "config_initial_ice_area", config_initial_ice_area)
+    call MPAS_pool_get_config(configs, "config_initial_ice_volume", config_initial_ice_volume)
+    call MPAS_pool_get_config(configs, "config_initial_snow_volume", config_initial_snow_volume)
+    call MPAS_pool_get_config(configs, "config_initial_latitude_north", config_initial_latitude_north)
+    call MPAS_pool_get_config(configs, "config_initial_latitude_south", config_initial_latitude_south)
+
+    call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
+    call MPAS_pool_get_subpool(block % structs, "tracers", tracers)
+    call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
+
+    call MPAS_pool_get_dimension(mesh, "nCells", nCellsSolve)
+
+    call MPAS_pool_get_array(mesh, "latCell", latCell)
+
+    call MPAS_pool_get_array(tracers, "iceAreaCategory", iceAreaCategory, 1)
+    call MPAS_pool_get_array(tracers, "iceVolumeCategory", iceVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "snowVolumeCategory", snowVolumeCategory, 1)
+    call MPAS_pool_get_array(tracers, "surfaceTemperature", surfaceTemperature, 1)
+
+    call MPAS_pool_get_array(tracers_aggregate, "iceAreaCell", iceAreaCell)
+    call MPAS_pool_get_array(tracers_aggregate, "surfaceTemperatureCell", surfaceTemperatureCell)
+
+    do iCell = 1, nCellsSolve
+
+       if (latCell(iCell) > config_initial_latitude_north * seaiceDegreesToRadians .or. &
+           latCell(iCell) < config_initial_latitude_south * seaiceDegreesToRadians) then
+
+
+          iceAreaCategory(1,:,iCell)    = 0.0_RKIND
+          iceVolumeCategory(1,:,iCell)  = 0.0_RKIND
+          snowVolumeCategory(1,:,iCell) = 0.0_RKIND
+          surfaceTemperature(1,:,iCell) = 0.0_RKIND
+
+          ! has ice
+          iceAreaCategory(1,1,iCell)    = config_initial_ice_area
+          iceVolumeCategory(1,1,iCell)  = config_initial_ice_volume
+          snowVolumeCategory(1,1,iCell) = config_initial_snow_volume
+          surfaceTemperature(1,1,iCell) = -1.0_RKIND
+
+       else
+
+          ! no ice
+          iceAreaCategory(1,:,iCell)    = 0.0_RKIND
+          iceVolumeCategory(1,:,iCell)  = 0.0_RKIND
+          snowVolumeCategory(1,:,iCell) = 0.0_RKIND
+          surfaceTemperature(1,:,iCell) = 0.0_RKIND
+
+       endif
+
+    enddo ! iCell
+
+    ! integrated quantities
+    do iCell = 1, nCellsSolve
+
+       iceAreaCell(iCell) = sum(iceAreaCategory(1,:,iCell))
+       surfaceTemperatureCell(iCell) = -20.15_RKIND
+
+    enddo ! iCell
+
+  end subroutine init_ice_state_uniform_1D!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !

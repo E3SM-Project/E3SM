@@ -450,7 +450,7 @@
 		/>
 		<nml_option name="config_initial_condition_type" type="character" default_value="cice_default" units="unitless"
 			description="Initial condition type for sea ice state."
-			possible_values="'restart', 'uniform', 'circle', 'square' or 'uniform_interior'"
+			possible_values="'restart', 'uniform', 'circle', 'square', 'uniform_interior', or uniform_1D"
 		/>
 		<nml_option name="config_initial_ice_area" type="real" default_value="1.0" units="unitless"
 			description="Sea ice concentration at initialization."
@@ -2110,6 +2110,54 @@
 				immutable="true">
 			<var name="iceCoverage"/>
 		</stream>
+		<stream name="ISPOLSixHourlyForcing"
+				type="input"
+				filename_template="forcing/atmosphere_forcing_six_hourly.ispol.nc"
+				filename_interval="0001-00-00_00:00:00"
+				input_interval="none"
+				reference_time="2004-01-01_00:00:00"
+				immutable="true">
+			<var name="shortwaveDown1D"/>
+			<var name="longwaveDown1D"/>
+		</stream>
+		<stream name="ISPOLDailyForcing"
+				type="input"
+				filename_template="forcing/atmosphere_forcing_daily.ispol.nc"
+				filename_interval="0001-00-00_00:00:00"
+				input_interval="none"
+				reference_time="2004-01-01_00:00:00"
+				immutable="true">
+			<var name="airTemperature1D"/>
+			<var name="airSpecificHumidity1D"/>
+			<var name="uAirVelocity1D"/>
+			<var name="vAirVelocity1D"/>
+			<var name="rainfallRate1D"/>
+		</stream>
+		<stream name="ISPOLMonthlyForcing"
+				type="input"
+				filename_template="forcing/ocean_forcing_monthly.ispol.nc"
+				filename_interval="none"
+				input_interval="none"
+				immutable="true">
+			<var name="seaSurfaceTemperature1D"/>
+			<var name="seaSurfaceSalinity1D"/>
+			<var name="oceanMixedLayerDepth1D"/>
+			<var name="uOceanVelocity1D"/>
+			<var name="vOceanVelocity1D"/>
+			<var name="seaSurfaceTiltU1D"/>
+			<var name="seaSurfaceTiltV1D"/>
+			<var name="oceanHeatFluxConvergence1D"/>
+		</stream>
+		<stream name="ISPOLDailyWOAForcing"
+				type="input"
+				filename_template="forcing/ocean_biogeochemistry_forcing_daily.ispol.nc"
+				filename_interval="0001-00-00_00:00:00"
+				input_interval="none"
+				reference_time="2004-01-01_00:00:00"
+				immutable="true">
+			<var name="oceanNitrateConc1D"/>
+			<var name="oceanSilicateConc1D"/>
+		</stream>
 
 		<!-- Aerosols input -->
 		<stream name="StandardAerosolsInput"
@@ -3737,6 +3785,52 @@
 		/>
 	</var_struct>
 
+	<!--1D atmos forcing -->
+	<var_struct name="1D_atmos_forcing" time_levs="1">
+		<var name="shortwaveDown1D"
+		     type="real"
+		     dimensions="Time"
+		     units="W m-2"
+		     description="Incoming shortwave flux (positive down)"
+		/>
+		<var name="longwaveDown1D"
+		     type="real"
+		     dimensions="Time"
+		     units="W m-2"
+		     description="Incoming longwave flux (positive down)"
+		/>
+		<var name="airTemperature1D"
+		     type="real"
+		     dimensions="Time"
+		     units="K"
+		     description="2-m air temperature"
+		/>
+		<var name="airSpecificHumidity1D"
+		     type="real"
+		     dimensions="Time"
+		     units="1"
+		     description="2-m specific humidity"
+		/>
+		<var name="uAirVelocity1D"
+		     type="real"
+		     dimensions="Time"
+		     units="m s-1"
+		     description="10-m wind velocity in the x direction"
+		/>
+		<var name="vAirVelocity1D"
+		     type="real"
+		     dimensions="Time"
+		     units="m s-1"
+		     description="10-m wind velocity in the y direction"
+		/>
+		<var name="rainfallRate1D"
+		     type="real"
+		     dimensions="Time"
+		     units="kg m-2 s-1"
+		     description="precipitation rate"
+		/>
+	</var_struct>
+
 	<!--ocean coupling -->
 	<var_struct name="ocean_coupling" time_levs="1">
 		<var name="seaSurfaceTemperature"
@@ -3803,6 +3897,73 @@
 		<var name="landIceMaskVertex"
 		     type="integer"
 		     dimensions="nVertices Time"
+		/>
+	</var_struct>
+
+	<!--1D ocean forcing -->
+	<var_struct name="1D_ocean_forcing" time_levs="1">
+		<var name="seaSurfaceTemperature1D"
+		     type="real"
+		     dimensions="Time"
+		     units="K"
+		     description="sea surface temperature"
+		/>
+		<var name="seaSurfaceSalinity1D"
+		     type="real"
+		     dimensions="Time"
+		     units="1e-3"
+		     description="sea surface salinity"
+		/>
+		<var name="uOceanVelocity1D"
+		     type="real"
+		     dimensions="Time"
+		     units="m s-1"
+		     description="ocean surface velocity in the x-direction"
+		/>
+		<var name="vOceanVelocity1D"
+		     type="real"
+		     dimensions="Time"
+		     units="m s-1"
+		     description="ocean surface velocity in the y-direction"
+		/>
+		<var name="seaSurfaceTiltU1D"
+		     type="real"
+		     dimensions="Time"
+		     units="1"
+		     description="sea surface tilt in the  x-direction"
+		/>
+		<var name="seaSurfaceTiltV1D"
+		     type="real"
+		     dimensions="Time"
+		     units="1"
+		     description="sea surface tilt in the y-direction"
+		/>
+		<var name="oceanMixedLayerDepth1D"
+		     type="real"
+		     dimensions="Time"
+		     units="m"
+		     description="ocean mixed layer depth"
+		/>
+		<var name="oceanHeatFluxConvergence1D"
+		     type="real"
+		     dimensions="Time"
+		     units="W m-2"
+		     description="deep ocean heat flux positive up"
+		/>
+	</var_struct>
+
+	<var_struct name="1D_ocean_biogeochemistry_forcing" time_levs="1">
+		<var name="oceanNitrateConc1D"
+		     type="real"
+		     dimensions="Time"
+		     units="mmol N m-3"
+		     description="sea surface nitrate"
+		/>
+		<var name="oceanSilicateConc1D"
+		     type="real"
+		     dimensions="Time"
+		     units="mmol Si m-3"
+		     description="sea surface silicate"
 		/>
 	</var_struct>
 
