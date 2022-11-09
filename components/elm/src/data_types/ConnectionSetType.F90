@@ -44,10 +44,6 @@ subroutine col_connect_init(this, bounds)
    !Real(r8)                         :: x(3,51),y(3,51),zh(3,51),dx(2,49),dy(1,50),dz(2,50),slopex(2,49),slopey(1,50),slopexx(2,50),slopeyy(2,50)
    begc = bounds%begc;  endc = bounds%endc
    begg = bounds%begg;  endg = bounds%endg
-   !print *, 'begg', begg
-   !print *, 'endg', endg
-   !print *,  'begc',begc
-   !print *, 'endc',endc
    nx = 50
    ny = 35
    iconn=0
@@ -105,8 +101,6 @@ subroutine col_connect_init(this, bounds)
    zh(ny+1,nx+1) = zhc (ny,nx)
    zh(1,nx+1) = zhc (1,nx)
    zh(ny+1,1) = zhc (ny,1)
-
-   print *, 'zh', zh
 
    do ii = 1, ny           
      do jj = 1,nx-1
@@ -202,9 +196,7 @@ subroutine col_connect_init(this, bounds)
       !this%aniso(iconn) ! will calculate based on clay sand ratio 
     enddo
 endif
-print *, 'vertcos',this%vertcos
-print *, 'dzg',this%dzg
-print *,'ele2',col_pp%topo_ele
+
 end subroutine col_connect_init
 
 function get_natveg_column_id(id, bounds) result(id_out)
