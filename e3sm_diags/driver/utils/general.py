@@ -50,10 +50,8 @@ def adjust_time_from_time_bounds(var):
     time2.units = var_time.units
     time2.calendar = var_time.calendar
     time2.setBounds(tbounds)
-    # time2.calendar = cdtime.NoLeapCalendar
     time2.id = "time"
     var.setAxis(0, time2)
-    #    cdutil.setTimeBoundsMonthly(var)
 
     return var
 

@@ -15,7 +15,6 @@ dependencies:
   - cartopy_offlinedata
   - cdp
   - cdms2
-  - cdtime
   - cdutil
   - genutil
   - lxml
