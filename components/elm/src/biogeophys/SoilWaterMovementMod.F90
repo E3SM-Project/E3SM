@@ -538,9 +538,7 @@ contains
                     ((watsat(c,j)*watsat(c,min(nlevsoi, j+1))))
             endif
             s1 = min(1._r8, s1)
-            !s3 = min(1._r8, s3)
             s2 = hksat(c,j)*s1**(2._r8*bsw(c,j)+2._r8)
-            !s4 = hksat(c,j)*s3**(1._r8*bsw(c,j)+1.5_r8)
             ! replace fracice with impedance factor, as in zhao 97,99
             if (origflag == 1) then
                imped(c,j)=(1._r8-0.5_r8*(fracice(c,j)+fracice(c,min(nlevsoi, j+1))))
@@ -611,10 +609,7 @@ contains
          col_id_up = get_natveg_column_id(grid_id_up,bounds)   
          col_id_dn = get_natveg_column_id(grid_id_dn,bounds)
          den = conn%dist(iconn)*1000._r8
-      !do j = 1, nlevsoi
        do j = 1, nlevgrnd
-	 !dzg(iconn,j) =  grc_pp%elevation(grid_id_up) - grc_pp%elevation(grid_id_dn)  !gravity potential here is the elevation change
-	                                                                    !it's the same for all the neighboring up-down layers 
 	 dzg(iconn,j) = conn%dzg(iconn)  	!iconn+1 ele - iconn ele or down cell ele- up cell ele							    !in a grid since the vertical discretization is the same
          dzgmm(iconn,j) = conn%dzg(iconn)*1000._r8
          if ((j > jwt(col_id_up)-1).or.(j > jwt(col_id_dn)-1)) then
@@ -623,7 +618,7 @@ contains
 
 	   !hydraulic conductivity hkl(iconn,j) is
            !the lateral hydraulic conductivity is calculated using the geometric mean of the 
-           !neighbouring lateral cells and is approximated as 20 times of the vertical hydraulic conductivity
+           !neighbouring lateral cells
              s1 = 0.5_r8*(h2osoi_vol(col_id_up,j) + h2osoi_vol(col_id_dn,j)) / &
                     (0.5_r8*(watsat(col_id_up,j)+watsat(col_id_dn,j)))
              s1 = min(1._r8, s1)
@@ -641,8 +636,6 @@ contains
             qflx_up_to_dn = -hkl(iconn,j)*((smp(col_id_dn,j) - smp(col_id_up,j) + dzgmm(iconn,j))/den*conn%facecos(iconn)+ conn%facesin(iconn))
             qflx_lateral_s(col_id_up,j) = qflx_lateral_s(col_id_up,j) - qflx_up_to_dn*conn%area(iconn)*dz(col_id_up,j)/conn%uparea(iconn)*conn%facecos(iconn) ! weighted by projected normal area to the cell interface
             qflx_lateral_s(col_id_dn,j) = qflx_lateral_s(col_id_dn,j) + qflx_up_to_dn*conn%area(iconn)*dz(col_id_dn,j)/conn%downarea(iconn)*conn%facecos(iconn)
-            !qflx_lateral_s(col_id_up, j) = 0._r8; !test for lateral flux=0
-            !qflx_lateral_s(col_id_dn, j) = 0._r8;
           endif
         enddo
      enddo
@@ -657,14 +650,11 @@ contains
          qin(c,j)    = qflx_infl(c)
          den    = (zmm(c,j+1)-zmm(c,j))
          dzq    = (zq(c,j+1)-zq(c,j))
-         !dzq = 1000._r8
          num    = (smp(c,j+1)-smp(c,j)) - dzq
          qout(c,j)   = -hk(c,j)*num/den*1._r8
          dqodw1(c,j) = -(-hk(c,j)*dsmpdw(c,j)   + num*dhkdw(c,j))/den
          dqodw2(c,j) = -( hk(c,j)*dsmpdw(c,j+1) + num*dhkdw(c,j))/den
-         !rmx(c,j) =  qin(c,j) - qout(c,j) - qflx_rootsoi_col(c,j) + qflx_lateral_s(c,j)/dx*dz(c,j)  
          rmx(c,j) = qin(c,j)*conn%vertcos(c) - qout(c,j)*conn%vertcos(c)- qflx_rootsoi_col(c,j)*conn%vertcos(c)+ qflx_lateral_s(c,j)
-         !rmx(c,j) = - qout(c,j)*conn%vertcos(c)+ qflx_lateral_s(c,j)
          amx(c,j) =  0._r8
          bmx(c,j) =  dzmm(c,j)*(sdamp+1._r8/dtime) + dqodw1(c,j)
          cmx(c,j) =  dqodw2(c,j)
@@ -678,21 +668,17 @@ contains
          do j = 2, nlevbed - 1
             den    = (zmm(c,j) - zmm(c,j-1))
             dzq    = (zq(c,j)-zq(c,j-1))
-            !dzq = 1000._r8
             num    = (smp(c,j)-smp(c,j-1)) - dzq
             qin(c,j)    = -hk(c,j-1)*num/den*1._r8
             dqidw0(c,j) = -(-hk(c,j-1)*dsmpdw(c,j-1) + num*dhkdw(c,j-1))/den
             dqidw1(c,j) = -( hk(c,j-1)*dsmpdw(c,j)   + num*dhkdw(c,j-1))/den
             den    = (zmm(c,j+1)-zmm(c,j))
             dzq    = (zq(c,j+1)-zq(c,j))
-            !dzq = 1000._r8
             num    = (smp(c,j+1)-smp(c,j)) - dzq
             qout(c,j)   = -hk(c,j)*num/den*1._r8
             dqodw1(c,j) = -(-hk(c,j)*dsmpdw(c,j)   + num*dhkdw(c,j))/den
             dqodw2(c,j) = -( hk(c,j)*dsmpdw(c,j+1) + num*dhkdw(c,j))/den
-            !rmx(c,j)    =  qin(c,j) - qout(c,j) -  qflx_rootsoi_col(c,j) + qflx_lateral_s(c,j)/dx*dz(c,j) 
             rmx(c,j)    =  qin(c,j)*conn%vertcos(c) - qout(c,j)*conn%vertcos(c) -  qflx_rootsoi_col(c,j)*conn%vertcos(c) + qflx_lateral_s(c,j)
-            !rmx(c,j)    =  qin(c,j)*conn%vertcos(c) - qout(c,j)*conn%vertcos(c) + qflx_lateral_s(c,j)
             amx(c,j)    = -dqidw0(c,j)
             bmx(c,j)    =  dzmm(c,j)/dtime - dqidw1(c,j) + dqodw1(c,j)
             cmx(c,j)    =  dqodw2(c,j)
@@ -714,9 +700,7 @@ contains
             dqidw1(c,j) = -( hk(c,j-1)*dsmpdw(c,j)   + num*dhkdw(c,j-1))/den
             qout(c,j)   =  0._r8
             dqodw1(c,j) =  0._r8
-            !rmx(c,j)    =  qin(c,j) - qout(c,j) - qflx_rootsoi_col(c,j) + qflx_lateral_s(c,j)/dx*dz(c,j)
             rmx(c,j)    =  qin(c,j)*conn%vertcos(c) - qout(c,j)*conn%vertcos(c) - qflx_rootsoi_col(c,j)*conn%vertcos(c) + qflx_lateral_s(c,j)
-            !rmx(c,j)    =  qin(c,j)*conn%vertcos(c) - qout(c,j)*conn%vertcos(c)  + qflx_lateral_s(c,j)
             amx(c,j)    = -dqidw0(c,j)
             bmx(c,j)    =  dzmm(c,j)/dtime - dqidw1(c,j) + dqodw1(c,j)
             cmx(c,j)    =  0._r8
@@ -761,9 +745,6 @@ contains
                dqodw1(c,j) = 0._r8
                dqodw2(c,j) = 0._r8
             else
-                !qout(c,j)   = -hk(c,j)*num/den
-                !dqodw1(c,j) = -(-hk(c,j)*dsmpdw(c,j)   + num*dhkdw(c,j))/den
-                !dqodw2(c,j) = -( hk(c,j)*dsmpdw1 + num*dhkdw(c,j))/den
                !Han Qiu test
                qout(c,j) = 0._r8
                dqodw1(c,j) = 0._r8
@@ -771,9 +752,7 @@ contains
 
             end if
 
-            !rmx(c,j) =  qin(c,j) - qout(c,j) - qflx_rootsoi_col(c,j) + qflx_lateral_s(c,j)/dx*dz(c,j)
             rmx(c,j) =  qin(c,j)*conn%vertcos(c) - qout(c,j)*conn%vertcos(c) - qflx_rootsoi_col(c,j)*conn%vertcos(c) + qflx_lateral_s(c,j)    !/dx*dz(c,j) 
-            !rmx(c,j) =  qin(c,j)*conn%vertcos(c) - qout(c,j)*conn%vertcos(c)  + qflx_lateral_s(c,j)    !/dx*dz(c,j) 
             amx(c,j) = -dqidw0(c,j)
             bmx(c,j) =  dzmm(c,j)/dtime - dqidw1(c,j) + dqodw1(c,j)
             cmx(c,j) =  dqodw2(c,j)
@@ -790,10 +769,6 @@ contains
                bmx(c,j+1) = dzmm(c,j+1)/dtime
                cmx(c,j+1) = 0._r8
             else
-               !rmx(c,j+1) = 0._r8
-               !amx(c,j+1) = 0._r8
-               !bmx(c,j+1) = dzmm(c,j+1)/dtime
-               !cmx(c,j+1) = 0._r8
                 rmx(c,j+1) =  qin(c,j+1) - qout(c,j+1)
                 amx(c,j+1) = -dqidw0(c,j+1)
                 bmx(c,j+1) =  dzmm(c,j+1)/dtime - dqidw1(c,j+1) + dqodw1(c,j+1)
@@ -946,12 +921,9 @@ contains
         anis  = 10.0_r8   ! will adapt this based on the clay sand ratio
         !trans = anis*sqrt(hksat(col_id_up,15)*hksat(col_id_dn,15))*(depth_up+depth_down)/2._r8*1000._r8 ! (mm2/s) 
         call calcu_transmissivity(depth_m, zwt_m, ko, conn%slope(iconn), hksat(col_id_up,j), hksat(col_id_up,j),anis,trans)
-        !print *, 'trans2',trans
         qflx_up_to_dn = -trans*(depth_down-depth_up+conn%dzg(iconn))*1000._r8/den  ! (mm2/s) 
         qflx_lateral_s(col_id_up,j) = qflx_lateral_s(col_id_up,j) - qflx_up_to_dn/1000._r8*conn%area(iconn)/conn%uparea(iconn)*conn%facecos(iconn)* conn%vertcos(col_id_up)  ! (mm2/s), area is cross section length 
         qflx_lateral_s(col_id_dn,j) = qflx_lateral_s(col_id_dn,j) + qflx_up_to_dn/1000._r8*conn%area(iconn)/conn%downarea(iconn)*conn%facecos(iconn) * conn%vertcos(col_id_dn) 
-       !qflx_lateral_s(col_id_up, j) = 0._r8;   ! do not recount the lateral flux if a cell is saturated and under water table !Qiu
-       !qflx_lateral_s(col_id_dn, j) = 0._r8;
        enddo 
         
        do fc = 1, num_hydrologyc
