@@ -2368,8 +2368,8 @@
         <command name="load">pnetcdf/1.9.0</command>
       </modules>
     </module_system>
-    <RUNDIR>/p/lustre1/donahue5/E3SM/$CASE/run</RUNDIR>
-    <EXEROOT>/p/lustre1/donahue5/E3SM/$CASE/bld</EXEROOT>
+    <RUNDIR>/p/lustre1/$USER/$CASE/run</RUNDIR>
+    <EXEROOT>/p/lustre1/$USER/$CASE/bld</EXEROOT>
     <environment_variables compiler="intel">
       <env name="NETCDFROOT">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</env>
       <env name="NETCDF_PATH">/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/</env>
