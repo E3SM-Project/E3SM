@@ -1,0 +1,27 @@
+There are 2 changes in files under submodules that are not easy to change.
+
+These are changes needed with higher version of GNU (all that is avail on PM)
+
+Need a change here to build. this is already done in master, but there are other changes we don't need --
+can just update source with the interface changes needed
+
+cp ODEMod.F90 components/clm/src/external_models/sbetr/src/betr/betr_math/ODEMod.F90
+
+needed to work-around issue with solver during runtime. this change modifies compiler
+flags for ALL MPAS sources which is not necessary, but unable to only affect one source in MPAS
+in current master, we build one MPAS source file with a compiler flag to turn off very specific optimization,
+however, in maint-1.0, the CMake logic is different and I can't do the same thing in Depends.
+But what I can do is add a flag here (which may need more guards) that turns off the optimization
+for all MPAS source files.
+
+cp Makefile.in.ACME components/mpas-source/src/Makefile.in.ACME
+
+-----------------------
+Here are two places that were failing with runtime segfault in DEBUG due to the compiler looking-ahead
+and trying to parse an experession B that should only be evaluated if A is true.
+
+cp RtmMod.F90 components/mosart/src/riverroute/RtmMod.F90
+cp micro_mg2_0.F90 components/cam/src/physics/cam/micro_mg2_0.F90
+
+We can decide how important fixes like these are. I don't see a fix in current master
+at these locations, but it's possible the code flow doesn't happen same way in maint-1.0
