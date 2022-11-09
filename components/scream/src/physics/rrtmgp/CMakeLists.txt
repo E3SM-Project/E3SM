@@ -57,6 +57,12 @@ set(EXTERNAL_SRC
   ${EAM_RRTMGP_DIR}/external/cpp/rte/kernels/mo_rte_solver_kernels.cpp
   ${EAM_RRTMGP_DIR}/external/cpp/extensions/fluxes_byband/mo_fluxes_byband_kernels.cpp
 )
+list(APPEND CMAKE_MODULE_PATH
+  ${SCREAM_BASE_DIR}/../../externals/YAKL)
+
+include(yakl_utils)
+yakl_process_cxx_source_files("${EXTERNAL_SRC}")
+
 add_library(rrtmgp ${EXTERNAL_SRC})
 EkatDisableAllWarning(rrtmgp)
 SetCudaFlags(rrtmgp)
