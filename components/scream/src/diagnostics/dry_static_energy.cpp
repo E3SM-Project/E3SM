@@ -43,6 +43,13 @@ void DryStaticEnergyDiagnostic::set_grids(const std::shared_ptr<const GridsManag
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
   C_ap.request_allocation(ps);
   m_diagnostic_output.allocate_view();
+
+  // Initialize a 2d view of dz to be used in compute_diagnostic
+  const auto npacks     = ekat::npack<Pack>(m_num_levs);
+  const auto npacks_p1  = ekat::npack<Pack>(m_num_levs+1);
+  m_dz    = view_2d("",m_num_cols,npacks);
+  m_z_int = view_2d("",m_num_cols,npacks_p1);
+  m_z_mid = view_2d("",m_num_cols,npacks);
 }
 // =========================================================================================
 void DryStaticEnergyDiagnostic::compute_diagnostic_impl()
@@ -50,7 +57,7 @@ void DryStaticEnergyDiagnostic::compute_diagnostic_impl()
 
   const auto npacks     = ekat::npack<Pack>(m_num_levs);
   const auto npacks_p1  = ekat::npack<Pack>(m_num_levs+1);
-  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, npacks);
+  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, npacks);
 
   const auto& dse                = m_diagnostic_output.get_view<Pack**>();
   const auto& T_mid              = get_field_in("T_mid").get_view<const Pack**>();
@@ -63,9 +70,9 @@ void DryStaticEnergyDiagnostic::compute_diagnostic_impl()
   const Real surf_geopotential = 0.0;
 
   const int num_levs = m_num_levs;
-  view_1d dz("",npacks);
-  view_1d z_int("",npacks_p1);
-  view_1d z_mid("",npacks);
+  auto      dz       = m_dz;
+  auto      z_int    = m_z_int;
+  auto      z_mid    = m_z_mid;
   Kokkos::deep_copy(dz,0.0);
   Kokkos::deep_copy(z_int,0.0);
   Kokkos::deep_copy(z_mid,0.0);
@@ -73,17 +80,20 @@ void DryStaticEnergyDiagnostic::compute_diagnostic_impl()
                        default_policy,
                        KOKKOS_LAMBDA(const MemberType& team) {
     const int icol = team.league_rank();
+    const auto& dz_s    = ekat::subview(dz,icol);
+    const auto& z_int_s = ekat::subview(z_int,icol);
+    const auto& z_mid_s = ekat::subview(z_mid,icol);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npacks), [&] (const Int& jpack) {
-      dz(jpack) = PF::calculate_dz(pseudo_density_mid(icol,jpack), p_mid(icol,jpack), T_mid(icol,jpack), qv_mid(icol,jpack));
+      dz_s(jpack) = PF::calculate_dz(pseudo_density_mid(icol,jpack), p_mid(icol,jpack), T_mid(icol,jpack), qv_mid(icol,jpack));
     });
     team.team_barrier();
-    PF::calculate_z_int(team,num_levs,dz,surf_geopotential,z_int);
+    PF::calculate_z_int(team,num_levs,dz_s,surf_geopotential,z_int_s);
     team.team_barrier();
-    PF::calculate_z_mid(team,num_levs,z_int,z_mid);
+    PF::calculate_z_mid(team,num_levs,z_int_s,z_mid_s);
     team.team_barrier();
     const auto& dse_s = ekat::subview(dse,icol);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npacks), [&] (const Int& jpack) {
-      dse_s(jpack) = PF::calculate_dse(T_mid(icol,jpack),z_mid(jpack),phis(icol));
+      dse_s(jpack) = PF::calculate_dse(T_mid(icol,jpack),z_mid_s(jpack),phis(icol));
     });
     team.team_barrier();
   });
