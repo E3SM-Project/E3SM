@@ -75,7 +75,7 @@ module element_ops
   public state0
 
   ! promote this to _real_kind after V2 code freeze
-  real (kind=real_kind), public :: tref_lapse_rate=0.0065e0
+  real (kind=real_kind), public :: tref_lapse_rate=0.0065D0
 contains
 
 
