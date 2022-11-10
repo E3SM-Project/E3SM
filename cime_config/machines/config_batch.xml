@@ -210,7 +210,7 @@
       <directive>-t {{ job_wallclock_time }}</directive>
       <directive>-o {{ job_id }}.out</directive>
       <directive>-e {{ job_id }}.err</directive>
-      <directive> -A {{ project }} </directive>
+      <directive>-A {{ project }}</directive>
     </directives>
     <queues>
       <queue walltimemax="01:00:00" nodemax="270" default="true">pbatch</queue>
