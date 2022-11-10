@@ -57,13 +57,14 @@ void Functions<S,D>::shoc_grid(
 
     // Define thickness of the interface grid points
     dz_zi(k) = zt_grid_km1 - zt_grid_k;
-    dz_zi(k).set(range_pack == 0, 0);
 
     // Define the air density on the thermo grid
     rho_zt(k) = (1/ggr)*(pdel(k)/dz_zt(k));
   });
 
+  team.team_barrier();
   // Set lower condition for dz_zi
+  s_dz_zi(0) = 0;
   s_dz_zi(nlevi-1) = s_zt_grid(nlev-1);
 }
 

@@ -68,12 +68,13 @@ void Functions<S,D>::shoc_energy_fixer(
   // Compute the total energy before and after SHOC call
   const Scalar shf = wthl_sfc*cp*s_rho_zi(nlevi-1);
   const Scalar lhf = wqw_sfc*s_rho_zi(nlevi-1);
-  te_a = se_a + ke_a + (lcond+lice)*wv_a +lice*wl_a;
+  te_a = se_a + ke_a + (lcond+lice)*wv_a + lice*wl_a;
   te_b = se_b + ke_b + (lcond+lice)*wv_b + lice*wl_b;
   te_b += (shf+lhf*(lcond+lice))*hdtime;
 
   // Limit the energy fixer to find highest layer where SHOC is active.
   // Find first level where tke is higher than lowest threshold.
+  static_assert(Spack::n == IntSmallPack::n, "SHOC: assumption in ||r.");
   Int shoctop = 0;
   const auto nlevm2_packs = ekat::npack<Spack>(nlev-2);
   Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nlevm2_packs),

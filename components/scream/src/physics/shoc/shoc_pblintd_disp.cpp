@@ -35,6 +35,7 @@ void Functions<Real,DefaultDevice>
 
     auto workspace       = workspace_mgr.get_workspace(team);
 
+    Scalar pblh_;
     pblintd(team, nlev, nlevi, npbl,
             ekat::subview(z, i),
             ekat::subview(zi, i),
@@ -48,7 +49,8 @@ void Functions<Real,DefaultDevice>
             kbfs(i),
             ekat::subview(cldn, i),
             workspace,
-            pblh(i));
+            pblh_);
+    pblh(i) = pblh_;
   });
 }
 
