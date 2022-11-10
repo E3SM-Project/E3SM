@@ -47,9 +47,8 @@ void DryStaticEnergyDiagnostic::set_grids(const std::shared_ptr<const GridsManag
   // Initialize a 2d view of dz to be used in compute_diagnostic
   const auto npacks     = ekat::npack<Pack>(m_num_levs);
   const auto npacks_p1  = ekat::npack<Pack>(m_num_levs+1);
-  m_dz    = view_2d("",m_num_cols,npacks);
-  m_z_int = view_2d("",m_num_cols,npacks_p1);
-  m_z_mid = view_2d("",m_num_cols,npacks);
+  m_tmp_mid = view_2d("",m_num_cols,npacks);
+  m_tmp_int = view_2d("",m_num_cols,npacks_p1);
 }
 // =========================================================================================
 void DryStaticEnergyDiagnostic::compute_diagnostic_impl()
@@ -70,19 +69,17 @@ void DryStaticEnergyDiagnostic::compute_diagnostic_impl()
   const Real surf_geopotential = 0.0;
 
   const int num_levs = m_num_levs;
-  auto      dz       = m_dz;
-  auto      z_int    = m_z_int;
-  auto      z_mid    = m_z_mid;
-  Kokkos::deep_copy(dz,0.0);
-  Kokkos::deep_copy(z_int,0.0);
-  Kokkos::deep_copy(z_mid,0.0);
+  auto      tmp_mid  = m_tmp_mid;
+  auto      tmp_int  = m_tmp_int;
+  Kokkos::deep_copy(tmp_mid,0.0);
+  Kokkos::deep_copy(tmp_int,0.0);
   Kokkos::parallel_for("DryStaticEnergyDiagnostic",
                        default_policy,
                        KOKKOS_LAMBDA(const MemberType& team) {
     const int icol = team.league_rank();
-    const auto& dz_s    = ekat::subview(dz,icol);
-    const auto& z_int_s = ekat::subview(z_int,icol);
-    const auto& z_mid_s = ekat::subview(z_mid,icol);
+    const auto& dz_s    = ekat::subview(tmp_mid,icol);
+    const auto& z_int_s = ekat::subview(tmp_int,icol);
+    const auto& z_mid_s = dz_s; // Reuse the memory for z_mid, but set a new variable for code readability.
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npacks), [&] (const Int& jpack) {
       dz_s(jpack) = PF::calculate_dz(pseudo_density_mid(icol,jpack), p_mid(icol,jpack), T_mid(icol,jpack), qv_mid(icol,jpack));
     });

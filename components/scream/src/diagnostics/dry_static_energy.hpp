@@ -46,9 +46,8 @@ protected:
   Int m_num_levs;
 
   // Temporary view to set dz in compute diagnostic
-  view_2d m_dz;
-  view_2d m_z_int;
-  view_2d m_z_mid;
+  view_2d m_tmp_mid;
+  view_2d m_tmp_int;
 
 }; // class DryStaticEnergyDiagnostic
 
