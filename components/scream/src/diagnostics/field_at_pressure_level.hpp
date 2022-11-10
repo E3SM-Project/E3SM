@@ -48,6 +48,7 @@ protected:
   Real                m_pressure_level;
   int                 m_num_levs;
   int                 m_num_cols;
+  Real                m_mask_val;
 
 }; // class FieldAtPressureLevel
 

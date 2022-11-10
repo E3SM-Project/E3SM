@@ -22,6 +22,8 @@ FieldAtPressureLevel::FieldAtPressureLevel (const ekat::Comm& comm, const ekat::
 
   m_p_tgt = view_1d<mPack>("",1);
   Kokkos::deep_copy(m_p_tgt, m_pressure_level);
+
+  m_mask_val = m_params.get<Real>("mask_value",-99999);
 }
 
 // =========================================================================================
@@ -63,7 +65,7 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
   auto d_data_tgt = m_diagnostic_output.get_view<Real*>();
   view_2d<mPack> data_tgt_tmp(reinterpret_cast<mPack*>(d_data_tgt.data()),m_num_cols,1);  // Note, vertical interp wants a 2D view, so we create a temporary one
 
-  perform_vertical_interpolation(pressure,m_p_tgt,f_data_src,data_tgt_tmp,m_num_levs,1);
+  perform_vertical_interpolation(pressure,m_p_tgt,f_data_src,data_tgt_tmp,m_num_levs,1,m_mask_val);
 
 }
 

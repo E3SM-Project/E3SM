@@ -115,6 +115,21 @@ TEST_CASE("field_at_pressure_level_p2")
       }
     }
   } 
+  {
+    // Test 3: Take a slice at a value outside the bounds, which should return the default masked value
+    for (int test_itr=0;test_itr<num_checks;test_itr++) {
+      Real plevel = pressure_bounds.p_surf*2;
+      auto diag = get_test_diag(comm, fm, gm, "int", plevel);
+      diag->initialize(t0,RunType::Initial);
+      diag->compute_diagnostic();
+      auto diag_f = diag->get_diagnostic();
+      diag_f.sync_to_host();
+      auto test2_diag_v = diag_f.get_view<const Real*, Host>();
+      for (int icol=0;icol<ncols;icol++) {
+        REQUIRE(approx(test2_diag_v(icol),-99999.0));
+      }
+    }
+  } 
   
 } // TEST_CASE("field_at_pressure_level")
 /*==========================================================================================================*/
