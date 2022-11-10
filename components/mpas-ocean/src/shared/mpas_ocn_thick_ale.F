@@ -126,8 +126,9 @@ contains
 
       real (kind=RKIND) :: &
          weightSum,       &! sum of weights in vertical
-         restingThicknessSum,    &! total resting thickness
-         restingThicknessDiff,    &! total resting thickness
+         restingThicknessSum,  &! total resting thickness
+         restingThicknessDiff, &! difference from total resting thickness
+         weightedThicknessSum, &! total resting thickness, weighted
          remainder,       &! track remainder in mix/max alteration
          newThickness      ! temp used during min/max adjustment
 
@@ -173,19 +174,24 @@ contains
          !xacc    present(ALE_thickness, SSH, restingThickness, &
          !xacc            minLevelCell, maxLevelCell, &
          !xacc            vertCoordMovementWeights) &
-         !xacc    private(k, kMin, kMax, restingThicknessDiff, restingThicknessSum)
+         !xacc    private(k, kMin, kMax, restingThicknessDiff, &
+         !xacc            restingThicknessSum, weightedThicknessSum)
 #else
          !$omp parallel
          !$omp do schedule(runtime) &
-         !$omp    private(k, kMin, kMax, restingThicknessDiff, restingThicknessSum)
+         !$omp    private(k, kMin, kMax, restingThicknessDiff, &
+         !$omp            restingThicknessSum, weightedThicknessSum)
 #endif
          do iCell = 1, nCells
             kMax = maxLevelCell(iCell)
             kMin = minLevelCell(iCell)
    
             restingThicknessSum = 0.0_RKIND
+            weightedThicknessSum = 0.0_RKIND
             do k = kMin, kMax
                restingThicknessSum = restingThicknessSum &
+                            + restingThickness(k,iCell)
+               weightedThicknessSum = weightedThicknessSum &
                             + vertCoordMovementWeights(k) &
                             * restingThickness(k,iCell)
             end do
@@ -198,7 +204,7 @@ contains
             do k = kMin, kMax
                ALE_thickness(k, iCell) = restingThickness(k, iCell) &
                   + ( (SSH(iCell) + restingThicknessDiff) * vertCoordMovementWeights(k) * &
-                      restingThickness(k, iCell) ) / max(1e-14_RKIND, restingThicknessSum)
+                      restingThickness(k, iCell) ) / max(1e-14_RKIND, weightedThicknessSum)
             end do
          enddo
 #ifndef MPAS_OPENACC
