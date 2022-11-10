@@ -439,10 +439,10 @@
       ! evapn < 0 => sublimation, evapn > 0 => condensation
       ! aerosol flux is accounted for in ice_aerosol.F90
       !-----------------------------------------------------------------
-            
+
       dhi = hin - worki
       dhs = hsn - works - hsn_new
-      
+
       freshn = freshn + evapn - (rhoi*dhi + rhos*dhs) / dt
       fsaltn = fsaltn - rhoi*dhi*ice_ref_salinity*p001/dt
       fhocnn = fhocnn + fadvocn ! for ktherm=2 
@@ -1038,7 +1038,7 @@
                                     meltt,     melts,    &
                                     meltsliq,  frain,    &
                                     meltb,     iage,     &
-                                    congel,    snoice,   &  
+                                    congel,    snoice,   &
                                     mlt_onset, frz_onset,&
                                     zSin,      sss,      &
                                     dsnow,     tr_snow,  &
@@ -1587,7 +1587,7 @@
             endif
          enddo
        endif
-     
+
 !---!-------------------------------------------------------------------
 !---! Repartition the ice and snow into equal-thickness layers,
 !---! conserving energy.
@@ -1596,7 +1596,7 @@
       !-----------------------------------------------------------------
       ! Compute desired layer thicknesses.
       !-----------------------------------------------------------------
- 
+
       if (hin > c0) then
          hilyr = hin / real(nilyr,kind=dbl_kind)
       else
@@ -1631,23 +1631,23 @@
         !-----------------------------------------------------------------
         ! Conserving energy, compute the enthalpy of the new equal layers.
         !-----------------------------------------------------------------
-            
+
          call adjust_enthalpy (nilyr,              &
                                zi1,      zi2,      &
                                hilyr,    hin,      &
-                               zqin)   
+                               zqin)
 
          if (ktherm == 2) &
               call adjust_enthalpy (nilyr,              &
                                     zi1,      zi2,      &
                                     hilyr,    hin,      &
-                                    zSin)   
+                                    zSin)
 
       else ! zero layer (nilyr=1)
 
          zqin(1) = -rhoi * Lfresh
          zqsn(1) = -rhos * Lfresh
-       
+
       endif
 
       if (nslyr > 1) then
@@ -1659,10 +1659,10 @@
 
          zs1(1) = c0
          zs1(1+nslyr) = hsn
-         
+
          zs2(1) = c0
          zs2(1+nslyr) = hsn
-         
+
          do k = 1, nslyr-1
             zs1(k+1) = zs1(k) + dzs(k)
             zs2(k+1) = zs2(k) + hslyr
@@ -1675,7 +1675,7 @@
          call adjust_enthalpy (nslyr,              &
                                zs1,      zs2,      &
                                hslyr,    hsn,      &
-                               zqsn)   
+                               zqsn)
 
          if (tr_rsnw) &
                call adjust_enthalpy (nslyr,              &
@@ -1893,18 +1893,8 @@
       real (kind=dbl_kind) :: &
          hovlp           ! overlap between old and new layers (m)
 
-      real (kind=dbl_kind) :: &
-         rhlyr           ! 1./hlyr
-
       real (kind=dbl_kind), dimension (nlyr) :: &
          hq              ! h * q for a layer
-
-      !-----------------------------------------------------------------
-      ! Compute reciprocal layer thickness.
-      !-----------------------------------------------------------------
-
-      rhlyr = c0
-      if (hn > puny) rhlyr = c1 / hlyr
 
       !-----------------------------------------------------------------
       ! Compute h*q for new layers (k2) given overlap with old layers (k1)
@@ -1931,9 +1921,15 @@
       ! Compute new enthalpies.
       !-----------------------------------------------------------------
 
-      do k = 1, nlyr
-         qn(k) = hq(k) * rhlyr
-      enddo                     ! k
+      if (hlyr > c0) then
+         do k = 1, nlyr
+            qn(k) = hq(k) / hlyr
+         enddo                     ! k
+      else
+         do k = 1, nlyr
+            qn(k) = c0
+         enddo
+      end if
 
       end subroutine adjust_enthalpy
 
