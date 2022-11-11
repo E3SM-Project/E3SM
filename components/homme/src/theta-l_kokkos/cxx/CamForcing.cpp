@@ -15,28 +15,55 @@
 
 namespace Homme {
 
-void apply_cam_forcing(const Real dt) {
-  GPTLstart("ApplyCAMForcing");
+static void apply_cam_forcing_tracers(const Real dt, ForcingFunctor& ff,
+                                      const TimeLevel& tl,
+                                      const SimulationParams& p) {
+  GPTLstart("ApplyCAMForcing_tracers");
 
+  bool adjustment = false;
+
+  if ( p.ftype == ForcingAlg::FORCING_0) adjustment = false;
+
+//standalone homme and ftype2
+#if !defined(CAM) && !defined(SCREAM)
+  if ( p.ftype == ForcingAlg::FORCING_2) adjustment = false;
+#endif
+//CAM or SCREAM and ftype2
+#if defined(CAM) || defined(SCREAM)
+  if ( p.ftype == ForcingAlg::FORCING_2) adjustment = true;
+#endif
+
+  ff.tracers_forcing(dt, tl.n0, tl.n0_qdp, adjustment, p.moisture);
+
+  GPTLstop("ApplyCAMForcing_tracers"); 
+}
+
+static void apply_cam_forcing_dynamics(const Real dt, ForcingFunctor& ff,
+                                       const TimeLevel& tl) {
+  GPTLstart("ApplyCAMForcing_dynamics");
+  ff.states_forcing(dt, tl.n0);
+  GPTLstop("ApplyCAMForcing_dynamics");
+}
+
+void apply_cam_forcing(const Real dt) {
   const auto& p  = Context::singleton().get<SimulationParams>();
   const auto& tl = Context::singleton().get<TimeLevel>();
   auto& ff = Context::singleton().get<ForcingFunctor>();
- 
-  ff.tracers_forcing(dt,tl.n0,tl.n0_qdp,false,p.moisture);
-  ff.states_forcing(dt,tl.n0);
+  apply_cam_forcing_tracers(dt, ff, tl, p);
+  apply_cam_forcing_dynamics(dt, ff, tl);
+}
 
-  GPTLstop("ApplyCAMForcing");
+void apply_cam_forcing_tracers(const Real dt) {
+  const auto& p  = Context::singleton().get<SimulationParams>();
+  const auto& tl = Context::singleton().get<TimeLevel>();
+  auto& ff = Context::singleton().get<ForcingFunctor>();
+  apply_cam_forcing_tracers(dt, ff, tl, p);
 }
 
 void apply_cam_forcing_dynamics(const Real dt) {
-  GPTLstart("ApplyCAMForcing_dynamics");
-
   const auto& tl = Context::singleton().get<TimeLevel>();
   auto& ff = Context::singleton().get<ForcingFunctor>();
-
-  ff.states_forcing(dt,tl.np1);
-
-  GPTLstop("ApplyCAMForcing_dynamics");
+  apply_cam_forcing_dynamics(dt, ff, tl);
 }
 
 } // namespace Homme

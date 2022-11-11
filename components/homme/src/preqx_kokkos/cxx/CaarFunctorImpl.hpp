@@ -63,15 +63,16 @@ struct CaarFunctorImpl {
 
   using deriv_type = ReferenceElement::deriv_type;
 
-  RKStageData                 m_data;
-  const int                   m_rsplit;
-  const HybridVCoord          m_hvcoord;
-  const ElementsState         m_state;
-  const ElementsDerivedState  m_derived;
-  const ElementsGeometry      m_geometry;
-  const Tracers               m_tracers;
-  const deriv_type            m_deriv;
-  Buffers                     m_buffers;
+  RKStageData           m_data;
+  const int             m_num_elems;
+  const int             m_rsplit;
+  HybridVCoord          m_hvcoord;
+  ElementsState         m_state;
+  ElementsDerivedState  m_derived;
+  ElementsGeometry      m_geometry;
+  Tracers               m_tracers;
+  deriv_type      m_deriv;
+  Buffers               m_buffers;
 
   SphereOperators       m_sphere_ops;
 
@@ -80,18 +81,32 @@ struct CaarFunctorImpl {
 
   Kokkos::Array<std::shared_ptr<BoundaryExchange>, NUM_TIME_LEVELS> m_bes;
 
+  CaarFunctorImpl(const int num_elems, const SimulationParams& params)
+    : m_num_elems(num_elems)
+    , m_rsplit(params.rsplit)
+    , m_policy (Homme::get_default_team_policy<ExecSpace>(m_num_elems))
+  {}
+
   CaarFunctorImpl(const Elements &elements, const Tracers &tracers,
                   const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
                   const SphereOperators &sphere_ops, const SimulationParams& params)
-      : m_rsplit(params.rsplit)
-      , m_hvcoord(hvcoord)
-      , m_state(elements.m_state)
-      , m_derived(elements.m_derived)
-      , m_geometry(elements.m_geometry)
-      , m_tracers(tracers)
-      , m_deriv(ref_FE.get_deriv())
-      , m_sphere_ops(sphere_ops)
-      , m_policy (Homme::get_default_team_policy<ExecSpace>(elements.num_elems())) {
+    : CaarFunctorImpl(elements.num_elems(),params)
+  {
+    setup(elements,tracers,ref_FE,hvcoord,sphere_ops);
+  }
+
+  void setup (const Elements &elements, const Tracers &tracers,
+              const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
+              const SphereOperators &sphere_ops)
+  {
+    m_hvcoord = hvcoord;
+    m_state = elements.m_state;
+    m_derived = elements.m_derived;
+    m_geometry = elements.m_geometry;
+    m_tracers = tracers;
+    m_deriv = ref_FE.get_deriv();
+    m_sphere_ops = sphere_ops;
+
     // Make sure the buffers in sph op are large enough for this functor's needs
     m_sphere_ops.allocate_buffers(m_policy);
   }
@@ -199,7 +214,7 @@ struct CaarFunctorImpl {
     profiling_resume();
     GPTLstart("caar compute");
     Kokkos::parallel_for("caar loop pre-boundary exchange", m_policy, *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     GPTLstop("caar compute");
 
     GPTLstart("caar_bexchV");
@@ -738,7 +753,7 @@ struct CaarFunctorImpl {
 private:
   template <typename ExecSpaceType>
   KOKKOS_INLINE_FUNCTION typename std::enable_if<
-      !std::is_same<ExecSpaceType, Hommexx_Cuda>::value, void>::type
+      !std::is_same<ExecSpaceType, HommexxGPU>::value, void>::type
   compute_pressure_impl(KernelVariables &kv) const {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
                          [&](const int loop_idx) {
@@ -772,7 +787,7 @@ private:
 
   template <typename ExecSpaceType>
   KOKKOS_INLINE_FUNCTION typename std::enable_if<
-      std::is_same<ExecSpaceType, Hommexx_Cuda>::value, void>::type
+      std::is_same<ExecSpaceType, HommexxGPU>::value, void>::type
   compute_pressure_impl(KernelVariables &kv) const {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
                          [&](const int loop_idx) {
@@ -806,7 +821,7 @@ private:
 
   template <typename ExecSpaceType>
   KOKKOS_INLINE_FUNCTION typename std::enable_if<
-      !std::is_same<ExecSpaceType, Hommexx_Cuda>::value, void>::type
+      !std::is_same<ExecSpaceType, HommexxGPU>::value, void>::type
   preq_hydrostatic_impl(KernelVariables &kv) const {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
                          [&](const int loop_idx) {
@@ -859,10 +874,10 @@ private:
 #endif
   }
 
-  // CUDA version
+  // GPU version
   template <typename ExecSpaceType>
   KOKKOS_INLINE_FUNCTION typename std::enable_if<
-      std::is_same<ExecSpaceType, Hommexx_Cuda>::value, void>::type
+      std::is_same<ExecSpaceType, HommexxGPU>::value, void>::type
   preq_hydrostatic_impl(KernelVariables &kv) const {
     assert_vector_size_1();
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
@@ -914,10 +929,10 @@ private:
     kv.team_barrier();
   }
 
-  // CUDA version
+  // GPU version
   template <typename ExecSpaceType>
   KOKKOS_INLINE_FUNCTION typename std::enable_if<
-      std::is_same<ExecSpaceType, Hommexx_Cuda>::value, void>::type
+      std::is_same<ExecSpaceType, HommexxGPU>::value, void>::type
   preq_omega_ps_impl(KernelVariables &kv) const {
     assert_vector_size_1();
 #ifdef DEBUG_TRACE
@@ -968,10 +983,10 @@ private:
 #endif
   }
 
-  // Non-CUDA version
+  // Non-GPU version
   template <typename ExecSpaceType>
   KOKKOS_INLINE_FUNCTION typename std::enable_if<
-      !std::is_same<ExecSpaceType, Hommexx_Cuda>::value, void>::type
+      !std::is_same<ExecSpaceType, HommexxGPU>::value, void>::type
   preq_omega_ps_impl(KernelVariables &kv) const {
     m_sphere_ops.gradient_sphere(
         kv, Homme::subview(m_buffers.pressure, kv.team_idx),

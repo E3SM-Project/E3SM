@@ -2,12 +2,12 @@
 #include "zero.h"
 
 void zero() {
-  auto &dudt   = :: dudt;
-  auto &dvdt   = :: dvdt;
-  auto &dwdt   = :: dwdt;
-  auto &misc   = :: misc;
-  auto &na     = :: na;
-  auto &ncrms  = :: ncrms;
+  YAKL_SCOPE( dudt   , :: dudt );
+  YAKL_SCOPE( dvdt   , :: dvdt );
+  YAKL_SCOPE( dwdt   , :: dwdt );
+  YAKL_SCOPE( misc   , :: misc );
+  YAKL_SCOPE( na     , :: na );
+  YAKL_SCOPE( ncrms  , :: ncrms );
 
   // for (int k=0; k<nz; k++) {
   //   for (int j=0; j<nyp1; j++) {

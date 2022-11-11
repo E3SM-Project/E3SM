@@ -58,11 +58,13 @@ module atm_comp_mct
   use co2_cycle        , only: co2_readFlux_ocn, co2_readFlux_fuel
   use runtime_opts     , only: read_namelist
   use scamMod          , only: single_column,scmlat,scmlon
+  use lnd_infodata     , only: precip_downscaling_method !Precipitation downscaling method used in the land model
 
 #ifdef HAVE_MOAB
   use seq_comm_mct     , only: mphaid ! atm physics grid id in MOAB, on atm pes
   use iso_c_binding 
 #endif
+
 !
 ! !PUBLIC TYPES:
   implicit none
@@ -249,7 +251,7 @@ CONTAINS
 
        endif
 
-       call t_startf("shr_taskmap_write")
+       call t_startf('shr_taskmap_write')
        call shr_taskmap_write(iulog, mpicom_atm,                    &
                               'ATM #'//trim(adjustl(c_inst_index)), &
                               verbose=verbose_taskmap_output,       &
@@ -257,7 +259,7 @@ CONTAINS
                               save_nnodes=nsmps,                    &
                               save_task_node_map=proc_smp_map       )
        call shr_sys_flush(iulog)
-       call t_stopf("shr_taskmap_write")
+       call t_stopf('shr_taskmap_write')
 
        ! 
        ! Consistency check                              
@@ -277,7 +279,7 @@ CONTAINS
             hostname=hostname, username=username, model_version=version,              &
             single_column=single_column, scmlat=scmlat, scmlon=scmlon,                &
             orb_eccen=eccen, orb_mvelpp=mvelpp, orb_lambm0=lambm0, orb_obliqr=obliqr, &
-            lnd_present=lnd_present, ocn_present=ocn_present,                         & 
+            lnd_present=lnd_present, ocn_present=ocn_present,                         &
             perpetual=perpetual_run, perpetual_ymd=perpetual_ymd)
        !
        ! Get nsrest from startup type methods
@@ -303,9 +305,11 @@ CONTAINS
        !
        ! Read namelist
        !
+       call t_startf('read_namelist')
        filein = "atm_in" // trim(inst_suffix)
        call read_namelist(single_column_in=single_column, scmlat_in=scmlat, &
             scmlon_in=scmlon, nlfilename_in=filein)
+       call t_stopf('read_namelist')
        !
        ! Initialize cam time manager
        !
@@ -326,9 +330,11 @@ CONTAINS
        ! Set defaults then override with user-specified input and initialize time manager
        ! Note that the following arguments are needed to cam_init for timemgr_restart only
        !
+       call t_startf('cam_init')
        call cam_init( cam_out, cam_in, mpicom_atm, &
             start_ymd, start_tod, ref_ymd, ref_tod, stop_ymd, stop_tod, &
             perpetual_run, perpetual_ymd, calendar)
+       call t_stopf('cam_init')
        !
        ! Check consistency of restart time information with input clock
        !
@@ -407,6 +413,11 @@ CONTAINS
        ! Note - cam_run1 is called on restart only to have cam internal state consistent with the 
        ! a2x_a state sent to the coupler
 
+       !Obtain the precipitation downscaling method from the land model
+       call seq_infodata_GetData( infodata,                                           &
+            precip_downscaling_method=precip_downscaling_method )
+
+
        ! Redirect share output to cam log
 
        call shr_file_getLogUnit (shrlogunit)
@@ -416,14 +427,25 @@ CONTAINS
        call seq_timemgr_EClockGetData(EClock,curr_ymd=CurrentYMD, StepNo=StepNo, dtime=DTime_Sync )
        if (StepNo == 0) then
           call atm_import( x2a_a%rattr, cam_in )
+
+          call t_startf('CAM_run1')
           call cam_run1 ( cam_in, cam_out ) 
+          call t_stopf('CAM_run1')
+          
           call atm_export( cam_out, a2x_a%rattr )
        else
+
+          call t_startf('atm_read_srfrest_mct')
           call atm_read_srfrest_mct( EClock, x2a_a, a2x_a )
+          call t_stopf('atm_read_srfrest_mct')
+
           ! Sent .true. as an optional argument so that restart_init is set to .true.  in atm_import
 	      ! This will ensure BFB restarts whenever qneg4 updates fluxes on the restart time step
           call atm_import( x2a_a%rattr, cam_in, .true. )
+
+          call t_startf('cam_run1')
           call cam_run1 ( cam_in, cam_out ) 
+          call t_stopf('cam_run1')
        end if
 
        ! Compute time of next radiation computation, like in run method for exact restart
@@ -639,8 +661,10 @@ CONTAINS
     ! Write merged surface data restart file if appropriate
     
     if (rstwr_sync) then
+       call t_startf('atm_write_srfrest_mct')
        call atm_write_srfrest_mct( x2a_a, a2x_a, &
             yr_spec=yr_sync, mon_spec=mon_sync, day_spec=day_sync, sec_spec=tod_sync)
+       call t_stopf('atm_write_srfrest_mct')
     end if
     
     ! Check for consistency of internal cam clock with master sync clock 
@@ -680,9 +704,9 @@ CONTAINS
     type(mct_aVect)             ,intent(inout) :: x2a_a
     type(mct_aVect)             ,intent(inout) :: a2x_a
 
-    call t_startf("cam_final")
+    call t_startf('cam_final')
     call cam_final( cam_out, cam_in )
-    call t_stopf("cam_final")
+    call t_stopf('cam_final')
 
   end subroutine atm_final_mct
 

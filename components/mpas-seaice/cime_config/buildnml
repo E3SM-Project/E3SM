@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Namelist creator for E3SM's MPAS SEAICE component
@@ -40,7 +40,7 @@ def buildnml(case, caseroot, compname):
     #ninst_ice       = case.get_value("NINST_ICE")
     ninst_ice        = 1 # Change if you want multiple instances... though this isn't coded yet.
     ninst_ice_real   = case.get_value("NINST_ICE")
-    ntasks_ice       = case.get_value("NTASKS_ICE")
+    ntasks_ice       = case.get_value("NTASKS_PER_INST_ICE")
     rundir           = case.get_value("RUNDIR")
     run_type         = case.get_value("RUN_TYPE")
     run_refcase      = case.get_value("RUN_REFCASE")
@@ -74,16 +74,7 @@ def buildnml(case, caseroot, compname):
     data_iceberg_file = ''
     points_file = ''
 
-    if ice_grid == 'oEC60to30':
-        decomp_date = '151020'
-        decomp_prefix = 'mpas-cice.graph.info.'
-        grid_date = '151020'
-        grid_prefix = 'cice.EC60to30km'
-        if ice_ic_mode == 'spunup':
-            grid_date = '160827'
-            grid_prefix = 'cice.EC60to30km.restartFrom_eos1b'
-
-    elif ice_grid == 'oEC60to30v3':
+    if ice_grid == 'oEC60to30v3':
         decomp_date = '161222'
         decomp_prefix = 'mpas-cice.graph.info.'
         grid_date = '161222'
@@ -95,15 +86,6 @@ def buildnml(case, caseroot, compname):
             grid_date = '180418'
             grid_prefix = 'mpassi.rst.BCRC_CNPECACNT_1850_anvil02.0066-01-01.no-xtime'
             points_file = 'seaice_points_EC.60to30v3_netcdf3_05152018.nc'
-
-    elif ice_grid == 'oEC60to30wLI':
-        decomp_date = '160830'
-        decomp_prefix = 'mpas-cice.graph.info.'
-        grid_date = '160830'
-        grid_prefix = 'cice.EC60to30wLI'
-        if ice_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'oEC60to30v3wLI':
         decomp_date = '170905'
@@ -121,15 +103,6 @@ def buildnml(case, caseroot, compname):
         data_iceberg_file = 'Iceberg_Interannual_Merino_ECwISC30to60E1r2.nc'
         grid_date = '200408'
         grid_prefix = 'seaice.ECwISC30to60E1r2'
-        if ice_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
-
-    elif ice_grid == 'mpas120':
-        decomp_date = '121116'
-        decomp_prefix = 'mpas-cice.graph.info.'
-        grid_date = '121116'
-        grid_prefix = 'cice120km'
         if ice_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
@@ -170,38 +143,11 @@ def buildnml(case, caseroot, compname):
             logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
 
-    elif ice_grid == 'mpasgx1':
-        decomp_date = '121116'
-        decomp_prefix = 'mpas-cice.graph.info.'
-        grid_date = '121116'
-        grid_prefix = 'grid_gx1'
-        if ice_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
-
-    elif ice_grid == 'oRRS30to10':
-        decomp_date = '151031'
-        decomp_prefix = 'mpas-cice.graph.info.'
-        grid_date = '151031'
-        grid_prefix = 'seaice.RRS.30-10km'
-        if ice_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
-
     elif ice_grid == 'oRRS30to10v3':
         decomp_date = '171128'
         decomp_prefix = 'mpas-cice.graph.info.'
         grid_date = '171128'
         grid_prefix = 'seaice.RRS30to10v3'
-        if ice_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
-
-    elif ice_grid == 'oRRS30to10wLI':
-        decomp_date = '160930'
-        decomp_prefix = 'mpas-cice.graph.info.'
-        grid_date = '160930'
-        grid_prefix = 'seaice.RRS30-10wLI'
         if ice_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
@@ -212,15 +158,6 @@ def buildnml(case, caseroot, compname):
         data_iceberg_file = 'data_iceberg_181022.RRS30to10v3wLI.nc'
         grid_date = '171109'
         grid_prefix = 'seaice.RRS30to10v3wLI'
-        if ice_ic_mode == 'spunup':
-            logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
-            logger.warning("         But no file available for this grid.")
-
-    elif ice_grid == 'oRRS18to6':
-        decomp_date = '160830'
-        decomp_prefix = 'mpas-cice.graph.info.'
-        grid_date = '160830'
-        grid_prefix = 'seaice.RRS.18to6km'
         if ice_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
@@ -244,13 +181,13 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     elif ice_grid == 'oARRM60to10':
-        decomp_date = '180723'
-        decomp_prefix = 'mpas-cice.graph.info.'
+        decomp_date = '190129'
+        decomp_prefix = 'mpas-seaice.graph.v2.'
         grid_date = '180715'
         grid_prefix = 'seaice.ARRM60to10'
         if ice_ic_mode == 'spunup':
-            grid_date = '200422'
-            grid_prefix = 'seaice.ARRM60to10.restart_grizzly'
+            grid_date = '210204'
+            grid_prefix = 'mpassi.oARRM60to10.rstFromG-cori'
 
     elif ice_grid == 'oARRM60to6':
         decomp_date = '180820'
@@ -260,6 +197,15 @@ def buildnml(case, caseroot, compname):
         if ice_ic_mode == 'spunup':
             logger.warning("WARNING: The specified compset is requesting seaice ICs spunup from a G-case")
             logger.warning("         But no file available for this grid.")
+
+    elif ice_grid == 'ARRM10to60E2r1':
+        decomp_date = '220802'
+        decomp_prefix = 'mpas-seaice.v2.'
+        grid_date = '220730'
+        grid_prefix = 'mpassi.ARRM10to60E2r1'
+        if ice_ic_mode == 'spunup':
+            grid_date = '220802'
+            grid_prefix = 'mpassi.ARRM10to60E2r1.rstFrom1monthG-chrys'
 
     elif ice_grid == 'EC30to60E2r2':
         decomp_date = '200908'
@@ -646,7 +592,7 @@ def buildnml(case, caseroot, compname):
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="00-01-00_00:00:00"')
-        lines.append('        clobber_mode="truncate"')
+        lines.append('        clobber_mode="append"')
         lines.append('        packages="conservationCheckAMPKG">')
         lines.append('')
         lines.append('    <var name="xtime"/>')

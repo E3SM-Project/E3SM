@@ -23,10 +23,9 @@ SET (USE_QUEUING FALSE CACHE BOOL "")
 
 SET (USE_MPIEXEC "srun" CACHE STRING "")
 
-# temporary fix:
-SET (USE_MPI_OPTIONS "-c 4 --cpu_bind=cores" CACHE STRING "")
+SET (USE_MPI_OPTIONS "--cpu_bind=cores" CACHE STRING "")
 
-SET (CPRNC_DIR /global/cfs/cdirs/e3sm/tools/cprnc CACHE FILEPATH "")
+SET (CPRNC_DIR /global/cfs/cdirs/e3sm/tools/cprnc.cori/cprnc CACHE FILEPATH "")
 
 # by default, cori env loads haswell mod, do
 # module unload craype-haswell ; module load craype-mic-knl

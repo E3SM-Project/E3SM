@@ -16,78 +16,23 @@
 #include "CamForcing.hpp"
 #include "profiling.hpp"
 
-#include <iostream>
-
 namespace Homme
 {
 
 void prim_step (const Real, const bool);
+void prim_step_flexible (const Real, const bool);
 void vertical_remap (const Real);
-void apply_test_forcing ();
 void update_q (const int np1_qdp, const int np1);
 
 extern "C" {
 
-void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np1, const int& next_output_step)
-{
-  GPTLstart("tl-sc prim_run_subcycle_c");
-
-  auto& context = Context::singleton();
-
-  // Get simulation params
-  SimulationParams& params = context.get<SimulationParams>();
-  assert(params.params_set);
-
-  // Get time info and compute dt for tracers and remap
-  TimeLevel& tl = context.get<TimeLevel>();
-  const Real dt_q = dt*params.qsplit;
-  Real dt_remap = dt_q;
-  int nstep_end = tl.nstep + params.qsplit;
-  if (params.rsplit>0) {
-    dt_remap  = dt_q*params.rsplit;
-    nstep_end = tl.nstep + params.qsplit*params.rsplit;
-  }
-
-  // Check if needed to compute diagnostics or energy
-  bool compute_diagnostics = false;
-  if (nstep_end%params.state_frequency==0 || nstep_end==tl.nstep0 ||
-      nstep_end>=next_output_step) {
-    compute_diagnostics = true;
-  }
-
-  if (params.disable_diagnostics) {
-    compute_diagnostics = false;
-  }
-
-  if (compute_diagnostics) {
-    Diagnostics& diags = context.get<Diagnostics>();
-    diags.run_diagnostics(true,2);
-  }
-
-  tl.update_tracers_levels(params.qsplit);
-
-#ifndef CAM
-  apply_test_forcing ();
-#endif
-
-  // Apply forcing.
-  // In standalone mode, params.ftype == ForcingAlg::FORCING_DEBUG
-  // Corresponds to ftype == 0 in Fortran
-  if(params.ftype == ForcingAlg::FORCING_DEBUG) {
-    apply_cam_forcing(dt_remap);
-  }
-  // Corresponds to ftype == 2 in Fortran
-  else if(params.ftype == ForcingAlg::FORCING_2) {
-    apply_cam_forcing_dynamics(dt_remap);
-  }
-
-  if (compute_diagnostics) {
-    Diagnostics& diags = context.get<Diagnostics>();
-    diags.run_diagnostics(true,0);
-  }
-
+void initialize_dp3d_from_ps_c () {
   // Initialize dp3d from ps
   GPTLstart("tl-sc dp3d-from-ps");
+
+  auto& context = Context::singleton();
+  auto& tl = context.get<TimeLevel>();
+
   Elements& elements = context.get<Elements>();
   HybridVCoord& hvcoord = context.get<HybridVCoord>();
   const auto hybrid_ai_delta = hvcoord.hybrid_ai_delta;
@@ -108,39 +53,115 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
                                  + hybrid_bi_delta[ilev]*ps_v(ie,tln0,igp,jgp);
     });
   }
-  ExecSpace::impl_static_fence();
+  Kokkos::fence();
   GPTLstop("tl-sc dp3d-from-ps");
+}
 
-  // Loop over rsplit vertically lagrangian timesteps
-  GPTLstart("tl-sc prim_step-loop");
-  prim_step(dt,compute_diagnostics);
-  for (int r=1; r<params.rsplit; ++r) {
-    tl.update_dynamics_levels(UpdateType::LEAPFROG);
-    prim_step(dt,false);
+void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np1, 
+                          const int& next_output_step, const int& nsplit_iteration)
+{
+  GPTLstart("tl-sc prim_run_subcycle_c");
+
+  auto& context = Context::singleton();
+
+  // Get simulation params
+  SimulationParams& params = context.get<SimulationParams>();
+  params.nsplit_iteration = nsplit_iteration;
+  assert(params.params_set);
+
+  const bool independent_time_steps = (params.transport_alg > 0 &&
+                                       params.dt_remap_factor < params.dt_tracer_factor);
+
+  // Get time info and compute dt for tracers and remap
+  TimeLevel& tl = context.get<TimeLevel>();
+  const Real dt_q = dt*params.dt_tracer_factor;
+  Real dt_remap;
+  int nstep_end; // nstep at end of this routine
+  if (params.dt_remap_factor == 0) {
+    // dt_remap_factor = 0 means use eulerian code, not vert. lagrange
+    dt_remap = dt_q;
+    nstep_end = tl.nstep + params.dt_tracer_factor;
+  } else {
+    dt_remap = dt*params.dt_remap_factor;
+    nstep_end = tl.nstep + (std::max(params.dt_remap_factor, params.dt_tracer_factor));
   }
-  GPTLstop("tl-sc prim_step-loop");
 
-  tl.update_tracers_levels(params.qsplit);
+  // Check if needed to compute diagnostics or energy
+  bool compute_diagnostics =
+    ( ! params.disable_diagnostics &&
+      ( // periodic display to stdout
+        nstep_end % params.state_frequency == 0 ||
+        // first two time steps
+        tl.nstep <= tl.nstep0 + (nstep_end - tl.nstep) ));
 
   if (compute_diagnostics) {
     Diagnostics& diags = context.get<Diagnostics>();
-    diags.run_diagnostics(false,3);
+    diags.run_diagnostics(true,2);
   }
 
-  ////////////////////////////////////////////////////////////////////////
-  // apply vertical remap
-  // always for tracers
-  // if rsplit>0:  also remap dynamics and compute reference level ps_v
-  ////////////////////////////////////////////////////////////////////////
-  GPTLstart("tl-sc vertical_remap");
-  vertical_remap(dt_remap);
-  GPTLstop("tl-sc vertical_remap");
+  if ( ! independent_time_steps) {
+    tl.update_tracers_levels(params.dt_tracer_factor);
 
-  ////////////////////////////////////////////////////////////////////////
-  // time step is complete.  update some diagnostic variables:
-  // Q    (mixing ratio)
-  ////////////////////////////////////////////////////////////////////////
-  update_q(tl.np1_qdp,tl.np1);
+    // Apply forcing.
+#if defined(CAM) || defined(SCREAM)
+    //CAM and SCREAM, support only ftype0 and 2
+    if (params.ftype == ForcingAlg::FORCING_0){
+         apply_cam_forcing_tracers(dt_remap);
+    }
+    if (params.ftype == ForcingAlg::FORCING_2 && params.nsplit_iteration == 1 ){
+         apply_cam_forcing_tracers(dt_remap*params.nsplit);
+    }
+
+    apply_cam_forcing_dynamics(dt_remap);
+    
+#else
+    //standalone homme, support ftype0 and ftype2
+    //ftype0  = ftype2 if dt_remap>=dt_tracer, but
+    //ftype0 != ftype2 for dt_remap<dt_tracer
+    if(params.ftype == ForcingAlg::FORCING_0 || 
+       params.ftype == ForcingAlg::FORCING_2    ) {
+      apply_cam_forcing(dt_remap);
+    }
+#endif
+
+    if (compute_diagnostics) {
+      Diagnostics& diags = context.get<Diagnostics>();
+      diags.run_diagnostics(true,0);
+    }
+
+    // Loop over rsplit vertically lagrangian timesteps
+    GPTLstart("tl-sc prim_step-loop");
+    prim_step(dt,compute_diagnostics);
+    for (int r=1; r<params.rsplit; ++r) {
+      tl.update_dynamics_levels(UpdateType::LEAPFROG);
+      prim_step(dt,false);
+    }
+    GPTLstop("tl-sc prim_step-loop");
+
+    tl.update_tracers_levels(params.dt_tracer_factor);
+
+    if (compute_diagnostics) {
+      Diagnostics& diags = context.get<Diagnostics>();
+      diags.run_diagnostics(false,3);
+    }
+
+    ////////////////////////////////////////////////////////////////////////
+    // apply vertical remap
+    // always for tracers
+    // if rsplit>0:  also remap dynamics and compute reference level ps_v
+    ////////////////////////////////////////////////////////////////////////
+    GPTLstart("tl-sc vertical_remap");
+    vertical_remap(dt_remap);
+    GPTLstop("tl-sc vertical_remap");
+
+    ////////////////////////////////////////////////////////////////////////
+    // time step is complete.  update some diagnostic variables:
+    // Q    (mixing ratio)
+    ////////////////////////////////////////////////////////////////////////
+    update_q(tl.np1_qdp,tl.np1);
+  } else { // independent_time_steps
+    prim_step_flexible(dt, compute_diagnostics);
+  }
 
   if (compute_diagnostics) {
     Diagnostics& diags = context.get<Diagnostics>();
@@ -160,20 +181,6 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
 }
 
 } // extern "C"
-
-void apply_test_forcing () {
-  // Get simulation params
-  SimulationParams& params = Context::singleton().get<SimulationParams>();
-
-  switch (params.test_case) {
-    case TestCase::JW_BAROCLINIC:
-      break;  // Do nothing
-    case TestCase::DCMIP2016_TEST2:
-    default:
-      Errors::runtime_abort("Test case not yet available in C++ build.\n",
-                            Errors::err_not_implemented);
-  }
-}
 
 void update_q (const int np1_qdp, const int np1)
 {

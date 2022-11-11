@@ -14,7 +14,6 @@ module cam_optics
           get_cloud_optics_lw, &
           sample_cloud_optics_sw, &
           sample_cloud_optics_lw, &
-          compress_optics_sw, &
           set_aerosol_optics_sw, &
           set_aerosol_optics_lw
 
@@ -388,29 +387,6 @@ contains
    end subroutine sample_cloud_optics_sw
 
    !----------------------------------------------------------------------------
-
-   ! Compress optics arrays to smaller arrays containing only daytime columns.
-   ! This is to work with the RRTMGP shortwave routines that will fail if they
-   ! encounter non-sunlit columns, and also allows us to perform less
-   ! computations. This routine is primarily a convenience routine to do all of
-   ! the shortwave optics arrays at once, as we do this for individual arrays
-   ! elsewhere in the code.
-   subroutine compress_optics_sw(day_indices, tau, ssa, asm, tau_day, ssa_day, asm_day)
-      integer, intent(in), dimension(:) :: day_indices
-      real(r8), intent(in), dimension(:,:,:) :: tau, ssa, asm
-      real(r8), intent(out), dimension(:,:,:) :: tau_day, ssa_day, asm_day
-      integer :: nday, iday, ilev, ibnd
-      nday = count(day_indices > 0)
-      do ibnd = 1,size(tau,3)
-         do ilev = 1,size(tau,2)
-            do iday = 1,nday
-               tau_day(iday,ilev,ibnd) = tau(day_indices(iday),ilev,ibnd)
-               ssa_day(iday,ilev,ibnd) = ssa(day_indices(iday),ilev,ibnd)
-               asm_day(iday,ilev,ibnd) = asm(day_indices(iday),ilev,ibnd)
-            end do
-         end do
-      end do
-   end subroutine compress_optics_sw
 
    !----------------------------------------------------------------------------
 

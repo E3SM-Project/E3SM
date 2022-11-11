@@ -872,7 +872,7 @@ subroutine dcmip2012_print_test1_conv_results(elem, tl, hvcoord, par, subnum)
         a = global_shared_sum(2*iq-1)
         b = global_shared_sum(2*iq)
         reldif = sqrt(a/b)
-        print '(a,i2,es11.3)', 'test1_conv> Q', iq, reldif
+        print '(a,i2,es24.16)', 'test1_conv> Q', iq, reldif
      end do
   end if
 end subroutine dcmip2012_print_test1_conv_results

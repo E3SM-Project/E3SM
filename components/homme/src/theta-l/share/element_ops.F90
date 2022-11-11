@@ -67,7 +67,7 @@ module element_ops
 
   type(elem_state_t), dimension(:), allocatable :: state0 ! storage for save_initial_state routine
 
-  public get_field, get_field_i, get_state
+  public get_field, get_field_i, get_state, get_pottemp
   public get_temperature, get_phi, get_R_star, get_hydro_pressure
   public set_thermostate, set_state, set_state_i, set_elem_state
   public set_forcing_rayleigh_friction, set_theta_ref
@@ -154,8 +154,11 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
          field = elem%state%w_i(:,:,1:nlevp,nt)
       endif
     case('geo_i');
-      !is phinh_i set for HY runs or should here be an abort?
-      field = elem%state%phinh_i(:,:,1:nlevp,nt)
+      if(theta_hydrostatic_mode) then
+         call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,nt),elem%state%dp3d(:,:,:,nt),field)
+      else
+          field = elem%state%phinh_i(:,:,1:nlevp,nt)
+      endif
     case('mu_i');
       call get_dpnh_dp_i(elem,field,hvcoord,nt)
     case('pnh_i');
@@ -290,9 +293,15 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   do k=1,nlev  ! SCAN
      p_i(:,:,k+1)=p_i(:,:,k) + dp(:,:,k)
   enddo
+#ifdef HOMMEXX_BFB_TESTING
+  do k=1,nlev
+     p(:,:,k) = (p_i(:,:,k+1)+p_i(:,:,k))/2
+  enddo
+#else
   do k=1,nlev
      p(:,:,k)=p_i(:,:,k) + dp(:,:,k)/2
   enddo
+#endif
   
   
   end subroutine get_hydro_pressure
@@ -707,7 +716,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
   ! Disable the following check in CUDA bfb builds,
   ! since the calls to pow are inexact
-#if !(defined(HOMMEXX_BFB_TESTING) && defined(CUDA_BUILD))
+#if !(defined(HOMMEXX_BFB_TESTING) && defined(HOMMEXX_ENABLE_GPU))
   ! verify discrete hydrostatic balance
   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),&
        elem%state%dp3d(:,:,:,tl),elem%state%phinh_i(:,:,:,tl),pnh,exner,dpnh_dp_i)

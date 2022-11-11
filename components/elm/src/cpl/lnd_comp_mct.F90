@@ -57,8 +57,9 @@ contains
     use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
     use elm_initializeMod, only : initialize1, initialize2, initialize3
     use elm_instMod      , only : lnd2atm_vars, lnd2glc_vars
+    use elm_instance     , only : elm_instance_init
     use elm_varctl       , only : finidat,single_column, elm_varctl_set, iulog, noland
-    use elm_varctl       , only : inst_index, inst_suffix, inst_name
+    use elm_varctl       , only : inst_index, inst_suffix, inst_name, precip_downscaling_method
     use elm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use controlMod       , only : control_setNL
     use decompMod        , only : get_proc_bounds
@@ -74,9 +75,9 @@ contains
                                   seq_infodata_start_type_start, seq_infodata_start_type_cont,   &
                                   seq_infodata_start_type_brnch
     use seq_comm_mct     , only : seq_comm_suffix, seq_comm_inst, seq_comm_name
-    use seq_flds_mod     , only : seq_flds_x2l_fields, seq_flds_l2x_fields
+    use seq_flds_mod     , only : seq_flds_x2l_fields, seq_flds_l2x_fields, lnd_rof_two_way
     use spmdMod          , only : masterproc, npes, spmd_init
-    use elm_varctl       , only : nsrStartup, nsrContinue, nsrBranch
+    use elm_varctl       , only : nsrStartup, nsrContinue, nsrBranch, use_lnd_rof_two_way
     use elm_cpl_indices  , only : elm_cpl_indices_set
     use perf_mod         , only : t_startf, t_stopf
     use mct_mod
@@ -92,7 +93,7 @@ contains
     character(len=*), optional, intent(in)    :: NLFilename       ! Namelist filename to read
     !
     ! !LOCAL VARIABLES:
-    integer                          :: LNDID        ! Land identifier
+    integer                          :: LNDID        ! Land identifyer
     integer                          :: mpicom_lnd   ! MPI communicator
     type(mct_gsMap),         pointer :: GSMap_lnd    ! Land model MCT GS map
     type(mct_gGrid),         pointer :: dom_l        ! Land model domain
@@ -147,6 +148,10 @@ contains
 
     call seq_cdata_setptrs(cdata_l, ID=LNDID, mpicom=mpicom_lnd, &
          gsMap=GSMap_lnd, dom=dom_l, infodata=infodata)
+
+    ! Set and save LNDID for easy access by other modules
+
+    call elm_instance_init( LNDID )
 
     ! Determine attriute vector indices
 
@@ -258,6 +263,8 @@ contains
                         scmlon_in=scmlon, nsrest_in=nsrest, version_in=version, &
                         hostname_in=hostname, username_in=username)
 
+    use_lnd_rof_two_way = lnd_rof_two_way
+    
     ! Read namelist, grid and surface data
 
     call initialize1( )
@@ -368,7 +375,7 @@ contains
     ! Fill in infodata settings
 
     call seq_infodata_PutData(infodata, lnd_prognostic=.true.)
-    call seq_infodata_PutData(infodata, lnd_nx=ldomain%ni, lnd_ny=ldomain%nj)
+    call seq_infodata_PutData(infodata, lnd_nx=ldomain%ni, lnd_ny=ldomain%nj, precip_downscaling_method = precip_downscaling_method)
 
     ! Get infodata info
 
@@ -519,7 +526,7 @@ contains
     ! Map to elm (only when state and/or fluxes need to be updated)
 
     call t_startf ('lc_lnd_import')
-    call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars)
+    call lnd_import( bounds, x2l_l%rattr, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars)
     call t_stopf ('lc_lnd_import')
 
     ! Use infodata to set orbital values if updated mid-run

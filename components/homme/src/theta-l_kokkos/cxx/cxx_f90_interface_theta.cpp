@@ -11,6 +11,7 @@
 #include "Elements.hpp"
 #include "ErrorDefs.hpp"
 #include "EulerStepFunctor.hpp"
+#include "ComposeTransport.hpp"
 #include "ForcingFunctor.hpp"
 #include "FunctorsBuffersManager.hpp"
 #include "HommexxEnums.hpp"
@@ -21,6 +22,7 @@
 #include "SphereOperators.hpp"
 #include "TimeLevel.hpp"
 #include "Tracers.hpp"
+#include "GllFvRemap.hpp"
 #include "VerticalRemapManager.hpp"
 #include "mpi/BoundaryExchange.hpp"
 #include "mpi/MpiBuffersManager.hpp"
@@ -38,17 +40,20 @@ extern "C"
 void init_simulation_params_c (const int& remap_alg, const int& limiter_option, const int& rsplit, const int& qsplit,
                                const int& time_step_type, const int& qsize, const int& state_frequency,
                                const Real& nu, const Real& nu_p, const Real& nu_q, const Real& nu_s, const Real& nu_div, const Real& nu_top,
-                               const int& hypervis_order, const int& hypervis_subcycle, const double& hypervis_scaling, const double& dcmip16_mu,
+                               const int& hypervis_order, const int& hypervis_subcycle, const int& hypervis_subcycle_tom, 
+                               const double& hypervis_scaling, const double& dcmip16_mu,
                                const int& ftype, const int& theta_adv_form, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
-                               const bool& use_cpstar, const bool& use_semi_lagrangian_transport, const bool& theta_hydrostatic_mode, const char** test_case)
+                               const bool& use_cpstar, const int& transport_alg, const bool& theta_hydrostatic_mode, const char** test_case,
+                               const int& dt_remap_factor, const int& dt_tracer_factor,
+                               const double& rearth, const int& nsplit)
 {
   // Check that the simulation options are supported. This helps us in the future, since we
   // are currently 'assuming' some option have/not have certain values. As we support for more
   // options in the C++ build, we will remove some checks
-  Errors::check_option("init_simulation_params_c","vert_remap_q_alg",remap_alg,{1,3});
+  Errors::check_option("init_simulation_params_c","vert_remap_q_alg",remap_alg,{1,3,10});
   Errors::check_option("init_simulation_params_c","prescribed_wind",prescribed_wind,{false});
   Errors::check_option("init_simulation_params_c","hypervis_order",hypervis_order,{2});
-  Errors::check_option("init_simulation_params_c","use_semi_lagrangian_transport",use_semi_lagrangian_transport,{false});
+  Errors::check_option("init_simulation_params_c","transport_alg",transport_alg,{0,12});
   Errors::check_option("init_simulation_params_c","time_step_type",time_step_type,{1,4,5,6,7,9,10});
   Errors::check_option("init_simulation_params_c","qsize",qsize,0,Errors::ComparisonOp::GE);
   Errors::check_option("init_simulation_params_c","qsize",qsize,QSIZE_D,Errors::ComparisonOp::LE);
@@ -58,16 +63,22 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   Errors::check_option("init_simulation_params_c","nu",nu,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","nu_div",nu_div,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","theta_advection_form",theta_adv_form,{0,1});
+#ifndef SCREAM
+  Errors::check_option("init_simulation_params_c","nsplit",nsplit,1,Errors::ComparisonOp::GE);
+#else
+  if (nsplit<1 && Context::singleton().get<Comm>().root()) {
+    printf ("Note: nsplit=%d, while nsplit must be >=1. We know SCREAM does not know nsplit until runtime, so this is fine.\n"
+            "      Make sure nsplit is set to a valid value before calling prim_advance_subcycle!\n",nsplit);
+  }
+#endif
 
   // Get the simulation params struct
   SimulationParams& params = Context::singleton().create<SimulationParams>();
 
   if (remap_alg==1) {
     params.remap_alg = RemapAlg::PPM_MIRRORED;
-  } else if (remap_alg == 2) {
-    params.remap_alg = RemapAlg::PPM_FIXED_PARABOLA;
-  } else if (remap_alg == 3) {
-    params.remap_alg = RemapAlg::PPM_FIXED_MEANS;
+  } else if (remap_alg == 10) {
+    params.remap_alg = RemapAlg::PPM_LIMITED_EXTRAP;
   }
 
   if (theta_adv_form==0) {
@@ -79,6 +90,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.limiter_option                = limiter_option;
   params.rsplit                        = rsplit;
   params.qsplit                        = qsplit;
+  params.dt_remap_factor               = dt_remap_factor;
+  params.dt_tracer_factor              = dt_tracer_factor;
   params.prescribed_wind               = prescribed_wind;
   params.state_frequency               = state_frequency;
   params.qsize                         = qsize;
@@ -90,29 +103,35 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.nu_top                        = nu_top;
   params.hypervis_order                = hypervis_order;
   params.hypervis_subcycle             = hypervis_subcycle;
+  params.hypervis_subcycle_tom         = hypervis_subcycle_tom;
   params.hypervis_scaling              = hypervis_scaling;
   params.disable_diagnostics           = disable_diagnostics;
   params.moisture                      = (moisture ? MoistDry::MOIST : MoistDry::DRY);
   params.use_cpstar                    = use_cpstar;
-  params.use_semi_lagrangian_transport = use_semi_lagrangian_transport;
+  params.transport_alg                 = transport_alg;
   params.theta_hydrostatic_mode        = theta_hydrostatic_mode;
   params.dcmip16_mu                    = dcmip16_mu;
-  if (time_step_type==0) {
-    params.time_step_type = TimeStepType::LF;
-  } else if (time_step_type==1) {
-    params.time_step_type = TimeStepType::RK2;
-  } else if (time_step_type==4) {
-    params.time_step_type = TimeStepType::IMEX_KG254_EX;
-  } else if (time_step_type==5) {
-    params.time_step_type = TimeStepType::ULLRICH_RK35;
-  } else if (time_step_type==6) {
-    params.time_step_type = TimeStepType::IMEX_KG243;
+  params.nsplit                        = nsplit;
+  params.rearth                        = rearth;
+
+  if (time_step_type==5) {
+    //5 stage, 3rd order, explicit
+    params.time_step_type = TimeStepType::ttype5;
   } else if (time_step_type==7) {
-    params.time_step_type = TimeStepType::IMEX_KG254;
+    //5 stage, based on 2nd order explicit KGU table
+    //1st order (BE) implicit part
+    params.time_step_type = TimeStepType::ttype7_imex;
   } else if (time_step_type==9) {
-    params.time_step_type = TimeStepType::IMEX_KG355;
+    //5 stage, based on 3rd order explicit KGU table
+    //2nd order implicit table
+    params.time_step_type = TimeStepType::ttype9_imex;
   } else if (time_step_type==10) {
-    params.time_step_type = TimeStepType::IMEX_KG255;
+    //5 stage, based on the 2nd order explicit KGU table
+    //2nd order implicit table
+    params.time_step_type = TimeStepType::ttype10_imex;
+  } else {
+    Errors::runtime_abort("Invalid time_step_time" 
+                          + std::to_string(time_step_type), Errors::err_not_implemented);
   }
 
   //set nu_ratios values
@@ -133,7 +152,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   if (ftype == -1) {
     params.ftype = ForcingAlg::FORCING_OFF;
   } else if (ftype == 0) {
-    params.ftype = ForcingAlg::FORCING_DEBUG;
+    params.ftype = ForcingAlg::FORCING_0;
   } else if (ftype == 2) {
     params.ftype = ForcingAlg::FORCING_2;
   }
@@ -141,11 +160,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   // TODO Parse a fortran string and set this properly. For now, our code does
   // not depend on this except to throw an error in apply_test_forcing.
   std::string test_name(*test_case);
-  if (test_name=="jw_baroclinic") {
-    params.test_case = TestCase::JW_BAROCLINIC;
-  } else {
-    Errors::runtime_abort("Error! Unknown test case '" + test_name + "'.\n");
-  }
+  //TEMP
+  params.test_case = TestCase::JW_BAROCLINIC;
 
   // Now this structure can be used safely
   params.params_set = true;
@@ -193,6 +209,8 @@ void cxx_push_results_to_f90(F90Ptr &elem_state_v_ptr,         F90Ptr &elem_stat
                    elem_Q_ptr, num_elems));
 }
 
+//currently, we do not need FVTheta and FPHI, because they are computed from FT and FQ
+//in applycamforcing_tracers inside xx
 void push_forcing_to_c (F90Ptr elem_derived_FM,
                         F90Ptr elem_derived_FVTheta,
                         F90Ptr elem_derived_FT,
@@ -217,16 +235,13 @@ void push_forcing_to_c (F90Ptr elem_derived_FM,
       elem_derived_FPHI, num_elems);
   sync_to_device(fphi_f90, forcing.m_fphi);
 
-  const SimulationParams &params = Context::singleton().get<SimulationParams>();
   Tracers &tracers = Context::singleton().get<Tracers>();
-  if (params.ftype == ForcingAlg::FORCING_DEBUG) {
-    if (tracers.fq.data() == nullptr) {
-      tracers.fq = decltype(tracers.fq)("fq", num_elems);
-    }
-    HostViewUnmanaged<Real * [QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]> fq_f90(
-        elem_derived_FQ, num_elems);
-    sync_to_device(fq_f90, tracers.fq);
+  if (tracers.fq.data() == nullptr) {
+    tracers.fq = decltype(tracers.fq)("fq", num_elems, tracers.num_tracers());
   }
+  HostViewUnmanaged<Real * [QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]> fq_f90(
+      elem_derived_FQ, num_elems);
+  sync_to_device(fq_f90, tracers.fq);
 }
 
 void init_reference_element_c (CF90Ptr& deriv, CF90Ptr& mass)
@@ -254,7 +269,9 @@ void init_elements_c (const int& num_elems)
   const SimulationParams& params = c.get<SimulationParams>();
 
   const bool consthv = (params.hypervis_scaling==0.0);
-  e.init (num_elems, consthv, /* alloc_gradphis = */ true);
+  e.init (num_elems, consthv, /* alloc_gradphis = */ true,
+          params.rearth,
+          /* alloc_sphere_coords = */ params.transport_alg > 0);
 
   // Init also the tracers structure
   Tracers& t = c.create<Tracers> ();
@@ -277,8 +294,10 @@ void init_elements_c (const int& num_elems)
   c.create_ref<ElementsForcing>(e.m_forcing);
 }
 
-void init_functors_c ()
+void init_functors_c (const bool& allocate_buffer)
 {
+  auto& c = Context::singleton();
+
   // We init all the functors in the Context, so that every call to
   // Context::singleton().get<[FunctorName]>()
   // will return a functor already initialized.
@@ -300,11 +319,14 @@ void init_functors_c ()
   // It is way easier to create all functors here once and for all,
   // so that the user does not have to initialize them when calling them.
 
-  auto& elems   = Context::singleton().get<Elements>();
-  auto& tracers = Context::singleton().get<Tracers>();
-  auto& ref_FE  = Context::singleton().get<ReferenceElement>();
-  auto& hvcoord = Context::singleton().get<HybridVCoord>();
-  auto& params  = Context::singleton().get<SimulationParams>();
+  auto& elems    = c.get<Elements>();
+  auto& tracers  = c.get<Tracers>();
+  auto& ref_FE   = c.get<ReferenceElement>();
+  auto& hvcoord  = c.get<HybridVCoord>();
+  auto& params   = c.get<SimulationParams>();
+  auto& geometry = c.get<ElementsGeometry>();
+  auto& state    = c.get<ElementsState>();
+  auto& derived  = c.get<ElementsDerivedState>();
 
   // Check that the above structures have been inited
   Errors::runtime_check(elems.inited(),    "Error! You must initialize the Elements structure before initializing the functors.\n", -1);
@@ -314,43 +336,87 @@ void init_functors_c ()
   Errors::runtime_check(params.params_set, "Error! You must initialize the SimulationParams structure before initializing the functors.\n", -1);
 
   // First, sphere operators, then the others
-  auto& sph_op = Context::singleton().create<SphereOperators>(elems.m_geometry,ref_FE);
-  auto& caar = Context::singleton().create<CaarFunctor>(elems,tracers,ref_FE,hvcoord,sph_op,params);
-  auto& esf  = Context::singleton().create<EulerStepFunctor>();
-  auto& hvf  = Context::singleton().create<HyperviscosityFunctor>();
-  auto& fbm  = Context::singleton().create<FunctorsBuffersManager>();
-  auto& ff   = Context::singleton().create<ForcingFunctor>();
-  auto& diag = Context::singleton().create<Diagnostics> (elems.num_elems());
-  auto& vrm  = Context::singleton().create<VerticalRemapManager>();
+  auto& sph_op = c.create<SphereOperators>(elems.m_geometry,ref_FE);
 
-  const bool need_dirk = (params.time_step_type==TimeStepType::IMEX_KG243 ||   
-                          params.time_step_type==TimeStepType::IMEX_KG254 ||
-                          params.time_step_type==TimeStepType::IMEX_KG255 ||
-                          params.time_step_type==TimeStepType::IMEX_KG355);
+  // Some functors might have been previously created, so
+  // use the create_if_not_there() function.
+  auto& caar = c.create_if_not_there<CaarFunctor>(elems,tracers,ref_FE,hvcoord,sph_op,params);
+  if (params.transport_alg == 0) c.create_if_not_there<EulerStepFunctor>();
+#ifdef HOMME_ENABLE_COMPOSE
+  else                           c.create_if_not_there<ComposeTransport>();
+#endif
+  auto& hvf  = c.create_if_not_there<HyperviscosityFunctor>();
+  auto& ff   = c.create_if_not_there<ForcingFunctor>();
+  auto& diag = c.create_if_not_there<Diagnostics> (elems.num_elems(),params.theta_hydrostatic_mode);
+  auto& vrm  = c.create_if_not_there<VerticalRemapManager>(elems.num_elems());
+
+  auto& fbm  = c.create_if_not_there<FunctorsBuffersManager>();
+
+  // If any Functor was constructed only partially, setup() must be called.
+  // This does not apply to Diagnostics or DirkFunctor since they only
+  // contain one constructor.
+  if (caar.setup_needed()) {
+    caar.setup(elems, tracers, ref_FE, hvcoord, sph_op);
+  }
+  if (params.transport_alg == 0) {
+    auto& esf = c.get<EulerStepFunctor>();
+    if (esf.setup_needed()) esf.setup();
+  } else {
+#ifdef HOMME_ENABLE_COMPOSE	  
+    auto& ct = c.get<ComposeTransport>();
+    if (ct.setup_needed()) ct.setup();
+#endif    
+  }
+  if (hvf.setup_needed()) {
+    hvf.setup(geometry, state, derived);
+  }
+  if (ff.setup_needed()) {
+    ff.setup();
+  }
+  if (vrm.setup_needed()) {
+    vrm.setup();
+  }
+
+  const bool need_dirk = (params.time_step_type==TimeStepType::ttype7_imex ||   
+                          params.time_step_type==TimeStepType::ttype9_imex ||
+                          params.time_step_type==TimeStepType::ttype10_imex  );
 
   if (need_dirk) {
     // Create dirk functor only if needed
-    Context::singleton().create<DirkFunctor>(elems.num_elems());
+    c.create_if_not_there<DirkFunctor>(elems.num_elems());
   }
 
-  // Make the functor request their buffer to the buffers manager
-  // Note: diagnostics also needs buffers
-  fbm.request_size(caar.requested_buffer_size());
-  fbm.request_size(esf.requested_buffer_size());
-  fbm.request_size(hvf.requested_buffer_size());
-  fbm.request_size(diag.requested_buffer_size());
-  fbm.request_size(ff.requested_buffer_size());
-  fbm.request_size(vrm.requested_buffer_size());
-  if (need_dirk) {
-    const auto& dirk = Context::singleton().get<DirkFunctor>();
-    fbm.request_size(dirk.requested_buffer_size());
-  }
+  // If memory in the buffer manager was previously allocated, skip allocation here
+  if (allocate_buffer) {
+    // Make the functor request their buffer to the buffers manager
+    // Note: diagnostics also needs buffers
+    fbm.request_size(caar.requested_buffer_size());
+    if (params.transport_alg == 0)
+      fbm.request_size(c.get<EulerStepFunctor>().requested_buffer_size());
+#ifdef HOMME_ENABLE_COMPOSE
+    else	    
+      fbm.request_size(c.get<ComposeTransport>().requested_buffer_size());
+#endif
+    fbm.request_size(hvf.requested_buffer_size());
+    fbm.request_size(diag.requested_buffer_size());
+    fbm.request_size(ff.requested_buffer_size());
+    fbm.request_size(vrm.requested_buffer_size());
+    if (need_dirk) {
+      const auto& dirk = Context::singleton().get<DirkFunctor>();
+      fbm.request_size(dirk.requested_buffer_size());
+    }
 
-  // Allocate the buffers in the FunctorsBuffersManager, then tell the functors to grab their buffers
-  fbm.allocate();
+    // Allocate the buffers in the FunctorsBuffersManager, then tell the functors to grab their buffers
+    fbm.allocate();
+  }
 
   caar.init_buffers(fbm);
-  esf.init_buffers(fbm);
+  if (params.transport_alg == 0)
+    Context::singleton().get<EulerStepFunctor>().init_buffers(fbm);
+#ifdef HOMME_ENABLE_COMPOSE
+  else
+    Context::singleton().get<ComposeTransport>().init_buffers(fbm);
+#endif
   hvf.init_buffers(fbm);
   diag.init_buffers(fbm);
   ff.init_buffers(fbm);
@@ -359,21 +425,30 @@ void init_functors_c ()
     auto& dirk = Context::singleton().get<DirkFunctor>();
     dirk.init_buffers(fbm);
   }
+  // The SCREAM-side Hommexx interface will initialize GllFvRemap if it's
+  // needed. But it expects the Homme-side Hommexx interface to init buffers, so
+  // do that here.
+  if (c.has<GllFvRemap>()) {
+    auto& gfr = c.get<GllFvRemap>();
+    gfr.setup();
+    gfr.init_buffers(fbm);
+  }
 }
 
 void init_elements_2d_c (const int& ie,
                          CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
                          CF90Ptr& spheremp, CF90Ptr& rspheremp,
                          CF90Ptr& metdet, CF90Ptr& metinv,
-                         CF90Ptr &tensorvisc, CF90Ptr &vec_sph2cart)
+                         CF90Ptr &tensorvisc, CF90Ptr &vec_sph2cart,
+                         double* sphere_cart_vec, double* sphere_latlon_vec)
 {
   auto& c = Context::singleton();
   Elements& e = c.get<Elements> ();
   const SimulationParams& params = c.get<SimulationParams>();
 
   const bool consthv = (params.hypervis_scaling==0.0);
-  e.m_geometry.set_elem_data(ie,D,Dinv,fcor,spheremp,rspheremp,metdet,metinv,tensorvisc,vec_sph2cart,consthv);
-  e.m_geometry.set_elem_data(ie,D,Dinv,fcor,spheremp,rspheremp,metdet,metinv,tensorvisc,vec_sph2cart,consthv);
+  e.m_geometry.set_elem_data(ie,D,Dinv,fcor,spheremp,rspheremp,metdet,metinv,tensorvisc,
+                             vec_sph2cart,consthv,sphere_cart_vec,sphere_latlon_vec);
 }
 
 void init_geopotential_c (const int& ie,
@@ -410,11 +485,32 @@ void init_elements_states_c (CF90Ptr& elem_state_v_ptr,       CF90Ptr& elem_stat
                              CF90Ptr& elem_state_phinh_i_ptr, CF90Ptr& elem_state_dp3d_ptr,
                              CF90Ptr& elem_state_ps_v_ptr,    CF90Ptr& elem_state_Qdp_ptr)
 {
-  ElementsState& state = Context::singleton().get<ElementsState> ();
+  const auto& c = Context::singleton();
+  ElementsState& state = c.get<ElementsState> ();
   state.pull_from_f90_pointers(elem_state_v_ptr,elem_state_w_i_ptr,elem_state_vtheta_dp_ptr,
                                elem_state_phinh_i_ptr,elem_state_dp3d_ptr,elem_state_ps_v_ptr);
-  Tracers &tracers = Context::singleton().get<Tracers>();
+  Tracers &tracers = c.get<Tracers>();
   tracers.pull_qdp(elem_state_Qdp_ptr);
+  const auto  qdp = tracers.qdp;
+  const auto  q = tracers.Q;
+  const auto  dp = state.m_dp3d;
+  auto& tl = c.get<TimeLevel>();
+  const auto n0 = tl.n0;
+  const SimulationParams& params = c.get<SimulationParams>();
+  tl.update_tracers_levels(params.qsplit);
+  const auto n0_qdp = tl.n0_qdp;
+  const auto qsize = tracers.num_tracers();
+  const auto size = tracers.num_elems()*tracers.num_tracers()*NP*NP*NUM_LEV;
+  Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,size),
+                       KOKKOS_LAMBDA(const int idx) {
+    const int ie  =  idx / (qsize*NP*NP*NUM_LEV);
+    const int iq  = (idx / (NP*NP*NUM_LEV)) % qsize;
+    const int igp = (idx / (NP*NUM_LEV)) % NP;
+    const int jgp = (idx / NUM_LEV) % NP;
+    const int k   =  idx % NUM_LEV;
+
+    q (ie,iq,igp,jgp,k) = qdp (ie,n0_qdp,iq,igp,jgp,k) / dp(ie,n0,igp,jgp,k);
+  });
 }
 
 void init_reference_states_c (CF90Ptr& elem_theta_ref_ptr, 
@@ -444,37 +540,56 @@ void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr, 
   ElementsState&    state    = Context::singleton().get<ElementsState> ();
   Diagnostics&      diags    = Context::singleton().get<Diagnostics> ();
 
-  auto& params  = Context::singleton().get<SimulationParams>();
   auto& hvcoord = Context::singleton().get<HybridVCoord>();
   
-  diags.init(state, geometry, hvcoord, params.theta_hydrostatic_mode,
+  diags.init(state, geometry, hvcoord,
              elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr,
              elem_accum_iener_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr);
 }
 
 void init_boundary_exchanges_c ()
 {
-  auto& params       = Context::singleton().get<SimulationParams>();
-  auto  connectivity = Context::singleton().get_ptr<Connectivity>();
+  auto& c = Context::singleton();
+
+  auto& params       = c.get<SimulationParams>();
+  auto  connectivity = c.get_ptr<Connectivity>();
   assert (connectivity->is_finalized());
 
   // Create buffers manager map
-  auto& bmm = Context::singleton().create<MpiBuffersManagerMap>();
-  bmm[MPI_EXCHANGE]->set_connectivity(connectivity);
-  bmm[MPI_EXCHANGE_MIN_MAX]->set_connectivity(connectivity);
+  auto& bmm = c.create_if_not_there<MpiBuffersManagerMap>();
+  if (!bmm[MPI_EXCHANGE]->is_connectivity_set()) {
+    bmm[MPI_EXCHANGE]->set_connectivity(connectivity);
+  }
+  if (!bmm[MPI_EXCHANGE_MIN_MAX]->is_connectivity_set()) {
+    bmm[MPI_EXCHANGE_MIN_MAX]->set_connectivity(connectivity);
+  }
 
-  // Euler BEs
-  auto& esf = Context::singleton().get<EulerStepFunctor>();
-  esf.reset(params);
-  esf.init_boundary_exchanges();
+  if (params.transport_alg == 0) {
+    // Euler BEs
+    auto& esf = c.get<EulerStepFunctor>();
+    esf.reset(params);
+    esf.init_boundary_exchanges();
+  } else {
+#ifdef HOMME_ENABLE_COMPOSE	  
+    auto& ct = c.get<ComposeTransport>();
+    ct.reset(params);
+    ct.init_boundary_exchanges();
+#endif    
+  }
 
   // RK stages BE's
-  auto& cf = Context::singleton().get<CaarFunctor>();
+  auto& cf = c.get<CaarFunctor>();
   cf.init_boundary_exchanges(bmm[MPI_EXCHANGE]);
 
   // HyperviscosityFunctor's BE's
-  auto& hvf = Context::singleton().get<HyperviscosityFunctor>();
+  auto& hvf = c.get<HyperviscosityFunctor>();
   hvf.init_boundary_exchanges();
+
+  if (c.has<GllFvRemap>()) {
+    auto& gfr = c.get<GllFvRemap>();
+    gfr.reset(params);
+    gfr.init_boundary_exchanges();
+  }
 }
 
 } // extern "C"

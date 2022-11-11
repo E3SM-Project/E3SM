@@ -30,6 +30,30 @@ public:
     assert (m_hvcoord.m_inited);
   }
 
+  // On input, pe is pressure; on output, the Exner function.
+  template<typename Scalar>
+  KOKKOS_INLINE_FUNCTION
+  static void pressure_to_exner (Scalar& pe) {
+    pe /= PhysicalConstants::p0;
+#ifdef HOMMEXX_BFB_TESTING
+    pe = bfb_pow(pe,PhysicalConstants::kappa);
+#else
+    pe = pow(pe,PhysicalConstants::kappa);
+#endif
+  }
+
+  // On input, pe is pressure; on output, the reciprocal of the Exner function.
+  template<typename Scalar>
+  KOKKOS_INLINE_FUNCTION
+  static void pressure_to_recip_exner (Scalar& pe) {
+    pe = PhysicalConstants::p0 / pe;
+#ifdef HOMMEXX_BFB_TESTING
+    pe = bfb_pow(pe,PhysicalConstants::kappa);
+#else
+    pe = pow(pe,PhysicalConstants::kappa);
+#endif
+  }
+
   KOKKOS_INLINE_FUNCTION
   void compute_exner (const KernelVariables& kv,
                       const ExecViewUnmanaged<const Scalar[NUM_LEV]>& pi,
@@ -39,18 +63,13 @@ public:
                          [&](const int ilev) {
       // Avoid temporaries
       exner(ilev) = pi(ilev);
-      exner(ilev) /= PhysicalConstants::p0;
-#ifdef HOMMEXX_BFB_TESTING
-      exner(ilev) = bfb_pow(exner(ilev),PhysicalConstants::kappa);
-#else
-      exner(ilev) = pow(exner(ilev),PhysicalConstants::kappa);
-#endif
+      pressure_to_exner(exner(ilev));
     });
   }
 
   template<typename VThetaProvider, typename PhiProvider>
   KOKKOS_INLINE_FUNCTION
-  void compute_pnh_and_exner (const KernelVariables& kv,
+  bool compute_pnh_and_exner (const KernelVariables& kv,
                               const VThetaProvider& vtheta_dp,
                               const PhiProvider&    phi_i,
                               const ExecViewUnmanaged<Scalar[NUM_LEV]>& pnh,
@@ -62,22 +81,19 @@ public:
     // To avoid temporaries, use exner to store some temporaries
     ColumnOps::compute_midpoint_delta(kv,phi_i,exner);
 
-    Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                         [&](const int ilev) {
-#ifndef NDEBUG
+    int nerr;
+    Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                            [&](const int ilev, int& nerr) {
       // check inputs
       const int vec_len = (ilev==(NUM_LEV-1)) ? ColInfo<NUM_PHYSICAL_LEV>::LastPackLen : VECTOR_SIZE;
       for (int iv=0; iv<vec_len; ++iv) {
-        if (vtheta_dp(ilev)[iv]<0.0) {
-          Kokkos::abort("Error! vtheta_dp>0 detected.\n");
-        }
-        if (exner(ilev)[iv]>0.0) {
-          Kokkos::abort("Error! dphi>0 detected.\n");
-        }
+        if (vtheta_dp(ilev)[iv] < 0.0 || exner(ilev)[iv] > 0.0)
+          ++nerr;
       }
-#endif
+      if (nerr) return;
       compute_pnh_and_exner(vtheta_dp(ilev), exner(ilev), pnh(ilev), exner(ilev));
-    });
+    }, nerr);
+    return nerr == 0;
   }
 
   // Compute:
@@ -232,7 +248,7 @@ public:
     ColumnOps::column_scan_mid_to_int<false>(kv,integrand_provider,phi_i);
   }
 
-private:
+public:
 
   bool            m_theta_hydrostatic_mode;
   HybridVCoord    m_hvcoord;

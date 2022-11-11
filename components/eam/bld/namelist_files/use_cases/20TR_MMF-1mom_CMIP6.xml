@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<namelist_defaults>
+
+<!-- Set default output options for CMIP6 simulations -->
+<cosp_lite>.true.</cosp_lite>
+
+<liqcf_fix>.false.</liqcf_fix>
+
+<!-- Solar constant from CMIP6 input4MIPS -->
+<solar_data_file>atm/cam/solar/Solar_1850-2299_input4MIPS_c20181106.nc</solar_data_file>
+<solar_data_type>SERIAL</solar_data_type>
+
+<!-- GHG values from CMIP6 input4MIPS -->
+<bndtvghg>atm/cam/ggas/GHG_CMIP-1-2-0_Annual_Global_0000-2014_c20180105.nc</bndtvghg>
+<scenario_ghg>RAMPED</scenario_ghg>
+
+<!-- Stratospheric aerosols from CMIP6 input4MIPS -->
+<prescribed_volcaero_datapath>atm/cam/volc</prescribed_volcaero_datapath>
+<prescribed_volcaero_file>CMIP_DOE-ACME_radiation_1850-2014_v3_c20171205.nc</prescribed_volcaero_file>
+<prescribed_volcaero_filetype>VOLC_CMIP6</prescribed_volcaero_filetype>
+<prescribed_volcaero_type>SERIAL</prescribed_volcaero_type>
+
+<!-- For comprehensive history -->
+<history_amwg>.true.</history_amwg>
+<history_aerosol>.true.</history_aerosol>
+<history_aero_optics>.true.</history_aero_optics>
+
+<!-- Prescribed aerosols -->
+<prescribed_aero_datapath>atm/cam/chem/trop_mam/aero</prescribed_aero_datapath>
+<prescribed_aero_file>mam4_0.9x1.2_L72_2000clim_c170323.nc</prescribed_aero_file>
+<use_hetfrz_classnuc>.false.</use_hetfrz_classnuc>
+<prescribed_aero_type>CYCLICAL</prescribed_aero_type>
+<prescribed_aero_cycle_yr>01</prescribed_aero_cycle_yr>
+
+<!-- Stratospheric ozone (Linoz) updated using CMIP6 input4MIPS GHG concentrations -->
+<chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc</chlorine_loading_file>
+<chlorine_loading_type      >SERIAL</chlorine_loading_type>
+
+<!-- sim_year used for CLM datasets and SSTs forcings -->
+<sim_year>1850-2000</sim_year>
+
+</namelist_defaults>

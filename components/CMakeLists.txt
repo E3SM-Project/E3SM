@@ -2,7 +2,7 @@
 #
 # Common CMakeLists.txt: a framework for building all CIME components and more
 #
-# This is a port of cime/scripts/Tools/Makefile. As more components are ported to
+# This is a port of cime/CIME/Tools/Makefile. As more components are ported to
 # CMake, the directory level of this file will rise to the top-level directory.
 #
 # We will prefer space-separated strings over lists
@@ -21,8 +21,8 @@ cmake_policy(SET CMP0057 NEW)
 set (CASEROOT "" CACHE STRING "The case root directory.")
 
 # Turn on wrapper
-set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "python ${CASEROOT}/Tools/e3sm_compile_wrap.py ")
-set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "python ${CASEROOT}/Tools/e3sm_compile_wrap.py ")
+set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "python3 ${CASEROOT}/Tools/e3sm_compile_wrap.py ")
+set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK    "python3 ${CASEROOT}/Tools/e3sm_compile_wrap.py ")
 
 # We need to set the compilers *before* calling `project`.
 # The only way to get the compiler name, is to load Macros.cmake
@@ -46,6 +46,8 @@ function(set_compilers_e3sm)
   set(CMAKE_CXX_COMPILER     ${CXX} CACHE STRING "The CXX compiler")
   set(CMAKE_C_COMPILER       ${CC}  CACHE STRING "The C   compiler")
   set(CMAKE_Fortran_COMPILER ${FC}  CACHE STRING "The Fortran compiler")
+  # USE_CUDA is set through Macros.cmake / config_compilers.xml
+  # If it exists, then set parent's scope to true; otherwise to false
   if (USE_CUDA)
     set(USE_CUDA TRUE PARENT_SCOPE)
   else()
@@ -77,7 +79,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
 
 # Set global targets
 add_custom_target(genf90
-  DEPENDS ${CIMEROOT}/src/externals/genf90/genf90.pl)
+  DEPENDS ${CIMEROOT}/CIME/non_py/externals/genf90/genf90.pl)
 
 # Build E3SM components
 set(IDX 0)

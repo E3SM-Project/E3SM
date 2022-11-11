@@ -7,6 +7,8 @@ add_executable(fortran2d ../shr_const_mod.F90 ../perf_mod.F90 ../fortran_driver.
                ../../../crm_output_module.F90
                ../../../crm_rad_module.F90
                ../../../crm_state_module.F90
+               ../../../crm_ecpp_output_module.F90
+               ../../../ecppvars.F90
                ../../../openacc_utils.F90
                ${FORTRAN_SRC})
 target_link_libraries(fortran2d ${NCFLAGS})

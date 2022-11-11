@@ -20,6 +20,8 @@ module planar_mod
   use control_mod, only : hypervis_scaling, cubed_sphere_map
   use spacecurve_mod, only : GilbertCurve
 
+  use physical_constants, only: Lx, Ly, Sx, Sy, dx, dy, dx_ref, dy_ref
+
   implicit none
   private
 
@@ -262,7 +264,6 @@ call initgridedge(GridEdge,GridVertex)
 
   subroutine coordinates_atomic(elem,gll_points)
     use element_mod, only : element_t
-    use physical_constants, only: dx, dy, dx_ref, dy_ref, Sx, Sy, Lx, Ly
 
     type (element_t) :: elem
     real (kind=longdouble_kind)      :: gll_points(np)
@@ -310,7 +311,6 @@ call initgridedge(GridEdge,GridVertex)
 
 
   subroutine Dmap(D, a,b, corners3D, ref_map, cartp, facenum)
-    use physical_constants, only: dx, dy
     real (kind=real_kind), intent(out)  :: D(2,2)
     real (kind=real_kind), intent(in)     :: a,b
     type (cartesian3D_t)   :: corners3D(4)  !x,y,z coords of element corners
@@ -363,7 +363,6 @@ call initgridedge(GridEdge,GridVertex)
 
   subroutine metric_atomic(elem,gll_points,alpha)
     use element_mod, only : element_t
-    use physical_constants, only: Lx, Ly, dx, dy
 
     type (element_t) :: elem
     real(kind=real_kind) :: alpha
@@ -597,7 +596,6 @@ call initgridedge(GridEdge,GridVertex)
 
   subroutine plane_set_corner_coordinates(elem)
     use element_mod,    only : element_t
-    use physical_constants, only : dx_ref, dy_ref
 
     type (element_t) :: elem
     ! Local variables

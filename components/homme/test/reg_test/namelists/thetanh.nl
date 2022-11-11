@@ -31,7 +31,6 @@
   theta_hydrostatic_mode = .${HOMME_TEST_HYDROSTATIC_MODE}.
 /
 &vert_nl
-  vform         = "ccm"
   vfile_mid     = "./vcoord/${HOMME_TEST_VCOORD_MID_FILE}"
   vfile_int     = "./vcoord/${HOMME_TEST_VCOORD_INT_FILE}"
 /

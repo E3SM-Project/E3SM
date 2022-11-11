@@ -22,6 +22,7 @@ add_default($nl, 'config_effective_pressure_max');
 
 add_default($nl, 'config_thickness_advection');
 add_default($nl, 'config_tracer_advection');
+add_default($nl, 'config_restore_thickness_after_advection');
 
 ##############################
 # Namelist group: solidearth #
@@ -46,6 +47,7 @@ add_default($nl, 'config_calving_timescale');
 add_default($nl, 'config_restore_calving_front');
 add_default($nl, 'config_remove_icebergs');
 add_default($nl, 'config_remove_small_islands');
+add_default($nl, 'config_calving_speed_limit');
 add_default($nl, 'config_grounded_von_Mises_threshold_stress');
 add_default($nl, 'config_floating_von_Mises_threshold_stress');
 add_default($nl, 'config_finalize_damage_after_advection');
@@ -193,6 +195,7 @@ add_default($nl, 'config_SGH_pressure_calc');
 add_default($nl, 'config_SGH_alpha');
 add_default($nl, 'config_SGH_beta');
 add_default($nl, 'config_SGH_conduc_coeff');
+add_default($nl, 'config_SGH_conduc_coeff_drowned');
 add_default($nl, 'config_SGH_till_drainage');
 add_default($nl, 'config_SGH_till_max');
 add_default($nl, 'config_SGH_advection');

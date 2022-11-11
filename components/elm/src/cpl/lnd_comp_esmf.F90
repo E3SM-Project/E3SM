@@ -558,7 +558,7 @@ contains
     call ESMF_ArrayGet(x2l, localDe=0, farrayPtr=fptr, rc=rc)
     if (rc /= ESMF_SUCCESS) call ESMF_Finalize(rc=rc, endflag=ESMF_END_ABORT)
 
-    call lnd_import( bounds, fptr, atm2lnd_vars, glc2lnd_vars )
+    call lnd_import( bounds, fptr, atm2lnd_vars, glc2lnd_vars, lnd2atm_vars )
 
     call t_stopf ('lc_lnd_import')
 

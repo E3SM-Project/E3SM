@@ -4,8 +4,7 @@ source $MODULESHOME/init/bash
 module purge
 module load netcdf
 
-unset ARCH
-unset CUDA_ARCH
+unset YAKL_ARCH
 unset NCRMS
 
 export NCHOME=${NETCDF_PATH}
@@ -15,8 +14,7 @@ export CC=mpicc
 export CXX=mpic++
 export FC=mpif90
 export FFLAGS="-O3"
-export CXXFLAGS="-O3"
+export YAKL_CXX_FLAGS="-O3"
 export YAKL_HOME="`pwd`/../../../../../../../../externals/YAKL"
-export YAKL_CUB_HOME="`pwd`/../../../../../../../../externals/cub"
-# export ARCH="CUDA"
-# export CUDA_ARCH="-arch sm_35"
+# export YAKL_ARCH="CUDA"
+# export YAKL_CUDA_FLAGS="-arch sm_35 -O3 --use_fast_math"

@@ -1,0 +1,194 @@
+#! /usr/bin/env python3
+
+"""
+Compare two build trees to see if compiler or link flags have changed.
+"""
+
+import argparse, sys, os, subprocess, glob
+from pathlib import Path
+
+###############################################################################
+def run_cmd_no_fail(cmd, from_dir=None):
+###############################################################################
+    proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            cwd=from_dir, text=True)
+    output, errput = proc.communicate()
+    stat = proc.wait()
+
+    assert stat == 0, f"CMD: {cmd} FAILED when run from {from_dir}\nERROR: {errput}"
+    assert isinstance(output, str)
+
+    return output.strip()
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <filename>
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Compare case1 to case2 \033[0m
+    > {0} $case1dir $case2dir
+
+    \033[1;32m# same as ^, except with comparisons not sensitive to flag order. This flag is likely to be necessary for the flags.make to match \033[0m
+    > {0} $case1dir $case2dir -u
+
+    \033[1;32m# same as ^, except limit to atm component \033[0m
+    > {0} $case1dir $case2dir -u -l atm.dir
+
+    \033[1;32m# same as ^, except limit to link flags for all components \033[0m
+    > {0} $case1dir $case2dir -u -l link.txt
+""".format(os.path.basename(args[0])),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("case1", help="The path to case1")
+
+    parser.add_argument("case2", help="The path to case2")
+
+    parser.add_argument("-u", "--unordered", action="store_true",
+                        help="Make comparisons not sensitive to token order")
+
+    parser.add_argument("-l", "--limit", dest="limits", action="append", default=[],
+                        help="Limit compared files to files containing this substring. This option can be supplied multiple times")
+
+    parser.add_argument("-v", "--verbose", action="store_true", help="Print diff details")
+
+    args = parser.parse_args(args[1:])
+
+    return args
+
+###############################################################################
+def find_files(builddir_cmake, filename, limits):
+###############################################################################
+    result = []
+    all_files = list(sorted(glob.glob(f"{builddir_cmake}/**/{filename}", recursive=True)))
+
+    if limits:
+        for curr_file in all_files:
+            matches_limits = True
+            for limit in limits:
+                if limit not in curr_file:
+                    matches_limits = False
+                    print(f"File {curr_file} does not match limit {limit}, skipping")
+                    break
+
+            if matches_limits:
+                result.append(curr_file)
+
+        return result
+
+    else:
+        return all_files
+
+###############################################################################
+def compare_contents(case1, case2, file1, file2, contents1, contents2, unordered, verbose):
+###############################################################################
+    print("###############################################################################")
+    print(f"COMPARING FILES {file1} AND {file2}")
+
+    normalized_contents2 = contents2.replace(case2, case1)
+
+    lines1 = contents1.splitlines()
+    lines2 = normalized_contents2.splitlines()
+
+    assert len(lines1) == len(lines2), f"{file1} and {file2} are not even the same length!"
+
+    files_match = True
+    for line1, line2 in zip(lines1, lines2):
+        tokens1 = line1.split()
+        tokens2 = line2.split()
+
+        if unordered:
+            tokens1.sort()
+            tokens2.sort()
+
+        if tokens1 != tokens2:
+            if files_match:
+                print("  did NOT match")
+                files_match = False
+
+            if verbose:
+                for token1, token2 in zip(tokens1, tokens2):
+                    if token1 != token2:
+                        print(f"    {token1} != {token2}")
+            else:
+                break
+
+    if files_match:
+        print("  MATCHED")
+
+    return files_match
+
+###############################################################################
+def compare_file_lists(case1, case2, files1, files2, unordered, verbose):
+###############################################################################
+    result = True
+    for file1, file2 in zip(files1, files2):
+        file1p = Path(file1)
+        file2p = Path(file2)
+
+        assert file1p.name == file2p.name, f"File orders did not match, {file1p.name} != {file2p.name}"
+
+        file1c = file1p.open().read()
+        file2c = file2p.open().read()
+
+        result &= compare_contents(case1, case2, file1, file2, file1c, file2c, unordered, verbose)
+
+    return result
+
+###############################################################################
+def compare_flags(case1, case2, unordered, limits, verbose):
+###############################################################################
+    result = True
+
+    assert os.path.isdir(case1), f"{case1} is not an existing directory"
+    assert os.path.isdir(case2), f"{case2} is not an existing directory"
+
+    builddir1 = run_cmd_no_fail("./xmlquery EXEROOT --value", from_dir=case1)
+    builddir2 = run_cmd_no_fail("./xmlquery EXEROOT --value", from_dir=case2)
+
+    casename1 = run_cmd_no_fail("./xmlquery CASE --value", from_dir=case1)
+    casename2 = run_cmd_no_fail("./xmlquery CASE --value", from_dir=case2)
+
+    builddir1_cmake = os.path.join(builddir1, "cmake-bld")
+    builddir2_cmake = os.path.join(builddir2, "cmake-bld")
+
+    assert os.path.isdir(builddir1_cmake), \
+        f"{builddir1_cmake} is not an existing directory, you need to run case.build in {case1}"
+    assert os.path.isdir(builddir2_cmake), \
+        f"{builddir2_cmake} is not an existing directory, you need to run case.build in {case2}"
+
+    flag_files1 = find_files(builddir1_cmake, "flags.make", limits)
+    flag_files2 = find_files(builddir2_cmake, "flags.make", limits)
+
+    link_files1 = find_files(builddir1_cmake, "link.txt", limits)
+    link_files2 = find_files(builddir2_cmake, "link.txt", limits)
+
+    print()
+
+    result &= compare_file_lists(casename1, casename2, flag_files1, flag_files2, unordered, verbose)
+
+    result &= compare_file_lists(casename1, casename2, link_files1, link_files2, unordered, verbose)
+
+    if result:
+        print("\nALL FILES MATCHED")
+    else:
+        print("\nALL FILES DID NOT MATCH")
+
+    return result
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    success = compare_flags(**vars(parse_command_line(sys.argv, description)))
+
+    sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

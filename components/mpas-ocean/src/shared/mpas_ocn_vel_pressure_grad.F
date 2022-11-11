@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -93,7 +93,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_pressure_grad_tend(ssh, pressure, &
+   subroutine ocn_vel_pressure_grad_tend(ssh, pressure, surfacePressure, &
                                   montgomeryPotential, zMid, &
                                   density, potentialDensity, &
                                   indxT, indxS, tracers, &
@@ -111,7 +111,8 @@ contains
          indxS                !< [in] tracer array index for salt
 
       real (kind=RKIND), dimension(:), intent(in) :: &
-         ssh                  !< [in] sea surface height
+         ssh,                &!< [in] sea surface height
+         surfacePressure      !< [in] surface pressure
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          pressure,            &!< [in] Pressure field
@@ -145,7 +146,7 @@ contains
       !-----------------------------------------------------------------
 
       integer ::           &
-         iEdge, iCell, k,  &! loop indices for edge, cell, vertical loops
+         iEdge, k,  &! loop indices for edge, cell, vertical loops
          cell1, cell2,     &! neighbor cell indices across edge
          kMin, kMax         ! shallowest and deepest active layer
 
@@ -192,7 +193,7 @@ contains
 #ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, dcEdge, &
-         !$acc            tend, edgeMask, ssh) &
+         !$acc            tend, edgeMask, ssh,surfacePressure) &
          !$acc    private(cell1, cell2, invdcEdge, k, kMin, kMax)
 #else
          !$omp parallel
@@ -208,8 +209,10 @@ contains
 
             do k=kMin,kMax
                tend(k,iEdge) = tend(k,iEdge) - &
-                               gravity*edgeMask(k,iEdge)*invdcEdge* &
-                               (ssh(cell2) - ssh(cell1))
+                               edgeMask(k,iEdge)*invdcEdge* &
+                               (  gravity*(ssh(cell2) - ssh(cell1)) &
+                                + density0Inv*(  surfacePressure(cell2) &
+                                               - surfacePressure(cell1)) )
             end do
          end do
 #ifndef MPAS_OPENACC

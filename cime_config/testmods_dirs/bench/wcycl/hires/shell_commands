@@ -1,5 +1,5 @@
 #!/bin/bash
 ./xmlchange --append CAM_CONFIG_OPTS='-cosp'
-./xmlchange --id BUDGETS --val TRUE
 
-./xmlchange PIO_VERSION=2
+# save benchmark timing info for provenance
+./xmlchange SAVE_TIMING=TRUE

@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -288,9 +288,6 @@ contains
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: harmonicAnalysisAMPool 
-      type (mpas_time_type) :: current_time
-      type (mpas_time_type) :: harmonicAnalysisStart
-      type (mpas_time_type) :: harmonicAnalysisEnd
 
       integer, pointer :: nCellsSolve      
       integer, pointer :: nAnalysisConstituents
@@ -321,7 +318,9 @@ contains
 
       integer :: iCell
       integer :: iCon
+      integer :: err_tmp
       real (kind=RKIND) :: time
+      real (kind=RKIND) :: harmonicAnalysisEnd
 
       err = 0
 
@@ -346,18 +345,16 @@ contains
 
          ! get relevant time information
          time = daysSinceStartOfSim*86400_RKIND
-         current_time = mpas_get_clock_time(domain % clock, MPAS_NOW, err)
-         call mpas_set_time(harmonicAnalysisStart, dateTimeString=config_AM_harmonicAnalysis_start)  
-         call mpas_set_time(harmonicAnalysisEnd, dateTimeString=config_AM_harmonicAnalysis_end)  
+         harmonicAnalysisEnd = config_AM_harmonicAnalysis_start_delay + config_AM_harmonicAnalysis_duration
          
          ! exit if harmonic analysis period has not begun yet
-         if (current_time .lt. harmonicAnalysisStart) then
+         if (daysSinceStartOfSim .lt. config_AM_harmonicAnalysis_start_delay) then
            call mpas_log_write('harmonicAnalysisAM exit: before HA period')
            return 
          end if
 
          ! update if within harmonic analysis period 
-         if (current_time .le. harmonicAnalysisEnd) then
+         if (daysSinceStartOfSim .le. harmonicAnalysisEnd) then
            CALL update_least_squares_LHS_matrix(nAnalysisConstituents, &
                                                 time, &
                                                 analysisConstituentFrequency, &
@@ -373,7 +370,7 @@ contains
          end if
 
          ! solve harmonic analysis least squares system if harmonic analysis period is over
-         if ((current_time .ge. harmonicAnalysisEnd) .and. (leastSquaresSolution == 0)) then
+         if ((daysSinceStartOfSim .ge. harmonicAnalysisEnd) .and. (leastSquaresSolution == 0)) then
            call harmonic_analysis_solve(nCellsSolve, &
                                         nAnalysisConstituents, &
                                         leastSquaresLHSMatrix, &
@@ -435,11 +432,13 @@ contains
              endif
            enddo
 
+           call mpas_stream_mgr_write(domain % streamManager, streamID=config_AM_harmonicAnalysis_output_stream, forceWriteNow=.true., ierr=err_tmp)
+
            ! increment to indicate the system has been solved
            leastSquaresSolution = leastSquaresSolution + 1
            call mpas_log_write('harmonicAnalysisAM solve')
 
-         else if ((current_time .ge. harmonicAnalysisEnd) .and. (leastSquaresSolution > 0)) then
+         else if ((daysSinceStartOfSim .ge. harmonicAnalysisEnd) .and. (leastSquaresSolution > 0)) then
            call mpas_log_write('harmonicAnalysisAM exit: past HA period')
          end if
 
@@ -744,18 +743,21 @@ contains
 
 !     Decomposition of matrix 
 
-      do 100 ir=1,mm
+      do ir=1,mm
          ire=ir+1
-         do 20 j=ire,mm
- 20         ha(ir,j)=ha(ir,j)/ha(ir,ir)
-         if (ire.gt.mm) goto 100
-         do 40 j=ire,mm
-           do 40 k=ire,mm
- 40           ha(k,j)=ha(k,j)-ha(k,ir)*ha(ir,j)
-         do 50 j=ire,mm
- 50        ha(j,ir)=0.0_RKIND
- 100  continue
-
+         do j=ire,mm
+            ha(ir,j)=ha(ir,j)/ha(ir,ir)
+         end do
+         if (ire.gt.mm) exit
+         do j=ire,mm
+           do k=ire,mm
+              ha(k,j)=ha(k,j)-ha(k,ir)*ha(ir,j)
+           end do
+         end do
+         do j=ire,mm
+           ha(j,ir)=0.0_RKIND
+         end do
+      end do
 
       end subroutine least_squares_decompose !}}}
 
@@ -789,26 +791,27 @@ contains
 
 !     solve for y by forward substitution for l*y=p
 
-      do 120 ir=1,mm
+      do ir=1,mm
          y(ir)=hap(ir)
-         do 110 jr=1,ir-1
- 110        y(ir)=y(ir)-ha(jr,ir)*y(jr)
- 120  continue
+         do jr=1,ir-1
+            y(ir)=y(ir)-ha(jr,ir)*y(jr)
+         end do
+      end do
 
 !     calculate c=d**(-1)*y
 
-      do 130 ir=1,mm
- 130     c(ir)=y(ir)/ha(ir,ir)
+      do ir=1,mm
+         c(ir)=y(ir)/ha(ir,ir)
+      end do
 
 !     solve for x by back-substituting for l(tr)*x=c
 
-      ir=mm
- 140  continue
-      hax(ir)=c(ir)
-      do 150 jr=ir+1,mm
- 150     hax(ir)=hax(ir)-ha(ir,jr)*hax(jr)
-      ir=ir-1
-      if(ir.ge.1) goto 140
+      do ir = mm,1,-1
+         hax(ir)=c(ir)
+         do jr=ir+1,mm
+            hax(ir)=hax(ir)-ha(ir,jr)*hax(jr)
+         end do
+      end do
 
       end subroutine least_squares_solve!}}}
 

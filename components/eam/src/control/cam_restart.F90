@@ -213,8 +213,14 @@ end subroutine restart_printopts
       call cam_pio_createfile(File, trim(fname))
       call timemgr_init_restart(File)
 
+      call t_startf("init_restart_dynamics")
       call init_restart_dynamics(File, dyn_out)
+      call t_stopf("init_restart_dynamics")
+
+      call t_startf("init_restart_physics")
       call init_restart_physics(File, pbuf2d)
+      call t_stopf("init_restart_physics")
+
       call init_restart_history(File)
 
       ierr = PIO_Put_att(File, PIO_GLOBAL, 'caseid', caseid)
@@ -229,7 +235,9 @@ end subroutine restart_printopts
       !-----------------------------------------------------------------------
       ! Dynamics, physics, History
       !-----------------------------------------------------------------------
+      call t_startf("timemgr_write_restart")
       call timemgr_write_restart(File)
+      call t_stopf("timemgr_write_restart")
 
       call t_startf("write_restart_dynamics")
       call write_restart_dynamics(File, dyn_out)
@@ -362,8 +370,10 @@ end subroutine restart_printopts
    ierr = pio_get_att(File, PIO_GLOBAL, 'WNUMMAX', tmp_rgrid)
    if(ierr==PIO_NOERR) wnummax=tmp_rgrid
    call PIO_SetErrorHandling(File, PIO_INTERNAL_ERROR)
-   call timemgr_read_restart(File)
 
+   call t_startf('timemgr_read_restart')
+   call timemgr_read_restart(File)
+   call t_stopf('timemgr_read_restart')
 
    if(masterproc) then
 
@@ -385,7 +395,10 @@ end subroutine restart_printopts
       !-----------------------------------------------------------------------
 
    call initcom ()
+
+   call t_startf('read_restart_dynamics')
    call read_restart_dynamics(File, dyn_in, dyn_out, NLFileName)   
+   call t_stopf('read_restart_dynamics')
 
    call hub2atm_alloc( cam_in )
    call atm2hub_alloc( cam_out )
@@ -394,10 +407,14 @@ end subroutine restart_printopts
    ! Initialize physics grid reference pressures (needed by initialize_radbuffer)
    call ref_pres_init()
 
+   call t_startf('read_restart_physics')
    call read_restart_physics( File, cam_in, cam_out, pbuf2d )
+   call t_stopf('read_restart_physics')
 
    if (nlres .and. .not.lbrnch) then
+      call t_startf('read_restart_history')
       call read_restart_history ( File )
+      call t_stopf('read_restart_history')
    end if
 
    call pio_closefile(File)
@@ -414,7 +431,10 @@ end subroutine restart_printopts
    ! Initialize ghg surface values.
 
    call chem_surfvals_init()
+
+   call t_startf('clean_iodesc_list')
    call clean_iodesc_list()
+   call t_stopf('clean_iodesc_list')
 
  end subroutine cam_read_restart
 

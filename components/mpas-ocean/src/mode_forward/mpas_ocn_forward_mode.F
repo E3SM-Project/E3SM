@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -43,6 +43,7 @@ module ocn_forward_mode
    use ocn_test
    use ocn_mesh
 
+   use ocn_eddy_parameterization_helpers
    use ocn_thick_hadv
    use ocn_thick_vadv
    use ocn_thick_ale
@@ -59,6 +60,7 @@ module ocn_forward_mode
    use ocn_frazil_forcing
    use ocn_tidal_forcing
    use ocn_vel_tidal_potential
+   use ocn_vel_self_attraction_loading
 
    use ocn_tracer_hmix
    use ocn_tracer_hmix_redi
@@ -70,8 +72,12 @@ module ocn_forward_mode
    use ocn_tracer_ecosys
    use ocn_tracer_DMS
    use ocn_tracer_MacroMolecules
+   use ocn_tracer_ideal_age
+   use ocn_tracer_CFC
    use ocn_tracer_surface_restoring
    use ocn_gm
+   use ocn_submesoscale_eddies
+   use ocn_stokes_drift 
 
    use ocn_high_freq_thickness_hmix_del2
 
@@ -79,6 +85,9 @@ module ocn_forward_mode
 
    use ocn_vmix
    use ocn_vmix_gotm, only: ocn_vmix_gotm_finalize
+
+   use ocn_vertical_advection
+   use ocn_vertical_remap, only: ocn_vertical_remap_init
 
    use ocn_forcing
    use ocn_time_varying_forcing
@@ -147,17 +156,22 @@ module ocn_forward_mode
          block              ! structure with all data for a given block
 
       type (mpas_pool_type), pointer :: &
-         meshPool           ! structure containing mesh data
+         diagnosticsPool    ! structure containing diagnostics data
 
       type (MPAS_Time_type) :: &
          xtime_timeType,               &! current time
          simulationStartTime_timeType, &! start time whole simulation
+         referenceTime_timeType,       &! reference time for Time coordinate
          startTime,                    &! start time this run
          alarmTime                      ! alarm for salinity restoring
+
+      type (field0DReal), pointer :: TimeField    ! to add units
 
       type (MPAS_TimeInterval_type) :: &
          timeStep,      &! time step in time manager form
          alarmTimeStep   ! alarm interval in time manager form
+
+      character (len=StrKIND) :: units
 
       ! End preamble
       !-------------
@@ -312,8 +326,27 @@ module ocn_forward_mode
       ! compute time since start of simulation, in days
       call mpas_set_time(xtime_timeType, dateTimeString=xtime)
       call mpas_set_time(simulationStartTime_timeType, dateTimeString=simulationStartTime)
-      call mpas_get_timeInterval(xtime_timeType - simulationStartTime_timeType,dt=daysSinceStartOfSim)
+      call mpas_get_timeInterval(xtime_timeType - simulationStartTime_timeType, dt=daysSinceStartOfSim)
       daysSinceStartOfSim = daysSinceStartOfSim*days_per_second
+
+      call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+
+      ! add units of "days since <ref_date>" to Time
+      write(units, '(a10,a20)') 'days since', &
+           config_output_reference_time(1:10)//" "//config_output_reference_time(12:19)
+      call mpas_pool_get_Field(diagnosticsPool, 'Time', TimeField)
+      call mpas_add_att(TimeField % attLists(1) % attList, 'units', units)
+
+      ! Add calendar attribute to Time
+      call mpas_add_att(TimeField % attLists(1) % attList, 'calendar', config_calendar_type)
+
+      ! compute Time as days since config_output_reference_time
+      call mpas_set_time(referenceTime_timeType, dateTimeString=config_output_reference_time)
+      call mpas_get_timeInterval(xtime_timeType - referenceTime_timeType, dt=Time)
+      Time = Time*days_per_second
+      ! bounds on instantaneous time are just the time itself
+      Time_bnds(1) = Time
+      Time_bnds(2) = Time
 
       ! Update any mesh fields that may have been modified during init
       call ocn_meshUpdateFields(domain)
@@ -348,6 +381,10 @@ module ocn_forward_mode
       call mpas_reset_clock_alarm(domain % clock, 'salinityDataReadAlarm', ierr=err_tmp)
 
       endif
+
+      ! Initialize self-attraction and loading
+      call ocn_vel_self_attraction_loading_init(domain,err_tmp)
+      ierr = ior(ierr, err_tmp)
 
       !-----------------------------------------------------------------
       ! Complete all remaining module initializations.
@@ -431,6 +468,8 @@ module ocn_forward_mode
       ierr = ior(ierr,err_tmp)
       call ocn_gm_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
+      call ocn_submesoscale_init(err_tmp)
+      ierr = ior(ierr,err_tmp)
       call ocn_tracer_nonlocalflux_init(err_tmp)
       ierr = ior(ierr,err_tmp)
       call ocn_tracer_ecosys_init(domain, err_tmp)
@@ -438,6 +477,10 @@ module ocn_forward_mode
       call ocn_tracer_DMS_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
       call ocn_tracer_MacroMolecules_init(domain, err_tmp)
+      ierr = ior(ierr,err_tmp)
+      call ocn_tracer_ideal_age_init(domain, err_tmp)
+      ierr = ior(ierr,err_tmp)
+      call ocn_tracer_CFC_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
       if (ierr /= 0) then
          call mpas_log_write( &
@@ -450,6 +493,11 @@ module ocn_forward_mode
       call ocn_vmix_init(domain, err_tmp)
       ierr = ior(ierr, err_tmp)
       call ocn_tendency_init(err_tmp)
+      ierr = ior(ierr,err_tmp)
+      call ocn_vertical_advection_init(err_tmp)
+      if ( configVertAdvMethod == vertAdvRemap ) &
+         call ocn_vertical_remap_init(err_tmp)
+      call ocn_stokes_drift_init(err_tmp)
       ierr = ior(ierr,err_tmp)
 
       if (ierr /= 0) then
@@ -592,6 +640,13 @@ module ocn_forward_mode
         call mpas_timer_stop('io_ecosys')
       endif
 
+      ! read initial data required for CFC forcing
+      if (config_use_CFCTracers) then
+        call mpas_timer_start('io_CFC',.false.)
+        call ocn_get_CFCData(domain % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_CFC')
+      endif
+
       ! read initial data required for monthly surface salinity restoring
       ! always execute this call as initial data needed regardless of alarm
       if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
@@ -628,6 +683,9 @@ module ocn_forward_mode
          call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
          call mpas_log_write('Doing timestep ' // trim(timeStamp))
 
+         ! pre-timestep analysis computation
+         call ocn_analysis_precompute(domain, ierr)
+
 #ifdef MPAS_DEBUG
          call mpas_log_write( '   Computing surface flux arrays')
 #endif
@@ -647,6 +705,14 @@ module ocn_forward_mode
            call ocn_tidal_forcing_build_array(domain, meshPool, forcingPool, statePool, err)
 
            ! Compute normalGMBolusVelocity, relativeSlope and RediDiffVertCoef if respective flags are turned on
+
+           call ocn_eddy_compute_mixed_layer_depth(statePool, forcingPool)
+           if (config_use_GM .or. config_submesoscale_enable) then
+               call mpas_timer_start("submesoscale eddy velocity compute", .false.)
+               call ocn_eddy_compute_buoyancy_gradient()
+               call mpas_timer_stop("submesoscale eddy velocity compute")
+           end if
+
            if (config_use_Redi.or.config_use_GM) then
                call ocn_gm_compute_Bolus_velocity(statePool, meshPool, scratchPool, timeLevelIn=1)
            end if
@@ -737,6 +803,13 @@ module ocn_forward_mode
            call mpas_timer_stop('io_ecosys')
          endif
 
+         ! read next time level data required for CFC forcing
+         if (config_use_CFCTracers) then
+           call mpas_timer_start('io_CFC',.false.)
+           call ocn_get_CFCData(domain % streamManager, domain, domain % clock, .false.)
+           call mpas_timer_stop('io_CFC')
+         endif
+
          ! read next time level data required for monthly surface salinity restoring
          if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) then
            if ( mpas_is_alarm_ringing(domain % clock, 'salinityDataReadAlarm', ierr=err_tmp) ) then
@@ -778,11 +851,15 @@ module ocn_forward_mode
       ! destroy the ocean mesh structure
       call ocn_meshDestroy(ierr)
 
-      call mpas_dmpar_exch_group_destroy_reusable_buffers(domain, 'subcycleFields')
+      if ( config_time_integrator == 'split_explicit') then
+         call mpas_dmpar_exch_group_destroy_reusable_buffers(domain, 'subcycleFields')
+      end if
 
       call ocn_analysis_finalize(domain, ierr)
 
       call ocn_vmix_gotm_finalize(domain, ierr)
+
+      call ocn_submesoscale_finalize()
 
       call mpas_destroy_clock(domain % clock, ierr)
 

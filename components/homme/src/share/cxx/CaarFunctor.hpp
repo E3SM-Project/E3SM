@@ -31,11 +31,17 @@ public:
   CaarFunctor(const Elements &elements, const Tracers &tracers,
               const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
               const SphereOperators &sphere_ops, const SimulationParams& params);
+  CaarFunctor(const int num_elems, const SimulationParams& params);
   CaarFunctor(const CaarFunctor &) = delete;
 
   ~CaarFunctor();
 
   CaarFunctor &operator=(const CaarFunctor &) = delete;
+
+  bool setup_needed() { return !is_setup; }
+  void setup(const Elements &elements, const Tracers &tracers,
+             const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
+             const SphereOperators &sphere_ops);
 
   int requested_buffer_size () const;
   void init_buffers(const FunctorsBuffersManager& fbm);
@@ -47,6 +53,7 @@ public:
 
 private:
   std::unique_ptr<CaarFunctorImpl> m_caar_impl;
+  bool is_setup;
 };
 
 } // Namespace Homme

@@ -58,6 +58,7 @@ program driver
 
   logical :: use_MMF_VT                    ! flag for MMF variance transport
   integer :: MMF_VT_wn_max                 ! wavenumber cutoff for filtered variance transport
+  character(len=7) :: microphysics_scheme = 'sam1mom'
 
 #if HAVE_MPI
   call mpi_init(ierr)
@@ -88,22 +89,12 @@ program driver
   endif
 
   ! Allocate model data
-  call crm_input%initialize (           ncrms,plev)
-  call crm_output_initialize(crm_output,ncrms,plev)
+  call crm_state_initialize (crm_state , ncrms, crm_nx, crm_ny, crm_nz, trim(microphysics_scheme))
+  call crm_rad_initialize   (crm_rad   , ncrms, crm_nx_rad, crm_ny_rad, crm_nz, trim(microphysics_scheme))
+  call crm_input_initialize (crm_input , ncrms, plev, trim(microphysics_scheme))
+  call crm_output_initialize(crm_output, ncrms, plev, crm_nx, crm_ny, crm_nz, trim(microphysics_scheme))
+
   ! These are normally allocated by pbuf, so we have to do it explicitly
-  allocate( crm_state%u_wind     (ncrms,crm_nx,crm_ny,crm_nz) )
-  allocate( crm_state%v_wind     (ncrms,crm_nx,crm_ny,crm_nz) )
-  allocate( crm_state%w_wind     (ncrms,crm_nx,crm_ny,crm_nz) )
-  allocate( crm_state%temperature(ncrms,crm_nx,crm_ny,crm_nz) )
-  allocate( crm_state%qt         (ncrms,crm_nx,crm_ny,crm_nz) )
-  allocate( crm_state%qp         (ncrms,crm_nx,crm_ny,crm_nz) )
-  allocate( crm_state%qn         (ncrms,crm_nx,crm_ny,crm_nz) )
-  allocate( crm_rad%qrad         (ncrms,crm_nx_rad,crm_ny_rad,crm_nz) )
-  allocate( crm_rad%temperature  (ncrms,crm_nx_rad,crm_ny_rad,crm_nz) )
-  allocate( crm_rad%qv           (ncrms,crm_nx_rad,crm_ny_rad,crm_nz) )
-  allocate( crm_rad%qc           (ncrms,crm_nx_rad,crm_ny_rad,crm_nz) )
-  allocate( crm_rad%qi           (ncrms,crm_nx_rad,crm_ny_rad,crm_nz) )
-  allocate( crm_rad%cld          (ncrms,crm_nx_rad,crm_ny_rad,crm_nz) )
   allocate( lat0                 (ncrms) )
   allocate( long0                (ncrms) )
   allocate( dt_gl                (ncrms) )
@@ -179,6 +170,7 @@ program driver
   call dmdf_read( crm_input%fluxq00          , fname_in , trim("in_fluxq00       ") , myTasks_beg , myTasks_end , .false. , .false. )
   call dmdf_read( crm_output%subcycle_factor   , fname_in , trim("out_subcycle_factor") , myTasks_beg , myTasks_end , .false. , .true.  )
 
+  print *, 'Reading crm_input...'
   do icrm = 1 , ncrms
     crm_input%zmid       (icrm,:)     = read_crm_input_zmid       (:    ,icrm)                       
     crm_input%zint       (icrm,:)     = read_crm_input_zint       (:    ,icrm)                       
@@ -191,6 +183,9 @@ program driver
     crm_input%pdel       (icrm,:)     = read_crm_input_pdel       (:    ,icrm)                       
     crm_input%ul         (icrm,:)     = read_crm_input_ul         (:    ,icrm)                       
     crm_input%vl         (icrm,:)     = read_crm_input_vl         (:    ,icrm)                       
+  enddo
+  print *, 'Reading crm_state...'
+  do icrm = 1 , ncrms
     crm_state%u_wind     (icrm,:,:,:) = read_crm_state_u_wind     (:,:,:,icrm) 
     crm_state%v_wind     (icrm,:,:,:) = read_crm_state_v_wind     (:,:,:,icrm) 
     crm_state%w_wind     (icrm,:,:,:) = read_crm_state_w_wind     (:,:,:,icrm) 
@@ -198,6 +193,9 @@ program driver
     crm_state%qt         (icrm,:,:,:) = read_crm_state_qt         (:,:,:,icrm) 
     crm_state%qp         (icrm,:,:,:) = read_crm_state_qp         (:,:,:,icrm) 
     crm_state%qn         (icrm,:,:,:) = read_crm_state_qn         (:,:,:,icrm) 
+  enddo
+  print *, 'Reading crm_rad...'
+  do icrm = 1 , ncrms
     crm_rad%qrad         (icrm,:,:,:) = read_crm_rad_qrad         (:,:,:,icrm) 
     crm_rad%temperature  (icrm,:,:,:) = read_crm_rad_temperature  (:,:,:,icrm) 
     crm_rad%qv           (icrm,:,:,:) = read_crm_rad_qv           (:,:,:,icrm) 

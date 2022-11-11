@@ -46,7 +46,7 @@ NX_RAD=`$NCHOME/bin/ncdump -h $1  | grep "crm_nx_rad =" | awk '{print $3}'`
 NY_RAD=`$NCHOME/bin/ncdump -h $1  | grep "crm_ny_rad =" | awk '{print $3}'`
 DX=1000
 DT=5
-NCRMS_FILE=`ncdump -h $1 | grep UNLIMITED | awk '{print $6}' | cut -d '(' -f 2`
+NCRMS_FILE=`$NCHOME/bin/ncdump -h $1 | grep UNLIMITED | awk '{print $6}' | cut -d '(' -f 2`
 if [[ $NY -eq 1 ]]; then
   YES3D=0
 else
@@ -64,7 +64,7 @@ else
   NCRMS2D=$NCRMS_FILE
 fi
 
-DEFS2D=" -DNCRMS=$NCRMS2D -DCRM -DCRM_NX=$NX -DCRM_NY=$NY -DCRM_NZ=$NZ -DCRM_NX_RAD=$NX_RAD -DCRM_NY_RAD=$NY_RAD -DCRM_DT=$DT -DCRM_DX=$DX -DYES3DVAL=$YES3D -DPLEV=$PLEV -Dsam1mom -DMMF_STANDALONE -DHAVE_MPI"
+DEFS2D=" -DNCRMS=$NCRMS2D -DCRM -DCRM_NX=$NX -DCRM_NY=$NY -DCRM_NZ=$NZ -DCRM_NX_RAD=$NX_RAD -DCRM_NY_RAD=$NY_RAD -DCRM_DT=$DT -DCRM_DX=$DX -DYES3DVAL=$YES3D -DPLEV=$PLEV -Dsam1mom -DMMF_STANDALONE"
 printf "2D Defs: $DEFS2D\n\n"
 
 
@@ -78,7 +78,7 @@ NX_RAD=`$NCHOME/bin/ncdump -h $2  | grep "crm_nx_rad =" | awk '{print $3}'`
 NY_RAD=`$NCHOME/bin/ncdump -h $2  | grep "crm_ny_rad =" | awk '{print $3}'`
 DX=1000
 DT=5
-NCRMS_FILE=`ncdump -h $2 | grep UNLIMITED | awk '{print $6}' | cut -d '(' -f 2`
+NCRMS_FILE=`$NCHOME/bin/ncdump -h $2 | grep UNLIMITED | awk '{print $6}' | cut -d '(' -f 2`
 if [[ $NY -eq 1 ]]; then
   echo "Error: 2D file specified as the 3D file\n\n"
   usage
@@ -96,7 +96,7 @@ else
   NCRMS3D=$NCRMS_FILE
 fi
 
-DEFS3D=" -DNCRMS=$NCRMS3D -DCRM -DCRM_NX=$NX -DCRM_NY=$NY -DCRM_NZ=$NZ -DCRM_NX_RAD=$NX_RAD -DCRM_NY_RAD=$NY_RAD -DCRM_DT=$DT -DCRM_DX=$DX -DYES3DVAL=$YES3D -DPLEV=$PLEV -Dsam1mom -DMMF_STANDALONE -DHAVE_MPI"
+DEFS3D=" -DNCRMS=$NCRMS3D -DCRM -DCRM_NX=$NX -DCRM_NY=$NY -DCRM_NZ=$NZ -DCRM_NX_RAD=$NX_RAD -DCRM_NY_RAD=$NY_RAD -DCRM_DT=$DT -DCRM_DX=$DX -DYES3DVAL=$YES3D -DPLEV=$PLEV -Dsam1mom -DMMF_STANDALONE"
 printf "3D Defs: $DEFS3D\n\n"
 
 
@@ -129,42 +129,29 @@ cd ..
 ## GET THE NETCDF LINKING FLAGS
 ############################################################################
 NCFLAGS="`$NFHOME/bin/nf-config --flibs` `$NCHOME/bin/nc-config --libs`"
+NCFLAGS=`echo "$NCFLAGS" | xargs`
 printf "NetCDF Flags: $NCFLAGS\n\n"
 
 
 ############################################################################
 ## RUN THE CONFIGURE
 ############################################################################
-FFLAGS="$FFLAGS -I$NCHOME/include -I$NFHOME/include"
-CXXFLAGS="$CXXFLAGS -I$NCHOME/include -I$NFHOME/include"
-CUDAFLAGS="$CUDAFLAGS ${CUDA_ARCH}"
+unset CXXFLAGS
+unset CUDAFLAGS
 
 printf "FFLAGS: $FFLAGS\n\n"
-printf "CXXFLAGS: $CXXFLAGS\n\n"
-printf "CUDAFLAGS: $CUDAFLAGS\n\n"
 
-echo cmake                          \
-  -DCMAKE_Fortran_FLAGS="$FFLAGS"   \
-  -DCMAKE_CXX_FLAGS="$CXXFLAGS"     \
-  -DNCFLAGS="$NCFLAGS"              \
-  -DDEFS2D="$DEFS2D"                \
-  -DDEFS3D="$DEFS3D"                \
-  -DCUDA_FLAGS="$CUDAFLAGS"         \
-  -DYAKL_HOME=${YAKL_HOME}          \
-  -DYAKL_CUB_HOME=${YAKL_CUB_HOME}  \
-  -DARCH="${ARCH}"                  \
-  ..
-
-cmake                               \
-  -DCMAKE_Fortran_FLAGS="$FFLAGS"   \
-  -DCMAKE_CXX_FLAGS="$CXXFLAGS"     \
-  -DNCFLAGS="$NCFLAGS"              \
-  -DDEFS2D="$DEFS2D"                \
-  -DDEFS3D="$DEFS3D"                \
-  -DCUDA_FLAGS="$CUDAFLAGS"         \
-  -DYAKL_HOME=${YAKL_HOME}          \
-  -DYAKL_CUB_HOME=${YAKL_CUB_HOME}  \
-  -DARCH="${ARCH}"                  \
+cmake                                      \
+  -DCMAKE_Fortran_FLAGS="$FFLAGS"          \
+  -DNCFLAGS="$NCFLAGS"                     \
+  -DDEFS2D="$DEFS2D"                       \
+  -DDEFS3D="$DEFS3D"                       \
+  -DYAKL_HOME=${YAKL_HOME}                 \
+  -DYAKL_CXX_FLAGS="${YAKL_CXX_FLAGS}"     \
+  -DYAKL_CUDA_FLAGS="${YAKL_CUDA_FLAGS}"   \
+  -DYAKL_C_FLAGS="${YAKL_C_FLAGS}"         \
+  -DYAKL_F90_FLAGS="${YAKL_F90_FLAGS}"     \
+  -DYAKL_ARCH="${YAKL_ARCH}"               \
   ..
 
 

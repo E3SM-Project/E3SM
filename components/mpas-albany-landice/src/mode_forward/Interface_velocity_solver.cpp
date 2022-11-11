@@ -4,7 +4,7 @@ and the University Corporation for Atmospheric Research (UCAR).
 
 Unless noted otherwise source code is licensed under the BSD license.
 Additional copyright and license information can be found in the LICENSE file
-distributed with this code, or at http://mpas-dev.github.com/license.html
+distributed with this code, or at http://mpas-dev.github.io/license.html
 */
 
 // ===================================================
@@ -1251,9 +1251,6 @@ void importFields(std::vector<std::pair<int, int> >& marineBdyExtensionMap,  dou
       elevationData[iv] = elev;
     }
 
-    bool floating = rho_ice * thicknessData[iv] + rho_ocean * bedTopographyData[iv] < 0;
-    if (floating && (effecPress_F != 0))
-      effecPressData[iv] = 0.0;
   }
 }
 

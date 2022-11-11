@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -75,7 +75,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_del4_tend(meshPool, layerThicknessEdge, tracers, tend, err)!{{{
+   subroutine ocn_tracer_hmix_del4_tend(meshPool, layerThickEdgeMean, tracers, tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -84,7 +84,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThicknessEdge    !< Input: thickness at edge
+         layerThickEdgeMean    !< Input: mean thickness at edge
 
       type (mpas_pool_type), intent(in) :: &
          meshPool          !< Input: mesh information
@@ -115,7 +115,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iEdge, num_tracers, nCells, nEdges
+      integer :: iEdge, num_tracers, nCells
       integer :: iTracer, k, iCell, cell1, cell2, i
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray, nEdgesArray
@@ -123,7 +123,7 @@ contains
       integer, dimension(:), pointer :: minLevelEdgeBot, maxLevelEdgeTop, minLevelCell, maxLevelCell, nEdgesOnCell
       integer, dimension(:,:), pointer :: edgeMask, cellsOnEdge, edgesOnCell, edgeSignOnCell
 
-      real (kind=RKIND) :: invAreaCell1, invAreaCell2, tracer_turb_flux, flux, invdcEdge, r_tmp1, r_tmp2
+      real (kind=RKIND) :: invAreaCell1, tracer_turb_flux, flux, invdcEdge, r_tmp1, r_tmp2
 
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell, meshScalingDel4
 
@@ -166,10 +166,10 @@ contains
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
-      allocate(delsq_tracer(num_tracers, nVertLevels, nCells))
-
       ! Need 1 halo around owned cells
       nCells = nCellsArray( 2 )
+
+      allocate(delsq_tracer(num_tracers, nVertLevels, nCells))
 
       ! first del2: div(h \nabla \phi) at cell center
       !$omp parallel
@@ -186,8 +186,8 @@ contains
           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
             do iTracer = 1, num_tracers * edgeMask(k, iEdge)
 
-              r_tmp1 = invdcEdge * layerThicknessEdge(k, iEdge) * tracers(iTracer, k, cell1)
-              r_tmp2 = invdcEdge * layerThicknessEdge(k, iEdge) * tracers(iTracer, k, cell2)
+              r_tmp1 = invdcEdge * layerThickEdgeMean(k, iEdge) * tracers(iTracer, k, cell1)
+              r_tmp2 = invdcEdge * layerThickEdgeMean(k, iEdge) * tracers(iTracer, k, cell2)
 
               delsq_tracer(iTracer, k, iCell) = delsq_tracer(iTracer, k, iCell) - edgeSignOnCell(i, iCell) &
                                               * (r_tmp2 - r_tmp1) * invAreaCell1

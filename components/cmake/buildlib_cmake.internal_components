@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 build cime component model library.   This buildlib script is used by all cime internal

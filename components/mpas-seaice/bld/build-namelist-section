@@ -178,7 +178,7 @@ add_default($nl, 'config_use_topo_meltponds');
 add_default($nl, 'config_use_aerosols');
 add_default($nl, 'config_use_effective_snow_density');
 add_default($nl, 'config_use_snow_grain_radius');
-add_default($nl, 'config_use_special_boundaries_zero_tracers');
+add_default($nl, 'config_use_special_boundaries_tracers');
 
 ###################################
 # Namelist group: biogeochemistry #
@@ -193,6 +193,7 @@ add_default($nl, 'config_use_skeletal_biochemistry');
 add_default($nl, 'config_use_nitrate');
 add_default($nl, 'config_use_carbon');
 add_default($nl, 'config_use_chlorophyll');
+add_default($nl, 'config_use_macromolecules');
 add_default($nl, 'config_use_ammonium');
 add_default($nl, 'config_use_silicate');
 add_default($nl, 'config_use_DMS');
@@ -531,6 +532,7 @@ add_default($nl, 'config_AM_conservationCheck_compute_on_startup');
 add_default($nl, 'config_AM_conservationCheck_write_on_startup');
 add_default($nl, 'config_AM_conservationCheck_write_to_logfile');
 add_default($nl, 'config_AM_conservationCheck_restart_stream');
+add_default($nl, 'config_AM_conservationCheck_carbon_failure_abort');
 
 ##########################################
 # Namelist group: AM_geographicalVectors #

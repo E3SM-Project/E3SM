@@ -83,17 +83,18 @@ struct CaarFunctorImpl {
 
   Scalar                      m_scale2g_last_int_pack;
 
-  const int                   m_rsplit;
-  const bool                  m_theta_hydrostatic_mode;
-  const AdvectionForm         m_theta_advection_form;
+  const int           m_num_elems;
+  const int           m_rsplit;
+  const bool          m_theta_hydrostatic_mode;
+  const AdvectionForm m_theta_advection_form;
 
-  const HybridVCoord          m_hvcoord;
-  const ElementsState         m_state;
-  const ElementsDerivedState  m_derived;
-  const ElementsGeometry      m_geometry;
-  EquationOfState             m_eos;
-  Buffers                     m_buffers;
-  const deriv_type            m_deriv;
+  HybridVCoord          m_hvcoord;
+  ElementsState         m_state;
+  ElementsDerivedState  m_derived;
+  ElementsGeometry      m_geometry;
+  EquationOfState       m_eos;
+  Buffers               m_buffers;
+  deriv_type            m_deriv;
 
   SphereOperators             m_sphere_ops;
 
@@ -122,7 +123,8 @@ struct CaarFunctorImpl {
   CaarFunctorImpl(const Elements &elements, const Tracers &/* tracers */,
                   const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
                   const SphereOperators &sphere_ops, const SimulationParams& params)
-      : m_rsplit(params.rsplit)
+      : m_num_elems(elements.num_elems())
+      , m_rsplit(params.rsplit)
       , m_theta_hydrostatic_mode(params.theta_hydrostatic_mode)
       , m_theta_advection_form(params.theta_adv_form)
       , m_hvcoord(hvcoord)
@@ -131,13 +133,44 @@ struct CaarFunctorImpl {
       , m_geometry(elements.m_geometry)
       , m_deriv(ref_FE.get_deriv())
       , m_sphere_ops(sphere_ops)
-      , m_policy_pre (Homme::get_default_team_policy<ExecSpace,TagPreExchange>(elements.num_elems()))
-      , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(elements.num_elems()))
-      , m_policy_post (0,elements.num_elems()*NP*NP)
+      , m_policy_pre (Homme::get_default_team_policy<ExecSpace,TagPreExchange>(m_num_elems))
+      , m_policy_post (0,m_num_elems*NP*NP)
+      , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(m_num_elems))
       , m_tu(m_policy_pre)
   {
     // Initialize equation of state
     m_eos.init(params.theta_hydrostatic_mode,m_hvcoord);
+
+    // Make sure the buffers in sph op are large enough for this functor's needs
+    m_sphere_ops.allocate_buffers(m_tu);
+  }
+
+  CaarFunctorImpl(const int num_elems, const SimulationParams& params)
+      : m_num_elems(num_elems)
+      , m_rsplit(params.rsplit)
+      , m_theta_hydrostatic_mode(params.theta_hydrostatic_mode)
+      , m_theta_advection_form(params.theta_adv_form)
+      , m_policy_pre (Homme::get_default_team_policy<ExecSpace,TagPreExchange>(m_num_elems))
+      , m_policy_post (0,num_elems*NP*NP)
+      , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(m_num_elems))
+      , m_tu(m_policy_pre)
+  {}
+
+
+  void setup (const Elements &elements, const Tracers &/*tracers*/,
+              const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
+              const SphereOperators &sphere_ops)
+  {
+    assert(m_num_elems == elements.num_elems()); // Sanity check
+    m_hvcoord = hvcoord;
+    m_state = elements.m_state;
+    m_derived = elements.m_derived;
+    m_geometry = elements.m_geometry;
+    m_deriv = ref_FE.get_deriv();
+    m_sphere_ops = sphere_ops;
+
+    // Initialize equation of state
+    m_eos.init(m_theta_hydrostatic_mode,m_hvcoord);
 
     // Make sure the buffers in sph op are large enough for this functor's needs
     m_sphere_ops.allocate_buffers(m_tu);
@@ -255,8 +288,7 @@ struct CaarFunctorImpl {
     m_buffers.grad_phinh_i = decltype(m_buffers.grad_phinh_i)(mem,nslots);
     mem += m_buffers.grad_phinh_i.size();
 
-    int used_mem = (reinterpret_cast<Real*>(mem) - fbm.get_memory());
-    assert (used_mem==requested_buffer_size());
+    assert ((reinterpret_cast<Real*>(mem) - fbm.get_memory())==requested_buffer_size());
   }
 
   void init_boundary_exchanges (const std::shared_ptr<MpiBuffersManager>& bm_exchange) {
@@ -302,32 +334,35 @@ struct CaarFunctorImpl {
     profiling_resume();
 
     GPTLstart("caar compute");
-    Kokkos::parallel_for("caar loop pre-boundary exchange", m_policy_pre, *this);
-    ExecSpace::impl_static_fence();
+    int nerr;
+    Kokkos::parallel_reduce("caar loop pre-boundary exchange", m_policy_pre, *this, nerr);
+    Kokkos::fence();
     GPTLstop("caar compute");
+    if (nerr > 0)
+      check_print_abort_on_bad_elems("CaarFunctorImpl::run TagPreExchange", data.n0);
 
     GPTLstart("caar_bexchV");
     m_bes[data.np1]->exchange(m_geometry.m_rspheremp);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     GPTLstop("caar_bexchV");
 
     if (!m_theta_hydrostatic_mode) {
       GPTLstart("caar compute");
       Kokkos::parallel_for("caar loop post-boundary exchange", m_policy_post, *this);
-      ExecSpace::impl_static_fence();
+      Kokkos::fence();
       GPTLstop("caar compute");
     }
 
     GPTLstart("caar dp3d");
     Kokkos::parallel_for("caar loop dp3d limiter", m_policy_dp3d_lim, *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     GPTLstop("caar dp3d");
 
     profiling_pause();
   }
 
   KOKKOS_INLINE_FUNCTION
-  void operator()(const TagPreExchange&, const TeamMember &team) const {
+  void operator()(const TagPreExchange&, const TeamMember &team, int& nerr) const {
     // In this body, we use '====' to separate sync epochs (delimited by barriers)
     // Note: make sure the same temp is not used within each epoch!
 
@@ -340,7 +375,8 @@ struct CaarFunctorImpl {
     kv.team_barrier();
 
     // Computes pi, omega, and phi.
-    compute_scan_quantities(kv);
+    const bool ok = compute_scan_quantities(kv);
+    if ( ! ok) nerr = 1;
 
     if (m_rsplit==0 || !m_theta_hydrostatic_mode) {
       // ============ EPOCH 2.1 =========== //
@@ -566,7 +602,9 @@ struct CaarFunctorImpl {
   }
 
   KOKKOS_INLINE_FUNCTION
-  void compute_scan_quantities (KernelVariables &kv) const {
+  bool compute_scan_quantities (KernelVariables &kv) const {
+    bool ok = true;
+    
     kv.team_barrier();
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
@@ -644,11 +682,13 @@ struct CaarFunctorImpl {
                             Homme::subview(m_buffers.pnh,kv.team_idx,igp,jgp),
                             Homme::subview(m_state.m_phinh_i,kv.ie,m_data.n0,igp,jgp));
       } else {
+        const bool ok1 =
         m_eos.compute_pnh_and_exner(kv,
                                     Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.n0,igp,jgp),
                                     Homme::subview(m_state.m_phinh_i,kv.ie,m_data.n0,igp,jgp),
                                     Homme::subview(m_buffers.pnh,kv.team_idx,igp,jgp),
                                     Homme::subview(m_buffers.exner,kv.team_idx,igp,jgp));
+        if ( ! ok1) ok = false;
       }
 
       // Compute phi at midpoints
@@ -656,6 +696,7 @@ struct CaarFunctorImpl {
                                             Homme::subview(m_buffers.phi,kv.team_idx,igp,jgp));
     });
     kv.team_barrier();
+    return ok;
   }
 
   KOKKOS_INLINE_FUNCTION

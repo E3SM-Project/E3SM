@@ -2,21 +2,21 @@
 #include "accelerate_crm.h"
 
 void accelerate_crm(int nstep, int nstop, bool &ceaseflag) {
-  auto &t                 = :: t;
-  auto &qcl               = :: qcl;
-  auto &qci               = :: qci;
-  auto &qv                = :: qv;
-  auto &u                 = :: u;
-  auto &v                 = :: v;
-  auto &t0                = :: t0;
-  auto &u0                = :: u0;
-  auto &v0                = :: v0;
-  auto &q0                = :: q0;
-  auto &crm_accel_uv      = :: crm_accel_uv;
-  auto &use_crm_accel     = :: use_crm_accel;
-  auto &micro_field       = :: micro_field;
-  auto &ncrms             = :: ncrms;
-  auto &crm_accel_factor  = :: crm_accel_factor;
+  YAKL_SCOPE( t                  , ::t);
+  YAKL_SCOPE( qcl                , ::qcl);
+  YAKL_SCOPE( qci                , ::qci);
+  YAKL_SCOPE( qv                 , ::qv);
+  YAKL_SCOPE( u                  , ::u);
+  YAKL_SCOPE( v                  , ::v);
+  YAKL_SCOPE( t0                 , ::t0);
+  YAKL_SCOPE( u0                 , ::u0);
+  YAKL_SCOPE( v0                 , ::v0);
+  YAKL_SCOPE( q0                 , ::q0);
+  YAKL_SCOPE( crm_accel_uv       , ::crm_accel_uv);
+  YAKL_SCOPE( use_crm_accel      , ::use_crm_accel);
+  YAKL_SCOPE( micro_field        , ::micro_field);
+  YAKL_SCOPE( ncrms              , ::ncrms);
+  YAKL_SCOPE( crm_accel_factor   , ::crm_accel_factor);
 
   real ttend_threshold = 5.0;  // 5K, following UP-CAM implementation
   real tmin = 50.0;  // should never get below 50K in crm, following UP-CAM implementation

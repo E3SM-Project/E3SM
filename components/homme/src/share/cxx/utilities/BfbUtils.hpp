@@ -37,7 +37,7 @@ double zeroulpn (double a, const int n, double replace) {
   x <<= n;
   { // Replace the n least significant bits with those from the fraction part of
     // 'replace'.
-    const long long int ones = 0xffffffffffffffff;
+    const unsigned long long int ones = 0xffffffffffffffff;
     auto mask = ones;
     mask >>= n;
     mask <<= n;
@@ -111,14 +111,13 @@ typename
 std::enable_if<!std::is_reference<ScalarType>::value &&
                !std::is_reference<ExpType>::value, ScalarType>::type
 bfb_pow_impl (ScalarType val, ExpType e) {
-#ifdef CUDA_BUILD
+#ifdef HOMMEXX_ENABLE_GPU
   // Note: this function is tailored (or taylored...eheh)
   // for -1<e<1.5 and 0.001 < b < 1e6
   if (val<ScalarType(0)) {
     Kokkos::abort("Cannot take powers of negative numbers.\n");
   }
   if (e<-1.0 || e>1.5) {
-    printf("Bad exponent: %3.15f\n",1);
     Kokkos::abort("bfb_pow x^a impl-ed with only -1.0<a<1.5 in mind.\n");
   }
   if (val==ScalarType(0)) {

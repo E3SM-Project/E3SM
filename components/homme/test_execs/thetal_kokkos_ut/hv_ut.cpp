@@ -14,6 +14,7 @@
 #include "SphereOperators.hpp"
 #include "mpi/MpiBuffersManager.hpp"
 #include "mpi/Connectivity.hpp"
+#include "PhysicalConstants.hpp"
 
 #include "utilities/TestUtils.hpp"
 #include "utilities/SyncUtils.hpp"
@@ -68,7 +69,9 @@ public:
   void set_timestep_data (const int np1, const Real dt, const Real eta_ave_w)
   {
     m_data.np1 = np1;
-    m_data.dt = dt/m_data.hypervis_subcycle;
+    m_data.dt = dt;
+    m_data.dt_hvs = (m_data.hypervis_subcycle > 0 ) ? dt/m_data.hypervis_subcycle : -1.0;
+    m_data.dt_hvs_tom = -1.0;// set to dt/m_data.hypervis_subcycle_tom;
     m_data.eta_ave_w = eta_ave_w;
   }
 
@@ -136,13 +139,16 @@ TEST_CASE("hvf", "biharmonic") {
 
   // Init parameters
   auto& params = c.create<SimulationParams>();
-  params.nu_top            = RPDF(1e-6,1e-3)(engine);
-  params.nu                = RPDF(1e-6,1e-3)(engine);
+  //keep nu_top=0 till nu_scale_top is set here
+  params.nu_top            = 0.0; //RPDF(1e-6,1e-3)(engine);
+  params.nu                = RPDF(1e-1,1e3)(engine);
   params.nu_p              = RPDF(1e-6,1e-3)(engine);
   params.nu_s              = RPDF(1e-6,1e-3)(engine);
+  //do not set to 0 in the test, won't work
   params.nu_div            = RPDF(1e-6,1e-3)(engine);
   params.hypervis_scaling  = RPDF(0.1,1.0)(engine);
   params.hypervis_subcycle = IPDF(1,3)(engine);
+  params.hypervis_subcycle_tom = 0; 
   params.params_set = true;
 
   // Sync params across ranks
@@ -151,6 +157,7 @@ TEST_CASE("hvf", "biharmonic") {
   MPI_Bcast(&params.nu_p,1,MPI_DOUBLE,0,c.get<Comm>().mpi_comm());
   MPI_Bcast(&params.nu_s,1,MPI_DOUBLE,0,c.get<Comm>().mpi_comm());
   MPI_Bcast(&params.nu_div,1,MPI_DOUBLE,0,c.get<Comm>().mpi_comm());
+  //reset below, not bcasted
   MPI_Bcast(&params.hypervis_scaling,1,MPI_DOUBLE,0,c.get<Comm>().mpi_comm());
   MPI_Bcast(&params.hypervis_subcycle,1,MPI_INT,0,c.get<Comm>().mpi_comm());
 
@@ -176,6 +183,8 @@ TEST_CASE("hvf", "biharmonic") {
   std::vector<Real> mp(NP*NP);
 
   // This will also init the c connectivity.
+// nu is set differently for tensor than for const hv, move this call down
+// or reset nu only
   init_hv_f90(ne,hyai_ptr,hybi_ptr,hyam_ptr,hybm_ptr,dvv.data(),mp.data(),
               hvcoord.ps0,params.hypervis_subcycle,
               params.nu, params.nu_div, params.nu_top,
@@ -187,7 +196,7 @@ TEST_CASE("hvf", "biharmonic") {
   const int num_elems = c.get<Connectivity>().get_num_local_elements();
 
   auto& geo = c.create<ElementsGeometry>();
-  geo.init(num_elems,false,true);
+  geo.init(num_elems,false,true,PhysicalConstants::rearth0);
   geo.randomize(seed);
 
   auto& state = c.create<ElementsState>();
@@ -378,14 +387,14 @@ TEST_CASE("hvf", "biharmonic") {
                 REQUIRE(ttens_cxx(igp,jgp,k)==ttens_f90(ie,k,igp,jgp));
                 if(vtens_cxx(0,igp,jgp,k)!=vtens_f90(ie,k,0,igp,jgp)) {
                   printf("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf("vtens cxx: %3.17f\n",vtens_cxx(0,igp,jgp,k));
-                  printf("vtens f90: %3.17f\n",vtens_f90(ie,k,0,igp,jgp));
+                  printf("vtens cxx: %3.40f\n",vtens_cxx(0,igp,jgp,k));
+                  printf("vtens f90: %3.40f\n",vtens_f90(ie,k,0,igp,jgp));
                 }
                 REQUIRE(vtens_cxx(0,igp,jgp,k)==vtens_f90(ie,k,0,igp,jgp));
                 if(vtens_cxx(1,igp,jgp,k)!=vtens_f90(ie,k,1,igp,jgp)) {
                   printf("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf("vtens cxx: %3.17f\n",vtens_cxx(1,igp,jgp,k));
-                  printf("vtens f90: %3.17f\n",vtens_f90(ie,k,1,igp,jgp));
+                  printf("vtens cxx: %3.40f\n",vtens_cxx(1,igp,jgp,k));
+                  printf("vtens f90: %3.40f\n",vtens_f90(ie,k,1,igp,jgp));
                 }
                 REQUIRE(vtens_cxx(1,igp,jgp,k)==vtens_f90(ie,k,1,igp,jgp));
 
@@ -437,8 +446,11 @@ TEST_CASE("hvf", "biharmonic") {
 
         // Generate timestep settings
         const Real dt = RPDF(1e-5,1e-3)(engine);
+        //randomize it? also, dpdiss is not tested in here
         const Real eta_ave_w = 1.0;
-        const int  np1 = IPDF(0,2)(engine);
+        int  np1 = IPDF(0,2)(engine);
+        // Sync np1 across ranks. If they are not synced, we may get stuck in an mpi wait
+        MPI_Bcast(&np1,1,MPI_INT,0,c.get<Comm>().mpi_comm());
 
         // Create the HVF tester
         HVFTester hvf(params,geo,state,derived);
@@ -465,7 +477,6 @@ TEST_CASE("hvf", "biharmonic") {
 
         constexpr Real noise_lvl = 0.05;
         genRandArray(perturb,engine,PDF(-noise_lvl,noise_lvl));
-
         EquationOfState eos;
         eos.init(hydrostatic,hvcoord);
 
@@ -558,7 +569,6 @@ TEST_CASE("hvf", "biharmonic") {
                              dp_ref_ptr, theta_ref_ptr, phi_ref_ptr,
                              v_f90_ptr, w_f90_ptr, vtheta_f90_ptr, dp_f90_ptr, phinh_f90_ptr);
 
-
         // Compare answers
         auto v_cxx      = Kokkos::create_mirror_view(state.m_v);
         auto w_cxx      = Kokkos::create_mirror_view(state.m_w_i);
@@ -581,15 +591,15 @@ TEST_CASE("hvf", "biharmonic") {
 
                 if (v_cxx(ie,np1,0,igp,jgp,ilev)[ivec]!=v_f90(ie,np1,k,0,igp,jgp)) {
                   printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf ("v_cxx: %3.16f\n",v_cxx(ie,np1,0,igp,jgp,ilev)[ivec]);
-                  printf ("v_f90: %3.16f\n",v_f90(ie,np1,k,0,igp,jgp));
+                  printf ("v_cxx: %3.40f\n",v_cxx(ie,np1,0,igp,jgp,ilev)[ivec]);
+                  printf ("v_f90: %3.40f\n",v_f90(ie,np1,k,0,igp,jgp));
                 }
                 REQUIRE (v_cxx(ie,np1,0,igp,jgp,ilev)[ivec]==v_f90(ie,np1,k,0,igp,jgp));
 
                 if (v_cxx(ie,np1,1,igp,jgp,ilev)[ivec]!=v_f90(ie,np1,k,1,igp,jgp)) {
                   printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf ("v_cxx: %3.16f\n",v_cxx(ie,np1,1,igp,jgp,ilev)[ivec]);
-                  printf ("v_f90: %3.16f\n",v_f90(ie,np1,k,1,igp,jgp));
+                  printf ("v_cxx: %3.40f\n",v_cxx(ie,np1,1,igp,jgp,ilev)[ivec]);
+                  printf ("v_f90: %3.40f\n",v_f90(ie,np1,k,1,igp,jgp));
                 }
                 REQUIRE (v_cxx(ie,np1,1,igp,jgp,ilev)[ivec]==v_f90(ie,np1,k,1,igp,jgp));
 

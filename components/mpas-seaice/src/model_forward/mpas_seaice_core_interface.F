@@ -586,7 +586,7 @@ module seaice_core_interface
           config_use_prescribed_ice, &
           config_use_special_boundaries_velocity, &
           config_use_special_boundaries_velocity_masks, &
-          config_use_special_boundaries_zero_tracers
+          config_use_special_boundaries_tracers
 
      logical, pointer :: &
           pkgForcingActive, &
@@ -638,11 +638,11 @@ module seaice_core_interface
      ! pkgSpecialBoundaries
      call MPAS_pool_get_config(configPool, "config_use_special_boundaries_velocity", config_use_special_boundaries_velocity)
      call MPAS_pool_get_config(configPool, "config_use_special_boundaries_velocity_masks", config_use_special_boundaries_velocity_masks)
-     call MPAS_pool_get_config(configPool, "config_use_special_boundaries_zero_tracers", config_use_special_boundaries_zero_tracers)
+     call MPAS_pool_get_config(configPool, "config_use_special_boundaries_tracers", config_use_special_boundaries_tracers)
      call MPAS_pool_get_package(packagePool, "pkgSpecialBoundariesActive", pkgSpecialBoundariesActive)
      if (config_use_special_boundaries_velocity .or. &
          config_use_special_boundaries_velocity_masks .or. &
-         config_use_special_boundaries_zero_tracers) then
+         config_use_special_boundaries_tracers) then
         pkgSpecialBoundariesActive = .true.
      endif
 

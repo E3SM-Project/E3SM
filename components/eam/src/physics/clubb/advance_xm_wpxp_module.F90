@@ -64,7 +64,8 @@ module advance_xm_wpxp_module
                               fcor, um_ref, vm_ref, up2, vp2, &
                               uprcp, vprcp, rc_coef, & 
                               rtm, wprtp, thlm, wpthlp, &
-                              sclrm, wpsclrp, um, upwp, vm, vpwp )
+                              sclrm, wpsclrp, um, upwp, vm, vpwp, &
+                              um_pert, vm_pert, upwp_pert, vpwp_pert)
 
     ! Description:
     ! Advance the mean and flux terms by one timestep.
@@ -323,6 +324,13 @@ module advance_xm_wpxp_module
       vm,   & ! <v>:  mean south-north horiz. velocity (thermo. levs.) [m/s]
       vpwp    ! <v'w'>:  momentum flux (momentum levels)               [m^2/s^2]
 
+    ! Variables used to track perturbed version of winds.
+    real( kind = core_rknd ), intent(inout), dimension(:), pointer ::  & 
+      um_pert,   & ! perturbed <u>    [m/s]
+      vm_pert,   & ! perturbed <v>    [m/s]
+      upwp_pert, & ! perturbed <u'w'> [m^2/s^2]
+      vpwp_pert    ! perturbed <v'w'> [m^2/s^2]
+
     ! Local variables
     real( kind = core_rknd ), dimension(nsup+nsub+1,2*gr%nz) :: & 
       lhs  ! Implicit contributions to wpxp/xm (band diag. matrix) (LAPACK)
@@ -413,7 +421,15 @@ module advance_xm_wpxp_module
       upthlp,       & ! eastward horz turb flux of theta_l (mom levs)    [m/s K]
       vpthlp,       & ! northward horz turb flux of theta_l (mom levs)   [m/s K]
       uprtp,        & ! eastward horz turb flux of tot water (mom levs)  [m/s kg/kg]
-      vprtp           ! northward horz turb flux of tot water (mom levs) [m/s kg/kg]
+      vprtp,        & ! northward horz turb flux of tot water (mom levs) [m/s kg/kg]
+      upwp_forcing_pert, & ! perturbed extra RHS term (mom levs)         [m^2/s^3]
+      vpwp_forcing_pert, & ! perturbed extra RHS term (mom levs)         [m^2/s^3]
+      upthvp_pert,       & ! perturbed <u'thv'> (momentum levels)        [m/s K]
+      vpthvp_pert,       & ! perturbed <v'thv'> (momentum levels)        [m/s K]
+      upthlp_pert,       & ! perturbed horz flux of theta_l (mom levs)   [m/s K]
+      vpthlp_pert,       & ! perturbed horz flux of theta_l (mom levs)   [m/s K]
+      uprtp_pert,        & ! perturbed horz flux of tot water (mom levs) [m/s kg/kg]
+      vprtp_pert           ! perturbed horz flux of tot water (mom levs) [m/s kg/kg]
 
     ! Variables used as part of the monotonic turbulent advection scheme.
     ! Find the lowermost and uppermost grid levels that can have an effect
@@ -468,18 +484,28 @@ module advance_xm_wpxp_module
     ! Indices
     integer :: i, k
 
+    ! Whether perturbed winds are being solved.
+    logical :: l_perturbed_wind
+
     !---------------------------------------------------------------------------
 
     ! ----- Begin Code -----
+
+    l_perturbed_wind = l_predict_upwp_vpwp .and. associated(um_pert) .and. &
+         associated(vm_pert) .and. associated(upwp_pert) .and. &
+         associated(vpwp_pert)
+
     if ( l_clip_semi_implicit &
          .or. ( ( iiPDF_type == iiPDF_new ) &
                 .and. ( .not. l_explicit_turbulent_adv_wpxp ) ) ) then
        nrhs = 1
     else
+       nrhs = 2 + sclr_dim
        if ( l_predict_upwp_vpwp ) then
-          nrhs = 4+sclr_dim
-       else
-          nrhs = 2+sclr_dim
+          nrhs = nrhs + 2
+          if ( l_perturbed_wind ) then
+             nrhs = nrhs + 2
+          end if
        endif
     endif
 
@@ -1433,6 +1459,10 @@ module advance_xm_wpxp_module
          ! Add "extra term" and optional Coriolis term for <u'w'> and <v'w'>.
          upwp_forcing = C7_Skw_fnc * wp2 * ddzt( um )
          vpwp_forcing = C7_Skw_fnc * wp2 * ddzt( vm )
+         if ( l_perturbed_wind ) then
+            upwp_forcing_pert = C7_Skw_fnc * wp2 * ddzt( um_pert )
+            vpwp_forcing_pert = C7_Skw_fnc * wp2 * ddzt( vm_pert )
+         end if
 
          if ( l_stats_samp ) then
             call stat_update_var( iupwp_pr4, C7_Skw_fnc * wp2 * ddzt( um ), &
@@ -1453,6 +1483,20 @@ module advance_xm_wpxp_module
          call diagnose_upxp( vpwp, rtm, wprtp, vm, &                ! Intent(in)
                              C6rt_Skw_fnc, tau_C6_zm, C7_Skw_fnc, & ! Intent(in)
                              vprtp )                                ! Intent(out)
+         if ( l_perturbed_wind ) then
+            call diagnose_upxp( upwp_pert, thlm, wpthlp, um_pert, &               ! Intent(in)
+                                C6thl_Skw_fnc, tau_C6_zm, C7_Skw_fnc, & ! Intent(in)
+                                upthlp_pert )                                ! Intent(out)
+            call diagnose_upxp( upwp_pert, rtm, wprtp, um_pert, &                ! Intent(in)
+                                C6rt_Skw_fnc, tau_C6_zm, C7_Skw_fnc, & ! Intent(in)
+                                uprtp_pert )                                ! Intent(out)
+            call diagnose_upxp( vpwp_pert, thlm, wpthlp, vm_pert, &               ! Intent(in)
+                                C6thl_Skw_fnc, tau_C6_zm, C7_Skw_fnc, & ! Intent(in)
+                                vpthlp_pert )                                ! Intent(out)
+            call diagnose_upxp( vpwp_pert, rtm, wprtp, vm_pert, &                ! Intent(in)
+                                C6rt_Skw_fnc, tau_C6_zm, C7_Skw_fnc, & ! Intent(in)
+                                vprtp_pert )                                ! Intent(out)
+         end if
 
          ! Use a crude approximation for buoyancy terms <u'thv'> and <v'thv'>.
          !upthvp = upwp * wpthvp / max( wp2, w_tol_sqd )
@@ -1463,6 +1507,10 @@ module advance_xm_wpxp_module
          !         + 200._core_rknd * sign( one, vpwp ) * sqrt( vp2 * rcm**2 )
          upthvp = upthlp + ep1 * thv_ds_zm * uprtp + rc_coef * uprcp
          vpthvp = vpthlp + ep1 * thv_ds_zm * vprtp + rc_coef * vprcp
+         if ( l_perturbed_wind ) then
+            upthvp_pert = upthlp_pert + ep1 * thv_ds_zm * uprtp_pert + rc_coef * uprcp
+            vpthvp_pert = vpthlp_pert + ep1 * thv_ds_zm * vprtp_pert + rc_coef * vprcp
+         end if
 
          if ( l_stats_samp ) then
             call stat_update_var( iupthlp, upthlp, stats_zm )
@@ -1494,6 +1542,28 @@ module advance_xm_wpxp_module
                            rho_ds_zm, invrs_rho_ds_zm, thv_ds_zm, & ! In
                            wpxp_upper_lim, wpxp_lower_lim, & ! In
                            rhs(:,4+sclr_dim) ) ! Out
+
+         if ( l_perturbed_wind ) then
+            call xm_wpxp_rhs( xm_wpxp_um, l_iter, dt, um_pert, upwp_pert, & ! In
+                              um_tndcy, upwp_forcing_pert, C7_Skw_fnc, & ! In
+                              upthvp_pert, C6rt_Skw_fnc, tau_C6_zm, & ! In
+                              coef_wp2up_implicit, coef_wp2up_implicit_zm, & ! In
+                              term_wp2up_explicit, term_wp2up_explicit_zm, & ! In
+                              sgn_t_vel_upwp, rho_ds_zt, & ! In
+                              rho_ds_zm, invrs_rho_ds_zm, thv_ds_zm, & ! In
+                              wpxp_upper_lim, wpxp_lower_lim, & ! In
+                              rhs(:,5+sclr_dim) ) ! Out
+
+            call xm_wpxp_rhs( xm_wpxp_vm, l_iter, dt, vm_pert, vpwp_pert, & ! In
+                              vm_tndcy, vpwp_forcing_pert, C7_Skw_fnc, & ! In
+                              vpthvp_pert, C6rt_Skw_fnc, tau_C6_zm, & ! In
+                              coef_wp2vp_implicit, coef_wp2vp_implicit_zm, & ! In
+                              term_wp2vp_explicit, term_wp2vp_explicit_zm, & ! In
+                              sgn_t_vel_vpwp, rho_ds_zt, & ! In
+                              rho_ds_zm, invrs_rho_ds_zm, thv_ds_zm, & ! In
+                              wpxp_upper_lim, wpxp_lower_lim, & ! In
+                              rhs(:,6+sclr_dim) ) ! Out
+         end if
 
       endif ! l_predict_upwp_vpwp
 
@@ -1788,6 +1858,27 @@ module advance_xm_wpxp_module
                return
             endif
          endif
+
+         if ( l_perturbed_wind ) then
+
+            call xm_wpxp_clipping_and_stats &
+                 ( xm_wpxp_um, dt, wp2, up2, wm_zt,       & ! Intent(in)
+                   um_tndcy, rho_ds_zm, rho_ds_zt,        & ! Intent(in)
+                   invrs_rho_ds_zm, invrs_rho_ds_zt,      & ! Intent(in)
+                   w_tol_sqd, w_tol, rcond,               & ! Intent(in)
+                   low_lev_effect, high_lev_effect,       & ! Intent(in)
+                   l_implemented, solution(:,5+sclr_dim), & ! Intent(in)
+                   um_pert, w_tol, upwp_pert              ) ! Intent(inout)
+
+            call xm_wpxp_clipping_and_stats &
+                 ( xm_wpxp_vm, dt, wp2, vp2, wm_zt,       & ! Intent(in)
+                   vm_tndcy, rho_ds_zm, rho_ds_zt,        & ! Intent(in)
+                   invrs_rho_ds_zm, invrs_rho_ds_zt,      & ! Intent(in)
+                   w_tol_sqd, w_tol, rcond,               & ! Intent(in)
+                   low_lev_effect, high_lev_effect,       & ! Intent(in)
+                   l_implemented, solution(:,6+sclr_dim), & ! Intent(in)
+                   vm_pert, w_tol, vpwp_pert              ) ! Intent(inout)
+         end if
 
       endif ! l_predict_upwp_vpwp
 

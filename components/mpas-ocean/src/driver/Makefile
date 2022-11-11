@@ -10,7 +10,7 @@ OBJS = mpas_ocn_core.o \
 
 all: core_ocean
 
-core_ocean: $(OBJS) 
+core_ocean: $(OBJS)
 
 mpas_ocn_core.o:
 

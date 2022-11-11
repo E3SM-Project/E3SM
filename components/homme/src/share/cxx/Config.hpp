@@ -14,14 +14,14 @@
 # endif
 #else
 // Establish a good candidate vector size for eam builds
-# ifdef CUDA_BUILD
+# ifdef HOMMEXX_ENABLE_GPU
 #  define HOMMEXX_VECTOR_SIZE 1
 # else
 #  define HOMMEXX_VECTOR_SIZE 8
 # endif
 #endif
 
-#if ! defined HOMMEXX_CUDA_SPACE && ! defined HOMMEXX_OPENMP_SPACE && ! defined HOMMEXX_THREADS_SPACE && ! defined HOMMEXX_SERIAL_SPACE
+#if ! defined HOMMEXX_CUDA_SPACE && ! defined HOMMEXX_OPENMP_SPACE && ! defined HOMMEXX_THREADS_SPACE && ! defined HOMMEXX_SERIAL_SPACE && ! defined HOMMEXX_HIP_SPACE
 # define HOMMEXX_DEFAULT_SPACE
 #endif
 
@@ -31,7 +31,7 @@
 
 #include <Kokkos_Core.hpp>
 
-#ifdef KOKKOS_ENABLE_CUDA
+#ifdef HOMMEXX_ENABLE_GPU 
 # ifndef HOMMEXX_CUDA_MIN_WARP_PER_TEAM
 #  define HOMMEXX_CUDA_MIN_WARP_PER_TEAM 8
 # endif
@@ -41,6 +41,13 @@
 #elif !defined(HOMMEXX_CONFIG_IS_CMAKE)
 # define HOMMEXX_CUDA_MIN_WARP_PER_TEAM 1
 # define HOMMEXX_CUDA_MAX_WARP_PER_TEAM 1
+#endif
+
+#if defined KOKKOS_COMPILER_GNU
+// See https://github.com/kokkos/kokkos-kernels/issues/129
+# define ConstExceptGnu
+#else
+# define ConstExceptGnu const
 #endif
 
 #endif // HOMMEXX_CONFIG_HPP

@@ -1,0 +1,94 @@
+<?xml version="1.0"?>
+<namelist_defaults>
+
+<!-- Solar constant from CMIP6 input4MIPS -->
+<solar_data_file>atm/cam/solar/Solar_2010control_input4MIPS_c20181017.nc</solar_data_file>
+<solar_data_ymd>20100101</solar_data_ymd>
+<solar_data_type>FIXED</solar_data_type>
+
+<!-- 2010 GHG values from CMIP6 input4MIPS -->
+<!-- <co2vmr>312.821e-6</co2vmr> The CMIP6 concentration set by CCSM_CO2_PPMV in cime/src/drivers/mct/cime_config/config_co
+     mponent_acme.xml -->
+<ch4vmr>1807.851e-9</ch4vmr>
+<n2ovmr>323.141e-9</n2ovmr>
+<f11vmr>768.7644e-12</f11vmr>
+<f12vmr>531.2820e-12</f12vmr>
+
+<!-- Stratospheric aerosols from CMIP6 input4MIPS -->
+<prescribed_volcaero_datapath>atm/cam/volc                                             </prescribed_volcaero_datapath>
+<prescribed_volcaero_file    >CMIP_DOE-ACME_radiation_average_1850-2014_v3_c20171204.nc</prescribed_volcaero_file    >
+<prescribed_volcaero_filetype>VOLC_CMIP6                                               </prescribed_volcaero_filetype>
+<prescribed_volcaero_type    >CYCLICAL                                                 </prescribed_volcaero_type    >
+<prescribed_volcaero_cycle_yr>1                                                        </prescribed_volcaero_cycle_yr>
+
+<!-- For comprehensive history -->
+<history_amwg       >.true.</history_amwg>
+<history_aerosol    >.true.</history_aerosol>
+<history_aero_optics>.true.</history_aero_optics>
+
+<!-- External forcing for BAM or MAM.  CMIP6 input4mips data -->
+<ext_frc_type         >CYCLICAL</ext_frc_type>
+<ext_frc_cycle_yr     >2010</ext_frc_cycle_yr>
+<so2_ext_file         >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_elev_1x1_2010_clim_c20190821.nc </so2_ext_file>
+<soag_ext_file        >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_soag_elev_1x1_2010_clim_c20190821.nc </soag_ext_file>
+<bc_a4_ext_file       >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_elev_1x1_2010_clim_c20190821.nc </bc_a4_ext_file>
+<mam7_num_a1_ext_file >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_elev_1x1_2010_clim_c20190821.nc </mam7_num_a1_ext_file>
+<num_a2_ext_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a2_elev_1x1_2010_clim_c20190821.nc </num_a2_ext_file>
+<mam7_num_a3_ext_file >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a4_elev_1x1_2010_clim_c20190821.nc </mam7_num_a3_ext_file> <!-- This is to set num_a4 emissions -->
+<pom_a4_ext_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_pom_a4_elev_1x1_2010_clim_c20190821.nc </pom_a4_ext_file>
+<so4_a1_ext_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_elev_1x1_2010_clim_c20190821.nc </so4_a1_ext_file>
+<so4_a2_ext_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_elev_1x1_2010_clim_c20190821.nc </so4_a2_ext_file>
+
+<!-- Surface emissions for MAM4.  CMIP6 input4mips data -->
+<srf_emis_type        >CYCLICAL</srf_emis_type>
+<srf_emis_cycle_yr    >2010</srf_emis_cycle_yr>
+<dms_emis_file        >atm/cam/chem/trop_mozart_aero/emis/DMSflux.2010.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20190220.nc</dms_emis_file>
+<so2_emis_file        >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so2_surf_1x1_2010_clim_c20190821.nc </so2_emis_file>
+<bc_a4_emis_file      >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_bc_a4_surf_1x1_2010_clim_c20190821.nc </bc_a4_emis_file>
+<mam7_num_a1_emis_file>atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a1_surf_1x1_2010_clim_c20190821.nc </mam7_num_a1_emis_file>
+<num_a2_emis_file     >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a2_surf_1x1_2010_clim_c20190821.nc </num_a2_emis_file>
+<mam7_num_a3_emis_file>atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_num_a4_surf_1x1_2010_clim_c20190821.nc </mam7_num_a3_emis_file> <!-- This is to set num_a4 emissions -->
+<pom_a4_emis_file     >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_pom_a4_surf_1x1_2010_clim_c20190821.nc </pom_a4_emis_file>
+<so4_a1_emis_file     >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a1_surf_1x1_2010_clim_c20190821.nc </so4_a1_emis_file>
+<so4_a2_emis_file     >atm/cam/chem/trop_mozart_aero/emis/DECK_ne30/cmip6_mam4_so4_a2_surf_1x1_2010_clim_c20190821.nc </so4_a2_emis_file>
+
+<!-- Prescribed oxidants for aerosol chemistry.   Ozone is from CMIP6 input4MIPS file -->
+<tracer_cnst_type    >CYCLICAL</tracer_cnst_type>
+<tracer_cnst_cycle_yr>2015</tracer_cnst_cycle_yr>
+<tracer_cnst_file    >oxid_1.9x2.5_L26_1850-2015_c20181106.nc</tracer_cnst_file>
+<tracer_cnst_filelist>''</tracer_cnst_filelist>
+<!-- <tracer_cnst_filelist>this_field_is_not_used</tracer_cnst_filelist> -->
+
+<!-- Marine organic aerosol namelist settings -->
+<mam_mom_mixing_state>3</mam_mom_mixing_state>
+<mam_mom_cycle_yr  >1                                                                                    </mam_mom_cycle_yr  >
+<mam_mom_datapath  >'atm/cam/chem/trop_mam/marine_BGC/'                                                  </mam_mom_datapath  >
+<mam_mom_datatype  >'CYCLICAL'                                                                           </mam_mom_datatype  >
+<mam_mom_filename  >'monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc'                 </mam_mom_filename  > <!-- Using the 2000 file, for now -->
+<mam_mom_fixed_tod >0                                                                                    </mam_mom_fixed_tod >
+<mam_mom_fixed_ymd >0                                                                                    </mam_mom_fixed_ymd >
+<mam_mom_specifier >'chla:CHL1','mpoly:TRUEPOLYC','mprot:TRUEPROTC','mlip:TRUELIPC'                      </mam_mom_specifier >
+
+<!-- Stratospheric ozone (Linoz) updated using CMIP6 input4MIPS GHG concentrations -->
+<chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc</chlorine_loading_file>
+<chlorine_loading_fixed_ymd >20100101</chlorine_loading_fixed_ymd>
+<chlorine_loading_type      >FIXED</chlorine_loading_type>
+<linoz_data_cycle_yr        >2010</linoz_data_cycle_yr>
+<linoz_data_file            >linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc</linoz_data_file>
+<linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
+<linoz_data_type            >CYCLICAL</linoz_data_type>
+
+<!-- Turn off ozone dry deposition, as Linoz O3v2 and ozone are not separated for now. Need to turn on ozone dry deposition when interactive tropospheric chemistry is implemented -->
+<drydep_list            >'H2O2', 'H2SO4', 'SO2'</drydep_list>
+
+<!-- sim_year used for CLM datasets -->
+<sim_year>2015</sim_year>
+
+<!-- land datasets -->
+<!-- Set in components/clm/bld/namelist_files/use_cases/1850_CMIP6_control.xml -->
+
+<!-- MMF SPECIFIC BELOW HERE -->
+
+<liqcf_fix>.false.</liqcf_fix>
+
+</namelist_defaults>

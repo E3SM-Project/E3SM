@@ -35,7 +35,6 @@
   theta_hydrostatic_mode = .false.
 /
 &vert_nl
-  vform             = "ccm"                     ! vertical coordinate type "ccm"=hybrid pressure/terrain
   vanalytic         = 1                         ! set vcoords in initialization routine
 /
 &analysis_nl

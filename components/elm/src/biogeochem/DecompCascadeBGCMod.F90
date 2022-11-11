@@ -2,7 +2,7 @@ module DecompCascadeBGCMod
 
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
-  ! Sets the coeffiecients used in the decomposition cascade submodel.  
+  ! Sets the coeffiecients used in the decomposition cascade submodel.
   ! This uses the CENTURY/BGC parameters
   !
   ! !USES:
@@ -15,16 +15,16 @@ module DecompCascadeBGCMod
   use elm_varcon             , only : zsoi
   use decompMod              , only : bounds_type
   use abortutils             , only : endrun
-  use SharedParamsMod      , only : ParamsShareInst, anoxia_wtsat, nlev_soildecomp_standard 
+  use SharedParamsMod      , only : ParamsShareInst, anoxia_wtsat, nlev_soildecomp_standard
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType            , only : cnstate_type
-  use CNCarbonFluxType       , only : carbonflux_type
   use SoilStateType          , only : soilstate_type
   use CanopyStateType        , only : canopystate_type
-  use TemperatureType        , only : temperature_type 
   use ch4Mod                 , only : ch4_type
   use ColumnType             , only : col_pp
-  use ColumnDataType         , only : col_es, col_cf 
+  use ColumnDataType         , only : col_es, col_cf
+
+  use timeinfomod
   !
   implicit none
   save
@@ -35,222 +35,255 @@ module DecompCascadeBGCMod
   public :: readDecompBGCParams
   public :: decomp_rate_constants_bgc
   !
-  ! !PUBLIC DATA MEMBERS 
+  ! !PUBLIC DATA MEMBERS
   logical , public :: normalize_q10_to_century_tfunc = .true.! do we normalize the century decomp. rates so that they match the CLM Q10 at a given tep?
   logical , public :: use_century_tfunc = .false.
   real(r8), public :: normalization_tref = 15._r8            ! reference temperature for normalizaion (degrees C)
+  !$acc declare copyin(normalize_q10_to_century_tfunc)
+  !$acc declare copyin(use_century_tfunc )
+  !$acc declare copyin(normalization_tref)
   !
-  ! !PRIVATE DATA MEMBERS 
-  type, private :: DecompBGCParamsType
-     real(r8):: cn_s1_bgc     !C:N for SOM 1
-     real(r8):: cn_s2_bgc     !C:N for SOM 2
-     real(r8):: cn_s3_bgc     !C:N for SOM 3
-     
-     real(r8):: np_s1_new_bgc  !C:P for SOM 1
-     real(r8):: np_s2_new_bgc  !C:P for SOM 2
-     real(r8):: np_s3_new_bgc  !C:P for SOM 3
+  ! !PRIVATE DATA MEMBERS
+  type, public :: DecompBGCParamsType
 
-     real(r8):: cp_s1_new_bgc        !C:P for SOM 1
-     real(r8):: cp_s2_new_bgc        !C:P for SOM 2
-     real(r8):: cp_s3_new_bgc        !C:P for SOM 3
+     real(r8), pointer:: cn_s1_bgc     => null()!C:N for SOM 1
+     real(r8), pointer:: cn_s2_bgc     => null()!C:N for SOM 2
+     real(r8), pointer:: cn_s3_bgc     => null()!C:N for SOM 3
+
+     real(r8), pointer:: np_s1_new_bgc => null() !C:P for SOM 1
+     real(r8), pointer:: np_s2_new_bgc => null() !C:P for SOM 2
+     real(r8), pointer:: np_s3_new_bgc => null() !C:P for SOM 3
+
+     real(r8), pointer:: cp_s1_new_bgc => null()       !C:P for SOM 1
+     real(r8), pointer:: cp_s2_new_bgc => null()       !C:P for SOM 2
+     real(r8), pointer:: cp_s3_new_bgc => null()       !C:P for SOM 3
 
 
 
-     real(r8):: rf_l1s1_bgc   !respiration fraction litter 1 -> SOM 1
-     real(r8):: rf_l2s1_bgc
-     real(r8):: rf_l3s2_bgc
+     real(r8), pointer:: rf_l1s1_bgc  => null()  !respiration fraction litter 1 -> SOM 1
+     real(r8), pointer:: rf_l2s1_bgc  => null()
+     real(r8), pointer:: rf_l3s2_bgc  => null()
 
-     real(r8):: rf_s2s1_bgc    
-     real(r8):: rf_s2s3_bgc    
-     real(r8):: rf_s3s1_bgc    
+     real(r8), pointer:: rf_s2s1_bgc  => null()
+     real(r8), pointer:: rf_s2s3_bgc  => null()
+     real(r8), pointer:: rf_s3s1_bgc  => null()
+     real(r8), pointer:: rf_cwdl2_bgc => null()
+     real(r8), pointer:: rf_cwdl3_bgc => null()
 
-     real(r8):: rf_cwdl2_bgc 
-     real(r8):: rf_cwdl3_bgc
+     real(r8), pointer:: tau_l1_bgc    => null()! turnover time of  litter 1 (yr)
+     real(r8), pointer:: tau_l2_l3_bgc => null()! turnover time of  litter 2 and litter 3 (yr)
+     real(r8), pointer:: tau_s1_bgc    => null()! turnover time of  SOM 1 (yr)
+     real(r8), pointer:: tau_s2_bgc    => null()! turnover time of  SOM 2 (yr)
+     real(r8), pointer:: tau_s3_bgc    => null()! turnover time of  SOM 3 (yr)
+     real(r8), pointer:: tau_cwd_bgc   => null()! corrected fragmentation rate constant CWD
 
-     real(r8):: tau_l1_bgc    ! turnover time of  litter 1 (yr)
-     real(r8):: tau_l2_l3_bgc ! turnover time of  litter 2 and litter 3 (yr)
-     real(r8):: tau_s1_bgc    ! turnover time of  SOM 1 (yr)
-     real(r8):: tau_s2_bgc    ! turnover time of  SOM 2 (yr)
-     real(r8):: tau_s3_bgc    ! turnover time of  SOM 3 (yr)
-     real(r8):: tau_cwd_bgc   ! corrected fragmentation rate constant CWD
+     real(r8), pointer :: cwd_fcel_bgc => null()!cellulose fraction for CWD
+     real(r8), pointer :: cwd_flig_bgc => null()!
 
-     real(r8) :: cwd_fcel_bgc !cellulose fraction for CWD
-     real(r8) :: cwd_flig_bgc !
+     real(r8), pointer :: k_frag_bgc  => null() !fragmentation rate for CWD
+     real(r8), pointer :: minpsi_bgc  => null() !minimum soil water potential for heterotrophic resp
 
-     real(r8) :: k_frag_bgc   !fragmentation rate for CWD
-     real(r8) :: minpsi_bgc   !minimum soil water potential for heterotrophic resp
-     
-     integer  :: nsompools = 3
-     real(r8),allocatable :: spinup_vector(:) ! multipliers for soil decomp during accelerated spinup
+     integer , pointer :: nsompools   => null()!= 3
+     real(r8), pointer  :: spinup_vector(:) => null() ! multipliers for soil decomp during accelerated spinup
 
   end type DecompBGCParamsType
 
-  type(DecompBGCParamsType),private ::  DecompBGCParamsInst
+  type(DecompBGCParamsType), public, target ::  DecompBGCParamsInst
+  !$acc declare create(DecompBGCParamsInst)
   !-----------------------------------------------------------------------
 
 contains
 
   !-----------------------------------------------------------------------
-  subroutine readDecompBGCParams ( ncid )
-    !
-    ! !DESCRIPTION:
-    !
-    ! !USES:
-    use ncdio_pio    , only: file_desc_t,ncd_io
-    !
-    ! !ARGUMENTS:
-    type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
-    !
-    ! !LOCAL VARIABLES:
-    character(len=32)  :: subname = 'DecompBGCParamsType'
-    character(len=100) :: errCode = 'Error reading in CN const file '
-    logical            :: readv   ! has variable been read in or not
-    real(r8)           :: tempr   ! temporary to read in constant
-    character(len=100) :: tString ! temp. var for reading
-    !-----------------------------------------------------------------------
+   subroutine readDecompBGCParams(ncid )
+     !
+     ! !DESCRIPTION:
+     !
+     ! !USES:
+     use ncdio_pio    , only: file_desc_t,ncd_io
+     !
+     ! !ARGUMENTS:
+     type(file_desc_t),intent(inout) :: ncid   ! pio netCDF file id
+     !
+     ! !LOCAL VARIABLES:
+     character(len=32)  :: subname = 'DecompBGCParamsType'
+     character(len=100) :: errCode = 'Error reading in CN const file '
+     logical            :: readv   ! has variable been read in or not
+     real(r8)           :: tempr   ! temporary to read in constant
+     character(len=100) :: tString ! temp. var for reading
+     !-----------------------------------------------------------------------
 
-    ! These are not read off of netcdf file
-    allocate(DecompBGCParamsInst%spinup_vector(DecompBGCParamsInst%nsompools))
-    DecompBGCParamsInst%spinup_vector(:) = (/ 1.0_r8, 15.0_r8, 675.0_r8 /)
+     allocate(DecompBGCParamsInst%cn_s1_bgc   )
+     allocate(DecompBGCParamsInst%cn_s2_bgc   )
+     allocate(DecompBGCParamsInst%cn_s3_bgc   )
+     allocate(DecompBGCParamsInst%np_s1_new_bgc)
+     allocate(DecompBGCParamsInst%np_s2_new_bgc)
+     allocate(DecompBGCParamsInst%np_s3_new_bgc)
+     allocate(DecompBGCParamsInst%cp_s1_new_bgc)
+     allocate(DecompBGCParamsInst%cp_s2_new_bgc)
+     allocate(DecompBGCParamsInst%cp_s3_new_bgc)
+     allocate(DecompBGCParamsInst%rf_l1s1_bgc )
+     allocate(DecompBGCParamsInst%rf_l2s1_bgc )
+     allocate(DecompBGCParamsInst%rf_l3s2_bgc )
+     allocate(DecompBGCParamsInst%rf_s2s1_bgc )
+     allocate(DecompBGCParamsInst%rf_s2s3_bgc )
+     allocate(DecompBGCParamsInst%rf_s3s1_bgc )
+     allocate(DecompBGCParamsInst%rf_cwdl2_bgc)
+     allocate(DecompBGCParamsInst%rf_cwdl3_bgc)
+     allocate(DecompBGCParamsInst%tau_l1_bgc  )
+     allocate(DecompBGCParamsInst%tau_l2_l3_bgc)
+     allocate(DecompBGCParamsInst%tau_s1_bgc  )
+     allocate(DecompBGCParamsInst%tau_s2_bgc  )
+     allocate(DecompBGCParamsInst%tau_s3_bgc  )
+     allocate(DecompBGCParamsInst%tau_cwd_bgc )
+     allocate(DecompBGCParamsInst%cwd_fcel_bgc)
+     allocate(DecompBGCParamsInst%cwd_flig_bgc)
+     allocate(DecompBGCParamsInst%k_frag_bgc  )
+     allocate(DecompBGCParamsInst%minpsi_bgc  )
 
-    ! Read off of netcdf file
-    tString='tau_l1'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%tau_l1_bgc=tempr
+     ! These are not read off of netcdf file
+     allocate(DecompBGCParamsInst%nsompools); DecompBGCParamsInst%nsompools = 3
+     allocate(DecompBGCParamsInst%spinup_vector(DecompBGCParamsInst%nsompools))
+     DecompBGCParamsInst%spinup_vector(:) = (/ 1.0_r8, 15.0_r8, 675.0_r8 /)
 
-    tString='tau_l2_l3'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%tau_l2_l3_bgc=tempr
+     ! Read off of netcdf file
+     tString='tau_l1'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%tau_l1_bgc=tempr
 
-    tString='tau_s1'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%tau_s1_bgc=tempr
+     tString='tau_l2_l3'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%tau_l2_l3_bgc=tempr
 
-    tString='tau_s2'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%tau_s2_bgc=tempr
+     tString='tau_s1'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%tau_s1_bgc=tempr
 
-    tString='tau_s3'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%tau_s3_bgc=tempr
+     tString='tau_s2'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%tau_s2_bgc=tempr
 
-    tString='tau_cwd'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%tau_cwd_bgc=tempr
+     tString='tau_s3'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%tau_s3_bgc=tempr
 
-    tString='cn_s1_bgc'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%cn_s1_bgc=tempr
+     tString='tau_cwd'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%tau_cwd_bgc=tempr
 
-    tString='cn_s2_bgc'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%cn_s2_bgc=tempr
+     tString='cn_s1_bgc'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%cn_s1_bgc=tempr
 
-    tString='cn_s3_bgc'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%cn_s3_bgc=tempr
+     tString='cn_s2_bgc'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%cn_s2_bgc=tempr
 
-!!! read in phosphorus variables - note that these NP ratio parameters for BGC  will have
-!!! to be added in the parameter file
- 
-    tString='np_s1_new'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%np_s1_new_bgc=tempr
+     tString='cn_s3_bgc'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%cn_s3_bgc=tempr
 
-    tString='np_s2_new'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%np_s2_new_bgc=tempr
+ !!! read in phosphorus variables - note that these NP ratio parameters for BGC  will have
+ !!! to be added in the parameter file
 
-    tString='np_s3_new'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%np_s3_new_bgc=tempr
+     tString='np_s1_new'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%np_s1_new_bgc=tempr
 
-    tString='rf_l1s1_bgc'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%rf_l1s1_bgc=tempr
+     tString='np_s2_new'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%np_s2_new_bgc=tempr
 
-    tString='rf_l2s1_bgc'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%rf_l2s1_bgc=tempr
+     tString='np_s3_new'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%np_s3_new_bgc=tempr
 
-    tString='rf_l3s2_bgc'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%rf_l3s2_bgc=tempr   
+     tString='rf_l1s1_bgc'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%rf_l1s1_bgc=tempr
 
-    tString='rf_s2s1_bgc'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%rf_s2s1_bgc=tempr
+     tString='rf_l2s1_bgc'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%rf_l2s1_bgc=tempr
 
-    tString='rf_s2s3_bgc'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%rf_s2s3_bgc=tempr
+     tString='rf_l3s2_bgc'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%rf_l3s2_bgc=tempr
 
-    tString='rf_s3s1_bgc'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%rf_s3s1_bgc=tempr
+     tString='rf_s2s1_bgc'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%rf_s2s1_bgc=tempr
 
-    tString='rf_cwdl2_bgc'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%rf_cwdl2_bgc=tempr
+     tString='rf_s2s3_bgc'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%rf_s2s3_bgc=tempr
 
-    tString='rf_cwdl3_bgc'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%rf_cwdl3_bgc=tempr
+     tString='rf_s3s1_bgc'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%rf_s3s1_bgc=tempr
 
-    tString='cwd_fcel'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%cwd_fcel_bgc=tempr
+     tString='rf_cwdl2_bgc'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%rf_cwdl2_bgc=tempr
 
-    tString='k_frag'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%k_frag_bgc=tempr
+     tString='rf_cwdl3_bgc'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%rf_cwdl3_bgc=tempr
 
-    tString='minpsi_hr'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%minpsi_bgc=tempr 
+     tString='cwd_fcel'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%cwd_fcel_bgc=tempr
 
-    tString='cwd_flig'
-    call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
-    if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
-    DecompBGCParamsInst%cwd_flig_bgc=tempr 
+     tString='k_frag'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%k_frag_bgc=tempr
 
-  end subroutine readDecompBGCParams
+     tString='minpsi_hr'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%minpsi_bgc=tempr
+
+     tString='cwd_flig'
+     call ncd_io(trim(tString),tempr, 'read', ncid, readvar=readv)
+     if ( .not. readv ) call endrun(msg=trim(errCode)//trim(tString)//errMsg(__FILE__, __LINE__))
+     DecompBGCParamsInst%cwd_flig_bgc=tempr
+
+   end subroutine readDecompBGCParams
 
   !-----------------------------------------------------------------------
   subroutine init_decompcascade_bgc(bounds, cnstate_vars, soilstate_vars)
     !
     ! !DESCRIPTION:
     !  initialize rate constants and decomposition pathways following the decomposition cascade of the BGC model.
-    !  written by C. Koven 
+    !  written by C. Koven
     !
     ! !USES:
-    use clm_time_manager , only : get_step_size
+     use clm_time_manager , only : get_step_size
     !
     ! !ARGUMENTS:
-    type(bounds_type)    , intent(in)    :: bounds  
+    type(bounds_type)    , intent(in)    :: bounds
     type(cnstate_type)   , intent(inout) :: cnstate_vars
     type(soilstate_type) , intent(in)    :: soilstate_vars
     !
@@ -305,29 +338,29 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                                                 &
-         rf_decomp_cascade              => cnstate_vars%rf_decomp_cascade_col                , & ! Input:  [real(r8)          (:,:,:) ]  respired fraction in decomposition step (frac)       
+         rf_decomp_cascade              => cnstate_vars%rf_decomp_cascade_col                , & ! Input:  [real(r8)          (:,:,:) ]  respired fraction in decomposition step (frac)
          pathfrac_decomp_cascade        => cnstate_vars%pathfrac_decomp_cascade_col          , & ! Input:  [real(r8)          (:,:,:) ]  what fraction of C leaving a given pool passes through a given transition (frac)
-         cellsand                       => soilstate_vars%cellsand_col                       , & ! Input:  [real(r8)          (:,:)   ]  column 3D sand                                         
-         
-         cascade_step_name              => decomp_cascade_con%cascade_step_name              , & ! Output: [character(len=8)  (:)     ]  name of transition                               
-         cascade_donor_pool             => decomp_cascade_con%cascade_donor_pool             , & ! Output: [integer           (:)     ]  which pool is C taken from for a given decomposition step 
-         cascade_receiver_pool          => decomp_cascade_con%cascade_receiver_pool          , & ! Output: [integer           (:)     ]  which pool is C added to for a given decomposition step   
-         floating_cn_ratio_decomp_pools => decomp_cascade_con%floating_cn_ratio_decomp_pools , & ! Output: [logical           (:)     ]  TRUE => pool has fixed C:N ratio                          
-         floating_cp_ratio_decomp_pools => decomp_cascade_con%floating_cp_ratio_decomp_pools , & ! Output: [logical           (:)     ]  TRUE => pool has fixed C:P ratio                          
-         decomp_pool_name_restart       => decomp_cascade_con%decomp_pool_name_restart       , & ! Output: [character(len=8)  (:)     ]  name of pool for restart files                   
-         decomp_pool_name_history       => decomp_cascade_con%decomp_pool_name_history       , & ! Output: [character(len=8)  (:)     ]  name of pool for history files                   
-         decomp_pool_name_long          => decomp_cascade_con%decomp_pool_name_long          , & ! Output: [character(len=20) (:)     ]  name of pool for netcdf long names              
-         decomp_pool_name_short         => decomp_cascade_con%decomp_pool_name_short         , & ! Output: [character(len=8)  (:)     ]  name of pool for netcdf short names              
-         is_litter                      => decomp_cascade_con%is_litter                      , & ! Output: [logical           (:)     ]  TRUE => pool is a litter pool                             
-         is_soil                        => decomp_cascade_con%is_soil                        , & ! Output: [logical           (:)     ]  TRUE => pool is a soil pool                               
-         is_cwd                         => decomp_cascade_con%is_cwd                         , & ! Output: [logical           (:)     ]  TRUE => pool is a cwd pool                                
-         initial_cn_ratio               => decomp_cascade_con%initial_cn_ratio               , & ! Output: [real(r8)          (:)     ]  c:n ratio for initialization of pools                    
-         initial_cp_ratio               => decomp_cascade_con%initial_cp_ratio               , & ! Output: [real(r8)          (:)     ]  c:p ratio for initialization of pools                    
-         initial_stock                  => decomp_cascade_con%initial_stock                  , & ! Output: [real(r8)          (:)     ]  initial concentration for seeding at spinup              
-         is_metabolic                   => decomp_cascade_con%is_metabolic                   , & ! Output: [logical           (:)     ]  TRUE => pool is metabolic material                        
-         is_cellulose                   => decomp_cascade_con%is_cellulose                   , & ! Output: [logical           (:)     ]  TRUE => pool is cellulose                                 
-         is_lignin                      => decomp_cascade_con%is_lignin                      , & ! Output: [logical           (:)     ]  TRUE => pool is lignin                                    
-         spinup_factor                  => decomp_cascade_con%spinup_factor                    & ! Output: [real(r8)          (:)     ]  factor for AD spinup associated with each pool           
+         cellsand                       => soilstate_vars%cellsand_col                       , & ! Input:  [real(r8)          (:,:)   ]  column 3D sand
+
+         cascade_step_name              => decomp_cascade_con%cascade_step_name              , & ! Output: [character(len=8)  (:)     ]  name of transition
+         cascade_donor_pool             => decomp_cascade_con%cascade_donor_pool             , & ! Output: [integer           (:)     ]  which pool is C taken from for a given decomposition step
+         cascade_receiver_pool          => decomp_cascade_con%cascade_receiver_pool          , & ! Output: [integer           (:)     ]  which pool is C added to for a given decomposition step
+         floating_cn_ratio_decomp_pools => decomp_cascade_con%floating_cn_ratio_decomp_pools , & ! Output: [logical           (:)     ]  TRUE => pool has fixed C:N ratio
+         floating_cp_ratio_decomp_pools => decomp_cascade_con%floating_cp_ratio_decomp_pools , & ! Output: [logical           (:)     ]  TRUE => pool has fixed C:P ratio
+         decomp_pool_name_restart       => decomp_cascade_con%decomp_pool_name_restart       , & ! Output: [character(len=8)  (:)     ]  name of pool for restart files
+         decomp_pool_name_history       => decomp_cascade_con%decomp_pool_name_history       , & ! Output: [character(len=8)  (:)     ]  name of pool for history files
+         decomp_pool_name_long          => decomp_cascade_con%decomp_pool_name_long          , & ! Output: [character(len=20) (:)     ]  name of pool for netcdf long names
+         decomp_pool_name_short         => decomp_cascade_con%decomp_pool_name_short         , & ! Output: [character(len=8)  (:)     ]  name of pool for netcdf short names
+         is_litter                      => decomp_cascade_con%is_litter                      , & ! Output: [logical           (:)     ]  TRUE => pool is a litter pool
+         is_soil                        => decomp_cascade_con%is_soil                        , & ! Output: [logical           (:)     ]  TRUE => pool is a soil pool
+         is_cwd                         => decomp_cascade_con%is_cwd                         , & ! Output: [logical           (:)     ]  TRUE => pool is a cwd pool
+         initial_cn_ratio               => decomp_cascade_con%initial_cn_ratio               , & ! Output: [real(r8)          (:)     ]  c:n ratio for initialization of pools
+         initial_cp_ratio               => decomp_cascade_con%initial_cp_ratio               , & ! Output: [real(r8)          (:)     ]  c:p ratio for initialization of pools
+         initial_stock                  => decomp_cascade_con%initial_stock                  , & ! Output: [real(r8)          (:)     ]  initial concentration for seeding at spinup
+         is_metabolic                   => decomp_cascade_con%is_metabolic                   , & ! Output: [logical           (:)     ]  TRUE => pool is metabolic material
+         is_cellulose                   => decomp_cascade_con%is_cellulose                   , & ! Output: [logical           (:)     ]  TRUE => pool is cellulose
+         is_lignin                      => decomp_cascade_con%is_lignin                      , & ! Output: [logical           (:)     ]  TRUE => pool is lignin
+         spinup_factor                  => decomp_cascade_con%spinup_factor                    & ! Output: [real(r8)          (:)     ]  factor for AD spinup associated with each pool
          )
 
       allocate(rf_s1s2(bounds%begc:bounds%endc,1:nlevdecomp))
@@ -341,7 +374,7 @@ contains
       cn_s2 = DecompBGCParamsInst%cn_s2_bgc
       cn_s3 = DecompBGCParamsInst%cn_s3_bgc
 
-      ! set soil organic matter C:P ratios -X. YANG 
+      ! set soil organic matter C:P ratios -X. YANG
       np_s1_new=DecompBGCParamsInst%np_s1_new_bgc
       np_s2_new=DecompBGCParamsInst%np_s2_new_bgc
       np_s3_new=DecompBGCParamsInst%np_s3_new_bgc
@@ -435,7 +468,7 @@ contains
       ! be zero when FATES is on. We used to turn this pool
       ! off, but it is fine to leave it on for code simplicity
       ! as it is not a destination transition.
-      
+
       floating_cn_ratio_decomp_pools (i_cwd)   = .true.
       floating_cp_ratio_decomp_pools (i_cwd)   = .true.
       decomp_pool_name_restart       (i_cwd)   = 'cwd'
@@ -451,7 +484,7 @@ contains
       is_metabolic                   (i_cwd)   = .false.
       is_cellulose                   (i_cwd)   = .false.
       is_lignin                      (i_cwd)   = .false.
-      
+
 
       i_soil1 = 5
       floating_cn_ratio_decomp_pools (i_soil1) = .false.
@@ -557,7 +590,7 @@ contains
       cascade_receiver_pool(i_s2s1) = i_soil1
       pathfrac_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,i_s2s1) = f_s2s1
 
-      i_s2s3 = 7 
+      i_s2s3 = 7
       cascade_step_name(i_s2s3) = 'S2S3'
       rf_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,i_s2s3) = rf_s2s3
       cascade_donor_pool(i_s2s3) = i_soil2
@@ -577,14 +610,14 @@ contains
       cascade_donor_pool(i_cwdl2) = i_cwd
       cascade_receiver_pool(i_cwdl2) = i_litr2
       pathfrac_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,i_cwdl2) = cwd_fcel
-      
+
       i_cwdl3 = 10
       cascade_step_name(i_cwdl3) = 'CWDL3'
       rf_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,i_cwdl3) = rf_cwdl3
       cascade_donor_pool(i_cwdl3) = i_cwd
       cascade_receiver_pool(i_cwdl3) = i_litr3
       pathfrac_decomp_cascade(bounds%begc:bounds%endc,1:nlevdecomp,i_cwdl3) = cwd_flig
-            
+
       deallocate(rf_s1s2)
       deallocate(rf_s1s3)
       deallocate(f_s1s2)
@@ -596,27 +629,28 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine decomp_rate_constants_bgc(bounds, num_soilc, filter_soilc, &
-       canopystate_vars, soilstate_vars, temperature_vars, ch4_vars, carbonflux_vars, cnstate_vars)
+       canopystate_vars, soilstate_vars, ch4_vars, cnstate_vars )
     !
     ! !DESCRIPTION:
     !  calculate rate constants and decomposition pathways for teh CENTURY decomposition cascade model
     !  written by C. Koven based on original CLM4 decomposition cascade
     !
     ! !USES:
-    use clm_time_manager , only : get_days_per_year, get_curr_date, get_step_size
+      !$acc routine seq
     use shr_const_mod    , only : SHR_CONST_PI
     use elm_varcon       , only : secspday
     !
     ! !ARGUMENTS:
-    type(bounds_type)      , intent(in)    :: bounds          
+    type(bounds_type)      , intent(in)    :: bounds
     integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
     integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
     type(canopystate_type) , intent(in)    :: canopystate_vars
     type(soilstate_type)   , intent(in)    :: soilstate_vars
-    type(temperature_type) , intent(in)    :: temperature_vars
     type(ch4_type)         , intent(in)    :: ch4_vars
-    type(carbonflux_type)  , intent(inout) :: carbonflux_vars
     type(cnstate_type)     , intent(inout) :: cnstate_vars
+    real(r8)      :: dt, days_per_year
+    integer :: year, mon, day, sec          ! fraction of potential aerobic rate
+
 
     !
     ! !LOCAL VARIABLES:
@@ -654,44 +688,43 @@ contains
     real(r8):: catanf_30                    ! reference rate at 30C
     real(r8):: t1                           ! temperature argument
     real(r8):: normalization_factor         ! factor by which to offset the decomposition rates frm century to a q10 formulation
-    real(r8):: days_per_year                ! days per year
-    real(r8):: depth_scalar(bounds%begc:bounds%endc,1:nlevdecomp) 
+    real(r8):: depth_scalar(bounds%begc:bounds%endc,1:nlevdecomp)
     real(r8):: mino2lim                     !minimum anaerobic decomposition rate
-    integer :: year, mon, day, sec          ! fraction of potential aerobic rate
-    real(r8):: dt                           ! decomp timestep (seconds) 
     !-----------------------------------------------------------------------
 
     !----- CENTURY T response function
     catanf(t1) = 11.75_r8 +(29.7_r8 / SHR_CONST_PI) * atan( SHR_CONST_PI * 0.031_r8  * ( t1 - 15.4_r8 ))
 
     associate(                                             &
-         sucsat         => soilstate_vars%sucsat_col     , & ! Input:  [real(r8) (:,:)   ]  minimum soil suction (mm)                              
-         soilpsi        => soilstate_vars%soilpsi_col    , & ! Input:  [real(r8) (:,:)   ]  soil water potential in each soil layer (MPa)          
+         sucsat         => soilstate_vars%sucsat_col     , & ! Input:  [real(r8) (:,:)   ]  minimum soil suction (mm)
+         soilpsi        => soilstate_vars%soilpsi_col    , & ! Input:  [real(r8) (:,:)   ]  soil water potential in each soil layer (MPa)
 
-         alt_indx       => canopystate_vars%alt_indx_col , & ! Input:  [integer  (:)     ]  current depth of thaw                                     
+         alt_indx       => canopystate_vars%alt_indx_col , & ! Input:  [integer  (:)     ]  current depth of thaw
 
-         t_soisno       => col_es%t_soisno , & ! Input:  [real(r8) (:,:)   ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)       
+         t_soisno       => col_es%t_soisno , & ! Input:  [real(r8) (:,:)   ]  soil temperature (Kelvin)  (-nlevsno+1:nlevgrnd)
 
          o2stress_sat   => ch4_vars%o2stress_sat_col     , & ! Input:  [real(r8) (:,:)   ]  Ratio of oxygen available to that demanded by roots, aerobes, & methanotrophs (nlevsoi)
          o2stress_unsat => ch4_vars%o2stress_unsat_col   , & ! Input:  [real(r8) (:,:)   ]  Ratio of oxygen available to that demanded by roots, aerobes, & methanotrophs (nlevsoi)
-         finundated     => ch4_vars%finundated_col       , & ! Input:  [real(r8) (:)     ]  fractional inundated area                                
-         
-         t_scalar       => col_cf%t_scalar  , & ! Output: [real(r8) (:,:)   ]  soil temperature scalar for decomp                     
-         w_scalar       => col_cf%w_scalar  , & ! Output: [real(r8) (:,:)   ]  soil water scalar for decomp                           
-         o_scalar       => col_cf%o_scalar  , & ! Output: [real(r8) (:,:)   ]  fraction by which decomposition is limited by anoxia   
-         decomp_k       => col_cf%decomp_k  , & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec)   
+         finundated     => ch4_vars%finundated_col       , & ! Input:  [real(r8) (:)     ]  fractional inundated area
+
+         t_scalar       => col_cf%t_scalar  , & ! Output: [real(r8) (:,:)   ]  soil temperature scalar for decomp
+         w_scalar       => col_cf%w_scalar  , & ! Output: [real(r8) (:,:)   ]  soil water scalar for decomp
+         o_scalar       => col_cf%o_scalar  , & ! Output: [real(r8) (:,:)   ]  fraction by which decomposition is limited by anoxia
+         decomp_k       => col_cf%decomp_k  , & ! Output: [real(r8) (:,:,:) ]  rate constant for decomposition (1./sec)
          decomp_k_pools => decomp_cascade_con%decomp_k_pools  & !(0: ndecomp_pools)    ! pflotran (0 for atm. co2)
          )
 
       mino2lim = ParamsShareInst%mino2lim
-
       if ( use_century_tfunc .and. normalize_q10_to_century_tfunc ) then
-         call endrun(msg='ERROR: cannot have both use_century_tfunc and normalize_q10_to_century_tfunc set as true'//&
-              errMsg(__FILE__, __LINE__))
+#ifndef _OPENACC
+          call endrun(msg='ERROR: cannot have both use_century_tfunc and normalize_q10_to_century_tfunc set as true'//&
+               errMsg(__FILE__, __LINE__))
+#endif
       endif
 
-      days_per_year = get_days_per_year()
-      dt = real( get_step_size(), r8 ) 
+      days_per_year = dayspyr_mod
+      dt = dtime_mod
+      year = year_curr; mon = mon_curr; day = day_curr; sec = secs_curr
 
       ! the belowground parameters from century
       tau_l1 = 1./18.5
@@ -704,7 +737,7 @@ contains
       tau_cwd  = 1./0.3
 
       ! Todo:  FIX(SPM,032414) - the explicit divide gives different results than when that
-      ! value is placed in the parameters netcdf file.  To get bfb, keep the 
+      ! value is placed in the parameters netcdf file.  To get bfb, keep the
       ! divide in source.
 
       !tau_l1 = DecompBGCParamsInst%tau_l1_bgc
@@ -720,7 +753,7 @@ contains
       Q10 = ParamsShareInst%Q10_hr
 
       ! set "froz_q10" parameter
-      froz_q10  = ParamsShareInst%froz_q10 
+      froz_q10  = ParamsShareInst%froz_q10
 
       ! Set "decomp_depth_efolding" parameter
       decomp_depth_efolding = ParamsShareInst%decomp_depth_efolding
@@ -746,13 +779,13 @@ contains
 
 
        ! pflotran:beg---saving orignal k (not scaled) for passing to pflotran bgc decomposition sandboxes
-       decomp_k_pools(i_litr1) = k_l1 
+       decomp_k_pools(i_litr1) = k_l1
        decomp_k_pools(i_litr2) = k_l2_l3
        decomp_k_pools(i_litr3) = k_l2_l3
-       decomp_k_pools(i_cwd)   = k_frag 
-       decomp_k_pools(i_soil1) = k_s1 
-       decomp_k_pools(i_soil2) = k_s2 
-       decomp_k_pools(i_soil3) = k_s3 
+       decomp_k_pools(i_cwd)   = k_frag
+       decomp_k_pools(i_soil1) = k_s1
+       decomp_k_pools(i_soil2) = k_s2
+       decomp_k_pools(i_soil3) = k_s3
        ! pflotran:end
 
      ! The following code implements the acceleration part of the AD spinup algorithm
@@ -766,7 +799,7 @@ contains
       if ( nlevdecomp .eq. 1 ) then
 
          ! calculate function to weight the temperature and water potential scalars
-         ! for decomposition control.  
+         ! for decomposition control.
 
 
          ! the following normalizes values in fr so that they
@@ -794,7 +827,7 @@ contains
          if ( .not. use_century_tfunc ) then
             ! calculate rate constant scalar for soil temperature
             ! assuming that the base rate constants are assigned for non-moisture
-            ! limiting conditions at 25 C. 
+            ! limiting conditions at 25 C.
 
             do j = 1,nlev_soildecomp_standard
                do fc = 1,num_soilc
@@ -891,10 +924,10 @@ contains
          if ( .not. use_century_tfunc ) then
             ! calculate rate constant scalar for soil temperature
             ! assuming that the base rate constants are assigned for non-moisture
-            ! limiting conditions at 25 C. 
+            ! limiting conditions at 25 C.
             ! Peter Thornton: 3/13/09
             ! Replaced the Lloyd and Taylor function with a Q10 formula, with Q10 = 1.5
-            ! as part of the modifications made to improve the seasonal cycle of 
+            ! as part of the modifications made to improve the seasonal cycle of
             ! atmospheric CO2 concentration in global simulations. This does not impact
             ! the base rates at 25 C, which are calibrated from microcosm studies.
 
@@ -996,7 +1029,6 @@ contains
          end do
       end if
 
-      call get_curr_date(year, mon, day, sec)
       !Calcluate location and depth-specific acceleration factors
       do fc=1,num_soilc
           c = filter_soilc(fc)

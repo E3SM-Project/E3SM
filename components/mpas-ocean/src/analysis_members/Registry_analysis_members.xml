@@ -34,3 +34,4 @@
 #include "Registry_sediment_flux_index.xml"
 #include "Registry_sediment_transport.xml"
 #include "Registry_harmonic_analysis.xml"
+#include "Registry_conservation_check.xml"

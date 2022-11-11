@@ -6,7 +6,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -44,6 +44,12 @@ module ocn_mesh
    !----------------------------------------------------------------------------
    !{{{
 
+   logical, public :: &
+      onSphere        ! this mesh is on the sphere
+
+   real (kind=RKIND), public :: &
+      sphereRadius    ! radius of sphere for spherical meshes
+
    integer, public :: &! mesh, array sizes
       nCellsAll, &! total number of local (owned+halo) cells in primary
       nEdgesAll, &! total number of local edge midpoints
@@ -55,8 +61,7 @@ module ocn_mesh
       maxEdges2, &! 2x the largest number of edges any polygon has
       vertexDegree, &! number of cells or edges touching each vertex
       nVertLevels, &! number of vertical levels
-      nVertLevelsP1, &! number of vertical interfaces (levels plus one)
-      nAdvectionCells  ! largest number of advection cells for any edge
+      nVertLevelsP1 ! number of vertical interfaces (levels plus one)
 
    integer, public, dimension(:), allocatable :: &
       nCellsHalo, &! number of owned+halo(n) cells in local domain
@@ -76,7 +81,6 @@ module ocn_mesh
       maxLevelEdgeBot, &! max ocean level at bottom of edge column
       maxLevelVertexTop, &! max ocean level at top    of each vertex
       maxLevelVertexBot, &! max ocean level at bottom of each vertex
-      nAdvCellsForEdge, &! number of cells contrib to advection at edge
       indexToCellID, &! global ID of each local cell
       indexToEdgeID, &! global ID of each local edge
       indexToVertexID    ! global ID of each local vertex
@@ -90,8 +94,7 @@ module ocn_mesh
       verticesOnCell, &! index of vertices connected to each cell
       cellsOnVertex, &! index of cells connected to each vertex
       edgesOnVertex, &! index of edges connected to each vertex
-      kiteIndexOnCell, &! index of kite associated with each cell
-      advCellsForEdge  ! index of cells contrib to advective flux at edge
+      kiteIndexOnCell ! index of kite associated with each cell
 
    real(kind=RKIND), public, dimension(:), pointer :: &
       latCell, &! latitude  of cell centers
@@ -123,7 +126,11 @@ module ocn_mesh
       meshScalingDel2, &! mesh scaling factor for use in del2 diffusion
       meshScalingDel4, &! mesh scaling factor for use in del4 diffusion
       meshDensity, &! density of mesh
-      angleEdge        ! angle the edge normal makes with local east
+      angleEdge, &! angle the edge normal makes with local east
+      distanceToCoast ! distance to nearest coast cell 
+
+   real(kind=RKIND), public, dimension(:), allocatable :: &
+      invAreaCell   ! inverse of area of each cell
 
    ! Multiplicative masks and vectors for various conditions
    real(kind=RKIND), public, dimension(:, :), allocatable :: &
@@ -134,20 +141,16 @@ module ocn_mesh
       boundaryCell, &! mask for boundary cells    at each level
       boundaryVertex, &! mask for boundary vertices at each level
       edgeSignOnCell, &! sign of edge contributions to a cell
-      edgeSignOnVertex, &! sign of edge contributions to a vertex
-      highOrderAdvectionMask ! mask for high order advection contributions
+      edgeSignOnVertex ! sign of edge contributions to a vertex
 
    real(kind=RKIND), public, dimension(:, :), pointer :: &
       weightsOnEdge, &! weights on each edge
       kiteAreasOnVertex, &! real (vertexDegree nVertices)
       edgeTangentVectors, &! tangent unit vector at edge
       edgeNormalVectors, &! normal  unit vector at edge
-      localVerticalUnitVectors, &! local unit vector iin vertical
-      advCoefs, &! mesh-based advection coefficients
-      advCoefs3rd         ! mesh-based advection coeffs for high order
+      localVerticalUnitVectors ! local unit vector iin vertical
 
    real(kind=RKIND), public, dimension(:, :, :), pointer :: &
-      derivTwo, &! 2nd derivative of edge reconstruction polynomial
       cellTangentPlane, &! two vectors defining tangent plane at cell center
       coeffs_reconstruct  ! coeffs for reconstructing vectors at cell centers
 
@@ -210,6 +213,12 @@ contains
          maxDensityLocal, maxDensityGlobal ! temps for mesh density
 
       ! scalar pointers for retrieval, but convert to actual scalars in struct
+      logical, pointer :: &
+         on_a_sphere
+
+      real (kind=RKIND), pointer :: &
+         sphere_radius
+
       integer, pointer :: &! mesh dimensions
          nCellsTmp, &!
          nEdgesTmp, &!
@@ -218,8 +227,7 @@ contains
          maxEdges2Tmp, &!
          vertexDegreeTmp, &!
          nVertLevelsTmp, &!
-         nVertLevelsP1Tmp, &!
-         nAdvectionCellsTmp  !
+         nVertLevelsP1Tmp !
 
       ! temporary pointers for converting index arrays
       integer, dimension(:), pointer :: &
@@ -233,7 +241,6 @@ contains
          edgeMaskTmp, &
          vertexMaskTmp, &
          cellMaskTmp, &
-         highOrderAdvectionMaskTmp, &
          edgeSignOnCellTmp, &
          edgeSignOnVertexTmp, &
          boundaryEdgeTmp, &
@@ -268,6 +275,12 @@ contains
       ! many variables already initialized based on read of mesh file
       !-----------------------------------------------------------------
 
+      ! set all mesh properties
+      call mpas_pool_get_config(meshPool, 'on_a_sphere', &
+                                           on_a_sphere)
+      call mpas_pool_get_config(meshPool, 'sphere_radius', &
+                                           sphere_radius)
+
       ! set all mesh dimensions
       call mpas_pool_get_dimension(meshPool, 'nCells', &
                                    nCellsTmp)
@@ -285,8 +298,6 @@ contains
                                    nVertLevelsTmp)
       call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', &
                                    nVertLevelsP1Tmp)
-      call mpas_pool_get_dimension(meshPool, 'nAdvectionCells', &
-                                nAdvectionCellsTmp)
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', &
                                    nCellsArrayTmp)
       call mpas_pool_get_dimension(meshPool, 'nEdgesArray', &
@@ -295,12 +306,13 @@ contains
                                    nVerticesArrayTmp)
 
       ! translate scalar pointers to scalars in new mesh structure
+      onSphere = on_a_sphere
+      sphereRadius = sphere_radius
       maxEdges = maxEdgesTmp
       maxEdges2 = maxEdges2Tmp
       vertexDegree = vertexDegreeTmp
       nVertLevels = nVertLevelsTmp
       nVertLevelsP1 = nVertLevelsP1Tmp
-      nAdvectionCells = nAdvectionCellsTmp
 
       ! convert previous index limits into new halo definitions
       nCellsAll = nCellsTmp
@@ -353,8 +365,6 @@ contains
                                maxLevelVertexTop)
       call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', &
                                maxLevelVertexBot)
-      call mpas_pool_get_array(meshPool, 'nAdvCellsForEdge', &
-                               nAdvCellsForEdge)
       call mpas_pool_get_array(meshPool, 'indexToCellID', &
                                indexToCellID)
       call mpas_pool_get_array(meshPool, 'indexToEdgeID', &
@@ -379,8 +389,6 @@ contains
                                edgesOnVertex)
       call mpas_pool_get_array(meshPool, 'kiteIndexOnCell', &
                                kiteIndexOnCell)
-      call mpas_pool_get_array(meshPool, 'advCellsForEdge', &
-                               advCellsForEdge)
 
       ! now set a number of physics and numerical properties of mesh
       call mpas_pool_get_array(meshPool, 'latCell', &
@@ -445,6 +453,8 @@ contains
                                meshDensity)
       call mpas_pool_get_array(meshPool, 'angleEdge', &
                                angleEdge)
+      call mpas_pool_get_array(meshPool, 'distanceToCoast', &
+                               distanceToCoast)
 
       call mpas_pool_get_array(meshPool, 'weightsOnEdge', &
                                weightsOnEdge)
@@ -456,12 +466,6 @@ contains
                                edgeNormalVectors)
       call mpas_pool_get_array(meshPool, 'localVerticalUnitVectors', &
                                localVerticalUnitVectors)
-      call mpas_pool_get_array(meshPool, 'advCoefs', &
-                               advCoefs)
-      call mpas_pool_get_array(meshPool, 'advCoefs3rd', &
-                               advCoefs3rd)
-      call mpas_pool_get_array(meshPool, 'derivTwo', &
-                               derivTwo)
       call mpas_pool_get_array(meshPool, 'cellTangentPlane', &
                                cellTangentPlane)
       call mpas_pool_get_array(meshPool, 'coeffs_reconstruct', &
@@ -476,8 +480,6 @@ contains
                                vertexMaskTmp)
       call mpas_pool_get_array(meshPool, 'cellMask', &
                                cellMaskTmp)
-      call mpas_pool_get_array(meshPool, 'highOrderAdvectionMask', &
-                               highOrderAdvectionMaskTmp)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', &
                                edgeSignOnCellTmp)
       call mpas_pool_get_array(meshPool, 'edgeSignOnVertex', &
@@ -498,7 +500,7 @@ contains
             boundaryVertex(nVertLevels, nVerticesAll+1), &
             edgeSignOnCell(maxEdges, nCellsAll+1), &
             edgeSignOnVertex(maxEdges, nVerticesAll+1), &
-            highOrderAdvectionMask(nVertLevels, nEdgesAll+1))
+            invAreaCell(nCellsAll+1))
 
       !-----------------------------------------------------------------
       ! Now that all pointers are set and mesh variables allocated
@@ -539,8 +541,6 @@ contains
       do k = 1, nVertLevels
          edgeMaskTmp(k, n) = nint(edgeMask(k,n))
          boundaryEdgeTmp(k, n) = nint(boundaryEdge(k,n))
-         highOrderAdvectionMaskTmp(k,n) = &
-            real(highOrderAdvectionMask(k,n))
       end do
       end do
 
@@ -561,11 +561,19 @@ contains
       call ocn_meshAreaWeights()
       areaCell(nCellsAll+1) = -1.0e34_RKIND
 
+      ! Compute the inverse of areaCell
+      do n = 1, nCellsAll
+         invAreaCell(n) = 1.0_RKIND / areaCell(n)
+      end do
+      invAreaCell(nCellsAll+1) = 0.0_RKIND
+
       !-----------------------------------------------------------------
       ! Copy mesh data to accelerator if needed.
       !-----------------------------------------------------------------
 
          !$acc enter data copyin( &
+         !$acc                   onSphere,                 &
+         !$acc                   sphereRadius,             &
          !$acc                   nCellsAll,                &
          !$acc                   nEdgesAll,                &
          !$acc                   nVerticesAll,             &
@@ -577,7 +585,6 @@ contains
          !$acc                   vertexDegree,             &
          !$acc                   nVertLevels,              &
          !$acc                   nVertLevelsP1,            &
-         !$acc                   nAdvectionCells,          &
          !$acc                   nEdgesHalo,               &
          !$acc                   nCellsHalo,               &
          !$acc                   nVerticesHalo,            &
@@ -593,7 +600,6 @@ contains
          !$acc                   maxLevelEdgeBot,          &
          !$acc                   maxLevelVertexTop,        &
          !$acc                   maxLevelVertexBot,        &
-         !$acc                   nAdvCellsForEdge,         &
          !$acc                   indexToCellID,            &
          !$acc                   indexToEdgeID,            &
          !$acc                   indexToVertexID,          &
@@ -606,7 +612,6 @@ contains
          !$acc                   cellsOnVertex,            &
          !$acc                   edgesOnVertex,            &
          !$acc                   kiteIndexOnCell,          &
-         !$acc                   advCellsForEdge,          &
          !$acc                   latCell,                  &
          !$acc                   lonCell,                  &
          !$acc                   xCell,                    &
@@ -628,6 +633,7 @@ contains
          !$acc                   dcEdge,                   &
          !$acc                   dvEdge,                   &
          !$acc                   areaCell,                 &
+         !$acc                   invAreaCell,              &
          !$acc                   areaTriangle,             &
          !$acc                   bottomDepth,              &
          !$acc                   refBottomDepth,           &
@@ -637,6 +643,7 @@ contains
          !$acc                   meshScalingDel4,          &
          !$acc                   meshDensity,              &
          !$acc                   angleEdge,                &
+         !$acc                   distanceToCoast,          &
          !$acc                   edgeMask,                 &
          !$acc                   cellMask,                 &
          !$acc                   vertexMask,               &
@@ -645,18 +652,13 @@ contains
          !$acc                   boundaryVertex,           &
          !$acc                   edgeSignOnCell,           &
          !$acc                   edgeSignOnVertex,         &
-         !$acc                   highOrderAdvectionMask,   &
          !$acc                   weightsOnEdge,            &
          !$acc                   kiteAreasOnVertex,        &
          !$acc                   edgeTangentVectors,       &
          !$acc                   edgeNormalVectors,        &
          !$acc                   localVerticalUnitVectors, &
-         !$acc                   advCoefs,                 &
-         !$acc                   advCoefs3rd,              &
-         !$acc                   derivTwo,                 &
          !$acc                   cellTangentPlane,         &
-         !$acc                   coeffs_reconstruct,       &
-         !$acc                   edgeAreaFractionOfCell)
+         !$acc                   coeffs_reconstruct)
 
 !-------------------------------------------------------------------------------
 
@@ -700,7 +702,9 @@ contains
       ! First remove data from the device. Must remove components first,
       ! then remove the mesh type itself.
 
-      !$acc exit data delete(nCellsAll,         &
+      !$acc exit data delete(onSphere,          &
+      !$acc                  sphereRadius,      &
+      !$acc                  nCellsAll,         &
       !$acc                  nEdgesAll,         &
       !$acc                  nVerticesAll,      &
       !$acc                  nCellsOwned,       &
@@ -711,7 +715,6 @@ contains
       !$acc                  vertexDegree,      &
       !$acc                  nVertLevels,       &
       !$acc                  nVertLevelsP1,     &
-      !$acc                  nAdvectionCells,   &
       !$acc                  nEdgesHalo,        &
       !$acc                  nCellsHalo,        &
       !$acc                  nVerticesHalo,     &
@@ -727,7 +730,6 @@ contains
       !$acc                  maxLevelEdgeBot,   &
       !$acc                  maxLevelVertexTop, &
       !$acc                  maxLevelVertexBot, &
-      !$acc                  nAdvCellsForEdge,  &
       !$acc                  indexToCellID,     &
       !$acc                  indexToEdgeID,     &
       !$acc                  indexToVertexID,   &
@@ -740,7 +742,6 @@ contains
       !$acc                  cellsOnVertex,     &
       !$acc                  edgesOnVertex,     &
       !$acc                  kiteIndexOnCell,   &
-      !$acc                  advCellsForEdge,   &
       !$acc                  latCell,           &
       !$acc                  lonCell,           &
       !$acc                  xCell,             &
@@ -762,6 +763,7 @@ contains
       !$acc                  dcEdge,            &
       !$acc                  dvEdge,            &
       !$acc                  areaCell,          &
+      !$acc                  invAreaCell,       &
       !$acc                  areaTriangle,      &
       !$acc                  bottomDepth,       &
       !$acc                  refBottomDepth,    &
@@ -771,6 +773,7 @@ contains
       !$acc                  meshScalingDel4,   &
       !$acc                  meshDensity,       &
       !$acc                  angleEdge,         &
+      !$acc                  distanceToCoast,   &
       !$acc                  edgeMask,          &
       !$acc                  cellMask,          &
       !$acc                  vertexMask,        &
@@ -779,20 +782,17 @@ contains
       !$acc                  boundaryVertex,    &
       !$acc                  edgeSignOnCell,    &
       !$acc                  edgeSignOnVertex,  &
-      !$acc                  highOrderAdvectionMask,&
       !$acc                  weightsOnEdge,     &
       !$acc                  kiteAreasOnVertex, &
       !$acc                  edgeTangentVectors,&
       !$acc                  edgeNormalVectors, &
       !$acc                  localVerticalUnitVectors, &
-      !$acc                  advCoefs,          &
-      !$acc                  advCoefs3rd,       &
-      !$acc                  derivTwo,          &
       !$acc                  cellTangentPlane,  &
-      !$acc                  coeffs_reconstruct,&
-      !$acc                  edgeAreaFractionOfCell)
+      !$acc                  coeffs_reconstruct)
 
       ! Reset all scalars to zero
+      onSphere  = .false.
+      sphereRadius = 0.0_RKIND
       nCellsAll = 0
       nEdgesAll = 0
       nVerticesAll = 0
@@ -804,7 +804,6 @@ contains
       vertexDegree = 0
       nVertLevels = 0
       nVertLevelsP1 = 0
-      nAdvectionCells = 0
 
       ! Now nullify all pointers to invalidate fields
       ! If this becomes the only mesh structure and mesh pool is eliminated,
@@ -822,7 +821,6 @@ contains
                maxLevelEdgeBot, &
                maxLevelVertexTop, &
                maxLevelVertexBot, &
-               nAdvCellsForEdge, &
                indexToCellID, &
                indexToEdgeID, &
                indexToVertexID, &
@@ -835,7 +833,6 @@ contains
                cellsOnVertex, &
                edgesOnVertex, &
                kiteIndexOnCell, &
-               advCellsForEdge, &
                latCell, &
                lonCell, &
                xCell, &
@@ -866,17 +863,18 @@ contains
                meshScalingDel4, &
                meshDensity, &
                angleEdge, &
+               distanceToCoast, &
                weightsOnEdge, &
                kiteAreasOnVertex, &
                edgeTangentVectors, &
                edgeNormalVectors, &
                localVerticalUnitVectors, &
-               advCoefs, &
-               advCoefs3rd, &
-               derivTwo, &
                cellTangentPlane, &
                coeffs_reconstruct)
 
+#ifdef MPAS_OPENACC
+      !$acc exit data delete(edgeAreaFractionOfCell)
+#endif
       deallocate (nEdgesHalo, &
                   nCellsHalo, &
                   nVerticesHalo, &
@@ -888,8 +886,8 @@ contains
                   boundaryVertex, &
                   edgeSignOnCell, &
                   edgeSignOnVertex, &
-                  highOrderAdvectionMask, &
-                  edgeAreaFractionOfCell)
+                  edgeAreaFractionOfCell, &
+                  invAreaCell)
 
 !-------------------------------------------------------------------------------
 
@@ -927,12 +925,11 @@ contains
          meshPool                 ! mesh variables in MPAS pool structure
 
       ! temporary pointers for converting masks
-      integer i, k, n          ! loop indices
+      integer k, n          ! loop indices
       integer, dimension(:, :), pointer :: &
          edgeMaskTmp, &
          vertexMaskTmp, &
          cellMaskTmp, &
-         highOrderAdvectionMaskTmp, &
          edgeSignOnCellTmp, &
          edgeSignOnVertexTmp, &
          boundaryEdgeTmp, &
@@ -967,8 +964,6 @@ contains
       !                                    maxLevelVertexTop)
       !call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', &
       !                                    maxLevelVertexBot)
-      !call mpas_pool_get_array(meshPool, 'nAdvCellsForEdge',  &
-      !                                    nAdvCellsForEdge)
       !call mpas_pool_get_array(meshPool, 'indexToCellID',     &
       !                                    indexToCellID)
       !call mpas_pool_get_array(meshPool, 'indexToEdgeID',     &
@@ -993,8 +988,6 @@ contains
       !                                    edgesOnVertex)
       !call mpas_pool_get_array(meshPool, 'kiteIndexOnCell',   &
       !                                    kiteIndexOnCell)
-      !call mpas_pool_get_array(meshPool, 'advCellsForEdge',   &
-      !                                    advCellsForEdge)
 
       ! these are also pointers that do not require updating
       ! now set a number of physics and numerical properties of mesh
@@ -1060,6 +1053,8 @@ contains
       !                                    meshDensity)
       !call mpas_pool_get_array(meshPool, 'angleEdge',         &
       !                                    angleEdge)
+      !call mpas_pool_get_array(meshPool, 'distanceToCoast',   &
+      !                                    distanceToCoast)
       !
       !call mpas_pool_get_array(meshPool, 'weightsOnEdge',             &
       !                                    weightsOnEdge)
@@ -1071,12 +1066,6 @@ contains
       !                                    edgeNormalVectors)
       !call mpas_pool_get_array(meshPool, 'localVerticalUnitVectors',  &
       !                                    localVerticalUnitVectors)
-      !call mpas_pool_get_array(meshPool, 'advCoefs',                  &
-      !                                    advCoefs)
-      !call mpas_pool_get_array(meshPool, 'advCoefs3rd',               &
-      !                                    advCoefs3rd)
-      !call mpas_pool_get_array(meshPool, 'derivTwo',                  &
-      !                                    derivTwo)
       !call mpas_pool_get_array(meshPool, 'cellTangentPlane',          &
       !                                    cellTangentPlane)
       !call mpas_pool_get_array(meshPool, 'coeffs_reconstruct',        &
@@ -1091,8 +1080,6 @@ contains
                                vertexMaskTmp)
       call mpas_pool_get_array(meshPool, 'cellMask', &
                                cellMaskTmp)
-      call mpas_pool_get_array(meshPool, 'highOrderAdvectionMask', &
-                               highOrderAdvectionMaskTmp)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', &
                                edgeSignOnCellTmp)
       call mpas_pool_get_array(meshPool, 'edgeSignOnVertex', &
@@ -1123,8 +1110,6 @@ contains
       do k = 1, nVertLevels
          edgeMask(k, n) = real(edgeMaskTmp(k, n), RKIND)
          boundaryEdge(k, n) = real(boundaryEdgeTmp(k, n), RKIND)
-         highOrderAdvectionMask(k, n) = &
-            real(highOrderAdvectionMaskTmp(k, n), RKIND)
       end do
       end do
 
@@ -1148,7 +1133,9 @@ contains
       ! NOTE: if we end up computing some fields on the device during
       !       init, the update must go the opposite direction (update host)
 
-      !$acc update device(nCellsAll,                &
+      !$acc update device(onSphere,                 &
+      !$acc               sphereRadius,             &
+      !$acc               nCellsAll,                &
       !$acc               nEdgesAll,                &
       !$acc               nVerticesAll,             &
       !$acc               nCellsOwned,              &
@@ -1159,7 +1146,6 @@ contains
       !$acc               vertexDegree,             &
       !$acc               nVertLevels,              &
       !$acc               nVertLevelsP1,            &
-      !$acc               nAdvectionCells,          &
       !$acc               nEdgesHalo,               &
       !$acc               nCellsHalo,               &
       !$acc               nVerticesHalo,            &
@@ -1175,7 +1161,6 @@ contains
       !$acc               maxLevelEdgeBot,          &
       !$acc               maxLevelVertexTop,        &
       !$acc               maxLevelVertexBot,        &
-      !$acc               nAdvCellsForEdge,         &
       !$acc               indexToCellID,            &
       !$acc               indexToEdgeID,            &
       !$acc               indexToVertexID,          &
@@ -1188,7 +1173,6 @@ contains
       !$acc               cellsOnVertex,            &
       !$acc               edgesOnVertex,            &
       !$acc               kiteIndexOnCell,          &
-      !$acc               advCellsForEdge,          &
       !$acc               latCell,                  &
       !$acc               lonCell,                  &
       !$acc               xCell,                    &
@@ -1210,6 +1194,7 @@ contains
       !$acc               dcEdge,                   &
       !$acc               dvEdge,                   &
       !$acc               areaCell,                 &
+      !$acc               invAreaCell,              &
       !$acc               areaTriangle,             &
       !$acc               bottomDepth,              &
       !$acc               refBottomDepth,           &
@@ -1219,6 +1204,7 @@ contains
       !$acc               meshScalingDel4,          &
       !$acc               meshDensity,              &
       !$acc               angleEdge,                &
+      !$acc               distanceToCoast,          &
       !$acc               edgeMask,                 &
       !$acc               cellMask,                 &
       !$acc               vertexMask,               &
@@ -1227,18 +1213,13 @@ contains
       !$acc               boundaryVertex,           &
       !$acc               edgeSignOnCell,           &
       !$acc               edgeSignOnVertex,         &
-      !$acc               highOrderAdvectionMask,   &
       !$acc               weightsOnEdge,            &
       !$acc               kiteAreasOnVertex,        &
       !$acc               edgeTangentVectors,       &
       !$acc               edgeNormalVectors,        &
       !$acc               localVerticalUnitVectors, &
-      !$acc               advCoefs,                 &
-      !$acc               advCoefs3rd,              &
-      !$acc               derivTwo,                 &
       !$acc               cellTangentPlane,         &
-      !$acc               coeffs_reconstruct,       &
-      !$acc               edgeAreaFractionOfCell)
+      !$acc               coeffs_reconstruct)
 
 !-------------------------------------------------------------------------------
 
@@ -1437,7 +1418,7 @@ contains
       !-----------------------------------------------------------------
       ! Local variables
       !-----------------------------------------------------------------
-      integer :: iCell, iEdge, iVertex, i, j, k
+      integer :: iCell, iEdge, iVertex, i, j
 
       ! End preamble
       !-------------
@@ -1745,6 +1726,9 @@ contains
 
       ! Allocate space
       allocate (edgeAreaFractionOfCell(maxEdges,nCellsAll), STAT=ierr)
+#ifdef MPAS_OPENACC
+      !$acc enter data create(edgeAreaFractionOfCell)
+#endif
       if (ierr /= 0) call mpas_log_write( &
          'Error allocating edgeAreaFractionOfCell in ocn_mesh', &
           MPAS_LOG_CRIT)
@@ -1756,6 +1740,9 @@ contains
                dcEdge(iEdge)*dvEdge(iEdge)/areaCell(iCell)
       end do
       end do
+#ifdef MPAS_OPENACC
+      !$acc update device(edgeAreaFractionOfCell)
+#endif
 
    !--------------------------------------------------------------------
 

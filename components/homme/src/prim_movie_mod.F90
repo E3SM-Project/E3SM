@@ -21,7 +21,7 @@ module prim_movie_mod
   use cube_mod, only : cube_assemble
   use control_mod, only : test_case, runtype, geometry, &
        restartfreq, &
-       integration, hypervis_power, qsplit
+       integration, qsplit
   use common_io_mod, only : &
        output_start_time,   &
        output_end_time,     &
@@ -547,8 +547,6 @@ contains
                 st=1
                 do ie=1,nelemd
                    vartmp(:,:,1) = elem(ie)%variable_hyperviscosity(:,:)
-                   ! scale back to a length scale
-                   if (hypervis_power /= 0 ) vartmp(:,:,1)=vartmp(:,:,1)**(2d0/hypervis_power)
                    en=st+elem(ie)%idxp%NumUniquePts-1
                    call UniquePoints(elem(ie)%idxP,vartmp(:,:,1),var2d(st:en))
                    st=en+1

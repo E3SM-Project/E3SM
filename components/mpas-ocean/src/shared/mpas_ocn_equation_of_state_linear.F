@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -21,12 +21,7 @@
 module ocn_equation_of_state_linear
 
    use mpas_kind_types
-   use mpas_derived_types
-   use mpas_pool_routines
-   use ocn_constants
    use ocn_config
-   use mpas_dmpar
-   use mpas_log
 
    implicit none
    private
@@ -172,8 +167,13 @@ contains
 
       if (trim(displacementType) == 'surfaceDisplaced') then
 
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector collapse(2) &
+         !$acc& present(density, tracersSurfaceLayerValue)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k)
+#endif
          do iCell = 1, nCells
          do k = 1, nVertLevels
 
@@ -186,13 +186,20 @@ contains
                                 ocnEqStateLinearSref)
          end do
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
 
       else  ! all other displacement types
 
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector collapse(2) &
+         !$acc& present(density, tracers)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k)
+#endif
          do iCell = 1, nCells
          do k = 1, nVertLevels
 
@@ -205,8 +212,10 @@ contains
                                 ocnEqStateLinearSref)
          end do
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
 
       endif
 
@@ -310,8 +319,16 @@ contains
 
       if (trim(displacementType) == 'surfaceDisplaced') then
 
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector collapse(2) &
+         !$acc& present(density, &
+         !$acc&         tracersSurfaceLayerValue, &
+         !$acc&         salineContractionCoeff, &
+         !$acc&         thermalExpansionCoeff)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k)
+#endif
          do iCell = 1, nCells
          do k = 1, nVertLevels
 
@@ -330,13 +347,23 @@ contains
                                               density(k,iCell)
          end do
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
 
       else  ! all other displacement types
 
+#ifdef MPAS_OPENACC
+         !$acc parallel loop gang vector collapse(2) &
+         !$acc& present(density, &
+         !$acc&         tracers, &
+         !$acc&         salineContractionCoeff, &
+         !$acc&         thermalExpansionCoeff)
+#else
          !$omp parallel
          !$omp do schedule(runtime) private(k)
+#endif
          do iCell = 1, nCells
          do k = 1, nVertLevels
 
@@ -355,8 +382,10 @@ contains
                                               density(k,iCell)
          end do
          end do
+#ifndef MPAS_OPENACC
          !$omp end do
          !$omp end parallel
+#endif
 
       endif
 

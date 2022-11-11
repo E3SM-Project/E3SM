@@ -229,6 +229,8 @@ contains
     use phys_grid , only: get_ncols_p
     use ppgrid    , only: begchunk, endchunk       
     use cam_cpl_indices
+    use phys_control, only: phys_getopts
+    use lnd_infodata, only: precip_downscaling_method
     !
     ! Arguments
     !
@@ -240,7 +242,11 @@ contains
     integer :: avsize, avnat
     integer :: i,m,c,n,ig       ! indices
     integer :: ncols            ! Number of columns
+    logical :: linearize_pbl_winds, export_gustiness
     !-----------------------------------------------------------------------
+
+    call phys_getopts(linearize_pbl_winds_out=linearize_pbl_winds, &
+                      export_gustiness_out=export_gustiness)
 
     ! Copy from component arrays into chunk array data structure
     ! Rearrange data from chunk structure into lat-lon buffer and subsequently
@@ -253,12 +259,24 @@ contains
           a2x(index_a2x_Sa_pslv   ,ig) = cam_out(c)%psl(i)
           a2x(index_a2x_Sa_z      ,ig) = cam_out(c)%zbot(i)   
           a2x(index_a2x_Sa_u      ,ig) = cam_out(c)%ubot(i)   
-          a2x(index_a2x_Sa_v      ,ig) = cam_out(c)%vbot(i)   
+          a2x(index_a2x_Sa_v      ,ig) = cam_out(c)%vbot(i)
+          if (linearize_pbl_winds) then
+             a2x(index_a2x_Sa_wsresp ,ig) = cam_out(c)%wsresp(i)
+             a2x(index_a2x_Sa_tau_est,ig) = cam_out(c)%tau_est(i)
+          end if
+          if (export_gustiness) then
+             a2x(index_a2x_Sa_ugust  ,ig) = cam_out(c)%ugust(i)
+          end if
           a2x(index_a2x_Sa_tbot   ,ig) = cam_out(c)%tbot(i)   
           a2x(index_a2x_Sa_ptem   ,ig) = cam_out(c)%thbot(i)  
           a2x(index_a2x_Sa_pbot   ,ig) = cam_out(c)%pbot(i)   
           a2x(index_a2x_Sa_shum   ,ig) = cam_out(c)%qbot(i,1) 
 	  a2x(index_a2x_Sa_dens   ,ig) = cam_out(c)%rho(i)
+
+          if (trim(adjustl(precip_downscaling_method)) == "FNM") then
+             !if the land model's precip downscaling method is FNM, export uovern to the coupler
+             a2x(index_a2x_Sa_uovern ,ig) = cam_out(c)%uovern(i)
+          end if
           a2x(index_a2x_Faxa_swnet,ig) = cam_out(c)%netsw(i)      
           a2x(index_a2x_Faxa_lwdn ,ig) = cam_out(c)%flwds(i)  
           a2x(index_a2x_Faxa_rainc,ig) = (cam_out(c)%precc(i)-cam_out(c)%precsc(i))*1000._r8

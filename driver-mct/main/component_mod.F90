@@ -495,10 +495,13 @@ contains
           dom_s   => component_get_dom_cx(ocn(1))   ! dom_ox
           dom_d   => component_get_dom_cx(atm(1))   ! dom_ax
 
+          call t_startf('CPL:seq_map_readdata-ocn2atm')
           call seq_map_readdata('seq_maps.rc','ocn2atm_fmapname:', mpicom_CPLID, CPLID, &
                gsmap_s=gsmap_s, av_s=dom_s%data, avfld_s='aream', filefld_s='area_a', &
                gsmap_d=gsmap_d, av_d=dom_d%data, avfld_d='aream', filefld_d='area_b', &
                string='ocn2atm aream initialization')
+          call t_stopf('CPL:seq_map_readdata-ocn2atm')
+
        endif
     end if
 
@@ -514,13 +517,18 @@ contains
           gsmap_s => component_get_gsmap_cx(rof(1)) ! gsmap_rx
           dom_s   => component_get_dom_cx(rof(1))   ! dom_rx
 
+          call t_startf('CPL:seq_map_readdata-rof2ocn_liq')
           call seq_map_readdata('seq_maps.rc', 'rof2ocn_liq_rmapname:',mpicom_CPLID, CPLID, &
                gsmap_s=gsmap_s, av_s=dom_s%data, avfld_s='aream', filefld_s='area_a', &
                string='rof2ocn liq aream initialization')
+          call t_stopf('CPL:seq_map_readdata-rof2ocn_liq')
 
+          call t_startf('CPL:seq_map_readdata-rof2ocn_ice')
           call seq_map_readdata('seq_maps.rc', 'rof2ocn_ice_rmapname:',mpicom_CPLID, CPLID, &
                gsmap_s=gsmap_s, av_s=dom_s%data, avfld_s='aream', filefld_s='area_a', &
                string='rof2ocn ice aream initialization')
+          call t_stopf('CPL:seq_map_readdata-rof2ocn_ice')
+
        endif
     end if
 
@@ -534,9 +542,12 @@ contains
           gsmap_d => component_get_gsmap_cx(lnd(1)) ! gsmap_lx
           dom_d   => component_get_dom_cx(lnd(1))   ! dom_lx
 
+          call t_startf('CPL:seq_map_readdata-atm2lnd')
           call seq_map_readdata('seq_maps.rc','atm2lnd_fmapname:',mpicom_CPLID, CPLID, &
                gsmap_d=gsmap_d, av_d=dom_d%data, avfld_d='aream', filefld_d='area_b', &
                string='atm2lnd aream initialization')
+          call t_stopf('CPL:seq_map_readdata-atm2lnd')
+
        endif
     end if
 
@@ -550,9 +561,12 @@ contains
           gsmap_d => component_get_gsmap_cx(glc(1)) ! gsmap_gx
           dom_d   => component_get_dom_cx(glc(1))   ! dom_gx
 
+          call t_startf('CPL:seq_map_readdata-lnd2glc')
           call seq_map_readdata('seq_maps.rc','lnd2glc_fmapname:',mpicom_CPLID, CPLID, &
                gsmap_d=gsmap_d, av_d=dom_d%data, avfld_d='aream', filefld_d='area_b', &
                string='lnd2glc aream initialization')
+          call t_stopf('CPL:seq_map_readdata-lnd2glc')
+
        endif
     endif
 

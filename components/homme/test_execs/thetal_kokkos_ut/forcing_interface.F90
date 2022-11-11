@@ -127,7 +127,7 @@ contains
     enddo
   end subroutine dynamics_forcing_f90
 
-  subroutine tracers_forcing_f90(dt,np1,np1_qdp,hydrostatic,moist) bind(c)
+  subroutine tracers_forcing_f90(dt,np1,np1_qdp,hydrostatic,moist,adjustment) bind(c)
     use control_mod,      only: use_moisture, theta_hydrostatic_mode
     use dimensions_mod,   only: nelemd
     use prim_driver_base, only: applyCAMforcing_tracers
@@ -136,7 +136,7 @@ contains
     !
     real (kind=c_double),  intent(in) :: dt
     integer (kind=c_int),  intent(in) :: np1,np1_qdp
-    logical (kind=c_bool), intent(in) :: hydrostatic, moist
+    logical (kind=c_bool), intent(in) :: hydrostatic, moist, adjustment
     !
     ! Locals
     !
@@ -164,7 +164,7 @@ contains
       elem(ie)%derived%FPHI    = fphi(:,:,:,ie)
 
       ! Apply forcing
-      call applyCAMforcing_tracers(elem(ie),hvcoord,np1,np1_qdp,dt,.false.)
+      call applyCAMforcing_tracers(elem(ie),hvcoord,np1,np1_qdp,dt,LOGICAL(adjustment))
 
       ! Copy outputs to C ptrs
       q(:,:,:,:,ie)     = elem(ie)%state%q    

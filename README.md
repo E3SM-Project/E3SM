@@ -9,9 +9,12 @@ the most challenging and demanding climate-change research problems and
 Department of Energy mission needs while efficiently using DOE Leadership
 Computing Facilities.  
 
-DOI: [10.11578/E3SM/dc.20180418.36](http://dx.doi.org/10.11578/E3SM/dc.20180418.36)
+DOI: [10.11578/E3SM/dc.20210927.1](http://dx.doi.org/10.11578/E3SM/dc.20210927.1)
 
-Please visit the [project website](https://e3sm.org) for further details.
+Please visit the [project website](https://e3sm.org) or our [Confluence site](https://acme-climate.atlassian.net/wiki/spaces/DOC/overview)
+for further details.
+
+For questions about the model, use [Github Discussions](https://github.com/E3SM-Project/E3SM/discussions)
 
 Table of Contents 
 --------------------------------------------------------------------------------
@@ -26,12 +29,12 @@ Quick Start
 --------------------------------------------------------------------------------
 The [Quick Start](https://e3sm.org/model/running-e3sm/e3sm-quick-start/) page 
 includes instructions on obtaining the necessary code and input data for model 
-setup and execution.
+setup and execution on a supported machine.
 
 Supported Machines 
 --------------------------------------------------------------------------------
-E3SM is high-performance computing application and generally requires a cluster
-with several hundred nodes to run a scientifically validated case at a useful
+E3SM is a high-performance computing application and generally requires a
+capable compute cluster to run a scientifically validated case at a useful
 simulation speed.
 
 To run E3SM, it is recommended that you obtain time on a 
@@ -45,7 +48,7 @@ Please refer to [Running E3SM](https://e3sm.org/model/running-e3sm/)
 Contributing
 --------------------------------------------------------------------------------
 Please refer to [Contributing](CONTRIBUTING.md) for details on our code development
-process for submitting pull requests.
+process.
 
 Acknowledgement
 --------------------------------------------------------------------------------
@@ -61,16 +64,16 @@ the following BibTeX entry is provided.
 	author = {{E3SM Project}},
 	abstractNote = {{E3SM} is a state-of-the-art fully coupled model of the {E}arth's 
 		climate including important biogeochemical and cryospheric processes.},
-	howpublished = {[Computer Software] \url{https://dx.doi.org/10.11578/E3SM/dc.20180418.36}},
-	url = {https://dx.doi.org/10.11578/E3SM/dc.20180418.36},
-	doi = {10.11578/E3SM/dc.20180418.36},
-	year = 2018,
-	month = apr,
+	howpublished = {[Computer Software] \url{https://dx.doi.org/10.11578/E3SM/dc.20210927.1}},
+	url = {https://dx.doi.org/10.11578/E3SM/dc.20210927.1},
+	doi = {10.11578/E3SM/dc.20210927.1},
+	year = 2021,
+	month = sep,
 }
 ```
 
 License
 --------------------------------------------------------------------------------
-The E3SM model became open development at the time of first model and data release.
+The E3SM model is available under a BSD 3-clause license.
 Please see [LICENSE](LICENSE) for details.
 

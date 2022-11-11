@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 """
 Namelist creator for E3SM's Land Model component
@@ -25,6 +25,8 @@ def buildnml(case, caseroot, compname):
 
     srcroot             = case.get_value("SRCROOT")
     compset             = case.get_value("COMPSET")
+    atm_flux_method     = case.get_value("ATM_FLUX_INTEGRATION_METHOD")
+    atm_gustiness       = case.get_value("ATM_SUPPLIES_GUSTINESS")
     ccsm_co2_ppmv       = case.get_value("CCSM_CO2_PPMV")
     elm_co2_type        = case.get_value("ELM_CO2_TYPE")
     elm_usrdat_name     = case.get_value("ELM_USRDAT_NAME")
@@ -39,6 +41,7 @@ def buildnml(case, caseroot, compname):
     glc_nec             = case.get_value("GLC_NEC")
     lnd_grid            = case.get_value("LND_GRID")
     lnd_ncpl            = case.get_value("LND_NCPL")
+    rof_ncpl            = case.get_value("ROF_NCPL")
     lnd_domain_path     = case.get_value("LND_DOMAIN_PATH")
     lnd_domain_file     = case.get_value("LND_DOMAIN_FILE")
     mask_grid           = case.get_value("MASK_GRID")
@@ -136,8 +139,9 @@ def buildnml(case, caseroot, compname):
         # create elmconf/namelist
         # -----------------------------------------------------
 
-        if os.path.exists("{}/Buildconf/elm.input_data_list".format(caseroot)):
-            os.remove("{}/Buildconf/elm.input_data_list".format(caseroot))
+        if inst_counter ==1:
+            if os.path.exists("{}/Buildconf/elm.input_data_list".format(caseroot)):
+                os.remove("{}/Buildconf/elm.input_data_list".format(caseroot))
 
         elmicfile = ""
         elm_startfile = ""
@@ -150,6 +154,14 @@ def buildnml(case, caseroot, compname):
 
         infile_text = ""
         if elmicfile: infile_text = "{} = '{}' \n".format(startfiletype, elm_startfile)
+
+        if atm_flux_method == 'implicit_stress':
+            implicit_stress = True
+        else:
+            implicit_stress = False
+
+        if implicit_stress: infile_text += " implicit_stress = .true. \n"
+        if atm_gustiness: infile_text += " atm_gustiness = .true. \n"
 
         create_namelist_infile(case,
                                "{}/user_nl_elm{}".format(caseroot, inst_string),
@@ -175,7 +187,7 @@ def buildnml(case, caseroot, compname):
         sysmod += " -csmdata {} -inputdata {}/Buildconf/elm.input_data_list {}".format(din_loc_root, caseroot, ignore)
         sysmod += ' -namelist " &elm_inparm  start_ymd={} {} /"'.format(start_ymd, elm_namelist_opts)
         sysmod += " {} {} -res {} {} -clm_start_type {}".format(usecase, glc_opts, resolution, clmusr, start_type)
-        sysmod += " -envxml_dir {} -l_ncpl {} -lnd_frac {}/{}".format(caseroot, lnd_ncpl, lnd_domain_path, lnd_domain_file)
+        sysmod += " -envxml_dir {} -l_ncpl {} -r_ncpl {} -lnd_frac {}/{}".format(caseroot, lnd_ncpl, rof_ncpl, lnd_domain_path, lnd_domain_file)
         sysmod += " -glc_nec {} -co2_ppmv {} -co2_type {} ".format(glc_nec, ccsm_co2_ppmv, elm_co2_type)
         sysmod += " -ncpl_base_period {} ".format(ncpl_base_period)
         sysmod += " -config {}/config_cache.xml {}".format(elmconf_dir, elm_bldnml_opts)

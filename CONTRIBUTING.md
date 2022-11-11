@@ -5,7 +5,7 @@
 * Is it a bug in E3SM code? E3SM includes several codes that are developed
 externally. 
 See [LICENSE](LICENSE) for
-locations and report your bug in the original developers site.
+locations and, if appropriate, report your bug in the original developers site.
 
 * Ensure the bug was not already reported by searching on our GitHub instance
 under [Issues](https://github.com/E3SM-Project/E3SM/issues).
@@ -16,6 +16,8 @@ information as possible, including the case, machine, compiler and compiler
 version.
 
 #### **Do you want to fix an existing bug?**
+
+* Thank you!
 
 * Before you start writing code, please read [Developing
 E3SM](http://e3sm.org/model/running-e3sm/developing-e3sm/) to know more about
@@ -29,7 +31,8 @@ the relevant issue number if applicable.
 #### **Did you fix whitespace, format code, or make a purely cosmetic patch?**
 
 Changes that are cosmetic in nature and do not add anything substantial to the
-stability, functionality, or testability of E3SM will generally not be accepted.
+stability, functionality, or testability of E3SM will generally not be accepted
+from non-staff.
 
 #### **Do you intend to add a new feature or change an existing one?**
 

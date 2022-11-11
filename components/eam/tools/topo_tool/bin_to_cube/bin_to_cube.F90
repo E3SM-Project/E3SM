@@ -5,9 +5,6 @@
 !                bins it to an approximately 3km cubed-sphere grid and outputs the
 !                data in netCDF format.
 !
-!                The LANDM_COSLAT field is read in from a separate netCDF file and linearly
-!                interpolated to the 3km cubed-sphere grid.
-!
 !  Author: Peter Hjort Lauritzen (pel@ucar.edu) 
 !
 !  ROUTINES CALLED:
@@ -36,9 +33,6 @@ program convterr
   integer :: srcid,dstid                                  ! for netCDF weight file
   
   real(r8), allocatable, dimension(:)   :: lon  , lat
-  real(r8), allocatable, dimension(:)   :: lon_landm  , lat_landm
-  real(r8), allocatable, dimension(:,:) :: landm_coslat
-  integer :: im_landm, jm_landm
   integer :: lonid, latid
   integer :: lon_vid, lat_vid
   
@@ -51,7 +45,6 @@ program convterr
   real(r8) :: alpha, beta,da,wt,dlat
   integer  :: ipanel,icube,jcube
   real(r8), allocatable, dimension(:,:,:)   :: weight,terr_cube,landfrac_cube,sgh30_cube
-  real(r8), allocatable, dimension(:,:,:)   :: landm_coslat_cube
   integer , allocatable, dimension(:,:)     :: idx,idy,idp
   !
   real(r8) :: dx,dy
@@ -185,82 +178,6 @@ program convterr
   WRITE(*,*) "consistency of lat-lon area",area_latlon-4.0*pi
   WRITE(*,*) "volume of topography about sea-level (raw usgs data)",vol
 
-#undef LANDM_COSLAT
-#ifdef LANDM_COSLAT
-  !
-  !****************************************************
-  !
-  ! read LANDM_COSLAT
-  !
-  !****************************************************
-  !
-  WRITE(*,*) "read LANDM_COSLAT from file"
-  status = nf_open('landm_coslat.nc', 0, ncid)
-  IF (STATUS .NE. NF_NOERR) CALL HANDLE_ERR(STATUS)
-  
-  status = NF_INQ_DIMID(ncid, 'lat', dimlatid)
-  IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
-  status = NF_INQ_DIMLEN(ncid, dimlatid, jm_landm)
-  IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
-  
-  status = NF_INQ_DIMID(ncid, 'lon', dimlonid)
-  IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
-  status = NF_INQ_DIMLEN(ncid, dimlonid, im_landm)
-  IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
-  
-  WRITE(*,*) "lon-lat dimensions: ",im_landm,jm_landm
-  
-  allocate ( landm_coslat(im_landm,jm_landm),stat=alloc_error )
-  if( alloc_error /= 0 ) then
-    print*,'Program could not allocate space for landfrac'
-    stop
-  end if
-  
-  allocate ( lon_landm(im_landm),stat=alloc_error )
-  if( alloc_error /= 0 ) then
-    print*,'Program could not allocate space for landfrac'
-    stop
-  end if
-  
-  allocate ( lat_landm(jm_landm),stat=alloc_error )
-  if( alloc_error /= 0 ) then
-    print*,'Program could not allocate space for landfrac'
-    stop
-  end if
-  
-  do j = 1, jm_landm
-    do i = 1, im_landm
-      landm_coslat(i,j) = -999999.99
-    end do
-  end do
-  
-  status = NF_INQ_VARID(ncid, 'LANDM_COSLAT', landid)
-  IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
-  
-  status = NF_GET_VAR_DOUBLE(ncid, landid,landm_coslat)
-  IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
-  WRITE(*,*) "min/max of landm_coslat",MINVAL(landm_coslat),MAXVAL(landm_coslat)
-  
-  status = NF_INQ_VARID(ncid, 'lon', lonid)
-  IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
-  
-  WRITE(*,*) "read lon"
-  status = NF_GET_VAR_DOUBLE(ncid, lonid,lon_landm)
-  IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
-  
-  status = NF_INQ_VARID(ncid, 'lat', latid)
-  IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
-  
-  WRITE(*,*) "read lat"
-  status = NF_GET_VAR_DOUBLE(ncid, latid,lat_landm)
-  IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
-  
-  print *,"close file"
-  status = nf_close (ncid)
-  if (status .ne. NF_NOERR) call handle_err(status)
-  
-  WRITE(*,*) 'done reading in LANDM_COSLAT data from netCDF file'
-#endif  
   !
   ! bin data on cubed-sphere grid
   !
@@ -286,14 +203,6 @@ program convterr
     stop
   end if
   landfrac_cube = 0.0
-  allocate ( landm_coslat_cube(ncube,ncube,6),stat=alloc_error )
-  if( alloc_error /= 0 ) then
-    print*,'Program could not allocate space for terr_cube'
-    stop
-  end if
-  landm_coslat_cube = 0.0
-  
-
   allocate ( idx(im,jm),stat=alloc_error )
   if( alloc_error /= 0 ) then
     print*,'Program could not allocate space for idx'
@@ -348,78 +257,7 @@ program convterr
     END DO
   END DO
 
-#ifdef LANDM_COSLAT
-  dx = deg2rad*(lon_landm(2)-lon_landm(1))
-  !
-  ! lat_landm is not exactly equally spaced so a search is needed in the loop below
-  !
-  dy = deg2rad*(lat_landm(2)-lat_landm(1))
-  DO k=1,6
-    DO j=1,ncube          
-      DO i=1,ncube
-        IF (ABS(weight(i,j,k))<1.0E-9) THEN
-          WRITE(*,*) "there is no lat-lon grid point in cubed sphere cell ",i,j,k
-          WRITE(*,*) "fatal error"
-          STOP
-        ELSE
-          terr_cube        (i,j,k) = terr_cube        (i,j,k)/weight(i,j,k)                
-          landfrac_cube    (i,j,k) = landfrac_cube    (i,j,k)/weight(i,j,k)                
-        END IF
-        !
-        ! linearly interpolate landm_coslat
-        !
-        alpha = -piq+(i-0.5)*da
-        beta  = -piq+(j-0.5)*da
-        CALL CubedSphereRLLFromABP(alpha, beta, k, lambda, theta)   
-        IF (theta>lat_landm(jm_landm)*deg2rad-tiny) THEN
-          landm_coslat_cube(i,j,k) = 0.0
-        ELSE IF (theta<lat_landm(1)*deg2rad+tiny) THEN
-          landm_coslat_cube(i,j,k) = 1.0
-        ELSE
-          !
-          ! this code assumes data is equally spaced in longitude
-          !
-          ilon = MAX(MIN(INT((lambda-lon_landm(1)*deg2rad)/dx)+1,im_landm),1)
-          ip1  = MOD(ilon,im_landm)+1
-          wx = (lambda-lon_landm(ilon)*deg2rad)/dx
-          !
-          ilat = MAX(MIN(INT((theta -lat_landm(1)*deg2rad)/dy)+1,jm_landm-1),1)
-          jp1  = ilat+1
-          wy = (theta -lat_landm(ilat)*deg2rad)/(lat_landm(jp1)-lat_landm(ilat))
-          !
-          ! since LANDM_COSLAT is not equally spaced in latitude a search is needed
-          ! 
-          DO WHILE (wy>1.0.OR.wy<0.0)
-            jp1  = ilat+1
-            wy = (theta -lat_landm(ilat)*deg2rad)/((lat_landm(jp1)-lat_landm(ilat))*deg2rad)
-            IF (wy>1.0) THEN
-              ilat=ilat+1
-            ELSE IF (wy<0.0) THEN
-              ilat=ilat-1
-            END IF
-          END DO
-          
-          IF (wx>1.0+tiny.OR.wx<0.0-tiny) THEN
-            WRITE(*,*) "wx out of range",wx
-            stop
-          END IF
-          IF (wy>1.0+tiny.OR.wy<0.0-tiny) THEN
-            WRITE(*,*) "wy out of range",wy
-            stop
-          END IF
-          !
-          ! "crude" bi-linear interpolation
-          !
-          landm_coslat_cube(i,j,k) =&
-               (1.0-wx)*(1.0-wy)*landm_coslat(ilon,ilat)+   wx *(1-wy)*landm_coslat(ip1,ilat)+&
-               (1.0-wx)*     wy *landm_coslat(ilon,jp1 )+   wx * wy   *landm_coslat(ip1,jp1)
-        END IF
-      END DO
-    END DO
-  END DO
-#endif
   WRITE(*,*) "min/max value of terr_cube:", MINVAL(terr_cube), MAXVAL(terr_cube)
-  WRITE(*,*) "min/max value of landm_coslat_cube:", MINVAL(landm_coslat_cube), MAXVAL(landm_coslat_cube)
   !
   ! compute volume of topography on cubed-sphere
   !
@@ -468,7 +306,7 @@ program convterr
   !
   ! write data to NetCDF file
   !
-  CALL wrt_cube(ncube,terr_cube,landfrac_cube,landm_coslat_cube,sgh30_cube)
+  CALL wrt_cube(ncube,terr_cube,landfrac_cube,sgh30_cube)
   DEALLOCATE(weight,terr,landfrac,idx,idy,idp,lat,lon)
   WRITE(*,*) "done writing cubed sphere data"
 end program convterr
@@ -593,7 +431,7 @@ END SUBROUTINE CubedSphereABPFromRLL
 !
 ! write netCDF file
 ! 
-subroutine wrt_cube(ncube,terr_cube,landfrac_cube,landm_coslat_cube,sgh30_cube)
+subroutine wrt_cube(ncube,terr_cube,landfrac_cube,sgh30_cube)
   use shr_kind_mod, only: r8 => shr_kind_r8
   implicit none
 #     include         <netcdf.inc>
@@ -602,7 +440,7 @@ subroutine wrt_cube(ncube,terr_cube,landfrac_cube,landm_coslat_cube,sgh30_cube)
   ! Dummy arguments
   !
   integer, intent(in) :: ncube
-  real (r8), dimension(6*ncube*ncube), intent(in) :: terr_cube,landfrac_cube,sgh30_cube,landm_coslat_cube
+  real (r8), dimension(6*ncube*ncube), intent(in) :: terr_cube,landfrac_cube,sgh30_cube
   !
   ! Local variables
   !
@@ -624,7 +462,6 @@ subroutine wrt_cube(ncube,terr_cube,landfrac_cube,landm_coslat_cube,sgh30_cube)
   integer  :: nc_grdcntrlon_id   ! netCDF grid center lon id
   integer  :: nc_terr_id
   integer  :: nc_landfrac_id
-  integer  :: nc_landm_coslat_id
   integer  :: nc_var_id
   
   
@@ -717,12 +554,6 @@ subroutine wrt_cube(ncube,terr_cube,landfrac_cube,landm_coslat_cube,sgh30_cube)
        'land ocean transition mask: ocean (0), continent (1), transition (0-1)')
   call handle_err(ncstat)
   
-  WRITE(*,*) "define landm_coslat_cube array"
-  ncstat = nf_def_var (nc_grid_id, 'LANDM_COSLAT', NF_DOUBLE,1, nc_gridsize_id, nc_landm_coslat_id)
-  call handle_err(ncstat)
-  ncstat = nf_put_att_text (nc_grid_id, nc_landm_coslat_id, 'long_name',35,'smoothed land ocean transition mask')
-  call handle_err(ncstat)
-  
   WRITE(*,*) "define sgh30_cube array"
   ncstat = nf_def_var (nc_grid_id, 'SGH30', NF_DOUBLE,1, nc_gridsize_id, nc_var_id)
   call handle_err(ncstat)
@@ -756,9 +587,6 @@ subroutine wrt_cube(ncube,terr_cube,landfrac_cube,landm_coslat_cube,sgh30_cube)
   call handle_err(ncstat)
   
   ncstat = nf_put_var_double(nc_grid_id, nc_landfrac_id, landfrac_cube)
-  call handle_err(ncstat)
-  
-  ncstat = nf_put_var_double(nc_grid_id, nc_landm_coslat_id, landm_coslat_cube)
   call handle_err(ncstat)
   
   ncstat = nf_put_var_double(nc_grid_id, nc_var_id, sgh30_cube)

@@ -6,6 +6,7 @@ module restart_dynamics
   use spmd_utils,  only : iam
   use cam_logfile, only : iulog
   use control_mod, only : theta_hydrostatic_mode
+  use perf_mod,    only : t_startf, t_stopf
 
   implicit none
 
@@ -404,7 +405,9 @@ CONTAINS
 !how to place a check so that someone does not restart nh from hy file?
 !is hy restart run from nh ok?
 
+    call t_startf('dyn_init1')
     call dyn_init1(file, NLFileName, dyn_in, dyn_out)
+    call t_stopf('dyn_init1')
 
     ! Define physics data structures
     if(par%masterproc  ) write(iulog,*) 'Running phys_grid_init()'
@@ -676,7 +679,9 @@ CONTAINS
 
     deallocate(qdesc_dp)
 
+    call t_startf('dyn_init2')
     call dyn_init2(dyn_in)
+    call t_stopf('dyn_init2')
 
    if (par%dynproc) then
    else

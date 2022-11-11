@@ -161,8 +161,8 @@ contains
        do iSubCell = 1, nEdgesOnCell(iCell)
 
           iEdge = edgesOnCell(iSubCell,iCell)
-          iVertexOnCell1 = iSubCell
-          iVertexOnCell2 = seaice_wrapped_index(iSubCell + 1, nEdgesOnCell(iCell))
+          iVertexOnCell1 = seaice_wrapped_index(iSubCell - 1, nEdgesOnCell(iCell))
+          iVertexOnCell2 = iSubCell
 
           c = dvEdge(iEdge)
           a = sqrt((xLocal(iVertexOnCell1,iCell) - xPWLCentre)**2 + &
@@ -185,8 +185,8 @@ contains
        ! calculate the linear basis on the sub triangle
        do iSubCell = 1, nEdgesOnCell(iCell)
 
-          iVertexOnCell1 = iSubCell
-          iVertexOnCell2 = seaice_wrapped_index(iSubCell + 1, nEdgesOnCell(iCell))
+          iVertexOnCell1 = seaice_wrapped_index(iSubCell - 1, nEdgesOnCell(iCell))
+          iVertexOnCell2 = iSubCell
 
           ! set up left hand matrix
           leftMatrix(1,1) = xLocal(iVertexOnCell1,iCell) - xPWLCentre
@@ -240,12 +240,12 @@ contains
              subCellGradientU(iBasisVertex,iSubCell) = subBasisGradientU(iSubCell,3) * alphaPWL
              subCellGradientV(iBasisVertex,iSubCell) = subBasisGradientV(iSubCell,3) * alphaPWL
 
-             if (iSubCell == iBasisVertex) then
+             if (iSubCell == seaice_wrapped_index(iBasisVertex + 1, nEdgesOnCell(iCell))) then
 
                 subCellGradientU(iBasisVertex,iSubCell) = subCellGradientU(iBasisVertex,iSubCell) + subBasisGradientU(iSubCell,1)
                 subCellGradientV(iBasisVertex,iSubCell) = subCellGradientV(iBasisVertex,iSubCell) + subBasisGradientV(iSubCell,1)
 
-             else if (iSubCell == seaice_wrapped_index(iBasisVertex - 1, nEdgesOnCell(iCell))) then
+             else if (iSubCell == iBasisVertex) then
 
                 subCellGradientU(iBasisVertex,iSubCell) = subCellGradientU(iBasisVertex,iSubCell) + subBasisGradientU(iSubCell,2)
                 subCellGradientV(iBasisVertex,iSubCell) = subCellGradientV(iBasisVertex,iSubCell) + subBasisGradientV(iSubCell,2)
@@ -262,7 +262,7 @@ contains
           do iGradientVertex = 1, nEdgesOnCell(iCell)
 
              iSubCell1 = iGradientVertex
-             iSubCell2 = seaice_wrapped_index(iGradientVertex - 1, nEdgesOnCell(iCell))
+             iSubCell2 = seaice_wrapped_index(iGradientVertex + 1, nEdgesOnCell(iCell))
 
              basisGradientU(iBasisVertex,iGradientVertex,iCell) = &
                   0.5_RKIND * (subCellGradientU(iBasisVertex,iSubCell1) + subCellGradientU(iBasisVertex,iSubCell2))
@@ -282,7 +282,7 @@ contains
 
              do iSubCell = 1, nEdgesOnCell(iCell)
 
-                if (iSubCell == iStressVertex .or. iSubCell == seaice_wrapped_index(iStressVertex - 1, nEdgesOnCell(iCell))) then
+                if (iSubCell == iStressVertex .or. iSubCell == seaice_wrapped_index(iStressVertex + 1, nEdgesOnCell(iCell))) then
                    basisIntegral = ((alphaPWL + 1) * basisSubArea(iSubCell)) / 3.0_RKIND
                 else
                    basisIntegral = ( alphaPWL      * basisSubArea(iSubCell)) / 3.0_RKIND
@@ -308,18 +308,18 @@ contains
              do iSubCell = 1, nEdgesOnCell(iCell)
 
                 ! determine stress subcell type
-                if (iSubCell == iStressVertex) then
+                if (iSubCell == seaice_wrapped_index(iStressVertex + 1, nEdgesOnCell(iCell))) then
                    subCellTypeStress = 1
-                else if (iSubCell == seaice_wrapped_index(iStressVertex - 1, nEdgesOnCell(iCell))) then
+                else if (iSubCell == iStressVertex) then
                    subCellTypeStress = 2
                 else
                    subCellTypeStress = 3
                 endif
 
                 ! determine velocity subcell type
-                if (iSubCell == iVelocityVertex) then
+                if (iSubCell == seaice_wrapped_index(iVelocityVertex + 1, nEdgesOnCell(iCell))) then
                    subCellTypeVelocity = 1
-                else if (iSubCell == seaice_wrapped_index(iVelocityVertex - 1, nEdgesOnCell(iCell))) then
+                else if (iSubCell == iVelocityVertex) then
                    subCellTypeVelocity = 2
                 else
                    subCellTypeVelocity = 3
