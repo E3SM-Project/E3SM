@@ -67,11 +67,22 @@ module physical_constants
   real (kind=real_kind), public, parameter :: MWDAIR       = 28.966D0
   real (kind=real_kind), public, parameter :: Rwater_vapor = 461.50D0
   real (kind=real_kind), public, parameter :: Cpwater_vapor= 1870.0D0
+  real (kind=real_kind), public, parameter :: Cl           = 4188.0D0  !fresh liquid water
   real (kind=real_kind), public, parameter :: kappa        = Rgas/Cp
-  real (kind=real_kind), public, parameter :: Rd_on_Rv     = Rgas/Rwater_vapor	
+  real (kind=real_kind), public, parameter :: Rd_on_Rv     = Rgas/Rwater_vapor
   real (kind=real_kind), public, parameter :: Cpd_on_Cpv   = Cp/Cpwater_vapor
   real (kind=real_kind), public, parameter :: rrearth0     = 1.0_real_kind/rearth0
   real (kind=real_kind), public            :: rrearth      = rrearth0
+  real (kind=real_kind), public            :: rhow         = 1000.0D0
+
+!consts for kessler-defined qsat
+  real (kind=real_kind), public :: bubble_const1=3.8, bubble_const2=17.27, bubble_const3=273.0, bubble_const4=36.0
+!consts for RJ-defined qsat
+  real (kind=real_kind), public :: bubble_t0_const=273.16, bubble_epsilo=Rd_on_Rv, bubble_e0=610.78
+
+  real (kind=real_kind), public :: latvap=2.501e6
+  real (kind=real_kind), public :: latice=3.337e5
+
 
 #endif
 

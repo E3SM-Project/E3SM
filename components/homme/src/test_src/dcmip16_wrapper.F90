@@ -11,7 +11,7 @@ module dcmip16_wrapper
 
 use dcmip12_wrapper,      only: pressure_thickness, set_tracers, get_evenly_spaced_z, set_hybrid_coefficients
 use control_mod,          only: test_case, dcmip16_pbl_type, dcmip16_prec_type, use_moisture, theta_hydrostatic_mode,&
-     sub_case, case_planar_bubble, bubble_prec_type
+     sub_case, case_planar_bubble, bubble_prec_type, bubble_rj_cpdry, bubble_rj_cpstar
 use baroclinic_wave,      only: baroclinic_wave_test
 use supercell,            only: supercell_init, supercell_test, supercell_z
 use tropical_cyclone,     only: tropical_cyclone_test
@@ -30,6 +30,11 @@ use reduction_mod,        only: parallelmax, parallelmin
 use terminator,           only: initial_value_terminator, tendency_terminator
 use time_mod,             only: time_at, TimeLevel_t
 
+use physical_constants,   only: bubble_const1, bubble_const2, bubble_const3, bubble_const4, &
+                                bubble_t0_const, bubble_epsilo, bubble_e0, &
+                                latvap, &
+                                g, cp, p0, kappa
+
 implicit none
 
 ! this cannot be made stack variable, nelemd is not compile option
@@ -37,8 +42,6 @@ real(rl),dimension(:,:,:), allocatable :: precl ! storage for column precip
 real(rl):: zi(nlevp), zm(nlev)                                          ! z coordinates
 real(rl):: ddn_hyai(nlevp), ddn_hybi(nlevp)                             ! vertical derivativess of hybrid coefficients
 real(rl):: tau
-real(rl), parameter :: rh2o    = 461.5d0,            &                  ! Gas constant for water vapor (J/kg/K)
-                       Mvap    = (Rwater_vapor/Rgas) - 1.d0             ! Constant for virtual temp. calc. (~0.608)
 
 real(rl) :: sample_period  = 2.0_rl
 real(rl) :: rad2dg = 180.0_rl/pi
@@ -583,7 +586,10 @@ end subroutine dcmip2016_test1_forcing
 
 
 !_______________________________________________________________________
-subroutine bubble_rj_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
+subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
+
+  use physical_constants, only: g, Rgas, cp, cpwater_vapor, cl, latvap, latice, &
+                                Rwater_vapor, bubble_epsilo, rhow
 
   type(element_t),    intent(inout), target :: elem(:)                  ! element array
   type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
@@ -607,10 +613,11 @@ subroutine bubble_rj_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   real(rl) :: zi(np,np,nlevp)
 !  integer, parameter :: test = 1
 
-  real(rl), parameter:: gravit = 9.80616, rair = 287.0, cpair = 1.0045e3, cpv = 1810.0, cl = 4188.0, &
-                        rvapor = 461.5, epsilo = rair/rvapor, &
-                        latvap=2.501e6, latice=3.337e5, e0=610.78, &
-                        T0const = 273.16, rhow = 1000.0
+!  real(rl), parameter:: gravit = 9.80616, rair = 287.0, cpair = 1.0045e3, cpv = 1810.0, cl = 4188.0, &
+!                        rvapor = 461.5, epsilo = rair/rvapor, &
+!                        latvap=2.501e6, latice=3.337e5, e0=610.78, &
+!                        T0const = 273.16, rhow = 1000.0, &
+
 
   if (qsize .ne. 3) call abortmp('ERROR: moist bubble test requires qsize=3')
 
@@ -620,11 +627,14 @@ subroutine bubble_rj_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   do ie = nets,nete
 
+    elem(ie)%derived%FM(:,:,1,:) = 0.0 !(u - u0)/dt
+    elem(ie)%derived%FM(:,:,2,:) = 0.0 !(v - v0)/dt
+
     !precl(:,:,ie) = -1.0d0
     precl(:,:,ie) = 0.0d0
 
     ! get current element state
-    call get_state(u,v,w,T,p,dp,ps,rho,z,zi,gravit,elem(ie),hvcoord,nt,ntQ)
+    call get_state(u,v,w,T,p,dp,ps,rho,z,zi,g,elem(ie),hvcoord,nt,ntQ)
 
     ! get mixing ratios
     ! use qi to avoid compiler warnings when qsize_d<5
@@ -639,6 +649,21 @@ subroutine bubble_rj_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     ! apply forcing to columns
     do j=1,np; do i=1,np
 
+#if 0
+      !energy before
+      elem(ie)%derived%energy1(i,j,:) = 0.0
+      !cpstar before 
+      if(bubble_cpdry) then 
+        elem(ie)%derived%cpstar(i,j,:) = cpair
+      elseif (bubble_cl) then
+        elem(ie)%derived%cpstar(i,j,:) = cpair
+        elem(ie)%derived%cpstar(i,j,:) = cpair
+
+      do k = 1, nlev
+         elem(ie)%derived%energy1(i,j,:) = elem(ie)%derived%energy1(i,j,:) + 
+      enddo
+#endif
+
       !column values
       qv_c = qv(i,j,:); p_c = p(i,j,:); dp_c = dp(i,j,:); T_c = T(i,j,:);
 
@@ -648,59 +673,59 @@ subroutine bubble_rj_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
         pi(k) = pi_upper - dp_c(k)/2
       enddo
 
-      do k=1, nlev
-      qsat = epsilo * e0 / p_c(k) * exp(-(latvap/rh2o) * ((1.0/T_c(k))-(1.0/T0const)))
 
-      if (qv_c(k) > qsat) then
+      ! RJ part
+      if(bubble_prec_type == 1) then
+
+      do k=1, nlev
+        call qsat_rj(p_c(k), T_c(k), qsat)
+
+        if (qv_c(k) > qsat) then
 
 !print *, 'HEY RAIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
 !stop
-      !condensation happens
-#if 1
-      !compute dry values
-        dp_loc = dp_c(k)
-        qv_loc = qv_c(k)
-        dpdry_loc = dp_loc * (1.0 - qv_loc)
-        qvdry_loc = qv_loc * dp_loc / dpdry_loc
-        qsatdry = qsat * dp_loc / dpdry_loc     ! qv_new
-        dq_loc = qvdry_loc - qsatdry            ! > 0 , is qliq_dry_new
-        vapor_mass_change = dpdry_loc*dq_loc
-        T_loc = T_c(k)
-        p_loc = p_c(k)
-        pi_loc = pi(k)
+        !condensation happens
+        if(bubble_rj_cpstar) then
+        !compute dry values
+          dp_loc = dp_c(k)
+          qv_loc = qv_c(k)
+          dpdry_loc = dp_loc * (1.0 - qv_loc)
+          qvdry_loc = qv_loc * dp_loc / dpdry_loc
+          qsatdry = qsat * dp_loc / dpdry_loc     ! qv_new
+          dq_loc = qvdry_loc - qsatdry            ! > 0 , is qliq_dry_new
+          vapor_mass_change = dpdry_loc*dq_loc
+          T_loc = T_c(k)
+          p_loc = p_c(k)
+          pi_loc = pi(k)
 
-        !new Q will be qsatdry
-        L_old = (latvap + latice) * qvdry_loc
-        L_new = (latvap + latice) * qsatdry   + latice * dq_loc
+          !new Q will be qsatdry
+          L_old = (latvap + latice) * qvdry_loc
+          L_new = (latvap + latice) * qsatdry   + latice * dq_loc
 
-        rstar_old = rair * 1.0 + rvapor * qvdry_loc
-        rstar_new = rair * 1.0 + rvapor * qsatdry
-
-        !dpnew_loc = dpdry_loc * (1.0 + qsatdry) 
+          rstar_old = Rgas * 1.0 + Rwater_vapor * qvdry_loc
+          rstar_new = Rgas * 1.0 + Rwater_vapor * qsatdry
 
 !#define HYY
 #undef HYY
 #ifndef HYY
-        ! L and Rstar are in terms of q, so, enthalpy too
-        hold = T_loc*( cpair*1.0 + cpv*qvdry_loc ) + &
+          ! L and Rstar are in terms of q, so, enthalpy too
+          hold = T_loc*( cp*1.0 + cpwater_vapor*qvdry_loc ) + &
                (pi_loc/p_loc - 1) * rstar_old * T_loc + L_old
 #else
-        hold = T_loc*( cpair*1.0 + cpv*qvdry_loc ) + &
+          hold = T_loc*( cp*1.0 + cpwater_vapor*qvdry_loc ) + &
                                                         L_old
 #endif
-
-        cpstarTerm_new = cpair*1.0 + cpv*qsatdry + cl*dq_loc
-        !hnew = T_new * (   cpstarTerm_new + ( (pi_loc - vapor_mass_change)/(p_loc - vapor_mass_change) - 1)*rstar_new   ) + &
-        !       L_new
-        !     = hold
+          cpstarTerm_new = cp*1.0 + cpwater_vapor*qsatdry + cl*dq_loc
+          !hnew = T_new * (   cpstarTerm_new + ( (pi_loc - vapor_mass_change)/(p_loc - vapor_mass_change) - 1)*rstar_new   ) + &
+          !       L_new
+          !     = hold
 #ifndef HYY
-        T_new = (hold - L_new)/ &
-        (   cpstarTerm_new + ( pi_loc/p_loc - 1)*rstar_new   )  
+          T_new = (hold - L_new)/ &
+          (   cpstarTerm_new + ( pi_loc/p_loc - 1)*rstar_new   )  
 #else
-        T_new = (hold - L_new)/ &
-        (   cpstarTerm_new   )
+          T_new = (hold - L_new)/ &
+          (   cpstarTerm_new   )
 #endif
-
 print *, 'T_new - T_c', T_new - T_c(k)
 
 #if 0
@@ -714,39 +739,43 @@ stop
 endif
 #endif
 
-        T_c(k)  = T_new
-        qv_c(k) = qsat
-        precl(i,j,ie) = precl(i,j,ie) + vapor_mass_change / dt / rhow / gravit
+          T_c(k)  = T_new
+          qv_c(k) = qsat
+          precl(i,j,ie) = precl(i,j,ie) + vapor_mass_change / dt / rhow / g
 print *, 'precl',  precl(i,j,ie), vapor_mass_change, rhow
 
-
-#else
+        elseif(bubble_rj_cpdry) then
 !original RJ
-        dq_loc = (qv_c(k) - qsat) &
-          / (1.0 + (latvap/cpair) * epsilo * latvap * qsat / (rair*T_c(k)*T_c(k)))
-
-        T_c(k) = T_c(k) + latvap / cpair * dq_loc
-        qv_c(k) = qv_c(k) - dq_loc
-        precl(i,j,ie) = precl(i,j,ie) + dq_loc * dp_c(k) / (dt * rhow) / gravit
-#endif
+          dq_loc = (qv_c(k) - qsat) &
+            / (1.0 + (latvap/cp) * bubble_epsilo * latvap * qsat / (Rgas*T_c(k)*T_c(k)))
+          T_c(k) = T_c(k) + latvap / cp * dq_loc
+          qv_c(k) = qv_c(k) - dq_loc
+          precl(i,j,ie) = precl(i,j,ie) + dq_loc * dp_c(k) / (dt * rhow) / g
+        endif
 
       endif ! if prect happened
       enddo ! k loop
 
+      ! Kessler part
+      elseif(bubble_prec_type == 0) then
+
+      endif
+
       !now update 3d fields here
       T(i,j,:)  = T_c(:)
       qv(i,j,:) = qv_c(:)
+
+      ! set dynamics forcing
+      elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
+
+!for Kessler this is incorrect!!!!!!!!!!!!!!!!
+      ! set tracer-mass forcing. conserve tracer mass
+      ! one call say, this is "rain" step, liquid water dissapears from the column
+      elem(ie)%derived%FQ(i,j,:,:) = 0.0
+      elem(ie)%derived%FQ(i,j,:,1) = (qv(i,j,:) - qv0(i,j,:))/dt !(rho_dry/rho)*dp*(qv-qv0)/dt
  
+
     enddo; enddo; !j,i loop
-
-    ! set dynamics forcing
-    elem(ie)%derived%FM(:,:,1,:) = 0.0 !(u - u0)/dt
-    elem(ie)%derived%FM(:,:,2,:) = 0.0 !(v - v0)/dt
-    elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
-
-    ! set tracer-mass forcing. conserve tracer mass
-    elem(ie)%derived%FQ(:,:,:,:) = 0.0
-    elem(ie)%derived%FQ(:,:,:,1) = (qv - qv0)/dt !(rho_dry/rho)*dp*(qv-qv0)/dt
 
     ! perform measurements of max w, and max prect
     max_w     = max( max_w    , maxval(w    ) )
@@ -757,7 +786,7 @@ print *, 'precl',  precl(i,j,ie), vapor_mass_change, rhow
 
   call dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
 
-end subroutine bubble_rj_forcing
+end subroutine bubble_new_forcing
 
 
 
@@ -1285,5 +1314,21 @@ subroutine dcmip2016_test3_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   call dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
 
 end subroutine
+
+
+subroutine qsat_kessler(p, T, qsat)
+  real(rl),         intent(out):: qsat
+  real(rl),         intent(in) :: p, T
+  qsat = bubble_const1 / p * exp( bubble_const2 * (T - bubble_const3) / ( T - bubble_const4 ) )
+end subroutine qsat_kessler
+
+subroutine qsat_rj(p, T, qsat)
+  real(rl),         intent(out):: qsat
+  real(rl),         intent(in) :: p, T
+  qsat = bubble_epsilo * bubble_e0 / p * &
+         exp(-(latvap/Rwater_vapor) * ((1.0/T)-(1.0/bubble_t0_const)))
+end subroutine qsat_rj
+
+
 end module dcmip16_wrapper
 #endif

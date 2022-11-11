@@ -10,28 +10,20 @@ module dry_planar_tests
   use parallel_mod,         only: abortmp
   use element_ops,          only: set_state, set_state_i, tests_finalize
   use kinds,                only: rl=>real_kind, iulog
-  use physical_constants,   only : dd_pi, rgas, rwater_vapor
   use dcmip12_wrapper, only : set_tracers, get_evenly_spaced_z, get_evenly_spaced_p, set_hybrid_coefficients, pressure_thickness
   use dimensions_mod,       only: np, nlev, nlevp, qsize, qsize_d, nelemd
   use element_state,        only: nt=>timelevels
   use control_mod,          only: planar_slice
+  use physical_constants,   only: dd_pi, Rgas, Rwater_vapor
+  use physical_constants,   only: bubble_const1, bubble_const2, bubble_const3, bubble_const4, &
+                                  bubble_t0_const, bubble_epsilo, bubble_e0, &
+                                  latvap, &
+                                  g, cp, p0, kappa
+
+  use dcmip16_wrapper,      only: qsat_rj, qsat_kessler
+
 
   implicit none
-
-!OG take from physical const mod instead
-
-  real(rl), parameter :: Rd 	= 287.0d0,	&	! Ideal gas const dry air (J kg^-1 K^1)
-				                        g	= 9.80616d0,	&	! Gravity (m s^2)
-				                        cp	= 1004.5d0,	&	! Specific heat capacity (J kg^-1 K^1)
-                                p0	= 100000.d0, &! reference pressure (Pa)
-                                kappa   = Rd/cp
-
-!consts for kessler-defined qsat
-  real(rl), parameter :: bubble_const1=3.8, bubble_const2=17.27, bubble_const3=273.0, bubble_const4=36.0
-!consts for RJ-defined qsat
-  real(rl), parameter :: bubble_t0_const=273.16, bubble_epsilo=Rgas/Rwater_vapor, bubble_e0=610.78
-!this one is used in dcmip as 2.5e6 instead of the one in cam, 2.501e6
-  real(rl), parameter :: bubble_latvap=2.5e6
 
   real(rl):: zi(nlevp), zm(nlev)                                          ! z coordinates
   real(rl):: ddn_hyai(nlevp), ddn_hybi(nlevp)                             ! vertical derivativess of hybrid coefficients
@@ -295,24 +287,20 @@ subroutine bubble_init(elem,hybrid,hvcoord,nets,nete,f)
     !build specific humidity at saturation qs as in dcmip2016-kessler
 
     if(bubble_prec_type == 0) then
-    !kessler
-    do k=1,nlevp
-       qi_s(k) = bubble_const1 / pi(k) * exp( bubble_const2 * (Ti(k) - bubble_const3) / ( Ti(k) - bubble_const4 ) )
-    enddo
+      !kessler
+      do k=1,nlevp
+        call qsat_kessler(pi(k), Ti(k), qi_s(k))
+      enddo
     elseif(bubble_prec_type == 1) then
-    !RJ physics
-    do k=1,nlevp
-       !dcmip line
-       !qsat = epsilo * e0 / p(k) * exp(-(latvap/rh2o) * ((one/t(k))-(one/T0)))
-       qi_s(k) = bubble_epsilo * bubble_e0 / pi(k) * &
-                 exp(-(bubble_latvap/Rwater_vapor) * ((1.0/Ti(k))-(1.0/bubble_t0_const)))
-    enddo
+      !RJ physics
+      do k=1,nlevp
+        call qsat_rj(pi(k), Ti(k), qi_s(k))
+      enddo
     else
-    call abortmp('planar moist bubble bubble_prec_type should be 0 or 1')
+      call abortmp('planar moist bubble bubble_prec_type should be 0 or 1')
     endif   
-
   else
-     qi_s(1:nlevp) = 0.0
+    qi_s(1:nlevp) = 0.0
   endif
 
   do k=1,nlev
@@ -512,12 +500,12 @@ IMPLICIT NONE
   if (zcoords .eq. 1) then
 
     height = z
-    p = ps*( (bigG/Ts)*exp(-N2*height/g)+1.d0 - (bigG/Ts)  )**(cp/Rd)
+    p = ps*( (bigG/Ts)*exp(-N2*height/g)+1.d0 - (bigG/Ts)  )**(cp/Rgas)
 
   else
 
     if (hybrid_eta) p = hyam*p0 + hybm*ps
-        height = (-g/N2)*log( (Ts/bigG)*( (p/ps)**(Rd/cp) - 1.d0  ) + 1.d0 )
+        height = (-g/N2)*log( (Ts/bigG)*( (p/ps)**(Rgas/cp) - 1.d0  ) + 1.d0 )
     z = height
 
   endif
@@ -527,7 +515,7 @@ IMPLICIT NONE
 !-----------------------------------------------------------------------
 !    rho (density), unperturbed using the background temperature t_mean
 !-----------------------------------------------------------------------
-  rho_mean = p/(Rd*t_mean)
+  rho_mean = p/(Rgas*t_mean)
 
 !-----------------------------------------------------------------------
 !    POTENTIAL TEMPERATURE PERTURBATION,
@@ -547,10 +535,10 @@ IMPLICIT NONE
 
   theta_pert = delta_theta*s*sin(2.d0*DD_PI*height/Lz)
 
-  t_pert = theta_pert*(p/p0)**(Rd/cp)
+  t_pert = theta_pert*(p/p0)**(Rgas/cp)
   t = t_mean + t_pert
 
-  rho = p/(Rd*t)
+  rho = p/(Rgas*t)
 
 !-----------------------------------------------------------------------
 !     initialize Q, set to zero
@@ -581,7 +569,20 @@ subroutine get_xycoordinates(x,y,hyam,hybm, i,j,k,elem,hvcoord)
 end subroutine
 
 
+#if 0
+subroutine qsat_kessler(p, T, qsat)
+  real(rl),         intent(out):: qsat
+  real(rl),         intent(in) :: p, T
+  qsat = bubble_const1 / p * exp( bubble_const2 * (T - bubble_const3) / ( T - bubble_const4 ) )
+end subroutine qsat_kessler
 
+subroutine qsat_rj(p, T, qsat)
+  real(rl),         intent(out):: qsat
+  real(rl),         intent(in) :: p, T
+  qsat = bubble_epsilo * bubble_e0 / p * &
+         exp(-(latvap/Rwater_vapor) * ((1.0/T)-(1.0/bubble_t0_const)))
+end subroutine qsat_rj
+#endif
 
 
 end module dry_planar_tests
