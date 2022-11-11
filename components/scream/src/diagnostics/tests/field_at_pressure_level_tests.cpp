@@ -126,7 +126,7 @@ TEST_CASE("field_at_pressure_level_p2")
       diag_f.sync_to_host();
       auto test2_diag_v = diag_f.get_view<const Real*, Host>();
       for (int icol=0;icol<ncols;icol++) {
-        REQUIRE(approx(test2_diag_v(icol),-99999.0));
+        REQUIRE(approx(test2_diag_v(icol),Real(-99999)));
       }
     }
   } 
