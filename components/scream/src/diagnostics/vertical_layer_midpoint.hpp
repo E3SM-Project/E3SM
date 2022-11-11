@@ -19,7 +19,7 @@ public:
   using PF            = scream::PhysicsFunctions<DefaultDevice>;
   using KT            = KokkosTypes<DefaultDevice>;
   using MemberType    = typename KT::MemberType;
-  using view_1d       = typename KT::template view_1d<Pack>;
+  using view_2d       = typename KT::template view_2d<Pack>;
 
   // Constructors
   VerticalLayerMidpointDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -43,6 +43,9 @@ protected:
   // Keep track of field dimensions
   Int m_num_cols;
   Int m_num_levs;
+
+  // Temporary view to set dz in compute diagnostic
+  view_2d m_z_int;
 
 }; // class VerticalLayerMidpointDiagnostic
 
