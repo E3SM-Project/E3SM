@@ -2,9 +2,20 @@
 set (EKAT_MACH_FILES_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../../externals/ekat/cmake/machine-files)
 
 #message(STATUS "pm-cpu PROJECT_NAME=${PROJECT_NAME} USE_CUDA=${USE_CUDA} KOKKOS_ENABLE_CUDA=${KOKKOS_ENABLE_CUDA}")
+#message(STATUS, "pm-cpu SMP_PRESENT=${SMP_PRESENT}")
+
 include (${EKAT_MACH_FILES_PATH}/kokkos/amd-zen3.cmake)
-include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
-#include (${EKAT_MACH_FILES_PATH}/kokkos/serial.cmake)
+if ("${PROJECT_NAME}" STREQUAL "E3SM")
+  if (SMP_PRESENT)
+    include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
+    #message(STATUS, "pm-cpu openmp SMP_PRESENT=${SMP_PRESENT}")
+  else()
+    include (${EKAT_MACH_FILES_PATH}/kokkos/serial.cmake)
+    #message(STATUS, "pm-cpu serial SMP_PRESENT=${SMP_PRESENT}")
+  endif()
+else()
+  include (${EKAT_MACH_FILES_PATH}/kokkos/openmp.cmake)
+endif()
 
 set(CMAKE_CXX_FLAGS "-DTHRUST_IGNORE_CUB_VERSION_CHECK" CACHE STRING "" FORCE)
 
