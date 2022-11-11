@@ -452,6 +452,7 @@ TEST_CASE("horizontal_remap_units", "") {
     // Restore w/2, so that adding a complementary weight segment should
     // restore the valid map
     weights_h(0) = wgt_to_add;
+    Kokkos::deep_copy(check_wgts,weights_h);
 
     // Create a new segment that has the same DOF as the first segment
     HorizontalMapSegment new_seg(1,1);
