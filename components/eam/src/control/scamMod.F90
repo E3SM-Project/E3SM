@@ -196,6 +196,7 @@ module scamMod
   logical*4, public ::  have_asdif    ! dataset contains asdif
   logical*4, public ::  scm_iop_srf_prop   ! use the specified surface properties
   logical*4, public ::  iop_dosubsidence ! compute Eulerian LS vertical advection
+  logical*4, public ::  iop_coriolis ! use geostropic winds to apply coriolis forcing
   logical*4, public ::  iop_nudge_tq! use relaxation for t and q
   logical*4, public ::  iop_nudge_uv! use relaxation for u and v
   logical*4, public ::  scm_observed_aero ! use observed aerosols in SCM file
@@ -218,7 +219,7 @@ module scamMod
 
 subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
         single_column_out,scm_iop_srf_prop_out, &
-        iop_dosubsidence_out,  &
+        iop_dosubsidence_out, iop_coriolis_out, &
         iop_nudge_tq_out, iop_nudge_uv_out, iop_nudge_tq_low_out, &
         iop_nudge_tq_high_out, iop_nudge_tscale_out, &
         scm_diurnal_avg_out, scm_crm_mode_out, scm_observed_aero_out, &
@@ -231,6 +232,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    logical, intent(out), optional ::  single_column_out
    logical, intent(out), optional ::  scm_iop_srf_prop_out
    logical, intent(out), optional ::  iop_dosubsidence_out
+   logical, intent(out), optional ::  iop_coriolis_out
    logical, intent(out), optional ::  iop_nudge_tq_out
    logical, intent(out), optional ::  iop_nudge_uv_out
    logical, intent(out), optional ::  scm_diurnal_avg_out
@@ -252,6 +254,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    if ( present(single_column_out) )    single_column_out  = .false.
    if ( present(scm_iop_srf_prop_out) )scm_iop_srf_prop_out  = .false.
    if ( present(iop_dosubsidence_out) )iop_dosubsidence_out = .false.
+   if ( present(iop_coriolis_out) )   iop_coriolis_out  = .false.
    if ( present(iop_nudge_tq_out) )   iop_nudge_tq_out  = .false.
    if ( present(iop_nudge_uv_out) )   iop_nudge_uv_out  = .false.
    if ( present(iop_nudge_tq_low_out) ) iop_nudge_tq_low_out = 1050.0_r8
@@ -271,7 +274,7 @@ end subroutine scam_default_opts
 
 subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                          scm_iop_srf_prop_in, &
-                         iop_dosubsidence_in, &
+                         iop_dosubsidence_in, iop_coriolis_in, &
                          iop_nudge_tq_in, iop_nudge_uv_in, iop_nudge_tq_low_in, &
                          iop_nudge_tq_high_in, iop_nudge_tscale_in, &
                          scm_diurnal_avg_in, scm_crm_mode_in, scm_observed_aero_in, &
@@ -284,6 +287,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   logical, intent(in), optional        :: single_column_in
   logical, intent(in), optional        :: scm_iop_srf_prop_in
   logical, intent(in), optional        :: iop_dosubsidence_in
+  logical, intent(in), optional        :: iop_coriolis_in
   logical, intent(in), optional        :: iop_nudge_tq_in
   logical, intent(in), optional        :: iop_nudge_uv_in
   logical, intent(in), optional        :: scm_diurnal_avg_in
@@ -320,6 +324,10 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
 
   if (present (iop_dosubsidence_in)) then
      iop_dosubsidence=iop_dosubsidence_in
+  endif
+
+  if (present (iop_coriolis_in)) then
+     iop_coriolis=iop_coriolis_in
   endif
 
   if (present (iop_nudge_tq_in)) then
@@ -378,6 +386,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   call mpibcast(scm_iop_srf_prop,1,mpilog,0,mpicom)
   call mpibcast(dp_crm,1,mpilog,0,mpicom)
   call mpibcast(iop_dosubsidence,1,mpilog,0,mpicom)
+  call mpibcast(iop_coriolis,1,mpilog,0,mpicom)
   call mpibcast(iop_nudge_tq,1,mpilog,0,mpicom)
   call mpibcast(iop_nudge_uv,1,mpilog,0,mpicom)
   call mpibcast(iop_nudge_tq_high,1,mpir8,0,mpicom)
@@ -1444,6 +1453,12 @@ endif !scm_observed_aero
        dplevs, nlev,psobs, hyam, hybm, uls, status )
      if ( status .ne. nf90_noerr ) then
        have_uls = .false.
+       if (iop_coriolis) then
+         write(iulog,*) 'Large scale / geostrophic winds required for Coriolis forcing'
+	 write(iulog,*) 'Missing variable u_ls in the IOP file'
+	 write(iulog,*) 'Aborting run'
+	 call endrun
+       endif
      else
        have_uls = .true.
      endif
@@ -1473,6 +1488,12 @@ endif !scm_observed_aero
        dplevs, nlev,psobs, hyam, hybm, vls, status )
      if ( status .ne. nf90_noerr ) then
        have_vls = .false.
+       if (iop_coriolis) then
+         write(iulog,*) 'Large scale / geostrophic winds required for Coriolis forcing'
+	 write(iulog,*) 'Missing variable v_ls in the IOP file'
+	 write(iulog,*) 'Aborting run'
+	 call endrun
+       endif
      else
        have_vls = .true.
      endif

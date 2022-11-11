@@ -172,6 +172,7 @@ character(len=max_chars) iopfile
 character(len=200) :: scm_clubb_iop_name
 logical  :: scm_iop_srf_prop
 logical  :: iop_dosubsidence
+logical  :: iop_coriolis
 logical  :: iop_nudge_tq
 logical  :: iop_nudge_uv
 logical  :: scm_diurnal_avg
@@ -332,7 +333,7 @@ contains
    namelist /cam_inparm/ print_energy_errors
 
    ! scam
-   namelist /cam_inparm/ iopfile,scm_iop_srf_prop,iop_dosubsidence, &
+   namelist /cam_inparm/ iopfile,scm_iop_srf_prop,iop_dosubsidence,iop_coriolis, &
                          iop_nudge_tq, iop_nudge_uv, iop_nudge_tq_low, &
                          iop_nudge_tq_high, iop_nudge_tscale, &
                          scm_diurnal_avg,scm_crm_mode,scm_clubb_iop_name, &
@@ -377,6 +378,7 @@ contains
         single_column_out=single_column, &
         scm_iop_srf_prop_out=scm_iop_srf_prop,&
         iop_dosubsidence_out=iop_dosubsidence, &
+        iop_coriolis_out=iop_coriolis, &
         iop_nudge_tq_out=iop_nudge_tq, &
         iop_nudge_uv_out=iop_nudge_uv, &
         iop_nudge_tq_low_out=iop_nudge_tq_low, &
@@ -462,6 +464,7 @@ contains
                             iopfile_in=iopfile,single_column_in=single_column,&
                             scm_iop_srf_prop_in=scm_iop_srf_prop,&
                             iop_dosubsidence_in=iop_dosubsidence,&
+                            iop_coriolis_in=iop_coriolis,&
                             iop_nudge_tq_in=iop_nudge_tq, &
                             iop_nudge_uv_in=iop_nudge_uv, &
                             iop_nudge_tq_low_in=iop_nudge_tq_low, &
