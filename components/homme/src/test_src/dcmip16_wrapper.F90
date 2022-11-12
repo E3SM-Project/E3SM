@@ -782,7 +782,12 @@ stop
 endif
 
         !dry density, the only quantity that won't change
-        dpdry_c = dp_c(k)*(1.0 - qv_c - qc_c - qr_c)
+        dpdry_c = dp_c*(1.0 - qv_c - qc_c - qr_c)
+        pidry_upper = hvcoord%hyai(1) * hvcoord%ps0
+        do k = 1, nlev
+          pidry_upper = pidry_upper + dpdry_c(k)
+          pidry(k) = pidry_upper - dpdry_c(k)/2
+        enddo
 
         !convert all tracers to dry ratios
         qvdry_c = qv_c * dp_c / dpdry_c
@@ -802,12 +807,40 @@ endif
         qcdry_c = qcdry_c - change
         qrdry_c = qrdry_c + change
 
-        !sedimentation
+        !sedimentation needs rho, which needs dz
+        zi_c(nlevp) = zi(i,j,nlevp)
+        do k=nlev,1,-1
+          zi_c(k) = zi_c(k+1) + Rgas*T_c(k)*dpdry_c(k)/pidry(k)/g
+        enddo
+        dz_c(1:nlev) = zi_c(1:nlev) - zi_c(2:nlevp)
+        zm_c(1:nlev) = (zi_c(1:nlev) + zi_c(2:nlevp))/2
         
+        rhodry = dpdry_c / dz_c / g
+        mass_prect = 0.0; energy_prect = 0.0
+
         !compute velocity of rain
         do k=1,nlev
-          ! Liquid water terminal velocity (m/s) following KW eq. 2.15
-          velqr(k)  = 36.34d0*(qr_c(k)*rho(k))**0.1364*sqrt(rho(nlev)/rho(k))
+          ! Liquid water terminal velocity, using dry densities instead of wet
+          ! in meter/sec
+          velqr(k)  = 36.34d0*(qr_c(k)*rhodry(k))**0.1364*sqrt(rhodry(nlev)/rhodry(k))
+          !check where it ends
+          destination_ind = k
+          positt = velqr(k) * dt + zm_c(k)
+          !cell with kk index has boundaries zi(kk) and zi(kk+1)
+          do kk=2,nlev
+            if (positt > zi_c(kk) .and. positt <= zi_c(kk+1)) then
+               destination_ind = kk
+               kk = nlev ! does F allow this
+            endif   
+          enddo
+          if(positt < zi_c(nlevp)) then 
+            !hit the bottom
+            destination_ind = -1
+            mass_prect = mass_prect + qrdry_c(k) * dpdry_c(k) 
+            energy_prect = qrdry_c(k) * dpdry_c(k) * ( cl*T_c(k) + latice ) 
+          else
+            !stuck in between
+          endif
         end do
 
 
