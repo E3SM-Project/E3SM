@@ -600,10 +600,10 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   type(TimeLevel_t),  intent(in)            :: tl                       ! time level structure
 
   integer :: i,j,k,ie,qind                                              ! loop indices
-  real(rl), dimension(np,np,nlev) :: u,v,w,T,p,dp,rho,z,qv
-  real(rl), dimension(np,np,nlev) :: T0,qv0
+  real(rl), dimension(np,np,nlev) :: u,v,w,T,p,dp,rho,z,qv,qc,qr
+  real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
   real(rl), dimension(np,np)      :: ps 
-  real(rl), dimension(nlev)       :: p_c,qv_c,dp_c,T_c,pi
+  real(rl), dimension(nlev)       :: p_c,qv_c,qc_c,qr_c,dp_c,T_c,pi,dz_c
   real(rl) :: max_w, max_precl, min_ps
 
   real(rl) :: pi_upper,qsat,qsatdry,dp_loc,qv_loc,dpdry_loc,qvdry_loc,dq_loc,vapor_mass_change
@@ -637,14 +637,18 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     call get_state(u,v,w,T,p,dp,ps,rho,z,zi,g,elem(ie),hvcoord,nt,ntQ)
 
     ! get mixing ratios
-    ! use qi to avoid compiler warnings when qsize_d<5
+    ! use qind to avoid compiler warnings when qsize_d<5
     qind=1;  qv  = elem(ie)%state%Qdp(:,:,:,qind,ntQ)/dp
+    qind=2;  qc  = elem(ie)%state%Qdp(:,:,:,qind,ntQ)/dp
+    qind=3;  qr  = elem(ie)%state%Qdp(:,:,:,qind,ntQ)/dp
 
     ! ensure positivity
     where(qv<0); qv=0; endwhere
+    where(qc<0); qc=0; endwhere
+    where(qr<0); qr=0; endwhere
 
     ! save un-forced prognostics
-    T0=T; qv0=qv;
+    T0=T; qv0=qv; qc0=qc; qr0=qr;
 
     ! apply forcing to columns
     do j=1,np; do i=1,np
@@ -665,7 +669,8 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 #endif
 
       !column values
-      qv_c = qv(i,j,:); p_c = p(i,j,:); dp_c = dp(i,j,:); T_c = T(i,j,:);
+      qv_c = qv(i,j,:); qc_c = qc(i,j,:); qr_c = qr(i,j,:); 
+      p_c  = p(i,j,:); dp_c = dp(i,j,:); T_c = T(i,j,:);
 
       pi_upper = hvcoord%hyai(1) * hvcoord%ps0
       do k = 1, nlev
@@ -759,20 +764,72 @@ print *, 'precl',  precl(i,j,ie), vapor_mass_change, rhow
       ! Kessler part
       elseif(bubble_prec_type == 0) then
 
+
+
+!available quantities
+      !column values
+!      qv_c, qc_c, qr_c
+!      p_c, dp_c, T_c, pi
+
+!unlike RJ, Kessler needs all column values at once (for sedimentation, at least)
+!and to split all processes
+!and the same temp vars that were used for RJ do not work here
+
+!now add geopotential. We will never run this test in HY
+if(theta_hydrostatic_mode) then
+print *, 'A! switch to NH'
+stop
+endif
+
+        !dry density, the only quantity that won't change
+        dpdry_c = dp_c(k)*(1.0 - qv_c - qc_c - qr_c)
+
+        !convert all tracers to dry ratios
+        qvdry_c = qv_c * dp_c / dpdry_c
+        qcdry_c = qc_c * dp_c / dpdry_c
+        qrdry_c = qr_c * dp_c / dpdry_c
+
+        !no movement between levels, no T change
+        !accretion step, collection Cr = max ( k2 qc qr^k3, 0)
+        change = dt * max ( k2*qcdry_c*qrdry_c**k2, 0.0)
+        !apply change
+        qcdry_c = qcdry_c - change
+        qrdry_c = qrdry_c + change
+
+        !auto-accumulation step Ar = max ( k1 (qc - a), 0 )
+        change = dt * max (k1*(qcdry_c - a1), 0.0)
+        !apply change
+        qcdry_c = qcdry_c - change
+        qrdry_c = qrdry_c + change
+
+        !sedimentation
+        
+        !compute velocity of rain
+        do k=1,nlev
+          ! Liquid water terminal velocity (m/s) following KW eq. 2.15
+          velqr(k)  = 36.34d0*(qr_c(k)*rho(k))**0.1364*sqrt(rho(nlev)/rho(k))
+        end do
+
+
+
+
       endif
 
       !now update 3d fields here
       T(i,j,:)  = T_c(:)
       qv(i,j,:) = qv_c(:)
+      qc(i,j,:) = qc_c(:)
+      qr(i,j,:) = qr_c(:)
 
       ! set dynamics forcing
       elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
 
-!for Kessler this is incorrect!!!!!!!!!!!!!!!!
       ! set tracer-mass forcing. conserve tracer mass
       ! one call say, this is "rain" step, liquid water dissapears from the column
       elem(ie)%derived%FQ(i,j,:,:) = 0.0
       elem(ie)%derived%FQ(i,j,:,1) = (qv(i,j,:) - qv0(i,j,:))/dt !(rho_dry/rho)*dp*(qv-qv0)/dt
+      elem(ie)%derived%FQ(i,j,:,2) = (qc(i,j,:) - qc0(i,j,:))/dt !(rho_dry/rho)*dp*(qv-qv0)/dt
+      elem(ie)%derived%FQ(i,j,:,3) = (qr(i,j,:) - qr0(i,j,:))/dt !(rho_dry/rho)*dp*(qv-qv0)/dt
  
 
     enddo; enddo; !j,i loop

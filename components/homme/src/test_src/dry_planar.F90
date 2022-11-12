@@ -569,21 +569,5 @@ subroutine get_xycoordinates(x,y,hyam,hybm, i,j,k,elem,hvcoord)
 end subroutine
 
 
-#if 0
-subroutine qsat_kessler(p, T, qsat)
-  real(rl),         intent(out):: qsat
-  real(rl),         intent(in) :: p, T
-  qsat = bubble_const1 / p * exp( bubble_const2 * (T - bubble_const3) / ( T - bubble_const4 ) )
-end subroutine qsat_kessler
-
-subroutine qsat_rj(p, T, qsat)
-  real(rl),         intent(out):: qsat
-  real(rl),         intent(in) :: p, T
-  qsat = bubble_epsilo * bubble_e0 / p * &
-         exp(-(latvap/Rwater_vapor) * ((1.0/T)-(1.0/bubble_t0_const)))
-end subroutine qsat_rj
-#endif
-
-
 end module dry_planar_tests
 #endif
