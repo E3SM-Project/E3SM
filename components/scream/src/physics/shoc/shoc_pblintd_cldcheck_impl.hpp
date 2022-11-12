@@ -27,9 +27,7 @@ void Functions<S,D>
     // higher than top interface of lowest level
     //
 
-    auto cldcheck = false;
-    if (cldn >= 0) cldcheck = true;
-    if (cldcheck) pblh = ekat::impl::max<Scalar>(pblh, zi + sp(50));
+    if (cldn >= 0) pblh = ekat::impl::max<Scalar>(pblh, zi + sp(50));
 }
 } // namespace shoc
 } // namespace scream
