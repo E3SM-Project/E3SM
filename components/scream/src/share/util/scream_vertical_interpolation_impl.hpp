@@ -24,6 +24,21 @@ void perform_vertical_interpolation(
   const Tgt& x_tgt,
   const Input& input,
   const view_2d<Pack<T,N>>& output,
+  const int nlevs_src,
+  const int nlevs_tgt,
+  const Real msk_val)
+{
+  const view_2d<Mask<N>> mask("",x_src.extent(0),x_tgt.extent(0));
+  perform_vertical_interpolation_impl_2d(x_src, x_tgt, input, output, mask,
+                                         nlevs_src, nlevs_tgt, msk_val);
+}
+
+template<typename Src, typename Tgt, typename Input, typename T, int N> 
+void perform_vertical_interpolation(
+  const Src& x_src,
+  const Tgt& x_tgt,
+  const Input& input,
+  const view_2d<Pack<T,N>>& output,
   const view_2d<Mask<N>>& mask,
   const int nlevs_src,
   const int nlevs_tgt)
@@ -63,10 +78,9 @@ void perform_vertical_interpolation_impl_2d(
   auto npacks_tgt = ekat::PackInfo<Pack<T,N>::n>::num_packs(nlevs_tgt);
   EKAT_REQUIRE(x_src.extent(0)==input.extent(0));
   EKAT_REQUIRE(x_src.extent(1)==input.extent(1));
-  EKAT_REQUIRE(x_src.extent_int(1)==npacks_src);
-  EKAT_REQUIRE(input.extent_int(1)==npacks_src);
+  EKAT_REQUIRE(x_src.extent(1)*N >= nlevs_src);
   EKAT_REQUIRE(x_tgt.extent(0)==output.extent(1));
-  EKAT_REQUIRE(x_tgt.extent_int(0)==npacks_tgt);
+  EKAT_REQUIRE(x_tgt.extent(0)==npacks_tgt); 
   
   LIV<T,N> vert_interp(ncols,nlevs_src,nlevs_tgt);
 

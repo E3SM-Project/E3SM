@@ -3,6 +3,7 @@ set(DIAGNOSTIC_SRCS
   dry_static_energy.cpp
   exner.cpp
   field_at_level.cpp
+  field_at_pressure_level.cpp
   ice_cloud_mask.cpp
   ice_water_path.cpp
   liquid_water_path.cpp
@@ -25,7 +26,7 @@ set(DIAGNOSTIC_SRCS
 
 add_library(diagnostics ${DIAGNOSTIC_SRCS})
 target_include_directories(diagnostics PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../share)
-target_link_libraries(diagnostics PUBLIC scream_share physics_share)
+target_link_libraries(diagnostics PUBLIC scream_share)
 
 if (NOT SCREAM_LIB_ONLY)
   add_subdirectory(tests)

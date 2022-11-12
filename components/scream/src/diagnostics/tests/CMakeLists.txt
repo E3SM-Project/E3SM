@@ -2,13 +2,15 @@
 if (NOT SCREAM_BASELINES_ONLY)
   include(ScreamUtils)
 
-  set( NEED_LIBS scream_share diagnostics physics_share)
+  set( NEED_LIBS scream_share diagnostics physics_share )
 
   # Test extracting a single level of a field
   CreateUnitTest(field_at_level "field_at_level_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 
  # Test vertically remapping of field
   CreateUnitTest(vertically_remapped_field "vertically_remapped_field_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test interpolating a field onto a single pressure level
+  CreateUnitTest(field_at_pressure_level "field_at_pressure_level_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 
   # Test potential temperature diagnostic
   CreateUnitTest(potential_temperature "potential_temperature_test.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
