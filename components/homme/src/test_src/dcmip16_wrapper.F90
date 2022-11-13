@@ -599,24 +599,28 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   real(rl),           intent(in)            :: dt                       ! time-step size
   type(TimeLevel_t),  intent(in)            :: tl                       ! time level structure
 
-  integer :: i,j,k,ie,qind                                              ! loop indices
+  integer :: i,j,k,kk,ie,qind,d_ind
   real(rl), dimension(np,np,nlev) :: u,v,w,T,p,dp,rho,z,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
   real(rl), dimension(np,np)      :: ps 
-  real(rl), dimension(nlev)       :: p_c,qv_c,qc_c,qr_c,dp_c,T_c,pi,dz_c
+  real(rl), dimension(nlev)       :: p_c,qv_c,qc_c,qr_c,dp_c,T_c,pi,dz_c,rhodry,velqr
+  real(rl), dimension(nlev)       :: dpdry_c, pidry, zm_c, qvdry_c, qcdry_c, qrdry_c, change_c
   real(rl) :: max_w, max_precl, min_ps
 
   real(rl) :: pi_upper,qsat,qsatdry,dp_loc,qv_loc,dpdry_loc,qvdry_loc,dq_loc,vapor_mass_change
   real(rl) :: T_loc,p_loc,pi_loc,L_old,L_new,rstar_old,rstar_new,hold,cpstarTerm_new
-  real(rl) :: T_new
+  real(rl) :: T_new, change, pidry_upper, mass_prect, energy_prect, positt
 
-  real(rl) :: zi(np,np,nlevp)
+  real(rl) :: zi(np,np,nlevp), zi_c(nlevp)
 !  integer, parameter :: test = 1
 
 !  real(rl), parameter:: gravit = 9.80616, rair = 287.0, cpair = 1.0045e3, cpv = 1810.0, cl = 4188.0, &
 !                        rvapor = 461.5, epsilo = rair/rvapor, &
 !                        latvap=2.501e6, latice=3.337e5, e0=610.78, &
 !                        T0const = 273.16, rhow = 1000.0, &
+
+  !kessler constants
+  real(rl), parameter:: k1=0.001,k2=2.2,k3=0.875,a1=0.001
 
 
   if (qsize .ne. 3) call abortmp('ERROR: moist bubble test requires qsize=3')
@@ -652,21 +656,6 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
     ! apply forcing to columns
     do j=1,np; do i=1,np
-
-#if 0
-      !energy before
-      elem(ie)%derived%energy1(i,j,:) = 0.0
-      !cpstar before 
-      if(bubble_cpdry) then 
-        elem(ie)%derived%cpstar(i,j,:) = cpair
-      elseif (bubble_cl) then
-        elem(ie)%derived%cpstar(i,j,:) = cpair
-        elem(ie)%derived%cpstar(i,j,:) = cpair
-
-      do k = 1, nlev
-         elem(ie)%derived%energy1(i,j,:) = elem(ie)%derived%energy1(i,j,:) + 
-      enddo
-#endif
 
       !column values
       qv_c = qv(i,j,:); qc_c = qc(i,j,:); qr_c = qr(i,j,:); 
@@ -744,6 +733,7 @@ stop
 endif
 #endif
 
+          !this does not need conversion wet-dry
           T_c(k)  = T_new
           qv_c(k) = qsat
           precl(i,j,ie) = precl(i,j,ie) + vapor_mass_change / dt / rhow / g
@@ -765,6 +755,7 @@ print *, 'precl',  precl(i,j,ie), vapor_mass_change, rhow
       elseif(bubble_prec_type == 0) then
 
 
+#if 1
 
 !available quantities
       !column values
@@ -775,11 +766,12 @@ print *, 'precl',  precl(i,j,ie), vapor_mass_change, rhow
 !and to split all processes
 !and the same temp vars that were used for RJ do not work here
 
-!now add geopotential. We will never run this test in HY
 if(theta_hydrostatic_mode) then
 print *, 'A! switch to NH'
 stop
 endif
+
+        if( any(qv_c>0).or.any(qc_c>0).or.any(qr_c>0) ) then
 
         !dry density, the only quantity that won't change
         dpdry_c = dp_c*(1.0 - qv_c - qc_c - qr_c)
@@ -794,18 +786,32 @@ endif
         qcdry_c = qc_c * dp_c / dpdry_c
         qrdry_c = qr_c * dp_c / dpdry_c
 
+#if 1
         !no movement between levels, no T change
         !accretion step, collection Cr = max ( k2 qc qr^k3, 0)
-        change = dt * max ( k2*qcdry_c*qrdry_c**k2, 0.0)
+        do k=1,nlev
+        change_c(k) = dt * max ( k2*qcdry_c(k)*qrdry_c(k)**k3, 0.0)
+        enddo
         !apply change
-        qcdry_c = qcdry_c - change
-        qrdry_c = qrdry_c + change
+        qcdry_c = qcdry_c - change_c
+        qrdry_c = qrdry_c + change_c
 
         !auto-accumulation step Ar = max ( k1 (qc - a), 0 )
-        change = dt * max (k1*(qcdry_c - a1), 0.0)
+        do k=1,nlev
+        change_c(k) = dt * max (k1*(qcdry_c(k) - a1), 0.0)
+!if(change_c(k)>0) then
+!print *, 'change_c', change_c(k)
+!endif  
+
+        enddo
+
+!print *, 'max of qcdry', maxval(qcdry_c)
         !apply change
-        qcdry_c = qcdry_c - change
-        qrdry_c = qrdry_c + change
+        qcdry_c = qcdry_c - change_c
+        qrdry_c = qrdry_c + change_c
+#endif
+
+!print *, 'rain', qrdry_c
 
         !sedimentation needs rho, which needs dz
         zi_c(nlevp) = zi(i,j,nlevp)
@@ -818,35 +824,78 @@ endif
         rhodry = dpdry_c / dz_c / g
         mass_prect = 0.0; energy_prect = 0.0
 
+        !sedimentation
+        !
         !compute velocity of rain
         do k=1,nlev
+
+          if(qrdry_c(k)>0.0) then
           ! Liquid water terminal velocity, using dry densities instead of wet
           ! in meter/sec
-          velqr(k)  = 36.34d0*(qr_c(k)*rhodry(k))**0.1364*sqrt(rhodry(nlev)/rhodry(k))
+          velqr(k)  = 36.34d0*(qrdry_c(k)*rhodry(k))**0.1364*sqrt(rhodry(nlev)/rhodry(k))
+
+!print *, 'k, velqr, qr', k, velqr(k), qrdry_c(k)
+
           !check where it ends
-          destination_ind = k
-          positt = velqr(k) * dt + zm_c(k)
+          d_ind = k
+          positt = zm_c(k) - velqr(k) * dt
           !cell with kk index has boundaries zi(kk) and zi(kk+1)
-          do kk=2,nlev
-            if (positt > zi_c(kk) .and. positt <= zi_c(kk+1)) then
-               destination_ind = kk
-               kk = nlev ! does F allow this
+          do kk=k+1,nlev
+            if ( (positt > zi_c(kk)) .and. (positt <= zi_c(kk+1)) ) then
+               d_ind = kk
+               !kk = nlev ! does F allow this
             endif   
           enddo
+
+print *, 'positt - zm_c(k)', positt - zm_c(k)
+
+if(d_ind > kk) then
+print *, k,kk
+endif
+
           if(positt < zi_c(nlevp)) then 
             !hit the bottom
-            destination_ind = -1
+            d_ind = -1
             mass_prect = mass_prect + qrdry_c(k) * dpdry_c(k) 
-            energy_prect = qrdry_c(k) * dpdry_c(k) * ( cl*T_c(k) + latice ) 
+            energy_prect =            qrdry_c(k) * dpdry_c(k) * ( cl*T_c(k) + latice ) 
+            qrdry_c(k) = 0.0
           else
             !stuck in between
+            !arrives to dest cell
+            change = qrdry_c(k)
+            !compute average temperature with new mass
+            T_new = ( T_c(d_ind)*dpdry_c(d_ind)*(cp + cpwater_vapor * qvdry_c(d_ind) + cl * (qcdry_c(d_ind) + qrdry_c(d_ind)) ) + &
+                     T_c(k)    *dpdry_c(k)    *cl*change ) / &
+                     ( cp + cpwater_vapor * qvdry_c(d_ind) + cl * (qcdry_c(d_ind) + qrdry_c(d_ind) + change) ) / &
+                     dpdry_c(d_ind)
+
+!print *, 'T_new', T_new 
+
+            T_c(d_ind) = T_new
+
+            qrdry_c(k)     = qrdry_c(k)     - change
+            qrdry_c(d_ind) = qrdry_c(d_ind) + change
           endif
-        end do
+          endif !there was rain in cell
+        end do ! k loop for sedim
 
+!print *, 'old-new', T(i,j,:)-T_c
+!print *, 'new', T_c
 
+        ! evaporation of rain
+        ! condensation - evaporation
 
+        !update q fields, 
+        dp_c = dpdry_c*(1.0 + qvdry_c + qcdry_c + qrdry_c)
+        qv_c = qvdry_c * dpdry_c / dp_c 
+        qc_c = qcdry_c * dpdry_c / dp_c 
+        qr_c = qrdry_c * dpdry_c / dp_c 
+        precl(i,j,ie) = precl(i,j,ie) + mass_prect / (dt * rhow) / g
 
-      endif
+      endif ! any water >0
+
+#endif
+      endif ! RJ or Kessler choice
 
       !now update 3d fields here
       T(i,j,:)  = T_c(:)
