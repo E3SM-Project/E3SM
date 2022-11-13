@@ -1,586 +1,200 @@
-
-
-
-
 #ifndef CAM
 #include "config.h"
 
-module dcmip16_wrapper
+module newphysics
 
 ! Implementation of the dcmip2012 dycore tests for the preqx dynamics target
 
-use dcmip12_wrapper,      only: pressure_thickness, set_tracers, get_evenly_spaced_z, set_hybrid_coefficients
-use control_mod,          only: test_case, dcmip16_pbl_type, dcmip16_prec_type, use_moisture, theta_hydrostatic_mode,&
-     sub_case, case_planar_bubble, bubble_prec_type, bubble_rj_cpdry, bubble_rj_cpstar
-use baroclinic_wave,      only: baroclinic_wave_test
-use supercell,            only: supercell_init, supercell_test, supercell_z
-use tropical_cyclone,     only: tropical_cyclone_test
-use derivative_mod,       only: derivative_t, gradient_sphere
+use control_mod,          only: theta_hydrostatic_mode,&
+                   case_planar_bubble, bubble_prec_type, bubble_rj_cpdry, bubble_rj_cpstar
 use dimensions_mod,       only: np, nlev, nlevp , qsize, qsize_d, nelemd
 use element_mod,          only: element_t
 use element_state,        only: nt=>timelevels
 use hybrid_mod,           only: hybrid_t
-use hybvcoord_mod,        only: hvcoord_t, set_layer_locations
 use kinds,                only: rl=>real_kind, iulog
 use parallel_mod,         only: abortmp,iam
-use element_ops,          only: set_state, set_state_i, set_elem_state, get_state, tests_finalize,&
-     set_forcing_rayleigh_friction
-use physical_constants,   only: p0, g, Rgas, kappa, Cp, Rwater_vapor, pi=>dd_pi
 use reduction_mod,        only: parallelmax, parallelmin
-use terminator,           only: initial_value_terminator, tendency_terminator
-use time_mod,             only: time_at, TimeLevel_t
+
+!use physical_constants,   only:  pi=>dd_pi
 
 use physical_constants,   only: bubble_const1, bubble_const2, bubble_const3, bubble_const4, &
                                 bubble_t0_const, bubble_epsilo, bubble_e0, &
-                                latvap, &
-                                g, cp, p0, kappa
+                                latvap, latice, &
+                                gravit=>g, p0, &
+                                rdry=>rgas, cpdry=>cp, cpv=>cpwater_vapor, cl, &
+                                rvapor=>rwater_vapor, rhow
 
 implicit none
 
-! this cannot be made stack variable, nelemd is not compile option
-real(rl),dimension(:,:,:), allocatable :: precl ! storage for column precip
-real(rl):: zi(nlevp), zm(nlev)                                          ! z coordinates
-real(rl):: ddn_hyai(nlevp), ddn_hybi(nlevp)                             ! vertical derivativess of hybrid coefficients
-real(rl):: tau
-
-real(rl) :: sample_period  = 2.0_rl
-real(rl) :: rad2dg = 180.0_rl/pi
-
-type :: PhysgridData_t
-   integer :: nphys
-   real(rl), allocatable :: ps(:,:), zs(:,:), T(:,:,:), uv(:,:,:,:), omega_p(:,:,:), q(:,:,:,:)
-end type PhysgridData_t
-
-type (PhysgridData_t) :: pg_data
+!kessler constants, put into phys_const mod
+real(rl), parameter:: k1=0.001,k2=2.2,k3=0.875,a1=0.001
 
 contains
 
-!---------------------------------------------------------------------
-!init routine to call before any dcmip16 inin routines, including restart runs
-subroutine dcmip2016_init()
-  implicit none
-!$OMP BARRIER
-!$OMP MASTER
-  if (.not.allocated(precl)) then
-    allocate(precl(np,np,nelemd))
-    precl(:,:,:) = 0.0
-  else
-    call abortmp('ERROR: in dcmip2016_init() precl has already been allocated') 
-  endif
-!$OMP END MASTER
-!$OMP BARRIER
+subroutine construct_hydro_pressure(dp,ptop,pi)
 
-end subroutine dcmip2016_init
+  real(rl), dimension(nlev), intend(in)  :: dp
+  real(rl),                  intend(in)  :: ptop
+  real(rl), dimension(nlev), intend(out) :: p
+  integer :: k
+  real(rl) :: pi_upper
 
-!_____________________________________________________________________
-subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
-
-  ! moist baroclinic wave test
-
-  type(element_t),    intent(inout), target :: elem(:)                  ! element array
-  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
-  type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
-  integer,            intent(in)            :: nets,nete                ! start, end element index
-
-  integer,  parameter :: use_zcoords  = 0                               ! use vertical pressure coordinates
-  integer,  parameter :: is_deep      = 0                               ! use shallow atmosphere approximation
-  integer,  parameter :: pertt        = 0                               ! use exponential perturbation type
-  real(rl), parameter :: dcmip_X      = 1.0_rl                          ! full scale planet
-  integer :: moist                                                      ! use moist version
-  integer :: i,j,k,ie                                                   ! loop indices
-  real(rl):: lon,lat                                                    ! pointwise coordiantes
-
-  real(rl), dimension(np,np,nlev):: p,z,u,v,w,T,thetav,rho,dp           ! field values
-  real(rl), dimension(np,np,nlevp):: p_i,w_i,z_i
-  real(rl), dimension(np,np):: ps, phis
-  real(rl), dimension(np,np,nlev,6):: q
-
-  real(rl) :: min_thetav, max_thetav
-  min_thetav = +huge(rl)
-  max_thetav = -huge(rl)
-
-  moist = 0
-  if (use_moisture) moist=1
-
-  if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 1: moist baroclinic wave'
-
-  if (qsize<6) call abortmp('ERROR: test requires qsize>=6')
-
-  ! set initial conditions
-  do ie = nets,nete
-    do k=1,nlevp; do j=1,np; do i=1,np
-
-        ! no surface topography
-        p_i(i,j,k)  = p0*hvcoord%etai(k)
-
-        lon = elem(ie)%spherep(i,j)%lon
-        lat = elem(ie)%spherep(i,j)%lat
-
-        w_i(i,j,k)   = 0.0d0
-        ! call this only to compute z_i, will ignore all other output
-        call baroclinic_wave_test(is_deep,moist,pertt,dcmip_X,lon,lat,p_i(i,j,k),&
-            z_i(i,j,k),use_zcoords,u(i,j,1),v(i,j,1),T(i,j,1),thetav(i,j,1),phis(i,j),ps(i,j),rho(i,j,1),q(i,j,1,1))
-    enddo; enddo; enddo
-    do k=1,nlev; do j=1,np; do i=1,np
-
-        ! no surface topography
-        p(i,j,k)  = p0*hvcoord%etam(k)
-        dp(i,j,k) = (hvcoord%etai(k+1)-hvcoord%etai(k))*p0
-
-        lon = elem(ie)%spherep(i,j)%lon
-        lat = elem(ie)%spherep(i,j)%lat
-
-        q(i,j,k,1:5) = 0.0d0
-        q(i,j,k,6) = 1
-        w(i,j,k)   = 0.0d0
-
-        call baroclinic_wave_test(is_deep,moist,pertt,dcmip_X,lon,lat,p(i,j,k),&
-            z(i,j,k),use_zcoords,u(i,j,k),v(i,j,k),T(i,j,k),thetav(i,j,k),phis(i,j),ps(i,j),rho(i,j,k),q(i,j,k,1))
-
-        ! initialize tracer chemistry
-        call initial_value_terminator( lat*rad2dg, lon*rad2dg, q(i,j,k,4), q(i,j,k,5) )
-        call set_tracers(q(i,j,k,1:6),6,dp(i,j,k),i,j,k,lat,lon,elem(ie))
-
-        min_thetav =  min( min_thetav,   thetav(i,j,k) )
-        max_thetav =  max( max_thetav,   thetav(i,j,k) )
-
-    enddo; enddo; enddo
-
-    call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,z,z_i,g,elem(ie),1,nt,ntQ=1)
-    call tests_finalize(elem(ie),hvcoord)
-
-  enddo
-  sample_period = 1800.0 ! sec
-  !print *,"min thetav = ",min_thetav, "max thetav=",max_thetav
-
-
-end subroutine
-
-subroutine dcmip2016_test1_pg(elem,hybrid,hvcoord,nets,nete,nphys)
-  use gllfvremap_mod, only: gfr_init
-
-  type(element_t),    intent(inout), target :: elem(:)                  ! element array
-  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
-  type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
-  integer,            intent(in)            :: nets,nete                ! start, end element index
-  integer,            intent(in)            :: nphys                    ! pgN, N parameter, for physgrid
-
-  integer :: ncol
-
-  if (hybrid%ithr == 0) then
-     ncol = nphys*nphys
-     pg_data%nphys = nphys
-     call gfr_init(hybrid%par, elem, nphys, boost_pg1=.true.)
-     allocate(pg_data%ps(ncol,nelemd), pg_data%zs(ncol,nelemd), pg_data%T(ncol,nlev,nelemd), &
-          pg_data%omega_p(ncol,nlev,nelemd), pg_data%uv(ncol,2,nlev,nelemd), &
-          pg_data%q(ncol,nlev,qsize,nelemd))
-  end if
-  !$omp barrier
-  call dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
-  sample_period = 3600*24
-end subroutine dcmip2016_test1_pg
-
-!_____________________________________________________________________
-subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
-
-  ! tropical cyclone test
-
-  type(element_t),    intent(inout), target :: elem(:)                  ! element array
-  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
-  type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
-  integer,            intent(in)            :: nets,nete                ! start, end element index
-
-  integer :: i,j,k,ie , ierr                                                  ! loop indices
-  real(rl):: lon,lat,ntop                                               ! pointwise coordiantes
-  real(rl), dimension(np,np,nlev):: p,z,u,v,w,T,rho,dp                     ! pointwise field values
-  real(rl), dimension(np,np):: ps,phis
-  real(rl), dimension(np,np,nlevp):: w_i,z_i,p_i
-  real(rl) :: thetav,q(3)
-
-  if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 2: tropical cyclone'
-  !use vertical levels specificed in cam30 file
-
-  ! set initial conditions
-  do ie = nets,nete
-     do k=1,nlevp; do j=1,np; do i=1,np
-
-        ! get surface pressure ps(i,j) at lat, lon, z=0, ignore all other output
-        lon = elem(ie)%spherep(i,j)%lon
-        lat = elem(ie)%spherep(i,j)%lat
-        z_i(i,j,k)=0; call tropical_cyclone_test(lon,lat,p(i,j,1),z_i(i,j,k),1,u(i,j,1),&
-             v(i,j,1),T(i,j,1),thetav,phis(i,j),ps(i,j),rho(i,j,1),q(1))
-
-        ! get hydrostatic pressure at level k
-        p_i(i,j,k)  = p0*hvcoord%hyai(k) + ps(i,j)*hvcoord%hybi(k)
-
-        ! call this only to compute z_i, will ignore all other output
-        call tropical_cyclone_test(lon,lat,p_i(i,j,k),z_i(i,j,k),0,u(i,j,1),v(i,j,1),&
-             T(i,j,1),thetav,phis(i,j),ps(i,j),rho(i,j,1),q(1))
-
-        w_i(i,j,k)  = 0
-
-     enddo; enddo; enddo;
-
-     do k=1,nlev; do j=1,np; do i=1,np
-
-        ! get surface pressure
-        lon = elem(ie)%spherep(i,j)%lon
-        lat = elem(ie)%spherep(i,j)%lat
-        z=0; call tropical_cyclone_test(lon,lat,p(i,j,k),z(i,j,k),1,u(i,j,k),v(i,j,k),&
-             T(i,j,k),thetav,phis(i,j),ps(i,j),rho(i,j,k),q(1))
-
-        ! get pressure at level midpoints
-        p(i,j,k) = p0*hvcoord%hyam(k) + ps(i,j)*hvcoord%hybm(k)
-
-        ! get initial conditions at pressure level p
-        call tropical_cyclone_test(lon,lat,p(i,j,k),z(i,j,k),0,u(i,j,k),v(i,j,k),&
-             T(i,j,k),thetav,phis(i,j),ps(i,j),rho(i,j,k),q(1))
-
-        dp(i,j,k) = pressure_thickness(ps(i,j),k,hvcoord)
-        w(i,j,k)  = 0
-        q(2)=0
-        q(3)=0
-
-        call set_tracers(q(:),3,dp(i,j,k),i,j,k,lat,lon,elem(ie))
-     enddo; enddo; enddo;
-
-    call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,z,z_i,g,elem(ie),1,nt,ntQ=1)
-    call tests_finalize(elem(ie),hvcoord)
+  pi_upper = ptop
+  do k = 1, nlev
+    pi_upper = pi_upper + dp_c(k)
+    pi(k) = pi_upper - dp_c(k)/2
   enddo
 
-  sample_period = 1800.0 ! sec
+end subroutine construct_hydro_pressure
 
-end subroutine
+subroutine convert_to_dry(q1,q2,q3,dp,dpdry,q1dry,q2dry,q3dry)
 
-!_____________________________________________________________________
-subroutine dcmip2016_test3(elem,hybrid,hvcoord,nets,nete)
+  real(rl), dimension(nlev), intend(in)  :: q1,q2,q3,dp,dpdry
+  real(rl), dimension(nlev), intend(out) :: q1dry,q2dry,q3dry
+  q1dry = q1 * dp /dpdry
+  q2dry = q2 * dp /dpdry
+  q3dry = q3 * dp /dpdry
 
-  ! supercell storm test case
+end subroutine convert_to_dry
 
-  type(element_t),    intent(inout), target :: elem(:)                  ! element array
-  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
-  type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
-  integer,            intent(in)            :: nets,nete                ! start, end element index
+subroutine convert_to_wet(q1dry,q2dry,q3dry,dp,dpdry,q1,q2,q3)
 
-  integer,  parameter :: zcoords  = 0                                   ! 0 -> use p coords
-  integer,  parameter :: pert     = 1                                   ! 1 -> add thermal perturbation
+  real(rl), dimension(nlev), intend(in)  :: q1dry,q2dry,q3dry,dp,dpdry
+  real(rl), dimension(nlev), intend(out) :: q1,q2,q3
+  q1 = q1dry * dpdry / dp
+  q2 = q2dry * dpdry / dp
+  q3 = q3dry * dpdry / dp
 
-  integer :: i,j,k,ie,imod                                              ! loop indices
-  real(rl):: lon,lat                                                    ! pointwise coordiantes
+end subroutine convert_to_dry
 
-  real(rl), parameter :: ztop3  = 20000_rl                              ! top of model at 20km
+subroutine accrecion_and_accumulation(qcdry,qrdry,dt)
 
-  real(rl), dimension(np,np,nlev,3) :: q
-  real(rl), dimension(np,np,nlev) :: p,dp,z,u,v,w,T,thetav,rho,rhom
-  real(rl), dimension(np,np,nlevp) :: p_i,z_i,w_i
-  real(rl), dimension(np,np) :: phis, ps
+  real(rl), dimension(nlev), intend(inout) :: qcdry,qrdry
+  real(rl),                  intend(in)    :: dt
+  integer  :: k
+  real(rl) :: change
 
-  real(rl) :: p1,thetav1,rho1,q1
-
-  if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2016 test 3: supercell storm'
-
-  ! initialize hydrostatic state
-  call supercell_init()
-
-  ! get evenly spaced z levels from 0 to 20km
-  call get_evenly_spaced_z(zi,zm, 0.0_rl, ztop3)                          ! get evenly spaced z levels
-
-  ! get eta levels matching z at equator
-  do k=1,nlevp
-    lon =0; lat = 0;
-    call supercell_z(lon, lat, zi(k), p1, thetav1, rho1, q1, pert)
-    hvcoord%etai(k) = p1/p0
-    if (hybrid%masterthread) print *,"k=",k," z=",zi(k)," p=",p1,"etai=",hvcoord%etai(k)
-  enddo
-  call set_hybrid_coefficients(hvcoord,hybrid,  hvcoord%etai(1), 1.0_rl)
-  call set_layer_locations(hvcoord, .true., hybrid%masterthread)
-
-  ! set initial conditions
-  do ie = nets,nete
-     imod=max(1,(nete-nets)/50) ! limit output to 50 lines. 
-     !if (hybrid%masterthread) write(*,"(A,I5,A)",advance="NO") " ie=",ie,achar(13)
-     if (hybrid%masterthread .and. mod(ie,imod)==0) &
-          write(*,"(A,2I5)") " ie=",ie,nete
-
-    do k=1,nlevp
-
-      do j=1,np; do i=1,np
-
-        lon = elem(ie)%spherep(i,j)%lon
-        lat = elem(ie)%spherep(i,j)%lat
-        if (sub_case==2) lon=mod(lon+pi,2*pi)  ! shift initial condition
-
-        ! get surface pressure ps(i,j) at lat, lon, z=0, ignore all other output
-        z_i(i,j,k)=0; call supercell_test(lon,lat,p(i,j,1),z_i(i,j,k),1,u(i,j,1),v(i,j,1),&
-             T(i,j,1),thetav(i,j,1),ps(i,j),rho(i,j,1),q(i,j,1,1),pert)
-
-        ! get hydrostatic pressure at level k
-        p_i(i,j,k)  = p0*hvcoord%hyai(k) + ps(i,j)*hvcoord%hybi(k)
-
-        ! call this only to compute z_i, will ignore all other output
-        call supercell_test(lon,lat,p_i(i,j,k),z_i(i,j,k),zcoords,u(i,j,1),v(i,j,1),T(i,j,1),&
-             thetav(i,j,1),ps(i,j),rho(i,j,1),q(i,j,1,1),pert)
-
-        w_i (i,j,k)  = 0 ! no vertical motion
-
-      enddo; enddo
-    enddo
-    do k=1,nlev
-
-      do j=1,np; do i=1,np
-
-        lon = elem(ie)%spherep(i,j)%lon
-        lat = elem(ie)%spherep(i,j)%lat
-        if (sub_case==2) lon=mod(lon+pi,2*pi)  ! shift initial condition
-        
-        ! get surface pressure ps(i,j) at lat, lon, z=0
-        z(i,j,k)=0; call supercell_test(lon,lat,p(i,j,k),z(i,j,k),1,u(i,j,k),v(i,j,k),T(i,j,k),thetav(i,j,k),ps(i,j),rho(i,j,k),q(i,j,k,1),pert)
-
-        ! get hydrostatic pressure at level k
-        p(i,j,k)  = p0*hvcoord%hyam(k) + ps(i,j)*hvcoord%hybm(k)
-        dp(i,j,k) = pressure_thickness(ps(i,j),k,hvcoord)
-
-        call supercell_test(lon,lat,p(i,j,k),z(i,j,k),zcoords,u(i,j,k),v(i,j,k),T(i,j,k),thetav(i,j,k),ps(i,j),rho(i,j,k),q(i,j,k,1),pert)
-
-        w   (i,j,k)  = 0 ! no vertical motion
-        phis(i,j)    = 0 ! no topography
-        q   (i,j,k,2)= 0 ! no initial clouds
-        q   (i,j,k,3)= 0 ! no initial rain
-
-        call set_tracers(q(i,j,k,:),3,dp(i,j,k),i,j,k,lat,lon,elem(ie))
-
-      enddo; enddo
-    enddo
-    call set_elem_state(u,v,w,w_i,T,ps,phis,p,dp,z,z_i,g,elem(ie),1,nt,ntQ=1)
-
-    ! set density to ensure hydrostatic balance and save initial state
-    call tests_finalize(elem(ie),hvcoord,ie)
-
+  !no movement between levels, no T change
+  !accretion step, collection Cr = max ( k2 qc qr^k3, 0)
+  do k=1,nlev
+    change = dt * max ( k2*qcdry_c(k)*qrdry(k)**k3, 0.0)
+    qcdry(k) = qcdry(k) - change
+    qrdry(k) = qrdry(k) + change
   enddo
 
-  sample_period = 1 ! 60 orig sec
-end subroutine
-
-!_______________________________________________________________________
-subroutine dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
-  real(rl),           intent(in) :: max_w, max_precl, min_ps
-  type(TimeLevel_t),  intent(in) :: tl
-  type(hybrid_t),     intent(in) :: hybrid                   ! hybrid parallel structure
-
-  character(len=*), parameter :: w_filename     = "measurement_wmax.txt"
-  character(len=*), parameter :: precl_filename = "measurement_prect_rate.txt"
-  character(len=*), parameter :: time_filename  = "measurement_time.txt"
-  character(len=*), parameter :: ps_filename    = "measurement_psmin.txt"
-
-  real(rl) :: pmax_w, pmax_precl, pmin_ps, time
-  real(rl) :: next_sample_time = 0.0
-
-  time = time_at(tl%nstep)
-  ! initialize output file
-  if(next_sample_time == 0.0 .and. hybrid%masterthread) then
-    open(unit=10,file=w_filename,    form="formatted",status="UNKNOWN")
-    close(10)
-
-    open(unit=11,file=precl_filename,form="formatted",status="UNKNOWN")
-    close(11)
-
-    open(unit=12,file=time_filename, form="formatted",status="UNKNOWN")
-    close(12)
-
-    open(unit=12,file=ps_filename, form="formatted",status="UNKNOWN")
-    close(13)
-  endif
-  ! append measurements at regular intervals
-  if(time .ge. next_sample_time) then
-!$OMP BARRIER
-!$OMP MASTER
-    next_sample_time = next_sample_time + sample_period
-!$OMP END MASTER
-!$OMP BARRIER
-    pmax_w     = parallelMax(max_w,    hybrid)
-    pmax_precl = parallelMax(max_precl,hybrid)
-    pmin_ps    = parallelMin(min_ps,   hybrid)
-
-    if (hybrid%masterthread) then
-      print *,"time=",time_at(tl%nstep)," pmax_w (m/s)=",pmax_w
-      print *,"time=",time_at(tl%nstep)," pmax_precl (mm/day)=",pmax_precl*(1000.0)*(24.0*3600)
-      print *,"time=",time_at(tl%nstep)," pmin_ps (Pa)=",pmin_ps
-
-      open(unit=10,file=w_filename,form="formatted",position="append")
-        write(10,'(99E24.15)') pmax_w
-      close(10)
-
-      open(unit=11,file=precl_filename,form="formatted",position="append")
-        write(11,'(99E24.15)') pmax_precl
-      close(11)
-
-      open(unit=12,file=time_filename,form="formatted",position="append")
-        write(12,'(99E24.15)') time
-      close(12)
-
-      open(unit=13,file=ps_filename,form="formatted",position="append")
-        write(13,'(99E24.15)') pmin_ps
-      close(13)
-
-    endif
-  endif
-
-  end subroutine
-
-!_______________________________________________________________________
-subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
-
-  type(element_t),    intent(inout), target :: elem(:)                  ! element array
-  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
-  type(hvcoord_t),    intent(in)            :: hvcoord                  ! hybrid vertical coordinates
-  integer,            intent(in)            :: nets,nete                ! start, end element index
-  integer,            intent(in)            :: nt, ntQ                  ! time level index
-  real(rl),           intent(in)            :: dt                       ! time-step size
-  type(TimeLevel_t),  intent(in)            :: tl                       ! time level structure
-
-  integer :: i,j,k,ie                                                     ! loop indices
-  real(rl), dimension(np,np,nlev) :: u,v,w,T,exner_kess,theta_kess,p,dp,rho,z,qv,qc,qr
-  real(rl), dimension(np,np,nlev) :: u0,v0,T0,qv0,qc0,qr0,cl,cl2,ddt_cl,ddt_cl2
-  real(rl), dimension(np,np,nlev) :: rho_dry,rho_new,Rstar,p_pk
-  real(rl), dimension(nlev)       :: u_c,v_c,p_c,qv_c,qc_c,qr_c,rho_c,z_c, th_c
-  real(rl), dimension(np,np)      :: delta_ps(np,np)
-  real(rl) :: max_w, max_precl, min_ps
-  real(rl) :: lat, lon, dz_top(np,np), zi(np,np,nlevp),zi_c(nlevp), ps(np,np)
-
-  integer :: pbl_type, prec_type, qi
-  integer, parameter :: test = 1
-  logical :: toy_chemistry_on
-
-  if (case_planar_bubble) then
-    toy_chemistry_on = .false.
-    prec_type = bubble_prec_type
-    if (qsize .ne. 3) call abortmp('ERROR: moist bubble test requires qsize=3')
-  else
-    toy_chemistry_on = .true.
-    prec_type = dcmip16_prec_type
-  endif
-
-  pbl_type  = dcmip16_pbl_type
-
-  max_w     = -huge(rl)
-  max_precl = -huge(rl)
-  min_ps    = +huge(rl)
-
-  do ie = nets,nete
-
-    precl(:,:,ie) = -1.0d0
-
-    ! get current element state
-    call get_state(u,v,w,T,p,dp,ps,rho,z,zi,g,elem(ie),hvcoord,nt,ntQ)
-
-    ! compute form of exner pressure expected by Kessler physics
-    exner_kess = (p/p0)**(Rgas/Cp)
-    theta_kess = T/exner_kess
-
-    ! get mixing ratios
-    ! use qi to avoid compiler warnings when qsize_d<5
-    qi=1;  qv  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
-    qi=2;  qc  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
-    qi=3;  qr  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
-    if (toy_chemistry_on) then
-      qi=4;  cl  = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
-      qi=5;  cl2 = elem(ie)%state%Qdp(:,:,:,qi,ntQ)/dp
-    endif
-
-    ! ensure positivity
-    where(qv<0); qv=0; endwhere
-    where(qc<0); qc=0; endwhere
-    where(qr<0); qr=0; endwhere
-
-
-    rho_dry = (1-qv)*rho  ! convert to dry density using wet mixing ratio
-
-    ! convert to dry mixing ratios
-    qv  = qv*rho/rho_dry
-    qc  = qc*rho/rho_dry
-    qr  = qr*rho/rho_dry
-
-    ! save un-forced prognostics
-    u0=u; v0=v; T0=T; qv0=qv; qc0=qc; qr0=qr
-
-    ! apply forcing to columns
-    do j=1,np; do i=1,np
-
-      ! invert column
-      u_c  = u  (i,j,nlev:1:-1)
-      v_c  = v  (i,j,nlev:1:-1)
-      qv_c = qv (i,j,nlev:1:-1)
-      qc_c = qc (i,j,nlev:1:-1)
-      qr_c = qr (i,j,nlev:1:-1)
-      p_c  = p  (i,j,nlev:1:-1)
-      rho_c= rho_dry(i,j,nlev:1:-1)
-      z_c  = z  (i,j,nlev:1:-1)
-      zi_c = zi (i,j,nlevp:1:-1)
-      th_c = theta_kess(i,j,nlev:1:-1)
-
-      ! get forced versions of u,v,p,qv,qc,qr. rho is constant
-      lat=0.0
-      call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, z_c, zi_c, lat, nlev, &
-                             precl(i,j,ie), pbl_type, prec_type)
-
-      ! revert column
-      u(i,j,:)  = u_c(nlev:1:-1)
-      v(i,j,:)  = v_c(nlev:1:-1)
-      qv(i,j,:) = qv_c(nlev:1:-1)
-      qc(i,j,:) = qc_c(nlev:1:-1)
-      qr(i,j,:) = qr_c(nlev:1:-1)
-      theta_kess(i,j,:) = th_c(nlev:1:-1)
-
-      if (toy_chemistry_on) then 
-        lon = elem(ie)%spherep(i,j)%lon
-        lat = elem(ie)%spherep(i,j)%lat
-
-        do k=1,nlev
-          call tendency_terminator( lat*rad2dg, lon*rad2dg, cl(i,j,k), cl2(i,j,k), dt, ddt_cl(i,j,k), ddt_cl2(i,j,k))
-        enddo
-      endif
-
-
-    enddo; enddo;
-
-    ! convert from theta to T w.r.t. new model state
-    ! assume hydrostatic pressure pi changed by qv forcing
-    ! assume NH pressure perturbation unchanged
-    delta_ps = sum( (rho_dry/rho)*dp*(qv-qv0) , 3 )
-    do k=1,nlev
-       p(:,:,k) = p(:,:,k) + hvcoord%hybm(k)*delta_ps(:,:)
-    enddo
-    exner_kess = (p/p0)**(Rgas/Cp)
-    T = exner_kess*theta_kess
-
-    ! set dynamics forcing
-    elem(ie)%derived%FM(:,:,1,:) = (u - u0)/dt
-    elem(ie)%derived%FM(:,:,2,:) = (v - v0)/dt
-    elem(ie)%derived%FT(:,:,:)   = (T - T0)/dt
-
-    ! set tracer-mass forcing. conserve tracer mass
-    ! rho_dry*(qv-qv0)*dz = FQ deta, dz/deta = -dp/(g*rho)
-    elem(ie)%derived%FQ(:,:,:,1) = (rho_dry/rho)*dp*(qv-qv0)/dt
-    elem(ie)%derived%FQ(:,:,:,2) = (rho_dry/rho)*dp*(qc-qc0)/dt
-    elem(ie)%derived%FQ(:,:,:,3) = (rho_dry/rho)*dp*(qr-qr0)/dt
-
-
-    if (toy_chemistry_on) then 
-    qi=4; elem(ie)%derived%FQ(:,:,:,qi) = dp*ddt_cl
-    qi=5; elem(ie)%derived%FQ(:,:,:,qi) = dp*ddt_cl2
-    endif
-
-
-    ! perform measurements of max w, and max prect
-    max_w     = max( max_w    , maxval(w    ) )
-    max_precl = max( max_precl, maxval(precl(:,:,ie)) )
-    min_ps    = min( min_ps,    minval(ps) )
-
+  !auto-accumulation step Ar = max ( k1 (qc - a), 0 )
+  do k=1,nlev
+    change = dt * max (k1*(qcdry(k) - a1), 0.0)
+    qcdry(k) = qcdry(k) - change
+    qrdry(k) = qrdry(k) + change
   enddo
 
-  call dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
+end subroutine accrecion
 
-end subroutine dcmip2016_test1_forcing
+subroutine get_geo_from_drydp(Tempe, dpdry, pidry, zbottom, zi, zm, dz)
+
+  real(rl), dimension(nlevp), intend(out) :: zi
+  real(rl), dimension(nlev),  intend(out) :: zm, dz
+  real(rl), dimension(nlev),  intend(in)  :: Tempe, dpdry, pidry
+  real(rl),                   intend(in)  :: zbottom
+
+  integer  :: k
+
+  zi(nlevp) = zbottom
+  do k=nlev,1,-1
+    zi(k) = zi(k+1) + rdry*Tempe(k)*dpdry(k)/pidry(k)/gravit
+  enddo
+  dz(1:nlev) = zi(1:nlev) - zi(2:nlevp)
+  zm(1:nlev) = (zi(1:nlev) + zi(2:nlevp))/2
+
+end subroutine get_geo_from_drydp
+
+
+subroutine sedimentation(qvdry,qcdry,qrdry,tempe,dpdry,pidry,zi,massleft,energyleft,dt)
+
+  real(rl), dimension(nlev), intend(inout) :: qvdry,qcdry,qrdry,tempe
+  real(rl), dimension(nlev), intend(in)    :: dpdry, pidry, zi
+  real(rl),                  intend(in)    :: dt
+  real(rl),                  intend(out)   :: massleft, energyleft
+
+  integer  :: k, kk, d_ind
+  real(rl) :: change, positt, velqr, T_new, cptermold, cptermnew
+  real(rl), dimension(nlev) :: zm, dz, rhodry
+
+  massleft = 0.0; energyleft = 0.0
+
+  call get_geo_from_drydp(tempe, dpdry, pidry, zbottom, zi, zm, dz)
+
+  rhodry = dpdry / dz / gravit
+
+  do k=1,nlev
+
+    if(qrdry(k)>0.0) then
+      ! Liquid water terminal velocity, using dry densities instead of wet
+      ! in meter/sec
+      velqr  = 36.34d0*(qrdry(k)*rhodry(k))**0.1364*sqrt(rhodry(nlev)/rhodry(k))
+
+!print *, 'k, velqr, qr', k, velqr(k), qrdry_c(k)
+
+      !check where it ends
+       d_ind = k
+       positt = zm(k) - velqr * dt
+       !cell with kk index has boundaries zi(kk) and zi(kk+1)
+       do kk=k+1,nlev
+         if ( (positt > zi(kk)) .and. (positt <= zi(kk+1)) ) then
+           d_ind = kk
+           !kk = nlev ! does F allow this
+         endif
+       enddo
+
+print *, 'positt - zm_c(k)', positt - zm_c(k)
+if(d_ind > kk) then
+print *, k,kk
+endif
+
+       if(positt < zi(nlevp)) then
+         !hit the bottom
+         d_ind = -1
+         massleft   = massleft   + qrdry(k) * dpdry(k)
+         energyleft = energyleft + qrdry(k) * dpdry(k) * ( cl*tempe(k) + latice )
+         qrdry_c(k) = 0.0
+       else
+         !stuck in between
+         !arrives to dest cell, recompute ratio for the dest cell
+         change = qrdry(k)*dpdry(k)/dpdry(d_ind)
+         !compute average temperature with new mass
+         cptermold = cpdry + cpwater_vapor * qvdry_c(d_ind) + cl * (qcdry_c(d_ind) + qrdry_c(d_ind))
+         cptermnew = cptermold + cl*change
+         T_new = ( tempe(d_ind) * dpdry(d_ind) * cptermold + tempe(k) * dpdry(k) * qrdry(k) * cl ) / &
+                  cptermnew / dpdry_c(d_ind)
+
+!print *, 'T_new', T_new 
+         tempe(d_ind) = T_new
+
+         qrdry(k) = 0.0
+         qrdry(d_ind) = qrdry(d_ind) + change
+       endif
+     endif !there was rain in cell
+   end do ! k loop for sedim
+
+end subroutine sedimentation
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -588,10 +202,6 @@ end subroutine dcmip2016_test1_forcing
 !_______________________________________________________________________
 subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
-  use physical_constants, only: g, Rgas, cp, cpwater_vapor, cl, latvap, latice, &
-                                Rwater_vapor, bubble_epsilo, rhow
-
-  type(element_t),    intent(inout), target :: elem(:)                  ! element array
   type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
   type(hvcoord_t),    intent(in)            :: hvcoord                  ! hybrid vertical coordinates
   integer,            intent(in)            :: nets,nete                ! start, end element index
@@ -662,7 +272,11 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       p_c  = p(i,j,:); dp_c = dp(i,j,:); T_c = T(i,j,:);
 
       pi_upper = hvcoord%hyai(1) * hvcoord%ps0
-      call construct_hydro_pressure(dp_c,pi_upper,pi)
+      do k = 1, nlev
+        pi_upper = pi_upper + dp_c(k)
+        pi(k) = pi_upper - dp_c(k)/2
+      enddo
+
 
       ! RJ part
       if(bubble_prec_type == 1) then
@@ -750,41 +364,147 @@ print *, 'precl',  precl(i,j,ie), vapor_mass_change, rhow
       ! Kessler part
       elseif(bubble_prec_type == 0) then
 
-        if(theta_hydrostatic_mode) then
-          print *, 'A, in kessler planar bubble! switch to NH';  stop
-        endif
 
-        !if there is any water int he column
+#if 1
+
+!available quantities
+      !column values
+!      qv_c, qc_c, qr_c
+!      p_c, dp_c, T_c, pi
+
+!unlike RJ, Kessler needs all column values at once (for sedimentation, at least)
+!and to split all processes
+!and the same temp vars that were used for RJ do not work here
+
+if(theta_hydrostatic_mode) then
+print *, 'A! switch to NH'
+stop
+endif
+
         if( any(qv_c>0).or.any(qc_c>0).or.any(qr_c>0) ) then
 
-          !dry density, the only quantity that won't change
-          dpdry_c = dp_c*(1.0 - qv_c - qc_c - qr_c)
+        !dry density, the only quantity that won't change
+        dpdry_c = dp_c*(1.0 - qv_c - qc_c - qr_c)
+        pidry_upper = hvcoord%hyai(1) * hvcoord%ps0
+        do k = 1, nlev
+          pidry_upper = pidry_upper + dpdry_c(k)
+          pidry(k) = pidry_upper - dpdry_c(k)/2
+        enddo
 
-          call construct_hydro_pressure(dpdry_c,pi_upper,pidry)
+        !convert all tracers to dry ratios
+        qvdry_c = qv_c * dp_c / dpdry_c
+        qcdry_c = qc_c * dp_c / dpdry_c
+        qrdry_c = qr_c * dp_c / dpdry_c
 
-          !convert all tracers to dry ratios
-          call convert_to_dry(qv_c, qc_c, qr_c, dp_c, dpdry_c, qvdry_c, qcdry_c, qrdry_c)
+#if 1
+        !no movement between levels, no T change
+        !accretion step, collection Cr = max ( k2 qc qr^k3, 0)
+        do k=1,nlev
+        change_c(k) = dt * max ( k2*qcdry_c(k)*qrdry_c(k)**k3, 0.0)
+        enddo
+        !apply change
+        qcdry_c = qcdry_c - change_c
+        qrdry_c = qrdry_c + change_c
 
-          call accrecion_and_accumulation(qcdry_c, qrdry_c, dt)
+        !auto-accumulation step Ar = max ( k1 (qc - a), 0 )
+        do k=1,nlev
+        change_c(k) = dt * max (k1*(qcdry_c(k) - a1), 0.0)
+!if(change_c(k)>0) then
+!print *, 'change_c', change_c(k)
+!endif  
+
+        enddo
+
+!print *, 'max of qcdry', maxval(qcdry_c)
+        !apply change
+        qcdry_c = qcdry_c - change_c
+        qrdry_c = qrdry_c + change_c
+#endif
 
 !print *, 'rain', qrdry_c
 
-          call sedimentation(qvdry_c,qcdry_c,qrdry_c,zi_c,,dt)
+        !sedimentation needs rho, which needs dz
+        zi_c(nlevp) = zi(i,j,nlevp)
+        do k=nlev,1,-1
+          zi_c(k) = zi_c(k+1) + Rgas*T_c(k)*dpdry_c(k)/pidry(k)/g
+        enddo
+        dz_c(1:nlev) = zi_c(1:nlev) - zi_c(2:nlevp)
+        zm_c(1:nlev) = (zi_c(1:nlev) + zi_c(2:nlevp))/2
+        
+        rhodry = dpdry_c / dz_c / g
+        mass_prect = 0.0; energy_prect = 0.0
+
+        !sedimentation
+        !
+        !compute velocity of rain
+        do k=1,nlev
+
+          if(qrdry_c(k)>0.0) then
+          ! Liquid water terminal velocity, using dry densities instead of wet
+          ! in meter/sec
+          velqr(k)  = 36.34d0*(qrdry_c(k)*rhodry(k))**0.1364*sqrt(rhodry(nlev)/rhodry(k))
+
+!print *, 'k, velqr, qr', k, velqr(k), qrdry_c(k)
+
+          !check where it ends
+          d_ind = k
+          positt = zm_c(k) - velqr(k) * dt
+          !cell with kk index has boundaries zi(kk) and zi(kk+1)
+          do kk=k+1,nlev
+            if ( (positt > zi_c(kk)) .and. (positt <= zi_c(kk+1)) ) then
+               d_ind = kk
+               !kk = nlev ! does F allow this
+            endif   
+          enddo
+
+print *, 'positt - zm_c(k)', positt - zm_c(k)
+
+if(d_ind > kk) then
+print *, k,kk
+endif
+
+          if(positt < zi_c(nlevp)) then 
+            !hit the bottom
+            d_ind = -1
+            mass_prect = mass_prect + qrdry_c(k) * dpdry_c(k) 
+            energy_prect =            qrdry_c(k) * dpdry_c(k) * ( cl*T_c(k) + latice ) 
+            qrdry_c(k) = 0.0
+          else
+            !stuck in between
+            !arrives to dest cell
+            change = qrdry_c(k)
+            !compute average temperature with new mass
+            T_new = ( T_c(d_ind)*dpdry_c(d_ind)*(cp + cpwater_vapor * qvdry_c(d_ind) + cl * (qcdry_c(d_ind) + qrdry_c(d_ind)) ) + &
+                     T_c(k)    *dpdry_c(k)    *cl*change ) / &
+                     ( cp + cpwater_vapor * qvdry_c(d_ind) + cl * (qcdry_c(d_ind) + qrdry_c(d_ind) + change) ) / &
+                     dpdry_c(d_ind)
+
+!print *, 'T_new', T_new 
+
+            T_c(d_ind) = T_new
+
+            qrdry_c(k)     = qrdry_c(k)     - change
+            qrdry_c(d_ind) = qrdry_c(d_ind) + change
+          endif
+          endif !there was rain in cell
+        end do ! k loop for sedim
 
 !print *, 'old-new', T(i,j,:)-T_c
 !print *, 'new', T_c
 
-          ! evaporation of rain
-          ! condensation - evaporation
+        ! evaporation of rain
+        ! condensation - evaporation
 
-          !update q fields
-          dp_c = dpdry_c*(1.0 + qvdry_c + qcdry_c + qrdry_c)
-          call convert_to_wet(qvdry_c, qcdry_c, qrdry_c, dp_c, dpdry_c, qv_c, qc_c, qr_c)
+        !update q fields, 
+        dp_c = dpdry_c*(1.0 + qvdry_c + qcdry_c + qrdry_c)
+        qv_c = qvdry_c * dpdry_c / dp_c 
+        qc_c = qcdry_c * dpdry_c / dp_c 
+        qr_c = qrdry_c * dpdry_c / dp_c 
+        precl(i,j,ie) = precl(i,j,ie) + mass_prect / (dt * rhow) / g
 
-          precl(i,j,ie) = precl(i,j,ie) + mass_prect / (dt * rhow) / g
+      endif ! any water >0
 
-        endif ! any water >0
-
+#endif
       endif ! RJ or Kessler choice
 
       !now update 3d fields here
