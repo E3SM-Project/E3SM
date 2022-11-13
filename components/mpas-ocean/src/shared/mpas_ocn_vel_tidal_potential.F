@@ -328,7 +328,7 @@ contains
       tidalPotRamp      = 1.0e20_RKIND
       rho0gInv = 1.0_RKIND / rho_sw / gravity
       sshTermSplit = 1.0_RKIND
-      nonSshTermSplit = 1.0_RKIND
+      nonSshTermsSplit = 1.0_RKIND
       !*** If tidal potential turned on, set all relevant variables
 
       if (config_use_tidal_potential_forcing) then

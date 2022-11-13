@@ -55,8 +55,6 @@ module ocn_time_integration_lts
    ! Public member functions
    !
    !--------------------------------------------------------------------
-   !TODO add the config related functions and modify the ocn_lts_fast_tends not
-   !to use mesh pool or tend pool
    public :: ocn_time_integrator_lts, &
              ocn_time_integration_lts_init, &
              ocn_lts_tends, &
@@ -119,7 +117,8 @@ module ocn_time_integration_lts
        statePool, & ! structure holding state variables
        meshPool, & ! structure holding mesh variables
        forcingPool, & ! structure holding forcing variables
-       scratchPool  ! structure holding temporary variables
+       scratchPool, & ! structure holding temporary variables
+       tracersPool  ! structure holding tracers variables
 
     ! LTS Pools
     type (mpas_pool_type), pointer :: &
@@ -131,7 +130,7 @@ module ocn_time_integration_lts
        prevTendSlowPool, nextTendSlowPool, & ! structures containing intermediate data
        prevTendSum1stPool, nextTendSum1stPool, & ! structures containing intermediate data
        prevTendSum2ndPool, nextTendSum2ndPool, & ! structures containing intermediate data
-       prevTendSum3rdPool, nextTendSum3rdPool, & ! structures containing intermediate data
+       prevTendSum3rdPool, nextTendSum3rdPool    ! structures containing intermediate data
 
     ! Tend Array Pointers
     real (kind=RKIND), dimension(:,:), pointer ::  &
@@ -140,10 +139,10 @@ module ocn_time_integration_lts
        normalVelocityTendSlow, & ! normal velocity slow tendency
        normalVelocityTendSum1st, & ! one of the normal velocity correction terms for the interface
        layerThicknessTendSum1st, & ! one of the layer thickness correction terms for the interface
-       normalVelocityTendSum1st, & ! one of the normal velocity correction terms for the interface
-       layerThicknessTendSum1st, & ! one of the layer thickness correction terms for the interface
-       normalVelocityTendSum1st, & ! one of the normal velocity correction terms for the interface
-       layerThicknessTendSum1st  ! one of the layer thickness correction terms for the interface
+       normalVelocityTendSum2nd, & ! one of the normal velocity correction terms for the interface
+       layerThicknessTendSum2nd, & ! one of the layer thickness correction terms for the interface
+       normalVelocityTendSum3rd, & ! one of the normal velocity correction terms for the interface
+       layerThicknessTendSum3rd  ! one of the layer thickness correction terms for the interface
 
     ! State Array Pointers
     real (kind=RKIND), dimension(:,:), pointer :: &
@@ -159,7 +158,7 @@ module ocn_time_integration_lts
     ! LTS objects
     real (kind=RKIND) :: &
        dtFine, & ! fine dt, defined as dt / M
-       alpha, alphaHat, beta, betaHat, gam, gamHat, & ! interpolation coefficients for the predictor step of LTS
+       alpha, alphaHat, beta, betaHat, gam, gamHat  ! interpolation coefficients for the predictor step of LTS
     integer, dimension(:,:), pointer :: &
        nCellsInLTSRegion, & ! number of cells in a given LTS region
        nEdgesInLTSRegion ! number of edges in a given LTS region
@@ -202,6 +201,8 @@ module ocn_time_integration_lts
                                                tendPool)
     call mpas_pool_get_subpool(block%structs, 'scratch', &
                                                scratchPool)
+    call mpas_pool_get_subpool(statePool, 'tracers', &
+                                               tracersPool)
 
     !--- Retrieve state variables at necessary time levels
 
@@ -417,7 +418,6 @@ module ocn_time_integration_lts
 
     normalVelocityTend(:,:) = normalVelocityTend(:,:) + normalVelocityTendSlow(:,:)
 
-
     ! --- NORMAL VELOCITY
 
     ! --- interface layers
@@ -610,7 +610,6 @@ module ocn_time_integration_lts
  
        normalVelocityTend(:,:) = normalVelocityTend(:,:) + normalVelocityTendSlow(:,:)
 
-
        ! --- NORMAL VELOCITY
 
        ! --- interface layer 1 (correction)
@@ -728,7 +727,7 @@ module ocn_time_integration_lts
 
        ! --- interface layer 1 (correction)
        do ie = 1, nEdgesInLTSRegion(1,2)
-          iEdge = edgesInLTSRegon(1,2,ie)
+          iEdge = edgesInLTSRegion(1,2,ie)
           normalVelocityFirstStage(:,iEdge) = normalVelocityNew(:,iEdge)
           normalVelocityTendSum1st(:,iEdge) = normalVelocityTendSum1st(:,iEdge) + normalVelocityTend(:,iEdge)
        end do
@@ -1060,7 +1059,6 @@ module ocn_time_integration_lts
     ! DIAGNOSTICS UPDATE ---
     call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, scratchPool, tracersPool, 2)
 
-
     call mpas_pool_destroy_pool(tendSum1stPool)
     call mpas_pool_destroy_pool(tendSum2ndPool)
     call mpas_pool_destroy_pool(tendSum3rdPool)
@@ -1101,8 +1099,8 @@ module ocn_time_integration_lts
     type (block_type), pointer :: block
     type (mpas_pool_type), pointer :: LTSPool, meshPool
     integer, dimension(:), allocatable :: isLTSRegionEdgeAssigned
-    integer :: i, iCell, iEdge, iRegion, iHalo, coarseRegions, fineRegions, fineRegionsM1 
-    integer, dimension(:), pointer :: LTSRegion, mpiRankCell, blockPartitionCel
+    integer :: i, iCell, iEdge, iRegion, coarseRegions, fineRegions, fineRegionsM1 
+    integer, dimension(:), pointer :: LTSRegion, mpiRankCell
     integer, dimension(:,:), pointer :: nCellsInLTSRegion, nEdgesInLTSRegion
     integer, dimension(:,:,:), pointer :: cellsInLTSRegion, edgesInLTSRegion
     integer, dimension(2) :: minMaxLTSRegion
@@ -1112,13 +1110,12 @@ module ocn_time_integration_lts
 
     block => domain % blocklist
     call mpas_pool_get_subpool(block % structs, 'LTS', LTSPool)
-
+    call mpas_pool_get_subpool(block % structs, ',mesh', meshPool)
 
     call mpas_pool_get_array(meshPool, 'mpiRankCell', mpiRankCell)
-    call mpas_pool_get_array(meshPool, 'blockPartitionCell', blockPartitionCell)
 
     call mpas_pool_get_array(LTSPool, 'LTSRegion', LTSRegion)
-    call mpas_pool_get_array(LTSPool, 'cellsInLTSRegion', cellsInLTSRegion
+    call mpas_pool_get_array(LTSPool, 'cellsInLTSRegion', cellsInLTSRegion)
     call mpas_pool_get_array(LTSPool, 'nCellsInLTSRegion', nCellsInLTSRegion)
     call mpas_pool_get_array(LTSPool, 'edgesInLTSRegion', edgesInLTSRegion)
     call mpas_pool_get_array(LTSPool, 'nEdgesInLTSRegion', nEdgesInLTSRegion)
@@ -1130,16 +1127,11 @@ module ocn_time_integration_lts
     ! 4 = interface layer 2
     ! 5 = fine (to advance when doing 1st stage on interface)
        
-    nCellsInLTSHalo(:,:) = 0
-    nEdgesInLTSHalo(:,:) = 0
+    nCellsInLTSRegion(:,:) = 0
+    nEdgesInLTSRegion(:,:) = 0
 
     ! this is to visualize MPI partitions on Paraview
     mpiRankCell(1:nCellsAll) = domain % dminfo % my_proc_id
-
-    ! this is to visualize block partitions on Paraview
-    do iCell = 1, nCellsAll
-       blockPartitionCell(iCell) = block % blockID
-    end do
 
     ! this is a loop to build the lists of elements in the fine, coarse, and interface regions
     do iCell = 1, nCellsOwned !this loops up to nCellsOwned because in the time stepping we only want to advance the cells owned by the MPI process
@@ -1190,14 +1182,14 @@ module ocn_time_integration_lts
 
     fineRegions = 3
     fineRegionsM1 = 2
-    do iHalo = 1, fineRegionsM1
-       do iCell = 1, nCellsInLTSRegion(1, fineRegions - iHalo + 1)
-          do i = 1, nEdgesOnCell(cellsInLTSRegion(1, fineRegions - iHalo + 1, iCell))
-             iEdge = edgesOnCell(i,cellsInLTSRegion(1, fineRegions - iHalo + 1, iCell))
+    do iRegion = 1, fineRegionsM1
+       do iCell = 1, nCellsInLTSRegion(1, fineRegions - iRegion + 1)
+          do i = 1, nEdgesOnCell(cellsInLTSRegion(1, fineRegions - iRegion + 1, iCell))
+             iEdge = edgesOnCell(i,cellsInLTSRegion(1, fineRegions - iRegion + 1, iCell))
              if (iEdge .le. nEdgesOwned) then
                 if (isLTSRegionEdgeAssigned(iEdge) == 0) then
-                   nEdgesInLTSRegion(1, fineRegions - iHalo + 1) = nEdgesInLTSRegion(1, fineRegions - iHalo + 1) + 1
-                   edgesInLTSRegion(1, fineRegions - iHalo + 1, nEdgesInLTSRegion(1, fineRegions - iHalo + 1)) = iEdge
+                   nEdgesInLTSRegion(1, fineRegions - iRegion + 1) = nEdgesInLTSRegion(1, fineRegions - iRegion + 1) + 1
+                   edgesInLTSRegion(1, fineRegions - iRegion + 1, nEdgesInLTSRegion(1, fineRegions - iRegion + 1)) = iEdge
                    isLTSRegionEdgeAssigned(iEdge) = 1 
                 end if
             end if
@@ -1206,14 +1198,14 @@ module ocn_time_integration_lts
     end do
 
     coarseRegions = 2
-    do iHalo = 1, coarseRegions
-       do iCell = 1, nCellsInLTSRegion(2, coarseRegions - iHalo + 1)
-          do i = 1, nEdgesOnCell(cellsInLTSRegion(2,coarseRegions - iHalo + 1,iCell))
-             iEdge = edgesOnCell(i,cellsInLTSRegion(2,coarseRegions - iHalo + 1,iCell))
+    do iRegion = 1, coarseRegions
+       do iCell = 1, nCellsInLTSRegion(2, coarseRegions - iRegion + 1)
+          do i = 1, nEdgesOnCell(cellsInLTSRegion(2,coarseRegions - iRegion + 1,iCell))
+             iEdge = edgesOnCell(i,cellsInLTSRegion(2,coarseRegions - iRegion + 1,iCell))
             if (iEdge .le. nEdgesOwned) then
                 if (isLTSRegionEdgeAssigned(iEdge) == 0) then
-                   nEdgesInLTSRegion(2, coarseRegions - iHalo + 1) = nEdgesInLTSRegion(2, coarseRegions - iHalo + 1) + 1
-                   edgesInLTSRegion(2, coarseRegions - iHalo + 1, nEdgesInLTSRegion(2, coarseRegions - iHalo + 1)) = iEdge
+                   nEdgesInLTSRegion(2, coarseRegions - iRegion + 1) = nEdgesInLTSRegion(2, coarseRegions - iRegion + 1) + 1
+                   edgesInLTSRegion(2, coarseRegions - iRegion + 1, nEdgesInLTSRegion(2, coarseRegions - iRegion + 1)) = iEdge
                    isLTSRegionEdgeAssigned(iEdge) = 1
                 end if
              end if
@@ -1245,10 +1237,11 @@ module ocn_time_integration_lts
 
    integer, dimension(:,:), pointer :: nCellsInLTSRegion, nEdgesInLTSRegion
    integer, dimension(:,:,:), pointer :: cellsInLTSRegion, edgesInLTSRegion
+   real (kind=RKIND), dimension(:), pointer :: ssh
    real (kind=RKIND), dimension(:,:), pointer :: normalVelocityTend, layerThicknessTend, normalVelocity, layerThickness
 
-   integer :: iEdge, cell1, cell2, k, ie, iRegion, nRegions, ic, iCell, nCells
-   real (kind=RKIND) :: invdcEdge, betaSelfAttrLoad, flux, invAreaCell
+   integer :: iEdge, cell1, cell2, k, ie, iRegion, nRegions, ic, i, iCell, nCells, kmin, kmax
+   real (kind=RKIND) :: invdcEdge, betaSelfAttrLoad, flux, invAreaCell, ssh_sal_on
 
    integer, dimension(:), pointer :: nCellsArray
 
@@ -1269,33 +1262,46 @@ module ocn_time_integration_lts
    call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevelIn)
    call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevelIn)
 
+   if (config_use_self_attraction_loading) then
+      ssh_sal_on = 1.0_RKIND
+   else
+      ssh_sal_on = 0.0_RKIND
+   endif
+
    ! inline computation of the diagnostics
    ! TODO: check if this can be done using LTS regions
 
-   ! layerThicknessEdge
+   ! layerThickEdgeFlux
    do iEdge = 1, nEdgesAll
-      layerThicknessEdge(:, iEdge) = -1.0e34_RKIND
+      kmin = minLevelEdgeBot(iEdge)
+      kmax = maxLevelEdgeTop(iEdge)
       cell1 = cellsOnEdge(1,iEdge)
       cell2 = cellsOnEdge(2,iEdge)
-      do k = 1, maxLevelEdgeTop(iEdge)
-         layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k,cell1) + layerThickness(k,cell2))
+      do k=1,nVertLevels
+      ! initialize layerThickEdgeFlux to avoid divide by zero and NaN problems.
+         layerThickEdgeFlux(k,iEdge) = -1.0e34_RKIND
+      end do
+      do k = kmin,kmax
+         if (normalVelocity(k,iEdge) > 0.0_RKIND) then
+            layerThickEdgeFlux(k,iEdge) = layerThickness(k,cell1)
+         elseif (normalVelocity(k,iEdge) < 0.0_RKIND) then
+            layerThickEdgeFlux(k,iEdge) = layerThickness(k,cell2)
+         else
+            layerThickEdgeFlux(k,iEdge) = max(layerThickness(k,cell1), layerThickness(k,cell2))
+         end if
       end do
    end do
 
-   ! ssh
-   nCells = nCellsArray( size(nCellsArray) )
-   do iCell = 1, nCells
-      k = maxLevelCell(iCell)
-      zMid(k:nVertLevels,iCell) = -bottomDepth(iCell) + 0.5_RKIND*layerThickness(k,iCell)
-      zTop(k:nVertLevels,iCell) = -bottomDepth(iCell) + layerThickness(k,iCell)
 
-      do k = maxLevelCell(iCell)-1, 1, -1
-         zMid(k,iCell) = zMid(k+1,iCell) + 0.5_RKIND*(  layerThickness(k+1,iCell) + layerThickness(k  ,iCell))
+   ! ssh
+   do iCell = 1, nCellsAll
+      k = maxLevelCell(iCell)
+      zTop(k:nVertLevels,iCell) = -bottomDepth(iCell) + layerThickness(k,iCell)
+      do k = maxLevelCell(iCell)-1, minLevelCell(iCell), -1
          zTop(k,iCell) = zTop(k+1,iCell) + layerThickness(k  ,iCell)
       end do
-
-      ssh(iCell) = zTop(1,iCell)
-
+      ! copy zTop(1,iCell) into sea-surface height array
+      ssh(iCell) = zTop(minLevelCell(iCell),iCell)
    end do
 
    ! inline computation of the tendencies
@@ -1312,9 +1318,13 @@ module ocn_time_integration_lts
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             invdcEdge = 1.0_RKIND / dcEdge(iEdge)
-            do k=1,maxLevelEdgeTop(iEdge)
+            kMin = minLevelEdgeBot(iEdge)
+            kMax = maxLevelEdgeTop(iEdge)
+            !TODO: in the tidal potential the for starts from 1, not from kMin, is that OK to have it start from kMin here?
+            do k=kMin,kMax
                normalVelocityTend(k,iEdge) = normalVelocityTend(k,iEdge) &
-                                             - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1))  - betaSelfAttrLoad * (ssh(cell2) - ssh(cell1)) ) )
+                                             - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1)) &
+                                             - (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * (ssh(cell2) - ssh(cell1)) ) )
             end do
          end do
          ! thickness tendency
@@ -1323,8 +1333,8 @@ module ocn_time_integration_lts
             invAreaCell = 1.0_RKIND / areaCell(iCell)
             do i = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(i, iCell)
-               do k = 1, maxLevelEdgeBot(iEdge)
-                  flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThicknessEdge(k, iEdge)
+               do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+                  flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThickEdgeFlux(k, iEdge)
                   layerThicknessTend(k, iCell) = layerThicknessTend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell
                end do
             end do
@@ -1339,9 +1349,12 @@ module ocn_time_integration_lts
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          invdcEdge = 1.0_RKIND / dcEdge(iEdge)
-         do k=1,maxLevelEdgeTop(iEdge)
+         kMin = minLevelEdgeBot(iEdge)
+         kMax = maxLevelEdgeTop(iEdge)
+         do k=kMin,kMax
             normalVelocityTend(k,iEdge) = normalVelocityTend(k,iEdge) & 
-                                          - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1))  - betaSelfAttrLoad * (ssh(cell2) - ssh(cell1)) ) )
+                                          - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1))  & 
+                                          - (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * (ssh(cell2) - ssh(cell1)) ) )
          end do
       end do
       ! thickness tendency
@@ -1350,8 +1363,8 @@ module ocn_time_integration_lts
          invAreaCell = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
-            do k = 1, maxLevelEdgeBot(iEdge)
-               flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThicknessEdge(k, iEdge)
+            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+               flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThickEdgeFlux(k, iEdge)
                layerThicknessTend(k, iCell) = layerThicknessTend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell
             end do
          end do
@@ -1365,9 +1378,12 @@ module ocn_time_integration_lts
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          invdcEdge = 1.0_RKIND / dcEdge(iEdge)
-         do k=1,maxLevelEdgeTop(iEdge)
+         kMin = minLevelEdgeBot(iEdge)
+         kMax = maxLevelEdgeTop(iEdge)
+         do k=kMin,kMax
             normalVelocityTend(k,iEdge) = normalVelocityTend(k,iEdge) & 
-                                          - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1))  - betaSelfAttrLoad * (ssh(cell2) - ssh(cell1)) ) )
+                                          - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1))  & 
+                                          - (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * (ssh(cell2) - ssh(cell1)) ) )
          end do
       end do
       ! thickness tendency
@@ -1376,8 +1392,8 @@ module ocn_time_integration_lts
          invAreaCell = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
-            do k = 1, maxLevelEdgeBot(iEdge)
-               flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThicknessEdge(k, iEdge)
+            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+               flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThickEdgeFlux(k, iEdge)
                layerThicknessTend(k, iCell) = layerThicknessTend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell
             end do
          end do
@@ -1391,9 +1407,12 @@ module ocn_time_integration_lts
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
          invdcEdge = 1.0_RKIND / dcEdge(iEdge)
-         do k=1,maxLevelEdgeTop(iEdge)
+         kMin = minLevelEdgeBot(iEdge)
+         kMax = maxLevelEdgeTop(iEdge)
+         do k=kMin,kMax
             normalVelocityTend(k,iEdge) = normalVelocityTend(k,iEdge) &
-                                          - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1))  - betaSelfAttrLoad * (ssh(cell2) - ssh(cell1)) ) )
+                                          - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1))  &
+                                          - (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * (ssh(cell2) - ssh(cell1)) ) )
          end do
       end do
       ! thickness tendency
@@ -1402,8 +1421,8 @@ module ocn_time_integration_lts
          invAreaCell = 1.0_RKIND / areaCell(iCell)
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
-            do k = 1, maxLevelEdgeBot(iEdge)
-               flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThicknessEdge(k, iEdge)
+            do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+               flux = normalVelocity(k, iEdge) * dvEdge(iEdge) * layerThickEdgeFlux(k, iEdge)
                layerThicknessTend(k, iCell) = layerThicknessTend(k, iCell) + edgeSignOnCell(i, iCell) * flux * invAreaCell
             end do
          end do
@@ -1500,4 +1519,4 @@ module ocn_time_integration_lts
 
    end function sphere_distance
 
-end module ocn_time_integration_lts3
+end module ocn_time_integration_lts
