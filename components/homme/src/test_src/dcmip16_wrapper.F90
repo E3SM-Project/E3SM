@@ -1,7 +1,4 @@
 
-
-
-
 #ifndef CAM
 #include "config.h"
 
@@ -34,6 +31,7 @@ use physical_constants,   only: bubble_const1, bubble_const2, bubble_const3, bub
                                 bubble_t0_const, bubble_epsilo, bubble_e0, &
                                 latvap, &
                                 g, cp, p0, kappa
+use newphysics
 
 implicit none
 
@@ -609,7 +607,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   real(rl) :: pi_upper,qsat,qsatdry,dp_loc,qv_loc,dpdry_loc,qvdry_loc,dq_loc,vapor_mass_change
   real(rl) :: T_loc,p_loc,pi_loc,L_old,L_new,rstar_old,rstar_new,hold,cpstarTerm_new
-  real(rl) :: T_new, change, pidry_upper, mass_prect, energy_prect, positt
+  real(rl) :: T_new, pidry_upper, mass_prect, energy_prect, zbottom
 
   real(rl) :: zi(np,np,nlevp), zi_c(nlevp)
 !  integer, parameter :: test = 1
@@ -769,7 +767,8 @@ print *, 'precl',  precl(i,j,ie), vapor_mass_change, rhow
 
 !print *, 'rain', qrdry_c
 
-          call sedimentation(qvdry_c,qcdry_c,qrdry_c,zi_c,,dt)
+          zbottom = zi_c(nlevp)
+          call sedimentation(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,pidry,zbottom,mass_prect,energy_prect,dt)
 
 !print *, 'old-new', T(i,j,:)-T_c
 !print *, 'new', T_c
