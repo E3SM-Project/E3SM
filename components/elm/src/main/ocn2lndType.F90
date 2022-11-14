@@ -28,7 +28,8 @@ module ocn2lndType
   !
   type, public :: ocn2lnd_type
 
-      real(r8), pointer :: frac_h2oocn_grc(:)   => null() ! sea surface height [m]
+      real(r8), pointer :: frac_h2oocn_grc(:)   => null() ! coastal inundation fraction [-]
+      real(r8), pointer :: ssh_grc(:)           => null() ! sea surface height [m]
 
     contains
 
@@ -70,17 +71,18 @@ module ocn2lndType
       integer  :: begg, endg
       integer  :: begc, endc
       integer  :: begp, endp
-      !------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
 
       begg = bounds%begg; endg= bounds%endg
       begc = bounds%begc; endc= bounds%endc
       begp = bounds%begp; endp= bounds%endp
 
-      allocate(this%frac_h2oocn_grc(begg:endg)); this%frac_h2oocn_grc(:)   = ival
+      allocate(this%frac_h2oocn_grc(begg:endg)); this%frac_h2oocn_grc(:)  = ival
+      allocate(this%ssh_grc(begg:endg));         this%ssh_grc(:)          = ival
 
     end subroutine InitAllocate
 
-    !------------------------------------------------------------------------
+    !---------------------------------------------------------------------------
     subroutine InitHistory(this, bounds)
       !
       ! !USES:
@@ -93,12 +95,17 @@ module ocn2lndType
       ! !LOCAL VARIABLES:
       integer  :: begg, endg
       integer  :: begp, endp
-      !---------------------------------------------------------------------
+      !-------------------------------------------------------------------------
 
       begg = bounds%begg; endg= bounds%endg
       begp = bounds%begp; endp= bounds%endp
 
       if (ocn_lnd_one_way) then
+         this%ssh_grc(begg:endg) = spval
+         call hist_addfld1d (fname='SSH',  units='meter'          , &
+              avgflag='A', long_name='sea surface height'         , &
+              ptr_lnd=this%ssh_grc)
+
          this%frac_h2oocn_grc(begg:endg) = spval
          call hist_addfld1d (fname='FRAC_H2OOCN',  units='-'      , &
               avgflag='A', long_name='coastal inundation fraction', &

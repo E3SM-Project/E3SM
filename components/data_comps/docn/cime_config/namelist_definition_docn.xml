@@ -216,6 +216,7 @@
       <value stream="GTSM">
         T t
         Inund frac_h2oocn
+        SSH ssh
       </value>
     </values>
   </entry>

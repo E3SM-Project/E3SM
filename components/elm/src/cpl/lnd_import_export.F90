@@ -206,6 +206,10 @@ contains
          atm2lnd_vars%frac_h2orof_grc(g) = x2l(index_x2l_Sr_frac_h2orof,i)
        endif
 
+       if (index_x2l_So_ssh /= 0) then
+         ocn2lnd_vars%ssh_grc(g) = x2l(index_x2l_So_ssh,i)
+       endif
+
        if (index_x2l_So_frac_h2oocn /= 0) then
          ocn2lnd_vars%frac_h2oocn_grc(g) = x2l(index_x2l_So_frac_h2oocn,i)
        endif
