@@ -440,13 +440,20 @@ TEST_CASE("horizontal_remap_units", "") {
     REQUIRE(test_map.get_num_of_segments()==1);
     auto check_seg = test_map.get_map_segments()[0];
     REQUIRE(check_seg.get_length()==len);
+
+    // Set a wrong weight, to ensure the check method can spot it
     auto check_wgts = check_seg.get_weights();
     weights_h = Kokkos::create_mirror_view(check_wgts);
     Kokkos::deep_copy(weights_h,check_wgts);
-    weights_h(0) = weights_h(0)/2.0;
-    Real wgt_to_add = weights_h(0);
+    Real wgt_to_add = weights_h(0)/2;
+    weights_h(0) = 1-weights_h(0);
     Kokkos::deep_copy(check_wgts,weights_h);
     REQUIRE_THROWS(test_map.check());
+    // Restore w/2, so that adding a complementary weight segment should
+    // restore the valid map
+    weights_h(0) = wgt_to_add;
+    Kokkos::deep_copy(check_wgts,weights_h);
+
     // Create a new segment that has the same DOF as the first segment
     HorizontalMapSegment new_seg(1,1);
     auto new_wgts = new_seg.get_weights();
