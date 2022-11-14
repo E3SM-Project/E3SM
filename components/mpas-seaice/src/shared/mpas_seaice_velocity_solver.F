@@ -1345,6 +1345,8 @@ contains
 
     use seaice_icepack, only: &
          seaice_icepack_ice_strength
+    use seaice_column, only: &
+         seaice_column_ice_strength
 
     use seaice_constants, only: &
          seaiceIceStrengthConstantHiblerP, &
@@ -1393,8 +1395,13 @@ contains
          iCell, &
          ierr
 
+    character(len=strKIND), pointer :: &
+         config_column_physics_type
+
     block => domain % blocklist
     do while (associated(block))
+
+       call MPAS_pool_get_config(block % configs, "config_column_physics_type", config_column_physics_type)
 
        call MPAS_pool_get_config(block % configs, "config_use_column_package", config_use_column_package)
        call MPAS_pool_get_config(block % configs, "config_use_column_vertical_thermodynamics", &
@@ -1439,25 +1446,47 @@ contains
 
        else
 
-          do iCell = 1, nCellsSolve
+          if (trim(config_column_physics_type) == "icepack") then
+             do iCell = 1, nCellsSolve
 
-             icePressure(iCell) = 0.0_RKIND
+                icePressure(iCell) = 0.0_RKIND
 
-             if (solveStress(iCell) == 1) then
+                if (solveStress(iCell) == 1) then
 
-                ! this routine doesnt reset icePressure
-                call seaice_icepack_ice_strength(&
-                     nCategories, &
-                     iceAreaCell(iCell), &
-                     iceVolumeCell(iCell), &
-                     openWaterArea(iCell), &
-                     iceAreaCategory(1,:,iCell), &
-                     iceVolumeCategory(1,:,iCell), &
-                     icePressure(iCell))
+                   ! this routine doesnt reset icePressure
+                   call seaice_icepack_ice_strength(&
+                        nCategories, &
+                        iceAreaCell(iCell), &
+                        iceVolumeCell(iCell), &
+                        openWaterArea(iCell), &
+                        iceAreaCategory(1,:,iCell), &
+                        iceVolumeCategory(1,:,iCell), &
+                        icePressure(iCell))
 
-             endif ! solveStress
+                endif ! solveStress
 
-          enddo ! iCell
+             enddo ! iCell
+          else if (trim(config_column_physics_type) == "column_package") then
+             do iCell = 1, nCellsSolve
+
+                icePressure(iCell) = 0.0_RKIND
+
+                if (solveStress(iCell) == 1) then
+
+                   ! this routine doesnt reset icePressure
+                   call seaice_column_ice_strength(&
+                        nCategories, &
+                        iceAreaCell(iCell), &
+                        iceVolumeCell(iCell), &
+                        openWaterArea(iCell), &
+                        iceAreaCategory(1,:,iCell), &
+                        iceVolumeCategory(1,:,iCell), &
+                        icePressure(iCell))
+
+                endif ! solveStress
+
+             enddo ! iCell
+          endif ! config_column_physics_type
 
        endif
 
