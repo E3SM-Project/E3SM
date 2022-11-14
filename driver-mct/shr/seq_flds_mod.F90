@@ -1788,6 +1788,16 @@ contains
     attname  = 'So_ssh'
     call metadata_set(attname, longname, stdname, units)
 
+    ! ocn -> lnd one-way coupling
+    call seq_flds_add(o2x_states,"So_ssh")
+    call seq_flds_add(x2l_states,"So_ssh")
+    call seq_flds_add(o2x_states_to_lnd,"So_ssh")
+    longname = 'Sea surface height'
+    stdname  = 'sea_surface_height'
+    units    = 'm'
+    attname  = 'So_ssh'
+    call metadata_set(attname, longname, stdname, units)
+
     call seq_flds_add(o2x_states,"So_frac_h2oocn")
     call seq_flds_add(x2l_states,"So_frac_h2oocn")
     call seq_flds_add(o2x_states_to_lnd,"So_frac_h2oocn")

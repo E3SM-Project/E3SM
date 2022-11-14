@@ -520,6 +520,7 @@ module ColumnDataType
     real(r8), pointer :: qflx_h2osfc2topsoi   (:)   => null() ! liquid water coming from surface standing water top soil (mm H2O/s)
     real(r8), pointer :: qflx_snow2topsoi     (:)   => null() ! liquid water coming from residual snow to topsoil (mm H2O/s)
     real(r8), pointer :: qflx_lateral         (:)   => null() ! lateral subsurface flux (mm H2O /s)
+    real(r8), pointer :: qflx_lnd2ocn         (:)   => null() ! lateral flux between water table and sea surface height (mm H2O/s)
     real(r8), pointer :: snow_sources         (:)   => null() ! snow sources (mm H2O/s)
     real(r8), pointer :: snow_sinks           (:)   => null() ! snow sinks (mm H2O/s)
 
@@ -5844,6 +5845,7 @@ contains
     allocate(this%qflx_h2osfc2topsoi     (begc:endc))             ; this%qflx_h2osfc2topsoi   (:)   = spval
     allocate(this%qflx_snow2topsoi       (begc:endc))             ; this%qflx_snow2topsoi     (:)   = spval
     allocate(this%qflx_lateral           (begc:endc))             ; this%qflx_lateral         (:)   = 0._r8
+    allocate(this%qflx_lnd2ocn           (begc:endc))             ; this%qflx_lnd2ocn         (:)   = spval
     allocate(this%snow_sources           (begc:endc))             ; this%snow_sources         (:)   = spval
     allocate(this%snow_sinks             (begc:endc))             ; this%snow_sinks           (:)   = spval
     allocate(this%qflx_irrig             (begc:endc))             ; this%qflx_irrig           (:)   = spval
@@ -5909,6 +5911,11 @@ contains
     call hist_addfld1d (fname='QDRAI',  units='mm/s',  &
          avgflag='A', long_name='sub-surface drainage', &
          ptr_col=this%qflx_drain, c2l_scale_type='urbanf')
+
+    this%qflx_lnd2ocn(begc:endc) = spval
+    call hist_addfld1d (fname='QLND2OCN',  units='mm/s',  &
+         avgflag='A', long_name='land to ocean drainage', &
+         ptr_col=this%qflx_lnd2ocn, c2l_scale_type='urbanf')
 
     this%qflx_irr_demand(begc:endc) = spval
     call hist_addfld1d (fname='QIRRIG_WM',  units='mm/s',  &
@@ -6055,6 +6062,7 @@ contains
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%qflx_drain(c) = 0._r8
           this%qflx_surf(c)  = 0._r8
+          this%qflx_lnd2ocn(c) = 0._r8
        end if
     end do
 
