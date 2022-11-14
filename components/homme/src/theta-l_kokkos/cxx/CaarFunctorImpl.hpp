@@ -336,26 +336,26 @@ struct CaarFunctorImpl {
     GPTLstart("caar compute");
     int nerr;
     Kokkos::parallel_reduce("caar loop pre-boundary exchange", m_policy_pre, *this, nerr);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     GPTLstop("caar compute");
     if (nerr > 0)
       check_print_abort_on_bad_elems("CaarFunctorImpl::run TagPreExchange", data.n0);
 
     GPTLstart("caar_bexchV");
     m_bes[data.np1]->exchange(m_geometry.m_rspheremp);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     GPTLstop("caar_bexchV");
 
     if (!m_theta_hydrostatic_mode) {
       GPTLstart("caar compute");
       Kokkos::parallel_for("caar loop post-boundary exchange", m_policy_post, *this);
-      ExecSpace::impl_static_fence();
+      Kokkos::fence();
       GPTLstop("caar compute");
     }
 
     GPTLstart("caar dp3d");
     Kokkos::parallel_for("caar loop dp3d limiter", m_policy_dp3d_lim, *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     GPTLstop("caar dp3d");
 
     profiling_pause();

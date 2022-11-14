@@ -254,6 +254,8 @@ _TESTS = {
         "inherit" : "e3sm_atm_prod",
         "tests"   : (
             "SMS_Ld1.ne30pg2_r05_EC30to60E2r2.WCYCL1850.allactive-wcprod",
+            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850-1pctCO2.allactive-wcprod",
+            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850-4xCO2.allactive-wcprod",
             "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-wcprod",
             "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCLSSP370.allactive-wcprodssp",
             "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCLSSP585.allactive-wcprodssp",

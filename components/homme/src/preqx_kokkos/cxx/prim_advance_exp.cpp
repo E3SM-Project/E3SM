@@ -131,7 +131,7 @@ void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w
          dp3d(ie,nm1,igp,jgp,ilev) = (5.0*dp3d(ie,nm1,igp,jgp,ilev)-dp3d(ie,n0,igp,jgp,ilev))/4.0;
     });
   }
-  ExecSpace::impl_static_fence();
+  Kokkos::fence();
 
   // Stage 5: u5 = (5u1-u0)/4 + 3dt/4 RHS(u4), t_rhs = t + dt/5 + dt/5 + dt/3 + 2dt/3
   functor.run(RKStageData(tl.nm1,tl.np1,tl.np1,tl.n0_qdp,3.0*dt/4.0,3.0*eta_ave_w/4.0));

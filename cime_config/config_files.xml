@@ -533,7 +533,7 @@
   <entry id="BUILD_LIB_FILE">
     <type>char</type>
     <values>
-      <value lib="kokkos">$CIMEROOT/CIME/build_scripts/buildlib.kokkos</value>
+      <value lib="kokkos">$SRCROOT/share/build/buildlib.kokkos</value>
       <value lib="gptl">$SRCROOT/share/build/buildlib.gptl</value>
       <value lib="pio">$CIMEROOT/CIME/build_scripts/buildlib.pio</value>
       <value lib="mct">$CIMEROOT/CIME/build_scripts/buildlib.mct</value>
