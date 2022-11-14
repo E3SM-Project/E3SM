@@ -9,15 +9,19 @@ module ml_training
    use shr_kind_mod,       only: r8 => shr_kind_r8
    use spmd_utils,         only: masterproc
    use constituents,       only: pcnst
+   use ppgrid,             only: pver, pverp, pcols, begchunk, endchunk
    use cam_abortutils,     only: endrun
+   use cam_history_support,only: fillvalue
    use camsrfexch,         only: cam_in_t, cam_out_t
    use cam_logfile,        only: iulog
    use shr_sys_mod,        only: shr_sys_flush
+   use physics_types,      only: physics_state, physics_tend
+   use physics_buffer,     only: physics_buffer_desc
    use pio,                only: file_desc_t, io_desc_t, var_desc_t, &
                                  pio_double, pio_int, pio_noerr, &
                                  pio_seterrorhandling, pio_bcast_error, &
                                  pio_def_var, pio_def_dim, pio_enddef, &
-                                 pio_put_var, pio_write_darray
+                                 pio_put_var, pio_write_darray, pio_closefile
    use perf_mod,           only: t_startf, t_stopf
 
    implicit none
@@ -25,75 +29,32 @@ module ml_training
    save
    
    ! Public interfaces
-   public :: write_ml_training_input   ! write physics input data for ML training
-   public :: write_ml_training_output  ! write physics output data for ML verification
+   public :: write_ml_training
+
+   private :: get_ml_filename
 
    ! filename specifiers for master restart filename
    ! (%c = caseid, $y = year, $m = month, $d = day, $s = seconds in day, %t = number)
    integer, parameter :: filename_len = 256
-   character(len=filename_len),public :: mli_filename_spec = '%c.eam.mli.%y-%m-%d-%s.nc'
-   character(len=filename_len),public :: mlo_filename_spec = '%c.eam.mlo.%y-%m-%d-%s.nc'
-   
-   ! Private module data
-   character(len=8)     :: num
-   type(var_desc_t)     :: trefmxav_desc
-   type(var_desc_t)     :: trefmnav_desc
-   type(var_desc_t)     :: flwds_desc
-   type(var_desc_t)     :: solld_desc
-   type(var_desc_t)     :: sols_desc
-   type(var_desc_t)     :: soll_desc
-   type(var_desc_t)     :: solsd_desc
-
-   ! type(var_desc_t)     :: bcphidry_desc
-   ! type(var_desc_t)     :: bcphodry_desc
-   ! type(var_desc_t)     :: ocphidry_desc
-   ! type(var_desc_t)     :: ocphodry_desc
-   ! type(var_desc_t)     :: dstdry1_desc
-   ! type(var_desc_t)     :: dstdry2_desc
-   ! type(var_desc_t)     :: dstdry3_desc
-   ! type(var_desc_t)     :: dstdry4_desc
-
-   type(var_desc_t)     :: cflx_desc(pcnst)
-   type(var_desc_t)     :: lhf_desc
-   type(var_desc_t)     :: shf_desc
+   ! character(len=filename_len),public :: mli_filename_spec = '%c.eam.mli.%y-%m-%d-%s.nc'
+   ! character(len=filename_len),public :: mlo_filename_spec = '%c.eam.mlo.%y-%m-%d-%s.nc'
 
 CONTAINS
    !------------------------------------------------------------------------------------------------
-   function get_ml_input_filename(yr,mn,dy,sec) result(fname)
+   function get_ml_filename(fspec_in,yr,mn,dy,sec) result(fname)
       use seq_timemgr_mod, only: seq_timemgr_EClockGetData
       use filenames,       only: interpret_filename_spec
-      character(len=filename_len) :: fname  ! surface restart filename
-      integer, intent(in) :: yr         ! current year
-      integer, intent(in) :: mn         ! current month
-      integer, intent(in) :: dy         ! current day
-      integer, intent(in) :: sec        ! current time of day (sec)
-
-      fname = interpret_filename_spec( mli_filename_spec, &
-                                       yr_spec=yr, mon_spec=mn, &
-                                       day_spec=dy, sec_spec=sec )
-
-   end function get_ml_input_filename
+      character(len=4), intent(in) :: fspec_in
+      integer,          intent(in) :: yr,mn,dy,sec   ! current year, month, day, and time of day (sec)
+      character(len=filename_len) :: fspec_loc
+      character(len=filename_len) :: fname  ! full file name to return
+      fspec_loc = '%c.eam.'//trim(fspec_in)//'.%y-%m-%d-%s.nc'
+      fname = interpret_filename_spec( fspec_loc, yr_spec=yr, mon_spec=mn, day_spec=dy, sec_spec=sec )
+   end function get_ml_filename
    !------------------------------------------------------------------------------------------------
-   function get_ml_output_filename(yr,mn,dy,sec) result(fname)
-      use seq_timemgr_mod, only: seq_timemgr_EClockGetData
-      use filenames,       only: interpret_filename_spec
-      character(len=filename_len) :: fname  ! surface restart filename
-      integer, intent(in) :: yr         ! current year
-      integer, intent(in) :: mn         ! current month
-      integer, intent(in) :: dy         ! current day
-      integer, intent(in) :: sec        ! current time of day (sec)
-
-      fname = interpret_filename_spec( mlo_filename_spec, &
-                                       yr_spec=yr, mon_spec=mn, &
-                                       day_spec=dy, sec_spec=sec )
-
-   end function get_ml_output_filename
-   !------------------------------------------------------------------------------------------------
-   subroutine write_ml_training_input( pbuf2d, cam_in, yr, mn, dy, sec )
-#ifdef MMF_ML_TRAINING
-      use ppgrid,              only: pver, pverp, pcols, begchunk, endchunk
+   subroutine write_ml_training( pbuf2d, phys_state, phys_tend, cam_in, cam_out, yr, mn, dy, sec, mode )
       use phys_grid,           only: phys_decomp
-      use physics_buffer,      only: physics_buffer_desc, pbuf_init_restart, pbuf_write_restart
+      use physics_buffer,      only: pbuf_init_restart, pbuf_write_restart
       use time_manager,        only: timemgr_init_restart, timemgr_write_restart
       ! use chemistry,           only: chem_init_restart, chem_write_restart
       ! use prescribed_ozone,    only: init_prescribed_ozone_restart, write_prescribed_ozone_restart
@@ -103,88 +64,284 @@ CONTAINS
       use cam_grid_support,    only: cam_grid_id, cam_grid_header_info_t
       use cam_grid_support,    only: cam_grid_get_decomp, cam_grid_dimensions
       use cam_grid_support,    only: cam_grid_write_attr, cam_grid_write_var
-      use cam_history_support, only: fillvalue
       use cam_pio_utils,       only: cam_pio_createfile, cam_pio_def_dim, cam_pio_closefile
       use phys_control,        only: phys_getopts
       use hycoef,              only: init_restart_hycoef
       use dyn_grid,            only: get_horiz_grid_d
       !-------------------------------------------------------------------------
       ! Input arguments
-      ! type(file_desc_t), intent(inout) :: file
       type(physics_buffer_desc), pointer    :: pbuf2d(:,:)
-      type(cam_in_t),            intent(in) :: cam_in(begchunk:endchunk)
+      type(physics_state),       intent(in) :: phys_state(begchunk:endchunk)
+      type(physics_tend ),       intent(in) :: phys_tend (begchunk:endchunk)
+      type(cam_in_t),            intent(in) :: cam_in    (begchunk:endchunk)
+      type(cam_out_t),           intent(in) :: cam_out   (begchunk:endchunk)
       integer,                   intent(in) :: yr   ! Simulation year
       integer,                   intent(in) :: mn   ! Simulation month
       integer,                   intent(in) :: dy   ! Simulation day
       integer,                   intent(in) :: sec  ! Seconds into current simulation day
+      integer,                   intent(in) :: mode ! used to select input / output modes
       !-------------------------------------------------------------------------
       ! Local workspace
       type(file_desc_t)            :: file
-      integer                      :: hdim1_d,hdim2_d,ngcols ! number of physics grid columns
-      integer                      :: hdimcnt
-      integer                      :: dimids(4)
-      integer, allocatable         :: hdimids(:)
-      integer                      :: ndims, pver_id, pverp_id
+      integer                      :: pver_id, pverp_id, pcnst_id
       integer                      :: ncol_dimid
-      ! integer                      :: lev_dimid(2)
       integer                      :: grid_id
       type(cam_grid_header_info_t) :: header_info ! A structure to hold the horz dims and coord info
+      ! integer                      :: ndims
+      ! integer                      :: lev_dimid(2)
 
-      type(io_desc_t), pointer :: iodesc
-      real(r8):: tmpfield(pcols, begchunk:endchunk)
+      integer :: ncol(begchunk:endchunk)                ! ncol value per chunk
+      type(io_desc_t), pointer :: iodesc2d              ! 
+      type(io_desc_t), pointer :: iodesc3d              ! 
+      real(r8):: tmp2D(pcols, begchunk:endchunk)        ! temp variable for derived type data
+      real(r8):: tmp3D(pcols, pver, begchunk:endchunk)  ! temp variable for derived type data
+
       integer :: ierr, i, m
       integer :: physgrid
       integer :: gdims(3)
       integer :: nhdims
-      !-------------------------------------------------------------------------
-      ! Initialize file
 
-      call cam_pio_createfile(file, trim(get_ml_input_filename(yr,mn,dy,sec)))
+      integer, parameter, dimension(1) :: dimids_hrz = (/1/)     ! horz dims only
+      integer, parameter, dimension(2) :: dimids_3D1 = (/1,2/)   ! horz + pver
+      integer, parameter, dimension(2) :: dimids_3D2 = (/1,3/)   ! horz + pverp
+      ! integer, parameter, dimension(2) :: dimids_c2D = (/1,4/)   ! horz + pcnst
+      ! integer, parameter, dimension(3) :: dimids_c3D = (/1,2,4/) ! horz + pver + pcnst
+
+      character(len=8)     :: num      ! used for writing numeric charaters (i.e. constituent index)
+      character(len=4)     :: fspec    ! string used after ".eam." in file name 
+      logical              :: add_pbuf       = .false.
+      logical              :: add_phys_state = .false.
+      logical              :: add_phys_tend  = .false.
+      logical              :: add_cam_in     = .false.
+      logical              :: add_cam_out    = .false.
+
+      ! file variable descriptions
+      ! type(var_desc_t)     :: desc_trefmxav
+      ! type(var_desc_t)     :: desc_trefmnav
+      type(var_desc_t)     :: desc_flwds
+      type(var_desc_t)     :: desc_solld
+      type(var_desc_t)     :: desc_sols
+      type(var_desc_t)     :: desc_soll
+      type(var_desc_t)     :: desc_solsd
+      ! type(var_desc_t)     :: desc_bcphidry
+      ! type(var_desc_t)     :: desc_bcphodry
+      ! type(var_desc_t)     :: desc_ocphidry
+      ! type(var_desc_t)     :: desc_ocphodry
+      ! type(var_desc_t)     :: desc_dstdry1
+      ! type(var_desc_t)     :: desc_dstdry2
+      ! type(var_desc_t)     :: desc_dstdry3
+      ! type(var_desc_t)     :: desc_dstdry4
+
+      type(var_desc_t)     :: state_desc_t
+      type(var_desc_t)     :: state_desc_u
+      type(var_desc_t)     :: state_desc_v
+      type(var_desc_t)     :: state_desc_s
+      type(var_desc_t)     :: state_desc_omega
+      type(var_desc_t)     :: state_desc_pmid
+      type(var_desc_t)     :: state_desc_pmiddry
+      type(var_desc_t)     :: state_desc_pdel
+      type(var_desc_t)     :: state_desc_pdeldry
+      type(var_desc_t)     :: state_desc_rpdel
+      type(var_desc_t)     :: state_desc_rpdeldry
+      type(var_desc_t)     :: state_desc_lnpmid
+      type(var_desc_t)     :: state_desc_lnpmiddry
+      type(var_desc_t)     :: state_desc_exner
+      type(var_desc_t)     :: state_desc_zm
+      type(var_desc_t)     :: state_desc_q(pcnst)
+      type(var_desc_t)     :: state_desc_pint
+      type(var_desc_t)     :: state_desc_pintdry
+      type(var_desc_t)     :: state_desc_lnpint
+      type(var_desc_t)     :: state_desc_lnpintdry
+      type(var_desc_t)     :: state_desc_zi
+
+      type(var_desc_t)     :: tend_desc_dtdt
+      type(var_desc_t)     :: tend_desc_dudt
+      type(var_desc_t)     :: tend_desc_dvdt
+      type(var_desc_t)     :: tend_desc_flx_net
+      type(var_desc_t)     :: tend_desc_te_tnd
+      type(var_desc_t)     :: tend_desc_tw_tnd
+
+      type(var_desc_t)     :: desc_cflx(pcnst)
+      type(var_desc_t)     :: desc_lhf
+      type(var_desc_t)     :: desc_shf
+      !-------------------------------------------------------------------------
+      ! Initialize stuff
+      !-------------------------------------------------------------------------
+      if (mode==1) then
+         fspec = 'mli'
+         add_pbuf        = .true.
+         add_phys_state  = .true.
+         add_cam_in      = .true.
+      end if
+      if (mode==2) then
+         fspec = 'mlo'
+         add_pbuf       = .true.
+         add_phys_state = .true.
+         add_phys_tend  = .true.
+         add_cam_out    = .true.
+      end if
+
+      do i=begchunk,endchunk
+         ncol(i) = phys_state(i)%ncol
+      end do
 
       grid_id = cam_grid_id('physgrid')
       call cam_grid_dimensions(grid_id, gdims(1:2), nhdims)
-      call cam_grid_get_decomp(grid_id, (/pcols,endchunk-begchunk+1/), gdims(1:nhdims), pio_double, iodesc)
+      if (nhdims==1) then
+         call cam_grid_get_decomp(grid_id, (/pcols,endchunk-begchunk+1/), (/gdims(1)/),      pio_double, iodesc2d)
+         call cam_grid_get_decomp(grid_id, (/pcols,endchunk-begchunk+1/), (/gdims(1),pver/), pio_double, iodesc3d)
+      end if
+      !-------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
+      ! Initialize file and define variables
+      !-------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
+      call cam_pio_createfile(file, trim(get_ml_filename(fspec,yr,mn,dy,sec)))      
       call cam_grid_write_attr(file, grid_id, header_info)
-      call cam_grid_write_var(file, grid_id)
-      
-      hdimcnt = header_info%num_hdims()
-      do i = 1, hdimcnt
-         dimids(i) = header_info%get_hdimid(i)
-      end do
-      allocate(hdimids(hdimcnt))
-      hdimids(1:hdimcnt) = dimids(1:hdimcnt)
 
-      ! ndims = hdimcnt
-      ! ndims = hdimcnt+1
+      call cam_pio_def_dim(file, 'lev',   pver,  pver_id,  existOK=.true.)
+      call cam_pio_def_dim(file, 'ilev',  pverp, pverp_id, existOK=.true.)
+      call cam_pio_def_dim(file, 'pcnst', pcnst, pcnst_id, existOK=.true.)
 
-      call cam_pio_def_dim(file, 'pcnst', pcnst, dimids(hdimcnt+1), existOK=.true.)
+      call timemgr_init_restart(File)
+
+      if (add_pbuf) call pbuf_init_restart(file, pbuf2d)
       !-------------------------------------------------------------------------
-      ! Define variables
+      ! copied and modified code from pbuf_init_restart (physics_buffer.F90.in)
 
-      call pbuf_init_restart(file, pbuf2d)
+    ! use pio,              only: file_desc_t, pio_int
+    ! use cam_pio_utils,    only: cam_pio_def_dim, cam_pio_def_var
+    ! use phys_grid,        only: phys_decomp
+    ! use cam_grid_support, only: cam_grid_get_file_dimids, cam_grid_dimensions
 
-      ! ! surface rad fluxes from cam_out
-      ! ierr = pio_def_var(File, 'FLWDS', pio_double, hdimids, flwds_desc)
-      ! ierr = pio_def_var(File, 'SOLS', pio_double, hdimids, sols_desc)
-      ! ierr = pio_def_var(File, 'SOLL', pio_double, hdimids, soll_desc)
-      ! ierr = pio_def_var(File, 'SOLSD', pio_double, hdimids, solsd_desc)
-      ! ierr = pio_def_var(File, 'SOLLD', pio_double, hdimids, solld_desc)
 
-      ! cam_in components
-      do i = 1, pcnst
-         write(num,'(i4.4)') i
-         ierr = pio_def_var(File, 'CFLX'//num,  pio_double, hdimids, cflx_desc(i))
+    ! ! Dummy Variables
+    ! type(file_desc_t),                 intent(inout) :: file
+    ! type(physics_buffer_desc), pointer               :: pbuf2d(:,:)
+
+    ! ! Local Variables
+    ! type(physics_buffer_desc), pointer               :: pbuf
+    ! integer                                          :: i, grid_select
+    ! integer                                          :: adimid(3) ! PIO IDs
+    ! integer                                          :: hdimcnt ! # grid dims
+    ! integer                                          :: dimcnt  ! # array dims
+    ! integer                                          :: mdimsize, piodtype
+
+    ! character(len=10)                                :: dimname
+    ! character(len=24)                                :: varname
+
+    ! ! Use adimid as a temp to find number of horizontal dims
+    ! call cam_grid_dimensions(phys_decomp, adimid(1:2), hdimcnt)
+    ! call cam_grid_get_file_dimids(phys_decomp, File, adimid)
+
+      do i = 1, currentpbufflds
+         pbuf => pbuf2d(i,begchunk)
+         ! Only save global pbufs
+         if(pbuf%hdr%persistence /= persistence_global) cycle
+         piodtype = pbuftype2piotype(pbuf%hdr%dtype)
+         do grid_select = 1, ngrid_types
+            ! For subcol fields, mdimsize includes psubcols in size
+            mdimsize  = product(pbuf%hdr%dimsizes(:,grid_select))/pcols
+            if(mdimsize > 1) then
+               write(dimname,'(a,i5.5)') 'pbuf_',mdimsize
+               call cam_pio_def_dim(File, dimname, mdimsize, adimid(hdimcnt+1),    &
+                  existOK=.true.)
+               dimcnt = hdimcnt + 1
+            else
+               dimcnt = hdimcnt
+            end if
+            if (mdimsize > 0) then
+               varname = trim(pbuf%hdr%name)//trim(field_grid_suff(grid_select))
+               call cam_pio_def_var(File, varname, piodtype, adimid(1:dimcnt),     &
+                  pbuf%hdr%vardesc(grid_select), existOK=.false.)
+            end if
+         end do
       end do
-      ierr = pio_def_var(file, 'SHF',  pio_double, hdimids, shf_desc)
-      ierr = pio_def_var(file, 'LHF',  pio_double, hdimids, lhf_desc)
+      !-------------------------------------------------------------------------
+      ! define physics state variables
+      if (add_phys_state) then
+         do m=1,pcnst
+            write(num,'(i4.4)') m
+            ierr = pio_def_var(file, 'state_q'//num, pio_double, dimids_3D1, state_desc_q(m))
+         end do
+         ierr = pio_def_var(file, 'state_t',         pio_double, dimids_3D1, state_desc_t)
+         ierr = pio_def_var(file, 'state_u',         pio_double, dimids_3D1, state_desc_u)
+         ierr = pio_def_var(file, 'state_v',         pio_double, dimids_3D1, state_desc_v)
+         ierr = pio_def_var(file, 'state_s',         pio_double, dimids_3D1, state_desc_s)
+         ierr = pio_def_var(file, 'state_omega',     pio_double, dimids_3D1, state_desc_omega)
+         ierr = pio_def_var(file, 'state_pmid',      pio_double, dimids_3D1, state_desc_pmid)
+         ierr = pio_def_var(file, 'state_pmiddry',   pio_double, dimids_3D1, state_desc_pmiddry)
+         ierr = pio_def_var(file, 'state_pdel',      pio_double, dimids_3D1, state_desc_pdel)
+         ierr = pio_def_var(file, 'state_pdeldry',   pio_double, dimids_3D1, state_desc_pdeldry)
+         ierr = pio_def_var(file, 'state_rpdel',     pio_double, dimids_3D1, state_desc_rpdel)
+         ierr = pio_def_var(file, 'state_rpdeldry',  pio_double, dimids_3D1, state_desc_rpdeldry)
+         ierr = pio_def_var(file, 'state_lnpmid',    pio_double, dimids_3D1, state_desc_lnpmid)
+         ierr = pio_def_var(file, 'state_lnpmiddry', pio_double, dimids_3D1, state_desc_lnpmiddry)
+         ierr = pio_def_var(file, 'state_exner',     pio_double, dimids_3D1, state_desc_exner)
+         ierr = pio_def_var(file, 'state_zm',        pio_double, dimids_3D1, state_desc_zm)
+         ierr = pio_def_var(file, 'state_pint',      pio_double, dimids_3D2, state_desc_pint)
+         ierr = pio_def_var(file, 'state_pintdry',   pio_double, dimids_3D2, state_desc_pintdry)
+         ierr = pio_def_var(file, 'state_lnpint',    pio_double, dimids_3D2, state_desc_lnpint)
+         ierr = pio_def_var(file, 'state_lnpintdry', pio_double, dimids_3D2, state_desc_lnpintdry)
+         ierr = pio_def_var(file, 'state_zi',        pio_double, dimids_3D2, state_desc_zi)
+      end if
 
+      !-------------------------------------------------------------------------
+      ! define physics tendency variables
+      if (add_phys_tend) then
+         ierr = pio_def_var(file, 'tend_dtdt',   pio_double, dimids_3D1, tend_desc_dtdt )
+         ierr = pio_def_var(file, 'tend_dudt',   pio_double, dimids_3D1, tend_desc_dudt )
+         ierr = pio_def_var(file, 'tend_dvdt',   pio_double, dimids_3D1, tend_desc_dvdt)
+         ierr = pio_def_var(file, 'tend_flx_net',pio_double, dimids_hrz, tend_desc_flx_net)
+         ierr = pio_def_var(file, 'tend_te_tnd', pio_double, dimids_hrz, tend_desc_te_tnd) ! cumulative boundary flux of total energy
+         ierr = pio_def_var(file, 'tend_tw_tnd', pio_double, dimids_hrz, tend_desc_tw_tnd) ! cumulative boundary flux of total water
+      end if
+
+      !-------------------------------------------------------------------------
+      ! define cam_out variables
+      if (add_cam_out) then
+         ierr = pio_def_var(file, 'cam_out_FLWDS', pio_double, dimids_hrz, desc_flwds )
+         ierr = pio_def_var(file, 'cam_out_SOLS',  pio_double, dimids_hrz, desc_sols )
+         ierr = pio_def_var(file, 'cam_out_SOLL',  pio_double, dimids_hrz, desc_soll )
+         ierr = pio_def_var(file, 'cam_out_SOLSD', pio_double, dimids_hrz, desc_solsd )
+         ierr = pio_def_var(file, 'cam_out_SOLLD', pio_double, dimids_hrz, desc_solld )
+      end if
+
+      !-------------------------------------------------------------------------
+      ! define cam_in variables
+      if (add_cam_in) then
+         ierr = pio_def_var(file, 'cam_in_SHF',  pio_double, dimids_hrz, desc_shf)
+         ierr = pio_def_var(file, 'cam_in_LHF',  pio_double, dimids_hrz, desc_lhf)
+         do m=1,pcnst
+            write(num,'(i4.4)') m
+            ierr = pio_def_var(file, 'cam_in_CFLX'//num,  pio_double, dimids_hrz, desc_cflx(m))
+         end do
+      end if
+
+      !-------------------------------------------------------------------------
+      ! End variable definitions
       ierr = pio_enddef(file)
+
       !-------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
+      ! write data to file
+      !-------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
+      
+      ! Set missing portions of tmp variables
+      ! (only do this once since all chunked vars have the same shape)
+      do i=begchunk,endchunk
+         if (ncol(i) < pcols) then
+            tmp2D(ncol(i)+1:,i)   = fillvalue
+            tmp3D(ncol(i)+1:,:,i) = fillvalue
+         end if
+      end do
 
-      ! call timemgr_write_restart(File)
+      call cam_grid_write_var(file, grid_id)
 
-      ! Physics buffer
-      call pbuf_write_restart(file, pbuf2d)
+      call timemgr_write_restart(file)
+
+      if (add_pbuf) call pbuf_write_restart(file, pbuf2d)
 
       ! ! data for chemistry
       ! call chem_write_restart(file)
@@ -193,217 +350,258 @@ CONTAINS
       ! call write_prescribed_aero_restart(file)
       ! call write_prescribed_volcaero_restart(file)
 
-      ! Set missing portions of tmpfield - only do this once since cam_in/out vars all same shape
-      do i = begchunk, endchunk
-         if (cam_in(i)%ncol < pcols) tmpfield(cam_in(i)%ncol+1:, i) = fillvalue
-      end do
+      !-------------------------------------------------------------------------
+      ! write physics state variables
+      if (add_phys_state) then
+
+         do m=1,pcnst
+            do i=begchunk,endchunk
+               tmp3D(:ncol(i),:,i) = phys_state(i)%q(:ncol(i),:,m) 
+            end do
+            call pio_write_darray(file, state_desc_q(m), iodesc3d, tmp3D, ierr)
+         end do
+
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%t(:ncol(i),:)
+         end do
+         call pio_write_darray(file, state_desc_t, iodesc3d, tmp3D, ierr)
+
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%u(:ncol(i),:)
+         end do
+         call pio_write_darray(file, state_desc_u, iodesc3d, tmp3D, ierr)
+
+
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%v(:ncol(i),:) 
+         end do
+         call pio_write_darray(file, state_desc_v, iodesc3d, tmp3D, ierr)
+
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%s(:ncol(i),:) 
+         end do
+         call pio_write_darray(file, state_desc_s, iodesc3d, tmp3D, ierr)
+
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%omega(:ncol(i),:) 
+         end do
+         call pio_write_darray(file, state_desc_omega, iodesc3d, tmp3D, ierr)
+         
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%pmid(:ncol(i),:) 
+         end do
+         call pio_write_darray(file, state_desc_pmid, iodesc3d, tmp3D, ierr)
+         
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%pmiddry(:ncol(i),:) 
+         end do
+         call pio_write_darray(file, state_desc_pmiddry, iodesc3d, tmp3D, ierr)
+         
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%pdel(:ncol(i),:) 
+         end do
+         call pio_write_darray(file, state_desc_pdel, iodesc3d, tmp3D, ierr)
+         
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%pdeldry(:ncol(i),:) 
+         end do
+         call pio_write_darray(file, state_desc_pdeldry, iodesc3d, tmp3D, ierr)
+         
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%rpdel(:ncol(i),:) 
+         end do
+         call pio_write_darray(file, state_desc_rpdel, iodesc3d, tmp3D, ierr)
+         
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%rpdeldry(:ncol(i),:) 
+         end do
+         call pio_write_darray(file, state_desc_rpdeldry, iodesc3d, tmp3D, ierr)
+         
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%lnpmid(:ncol(i),:) 
+         end do
+         call pio_write_darray(file, state_desc_lnpmid, iodesc3d, tmp3D, ierr)
+         
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%lnpmiddry(:ncol(i),:) 
+         end do
+         call pio_write_darray(file, state_desc_lnpmiddry, iodesc3d, tmp3D, ierr)
+         
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%exner(:ncol(i),:) 
+         end do
+         call pio_write_darray(file, state_desc_exner, iodesc3d, tmp3D, ierr)
+         
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%zm(:ncol(i),:) 
+         end do
+         call pio_write_darray(file, state_desc_zm, iodesc3d, tmp3D, ierr)
+         
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%pint(:ncol(i),:) 
+         end do
+         call pio_write_darray(file, state_desc_pint, iodesc3d, tmp3D, ierr)
+         
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%pintdry(:ncol(i),:) 
+         end do
+         call pio_write_darray(file, state_desc_pintdry, iodesc3d, tmp3D, ierr)
+         
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%lnpint(:ncol(i),:) 
+         end do
+         call pio_write_darray(file, state_desc_lnpint, iodesc3d, tmp3D, ierr)
+         
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%lnpintdry(:ncol(i),:) 
+         end do
+         call pio_write_darray(file, state_desc_lnpintdry, iodesc3d, tmp3D, ierr)
+         
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_state(i)%zi(:ncol(i),:) 
+         end do
+         call pio_write_darray(file, state_desc_zi, iodesc3d, tmp3D, ierr)
+
+      end if
+
+      !-------------------------------------------------------------------------
+      ! write physics state variables
+      if (add_phys_tend) then
+
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_tend(i)%dtdt(:ncol(i),:)
+         end do
+         call pio_write_darray(file, tend_desc_dtdt, iodesc3d, tmp3D, ierr)
+
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_tend(i)%dudt(:ncol(i),:)
+         end do
+         call pio_write_darray(file, tend_desc_dudt, iodesc3d, tmp3D, ierr)
+
+         do i=begchunk,endchunk
+            tmp3D(:ncol(i),:,i) = phys_tend(i)%dvdt(:ncol(i),:)
+         end do 
+         call pio_write_darray(file, tend_desc_dvdt, iodesc3d, tmp3D, ierr)
+
+         do i=begchunk,endchunk
+            tmp2D(:ncol(i),i) = phys_tend(i)%flx_net(:ncol(i))
+         end do
+         call pio_write_darray(file, tend_desc_flx_net, iodesc2d, tmp2D, ierr)
+         do i=begchunk,endchunk
+            tmp2D(:ncol(i),i) = phys_tend(i)%te_tnd(:ncol(i))
+         end do
+         call pio_write_darray(file, tend_desc_te_tnd, iodesc2d, tmp2D, ierr)
+         do i=begchunk,endchunk
+            tmp2D(:ncol(i),i) = phys_tend(i)%tw_tnd(:ncol(i))
+         end do
+         call pio_write_darray(file, tend_desc_tw_tnd, iodesc2d, tmp2D, ierr)
+
+      end if
 
       !-------------------------------------------------------------------------
       ! Write cam_in components
 
-      do m = 1, pcnst
-         do i = begchunk, endchunk
-            tmpfield(:cam_in(i)%ncol, i) = cam_in(i)%cflx(:cam_in(i)%ncol, m)
+      if (add_cam_in) then
+
+         do m=1,pcnst
+            do i=begchunk,endchunk
+               tmp2D(:ncol(i), i) = cam_in(i)%cflx(:ncol(i), m)
+            end do
+            call pio_write_darray(file, desc_cflx(m), iodesc2d, tmp2D, ierr)
          end do
-         call pio_write_darray(file, cflx_desc(m), iodesc, tmpfield, ierr)
-      end do
 
-      do i = begchunk, endchunk
-         tmpfield(:cam_in(i)%ncol, i) = cam_in(i)%shf(:cam_in(i)%ncol)
-      end do
-      call pio_write_darray(file, shf_desc, iodesc, tmpfield, ierr)
+         do i=begchunk,endchunk
+            tmp2D(:ncol(i), i) = cam_in(i)%shf(:ncol(i))
+         end do
+         call pio_write_darray(file, desc_shf, iodesc2d, tmp2D, ierr)
 
-      do i = begchunk, endchunk
-         tmpfield(:cam_in(i)%ncol, i) = cam_in(i)%lhf(:cam_in(i)%ncol)
-      end do
-      call pio_write_darray(file, lhf_desc, iodesc, tmpfield, ierr)
+         do i=begchunk,endchunk
+            tmp2D(:ncol(i), i) = cam_in(i)%lhf(:ncol(i))
+         end do
+         call pio_write_darray(file, desc_lhf, iodesc2d, tmp2D, ierr)
+
+      end if
 
       !-------------------------------------------------------------------------
-      ! close the file and clean-up
+      ! Write cam_out components
 
-      if (allocated(hdimids)) deallocate(hdimids)
+      if (add_cam_out) then
 
-      call cam_pio_closefile(file)
+         do i=begchunk,endchunk
+            tmp2D(:ncol(i), i) = cam_out(i)%flwds(:ncol(i))
+         end do
+         call pio_write_darray(file, desc_flwds, iodesc2d, tmp2D, ierr)
+
+         do i=begchunk,endchunk
+            tmp2D(:ncol(i), i) = cam_out(i)%sols(:ncol(i))
+         end do
+         call pio_write_darray(file, desc_sols, iodesc2d, tmp2D, ierr)
+
+         do i=begchunk,endchunk
+            tmp2D(:ncol(i), i) = cam_out(i)%soll(:ncol(i))
+         end do
+         call pio_write_darray(file, desc_soll, iodesc2d, tmp2D, ierr)
+
+         do i=begchunk,endchunk
+            tmp2D(:ncol(i), i) = cam_out(i)%solsd(:ncol(i))
+         end do
+         call pio_write_darray(file, desc_solsd, iodesc2d, tmp2D, ierr)
+
+         do i=begchunk,endchunk
+            tmp2D(:ncol(i), i) = cam_out(i)%solld(:ncol(i))
+         end do
+         call pio_write_darray(file, desc_solld, iodesc2d, tmp2D, ierr)
+
+
+
+
+         ! do i=begchunk,endchunk
+         !    tmp2D(:ncol(i), i) = cam_out(i)%bcphidry(:ncol(i))
+         ! end do
+         ! call pio_write_darray(file, desc_bcphidry, iodesc2d, tmp2D, ierr)
+
+         ! do i=begchunk,endchunk
+         !    tmp2D(:ncol(i), i) = cam_out(i)%bcphodry(:ncol(i))
+         ! end do
+         ! call pio_write_darray(file, desc_bcphodry, iodesc2d, tmp2D, ierr)
+
+         ! do i=begchunk,endchunk
+         !    tmp2D(:ncol(i), i) = cam_out(i)%ocphidry(:ncol(i))
+         ! end do
+         ! call pio_write_darray(file, desc_ocphidry, iodesc2d, tmp2D, ierr)
+
+         ! do i=begchunk,endchunk
+         !    tmp2D(:ncol(i), i) = cam_out(i)%ocphodry(:ncol(i))
+         ! end do
+         ! call pio_write_darray(file, desc_ocphodry, iodesc2d, tmp2D, ierr)
+
+         ! do i=begchunk,endchunk
+         !    tmp2D(:ncol(i), i) = cam_out(i)%dstdry1(:ncol(i))
+         ! end do
+         ! call pio_write_darray(file, desc_dstdry1desc, iodesc2d, tmp2D, ierr)
+
+         ! do i=begchunk,endchunk
+         !    tmp2D(:ncol(i), i) = cam_out(i)%dstdry2(:ncol(i))
+         ! end do
+         ! call pio_write_darray(file, desc_dstdry2, iodesc2d, tmp2D, ierr)
+
+         ! do i=begchunk,endchunk
+         !    tmp2D(:ncol(i), i) = cam_out(i)%dstdry3(:ncol(i))
+         ! end do
+         ! call pio_write_darray(file, desc_dstdry3, iodesc2d, tmp2D, ierr)
+
+         ! do i=begchunk,endchunk
+         !    tmp2D(:ncol(i), i) = cam_out(i)%dstdry4(:ncol(i))
+         ! end do
+         ! call pio_write_darray(file, desc_dstdry4, iodesc2d, tmp2D, ierr)
+
+      end if
+
+      !-------------------------------------------------------------------------
+      ! close the file
+      call pio_closefile(file)
+      ! call cam_pio_closefile(file)
       
-#endif /* MMF_ML_TRAINING */
-   end subroutine write_ml_training_input
-   !------------------------------------------------------------------------------------------------
-   subroutine write_ml_training_output( pbuf2d, cam_out, yr, mn, dy, sec )
-#ifdef MMF_ML_TRAINING
-      use ppgrid,              only: pver, pverp, pcols, begchunk, endchunk
-      use phys_grid,           only: phys_decomp
-      use physics_buffer,      only: physics_buffer_desc, pbuf_init_restart, pbuf_write_restart
-      use time_manager,        only: timemgr_init_restart, timemgr_write_restart
-      ! use chemistry,           only: chem_init_restart, chem_write_restart
-      use cam_grid_support,    only: cam_grid_id, cam_grid_header_info_t
-      use cam_grid_support,    only: cam_grid_get_decomp, cam_grid_dimensions
-      use cam_grid_support,    only: cam_grid_write_attr, cam_grid_write_var
-      use cam_history_support, only: fillvalue
-      use cam_pio_utils,       only: cam_pio_createfile, cam_pio_def_dim, cam_pio_closefile
-      use phys_control,        only: phys_getopts
-      use hycoef,              only: init_restart_hycoef
-      use dyn_grid,            only: get_horiz_grid_d
-      !-------------------------------------------------------------------------
-      ! Input arguments
-      ! type(file_desc_t), intent(inout) :: file
-      type(physics_buffer_desc), pointer    :: pbuf2d(:,:)
-      type(cam_out_t),           intent(in) :: cam_out(begchunk:endchunk)
-      integer,                   intent(in) :: yr   ! Simulation year
-      integer,                   intent(in) :: mn   ! Simulation month
-      integer,                   intent(in) :: dy   ! Simulation day
-      integer,                   intent(in) :: sec  ! Seconds into current simulation day
-      !-------------------------------------------------------------------------
-      ! Local workspace
-      type(file_desc_t)            :: file
-      integer                      :: hdim1_d,hdim2_d,ngcols ! number of physics grid columns
-      integer                      :: hdimcnt
-      integer                      :: dimids(4)
-      integer, allocatable         :: hdimids(:)
-      integer                      :: ndims, pver_id, pverp_id
-      integer                      :: ncol_dimid
-      ! integer                      :: lev_dimid(2)
-      integer                      :: grid_id
-      type(cam_grid_header_info_t) :: header_info ! A structure to hold the horz dims and coord info
-
-      type(io_desc_t), pointer :: iodesc
-      real(r8):: tmpfield(pcols, begchunk:endchunk)
-      integer :: ierr, i, m
-      integer :: physgrid
-      integer :: gdims(3)
-      integer :: nhdims
-      !-------------------------------------------------------------------------
-      ! Initialize file
-
-      call cam_pio_createfile(file, trim(get_ml_output_filename(yr,mn,dy,sec)))
-
-      grid_id = cam_grid_id('physgrid')
-      call cam_grid_dimensions(grid_id, gdims(1:2), nhdims)
-      call cam_grid_get_decomp(grid_id, (/pcols,endchunk-begchunk+1/), gdims(1:nhdims), pio_double, iodesc)
-      call cam_grid_write_attr(file, grid_id, header_info)
-      call cam_grid_write_var(file, grid_id)
-      
-      hdimcnt = header_info%num_hdims()
-      do i = 1, hdimcnt
-         dimids(i) = header_info%get_hdimid(i)
-      end do
-      allocate(hdimids(hdimcnt))
-      hdimids(1:hdimcnt) = dimids(1:hdimcnt)
-
-      ! ndims = hdimcnt
-      ! ndims = hdimcnt+1
-
-      call cam_pio_def_dim(file, 'pcnst', pcnst, dimids(hdimcnt+1), existOK=.true.)
-      !-------------------------------------------------------------------------
-      ! Define variables
-
-      call pbuf_init_restart(file, pbuf2d)
-
-      ! surface rad fluxes from cam_out
-      ierr = pio_def_var(File, 'FLWDS', pio_double, hdimids, flwds_desc)
-      ierr = pio_def_var(File, 'SOLS', pio_double, hdimids, sols_desc)
-      ierr = pio_def_var(File, 'SOLL', pio_double, hdimids, soll_desc)
-      ierr = pio_def_var(File, 'SOLSD', pio_double, hdimids, solsd_desc)
-      ierr = pio_def_var(File, 'SOLLD', pio_double, hdimids, solld_desc)
-
-      ierr = pio_enddef(file)
-      !-------------------------------------------------------------------------
-
-      ! call timemgr_write_restart(File)
-
-      ! Physics buffer
-      call pbuf_write_restart(file, pbuf2d)
-
-      ! ! data for chemistry
-      ! call chem_write_restart(file)
-      ! call write_prescribed_ozone_restart(file)
-      ! call write_prescribed_ghg_restart(file)
-      ! call write_prescribed_aero_restart(file)
-      ! call write_prescribed_volcaero_restart(file)
-
-      ! Set missing portions of tmpfield - only do this once since cam_in/out vars all same shape
-      do i = begchunk, endchunk
-         if (cam_out(i)%ncol < pcols) tmpfield(cam_out(i)%ncol+1:, i) = fillvalue
-      end do
-
-      !-------------------------------------------------------------------------
-      ! Write output surface rad fluxes
-
-      do i = begchunk, endchunk
-         tmpfield(:cam_out(i)%ncol, i) = cam_out(i)%flwds(:cam_out(i)%ncol)
-      end do
-      call pio_write_darray(file, flwds_desc, iodesc, tmpfield, ierr)
-
-      do i = begchunk, endchunk
-         tmpfield(:cam_out(i)%ncol, i) = cam_out(i)%sols(:cam_out(i)%ncol)
-      end do
-      call pio_write_darray(file, sols_desc, iodesc, tmpfield, ierr)
-
-      do i = begchunk, endchunk
-         tmpfield(:cam_out(i)%ncol, i) = cam_out(i)%soll(:cam_out(i)%ncol)
-      end do
-      call pio_write_darray(file, soll_desc, iodesc, tmpfield, ierr)
-
-      do i = begchunk, endchunk
-         tmpfield(:cam_out(i)%ncol, i) = cam_out(i)%solsd(:cam_out(i)%ncol)
-      end do
-      call pio_write_darray(file, solsd_desc, iodesc, tmpfield, ierr)
-
-      do i = begchunk, endchunk
-         tmpfield(:cam_out(i)%ncol, i) = cam_out(i)%solld(:cam_out(i)%ncol)
-      end do
-      call pio_write_darray(file, solld_desc, iodesc, tmpfield, ierr)
-
-      !-------------------------------------------------------------------------
-      ! Write output surface constiuent fluxes
-
-      ! do i = begchunk, endchunk
-      !    tmpfield(:cam_out(i)%ncol, i) = cam_out(i)%bcphidry(:cam_out(i)%ncol)
-      ! end do
-      ! call pio_write_darray(file, bcphidry_desc, iodesc, tmpfield, ierr)
-
-      ! do i = begchunk, endchunk
-      !    tmpfield(:cam_out(i)%ncol, i) = cam_out(i)%bcphodry(:cam_out(i)%ncol)
-      ! end do
-      ! call pio_write_darray(file, bcphodry_desc, iodesc, tmpfield, ierr)
-
-      ! do i = begchunk, endchunk
-      !    tmpfield(:cam_out(i)%ncol, i) = cam_out(i)%ocphidry(:cam_out(i)%ncol)
-      ! end do
-      ! call pio_write_darray(file, ocphidry_desc, iodesc, tmpfield, ierr)
-
-      ! do i = begchunk, endchunk
-      !    tmpfield(:cam_out(i)%ncol, i) = cam_out(i)%ocphodry(:cam_out(i)%ncol)
-      ! end do
-      ! call pio_write_darray(file, ocphodry_desc, iodesc, tmpfield, ierr)
-
-      ! do i = begchunk, endchunk
-      !    tmpfield(:cam_out(i)%ncol, i) = cam_out(i)%dstdry1(:cam_out(i)%ncol)
-      ! end do
-      ! call pio_write_darray(file, dstdry1_desc, iodesc, tmpfield, ierr)
-
-      ! do i = begchunk, endchunk
-      !    tmpfield(:cam_out(i)%ncol, i) = cam_out(i)%dstdry2(:cam_out(i)%ncol)
-      ! end do
-      ! call pio_write_darray(file, dstdry2_desc, iodesc, tmpfield, ierr)
-
-      ! do i = begchunk, endchunk
-      !    tmpfield(:cam_out(i)%ncol, i) = cam_out(i)%dstdry3(:cam_out(i)%ncol)
-      ! end do
-      ! call pio_write_darray(file, dstdry3_desc, iodesc, tmpfield, ierr)
-
-      ! do i = begchunk, endchunk
-      !    tmpfield(:cam_out(i)%ncol, i) = cam_out(i)%dstdry4(:cam_out(i)%ncol)
-      ! end do
-      ! call pio_write_darray(file, dstdry4_desc, iodesc, tmpfield, ierr)
-
-      !-------------------------------------------------------------------------
-      ! close the file and clean-up
-
-      if (allocated(hdimids)) deallocate(hdimids)
-
-      call cam_pio_closefile(file)
-      
-#endif /* MMF_ML_TRAINING */
-   end subroutine write_ml_training_output
+   end subroutine write_ml_training
    !------------------------------------------------------------------------------------------------
 end module ml_training
