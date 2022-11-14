@@ -280,6 +280,14 @@ real constexpr wmin = 2.0;
 real constexpr cwp_threshold = .001;
 int  constexpr perturb_seed_scale = 1000;
 
+#ifdef MMF_SEDIMENTATION
+  // parameters to compute cloud droplet sedimentation.
+  real constexpr sigmag_fixed = 1.5; // assumed geometric standard deviation of cloud droplet size distribution
+  real constexpr Nc0 = 100.;         // assumed cloud droplet number [#/cm3]
+  // real constexpr Nc0_ocn =  70.;     // assumed cloud droplet number [#/cm3] over ocean
+  // real constexpr Nc0_lnd = 200.;     // assumed cloud droplet number [#/cm3] over land
+#endif
+
 typedef yakl::Array<real,1,yakl::memDevice,yakl::styleC> umgReal1d;
 typedef yakl::Array<real,2,yakl::memDevice,yakl::styleC> umgReal2d;
 typedef yakl::Array<real,3,yakl::memDevice,yakl::styleC> umgReal3d;
