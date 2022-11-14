@@ -231,6 +231,7 @@ contains
 
        ! initialize the column package parameters
        call init_column_package_parameters(domain, ciceTracerObject)
+       call init_icepack_package_parameters(domain, ciceTracerObject)
 
     endif
 
@@ -654,6 +655,7 @@ contains
          colpkg_clear_warnings
 
     use icepack_intfc, only: &
+         icepack_init_orbit, &
          icepack_init_radiation
 
     use seaice_constants, only: &
@@ -741,6 +743,7 @@ contains
        call colpkg_init_orbit(&
             abortFlag, &
             abortMessage)
+       call icepack_init_orbit()
        call column_write_warnings(abortFlag)
 
        if (abortFlag) then
@@ -9483,7 +9486,7 @@ contains
     call init_icepack_package_tracer_indices(tracerObject)
 
     ! set the column parameters
-    call init_column_package_configs(domain)
+    call init_icepack_package_configs(domain)
 
   end subroutine init_icepack_package_parameters
 
@@ -10549,7 +10552,7 @@ contains
          !nt_isoice_in
          nt_aero_in       = tracerObject % index_aerosols, &
          nt_zaero_in      = tracerObject % index_verticalAerosolsConc, & ! name change?nt_zaeros -> nt_zaero
-         nt_bgc_C_in      = tracerObject % index_algalCarbon, &
+         !nt_bgc_C_in      = tracerObject % index_algalCarbon, & ! not supported
          nt_bgc_N_in      = tracerObject % index_algaeConc, &
          nt_bgc_chl_in    = tracerObject % index_algalChlorophyll, &
          nt_bgc_DOC_in    = tracerObject % index_DOCConc, &
@@ -10566,7 +10569,7 @@ contains
          nt_bgc_hum_in    = tracerObject % index_humicsConc, &
          nt_bgc_PON_in    = tracerObject % index_nonreactiveConc, &
          nlt_zaero_in     = tracerObject % index_verticalAerosolsConcLayer, &
-         nlt_bgc_C_in     = tracerObject % index_algalCarbonLayer, &
+         !nlt_bgc_C_in     = tracerObject % index_algalCarbonLayer, & ! not supported
          nlt_bgc_N_in     = tracerObject % index_algaeConcLayer, &
          nlt_bgc_chl_in   = tracerObject % index_algalChlorophyllLayer, &
          nlt_bgc_DOC_in   = tracerObject % index_DOCConcLayer, &
@@ -10588,6 +10591,11 @@ contains
          nlt_zaero_sw_in  = tracerObject % index_verticalAerosolsConcShortwave, &
          bio_index_o_in   = tracerObject % index_LayerIndexToDataArray, &
          bio_index_in     = tracerObject % index_LayerIndexToBioIndex)
+
+    if (seaice_icepack_aborted()) then
+       call seaice_icepack_write_warnings(.true.)
+       call mpas_log_write("init_icepack_package_tracer_indices: icepack aborted", MPAS_LOG_CRIT)
+    endif
 
   end subroutine init_icepack_package_tracer_indices
 
@@ -12387,7 +12395,9 @@ contains
          config_max_dry_snow_radius
 
     integer, pointer :: &
-         config_boundary_layer_iteration_number, &
+         config_boundary_layer_iteration_number
+
+    integer :: &
          config_thermodynamics_type_int, &
          config_ice_strength_formulation_int, &
          config_ridging_participation_function_int, &
@@ -17722,34 +17732,48 @@ contains
 
 !-----------------------------------------------------------------------
 
-  !subroutine seaice_icepack_write_warnings(logAsErrors)
+  subroutine seaice_icepack_write_warnings(logAsErrors)
 
-  !  use icepack_intfc, only: &
-  !       icepack_warnings_getall
+    use icepack_intfc, only: &
+         icepack_warnings_getall
 
-  !  character(len=strKINDWarnings), dimension(:), allocatable :: &
-  !       warnings
+    character(len=strKINDWarnings), dimension(:), allocatable :: &
+         warnings
 
-  !  logical, intent(in) :: &
-  !       logAsErrors
+    logical, intent(in) :: &
+         logAsErrors
 
-  !  integer :: &
-  !       iWarning
+    integer :: &
+         iWarning
 
-  !  call icepack_warnings_getall(warnings)
+    call icepack_warnings_getall(warnings)
 
-  !  if (logAsErrors) then
-  !     do iWarning = 1, size(warnings)
-  !        call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_ERR)
-  !     enddo ! iWarning
-  !  else
-  !     do iWarning = 1, size(warnings)
-  !        call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_WARN)
-  !     enddo ! iWarning
-  !  endif
+    if (logAsErrors) then
+       do iWarning = 1, size(warnings)
+          call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_ERR)
+       enddo ! iWarning
+    else
+       do iWarning = 1, size(warnings)
+          call mpas_log_write(trim(warnings(iWarning)), messageType=MPAS_LOG_WARN)
+       enddo ! iWarning
+    endif
 
-  !end subroutine seaice_icepack_write_warnings
+  end subroutine seaice_icepack_write_warnings
 
-!-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
+
+  function seaice_icepack_aborted() result(aborted)
+
+    use icepack_intfc, only: &
+         icepack_warnings_aborted
+
+    logical :: &
+         aborted
+
+    aborted = icepack_warnings_aborted()
+
+  end function seaice_icepack_aborted
+
+  !-----------------------------------------------------------------------
 
 end module seaice_icepack
