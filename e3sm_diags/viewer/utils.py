@@ -5,6 +5,7 @@ Utilities that are used by many different viewers.
 import datetime
 import os
 import shutil
+from typing import Dict
 
 from bs4 import BeautifulSoup
 
@@ -136,3 +137,68 @@ def h1_to_h3(path):
     html = soup.prettify("utf-8")
     with open(path, "wb") as f:
         f.write(html)
+
+
+def _fix_table_col_links(
+    viewer_index_path: str, first_col: str, html_table_paths: Dict[str, str]
+):
+    """Fixes links for cells in columns produced by CDP OutputViewer.
+
+    This funciton is a rough, generalized adaptation of
+    `lat_lon_viewer._edit_table_html` that can be improved upon.
+
+    Tables produced by the CDP OutputViewer don't support adding links to
+    the appropriate HTML files for each cell. This function subsitutes the link
+    for each cell to the appropriate HTML season table path.
+
+    Example HTML table update:
+        <tr class="output-row">
+        <!-- ... -->
+        <td colspan="1">
+        <!-- what needs to be changed -->
+        </td>
+        <!-- ... -->
+        </tr>
+        to:
+        <tr class="output-row">
+        <!-- ... -->
+        <td colspan="1">
+        <a href="{season_path}"> {season} </a> <!-- this was changed -->
+        </td>
+        <!-- ... -->
+        </tr>
+
+    Parameters
+    ----------
+    viewer_index_path : str
+        The path to the HTML index page for the viewer.
+        Example: "aerosol_Budgets/Aerosol_table/viewer/aerosol/index.html"
+    first_col : str
+        The first column in the table.
+    html_table_paths : Dict[str, str]
+        A dictionary mapping each climatology season to its HTML table path.
+    """
+    soup = BeautifulSoup(open(viewer_index_path), "lxml")
+
+    for season, season_path in html_table_paths.items():
+        # Example: ['All Species', 'ANN', 'DJF', 'MAM', 'JJA', 'SON']
+        lst = [first_col] + list(html_table_paths.keys())
+
+        for tr in soup.find_all("tr", {"class": "output-row"}):
+            index = lst.index(season)
+            cols = tr.find_all("td")
+
+            # Get the HTML element related to the season.
+            td = cols[index]
+
+            # Override the <a></a> tag with the new link.
+            url = os.path.join("..", season_path)
+            a = soup.new_tag("a", href=url)
+            a.append(season)
+
+            td.string = ""
+            td.append(a)
+
+        html = soup.prettify("utf-8")
+        with open(viewer_index_path, "wb") as f:
+            f.write(html)

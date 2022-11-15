@@ -32,4 +32,5 @@ SET_TO_PARAMETERS = {
     "lat_lon_land": LatLonLandParameter,
     "lat_lon_river": LatLonRiverParameter,
     "aerosol_aeronet": CoreParameter,
+    "aerosol_budget": CoreParameter,
 }

@@ -31,6 +31,7 @@ SET_TO_NAME = {
     "diurnal_cycle": "Diurnal cycle phase maps",
     "arm_diags": "Diagnostics at ARM stations",
     "aerosol_aeronet": "Aerosol Diags at AERONET sites",
+    "aerosol_budget": "Aerosol Budget Tables",
 }
 
 # The ordering of the columns in the viewer.

@@ -1,0 +1,57 @@
+// This file stores the e3sm_diags repository's VS Code workspace settings.
+// Simply open up this file in VS Code and the editor will be automatically
+// configured using this file. Workspace settings take precedence over your
+// user settings.
+{
+  "folders": [
+    {
+      "path": ".."
+    }
+  ],
+  "settings": {
+    // ===================
+    // Editor settings
+    // ===================
+    "editor.formatOnSave": true,
+    // ===================
+    // Python settings
+    // ===================
+    "[python]": {
+      // editor.rulers: [comments, max line length, wrap line length],
+      // Black does not wrap comments.
+      "editor.rulers": [80, 88, 120],
+      "editor.wordWrap": "wordWrapColumn",
+      "editor.wordWrapColumn": 120,
+      "editor.defaultFormatter": "ms-python.python"
+    },
+    // Code Formatting and Linting
+    // ---------------------------
+    "python.formatting.provider": "black",
+    "python.linting.flake8Enabled": true,
+    "python.linting.flake8Args": ["--config=setup.cfg"],
+    // Type checking
+    // ---------------------------
+    "python.linting.mypyEnabled": true,
+    "python.linting.mypyArgs": ["--config=setup.cfg"],
+    // Testing
+    // ---------------------------
+    "python.testing.unittestEnabled": true,
+    "python.testing.unittestArgs": [
+      "-v",
+      "-s",
+      "./tests/e3sm_diags",
+      "-p",
+      "test_*.py"
+    ],
+    // ===================
+    // Extension settings
+    // ===================
+    "jupyter.notebookFileRoot": "${workspaceFolder}",
+    "autoDocstring.docstringFormat": "numpy",
+    "[restructuredtext]": {
+      "editor.rulers": [88, 120],
+      "editor.wordWrap": "wordWrapColumn",
+      "editor.wordWrapColumn": 120
+    }
+  }
+}

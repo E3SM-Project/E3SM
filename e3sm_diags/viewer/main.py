@@ -7,6 +7,7 @@ import e3sm_diags
 from e3sm_diags.logger import custom_logger
 
 from . import (
+    aerosol_budget_viewer,
     annual_cycle_zonal_mean_viewer,
     area_mean_time_series_viewer,
     arm_diags_viewer,
@@ -42,6 +43,7 @@ SET_TO_VIEWER = {
     "tc_analysis": tc_analysis_viewer.create_viewer,
     "annual_cycle_zonal_mean": annual_cycle_zonal_mean_viewer.create_viewer,
     "aerosol_aeronet": default_viewer.create_viewer,
+    "aerosol_budget": aerosol_budget_viewer.create_viewer,
 }
 
 

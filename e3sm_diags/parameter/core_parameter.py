@@ -31,6 +31,7 @@ class CoreParameter(cdp.cdp_parameter.CDPParameter):
             "lat_lon_land",
             "lat_lon_river",
             "aerosol_aeronet",
+            "aerosol_budget",
         ]
         self.dataset = ""
         self.run_type = "model_vs_obs"
