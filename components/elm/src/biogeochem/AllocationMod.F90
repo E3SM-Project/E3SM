@@ -1181,7 +1181,6 @@ contains
                     col_plant_pdemand_vr(c,j) = col_plant_pdemand_vr(c,j) + &
                          elm_fates%fates(ci)%bc_out(s)%veg_rootc(f,j) * &
                          elm_fates%fates(ci)%bc_pconst%vmax_p(ft)
-
                  end do
 
                  ! [gN/m2/s]
