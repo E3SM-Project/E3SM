@@ -54,7 +54,8 @@ CONTAINS
    !------------------------------------------------------------------------------------------------
    subroutine write_ml_training( pbuf2d, phys_state, phys_tend, cam_in, cam_out, yr, mn, dy, sec, mode )
       use phys_grid,           only: phys_decomp
-      use physics_buffer,      only: pbuf_init_restart, pbuf_write_restart
+      ! use physics_buffer,      only: pbuf_init_restart, pbuf_write_restart
+      use physics_buffer,      only: pbuf_init_restart_alt, pbuf_write_restart_alt
       use time_manager,        only: timemgr_init_restart, timemgr_write_restart
       ! use chemistry,           only: chem_init_restart, chem_write_restart
       ! use prescribed_ozone,    only: init_prescribed_ozone_restart, write_prescribed_ozone_restart
@@ -205,58 +206,8 @@ CONTAINS
 
       call timemgr_init_restart(File)
 
-      if (add_pbuf) call pbuf_init_restart(file, pbuf2d)
-      !-------------------------------------------------------------------------
-      ! copied and modified code from pbuf_init_restart (physics_buffer.F90.in)
+      if (add_pbuf) call pbuf_init_restart_alt(file, pbuf2d)
 
-    ! use pio,              only: file_desc_t, pio_int
-    ! use cam_pio_utils,    only: cam_pio_def_dim, cam_pio_def_var
-    ! use phys_grid,        only: phys_decomp
-    ! use cam_grid_support, only: cam_grid_get_file_dimids, cam_grid_dimensions
-
-
-    ! ! Dummy Variables
-    ! type(file_desc_t),                 intent(inout) :: file
-    ! type(physics_buffer_desc), pointer               :: pbuf2d(:,:)
-
-    ! ! Local Variables
-    ! type(physics_buffer_desc), pointer               :: pbuf
-    ! integer                                          :: i, grid_select
-    ! integer                                          :: adimid(3) ! PIO IDs
-    ! integer                                          :: hdimcnt ! # grid dims
-    ! integer                                          :: dimcnt  ! # array dims
-    ! integer                                          :: mdimsize, piodtype
-
-    ! character(len=10)                                :: dimname
-    ! character(len=24)                                :: varname
-
-    ! ! Use adimid as a temp to find number of horizontal dims
-    ! call cam_grid_dimensions(phys_decomp, adimid(1:2), hdimcnt)
-    ! call cam_grid_get_file_dimids(phys_decomp, File, adimid)
-
-      do i = 1, currentpbufflds
-         pbuf => pbuf2d(i,begchunk)
-         ! Only save global pbufs
-         if(pbuf%hdr%persistence /= persistence_global) cycle
-         piodtype = pbuftype2piotype(pbuf%hdr%dtype)
-         do grid_select = 1, ngrid_types
-            ! For subcol fields, mdimsize includes psubcols in size
-            mdimsize  = product(pbuf%hdr%dimsizes(:,grid_select))/pcols
-            if(mdimsize > 1) then
-               write(dimname,'(a,i5.5)') 'pbuf_',mdimsize
-               call cam_pio_def_dim(File, dimname, mdimsize, adimid(hdimcnt+1),    &
-                  existOK=.true.)
-               dimcnt = hdimcnt + 1
-            else
-               dimcnt = hdimcnt
-            end if
-            if (mdimsize > 0) then
-               varname = trim(pbuf%hdr%name)//trim(field_grid_suff(grid_select))
-               call cam_pio_def_var(File, varname, piodtype, adimid(1:dimcnt),     &
-                  pbuf%hdr%vardesc(grid_select), existOK=.false.)
-            end if
-         end do
-      end do
       !-------------------------------------------------------------------------
       ! define physics state variables
       if (add_phys_state) then
@@ -341,7 +292,7 @@ CONTAINS
 
       call timemgr_write_restart(file)
 
-      if (add_pbuf) call pbuf_write_restart(file, pbuf2d)
+      if (add_pbuf) call pbuf_write_restart_alt(file, pbuf2d)
 
       ! ! data for chemistry
       ! call chem_write_restart(file)
