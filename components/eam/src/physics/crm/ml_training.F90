@@ -1,10 +1,8 @@
 module ml_training
 
    ! TODO:
-   ! - add physics state
-   ! - figure out how to handles prescribed aerosol, ozone, etc. (see phys_timestep_init)
-   ! - screen CRM variables from pbuf data
-   ! - write "output" routines and add calls in cam_run1()
+   ! - figure out how to handle prescribed aerosol, ozone, etc. (see phys_timestep_init)
+   ! - allow data to be written at specific interval (i.e. not every time step)
 
    use shr_kind_mod,       only: r8 => shr_kind_r8
    use spmd_utils,         only: masterproc
