@@ -763,7 +763,7 @@ def _get_batch_job_id_for_syslog(case):
     """
     mach = case.get_value("MACH")
     try:
-        if mach in ["anvil", "chrysalis", "compy", "cori-haswell", "cori-knl"]:
+        if mach in ["anvil", "chrysalis", "compy", "cori-haswell", "cori-knl", "pm-cpu", "pm-gpu", "alvarez"]:
             return os.environ["SLURM_JOB_ID"]
         elif mach in ["theta"]:
             return os.environ["COBALT_JOBID"]
