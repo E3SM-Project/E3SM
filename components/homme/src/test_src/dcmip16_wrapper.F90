@@ -601,13 +601,13 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   real(rl), dimension(np,np,nlev) :: u,v,w,T,p,dp,rho,z,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
   real(rl), dimension(np,np)      :: ps 
-  real(rl), dimension(nlev)       :: p_c,qv_c,qc_c,qr_c,dp_c,T_c,pi,dz_c,rhodry,velqr
+  real(rl), dimension(nlev)       :: p_c,qv_c,qc_c,qr_c,dp_c,T_c,pi,dz_c,rhodry,velqr, pprime
   real(rl), dimension(nlev)       :: dpdry_c, pidry, zm_c, qvdry_c, qcdry_c, qrdry_c, change_c
   real(rl) :: max_w, max_precl, min_ps
 
   real(rl) :: pi_upper,qsat,qsatdry,dp_loc,qv_loc,dpdry_loc,qvdry_loc,dq_loc,vapor_mass_change
   real(rl) :: T_loc,p_loc,pi_loc,L_old,L_new,rstar_old,rstar_new,hold,cpstarTerm_new
-  real(rl) :: T_new, pidry_upper, mass_prect, energy_prect, zbottom
+  real(rl) :: T_new, pidry_upper, loc_mass_p, mass_prect, loc_energy_p, energy_prect, zbottom
 
   real(rl) :: zi(np,np,nlevp), zi_c(nlevp)
 !  integer, parameter :: test = 1
@@ -617,8 +617,10 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 !                        latvap=2.501e6, latice=3.337e5, e0=610.78, &
 !                        T0const = 273.16, rhow = 1000.0, &
 
-  !kessler constants
-  real(rl), parameter:: k1=0.001,k2=2.2,k3=0.875,a1=0.001
+!  !kessler constants
+!  real(rl), parameter:: k1=0.001,k2=2.2,k3=0.875,a1=0.001
+  real(rl), parameter:: tol = 1e-12
+  real(rl) :: energy_before, energy_after, energy_start_timestep
 
 
   if (qsize .ne. 3) call abortmp('ERROR: moist bubble test requires qsize=3')
@@ -661,6 +663,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
       pi_upper = hvcoord%hyai(1) * hvcoord%ps0
       call construct_hydro_pressure(dp_c,pi_upper,pi)
+      pprime = p_c - pi
 
       ! RJ part
       if(bubble_prec_type == 1) then
@@ -755,6 +758,11 @@ print *, 'precl',  precl(i,j,ie), vapor_mass_change, rhow
         !if there is any water int he column
         if( any(qv_c>0).or.any(qc_c>0).or.any(qr_c>0) ) then
 
+          !list here init that is used above the RJ block
+
+          mass_prect = 0.0; energy_prect = 0.0;
+          zbottom = zi_c(nlevp)
+
           !dry density, the only quantity that won't change
           dpdry_c = dp_c*(1.0 - qv_c - qc_c - qr_c)
 
@@ -763,18 +771,29 @@ print *, 'precl',  precl(i,j,ie), vapor_mass_change, rhow
           !convert all tracers to dry ratios
           call convert_to_dry(qv_c, qc_c, qr_c, dp_c, dpdry_c, qvdry_c, qcdry_c, qrdry_c)
 
+          ! Cr, Ar stages ----------------------------------------------------------
+          call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,pi,zbottom,energy_before)
+          energy_start_timestep = energy_before
           call accrecion_and_accumulation(qcdry_c, qrdry_c, dt)
+          call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,pi,zbottom,energy_after)
+          !print *, 'enbef - enafter', (energy_before - energy_after)/energy_after
 
-!print *, 'rain', qrdry_c
+          ! sedimentation ----------------------------------------------------------
+          ! right now nh term is not used, so, no need to recompute wet hydro pressure and total nh pressure
+          call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,pi,zbottom,energy_before)
+          call sedimentation(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,pidry,zbottom,loc_mass_p,loc_energy_p,dt)
+          call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,pi,zbottom,energy_after)
+          print *, 'enbefore - enafter(up to flux)', (energy_before - energy_after - loc_energy_p)/energy_before
+          mass_prect = mass_prect + loc_mass_p; energy_prect = energy_prect + loc_energy_p;
 
-          zbottom = zi_c(nlevp)
-          call sedimentation(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,pidry,zbottom,mass_prect,energy_prect,dt)
-
-!print *, 'old-new', T(i,j,:)-T_c
-!print *, 'new', T_c
-
-          ! evaporation of rain
-          ! condensation - evaporation
+          ! evaporation of rain ----------------------------------------------------
+          ! condensation <-> evaporation -------------------------------------------
+          call recompute_pressures(qvdry_c,qcdry_c,qrdry_c, dpdry_c,pidry,pprime, pi,p_c,dp_c)
+          call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,pi,zbottom,energy_before)
+          call condensation_and_back_again(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,dp_c,pi,p_c,dt)
+          call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,pi,zbottom,energy_after)
+          !print *, 'Condensation: enbefore - enafter(up to flux)', (energy_before - energy_after)/energy_before
+          !print *, 'Total: en - en(up to flux)', (energy_start_timestep - energy_after - energy_prect)/energy_start_timestep
 
           !update q fields
           dp_c = dpdry_c*(1.0 + qvdry_c + qcdry_c + qrdry_c)

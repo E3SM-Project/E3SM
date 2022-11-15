@@ -25,7 +25,7 @@ use physical_constants,   only: bubble_const1, bubble_const2, bubble_const3, bub
 implicit none
 
 !kessler constants, put into physonst mod
-real(rl), parameter:: k1=0.001,k2=2.2,k3=0.875,a1=0.001
+real(rl), parameter:: k1=0.001,k2=2.2,k3=0.875,a1=0.00001 !a1 should be 0.001
 
 contains
 
@@ -80,11 +80,28 @@ subroutine accrecion_and_accumulation(qcdry,qrdry,dt)
     qrdry(k) = qrdry(k) + change
   enddo
 
+!print *, 'max of qc', maxval(qcdry)
+!print *, k1,a1
+!if(maxval(qcdry)> 0.001)then
+!print *, 'hey you!!!!!!!!!!!'
+!endif
+
+
   !auto-accumulation step Ar = max ( k1 (qc - a), 0 )
   do k=1,nlev
     change = dt * max (k1*(qcdry(k) - a1), 0.0)
     qcdry(k) = qcdry(k) - change
     qrdry(k) = qrdry(k) + change
+
+!if (change > 0.0) then
+!print *, 'hey rain happned!'
+!stop
+!endif
+!if(qcdry(k)> 0.001)then
+!print *, "change is ", change
+!endif
+
+
   enddo
 
 end subroutine accrecion_and_accumulation
@@ -146,10 +163,21 @@ subroutine sedimentation(qvdry,qcdry,qrdry,tempe,dpdry,pidry,zbottom,massleft,en
          endif
        enddo
 
-print *, 'positt - zm(k)', positt - zm(k)
-if(d_ind > kk) then
-print *, k,kk
+!print *, 'positt - zm(k)', positt - zm(k)
+!if(d_ind > kk) then
+!print *, k,kk
+!endif
+
+!hack
+!positt = -100.0
+!hack
+if (k < nlev) then
+  positt = zm(k+1)
+  d_ind = k+1
+else
+  positt = -100.0
 endif
+
 
        if(positt < zi(nlevp)) then
          !hit the bottom
@@ -180,6 +208,110 @@ endif
 
 end subroutine sedimentation
 
+
+subroutine recompute_pressures(qvdry,qcdry,qrdry,dpdry,pidry,pprime,pi,pnh,dp)
+
+  real(rl), dimension(nlev), intent(in)    :: qvdry,qcdry,qrdry
+  real(rl), dimension(nlev), intent(in)    :: dpdry,pidry,pprime
+  real(rl), dimension(nlev), intent(out)   :: dp,pi,pnh
+
+  real(rl)  :: ptop
+  real(rl), dimension(nlev)  :: dpi_from_water, pi_from_water
+
+  ptop = 0.0
+
+  dpi_from_water = dpdry*( qvdry + qcdry + qrdry )
+  dp = dpi_from_water + dpdry
+
+  call construct_hydro_pressure(dpi_from_water,ptop,pi_from_water)
+
+  pi = pidry + pi_from_water
+  pnh = pi + pprime
+
+end subroutine recompute_pressures
+
+
+subroutine condensation_and_back_again(qvdry,qcdry,qrdry,tempe,dpdry,dp,pi,pnh,dt)
+
+  real(rl), dimension(nlev), intent(in)    :: qrdry
+  real(rl), dimension(nlev), intent(inout) :: qvdry,qcdry,tempe
+  real(rl), dimension(nlev), intent(in)    :: dpdry, dp, pi, pnh
+  real(rl),                  intent(in)    :: dt
+
+  integer  :: k
+  real(rl) :: dq, qsat, qsatdry, T_new, cptermold, cptermnew, Lold, Lnew
+
+  do k=1, nlev
+    call qsat_kessler2(pnh(k), tempe(k), qsat)
+    qsatdry = qsat*dp(k)/dpdry(k)
+
+    !assume condensation
+    dq = qvdry(k) - qsatdry
+    !except if
+    if ( dq < 0.0 ) then
+      !evaporation
+      dq = max( dq, -qcdry(k) )
+    endif
+    ! new values: qv = qv - dq, qc = qc + dq
+
+    cptermold = cpdry + cpv *  qvdry(k)       + cl * (qcdry(k) + qrdry(k))
+    cptermnew = cpdry + cpv * (qvdry(k) - dq) + cl * (qcdry(k) + qrdry(k) + dq)
+
+    Lold = (latvap+latice) * qvdry(k)     + latice * (qcdry(k) + qrdry(k))
+    Lnew = (latvap+latice) *(qvdry(k)-dq) + latice * (qcdry(k) + qrdry(k) + dq)
+
+    !dpdry is cancelled from both sides
+    T_new = ( tempe(k) * cptermold + Lold - Lnew ) / cptermnew 
+
+    tempe(k) = T_new
+
+    qvdry(k) = qvdry(k) - dq
+    qcdry(k) = qcdry(k) + dq
+
+!if (dq > 0) then
+! print *, 'yay, condensation',' qc', qcdry(k)
+!endif
+
+  enddo
+
+end subroutine condensation_and_back_again
+
+
+subroutine compute_energy(qvdry,qcdry,qrdry,tempe,dpdry,pi,zbottom,energy)
+
+  real(rl), dimension(nlev), intent(in)    :: qrdry
+  real(rl), dimension(nlev), intent(inout) :: qvdry,qcdry,tempe
+  real(rl), dimension(nlev), intent(in)    :: dpdry, pi
+  real(rl),                  intent(inout) :: energy
+  real(rl),                  intent(in)    :: zbottom
+
+  integer  :: k
+  real(rl) :: cpterm, Lterm
+
+  !dont do 1/g term
+  energy = zbottom*pi(nlevp)
+  do k=1,nlev
+    cpterm = cpdry + cpv * qvdry(k) + cl * (qcdry(k) + qrdry(k))
+    Lterm = (latvap+latice) * qvdry(k) + latice * (qcdry(k) + qrdry(k))
+    energy = energy + dpdry(k)*( tempe(k)*cpterm + Lterm )
+  enddo
+
+end subroutine compute_energy
+
+
+
+
+
+
+
+
+
+!!!!!!!!!!! copy from dcmip16 FIX THAT!
+subroutine qsat_kessler2(p, T, qsat)
+  real(rl),         intent(out):: qsat
+  real(rl),         intent(in) :: p, T
+  qsat = bubble_const1 / p * exp( bubble_const2 * (T - bubble_const3) / ( T - bubble_const4 ) )
+end subroutine qsat_kessler2
 
 
 
