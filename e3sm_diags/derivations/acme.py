@@ -59,7 +59,7 @@ def convert_units(var, target_units):  # noqa: C901
         var.units = target_units
     elif var.units == "N/m2" and target_units == "N/m^2":
         var.units = target_units
-    elif var.id == "AODVIS" or var.id == "AOD_550_ann":
+    elif var.id == "AODVIS" or var.id == "AOD_550_ann" or var.id == "TOTEXTTAU":
         var.units = target_units
     elif var.units == "fraction":
         var = 100.0 * var
@@ -1357,6 +1357,10 @@ derived_variables = {
             ),
             (
                 ("AOD_550",),
+                lambda aod: convert_units(rename(aod), target_units="dimensionless"),
+            ),
+            (
+                ("TOTEXTTAU",),
                 lambda aod: convert_units(rename(aod), target_units="dimensionless"),
             ),
             (
