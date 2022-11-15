@@ -155,8 +155,8 @@ _TESTS = {
 
     "e3sm_ocnice_extra_coverage" : {
         "tests" : (
-            "ERS_P480_Ld5.T62_oEC60to30v3wLI.GMPAS-DIB-IAF-ISMF",
-            "PEM_P480_Ld5.T62_oEC60to30v3wLI.GMPAS-DIB-IAF-ISMF",
+            "ERS_P480_Ld5.T62_ECwISC30to60E2r1.GMPAS-DIB-IAF-ISMF",
+            "PEM_P480_Ld5.T62_ECwISC30to60E2r1.GMPAS-DIB-IAF-ISMF",
             "SMS.ne30_oECv3_gis.IGELM_MLI.elm-extrasnowlayers",
             )
         },
@@ -227,7 +227,7 @@ _TESTS = {
         "inherit" : "e3sm_atm_hi_res",
         "tests"   : (
             "SMS.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.eam-cosplite",
-            "SMS.T62_oRRS30to10v3wLI.GMPAS-IAF",
+            "SMS.T62_SOwISC12to60E2r4.GMPAS-IAF",
             )
         },
 
