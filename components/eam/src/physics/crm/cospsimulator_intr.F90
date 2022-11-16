@@ -1251,10 +1251,10 @@ CONTAINS
     integer, intent(in) :: npoints
     type(physics_state), intent(in),target  :: state
     type(physics_buffer_desc),      pointer :: pbuf(:)
-    real(r8), intent(in) :: emis(pcols,pver)                  ! cloud longwave emissivity
-    real(r8), intent(in) :: cld_swtau(pcols,pver)             ! RRTM cld_swtau, read in using this variable
-    real(r8), intent(in),optional :: snow_tau(pcols,pver)  ! RRTM grid-box mean SW snow optical depth, used for CAM5 simulations 
-    real(r8), intent(in),optional :: snow_emis(pcols,pver) ! RRTM grid-box mean LW snow optical depth, used for CAM5 simulations 
+    real(r8), intent(in) :: emis(npoints,pver)                  ! cloud longwave emissivity
+    real(r8), intent(in) :: cld_swtau(npoints,pver)             ! RRTM cld_swtau, read in using this variable
+    real(r8), intent(in),optional :: snow_tau(npoints,pver)  ! RRTM grid-box mean SW snow optical depth, used for CAM5 simulations 
+    real(r8), intent(in),optional :: snow_emis(npoints,pver) ! RRTM grid-box mean LW snow optical depth, used for CAM5 simulations 
 
     ! ######################################################################################
     ! Local variables
