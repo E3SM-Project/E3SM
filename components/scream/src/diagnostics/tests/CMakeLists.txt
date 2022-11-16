@@ -7,7 +7,7 @@ if (NOT SCREAM_BASELINES_ONLY)
   # Test extracting a single level of a field
   CreateUnitTest(field_at_level "field_at_level_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 
- # Test vertically remapping of field
+  # Test vertically remapping of field
   CreateUnitTest(vertically_remapped_field "vertically_remapped_field_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test interpolating a field onto a single pressure level
   CreateUnitTest(field_at_pressure_level "field_at_pressure_level_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
@@ -44,4 +44,9 @@ if (NOT SCREAM_BASELINES_ONLY)
   CreateUnitTest(meridional_vapor_flux "meridional_vapor_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test Meridional Vapor Flux
   CreateUnitTest(ice_cloud_mask "ice_cloud_mask_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test precipitation ice mass surface flux
+  CreateUnitTest(precip_ice_surf_mass_flux "precip_ice_surf_mass_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  # Test precipitation liq mass surface flux
+  CreateUnitTest(precip_liq_surf_mass_flux "precip_liq_surf_mass_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+
 endif()

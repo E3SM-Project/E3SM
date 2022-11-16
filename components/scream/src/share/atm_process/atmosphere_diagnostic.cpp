@@ -18,7 +18,10 @@ Field AtmosphereDiagnostic::get_diagnostic () const {
   return m_diagnostic_output.get_const();
 }
 
-void AtmosphereDiagnostic::compute_diagnostic () {
+void AtmosphereDiagnostic::compute_diagnostic (const int dt) {
+  // Some diagnostics need the timestep, store in case.
+  m_dt = dt;
+
   compute_diagnostic_impl ();
 
   // Set the timestamp of the diagnostic to the most
@@ -41,8 +44,8 @@ void AtmosphereDiagnostic::compute_diagnostic () {
 }
 
 
-void AtmosphereDiagnostic::run_impl (const int /* dt */) {
-  compute_diagnostic();
+void AtmosphereDiagnostic::run_impl (const int dt) {
+  compute_diagnostic(dt);
 }
 void AtmosphereDiagnostic::set_computed_field (const Field& /* f */) {
   EKAT_ERROR_MSG("Error! Diagnostics are not allowed to compute fields. See " + name() + ".\n");

@@ -25,6 +25,8 @@
 #include "diagnostics/ice_cloud_mask.hpp"
 #include "diagnostics/vertically_remapped_field.hpp"
 #include "diagnostics/field_at_pressure_level.hpp"
+#include "diagnostics/precip_liq_surf_mass_flux.hpp"
+#include "diagnostics/precip_ice_surf_mass_flux.hpp"
 
 namespace scream {
 
@@ -53,7 +55,8 @@ inline void register_diagnostics () {
   diag_factory.register_product("MeridionalVapFlux",&create_atmosphere_diagnostic<MeridionalVapFluxDiagnostic>);
   diag_factory.register_product("IceCloudMask",&create_atmosphere_diagnostic<IceCloudMaskDiagnostic>);
   diag_factory.register_product("VerticallyRemappedField",&create_atmosphere_diagnostic<VerticallyRemappedField>);
-
+  diag_factory.register_product("PrecipLiqSurfMassFlux",&create_atmosphere_diagnostic<PrecipLiqSurfMassFluxDiagnostic>);
+  diag_factory.register_product("PrecipIceSurfMassFlux",&create_atmosphere_diagnostic<PrecipIceSurfMassFluxDiagnostic>);
 }
 
 } // namespace scream
