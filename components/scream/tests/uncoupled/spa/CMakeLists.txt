@@ -2,7 +2,7 @@ include (ScreamUtils)
 
 # Create the test
 SET (TEST_LABELS "spa;physics;driver")
-set (NEED_LIBS spa scream_control scream_share)
+set (NEED_LIBS spa scream_control scream_share diagnostics)
 
 # Test atmosphere processes
 CreateUnitTest(spa_stand_alone "spa_stand_alone.cpp" "${NEED_LIBS}" LABELS ${TEST_LABELS}

@@ -118,8 +118,6 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   constexpr int N   = HOMMEXX_PACK_SIZE;
 
   // Some units
-  const auto nondim = Units::nondimensional();
-  const auto rho = kg/(m*m*m);
   auto Q = kg/kg;
   Q.set_string("kg/kg");
 

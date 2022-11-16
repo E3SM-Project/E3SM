@@ -1,6 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include "control/atmosphere_driver.hpp"
+#include "diagnostics/register_diagnostics.hpp"
 
 #include "physics/spa/atmosphere_prescribed_aerosol.hpp"
 
@@ -43,6 +44,7 @@ TEST_CASE("spa-stand-alone", "") {
   auto& gm_factory = GridsManagerFactory::instance();
   proc_factory.register_product("SPA",&create_atmosphere_process<SPA>);
   gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
+  register_diagnostics();
 
   // Create the grids manager
   auto& gm_params = ad_params.sublist("grids_manager");

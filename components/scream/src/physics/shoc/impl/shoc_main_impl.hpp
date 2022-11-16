@@ -366,8 +366,6 @@ void Functions<S,D>::shoc_main_internal(
   const view_2d<Spack>& dz_zi,
   const view_2d<Spack>& tkh)
 {
-  workspace_mgr.reset_internals();
-
   // Scalarize some views for single entry access
   const auto s_thetal  = ekat::scalarize(thetal);
   const auto s_shoc_ql = ekat::scalarize(shoc_ql);

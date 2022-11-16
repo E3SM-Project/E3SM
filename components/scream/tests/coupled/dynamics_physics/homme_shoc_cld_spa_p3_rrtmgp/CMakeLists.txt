@@ -6,7 +6,7 @@ CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 
 # Create the test
 set (TEST_LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
-set (NEED_LIBS cld_fraction shoc spa p3 scream_rrtmgp ${dynLibName} scream_control scream_share physics_share)
+set (NEED_LIBS cld_fraction shoc spa p3 scream_rrtmgp ${dynLibName} scream_control scream_share physics_share diagnostics)
 CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp "homme_shoc_cld_spa_p3_rrtmgp.cpp" "${NEED_LIBS}"
   LABELS ${TEST_LABELS}
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
@@ -26,6 +26,8 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/input.yaml)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_shoc_cld_spa_p3_rrtmgp_output.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/homme_shoc_cld_spa_p3_rrtmgp_output.yaml)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/homme_shoc_cld_spa_p3_rrtmgp_diagnostics.yaml
+               ${CMAKE_CURRENT_BINARY_DIR}/homme_shoc_cld_spa_p3_rrtmgp_diagnostics.yaml)
 
 # Set homme's test options, so that we can configure the namelist correctly
 # Discretization/algorithm settings
@@ -82,7 +84,17 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
   foreach (MPI_RANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
     set (SRC_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
     set (TGT_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
-    set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_bfb")
+    set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_output_bfb")
+    add_test (NAME ${TEST_NAME} 
+              COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
+              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+    set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
+              RESOURCE_LOCK ${BASE_TEST_NAME}
+              FIXTURES_REQUIRED homme_shoc_cld_spa_p3_rrtmgp_generate_output_nc_files)
+    ## Also test that the diagnostics outputs match at multiple ranks
+    set (SRC_FILE "${BASE_TEST_NAME}_diagnostics.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
+    set (TGT_FILE "${BASE_TEST_NAME}_diagnostics.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
+    set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_diagnostics_bfb")
     add_test (NAME ${TEST_NAME} 
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})

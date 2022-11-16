@@ -181,6 +181,9 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
     &m_buffer.z_mid, &m_buffer.rrho, &m_buffer.thv, &m_buffer.dz, &m_buffer.zt_grid, &m_buffer.wm_zt,
     &m_buffer.inv_exner, &m_buffer.thlm, &m_buffer.qw, &m_buffer.dse, &m_buffer.tke_copy, &m_buffer.qc_copy,
     &m_buffer.shoc_ql2, &m_buffer.shoc_mix, &m_buffer.isotropy, &m_buffer.w_sec, &m_buffer.wqls_sec, &m_buffer.brunt
+#ifdef SCREAM_SMALL_KERNELS
+    , &m_buffer.rho_zt, &m_buffer.shoc_qv, &m_buffer.dz_zt, &m_buffer.tkh
+#endif
   };
 
   spack_2d_view_t* _2d_spack_int_view_ptrs[Buffer::num_2d_vector_int] = {
@@ -188,7 +191,7 @@ void SHOCMacrophysics::init_buffers(const ATMBufferManager &buffer_manager)
     &m_buffer.qwthl_sec, &m_buffer.wthl_sec, &m_buffer.wqw_sec, &m_buffer.wtke_sec, &m_buffer.uw_sec,
     &m_buffer.vw_sec, &m_buffer.w3
 #ifdef SCREAM_SMALL_KERNELS
-    , &m_buffer.rho_zt, &m_buffer.shoc_qv, &m_buffer.dz_zt, &m_buffer.dz_zi, &m_buffer.tkh
+    , &m_buffer.dz_zi
 #endif
   };
 

@@ -40,12 +40,16 @@ void VerticalLayerInterfaceDiagnostic::set_grids(const std::shared_ptr<const Gri
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
   C_ap.request_allocation(ps);
   m_diagnostic_output.allocate_view();
+
+  // Initialize a 2d view of dz to be used for compute_diagnostic
+  const auto npacks     = ekat::npack<Pack>(m_num_levs);
+  m_dz = view_2d("",m_num_cols,npacks);
 }
 // =========================================================================================
 void VerticalLayerInterfaceDiagnostic::compute_diagnostic_impl()
 {
   const auto npacks     = ekat::npack<Pack>(m_num_levs);
-  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, npacks);
+  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, npacks);
   const auto& z_int              = m_diagnostic_output.get_view<Pack**>();
   const auto& T_mid              = get_field_in("T_mid").get_view<const Pack**>();
   const auto& p_mid              = get_field_in("p_mid").get_view<const Pack**>();
@@ -56,17 +60,18 @@ void VerticalLayerInterfaceDiagnostic::compute_diagnostic_impl()
   const Real surf_geopotential = 0.0;
 
   const int num_levs = m_num_levs;
-  view_1d dz("",npacks);
+  auto dz = m_dz;
   Kokkos::parallel_for("VerticalLayerInterfaceDiagnostic",
                        default_policy,
                        KOKKOS_LAMBDA(const MemberType& team) {
     const int icol = team.league_rank();
+    const auto& dz_s = ekat::subview(dz, icol);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npacks), [&] (const Int& jpack) {
-      dz(jpack) = PF::calculate_dz(pseudo_density_mid(icol,jpack), p_mid(icol,jpack), T_mid(icol,jpack), qv_mid(icol,jpack));
+      dz_s(jpack) = PF::calculate_dz(pseudo_density_mid(icol,jpack), p_mid(icol,jpack), T_mid(icol,jpack), qv_mid(icol,jpack));
     });
     team.team_barrier();
     const auto& z_int_s = ekat::subview(z_int, icol);
-    PF::calculate_z_int(team,num_levs,dz,surf_geopotential,z_int_s);
+    PF::calculate_z_int(team,num_levs,dz_s,surf_geopotential,z_int_s);
   });
 
   const auto ts = get_field_in("qv").get_header().get_tracking().get_time_stamp();

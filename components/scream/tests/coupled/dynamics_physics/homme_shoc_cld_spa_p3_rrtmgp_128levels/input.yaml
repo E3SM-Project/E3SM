@@ -20,7 +20,6 @@ atmosphere_processes:
   atm_procs_list: (homme,physics)
   schedule_type: Sequential
   homme:
-    Process Name: Homme
     vertical_coordinate_filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_128lev}
     Moisture: moist
   physics:

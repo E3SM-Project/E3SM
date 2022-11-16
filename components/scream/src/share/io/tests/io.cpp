@@ -1,12 +1,12 @@
 #include <catch2/catch.hpp>
 #include <memory>
 
-#include "ekat/ekat_parse_yaml_file.hpp"
-#include "ekat/util/ekat_string_utils.hpp"
 #include "share/io/scream_output_manager.hpp"
 #include "share/io/scorpio_output.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
+
+#include "diagnostics/register_diagnostics.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
@@ -24,6 +24,8 @@
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/ekat_scalar_traits.hpp"
 #include "ekat/ekat_assert.hpp"
+#include "ekat/ekat_parse_yaml_file.hpp"
+#include "ekat/util/ekat_string_utils.hpp"
 
 namespace {
 
@@ -723,6 +725,10 @@ int get_current_t(const int tt, const int dt, const int freq, const std::string&
 TEST_CASE("input_output_basic","io")
 {
   ekat::Comm comm (MPI_COMM_WORLD);
+
+  // Register all potential diagnostics
+  register_diagnostics();
+
   std::vector<std::string> output_types =
     { "instant","average", "max", "min"};
   std::vector<std::string> output_freq =

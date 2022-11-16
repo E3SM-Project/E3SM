@@ -504,7 +504,6 @@ TEST_CASE("field_checks", "") {
 
   // Create a parameter list
   ekat::ParameterList params ("Atmosphere Processes");
-  params.set<std::string>("Process Name", "Foo");
   params.set<std::string>("Grid Name", "Point Grid");
 
   const auto lt = grid->get_3d_scalar_layout(true);
@@ -567,9 +566,7 @@ TEST_CASE ("subcycling") {
   auto gm = create_gm(comm);
 
   ekat::ParameterList params, params_sub;
-  params.set<std::string>("Process Name", "AddOne");
   params.set<std::string>("Grid Name", "Point Grid");
-  params_sub.set<std::string>("Process Name", "AddOne");
   params_sub.set<std::string>("Grid Name", "Point Grid");
   params_sub.set<int>("number_of_subcycles", 5);
 

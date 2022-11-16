@@ -37,7 +37,7 @@ void Functions<S,D>
   const auto s_tke = scalarize(tke);
   const auto s_w3 = scalarize(w3);
 
-  const Int max_safe_shift1_idx = s_wthl_sec.extent(0) - 2;
+  const Int max_safe_shift1_idx = nlevi - 2;
 
   // Set lower condition: w3(i,nlevi) = 0
   s_w3(nlevi-1) = 0;
@@ -76,9 +76,9 @@ void Functions<S,D>
     ekat::index_and_shift<-1>(s_w_sec, range_pack_m1, w_sec_k, w_sec_km1);
     ekat::index_and_shift<-1>(s_tke, range_pack_m1, tke_k, tke_km1);
 
-    // Compute inputs for computing f0 to f5 terms
     const auto active_range = range_pack > 0 && range_pack < nlev;
     if (active_range.any()) {
+      // Compute inputs for computing f0 to f5 terms
       const auto thedz  = 1/dz_zi(k);
       const auto thedz2 = 1/(dz_zt_k+dz_zt_km1);
 

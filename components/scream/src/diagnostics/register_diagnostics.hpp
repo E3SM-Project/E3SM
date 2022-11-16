@@ -23,6 +23,8 @@
 #include "diagnostics/zonal_vapor_flux.hpp"
 #include "diagnostics/meridional_vapor_flux.hpp"
 #include "diagnostics/ice_cloud_mask.hpp"
+#include "diagnostics/vertically_remapped_field.hpp"
+#include "diagnostics/field_at_pressure_level.hpp"
 
 namespace scream {
 
@@ -30,6 +32,7 @@ inline void register_diagnostics () {
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
   diag_factory.register_product("PotentialTemperature",&create_atmosphere_diagnostic<PotentialTemperatureDiagnostic>);
   diag_factory.register_product("FieldAtLevel",&create_atmosphere_diagnostic<FieldAtLevel>);
+  diag_factory.register_product("FieldAtPressureLevel",&create_atmosphere_diagnostic<FieldAtPressureLevel>);
   diag_factory.register_product("AtmosphereDensity",&create_atmosphere_diagnostic<AtmDensityDiagnostic>);
   diag_factory.register_product("Exner",&create_atmosphere_diagnostic<ExnerDiagnostic>);
   diag_factory.register_product("VirtualTemperature",&create_atmosphere_diagnostic<VirtualTemperatureDiagnostic>);
@@ -49,6 +52,7 @@ inline void register_diagnostics () {
   diag_factory.register_product("ZonalVapFlux",&create_atmosphere_diagnostic<ZonalVapFluxDiagnostic>);
   diag_factory.register_product("MeridionalVapFlux",&create_atmosphere_diagnostic<MeridionalVapFluxDiagnostic>);
   diag_factory.register_product("IceCloudMask",&create_atmosphere_diagnostic<IceCloudMaskDiagnostic>);
+  diag_factory.register_product("VerticallyRemappedField",&create_atmosphere_diagnostic<VerticallyRemappedField>);
 
 }
 

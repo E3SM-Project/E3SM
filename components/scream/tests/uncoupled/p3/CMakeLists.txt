@@ -2,7 +2,7 @@ include (ScreamUtils)
 
 # Create the test
 SET (TEST_LABELS "p3;physics;driver")
-set (NEED_LIBS p3 scream_control scream_share)
+set (NEED_LIBS p3 scream_control scream_share diagnostics)
 CreateUnitTest(p3_standalone "p3_standalone.cpp" "${NEED_LIBS}" LABELS ${TEST_LABELS}
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   PROPERTIES FIXTURES_SETUP p3_generate_output_nc_files

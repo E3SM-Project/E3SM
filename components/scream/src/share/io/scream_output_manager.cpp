@@ -3,8 +3,6 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
 
-#include "diagnostics/register_diagnostics.hpp"
-
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
@@ -52,9 +50,6 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_case_t0 = case_t0;
   m_is_restarted_run = (case_t0<run_t0);
   m_is_model_restart_output = is_model_restart_output;
-
-  // Register all potential diagnostics
-  register_diagnostics();
 
   // Check for model restart output
   set_params(params,field_mgrs);

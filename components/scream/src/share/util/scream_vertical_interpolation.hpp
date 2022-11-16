@@ -70,6 +70,18 @@ void perform_vertical_interpolation(
   const int nlevs_tgt,
   const Real msk_val);
 
+// Tjhis is the same as the generic function above, but in the case where the user
+// does not want to output the masked array.
+template<typename Src, typename Tgt, typename Input, typename T, int N> 
+void perform_vertical_interpolation(
+  const Src& x_src,
+  const Tgt& x_tgt,
+  const Input& input,
+  const view_2d<Pack<T,N>>& output,
+  const int nlevs_src,
+  const int nlevs_tgt,
+  const Real msk_val);
+
 //This function call does not have a mask value provided by user
 //so uses the default masked value (masked_val) in the
 //scream_vertical_interpolation.hpp file

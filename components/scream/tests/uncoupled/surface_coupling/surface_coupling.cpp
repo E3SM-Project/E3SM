@@ -3,6 +3,7 @@
 #include "control/atmosphere_driver.hpp"
 #include "control/atmosphere_surface_coupling_importer.hpp"
 #include "control/atmosphere_surface_coupling_exporter.hpp"
+#include "diagnostics/register_diagnostics.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/scream_types.hpp"
@@ -340,6 +341,7 @@ TEST_CASE("surface-coupling", "") {
   proc_factory.register_product("SurfaceCouplingImporter",&create_atmosphere_process<SurfaceCouplingImporter>);
   proc_factory.register_product("SurfaceCouplingExporter",&create_atmosphere_process<SurfaceCouplingExporter>);
   gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
+  register_diagnostics();
 
   // Create the AD
   AtmosphereDriver ad;
