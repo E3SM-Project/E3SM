@@ -6,7 +6,7 @@ CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 
 # Create the test
 set (TEST_LABELS "dynamics;driver")
-set (NEED_LIBS ${dynLibName} scream_control scream_share)
+set (NEED_LIBS ${dynLibName} scream_control scream_share diagnostics)
 
 CreateUnitTest(homme_standalone "homme_standalone.cpp" "${NEED_LIBS}"
   LABELS ${TEST_LABELS} 

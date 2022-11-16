@@ -17,7 +17,6 @@ set(SHARE_SRC
   field/field_manager.cpp
   grid/abstract_grid.cpp
   grid/grids_manager.cpp
-  grid/mesh_free_grids_manager.cpp
   grid/se_grid.cpp
   grid/point_grid.cpp
   grid/remap/abstract_remapper.cpp
@@ -27,7 +26,6 @@ set(SHARE_SRC
   property_checks/field_nan_check.cpp
   property_checks/field_within_interval_check.cpp
   property_checks/mass_and_energy_column_conservation_check.cpp
-  util/scream_test_session.cpp
   util/scream_time_stamp.cpp
   util/scream_timing.cpp
   util/scream_utils.cpp
@@ -80,8 +78,16 @@ if (NOT WGET STREQUAL "WGET-NOTFOUND")
     COMMENT "Downloading CF conventions XML file and building YAML dictionary...")
 endif()
 
+# IO library
+add_subdirectory(io)
+
 if (NOT SCREAM_LIB_ONLY)
+  # Create test_support lib
+  add_library(scream_test_support
+    grid/mesh_free_grids_manager.cpp
+    util/scream_test_session.cpp
+  )
+  target_link_libraries(scream_test_support PUBLIC scream_share)
+
   add_subdirectory(tests)
 endif()
-
-add_subdirectory(io)

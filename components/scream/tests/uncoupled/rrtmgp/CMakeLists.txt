@@ -6,7 +6,7 @@ if (NOT SCREAM_BASELINES_ONLY)
   SET (TEST_LABELS "rrtmgp;physics;driver")
   # Required libraries
   find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
-  set (NEED_LIBS scream_rrtmgp rrtmgp ${NETCDF_C} scream_control scream_share physics_share yakl)
+  set (NEED_LIBS scream_rrtmgp rrtmgp ${NETCDF_C} scream_control scream_share physics_share yakl diagnostics)
 
   CreateUnitTest(
       rrtmgp_standalone_unit rrtmgp_standalone_unit.cpp "${NEED_LIBS}" LABELS ${TEST_LABELS}

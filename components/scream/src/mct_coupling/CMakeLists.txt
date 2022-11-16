@@ -37,6 +37,7 @@ set (SCREAM_LIBS
      scream_rrtmgp
      cld_fraction
      spa
+     diagnostics
 )
 
 # Create atm lib

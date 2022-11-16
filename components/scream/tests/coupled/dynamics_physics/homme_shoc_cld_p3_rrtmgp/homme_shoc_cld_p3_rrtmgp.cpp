@@ -8,6 +8,7 @@
 #include "physics/shoc/atmosphere_macrophysics.hpp"
 #include "physics/cld_fraction/atmosphere_cld_fraction.hpp"
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
+#include "diagnostics/register_diagnostics.hpp"
 
 // Dynamics includes
 #include "dynamics/register_dynamics.hpp"
@@ -48,6 +49,7 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   proc_factory.register_product("SHOC",&create_atmosphere_process<SHOCMacrophysics>);
   proc_factory.register_product("CldFraction",&create_atmosphere_process<CldFraction>);
   proc_factory.register_product("RRTMGP",&create_atmosphere_process<RRTMGPRadiation>);
+  register_diagnostics();
 
   // Create the driver
   AtmosphereDriver ad;

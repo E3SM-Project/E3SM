@@ -2,7 +2,7 @@ INCLUDE (ScreamUtils)
 
 # Create the test
 set (TEST_LABELS "surface_coupling;driver")
-set (NEED_LIBS scream_control scream_share)
+set (NEED_LIBS scream_control scream_share diagnostics)
 CreateUnitTest(surface_coupling surface_coupling.cpp "${NEED_LIBS}" LABELS ${TEST_LABELS}
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   PROPERTIES FIXTURES_SETUP surface_coupling_generate_output_nc_files

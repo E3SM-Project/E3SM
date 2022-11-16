@@ -6,7 +6,7 @@ CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 
 # Create the test
 set (TEST_LABELS "dynamics;driver;shoc;cld;p3;rrtmgp;physics")
-set (NEED_LIBS cld_fraction shoc spa p3 scream_rrtmgp ${dynLibName} scream_control scream_share physics_share)
+set (NEED_LIBS cld_fraction shoc spa p3 scream_rrtmgp ${dynLibName} scream_control scream_share physics_share diagnostics)
 CreateUnitTest(homme_shoc_cld_spa_p3_rrtmgp "homme_shoc_cld_spa_p3_rrtmgp.cpp" "${NEED_LIBS}"
   LABELS ${TEST_LABELS}
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}

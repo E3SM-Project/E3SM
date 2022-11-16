@@ -2,6 +2,7 @@
 
 #include "control/atmosphere_driver.hpp"
 #include "share/atm_process/atmosphere_process_group.hpp"
+#include "diagnostics/register_diagnostics.hpp"
 #include "dynamics/register_dynamics.hpp"
 #include "dynamics/homme/atmosphere_dynamics.hpp"
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
@@ -45,6 +46,7 @@ TEST_CASE("scream_homme_standalone", "scream_homme_standalone") {
 
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,
   register_dynamics();
+  register_diagnostics();
 
   // Create the driver
   AtmosphereDriver ad;

@@ -1,7 +1,7 @@
 INCLUDE (ScreamUtils)
 
 # Create the exec
-CreateUnitTestExec (shoc_p3 shoc_p3.cpp "shoc;p3;scream_control")
+CreateUnitTestExec (shoc_p3 shoc_p3.cpp "shoc;p3;scream_control;diagnostics")
 
 # Ensure test input files are present in the data dir
 GetInputFile(init/${EAMxx_tests_IC_FILE_72lev})

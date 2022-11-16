@@ -10,7 +10,7 @@ find_library(NETCDF_C netcdf HINTS ${NetCDF_C_PATH}/lib)
 #                 HOMME_TARGET   NP PLEV QSIZE_D
 CreateDynamicsLib("theta-l_kokkos"  4   72   10)
 
-set (NEED_LIBS cld_fraction shoc p3 scream_rrtmgp rrtmgp ${NETCDF_C} ${dynLibName} scream_control scream_share physics_share yakl)
+set (NEED_LIBS cld_fraction shoc p3 scream_rrtmgp rrtmgp ${NETCDF_C} ${dynLibName} scream_control scream_share physics_share yakl diagnostics)
 
 # We have 3 runs:
 #  1) run for 2*N time steps starting from t=0 (baseline run)

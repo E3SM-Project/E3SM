@@ -2,7 +2,7 @@ include (ScreamUtils)
 
 # Create the test
 SET (TEST_LABELS "shoc;physics;driver")
-set (NEED_LIBS shoc scream_control scream_share)
+set (NEED_LIBS shoc scream_control scream_share diagnostics)
 CreateUnitTest(shoc_standalone "shoc_standalone.cpp" "${NEED_LIBS}" LABELS ${TEST_LABELS}
   MPI_RANKS ${TEST_RANK_START} ${TEST_RANK_END}
   PROPERTIES FIXTURES_SETUP shoc_generate_output_nc_files

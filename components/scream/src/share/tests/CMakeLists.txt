@@ -44,7 +44,4 @@ if (NOT ${SCREAM_BASELINES_ONLY})
     LABELS "horiz_remap"
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
   )
- 
-
-
 endif()
