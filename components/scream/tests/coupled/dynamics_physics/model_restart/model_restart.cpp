@@ -10,6 +10,7 @@
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 #include "dynamics/register_dynamics.hpp"
 #include "dynamics/homme/interface/scream_homme_interface.hpp"
+#include "diagnostics/register_diagnostics.hpp"
 
 // EKAT headers
 #include "ekat/ekat_assert.hpp"
@@ -39,6 +40,7 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   // NOTE: we register physics by hand (rather than with register_physics()), since
   //       we don't want to require spa to run this test
   register_dynamics();
+  register_diagnostics();
 
   auto& proc_factory = AtmosphereProcessFactory::instance();
   proc_factory.register_product("p3",&create_atmosphere_process<P3Microphysics>);

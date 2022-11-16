@@ -1,5 +1,6 @@
 #include <catch2/catch.hpp>
 #include "control/atmosphere_driver.hpp"
+#include "diagnostics/register_diagnostics.hpp"
 
 #include "physics/zm/atmosphere_deep_convection.hpp"
 #include "physics/zm/scream_zm_interface.hpp"
@@ -47,6 +48,7 @@ TEST_CASE("zm-standalone", "") {
   auto& gm_factory = GridsManagerFactory::instance();
   proc_factory.register_product("ZM",&create_atmosphere_process<ZMDeepConvection>);
   gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
+  register_diagnostics();
 
   // Create the driver
   AtmosphereDriver ad;

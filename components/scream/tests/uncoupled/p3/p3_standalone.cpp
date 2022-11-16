@@ -1,6 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include "control/atmosphere_driver.hpp"
+#include "diagnostics/register_diagnostics.hpp"
 
 #include "physics/p3/atmosphere_microphysics.hpp"
 
@@ -40,6 +41,7 @@ TEST_CASE("p3-stand-alone", "") {
   auto& gm_factory = GridsManagerFactory::instance();
   proc_factory.register_product("p3",&create_atmosphere_process<P3Microphysics>);
   gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
+  register_diagnostics();
 
   // Create the driver
   AtmosphereDriver ad;

@@ -1,6 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include "control/atmosphere_driver.hpp"
+#include "diagnostics/register_diagnostics.hpp"
 
 #include "physics/rrtmgp/atmosphere_radiation.hpp"
 
@@ -44,6 +45,7 @@ TEST_CASE("rrtmgp-stand-alone", "") {
   auto& gm_factory = GridsManagerFactory::instance();
   proc_factory.register_product("rrtmgp",&create_atmosphere_process<RRTMGPRadiation>);
   gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
+  register_diagnostics();
 
   // Create the driver
   AtmosphereDriver ad;

@@ -14,6 +14,7 @@
 #include "physics/share/physics_constants.hpp"
 
 // scream share headers
+#include "diagnostics/register_diagnostics.hpp"
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/util/scream_common_physics_functions.hpp"
@@ -76,6 +77,7 @@ namespace scream {
         auto& gm_factory = GridsManagerFactory::instance();
         proc_factory.register_product("RRTMGP",&create_atmosphere_process<RRTMGPRadiation>);
         gm_factory.register_product("Mesh Free",&create_mesh_free_grids_manager);
+        register_diagnostics();
 
         // Create the driver
         AtmosphereDriver ad;

@@ -8,6 +8,7 @@
 
 // Physics includes
 #include "physics/register_physics.hpp"
+#include "diagnostics/register_diagnostics.hpp"
 
 // EKAT headers
 #include "ekat/ekat_assert.hpp"
@@ -40,6 +41,7 @@ TEST_CASE("scream_homme_physics", "scream_homme_physics") {
   // Register all atm procs and the grids manager in the respective factories
   register_dynamics();
   register_physics();
+  register_diagnostics();
 
   // Create the driver
   AtmosphereDriver ad;
