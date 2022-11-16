@@ -1590,6 +1590,13 @@ CONTAINS
            end do
          end do
        end do
+       if (present(snow_tau) .and. present(snow_emis)) then
+          dem_s_snow(1:npoints,1:pver)  = snow_emis(1:npoints,1:pver)  ! 10.5 micron grid-box mean optical depth of stratiform snow
+          dtau_s_snow(1:npoints,1:pver) = snow_tau(1:npoints,1:pver)   ! 0.67 micron grid-box mean optical depth of stratiform snow
+       else
+          dem_s_snow(1:npoints,1:pver) = 0._r8
+          dtau_s_snow(1:npoints,1:pver) = 0._r8
+       end if
     else
        ! NOTES:
        ! 1) EAM assumes same radiative properties for stratiform and convective clouds, 
