@@ -1,4 +1,4 @@
-#include "../impl/p3_droplet_self_coll_impl.hpp"
+#include "p3_droplet_self_coll_impl.hpp"
 
 namespace scream {
 namespace p3 {

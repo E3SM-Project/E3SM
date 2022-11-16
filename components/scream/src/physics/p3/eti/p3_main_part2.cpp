@@ -1,4 +1,4 @@
-#include "../impl/p3_main_impl_part2.hpp"
+#include "p3_main_impl_part2.hpp"
 
 namespace scream {
 namespace p3 {

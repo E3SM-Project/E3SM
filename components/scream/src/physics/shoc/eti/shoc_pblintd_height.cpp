@@ -1,4 +1,4 @@
-#include "../impl/shoc_pblintd_height_impl.hpp"
+#include "shoc_pblintd_height_impl.hpp"
 
 namespace scream {
 namespace shoc {

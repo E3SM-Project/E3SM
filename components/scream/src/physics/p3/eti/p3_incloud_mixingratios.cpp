@@ -1,4 +1,4 @@
-#include "../impl/p3_incloud_mixingratios_impl.hpp"
+#include "p3_incloud_mixingratios_impl.hpp"
 
 namespace scream {
 namespace p3 {

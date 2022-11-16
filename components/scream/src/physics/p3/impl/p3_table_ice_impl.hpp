@@ -1,7 +1,7 @@
 #ifndef P3_TABLE_ICE_IMPL_HPP
 #define P3_TABLE_ICE_IMPL_HPP
 
-#include "../p3_functions.hpp" // for ETI only but harmless for GPU
+#include "p3_functions.hpp" // for ETI only but harmless for GPU
 
 #include <fstream>
 
@@ -10,7 +10,7 @@ namespace p3 {
 
 /*
  * Implementation of ice table functions. Clients should NOT #include
- * this file, #include ../p3_functions.hpp instead.
+ * this file, #include p3_functions.hpp instead.
  */
 
 template <typename S, typename D>

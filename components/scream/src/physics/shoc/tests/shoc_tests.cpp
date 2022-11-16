@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 
-#include "physics/shoc/shoc_main_wrap.hpp"
-#include "physics/shoc/shoc_ic_cases.hpp"
+#include "shoc_main_wrap.hpp"
+#include "shoc_ic_cases.hpp"
 
 #include "ekat/util/ekat_test_utils.hpp"
 

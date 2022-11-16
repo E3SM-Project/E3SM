@@ -1,4 +1,4 @@
-#include "../impl/shoc_length_impl.hpp"
+#include "shoc_length_impl.hpp"
 
 namespace scream {
 namespace shoc {

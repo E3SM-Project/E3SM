@@ -1,4 +1,4 @@
-#include "../impl/p3_dsd2_impl.hpp"
+#include "p3_dsd2_impl.hpp"
 
 namespace scream {
 namespace p3 {

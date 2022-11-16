@@ -2,7 +2,7 @@
 #define P3_UNIT_TESTS_COMMON_HPP
 
 #include "share/scream_types.hpp"
-#include "physics/p3/p3_functions.hpp"
+#include "p3_functions.hpp"
 
 namespace scream {
 namespace p3 {

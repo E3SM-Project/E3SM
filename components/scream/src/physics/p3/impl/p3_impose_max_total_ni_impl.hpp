@@ -1,7 +1,7 @@
 #ifndef P3_IMPOSE_MAX_TOTAL_NI_IMPL_HPP
 #define P3_IMPOSE_MAX_TOTAL_NI_IMPL_HPP
 
-#include "../p3_functions.hpp" // for ETI only but harmless for GPU
+#include "p3_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
 namespace p3 {

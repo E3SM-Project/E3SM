@@ -68,6 +68,9 @@ set_target_properties(p3 PROPERTIES
 target_include_directories(p3 PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/../share
   ${CMAKE_CURRENT_BINARY_DIR}/modules
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/impl
 )
 target_link_libraries(p3 physics_share scream_share)
 

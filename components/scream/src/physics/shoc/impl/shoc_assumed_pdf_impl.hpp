@@ -1,7 +1,7 @@
 #ifndef SHOC_SHOC_ASSUMED_PDF_IMPL_HPP
 #define SHOC_SHOC_ASSUMED_PDF_IMPL_HPP
 
-#include "../shoc_functions.hpp" // for ETI only but harmless for GPU
+#include "shoc_functions.hpp" // for ETI only but harmless for GPU
 #include "physics/share/physics_functions.hpp"
 
 #include <iomanip>
@@ -11,7 +11,7 @@ namespace shoc {
 
 /*
  * Implementation of shoc shoc_assumed_pdf. Clients should NOT
- * #include this file, but include ../shoc_functions.hpp instead.
+ * #include this file, but include shoc_functions.hpp instead.
  *
  *  Purpose of this function is to calculate the
  *  double Gaussian PDF of SHOC, which is the centerpiece

@@ -1,4 +1,4 @@
-#include "../impl/shoc_pblintd_cldcheck_impl.hpp"
+#include "shoc_pblintd_cldcheck_impl.hpp"
 
 namespace scream {
 namespace shoc {

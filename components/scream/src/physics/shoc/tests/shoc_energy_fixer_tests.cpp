@@ -2,10 +2,10 @@
 
 #include "shoc_unit_tests_common.hpp"
 
-#include "physics/shoc/shoc_functions.hpp"
-#include "physics/shoc/shoc_functions_f90.hpp"
+#include "shoc_functions.hpp"
+#include "shoc_functions_f90.hpp"
 #include "physics/share/physics_constants.hpp"
-#include "physics/shoc/shoc_constants.hpp"
+#include "shoc_constants.hpp"
 #include "share/scream_types.hpp"
 #include "share/util/scream_setup_random_test.hpp"
 

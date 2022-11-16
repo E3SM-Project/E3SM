@@ -1,4 +1,4 @@
-#include "../impl/p3_calc_liq_relaxation_timescale_impl.hpp"
+#include "p3_calc_liq_relaxation_timescale_impl.hpp"
 
 namespace scream {
 namespace p3 {

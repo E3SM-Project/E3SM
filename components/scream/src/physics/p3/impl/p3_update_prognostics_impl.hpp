@@ -1,7 +1,7 @@
 #ifndef P3_UPDATE_PROGNOSTICS_IMPL_HPP
 #define P3_UPDATE_PROGNOSTICS_IMPL_HPP
 
-#include "../p3_functions.hpp"
+#include "p3_functions.hpp"
 
 namespace scream {
 namespace p3 {

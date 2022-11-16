@@ -1,9 +1,9 @@
 #include "share/scream_types.hpp"
 #include "share/scream_session.hpp"
 
-#include "physics/p3/p3_main_wrap.hpp"
-#include "physics/p3/p3_functions_f90.hpp"
-#include "physics/p3/p3_ic_cases.hpp"
+#include "p3_main_wrap.hpp"
+#include "p3_functions_f90.hpp"
+#include "p3_ic_cases.hpp"
 
 #include "ekat/util/ekat_file_utils.hpp"
 #include "ekat/util/ekat_test_utils.hpp"

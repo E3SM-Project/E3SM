@@ -1,4 +1,4 @@
-#include "../impl/shoc_calc_shoc_vertflux_impl.hpp"
+#include "shoc_calc_shoc_vertflux_impl.hpp"
 
 namespace scream {
 namespace shoc {

@@ -1,7 +1,7 @@
 #ifndef SHOC_ENERGY_INTEGRALS_IMPL_HPP
 #define SHOC_ENERGY_INTEGRALS_IMPL_HPP
 
-#include "../shoc_functions.hpp" // for ETI only but harmless for GPU
+#include "shoc_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
 namespace shoc {

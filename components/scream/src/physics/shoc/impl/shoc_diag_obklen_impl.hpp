@@ -1,14 +1,14 @@
 #ifndef SHOC_DIAG_OBKLEN_IMPL_HPP
 #define SHOC_DIAG_OBKLEN_IMPL_HPP
 
-#include "../shoc_functions.hpp" // for ETI only but harmless for GPU
+#include "shoc_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
 namespace shoc {
 
 /*
  * Implementation of shoc shoc_diag_obklen. Clients should NOT
- * #include this file, but include ../shoc_functions.hpp instead.
+ * #include this file, but include shoc_functions.hpp instead.
  */
 
 template<typename S, typename D>

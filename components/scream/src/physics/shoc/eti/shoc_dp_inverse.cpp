@@ -1,4 +1,4 @@
-#include "../impl/shoc_dp_inverse_impl.hpp"
+#include "shoc_dp_inverse_impl.hpp"
 
 namespace scream {
 namespace shoc {

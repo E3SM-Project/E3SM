@@ -1,4 +1,4 @@
-#include "../impl/shoc_energy_integrals_impl.hpp"
+#include "shoc_energy_integrals_impl.hpp"
 
 namespace scream {
 namespace shoc {

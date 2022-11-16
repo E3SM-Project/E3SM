@@ -1,4 +1,4 @@
-#include "../impl/shoc_compute_diag_third_shoc_moment_impl.hpp"
+#include "shoc_compute_diag_third_shoc_moment_impl.hpp"
 
 namespace scream {
 namespace shoc {

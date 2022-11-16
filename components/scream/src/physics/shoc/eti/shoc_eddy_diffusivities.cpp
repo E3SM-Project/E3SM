@@ -1,4 +1,4 @@
-#include "../impl/shoc_eddy_diffusivities_impl.hpp"
+#include "shoc_eddy_diffusivities_impl.hpp"
 
 namespace scream {
 namespace shoc {

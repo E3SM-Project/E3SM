@@ -1,4 +1,4 @@
-#include "../impl/shoc_grid_impl.hpp"
+#include "shoc_grid_impl.hpp"
 
 namespace scream {
 namespace shoc {

@@ -1,4 +1,4 @@
-#include "../impl/shoc_isotropic_ts_impl.hpp"
+#include "shoc_isotropic_ts_impl.hpp"
 
 namespace scream {
 namespace shoc {

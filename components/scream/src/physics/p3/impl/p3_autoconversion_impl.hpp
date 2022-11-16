@@ -1,7 +1,7 @@
 #ifndef P3_AUTOCONVERSION_IMPL_HPP
 #define P3_AUTOCONVERSION_IMPL_HPP
 
-#include "../p3_functions.hpp" // for ETI only but harmless for GPU
+#include "p3_functions.hpp" // for ETI only but harmless for GPU
 #include "p3_subgrid_variance_scaling_impl.hpp"
 
 namespace scream {

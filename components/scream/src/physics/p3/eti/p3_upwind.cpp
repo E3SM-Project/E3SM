@@ -1,4 +1,4 @@
-#include "../impl/p3_upwind_impl.hpp"
+#include "p3_upwind_impl.hpp"
 
 namespace scream {
 namespace p3 {

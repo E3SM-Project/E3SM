@@ -1,4 +1,4 @@
-#include "../impl/p3_check_values_impl.hpp"
+#include "p3_check_values_impl.hpp"
 
 namespace scream {
 namespace p3 {

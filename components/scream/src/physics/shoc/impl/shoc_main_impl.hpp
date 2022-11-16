@@ -1,7 +1,7 @@
 #ifndef SHOC_MAIN_IMPL_HPP
 #define SHOC_MAIN_IMPL_HPP
 
-#include "../shoc_functions.hpp" // for ETI only but harmless for GPU
+#include "shoc_functions.hpp" // for ETI only but harmless for GPU
 
 #include "ekat/kokkos/ekat_subview_utils.hpp"
 
@@ -12,7 +12,7 @@ namespace shoc {
 
 /*
  * Implementation of shoc shoc_main. Clients should NOT
- * #include this file, but include ../shoc_functions.hpp instead.
+ * #include this file, but include shoc_functions.hpp instead.
  */
 
 template<typename S, typename D>

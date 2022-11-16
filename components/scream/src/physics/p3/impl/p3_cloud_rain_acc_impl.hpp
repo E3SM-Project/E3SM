@@ -1,7 +1,7 @@
 #ifndef P3_CLOUD_RAIN_ACC_IMPL_HPP
 #define P3_CLOUD_RAIN_ACC_IMPL_HPP
 
-#include "../p3_functions.hpp" // for ETI only but harmless for GPU
+#include "p3_functions.hpp" // for ETI only but harmless for GPU
 #include "p3_subgrid_variance_scaling_impl.hpp"
 
 namespace scream {
@@ -9,7 +9,7 @@ namespace p3 {
 
 /*
  * Implementation of p3 cloud rain accretion function. Clients should NOT
- * #include this file, but include ../p3_functions.hpp instead.
+ * #include this file, but include p3_functions.hpp instead.
  */
 
 template <typename S, typename D>

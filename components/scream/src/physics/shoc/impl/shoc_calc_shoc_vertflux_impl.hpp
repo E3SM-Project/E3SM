@@ -1,7 +1,7 @@
 #ifndef SHOC_CALC_SHOC_VERTFLUX_IMPL_HPP
 #define SHOC_CALC_SHOC_VERTFLUX_IMPL_HPP
 
-#include "../shoc_functions.hpp" // for ETI only but harmless for GPU
+#include "shoc_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
 namespace shoc {

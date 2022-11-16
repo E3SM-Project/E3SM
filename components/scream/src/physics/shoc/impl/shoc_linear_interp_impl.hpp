@@ -1,14 +1,14 @@
 #ifndef SHOC_LINEAR_INTERP_IMPL_HPP
 #define SHOC_LINEAR_INTERP_IMPL_HPP
 
-#include "../shoc_functions.hpp" // for ETI only but harmless for GPU
+#include "shoc_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
 namespace shoc {
 
 /*
  * Implementation of shoc linear_interp. Clients should NOT
- * #include this file, but include ../shoc_functions.hpp instead.
+ * #include this file, but include shoc_functions.hpp instead.
  */
 
 template<typename S, typename D>

@@ -1,4 +1,4 @@
-#include "../impl/shoc_linear_interp_impl.hpp"
+#include "shoc_linear_interp_impl.hpp"
 
 namespace scream {
 namespace shoc {

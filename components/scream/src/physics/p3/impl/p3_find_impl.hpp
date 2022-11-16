@@ -1,14 +1,14 @@
 #ifndef P3_FIND_IMPL_HPP
 #define P3_FIND_IMPL_HPP
 
-#include "../p3_functions.hpp" // for ETI only but harmless for GPU
+#include "p3_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
 namespace p3 {
 
 /*
  * Implementation of p3 find functions. Clients should NOT #include
- * this file, #include ../p3_functions.hpp instead.
+ * this file, #include p3_functions.hpp instead.
  */
 
 template <typename S, typename D>

@@ -1,14 +1,14 @@
 #ifndef P3_BACK_TO_CELL_AVERAGE_IMPL_HPP
 #define P3_BACK_TO_CELL_AVERAGE_IMPL_HPP
 
-#include "../p3_functions.hpp" // for ETI only but harmless for GPU
+#include "p3_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
 namespace p3 {
 
 /*
  * Implementation of p3 cell averaging function.
- * Clients should NOT #include this file, but include ../p3_functions.hpp instead.
+ * Clients should NOT #include this file, but include p3_functions.hpp instead.
  */
 
 template <typename S, typename D>

@@ -1,4 +1,4 @@
-#include "../impl/p3_subgrid_variance_scaling_impl.hpp"
+#include "p3_subgrid_variance_scaling_impl.hpp"
 
 namespace scream {
 namespace p3 {

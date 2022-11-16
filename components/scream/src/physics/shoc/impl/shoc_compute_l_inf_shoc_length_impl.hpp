@@ -1,7 +1,7 @@
 #ifndef SHOC_COMPUTE_L_INF_SHOC_LENGTH_HPP
 #define SHOC_COMPUTE_L_INF_SHOC_LENGTH_HPP
 
-#include "../shoc_functions.hpp" // for ETI only but harmless for GPU
+#include "shoc_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
 namespace shoc {

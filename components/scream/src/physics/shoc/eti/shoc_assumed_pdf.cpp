@@ -1,4 +1,4 @@
-#include "../impl/shoc_assumed_pdf_impl.hpp"
+#include "shoc_assumed_pdf_impl.hpp"
 
 namespace scream {
 namespace shoc {

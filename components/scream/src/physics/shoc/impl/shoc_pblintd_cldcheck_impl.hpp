@@ -2,7 +2,7 @@
 #ifndef SHOC_PBLINTD_CLDCHECK_IMPL_HPP
 #define SHOC_PBLINTD_CLDCHECK_IMPL_HPP
 
-#include "../shoc_functions.hpp" // for ETI only but harmless for GPU
+#include "shoc_functions.hpp" // for ETI only but harmless for GPU
 #include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
 
 namespace scream {

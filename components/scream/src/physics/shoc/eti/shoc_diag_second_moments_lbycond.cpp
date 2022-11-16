@@ -1,4 +1,4 @@
-#include "../impl/shoc_diag_second_moments_lbycond_impl.hpp"
+#include "shoc_diag_second_moments_lbycond_impl.hpp"
 
 namespace scream {
 namespace shoc {

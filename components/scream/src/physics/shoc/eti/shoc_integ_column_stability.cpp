@@ -1,4 +1,4 @@
-#include "../impl/shoc_integ_column_stability_impl.hpp"
+#include "shoc_integ_column_stability_impl.hpp"
 
 namespace scream {
 namespace shoc {

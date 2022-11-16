@@ -1,14 +1,14 @@
 #ifndef SHOC_DIAG_SECOND_SHOC_MOMENTS_IMPL_HPP
 #define SHOC_DIAG_SECOND_SHOC_MOMENTS_IMPL_HPP
 
-#include "../shoc_functions.hpp" // for ETI only but harmless for GPU
+#include "shoc_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
 namespace shoc {
 
 /*
  * Implementation of shoc diag_second_shoc_moments. Clients should NOT
- * #include this file, but include ../shoc_functions.hpp instead.
+ * #include this file, but include shoc_functions.hpp instead.
  */
 
 template<typename S, typename D>

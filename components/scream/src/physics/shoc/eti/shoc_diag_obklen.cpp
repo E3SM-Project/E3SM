@@ -1,4 +1,4 @@
-#include "../impl/shoc_diag_obklen_impl.hpp"
+#include "shoc_diag_obklen_impl.hpp"
 
 namespace scream {
 namespace shoc {

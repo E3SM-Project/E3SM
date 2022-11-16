@@ -1,7 +1,7 @@
 #ifndef P3_MAIN_IMPL_HPP
 #define P3_MAIN_IMPL_HPP
 
-#include "../p3_functions.hpp" // for ETI only but harmless for GPU
+#include "p3_functions.hpp" // for ETI only but harmless for GPU
 #include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
 #include "physics/share/physics_saturation_impl.hpp"
 
@@ -12,7 +12,7 @@ namespace p3 {
 
 /*
  * Implementation of p3 main function. Clients should NOT #include
- * this file, #include ../p3_functions.hpp instead.
+ * this file, #include p3_functions.hpp instead.
  */
 
 template <typename S, typename D>

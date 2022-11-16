@@ -1,7 +1,7 @@
 #ifndef P3_ICE_NUCLEATION_IMPL_HPP
 #define P3_ICE_NUCLEATION_IMPL_HPP
 
-#include "../p3_functions.hpp" // for ETI only but harmless for GPU
+#include "p3_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
 namespace p3 {

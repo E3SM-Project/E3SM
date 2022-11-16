@@ -1,7 +1,7 @@
 #ifndef P3_MAIN_IMPL_PART_1_HPP
 #define P3_MAIN_IMPL_PART_1_HPP
 
-#include "../p3_functions.hpp" // for ETI only but harmless for GPU
+#include "p3_functions.hpp" // for ETI only but harmless for GPU
 #include "physics/share/physics_functions.hpp" // also for ETI not on GPUs
 #include "physics/share/physics_saturation_impl.hpp"
 

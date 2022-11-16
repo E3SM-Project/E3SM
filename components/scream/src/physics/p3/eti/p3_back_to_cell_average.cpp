@@ -1,4 +1,4 @@
-#include "../impl/p3_back_to_cell_average_impl.hpp"
+#include "p3_back_to_cell_average_impl.hpp"
 
 namespace scream {
 namespace p3 {

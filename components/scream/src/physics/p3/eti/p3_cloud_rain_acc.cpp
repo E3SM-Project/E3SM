@@ -1,4 +1,4 @@
-#include "../impl/p3_cloud_rain_acc_impl.hpp"
+#include "p3_cloud_rain_acc_impl.hpp"
 
 namespace scream {
 namespace p3 {

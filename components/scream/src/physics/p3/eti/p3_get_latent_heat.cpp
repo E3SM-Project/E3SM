@@ -1,4 +1,4 @@
-#include "../impl/p3_get_latent_heat_impl.hpp"
+#include "p3_get_latent_heat_impl.hpp"
 
 namespace scream {
 namespace p3 {

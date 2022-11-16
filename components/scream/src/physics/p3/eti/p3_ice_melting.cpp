@@ -1,4 +1,4 @@
-#include "../impl/p3_ice_melting_impl.hpp"
+#include "p3_ice_melting_impl.hpp"
 
 namespace scream {
 namespace p3 {

@@ -1,14 +1,14 @@
 #ifndef SHOC_COMPUTE_SHOC_VAPOR_IMPL_HPP
 #define SHOC_COMPUTE_SHOC_VAPOR_IMPL_HPP
 
-#include "../shoc_functions.hpp" // for ETI only but harmless for GPU
+#include "shoc_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
 namespace shoc {
 
 /*
  * Implementation of shoc compute_shoc_vapor. Clients should NOT
- * #include this file, but include ../shoc_functions.hpp instead.
+ * #include this file, but include shoc_functions.hpp instead.
  *
  * This function computes water vapor
  * based on SHOC's prognostic total water mixing ratio

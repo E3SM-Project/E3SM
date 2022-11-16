@@ -1,14 +1,14 @@
 #ifndef P3_CALC_LIQ_RELAXATION_TIMESCALE_IMPL_HPP
 #define P3_CALC_LIQ_RELAXATION_TIMESCALE_IMPL_HPP
 
-#include "../p3_functions.hpp" // for ETI only but harmless for GPU
+#include "p3_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
 namespace p3 {
 
 /*
  * Implementation of p3 liquid relaxation timescale calculation.
- * Clients should NOT #include this file, but include ../p3_functions.hpp instead.
+ * Clients should NOT #include this file, but include p3_functions.hpp instead.
  */
 
 template <typename S, typename D>

@@ -1,7 +1,7 @@
 #ifndef P3_CONSERVATION_IMPL_HPP
 #define P3_CONSERVATION_IMPL_HPP
 
-#include "../p3_functions.hpp"
+#include "p3_functions.hpp"
 #include "physics/share/physics_constants.hpp"
 
 namespace scream {

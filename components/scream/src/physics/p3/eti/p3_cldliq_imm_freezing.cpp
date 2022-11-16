@@ -1,4 +1,4 @@
-#include "../impl/p3_cldliq_imm_freezing_impl.hpp"
+#include "p3_cldliq_imm_freezing_impl.hpp"
 
 namespace scream {
 namespace p3 {

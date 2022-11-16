@@ -3,9 +3,9 @@
 #include "share/scream_types.hpp"
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
-#include "physics/p3/p3_functions.hpp"
-#include "physics/p3/p3_functions_f90.hpp"
-#include "physics/p3/p3_f90.hpp"
+#include "p3_functions.hpp"
+#include "p3_functions_f90.hpp"
+#include "p3_f90.hpp"
 
 #include "p3_unit_tests_common.hpp"
 

@@ -1,4 +1,4 @@
-#include "../impl/p3_update_prognostics_impl.hpp"
+#include "p3_update_prognostics_impl.hpp"
 
 namespace scream {
 namespace p3 {
