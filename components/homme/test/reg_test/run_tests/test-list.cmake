@@ -51,7 +51,6 @@ IF (HOMME_ENABLE_COMPOSE)
 ENDIF()
 
 IF (${BUILD_HOMME_PREQX_KOKKOS})
-
   # Lists of test files for the HOMME kokkos regression tests.
   # These tests come in pairs, so that, besides checking
   # performance, we can compare the kokkos output with the

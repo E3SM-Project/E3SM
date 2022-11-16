@@ -253,13 +253,32 @@ private:
   // and the blackhole buffers (used for missing connections)
   std::shared_ptr<MpiBuffersManager> m_buffers_manager;
 
-  // These views can look quite complicated. Basically, we want something like
-  // send_buffer(ielem, ifield, iedge) to point to the right area of one of the
-  // three buffers in the buffers manager. In particular, if it is a local connection, it will
-  // point to local_buffer (on both send and recv views), while for shared
-  // connection, it will point to the corresponding mpi buffer, and for missing
-  // connection, it will point to the send/recv blackhole.
+  // send_buffer(..) points to the right area of one of the three buffers in the
+  // buffers manager:
+  // * local connection: point to local_buffer (on both send and recv views);
+  // * shared connection: point to the corresponding mpi buffer;
+  // * missing connection: point to the send/recv blackhole.
 
+  //#define AMB_BE
+#ifdef AMB_BE
+  // Index as m_*_?d_buffers(ifield, iconn), where iconn ranges over all
+  // connections in this rank.
+  ExecViewManaged<ExecViewUnmanaged<Scalar[2][NUM_LEV]>**>  m_send_1d_buffers;
+  ExecViewManaged<ExecViewUnmanaged<Scalar[2][NUM_LEV]>**>  m_recv_1d_buffers;
+
+  ExecViewManaged<ExecViewUnmanaged<Real*>**>               m_send_2d_buffers;
+  ExecViewManaged<ExecViewUnmanaged<Real*>**>               m_recv_2d_buffers;
+
+  ExecViewManaged<ExecViewUnmanaged<Scalar**>**>            m_send_3d_buffers;
+  ExecViewManaged<ExecViewUnmanaged<Scalar**>**>            m_recv_3d_buffers;
+  
+  // TODO: optimize: you only need to pack/unpack the first entry of the NUM_LEV_P-th pack.
+  //       This is because, if NUM_LEV!=NUM_LEV_P, then the NUM_LEV_P-th pack contains
+  //       only one meaningful value (the rest is garbage, most likely nan's).
+  ExecViewManaged<ExecViewUnmanaged<Scalar**>**>  m_send_3d_int_buffers;
+  ExecViewManaged<ExecViewUnmanaged<Scalar**>**>  m_recv_3d_int_buffers;  
+#else
+  // Index as m_*_?d_buffers(ielem, ifield, iedge).
   ExecViewManaged<ExecViewUnmanaged<Scalar[2][NUM_LEV]>**[NUM_CONNECTIONS]>  m_send_1d_buffers;
   ExecViewManaged<ExecViewUnmanaged<Scalar[2][NUM_LEV]>**[NUM_CONNECTIONS]>  m_recv_1d_buffers;
 
@@ -268,14 +287,15 @@ private:
 
   ExecViewManaged<ExecViewUnmanaged<Scalar**>**[NUM_CONNECTIONS]>            m_send_3d_buffers;
   ExecViewManaged<ExecViewUnmanaged<Scalar**>**[NUM_CONNECTIONS]>            m_recv_3d_buffers;
-  std::vector<int> m_3d_nlev_pack;        // during registration
-  ExecViewManaged<int*> m_3d_nlev_pack_d; //  after registration
-
+  
   // TODO: optimize: you only need to pack/unpack the first entry of the NUM_LEV_P-th pack.
   //       This is because, if NUM_LEV!=NUM_LEV_P, then the NUM_LEV_P-th pack contains
   //       only one meaningful value (the rest is garbage, most likely nan's).
   ExecViewManaged<ExecViewUnmanaged<Scalar**>**[NUM_CONNECTIONS]>  m_send_3d_int_buffers;
   ExecViewManaged<ExecViewUnmanaged<Scalar**>**[NUM_CONNECTIONS]>  m_recv_3d_int_buffers;
+#endif
+  std::vector<int> m_3d_nlev_pack;        // during registration
+  ExecViewManaged<int*> m_3d_nlev_pack_d; //  after registration
 
   // The number of registered fields
   int         m_num_1d_fields;    // Without counting the 2x factor due to min/max fields

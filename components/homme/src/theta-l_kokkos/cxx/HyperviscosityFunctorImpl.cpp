@@ -17,8 +17,6 @@
 namespace Homme
 {
 
-#pragma message "TODO modify nutop policies according to nlev_tom"
-
 HyperviscosityFunctorImpl::
 HyperviscosityFunctorImpl (const SimulationParams&     params,
                            const ElementsGeometry&     geometry,
