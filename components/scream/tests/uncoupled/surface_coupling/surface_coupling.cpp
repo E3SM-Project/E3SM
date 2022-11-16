@@ -182,6 +182,7 @@ void test_exports(const FieldManager& fm,
                   const bool called_directly_after_init = false)
 {
   using PF = PhysicsFunctions<DefaultDevice>;
+  using PC = physics::Constants<Real>;
 
   // Some computed fields rely on calculations that are done in the AD.
   // Recompute here and verify that they were exported correctly.
@@ -243,8 +244,8 @@ void test_exports(const FieldManager& fm,
     Sa_pslv(i)    = PF::calculate_psl(T_int_bot, p_int_i(nlevs), phis(i));
 
     if (not called_directly_after_init) {
-      Faxa_rainl(i) = precip_liq_surf_mass(i)/dt;
-      Faxa_snowl(i) = precip_ice_surf_mass(i)/dt;
+      Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O);
+      Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O);
     }
   });
 
