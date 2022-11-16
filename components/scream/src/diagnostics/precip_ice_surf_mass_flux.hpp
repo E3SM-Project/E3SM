@@ -8,7 +8,7 @@ namespace scream
 {
 
 /*
- * This diagnostic will produce the potential temperature.
+ * This diagnostic will produce the precipitation (ice) surface mass flux.
  */
 
 class PrecipIceSurfMassFluxDiagnostic : public AtmosphereDiagnostic
