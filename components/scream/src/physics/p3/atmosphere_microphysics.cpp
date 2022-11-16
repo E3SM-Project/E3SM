@@ -56,7 +56,6 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
-  FieldLayout scalar3d_layout_int { {COL,ILEV}, {m_num_cols,m_num_levs+1} };
 
   // Define fields needed in P3.
   // Note: p3_main is organized by a set of 5 structures, variables below are organized
@@ -92,8 +91,8 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Updated> ("T_prev_micro_step",  scalar3d_layout_mid, K,        grid_name, ps);
 
   // Diagnostic Outputs: (all fields are just outputs w.r.t. P3)
-  add_field<Updated>("precip_liq_surf_mass", scalar2d_layout,     kg,     grid_name);
-  add_field<Updated>("precip_ice_surf_mass", scalar2d_layout,     kg,     grid_name);
+  add_field<Updated>("precip_liq_surf_mass", scalar2d_layout,     kg/m2,  grid_name);
+  add_field<Updated>("precip_ice_surf_mass", scalar2d_layout,     kg/m2,  grid_name);
   add_field<Computed>("eff_radius_qc",       scalar3d_layout_mid, micron, grid_name, ps);
   add_field<Computed>("eff_radius_qi",       scalar3d_layout_mid, micron, grid_name, ps);
 

@@ -61,8 +61,8 @@ void SurfaceCouplingExporter::set_grids(const std::shared_ptr<const GridsManager
   add_field<Required>("sfc_flux_lw_dn"  ,     scalar2d_layout,      Wm2,   grid_name);
 
   // These fields are required for computations, and are set to zero after the export
-  add_field<Updated>("precip_liq_surf_mass", scalar2d_layout,      kg,    grid_name);
-  add_field<Updated>("precip_ice_surf_mass", scalar2d_layout,      kg,    grid_name);
+  add_field<Updated>("precip_liq_surf_mass", scalar2d_layout,      kg/m2,  grid_name);
+  add_field<Updated>("precip_ice_surf_mass", scalar2d_layout,      kg/m2,  grid_name);
 
   create_helper_field("Sa_z",       scalar2d_layout, grid_name);
   create_helper_field("Sa_ptem",    scalar2d_layout, grid_name);
@@ -212,6 +212,7 @@ void SurfaceCouplingExporter::do_export(const Int dt, const bool called_during_i
   using KT = KokkosTypes<DefaultDevice>;
   using policy_type = KT::RangePolicy;
   using PF = PhysicsFunctions<DefaultDevice>;
+  using PC = physics::Constants<Real>;
 
   const auto& p_int                = get_field_in("p_int").get_view<const Real**>();
   const auto& pseudo_density       = get_field_in("pseudo_density").get_view<const Spack**>();
@@ -285,9 +286,11 @@ void SurfaceCouplingExporter::do_export(const Int dt, const bool called_during_i
     Sa_pslv(i) = PF::calculate_psl(T_int_bot, p_int_i(num_levs), phis(i));
 
     if (not called_during_initialization) {
-      // Precipitation has units of kg, so we need to convert to a flux with units of kg/s
-      Faxa_rainl(i) = precip_liq_surf_mass(i)/dt;
-      Faxa_snowl(i) = precip_ice_surf_mass(i)/dt;
+      // Precipitation has units of kg/m2, and Faxa_rainl/snowl
+      // need units mm/s. Here, 1000 converts m->mm, dt has units s, and
+      // rho_h2o has units kg/m3.
+      Faxa_rainl(i) = precip_liq_surf_mass(i)/dt*(1000.0/PC::RHO_H2O);
+      Faxa_snowl(i) = precip_ice_surf_mass(i)/dt*(1000.0/PC::RHO_H2O);
     }
   });
 
