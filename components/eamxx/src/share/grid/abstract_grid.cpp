@@ -295,154 +295,59 @@ get_owners (const hview_1d<const gid_type>& gids) const
 {
   EKAT_REQUIRE_MSG (m_dofs_set,
       "Error! Cannot retrieve gids owners until dofs gids have been set.\n");
-  // In order to ship information around across ranks, it is easier to use
-  // an auxiliary grid, where dofs are partitioned across ranks linearly
-  // NOTE: we actually don't need the grid itself. We only need to know
-  //       what the local number of dofs would be on this rank.
-  const int ngdofs = get_num_global_dofs();
+
   const auto& comm = get_comm();
-  int nldofs_linear = ngdofs / comm.size();
-  if (comm.rank()<(ngdofs % comm.size())) {
-    ++ nldofs_linear;
-  }
 
-  // For each pid, compute offsets in the global gids array.
-  std::vector<int> offsets(comm.size()+1,0);
-  const int ndofs_per_rank = ngdofs / comm.size();
-  const int remainder = ngdofs % comm.size();
-  for (int pid=1; pid<=comm.size(); ++pid) {
-    offsets[pid] = offsets[pid-1] + ndofs_per_rank;
-    if ( (pid-1)<remainder ){
-      ++offsets[pid];
+  // Init owners to in
+  std::map<gid_type,int> owners;
+  int num_gids_in = gids.size();
+  for (int i=0; i<num_gids_in; ++i) {
+    owners[gids[i]] = -1;
+  }
+  int num_found = 0;
+
+  // Let each rank bcast its owned gids, so that other procs can
+  // check against their input list
+  auto my_gids_h = m_dofs_gids_host;
+  gid_type* data;
+  std::vector<gid_type> pid_gids;
+  for (int pid=0; pid<comm.size(); ++pid) {
+    // Bcast gids count for this pid
+    int num_gids_pid = my_gids_h.size();
+    comm.broadcast(&num_gids_pid,1,pid);
+
+    // Bcast gids
+    if (pid==comm.rank()) {
+      data = my_gids_h.data();
+    } else {
+      pid_gids.resize(num_gids_pid);
+      data = pid_gids.data();
+    }
+    comm.broadcast(data,num_gids_pid,pid);
+
+    // Checks if any of the input pids is in this list
+    for (int i=0; i<num_gids_pid && num_found<num_gids_in; ++i) {
+      auto it = owners.find(data[i]);
+      if (it!=owners.end()) {
+        EKAT_REQUIRE_MSG (it->second==-1,
+            "Error! Found a GID with multiple owners.\n"
+            "  - owner 1: " + std::to_string(it->second) + "\n"
+            "  - owner 2: " + std::to_string(pid) + "\n");
+        it->second = pid;
+        ++num_found;
+      }
     }
   }
-  EKAT_REQUIRE_MSG (offsets.back()==ngdofs,
-      "Error! Something went wrong while calling get_gids_owners.\n"
-      "  - grid name: " + this->name() + "\n");
+  EKAT_REQUIRE_MSG (num_found==num_gids_in,
+      "Error! Could not locate the owner of one of the input GIDs.\n");
 
-  // Utility lambda: given a GID, retrieve the PID that would own it in a
-  // linearly distributed grid, as well as the corresponding LID it would
-  // have in that grid on that rank. This is doable without any communication
-  // since the gids are partitioned linearly
-  auto pid_and_lid = [&] (const gid_type gid) -> std::pair<int,int> {
-    auto it = std::upper_bound (offsets.begin(),offsets.end(),gid);
-    int pid = std::distance(offsets.begin(),it) - 1;
-    int lid = gid - offsets[pid];
-    EKAT_REQUIRE_MSG (pid>=0 && pid<comm.size(),
-        "Error! Failed to retrieve owner of GID in the linear grid.\n");
-    return std::make_pair(pid,lid);
-  };
-
-  // The idea is to create a "global" array (partitioned across ranks) of the
-  // gids in the linear map, use it to store the owner of each dofs (in the original grid),
-  // and finally read that global array for all the input gids.
-  struct PidLid {
-    int pid;
-    int lid;
-  };
-  std::map<int,std::vector<PidLid>> rma_data;
-  std::map<int,std::vector<int>> rma_offsets;
-  std::map<int,MPI_Datatype> rma_dtypes;
-
-  auto clear_dtypes = [&] () {
-    for (auto& it : rma_dtypes) {
-      MPI_Type_free(&it.second);
-    }
-    rma_dtypes.clear();
-  };
-
-  MPI_Win win;
-  PidLid* pids_lids_linear;
-  MPI_Win_allocate (nldofs_linear*sizeof(MPI_2INT),sizeof(MPI_2INT),
-                    MPI_INFO_NULL,comm.mpi_comm(),&pids_lids_linear,&win);
-  MPI_Win_fence(0,win);
-
-  // Step 1: each rank loops through its grid gids, and sets owners_linear=rank
-  // for all its gids in the grid.
-  MPI_Win_fence(0,win);
-
-  //  - 1.a Figure where each local dof specs will be written in the linearly
-  //        distributed global array
-  for (int i=0; i<get_num_local_dofs(); ++i) {
-    const auto gid = m_dofs_gids_host[i];
-    const auto pidlid = pid_and_lid (gid);
-    const auto pid = pidlid.first;
-    const auto lid = pidlid.second;
-    rma_data[pid].push_back({comm.rank(),i});
-    rma_offsets[pid].push_back(lid);
+  // Now create and fill output view
+  hview_1d<int> result("",num_found);
+  for (int i=0; i<num_gids_in; ++i) {
+    result[i] = owners.at(gids[i]);
   }
 
-  //  - 1.b: build data types for writing all the data on each tgt rank at once
-  for (const auto& it : rma_offsets) {
-    auto& dtype = rma_dtypes[it.first];
-    std::vector<int> ones(it.second.size(),1);
-    MPI_Type_indexed (it.second.size(),ones.data(),it.second.data(),MPI_2INT,&dtype);
-    MPI_Type_commit (&dtype);
-  }
-
-  //  - 1.c: write on the window
-  for (const auto& it : rma_data) {
-    const auto pid = it.first;
-    const auto dtype = rma_dtypes.at(pid);
-    // Note: the dtype already encodes offsets in the remote window, so tgt_disp=0
-    MPI_Put (it.second.data(),it.second.size(),MPI_2INT,pid,
-             0,1,dtype,win);
-  }
-  clear_dtypes();
-  rma_data.clear();
-  rma_offsets.clear();
-  MPI_Win_fence(0,win);
-
-  // Step 2: each rank loops over its input gids, and retrieves the owner from the window
-
-  //  - 1.a: Figure out what needs to be read from each rank
-  for (int i=0; i<gids.extent_int(0); ++i) {
-    const auto gid = gids[i];
-    const auto pidlid = pid_and_lid (gid);
-    const auto pid = pidlid.first;
-    const auto lid = pidlid.second;
-    rma_offsets[pid].push_back(lid);
-    rma_data[pid].push_back({-1,-1});
-  }
-
-  //  - 1.b: build data types for reading all the data from each tgt rank at once
-  for (const auto& it : rma_offsets) {
-    auto& dtype = rma_dtypes[it.first];
-    std::vector<int> ones(it.second.size(),1);
-    MPI_Type_indexed (it.second.size(),ones.data(),it.second.data(),MPI_2INT,&dtype);
-    MPI_Type_commit (&dtype);
-  }
-
-  //  - 1.c: read from the window
-  for (auto& it : rma_data) {
-    const auto pid = it.first;
-    const auto dtype = rma_dtypes.at(pid);
-    // Note: the dtype already encodes offsets in the remote window, so tgt_disp=0
-    MPI_Get (it.second.data(),it.second.size(),MPI_2INT,pid,
-             0,1,dtype,win);
-  }
-  clear_dtypes();
-  rma_offsets.clear();
-  MPI_Win_fence(0,win);
-
-  // Step 3: copy data in rma types into output view, making sure we keep correct order
-  hview_1d<int> owners("",gids.size());
-  std::map<int,int> curr_data_index;
-  for (int i=0; i<gids.extent_int(0); ++i) {
-    const auto gid = gids[i];
-    const auto pidlid = pid_and_lid (gid);
-    const auto pid = pidlid.first;
-    auto it_bool = curr_data_index.emplace(pid,0);
-    auto& idx = it_bool.first->second;
-    owners(i) = rma_data[pid][idx].pid;
-    ++idx;
-  }
-  rma_data.clear();
-
-  // Clean up
-  MPI_Win_free(&win);
-
-  return owners;
+  return result;
 }
 
 void AbstractGrid::copy_views (const AbstractGrid& src, const bool shallow)
