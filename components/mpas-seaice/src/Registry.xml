@@ -992,7 +992,7 @@
 			icepack_name="fr_resp"
 		/>
 		<nml_option name="config_rapid_mobile_to_stationary_time" type="real" default_value="3600.0" units="seconds"
-			description="Rapid adsorption timescale  "
+			description="Rapid adsorption timescale"
 			possible_values="zero or positive real number"
 			icepack_name="tau_min"
 		/>
@@ -1003,7 +1003,7 @@
 		/>
 		<nml_option name="config_algal_maximum_velocity" type="real" default_value="0.0000001" units="m/s"
 			description="Maximum speed at which diatoms can move"
-			possible_values="zero or positive real number "
+			possible_values="zero or positive real number"
 			icepack_name="algal_vel"
 		/>
 		<nml_option name="config_ratio_Fe_to_dust" type="real" default_value="0.035" units="mg iron/g dust"
@@ -1287,7 +1287,7 @@
 			icepack_name="fr_mort2min"
 		/>
 		<nml_option name="config_fraction_iron_remineralized" type="real" default_value="1.0" units="unitless"
-			description="Fraction of remineralized iron "
+			description="Fraction of remineralized iron"
 			possible_values="zero or positive real less than or equal to 1"
 			icepack_name="fr_dFe"
 		/>
