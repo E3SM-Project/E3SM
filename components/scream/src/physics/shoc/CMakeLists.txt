@@ -121,7 +121,6 @@ foreach (SHOC_LIB IN LISTS SHOC_LIBS)
     ${CMAKE_CURRENT_SOURCE_DIR}/../share
     ${CMAKE_CURRENT_BINARY_DIR}/${SHOC_LIB}_modules
     ${CMAKE_CURRENT_SOURCE_DIR}
-    PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/impl
   )
   target_link_libraries(${SHOC_LIB} physics_share scream_share)
