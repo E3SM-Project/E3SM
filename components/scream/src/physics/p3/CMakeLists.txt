@@ -17,48 +17,47 @@ endif()
 # Add ETI source files if not on CUDA/HIP
 if (NOT EAMXX_ENABLE_GPU OR Kokkos_ENABLE_CUDA_RELOCATABLE_DEVICE_CODE OR Kokkos_ENABLE_HIP_RELOCATABLE_DEVICE_CODE)
   list(APPEND P3_SRCS
-    p3_upwind.cpp
-    p3_cloud_sed.cpp
-    p3_ice_sed.cpp
-    p3_ice_collection.cpp
-    p3_ice_melting.cpp
-    p3_rain_sed.cpp
-    p3_table3.cpp
-    p3_table_ice.cpp
-    p3_dsd2.cpp
-    p3_find.cpp
-    p3_update_prognostics.cpp
-    p3_get_time_space_phys_variables.cpp
-    p3_autoconversion.cpp
-    p3_ice_deposition_sublimation.cpp
-    p3_conservation.cpp
-    p3_rain_self_collection.cpp
-    p3_back_to_cell_average.cpp
-    p3_cloud_rain_acc.cpp
-    p3_calc_rime_density.cpp
-    p3_cldliq_imm_freezing.cpp
-    p3_rain_imm_freezing.cpp
-    p3_droplet_self_coll.cpp
-    p3_update_prognostics.cpp
-    p3_evaporate_rain.cpp
-    p3_impose_max_total_ni.cpp
-    p3_calc_liq_relaxation_timescale.cpp
-    p3_ice_relaxation_timescale.cpp
-    p3_ice_nucleation.cpp
-    p3_ice_cldliq_wet_growth.cpp
-    p3_get_latent_heat.cpp
-    p3_check_values.cpp
-    p3_incloud_mixingratios.cpp
-    p3_subgrid_variance_scaling.cpp
-    p3_main.cpp
-    p3_main_part1.cpp
-    p3_main_part2.cpp
-    p3_main_part3.cpp
-    p3_ice_supersat_conservation.cpp
-    p3_nc_conservation.cpp
-    p3_nr_conservation.cpp
-    p3_ni_conservation.cpp
-    p3_prevent_liq_supersaturation.cpp
+    eti/p3_upwind.cpp
+    eti/p3_cloud_sed.cpp
+    eti/p3_ice_sed.cpp
+    eti/p3_ice_collection.cpp
+    eti/p3_ice_melting.cpp
+    eti/p3_rain_sed.cpp
+    eti/p3_table3.cpp
+    eti/p3_table_ice.cpp
+    eti/p3_dsd2.cpp
+    eti/p3_find.cpp
+    eti/p3_update_prognostics.cpp
+    eti/p3_get_time_space_phys_variables.cpp
+    eti/p3_autoconversion.cpp
+    eti/p3_ice_deposition_sublimation.cpp
+    eti/p3_conservation.cpp
+    eti/p3_rain_self_collection.cpp
+    eti/p3_back_to_cell_average.cpp
+    eti/p3_cloud_rain_acc.cpp
+    eti/p3_calc_rime_density.cpp
+    eti/p3_cldliq_imm_freezing.cpp
+    eti/p3_rain_imm_freezing.cpp
+    eti/p3_droplet_self_coll.cpp
+    eti/p3_evaporate_rain.cpp
+    eti/p3_impose_max_total_ni.cpp
+    eti/p3_calc_liq_relaxation_timescale.cpp
+    eti/p3_ice_relaxation_timescale.cpp
+    eti/p3_ice_nucleation.cpp
+    eti/p3_ice_cldliq_wet_growth.cpp
+    eti/p3_get_latent_heat.cpp
+    eti/p3_check_values.cpp
+    eti/p3_incloud_mixingratios.cpp
+    eti/p3_subgrid_variance_scaling.cpp
+    eti/p3_main.cpp
+    eti/p3_main_part1.cpp
+    eti/p3_main_part2.cpp
+    eti/p3_main_part3.cpp
+    eti/p3_ice_supersat_conservation.cpp
+    eti/p3_nc_conservation.cpp
+    eti/p3_nr_conservation.cpp
+    eti/p3_ni_conservation.cpp
+    eti/p3_prevent_liq_supersaturation.cpp
   ) # P3 ETI SRCS
 endif()
 
@@ -69,6 +68,8 @@ set_target_properties(p3 PROPERTIES
 target_include_directories(p3 PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/../share
   ${CMAKE_CURRENT_BINARY_DIR}/modules
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/impl
 )
 target_link_libraries(p3 physics_share scream_share)
 

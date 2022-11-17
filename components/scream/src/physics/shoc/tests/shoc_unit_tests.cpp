@@ -2,8 +2,8 @@
 
 #include "shoc_unit_tests_common.hpp"
 
-#include "physics/shoc/shoc_functions.hpp"
-#include "physics/shoc/shoc_functions_f90.hpp"
+#include "shoc_functions.hpp"
+#include "shoc_functions_f90.hpp"
 
 #include "share/scream_types.hpp"
 

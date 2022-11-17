@@ -4,8 +4,8 @@
 #include "ekat/ekat_pack.hpp"
 #include "ekat/kokkos/ekat_kokkos_utils.hpp"
 #include "ekat/util/ekat_arch.hpp"
-#include "physics/p3/p3_functions.hpp"
-#include "physics/p3/p3_functions_f90.hpp"
+#include "p3_functions.hpp"
+#include "p3_functions_f90.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
