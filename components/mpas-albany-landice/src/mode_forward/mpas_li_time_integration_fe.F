@@ -176,18 +176,14 @@ module li_time_integration_fe
 ! === Calve ice ========================
       call mpas_timer_start("calve_ice")
 
-      if (config_restore_calving_front) then
+      ! ice calving
+      call li_calve_ice(domain, err_tmp)
+      err = ior(err, err_tmp)
 
+      if (config_restore_calving_front) then
          ! restore the calving front to its initial position; calving options are ignored
          call li_restore_calving_front(domain, err_tmp)
          err = ior(err, err_tmp)
-
-      else
-
-         ! ice calving
-         call li_calve_ice(domain, err_tmp)
-         err = ior(err, err_tmp)
-
       endif
 
       call mpas_timer_stop("calve_ice")
