@@ -258,8 +258,8 @@ void Functions<S,D>::shoc_assumed_pdf(
       {
         // Compute MurphyKoop_svp
         const int liquid = 0;
-        const Spack esval1_1 = scream::physics::Functions<S,D>::MurphyKoop_svp(Tl1_1,liquid,active_entries);
-        const Spack esval1_2 = scream::physics::Functions<S,D>::MurphyKoop_svp(Tl1_2,liquid,active_entries);
+        const Spack esval1_1 = scream::physics::Functions<S,D>::MurphyKoop_svp(Tl1_1,liquid,active_entries,"shoc::shoc_assumed_pdf (Tl1_1)");
+        const Spack esval1_2 = scream::physics::Functions<S,D>::MurphyKoop_svp(Tl1_2,liquid,active_entries,"shoc::shoc_assumed_pdf (Tl1_2)");
         const Spack lstarn(lcond);
 
         qs1 = sp(0.622)*esval1_1/ekat::max(esval1_1, pval - esval1_1);

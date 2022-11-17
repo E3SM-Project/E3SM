@@ -42,7 +42,7 @@ Functions<S,D>::MurphyKoop_svp(const Spack& t_atm, const bool ice, const Smask& 
 {
 
   //First check if the temperature is legitimate or not
-  check_temperature(t_atm, ekat::impl::strlen(caller) == 0 ? "MurphyKoop_svp" : caller, range_mask);
+  check_temperature(t_atm, caller ? caller : "MurphyKoop_svp", range_mask);
 
   //Formulas used below are from the following paper:
   //Murphy, D. M., and T. Koop (2005), Review of the vapour pressures of ice
@@ -89,7 +89,7 @@ Functions<S,D>::polysvp1(const Spack& t, const bool ice, const Smask& range_mask
   // REPLACE GOFF-GRATCH WITH FASTER FORMULATION FROM FLATAU ET AL. 1992, TABLE 4 (RIGHT-HAND COLUMN)
 
   //First check if the temperature is legitimate or not
-  check_temperature(t, ekat::impl::strlen(caller) ? "polysvp1" : caller, range_mask);
+  check_temperature(t, caller ? caller : "polysvp1", range_mask);
 
   const Spack dt = max(t - sp(273.15), sp(-80));
   Spack result;
