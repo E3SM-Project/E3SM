@@ -193,7 +193,11 @@
 		            possible_values="Any non-negative real value"
 		/>
 		<nml_option name="config_restore_calving_front" type="logical" default_value=".false." units="unitless"
-                        description="If true, then restore the calving front to its initial position.  If ice grows beyond the initial extent, it is removed.  If ice shrinks to an extent behind the initial extent, those locations are filled with thin ice (defined as 1/10th the value of config_dynamic_thickness).  Note that this violates conservation of mass and energy."
+                        description="If true, then restore the calving front to its initial position.  If ice grows beyond the initial extent, it is removed.  If ice shrinks to an extent behind the initial extent, behavior is determined by config_restore_calving_front_prevent_retreat.  If that option is true, then those locations are filled with thin ice (defined as 1/10th the value of config_dynamic_thickness).  Note that this violates conservation of mass and energy."
+		            possible_values=".true. or .false."
+                />
+		<nml_option name="config_restore_calving_front_prevent_retreat" type="logical" default_value=".true." units="unitless"
+                        description="If true, then the config_restore_calving_front option will fill locations where ice shelves have retreated with a thin layer of ice.  This option should be used in E3SM when the ice shelf extent seen by the E3SM coupler cannot change.  If false, the config_restore_calving_front option will do nothing when ice shelves retreat.  For either value of this option, the config_restore_calving_front option will prevent ice-shelf advance.  True is likely the desired value for standalone runs where no advance is desired.  Default value is true for backwards compatibility."
 		            possible_values=".true. or .false."
                 />
                 <nml_option name="config_remove_icebergs" type="logical" default_value=".false." units="unitless"

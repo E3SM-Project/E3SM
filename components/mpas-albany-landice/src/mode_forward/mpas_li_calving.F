@@ -387,7 +387,8 @@ module li_calving
       integer, pointer :: nCells, nVertLevels
 
       logical, pointer :: &
-           config_print_calving_info
+           config_print_calving_info, &
+           config_restore_calving_front_prevent_retreat
 
       real (kind=RKIND), pointer ::   &
            config_sea_level,          &
@@ -404,6 +405,7 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: &
            thickness,        & ! ice thickness
            bedTopography,    & ! elevation of the bed
+           calvingVelocity,  &
            calvingThickness, & ! thickness of ice that calves
                                ! > 0 for cells below sea level that were initially ice-free and now have ice
            restoreThickness    ! thickness of ice that is added to restore the calving front to its initial position
@@ -422,6 +424,8 @@ module li_calving
            surfaceAirTemperature, &   ! surface air temperature
            surfaceTemperature,    &   ! surface ice temperature
            basalTemperature           ! basal ice temperature
+
+      real (kind=RKIND), dimension(:), pointer :: surfaceSpeed
 
       integer :: iCell, err_tmp
 
@@ -461,6 +465,7 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
          call mpas_pool_get_array(geometryPool, 'restoreThickness', restoreThickness)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
 
          ! get required fields from the thermal pool
          call mpas_pool_get_array(thermalPool, 'temperature', temperature)
@@ -469,10 +474,13 @@ module li_calving
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
          call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
 
+         call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
+
          ! get config variables
          call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
          call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
          call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
+         call mpas_pool_get_config(liConfigs, 'config_restore_calving_front_prevent_retreat', config_restore_calving_front_prevent_retreat)
 
          if (config_print_calving_info) then
             call mpas_log_write('Restore calving front')
@@ -513,41 +521,45 @@ module li_calving
          calvingThickness = 0.0_RKIND
          restoreThickness = 0.0_RKIND
 
-         ! loop over locally owned cells
+         if (config_restore_calving_front_prevent_retreat) then
+            do iCell = 1, nCells
+               if (bedTopography(iCell) < config_sea_level) then
+                  ! The bed is below sea level; test for calving-front advance and retreat.
+                  if (li_mask_is_initial_ice(cellMask(iCell)) .and. thickness(iCell) < restoreThicknessMin) then
+                     ! Ice was present in this cell initially, but now is either very thin or absent;
+                     !  reset the thickness to restoreThicknessMin.
+                     ! Note: Mass is not conserved.
+                     !       Save the difference (restoreThicknessMin - thickness) so as to keep track of energy non-conservation.
+
+                     if (config_print_calving_info) then
+                        call mpas_log_write('Restore ice: indexToCellID=$i, thickness=$r', intArgs=(/indexToCellID(iCell)/), realArgs=(/thickness(iCell)/))
+                     endif
+
+                     restoreThickness(iCell) = restoreThicknessMin - thickness(iCell)
+                     thickness(iCell) = restoreThicknessMin
+
+                     ! Initial a linear temperature profile in the column
+                     ! Note: Energy is not conserved.
+
+                     call li_init_linear_temperature_in_column(&
+                          nVertLevels,                   &
+                          layerCenterSigma,              &
+                          thickness(iCell),              &
+                          surfaceAirTemperature(iCell),  &
+                          temperature(:,iCell),          &
+                          waterFrac(:,iCell),            &
+                          surfaceTemperature(iCell),     &
+                          basalTemperature(iCell))
+                  endif ! retreated
+               endif ! bed below sea level
+            enddo ! nCells
+         endif ! if preventing retreat
+
+         ! Now check for marine regions that have advanced
          do iCell = 1, nCells
-
             if (bedTopography(iCell) < config_sea_level) then
-
                ! The bed is below sea level; test for calving-front advance and retreat.
-
-               if (li_mask_is_initial_ice(cellMask(iCell)) .and. thickness(iCell) < restoreThicknessMin) then
-
-                  ! Ice was present in this cell initially, but now is either very thin or absent;
-                  !  reset the thickness to restoreThicknessMin.
-                  ! Note: Mass is not conserved.
-                  !       Save the difference (restoreThicknessMin - thickness) so as to keep track of energy non-conservation.
-
-                  if (config_print_calving_info) then
-                     call mpas_log_write('Restore ice: indexToCellID=$i, thickness=$r', intArgs=(/indexToCellID(iCell)/), realArgs=(/thickness(iCell)/))
-                  endif
-
-                  restoreThickness(iCell) = restoreThicknessMin - thickness(iCell)
-                  thickness(iCell) = restoreThicknessMin
-
-                  ! Initial a linear temperature profile in the column
-                  ! Note: Energy is not conserved.
-
-                  call li_init_linear_temperature_in_column(&
-                       nVertLevels,                   &
-                       layerCenterSigma,              &
-                       thickness(iCell),              &
-                       surfaceAirTemperature(iCell),  &
-                       temperature(:,iCell),          &
-                       waterFrac(:,iCell),            &
-                       surfaceTemperature(iCell),     &
-                       basalTemperature(iCell))
-
-               elseif (.not.li_mask_is_initial_ice(cellMask(iCell)) .and. thickness(iCell) > 0.0_RKIND) then
+               if (.not.li_mask_is_initial_ice(cellMask(iCell)) .and. thickness(iCell) > 0.0_RKIND) then
 
                   ! This cell was initially ice-free but now has ice.
                   ! Remove the ice and add it to calvingThickness.
@@ -558,11 +570,10 @@ module li_calving
 
                   calvingThickness(iCell) = thickness(iCell)
                   thickness(iCell) = 0.0_RKIND
-
+                  ! Assign flow speed to calving speed - this allows calculation of licalvf in ISMIP6 postprocessing
+                  calvingVelocity(iCell) = surfaceSpeed(iCell)
                endif   ! li_mask_is_initial_ice
-
             endif    ! bedTopography < config_sea_level
-
          enddo   ! iCell
 
          block => block % next
