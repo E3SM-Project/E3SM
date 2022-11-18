@@ -28,27 +28,27 @@ OR
 
 \033[1mEXAMPLES (assumes user is on machine melvin):\033[0m
     \033[1;32m# Run all tests on current machine using the SCREAM-approved env for this machine (this is the default env behavior) and your origin/master common ancestor for baseline generation (the default baseline behavior) \033[0m
-    > cd $scream_repo/components/scream
+    > cd $scream_repo/components/eamxx
     > ./scripts/{0} -m melvin
 
     \033[1;32m# Run all tests on current machine with defaut behavior except using your current shell env \033[0m
-    > cd $scream_repo/components/scream
+    > cd $scream_repo/components/eamxx
     > ./scripts/{0} --preserve-env -m melvin
 
     \033[1;32m# Run all tests on current machine with default behavior except using a custom ref for baseline generation\033[0m
-    > cd $scream_repo/components/scream
+    > cd $scream_repo/components/eamxx
     > ./scripts/{0} -m melvin -b BASELINE_REF
 
     \033[1;32m# Run all tests on current machine with default behavior except using pre-existing baselines (skips baseline generation) \033[0m
-    > cd $scream_repo/components/scream
+    > cd $scream_repo/components/eamxx
     > ./scripts/{0} -m melvin --baseline-dir=PATH_TO_BASELINES
 
     \033[1;32m# Run only the dbg test on current machine with default behavior otherwise\033[0m
-    > cd $scream_repo/components/scream
+    > cd $scream_repo/components/eamxx
     > ./scripts/{0} -m melvin -t dbg
 
     \033[1;32m# Run all tests on current machine with default behavior on a repo with uncommitted changes\033[0m
-    > cd $scream_repo/components/scream
+    > cd $scream_repo/components/eamxx
     > ./scripts/{0} -m melvin -k -b HEAD
 """.format(pathlib.Path(args[0]).name),
         description=description,

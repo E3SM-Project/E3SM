@@ -469,7 +469,7 @@ Real PhysicsFunctions<DeviceT>::calculate_psl(const Real& T_ground, const Real& 
 {
   /* 
      Compute sea level pressure (psl) assuming atmosphere below the land surface is dry and has a lapse 
-     rate of 6.5K/km unless conditions are very warm. See components/scream/docs/tech_doc/physics/psl/
+     rate of 6.5K/km unless conditions are very warm. See components/eamxx/docs/tech_doc/physics/psl/
      for a description. Note that all input/out variables are only defined at the surface rather than 
      being 3d variables so no need to template on InputProvider.
  */

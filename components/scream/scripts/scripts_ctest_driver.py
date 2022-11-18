@@ -36,7 +36,7 @@ class ScriptsCtestDriver(object):
         else:
             self._root_dir = Path(self._root_dir).resolve()
             expect(self._root_dir.is_dir() and self._root_dir.parts()[-2:] == ('scream', 'components'),
-                   "Bad root-dir '{}', should be: $scream_repo/components/scream".format(self._root_dir))
+                   "Bad root-dir '{}', should be: $scream_repo/components/eamxx".format(self._root_dir))
 
         if self._work_dir is None:
             self._work_dir = self._root_dir.absolute().joinpath("ctest-build-scripts")

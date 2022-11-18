@@ -22,7 +22,7 @@ OR
 
     \033[1mEXAMPLES (assumes user is on machine mappy):\033[0m
     \033[1;32m# Run tests \033[0m
-    > cd $scream_repo/components/scream
+    > cd $scream_repo/components/eamxx
     > ./scripts/{0} -m mappy
 """.format(pathlib.Path(args[0]).name),
         description=description,

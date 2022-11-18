@@ -7,7 +7,7 @@ is called during case.setup. Note, this is for runtime coniguration
 only. Cmake/build-time configuration should be done through SCREAM_CMAKE_OPTIONS.
 
 For inline comments, see the version of scream_input.yaml that lives in the repo
-(components/scream/data/scream_input.yaml)
+(components/eamxx/data/scream_input.yaml)
 
 Note, the $case/run/scream_input.yaml will NEVER be overwritten by subsequent
 calls to case.setup/buildnml in order to avoid blowing away potential local

@@ -498,7 +498,7 @@ def create_raw_xml_file(case, caseroot):
     modified by users via editor or the atmchange script if they want
     to make tweaks to input files (yaml and/or nml).
     """
-    src = os.path.join(case.get_value("SRCROOT"), "components/scream/cime_config/namelist_defaults_scream.xml")
+    src = os.path.join(case.get_value("SRCROOT"), "components/eamxx/cime_config/namelist_defaults_scream.xml")
 
     raw_xml_file = os.path.join(caseroot, "namelist_scream.xml")
     with open(src, "r") as fd:
@@ -810,7 +810,7 @@ def buildnml(case, caseroot, compname):
     expect(compname == "scream", compname)
 
     rundir     = case.get_value("RUNDIR")
-    screamroot = os.path.join(case.get_value("SRCROOT"), "components/scream")
+    screamroot = os.path.join(case.get_value("SRCROOT"), "components/eamxx")
     rundata    = os.path.join(rundir, "data")
 
     #
