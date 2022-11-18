@@ -108,6 +108,7 @@ module li_calving
       character (len=StrKIND), pointer :: config_calving, &
                                           config_front_mass_bal_grounded
       logical, pointer :: config_print_calving_info, config_data_calving
+      logical, pointer :: config_apply_calving_mask
       real(kind=RKIND), pointer :: config_calving_timescale
 
       integer, pointer :: nCells
@@ -142,15 +143,26 @@ module li_calving
       err_tmp = 0
 
       call mpas_pool_get_config(liConfigs, 'config_calving', config_calving)
+      call mpas_pool_get_config(liConfigs, 'config_apply_calving_mask', config_apply_calving_mask)
       call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
       call mpas_pool_get_config(liConfigs, 'config_calving_timescale', config_calving_timescale)
       call mpas_pool_get_config(liConfigs, 'config_print_calving_info', config_print_calving_info)
       call mpas_pool_get_config(liConfigs, 'config_data_calving', config_data_calving)
       call mpas_pool_get_config(liConfigs, 'config_number_of_blocks', config_number_of_blocks)
 
-      if (trim(config_calving) == 'none') then
-         return ! do nothing
-      endif
+      ! Zero calvingThickness here instead of or in addition to in individual subroutines.
+      ! This is necessary when using damage threshold calving with other calving
+      ! routines. Some individual routines still set calvingThickness to zero, but
+      ! this is redundant. li_apply_front_ablation_velocity will zero
+      ! calvingThickness, so any routines that use that should not be applied
+      ! after other calving routines.
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+         calvingThickness(:) = 0.0_RKIND
+         block => block % next
+      end do
 
       ! Get deltat from first block (same on all blocks)
       block => domain % blocklist
@@ -203,22 +215,16 @@ module li_calving
          end do
       endif
       
-      ! Zero calvingThickness here instead of or in addition to in individual subroutines.
-      ! This is necessary when using damage threshold calving with other calving
-      ! routines. Some individual routines still set calvingThickness to zero, but 
-      ! this is redundant. li_apply_front_ablation_velocity will zero 
-      ! calvingThickness, so any routines that use that should not be applied 
-      ! after other calving routines.
-      block => domain % blocklist
-      do while (associated(block))
-         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
-         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
-         calvingThickness(:) = 0.0_RKIND
-   
-         block => block % next
-      end do
       ! compute calvingThickness based on the calving_config option
-      if (trim(config_calving) == 'thickness_threshold') then
+      if (trim(config_calving) == 'none') then
+
+         ! if mask calving not enabled, do nothing and return.
+         ! if mask calving is enabled do nothing here but continue rest of routine.
+         if (.not. config_apply_calving_mask) then
+            return
+         endif
+
+      elseif (trim(config_calving) == 'thickness_threshold') then
 
          call thickness_calving(domain, calvingFraction, err_tmp)
          err = ior(err, err_tmp)
@@ -248,11 +254,6 @@ module li_calving
          call damage_calving(domain, err_tmp)
          err = ior(err, err_tmp)
 
-      elseif (trim(config_calving) == 'mask') then
-
-         call mask_calving(domain, err_tmp)
-         err = ior(err, err_tmp)
-
       elseif (trim(config_calving) == 'von_Mises_stress') then
 
          call von_Mises_calving(domain, err_tmp)
@@ -279,6 +280,14 @@ module li_calving
          call mpas_log_write("Invalid option for config_calving specified: " // trim(config_calving), MPAS_LOG_ERR)
          err = 1
 
+      endif
+
+      ! Consider mask calving as a possible additional step
+      ! Mask calving can occur by itself or in conjunction with a physical calving law
+      if (config_apply_calving_mask) then
+         call mpas_log_write("Applying calving mask")
+         call mask_calving(domain, err_tmp)
+         err = ior(err, err_tmp)
       endif
 
       ! now also remove any icebergs
@@ -3686,7 +3695,9 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 
-         calvingThickness = 0.0_RKIND
+         ! update mask
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
 
          ! === apply calving ===
          where (li_mask_is_floating_ice(cellMask) .and. (calvingMask >= 1))
