@@ -68,10 +68,12 @@
       <value compset="PDAY.*_ELM"            >1850-2100_rcp4.5_transient</value> 
       <!-- CMIP6 DECK compsets and related BGC compsets -->
       <value compset="1850(?:SOI)?_EAM%CMIP6_ELM">1850_CMIP6_control</value>
+      <value compset="1850(?:SOI)?_EAM%CMIP6_ELM.*_BGC%LNDATM">1850_CMIP6bgc_control</value>
+      <value compset="1850(?:SOI)?_EAM%CMIP6_ELM.*_BGC%BCRC">1850_CMIP6bgc_control</value>
       <value compset="1850S_EAM%CMIP6_ELM">1850_SCMIP6_control</value>
-      <value compset="1850(?:SOI)?_EAM%CMIP6_ELM*_BGC%BCRC">1850_CMIP6bgc_control</value>
       <value compset="1850S_EAM%CMIP6_ELM">1850_SCMIP6_control</value>
       <value compset="20TR.*_EAM%.*CMIP6.*_ELM">20thC_CMIP6_transient</value>
+      <value compset="20TR_EAM%CMIP6_ELM.*_BGC%LNDATM">20thC_CMIP6bgc_transient</value> 
       <value compset="20TR(?:SOI)?_EAM%CMIP6_ELM*_BGC%B">20thC_CMIP6bgc_transient</value> 
       <value compset="20TR.*_ELM%[^_]*BGC">20thC_bgc_transient</value>
       <value compset="1950(?:SOI)?_EAM%CMIP6_ELM">1950_CMIP6_control</value>
@@ -90,6 +92,7 @@
       <!-- superfast chemistry compsets (use CMIP6 land configuration)-->
       <value compset="1850(?:SOI)?_EAM%AR5sf_ELM">1850_CMIP6_control</value>
       <value compset="20TR(?:SOI)?_EAM%AR5sf_ELM">20thC_CMIP6_transient</value>
+
     </values>
     <group>run_component_clm</group>
     <file>env_run.xml</file>
@@ -145,6 +148,7 @@
       <value compset="_EAM.*_ELM"     >diagnostic</value>
       <value compset="_ELM.*_BGC%BDRD">diagnostic</value>
       <value compset="_ELM.*_BGC%BPRP">prognostic</value>
+      <value compset="_ELM.*_BGC%LNDATM">prognostic</value>
       <value compset="20TR.*_DATM"    >diagnostic</value>
       <value compset="RCP.*_DATM"     >diagnostic</value>
       <value compset="_ELM.*_BGC%BCRC">constant</value>

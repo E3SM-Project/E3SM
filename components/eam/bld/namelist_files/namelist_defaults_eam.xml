@@ -374,8 +374,8 @@
 <liqopticsfile rad="rrtmgp">atm/cam/physprops/F_nwvl200_mu20_lam50_res64_t298_c080428.nc</liqopticsfile>
 
 <!-- Gas absorption coefficients for RRTMGP -->
-<rrtmgp_coefficients_file_lw rad="rrtmgp">atm/cam/rad/rrtmgp_coefficients_lw_20181204.nc</rrtmgp_coefficients_file_lw>
-<rrtmgp_coefficients_file_sw rad="rrtmgp">atm/cam/rad/rrtmgp_coefficients_sw_20181204.nc</rrtmgp_coefficients_file_sw>
+<rrtmgp_coefficients_file_lw rad="rrtmgp">atm/cam/rad/rrtmgp-data-lw-g128-210809.nc</rrtmgp_coefficients_file_lw>
+<rrtmgp_coefficients_file_sw rad="rrtmgp">atm/cam/rad/rrtmgp-data-sw-g112-210809.nc</rrtmgp_coefficients_file_sw>
 
 <rrtmgp_enable_temperature_warnings rad="rrtmgp"               >.true.</rrtmgp_enable_temperature_warnings>
 <rrtmgp_enable_temperature_warnings rad="rrtmgp" aquaplanet="1">.false.</rrtmgp_enable_temperature_warnings>

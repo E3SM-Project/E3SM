@@ -337,6 +337,7 @@ contains
 
        call MPAS_pool_get_array(initial, "categoryThicknessLimits", categoryThicknessLimits)
 
+       ! code abort
        abortFlag = .false.
        abortMessage = ""
 
@@ -719,6 +720,7 @@ contains
 
     if (trim(config_shortwave_type) == "dEdd") then
 
+       ! code abort
        abortFlag = .false.
        abortMessage = ""
 
@@ -728,6 +730,7 @@ contains
             abortMessage)
        call column_write_warnings(abortFlag)
 
+       ! code abort
        if (abortFlag) then
           call mpas_log_write("colpkg_init_orbit: "//trim(abortMessage), messageType=MPAS_LOG_CRIT)
       endif
@@ -1481,7 +1484,8 @@ contains
 
     logical :: &
          northernHemisphereMask, &
-         abortFlag
+         abortFlag, &
+         anyAbort
 
     character(len=strKIND) :: &
          abortMessage, &
@@ -1697,6 +1701,7 @@ contains
        ! code abort
        abortFlag = .false.
        abortMessage = ""
+       anyAbort = .false.
 
        !$omp parallel do default(shared) private(iCategory,iAerosol,northernHemisphereMask,&
        !$omp&  abortMessage) firstprivate(specificSnowAerosol,specificIceAerosol) &
@@ -1878,8 +1883,8 @@ contains
                config_use_prescribed_ice)
           call column_write_warnings(abortFlag)
 
-          ! cell-specific abort message
-          if (abortFlag) then
+          ! code abort
+          if (abortFlag .and. .not. anyAbort) then
              call mpas_log_write("column_vertical_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
 
@@ -2036,6 +2041,9 @@ contains
              call mpas_log_write("freezeOnset: $r", messageType=MPAS_LOG_ERR, realArgs=(/freezeOnset(iCell)/))
              call mpas_log_write("dayOfYear: $r", messageType=MPAS_LOG_ERR, realArgs=(/dayOfYear/))
              call mpas_log_write("config_use_prescribed_ice: $l", messageType=MPAS_LOG_ERR, logicArgs=(/config_use_prescribed_ice/))
+             anyAbort = .true.
+             abortFlag = .false.
+             abortMessage = ""
           endif
 
           ! aerosol
@@ -2065,9 +2073,9 @@ contains
 
        enddo ! iCell
 
-       ! error-checking
-       call seaice_critical_error_write_block(domain, block, abortFlag)
-       call seaice_check_critical_error(domain, abortFlag)
+       ! code abort
+       call seaice_critical_error_write_block(domain, block, anyAbort)
+       call seaice_check_critical_error(domain, anyAbort)
 
        ! aerosols
        deallocate(specificSnowAerosol)
@@ -2207,6 +2215,7 @@ contains
 
     logical :: &
          abortFlag, &
+         anyAbort, &
          setGetPhysicsTracers, &
          setGetBGCTracers, &
          checkCarbon
@@ -2317,6 +2326,7 @@ contains
        ! code abort
        abortFlag = .false.
        abortMessage = ""
+       anyAbort = .false.
 
        !$omp parallel do default(shared) private(iCategory,iBioTracers,iBioData,&
        !$omp&   totalCarbonInitial,abortMessage,oceanBioFluxesTemp,totalCarbonFinal,&
@@ -2439,17 +2449,20 @@ contains
             endif
           endif
 
-          ! cell-specific abort message
-          if (abortFlag) then
+          ! code abort
+          if (abortFlag .and. .not. anyAbort) then
              call mpas_log_write("column_itd_thermodynamics: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
              call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
+             abortFlag = .false.
+             abortMessage = ""
+             anyAbort = .true.
           endif
 
        enddo ! iCell
 
-       ! error checking
-       call seaice_critical_error_write_block(domain, block, abortFlag)
-       call seaice_check_critical_error(domain, abortFlag)
+       ! code abort
+       call seaice_critical_error_write_block(domain, block, anyAbort)
+       call seaice_check_critical_error(domain, anyAbort)
 
        if (checkCarbon) then
           deallocate(totalCarbonCatFinal)
@@ -2781,12 +2794,13 @@ contains
 
        allocate(effectiveSnowDensityCategory(1:nSnowLayers,1:nCategories))
 
+       ! code abort
+       abortFlag = .false.
+       abortMessage = ""
+
        do iCell = 1, nCellsSolve
 
           effectiveSnowDensityCategory(:,:) = 0.0_RKIND
-
-          abortFlag = .false.
-          abortMessage = ""
 
           call colpkg_clear_warnings()
           call colpkg_step_snow (&
@@ -2830,10 +2844,16 @@ contains
                abortMessage)
 
           call column_write_warnings(abortFlag)
+          ! code abort
+          if (abortFlag) exit
 
        enddo !iCell
 
        deallocate(effectiveSnowDensityCategory)
+
+       ! code abort
+       call seaice_critical_error_write_block(domain, block, abortFlag)
+       call seaice_check_critical_error(domain, abortFlag)
 
        block => block % next
     end do
@@ -3542,15 +3562,15 @@ contains
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
           ! code abort
-          if (abortFlag) exit
+          if (abortFlag) then
+             call mpas_log_write("column_ridging: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
+             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
+             exit
+          endif
 
        enddo ! iCell
 
        ! code abort
-       if (abortFlag) then
-          call mpas_log_write("column_ridging: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-          call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-       endif
        call seaice_critical_error_write_block(domain, block, abortFlag)
        call seaice_check_critical_error(domain, abortFlag)
 
@@ -3988,8 +4008,6 @@ contains
              oceanBioConcentrationsUsed(iBioTracers) = oceanBioConcentrations(iBioData,iCell)
           enddo ! iBioTracers
 
-          abortFlag = .false.
-
           call set_cice_tracer_array_category(block, ciceTracerObject, &
                tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
@@ -4106,7 +4124,11 @@ contains
           endif
 
           ! code abort
-          if (abortFlag) exit
+          if (abortFlag) then
+             call mpas_log_write("column_biogeochemistry: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
+             call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
+             exit
+          endif
 
           totalSkeletalAlgae(iCell) = 0.0_RKIND
           bioShortwaveFluxCell(:,iCell) = 0.0_RKIND
@@ -4135,10 +4157,6 @@ contains
        enddo ! iCell
 
        ! code abort
-       if (abortFlag) then
-          call mpas_log_write("column_biogeochemistry: "//trim(abortMessage) , messageType=MPAS_LOG_ERR)
-          call mpas_log_write("iCell: $i", messageType=MPAS_LOG_ERR, intArgs=(/indexToCellID(iCell)/))
-       endif
        call seaice_critical_error_write_block(domain, block, abortFlag)
        call seaice_check_critical_error(domain, abortFlag)
 
@@ -13227,8 +13245,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_snow_porosity_at_ice_surface", config_snow_porosity_at_ice_surface)
     call MPAS_pool_get_config(domain % configs, "config_use_macromolecules", config_use_macromolecules)
 
-    abortFlag = .false.
-
     setGetPhysicsTracers = .false.
     setGetBGCTracers     = .true.
 
@@ -13302,6 +13318,10 @@ contains
             nIceLayers, &
             config_snow_porosity_at_ice_surface)
 
+       ! code abort
+       abortFlag = .false.
+       abortMessage = ""
+
        do iCell = 1, nCellsSolve
           if (.not. config_do_restart_hbrine) then
              ! initialize newly formed ice
@@ -13369,11 +13389,14 @@ contains
                   abortFlag, &
                   abortMessage)
 
+             ! code abort
              if (abortFlag) then
                 call mpas_log_write(&
                      "init_column_biogeochemistry_profiles: colpkg_init_bgc: "//trim(abortMessage), &
                      messageType=MPAS_LOG_CRIT)
+                exit
              endif
+
           endif ! biogeochemistry
 
           ! get the category tracer array
@@ -13381,6 +13404,10 @@ contains
                tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
        enddo ! iCell
+
+       ! code abort
+       call seaice_critical_error_write_block(domain, block, abortFlag)
+       call seaice_check_critical_error(domain, abortFlag)
 
        block => block % next
     end do

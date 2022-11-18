@@ -155,8 +155,8 @@ _TESTS = {
 
     "e3sm_ocnice_extra_coverage" : {
         "tests" : (
-            "ERS_P480_Ld5.T62_oEC60to30v3wLI.GMPAS-DIB-IAF-ISMF",
-            "PEM_P480_Ld5.T62_oEC60to30v3wLI.GMPAS-DIB-IAF-ISMF",
+            "ERS_P480_Ld5.T62_ECwISC30to60E2r1.GMPAS-DIB-IAF-ISMF",
+            "PEM_P480_Ld5.T62_ECwISC30to60E2r1.GMPAS-DIB-IAF-ISMF",
             "SMS.ne30_oECv3_gis.IGELM_MLI.elm-extrasnowlayers",
             )
         },
@@ -218,6 +218,7 @@ _TESTS = {
         "tests"   : (
             "SMS_D_Ln5.enax4v1_enax4v1.F2010-CICE",
             "SMS_D_Ln5.twpx4v1_twpx4v1.F2010-CICE",
+            "SMS_D_Ln3.TL319_EC30to60E2r2_wQU225EC30to60E2r2.GMPAS-JRA-WW3",
             )
         },
 
@@ -226,7 +227,7 @@ _TESTS = {
         "inherit" : "e3sm_atm_hi_res",
         "tests"   : (
             "SMS.ne120pg2_r0125_oRRS18to6v3.WCYCL1950.eam-cosplite",
-            "SMS.T62_oRRS30to10v3wLI.GMPAS-IAF",
+            "SMS.T62_SOwISC12to60E2r4.GMPAS-IAF",
             )
         },
 
@@ -253,6 +254,8 @@ _TESTS = {
         "inherit" : "e3sm_atm_prod",
         "tests"   : (
             "SMS_Ld1.ne30pg2_r05_EC30to60E2r2.WCYCL1850.allactive-wcprod",
+            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850-1pctCO2.allactive-wcprod",
+            "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850-4xCO2.allactive-wcprod",
             "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850.allactive-wcprod",
             "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCLSSP370.allactive-wcprodssp",
             "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCLSSP585.allactive-wcprodssp",
@@ -574,4 +577,11 @@ _TESTS = {
             )
     },
 
+    "e3sm_wav_developer" : {
+        "time"    : "0:45:00",
+        "tests"   : (
+            "ERS.T62_oEC60to30v3_wQU225EC60to30.GMPAS-IAF-WW3",
+            )
+    },
 }
+
