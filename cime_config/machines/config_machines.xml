@@ -1111,9 +1111,11 @@
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <environment_variables mpilib="mpich">
+      <env name="LD_LIBRARY_PATH">/home/wuda/3rdparty/hdf5/lib:$ENV{LD_LIBRARY_PATH}</env>
       <env name="PATH">/home/wuda/3rdparty/mpich/bin:$ENV{PATH}</env>
       <env name="NETCDF_PATH">/home/wuda/3rdparty/netcdf_serial</env>
       <env name="PNETCDF_PATH">/home/wuda/3rdparty/pnetcdf</env>
+      <env name="HDF5_PATH">/home/wuda/3rdparty/hdf5</env>
     </environment_variables>
     <environment_variables>
       <env name="PERL5LIB">/home/wuda/perl5/lib/perl5</env>
