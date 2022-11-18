@@ -227,11 +227,7 @@ module li_calving
       ! compute calvingThickness based on the calving_config option
       if (trim(config_calving) == 'none') then
 
-         ! if mask calving not enabled, do nothing and return.
-         ! if mask calving is enabled do nothing here but continue rest of routine.
-         if (.not. config_apply_calving_mask) then
-            return
-         endif
+         ! Do nothing, but continue through rest of routine
 
       elseif (trim(config_calving) == 'thickness_threshold') then
 
@@ -455,8 +451,8 @@ module li_calving
       integer :: k
 
 
-      ! first remove any icebergs - do it first so restore-calving can put back thin ice in those places
-      call remove_icebergs(domain)
+      ! No longer a need to remove icebergs here, because li_calve_ice is now always called first
+      ! and remove_icebergs is always called from calving routine.
 
       ! block loop
       block => domain % blocklist
