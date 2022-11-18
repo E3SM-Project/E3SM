@@ -134,6 +134,8 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: &
            calvingThicknessFromThreshold   ! thickness of ice that calves from threshold processes (computed in this subroutine)
 
+      real (kind=RKIND), dimension(:), pointer :: calvingVelocity
+
       type (field1dReal), pointer :: originalThicknessField
 
       real (kind=RKIND), dimension(:), pointer :: originalThickness
@@ -164,8 +166,10 @@ module li_calving
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
          call mpas_pool_get_array(geometryPool, 'calvingThicknessFromThreshold', calvingThicknessFromThreshold)
+         call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
          calvingThickness(:) = 0.0_RKIND
          calvingThicknessFromThreshold(:) = 0.0_RKIND
+         calvingVelocity(:) = 0.0_RKIND
          block => block % next
       end do
 
@@ -532,7 +536,6 @@ module li_calving
          err = ior(err, err_tmp)
 
          ! initialize
-         calvingThickness = 0.0_RKIND
          restoreThickness = 0.0_RKIND
 
          if (config_restore_calving_front_prevent_retreat) then
@@ -582,7 +585,7 @@ module li_calving
                      call mpas_log_write('Remove ice:  indexToCellID=$i, thickness=$r', intArgs=(/indexToCellID(iCell)/), realArgs=(/thickness(iCell)/))
                   endif
 
-                  calvingThickness(iCell) = thickness(iCell)
+                  calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
                   thickness(iCell) = 0.0_RKIND
                   ! Assign flow speed to calving speed - this allows calculation of licalvf in ISMIP6 postprocessing
                   calvingVelocity(iCell) = surfaceSpeed(iCell)
