@@ -1108,7 +1108,11 @@
 					description="If true, topographic wave drag is used on the momentum equation."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_topographic_wave_drag_coeff" type="real" default_value="5.0e-4"
+		<nml_option name="config_topographic_wave_drag_scheme" type="character" default_value="JSL" units="unitless"
+					description="hich of the following three wave drag schemes to use: JSL: Jayne and St. Laurent; ZAE: Zaron and Egbert; or NYC: Nycander"
+					possible_values="JSL or ZAE or NYC"
+		/>
+		<nml_option name="config_topographic_wave_drag_coeff" type="real" default_value="5.0e-4" units="unitless"
 					description="Dimensionless topographic wave drag coefficient, $c_{topo}$."
 					possible_values="any positive real, typically 5.0e-4"
 		/>
@@ -2262,7 +2266,11 @@
 				filename_template="topographic_wave_drag.nc"
 				runtime_format="single_file"
 				mode="forward;analysis">
-			<var name="topographic_wave_drag"/>
+			<var name="topo_rinv"/>
+			<var name="topo_buoyancy_N1V"/>
+			<var name="topo_buoyancy_N1B"/>
+			<var name="bathy_stddev"/>
+			<var name="bed_slope_edges"/>
 		</stream>
 
 	</streams>
@@ -3233,8 +3241,24 @@
 		<var name="surfaceFluxAttenuationCoefficientRunoff" type="real" dimensions="nCells Time" units="m"
 			description="The spatially-dependent length scale of exponential decay of river runoff. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
 		/>
-		<var name="topographic_wave_drag" type="real" dimensions="nEdges" units="1"
+		<var name="topo_rinv" type="real" dimensions="nEdges" units="unitless"
 			description="wave drag coefficient or 1/(rinv) where rinv is the e-folding time used in HyCOM"
+			packages="topographicWaveDragPKG"
+		/>
+		<var name="topo_buoyancy_N1V" type="real" dimensions="nEdges" units="unitless"
+			description="Vertically averaged buoyancy frequencies from WOA 2013 data"
+			packages="topographicWaveDragPKG"
+		/>
+		<var name="topo_buoyancy_N1B" type="real" dimensions="nEdges" units="unitless"
+			description="Bottom buoyancy frequencies from WOA 2013 data"
+			packages="topographicWaveDragPKG"
+		/>
+		<var name="bathy_stddev" type="real" dimensions="nEdges" units="unitless"
+			description="Standard deviation of the bathymetry within a given cell"
+			packages="topographicWaveDragPKG"
+		/>
+		<var name="bed_slope_edges" type="real" dimensions="nEdges" units="unitless"
+			description="The integral gradient average per cell"
 			packages="topographicWaveDragPKG"
 		/>
 		<!-- diagnostic fields for land-ice fluxes -->

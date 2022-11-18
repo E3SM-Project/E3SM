@@ -85,7 +85,11 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: landIceFrictionVelocity
    real (kind=RKIND), dimension(:), pointer :: topDrag
    real (kind=RKIND), dimension(:), pointer :: topDragMag
-   real (kind=RKIND), dimension(:), pointer :: topographic_wave_drag
+   real (kind=RKIND), dimension(:), pointer :: topo_rinv
+   real (kind=RKIND), dimension(:), pointer :: topo_buoyancy_N1V
+   real (kind=RKIND), dimension(:), pointer :: topo_buoyancy_N1B
+   real (kind=RKIND), dimension(:), pointer :: bathy_stddev
+   real (kind=RKIND), dimension(:), pointer :: bed_slope_edges
    real (kind=RKIND), dimension(:,:), pointer :: landIceBoundaryLayerTracers
    real (kind=RKIND), dimension(:,:), pointer :: landIceTracerTransferVelocities
 
@@ -254,7 +258,11 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
 
       if (config_use_topographic_wave_drag) then
-         call mpas_pool_get_array(diagnosticsPool, 'topographic_wave_drag', topographic_wave_drag)
+         call mpas_pool_get_array(diagnosticsPool, 'topo_rinv', topo_rinv)
+         call mpas_pool_get_array(diagnosticsPool, 'topo_buoyancy_N1V', topo_buoyancy_N1V)
+         call mpas_pool_get_array(diagnosticsPool, 'topo_buoyancy_N1B', topo_buoyancy_N1B)
+         call mpas_pool_get_array(diagnosticsPool, 'bathy_stddev', bathy_stddev)
+         call mpas_pool_get_array(diagnosticsPool, 'bed_slope_edges', bed_slope_edges)
       end if
 
       if ( trim(config_ocean_run_mode) == 'forward' ) then
@@ -368,9 +376,19 @@ contains
       end if
 
       if (config_use_topographic_wave_drag) then
+         call mpas_pool_get_array(diagnosticsPool, 'topo_rinv', topo_rinv)
          call mpas_pool_get_array(diagnosticsPool, &
-                  'topographic_wave_drag', &
-                   topographic_wave_drag)
+                    'topo_buoyancy_N1V', &
+                     topo_buoyancy_N1V)
+         call mpas_pool_get_array(diagnosticsPool, &
+                    'topo_buoyancy_N1B', &
+                     topo_buoyancy_N1B)
+         call mpas_pool_get_array(diagnosticsPool, &
+                    'bathy_stddev', &
+                     bathy_stddev)
+         call mpas_pool_get_array(diagnosticsPool, &
+                    'bed_slope_edges', &
+                     bed_slope_edges)
       end if
 
       if (config_use_tidal_potential_forcing) then
@@ -688,7 +706,11 @@ contains
          !$acc                   landIceFrictionVelocity)
       end if
       if (config_use_topographic_wave_drag) then
-         !$acc enter data create(topographic_wave_drag)
+         !$acc enter data create(topo_rinv)
+         !$acc enter data create(topo_buoyancy_N1V)
+         !$acc enter data create(topo_buoyancy_N1B)
+         !$acc enter data create(bathy_stddev)
+         !$acc enter data create(bed_slope_edges)
       end if
       if (config_use_self_attraction_loading) then
          !$acc enter data copyin(pgf_sal)
