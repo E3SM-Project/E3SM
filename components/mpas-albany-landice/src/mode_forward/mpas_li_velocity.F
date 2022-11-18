@@ -1043,7 +1043,7 @@ contains
       integer, pointer :: nCells
       integer, dimension(:), pointer :: nEdgesOnCell
       integer, dimension(:,:), pointer :: edgesOnCell
-      real(kind=RKIND), dimension(:), pointer :: thickness, calvingThickness
+      real(kind=RKIND), dimension(:), pointer :: thickness, calvingThickness, calvingThicknessFromThreshold
       real(kind=RKIND), dimension(:), pointer :: upperSurface, lowerSurface
       integer, dimension(:), pointer :: cellMask
       integer :: iCell, iEdgeOnCell, iEdge
@@ -1056,6 +1056,7 @@ contains
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+      call mpas_pool_get_array(geometryPool, 'calvingThicknessFromThreshold', calvingThicknessFromThreshold)
       call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
       call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
 
@@ -1066,6 +1067,7 @@ contains
             (sqrt(uReconstructX(1,iCell)**2 + uReconstructY(1,iCell)**2) > config_unrealistic_velocity)) then
          ! "fast" ice that is removed is added to the calving flux
             calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
+            calvingThicknessFromThreshold(iCell) = calvingThicknessFromThreshold(iCell) + thickness(iCell)
             thickness(iCell) = 0.0_RKIND
             uReconstructX(:,iCell) = 0.0_RKIND
             uReconstructY(:,iCell) = 0.0_RKIND
