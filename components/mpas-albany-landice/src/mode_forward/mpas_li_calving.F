@@ -290,7 +290,6 @@ module li_calving
       ! Consider mask calving as a possible additional step
       ! Mask calving can occur by itself or in conjunction with a physical calving law
       if (config_apply_calving_mask) then
-         call mpas_log_write("Applying calving mask")
          call mask_calving(domain, err_tmp)
          err = ior(err, err_tmp)
       endif
@@ -3701,8 +3700,9 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: calvingThicknessFromThreshold
       integer, dimension(:), pointer :: calvingMask
       integer, dimension(:), pointer :: cellMask
-      integer, pointer :: nCells
+      integer, pointer :: nCells, nCellsSolve
       integer :: iCell
+      integer :: localMaskCellCount, globalMaskCellCount
       integer :: err_tmp
 
       err = 0
@@ -3718,6 +3718,7 @@ module li_calving
 
          ! get fields
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
          call mpas_pool_get_array(geometryPool, 'calvingThicknessFromThreshold', calvingThicknessFromThreshold)
          call mpas_pool_get_array(geometryPool, 'calvingMask', calvingMask)
@@ -3728,6 +3729,8 @@ module li_calving
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          err = ior(err, err_tmp)
 
+         localMaskCellCount = 0
+
          ! === apply calving ===
          do iCell = 1, nCells
             if (li_mask_is_floating_ice(cellMask(iCell)) .and. (calvingMask(iCell) >= 1)) then
@@ -3735,8 +3738,12 @@ module li_calving
                calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
                calvingThicknessFromThreshold(iCell) = calvingThicknessFromThreshold(iCell) + thickness(iCell)
                thickness(iCell) = 0.0_RKIND
+               if (iCell <= nCellsSolve) localMaskCellCount = localMaskCellCount + 1
             endif
          enddo
+
+         call mpas_dmpar_sum_int(domain % dminfo, localMaskCellCount, globalMaskCellCount)
+         call mpas_log_write("Mask calving applied.  Removed $i floating cells with mask.", intArgs=(/globalMaskCellCount/))
 
          ! update mask
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
