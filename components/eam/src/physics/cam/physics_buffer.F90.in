@@ -1403,16 +1403,13 @@ CONTAINS
     call cam_grid_get_file_dimids(phys_decomp, File, adimid)
     do i = 1, currentpbufflds
       pbuf => pbuf2d(i,begchunk)
-      ! Only save global pbufs
-      if(pbuf%hdr%persistence /= persistence_global) cycle
       piodtype = pbuftype2piotype(pbuf%hdr%dtype)
       do grid_select = 1, ngrid_types
         ! For subcol fields, mdimsize includes psubcols in size
         mdimsize  = product(pbuf%hdr%dimsizes(:,grid_select))/pcols
         if(mdimsize > 1) then
           write(dimname,'(a,i5.5)') 'pbuf_',mdimsize
-          call cam_pio_def_dim(File, dimname, mdimsize, adimid(hdimcnt+1),    &
-               existOK=.true.)
+          call cam_pio_def_dim(File, dimname, mdimsize, adimid(hdimcnt+1), existOK=.true.)
           dimcnt = hdimcnt + 1
         else
           dimcnt = hdimcnt
@@ -1451,17 +1448,15 @@ CONTAINS
       varname = trim(pbufhdr(index)%hdr%name)
       ! skip CRM data in pbuf
       if (trim(varname(1:4))=='CRM_') cycle
-      if(pbufhdr(index)%hdr%persistence == persistence_global) then
-        dtype = pbufhdr(index)%hdr%dtype
-        select case(dtype)
-        case (TYPEDOUBLE)
-          call write_restart_field_double(File, pbuf2d, index, gdimlens, grank)
-        case (TYPEREAL)
-          call write_restart_field_real(File, pbuf2d, index, gdimlens, grank)
-        case (TYPEINT)
-          call write_restart_field_int(File, pbuf2d, index, gdimlens, grank)
-        end select
-      end if
+      dtype = pbufhdr(index)%hdr%dtype
+      select case(dtype)
+      case (TYPEDOUBLE)
+        call write_restart_field_double(File, pbuf2d, index, gdimlens, grank)
+      case (TYPEREAL)
+        call write_restart_field_real(File, pbuf2d, index, gdimlens, grank)
+      case (TYPEINT)
+        call write_restart_field_int(File, pbuf2d, index, gdimlens, grank)
+      end select
     end do
   end subroutine pbuf_write_restart_alt
   !-----------------------------------------------------------------------------

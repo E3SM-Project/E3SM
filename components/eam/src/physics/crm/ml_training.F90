@@ -29,37 +29,31 @@ module ml_training
    ! Public interfaces
    public :: write_ml_training
 
+   ! internal private routines
    private :: get_ml_filename
 
-   ! filename specifiers for master restart filename
-   ! (%c = caseid, $y = year, $m = month, $d = day, $s = seconds in day, %t = number)
    integer, parameter :: filename_len = 256
-   ! character(len=filename_len),public :: mli_filename_spec = '%c.eam.mli.%y-%m-%d-%s.nc'
-   ! character(len=filename_len),public :: mlo_filename_spec = '%c.eam.mlo.%y-%m-%d-%s.nc'
 
 CONTAINS
    !------------------------------------------------------------------------------------------------
    function get_ml_filename(fspec_in,yr,mn,dy,sec) result(fname)
+      ! return filename based on date/time info and fspec_in specifiers
       use seq_timemgr_mod, only: seq_timemgr_EClockGetData
       use filenames,       only: interpret_filename_spec
       character(len=4), intent(in) :: fspec_in
       integer,          intent(in) :: yr,mn,dy,sec   ! current year, month, day, and time of day (sec)
       character(len=filename_len) :: fspec_loc
       character(len=filename_len) :: fname  ! full file name to return
+      ! (%c=caseid, $y=year, $m=month, $d=day, $s=sec in day, %t=number)
       fspec_loc = '%c.eam.'//trim(fspec_in)//'.%y-%m-%d-%s.nc'
       fname = interpret_filename_spec( fspec_loc, yr_spec=yr, mon_spec=mn, day_spec=dy, sec_spec=sec )
    end function get_ml_filename
    !------------------------------------------------------------------------------------------------
    subroutine write_ml_training( pbuf2d, phys_state, phys_tend, cam_in, cam_out, yr, mn, dy, sec, mode )
       use phys_grid,           only: phys_decomp
-      ! use physics_buffer,      only: pbuf_init_restart, pbuf_write_restart
       use physics_buffer,      only: pbuf_init_restart_alt, pbuf_write_restart_alt
       use time_manager,        only: timemgr_init_restart, timemgr_write_restart
-      ! use chemistry,           only: chem_init_restart, chem_write_restart
-      ! use prescribed_ozone,    only: init_prescribed_ozone_restart, write_prescribed_ozone_restart
-      ! use prescribed_ghg,      only: init_prescribed_ghg_restart, write_prescribed_ghg_restart
-      ! use prescribed_aero,     only: init_prescribed_aero_restart, write_prescribed_aero_restart
-      ! use prescribed_volcaero, only: init_prescribed_volcaero_restart, write_prescribed_volcaero_restart
+      use chemistry,           only: chem_init_restart, chem_write_restart
       use cam_grid_support,    only: cam_grid_id, cam_grid_header_info_t
       use cam_grid_support,    only: cam_grid_get_decomp, cam_grid_dimensions
       use cam_grid_support,    only: cam_grid_write_attr, cam_grid_write_var
@@ -86,8 +80,6 @@ CONTAINS
       integer                      :: ncol_dimid
       integer                      :: grid_id
       type(cam_grid_header_info_t) :: header_info ! A structure to hold the horz dims and coord info
-      ! integer                      :: ndims
-      ! integer                      :: lev_dimid(2)
 
       integer :: ncol(begchunk:endchunk)                ! ncol value per chunk
       type(io_desc_t), pointer :: iodesc2d              ! 
@@ -103,8 +95,6 @@ CONTAINS
       integer, parameter, dimension(1) :: dimids_hrz = (/1/)     ! horz dims only
       integer, parameter, dimension(2) :: dimids_3D1 = (/1,2/)   ! horz + pver
       integer, parameter, dimension(2) :: dimids_3D2 = (/1,3/)   ! horz + pverp
-      ! integer, parameter, dimension(2) :: dimids_c2D = (/1,4/)   ! horz + pcnst
-      ! integer, parameter, dimension(3) :: dimids_c3D = (/1,2,4/) ! horz + pver + pcnst
 
       character(len=8)     :: num      ! used for writing numeric charaters (i.e. constituent index)
       character(len=4)     :: fspec    ! string used after ".eam." in file name 
@@ -115,21 +105,11 @@ CONTAINS
       logical              :: add_cam_out    = .false.
 
       ! file variable descriptions
-      ! type(var_desc_t)     :: desc_trefmxav
-      ! type(var_desc_t)     :: desc_trefmnav
       type(var_desc_t)     :: desc_flwds
       type(var_desc_t)     :: desc_solld
       type(var_desc_t)     :: desc_sols
       type(var_desc_t)     :: desc_soll
       type(var_desc_t)     :: desc_solsd
-      ! type(var_desc_t)     :: desc_bcphidry
-      ! type(var_desc_t)     :: desc_bcphodry
-      ! type(var_desc_t)     :: desc_ocphidry
-      ! type(var_desc_t)     :: desc_ocphodry
-      ! type(var_desc_t)     :: desc_dstdry1
-      ! type(var_desc_t)     :: desc_dstdry2
-      ! type(var_desc_t)     :: desc_dstdry3
-      ! type(var_desc_t)     :: desc_dstdry4
 
       type(var_desc_t)     :: state_desc_t
       type(var_desc_t)     :: state_desc_u
@@ -206,6 +186,9 @@ CONTAINS
 
       if (add_pbuf) call pbuf_init_restart_alt(file, pbuf2d)
 
+      ! data for prognostic chemistry (does nothing for "chem none" option)
+      call chem_init_restart(file)
+      
       !-------------------------------------------------------------------------
       ! define physics state variables
       if (add_phys_state) then
@@ -292,12 +275,8 @@ CONTAINS
 
       if (add_pbuf) call pbuf_write_restart_alt(file, pbuf2d)
 
-      ! ! data for chemistry
-      ! call chem_write_restart(file)
-      ! call write_prescribed_ozone_restart(file)
-      ! call write_prescribed_ghg_restart(file)
-      ! call write_prescribed_aero_restart(file)
-      ! call write_prescribed_volcaero_restart(file)
+      ! data for prognostic chemistry (does nothing for "chem none" option)
+      call chem_write_restart(file)
 
       !-------------------------------------------------------------------------
       ! write physics state variables
@@ -500,49 +479,6 @@ CONTAINS
             tmp2D(:ncol(i), i) = cam_out(i)%solld(:ncol(i))
          end do
          call pio_write_darray(file, desc_solld, iodesc2d, tmp2D, ierr)
-
-
-
-
-         ! do i=begchunk,endchunk
-         !    tmp2D(:ncol(i), i) = cam_out(i)%bcphidry(:ncol(i))
-         ! end do
-         ! call pio_write_darray(file, desc_bcphidry, iodesc2d, tmp2D, ierr)
-
-         ! do i=begchunk,endchunk
-         !    tmp2D(:ncol(i), i) = cam_out(i)%bcphodry(:ncol(i))
-         ! end do
-         ! call pio_write_darray(file, desc_bcphodry, iodesc2d, tmp2D, ierr)
-
-         ! do i=begchunk,endchunk
-         !    tmp2D(:ncol(i), i) = cam_out(i)%ocphidry(:ncol(i))
-         ! end do
-         ! call pio_write_darray(file, desc_ocphidry, iodesc2d, tmp2D, ierr)
-
-         ! do i=begchunk,endchunk
-         !    tmp2D(:ncol(i), i) = cam_out(i)%ocphodry(:ncol(i))
-         ! end do
-         ! call pio_write_darray(file, desc_ocphodry, iodesc2d, tmp2D, ierr)
-
-         ! do i=begchunk,endchunk
-         !    tmp2D(:ncol(i), i) = cam_out(i)%dstdry1(:ncol(i))
-         ! end do
-         ! call pio_write_darray(file, desc_dstdry1desc, iodesc2d, tmp2D, ierr)
-
-         ! do i=begchunk,endchunk
-         !    tmp2D(:ncol(i), i) = cam_out(i)%dstdry2(:ncol(i))
-         ! end do
-         ! call pio_write_darray(file, desc_dstdry2, iodesc2d, tmp2D, ierr)
-
-         ! do i=begchunk,endchunk
-         !    tmp2D(:ncol(i), i) = cam_out(i)%dstdry3(:ncol(i))
-         ! end do
-         ! call pio_write_darray(file, desc_dstdry3, iodesc2d, tmp2D, ierr)
-
-         ! do i=begchunk,endchunk
-         !    tmp2D(:ncol(i), i) = cam_out(i)%dstdry4(:ncol(i))
-         ! end do
-         ! call pio_write_darray(file, desc_dstdry4, iodesc2d, tmp2D, ierr)
 
       end if
 
