@@ -83,24 +83,24 @@ struct Functions
   //  t is input in units of k.
   //  ice refers to saturation with respect to liquid (false) or ice (true)
   KOKKOS_FUNCTION
-  static Spack polysvp1(const Spack& t, const bool ice, const Smask& range_mask);
+  static Spack polysvp1(const Spack& t, const bool ice, const Smask& range_mask, const char* caller=nullptr);
 
   //  compute saturation vapor pressure using Murphy and Koop(2005) formulation
   //  MurphyKoop_svp returned in units of pa.
   //  t is input in units of k.
   //  ice refers to saturation with respect to liquid (false) or ice (true)
   KOKKOS_FUNCTION
-  static Spack MurphyKoop_svp(const Spack& t, const bool ice, const Smask& range_mask);
+  static Spack MurphyKoop_svp(const Spack& t, const bool ice, const Smask& range_mask, const char* caller=nullptr);
 
   // Calls a function to obtain the saturation vapor pressure, and then computes
   // and returns the saturation mixing ratio, with respect to either liquid or ice,
   // depending on value of 'ice'
   KOKKOS_FUNCTION
-  static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, const Smask& range_mask, const SaturationFcn func_idx = MurphyKoop);
+  static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, const Smask& range_mask, const SaturationFcn func_idx = MurphyKoop, const char* caller=nullptr);
 
   //checks temperature for negatives and NaNs
   KOKKOS_FUNCTION
-  static void check_temperature(const Spack& t_atm, const char* func_name, const Smask& range_mask);
+  static void check_temperature(const Spack& t_atm, const char* caller, const Smask& range_mask);
 
 };
 

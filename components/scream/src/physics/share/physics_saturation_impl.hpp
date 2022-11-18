@@ -14,7 +14,7 @@ namespace physics {
 template <typename S, typename D>
 KOKKOS_FUNCTION
 void  Functions<S,D>
-::check_temperature(const Spack& t_atm, const char* /* func_name */, const Smask& range_mask)
+::check_temperature(const Spack& t_atm, const char* caller, const Smask& range_mask)
 {
 
   //"range_mask" masks out packs which are padded with uninitialized values
@@ -27,22 +27,22 @@ void  Functions<S,D>
 
   //find out if there are any negative temperatures in the pack
   const auto is_neg_t_atm = (t_atm <= 0) && range_mask;
-  EKAT_KERNEL_REQUIRE_MSG(!(is_neg_t_atm.any()), "Error! Temperature has <= 0 values.\n"); //exit with an error message
+  EKAT_KERNEL_REQUIRE_MSG(!(is_neg_t_atm.any()), caller); //exit with an error message
 
   //find out if there are any NaN temperatures in the pack
   const auto is_nan_t_atm = isnan(t_atm) && range_mask;
-  EKAT_KERNEL_REQUIRE_MSG(!(is_nan_t_atm.any()), "Error! Temperature has NaN values.\n"); //exit with an error message
+  EKAT_KERNEL_REQUIRE_MSG(!(is_nan_t_atm.any()), caller); //exit with an error message
 
 }
 
 template <typename S, typename D>
 KOKKOS_FUNCTION
 typename Functions<S,D>::Spack
-Functions<S,D>::MurphyKoop_svp(const Spack& t_atm, const bool ice, const Smask& range_mask)
+Functions<S,D>::MurphyKoop_svp(const Spack& t_atm, const bool ice, const Smask& range_mask, const char* caller)
 {
 
   //First check if the temperature is legitimate or not
-  check_temperature(t_atm, "MurphyKoop_svp", range_mask);
+  check_temperature(t_atm, caller ? caller : "MurphyKoop_svp", range_mask);
 
   //Formulas used below are from the following paper:
   //Murphy, D. M., and T. Koop (2005), Review of the vapour pressures of ice
@@ -84,12 +84,12 @@ Functions<S,D>::MurphyKoop_svp(const Spack& t_atm, const bool ice, const Smask& 
 template <typename S, typename D>
 KOKKOS_FUNCTION
 typename Functions<S,D>::Spack
-Functions<S,D>::polysvp1(const Spack& t, const bool ice, const Smask& range_mask)
+Functions<S,D>::polysvp1(const Spack& t, const bool ice, const Smask& range_mask, const char* caller)
 {
   // REPLACE GOFF-GRATCH WITH FASTER FORMULATION FROM FLATAU ET AL. 1992, TABLE 4 (RIGHT-HAND COLUMN)
 
   //First check if the temperature is legitimate or not
-  check_temperature(t, "polysvp1", range_mask);
+  check_temperature(t, caller ? caller : "polysvp1", range_mask);
 
   const Spack dt = max(t - sp(273.15), sp(-80));
   Spack result;
@@ -127,7 +127,7 @@ Functions<S,D>::polysvp1(const Spack& t, const bool ice, const Smask& range_mask
 template <typename S, typename D>
 KOKKOS_FUNCTION
 typename Functions<S,D>::Spack
-Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, const Smask& range_mask, const SaturationFcn func_idx)
+Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, const Smask& range_mask, const SaturationFcn func_idx, const char* caller)
 {
   /*Arguments:
     ----------
@@ -143,10 +143,10 @@ Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice, c
 
   switch (func_idx){
     case Polysvp1:
-      e_pres = polysvp1(t_atm, ice, range_mask);
+      e_pres = polysvp1(t_atm, ice, range_mask, caller);
       break;
     case MurphyKoop:
-      e_pres = MurphyKoop_svp(t_atm, ice, range_mask);
+      e_pres = MurphyKoop_svp(t_atm, ice, range_mask, caller);
       break;
     default:
       EKAT_KERNEL_ERROR_MSG("Error! Invalid func_idx supplied to qv_sat.");
