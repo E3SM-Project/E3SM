@@ -5,9 +5,6 @@
 #      --reference_files=
 #      --inputdata_root=
 
-# See step 9 in
-# https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/872579110/Running+E3SM+on+New+Grids
-
 e3sm_root="default"
 test_root="default"
 inputdata_root="default"
@@ -90,6 +87,8 @@ if [ ! -f .env_mach_specific.sh ]; then
     fi
 fi
 cp ${e3sm_root}/components/eam/tools/mkatmsrffile/* .
+
+# Edit Makefile to use variables created by configure
 sed  "s:^FFLAGS:#FFLAGS:g" Makefile | sed "s:^INC:#INC^:g" | sed "s:^LIB:#LIB:g"  > Makefile.tmp
 echo "include Macros.make" > Makefile
 echo 'FC=${MPIFC}' >> Makefile

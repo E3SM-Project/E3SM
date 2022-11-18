@@ -7,7 +7,6 @@
 
 # Also need tempest in PATH for now...
 
-
 # test mkdurfdat.pl to generate land surface data
 # See step 7 in
 # https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/872579110/Running+E3SM+on+New+Grids
@@ -77,9 +76,8 @@ rm -f ${test_log}
 generatecsmesh=`which GenerateCSMesh`
 generatevolumetricmesh=`which GenerateVolumetricMesh`
 convertexodustoscrip=`which ConvertMeshToSCRIP`
-mksurfdata_map=`which mksurfdata_map` # TODO compile this
+mksurfdata_map=`which mksurfdata_map`
 
-#ne1024g=${cime_root}/tools/mapping/tests/reference_files/ne1024.g
 # These files will be created
 meshfile=ne4.g
 gridfile=ne4pg2.g
@@ -130,24 +128,6 @@ echo "Running ${mkmapdata}" >> ${test_log} 2>&1
 (. .env_mach_specific.sh && set -x && ${mkmapdata} --gridfile ${scripfile} --inputdata-path ${inputdata_root} --res ne4pg2 --gridtype global --output-filetype 64bit_offset) >> ${test_log} 2>&1
 
 
-set +x
-#awk '/ingrid/ {print $3}' clm.input_data_list  > files.txt
-missingfile="no"
-#for filename in `cat files.txt`; do
-#    if [ ! -f ${filename} ]; then
-#	echo "${filename} not found"
-#	missingfile="yes"
-#    fi
-#done
-
-if [ ${missingfile} == "yes" ]; then
-    echo "Error: missing files. Try downloading from"
-    echo "https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata"
-    echo "or"
-    echo "https://web.lcrc.anl.gov/public/e3sm/inputdata"
-    exit 1
-fi
-
 # d) Create mapping file
 
 ##############
@@ -185,8 +165,6 @@ fi
 echo "Running mksurfdata.pl" >> ${test_log} 2>&1
 mapdir=${inputdat_root}/lnd/clm2/mappingdata/maps/ne4np4
 (. .env_mach_specific.sh && ${e3sm_root}/components/elm/tools/mksurfdata_map/mksurfdata.pl -res ne4np4 -y 2010 -d -dinlc ${inputdata_root} -usr_mapdir ${mapdir}) >> ${test_log}
-
-
 
 
 exit 0

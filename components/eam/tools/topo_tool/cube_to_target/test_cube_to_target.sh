@@ -2,13 +2,8 @@
 
 # get arguments
 # Need --e3sm_root=
-
-# Also need tempest in PATH for now...
-
-
-# test mkdurfdat.pl to generate land surface data
-# See step 7 in
-# https://acme-climate.atlassian.net/wiki/spaces/DOC/pages/872579110/Running+E3SM+on+New+Grids
+#      --reference_files=
+#      --inputdata_root=
 
 e3sm_root="default"
 test_root="default"
@@ -79,7 +74,9 @@ if [ ! -f .env_mach_specific.sh ]; then
         exit 1
     fi
 fi
+
 cp ${e3sm_root}/components/eam/tools/topo_tool/cube_to_target/* .
+#Edit Makefile to use macros defined by configure in Macros.make
 sed  "s:^FFLAGS:#FFLAGS:g" Makefile | sed "s:^LDFLAGS:#LDFLAGS:g" > Makefile.tmp
 echo "include Macros.make" > Makefile
 echo 'FC=${MPIFC}' >> Makefile
@@ -87,10 +84,7 @@ echo 'LDFLAGS=${SLIBS}' >> Makefile
 echo 'FFLAGS+=-I${NETCDF_PATH}/include' >> Makefile
 cat  Makefile.tmp >> Makefile
 
-
-
-#
-
+# Compile
 (. .env_mach_specific.sh && export FC=gfortran && export LIB_NETCDF=${NETCDF_FORTRAN_PATH}/lib && export INC_NETCDF=${NETCDF_FORTRAN_PATH/include} && make) >> ${test_log} 2>&1
 
 if [ ! -f cube_to_target ]; then
