@@ -2630,7 +2630,7 @@ contains
      call mpas_pool_get_dimension(forcingPool, 'index_avgSurfaceVelocityZonal', index_avgZonalSurfaceVelocity)
      call mpas_pool_get_dimension(forcingPool, 'index_avgSurfaceVelocityMeridional', index_avgMeridionalSurfaceVelocity)
 
-     call mpas_pool_get_array(statePool, 'ssh', ssh)
+     call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
 
      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
