@@ -32,8 +32,8 @@ function(build_scream)
     add_compile_definitions ("${CPPDEFS}")
 
     # Include machine file here
-    include(${CMAKE_SOURCE_DIR}/scream/cmake/machine-files/${MACH}.cmake)
-    add_subdirectory("scream")
+    include(${CMAKE_SOURCE_DIR}/eamxx/cmake/machine-files/${MACH}.cmake)
+    add_subdirectory("eamxx")
   endif()
 
 endfunction(build_scream)
