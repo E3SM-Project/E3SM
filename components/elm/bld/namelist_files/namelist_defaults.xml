@@ -462,6 +462,8 @@ lnd/clm2/surfdata_map/surfdata_twpx4v1_simyr2000_c170706.nc</fsurdat>
 
 <flanduse_timeseries hgrid="ne0np4_CAx32v1.pg2"    sim_year_range="1850-2100"
  use_crop=".false." >lnd/clm2/surfdata_map/landuse.timeseries_ne0_CAx32.pg2_rcp8.5_simyr1850-2100_c220712.nc</flanduse_timeseries>
+<flanduse_timeseries hgrid="ne0np4_CAx32v1.pg2"    sim_year_range="1850-2000"
+ use_crop=".false." >lnd/clm2/surfdata_map/landuse.timeseries_ne0_CAx32.pg2_rcp8.5_simyr1850-2100_c220712.nc</flanduse_timeseries>
 <!-- add landuse with sim_year_range 2015-2100 (zhang73) -->
 <flanduse_timeseries hgrid="ne0np4_CAx32v1.pg2"    sim_year_range="2015-2100"
  use_crop=".false." >lnd/clm2/surfdata_map/landuse.timeseries_ne0_CAx32.pg2_rcp8.5_simyr2015-2100_c220712.nc</flanduse_timeseries>
