@@ -550,7 +550,7 @@ module li_calving
                      restoreThickness(iCell) = restoreThicknessMin - thickness(iCell)
                      thickness(iCell) = restoreThicknessMin
 
-                     ! Initial a linear temperature profile in the column
+                     ! Initialize a linear temperature profile in the column
                      ! Note: Energy is not conserved.
 
                      call li_init_linear_temperature_in_column(&
@@ -3590,7 +3590,7 @@ module li_calving
       type (field1dInteger), pointer :: growMaskField
       integer, dimension(:), pointer :: seedMask, growMask !masks to pass to flood-fill routine
       real (kind=RKIND), dimension(:), pointer :: calvingThickness !< Output: the applied calving rate as a thickness
-      real (kind=RKIND), dimension(:), pointer :: calvingThicknessFromThreshold !< Output: the applied calving rate as a thickness
+      real (kind=RKIND), dimension(:), pointer :: calvingThicknessFromThreshold !< Output: the applied calving thickness from threshold processes
       real (kind=RKIND), dimension(:), pointer :: thickness, damage
       real(kind=RKIND), pointer :: config_damage_calving_threshold
       integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
@@ -3734,7 +3734,7 @@ module li_calving
          ! === apply calving ===
          do iCell = 1, nCells
             if (li_mask_is_floating_ice(cellMask(iCell)) .and. (calvingMask(iCell) >= 1)) then
-               call mpas_log_write("Found masked cell at $i", intArgs=(/iCell/))
+               !call mpas_log_write("Found masked cell at $i", intArgs=(/iCell/))
                calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
                calvingThicknessFromThreshold(iCell) = calvingThicknessFromThreshold(iCell) + thickness(iCell)
                thickness(iCell) = 0.0_RKIND

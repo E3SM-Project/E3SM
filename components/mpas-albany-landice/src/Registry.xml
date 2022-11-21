@@ -157,12 +157,12 @@
 		            possible_values="'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving', 'specified_calving_velocity', 'von_Mises_stress', 'damagecalving', 'ismip6_retreat'"
 		/>
                 <nml_option name="config_apply_calving_mask" type="logical" default_value=".false." units="unitless"
-			    description="Whether the field 'calvingMask' gets used to force calving.  This is independent of choice of `config_calving'; the application of 'calvingMask' can be applied in conjunction with a physical calving law or with no calving law enabled.  The calving mask gets applied after a physical calving law, if one is selected."
-			    possible_values="'.true.', '.false.'"
+			    description="Whether the field 'calvingMask' gets used to force calving.  This is independent of choice of 'config_calving'; the application of 'calvingMask' can be applied in conjunction with a physical calving law or with no calving law enabled.  The calving mask gets applied after a physical calving law, if one is selected."
+			    possible_values=".true. or .false."
 		/>
                 <nml_option name="config_use_Albany_flowA_eqn_for_vM" type="logical" default_value=".false." units="unitless"
 			    description="Not yet supported. Determine whether to use MPAS or Albany calculation for flowParamA used in von Mises stress calving"
-			    possible_values="'.true.', '.false.'"
+			    possible_values=".true. or .false."
 		/>
 		<nml_option name="config_calving_topography" type="real" default_value="-500.0" units="m"
 		            description="Defines the topographic height below which ice calves (for topographic_threshold option)."
