@@ -338,7 +338,7 @@ get_owners (const hview_1d<const gid_type>& gids) const
       }
     }
   }
-  EKAT_REQUIRE_MSG (num_found==num_gids_in,
+  EKAT_REQUIRE_MSG (num_found==owners.size(),
       "Error! Could not locate the owner of one of the input GIDs.\n"
       "  - rank: " + std::to_string(comm.rank()) + "\n"
       "  - num found: " + std::to_string(num_found) + "\n"
@@ -346,7 +346,7 @@ get_owners (const hview_1d<const gid_type>& gids) const
 
 
   // Now create and fill output view
-  hview_1d<int> result("",num_found);
+  hview_1d<int> result("",num_gids_in);
   for (int i=0; i<num_gids_in; ++i) {
     result[i] = owners.at(gids[i]);
   }

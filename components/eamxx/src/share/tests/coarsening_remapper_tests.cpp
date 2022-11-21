@@ -209,12 +209,13 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
   //      Build src grid and remapper       //
   // -------------------------------------- //
 
-  print (" -> creating grid and remapper ...\n",comm);
-
+  print (" -> creating grid ...\n",comm);
   auto src_grid = build_src_grid(comm, nldofs_src);
+  print (" -> creating grid ... done\n",comm);
 
+  print (" -> creating remapper ...\n",comm);
   auto remap = std::make_shared<CoarseningRemapperTester>(src_grid,filename);
-  print (" -> creating grid and remapper ... done!\n",comm);
+  print (" -> creating remapper ... done!\n",comm);
 
   // -------------------------------------- //
   //      Create src/tgt grid fields        //
