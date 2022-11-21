@@ -2539,7 +2539,7 @@
     <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/p/lustre2/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/p/lustre2/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/p/lscratchd/ma21/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/usr/gdata/climdat/tools/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
@@ -2592,7 +2592,7 @@
     <DIN_LOC_ROOT_CLMFORC>/usr/gdata/climdat/ccsm3data/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/p/lustre2/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/p/lustre2/$USER/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/p/lscratchd/ma21/ccsm3data/tools/cprnc/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/usr/gdata/climdat/tools/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>lc_slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>donahue5 -at- llnl.gov</SUPPORTED_BY>
