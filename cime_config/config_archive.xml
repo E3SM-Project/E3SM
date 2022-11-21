@@ -150,4 +150,15 @@
     </test_file_names>
   </comp_archive_spec>
 
+  <comp_archive_spec compname="ww3" compclass="wav">
+    <rest_file_extension>restart.ww3</rest_file_extension>
+    <hist_file_extension>out_pnt.ww3</hist_file_extension>
+    <hist_file_extension>out_grd.ww3</hist_file_extension>
+    <rest_history_varname>unset</rest_history_varname>
+    <rpointer>
+      <rpointer_file>rpointer.wav$NINST_STRING</rpointer_file>
+      <rpointer_content>unset</rpointer_content>
+    </rpointer>
+  </comp_archive_spec>
+
 </components>

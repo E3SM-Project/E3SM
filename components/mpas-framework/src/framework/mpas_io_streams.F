@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 module mpas_io_streams
 
@@ -915,7 +915,8 @@ module mpas_io_streams
           return
       end if
 
-      call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(1) % attList)
+      call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(1) % attList, &
+          precision=local_precision)
 
 
       !
@@ -1047,10 +1048,12 @@ module mpas_io_streams
             else
                fieldName => field % constituentNames(i)
             end if
-            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(i) % attList)
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(i) % attList, &
+               precision=local_precision)
          end do
       else
-         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(1) % attList)
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(1) % attList, &
+            precision=local_precision)
       end if
 
 
@@ -1182,10 +1185,12 @@ module mpas_io_streams
             else
                fieldName => field % constituentNames(i)
             end if
-            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(i) % attList)
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(i) % attList, &
+               precision=local_precision)
          end do
       else
-         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(1) % attList)
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(1) % attList, &
+            precision=local_precision)
       end if
 
 
@@ -1318,10 +1323,12 @@ module mpas_io_streams
             else
                fieldName => field % constituentNames(i)
             end if
-            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(i) % attList)
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(i) % attList, &
+               precision=local_precision)
          end do
       else
-         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(1) % attList)
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(1) % attList, &
+            precision=local_precision)
       end if
 
 
@@ -1455,10 +1462,12 @@ module mpas_io_streams
             else
                fieldName => field % constituentNames(i)
             end if
-            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(i) % attList)
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(i) % attList, &
+               precision=local_precision)
          end do
       else
-         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(1) % attList)
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(1) % attList, &
+            precision=local_precision)
       end if
 
 
@@ -1592,10 +1601,12 @@ module mpas_io_streams
             else
                fieldName => field % constituentNames(i)
             end if
-            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(i) % attList)
+            call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(i) % attList, &
+               precision=local_precision)
          end do
       else
-         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(1) % attList)
+         call put_get_field_atts(stream % fileHandle, stream % ioDirection, trim(fieldName), field % attLists(1) % attList, &
+            precision=local_precision)
       end if
 
 
@@ -4906,7 +4917,7 @@ module mpas_io_streams
    end subroutine mergeArrays
 
 
-   subroutine put_get_field_atts(handle, ioDirection, fieldname, attList)
+   subroutine put_get_field_atts(handle, ioDirection, fieldname, attList, precision)
 
       implicit none
 
@@ -4914,6 +4925,7 @@ module mpas_io_streams
       integer, intent(in) :: ioDirection
       character (len=*), intent(in) :: fieldname
       type (att_list_type), pointer :: attList
+      integer, intent(in), optional :: precision
 
       type (att_list_type), pointer :: att_cursor
 
@@ -4928,9 +4940,11 @@ module mpas_io_streams
                case (MPAS_ATT_INTA)
                   call MPAS_io_put_att(handle, trim(att_cursor % attName), att_cursor % attValueIntA, fieldname)
                case (MPAS_ATT_REAL)
-                  call MPAS_io_put_att(handle, trim(att_cursor % attName), att_cursor % attValueReal, fieldname)
+                  call MPAS_io_put_att(handle, trim(att_cursor % attName), att_cursor % attValueReal, fieldname, &
+                     precision=precision)
                case (MPAS_ATT_REALA)
-                  call MPAS_io_put_att(handle, trim(att_cursor % attName), att_cursor % attValueRealA, fieldname)
+                  call MPAS_io_put_att(handle, trim(att_cursor % attName), att_cursor % attValueRealA, fieldname, &
+                     precision=precision)
                case (MPAS_ATT_TEXT)
                   call MPAS_io_put_att(handle, trim(att_cursor % attName), att_cursor % attValueText, fieldname)
             end select

@@ -42,9 +42,8 @@
       <grid name="glc"    compset="CISM2">gland4</grid>
       <grid name="glc"    compset="XGLC">gland4</grid>
       <grid name="wav"    compset="SWAV">null</grid>
-      <grid name="wav"    compset="DWAV">ww3a</grid>
-      <grid name="wav"    compset="WW3">ww3a</grid>
-      <grid name="wav"    compset="XWAV">ww3a</grid>
+      <grid name="wav"    compset="DWAV">null</grid>
+      <grid name="wav"    compset="XWAV">null</grid>
       <grid name="iac"    compset="SIAC">null</grid>
     </model_grid_defaults>
 
@@ -552,16 +551,6 @@
       <mask>gx1v6</mask>
     </model_grid>
 
-    <model_grid alias="f09_g16" compset="SGLC.+DWAV">
-      <grid name="atm">0.9x1.25</grid>
-      <grid name="lnd">0.9x1.25</grid>
-      <grid name="ocnice">gx1v6</grid>
-      <grid name="rof">r05</grid>
-      <grid name="glc">null</grid>
-      <grid name="wav">ww3a</grid>
-      <mask>gx1v6</mask>
-    </model_grid>
-
     <model_grid alias="f19_g16">
       <grid name="atm">1.9x2.5</grid>
       <grid name="lnd">1.9x2.5</grid>
@@ -569,16 +558,6 @@
       <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
-      <mask>gx1v6</mask>
-    </model_grid>
-
-    <model_grid alias="f19_g16" compset="SGLC.+DWAV">
-      <grid name="atm">1.9x2.5</grid>
-      <grid name="lnd">1.9x2.5</grid>
-      <grid name="ocnice">gx1v6</grid>
-      <grid name="rof">r05</grid>
-      <grid name="glc">null</grid>
-      <grid name="wav">ww3a</grid>
       <mask>gx1v6</mask>
     </model_grid>
 
@@ -1723,64 +1702,34 @@
 
     <!-- ww3 grids -->
 
-    <model_grid alias="ww3a_ww3a" compset="_WW3">
-      <grid name="atm">ww3a</grid>
-      <grid name="lnd">ww3a</grid>
-      <grid name="ocnice">ww3a</grid>
+    <model_grid alias="CFSv2_wQU225EC60to30" compset="_WW3">
+      <grid name="atm">CFSv2</grid>
+      <grid name="lnd">null</grid>
+      <grid name="ocnice">null</grid>
       <grid name="rof">null</grid>
       <grid name="glc">null</grid>
-      <grid name="wav">ww3a</grid>
-      <mask>ww3a</mask>
+      <grid name="wav">wQU225EC60to30</grid>
+      <mask>oEC60to30v3</mask>
     </model_grid>
 
-    <model_grid alias="f19_g16_r05_ww3" compset="(_DWAV|_XWAV|_WW3)">
-      <grid name="atm">1.9x2.5</grid>
-      <grid name="lnd">1.9x2.5</grid>
-      <grid name="ocnice">gx1v6</grid>
-      <grid name="rof">r05</grid>
+    <model_grid alias="CFSR_wQU225EC60to30" compset="_WW3">
+      <grid name="atm">CFSR</grid>
+      <grid name="lnd">null</grid>
+      <grid name="ocnice">null</grid>
+      <grid name="rof">null</grid>
       <grid name="glc">null</grid>
-      <grid name="wav">ww3a</grid>
-      <mask>gx1v6</mask>
+      <grid name="wav">wQU225EC60to30</grid>
+      <mask>oEC60to30v3</mask>
     </model_grid>
 
-    <model_grid alias="f09_g16_r05_ww3" compset="(_DWAV|_XWAV|_WW3)">
-      <grid name="atm">0.9x1.25</grid>
-      <grid name="lnd">1.9x2.5</grid>
-      <grid name="ocnice">gx1v6</grid>
-      <grid name="rof">r05</grid>
-      <grid name="glc">null</grid>
-      <grid name="wav">ww3a</grid>
-      <mask>gx1v6</mask>
-    </model_grid>
-
-    <model_grid alias="T31_g37_r05_ww3" compset="(_DWAV|_XWAV|_WW3)">
-      <grid name="atm">T31</grid>
-      <grid name="lnd">T31</grid>
-      <grid name="ocnice">gx3v7</grid>
-      <grid name="rof">r05</grid>
-      <grid name="glc">null</grid>
-      <grid name="wav">ww3a</grid>
-      <mask>gx3v7</mask>
-    </model_grid>
-
-    <model_grid alias="T31_g37_rx1_ww3&gt;" compset="(_DROF.*_DWAV|_DROF.*_WW3)">
-      <grid name="atm">T31</grid>
-      <grid name="lnd">T31</grid>
-      <grid name="ocnice">gx3v7</grid>
-      <grid name="rof">rx1</grid>
-      <grid name="glc">null</grid>
-      <grid name="wav">ww3a</grid>
-      <mask>gx3v7</mask>
-    </model_grid>
-
-    <model_grid alias="T62_g16_rx1_ww3" compset="(DATM.+DWAV|XATM.+XWAV|SATM.+SWAV)">
+    <model_grid alias="T62_oEC60to30v3_wQU225EC60to30" compset="_WW3">
       <grid name="atm">T62</grid>
       <grid name="lnd">T62</grid>
-      <grid name="ocnice">gx1v6</grid>
+      <grid name="ocnice">oEC60to30v3</grid>
       <grid name="rof">rx1</grid>
       <grid name="glc">null</grid>
-      <grid name="wav">ww3a</grid>
-      <mask>gx1v6</mask>
+      <grid name="wav">wQU225EC60to30</grid>
+      <mask>oEC60to30v3</mask>
     </model_grid>
 
     <model_grid alias="T62_oQU480" compset="(DATM|XATM|SATM)">
@@ -1821,6 +1770,16 @@
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
       <mask>oQU120</mask>
+    </model_grid>
+
+    <model_grid alias="TL319_EC30to60E2r2_wQU225EC30to60E2r2">
+      <grid name="atm">TL319</grid>
+      <grid name="lnd">TL319</grid>
+      <grid name="ocnice">EC30to60E2r2</grid>
+      <grid name="rof">JRA025</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">wQU225EC30to60E2r2</grid>
+      <mask>EC30to60E2r2</mask>
     </model_grid>
 
     <model_grid alias="ne16_oQU240">
@@ -1870,6 +1829,16 @@
       <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne30_oECv3_wQU225EC60to30">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">ne30np4</grid>
+      <grid name="ocnice">oEC60to30v3</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">wQU225EC60to30</grid>
       <mask>oEC60to30v3</mask>
     </model_grid>
 
@@ -1930,6 +1899,16 @@
       <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
+      <mask>EC30to60E2r2</mask>
+    </model_grid>
+
+    <model_grid alias="ne30pg2_EC30to60E2r2_wQU225EC30to60E2r2">
+      <grid name="atm">ne30np4.pg2</grid>
+      <grid name="lnd">ne30np4.pg2</grid>
+      <grid name="ocnice">EC30to60E2r2</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">wQU225EC30to60E2r2</grid>
       <mask>EC30to60E2r2</mask>
     </model_grid>
 
@@ -2093,11 +2072,6 @@
       <grid name="glc">mpas.ais20km</grid>
       <grid name="wav">null</grid>
       <mask>oEC60to30v3wLI</mask>
-    </model_grid>
-
-    <!-- The following grid is only used for ADWAV testing -->
-    <model_grid alias="ww3a" compset="_WW3|DWAV">
-      <grid name="wav">ww3a</grid>
     </model_grid>
 
   </grids>
@@ -2813,12 +2787,18 @@
 
     <!-- WW3 domains-->
 
-    <domain name="ww3a">
-      <nx>90</nx>
-      <ny>50</ny>
-      <file grid="atm|lnd">$DIN_LOC_ROOT/share/domains/domain.lnd.ww3a_ww3a.120222.nc</file>
-      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.ww3a_ww3a.120222.nc</file>
-      <desc>WW3 90 x 50 global grid</desc>
+    <domain name="wQU225EC60to30">
+      <nx>56131</nx>
+      <ny>1</ny>
+      <file grid="wav">$DIN_LOC_ROOT/share/domains/domain.ocn.wQU225EC60to30.210413.nc</file>
+      <desc>WW3 unstructured QU 225km global grid with EC60to30 coastlines</desc>
+    </domain>
+
+    <domain name="wQU225EC30to60E2r2">
+      <nx>56645</nx>
+      <ny>1</ny>
+      <file grid="wav">$DIN_LOC_ROOT/share/domains/domain.ocn.wQU225EC30to60E2r2.220224.nc</file>
+      <desc>WW3 unstructured QU 225km global grid with EC30to60E2r2 coastlines</desc>
     </domain>
 
     <!-- RRM grids -->
@@ -4106,28 +4086,40 @@
 
     <!--  QL, 150525, wav to ocn, atm, ice mapping files  -->
 
-    <gridmap ocn_grid="gx3v7" wav_grid="ww3a">
-      <map name="WAV2OCN_SMAPNAME">cpl/gridmaps/ww3a/map_ww3a_TO_gx3v7_splice_150428.nc</map>
-      <map name="OCN2WAV_SMAPNAME">cpl/gridmaps/gx3v7/map_gx3v7_TO_ww3a_splice_150428.nc</map>
-      <map name="ICE2WAV_SMAPNAME">cpl/gridmaps/gx3v7/map_gx3v7_TO_ww3a_splice_150428.nc</map>
+    <gridmap atm_grid="T62" wav_grid="wQU225EC60to30">
+      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_T62_TO_wQU225EC60to30_blin.20210428.nc</map>
     </gridmap>
 
-    <gridmap ocn_grid="gx1v6" wav_grid="ww3a">
-      <map name="WAV2OCN_SMAPNAME">cpl/gridmaps/ww3a/map_ww3a_TO_gx1v6_splice_150428.nc</map>
-      <map name="OCN2WAV_SMAPNAME">cpl/gridmaps/gx1v6/map_gx1v6_TO_ww3a_splice_150428.nc</map>
-      <map name="ICE2WAV_SMAPNAME">cpl/gridmaps/gx1v6/map_gx1v6_TO_ww3a_splice_150428.nc</map>
+    <gridmap atm_grid="ne30np4" wav_grid="wQU225EC60to30">
+      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_n30np4_to_wQU225EC60to30_bilin.211207.nc</map>
     </gridmap>
 
-    <gridmap atm_grid="48x96" wav_grid="ww3a">
-      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/T31/map_T31_TO_ww3a_bilin_131104.nc</map>
+    <gridmap atm_grid="ne30np4.pg2" wav_grid="wQU225EC30to60E2r2">
+      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC30to60E2r2/map_ne30pg2_TO_wQU225EC30to60E2r2_blin.20220222.nc</map>
     </gridmap>
 
-    <gridmap atm_grid="T62" wav_grid="ww3a">
-      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/T62/map_T62_TO_ww3a_bilin.150617.nc</map>
+    <gridmap atm_grid="TL319" wav_grid="wQU225EC30to60E2r2">
+      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC30to60E2r2/map_TL319_TO_wQU225EC30to60E2r2_blin.20220602.nc</map>
     </gridmap>
 
-    <gridmap atm_grid="1.9x2.5" wav_grid="ww3a">
-      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/fv1.9x2.5/map_fv1.9x2.5_TO_ww3a_bilin_140702.nc</map>
+    <gridmap ocn_grid="oEC60to30v3" wav_grid="wQU225EC60to30">
+      <map name="WAV2OCN_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_wQU225EC60to30_TO_oEC60to30v3_blin.20210428.nc</map>
+      <map name="OCN2WAV_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_oEC60to30v3_TO_wQU225EC60to30_blin.20210428.nc</map>
+      <map name="ICE2WAV_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_oEC60to30v3_TO_wQU225EC60to30_blin.20210428.nc</map>
+    </gridmap>
+
+    <gridmap ocn_grid="EC30to60E2r2" wav_grid="wQU225EC30to60E2r2">
+      <map name="WAV2OCN_SMAPNAME">cpl/gridmaps/wQU225EC30to60E2r2/map_wQU225EC30to60E2r2_TO_EC30to60E2r2_blin.20220222.nc</map>
+      <map name="OCN2WAV_SMAPNAME">cpl/gridmaps/wQU225EC30to60E2r2/map_EC30to60E2r2_TO_wQU225EC30to60E2r2_blin.20220222.nc</map>
+      <map name="ICE2WAV_SMAPNAME">cpl/gridmaps/wQU225EC30to60E2r2/map_EC30to60E2r2_TO_wQU225EC30to60E2r2_blin.20220222.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="CFSv2" wav_grid="wQU225EC60to30">
+      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_CFSv2_TO_wQU225EC60to30_blin.20210412.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="CFSR" wav_grid="wQU225EC60to30">
+      <map name="ATM2WAV_SMAPNAME">cpl/gridmaps/wQU225EC60to30/map_CFSR_TO_wQU225EC60to30_blin.20210415.nc</map>
     </gridmap>
 
     <!--- river to land and land to river mapping files    -->

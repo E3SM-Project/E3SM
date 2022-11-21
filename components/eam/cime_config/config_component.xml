@@ -47,7 +47,9 @@
     <values modifier='additive'>
       <value compset=""                >-mach $MACH</value>
       <value compset="_EAM"            >-phys default</value>
-      <value compset="_EAM%CMIP6_"     >&eam_phys_defaults; &eam_chem_defaults;</value>
+      <value compset="_EAM%CMIP6_"      >&eam_phys_defaults; &eam_chem_defaults;</value>
+      <value compset="_EAM%CMIP6-1pctCO2" >&eam_phys_defaults; &eam_chem_defaults;</value>
+      <value compset="_EAM%CMIP6-4xCO2"   >&eam_phys_defaults; &eam_chem_defaults;</value>
       <value compset="_EAM%AR5sf"      >&eam_phys_defaults; -chem superfast_mam4_resus_mom_soag -rain_evap_to_coarse_aero</value>
       <value compset="_ELM%[^_]*BC"    >-bc_dep_to_snow_updates</value>
       <value compset="_EAM.*_BGC%*"    >-co2_cycle</value>

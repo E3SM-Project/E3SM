@@ -16,23 +16,33 @@
 <clm_demand >flanduse_timeseries</clm_demand>
 
 
-
-<stream_year_first_ndep phys="elm" use_cn=".true."   >1850</stream_year_first_ndep>
-<stream_year_last_ndep  phys="elm" use_cn=".true."   >2005</stream_year_last_ndep>
-<model_year_align_ndep  phys="elm" use_cn=".true."   >1850</model_year_align_ndep>
-
-
 <stream_year_first_pdep phys="elm" use_cn=".true."   >2000</stream_year_first_pdep>
 <stream_year_last_pdep  phys="elm" use_cn=".true."   >2000</stream_year_last_pdep>
 <model_year_align_pdep  phys="elm" use_cn=".true."   >2000</model_year_align_pdep>
 
-<stream_year_first_popdens phys="elm" use_cn=".true."   >1850</stream_year_first_popdens>
-<stream_year_last_popdens  phys="elm" use_cn=".true."   >2010</stream_year_last_popdens>
-<model_year_align_popdens  phys="elm" use_cn=".true."   >1850</model_year_align_popdens>
-
 
 <!-- CMIP6 DECK compsets -->
 
-<fsurdat>lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_2015_c171018.nc </fsurdat>
-<flanduse_timeseries>lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850_2015_c20171018.nc</flanduse_timeseries>
+<fsurdat hgrid="ne30np4">lnd/clm2/surfdata_map/surfdata_ne30np4_simyr1850_2015_c171018.nc </fsurdat>
+<flanduse_timeseries hgrid="ne30np4">lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_hist_simyr1850_2015_c20171018.nc</flanduse_timeseries>
+
+<!-- BGCv2 compsets -->
+
+<fsurdat hgrid="r05">lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c211019.nc </fsurdat>
+<flanduse_timeseries hgrid="r05">lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_HIST_simyr1850-2015_c211019.nc</flanduse_timeseries>
+
+<stream_fldfilename_pdep>lnd/clm2/pdepdata/fpdep_clm_hist_simyr2000_1.9x2.5_c150929.nc </stream_fldfilename_pdep>
+
+<stream_fldfilename_ndep>lnd/clm2/ndepdata/fndep_elm_cbgc_exp_simyr1849-2101_1.9x2.5_c190103.nc</stream_fldfilename_ndep>
+<stream_year_first_ndep>1850</stream_year_first_ndep>
+<stream_year_last_ndep>2101</stream_year_last_ndep>
+<model_year_align_ndep>1850</model_year_align_ndep>
+
+<stream_fldfilename_popdens>lnd/clm2/firedata/elmforc.ssp5_hdm_0.5x0.5_simyr1850-2100_c190109.nc</stream_fldfilename_popdens>
+<stream_year_first_popdens>1850</stream_year_first_popdens>
+<stream_year_last_popdens>2100</stream_year_last_popdens>
+<model_year_align_popdens>1850</model_year_align_popdens>
+
 </namelist_defaults>
+
+
