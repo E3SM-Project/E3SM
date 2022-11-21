@@ -21,8 +21,16 @@ class NUDGING : public AtmosphereProcess
 {
 public:
 
+  //using gid_type         = AbstractGrid::gid_type;
+  //using KT = KokkosTypes<Device>;
+
+  //template <typename S>
+  //using view_1d = typename KT::template view_1d<S>;
+
+  //using view_1d_dof     = typename view_1d<gid_type>;
+  
   // Constructors
-  NUDGIING (const ekat::Comm& comm, const ekat::ParameterList& params);
+  NUDGING (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // The type of subcomponent
   AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
@@ -59,9 +67,9 @@ protected:
   int m_num_src_levs;
 
   // DOF information
-  view_1d_dof m_dofs_gids;
-  int         m_total_global_dofs; // Needed to make sure that remap data matches grid.
-  gid_type    m_min_global_dof;
+  //view_1d_dof m_dofs_gids;
+  //int         m_total_global_dofs; // Needed to make sure that remap data matches grid.
+  //gid_type    m_min_global_dof;
 
 
 }; // class SPA 

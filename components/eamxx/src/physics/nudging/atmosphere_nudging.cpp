@@ -30,13 +30,13 @@ void NUDGING::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
-  m_dofs_gids = m_grid->get_dofs_gids();
-  m_min_global_dof    = m_grid->get_global_min_dof_gid();
+  //m_dofs_gids = m_grid->get_dofs_gids();
+  //m_min_global_dof    = m_grid->get_global_min_dof_gid();
 
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_levs} };
-  constexpr int ps = Pack::n;
-  add_field<Updated>("T_mid"      , scalar3d_layout_mid, K,     grid_name, ps);
-  add_field<Updated>("p_mid"      , scalar3d_layout_mid, Pa,     grid_name, ps);
+  //constexpr int ps = Pack::n;
+  //add_field<Updated>("T_mid"      , scalar3d_layout_mid, K,     grid_name, ps);
+  //add_field<Updated>("p_mid"      , scalar3d_layout_mid, Pa,     grid_name, ps);
   
 }
 // =========================================================================================
