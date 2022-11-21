@@ -89,7 +89,8 @@ if (NOT SCREAM_DEBUG)
   # Mods to compiler flags for individual files to resolve internal compiler errors.
   if ("${SCREAM_MACHINE}" STREQUAL "cori-knl")
     set_source_files_properties (
-      shoc_assumed_pdf.cpp shoc_calc_shoc_varorcovar.cpp
+      eti/shoc_assumed_pdf.cpp
+      eti/shoc_calc_shoc_varorcovar.cpp
       PROPERTIES COMPILE_FLAGS "-O1"
     )
   endif()
