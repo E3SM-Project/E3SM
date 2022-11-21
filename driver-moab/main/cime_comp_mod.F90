@@ -201,7 +201,6 @@ module cime_comp_mod
 #endif
 
 #ifdef MOABDEBUG
-    use component_type_mod, only:  compare_mct_av_moab_tag
     use seq_comm_mct , only : mboxid
     use iso_c_binding
 #endif
