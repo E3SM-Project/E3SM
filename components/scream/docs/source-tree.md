@@ -1,6 +1,6 @@
 # SCREAM's Source Tree
 
-All SCREAM-specific code can be found in `components/scream` within the
+All SCREAM-specific code can be found in `components/eamxx` within the
 [SCREAM repo](https://github.com/E3SM-Project/scream). Here's how things are
 organized:
 
@@ -19,7 +19,7 @@ organized:
 + `tests`: Implements standalone, end-to-end tests for various SCREAM
   components (RRTMG, HOMME, P3, SHOC, etc).
 
-In addition, you'll notice the following files in `components/scream`:
+In addition, you'll notice the following files in `components/eamxx`:
 
 + `CMakeLists.txt`: The CMake file that defines SCREAM's configuration/build
   system.

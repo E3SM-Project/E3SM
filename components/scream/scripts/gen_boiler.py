@@ -234,12 +234,12 @@ ORIGIN_FILE, CXX_ROOT, INIT_CODE = range(3)
 PHYSICS = {
     "p3"   : (
         "components/eam/src/physics/cam/micro_p3.F90",
-        "components/scream/src/physics/p3",
+        "components/eamxx/src/physics/p3",
         "p3_init();"
     ),
     "shoc" : (
         "components/eam/src/physics/cam/shoc.F90",
-        "components/scream/src/physics/shoc",
+        "components/eamxx/src/physics/shoc",
         "shoc_init(REPLACE_ME, true);"
     ),
 }
@@ -507,7 +507,7 @@ def create_template(physics, sub, gb, piece, force=False, force_arg_data=None):
 
     >>> gb = GenBoiler(["linear_interp"], ["cxx_func_impl"], dry_run=True)
     >>> create_template("shoc", "linear_interp", gb, "cxx_func_impl", force=True, force_arg_data=UT_ARG_DATA) #doctest: +ELLIPSIS
-    Would create file .../components/scream/src/physics/shoc/shoc_linear_interp_impl.hpp with contents:
+    Would create file .../components/eamxx/src/physics/shoc/shoc_linear_interp_impl.hpp with contents:
     #ifndef SHOC_LINEAR_INTERP_IMPL_HPP
     #define SHOC_LINEAR_INTERP_IMPL_HPP
     <BLANKLINE>

@@ -332,7 +332,7 @@ tweaking their $case/namelist_scream.xml file.
 
   <!-- List of yaml files containing I/O output specs -->
   <Scorpio>
-    <output_yaml_files type="array(string)">${SRCROOT}/components/scream/data/scream_default_output.yaml</output_yaml_files>
+    <output_yaml_files type="array(string)">${SRCROOT}/components/eamxx/data/scream_default_output.yaml</output_yaml_files>
     <model_restart>
       <Casename>./${CASE}.scream</Casename>
       <output_control>

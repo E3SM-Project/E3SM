@@ -48,7 +48,7 @@ Change to your `$RUN_ROOT_DIR` directory and use CMake to configure your build.
 
 If you're building SCREAM on one of our supported platforms, you can tell CMake
 to use the appropriate machine file using the `-C` flag. Machine files are
-located in `$SCREAM_SRC_DIR/components/scream/cmake/machine-files`. Take a look
+located in `$SCREAM_SRC_DIR/components/eamxx/cmake/machine-files`. Take a look
 and see whether your favorite machine has one.
 
 For example, to configure SCREAM on the Quartz machine at LLNL:
@@ -58,8 +58,8 @@ cd $RUN_ROOT_DIR
 cmake \
     -DCMAKE_CXX_COMPILER=$(which mpicxx) \
     -DCMAKE_BUILD_TYPE=Debug \
-    -C ${SCREAM_SRC_DIR}/components/scream/cmake/machine-files/quartz.cmake \
-    ${SCREAM_SRC_DIR}/components/scream
+    -C ${SCREAM_SRC_DIR}/components/eamxx/cmake/machine-files/quartz.cmake \
+    ${SCREAM_SRC_DIR}/components/eamxx
 ```
 
 If you're building on a machine that doesn't have a ready-made machine file,
@@ -79,7 +79,7 @@ cmake \
     -D CMAKE_C_COMPILER=mpicc \
     -D CMAKE_CXX_COMPILER=mpicxx \
     -D CMAKE_Fortran_COMPILER=mpif90 \
-    ${SCREAM_SRC_DIR}/components/scream
+    ${SCREAM_SRC_DIR}/components/eamxx
 ```
 
 In either case, SCREAM requires MPI-savvy compilers, which can be specified
@@ -154,7 +154,7 @@ ctest -L driver -N
 implementations with our P3 Fortran reference implementation. If you're working
 on the C++/Kokkos implementation, you can invoke any new tests to the function
 `Baseline::run_and_cmp` in
-`${SCREAM_SRC_DIR}/components/scream/p3/tests/p3_run_and_cmp.cpp`.
+`${SCREAM_SRC_DIR}/components/eamxx/p3/tests/p3_run_and_cmp.cpp`.
 
 If the reference Fortran implementation changes enough that a new baseline file
 is required, make sure to let other SCREAM team members know, in order to

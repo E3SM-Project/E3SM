@@ -49,7 +49,7 @@ class GatherAllData(object):
         else:
             if self._scream_docs:
                 scream_docs_repo = root_dir
-                scream_repo      = pathlib.Path("~/scream-perf-{}/components/scream".format(machine))
+                scream_repo      = pathlib.Path("~/scream-perf-{}/components/eamxx".format(machine))
             else:
                 scream_docs_repo = None
                 scream_repo      = root_dir

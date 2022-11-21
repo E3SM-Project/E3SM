@@ -258,7 +258,7 @@ class TestAllScream(object):
         else:
             self._root_dir = Path(self._root_dir).resolve()
             expect(self._root_dir.is_dir() and self._root_dir.parts()[-2:] == ('scream', 'components'),
-                   f"Bad root-dir '{self._root_dir}', should be: $scream_repo/components/scream")
+                   f"Bad root-dir '{self._root_dir}', should be: $scream_repo/components/eamxx")
 
         if self._work_dir is not None:
             self._work_dir = Path(self._work_dir).absolute()

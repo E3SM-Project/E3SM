@@ -75,7 +75,7 @@ OR
     parser.add_argument("-r", "--root-dir",
                         help="The root directory of the scream src you want to test. "
                         "Default will be the scream src containing this script for local testing or "
-                        "$HOME/scream-perf-$machine/components/scream for remote testing or "
+                        "$HOME/scream-perf-$machine/components/eamxx for remote testing or "
                         "$HOME/scream-docs-perf-$machine/micro-apps for remote testing of scream-docs. "
                         "References to $machine in this option will be automatically replaced with the machine name. "
                         "Supported magic strings: $machine")
@@ -105,7 +105,7 @@ OR
             if args.scream_docs:
                 args.root_dir = pathlib.Path("~/scream-docs-perf-$machine/micro-apps")
             else:
-                args.root_dir = pathlib.Path("~/scream-perf-$machine/components/scream")
+                args.root_dir = pathlib.Path("~/scream-perf-$machine/components/eamxx")
 
     else:
         if args.local:
