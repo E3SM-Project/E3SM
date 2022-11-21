@@ -90,6 +90,229 @@ void print (const std::string& msg, const ekat::Comm& comm) {
   }
 }
 
+// Helper function to create a grid given the number of dof's and a comm group.
+std::shared_ptr<AbstractGrid>
+build_src_grid(const ekat::Comm& comm, const int nldofs_src) 
+{
+
+  AbstractGrid::dofs_list_type src_dofs("",nldofs_src);
+  auto src_dofs_h = cmvc(src_dofs);
+  std::iota(src_dofs_h.data(),src_dofs_h.data()+nldofs_src,nldofs_src*comm.rank());
+  Kokkos::deep_copy(src_dofs,src_dofs_h);
+
+  auto src_grid = std::make_shared<PointGrid>("src",nldofs_src,20,comm);
+  src_grid->set_dofs(src_dofs);
+
+  return src_grid;
+}
+
+// Helper function to create fields
+Field
+create_field(const std::string& name, const std::shared_ptr<const AbstractGrid>& grid, const bool twod, const bool vec, const bool mid = false, const int ps = 1)
+{
+  constexpr int vec_dim = 3;
+  constexpr auto CMP = FieldTag::Component;
+  constexpr auto units = ekat::units::Units::nondimensional();
+  auto fl = twod
+          ? (vec ? grid->get_2d_vector_layout (CMP,vec_dim)
+                 : grid->get_2d_scalar_layout ())
+          : (vec ? grid->get_3d_vector_layout (mid,CMP,vec_dim)
+                 : grid->get_3d_scalar_layout (mid));
+  FieldIdentifier fid(name,fl,units,grid->name());
+  Field f(fid);
+  f.get_header().get_alloc_properties().request_allocation(ps);
+  f.allocate_view();
+  return f;
+}
+
+// Helper function to create a remap file
+void create_remap_file(const ekat::Comm& comm, const std::string& filename, std::vector<std::int64_t>& dofs,
+                       const int na, const int nb, const int ns,
+                       const std::vector<Real>& col, const std::vector<Real>& row, const std::vector<Real>& S) 
+{
+
+  scorpio::register_file(filename, scorpio::FileMode::Write);
+
+  scorpio::register_dimension(filename,"n_a", "n_a", na);
+  scorpio::register_dimension(filename,"n_b", "n_b", nb);
+  scorpio::register_dimension(filename,"n_s", "n_s", ns);
+
+  scorpio::register_variable(filename,"col","col","none",{"n_s"},"real","int","int-nnz");
+  scorpio::register_variable(filename,"row","row","none",{"n_s"},"real","int","int-nnz");
+  scorpio::register_variable(filename,"S","S","none",{"n_s"},"real","real","Real-nnz");
+
+  scorpio::set_dof(filename,"col",dofs.size(),dofs.data());
+  scorpio::set_dof(filename,"row",dofs.size(),dofs.data());
+  scorpio::set_dof(filename,"S",  dofs.size(),dofs.data());
+  
+  scorpio::eam_pio_enddef(filename);
+
+  scorpio::grid_write_data_array(filename,"row",row.data(),ns);
+  scorpio::grid_write_data_array(filename,"col",col.data(),ns);
+  scorpio::grid_write_data_array(filename,"S",    S.data(),ns);
+
+  scorpio::eam_pio_closefile(filename);
+}
+
+TEST_CASE("coarsening_remap_nnz>nsrc") {
+  // This is a simple test to just make sure the coarsening remapper works
+  // when the map itself has more remap triplets than the size of the 
+  // source and target grid.  This is typical in monotone remappers from
+  // fine to coarse meshes.
+
+  // -------------------------------------- //
+  //           Init MPI and PIO             //
+  // -------------------------------------- //
+
+  ekat::Comm comm(MPI_COMM_WORLD);
+
+  MPI_Fint fcomm = MPI_Comm_c2f(comm.mpi_comm());
+  scorpio::eam_init_pio_subsystem(fcomm);
+
+  // -------------------------------------- //
+  //           Set grid/map sizes           //
+  // -------------------------------------- //
+
+  const int nldofs_src = 4;
+  const int nldofs_tgt = 2;
+  const int ngdofs_src = nldofs_src*comm.size();
+  const int ngdofs_tgt = nldofs_tgt*comm.size();
+  const int nnz_local  = nldofs_src*nldofs_tgt;
+  const int nnz        = nnz_local*comm.size();
+
+  // -------------------------------------- //
+  //           Create a map file            //
+  // -------------------------------------- //
+
+  print (" -> creating map file ...\n",comm);
+
+  std::string filename = "coarsening_map_file_lrg_np" + std::to_string(comm.size()) + ".nc";
+  std::vector<std::int64_t> dofs (nnz_local);
+  std::iota(dofs.begin(),dofs.end(),comm.rank()*nnz_local);
+
+  // Create triplets: tgt entry K is the avg of src entries K and K+ngdofs_tgt
+  // NOTE: add 1 to row/col indices, since e3sm map files indices are 1-based
+  std::vector<Real> col,row,S;
+  const Real wgt = 1.0/nldofs_src;
+  for (int i=0; i<nldofs_tgt; ++i) {
+    for (int j=0; j<nldofs_src; j++) {
+      row.push_back(1+i+nldofs_tgt*comm.rank());
+      col.push_back(1+j+nldofs_src*comm.rank());
+      S.push_back(wgt);
+    }
+  }
+
+  create_remap_file(comm, filename, dofs, ngdofs_src, ngdofs_tgt, nnz, col, row, S);
+  print (" -> creating map file ... done!\n",comm);
+
+  // -------------------------------------- //
+  //      Build src grid and remapper       //
+  // -------------------------------------- //
+
+  print (" -> creating grid and remapper ...\n",comm);
+
+  auto src_grid = build_src_grid(comm, nldofs_src);
+
+  auto remap = std::make_shared<CoarseningRemapperTester>(src_grid,filename);
+  print (" -> creating grid and remapper ... done!\n",comm);
+
+  // -------------------------------------- //
+  //      Create src/tgt grid fields        //
+  // -------------------------------------- //
+
+  print (" -> creating fields ...\n",comm);
+  // The other test checks remapping for fields of multiple dimensions.
+  // Here we will simplify and just remap a simple 2D horizontal field.
+  auto tgt_grid = remap->get_tgt_grid();
+
+  auto src_s2d   = create_field("s2d",  src_grid,true,false);
+  auto tgt_s2d   = create_field("s2d",  tgt_grid,true,false);
+
+  std::vector<Field> src_f = {src_s2d};
+  std::vector<Field> tgt_f = {tgt_s2d};
+
+  // -------------------------------------- //
+  //     Register fields in the remapper    //
+  // -------------------------------------- //
+
+  print (" -> registering fields ...\n",comm);
+  remap->registration_begins();
+  remap->register_field(src_s2d,  tgt_s2d);
+  remap->registration_ends();
+  print (" -> registering fields ... done!\n",comm);
+
+  // -------------------------------------- //
+  //       Generate data for src fields     //
+  // -------------------------------------- //
+
+  print (" -> generate src fields data ...\n",comm);
+  // Generate data in a deterministic way, so that when we check results,
+  // we know a priori what the input data that generated the tgt field's
+  // values was, even if that data was off rank.
+  auto src_gids    = remap->get_src_grid()->get_dofs_gids_host();
+  for (const auto& f : src_f) {
+    const auto& l = f.get_header().get_identifier().get_layout();
+    switch (get_layout_type(l.tags())) {
+      case LayoutType::Scalar2D:
+      {
+        const auto v_src = f.get_view<Real*,Host>();
+        for (int i=0; i<nldofs_src; ++i) {
+          v_src(i) = src_gids(i);
+        }
+      } break;
+      default:
+        EKAT_ERROR_MSG ("Unexpected layout.\n");
+    }
+    f.sync_to_dev();
+  }
+  print (" -> generate src fields data ... done!\n",comm);
+
+
+  // -------------------------------------- //
+  //          Check remapped fields         //
+  // -------------------------------------- //
+  const auto tgt_gids = tgt_grid->get_dofs_gids_host();
+  for (int irun=0; irun<5; ++irun) {
+    print (" -> run remap ...\n",comm);
+    remap->remap(true);
+    print (" -> run remap ... done!\n",comm);
+
+    print (" -> check tgt fields ...\n",comm);
+    // Recall, tgt gid K should be the avg of local src_gids
+    const int ntgt_gids = tgt_gids.size();
+    for (size_t ifield=0; ifield<tgt_f.size(); ++ifield) {
+      const auto& f = tgt_f[ifield];
+      const auto& l = f.get_header().get_identifier().get_layout();
+      const auto ls = to_string(l);
+      std::string dots (25-ls.size(),'.');
+      print ("   -> Checking field with layout " + to_string(l) + " " + dots + "\n",comm);
+
+      f.sync_to_host();
+
+      switch (get_layout_type(l.tags())) {
+        case LayoutType::Scalar2D:
+        {
+          const auto v_tgt = f.get_view<const Real*,Host>();
+          for (int i=0; i<ntgt_gids; ++i) {
+            const auto gid = tgt_gids(i);
+            Real cmp = 0;
+            for (int j=0; j<src_gids.size(); j++) {
+              cmp += src_gids(j);
+            }
+            REQUIRE ( v_tgt(i)== cmp/src_gids.size() );
+          }
+        } break;
+        default:
+          EKAT_ERROR_MSG ("Unexpected layout.\n");
+      }
+    }
+  }
+
+  // Clean up scorpio stuff
+  scorpio::eam_pio_finalize();
+
+}
+
 TEST_CASE ("coarsening_remap") {
 
   // -------------------------------------- //
@@ -109,7 +332,8 @@ TEST_CASE ("coarsening_remap") {
   const int nldofs_tgt =  5;
   const int ngdofs_src = nldofs_src*comm.size();
   const int ngdofs_tgt = nldofs_tgt*comm.size();
-  const int nnz = ngdofs_src;
+  const int nnz_local  = nldofs_src;
+  const int nnz        = nnz_local*comm.size();
 
   // -------------------------------------- //
   //           Create a map file            //
@@ -118,23 +342,8 @@ TEST_CASE ("coarsening_remap") {
   print (" -> creating map file ...\n",comm);
 
   std::string filename = "coarsening_map_file_np" + std::to_string(comm.size()) + ".nc";
-  scorpio::register_file(filename, scorpio::FileMode::Write);
-
-  scorpio::register_dimension(filename,"n_a", "n_a", ngdofs_src);
-  scorpio::register_dimension(filename,"n_b", "n_b", ngdofs_tgt);
-  scorpio::register_dimension(filename,"n_s", "n_s", nnz);
-
-  scorpio::register_variable(filename,"col","col","none",{"n_s"},"real","int","Real-nnz");
-  scorpio::register_variable(filename,"row","row","none",{"n_s"},"real","int","Real-nnz");
-  scorpio::register_variable(filename,"S","S","none",{"n_s"},"real","real","Real-nnz");
-
-  std::vector<std::int64_t> dofs (nldofs_src);
-  std::iota(dofs.begin(),dofs.end(),comm.rank()*nldofs_src);
-  scorpio::set_dof(filename,"col",nldofs_src,dofs.data());
-  scorpio::set_dof(filename,"row",nldofs_src,dofs.data());
-  scorpio::set_dof(filename,"S",nldofs_src,dofs.data());
-  
-  scorpio::eam_pio_enddef(filename);
+  std::vector<std::int64_t> dofs (nnz_local);
+  std::iota(dofs.begin(),dofs.end(),comm.rank()*nnz_local);
 
   // Create triplets: tgt entry K is the avg of src entries K and K+ngdofs_tgt
   // NOTE: add 1 to row/col indices, since e3sm map files indices are 1-based
@@ -149,11 +358,7 @@ TEST_CASE ("coarsening_remap") {
     S.push_back(0.75);
   }
 
-  scorpio::grid_write_data_array(filename,"row",row.data(),row.size());
-  scorpio::grid_write_data_array(filename,"col",col.data(),row.size());
-  scorpio::grid_write_data_array(filename,"S",S.data(),row.size());
-
-  scorpio::eam_pio_closefile(filename);
+  create_remap_file(comm, filename, dofs, ngdofs_src, ngdofs_tgt, nnz, col, row, S);
   print (" -> creating map file ... done!\n",comm);
 
   // -------------------------------------- //
@@ -162,13 +367,7 @@ TEST_CASE ("coarsening_remap") {
 
   print (" -> creating grid and remapper ...\n",comm);
 
-  AbstractGrid::dofs_list_type src_dofs("",nldofs_src);
-  auto src_dofs_h = cmvc(src_dofs);
-  std::iota(src_dofs_h.data(),src_dofs_h.data()+nldofs_src,nldofs_src*comm.rank());
-  Kokkos::deep_copy(src_dofs,src_dofs_h);
-
-  auto src_grid = std::make_shared<PointGrid>("src",nldofs_src,20,comm);
-  src_grid->set_dofs(src_dofs);
+  auto src_grid = build_src_grid(comm, nldofs_src);
 
   auto remap = std::make_shared<CoarseningRemapperTester>(src_grid,filename);
   print (" -> creating grid and remapper ... done!\n",comm);
@@ -179,25 +378,12 @@ TEST_CASE ("coarsening_remap") {
 
   print (" -> creating fields ...\n",comm);
   constexpr int vec_dim = 3;
-  auto create_field = [&] (const std::string& name,
-                           const std::shared_ptr<const AbstractGrid>& grid,
-                           const bool twod, const bool vec, const bool mid = false, const int ps = 1) -> Field
-  {
-    constexpr auto CMP = FieldTag::Component;
-    constexpr auto units = ekat::units::Units::nondimensional();
-    auto fl = twod
-            ? (vec ? grid->get_2d_vector_layout (CMP,vec_dim)
-                   : grid->get_2d_scalar_layout ())
-            : (vec ? grid->get_3d_vector_layout (mid,CMP,vec_dim)
-                   : grid->get_3d_scalar_layout (mid));
-    FieldIdentifier fid(name,fl,units,grid->name());
-    Field f(fid);
-    f.get_header().get_alloc_properties().request_allocation(ps);
-    f.allocate_view();
-    return f;
-  };
 
   auto tgt_grid = remap->get_tgt_grid();
+  // Check that the target grid made by the remapper has the correct number of columns,
+  // and has the same number of levels as the source grid.
+  REQUIRE(tgt_grid->get_num_vertical_levels()==src_grid->get_num_vertical_levels());
+  REQUIRE(tgt_grid->get_num_global_dofs()==ngdofs_tgt);
 
   auto src_s2d   = create_field("s2d",  src_grid,true,false);
   auto src_v2d   = create_field("v2d",  src_grid,true,true);
@@ -256,10 +442,11 @@ TEST_CASE ("coarsening_remap") {
   REQUIRE (tgt_grid->get_num_global_dofs()==ngdofs_tgt);
 
   // Check which triplets are read from map file
+  auto src_dofs_h = src_grid->get_dofs_gids_host();
   auto my_triplets = remap->test_triplet_gids (filename);
   const int num_triplets = my_triplets.size();
-  REQUIRE (num_triplets==nldofs_src);
-  for (int i=0; i<nldofs_src; ++i) {
+  REQUIRE (num_triplets==nnz_local);
+  for (int i=0; i<nnz_local; ++i) {
     const auto src_gid = src_dofs_h(i);
     const auto tgt_gid = src_gid % ngdofs_tgt;
 
