@@ -1,7 +1,7 @@
 # For now, scream will rely on it's own build of kokkos rather than the
 # one in sharedlib.
 
-function(build_scream)
+function(build_eamxx)
 
   if (COMP_NAMES MATCHES ".*scream.*")
 
@@ -36,4 +36,4 @@ function(build_scream)
     add_subdirectory("eamxx")
   endif()
 
-endfunction(build_scream)
+endfunction(build_eamxx)
