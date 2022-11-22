@@ -38,6 +38,10 @@
       private
       public :: frzmlt_bottom_lateral, thermo_vertical, adjust_enthalpy
 
+      real(kind=dbl_kind), public :: &
+           lateralMeltActive = c1, &
+           congelBasalMeltActive = c1
+
 !=======================================================================
 
       contains
@@ -208,7 +212,8 @@
          hsn         , & ! snow thickness (m)
          hsn_new     , & ! thickness of new snow (m)
          worki       , & ! local work array
-         works           ! local work array
+         works       , & ! local work array
+         fbotUse
 
       real (kind=dbl_kind), dimension (nilyr) :: &
          zTin            ! internal ice layer temperatures
@@ -382,7 +387,11 @@
       ! Compute growth and/or melting at the top and bottom surfaces.
       ! Add new snowfall.
       ! Repartition ice into equal-thickness layers, conserving energy.
-      !----------------------------------------------------------------- 
+      !-----------------------------------------------------------------
+
+      fbotUse = &
+                 congelBasalMeltActive  * fbot + &
+           (c1 - congelBasalMeltActive) * fcondbot
 
       call thickness_changes(nilyr,       nslyr,     &
                              dt,          yday,      &
@@ -391,7 +400,7 @@
                              hsn,         hslyr,     &
                              zqin,        zqsn,      &
                              smice,       smliq,     &
-                             fbot,        Tbot,      &
+                             fbotUse,     Tbot,      &
                              flatn,       fsurfn,    &
                              fcondtopn,   fcondbot,  &
                              fsnow,       hsn_new,   &
@@ -416,7 +425,7 @@
                                       fsnow,     einit,    &
                                       einter,    efinal,   &
                                       fcondtopn, fcondbot, &
-                                      fadvocn,   fbot,     &
+                                      fadvocn,   fbotUse,  &
                                       l_stop,    stop_label)
       
       if (l_stop) return
@@ -602,7 +611,7 @@
 
          wlat = m1 * deltaT**m2 ! Maykut & Perovich
          rside = wlat*dt*pi/(floeshape*floediam) ! Steele
-         rside = max(c0,min(rside,c1))
+         rside = max(c0,min(rside,c1)) * lateralMeltActive
 
       !-----------------------------------------------------------------
       ! Compute heat flux associated with this value of rside.
