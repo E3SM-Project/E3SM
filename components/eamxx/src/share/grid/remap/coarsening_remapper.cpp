@@ -320,8 +320,10 @@ local_mat_vec (const Field& x, const Field& y) const
   using PackInfo    = ekat::PackInfo<PackSize>;
 
   const auto& src_layout = x.get_header().get_identifier().get_layout();
+  const auto& tgt_layout = y.get_header().get_identifier().get_layout();
   const int rank = src_layout.rank();
   const int nrows = m_ov_tgt_grid->get_num_local_dofs();
+  const int nrows_src = m_src_grid->get_num_local_dofs();
   auto row_offsets = m_row_offsets;
   auto col_lids = m_col_lids;
   auto weights = m_weights;
