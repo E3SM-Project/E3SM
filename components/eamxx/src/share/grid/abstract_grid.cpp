@@ -118,6 +118,9 @@ set_dofs (const dofs_list_type& dofs)
 
   m_dofs_gids_host = Kokkos::create_mirror_view(m_dofs_gids);
   Kokkos::deep_copy(m_dofs_gids_host,m_dofs_gids);
+
+  set_global_min_dof_gid();
+  set_global_max_dof_gid();
 }
 
 const AbstractGrid::dofs_list_type&
@@ -186,8 +189,8 @@ AbstractGrid::get_geometry_data_host (const std::string& name) const {
   return m_geo_views_host.at(name);
 }
 
-AbstractGrid::gid_type
-AbstractGrid::get_global_min_dof_gid () const
+void
+AbstractGrid::set_global_min_dof_gid ()
 {
   EKAT_REQUIRE_MSG (m_dofs_set,
       "Error! You need to set dofs gids before you can compute the global min dof.\n");
@@ -205,11 +208,11 @@ AbstractGrid::get_global_min_dof_gid () const
 
   m_comm.all_reduce(&local_min,&global_min,1,MPI_MIN);
 
-  return global_min;
+  m_global_min_dof_gid = global_min;
 }
 
-AbstractGrid::gid_type
-AbstractGrid::get_global_max_dof_gid () const
+void
+AbstractGrid::set_global_max_dof_gid ()
 {
   EKAT_REQUIRE_MSG (m_dofs_set,
       "Error! You need to set dofs gids before you can compute the global max dof.\n");
@@ -227,7 +230,7 @@ AbstractGrid::get_global_max_dof_gid () const
 
   m_comm.all_reduce(&local_max,&global_max,1,MPI_MAX);
 
-  return global_max;
+  m_global_max_dof_gid = global_max;
 }
 
 std::list<std::string>

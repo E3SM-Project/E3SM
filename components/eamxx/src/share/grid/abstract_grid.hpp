@@ -104,13 +104,15 @@ public:
   // The number of dofs on this MPI rank
   int get_num_local_dofs  () const { return m_num_local_dofs;  }
   gid_type get_num_global_dofs () const { return m_num_global_dofs; }
-  gid_type get_global_min_dof_gid () const;
-  gid_type get_global_max_dof_gid () const;
+  gid_type get_global_min_dof_gid () const { return m_global_min_dof_gid; }
+  gid_type get_global_max_dof_gid () const { return m_global_max_dof_gid; }
 
   // Set the dofs list
   // NOTE: this method calls valid_dofs_list, which may contain collective
   //       operations over the stored communicator.
   void set_dofs (const dofs_list_type& dofs);
+  void set_global_min_dof_gid ();
+  void set_global_max_dof_gid ();
 
   // Get a 1d view containing the dof gids
   const dofs_list_type& get_dofs_gids () const;
@@ -192,6 +194,8 @@ private:
   // The global ID of each dof
   dofs_list_type        m_dofs_gids;
   dofs_list_h_type      m_dofs_gids_host;
+  gid_type              m_global_min_dof_gid;
+  gid_type              m_global_max_dof_gid;
 
   // The map lid->idx
   lid_to_idx_map_type   m_lid_to_idx;
