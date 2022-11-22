@@ -62,6 +62,10 @@ module atm_comp_mct
 #ifdef HAVE_MOAB
   use seq_comm_mct     , only: mphaid ! atm physics grid id in MOAB, on atm pes
   use iso_c_binding 
+  use seq_comm_mct,     only : num_moab_exports
+#endif
+#ifdef MOABDEBUG
+  !use seq_comm_mct, only:  compare_to_moab_tag
 #endif
 !
 ! !PUBLIC TYPES:
@@ -113,6 +117,10 @@ module atm_comp_mct
   real(r8) , allocatable, private :: a2x_am(:,:) ! atm to coupler, on atm mesh, on atm component pes
   real(r8) , allocatable, private :: x2a_am(:,:) ! coupler to atm, on atm mesh, on atm component pes
 #endif 
+#ifdef MOABDEBUG
+  integer  :: mpicom_atm_moab ! used just for mpi-reducing the difference betweebn moab tags and mct avs
+  integer :: rank2
+#endif
 !
 !================================================================================
 CONTAINS
@@ -174,6 +182,15 @@ CONTAINS
                                 ! data structure, If 1D data structure, then
                                 ! hdim2_d == 1.
     character(len=64) :: filein ! Input namelist filename
+
+#ifdef MOABDEBUG
+    real(r8)                 :: difference
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list, ent_type
+    type(mct_string)    :: mctOStr  !
+    character(CXX) ::tagname, mct_field
+#endif 
+
     !-----------------------------------------------------------------------
     !
     ! Determine cdata points
@@ -187,7 +204,10 @@ CONTAINS
 
     call seq_cdata_setptrs(cdata_a, ID=ATMID, mpicom=mpicom_atm, &
          gsMap=gsMap_atm, dom=dom_a, infodata=infodata)
-
+#ifdef MOABDEBUG
+    mpicom_atm_moab = mpicom_atm ! just store it now, for later use
+    call shr_mpi_commrank( mpicom_atm_moab, rank2 )
+#endif 
     if (first_time) then
        
        call cam_instance_init(ATMID)
@@ -425,10 +445,30 @@ CONTAINS
 
        call seq_timemgr_EClockGetData(EClock,curr_ymd=CurrentYMD, StepNo=StepNo, dtime=DTime_Sync )
        if (StepNo == 0) then
-          call atm_import( x2a_a%rattr, cam_in )
+#ifdef MOABDEBUG
+  !compare_to_moab_tag(mpicom_atm_moab, attrVect, field, imoabApp, tag_name, ent_type, difference)
+    !x2o_o => component_get_x2c_cx(ocn(1))
+    ! loop over all fields in seq_flds_x2a_fields
+    call mct_list_init(temp_list ,seq_flds_x2a_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 0 ! entity type is vertex for phys atm
+    if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2a_fields), ' atm import check'
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call compare_to_moab_tag(mpicom_atm_moab, x2a_a, mct_field,  mphaid, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+
+#endif
+
 #ifdef HAVE_MOAB
-          !call atm_import_moab(cam_in)
-#endif         
+          call atm_import_moab(cam_in)
+#endif    
+          ! move moab import before cam import
+          ! so the cam import takes precedence, and fixes eventual problems in moab import     
+          call atm_import( x2a_a%rattr, cam_in )
           call cam_run1 ( cam_in, cam_out ) 
           call atm_export( cam_out, a2x_a%rattr )
 #ifdef HAVE_MOAB
@@ -529,6 +569,13 @@ CONTAINS
     integer :: lbnum
     character(len=*), parameter :: subname="atm_run_mct"
     !-----------------------------------------------------------------------
+#ifdef MOABDEBUG
+    real(r8)                 :: difference
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list, ent_type
+    type(mct_string)    :: mctOStr  !
+    character(CXX) ::tagname, mct_field
+#endif 
 
 #if (defined _MEMTRACE)
     if(masterproc) then
@@ -559,10 +606,30 @@ CONTAINS
     ! Map input from mct to cam data structure
 
     call t_startf ('CAM_import')
-    call atm_import( x2a_a%rattr, cam_in )
-#ifdef HAVE_MOAB
-    !call atm_import_moab(cam_in)
+   
+#ifdef MOABDEBUG
+  !compare_to_moab_tag(mpicom_atm_moab, attrVect, field, imoabApp, tag_name, ent_type, difference)
+    !x2o_o => component_get_x2c_cx(ocn(1))
+    ! loop over all fields in seq_flds_a2x_fields
+    call mct_list_init(temp_list ,seq_flds_x2a_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 0 ! entity type is vertex for phys atm
+    if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2a_fields)
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call compare_to_moab_tag(mpicom_atm_moab, x2a_a, mct_field,  mphaid, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+
 #endif
+
+#ifdef HAVE_MOAB
+     call atm_import_moab(cam_in)
+#endif
+   ! move moab import before regular atm import, so it would hopefully not be a problem
+     call atm_import( x2a_a%rattr, cam_in )
     call t_stopf  ('CAM_import')
     
     ! Cycle over all time steps in the atm coupling interval
@@ -1195,7 +1262,6 @@ CONTAINS
     use phys_grid , only: get_ncols_p, get_nlcols_p
     use ppgrid    , only: begchunk, endchunk
     use seq_comm_mct, only: mphaid ! imoab pid for atm physics
-    use seq_comm_mct, only : num_moab_exports !
     use cam_abortutils       , only: endrun
     use iMOAB, only:  iMOAB_WriteMesh,  iMOAB_SetDoubleTagStorage
     use iso_c_binding 
@@ -1511,5 +1577,80 @@ subroutine atm_import_moab(cam_in, restart_init )
 
 ! endif for HAVE_MOAB
 #endif
+
+
+#ifdef MOABDEBUG
+ ! assumes everything is on component side, to compare before imports
+  subroutine compare_to_moab_tag(mpicom, attrVect, mct_field, appId, tagname, ent_type, difference)
+    
+    use shr_mpi_mod,       only: shr_mpi_sum,  shr_mpi_commrank
+    use shr_kind_mod,     only:  CXX => shr_kind_CXX
+    use seq_comm_mct , only : CPLID, seq_comm_iamroot
+    use seq_comm_mct, only:   seq_comm_setptrs
+    use iMOAB, only : iMOAB_DefineTagStorage,  iMOAB_GetDoubleTagStorage, &
+       iMOAB_SetDoubleTagStorageWithGid, iMOAB_GetMeshInfo
+    
+    use iso_c_binding 
+
+    integer, intent(in) :: mpicom
+    integer , intent(in) :: appId, ent_type
+    type(mct_aVect) , intent(in)      :: attrVect
+    character(*) , intent(in)       :: mct_field
+    character(*) , intent(in)       :: tagname
+
+    real(r8)      , intent(out)     :: difference
+
+    real(r8)  :: differenceg ! global, reduced diff
+    integer   :: mbSize, nloc, index_avfield, rank2
+
+     ! moab
+     integer                  :: tagtype, numco,  tagindex, ierr
+     character(CXX)           :: tagname_mct
+     
+     real(r8) , allocatable :: values(:), mct_values(:)
+     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+     logical   :: iamroot
+
+
+     character(*),parameter :: subName = '(compare_to_moab_tag) '
+
+     nloc = mct_avect_lsize(attrVect)
+     allocate(mct_values(nloc))
+
+     index_avfield     = mct_aVect_indexRA(attrVect,trim(mct_field))
+     mct_values(:) = attrVect%rAttr(index_avfield,:) 
+
+     ! now get moab tag values; first get info
+     ierr  = iMOAB_GetMeshInfo ( appId, nvert, nvise, nbl, nsurf, nvisBC );
+     if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to get mesh info')
+     if (ent_type .eq. 0) then
+        mbSize = nvert(1)
+     else if (ent_type .eq. 1) then
+        mbSize = nvise(1)
+     endif
+     allocate(values(mbSize))
+
+     ierr = iMOAB_GetDoubleTagStorage ( appId, tagname, mbSize , ent_type, values)
+     if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to get moab tag values')
+      
+     values  = mct_values - values
+
+     difference = dot_product(values, values)
+     call shr_mpi_sum(difference,differenceg,mpicom,subname)
+     difference = sqrt(differenceg)
+     call shr_mpi_commrank( mpicom, rank2 )
+     if ( rank2 .eq. 0 ) then
+        print * , subname, ' , difference on tag ', trim(tagname), ' = ', difference
+        !call shr_sys_abort(subname//'differences between mct and moab values')
+     endif
+     deallocate(values)
+     deallocate(mct_values)
+
+  end subroutine compare_to_moab_tag
+  !  #endif for MOABDEBUG
+#endif
+
 
 end module atm_comp_mct
