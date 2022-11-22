@@ -7,7 +7,8 @@
 # by case.submit when on batch. Use case.submit from the command line to run your case.
 
 # cd to case
-cd {{ caseroot }}
+caseroot={{ caseroot }}
+cd $caseroot
 
 # Set PYTHONPATH so we can make cime calls if needed
 LIBDIR={{ cimeroot }}
@@ -17,7 +18,7 @@ export PYTHONPATH=$LIBDIR:$PYTHONPATH
 source .env_mach_specific.sh
 
 # get new lid
-lid=$(python -c 'import CIME.utils; print CIME.utils.new_lid()')
+lid=$(python3 -c 'import CIME.utils; print(CIME.utils.new_lid())')
 export LID=$lid
 
 # Clean/make timing dirs
@@ -42,6 +43,16 @@ export OMP_NUM_THREADS=$(./xmlquery THREAD_COUNT --value)
 # MPIRUN!
 cd $(./xmlquery RUNDIR --value)
 {{ mpirun }}
+
+# get timing
+python3 -c '
+import os
+from CIME.case import Case
+from CIME.get_timing import get_timing
+
+with Case("'$caseroot'", read_only=True) as case:
+    get_timing(case, "'$lid'")
+'
 
 # save logs?
 
