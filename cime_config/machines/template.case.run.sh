@@ -7,8 +7,8 @@
 # by case.submit when on batch. Use case.submit from the command line to run your case.
 
 # cd to case
-export CASEROOT={{ caseroot }}
-cd $CASEROOT
+caseroot={{ caseroot }}
+cd $caseroot
 
 # Set PYTHONPATH so we can make cime calls if needed
 LIBDIR={{ cimeroot }}
@@ -50,8 +50,8 @@ import os
 from CIME.case import Case
 from CIME.get_timing import get_timing
 
-with Case(os.environ["CASEROOT"], read_only=True) as case:
-    get_timing(case, os.environ["LID"])
+with Case("'$caseroot'", read_only=True) as case:
+    get_timing(case, "'$lid'")
 '
 
 # save logs?
