@@ -630,8 +630,10 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
      ztodt   , &
      jctop   ,jcbot , &
      state   ,ptend_all   ,landfrac,  pbuf, mu, eu, &
-     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath) 
-
+     du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, &
+!<shanyp 07112022
+     wuc) 
+!shanyp 07112022
    use cam_history,   only: outfld
    use physics_types, only: physics_state, physics_ptend
    use physics_types, only: physics_ptend_init
@@ -695,7 +697,9 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    
    ! w holds position of gathered points vs longitude index   
    integer, intent(out)  :: lengath
-
+!<shanyp 03212022
+   real(r8), intent(inout),optional :: wuc(pcols,pver)
+!shanyp 03212022>
    ! Local variables
 
 !<songxl 11-20---------
@@ -1023,8 +1027,10 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
                     t_star, q_star, dcape, &  
 !<songxl 2014-11-20----------------------------
                     aero(lchnk), qi, dif, dnlf, dnif, dsf, dnsf, sprd, rice, frz, mudpcu, &
-                    lambdadpcu,  microp_st)
-
+                    lambdadpcu,  microp_st, &
+!<shanyp 07112022
+                    wuc)
+!shanyp 07112022>
    if (zm_microp) then
      dlftot(:,:) = dlf(:,:) + dif(:,:) + dsf(:,:)
    else

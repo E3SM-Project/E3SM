@@ -129,6 +129,9 @@ module micro_p3_interface
       p3_nc_autocon_expon      = huge(1.0_rtype), &
       p3_qc_accret_expon       = huge(1.0_rtype), &
       p3_wbf_coeff             = huge(1.0_rtype), &
+!<shanyp 11052022
+      p3_mincdnc               = huge(1.0_rtype), &
+!shanyp 11052022>
       p3_max_mean_rain_size    = huge(1.0_rtype), &
       p3_embryonic_rain_size   = huge(1.0_rtype)
    
@@ -164,8 +167,9 @@ subroutine micro_p3_readnl(nlfile)
        micro_p3_tableversion, micro_p3_lookup_dir, micro_aerosolactivation, micro_subgrid_cloud, &
        micro_tend_output, p3_autocon_coeff, p3_qc_autocon_expon, p3_nc_autocon_expon, p3_accret_coeff, &
        p3_qc_accret_expon, p3_wbf_coeff, p3_max_mean_rain_size, p3_embryonic_rain_size, &
-       do_prescribed_CCN, do_Cooper_inP3
-
+!<shanyp 11052022
+       do_prescribed_CCN, do_Cooper_inP3, p3_mincdnc
+!shanyp 11052022>
   !-----------------------------------------------------------------------------
 
   if (masterproc) then
@@ -193,6 +197,9 @@ subroutine micro_p3_readnl(nlfile)
      write(iulog,'(A30,1x,8e12.4)') 'p3_nc_autocon_expon',     p3_nc_autocon_expon
      write(iulog,'(A30,1x,8e12.4)') 'p3_qc_accret_expon',      p3_qc_accret_expon
      write(iulog,'(A30,1x,8e12.4)') 'p3_wbf_coeff',            p3_wbf_coeff
+!shanyp 11052022
+     write(iulog,'(A30,1x,8e12.4)') 'p3_mincdnc',              p3_mincdnc
+!shanyp 11052022>
      write(iulog,'(A30,1x,8e12.4)') 'p3_max_mean_rain_size',   p3_max_mean_rain_size
      write(iulog,'(A30,1x,8e12.4)') 'p3_embryonic_rain_size',  p3_embryonic_rain_size
      write(iulog,'(A30,1x,L)')    'do_prescribed_CCN: ',       do_prescribed_CCN
@@ -213,6 +220,9 @@ subroutine micro_p3_readnl(nlfile)
   call mpibcast(p3_accret_coeff,         1 ,                         mpir8,   0, mpicom)
   call mpibcast(p3_qc_accret_expon,      1 ,                         mpir8,   0, mpicom)
   call mpibcast(p3_wbf_coeff,            1 ,                         mpir8,   0, mpicom)
+!shanyp 11052022
+  call mpibcast(p3_mincdnc,              1 ,                         mpir8,   0, mpicom)
+!shanyp 11052022>
   call mpibcast(p3_max_mean_rain_size,   1 ,                         mpir8,   0, mpicom)
   call mpibcast(p3_embryonic_rain_size,  1 ,                         mpir8,   0, mpicom)
   call mpibcast(do_prescribed_CCN,       1,                          mpilog,  0, mpicom)
@@ -1285,6 +1295,9 @@ end subroutine micro_p3_readnl
     vap_liq_exchange = 0.0_rtype
 
     call t_startf('micro_p3_tend_loop')
+!<shanyp 11052022
+!    write(iulog,*) "LLILY1", p3_mincdnc
+!shanyp 11052022>
     call p3_main( &
          cldliq(its:ite,kts:kte),     & ! INOUT  cloud, mass mixing ratio         kg kg-1
          numliq(its:ite,kts:kte),     & ! INOUT  cloud, number mixing ratio       #  kg-1
@@ -1324,6 +1337,9 @@ end subroutine micro_p3_readnl
          p3_nc_autocon_expon,         & ! IN  autoconversion nc exponent
          p3_qc_accret_expon,          & ! IN  autoconversion coefficient
          p3_wbf_coeff,                & ! IN  WBF process coefficient
+!<shanyp 11052022
+         p3_mincdnc,                  & ! IN  imposing minimal Nc
+!shanyp 11052022>
          p3_max_mean_rain_size,       & ! IN  max mean rain size
          p3_embryonic_rain_size,      & ! IN  embryonic rain size for autoconversion
          ! AaronDonahue new stuff
@@ -1458,12 +1474,17 @@ end subroutine micro_p3_readnl
       do icol = 1, ncol
          ! Limits for in-cloud mixing ratios consistent with P3 microphysics
          ! in-cloud mixing ratio maximum limit of 0.005 kg/kg
-         icimrst(icol,k)   = min( state%q(icol,k,ixcldice) / max(mincld,cld_frac_i(icol,k)),0.005_rtype )
-         icwmrst(icol,k)   = min( state%q(icol,k,ixcldliq) / max(mincld,cld_frac_l(icol,k)),0.005_rtype )
-         icinc(icol,k)     = state%q(icol,k,ixnumice) / max(mincld,cld_frac_i(icol,k)) * &
-              state%pmid(icol,k) / (287.15_rtype*state%t(icol,k))
-         icwnc(icol,k)     = state%q(icol,k,ixnumliq) / max(mincld,cld_frac_l(icol,k)) * &
-              state%pmid(icol,k) / (287.15_rtype*state%t(icol,k))
+
+         ! The in-cloud properties should be outputted after the cloud microphysics
+         ! tendencies are taken into account, whereas they are outputted in P3 without
+         ! accounting for the microphysics calculations. This fix does not affect model
+         ! simulations, but will affect all of offline analysis where in-cloud
+         ! property is used.
+         icimrst(icol,k)   = min( ice(icol,k) / max(mincld,cld_frac_i(icol,k)),0.005_rtype )
+         icwmrst(icol,k)   = min( cldliq(icol,k) / max(mincld,cld_frac_l(icol,k)),0.005_rtype )
+         icinc(icol,k)     = numice(icol,k) / max(mincld,cld_frac_i(icol,k)) * rho(icol,k) !&
+         icwnc(icol,k)     = numliq(icol,k) / max(mincld,cld_frac_l(icol,k)) * rho(icol,k) !&
+
       end do                    
    end do
 

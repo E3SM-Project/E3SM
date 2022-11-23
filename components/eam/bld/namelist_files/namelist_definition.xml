@@ -2242,6 +2242,14 @@ Minimum droplet number conc (#/m3) imposed when micro_mincdnc > 0.
 Default: -999.
 </entry>
 
+<!-- shanyp add min_cdnc for P3-->
+<entry id="p3_mincdnc" type="real" category="microphys"
+       group="micro_nl" valid_values="" >
+Minimum droplet number conc (#/m3) imposed when p3_mincdnc > 0.
+Default: -999.
+</entry>
+<!-- shanyp add min_cdnc for P3-->
+
 <entry id="micro_mg_version" type="integer" category="microphys"
        group="micro_mg_nl" valid_values="" >
 Version number for MG microphysics
@@ -2659,6 +2667,13 @@ Default: set by build-namelist
 Apply dynamics adjustment to CAPE closure
 Default: set by build-namelist
 </entry>
+
+<entry id="zmconv_tpert_fix" type="logical" category="conv"
+       group="zmconv_nl" valid_values="" >
+logical switch for tpert impacts in ZM deep convection scheme
+Default: set by build-namelist
+</entry>
+
 
 <entry id="zmconv_auto_fac" type="real" category="conv"
        group="zmconv_nl" valid_values="" >    

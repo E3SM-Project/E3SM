@@ -99,7 +99,9 @@ module aero_model
   real(r8)          :: sol_factb_interstitial  = 0.1_r8
   real(r8)          :: sol_factic_interstitial = 0.4_r8
   real(r8)          :: seasalt_emis_scale
-
+!<shanyp 07222022
+  real(r8)          :: small = 1.e-36
+!07222022 shanyp>
   integer :: ndrydep = 0
   integer,allocatable :: drydep_indices(:)
   integer :: nwetdep = 0
@@ -1373,8 +1375,9 @@ contains
        cam_out,                                                                 & !Intent-inout
        pbuf,                                                                    & !Pointer
        ptend,                                                                   & !Intent-out
-       clear_rh                                                                 ) !optional 
-
+!<shanyp 07112022
+       clear_rh, wuc                                                            ) !optional 
+!shanyp 07112022
     use modal_aero_deposition, only: set_srf_wetdep
     use wetdep,                only: wetdepa_v2, wetdep_inputs_set, &
                                      wetdep_inputs_unset, wetdep_inputs_t
@@ -1418,7 +1421,12 @@ contains
     real(r8), optional,  intent(in)    :: clear_rh(pcols,pver) ! optional clear air relative humidity 
                                                                ! that gets passed to modal_aero_wateruptake_dr
 
-
+!<shanyp 07112022
+   real(r8),intent(in),optional :: wuc(pcols,pver)
+!<shanyp 07182022
+   real(r8) :: dcondt_resusp3d(2*pcnst,pcols, pver)
+!shanyp 07182022>
+!shanyp 07112022>
     ! local vars
 
     integer :: i
@@ -1517,7 +1525,9 @@ contains
 
     lchnk = state%lchnk
     ncol  = state%ncol
-
+!<shanyp 07182022
+    dcondt_resusp3d(:,:,:) = 0._r8
+!shanyp 07182022>
     call physics_ptend_init(ptend, state%psetcols, 'aero_model_wetdep_ma', lq=wetdep_lq)
 
     ! Do calculations of mode radius and water uptake if:
@@ -1622,6 +1632,64 @@ contains
        rcscavt_cn_sv(:,:) = 0.0_r8
        rsscavt_cn_sv(:,:) = 0.0_r8
     endif
+!<shanyp 07212022
+    if (convproc_do_aer) then
+
+       call pbuf_get_field(pbuf, icwmrdp_idx,     icwmrdp )
+       call pbuf_get_field(pbuf, icwmrsh_idx,     icwmrsh )
+       call pbuf_get_field(pbuf, sh_frac_idx,     sh_frac )
+       call pbuf_get_field(pbuf, dp_frac_idx,     dp_frac )
+
+       call t_startf('ma_convproc')
+       call ma_convproc_intr( state, ptend, pbuf, dt,                   &
+            dp_frac, icwmrdp, rprddp, evapcdp,                          &
+            sh_frac, icwmrsh, rprdsh, evapcsh,                          &
+            dlf, dlf2, cmfmc2, sh_e_ed_ratio,                           &
+            nsrflx_mzaer2cnvpr, qsrflx_mzaer2cnvpr, aerdepwetis,        &
+            mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath,  &
+            species_class, mam_prevap_resusp_optaa,                     &
+            history_aero_prevap_resusp, &
+!<shanyp 07112022
+            dcondt_resusp3d=dcondt_resusp3d,wuc=wuc)
+!<shanyp 07182022
+    do m = 1, ntot_amode ! main loop over aerosol modes
+     do lphase = strt_loop,end_loop, stride_loop
+      ! loop over interstitial (1) and cloud-borne (2) forms
+      do lspec = 0, nspec_amode(m) !+1 ! loop over number + chem constituents + water
+       if (lspec == 0) then ! number
+        if (lphase == 1) then
+         mm = numptr_amode(m)
+        else
+         mm = numptrcw_amode(m)
+        endif
+       else if (lspec <= nspec_amode(m)) then ! non-water mass
+        if (lphase == 1) then
+         mm = lmassptr_amode(lspec,m)
+        else
+         mm = lmassptrcw_amode(lspec,m)
+        endif
+       endif
+       if (lphase .eq. 2) then
+        fldcw => qqcw_get_field(pbuf, mm,lchnk)
+        fldcw(:,:) = fldcw(:,:) + dcondt_resusp3d(mm+pcnst,:,:) !*dt
+!The dcondt_resusp3d is detrained aerosol AMOUNT (i.e., both mass
+!and number for four modals).
+!For dcondt_resusp3d(idx,:,:), idx=16,...,40 -> interstial aerosols
+!                              idx=56,...,80 -> cloud-borne aerosols
+! Currently, we assume that no aerosol resuspension occurrs during convective
+! cloud water detrainment. So, 100% of cloud-borne aerosols will be added to
+! stratiform cloud-borne aerosols and detrained interstial aerosol amount is
+! zero.
+       end if
+      end do ! loop over number + chem constituents + water <shanyp the loop is
+             ! changed: no aerosol water is considered. 
+     end do  ! lphase
+    end do   ! m aerosol modes
+!shanyp 07182022>
+!shanyp 07112022>
+       call t_stopf('ma_convproc')
+    endif
+!shanyp 07212022>
 
 mmode_loop_aa: &
 ! REASTER 08/11/2015 BEGIN
@@ -1867,7 +1935,12 @@ lphase_jnmw_conditional: &
                 ptend%lq(mm) = .TRUE.
                 dqdt_tmp(:,:) = 0.0_r8
                 ! q_tmp reflects changes from modal_aero_calcsize and is the "most current" q
+!<shanyp 07220222
                 q_tmp(1:ncol,:) = state%q(1:ncol,:,mm) + ptend%q(1:ncol,:,mm)*dt
+                where(q_tmp(1:ncol,:).lt.small)
+                 q_tmp(1:ncol,:)=small
+                end where
+!shanyp 0722022>
                 if (convproc_do_aer) then
                    !Feed in the saved cloudborne mixing ratios from phase 2
                    qqcw_in(:,:) = qqcw_sav(:,:,lspec)
@@ -1938,8 +2011,12 @@ lphase_jnmw_conditional: &
                       sflx(i)=sflx(i)+dqdt_tmp(i,k)*state%pdel(i,k)/gravit
                    enddo
                 enddo
-                if ( .not. convproc_do_aer ) call outfld( trim(cnst_name(mm))//'SFWET', sflx, pcols, lchnk)
-                aerdepwetis(:ncol,mm) = sflx(:ncol)
+!<shanyp 07252022
+!                if ( .not. convproc_do_aer ) call outfld( trim(cnst_name(mm))//'SFWET', sflx, pcols, lchnk)
+                 aerdepwetis(:,mm) = aerdepwetis(:,mm) + sflx(:)
+                 if ( convproc_do_aer ) call outfld( trim(cnst_name(mm))//'SFWET', aerdepwetis(:,mm), pcols, lchnk)
+!                aerdepwetis(:ncol,mm) = sflx(:ncol)
+!shanyp 07252022>
 
                 sflx(:)=0._r8
                 do k=1,pver
@@ -2248,25 +2325,65 @@ do_lphase2_conditional: &
        call set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
     endif
 
-    if (convproc_do_aer) then 
-       
-       call pbuf_get_field(pbuf, icwmrdp_idx,     icwmrdp )
-       call pbuf_get_field(pbuf, icwmrsh_idx,     icwmrsh )
-       call pbuf_get_field(pbuf, sh_frac_idx,     sh_frac )
-       call pbuf_get_field(pbuf, dp_frac_idx,     dp_frac )
-
-       call t_startf('ma_convproc')
-       call ma_convproc_intr( state, ptend, pbuf, dt,                   &
-            dp_frac, icwmrdp, rprddp, evapcdp,                          &
-            sh_frac, icwmrsh, rprdsh, evapcsh,                          &
-            dlf, dlf2, cmfmc2, sh_e_ed_ratio,                           &
-            nsrflx_mzaer2cnvpr, qsrflx_mzaer2cnvpr, aerdepwetis,        &
-            mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath,  &
-            species_class, mam_prevap_resusp_optaa,                     &
-            history_aero_prevap_resusp                                  )
-       call t_stopf('ma_convproc')       
-    endif
-
+!    if (convproc_do_aer) then 
+!       
+!       call pbuf_get_field(pbuf, icwmrdp_idx,     icwmrdp )
+!       call pbuf_get_field(pbuf, icwmrsh_idx,     icwmrsh )
+!       call pbuf_get_field(pbuf, sh_frac_idx,     sh_frac )
+!       call pbuf_get_field(pbuf, dp_frac_idx,     dp_frac )
+!
+!       call t_startf('ma_convproc')
+!       call ma_convproc_intr( state, ptend, pbuf, dt,                   &
+!            dp_frac, icwmrdp, rprddp, evapcdp,                          &
+!            sh_frac, icwmrsh, rprdsh, evapcsh,                          &
+!            dlf, dlf2, cmfmc2, sh_e_ed_ratio,                           &
+!            nsrflx_mzaer2cnvpr, qsrflx_mzaer2cnvpr, aerdepwetis,        &
+!            mu, md, du, eu, ed, dp, dsubcld, jt, maxg, ideep, lengath,  &
+!            species_class, mam_prevap_resusp_optaa,                     &
+!            history_aero_prevap_resusp, &
+!!<shanyp 07112022
+!            dcondt_resusp3d=dcondt_resusp3d,wuc=wuc)
+!!<shanyp 07182022
+!    do m = 1, ntot_amode ! main loop over aerosol modes
+!     do lphase = strt_loop,end_loop, stride_loop
+!      ! loop over interstitial (1) and cloud-borne (2) forms
+!      do lspec = 0, nspec_amode(m) !+1 ! loop over number + chem constituents + water
+!       if (lspec == 0) then ! number
+!        if (lphase == 1) then
+!         mm = numptr_amode(m)
+!        else
+!         mm = numptrcw_amode(m)
+!        endif
+!       else if (lspec <= nspec_amode(m)) then ! non-water mass
+!        if (lphase == 1) then
+!         mm = lmassptr_amode(lspec,m)
+!        else
+!         mm = lmassptrcw_amode(lspec,m)
+!        endif
+!       endif
+!       if (lphase .eq. 2) then
+!        fldcw => qqcw_get_field(pbuf, mm,lchnk)
+!        fldcw(:,:) = fldcw(:,:) + dcondt_resusp3d(mm+pcnst,:,:) !*dt
+!!The dcondt_resusp3d is detrained aerosol AMOUNT (i.e., both mass
+!!and number for four modals). 
+!!For dcondt_resusp3d(idx,:,:), idx=16,...,40 -> interstial aerosols
+!!                              idx=56,...,80 -> cloud-borne aerosols
+!! Currently, we assume that no aerosol resuspension occurrs during convective
+!! cloud water detrainment. So, 100% of cloud-borne aerosols will be added to
+!! stratiform cloud-borne aerosols and detrained interstial aerosol amount is
+!! zero. -Shanyp
+!       end if
+!      end do ! loop over number + chem constituents + water
+!     end do  ! lphase
+!    end do   ! m aerosol modes
+!!shanyp 07182022>
+!!shanyp 07112022>
+!       call t_stopf('ma_convproc')       
+!    endif
+! Move the deep convection wet removal before the stratiform wet removal. As a
+! result, the evolution of cloud-borne aerosols (detrained from deep covnection
+! and added into stratiform IN ONE TIMESTEP) is consistent with convective
+! cloud water. 
     call wetdep_inputs_unset(dep_inputs)
 
   end subroutine aero_model_wetdep

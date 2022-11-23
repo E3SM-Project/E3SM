@@ -177,8 +177,10 @@ subroutine convect_deep_tend( &
 !>songxl 2014-11-20-------- 
      ztodt   , &
      state   ,ptend   ,landfrac ,pbuf, mu, eu, &
-     du, md, ed, dp, dsubcld, jt, maxg, ideep,lengath ) 
-
+     du, md, ed, dp, dsubcld, jt, maxg, ideep,lengath, &
+!<shanyp 07112022
+     wuc) 
+!shanyp 07112022>
 
 
    use physics_types, only: physics_state, physics_ptend, physics_tend, physics_ptend_init
@@ -231,6 +233,9 @@ subroutine convect_deep_tend( &
    
    ! w holds position of gathered points vs longitude index   
    integer, intent(out) :: lengath
+!<shanyp 07112022
+   real(r8),intent(inout),optional :: wuc(pcols,pver)
+!shanyp 07112022>
 
    real(r8), pointer :: prec(:)   ! total precipitation
    real(r8), pointer :: snow(:)   ! snow from ZM convection 
@@ -332,7 +337,10 @@ subroutine convect_deep_tend( &
           ztodt   , &
           jctop, jcbot , &
           state   ,ptend   ,landfrac, pbuf, mu, eu, &
-          du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath)
+          du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, &
+!<shanyp 07112022
+          wuc)
+!shanyp 07112022
      call t_stopf('zm_conv_tend')
 
 
