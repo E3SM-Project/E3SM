@@ -53,6 +53,11 @@
   </compset>
 
   <compset>
+    <alias>GMPAS-JRA1p5</alias>
+    <lname>2000_DATM%JRA-1p5_SLND_MPASSI_MPASO%DATMFORCED_DROF%JRA-1p5_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>GMPAS-JRA1p4</alias>
     <lname>2000_DATM%JRA-1p4-2018_SLND_MPASSI_MPASO%DATMFORCED_DROF%JRA-1p4-2018_SGLC_SWAV</lname>
   </compset>
