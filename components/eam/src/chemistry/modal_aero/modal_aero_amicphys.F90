@@ -20,7 +20,7 @@
   use modal_aero_data, only:  ntot_aspectype, ntot_amode, nsoa, npoa, nbc
 ! use ref_pres,        only:  top_lev => clim_modal_aero_top_lev  ! this is for gg02a
   use ref_pres,        only:  top_lev => trop_cloud_top_lev       ! this is for ee02c
-
+!  use perf_mod,       only: t_startf, t_stopf 
   implicit none
   private
   save
@@ -910,6 +910,7 @@ main_i_loop: &
 !        qsub4, qqcwsub4,                         &
 !        qsub_tendaa, qqcwsub_tendaa              )
 
+!      call t_startf ('mam_amicphys_1gridcell')
       call mam_amicphys_1gridcell(                &
          do_cond,             do_rename,          &
          do_newnuc,           do_coag,            &
@@ -1346,7 +1347,6 @@ main_jsub_loop: &
 
 
       if ( iscldy_subarea(jsub) .eqv. .true. ) then
-
       call mam_amicphys_1subarea_cloudy(             &
          do_cond_sub,            do_rename_sub,      &
          do_newnuc_sub,          do_coag_sub,        &
@@ -2303,7 +2303,6 @@ do_rename_if_block30: &
 !kzm ++
       if (strat_sulfate_xfer) then
 
-      !call mam_rename_1subarea
          call mam_rename_1subarea_strat(                                &
               nstep,             lchnk,                                 &
                i,                 k,                jsub,               &
@@ -2315,7 +2314,7 @@ do_rename_if_block30: &
               qaer_cur,          qaer_delsub_grow4rnam,                 &
               qwtr_cur)
       else
-           call mam_rename_1subarea(                                    &
+         call mam_rename_1subarea(                                    &
                               nstep,             lchnk,                 &
                i,                 k,                jsub,               &
               latndx,            lonndx,           lund,                &
@@ -2326,7 +2325,6 @@ do_rename_if_block30: &
               qaer_cur,          qaer_delsub_grow4rnam,                 &
               qwtr_cur)
       end if!kzm++
-!kzm
 
 
       qnum_del_rnam = qnum_del_rnam + (qnum_cur - qnum_sv1)
@@ -2346,7 +2344,6 @@ do_newnuc_if_block50: &
       qgas_sv1 = qgas_cur
       qnum_sv1 = qnum_cur
       qaer_sv1 = qaer_cur
-
       call mam_newnuc_1subarea(                                     &
          nstep,             lchnk,                                  &
          i,                 k,                jsub,                 &
@@ -2362,7 +2359,6 @@ do_newnuc_if_block50: &
          qwtr_cur,                                                  &
          dnclusterdt_substep,                                        &
          troplev_i                                        )!kzm++
-
       qgas_del_nnuc = qgas_del_nnuc + (qgas_cur - qgas_sv1)
       qnum_del_nnuc = qnum_del_nnuc + (qnum_cur - qnum_sv1)
       qaer_del_nnuc = qaer_del_nnuc + (qaer_cur - qaer_sv1)
@@ -2380,7 +2376,6 @@ do_newnuc_if_block50: &
 
       qnum_sv1 = qnum_cur
       qaer_sv1 = qaer_cur
-
       call mam_coag_1subarea(                                       &
          nstep,             lchnk,                                  &
          i,                 k,                jsub,                 &
@@ -2392,7 +2387,6 @@ do_newnuc_if_block50: &
          qnum_cur,                                                  &
          qaer_cur,          qaer_delsub_coag_in,                    &
          qwtr_cur                                                   )
-
       qnum_delsub_coag = qnum_cur - qnum_sv1
       qaer_delsub_coag = qaer_cur - qaer_sv1
 
@@ -2405,7 +2399,6 @@ do_newnuc_if_block50: &
 !
 !
       if ( n_agepair > 0 ) then
-
       call mam_pcarbon_aging_1subarea(                              &
          nstep,             lchnk,                                  &
          i,                 k,                jsub,                 &
@@ -2416,7 +2409,6 @@ do_newnuc_if_block50: &
          qaer_cur,          qaer_delsub_cond, qaer_delsub_coag,     &
          qaer_delsub_coag_in,                                       &
          qwtr_cur                                                   )
-
       end if
 
 
@@ -2911,22 +2903,6 @@ do_newnuc_if_block50: &
         !         arg list:
         !         gam_ratio, iter_mesa, aH2O_a,jaerosolstate, mass_dry_a_bgn, mass_dry_a, 
         !         dens_dry_a_bgn, dens_dry_a, water_a_hyst, jaerosolstate_bgn
-
-! *** ff03h version ***
-!       call mosaic_box_aerchemistry(                                                   &
-!            hostgridinfo,            it_mosaic,    aH2O,               T_K,            &!Intent-ins
-!            P_atm,                   RH_pc,        dtchem,                             &
-!            mcall_load_mosaic_parameters,          mcall_print_aer_in, sigmag_a,       &
-!            jaerosolstate,           aer,                                              &!Intent-inouts
-!            num_a,                   water_a,      gas,                                &
-!            gas_avg,                 gas_netprod_otrproc,              Dp_dry_a,       &
-!            dp_wet_a,                jhyst_leg,    zero_water_flag,    flag_itr_kel,   &
-!            mass_dry_a_bgn,          mass_dry_a,                                       &!Intent-outs
-!            dens_dry_a_bgn,          dens_dry_a,   water_a_hyst,       aH2O_a,         &
-!            gam_ratio,               jaerosolstate_bgn,                jASTEM_fail,    &
-!            iter_MESA,               f_neg_vol_tmp                                     )
-
-! *** ff04a version ***
         call mosaic_box_aerchemistry(               aH2O,               T_K,            &!Intent-ins
              P_atm,                   RH_pc,        dtchem,                             &
              mcall_load_mosaic_parameters,          mcall_print_aer_in, sigmag_a,       &
@@ -2953,7 +2929,6 @@ do_newnuc_if_block50: &
 !       mass_dry_a_bgn,         mass_dry_a,                                       &!Intent-outs
 !       dens_dry_a_bgn,         dens_dry_a,   water_a_hyst,       aH2O_a,         &
 !       uptkrate_h2so4,         gam_ratio,    jaerosolstate_bgn                   )
-
         if (mosaic_vars_aa%flag_itr_kel) then
            misc_vars_aa_sub%max_kelvin_iter_1grid = misc_vars_aa_sub%max_kelvin_iter_1grid + 1.0_r8
         endif
