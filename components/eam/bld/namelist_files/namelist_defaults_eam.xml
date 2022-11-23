@@ -1080,6 +1080,9 @@
 <!-- wet scavenging tuning option by PNNL -->
 <sscav_tuning>.false.</sscav_tuning>
 
+<!-- strat. H2SO4 wateruptake flag option by LLNL -->
+<modal_strat_sulfate_aod_treatment>.false.</modal_strat_sulfate_aod_treatment>
+
 <!-- ice nucleation option by PNNL -->
 <demott_ice_nuc>.false.</demott_ice_nuc>
 <pergro_mods>.false.</pergro_mods>
@@ -1795,6 +1798,9 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <use_preexisting_ice               >.false.</use_preexisting_ice>
 <micro_mg_dcs_tdep phys="default">.true.</micro_mg_dcs_tdep>
 <microp_aero_wsub_scheme               >1</microp_aero_wsub_scheme>
+
+
+<modal_strat_sulfate_aod_treatment phys="default">.false.</modal_strat_sulfate_aod_treatment>
 
 <!-- For Polar mods-->
 <sscav_tuning phys="default">.true.</sscav_tuning>
