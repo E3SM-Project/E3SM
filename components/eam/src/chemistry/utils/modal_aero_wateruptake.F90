@@ -16,10 +16,6 @@ use cam_logfile,      only: iulog
 use ref_pres,         only: top_lev => clim_modal_aero_top_lev
 use phys_control,     only: phys_getopts
 use cam_abortutils,   only: endrun
-use shr_log_mod,      only: errMsg => shr_log_errMsg
-!kzm ++
-use modal_aero_calcsize,  only: modal_strat_sulfate_aod
-!kzm
 implicit none
 private
 save
@@ -60,13 +56,18 @@ real(r8), allocatable :: wtrvol(:,:,:)    ! single-particle-mean water volume in
 real(r8), allocatable :: rhcrystal(:)
 real(r8), allocatable :: rhdeliques(:)
 real(r8), allocatable :: specdens_1(:)
+
+logical :: modal_strat_sulfate_aod  !kzm
 !$OMP THREADPRIVATE(maer, hygro, naer, dryvol, drymass, dryrad, wetrad, wetvol, wtrvol, rhcrystal, rhdeliques, specdens_1)
 
 
 !===============================================================================
 contains
 !===============================================================================
+!------------------
 
+
+!------------------ 
 subroutine modal_aero_wateruptake_reg()
 
   use physics_buffer,   only: pbuf_add_field, dtype_r8
@@ -80,11 +81,6 @@ subroutine modal_aero_wateruptake_reg()
 
    ! 1st order rate for direct conversion of strat. cloud water to precip (1/s)
    call pbuf_add_field('QAERWAT',    'physpkg', dtype_r8, (/pcols, pver, nmodes/), qaerwat_idx)  
-   if (modal_strat_sulfate_aod) then
-      !write(iulog,*)'kzm_wateruptake_reg_1'
-      !call pbuf_add_field('MAMH2SO4EQ', 'global',  dtype_r8, (/pcols, pver, nmodes/), sulfeq_idx)
-      ! write(iulog,*)'kzm_wateruptake_reg_2'
-   end if
 end subroutine modal_aero_wateruptake_reg
 
 !===============================================================================
@@ -100,6 +96,8 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
    integer :: m, nmodes, istat
    logical :: history_aerosol      ! Output the MAM aerosol variables and tendencies
    logical :: history_verbose      ! produce verbose history output
+   logical :: get_presc_aero_data  ! produce output to generate prescribed aero files
+   logical :: modal_strat_sulfate_aod_treatment !for strat. H2SO4 wateruptake treatment flag
 
    character(len=3) :: trnum       ! used to hold mode number (as characters)
    !----------------------------------------------------------------------------
@@ -108,11 +106,6 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
    dgnum_idx      = pbuf_get_index('DGNUM')    
 
    ! assume for now that will compute wateruptake for climate list modes only
-   !kzm ++
-   !if (modal_strat_sulfate_aod) then
-   !   so4dryvol_idx  = pbuf_get_index('SO4DRYVOL')
-   !end if
-   !kzm --
    call rad_cnst_get_info(0, nmodes=nmodes)
 
    !$OMP PARALLEL
@@ -146,7 +139,10 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
    ! determine default variables
    call phys_getopts(history_aerosol_out = history_aerosol, &
                      history_verbose_out = history_verbose, &
-                     pergro_mods_out = pergro_mods)
+                     get_presc_aero_data_out = get_presc_aero_data, &
+                     pergro_mods_out = pergro_mods,         &
+                     modal_strat_sulfate_aod_treatment_out &
+                     = modal_strat_sulfate_aod_treatment)
 
    do m = 1, nmodes
       write(trnum, '(i3.3)') m
@@ -173,14 +169,15 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
          'sum of aerosol water of interstitial modes wat_a1+wat_a2+wat_a3+wat_a4' )
       call add_default( 'aero_water',  1, ' ')
    endif
+
+   if (modal_strat_sulfate_aod_treatment) then
+      modal_strat_sulfate_aod = modal_strat_sulfate_aod_treatment ! pass flat to H2SO4 treatment
+      write(iulog,*)'modal_strat_sulfate_aod_in_wateruptake ', modal_strat_sulfate_aod
+   endif     
    
    if (is_first_step()) then
       ! initialize fields in physics buffer
       call pbuf_set_field(pbuf2d, dgnumwet_idx, 0.0_r8)
-      if (modal_strat_sulfate_aod) then  !kzm ++
-      !call pbuf_set_field(pbuf2d, sulfeq_idx, 0.0_r8) !kzm++
-      write(iulog,*)'kzm_modal_strat_sulfate_aod_in_wateruptake ', modal_strat_sulfate_aod
-      end if !kzm --
    endif
 
 end subroutine modal_aero_wateruptake_init

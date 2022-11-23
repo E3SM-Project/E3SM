@@ -3771,6 +3771,8 @@ add_default($nl, 'convproc_do_gas');
 add_default($nl, 'demott_ice_nuc');
 #BSINGH - ENDS
 
+add_default($nl, 'modal_strat_sulfate_aod_treatment');
+
 add_default($nl, 'mam_amicphys_optaa'); #for enabling amicphys code in eam
 add_default($nl, 'n_so4_monolayers_pcage'); #number of so4(+nh4) monolayers needed to "age" a carbon particle
 

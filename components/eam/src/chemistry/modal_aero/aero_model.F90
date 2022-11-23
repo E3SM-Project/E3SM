@@ -38,7 +38,6 @@ module aero_model
   public :: aero_model_surfarea   ! aerosol surface area for chemistry
   !kzm from CAM6
   public :: aero_model_strat_surfarea ! kzm+ stratospheric aerosol wet surface area for chemistry
-
   ! These are made public to be used by MMF w/ ECPP
   public :: calc_1_impact_rate
   public :: dlndg_nimptblgrow
@@ -172,7 +171,6 @@ contains
 
     wetdep_list = aer_wetdep_list
     drydep_list = aer_drydep_list
-
   end subroutine aero_model_readnl
 
   !=============================================================================

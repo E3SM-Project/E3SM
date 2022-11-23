@@ -45,14 +45,14 @@ save
 public :: modal_aero_calcsize_init, modal_aero_calcsize_sub, modal_aero_calcsize_diag
 public :: modal_aero_calcsize_reg
 !kzm ++
-public :: modal_strat_sulfate_aod
+!public :: modal_strat_sulfate_aod
 !kzm --
 !Mimic enumerators for aerosol types
 integer, parameter:: inter_aero   = 1 !interstitial aerosols
 integer, parameter:: cld_brn_aero = 2 !cloud borne species
 
 integer :: dgnum_idx = -1 !pbuf id for dgnum
-integer :: so4dryvol_idx = -1 !pbuf id for so4dryvol !kzm++
+!integer :: so4dryvol_idx = -1 !pbuf id for so4dryvol !kzm++
 
 integer, parameter :: maxpair_csizxf = N_DIAG
 #ifdef MODAL_AERO
@@ -75,11 +75,6 @@ real(r8), parameter :: r8_huge = huge(1.0_r8)
 integer, parameter :: npair_csizxf = N_DIAG           !total number of possible diagnostic calls
 
 logical :: do_adjust_allowed                          !flag to turn on/off  aerosol size adjustment process
-#if ( defined MODAL_AERO_5MODE )
-logical :: modal_strat_sulfate_aod = .true.           !kzm !flag to turn on/off stratospheric H2SO4 AOD treatment
-#else
-logical :: modal_strat_sulfate_aod = .false.          !no this setting in MAM4
-#endif
 !flag to turn on/off  aerosol aitken<->accumulation transfer process
 logical :: do_aitacc_transfer_allowed(0:npair_csizxf) ! This is an array as it can be different for each radiatio diagnostic call
 
@@ -140,7 +135,7 @@ subroutine modal_aero_calcsize_reg()
   !kzm ++
    !if (modal_strat_sulfate_aod) then
       !write(iulog,*)'kzm_wateruptake_reg_1'
-      call pbuf_add_field('SO4DRYVOL', 'global',  dtype_r8, (/pcols, pver, nmodes/), so4dryvol_idx)
+   !   call pbuf_add_field('SO4DRYVOL', 'global',  dtype_r8, (/pcols, pver, nmodes/), so4dryvol_idx)
       ! write(iulog,*)'kzm_wateruptake_reg_2'
    !end if
 end subroutine modal_aero_calcsize_reg

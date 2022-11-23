@@ -211,11 +211,13 @@ end subroutine prescribed_volcaero_readnl
     endif
     is_cmip6_volc = .false.
     if (trim(adjustl(file_type))== 'VOLC_CMIP6') then
-      ! is_cmip6_volc = .true.
+
        is_cmip6_volc = .true.
 #if (defined MODAL_AERO_5MODE)
-     write(iulog,*)'kzm_rescribed_volcaero_mam5 '
-     is_cmip6_volc = .false.
+       write(iulog,*)'kzm_prescribed_volcaero_mam5_flag '
+       is_cmip6_volc = .false.
+#else
+      write(iulog,*)'kzm_prescribed_volcaero_flag '
 #endif
        ispf = 1
        specifier_sw(ispf) = trim(adjustl(ext_sun_name))

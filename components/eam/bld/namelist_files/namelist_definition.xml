@@ -4329,6 +4329,13 @@ Default: set by build-namelist.
 In-cloud scav for cloud-borne aerosol tuning factor
 Default: set by build-namelist.
 </entry>
+
+<entry id="modal_strat_sulfate_aod_treatment" type="logical"  category="cam_chem"
+       group="phys_ctl_nl" valid_values="" >
+Flag for H2SO4 specific stratospheric wateruptake treatment
+Default: .false.
+</entry>
+
 <!-- Flags for implementing code modifications under polar project -->
 <entry id="sscav_tuning" type="logical"  category="cam_chem"
        group="aerosol_nl" valid_values="" >
