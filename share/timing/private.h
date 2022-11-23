@@ -44,7 +44,10 @@
 #define MAX_AUX 9
 
 #ifndef __cplusplus
+// Protect against inclusion of stdbool.h in, e.g., a compiler wrapper.
+# ifndef true
 typedef enum {false = 0, true = 1} bool;  /* mimic C++ */
+# endif
 #endif
 
 typedef struct {

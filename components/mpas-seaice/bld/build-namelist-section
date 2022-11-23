@@ -118,6 +118,10 @@ add_default($nl, 'config_include_pond_freshwater_feedback');
 
 add_default($nl, 'config_use_test_ice_shelf');
 add_default($nl, 'config_testing_system_test');
+add_default($nl, 'config_use_congelation_basal_melt');
+add_default($nl, 'config_use_lateral_melt');
+add_default($nl, 'config_use_latent_processes');
+add_default($nl, 'config_limit_air_temperatures');
 
 ###################################
 # Namelist group: velocity_solver #
@@ -420,6 +424,7 @@ add_default($nl, 'config_boundary_layer_iteration_number');
 #########################
 
 add_default($nl, 'config_use_ocean_mixed_layer');
+add_default($nl, 'config_ocean_mixed_layer_type');
 add_default($nl, 'config_min_friction_velocity');
 add_default($nl, 'config_ocean_heat_transfer_type');
 add_default($nl, 'config_sea_freezing_temperature_type');
@@ -533,6 +538,7 @@ add_default($nl, 'config_AM_conservationCheck_write_on_startup');
 add_default($nl, 'config_AM_conservationCheck_write_to_logfile');
 add_default($nl, 'config_AM_conservationCheck_restart_stream');
 add_default($nl, 'config_AM_conservationCheck_carbon_failure_abort');
+add_default($nl, 'config_AM_conservationCheck_include_ocean');
 
 ##########################################
 # Namelist group: AM_geographicalVectors #

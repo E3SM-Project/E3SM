@@ -42,6 +42,7 @@
     CORE2_NYF		= CORE2 normal year forcing (for forcing POP and CICE)
     CORE2_IAF		= CORE2 intra-annual year forcing (for forcing POP and CICE)
     CORE_IAF_JRA	= JRA55 intra-annual year forcing (for forcing POP and CICE)
+    IAF_JRA_1p5         = JRA55 intra-annual year forcing, v1.5, through 2020 (for forcing MPAS-Ocean and MPAS-Seaice)
     CORE_IAF_JRA_1p4_2018 = JRA55 intra-annual year forcing, v1.4, through 2018 (for forcing POP and CICE)
     CORE_RYF8485_JRA = JRA55 repeat year forcing, v1.3, 1984-1985 (for forcing POP and CICE)
     CORE_RYF9091_JRA = JRA55 repeat year forcing, v1.3, 1990-1991 (for forcing POP and CICE)
@@ -205,6 +206,7 @@
       <value datm_mode="CLMNLDAS2">CLMNLDAS2.Solar,CLMNLDAS2.Precip,CLMNLDAS2.TPQW</value>
       <value datm_mode="CORE2_NYF" >CORE2_NYF.GISS,CORE2_NYF.GXGXS,CORE2_NYF.NCEP</value>
       <value datm_mode="CORE2_IAF" >CORE2_IAF.GCGCS.PREC,CORE2_IAF.GISS.LWDN,CORE2_IAF.GISS.SWDN,CORE2_IAF.GISS.SWUP,CORE2_IAF.NCEP.DN10,CORE2_IAF.NCEP.Q_10,CORE2_IAF.NCEP.SLP_,CORE2_IAF.NCEP.T_10,CORE2_IAF.NCEP.U_10,CORE2_IAF.NCEP.V_10,CORE2_IAF.CORE2.ArcFactor</value>
+      <value datm_mode="IAF_JRA_1p5" >IAF_JRA_1p5.GCGCS.PREC,IAF_JRA_1p5.GISS.LWDN,IAF_JRA_1p5.GISS.SWDN,IAF_JRA_1p5.NCEP.Q_10,IAF_JRA_1p5.NCEP.SLP_,IAF_JRA_1p5.NCEP.T_10,IAF_JRA_1p5.NCEP.U_10,IAF_JRA_1p5.NCEP.V_10</value>
       <value datm_mode="CORE_IAF_JRA_1p4_2018" >CORE_IAF_JRA_1p4_2018.GCGCS.PREC,CORE_IAF_JRA_1p4_2018.GISS.LWDN,CORE_IAF_JRA_1p4_2018.GISS.SWDN,CORE_IAF_JRA_1p4_2018.NCEP.Q_10,CORE_IAF_JRA_1p4_2018.NCEP.SLP_,CORE_IAF_JRA_1p4_2018.NCEP.T_10,CORE_IAF_JRA_1p4_2018.NCEP.U_10,CORE_IAF_JRA_1p4_2018.NCEP.V_10</value>
       <value datm_mode="CORE_IAF_JRA" >CORE_IAF_JRA.GCGCS.PREC,CORE_IAF_JRA.GISS.LWDN,CORE_IAF_JRA.GISS.SWDN,CORE_IAF_JRA.NCEP.Q_10,CORE_IAF_JRA.NCEP.SLP_,CORE_IAF_JRA.NCEP.T_10,CORE_IAF_JRA.NCEP.U_10,CORE_IAF_JRA.NCEP.V_10</value>
       <value datm_mode="CORE_RYF8485_JRA" >CORE_RYF8485_JRA.GISS.LWDN,CORE_RYF8485_JRA.GISS.SWDN,CORE_RYF8485_JRA.GCGCS,CORE_RYF8485_JRA.NCEP</value>
@@ -260,6 +262,7 @@
       <value stream="CORE2_IAF.NCEP.U_10">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="CORE2_IAF.NCEP.V_10">$DIN_LOC_ROOT/atm/datm7</value>
       <value stream="CORE_IAF_JRA.*">$DIN_LOC_ROOT/atm/datm7/JRA55</value>
+      <value stream="IAF_JRA_1p5.*">$DIN_LOC_ROOT/atm/datm7/JRA55</value>
       <value stream="CORE_RYF*">$DIN_LOC_ROOT/atm/datm7/JRA55</value>
       <value stream="co2tseries">$DIN_LOC_ROOT/atm/datm7/CO2 </value>
       <value stream="BC.QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian</value>
@@ -326,6 +329,7 @@
       <value stream="CORE2_IAF.NCEP.V_10">domain.T62.050609.nc</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">CORE2.t_10.ArcFactor.T62.1997-2004.nc</value>
       <value stream="CORE_IAF_JRA.*">domain.atm.TL319.151007.nc</value>
+      <value stream="IAF_JRA_1p5.*">domain.atm.TL319.151007.nc</value>
       <value stream="CORE_RYF*">domain.atm.TL319.151007.nc</value>
       <value stream="co2tseries.20tr" cime_model="e3sm">fco2_datm_1765-2007_c100614.nc</value>
       <value stream="co2tseries.20tr" cime_model="cesm">fco2_datm_global_simyr_1750-2014_CMIP6_c180929.nc</value>
@@ -482,6 +486,7 @@
       <value stream="CORE2_IAF.CORE2.ArcFactor">$DIN_LOC_ROOT/atm/datm7/CORE2</value>
       <value stream="CORE2_IAF">$DIN_LOC_ROOT/ocn/iaf</value>
       <value stream="CORE_IAF_JRA.*">$DIN_LOC_ROOT/ocn/jra55/v1.3_noleap</value>
+      <value stream="IAF_JRA_1p5.*">$DIN_LOC_ROOT/ocn/jra55/v1.5_noleap</value>
       <value stream="CORE_RYF*">$DIN_LOC_ROOT/ocn/jra55/v1.3_ryf</value>
       <value stream="co2tseries">$DIN_LOC_ROOT/atm/datm7/CO2</value>
       <value stream="BC.QIAN.Precip">$DIN_LOC_ROOT/atm/datm7/bias_correction/precip/gpcp/qian</value>
@@ -1211,11 +1216,17 @@
       <value  stream="CORE_IAF_JRA.GCGCS.PREC">
         JRA.v1.3.prec.TL319.%y.171019.nc
       </value>
+      <value  stream="IAF_JRA_1p5.GCGCS.PREC">
+        JRA.v1.5.prec.TL319.%y.210504.nc
+      </value>
       <value  stream="CORE_IAF_JRA_1p4_2018.GCGCS.PREC">
         JRA.v1.3.prec.TL319.%y.190528.nc
       </value>
       <value  stream="CORE_IAF_JRA.GISS.LWDN">
         JRA.v1.3.lwdn.TL319.%y.171019.nc
+      </value>
+      <value  stream="IAF_JRA_1p5.GISS.LWDN">
+        JRA.v1.5.lwdn.TL319.%y.210504.nc
       </value>
       <value  stream="CORE_IAF_JRA_1p4_2018.GISS.LWDN">
         JRA.v1.3.lwdn.TL319.%y.190528.nc
@@ -1223,35 +1234,53 @@
       <value  stream="CORE_IAF_JRA.GISS.SWDN">
         JRA.v1.3.swdn.TL319.%y.171019.nc
       </value>
+      <value  stream="IAF_JRA_1p5.GISS.SWDN">
+        JRA.v1.5.swdn.TL319.%y.210504.nc
+      </value>
       <value  stream="CORE_IAF_JRA_1p4_2018.GISS.SWDN">
         JRA.v1.3.swdn.TL319.%y.190528.nc
       </value>
       <value  stream="CORE_IAF_JRA.NCEP.Q_10">
         JRA.v1.3.q_10.TL319.%y.171019.nc
       </value>
+      <value  stream="IAF_JRA_1p5.NCEP.Q_10">
+        JRA.v1.5.q_10.TL319.%y.210504.nc
+      </value>
       <value  stream="CORE_IAF_JRA_1p4_2018.NCEP.Q_10">
         JRA.v1.3.q_10.TL319.%y.190528.nc
-      </value> 
+      </value>
       <value  stream="CORE_IAF_JRA.NCEP.SLP_">
         JRA.v1.3.slp.TL319.%y.171019.nc
-      </value> 
+      </value>
+      <value  stream="IAF_JRA_1p5.NCEP.SLP_">
+        JRA.v1.5.slp.TL319.%y.210504.nc
+      </value>
       <value  stream="CORE_IAF_JRA_1p4_2018.NCEP.SLP_">
         JRA.v1.3.slp.TL319.%y.190528.nc
       </value> 
       <value  stream="CORE_IAF_JRA.NCEP.T_10">
         JRA.v1.3.t_10.TL319.%y.171019.nc
-      </value> 
+      </value>
+      <value  stream="IAF_JRA_1p5.NCEP.T_10">
+        JRA.v1.5.t_10.TL319.%y.210504.nc
+      </value>
       <value  stream="CORE_IAF_JRA_1p4_2018.NCEP.T_10">
         JRA.v1.3.t_10.TL319.%y.190528.nc
       </value> 
       <value  stream="CORE_IAF_JRA.NCEP.U_10">
         JRA.v1.3.u_10.TL319.%y.171019.nc
-      </value> 
+      </value>
+      <value  stream="IAF_JRA_1p5.NCEP.U_10">
+        JRA.v1.5.u_10.TL319.%y.210504.nc
+      </value>
       <value  stream="CORE_IAF_JRA_1p4_2018.NCEP.U_10">
         JRA.v1.3.u_10.TL319.%y.190528.nc
       </value> 
       <value  stream="CORE_IAF_JRA.NCEP.V_10">
         JRA.v1.3.v_10.TL319.%y.171019.nc
+      </value>
+      <value  stream="IAF_JRA_1p5.NCEP.V_10">
+        JRA.v1.5.v_10.TL319.%y.210504.nc
       </value>
       <value  stream="CORE_IAF_JRA_1p4_2018.NCEP.V_10">
         JRA.v1.3.v_10.TL319.%y.190528.nc
@@ -1619,6 +1648,30 @@
       <value  stream="CORE_IAF_JRA.*.NCEP.V_10">
         v_10  v
       </value>
+      <value  stream="IAF_JRA_1p5*.GCGCS.PREC">
+        prec  prec
+      </value>
+      <value  stream="IAF_JRA_1p5*.GISS.LWDN">
+        lwdn  lwdn
+      </value>
+      <value  stream="IAF_JRA_1p5*.GISS.SWDN">
+        swdn  swdn
+      </value>
+      <value  stream="IAF_JRA_1p5*.NCEP.Q_10">
+        q_10  shum
+      </value>
+      <value  stream="IAF_JRA_1p5*.NCEP.SLP_">
+        slp  pslv
+      </value>
+      <value  stream="IAF_JRA_1p5*.NCEP.T_10">
+        t_10  tbot
+      </value>
+      <value  stream="IAF_JRA_1p5*.NCEP.U_10">
+        u_10  u
+      </value>
+      <value  stream="IAF_JRA_1p5*.NCEP.V_10">
+        v_10  v
+      </value>
       <value stream="CORE_RYF.*.GISS.LWDN">
         lwdn  lwdn
       </value>
@@ -1746,6 +1799,7 @@
       <value stream="CORE2_IAF.CORE2.ArcFactor">1</value>
       <value stream="CORE2_IAF">1</value>
       <value stream="CORE_IAF_JRA.*">1</value>
+      <value stream="IAF_JRA_1p5.*">1</value>
       <value stream="CORE_RYF*">1</value>
       <value stream="co2tseries.20tr">1850</value>
       <!-- ncycles*(year_end-year_start+1)-(year_end-co2_year_start) -->
@@ -1814,6 +1868,7 @@
       <value stream="CORE2_IAF.NCEP.V_10">1948</value>
       <value stream="CORE2_IAF.CORE2.ArcFactor">1948</value>
       <value stream="CORE_IAF_JRA.*">$DATM_CLMNCEP_YR_START</value>
+      <value stream="IAF_JRA_1p5.*">1958</value>
       <value stream="CORE_RYF8485_JRA">1984</value>
       <value stream="CORE_RYF9091_JRA">1990</value>
       <value stream="CORE_RYF0304_JRA">2003</value>
@@ -1887,6 +1942,7 @@
       <value stream="co2tseries.20tr" cime_model="cesm">2014</value>
       <value stream="CORE_IAF_JRA.*2018">2018</value>
       <value stream="CORE_IAF_JRA.*">$DATM_CLMNCEP_YR_END</value>
+      <value stream="IAF_JRA_1p5.*">2020</value>
       <value stream="CORE_RYF8485_JRA">1984</value>
       <value stream="CORE_RYF9091_JRA">1990</value>
       <value stream="CORE_RYF0304_JRA">2003</value>
@@ -1924,6 +1980,7 @@
     <values>
       <value>0</value>
       <value stream="CORE_IAF_JRA.*.GISS.SWDN">-5400</value>
+      <value stream="IAF_JRA_1p5.*.GISS.SWDN">-5400</value>
       <value stream="CORE_RYF.*.GISS.SWDN">-5400</value>
       <value stream="CPLHISTForcing.Solar">2700</value>
       <value stream="CPLHISTForcing.nonSolarFlux">900</value>
@@ -1946,7 +2003,7 @@
     <type>char</type>
     <category>streams</category>
     <group>shr_strdata_nml</group>
-    <valid_values>CLMNCEP,COPYALL,CORE2_NYF,CORE2_IAF,CORE_IAF_JRA,CORE_RYF_JRA,NULL</valid_values>
+    <valid_values>CLMNCEP,COPYALL,CORE2_NYF,CORE2_IAF,CORE_IAF_JRA,IAF_JRA_1p5,CORE_RYF_JRA,NULL</valid_values>
     <desc>
       general method that operates on the data.  this is generally
       implemented in the data models but is set in the strdata method for
@@ -1984,6 +2041,8 @@
       Clm Dyn doi 10.1007/s00382-008-0441-3.
       datamode = "CORE_IAF_JRA*"
       JRA55 intra-annual year forcing
+      datamode = "IAF_JRA_1p5*"
+      JRA55 intra-annual year forcing v1.5
       datamode = "CLMNCEP"
       In conjunction with NCEP climatological atmosphere data, provides the
       atmosphere forcing favored by the Land Model Working Group when
@@ -1998,6 +2057,7 @@
       <value datm_mode="CORE2_NYF">CORE2_NYF</value>
       <value datm_mode="CORE2_IAF">CORE2_IAF</value>
       <value datm_mode="CORE_IAF_JRA.*">CORE_IAF_JRA</value>
+      <value datm_mode="IAF_JRA_1p5">IAF_JRA_1p5</value>
       <value datm_mode="CORE_RYF*">CORE_RYF_JRA</value>
       <value datm_mode="CPLHIST">COPYALL</value>
       <value datm_mode="CFSv2">COPYALL</value>
@@ -2207,6 +2267,7 @@
       <value stream="topo.observed">lower</value>
       <value stream="CORE2_IAF.GISS.SWDN">coszen</value>
       <value stream="CORE_IAF_JRA.*.GISS.SWDN">coszen</value>
+      <value stream="IAF_JRA_1p5.*.GISS.SWDN">coszen</value>
       <value stream="CORE_RYF.*.GISS.SWDN">coszen</value>
     </values>
   </entry>
@@ -2300,6 +2361,7 @@
       <value datm_mode="CORE2_NYF">u:v</value>
       <value datm_mode="CORE2_IAF">u:v</value>
       <value datm_mode="CORE_IAF_JRA.*">u:v</value>
+      <value datm_mode="IAF_JRA_1p5.*">u:v</value>
       <value datm_mode="CORE_RYF*">u:v</value>
       <value datm_mode="CFSv2">u:v</value>
       <value datm_mode="CFSR">u:v</value>

@@ -222,6 +222,9 @@ contains
        ! initialize the column package parameters
        call init_column_package_parameters(domain, ciceTracerObject)
 
+       ! initialize active column processes
+       call init_column_active_processes(domain)
+
     endif
 
   end subroutine seaice_init_column_physics_package_parameters
@@ -5374,6 +5377,7 @@ contains
 
     real(kind=RKIND), dimension(:), pointer :: &
          seaSurfaceTemperature, &
+         seaSurfaceSalinity, &
          seaFreezingTemperature, &
          oceanMixedLayerDepth, &
          oceanHeatFluxConvergence, &
@@ -5387,6 +5391,7 @@ contains
          longwaveDown, &
          iceAreaCell, &
          freezingMeltingPotential, &
+         frazilMassAdjust, &
          shortwaveVisibleDirectDown, &
          shortwaveVisibleDiffuseDown, &
          shortwaveIRDirectDown, &
@@ -5395,6 +5400,8 @@ contains
          airOceanDragCoefficientRatio, &
          oceanHeatFlux, &
          oceanShortwaveFlux, &
+         oceanFreshWaterFlux, &
+         oceanSaltFlux, &
          airStressOceanU, &
          airStressOceanV, &
          atmosReferenceTemperature2mOcean, &
@@ -5417,6 +5424,9 @@ contains
     real(kind=RKIND), pointer :: &
          config_dt
 
+    character(len=strKIND), pointer :: &
+         config_ocean_mixed_layer_type
+
     integer :: &
          iCell
 
@@ -5430,6 +5440,7 @@ contains
          config_use_test_ice_shelf
 
     call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
+    call MPAS_pool_get_config(domain % configs, "config_ocean_mixed_layer_type", config_ocean_mixed_layer_type)
 
     block => domain % blocklist
     do while (associated(block))
@@ -5445,8 +5456,10 @@ contains
        call MPAS_pool_get_dimension(oceanCoupling, "nCellsSolve", nCellsSolve)
 
        call MPAS_pool_get_array(oceanCoupling, "seaSurfaceTemperature", seaSurfaceTemperature)
+       call MPAS_pool_get_array(oceanCoupling, "seaSurfaceSalinity", seaSurfaceSalinity)
        call MPAS_pool_get_array(oceanCoupling, "seaFreezingTemperature", seaFreezingTemperature)
        call MPAS_pool_get_array(oceanCoupling, "freezingMeltingPotential", freezingMeltingPotential)
+       call MPAS_pool_get_array(oceanCoupling, "frazilMassAdjust", frazilMassAdjust)
        call MPAS_pool_get_array(oceanCoupling, "oceanMixedLayerDepth", oceanMixedLayerDepth)
        call MPAS_pool_get_array(oceanCoupling, "oceanHeatFluxConvergence", oceanHeatFluxConvergence)
 
@@ -5471,6 +5484,8 @@ contains
 
        call MPAS_pool_get_array(oceanFluxes, "oceanHeatFlux", oceanHeatFlux)
        call MPAS_pool_get_array(oceanFluxes, "oceanShortwaveFlux", oceanShortwaveFlux)
+       call MPAS_pool_get_array(oceanFluxes, "oceanFreshWaterFlux", oceanFreshWaterFlux)
+       call MPAS_pool_get_array(oceanFluxes, "oceanSaltFlux", oceanSaltFlux)
 
        call MPAS_pool_get_array(oceanAtmosphere, "airStressOceanU", airStressOceanU)
        call MPAS_pool_get_array(oceanAtmosphere, "airStressOceanV", airStressOceanV)
@@ -5485,62 +5500,127 @@ contains
        call MPAS_pool_get_array(oceanAtmosphere, "latentHeatFluxOcean", latentHeatFluxOcean)
        call MPAS_pool_get_array(oceanAtmosphere, "evaporativeWaterFluxOcean", evaporativeWaterFluxOcean)
 
-       do iCell = 1, nCellsSolve
-          call colpkg_atm_boundary(&
-               'ocn', &
-               seaSurfaceTemperature(iCell), &
-               airPotentialTemperature(iCell), &
-               uAirVelocity(iCell), &
-               vAirVelocity(iCell), &
-               windSpeed(iCell), &
-               airLevelHeight(iCell), &
-               airSpecificHumidity(iCell), &
-               airDensity(iCell), &
-               airStressOceanU(iCell), &
-               airStressOceanV(iCell), &
-               atmosReferenceTemperature2mOcean(iCell), &
-               atmosReferenceHumidity2mOcean(iCell), &
-               potentialTemperatureDifference, &
-               specificHumidityDifference, &
-               latentTransferCoefficient, &
-               sensibleTransferCoefficient, &
-               airDragCoefficient(iCell), &
-               airOceanDragCoefficientRatio(iCell))
+       if (trim(config_ocean_mixed_layer_type) == "cice") then
 
-          albedoVisibleDirectOcean(iCell)  = seaiceOceanAlbedo
-          albedoIRDirectOcean(iCell)       = seaiceOceanAlbedo
-          albedoVisibleDiffuseOcean(iCell) = seaiceOceanAlbedo
-          albedoIRDiffuseOcean(iCell)      = seaiceOceanAlbedo
+          do iCell = 1, nCellsSolve
 
-          call colpkg_ocn_mixed_layer(&
-               albedoVisibleDirectOcean(iCell), &
-               shortwaveVisibleDirectDown(iCell), &
-               albedoIRDirectOcean(iCell), &
-               shortwaveIRDirectDown(iCell), &
-               albedoVisibleDiffuseOcean(iCell), &
-               shortwaveVisibleDiffuseDown(iCell), &
-               albedoIRDiffuseOcean(iCell), &
-               shortwaveIRDiffuseDown(iCell), &
-               seaSurfaceTemperature(iCell), &
-               longwaveUpOcean(iCell), &
-               sensibleHeatFluxOcean(iCell), &
-               sensibleTransferCoefficient, &
-               latentHeatFluxOcean(iCell), &
-               latentTransferCoefficient, &
-               evaporativeWaterFluxOcean(iCell), &
-               longwaveDown(iCell), &
-               potentialTemperatureDifference, &
-               specificHumidityDifference, &
-               iceAreaCell(iCell), &
-               oceanHeatFlux(iCell), &
-               oceanShortwaveFlux(iCell), &
-               oceanMixedLayerDepth(iCell), &
-               seaFreezingTemperature(iCell), &
-               oceanHeatFluxConvergence(iCell), &
-               freezingMeltingPotential(iCell), &
-               config_dt)
+             call colpkg_atm_boundary(&
+                  'ocn', &
+                  seaSurfaceTemperature(iCell), &
+                  airPotentialTemperature(iCell), &
+                  uAirVelocity(iCell), &
+                  vAirVelocity(iCell), &
+                  windSpeed(iCell), &
+                  airLevelHeight(iCell), &
+                  airSpecificHumidity(iCell), &
+                  airDensity(iCell), &
+                  airStressOceanU(iCell), &
+                  airStressOceanV(iCell), &
+                  atmosReferenceTemperature2mOcean(iCell), &
+                  atmosReferenceHumidity2mOcean(iCell), &
+                  potentialTemperatureDifference, &
+                  specificHumidityDifference, &
+                  latentTransferCoefficient, &
+                  sensibleTransferCoefficient, &
+                  airDragCoefficient(iCell), &
+                  airOceanDragCoefficientRatio(iCell))
 
-       enddo ! iCell
+             albedoVisibleDirectOcean(iCell)  = seaiceOceanAlbedo
+             albedoIRDirectOcean(iCell)       = seaiceOceanAlbedo
+             albedoVisibleDiffuseOcean(iCell) = seaiceOceanAlbedo
+             albedoIRDiffuseOcean(iCell)      = seaiceOceanAlbedo
+
+             call colpkg_ocn_mixed_layer(&
+                  albedoVisibleDirectOcean(iCell), &
+                  shortwaveVisibleDirectDown(iCell), &
+                  albedoIRDirectOcean(iCell), &
+                  shortwaveIRDirectDown(iCell), &
+                  albedoVisibleDiffuseOcean(iCell), &
+                  shortwaveVisibleDiffuseDown(iCell), &
+                  albedoIRDiffuseOcean(iCell), &
+                  shortwaveIRDiffuseDown(iCell), &
+                  seaSurfaceTemperature(iCell), &
+                  longwaveUpOcean(iCell), &
+                  sensibleHeatFluxOcean(iCell), &
+                  sensibleTransferCoefficient, &
+                  latentHeatFluxOcean(iCell), &
+                  latentTransferCoefficient, &
+                  evaporativeWaterFluxOcean(iCell), &
+                  longwaveDown(iCell), &
+                  potentialTemperatureDifference, &
+                  specificHumidityDifference, &
+                  iceAreaCell(iCell), &
+                  oceanHeatFlux(iCell), &
+                  oceanShortwaveFlux(iCell), &
+                  oceanMixedLayerDepth(iCell), &
+                  seaFreezingTemperature(iCell), &
+                  oceanHeatFluxConvergence(iCell), &
+                  freezingMeltingPotential(iCell), &
+                  config_dt)
+
+          enddo ! iCell
+
+       else if (trim(config_ocean_mixed_layer_type) == "e3sm") then
+
+          do iCell = 1, nCellsSolve
+
+             call colpkg_atm_boundary(&
+                  'ocn', &
+                  seaSurfaceTemperature(iCell), &
+                  airPotentialTemperature(iCell), &
+                  uAirVelocity(iCell), &
+                  vAirVelocity(iCell), &
+                  windSpeed(iCell), &
+                  airLevelHeight(iCell), &
+                  airSpecificHumidity(iCell), &
+                  airDensity(iCell), &
+                  airStressOceanU(iCell), &
+                  airStressOceanV(iCell), &
+                  atmosReferenceTemperature2mOcean(iCell), &
+                  atmosReferenceHumidity2mOcean(iCell), &
+                  potentialTemperatureDifference, &
+                  specificHumidityDifference, &
+                  latentTransferCoefficient, &
+                  sensibleTransferCoefficient, &
+                  airDragCoefficient(iCell), &
+                  airOceanDragCoefficientRatio(iCell))
+
+             albedoVisibleDirectOcean(iCell)  = seaiceOceanAlbedo
+             albedoIRDirectOcean(iCell)       = seaiceOceanAlbedo
+             albedoVisibleDiffuseOcean(iCell) = seaiceOceanAlbedo
+             albedoIRDiffuseOcean(iCell)      = seaiceOceanAlbedo
+
+             call seaice_ocean_mixed_layer_e3sm(&
+                  oceanMixedLayerDepth(iCell), &
+                  seaSurfaceTemperature(iCell), &
+                  seaSurfaceSalinity(iCell), &
+                  freezingMeltingPotential(iCell), &
+                  frazilMassAdjust(iCell), &
+                  oceanHeatFlux(iCell), &
+                  oceanShortwaveFlux(iCell), &
+                  oceanFreshWaterFlux(iCell), &
+                  oceanSaltFlux(iCell), &
+                  oceanHeatFluxConvergence(iCell), &
+                  albedoVisibleDirectOcean(iCell), &
+                  shortwaveVisibleDirectDown(iCell), &
+                  albedoIRDirectOcean(iCell), &
+                  shortwaveIRDirectDown(iCell), &
+                  albedoVisibleDiffuseOcean(iCell), &
+                  shortwaveVisibleDiffuseDown(iCell), &
+                  albedoIRDiffuseOcean(iCell), &
+                  shortwaveIRDiffuseDown(iCell), &
+                  sensibleTransferCoefficient, &
+                  latentTransferCoefficient, &
+                  longwaveDown(iCell), &
+                  potentialTemperatureDifference, &
+                  specificHumidityDifference, &
+                  iceAreaCell(iCell), &
+                  seaFreezingTemperature(iCell), &
+                  config_dt)
+
+          enddo ! iCell
+
+       endif
 
        block => block % next
     enddo
@@ -5574,6 +5654,310 @@ contains
     endif !
 
   end subroutine seaice_column_ocean_mixed_layer
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_ocean_mixed_layer_e3sm
+!
+!> \brief E3SM ocean coupling proxy
+!> \author Adrian K. Turner, LANL
+!> \date 9th July 2022
+!> \details Representation of ocean processes and coupling in e3sm. This
+!>  routine mimics the ocean/sea ice coupling in e3sm using MPAS-Ocn,
+!>  including updates to ocean thickness, temperature and salinity from
+!>  interactions with sea ice and frazil formation.
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_ocean_mixed_layer_e3sm(&
+       oceanMixedLayerDepth, &
+       seaSurfaceTemperature, &
+       seaSurfaceSalinity, &
+       freezingMeltingPotential, &
+       frazilMassAdjust, &
+       oceanHeatFlux, &
+       oceanShortwaveFlux, &
+       oceanFreshWaterFlux, &
+       oceanSaltFlux, &
+       oceanHeatFluxConvergence, &
+       albedoVisibleDirectOcean, &
+       shortwaveVisibleDirectDown, &
+       albedoIRDirectOcean, &
+       shortwaveIRDirectDown, &
+       albedoVisibleDiffuseOcean, &
+       shortwaveVisibleDiffuseDown, &
+       albedoIRDiffuseOcean, &
+       shortwaveIRDiffuseDown, &
+       sensibleTransferCoefficient, &
+       latentTransferCoefficient, &
+       longwaveDown, &
+       potentialTemperatureDifference, &
+       specificHumidityDifference, &
+       iceAreaCell, &
+       seaFreezingTemperature, &
+       timeStep)
+
+    use seaice_constants, only: &
+         seaiceFreshWaterFreezingPoint, &
+         seaiceStefanBoltzmann, &
+         seaiceDensitySeaWater, &
+         seaiceSeaWaterSpecificHeat, &
+         seaiceLatentHeatVaporization, &
+         seaiceReferenceSalinity
+
+    real(kind=RKIND), intent(inout) :: &
+         oceanMixedLayerDepth, &
+         seaSurfaceTemperature, &
+         seaSurfaceSalinity
+
+    real(kind=RKIND), intent(out) :: &
+         freezingMeltingPotential
+
+    real(kind=RKIND), intent(inout) :: &
+         frazilMassAdjust, &
+         oceanFreshWaterFlux, &
+         oceanSaltFlux
+
+    real(kind=RKIND), intent(in) :: &
+         oceanHeatFlux, &
+         oceanShortwaveFlux, &
+         oceanHeatFluxConvergence, &
+         albedoVisibleDirectOcean, &
+         shortwaveVisibleDirectDown, &
+         albedoIRDirectOcean, &
+         shortwaveIRDirectDown, &
+         albedoVisibleDiffuseOcean, &
+         shortwaveVisibleDiffuseDown, &
+         albedoIRDiffuseOcean, &
+         shortwaveIRDiffuseDown, &
+         sensibleTransferCoefficient, &
+         latentTransferCoefficient, &
+         longwaveDown, &
+         potentialTemperatureDifference, &
+         specificHumidityDifference, &
+         iceAreaCell, &
+         seaFreezingTemperature, &
+         timeStep
+
+    real(kind=RKIND) :: &
+         absorbedShortwaveOcean, &
+         seaSurfaceTemperatureKelvin, &
+         longwaveUpOcean, &
+         sensibleHeatFluxOcean, &
+         latentHeatFluxOcean, &
+         evaporativeWaterFluxOcean, &
+         openWaterHeatFlux, &
+         iceHeatFlux, &
+         totalHeatFlux, &
+         fflux_factor, &
+         hflux_factor, &
+         sflux_factor, &
+         maxFreezingMeltingPotential, &
+         changeOceanMixedLayerDepth, &
+         changeSeaSurfaceTemperature, &
+         changeSeaSurfaceSalinity
+
+    real(kind=RKIND) :: &
+         potential, &
+         freezingEnergy, &
+         newFrazilIceThickness, &
+         newThicknessWeightedSaltContent, &
+         frazilLayerThicknessTendency, &
+         frazilSalinityTendency, &
+         frazilTemperatureTendency, &
+         seaIceEnergy, &
+         accumulatedFrazilIceMass, &
+         sumNewFrazilIceThickness, &
+         ocn_cpl_dt, &
+         o2x_Fioo_q, &
+         o2x_Fioo_frazil, &
+         x2i_Fioo_q, &
+         x2i_Fioo_frazil, &
+         frazilMassFlux, &
+         frazilMassFluxRev
+
+    real(kind=RKIND), parameter :: &
+         config_specific_heat_sea_water = 3.996e3_RKIND, &
+         rho_sw = 1.026e3_RKIND, &
+         cp_sw = 3.996e3_RKIND, &
+         config_frazil_heat_of_fusion = 3.337e5_RKIND, &
+         config_frazil_ice_density = 1000.0_RKIND, &
+         config_frazil_fractional_thickness_limit = 0.1_RKIND, &
+         config_frazil_sea_ice_reference_salinity = 4.0_RKIND
+
+    ocn_cpl_dt = timeStep
+
+    !-----------------------------------------------------------------------------------
+    ! ice_comp_mct - export
+    !-----------------------------------------------------------------------------------
+
+    oceanFreshWaterFlux = oceanFreshWaterFlux + frazilMassAdjust/iceAreaCell
+    oceanSaltFlux       = oceanSaltFlux       + seaiceReferenceSalinity*0.001_RKIND*frazilMassAdjust/iceAreaCell
+
+    !-----------------------------------------------------------------------------------
+    ! Ocean surface fluxes
+    !-----------------------------------------------------------------------------------
+
+    ! shortwave radiative flux
+    absorbedShortwaveOcean = &
+         (1.0_RKIND-albedoVisibleDirectOcean)  * shortwaveVisibleDirectDown + &
+         (1.0_RKIND-albedoIRDirectOcean)       * shortwaveIRDirectDown + &
+         (1.0_RKIND-albedoVisibleDiffuseOcean) * shortwaveVisibleDiffuseDown + &
+         (1.0_RKIND-albedoIRDiffuseOcean)      * shortwaveIRDiffuseDown
+
+    ! ocean surface temperature in Kelvin
+    seaSurfaceTemperatureKelvin = seaSurfaceTemperature + seaiceFreshWaterFreezingPoint
+
+    ! longwave radiative flux
+    longwaveUpOcean = -seaiceStefanBoltzmann * seaSurfaceTemperatureKelvin**4
+
+    ! downward latent and sensible heat fluxes
+    sensibleHeatFluxOcean     = sensibleTransferCoefficient * potentialTemperatureDifference
+    latentHeatFluxOcean       = latentTransferCoefficient * specificHumidityDifference
+    evaporativeWaterFluxOcean = -latentHeatFluxOcean / seaiceLatentHeatVaporization
+
+    ! open water heat flux
+    openWaterHeatFlux = &
+         sensibleHeatFluxOcean + &
+         latentHeatFluxOcean + &
+         longwaveUpOcean + &
+         longwaveDown + &
+         absorbedShortwaveOcean
+    openWaterHeatFlux = openWaterHeatFlux * (1.0_RKIND - iceAreaCell)
+
+    ! ice heat flux
+    iceHeatFlux = &
+         oceanHeatFlux + &
+         oceanShortwaveFlux
+
+    ! total heat flux
+    totalHeatFlux = openWaterHeatFlux + iceHeatFlux - oceanHeatFluxConvergence
+
+    !-----------------------------------------------------------------------------------
+    ! MPAS-Ocn frazil formation - mpas_ocn_frazil_forcing.F
+    !-----------------------------------------------------------------------------------
+    potential = oceanMixedLayerDepth * config_specific_heat_sea_water * rho_sw * (seaSurfaceTemperature - seaFreezingTemperature)
+
+    freezingEnergy = max(0.0_RKIND, -potential)
+    newFrazilIceThickness = freezingEnergy / (config_frazil_heat_of_fusion * config_frazil_ice_density)
+    newFrazilIceThickness = min(newFrazilIceThickness, oceanMixedLayerDepth * config_frazil_fractional_thickness_limit)
+    newThicknessWeightedSaltContent = newFrazilIceThickness * config_frazil_sea_ice_reference_salinity * 0.001_RKIND
+
+    frazilLayerThicknessTendency = - newFrazilIceThickness * (config_frazil_ice_density / seaiceDensitySeaWater)
+    frazilSalinityTendency = - newThicknessWeightedSaltContent
+    frazilTemperatureTendency =  + (newFrazilIceThickness * config_frazil_heat_of_fusion * config_frazil_ice_density) / (config_specific_heat_sea_water * rho_sw)
+
+    sumNewFrazilIceThickness = newFrazilIceThickness
+    accumulatedFrazilIceMass = sumNewFrazilIceThickness * config_frazil_ice_density
+
+    !-----------------------------------------------------------------------------------
+    ! Modify ocean state
+    !-----------------------------------------------------------------------------------
+
+    ! change in mixed layer depth
+    changeOceanMixedLayerDepth = (oceanFreshWaterFlux * timeStep) / seaiceDensitySeaWater + frazilLayerThicknessTendency
+    oceanMixedLayerDepth = oceanMixedLayerDepth + changeOceanMixedLayerDepth
+
+    ! change in sea surface temperature
+    changeSeaSurfaceTemperature = (totalHeatFlux * timeStep) / (oceanMixedLayerDepth * seaiceDensitySeaWater * seaiceSeaWaterSpecificHeat) + frazilTemperatureTendency / oceanMixedLayerDepth
+    seaSurfaceTemperature = seaSurfaceTemperature + changeSeaSurfaceTemperature - (changeOceanMixedLayerDepth * seaSurfaceTemperature) / oceanMixedLayerDepth
+
+    ! change in sea surface salinity
+    changeSeaSurfaceSalinity = (oceanSaltFlux * timeStep) / (oceanMixedLayerDepth * seaiceDensitySeaWater * 0.001_RKIND) + frazilSalinityTendency / oceanMixedLayerDepth
+    seaSurfaceSalinity = seaSurfaceSalinity + changeSeaSurfaceSalinity - (changeOceanMixedLayerDepth * seaSurfaceSalinity) / oceanMixedLayerDepth
+
+    ! compute potential to freeze or melt ice
+    !maxFreezingMeltingPotential = 1000.0_RKIND
+    !freezingMeltingPotential = ((seaFreezingTemperature - seaSurfaceTemperature) * seaiceDensitySeaWater * seaiceSeaWaterSpecificHeat * oceanMixedLayerDepth) / timeStep
+    !freezingMeltingPotential = min(max(freezingMeltingPotential,-maxFreezingMeltingPotential),maxFreezingMeltingPotential)
+
+    ! if sst is below freezing, reset sst to Tf
+    !if (seaSurfaceTemperature <= seaFreezingTemperature) seaSurfaceTemperature = seaFreezingTemperature
+
+    !-----------------------------------------------------------------------------------
+    ! ocn_comp_mct - export
+    !-----------------------------------------------------------------------------------
+    if (accumulatedFrazilIceMass > 0.0_RKIND) then
+       seaIceEnergy = accumulatedFrazilIceMass * config_frazil_heat_of_fusion
+    else
+       seaIceEnergy = min(rho_sw*cp_sw*oceanMixedLayerDepth*(seaFreezingTemperature - seaSurfaceTemperature), 0.0_RKIND)
+    endif
+
+    o2x_Fioo_q = seaIceEnergy / ocn_cpl_dt
+    o2x_Fioo_frazil = accumulatedFrazilIceMass / ocn_cpl_dt
+
+    !-----------------------------------------------------------------------------------
+    ! coupler
+    !-----------------------------------------------------------------------------------
+    x2i_Fioo_q = o2x_Fioo_q
+    x2i_Fioo_frazil = o2x_Fioo_frazil
+
+    !-----------------------------------------------------------------------------------
+    ! ice_comp_mct - import
+    !-----------------------------------------------------------------------------------
+    freezingMeltingPotential = x2i_Fioo_q
+    frazilMassFlux = x2i_Fioo_frazil
+
+    call seaice_frazil_mass(freezingMeltingPotential, frazilMassFluxRev, seaSurfaceSalinity)
+    frazilMassAdjust = frazilMassFlux-frazilMassFluxRev
+
+  end subroutine seaice_ocean_mixed_layer_e3sm
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_frazil_mass
+!
+!> \brief Calculate sea ice frazil formation from freezig potential
+!> \author Adrian K. Turner, LANL
+!> \date 9th July 2022
+!> \details Used in ice_comp_mct to determine frazil formation and
+!>  replicated here for use with the e3sm ocean coupling proxy
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_frazil_mass(freezingPotential, frazilMassFlux, seaSurfaceSalinity)
+
+    use ice_mushy_physics, only:  &
+         liquidus_temperature_mush, &
+         enthalpy_mush
+
+    use ice_colpkg_shared, only: &
+         dSin0_frazil,             &
+         phi_init
+
+    use seaice_constants, only: &
+         seaiceDensityIce
+
+    real (kind=RKIND),      intent(in)   :: freezingPotential
+    real (kind=RKIND),      intent(in)   :: seaSurfaceSalinity
+
+    real (kind=RKIND),      intent(out)  :: frazilMassFlux
+
+    real(kind=RKIND) :: &
+         Si0new,          &
+         Ti,              &
+         qi0new,          &
+         vi0new
+
+    if (freezingPotential > 0.0_RKIND) then
+
+       if (seaSurfaceSalinity > 2.0_RKIND * dSin0_frazil) then
+          Si0new = seaSurfaceSalinity - dSin0_frazil
+       else
+          Si0new = seaSurfaceSalinity**2 / (4.0_RKIND*dSin0_frazil)
+       endif
+       Ti = liquidus_temperature_mush(Si0new/phi_init)
+       qi0new = enthalpy_mush(Ti, Si0new)
+
+       frazilMassFlux = -freezingPotential*seaiceDensityIce/qi0new
+
+    else
+
+       frazilMassFlux = 0.0_RKIND
+
+    endif
+
+  end subroutine seaice_frazil_mass
 
 !-----------------------------------------------------------------------
 ! CICE tracer object
@@ -9486,6 +9870,41 @@ contains
     endif
 
   end subroutine check_column_package_configs
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_column_active_processes
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 14th September 2022
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_column_active_processes(domain)
+
+    use ice_colpkg, only: &
+         colpkg_init_active_processes
+
+    type(domain_type), intent(inout) :: domain
+
+    logical, pointer :: &
+         config_use_latent_processes, &
+         config_use_lateral_melt, &
+         config_use_congelation_basal_melt
+
+    call MPAS_pool_get_config(domain % configs, "config_use_latent_processes", config_use_latent_processes)
+    call MPAS_pool_get_config(domain % configs, "config_use_lateral_melt", config_use_lateral_melt)
+    call MPAS_pool_get_config(domain % configs, "config_use_congelation_basal_melt", config_use_congelation_basal_melt)
+
+    call colpkg_init_active_processes(&
+         config_use_latent_processes, &
+         config_use_lateral_melt, &
+         config_use_congelation_basal_melt)
+
+  end subroutine init_column_active_processes
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
