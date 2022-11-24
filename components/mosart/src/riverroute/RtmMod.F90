@@ -12,6 +12,7 @@ module RtmMod
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_sys_mod     , only : shr_sys_flush
   use shr_const_mod   , only : SHR_CONST_PI, SHR_CONST_CDAY
+  use seq_flds_mod    , only : rof_sed
   use rof_cpl_indices , only : nt_rtm, rtm_tracers, KW, DW 
   use RtmSpmd         , only : masterproc, npes, iam, mpicom_rof, ROFID, mastertask, &
                                MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
@@ -355,7 +356,13 @@ contains
        if (.not. inundflag .and. use_lnd_rof_two_way) then
           call shr_sys_abort(trim(subname)//' inundation model must be turned on for land river two way coupling')
        end if
+       if(.not.(rof_sed) .and. sediflag) then
+           write(iulog,*) 'sediflag can only be effective when rof_sed is set as .true.'
+           sediflag = .false.
+       end if
+
     end if
+    
 
     call mpi_bcast (coupling_period,   1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (delt_mosart    ,   1, MPI_INTEGER, 0, mpicom_rof, ier)
@@ -425,7 +432,7 @@ contains
     Tctl%DLevelH2R     = DLevelH2R
     Tctl%DLevelR       = DLevelR
     if(.not.(Tctl%RoutingMethod==KW .or. Tctl%RoutingMethod==DW)) then 
-	   call shr_sys_abort('Error in routing method setup! There are only 2 options available: 1==KW, 2==DW')
+       call shr_sys_abort('Error in routing method setup! There are only 2 options available: 1==KW, 2==DW')
     end if
 
     if (inundflag) then
@@ -1826,7 +1833,7 @@ contains
        endif
        call t_stopf('mosarti_reservoir_sed_init')
     end if
-	
+    
     !-------------------------------------------------------
     ! Read restart/initial info
     !-------------------------------------------------------
@@ -2001,7 +2008,7 @@ contains
                                  TRunoff%wt_al(nr,nt) + TRunoff%wr_al(nr,nt))
         enddo
     enddo
-	end if
+    end if
 
     call t_stopf('mosarti_restart')
 
@@ -2265,7 +2272,7 @@ contains
           budget_terms(bv_volt_i,nt) = budget_terms( bv_volt_i,nt) + rtmCTL%volr(nr,nt)
           budget_terms(bv_wt_i,nt) = budget_terms(bv_wt_i,nt) + TRunoff%wt(nr,nt)
           budget_terms(bv_wr_i,nt) = budget_terms(bv_wr_i,nt) + TRunoff%wr(nr,nt)
-          budget_terms(bv_wh_i,nt) = budget_terms(bv_wh_i,nt) + TRunoff%wh(nr,nt)*rtmCTL%area(nr)
+          budget_terms(bv_wh_i,nt) = budget_terms(bv_wh_i,nt) + TRunoff%wh(nr,nt)*rtmCTL%area(nr)          
           budget_terms(bv_t_al_i,nt) = budget_terms(bv_t_al_i,nt) + TRunoff%wt_al(nr,nt)
           budget_terms(bv_r_al_i,nt) = budget_terms(bv_r_al_i,nt) + TRunoff%wr_al(nr,nt)
           budget_terms(br_qsur,nt) = budget_terms(br_qsur,nt) + rtmCTL%qsur(nr,nt)*delt_coupling     ! (rtmCTL%qsur 's unit is m^3/s. --Inund.)
@@ -2313,13 +2320,13 @@ contains
              budget_terms(bv_dstor_i,nt) = budget_terms(bv_dstor_i,nt) + StorWater%storage(idam)
           enddo
           
-		  if (sediflag) then
+          if (sediflag) then
              do nt = 1,nt_rtm
              do nr = rtmCTL%begr,rtmCTL%endr
                 budget_terms(bv_dstor_i,nt) = budget_terms(bv_dstor_i,nt) + Tres%wres(nr,nt)
              enddo
              enddo
-		  end if
+          end if
        endif
        call t_stopf('mosartr_budget')
     endif ! budget_check
@@ -2525,14 +2532,25 @@ contains
     ! --- convert TRunoff fields from m3/s to m/s before calling Euler
     !-----------------------------------
 
-    do nt = 1,nt_rtm
-    do nr = rtmCTL%begr,rtmCTL%endr
-       TRunoff%qsur(nr,nt) = TRunoff%qsur(nr,nt) / rtmCTL%area(nr)
-       TRunoff%qsub(nr,nt) = TRunoff%qsub(nr,nt) / rtmCTL%area(nr)
-       TRunoff%qgwl(nr,nt) = TRunoff%qgwl(nr,nt) / rtmCTL%area(nr)
-       TRunoff%qdem(nr,nt) = TRunoff%qdem(nr,nt) / rtmCTL%area(nr) !m3 to m
-    enddo
-    enddo
+    if(sediflag) then
+       do nt = 1,nt_rtm
+       do nr = rtmCTL%begr,rtmCTL%endr
+          TRunoff%qsur(nr,nt) = TRunoff%qsur(nr,nt) / rtmCTL%area(nr)
+          TRunoff%qsub(nr,nt) = TRunoff%qsub(nr,nt) / rtmCTL%area(nr)
+          TRunoff%qgwl(nr,nt) = TRunoff%qgwl(nr,nt) / rtmCTL%area(nr)
+          TRunoff%qdem(nr,nt) = TRunoff%qdem(nr,nt) / rtmCTL%area(nr) !m3 to m
+       enddo
+       enddo
+    else
+       do nt = nt_nliq,nt_nice
+       do nr = rtmCTL%begr,rtmCTL%endr
+          TRunoff%qsur(nr,nt) = TRunoff%qsur(nr,nt) / rtmCTL%area(nr)
+          TRunoff%qsub(nr,nt) = TRunoff%qsub(nr,nt) / rtmCTL%area(nr)
+          TRunoff%qgwl(nr,nt) = TRunoff%qgwl(nr,nt) / rtmCTL%area(nr)
+          TRunoff%qdem(nr,nt) = TRunoff%qdem(nr,nt) / rtmCTL%area(nr) !m3 to m
+       enddo
+       enddo
+    end if
 
     do ns = 1,nsub
 
@@ -2604,21 +2622,38 @@ contains
        !-----------------------------------
        ! accumulate local flow field
        !-----------------------------------
-
-       do nt = 1,nt_rtm
-       do nr = rtmCTL%begr,rtmCTL%endr
-          flow(nr,nt) = flow(nr,nt) + TRunoff%flow(nr,nt)
-          eroup_lagi(nr,nt) = eroup_lagi(nr,nt) + TRunoff%eroup_lagi(nr,nt)
-          eroup_lagf(nr,nt) = eroup_lagf(nr,nt) + TRunoff%eroup_lagf(nr,nt)
-          erowm_regi(nr,nt) = erowm_regi(nr,nt) + TRunoff%erowm_regi(nr,nt)
-          erowm_regf(nr,nt) = erowm_regf(nr,nt) + TRunoff%erowm_regf(nr,nt)
-          eroutup_avg(nr,nt) = eroutup_avg(nr,nt) + TRunoff%eroutup_avg(nr,nt)
-          erlat_avg(nr,nt) = erlat_avg(nr,nt) + TRunoff%erlat_avg(nr,nt)
-          ehexch_avg(nr,nt) = ehexch_avg(nr,nt) + TRunoff%ehexch_avg(nr,nt)
-          etexch_avg(nr,nt) = etexch_avg(nr,nt) + TRunoff%etexch_avg(nr,nt)
-          erexch_avg(nr,nt) = erexch_avg(nr,nt) + TRunoff%erexch_avg(nr,nt)
-       enddo
-       enddo
+       
+       if(sediflag) then
+          do nt = 1,nt_rtm
+          do nr = rtmCTL%begr,rtmCTL%endr
+             flow(nr,nt) = flow(nr,nt) + TRunoff%flow(nr,nt)
+             eroup_lagi(nr,nt) = eroup_lagi(nr,nt) + TRunoff%eroup_lagi(nr,nt)
+             eroup_lagf(nr,nt) = eroup_lagf(nr,nt) + TRunoff%eroup_lagf(nr,nt)
+             erowm_regi(nr,nt) = erowm_regi(nr,nt) + TRunoff%erowm_regi(nr,nt)
+             erowm_regf(nr,nt) = erowm_regf(nr,nt) + TRunoff%erowm_regf(nr,nt)
+             eroutup_avg(nr,nt) = eroutup_avg(nr,nt) + TRunoff%eroutup_avg(nr,nt)
+             erlat_avg(nr,nt) = erlat_avg(nr,nt) + TRunoff%erlat_avg(nr,nt)
+             ehexch_avg(nr,nt) = ehexch_avg(nr,nt) + TRunoff%ehexch_avg(nr,nt)
+             etexch_avg(nr,nt) = etexch_avg(nr,nt) + TRunoff%etexch_avg(nr,nt)
+             erexch_avg(nr,nt) = erexch_avg(nr,nt) + TRunoff%erexch_avg(nr,nt)
+          enddo
+          enddo
+       else
+          do nt = nt_nliq,nt_nice
+          do nr = rtmCTL%begr,rtmCTL%endr
+             flow(nr,nt) = flow(nr,nt) + TRunoff%flow(nr,nt)
+             eroup_lagi(nr,nt) = eroup_lagi(nr,nt) + TRunoff%eroup_lagi(nr,nt)
+             eroup_lagf(nr,nt) = eroup_lagf(nr,nt) + TRunoff%eroup_lagf(nr,nt)
+             erowm_regi(nr,nt) = erowm_regi(nr,nt) + TRunoff%erowm_regi(nr,nt)
+             erowm_regf(nr,nt) = erowm_regf(nr,nt) + TRunoff%erowm_regf(nr,nt)
+             eroutup_avg(nr,nt) = eroutup_avg(nr,nt) + TRunoff%eroutup_avg(nr,nt)
+             erlat_avg(nr,nt) = erlat_avg(nr,nt) + TRunoff%erlat_avg(nr,nt)
+             ehexch_avg(nr,nt) = ehexch_avg(nr,nt) + TRunoff%ehexch_avg(nr,nt)
+             etexch_avg(nr,nt) = etexch_avg(nr,nt) + TRunoff%etexch_avg(nr,nt)
+             erexch_avg(nr,nt) = erexch_avg(nr,nt) + TRunoff%erexch_avg(nr,nt)
+          enddo
+          enddo
+       end if
 
 
        if (inundflag) then
@@ -2845,13 +2880,13 @@ contains
              budget_terms(bv_dstor_f,nt) = budget_terms(bv_dstor_f,nt) + StorWater%storage(idam)
           enddo
           
-		  if(sediflag) then
+          if(sediflag) then
              do nt = 1,nt_rtm
              do nr = rtmCTL%begr,rtmCTL%endr
                 budget_terms(bv_dstor_f,nt) = budget_terms(bv_dstor_f,nt) + Tres%wres(nr,nt)
              enddo
              enddo
-		  end if
+          end if
        endif
 
        if (inundflag) then

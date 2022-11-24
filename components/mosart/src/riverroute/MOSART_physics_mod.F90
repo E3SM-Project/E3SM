@@ -768,10 +768,6 @@ MODULE MOSART_physics_mod
     end if
     TRunoff%dwh(iunit,nt) = (TRunoff%qsur(iunit,nt) + TRunoff%ehout(iunit,nt)) 
 
-    if(isnan(TRunoff%wh(iunit,nt)) .or. isnan(TRunoff%dwh(iunit,nt))) then
-        write(unit=2101,fmt="(i10, 3(e15.4), 2(f12.4))") iunit, TRunoff%qsur(iunit,nt), TRunoff%ehout(iunit,nt), TRunoff%yh(iunit,nt), TUnit%hslpsqrt(iunit), TUnit%nh(iunit) 
-    end if
-
   end subroutine hillslopeRouting
 
 !-----------------------------------------------------------------------

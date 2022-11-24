@@ -668,6 +668,9 @@ contains
     rtmCTL%inundhf(:)      = 0._r8
     rtmCTL%inundff(:)      = 0._r8
     rtmCTL%inundffunit(:)  = 0._r8
+    rtmCTL%wh(:,:)         = 0._r8
+    rtmCTL%wt(:,:)         = 0._r8
+    rtmCTL%wr(:,:)         = 0._r8
     rtmCTL%qsur(:,:)       = 0._r8
     rtmCTL%qsub(:,:)       = 0._r8
     rtmCTL%qgwl(:,:)       = 0._r8

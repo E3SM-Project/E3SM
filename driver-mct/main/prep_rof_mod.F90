@@ -496,7 +496,6 @@ contains
           index_l2x_Flrl_irrig  = mct_aVect_indexRA(l2x_r,'Flrl_irrig' )
        end if
        index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_r,'Flrl_rofi' )
-       index_l2x_Flrl_rofmud = mct_aVect_indexRA(l2x_r,'Flrl_rofmud' )
        if(trim(cime_model) .eq. 'e3sm') then
           index_l2x_Flrl_demand = mct_aVect_indexRA(l2x_r,'Flrl_demand' )
           index_x2r_Flrl_demand = mct_aVect_indexRA(x2r_r,'Flrl_demand' )
@@ -517,7 +516,10 @@ contains
        endif
 
        index_l2x_Flrl_rofl_16O = mct_aVect_indexRA(l2x_r,'Flrl_rofl_16O', perrWith='quiet' )
-       index_x2r_Flrl_rofmud = mct_aVect_indexRA(x2r_r,'Flrl_rofmud' )
+	   if (rof_sed) then
+          index_l2x_Flrl_rofmud = mct_aVect_indexRA(l2x_r,'Flrl_rofmud' )
+          index_x2r_Flrl_rofmud = mct_aVect_indexRA(x2r_r,'Flrl_rofmud' )
+	   end if
 
        if ( index_l2x_Flrl_rofl_16O /= 0 ) flds_wiso_rof = .true.
        if ( flds_wiso_rof ) then
@@ -562,9 +564,11 @@ contains
           mrgstr(index_x2r_Flrl_irrig) = trim(mrgstr(index_x2r_Flrl_irrig))//' = '// &
                trim(fracstr)//'*l2x%Flrl_irrig'
        end if
-       mrgstr(index_x2r_Flrl_rofmud) = trim(mrgstr(index_x2r_Flrl_rofmud))//' = '// &
-            trim(fracstr)//'*l2x%Flrl_rofmud'
-       if(trim(cime_model) .eq. 'e3sm') then
+	   if (rof_sed) then
+          mrgstr(index_x2r_Flrl_rofmud) = trim(mrgstr(index_x2r_Flrl_rofmud))//' = '// &
+               trim(fracstr)//'*l2x%Flrl_rofmud'
+       end if
+	   if(trim(cime_model) .eq. 'e3sm') then
           mrgstr(index_x2r_Flrl_Tqsur) = trim(mrgstr(index_x2r_Flrl_Tqsur))//' = '//'l2x%Flrl_Tqsur'
           mrgstr(index_x2r_Flrl_Tqsur) = trim(mrgstr(index_x2r_Flrl_Tqsub))//' = '//'l2x%Flrl_Tqsub'
        endif
@@ -640,8 +644,10 @@ contains
        if (have_irrig_field) then
           x2r_r%rAttr(index_x2r_Flrl_irrig,i) = l2x_r%rAttr(index_l2x_Flrl_irrig,i) * frac
        end if
-       x2r_r%rAttr(index_x2r_Flrl_rofmud,i) = l2x_r%rAttr(index_l2x_Flrl_rofmud,i) * frac
-       if(trim(cime_model) .eq. 'e3sm') then
+	   if (rof_sed) then
+          x2r_r%rAttr(index_x2r_Flrl_rofmud,i) = l2x_r%rAttr(index_l2x_Flrl_rofmud,i) * frac
+       end if
+	   if(trim(cime_model) .eq. 'e3sm') then
          x2r_r%rAttr(index_x2r_Flrl_Tqsur,i) = l2x_r%rAttr(index_l2x_Flrl_Tqsur,i)
          x2r_r%rAttr(index_x2r_Flrl_Tqsub,i) = l2x_r%rAttr(index_l2x_Flrl_Tqsub,i)
        endif
