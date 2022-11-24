@@ -353,10 +353,10 @@ struct CaarFunctorImpl {
       GPTLstop("caar compute");
     }
 
-    GPTLstart("caar dp3d");
-    Kokkos::parallel_for("caar loop dp3d limiter", m_policy_dp3d_lim, *this);
-    Kokkos::fence();
-    GPTLstop("caar dp3d");
+//    GPTLstart("caar dp3d");
+//    Kokkos::parallel_for("caar loop dp3d limiter", m_policy_dp3d_lim, *this);
+//    Kokkos::fence();
+//    GPTLstop("caar dp3d");
 
     profiling_pause();
   }
