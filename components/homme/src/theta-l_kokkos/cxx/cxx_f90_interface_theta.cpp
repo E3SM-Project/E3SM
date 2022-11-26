@@ -17,6 +17,7 @@
 #include "HommexxEnums.hpp"
 #include "HybridVCoord.hpp"
 #include "HyperviscosityFunctor.hpp"
+#include "LimiterFunctor.hpp"
 #include "ReferenceElement.hpp"
 #include "SimulationParams.hpp"
 #include "SphereOperators.hpp"
@@ -345,12 +346,15 @@ void init_functors_c (const bool& allocate_buffer)
 #ifdef HOMME_ENABLE_COMPOSE
   else                           c.create_if_not_there<ComposeTransport>();
 #endif
-  auto& hvf  = c.create_if_not_there<HyperviscosityFunctor>();
-  auto& ff   = c.create_if_not_there<ForcingFunctor>();
-  auto& diag = c.create_if_not_there<Diagnostics> (elems.num_elems(),params.theta_hydrostatic_mode);
-  auto& vrm  = c.create_if_not_there<VerticalRemapManager>(elems.num_elems());
+  auto& hvf     = c.create_if_not_there<HyperviscosityFunctor>();
+  auto& ff      = c.create_if_not_there<ForcingFunctor>();
+  auto& diag    = c.create_if_not_there<Diagnostics> (elems.num_elems(),params.theta_hydrostatic_mode);
+  auto& vrm     = c.create_if_not_there<VerticalRemapManager>(elems.num_elems());
+  auto& limiter = c.create_if_not_there<LimiterFunctor>(elems,hvcoord,params);
 
-  auto& fbm  = c.create_if_not_there<FunctorsBuffersManager>();
+  auto& fbm     = c.create_if_not_there<FunctorsBuffersManager>();
+
+//why do some functors have 2 constructors?
 
   // If any Functor was constructed only partially, setup() must be called.
   // This does not apply to Diagnostics or DirkFunctor since they only
@@ -401,6 +405,7 @@ void init_functors_c (const bool& allocate_buffer)
     fbm.request_size(diag.requested_buffer_size());
     fbm.request_size(ff.requested_buffer_size());
     fbm.request_size(vrm.requested_buffer_size());
+    fbm.request_size(limiter.requested_buffer_size());
     if (need_dirk) {
       const auto& dirk = Context::singleton().get<DirkFunctor>();
       fbm.request_size(dirk.requested_buffer_size());
@@ -421,6 +426,7 @@ void init_functors_c (const bool& allocate_buffer)
   diag.init_buffers(fbm);
   ff.init_buffers(fbm);
   vrm.init_buffers(fbm);
+  limiter.init_buffers(fbm);
   if (need_dirk) {
     auto& dirk = Context::singleton().get<DirkFunctor>();
     dirk.init_buffers(fbm);

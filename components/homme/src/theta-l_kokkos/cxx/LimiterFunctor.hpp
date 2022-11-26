@@ -16,9 +16,9 @@
 #include "HybridVCoord.hpp"
 #include "KernelVariables.hpp"
 #include "ReferenceElement.hpp"
-#include "RKStageData.hpp"
+//#include "RKStageData.hpp"
 #include "SimulationParams.hpp"
-#include "SphereOperators.hpp"
+//#include "SphereOperators.hpp"
 #include "kokkos_utils.hpp"
 
 #include "utilities/SubviewUtils.hpp"
@@ -34,24 +34,22 @@ namespace Homme {
 // Theta does not use tracers in caar. A fwd decl is enough here
 //struct Tracers;
 
-struct CaarFunctorImpl {
+struct LimiterFunctor {
 
   struct Buffers {
     static constexpr int num_3d_scalar_mid_buf = 1;
     ExecViewUnmanaged<Scalar*    [NP][NP][NUM_LEV]  >   vort;
   };
 
-  // The 'm_data.scale2' coeff used for the calculation of w_tens and phi_tens must be replaced
-  // with 'm_data.scale1' on the surface (k=NUM_INTERFACE_LEV). To allow pack-level operations
-  // in the code, we store a pack containing [[scale2 scale2 ...]  scale1 [garbage] ], to be used
-  // at pack NUM_LEV_P
-
+  int                 m_np1;
   const int           m_num_elems;
   const bool          m_theta_hydrostatic_mode;
 
-  ElementsState         m_state;
-  EquationOfState       m_eos;
-  Buffers               m_buffers;
+  HybridVCoord        m_hvcoord;
+  ElementsState       m_state;
+  //EquationOfState     m_eos;
+  Buffers             m_buffers;
+  ElementsGeometry    m_geometry;
 
   struct TagDp3dLimiter {};
 
@@ -68,43 +66,40 @@ struct CaarFunctorImpl {
 
   TeamUtils<ExecSpace> m_tu;
 
-  Kokkos::Array<std::shared_ptr<BoundaryExchange>, NUM_TIME_LEVELS> m_bes;
-
-  LimiterFunctor(const Elements &elements, const SimulationParams& params)
+  LimiterFunctor(const Elements &elements, const HybridVCoord &hvcoord, const SimulationParams& params)
       : m_num_elems(elements.num_elems())
       , m_theta_hydrostatic_mode(params.theta_hydrostatic_mode)
+      , m_hvcoord(hvcoord)
       , m_state(elements.m_state)
+      , m_geometry(elements.m_geometry)
       , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(m_num_elems))
-      , m_tu(m_policy_pre)
+      , m_tu(m_policy_dp3d_lim)
   {
     // Initialize equation of state
-    m_eos.init(params.theta_hydrostatic_mode,m_hvcoord);
-
-    // Make sure the buffers in sph op are large enough for this functor's needs
-    m_sphere_ops.allocate_buffers(m_tu);
+    //m_eos.init(params.theta_hydrostatic_mode,m_hvcoord);
+    m_np1 = -1;
   }
 
-  LimiterFunctor(const int num_elems, const SimulationParams& params)
-      : m_num_elems(num_elems)
-      , m_theta_hydrostatic_mode(params.theta_hydrostatic_mode)
-      , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(m_num_elems))
-      , m_tu(m_policy_pre)
-  {}
+//  LimiterFunctor(const int num_elems, const SimulationParams& params)
+//      : m_num_elems(num_elems)
+//      , m_theta_hydrostatic_mode(params.theta_hydrostatic_mode)
+//      , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(m_num_elems))
+//      , m_tu(m_policy_pre)
+//  {}
 
 
-  void setup (const Elements &elements, const Tracers &/*tracers*/,
-              const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
-              const SphereOperators &sphere_ops)
-  {
-    assert(m_num_elems == elements.num_elems()); // Sanity check
-    m_state = elements.m_state;
-
-    // Initialize equation of state
-    m_eos.init(m_theta_hydrostatic_mode,m_hvcoord);
-  }
+//  void setup (const Elements &elements, const Tracers &/*tracers*/,
+//              const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
+//              const SphereOperators &sphere_ops)
+//  {
+//    assert(m_num_elems == elements.num_elems()); // Sanity check
+//    m_state = elements.m_state;
+//    // Initialize equation of state
+//    m_eos.init(m_theta_hydrostatic_mode,m_hvcoord);
+//  }
 
   int requested_buffer_size () const {
-    // Ask the buffers manager to allocate enough buffers to satisfy Caar's needs
+    // Ask the buffers manager to allocate enough buffers
     const int nslots = m_tu.get_num_ws_slots();
 
     int num_scalar_mid_buf = Buffers::num_3d_scalar_mid_buf;
@@ -126,12 +121,13 @@ struct CaarFunctorImpl {
   }
 
 
-  void run ()
+  void run (const int& tl)
   {
 //not sure
     profiling_resume();
 
     GPTLstart("caar limiter");
+    m_np1 = tl;
     Kokkos::parallel_for("caar loop dp3d limiter", m_policy_dp3d_lim, *this);
 // not sure
     Kokkos::fence();
@@ -157,7 +153,7 @@ struct CaarFunctorImpl {
       const auto& spheremp = m_geometry.m_spheremp(kv.ie,igp,jgp);
 
       // Check if the minimum dp3d in this column is blow a certain threshold
-      auto dp = Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1,igp,jgp);
+      auto dp = Homme::subview(m_state.m_dp3d,kv.ie,m_np1,igp,jgp);
       auto& dp0 = m_hvcoord.dp0;
       auto diff = Homme::subview(m_buffers.vort,kv.team_idx,igp,jgp);
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
@@ -173,7 +169,7 @@ struct CaarFunctorImpl {
         result = result<=diff_as_real(k) ? result : diff_as_real(k);
       }, reducer);
 
-      auto vtheta_dp = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1,igp,jgp);
+      auto vtheta_dp = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_np1,igp,jgp);
       if (min_diff<0) {
         // Compute vtheta = vtheta_dp/dp
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
@@ -243,4 +239,4 @@ struct CaarFunctorImpl {
 
 } // Namespace Homme
 
-#endif // HOMMEXX_CAAR_FUNCTOR_IMPL_HPP
+#endif // HOMMEXX_LIMITER_FUNCTOR_HPP
