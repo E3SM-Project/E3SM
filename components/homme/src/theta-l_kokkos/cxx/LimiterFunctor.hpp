@@ -137,13 +137,15 @@ struct LimiterFunctor {
   }
 
 
+//NEED TO THROW IN SOME MESSAGE
+
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagDp3dLimiter&, const TeamMember &team) const {
     KernelVariables kv(team, m_tu);
 
     // TODO: make this less hard-coded maybe?
     constexpr Real dp3d_thresh = 0.125;
-    constexpr Real vtheta_thresh = 100; // Kelvin
+    constexpr double vtheta_thresh = 400; // Kelvin
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {

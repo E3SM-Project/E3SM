@@ -1803,12 +1803,12 @@ contains
   warn=.false. 
   do k=1,nlev
      if ( minval(dp3d(:,:,k)) < dp3d_thresh*dp0(k)) then
-#ifndef HOMMEXX_BFB_TESTING
+!#ifndef HOMMEXX_BFB_TESTING
         ! In bfb unit tests, we use (semi-)random inputs, so we expect to hit this.
         ! Still, we don't want to fill up the console output
         write(iulog,*) 'WARNING:CAAR: dp3d too small. dt_remap may be too large'
         write(iulog,*) 'k,dp3d(k), dp0: ',k,minval(dp3d(:,:,k)),dp0(k)
-#endif
+!#endif
         warn=.true.
      endif
   enddo
@@ -1862,12 +1862,12 @@ contains
   warn=.false.
   do k=1,nlev
      if ( minval(vtheta_dp(:,:,k)-vtheta_thresh*dp3d(:,:,k))   <  0) then
-#ifndef HOMMEXX_BFB_TESTING
+!#ifndef HOMMEXX_BFB_TESTING
         ! In bfb unit tests, we use (semi-)random inputs, so we expect to hit this.
         ! Still, we don't want to fill up the console output
         write(iulog,*) 'WARNING:CAAR: theta<',vtheta_thresh,' applying limiter'
         write(iulog,*) 'k,vtheta(k): ',k,minval(vtheta_dp(:,:,k)/dp3d(:,:,k))
-#endif
+!#endif
         warn=.true.
      endif
   enddo
