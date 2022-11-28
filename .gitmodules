@@ -71,3 +71,7 @@
 	path = components/ww3/src/WW3
 	url = git@github.com:E3SM-Project/WW3.git
 	branch = e3sm
+[submodule "components/eam/src/physics/crm/pam"]
+	path = components/eam/src/physics/crm/pam
+	url = git@github.com:E3SM-Project/PAM.git
+	branch = master
