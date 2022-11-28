@@ -24,8 +24,10 @@ use physical_constants,   only: bubble_const1, bubble_const2, bubble_const3, bub
 
 implicit none
 
-!kessler constants, put into physonst mod
+!kessler constants, put into physconst mod
 real(rl), parameter:: k1=0.001,k2=2.2,k3=0.875,a1=0.00001 !a1 should be 0.001
+real(rl), parameter:: r1=0.525,r2=5.4e5,r3=2.55e6
+real(rl), parameter:: r4=1.6,r5=124.9,r6=0.2046
 
 contains
 
@@ -80,32 +82,16 @@ subroutine accrecion_and_accumulation(qcdry,qrdry,dt)
     qrdry(k) = qrdry(k) + change
   enddo
 
-!print *, 'max of qc', maxval(qcdry)
-!print *, k1,a1
-!if(maxval(qcdry)> 0.001)then
-!print *, 'hey you!!!!!!!!!!!'
-!endif
-
-
   !auto-accumulation step Ar = max ( k1 (qc - a), 0 )
   do k=1,nlev
     change = dt * max (k1*(qcdry(k) - a1), 0.0)
     qcdry(k) = qcdry(k) - change
     qrdry(k) = qrdry(k) + change
-
-!if (change > 0.0) then
-!print *, 'hey rain happned!'
-!stop
-!endif
-!if(qcdry(k)> 0.001)then
-!print *, "change is ", change
-!endif
-
-
   enddo
 
 end subroutine accrecion_and_accumulation
 
+!does not need moisture
 subroutine get_geo_from_drydp(Tempe, dpdry, pidry, zbottom, zi, zm, dz)
 
   real(rl), dimension(nlevp), intent(out) :: zi
@@ -231,15 +217,63 @@ subroutine recompute_pressures(qvdry,qcdry,qrdry,dpdry,pidry,pprime,pi,pnh,dp)
 end subroutine recompute_pressures
 
 
-subroutine condensation_and_back_again(qvdry,qcdry,qrdry,tempe,dpdry,dp,pi,pnh,dt)
+
+
+subroutine rain_evaporation(qvdry,qcdry,qrdry,tempe,zbottom,dpdry,dp,pidry,pi,pnh)
+
+  real(rl), dimension(nlev), intent(in)    :: qcdry
+  real(rl), dimension(nlev), intent(inout) :: qvdry,qrdry,tempe
+  real(rl), dimension(nlev), intent(in)    :: dpdry, dp, pidry, pi, pnh
+  real(rl),                  intent(in)    :: zbottom
+
+  integer  :: k
+  real(rl) :: dq, qsat, qsatdry, cval
+  real(rl), dimension(nlev)  :: zm,dz,rhodry
+  real(rl), dimension(nlevp) :: zi
+
+  !we can use wet pho, but we will ignore thah here
+  call get_geo_from_drydp(tempe, dpdry, pidry, zbottom, zi, zm, dz)
+  rhodry = dpdry / dz / gravit
+
+  do k=1, nlev
+
+    !r1=0.525,r2=5.4e5,r3=2.55e6 
+    !r4=1.6,r5=124.9,r6=0.2046
+
+    call qsat_kessler2(pnh(k), tempe(k), qsat)
+    qsatdry = qsat*dp(k)/dpdry(k)
+
+    cval = r4 + r5*( (rhodry(k)*qrdry(k))**r6 )
+    dq = (1 - qvdry(k)/qsatdry) * cval**r1
+    dq = dq / ( r2 + r3/pnh(k)/qsat ) / rhodry(k)
+    !change the sign to conform to the phase_change... routine
+    dq = -dq
+    dq = max( dq, -qcdry(k) )
+
+    ! new values: qv = qv - dq, qr = qr + dq
+    !notice liquid_in_use var is now qrdry
+    call phase_change_gas_liquid_level( &
+         qvdry(k),qrdry(k),qcdry(k),dq,tempe(k),dpdry(k),dp(k),pi(k),pnh(k) )
+
+!if (dq > 0) then
+! print *, 'yay, condensation',' qc', qcdry(k)
+!endif
+
+  enddo
+
+end subroutine rain_evaporation
+
+
+
+
+subroutine condensation_and_back_again(qvdry,qcdry,qrdry,tempe,dpdry,dp,pi,pnh)
 
   real(rl), dimension(nlev), intent(in)    :: qrdry
   real(rl), dimension(nlev), intent(inout) :: qvdry,qcdry,tempe
   real(rl), dimension(nlev), intent(in)    :: dpdry, dp, pi, pnh
-  real(rl),                  intent(in)    :: dt
 
   integer  :: k
-  real(rl) :: dq, qsat, qsatdry, T_new, cptermold, cptermnew, Lold, Lnew
+  real(rl) :: dq, qsat, qsatdry
 
   do k=1, nlev
     call qsat_kessler2(pnh(k), tempe(k), qsat)
@@ -254,19 +288,8 @@ subroutine condensation_and_back_again(qvdry,qcdry,qrdry,tempe,dpdry,dp,pi,pnh,d
     endif
     ! new values: qv = qv - dq, qc = qc + dq
 
-    cptermold = cpdry + cpv *  qvdry(k)       + cl * (qcdry(k) + qrdry(k))
-    cptermnew = cpdry + cpv * (qvdry(k) - dq) + cl * (qcdry(k) + qrdry(k) + dq)
-
-    Lold = (latvap+latice) * qvdry(k)     + latice * (qcdry(k) + qrdry(k))
-    Lnew = (latvap+latice) *(qvdry(k)-dq) + latice * (qcdry(k) + qrdry(k) + dq)
-
-    !dpdry is cancelled from both sides
-    T_new = ( tempe(k) * cptermold + Lold - Lnew ) / cptermnew 
-
-    tempe(k) = T_new
-
-    qvdry(k) = qvdry(k) - dq
-    qcdry(k) = qcdry(k) + dq
+    call phase_change_gas_liquid_level( &
+         qvdry(k),qcdry(k),qrdry(k),dq,tempe(k),dpdry(k),dp(k),pi(k),pnh(k) )
 
 !if (dq > 0) then
 ! print *, 'yay, condensation',' qc', qcdry(k)
@@ -275,6 +298,39 @@ subroutine condensation_and_back_again(qvdry,qcdry,qrdry,tempe,dpdry,dp,pi,pnh,d
   enddo
 
 end subroutine condensation_and_back_again
+
+
+! convension: vapor = vapor - dq, liquid_in_use = liquid_in_use + dq
+subroutine phase_change_gas_liquid_level(vapor,liquid_in_use,liquid_not_in_use,dq,tempe,dpdry,dp,pi,pnh)
+
+  real(rl),  intent(in)    :: liquid_not_in_use
+  real(rl),  intent(inout) :: vapor,liquid_in_use,tempe
+  real(rl),  intent(in)    :: dpdry, dp, pi, pnh
+  real(rl),  intent(in)    :: dq
+
+  integer  :: k
+  real(rl) :: T_new, cptermold, cptermnew, Lold, Lnew
+
+  cptermold = cpdry     + cpv *  vapor     + cl * (liquid_in_use + liquid_not_in_use)
+  cptermnew = cptermold + cpv * ( -dq )    + cl * dq
+
+  Lold =        (latvap+latice) * vapor    + latice * (liquid_in_use + liquid_not_in_use)
+  Lnew = Lold + (latvap+latice) * ( -dq )  + latice * dq
+
+  !dpdry is cancelled from both sides
+  T_new = ( tempe * cptermold + Lold - Lnew ) / cptermnew
+
+  tempe = T_new
+
+  vapor = vapor - dq
+  liquid_in_use = liquid_in_use + dq
+
+!if (dq > 0) then
+! print *, 'yay, condensation',' qc', qcdry(k)
+!endif
+
+end subroutine phase_change_gas_liquid_level
+
 
 
 subroutine compute_energy(qvdry,qcdry,qrdry,tempe,dpdry,pi,zbottom,energy)
@@ -299,7 +355,20 @@ subroutine compute_energy(qvdry,qcdry,qrdry,tempe,dpdry,pi,zbottom,energy)
 end subroutine compute_energy
 
 
+subroutine compute_mass(qvdry,qcdry,qrdry,dpdry,mass)
 
+  real(rl), dimension(nlev), intent(in)    :: qvdry,qcdry,qrdry
+  real(rl), dimension(nlev), intent(in)    :: dpdry
+  real(rl),                  intent(inout) :: mass
+
+  integer  :: k
+
+  mass = 0.0
+  do k=1,nlev
+    mass = mass + dpdry(k)*( 1.0 + qvdry(k) + qcdry(k) + qrdry(k) )
+  enddo
+
+end subroutine compute_mass
 
 
 

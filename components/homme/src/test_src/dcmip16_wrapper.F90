@@ -619,8 +619,8 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
 !  !kessler constants
 !  real(rl), parameter:: k1=0.001,k2=2.2,k3=0.875,a1=0.001
-  real(rl), parameter:: tol = 1e-12
-  real(rl) :: energy_before, energy_after, energy_start_timestep
+  real(rl), parameter:: tol_energy = 1e-12, tol_mass = 1e-12
+  real(rl) :: energy_before, energy_after, energy_start_timestep, mass_before, mass_after, mass_start_timestep
 
 
   if (qsize .ne. 3) call abortmp('ERROR: moist bubble test requires qsize=3')
@@ -781,19 +781,28 @@ print *, 'precl',  precl(i,j,ie), vapor_mass_change, rhow
           ! sedimentation ----------------------------------------------------------
           ! right now nh term is not used, so, no need to recompute wet hydro pressure and total nh pressure
           call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,pi,zbottom,energy_before)
-          call sedimentation(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,pidry,zbottom,loc_mass_p,loc_energy_p,dt)
+          call sedimentation(qvdry_c,qcdry_c,qrdry_c, T_c, dpdry_c,pidry, zbottom, loc_mass_p,loc_energy_p,dt)
           call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,pi,zbottom,energy_after)
-          print *, 'enbefore - enafter(up to flux)', (energy_before - energy_after - loc_energy_p)/energy_before
+          !print *, 'enbefore - enafter(up to flux)', (energy_before - energy_after - loc_energy_p)/energy_before
           mass_prect = mass_prect + loc_mass_p; energy_prect = energy_prect + loc_energy_p;
 
           ! evaporation of rain ----------------------------------------------------
+          call recompute_pressures(qvdry_c,qcdry_c,qrdry_c, dpdry_c,pidry,pprime, pi,p_c,dp_c)
+          call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,pi,zbottom,energy_before)
+          call rain_evaporation(qvdry_c,qcdry_c,qrdry_c, T_c, zbottom, dpdry_c,dp_c,pidry,pi,p_c)
+          call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,pi,zbottom,energy_after)
+          !print *, 'Rain evap: enbefore - enafter(up to flux)', (energy_before - energy_after)/energy_before
+
           ! condensation <-> evaporation -------------------------------------------
           call recompute_pressures(qvdry_c,qcdry_c,qrdry_c, dpdry_c,pidry,pprime, pi,p_c,dp_c)
           call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,pi,zbottom,energy_before)
-          call condensation_and_back_again(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,dp_c,pi,p_c,dt)
+          call condensation_and_back_again(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,dp_c,pi,p_c)
           call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,pi,zbottom,energy_after)
           !print *, 'Condensation: enbefore - enafter(up to flux)', (energy_before - energy_after)/energy_before
           !print *, 'Total: en - en(up to flux)', (energy_start_timestep - energy_after - energy_prect)/energy_start_timestep
+          !if(energy_prect > tol_energy)then
+          !print *, 'Energy flux comparison:', (energy_prect - cl*T_c(nlev)*mass_prect)/energy_prect
+          !endif
 
           !update q fields
           dp_c = dpdry_c*(1.0 + qvdry_c + qcdry_c + qrdry_c)
