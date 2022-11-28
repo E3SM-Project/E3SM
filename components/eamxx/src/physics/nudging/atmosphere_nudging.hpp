@@ -5,6 +5,8 @@
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/util/ekat_lin_interp.hpp"
 
+//#include "share/scream_types.hpp"
+
 #include <string>
 
 namespace scream
@@ -23,12 +25,17 @@ public:
 
   //using gid_type         = AbstractGrid::gid_type;
   //using KT = KokkosTypes<Device>;
-
   //template <typename S>
   //using view_1d = typename KT::template view_1d<S>;
-
   //using view_1d_dof     = typename view_1d<gid_type>;
   
+  template <typename S>
+  using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
+
+  using Spack = SmallPack<Real>;
+
+  using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+
   // Constructors
   NUDGING (const ekat::Comm& comm, const ekat::ParameterList& params);
 
@@ -36,15 +43,11 @@ public:
   AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
 
   // The name of the subcomponent
-  std::string name () const { return "Simple Prescribed Aerosols (SPA)"; }
+  std::string name () const { return "Nudging"; }
 
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
-  // Structure for storing local variables initialized using the ATMBufferManager
-  struct Buffer {
-
-  };
 protected:
 
   // The three main overrides for the subcomponent
@@ -53,7 +56,7 @@ protected:
   void finalize_impl   ();
 
   // Computes total number of bytes needed for local variables
-  size_t requested_buffer_size_in_bytes() const;
+  //size_t requested_buffer_size_in_bytes() const;
 
   // Set local variables using memory provided by
   // the ATMBufferManager
