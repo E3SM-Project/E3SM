@@ -1,6 +1,9 @@
 
 #include "pressure.h"
 
+yakl::RealFFT1D<real> pressure_fftx;
+yakl::RealFFT1D<real> pressure_ffty;
+
 void pressure() {
   YAKL_SCOPE( p             , :: p );
   YAKL_SCOPE( rhow          , :: rhow );
@@ -49,13 +52,8 @@ void pressure() {
 
   #ifndef USE_ORIG_FFT
 
-    yakl::RealFFT1D<real> fftx;
-    yakl::RealFFT1D<real> ffty;
-    fftx.init(f, 2, nx);
-    ffty.init(f, 1, ny);
-
-    fftx.forward_real(f);
-    if (RUN3D) { ffty.forward_real(f); }
+    pressure_fftx.forward_real(f, 2, nx);
+    if (RUN3D) { pressure_ffty.forward_real(f, 1, ny); }
 
   #else
 
@@ -179,8 +177,8 @@ void pressure() {
 
   #ifndef USE_ORIG_FFT
 
-    if (RUN3D) { ffty.inverse_real(f); }
-    fftx.inverse_real(f);
+    if (RUN3D) { pressure_ffty.inverse_real(f); }
+    pressure_fftx.inverse_real(f);
 
   #else
 

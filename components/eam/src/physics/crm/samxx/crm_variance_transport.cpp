@@ -3,6 +3,9 @@
 //==============================================================================
 //==============================================================================
 
+yakl::RealFFT1D<real> vt_fftx;
+yakl::RealFFT1D<real> vt_ffty;
+
 void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
   // local variables
   int nx2 = nx+2;
@@ -13,11 +16,6 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
   
   int nwx = nx2-(filter_wn_max+1)*2;
   int nwy = ny2-(filter_wn_max+1)*2;
-  
-  yakl::RealFFT1D<real> fftx;
-  yakl::RealFFT1D<real> ffty;
-  fftx.init(fft_out, 2, nx);
-  ffty.init(fft_out, 1, ny);
 
   //----------------------------------------------------------------------------
   // Forward Fourier transform
@@ -26,8 +24,8 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
     fft_out(k,j,i,icrm) = f_in(k,j,i,icrm);
   });
 
-  fftx.forward_real(fft_out);
-  if (RUN3D) { ffty.forward_real(fft_out); }
+  vt_fftx.forward_real(fft_out, 2, nx);
+  if (RUN3D) { vt_ffty.forward_real(fft_out, 1, ny); }
 
   //----------------------------------------------------------------------------
   // Zero out the higher modes
@@ -55,8 +53,8 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
   //----------------------------------------------------------------------------
   // Backward Fourier transform
 
-  if (RUN3D) { ffty.inverse_real(fft_out); }
-  fftx.inverse_real(fft_out);
+  if (RUN3D) { vt_ffty.inverse_real(fft_out); }
+  vt_fftx.inverse_real(fft_out);
 
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
     f_out(k,j,i,icrm) = fft_out(k,j,i,icrm);
