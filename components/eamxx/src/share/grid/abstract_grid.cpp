@@ -194,17 +194,18 @@ AbstractGrid::set_global_min_dof_gid ()
 {
   EKAT_REQUIRE_MSG (m_dofs_set,
       "Error! You need to set dofs gids before you can compute the global min dof.\n");
-  // TODO: we could probably cache these into mutable variables.
-  //       But unless we call this method *many* times, it won't matter
-  gid_type local_min, global_min;
-  auto dofs = get_dofs_gids();
-  Kokkos::parallel_reduce(Kokkos::RangePolicy<>(0,get_num_local_dofs()),
-      KOKKOS_LAMBDA (const int& i, gid_type& lmin) {
-        if (dofs(i) < lmin) {
-          lmin = dofs(i);
-        }
-      },Kokkos::Min<gid_type>(local_min));
-  Kokkos::fence();
+  gid_type local_min = get_num_global_dofs(); // the local min should be <= than the size of the grid.
+  gid_type global_min;
+  if (get_num_local_dofs()>0) {
+    auto dofs = get_dofs_gids();
+    Kokkos::parallel_reduce(Kokkos::RangePolicy<>(0,get_num_local_dofs()),
+        KOKKOS_LAMBDA (const int& i, gid_type& lmin) {
+          if (dofs(i) < lmin) {
+            lmin = dofs(i);
+          }
+        },Kokkos::Min<gid_type>(local_min));
+    Kokkos::fence();
+  }
 
   m_comm.all_reduce(&local_min,&global_min,1,MPI_MIN);
 
@@ -216,17 +217,18 @@ AbstractGrid::set_global_max_dof_gid ()
 {
   EKAT_REQUIRE_MSG (m_dofs_set,
       "Error! You need to set dofs gids before you can compute the global max dof.\n");
-  // TODO: we could probably cache these into mutable variables.
-  //       But unless we call this method *many* times, it won't matter
-  gid_type local_max, global_max;
-  auto dofs = get_dofs_gids();
-  Kokkos::parallel_reduce(Kokkos::RangePolicy<>(0,get_num_local_dofs()),
-      KOKKOS_LAMBDA (const int& i, gid_type& lmax) {
-        if (dofs(i) > lmax) {
-          lmax = dofs(i);
-        }
-      },Kokkos::Max<gid_type>(local_max));
-  Kokkos::fence();
+  gid_type local_max = -1;
+  gid_type global_max;
+  if (get_num_local_dofs()>0) {
+    auto dofs = get_dofs_gids();
+    Kokkos::parallel_reduce(Kokkos::RangePolicy<>(0,get_num_local_dofs()),
+        KOKKOS_LAMBDA (const int& i, gid_type& lmax) {
+          if (dofs(i) > lmax) {
+            lmax = dofs(i);
+          }
+        },Kokkos::Max<gid_type>(local_max));
+    Kokkos::fence();
+  }
 
   m_comm.all_reduce(&local_max,&global_max,1,MPI_MAX);
 

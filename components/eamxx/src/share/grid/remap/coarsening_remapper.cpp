@@ -71,9 +71,13 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   // Offset the cols ids to match the source grid.
   // Determine the min id among the cols array, we
   // also add the min_dof for the grid.
-  int remap_min_dof = col_gids_h[0];
-  for (int id=1; id<nlweights; id++) {
-    remap_min_dof = std::min(col_gids_h[id],remap_min_dof);
+  // Note: The cols field is not guaranteed to have the
+  // min offset value, but the rows will be numbered 
+  // by 1 from least to greatest.  So we use row_gids to calculate
+  // the remap min.
+  int remap_min_dof = io_grid->get_num_global_dofs()*100;  // Really big INT
+  for (int id=0; id<nlweights; id++) {
+    remap_min_dof = std::min(row_gids_h[id],remap_min_dof);
   }
   int global_remap_min_dof;
   m_comm.all_reduce(&remap_min_dof,&global_remap_min_dof,1,MPI_MIN);
@@ -667,8 +671,8 @@ get_my_triplets_gids (const std::string& map_file,
   // Offset the cols ids to match the source grid.
   // Determine the min id among the cols array, we
   // also add the min_dof for the grid.
-  int remap_min_dof = cols[0];
-  for (int id=1; id<nlweights; id++) {
+  int remap_min_dof = ngweights*100;
+  for (int id=0; id<nlweights; id++) {
     remap_min_dof = std::min(cols[id],remap_min_dof);
   }
   int global_remap_min_dof;
@@ -845,7 +849,11 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   for (int i=0; i<m_num_fields; ++i) {
     const auto& f  = m_ov_tgt_fields[i];  // Doesn't matter if tgt or ov_tgt
     const auto& fl = f.get_header().get_identifier().get_layout();
-    field_col_size[i] = fl.size() / fl.dim(0);
+    if (fl.dim(0)>0) {
+      field_col_size[i] = fl.size() / fl.dim(0);
+    } else {
+      field_col_size[i] = fl.size();
+    }
     sum_fields_col_sizes += field_col_size[i];
   }
 
