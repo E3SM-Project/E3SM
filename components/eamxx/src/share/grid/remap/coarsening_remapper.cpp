@@ -68,6 +68,25 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   scorpio::grid_read_data_array(map_file,"S",  -1,S_h.data(),       nlweights);
   scorpio::eam_pio_closefile(map_file);
 
+  // Offset the cols ids to match the source grid.
+  // Determine the min id among the cols array, we
+  // also add the min_dof for the grid.
+  // Note: The cols field is not guaranteed to have the
+  // min offset value, but the rows will be numbered 
+  // by 1 from least to greatest.  So we use row_gids to calculate
+  // the remap min.
+  int remap_min_dof = std::numeric_limits<int>::max();  // Really big INT
+  for (int id=0; id<nlweights; id++) {
+    remap_min_dof = std::min(row_gids_h[id],remap_min_dof);
+  }
+  int global_remap_min_dof;
+  m_comm.all_reduce(&remap_min_dof,&global_remap_min_dof,1,MPI_MIN);
+
+  gid_t col_offset = global_remap_min_dof - src_grid->get_global_min_dof_gid();
+  for (int ii=0; ii<nlweights; ii++) {
+    col_gids_h(ii) -= col_offset; 
+  }
+
   // Create an "overlapped" tgt grid, that is, a grid where each rank
   // owns all tgt rows that are affected by at least one of the cols
   // in its src_grid
@@ -110,7 +129,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   auto weights_h     = Kokkos::create_mirror_view(m_weights);
 
   for (int i=0; i<nlweights; ++i) {
-    col_lids_h(i) = gid2lid(col_gids_h(id[i])-1,src_grid);
+    col_lids_h(i) = gid2lid(col_gids_h(id[i]),src_grid);
     weights_h(i)  = S_h(id[i]);
   }
 
@@ -158,7 +177,7 @@ create_src_layout (const FieldLayout& tgt_layout) const
   const auto lt = get_layout_type(tgt_layout.tags());
   auto src = FieldLayout::invalid();
   const bool midpoints = tgt_layout.has_tag(LEV);
-  const int vec_dim = tgt_layout.is_vector_layout() ? tgt_layout.get_vector_dim() : -1;
+  const int vec_dim = tgt_layout.is_vector_layout() ? tgt_layout.dim(CMP) : -1;
   switch (lt) {
     case LayoutType::Scalar2D:
       src = m_src_grid->get_2d_scalar_layout();
@@ -184,7 +203,7 @@ create_tgt_layout (const FieldLayout& src_layout) const
   const auto lt = get_layout_type(src_layout.tags());
   auto tgt = FieldLayout::invalid();
   const bool midpoints = src_layout.has_tag(LEV);
-  const int vec_dim = src_layout.is_vector_layout() ? src_layout.get_vector_dim() : -1;
+  const int vec_dim = src_layout.is_vector_layout() ? src_layout.dim(CMP) : -1;
   switch (lt) {
     case LayoutType::Scalar2D:
       tgt = m_tgt_grid->get_2d_scalar_layout();
@@ -259,6 +278,7 @@ void CoarseningRemapper::do_remap_fwd ()
     // x is the src field, and y is the overlapped tgt field.
     const auto& f_src    = m_src_fields[i];
     const auto& f_ov_tgt = m_ov_tgt_fields[i];
+    const auto& tgt_layout = f_ov_tgt.get_header().get_identifier().get_layout();
 
     // Dispatch kernel with the largest possible pack size
     const auto& src_ap = f_src.get_header().get_alloc_properties();
@@ -304,8 +324,10 @@ local_mat_vec (const Field& x, const Field& y) const
   using PackInfo    = ekat::PackInfo<PackSize>;
 
   const auto& src_layout = x.get_header().get_identifier().get_layout();
+  const auto& tgt_layout = y.get_header().get_identifier().get_layout();
   const int rank = src_layout.rank();
   const int nrows = m_ov_tgt_grid->get_num_local_dofs();
+  const int nrows_src = m_src_grid->get_num_local_dofs();
   auto row_offsets = m_row_offsets;
   auto col_lids = m_col_lids;
   auto weights = m_weights;
@@ -637,16 +659,32 @@ get_my_triplets_gids (const std::string& map_file,
 
   // 2. Read a chunk of triplets col indices
   std::vector<gid_t> cols(nlweights);
+  std::vector<gid_t> rows(nlweights); // Needed to calculate min_dof
   const std::string idx_decomp_tag = "coarsening_remapper::get_my_triplet_gids_int_dim" + std::to_string(nlweights);
   scorpio::get_variable(map_file, "col", "col", {"n_s"}, "int", idx_decomp_tag);
+  scorpio::get_variable(map_file, "row", "row", {"n_s"}, "int", idx_decomp_tag);
   std::vector<scorpio::offset_t> dofs_offsets(nlweights);
   std::iota(dofs_offsets.begin(),dofs_offsets.end(),offset);
   scorpio::set_dof(map_file,"col",nlweights,dofs_offsets.data());
+  scorpio::set_dof(map_file,"row",nlweights,dofs_offsets.data());
   scorpio::set_decomp(map_file);
   scorpio::grid_read_data_array(map_file,"col",-1,cols.data(),cols.size());
+  scorpio::grid_read_data_array(map_file,"row",-1,rows.data(),rows.size());
   scorpio::eam_pio_closefile(map_file);
+
+  // Offset the cols ids to match the source grid.
+  // Determine the min id among the cols array, we
+  // also add the min_dof for the grid.
+  int remap_min_dof = std::numeric_limits<int>::max();
+  for (int id=0; id<nlweights; id++) {
+    remap_min_dof = std::min(rows[id],remap_min_dof);
+  }
+  int global_remap_min_dof;
+  m_comm.all_reduce(&remap_min_dof,&global_remap_min_dof,1,MPI_MIN);
+
+  gid_t col_offset = global_remap_min_dof - src_grid->get_global_min_dof_gid();
   for (auto& id : cols) {
-    --id; // Subtract 1 to get 0-based indices
+    id -= col_offset; 
   }
 
   // 3. Get the owners of the cols gids we read in, according to the src grid
@@ -815,7 +853,11 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   for (int i=0; i<m_num_fields; ++i) {
     const auto& f  = m_ov_tgt_fields[i];  // Doesn't matter if tgt or ov_tgt
     const auto& fl = f.get_header().get_identifier().get_layout();
-    field_col_size[i] = fl.size() / fl.dim(0);
+    if (fl.dim(0)>0) {
+      field_col_size[i] = fl.size() / fl.dim(0);
+    } else {
+      field_col_size[i] = fl.size();
+    }
     sum_fields_col_sizes += field_col_size[i];
   }
 

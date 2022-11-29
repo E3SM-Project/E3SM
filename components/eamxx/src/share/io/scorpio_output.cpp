@@ -1,6 +1,8 @@
 #include "share/io/scorpio_output.hpp"
 #include "share/io/scorpio_input.hpp"
 #include "share/util/scream_array_utils.hpp"
+#include "share/grid/remap/coarsening_remapper.hpp"
+#include "share/util/scream_timing.hpp"
 
 #include "ekat/util/ekat_units.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
@@ -86,9 +88,18 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   // Try to set the IO grid (checks will be performed)
   set_grid (io_grid);
 
-  if (io_grid->name()!=fm_grid->name()) {
+  bool remap_from_file = params.isParameter("remap_file");
+
+  if (io_grid->name()!=fm_grid->name() || remap_from_file) {
     // We build a remapper, to remap fields from the fm grid to the io grid
-    m_remapper = grids_mgr->create_remapper(fm_grid,io_grid);
+    if (remap_from_file) {
+      auto remap_file   = params.get<std::string>("remap_file");
+      m_remapper = std::make_shared<CoarseningRemapper>(io_grid,remap_file);
+      io_grid = m_remapper->get_tgt_grid();
+      set_grid(io_grid);
+    } else {
+      m_remapper = grids_mgr->create_remapper(fm_grid,io_grid);
+    }
 
     // Register all output fields in the remapper.
     m_remapper->registration_begins();
@@ -175,6 +186,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
 
   // If needed, remap fields from their grid to the unique grid, for I/O
   if (m_remapper) {
+    start_timer("EAMxx::IO::remap");
     m_remapper->remap(true);
 
     for (int i=0; i<m_remapper->get_num_fields(); ++i) {
@@ -186,6 +198,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
       auto src_t = src.get_header().get_tracking().get_time_stamp();
       tgt.get_header().get_tracking().update_time_stamp(src_t);
     }
+    stop_timer("EAMxx::IO::remap");
   }
 
   // Take care of updating and possibly writing fields.
@@ -359,10 +372,11 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
       (grid->get_global_max_dof_gid()-grid->get_global_min_dof_gid()+1)==grid->get_num_global_dofs(),
       "Error! In order for IO to work, the grid must (globally) have dof gids in interval [gid_0,gid_0+num_global_dofs).\n");
 
-  EKAT_REQUIRE_MSG(m_comm.size()<=grid->get_num_global_dofs(),
-      "Error! PIO interface requires the size of the IO MPI group to be\n"
-      "       no greater than the global number of columns.\n"
-      "       Consider decreasing the size of IO MPI group.\n");
+//ASD  IS THIS STILL TRUE vv
+//ASD  EKAT_REQUIRE_MSG(m_comm.size()<=grid->get_num_global_dofs(),
+//ASD      "Error! PIO interface requires the size of the IO MPI group to be\n"
+//ASD      "       no greater than the global number of columns.\n"
+//ASD      "       Consider decreasing the size of IO MPI group.\n");
 
   // The grid is good. Store it.
   m_io_grid = grid;
@@ -540,8 +554,13 @@ AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
   //       All we need to do in this routine is to compute the offset of all the entries
   //       of the MPI-local array w.r.t. the global array. So long as the offsets are in
   //       the same order as the corresponding entry in the data to be read/written, we're good.
+  // NOTE: In the case of regional output this rank may have 0 columns to write, thus, var_dof
+  //       should be empty, we check for this special case and return an empty var_dof.
   if (layout.has_tag(ShortFieldTagsNames::COL)) {
     const int num_cols = m_io_grid->get_num_local_dofs();
+    if (num_cols==0) {
+      return var_dof;
+    }
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
@@ -570,6 +589,9 @@ AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
     const int num_my_elems = layout2d.dim(0);
     const int ngp = layout2d.dim(1);
     const int num_cols = num_my_elems*ngp*ngp;
+    if (num_cols==0) {
+      return var_dof;
+    }
 
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
