@@ -373,6 +373,128 @@ end subroutine compute_mass
 
 
 
+subroutine rj_new(qv_c,T_c,dp_c,p_c,pi,massout)
+
+  real(rl), dimension(nlev), intent(in)    :: p_c, dp_c, pi
+  real(rl), dimension(nlev), intent(inout) :: qv_c,T_c
+  real(rl),                  intent(inout) :: massout
+
+  real(rl) :: qsat, dp_loc, qv_loc, dpdry_loc, qvdry_loc, qsatdry, dq_loc, vapor_mass_change
+  real(rl) :: T_loc, p_loc, pi_loc, L_old, L_new, rstar_old, rstar_new, hold, T_new
+  real(rl) :: cpstarTerm_new
+  integer  :: k
+
+  massout = 0.0
+
+  do k=1, nlev
+    call qsat_rj2(p_c(k), T_c(k), qsat)
+
+    if (qv_c(k) > qsat) then
+!print *, 'HEY RAIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+!stop
+      !compute dry values
+       dp_loc = dp_c(k)
+       qv_loc = qv_c(k)
+       dpdry_loc = dp_loc * (1.0 - qv_loc)
+       qvdry_loc = qv_loc * dp_loc / dpdry_loc
+       qsatdry = qsat * dp_loc / dpdry_loc     ! qv_new
+       dq_loc = qvdry_loc - qsatdry            ! > 0 , is qliq_dry_new
+       vapor_mass_change = dpdry_loc*dq_loc
+       T_loc = T_c(k)
+       p_loc = p_c(k)
+       pi_loc = pi(k)
+
+       !new Q will be qsatdry
+       L_old = (latvap + latice) * qvdry_loc
+       L_new = (latvap + latice) * qsatdry   + latice * dq_loc
+
+       rstar_old = rdry * 1.0 + rvapor * qvdry_loc
+       rstar_new = rdry * 1.0 + rvapor * qsatdry
+
+!#define HYY
+#undef HYY
+#ifndef HYY
+       ! L and Rstar are in terms of q, so, enthalpy too
+       hold = T_loc*( cpdry*1.0 + cpv*qvdry_loc ) + &
+           (pi_loc/p_loc - 1) * rstar_old * T_loc + L_old
+#else
+       hold = T_loc*( cpdry*1.0 + cpv*qvdry_loc ) + &
+                                                    L_old
+#endif
+       cpstarTerm_new = cpdry*1.0 + cpv*qsatdry + cl*dq_loc
+       !hnew = T_new * (   cpstarTerm_new + ( (pi_loc - vapor_mass_change)/(p_loc - vapor_mass_change) - 1)*rstar_new   ) + &
+       !       L_new
+       !     = hold
+#ifndef HYY
+       T_new = (hold - L_new)/ &
+       (   cpstarTerm_new + ( pi_loc/p_loc - 1)*rstar_new   )
+#else
+       T_new = (hold - L_new)/ &
+       (   cpstarTerm_new   )
+#endif
+print *, 'T_new - T_c', T_new - T_c(k)
+
+#if 0
+if( (T_new - T_c(k)) < 0 )then
+print *, 'dq_loc', dq_loc
+print *, 'T_loc, T_c', T_loc, T_c(k)
+print *, 'qvdry_loc', qvdry_loc
+print *, 'dq_loc', dq_loc
+print *, 'dq_loc', dq_loc
+stop
+endif
+#endif
+
+       !this does not need conversion wet-dry
+       T_c(k)  = T_new
+       qv_c(k) = qsat
+       massout = massout + vapor_mass_change
+     endif
+  enddo
+  
+!          precl(i,j,ie) = precl(i,j,ie) + vapor_mass_change / dt / rhow / g
+!print *, 'precl',  precl(i,j,ie), vapor_mass_change, rhow
+
+end subroutine rj_new
+
+
+
+
+subroutine rj_old(qv_c,T_c,dp_c,p_c,massout)
+
+  real(rl), dimension(nlev), intent(in)    :: p_c, dp_c
+  real(rl), dimension(nlev), intent(inout) :: qv_c,T_c
+  real(rl),                  intent(inout) :: massout
+
+  real(rl) :: qsat, dq_loc
+  integer :: k
+
+  massout = 0.0
+
+  do k=1, nlev
+    call qsat_rj2(p_c(k), T_c(k), qsat)
+
+    if (qv_c(k) > qsat) then
+!original RJ
+       dq_loc = (qv_c(k) - qsat) &
+         / (1.0 + (latvap/cpdry) * bubble_epsilo * latvap * qsat / (rdry*T_c(k)*T_c(k)))
+       T_c(k)  = T_c(k)  + latvap / cpdry * dq_loc
+       qv_c(k) = qv_c(k) - dq_loc
+       massout = massout + dq_loc * dp_c(k)
+     endif
+  enddo
+
+end subroutine rj_old
+
+
+
+
+
+
+
+
+
+
 
 
 !!!!!!!!!!! copy from dcmip16 FIX THAT!
@@ -382,7 +504,12 @@ subroutine qsat_kessler2(p, T, qsat)
   qsat = bubble_const1 / p * exp( bubble_const2 * (T - bubble_const3) / ( T - bubble_const4 ) )
 end subroutine qsat_kessler2
 
-
+subroutine qsat_rj2(p, T, qsat)
+  real(rl),         intent(out):: qsat
+  real(rl),         intent(in) :: p, T
+  qsat = bubble_epsilo * bubble_e0 / p * &
+         exp(-(latvap/rvapor) * ((1.0/T)-(1.0/bubble_t0_const)))
+end subroutine qsat_rj2
 
 
 end module newphysics
