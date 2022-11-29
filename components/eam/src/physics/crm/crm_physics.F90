@@ -80,9 +80,11 @@ subroutine crm_physics_register()
                                   crm_nx_rad, crm_ny_rad
    use constituents,        only: cnst_add
    use crm_history,         only: crm_history_register
+#if defined(MMF_SAMXX) || defined(MMF_PAM)
+   use gator_mod,           only: gator_init
+#endif
 #if defined(MMF_SAMXX)
    use cpp_interface_mod,   only: setparm
-   use gator_mod, only: gator_init
 #elif defined(MMF_SAM) || defined(MMF_SAMOMP)
    use setparm_mod      ,   only: setparm
 #endif
@@ -103,7 +105,7 @@ subroutine crm_physics_register()
    integer, dimension(4) :: dims_crm_rad
    integer :: cnst_ind ! dummy for adding new constituents for variance transport
    !----------------------------------------------------------------------------
-#ifdef MMF_SAMXX
+#if defined(MMF_SAMXX) || defined(MMF_PAM)
    call gator_init()
 #endif
 
@@ -447,7 +449,7 @@ end subroutine crm_physics_init
 !===================================================================================================
 
 subroutine crm_physics_final()
-#if defined(MMF_SAMXX)
+#if defined(MMF_SAMXX) || defined(MMF_PAM)
    use gator_mod, only: gator_finalize
    call gator_finalize()
 #endif
@@ -474,6 +476,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    use constituents,          only: pcnst, cnst_get_ind
 #if defined(MMF_SAMXX)
    use cpp_interface_mod,     only: crm
+#elif defined(MMF_PAM)
+   use pam_fortran_interface_mod
 #elif defined(MMF_SAM) || defined(MMF_SAMOMP)
    use crm_module,            only: crm
 #endif
@@ -1113,23 +1117,16 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          ncol_sum = ncol_sum + ncol
       end do ! c=begchunk, endchunk
 
-#if defined(MMF_SAM) || defined(MMF_SAMOMP)
-
       call t_startf ('crm_call')
 
+#if defined(MMF_SAM) || defined(MMF_SAMOMP)
       call crm(ncrms, ztodt, pver, &
                crm_input, crm_state, crm_rad, &
                crm_ecpp_output, crm_output, crm_clear_rh, &
                latitude0, longitude0, gcolp, nstep, &
                use_MMF_VT_tmp, MMF_VT_wn_max, &
                use_crm_accel_tmp, crm_accel_factor, crm_accel_uv_tmp)
-
-      call t_stopf('crm_call')
-
 #elif defined(MMF_SAMXX)
-
-      call t_startf ('crm_call')
-
       ! Fortran classes don't translate to C++ classes, we we have to separate
       ! this stuff out when calling the C++ routinte crm(...)
       call crm(ncrms, ncrms, ztodt, pver, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, &
@@ -1160,10 +1157,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                latitude0, longitude0, gcolp, nstep, &
                use_MMF_VT, MMF_VT_wn_max, use_MMF_ESMT, &
                use_crm_accel, crm_accel_factor, crm_accel_uv)
+#elif defined(MMF_PAM)
+      ! call pam_crm(...)
+#endif
 
       call t_stopf('crm_call')
-      
-#endif
 
       deallocate(longitude0)
       deallocate(latitude0 )
