@@ -222,10 +222,10 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    //-----------------------------------------
    // invert fft of pgf_hat to get pgf
    //-----------------------------------------
+   fftx.inverse_real(pgf_hat);
    parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
       pgf(k,j,i,icrm) = pgf_hat(k,j,i,icrm);
    });
-   fftx.inverse_real(pgf);
 
    //-----------------------------------------
    // Compute final tendency
