@@ -94,7 +94,7 @@ def atm_config_chg_impl(xml_root,changes,append=False):
         else:
             append_this = append
             tokens = change.split('=')
-            
+
         expect (len(tokens)==2,
             f"Invalid change request '{change}'. Valid formats are:\n"
             f"  - A[::B[...]=value\n"
