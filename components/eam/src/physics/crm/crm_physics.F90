@@ -1117,18 +1117,22 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          ncol_sum = ncol_sum + ncol
       end do ! c=begchunk, endchunk
 
-      call t_startf ('crm_call')
-
 #if defined(MMF_SAM) || defined(MMF_SAMOMP)
+      
+      call t_startf ('crm_call')
       call crm(ncrms, ztodt, pver, &
                crm_input, crm_state, crm_rad, &
                crm_ecpp_output, crm_output, crm_clear_rh, &
                latitude0, longitude0, gcolp, nstep, &
                use_MMF_VT_tmp, MMF_VT_wn_max, &
                use_crm_accel_tmp, crm_accel_factor, crm_accel_uv_tmp)
+      call t_stopf('crm_call')
+      
 #elif defined(MMF_SAMXX)
+
       ! Fortran classes don't translate to C++ classes, we we have to separate
       ! this stuff out when calling the C++ routinte crm(...)
+      call t_startf ('crm_call')
       call crm(ncrms, ncrms, ztodt, pver, crm_input%bflxls, crm_input%wndls, crm_input%zmid, crm_input%zint, &
                crm_input%pmid, crm_input%pint, crm_input%pdel, crm_input%ul, crm_input%vl, &
                crm_input%tl, crm_input%qccl, crm_input%qiil, crm_input%ql, crm_input%tau00, &
@@ -1157,11 +1161,121 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                latitude0, longitude0, gcolp, nstep, &
                use_MMF_VT, MMF_VT_wn_max, use_MMF_ESMT, &
                use_crm_accel, crm_accel_factor, crm_accel_uv)
-#elif defined(MMF_PAM)
-      ! call pam_crm(...)
-#endif
-
       call t_stopf('crm_call')
+
+#elif defined(MMF_PAM)
+
+      call pam_mirror_array_readonly( 'input_bflxls',  crm_input%bflxls,  '' )
+      call pam_mirror_array_readonly( 'input_wndls',   crm_input%wndls,   '' )
+      call pam_mirror_array_readonly( 'input_zmid',    crm_input%zmid,    '' )
+      call pam_mirror_array_readonly( 'input_zint',    crm_input%zint,    '' )
+      call pam_mirror_array_readonly( 'input_pmid',    crm_input%pmid,    '' )
+      call pam_mirror_array_readonly( 'input_pint',    crm_input%pint,    '' )
+      call pam_mirror_array_readonly( 'input_pdel',    crm_input%pdel,    '' )
+      call pam_mirror_array_readonly( 'input_ul',      crm_input%ul,      '' )
+      call pam_mirror_array_readonly( 'input_vl',      crm_input%vl,      '' )
+      call pam_mirror_array_readonly( 'input_tl',      crm_input%tl,      '' )
+      call pam_mirror_array_readonly( 'input_qccl',    crm_input%qccl,    '' )
+      call pam_mirror_array_readonly( 'input_qiil',    crm_input%qiil,    '' )
+      call pam_mirror_array_readonly( 'input_ql',      crm_input%ql,      '' )
+      call pam_mirror_array_readonly( 'input_tau00',   crm_input%tau00,   '' )
+      call pam_mirror_array_readonly( 'input_ul_esmt', crm_input%ul_esmt, '' )
+      call pam_mirror_array_readonly( 'input_vl_esmt', crm_input%vl_esmt, '' )
+      call pam_mirror_array_readonly( 'input_t_vt',    crm_input%t_vt,    '' )
+      call pam_mirror_array_readonly( 'input_q_vt',    crm_input%q_vt,    '' )
+      call pam_mirror_array_readonly( 'input_u_vt',    crm_input%u_vt,    '' )
+
+      call pam_mirror_array_readwrite( 'state_u_wind',      crm_state%u_wind,      '' )
+      call pam_mirror_array_readwrite( 'state_v_wind',      crm_state%v_wind,      '' )
+      call pam_mirror_array_readwrite( 'state_w_wind',      crm_state%w_wind,      '' )
+      call pam_mirror_array_readwrite( 'state_temperature', crm_state%temperature, '' )
+      call pam_mirror_array_readwrite( 'state_qt',          crm_state%qt,          '' )
+      call pam_mirror_array_readwrite( 'state_qp',          crm_state%qp,          '' )
+      call pam_mirror_array_readwrite( 'state_qn',          crm_state%qn,          '' )
+
+      call pam_mirror_array_readwrite( 'rad_qrad',        crm_rad%qrad,        '' )
+      call pam_mirror_array_readwrite( 'rad_temperature', crm_rad%temperature, '' )
+      call pam_mirror_array_readwrite( 'rad_qv',          crm_rad%qv,          '' )
+      call pam_mirror_array_readwrite( 'rad_qc',          crm_rad%qc,          '' )
+      call pam_mirror_array_readwrite( 'rad_qi',          crm_rad%qi,          '' )
+      call pam_mirror_array_readwrite( 'rad_cld',         crm_rad%cld,         '' )
+
+      ! call pam_mirror_array_readwrite( 'output_prectend',    crm_output%prectend,    '' )
+      ! call pam_mirror_array_readwrite( 'output_precstend',   crm_output%precstend,   '' )
+      ! call pam_mirror_array_readwrite( 'output_cld',         crm_output%cld,         '' )
+      ! call pam_mirror_array_readwrite( 'output_cldtop',      crm_output%cldtop,      '' )
+      ! call pam_mirror_array_readwrite( 'output_gicewp',      crm_output%gicewp,      '' )
+      ! call pam_mirror_array_readwrite( 'output_gliqwp',      crm_output%gliqwp,      '' )
+      ! call pam_mirror_array_readwrite( 'output_mctot',       crm_output%mctot,       '' )
+      ! call pam_mirror_array_readwrite( 'output_mcup',        crm_output%mcup,        '' )
+      ! call pam_mirror_array_readwrite( 'output_mcdn',        crm_output%mcdn,        '' )
+      ! call pam_mirror_array_readwrite( 'output_mcuup',       crm_output%mcuup,       '' )
+      ! call pam_mirror_array_readwrite( 'output_mcudn',       crm_output%mcudn,       '' )
+      ! call pam_mirror_array_readwrite( 'output_qc_mean',     crm_output%qc_mean,     '' )
+      ! call pam_mirror_array_readwrite( 'output_qi_mean',     crm_output%qi_mean,     '' )
+      ! call pam_mirror_array_readwrite( 'output_qs_mean',     crm_output%qs_mean,     '' )
+      ! call pam_mirror_array_readwrite( 'output_qg_mean',     crm_output%qg_mean,     '' )
+      ! call pam_mirror_array_readwrite( 'output_qr_mean',     crm_output%qr_mean,     '' )
+      ! call pam_mirror_array_readwrite( 'output_mu_crm',      crm_output%mu_crm,      '' )
+      ! call pam_mirror_array_readwrite( 'output_md_crm',      crm_output%md_crm,      '' )
+      ! call pam_mirror_array_readwrite( 'output_eu_crm',      crm_output%eu_crm,      '' )
+      ! call pam_mirror_array_readwrite( 'output_du_crm',      crm_output%du_crm,      '' )
+      ! call pam_mirror_array_readwrite( 'output_ed_crm',      crm_output%ed_crm,      '' )
+      ! call pam_mirror_array_readwrite( 'output_flux_qt',     crm_output%flux_qt,     '' )
+      ! call pam_mirror_array_readwrite( 'output_flux_u',      crm_output%flux_u,      '' )
+      ! call pam_mirror_array_readwrite( 'output_flux_v',      crm_output%flux_v,      '' )
+      ! call pam_mirror_array_readwrite( 'output_fluxsgs_qt',  crm_output%fluxsgs_qt,  '' )
+      ! call pam_mirror_array_readwrite( 'output_tkez',        crm_output%tkez,        '' )
+      ! call pam_mirror_array_readwrite( 'output_tkew',        crm_output%tkew,        '' )
+      ! call pam_mirror_array_readwrite( 'output_tkesgsz',     crm_output%tkesgsz,     '' )
+      ! call pam_mirror_array_readwrite( 'output_tkz',         crm_output%tkz,         '' )
+      ! call pam_mirror_array_readwrite( 'output_flux_qp',     crm_output%flux_qp,     '' )
+      ! call pam_mirror_array_readwrite( 'output_precflux',    crm_output%precflux,    '' )
+      ! call pam_mirror_array_readwrite( 'output_qt_trans',    crm_output%qt_trans,    '' )
+      ! call pam_mirror_array_readwrite( 'output_qp_trans',    crm_output%qp_trans,    '' )
+      ! call pam_mirror_array_readwrite( 'output_qp_fall',     crm_output%qp_fall,     '' )
+      ! call pam_mirror_array_readwrite( 'output_qp_evp',      crm_output%qp_evp,      '' )
+      ! call pam_mirror_array_readwrite( 'output_qp_src',      crm_output%qp_src,      '' )
+      call pam_mirror_array_readwrite( 'output_qt_ls',       crm_output%qt_ls,       '' )
+      call pam_mirror_array_readwrite( 'output_t_ls',        crm_output%t_ls,        '' )
+      ! call pam_mirror_array_readwrite( 'output_jt_crm',      crm_output%jt_crm,      '' )
+      ! call pam_mirror_array_readwrite( 'output_mx_crm',      crm_output%mx_crm,      '' )
+      ! call pam_mirror_array_readwrite( 'output_cltot',       crm_output%cltot,       '' )
+      ! call pam_mirror_array_readwrite( 'output_clhgh',       crm_output%clhgh,       '' )
+      ! call pam_mirror_array_readwrite( 'output_clmed',       crm_output%clmed,       '' )
+      ! call pam_mirror_array_readwrite( 'output_cllow',       crm_output%cllow,       '' )
+      ! call pam_mirror_array_readwrite( 'output_sltend',      crm_output%sltend,      '' )
+      ! call pam_mirror_array_readwrite( 'output_qltend',      crm_output%qltend,      '' )
+      ! call pam_mirror_array_readwrite( 'output_qcltend',     crm_output%qcltend,     '' )
+      ! call pam_mirror_array_readwrite( 'output_qiltend',     crm_output%qiltend,     '' )
+      ! call pam_mirror_array_readwrite( 'output_t_vt_tend',   crm_output%t_vt_tend,   '' )
+      ! call pam_mirror_array_readwrite( 'output_q_vt_tend',   crm_output%q_vt_tend,   '' )
+      ! call pam_mirror_array_readwrite( 'output_u_vt_tend',   crm_output%u_vt_tend,   '' )
+      ! call pam_mirror_array_readwrite( 'output_t_vt_ls',     crm_output%t_vt_ls,     '' )
+      ! call pam_mirror_array_readwrite( 'output_q_vt_ls',     crm_output%q_vt_ls,     '' )
+      ! call pam_mirror_array_readwrite( 'output_u_vt_ls',     crm_output%u_vt_ls,     '' )
+      call pam_mirror_array_readwrite( 'output_ultend',      crm_output%ultend,      '' )
+      call pam_mirror_array_readwrite( 'output_vltend',      crm_output%vltend,      '' )
+      ! call pam_mirror_array_readwrite( 'output_tk',          crm_output%tk,          '' )
+      ! call pam_mirror_array_readwrite( 'output_tkh',         crm_output%tkh,         '' )
+      ! call pam_mirror_array_readwrite( 'output_qcl',         crm_output%qcl,         '' )
+      ! call pam_mirror_array_readwrite( 'output_qci',         crm_output%qci,         '' )
+      ! call pam_mirror_array_readwrite( 'output_qpl',         crm_output%qpl,         '' )
+      ! call pam_mirror_array_readwrite( 'output_qpi',         crm_output%qpi,         '' )
+      ! call pam_mirror_array_readwrite( 'output_z0m',         crm_output%z0m,         '' )
+      ! call pam_mirror_array_readwrite( 'output_taux',        crm_output%taux,        '' )
+      ! call pam_mirror_array_readwrite( 'output_tauy',        crm_output%tauy,        '' )
+      call pam_mirror_array_readwrite( 'output_precc',       crm_output%precc,       '' )
+      ! call pam_mirror_array_readwrite( 'output_precl',       crm_output%precl,       '' )
+      ! call pam_mirror_array_readwrite( 'output_precsc',      crm_output%precsc,      '' )
+      ! call pam_mirror_array_readwrite( 'output_precsl',      crm_output%precsl,      '' )
+      call pam_mirror_array_readwrite( 'output_prec_crm',    crm_output%prec_crm,    '' )
+
+      call t_startf ('crm_call')
+      ! call pam_crm(...)
+      call t_stopf('crm_call')
+
+#endif
 
       deallocate(longitude0)
       deallocate(latitude0 )
