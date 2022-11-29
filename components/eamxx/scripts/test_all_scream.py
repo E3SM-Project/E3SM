@@ -936,8 +936,8 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
                         latest = file
                         curr_tag = int(tokens[1])
                         curr_idx = int(tokens[2])
-                
-            return latest 
+
+            return latest
         else:
             return None
 
