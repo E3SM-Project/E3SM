@@ -2,6 +2,7 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/util/scream_array_utils.hpp"
 #include "share/grid/remap/coarsening_remapper.hpp"
+#include "share/util/scream_timing.hpp"
 
 #include "ekat/util/ekat_units.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
@@ -185,6 +186,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
 
   // If needed, remap fields from their grid to the unique grid, for I/O
   if (m_remapper) {
+    start_timer("EAMxx::IO::remap");
     m_remapper->remap(true);
 
     for (int i=0; i<m_remapper->get_num_fields(); ++i) {
@@ -196,6 +198,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
       auto src_t = src.get_header().get_tracking().get_time_stamp();
       tgt.get_header().get_tracking().update_time_stamp(src_t);
     }
+    stop_timer("EAMxx::IO::remap");
   }
 
   // Take care of updating and possibly writing fields.
@@ -556,7 +559,6 @@ AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
   if (layout.has_tag(ShortFieldTagsNames::COL)) {
     const int num_cols = m_io_grid->get_num_local_dofs();
     if (num_cols==0) {
-      var_dof = std::vector<scorpio::offset_t>(0);
       return var_dof;
     }
 
@@ -588,7 +590,6 @@ AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
     const int ngp = layout2d.dim(1);
     const int num_cols = num_my_elems*ngp*ngp;
     if (num_cols==0) {
-      var_dof = std::vector<scorpio::offset_t>(0);
       return var_dof;
     }
 

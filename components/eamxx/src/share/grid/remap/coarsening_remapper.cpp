@@ -75,14 +75,14 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   // min offset value, but the rows will be numbered 
   // by 1 from least to greatest.  So we use row_gids to calculate
   // the remap min.
-  int remap_min_dof = io_grid->get_num_global_dofs()*100;  // Really big INT
+  int remap_min_dof = std::numeric_limits<int>::max();  // Really big INT
   for (int id=0; id<nlweights; id++) {
     remap_min_dof = std::min(row_gids_h[id],remap_min_dof);
   }
   int global_remap_min_dof;
   m_comm.all_reduce(&remap_min_dof,&global_remap_min_dof,1,MPI_MIN);
 
-  gid_t col_offset = global_remap_min_dof + src_grid->get_global_min_dof_gid();
+  gid_t col_offset = global_remap_min_dof - src_grid->get_global_min_dof_gid();
   for (int ii=0; ii<nlweights; ii++) {
     col_gids_h(ii) -= col_offset; 
   }
@@ -659,26 +659,30 @@ get_my_triplets_gids (const std::string& map_file,
 
   // 2. Read a chunk of triplets col indices
   std::vector<gid_t> cols(nlweights);
+  std::vector<gid_t> rows(nlweights); // Needed to calculate min_dof
   const std::string idx_decomp_tag = "coarsening_remapper::get_my_triplet_gids_int_dim" + std::to_string(nlweights);
   scorpio::get_variable(map_file, "col", "col", {"n_s"}, "int", idx_decomp_tag);
+  scorpio::get_variable(map_file, "row", "row", {"n_s"}, "int", idx_decomp_tag);
   std::vector<scorpio::offset_t> dofs_offsets(nlweights);
   std::iota(dofs_offsets.begin(),dofs_offsets.end(),offset);
   scorpio::set_dof(map_file,"col",nlweights,dofs_offsets.data());
+  scorpio::set_dof(map_file,"row",nlweights,dofs_offsets.data());
   scorpio::set_decomp(map_file);
   scorpio::grid_read_data_array(map_file,"col",-1,cols.data(),cols.size());
+  scorpio::grid_read_data_array(map_file,"row",-1,rows.data(),rows.size());
   scorpio::eam_pio_closefile(map_file);
 
   // Offset the cols ids to match the source grid.
   // Determine the min id among the cols array, we
   // also add the min_dof for the grid.
-  int remap_min_dof = ngweights*100;
+  int remap_min_dof = std::numeric_limits<int>::max();
   for (int id=0; id<nlweights; id++) {
-    remap_min_dof = std::min(cols[id],remap_min_dof);
+    remap_min_dof = std::min(rows[id],remap_min_dof);
   }
   int global_remap_min_dof;
   m_comm.all_reduce(&remap_min_dof,&global_remap_min_dof,1,MPI_MIN);
 
-  gid_t col_offset = global_remap_min_dof + src_grid->get_global_min_dof_gid();
+  gid_t col_offset = global_remap_min_dof - src_grid->get_global_min_dof_gid();
   for (auto& id : cols) {
     id -= col_offset; 
   }
