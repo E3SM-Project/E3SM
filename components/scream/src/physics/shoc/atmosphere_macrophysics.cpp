@@ -403,7 +403,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   // Set field property checks for the fields in this process
   using Interval = FieldWithinIntervalCheck;
   using LowerBound = FieldLowerBoundCheck;
-  add_postcondition_check<Interval>(get_field_out("T_mid"),m_grid,130.0,500.0,false);
+  add_postcondition_check<Interval>(get_field_out("T_mid"),m_grid,100.0,500.0,false);
   add_postcondition_check<Interval>(get_field_out("qc"),m_grid,0.0,0.1,false);
   add_postcondition_check<Interval>(get_field_out("horiz_winds"),m_grid,-400.0,400.0,false);
   add_postcondition_check<LowerBound>(get_field_out("pbl_height"),m_grid,0);
