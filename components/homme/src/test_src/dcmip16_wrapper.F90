@@ -656,27 +656,14 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     ! apply forcing to columns
     do j=1,np; do i=1,np
 
-      ! RJ needs only qv_c, T_c, dp_c, ppi
+      ! RJ needs only qv_c, T_c, dp_c, ptop
       ! Kessler needs all
 
       !column values
       qv_c = qv(i,j,:); qc_c = qc(i,j,:); qr_c = qr(i,j,:); 
       p_c  = p(i,j,:); dp_c = dp(i,j,:); T_c = T(i,j,:); zi_c = zi(i,j,:);
-
-      zbottom = zi_c(nlevp)
-
-      !derived pressure values
+      !also needed
       ppi_upper = hvcoord%hyai(1) * hvcoord%ps0
-      call construct_hydro_pressure(dp_c,ppi_upper,ppi)
-      pprime = p_c - ppi
-
-      !derived dry pressure values
-      !dry density, the only quantity that won't change
-      dpdry_c = dp_c*(1.0 - qv_c - qc_c - qr_c)
-      call construct_hydro_pressure(dpdry_c,ppi_upper,ppidry)
-
-      !convert all tracers to dry ratios
-      call convert_to_dry(qv_c, qc_c, qr_c, dp_c, dpdry_c, qvdry_c, qcdry_c, qrdry_c)
 
       !set them here in case physics is not activated
       mass_prect = 0.0; energy_prect = 0.0;
@@ -686,7 +673,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
         !computes its own dry values
         if(bubble_rj_cpstar) then
-          call rj_new(qv_c,T_c,dp_c,p_c,ppi,mass_prect)
+          call rj_new(qv_c,T_c,dp_c,p_c,ppi_upper,mass_prect)
 !          precl(i,j,ie) = precl(i,j,ie) + massout / dt / rhow / g
 !print *, 'precl',  precl(i,j,ie), massout, rhow
         elseif(bubble_rj_cpdry) then
@@ -700,47 +687,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
           print *, 'A, in kessler planar bubble! switch to NH';  stop
         endif
 
-        !if there is any water int he column
-        if( any(qv_c>0).or.any(qc_c>0).or.any(qr_c>0) ) then
-
-          ! Cr, Ar stages ----------------------------------------------------------
-          call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ppi,zbottom,energy_before)
-          energy_start_timestep = energy_before
-          call accrecion_and_accumulation(qcdry_c, qrdry_c, dt)
-          call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ppi,zbottom,energy_after)
-          !print *, 'enbef - enafter', (energy_before - energy_after)/energy_after
-
-          ! sedimentation ----------------------------------------------------------
-          ! right now nh term is not used, so, no need to recompute wet hydro pressure and total nh pressure
-          call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ppi,zbottom,energy_before)
-          call sedimentation(qvdry_c,qcdry_c,qrdry_c, T_c, dpdry_c,ppidry, zbottom, loc_mass_p,loc_energy_p,dt)
-          call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ppi,zbottom,energy_after)
-          !print *, 'enbefore - enafter(up to flux)', (energy_before - energy_after - loc_energy_p)/energy_before
-          mass_prect = mass_prect + loc_mass_p; energy_prect = energy_prect + loc_energy_p;
-
-          ! evaporation of rain ----------------------------------------------------
-          call recompute_pressures(qvdry_c,qcdry_c,qrdry_c, dpdry_c,ppidry,pprime, ppi,p_c,dp_c)
-          call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ppi,zbottom,energy_before)
-          call rain_evaporation(qvdry_c,qcdry_c,qrdry_c, T_c, zbottom, dpdry_c,dp_c,ppidry,ppi,p_c)
-          call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ppi,zbottom,energy_after)
-          !print *, 'Rain evap: enbefore - enafter(up to flux)', (energy_before - energy_after)/energy_before
-
-          ! condensation <-> evaporation -------------------------------------------
-          call recompute_pressures(qvdry_c,qcdry_c,qrdry_c, dpdry_c,ppidry,pprime, ppi,p_c,dp_c)
-          call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ppi,zbottom,energy_before)
-          call condensation_and_back_again(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,dp_c,ppi,p_c)
-          call compute_energy(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ppi,zbottom,energy_after)
-          !print *, 'Condensation: enbefore - enafter(up to flux)', (energy_before - energy_after)/energy_before
-          !print *, 'Total: en - en(up to flux)', (energy_start_timestep - energy_after - energy_prect)/energy_start_timestep
-          !if(energy_prect > tol_energy)then
-          !print *, 'Energy flux comparison:', (energy_prect - cl*T_c(nlev)*mass_prect)/energy_prect
-          !endif
-
-          !update q fields
-          dp_c = dpdry_c*(1.0 + qvdry_c + qcdry_c + qrdry_c)
-          call convert_to_wet(qvdry_c, qcdry_c, qrdry_c, dp_c, dpdry_c, qv_c, qc_c, qr_c)
-
-        endif ! any water >0
+        call kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ppi_upper,zi_c,mass_prect,dt)
 
       endif ! RJ or Kessler choice
 
