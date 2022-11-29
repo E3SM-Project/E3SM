@@ -14,8 +14,8 @@ void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
   int nwx = nx2-(filter_wn_max+1)*2;
   int nwy = ny2-(filter_wn_max+1)*2;
   
-  yakl::RealFFT<real> fftx;
-  yakl::RealFFT<real> ffty;
+  yakl::RealFFT1D<real> fftx;
+  yakl::RealFFT1D<real> ffty;
   fftx.init(fft_out, 2, nx);
   ffty.init(fft_out, 1, ny);
 
