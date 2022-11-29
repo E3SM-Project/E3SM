@@ -23,8 +23,8 @@ string(APPEND FFLAGS " -hnoacc -I${MPICH_DIR}/include -L${MPICH_DIR}/lib -lmpi -
 
 #this resolves a crash in mct in docn init
 if (NOT DEBUG)
-string(APPEND CFLAGS " -O2 -hnoacc -hzero -hfp0 -hipa0")
-string(APPEND FFLAGS " -O2 -hnoacc -hzero -hfp0 -hipa0")
+string(APPEND CFLAGS " -O2 -hnoacc -hfp0 -hipa0")
+string(APPEND FFLAGS " -O2 -hnoacc -hfp0 -hipa0")
 endif()
 
 string(APPEND CPPDEFS " -DCPRCRAY")
