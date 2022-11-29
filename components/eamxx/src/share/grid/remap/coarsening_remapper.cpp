@@ -78,8 +78,9 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   int global_remap_min_dof;
   m_comm.all_reduce(&remap_min_dof,&global_remap_min_dof,1,MPI_MIN);
 
+  gid_t col_offset = global_remap_min_dof + src_grid->get_global_min_dof_gid();
   for (int ii=0; ii<nlweights; ii++) {
-    col_gids_h(ii) = col_gids_h(ii) - global_remap_min_dof + src_grid->get_global_min_dof_gid();
+    col_gids_h(ii) -= col_offset; 
   }
 
   // Create an "overlapped" tgt grid, that is, a grid where each rank
@@ -273,7 +274,6 @@ void CoarseningRemapper::do_remap_fwd ()
     // x is the src field, and y is the overlapped tgt field.
     const auto& f_src    = m_src_fields[i];
     const auto& f_ov_tgt = m_ov_tgt_fields[i];
-    const auto& src_layout = f_src.get_header().get_identifier().get_layout();
     const auto& tgt_layout = f_ov_tgt.get_header().get_identifier().get_layout();
 
     // Dispatch kernel with the largest possible pack size
@@ -320,10 +320,8 @@ local_mat_vec (const Field& x, const Field& y) const
   using PackInfo    = ekat::PackInfo<PackSize>;
 
   const auto& src_layout = x.get_header().get_identifier().get_layout();
-  const auto& tgt_layout = y.get_header().get_identifier().get_layout();
   const int rank = src_layout.rank();
   const int nrows = m_ov_tgt_grid->get_num_local_dofs();
-  const int nrows_src = m_src_grid->get_num_local_dofs();
   auto row_offsets = m_row_offsets;
   auto col_lids = m_col_lids;
   auto weights = m_weights;
@@ -674,8 +672,9 @@ get_my_triplets_gids (const std::string& map_file,
   int global_remap_min_dof;
   m_comm.all_reduce(&remap_min_dof,&global_remap_min_dof,1,MPI_MIN);
 
+  gid_t col_offset = global_remap_min_dof + src_grid->get_global_min_dof_gid();
   for (auto& id : cols) {
-    id = id - global_remap_min_dof + src_grid->get_global_min_dof_gid(); 
+    id -= col_offset; 
   }
 
   // 3. Get the owners of the cols gids we read in, according to the src grid
