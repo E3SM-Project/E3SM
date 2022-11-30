@@ -45,7 +45,7 @@ module li_calving
    !--------------------------------------------------------------------
 
    public :: li_calve_ice, li_restore_calving_front, li_apply_front_ablation_velocity, &
-             li_calculate_damage, li_finalize_damage_after_advection
+             li_calculate_damage, li_finalize_damage_after_advection, li_flood_fill
 
    !--------------------------------------------------------------------
    !
@@ -3632,7 +3632,7 @@ module li_calving
               growMask = 1
       end where
 
-      call flood_fill(seedMask, growMask, domain)
+      call li_flood_fill(seedMask, growMask, domain)
 
       ! Remove ice from flood-filled mask, and any neighboring non-dynamic ice
       do iCell = 1, nCells
@@ -3940,7 +3940,7 @@ module li_calving
       where ( (seedMask == 0) .and. li_mask_is_floating_ice(cellMask(:)) .and. li_mask_is_dynamic_ice(cellMask(:)) )
              growMask = 1
       endwhere
-      call flood_fill(seedMask, growMask, domain)
+      call li_flood_fill(seedMask, growMask, domain)
 
       ! Add floating non-dynamic fringe, but exclude dynamic ice isolated by
       ! non-dynamic ice, which can cause velocity solver to fail to converge.
@@ -3952,7 +3952,7 @@ module li_calving
       elsewhere
              growMask = 0
       endwhere
-      call flood_fill(seedMask, growMask, domain)
+      call li_flood_fill(seedMask, growMask, domain)
       
       ! Now remove any ice that was not flood-filled - these are icebergs
       block => domain % blocklist
@@ -3999,7 +3999,7 @@ module li_calving
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!    routine flood_fill
+!    routine li_flood_fill
 !
 !> \brief  Flood fill routine to differentiate ice sheet from icebergs, critically damaged regions, etc. 
 !> The calling routine defines the seedMask to specify the initial masked region, and the growMask 
@@ -4011,7 +4011,7 @@ module li_calving
 !> \date   March 2021
 !> \details 
 !-----------------------------------------------------------------------
-   subroutine flood_fill(seedMask, growMask, domain)
+   subroutine li_flood_fill(seedMask, growMask, domain)
       !-----------------------------------------------------------------
       ! input/output variables
       !-----------------------------------------------------------------
@@ -4146,7 +4146,7 @@ module li_calving
 
       call mpas_log_write("Flood fill complete.")
 
-   end subroutine flood_fill
+   end subroutine li_flood_fill
 
 end module li_calving
 
