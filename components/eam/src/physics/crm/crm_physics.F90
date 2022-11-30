@@ -233,8 +233,6 @@ subroutine crm_physics_register()
    ! this seemed to be the cleanest solution for the time being (in other
    ! words, this is probably a lazy hack because I could not think of a
    ! cleaner way of passing these)
-   call pbuf_add_field('CRM_DTAU', 'physpkg', dtype_r8,dims_crm_3D,idx)
-   call pbuf_add_field('CRM_EMIS', 'physpkg', dtype_r8,dims_crm_3D,idx)
    call pbuf_add_field('CRM_REL' , 'physpkg', dtype_r8,dims_crm_3D,idx)
    call pbuf_add_field('CRM_REI' , 'physpkg', dtype_r8,dims_crm_3D,idx)
 
