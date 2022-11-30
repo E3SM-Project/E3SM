@@ -1,4 +1,4 @@
-if (compile_threaded)
+if (compile_threaded AND NOT COMP_NAME STREQUAL pio2)
   string(APPEND CFLAGS " -h omp")
   string(APPEND FFLAGS " -h omp")
   string(APPEND LDFLAGS " -h omp")
