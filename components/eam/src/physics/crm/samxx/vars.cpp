@@ -667,6 +667,8 @@ void finalize() {
   q_vt_pert        = real4d();
   u_vt_pert        = real4d();
 
+  yakl::fence();
+
   pressure_fftx.cleanup();
   pressure_ffty.cleanup();
   vt_fftx.cleanup();
