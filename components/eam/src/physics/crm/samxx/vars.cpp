@@ -1,14 +1,6 @@
 
 #include "vars.h"
 
-yakl::RealFFT1D<real> pressure_fftx;
-yakl::RealFFT1D<real> pressure_ffty;
-
-yakl::RealFFT1D<real> vt_fftx;
-yakl::RealFFT1D<real> vt_ffty;
-
-yakl::RealFFT1D<real> esmt_fftx;
-
 void allocate() {
   t00              = real2d( "t00                "      , nzm, ncrms);
   tln              = real2d( "tln                "      ,plev, ncrms);
