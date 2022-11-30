@@ -61,7 +61,8 @@ private:
   void init(const FortranData::Ptr& d);
 };
 
-void p3_init(const bool write_tables = false);
+void p3_init(const bool write_tables = false,
+             const bool masterproc = false);
 
 // We will likely want to remove these checks in the future, as we're not tied
 // to the exact implementation or arithmetic in P3. For now, these checks are

@@ -175,9 +175,10 @@ contains
 
   subroutine micro_p3_utils_init_c(Cpair, Rair, RH2O, RHO_H2O, &
                  MWH2O, MWdry, gravit, LatVap, LatIce,        &
-                 CpLiq, Tmelt, Pi, iulog_in, masterproc) bind(C)
+                 CpLiq, Tmelt, Pi, masterproc) bind(C)
 
     use micro_p3_utils, only: micro_p3_utils_init
+    use iso_fortran_env, only: OUTPUT_UNIT
     real(kind=c_real), value, intent(in) :: Cpair
     real(kind=c_real), value, intent(in) :: Rair
     real(kind=c_real), value, intent(in) :: RH2O
@@ -190,14 +191,10 @@ contains
     real(kind=c_real), value, intent(in) :: CpLiq
     real(kind=c_real), value, intent(in) :: Tmelt
     real(kind=c_real), value, intent(in) :: Pi
-    integer(kind=c_int), value, intent(in)   :: iulog_in
     logical(kind=c_bool), value, intent(in)  :: masterproc
 
-    integer :: iulog
-    iulog = iulog_in
-
     call micro_p3_utils_init(Cpair,Rair,RH2O,RHO_H2O,MWH2O,MWdry,gravit,LatVap,LatIce, &
-                   CpLiq,Tmelt,Pi,iulog,masterproc)
+                   CpLiq,Tmelt,Pi,OUTPUT_UNIT,masterproc)
   end subroutine micro_p3_utils_init_c
 
   subroutine p3_init_a_c(ice_table_vals_c, collect_table_vals_c) bind(C)

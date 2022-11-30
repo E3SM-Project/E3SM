@@ -9,7 +9,7 @@ using scream::Int;
 extern "C" {
   void micro_p3_utils_init_c(Real Cpair, Real Rair, Real RH2O, Real RHO_H2O,
                  Real MWH2O, Real MWdry, Real gravit, Real LatVap, Real LatIce,
-                 Real CpLiq, Real Tmelt, Real Pi, Int iulog, bool masterproc);
+                 Real CpLiq, Real Tmelt, Real Pi, bool masterproc);
   void p3_init_c(const char** lookup_file_dir, int* info, const bool& write_tables);
 }
 
@@ -92,17 +92,17 @@ FortranDataIterator::getfield (Int i) const {
   return fields_[i];
 }
 
-void micro_p3_utils_init () {
+void micro_p3_utils_init (const bool masterproc) {
   using c = scream::physics::Constants<Real>;
   micro_p3_utils_init_c(c::Cpair, c::Rair, c::RH2O, c::RHO_H2O,
                  c::MWH2O, c::MWdry, c::gravit, c::LatVap, c::LatIce,
-                 c::CpLiq, c::Tmelt, c::Pi, c::iulog, c::masterproc);
+                 c::CpLiq, c::Tmelt, c::Pi, masterproc);
 }
 
-void p3_init (const bool write_tables) {
+void p3_init (const bool write_tables, const bool masterproc) {
   static bool is_init = false;
   if (!is_init) {
-    micro_p3_utils_init();
+    micro_p3_utils_init(masterproc);
     static const char* dir = SCREAM_DATA_DIR "/tables";
     Int info;
     p3_init_c(&dir, &info, write_tables);
