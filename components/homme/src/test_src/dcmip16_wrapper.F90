@@ -601,25 +601,17 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   real(rl), dimension(np,np,nlev) :: u,v,w,T,p,dp,rho,z,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
   real(rl), dimension(np,np)      :: ps 
-  real(rl), dimension(nlev)       :: p_c,qv_c,qc_c,qr_c,dp_c,T_c,ppi,dz_c,rhodry,velqr, pprime
-  real(rl), dimension(nlev)       :: dpdry_c, ppidry, zm_c, qvdry_c, qcdry_c, qrdry_c, change_c
+  real(rl), dimension(nlev)       :: p_c,qv_c,qc_c,qr_c,dp_c,T_c,ppi,dz_c, pprime
+  real(rl), dimension(nlev)       :: dpdry_c, massd_c
   real(rl) :: max_w, max_precl, min_ps
 
-  real(rl) :: ppi_upper, massout
-  real(rl) :: loc_mass_p, mass_prect, loc_energy_p, energy_prect, zbottom
+  real(rl) :: ppi_upper
+  real(rl) :: loc_mass_p, mass_prect, loc_energy_p, energy_prect
 
   real(rl) :: zi(np,np,nlevp), zi_c(nlevp)
 
-!  integer, parameter :: test = 1
-!  real(rl), parameter:: gravit = 9.80616, rair = 287.0, cpair = 1.0045e3, cpv = 1810.0, cl = 4188.0, &
-!                        rvapor = 461.5, epsilo = rair/rvapor, &
-!                        latvap=2.501e6, latice=3.337e5, e0=610.78, &
-!                        T0const = 273.16, rhow = 1000.0, &
-!  !kessler constants
-!  real(rl), parameter:: k1=0.001,k2=2.2,k3=0.875,a1=0.001
-
-  real(rl), parameter:: tol_energy = 1e-12, tol_mass = 1e-12
-  real(rl) :: energy_before, energy_after, energy_start_timestep, mass_before, mass_after, mass_start_timestep
+  real(rl) :: energy_before, energy_after, mass_before, mass_after
+  logical :: wasiactive
 
 
   if (qsize .ne. 3) call abortmp('ERROR: moist bubble test requires qsize=3')
@@ -662,22 +654,28 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       !column values
       qv_c = qv(i,j,:); qc_c = qc(i,j,:); qr_c = qr(i,j,:); 
       p_c  = p(i,j,:); dp_c = dp(i,j,:); T_c = T(i,j,:); zi_c = zi(i,j,:);
-      !also needed
+      !also needed, pressure-derived values
       ppi_upper = hvcoord%hyai(1) * hvcoord%ps0
+      pprime = p_c - dp_c
+      dpdry_c = dp_c*(1.0 - qv_c - qc_c - qr_c)
 
       !set them here in case physics is not activated
       mass_prect = 0.0; energy_prect = 0.0;
+      wasiactive = .false.
 
       ! if RJ precipitation
       if(bubble_prec_type == 1) then
 
         !computes its own dry values
         if(bubble_rj_cpstar) then
-          call rj_new(qv_c,T_c,dp_c,p_c,ppi_upper,mass_prect)
-!          precl(i,j,ie) = precl(i,j,ie) + massout / dt / rhow / g
-!print *, 'precl',  precl(i,j,ie), massout, rhow
+
+          !this one is expected to conserve only after PA
+          call rj_new(qv_c,T_c,dp_c,p_c,ppi_upper,mass_prect,wasiactive)
+
         elseif(bubble_rj_cpdry) then
-          call rj_old(qv_c,T_c,dp_c,p_c,mass_prect)
+
+          !this one conserves with const dp
+          call rj_old(qv_c,T_c,dp_c,p_c,mass_prect,wasiactive)
         endif
 
       ! Kessler precipitation
@@ -687,7 +685,8 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
           print *, 'A, in kessler planar bubble! switch to NH';  stop
         endif
 
-        call kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ppi_upper,zi_c,mass_prect,dt)
+        !this one conserves after PA
+        call kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ppi_upper,zi_c,mass_prect,energy_prect,dt,wasiactive)
 
       endif ! RJ or Kessler choice
 

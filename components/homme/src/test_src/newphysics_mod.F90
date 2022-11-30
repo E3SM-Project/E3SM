@@ -345,7 +345,7 @@ subroutine compute_energy_via_dry(qvdry,qcdry,qrdry,tempe,dpdry,pi,zbottom,energ
   real(rl) :: cpterm, Lterm
 
   !dont do 1/g term
-  energy = zbottom*pi(nlevp)
+  energy = zbottom*pi(nlevp)*gravit
   do k=1,nlev
     cpterm = cpdry + cpv * qvdry(k) + cl * (qcdry(k) + qrdry(k))
     Lterm = (latvap+latice) * qvdry(k) + latice * (qcdry(k) + qrdry(k))
@@ -373,12 +373,13 @@ end subroutine compute_mass
 
 
 
-subroutine rj_new(qv_c,T_c,dp_c,p_c,ptop,massout)
+subroutine rj_new(qv_c,T_c,dp_c,p_c,ptop,massout,wasiactive)
 
   real(rl), dimension(nlev), intent(in)    :: p_c, dp_c
   real(rl), dimension(nlev), intent(inout) :: qv_c,T_c
   real(rl),                  intent(inout) :: massout
   real(rl),                  intent(in)    :: ptop
+  logical,                   intent(inout) :: wasiactive
 
   real(rl) :: qsat, dp_loc, qv_loc, dpdry_loc, qvdry_loc, qsatdry, dq_loc, vapor_mass_change
   real(rl) :: T_loc, p_loc, pi_loc, L_old, L_new, rstar_old, rstar_new, hold, T_new
@@ -396,7 +397,8 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,ptop,massout)
     if (qv_c(k) > qsat) then
 !print *, 'HEY RAIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
 !stop
-      !compute dry values
+       wasiactive = .true. 
+       !compute dry values
        dp_loc = dp_c(k)
        qv_loc = qv_c(k)
        dpdry_loc = dp_loc * (1.0 - qv_loc)
@@ -439,17 +441,6 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,ptop,massout)
 #endif
 print *, 'T_new - T_c', T_new - T_c(k)
 
-#if 0
-if( (T_new - T_c(k)) < 0 )then
-print *, 'dq_loc', dq_loc
-print *, 'T_loc, T_c', T_loc, T_c(k)
-print *, 'qvdry_loc', qvdry_loc
-print *, 'dq_loc', dq_loc
-print *, 'dq_loc', dq_loc
-stop
-endif
-#endif
-
        !this does not need conversion wet-dry
        T_c(k)  = T_new
        qv_c(k) = qsat
@@ -457,22 +448,17 @@ endif
      endif
   enddo
   
-!          precl(i,j,ie) = precl(i,j,ie) + vapor_mass_change / dt / rhow / g
-!print *, 'precl',  precl(i,j,ie), vapor_mass_change, rhow
-
-!mass change = dpdry_loc*dq_loc....
-!not sure this version is conserving
-
 end subroutine rj_new
 
 
 
 !in NH case, uses NH pressure
-subroutine rj_old(qv_c,T_c,dp_c,p_c,massout)
+subroutine rj_old(qv_c,T_c,dp_c,p_c,massout,wasiactive)
 
   real(rl), dimension(nlev), intent(in)    :: p_c, dp_c
   real(rl), dimension(nlev), intent(inout) :: qv_c,T_c
   real(rl),                  intent(inout) :: massout
+  logical,                   intent(inout) :: wasiactive
 
   real(rl) :: qsat, dq_loc
   integer :: k
@@ -483,6 +469,7 @@ subroutine rj_old(qv_c,T_c,dp_c,p_c,massout)
     call qsat_rj2(p_c(k), T_c(k), qsat)
 
     if (qv_c(k) > qsat) then
+       wasiactive = .true.
 !original RJ
        dq_loc = (qv_c(k) - qsat) &
          / (1.0 + (latvap/cpdry) * bubble_epsilo * latvap * qsat / (rdry*T_c(k)*T_c(k)))
@@ -497,21 +484,25 @@ end subroutine rj_old
 
 
 
-subroutine kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ptop,zi_c,massout,dt)
+subroutine kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ptop,zi_c,massout,energyout, &
+                                            dt,wasiactive)
 
   real(rl), dimension(nlev), intent(in)    :: p_c, dp_c
   real(rl), dimension(nlevp),intent(in)    :: zi_c
   real(rl), dimension(nlev), intent(inout) :: qv_c,qc_c,qr_c,T_c
-  real(rl),                  intent(inout) :: massout !, energyout
+  real(rl),                  intent(inout) :: massout, energyout
   real(rl),                  intent(in)    :: ptop, dt
+  logical,                   intent(inout) :: wasiactive
 
   real(rl), dimension(nlev) :: ppi, ppidry, pprime, ploc_c, dploc_c
   real(rl), dimension(nlev) :: dpdry_c, qvdry_c, qcdry_c, qrdry_c
 
-  real(rl) :: zbottom, energy_start_timestep, energy_before, energy_after, loc_mass_p, loc_energy_p, energyout
+  real(rl) :: zbottom, energy_start_timestep, energy_before, energy_after, loc_mass_p, loc_energy_p
   integer  :: k
 
-  massout = 0.0
+  real(rl), parameter:: tol_energy = 1e-12, tol_mass = 1e-12
+
+  massout = 0.0; energyout = 0.0
   zbottom = zi_c(nlevp)
   ploc_c = p_c
   dploc_c = dp_c
@@ -531,6 +522,8 @@ subroutine kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ptop,zi_c,massout,dt)
   !if there is any water int he column
   if( any(qv_c>0).or.any(qc_c>0).or.any(qr_c>0) ) then
 
+     !not exactly, as below conditions might not get triggered
+     wasiactive = .true.
      ! Cr, Ar stages ----------------------------------------------------------
      call compute_energy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ppi,zbottom,energy_before)
      energy_start_timestep = energy_before
@@ -540,10 +533,11 @@ subroutine kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ptop,zi_c,massout,dt)
 
      ! sedimentation ----------------------------------------------------------
      ! right now nh term is not used, so, no need to recompute wet hydro pressure and total nh pressure
+     !so far, it is only part that has fluxes out
      call compute_energy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ppi,zbottom,energy_before)
      call sedimentation(qvdry_c,qcdry_c,qrdry_c, T_c, dpdry_c,ppidry, zbottom, loc_mass_p,loc_energy_p,dt)
      call compute_energy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ppi,zbottom,energy_after)
-     !print *, 'enbefore - enafter(up to flux)', (energy_before - energy_after - loc_energy_p)/energy_before
+     !print *, 'Sedime:enbefore - enafter(up to flux)', (energy_before - energy_after - loc_energy_p)/energy_before
      massout = massout + loc_mass_p; energyout = energyout + loc_energy_p;
 
      ! evaporation of rain ----------------------------------------------------
@@ -559,9 +553,15 @@ subroutine kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ptop,zi_c,massout,dt)
      call condensation_and_back_again(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,dploc_c,ppi,ploc_c)
      call compute_energy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ppi,zbottom,energy_after)
      !print *, 'Condensation: enbefore - enafter(up to flux)', (energy_before - energy_after)/energy_before
-     !print *, 'Total: en - en(up to flux)', (energy_start_timestep - energy_after - energy_prect)/energy_start_timestep
-     !if(energy_prect > tol_energy)then
-     !print *, 'Energy flux comparison:', (energy_prect - cl*T_c(nlev)*mass_prect)/energy_prect
+
+     !this works for now
+     !if(energyout > tol_energy)then
+     !print *, 'Total: en - en(up to flux)', (energy_start_timestep - energy_after - energyout)/energy_start_timestep
+     !print *, 'energy flux, total energy after', energyout, energy_after
+     !endif
+
+     !if(energyout > tol_energy)then
+     !print *, 'Energy flux comparison:', (energyout - cl*T_c(nlev)*massout)/energyout
      !endif
 
      !update q fields
@@ -575,7 +575,35 @@ end subroutine kessler_new
 
 
 
+!give masses and pprime
+subroutine energy_hy_via_mass(dpdry_c,dpv_c,dpc_c,dpr_c,T_c,ptop,zi_c,energy)
 
+  real(rl), dimension(nlev), intent(in) :: dpdry_c, dpv_c, dpc_c, dpr_c
+  real(rl), dimension(nlevp),intent(in) :: zi_c
+  real(rl), dimension(nlev), intent(in) :: T_c
+  real(rl),                  intent(in) :: ptop
+  real(rl),                  intent(inout) :: energy
+
+  real(rl) :: zbottom, ps, cpterm, Lterm
+  integer  :: k
+
+  energy = 0.0
+  zbottom = zi_c(nlevp)
+  ps = ptop + sum(dpdry_c + dpv_c + dpc_c + dpr_c)
+
+  !derived pressure values
+  !call construct_hydro_pressure(dp_c,ptop,ppi)
+
+  energy = zbottom * ps * gravit
+
+  do k=1,nlev
+    cpterm = cpdry*dpdry_c(k) + cpv * dpv_c(k) + cl * (dpc_c(k) + dpr_c(k))
+    Lterm = (latvap+latice) * dpv_c(k) + latice * (dpc_c(k) + dpr_c(k))
+    energy = energy + T_c(k)*cpterm + Lterm 
+  enddo
+
+end subroutine energy_hy_via_mass
+!still running this branch without wl?
 
 
 
