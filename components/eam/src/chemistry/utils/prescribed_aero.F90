@@ -481,11 +481,8 @@ end subroutine spec_c_to_a
     ! random sampling is off (randn=0) in single column model setting. 
     if (single_column) then
       randn = 0._r8
-   endif
+    endif
 
-   ! turn off random sampling for scream simulations
-   randn = 0._r8
-    
     do i = 1, aero_cnt
        !Species with '_a' are updated using random sampling.
        !Cloud borne species (ends with _c1,_c2, etc.) have to be skipped
