@@ -788,7 +788,7 @@
         <!-- <arg name="binding">cpu_bind=cores</arg>  -->
         <!-- <arg name="binding">threads-per-core=1 -c 2</arg> -->
         <arg name="binding">--gpus-per-node=8 --gpu-bind=closest</arg>
-        <arg name="thread_count">-c 4</arg>
+        <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
         <!-- <arg name="placement">-m *:block</arg> -->
         <!--<arg name="placement">-m plane={{ tasks_per_node }}</arg>-->
       </arguments>
