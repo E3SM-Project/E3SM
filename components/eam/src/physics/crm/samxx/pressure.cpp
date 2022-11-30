@@ -1,9 +1,6 @@
 
 #include "pressure.h"
 
-yakl::RealFFT1D<real> pressure_fftx;
-yakl::RealFFT1D<real> pressure_ffty;
-
 void pressure() {
   YAKL_SCOPE( p             , :: p );
   YAKL_SCOPE( rhow          , :: rhow );

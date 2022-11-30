@@ -3,9 +3,6 @@
 //==============================================================================
 //==============================================================================
 
-yakl::RealFFT1D<real> vt_fftx;
-yakl::RealFFT1D<real> vt_ffty;
-
 void VT_filter(int filter_wn_max, real4d &f_in, real4d &f_out) {
   // local variables
   int nx2 = nx+2;
