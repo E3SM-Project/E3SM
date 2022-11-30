@@ -677,7 +677,7 @@
 <drydep_srf_file hgrid="ne512np4"  npg="2">atm/cam/chem/trop_mam/atmsrf_ne512pg2_200212.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne1024np4" npg="2">atm/cam/chem/trop_mam/atmsrf_ne1024pg2_200212.nc</drydep_srf_file>
 
-<drydep_srf_file hgrid="ne0np4_CAx32v1">atm/cam/chem/trop_mam/atmsrf_CAx32v1_pg2_20220517.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_CAx32v1">atm/cam/chem/trop_mam/atmsrf_CAx32v1_pg2_20221130.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_arm_x8v3_lowcon">atm/cam/chem/trop_mam/atmsrf_armx8v3.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_conus_x4v1_lowcon" >atm/cam/chem/trop_mam/atmsrf_conusx4v1.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_conus_x4v1_lowcon" npg="2" >atm/cam/chem/trop_mam/atmsrf_conusx4v1pg2_20020609.nc</drydep_srf_file>
