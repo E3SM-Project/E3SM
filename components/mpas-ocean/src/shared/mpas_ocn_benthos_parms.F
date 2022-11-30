@@ -113,8 +113,6 @@ module ocn_benthos_parms
        benthos_dic_min  = benthos_salt_min/35.0_benthos_r8 * 1944.0_benthos_r8, & ! minium dic (mmol/m3)
        benthos_alk_min  = benthos_salt_min/35.0_benthos_r8 * 2225.0_benthos_r8, & ! minium alkalinity (mmolEq/m3)
        oceanMagnesium = 53.0_benthos_r8/sediment_density, & ! (mol/kg)  concentration of Mg in the ocean
-       benthos_phlo_3d_init = 6.0_benthos_r8, & ! lower bound for pH
-       benthos_phhi_3d_init = 9.0_benthos_r8, & ! higher bound for pH
        CtoP = 106.0_benthos_r8, & ! carbon to phosphorus ratio of sinking organic matter  (117 in BGC)
        NtoP = 16.0_benthos_r8,  & ! carbon to nitrogen ratio of organic sinking matter)
        CtoP_r = 290.0_benthos_r8, & ! carbon to phosphorus ratio of sinking organic matter  (117 in BGC)
@@ -170,13 +168,22 @@ module ocn_benthos_parms
 
   real(KIND=benthos_r8), parameter, public :: &
        inhibition = 0.1_benthos_r8, & ! inhibition factor from Krumins et al
-       kp1 = 457.1_benthos_r8,   & ! barnacle Balanus (per mM per y)
-       kp2 = 1258.9_benthos_r8,  & ! green algae Halimeda (per mM per y)
-       kp3 = 660.69_benthos_r8,  & ! foraminifera Peneroplis (per mM per y)
-       n1 = 2.74_benthos_r8,     & ! power law for barnacle Balanus
-       n2 = 2.43_benthos_r8,     & ! power law for green algae Halimeda
-       n3 = 3.61_benthos_r8 ! power law for foraminifera Peneroplis
-       
+       kp1 = 14.296e-6_benthos_r8, & ! mmoles/mg/hr !14.296 umoles/g/hr (Walter and Morse (1985) table 4)barnacle Balanus
+       kp2 = 22.198e-6_benthos_r8, & ! mmol/mg/hr !22.198 umoles/g/hr (Walter and Morse (1985) table 4)green algae Halimeda
+       kp3 = 16.78e-6_benthos_r8,  & ! mmol/mg/hr !16.78 umoles/g/hr (Walter and Morse (1985table 4) foraminifera Peneroplis
+       n1 = 2.74_benthos_r8,     & ! Walter and morse 1985 table 4; power law for barnacle Balanus
+       n2 = 2.43_benthos_r8,     & ! Walter and morse 1985 table 4; power law for green algae Halimeda
+       n3 = 3.51_benthos_r8,     & !  Walter and morse 1985 table 4; 3.51 power law for foraminifera Peneroplis
+! old spin-up
+!       kp1 = 457.1_benthos_r8,   & ! 14.296E-6 mmoles/mg/hr !14.296 umoles/g/hr (Walter and Morse (1985) table 4)barnacle Balanus
+!       kp2 = 1258.9_benthos_r8,  & ! 22.198E-6 mmol/mg/hr !22.198 umoles/g/hr (Walter and Morse (1985) table 4)green algae Halimeda
+!       kp3 = 660.69_benthos_r8,  & ! 16.78E-6 mmol/mg/hr !16.78 umoles/g/hr (Walter and Morse (1985table 4) foraminifera Peneroplis
+!       n1 = 2.74_benthos_r8,     & ! Walter and morse 1985 table 4; power law for barnacle Balanus
+!       n2 = 2.43_benthos_r8,     & ! Walter and morse 1985 table 4; power law for green algae Halimeda
+!       n3 = 3.61_benthos_r8,     & !  Walter and morse 1985 table 4; 3.51 power law for foraminifera Peneroplis
+       mm_calcite = 100.0869_benthos_r8,   & ! g/mol molar mass of calcite
+       mm_aragonite = 100.0869_benthos_r8, & ! g/mol molar mass of aragonite
+       mm_mgcalcite = 97.7201_benthos_r8     ! g/mol molar mass of 15% Mg + 85% Ca + CO3
   !-----------------------------------------------------------------------------
   !   functional group
   !-----------------------------------------------------------------------------
@@ -514,7 +521,7 @@ module ocn_benthos_parms
         fauna_biomass_max = 1000.0_benthos_r8, & ! (g/m2) saturation biomass
         fauna_biomass     = 1000.0_benthos_r8, & ! (g/m2) surface biomass use in biodiffusion
         molecular_diff    = 0.035_benthos_r8, & ! (m2/y) molecular diffusivity (Hensen et al 1998 for nitrate)
-        max_bio_diff      = 5.411_benthos_r8, & ! (cm2/s) maximum biodiffusivity
+        max_bio_diff      = 5.411_benthos_r8, & ! (cm2/y) maximum biodiffusivity
         x_biodiffusion    = 0.0075_benthos_r8, & ! 0.005 but use 0.01 to start (m) biodiffusion e-folding length scale
         T_max_biodiffusion = 286.85_benthos_r8  ! (K) maximum biodiffusion temperature dependence
                                            ! Reed et al 2011

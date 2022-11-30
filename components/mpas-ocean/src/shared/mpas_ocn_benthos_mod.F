@@ -2993,7 +2993,8 @@ contains
                benthosTracerBulk(iTracers,iLevels) = initBenthosTracerBulk_Carbonate(iTracers,iLevels)
             end do
          end do
-
+         rel_error(:) = c0_benthos_r8
+         rel_error_tot(:) = c0_benthos_r8
          do subtt = 1,subN
             do iLevels = 1,nBenthicVertLevels+1
 
@@ -5637,7 +5638,7 @@ subroutine carbonateRateConstants(carbonateRates,benthosTracerBulkLevels,&
   integer (KIND=benthos_i4) :: iReactions
 
   real (KIND=benthos_r8) :: &
-       k_p1, k_p2, k_p3  ! mmol/m3/s
+       k_p1, k_p2, k_p3  ! mmol/mmol of calcite/s
 
    !  Constants from Krumins et al.  Something odd about the units
 
@@ -5647,29 +5648,17 @@ subroutine carbonateRateConstants(carbonateRates,benthosTracerBulkLevels,&
 
    ! Constants from Walter and Morse (1985) reduced by inhibition factor of 0.1 as in Krumins et al
 
-   k_p1 = kp1 * inhibition * sec_per_hour * sediment_density  ! barnacle Balanus
-   k_p2 = kp2 * inhibition * sec_per_hour * sediment_density ! green algae Halimeda
-   k_p3 = kp3 * inhibition * sec_per_hour * sediment_density ! foraminifier Peneroplis
+   k_p1 = kp1 * inhibition / sec_per_hour * mm_calcite * sediment_density! mmol/mmol of calcite/s*kg/m^3 !* sediment_density  ! barnacle Balanus
+   k_p2 = kp2 * inhibition / sec_per_hour * mm_aragonite * sediment_density! mmol/mmol of aragonite/s*kg/m^3 !* sediment_density ! green algae Halimeda
+   k_p3 = kp3 * inhibition / sec_per_hour * mm_mgcalcite * sediment_density ! !mmol/mmmol  of mg-calcite /s*kg/m^3 !* sediment_density ! foraminifier Peneroplis
 
    do iReactions = 1,nCarbonateReactions
       carbonateRates(iReactions) = c0_benthos
    end do
 
-   carbonateRates(1) = k_p1 * (c1_benthos - min(c1_benthos,sat_calc))**n1   ! mmol/m3/s
-   carbonateRates(2) = k_p2 * (c1_benthos - min(c1_benthos,sat_arag))**n2   ! mmol/m3/s
-   carbonateRates(3) = k_p3 * (c1_benthos - min(c1_benthos,sat_mgcalc))**n3 ! mmol/m3/s
-
-   if (benthosTracerBulkLevels(caco3a_ind)*0.9_benthos_r8 < carbonateRates(1) * dt/sediment_density) then
-      carbonateRates(1) = benthosTracerBulkLevels(caco3a_ind)*0.9_benthos_r8/dt*sediment_density
-   end if
-
-   if (benthosTracerBulkLevels(caco3b_ind)*0.9_benthos_r8 < carbonateRates(2) * dt/sediment_density) then
-      carbonateRates(2) = benthosTracerBulkLevels(caco3b_ind)*0.9_benthos_r8/dt*sediment_density
-   end if
-
-   if (benthosTracerBulkLevels(camgco3_ind)*0.9_benthos_r8 < carbonateRates(3) * dt/sediment_density) then
-      carbonateRates(3) = benthosTracerBulkLevels(camgco3_ind)*0.9_benthos_r8/dt*sediment_density
-   end if
+   carbonateRates(1) = k_p1 * (c1_benthos - min(c1_benthos,sat_calc))**n1*benthosTracerBulkLevels(caco3a_ind)   ! mmol/m^3/s
+   carbonateRates(2) = k_p2 * (c1_benthos - min(c1_benthos,sat_arag))**n2*benthosTracerBulkLevels(caco3b_ind)   ! mmol/m^3/s
+   carbonateRates(3) = k_p3 * (c1_benthos - min(c1_benthos,sat_mgcalc))**n3*benthosTracerBulkLevels(camgco3_ind) ! mmol/m^3/s
 
  end subroutine carbonateRateConstants
 
