@@ -30,6 +30,7 @@ module ocn_tracer_surface_restoring
    use ocn_config
    use ocn_framework_forcing
    use ocn_diagnostics_variables
+   use ocn_mesh
 
    implicit none
 
@@ -135,11 +136,11 @@ contains
 
       err = 0
 
-      iLevel = 1  ! base surface flux restoring on tracer fields in the top layer
-
       !$omp parallel
-      !$omp do schedule(runtime) private(iTracer)
+      !$omp do schedule(runtime) private(iTracer, iLevel)
       do iCell=1,nCells
+        iLevel = minLevelCell(iCell)  ! base surface flux restoring on tracer fields in the top layer
+
         do iTracer=1,nTracers
 
           ! For monthly salinity restoring, tracersSurfaceRestoringValue contains the zero-mean deltaS

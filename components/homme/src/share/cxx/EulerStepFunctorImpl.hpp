@@ -311,7 +311,7 @@ public:
 
     }
 
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     profiling_pause();
   }
 
@@ -328,7 +328,7 @@ public:
                            m_geometry.num_elems() * m_data.qsize, m_tpref),
                          *this);
     }
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     profiling_pause();
   }
 
@@ -421,7 +421,7 @@ public:
       Homme::get_default_team_policy<ExecSpace, AALSetupPhase>(
         m_geometry.num_elems(), m_tpref),
       *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     m_kernel_will_run_limiters = true;
     Kokkos::parallel_for(
       //to play with launch bounds
@@ -429,7 +429,7 @@ public:
       Homme::get_default_team_policy<ExecSpace, AALTracerPhase >(
         m_geometry.num_elems() * m_data.qsize, m_tpref),
       *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     m_kernel_will_run_limiters = false;
     profiling_pause();
   }
@@ -457,7 +457,7 @@ public:
             m_geometry.num_elems(), m_tpref),
         *this);
 
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     profiling_pause();
   }
 
@@ -575,7 +575,7 @@ public:
               });
           }
       });
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
   }
 
   void neighbor_minmax_start() {

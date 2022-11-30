@@ -1463,6 +1463,26 @@
       </pes>
     </mach>
     <mach name="chrysalis">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="L">
+        <comment> -compset WCYCL*/CRYO* -res ne30pg*ECwISC30to60E2r1* on 105 nodes pure-MPI, ~40 sypd </comment>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>5400</ntasks_atm>
+          <ntasks_lnd>320</ntasks_lnd>
+          <ntasks_rof>320</ntasks_rof>
+          <ntasks_ice>4800</ntasks_ice>
+          <ntasks_ocn>1280</ntasks_ocn>
+          <ntasks_cpl>5440</ntasks_cpl>
+        </ntasks>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_lnd>5120</rootpe_lnd>
+          <rootpe_rof>5120</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>5440</rootpe_ocn>
+          <rootpe_cpl>0</rootpe_cpl>
+        </rootpe>
+      </pes>
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="M">
         <comment> -compset WCYCL*/CRYO* -res ne30pg*ECwISC30to60E2r1* on 55 nodes pure-MPI, ~25 sypd </comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
