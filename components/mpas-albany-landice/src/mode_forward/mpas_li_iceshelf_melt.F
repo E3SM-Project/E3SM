@@ -78,7 +78,6 @@ module li_iceshelf_melt
 !-----------------------------------------------------------------------
 
    subroutine li_face_melt_grounded_ice(domain, err)
-
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -203,7 +202,7 @@ module li_iceshelf_melt
 !-----------------------------------------------------------------------
 
    subroutine li_basal_melt_floating_ice(domain, err)
-
+      use li_calving, only: li_flood_fill
       !-----------------------------------------------------------------
       ! input variables
       !-----------------------------------------------------------------
@@ -230,8 +229,12 @@ module li_iceshelf_melt
       type (mpas_pool_type), pointer :: velocityPool   ! needed for mask subroutine
       type (mpas_pool_type), pointer :: scratchPool
 
+      type (field1dInteger), pointer :: seedMaskField
+      type (field1dInteger), pointer :: growMaskField
+      integer, dimension(:), pointer :: seedMask, growMask !masks to pass to flood-fill routine
+
       integer, pointer :: &
-           nCellsSolve                 ! number of locally owned cells
+           nCellsSolve, nCells             ! number of locally owned cells
 
       logical, pointer :: &
            config_print_thermal_info   ! if true, print debug info
@@ -499,7 +502,43 @@ module li_iceshelf_melt
 
             block => block % next
          enddo   ! associated(block)
+
       endif
+
+      ! Allocate scratch fields for flood-fill
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
+      call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
+      call mpas_allocate_scratch_field(seedMaskField, single_block_in = .true.)
+      seedMask => seedMaskField % array
+      seedMask(:) = 0
+      call mpas_pool_get_field(scratchPool, 'growMask', growMaskField)
+      call mpas_allocate_scratch_field(growMaskField, single_block_in = .true.)
+      growMask => growMaskField % array
+      growMask(:) = 0
+
+      ! Prevent sub-shelf melt in subglacial lakes
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
+      do iCell = 1, nCells
+         if ( (.not. li_mask_is_ice(cellMask(iCell))) ) then
+              seedMask(iCell) = 1
+         else if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
+              growMask(iCell) = 1
+         end if
+      end do
+      call li_flood_fill(seedMask, growMask, domain)
+      do iCell = 1, nCells
+         if (seedMask(iCell) == 0) then
+              floatingBasalMassBal(iCell) = 0.0_RKIND
+         end if
+      end do
+
+      ! deallocate scratch fields used for flood fill
+      call mpas_deallocate_scratch_field(seedMaskField, single_block_in=.true.)
+      call mpas_deallocate_scratch_field(growMaskField, single_block_in=.true.)
 
       if (trim(config_front_mass_bal_grounded) .ne. 'none') then
          block => domain % blocklist
