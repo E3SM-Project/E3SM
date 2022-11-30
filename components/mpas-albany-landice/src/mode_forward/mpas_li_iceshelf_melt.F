@@ -234,7 +234,7 @@ module li_iceshelf_melt
       integer, dimension(:), pointer :: seedMask, growMask !masks to pass to flood-fill routine
 
       integer, pointer :: &
-           nCellsSolve, nCells             ! number of locally owned cells
+           nCellsSolve, nCells         ! number of locally owned cells & total cells on this proc
 
       logical, pointer :: &
            config_print_thermal_info   ! if true, print debug info
@@ -506,6 +506,7 @@ module li_iceshelf_melt
       endif
 
       ! Allocate scratch fields for flood-fill
+      ! Note: This only supports one block per processor
       call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
       call mpas_pool_get_field(scratchPool, 'seedMask', seedMaskField)
       call mpas_allocate_scratch_field(seedMaskField, single_block_in = .true.)
@@ -530,11 +531,8 @@ module li_iceshelf_melt
          end if
       end do
       call li_flood_fill(seedMask, growMask, domain)
-      do iCell = 1, nCells
-         if (seedMask(iCell) == 0) then
-              floatingBasalMassBal(iCell) = 0.0_RKIND
-         end if
-      end do
+
+      floatingBasalMassBal(:) = floatingBasalMassBal(:) * seedMask(:)
 
       ! deallocate scratch fields used for flood fill
       call mpas_deallocate_scratch_field(seedMaskField, single_block_in=.true.)
