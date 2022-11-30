@@ -88,7 +88,6 @@ contains
     character(CL)               :: atm_gnam      ! atm grid
     character(CL)               :: ocn_gnam      ! ocn grid
     character(CL)               :: wav_gnam      ! wav grid
-    character(CL)               :: wav_snam      ! wav grid
     type(mct_avect) , pointer   :: w2x_wx
     character(*)    , parameter :: subname = '(prep_wav_init)'
     character(*)    , parameter :: F00 = "('"//subname//" : ', 4A )"
@@ -98,7 +97,6 @@ contains
          wav_present=wav_present      , &
          ocn_gnam=ocn_gnam            , &
          wav_gnam=wav_gnam            , &
-         wav_snam=wav_snam            , &
          atm_gnam=atm_gnam            , &
          esmf_map_flag=esmf_map_flag  )
 

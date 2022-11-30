@@ -31,7 +31,6 @@ def buildnml(case, caseroot, compname):
     get_refcase          = case.get_value("GET_REFCASE")
     compset              = case.get_value("COMPSET")
     wav_grid             = case.get_value("WAV_GRID")
-    wav_spec             = case.get_value("WAV_SPEC")
     wav_only             = case.get_value("WAV_ONLY")
     ww3_bldnml_opts      = case.get_value("WW3_BLDNML_OPTS")
     ww3_namelist_opts    = case.get_value("WW3_NAMELIST_OPTS")
@@ -52,7 +51,11 @@ def buildnml(case, caseroot, compname):
     #--------------------------------------------------------------------
 
     wav_grid_supported = ("null", "wQU225EC60to30sp32x36", "wQU225EC60to30sp50x36", "wQU100sp50x36", "wQU225EC30to60E2r2sp50x36","wQU225EC30to60E2r2sp36x36","wQU225EC30to60E2r2sp25x36")
-    expect((wav_grid+wav_spec) in wav_grid_supported, "WAV_GRID '{}' is not supported in ww3. Choose from: '{}'".format((wav_grid+wave_spec),' ,'.join(wav_grid_supported)))
+    expect((wav_grid) in wav_grid_supported, "WAV_GRID '{}' is not supported in ww3. Choose from: '{}'".format((wav_grid),' ,'.join(wav_grid_supported)))
+
+    # determine grid and spectral resolution of WW3 as defined in 'wav_grid'
+    spectral_res = wav_grid[-7:] # specral res will always be last seven charcters of string
+    ww3_grid = wav_grid[:-7] # just the wave grid without spectral info
 
     #--------------------------------------------------------------------
     # Generate input data file
@@ -60,10 +63,10 @@ def buildnml(case, caseroot, compname):
 
     with open(os.path.join(casebuild, "ww3.input_data_list"), "w") as input_list:
 
-        input_list.write("mesh = {}/wav/ww3/{}.msh\n".format(din_loc_root,wav_grid))
+        input_list.write("mesh = {}/wav/ww3/{}.msh\n".format(din_loc_root,ww3_grid))
         input_list.write("stations = {}/wav/ww3/stations.txt\n".format(din_loc_root))
-        input_list.write("uostfilelocal = {}/wav/ww3/obstructions_local.{}{}.in\n".format(din_loc_root,wav_grid,wav_spec))
-        input_list.write("uostfileshadow = {}/wav/ww3/obstructions_shadow.{}{}.in\n".format(din_loc_root,wav_grid,wav_spec))
+        input_list.write("uostfilelocal = {}/wav/ww3/obstructions_local.{}.in\n".format(din_loc_root,wav_grid))
+        input_list.write("uostfileshadow = {}/wav/ww3/obstructions_shadow.{}.in\n".format(din_loc_root,wav_grid))
 
     #--------------------------------------------------------------------
     # Invoke ww3 build-namelist - output will go in $CASEBUILD/ww3conf

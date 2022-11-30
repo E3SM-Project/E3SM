@@ -1,4 +1,4 @@
-! !MODULE: seq_infodata_mod --- Module for input data shared between CCSM components
+!MODULE: seq_infodata_mod --- Module for input data shared between CCSM components
 !
 ! !DESCRIPTION:
 !
@@ -126,7 +126,6 @@ MODULE seq_infodata_mod
      character(SHR_KIND_CL)  :: rof_gnam        ! rof grid
      character(SHR_KIND_CL)  :: glc_gnam        ! glc grid
      character(SHR_KIND_CL)  :: wav_gnam        ! wav grid
-     character(SHR_KIND_CL)  :: wav_snam        ! wav spectral name
      character(SHR_KIND_CL)  :: iac_gnam        ! iac grid
      logical                 :: shr_map_dopole  ! pole corrections in shr_map_mod
      character(SHR_KIND_CL)  :: vect_map        ! vector mapping option, none, cart3d, cart3d_diag, cart3d_uvw, cart3d_uvw_diag
@@ -380,7 +379,6 @@ CONTAINS
     character(SHR_KIND_CL) :: rof_gnam           ! rof grid
     character(SHR_KIND_CL) :: glc_gnam           ! glc grid
     character(SHR_KIND_CL) :: wav_gnam           ! wav grid
-    character(SHR_KIND_CL) :: wav_snam           ! wav spectra
     character(SHR_KIND_CL) :: iac_gnam           ! iac grid
     logical                :: shr_map_dopole     ! pole corrections in shr_map_mod
     character(SHR_KIND_CL) :: vect_map           ! vector mapping option
@@ -453,7 +451,7 @@ CONTAINS
          wv_sat_scheme, wv_sat_transition_start,           &
          wv_sat_use_tables, wv_sat_table_spacing,          &
          tfreeze_option, glc_renormalize_smb,              &
-         ice_gnam, rof_gnam, glc_gnam, wav_gnam,wav_snam,  &
+         ice_gnam, rof_gnam, glc_gnam, wav_gnam,      &
          atm_gnam, lnd_gnam, ocn_gnam, iac_gnam, cpl_decomp,         &
          shr_map_dopole, vect_map, aoflux_grid, do_histinit,  &
          do_budgets, do_bgc_budgets, drv_threading,        &
@@ -543,7 +541,6 @@ CONTAINS
        rof_gnam              = 'undefined'
        glc_gnam              = 'undefined'
        wav_gnam              = 'undefined'
-       wav_snam              = 'undefined'
        iac_gnam              = 'undefined'
        shr_map_dopole        = .true.
        vect_map              = 'cart3d'
@@ -676,7 +673,6 @@ CONTAINS
        infodata%rof_gnam              = rof_gnam
        infodata%glc_gnam              = glc_gnam
        infodata%wav_gnam              = wav_gnam
-       infodata%wav_snam              = wav_snam
        infodata%iac_gnam              = iac_gnam
        infodata%shr_map_dopole        = shr_map_dopole
 #ifdef COMPARE_TO_NUOPC
@@ -1004,7 +1000,7 @@ CONTAINS
        glclnd_present, glcocn_present, glcice_present, iceberg_prognostic,&
        esp_present, esp_prognostic,                                       &
        bfbflag, lnd_gnam, cpl_decomp, cpl_seq_option,                     &
-       ice_gnam, rof_gnam, glc_gnam, wav_gnam, wav_snam, iac_gnam,        &
+       ice_gnam, rof_gnam, glc_gnam, wav_gnam, iac_gnam,                 &
        atm_gnam, ocn_gnam, info_debug, dead_comps, read_restart,          &
        shr_map_dopole, vect_map, aoflux_grid, flux_epbalfact,             &
        nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
@@ -1101,7 +1097,6 @@ CONTAINS
     character(len=*),       optional, intent(OUT) :: rof_gnam                ! rof grid
     character(len=*),       optional, intent(OUT) :: glc_gnam                ! glc grid
     character(len=*),       optional, intent(OUT) :: wav_gnam                ! wav grid
-    character(len=*),       optional, intent(OUT) :: wav_snam                ! wav spectra
     character(len=*),       optional, intent(OUT) :: iac_gnam                ! iac grid
     logical,                optional, intent(OUT) :: shr_map_dopole          ! pole corrections in shr_map_mod
     character(len=*),       optional, intent(OUT) :: vect_map                ! vector mapping option
@@ -1286,7 +1281,6 @@ CONTAINS
     if ( present(rof_gnam)       ) rof_gnam       = infodata%rof_gnam
     if ( present(glc_gnam)       ) glc_gnam       = infodata%glc_gnam
     if ( present(wav_gnam)       ) wav_gnam       = infodata%wav_gnam
-    if ( present(wav_snam)       ) wav_snam       = infodata%wav_snam
     if ( present(iac_gnam)       ) iac_gnam       = infodata%iac_gnam
     if ( present(shr_map_dopole) ) shr_map_dopole = infodata%shr_map_dopole
     if ( present(vect_map)       ) vect_map       = infodata%vect_map
@@ -1486,7 +1480,6 @@ CONTAINS
     else if (component_firstletter == 'w') then
        call seq_infodata_GetData(infodata, wav_present=comp_present,           &
             wav_prognostic=comp_prognostic, wav_gnam=comp_gnam,                &
-            wav_snam=comp_snam,                &
             wav_phase=comp_phase, wav_nx=comp_nx, wav_ny=comp_ny,              &
             histavg_wav=histavg_comp)
     else if (component_firstletter == 'z') then
@@ -1556,7 +1549,7 @@ CONTAINS
        esp_present, esp_prognostic,                                       &
        iac_present, iac_prognostic,                                       &
        bfbflag, lnd_gnam, cpl_decomp, cpl_seq_option,                     &
-       ice_gnam, rof_gnam, glc_gnam, wav_gnam, wav_snam, iac_gnam,        &
+       ice_gnam, rof_gnam, glc_gnam, wav_gnam, iac_gnam,        &
        atm_gnam, ocn_gnam, info_debug, dead_comps, read_restart,          &
        shr_map_dopole, vect_map, aoflux_grid, run_barriers,               &
        nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
@@ -1652,7 +1645,6 @@ CONTAINS
     character(len=*),       optional, intent(IN)    :: rof_gnam                ! rof grid
     character(len=*),       optional, intent(IN)    :: glc_gnam                ! glc grid
     character(len=*),       optional, intent(IN)    :: wav_gnam                ! wav grid
-    character(len=*),       optional, intent(IN)    :: wav_snam                ! wav spectra
     character(len=*),       optional, intent(IN)    :: iac_gnam                ! iac grid
     logical,                optional, intent(IN)    :: shr_map_dopole          ! pole corrections in shr_map_mod
     character(len=*),       optional, intent(IN)    :: vect_map                ! vector mapping option
@@ -1836,7 +1828,6 @@ CONTAINS
     if ( present(rof_gnam)       ) infodata%rof_gnam       = rof_gnam
     if ( present(glc_gnam)       ) infodata%glc_gnam       = glc_gnam
     if ( present(wav_gnam)       ) infodata%wav_gnam       = wav_gnam
-    if ( present(wav_snam)       ) infodata%wav_snam       = wav_snam
     if ( present(iac_gnam)       ) infodata%iac_gnam       = iac_gnam
     if ( present(shr_map_dopole) ) infodata%shr_map_dopole = shr_map_dopole
     if ( present(vect_map)       ) infodata%vect_map       = vect_map
@@ -2021,7 +2012,6 @@ CONTAINS
     else if (component_firstletter == 'w') then
        call seq_infodata_PutData(infodata, wav_present=comp_present,           &
             wav_prognostic=comp_prognostic, wav_gnam=comp_gnam,                &
-            wav_snam=comp_snam,                                                &
             wav_phase=comp_phase, wav_nx=comp_nx, wav_ny=comp_ny,              &
             histavg_wav=histavg_comp)
     else if (component_firstletter == 'z') then
@@ -2144,7 +2134,6 @@ CONTAINS
     call shr_mpi_bcast(infodata%rof_gnam,                mpicom)
     call shr_mpi_bcast(infodata%glc_gnam,                mpicom)
     call shr_mpi_bcast(infodata%wav_gnam,                mpicom)
-    call shr_mpi_bcast(infodata%wav_snam,                mpicom)
     call shr_mpi_bcast(infodata%iac_gnam,                mpicom)
     call shr_mpi_bcast(infodata%shr_map_dopole,          mpicom)
     call shr_mpi_bcast(infodata%vect_map,                mpicom)
@@ -2851,7 +2840,6 @@ CONTAINS
     write(logunit,F0A) subname,'rof_gridname             = ', trim(infodata%rof_gnam)
     write(logunit,F0A) subname,'glc_gridname             = ', trim(infodata%glc_gnam)
     write(logunit,F0A) subname,'wav_gridname             = ', trim(infodata%wav_gnam)
-    write(logunit,F0A) subname,'wav_specname             = ', trim(infodata%wav_snam)
     write(logunit,F0A) subname,'iac_gridname             = ', trim(infodata%iac_gnam)
     write(logunit,F0L) subname,'shr_map_dopole           = ', infodata%shr_map_dopole
     write(logunit,F0A) subname,'vect_map                 = ', trim(infodata%vect_map)

@@ -1126,15 +1126,6 @@
     <desc>wave model (wav) grid</desc>
   </entry>
 
-  <entry id="WAV_SPEC">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>build_grid</group>
-    <file>env_build.xml</file>
-    <desc>wave model (wav) spectra</desc>
-  </entry>
-
-
   <entry id="WAV_NX">
     <type>integer</type>
     <default_value>0</default_value>

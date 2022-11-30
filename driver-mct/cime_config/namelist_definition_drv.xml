@@ -913,18 +913,6 @@
     </values>
   </entry>
   
-  <entry id="wav_snam" modify_via_xml="WAV_SPEC">
-    <type>char</type>
-    <category>mapping</category>
-    <group>seq_infodata_inparm</group>
-    <desc>
-      WAV_SPEC values passed into driver.
-    </desc>
-    <values>
-      <value>$WAV_SPEC</value>
-    </values>
-  </entry>
-
   <entry id="iac_gnam" modify_via_xml="IAC_GRID">
     <type>char</type>
     <category>mapping</category>
