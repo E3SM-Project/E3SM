@@ -1971,7 +1971,11 @@ bool crm_accel_ceaseflag;
 
 int igstep;
 
-
+yakl::RealFFT1D<real> pressure_fftx;
+yakl::RealFFT1D<real> pressure_ffty;
+yakl::RealFFT1D<real> vt_fftx;
+yakl::RealFFT1D<real> vt_ffty;
+yakl::RealFFT1D<real> esmt_fftx;
 
 
 

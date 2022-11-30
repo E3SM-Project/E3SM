@@ -2,6 +2,7 @@
 #pragma once
 
 #include "samxx_const.h"
+#include "YAKL_fft.h"
 
 
 void allocate();
@@ -11,14 +12,6 @@ void init_values();
 
 
 void finalize();
-
-yakl::RealFFT1D<real> pressure_fftx;
-yakl::RealFFT1D<real> pressure_ffty;
-
-yakl::RealFFT1D<real> vt_fftx;
-yakl::RealFFT1D<real> vt_ffty;
-
-yakl::RealFFT1D<real> esmt_fftx;
 
 
 inline void perturb(real1d &arr, double mag) {
@@ -559,4 +552,9 @@ extern bool crm_accel_ceaseflag;
 
 extern int igstep;
 
+extern yakl::RealFFT1D<real> pressure_fftx;
+extern yakl::RealFFT1D<real> pressure_ffty;
+extern yakl::RealFFT1D<real> vt_fftx;
+extern yakl::RealFFT1D<real> vt_ffty;
+extern yakl::RealFFT1D<real> esmt_fftx;
 
