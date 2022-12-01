@@ -40,6 +40,7 @@ module crm_physics
    integer :: ixrimvol  = -1   ! ice rime volume mixing ratio index
    integer :: idx_vt_t  = -1   ! CRM variance transport - liquid static energy
    integer :: idx_vt_q  = -1   ! CRM variance transport - total water
+   integer :: idx_vt_u  = -1   ! CRM variance transport - horizontal momentum
 
    ! Physics buffer indices  
    integer :: ttend_dp_idx     = -1
