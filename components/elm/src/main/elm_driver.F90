@@ -1109,7 +1109,7 @@ contains
                     cnstate_vars)
              end if
              
-             if (use_fates_sp .and. doalb) then
+             if (use_fates_sp) then
                call SatellitePhenology(bounds_clump,               &
                filter_inactive_and_active(nc)%num_soilp, filter_inactive_and_active(nc)%soilp,    &
                waterstate_vars, canopystate_vars)
