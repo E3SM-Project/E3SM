@@ -33,12 +33,13 @@ module crm_physics
    integer :: ixnumliq  = -1   ! cloud liquid number index
    integer :: ixnumice  = -1   ! cloud ice water index
    integer :: ixrain    = -1   ! rain index
+   integer :: ixsnow    = -1   ! snow index
    integer :: ixnumrain = -1   ! rain number index
+   integer :: ixnumsnow = -1   ! snow number index
    integer :: ixcldrim  = -1   ! ice rime mass mixing ratio index
    integer :: ixrimvol  = -1   ! ice rime volume mixing ratio index
    integer :: idx_vt_t  = -1   ! CRM variance transport - liquid static energy
    integer :: idx_vt_q  = -1   ! CRM variance transport - total water
-   integer :: idx_vt_u  = -1   ! CRM variance transport - horizontal momentum
 
    ! Physics buffer indices  
    integer :: ttend_dp_idx     = -1
