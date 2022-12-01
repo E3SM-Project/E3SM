@@ -25,18 +25,17 @@ module crm_physics
 
    integer, public :: ncrms = -1 ! total number of CRMs summed over all chunks in task
 
-   ! Constituent names
-   character(len=8), parameter :: cnst_names(8) = (/'CLDLIQ', 'CLDICE','NUMLIQ','NUMICE', &
-                                                    'RAINQM', 'SNOWQM','NUMRAI','NUMSNO'/)
+   ! Constituent names - assigned according to MMF_microphysics_scheme
+   character(len=8) :: cnst_names(8)
 
    integer :: ixcldliq  = -1   ! cloud liquid amount index
    integer :: ixcldice  = -1   ! cloud ice amount index
    integer :: ixnumliq  = -1   ! cloud liquid number index
    integer :: ixnumice  = -1   ! cloud ice water index
    integer :: ixrain    = -1   ! rain index
-   integer :: ixsnow    = -1   ! snow index
    integer :: ixnumrain = -1   ! rain number index
-   integer :: ixnumsnow = -1   ! snow number index
+   integer :: ixcldrim  = -1   ! ice rime mass mixing ratio index
+   integer :: ixrimvol  = -1   ! ice rime volume mixing ratio index
    integer :: idx_vt_t  = -1   ! CRM variance transport - liquid static energy
    integer :: idx_vt_q  = -1   ! CRM variance transport - total water
    integer :: idx_vt_u  = -1   ! CRM variance transport - horizontal momentum
@@ -60,6 +59,9 @@ module crm_physics
    integer :: crm_ni_rad_idx   = -1
    integer :: crm_qs_rad_idx   = -1
    integer :: crm_ns_rad_idx   = -1
+
+   integer :: crm_t_prev_idx   = -1
+   integer :: crm_q_prev_idx   = -1
 
 contains
 !===================================================================================================
