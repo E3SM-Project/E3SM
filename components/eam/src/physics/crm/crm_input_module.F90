@@ -38,16 +38,17 @@ module crm_input_module
       real(crm_rknd), allocatable :: fluxt00(:)          ! surface sensible heat fluxes [K Kg/ (m2 s)]
       real(crm_rknd), allocatable :: fluxq00(:)          ! surface latent heat fluxes [ kg/(m2 s)]
 
-      real(crm_rknd), allocatable :: naermod (:,:,:)     ! Aerosol number concentration [/m3]
-      real(crm_rknd), allocatable :: vaerosol(:,:,:)     ! aerosol volume concentration [m3/m3]
-      real(crm_rknd), allocatable :: hygro   (:,:,:)     ! hygroscopicity of aerosol mode 
-
       real(crm_rknd), allocatable :: ul_esmt(:,:)        ! input u for ESMT
       real(crm_rknd), allocatable :: vl_esmt(:,:)        ! input v for ESMT
 
       real(crm_rknd), allocatable :: t_vt(:,:)           ! CRM input of variance used for forcing tendency
       real(crm_rknd), allocatable :: q_vt(:,:)           ! CRM input of variance used for forcing tendency
       real(crm_rknd), allocatable :: u_vt(:,:)           ! CRM input of variance used for forcing tendency
+
+      ! inputs for P3
+      real(crm_rknd), allocatable :: nccn(:,:)           ! CCN number concentration           [kg-1]
+      real(crm_rknd), allocatable :: nc_nuceat_tend(:,:) ! activated CCN number tendency      [kg-1 s-1]
+      real(crm_rknd), allocatable :: ni_activated(:,:)   ! activated ice nuclei concentration [kg-1]
 
    end type crm_input_type
    !------------------------------------------------------------------------------------------------
@@ -104,15 +105,6 @@ contains
       call prefetch(input%fluxt00)
       call prefetch(input%fluxq00)
 
-      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
-         if (.not. allocated(input%naermod))  allocate(input%naermod(ncrms,nlev,ntot_amode))
-         if (.not. allocated(input%vaerosol)) allocate(input%vaerosol(ncrms,nlev,ntot_amode))
-         if (.not. allocated(input%hygro))    allocate(input%hygro(ncrms,nlev,ntot_amode))
-         call prefetch(input%naermod)
-         call prefetch(input%vaerosol)
-         call prefetch(input%hygro)
-      end if
-
       if (.not. allocated(input%ul_esmt))  allocate(input%ul_esmt(ncrms,nlev))
       if (.not. allocated(input%vl_esmt))  allocate(input%vl_esmt(ncrms,nlev))
 
@@ -122,6 +114,15 @@ contains
       call prefetch(input%t_vt)
       call prefetch(input%q_vt)
       call prefetch(input%u_vt)
+
+      if (trim(MMF_microphysics_scheme).eq.'p3') then
+         if (.not. allocated(input%nccn          ))  allocate(input%nccn(ncrms,nlev))
+         if (.not. allocated(input%nc_nuceat_tend))  allocate(input%nc_nuceat_tend(ncrms,nlev))
+         if (.not. allocated(input%ni_activated  ))  allocate(input%ni_activated(ncrms,nlev))
+         call prefetch(input%nccn)
+         call prefetch(input%nc_nuceat_tend)
+         call prefetch(input%ni_activated)
+      end if
 
       ! Initialize
       input%zmid    = 0
@@ -147,18 +148,18 @@ contains
       input%fluxt00 = 0
       input%fluxq00 = 0
 
-      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
-         input%naermod  = 0
-         input%vaerosol = 0
-         input%hygro    = 0
-      end if
-
       input%ul_esmt = 0
       input%vl_esmt = 0
 
       input%t_vt = 0
       input%q_vt = 0
       input%u_vt = 0
+
+      if (trim(MMF_microphysics_scheme).eq.'p3') then
+         input%nccn           = 0
+         input%nc_nuceat_tend = 0
+         input%ni_activated   = 0
+      end if
 
    end subroutine crm_input_initialize
    !------------------------------------------------------------------------------------------------
@@ -189,18 +190,16 @@ contains
       if (allocated(input%fluxt00)) deallocate(input%fluxt00)
       if (allocated(input%fluxq00)) deallocate(input%fluxq00)
 
-      if (trim(MMF_microphysics_scheme) .eq. 'm2005') then
-         if (allocated(input%naermod))    deallocate(input%naermod)
-         if (allocated(input%vaerosol))   deallocate(input%vaerosol)
-         if (allocated(input%hygro))      deallocate(input%hygro)
-      end if
-
       if (allocated(input%ul_esmt)) deallocate(input%ul_esmt)
       if (allocated(input%vl_esmt)) deallocate(input%vl_esmt)
 
       if (allocated(input%t_vt)) deallocate(input%t_vt)
       if (allocated(input%q_vt)) deallocate(input%q_vt)
       if (allocated(input%u_vt)) deallocate(input%u_vt)
+
+      if (allocated(input%nccn          ))  deallocate(input%nccn)
+      if (allocated(input%nc_nuceat_tend))  deallocate(input%nc_nuceat_tend)
+      if (allocated(input%ni_activated  ))  deallocate(input%ni_activated)
 
    end subroutine crm_input_finalize 
 
