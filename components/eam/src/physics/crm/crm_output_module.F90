@@ -53,6 +53,7 @@ module crm_output_module
       real(crm_rknd), allocatable :: qi_mean(:,:)  ! mean cloud ice
       real(crm_rknd), allocatable :: qr_mean(:,:)  ! mean rain
       real(crm_rknd), allocatable :: qs_mean(:,:)  ! mean snow
+      real(crm_rknd), allocatable :: qg_mean(:,:)  ! mean graupel
 
       real(crm_rknd), allocatable :: nc_mean(:,:)  ! mean cloud water  (#/kg)
       real(crm_rknd), allocatable :: ni_mean(:,:)  ! mean cloud ice    (#/kg)
@@ -165,6 +166,7 @@ contains
       if (.not. allocated(output%qi_mean)) allocate(output%qi_mean(ncol,nlev))
       if (.not. allocated(output%qr_mean)) allocate(output%qr_mean(ncol,nlev))
       if (.not. allocated(output%qs_mean)) allocate(output%qs_mean(ncol,nlev))
+      if (.not. allocated(output%qg_mean)) allocate(output%qg_mean(ncol,nlev))
 
       call prefetch(output%qcl)
       call prefetch(output%qci)
@@ -195,6 +197,7 @@ contains
       call prefetch(output%qi_mean)
       call prefetch(output%qr_mean)
       call prefetch(output%qs_mean)
+      call prefetch(output%qg_mean)
 
       if (.not. allocated(output%nc_mean)) allocate(output%nc_mean(ncol,nlev))
       if (.not. allocated(output%ni_mean)) allocate(output%ni_mean(ncol,nlev))
@@ -342,6 +345,7 @@ contains
       output%qi_mean = 0
       output%qr_mean = 0
       output%qs_mean = 0
+      output%qg_mean = 0
 
       output%nc_mean = 0
       output%ni_mean = 0
@@ -442,6 +446,7 @@ contains
       if (allocated(output%qi_mean)) deallocate(output%qi_mean)
       if (allocated(output%qr_mean)) deallocate(output%qr_mean)
       if (allocated(output%qs_mean)) deallocate(output%qs_mean)
+      if (allocated(output%qg_mean)) deallocate(output%qg_mean)
       
       if (allocated(output%nc_mean)) deallocate(output%nc_mean)
       if (allocated(output%ni_mean)) deallocate(output%ni_mean)
