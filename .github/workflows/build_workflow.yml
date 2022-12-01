@@ -26,20 +26,20 @@ jobs:
 
       - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
         name: Checkout Code Repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
-        name: Set up Python 3.9
-        uses: actions/setup-python@v2
+        name: Set up Python 3.10
+        uses: actions/setup-python@v3
         with:
-          python-version: 3.9
+          python-version: "3.10"
 
       - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
         # Run all pre-commit hooks on all the files.
         # Getting only staged files can be tricky in case a new PR is opened
         # since the action is run on a branch in detached head state
         name: Install and Run Pre-commit
-        uses: pre-commit/action@v2.0.3
+        uses: pre-commit/action@v3.0.0
 
   build:
     name: Build (Python ${{ matrix.python-version }})
@@ -50,7 +50,7 @@ jobs:
         shell: bash -l {0}
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.9", "3.10"]
     steps:
       - id: skip_check
         uses: fkirc/skip-duplicate-actions@master
@@ -59,11 +59,11 @@ jobs:
           paths_ignore: ${{ env.PATHS_IGNORE }}
 
       - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
         name: Cache Conda
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           # Increase this value to reset cache if conda-env/ci.yml has not changed in the workflow
           CACHE_NUMBER: 0
@@ -104,13 +104,13 @@ jobs:
         shell: bash -l {0}
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           persist-credentials: false
           fetch-depth: 0
 
       - name: Cache Conda
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           # Increase this value to reset cache if conda-env/docs.yml has not changed in the workflow
           CACHE_NUMBER: 0

@@ -8,5 +8,5 @@ dependencies:
   # =================
   - python=3.9.10
   - pip=22.0.3
-  - e3sm_diags=2.8.0rc1
+  - e3sm_diags=2.8.0
 prefix: /opt/miniconda3/envs/e3sm_diags_prod

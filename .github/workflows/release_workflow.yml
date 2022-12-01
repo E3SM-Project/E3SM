@@ -12,13 +12,13 @@ jobs:
         shell: bash -l {0}
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           persist-credentials: false
           fetch-depth: 0
 
       - name: Cache Conda
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         env:
           # Increase this value to reset cache if conda-env/docs.yml has not changed in the workflow
           CACHE_NUMBER: 0

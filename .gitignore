@@ -110,3 +110,6 @@ ENV/
 
 # NetCDF files needed
 !e3sm_diags/driver/acme_ne30_ocean_land_mask.nc
+
+# Folder for storing quality assurance files and notes
+qa/
