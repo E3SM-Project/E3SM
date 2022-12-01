@@ -123,9 +123,6 @@ contains
       if (allocated(state%ni)) deallocate(state%ni)
       if (allocated(state%nr)) deallocate(state%nr)
 
-      if (allocated(state%ns)) deallocate(state%ns)
-      if (allocated(state%ng)) deallocate(state%ng)
-
       if (allocated(state%qm)) deallocate(state%qm)
       if (allocated(state%bm)) deallocate(state%bm)
       if (allocated(state%t_prev)) deallocate(state%t_prev)
