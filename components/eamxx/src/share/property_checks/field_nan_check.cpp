@@ -125,7 +125,7 @@ PropertyCheck::ResultAndMsg FieldNaNCheck::check_impl() const {
   res_and_msg.result = invalid_idx<0 ? CheckResult::Pass : CheckResult::Fail;
   res_and_msg.msg = "";
   if (res_and_msg.result==CheckResult::Fail) {
-    auto indices = unflatten_idx(layout.dims(),invalid_idx);
+    auto& indices = res_and_msg.fail_indices = unflatten_idx(layout.dims(),invalid_idx);
     res_and_msg.msg  = "FieldNaNCheck failed.\n";
     res_and_msg.msg += "  - field id: " + f.get_header().get_identifier().get_id_string() + "\n";
     using namespace ShortFieldTagsNames;

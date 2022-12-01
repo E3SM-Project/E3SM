@@ -197,13 +197,29 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
           "You should not have reached this line. Please, contact developers.\n");
   }
   PropertyCheck::ResultAndMsg res_and_msg;
-  
+
+  bool pass_lower, pass_upper;
+
   if (minmaxloc.min_val>=m_lb && minmaxloc.max_val<=m_ub) {
     res_and_msg.result = CheckResult::Pass;
+    pass_lower = pass_upper = true;
   } else if  (minmaxloc.min_val<m_lb_repairable || minmaxloc.max_val>m_ub_repairable) {
+    if (minmaxloc.min_val<m_lb_repairable) {
+      pass_lower = false;
+    }
+    if (minmaxloc.man_val>m_ub_repairable) {
+      pass_upper = false;
+    }
+
     res_and_msg.result = CheckResult::Fail;
   } else {
     res_and_msg.result = CheckResult::Repairable;
+    if (minmaxloc.min_val<m_lb) {
+      pass_lower = false;
+    }
+    if (minmaxloc.man_val>m_ub) {
+      pass_upper = false;
+    }
   }
 
   if (res_and_msg.result == CheckResult::Pass) {
@@ -218,6 +234,12 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
 
   auto idx_min = unflatten_idx(layout.dims(),minmaxloc.min_loc);
   auto idx_max = unflatten_idx(layout.dims(),minmaxloc.max_loc);
+
+  if (not pass_lower) {
+    res_and_msg.fail_indices = idx_min;
+  } else if (not pass_upper) {
+    res_and_msg.fail_indices = idx_max;
+  }
 
   using namespace ShortFieldTagsNames;
 

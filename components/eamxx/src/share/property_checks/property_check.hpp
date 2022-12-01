@@ -52,8 +52,11 @@ public:
   virtual std::string name () const = 0;
 
   struct ResultAndMsg {
-    CheckResult   result;
-    std::string   msg;
+    CheckResult       result;
+    std::string       msg;
+
+    // For pointwise checks, if failing, can return indices where test failed
+    std::vector<int>  fail_indices;
   };
 
   // Check if the property is satisfied, and return true if it is
