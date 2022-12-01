@@ -1549,50 +1549,47 @@ contains
              
             !if (len(flag) >= 6 .and. flag(6:8) == '_LL') then
             if (len(flag) >= 8) then
-                    if (flag(6:8) == '_LL') then
-                    !this change is to let code not got to flag(6:8) when length is 5
-                    !this change is to avoid debug run issue                
-                           
-                        wrk_sum(:ncol) = 0.0_r8
-                        do k = gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e
-                          wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
-                        enddo
-                        call outfld( trim(solsym(m))//'_'//flag(1:5)//'_L1', wrk_sum(:ncol), ncol ,lchnk )
+               if (flag(6:8) == '_LL') then
+               !this change is to let code not got to flag(6:8) when length is 5
+               !to avoid debug built issue
+
+                   wrk_sum(:ncol) = 0.0_r8
+                   do k = gaschmbudget_2D_L1_s, gaschmbudget_2D_L1_e
+                     wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
+                   enddo
+                   call outfld( trim(solsym(m))//'_'//flag(1:5)//'_L1', wrk_sum(:ncol), ncol ,lchnk )
           
-                        wrk_sum(:ncol) = 0.0_r8
-                        do k = gaschmbudget_2D_L2_s, gaschmbudget_2D_L2_e
-                           wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
-                        enddo
-                        call outfld( trim(solsym(m))//'_'//flag(1:5)//'_L2', wrk_sum(:ncol), ncol ,lchnk )
+                   wrk_sum(:ncol) = 0.0_r8
+                   do k = gaschmbudget_2D_L2_s, gaschmbudget_2D_L2_e
+                      wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
+                   enddo
+                   call outfld( trim(solsym(m))//'_'//flag(1:5)//'_L2', wrk_sum(:ncol), ncol ,lchnk )
          
-                        wrk_sum(:ncol) = 0.0_r8
-                        do k = gaschmbudget_2D_L3_s, gaschmbudget_2D_L3_e
-                           wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
-                        enddo
-                        call outfld( trim(solsym(m))//'_'//flag(1:5)//'_L3', wrk_sum(:ncol), ncol ,lchnk )
+                   wrk_sum(:ncol) = 0.0_r8
+                   do k = gaschmbudget_2D_L3_s, gaschmbudget_2D_L3_e
+                      wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
+                   enddo
+                   call outfld( trim(solsym(m))//'_'//flag(1:5)//'_L3', wrk_sum(:ncol), ncol ,lchnk )
         
-                       wrk_sum(:ncol) = 0.0_r8
-                       do k = gaschmbudget_2D_L4_s, gaschmbudget_2D_L4_e
-                          wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
-                       enddo
-                       call outfld( trim(solsym(m))//'_'//flag(1:5)//'_L4', wrk_sum(:ncol), ncol ,lchnk )
-                   endif 
-                   
-            !elseif (len(flag) >= 6 .and. flag(6:10) == '_trop') then
-            elseif (len(flag) >= 10) then 
-                    if (flag(6:10) == '_trop') then
-                    !this change is to let code not got to flag(6:8) when length is 5
-                    !this change is to avoid debug run issue        
-                           
-                         wrk_sum(:ncol) = 0.0_r8
-                         if (trim(solsym(m))=='O3' .or. trim(solsym(m))=='O3LNZ' .or. &
-                              trim(solsym(m))=='N2OLNZ' .or. trim(solsym(m))=='CH4LNZ') then
-                              do k = 1, pver
-                                    wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k) * tropFlagInt(:ncol,k)
-                              enddo
-                              call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
-                         endif
-                   endif     
+                  wrk_sum(:ncol) = 0.0_r8
+                  do k = gaschmbudget_2D_L4_s, gaschmbudget_2D_L4_e
+                     wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k)
+                  enddo
+                  call outfld( trim(solsym(m))//'_'//flag(1:5)//'_L4', wrk_sum(:ncol), ncol ,lchnk )
+
+               elseif (flag(6:10) == '_trop') then
+               !this change is to let code not got to flag(6:8) when length is 5
+               !to avoid debug built issue
+
+                  wrk_sum(:ncol) = 0.0_r8
+                  if (trim(solsym(m))=='O3' .or. trim(solsym(m))=='O3LNZ' .or. &
+                       trim(solsym(m))=='N2OLNZ' .or. trim(solsym(m))=='CH4LNZ') then
+                     do k = 1, pver
+                           wrk_sum(:ncol) = wrk_sum(:ncol) + wrk(:ncol,k) * tropFlagInt(:ncol,k)
+                     enddo
+                     call outfld( trim(solsym(m))//'_'//flag, wrk_sum(:ncol), ncol ,lchnk )
+                  endif
+               endif
             else
                do k=2,pver
                   wrk(:ncol,1) = wrk(:ncol,1) + wrk(:ncol,k)
