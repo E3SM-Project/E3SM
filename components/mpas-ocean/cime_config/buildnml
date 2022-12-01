@@ -801,7 +801,7 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="ecosys_diag_photoC_TOT_zint"/>')
         lines.append('</stream>')
         lines.append('')
-        if ocn_wave:
+        if ocn_wave == 'true':
             lines.append('<stream name="waveOutput"')
             lines.append('        type="output"')
             lines.append('        precision="single"')
@@ -1331,7 +1331,7 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="ecosys_diag_CO3"/>')
             lines.append('    <var name="ecosys_diag_co3_sat_calc"/>')
             lines.append('    <var name="ecosys_diag_co3_sat_arag"/>')
-        if ocn_wave:
+        if ocn_wave == 'true':
             lines.append('    <var name="peakWaveFrequency"/>')
             lines.append('    <var name="peakWaveDirection"/>')
             lines.append('    <var name="significantWaveHeight"/>')
