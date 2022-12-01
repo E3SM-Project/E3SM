@@ -498,6 +498,35 @@ add_precondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
 void AtmosphereProcess::
 add_postcondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
 {
+  auto cfh2str = [] (const CheckFailHandling cfh) -> std::string {
+    std::string s = "";
+    switch (cfh) {
+      case CheckFailHandling::Fatal:
+        s = "Fatal";
+        break;
+      case CheckFailHandling::Warning:
+        s = "Warning";
+        break;
+      default:
+        EKAT_ERROR_MSG ("Unexpected/unsupported CheckFailHandling value.\n");
+    }
+
+    return "";
+  };
+
+  // Avoid adding the *SAME* test twice
+  for (const auto& it : m_postcondition_checks) {
+    if (it.second->same_as(*pc)) {
+      EKAT_REQUIRE_MSG (it.first==cfh,
+          "Error! Duplicate property check with different CheckFailHandling.\n"
+          "  - Atmosphere process name: " + name() + "\n"
+          "  - Property check name: " + pc->name() + "\n"
+          "  - Current CFH: " + cfh2str(it.first) + "\n"
+          "  - Input CFH: " + cfh2str(cfh) + "\n");
+      return;
+    }
+  }
+
   // If a pc can repair, we need to make sure the repairable
   // fields are among the computed fields of this atm proc.
   // Otherwise, it would be possible for this AP to implicitly
