@@ -209,9 +209,7 @@ void SurfaceCouplingExporter::run_impl (const int dt)
 // =========================================================================================
 void SurfaceCouplingExporter::do_export(const Int dt, const bool called_during_initialization)
 {
-  using KT = KokkosTypes<DefaultDevice>;
   using policy_type = KT::RangePolicy;
-  using PF = PhysicsFunctions<DefaultDevice>;
   using PC = physics::Constants<Real>;
 
   const auto& p_int                = get_field_in("p_int").get_view<const Real**>();
