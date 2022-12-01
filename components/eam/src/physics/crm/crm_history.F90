@@ -190,8 +190,6 @@ subroutine crm_history_init(species_class)
    call addfld('ED_CRM',     (/'lev'/), 'A','/s',     'entraiment rate from downdraft')
    call addfld('MMF_QC',     (/'lev'/), 'A','kg/kg',  'Cloud water from CRM' )
    call addfld('MMF_QI',     (/'lev'/), 'A','kg/kg',  'Cloud ice from CRM' )
-   call addfld('MMF_QS',     (/'lev'/), 'A','kg/kg',  'Snow from CRM' )
-   call addfld('MMF_QG',     (/'lev'/), 'A','kg/kg',  'Graupel from CRM' )
    call addfld('MMF_QR',     (/'lev'/), 'A','kg/kg',  'Rain from CRM' )
    call addfld('MMF_QTFLX',  (/'lev'/), 'A','kg/m2/s','Nonprecip. water flux from CRM' )
    call addfld('MMF_UFLX',   (/'lev'/), 'A','m2/s2',  'x-momentum flux from CRM' )
@@ -444,10 +442,6 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    call outfld('MMF_QC    ',crm_output%qc_mean(icol_beg:icol_end,:), ncol ,lchnk )
    call outfld('MMF_QI    ',crm_output%qi_mean(icol_beg:icol_end,:), ncol ,lchnk )
    call outfld('MMF_QR    ',crm_output%qr_mean(icol_beg:icol_end,:), ncol ,lchnk )
-   if (MMF_microphysics_scheme .eq. 'sam1mom') then
-      call outfld('MMF_QS    ',crm_output%qs_mean(icol_beg:icol_end,:), ncol ,lchnk )
-      call outfld('MMF_QG    ',crm_output%qg_mean(icol_beg:icol_end,:), ncol ,lchnk )   
-   end if
    if (MMF_microphysics_scheme .eq. 'p3') then
       call outfld('MMF_NC    ',crm_output%nc_mean(icol_beg:icol_end,:), ncol, lchnk )
       call outfld('MMF_NI    ',crm_output%ni_mean(icol_beg:icol_end,:), ncol, lchnk )
