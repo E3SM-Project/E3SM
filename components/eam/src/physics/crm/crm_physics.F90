@@ -1165,6 +1165,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
 #elif defined(MMF_PAM)
 
+#ifdef MMF_PAM_MIRROR
       call pam_mirror_array_readonly( 'input_bflxls',  crm_input%bflxls,  '' )
       call pam_mirror_array_readonly( 'input_wndls',   crm_input%wndls,   '' )
       call pam_mirror_array_readonly( 'input_zmid',    crm_input%zmid,    '' )
@@ -1189,7 +1190,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_mirror_array_readwrite( 'state_v_wind',      crm_state%v_wind,      '' )
       call pam_mirror_array_readwrite( 'state_w_wind',      crm_state%w_wind,      '' )
       call pam_mirror_array_readwrite( 'state_temperature', crm_state%temperature, '' )
-      call pam_mirror_array_readwrite( 'state_qt',          crm_state%qt,          '' )
+      call pam_mirror_array_readwrite( 'state_qt',          crm_state%qv,          '' )
       call pam_mirror_array_readwrite( 'state_qp',          crm_state%qp,          '' )
       call pam_mirror_array_readwrite( 'state_qn',          crm_state%qn,          '' )
 
@@ -1270,9 +1271,27 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       ! call pam_mirror_array_readwrite( 'output_precsc',      crm_output%precsc,      '' )
       ! call pam_mirror_array_readwrite( 'output_precsl',      crm_output%precsl,      '' )
       call pam_mirror_array_readwrite( 'output_prec_crm',    crm_output%prec_crm,    '' )
+#endif
+
+      pam_set_option('ncrms', ncrms )
+      pam_set_option('gcm_nlev', pver )
+      pam_set_option('crm_nz', crm_nz )
+      pam_set_option('crm_nx', crm_nx )
+      pam_set_option('crm_ny', crm_ny )
+      pam_set_option('crm_dx', crm_dx )
+      pam_set_option('crm_dy', crm_dy )
+      pam_set_option('gcm_dt', ztodt )
+      pam_set_option('crm_dt', crm_dt )
+
+      pam_set_option('use_MMF_VT', use_MMF_VT )
+      pam_set_option('MMF_VT_wn_max', MMF_VT_wn_max )
+      pam_set_option('use_MMF_ESMT', use_MMF_ESMT )
+      pam_set_option('use_crm_accel', use_crm_accel )
+      pam_set_option('crm_accel_factor', crm_accel_factor )
+
 
       call t_startf ('crm_call')
-      ! call pam_crm(...)
+      call pam_driver()
       call t_stopf('crm_call')
 
 #endif
