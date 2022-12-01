@@ -404,4 +404,17 @@ void FieldWithinIntervalCheck::repair_impl() const {
   }
 }
 
+bool FieldWithinIntervalCheck::same_as (const PropertyCheck& pc) const {
+  auto* fwic = dynamic_cast<const FieldWithinIntervalCheck*>(&pc);
+  if (fwic==nullptr) {
+    return false;
+  }
+
+  // They are both interval checks, so check bounds and whatever the base class does
+  return PropertyCheck::same_as(pc) &&
+         m_ub==fwic->m_ub && m_lb==fwic->m_lb &&
+         m_ub_repairable==fwic->m_ub_repairable &&
+         m_lb_repairable==fwic->m_lb_repairable;
+}
+
 } // namespace scream

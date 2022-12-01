@@ -50,6 +50,8 @@ protected:
   template<typename ST>
   void repair_impl() const;
 
+  bool same_as (const PropertyCheck& pc) const override;
+
 protected:
 
   void repair_impl() const override;

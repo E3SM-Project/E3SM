@@ -93,6 +93,9 @@ public:
   // override this method.
   virtual void check_and_repair () const;
 
+  // Whether the input check is the same as this class
+  virtual bool same_as (const PropertyCheck& pc) const;
+
 protected:
   virtual void repair_impl () const {
     EKAT_ERROR_MSG ("Error! The method 'repair_impl' has not been overridden.\n"
