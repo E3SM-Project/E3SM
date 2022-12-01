@@ -2542,7 +2542,7 @@
         <command name="use">/soft/restricted/CNDA/modules</command>
       </modules>
       <modules compiler="!gnu">
-	<command name="load">oneapi/eng-compiler/2022.01.30.008</command>
+	<command name="load">oneapi/eng-compiler/2022.10.15.006</command>
       </modules>
       <modules compiler="gnu">
         <command name="unload">cmake</command>
