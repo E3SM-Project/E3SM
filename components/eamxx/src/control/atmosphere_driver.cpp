@@ -244,11 +244,11 @@ void AtmosphereDriver::create_grids()
   m_atm_logger->info("[EAMxx] create_grids ... done!");
 }
 
-  void AtmosphereDriver::setup_surface_coupling_data_manager(SurfaceCouplingTransferType transfer_type,
-                                                             const int num_cpl_fields, const int num_scream_fields,
-                                                             const int field_size, Real* data_ptr,
-                                                             char* names_ptr, int* cpl_indices_ptr, int* vec_comps_ptr,
-                                                             Real* constant_multiple_ptr, bool* do_transfer_during_init_ptr)
+void AtmosphereDriver::setup_surface_coupling_data_manager(SurfaceCouplingTransferType transfer_type,
+                                                           const int num_cpl_fields, const int num_scream_fields,
+                                                           const int field_size, Real* data_ptr,
+                                                           char* names_ptr, int* cpl_indices_ptr, int* vec_comps_ptr,
+                                                           Real* constant_multiple_ptr, bool* do_transfer_during_init_ptr)
 {
   std::shared_ptr<SCDataManager> sc_data_mgr;
 
@@ -1142,6 +1142,11 @@ void AtmosphereDriver::initialize_atm_procs ()
 
   // Create and add energy and mass conservation check to appropriate atm procs
   setup_column_conservation_checks();
+
+  // If user requests it, we set up NaN checks for all computed fields after each atm proc run
+  if (m_atm_params.sublist("driver_options").get("check_all_computed_fields_for_nans",false)) {
+    m_atm_process_group->add_postcondition_nan_checks();
+  }
 
   if (fvphyshack) {
     // [CGLL ICs in pg2] See related notes in atmosphere_dynamics.cpp.
