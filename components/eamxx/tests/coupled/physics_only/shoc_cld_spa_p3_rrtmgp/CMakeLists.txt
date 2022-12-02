@@ -22,6 +22,7 @@ set (TEST_INPUT_FILES
   init/spa_init_ne2np4.nc
   init/map_ne4np4_to_ne2np4_mono.nc
   init/spa_file_unified_and_complete_ne4_20220428.nc
+  ../cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
   GetInputFile(${file})
