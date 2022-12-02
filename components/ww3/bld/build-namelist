@@ -315,10 +315,10 @@ if ($NML_TYPE eq "ww3") {
 }
 if ($NML_TYPE eq "ww3_grid") {
 
-    if (${WAV_SPEC} eq "sp32x36") { #this option only exists for E3SM V1 grid
-       add_default($nl, 'spectrum%xfr', 'val'=>1.10);
-       add_default($nl, 'spectrum%freq1', 'val'=>0.05);
-       add_default($nl, 'spectrum%nk', 'val'=>32);
+    if (${WAV_GRID} eq "wQU225EC60to30") { #only highest WW3 spectral resolution for E3SM V1 grid
+       add_default($nl, 'spectrum%xfr', 'val'=>1.07);
+       add_default($nl, 'spectrum%freq1', 'val'=>0.035);
+       add_default($nl, 'spectrum%nk', 'val'=>50);
        add_default($nl, 'spectrum%nth', 'val'=>36);
     }
     elsif (${WAV_SPEC} eq "sp25x36") {

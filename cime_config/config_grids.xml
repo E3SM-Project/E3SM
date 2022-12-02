@@ -1871,7 +1871,7 @@
       <grid name="wav">wQU225EC30to60E2r2</grid>
       <mask>EC30to60E2r2</mask>
     </model_grid>
-    
+ 
     <model_grid alias="ne30pg2_WC14to60E2r3">
       <grid name="atm">ne30np4.pg2</grid>
       <grid name="lnd">ne30np4.pg2</grid>
@@ -2741,7 +2741,7 @@
       <nx>56645</nx>
       <ny>1</ny>
       <file grid="wav">$DIN_LOC_ROOT/share/domains/domain.ocn.wQU225EC30to60E2r2.220224.nc</file>
-      <desc>WW3 unstructured QU 225km global grid with EC30to60E2r2 coastlines.</desc>
+      <desc>WW3 unstructured QU 225km global grid with EC30to60E2r2 coastlines</desc>
     </domain>
 
     <!-- RRM grids -->

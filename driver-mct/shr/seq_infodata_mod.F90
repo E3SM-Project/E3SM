@@ -451,7 +451,7 @@ CONTAINS
          wv_sat_scheme, wv_sat_transition_start,           &
          wv_sat_use_tables, wv_sat_table_spacing,          &
          tfreeze_option, glc_renormalize_smb,              &
-         ice_gnam, rof_gnam, glc_gnam, wav_gnam,      &
+         ice_gnam, rof_gnam, glc_gnam, wav_gnam,           &
          atm_gnam, lnd_gnam, ocn_gnam, iac_gnam, cpl_decomp,         &
          shr_map_dopole, vect_map, aoflux_grid, do_histinit,  &
          do_budgets, do_bgc_budgets, drv_threading,        &
@@ -1000,7 +1000,7 @@ CONTAINS
        glclnd_present, glcocn_present, glcice_present, iceberg_prognostic,&
        esp_present, esp_prognostic,                                       &
        bfbflag, lnd_gnam, cpl_decomp, cpl_seq_option,                     &
-       ice_gnam, rof_gnam, glc_gnam, wav_gnam, iac_gnam,                 &
+       ice_gnam, rof_gnam, glc_gnam, wav_gnam, iac_gnam,                  &
        atm_gnam, ocn_gnam, info_debug, dead_comps, read_restart,          &
        shr_map_dopole, vect_map, aoflux_grid, flux_epbalfact,             &
        nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
@@ -1549,7 +1549,7 @@ CONTAINS
        esp_present, esp_prognostic,                                       &
        iac_present, iac_prognostic,                                       &
        bfbflag, lnd_gnam, cpl_decomp, cpl_seq_option,                     &
-       ice_gnam, rof_gnam, glc_gnam, wav_gnam, iac_gnam,        &
+       ice_gnam, rof_gnam, glc_gnam, wav_gnam, iac_gnam,                  &
        atm_gnam, ocn_gnam, info_debug, dead_comps, read_restart,          &
        shr_map_dopole, vect_map, aoflux_grid, run_barriers,               &
        nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
