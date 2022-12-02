@@ -205,12 +205,12 @@ static int get_num_concurrent_teams(const int num_parallel_iterations) {
 
 // A templated typedef for MD range policy (used in RK stages)
 template<typename ExecutionSpace, int Rank>
-using MDRangePolicy = Kokkos::Experimental::MDRangePolicy
+using MDRangePolicy = Kokkos::MDRangePolicy
                           < ExecutionSpace,
-                            Kokkos::Experimental::Rank
+                            Kokkos::Rank
                               < Rank,
-                                Kokkos::Experimental::Iterate::Right,
-                                Kokkos::Experimental::Iterate::Right
+                                Kokkos::Iterate::Right,
+                                Kokkos::Iterate::Right
                               >,
                             Kokkos::IndexType<int>
                           >;
