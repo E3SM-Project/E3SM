@@ -43,6 +43,12 @@ enum class CheckResult {
   Repairable
 };
 
+enum class PropertyType {
+  PointWise,    // The property is computed pointwise at each entry of the field(s)
+  ColumnWise,   // The property is computed over each column of the field(s)
+  Global        // The property is computed globally
+};
+
 class PropertyCheck {
 public:
 
@@ -58,6 +64,8 @@ public:
     // For pointwise checks, if failing, can return indices where test failed
     std::vector<int>  fail_indices;
   };
+
+  virtual PropertyType type () const = 0;
 
   // Check if the property is satisfied, and return true if it is
   virtual ResultAndMsg check () const = 0;

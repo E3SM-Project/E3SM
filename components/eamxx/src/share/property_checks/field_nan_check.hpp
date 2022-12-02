@@ -19,6 +19,8 @@ public:
     return "NaN check for field " + fields().front().name();
   }
 
+  PropertyType type () const override { return PropertyType::PointWise; }
+
   ResultAndMsg check() const override;
 
 // CUDA requires the parent fcn of a KOKKOS_LAMBDA to have public access
