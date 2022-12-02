@@ -52,7 +52,7 @@ def buildnml(case, caseroot, compname):
     #--------------------------------------------------------------------
 
     wav_grid_supported = ("null", "wQU225EC60to30sp32x36", "wQU225EC60to30sp50x36", "wQU100sp50x36", "wQU225EC30to60E2r2sp50x36","wQU225EC30to60E2r2sp36x36","wQU225EC30to60E2r2sp25x36")
-    expect((wav_grid+wav_spec) in wav_grid_supported, "Combination of WAV_GRID '{}' and WAV_SPEC '{}' is not supported in ww3. Choose from: '{}'".format((wav_grid,wav_spec),' ,'.join(wav_grid_supported)))
+    expect((wav_grid.join(wav_spec)) in wav_grid_supported, "Combination of WAV_GRID and WAV_SPEC is not supported in ww3. Choose from: '{}'".format(wave_grid_supported) )
 
 
     # determine grid and spectral resolution of WW3 as defined in 'wav_grid'
