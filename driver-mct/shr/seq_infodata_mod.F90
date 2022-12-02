@@ -1,4 +1,4 @@
-!MODULE: seq_infodata_mod --- Module for input data shared between CCSM components
+! !MODULE: seq_infodata_mod --- Module for input data shared between CCSM components
 !
 ! !DESCRIPTION:
 !
