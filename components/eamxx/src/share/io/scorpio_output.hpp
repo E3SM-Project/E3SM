@@ -157,7 +157,8 @@ protected:
   void set_degrees_of_freedom(const std::string& filename);
   std::vector<scorpio::offset_t> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
-  Field get_field(const std::string& name, const bool eval_diagnostic = false) const;
+  Field get_field(const std::string& name) const;
+  void update_field(const std::string& name) const;
   void set_diagnostics();
   void create_diagnostic (const std::string& diag_name);
 

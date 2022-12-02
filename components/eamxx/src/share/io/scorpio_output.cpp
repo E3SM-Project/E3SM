@@ -204,7 +204,8 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
   // Take care of updating and possibly writing fields.
   for (auto const& name : m_fields_names) {
     // Get all the info for this field.
-    const auto  field = get_field(name,true); // If diagnostic, must evaluate it
+    update_field(name); // If diagnostic, must evaluate it
+    const auto  field = get_field(name);
     const auto& layout = m_layouts.at(name);
     const auto& dims = layout.dims();
     const auto  rank = layout.rank();
@@ -662,6 +663,23 @@ setup_output_file(const std::string& filename,
   set_degrees_of_freedom(filename);
 }
 /* ---------------------------------------------------------- */
+// This routine will evaluate the diagnostics stored in this
+// output instance.
+void AtmosphereOutput::update_field(const std::string& name) const
+{
+  // Check if the field is a diagnostic, if so evaluate it. 
+  if (m_diagnostics.find(name) != m_diagnostics.end()) {
+    const auto& diag = m_diagnostics.at(name);
+    // Check if the diagnostics has any dependencies, if so, evaluate
+    // them as well.  Needed if a diagnostic relies on another
+    // diagnostic.
+    for (const auto& dep : m_diag_depends_on_diags.at(name)) {
+      update_field(dep);
+    }
+    diag->compute_diagnostic();
+  }
+}
+/* ---------------------------------------------------------- */
 // General get_field routine for output.
 // This routine will first check if a field is in the local field
 // manager.  If not it will next check to see if it is in the list
@@ -673,12 +691,6 @@ Field AtmosphereOutput::get_field(const std::string& name, const bool eval_diagn
     return m_field_mgr->get_field(name);
   } else if (m_diagnostics.find(name) != m_diagnostics.end()) {
     const auto& diag = m_diagnostics.at(name);
-    if (eval_diagnostic) {
-      for (const auto& dep : m_diag_depends_on_diags.at(name)) {
-        get_field(dep,eval_diagnostic);
-      }
-      diag->compute_diagnostic();
-    }
     return diag->get_diagnostic();
   } else {
     EKAT_ERROR_MSG ("Field " + name + " not found in output field manager or diagnostics list");
