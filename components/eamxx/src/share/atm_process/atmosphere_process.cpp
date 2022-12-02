@@ -1,6 +1,7 @@
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/util/scream_timing.hpp"
 #include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
+#include "share/field/field_utils.hpp"
 
 #include "ekat/ekat_assert.hpp"
 
@@ -252,13 +253,45 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
         "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
         "  - Message: " + res_and_msg.msg);
     } else {
-      // No hope. Crash.
-      EKAT_ERROR_MSG(
-          "Error! Failed " + pre_post_str + " property check (cannot be repaired).\n"
-          "  - Atmosphere process name: " + name() + "\n"
-          "  - Property check name: " + property_check->name() + "\n"
-          "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
-          "  - Message: " + res_and_msg.msg);
+      // No hope. Crash. But before crashing, print all the input and output fields at the samme
+      // location where the check failed.
+      std::ostringstream ss;
+      ss << "Error! Failed " + pre_post_str + " property check (cannot be repaired).\n"
+            "  - Atmosphere process name: " + name() + "\n"
+            "  - Property check name: " + property_check->name() + "\n"
+            "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
+            "  - Message: " + res_and_msg.msg;
+      if (res_and_msg.fail_loc_indices.size()>0) {
+        const auto& tags = res_and_msg.fail_loc_tags;
+        const auto& idx  = res_and_msg.fail_loc_indices;
+        ss << "\n  ------- INPUT FIELDS -------\n";
+        for (const auto& f : m_fields_in) {
+          if (f.get_header().get_identifier().get_layout().has_tags(tags)) {
+            print_field_hyperslab (f,tags,idx,ss);
+          }
+        }
+        for (const auto& g : m_groups_in) {
+          for (const auto& f : g.m_fields) {
+            if (f.second->get_header().get_identifier().get_layout().has_tags(tags)) {
+              print_field_hyperslab (*f.second,tags,idx,ss);
+            }
+          }
+        }
+        ss << "\n  ------- OUTPUT FIELDS -------\n";
+        for (const auto& f : m_fields_out) {
+          if (f.get_header().get_identifier().get_layout().has_tags(tags)) {
+            print_field_hyperslab (f,tags,idx,ss);
+          }
+        }
+        for (const auto& g : m_groups_out) {
+          for (const auto& f : g.m_fields) {
+            if (f.second->get_header().get_identifier().get_layout().has_tags(tags)) {
+              print_field_hyperslab (*f.second,tags,idx,ss);
+            }
+          }
+        }
+      }
+      EKAT_ERROR_MSG(ss.str());
     }
   }
 }
