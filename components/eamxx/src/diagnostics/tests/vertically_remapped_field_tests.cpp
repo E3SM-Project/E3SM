@@ -6,7 +6,6 @@
 
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/field/field_utils.hpp"
-#include "share/util/scream_setup_random_test.hpp"
 
 namespace scream {
 
@@ -58,8 +57,6 @@ TEST_CASE("vertically_remapped_field")
   constexpr int packsize = SCREAM_PACK_SIZE;
   std::cout<<"packsize: "<<packsize<<std::endl;
   ekat::Comm comm(MPI_COMM_WORLD);
-
-  auto engine = scream::setup_random_test(&comm);
 
   // Create a grids manager
   const int ncols = 3;

@@ -10,13 +10,14 @@ namespace scream
 {
 
 // =========================================================================================
-VerticallyRemappedField::VerticallyRemappedField (const ekat::Comm& comm, const ekat::ParameterList& params)
+VerticallyRemappedField::
+VerticallyRemappedField (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereDiagnostic(comm,params)
+  , m_field_name(m_params.get<std::string>("Field Name"))
   , m_field_layout(m_params.get<FieldLayout>("Field Layout"))
   , m_field_units(m_params.get<ekat::units::Units>("Field Units")) 
-  , m_field_name(m_params.get<std::string>("Field Name"))
-  , m_tgt_pres_levs(m_params.get<view_1d_const>("press_levels"))
   , m_tgt_num_levs(m_params.get<int>("tgt_num_levs"))
+  , m_tgt_pres_levs(m_params.get<view_1d_const>("press_levels"))
 {
   using namespace ShortFieldTagsNames;
   EKAT_REQUIRE_MSG (ekat::contains(std::vector<FieldTag>{LEV,ILEV},m_field_layout.tags().back()),
@@ -26,13 +27,13 @@ VerticallyRemappedField::VerticallyRemappedField (const ekat::Comm& comm, const 
 }
 
 // =========================================================================================
-void VerticallyRemappedField::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void VerticallyRemappedField::
+set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
   const auto& gname  = m_params.get<std::string>("Grid Name");
   auto m_grid = grids_manager->get_grid(gname);
-  const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs();
 
   add_field<Required>(m_field_name, m_field_layout, m_field_units, gname);

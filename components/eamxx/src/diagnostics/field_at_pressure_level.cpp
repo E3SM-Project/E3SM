@@ -7,12 +7,13 @@ namespace scream
 {
 
 // =========================================================================================
-FieldAtPressureLevel::FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
-  : AtmosphereDiagnostic(comm,params)
-  ,m_field_layout(m_params.get<FieldLayout>("Field Layout"))
-  ,m_field_units(m_params.get<ekat::units::Units>("Field Units"))
-  ,m_field_name(m_params.get<std::string>("Field Name"))
-  ,m_pressure_level(m_params.get<Real>("Field Target Pressure"))
+FieldAtPressureLevel::
+FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
+ : AtmosphereDiagnostic(comm,params)
+ , m_field_name(m_params.get<std::string>("Field Name"))
+ , m_field_layout(m_params.get<FieldLayout>("Field Layout"))
+ , m_field_units(m_params.get<ekat::units::Units>("Field Units"))
+ , m_pressure_level(m_params.get<Real>("Field Target Pressure"))
 {
   using namespace ShortFieldTagsNames;
   EKAT_REQUIRE_MSG (ekat::contains(std::vector<FieldTag>{LEV,ILEV},m_field_layout.tags().back()),
@@ -27,15 +28,14 @@ FieldAtPressureLevel::FieldAtPressureLevel (const ekat::Comm& comm, const ekat::
 }
 
 // =========================================================================================
-void FieldAtPressureLevel::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void FieldAtPressureLevel::
+set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ShortFieldTagsNames;
   using namespace ekat::units;
   const auto& gname  = m_params.get<std::string>("Grid Name");
   auto m_grid = grids_manager->get_grid(gname);
-  const auto& grid_name = m_grid->name();
   m_num_cols = m_grid->get_num_local_dofs();
-  auto num_levs = m_grid->get_num_vertical_levels();
 
   add_field<Required>(m_field_name, m_field_layout, m_field_units, gname);
 
