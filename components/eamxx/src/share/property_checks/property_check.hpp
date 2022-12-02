@@ -61,8 +61,10 @@ public:
     CheckResult       result;
     std::string       msg;
 
-    // For pointwise checks, if failing, can return indices where test failed
-    std::vector<int>  fail_indices;
+    // For pointwise/columnwise checks, if failing, can return tags/indices
+    // for the location where the test failed.
+    std::vector<int>        fail_loc_indices;
+    std::vector<FieldTag>   fail_loc_tags;
   };
 
   virtual PropertyType type () const = 0;

@@ -207,7 +207,7 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
     if (minmaxloc.min_val<m_lb_repairable) {
       pass_lower = false;
     }
-    if (minmaxloc.man_val>m_ub_repairable) {
+    if (minmaxloc.max_val>m_ub_repairable) {
       pass_upper = false;
     }
 
@@ -217,7 +217,7 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
     if (minmaxloc.min_val<m_lb) {
       pass_lower = false;
     }
-    if (minmaxloc.man_val>m_ub) {
+    if (minmaxloc.max_val>m_ub) {
       pass_upper = false;
     }
   }
@@ -236,9 +236,11 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
   auto idx_max = unflatten_idx(layout.dims(),minmaxloc.max_loc);
 
   if (not pass_lower) {
-    res_and_msg.fail_indices = idx_min;
+    res_and_msg.fail_loc_indices = idx_min;
+    res_and_msg.fail_loc_tags = layout.tags();
   } else if (not pass_upper) {
-    res_and_msg.fail_indices = idx_max;
+    res_and_msg.fail_loc_indices = idx_max;
+    res_and_msg.fail_loc_tags = layout.tags();
   }
 
   using namespace ShortFieldTagsNames;
