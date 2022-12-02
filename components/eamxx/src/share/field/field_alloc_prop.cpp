@@ -50,16 +50,6 @@ subview (const int idim, const int k, const bool dynamic) const {
   props.m_alloc_size = m_alloc_size / m_layout->dim(idim);
   props.m_subview_info = SubviewInfo(idim,k,m_layout->dim(idim),dynamic);
 
-  // Output is contioguous if a) this->m_contiguous=true,
-  // b) idim==0, or if m_layout->dim(i)==1 for i<idim
-  props.m_contiguous = m_contiguous;
-  for (int i=0; i<idim; ++i) {
-    if (m_layout->dim(i)>0) {
-      props.m_contiguous = false;
-      break;
-    }
-  }
-
   // The output props should still store a FieldLayout, in case
   // they are further subviewed. We have all we need here to build
   // a layout from scratch, but it would duplicate what is inside
@@ -74,6 +64,18 @@ subview (const int idim, const int k, const bool dynamic) const {
   tags.erase(tags.begin()+idim);
   dims.erase(dims.begin()+idim);
   props.m_layout = std::make_shared<layout_type>(tags,dims);
+
+  // Output is contioguous if either
+  //  - this->m_contiguous=true AND idim==0
+  //  - m_layout->dim(i)==1 for all i<idim
+  //  - props.m_layout->rank()==0
+  props.m_contiguous = m_contiguous || props.m_layout->rank()==0;
+  for (int i=0; i<idim; ++i) {
+    if (m_layout->dim(i)>0) {
+      props.m_contiguous = false;
+      break;
+    }
+  }
 
   // Figure out strides
   const int rm1 = m_layout->rank()-1;
