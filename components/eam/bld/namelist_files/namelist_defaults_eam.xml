@@ -974,6 +974,12 @@
 <!-- wet scavenging tuning option by PNNL -->
 <sscav_tuning>.false.</sscav_tuning>
 
+<!--Strat.Ice by KZM-LLNL -->
+<modal_strat_sulfate_aod_treatment>.false.</modal_strat_sulfate_aod_treatment>
+<modal_strat_sulfate_ice_nucleation>.false.</modal_strat_sulfate_ice_nucleation>
+<modal_strat_sulfate_wet_removal>.false.</modal_strat_sulfate_wet_removal>
+
+
 <!-- ice nucleation option by PNNL -->
 <demott_ice_nuc>.false.</demott_ice_nuc>
 <pergro_mods>.false.</pergro_mods>
@@ -1639,6 +1645,11 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <hist_hetfrz_classnuc phys="default">.false.</hist_hetfrz_classnuc>
 <micro_mg_dcs_tdep phys="default">.true.</micro_mg_dcs_tdep>
 <microp_aero_wsub_scheme phys="default">1</microp_aero_wsub_scheme>
+
+<!--Strat.Ice by KZM-LLNL -->
+<modal_strat_sulfate_aod_treatment phys="default">.false.</modal_strat_sulfate_aod_treatment>
+<modal_strat_sulfate_ice_nucleation phys="default">.false.</modal_strat_sulfate_ice_nucleation>
+<modal_strat_sulfate_wet_removal phys="default">.false.</modal_strat_sulfate_wet_removal>
 
 <!-- For Polar mods-->
 <sscav_tuning phys="default">.true.</sscav_tuning>

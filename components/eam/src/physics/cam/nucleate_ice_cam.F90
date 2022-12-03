@@ -13,6 +13,13 @@ use ppgrid,         only: pcols, pver
 use physconst,      only: pi, rair, tmelt
 use constituents,   only: cnst_get_ind
 use physics_types,  only: physics_state
+!kzm ++
+use constituents,   only: pcnst
+!use physics_types,  only: physics_state
+use rad_constituents, only: rad_cnst_get_mode_num_idx, &
+                            rad_cnst_get_mam_mmr_idx
+use physics_types,  only: physics_state, physics_ptend, physics_ptend_init
+!kzm --
 use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_old_tim_idx, pbuf_get_field
 use phys_control,   only: use_hetfrz_classnuc
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_mmr, rad_cnst_get_aer_props, &
@@ -49,9 +56,14 @@ logical, public, protected :: use_preexisting_ice = .false.
 logical                    :: hist_preexisting_ice = .false.
 logical, public, protected :: use_nie_nucleate = .false.
 logical, public, protected :: use_dem_nucleate = .false.
-real(r8)                   :: nucleate_ice_subgrid
+!real(r8)                   :: nucleate_ice_subgrid
 real(r8)                   :: so4_sz_thresh_icenuc = huge(1.0_r8) !ice nucleation SO2 size threshold for aitken mode
-
+logical                    :: nucleate_ice_use_troplev = .true.  !kzm ++
+logical                    :: nucleate_ice_use_troplev_old = .false. !kzm ++
+logical                    :: nucleate_ice_incloud = .false. !kzm ++
+real(r8)                   :: nucleate_ice_subgrid = -1._r8 !kzm ++
+real(r8)                   :: nucleate_ice_subgrid_strat = -1._r8  !kzm ++
+real(r8)                   :: nucleate_ice_strat = 1.0_r8      !kzm ++
 ! Vars set via init method.
 real(r8) :: mincld      ! minimum allowed cloud fraction
 real(r8) :: bulk_scale  ! prescribed aerosol bulk sulfur scale factor
@@ -84,6 +96,9 @@ integer :: idxbcphi = -1 ! index in aerosol list for Soot (BCPHIL)
 
 ! modal aerosols
 logical :: clim_modal_aero
+!kzm ++
+logical :: prog_modal_aero
+real(r8) :: sigmag_accum
 
 integer :: nmodes = -1
 integer :: mode_accum_idx  = -1  ! index of accumulation mode
@@ -95,12 +110,11 @@ integer :: coarse_dust_idx = -1  ! index of dust in coarse mode
 integer :: coarse_nacl_idx = -1  ! index of nacl in coarse mode
 
 integer :: coarse_so4_idx = -1  ! index of so4 in coarse mode
-! kzm ++
-! for so4 only aitken mode so4 to get so4_num for nucleation
-! if defined MAM7S add stratosphere aitken to troposphere aitken
-integer :: mode_strat_sulfate1_idx = -1
-! kzm --
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE || defined MODAL_AERO_7MODE_S)
+
+
+integer :: mode_strat_sulfate1_idx = -1 !kzm
+integer :: mode_strat_coarse_idx = -1 !kzm
+#if (defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_5MODE)
 integer :: coarse_mom_idx = -1  ! index of mom in coarse mode
 #endif
 
@@ -195,6 +209,28 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
 
    mincld     = mincld_in
    bulk_scale = bulk_scale_in
+!kzm ++
+      ! Initialize naai.
+   !if (is_first_step()) then
+   !   call pbuf_set_field(pbuf2d, naai_idx, 0.0_r8)
+   !end if
+
+   if( masterproc ) then
+      write(iulog,*) 'nucleate_ice parameters:'
+      write(iulog,*) '  mincld                     = ', mincld_in !set as 1.0E-04 in WACCM6
+      write(iulog,*) '  bulk_scale                 = ', bulk_scale_in !set as 2.0 in WACCM6
+      write(iulog,*) '  use_preexisiting_ice       = ', use_preexisting_ice ! T 
+      write(iulog,*) '  hist_preexisiting_ice      = ', hist_preexisting_ice ! F
+      write(iulog,*) '  nucleate_ice_subgrid       = ', nucleate_ice_subgrid !set as 1.2 in waccm6, modulate the RH staturation value, 
+!      write(iulog,*) '  nucleate_ice_subgrid_strat = ', nucleate_ice_subgrid_strat ! this is the same as nucleate_ice_subgrid in
+!      WACCM6
+      write(iulog,*) '  nucleate_ice_strat         = ', nucleate_ice_strat !set as 1.0 in WACCM6
+!      write(iulog,*) '  nucleate_ice_incloud       = ', nucleate_ice_incloud !set as F in WACCM6
+      write(iulog,*) '  nucleate_ice_use_troplev   = ', nucleate_ice_use_troplev !set as T in WACCM6
+   end if
+
+!kzm --
+
 
    call cnst_get_ind('CLDLIQ', cldliq_idx)
    call cnst_get_ind('CLDICE', cldice_idx)
@@ -263,6 +299,10 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
          !kzm ++
          case ('strat_sulfate1')
             mode_strat_sulfate1_idx = m
+         case ('strat_coarse')	
+            mode_strat_coarse_idx = m !kzm MAM5 cse
+	     write(iulog,*)'kzm_MAM5_strat_coarse_mode_shown'
+
          !kzm --   
          end select
       end do
@@ -373,7 +413,7 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
          end if
       end if
 
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE || defined MODAL_AERO_7MODE_S)
+#if (defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_5MODE )
       call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)
       do n = 1, nspec
          call rad_cnst_get_info(0, mode_coarse_idx, n, spec_type=str32)
@@ -470,12 +510,15 @@ end subroutine nucleate_ice_cam_init
 
 subroutine nucleate_ice_cam_calc( &
    state, wsubi, pbuf)
-
+!kzm ++
+   use tropopause,          only : tropopause_find, TROP_ALG_HYBSTOB, TROP_ALG_CLIMATE
+   use time_manager,   only: get_nstep  
+!kzm --   
    ! arguments
    type(physics_state), target, intent(in)    :: state
    real(r8),                    intent(in)    :: wsubi(:,:)
    type(physics_buffer_desc),   pointer       :: pbuf(:)
- 
+   integer  :: troplev(pcols)       ! tropopause level 
    ! local workspace
 
    ! naai and naai_hom are the outputs shared with the microphysics
@@ -501,15 +544,12 @@ subroutine nucleate_ice_cam_calc( &
    real(r8), pointer :: coarse_nacl(:,:) ! mass m.r. of coarse nacl
 
    real(r8), pointer :: coarse_so4(:,:) ! mass m.r. of coarse so4
-!kzm ++
-#if (defined MODAL_AERO_7MODE_S)
-   real(r8), pointer :: num_strat_sulfate1(:,:) ! number m.r. of aitken mode
-#endif
 
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE || defined MODAL_AERO_7MODE_S)
+   real(r8), pointer :: num_strcrs(:,:)  ! number m.r. of strat. coarse mode !kzm 
+#if (defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_5MODE)
    real(r8), pointer :: coarse_mom(:,:) ! mass m.r. of coarse mom
 #endif
-!kzm--
+
 #if (defined RAIN_EVAP_TO_COARSE_AERO) 
    real(r8), pointer :: coarse_bc(:,:) ! mass m.r. of coarse bc
    real(r8), pointer :: coarse_pom(:,:) ! mass m.r. of coarse pom
@@ -548,6 +588,24 @@ subroutine nucleate_ice_cam_calc( &
    real(r8) :: pommc
    real(r8) :: soamc
 
+!kzm ++
+   real(r8) :: oso4_num
+   real(r8) :: odst_num
+   real(r8) :: osoot_num
+   real(r8) :: dso4_num
+   real(r8) :: so4_num_ac
+   real(r8) :: so4_num_at!kzm so4 num in aitken																		
+   real(r8) :: so4_num_cr
+   real(r8) :: so4_num_st_cr
+
+   real(r8) :: ramp
+
+!   real(r8) :: subgrid(pcols,pver) !kzm note: not add in for now
+   real(r8) :: trop_pd(pcols,pver)
+   integer :: nstep                             ! current timestep number
+!kzm --
+
+
    ! For pre-existing ice
    real(r8) :: fhom(pcols,pver)    ! how much fraction of cloud can reach Shom
    real(r8) :: wice(pcols,pver)    ! diagnosed Vertical velocity Reduction caused by preexisting ice (m/s), at Shom 
@@ -573,7 +631,7 @@ subroutine nucleate_ice_cam_calc( &
                dst1_sfc, dst2_sfc, dst3_sfc, dst4_sfc     ! aerosol surface area (m2/cm^3)
 
    !-------------------------------------------------------------------------------
-
+   nstep = get_nstep() !kzm ++
    lchnk = state%lchnk
    ncol  = state%ncol
    t     => state%t
@@ -594,15 +652,15 @@ subroutine nucleate_ice_cam_calc( &
       call rad_cnst_get_mode_num(0, mode_accum_idx,  'a', state, pbuf, num_accum)
       call rad_cnst_get_mode_num(0, mode_aitken_idx, 'a', state, pbuf, num_aitken)
       call rad_cnst_get_mode_num(0, mode_coarse_dst_idx, 'a', state, pbuf, num_coarse)
-!kzm ++
-#if ( defined MODAL_AERO_7MODE_S )
-     call rad_cnst_get_mode_num(0, mode_strat_sulfate1_idx,  'a', state, pbuf, num_strat_sulfate1)
-#endif
-!kzm --
+
       ! mode specie mass m.r.
       call rad_cnst_get_aer_mmr(0, mode_coarse_dst_idx, coarse_dust_idx, 'a', state, pbuf, coarse_dust)
       call rad_cnst_get_aer_mmr(0, mode_coarse_slt_idx, coarse_nacl_idx, 'a', state, pbuf, coarse_nacl)
-    
+!kzm ++
+      if (mode_strat_coarse_idx > 0) then
+          call rad_cnst_get_mode_num(0, mode_strat_coarse_idx,  'a', state, pbuf, num_strcrs) !kzm
+      endif
+!kzm --    
       if (mode_coarse_idx > 0) then
          call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_so4_idx, 'a', state, pbuf, coarse_so4)
       end if
@@ -610,8 +668,8 @@ subroutine nucleate_ice_cam_calc( &
       if (use_nie_nucleate .or. use_dem_nucleate) then
          call rad_cnst_get_aer_mmr(0, mode_fine_dst_idx, fine_dust_idx, 'a', state, pbuf, fine_dust)
       end if
-!kzm ++
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE || defined MODAL_AERO_7MODE_S)
+
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
       call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_mom_idx, 'a', state, pbuf, coarse_mom)
 #endif
 
@@ -620,7 +678,11 @@ subroutine nucleate_ice_cam_calc( &
       call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_pom_idx, 'a', state, pbuf, coarse_pom)
       call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_soa_idx, 'a', state, pbuf, coarse_soa)
 #endif
-
+!kzm ++
+     ! call rad_cnst_get_mode_num(0, mode_coarse_dst_idx, 'c', state, pbuf, cld_num_coarse)
+     ! call rad_cnst_get_aer_mmr(0, mode_coarse_dst_idx, coarse_dust_idx, 'c', state, pbuf, cld_coarse_dust)
+     ! call physics_ptend_init(ptend, state%psetcols, 'nucleatei', lq=lq) !kzm not now
+!kzm --
    else
       ! init number/mass arrays for bulk aerosols
       allocate( &
@@ -653,6 +715,40 @@ subroutine nucleate_ice_cam_calc( &
    call pbuf_get_field(pbuf, naai_hom_idx, naai_hom)
    naai(1:ncol,1:pver)     = 0._r8  
    naai_hom(1:ncol,1:pver) = 0._r8  
+!kzm ++
+   ! Use the same criteria that is used in chemistry and in CLUBB (for cloud fraction)
+   ! to determine whether to use tropospheric or stratospheric settings. Include the
+   ! tropopause level so that the cold point tropopause will use the stratospheric values.
+   !call tropopause_findChemTrop(state, troplev)
+   call tropopause_find(state, tropLev, primary=TROP_ALG_HYBSTOB, backup=TROP_ALG_CLIMATE)
+
+!   if ((nucleate_ice_subgrid .eq. -1._r8) .or. (nucleate_ice_subgrid_strat .eq. -1._r8)) then
+!      call pbuf_get_field(pbuf, qsatfac_idx, qsatfac)
+!   end if
+
+ !  trop_pd(:,:) = 0._r8
+
+!   do k = top_lev, pver
+!      do i = 1, ncol
+!         trop_pd(i, troplev(i)) = 1._r8
+!
+!         if (k <= troplev(i)) then
+!            if (nucleate_ice_subgrid_strat .eq. -1._r8) then
+!               subgrid(i, k) = 1._r8 / qsatfac(i, k)
+!            else
+!               subgrid(i, k) = nucleate_ice_subgrid_strat
+!            end if
+!         else
+!            if (nucleate_ice_subgrid .eq. -1._r8) then
+!               subgrid(i, k) = 1._r8 / qsatfac(i, k)
+!            else
+!               subgrid(i, k) = nucleate_ice_subgrid
+!            end if
+!         end if
+!      end do
+!   end do
+!kzm --
+
 
    ! initialize history output fields for ice nucleation
    nihf(1:ncol,1:pver)  = 0._r8  
@@ -733,11 +829,11 @@ subroutine nucleate_ice_cam_calc( &
                   so4mc  = coarse_so4(i,k)*rho(i,k)
                endif
 
-#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE || defined MODAL_AERO_7MODE_S)
+#if (defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE)
                mommc  = coarse_mom(i,k)*rho(i,k)
 #endif
 
-#if (defined RAIN_EVAP_TO_COARSE_AERO ) 
+#if (defined RAIN_EVAP_TO_COARSE_AERO) 
                bcmc  = coarse_bc(i,k)*rho(i,k)
                pommc  = coarse_pom(i,k)*rho(i,k)
                soamc  = coarse_soa(i,k)*rho(i,k)
@@ -756,9 +852,6 @@ subroutine nucleate_ice_cam_calc( &
 !kzm ++
 #elif (defined MODAL_AERO_5MODE && defined RAIN_EVAP_TO_COARSE_AERO )
                      wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
-#elif (defined MODAL_AERO_7MODE_S && defined RAIN_EVAP_TO_COARSE_AERO )
-                     wght = dmc/(ssmc + dmc + so4mc + bcmc + pommc + soamc + mommc)
-!kzm --
 #elif (defined MODAL_AERO_4MODE_MOM)
                      wght = dmc/(ssmc + dmc + so4mc + mommc)
 #elif (defined RAIN_EVAP_TO_COARSE_AERO) 
@@ -783,6 +876,29 @@ subroutine nucleate_ice_cam_calc( &
                else
                   dst_num = dst3_num
                end if
+!kzm ++
+! this part is to calculate the so4 num in the coarse mode (mode 3)
+               if ( separate_dust ) then
+                  ! 7-mode -- the 7 mode scheme does not support
+                  ! stratospheric sulfates, and the sulfates are mixed in
+                  ! with the separate soot and dust modes, so just ignore
+                  ! for now.
+                  so4_num_cr = 0.0_r8
+               else
+                  ! 3-mode -- needs weighting for dust since dust, seasalt,
+                  !           and sulfate are combined in the "coarse" mode
+                  !           type
+                  so4mc    = coarse_so4(i,k)*rho(i,k)
+
+                  if (so4mc > 0._r8) then
+                    wght = so4mc/(ssmc + dmc + so4mc)
+                    so4_num_cr = wght * num_coarse(i,k)*rho(i,k)*1.0e-6_r8
+                  else
+                    so4_num_cr = 0.0_r8
+                  end if
+               endif
+!kzm --
+
 
                if (dgnum(i,k,mode_aitken_idx) > 0._r8) then
                   if (.not. use_preexisting_ice) then
@@ -790,21 +906,9 @@ subroutine nucleate_ice_cam_calc( &
                      so4_num  = num_aitken(i,k)*rho(i,k)*1.0e-6_r8 &
                         * (0.5_r8 - 0.5_r8*erf(log(so4_sz_thresh_icenuc/dgnum(i,k,mode_aitken_idx))/  &
                         (2._r8**0.5_r8*log(sigmag_aitken))))
-                ! kzm ++
-#if ( defined MODAL_AERO_7MODE_S )
-                     so4_num = so4_num + num_strat_sulfate1(i,k)*rho(i,k)*1.0e-6_r8 &
-                        * (0.5_r8 - 0.5_r8*erf(log(so4_sz_thresh_icenuc/dgnum(i,k,mode_aitken_idx))/  &
-                        (2._r8**0.5_r8*log(sigmag_aitken))))
-#endif
-                ! kzm --                
                   else
                      ! all so4 from aitken
                      so4_num  = num_aitken(i,k)*rho(i,k)*1.0e-6_r8
-                 ! kzm ++
-#if ( defined MODAL_AERO_7MODE_S )
-                     so4_num = so4_num + num_strat_sulfate1(i,k)*rho(i,k)*1.0e-6_r8
-#endif
-                ! kzm --                     
                   end if
                else 
                   so4_num = 0.0_r8 
@@ -847,7 +951,82 @@ subroutine nucleate_ice_cam_calc( &
                naai(i,k), nihf(i,k), niimm(i,k), nidep(i,k), nimey(i,k), &
                wice(i,k), weff(i,k), fhom(i,k),                          &
                dst1_num,dst2_num,dst3_num,dst4_num,organic_num,          &
-               clim_modal_aero)
+               clim_modal_aero,                                          &
+               oso4_num, odst_num, osoot_num)   !kzm ++
+!kzm ++
+            ! Move aerosol used for nucleation from interstial to cloudborne,
+            ! otherwise the same coarse mode aerosols will be available again
+            ! in the next timestep and will supress homogeneous freezing.
+            !if (prog_modal_aero .and. use_preexisting_ice) then
+!            if ( use_preexisting_ice) then
+!               if (separate_dust) then
+!                  call endrun('nucleate_ice_cam: use_preexisting_ice is not supported in separate_dust mode (MAM7)')
+!               endif
+!               write(iulog,*)'kzm_dust_removal_in_cirrus_cloud'
+!               ptend%q(i,k,cnum_idx) = -(odst_num * icldm(i,k))/rho(i,k)/1e-6_r8/dtime
+!               cld_num_coarse(i,k)   = cld_num_coarse(i,k) + (odst_num * icldm(i,k))/rho(i,k)/1e-6_r8
+
+!               ptend%q(i,k,cdst_idx) = - odst_num / dst_num * icldm(i,k) * coarse_dust(i,k) / dtime!
+!               cld_coarse_dust(i,k) = cld_coarse_dust(i,k) + odst_num / dst_num *icldm(i,k) * coarse_dust(i,k)
+!            end if
+
+            ! Liu&Penner does not generate enough nucleation in the polar winter
+            ! stratosphere, which affects surface area density, dehydration and
+            ! ozone chemistry. Part of this is that there are a larger number of
+            ! particles in the accumulation mode than in the Aitken mode. In volcanic
+            ! periods, the coarse mode may also be important. As a short
+            ! term work around, include the accumulation and coarse mode particles
+            ! and assume a larger fraction of the sulfates nucleate in the polar
+            ! stratosphere.
+            !
+            ! Do not include the tropopause level, as stratospheric aerosols
+            ! only exist above the tropopause level.
+            !
+            ! NOTE: This may still not represent the proper particles that
+            ! participate in nucleation, because it doesn't include STS and NAT
+            ! particles. It may not represent the proper saturation threshold for
+            ! nucleation, and wsubi from CLUBB is probably not representative of
+            ! wave driven varaibility in the polar stratosphere.
+             if (nucleate_ice_use_troplev .and. clim_modal_aero) then
+              if ((k < (troplev(i)) ) .and. (nucleate_ice_strat > 0._r8)) then 
+                 !if (nstep > 4 .and. ((t(i,k) - 273.15_r8) .le. -40.0_r8)) then !after first day    
+                 !write(iulog,*)'kzm_nihf_num ',nihf(i,k)    
+                 !write(iulog,*)'kzm_so4_num ',so4_num   
+                 !end if  
+                 if (oso4_num > 0._r8) then
+                    so4_num_ac = num_accum(i,k)*rho(i,k)*1.0e-6_r8
+                    if (mode_strat_coarse_idx > 0) then
+                        so4_num_st_cr = num_strcrs(i,k)*rho(i,k)*1.0e-6_r8 !kzm add in stratosphere coarse
+                        dso4_num = max(0._r8, (nucleate_ice_strat * (so4_num_cr + so4_num_ac + so4_num_st_cr)) &
+                                   - oso4_num) * 1e6_r8 / rho(i,k) !kzm
+                        write(iulog,*)'kzm_mam5_sice_working'  
+
+                    else
+                        dso4_num = max(0._r8, (nucleate_ice_strat * (so4_num_cr + so4_num_ac)) - oso4_num) * 1e6_r8 / rho(i,k)
+                        write(iulog,*)'kzm_mam4_sice_working'
+
+                    endif
+                    !dso4_num = max(0._r8, (nucleate_ice_strat * (so4_num_cr + so4_num_ac)) - oso4_num) * 1e6_r8 / rho(i,k)
+                    write(iulog,*)'kzm_dso4_num ', dso4_num
+                    naai(i,k) = naai(i,k) + dso4_num
+                    nihf(i,k) = nihf(i,k) + dso4_num
+                 end if
+              end if
+            else
+                                  ! This maintains backwards compatibility with the previous version.
+              if (pmid(i,k) <= 12500._r8 .and. pmid(i,k) > 100._r8 .and. abs(state%lat(i)) >= 60._r8 * pi / 180._r8) then
+                 ramp = 1._r8 - min(1._r8, max(0._r8, (pmid(i,k) - 10000._r8) / 2500._r8))
+
+                 if (oso4_num > 0._r8) then
+                    dso4_num = (max(oso4_num, ramp * nucleate_ice_strat * so4_num) - oso4_num) * 1e6_r8 / rho(i,k)
+                    naai(i,k) = naai(i,k) + dso4_num
+                    nihf(i,k) = nihf(i,k) + dso4_num
+                 end if
+              end if
+            end if
+
+
+!kzm --
 
 
             naai_hom(i,k) = nihf(i,k)

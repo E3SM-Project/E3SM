@@ -17,7 +17,7 @@ use ref_pres,         only: top_lev => clim_modal_aero_top_lev
 use phys_control,     only: phys_getopts
 use cam_abortutils,       only: endrun
 !kzm ++
-use modal_aero_calcsize,  only: modal_strat_sulfate_aod
+!use perf_mod,       only: t_startf, t_stopf
 !kzm
 implicit none
 private
@@ -41,8 +41,8 @@ integer :: dgnum_idx      = 0
 integer :: dgnumwet_idx   = 0
 integer :: wetdens_ap_idx = 0
 integer :: qaerwat_idx    = 0
-   integer :: sulfeq_idx     = 0 !kzm++
-   integer :: so4dryvol_idx  = 0 !kzm++
+   !integer :: sulfeq_idx     = 0 !kzm++
+   !integer :: so4dryvol_idx  = 0 !kzm++
 logical :: pergro_mods         = .false.
 
 real(r8), allocatable :: maer(:,:,:)      ! aerosol wet mass MR (including water) (kg/kg-air)
@@ -59,13 +59,17 @@ real(r8), allocatable :: wtrvol(:,:,:)    ! single-particle-mean water volume in
 real(r8), allocatable :: rhcrystal(:)
 real(r8), allocatable :: rhdeliques(:)
 real(r8), allocatable :: specdens_1(:)
-!$OMP THREADPRIVATE(maer, hygro, naer, dryvol, drymass, dryrad, wetrad, wetvol, wtrvol, rhcrystal, rhdeliques, specdens_1)
 
+logical :: modal_strat_sulfate_aod  !kzm
+!$OMP THREADPRIVATE(maer, hygro, naer, dryvol, drymass, dryrad, wetrad, wetvol, wtrvol, rhcrystal, rhdeliques, specdens_1)
 
 !===============================================================================
 contains
 !===============================================================================
+!------------------
 
+
+!------------------ 
 subroutine modal_aero_wateruptake_reg()
 
   use physics_buffer,   only: pbuf_add_field, dtype_r8
@@ -79,11 +83,6 @@ subroutine modal_aero_wateruptake_reg()
 
    ! 1st order rate for direct conversion of strat. cloud water to precip (1/s)
    call pbuf_add_field('QAERWAT',    'physpkg', dtype_r8, (/pcols, pver, nmodes/), qaerwat_idx)  
-   if (modal_strat_sulfate_aod) then
-      !write(iulog,*)'kzm_wateruptake_reg_1'
-      call pbuf_add_field('MAMH2SO4EQ', 'global',  dtype_r8, (/pcols, pver, nmodes/), sulfeq_idx)
-      ! write(iulog,*)'kzm_wateruptake_reg_2'
-   end if
 end subroutine modal_aero_wateruptake_reg
 
 !===============================================================================
@@ -99,6 +98,7 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
    integer :: m, nmodes, istat
    logical :: history_aerosol      ! Output the MAM aerosol variables and tendencies
    logical :: history_verbose      ! produce verbose history output
+   logical :: modal_strat_sulfate_aod_treatment !for strat. H2SO4 wateruptake treatment flag
 
    character(len=3) :: trnum       ! used to hold mode number (as characters)
    !----------------------------------------------------------------------------
@@ -107,11 +107,6 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
    dgnum_idx      = pbuf_get_index('DGNUM')    
 
    ! assume for now that will compute wateruptake for climate list modes only
-   !kzm ++
-   if (modal_strat_sulfate_aod) then
-      so4dryvol_idx  = pbuf_get_index('SO4DRYVOL')
-   end if
-   !kzm --
    call rad_cnst_get_info(0, nmodes=nmodes)
 
    !$OMP PARALLEL
@@ -145,7 +140,9 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
    ! determine default variables
    call phys_getopts(history_aerosol_out = history_aerosol, &
                      history_verbose_out = history_verbose, &
-                     pergro_mods_out = pergro_mods)
+                     pergro_mods_out = pergro_mods,         &
+                     modal_strat_sulfate_aod_treatment_out &
+                     = modal_strat_sulfate_aod_treatment)
 
    do m = 1, nmodes
       write(trnum, '(i3.3)') m
@@ -172,14 +169,15 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
          'sum of aerosol water of interstitial modes wat_a1+wat_a2+wat_a3+wat_a4' )
       call add_default( 'aero_water',  1, ' ')
    endif
+
+   if (modal_strat_sulfate_aod_treatment) then
+      modal_strat_sulfate_aod = modal_strat_sulfate_aod_treatment ! pass flat to H2SO4 treatment
+      write(iulog,*)'modal_strat_sulfate_aod_in_wateruptake ', modal_strat_sulfate_aod
+   endif     
    
    if (is_first_step()) then
       ! initialize fields in physics buffer
       call pbuf_set_field(pbuf2d, dgnumwet_idx, 0.0_r8)
-      if (modal_strat_sulfate_aod) then  !kzm ++
-      call pbuf_set_field(pbuf2d, sulfeq_idx, 0.0_r8) !kzm++
-      write(iulog,*)'kzm_modal_strat_sulfate_aod_in_wateruptake ', modal_strat_sulfate_aod
-      end if !kzm --
    endif
 
 end subroutine modal_aero_wateruptake_init
@@ -222,12 +220,13 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    !if (modal_strat_sulfate_aod) then
    character(len=fieldname_len+3) :: fieldname
    integer :: tropLev(pcols) !kzm ++
-   real(r8), pointer :: so4dryvol(:,:,:) ! single-particle-mean so4 dry volume (m3)
-   real(r8), pointer :: sulfeq(:,:,:) ! H2SO4 equilibrium mixing ratios over particles (mol/mol)
    real(r8), allocatable :: sulden(:,:,:) ! sulfate aerosol mass density (g/cm3)!kzm ++
    real(r8), allocatable :: wtpct(:,:,:)  ! sulfate aerosol composition, weight % H2SO4
    character(len=32) :: spectype
    real(r8) :: so4specdens,dmean,qh2so4_equilib, wtpct_mode, sulden_mode
+   real(r8) :: so4dryvolmr(pcols,pver)
+   real(r8), allocatable ::so4dryvol(:,:,:) ! single-particle-mean so4 dry volume (m3) 
+   real(r8), allocatable ::sulfeq(:,:,:) ! H2SO4 equilibrium mixing ratios over particles (mol/mol) 
    !endif
    !kzm --
 
@@ -307,6 +306,9 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    !kzm ++
    allocate(sulden(pcols,pver,nmodes)) 
    allocate(wtpct(pcols,pver,nmodes)) 
+   allocate(so4dryvol(pcols,pver,nmodes))
+   allocate(sulfeq(pcols,pver,nmodes))
+
    !kzm --
    !initialize to an invalid value
    naer(:,:,:)    = huge(1.0_r8)
@@ -352,9 +354,9 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    ! retreive aerosol properties
    !kzm ++
 
-   if (modal_strat_sulfate_aod) then
+   if (modal_strat_sulfate_aod .and. present(list_idx_in)) then
       if (is_first_step()) then
-         dgncur_awet(:,:,:) = dgncur_a(:,:,:)
+         !dgncur_awet(:,:,:) = dgncur_a(:,:,:)
          write(iulog,*)'kzm_strat_sulfate_aod_treatment_activiated'
       end if
      
@@ -364,8 +366,8 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
       h2ommr => state%q(:,:,1)
       t      => state%t
       pmid   => state%pmid
-      call pbuf_get_field(pbuf, so4dryvol_idx,   so4dryvol)!from /utils/modal_aero_calcsize.F90
-      call pbuf_get_field(pbuf,  sulfeq_idx, sulfeq )
+      !call pbuf_get_field(pbuf, so4dryvol_idx,   so4dryvol)!from /utils/modal_aero_calcsize.F90
+      !call pbuf_get_field(pbuf,  sulfeq_idx, sulfeq )
       wtpct(:,:,:)     = 75._r8
       sulden(:,:,:)    = 1.923_r8
    endif
@@ -373,7 +375,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    do m = 1, nmodes
 
       dryvolmr(:,:) = 0._r8
-
+      so4dryvolmr(:,:) = 0._r8! kzm+
       ! get mode properties
       call rad_cnst_get_mode_props(list_idx, m, sigmag=sigmag,  &
          rhcrystal=rhcrystal(m), rhdeliques=rhdeliques(m))
@@ -386,7 +388,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
          ! get species interstitial mixing ratio ('a')
          call rad_cnst_get_aer_mmr(list_idx, m, l, 'a', state, pbuf, raer)
          call rad_cnst_get_aer_props(list_idx, m, l, density_aer=specdens, hygro_aer=spechygro)
-         if (modal_strat_sulfate_aod) then !kzm ++
+         if (modal_strat_sulfate_aod .and. present(list_idx_in)) then !kzm ++
             call rad_cnst_get_aer_props(list_idx, m, l, density_aer=specdens, &
                                      spectype=spectype) !kzm ++
          endif !kzm --                   
@@ -401,15 +403,15 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
                  so4specdens=specdens
          endif
 
-         if (modal_strat_sulfate_aod) then
+         if (modal_strat_sulfate_aod .and. present(list_idx_in)) then
            ! so4specdens=specdens     
             alnsg = log(sigmag)
             do k = top_lev, pver
                do i = 1, ncol
-                  dmean = dgncur_awet(i,k,m)*exp(1.5_r8*alnsg**2)
-                  if ( ieee_is_nan(dgncur_awet(i,k,m)) ) then
-                      dmean = dgncur_a(i,k,m)*exp(1.5_r8*alnsg**2)
-                  endif    
+                  !dmean = dgncur_awet(i,k,m)*exp(1.5_r8*alnsg**2)
+                  !if ( ieee_is_nan(dgncur_awet(i,k,m)) ) then
+                  dmean = dgncur_a(i,k,m)*exp(1.5_r8*alnsg**2)
+                  !endif    
                   !kzm: h2ommr has NaN values in restart run when using
                   !MAM5-FC,at the first step
                   !if ( ieee_is_nan(h2ommr(i,k)) ) h2ommr(i,k) = 0.0_r8 
@@ -441,6 +443,12 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
                dumb          = duma/specdens
                dryvolmr(i,k) = dryvolmr(i,k) + dumb
                hygro(i,k,m)  = hygro(i,k,m) + dumb*spechygro
+               !kzm ++
+               if (modal_strat_sulfate_aod .and. present(list_idx_in) .and. (trim(spectype).eq.'sulfate')) then
+                       so4dryvolmr(i,k) = so4dryvolmr(i,k) + dumb
+               end if
+               !kzm --
+
             end do ! i = 1, ncol
          end do ! k = top_lev, pver
       end do ! l = 1, nspec
@@ -478,7 +486,17 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
          end do ! i = 1, ncol
       end do ! k = top_lev, pver
-
+      if (modal_strat_sulfate_aod .and. present(list_idx_in)) then
+          do k = top_lev, pver
+              do i = 1, ncol
+                 if (so4dryvolmr(i,k) .gt. 1.0e-31_r8) then
+                    so4dryvol(i,k,m) = dryvol(i,k,m)*so4dryvolmr(i,k)/dryvolmr(i,k)
+                 else
+                    so4dryvol(i,k,m) = 0.0_r8
+                 end if
+              end do    ! i = 1, ncol
+          end do    ! k = top_lev, pver
+      end if     
    end do    ! modes
 
    !----------------------------------------------------------------------------
@@ -538,19 +556,22 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    !----------------------------------------------------------------------------
    ! compute aerosol wet radius and aerosol water
    !kzm ++
-   if (modal_strat_sulfate_aod ) then
+   if (modal_strat_sulfate_aod .and. present(list_idx_in)) then
+!      call t_startf ('wateruptake_strat_sub')    
       call modal_aero_wateruptake_strat_sub( &
            ncol, nmodes, rhcrystal, rhdeliques, dryrad, &
            hygro, rh, dryvol, wetrad, wetvol, &
            wtrvol,                            &
            so4dryvol, so4specdens, tropLev, &          !kzm++
            sulden, wtpct)                              !kzm++
-
+!      call t_stopf ('wateruptake_strat_sub')
    else
+!      call t_startf ('wateruptake_sub')     
       call modal_aero_wateruptake_sub( &
            ncol, nmodes, rhcrystal, rhdeliques, dryrad, &
            hygro, rh, dryvol, wetrad, wetvol,           &
            wtrvol)
+!      call t_stopf ('wateruptake_sub')
    end if
    !call modal_aero_wateruptake_sub( &
    !   ncol, nmodes, rhcrystal, rhdeliques, dryrad, &
@@ -1013,15 +1034,7 @@ subroutine modal_aero_wateruptake_strat_sub( &
          do i = 1, ncol
 
          !kzm ++
-         if ( (k<troplev(i)) .and.  (modal_strat_sulfate_aod) ) then
-               !kzm ++  
-               !if (so4dryvol(i,k,m) > 1.0e-30_r8 ) then
-               !   call modal_aero_kohler(dryrad(i:i,k,m), hygro(i:i,k,m), rh(i:i,k), wetrad(i:i,k,m), 1)
-               !   wetrad(i,k,m) = max(wetrad(i,k,m), dryrad(i,k,m))
-               !   wetvol(i,k,m) = pi43*wetrad(i,k,m)**3
-               !   write(iulog,*)'kzm_wetvol1 ', wetvol(i,k,m)
-               !end if
-               !kzm --
+         if ( (k<troplev(i)) .and.  (modal_strat_sulfate_aod)  .and. (m .eq. 5)) then
                wetvol(i,k,m) = dryvol(i,k,m)-so4dryvol(i,k,m)
                wetvol(i,k,m) = wetvol(i,k,m)+so4dryvol(i,k,m)*so4specdens/sulden(i,k,m)/wtpct(i,k,m)/10._r8
                wetvol(i,k,m) = max(wetvol(i,k,m), dryvol(i,k,m))

@@ -45,6 +45,7 @@ logical  :: use_preexisting_ice
 logical  :: use_hetfrz_classnuc
 logical  :: use_nie_nucleate
 logical  :: use_dem_nucleate
+logical  :: iulog
 
 real(r8) :: pi
 real(r8) :: mincld
@@ -103,7 +104,8 @@ subroutine nucleati(  &
    nuci, onihf, oniimm, onidep, onimey, &
    wpice, weff, fhom,                   &
    dst1_num,dst2_num,dst3_num,dst4_num, &
-   organic_num, clim_modal_aero )
+   organic_num, clim_modal_aero, &
+   oso4_num, odst_num, osoot_num   )!kzm ++
 
    !---------------------------------------------------------------
    ! Purpose:
@@ -148,6 +150,11 @@ subroutine nucleati(  &
    real(r8), intent(out) :: wpice      ! diagnosed Vertical velocity Reduction caused by preexisting ice (m/s), at Shom
    real(r8), intent(out) :: weff       ! effective Vertical velocity for ice nucleation (m/s); weff=wbar-wpice
    real(r8), intent(out) :: fhom       ! how much fraction of cloud can reach Shom
+!kzm ++
+   real(r8), intent(out) :: oso4_num   ! so4 aerosol number (#/cm^3)
+   real(r8), intent(out) :: odst_num   ! total dust aerosol number (#/cm^3)
+   real(r8), intent(out) :: osoot_num  ! soot (hydrophilic) aerosol number (#/cm^3)
+!kzm --
 
    ! Local workspace
    real(r8) :: nihf                      ! nucleated number from homogeneous freezing of so4
@@ -182,6 +189,12 @@ subroutine nucleati(  &
    ! temp variables that depend on use_preexisting_ice
    wbar1 = wbar
    wbar2 = wbar
+!kzm ++
+   ! If not using prexisting ice, the homogeneous freezing happens in the
+   ! entire gridbox.
+   fhom = 1._r8
+!kzm --
+
 
    if (use_preexisting_ice) then
 
@@ -225,7 +238,12 @@ subroutine nucleati(  &
    nihf  = 0._r8
    deles = 0._r8
    esi   = 0._r8
-
+!kzm ++
+   regm  = 0._r8
+   oso4_num  = 0._r8
+   odst_num  = 0._r8
+   osoot_num = 0._r8
+!kzm --
    if(so4_num >= 1.0e-10_r8 .and. (soot_num+dst3_num) >= 1.0e-10_r8 .and. cldn > 0._r8) then
 
 #ifdef USE_XLIU_MOD
@@ -425,7 +443,11 @@ subroutine nucleati(  &
    onidep = nidep*1.e+6_r8/rhoair
    oniimm = niimm*1.e+6_r8/rhoair
    onihf  = nihf*1.e+6_r8/rhoair
-
+!kzm++
+   oso4_num  = nihf
+   odst_num  = niimm
+   osoot_num = 0._r8
+!kzm--
 end subroutine nucleati
 
 !===============================================================================
