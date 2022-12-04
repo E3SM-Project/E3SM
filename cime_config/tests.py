@@ -13,10 +13,18 @@ _TESTS = {
     "e3sm_mosart_developer" : {
         "share" : True,
         "time"  : "0:45:00",
+        "inherit" : ("e3sm_mosart_heat"),
         "tests" : (
             "ERS.r05_r05.RMOSGPCC.mosart-gpcc_1972",
             "ERS.MOS_USRDAT.RMOSGPCC.mosart-mos_usrdat",
             "SMS.MOS_USRDAT.RMOSGPCC.mosart-unstructure",
+            )
+        },
+
+    "e3sm_mosart_heat" : {
+        "time"  : "0:45:00",
+        "tests" : (
+            "ERS.r05_r05.RMOSGPCC.mosart-heat", 
             )
         },
 
