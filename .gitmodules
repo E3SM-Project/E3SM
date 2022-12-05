@@ -68,3 +68,9 @@
 	path = components/ww3/src/WW3
 	url = git@github.com:E3SM-Project/WW3.git
 	branch = e3sm
+[submodule "Icepack"]
+	path = Icepack
+	url = git@github.com:E3SM-Project/Icepack.git
+[submodule "components/mpas-seaice/src/icepack"]
+	path = components/mpas-seaice/src/icepack
+	url = git@github.com:E3SM-Project/Icepack.git
