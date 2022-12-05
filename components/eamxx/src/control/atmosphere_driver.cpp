@@ -1144,7 +1144,7 @@ void AtmosphereDriver::initialize_atm_procs ()
   setup_column_conservation_checks();
 
   // If user requests it, we set up NaN checks for all computed fields after each atm proc run
-  if (m_atm_params.sublist("driver_options").get("check_all_computed_fields_for_nans",false)) {
+  if (m_atm_params.sublist("driver_options").get("check_all_computed_fields_for_nans",true)) {
     m_atm_process_group->add_postcondition_nan_checks();
   }
 
