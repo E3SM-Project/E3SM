@@ -636,8 +636,10 @@ void print_field_hyperslab (const Field& f,
   // slice/entry currently printed. We can already fill the entries corresponding
   // to dimensions we sliced away.
   auto get_dims_str = [&](const FieldLayout& orig_layout) -> std::vector<std::string> {
-    std::vector<std::string> dims_str (orig_layout.rank(),"");
-    for (int ii=0, jj=0; ii<orig_layout.rank(); ++ii) {
+    const int orig_rank = orig_layout.rank();
+    const int num_tags  = tags.size();
+    std::vector<std::string> dims_str (orig_rank,"");
+    for (int ii=0, jj=0; ii<orig_rank && jj<num_tags; ++ii) {
       if (orig_layout.tag(ii)==tags[jj]) {
         // Was sliced. Store slice idx as a stirng
         dims_str[ii] = std::to_string(indices[jj]);
@@ -651,9 +653,11 @@ void print_field_hyperslab (const Field& f,
   // since we'll have to loop over them. We'll use these indices to add the
   // missing info in the dims_str vector<string> as we loop and print.
   auto get_dims_left = [&](const FieldLayout& orig_layout) -> std::vector<int> {
+    const int orig_rank = orig_layout.rank();
+    const int num_tags  = tags.size();
     std::vector<int> dims_left;
-    for (int ii=0, jj=0; ii<orig_layout.rank(); ++ii) {
-      if (orig_layout.tag(ii)==tags[jj]) {
+    for (int ii=0, jj=0; ii<orig_rank; ++ii) {
+      if (jj<num_tags && orig_layout.tag(ii)==tags[jj]) {
         // Was sliced. Skip
         ++jj;
       } else {
