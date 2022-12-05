@@ -2392,9 +2392,6 @@ subroutine shoc_assumed_pdf(&
       !  BEGIN TO COMPUTE CLOUD PROPERTY STATISTICS
 
       call shoc_assumed_pdf_compute_temperature(&
-        thl_first,basepres,pval,& ! Input
-        Tl1_g)                    ! Output
-      call shoc_assumed_pdf_compute_temperature(&
         thl1_1,basepres,pval,& ! Input
         Tl1_1)                 ! Output
       call shoc_assumed_pdf_compute_temperature(&
