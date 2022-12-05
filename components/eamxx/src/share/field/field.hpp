@@ -554,11 +554,14 @@ auto Field::get_ND_view () const ->
   const auto& alloc_prop = m_header->get_alloc_properties();
   auto num_values = alloc_prop.get_alloc_size() / sizeof(T);
   Kokkos::LayoutRight kl;
-  for (int i=0; i<N-1; ++i) {
-    kl.dimension[i] = fl.dim(i);
-    num_values = fl.dim(i)==0 ? 0 : num_values/fl.dim(i);
+  for (int i=0; i<N; ++i) {
+    if (i==N-1) {
+      kl.dimension[i] = num_values;
+    } else {
+      kl.dimension[i] = fl.dim(i);
+      num_values = fl.dim(i)==0 ? 0 : num_values/fl.dim(i);
+    }
   }
-  kl.dimension[N-1] = num_values;
   auto ptr = reinterpret_cast<T*>(get_view_impl<HD>().data());
 
   using ret_type = get_view_type<data_nd_t<T,N>,HD>;
