@@ -2267,7 +2267,7 @@ subroutine shoc_assumed_pdf(&
   real(rtype) s1,s2,std_s1,std_s2,C1,C2
   real(rtype) ql1,ql2
   real(rtype) thl_first,qw_first,w_first
-  real(rtype) Tl1_1,Tl1_2,Tl1_g,pval
+  real(rtype) Tl1_1,Tl1_2,pval
   real(rtype) thlsec,qwsec,qwthlsec,wqwsec,wthlsec
   real(rtype) qn1,qn2
   real(rtype) beta1, beta2, qs1, qs2
@@ -2284,6 +2284,8 @@ subroutine shoc_assumed_pdf(&
   real(rtype) :: thl_sec_zt(shcol,nlev)
   real(rtype) :: qwthl_sec_zt(shcol,nlev)
   real(rtype) :: qw_sec_zt(shcol,nlev)
+
+  real(rtype), parameter :: Tl_min = 100._rtype
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
   if (use_cxx) then
@@ -2399,13 +2401,14 @@ subroutine shoc_assumed_pdf(&
         thl1_2,basepres,pval,& ! Input
         Tl1_2)                 ! Output
 
-      ! Check to ensure Tl1_1 and Tl1_2 are not negative. temporarily set to grid mean value if so.
-      if (Tl1_1 .le. 0._rtype) then
-         Tl1_1 = Tl1_g
+      ! Check to ensure Tl1_1 and Tl1_2 are not excessively small.
+      !  Temporary fix to set to minimum value if so.
+      if (Tl1_1 .le. Tl_min) then
+         Tl1_1 = Tl_min
       endif
 
-      if (Tl1_2 .le. 0._rtype) then
-         Tl1_2 = Tl1_g
+      if (Tl1_2 .le. Tl_min) then
+         Tl1_2 = Tl_min
       endif
 
       ! Now compute qs

@@ -72,6 +72,7 @@ void Functions<S,D>::shoc_assumed_pdf(
   const Scalar pi = C::Pi;
   const Scalar basetemp = C::basetemp;
   const Scalar epsterm = rair/rv;
+  const Scalar Tl_min = 100;
 
   // Interpolate many variables from interface grid to thermo grid
   linear_interp(team,zi_grid,zt_grid,w3,w3_zt,nlevi,nlev,largeneg);
@@ -222,35 +223,34 @@ void Functions<S,D>::shoc_assumed_pdf(
       }
 
       // Begin to compute cloud property statistics
-      const Spack Tl1_g = thl_first/(ekat::pow(basepres/pval,(rair/cp)));
-            Spack Tl1_1 = thl1_1/(ekat::pow(basepres/pval,(rair/cp)));
+      const Spack Tl1_1 = thl1_1/(ekat::pow(basepres/pval,(rair/cp)));
             Spack Tl1_2 = thl1_2/(ekat::pow(basepres/pval,(rair/cp)));
 
       const auto index_range = ekat::range<IntSmallPack>(k*Spack::n);
       const Smask active_entries = (index_range < nlev);
 
-      // Check to ensure Tl1_1 and Tl1_2 are not negative, temporarily set to grid mean value if so.
-      const Smask is_neg_Tl1_1 = (Tl1_1 <= 0) && active_entries;
-      const Smask is_neg_Tl1_2 = (Tl1_2 <= 0) && active_entries;
-      if( is_neg_Tl1_1.any() ) {
-        Tl1_1.set(is_neg_Tl1_1,Tl1_g);
+      // Check to ensure Tl1_1 and Tl1_2 are not excessively small, set to threshold value if so.
+      const Smask is_small_Tl1_1 = (Tl1_1 <= Tl_min) && active_entries;
+      const Smask is_small_Tl1_2 = (Tl1_2 <= Tl_min) && active_entries;
+      if( is_small_Tl1_1.any() ) {
+        Tl1_1.set(is_small_Tl1_1,Tl_min);
         int n_mask = 0;
-        for (int i=0; i<is_neg_Tl1_1.n; i++) {
-          if (is_neg_Tl1_1[i]) {
+        for (int i=0; i<is_small_Tl1_1.n; i++) {
+          if (is_small_Tl1_1[i]) {
             n_mask++;
           }
         }
-        printf("WARNING: Tl1_1 has %d values <= 0.  Resetting to minimum value.\n",n_mask);
+        printf("WARNING: Tl1_1 has %d values <= allowable value.  Resetting to minimum value.\n",n_mask);
       }
-      if( is_neg_Tl1_2.any() ) {
-        Tl1_2.set(is_neg_Tl1_2,Tl1_g);
+      if( is_small_Tl1_2.any() ) {
+        Tl1_2.set(is_small_Tl1_2,Tl_min);
         int n_mask = 0;
-        for (int i=0; i<is_neg_Tl1_2.n; i++) {
-          if (is_neg_Tl1_2[i]) {
+        for (int i=0; i<is_small_Tl1_2.n; i++) {
+          if (is_small_Tl1_2[i]) {
             n_mask++;
           }
         }
-        printf("WARNING: Tl1_2 has %d values <= 0.  Resetting to minimum value.\n",n_mask);
+        printf("WARNING: Tl1_2 has %d values <= allowable value.  Resetting to minimum value.\n",n_mask);
       }
 
       // Compute qs and beta
