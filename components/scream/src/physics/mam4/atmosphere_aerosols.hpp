@@ -28,13 +28,9 @@ namespace scream
 
 class MAM4Aerosols final : public scream::AtmosphereProcess
 {
-  using SHF          = shoc::Functions<Real, DefaultDevice>;
   using PF           = scream::PhysicsFunctions<DefaultDevice>;
-  using C            = physics::Constants<Real>;
   using KT           = ekat::KokkosTypes<DefaultDevice>;
 
-  using Pack         = mam4::PackType;
-  using IntPack      = mam4::IntPackType;
   using ColumnView   = mam4::ColumnView;
   using ThreadTeam   = mam4::ThreadTeam;
 

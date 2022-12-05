@@ -53,20 +53,13 @@ void MAM4Aerosols::set_grids(const std::shared_ptr<const GridsManager> grids_man
   // Layout for horiz_wind field
   FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {m_num_cols,2,m_num_levs} };
 
-  // Define fields needed in SHOC.
-  // Note: shoc_main is organized by a set of 5 structures, variables below are organized
-  //       using the same approach to make it easier to follow.
-
-  constexpr int ps = Spack::n;
-
+  // Define fields needed in mam4xx.
   const auto m2 = m*m;
   const auto s2 = s*s;
 
   // atmospheric quantities
-  // (height is calculated from pdel, p_mid, T_mid, qv)
-  // FIXME: Should we use p_dry_mid and pseudo_density_dry instead??
   add_field<Required>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
-  add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name, ps);
+  add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name, ps); // total pressure
   add_field<Required>("qv", scalar3d_layout_mid, Qunit, grid_name, "tracers", ps);
   add_field<Required>("pbl_height", scalar2d_layout_col, m, grid_name);
   add_field<Required>("pseudo_density", scalar3d_layout_mid, Qunit, grid_name, ps); // pdel
@@ -122,30 +115,29 @@ void MAM4Aerosols::initialize_impl(const RunType run_type) {
   auto wtracer_sfc = m_buffer.wtracer_sfc;
   auto wm_zt       = m_buffer.wm_zt;
 
-  // For now, set z_int(i,nlevs) = z_surf = 0
-  const Real z_surf = 0.0;
-
-  // Some SHOC variables should be initialized uniformly if an Initial run
+  // Perform any initialization work.
   if (run_type==RunType::Initial){
+    /*
     Kokkos::deep_copy(sgs_buoy_flux,0.0);
     Kokkos::deep_copy(tk,0.0);
     Kokkos::deep_copy(tke,0.0004);
     Kokkos::deep_copy(tke_copy,0.0004);
     Kokkos::deep_copy(cldfrac_liq,0.0);
+    */
   }
+
   // Find index of qv (water vapor, kg/kg(wet-air) and tke (J/kg(wet-air)) in the qtracer 3d view
   // These indices are later used for converting tracers from wet mmr to dry mmr and vice-versa
   auto qv_index  = tracer_info->m_subview_idx.at("qv");
-  auto tke_index = tracer_info->m_subview_idx.at("tke");
 
   //Device view to store indices of tracers which will participate in wet<->dry conversion; we are excluding
   //"tke" [as it is not "water based" tracer] and "qv"[as "qv" (before conversion) is needed for
   //computing conversion for all other tracers] from qtracers view
-
-  view_1d_int convert_wet_dry_idx_d("convert_wet_dry_idx_d",m_num_tracers-2);  //2 tracers, qv and tke, are excluded
+  view_1d_int convert_wet_dry_idx_d("convert_wet_dry_idx_d",m_num_tracers-1);  // qv is excluded
 
   //mirror view on host
   auto convert_wet_dry_idx_h = Kokkos::create_mirror_view(convert_wet_dry_idx_d);
+
   //loop over all tracers to store of all tracer indices except for tke and qv
   for (int it=0,iq=0; it<m_num_tracers; ++it) {
     if (it!=qv_index && it!= tke_index) { //skip if "it" is a tke or qv index
@@ -213,28 +205,6 @@ void MAM4Aerosols::initialize_impl(const RunType run_type) {
   history_output.w3        = m_buffer.w3;
   history_output.wqls_sec  = m_buffer.wqls_sec;
   history_output.brunt     = m_buffer.brunt;
-
-#ifdef SCREAM_SMALL_KERNELS
-  temporaries.se_b = m_buffer.se_b;
-  temporaries.ke_b = m_buffer.ke_b;
-  temporaries.wv_b = m_buffer.wv_b;
-  temporaries.wl_b = m_buffer.wl_b;
-  temporaries.se_a = m_buffer.se_a;
-  temporaries.ke_a = m_buffer.ke_a;
-  temporaries.wv_a = m_buffer.wv_a;
-  temporaries.wl_a = m_buffer.wl_a;
-  temporaries.ustar = m_buffer.ustar;
-  temporaries.kbfs = m_buffer.kbfs;
-  temporaries.obklen = m_buffer.obklen;
-  temporaries.ustar2 = m_buffer.ustar2;
-  temporaries.wstar = m_buffer.wstar;
-
-  temporaries.rho_zt = m_buffer.rho_zt;
-  temporaries.shoc_qv = m_buffer.shoc_qv;
-  temporaries.dz_zt = m_buffer.dz_zt;
-  temporaries.dz_zi = m_buffer.dz_zi;
-  temporaries.tkh = m_buffer.tkh;
-#endif
 
   shoc_postprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,convert_wet_dry_idx_d,
                                  rrho,qv,qw,qc,qc_copy,tke,tke_copy,qtracers,shoc_ql2,
