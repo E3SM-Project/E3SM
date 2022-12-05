@@ -1100,7 +1100,7 @@ module ocn_time_integration_lts
     type (mpas_pool_type), pointer :: LTSPool, meshPool
     integer, dimension(:), allocatable :: isLTSRegionEdgeAssigned
     integer :: i, iCell, iEdge, iRegion, coarseRegions, fineRegions, fineRegionsM1 
-    integer, dimension(:), pointer :: LTSRegion, mpiRankCell
+    integer, dimension(:), pointer :: LTSRegion
     integer, dimension(:,:), pointer :: nCellsInLTSRegion, nEdgesInLTSRegion
     integer, dimension(:,:,:), pointer :: cellsInLTSRegion, edgesInLTSRegion
     integer, dimension(2) :: minMaxLTSRegion
@@ -1111,8 +1111,6 @@ module ocn_time_integration_lts
     block => domain % blocklist
     call mpas_pool_get_subpool(block % structs, 'LTS', LTSPool)
     call mpas_pool_get_subpool(block % structs, ',mesh', meshPool)
-
-    call mpas_pool_get_array(meshPool, 'mpiRankCell', mpiRankCell)
 
     call mpas_pool_get_array(LTSPool, 'LTSRegion', LTSRegion)
     call mpas_pool_get_array(LTSPool, 'cellsInLTSRegion', cellsInLTSRegion)
@@ -1129,9 +1127,6 @@ module ocn_time_integration_lts
        
     nCellsInLTSRegion(:,:) = 0
     nEdgesInLTSRegion(:,:) = 0
-
-    ! this is to visualize MPI partitions on Paraview
-    mpiRankCell(1:nCellsAll) = domain % dminfo % my_proc_id
 
     ! this is a loop to build the lists of elements in the fine, coarse, and interface regions
     do iCell = 1, nCellsOwned !this loops up to nCellsOwned because in the time stepping we only want to advance the cells owned by the MPI process
