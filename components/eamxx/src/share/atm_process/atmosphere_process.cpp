@@ -262,8 +262,22 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
             "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
             "  - Message: " + res_and_msg.msg;
       if (res_and_msg.fail_loc_indices.size()>0) {
-        const auto& tags = res_and_msg.fail_loc_tags;
-        const auto& idx  = res_and_msg.fail_loc_indices;
+        // If the location is 3d, we not use the level index to slice the fields,
+        // but print a column worth of data for all fields.
+        using namespace ShortFieldTagsNames;
+        auto tags = res_and_msg.fail_loc_tags;
+        auto idx  = res_and_msg.fail_loc_indices;
+        auto itm = ekat::find(tags,LEV);
+        auto iti = ekat::find(tags,ILEV);
+        if (itm!=tags.end()) {
+          auto pos = std::distance(tags.begin(),itm);
+          tags.erase(itm);
+          idx.erase(idx.begin()+pos);
+        } else if (iti!=tags.end()) {
+          auto pos = std::distance(tags.begin(),iti);
+          tags.erase(itm);
+          idx.erase(idx.begin()+pos);
+        }
         ss << "\n  ------- INPUT FIELDS -------\n";
         for (const auto& f : m_fields_in) {
           if (f.get_header().get_identifier().get_layout().has_tags(tags)) {
