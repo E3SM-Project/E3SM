@@ -184,6 +184,12 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
 
   using namespace scream::scorpio;
 
+  // Update all diagnostics, we need to do this before applying the remapper
+  // to make sure that the remapped fields are the most up to date.
+  for (auto const& name : m_fields_names) {
+    update_field(name); // Note, if the field is a diagnostic this will update it.
+  }
+
   // If needed, remap fields from their grid to the unique grid, for I/O
   if (m_remapper) {
     start_timer("EAMxx::IO::remap");
@@ -204,7 +210,6 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
   // Take care of updating and possibly writing fields.
   for (auto const& name : m_fields_names) {
     // Get all the info for this field.
-    update_field(name); // If diagnostic, must evaluate it
     const auto  field = get_field(name);
     const auto& layout = m_layouts.at(name);
     const auto& dims = layout.dims();
@@ -685,7 +690,7 @@ void AtmosphereOutput::update_field(const std::string& name) const
 // manager.  If not it will next check to see if it is in the list
 // of available diagnostics.  If neither of these two options it
 // will throw an error.
-Field AtmosphereOutput::get_field(const std::string& name, const bool eval_diagnostic) const
+Field AtmosphereOutput::get_field(const std::string& name) const
 {
   if (m_field_mgr->has_field(name)) {
     return m_field_mgr->get_field(name);
