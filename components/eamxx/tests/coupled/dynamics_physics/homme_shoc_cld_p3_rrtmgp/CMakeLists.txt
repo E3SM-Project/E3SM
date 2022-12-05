@@ -60,8 +60,8 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
                ${CMAKE_CURRENT_BINARY_DIR}/namelist.nl)
 
 # Ensure test input files are present in the data dir
-GetInputFile(init/${EAMxx_tests_IC_FILE_72lev})
-GetInputFile(../cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc)
+GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
+GetInputFile(cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc)
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if running with 2+ ranks configurations

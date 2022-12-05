@@ -61,9 +61,9 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
 
 # Ensure test input files are present in the data dir
 set (TEST_INPUT_FILES
-  init/spa_file_unified_and_complete_ne4_20220428.nc
-  init/${EAMxx_tests_IC_FILE_128lev}
-  ../cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc
+  scream/init/spa_file_unified_and_complete_ne4_20220428.nc
+  scream/init/${EAMxx_tests_IC_FILE_128lev}
+  cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
   GetInputFile(${file})
