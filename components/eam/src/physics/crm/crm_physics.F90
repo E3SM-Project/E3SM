@@ -1215,41 +1215,58 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
 #elif defined(MMF_PAM)
 
-#ifdef MMF_PAM_MIRROR
-      call pam_mirror_array_readonly( 'input_bflxls',  crm_input%bflxls,  '' )
-      call pam_mirror_array_readonly( 'input_wndls',   crm_input%wndls,   '' )
-      call pam_mirror_array_readonly( 'input_zmid',    crm_input%zmid,    '' )
-      call pam_mirror_array_readonly( 'input_zint',    crm_input%zint,    '' )
-      call pam_mirror_array_readonly( 'input_pmid',    crm_input%pmid,    '' )
-      call pam_mirror_array_readonly( 'input_pint',    crm_input%pint,    '' )
-      call pam_mirror_array_readonly( 'input_pdel',    crm_input%pdel,    '' )
-      call pam_mirror_array_readonly( 'input_ul',      crm_input%ul,      '' )
-      call pam_mirror_array_readonly( 'input_vl',      crm_input%vl,      '' )
-      call pam_mirror_array_readonly( 'input_tl',      crm_input%tl,      '' )
-      call pam_mirror_array_readonly( 'input_qccl',    crm_input%qccl,    '' )
-      call pam_mirror_array_readonly( 'input_qiil',    crm_input%qiil,    '' )
-      call pam_mirror_array_readonly( 'input_ql',      crm_input%ql,      '' )
-      call pam_mirror_array_readonly( 'input_tau00',   crm_input%tau00,   '' )
-      call pam_mirror_array_readonly( 'input_ul_esmt', crm_input%ul_esmt, '' )
-      call pam_mirror_array_readonly( 'input_vl_esmt', crm_input%vl_esmt, '' )
-      call pam_mirror_array_readonly( 'input_t_vt',    crm_input%t_vt,    '' )
-      call pam_mirror_array_readonly( 'input_q_vt',    crm_input%q_vt,    '' )
-      call pam_mirror_array_readonly( 'input_u_vt',    crm_input%u_vt,    '' )
+      call pam_mirror_array_readonly( 'input_bflxls',  crm_input%bflxls  )
+      call pam_mirror_array_readonly( 'input_wndls',   crm_input%wndls   )
 
-      call pam_mirror_array_readwrite( 'state_u_wind',      crm_state%u_wind,      '' )
-      call pam_mirror_array_readwrite( 'state_v_wind',      crm_state%v_wind,      '' )
-      call pam_mirror_array_readwrite( 'state_w_wind',      crm_state%w_wind,      '' )
-      call pam_mirror_array_readwrite( 'state_temperature', crm_state%temperature, '' )
-      call pam_mirror_array_readwrite( 'state_qt',          crm_state%qv,          '' )
-      call pam_mirror_array_readwrite( 'state_qp',          crm_state%qp,          '' )
-      call pam_mirror_array_readwrite( 'state_qn',          crm_state%qn,          '' )
+      call pam_mirror_array_readonly( 'input_zmid',    crm_input%zmid    )
+      call pam_mirror_array_readonly( 'input_zint',    crm_input%zint    )
+      call pam_mirror_array_readonly( 'input_pmid',    crm_input%pmid    )
+      call pam_mirror_array_readonly( 'input_pint',    crm_input%pint    )
+      call pam_mirror_array_readonly( 'input_pdel',    crm_input%pdel    )
 
-      call pam_mirror_array_readwrite( 'rad_qrad',        crm_rad%qrad,        '' )
-      call pam_mirror_array_readwrite( 'rad_temperature', crm_rad%temperature, '' )
-      call pam_mirror_array_readwrite( 'rad_qv',          crm_rad%qv,          '' )
-      call pam_mirror_array_readwrite( 'rad_qc',          crm_rad%qc,          '' )
-      call pam_mirror_array_readwrite( 'rad_qi',          crm_rad%qi,          '' )
-      call pam_mirror_array_readwrite( 'rad_cld',         crm_rad%cld,         '' )
+      call pam_mirror_array_readonly( 'input_ul',      crm_input%ul      )
+      call pam_mirror_array_readonly( 'input_vl',      crm_input%vl      )
+      call pam_mirror_array_readonly( 'input_tl',      crm_input%tl      )
+      call pam_mirror_array_readonly( 'input_qccl',    crm_input%qccl    )
+      call pam_mirror_array_readonly( 'input_qiil',    crm_input%qiil    )
+      call pam_mirror_array_readonly( 'input_ql',      crm_input%ql      )
+      call pam_mirror_array_readonly( 'input_tau00',   crm_input%tau00   )
+      ! call pam_mirror_array_readonly( 'input_ul_esmt', crm_input%ul_esmt )
+      ! call pam_mirror_array_readonly( 'input_vl_esmt', crm_input%vl_esmt )
+      ! call pam_mirror_array_readonly( 'input_t_vt',    crm_input%t_vt    )
+      ! call pam_mirror_array_readonly( 'input_q_vt',    crm_input%q_vt    )
+      ! call pam_mirror_array_readonly( 'input_u_vt',    crm_input%u_vt    )
+
+      call pam_mirror_array_readwrite( 'state_u_wind',      crm_state%u_wind      )
+      call pam_mirror_array_readwrite( 'state_v_wind',      crm_state%v_wind      )
+      call pam_mirror_array_readwrite( 'state_w_wind',      crm_state%w_wind      )
+      call pam_mirror_array_readwrite( 'state_temperature', crm_state%temperature )
+      call pam_mirror_array_readwrite( 'state_qv',          crm_state%qv          )
+      call pam_mirror_array_readwrite( 'state_qc',          crm_state%qc          )
+      call pam_mirror_array_readwrite( 'state_nc',          crm_state%nc          )
+      call pam_mirror_array_readwrite( 'state_qr',          crm_state%qr          )
+      call pam_mirror_array_readwrite( 'state_nr',          crm_state%nr          )
+      call pam_mirror_array_readwrite( 'state_qi',          crm_state%qi          )
+      call pam_mirror_array_readwrite( 'state_ni',          crm_state%ni          )
+      call pam_mirror_array_readwrite( 'state_qm',          crm_state%qm          )
+      call pam_mirror_array_readwrite( 'state_bm',          crm_state%bm          )
+      call pam_mirror_array_readwrite( 'state_t_prev',      crm_state%t_prev      )
+      call pam_mirror_array_readwrite( 'state_q_prev',      crm_state%q_prev      )
+
+      ! SHOC variables
+      call pam_mirror_array_readwrite( 'state_shoc_wthv_sec',crm_stat%shoc_wthv_sec )
+      call pam_mirror_array_readwrite( 'state_shoc_tk',      crm_stat%shoc_tk       )
+      call pam_mirror_array_readwrite( 'state_shoc_tkh',     crm_stat%shoc_tkh      )
+      call pam_mirror_array_readwrite( 'state_shoc_cldfrac', crm_stat%shoc_cldfrac  )
+      call pam_mirror_array_readwrite( 'state_shoc_relvar',  crm_stat%shoc_relvar   )
+
+      ! Radiation tendency and output conditions
+      call pam_mirror_array_readwrite( 'rad_qrad',        crm_rad%qrad        )
+      call pam_mirror_array_readwrite( 'rad_temperature', crm_rad%temperature )
+      call pam_mirror_array_readwrite( 'rad_qv',          crm_rad%qv          )
+      call pam_mirror_array_readwrite( 'rad_qc',          crm_rad%qc          )
+      call pam_mirror_array_readwrite( 'rad_qi',          crm_rad%qi          )
+      call pam_mirror_array_readwrite( 'rad_cld',         crm_rad%cld         )
 
       ! call pam_mirror_array_readwrite( 'output_prectend',    crm_output%prectend,    '' )
       ! call pam_mirror_array_readwrite( 'output_precstend',   crm_output%precstend,   '' )
@@ -1262,11 +1279,14 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       ! call pam_mirror_array_readwrite( 'output_mcdn',        crm_output%mcdn,        '' )
       ! call pam_mirror_array_readwrite( 'output_mcuup',       crm_output%mcuup,       '' )
       ! call pam_mirror_array_readwrite( 'output_mcudn',       crm_output%mcudn,       '' )
-      ! call pam_mirror_array_readwrite( 'output_qc_mean',     crm_output%qc_mean,     '' )
-      ! call pam_mirror_array_readwrite( 'output_qi_mean',     crm_output%qi_mean,     '' )
-      ! call pam_mirror_array_readwrite( 'output_qs_mean',     crm_output%qs_mean,     '' )
-      ! call pam_mirror_array_readwrite( 'output_qg_mean',     crm_output%qg_mean,     '' )
-      ! call pam_mirror_array_readwrite( 'output_qr_mean',     crm_output%qr_mean,     '' )
+      call pam_mirror_array_readwrite( 'output_qc_mean',     crm_output%qc_mean,     '' )
+      call pam_mirror_array_readwrite( 'output_qr_mean',     crm_output%qr_mean,     '' )
+      call pam_mirror_array_readwrite( 'output_qi_mean',     crm_output%qi_mean,     '' )
+      call pam_mirror_array_readwrite( 'output_qm_mean',     crm_output%qm_mean,     '' )
+      call pam_mirror_array_readwrite( 'output_nc_mean',     crm_output%nc_mean,     '' )
+      call pam_mirror_array_readwrite( 'output_nr_mean',     crm_output%nr_mean,     '' )
+      call pam_mirror_array_readwrite( 'output_ni_mean',     crm_output%ni_mean,     '' )
+
       ! call pam_mirror_array_readwrite( 'output_mu_crm',      crm_output%mu_crm,      '' )
       ! call pam_mirror_array_readwrite( 'output_md_crm',      crm_output%md_crm,      '' )
       ! call pam_mirror_array_readwrite( 'output_eu_crm',      crm_output%eu_crm,      '' )
@@ -1317,11 +1337,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       ! call pam_mirror_array_readwrite( 'output_taux',        crm_output%taux,        '' )
       ! call pam_mirror_array_readwrite( 'output_tauy',        crm_output%tauy,        '' )
       call pam_mirror_array_readwrite( 'output_precc',       crm_output%precc,       '' )
-      ! call pam_mirror_array_readwrite( 'output_precl',       crm_output%precl,       '' )
-      ! call pam_mirror_array_readwrite( 'output_precsc',      crm_output%precsc,      '' )
+      call pam_mirror_array_readwrite( 'output_precl',       crm_output%precl,       '' )
+      call pam_mirror_array_readwrite( 'output_precsc',      crm_output%precsc,      '' )
       ! call pam_mirror_array_readwrite( 'output_precsl',      crm_output%precsl,      '' )
       call pam_mirror_array_readwrite( 'output_prec_crm',    crm_output%prec_crm,    '' )
-#endif
+
+      call pam_mirror_array_readonly( 'gcolp', gcolp )
 
       pam_set_option('ncrms', ncrms )
       pam_set_option('gcm_nlev', pver )
@@ -1338,6 +1359,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       pam_set_option('use_MMF_ESMT', use_MMF_ESMT )
       pam_set_option('use_crm_accel', use_crm_accel )
       pam_set_option('crm_accel_factor', crm_accel_factor )
+
+      pam_set_option('is_first_step', (nstep<=1) )
 
       call t_startf ('crm_call')
       call pam_driver()
@@ -1407,12 +1430,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
             ptend(c)%lq(ixnumliq)  = .TRUE.
             ptend(c)%lq(ixnumice)  = .TRUE.
-            if (use_ECPP) then
-               ptend(c)%lq(ixrain)    = .TRUE. 
-               ptend(c)%lq(ixnumrain) = .TRUE. 
-               ptend(c)%lq(ixcldrim)  = .TRUE. 
-               ptend(c)%lq(ixrimvol)  = .TRUE. 
-            end if
+            ptend(c)%lq(ixrain)    = .TRUE. 
+            ptend(c)%lq(ixnumrain) = .TRUE. 
+            ptend(c)%lq(ixcldrim)  = .TRUE. 
+            ptend(c)%lq(ixrimvol)  = .TRUE. 
 
             do i = 1, ncol
                icrm = ncol_sum + i
@@ -1422,22 +1443,18 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                   do jj = 1, crm_ny
                      ptend(c)%q(i,m,ixnumliq)  = ptend(c)%q(i,m,ixnumliq)  + crm_state%nc(icrm,ii,jj,k) 
                      ptend(c)%q(i,m,ixnumice)  = ptend(c)%q(i,m,ixnumice)  + crm_state%ni(icrm,ii,jj,k)
-                     if (use_ECPP) then
-                        ptend(c)%q(i,m,ixrain)    = ptend(c)%q(i,m,ixrain)    + crm_state%qr(icrm,ii,jj,k)
-                        ptend(c)%q(i,m,ixnumrain) = ptend(c)%q(i,m,ixnumrain) + crm_state%nr(icrm,ii,jj,k)
-                        ptend(c)%q(i,m,ixcldrim)  = ptend(c)%q(i,m,ixcldrim)  + crm_state%qm(icrm,ii,jj,k)
-                        ptend(c)%q(i,m,ixrimvol)  = ptend(c)%q(i,m,ixrimvol)  + crm_state%bm(icrm,ii,jj,k)
-                     end if
+                     ptend(c)%q(i,m,ixrain)    = ptend(c)%q(i,m,ixrain)    + crm_state%qr(icrm,ii,jj,k)
+                     ptend(c)%q(i,m,ixnumrain) = ptend(c)%q(i,m,ixnumrain) + crm_state%nr(icrm,ii,jj,k)
+                     ptend(c)%q(i,m,ixcldrim)  = ptend(c)%q(i,m,ixcldrim)  + crm_state%qm(icrm,ii,jj,k)
+                     ptend(c)%q(i,m,ixrimvol)  = ptend(c)%q(i,m,ixrimvol)  + crm_state%bm(icrm,ii,jj,k)
                   end do
                   end do
                   ptend(c)%q(i,m,ixnumliq)  = (ptend(c)%q(i,m,ixnumliq) /(crm_nx*crm_ny) - state(c)%q(i,m,ixnumliq)) /ztodt
                   ptend(c)%q(i,m,ixnumice)  = (ptend(c)%q(i,m,ixnumice) /(crm_nx*crm_ny) - state(c)%q(i,m,ixnumice)) /ztodt
-                  if (use_ECPP) then
-                     ptend(c)%q(i,m,ixrain)    = (ptend(c)%q(i,m,ixrain)   /(crm_nx*crm_ny) - state(c)%q(i,m,ixrain))   /ztodt
-                     ptend(c)%q(i,m,ixnumrain) = (ptend(c)%q(i,m,ixnumrain)/(crm_nx*crm_ny) - state(c)%q(i,m,ixnumrain))/ztodt
-                     ptend(c)%q(i,m,ixcldrim)  = (ptend(c)%q(i,m,ixcldrim) /(crm_nx*crm_ny) - state(c)%q(i,m,ixcldrim)) /ztodt
-                     ptend(c)%q(i,m,ixrimvol)  = (ptend(c)%q(i,m,ixrimvol) /(crm_nx*crm_ny) - state(c)%q(i,m,ixrimvol)) /ztodt
-                  end if
+                  ptend(c)%q(i,m,ixrain)    = (ptend(c)%q(i,m,ixrain)   /(crm_nx*crm_ny) - state(c)%q(i,m,ixrain))   /ztodt
+                  ptend(c)%q(i,m,ixnumrain) = (ptend(c)%q(i,m,ixnumrain)/(crm_nx*crm_ny) - state(c)%q(i,m,ixnumrain))/ztodt
+                  ptend(c)%q(i,m,ixcldrim)  = (ptend(c)%q(i,m,ixcldrim) /(crm_nx*crm_ny) - state(c)%q(i,m,ixcldrim)) /ztodt
+                  ptend(c)%q(i,m,ixrimvol)  = (ptend(c)%q(i,m,ixrimvol) /(crm_nx*crm_ny) - state(c)%q(i,m,ixrimvol)) /ztodt
                end do
             end do
 
