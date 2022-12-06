@@ -16,7 +16,7 @@ module SatellitePhenologyMod
   use decompMod       , only : bounds_type
   use abortutils      , only : endrun
   use elm_varctl      , only : scmlat,scmlon,single_column
-  use elm_varctl      , only : iulog, use_lai_streams
+  use elm_varctl      , only : iulog, use_lai_streams, use_cn
   use elm_varcon      , only : grlnd
   use controlMod      , only : NLFilename
   use decompMod       , only : gsmap_lnd_gdc2glo
@@ -25,7 +25,7 @@ module SatellitePhenologyMod
   use VegetationType       , only : veg_pp
   use CanopyStateType , only : canopystate_type
   use WaterstateType  , only : waterstate_type
-  use ColumnDataType  , only : col_ws
+  use ColumnDataType  , only : col_ws, col_es
   use perf_mod        , only : t_startf, t_stopf
   use spmdMod         , only : masterproc
   use spmdMod         , only : mpicom, comp_id
@@ -305,7 +305,12 @@ contains
     !
     ! !USES:
     use pftvarcon,  only : noveg, nbrdlf_dcd_brl_shrub
+    use pftvarcon,  only : season_decid, stress_decid, ndays_on, ndays_off
+    use pftvarcon,  only : crit_onset_gdd, crit_dayl
+    use clm_time_manager, only : get_step_size
     use elm_varctl, only : use_fates_sp
+    use elm_varcon, only : secspday
+
     !
     ! !ARGUMENTS:
     type(bounds_type)      , intent(in)    :: bounds
@@ -315,22 +320,35 @@ contains
     type(canopystate_type) , intent(inout) :: canopystate_vars
     !
     ! !LOCAL VARIABLES:
-    integer  :: fp,p,c                            ! indices
+    integer  :: fp,p,c,g                          ! indices
     real(r8) :: ol                                ! thickness of canopy layer covered by snow (m)
     real(r8) :: fb                                ! fraction of canopy layer covered by snow
+    integer :: spring_threshold, autumn_threshold, ws_flag
+    real(r8) :: fracday, dt
     !-----------------------------------------------------------------------
 
     associate(                                                           &
          frac_sno           => col_ws%frac_sno   ,          & ! Input:  [real(r8) (:) ] fraction of ground covered by snow (0 to 1)
          snow_depth         => col_ws%snow_depth ,          & ! Input:  [real(r8) (:) ] snow height (m)
+         dayl               => grc_pp%dayl       ,          &
+         prev_dayl          => grc_pp%prev_dayl  ,          &
+         t_soisno           => col_es%t_soisno   ,          &
          tlai               => canopystate_vars%tlai_patch    ,          & ! Output: [real(r8) (:) ] one-sided leaf area index, no burying by snow
          tsai               => canopystate_vars%tsai_patch    ,          & ! Output: [real(r8) (:) ] one-sided stem area index, no burying by snow
          elai               => canopystate_vars%elai_patch    ,          & ! Output: [real(r8) (:) ] one-sided leaf area index with burying by snow
          esai               => canopystate_vars%esai_patch    ,          & ! Output: [real(r8) (:) ] one-sided stem area index with burying by snow
          htop               => canopystate_vars%htop_patch    ,          & ! Output: [real(r8) (:) ] canopy top (m)
          hbot               => canopystate_vars%hbot_patch    ,          & ! Output: [real(r8) (:) ] canopy bottom (m)
-         frac_veg_nosno_alb => canopystate_vars%frac_veg_nosno_alb_patch & ! Output: [integer  (:) ] fraction of vegetation not covered by snow (0 OR 1) [-]
+         frac_veg_nosno_alb => canopystate_vars%frac_veg_nosno_alb_patch, & ! Output: [integer  (:) ] fraction of vegetation not covered by snow (0 OR 1) [-]
+         sp_gdd             => canopystate_vars%sp_gdd_patch  ,           &
+         sp_onset_day       => canopystate_vars%sp_onset_day_patch  ,     &
+         sp_offset_day      => canopystate_vars%sp_offset_day_patch ,     &
+         annlai             => canopystate_vars%annlai_patch ,            &
+         ivt                => veg_pp%itype                               &
          )
+
+      dt = real(get_step_size(), r8 )
+      fracday = dt / secspday
 
       if (use_lai_streams) then
          call lai_interp(bounds, canopystate_vars)
@@ -339,6 +357,7 @@ contains
       do fp = 1, num_filter
          p = filter(fp)
          c = veg_pp%column(p)
+         g = veg_pp%gridcell(p)
 
          ! need to update elai and esai only every albedo time step so do not
          ! have any inconsistency in lai and sai between SurfaceAlbedo calls (i.e.,
@@ -358,8 +377,40 @@ contains
 
          if (.not. use_lai_streams) then
             tlai(p) = timwt(1)*mlai2t(p,1) + timwt(2)*mlai2t(p,2)
+            if (dayl(g) >= prev_dayl(g)) then  
+              ws_flag = 1._r8
+            else 
+              ws_flag = 0._r8
+            end if
+            if (.not. use_cn .and. season_decid(ivt(p)) == 1._r8) then 
+              tlai(p) = maxval(annlai(:,p))
+              !Spring phenology
+              spring_threshold = 0
+              if (ws_flag == 1._r8) then 
+                sp_gdd(p) = sp_gdd(p) + max((t_soisno(c,3) - SHR_CONST_TKFRZ)*fracday, 0._r8)
+                if (sp_gdd(p) .ge. crit_onset_gdd) spring_threshold = 1
+                !Set offset counters to zero
+                sp_offset_day(p) = 0._r8
+                if (spring_threshold == 1) then 
+                  sp_onset_day(p) = min(sp_onset_day(p)+fracday, ndays_on)
+                  tlai(p) = tlai(p) * sp_onset_day(p) / ndays_on
+                else
+                  tlai(p) = 0._r8
+                end if
+              else  !Offset period
+                !set onset counters to zero
+                sp_onset_day(p) = 0._r8
+                sp_gdd(p) = 0._r8
+                autumn_threshold = 0
+                !Senescence model
+                if (dayl(g) .lt. crit_dayl) autumn_threshold = 1
+                if (autumn_threshold == 1) then 
+                  sp_offset_day(p) = sp_offset_day(p)+fracday
+                end if
+                tlai(p) = max(tlai(p) * (ndays_off - sp_offset_day(p)) / ndays_off, 0._r8)
+              end if
+           end if
          endif
-
          tsai(p) = timwt(1)*msai2t(p,1) + timwt(2)*msai2t(p,2)
          htop(p) = timwt(1)*mhvt2t(p,1) + timwt(2)*mhvt2t(p,2)
          hbot(p) = timwt(1)*mhvb2t(p,1) + timwt(2)*mhvb2t(p,2)

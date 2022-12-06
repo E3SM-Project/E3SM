@@ -176,8 +176,13 @@ module pftvarcon
   real(r8), allocatable :: leaf_long(:)    !leaf longevity (yrs)
   real(r8), allocatable :: froot_long(:)   !fine root longevity(yrs)
   real(r8), allocatable :: evergreen(:)    !binary flag for evergreen leaf habit (0 or 1)
-  real(r8), allocatable :: stress_decid(:) !binary flag for stress-deciduous leaf habit (0 or 1)
   real(r8), allocatable :: season_decid(:) !binary flag for seasonal-deciduous leaf habit (0 or 1)
+  real(r8), allocatable :: stress_decid(:) !binary flag for stress-deciduous leaf habit (0 or 1)
+  real(r8), allocatable :: crit_onset_gdd  !Critical onset growing degree days
+  real(r8), allocatable :: crit_dayl       !Critical day length
+  real(r8), allocatable :: ndays_on        !Number of days for leaf onset
+  real(r8), allocatable :: ndays_off       !Number of days for leaf offset
+
   real(r8), allocatable :: pconv(:)        !proportion of deadstem to conversion flux
   real(r8), allocatable :: pprod10(:)      !proportion of deadstem to 10-yr product pool
   real(r8), allocatable :: pprod100(:)     !proportion of deadstem to 100-yr product pool
@@ -495,6 +500,10 @@ contains
     allocate( evergreen     (0:mxpft) )    
     allocate( stress_decid  (0:mxpft) ) 
     allocate( season_decid  (0:mxpft) ) 
+    allocate( ndays_on ) 
+    allocate( ndays_off )
+    allocate( crit_dayl )
+    allocate( crit_onset_gdd )
     allocate( pconv         (0:mxpft) )        
     allocate( pprod10       (0:mxpft) )      
     allocate( pprod100      (0:mxpft) )     
@@ -714,6 +723,14 @@ contains
     call ncd_io('stress_decid',stress_decid, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('season_decid',season_decid, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    call ncd_io('ndays_on',ndays_on, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    call ncd_io('ndays_off',ndays_off, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    call ncd_io('crit_dayl',crit_dayl, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+    call ncd_io('crit_onset_gdd',crit_onset_gdd,'read',ncid,readvar=readv,posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('fertnitro',fertnitro, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))

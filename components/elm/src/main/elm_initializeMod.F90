@@ -932,6 +932,8 @@ contains
       ! If fates has satellite phenology enabled, get the monthly veg values
       ! prior to the first call to SatellitePhenology()
        call interpMonthlyVeg(bounds_proc, canopystate_vars)
+    else
+       call readAnnualVegetation(bounds_proc, canopystate_vars)
     end if
 
     !------------------------------------------------------------
