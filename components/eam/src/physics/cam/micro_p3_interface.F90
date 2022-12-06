@@ -129,6 +129,9 @@ module micro_p3_interface
       p3_nc_autocon_expon      = huge(1.0_rtype), &
       p3_qc_accret_expon       = huge(1.0_rtype), &
       p3_wbf_coeff             = huge(1.0_rtype), &
+!<shanyp 11052022
+      p3_mincdnc               = huge(1.0_rtype), &
+!shanyp 11052022>
       p3_max_mean_rain_size    = huge(1.0_rtype), &
       p3_embryonic_rain_size   = huge(1.0_rtype)
    
@@ -164,8 +167,9 @@ subroutine micro_p3_readnl(nlfile)
        micro_p3_tableversion, micro_p3_lookup_dir, micro_aerosolactivation, micro_subgrid_cloud, &
        micro_tend_output, p3_autocon_coeff, p3_qc_autocon_expon, p3_nc_autocon_expon, p3_accret_coeff, &
        p3_qc_accret_expon, p3_wbf_coeff, p3_max_mean_rain_size, p3_embryonic_rain_size, &
-       do_prescribed_CCN, do_Cooper_inP3
-
+!<shanyp 11052022
+       do_prescribed_CCN, do_Cooper_inP3, p3_mincdnc
+!shanyp 11052022>
   !-----------------------------------------------------------------------------
 
   if (masterproc) then
@@ -1324,6 +1328,9 @@ end subroutine micro_p3_readnl
          p3_nc_autocon_expon,         & ! IN  autoconversion nc exponent
          p3_qc_accret_expon,          & ! IN  autoconversion coefficient
          p3_wbf_coeff,                & ! IN  WBF process coefficient
+!<shanyp 11052022
+         p3_mincdnc,                  & ! IN  imposing minimal Nc
+!shanyp 11052022>
          p3_max_mean_rain_size,       & ! IN  max mean rain size
          p3_embryonic_rain_size,      & ! IN  embryonic rain size for autoconversion
          ! AaronDonahue new stuff

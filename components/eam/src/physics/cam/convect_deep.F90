@@ -169,8 +169,9 @@ subroutine convect_deep_tend( &
      rliq    ,rice     , &
      ztodt   , &
      state   ,ptend   ,landfrac ,pbuf, mu, eu, &
-     du, md, ed, dp, dsubcld, jt, maxg, ideep,lengath ) 
-
+!<shanyp
+     du, md, ed, dp, dsubcld, jt, maxg, ideep,lengath,wuc ) 
+!shanyp>
 
 
    use physics_types, only: physics_state, physics_ptend, physics_tend, physics_ptend_init
@@ -222,6 +223,9 @@ subroutine convect_deep_tend( &
    
    ! w holds position of gathered points vs longitude index   
    integer, intent(out) :: lengath
+!<shanyp
+   real(r8),intent(inout),optional :: wuc(pcols,pver)
+!shanyp>
 
    real(r8), pointer :: prec(:)   ! total precipitation
    real(r8), pointer :: snow(:)   ! snow from ZM convection 
@@ -308,7 +312,9 @@ subroutine convect_deep_tend( &
           ztodt   , &
           jctop, jcbot , &
           state   ,ptend   ,landfrac, pbuf, mu, eu, &
-          du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath)
+!<shanyp
+          du, md, ed, dp, dsubcld, jt, maxg, ideep, lengath, wuc)
+!shanyp>
      call t_stopf('zm_conv_tend')
 
 

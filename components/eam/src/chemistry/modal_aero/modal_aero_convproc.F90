@@ -22,7 +22,9 @@ module modal_aero_convproc
    use cam_logfile,  only: iulog
    use cam_abortutils, only: endrun
    use physconst,    only: spec_class_aerosol, spec_class_gas
-
+!<shanyp
+   use constituents,  only: pcnst
+!shanyp>
    implicit none
 
    save
@@ -194,7 +196,10 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
                            ed, dp, dsubcld,                         &
                            jt, maxg, ideep, lengath, species_class, &
                            mam_prevap_resusp_optaa,                 &
-                           history_aero_prevap_resusp               )
+!<shanyp
+                           history_aero_prevap_resusp, &
+                           dcondt_resusp3d,wuc  )
+!shanyp>
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -215,7 +220,10 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
    use physics_types, only: physics_state, physics_ptend, physics_ptend_init
    use time_manager,  only: get_nstep
    use physics_buffer, only: physics_buffer_desc, pbuf_get_index
-   use constituents,  only: pcnst, cnst_name
+!<shanyp
+!   use constituents,  only: pcnst
+   use constituents,  only: cnst_name
+!shanyp>
    use error_messages, only: alloc_err	
 
    use modal_aero_data, only: lmassptr_amode, nspec_amode, ntot_amode, numptr_amode
@@ -260,6 +268,10 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
    integer,  intent(in)    :: species_class(:)
    integer,  intent(in)    :: mam_prevap_resusp_optaa
    logical,  intent(in)    :: history_aero_prevap_resusp
+!<shanyp
+   real(r8), intent(in),optional :: wuc(pcols,pver)
+   real(r8), intent(inout),optional :: dcondt_resusp3d(2*pcnst,pcols,pver)
+!shanyp>
 
 
 ! Local variables
@@ -290,6 +302,9 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
 !
 ! Initialize
 !
+!<shanyp
+   dcondt_resusp3d(:,:,:) = 0._r8
+!shanyp>
 
 ! apply this minor fix when doing resuspend to coarse mode
    if (mam_prevap_resusp_optaa >= 30) convproc_prevap_resusp_fixaa = .true.
@@ -363,8 +378,10 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
      ed, dp, dsubcld,                          &
      jt, maxg, ideep, lengath,                 &
      qb, dqdt, dotend, nsrflx, qsrflx,         &
-     species_class, mam_prevap_resusp_optaa    )
-
+!<shanyp
+     species_class, mam_prevap_resusp_optaa,   &
+     dcondt_resusp3d=dcondt_resusp3d,wuc=wuc   )
+!shanyp>
 
 ! apply deep conv processing tendency and prepare for shallow conv processing
   do l = 1, pcnst
@@ -472,8 +489,9 @@ subroutine ma_convproc_intr( state, ptend, pbuf, ztodt,             &
         else
            l = lmassptr_amode(ll,n)
         end if
-
-        call outfld( trim(cnst_name(l))//'SFWET', aerdepwetis(:,l), pcols, lchnk )
+!<shanyp
+!        call outfld( trim(cnst_name(l))//'SFWET', aerdepwetis(:,l), pcols, lchnk )
+!shanyp>
         call outfld( trim(cnst_name(l))//'SFSIC', sflxic(:,l), pcols, lchnk )
         if ( history_aero_prevap_resusp ) &
         call outfld( trim(cnst_name(l))//'SFSEC', sflxec(:,l), pcols, lchnk )
@@ -500,7 +518,10 @@ subroutine ma_convproc_dp_intr(                &
      ed, dp, dsubcld,                          &
      jt, maxg, ideep, lengath,                 &
      q, dqdt, dotend, nsrflx, qsrflx,          &
-     species_class, mam_prevap_resusp_optaa    )
+!<shanyp 
+     species_class, mam_prevap_resusp_optaa,   &
+     dcondt_resusp3d,wuc )
+!shanyp>
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -563,7 +584,10 @@ subroutine ma_convproc_dp_intr(                &
    integer,  intent(in)    :: lengath           ! Gathered min lon indices over which to operate
    integer,  intent(in)    :: species_class(:)
    integer,  intent(in)    :: mam_prevap_resusp_optaa
-
+!<shanyp
+   real(r8), intent(in),optional :: wuc(pcols,pver)
+   real(r8), intent(inout),optional :: dcondt_resusp3d(pcnst*2,pcols,pver)
+!shanyp>
 !  real(r8), intent(in)    :: concld(pcols,pver) ! Convective cloud cover
 
 ! Local variables
@@ -841,7 +865,10 @@ subroutine ma_convproc_dp_intr(                &
                      dqdt,       dotend,     nsrflx,     qsrflx,     &
                      species_class, mam_prevap_resusp_optaa,         & ! REASTER 08/05/2015
                      xx_mfup_max, xx_wcldbase, xx_kcldbase,          &
-                     lun,        itmpveca                            )
+!<shanyp
+                     lun,        itmpveca,                           &
+                     dcondt_resusp3d=dcondt_resusp3d,wuc=wuc )
+!shanyp>
 !                    ed,         dp,         dsubcld,    jt,         &   
 
 
@@ -1470,8 +1497,10 @@ subroutine ma_convproc_tend(                                           &
                      dqdt,       doconvproc, nsrflx,     qsrflx,     &
                      species_class, mam_prevap_resusp_optaa,         & ! REASTER 08/05/2015
                      xx_mfup_max, xx_wcldbase, xx_kcldbase,          &
-                     lun,        idiag_in                            )
-
+!<shanyp
+                     lun,        idiag_in,                           &
+                     dcondt_resusp3d,wuc)
+!shanyp>
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -1581,6 +1610,10 @@ subroutine ma_convproc_tend(                                           &
    real(r8), intent(out):: xx_kcldbase(pcols)
    integer,  intent(in) :: lun               ! unit number for diagnostic output
    integer,  intent(in) :: idiag_in(pcols)   ! flag for diagnostic output
+!<shanyp
+   real(r8), intent(in), optional :: wuc(pcols,pver)
+   real(r8), intent(inout),optional :: dcondt_resusp3d(pcnst*2,pcols,pver)
+!shanyp>
 
 
 !--------------------------Local Variables------------------------------
@@ -2055,6 +2088,11 @@ k_loop_main_bb: &
                end if
                wup(k) = max( 0.1_r8, min( 4.0_r8, wup(k) ) )
             end if
+!<shanyp
+! update the vertical velocity from convective cloud microphysics scheme
+            wup(k) = wuc(icol,k)
+            wup(k) = max( 0.1_r8, min( 15.0_r8, wup(k) ) )
+!shanyp>
 
 ! compute lagrangian transport time (dt_u) and updraft fractional area (fa_u)
 ! *** these must obey    dt_u(k)*mu_p_eudp(k) = dp_i(k)*fa_u(k)
@@ -2222,7 +2260,11 @@ k_loop_main_bb: &
             cdt(k) = 0.0_r8
             if ((icwmr(icol,k) > clw_cut) .and. (rprd(icol,k) > 0.0)) then 
 !              if (iconvtype == 1) then
-                  tmpf = 0.5_r8*cldfrac_i(k)
+!<shanyp
+!              fa_u(k) = dt_u(k)*(mu_p_eudp(k)/dp_i(k)) =>
+!              dt_u(k) = tmpf*dp(i,k)/mu_p_eudp(k)
+                  tmpf = fa_u(k) !0.5_r8*cldfrac_i(k)
+!shanyp>
                   cdt(k) = (tmpf*dp(i,k)/mu_p_eudp(k)) * rprd(icol,k) / &
                         (tmpf*icwmr(icol,k) + dt*rprd(icol,k))
 !              else if (k < pver) then
@@ -2242,6 +2284,12 @@ k_loop_main_bb: &
             end if
 
          end if    ! "(mu_p_eudp(k) > mbsth)"
+!<shanyp
+!               write(lun,'(a,i9,3i4,1p,6e10.3)') &
+!                  'qakr - l,i,k,jt; cdt, cldfrac, icwmr, rprd, ...', lchnk,icol, k, jtsub, &
+!                   cdt(k), fa_u(k), icwmr(icol,k), rprd(icol,k), wup(k), mu_p_eudp(k)
+!                  cdt(k), cldfrac_i(k), icwmr(icol,k), rprd(icol,k), wup(k),mu_p_eudp(k)
+!shanyp>
       end do k_loop_main_bb ! "k = kbot, ktop, -1"
 
 ! when doing updraft calcs twice, only need to go this far on the first pass
@@ -2434,6 +2482,12 @@ k_loop_main_cc: &
 !    pairs to account any (or total) resuspension of convective-cloudborne aerosol
       call ma_resuspend_convproc( dcondt, dcondt_resusp,   &
                                   const, dp_i, ktop, kbot_prevap, pcnst_extd ) ! REASTER 08/05/2015
+!<shanyp 03182022
+     dcondt_resusp3d(pcnst+1:pcnst_extd,icol,:) = dcondt_resusp3d(pcnst+1:pcnst_extd,icol,:) &
+                                                + dcondt(pcnst+1:pcnst_extd,:)*dtsub
+!     dcondt_resusp(pcnst+1:pcnst_extd,:) = 0._r8
+!shanyp 03182022>
+
       if ( idiag_in(icol)>0 ) then
          k = 26
          do m = 16, 23, 7
@@ -3712,7 +3766,10 @@ end subroutine ma_convproc_tend
       call activate_modal(                                                 &
          wbar, sigw, wdiab, wminf, wmaxf, tair, rhoair,                    &
          naerosol, ntot_amode, vaerosol, hygro,                            &
-         fn, fm, fluxn, fluxm, flux_fullact, smax_prescribed               )
+!<shanyp
+!         fn, fm, fluxn, fluxm, flux_fullact, smax_prescribed               )
+         fn, fm, fluxn, fluxm, flux_fullact)
+!shanyp>
    end if
 
 
@@ -3866,11 +3923,24 @@ end subroutine ma_convproc_tend
 !           end if
 
 ! cam5 approach
-            dcondt(la,k) = qdotac
-            dcondt(lc,k) = 0.0
-
-            dcondt_resusp(la,k) = (dcondt(la,k) - qdota)
-            dcondt_resusp(lc,k) = (dcondt(lc,k) - qdotc)
+!<shanyp
+!            dcondt(la,k) = qdotac
+!            dcondt(lc,k) = 0.0
+!
+!            dcondt_resusp(la,k) = (dcondt(la,k) - qdota)
+!            dcondt_resusp(lc,k) = (dcondt(lc,k) - qdotc)
+!shanyp>
+!<shanyp
+            if(qdotc.gt.0._r8) then
+             dcondt(la,k) = qdota
+             dcondt(lc,k) = qdotc
+            else
+             dcondt(la,k) = qdota+qdotc
+             dcondt(lc,k) = 0._r8
+            end if
+            dcondt_resusp(la,k) = 0._r8 !dcondt(la,k)
+            dcondt_resusp(lc,k) = 0._r8 !dcondt(lc,k)
+!shanyp>
          end do
 
       end do   ! "ll = -1, nspec_amode(n)"
