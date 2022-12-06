@@ -912,7 +912,7 @@
       <value>$WAV_GRID</value>
     </values>
   </entry>
-  
+
   <entry id="iac_gnam" modify_via_xml="IAC_GRID">
     <type>char</type>
     <category>mapping</category>
