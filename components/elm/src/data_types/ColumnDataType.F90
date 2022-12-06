@@ -5912,6 +5912,10 @@ contains
          avgflag='A', long_name='sub-surface drainage', &
          ptr_col=this%qflx_drain, c2l_scale_type='urbanf')
 
+    call hist_addfld1d (fname='QH2OOCN',  units='mm/s',  &
+         avgflag='A', long_name='Ocean inundation infiltration', &
+         ptr_col=this%qflx_h2oocn_drain, c2l_scale_type='urbanf')
+
     this%qflx_lnd2ocn(begc:endc) = spval
     call hist_addfld1d (fname='QLND2OCN',  units='mm/s',  &
          avgflag='A', long_name='land to ocean drainage', &
