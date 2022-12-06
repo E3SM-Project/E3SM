@@ -282,24 +282,40 @@ contains
        ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
        call compute_andor_apply_rhs(nm1,n0,n0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,0.d0,1.d0)
+       do ie=nets,nete
+          call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,nm1),elem(ie)%state%vtheta_dp(:,:,:,nm1),&
+               elem(ie)%spheremp,hvcoord%dp0)
+       enddo
        call compute_stage_value_dirk(nm1,0d0,n0,0d0,nm1,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,maxiter,itertol)
 
        ! u2 = u0 + dt/5 RHS(u1)
        call compute_andor_apply_rhs(np1,n0,nm1,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
+       do ie=nets,nete
+          call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1),&
+               elem(ie)%spheremp,hvcoord%dp0)
+       enddo
        call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,maxiter,itertol)
 
        ! u3 = u0 + dt/3 RHS(u2)
        call compute_andor_apply_rhs(np1,n0,np1,dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
+       do ie=nets,nete
+          call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1),&
+               elem(ie)%spheremp,hvcoord%dp0)
+       enddo
        call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,maxiter,itertol)
 
        ! u4 = u0 + 2dt/3 RHS(u3)
        call compute_andor_apply_rhs(np1,n0,np1,2*dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
+       do ie=nets,nete
+          call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1),&
+               elem(ie)%spheremp,hvcoord%dp0)
+       enddo
        call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,2*dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,maxiter,itertol)
 
@@ -1768,8 +1784,8 @@ contains
 #endif
      endif
      if (scale3 /= 0) then
-       call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1),&
-            elem(ie)%spheremp,hvcoord%dp0)
+!       call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1),&
+!            elem(ie)%spheremp,hvcoord%dp0)
      endif
   end do
   call t_stopf('compute_andor_apply_rhs')
@@ -1795,23 +1811,34 @@ contains
   ! local
   real (kind=real_kind) :: Qcol(nlev)
   real (kind=real_kind) :: mass,mass_new
-  real (kind=real_kind) :: dp3d_thresh=.125
+  real (kind=real_kind) :: dp3d_thresh=1.d0
   logical :: warn
   integer i,j,k
 
   ! first check if limter is needed, and print warning
   warn=.false. 
+
+
+
+! dp part
+#if 1
+
+!  do j=1,np; do i=1,np
   do k=1,nlev
      if ( minval(dp3d(:,:,k)) < dp3d_thresh*dp0(k)) then
+!print *, dp3d(i,j,k) , dp3d_thresh, dp0(k)
+!     if ( dp3d(i,j,k) < dp3d_thresh*dp0(k)) then
 !#ifndef HOMMEXX_BFB_TESTING
         ! In bfb unit tests, we use (semi-)random inputs, so we expect to hit this.
         ! Still, we don't want to fill up the console output
         write(iulog,*) 'WARNING:CAAR: dp3d too small. dt_remap may be too large'
         write(iulog,*) 'k,dp3d(k), dp0: ',k,minval(dp3d(:,:,k)),dp0(k)
+!        write(iulog,*) 'k,dp3d(k), dp0: ',k,dp3d(i,j,k),dp0(k)
 !#endif
         warn=.true.
      endif
   enddo
+!  enddo; enddo
 
   if (warn) then
 #ifndef HOMMEXX_BFB_TESTING
@@ -1856,6 +1883,15 @@ contains
     vtheta_dp(:,:,:)=vtheta_dp(:,:,:)*dp3d(:,:,:)
 #endif
   endif
+
+#endif 
+!end dp
+
+
+
+
+
+
 
 #if 1
   ! check for theta < 10K                                                                                                       
