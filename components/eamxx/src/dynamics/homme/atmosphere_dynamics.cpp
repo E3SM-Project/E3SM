@@ -245,7 +245,7 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
     m_p2d_remapper = grids_manager->create_remapper(m_phys_grid,m_dyn_grid);
     m_d2p_remapper = grids_manager->create_remapper(m_dyn_grid,m_phys_grid);
   }
-
+  
   // Create separate remapper for initial_conditions
   m_ic_remapper = grids_manager->create_remapper(m_cgll_grid,m_dyn_grid);
 }
@@ -660,7 +660,7 @@ void HommeDynamics::homme_post_process (const int dt) {
 
     return;
   }
-
+  
   // Convert VTheta_dp->T, store T,uv, and possibly w in FT, FM,
   // compute p_int on ref grid.
   const auto dp_view = get_field_out("pseudo_density").get_view<Pack**>();
@@ -1121,7 +1121,7 @@ void HommeDynamics::initialize_homme_state () {
     team.team_barrier();
     ColOps::compute_midpoint_values(team,nlevs,p_int,p_mid);
     team.team_barrier();
-
+    
     // Convert T->Theta->VTheta->VTheta*dp in place
     auto T      = ekat::subview(vth_view,ie,n0,igp,jgp);
     auto vTh_dp = ekat::subview(vth_view,ie,n0,igp,jgp);
@@ -1234,7 +1234,7 @@ copy_dyn_states_to_all_timelevels () {
 }
 
 void HommeDynamics::init_homme_vcoord () {
-  using view_1d_host = AtmosphereInput::view_1d_host;
+  using view_1d_host = AtmosphereInput::view_1d_host; 
   using vos_t = std::vector<std::string>;
   using namespace ShortFieldTagsNames;
 
@@ -1262,7 +1262,7 @@ void HommeDynamics::init_homme_vcoord () {
   vcoord_reader.init(m_dyn_grid,host_views,layouts);
   vcoord_reader.read_variables();
   vcoord_reader.finalize();
-
+  
   // Pass host views data to hvcoord init function
   const auto ps0 = Homme::PhysicalConstants::p0;
 

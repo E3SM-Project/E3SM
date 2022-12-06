@@ -18,7 +18,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/input.yaml
 configure_file(p3_standalone_output.yaml p3_standalone_output.yaml)
 
 # Ensure test input files are present in the data dir
-GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
+GetInputFile(init/${EAMxx_tests_IC_FILE_72lev})
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC
 ## Only if running with 2+ ranks configurations

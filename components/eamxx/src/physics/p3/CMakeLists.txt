@@ -80,11 +80,11 @@ else()
   set (PRECISION_SUFFIX "4")
 endif()
 set (P3_TABLES
-  scream/tables/p3_lookup_table_1.dat-v4.1.1
-  scream/tables/mu_r_table_vals.dat${PRECISION_SUFFIX}
-  scream/tables/revap_table_vals.dat${PRECISION_SUFFIX}
-  scream/tables/vm_table_vals.dat${PRECISION_SUFFIX}
-  scream/tables/vn_table_vals.dat${PRECISION_SUFFIX}
+  tables/p3_lookup_table_1.dat-v4.1.1
+  tables/mu_r_table_vals.dat${PRECISION_SUFFIX}
+  tables/revap_table_vals.dat${PRECISION_SUFFIX}
+  tables/vm_table_vals.dat${PRECISION_SUFFIX}
+  tables/vn_table_vals.dat${PRECISION_SUFFIX}
 )
 
 include (ScreamUtils)

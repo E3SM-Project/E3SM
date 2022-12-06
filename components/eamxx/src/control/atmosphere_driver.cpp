@@ -315,7 +315,7 @@ void AtmosphereDriver::setup_surface_coupling_processes () const
   }
 }
 
-void AtmosphereDriver::set_precipitation_fields_to_zero ()
+void AtmosphereDriver::set_precipitation_fields_to_zero () 
 {
   auto phys_grid = m_grids_manager->get_grid("Physics");
 
@@ -612,7 +612,7 @@ void AtmosphereDriver::initialize_output_managers () {
     }
     om.setup_globals_map(m_atm_process_group->get_restart_extra_data());
   }
-
+  
   // Build one manager per output yaml file
   using vos_t = std::vector<std::string>;
   const auto& output_yaml_files = io_params.get<vos_t>("output_yaml_files",vos_t{});
@@ -857,10 +857,6 @@ void AtmosphereDriver::set_initial_conditions ()
   std::vector<FieldIdentifier> ic_fields_to_copy;
   std::map<std::string,std::vector<std::string>> fields_inited;
 
-  // Check which fields should be loaded from the topography file
-  std::map<std::string,std::vector<std::string>> topography_fields_names_nc;
-  std::map<std::string,std::vector<std::string>> topography_fields_names_eamxx;
-
   // Helper lambda, to reduce code duplication
   auto process_ic_field = [&](const Field& f) {
     const auto& fid = f.get_header().get_identifier();
@@ -884,25 +880,10 @@ void AtmosphereDriver::set_initial_conditions ()
         EKAT_REQUIRE_MSG (false, "ERROR: invalid assignment for variable " + fname + ", only scalar double or string, or vector double arguments are allowed");
       }
     } else if (not (fvphyshack and grid_name == "Physics PG2")) {
-      auto& this_grid_ic_fnames = ic_fields_names[grid_name];
-      auto& this_grid_topo_fnames_nc = topography_fields_names_nc[grid_name];
-      auto& this_grid_topo_fnames_eamxx = topography_fields_names_eamxx[grid_name];
-
+      // If this field is the parent of other subfields, we only read from file the subfields.
       auto c = f.get_header().get_children();
-
-      if (fname == "phis") {
-        // Topography (phis) is a special case that should
-        // be loaded from the topography file (assuming
-        // input files doesn't contain a value).
-        if (fvphyshack) {
-          this_grid_topo_fnames_nc.push_back("PHIS_d");
-          this_grid_topo_fnames_eamxx.push_back("phis");
-        } else {
-          this_grid_topo_fnames_nc.push_back("PHIS");
-          this_grid_topo_fnames_eamxx.push_back("phis");
-       }
-      } else if (c.size()==0) {
-        // If this field is the parent of other subfields, we only read from file the subfields.
+      if (c.size()==0) {
+        auto& this_grid_ic_fnames = ic_fields_names[grid_name];
         if (not ekat::contains(this_grid_ic_fnames,fname)) {
           this_grid_ic_fnames.push_back(fname);
         }
@@ -912,6 +893,7 @@ void AtmosphereDriver::set_initial_conditions ()
         // list of fields. I think the issue is that you can't access group
         // objects until some registration period ends. So instead do it here,
         // where the list is definitely available.
+        auto& this_grid_ic_fnames = ic_fields_names[grid_name];
         for (const auto& e : c) {
           const auto f = e.lock();
           const auto& fid = f->get_identifier();
@@ -1017,7 +999,7 @@ void AtmosphereDriver::set_initial_conditions ()
   }
   m_atm_logger->debug("    [EAMxx] Processing fields to copy ... done!");
 
-  // It is possible to have a bundled group G1=(f1,f2,f3),
+  // Final step: it is possible to have a bundled group G1=(f1,f2,f3),
   // where the IC are read from file for f1, f2, and f3. In that case,
   // the time stamp for the bundled G1 has not be inited, but the data
   // is valid (all entries have been inited). Let's fix that.
@@ -1045,77 +1027,7 @@ void AtmosphereDriver::set_initial_conditions ()
   }
   m_atm_logger->debug("    [EAMxx] Processing subfields ... done!");
 
-  // Load topography from file if topography file is given.
-  if (ic_pl.isParameter("topography_filename")) {
-    m_atm_logger->debug("    [EAMxx] Reading topography from file ...");
-    const auto& file_name = ic_pl.get<std::string>("topography_filename");
-    for (const auto& it : m_field_mgrs) {
-      const auto& grid_name = it.first;
-      read_fields_from_file (topography_fields_names_nc[grid_name],
-                              topography_fields_names_eamxx[grid_name],
-                            it.first,file_name,m_current_ts);
-    }
-    m_atm_logger->debug("    [EAMxx] Processing topography from file ... done!");
-  } else {
-    // Ensure that, if no topography_filename is given, no
-    // processes is asking for topography data (assuming a
-    // separate IC param entry isn't given for the field).
-    for (const auto& it : m_field_mgrs) {
-      const auto& grid_name = it.first;
-      EKAT_REQUIRE_MSG(topography_fields_names_nc[grid_name].size()==0,
-                      "Error! Topography data was requested in the FM, but no "
-                      "topography_filename or entry matching the field name "
-                      "was given in IC parameters.\n");
-    }
-  }
-
   m_atm_logger->info("  [EAMxx] set_initial_conditions ... done!");
-}
-
-void AtmosphereDriver::
-read_fields_from_file (const std::vector<std::string>& field_names_nc,
-                       const std::vector<std::string>& field_names_eamxx,
-                       const std::string& grid_name,
-                       const std::string& file_name,
-                       const util::TimeStamp& t0)
-{
-  EKAT_REQUIRE_MSG(field_names_nc.size()==field_names_eamxx.size(),
-                   "Error! Field name arrays must have same size.\n");
-
-  if (field_names_nc.size()==0) {
-    return;
-  }
-
-  ekat::ParameterList ic_reader_params;
-  ic_reader_params.set("Field Names",field_names_nc);
-  ic_reader_params.set("Filename",file_name);
-
-  using view_1d_host = AtmosphereInput::view_1d_host;
-
-  const auto& field_mgr = m_field_mgrs.at(grid_name);
-  std::map<std::string, view_1d_host> hosts_views;
-  std::map<std::string, FieldLayout> layouts;
-  for (int i=0; i<field_names_nc.size(); ++i) {
-    const auto fname_nc = field_names_nc[i];
-    const auto fname_eamxx = field_names_eamxx[i];
-
-    hosts_views[fname_nc] =
-      m_field_mgrs.at(grid_name)->get_field(fname_eamxx).get_view<Real*, Host>();
-    layouts.emplace(fname_nc,
-      m_field_mgrs.at(grid_name)->get_field(fname_eamxx).get_header().get_identifier().get_layout());
-  }
-
-  AtmosphereInput ic_reader(ic_reader_params,
-                            m_grids_manager->get_grid(grid_name),
-                            hosts_views, layouts);
-  ic_reader.read_variables();
-  ic_reader.finalize();
-
-  for (const auto& fname : field_names_eamxx) {
-    // Set the initial time stamp
-    auto f = m_field_mgrs.at(grid_name)->get_field(fname);
-    f.get_header().get_tracking().update_time_stamp(t0);
-  }
 }
 
 void AtmosphereDriver::
