@@ -1052,8 +1052,8 @@ void AtmosphereDriver::set_initial_conditions ()
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
       read_fields_from_file (topography_fields_names_nc[grid_name],
-                              topography_fields_names_eamxx[grid_name],
-                            it.first,file_name,m_current_ts);
+                             topography_fields_names_eamxx[grid_name],
+                             it.first,file_name,m_current_ts);
     }
     m_atm_logger->debug("    [EAMxx] Processing topography from file ... done!");
   } else {
@@ -1095,14 +1095,14 @@ read_fields_from_file (const std::vector<std::string>& field_names_nc,
   const auto& field_mgr = m_field_mgrs.at(grid_name);
   std::map<std::string, view_1d_host> hosts_views;
   std::map<std::string, FieldLayout> layouts;
-  for (int i=0; i<field_names_nc.size(); ++i) {
+  for (int i=0; i<int(field_names_nc.size()); ++i) {
     const auto fname_nc = field_names_nc[i];
     const auto fname_eamxx = field_names_eamxx[i];
 
     hosts_views[fname_nc] =
-      m_field_mgrs.at(grid_name)->get_field(fname_eamxx).get_view<Real*, Host>();
+      field_mgr->get_field(fname_eamxx).get_view<Real*, Host>();
     layouts.emplace(fname_nc,
-      m_field_mgrs.at(grid_name)->get_field(fname_eamxx).get_header().get_identifier().get_layout());
+      field_mgr->get_field(fname_eamxx).get_header().get_identifier().get_layout());
   }
 
   AtmosphereInput ic_reader(ic_reader_params,
@@ -1113,7 +1113,7 @@ read_fields_from_file (const std::vector<std::string>& field_names_nc,
 
   for (const auto& fname : field_names_eamxx) {
     // Set the initial time stamp
-    auto f = m_field_mgrs.at(grid_name)->get_field(fname);
+    auto f = field_mgr->get_field(fname);
     f.get_header().get_tracking().update_time_stamp(t0);
   }
 }
@@ -1145,7 +1145,7 @@ read_fields_from_file (const std::vector<std::string>& field_names,
 
   for (const auto& fname : field_names) {
     // Set the initial time stamp
-    auto f = m_field_mgrs.at(grid_name)->get_field(fname);
+    auto f = field_mgr->get_field(fname);
     f.get_header().get_tracking().update_time_stamp(t0);
   }
 }
