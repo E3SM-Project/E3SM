@@ -775,8 +775,6 @@ module ocn_time_integration_split
                enddo
                barotropicForcing(iEdge) = splitFact* &
                               normalThicknessFluxSum/thicknessSum/dt
-               bottomDepthEdge(iEdge) = thicknessSum &
-                  - 0.5_RKIND*(sshNew(cell1) + sshNew(cell2))
 
                do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                   ! These two steps are together here:
@@ -798,7 +796,7 @@ module ocn_time_integration_split
             !$omp parallel
             !$omp do schedule(runtime) &
             !$omp private(cell1, cell2, k, thicknessSum)
-            do iEdge = nEdgesOwned+1, nEdgesArray(4)
+            do iEdge = 1, nEdgesArray(size(nEdgesArray)-1)
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
                thicknessSum = layerThickEdgeFlux(minLevelEdgeBot(iEdge),iEdge)
