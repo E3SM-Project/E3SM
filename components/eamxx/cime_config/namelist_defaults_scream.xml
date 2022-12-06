@@ -295,22 +295,6 @@ tweaking their $case/namelist_scream.xml file.
     <Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</Filename>
     <Filename hgrid="ne30np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne30np4L128_20220823.nc</Filename> <!-- This will need to be updated to the new nccn name -->
 
-    <topography_filename type="file">UNSET</topography_filename>
-    <topography_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc</topography_filename>
-    <topography_filename hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</topography_filename>
-    <topography_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc</topography_filename>
-    <topography_filename hgrid="ne30np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_16xdel2.c20200108.nc</topography_filename>
-    <topography_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4_16xdel2-PFC-consistentSGH.nc</topography_filename>
-    <topography_filename hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4pg2_16xdel2.nc</topography_filename>
-    <topography_filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4_16xdel2_consistentSGH_20220429.nc</topography_filename>
-    <topography_filename hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4pg2_16xdel2_20200213.nc</topography_filename>
-    <topography_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4_16xconsistentSGH_20190212.nc</topography_filename>
-    <topography_filename hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4pg2_16xconsistentSGH_20190212_converted.nc</topography_filename>
-    <topography_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4_16xconsistentSGH_20190528.nc</topography_filename>
-    <topography_filename hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_16xconsistentSGH_20190528_converted.nc</topography_filename>
-    <topography_filename COMPSET=".*SCREAM%AQUA.*">UNSET</topography_filename>
-    <phis COMPSET=".*SCREAM%AQUA.*">0.0</phis>
-
     <restart_casename>${CASE}.scream</restart_casename>
     <!-- Fields that we need to initialize, but are not in an initial condition file need to be inited here -->
     <surf_evap>0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->

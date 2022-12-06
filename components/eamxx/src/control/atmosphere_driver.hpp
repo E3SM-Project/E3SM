@@ -154,18 +154,6 @@ protected:
   void create_logger ();
   void set_initial_conditions ();
   void restart_model ();
-
-  // Read fields from a file when the names of the fields in
-  // EAMxx do not match exactly with the .nc file. Example is
-  // for topography data files, where GLL and PG2 grid have
-  // different naming conventions for phis.
-  void read_fields_from_file (const std::vector<std::string>& field_names_nc,
-                              const std::vector<std::string>& field_names_eamxx,
-                              const std::string& grid_name,
-                              const std::string& file_name,
-                              const util::TimeStamp& t0);
-  // Read fields from a file when the names of the fields in
-  // EAMxx match with the .nc file.
   void read_fields_from_file (const std::vector<std::string>& field_names,
                               const std::string& grid_name,
                               const std::string& file_name,

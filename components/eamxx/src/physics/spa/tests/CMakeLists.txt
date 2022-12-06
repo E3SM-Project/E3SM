@@ -18,5 +18,5 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/spa_main.yaml
                ${CMAKE_CURRENT_BINARY_DIR}/spa_main.yaml)
 
 # Ensure tests input files are present
-GetInputFile(scream/init/spa_data_for_testing.nc)
-GetInputFile(scream/init/spa_file_unified_and_complete_ne4_scream.nc)
+GetInputFile(init/spa_data_for_testing.nc)
+GetInputFile(init/spa_file_unified_and_complete_ne4_scream.nc)

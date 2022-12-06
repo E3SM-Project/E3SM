@@ -27,7 +27,7 @@ set (TEST_INPUT_FILES
   spa_file_unified_and_complete_ne4_20220428.nc
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
-  GetInputFile(scream/init/${file})
+  GetInputFile(init/${file})
 endforeach()
 
 ## Finally compare all MPI rank output files against the single rank output as a baseline, using CPRNC

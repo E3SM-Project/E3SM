@@ -176,9 +176,9 @@ function(GetInputFile src_path)
     if (NOT SCREAM_INPUT_ROOT)
       message(FATAL_ERROR "No SCREAM_INPUT_ROOT set, cannot try to locate input file ${src_path}")
     endif()
-    set(full_src_path ${SCREAM_INPUT_ROOT}/atm/${src_path})
+    set(full_src_path ${SCREAM_INPUT_ROOT}/atm/scream/${src_path})
     if (NOT EXISTS ${full_src_path})
-      execute_process(COMMAND ${SCREAM_SRC_DIR}/../scripts/check-input ${SCREAM_INPUT_ROOT} atm/${src_path}
+      execute_process(COMMAND ${SCREAM_SRC_DIR}/../scripts/check-input ${SCREAM_INPUT_ROOT} atm/scream/${src_path}
         RESULT_VARIABLE check_input_status
         OUTPUT_VARIABLE check_input_output
         ERROR_VARIABLE  check_input_output

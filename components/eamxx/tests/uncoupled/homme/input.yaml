@@ -11,7 +11,6 @@ Time Stepping:
 
 initial_conditions:
   Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
-  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4_16x.c20160612.nc
 
 atmosphere_processes:
   atm_procs_list: (Dynamics)

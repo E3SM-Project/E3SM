@@ -104,11 +104,11 @@ target_include_directories(scream_rrtmgp SYSTEM PUBLIC
 
 # Ensure RRTMGP lookup tables are present in the data dir
 set (RRTMGP_TABLES
-  scream/init/rrtmgp-data-sw-g112-210809.nc
-  scream/init/rrtmgp-data-lw-g128-210809.nc
-  scream/init/rrtmgp-allsky.nc
-  scream/init/rrtmgp-cloud-optics-coeffs-sw.nc
-  scream/init/rrtmgp-cloud-optics-coeffs-lw.nc
+  init/rrtmgp-data-sw-g112-210809.nc
+  init/rrtmgp-data-lw-g128-210809.nc
+  init/rrtmgp-allsky.nc
+  init/rrtmgp-cloud-optics-coeffs-sw.nc
+  init/rrtmgp-cloud-optics-coeffs-lw.nc
 )
 
 foreach (file IN ITEMS ${RRTMGP_TABLES})
