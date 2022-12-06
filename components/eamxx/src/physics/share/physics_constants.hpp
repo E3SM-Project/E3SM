@@ -43,8 +43,6 @@ struct Constants
   static constexpr Scalar T_homogfrz    = Tmelt - 40;
   static constexpr Scalar T_rainfrz     = Tmelt - 4;
   static constexpr Scalar Pi            = 3.14159265358979323;
-  static constexpr long long int    iulog       = 98;
-  static constexpr bool   masterproc    = true;
   static constexpr Scalar RHOW          = RHO_H2O;
   static constexpr Scalar INV_RHOW      = 1.0/RHOW;
   static constexpr Scalar RHO_RIMEMIN   =  50.0;  //Min limit for rime density [kg m-3]
