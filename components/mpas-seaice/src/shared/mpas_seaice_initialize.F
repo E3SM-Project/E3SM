@@ -715,10 +715,6 @@ contains
                iceEnthalpy(:,1,iCell), &
                snowEnthalpy(:,1,iCell))
        endif
-    !enddo ! iCell
-
-    ! integrated quantities
-    !do iCell = 1, nCellsSolve
 
        iceAreaCell(iCell) = sum(iceAreaCategory(1,:,iCell))
        surfaceTemperatureCell(iCell) = -20.15_RKIND
