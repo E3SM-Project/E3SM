@@ -1112,8 +1112,10 @@ read_fields_from_file (const std::vector<std::string>& field_names_nc,
   ic_reader.finalize();
 
   for (const auto& fname : field_names_eamxx) {
-    // Set the initial time stamp
     auto f = field_mgr->get_field(fname);
+    // Sync fields to device
+    f.sync_to_dev();
+    // Set the initial time stamp
     f.get_header().get_tracking().update_time_stamp(t0);
   }
 }
