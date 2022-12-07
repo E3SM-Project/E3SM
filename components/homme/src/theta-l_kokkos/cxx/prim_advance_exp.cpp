@@ -255,25 +255,25 @@ void ttype9_imex_timestep(const TimeLevel& tl,
 // Names of timelevels in RK:
 //         RKStageData (const int nm1_in, const int n0_in, const int np1_in, const int n0_qdp_in ...
   caar.run(RKStageData(n0, n0, nm1, qn0, dt, eta_ave_w/4.0, 1.0, 0.0, 1.0));
-  limiter.run(nm1);
+//  limiter.run(nm1);
   dirk.run(nm1, 0.0, n0, 0.0, nm1, dt, elements, hvcoord);
 
   // Stage 2
   dt = dt_dyn/5.0;
   caar.run(RKStageData(n0, nm1, np1, qn0, dt, 0.0, 1.0, 0.0, 1.0));
-  limiter.run(np1);
+//  limiter.run(np1);
   dirk.run(nm1, 0.0, n0, 0.0, np1, dt, elements, hvcoord);
 
   // Stage 3
   dt = dt_dyn/3.0;
   caar.run(RKStageData(n0, np1, np1, qn0, dt, 0.0, 1.0, 0.0, 1.0));
-  limiter.run(np1);
+//  limiter.run(np1);
   dirk.run(nm1, 0.0, n0, 0.0, np1, dt, elements, hvcoord);
 
   // Stage 4
   dt = 2.0*dt_dyn/3.0;
   caar.run(RKStageData(n0, np1, np1, qn0, dt, 0.0, 1.0, 0.0, 1.0));
-  limiter.run(np1);
+//  limiter.run(np1);
   dirk.run(nm1, 0.0, n0, 0.0, np1, dt, elements, hvcoord);
 
   // Stage 5

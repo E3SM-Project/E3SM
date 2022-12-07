@@ -10,10 +10,12 @@
 #include "Types.hpp"
 #include "Elements.hpp"
 #include "ColumnOps.hpp"
+#include "Context.hpp"
 #include "EquationOfState.hpp"
 #include "FunctorsBuffersManager.hpp"
 #include "HybridVCoord.hpp"
 #include "KernelVariables.hpp"
+#include "LimiterFunctor.hpp"
 #include "ReferenceElement.hpp"
 #include "RKStageData.hpp"
 #include "SimulationParams.hpp"
@@ -96,7 +98,7 @@ struct CaarFunctorImpl {
   Buffers               m_buffers;
   deriv_type            m_deriv;
 
-  SphereOperators             m_sphere_ops;
+  SphereOperators       m_sphere_ops;
 
   struct TagPreExchange {};
   struct TagPostExchange {};
@@ -155,7 +157,6 @@ struct CaarFunctorImpl {
       , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(m_num_elems))
       , m_tu(m_policy_pre)
   {}
-
 
   void setup (const Elements &elements, const Tracers &/*tracers*/,
               const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
@@ -329,6 +330,9 @@ struct CaarFunctorImpl {
 
   void run (const RKStageData& data)
   {
+
+    auto& limiter  = Context::singleton().get<LimiterFunctor>();
+
     set_rk_stage_data(data);
 
     profiling_resume();
@@ -357,6 +361,8 @@ struct CaarFunctorImpl {
 //    Kokkos::parallel_for("caar loop dp3d limiter", m_policy_dp3d_lim, *this);
 //    Kokkos::fence();
 //    GPTLstop("caar dp3d");
+
+    limiter.run(data.np1);
 
     profiling_pause();
   }

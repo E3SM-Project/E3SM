@@ -338,6 +338,7 @@ void init_functors_c (const bool& allocate_buffer)
 
   // First, sphere operators, then the others
   auto& sph_op = c.create<SphereOperators>(elems.m_geometry,ref_FE);
+  auto& limiter = c.create_if_not_there<LimiterFunctor>(elems,hvcoord,params);
 
   // Some functors might have been previously created, so
   // use the create_if_not_there() function.
@@ -350,11 +351,10 @@ void init_functors_c (const bool& allocate_buffer)
   auto& ff      = c.create_if_not_there<ForcingFunctor>();
   auto& diag    = c.create_if_not_there<Diagnostics> (elems.num_elems(),params.theta_hydrostatic_mode);
   auto& vrm     = c.create_if_not_there<VerticalRemapManager>(elems.num_elems());
-  auto& limiter = c.create_if_not_there<LimiterFunctor>(elems,hvcoord,params);
 
   auto& fbm     = c.create_if_not_there<FunctorsBuffersManager>();
 
-//why do some functors have 2 constructors?
+//OG why are if-statement here -- above calls define which constructor is called
 
   // If any Functor was constructed only partially, setup() must be called.
   // This does not apply to Diagnostics or DirkFunctor since they only
