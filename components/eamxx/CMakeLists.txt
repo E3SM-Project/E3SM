@@ -57,7 +57,7 @@ option (Kokkos_ENABLE_SERIAL "" ON)
 set (CMAKE_CXX_STANDARD 14)
 
 if (NOT SCREAM_CIME_BUILD)
-  project(SCREAM CXX Fortran)
+  project(SCREAM CXX C Fortran)
 
   if (SCREAM_CORI_HACK)
     list(APPEND CMAKE_CXX_IMPLICIT_LINK_LIBRARIES "ifcore")
@@ -71,6 +71,9 @@ if (NOT SCREAM_CIME_BUILD)
     OUTPUT_STRIP_TRAILING_WHITESPACE)
   set(LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA} CACHE STRING "The sha of the last git commit.")
   message(STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
+else()
+  # Ensure our languages are all enabled
+  enable_language(C CXX Fortan)
 endif()
 
 set(SCREAM_DOUBLE_PRECISION TRUE CACHE BOOL "Set to double precision (default True)")
