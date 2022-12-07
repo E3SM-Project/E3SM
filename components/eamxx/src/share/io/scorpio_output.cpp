@@ -191,11 +191,8 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
   // to make sure that the remapped fields are the most up to date.
   // First we reset the diag computed map so that all diags are recomputed.
   m_diag_computed.clear();
-  for (auto const& name : m_fields_names) {
-    auto it = m_diagnostics.find(name);
-    if (it != m_diagnostics.end()) {
-      compute_diagnostic(name); 
-    }
+  for (auto& it : m_diagnostics) {
+    compute_diagnostic(it.first);
   }
 
   // If needed, remap fields from their grid to the unique grid, for I/O
