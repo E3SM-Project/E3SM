@@ -63,10 +63,11 @@ configure_file(${SCREAM_SRC_DIR}/dynamics/homme/tests/theta.nl
 
 # Ensure test input files are present in the data dir
 set (TEST_INPUT_FILES
-  init/spa_init_ne2np4.nc
-  init/map_ne4np4_to_ne2np4_mono.nc
-  init/spa_file_unified_and_complete_ne4_20220428.nc
-  init/${EAMxx_tests_IC_FILE_72lev}
+  scream/init/spa_init_ne2np4.nc
+  scream/init/map_ne4np4_to_ne2np4_mono.nc
+  scream/init/spa_file_unified_and_complete_ne4_20220428.nc
+  scream/init/${EAMxx_tests_IC_FILE_72lev}
+  cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc
 )
 foreach (file IN ITEMS ${TEST_INPUT_FILES})
   GetInputFile(${file})
@@ -85,7 +86,7 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
     set (SRC_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
     set (TGT_FILE "${BASE_TEST_NAME}_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
     set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_output_bfb")
-    add_test (NAME ${TEST_NAME} 
+    add_test (NAME ${TEST_NAME}
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"
@@ -95,7 +96,7 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
     set (SRC_FILE "${BASE_TEST_NAME}_diagnostics.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
     set (TGT_FILE "${BASE_TEST_NAME}_diagnostics.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
     set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_diagnostics_bfb")
-    add_test (NAME ${TEST_NAME} 
+    add_test (NAME ${TEST_NAME}
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
               WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
     set_tests_properties(${TEST_NAME} PROPERTIES LABELS "${TEST_LABELS}"

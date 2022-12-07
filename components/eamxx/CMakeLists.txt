@@ -264,6 +264,7 @@ else()
 endif()
 
 set (SCREAM_DATA_DIR ${SCREAM_INPUT_ROOT}/atm/scream CACHE PATH "" FORCE)
+set (TOPO_DATA_DIR ${SCREAM_INPUT_ROOT}/atm/cam/topo CACHE PATH "" FORCE)
 
 #
 # Handle test level
