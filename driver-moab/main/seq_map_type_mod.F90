@@ -34,15 +34,21 @@ module seq_map_type_mod
      real(R8), pointer       :: clat_d(:)
      integer(IN)             :: mpicom    ! mpicom
 
+#ifdef HAVE_MOAB
      ! MOAB additional members, that store source, target and intx MOAB appids
      !  these are integers greater than or equal to 0
-     ! 
-   !   in general, rearrange can be solved with a parcommgraph, true fv-fv intx with an actual intx 
-   !   and a weight matrix; 
+     !
+     !   in general, rearrange can be solved with a parcommgraph, true fv-fv intx with an actual intx
+     !   and a weight matrix;
      ! intx appid should be used for one map usually
      ! source and target app ids also make sense only on the coupler pes
      integer                 :: src_mbid, tgt_mbid, intx_mbid
+     character*32            :: weight_identifier ! 'state' OR 'flux'
+     integer                 :: tag_entity_type
+     integer                 :: nentities
      !
+#endif
+
   end type seq_map
   public seq_map
 
@@ -145,10 +151,12 @@ contains
     mapper%strategy       = "undefined"
     mapper%mapfile        = "undefined"
 
+#ifdef HAVE_MOAB
     mapper%src_mbid = -1
     mapper%tgt_mbid = -1
     mapper%intx_mbid = -1
-
+    mapper%nentities = 0
+#endif
 
   end subroutine seq_map_mapinit
 
