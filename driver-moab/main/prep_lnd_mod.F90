@@ -776,41 +776,6 @@ contains
   ! how to get mpicomm for joint ocn + coupler
     id_join = lnd(1)%cplcompid
     lndid1   = lnd(1)%compid
-!     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
-!     context_id = -1
-!     ! now send the tag a2oTbot_proj, a2oUbot_proj, a2oVbot_proj from ocn on coupler pes towards original ocean mesh
-!     tagName = 'a2lTbot_proj:a2lUbot_proj:a2lVbot_proj:'//C_NULL_CHAR !  defined in prep_atm_mod.F90!!!
-
-!     if (mblxid .ge. 0) then !  send because we are on coupler pes
-
-!       ! basically, use the initial partitioning
-!        context_id = lndid1
-!        ierr = iMOAB_SendElementTag(mblxid, tagName, mpicom_join, context_id)
-
-!     endif
-!     if (mlnid .ge. 0 ) then !  we are on land pes, for sure
-!       ! receive on land pes, a tag that was computed on coupler pes
-!        context_id = id_join
-!        ierr = iMOAB_ReceiveElementTag(mlnid, tagName, mpicom_join, context_id)
-!     !CHECKRC(ierr, "cannot receive tag values")
-!     endif
-
-!     ! we can now free the sender buffers
-!     if (mblxid .ge. 0) then
-!        context_id = lndid1
-!        ierr = iMOAB_FreeSenderBuffers(mblxid, context_id)
-!        ! CHECKRC(ierr, "cannot free buffers used to send projected tag towards the ocean mesh")
-!     endif
-
-! #ifdef MOABDEBUG
-!     if (mlnid .ge. 0 ) then !  we are on land pes, for sure
-!       number_calls = number_calls + 1
-!       write(lnum,"(I0.2)") number_calls
-!       outfile = 'wholeLND_proj'//trim(lnum)//'.h5m'//C_NULL_CHAR
-!       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-!       ierr = iMOAB_WriteMesh(mlnid, trim(outfile), trim(wopts))
-!     endif
-! #endif
 
   end subroutine prep_lnd_migrate_moab
 
