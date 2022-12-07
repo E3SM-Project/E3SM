@@ -87,7 +87,6 @@ set(INTERFACE_SRC
   mo_garand_atmos_io.cpp
   mo_load_coefficients.cpp
   mo_load_cloud_coefficients.cpp
-  rrtmgp_test_utils.cpp
   shr_orb_mod_c2f.F90
 )
 add_library(scream_rrtmgp ${INTERFACE_SRC})
@@ -117,5 +116,9 @@ endforeach()
 
 # Build tests
 if (NOT SCREAM_LIB_ONLY)
+  # Some utils for the tests. Build them only once, for all execs that might need them
+  add_library (rrtmgp_test_utils rrtmgp_test_utils.cpp)
+  target_link_libraries(rrtmgp_test_utils PUBLIC scream_rrtmgp)
+
   add_subdirectory(tests)
 endif()
