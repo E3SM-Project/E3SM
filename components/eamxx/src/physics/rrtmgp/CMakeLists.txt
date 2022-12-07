@@ -67,7 +67,7 @@ set(EXTERNAL_SRC
 )
 add_library(rrtmgp ${EXTERNAL_SRC})
 EkatDisableAllWarning(rrtmgp)
-SetCudaFlags(rrtmgp)
+SetCudaFlags(rrtmgp CUDA_LANG)
 yakl_process_target(rrtmgp)
 
 # NOTE: cannot use 'PUBLIC' in target_link_libraries,
@@ -113,6 +113,7 @@ set(SCREAM_RRTMGP_SOURCES_YAKL
 
 add_library(scream_rrtmgp_yakl ${SCREAM_RRTMGP_SOURCES_YAKL})
 yakl_process_target(scream_rrtmgp_yakl)
+SetCudaFlags(scream_rrtmgp_yakl CUDA_LANG)
 
 # NOTE: cannot use 'PUBLIC' in target_link_libraries,
 #       since yakl_process_target already used it
