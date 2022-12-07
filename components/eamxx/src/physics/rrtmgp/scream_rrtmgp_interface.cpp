@@ -9,6 +9,17 @@
 #include "cpp/rte/mo_rte_lw.h"
 
 namespace scream {
+    void yakl_init ()
+    {
+      // Initialize yakl
+      if(!yakl::isInitialized()) { yakl::init(); }
+    }
+
+    void yakl_finalize()
+    {
+      // Finalize YAKL
+      yakl::finalize();
+    }
     namespace rrtmgp {
 
         OpticalProps2str get_cloud_optics_sw(const int ncol, const int nlay, CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei);

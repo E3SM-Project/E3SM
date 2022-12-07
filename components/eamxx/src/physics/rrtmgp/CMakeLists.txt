@@ -104,7 +104,6 @@ target_link_options(rrtmgp PRIVATE -DKOKKOS_DEPENDENCE)
 ##################################
 
 set(SCREAM_RRTMGP_SOURCES_YAKL
-  atmosphere_radiation_yakl.cpp
   scream_rrtmgp_interface.cpp
   mo_garand_atmos_io.cpp
   mo_load_coefficients.cpp

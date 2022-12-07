@@ -846,7 +846,14 @@ void RRTMGPRadiation::run_impl (const int dt) {
     const int kbot = nlay+1;
 
     // Compute diffuse flux as difference between total and direct; use YAKL parallel_for here because these are YAKL objects
-    compute_diffuse_flux(nswbands,nlay,ncol,sw_bnd_flux_dif, sw_bnd_flux_dn, sw_bnd_flux_dir);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExeSpace>(0,nswbands*(nlay+1)*ncol),
+                         KOKKOS_LAMBDA (const int idx) {
+      // CAREFUL: these are YAKL arrays, with "LayoutLeft". So make the indices stride accordingly
+      const int ibnd = (idx / ncol) / (nlay+1);
+      const int ilev = (idx / ncol) % (nlay+1);
+      const int icol =  idx % ncol;
+      sw_bnd_flux_dif(icol,ilev,ibnd) = sw_bnd_flux_dn(icol,ilev,ibnd) - sw_bnd_flux_dir(icol,ilev,ibnd);
+    });
 
     // Compute surface fluxes
     rrtmgp::compute_broadband_surface_fluxes(
