@@ -137,7 +137,6 @@ void ttype5_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w)
 
   // Create the functor
   CaarFunctor& functor = Context::singleton().get<CaarFunctor>();
-  auto& limiter  = Context::singleton().get<LimiterFunctor>();
 
   const int nm1 = tl.nm1;
   const int n0  = tl.n0;
@@ -335,7 +334,6 @@ void ttype10_imex_timestep(const TimeLevel& tl,
   auto& hvcoord  = c.get<HybridVCoord>();
   auto& dirk     = c.get<DirkFunctor>();
   auto& caar     = c.get<CaarFunctor>();
-  auto& limiter  = c.get<LimiterFunctor>();
 
   const int nm1 = tl.nm1;
   const int n0  = tl.n0;
