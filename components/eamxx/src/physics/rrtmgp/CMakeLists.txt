@@ -6,44 +6,47 @@ include(ScreamUtils)
 #             YAKL               #
 ##################################
 
-# In case other E3SM components are building YAKL...
-if (TARGET yakl)
-  string (CONCAT msg
-    "It appears other parts of E3SM already built YAKL.\n"
-    "We are not preopared for this. Please, check the cmake\n"
-    "logic in EAMxx, so that we can use an existing yakl.")
-  message("${msg}")
-  message(FATAL_ERROR "Error! Aborting...")
-endif()
 # RRTMGP++ requires YAKL
 
-# Add CUDA flags for YAKL
-if (CUDA_BUILD)
-  set(YAKL_ARCH "CUDA")
-  set(YAKL_CUDA_FLAGS "-DYAKL_ARCH_CUDA --expt-extended-lambda --expt-relaxed-constexpr -ccbin ${CMAKE_CXX_COMPILER}")
+if (TARGET yakl)
+  # Other E3SM components are building YAKL...
+  message ("It appears some other part of E3SM is building YAKL.\n"
+           "We will reuse that, but if this is a debug build we will\n"
+           "add the --fmad=false flag to the cuda flags used by YAKL\n")
+else ()
+  # Prepare CUDA/HIP flags for YAKL
+  if (CUDA_BUILD)
+    set(YAKL_ARCH "CUDA")
+    set(YAKL_CUDA_FLAGS "-DYAKL_ARCH_CUDA --expt-extended-lambda --expt-relaxed-constexpr -ccbin ${CMAKE_CXX_COMPILER}")
+  endif()
+  if (HIP_BUILD)
+    set(YAKL_ARCH "HIP")
+    set(YAKL_HIP_FLAGS "-DYAKL_ARCH_HIP -O3 -D__HIP_ROCclr__ -D__HIP_ARCH_GFX90A__=1 --rocm-path=${ROCM_PATH} --offload-arch=gfx90a -x hip")
+  endif()
+
+  set (YAKL_SOURCE_DIR ${SCREAM_BASE_DIR}/../../externals/YAKL)
+  add_subdirectory(${YAKL_SOURCE_DIR} ${CMAKE_BINARY_DIR}/externals/YAKL)
+
+  # Set some additional flag/cpp option on the yakl target
+
+  cmake_policy (SET CMP0079 NEW) # Allow to link to a tgt from a different directory
+
+  # EAMxx *requires* MPI, so simply look for it, then link against it
+  find_package(MPI REQUIRED COMPONENTS C)
+  target_link_libraries (yakl PUBLIC MPI::MPI_C)
+  EkatDisableAllWarning(yakl)
+
+  # For debug builds, set -DYAKL_DEBUG
+  string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
+  if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+    target_compile_definitions(yakl PUBLIC YAKL_DEBUG)
+  endif()
 endif()
-if (HIP_BUILD)
-  set(YAKL_ARCH "HIP")
-  set(YAKL_HIP_FLAGS "-DYAKL_ARCH_HIP -O3 -D__HIP_ROCclr__ -D__HIP_ARCH_GFX90A__=1 --rocm-path=${ROCM_PATH} --offload-arch=gfx90a -x hip")
-endif()
 
-set (YAKL_SOURCE_DIR ${SCREAM_BASE_DIR}/../../externals/YAKL)
-add_subdirectory(${YAKL_SOURCE_DIR} ${CMAKE_BINARY_DIR}/externals/YAKL)
-
-# Set some additional flag/cpp option on the yakl target
-
-cmake_policy (SET CMP0079 NEW) # Allow to link to a tgt from a different directory
-
-# EAMxx *requires* MPI, so simply look for it, then link against it
-find_package(MPI REQUIRED COMPONENTS C)
-target_link_libraries (yakl PUBLIC MPI::MPI_C)
-EkatDisableAllWarning(yakl)
-
-# For debug builds, set -DYAKL_DEBUG
-string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
-if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
-  target_compile_definitions(yakl PUBLIC YAKL_DEBUG)
-endif()
+# Whether we built yakl or it was already built, we still need to ensure
+# debug builds have --fmad=false in it. The EKAT util automatically sets
+# the flag for debug builds
+SetCudaFlags(yakl CUDA_LANG)
 
 ##################################
 #           RRTMGP               #
@@ -67,7 +70,6 @@ set(EXTERNAL_SRC
 )
 add_library(rrtmgp ${EXTERNAL_SRC})
 EkatDisableAllWarning(rrtmgp)
-SetCudaFlags(rrtmgp CUDA_LANG)
 yakl_process_target(rrtmgp)
 
 # NOTE: cannot use 'PUBLIC' in target_link_libraries,
@@ -112,7 +114,6 @@ set(SCREAM_RRTMGP_SOURCES_YAKL
 
 add_library(scream_rrtmgp_yakl ${SCREAM_RRTMGP_SOURCES_YAKL})
 yakl_process_target(scream_rrtmgp_yakl)
-SetCudaFlags(scream_rrtmgp_yakl CUDA_LANG)
 
 # NOTE: cannot use 'PUBLIC' in target_link_libraries,
 #       since yakl_process_target already used it
