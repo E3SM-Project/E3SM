@@ -521,6 +521,15 @@ _TESTS = {
             )
     },
 
+    "e3sm_scream_v1_long_crusher" : {
+        # _D builds take a long longer on crusher than ascent or pm-gpu, so
+        # don't run the long _D test.
+        "time"  : "01:00:00",
+        "tests" : (
+            "ERS_Ln362.ne30pg2_ne30pg2.F2010-SCREAMv1"
+            )
+    },
+
     "e3sm_gpuacc" : {
         "tests"    : (
                  "SMS_Ld1.T62_oEC60to30v3.CMPASO-NYF",
