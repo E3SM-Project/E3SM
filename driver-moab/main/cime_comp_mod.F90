@@ -2283,6 +2283,8 @@ contains
              if (associated(xao_ax)) then
                 call  prep_atm_mrg(infodata, &
                      fractions_ax=fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:init_atminit')
+                     ! MOAB 
+                call  prep_atm_mrg_moab(infodata, xao_ax)
              endif
           endif
 

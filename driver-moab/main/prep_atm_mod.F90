@@ -47,6 +47,7 @@ module prep_atm_mod
 
   public :: prep_atm_init
   public :: prep_atm_mrg
+  public :: prep_atm_mrg_moab
 
   public :: prep_atm_get_l2x_ax
   public :: prep_atm_get_i2x_ax
@@ -722,6 +723,20 @@ contains
 
   end subroutine prep_atm_mrg
 
+  subroutine prep_atm_mrg_moab(infodata, xao_ax)
+    use iMOAB , only : iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
+     iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
+   ! use seq_comm_mct , only : mbaxid, mbofxid ! ocean and atm-ocean flux instances
+    !---------------------------------------------------------------
+    ! Description
+    ! Merge all ocn inputs
+    !
+    ! Arguments
+    type(seq_infodata_type) , intent(in)    :: infodata
+    type(mct_aVect)        , pointer , intent(in)    :: xao_ax(:) ! Atm-ocn fluxes, atm grid, cpl pes; used here just for indexing
+
+
+  end subroutine prep_atm_mrg_moab
   !================================================================================================
 
   subroutine prep_atm_merge( l2x_a, o2x_a, xao_a, i2x_a, fractions_a, x2a_a )
