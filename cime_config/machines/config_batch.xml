@@ -334,11 +334,6 @@
     </queues>
   </batch_system>
 
-  <batch_system MACH="miller" type="miller_slurm">
-    <queues>
-      <queue walltimemax="06:00:00" nodemax="800" default="true">collaboration</queue>
-    </queues>
-  </batch_system>
 
   <batch_system MACH="pm-gpu" type="nersc_slurm">
     <directives>
@@ -365,7 +360,7 @@
     </directives>
     <queues>
       <queue walltimemax="00:45:00" nodemax="1500" default="true">regular</queue>
-      <queue walltimemax="00:15:00" nodemax="4" strict="true">debug</queue>
+      <queue walltimemax="00:30:00" nodemax="4" strict="true">debug</queue>
     </queues>
   </batch_system>
 
@@ -374,7 +369,17 @@
       <directive> --constraint=cpu</directive>
     </directives>
     <queues>
-      <queue walltimemax="00:30:00" nodemax="1500" default="true">regular</queue>
+      <queue walltimemax="00:45:00" nodemax="3000" default="true">regular</queue>
+      <queue walltimemax="00:30:00" nodemax="4" strict="true">debug</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="alvarez" type="nersc_slurm">
+    <directives>
+      <directive> --constraint=cpu</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:45:00" nodemax="256" default="true">regular</queue>
       <queue walltimemax="00:30:00" nodemax="4" strict="true">debug</queue>
     </queues>
   </batch_system>
