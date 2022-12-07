@@ -397,7 +397,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_vel_vmix_tend_implicit(dt, kineticEnergyCell, vertViscTopOfEdge, layerThickness, & !{{{
-                                         layerThickEdgeMean, landIceEdgeFraction, normalVelocity, err)
+                                         layerThickEdgeDrag, layerThickEdgeMean, &
+                                         landIceEdgeFraction, normalVelocity, err)
 
       !-----------------------------------------------------------------
       !
@@ -418,7 +419,8 @@ contains
          layerThickness !< Input: thickness at cell center
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThickEdgeMean !< Input: mean thickness at edge
+         layerThickEdgeDrag, &!< Input: mean thickness at edge
+         layerThickEdgeMean   !< Input: mean thickness at edge
 
       real (kind=RKIND), dimension(:), intent(in) :: &
          landIceEdgeFraction !< Input: land ice fraction
@@ -461,8 +463,8 @@ contains
       !$acc enter data create(bTemp, C, rTemp)
 
       !$acc parallel loop present(maxLevelEdgeTop, minLevelEdgeBot, cellsOnEdge, &
-      !$acc    layerThickEdgeMean, layerThickness, vertViscTopOfEdge, normalVelocity, &
-      !$acc    landIceEdgeFraction, kineticEnergyCell) &
+      !$acc    layerThickEdgeDrag, layerThickEdgeMean, layerThickness, vertViscTopOfEdge, &
+      !$acc    normalVelocity, landIceEdgeFraction, kineticEnergyCell) &
       !$acc    private(Nsurf, N, cell1, cell2, A, bTemp, C, m, rTemp, k)
 #else
       !$omp parallel
@@ -480,7 +482,7 @@ contains
          if (N .eq. Nsurf) then
             normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
                 / (1.0_RKIND + dt*(implicitTopDragCoef * landIceEdgeFraction(iEdge) + implicitBottomDragCoef) &
-                   * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) )
+                   * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) )
          else
 
            ! tridiagonal matrix algorithm
@@ -516,7 +518,7 @@ contains
            ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
            normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
                / (1.0_RKIND - A + dt*implicitBottomDragCoef &
-               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
+               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) &
                - m*C(N-1))
            ! second pass: back substitution
            do k = N-1, Nsurf, -1
@@ -1308,6 +1310,7 @@ contains
           ssh, err)
 
       end select
+
 #ifdef MPAS_OPENACC
       !$acc exit data copyout(normalVelocity)
 #endif

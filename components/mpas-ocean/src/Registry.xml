@@ -2769,6 +2769,11 @@
 			 missing_value="FILLVAL" missing_value_mask="edgeMask"
 			 packages="forwardMode;analysisMode"
 		/>
+		<var name="layerThicknessEdgeDrag" type="real" dimensions="nVertLevels nEdges Time" units="m"
+			 description="layer thickness to be used for drag terms"
+			 missing_value="FILLVAL" missing_value_mask="edgeMask"
+			 packages="forwardMode;analysisMode"
+		/>
 		<var name="layerThicknessEdgeMean" type="real" dimensions="nVertLevels nEdges Time" units="m"
 			 description="layer thickness averaged from cell center to edges"
 			 missing_value="FILLVAL" missing_value_mask="edgeMask"

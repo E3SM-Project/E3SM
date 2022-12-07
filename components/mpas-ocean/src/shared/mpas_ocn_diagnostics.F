@@ -231,7 +231,7 @@ contains
 #endif
 
       ! inputs: layerThickness, normalVelocity
-      ! output: layerThickEdgeMean, layerThickEdgeFlux
+      ! output: layerThickEdgeMean, layerThickEdgeDrag, layerThickEdgeFlux
       call ocn_diagnostic_solve_layerThicknessEdge(normalVelocity, &
                                                    layerThickness)
 
@@ -474,7 +474,8 @@ contains
 
 #ifdef MPAS_OPENACC
       !! Listing outputs by first routine that modifies variable
-      !! ocn_diagnostic_solve_layerThicknessEdge :: layerThickEdgeFlux, (diagnostics array)
+      !! ocn_diagnostic_solve_layerThicknessEdge :: layerThickEdgeDrag, (diagnostics array)
+      !!                                            layerThickEdgeFlux, (diagnostics array)
       !!                                            layerThickEdgeMean (diagnostics array)
       !! ocn_relativeVorticity_circulation       :: relativeVorticity, (diagnostics array)
       !!                                            circulation (diagnostics array)
@@ -512,7 +513,7 @@ contains
       !! ocn_diagnostic_solve_ssh                :: pressureAdjustedSSH, (diagnostics array)
       !!                                            gradSSH (diagnostics array)
 
-!     !$acc update host(layerThickEdgeFlux, layerThickEdgeCenter)
+!     !$acc update host(layerThickEdgeDrag, layerThickEdgeFlux, layerThickEdgeCenter)
 !     !$acc update host(relativeVorticity, circulation)
 !     !$acc update host(vertTransportVelocityTop, &
 !     !$acc             vertGMBolusVelocityTop, &
