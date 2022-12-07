@@ -845,13 +845,13 @@ void RRTMGPRadiation::run_impl (const int dt) {
     // Index to surface (bottom of model); used to get surface fluxes below
     const int kbot = nlay+1;
 
-    // Compute diffuse flux as difference between total and direct; use YAKL parallel_for here because these are YAKL objects
+    // Compute diffuse flux as difference between total and direct
     Kokkos::parallel_for(Kokkos::RangePolicy<ExeSpace>(0,nswbands*(nlay+1)*ncol),
                          KOKKOS_LAMBDA (const int idx) {
-      // CAREFUL: these are YAKL arrays, with "LayoutLeft". So make the indices stride accordingly
-      const int ibnd = (idx / ncol) / (nlay+1);
-      const int ilev = (idx / ncol) % (nlay+1);
-      const int icol =  idx % ncol;
+      // CAREFUL: these are YAKL arrays, with "LayoutLeft". So make the indices stride accordingly, and add 1.
+      const int ibnd = (idx / ncol) / (nlay+1) + 1;
+      const int ilev = (idx / ncol) % (nlay+1) + 1;
+      const int icol =  idx % ncol + 1;
       sw_bnd_flux_dif(icol,ilev,ibnd) = sw_bnd_flux_dn(icol,ilev,ibnd) - sw_bnd_flux_dir(icol,ilev,ibnd);
     });
 
