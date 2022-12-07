@@ -513,7 +513,9 @@ contains
       !! ocn_diagnostic_solve_ssh                :: pressureAdjustedSSH, (diagnostics array)
       !!                                            gradSSH (diagnostics array)
 
-!     !$acc update host(layerThickEdgeDrag, layerThickEdgeFlux, layerThickEdgeCenter)
+!     !$acc update host(layerThickEdgeDrag, &
+!     !$acc             layerThickEdgeFlux, &
+!     !$acc             layerThickEdgeMean)
 !     !$acc update host(relativeVorticity, circulation)
 !     !$acc update host(vertTransportVelocityTop, &
 !     !$acc             vertGMBolusVelocityTop, &
@@ -665,10 +667,10 @@ contains
 !> \author  Matt Turner
 !> \date    October 2020
 !> \details
-!>  This routine computes the diagnostic variables layerThickEdgeFlux
-!>  and layerThickEdgeMean. The Mean is a simple mean across the edge
-!>  but the Flux value can either be the mean or an upwind value,
-!>  depending on user input.
+!>  This routine computes the diagnostic variables layerThickEdgeDrag,
+!>  layerThickEdgeFlux, and layerThickEdgeMean. The Mean is a simple
+!>  mean across the edge but the Flux value can either be the mean or
+!>  an upwind value, depending on user input.
 !
 !-----------------------------------------------------------------------
 
@@ -689,6 +691,7 @@ contains
 
       ! Outputs are the shared variables from diagnostic_variables:
       !real (kind=RKIND), dimension(:,:), intent(out) :: &
+      !   layerThickEdgeDrag, & !< [out] layer thickness on edge for drag
       !   layerThickEdgeMean, & !< [out] centered layer thickness on edge
       !   layerThickEdgeFlux    !< [out] flux-related thickness on edge
 
@@ -807,6 +810,25 @@ contains
                              MPAS_LOG_CRIT)
 
       end select
+
+#ifdef MPAS_OPENACC
+      !$acc parallel loop collapse(2) &
+      !$acc    present(layerThickEdgeDrag, layerThickEdgeMean)
+#else
+      !$omp parallel
+      !$omp do schedule(runtime) private(k)
+#endif
+      do iEdge = 1, nEdgesAll
+      do k = 1,nVertLevels
+         layerThickEdgeDrag(k,iEdge) = &
+         layerThickEdgeMean(k,iEdge)
+      end do
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
+
 
    !--------------------------------------------------------------------
 
