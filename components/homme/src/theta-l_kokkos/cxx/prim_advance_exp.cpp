@@ -148,19 +148,15 @@ void ttype5_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w)
 
   // Stage 1: u1 = u0 + dt/5 RHS(u0),          t_rhs = t
   functor.run(RKStageData(n0, n0, nm1, qn0, dt/5.0, eta_ave_w/4.0));
-  limiter.run(nm1);
 
   // Stage 2: u2 = u0 + dt/5 RHS(u1),          t_rhs = t + dt/5
   functor.run(RKStageData(n0, nm1, np1, qn0, dt/5.0, 0.0));
-  limiter.run(np1);
 
   // Stage 3: u3 = u0 + dt/3 RHS(u2),          t_rhs = t + dt/5 + dt/5
   functor.run(RKStageData(n0, np1, np1, qn0, dt/3.0, 0.0));
-  limiter.run(np1);
 
   // Stage 4: u4 = u0 + 2dt/3 RHS(u3),         t_rhs = t + dt/5 + dt/5 + dt/3
   functor.run(RKStageData(n0, np1, np1, qn0, 2.0*dt/3.0, 0.0));
-  limiter.run(np1);
 
   // Compute (5u1-u0)/4 and store it in timelevel nm1
   {
@@ -246,6 +242,7 @@ void ttype9_imex_timestep(const TimeLevel& tl,
 
   // Stage 1
   Real dt = dt_dyn/5.0;
+
 // subroutine compute_andor_apply_rhs(np1,nm1,n0,dt2,...
 //
 // if one wants to map F call compute_andor_apply_rhs(n1,n2,n3,qn0,...
@@ -255,25 +252,21 @@ void ttype9_imex_timestep(const TimeLevel& tl,
 // Names of timelevels in RK:
 //         RKStageData (const int nm1_in, const int n0_in, const int np1_in, const int n0_qdp_in ...
   caar.run(RKStageData(n0, n0, nm1, qn0, dt, eta_ave_w/4.0, 1.0, 0.0, 1.0));
-//  limiter.run(nm1);
   dirk.run(nm1, 0.0, n0, 0.0, nm1, dt, elements, hvcoord);
 
   // Stage 2
   dt = dt_dyn/5.0;
   caar.run(RKStageData(n0, nm1, np1, qn0, dt, 0.0, 1.0, 0.0, 1.0));
-//  limiter.run(np1);
   dirk.run(nm1, 0.0, n0, 0.0, np1, dt, elements, hvcoord);
 
   // Stage 3
   dt = dt_dyn/3.0;
   caar.run(RKStageData(n0, np1, np1, qn0, dt, 0.0, 1.0, 0.0, 1.0));
-//  limiter.run(np1);
   dirk.run(nm1, 0.0, n0, 0.0, np1, dt, elements, hvcoord);
 
   // Stage 4
   dt = 2.0*dt_dyn/3.0;
   caar.run(RKStageData(n0, np1, np1, qn0, dt, 0.0, 1.0, 0.0, 1.0));
-//  limiter.run(np1);
   dirk.run(nm1, 0.0, n0, 0.0, np1, dt, elements, hvcoord);
 
   // Stage 5
@@ -315,7 +308,6 @@ void ttype9_imex_timestep(const TimeLevel& tl,
            w(ie,np1,igp,jgp,LAST_INT)  += (w(ie,nm1,igp,jgp,LAST_INT)-w(ie,n0,igp,jgp,LAST_INT))/4.0;
       });  
     }
-    //LIMITER TO ADD!
     limiter.run(np1);
   }
   Kokkos::fence();
@@ -363,28 +355,24 @@ void ttype10_imex_timestep(const TimeLevel& tl,
   Real dt = dt_dyn/4.0;
 
   caar.run(RKStageData(n0, n0, nm1, qn0, dt, 0.0, 1.0, 0.0, 1.0));
-  limiter.run(nm1);
   dirk.run(nm1, 0.0, n0, 0.0, nm1, dt, elements, hvcoord);
 
   // Stage 2
   dt = dt_dyn/6.0;
 
   caar.run(RKStageData(n0, nm1, np1, qn0, dt, 0.0, 1.0, 0.0, 1.0));
-  limiter.run(np1);
   dirk.run(nm1, 0.0, n0, 0.0, np1, dt, elements, hvcoord);
 
   // Stage 3
   dt = 3.0*dt_dyn/8.0;
 
   caar.run(RKStageData(n0, np1, np1, qn0, dt, 0.0, 1.0, 0.0, 1.0));
-  limiter.run(np1);
   dirk.run(nm1, 0.0, n0, 0.0, np1, dt, elements, hvcoord);
 
   // Stage 4
   dt = dt_dyn/2.0;
 
   caar.run(RKStageData(n0, np1, np1, qn0, dt, 0.0, 1.0, 0.0, 1.0));
-  limiter.run(np1);
   dirk.run(nm1, 0.0, n0, 0.0, np1, dt, elements, hvcoord);
 
   // Stage 5
@@ -394,7 +382,6 @@ void ttype10_imex_timestep(const TimeLevel& tl,
   dt = dt_dyn;
 
   caar.run(RKStageData(n0, np1, np1, qn0, dt, eta_ave_w, 1.0, 0.0, 1.0));
-  limiter.run(np1);
   dirk.run(nm1, a2*dt, n0, a1*dt, np1, a3*dt, elements, hvcoord);
 
   GPTLstop("ttype10_imex_timestep");
