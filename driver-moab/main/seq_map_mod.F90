@@ -191,9 +191,9 @@ contains
    character(CL)               :: maptype
    integer(IN)                 :: mapid
    character(CX)               :: sol_identifier !   /* "scalar", "flux", "custom" */
-   integer                     :: ierr 
+   integer                     :: ierr
    integer                     :: col_or_row ! 0 for row based, 1 for col based (we use row distribution now)
-   
+
 
    character(len=*),parameter  :: subname = "(moab_map_init_rcfile) "
    !-----------------------------------------------------
@@ -211,7 +211,7 @@ contains
    mapfile_term = trim(mapfile)//CHAR(0)
    if (seq_comm_iamroot(CPLID)) then
        write(logunit,*) subname,' reading map file with iMOAB: ', mapfile_term
-   endif 
+   endif
 
    col_or_row = 0 ! row based distribution
 
@@ -304,6 +304,10 @@ end subroutine moab_map_init_rcfile
   subroutine seq_map_map( mapper, av_s, av_d, fldlist, norm, avwts_s, avwtsfld_s, &
        string, msgtag )
 
+    use iso_c_binding
+    use iMOAB, only: iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, iMOAB_SetDoubleTagStorage, &
+      iMOAB_GetIntTagStorage, iMOAB_SetDoubleTagStorageWithGid, iMOAB_ApplyScalarProjectionWeights
+
     implicit none
     !-----------------------------------------------------
     !
@@ -318,6 +322,15 @@ end subroutine moab_map_init_rcfile
     character(len=*),intent(in),optional :: avwtsfld_s
     character(len=*),intent(in),optional :: string
     integer(IN)     ,intent(in),optional :: msgtag
+#ifdef HAVE_MOAB
+    logical  :: valid_moab_context
+    integer  :: ierr, nfields, ntagdatalength
+    character, dimension(:), allocatable   :: fldlist_moab
+    integer    :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
+    type(mct_list) :: temp_list
+    integer, dimension(:), allocatable  :: globalIds
+    real(r8), dimension(:), allocatable  :: moab_tag_data
+#endif
     !
     ! Local Variables
     !
@@ -350,6 +363,47 @@ end subroutine moab_map_init_rcfile
        call shr_sys_abort(subname//' ERROR: avwtsfld present')
     endif
 
+#ifdef HAVE_MOAB
+       ! check whether the application ID is defined on the current process
+       if ( mapper%src_mbid .lt. 0 .or. mapper%tgt_mbid .lt. 0 ) then
+         valid_moab_context = .FALSE.
+       else
+         valid_moab_context = .TRUE.
+       endif
+
+       if ( valid_moab_context ) then
+         ! if ( mapper % nentities == 0 ) then
+         !    ! tag_entity_type = 1 ! 0 = vertices, 1 = elements
+         !    ! find out the number of local elements in moab mesh ocean instance on coupler
+         !    ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC )
+         !    if (ierr .ne. 0) then
+         !          write(logunit,*) subname,' error in getting mesh info '
+         !          call shr_sys_abort(subname//' error in getting mesh info ')
+         !    endif
+         !   !! check tag_entity_type and then set nentieis accordingly
+         ! endif
+
+         nfields = 1
+         ! first get data from source tag and store in a temporary
+         ! then set it back to target tag to mimic a copy
+         if (present(fldlist)) then
+            ! find the number of fields in the list
+            ! Or should we decipher based on fldlist?
+            call mct_list_init(temp_list, fldlist)
+            nfields=mct_list_nitem (temp_list)
+            call mct_list_clean(temp_list)
+            allocate(fldlist_moab(len(fldlist)))
+            fldlist_moab(:) = fldlist(:)
+         else
+            ! Extract character strings from attribute vector
+            nfields = mct_aVect_nRAttr(av_s)
+            fldlist_moab = mct_aVect_exportRList2c(av_s)
+         endif
+
+         ntagdatalength = nfields * mapper % nentities
+       endif ! valid_moab_context
+#endif
+
     if (mapper%copy_only) then
        !-------------------------------------------
        ! COPY data
@@ -359,6 +413,32 @@ end subroutine moab_map_init_rcfile
        else
           call mct_aVect_copy(aVin=av_s,aVout=av_d,vector=mct_usevector)
        endif
+
+#ifdef HAVE_MOAB
+       if ( valid_moab_context ) then
+         ! first get data from source tag and store in a temporary
+         ! then set it back to target tag to mimic a copy
+         allocate(moab_tag_data(ntagdatalength))
+
+         ierr = iMOAB_GetDoubleTagStorage( mapper%src_mbid, &
+                                    fldlist_moab,               &
+                                    ntagdatalength,        &
+                                    mapper % tag_entity_type,       &
+                                    moab_tag_data )
+         if (ierr > 0 )  &
+            call shr_sys_abort( subname//'MOAB Error: failed to get source double tag ')
+
+         ierr = iMOAB_SetDoubleTagStorage( mapper%tgt_mbid, &
+                                    fldlist_moab,               &
+                                    ntagdatalength,        &
+                                    mapper % tag_entity_type,       &
+                                    moab_tag_data )
+         if (ierr > 0 )  &
+            call shr_sys_abort( subname//'MOAB Error: failed to set target double tag ')
+
+         deallocate(moab_tag_data)
+       endif
+#endif
 
     else if (mapper%rearrange_only) then
        !-------------------------------------------
@@ -371,6 +451,44 @@ end subroutine moab_map_init_rcfile
           call mct_rearr_rearrange(av_s, av_d, mapper%rearr, tag=ltag, VECTOR=mct_usevector, &
                ALLTOALL=mct_usealltoall)
        endif
+
+#ifdef HAVE_MOAB
+       if ( valid_moab_context ) then
+         ! first get data from source tag and store in a temporary
+         ! then set it back to target tag to mimic a copy
+         allocate(moab_tag_data(ntagdatalength))
+
+         allocate(globalIds(mapper % nentities))
+         ierr = iMOAB_GetIntTagStorage( mapper%src_mbid,        &
+                                    'GLOBAL_ID'//C_NULL_CHAR,  &
+                                    mapper % nentities,                  &
+                                    mapper % tag_entity_type,           &
+                                    globalIds )
+         if (ierr > 0 )  &
+            call shr_sys_abort( subname//'MOAB Error: failed to get GLOBAL_ID tag ')
+
+         ierr = iMOAB_GetDoubleTagStorage( mapper%src_mbid,     &
+                                    fldlist_moab,                   &
+                                    ntagdatalength,            &
+                                    mapper % tag_entity_type,           &
+                                    moab_tag_data )
+         if (ierr > 0 )  &
+            call shr_sys_abort( subname//'MOAB Error: failed to get fields tag ')
+
+         !! TODO: Compute a comm graph and store it so that it is used for application at runtime
+         ierr = iMOAB_SetDoubleTagStorageWithGid( mapper%tgt_mbid, &
+                                             fldlist_moab,               &
+                                             ntagdatalength,        &
+                                             mapper % tag_entity_type,       &
+                                             moab_tag_data,         &
+                                             globalIds )
+         if (ierr > 0 )  &
+            call shr_sys_abort( subname//'MOAB Error: failed to set fields tag ')
+
+         deallocate(globalIds)
+         deallocate(moab_tag_data)
+       endif
+#endif
 
     else
        !-------------------------------------------
@@ -391,7 +509,24 @@ end subroutine moab_map_init_rcfile
              call seq_map_avNorm(mapper, av_s, av_d, norm=lnorm)
           endif
        endif
+
+#ifdef HAVE_MOAB
+       if ( valid_moab_context ) then
+         ! wgtIdef = 'scalar'//C_NULL_CHAR
+         ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, mapper%weight_identifier, fldlist_moab, fldlist_moab)
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in applying weights '
+                     call shr_sys_abort(subname//' ERROR in applying weights')
+                  endif
+       endif
+#endif
     end if
+
+#ifdef HAVE_MOAB
+    if ( valid_moab_context ) then
+      deallocate(fldlist_moab)
+    endif
+#endif
 
   end subroutine seq_map_map
 
