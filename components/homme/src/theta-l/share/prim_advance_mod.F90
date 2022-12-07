@@ -1801,28 +1801,17 @@ contains
 
   ! first check if limter is needed, and print warning
   warn=.false. 
-
-
-
-! dp part
-#if 1
-
-!  do j=1,np; do i=1,np
   do k=1,nlev
      if ( minval(dp3d(:,:,k)) < dp3d_thresh*dp0(k)) then
-!print *, dp3d(i,j,k) , dp3d_thresh, dp0(k)
-!     if ( dp3d(i,j,k) < dp3d_thresh*dp0(k)) then
 !#ifndef HOMMEXX_BFB_TESTING
         ! In bfb unit tests, we use (semi-)random inputs, so we expect to hit this.
         ! Still, we don't want to fill up the console output
         write(iulog,*) 'WARNING:CAAR: dp3d too small. dt_remap may be too large'
         write(iulog,*) 'k,dp3d(k), dp0: ',k,minval(dp3d(:,:,k)),dp0(k)
-!        write(iulog,*) 'k,dp3d(k), dp0: ',k,dp3d(i,j,k),dp0(k)
 !#endif
         warn=.true.
      endif
   enddo
-!  enddo; enddo
 
   if (warn) then
 #ifndef HOMMEXX_BFB_TESTING
@@ -1867,15 +1856,6 @@ contains
     vtheta_dp(:,:,:)=vtheta_dp(:,:,:)*dp3d(:,:,:)
 #endif
   endif
-
-#endif 
-!end dp
-
-
-
-
-
-
 
 #if 1
   ! check for theta < 10K                                                                                                       

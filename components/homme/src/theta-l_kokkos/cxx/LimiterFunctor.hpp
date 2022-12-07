@@ -27,9 +27,6 @@
 
 namespace Homme {
 
-// Theta does not use tracers in caar. A fwd decl is enough here
-//struct Tracers;
-
 struct LimiterFunctor {
 
   struct Buffers {
@@ -98,13 +95,11 @@ struct LimiterFunctor {
 
   void run (const int& tl)
   {
-//not sure
     profiling_resume();
 
     GPTLstart("caar limiter");
     m_np1 = tl;
     Kokkos::parallel_for("caar loop dp3d limiter", m_policy_dp3d_lim, *this);
-// not sure
     Kokkos::fence();
     GPTLstop("caar limiter");
 
@@ -119,7 +114,6 @@ struct LimiterFunctor {
     KernelVariables kv(team, m_tu);
 
     // TODO: make this less hard-coded maybe?
-    //constexpr Real dp3d_thresh = 1.0;
     constexpr double dp3d_thresh = 1.0;
     constexpr double vtheta_thresh = 400; // Kelvin
 
@@ -148,11 +142,6 @@ struct LimiterFunctor {
       }, reducer);
 
       auto vtheta_dp = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_np1,igp,jgp);
-
-
-
-//dp part
-#if 1
 
       if (min_diff<0) {
         // Compute vtheta = vtheta_dp/dp
@@ -196,10 +185,6 @@ struct LimiterFunctor {
           vtheta_dp(ilev) *= dp(ilev);
         });
       }
-
-#endif //dp part
-
-
 
 #if 1
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),

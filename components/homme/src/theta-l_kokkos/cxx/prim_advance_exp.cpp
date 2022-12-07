@@ -200,7 +200,6 @@ void ttype5_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w)
 
   // Stage 5: u5 = (5u1-u0)/4 + 3dt/4 RHS(u4), t_rhs = t + dt/5 + dt/5 + dt/3 + 2dt/3
   functor.run(RKStageData(nm1, np1, np1, qn0, 3.0*dt/4.0, 3.0*eta_ave_w/4.0));
-  limiter.run(np1);
   GPTLstop("ttype5_timestep");
 }
 
