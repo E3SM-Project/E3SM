@@ -14,7 +14,7 @@ module prep_lnd_mod
   use seq_comm_mct,     only: mhid     ! iMOAB id for atm instance
   use seq_comm_mct,     only: mphaid   ! iMOAB id for phys atm on atm pes
   use seq_comm_mct,     only: mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
-  use seq_comm_mct,     only: mblxid ! iMOAB id for mpas ocean migrated mesh to coupler pes
+  use seq_comm_mct,     only: mblxid ! iMOAB id for land migrated mesh to coupler pes
   use seq_comm_mct,     only: mbintxla ! iMOAB id for intx mesh between land and atmosphere
   use seq_comm_mct,     only: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   use seq_comm_mct,     only: atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
@@ -618,8 +618,6 @@ contains
    ! how to get mpicomm for joint atm + coupler
    id_join = atm(1)%cplcompid
    atm_id   = atm(1)%compid
-   ! maybe we can use a moab-only id, defined like mbintxao, mhid, somewhere else (seq_comm_mct)
-   ! we cannot use mbintxla because it may not exist on atm comp yet;
    context_id = lnd(1)%cplcompid
    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
    if ( .not. samegrid_al ) then
