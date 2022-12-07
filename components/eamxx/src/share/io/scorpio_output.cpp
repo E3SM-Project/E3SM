@@ -53,7 +53,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       "Error! Unsupported averaging type '" + avg_type + "'.\n"
       "       Valid options: Instant, Max, Min, Average. Case insensitive.\n");
 
-  set_field_manager (field_mgr,"both");
+  set_field_manager (field_mgr,"sim");
 
   // By default, IO is done directly on the field mgr grid
   m_grids_manager = grids_mgr;
@@ -137,6 +137,9 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
     // Reset the field manager
     set_field_manager(io_fm,"io");
+  } else {
+    // Need to just set the io_fm to match the sim_fm
+    set_field_manager (field_mgr,"io");
   }
 
   // Setup I/O structures
@@ -186,8 +189,13 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
 
   // Update all diagnostics, we need to do this before applying the remapper
   // to make sure that the remapped fields are the most up to date.
+  // First we reset the diag computed map so that all diags are recomputed.
+  m_diag_computed.clear();
   for (auto const& name : m_fields_names) {
-    update_field(name); // Note, if the field is a diagnostic this will update it.
+    auto it = m_diagnostics.find(name);
+    if (it != m_diagnostics.end()) {
+      compute_diagnostic(name); 
+    }
   }
 
   // If needed, remap fields from their grid to the unique grid, for I/O
@@ -359,15 +367,12 @@ void AtmosphereOutput::
 set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::string& mode)
 {
   // Sanity checks
-  EKAT_REQUIRE_MSG (mode=="both" || mode=="io" || mode=="sim", "Error! Invalid arg to set_field_manager, must be 'io', 'sim' or 'both'");
+  EKAT_REQUIRE_MSG (mode=="io" || mode=="sim", "Error! Invalid arg to set_field_manager, must be 'io' or 'sim'");
   EKAT_REQUIRE_MSG (field_mgr, "Error! Invalid field manager pointer.\n");
   EKAT_REQUIRE_MSG (field_mgr->get_grid(), "Error! Field manager stores an invalid grid pointer.\n");
 
   // All good, store it
-  if (mode=="both") {
-    m_io_field_mgr  = field_mgr;
-    m_sim_field_mgr = field_mgr;
-  } else if (mode=="io") {
+  if (mode=="io") {
     m_io_field_mgr  = field_mgr;
   } else { //mode = "sim"
     m_sim_field_mgr = field_mgr;
@@ -678,19 +683,22 @@ setup_output_file(const std::string& filename,
 /* ---------------------------------------------------------- */
 // This routine will evaluate the diagnostics stored in this
 // output instance.
-void AtmosphereOutput::update_field(const std::string& name) const
+void AtmosphereOutput::compute_diagnostic(const std::string& name)
 {
-  // Check if the field is a diagnostic, if so evaluate it. 
-  if (m_diagnostics.find(name) != m_diagnostics.end()) {
-    const auto& diag = m_diagnostics.at(name);
-    // Check if the diagnostics has any dependencies, if so, evaluate
-    // them as well.  Needed if a diagnostic relies on another
-    // diagnostic.
-    for (const auto& dep : m_diag_depends_on_diags.at(name)) {
-      update_field(dep);
-    }
-    diag->compute_diagnostic();
+  auto skip_diag = m_diag_computed[name];
+  if (skip_diag) {
+    // Diagnostic already computed, just return
+    return;
   }
+  const auto& diag = m_diagnostics.at(name);
+  // Check if the diagnostics has any dependencies, if so, evaluate
+  // them as well.  Needed if a diagnostic relies on another
+  // diagnostic.
+  for (const auto& dep : m_diag_depends_on_diags.at(name)) {
+    compute_diagnostic(dep);
+  }
+  diag->compute_diagnostic();
+  m_diag_computed[name] = true;
 }
 /* ---------------------------------------------------------- */
 // General get_field routine for output.
@@ -714,7 +722,7 @@ void AtmosphereOutput::set_diagnostics()
 {
   // Create all diagnostics
   for (const auto& fname : m_fields_names) {
-    if (!m_io_field_mgr->has_field(fname)) {
+    if (!m_sim_field_mgr->has_field(fname)) {
       create_diagnostic(fname);
     }
   }

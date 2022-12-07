@@ -158,7 +158,7 @@ protected:
   std::vector<scorpio::offset_t> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
   Field get_field(const std::string& name, const std::shared_ptr<const fm_type>& field_mgr) const;
-  void update_field(const std::string& name) const;
+  void compute_diagnostic(const std::string& name);
   void set_diagnostics();
   void create_diagnostic (const std::string& diag_name);
 
@@ -185,6 +185,7 @@ protected:
   std::map<std::string,int>                             m_dims;
   std::map<std::string,std::shared_ptr<atm_diag_type>>  m_diagnostics;
   std::map<std::string,std::vector<std::string>>        m_diag_depends_on_diags;
+  std::map<std::string,bool>                            m_diag_computed;
 
   // Local views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_1d_host>    m_host_views_1d;
