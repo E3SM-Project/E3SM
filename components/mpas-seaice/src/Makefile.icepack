@@ -131,7 +131,6 @@ icepack_orbital.o:icepack_kinds.o
 icepack_orbital.o:icepack_parameters.o
 icepack_orbital.o:icepack_warnings.o
 icepack_parameters.o:icepack_kinds.o
-icepack_parameters.o:icepack_shortwave_data.o
 icepack_parameters.o:icepack_warnings.o
 icepack_shortwave.o:icepack_kinds.o
 icepack_shortwave.o:icepack_orbital.o
@@ -142,6 +141,7 @@ icepack_shortwave.o:icepack_warnings.o
 icepack_shortwave.o:icepack_zbgc_shared.o
 icepack_shortwave_data.o:icepack_kinds.o
 icepack_shortwave_data.o:icepack_warnings.o
+icepack_shortwave_data.o:icepack_parameters.o
 icepack_snow.o:icepack_kinds.o
 icepack_snow.o:icepack_parameters.o
 icepack_snow.o:icepack_therm_shared.o

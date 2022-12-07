@@ -725,14 +725,12 @@ contains
          config_shortwave_type
 
     logical, pointer :: &
-         config_do_restart, &
-         config_use_snicar_ad
+         config_do_restart
 
     call icepack_init_radiation()
 
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
-    call MPAS_pool_get_config(domain % configs, "config_use_snicar_ad", config_use_snicar_ad)
 
     if (trim(config_shortwave_type) == "dEdd") then
 
@@ -2594,9 +2592,6 @@ contains
        do iCell = 1, nCellsSolve
 
           call icepack_prep_radiation(&
-               ncat=nCategories, &
-               nilyr=nIceLayers, &
-               nslyr=nSnowLayers, &
                aice=iceAreaCell(iCell), &
                aicen=iceAreaCategory(1,:,iCell), &
                swvdr=shortwaveVisibleDirectDown(iCell), &
@@ -2906,10 +2901,7 @@ contains
          atmos_coupling, &
          shortwave, &
          ponds, &
-         aerosols, &
-         biogeochemistry, &
-         snicar, &
-         snow
+         biogeochemistry
 
     ! configs
     real(kind=RKIND), pointer :: &
@@ -2963,30 +2955,11 @@ contains
          effectivePondAreaCategory, &
          pondSnowDepthDifference, &
          pondLidMeltFluxFraction, &
-         aerosolMassExtinctionCrossSection, &
-         aerosolSingleScatterAlbedo, &
-         aerosolAsymmetryParameter, &
-         modalMassExtinctionCrossSection, &
-         modalSingleScatterAlbedo, &
-         modalAsymmetryParameter, &
          albedoVisibleDirectCategory, &
          albedoVisibleDiffuseCategory, &
          albedoIRDirectCategory, &
          albedoIRDiffuseCategory, &
-         snowFractionCategory, &
-         iceAsymmetryParameterDirect, &
-         iceAsymmetryParameterDiffuse, &
-         iceSingleScatterAlbedoDirect, &
-         iceSingleScatterAlbedoDiffuse, &
-         iceMassExtinctionCrossSectionDirect, &
-         iceMassExtinctionCrossSectionDiffuse, &
-         aerosolAsymmetryParameter5band, &
-         aerosolMassExtinctionCrossSection5band, &
-         aerosolSingleScatterAlbedo5band, &
-         modalAsymmetryParameter5band, &
-         modalMassExtinctionCrossSection5band, &
-         modalSingleScatterAlbedo5band, &
-         snowRadiusInStandardRadiationSchemeCategory
+         snowFractionCategory
 
     real(kind=RKIND), dimension(:,:,:), pointer :: &
          iceAreaCategory, &
@@ -3005,9 +2978,7 @@ contains
          iceScatteringAerosol, &
          iceBodyAerosol, &
          brineFraction, &
-         modalBCabsorptionParameter, &
          bioTracerShortwave, &
-         modalBCabsorptionParameter5band, &
          snowGrainRadius
 
     real(kind=RKIND), pointer :: &
@@ -3028,7 +2999,6 @@ contains
          iCell, &
          iCategory, &
          iAerosol, &
-         iTracer, &
          iBioTracers
 
     integer, dimension(:), allocatable :: &
@@ -3070,10 +3040,7 @@ contains
        call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmos_coupling)
        call MPAS_pool_get_subpool(block % structs, "shortwave", shortwave)
        call MPAS_pool_get_subpool(block % structs, "ponds", ponds)
-       call MPAS_pool_get_subpool(block % structs, "aerosols", aerosols)
        call MPAS_pool_get_subpool(block % structs, "biogeochemistry", biogeochemistry)
-       call MPAS_pool_get_subpool(block % structs, "snicar", snicar)
-       call MPAS_pool_get_subpool(block % structs, "snow", snow)
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(block % configs, "config_snow_redistribution_scheme", config_snow_redistribution_scheme)
@@ -3137,34 +3104,9 @@ contains
        call MPAS_pool_get_array(ponds, "pondSnowDepthDifference", pondSnowDepthDifference)
        call MPAS_pool_get_array(ponds, "pondLidMeltFluxFraction", pondLidMeltFluxFraction)
 
-       call MPAS_pool_get_array(aerosols, "aerosolMassExtinctionCrossSection", aerosolMassExtinctionCrossSection)
-       call MPAS_pool_get_array(aerosols, "aerosolSingleScatterAlbedo", aerosolSingleScatterAlbedo)
-       call MPAS_pool_get_array(aerosols, "aerosolAsymmetryParameter", aerosolAsymmetryParameter)
-       call MPAS_pool_get_array(aerosols, "modalMassExtinctionCrossSection", modalMassExtinctionCrossSection)
-       call MPAS_pool_get_array(aerosols, "modalSingleScatterAlbedo", modalSingleScatterAlbedo)
-       call MPAS_pool_get_array(aerosols, "modalAsymmetryParameter", modalAsymmetryParameter)
-       call MPAS_pool_get_array(aerosols, "modalBCabsorptionParameter", modalBCabsorptionParameter)
-
        call MPAS_pool_get_array(biogeochemistry, "bioTracerShortwave", bioTracerShortwave)
        call MPAS_pool_get_array(biogeochemistry, "verticalShortwaveGrid", verticalShortwaveGrid)
        call MPAS_pool_get_array(biogeochemistry, "verticalGrid", verticalGrid)
-
-       ! snicar 5-band snow IOPs
-       call MPAS_pool_get_array(snicar, "iceAsymmetryParameterDirect", iceAsymmetryParameterDirect)
-       call MPAS_pool_get_array(snicar, "iceAsymmetryParameterDiffuse", iceAsymmetryParameterDiffuse)
-       call MPAS_pool_get_array(snicar, "iceSingleScatterAlbedoDirect", iceSingleScatterAlbedoDirect)
-       call MPAS_pool_get_array(snicar, "iceSingleScatterAlbedoDiffuse", iceSingleScatterAlbedoDiffuse)
-       call MPAS_pool_get_array(snicar, "iceMassExtinctionCrossSectionDirect", iceMassExtinctionCrossSectionDirect)
-       call MPAS_pool_get_array(snicar, "iceMassExtinctionCrossSectionDiffuse", iceMassExtinctionCrossSectionDiffuse)
-       call MPAS_pool_get_array(snicar, "aerosolMassExtinctionCrossSection5band", aerosolMassExtinctionCrossSection5band)
-       call MPAS_pool_get_array(snicar, "aerosolSingleScatterAlbedo5band", aerosolSingleScatterAlbedo5band)
-       call MPAS_pool_get_array(snicar, "aerosolAsymmetryParameter5band", aerosolAsymmetryParameter5band)
-       call MPAS_pool_get_array(snicar, "modalMassExtinctionCrossSection5band", modalMassExtinctionCrossSection5band)
-       call MPAS_pool_get_array(snicar, "modalSingleScatterAlbedo5band", modalSingleScatterAlbedo5band)
-       call MPAS_pool_get_array(snicar, "modalAsymmetryParameter5band", modalAsymmetryParameter5band)
-       call MPAS_pool_get_array(snicar, "modalBCabsorptionParameter5band", modalBCabsorptionParameter5band)
-
-       call MPAS_pool_get_array(snow, "snowRadiusInStandardRadiationSchemeCategory", snowRadiusInStandardRadiationSchemeCategory)
 
        ! calendar type
        call MPAS_pool_get_config(block % configs, "config_calendar_type", config_calendar_type)
@@ -3223,11 +3165,6 @@ contains
           call icepack_warnings_clear()
           call icepack_step_radiation(&
                dt=config_dt, &
-               ncat=nCategories, &
-               nblyr=nBioLayers, &
-               nilyr=nIceLayers, &
-               nslyr=nSnowLayers, &
-               dEdd_algae=config_use_shortwave_bioabsorption, &
                swgrid=verticalShortwaveGrid(:), &
                igrid=verticalGrid(:), &
                fbri=brineFraction(1,:,iCell), &
@@ -3250,14 +3187,6 @@ contains
                nextsw_cday=dayOfNextShortwaveCalculation, &
                yday=dayOfYear, &
                sec=secondsIntoDay, &
-               kaer_3bd=aerosolMassExtinctionCrossSection(:,:), &
-               waer_3bd=aerosolSingleScatterAlbedo(:,:), &
-               gaer_3bd=aerosolAsymmetryParameter(:,:), &
-               kaer_bc_3bd=modalMassExtinctionCrossSection(:,:), &
-               waer_bc_3bd=modalSingleScatterAlbedo(:,:), &
-               gaer_bc_3bd=modalAsymmetryParameter(:,:), &
-               bcenh_3bd=modalBCabsorptionParameter(:,:,:), &
-               modal_aero=config_use_modal_aerosols, &
                swvdr=shortwaveVisibleDirectDown(iCell), &
                swvdf=shortwaveVisibleDiffuseDown(iCell), &
                swidr=shortwaveIRDirectDown(iCell), &
@@ -3288,7 +3217,6 @@ contains
                rsnow=snowGrainRadius(:,:,iCell), &
                l_print_point=.false., &
                initonly=lInitialization)
-
           call column_write_warnings(.false.)
 
           ! set the category tracer array
@@ -9518,6 +9446,7 @@ contains
          config_nIceLayers
 
     character(len=strKIND), pointer :: &
+         config_column_physics_type, &
          config_thermodynamics_type, &
          config_heat_conductivity_type, &
          config_shortwave_type, &
@@ -9558,7 +9487,8 @@ contains
          config_use_DON, &
          config_use_iron, &
          config_use_modal_aerosols, &
-         config_use_column_biogeochemistry
+         config_use_column_biogeochemistry, &
+         config_use_snicar_ad
 
     logical :: &
          use_meltponds
@@ -9574,6 +9504,8 @@ contains
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nCategories", nCategories)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nSnowLayers", nSnowLayers)
     call MPAS_pool_get_dimension(domain % blocklist % dimensions, "nIceLayers", nIceLayers)
+
+    call MPAS_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)
 
     call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)
     call MPAS_pool_get_config(domain % configs, "config_heat_conductivity_type", config_heat_conductivity_type)
@@ -9596,6 +9528,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
+    call MPAS_pool_get_config(domain % configs, "config_use_snicar_ad", config_use_snicar_ad)
     call MPAS_pool_get_config(domain % configs, "config_ocean_heat_transfer_type", config_ocean_heat_transfer_type)
     call MPAS_pool_get_config(domain % configs, "config_sea_freezing_temperature_type", config_sea_freezing_temperature_type)
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
@@ -9707,6 +9640,12 @@ contains
     if (config_nIceLayers /= nIcelayers) &
        call mpas_log_write(&
             'Check for inconsistencies in restart file: config_nIceLayers /= nIceLayers', &
+            messageType=MPAS_LOG_CRIT)
+
+    ! check snicar value
+    if (config_use_snicar_ad .and. trim(config_column_physics_type) == "icepack") &
+       call mpas_log_write(&
+            "Use config_shortwave_type='dEdd_snicar_ad' for Snicar in Icepack", &
             messageType=MPAS_LOG_CRIT)
 
     !-----------------------------------------------------------------------
@@ -12233,8 +12172,8 @@ contains
          config_use_skeletal_biochemistry, &
          config_use_vertical_zsalinity, &
          config_use_modal_aerosols, &
-         config_use_snicar_ad, &
-         config_use_snow_liquid_ponds
+         config_use_snow_liquid_ponds, &
+         config_use_snow_grain_radius
 
     real(kind=RKIND), pointer :: &
          config_min_friction_velocity, &
@@ -12418,7 +12357,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_slow_mode_critical_porosity", config_slow_mode_critical_porosity)
     call MPAS_pool_get_config(domain % configs, "config_congelation_ice_porosity", config_congelation_ice_porosity)
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
-    call MPAS_pool_get_config(domain % configs, "config_use_snicar_ad", config_use_snicar_ad)
     call MPAS_pool_get_config(domain % configs, "config_albedo_type", config_albedo_type)
     call MPAS_pool_get_config(domain % configs, "config_visible_ice_albedo", config_visible_ice_albedo)
     call MPAS_pool_get_config(domain % configs, "config_infrared_ice_albedo", config_infrared_ice_albedo)
@@ -12605,6 +12543,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_minimum_wind_compaction", config_minimum_wind_compaction)
     call MPAS_pool_get_config(domain % configs, "config_wind_compaction_factor", config_wind_compaction_factor)
     call MPAS_pool_get_config(domain % configs, "config_max_dry_snow_radius", config_max_dry_snow_radius)
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
 
     config_thermodynamics_type_int = config_cice_int("config_thermodynamics_type", config_thermodynamics_type)
     config_ice_strength_formulation_int = config_cice_int("config_ice_strength_formulation", config_ice_strength_formulation)
@@ -12689,7 +12628,6 @@ contains
          phi_c_slow_mode_in      = config_slow_mode_critical_porosity, &
          phi_i_mushy_in          = config_congelation_ice_porosity, &
          shortwave_in            = config_shortwave_type, &
-         use_snicar_in           = config_use_snicar_ad, &
          albedo_type_in          = config_albedo_type, &
          albsnowi_in             = config_infrared_snow_albedo, &
          albicev_in              = config_visible_ice_albedo, &
@@ -12740,8 +12678,8 @@ contains
          initbio_frac_in         = config_new_ice_fraction_biotracer, &
          grid_oS_in              = config_zsalinity_molecular_sublayer, &
          l_skS_in                = config_zsalinity_gravity_drainage_scale, &
-         !dEdd_algae_in           = , &
-         phi_snow_in             = config_snow_porosity_at_ice_surface &
+         dEdd_algae_in           = config_use_shortwave_bioabsorption, &
+         phi_snow_in             = config_snow_porosity_at_ice_surface, &
          !T_max_in                = , &
          !fsal_in                 = , &
          !fr_resp_in              = , &
@@ -12766,7 +12704,7 @@ contains
          !sw_redist_in            = , &
          !sw_frac_in              = , &
          !sw_dtemp_in             = , &
-         !snwgrain_in             = , &
+         snwgrain_in             = config_use_snow_grain_radius &
          !snwredist_in            = , &
          !use_smliq_pnd_in        = , &
          !rsnw_fall_in            = , &
@@ -12818,7 +12756,6 @@ contains
     !     phi_c_slow_mode       = config_slow_mode_critical_porosity, &
     !     phi_i_mushy           = config_congelation_ice_porosity, &
     !     shortwave             = config_shortwave_type, &
-    !     use_snicar            = config_use_snicar_ad, &
     !     albedo_type           = config_albedo_type, &
     !     albicev               = config_visible_ice_albedo, &
     !     albicei               = config_infrared_ice_albedo, &
