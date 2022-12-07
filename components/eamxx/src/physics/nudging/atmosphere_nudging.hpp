@@ -33,8 +33,18 @@ public:
   using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
 
   using Spack = SmallPack<Real>;
-
   using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+  using KT = KokkosTypes<DefaultDevice>;
+
+  template <typename S>
+  using view_2d = typename KT::template view_2d<S>;
+
+  template <typename S, int N>
+  using view_Nd_host = typename KT::template view_ND<S,N>::HostMirror;
+
+  template <typename S>
+  using view_1d_host = view_Nd_host<S,1>;
+
 
   // Constructors
   NUDGING (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -65,17 +75,21 @@ protected:
 
   std::shared_ptr<const AbstractGrid>   m_grid;
   // Keep track of field dimensions and the iteration count
+  ekat::Comm m_comm;
   int m_num_cols; 
   int m_num_levs;
+  //int m_num_src_levs;
   int m_num_src_levs;
-
+  std::string datafile;
+  view_2d<Real> T_mid_r_m;
+  //FieldLayout scalar3d_layout_mid_;
   // DOF information
   //view_1d_dof m_dofs_gids;
   //int         m_total_global_dofs; // Needed to make sure that remap data matches grid.
   //gid_type    m_min_global_dof;
 
 
-}; // class SPA 
+}; // class NUDGING
 
 } // namespace scream
 
