@@ -7,18 +7,14 @@
 #ifndef HOMMEXX_LIMITER_FUNCTOR_HPP
 #define HOMMEXX_LIMITER_FUNCTOR_HPP
 
-///??????
 #include "Types.hpp"
 #include "Elements.hpp"
 #include "ColumnOps.hpp"
-#include "EquationOfState.hpp"
 #include "FunctorsBuffersManager.hpp"
 #include "HybridVCoord.hpp"
 #include "KernelVariables.hpp"
 #include "ReferenceElement.hpp"
-//#include "RKStageData.hpp"
 #include "SimulationParams.hpp"
-//#include "SphereOperators.hpp"
 #include "kokkos_utils.hpp"
 
 #include "utilities/SubviewUtils.hpp"
@@ -38,7 +34,7 @@ struct LimiterFunctor {
 
   struct Buffers {
     static constexpr int num_3d_scalar_mid_buf = 1;
-    ExecViewUnmanaged<Scalar*    [NP][NP][NUM_LEV]  >   vort;
+    ExecViewUnmanaged<Scalar*    [NP][NP][NUM_LEV]  >   buffer1;
   };
 
   int                 m_np1;
@@ -47,7 +43,6 @@ struct LimiterFunctor {
 
   HybridVCoord        m_hvcoord;
   ElementsState       m_state;
-  //EquationOfState     m_eos;
   Buffers             m_buffers;
   ElementsGeometry    m_geometry;
 
@@ -75,28 +70,8 @@ struct LimiterFunctor {
       , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(m_num_elems))
       , m_tu(m_policy_dp3d_lim)
   {
-    // Initialize equation of state
-    //m_eos.init(params.theta_hydrostatic_mode,m_hvcoord);
     m_np1 = -1;
   }
-
-//  LimiterFunctor(const int num_elems, const SimulationParams& params)
-//      : m_num_elems(num_elems)
-//      , m_theta_hydrostatic_mode(params.theta_hydrostatic_mode)
-//      , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(m_num_elems))
-//      , m_tu(m_policy_pre)
-//  {}
-
-
-//  void setup (const Elements &elements, const Tracers &/*tracers*/,
-//              const ReferenceElement &ref_FE, const HybridVCoord &hvcoord,
-//              const SphereOperators &sphere_ops)
-//  {
-//    assert(m_num_elems == elements.num_elems()); // Sanity check
-//    m_state = elements.m_state;
-//    // Initialize equation of state
-//    m_eos.init(m_theta_hydrostatic_mode,m_hvcoord);
-//  }
 
   int requested_buffer_size () const {
     // Ask the buffers manager to allocate enough buffers
@@ -114,8 +89,8 @@ struct LimiterFunctor {
     const int nslots = m_tu.get_num_ws_slots();
 
     // Midpoints scalars
-    m_buffers.vort       = decltype(m_buffers.vort)(mem,nslots);
-    mem += m_buffers.vort.size();
+    m_buffers.buffer1       = decltype(m_buffers.buffer1)(mem,nslots);
+    mem += m_buffers.buffer1.size();
 
     assert ((reinterpret_cast<Real*>(mem) - fbm.get_memory())==requested_buffer_size());
   }
@@ -158,7 +133,7 @@ struct LimiterFunctor {
       // Check if the minimum dp3d in this column is blow a certain threshold
       auto dp = Homme::subview(m_state.m_dp3d,kv.ie,m_np1,igp,jgp);
       auto& dp0 = m_hvcoord.dp0;
-      auto diff = Homme::subview(m_buffers.vort,kv.team_idx,igp,jgp);
+      auto diff = Homme::subview(m_buffers.buffer1,kv.team_idx,igp,jgp);
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
         diff(ilev) = (dp(ilev) - dp3d_thresh*dp0(ilev))*spheremp;

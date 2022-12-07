@@ -282,40 +282,24 @@ contains
        ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
        call compute_andor_apply_rhs(nm1,n0,n0,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,0.d0,1.d0)
-!       do ie=nets,nete
-!          call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,nm1),elem(ie)%state%vtheta_dp(:,:,:,nm1),&
-!               elem(ie)%spheremp,hvcoord%dp0)
-!       enddo
        call compute_stage_value_dirk(nm1,0d0,n0,0d0,nm1,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,maxiter,itertol)
 
        ! u2 = u0 + dt/5 RHS(u1)
        call compute_andor_apply_rhs(np1,n0,nm1,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
-!       do ie=nets,nete
-!          call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1),&
-!               elem(ie)%spheremp,hvcoord%dp0)
-!       enddo
        call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dt/5,elem,hvcoord,hybrid,&
             deriv,nets,nete,maxiter,itertol)
 
        ! u3 = u0 + dt/3 RHS(u2)
        call compute_andor_apply_rhs(np1,n0,np1,dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
-!       do ie=nets,nete
-!          call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1),&
-!               elem(ie)%spheremp,hvcoord%dp0)
-!       enddo
        call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,maxiter,itertol)
 
        ! u4 = u0 + 2dt/3 RHS(u3)
        call compute_andor_apply_rhs(np1,n0,np1,2*dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
-!       do ie=nets,nete
-!          call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1),&
-!               elem(ie)%spheremp,hvcoord%dp0)
-!       enddo
        call compute_stage_value_dirk(nm1,0d0,n0,0d0,np1,2*dt/3,elem,hvcoord,hybrid,&
             deriv,nets,nete,maxiter,itertol)
 
