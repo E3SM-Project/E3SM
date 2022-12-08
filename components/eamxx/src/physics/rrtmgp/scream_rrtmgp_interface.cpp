@@ -310,10 +310,10 @@ namespace scream {
 
             // Copy cloud properties to outputs (is this needed, or can we just use pointers?)
             // Alternatively, just compute and output a subcolumn cloud mask
-            parallel_for(Bounds<3>(nswgpts, nlay, ncol), YAKL_LAMBDA (int igpt, int ilay, int icol) {
+            parallel_for(SimpleBounds<3>(nswgpts, nlay, ncol), YAKL_LAMBDA (int igpt, int ilay, int icol) {
                 cld_tau_sw_gpt(icol,ilay,igpt) = clouds_sw_gpt.tau(icol,ilay,igpt);
             });
-            parallel_for(Bounds<3>(nlwgpts, nlay, ncol), YAKL_LAMBDA (int igpt, int ilay, int icol) {
+            parallel_for(SimpleBounds<3>(nlwgpts, nlay, ncol), YAKL_LAMBDA (int igpt, int ilay, int icol) {
                 cld_tau_lw_gpt(icol,ilay,igpt) = clouds_lw_gpt.tau(icol,ilay,igpt);
             });
 
@@ -373,7 +373,7 @@ namespace scream {
                 // https://github.com/AER-RC/RRTMG_SW/blob/master/src/mcica_subcol_gen_sw.f90)
                 //
                 // First, fill cldx with random numbers. Need to use a unique seed for each column!
-                parallel_for(Bounds<1>(ncol), YAKL_LAMBDA(int icol) {
+                parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
                     yakl::Random rand(seeds(icol));
                     for (int igpt = 1; igpt <= ngpt; igpt++) {
                         for (int ilay = 1; ilay <= nlay; ilay++) {
@@ -382,7 +382,7 @@ namespace scream {
                     }
                 });
                 // Step down columns and apply algorithm from eq (14)
-                parallel_for(Bounds<2>(ngpt,ncol), YAKL_LAMBDA(int igpt, int icol) {
+                parallel_for(SimpleBounds<2>(ngpt,ncol), YAKL_LAMBDA(int igpt, int icol) {
                     for (int ilay = 2; ilay <= nlay; ilay++) {
                         // Check cldx in level above and see if it satisfies conditions to create a cloudy subcolumn
                         if (cldx(icol,ilay-1,igpt) > 1.0 - cldf(icol,ilay-1)) {
@@ -402,7 +402,7 @@ namespace scream {
             }
 
             // Use cldx array to create subcolumn mask
-            parallel_for(Bounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
+            parallel_for(SimpleBounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
                 if (cldx(icol,ilay,igpt) > 1.0 - cldf(icol,ilay)) {
                     subcolumn_mask(icol,ilay,igpt) = 1;
                 } else {
@@ -429,7 +429,7 @@ namespace scream {
             // randomly overlapped.
             auto cldfrac_rad = real2d("cldfrac_rad", ncol, nlay);
             memset(cldfrac_rad, 0.0);  // Start with all zeros
-            parallel_for(Bounds<3>(nbnd,nlay,ncol), YAKL_LAMBDA (int ibnd, int ilay, int icol) {
+            parallel_for(SimpleBounds<3>(nbnd,nlay,ncol), YAKL_LAMBDA (int ibnd, int ilay, int icol) {
                 if (cloud_optics.tau(icol,ilay,ibnd) > 0) {
                     cldfrac_rad(icol,ilay) = cld(icol,ilay);
                 } 
@@ -443,13 +443,13 @@ namespace scream {
             // Get unique seeds for each column that are reproducible across different MPI rank layouts;
             // use decimal part of pressure for this, consistent with the implementation in EAM
             auto seeds = int1d("seeds", ncol);
-            parallel_for(Bounds<1>(ncol), YAKL_LAMBDA(int icol) {
+            parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
                 seeds(icol) = 1e9 * (p_lay(icol,nlay) - int(p_lay(icol,nlay)));
             });
             auto cldmask = get_subcolumn_mask(ncol, nlay, ngpt, cldfrac_rad, overlap, seeds);
             // Assign optical properties to subcolumns (note this implements MCICA)
             auto gpoint_bands = kdist.get_gpoint_bands();
-            parallel_for(Bounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
+            parallel_for(SimpleBounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
                 auto ibnd = gpoint_bands(igpt);
                 if (cldmask(icol,ilay,igpt) == 1) {
                     subsampled_optics.tau(icol,ilay,igpt) = cloud_optics.tau(icol,ilay,ibnd);
@@ -482,7 +482,7 @@ namespace scream {
             // randomly overlapped.
             auto cldfrac_rad = real2d("cldfrac_rad", ncol, nlay);
             memset(cldfrac_rad, 0.0);  // Start with all zeros
-            parallel_for(Bounds<3>(nbnd,nlay,ncol), YAKL_LAMBDA (int ibnd, int ilay, int icol) {
+            parallel_for(SimpleBounds<3>(nbnd,nlay,ncol), YAKL_LAMBDA (int ibnd, int ilay, int icol) {
                 if (cloud_optics.tau(icol,ilay,ibnd) > 0) {
                     cldfrac_rad(icol,ilay) = cld(icol,ilay);
                 } 
@@ -493,13 +493,13 @@ namespace scream {
             // use decimal part of pressure for this, consistent with the implementation in EAM; use different
             // seed values for longwave and shortwave
             auto seeds = int1d("seeds", ncol);
-            parallel_for(Bounds<1>(ncol), YAKL_LAMBDA(int icol) {
+            parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
                 seeds(icol) = 1e9 * (p_lay(icol,nlay-1) - int(p_lay(icol,nlay-1)));
             });
             auto cldmask = get_subcolumn_mask(ncol, nlay, ngpt, cldfrac_rad, overlap, seeds);
             // Assign optical properties to subcolumns (note this implements MCICA)
             auto gpoint_bands = kdist.get_gpoint_bands();
-            parallel_for(Bounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
+            parallel_for(SimpleBounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
                 auto ibnd = gpoint_bands(igpt);
                 if (cldmask(icol,ilay,igpt) == 1) {
                     subsampled_optics.tau(icol,ilay,igpt) = cloud_optics.tau(icol,ilay,ibnd);
@@ -743,7 +743,7 @@ namespace scream {
             // Compute clearsky (gas + aerosol) fluxes on daytime columns
             rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
             // Expand daytime fluxes to all columns
-            parallel_for(Bounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
+            parallel_for(SimpleBounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
                 int icol = dayIndices(iday);
                 clrsky_flux_up    (icol,ilev) = flux_up_day    (iday,ilev);
                 clrsky_flux_dn    (icol,ilev) = flux_dn_day    (iday,ilev);
@@ -860,7 +860,7 @@ namespace scream {
             // then 2d subcol mask is 1, otherwise it is 0
             auto subcol_mask = real2d("subcol_mask", ncol, ngpt);
             memset(subcol_mask, 0);
-            yakl::fortran::parallel_for(Bounds<3>(ngpt, nlay, ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
+            yakl::fortran::parallel_for(SimpleBounds<3>(ngpt, nlay, ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
                 // NOTE: using plev would need to assume level ordering (top to bottom or bottom to top), but
                 // using play/pmid does not
                 if (cld_tau_gpt(icol,ilay,igpt) > 0 && pmid(icol,ilay) >= pmin && pmid(icol,ilay) < pmax) {
@@ -870,7 +870,7 @@ namespace scream {
             // Compute average over subcols to get cloud area
             auto ngpt_inv = 1.0 / ngpt;
             memset(cld_area, 0);
-            yakl::fortran::parallel_for(Bounds<1>(ncol), YAKL_LAMBDA(int icol) {
+            yakl::fortran::parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
                 // This loop needs to be serial because of the atomic reduction
                 for (int igpt = 1; igpt <= ngpt; ++igpt) {
                     cld_area(icol) += subcol_mask(icol,igpt) * ngpt_inv;
