@@ -118,10 +118,6 @@ struct LimiterFunctor {
   void operator()(const TagDp3dLimiter&, const TeamMember &team) const {
     KernelVariables kv(team, m_tu);
 
-    // TODO: make this less hard-coded maybe?
-    //constexpr double dp3d_thresh = 1.0;
-    //constexpr double vtheta_thresh = 400; // Kelvin
-
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
       const int igp = idx / NP;
@@ -137,6 +133,8 @@ struct LimiterFunctor {
                            [&](const int ilev) {
         diff(ilev) = (dp(ilev) - m_dp3d_thresh*dp0(ilev))*spheremp;
       });
+
+      kv.team_barrier();
 
       Real min_diff = Kokkos::reduction_identity<Real>::min();
       auto diff_as_real = Homme::viewAsReal(diff);
@@ -166,6 +164,8 @@ struct LimiterFunctor {
           });
         }
 
+        kv.team_barrier();
+
         // This loop must be done over physical levels, unless we implement
         // masks, like it has been done in the E3SM/scream project
         Real mass_new = 0.0;
@@ -191,7 +191,6 @@ struct LimiterFunctor {
         });
       }
 
-#if 1
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
         // Check if vtheta is too low
@@ -202,7 +201,6 @@ struct LimiterFunctor {
           }
         }
       });
-#endif
     });
     kv.team_barrier();
   }
