@@ -102,7 +102,6 @@ struct CaarFunctorImpl {
 
   struct TagPreExchange {};
   struct TagPostExchange {};
-  struct TagDp3dLimiter {};
 
   // Policies
 #ifndef NDEBUG
@@ -114,7 +113,6 @@ struct CaarFunctorImpl {
 #endif
 
   TeamPolicyType<TagPreExchange>   m_policy_pre;
-  TeamPolicyType<TagDp3dLimiter>   m_policy_dp3d_lim;
 
   Kokkos::RangePolicy<ExecSpace, TagPostExchange> m_policy_post;
 
@@ -137,7 +135,6 @@ struct CaarFunctorImpl {
       , m_sphere_ops(sphere_ops)
       , m_policy_pre (Homme::get_default_team_policy<ExecSpace,TagPreExchange>(m_num_elems))
       , m_policy_post (0,m_num_elems*NP*NP)
-      , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(m_num_elems))
       , m_tu(m_policy_pre)
   {
     // Initialize equation of state
@@ -154,7 +151,6 @@ struct CaarFunctorImpl {
       , m_theta_advection_form(params.theta_adv_form)
       , m_policy_pre (Homme::get_default_team_policy<ExecSpace,TagPreExchange>(m_num_elems))
       , m_policy_post (0,num_elems*NP*NP)
-      , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(m_num_elems))
       , m_tu(m_policy_pre)
   {}
 
