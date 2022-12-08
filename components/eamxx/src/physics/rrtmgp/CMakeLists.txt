@@ -18,10 +18,12 @@ else ()
   if (CUDA_BUILD)
     set(YAKL_ARCH "CUDA")
     set(YAKL_CUDA_FLAGS "-DYAKL_ARCH_CUDA --expt-extended-lambda --expt-relaxed-constexpr -ccbin ${CMAKE_CXX_COMPILER}")
+    string (REPLACE " " ";" YAKL_CUDA_FLAGS_LIST ${YAKL_CUDA_FLAGS})
   endif()
   if (HIP_BUILD)
     set(YAKL_ARCH "HIP")
     set(YAKL_HIP_FLAGS "-DYAKL_ARCH_HIP -O3 -D__HIP_ROCclr__ -D__HIP_ARCH_GFX90A__=1 --rocm-path=${ROCM_PATH} --offload-arch=gfx90a -x hip")
+    string (REPLACE " " ";" YAKL_HIP_FLAGS_LIST ${YAKL_HIP_FLAGS})
   endif()
 
   set (YAKL_SOURCE_DIR ${SCREAM_BASE_DIR}/../../externals/YAKL)
@@ -143,6 +145,17 @@ set_target_properties(scream_rrtmgp PROPERTIES
 target_include_directories(scream_rrtmgp PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}/modules)
+
+# If yakl builds with LANG!=CXX, then the yakl CPP defines don't transfer to scream
+# targets, b/c of the lang difference. So, if YAKL_ARCH is set, we add
+# ${YAKL_${YAKL_ARCH}_FLAGS} flags to the CXX flags of scream_rrtmgp.
+# In particular, this will ensure that all the yakl macros
+# are correctly defined in YAKL headers, depending on the backend
+if (YAKL_ARCH)
+  target_compile_options(scream_rrtmgp PUBLIC
+        "$<$<COMPILE_LANGUAGE:CXX>:${YAKL_${YAKL_ARCH}_FLAGS_LIST}>")
+endif()
+
 
 # Ensure RRTMGP lookup tables are present in the data dir
 set (RRTMGP_TABLES
