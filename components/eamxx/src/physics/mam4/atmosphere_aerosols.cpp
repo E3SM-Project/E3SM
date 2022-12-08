@@ -41,17 +41,17 @@ void MAM4Aerosols::set_grids(const std::shared_ptr<const GridsManager> grids_man
   using namespace ShortFieldTagsNames;
 
   // Layout for 2D (1d horiz X 1d vertical) variable
-  FieldLayout scalar2d_layout_col{ {COL}, {m_num_cols} };
+  FieldLayout scalar2d_layout_col{ {COL}, {num_cols_} };
 
   // Layout for surf_mom_flux
-  FieldLayout  surf_mom_flux_layout { {COL, CMP}, {m_num_cols, 2} };
+  FieldLayout  surf_mom_flux_layout { {COL, CMP}, {num_cols_, 2} };
 
   // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
-  FieldLayout scalar3d_layout_int { {COL,ILEV}, {m_num_cols,m_num_levs+1} };
+  FieldLayout scalar3d_layout_mid { {COL,LEV}, {num_cols_,num_levs_} };
+  FieldLayout scalar3d_layout_int { {COL,ILEV}, {num_cols_,num_levs_+1} };
 
   // Layout for horiz_wind field
-  FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {m_num_cols,2,m_num_levs} };
+  FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {num_cols_,2,num_levs_} };
 
   // Define fields needed in mam4xx.
   const auto m2 = m*m;
@@ -93,6 +93,103 @@ set_computed_group_impl(const FieldGroup& group) {
 
   EKAT_REQUIRE_MSG(group.m_info->size() >= num_aero_tracers,
     "Error! MAM4 requires at least " << num_aero_tracers << " aerosol tracers.");
+}
+
+size_t MAM4Aerosols::requested_buffer_size_in_bytes() const override {
+  const int nlev_packs       = ekat::npack<Spack>(m_num_levs);
+  const int nlevi_packs      = ekat::npack<Spack>(m_num_levs+1);
+  const int num_tracer_packs = ekat::npack<Spack>(m_num_tracers);
+
+  // Number of Reals needed by local views in the interface
+  const size_t interface_request = Buffer::num_1d_scalar_ncol*m_num_cols*sizeof(Real) +
+                                   Buffer::num_1d_scalar_nlev*nlev_packs*sizeof(Spack) +
+                                   Buffer::num_2d_vector_mid*m_num_cols*nlev_packs*sizeof(Spack) +
+                                   Buffer::num_2d_vector_int*m_num_cols*nlevi_packs*sizeof(Spack) +
+                                   Buffer::num_2d_vector_tr*m_num_cols*num_tracer_packs*sizeof(Spack);
+
+  // Number of Reals needed by the WorkspaceManager passed to shoc_main
+  const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const int n_wind_slots  = ekat::npack<Spack>(2)*Spack::n;
+  const int n_trac_slots  = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
+  const size_t wsm_request= WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy);
+
+  return interface_request + wsm_request;
+}
+
+void MAM4Aerosols::init_buffers(const ATMBufferManager &buffer_manager) override {
+  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(), "Error! Buffers size not sufficient.\n");
+
+  Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
+
+  // 1d scalar views
+  using scalar_view_t = decltype(m_buffer.cell_length);
+  scalar_view_t* _1d_scalar_view_ptrs[Buffer::num_1d_scalar_ncol] =
+    {&m_buffer.cell_length, &m_buffer.wpthlp_sfc, &m_buffer.wprtp_sfc, &m_buffer.upwp_sfc, &m_buffer.vpwp_sfc
+#ifdef SCREAM_SMALL_KERNELS
+     , &m_buffer.se_b, &m_buffer.ke_b, &m_buffer.wv_b, &m_buffer.wl_b
+     , &m_buffer.se_a, &m_buffer.ke_a, &m_buffer.wv_a, &m_buffer.wl_a
+     , &m_buffer.ustar, &m_buffer.kbfs, &m_buffer.obklen, &m_buffer.ustar2, &m_buffer.wstar
+#endif
+    };
+  for (int i = 0; i < Buffer::num_1d_scalar_ncol; ++i) {
+    *_1d_scalar_view_ptrs[i] = scalar_view_t(mem, m_num_cols);
+    mem += _1d_scalar_view_ptrs[i]->size();
+  }
+
+  Spack* s_mem = reinterpret_cast<Spack*>(mem);
+
+  // 2d packed views
+  const int nlev_packs       = ekat::npack<Spack>(m_num_levs);
+  const int nlevi_packs      = ekat::npack<Spack>(m_num_levs+1);
+  const int num_tracer_packs = ekat::npack<Spack>(m_num_tracers);
+
+  m_buffer.pref_mid = decltype(m_buffer.pref_mid)(s_mem, nlev_packs);
+  s_mem += m_buffer.pref_mid.size();
+
+  using spack_2d_view_t = decltype(m_buffer.z_mid);
+  spack_2d_view_t* _2d_spack_mid_view_ptrs[Buffer::num_2d_vector_mid] = {
+    &m_buffer.z_mid, &m_buffer.rrho, &m_buffer.thv, &m_buffer.dz, &m_buffer.zt_grid, &m_buffer.wm_zt,
+    &m_buffer.inv_exner, &m_buffer.thlm, &m_buffer.qw, &m_buffer.dse, &m_buffer.tke_copy, &m_buffer.qc_copy,
+    &m_buffer.shoc_ql2, &m_buffer.shoc_mix, &m_buffer.isotropy, &m_buffer.w_sec, &m_buffer.wqls_sec, &m_buffer.brunt
+#ifdef SCREAM_SMALL_KERNELS
+    , &m_buffer.rho_zt, &m_buffer.shoc_qv, &m_buffer.dz_zt, &m_buffer.tkh
+#endif
+  };
+
+  spack_2d_view_t* _2d_spack_int_view_ptrs[Buffer::num_2d_vector_int] = {
+    &m_buffer.z_int, &m_buffer.rrho_i, &m_buffer.zi_grid, &m_buffer.thl_sec, &m_buffer.qw_sec,
+    &m_buffer.qwthl_sec, &m_buffer.wthl_sec, &m_buffer.wqw_sec, &m_buffer.wtke_sec, &m_buffer.uw_sec,
+    &m_buffer.vw_sec, &m_buffer.w3
+#ifdef SCREAM_SMALL_KERNELS
+    , &m_buffer.dz_zi
+#endif
+  };
+
+  for (int i = 0; i < Buffer::num_2d_vector_mid; ++i) {
+    *_2d_spack_mid_view_ptrs[i] = spack_2d_view_t(s_mem, m_num_cols, nlev_packs);
+    s_mem += _2d_spack_mid_view_ptrs[i]->size();
+  }
+
+  for (int i = 0; i < Buffer::num_2d_vector_int; ++i) {
+    *_2d_spack_int_view_ptrs[i] = spack_2d_view_t(s_mem, m_num_cols, nlevi_packs);
+    s_mem += _2d_spack_int_view_ptrs[i]->size();
+  }
+  m_buffer.wtracer_sfc = decltype(m_buffer.wtracer_sfc)(s_mem, m_num_cols, num_tracer_packs);
+  s_mem += m_buffer.wtracer_sfc.size();
+
+  // WSM data
+  m_buffer.wsm_data = s_mem;
+
+  // Compute workspace manager size to check used memory
+  // vs. requested memory
+  const auto policy      = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
+  const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
+  const int wsm_size     = WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy)/sizeof(Spack);
+  s_mem += wsm_size;
+
+  size_t used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
+  EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for SHOCMacrophysics.");
 }
 
 void MAM4Aerosols::initialize_impl(const RunType run_type) {
@@ -150,7 +247,7 @@ void MAM4Aerosols::initialize_impl(const RunType run_type) {
   Kokkos::deep_copy(convert_wet_dry_idx_d,convert_wet_dry_idx_h);
 
 
-  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,convert_wet_dry_idx_d,z_surf,m_cell_area,m_cell_lat,
+  shoc_preprocess.set_variables(num_cols_,num_levs_,m_num_tracers,convert_wet_dry_idx_d,z_surf,m_cell_area,m_cell_lat,
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_evap,
                                 surf_mom_flux,qtracers,qv,qc,qc_copy,tke,tke_copy,z_mid,z_int,cell_length,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
@@ -206,7 +303,7 @@ void MAM4Aerosols::initialize_impl(const RunType run_type) {
   history_output.wqls_sec  = m_buffer.wqls_sec;
   history_output.brunt     = m_buffer.brunt;
 
-  shoc_postprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,convert_wet_dry_idx_d,
+  shoc_postprocess.set_variables(num_cols_,num_levs_,m_num_tracers,convert_wet_dry_idx_d,
                                  rrho,qv,qw,qc,qc_copy,tke,tke_copy,qtracers,shoc_ql2,
                                  cldfrac_liq,inv_qc_relvar,
                                  T_mid, dse, z_mid, phis);
@@ -225,11 +322,11 @@ void MAM4Aerosols::initialize_impl(const RunType run_type) {
   add_postcondition_check<Interval>(get_field_out("qv"),m_grid,0,0.2,true);
 
   // Setup WSM for internal local variables
-  const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);
-  const auto nlevi_packs = ekat::npack<Spack>(m_num_levs+1);
+  const auto nlev_packs  = ekat::npack<Spack>(num_levs_);
+  const auto nlevi_packs = ekat::npack<Spack>(num_levs_+1);
   const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
   const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
-  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_cols_, nlev_packs);
   workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 13+(n_wind_slots+n_trac_slots), default_policy);
 
   // Calculate pref_mid, and use that to calculate
@@ -240,21 +337,21 @@ void MAM4Aerosols::initialize_impl(const RunType run_type) {
   const auto hybm = m_grid->get_geometry_data("hybm");
   const auto ps0 = C::P0;
   const auto psref = ps0;
-  Kokkos::parallel_for(Kokkos::RangePolicy<>(0, m_num_levs), KOKKOS_LAMBDA (const int lev) {
+  Kokkos::parallel_for(Kokkos::RangePolicy<>(0, num_levs_), KOKKOS_LAMBDA (const int lev) {
     s_pref_mid(lev) = ps0*hyam(lev) + psref*hybm(lev);
   });
   Kokkos::fence();
 
   const int ntop_shoc = 0;
-  const int nbot_shoc = m_num_levs;
+  const int nbot_shoc = num_levs_;
   m_npbl = SHF::shoc_init(nbot_shoc,ntop_shoc,pref_mid);
 }
 
 void MAM4Aerosols::run_impl(const int dt) {
 
-  const auto nlev_packs  = ekat::npack<Spack>(m_num_levs);
-  const auto scan_policy    = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, nlev_packs);
-  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const auto nlev_packs  = ekat::npack<Spack>(num_levs_);
+  const auto scan_policy    = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(num_cols_, nlev_packs);
+  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_cols_, nlev_packs);
 
   // Preprocessing of SHOC inputs. Kernel contains a parallel_scan,
   // so a special TeamPolicy is required.
@@ -273,7 +370,7 @@ void MAM4Aerosols::run_impl(const int dt) {
   workspace_mgr.reset_internals();
 
   // Run shoc main
-  SHF::shoc_main(m_num_cols, m_num_levs, m_num_levs+1, m_npbl, m_nadv, m_num_tracers, dt,
+  SHF::shoc_main(num_cols_, num_levs_, num_levs_+1, m_npbl, m_nadv, m_num_tracers, dt,
                  workspace_mgr,input,input_output,output,history_output
 #ifdef SCREAM_SMALL_KERNELS
                  , temporaries
