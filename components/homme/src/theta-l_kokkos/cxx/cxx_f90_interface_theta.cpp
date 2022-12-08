@@ -46,7 +46,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
                                const int& ftype, const int& theta_adv_form, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
                                const bool& use_cpstar, const int& transport_alg, const bool& theta_hydrostatic_mode, const char** test_case,
                                const int& dt_remap_factor, const int& dt_tracer_factor,
-                               const double& rearth, const int& nsplit)
+                               const double& rearth, const int& nsplit,
+                               const double& dp3d_thresh, const double& vtheta_thresh)
 {
   // Check that the simulation options are supported. This helps us in the future, since we
   // are currently 'assuming' some option have/not have certain values. As we support for more
@@ -62,6 +63,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   Errors::check_option("init_simulation_params_c","ftype",ftype, {-1, 0, 2});
   Errors::check_option("init_simulation_params_c","nu_p",nu_p,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","nu",nu,0.0,Errors::ComparisonOp::GT);
+  Errors::check_option("init_simulation_params_c","dp3d_thresh",dp3d_thresh,0.0,Errors::ComparisonOp::GT);
+  Errors::check_option("init_simulation_params_c","vtheta_thresh",vtheta_thresh,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","nu_div",nu_div,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","theta_advection_form",theta_adv_form,{0,1});
 #ifndef SCREAM
@@ -114,6 +117,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.dcmip16_mu                    = dcmip16_mu;
   params.nsplit                        = nsplit;
   params.rearth                        = rearth;
+  params.dp3d_thresh                   = dp3d_thresh;
+  params.vtheta_thresh                 = vtheta_thresh;
 
   if (time_step_type==5) {
     //5 stage, 3rd order, explicit

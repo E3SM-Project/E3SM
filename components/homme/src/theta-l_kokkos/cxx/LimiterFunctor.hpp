@@ -42,6 +42,9 @@ struct LimiterFunctor {
   ElementsState       m_state;
   Buffers             m_buffers;
   ElementsGeometry    m_geometry;
+  
+  double              m_dp3d_thresh;
+  double              m_vtheta_thresh;           
 
   struct TagDp3dLimiter {};
 
@@ -66,6 +69,8 @@ struct LimiterFunctor {
       , m_geometry(elements.m_geometry)
       , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(m_num_elems))
       , m_tu(m_policy_dp3d_lim)
+      , m_dp3d_thresh(params.dp3d_thresh)
+      , m_vtheta_thresh(params.vtheta_thresh)
   {
     m_np1 = -1;
   }
@@ -114,8 +119,8 @@ struct LimiterFunctor {
     KernelVariables kv(team, m_tu);
 
     // TODO: make this less hard-coded maybe?
-    constexpr double dp3d_thresh = 1.0;
-    constexpr double vtheta_thresh = 400; // Kelvin
+    //constexpr double dp3d_thresh = 1.0;
+    //constexpr double vtheta_thresh = 400; // Kelvin
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
@@ -130,7 +135,7 @@ struct LimiterFunctor {
       auto diff = Homme::subview(m_buffers.buffer1,kv.team_idx,igp,jgp);
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
-        diff(ilev) = (dp(ilev) - dp3d_thresh*dp0(ilev))*spheremp;
+        diff(ilev) = (dp(ilev) - m_dp3d_thresh*dp0(ilev))*spheremp;
       });
 
       Real min_diff = Kokkos::reduction_identity<Real>::min();
@@ -181,7 +186,7 @@ struct LimiterFunctor {
             diff(ilev) *= -1.0;
           }
 
-          dp(ilev) = diff(ilev)/spheremp + dp3d_thresh*dp0(ilev);
+          dp(ilev) = diff(ilev)/spheremp + m_dp3d_thresh*dp0(ilev);
           vtheta_dp(ilev) *= dp(ilev);
         });
       }
@@ -192,8 +197,8 @@ struct LimiterFunctor {
         // Check if vtheta is too low
         // Note: another place where scream's masks could help
         for (int ivec=0; ivec<VECTOR_SIZE; ++ivec) {
-          if ( (vtheta_dp(ilev)[ivec] - vtheta_thresh*dp(ilev)[ivec]) < 0) {
-             vtheta_dp(ilev)[ivec]=vtheta_thresh*dp(ilev)[ivec];
+          if ( (vtheta_dp(ilev)[ivec] - m_vtheta_thresh*dp(ilev)[ivec]) < 0) {
+             vtheta_dp(ilev)[ivec]=m_vtheta_thresh*dp(ilev)[ivec];
           }
         }
       });
