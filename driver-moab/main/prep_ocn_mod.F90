@@ -2753,6 +2753,7 @@ subroutine prep_ocn_calc_a2x_ox_moab(timer, infodata)
    ! it happens over joint communicator, only if ocn_prognostic true
    if (ocn_prognostic) then
 
+      ! this coverage graph will have the exact input for the projection.  Like x'
       if (atm_pg_active ) then ! use mhpgid mesh
          ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxao, atm_id, id_join, context_id);
          if (iamroot_CPLID) then
@@ -2850,8 +2851,6 @@ subroutine prep_ocn_calc_a2x_ox_moab(timer, infodata)
         mphaid, mbintxao, mpicom_join, mpigrp_old, mpigrp_CPLID, &
          typeA, typeB, atm_id, idintx
    end if
-   ! for these to work, we need to define the tags of size 16 (np x np) on coupler atm, 
-   !   corresponding to this phys grid graph
    ierr = iMOAB_ComputeCommGraph( mphaid, mbintxao, mpicom_join, mpigrp_old, mpigrp_CPLID, &
          typeA, typeB, atm_id, idintx)
    if (ierr .ne. 0) then
@@ -2877,8 +2876,6 @@ subroutine prep_ocn_calc_a2x_ox_moab(timer, infodata)
         mphaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
          typeA, typeB, id_join, idintx
    end if
-   ! for these to work, we need to define the tags of size 16 (np x np) on coupler atm, 
-   !   corresponding to this phys grid graph
    if (mphaxid .ge. 0) then
       ierr = iMOAB_ComputeCommGraph( mphaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
             typeA, typeB, id_join, idintx)

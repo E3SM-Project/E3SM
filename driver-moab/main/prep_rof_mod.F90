@@ -315,6 +315,7 @@ contains
    typeA = 2 ! point cloud
    direction = 1 ! 
    context_id = ocn(1)%cplcompid
+   ! distribute river model corresponding to ocean on coupler and r2o map.
    ierr = iMOAB_MigrateMapMesh (mrofid, mbrmapro, mbrxoid, mpicom_join, mpigrp_rof, &
       mpigrp_CPLID, typeA, rof_id, context_id, direction)
    
