@@ -6,7 +6,7 @@
 inline void update_gcm_state( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
-  auto &dm_device = coupler.get_data_manager_readwrite();
+  auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
   int nz   = dm_device.get_dimension_size("z"   );
   int ny   = dm_device.get_dimension_size("y"   );
@@ -50,7 +50,7 @@ inline void update_gcm_state( pam::PamCoupler &coupler ) {
 inline void copy_input_state_to_coupler( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
-  auto &dm_device = coupler.get_data_manager_readwrite();
+  auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
   int nz   = dm_device.get_dimension_size("z"   );
   int ny   = dm_device.get_dimension_size("y"   );
@@ -94,21 +94,22 @@ inline void copy_input_state_to_coupler( pam::PamCoupler &coupler ) {
   //------------------------------------------------------------------------------------------------
   // Copy the host CRM data to the coupler
   parallel_for("Horz mean of CRM state", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
-    crm_uvel  (k,j,i,iens) = state_u_wind      (iens,i,j,k);
-    crm_vvel  (k,j,i,iens) = state_v_wind      (iens,i,j,k);
-    crm_wvel  (k,j,i,iens) = state_w_wind      (iens,i,j,k);
-    crm_temp  (k,j,i,iens) = state_temperature (iens,i,j,k);
-    crm_qv    (k,j,i,iens) = state_qv          (iens,i,j,k);
-    crm_qc    (k,j,i,iens) = state_qc          (iens,i,j,k);
-    crm_nc    (k,j,i,iens) = state_nc          (iens,i,j,k);
-    crm_qr    (k,j,i,iens) = state_qr          (iens,i,j,k);
-    crm_nr    (k,j,i,iens) = state_nr          (iens,i,j,k);
-    crm_qi    (k,j,i,iens) = state_qi          (iens,i,j,k);
-    crm_ni    (k,j,i,iens) = state_ni          (iens,i,j,k);
-    crm_qm    (k,j,i,iens) = state_qm          (iens,i,j,k);
-    crm_bm    (k,j,i,iens) = state_bm          (iens,i,j,k);
-    crm_t_prev(k,j,i,iens) = state_t_prev      (iens,i,j,k);
-    crm_q_prev(k,j,i,iens) = state_q_prev      (iens,i,j,k);
+    crm_uvel  (k,j,i,iens) = state_u_wind      (k,j,i,iens);
+    crm_vvel  (k,j,i,iens) = state_v_wind      (k,j,i,iens);
+    crm_wvel  (k,j,i,iens) = state_w_wind      (k,j,i,iens);
+    crm_temp  (k,j,i,iens) = state_temperature (k,j,i,iens);
+    crm_qv    (k,j,i,iens) = state_qv          (k,j,i,iens);
+    crm_qc    (k,j,i,iens) = state_qc          (k,j,i,iens);
+    crm_nc    (k,j,i,iens) = state_nc          (k,j,i,iens);
+    crm_qr    (k,j,i,iens) = state_qr          (k,j,i,iens);
+    crm_nr    (k,j,i,iens) = state_nr          (k,j,i,iens);
+    crm_qi    (k,j,i,iens) = state_qi          (k,j,i,iens);
+    crm_ni    (k,j,i,iens) = state_ni          (k,j,i,iens);
+    crm_qm    (k,j,i,iens) = state_qm          (k,j,i,iens);
+    crm_bm    (k,j,i,iens) = state_bm          (k,j,i,iens);
+    crm_t_prev(k,j,i,iens) = state_t_prev      (k,j,i,iens);
+    crm_q_prev(k,j,i,iens) = state_q_prev      (k,j,i,iens);
   });
   //------------------------------------------------------------------------------------------------
 }
+

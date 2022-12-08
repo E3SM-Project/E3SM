@@ -21,7 +21,7 @@ inline void compute_crm_feedback_tendencies( pam::PamCoupler &coupler , real gcm
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
   using yakl::atomicAdd;
-  auto &dm_device = coupler.get_data_manager_readwrite();
+  auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
 
   int nz   = dm_device.get_dimension_size("z"   );
@@ -123,7 +123,7 @@ inline void compute_crm_mean_state( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
   using yakl::atomicAdd;
-  auto &dm_device = coupler.get_data_manager_readwrite();
+  auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
 
   int nz   = dm_device.get_dimension_size("z"   );

@@ -35,7 +35,7 @@ extern "C" void pam_driver() {
   // Allocate the coupler state and retrieve host/device data managers
   auto &coupler = pam_interface::get_coupler();
   coupler.allocate_coupler_state( crm_nz , crm_ny , crm_nx , nens );
-  auto &dm_device = coupler.get_data_manager_readwrite();
+  auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
   //------------------------------------------------------------------------------------------------
   // wrap host data in YAKL arrays
@@ -75,6 +75,8 @@ extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
   // Copy the input CRM state saved by the GCM to the PAM coupler state
   copy_input_state_to_coupler( coupler );
+  // Copy input radiation tendencies to coupler
+  copy_input_rad_to_coupler( coupler );
   //------------------------------------------------------------------------------------------------
   // Compute CRM forcing tendencies
   modules::compute_gcm_forcing_tendencies( coupler, gcm_dt );
@@ -107,6 +109,12 @@ extern "C" void pam_driver() {
   
   // Compute horizontal means of CRM state variables that are not forced
   compute_crm_mean_state( coupler )
+
+  // Copy the output CRM state from the PAM coupler to the GCM
+  copy_output_state_to_gcm( coupler );
+
+  // Copy input radiation tendencies to coupler
+  copy_output_rad_to_gcm( coupler );
 
   //------------------------------------------------------------------------------------------------
   // Output aggregated surface flux of water specices
