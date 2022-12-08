@@ -1313,17 +1313,6 @@ contains
             write(logunit,*) subname,' error in sending land mesh '
             call shr_sys_abort(subname//' ERROR in sending land mesh ')
          endif
-         ! create the receiver on land mesh too:
-         tagnameProj = 'a2lTbot_proj'//C_NULL_CHAR  ! temperature
-         tagtype = 1  ! dense, double
-         numco = 1 !  one value per vertex / entity
-         ierr = iMOAB_DefineTagStorage(mlnid, tagnameProj, tagtype, numco,  tagindex )
-
-         ! define more tags
-         tagnameProj = 'a2lUbot_proj'//C_NULL_CHAR  ! U component of velocity
-         ierr = iMOAB_DefineTagStorage(mlnid, tagnameProj, tagtype, numco,  tagindex )
-         tagnameProj = 'a2lVbot_proj'//C_NULL_CHAR  ! V component of velocity
-         ierr = iMOAB_DefineTagStorage(mlnid, tagnameProj, tagtype, numco,  tagindex )
 
          endif
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
@@ -1339,21 +1328,7 @@ contains
             write(logunit,*) subname,' error in receiving coupler land mesh'
             call shr_sys_abort(subname//' ERROR in receiving coupler land mesh')
             endif
-         ! define here the tag that will be projected from atmosphere
-         tagnameProj = 'a2lTbot_proj'//C_NULL_CHAR  ! temperature
-         tagtype = 1  ! dense, double
-         numco = 1 !  one value per vertex / entity
-         ierr = iMOAB_DefineTagStorage(mblxid, tagnameProj, tagtype, numco,  tagindex )
 
-         ! define more tags
-         tagnameProj = 'a2lUbot_proj'//C_NULL_CHAR  ! U component of velocity
-         ierr = iMOAB_DefineTagStorage(mblxid, tagnameProj, tagtype, numco,  tagindex )
-         tagnameProj = 'a2lVbot_proj'//C_NULL_CHAR  ! V component of velocity
-         ierr = iMOAB_DefineTagStorage(mblxid, tagnameProj, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags on land coupler'
-            call shr_sys_abort(subname//' ERROR in defining tags on land coupler')
-         endif
 #ifdef MOABDEBUG
          ! debug test
          ! if only vertices, set a partition tag for help in visualizations

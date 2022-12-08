@@ -105,7 +105,7 @@ contains
   subroutine prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_atm)
 
     use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
-      iMOAB_WriteMesh 
+      iMOAB_WriteMesh , iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and  mappers
@@ -135,6 +135,16 @@ contains
     character(*), parameter          :: F00 = "('"//subname//" : ', 4A )"
     integer ierr, idintx, rank
     character*32             :: appname, outfile, wopts, lnum
+
+    ! MOAB stuff 
+    character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdef
+    integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
+    integer                  :: fNoBubble, monotonicity
+   ! will do comm graph over coupler PES, in 2-hop strategy
+    integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
+
+    integer                  :: type1, type2 ! type for computing graph; should be the same type for ocean, 3 (FV)
+
     !---------------------------------------------------------------
 
 
@@ -193,6 +203,7 @@ contains
                'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
                'mapper_So2a initialization',esmf_map_flag)
 
+#ifdef HAVE_MOAB
           ! Call moab intx only if atm and ocn are init in moab
           if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
             appname = "OCN_ATM_COU"//C_NULL_CHAR
@@ -211,6 +222,58 @@ contains
             if (iamroot_CPLID) then
               write(logunit,*) 'iMOAB intersection between ocean and atm with id:', idintx
             end if
+
+
+            ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the 
+            ! ocean for the intx ocean-atm context (coverage)
+            !    
+            call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID) 
+            type1 = 3; !  fv for ocean
+            type2 = 3;
+            ! ierr      = iMOAB_ComputeCommGraph( mboxid, mbintxoa, &mpicom_CPLID, &mpigrp_CPLID, &mpigrp_CPLID, &type1, &type2,
+            !                              &ocn_id, &idintx)
+            ierr = iMOAB_ComputeCommGraph( mboxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                        ocn(1)%cplcompid, idintx)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing comm graph for second hop, ocn-atm'
+               call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocn-atm')
+            endif
+            ! now take care of the mapper 
+            mapper_So2a%src_mbid = mboxid
+            mapper_So2a%tgt_mbid = mbaxid
+            !mapper_So2a%intx_mbid = mbintxoa ! comment out so it will do nothing yet
+
+            volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL; 
+            wgtIdef = 'scalar'//C_NULL_CHAR
+            if (atm_pg_active) then
+              dm2 = "fv"//C_NULL_CHAR
+              dofnameT="GLOBAL_ID"//C_NULL_CHAR
+              orderT = 1 !  fv-fv
+            else
+              dm2 = "cgll"//C_NULL_CHAR
+              dofnameT="GLOBAL_DOFS"//C_NULL_CHAR
+              orderT = np !  it should be 4
+            endif
+            dm1 = "fv"//C_NULL_CHAR
+            dofnameS="GLOBAL_ID"//C_NULL_CHAR
+            orderS = 1  !  not much arguing
+            fNoBubble = 1
+            monotonicity = 0 !
+            noConserve = 0
+            validate = 1
+            fInverseDistanceMap = 0
+
+            ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa, wgtIdef, &
+                                               trim(dm1), orderS, trim(dm2), orderT, &
+                                               fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                               noConserve, validate, &
+                                               trim(dofnameS), trim(dofnameT) )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing  '
+               call shr_sys_abort(subname//' ERROR in writing intx file ')
+            endif
+
+
 #ifdef MOABDEBUG
             wopts = C_NULL_CHAR
             call shr_mpi_commrank( mpicom_CPLID, rank )
@@ -223,7 +286,10 @@ contains
                 call shr_sys_abort(subname//' ERROR in writing intx file ')
               endif
             endif
+! endif for MOABDEBUG            
 #endif
+! endif for HAVE_MOAB
+#endif  
          end if
        end if
 
