@@ -232,6 +232,7 @@ use iso_c_binding, only: c_loc
    do c = begchunk,endchunk
     nlcols = nlcols +  get_ncols_p(c)
    enddo
+   dimnames(1) = "ncol"
 
    ! PBUF fields
    nfields = size(pbuf2d,1)
@@ -246,7 +247,6 @@ use iso_c_binding, only: c_loc
      dims(:) = pbuf_get_field_dims(idx)
      dims(1) = nlcols
 
-     dimnames(1) = "ncol"
      dimnames(2) = "lev"
 
      call cldera_add_partitioned_field(fname,2,dims,dimnames,nparts,part_dim)
@@ -282,6 +282,8 @@ use iso_c_binding, only: c_loc
    enddo
 
    ! STATE fields
+   dims(1) = nlcols
+   dimnames(1) = 'ncol'
 
    !1d, horizontal
    call cldera_add_partitioned_field("lat",1,dims,dimnames,nparts,part_dim)
@@ -291,6 +293,8 @@ use iso_c_binding, only: c_loc
    call cldera_add_partitioned_field("phis",1,dims,dimnames,nparts,part_dim)
 
    !2d, mid points
+   dims(2) = pver
+   dimnames(2) = 'lev'
    call cldera_add_partitioned_field("T",2,dims,dimnames,nparts,part_dim)
    call cldera_add_partitioned_field("u",2,dims,dimnames,nparts,part_dim)
    call cldera_add_partitioned_field("v",2,dims,dimnames,nparts,part_dim)
@@ -302,6 +306,12 @@ use iso_c_binding, only: c_loc
    call cldera_add_partitioned_field("pdel_dry",2,dims,dimnames,nparts,part_dim)
    call cldera_add_partitioned_field("exner",2,dims,dimnames,nparts,part_dim)
    call cldera_add_partitioned_field("zm",2,dims,dimnames,nparts,part_dim)
+
+   ! Last arg is view=false, since AOD fields are *not* views of EAM persistent data.
+   call cldera_add_partitioned_field("aod_tot", 2,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("aod_so2", 2,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("aod_ash", 2,dims,dimnames,nparts,part_dim,.false.)
+   call cldera_add_partitioned_field("aod_sulf",2,dims,dimnames,nparts,part_dim,.false.)
 
    ! 2d, interfaces
    dims(2) = pver+1
@@ -403,6 +413,12 @@ use iso_c_binding, only: c_loc
      field1d => phys_state(c)%tw_cur(:)
      call cldera_set_field_part_size("tw",ipart,ncols)
      call cldera_set_field_part_data("tw",ipart,field1d)
+
+     ! Copied field (AOD)
+     call cldera_set_field_part_size("aod_tot", ipart,ncols)
+     call cldera_set_field_part_size("aod_so2", ipart,ncols)
+     call cldera_set_field_part_size("aod_ash", ipart,ncols)
+     call cldera_set_field_part_size("aod_sulf",ipart,ncols)
    enddo
 
    call cldera_commit_all_fields()
