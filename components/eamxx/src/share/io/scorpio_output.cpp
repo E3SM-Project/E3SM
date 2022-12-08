@@ -97,29 +97,29 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     // We build a remapper, to remap fields from the fm grid to the io grid
     if (remap_from_file) {
       auto remap_file   = params.get<std::string>("remap_file");
-      m_remapper = std::make_shared<CoarseningRemapper>(io_grid,remap_file);
-      io_grid = m_remapper->get_tgt_grid();
+      m_horiz_remapper = std::make_shared<CoarseningRemapper>(io_grid,remap_file);
+      io_grid = m_horiz_remapper->get_tgt_grid();
       set_grid(io_grid);
     } else {
-      m_remapper = grids_mgr->create_remapper(fm_grid,io_grid);
+      m_horiz_remapper = grids_mgr->create_remapper(fm_grid,io_grid);
     }
 
     // Register all output fields in the remapper.
-    m_remapper->registration_begins();
+    m_horiz_remapper->registration_begins();
     for (const auto& fname : m_fields_names) {
       auto f = get_field(fname,m_sim_field_mgr);
       const auto& src_fid = f.get_header().get_identifier();
       EKAT_REQUIRE_MSG(src_fid.data_type()==DataType::RealType,
           "Error! I/O supports only Real data, for now.\n");
-      m_remapper->register_field_from_src(src_fid);
+      m_horiz_remapper->register_field_from_src(src_fid);
     }
-    m_remapper->registration_ends();
+    m_horiz_remapper->registration_ends();
 
     // Now create a new FM on io grid, and create copies of output fields from FM.
     auto io_fm = std::make_shared<fm_type>(io_grid);
     io_fm->registration_begins();
-    for (int i=0; i<m_remapper->get_num_fields(); ++i) {
-      const auto& tgt_fid = m_remapper->get_tgt_field_id(i);
+    for (int i=0; i<m_horiz_remapper->get_num_fields(); ++i) {
+      const auto& tgt_fid = m_horiz_remapper->get_tgt_field_id(i);
       io_fm->register_field(FieldRequest(tgt_fid));
     }
     io_fm->registration_ends();
@@ -128,11 +128,11 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     for (const auto& fname : m_fields_names) {
       auto src = get_field(fname,m_sim_field_mgr);
       auto tgt = io_fm->get_field(src.name());
-      m_remapper->bind_field(src,tgt);
+      m_horiz_remapper->bind_field(src,tgt);
     }
 
     // This should never fail, but just in case
-    EKAT_REQUIRE_MSG (m_remapper->get_num_fields()==m_remapper->get_num_bound_fields(),
+    EKAT_REQUIRE_MSG (m_horiz_remapper->get_num_fields()==m_horiz_remapper->get_num_bound_fields(),
         "Error! Something went wrong while building the scorpio input remapper.\n");
 
     // Reset the field manager
@@ -196,15 +196,15 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
   }
 
   // If needed, remap fields from their grid to the unique grid, for I/O
-  if (m_remapper) {
+  if (m_horiz_remapper) {
     start_timer("EAMxx::IO::remap");
-    m_remapper->remap(true);
+    m_horiz_remapper->remap(true);
 
-    for (int i=0; i<m_remapper->get_num_fields(); ++i) {
+    for (int i=0; i<m_horiz_remapper->get_num_fields(); ++i) {
       // Need to update the time stamp of the fields on the IO grid,
       // to avoid throwing an exception later
-      auto src = m_remapper->get_src_field(i);
-      auto tgt = m_remapper->get_tgt_field(i);
+      auto src = m_horiz_remapper->get_src_field(i);
+      auto tgt = m_horiz_remapper->get_tgt_field(i);
 
       auto src_t = src.get_header().get_tracking().get_time_stamp();
       tgt.get_header().get_tracking().update_time_stamp(src_t);
@@ -331,7 +331,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
 long long AtmosphereOutput::
 res_dep_memory_footprint () const {
   long long rdmf = 0;
-  if (m_remapper) {
+  if (m_horiz_remapper) {
     // The IO is done on a different grid. The FM stored here is
     // not shared with anyone else, so we can safely add its footprint
     for (const auto& it : *m_io_field_mgr) {
