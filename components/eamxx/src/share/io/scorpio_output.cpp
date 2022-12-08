@@ -707,11 +707,11 @@ Field AtmosphereOutput::get_field(const std::string& name, const std::shared_ptr
 {
   if (field_mgr->has_field(name)) {
     return field_mgr->get_field(name);
-  } else if (m_diagnostics.find(name) != m_diagnostics.end()) {
+  } else if (m_diagnostics.find(name) != m_diagnostics.end() && field_mgr==m_sim_field_mgr) {
     const auto& diag = m_diagnostics.at(name);
     return diag->get_diagnostic();
   } else {
-    EKAT_ERROR_MSG ("Field " + name + " not found in output field manager or diagnostics list");
+    EKAT_ERROR_MSG ("Field " + name + " not found in output field manager or diagnostics list, or requesting a diag not on the simualation field manager.");
   }
 }
 /* ---------------------------------------------------------- */
