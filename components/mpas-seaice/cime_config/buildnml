@@ -245,17 +245,10 @@ def buildnml(case, caseroot, compname):
 
 
     #--------------------------------------------------------------------
-    # Set the initial file, changing to a restart file for branch and hybrid runs
-    # Note: this is not setup for multiple instances
+    # Set the initial file
     #--------------------------------------------------------------------
 
     input_file = "{}/ice/mpas-cice/{}/{}.{}.nc".format(din_loc_root, ice_mask, grid_prefix, grid_date)
-    if run_type == 'hybrid' or run_type == 'branch':
-        input_file = "{}/{}.mpassi{}.rst.{}_{}.nc".format(rundir, run_refcase, inst_string, run_refdate, run_reftod)
-        expect(os.path.exists(input_file), " ERROR mpassi buildnml: missing specified restart file for branch or hybrid run: {}".format(input_file))
-        restart_file = "{}/{}.mpassi{}.rst.{}_{}.nc".format(rundir, casename, inst_string, run_refdate, run_reftod)
-        if not os.path.exists(restart_file):
-            safe_copy(input_file, restart_file)
 
     #--------------------------------------------------------------------
     # Generate input data file with stream-specified files
@@ -292,6 +285,18 @@ def buildnml(case, caseroot, compname):
                 safe_copy(os.path.join(rundir, "rpointer.ice"),
                           os.path.join(rundir, "rpointer.ice{}".format(inst_string)))
         stream_name_inst = f"{stream_name}{inst_string}"
+
+        #--------------------------------------------------------------------
+        # Change the initial file to a restart file for branch and hybrid runs
+        #--------------------------------------------------------------------
+
+        if run_type == 'hybrid' or run_type == 'branch':
+            input_file = "{}/{}.mpassi{}.rst.{}_{}.nc".format(rundir, run_refcase, inst_string, run_refdate, run_reftod)
+            expect(os.path.exists(input_file), " ERROR mpassi buildnml: missing specified restart file for branch or hybrid run: {}".format(input_file))
+            restart_file = "{}/{}.mpassi{}.rst.{}_{}.nc".format(rundir, casename, inst_string, run_refdate, run_reftod)
+            if not os.path.exists(restart_file):
+                safe_copy(input_file, restart_file)
+
         # -----------------------------------------------------
         # create mpassiconf/cesm_namelist
         # -----------------------------------------------------

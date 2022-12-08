@@ -279,17 +279,10 @@ def buildnml(case, caseroot, compname):
             logger.warning("         But no file available for this grid.")
 
     #--------------------------------------------------------------------
-    # Set the initial file, changing to a restart file for branch and hybrid runs
-    # Note: this is not setup for multiple instances
+    # Set the initial file
     #--------------------------------------------------------------------
 
     input_file = "{}/ocn/mpas-o/{}/{}.{}.nc".format(din_loc_root, ocn_mask, ic_prefix, ic_date)
-    if run_type == 'hybrid' or run_type == 'branch':
-        input_file = "{}/{}.mpaso{}.rst.{}_{}.nc".format(rundir, run_refcase, inst_string, run_refdate, run_reftod)
-        expect(os.path.exists(input_file), "ERROR mpaso buildnml: missing specified restart file for branch or hybrid run: " + input_file)
-        restart_file = "{}/{}.mpaso{}.rst.{}_{}.nc".format(rundir, casename, inst_string, run_refdate, run_reftod)
-        if not os.path.exists(restart_file):
-            safe_copy(input_file, restart_file)
 
     #--------------------------------------------------------------------
     # Generate input data file with stream-specified files
@@ -331,6 +324,18 @@ def buildnml(case, caseroot, compname):
                           os.path.join(rundir, "rpointer.ocn{}".format(inst_string)))
 
         stream_name_inst = f"{stream_name}{inst_string}"
+
+        #--------------------------------------------------------------------
+        # Change the initial file to a restart file for branch and hybrid runs
+        #--------------------------------------------------------------------
+
+        if run_type == 'hybrid' or run_type == 'branch':
+            input_file = "{}/{}.mpaso{}.rst.{}_{}.nc".format(rundir, run_refcase, inst_string, run_refdate, run_reftod)
+            expect(os.path.exists(input_file), "ERROR mpaso buildnml: missing specified restart file for branch or hybrid run: " + input_file)
+            restart_file = "{}/{}.mpaso{}.rst.{}_{}.nc".format(rundir, casename, inst_string, run_refdate, run_reftod)
+            if not os.path.exists(restart_file):
+                safe_copy(input_file, restart_file)
+
         # -----------------------------------------------------
         # create mpasoconf/cesm_namelist
         # -----------------------------------------------------
