@@ -97,7 +97,6 @@ struct LimiterFunctor {
     assert ((reinterpret_cast<Real*>(mem) - fbm.get_memory())==requested_buffer_size());
   }
 
-
   void run (const int& tl)
   {
     profiling_resume();
@@ -110,9 +109,6 @@ struct LimiterFunctor {
 
     profiling_pause();
   }
-
-
-//NEED TO THROW IN SOME MESSAGE
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const TagDp3dLimiter&, const TeamMember &team) const {
@@ -138,9 +134,17 @@ struct LimiterFunctor {
 
       Real min_diff = Kokkos::reduction_identity<Real>::min();
       auto diff_as_real = Homme::viewAsReal(diff);
+      auto dp_as_real   = Homme::viewAsReal(dp);
+      auto dp0_as_real  = Homme::viewAsReal(dp0);
       Kokkos::Min<Real,ExecSpace> reducer(min_diff);
       Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
                               [&](const int k,Real& result) {
+//#ifndef HOMMEXX_BFB_TESTING
+        if(diff_as_real(k) < 0){
+          printf("WARNING:CAAR: dp3d too small. k=%d, dp3d(k)=%f, dp0=%f \n",
+           k+1,dp_as_real(k),dp0_as_real(k));
+        }
+//#endif
         result = result<=diff_as_real(k) ? result : diff_as_real(k);
       }, reducer);
 
@@ -189,7 +193,7 @@ struct LimiterFunctor {
           dp(ilev) = diff(ilev)/spheremp + m_dp3d_thresh*dp0(ilev);
           vtheta_dp(ilev) *= dp(ilev);
         });
-      }
+      } //end of min_diff < 0
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
@@ -197,6 +201,10 @@ struct LimiterFunctor {
         // Note: another place where scream's masks could help
         for (int ivec=0; ivec<VECTOR_SIZE; ++ivec) {
           if ( (vtheta_dp(ilev)[ivec] - m_vtheta_thresh*dp(ilev)[ivec]) < 0) {
+//#ifndef HOMMEXX_BFB_TESTING
+             printf("WARNING:CAAR: k=%d,theta(k)=%f<%f=th_thresh, applying limiter \n",
+               ilev*VECTOR_SIZE+ivec+1,vtheta_dp(ilev)[ivec]/dp(ilev)[ivec],m_vtheta_thresh);
+//#endif
              vtheta_dp(ilev)[ivec]=m_vtheta_thresh*dp(ilev)[ivec];
           }
         }
