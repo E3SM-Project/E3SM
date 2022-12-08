@@ -120,6 +120,7 @@ contains
        call seq_comm_getinfo(comp(eci)%compid      , iamroot=comp(eci)%iamroot_compid)
        call seq_comm_getinfo(comp(eci)%compid      , nthreads=comp(eci)%nthreads_compid)
 
+       ! a processor may have more then one component
        comp(eci)%iamin_compid       =  seq_comm_iamin (comp(eci)%compid)
        comp(eci)%iamin_cplcompid    =  seq_comm_iamin (comp(eci)%cplcompid)
        comp(eci)%iamin_cplallcompid =  seq_comm_iamin (comp(eci)%cplallcompid)
@@ -148,11 +149,15 @@ contains
        allocate(comp(eci)%dom_cc)
        allocate(comp(eci)%gsmap_cc)
        allocate(comp(eci)%cdata_cc)
+       ! copy things like name, ID, mpicom, dom and GsMap pointers to cdata struct
        call seq_cdata_init(comp(eci)%cdata_cc, comp(eci)%compid,              &
             'cdata_'//ntype(1:1)//ntype(1:1), comp(eci)%dom_cc,               &
             comp(eci)%gsmap_cc, infodata, seq_timemgr_data_assimilation_active(ntype(1:3)))
 
-       ! Determine initial value of comp_present in infodata - to do - add this to component
+       ! Determine initial value of comp_present in infodata and set it in
+       ! comp%present
+       !
+!workaround some weird bug in pgi compiler.
 #ifdef CPRPGI
        if (comp(1)%oneletterid == 'a') then
           call seq_infodata_getData(infodata, atm_present=comp(eci)%present)
@@ -223,7 +228,7 @@ contains
     character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
     !---------------------------------------------------------------
 
-    ! **** Initialize component - this initializes  x2c_cc and c2x_cc ***
+    ! **** Initialize component - this initializes pointers to x2c_cc and c2x_cc ***
     ! the following will call the appropriate comp_init_mct routine
 
     call t_set_prefixf(comp(1)%oneletterid//"_i:")
@@ -252,10 +257,13 @@ contains
           if (drv_threading) call seq_comm_setnthreads(comp(eci)%nthreads_compid)
           call shr_sys_flush(logunit)
 
+          ! only done in second phase of atm init
+          ! multiple by area ratio
           if (present(seq_flds_x2c_fluxes)) then
              call mct_avect_vecmult(comp(eci)%x2c_cc, comp(eci)%drv2mdl, seq_flds_x2c_fluxes, mask_spval=.true.)
           end if
 
+          ! call the component's specific init phase
           call t_startf('comp_init')
           call comp_init( EClock, comp(eci)%cdata_cc, comp(eci)%x2c_cc, comp(eci)%c2x_cc, &
                NLFilename=NLFilename )
@@ -266,6 +274,7 @@ contains
              call t_drvstopf ('check_fields')
           end If
 
+          ! only done in second phase of atm init
           if (present(seq_flds_c2x_fluxes)) then
              call mct_avect_vecmult(comp(eci)%c2x_cc, comp(eci)%mdl2drv, seq_flds_c2x_fluxes, mask_spval=.true.)
           end if
@@ -883,6 +892,8 @@ contains
              else
                 mpi_tag = comp(eci)%cplcompid*10000+eci*10+2
              end if
+             ! one of the map methods is a rearrange so can use it to do transfer from comp to coupler
+             ! which is a rearrange
              call seq_map_map(comp(eci)%mapper_Cx2c, comp(eci)%x2c_cx, comp(eci)%x2c_cc, msgtag=mpi_tag)
           else if (flow == 'c2x') then ! component to coupler
              if ( size(comp) > 1) then
@@ -967,6 +978,8 @@ contains
 
   end subroutine component_diag
 
+  ! can exchange data between mesh in component and mesh on coupler.  Either way.
+  ! used in first hop of 2-hop
   subroutine component_exch_moab(comp, mbAPPid1, mbAppid2, direction, fields )
 
    use iMOAB ,  only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_WriteMesh, iMOAB_FreeSenderBuffers

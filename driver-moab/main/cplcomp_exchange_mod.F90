@@ -1062,6 +1062,7 @@ contains
          ! now, if on coupler pes, receive mesh; if on comp pes, send mesh
          if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
          !  send mesh to coupler
+            ! this mesh will just be used to compute intersection on coupler side.
             if (atm_pg_active) then !  change : send the pg2 mesh, not coarse mesh, when atm pg active
                ierr = iMOAB_SendMesh(mhpgid, mpicom_join, mpigrp_cplid, id_join, partMethod)
             else
@@ -1117,7 +1118,8 @@ contains
             endif
          endif
          
-         ! send also the phys grid to coupler, because it will be used for fractions
+         ! send also the point cloud phys grid to coupler, because it will be used for fractions
+         ! and to send data
          ! start copy for mphaid->mphaxid 
          if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
             ID_JOIN_ATMPHYS = id_join + 200 ! somewhat arbitrary, just a different comp id
@@ -1191,7 +1193,7 @@ contains
          ! we can receive those tags only on coupler pes, when mbaxid exists
          ! we have to check that before we can define the tag
          if (mbaxid .ge. 0 .and. .not. (atm_pg_active) ) then
-            tagname = trim(seq_flds_a2x_ext_fields)//C_NULL_CHAR
+            tagname = trim(seq_flds_a2x_ext_fields)//C_NULL_CHAR ! MOAB versions of a2x for spectral
             tagtype = 1  ! dense, double
             numco = np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
             ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
