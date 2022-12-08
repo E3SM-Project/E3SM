@@ -677,22 +677,20 @@ void print_field_hyperslab (const Field& f,
 
     f.sync_to_host();
     const int rank = layout.rank();
-    out << " -----------------------------------------------------------------------\n";
-    out << "     " << f.name() << to_string(orig_layout) << "\n";
-    out << " -----------------------------------------------------------------------\n";
+    out << "     " << f.name() << to_string(orig_layout) << "\n\n";
     switch (rank) {
       case 0:
       {
-        out << "\n  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
+        out << "  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
         // NOTE: add ", " at the end, to make rank0 behave the same as other ranks,
         //       for the sake of any script trying to manipulate output
-        out << "\n    " << f.get_view<const T,Host>()() << ", ";
+        out << "\n    " << f.get_view<const T,Host>()() << ", \n";
         break;
       }
       case 1:
       {
         dims_str[dims_left[0]] = ":";
-        out << "\n  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
+        out << "  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
         auto v = f.get_view<const T*,Host>();
         for (int i=0; i<layout.dim(0); ++i) {
           if (i%max_per_line==0) {
@@ -700,6 +698,7 @@ void print_field_hyperslab (const Field& f,
           }
           out << v(i) << ", ";
         }
+        out << "\n";
         break;
       }
       case 2:
@@ -708,13 +707,14 @@ void print_field_hyperslab (const Field& f,
         auto v = f.get_view<const T**,Host>();
         for (int i=0; i<layout.dim(0); ++i) {
           dims_str[dims_left[0]] = std::to_string(i);
-          out << "\n  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
+          out << "  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
           for (int j=0; j<layout.dim(1); ++j) {
             if (j%max_per_line==0) {
               out << "\n    ";
             }
             out << v(i,j) << ", ";
           }
+          out << "\n";
         }
         break;
       }
@@ -726,13 +726,14 @@ void print_field_hyperslab (const Field& f,
           dims_str[dims_left[0]] = std::to_string(i);
           for (int j=0; j<layout.dim(1); ++j) {
             dims_str[dims_left[1]] = std::to_string(j);
-            out << "\n  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
+            out << "  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
             for (int k=0; k<layout.dim(2); ++k) {
               if (k%max_per_line==0) {
                 out << "\n    ";
               }
               out << v(i,j,k) << ", ";
             }
+            out << "\n";
           }
         }
         break;
@@ -747,13 +748,14 @@ void print_field_hyperslab (const Field& f,
             dims_str[dims_left[1]] = std::to_string(j);
             for (int k=0; k<layout.dim(2); ++k) {
               dims_str[dims_left[2]] = std::to_string(k);
-              out << "\n  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
+              out << "  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
               for (int l=0; l<layout.dim(3); ++l) {
                 if (l%max_per_line==0) {
                   out << "\n    ";
                 }
                 out << v(i,j,k,l) << ", ";
               }
+              out << "\n";
             }
           }
         }
@@ -766,7 +768,6 @@ void print_field_hyperslab (const Field& f,
             "  - field layout (upon slicing): " + to_string(layout) + "\n");
 
     }
-    out << "\n -----------------------------------------------------------------------\n";
   } else {
     auto tag = tags[curr_idx];
     auto idx = indices[curr_idx];
@@ -815,19 +816,17 @@ void print_field_hyperslab (const Field& f,
       // with a rank 1 field (if Kokkos had allowed us to take the subview)
       dims_str[dims_left[0]] = ":";
 
-      out << " -----------------------------------------------------------------------\n";
-      out << "     " << f.name() << to_string(orig_layout) << "\n";
-      out << " -----------------------------------------------------------------------\n";
+      out << "     " << f.name() << to_string(orig_layout) << "\n\n";
       f.sync_to_host();
       auto v = f.get_view<const T**,Host>();
-      out << "\n  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
+      out << "  " << f.name() << "(" << ekat::join(dims_str,",") << ")";
       for (int i=0; i<layout.dim(0); ++i) {
         if (i%max_per_line==0) {
           out << "\n    ";
         }
         out << v(i,idx) << ", ";
       }
-      out << "\n -----------------------------------------------------------------------\n";
+      out << "\n";
     }
   }
 }

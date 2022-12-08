@@ -278,29 +278,34 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
           tags.erase(itm);
           idx.erase(idx.begin()+pos);
         }
+        ss << "\n *************************** INPUT FIELDS ******************************\n";
         ss << "\n  ------- INPUT FIELDS -------\n";
         for (const auto& f : m_fields_in) {
           if (f.get_header().get_identifier().get_layout().has_tags(tags)) {
             print_field_hyperslab (f,tags,idx,ss);
+            ss << " -----------------------------------------------------------------------\n";
           }
         }
         for (const auto& g : m_groups_in) {
           for (const auto& f : g.m_fields) {
             if (f.second->get_header().get_identifier().get_layout().has_tags(tags)) {
               print_field_hyperslab (*f.second,tags,idx,ss);
+              ss << " -----------------------------------------------------------------------\n";
             }
           }
         }
-        ss << "\n  ------- OUTPUT FIELDS -------\n";
+        ss << "\n ************************** OUTPUT FIELDS ******************************\n";
         for (const auto& f : m_fields_out) {
           if (f.get_header().get_identifier().get_layout().has_tags(tags)) {
             print_field_hyperslab (f,tags,idx,ss);
+            ss << " -----------------------------------------------------------------------\n";
           }
         }
         for (const auto& g : m_groups_out) {
           for (const auto& f : g.m_fields) {
             if (f.second->get_header().get_identifier().get_layout().has_tags(tags)) {
               print_field_hyperslab (*f.second,tags,idx,ss);
+              ss << " -----------------------------------------------------------------------\n";
             }
           }
         }

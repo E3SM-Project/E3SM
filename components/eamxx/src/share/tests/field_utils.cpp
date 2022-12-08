@@ -229,22 +229,19 @@ TEST_CASE ("print_field_hyperslab") {
     print_field_hyperslab(f,loc_tags,loc_idxs,out);
 
     std::stringstream expected;
-    expected <<
-      " -----------------------------------------------------------------------\n"
-      "     f" << to_string(fid.get_layout()) << "\n"
-      " -----------------------------------------------------------------------\n";
+    expected << "     f" << to_string(fid.get_layout()) << "\n\n";
       for (int gp1=0; gp1<ngp; ++gp1) {
         for (int gp2=0; gp2<ngp; ++gp2) {
-          expected <<  "\n  f(" << iel << "," << icmp << "," << gp1 << "," << gp2 << ",:)";
+          expected <<  "  f(" << iel << "," << icmp << "," << gp1 << "," << gp2 << ",:)";
           for (int lev=0; lev<nlev; ++lev) {
             if (lev % max_per_line == 0) {
               expected << "\n    ";
             }
             expected << v(iel,icmp,gp1,gp2,lev) << ", ";
           }
+          expected << "\n";
         }
       }
-      expected << "\n -----------------------------------------------------------------------\n";
 
     REQUIRE (out.str()==expected.str());
   }
@@ -255,18 +252,15 @@ TEST_CASE ("print_field_hyperslab") {
     print_field_hyperslab(f,loc_tags,loc_idxs,out);
 
     std::stringstream expected;
-    expected <<
-      " -----------------------------------------------------------------------\n"
-      "     f" << to_string(fid.get_layout()) << "\n"
-      " -----------------------------------------------------------------------\n";
-      expected <<  "\n  f(" << iel << ",:," << igp << "," << jgp << "," << ilev << ")";
+    expected << "     f" << to_string(fid.get_layout()) << "\n\n";
+      expected <<  "  f(" << iel << ",:," << igp << "," << jgp << "," << ilev << ")";
       for (int cmp=0; cmp<ncmp; ++cmp) {
         if (cmp % max_per_line == 0) {
           expected << "\n    ";
         }
         expected << v(iel,cmp,igp,jgp,ilev) << ", ";
       }
-      expected << "\n -----------------------------------------------------------------------\n";
+      expected << "\n";
 
     REQUIRE (out.str()==expected.str());
   }
@@ -277,13 +271,9 @@ TEST_CASE ("print_field_hyperslab") {
     print_field_hyperslab(f,loc_tags,loc_idxs,out);
 
     std::stringstream expected;
-    expected <<
-      " -----------------------------------------------------------------------\n"
-      "     f" << to_string(fid.get_layout()) << "\n"
-      " -----------------------------------------------------------------------\n";
-      expected <<  "\n  f(" << ekat::join(loc_idxs,",") << ")";
-      expected << "\n    " << v(iel,icmp,igp,jgp,ilev) << ", ";
-      expected << "\n -----------------------------------------------------------------------\n";
+    expected << "     f" << to_string(fid.get_layout()) << "\n\n";
+      expected <<  "  f(" << ekat::join(loc_idxs,",") << ")\n";
+      expected << "    " << v(iel,icmp,igp,jgp,ilev) << ", \n";
 
     REQUIRE (out.str()==expected.str());
   }
