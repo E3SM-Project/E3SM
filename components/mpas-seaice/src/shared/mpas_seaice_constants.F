@@ -56,6 +56,9 @@ module seaice_constants
        seaiceOceanAlbedo, &             ! Ocean albedo
        seaiceVonKarmanConstant, &       ! Von Karman constant
        seaiceIceSurfaceRoughness, &     ! ice surface roughness (m)
+       seaiceSeaWaterSpecificHeat, &    ! specific heat of ocn (J/kg/K)
+       seaiceLatentHeatVaporization, &  ! latent heat, vaporization freshwater (J/kg)
+       seaiceReferenceSalinity, &       ! ice reference salinity (ppt)
        seaiceStabilityReferenceHeight   ! stability reference height (m)
 
   ! dynamics constants
