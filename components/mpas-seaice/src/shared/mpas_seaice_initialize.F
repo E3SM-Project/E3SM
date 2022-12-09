@@ -57,13 +57,9 @@ contains
          seaice_init_icepack_constants, &
          seaice_init_icepack_physics_package_parameters, &
          seaice_init_icepack_physics_package_variables
-    use seaice_icepack, only: &
-         seaice_init_icepack_physics_package_variables
     use seaice_column, only: &
          seaice_init_column_constants, &
          seaice_init_column_physics_package_parameters, &
-         seaice_init_column_physics_package_variables
-    use seaice_column, only: &
          seaice_init_column_physics_package_variables
     use seaice_forcing, only: seaice_forcing_init, seaice_reset_coupler_fluxes
     use seaice_diagnostics, only: &
