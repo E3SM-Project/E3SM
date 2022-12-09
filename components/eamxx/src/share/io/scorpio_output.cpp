@@ -91,6 +91,15 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   // Register any diagnostics needed by this output stream
   set_diagnostics();
 
+  // Check if remapping vertically and if so create a VerticalRemapper and initialize it.
+//ASD  if (true) {  //TODO trigger true if output_control.yaml requests it.
+//ASD    m_verti_remapper = VerticalRemapper("test.nc");
+//ASD    for (const auto& fname : m_fields_names) { 
+//ASD      auto fid = get_field(fname,m_sim_field_mgr).get_header().get_identifier();
+//ASD    }
+//ASD  }
+  
+
   bool remap_from_file = params.isParameter("remap_file");
 
   if (io_grid->name()!=fm_grid->name() || remap_from_file) {

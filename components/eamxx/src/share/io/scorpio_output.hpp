@@ -11,7 +11,10 @@
 
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
+#include "ekat/ekat_pack_utils.hpp"
+#include "ekat/ekat_pack_kokkos.hpp"
 
+#include <numeric>
 /*  The AtmosphereOutput class handles an output stream in SCREAM.
  *  Typical usage is to register an AtmosphereOutput object with the OutputManager (see scream_output_manager.hpp
  *
@@ -192,6 +195,62 @@ protected:
   std::map<std::string,view_1d_host>    m_host_views_1d;
   std::map<std::string,view_1d_dev>     m_dev_views_1d;
 
+//ASD  // A structure that will be used to handle vertical remapping
+//ASD  struct VerticalRemapper {
+//ASD    using fid_t = FieldIdentifier;
+//ASD    using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+//ASD    using KT = KokkosTypes<DefaultDevice>;
+//ASD    using view_1d_const = typename KT::template view_1d<const Pack>;
+//ASD    using view_1d = typename KT::template view_1d<Pack>;
+//ASD
+//ASD    VerticalRemapper() = default;
+//ASD    VerticalRemapper(const std::string remap_filename)
+//ASD    {
+//ASD      // Add code to read pressure levs from file.
+//ASD      scorpio::register_file(remap_filename,scorpio::FileMode::Read);
+//ASD      m_tgt_levs = scorpio::get_dimlen_c2f(remap_filename.c_str(),"nlevs");
+//ASD      std::vector<Real> remap_pres_levs(m_tgt_levs);
+//ASD      std::vector<scorpio::offset_t> dofs_offsets(m_tgt_levs);
+//ASD      std::iota(dofs_offsets.begin(),dofs_offsets.end(),0);
+//ASD      const std::string idx_decomp_tag = "vertical_remapper::" + std::to_string(m_tgt_levs);
+//ASD      scorpio::get_variable(remap_filename, "p_levs", "p_levs", {"nlevs"}, "real", idx_decomp_tag);
+//ASD      scorpio::set_dof(remap_filename,"p_levs",m_tgt_levs,dofs_offsets.data());
+//ASD      scorpio::set_decomp(remap_filename);
+//ASD      scorpio::grid_read_data_array(remap_filename,"p_levs",-1,remap_pres_levs.data(),remap_pres_levs.size());
+//ASD      scorpio::eam_pio_closefile(remap_filename);
+//ASD
+//ASD      auto npacks = ekat::PackInfo<SCREAM_PACK_SIZE>::num_packs(m_tgt_levs);
+//ASD      m_plevs = view_1d("",npacks);
+//ASD      auto remap_pres_host = Kokkos::create_mirror_view(m_plevs);
+//ASD      auto remap_pres_scal = ekat::scalarize(remap_pres_host);
+//ASD      for (int ii=0;ii<m_tgt_levs;ii++) {
+//ASD        remap_pres_scal(ii) = remap_pres_levs[ii];
+//ASD      }
+//ASD      Kokkos::deep_copy(m_plevs,remap_pres_host);
+//ASD    }
+//ASD
+//ASD    int m_tgt_levs;
+//ASD    view_1d m_plevs;
+//ASD    std::map<std::string,std::shared_ptr<atm_diag_type>>  m_fields;
+//ASD
+//ASD    void register_field(const ekat::Comm comm, const fid_t& fid, std::shared_ptr<const gm_type> grids_manager) {
+//ASD      auto& diag_factory = AtmosphereDiagnosticFactory::instance();
+//ASD 
+//ASD      ekat::ParameterList params;
+//ASD      params.set("Field Name",fid.name());
+//ASD      params.set("Grid Name",fid.get_grid_name());
+//ASD      params.set("Field Layout",fid.get_layout());
+//ASD      params.set("Field Units",fid.get_units());
+//ASD      params.set<view_1d_const>("press_levels",m_plevs);
+//ASD      params.set<int>("tgt_num_levs",m_tgt_levs);
+//ASD      // Create the diagnostic
+//ASD      auto diag = diag_factory.create("VerticallyRemappedField",comm,params);
+//ASD      diag->set_grids(grids_manager);
+//ASD      m_fields.emplace(fid.name(),diag);
+//ASD    }
+//ASD    
+//ASD  }; // VerticalRemapper
+//ASD  VerticalRemapper                    m_verti_remapper;
 };
 
 } //namespace scream
