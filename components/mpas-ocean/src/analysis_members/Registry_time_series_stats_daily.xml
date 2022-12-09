@@ -93,6 +93,7 @@
 				type="output"
 				mode="forward;analysis"
 				io_type="pnetcdf"
+				useMissingValMask="true"
 				precision="single"
 				filename_template="analysis_members/mpaso.hist.am.timeSeriesStatsDaily.$Y-$M-$D.nc"
 				reference_time="01-01-01_00:00:00"

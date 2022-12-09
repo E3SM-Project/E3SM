@@ -801,7 +801,7 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="ecosys_diag_photoC_TOT_zint"/>')
         lines.append('</stream>')
         lines.append('')
-        if ocn_wave:
+        if ocn_wave == 'true':
             lines.append('<stream name="waveOutput"')
             lines.append('        type="output"')
             lines.append('        precision="single"')
@@ -1058,6 +1058,7 @@ def buildnml(case, caseroot, compname):
         lines.append('        type="output"')
         lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        useMissingValMask="true"')
         lines.append('        filename_template="{}.mpaso.hist.am.timeSeriesStatsDaily.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
@@ -1112,6 +1113,7 @@ def buildnml(case, caseroot, compname):
         else:
             lines.append('        io_type="{}"'.format(ocn_pio_typename))
 
+        lines.append('        useMissingValMask="true"')
         lines.append('        filename_template="{}.mpaso.hist.am.timeSeriesStatsMonthly.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
@@ -1331,7 +1333,7 @@ def buildnml(case, caseroot, compname):
             lines.append('    <var name="ecosys_diag_CO3"/>')
             lines.append('    <var name="ecosys_diag_co3_sat_calc"/>')
             lines.append('    <var name="ecosys_diag_co3_sat_arag"/>')
-        if ocn_wave:
+        if ocn_wave == 'true':
             lines.append('    <var name="peakWaveFrequency"/>')
             lines.append('    <var name="peakWaveDirection"/>')
             lines.append('    <var name="significantWaveHeight"/>')
@@ -1347,6 +1349,7 @@ def buildnml(case, caseroot, compname):
         else:
             lines.append('        io_type="{}"'.format(ocn_pio_typename))
 
+        lines.append('        useMissingValMask="true"')
         lines.append('        filename_template="{}.mpaso.hist.am.timeSeriesStatsMonthlyMax.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
@@ -1408,6 +1411,7 @@ def buildnml(case, caseroot, compname):
         else:
             lines.append('        io_type="{}"'.format(ocn_pio_typename))
 
+        lines.append('        useMissingValMask="true"')
         lines.append('        filename_template="{}.mpaso.hist.am.timeSeriesStatsMonthlyMin.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
@@ -1465,6 +1469,7 @@ def buildnml(case, caseroot, compname):
         lines.append('        type="output"')
         lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        useMissingValMask="true"')
         lines.append('        filename_template="{}.mpaso.hist.am.timeSeriesStatsClimatology.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
@@ -1479,6 +1484,7 @@ def buildnml(case, caseroot, compname):
         lines.append('        type="output"')
         lines.append('        precision="single"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
+        lines.append('        useMissingValMask="true"')
         lines.append('        filename_template="{}.mpaso.hist.am.timeSeriesStatsCustom.$Y-$M-$D.nc"'.format(casename))
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')

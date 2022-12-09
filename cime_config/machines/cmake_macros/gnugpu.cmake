@@ -1,5 +1,4 @@
 string(APPEND CFLAGS " -mcmodel=medium")
-string(APPEND CXXFLAGS " -std=c++14")
 string(APPEND FFLAGS " -mcmodel=medium -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none")
 if (CMAKE_Fortran_COMPILER_VERSION VERSION_GREATER_EQUAL 10)
    string(APPEND FFLAGS " -fallow-argument-mismatch")
