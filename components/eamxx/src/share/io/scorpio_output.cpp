@@ -710,6 +710,8 @@ Field AtmosphereOutput::get_field(const std::string& name, const std::shared_ptr
   } else if (m_diagnostics.find(name) != m_diagnostics.end() && field_mgr==m_sim_field_mgr) {
     const auto& diag = m_diagnostics.at(name);
     return diag->get_diagnostic();
+  } else if (m_fields_alt_name.find(name) != m_fields_alt_name.end() && field_mgr->has_field(m_fields_alt_name.at(name))) {
+    return field_mgr->get_field(m_fields_alt_name.at(name));
   } else {
     EKAT_ERROR_MSG ("Field " + name + " not found in output field manager or diagnostics list, or requesting a diag not on the simualation field manager.");
   }
@@ -765,6 +767,7 @@ create_diagnostic (const std::string& diag_field_name) {
     diag_name = "FieldAtLevel";
     tokens.pop_back();
     auto fname = ekat::join(tokens,"_");
+    m_fields_alt_name.emplace(diag_field_name,fname);
     // If the field is itself a diagnostic, make sure it's built
     if (diag_factory.has_product(fname) and
         m_diagnostics.count(fname)==0) {
@@ -793,6 +796,7 @@ create_diagnostic (const std::string& diag_field_name) {
     }
     tokens.pop_back();
     auto fname = ekat::join(tokens,"_");
+    m_fields_alt_name.emplace(diag_field_name,fname);
     // If the field is itself a diagnostic, make sure it's built
     if (diag_factory.has_product(fname) and
         m_diagnostics.count(fname)==0) {

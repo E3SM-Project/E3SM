@@ -180,6 +180,7 @@ protected:
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
   std::vector<std::string>                              m_fields_names;
+  std::map<std::string,std::string>                     m_fields_alt_name;
   std::map<std::string,FieldLayout>                     m_layouts;
   std::map<std::string,int>                             m_dofs;
   std::map<std::string,int>                             m_dims;
