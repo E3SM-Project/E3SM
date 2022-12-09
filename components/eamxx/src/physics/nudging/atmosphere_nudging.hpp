@@ -33,7 +33,8 @@ public:
   using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
 
   using Spack = SmallPack<Real>;
-  using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+  //using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+  using Pack = ekat::Pack<Real,1>;
   using KT = KokkosTypes<DefaultDevice>;
 
   template <typename S>
@@ -75,13 +76,17 @@ protected:
 
   std::shared_ptr<const AbstractGrid>   m_grid;
   // Keep track of field dimensions and the iteration count
-  ekat::Comm m_comm;
+  //ekat::Comm m_comm;
   int m_num_cols; 
   int m_num_levs;
   //int m_num_src_levs;
   int m_num_src_levs;
   std::string datafile;
-  view_2d<Real> T_mid_r_m;
+  view_2d<Pack> T_mid_r_m;
+  view_2d<Pack> p_mid_r_m;
+  std::map<std::string,view_1d_host<Real>> host_views;
+  std::map<std::string,FieldLayout>  layouts;
+  std::vector<std::string> m_fnames;
   //FieldLayout scalar3d_layout_mid_;
   // DOF information
   //view_1d_dof m_dofs_gids;
