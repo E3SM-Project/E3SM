@@ -85,6 +85,9 @@ contains
     real(kind=RKIND), intent(in) :: &
          dt !< Input:
 
+    type(block_type), pointer :: &
+         block
+
     character(len=strKIND), pointer :: &
          config_column_physics_type
 
@@ -489,8 +492,8 @@ contains
     endif
 
     ! aggregate tracers even if restart
-    call MPAS_pool_get_config(domain % configs, "config_use_column_package", config_use_column_package)
-    call MPAS_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_use_column_package", config_use_column_package)
+    call MPAS_pool_get_config(domain % blocklist % configs, "config_column_physics_type", config_column_physics_type)
     if (config_use_column_package) then
        if (trim(config_column_physics_type) == "icepack") then
           call seaice_icepack_aggregate(domain)
