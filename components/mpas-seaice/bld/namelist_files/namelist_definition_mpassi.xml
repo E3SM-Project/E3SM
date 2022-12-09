@@ -781,9 +781,9 @@ Default: Defined in namelist_defaults.xml
 
 <!-- column_package -->
 
-<entry id="config_column_physics_type" type="character"
+<entry id="config_column_physics_type" type="char*1024"
 	category="column_package" group="column_package">
-Set column physics type.
+Set column physics library.
 
 Valid values: 'icepack' and 'column_package'
 Default: Defined in namelist_defaults.xml
