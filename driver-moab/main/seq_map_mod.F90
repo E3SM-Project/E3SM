@@ -365,7 +365,7 @@ end subroutine moab_map_init_rcfile
 
 #ifdef HAVE_MOAB
        ! check whether the application ID is defined on the current process
-       if ( mapper%src_mbid .lt. 0 .or. mapper%tgt_mbid .lt. 0 ) then
+       if ( mapper%src_mbid .lt. 0 .or. mapper%tgt_mbid .lt. 0 .or. mapper%intx_mbid .lt.0 ) then
          valid_moab_context = .FALSE.
        else
          valid_moab_context = .TRUE.
