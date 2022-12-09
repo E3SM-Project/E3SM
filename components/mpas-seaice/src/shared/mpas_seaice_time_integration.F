@@ -190,11 +190,15 @@ contains
 
     ! shortwave
     call mpas_timer_start("Column post-dynamics")
+#ifdef icepackON
     if (trim(config_column_physics_type) == "icepack") then
        call seaice_icepack_postdynamics_time_integration(domain, clock)
     else if (trim(config_column_physics_type) == "column_package") then
+#endif
        call seaice_column_postdynamics_time_integration(domain, clock)
+#ifdef icepackON
     endif ! config_column_physics_type
+#endif
     call mpas_timer_stop("Column post-dynamics")
 
     ! check the physical state of the model
