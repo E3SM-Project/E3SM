@@ -73,7 +73,7 @@ if (NOT SCREAM_CIME_BUILD)
   message(STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
 else()
   # Ensure our languages are all enabled
-  enable_language(C CXX Fortan)
+  enable_language(C CXX Fortran)
 endif()
 
 set(SCREAM_DOUBLE_PRECISION TRUE CACHE BOOL "Set to double precision (default True)")
