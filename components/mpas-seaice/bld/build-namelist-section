@@ -162,7 +162,7 @@ add_default($nl, 'config_recover_tracer_means_check');
 # Namelist group: column_package #
 ##################################
 
-add_default($nl, 'config_use_column_physics_type');
+add_default($nl, 'config_column_physics_type');
 add_default($nl, 'config_use_column_shortwave');
 add_default($nl, 'config_use_column_vertical_thermodynamics');
 add_default($nl, 'config_use_column_biogeochemistry');
