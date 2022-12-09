@@ -24,7 +24,6 @@
 using namespace scream;
 
 //namespace {
-
 std::shared_ptr<GridsManager>
 create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
@@ -39,6 +38,7 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
   return gm;
 }
+
 
 
 TEST_CASE("nudging") {
@@ -121,11 +121,13 @@ TEST_CASE("nudging") {
 
     const std::string& gn = grid2->name();
 
+    FieldIdentifier fid2("p_mid_r",FL{tag_2d,dims_2d},Pa,gn);
     FieldIdentifier fid3("T_mid_r",FL{tag_2d,dims_2d},K,gn);
 
     // Register fields with fm
     // Make sure packsize isn't bigger than the packsize for this machine, but not so big   that we end up with only 1 pack.
     fm->registration_begins();
+    fm->register_field(FR{fid2,"output"});
     fm->register_field(FR{fid3,"output"});
     fm->registration_ends();
 
@@ -134,15 +136,21 @@ TEST_CASE("nudging") {
     auto f3 = fm->get_field(fid3);
     auto f3_host = f3.get_view<Real**,Host>();
 
+    auto f2 = fm->get_field(fid2);
+    auto f2_host = f2.get_view<Real**,Host>();
+
+
     for (int ii=0;ii<num_lcols;++ii) {
       for (int jj=0;jj<num_levs;++jj) {
         f3_host(ii,jj) = 1;
+        f2_host(ii,jj) = 1;
       }
     }
     // Update timestamp
     //util::TimeStamp time ({2000,1,1},{0,0,0});
     fm->init_fields_time_stamp(time);
     // Sync back to device
+    f2.sync_to_dev();
     f3.sync_to_dev();
 
     fm->init_fields_time_stamp(t0);
@@ -156,7 +164,7 @@ TEST_CASE("nudging") {
     params.set<std::string>("Averaging Type","Instant");
     params.set<int>("Max Snapshots Per File",1);
     //auto& params_sub_f = params.sublist("Field Names");
-    std::vector<std::string> fnames = {"T_mid_r"};
+    std::vector<std::string> fnames = {"T_mid_r","p_mid_r"};
     //params_sub_f.set<std::vector<std::string>>("Field Names",fnames);
     params.set<std::vector<std::string>>("Field Names",fnames);
     //params_sub.set<std::string>("frequency_units","T_mid_r");
@@ -193,8 +201,13 @@ TEST_CASE("nudging") {
               auto v = f.get_view<Real**,Host>();
               for (int i=0; i<fl.dim(0); ++i) {
                 for (int j=0; j<fl.dim(1); ++j) {
-                  v(i,j) = (-j)*100 + i + 1;
-		  std::cout<<"v(i,j): "<<v(i,j)<<std::endl;
+                  if (fname == "T_mid_r"){
+                    v(i,j) = (-j)*100 + i + 1;
+                    std::cout<<"v("<<i<<","<<j<<"): "<<v(i,j)<<std::endl;
+                  }
+                  if (fname == "p_mid_r"){
+                    v(i,j) = 1+j*2;
+		  }
                 }
               }
             }
@@ -236,23 +249,39 @@ TEST_CASE("nudging") {
 
   FieldIdentifier fid_mid ("T_mid",FL({COL,LEV},{ncols,nlevs}),units,grid->name());
   Field f_mid (fid_mid);
-  f_mid.get_header().get_alloc_properties().request_allocation(packsize);
+  //f_mid.get_header().get_alloc_properties().request_allocation(packsize);
+  f_mid.get_header().get_alloc_properties().request_allocation(1);
   f_mid.allocate_view();
   f_mid.get_header().get_tracking().update_time_stamp(t0);
 
+  FieldIdentifier pid_mid ("p_mid",FL({COL,LEV},{ncols,nlevs}),units,grid->name());
+  Field p_mid (fid_mid);
+  //p_mid.get_header().get_alloc_properties().request_allocation(packsize);
+  p_mid.get_header().get_alloc_properties().request_allocation(1);
+  p_mid.allocate_view();
+  p_mid.get_header().get_tracking().update_time_stamp(t0);
+
   ekat::ParameterList params_mid;
+  std::vector<std::string> fnames = {"T_mid_r","p_mid_r"};
+  //std::vector<std::string> fnames = {"T_mid_r"};
+  params_mid.set<std::vector<std::string>>("Field Names",fnames);
   auto nudging_mid = std::make_shared<NUDGING>(io_comm,params_mid);
   nudging_mid->set_grids(gm);
   nudging_mid->set_required_field(f_mid);
 
+
   //fill data
   auto f_mid_v_h   = f_mid.get_view<Real**, Host>();
-  for (int ilev=0; ilev<nlevs; ilev++){ 
-    for (int icol=0; icol<ncols; icol++){
+  auto p_mid_v_h   = p_mid.get_view<Real**, Host>();
+  for (int icol=0; icol<ncols; icol++){
+    for (int ilev=0; ilev<nlevs; ilev++){ 
       f_mid_v_h(icol,ilev) = (-ilev)*100 + icol;
+      p_mid_v_h(icol,ilev) = 2+ilev*2;
     }
   }
   f_mid.sync_to_dev();
+  p_mid.sync_to_dev();
+
 
   //initialize
   nudging_mid->initialize(t0,RunType::Initial);
@@ -262,9 +291,9 @@ TEST_CASE("nudging") {
   f_mid.sync_to_host();
 
   //Now check that I was able to nudge it by a value of 1
-  for (int ilev=0; ilev<nlevs; ilev++){ 
-    for (int icol=0; icol<ncols; icol++){
-      std::cout<<"f_mid_v_h(icol,ilev): "<<f_mid_v_h(icol,ilev)<<std::endl;
+  for (int icol=0; icol<ncols; icol++){
+    for (int ilev=0; ilev<nlevs; ilev++){ 
+      std::cout<<"f_mid_v_h("<<icol<<","<<ilev<<"): "<<f_mid_v_h(icol,ilev)<<std::endl;
       REQUIRE(f_mid_v_h(icol,ilev) == (-ilev)*100 + icol + 1);
     }
   }
