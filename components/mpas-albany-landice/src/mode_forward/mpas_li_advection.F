@@ -461,22 +461,18 @@ module li_advection
 
          ! TODO: more complicated treatment at GL?
 
-         where ( li_mask_is_grounded_ice(cellMask) )
-
-            basalMassBal = groundedBasalMassBal
-
-         elsewhere ( li_mask_is_floating_ice(cellMask) )
-
-            ! Currently, floating and grounded ice are mutually exclusive.
-            ! This could change if the GL is parameterized, in which case this logic may need adjustment.
-            basalMassBal = floatingBasalMassBal
-
-         elsewhere ( .not. (li_mask_is_ice(cellMask) ) )
-
-            ! We don't allow a positive basal mass balance where ice is not already present.
-            basalMassBal = 0.0_RKIND
-
-         end where
+         do iCell = 1, nCells
+            if (li_mask_is_grounded_ice(cellMask(iCell))) then
+               basalMassBal(iCell) = groundedBasalMassBal(iCell)
+            elseif (li_mask_is_floating_ice(cellMask(iCell))) then
+               ! Currently, floating and grounded ice are mutually exclusive.
+               ! This could change if the GL is parameterized, in which case this logic may need adjustment.
+               basalMassBal(iCell) = floatingBasalMassBal(iCell)
+            elseif ( .not. (li_mask_is_ice(cellMask(iCell)))) then
+               ! We don't allow a positive basal mass balance where ice is not already present.
+               basalMassBal(iCell) = 0.0_RKIND
+            endif
+         enddo
 
          ! It is possible that excess internal melting was computed and assigned
          ! to the drainedInternalMeltRate array in mpas_li_thermal.F.  If so, then add it to basalMassBal.
@@ -948,16 +944,18 @@ module li_advection
             groundedSfcMassBalApplied = 0.0_RKIND
       end where
 
-      where (li_mask_is_grounded_ice(cellMask))
-            groundedBasalMassBalApplied = basalMassBalApplied
-            floatingBasalMassBalApplied = 0.0_RKIND
-      elsewhere (li_mask_is_floating_ice(cellMask))
-            floatingBasalMassBalApplied = basalMassBalApplied
-            groundedBasalMassBalApplied = 0.0_RKIND
-      elsewhere
-            groundedBasalMassBalApplied = 0.0_RKIND
-            floatingBasalMassBalApplied = 0.0_RKIND
-      end where
+      do iCell = 1, nCells
+         if (li_mask_is_grounded_ice(cellMask(iCell))) then
+            groundedBasalMassBalApplied(iCell) = basalMassBalApplied(iCell)
+            floatingBasalMassBalApplied(iCell) = 0.0_RKIND
+         elseif (li_mask_is_floating_ice(cellMask(iCell))) then
+            floatingBasalMassBalApplied(iCell) = basalMassBalApplied(iCell)
+            groundedBasalMassBalApplied(iCell) = 0.0_RKIND
+         else
+            groundedBasalMassBalApplied(iCell) = 0.0_RKIND
+            floatingBasalMassBalApplied(iCell) = 0.0_RKIND
+         endif
+      enddo
 
       deallocate(thckTracerProducts)
 
