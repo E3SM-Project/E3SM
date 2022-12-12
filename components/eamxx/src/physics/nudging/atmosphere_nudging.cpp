@@ -41,22 +41,12 @@ void NUDGING::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   std::cout<<"Grid name is : "<<grid_name<<std::endl;
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
-  //m_dofs_gids = m_grid->get_dofs_gids();
-  //m_min_global_dof    = m_grid->get_global_min_dof_gid();
 
-
-  //Here get all the fields that are defined in parameter list
-  //Then need to find the corresponding field layout for each of them
-  //Grid should be the same
-
-  //FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_levs} };
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_levs} };
-  //scalar3d_layout_mid_=scalar3d_layout_mid;
   //constexpr int ps = Pack::n;
   constexpr int ps = 1;
   add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name, ps);
   add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
-
 
   //Now need to read in the file
   datafile = "io_output_test.INSTANT.nsteps_x1.np1.2000-01-01-00001.nc";
@@ -77,14 +67,6 @@ void NUDGING::init_buffers(const ATMBufferManager &buffer_manager)
 // =========================================================================================
 void NUDGING::initialize_impl (const RunType /* run_type */)
 {
-
-  //In here make
-
-  //need to make grid for input file
-  //auto grid = std::make_shared<PointGrid>("grid",num_local_cols,source_data_nlevs,comm);
-
-  //Is there a way to get list of fields
-  //Is there a way to get   
 
   using namespace ShortFieldTagsNames;
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
@@ -121,37 +103,6 @@ void NUDGING::initialize_impl (const RunType /* run_type */)
 
   T_mid_r_v_g = T_mid_r_v;
   p_mid_r_v_g = p_mid_r_v;
-  //T_mid_r_m = T_mid_r_v;
-  //view_2d<Real> T_mid_r_p("T_mid_r",m_num_cols,m_num_src_levs);
-  //T_mid_r_m = T_mid_r_p;
-  //T_mid_r_m = T_mid_r_v;
-
-
-
-  /*  
-  //This is a way to get change from real to pack with pack size 16
-  auto T_mid_r_m_s = ekat::scalarize(T_mid_r_m);
-  int pp = Pack::n;
-  //Need to parallize this
-  for (int jj=0; jj<m_num_cols; jj++){
-    for (int kk=0; kk<m_num_levs; kk++) {
-      T_mid_r_m_s(jj,kk) = T_mid_r_v(jj,kk);
-    }
-  }
-  */
-
-
-  //p_mid_r_m = p_mid_r_v;
-
-
-  //Get proper data from file, i.e.
-  //Is this an initialization that happens at each time step or at the beginning before
-  //everything?
-  //Use AtmosphereInput from scorpio_input to read in file
-  //    Is there a file that I can start with? 
-  //Is there where we need to vertically interpolate to the new grid?
-
-  
   
 }
 
@@ -161,9 +112,6 @@ void NUDGING::run_impl (const int dt)
   using namespace scream::vinterp;
   std::cout<<"I get in run_impl of atmosphere nudging"<<std::endl;
 
-  //Eventually loop over all varialbes not just T_mid
-  //auto T_mid          = get_field_in("T_mid").get_view<Spack**>();
-  //auto T_mid          = get_field_in("T_mid").get_view<Pack**>();
   //These are fields before modifications
   auto T_mid          = get_field_in("T_mid").get_view<Pack**>();
   const auto p_mid    = get_field_in("p_mid").get_view<Pack**>();
@@ -171,88 +119,29 @@ void NUDGING::run_impl (const int dt)
   //These are field values to be modified to
   //auto T_mid_r_m = utput.get_view<Pack**>();
   view_2d<Pack> T_mid_r_m_out("T_mid_r_m_out",m_num_cols,m_num_levs);
-  //T_mid_r_m is temperature you want nudge to
-  //p_mid_r_m is value at source
-  //Need to perform 1D interpolation since pressure going to be 
-  //different everywhere  
-  //Loop over all columns and then perform interpolation
 
   const view_2d<Pack> T_mid_r_m(reinterpret_cast<Pack*>(T_mid_r_v_g.data()),m_num_cols,m_num_src_levs); 
   const view_2d<Pack> p_mid_r_m(reinterpret_cast<Pack*>(p_mid_r_v_g.data()),m_num_cols,m_num_src_levs);
   //T_mid_r_m =  view_2d<Pack>(reinterpret_cast<Pack*>(T_mid_r_v.data()),m_num_cols,m_num_src_levs);
   //p_mid_r_m =  view_2d<Pack>(reinterpret_cast<Pack*>(p_mid_r_v.data()),m_num_cols,m_num_src_levs);
 
-
-  
-  std::cout<<"Get right before vertical interpolation"<<std::endl;
   perform_vertical_interpolation(p_mid_r_m,
                                  p_mid,
                                  T_mid_r_m,
                                  T_mid_r_m_out,
                                  m_num_src_levs,
                                  m_num_levs);
-  std::cout<<"Get right after vertical interpolation"<<std::endl;
-  
 
-  //auto T_mid          = get_field_in("T_mid").get_view<Real**>();
   //Need to parallelize this
-
-  //First do vertical interpolation
-  // Need T_mid_r_m in Pack form
-  // Need p_mid source in Pack form
-  // Need p_mid target in Pack form
-  //auto T_mid_r_m_s = ekat::scalarize(T_mid_r_m);
   std::cout<<"T_mid.extent(0): "<<T_mid.extent(0)<<std::endl;
   std::cout<<"T_mid.extent(1): "<<T_mid.extent(1)<<std::endl;
   for (int i=0; i<T_mid.extent(0); ++i) { 
     for (int k=0; k<T_mid.extent(1); ++k) {
-    //for (int k=0; k<3; ++k) {
-      //T_mid(i,k)=T_mid(i,k)+1;
-      //T_mid(i,k)=T_mid_r_m(i,k);
-      //T_mid(i,k)=T_mid_r_m_s(i,k);
       T_mid(i,k)=T_mid_r_m(i,k);
       std::cout<<"T_mid("<<i<<","<<k<<"): "<<T_mid(i,k)<<std::endl;
     }
   }
 
-  /*
-  ekat::LinInterp<Real,1> vert_interp(m_num_cols,m_num_levs_src,m_num_levs);
-  const int num_vert_packs = p_tgt.extent(0);
-  const auto policy = ESU::get_default_team_policy(m_num_cols, 
-                                                   num_vert_packs);
-  auto loc_layers_src = m_num_levs_src;
-  auto loc_layers_tgt = m_num_levs_tgt;
-  Kokkos::parallel_for("nudging_vert_interp_setup_loop", policy,
-                   KOKKOS_LAMBDA(MemberType const& team) {
-      const int icol = team.league_rank();
-      view_1d<Pack> x1=ekat::subview(p_src, icol);
-      view_1d<Pack> in=ekat::subview(tmp_src, icol);
-      view_1d<Pack> out_1d=ekat::subview(out_1d_test, icol);
-      view_1d<Mask<1>> msk=ekat::subview(mask_1d_test, icol);
-      perform_vertical_interpolation_impl_1d(x1,
-                                             p_tgt,
-                                             in,
-                                             out_1d,
-                                             msk,
-                                             loc_layers_src,
-                                             loc_layers_tgt,
-                                             icol,
-                                             masked_val,
-                                             team,
-                                             vert_interp); 
-      });
-      Kokkos::fence();
-  */
-
- 
-  //Take T_mid field from model and T_mid from file (vertically interpolated)
-  //and apply the nudging so that the new T_mid output has been nudged 
-  //Then generalize to any variable
-  //Question of how to do this, need to get values from yaml file
-  //Then put into a vector of string names?
-  //Need ability for user to specify variables.
-  //Similar to 
-  //Also need to check whether the particular cell should be nudged
 }
 
 // =========================================================================================
