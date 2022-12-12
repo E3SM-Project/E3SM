@@ -150,7 +150,7 @@ namespace scream {
          */
         template<class S, class T> void limit_to_bounds(S const &arr_in, T const lower, T const upper, S &arr_out) {
             yakl::c::parallel_for(arr_in.totElems(), YAKL_LAMBDA(int i) {
-                arr_out.data()[i] = min(max(arr_in.data()[i], lower), upper);
+                arr_out.data()[i] = std::min(std::max(arr_in.data()[i], lower), upper);
             });
         }
 
