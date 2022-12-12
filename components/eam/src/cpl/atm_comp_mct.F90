@@ -694,15 +694,15 @@ CONTAINS
     type(mct_aVect)             ,intent(inout) :: x2a_a
     type(mct_aVect)             ,intent(inout) :: a2x_a
 
+    call t_startf('cam_final')
+    call cam_final( cam_out, cam_in )
+    call t_stopf('cam_final')
+
 #if defined(CLDERA_PROFILING)
     call t_startf('cldera_clean_up')
     call cldera_clean_up ()
     call t_stopf('cldera_clean_up')
 #endif
-
-    call t_startf('cam_final')
-    call cam_final( cam_out, cam_in )
-    call t_stopf('cam_final')
 
   end subroutine atm_final_mct
 
