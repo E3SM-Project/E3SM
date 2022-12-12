@@ -113,7 +113,6 @@ contains
 
     SHR_ASSERT_ALL(bounds%level == BOUNDS_LEVEL_PROC, subname // ': argument must be PROC-level bounds')
 
-    ! Shijie: Right now we don't want to consider topounit in harvest rate
     allocate(harvest_rates(num_harvest_vars,bounds%begg:bounds%endg),stat=ier)
     harvest_rates(:,bounds%begg:bounds%endg) = 0._r8
     if (ier /= 0) then
@@ -125,7 +124,7 @@ contains
     
     ! Get initial harvest data
     if (use_cn .or. use_fates) then
-       num_points = (bounds%endg - bounds%begg + 1)  
+       num_points = (bounds%endg - bounds%begg + 1)
        harvest_shape(1) = num_points
        do varnum = 1, num_harvest_vars
           harvest_vars(varnum) = dyn_var_time_uninterp_type( &
@@ -182,10 +181,10 @@ contains
           ! year of the file for all years past the end of this specified time series.
           do_harvest = .true.
           ! Right now we don't account for the topounit in plant harvest
-          allocate(this_data(bounds%begg:bounds%endg))   
+          allocate(this_data(bounds%begg:bounds%endg))
           do varnum = 1, num_harvest_vars
              call harvest_vars(varnum)%get_current_data(this_data)
-             harvest_rates(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)      
+             harvest_rates(varnum,bounds%begg:bounds%endg) = this_data(bounds%begg:bounds%endg)
           end do
           deallocate(this_data)
        end if

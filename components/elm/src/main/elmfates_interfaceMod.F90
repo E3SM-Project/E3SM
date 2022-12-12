@@ -155,8 +155,8 @@ module ELMFatesInterfaceMod
    use FatesPlantHydraulicsMod, only : InitHydrSites
    use FatesPlantHydraulicsMod, only : RestartHydrStates
 
-   use dynHarvestMod          , only : harvest_rates  ! these are dynamic in space and time
    use dynHarvestMod          , only : num_harvest_vars, harvest_varnames, wood_harvest_units
+   use dynHarvestMod          , only : harvest_rates ! these are dynamic in space and time
 
    use FatesConstantsMod      , only : hlm_harvest_area_fraction
    use FatesConstantsMod      , only : hlm_harvest_carbon
@@ -366,11 +366,7 @@ contains
      integer, parameter :: external_lightning = 2
      integer, parameter :: successful_ignitions = 3
      integer, parameter :: anthro_ignitions= 4
-
-     ! We will use this switch temporarily, until  we complete
-     ! the ELM-FATES harvest integration
-     logical, parameter :: do_elm_fates_harvest = .false.
-
+  
      if (use_fates) then
 
         ! Send parameters individually
@@ -464,16 +460,10 @@ contains
            pass_logging = 0
         end if
 
-!        if(do_elm_fates_harvest) then
         if(get_do_harvest()) then
            pass_logging = 1
            pass_num_lu_harvest_types = num_harvest_vars
            pass_lu_harvest = 1
-           if(allow_harvest_bypass_criteria) then
-              pass_harvest_bypass_criteria = 1
-           else
-              pass_harvest_bypass_criteria = 0
-           end if
         else
            pass_lu_harvest = 0
            pass_num_lu_harvest_types = 0
@@ -827,6 +817,7 @@ contains
          top_af_inst, atm2lnd_inst, soilstate_inst, temperature_inst, &
          canopystate_inst, frictionvel_inst )
 
+      use FatesConstantsMod     , only : m2_per_km2
 
       ! This wrapper is called daily from clm_driver
       ! This wrapper calls ed_driver, which is the daily dynamics component of FATES
@@ -941,6 +932,7 @@ contains
             this%fates(nc)%bc_in(s)%hlm_harvest_catnames = harvest_varnames
             this%fates(nc)%bc_in(s)%hlm_harvest_units = wood_harvest_units
          end if
+         this%fates(nc)%bc_in(s)%site_area=col_pp%wtgcell(c)*grc_pp%area(g)*m2_per_km2
 
       end do
 
@@ -955,6 +947,9 @@ contains
       ! ---------------------------------------------------------------------------------
       call fates_hist%flush_hvars(nc,upfreq_in=1)
 
+      ! Frequency 5 is routine that processes FATES history
+      ! on the dynamics (daily) step, but before disturbance
+      call fates_hist%flush_hvars(nc,upfreq_in=5)
 
       ! ---------------------------------------------------------------------------------
       ! Part II: Call the FATES model now that input boundary conditions have been
@@ -988,7 +983,8 @@ contains
       ! ---------------------------------------------------------------------------------
       call fates_hist%update_history_dyn( nc,                    &
            this%fates(nc)%nsites, &
-           this%fates(nc)%sites)
+           this%fates(nc)%sites,  &
+           this%fates(nc)%bc_in)
 
       if (masterproc) then
          write(iulog, *) 'FATES dynamics complete'
@@ -1167,7 +1163,6 @@ contains
        call update_hlm_dynamics(this%fates(nc)%nsites, &
             this%fates(nc)%sites,  &
             this%f2hmap(nc)%fcolumn, &
-            this%fates(nc)%bc_in, &
             this%fates(nc)%bc_out )
 
        !---------------------------------------------------------------------------------
@@ -1625,7 +1620,8 @@ contains
                end do
                call fates_hist%update_history_dyn( nc, &
                     this%fates(nc)%nsites,                 &
-                    this%fates(nc)%sites)
+                    this%fates(nc)%sites,  &
+                    this%fates(nc)%bc_in)
 
 
             end if
@@ -1782,7 +1778,8 @@ contains
            end do
            call fates_hist%update_history_dyn( nc, &
                 this%fates(nc)%nsites,                 &
-                this%fates(nc)%sites)
+                this%fates(nc)%sites,  &
+                this%fates(nc)%bc_in)
 
 
 
@@ -2270,6 +2267,8 @@ contains
 
  subroutine wrap_WoodProducts(this, bounds_clump, fc, filterc)
 
+   use FatesConstantsMod     , only : g_per_kg
+
    ! !ARGUMENTS:
    class(hlm_fates_interface_type), intent(inout) :: this
    type(bounds_type)              , intent(in)    :: bounds_clump
@@ -2292,13 +2291,13 @@ contains
        c = filterc(icc)
        s = this%f2hmap(nc)%hsites(c)
 
-       ! Shijie: Pass harvested wood products to ELM variable
+       ! Pass harvested wood products to ELM variable
        hrv_deadstemc_to_prod10c(c)  = this%fates(nc)%bc_out(s)%hrv_deadstemc_to_prod10c
        hrv_deadstemc_to_prod100c(c) = this%fates(nc)%bc_out(s)%hrv_deadstemc_to_prod100c
 
        ! Pass LUC related C fluxes which are calculated in FATES [gC m-2 s-1]
-       gpp(c) = this%fates(nc)%bc_out(s)%gpp_site*1e3
-       ar(c) = this%fates(nc)%bc_out(s)%ar_site*1e3
+       gpp(c) = this%fates(nc)%bc_out(s)%gpp_site*g_per_kg
+       ar(c) = this%fates(nc)%bc_out(s)%ar_site*g_per_kg
 
     end do
 

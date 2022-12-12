@@ -125,7 +125,7 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- ================================================================== -->
 <!-- FATES default parameter file                                       -->
 <!-- ================================================================== -->
-<fates_paramfile >lnd/clm2/paramdata/fates_params_api.24.0.0_12pft_c220719.nc</fates_paramfile>
+<fates_paramfile >lnd/clm2/paramdata/fates_params_api.25.0.0_12pft_c221212.nc</fates_paramfile>
 
 <!-- soil order related parameters (relative to {csmdata}) -->
 <fsoilordercon             >lnd/clm2/paramdata/CNP_parameters_c131108.nc</fsoilordercon>
