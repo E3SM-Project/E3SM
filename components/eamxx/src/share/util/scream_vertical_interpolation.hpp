@@ -122,6 +122,17 @@ void perform_vertical_interpolation_impl_2d(
   const Real msk_val);
 
 template<typename Src, typename Tgt, typename Input, typename T, int N> 
+void perform_vertical_interpolation_impl_pdiff_2d(
+  const Src& x_src,
+  const Tgt& x_tgt,
+  const Input& input,
+  const view_2d<Pack<T,N>>& output,
+  const view_2d<Mask<N>>& mask,
+  const int nlevs_src,
+  const int nlevs_tgt,
+  const Real msk_val);
+
+template<typename Src, typename Tgt, typename Input, typename T, int N> 
 KOKKOS_FUNCTION
 void perform_vertical_interpolation_impl_1d(
   const Src& x_src,

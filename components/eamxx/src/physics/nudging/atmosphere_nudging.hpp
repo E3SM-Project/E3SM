@@ -4,6 +4,13 @@
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/util/ekat_lin_interp.hpp"
+#include "share/io/scream_output_manager.hpp"
+#include "share/io/scorpio_output.hpp"
+#include "share/io/scorpio_input.hpp"
+#include "share/io/scream_scorpio_interface.hpp"
+#include "share/grid/mesh_free_grids_manager.hpp"
+#include "share/grid/point_grid.hpp"
+#include "share/util/scream_vertical_interpolation.hpp"
 
 //#include "share/scream_types.hpp"
 
@@ -82,11 +89,11 @@ protected:
   //int m_num_src_levs;
   int m_num_src_levs;
   std::string datafile;
-  view_2d<Pack> T_mid_r_m;
-  view_2d<Pack> p_mid_r_m;
   std::map<std::string,view_1d_host<Real>> host_views;
   std::map<std::string,FieldLayout>  layouts;
   std::vector<std::string> m_fnames;
+  view_2d<Real> T_mid_r_v_g;
+  view_2d<Real> p_mid_r_v_g;
   //FieldLayout scalar3d_layout_mid_;
   // DOF information
   //view_1d_dof m_dofs_gids;
