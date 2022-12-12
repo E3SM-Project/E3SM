@@ -1,7 +1,8 @@
 # NOTE: tests inside this if statement won't be built in a baselines-only build
 if (NOT SCREAM_BASELINES_ONLY)
+
   # Required libraries
-  set (NEED_LIBS scream_rrtmgp)
+  set (NEED_LIBS scream_rrtmgp rrtmgp_test_utils)
 
   # Build baseline code
   add_executable(generate_baseline generate_baseline.cpp)

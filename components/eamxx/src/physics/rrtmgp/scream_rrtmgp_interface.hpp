@@ -12,6 +12,8 @@
 #include "ekat/logging/ekat_logger.hpp"
 
 namespace scream {
+  void yakl_init ();
+  void yakl_finalize();
     namespace rrtmgp {
         /* 
          * Objects containing k-distribution information need to be initialized
