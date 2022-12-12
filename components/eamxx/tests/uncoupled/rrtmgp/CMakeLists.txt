@@ -9,7 +9,7 @@ if (NOT SCREAM_BASELINES_ONLY)
   set (NEED_LIBS scream_rrtmgp rrtmgp ${NETCDF_C} scream_control scream_share physics_share yakl diagnostics)
 
   CreateUnitTest(
-      rrtmgp_standalone_unit rrtmgp_standalone_unit.cpp "${NEED_LIBS}" LABELS ${TEST_LABELS}
+      rrtmgp_standalone_unit rrtmgp_standalone_unit.cpp "${NEED_LIBS};rrtmgp_test_utils" LABELS ${TEST_LABELS}
       EXE_ARGS "--ekat-test-params rrtmgp_inputfile=${SCREAM_DATA_DIR}/init/rrtmgp-allsky.nc,rrtmgp_baseline=${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
   )
   # This test needs the allsky baselines file

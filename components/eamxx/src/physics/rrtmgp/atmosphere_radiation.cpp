@@ -332,7 +332,7 @@ void RRTMGPRadiation::initialize_impl(const RunType /* run_type */) {
   m_do_subcol_sampling = m_params.get<bool>("do_subcol_sampling",true);
 
   // Initialize yakl
-  if(!yakl::isInitialized()) { yakl::init(); }
+  yakl_init();
 
   // Names of active gases
   auto gas_names_yakl_offset = string1d("gas_names",m_ngas);
@@ -844,8 +844,13 @@ void RRTMGPRadiation::run_impl (const int dt) {
     // Index to surface (bottom of model); used to get surface fluxes below
     const int kbot = nlay+1;
 
-    // Compute diffuse flux as difference between total and direct; use YAKL parallel_for here because these are YAKL objects
-    parallel_for(Bounds<3>(nswbands,nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilev, int icol) {
+    // Compute diffuse flux as difference between total and direct
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExeSpace>(0,nswbands*(nlay+1)*ncol),
+                         KOKKOS_LAMBDA (const int idx) {
+      // CAREFUL: these are YAKL arrays, with "LayoutLeft". So make the indices stride accordingly, and add 1.
+      const int ibnd = (idx / ncol) / (nlay+1) + 1;
+      const int ilev = (idx / ncol) % (nlay+1) + 1;
+      const int icol =  idx % ncol + 1;
       sw_bnd_flux_dif(icol,ilev,ibnd) = sw_bnd_flux_dn(icol,ilev,ibnd) - sw_bnd_flux_dir(icol,ilev,ibnd);
     });
 
@@ -875,35 +880,33 @@ void RRTMGPRadiation::run_impl (const int dt) {
 
     // Copy output data back to FieldManager
     if (update_rad) {
-      {
-        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-          const int i = team.league_rank();
-          const int icol = i + beg;
-          d_sfc_flux_dir_nir(icol) = sfc_flux_dir_nir(i+1);
-          d_sfc_flux_dir_vis(icol) = sfc_flux_dir_vis(i+1);
-          d_sfc_flux_dif_nir(icol) = sfc_flux_dif_nir(i+1);
-          d_sfc_flux_dif_vis(icol) = sfc_flux_dif_vis(i+1);
-          d_sfc_flux_sw_net(icol)  = sw_flux_dn(i+1,kbot) - sw_flux_up(i+1,kbot);
-          d_sfc_flux_lw_dn(icol)   = lw_flux_dn(i+1,kbot);
-          d_cldlow(icol) = cldlow(i+1);
-          d_cldmed(icol) = cldmed(i+1);
-          d_cldhgh(icol) = cldhgh(i+1);
-          d_cldtot(icol) = cldtot(i+1);
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay+1), [&] (const int& k) {
-            d_sw_flux_up(icol,k)            = sw_flux_up(i+1,k+1);
-            d_sw_flux_dn(icol,k)            = sw_flux_dn(i+1,k+1);
-            d_sw_flux_dn_dir(icol,k)        = sw_flux_dn_dir(i+1,k+1);
-            d_lw_flux_up(icol,k)            = lw_flux_up(i+1,k+1);
-            d_lw_flux_dn(icol,k)            = lw_flux_dn(i+1,k+1);
-            d_sw_clrsky_flux_up(icol,k)     = sw_clrsky_flux_up(i+1,k+1);
-            d_sw_clrsky_flux_dn(icol,k)     = sw_clrsky_flux_dn(i+1,k+1);
-            d_sw_clrsky_flux_dn_dir(icol,k) = sw_clrsky_flux_dn_dir(i+1,k+1);
-            d_lw_clrsky_flux_up(icol,k)     = lw_clrsky_flux_up(i+1,k+1);
-            d_lw_clrsky_flux_dn(icol,k)     = lw_clrsky_flux_dn(i+1,k+1);
-          });
+      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+        const int i = team.league_rank();
+        const int icol = i + beg;
+        d_sfc_flux_dir_nir(icol) = sfc_flux_dir_nir(i+1);
+        d_sfc_flux_dir_vis(icol) = sfc_flux_dir_vis(i+1);
+        d_sfc_flux_dif_nir(icol) = sfc_flux_dif_nir(i+1);
+        d_sfc_flux_dif_vis(icol) = sfc_flux_dif_vis(i+1);
+        d_sfc_flux_sw_net(icol)  = sw_flux_dn(i+1,kbot) - sw_flux_up(i+1,kbot);
+        d_sfc_flux_lw_dn(icol)   = lw_flux_dn(i+1,kbot);
+        d_cldlow(icol) = cldlow(i+1);
+        d_cldmed(icol) = cldmed(i+1);
+        d_cldhgh(icol) = cldhgh(i+1);
+        d_cldtot(icol) = cldtot(i+1);
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay+1), [&] (const int& k) {
+          d_sw_flux_up(icol,k)            = sw_flux_up(i+1,k+1);
+          d_sw_flux_dn(icol,k)            = sw_flux_dn(i+1,k+1);
+          d_sw_flux_dn_dir(icol,k)        = sw_flux_dn_dir(i+1,k+1);
+          d_lw_flux_up(icol,k)            = lw_flux_up(i+1,k+1);
+          d_lw_flux_dn(icol,k)            = lw_flux_dn(i+1,k+1);
+          d_sw_clrsky_flux_up(icol,k)     = sw_clrsky_flux_up(i+1,k+1);
+          d_sw_clrsky_flux_dn(icol,k)     = sw_clrsky_flux_dn(i+1,k+1);
+          d_sw_clrsky_flux_dn_dir(icol,k) = sw_clrsky_flux_dn_dir(i+1,k+1);
+          d_lw_clrsky_flux_up(icol,k)     = lw_clrsky_flux_up(i+1,k+1);
+          d_lw_clrsky_flux_dn(icol,k)     = lw_clrsky_flux_dn(i+1,k+1);
         });
-      }
+      });
     }
     // Temperature is always updated
     {
@@ -956,7 +959,7 @@ void RRTMGPRadiation::finalize_impl  () {
   rrtmgp::rrtmgp_finalize();
 
   // Finalize YAKL
-  yakl::finalize();
+  yakl_finalize();
 }
 // =========================================================================================
 
