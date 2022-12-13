@@ -250,7 +250,7 @@ namespace scream {
             fluxes_sw.bnd_flux_dn = sw_bnd_flux_dn;
             fluxes_sw.bnd_flux_dn_dir = sw_bnd_flux_dn_dir;
             // Clear-sky
-            FluxesByband clrsky_fluxes_sw;
+            FluxesBroadband clrsky_fluxes_sw;
             clrsky_fluxes_sw.flux_up = sw_clrsky_flux_up;
             clrsky_fluxes_sw.flux_dn = sw_clrsky_flux_dn;
             clrsky_fluxes_sw.flux_dn_dir = sw_clrsky_flux_dn_dir;
@@ -262,7 +262,7 @@ namespace scream {
             fluxes_lw.bnd_flux_up = lw_bnd_flux_up;
             fluxes_lw.bnd_flux_dn = lw_bnd_flux_dn;
             // Clear-sky
-            FluxesByband clrsky_fluxes_lw;
+            FluxesBroadband clrsky_fluxes_lw;
             clrsky_fluxes_lw.flux_up = lw_clrsky_flux_up;
             clrsky_fluxes_lw.flux_dn = lw_clrsky_flux_dn;
 
@@ -573,7 +573,7 @@ namespace scream {
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, 
                 OpticalProps2str &aerosol, OpticalProps2str &clouds,
-                FluxesByband &fluxes, FluxesByband &clrsky_fluxes,
+                FluxesByband &fluxes, FluxesBroadband &clrsky_fluxes,
                 const Real tsi_scaling,
                 const std::shared_ptr<spdlog::logger>& logger) {
 
@@ -779,7 +779,7 @@ namespace scream {
                 GasConcs &gas_concs,
                 OpticalProps1scl &aerosol,
                 OpticalProps1scl &clouds,
-                FluxesByband &fluxes, FluxesByband &clrsky_fluxes) {
+                FluxesByband &fluxes, FluxesBroadband &clrsky_fluxes) {
 
             // Problem size
             int nbnd = k_dist.get_nband();
