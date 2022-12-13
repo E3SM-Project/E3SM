@@ -3113,7 +3113,7 @@ contains
        if (trim(config_calendar_type) == "gregorian") then
           calendarType = "GREGORIAN"
        else
-          calendarType = "GREGORIAN_NOLEAP"
+          calendarType = "NOLEAP"
        endif
 
        ! aerosols array
@@ -4236,7 +4236,7 @@ contains
        else
           daysInYear = sum(daysInMonth)
        endif
-    case ("gregorian_noleap")
+    case ("noleap")
        daysInYear = sum(daysInMonth)
     end select
 
