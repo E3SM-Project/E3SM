@@ -223,8 +223,8 @@ void Functions<S,D>::shoc_assumed_pdf(
       }
 
       // Begin to compute cloud property statistics
-      const Spack Tl1_1 = thl1_1/(ekat::pow(basepres/pval,(rair/cp)));
-            Spack Tl1_2 = thl1_2/(ekat::pow(basepres/pval,(rair/cp)));
+      Spack Tl1_1 = thl1_1/(ekat::pow(basepres/pval,(rair/cp)));
+      Spack Tl1_2 = thl1_2/(ekat::pow(basepres/pval,(rair/cp)));
 
       const auto index_range = ekat::range<IntSmallPack>(k*Spack::n);
       const Smask active_entries = (index_range < nlev);
