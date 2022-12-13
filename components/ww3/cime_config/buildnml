@@ -53,7 +53,6 @@ def buildnml(case, caseroot, compname):
 
     wav_grid_supported = ("null",
                           "wQU225EC60to30sp50x36",
-                          "wQU100sp50x36",
                           "wQU225EC30to60E2r2sp50x36",
                           "wQU225EC30to60E2r2sp36x36",
                           "wQU225EC30to60E2r2sp25x36")
