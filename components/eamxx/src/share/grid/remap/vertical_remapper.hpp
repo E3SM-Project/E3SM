@@ -20,7 +20,15 @@ class VerticalRemapper : public AbstractRemapper
 public:
 
   VerticalRemapper (const grid_ptr_type& src_grid,
-                      const std::string& map_file);
+                    const std::string& map_file,
+                    const Field& lev_prof,
+                    const Field& ilev_prof,
+                    const Real mask_val);
+
+  VerticalRemapper (const grid_ptr_type& src_grid,
+                    const std::string& map_file,
+                    const Field& lev_prof,
+                    const Field& ilev_prof);
 
   ~VerticalRemapper ();
 
@@ -32,21 +40,23 @@ public:
     // Same type of layout, and same sizes except for possibly the first one
     // Note: we can't do tgt.size()/tgt.dim(0), since there may be 0 tgt gids
     //       on some ranks, which means tgt.dim(0)=0.
-    int src_col_size = 1;
-    for (int i=1; i<src.rank(); ++i) {
-      src_col_size *= src.dim(i);
-    }
-    int tgt_col_size = 1;
-    for (int i=1; i<tgt.rank(); ++i) {
-      tgt_col_size *= tgt.dim(i);
-    }
-    return get_layout_type(src.tags())==get_layout_type(tgt.tags()) &&
-           src_col_size == tgt_col_size;
+    return true;
+    // TODO: Set this up as appropriate
+//ASD    int src_col_size = 1;
+//ASD    for (int i=1; i<src.rank(); ++i) {
+//ASD      src_col_size *= src.dim(i);
+//ASD    }
+//ASD    int tgt_col_size = 1;
+//ASD    for (int i=1; i<tgt.rank(); ++i) {
+//ASD      tgt_col_size *= tgt.dim(i);
+//ASD    }
+//ASD    return get_layout_type(src.tags())==get_layout_type(tgt.tags()) &&
+//ASD           src_col_size == tgt_col_size;
   }
 
-  void register_vertical_source_field(const identifier_type& src, const std::string& mode);
-
 protected:
+
+  void register_vertical_source_field(const Field& src, const std::string& mode);
 
   const identifier_type& do_get_src_field_id (const int ifield) const override {
     return m_src_fields[ifield].get_header().get_identifier();
@@ -76,6 +86,7 @@ protected:
   }
 
   void set_pressure_levels (const std::string& map_file);
+  void do_print();
 
 protected:
 
@@ -98,6 +109,7 @@ protected:
   // Vertical profile fields, both for source and target
   int                   m_num_remap_levs;
   view_1d<Pack>         m_remap_pres_view;
+  Real                  m_mask_val;
   Field                 src_mid;  // Src vertical profile for LEV layouts
   Field                 src_int;  // Src vertical profile for ILEV layouts
   bool                  mid_set = false;

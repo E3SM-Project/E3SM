@@ -51,6 +51,12 @@ public:
 
   const grid_repo_type& get_repo () const { return m_grids; }
 
+  void print() const {
+    auto avail_grids = print_available_grids();
+    printf("List of available grids in grids manager:\n");
+    printf("   - %s\n",avail_grids.c_str());
+  }
+
 protected:
   using nonconstgrid_ptr_type     = std::shared_ptr<grid_type>;
   using nonconstgrid_repo_type    = std::map<std::string, nonconstgrid_ptr_type>;

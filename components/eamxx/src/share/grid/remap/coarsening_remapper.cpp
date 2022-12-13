@@ -814,7 +814,7 @@ void CoarseningRemapper::create_ov_tgt_fields ()
   m_ov_tgt_fields.reserve(m_num_fields);
   const int num_ov_cols = m_ov_tgt_grid->get_num_local_dofs();
   const auto ov_gn = m_ov_tgt_grid->name();
-  // for (const auto& f : m_tgt_fields) {
+  // for (const auto& f : m_tgt_fields) { //TODO should we delete this line?
   for (int i=0; i<m_num_fields; ++i) {
     const auto& f_src = m_src_fields[i];
     const auto& f_tgt = m_tgt_fields[i];

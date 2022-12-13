@@ -12,12 +12,24 @@
 
 namespace scream
 {
+VerticalRemapper::
+VerticalRemapper (const grid_ptr_type& src_grid,
+                  const std::string& map_file,
+                  const Field& lev_prof,
+                  const Field& ilev_prof)
+{
+  VerticalRemapper(src_grid,map_file,lev_prof,ilev_prof,-999999.0);
+}
 
 VerticalRemapper::
 VerticalRemapper (const grid_ptr_type& src_grid,
-                    const std::string& map_file)
+                  const std::string& map_file,
+                  const Field& lev_prof,
+                  const Field& ilev_prof,
+                  const Real mask_val)
  : AbstractRemapper()
  , m_comm (src_grid->get_comm())
+ , m_mask_val(mask_val)
 {
   using namespace ShortFieldTagsNames;
 
@@ -37,14 +49,44 @@ VerticalRemapper (const grid_ptr_type& src_grid,
 
   // Create tgt_grid that is a clone of the src grid but with
   // the correct number of level
-  auto tgt_grid = src_grid->clone("vertical_remapped_grid",false);
+  auto tgt_grid = src_grid->clone("Point Grid",false);  //<-- ?? For Luca, why does the 1st arg have to be PointGrid?  Shouldn't the tgt_grid be of the same type as the src_grid if being cloned?  Note, choosing any other string threw an error for an "unsupported grid".
+  tgt_grid->reset_num_vertical_lev(m_num_remap_levs);
+  printf("ASD - tgt_grid num of levs = %d\n",tgt_grid->get_num_vertical_levels());
   this->set_grids(src_grid,tgt_grid);
+
+  // Set the LEV and ILEV vertical profiles for interpolation from
+  register_vertical_source_field(lev_prof,"mid");
+  register_vertical_source_field(ilev_prof,"int");
 }
 
 VerticalRemapper::
 ~VerticalRemapper ()
 {
   // Nothing to do
+}
+
+void VerticalRemapper::
+do_print() {
+  // Helper function to print the setup of the vertical remapper:
+  const auto src_grid = get_src_grid();
+  const auto tgt_grid = get_tgt_grid();
+  if (m_comm.am_i_root()) {
+    printf("-------------------------------------\n");
+    printf("  Setup for vertical remapper\n");
+    printf("  ---------------------------\n");
+    // Print the remap layout
+    printf("  Layout of src->tgt:  (%d, %d) -> (%d, %d)\n",src_grid->get_num_global_dofs(),src_grid->get_num_vertical_levels(),
+                  tgt_grid->get_num_global_dofs(),tgt_grid->get_num_vertical_levels());
+    // Print the set of fields to be mapped
+    printf("  ---------------------------\n");
+    printf("  Map pairs for %d fields:\n",m_num_fields);
+    for (int i=0; i<m_num_fields; ++i) {
+      const auto& f_src  = m_src_fields[i];
+      const auto& f_tgt  = m_tgt_fields[i];
+      printf("      %s -> %s\n",f_src.name().c_str(),f_tgt.name());
+    }
+    printf("-------------------------------------\n");
+  }
 }
 
 FieldLayout VerticalRemapper::
@@ -125,30 +167,34 @@ set_pressure_levels(const std::string& map_file) {
 }
 
 void VerticalRemapper::
-register_vertical_source_field(const identifier_type& src, const std::string& mode)
+register_vertical_source_field(const Field& src, const std::string& mode)
 {
   using namespace ShortFieldTagsNames;
   EKAT_REQUIRE_MSG(mode=="mid" || mode=="int","Error: VerticalRemapper::register_vertical_source_field,"
     "mode arg must be 'mid' or 'int'\n");
+
+  auto src_fid = src.get_header().get_identifier();
   if (mode=="mid") {
-    auto layout = src.get_layout();
-    auto name   = src.name();
+    auto layout = src_fid.get_layout();
+    auto name   = src_fid.name();
     EKAT_REQUIRE_MSG(ekat::contains(std::vector<FieldTag>{LEV},layout.tags().back()),
       "Error::VerticalRemapper::register_vertical_source_field,\n"
       "mode = 'mid' expects a layour ending with LEV tag.\n"
       " - field name  : " + name + "\n"
       " - field layout: " + to_string(layout) + "\n");
-    src_mid = field_type(src);
+    EKAT_REQUIRE_MSG(src.is_allocated(), "Error! LEV source field is not yet allocated.\n");
+    src_mid = src;
     mid_set = true; 
    } else {  // mode=="int"
-    auto layout = src.get_layout();
-    auto name   = src.name();
+    auto layout = src_fid.get_layout();
+    auto name   = src_fid.name();
     EKAT_REQUIRE_MSG(ekat::contains(std::vector<FieldTag>{ILEV},layout.tags().back()),
       "Error::VerticalRemapper::register_vertical_source_field,\n"
       "mode = 'int' expects a layour ending with ILEV tag.\n"
       " - field name  : " + name + "\n"
       " - field layout: " + to_string(layout) + "\n");
-    src_int = field_type(src);
+    EKAT_REQUIRE_MSG(src.is_allocated(), "Error! ILEV source field is not yet allocated.\n");
+    src_int = src;
     int_set = true; 
   }
 }
@@ -157,7 +203,8 @@ void VerticalRemapper::
 do_register_field (const identifier_type& src, const identifier_type& tgt)
 {
   m_src_fields.push_back(field_type(src));
-  m_tgt_fields.push_back(field_type(tgt));
+  field_type tgt_f(tgt);
+  m_tgt_fields.push_back(tgt_f);
 }
 
 void VerticalRemapper::
@@ -173,6 +220,7 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
       "Error! We don't support 2d scalar fields that are padded.\n");
   m_src_fields[ifield] = src;
   m_tgt_fields[ifield] = tgt;
+
 }
 
 void VerticalRemapper::do_registration_ends ()
@@ -182,6 +230,8 @@ void VerticalRemapper::do_registration_ends ()
     "Field for vertical profile of the source data for layout LEV has not been set.\n");
   EKAT_REQUIRE_MSG(int_set,"Error::VerticalRemapper:registration_ends,\n"
     "Field for vertical profile of the source data for layout ILEV has not been set.\n");
+
+  do_print();
 }
 
 void VerticalRemapper::do_remap_fwd ()
@@ -207,6 +257,19 @@ void VerticalRemapper::do_remap_fwd ()
       src_lev_f = src_mid;
     }
     auto src_lev  = src_lev_f.get_view<const Pack**>();
+    printf("ASD - do remap: %s, SCREAM_PACK_SIZE = %d\n",f_src.name().c_str(),SCREAM_PACK_SIZE);
+    auto fap = f_tgt.get_header().get_alloc_properties();
+    if (fap.is_compatible<ekat::Pack<Real,16>>()) {
+      printf("    -    Compatible w/ packsize=16    \n");
+    }
+    else if (fap.is_compatible<ekat::Pack<Real,8>>()) {
+      printf("    -    Compatible w/ packsize=8    \n");
+    }
+    else if (fap.is_compatible<ekat::Pack<Real,4>>()) {
+      printf("    -    Compatible w/ packsize=4    \n");
+    } else {
+      printf("    -    Compatible w/ REAL    \n");
+    } 
     if (do_remap) { 
       switch(rank) {
         case 1:
@@ -217,8 +280,8 @@ void VerticalRemapper::do_remap_fwd ()
         case 2:
         {
           auto src_view = f_src.get_view<const Pack**>();
-          auto tgt_view = f_src.get_view<      Pack**>();
-          perform_vertical_interpolation(src_lev,m_remap_pres_view,src_view,tgt_view,src_num_levs,m_num_remap_levs);
+          auto tgt_view = f_tgt.get_view<      Pack**>();
+          perform_vertical_interpolation(src_lev,m_remap_pres_view,src_view,tgt_view,src_num_levs,m_num_remap_levs,m_mask_val);
           break;
         }
 //ASD TODO; perform vertical interpolation needs to be extended to views of size >2
