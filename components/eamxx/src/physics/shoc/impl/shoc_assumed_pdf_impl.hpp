@@ -231,24 +231,29 @@ void Functions<S,D>::shoc_assumed_pdf(
       const Smask active_entries = (index_range < nlev);
 
       // Do NaN Checking here
-      const Smask is_nan_Tl1_1 = (Tl1_1 != Tl1_1) && active_entries;
-      const Smask is_nan_Tl1_2 = (Tl1_2 != Tl1_2) && active_entries;
+      const Smask is_nan_Tl1_1 = isnan(Tl1_1) && active_entries;
+      const Smask is_nan_Tl1_2 = isnan(Tl1_2) && active_entries;
       if (is_nan_Tl1_1.any() || is_nan_Tl1_2.any()) {
-        printf("WARNING: NaN Detected in Tl1_1 or Tl1_2! \n");
-	for (int i=0; i<is_nan_Tl1_1.n; i++) {
+        printf("WARNING: NaN Detected in Tl1_1 or Tl1_2!\n");
+        for (int i=0; i<is_nan_Tl1_1.n; i++) {
           if (is_nan_Tl1_1[i] || is_nan_Tl1_2[i]) {
-	    printf("Tl1 NaN Detected: Tl1_1, Tl1_2: \n");
-	    printf("%4.9f,  %4.9f \n", Tl1_1, Tl1_2);
-	    printf("Tl1 NaN Detected, thetal, qw, temp, pressure, thl_sec, qw_sec, w2sec, lev: \n");
-            printf(" %4.9f, %2.9f, %4.9f, %8.9f, %4.9f, %2.9f, %4.9f %d \n",thl_first[i], qw_first[i], Tl1_g[i], pval[i], thlsec[i], qwsec[i], w2sec[i], k);
-	    printf("Tl1 NaN Detected, w_first, w3, qwthlsec, wqwsec, wthlsec, a: \n");
-            printf(" %2.9f, %4.9f, %2.9f, %2.9f, %2.9f, %2.9f \n",w_first[i], w3var[i], qwthlsec[i], wqwsec[i], wthlsec[i], a[i]);
-	    printf("Tl1 NaN Detected, w1_1, w1_2, w2_1, w2_2, thl1_1, thl1_2, thl2_1, thl2_2: \n");
-            printf(" %2.9f, %2.9f, %2.9f, %2.9f, %4.9f, %4.9f, %4.9f, %4.9f \n",w1_1[i], w1_2[i], w2_1[i], w2_2[i], thl1_1[i], thl1_2[i], thl2_1[i], thl2_2[i]);
-	    printf("Tl1 NaN Detected, qw1_1, qw1_2, qw2_1, qw2_2: \n");
-            printf(" %2.9f, %2.9f, %2.9f, %2.9f \n",qw1_1[i], qw1_2[i], qw2_1[i], qw2_2[i]);
-	  }
-	}
+            printf(
+              "Tl1 NaN Detected: lev, Tl1_1, Tl1_2: %d, %16.9e, %16.9e\n"
+              "  thetal, qw, temp, pressure, thl_sec, qw_sec, w2sec:"
+              " %16.9e, %16.9e, %16.9e, %16.9e, %16.9e, %16.9e, %16.9e\n"
+              "  w_first, w3, qwthlsec, wqwsec, wthlsec, a:"
+              " %16.9e, %16.9e, %16.9e, %16.9e, %16.9e, %16.9e\n"
+              "  w1_1, w1_2, w2_1, w2_2, thl1_1, thl1_2, thl2_1, thl2_2:"
+              " %16.9e, %16.9e, %16.9e, %16.9e, %16.9e, %16.9e, %16.9e, %16.9e\n"
+              "  qw1_1, qw1_2, qw2_1, qw2_2:"
+              " %16.9e, %16.9e, %16.9e, %16.9e\n",
+              index_range[i], Tl1_1[i], Tl1_2[i],
+              thl_first[i], qw_first[i], Tl1_g[i], pval[i], thlsec[i], qwsec[i], w2sec[i],
+              w_first[i], w3var[i], qwthlsec[i], wqwsec[i], wthlsec[i], a[i],
+              w1_1[i], w1_2[i], w2_1[i], w2_2[i], thl1_1[i], thl1_2[i], thl2_1[i], thl2_2[i],
+              qw1_1[i], qw1_2[i], qw2_1[i], qw2_2[i]);
+          }
+        }
       }
 
       // Check to ensure Tl1_1 and Tl1_2 are not negative, temporarily set to grid mean value if so.
