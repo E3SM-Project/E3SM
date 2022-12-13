@@ -60,6 +60,8 @@ OPTIONS
                            Options are: none, data, prognostic
      -prognostic_mode      variable for prognostic mode
                            Options are: full, prescribed
+     -column_mode          variable for column-only mode
+                           Options are: true, false
      -ntasks_ice           NTASKS_ICE for this case
      -ninst_ice            NINST_ICE for this case
 

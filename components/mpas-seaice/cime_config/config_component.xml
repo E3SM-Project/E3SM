@@ -66,6 +66,20 @@
         <desc>Option to enable prescribed ice mode in MPASSI</desc>
   </entry>
 
+  <entry id="MPASSI_COLUMN_MODE">
+        <type>char</type>
+        <valid_values>true,false</valid_values>
+        <default_value>full</default_value>
+        <values>
+           <value compset="MPASSI_">false</value>
+           <value compset="_MPASSI%COL">true</value>
+        </values>
+        <group>case_comp</group>
+        <file>env_case.xml</file>
+        <desc>Option to enable MPASSI to be run as a column model</desc>
+  </entry>
+
+
   <description>
     <desc compset="_MPASSI">MPAS seaice:</desc>
   </description>
