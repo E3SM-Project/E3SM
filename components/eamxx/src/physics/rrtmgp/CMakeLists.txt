@@ -35,7 +35,7 @@ else ()
 
   # EAMxx *requires* MPI, so simply look for it, then link against it
   find_package(MPI REQUIRED COMPONENTS C)
-  target_link_libraries (yakl PUBLIC MPI::MPI_C)
+  target_link_libraries (yakl MPI::MPI_C)
   EkatDisableAllWarning(yakl)
 
   # For debug builds, set -DYAKL_DEBUG
