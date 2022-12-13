@@ -16,10 +16,10 @@ Fields:
       - AtmosphereDensity
       - Exner
       - VirtualTemperature
-#      - VerticalLayerInterface
+      - VerticalLayerInterface
       - VerticalLayerThickness
-#      - VerticalLayerMidpoint
-#      - DryStaticEnergy
+      - VerticalLayerMidpoint
+      - DryStaticEnergy
       - SeaLevelPressure
       - LiqWaterPath
       - IceWaterPath
@@ -32,6 +32,8 @@ Fields:
       - ZonalVapFlux
       - MeridionalVapFlux
       - IceCloudMask
+      - PotentialTemperature@tom
+      - PotentialTemperature@500mb
  
 output_control:
   Frequency: ${NUM_STEPS}

@@ -9,7 +9,7 @@ if (NOT SCREAM_BASELINES_ONLY)
   set (NEED_LIBS scream_rrtmgp rrtmgp ${NETCDF_C} scream_control scream_share physics_share yakl diagnostics)
 
   CreateUnitTest(
-      rrtmgp_standalone_unit rrtmgp_standalone_unit.cpp "${NEED_LIBS}" LABELS ${TEST_LABELS}
+      rrtmgp_standalone_unit rrtmgp_standalone_unit.cpp "${NEED_LIBS};rrtmgp_test_utils" LABELS ${TEST_LABELS}
       EXE_ARGS "--ekat-test-params rrtmgp_inputfile=${SCREAM_DATA_DIR}/init/rrtmgp-allsky.nc,rrtmgp_baseline=${SCREAM_TEST_DATA_DIR}/rrtmgp-allsky-baseline.nc"
   )
   # This test needs the allsky baselines file
@@ -28,7 +28,7 @@ if (NOT SCREAM_BASELINES_ONLY)
                  ${CMAKE_CURRENT_BINARY_DIR}/input_unit.yaml)
 
   # Ensure test input files are present in the data dir
-  GetInputFile(init/${EAMxx_tests_IC_FILE_72lev})
+  GetInputFile(scream/init/${EAMxx_tests_IC_FILE_72lev})
 
   # The RRTMGP stand-alone test that runs multi-step
   # Set AD configurable options

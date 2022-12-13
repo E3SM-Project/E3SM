@@ -149,7 +149,7 @@ public:
   long long res_dep_memory_footprint () const;
 protected:
   // Internal functions
-  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr);
+  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::string& mode);
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
 
   void register_dimensions(const std::string& name);
@@ -157,14 +157,20 @@ protected:
   void set_degrees_of_freedom(const std::string& filename);
   std::vector<scorpio::offset_t> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
-  Field get_field(const std::string& name, const bool eval_diagnostic = false) const;
+  Field get_field(const std::string& name, const std::shared_ptr<const fm_type>& field_mgr) const;
+  void compute_diagnostic(const std::string& name);
   void set_diagnostics();
   void create_diagnostic (const std::string& diag_name);
 
   // --- Internal variables --- //
   ekat::Comm                          m_comm;
 
-  std::shared_ptr<const fm_type>      m_field_mgr;
+  // We store two shared pointers for field managers:
+  // io_field_manager stores the fields in the layout for output
+  // sim_field_manager points to the simulation field manager
+  // when remapping horizontally these two field managers may be different.
+  std::shared_ptr<const fm_type>      m_io_field_mgr;
+  std::shared_ptr<const fm_type>      m_sim_field_mgr;
   std::shared_ptr<const grid_type>    m_io_grid;
   std::shared_ptr<remapper_type>      m_remapper;
   std::shared_ptr<const gm_type>      m_grids_manager;
@@ -174,11 +180,13 @@ protected:
 
   // Internal maps to the output fields, how the columns are distributed, the file dimensions and the global ids.
   std::vector<std::string>                              m_fields_names;
+  std::map<std::string,std::string>                     m_fields_alt_name;
   std::map<std::string,FieldLayout>                     m_layouts;
   std::map<std::string,int>                             m_dofs;
   std::map<std::string,int>                             m_dims;
   std::map<std::string,std::shared_ptr<atm_diag_type>>  m_diagnostics;
   std::map<std::string,std::vector<std::string>>        m_diag_depends_on_diags;
+  std::map<std::string,bool>                            m_diag_computed;
 
   // Local views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_1d_host>    m_host_views_1d;
