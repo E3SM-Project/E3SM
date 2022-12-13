@@ -12,7 +12,7 @@ module seq_map_mod
   !---------------------------------------------------------------------
 
   use shr_kind_mod      ,only: R8 => SHR_KIND_R8, IN=>SHR_KIND_IN
-  use shr_kind_mod      ,only: CL => SHR_KIND_CL, CX => SHR_KIND_CX
+  use shr_kind_mod      ,only: CL => SHR_KIND_CL, CX => SHR_KIND_CX, CXX => SHR_KIND_CXX
   use shr_sys_mod
   use shr_const_mod
   use shr_mct_mod, only: shr_mct_sMatPInitnc, shr_mct_queryConfigFile
@@ -306,7 +306,8 @@ end subroutine moab_map_init_rcfile
 
     use iso_c_binding
     use iMOAB, only: iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, iMOAB_SetDoubleTagStorage, &
-      iMOAB_GetIntTagStorage, iMOAB_SetDoubleTagStorageWithGid, iMOAB_ApplyScalarProjectionWeights
+      iMOAB_GetIntTagStorage, iMOAB_SetDoubleTagStorageWithGid, iMOAB_ApplyScalarProjectionWeights, &
+      iMOAB_SendElementTag, iMOAB_ReceiveElementTag
 
     implicit none
     !-----------------------------------------------------
@@ -325,7 +326,7 @@ end subroutine moab_map_init_rcfile
 #ifdef HAVE_MOAB
     logical  :: valid_moab_context
     integer  :: ierr, nfields, ntagdatalength
-    character, dimension(:), allocatable   :: fldlist_moab
+    character(len=CXX) :: fldlist_moab
     integer    :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
     type(mct_list) :: temp_list
     integer, dimension(:), allocatable  :: globalIds
@@ -392,12 +393,11 @@ end subroutine moab_map_init_rcfile
             call mct_list_init(temp_list, fldlist)
             nfields=mct_list_nitem (temp_list)
             call mct_list_clean(temp_list)
-            allocate(fldlist_moab(len(fldlist)))
-            fldlist_moab(:) = fldlist(:)
+            fldlist_moab= trim(fldlist)//C_NULL_CHAR
          else
             ! Extract character strings from attribute vector
             nfields = mct_aVect_nRAttr(av_s)
-            fldlist_moab = mct_aVect_exportRList2c(av_s)
+            fldlist_moab = trim(mct_aVect_exportRList2c(av_s))//C_NULL_CHAR
          endif
 
          ntagdatalength = nfields * mapper % nentities
@@ -512,19 +512,38 @@ end subroutine moab_map_init_rcfile
 
 #ifdef HAVE_MOAB
        if ( valid_moab_context ) then
+         ! first have to do the second hop, iMOAB_ComputeCommGraph( src_mbid, intx_mbid,
          ! wgtIdef = 'scalar'//C_NULL_CHAR
+         ! 
+
+         ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom,mapper%intx_context );
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in sending tags ', fldlist_moab
+            ! call shr_sys_abort(subname//' ERROR in sending tags')
+            valid_moab_context = .false. 
+         endif
+       endif
+       if ( valid_moab_context ) then
+         ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom,mapper%src_context );
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in receiving tags ', fldlist_moab
+            !call shr_sys_abort(subname//' ERROR in receiving tags')
+            valid_moab_context = .false.
+         endif
+       endif
+       if ( valid_moab_context ) then
          ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, mapper%weight_identifier, fldlist_moab, fldlist_moab)
-                  if (ierr .ne. 0) then
-                     write(logunit,*) subname,' error in applying weights '
-                     call shr_sys_abort(subname//' ERROR in applying weights')
-                  endif
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in applying weights '
+            call shr_sys_abort(subname//' ERROR in applying weights')
+         endif
        endif
 #endif
-    end if
+    endif
 
 #ifdef HAVE_MOAB
     if ( valid_moab_context ) then
-      deallocate(fldlist_moab)
+
     endif
 #endif
 

@@ -228,7 +228,7 @@ contains
             ! ocean for the intx ocean-atm context (coverage)
             !    
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID) 
-            type1 = 3; !  fv for ocean
+            type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
             type2 = 3;
             ! ierr      = iMOAB_ComputeCommGraph( mboxid, mbintxoa, &mpicom_CPLID, &mpigrp_CPLID, &mpigrp_CPLID, &type1, &type2,
             !                              &ocn_id, &idintx)
@@ -241,10 +241,14 @@ contains
             ! now take care of the mapper 
             mapper_So2a%src_mbid = mboxid
             mapper_So2a%tgt_mbid = mbaxid
-            !mapper_So2a%intx_mbid = mbintxoa ! comment out so it will do nothing yet
+            mapper_So2a%intx_mbid = mbintxoa 
+            mapper_So2a%src_context = ocn(1)%cplcompid
+            mapper_So2a%intx_context = idintx
+            wgtIdef = 'scalar'//C_NULL_CHAR
+            mapper_So2a%weight_identifier = wgtIdef
 
             volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL; 
-            wgtIdef = 'scalar'//C_NULL_CHAR
+            
             if (atm_pg_active) then
               dm2 = "fv"//C_NULL_CHAR
               dofnameT="GLOBAL_ID"//C_NULL_CHAR
@@ -262,7 +266,13 @@ contains
             noConserve = 0
             validate = 1
             fInverseDistanceMap = 0
-
+            if (iamroot_CPLID) then
+               write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxoa=', mbintxoa, ' wgtIdef=', wgtIdef, &
+                   'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
+                                               fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                               noConserve, validate, &
+                                               trim(dofnameS), trim(dofnameT)
+            end if
             ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa, wgtIdef, &
                                                trim(dm1), orderS, trim(dm2), orderT, &
                                                fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
