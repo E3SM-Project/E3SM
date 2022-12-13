@@ -26,7 +26,7 @@ MassAndEnergyColumnConservationCheck (const std::shared_ptr<const AbstractGrid>&
   , m_dt (std::nan(""))
   , m_mass_tol (mass_error_tolerance)
   , m_energy_tol (energy_error_tolerance)
-{  
+{
   m_num_cols = m_grid->get_num_local_dofs();
   m_num_levs = m_grid->get_num_vertical_levels();
 
@@ -173,7 +173,7 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
     const Real tm = compute_total_mass_on_column(team, nlevs, pseudo_density_i, qv_i, qc_i, qi_i, qr_i);
     const Real previous_tm = mass(i);
 
-    // Calculate expected total mass. Here, dt should be set to the timestep of the 
+    // Calculate expected total mass. Here, dt should be set to the timestep of the
     // subcycle for the process that called this check. This effectively scales the boundary
     // fluxes by 1/num_subcycles (dt = model_dt/num_subcycles) so that we only include
     // the expected change after one substep (not a full timestep).
@@ -279,7 +279,7 @@ compute_total_mass_on_column (const KT::MemberType&       team,
                               const uview_1d<const Real>& qv,
                               const uview_1d<const Real>& qc,
                               const uview_1d<const Real>& qi,
-                              const uview_1d<const Real>& qr) const
+                              const uview_1d<const Real>& qr)
 {
   using PC = scream::physics::Constants<Real>;
 
@@ -297,7 +297,7 @@ compute_total_mass_on_column (const KT::MemberType&       team,
 KOKKOS_INLINE_FUNCTION
 Real MassAndEnergyColumnConservationCheck::
 compute_mass_boundary_flux_on_column (const Real vapor_flux,
-                                      const Real water_flux) const
+                                      const Real water_flux)
 {
   using PC = scream::physics::Constants<Real>;
   const Real RHO_H2O  = PC::RHO_H2O;
@@ -316,7 +316,7 @@ compute_total_energy_on_column (const KT::MemberType&       team,
                                 const uview_1d<const Real>& qc,
                                 const uview_1d<const Real>& qr,
                                 const Real                  ps,
-                                const Real                  phis) const
+                                const Real                  phis)
 {
   using PC = scream::physics::Constants<Real>;
   const Real LatVap = PC::LatVap;
@@ -345,7 +345,7 @@ Real MassAndEnergyColumnConservationCheck::
 compute_energy_boundary_flux_on_column (const Real vapor_flux,
                                         const Real water_flux,
                                         const Real ice_flux,
-                                        const Real heat_flux) const
+                                        const Real heat_flux)
 {
   using PC = scream::physics::Constants<Real>;
   const Real LatVap = PC::LatVap;
