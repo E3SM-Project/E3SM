@@ -460,7 +460,7 @@ TEST_CASE("rrtmgp_test_subcol_gen") {
     auto cldfrac = real2d("cldfrac", ncol, nlay);
     // Set cldfrac values
     memset(cldfrac, 0.0);
-    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+    yakl::fortran::parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
         cldfrac(1,1) = 1;
         cldfrac(1,2) = 0.5;
         cldfrac(1,3) = 0;
@@ -475,13 +475,13 @@ TEST_CASE("rrtmgp_test_subcol_gen") {
         cldmask = scream::rrtmgp::get_subcolumn_mask(ncol, nlay, ngpt, cldfrac, 1, seeds);
         // Check answers by computing new cldfrac from mask
         memset(cldfrac_from_mask, 0.0);
-        parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
+        yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
             for (int igpt = 1; igpt <= ngpt; ++igpt) {
                 real cldmask_real = cldmask(icol,ilay,igpt);
                 cldfrac_from_mask(icol,ilay) += cldmask_real;
             }
         });
-        parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
+        yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
             cldfrac_from_mask(icol,ilay) = cldfrac_from_mask(icol,ilay) / ngpt;
         });
         // For cldfrac 1 we should get 1, for cldfrac 0 we should get 0, but in between we cannot be sure
@@ -497,7 +497,7 @@ TEST_CASE("rrtmgp_test_subcol_gen") {
     // that has cloud in the layer above must also have cloud in the layer below; test
     // this property by creating two layers with non-zero cloud fraction, creating subcolums,
     // and verifying that every subcolumn with cloud in layer 1 has cloud in layer 2
-    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+    yakl::fortran::parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
         cldfrac(1,1) = 0.5;
         cldfrac(1,2) = 0.5;
         cldfrac(1,3) = 0;
@@ -534,7 +534,7 @@ TEST_CASE("rrtmgp_cloud_area") {
     auto pmid = real2d("pmid", ncol, nlay);
 
     // Set up pressure levels for test problem
-    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+    yakl::fortran::parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
         pmid(1,1) = 100;
         pmid(1,2) = 200;
     });
@@ -545,7 +545,7 @@ TEST_CASE("rrtmgp_cloud_area") {
     // 0 0 0
     //
     // should give cldtot = 0.0
-    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+    yakl::fortran::parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
         cldtau(1,1,1) = 0;
         cldtau(1,1,2) = 0;
         cldtau(1,1,3) = 0;
@@ -562,7 +562,7 @@ TEST_CASE("rrtmgp_cloud_area") {
     // 1 1 1
     //
     // should give cldtot = 1.0
-    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+    yakl::fortran::parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
         cldtau(1,1,1) = 1;
         cldtau(1,1,2) = 1;
         cldtau(1,1,3) = 1;
@@ -579,7 +579,7 @@ TEST_CASE("rrtmgp_cloud_area") {
     // 0 0 1  200
     //
     // should give cldtot = 1.0
-    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+    yakl::fortran::parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
         cldtau(1,1,1) = 0.1;
         cldtau(1,1,2) = 1.5;
         cldtau(1,1,3) = 0;
@@ -600,7 +600,7 @@ TEST_CASE("rrtmgp_cloud_area") {
     // 1 0 1
     //
     // should give cldtot = 2/3
-    parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
+    yakl::fortran::parallel_for(1, YAKL_LAMBDA(int /* dummy */) {
         cldtau(1,1,1) = 1;
         cldtau(1,1,2) = 0;
         cldtau(1,1,3) = 0;
