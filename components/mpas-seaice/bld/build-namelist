@@ -110,6 +110,7 @@ my %opts = ( help            => 0,
              surface_mode    => undef,
              iceberg_mode    => undef,
              prognostic_mode => undef,
+             column_mode => undef,
              cfg_dir         => $cfgdir,
              ntasks_ice      => 0,
              ninst_ice       => 0,
@@ -132,6 +133,7 @@ GetOptions(
     "surface_mode=s"    => \$opts{'surface_mode'},
     "iceberg_mode=s"    => \$opts{'iceberg_mode'},
     "prognostic_mode=s" => \$opts{'prognostic_mode'},
+    "column_mode=s"     => \$opts{'column_mode'},
     "cfg_dir=s"         => \$opts{'cfg_dir'},
     "preview"           => \$opts{'preview'},
     "ntasks_ice=i"      => \$opts{'ntasks_ice'},
@@ -171,6 +173,7 @@ my $ice_bgc         = $opts{'ice_bgc'};
 my $surface_mode    = $opts{'surface_mode'};
 my $iceberg_mode    = $opts{'iceberg_mode'};
 my $prognostic_mode = $opts{'prognostic_mode'};
+my $column_mode     = $opts{'column_mode'};
 my $NINST_ICE       = $opts{'ninst_ice'};
 my $NTASKS_ICE      = $opts{'ntasks_ice'};
 $cfgdir             = $opts{'cfg_dir'};
@@ -193,6 +196,7 @@ print $fh  <<"EOF";
 <config_definition>
 <entry id="ice_grid" value="$ICE_GRID">
 <entry id="prognostic_mode" value="$prognostic_mode">
+<entry id="column_mode" value="$column_mode">
 <entry id="decomp_prefix" value="$decomp_prefix">
 <entry id="date_stamp" value="$date_stamp">
 </config_definition>
@@ -432,6 +436,9 @@ if ($prognostic_mode eq 'prescribed') {
     $SSTICE_YEAR_START    = $xmlvars{'SSTICE_YEAR_START'};
     $SSTICE_YEAR_END      = $xmlvars{'SSTICE_YEAR_END'};
     $SSTICE_STREAM        = $xmlvars{'SSTICE_STREAM'};
+}
+if ($column_mode eq 'true') {
+
 }
 
 my $output_r = "./${CASE}.mpassi.r";

@@ -69,7 +69,7 @@
   <entry id="MPASSI_COLUMN_MODE">
         <type>char</type>
         <valid_values>true,false</valid_values>
-        <default_value>full</default_value>
+        <default_value>true</default_value>
         <values>
            <value compset="MPASSI_">false</value>
            <value compset="_MPASSI%COL">true</value>
