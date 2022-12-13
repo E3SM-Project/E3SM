@@ -437,9 +437,6 @@ if ($prognostic_mode eq 'prescribed') {
     $SSTICE_YEAR_END      = $xmlvars{'SSTICE_YEAR_END'};
     $SSTICE_STREAM        = $xmlvars{'SSTICE_STREAM'};
 }
-if ($column_mode eq 'true') {
-
-}
 
 my $output_r = "./${CASE}.mpassi.r";
 my $output_h = "./${CASE}.mpassi.h";
