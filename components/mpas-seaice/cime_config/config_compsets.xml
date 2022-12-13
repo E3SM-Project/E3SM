@@ -26,7 +26,8 @@
 
   <compset>
     <alias>DTESTM-COL</alias>
-    <lname>2000_DATM%SHEBA_SLND_MPASSI%COL_SOCN_SROF_SGLC_SWAV_TEST</lname>
+    <! CHANGE TO: 2000_DATM%SHEBA_SLND_MPASSI%COL_SOCN_SROF_SGLC_SWAV_TEST >
+    <lname>2000_DATM%NYF_SLND_MPASSI_DOCN%SOM_DROF%NYF_SGLC_SWAV_TEST</lname>
   </compset>
 
 </compsets>
