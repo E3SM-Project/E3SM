@@ -732,7 +732,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_shortwave_type", config_shortwave_type)
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
-    if (trim(config_shortwave_type) == "dEdd") then
+    if (trim(config_shortwave_type(1:4)) == "dEdd") then
 
        abortFlag = .false.
        abortMessage = ""
@@ -9572,7 +9572,7 @@ contains
 
     ! check config_shortwave_type value
     if (.not. (trim(config_shortwave_type) == "ccsm3" .or. &
-               trim(config_shortwave_type) == "dEdd")) then
+               trim(config_shortwave_type(1:4)) == "dEdd")) then
        call config_error("config_shortwave_type", config_shortwave_type, "'ccsm3' or 'dEdd'")
     endif
 
@@ -9643,10 +9643,10 @@ contains
             messageType=MPAS_LOG_CRIT)
 
     ! check snicar value
-    if (config_use_snicar_ad .and. trim(config_column_physics_type) == "icepack") &
-       call mpas_log_write(&
-            "Use config_shortwave_type='dEdd_snicar_ad' for Snicar in Icepack", &
-            messageType=MPAS_LOG_CRIT)
+!    if (config_use_snicar_ad .and. trim(config_column_physics_type) == "icepack") &
+!       call mpas_log_write(&
+!            "Use config_shortwave_type='dEdd_snicar_ad' for Snicar in Icepack", &
+!            messageType=MPAS_LOG_CRIT)
 
     !-----------------------------------------------------------------------
     ! Check combinations
@@ -9699,9 +9699,9 @@ contains
 
     ! check dEdd shortwave if using ponds
     use_meltponds = (config_use_cesm_meltponds .or. config_use_level_meltponds .or. config_use_topo_meltponds)
-    if (trim(config_shortwave_type) /= 'dEdd' .and. use_meltponds .and. config_calc_surface_temperature) then
+    if (trim(config_shortwave_type(1:4)) /= 'dEdd' .and. use_meltponds .and. config_calc_surface_temperature) then
        call mpas_log_write(&
-            "check_column_package_configs: config_shortwave_type) /= 'dEdd' .and. use_meltponds = .true.", &
+            "check_column_package_configs: config_shortwave_type(1:4)) /= 'dEdd' .and. use_meltponds = .true.", &
             messageType=MPAS_LOG_ERR)
        call mpas_log_write(&
             ".and. config_calc_surface_temperature ==.true.", &
@@ -9815,9 +9815,9 @@ contains
     endif
 
     ! check that the shortwave scheme and bioabsorption is consistent
-    if (config_use_shortwave_bioabsorption .and. .not. (trim(config_shortwave_type) == "dEdd")) then
+    if (config_use_shortwave_bioabsorption .and. .not. (trim(config_shortwave_type(1:4)) == "dEdd")) then
        call mpas_log_write(&
-            "check_column_package_configs: shortwave bioabsorption requires config_shortwave_type ==  'dEdd'", &
+            "check_column_package_configs: shortwave bioabsorption requires config_shortwave_type(1:4) ==  'dEdd'", &
             messageType=MPAS_LOG_CRIT)
     endif
 
@@ -12159,6 +12159,7 @@ contains
          config_snow_redistribution_scheme
 
     logical, pointer :: &
+         config_use_snicar_ad, &
          config_calc_surface_temperature, &
          config_update_ocean_fluxes, &
          config_use_form_drag, &
@@ -12343,6 +12344,9 @@ contains
          config_ridging_redistribution_function_int, &
          config_itd_conversion_type_int, &
          config_category_bounds_type_int
+
+    character(len=strKIND) :: &
+         tmp_config_shortwave
 
     call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)
     call MPAS_pool_get_config(domain % configs, "config_heat_conductivity_type", config_heat_conductivity_type)
@@ -12552,6 +12556,12 @@ contains
     config_itd_conversion_type_int = config_cice_int("config_itd_conversion_type", config_itd_conversion_type)
     config_category_bounds_type_int = config_cice_int("config_category_bounds_type", config_category_bounds_type)
 
+    if (config_use_snicar_ad .and. trim(config_shortwave_type) == 'dEdd') then
+       tmp_config_shortwave = 'dEdd_snicar_ad'
+    else
+       tmp_config_shortwave = trim(config_shortwave_type)
+    endif
+
     call icepack_init_parameters(&
          !argcheck_in             = , &
          !puny_in                 = , &
@@ -12627,7 +12637,8 @@ contains
          dSdt_slow_mode_in       = config_slow_mode_drainage_strength, &
          phi_c_slow_mode_in      = config_slow_mode_critical_porosity, &
          phi_i_mushy_in          = config_congelation_ice_porosity, &
-         shortwave_in            = config_shortwave_type, &
+!         shortwave_in            = config_shortwave_type, &
+         shortwave_in            = tmp_config_shortwave, &
          albedo_type_in          = config_albedo_type, &
          albsnowi_in             = config_infrared_snow_albedo, &
          albicev_in              = config_visible_ice_albedo, &
