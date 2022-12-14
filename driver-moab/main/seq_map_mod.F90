@@ -307,7 +307,7 @@ end subroutine moab_map_init_rcfile
     use iso_c_binding
     use iMOAB, only: iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, iMOAB_SetDoubleTagStorage, &
       iMOAB_GetIntTagStorage, iMOAB_SetDoubleTagStorageWithGid, iMOAB_ApplyScalarProjectionWeights, &
-      iMOAB_SendElementTag, iMOAB_ReceiveElementTag
+      iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers
 
     implicit none
     !-----------------------------------------------------
@@ -529,7 +529,7 @@ end subroutine moab_map_init_rcfile
             write(logunit, *) subname,' iMOAB mapper before sending ', trim(fldlist_moab)
             call shr_sys_flush(logunit)
          endif
-         ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom,mapper%intx_context );
+         ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
          if (ierr .ne. 0) then
             if (seq_comm_iamroot(CPLID)) then
                write(logunit, *) subname,' iMOAB mapper error in sending tags ', trim(fldlist_moab)
@@ -544,11 +544,17 @@ end subroutine moab_map_init_rcfile
             call shr_sys_flush(logunit)
          endif
          ! receive in the intx app, because it is redistributed according to coverage (trick)
-         ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom,mapper%src_context );
+         ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in receiving tags ', trim(fldlist_moab)
             !call shr_sys_abort(subname//' ERROR in receiving tags')
             valid_moab_context = .false. ! do not attempt to project
+         endif
+         ! now free buffers
+         ierr = iMOAB_FreeSenderBuffers( mapper%src_mbid, mapper%intx_context )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in freeing buffers ', trim(fldlist_moab)
+            call shr_sys_abort(subname//' ERROR in freeing buffers') ! serious enough
          endif
        endif
        if ( valid_moab_context ) then
