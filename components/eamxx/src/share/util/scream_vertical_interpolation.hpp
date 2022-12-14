@@ -49,6 +49,11 @@ template <typename S>
 using view_2d = typename KT::template view_2d<S>;
 template <typename S>
 using view_2d_host = typename KT::template view_2d<S>::HostMirror;
+
+template <typename S, int N>
+using view_Nd = typename KT::template view_ND<S,N>;
+template <typename S, int N>
+using view_Nd_host = typename KT::template view_ND<S,N>::HostMirror;
     
 constexpr Real masked_val = -std::numeric_limits<Real>::max();
 
@@ -111,17 +116,6 @@ void perform_vertical_interpolation(
   const int nlevs_tgt);
 
 template<typename Src, typename Tgt, typename Input, typename T, int N> 
-void perform_vertical_interpolation_impl_2d(
-  const Src& x_src,
-  const Tgt& x_tgt,
-  const Input& input,
-  const view_2d<Pack<T,N>>& output,
-  const view_2d<Mask<N>>& mask,
-  const int nlevs_src,
-  const int nlevs_tgt,
-  const Real msk_val);
-
-template<typename Src, typename Tgt, typename Input, typename T, int N> 
 KOKKOS_FUNCTION
 void perform_vertical_interpolation_impl_1d(
   const Src& x_src,
@@ -135,6 +129,61 @@ void perform_vertical_interpolation_impl_1d(
   const Real msk_val,
   const MemberType& team,
   const LIV<T,N>& vert_interp);
+
+template<typename T, int P, int N, int M> 
+void perform_vertical_interpolation_impl_Nd(
+  const view_Nd<const Pack<T,P>,M>& x_src,
+  const view_1d<const Pack<T,P>>&   x_tgt,
+  const view_Nd<const Pack<T,P>,N>& input,
+  const view_Nd<Pack<T,P>,N>&       output,
+  const view_Nd<Mask<P>,N>&         mask,
+  const int                         nlevs_src,
+  const int                         nlevs_tgt,
+  const Real                        msk_val);
+
+template<typename T, int P> 
+void apply_interpolation(
+  const                        int  num_levs,
+  const                          T  mask_val,
+  const                   LIV<T,P>& vert_interp,
+  const view_Nd<const Pack<T,P>,2>& x_src,
+  const view_Nd<const Pack<T,P>,1>& x_tgt,
+  const view_Nd<const Pack<T,P>,2>& input,
+  const view_Nd<      Pack<T,P>,2>& output,
+  const view_Nd<        Mask<P>,2>& mask);
+
+template<typename T, int P> 
+void apply_interpolation(
+  const                        int  num_levs,
+  const                          T  mask_val,
+  const                   LIV<T,P>& vert_interp,
+  const view_Nd<const Pack<T,P>,2>& x_src,
+  const view_Nd<const Pack<T,P>,1>& x_tgt,
+  const view_Nd<const Pack<T,P>,3>& input,
+  const view_Nd<      Pack<T,P>,3>& output,
+  const view_Nd<        Mask<P>,3>& mask);
+
+template<typename T, int P> 
+void apply_interpolation(
+  const                        int  num_levs,
+  const                          T  mask_val,
+  const                   LIV<T,P>& vert_interp,
+  const view_Nd<const Pack<T,P>,2>& x_src,
+  const view_Nd<const Pack<T,P>,1>& x_tgt,
+  const view_Nd<const Pack<T,P>,4>& input,
+  const view_Nd<      Pack<T,P>,4>& output,
+  const view_Nd<        Mask<P>,4>& mask);
+  
+template<typename T, int P>
+KOKKOS_FUNCTION
+void apply_masking(
+  const MemberType& team,
+  const T           mask_val,
+  const T           min_val,
+  const T           max_val,
+  const view_Nd<const Pack<T,P>,1>& x_tgt,
+  const view_1d<      Pack<T,P>>& out,
+  const view_1d<      Mask<P>>&   mask);
 
 } // namespace vinterp
 } // namespace scream
