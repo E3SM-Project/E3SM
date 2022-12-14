@@ -5,11 +5,11 @@ namespace vinterp {
 
 template<typename T, int N> 
 void perform_vertical_interpolation(
-  const view_2d<Pack<T,N>>& x_src,
-  const view_1d<Pack<T,N>>& x_tgt,
-  const view_2d<Pack<T,N>>& input,
-  const view_2d<Pack<T,N>>& output,
-  const view_2d<Mask<N>>& mask,
+  const view_Nd<Pack<T,N>,2>& x_src,
+  const view_1d<Pack<T,N>>&   x_tgt,
+  const view_Nd<Pack<T,N>,2>& input,
+  const view_Nd<Pack<T,N>,2>& output,
+  const view_Nd<Mask<N>,2>& mask,
   const int nlevs_src,
   const int nlevs_tgt,
   const Real msk_val)
@@ -20,26 +20,26 @@ void perform_vertical_interpolation(
 
 template<typename T, int N> 
 void perform_vertical_interpolation(
-  const view_2d<Pack<T,N>>& x_src,
-  const view_1d<Pack<T,N>>& x_tgt,
-  const view_2d<Pack<T,N>>& input,
-  const view_2d<Pack<T,N>>& output,
+  const view_Nd<Pack<T,N>,2>& x_src,
+  const view_1d<Pack<T,N>>&   x_tgt,
+  const view_Nd<Pack<T,N>,2>& input,
+  const view_Nd<Pack<T,N>,2>& output,
   const int nlevs_src,
   const int nlevs_tgt,
   const Real msk_val)
 {
-  const view_2d<Mask<N>> mask("",x_src.extent(0),x_tgt.extent(0));
+  const view_Nd<Mask<N>,2> mask("",x_src.extent(0),x_tgt.extent(0));
   perform_vertical_interpolation_impl_Nd<Real,N,2,2>(x_src, x_tgt, input, output, mask,
                                          nlevs_src, nlevs_tgt, msk_val);
 }
 
 template<typename T, int N> 
 void perform_vertical_interpolation(
-  const view_2d<Pack<T,N>>& x_src,
-  const view_1d<Pack<T,N>>& x_tgt,
-  const view_2d<Pack<T,N>>& input,
-  const view_2d<Pack<T,N>>& output,
-  const view_2d<Mask<N>>& mask,
+  const view_Nd<Pack<T,N>,2>& x_src,
+  const view_1d<Pack<T,N>>&   x_tgt,
+  const view_Nd<Pack<T,N>,2>& input,
+  const view_Nd<Pack<T,N>,2>& output,
+  const view_Nd<Mask<N>,2>& mask,
   const int nlevs_src,
   const int nlevs_tgt)
 {
@@ -49,14 +49,14 @@ void perform_vertical_interpolation(
 
 template<typename T, int N> 
 void perform_vertical_interpolation(
-  const view_2d<Pack<T,N>>& x_src,
-  const view_1d<Pack<T,N>>& x_tgt,
-  const view_2d<Pack<T,N>>& input,
-  const view_2d<Pack<T,N>>& output,
+  const view_Nd<Pack<T,N>,2>& x_src,
+  const view_1d<Pack<T,N>>&   x_tgt,
+  const view_Nd<Pack<T,N>,2>& input,
+  const view_Nd<Pack<T,N>,2>& output,
   const int nlevs_src,
   const int nlevs_tgt)
 {
-  const view_2d<Mask<N>> mask("",x_src.extent(0),x_tgt.extent(0));
+  const view_Nd<Mask<N>,2> mask("",x_src.extent(0),x_tgt.extent(0));
   perform_vertical_interpolation_impl_Nd<Real,N,2,2>(x_src, x_tgt, input, output, mask,
                                          nlevs_src, nlevs_tgt, masked_val);
 }
@@ -137,7 +137,7 @@ void apply_interpolation(
   const                          T  mask_val,
   const                   LIV<T,P>& vert_interp,
   const view_Nd<const Pack<T,P>,2>& x_src,
-  const view_Nd<const Pack<T,P>,1>& x_tgt,
+  const view_1d<const Pack<T,P>>&   x_tgt,
   const view_Nd<const Pack<T,P>,2>& input,
   const view_Nd<      Pack<T,P>,2>& output,
   const view_Nd<        Mask<P>,2>& mask_out)
@@ -171,7 +171,7 @@ void apply_interpolation(
   const                          T  mask_val,
   const                   LIV<T,P>& vert_interp,
   const view_Nd<const Pack<T,P>,2>& x_src,
-  const view_Nd<const Pack<T,P>,1>& x_tgt,
+  const view_1d<const Pack<T,P>>&   x_tgt,
   const view_Nd<const Pack<T,P>,3>& input,
   const view_Nd<      Pack<T,P>,3>& output,
   const view_Nd<        Mask<P>,3>& mask_out)
@@ -207,7 +207,7 @@ void apply_interpolation(
   const                          T  mask_val,
   const                   LIV<T,P>& vert_interp,
   const view_Nd<const Pack<T,P>,2>& x_src,
-  const view_Nd<const Pack<T,P>,1>& x_tgt,
+  const view_1d<const Pack<T,P>>&   x_tgt,
   const view_Nd<const Pack<T,P>,4>& input,
   const view_Nd<      Pack<T,P>,4>& output,
   const view_Nd<        Mask<P>,4>& mask_out)
@@ -248,7 +248,7 @@ void apply_masking(
   const T           mask_val,
   const T           min_val,
   const T           max_val,
-  const view_Nd<const Pack<T,P>,1>& x_tgt,
+  const view_1d<const Pack<T,P>>& x_tgt,
   const view_1d<      Pack<T,P>>& out,
   const view_1d<      Mask<P>>&   mask)
 {

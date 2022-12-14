@@ -55,16 +55,16 @@ void run(){
       auto p_tgt = view_1d<Pack<Real,N>>("",npacks_tgt);
       auto p_tgt_h = Kokkos::create_mirror_view(p_tgt);
       auto p_tgt_h_s = ekat::scalarize(p_tgt_h);
-      auto tmp_src = view_2d<Pack<Real,N>>("",2,npacks_src);
+      auto tmp_src = view_Nd<Pack<Real,N>,2>("",2,npacks_src);
       auto tmp_src_h = Kokkos::create_mirror_view(tmp_src);
       auto tmp_src_h_s = ekat::scalarize(tmp_src_h);
-      auto p_src = view_2d<Pack<Real,N>>("",2,npacks_src);
+      auto p_src = view_Nd<Pack<Real,N>,2>("",2,npacks_src);
       auto p_src_h = Kokkos::create_mirror_view(p_src);
       auto p_src_h_s = ekat::scalarize(p_src_h);
-      auto out = view_2d<Pack<Real,N>>("",2,npacks_tgt);
+      auto out = view_Nd<Pack<Real,N>,2>("",2,npacks_tgt);
       auto out_h = Kokkos::create_mirror_view(out);
       auto out_h_s = ekat::scalarize(out_h);
-      auto mask = view_2d<Mask<N>>("",2,npacks_tgt);
+      auto mask = view_Nd<Mask<N>,2>("",2,npacks_tgt);
       auto mask_h = Kokkos::create_mirror_view(mask);
   
       //Set target levels    
@@ -110,10 +110,10 @@ void run(){
         }//end of looping over levels
       }//end of looping over columns
 
-      auto out_1d_test = view_2d<Pack<Real,N>>("",2,npacks_tgt);
+      auto out_1d_test = view_Nd<Pack<Real,N>,2>("",2,npacks_tgt);
       auto out_1d_test_h = Kokkos::create_mirror_view(out_1d_test);
       auto out_1d_test_h_s = ekat::scalarize(out_1d_test_h);
-      auto mask_1d_test = view_2d<Mask<N>>("",2,npacks_tgt);
+      auto mask_1d_test = view_Nd<Mask<N>,2>("",2,npacks_tgt);
       auto mask_1d_test_h = Kokkos::create_mirror_view(mask_1d_test);
   
       //Take subview and run through the 1d interpolator function 
@@ -177,7 +177,7 @@ TEST_CASE("main_vertical_interpolation_test"){
 }
 
 template<int N>
-void check_mask(const view_2d_host<Mask<N>>& mask, int col, int lev){
+void check_mask(const view_Nd_host<Mask<N>,2>& mask, int col, int lev){
   const int ipack = lev / N;
   const int jpack  = lev % N;
   if ((col == 0 && lev == 16) || (col == 1 && lev == 0)){
@@ -206,15 +206,15 @@ TEST_CASE("testing_masking"){
   auto p_tgt       = view_1d<Pack<Real,N>>("",npacks_tgt);
   auto p_tgt_h     = Kokkos::create_mirror_view(p_tgt);
   auto p_tgt_h_s   = ekat::scalarize(p_tgt_h);
-  auto tmp_src     = view_2d<Pack<Real,N>>("",2,npacks_src);
+  auto tmp_src     = view_Nd<Pack<Real,N>,2>("",2,npacks_src);
   auto tmp_src_h   = Kokkos::create_mirror_view(tmp_src);
   auto tmp_src_h_s = ekat::scalarize(tmp_src_h);
-  auto p_src       = view_2d<Pack<Real,N>>("",2,npacks_src);
+  auto p_src       = view_Nd<Pack<Real,N>,2>("",2,npacks_src);
   auto p_src_h     = Kokkos::create_mirror_view(p_src);
   auto p_src_h_s   = ekat::scalarize(p_src_h);
-  auto out         = view_2d<Pack<Real,N>>("",2,npacks_tgt);
+  auto out         = view_Nd<Pack<Real,N>,2>("",2,npacks_tgt);
   auto out_h       = Kokkos::create_mirror_view(out);
-  auto mask        = view_2d<Mask<N>>("",2,npacks_tgt);
+  auto mask        = view_Nd<Mask<N>,2>("",2,npacks_tgt);
   auto mask_h      = Kokkos::create_mirror_view(mask);
 
   //Fist test to see if interpolate properly using 2d views
@@ -282,10 +282,10 @@ TEST_CASE("testing_masking"){
 
   //Test to see if get same answer when call 1D interpolation function 
   //instead of 2D interpolation function
-  auto out_1d_test = view_2d<Pack<Real,N>>("",2,npacks_tgt);
+  auto out_1d_test = view_Nd<Pack<Real,N>,2>("",2,npacks_tgt);
   auto out_1d_test_h = Kokkos::create_mirror_view(out_1d_test);
   auto out_1d_test_h_s = ekat::scalarize(out_1d_test_h);
-  auto mask_1d_test = view_2d<Mask<N>>("",2,npacks_tgt);
+  auto mask_1d_test = view_Nd<Mask<N>,2>("",2,npacks_tgt);
   auto mask_1d_test_h = Kokkos::create_mirror_view(mask_1d_test);
 
   ekat::LinInterp<Real,N> vert_interp(2,n_layers_src,n_layers_tgt);
@@ -322,10 +322,10 @@ TEST_CASE("testing_masking"){
   }
 
   //Check to see if choose different masked value than default that it returns as expected
-  auto out_usr_msk = view_2d<Pack<Real,N>>("",2,npacks_tgt);
+  auto out_usr_msk = view_Nd<Pack<Real,N>,2>("",2,npacks_tgt);
   auto out_usr_msk_h = Kokkos::create_mirror_view(out_usr_msk);
   auto out_usr_msk_h_s = ekat::scalarize(out_usr_msk_h);
-  auto mask_usr_msk = view_2d<Mask<N>>("",2,npacks_tgt);
+  auto mask_usr_msk = view_Nd<Mask<N>,2>("",2,npacks_tgt);
   auto mask_usr_msk_h = Kokkos::create_mirror_view(mask_usr_msk);
   Real mod_mask_val = -999.;
   perform_vertical_interpolation(p_src,
