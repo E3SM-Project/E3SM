@@ -400,7 +400,6 @@ end subroutine moab_map_init_rcfile
             fldlist_moab = trim(mct_aVect_exportRList2c(av_s))//C_NULL_CHAR
          endif
 
-         ntagdatalength = nfields * mapper % nentities
          if (seq_comm_iamroot(CPLID)) then
             write(logunit,*) subname,' iMOAB_mapper  nfields', &
                   nfields,  ' fldlist_moab=', trim(fldlist_moab)
@@ -423,6 +422,7 @@ end subroutine moab_map_init_rcfile
        if ( valid_moab_context ) then
          ! first get data from source tag and store in a temporary
          ! then set it back to target tag to mimic a copy
+         ntagdatalength = nfields * mapper % nentities
          allocate(moab_tag_data(ntagdatalength))
 
          ierr = iMOAB_GetDoubleTagStorage( mapper%src_mbid, &
@@ -543,7 +543,8 @@ end subroutine moab_map_init_rcfile
             write(logunit, *) subname,' iMOAB mapper before receiving ', trim(fldlist_moab)
             call shr_sys_flush(logunit)
          endif
-         ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom,mapper%src_context );
+         ! receive in the intx app, because it is redistributed according to coverage (trick)
+         ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom,mapper%src_context );
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in receiving tags ', trim(fldlist_moab)
             !call shr_sys_abort(subname//' ERROR in receiving tags')
