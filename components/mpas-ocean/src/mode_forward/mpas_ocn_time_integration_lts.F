@@ -385,7 +385,9 @@ module ocn_time_integration_lts
     call mpas_timer_start("lts slow tend computation")
 
     ! SLOW TENDENCY COMPUTATION --- (this is only for the momentum equation)
-    call ocn_time_varying_forcing_get(domain % streamManager, domain, domain % clock)
+    !TODO the call below has to be uncommented if we fix the computation
+    !of the forcing in the framework
+    !call ocn_time_varying_forcing_get(domain % streamManager, domain, domain % clock)
     call ocn_tend_vel(domain,tendSlowPool, statePool, forcingPool, 1, domain % dminfo, dt)
 
     ! set configs to compute only the fast terms on the momentum equation
