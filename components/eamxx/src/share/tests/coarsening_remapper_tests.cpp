@@ -126,7 +126,7 @@ create_field(const std::string& name, const std::shared_ptr<const AbstractGrid>&
 }
 
 // Helper function to create a remap file
-void create_remap_file(const ekat::Comm& comm, const std::string& filename, std::vector<std::int64_t>& dofs,
+void create_remap_file(const std::string& filename, std::vector<std::int64_t>& dofs,
                        const int na, const int nb, const int ns,
                        const std::vector<Real>& col, const std::vector<Real>& row, const std::vector<Real>& S) 
 {
@@ -202,7 +202,7 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
     }
   }
 
-  create_remap_file(comm, filename, dofs, ngdofs_src, ngdofs_tgt, nnz, col, row, S);
+  create_remap_file(filename, dofs, ngdofs_src, ngdofs_tgt, nnz, col, row, S);
   print (" -> creating map file ... done!\n",comm);
 
   // -------------------------------------- //
@@ -295,9 +295,8 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
         {
           const auto v_tgt = f.get_view<const Real*,Host>();
           for (int i=0; i<ntgt_gids; ++i) {
-            const auto gid = tgt_gids(i);
             Real cmp = 0;
-            for (int j=0; j<src_gids.size(); j++) {
+            for (size_t j=0; j<src_gids.size(); j++) {
               cmp += src_gids(j);
             }
             REQUIRE ( v_tgt(i)== cmp/src_gids.size() );
@@ -359,7 +358,7 @@ TEST_CASE ("coarsening_remap") {
     S.push_back(0.75);
   }
 
-  create_remap_file(comm, filename, dofs, ngdofs_src, ngdofs_tgt, nnz, col, row, S);
+  create_remap_file(filename, dofs, ngdofs_src, ngdofs_tgt, nnz, col, row, S);
   print (" -> creating map file ... done!\n",comm);
 
   // -------------------------------------- //
@@ -407,12 +406,10 @@ TEST_CASE ("coarsening_remap") {
 
   std::vector<int> field_col_size (src_f.size());
   std::vector<int> field_col_offset (src_f.size()+1,0);
-  int sum_fields_col_sizes = 0;
   for (int i=0; i<nfields; ++i) {
     const auto& f  = src_f[i];  // Doesn't matter if src or tgt
     const auto& fl = f.get_header().get_identifier().get_layout();
     field_col_size[i] = fl.size() / fl.dim(0);
-    sum_fields_col_sizes += field_col_size[i];
     field_col_offset[i+1] = field_col_offset[i]+field_col_size[i];
   }
 

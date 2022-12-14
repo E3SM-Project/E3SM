@@ -1,6 +1,8 @@
 #include "share/atm_process/atmosphere_process_group.hpp"
 #include "share/field/field_utils.hpp"
 
+#include "share/property_checks/field_nan_check.hpp"
+
 #include "ekat/std_meta/ekat_std_utils.hpp"
 #include "ekat/util/ekat_string_utils.hpp"
 
@@ -164,6 +166,8 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
       add_group<Computed>(req);
     }
   }
+
+  m_grids_mgr = grids_manager;
 }
 
 void AtmosphereProcessGroup::
@@ -289,6 +293,29 @@ setup_column_conservation_checks (const std::shared_ptr<MassAndEnergyColumnConse
 
     // If all conditions are satisfied, add as postcondition_check
     atm_proc->add_column_conservation_check(conservation_check, fail_handling_type);
+  }
+}
+
+void AtmosphereProcessGroup::add_postcondition_nan_checks () const {
+  for (auto proc : m_atm_processes) {
+    auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(proc);
+    if (group) {
+      group->add_postcondition_nan_checks();
+    } else {
+      for (const auto& f : proc->get_fields_out()) {
+        const auto& grid_name = f.get_header().get_identifier().get_grid_name();
+        auto nan_check = std::make_shared<FieldNaNCheck>(f,m_grids_mgr->get_grid(grid_name));
+        proc->add_postcondition_check(nan_check, CheckFailHandling::Fatal);
+      }
+
+      for (const auto& g : proc->get_groups_out()) {
+        const auto& grid = m_grids_mgr->get_grid(g.grid_name());
+        for (const auto& f : g.m_fields) {
+          auto nan_check = std::make_shared<FieldNaNCheck>(*f.second,grid);
+          proc->add_postcondition_check(nan_check, CheckFailHandling::Fatal);
+        }
+      }
+    }
   }
 }
 

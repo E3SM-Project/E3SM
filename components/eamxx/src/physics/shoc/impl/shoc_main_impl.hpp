@@ -532,12 +532,12 @@ Int Functions<S,D>::shoc_main(
 #endif
                               )
 {
-  using ExeSpace = typename KT::ExeSpace;
-
   // Start timer
   auto start = std::chrono::steady_clock::now();
 
 #ifndef SCREAM_SMALL_KERNELS
+  using ExeSpace = typename KT::ExeSpace;
+
   // SHOC main loop
   const auto nlev_packs = ekat::npack<Spack>(nlev);
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(shcol, nlev_packs);

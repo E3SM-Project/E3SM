@@ -189,8 +189,6 @@ std::shared_ptr<FieldManager> get_test_fm(std::shared_ptr<const AbstractGrid> gr
   auto f3_host = f3.get_view<Pack**,Host>();
   auto f4_host = f4.get_view<Pack**,Host>();
 
-  Real dpres_dz = 10000;
-  Real dpres_dx = 100;
   for (int ii=0;ii<num_lcols;++ii) {
     for (int jj=0;jj<num_levs;++jj) {
       int ipack = jj / packsize;

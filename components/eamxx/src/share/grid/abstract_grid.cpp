@@ -343,7 +343,7 @@ get_owners (const hview_1d<const gid_type>& gids) const
       }
     }
   }
-  EKAT_REQUIRE_MSG (num_found==owners.size(),
+  EKAT_REQUIRE_MSG (num_found==static_cast<int>(owners.size()),
       "Error! Could not locate the owner of one of the input GIDs.\n"
       "  - rank: " + std::to_string(comm.rank()) + "\n"
       "  - num found: " + std::to_string(num_found) + "\n"

@@ -278,7 +278,6 @@ void CoarseningRemapper::do_remap_fwd ()
     // x is the src field, and y is the overlapped tgt field.
     const auto& f_src    = m_src_fields[i];
     const auto& f_ov_tgt = m_ov_tgt_fields[i];
-    const auto& tgt_layout = f_ov_tgt.get_header().get_identifier().get_layout();
 
     // Dispatch kernel with the largest possible pack size
     const auto& src_ap = f_src.get_header().get_alloc_properties();
@@ -324,10 +323,8 @@ local_mat_vec (const Field& x, const Field& y) const
   using PackInfo    = ekat::PackInfo<PackSize>;
 
   const auto& src_layout = x.get_header().get_identifier().get_layout();
-  const auto& tgt_layout = y.get_header().get_identifier().get_layout();
   const int rank = src_layout.rank();
   const int nrows = m_ov_tgt_grid->get_num_local_dofs();
-  const int nrows_src = m_src_grid->get_num_local_dofs();
   auto row_offsets = m_row_offsets;
   auto col_lids = m_col_lids;
   auto weights = m_weights;

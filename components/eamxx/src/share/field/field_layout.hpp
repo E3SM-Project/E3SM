@@ -72,6 +72,7 @@ public:
   const std::vector<FieldTag>& tags () const { return m_tags; }
   FieldTag tag  (const int idim) const;
   bool has_tag (const FieldTag t) const { return ekat::contains(m_tags,t); }
+  bool has_tags (const std::vector<FieldTag>& tags) const;
 
   // The rank is the number of tags associated to this field.
   int     rank () const  { return m_rank; }
@@ -148,6 +149,14 @@ inline FieldTag FieldLayout::tag (const int idim) const {
   ekat::error::runtime_check(idim>=0 && idim<m_rank, "Error! Index out of bounds.", -1);
   return m_tags[idim];
 } 
+
+inline bool FieldLayout::has_tags (const std::vector<FieldTag>& tags) const {
+  bool b = true;
+  for (auto t : tags) {
+    b &= has_tag(t);
+  }
+  return b;
+}
 
 inline bool FieldLayout::is_dimension_set (const int idim) const {
   ekat::error::runtime_check(idim>=0 && idim<m_rank, "Error! Index out of bounds.", -1);

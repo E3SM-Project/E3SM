@@ -4,14 +4,16 @@ namespace scream
 {
 
 // =========================================================================================
-VerticalLayerMidpointDiagnostic::VerticalLayerMidpointDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
+VerticalLayerMidpointDiagnostic::
+VerticalLayerMidpointDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereDiagnostic(comm,params)
 {
   // Nothing to do here
 }
 
 // =========================================================================================
-void VerticalLayerMidpointDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void VerticalLayerMidpointDiagnostic::
+set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
@@ -49,7 +51,6 @@ void VerticalLayerMidpointDiagnostic::compute_diagnostic_impl()
 {
 
   const auto npacks     = ekat::npack<Pack>(m_num_levs);
-  const auto npacks_p1  = ekat::npack<Pack>(m_num_levs+1);
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, npacks);
   const auto& z_mid              = m_diagnostic_output.get_view<Pack**>();
   const auto& T_mid              = get_field_in("T_mid").get_view<const Pack**>();

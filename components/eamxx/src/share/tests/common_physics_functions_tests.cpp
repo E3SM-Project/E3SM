@@ -111,22 +111,21 @@ void run_scalar_valued_fns(std::mt19937_64& engine)
   RealType T_ground_tmp;
   RealType T_ground=0;
   RealType phi_ground=100;
-  RealType p_ground=100000; //can't use p0 because that is a ScalarT which could be a pack
-  PF::lapse_T_for_psl(T_ground, p_ground,  phi_ground, lapse, T_ground_tmp );
+  PF::lapse_T_for_psl(T_ground, phi_ground, lapse, T_ground_tmp );
   REQUIRE( Check::approx_equal(T_ground_tmp,0.5*255.,test_tol) );
   REQUIRE( Check::equal(lapse,0.0065) );
   T_ground=300;
-  PF::lapse_T_for_psl(T_ground, p_ground,  phi_ground, lapse, T_ground_tmp );
+  PF::lapse_T_for_psl(T_ground, phi_ground, lapse, T_ground_tmp );
   REQUIRE( Check::approx_equal(T_ground_tmp,0.5*(290.5+T_ground),test_tol) );
   REQUIRE( Check::equal(lapse,0) );
   T_ground=290;
   phi_ground=10000;
-  PF::lapse_T_for_psl(T_ground, p_ground,  phi_ground, lapse, T_ground_tmp );
+  PF::lapse_T_for_psl(T_ground, phi_ground, lapse, T_ground_tmp );
   REQUIRE( Check::equal(T_ground_tmp, T_ground) );
   REQUIRE( Check::approx_equal( T_ground_tmp+lapse*phi_ground/g, 290.5 , test_tol) );
   T_ground=280;
   phi_ground=100;
-  PF::lapse_T_for_psl(T_ground, p_ground,  phi_ground, lapse, T_ground_tmp );
+  PF::lapse_T_for_psl(T_ground, phi_ground, lapse, T_ground_tmp );
   REQUIRE( Check::equal(T_ground_tmp, T_ground) );
   REQUIRE( Check::equal(lapse,0.0065) );
   
@@ -136,6 +135,7 @@ void run_scalar_valued_fns(std::mt19937_64& engine)
   // computed value close to exact solution when lapse rate is 6.5 K/km (typical conditions)
   // PSL lower than surface pressure whenever surface height > 0 m
   // PSL greater than surface pressure whenever surface height < 0 m
+  RealType p_ground=100000; //can't use p0 because that is a ScalarT which could be a pack
   REQUIRE( Check::equal(PF::calculate_psl(310 , p_ground, 0 ), p_ground) );
   REQUIRE( Check::equal(PF::calculate_psl( 2 , 2, 0 ), 2) );
   

@@ -197,13 +197,29 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
           "You should not have reached this line. Please, contact developers.\n");
   }
   PropertyCheck::ResultAndMsg res_and_msg;
-  
+
+  bool pass_lower, pass_upper;
+
   if (minmaxloc.min_val>=m_lb && minmaxloc.max_val<=m_ub) {
     res_and_msg.result = CheckResult::Pass;
+    pass_lower = pass_upper = true;
   } else if  (minmaxloc.min_val<m_lb_repairable || minmaxloc.max_val>m_ub_repairable) {
+    if (minmaxloc.min_val<m_lb_repairable) {
+      pass_lower = false;
+    }
+    if (minmaxloc.max_val>m_ub_repairable) {
+      pass_upper = false;
+    }
+
     res_and_msg.result = CheckResult::Fail;
   } else {
     res_and_msg.result = CheckResult::Repairable;
+    if (minmaxloc.min_val<m_lb) {
+      pass_lower = false;
+    }
+    if (minmaxloc.max_val>m_ub) {
+      pass_upper = false;
+    }
   }
 
   if (res_and_msg.result == CheckResult::Pass) {
@@ -218,6 +234,14 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
 
   auto idx_min = unflatten_idx(layout.dims(),minmaxloc.min_loc);
   auto idx_max = unflatten_idx(layout.dims(),minmaxloc.max_loc);
+
+  if (not pass_lower) {
+    res_and_msg.fail_loc_indices = idx_min;
+    res_and_msg.fail_loc_tags = layout.tags();
+  } else if (not pass_upper) {
+    res_and_msg.fail_loc_indices = idx_max;
+    res_and_msg.fail_loc_tags = layout.tags();
+  }
 
   using namespace ShortFieldTagsNames;
 
@@ -402,6 +426,19 @@ void FieldWithinIntervalCheck::repair_impl() const {
           "Internal error in FieldWithinIntervalCheck: unsupported field data type.\n"
           "You should not have reached this line. Please, contact developers.\n");
   }
+}
+
+bool FieldWithinIntervalCheck::same_as (const PropertyCheck& pc) const {
+  auto* fwic = dynamic_cast<const FieldWithinIntervalCheck*>(&pc);
+  if (fwic==nullptr) {
+    return false;
+  }
+
+  // They are both interval checks, so check bounds and whatever the base class does
+  return PropertyCheck::same_as(pc) &&
+         m_ub==fwic->m_ub && m_lb==fwic->m_lb &&
+         m_ub_repairable==fwic->m_ub_repairable &&
+         m_lb_repairable==fwic->m_lb_repairable;
 }
 
 } // namespace scream

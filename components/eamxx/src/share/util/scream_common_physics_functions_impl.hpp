@@ -430,7 +430,7 @@ Real PhysicsFunctions<DeviceT>::calculate_surface_air_T(const Real& T_mid_bot, c
 
 template<typename DeviceT>
 KOKKOS_INLINE_FUNCTION
-void PhysicsFunctions<DeviceT>::lapse_T_for_psl(const Real& T_ground, const Real& p_ground, const Real& phi_ground,
+void PhysicsFunctions<DeviceT>::lapse_T_for_psl(const Real& T_ground, const Real& phi_ground,
 					        Real& lapse, Real& T_ground_tmp )
 {
   /* 
@@ -487,7 +487,7 @@ Real PhysicsFunctions<DeviceT>::calculate_psl(const Real& T_ground, const Real& 
   }else{
     Real lapse;
     Real T_ground_tmp;
-    lapse_T_for_psl(T_ground,p_ground,phi_ground, lapse, T_ground_tmp);
+    lapse_T_for_psl(T_ground,phi_ground, lapse, T_ground_tmp);
     Real alpha=lapse*Rair/gravit;
     Real beta=phi_ground/(Rair*T_ground_tmp);
     psl = p_ground*std::exp(beta*( 1 - alpha*beta/2 + std::pow(alpha*beta,2)/3 ) );

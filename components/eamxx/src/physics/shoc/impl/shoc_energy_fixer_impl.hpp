@@ -74,7 +74,8 @@ void Functions<S,D>::shoc_energy_fixer(
 
   // Limit the energy fixer to find highest layer where SHOC is active.
   // Find first level where tke is higher than lowest threshold.
-  static_assert(Spack::n == IntSmallPack::n, "SHOC: assumption in ||r.");
+  static_assert(static_cast<int>(Spack::n)==static_cast<int>(IntSmallPack::n),
+                "SHOC: violated assumption in parallel reduce.");
   Int shoctop = 0;
   const auto nlevm2_packs = ekat::npack<Spack>(nlev-2);
   Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nlevm2_packs),

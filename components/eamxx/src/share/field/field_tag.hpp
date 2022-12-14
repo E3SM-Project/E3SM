@@ -127,6 +127,12 @@ namespace ShortFieldTagsNames {
   constexpr auto LWGPT = FieldTag::LongWaveGpoint;
 }
 
+// Allow to stream FieldTag values as strings.
+inline std::ostream& operator<< (std::ostream& out, const FieldTag t) {
+  out << e2str(t);
+  return out;
+}
+
 } // namespace scream
 
 #endif // SCREAM_FIELD_TAG_HPP

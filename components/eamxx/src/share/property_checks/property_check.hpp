@@ -43,6 +43,12 @@ enum class CheckResult {
   Repairable
 };
 
+enum class PropertyType {
+  PointWise,    // The property is computed pointwise at each entry of the field(s)
+  ColumnWise,   // The property is computed over each column of the field(s)
+  Global        // The property is computed globally
+};
+
 class PropertyCheck {
 public:
 
@@ -52,9 +58,16 @@ public:
   virtual std::string name () const = 0;
 
   struct ResultAndMsg {
-    CheckResult   result;
-    std::string   msg;
+    CheckResult       result;
+    std::string       msg;
+
+    // For pointwise/columnwise checks, if failing, can return tags/indices
+    // for the location where the test failed.
+    std::vector<int>        fail_loc_indices;
+    std::vector<FieldTag>   fail_loc_tags;
   };
+
+  virtual PropertyType type () const = 0;
 
   // Check if the property is satisfied, and return true if it is
   virtual ResultAndMsg check () const = 0;
@@ -92,6 +105,9 @@ public:
   // perform both in a single call, for performance reason, you should
   // override this method.
   virtual void check_and_repair () const;
+
+  // Whether the input check is the same as this class
+  virtual bool same_as (const PropertyCheck& pc) const;
 
 protected:
   virtual void repair_impl () const {

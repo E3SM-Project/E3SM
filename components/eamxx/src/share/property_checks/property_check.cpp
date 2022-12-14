@@ -75,4 +75,36 @@ void PropertyCheck::check_and_repair () const {
   }
 }
 
+bool PropertyCheck::same_as (const PropertyCheck& pc) const
+{
+  if (this->name()!=pc.name()) {
+    return false;
+  }
+
+  for (const auto& f : m_fields) {
+    bool found = false;
+    for (const auto& pc_f : pc.fields()) {
+      if (f.get_header().get_identifier()==pc_f.get_header().get_identifier()) {
+        found = true;
+      }
+    }
+    if (not found) {
+      return false;
+    }
+  }
+
+  for (const auto& f : m_repairable_fields) {
+    bool found = false;
+    for (const auto& pc_f : pc.repairable_fields()) {
+      if (f->get_header().get_identifier()==pc_f->get_header().get_identifier()) {
+        found = true;
+      }
+    }
+    if (not found) {
+      return false;
+    }
+  }
+  return true;
+}
+
 } // namespace scream

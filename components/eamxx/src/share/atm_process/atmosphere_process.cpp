@@ -1,6 +1,7 @@
 #include "share/atm_process/atmosphere_process.hpp"
 #include "share/util/scream_timing.hpp"
 #include "share/property_checks/mass_and_energy_column_conservation_check.hpp"
+#include "share/field/field_utils.hpp"
 
 #include "ekat/ekat_assert.hpp"
 
@@ -252,13 +253,64 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
         "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
         "  - Message: " + res_and_msg.msg);
     } else {
-      // No hope. Crash.
-      EKAT_ERROR_MSG(
-          "Error! Failed " + pre_post_str + " property check (cannot be repaired).\n"
-          "  - Atmosphere process name: " + name() + "\n"
-          "  - Property check name: " + property_check->name() + "\n"
-          "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
-          "  - Message: " + res_and_msg.msg);
+      // No hope. Crash. But before crashing, print all the input and output fields at the samme
+      // location where the check failed.
+      std::ostringstream ss;
+      ss << "Error! Failed " + pre_post_str + " property check (cannot be repaired).\n"
+            "  - Atmosphere process name: " + name() + "\n"
+            "  - Property check name: " + property_check->name() + "\n"
+            "  - Atmosphere process MPI Rank: " + std::to_string(m_comm.rank()) + "\n"
+            "  - Message: " + res_and_msg.msg;
+      if (res_and_msg.fail_loc_indices.size()>0) {
+        // If the location is 3d, we not use the level index to slice the fields,
+        // but print a column worth of data for all fields.
+        using namespace ShortFieldTagsNames;
+        auto tags = res_and_msg.fail_loc_tags;
+        auto idx  = res_and_msg.fail_loc_indices;
+        auto itm = ekat::find(tags,LEV);
+        auto iti = ekat::find(tags,ILEV);
+        if (itm!=tags.end()) {
+          auto pos = std::distance(tags.begin(),itm);
+          tags.erase(itm);
+          idx.erase(idx.begin()+pos);
+        } else if (iti!=tags.end()) {
+          auto pos = std::distance(tags.begin(),iti);
+          tags.erase(itm);
+          idx.erase(idx.begin()+pos);
+        }
+        ss << "\n *************************** INPUT FIELDS ******************************\n";
+        ss << "\n  ------- INPUT FIELDS -------\n";
+        for (const auto& f : m_fields_in) {
+          if (f.get_header().get_identifier().get_layout().has_tags(tags)) {
+            print_field_hyperslab (f,tags,idx,ss);
+            ss << " -----------------------------------------------------------------------\n";
+          }
+        }
+        for (const auto& g : m_groups_in) {
+          for (const auto& f : g.m_fields) {
+            if (f.second->get_header().get_identifier().get_layout().has_tags(tags)) {
+              print_field_hyperslab (*f.second,tags,idx,ss);
+              ss << " -----------------------------------------------------------------------\n";
+            }
+          }
+        }
+        ss << "\n ************************** OUTPUT FIELDS ******************************\n";
+        for (const auto& f : m_fields_out) {
+          if (f.get_header().get_identifier().get_layout().has_tags(tags)) {
+            print_field_hyperslab (f,tags,idx,ss);
+            ss << " -----------------------------------------------------------------------\n";
+          }
+        }
+        for (const auto& g : m_groups_out) {
+          for (const auto& f : g.m_fields) {
+            if (f.second->get_header().get_identifier().get_layout().has_tags(tags)) {
+              print_field_hyperslab (*f.second,tags,idx,ss);
+              ss << " -----------------------------------------------------------------------\n";
+            }
+          }
+        }
+      }
+      EKAT_ERROR_MSG(ss.str());
     }
   }
 }
@@ -498,6 +550,35 @@ add_precondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
 void AtmosphereProcess::
 add_postcondition_check (const prop_check_ptr& pc, const CheckFailHandling cfh)
 {
+  auto cfh2str = [] (const CheckFailHandling cfh) -> std::string {
+    std::string s = "";
+    switch (cfh) {
+      case CheckFailHandling::Fatal:
+        s = "Fatal";
+        break;
+      case CheckFailHandling::Warning:
+        s = "Warning";
+        break;
+      default:
+        EKAT_ERROR_MSG ("Unexpected/unsupported CheckFailHandling value.\n");
+    }
+
+    return "";
+  };
+
+  // Avoid adding the *SAME* test twice
+  for (const auto& it : m_postcondition_checks) {
+    if (it.second->same_as(*pc)) {
+      EKAT_REQUIRE_MSG (it.first==cfh,
+          "Error! Duplicate property check with different CheckFailHandling.\n"
+          "  - Atmosphere process name: " + name() + "\n"
+          "  - Property check name: " + pc->name() + "\n"
+          "  - Current CFH: " + cfh2str(it.first) + "\n"
+          "  - Input CFH: " + cfh2str(cfh) + "\n");
+      return;
+    }
+  }
+
   // If a pc can repair, we need to make sure the repairable
   // fields are among the computed fields of this atm proc.
   // Otherwise, it would be possible for this AP to implicitly

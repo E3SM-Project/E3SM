@@ -55,7 +55,6 @@ void DryStaticEnergyDiagnostic::compute_diagnostic_impl()
 {
 
   const auto npacks     = ekat::npack<Pack>(m_num_levs);
-  const auto npacks_p1  = ekat::npack<Pack>(m_num_levs+1);
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(m_num_cols, npacks);
 
   const auto& dse                = m_diagnostic_output.get_view<Pack**>();

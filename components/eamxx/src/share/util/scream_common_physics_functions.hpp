@@ -255,7 +255,7 @@ struct PhysicsFunctions
   // psl is the sea level pressure (Pa)
   //-----------------------------------------------------------------------------------------------//
   KOKKOS_INLINE_FUNCTION
-  static void lapse_T_for_psl(const Real& T_ground, const Real& p_ground, const Real& phi_ground,
+  static void lapse_T_for_psl(const Real& T_ground, const Real& phi_ground,
 				 Real& lapse, Real& T_ground_tmp );
 
   //-----------------------------------------------------------------------------------------------//

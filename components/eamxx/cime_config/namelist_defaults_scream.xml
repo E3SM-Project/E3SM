@@ -101,8 +101,8 @@ tweaking their $case/namelist_scream.xml file.
            TODO support numeric checks (<, >, ...)??
 
         6) You can inline case values into parameter values via this syntax, e.g.:
-           <init_file>scream_init_${ATM_GRID}.nc</init_file>
-           This would result in parameter init_file' having the value 'scream_init_ne4np4.nc'
+           <init_file>scream_init_${ATM_GRID}.nc</init_file>. If ATM_GRID="ne4np4",
+           this would result in parameter init_file' having the value 'scream_init_ne4np4.nc'
 
         7) Any parameter value with a comma will be assumed to be a list.
            TODO allow this behavior to be overridden?
@@ -118,7 +118,7 @@ tweaking their $case/namelist_scream.xml file.
            for the atmosphere processes section(s).
 
        11) The attribute 'locked="true"' is to be used for entries that cannot be changed
-           via atm-config-chg. For instance, the overall list of atm procs cannot be changed,
+           via atmchange (see scripts/atmchange). For instance, the overall list of atm procs cannot be changed,
            since it would require to re-parse the defaults, to re-generate the correct
            defaults for the (possibly) new atm procs.
 
@@ -368,6 +368,7 @@ tweaking their $case/namelist_scream.xml file.
     <mass_column_conservation_error_tolerance>1e-10</mass_column_conservation_error_tolerance>
     <energy_column_conservation_error_tolerance>1e-14</energy_column_conservation_error_tolerance>
     <column_conservation_checks_fail_handling_type>Warning</column_conservation_checks_fail_handling_type>
+    <check_all_computed_fields_for_nans type="logical">true</check_all_computed_fields_for_nans >
   </driver_options>
 
   <!-- E3SM Simulation Settings -->

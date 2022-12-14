@@ -47,6 +47,8 @@ public:
   // The name of the property check
   std::string name () const override { return "Mass and energy column conservation check"; }
 
+  PropertyType type () const override { return PropertyType::ColumnWise; }
+
   // Computes mass and energy and tests against a tolerance.
   ResultAndMsg check () const override;
 

@@ -87,6 +87,11 @@ public:
       const std::shared_ptr<MassAndEnergyColumnConservationCheck>& conservation_check,
       const CheckFailHandling                                      fail_handling_type) const;
 
+  // Add nan checks after each non-group process, for each computed field.
+  // If checks fail, we print all input and output fields of that process
+  // (that are on the same grid) at the location of the fail.
+  void add_postcondition_nan_checks () const;
+
 protected:
 
   // Adds fid to the list of required/computed fields of the group (as a whole).
@@ -117,6 +122,9 @@ protected:
 
   // The schedule type: Parallel vs Sequential
   ScheduleType   m_group_schedule_type;
+
+  // This is only needed to be able to access grids objects later on
+  std::shared_ptr<const GridsManager>   m_grids_mgr;
 };
 
 } // namespace scream

@@ -37,6 +37,8 @@ public:
   // The name of the property check
   std::string name () const override;
 
+  PropertyType type () const override { return PropertyType::PointWise; }
+
   ResultAndMsg check() const override;
 
 // CUDA requires the parent fcn of a KOKKOS_LAMBDA to have public access
@@ -49,6 +51,8 @@ protected:
 
   template<typename ST>
   void repair_impl() const;
+
+  bool same_as (const PropertyCheck& pc) const override;
 
 protected:
 

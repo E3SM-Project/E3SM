@@ -74,7 +74,6 @@ void perform_vertical_interpolation_impl_2d(
 {
   const int ncols = x_src.extent(0);
   //Do a bunch of checks to make sure that Pack<T,N>s are consistent
-  auto npacks_src = ekat::PackInfo<Pack<T,N>::n>::num_packs(nlevs_src);
   auto npacks_tgt = ekat::PackInfo<Pack<T,N>::n>::num_packs(nlevs_tgt);
   EKAT_REQUIRE(x_src.extent(0)==input.extent(0));
   EKAT_REQUIRE(x_src.extent(1)==input.extent(1));
@@ -122,7 +121,6 @@ void perform_vertical_interpolation_impl_1d(
   const view_1d<Pack<T,N>>& output,
   const view_1d<Mask<N>>& mask,
   const int nlevs_src,
-  const int nlevs_tgt,
   const int icol,
   const Real msk_val,
   const MemberType& team,

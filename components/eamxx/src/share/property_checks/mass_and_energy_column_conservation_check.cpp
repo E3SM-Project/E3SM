@@ -255,6 +255,8 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
     if (has_latlon) {
       msg << "    - (lat, lon): (" << lat(maxloc_mass.loc) << ", " << lon(maxloc_mass.loc) << ")\n";
     }
+    res_and_msg.fail_loc_indices.resize(1,maxloc_mass.loc);
+    res_and_msg.fail_loc_tags = m_fields.at("phis")->get_header().get_identifier().get_layout().tags();
   }
   if (not energy_below_tol) {
     msg << "  - energy error tolerance: " << m_energy_tol << "\n";
@@ -263,6 +265,8 @@ PropertyCheck::ResultAndMsg MassAndEnergyColumnConservationCheck::check() const
     if (has_latlon) {
       msg << "    - (lat, lon): (" << lat(maxloc_energy.loc) << ", " << lon(maxloc_energy.loc) << ")\n";
     }
+    res_and_msg.fail_loc_indices.resize(1,maxloc_energy.loc);
+    res_and_msg.fail_loc_tags = m_fields.at("phis")->get_header().get_identifier().get_layout().tags();
   }
 
   res_and_msg.msg = msg.str();

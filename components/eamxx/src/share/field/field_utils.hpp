@@ -104,6 +104,38 @@ ST field_min(const Field& f, const ekat::Comm* comm = nullptr)
   return impl::field_min<ST>(f,comm);
 }
 
+// Prints the value of a field at a certain location, specified by tags and indices.
+// If the field layout contains all the location tags, we will slice the field along
+// those tags, and print it. E.g., f might be a <COL,LEV> field, and the tags/indices
+// refer to a single column, in which case we'll print a whole column worth of data.
+inline void
+print_field_hyperslab (const Field& f,
+                       const std::vector<FieldTag>& tags,
+                       const std::vector<int>& indices,
+                       std::ostream& out)
+{
+  const auto dt = f.data_type();
+  const auto rank = f.rank();
+
+  EKAT_REQUIRE_MSG (rank>=static_cast<int>(tags.size()),
+      "Error! Requested location incompatible with field rank.\n"
+      "  - field name: " + f.name() + "\n"
+      "  - field rank: " + std::to_string(rank) + "\n"
+      "  - requested indices: (" + ekat::join(indices,",") + "\n");
+
+  switch (dt) {
+    case DataType::IntType:
+      impl::print_field_hyperslab<int>(f,tags,indices,out,rank,0);
+      break;
+    case DataType::FloatType:
+      impl::print_field_hyperslab<float>(f,tags,indices,out,rank,0);
+      break;
+    case DataType::DoubleType:
+      impl::print_field_hyperslab<double>(f,tags,indices,out,rank,0);
+      break;
+  }
+}
+
 } // namespace scream
 
 #endif // SCREAM_FIELD_UTILS_HPP
