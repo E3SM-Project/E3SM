@@ -181,6 +181,9 @@ void apply_masking(
   const view_1d<      Pack<T,P>>& out,
   const view_1d<      Mask<P>>&   mask);
 
+template<int P, int N>
+view_Nd<Mask<P>,N> allocate_mask(const view_1d<int>& extents);
+
 } // namespace vinterp
 } // namespace scream
 

@@ -28,7 +28,11 @@ void perform_vertical_interpolation(
   const int nlevs_tgt,
   const Real msk_val)
 {
-  const view_Nd<Mask<P>,N> mask("",x_src.extent(0),x_tgt.extent(0));
+  std::vector<int> extents;
+  for (int ii=0;ii<output.rank;ii++) {
+    extents.pushback(output.extent_int(ii));
+  }
+  const auto mask = allocate_mask(extents);
   perform_vertical_interpolation_impl_Nd<Real,P,N>(x_src, x_tgt, input, output, mask,
                                          nlevs_src, nlevs_tgt, msk_val);
 }
@@ -56,9 +60,30 @@ void perform_vertical_interpolation(
   const int nlevs_src,
   const int nlevs_tgt)
 {
-  const view_Nd<Mask<P>,N> mask("",x_src.extent(0),x_tgt.extent(0));
+  std::vector<int> extents;
+  for (int ii=0;ii<output.rank;ii++) {
+    extents.pushback(output.extent_int(ii));
+  }
+  const auto mask = allocate_mask(extents);
   perform_vertical_interpolation_impl_Nd<Real,P,N>(x_src, x_tgt, input, output, mask,
                                          nlevs_src, nlevs_tgt, masked_val);
+}
+
+template<int P, int N>
+view_Nd<Mask<P>,N> allocate_mask(const std::vector<int>& extents)
+{
+  switch(extents.size()) {
+    case 1:
+      return view_Nd<Mask<P>,N>("",extents[0]);
+    case 2:
+      return view_Nd<Mask<P>,N>("",extents[0],extents[1]);
+    case 3:
+      return view_Nd<Mask<P>,N>("",extents[0],extents[1],extents[2]);
+    case 4:
+      return view_Nd<Mask<P>,N>("",extents[0],extents[1],extents[2],extents[3]);
+    default:
+      EKAT_ERROR_MSG("vertical_remap::allocate_mask only supports a rank of <= 4, received rank = " + std::to_string(N));
+  }
 }
 
 template<typename T, int P> 
