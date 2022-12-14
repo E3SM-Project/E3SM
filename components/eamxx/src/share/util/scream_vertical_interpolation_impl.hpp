@@ -3,61 +3,61 @@
 namespace scream {
 namespace vinterp {
 
-template<typename T, int P> 
+template<typename T, int P, int N> 
 void perform_vertical_interpolation(
-  const view_Nd<Pack<T,P>,2>& x_src,
+  const view_Nd<Pack<T,P>,N>& x_src,
   const view_1d<Pack<T,P>>&   x_tgt,
-  const view_Nd<Pack<T,P>,2>& input,
-  const view_Nd<Pack<T,P>,2>& output,
-  const view_Nd<Mask<P>,2>& mask,
+  const view_Nd<Pack<T,P>,N>& input,
+  const view_Nd<Pack<T,P>,N>& output,
+  const view_Nd<Mask<P>,N>&   mask,
   const int nlevs_src,
   const int nlevs_tgt,
   const Real msk_val)
 {
-  perform_vertical_interpolation_impl_Nd<Real,P,2,2>(x_src, x_tgt, input, output, mask,
+  perform_vertical_interpolation_impl_Nd<Real,P,N>(x_src, x_tgt, input, output, mask,
                                          nlevs_src, nlevs_tgt, msk_val);
 }
 
-template<typename T, int P> 
+template<typename T, int P, int N> 
 void perform_vertical_interpolation(
-  const view_Nd<Pack<T,P>,2>& x_src,
+  const view_Nd<Pack<T,P>,N>& x_src,
   const view_1d<Pack<T,P>>&   x_tgt,
-  const view_Nd<Pack<T,P>,2>& input,
-  const view_Nd<Pack<T,P>,2>& output,
+  const view_Nd<Pack<T,P>,N>& input,
+  const view_Nd<Pack<T,P>,N>& output,
   const int nlevs_src,
   const int nlevs_tgt,
   const Real msk_val)
 {
-  const view_Nd<Mask<P>,2> mask("",x_src.extent(0),x_tgt.extent(0));
-  perform_vertical_interpolation_impl_Nd<Real,P,2,2>(x_src, x_tgt, input, output, mask,
+  const view_Nd<Mask<P>,N> mask("",x_src.extent(0),x_tgt.extent(0));
+  perform_vertical_interpolation_impl_Nd<Real,P,N>(x_src, x_tgt, input, output, mask,
                                          nlevs_src, nlevs_tgt, msk_val);
 }
 
-template<typename T, int P> 
+template<typename T, int P, int N> 
 void perform_vertical_interpolation(
-  const view_Nd<Pack<T,P>,2>& x_src,
+  const view_Nd<Pack<T,P>,N>& x_src,
   const view_1d<Pack<T,P>>&   x_tgt,
-  const view_Nd<Pack<T,P>,2>& input,
-  const view_Nd<Pack<T,P>,2>& output,
-  const view_Nd<Mask<P>,2>& mask,
+  const view_Nd<Pack<T,P>,N>& input,
+  const view_Nd<Pack<T,P>,N>& output,
+  const view_Nd<Mask<P>,N>&   mask,
   const int nlevs_src,
   const int nlevs_tgt)
 {
-  perform_vertical_interpolation_impl_Nd<Real,P,2,2>(x_src, x_tgt, input, output, mask,
+  perform_vertical_interpolation_impl_Nd<Real,P,N>(x_src, x_tgt, input, output, mask,
                                          nlevs_src, nlevs_tgt, masked_val);
 }
 
-template<typename T, int P> 
+template<typename T, int P, int N> 
 void perform_vertical_interpolation(
-  const view_Nd<Pack<T,P>,2>& x_src,
+  const view_Nd<Pack<T,P>,N>& x_src,
   const view_1d<Pack<T,P>>&   x_tgt,
-  const view_Nd<Pack<T,P>,2>& input,
-  const view_Nd<Pack<T,P>,2>& output,
+  const view_Nd<Pack<T,P>,N>& input,
+  const view_Nd<Pack<T,P>,N>& output,
   const int nlevs_src,
   const int nlevs_tgt)
 {
-  const view_Nd<Mask<P>,2> mask("",x_src.extent(0),x_tgt.extent(0));
-  perform_vertical_interpolation_impl_Nd<Real,P,2,2>(x_src, x_tgt, input, output, mask,
+  const view_Nd<Mask<P>,N> mask("",x_src.extent(0),x_tgt.extent(0));
+  perform_vertical_interpolation_impl_Nd<Real,P,N>(x_src, x_tgt, input, output, mask,
                                          nlevs_src, nlevs_tgt, masked_val);
 }
 
@@ -93,9 +93,9 @@ void perform_vertical_interpolation_impl_1d(
   team.team_barrier();
 }
 
-template<typename T, int P, int N, int M> 
+template<typename T, int P, int N> 
 void perform_vertical_interpolation_impl_Nd(
-  const view_Nd<const Pack<T,P>,M>& x_src,
+  const view_Nd<const Pack<T,P>,2>& x_src,
   const view_1d<const Pack<T,P>>&   x_tgt,
   const view_Nd<const Pack<T,P>,N>& input,
   const view_Nd<Pack<T,P>,N>&       output,

@@ -82,7 +82,7 @@ void run(){
       Kokkos::deep_copy(p_src,p_src_h);
       Kokkos::deep_copy(p_tgt,p_tgt_h);
       Kokkos::deep_copy(tmp_src,tmp_src_h);
-      perform_vertical_interpolation(p_src,
+      perform_vertical_interpolation<Real,P,2>(p_src,
                                      p_tgt,
                                      tmp_src,
                                      out,
@@ -248,7 +248,7 @@ TEST_CASE("testing_masking"){
   Kokkos::deep_copy(p_tgt,p_tgt_h);
   Kokkos::deep_copy(tmp_src,tmp_src_h);
 
-  perform_vertical_interpolation(p_src,
+  perform_vertical_interpolation<Real,P,2>(p_src,
 				 p_tgt,
 				 tmp_src,
 				 out,
@@ -328,7 +328,7 @@ TEST_CASE("testing_masking"){
   auto mask_usr_msk = view_Nd<Mask<P>,2>("",2,npacks_tgt);
   auto mask_usr_msk_h = Kokkos::create_mirror_view(mask_usr_msk);
   Real mod_mask_val = -999.;
-  perform_vertical_interpolation(p_src,
+  perform_vertical_interpolation<Real,P,2>(p_src,
 				 p_tgt,
 				 tmp_src,
 				 out_usr_msk,
