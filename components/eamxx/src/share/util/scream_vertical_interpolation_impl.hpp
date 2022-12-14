@@ -3,11 +3,11 @@
 namespace scream {
 namespace vinterp {
 
-template<typename Src, typename Tgt, typename Input, typename T, int N> 
+template<typename T, int N> 
 void perform_vertical_interpolation(
-  const Src& x_src,
-  const Tgt& x_tgt,
-  const Input& input,
+  const view_2d<Pack<T,N>>& x_src,
+  const view_1d<Pack<T,N>>& x_tgt,
+  const view_2d<Pack<T,N>>& input,
   const view_2d<Pack<T,N>>& output,
   const view_2d<Mask<N>>& mask,
   const int nlevs_src,
@@ -18,11 +18,11 @@ void perform_vertical_interpolation(
                                          nlevs_src, nlevs_tgt, msk_val);
 }
 
-template<typename Src, typename Tgt, typename Input, typename T, int N> 
+template<typename T, int N> 
 void perform_vertical_interpolation(
-  const Src& x_src,
-  const Tgt& x_tgt,
-  const Input& input,
+  const view_2d<Pack<T,N>>& x_src,
+  const view_1d<Pack<T,N>>& x_tgt,
+  const view_2d<Pack<T,N>>& input,
   const view_2d<Pack<T,N>>& output,
   const int nlevs_src,
   const int nlevs_tgt,
@@ -33,11 +33,11 @@ void perform_vertical_interpolation(
                                          nlevs_src, nlevs_tgt, msk_val);
 }
 
-template<typename Src, typename Tgt, typename Input, typename T, int N> 
+template<typename T, int N> 
 void perform_vertical_interpolation(
-  const Src& x_src,
-  const Tgt& x_tgt,
-  const Input& input,
+  const view_2d<Pack<T,N>>& x_src,
+  const view_1d<Pack<T,N>>& x_tgt,
+  const view_2d<Pack<T,N>>& input,
   const view_2d<Pack<T,N>>& output,
   const view_2d<Mask<N>>& mask,
   const int nlevs_src,
@@ -47,11 +47,11 @@ void perform_vertical_interpolation(
                                          nlevs_src, nlevs_tgt, masked_val);
 }
 
-template<typename Src, typename Tgt, typename Input, typename T, int N> 
+template<typename T, int N> 
 void perform_vertical_interpolation(
-  const Src& x_src,
-  const Tgt& x_tgt,
-  const Input& input,
+  const view_2d<Pack<T,N>>& x_src,
+  const view_1d<Pack<T,N>>& x_tgt,
+  const view_2d<Pack<T,N>>& input,
   const view_2d<Pack<T,N>>& output,
   const int nlevs_src,
   const int nlevs_tgt)
@@ -61,12 +61,12 @@ void perform_vertical_interpolation(
                                          nlevs_src, nlevs_tgt, masked_val);
 }
 
-template<typename Src, typename Tgt, typename Input, typename T, int N> 
+template<typename T, int N> 
 KOKKOS_FUNCTION
 void perform_vertical_interpolation_impl_1d(
-  const Src& x_src,
-  const Tgt& x_tgt,
-  const Input& input,
+  const view_1d<Pack<T,N>>& x_src,
+  const view_1d<Pack<T,N>>& x_tgt,
+  const view_1d<Pack<T,N>>& input,
   const view_1d<Pack<T,N>>& output,
   const view_1d<Mask<N>>& mask,
   const int nlevs_src,
