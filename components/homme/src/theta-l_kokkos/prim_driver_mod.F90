@@ -75,6 +75,7 @@ contains
                               use_cpstar, transport_alg, theta_hydrostatic_mode,       &
                               dcmip16_mu, theta_advect_form, test_case,                &
                               MAX_STRING_LEN, dt_remap_factor, dt_tracer_factor,       &
+                              pgrad_correction,                                        &
                               dp3d_thresh, vtheta_thresh
     !
     ! Input(s)
@@ -110,7 +111,11 @@ contains
                                    LOGICAL(theta_hydrostatic_mode,c_bool),                        &
                                    c_loc(test_name),                                              &
                                    dt_remap_factor, dt_tracer_factor, rearth, nsplit,             &
+<<<<<<< HEAD
                                    dp3d_thresh, vtheta_thresh)
+=======
+                                   LOGICAL(pgrad_correction==1,c_bool))
+>>>>>>> origin/master
 
     ! Initialize time level structure in C++
     call init_time_level_c(tl%nm1, tl%n0, tl%np1, tl%nstep, tl%nstep0)

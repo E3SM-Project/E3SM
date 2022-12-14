@@ -971,6 +971,8 @@ include 'mpif.h'
       integer :: mpi_ierr, threadNum
       real(kind=RKIND), dimension(2,1) :: recvbuf, sendbuf
 
+      threadNum = mpas_threading_get_thread_num()
+
       if ( threadNum == 0 ) then
 #ifdef _MPI
          sendbuf(1,1) = r
@@ -5032,7 +5034,7 @@ subroutine mpas_dmpar_get_exch_list(haloLayer, ownedListField, neededListField, 
       type (field3DInteger), pointer :: fieldCursor, fieldCursor2
       type (mpas_exchange_list), pointer :: exchListPtr
       type (mpas_communication_list), pointer :: sendList, recvList, commListPtr
-      integer :: mpi_ierr, threadnum
+      integer :: mpi_ierr, threadNum
       integer :: nHaloLayers, iHalo, i, j, k
       integer :: bufferOffset, nAdded
       integer, dimension(:), pointer :: haloLayers

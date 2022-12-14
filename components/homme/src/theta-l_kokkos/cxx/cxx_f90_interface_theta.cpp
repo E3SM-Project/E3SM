@@ -46,7 +46,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
                                const int& ftype, const int& theta_adv_form, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
                                const bool& use_cpstar, const int& transport_alg, const bool& theta_hydrostatic_mode, const char** test_case,
                                const int& dt_remap_factor, const int& dt_tracer_factor,
-                               const double& rearth, const int& nsplit,
+                               const double& rearth, const int& nsplit, const bool& pgrad_correction,
                                const double& dp3d_thresh, const double& vtheta_thresh)
 {
   // Check that the simulation options are supported. This helps us in the future, since we
@@ -117,8 +117,12 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.dcmip16_mu                    = dcmip16_mu;
   params.nsplit                        = nsplit;
   params.rearth                        = rearth;
+<<<<<<< HEAD
   params.dp3d_thresh                   = dp3d_thresh;
   params.vtheta_thresh                 = vtheta_thresh;
+=======
+  params.pgrad_correction              = pgrad_correction;
+>>>>>>> origin/master
 
   if (time_step_type==5) {
     //5 stage, 3rd order, explicit

@@ -59,6 +59,7 @@ struct SimulationParams
   int       nsplit = 0;
   int       nsplit_iteration;
   double    rearth; //propagated then to Geometry and SphereOps
+  bool      pgrad_correction;
 
   double    dp3d_thresh;
   double    vtheta_thresh;
