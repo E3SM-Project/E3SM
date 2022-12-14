@@ -5,7 +5,7 @@ namespace vinterp {
 
 template<typename T, int P, int N> 
 void perform_vertical_interpolation(
-  const view_Nd<Pack<T,P>,N>& x_src,
+  const view_Nd<Pack<T,P>,2>& x_src,
   const view_1d<Pack<T,P>>&   x_tgt,
   const view_Nd<Pack<T,P>,N>& input,
   const view_Nd<Pack<T,P>,N>& output,
@@ -20,7 +20,7 @@ void perform_vertical_interpolation(
 
 template<typename T, int P, int N> 
 void perform_vertical_interpolation(
-  const view_Nd<Pack<T,P>,N>& x_src,
+  const view_Nd<Pack<T,P>,2>& x_src,
   const view_1d<Pack<T,P>>&   x_tgt,
   const view_Nd<Pack<T,P>,N>& input,
   const view_Nd<Pack<T,P>,N>& output,
@@ -30,16 +30,16 @@ void perform_vertical_interpolation(
 {
   std::vector<int> extents;
   for (int ii=0;ii<output.rank;ii++) {
-    extents.pushback(output.extent_int(ii));
+    extents.push_back(output.extent_int(ii));
   }
-  const auto mask = allocate_mask(extents);
+  const auto mask = allocate_mask<P,N>(extents);
   perform_vertical_interpolation_impl_Nd<Real,P,N>(x_src, x_tgt, input, output, mask,
                                          nlevs_src, nlevs_tgt, msk_val);
 }
 
 template<typename T, int P, int N> 
 void perform_vertical_interpolation(
-  const view_Nd<Pack<T,P>,N>& x_src,
+  const view_Nd<Pack<T,P>,2>& x_src,
   const view_1d<Pack<T,P>>&   x_tgt,
   const view_Nd<Pack<T,P>,N>& input,
   const view_Nd<Pack<T,P>,N>& output,
@@ -53,7 +53,7 @@ void perform_vertical_interpolation(
 
 template<typename T, int P, int N> 
 void perform_vertical_interpolation(
-  const view_Nd<Pack<T,P>,N>& x_src,
+  const view_Nd<Pack<T,P>,2>& x_src,
   const view_1d<Pack<T,P>>&   x_tgt,
   const view_Nd<Pack<T,P>,N>& input,
   const view_Nd<Pack<T,P>,N>& output,
@@ -62,9 +62,9 @@ void perform_vertical_interpolation(
 {
   std::vector<int> extents;
   for (int ii=0;ii<output.rank;ii++) {
-    extents.pushback(output.extent_int(ii));
+    extents.push_back(output.extent_int(ii));
   }
-  const auto mask = allocate_mask(extents);
+  const auto mask = allocate_mask<P,N>(extents);
   perform_vertical_interpolation_impl_Nd<Real,P,N>(x_src, x_tgt, input, output, mask,
                                          nlevs_src, nlevs_tgt, masked_val);
 }

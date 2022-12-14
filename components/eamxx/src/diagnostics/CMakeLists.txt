@@ -21,7 +21,7 @@ set(DIAGNOSTIC_SRCS
   vertical_layer_interface.cpp
   vertical_layer_midpoint.cpp
   vertical_layer_thickness.cpp
-  vertically_remapped_field.cpp
+#  vertically_remapped_field.cpp
   virtual_temperature.cpp
   zonal_vapor_flux.cpp
 )

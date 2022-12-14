@@ -62,7 +62,7 @@ constexpr Real masked_val = -std::numeric_limits<Real>::max();
 //The 2d-mask should have the same dimensions as the output
 template<typename T, int P, int N> 
 void perform_vertical_interpolation(
-  const view_Nd<Pack<T,P>,N>& x_src,
+  const view_Nd<Pack<T,P>,2>& x_src,
   const view_1d<Pack<T,P>>& x_tgt,
   const view_Nd<Pack<T,P>,N>& input,
   const view_Nd<Pack<T,P>,N>& output,
@@ -75,7 +75,7 @@ void perform_vertical_interpolation(
 // does not want to output the masked array.
 template<typename T, int P, int N> 
 void perform_vertical_interpolation(
-  const view_Nd<Pack<T,P>,N>& x_src,
+  const view_Nd<Pack<T,P>,2>& x_src,
   const view_1d<Pack<T,P>>& x_tgt,
   const view_Nd<Pack<T,P>,N>& input,
   const view_Nd<Pack<T,P>,N>& output,
@@ -88,7 +88,7 @@ void perform_vertical_interpolation(
 //scream_vertical_interpolation.hpp file
 template<typename T, int P, int N> 
 void perform_vertical_interpolation(
-  const view_Nd<Pack<T,P>,N>& x_src,
+  const view_Nd<Pack<T,P>,2>& x_src,
   const view_1d<Pack<T,P>>& x_tgt,
   const view_Nd<Pack<T,P>,N>& input,
   const view_Nd<Pack<T,P>,N>& output,
@@ -104,7 +104,7 @@ void perform_vertical_interpolation(
 //requires  
 template<typename T, int P, int N> 
 void perform_vertical_interpolation(
-  const view_Nd<Pack<T,P>,N>& x_src,
+  const view_Nd<Pack<T,P>,2>& x_src,
   const view_1d<Pack<T,P>>& x_tgt,
   const view_Nd<Pack<T,P>,N>& input,
   const view_Nd<Pack<T,P>,N>& output,
@@ -182,7 +182,7 @@ void apply_masking(
   const view_1d<      Mask<P>>&   mask);
 
 template<int P, int N>
-view_Nd<Mask<P>,N> allocate_mask(const view_1d<int>& extents);
+view_Nd<Mask<P>,N> allocate_mask(const std::vector<int>& extents);
 
 } // namespace vinterp
 } // namespace scream
