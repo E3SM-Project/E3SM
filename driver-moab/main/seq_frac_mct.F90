@@ -694,7 +694,7 @@ contains
             deallocate(tagValues)
           endif
        else
-       ! stil need to TODO moab case
+       ! still need to TODO moab case
           ko = mct_aVect_indexRa(fractions_o,"ofrac",perrWith=subName)
           kf = mct_aVect_indexRA(dom_o%data ,"frac" ,perrWith=subName)
           fractions_o%rAttr(ko,:) = dom_o%data%rAttr(kf,:)

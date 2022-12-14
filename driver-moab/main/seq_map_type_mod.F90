@@ -45,7 +45,7 @@ module seq_map_type_mod
      integer                 :: src_mbid, tgt_mbid, intx_mbid, src_context, intx_context
      character*32            :: weight_identifier ! 'state' OR 'flux'
      integer                 :: tag_entity_type
-     integer                 :: nentities
+     integer                 :: nentities ! this should be used only if copy_only is true
      !
 #endif
 

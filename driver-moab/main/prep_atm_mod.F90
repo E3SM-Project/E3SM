@@ -105,7 +105,8 @@ contains
   subroutine prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_atm)
 
     use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
-      iMOAB_WriteMesh , iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights
+      iMOAB_WriteMesh , iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights, &
+      iMOAB_DefineTagStorage
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and  mappers
@@ -144,6 +145,8 @@ contains
     integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
 
     integer                  :: type1, type2 ! type for computing graph; should be the same type for ocean, 3 (FV)
+    integer                  :: tagtype, numco, tagindex
+    character(CXX)           :: tagName
 
     !---------------------------------------------------------------
 
@@ -246,6 +249,20 @@ contains
             mapper_So2a%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_So2a%weight_identifier = wgtIdef
+            ! because we will project fields from ocean to atm phys grid, we need to define 
+            ! ocean o2x fields to atm phys grid (or atm spectral ext ) on coupler side
+            if (atm_pg_active) then
+               tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
+               tagtype = 1 ! dense
+               numco = 1 ! 
+               ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in defining tags for seq_flds_o2x_fields'
+                  call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_o2x_fields')
+               endif
+            else ! spectral case, fix later
+
+            endif
 
             volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL; 
             

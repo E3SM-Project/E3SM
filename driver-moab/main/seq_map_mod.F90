@@ -401,6 +401,11 @@ end subroutine moab_map_init_rcfile
          endif
 
          ntagdatalength = nfields * mapper % nentities
+         if (seq_comm_iamroot(CPLID)) then
+            write(logunit,*) subname,' iMOAB_mapper  nfields', &
+                  nfields,  ' fldlist_moab=', trim(fldlist_moab)
+            call shr_sys_flush(logunit)
+         endif
        endif ! valid_moab_context
 #endif
 
@@ -457,6 +462,10 @@ end subroutine moab_map_init_rcfile
          ! first get data from source tag and store in a temporary
          ! then set it back to target tag to mimic a copy
          allocate(moab_tag_data(ntagdatalength))
+         if (seq_comm_iamroot(CPLID)) then
+            write(logunit, *) subname,' iMOAB_mapper  rearrange context TODO fix parcommgraph'
+            call shr_sys_flush(logunit)
+         endif
 
          allocate(globalIds(mapper % nentities))
          ierr = iMOAB_GetIntTagStorage( mapper%src_mbid,        &
@@ -467,6 +476,7 @@ end subroutine moab_map_init_rcfile
          if (ierr > 0 )  &
             call shr_sys_abort( subname//'MOAB Error: failed to get GLOBAL_ID tag ')
 
+         ! this should set up a par comm graph in init, not use this
          ierr = iMOAB_GetDoubleTagStorage( mapper%src_mbid,     &
                                     fldlist_moab,                   &
                                     ntagdatalength,            &
@@ -515,20 +525,29 @@ end subroutine moab_map_init_rcfile
          ! first have to do the second hop, iMOAB_ComputeCommGraph( src_mbid, intx_mbid,
          ! wgtIdef = 'scalar'//C_NULL_CHAR
          ! 
-
+         if (seq_comm_iamroot(CPLID)) then
+            write(logunit, *) subname,' iMOAB mapper before sending ', trim(fldlist_moab)
+            call shr_sys_flush(logunit)
+         endif
          ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom,mapper%intx_context );
          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in sending tags ', fldlist_moab
-            ! call shr_sys_abort(subname//' ERROR in sending tags')
+            if (seq_comm_iamroot(CPLID)) then
+               write(logunit, *) subname,' iMOAB mapper error in sending tags ', trim(fldlist_moab)
+               call shr_sys_flush(logunit)
+            endif
             valid_moab_context = .false. 
          endif
        endif
        if ( valid_moab_context ) then
+         if (seq_comm_iamroot(CPLID)) then
+            write(logunit, *) subname,' iMOAB mapper before receiving ', trim(fldlist_moab)
+            call shr_sys_flush(logunit)
+         endif
          ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom,mapper%src_context );
          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in receiving tags ', fldlist_moab
+            write(logunit,*) subname,' error in receiving tags ', trim(fldlist_moab)
             !call shr_sys_abort(subname//' ERROR in receiving tags')
-            valid_moab_context = .false.
+            valid_moab_context = .false. ! do not attempt to project
          endif
        endif
        if ( valid_moab_context ) then
