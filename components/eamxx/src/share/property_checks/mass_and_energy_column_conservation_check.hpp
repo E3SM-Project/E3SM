@@ -54,9 +54,9 @@ public:
 
   std::shared_ptr<const AbstractGrid> get_grid () const { return m_grid; }
 
-  // Set the timestep for the process running the check. This 
+  // Set the timestep for the process running the check. This
   // should be the timestep of the current subcycle, equiv to
-  // dt = model_dt/num_subcycles. 
+  // dt = model_dt/num_subcycles.
   void set_dt (const int dt) { m_dt = dt; }
 
   // Compute total mass and store into m_current_mass.
@@ -77,35 +77,35 @@ public:
 #endif
 
   KOKKOS_INLINE_FUNCTION
-  Real compute_total_mass_on_column (const KT::MemberType&       team,
-                                     const int                   nlevs,
-                                     const uview_1d<const Real>& pseudo_density,
-                                     const uview_1d<const Real>& qv,
-                                     const uview_1d<const Real>& qc,
-                                     const uview_1d<const Real>& qi,
-                                     const uview_1d<const Real>& qr) const;
-  
-  KOKKOS_INLINE_FUNCTION
-  Real compute_mass_boundary_flux_on_column (const Real vapor_flux,
-                                             const Real water_flux) const;
+  static Real compute_total_mass_on_column (const KT::MemberType&       team,
+                                            const int                   nlevs,
+                                            const uview_1d<const Real>& pseudo_density,
+                                            const uview_1d<const Real>& qv,
+                                            const uview_1d<const Real>& qc,
+                                            const uview_1d<const Real>& qi,
+                                            const uview_1d<const Real>& qr);
 
   KOKKOS_INLINE_FUNCTION
-  Real compute_total_energy_on_column (const KT::MemberType&       team,
-                                       const int                   nlevs,
-                                       const uview_1d<const Real>& pseudo_density,
-                                       const uview_1d<const Real>& T_mid,
-                                       const uview_2d<const Real>& horiz_winds,
-                                       const uview_1d<const Real>& qv,
-                                       const uview_1d<const Real>& qc,
-                                       const uview_1d<const Real>& qr,
-                                       const Real                  ps,
-                                       const Real                  phis) const;
+  static Real compute_mass_boundary_flux_on_column (const Real vapor_flux,
+                                                    const Real water_flux);
 
   KOKKOS_INLINE_FUNCTION
-  Real compute_energy_boundary_flux_on_column (const Real vapor_flux,
-                                               const Real water_flux,
-                                               const Real ice_flux,
-                                               const Real heat_flux) const;
+  static Real compute_total_energy_on_column (const KT::MemberType&       team,
+                                              const int                   nlevs,
+                                              const uview_1d<const Real>& pseudo_density,
+                                              const uview_1d<const Real>& T_mid,
+                                              const uview_2d<const Real>& horiz_winds,
+                                              const uview_1d<const Real>& qv,
+                                              const uview_1d<const Real>& qc,
+                                              const uview_1d<const Real>& qr,
+                                              const Real                  ps,
+                                              const Real                  phis);
+
+  KOKKOS_INLINE_FUNCTION
+  static Real compute_energy_boundary_flux_on_column (const Real vapor_flux,
+                                                      const Real water_flux,
+                                                      const Real ice_flux,
+                                                      const Real heat_flux);
 
 protected:
 
