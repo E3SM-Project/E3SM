@@ -21,7 +21,7 @@ MACHINE_METADATA = {
                  ["mpicxx","mpifort","mpicc"],
                   "salloc -N 1 srun -n1 --preserve-env",
                   "/home/projects/e3sm/scream/pr-autotester/master-baselines/blake/"),
-    "weaver"   : (["module purge", "module load cuda/11.2.2/gcc/8.3.1 ucx/1.8.1/gcc/8.3.1 git/2.10.1 python/3.7.3 cmake/3.23.1",
+    "weaver"   : (["source /etc/profile.d/modules.sh", "module purge", "module load cuda/11.2.2/gcc/8.3.1 ucx/1.8.1/gcc/8.3.1 git/2.10.1 python/3.7.3 cmake/3.23.1",
                    "export LD_LIBRARY_PATH=/ascldap/users/projects/e3sm/scream/libs/mpfr/install/weaver/lib:${LD_LIBRARY_PATH}",
                    "export PATH=/ascldap/users/projects/e3sm/scream/libs/openmpi/install/weaver/gcc/8.5.0/cuda/10.1.105/bin:${PATH}",
                    "export PATH=/ascldap/users/projects/e3sm/scream/libs/pnetcdf/install/weaver/gcc/8.5.0/cuda/10.1.105/bin:${PATH}",
