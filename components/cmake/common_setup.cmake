@@ -35,6 +35,14 @@ if (NOT HAS_SAMXX EQUAL -1)
   set(USE_SAMXX TRUE)
 endif()
 
+# Look for -crm pam in the CAM_CONFIG_OPTS CIME variable
+# If it's found, then enable USE_PAM
+string(FIND "${CAM_CONFIG_OPTS}" "-crm pam" HAS_PAM)
+if (NOT HAS_PAM EQUAL -1)
+  # The following is for the PAM code:
+  set(USE_PAM TRUE)
+endif()
+
 string(FIND "${CAM_CONFIG_OPTS}" "-rrtmgpxx" HAS_RRTMGPXX)
 if (NOT HAS_RRTMGPXX EQUAL -1)
   # The following is for the RRTMGPXX code:
@@ -42,7 +50,7 @@ if (NOT HAS_RRTMGPXX EQUAL -1)
 endif()
 
 # If samxx or rrtmgpxx is being used, then YAKL must be used as well
-if (USE_SAMXX OR USE_RRTMGPXX)
+if (USE_SAMXX OR USE_RRTMGPXX OR USE_PAM)
     set(USE_YAKL TRUE)
 else()
     set(USE_YAKL FALSE)
