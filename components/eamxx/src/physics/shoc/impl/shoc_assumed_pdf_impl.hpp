@@ -103,6 +103,7 @@ void Functions<S,D>::shoc_assumed_pdf(
     const auto qwthlsec = qwthl_sec_zt(k);
     const auto wqwsec = wqw_sec_zt(k);
     const auto wthlsec = wthl_sec_zt(k);
+    const auto w2sec = w_sec(k);
 
     // Compute square roots of some variables so we don't have to compute these again
     const auto sqrtw2 = ekat::sqrt(w_sec(k));
@@ -228,6 +229,32 @@ void Functions<S,D>::shoc_assumed_pdf(
 
       const auto index_range = ekat::range<IntSmallPack>(k*Spack::n);
       const Smask active_entries = (index_range < nlev);
+
+      // Do NaN Checking here
+      const Smask is_nan_Tl1_1 = isnan(Tl1_1) && active_entries;
+      const Smask is_nan_Tl1_2 = isnan(Tl1_2) && active_entries;
+      if (is_nan_Tl1_1.any() || is_nan_Tl1_2.any()) {
+        printf("WARNING: NaN Detected in Tl1_1 or Tl1_2!\n");
+        for (int i=0; i<is_nan_Tl1_1.n; i++) {
+          if (is_nan_Tl1_1[i] || is_nan_Tl1_2[i]) {
+            printf(
+              "Tl1 NaN Detected: lev, Tl1_1, Tl1_2: %d, %16.9e, %16.9e\n"
+              "  thetal, qw, pressure, thl_sec, qw_sec, w2sec:"
+              " %16.9e, %16.9e, %16.9e, %16.9e, %16.9e, %16.9e, %16.9e\n"
+              "  w_first, w3, qwthlsec, wqwsec, wthlsec, a:"
+              " %16.9e, %16.9e, %16.9e, %16.9e, %16.9e\n"
+              "  w1_1, w1_2, w2_1, w2_2, thl1_1, thl1_2, thl2_1, thl2_2:"
+              " %16.9e, %16.9e, %16.9e, %16.9e, %16.9e, %16.9e, %16.9e, %16.9e\n"
+              "  qw1_1, qw1_2, qw2_1, qw2_2:"
+              " %16.9e, %16.9e, %16.9e, %16.9e\n",
+              index_range[i], Tl1_1[i], Tl1_2[i],
+              thl_first[i], qw_first[i], pval[i], thlsec[i], qwsec[i], w2sec[i],
+              w_first[i], w3var[i], qwthlsec[i], wqwsec[i], wthlsec[i], a[i],
+              w1_1[i], w1_2[i], w2_1[i], w2_2[i], thl1_1[i], thl1_2[i], thl2_1[i], thl2_2[i],
+              qw1_1[i], qw1_2[i], qw2_1[i], qw2_2[i]);
+          }
+        }
+      }
 
       // Check to ensure Tl1_1 and Tl1_2 are not excessively small, set to threshold value if so.
       const Smask is_small_Tl1_1 = (Tl1_1 <= Tl_min) && active_entries;
