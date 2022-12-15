@@ -125,6 +125,7 @@ CONTAINS
 #if defined(HORIZ_OPENMP) || defined(COLUMN_OPENMP)
     call endrun( 'in this EAM configuration, kokkos dycore does not run with threads yet')
 #endif
+#endif
 
 #ifdef HAVE_MOAB
     integer :: ATM_ID1

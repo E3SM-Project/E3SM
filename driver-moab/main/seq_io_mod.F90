@@ -132,7 +132,7 @@ contains
   !
   ! !INTERFACE: ------------------------------------------------------------------
 
-  subroutine seq_io_wopen(filename,clobber,file_ind, model_doi_url, set_fill)
+  subroutine seq_io_wopen(filename,clobber,file_ind, model_doi_url, set_fill, bfbflag)
 
     ! !INPUT/OUTPUT PARAMETERS:
     implicit none
@@ -141,6 +141,7 @@ contains
     integer,optional,intent(in):: file_ind
     character(CL), optional, intent(in)  :: model_doi_url
     logical, optional, intent(in) :: set_fill
+    logical, optional, intent(in) :: bfbflag !for priting bfbflag value in the history files
     !EOP
     integer :: lset_fill = PIO_NOFILL, old_set_fill
     logical :: exists
@@ -149,8 +150,9 @@ contains
     integer :: rcode
     integer :: nmode
     integer :: lfile_ind
-    character(CL)  :: lversion
-    character(CL)  :: lmodel_doi_url
+    character(CL) :: lbfbflag
+    character(CL) :: lversion
+    character(CL) :: lmodel_doi_url
     character(*),parameter :: subName = '(seq_io_wopen) '
 
     !-------------------------------------------------------------------------------
@@ -171,6 +173,12 @@ contains
 
     lfile_ind = 0
     if (present(file_ind)) lfile_ind=file_ind
+
+    lbfbflag = 'unset' ! default value for bfbflag
+    if(present(bfbflag)) then
+       if(bfbflag) lbfbflag = 'TRUE'
+       if(.not. bfbflag) lbfbflag = 'FALSE'
+    endif
 
     call seq_comm_setptrs(CPLID, iam=iam, mpicom=mpicom)
 
@@ -195,6 +203,7 @@ contains
 #endif
              rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"file_version",version)
              rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"model_doi_url",lmodel_doi_url)
+             rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"BFBFLAG",trim(lbfbflag))
           else
 
              rcode = pio_openfile(cpl_io_subsystem, cpl_io_file(lfile_ind), cpl_pio_iotype, trim(filename), pio_write)
@@ -220,6 +229,7 @@ contains
           if(iam==0) write(logunit,*) subname,' create file ',trim(filename)
           rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"file_version",version)
           rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"model_doi_url",lmodel_doi_url)
+          rcode = pio_put_att(cpl_io_file(lfile_ind),pio_global,"BFBFLAG",trim(lbfbflag))
        endif
     elseif (trim(wfilename) /= trim(filename)) then
        ! filename is open, better match open filename
@@ -1745,7 +1755,7 @@ contains
     call shr_mpi_bcast(exists,mpicom,'seq_io_read_avs exists')
     if (exists) then
        rcode = pio_openfile(cpl_io_subsystem, pioid, cpl_pio_iotype, trim(filename),pio_nowrite)
-       if(iam==0) write(logunit,*) subname,' open file ',trim(filename)
+       if(iam==0) write(logunit,*) subname,' open file ',trim(filename),' for ',trim(dname)
        call pio_seterrorhandling(pioid,PIO_BCAST_ERROR)
        rcode = pio_get_att(pioid,pio_global,"file_version",lversion)
        call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
@@ -1847,7 +1857,7 @@ contains
   !===============================================================================
   !BOP ===========================================================================
   !
-  ! !IROUTINE: seq_io_read_avs - read AV from netcdf file
+  ! !IROUTINE: seq_io_read_avscomp - read AV from netcdf file
   !
   ! !DESCRIPTION:
   !    Read AV from netcdf file
@@ -1890,7 +1900,7 @@ contains
     character(CL)            :: lversion
     character(CL)            :: name1
     character(CL)            :: lpre
-    character(*),parameter   :: subName = '(seq_io_read_avs) '
+    character(*),parameter   :: subName = '(seq_io_read_avscomp) '
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
@@ -1915,10 +1925,10 @@ contains
     ng = mct_gsmap_gsize(gsmap)
 
     if (iam==0) inquire(file=trim(filename),exist=exists)
-    call shr_mpi_bcast(exists,mpicom,'seq_io_read_avs exists')
+    call shr_mpi_bcast(exists,mpicom,'seq_io_read_avscomp exists')
     if (exists) then
        rcode = pio_openfile(cpl_io_subsystem, pioid, cpl_pio_iotype, trim(filename),pio_nowrite)
-       if(iam==0) write(logunit,*) subname,' open file ',trim(filename)
+       if(iam==0) write(logunit,*) subname,' open file ',trim(filename),' for ',trim(dname)
        call pio_seterrorhandling(pioid,PIO_BCAST_ERROR)
        rcode = pio_get_att(pioid,pio_global,"file_version",lversion)
        call pio_seterrorhandling(pioid,PIO_INTERNAL_ERROR)
