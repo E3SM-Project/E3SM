@@ -1701,7 +1701,8 @@ contains
                      endif
                   endif
                   elem%state%Qdp(i,j,k,q,np1_qdp) = elem%state%Qdp(i,j,k,q,np1_qdp)+fq
-                  if (q==1) then
+                  if ( (q==1) .or. (q==2) .or. (q==3)) then
+!print *, 'WL IS ON'
                      elem%derived%FQps(i,j)=elem%derived%FQps(i,j)+fq/dt
                      dp_adj(i,j,k)=dp_adj(i,j,k) + fq
                   endif
