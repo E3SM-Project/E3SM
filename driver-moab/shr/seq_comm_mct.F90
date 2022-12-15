@@ -229,6 +229,7 @@ module seq_comm_mct
   integer, public :: mbintxla ! iMOAB id for intx mesh between land and atmosphere
   integer, public :: mpsiid   ! iMOAB id for sea-ice, mpas model
   integer, public :: mbixid   ! iMOAB id for sea-ice migrated to coupler pes
+  integer, public :: mbintxia ! iMOAB id for intx mesh between ice and atmosphere
   integer, public :: mrofid   ! iMOAB id of moab rof app
   integer, public :: mbrxid   ! iMOAB id of moab rof migrated to coupler pes
   integer, public :: mbrmapro ! iMOAB id for read map between river and ocean; it exists on coupler PEs
@@ -638,6 +639,7 @@ contains
     mbintxla = -1 ! iMOAB id for land intx with atm on coupler pes
     mpsiid = -1   ! iMOAB for sea-ice
     mbixid = -1   ! iMOAB for sea-ice migrated to coupler
+    mbintxia = -1 ! iMOAB id for ice intx with atm on coupler pes
     mrofid = -1   ! iMOAB id of moab rof app
     mbrxid = -1   ! iMOAB id of moab rof migrated to coupler
     mbrmapro = -1 ! iMOAB id of moab instance of map read from rof2ocn map file 
