@@ -765,11 +765,13 @@ void RRTMGPRadiation::run_impl (const int dt) {
 
     // Compute band-by-band surface_albedos. This is needed since
     // the AD passes broadband albedos, but rrtmgp require band-by-band.
-    rrtmgp::compute_band_by_band_surface_albedos(
-      ncol, nswbands,
-      sfc_alb_dir_vis, sfc_alb_dir_nir,
-      sfc_alb_dif_vis, sfc_alb_dif_nir,
-      sfc_alb_dir, sfc_alb_dif);
+    if (update_rad) {
+      rrtmgp::compute_band_by_band_surface_albedos(
+        ncol, nswbands,
+        sfc_alb_dir_vis, sfc_alb_dir_nir,
+        sfc_alb_dif_vis, sfc_alb_dif_nir,
+        sfc_alb_dir, sfc_alb_dif);
+    }
 
     // Compute cloud optical properties here?
 
@@ -791,10 +793,10 @@ void RRTMGPRadiation::run_impl (const int dt) {
     }
 
     // Compute and apply heating tendency
-    auto sw_heating  = m_buffer.sw_heating;
-    auto lw_heating  = m_buffer.lw_heating;
     auto rad_heating = m_buffer.rad_heating;
     if (update_rad) {
+      auto sw_heating  = m_buffer.sw_heating;
+      auto lw_heating  = m_buffer.lw_heating;
       rrtmgp::compute_heating_rate(
         sw_flux_up, sw_flux_dn, p_del, sw_heating
       );
