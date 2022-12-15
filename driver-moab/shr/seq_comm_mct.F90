@@ -218,7 +218,6 @@ module seq_comm_mct
   integer, public :: mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   logical, public :: atm_pg_active = .false.  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
   integer, public :: mphaid   ! iMOAB id for atm phys grid, on atm pes
-  integer, public :: mphaxid   ! iMOAB id for atm phys grid, on cpl pes; 
   integer, public :: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes (migrate either mhid or mhpgid, depending on atm_pg_active)
   integer, public :: mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
   integer, public :: mbofxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
@@ -629,7 +628,6 @@ contains
     mpoid = -1    ! iMOAB id for ocn comp
     mlnid = -1    ! iMOAB id for land comp
     mphaid = -1   ! iMOAB id for phys grid on atm pes
-    mphaxid = -1  ! iMOAB id for phys grid on cpl pes
     mbaxid = -1 ! iMOAB id for atm migrated mesh to coupler pes
     mboxid = -1  ! iMOAB id for mpas ocean migrated mesh to coupler pes
     mbofxid = -1 ! iMOAB id for second mpas ocean migrated mesh to coupler pes, for flux calculations

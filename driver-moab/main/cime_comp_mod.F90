@@ -1394,7 +1394,7 @@ contains
 
   subroutine cime_init()
     use seq_flds_mod , only : seq_flds_x2a_fields, seq_flds_a2x_fields
-    use seq_comm_mct , only :  mphaid, mphaxid !
+    use seq_comm_mct , only :  mphaid, mbaxid !
 #ifdef MOABDEBUG
     real(r8) :: difference
     character(20) :: mct_field, tagname
@@ -2314,7 +2314,7 @@ contains
           call component_exch(atm, flow='x2c', infodata=infodata, &
                infodata_string='cpl2atm_init')
           ! moab too
-          call component_exch_moab(atm(1), mphaxid, mphaid, 1, seq_flds_x2a_fields)
+          call component_exch_moab(atm(1), mbaxid, mphaid, 1, seq_flds_x2a_fields)
        endif
 
        ! Set atm init phase to 2 for all atm instances on component instance pes
@@ -2334,7 +2334,7 @@ contains
        call component_exch(atm, flow='c2x', infodata=infodata, &
             infodata_string='atm2cpl_init')
        ! 
-       call component_exch_moab(atm(1), mphaid, mphaxid, 0, seq_flds_a2x_fields)
+       call component_exch_moab(atm(1), mphaid, mbaxid, 0, seq_flds_a2x_fields)
 
        if (iamin_CPLID) then
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -4002,7 +4002,7 @@ contains
 
   subroutine cime_run_atm_setup_send()
     use seq_flds_mod , only : seq_flds_x2a_fields
-    use seq_comm_mct , only :  mphaid, mphaxid !
+    use seq_comm_mct , only :  mphaid, mbaxid !
     !----------------------------------------------------------
     !| atm prep-merge
     !----------------------------------------------------------
@@ -4055,7 +4055,7 @@ contains
             timer_barrier='CPL:C2A_BARRIER', timer_comp_exch='CPL:C2A', &
             timer_map_exch='CPL:c2a_atmx2atmg', timer_infodata_exch='CPL:c2a_infoexch')
        ! will migrate the tag from coupler pes to component pes, on atm mesh
-       call component_exch_moab(atm(1), mphaxid, mphaid, 1, seq_flds_x2a_fields)
+       call component_exch_moab(atm(1), mbaxid, mphaid, 1, seq_flds_x2a_fields)
     endif
 
   end subroutine cime_run_atm_setup_send
@@ -4064,7 +4064,7 @@ contains
 
   subroutine cime_run_atm_recv_post()
      use seq_flds_mod , only : seq_flds_a2x_fields
-     use seq_comm_mct , only :  mphaid, mphaxid !
+     use seq_comm_mct , only :  mphaid, mbaxid !
     !----------------------------------------------------------
     !| atm -> cpl
     !----------------------------------------------------------
@@ -4075,7 +4075,7 @@ contains
             timer_map_exch='CPL:a2c_atma2atmx', timer_infodata_exch='CPL:a2c_infoexch')
 
        ! will migrate the tag from component pes to coupler pes, on atm mesh
-       call component_exch_moab(atm(1), mphaid, mphaxid, 0, seq_flds_a2x_fields)
+       call component_exch_moab(atm(1), mphaid, mbaxid, 0, seq_flds_a2x_fields)
        call prep_atm_migrate_moab(infodata)
     endif
 

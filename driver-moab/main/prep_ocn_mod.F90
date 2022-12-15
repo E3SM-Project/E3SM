@@ -20,7 +20,6 @@ module prep_ocn_mod
   use seq_comm_mct,     only : mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   use seq_comm_mct,     only : mbintxao ! iMOAB id for intx mesh between atm and ocean
   use seq_comm_mct,     only : mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere
-  use seq_comm_mct,     only : mphaxid  ! iMOAB id for atm phys grid, on cpl pes; it is a point cloud always
   use seq_comm_mct,     only : mhid     ! iMOAB id for atm instance
   use seq_comm_mct,     only : mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   use dimensions_mod,   only : np     ! for atmosphere degree 
@@ -2713,7 +2712,7 @@ subroutine prep_ocn_calc_a2x_ox_moab(timer, infodata)
    context_id = ocn(1)%cplcompid
    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
-   ! it happens over joint communicator, only if ocn_prognostic true
+   ! ! it happens over joint communicator, only if ocn_prognostic true
    if (ocn_prognostic) then
 
       if (atm_pg_active ) then ! use mhpgid mesh
@@ -2783,67 +2782,30 @@ subroutine prep_ocn_calc_a2x_ox_moab(timer, infodata)
      end if
 
    endif ! only if atm and ocn intersect  mbintxao >= 0
-   ! compute the comm graph between phys atm and intx-atm-ocn, to be able to send directly from phys atm
-   ! towards coverage mesh on atm for intx to ocean
-   ! this is similar to imoab_phatm_ocn_coupler.cpp test in moab
-   !    int typeA = 2; // point cloud
-   !    int typeB = 1; // quads in coverage set
-   !    ierr = iMOAB_ComputeCommGraph(cmpPhAtmPID, cplAtmOcnPID, &atmCouComm, &atmPEGroup, &couPEGroup,
-   !        &typeA, &typeB, &cmpatm, &atmocnid);
-   call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
-   call seq_comm_getinfo(atm_id, mpigrp=mpigrp_old)    !  component group pes, from atm id ( also ATMID(1) )
+   
+   ! I removed comm graph computed for one hop, from atm phys to intxao 
 
-   typeA = 2 ! point cloud, phys atm in this case
-   ! idintx is a unique number of MOAB app that takes care of intx between ocn and atm mesh
-   idintx = 100*atm(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it; ~ 618 !
-   if (atm_pg_active) then
-     typeB = 3 ! fv on atm side too !! imoab_apg2_ol  coupler example
-               ! atm cells involved in intersection (pg 2 in this case)
-               ! this will be used now to send
-               ! data from phys grid directly to atm-ocn intx , for later projection
-               ! context is the same, atm - ocn intx id !
-
-   else
-     typeB = 1 ! atm cells involved in intersection (spectral in this case) ! this will be used now to send
-               ! data from phys grid directly to atm-ocn intx , for later projection
-               ! context is the same, atm - ocn intx id !
-   endif
-   if (iamroot_CPLID) then
-       write(logunit,*) 'launch iMOAB graph with args ',  &
-        mphaid, mbintxao, mpicom_join, mpigrp_old, mpigrp_CPLID, &
-         typeA, typeB, atm_id, idintx
-   end if
-   ! for these to work, we need to define the tags of size 16 (np x np) on coupler atm, 
-   !   corresponding to this phys grid graph
-   ierr = iMOAB_ComputeCommGraph( mphaid, mbintxao, mpicom_join, mpigrp_old, mpigrp_CPLID, &
-         typeA, typeB, atm_id, idintx)
-   if (ierr .ne. 0) then
-     write(logunit,*) subname,' error in computing graph phys grid - atm/ocn intx '
-     call shr_sys_abort(subname//' ERROR  in computing graph phys grid - atm/ocn intx ')
-   endif
-   if (iamroot_CPLID) then
-      write(logunit,*) 'finish iMOAB graph in atm-ocn prep  '
-   end if
-
-   ! compute a second comm graph, used in a 2 hop migration, between phis grid on coupler and intx ao on coupler,
+   ! compute the comm graph, used in a 2 hop migration, between atm grid on coupler and intx ao on coupler,
    ! so first atm fields will be migrated to coupler, and then in another hop, distributed to the processors that actually need the
    !  those degrees of freedom 
    ! start copy
-     ! compute the comm graph between phys atm on coupler side  and intx-atm-ocn, to be able to project in a second hop
+     ! compute the comm graph between atm on coupler side  and intx-atm-ocn, to be able to send in a second hop
      ! from atm to ocean
-
-     ! to project from atm to ocean, first send using this comm graph, then 
-     ! apply weights (map); send from 
+   typeA = 3 ! (atm_pg_active)
+   typeB = 3 ! (atm_pg_active)
+   idintx = atm(1)%cplcompid * 100 + ocn(1)%cplcompid
+   call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  the coupler group CPLID is global variable
    if (iamroot_CPLID) then
        ! mpicom_CPLID is a module local variable, already initialized
        write(logunit,*) 'launch iMOAB computecommgraph with args ',  &
-        mphaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
+        mbaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
          typeA, typeB, id_join, idintx
+       call shr_sys_flush(logunit)
    end if
    ! for these to work, we need to define the tags of size 16 (np x np) on coupler atm, 
    !   corresponding to this phys grid graph
-   if (mphaxid .ge. 0) then
-      ierr = iMOAB_ComputeCommGraph( mphaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
+   if (mbaxid .ge. 0) then
+      ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
             typeA, typeB, id_join, idintx)
       if (ierr .ne. 0) then
       write(logunit,*) subname,' error in computing graph phys grid - atm/ocn intx '

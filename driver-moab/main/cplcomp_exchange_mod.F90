@@ -22,7 +22,6 @@ module cplcomp_exchange_mod
   use seq_comm_mct, only : atm_pg_active  ! flag if PG mesh instanced
   use seq_comm_mct, only : mlnid , mblxid !    iMOAB app id for land , on land pes and coupler pes
   use seq_comm_mct, only : mphaid !            iMOAB app id for phys atm; comp atm is 5, phys 5+200
-  use seq_comm_mct, only : mphaxid !            iMOAB app id for phys atm, on cpl pes
   use seq_comm_mct, only : MPSIID, mbixid  !  sea-ice on comp pes and on coupler pes
   use seq_comm_mct, only : mrofid, mbrxid  ! iMOAB id of moab rof app on comp pes and on coupler too
   use shr_mpi_mod,  only: shr_mpi_max
@@ -990,7 +989,7 @@ contains
       !
       use iMOAB, only: iMOAB_RegisterApplication, iMOAB_ReceiveMesh, iMOAB_SendMesh, &
       iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, &
-      iMOAB_SetIntTagStorage, iMOAB_FreeSenderBuffers
+      iMOAB_SetIntTagStorage, iMOAB_FreeSenderBuffers, iMOAB_ComputeCommGraph
       !
       type(component_type), intent(inout) :: comp
       !
@@ -1116,56 +1115,6 @@ contains
                call shr_sys_abort(subname//' ERROR in freeing send buffers')
             endif
          endif
-         
-         ! send also the phys grid to coupler, because it will be used for fractions
-         ! start copy for mphaid->mphaxid 
-         if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
-            ID_JOIN_ATMPHYS = id_join + 200 ! somewhat arbitrary, just a different comp id
-            ierr = iMOAB_SendMesh(mphaid, mpicom_join, mpigrp_cplid, ID_JOIN_ATMPHYS, partMethod)
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in sending mesh from atm comp '
-               call shr_sys_abort(subname//' ERROR in sending mesh from atm comp')
-            endif
-         endif
-         
-         if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-            appname = "COUPLE_ATMPH"//C_NULL_CHAR
-            ! migrated mesh gets another app id, moab atm to coupler (mbax)
-            ID_JOIN_ATMPHYS = id_join + 200 ! somewhat arbitrary, just a different comp id
-            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, ID_JOIN_ATMPHYS, mphaxid)
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in registering ', appname
-               call shr_sys_abort(subname//' ERROR registering '// appname)
-            endif
-            ID_OLD_ATMPHYS = id_old + 200 ! kind of arbitrary
-            ierr = iMOAB_ReceiveMesh(mphaxid, mpicom_join, mpigrp_old, ID_OLD_ATMPHYS)
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in receiving mesh on atm coupler '
-               call shr_sys_abort(subname//' ERROR in receiving mesh on atm coupler ')
-            endif
-#ifdef MOABDEBUG
-            ! debug test
-            
-            outfile = 'recPhysAtm.h5m'//C_NULL_CHAR
-            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
-      !      write out the mesh file to disk
-            ierr = iMOAB_WriteMesh(mphaxid, trim(outfile), trim(wopts))
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in writing mesh '
-               call shr_sys_abort(subname//' ERROR in writing mesh ')
-            endif
-#endif
-         endif
-         !  iMOAB_FreeSenderBuffers needs to be called after receiving the mesh
-         if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (atmosphere)
-            context_id = ID_JOIN_ATMPHYS
-            ierr = iMOAB_FreeSenderBuffers(mphaid, context_id)
-            
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in freeing send buffers '
-               call shr_sys_abort(subname//' ERROR in freeing send buffers')
-            endif
-         endif
 
       
 
@@ -1178,12 +1127,15 @@ contains
          !    &typeA, &typeB, &cmpatm, &physatm);
          ! graph between atm phys, mphaid, and atm dyn on coupler, mbaxid
          ! phys atm group is mpigrp_old, coupler group is mpigrp_cplid
-         !!typeA = 2 ! point cloud
-         !!typeB = 1 ! spectral elements
-         !!ATM_PHYS_CID = 200 + id_old ! 200 + 5 for atm, see line  969   ATM_PHYS = 200 + ATMID ! in
+         typeA = 2 ! point cloud for mphaid
+         typeB = 1 ! spectral elements
+         if (atm_pg_active) then
+            typeB = 3 ! in this case, we will have cells associated with DOFs as GLOBAL_ID tag
+         endif
+         ATM_PHYS_CID = 200 + id_old ! 200 + 5 for atm, see line  969   ATM_PHYS = 200 + ATMID ! in
                                     ! components/cam/src/cpl/atm_comp_mct.F90
-         !!ierr = iMOAB_ComputeCommGraph( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
-         !!    typeA, typeB, ATM_PHYS_CID, id_join)
+         ierr = iMOAB_ComputeCommGraph( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+             typeA, typeB, ATM_PHYS_CID, id_join) ! ID_JOIN is now 6 
    !  comment out this above part
 
          !  we also need to define the tags for receiving the physics data, on atm on coupler pes

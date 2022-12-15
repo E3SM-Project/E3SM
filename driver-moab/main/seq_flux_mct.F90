@@ -7,7 +7,7 @@ module seq_flux_mct
   use shr_mct_mod,       only: shr_mct_queryConfigFile, shr_mct_sMatReaddnc
 
   use seq_comm_mct,     only : mboxid ! iMOAB app id for ocn on cpl pes
-  use seq_comm_mct,     only : mphaxid ! iMOAB app id for atm phys grid on cpl pes
+  use seq_comm_mct,     only : mbaxid ! iMOAB app id for atm phys grid on cpl pes
 
   use prep_aoflux_mod,   only: prep_aoflux_get_xao_omct, prep_aoflux_get_xao_amct
 
@@ -1657,7 +1657,7 @@ contains
 
 
      if (comp%oneletterid == 'a' ) then
-        appId = mphaxid ! ocn on coupler
+        appId = mbaxid ! atm on coupler
         local_xao_mct => prep_aoflux_get_xao_amct()
      else if (comp%oneletterid == 'o') then
         appId = mbofxid  ! atm phys
