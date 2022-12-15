@@ -9,7 +9,7 @@ module cplcomp_exchange_mod
   use seq_map_type_mod
   use component_type_mod
   use seq_flds_mod, only: seq_flds_dom_coord, seq_flds_dom_other
-  use seq_flds_mod, only: seq_flds_a2x_ext_fields ! 
+  use seq_flds_mod, only: seq_flds_a2x_ext_fields, seq_flds_a2x_fields ! 
   use seq_flds_mod, only: seq_flds_o2x_fields ! needed for MOAB init of ocean fields o2x to be able to transfer to coupler
   use seq_flds_mod, only: seq_flds_x2o_fields ! needed for MOAB init of ocean fields x2o to be able to transfer from coupler
   use seq_flds_mod, only: seq_flds_i2x_fields ! needed for MOAB init of ice fields x2o on coupler side, to save them
@@ -1138,17 +1138,20 @@ contains
              typeA, typeB, ATM_PHYS_CID, id_join) ! ID_JOIN is now 6 
    !  comment out this above part
 
-         !  we also need to define the tags for receiving the physics data, on atm on coupler pes
-         ! corresponding to 'T_ph;u_ph;v_ph';
          ! we can receive those tags only on coupler pes, when mbaxid exists
          ! we have to check that before we can define the tag
-         if (mbaxid .ge. 0 .and. .not. (atm_pg_active) ) then
-            tagname = trim(seq_flds_a2x_ext_fields)//C_NULL_CHAR
-            tagtype = 1  ! dense, double
-            numco = np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
+         if (mbaxid .ge. 0 ) then
+             tagtype = 1  ! dense, double
+            if (atm_pg_active) then
+              tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+              numco = 1 !  usually 1 value per cell
+            else ! this is not supported now, but leave it here
+              tagname = trim(seq_flds_a2x_ext_fields)//C_NULL_CHAR
+              numco = np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
+            endif
             ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in defining tags '
+               write(logunit,*) subname,' error in defining tags on atm on coupler '
                call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
          endif

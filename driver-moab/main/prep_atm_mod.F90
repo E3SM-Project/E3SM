@@ -329,6 +329,22 @@ contains
           call seq_map_init_rcfile(mapper_Fo2a, ocn(1), atm(1), &
                'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
                'mapper_Fo2a initialization',esmf_map_flag)
+! copy mapper_So2a , maybe change the matrix ? still based on intersection ?
+#ifdef HAVE_MOAB
+          ! Call moab intx only if atm and ocn are init in moab
+          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
+            ! now take care of the mapper 
+            mapper_Fo2a%src_mbid = mboxid
+            mapper_Fo2a%tgt_mbid = mbaxid
+            mapper_Fo2a%intx_mbid = mbintxoa 
+            mapper_Fo2a%src_context = ocn(1)%cplcompid
+            mapper_Fo2a%intx_context = idintx
+            wgtIdef = 'scalar'//C_NULL_CHAR
+            mapper_Fo2a%weight_identifier = wgtIdef
+          endif 
+! endif for HAVE_MOAB
+#endif  
+
        endif
        call shr_sys_flush(logunit)
 
@@ -1205,7 +1221,9 @@ contains
     !---------------------------------------------------------------
     ! Description
     ! Create o2x_ax (note that o2x_ax is a local module variable)
-    !
+#ifdef MOABDEBUG
+    use iMOAB, only :  iMOAB_WriteMesh
+#endif
     ! Arguments
     type(mct_aVect) , optional, intent(in) :: fractions_ox(:)
     character(len=*), optional, intent(in) :: timer
@@ -1215,8 +1233,11 @@ contains
     type(mct_aVect) , pointer :: o2x_ox
     character(*), parameter   :: subname = '(prep_atm_calc_o2x_ax)'
     character(*), parameter   :: F00 = "('"//subname//" : ', 4A )"
+#ifdef MOABDEBUG
+    character*50             :: outfile, wopts, lnum
+    integer :: ierr
+#endif 
     !---------------------------------------------------------------
-
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
     do emi = 1,num_inst_max
        eoi = mod((emi-1),num_inst_ocn) + 1
@@ -1233,6 +1254,18 @@ contains
        endif
        call seq_map_map(mapper_Fo2a, o2x_ox, o2x_ax(emi),&
             fldlist=seq_flds_o2x_fluxes,norm=.true.)
+
+#ifdef MOABDEBUG
+               ! projection of atm to ocean fields
+            write(lnum,"(I0.2)")num_moab_exports
+            outfile = 'Ocn2Atm'//trim(lnum)//'.h5m'//C_NULL_CHAR
+            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+            ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
+            if (ierr .ne. 0) then
+              write(logunit,*) subname,' error in writing ocean to atm projection'
+              call shr_sys_abort(subname//' ERROR in writing ocean to atm projection')
+            endif
+#endif
     enddo
     call t_drvstopf  (trim(timer))
 
