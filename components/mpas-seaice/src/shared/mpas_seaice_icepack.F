@@ -9487,8 +9487,7 @@ contains
          config_use_DON, &
          config_use_iron, &
          config_use_modal_aerosols, &
-         config_use_column_biogeochemistry, &
-         config_use_snicar_ad
+         config_use_column_biogeochemistry
 
     logical :: &
          use_meltponds
@@ -9528,7 +9527,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_cesm_meltponds", config_use_cesm_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_level_meltponds", config_use_level_meltponds)
     call MPAS_pool_get_config(domain % configs, "config_use_topo_meltponds", config_use_topo_meltponds)
-    call MPAS_pool_get_config(domain % configs, "config_use_snicar_ad", config_use_snicar_ad)
     call MPAS_pool_get_config(domain % configs, "config_ocean_heat_transfer_type", config_ocean_heat_transfer_type)
     call MPAS_pool_get_config(domain % configs, "config_sea_freezing_temperature_type", config_sea_freezing_temperature_type)
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
@@ -9641,12 +9639,6 @@ contains
        call mpas_log_write(&
             'Check for inconsistencies in restart file: config_nIceLayers /= nIceLayers', &
             messageType=MPAS_LOG_CRIT)
-
-    ! check snicar value
-!    if (config_use_snicar_ad .and. trim(config_column_physics_type) == "icepack") &
-!       call mpas_log_write(&
-!            "Use config_shortwave_type='dEdd_snicar_ad' for Snicar in Icepack", &
-!            messageType=MPAS_LOG_CRIT)
 
     !-----------------------------------------------------------------------
     ! Check combinations
@@ -9916,10 +9908,6 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_effective_snow_density", config_use_effective_snow_density)
     call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
 
-    use_snow = .false.
-    if (config_use_effective_snow_density .or. config_use_snow_grain_radius) &
-         use_snow = .true.
-
     use_nitrogen = .false.
     if (config_use_skeletal_biochemistry .or. config_use_vertical_biochemistry) &
          use_nitrogen = .true.
@@ -10025,6 +10013,7 @@ contains
          config_use_snow_grain_radius
 
     logical :: &
+         use_snow, &
          use_meltponds, &
          use_nitrogen
 
@@ -10052,6 +10041,10 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_effective_snow_density", config_use_effective_snow_density)
     call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
+
+    use_snow = .false.
+    if (config_use_effective_snow_density .or. config_use_snow_grain_radius) &
+         use_snow = .true.
 
     use_nitrogen = .false.
     if (config_use_skeletal_biochemistry .or. config_use_vertical_biochemistry) &
