@@ -120,7 +120,6 @@ void perform_vertical_interpolation_impl_1d(
   const view_1d<      Pack<T,P>>& output,
   const view_1d<      Mask<P>>&   mask,
   const int nlevs_src,
-  const int nlevs_tgt,
   const int icol,
   const T msk_val,
   const MemberType& team,

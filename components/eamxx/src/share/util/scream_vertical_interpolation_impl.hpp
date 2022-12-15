@@ -132,7 +132,6 @@ void perform_vertical_interpolation_impl_Nd(
   auto rank = input.rank;
   EKAT_REQUIRE_MSG (rank<=4,"Error::scream_vertical_interpolation, passed view of rank (" + std::to_string(rank) +"), only support rank <= 4\n");
   const int ncols = rank > 1 ? x_src.extent(0) : 1;
-  auto npacks_src = ekat::PackInfo<Pack<T,P>::n>::num_packs(nlevs_src);
   auto npacks_tgt = ekat::PackInfo<Pack<T,P>::n>::num_packs(nlevs_tgt);
   // Do a series of checks to make sure that Pack<T,P>s are consistent:
   // Check 1: That the source and input share the same size
@@ -179,7 +178,7 @@ void apply_interpolation(
     const auto out  = ekat::subview(output, icol);
     const auto mask = ekat::subview(mask_out, icol);
     
-    perform_vertical_interpolation_impl_1d<T,P>(x1,x_tgt,in,out,mask,num_levs,icol,icol,mask_val,team,vert_interp);
+    perform_vertical_interpolation_impl_1d<T,P>(x1,x_tgt,in,out,mask,num_levs,icol,mask_val,team,vert_interp);
   });
   Kokkos::fence();
 }
@@ -209,7 +208,7 @@ void apply_interpolation(
     const auto out  = ekat::subview(output, icol, ivar);
     const auto mask = ekat::subview(mask_out, icol, ivar);
 
-    perform_vertical_interpolation_impl_1d<T,P>(x1,x_tgt,in,out,mask,num_levs,icol,icol,mask_val,team,vert_interp);
+    perform_vertical_interpolation_impl_1d<T,P>(x1,x_tgt,in,out,mask,num_levs,icol,mask_val,team,vert_interp);
   });
   Kokkos::fence();   
 }
@@ -243,7 +242,7 @@ void apply_interpolation(
     const auto out   = ekat::subview(output, icol, islc_1, islc_2);
     const auto mask  = ekat::subview(mask_out, icol, islc_1, islc_2);
     
-    perform_vertical_interpolation_impl_1d<T,P>(x1,x_tgt,in,out,mask,num_levs,icol,icol,mask_val,team,vert_interp);
+    perform_vertical_interpolation_impl_1d<T,P>(x1,x_tgt,in,out,mask,num_levs,icol,mask_val,team,vert_interp);
   });
   Kokkos::fence();   
 }
