@@ -845,22 +845,23 @@ void RRTMGPRadiation::run_impl (const int dt) {
     const int kbot = nlay+1;
 
     // Compute diffuse flux as difference between total and direct
-    Kokkos::parallel_for(Kokkos::RangePolicy<ExeSpace>(0,nswbands*(nlay+1)*ncol),
-                         KOKKOS_LAMBDA (const int idx) {
-      // CAREFUL: these are YAKL arrays, with "LayoutLeft". So make the indices stride accordingly, and add 1.
-      const int ibnd = (idx / ncol) / (nlay+1) + 1;
-      const int ilev = (idx / ncol) % (nlay+1) + 1;
-      const int icol =  idx % ncol + 1;
-      sw_bnd_flux_dif(icol,ilev,ibnd) = sw_bnd_flux_dn(icol,ilev,ibnd) - sw_bnd_flux_dir(icol,ilev,ibnd);
-    });
-
-    // Compute surface fluxes
-    rrtmgp::compute_broadband_surface_fluxes(
-        ncol, kbot, nswbands,
-        sw_bnd_flux_dir, sw_bnd_flux_dif, 
-        sfc_flux_dir_vis, sfc_flux_dir_nir, 
-        sfc_flux_dif_vis, sfc_flux_dif_nir
-    );
+    if (update_rad) {
+      Kokkos::parallel_for(Kokkos::RangePolicy<ExeSpace>(0,nswbands*(nlay+1)*ncol),
+                           KOKKOS_LAMBDA (const int idx) {
+        // CAREFUL: these are YAKL arrays, with "LayoutLeft". So make the indices stride accordingly, and add 1.
+        const int ibnd = (idx / ncol) / (nlay+1) + 1;
+        const int ilev = (idx / ncol) % (nlay+1) + 1;
+        const int icol =  idx % ncol + 1;
+        sw_bnd_flux_dif(icol,ilev,ibnd) = sw_bnd_flux_dn(icol,ilev,ibnd) - sw_bnd_flux_dir(icol,ilev,ibnd);
+      });
+      // Compute surface fluxes
+      rrtmgp::compute_broadband_surface_fluxes(
+          ncol, kbot, nswbands,
+          sw_bnd_flux_dir, sw_bnd_flux_dif, 
+          sfc_flux_dir_vis, sfc_flux_dir_nir, 
+          sfc_flux_dif_vis, sfc_flux_dif_nir
+      );
+    }
 
     // Compute diagnostic total cloud area (vertically-projected cloud cover)
     auto cldlow = real1d("cldlow", ncol);
