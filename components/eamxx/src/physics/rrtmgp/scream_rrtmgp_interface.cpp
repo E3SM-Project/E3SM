@@ -22,6 +22,10 @@ namespace scream {
     }
     namespace rrtmgp {
 
+        using yakl::fortran::parallel_for;
+        using yakl::fortran::SimpleBounds;
+        using yakl::intrinsics::merge;
+
         OpticalProps2str get_cloud_optics_sw(const int ncol, const int nlay, CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei);
         OpticalProps1scl get_cloud_optics_lw(const int ncol, const int nlay, CloudOptics &cloud_optics, GasOpticsRRTMGP &kdist, real2d &lwp, real2d &iwp, real2d &rel, real2d &rei);
         OpticalProps2str get_subsampled_clouds(
@@ -106,14 +110,14 @@ namespace scream {
             EKAT_ASSERT_MSG(initialized, "Error! rrtmgp_initialize must be called before GasOpticsRRTMGP object can be used.");
             auto wavenumber_limits = k_dist_sw.get_band_lims_wavenumber();
 
-            EKAT_ASSERT_MSG(size(wavenumber_limits, 1) == 2,
+            EKAT_ASSERT_MSG(yakl::intrinsics::size(wavenumber_limits, 1) == 2,
                             "Error! 1st dimension for wavenumber_limits should be 2.");
-            EKAT_ASSERT_MSG(size(wavenumber_limits, 2) == nswbands,
+            EKAT_ASSERT_MSG(yakl::intrinsics::size(wavenumber_limits, 2) == nswbands,
                             "Error! 2nd dimension for wavenumber_limits should be " + std::to_string(nswbands) + " (nswbands).");
 
             // Loop over bands, and determine for each band whether it is broadly in the
             // visible or infrared part of the spectrum (visible or "not visible")
-            parallel_for(Bounds<2>(nswbands, ncol), YAKL_LAMBDA(const int ibnd, const int icol) {
+            parallel_for(SimpleBounds<2>(nswbands, ncol), YAKL_LAMBDA(const int ibnd, const int icol) {
 
              // Threshold between visible and infrared is 0.7 micron, or 14286 cm^-1.
              const real visible_wavenumber_threshold = 14286;
@@ -171,7 +175,7 @@ namespace scream {
             // Threshold between visible and infrared is 0.7 micron, or 14286 cm^-1.
             const real visible_wavenumber_threshold = 14286;
             auto wavenumber_limits = k_dist_sw.get_band_lims_wavenumber();
-            parallel_for(Bounds<1>(ncol), YAKL_DEVICE_LAMBDA(const int icol) {
+            parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(const int icol) {
               for (int ibnd = 1; ibnd <= nswbands; ++ibnd) {
                 // Wavenumber is in the visible if it is above the visible wavenumber
                 // threshold, and in the infrared if it is below the threshold
@@ -246,7 +250,7 @@ namespace scream {
             fluxes_sw.bnd_flux_dn = sw_bnd_flux_dn;
             fluxes_sw.bnd_flux_dn_dir = sw_bnd_flux_dn_dir;
             // Clear-sky
-            FluxesByband clrsky_fluxes_sw;
+            FluxesBroadband clrsky_fluxes_sw;
             clrsky_fluxes_sw.flux_up = sw_clrsky_flux_up;
             clrsky_fluxes_sw.flux_dn = sw_clrsky_flux_dn;
             clrsky_fluxes_sw.flux_dn_dir = sw_clrsky_flux_dn_dir;
@@ -258,7 +262,7 @@ namespace scream {
             fluxes_lw.bnd_flux_up = lw_bnd_flux_up;
             fluxes_lw.bnd_flux_dn = lw_bnd_flux_dn;
             // Clear-sky
-            FluxesByband clrsky_fluxes_lw;
+            FluxesBroadband clrsky_fluxes_lw;
             clrsky_fluxes_lw.flux_up = lw_clrsky_flux_up;
             clrsky_fluxes_lw.flux_dn = lw_clrsky_flux_dn;
 
@@ -270,14 +274,14 @@ namespace scream {
             OpticalProps1scl aerosol_lw;
             aerosol_sw.init(k_dist_sw.get_band_lims_wavenumber());
             aerosol_sw.alloc_2str(ncol, nlay);
-            parallel_for(Bounds<3>(nswbands,nlay,ncol) , YAKL_LAMBDA (int ibnd, int ilay, int icol) {
+            parallel_for(SimpleBounds<3>(nswbands,nlay,ncol) , YAKL_LAMBDA (int ibnd, int ilay, int icol) {
                 aerosol_sw.tau(icol,ilay,ibnd) = aer_tau_sw(icol,ilay,ibnd);
                 aerosol_sw.ssa(icol,ilay,ibnd) = aer_ssa_sw(icol,ilay,ibnd);
                 aerosol_sw.g  (icol,ilay,ibnd) = aer_asm_sw(icol,ilay,ibnd);
             });
             aerosol_lw.init(k_dist_lw.get_band_lims_wavenumber());
             aerosol_lw.alloc_1scl(ncol, nlay);
-            parallel_for(Bounds<3>(nlwbands,nlay,ncol) , YAKL_LAMBDA (int ibnd, int ilay, int icol) {
+            parallel_for(SimpleBounds<3>(nlwbands,nlay,ncol) , YAKL_LAMBDA (int ibnd, int ilay, int icol) {
                 aerosol_lw.tau(icol,ilay,ibnd) = aer_tau_lw(icol,ilay,ibnd);
             });
 
@@ -306,10 +310,10 @@ namespace scream {
 
             // Copy cloud properties to outputs (is this needed, or can we just use pointers?)
             // Alternatively, just compute and output a subcolumn cloud mask
-            parallel_for(Bounds<3>(nswgpts, nlay, ncol), YAKL_LAMBDA (int igpt, int ilay, int icol) {
+            parallel_for(SimpleBounds<3>(nswgpts, nlay, ncol), YAKL_LAMBDA (int igpt, int ilay, int icol) {
                 cld_tau_sw_gpt(icol,ilay,igpt) = clouds_sw_gpt.tau(icol,ilay,igpt);
             });
-            parallel_for(Bounds<3>(nlwgpts, nlay, ncol), YAKL_LAMBDA (int igpt, int ilay, int icol) {
+            parallel_for(SimpleBounds<3>(nlwgpts, nlay, ncol), YAKL_LAMBDA (int igpt, int ilay, int icol) {
                 cld_tau_lw_gpt(icol,ilay,igpt) = clouds_lw_gpt.tau(icol,ilay,igpt);
             });
 
@@ -369,7 +373,7 @@ namespace scream {
                 // https://github.com/AER-RC/RRTMG_SW/blob/master/src/mcica_subcol_gen_sw.f90)
                 //
                 // First, fill cldx with random numbers. Need to use a unique seed for each column!
-                parallel_for(Bounds<1>(ncol), YAKL_LAMBDA(int icol) {
+                parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
                     yakl::Random rand(seeds(icol));
                     for (int igpt = 1; igpt <= ngpt; igpt++) {
                         for (int ilay = 1; ilay <= nlay; ilay++) {
@@ -378,7 +382,7 @@ namespace scream {
                     }
                 });
                 // Step down columns and apply algorithm from eq (14)
-                parallel_for(Bounds<2>(ngpt,ncol), YAKL_LAMBDA(int igpt, int icol) {
+                parallel_for(SimpleBounds<2>(ngpt,ncol), YAKL_LAMBDA(int igpt, int icol) {
                     for (int ilay = 2; ilay <= nlay; ilay++) {
                         // Check cldx in level above and see if it satisfies conditions to create a cloudy subcolumn
                         if (cldx(icol,ilay-1,igpt) > 1.0 - cldf(icol,ilay-1)) {
@@ -398,7 +402,7 @@ namespace scream {
             }
 
             // Use cldx array to create subcolumn mask
-            parallel_for(Bounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
+            parallel_for(SimpleBounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
                 if (cldx(icol,ilay,igpt) > 1.0 - cldf(icol,ilay)) {
                     subcolumn_mask(icol,ilay,igpt) = 1;
                 } else {
@@ -425,7 +429,7 @@ namespace scream {
             // randomly overlapped.
             auto cldfrac_rad = real2d("cldfrac_rad", ncol, nlay);
             memset(cldfrac_rad, 0.0);  // Start with all zeros
-            parallel_for(Bounds<3>(nbnd,nlay,ncol), YAKL_LAMBDA (int ibnd, int ilay, int icol) {
+            parallel_for(SimpleBounds<3>(nbnd,nlay,ncol), YAKL_LAMBDA (int ibnd, int ilay, int icol) {
                 if (cloud_optics.tau(icol,ilay,ibnd) > 0) {
                     cldfrac_rad(icol,ilay) = cld(icol,ilay);
                 } 
@@ -439,13 +443,13 @@ namespace scream {
             // Get unique seeds for each column that are reproducible across different MPI rank layouts;
             // use decimal part of pressure for this, consistent with the implementation in EAM
             auto seeds = int1d("seeds", ncol);
-            parallel_for(Bounds<1>(ncol), YAKL_LAMBDA(int icol) {
+            parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
                 seeds(icol) = 1e9 * (p_lay(icol,nlay) - int(p_lay(icol,nlay)));
             });
             auto cldmask = get_subcolumn_mask(ncol, nlay, ngpt, cldfrac_rad, overlap, seeds);
             // Assign optical properties to subcolumns (note this implements MCICA)
             auto gpoint_bands = kdist.get_gpoint_bands();
-            parallel_for(Bounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
+            parallel_for(SimpleBounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
                 auto ibnd = gpoint_bands(igpt);
                 if (cldmask(icol,ilay,igpt) == 1) {
                     subsampled_optics.tau(icol,ilay,igpt) = cloud_optics.tau(icol,ilay,ibnd);
@@ -478,7 +482,7 @@ namespace scream {
             // randomly overlapped.
             auto cldfrac_rad = real2d("cldfrac_rad", ncol, nlay);
             memset(cldfrac_rad, 0.0);  // Start with all zeros
-            parallel_for(Bounds<3>(nbnd,nlay,ncol), YAKL_LAMBDA (int ibnd, int ilay, int icol) {
+            parallel_for(SimpleBounds<3>(nbnd,nlay,ncol), YAKL_LAMBDA (int ibnd, int ilay, int icol) {
                 if (cloud_optics.tau(icol,ilay,ibnd) > 0) {
                     cldfrac_rad(icol,ilay) = cld(icol,ilay);
                 } 
@@ -489,13 +493,13 @@ namespace scream {
             // use decimal part of pressure for this, consistent with the implementation in EAM; use different
             // seed values for longwave and shortwave
             auto seeds = int1d("seeds", ncol);
-            parallel_for(Bounds<1>(ncol), YAKL_LAMBDA(int icol) {
+            parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
                 seeds(icol) = 1e9 * (p_lay(icol,nlay-1) - int(p_lay(icol,nlay-1)));
             });
             auto cldmask = get_subcolumn_mask(ncol, nlay, ngpt, cldfrac_rad, overlap, seeds);
             // Assign optical properties to subcolumns (note this implements MCICA)
             auto gpoint_bands = kdist.get_gpoint_bands();
-            parallel_for(Bounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
+            parallel_for(SimpleBounds<3>(ngpt,nlay,ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
                 auto ibnd = gpoint_bands(igpt);
                 if (cldmask(icol,ilay,igpt) == 1) {
                     subsampled_optics.tau(icol,ilay,igpt) = cloud_optics.tau(icol,ilay,ibnd);
@@ -569,7 +573,7 @@ namespace scream {
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0, 
                 OpticalProps2str &aerosol, OpticalProps2str &clouds,
-                FluxesByband &fluxes, FluxesByband &clrsky_fluxes,
+                FluxesByband &fluxes, FluxesBroadband &clrsky_fluxes,
                 const Real tsi_scaling,
                 const std::shared_ptr<spdlog::logger>& logger) {
 
@@ -590,7 +594,7 @@ namespace scream {
             auto &clrsky_flux_dn_dir = clrsky_fluxes.flux_dn_dir;
 
             // Reset fluxes to zero
-            parallel_for(Bounds<2>(nlay+1,ncol), YAKL_LAMBDA(int ilev, int icol) {
+            parallel_for(SimpleBounds<2>(nlay+1,ncol), YAKL_LAMBDA(int ilev, int icol) {
                 flux_up    (icol,ilev) = 0;
                 flux_dn    (icol,ilev) = 0;
                 flux_dn_dir(icol,ilev) = 0;
@@ -598,7 +602,7 @@ namespace scream {
                 clrsky_flux_dn    (icol,ilev) = 0;
                 clrsky_flux_dn_dir(icol,ilev) = 0;
             });
-            parallel_for(Bounds<3>(nbnd,nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilev, int icol) {
+            parallel_for(SimpleBounds<3>(nbnd,nlay+1,ncol), YAKL_LAMBDA(int ibnd, int ilev, int icol) {
                 bnd_flux_up    (icol,ilev,ibnd) = 0;
                 bnd_flux_dn    (icol,ilev,ibnd) = 0;
                 bnd_flux_dn_dir(icol,ilev,ibnd) = 0;
@@ -627,20 +631,20 @@ namespace scream {
 
             // Subset mu0
             auto mu0_day = real1d("mu0_day", nday);
-            parallel_for(Bounds<1>(nday), YAKL_LAMBDA(int iday) {
+            parallel_for(SimpleBounds<1>(nday), YAKL_LAMBDA(int iday) {
                 mu0_day(iday) = mu0(dayIndices(iday));
             });
 
             // subset state variables
             auto p_lay_day = real2d("p_lay_day", nday, nlay);
             auto t_lay_day = real2d("t_lay_day", nday, nlay);
-            parallel_for(Bounds<2>(nlay,nday), YAKL_LAMBDA(int ilay, int iday) {
+            parallel_for(SimpleBounds<2>(nlay,nday), YAKL_LAMBDA(int ilay, int iday) {
                 p_lay_day(iday,ilay) = p_lay(dayIndices(iday),ilay);
                 t_lay_day(iday,ilay) = t_lay(dayIndices(iday),ilay);
             });
             auto p_lev_day = real2d("p_lev_day", nday, nlay+1);
             auto t_lev_day = real2d("t_lev_day", nday, nlay+1);
-            parallel_for(Bounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
+            parallel_for(SimpleBounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
                 p_lev_day(iday,ilev) = p_lev(dayIndices(iday),ilev);
                 t_lev_day(iday,ilev) = t_lev(dayIndices(iday),ilev);
             });
@@ -653,7 +657,7 @@ namespace scream {
                 auto vmr_day = real2d("vmr_day", nday, nlay);
                 auto vmr     = real2d("vmr"    , ncol, nlay);
                 gas_concs.get_vmr(gas_names(igas), vmr);
-                parallel_for(Bounds<2>(nlay,nday), YAKL_LAMBDA(int ilay, int iday) {
+                parallel_for(SimpleBounds<2>(nlay,nday), YAKL_LAMBDA(int ilay, int iday) {
                     vmr_day(iday,ilay) = vmr(dayIndices(iday),ilay);
                 });
                 gas_concs_day.set_vmr(gas_names(igas), vmr_day);
@@ -663,7 +667,7 @@ namespace scream {
             OpticalProps2str aerosol_day;
             aerosol_day.init(k_dist.get_band_lims_wavenumber());
             aerosol_day.alloc_2str(nday, nlay);
-            parallel_for(Bounds<3>(nbnd,nlay,nday), YAKL_LAMBDA(int ibnd, int ilay, int iday) {
+            parallel_for(SimpleBounds<3>(nbnd,nlay,nday), YAKL_LAMBDA(int ibnd, int ilay, int iday) {
                 aerosol_day.tau(iday,ilay,ibnd) = aerosol.tau(dayIndices(iday),ilay,ibnd);
                 aerosol_day.ssa(iday,ilay,ibnd) = aerosol.ssa(dayIndices(iday),ilay,ibnd);
                 aerosol_day.g  (iday,ilay,ibnd) = aerosol.g  (dayIndices(iday),ilay,ibnd);
@@ -674,7 +678,7 @@ namespace scream {
             OpticalProps2str clouds_day;
             clouds_day.init(k_dist.get_band_lims_wavenumber(), k_dist.get_band_lims_gpoint());
             clouds_day.alloc_2str(nday, nlay);
-            parallel_for(Bounds<3>(ngpt,nlay,nday), YAKL_LAMBDA(int igpt, int ilay, int iday) {
+            parallel_for(SimpleBounds<3>(ngpt,nlay,nday), YAKL_LAMBDA(int igpt, int ilay, int iday) {
                 clouds_day.tau(iday,ilay,igpt) = clouds.tau(dayIndices(iday),ilay,igpt);
                 clouds_day.ssa(iday,ilay,igpt) = clouds.ssa(dayIndices(iday),ilay,igpt);
                 clouds_day.g  (iday,ilay,igpt) = clouds.g  (dayIndices(iday),ilay,igpt);
@@ -685,7 +689,7 @@ namespace scream {
             // daytime subsetting in the same kernel
             real2d sfc_alb_dir_T("sfc_alb_dir", nbnd, nday);
             real2d sfc_alb_dif_T("sfc_alb_dif", nbnd, nday);
-            parallel_for(Bounds<2>(nbnd,nday), YAKL_LAMBDA(int ibnd, int icol) {
+            parallel_for(SimpleBounds<2>(nbnd,nday), YAKL_LAMBDA(int ibnd, int icol) {
                 sfc_alb_dir_T(ibnd,icol) = sfc_alb_dir(dayIndices(icol),ibnd);
                 sfc_alb_dif_T(ibnd,icol) = sfc_alb_dif(dayIndices(icol),ibnd);
             });
@@ -728,7 +732,7 @@ namespace scream {
 #endif
 
             // Apply tsi_scaling
-            parallel_for(Bounds<2>(ngpt,nday), YAKL_LAMBDA(int igpt, int iday) {
+            parallel_for(SimpleBounds<2>(ngpt,nday), YAKL_LAMBDA(int igpt, int iday) {
                 toa_flux(iday,igpt) = tsi_scaling * toa_flux(iday,igpt);
             });
 
@@ -739,7 +743,7 @@ namespace scream {
             // Compute clearsky (gas + aerosol) fluxes on daytime columns
             rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
             // Expand daytime fluxes to all columns
-            parallel_for(Bounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
+            parallel_for(SimpleBounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
                 int icol = dayIndices(iday);
                 clrsky_flux_up    (icol,ilev) = flux_up_day    (iday,ilev);
                 clrsky_flux_dn    (icol,ilev) = flux_dn_day    (iday,ilev);
@@ -754,13 +758,13 @@ namespace scream {
             // Compute fluxes on daytime columns
             rte_sw(optics, top_at_1, mu0_day, toa_flux, sfc_alb_dir_T, sfc_alb_dif_T, fluxes_day);
             // Expand daytime fluxes to all columns
-            parallel_for(Bounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
+            parallel_for(SimpleBounds<2>(nlay+1,nday), YAKL_LAMBDA(int ilev, int iday) {
                 int icol = dayIndices(iday);
                 flux_up    (icol,ilev) = flux_up_day    (iday,ilev);
                 flux_dn    (icol,ilev) = flux_dn_day    (iday,ilev);
                 flux_dn_dir(icol,ilev) = flux_dn_dir_day(iday,ilev);
             });
-            parallel_for(Bounds<3>(nbnd,nlay+1,nday), YAKL_LAMBDA(int ibnd, int ilev, int iday) {
+            parallel_for(SimpleBounds<3>(nbnd,nlay+1,nday), YAKL_LAMBDA(int ibnd, int ilev, int iday) {
                 int icol = dayIndices(iday);
                 bnd_flux_up    (icol,ilev,ibnd) = bnd_flux_up_day    (iday,ilev,ibnd);
                 bnd_flux_dn    (icol,ilev,ibnd) = bnd_flux_dn_day    (iday,ilev,ibnd);
@@ -775,7 +779,7 @@ namespace scream {
                 GasConcs &gas_concs,
                 OpticalProps1scl &aerosol,
                 OpticalProps1scl &clouds,
-                FluxesByband &fluxes, FluxesByband &clrsky_fluxes) {
+                FluxesByband &fluxes, FluxesBroadband &clrsky_fluxes) {
 
             // Problem size
             int nbnd = k_dist.get_nband();
@@ -793,7 +797,7 @@ namespace scream {
             // Surface temperature
             auto p_lay_host = p_lay.createHostCopy();
             bool top_at_1 = p_lay_host(1, 1) < p_lay_host(1, nlay);
-            parallel_for(Bounds<1>(ncol), YAKL_LAMBDA(int icol) {
+            parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
                 t_sfc(icol) = t_lev(icol, merge(nlay+1, 1, top_at_1));
             });
             memset(emis_sfc , 0.98_wp);
@@ -856,7 +860,7 @@ namespace scream {
             // then 2d subcol mask is 1, otherwise it is 0
             auto subcol_mask = real2d("subcol_mask", ncol, ngpt);
             memset(subcol_mask, 0);
-            yakl::fortran::parallel_for(Bounds<3>(ngpt, nlay, ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
+            yakl::fortran::parallel_for(SimpleBounds<3>(ngpt, nlay, ncol), YAKL_LAMBDA(int igpt, int ilay, int icol) {
                 // NOTE: using plev would need to assume level ordering (top to bottom or bottom to top), but
                 // using play/pmid does not
                 if (cld_tau_gpt(icol,ilay,igpt) > 0 && pmid(icol,ilay) >= pmin && pmid(icol,ilay) < pmax) {
@@ -866,7 +870,7 @@ namespace scream {
             // Compute average over subcols to get cloud area
             auto ngpt_inv = 1.0 / ngpt;
             memset(cld_area, 0);
-            yakl::fortran::parallel_for(Bounds<1>(ncol), YAKL_LAMBDA(int icol) {
+            yakl::fortran::parallel_for(SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
                 // This loop needs to be serial because of the atomic reduction
                 for (int igpt = 1; igpt <= ngpt; ++igpt) {
                     cld_area(icol) += subcol_mask(icol,igpt) * ngpt_inv;

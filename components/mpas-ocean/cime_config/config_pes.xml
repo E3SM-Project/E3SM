@@ -554,6 +554,30 @@
         </rootpe>
       </pes>
     </mach>
+    <mach name="cori-knl">
+      <pes compset="DATM.+MPASO.+SWAV" pesize="any">
+        <comment>mpas-ocean: SO RRM, compset=DATM+MPASO, 75 nodes, ~2.6 SYPD</comment>
+        <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>4800</ntasks_atm>
+          <ntasks_lnd>4800</ntasks_lnd>
+          <ntasks_rof>4800</ntasks_rof>
+          <ntasks_ice>4800</ntasks_ice>
+          <ntasks_ocn>4800</ntasks_ocn>
+          <ntasks_glc>1</ntasks_glc>
+          <ntasks_cpl>4800</ntasks_cpl>
+        </ntasks>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_lnd>0</rootpe_lnd>
+          <rootpe_rof>0</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>0</rootpe_ocn>
+          <rootpe_glc>0</rootpe_glc>
+          <rootpe_cpl>0</rootpe_cpl>
+        </rootpe>
+      </pes>
+    </mach>
   </grid>
   <grid name="a%T62.+oi%oEC60to30|a%TL319.+oi%oEC60to30">
     <mach name="onyx|warhawk|narwhal">

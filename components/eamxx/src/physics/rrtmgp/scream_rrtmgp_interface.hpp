@@ -90,7 +90,7 @@ namespace scream {
                 GasConcs &gas_concs,
                 real2d &sfc_alb_dir, real2d &sfc_alb_dif, real1d &mu0,
                 OpticalProps2str &aerosol, OpticalProps2str &clouds,
-                FluxesByband &fluxes, FluxesByband &clrsky_fluxes, const Real tsi_scaling,
+                FluxesByband &fluxes, FluxesBroadband &clrsky_fluxes, const Real tsi_scaling,
                 const std::shared_ptr<spdlog::logger>& logger);
         /*
          * Longwave driver (called by rrtmgp_main)
@@ -101,7 +101,7 @@ namespace scream {
                 real2d &p_lay, real2d &t_lay, real2d &p_lev, real2d &t_lev,
                 GasConcs &gas_concs,
                 OpticalProps1scl &aerosol, OpticalProps1scl &clouds,
-                FluxesByband &fluxes, FluxesByband &clrsky_fluxes);
+                FluxesByband &fluxes, FluxesBroadband &clrsky_fluxes);
         /*
          * Return a subcolumn mask consistent with a specified overlap assumption
          */
@@ -127,7 +127,7 @@ namespace scream {
             int ncol = mixing_ratio.dimension[0];
             int nlay = mixing_ratio.dimension[1];
             using physconst = scream::physics::Constants<Real>;
-            parallel_for(Bounds<2>(nlay, ncol), YAKL_LAMBDA(int ilay, int icol) {
+            yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<2>(nlay, ncol), YAKL_LAMBDA(int ilay, int icol) {
                 // Compute in-cloud mixing ratio (mixing ratio of the cloudy part of the layer)
                 // NOTE: these thresholds (from E3SM) seem arbitrary, but included here for consistency
                 // This limits in-cloud mixing ratio to 0.005 kg/kg. According to note in cloud_diagnostics
@@ -150,7 +150,7 @@ namespace scream {
          */
         template<class S, class T> void limit_to_bounds(S const &arr_in, T const lower, T const upper, S &arr_out) {
             yakl::c::parallel_for(arr_in.totElems(), YAKL_LAMBDA(int i) {
-                arr_out.data()[i] = min(max(arr_in.data()[i], lower), upper);
+                arr_out.data()[i] = std::min(std::max(arr_in.data()[i], lower), upper);
             });
         }
 

@@ -129,7 +129,7 @@ void load_and_init(GasOpticsRRTMGP &kdist, std::string filename, GasConcs const 
           const real a_offset = 0.1495954;
           const real b_offset = 0.00066696;
           auto ngpt = solar_src.totElems();
-          parallel_for(Bounds<1>(ngpt), YAKL_LAMBDA(int igpt) {
+          yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<1>(ngpt), YAKL_LAMBDA(int igpt) {
               solar_src(igpt) = solar_src(igpt)
                   + (mg_index - a_offset) * solar_source_facular(igpt)
                   + (sb_index - b_offset) * solar_source_sunspot(igpt);

@@ -160,7 +160,7 @@ namespace scream {
         );
         // Populate our local input arrays with the proper columns, based on our rank
         int irank = atm_comm.rank();
-        parallel_for(Bounds<1>(ncol), YAKL_LAMBDA(int icol) {
+        yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<1>(ncol), YAKL_LAMBDA(int icol) {
             auto icol_all = ncol * irank + icol;
             sfc_alb_dir_vis(icol) = sfc_alb_dir_vis_all(icol_all);
             sfc_alb_dir_nir(icol) = sfc_alb_dir_nir_all(icol_all);
@@ -168,7 +168,7 @@ namespace scream {
             sfc_alb_dif_nir(icol) = sfc_alb_dif_nir_all(icol_all);
             mu0(icol) = mu0_all(icol_all);
         });
-        parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
+        yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
             auto icol_all = ncol * irank + icol;
             p_lay(icol,ilay) = p_lay_all(icol_all,ilay);
             t_lay(icol,ilay) = t_lay_all(icol_all,ilay);
@@ -179,7 +179,7 @@ namespace scream {
             rei(icol,ilay) = rei_all(icol_all,ilay);
             cld(icol,ilay) = cld_all(icol_all,ilay);
         });
-        parallel_for(Bounds<2>(nlay+1,ncol), YAKL_LAMBDA(int ilay, int icol) {
+        yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<2>(nlay+1,ncol), YAKL_LAMBDA(int ilay, int icol) {
             auto icol_all = ncol * irank + icol;
             p_lev(icol,ilay) = p_lev_all(icol_all,ilay);
             t_lev(icol,ilay) = t_lev_all(icol_all,ilay);
@@ -202,7 +202,7 @@ namespace scream {
         mu0_all.deallocate();
 
         // Need to calculate a dummy pseudo_density for our test problem
-        parallel_for(Bounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
+        yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<2>(nlay,ncol), YAKL_LAMBDA(int ilay, int icol) {
             p_del(icol,ilay) = abs(p_lev(icol,ilay+1) - p_lev(icol,ilay));
         });
 
@@ -211,13 +211,13 @@ namespace scream {
         using physconst = scream::physics::Constants<double>;
         auto qc = real2d("qc", ncol, nlay);
         auto qi = real2d("qi", ncol, nlay);
-        parallel_for(Bounds<2>(nlay, ncol), YAKL_LAMBDA(int ilay, int icol) {
+        yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<2>(nlay, ncol), YAKL_LAMBDA(int ilay, int icol) {
             qc(icol,ilay) = 1e-3 * lwp(icol,ilay) * cld(icol,ilay) * physconst::gravit / p_del(icol,ilay);
             qi(icol,ilay) = 1e-3 * iwp(icol,ilay) * cld(icol,ilay) * physconst::gravit / p_del(icol,ilay);
         });
 
         // Copy gases from gas_concs to gas_vmr array
-        parallel_for(Bounds<3>(ncol,nlay,ngas), YAKL_LAMBDA(int icol, int ilay, int igas) {
+        yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<3>(ncol,nlay,ngas), YAKL_LAMBDA(int icol, int ilay, int igas) {
             auto icol_all = ncol * irank + icol;
             gas_vmr(icol,ilay,igas) = gas_concs.concs(icol_all,ilay,igas);
         });
@@ -358,7 +358,7 @@ namespace scream {
         auto sw_flux_dn_dir_loc = real2d("sw_flux_dn_dir_loc", ncol, nlay+1);
         auto lw_flux_up_loc     = real2d("lw_flux_up_loc"    , ncol, nlay+1);
         auto lw_flux_dn_loc     = real2d("lw_flux_dn_loc"    , ncol, nlay+1);
-        parallel_for(Bounds<2>(nlay+1,ncol), YAKL_LAMBDA(int ilay, int icol) {
+        yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<2>(nlay+1,ncol), YAKL_LAMBDA(int ilay, int icol) {
             auto icol_all = ncol * irank + icol;
             sw_flux_up_loc(icol,ilay) = sw_flux_up_ref(icol_all,ilay);
             sw_flux_dn_loc(icol,ilay) = sw_flux_dn_ref(icol_all,ilay);

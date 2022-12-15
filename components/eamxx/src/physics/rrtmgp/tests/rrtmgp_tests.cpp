@@ -167,12 +167,12 @@ int run(int argc, char** argv) {
     auto aer_ssa_sw = real3d("aer_ssa_sw", ncol, nlay, nswbands);
     auto aer_asm_sw = real3d("aer_asm_sw", ncol, nlay, nswbands);
     auto aer_tau_lw = real3d("aer_tau_lw", ncol, nlay, nlwbands);
-    parallel_for(Bounds<3>(nswbands,nlay,ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
+    yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<3>(nswbands,nlay,ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
         aer_tau_sw(icol,ilay,ibnd) = 0;
         aer_ssa_sw(icol,ilay,ibnd) = 0;
         aer_asm_sw(icol,ilay,ibnd) = 0;
     });
-    parallel_for(Bounds<3>(nlwbands,nlay,ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
+    yakl::fortran::parallel_for(yakl::fortran::SimpleBounds<3>(nlwbands,nlay,ncol), YAKL_LAMBDA(int ibnd, int ilay, int icol) {
         aer_tau_lw(icol,ilay,ibnd) = 0;
     });
 
