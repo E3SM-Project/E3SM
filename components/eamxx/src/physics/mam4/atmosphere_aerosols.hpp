@@ -188,11 +188,11 @@ private:
 
     // assigns local variables
     void set_variables(const int ncol_, const int nlev_,
-                       const view_2d&       qv_,
-                       const view_2d&       q_soag_,
-                       const view_2d&       q_h2so4,
-                       const view_2d&       q_nh3,
-                       const view_2d&       q_aitken_so4) {
+                       const view_2d& qv_,
+                       const view_2d& q_soag_,
+                       const view_2d& q_h2so4,
+                       const view_2d& q_nh3,
+                       const view_2d& q_aitken_so4) {
     {
       ncol = ncol_;
       nlev = nlev_;

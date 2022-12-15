@@ -25,10 +25,10 @@ std::string MAM4Aerosols::name() const {
 void MAM4Aerosols::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
-  // The units of mixing ratio Q are technically non-dimensional.
+  // The units of mixing ratio q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
-  auto Qunit = kg/kg;
-  Qunit.set_string("kg/kg");
+  auto q_unit = kg/kg;
+  q_unit.set_string("kg/kg");
   Units nondim(0,0,0,0,0,0,0);
 
   grid_ = grids_manager->get_grid("Physics");
@@ -96,21 +96,17 @@ set_computed_group_impl(const FieldGroup& group) {
 }
 
 size_t MAM4Aerosols::requested_buffer_size_in_bytes() const override {
-  const int nlev_packs       = ekat::npack<Spack>(m_num_levs);
-  const int nlevi_packs      = ekat::npack<Spack>(m_num_levs+1);
-  const int num_tracer_packs = ekat::npack<Spack>(m_num_tracers);
-
   // Number of Reals needed by local views in the interface
-  const size_t interface_request = Buffer::num_1d_scalar_ncol*m_num_cols*sizeof(Real) +
+  const size_t interface_request = Buffer::num_1d_scalar_ncol*num_cols_*sizeof(Real) +
                                    Buffer::num_1d_scalar_nlev*nlev_packs*sizeof(Spack) +
-                                   Buffer::num_2d_vector_mid*m_num_cols*nlev_packs*sizeof(Spack) +
-                                   Buffer::num_2d_vector_int*m_num_cols*nlevi_packs*sizeof(Spack) +
-                                   Buffer::num_2d_vector_tr*m_num_cols*num_tracer_packs*sizeof(Spack);
+                                   Buffer::num_2d_vector_mid*num_cols_*nlev_packs*sizeof(Spack) +
+                                   Buffer::num_2d_vector_int*num_cols_*nlevi_packs*sizeof(Spack) +
+                                   Buffer::num_2d_vector_tr*num_cols_*num_tracer_packs*sizeof(Spack);
 
   // Number of Reals needed by the WorkspaceManager passed to shoc_main
-  const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
+  const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_cols_, nlev_packs);
   const int n_wind_slots  = ekat::npack<Spack>(2)*Spack::n;
-  const int n_trac_slots  = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
+  const int n_trac_slots  = ekat::npack<Spack>(num_tracers_+3)*Spack::n;
   const size_t wsm_request= WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy);
 
   return interface_request + wsm_request;
@@ -125,23 +121,11 @@ void MAM4Aerosols::init_buffers(const ATMBufferManager &buffer_manager) override
   using scalar_view_t = decltype(m_buffer.cell_length);
   scalar_view_t* _1d_scalar_view_ptrs[Buffer::num_1d_scalar_ncol] =
     {&m_buffer.cell_length, &m_buffer.wpthlp_sfc, &m_buffer.wprtp_sfc, &m_buffer.upwp_sfc, &m_buffer.vpwp_sfc
-#ifdef SCREAM_SMALL_KERNELS
-     , &m_buffer.se_b, &m_buffer.ke_b, &m_buffer.wv_b, &m_buffer.wl_b
-     , &m_buffer.se_a, &m_buffer.ke_a, &m_buffer.wv_a, &m_buffer.wl_a
-     , &m_buffer.ustar, &m_buffer.kbfs, &m_buffer.obklen, &m_buffer.ustar2, &m_buffer.wstar
-#endif
     };
   for (int i = 0; i < Buffer::num_1d_scalar_ncol; ++i) {
-    *_1d_scalar_view_ptrs[i] = scalar_view_t(mem, m_num_cols);
+    *_1d_scalar_view_ptrs[i] = scalar_view_t(mem, num_cols_);
     mem += _1d_scalar_view_ptrs[i]->size();
   }
-
-  Spack* s_mem = reinterpret_cast<Spack*>(mem);
-
-  // 2d packed views
-  const int nlev_packs       = ekat::npack<Spack>(m_num_levs);
-  const int nlevi_packs      = ekat::npack<Spack>(m_num_levs+1);
-  const int num_tracer_packs = ekat::npack<Spack>(m_num_tracers);
 
   m_buffer.pref_mid = decltype(m_buffer.pref_mid)(s_mem, nlev_packs);
   s_mem += m_buffer.pref_mid.size();
@@ -151,30 +135,24 @@ void MAM4Aerosols::init_buffers(const ATMBufferManager &buffer_manager) override
     &m_buffer.z_mid, &m_buffer.rrho, &m_buffer.thv, &m_buffer.dz, &m_buffer.zt_grid, &m_buffer.wm_zt,
     &m_buffer.inv_exner, &m_buffer.thlm, &m_buffer.qw, &m_buffer.dse, &m_buffer.tke_copy, &m_buffer.qc_copy,
     &m_buffer.shoc_ql2, &m_buffer.shoc_mix, &m_buffer.isotropy, &m_buffer.w_sec, &m_buffer.wqls_sec, &m_buffer.brunt
-#ifdef SCREAM_SMALL_KERNELS
-    , &m_buffer.rho_zt, &m_buffer.shoc_qv, &m_buffer.dz_zt, &m_buffer.tkh
-#endif
   };
 
   spack_2d_view_t* _2d_spack_int_view_ptrs[Buffer::num_2d_vector_int] = {
     &m_buffer.z_int, &m_buffer.rrho_i, &m_buffer.zi_grid, &m_buffer.thl_sec, &m_buffer.qw_sec,
     &m_buffer.qwthl_sec, &m_buffer.wthl_sec, &m_buffer.wqw_sec, &m_buffer.wtke_sec, &m_buffer.uw_sec,
     &m_buffer.vw_sec, &m_buffer.w3
-#ifdef SCREAM_SMALL_KERNELS
-    , &m_buffer.dz_zi
-#endif
   };
 
   for (int i = 0; i < Buffer::num_2d_vector_mid; ++i) {
-    *_2d_spack_mid_view_ptrs[i] = spack_2d_view_t(s_mem, m_num_cols, nlev_packs);
+    *_2d_spack_mid_view_ptrs[i] = spack_2d_view_t(s_mem, num_cols_, nlev_packs);
     s_mem += _2d_spack_mid_view_ptrs[i]->size();
   }
 
   for (int i = 0; i < Buffer::num_2d_vector_int; ++i) {
-    *_2d_spack_int_view_ptrs[i] = spack_2d_view_t(s_mem, m_num_cols, nlevi_packs);
+    *_2d_spack_int_view_ptrs[i] = spack_2d_view_t(s_mem, num_cols_, nlevi_packs);
     s_mem += _2d_spack_int_view_ptrs[i]->size();
   }
-  m_buffer.wtracer_sfc = decltype(m_buffer.wtracer_sfc)(s_mem, m_num_cols, num_tracer_packs);
+  m_buffer.wtracer_sfc = decltype(m_buffer.wtracer_sfc)(s_mem, num_cols_, num_tracer_packs);
   s_mem += m_buffer.wtracer_sfc.size();
 
   // WSM data
@@ -182,10 +160,8 @@ void MAM4Aerosols::init_buffers(const ATMBufferManager &buffer_manager) override
 
   // Compute workspace manager size to check used memory
   // vs. requested memory
-  const auto policy      = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(m_num_cols, nlev_packs);
-  const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
-  const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
-  const int wsm_size     = WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy)/sizeof(Spack);
+  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_cols_, nlev_packs);
+  const int wsm_size = WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy)/sizeof(Spack);
   s_mem += wsm_size;
 
   size_t used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
@@ -203,18 +179,11 @@ void MAM4Aerosols::initialize_impl(const RunType run_type) {
   const auto& tracers_info = tracers.m_info;
 
   // Alias local variables from temporary buffer
-  auto z_mid       = m_buffer.z_mid;
-  auto z_int       = m_buffer.z_int;
-  auto cell_length = m_buffer.cell_length;
-  auto dz          = m_buffer.dz;
-  auto zt_grid     = m_buffer.zt_grid;
-  auto zi_grid     = m_buffer.zi_grid;
-  auto wtracer_sfc = m_buffer.wtracer_sfc;
-  auto wm_zt       = m_buffer.wm_zt;
+  // e.g. auto z_mid       = m_buffer.z_mid;
 
   // Perform any initialization work.
   if (run_type==RunType::Initial){
-    /*
+    /* e.g.
     Kokkos::deep_copy(sgs_buoy_flux,0.0);
     Kokkos::deep_copy(tk,0.0);
     Kokkos::deep_copy(tke,0.0004);
@@ -223,145 +192,58 @@ void MAM4Aerosols::initialize_impl(const RunType run_type) {
     */
   }
 
-  // Find index of qv (water vapor, kg/kg(wet-air) and tke (J/kg(wet-air)) in the qtracer 3d view
-  // These indices are later used for converting tracers from wet mmr to dry mmr and vice-versa
+  // Find indices of qv and aerosol-related quantities
   auto qv_index  = tracer_info->m_subview_idx.at("qv");
+  // FIXME
 
-  //Device view to store indices of tracers which will participate in wet<->dry conversion; we are excluding
-  //"tke" [as it is not "water based" tracer] and "qv"[as "qv" (before conversion) is needed for
-  //computing conversion for all other tracers] from qtracers view
-  view_1d_int convert_wet_dry_idx_d("convert_wet_dry_idx_d",m_num_tracers-1);  // qv is excluded
+  mam4_preprocess.set_variables(num_cols_, num_levs_, T_mid, p_mid, qv, height,
+                                pdel, pblh, q_soag, q_h2so4, q_nh3, q_aitken_so4);
 
-  //mirror view on host
-  auto convert_wet_dry_idx_h = Kokkos::create_mirror_view(convert_wet_dry_idx_d);
-
-  //loop over all tracers to store of all tracer indices except for tke and qv
-  for (int it=0,iq=0; it<m_num_tracers; ++it) {
-    if (it!=qv_index && it!= tke_index) { //skip if "it" is a tke or qv index
-      convert_wet_dry_idx_h(iq) = it;
-      ++iq;
-    }
-  }
-
-  // copy to device
-  Kokkos::deep_copy(convert_wet_dry_idx_d,convert_wet_dry_idx_h);
-
-
-  shoc_preprocess.set_variables(num_cols_,num_levs_,m_num_tracers,convert_wet_dry_idx_d,z_surf,m_cell_area,m_cell_lat,
-                                T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_evap,
-                                surf_mom_flux,qtracers,qv,qc,qc_copy,tke,tke_copy,z_mid,z_int,cell_length,
-                                dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
-                                wtracer_sfc,wm_zt,inv_exner,thlm,qw);
-
-  // Input Variables:
-  input.dx          = shoc_preprocess.cell_length;
-  input.dy          = shoc_preprocess.cell_length;
-  input.zt_grid     = shoc_preprocess.zt_grid;
-  input.zi_grid     = shoc_preprocess.zi_grid;
+  // input
   input.pres        = p_mid;
-  input.presi       = p_int;
   input.pdel        = pseudo_density;
-  input.thv         = shoc_preprocess.thv;
-  input.w_field     = shoc_preprocess.wm_zt;
-  input.wthl_sfc    = shoc_preprocess.wpthlp_sfc;
-  input.wqw_sfc     = shoc_preprocess.wprtp_sfc;
-  input.uw_sfc      = shoc_preprocess.upwp_sfc;
-  input.vw_sfc      = shoc_preprocess.vpwp_sfc;
-  input.wtracer_sfc = shoc_preprocess.wtracer_sfc;
-  input.inv_exner   = shoc_preprocess.inv_exner;
-  input.phis        = phis;
+  input.temp        = mam4_preprocess.t_mid;
 
-  // Input/Output Variables
-  input_output.host_dse     = shoc_preprocess.shoc_s;
-  input_output.tke          = shoc_preprocess.tke_copy;
-  input_output.thetal       = shoc_preprocess.thlm;
-  input_output.qw           = shoc_preprocess.qw;
-  input_output.horiz_wind   = get_field_out("horiz_winds").get_view<Spack***>();
-  input_output.wthv_sec     = sgs_buoy_flux;
-  input_output.qtracers     = shoc_preprocess.qtracers;
-  input_output.tk           = tk;
-  input_output.shoc_cldfrac = cldfrac_liq;
-  input_output.shoc_ql      = qc_copy;
+  // input/output
+  // e.g. input_output.host_dse     = mam4_preprocess.shoc_s;
 
-  // Output Variables
-  output.pblh     = get_field_out("pbl_height").get_view<Real*>();
-  output.shoc_ql2 = shoc_ql2;
+  // output (prognostic)
+  // e.g. output.pblh     = get_field_out("pbl_height").get_view<Real*>();
 
-  // Ouput (diagnostic)
-  history_output.shoc_mix  = m_buffer.shoc_mix;
-  history_output.isotropy  = m_buffer.isotropy;
-  history_output.w_sec     = m_buffer.w_sec;
-  history_output.thl_sec   = m_buffer.thl_sec;
-  history_output.qw_sec    = m_buffer.qw_sec;
-  history_output.qwthl_sec = m_buffer.qwthl_sec;
-  history_output.wthl_sec  = m_buffer.wthl_sec;
-  history_output.wqw_sec   = m_buffer.wqw_sec;
-  history_output.wtke_sec  = m_buffer.wtke_sec;
-  history_output.uw_sec    = m_buffer.uw_sec;
-  history_output.vw_sec    = m_buffer.vw_sec;
-  history_output.w3        = m_buffer.w3;
-  history_output.wqls_sec  = m_buffer.wqls_sec;
-  history_output.brunt     = m_buffer.brunt;
+  // output (diagnostic)
+  // e.g. history_output.shoc_mix  = m_buffer.shoc_mix;
 
-  shoc_postprocess.set_variables(num_cols_,num_levs_,m_num_tracers,convert_wet_dry_idx_d,
-                                 rrho,qv,qw,qc,qc_copy,tke,tke_copy,qtracers,shoc_ql2,
-                                 cldfrac_liq,inv_qc_relvar,
-                                 T_mid, dse, z_mid, phis);
+  mam4_postprocess.set_variables(num_cols_, num_levs_, qv, q_soag, q_h2so4,
+                                 q_nh3, q_aitken_so4);
 
   // Set field property checks for the fields in this process
+  /* e.g.
   using Interval = FieldWithinIntervalCheck;
   using LowerBound = FieldLowerBoundCheck;
   add_postcondition_check<Interval>(get_field_out("T_mid"),m_grid,130.0,500.0,false);
-  add_postcondition_check<Interval>(get_field_out("qc"),m_grid,0.0,0.1,false);
-  add_postcondition_check<Interval>(get_field_out("horiz_winds"),m_grid,-400.0,400.0,false);
   add_postcondition_check<LowerBound>(get_field_out("pbl_height"),m_grid,0);
   add_postcondition_check<Interval>(get_field_out("cldfrac_liq"),m_grid,0.0,1.0,false);
   add_postcondition_check<LowerBound>(get_field_out("tke"),m_grid,0);
-  // For qv, ensure it doesn't get negative, by allowing repair of any neg value.
-  // TODO: use a repairable lb that clips only "small" negative values
-  add_postcondition_check<Interval>(get_field_out("qv"),m_grid,0,0.2,true);
+  */
 
   // Setup WSM for internal local variables
-  const auto nlev_packs  = ekat::npack<Spack>(num_levs_);
-  const auto nlevi_packs = ekat::npack<Spack>(num_levs_+1);
-  const int n_wind_slots = ekat::npack<Spack>(2)*Spack::n;
-  const int n_trac_slots = ekat::npack<Spack>(m_num_tracers+3)*Spack::n;
-  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_cols_, nlev_packs);
-  workspace_mgr.setup(m_buffer.wsm_data, nlevi_packs, 13+(n_wind_slots+n_trac_slots), default_policy);
+  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_cols_, nlev_);
+  // FIXME
+  //workspace_mgr.setup(m_buffer.wsm_data, nlev_+1, 13+(n_wind_slots+n_trac_slots), default_policy);
 
-  // Calculate pref_mid, and use that to calculate
-  // maximum number of levels in pbl from surface
-  const auto pref_mid = m_buffer.pref_mid;
-  const auto s_pref_mid = ekat::scalarize(pref_mid);
-  const auto hyam = m_grid->get_geometry_data("hyam");
-  const auto hybm = m_grid->get_geometry_data("hybm");
-  const auto ps0 = C::P0;
-  const auto psref = ps0;
-  Kokkos::parallel_for(Kokkos::RangePolicy<>(0, num_levs_), KOKKOS_LAMBDA (const int lev) {
-    s_pref_mid(lev) = ps0*hyam(lev) + psref*hybm(lev);
-  });
-  Kokkos::fence();
-
-  const int ntop_shoc = 0;
-  const int nbot_shoc = num_levs_;
-  m_npbl = SHF::shoc_init(nbot_shoc,ntop_shoc,pref_mid);
+  // FIXME: aerosol process initialization goes here!
 }
 
 void MAM4Aerosols::run_impl(const int dt) {
 
-  const auto nlev_packs  = ekat::npack<Spack>(num_levs_);
-  const auto scan_policy    = ekat::ExeSpaceUtils<KT::ExeSpace>::get_thread_range_parallel_scan_team_policy(num_cols_, nlev_packs);
-  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_cols_, nlev_packs);
+  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_cols_, nlev_);
 
-  // Preprocessing of SHOC inputs. Kernel contains a parallel_scan,
-  // so a special TeamPolicy is required.
-  Kokkos::parallel_for("shoc_preprocess",
-                       scan_policy,
-                       shoc_preprocess);
+  // preprocess input
+  Kokkos::parallel_for("mam4_preprocess", default_policy, mam4_preprocess);
   Kokkos::fence();
 
-  // For now set the host timestep to the shoc timestep. This forces
-  // number of SHOC timesteps (nadv) to be 1.
+  // For now set the host timestep to the MAM4 timestep. This forces
+  // number of MAM4 timesteps (nadv) to be 1.
   // TODO: input parameter?
   hdtime = dt;
   m_nadv = std::max(hdtime/dt,1);
@@ -369,18 +251,10 @@ void MAM4Aerosols::run_impl(const int dt) {
   // Reset internal WSM variables.
   workspace_mgr.reset_internals();
 
-  // Run shoc main
-  SHF::shoc_main(num_cols_, num_levs_, num_levs_+1, m_npbl, m_nadv, m_num_tracers, dt,
-                 workspace_mgr,input,input_output,output,history_output
-#ifdef SCREAM_SMALL_KERNELS
-                 , temporaries
-#endif
-                 );
+  // FIXME: Aerosol stuff goes here!
 
-  // Postprocessing of SHOC outputs
-  Kokkos::parallel_for("shoc_postprocess",
-                       default_policy,
-                       shoc_postprocess);
+  // postprocess output
+  Kokkos::parallel_for("mam4_postprocess", default_policy, mam4_postprocess);
   Kokkos::fence();
 }
 
