@@ -214,15 +214,11 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_column_physics_type", config_column_physics_type)
 
     if (config_use_column_package .and. config_use_column_shortwave .and. .not. config_do_restart) then
-#ifdef icepackON
        if (trim(config_column_physics_type) == "icepack") then
           call seaice_init_icepack_shortwave(domain, clock)
        else if (trim(config_column_physics_type) == "column_package") then
-#endif
           call seaice_init_column_shortwave(domain, clock)
-#ifdef icepackON
        endif ! config_column_physics_type
-#endif
     endif
 
   end subroutine seaice_init_post_clock_advance
