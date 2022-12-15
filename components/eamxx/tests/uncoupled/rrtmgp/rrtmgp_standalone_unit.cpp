@@ -97,8 +97,12 @@ namespace scream {
         const auto& field_mgr = *ad.get_field_mgr(grid->name());
         int ncol  = grid->get_num_local_dofs();
         int nlay  = grid->get_num_vertical_levels();
-        auto& lat = grid->get_geometry_data("lat");
-        auto& lon = grid->get_geometry_data("lon");
+
+        // In this test, we need to hack lat/lon. But the fields we get
+        // from the grid are read-only. Therefore, hack a bit, and cast
+        // away constness. It's bad, but it's only for this unit test
+        auto lat = grid->get_geometry_data_nonconst("lat").get_view<Real*>();
+        auto lon = grid->get_geometry_data_nonconst("lon").get_view<Real*>();
 
         // Get number of shortwave bands and number of gases from RRTMGP
         int ngas     =   8;  // TODO: get this intelligently

@@ -203,40 +203,6 @@ void AtmosphereDriver::create_grids()
   // Each process will grab what they need
   m_atm_process_group->set_grids(m_grids_manager);
 
-  // Load reference/surface pressure fractions if needed. This
-  // is done inside dynamics, however, for standalone runs
-  // without dynamics, these values could be needed.
-  auto& ic_pl = m_atm_params.sublist("initial_conditions");
-  const bool load_hybrid_coeffs = ic_pl.get<bool>("Load Hybrid Coefficients",false);
-  if (load_hybrid_coeffs) {
-    using view_1d_host = AtmosphereInput::view_1d_host;
-    using vos_t = std::vector<std::string>;
-    using namespace ShortFieldTagsNames;
-
-    auto phys_grid = m_grids_manager->get_grid("Physics");
-    const auto nlev = phys_grid->get_num_vertical_levels();
-
-    // Read vcoords into host views
-    ekat::ParameterList vcoord_reader_pl;
-    vcoord_reader_pl.set("Filename",ic_pl.get<std::string>("Filename"));
-    vcoord_reader_pl.set<vos_t>("Field Names",{"hyam","hybm"});
-    std::map<std::string,view_1d_host> host_views = {
-      { "hyam", view_1d_host("hyam",nlev) },
-      { "hybm", view_1d_host("hybm",nlev) }
-    };
-    std::map<std::string,FieldLayout> layouts = {
-      { "hyam", FieldLayout({LEV}, {nlev}) },
-      { "hybm", FieldLayout({LEV}, {nlev}) }
-    };
-
-    AtmosphereInput vcoord_reader(vcoord_reader_pl, phys_grid, host_views, layouts);
-    vcoord_reader.read_variables();
-    vcoord_reader.finalize();
-
-    Kokkos::deep_copy(phys_grid->get_geometry_data("hyam"), host_views["hyam"]);
-    Kokkos::deep_copy(phys_grid->get_geometry_data("hybm"), host_views["hybm"]);
-  }
-
   m_ad_status |= s_grids_created;
 
   stop_timer("EAMxx::create_grids");
@@ -684,50 +650,6 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
     restart_model ();
   } else {
     set_initial_conditions ();
-  }
-
-  // Check if lat/lon needs to be loaded
-  // Check whether we need to load latitude/longitude of physics grid dofs.
-  // This option allows the user to set lat or lon in their own
-  // test or run setup code rather than by file.
-  auto& ic_pl = m_atm_params.sublist("initial_conditions");
-  bool load_latitude  = ic_pl.get<bool>("Load Latitude",false);
-  bool load_longitude = ic_pl.get<bool>("Load Longitude",false);
-
-  if (load_longitude || load_latitude) {
-    using namespace ShortFieldTagsNames;
-    using view_d = AbstractGrid::geo_view_type;
-    using view_h = view_d::HostMirror;
-    auto grid = m_grids_manager->get_grid("Physics");
-    auto layout = grid->get_2d_scalar_layout();
-
-    std::vector<std::string> fnames;
-    std::map<std::string,FieldLayout> layouts;
-    std::map<std::string,view_h> host_views;
-    std::map<std::string,view_d> dev_views;
-    if (load_latitude) {
-      dev_views["lat"] = grid->get_geometry_data("lat");
-      host_views["lat"] = Kokkos::create_mirror_view(dev_views["lat"]);
-      layouts.emplace("lat",layout);
-      fnames.push_back("lat");
-    }
-    if (load_longitude) {
-      dev_views["lon"] = grid->get_geometry_data("lon");
-      host_views["lon"] = Kokkos::create_mirror_view(dev_views["lon"]);
-      layouts.emplace("lon",layout);
-      fnames.push_back("lon");
-    }
-
-    ekat::ParameterList lat_lon_params;
-    lat_lon_params.set("Field Names",fnames);
-    lat_lon_params.set("Filename",ic_pl.get<std::string>("Filename"));
-
-    AtmosphereInput lat_lon_reader(lat_lon_params,grid,host_views,layouts);
-    lat_lon_reader.read_variables();
-    lat_lon_reader.finalize();
-    for (auto& fname : fnames) {
-      Kokkos::deep_copy(dev_views[fname],host_views[fname]);
-    }
   }
 
 #ifdef SCREAM_HAS_MEMORY_USAGE
@@ -1434,7 +1356,7 @@ void AtmosphereDriver::report_res_dep_memory_footprint () const {
 
     my_dev_mem_usage += sizeof(AbstractGrid::gid_type)*nldofs;
 
-    my_dev_mem_usage += sizeof(int)*nldofs*grid->get_lid_to_idx_map().extent(1);
+    my_dev_mem_usage += sizeof(int)*grid->get_lid_to_idx_map().get_header().get_identifier().get_layout().size();
 
     const auto& geo_names = grid->get_geometry_data_names();
     my_dev_mem_usage += sizeof(Real)*geo_names.size()*nldofs;

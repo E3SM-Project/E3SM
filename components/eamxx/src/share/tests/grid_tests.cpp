@@ -38,12 +38,10 @@ TEST_CASE("point_grid", "") {
   const auto min_gid = grid->get_global_min_dof_gid();
   REQUIRE( (max_gid-min_gid+1)==grid->get_num_global_dofs() );
 
-  auto lid_to_idx = grid->get_lid_to_idx_map();
-  auto host_lid_to_idx = Kokkos::create_mirror_view(lid_to_idx);
-  Kokkos::deep_copy(host_lid_to_idx, lid_to_idx);
+  auto lid_to_idx = grid->get_lid_to_idx_map().get_view<int**,Host>();
   for (int i = 0; i < grid->get_num_local_dofs(); ++i) {
-    REQUIRE(host_lid_to_idx.extent_int(1) == 1);
-    REQUIRE(i == host_lid_to_idx(i, 0));
+    REQUIRE(lid_to_idx.extent_int(1) == 1);
+    REQUIRE(i == lid_to_idx(i, 0));
   }
 
   auto layout = grid->get_2d_scalar_layout();
@@ -53,10 +51,15 @@ TEST_CASE("point_grid", "") {
   auto shallow_copy = grid->clone("shallow",true);
   auto deep_copy    = grid->clone("deep",false);
 
-  REQUIRE (shallow_copy->get_dofs_gids().data()==grid->get_dofs_gids().data());
-  REQUIRE (deep_copy->get_dofs_gids().data()!=grid->get_dofs_gids().data());
+  using gid_type = AbstractGrid::gid_type;
+
+  auto grid_gids = grid->get_dofs_gids().get_view<const gid_type*,Host>();
+  auto scopy_gids = shallow_copy->get_dofs_gids().get_view<const gid_type*,Host>();
+  auto dcopy_gids = deep_copy->get_dofs_gids().get_view<const gid_type*,Host>();
+  REQUIRE (scopy_gids.data()==grid_gids.data());
+  REQUIRE (dcopy_gids.data()!=grid_gids.data());
   for (int i=0; i<grid->get_num_local_dofs(); ++i) {
-    REQUIRE (deep_copy->get_dofs_gids_host()[i]==grid->get_dofs_gids_host()[i]);
+    REQUIRE (dcopy_gids[i]==grid_gids[i]);
   }
 
   shallow_copy->reset_num_vertical_lev(4);
@@ -119,27 +122,23 @@ TEST_CASE ("get_owners") {
   auto grid = std::make_shared<PointGrid>("grid",num_local_dofs,2,comm);
 
   // Create dofs, shuffled them around across ranks.
-  using dofs_dev_t = AbstractGrid::dofs_list_type;
-  using dofs_host_t = AbstractGrid::dofs_list_h_type;
   using gid_t = AbstractGrid::gid_type;
 
-  dofs_host_t all_dofs_h ("",num_global_dofs);
+  std::vector<gid_t> all_dofs (num_global_dofs);
   if (comm.am_i_root()) {
-    std::iota(all_dofs_h.data(),all_dofs_h.data()+all_dofs_h.size(),0);
-    std::shuffle(all_dofs_h.data(),all_dofs_h.data()+num_global_dofs,engine);
+    std::iota(all_dofs.data(),all_dofs.data()+all_dofs.size(),0);
+    std::shuffle(all_dofs.data(),all_dofs.data()+num_global_dofs,engine);
   }
-  comm.broadcast(all_dofs_h.data(),num_global_dofs,comm.root_rank());
+  comm.broadcast(all_dofs.data(),num_global_dofs,comm.root_rank());
 
-  dofs_dev_t dofs_d ("",num_local_dofs);
-  auto dofs_h = Kokkos::create_mirror_view(dofs_d);
-  std::memcpy (dofs_h.data(),all_dofs_h.data()+offset,num_local_dofs*sizeof(gid_t));
-  Kokkos::deep_copy(dofs_d,dofs_h);
-
-  grid->set_dofs(dofs_d);
+  auto dofs = grid->get_dofs_gids();
+  auto dofs_h = dofs.get_view<gid_t*,Host>();
+  std::memcpy (dofs_h.data(),all_dofs.data()+offset,num_local_dofs*sizeof(gid_t));
+  dofs.sync_to_dev();
 
   // Now, ask each rank to retrieve owners, and verify
-  auto dofs_owners = grid->get_owners(all_dofs_h);
-  REQUIRE (dofs_owners.size()==all_dofs_h.size());
+  auto dofs_owners = grid->get_owners(all_dofs);
+  REQUIRE (dofs_owners.size()==all_dofs.size());
 
   for (int i=0; i<num_global_dofs; ++i) {
     const int pid = dofs_owners[i];

@@ -250,13 +250,16 @@ int scream_get_num_global_cols () {
 
 // Return the global ids of all physics column
 void scream_get_local_cols_gids (void* const ptr) {
+  using namespace scream;
+  using gid_t = AbstractGrid::gid_type;
   fpe_guard_wrapper([&]() {
     auto gids_f = reinterpret_cast<int* const>(ptr);
     const auto& ad = get_ad();
     const auto& phys_grid = ad.get_grids_manager()->get_grid("Physics");
 
-    auto gids_h = Kokkos::create_mirror_view(phys_grid->get_dofs_gids());
-    Kokkos::deep_copy(gids_h,phys_grid->get_dofs_gids());
+    auto gids = phys_grid->get_dofs_gids();
+    gids.sync_to_host();
+    auto gids_h = gids.get_view<const gid_t*,Host>();
 
     for (int i=0; i<gids_h.extent_int(0); ++i) {
       gids_f[i] = gids_h(i);
@@ -266,13 +269,14 @@ void scream_get_local_cols_gids (void* const ptr) {
 
 // Retrieve the lat/lon coords of all physics FV dofs
 void scream_get_cols_latlon (double* const& lat_ptr, double* const& lon_ptr) {
+  using namespace scream;
   fpe_guard_wrapper([&]() {
     const auto& ad = get_ad();
     const auto& phys_grid = ad.get_grids_manager()->get_grid("Physics");
     const auto ncols = phys_grid->get_num_local_dofs();
 
-    auto lat_cxx = phys_grid->get_geometry_data("lat");
-    auto lon_cxx = phys_grid->get_geometry_data("lon");
+    auto lat_cxx = phys_grid->get_geometry_data("lat").get_view<const Real*, Host>();
+    auto lon_cxx = phys_grid->get_geometry_data("lon").get_view<const Real*, Host>();
 
     using geo_view_f90 = ekat::Unmanaged<decltype(lat_cxx)::HostMirror>;
     geo_view_f90 lat_f90(lat_ptr, ncols);
@@ -284,12 +288,13 @@ void scream_get_cols_latlon (double* const& lat_ptr, double* const& lon_ptr) {
 
 // Retrieve the area of all physics FV dofs
 void scream_get_cols_area (double* const& area_ptr) {
+  using namespace scream;
   fpe_guard_wrapper([&]() {
     const auto& ad = get_ad();
     const auto& phys_grid = ad.get_grids_manager()->get_grid("Physics");
     const auto ncols = phys_grid->get_num_local_dofs();
 
-    auto area_cxx = phys_grid->get_geometry_data("area");
+    auto area_cxx = phys_grid->get_geometry_data("area").get_view<const Real*, Host>();
 
     using geo_view_f90 = ekat::Unmanaged<decltype(area_cxx)::HostMirror>;
     geo_view_f90  area_f90 (area_ptr, ncols);

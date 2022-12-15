@@ -548,8 +548,8 @@ protected:
   Int m_num_tracers;
   Int hdtime;
 
-  KokkosTypes<DefaultDevice>::view_1d<Real> m_cell_area;
-  KokkosTypes<DefaultDevice>::view_1d<Real> m_cell_lat;
+  KokkosTypes<DefaultDevice>::view_1d<const Real> m_cell_area;
+  KokkosTypes<DefaultDevice>::view_1d<const Real> m_cell_lat;
 
   // Struct which contains local variables
   Buffer m_buffer;

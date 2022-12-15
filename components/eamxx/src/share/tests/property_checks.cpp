@@ -51,6 +51,7 @@ TEST_CASE("property_checks", "") {
   using namespace scream;
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
+  using gid_type = AbstractGrid::gid_type;
 
   auto engine = setup_random_test();
   using RPDF = std::uniform_real_distribution<Real>;
@@ -63,25 +64,21 @@ TEST_CASE("property_checks", "") {
   const int nlevs = 12;
 
   // Create a point grid
-  std::shared_ptr<AbstractGrid> grid;
-  grid = std::make_shared<PointGrid>("some_grid",num_lcols,nlevs,comm);
-  AbstractGrid::dofs_list_type dofs("dogs",grid->get_num_local_dofs());
-  AbstractGrid::geo_view_type lat("lat",grid->get_num_local_dofs());
-  AbstractGrid::geo_view_type lon("lon",grid->get_num_local_dofs());
-  auto lat_h = Kokkos::create_mirror_view(lat);
-  auto lon_h = Kokkos::create_mirror_view(lon);
-  auto dofs_h = Kokkos::create_mirror_view(dofs);
+  const auto grid = create_point_grid("some_grid",num_lcols*comm.size(),nlevs,comm);
+  const auto layout = grid->get_2d_scalar_layout();
+  const auto units = ekat::units::Units::nondimensional();
+  const auto& lat = grid->create_geometry_data("lat",layout,units);
+  const auto& lon = grid->create_geometry_data("lon",layout,units);
+  auto lat_h = lat.get_view<Real*,Host>();
+  auto lon_h = lon.get_view<Real*,Host>();
+  auto dofs = grid->get_dofs_gids();
+  auto dofs_h = dofs.get_view<gid_type*,Host>();
   for (int i=0; i<grid->get_num_local_dofs(); ++i) {
-    dofs_h(i) = num_lcols*comm.rank() + i;
     lat_h(i) = i;
     lon_h(i) = -i;
   }
-  Kokkos::deep_copy(dofs,dofs_h);
-  Kokkos::deep_copy(lat,lat_h);
-  Kokkos::deep_copy(lon,lon_h);
-  grid->set_dofs(dofs);
-  grid->set_geometry_data("lat",lat);
-  grid->set_geometry_data("lon",lon);
+  lat.sync_to_dev();
+  lon.sync_to_dev();
 
   // Create a field
   std::vector<FieldTag> tags = {COL, CMP, LEV};

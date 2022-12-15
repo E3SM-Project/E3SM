@@ -572,6 +572,7 @@ AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
   //       the same order as the corresponding entry in the data to be read/written, we're good.
   // NOTE: In the case of regional output this rank may have 0 columns to write, thus, var_dof
   //       should be empty, we check for this special case and return an empty var_dof.
+  auto dofs_h = m_io_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
   if (layout.has_tag(ShortFieldTagsNames::COL)) {
     const int num_cols = m_io_grid->get_num_local_dofs();
     if (num_cols==0) {
@@ -581,10 +582,6 @@ AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
     scorpio::offset_t col_size = layout.size() / num_cols;
-
-    auto dofs = m_io_grid->get_dofs_gids();
-    auto dofs_h = Kokkos::create_mirror_view(dofs);
-    Kokkos::deep_copy(dofs_h,dofs);
 
     // Precompute this *before* the loop, since it involves expensive collectives.
     // Besides, the loop might have different length on different ranks, so
@@ -612,10 +609,6 @@ AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
     scorpio::offset_t col_size = layout.size() / num_cols;
-
-    auto dofs = m_io_grid->get_dofs_gids();
-    auto dofs_h = Kokkos::create_mirror_view(dofs);
-    Kokkos::deep_copy(dofs_h,dofs);
 
     // Precompute this *before* the loop, since it involves expensive collectives.
     // Besides, the loop might have different length on different ranks, so

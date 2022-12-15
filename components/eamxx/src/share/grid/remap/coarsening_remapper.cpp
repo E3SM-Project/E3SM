@@ -35,10 +35,10 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   auto my_gids = get_my_triplets_gids (map_file,src_grid);
   auto io_grid = std::make_shared<PointGrid>("",my_gids.size(),0,m_comm);
 
-  view_1d<gid_t> gids_d("",gids_h.size());
-  auto gids_h = Kokkos::create_mirror_view(gids_d);
-  std::memcpy(gids_h.data(),my_gids.data(),my_gids.size()*sizeof(gid_t));
-  io_grid->set_dofs(gids_d);
+  auto dofs_gids = io_grid->get_dofs_gids();
+  auto dofs_gids_h = dofs_gids.get_view<gid_t*,Host>();
+  std::memcpy(dofs_gids_h.data(),my_gids.data(),my_gids.size()*sizeof(gid_t));
+  dofs_gids.sync_to_dev();
 
   // Create CRS matrix views
 
@@ -51,7 +51,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   // scream's gids are of type int, while scorpio wants long int as offsets.
   std::vector<scorpio::offset_t> dofs_offsets(nlweights);
   for (int i=0; i<nlweights; ++i) {
-    dofs_offsets[i] = gids_h[i];
+    dofs_offsets[i] = dofs_gids_h[i];
   }
   const std::string idx_decomp_tag = "coarsening_remapper::constructor_int_nnz" + std::to_string(nlweights);
   const std::string val_decomp_tag = "coarsening_remapper::constructor_real_nnz" + std::to_string(nlweights);
@@ -96,16 +96,14 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
     ov_tgt_gids.insert(row_gids_h[i]-1);
   }
   const int num_ov_tgt_gids = ov_tgt_gids.size();
-  view_1d<int> ov_tgt_gids_d("",num_ov_tgt_gids);
-  auto ov_tgt_gids_h = Kokkos::create_mirror_view(ov_tgt_gids_d);
+  auto ov_tgt_grid = std::make_shared<PointGrid>("ov_tgt_grid",num_ov_tgt_gids,0,m_comm);
+  auto ov_tgt_gids_h = ov_tgt_grid->get_dofs_gids().get_view<gid_t*,Host>();
   auto it = ov_tgt_gids.begin();
   for (int i=0; i<num_ov_tgt_gids; ++i, ++it) {
     ov_tgt_gids_h[i] = *it;
   }
-  Kokkos::deep_copy(ov_tgt_gids_d,ov_tgt_gids_h);
+  ov_tgt_grid->get_dofs_gids().sync_to_dev();
 
-  auto ov_tgt_grid = std::make_shared<PointGrid>("ov_tgt_grid",num_ov_tgt_gids,0,m_comm);
-  ov_tgt_grid->set_dofs(ov_tgt_gids_d);
   m_ov_tgt_grid = ov_tgt_grid;
   const int num_ov_row_gids = m_ov_tgt_grid->get_num_local_dofs();
 
@@ -158,13 +156,43 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
 
   auto tgt_grid = std::make_shared<PointGrid>("tgt_grid",ngids,nlevs,m_comm);
 
-  view_1d<gid_t> tgt_grid_gids_d("",ngids);
-  auto tgt_grid_gids_h = Kokkos::create_mirror_view(tgt_grid_gids_d);
+  auto tgt_grid_gids_h = tgt_grid->get_dofs_gids().get_view<gid_t*,Host>();
   std::memcpy(tgt_grid_gids_h.data(),tgt_grid_gids.data(),ngids*sizeof(gid_t));
-  Kokkos::deep_copy(tgt_grid_gids_d,tgt_grid_gids_h);
-  tgt_grid->set_dofs(tgt_grid_gids_d);
+  tgt_grid->get_dofs_gids().sync_to_dev();
 
   this->set_grids(src_grid,tgt_grid);
+
+  // Replicate the src grid geo data in the tgt grid. We use this remapper to do
+  // the remapping (if needed), and clean it up afterwards.
+  const auto& src_geo_data_names = src_grid->get_geometry_data_names();
+  registration_begins();
+  for (const auto& name : src_geo_data_names) {
+    const auto& src_data = src_grid->get_geometry_data(name);
+    const auto& src_data_fid = src_data.get_header().get_identifier();
+    const auto& layout = src_data_fid.get_layout();
+    if (layout.tags()[0]!=COL) {
+      // Not a field to be coarsened (perhaps a vertical coordinate field).
+      // Simply copy it in the tgt grid
+      auto tgt_data = tgt_grid->create_geometry_data(src_data_fid);
+      tgt_data.deep_copy(src_data);
+    } else {
+      // This field needs to be remapped
+      auto tgt_data_fid = create_tgt_fid(src_data_fid);
+      auto tgt_data = tgt_grid->create_geometry_data(tgt_data_fid);
+      register_field(src_data,tgt_data);
+    }
+  }
+  registration_ends();
+  if (get_num_fields()>0) {
+    remap(true);
+
+    // The remap phase only alters the fields on device. We need to sync them to host as well
+    for (int i=0; i<get_num_fields(); ++i) {
+      auto tgt_data = get_tgt_field(i);
+      tgt_data.sync_to_host();
+    }
+  }
+  clean_up();
 }
 
 CoarseningRemapper::
@@ -871,7 +899,7 @@ void CoarseningRemapper::setup_mpi_data_structures ()
 
   // 1. Retrieve pid (and associated lid) of all ov_tgt gids
   //    on the tgt grid
-  const auto ov_gids = m_ov_tgt_grid->get_dofs_gids_host();
+  const auto ov_gids = m_ov_tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
   auto gids_owners = m_tgt_grid->get_owners (ov_gids);
 
   // 2. Group dofs to send by remote pid
@@ -969,9 +997,10 @@ void CoarseningRemapper::setup_mpi_data_structures ()
   auto recv_lids_beg_h  = Kokkos::create_mirror_view(m_recv_lids_beg);
   auto recv_lids_end_h  = Kokkos::create_mirror_view(m_recv_lids_end);
 
+  auto tgt_dofs_h = m_tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
   for (int i=0,pos=0; i<num_tgt_dofs; ++i) {
     recv_lids_beg_h(i) = pos;
-    const int gid = m_tgt_grid->get_dofs_gids_host()[i];
+    const int gid = tgt_dofs_h[i];
     for (auto pid : lid2pids_recv[i]) {
       auto it = std::find(pid2gids_recv.at(pid).begin(),pid2gids_recv.at(pid).end(),gid);
       EKAT_REQUIRE_MSG (it!=pid2gids_recv.at(pid).end(),
@@ -1033,6 +1062,36 @@ void CoarseningRemapper::setup_mpi_data_structures ()
     MPI_Recv_init (recv_ptr, n, mpi_real, pid,
                    0, mpi_comm, &req);
   }
+}
+
+void CoarseningRemapper::clean_up ()
+{
+  // Clear all MPI related structures
+  m_send_buffer         = view_1d<Real>();
+  m_recv_buffer         = view_1d<Real>();
+  m_mpi_send_buffer     = mpi_view_1d<Real>();
+  m_mpi_recv_buffer     = mpi_view_1d<Real>();
+  m_send_f_pid_offsets  = view_2d<int>();
+  m_recv_f_pid_offsets  = view_2d<int>();
+  m_send_lids_pids      = view_2d<int>();
+  m_send_pid_lids_start = view_1d<int>();
+  m_recv_lids_pidpos    = view_2d<int>();
+  m_recv_lids_beg       = view_1d<int>();
+  m_recv_lids_end       = view_1d<int>();
+  m_send_req.clear();
+  m_recv_req.clear();
+
+  // Clear all fields
+  m_src_fields.clear();
+  m_tgt_fields.clear();
+  m_ov_tgt_fields.clear();
+
+  // Reset the state of the base class
+  m_state = RepoState::Clean;
+  m_num_fields = 0;
+  m_num_registered_fields = 0;
+  m_fields_are_bound.clear();
+  m_num_bound_fields = 0;
 }
 
 } // namespace scream

@@ -39,6 +39,8 @@ protected:
   do_create_remapper (const grid_ptr_type from_grid,
                       const grid_ptr_type to_grid) const;
 
+  void load_lat_lon (const nonconstgrid_ptr_type& grid) const;
+  void load_vertical_coordinates (const nonconstgrid_ptr_type& grid) const;
   remap_repo_type     m_remappers;
 
   ekat::ParameterList m_params;

@@ -3,12 +3,19 @@
 #include "dynamics/homme/physics_dynamics_remapper.hpp"
 #include "dynamics/homme/homme_dynamics_helpers.hpp"
 
+#ifndef NDEBUG
+#include "share/property_checks/field_nan_check.hpp"
+#include "share/property_checks/field_lower_bound_check.hpp"
+#endif
+
+#include "share/io/scorpio_input.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/grid/remap/inverse_remapper.hpp"
 
-// Get all Homme's compile-time dims
+// Get all Homme's compile-time dims and constants
 #include "homme_dimensions.hpp"
+#include "PhysicalConstants.hpp"
 
 #include "ekat/std_meta/ekat_std_utils.hpp"
 
@@ -101,7 +108,7 @@ build_grids ()
   auto it = std::unique(pg_codes.begin(),pg_codes.end());
   const int* codes_ptr = pg_codes.data();
   init_grids_f90 (codes_ptr,std::distance(pg_codes.begin(),it));
-  
+
   // We know we need the dyn grid, so build it
   build_dynamics_grid ();
 
@@ -129,6 +136,8 @@ void HommeGridsManager::build_dynamics_grid () {
     return;
   }
 
+  using gid_t = AbstractGrid::gid_type;
+
   // Get dimensions and create "empty" grid
   const int nlelem = get_num_local_elems_f90();
   const int nlev   = get_nlev_f90();
@@ -136,47 +145,45 @@ void HommeGridsManager::build_dynamics_grid () {
   auto dyn_grid = std::make_shared<SEGrid>("Dynamics",nlelem,HOMMEXX_NP,nlev,m_comm);
   dyn_grid->setSelfPointer(dyn_grid);
 
-  const int ndofs = nlelem*HOMMEXX_NP*HOMMEXX_NP;
+  const auto layout2d = dyn_grid->get_2d_scalar_layout();
+  const auto rad = ekat::units::Units::nondimensional();
 
-  // Create the gids, elgpgp, coords, area views
-  AbstractGrid::dofs_list_type      dg_dofs("dyn dofs",ndofs);
-  AbstractGrid::dofs_list_type      cg_dofs("dyn dofs",ndofs);
-  AbstractGrid::lid_to_idx_map_type elgpgp("dof idx",ndofs,3);
-  AbstractGrid::geo_view_type       lat("lat",ndofs);
-  AbstractGrid::geo_view_type       lon("lon",ndofs);
-  auto h_cg_dofs   = Kokkos::create_mirror_view(cg_dofs);
-  auto h_dg_dofs   = Kokkos::create_mirror_view(dg_dofs);
-  auto h_elgpgp = Kokkos::create_mirror_view(elgpgp);
-  auto h_lat    = Kokkos::create_mirror_view(lat);
-  auto h_lon    = Kokkos::create_mirror_view(lon);
+  // Filling the cg/dg gids, elgpgp, coords, lat/lon views
+  auto dg_dofs = dyn_grid->get_dofs_gids();
+  auto cg_dofs = dyn_grid->get_cg_dofs_gids();
+  auto elgpgp  = dyn_grid->get_lid_to_idx_map();
+  auto lat     = dyn_grid->create_geometry_data("lat",layout2d,rad);
+  auto lon     = dyn_grid->create_geometry_data("lon",layout2d,rad);
+
+  auto dg_dofs_h = dg_dofs.get_view<gid_t*,Host>();
+  auto cg_dofs_h = cg_dofs.get_view<gid_t*,Host>();
+  auto elgpgp_h  = elgpgp.get_view<int**,Host>();
+  auto lat_h     = lat.get_view<Real***,Host>();
+  auto lon_h     = lon.get_view<Real***,Host>();
 
   // Get (ie,igp,jgp,gid) data for each dof
-  get_dyn_grid_data_f90 (h_dg_dofs.data(),h_cg_dofs.data(),h_elgpgp.data(), h_lat.data(), h_lon.data());
+  get_dyn_grid_data_f90 (dg_dofs_h.data(),cg_dofs_h.data(),elgpgp_h.data(), lat_h.data(), lon_h.data());
 
-  Kokkos::deep_copy(dg_dofs,h_dg_dofs);
-  Kokkos::deep_copy(cg_dofs,h_cg_dofs);
-  Kokkos::deep_copy(elgpgp,h_elgpgp);
-  Kokkos::deep_copy(lat,h_lat);
-  Kokkos::deep_copy(lon,h_lon);
+  dg_dofs.sync_to_dev();
+  cg_dofs.sync_to_dev();
+  elgpgp.sync_to_dev();
+  lat.sync_to_dev();
+  lon.sync_to_dev();
 
 #ifndef NDEBUG
-  // Check that latitude and longitude are valid
-  using KT = KokkosTypes<DefaultDevice>;
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ndofs,nlev);
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
-    const Int i = team.league_rank();
-
-    EKAT_KERNEL_ASSERT_MSG(!ekat::impl::is_nan(lat(i)), "Error! NaN values detected for latitude.");
-    EKAT_KERNEL_ASSERT_MSG(!ekat::impl::is_nan(lon(i)), "Error! NaN values detected for longitude.");
-  });
+  auto lat_check = std::make_shared<FieldNaNCheck>(lat,dyn_grid)->check();
+  EKAT_REQUIRE_MSG (lat_check.result==CheckResult::Pass,
+      "ERROR! NaN values detected in latitude field.\n" + lat_check.msg);
+  auto lon_check = std::make_shared<FieldNaNCheck>(lon,dyn_grid)->check();
+  EKAT_REQUIRE_MSG (lon_check.result==CheckResult::Pass,
+      "ERROR! NaN values detected in longitude field.\n" + lon_check.msg);
 #endif
 
-  // Set dofs and geo data in the grid
-  dyn_grid->set_dofs (dg_dofs);
-  dyn_grid->set_cg_dofs (cg_dofs);
-  dyn_grid->set_lid_to_idx_map(elgpgp);
-  dyn_grid->set_geometry_data ("lat", lat);
-  dyn_grid->set_geometry_data ("lon", lon);
+  if (m_params.isParameter("vertical_coordinate_filename")) {
+    // Read vertical coordinates, store in geometry data,
+    // and set in hommexx's structures.
+    initialize_vertical_coordinates(dyn_grid);
+  }
 
   add_grid(dyn_grid);
 }
@@ -204,52 +211,117 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   phys_grid->setSelfPointer(phys_grid);
 
   // Create the gids, coords, area views
-  AbstractGrid::dofs_list_type dofs("phys dofs",nlcols);
-  AbstractGrid::geo_view_type  lat("lat",nlcols);
-  AbstractGrid::geo_view_type  lon("lon",nlcols);
-  AbstractGrid::geo_view_type  area("area",nlcols);
-  AbstractGrid::geo_view_type  hyam("hyam",nlev);
-  AbstractGrid::geo_view_type  hybm("hybm",nlev);
-  auto h_dofs = Kokkos::create_mirror_view(dofs);
-  auto h_lat  = Kokkos::create_mirror_view(lat);
-  auto h_lon  = Kokkos::create_mirror_view(lon);
-  auto h_area = Kokkos::create_mirror_view(area);
+  using namespace ShortFieldTagsNames;
+  const auto layout2d = phys_grid->get_2d_scalar_layout();
+  const auto rad = ekat::units::Units::nondimensional();
 
-  // For the following, set to NaN. They will need to be grabbed
-  // from input files later.
-  Kokkos::deep_copy(hyam, std::nan(""));
-  Kokkos::deep_copy(hybm, std::nan(""));
+  auto dofs = phys_grid->get_dofs_gids();
+  auto lat  = phys_grid->create_geometry_data("lat",layout2d,rad);
+  auto lon  = phys_grid->create_geometry_data("lon",layout2d,rad);
+  auto area = phys_grid->create_geometry_data("area",layout2d,rad*rad);
+
+  using gid_t = AbstractGrid::gid_type;
+
+  auto dofs_h = dofs.get_view<gid_t*,Host>();
+  auto lat_h  = lat.get_view<Real*,Host>();
+  auto lon_h  = lon.get_view<Real*,Host>();
+  auto area_h = area.get_view<Real*,Host>();
 
   // Get all specs of phys grid cols (gids, coords, area)
-  get_phys_grid_data_f90 (pg_code, h_dofs.data(), h_lat.data(), h_lon.data(), h_area.data());
+  get_phys_grid_data_f90 (pg_code, dofs_h.data(), lat_h.data(), lon_h.data(), area_h.data());
 
-  Kokkos::deep_copy(dofs,h_dofs);
-  Kokkos::deep_copy(lat, h_lat);
-  Kokkos::deep_copy(lon, h_lon);
-  Kokkos::deep_copy(area,h_area);
-  
+  dofs.sync_to_dev();
+  lat.sync_to_dev();
+  lon.sync_to_dev();
+  area.sync_to_dev();
+
 #ifndef NDEBUG
-  // Check that latitude, longitude, and area are valid
-  using KT = KokkosTypes<DefaultDevice>;
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(nlcols,nlev);
-  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const KT::MemberType& team) {
-    const Int i = team.league_rank();
-
-    EKAT_KERNEL_ASSERT_MSG(!ekat::impl::is_nan(lat(i)),                   "Error! NaN values detected for latitude.");
-    EKAT_KERNEL_ASSERT_MSG(!ekat::impl::is_nan(lon(i)),                   "Error! NaN values detected for longitude.");
-    EKAT_KERNEL_ASSERT_MSG(area(i) >  0  && !ekat::impl::is_nan(area(i)), "Error! Non-positve or NaN values detected for area.");
-  });
+  auto lat_check = std::make_shared<FieldNaNCheck>(lat,phys_grid)->check();
+  EKAT_REQUIRE_MSG (lat_check.result==CheckResult::Pass,
+      "ERROR! NaN values detected in latitude field.\n" + lat_check.msg);
+  auto lon_check = std::make_shared<FieldNaNCheck>(lon,phys_grid)->check();
+  EKAT_REQUIRE_MSG (lon_check.result==CheckResult::Pass,
+      "ERROR! NaN values detected in longitude field.\n" + lon_check.msg);
+  auto area_check1 = std::make_shared<FieldNaNCheck>(area,phys_grid)->check();
+  EKAT_REQUIRE_MSG (area_check1.result==CheckResult::Pass,
+      "ERROR! NaN values detected in area field.\n" + area_check1.msg);
+  const auto eps = std::numeric_limits<Real>::epsilon();
+  auto area_check2 = std::make_shared<FieldLowerBoundCheck>(area,phys_grid,eps)->check();
+  EKAT_REQUIRE_MSG (area_check2.result==CheckResult::Pass,
+      "ERROR! NaN values detected in area field.\n" + area_check2.msg);
 #endif
 
-  // Set dofs and geo data in the grid
-  phys_grid->set_dofs(dofs);
-  phys_grid->set_geometry_data("lat",lat);
-  phys_grid->set_geometry_data("lon",lon);
-  phys_grid->set_geometry_data("area",area);
-  phys_grid->set_geometry_data("hyam",hyam);
-  phys_grid->set_geometry_data("hybm",hybm);
+  // If one of the hybrid vcoord arrays is there, they all are
+  if (get_grid("Dynamics")->has_geometry_data("hyam")) {
+    // Copy hybrid coords from dyn grid into phys grid
+    auto hyai = get_grid("Dynamics")->get_geometry_data("hyai");
+    auto hybi = get_grid("Dynamics")->get_geometry_data("hybi");
+    auto hyam = get_grid("Dynamics")->get_geometry_data("hyam");
+    auto hybm = get_grid("Dynamics")->get_geometry_data("hybm");
+    phys_grid->set_geometry_data(hyai);
+    phys_grid->set_geometry_data(hybi);
+    phys_grid->set_geometry_data(hyam);
+    phys_grid->set_geometry_data(hybm);
+  }
 
   add_grid(phys_grid);
+}
+
+void HommeGridsManager::initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
+  using view_1d_host = AtmosphereInput::view_1d_host; 
+  using vos_t = std::vector<std::string>;
+  using namespace ShortFieldTagsNames;
+
+  const int nlev_int = HOMMEXX_NUM_INTERFACE_LEV;
+  const int nlev_mid = HOMMEXX_NUM_PHYSICAL_LEV;
+
+  // Read vcoords into host views
+  ekat::ParameterList vcoord_reader_pl;
+  vcoord_reader_pl.set("Filename",m_params.get<std::string>("vertical_coordinate_filename"));
+  vcoord_reader_pl.set<vos_t>("Field Names",{"hyai","hybi","hyam","hybm"});
+
+  FieldLayout layout_mid ({ LEV},{nlev_mid});
+  FieldLayout layout_int ({ILEV},{nlev_int});
+  constexpr auto nondim = ekat::units::Units::nondimensional();
+
+  auto hyai = dyn_grid->create_geometry_data("hyai",layout_int,nondim);
+  auto hybi = dyn_grid->create_geometry_data("hybi",layout_int,nondim);
+  auto hyam = dyn_grid->create_geometry_data("hyam",layout_mid,nondim);
+  auto hybm = dyn_grid->create_geometry_data("hybm",layout_mid,nondim);
+
+  std::map<std::string,view_1d_host> host_views = {
+    { "hyai", hyai.get_view<Real*,Host>() },
+    { "hybi", hybi.get_view<Real*,Host>() },
+    { "hyam", hyam.get_view<Real*,Host>() },
+    { "hybm", hybm.get_view<Real*,Host>() }
+  };
+  std::map<std::string,FieldLayout> layouts = {
+    { "hyai", layout_int },
+    { "hybi", layout_int },
+    { "hyam", layout_mid },
+    { "hybm", layout_mid }
+  };
+
+  AtmosphereInput vcoord_reader(m_comm,vcoord_reader_pl);
+  vcoord_reader.init(dyn_grid,host_views,layouts);
+  vcoord_reader.read_variables();
+  vcoord_reader.finalize();
+
+  // Sync to device
+  hyai.sync_to_dev();
+  hybi.sync_to_dev();
+  hyam.sync_to_dev();
+  hybm.sync_to_dev();
+  
+  // Pass host views data to hvcoord init function
+  const auto ps0 = Homme::PhysicalConstants::p0;
+
+  // Set vcoords in f90
+  prim_set_hvcoords_f90 (ps0,
+                         host_views["hyai"].data(),
+                         host_views["hybi"].data(),
+                         host_views["hyam"].data(),
+                         host_views["hybm"].data());
 }
 
 void HommeGridsManager::
@@ -268,6 +340,6 @@ build_pg_codes () {
   m_pg_codes["GLL"]["Twin"] = 10;
   m_pg_codes["PG2"]["None"] =  2;
   m_pg_codes["PG2"]["Twin"] = 12;
-} 
+}
 
 } // namespace scream
