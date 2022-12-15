@@ -2853,7 +2853,7 @@ contains
        endif
        ! is this really needed here ?
        if ( atm_c2_ocn) then
-          call  prep_ocn_calc_a2x_ox_moab(timer='CPL:ocnpre1_atm2ocn_moab', infodata=infodata)
+          !call  prep_ocn_calc_a2x_ox_moab(timer='CPL:ocnpre1_atm2ocn_moab', infodata=infodata)
        endif
 
        !----------------------------------------------------------
@@ -4076,7 +4076,7 @@ contains
 
        ! will migrate the tag from component pes to coupler pes, on atm mesh
        call component_exch_moab(atm(1), mphaid, mbaxid, 0, seq_flds_a2x_fields)
-       call prep_atm_migrate_moab(infodata)
+       !call prep_atm_migrate_moab(infodata)
     endif
 
     !----------------------------------------------------------
