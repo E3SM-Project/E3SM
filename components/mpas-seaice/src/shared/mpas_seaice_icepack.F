@@ -9887,6 +9887,7 @@ contains
          config_use_snow_grain_radius
 
     logical :: &
+         use_snow, &
          use_meltponds, &
          use_nitrogen
 
@@ -9914,6 +9915,10 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_use_vertical_biochemistry", config_use_vertical_biochemistry)
     call MPAS_pool_get_config(domain % configs, "config_use_effective_snow_density", config_use_effective_snow_density)
     call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
+
+    use_snow = .false.
+    if (config_use_effective_snow_density .or. config_use_snow_grain_radius) &
+         use_snow = .true.
 
     use_nitrogen = .false.
     if (config_use_skeletal_biochemistry .or. config_use_vertical_biochemistry) &
@@ -10058,7 +10063,7 @@ contains
          tr_iage_in      = config_use_ice_age, &
          tr_FY_in        = config_use_first_year_ice, &
          tr_lvl_in       = config_use_level_ice, &
-         tr_snow_in      = config_use_effective_snow_density, &
+         tr_snow_in      = use_snow, &
          tr_pond_in      = use_meltponds, &
          !tr_pond_cesm_in = config_use_cesm_meltponds, & ! deprecated
          tr_pond_lvl_in  = config_use_level_meltponds, &
