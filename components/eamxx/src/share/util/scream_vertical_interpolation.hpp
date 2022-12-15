@@ -10,20 +10,23 @@
 namespace scream {
 namespace vinterp {
 
-/*This utility can perform vertical interpolation for a particular variable
- *(for instance a field) from src levels to target levels
- *The relevant function is perform_vertical_interpolation().
- *A user can decide to use the function without a masked value
- *in which case the default masked value (masked_val) will be used.
- *Also a user can decide to provide a view_2d mask which will be filled
- *based on whether each point is masked or not.
- *Masking occurs when a value is out-of-bounds (i.e. requires an 
- *extrapolation).
- *Most of the functions call assume you are providing a 2d view (or lambda)
- *for the src, and input, and a 1d view for the target.
- *There is a function, perform_vertical_interpolation_impl_1d which 
- *where what is provided is all 1d views (or lambdas). However, in this 
- *case the user must provide the team and ekat::LinInterp as input as well.
+/* This utility can perform vertical interpolation for a particular variable
+ * (for instance a field) from src levels to target levels
+ * The relevant function is perform_vertical_interpolation().
+ * A user can decide to use the function without a masked value
+ * in which case the default masked value (masked_val) will be used.
+ * Also a user can decide to provide a view_Nd mask which will be filled
+ * based on whether each point is masked or not.
+ * Masking occurs when a value is out-of-bounds (i.e. requires an 
+ * extrapolation).
+ * The main function assumes that the user is providing as input:
+ *   a 2D view for the source vertical levels to interpolate from
+ *   a 1D view for the target vertical levels to interpolate onto
+ *   a set of Nd views for the input data, output data and an optional mask
+ *     where Nd is a N-dimensional view of dimension 2-4.
+ * There is a function, perform_vertical_interpolation_impl_1d which 
+ * where what is provided is all 1d views (or lambdas). However, in this 
+ * case the user must provide the team and ekat::LinInterp as input as well.
  */
 
 // ------- Types --------
@@ -55,11 +58,11 @@ constexpr Real masked_val = -std::numeric_limits<Real>::max();
 
 //This is the generic function call where the user provides source levels, 
 //target levels, the input to interpolate, the output that has been interpolated,
-//a 2d-mask from the user which is filled based on what values
+//a Nd-mask from the user which is filled based on what values
 //should have a mask (i.e. are out-of-bounds and require an extrapolation),
 //the number of source and target levels,
 //and a mask value provided by the user (msk_val)
-//The 2d-mask should have the same dimensions as the output
+//The Nd-mask should have the same dimensions as the output
 template<typename T, int P, int N> 
 void perform_vertical_interpolation(
   const view_Nd<Pack<T,P>,2>& x_src,
@@ -99,8 +102,8 @@ void perform_vertical_interpolation(
 //This function call does not have a mask value provided by user
 //so uses the default masked value (masked_val) defined 
 //in the scream_vertical_interpolation.hpp file.
-//In addition, this function does not require a 2d mask from the user
-//so one is setup since this is what perform_vertical_interpolation_impl_2d
+//In addition, this function does not require a Nd mask from the user
+//so one is setup since this is what perform_vertical_interpolation_impl_Nd
 //requires  
 template<typename T, int P, int N> 
 void perform_vertical_interpolation(
@@ -169,6 +172,7 @@ void apply_interpolation(
   const view_Nd<      Pack<T,P>,4>& output,
   const view_Nd<        Mask<P>,4>& mask);
 
+// Helper function to allocate memory for an Nd mask on the fly.
 template<int P, int N>
 view_Nd<Mask<P>,N> allocate_mask(const std::vector<int>& extents);
 
