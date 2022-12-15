@@ -98,6 +98,7 @@ void NUDGING::initialize_impl (const RunType /* run_type */)
   AtmosphereInput data_input(m_comm,data_in_params);
   //data_input.init(m_grid,host_views,layouts);
   data_input.init(grid_l,host_views,layouts);
+  //This is where I read in time index
   data_input.read_variables(0);
   data_input.finalize();
 
@@ -112,18 +113,44 @@ void NUDGING::run_impl (const int dt)
   using namespace scream::vinterp;
   std::cout<<"I get in run_impl of atmosphere nudging"<<std::endl;
 
+  //auto ts = timestamp()+dt;
+  auto ts = timestamp();
+  std::cout<<"time_stamp year: "<<ts.get_year()<<std::endl;
+  std::cout<<"time_stamp month: "<<ts.get_month()<<std::endl;
+  std::cout<<"time_stamp day: "<<ts.get_day()<<std::endl;
+  std::cout<<"time_stamp hours: "<<ts.get_hours()<<std::endl;
+  std::cout<<"time_stamp minutes: "<<ts.get_minutes()<<std::endl;
+  std::cout<<"time_stamp seconds: "<<ts.get_seconds()<<std::endl;
+
+  
   //These are fields before modifications
   auto T_mid          = get_field_in("T_mid").get_view<Pack**>();
   const auto p_mid    = get_field_in("p_mid").get_view<Pack**>();
 
+  		       
+  for (int i=0; i<T_mid.extent(0); ++i) { 
+    for (int k=0; k<T_mid.extent(1); ++k) {
+      //T_mid(i,k)=T_mid_r_m(i,k);
+      std::cout<<"Before T_mid("<<i<<","<<k<<"): "<<T_mid(i,k)<<std::endl;
+    }
+  }
+  
+
+  
+  /*
+  auto ft = T_mid.get_header_ptr()->get_tracking();
+  auto pt = p_mid.get_header_ptr()->get_tracking();
+  auto ts = ft.get_time_stamp();
+  auto ts_p = pt.get_time_stamp();
+  ft.update_time_stamp(ts+dt);
+  pt.update_time_stamp(ts_p+dt);
+  */
+  
   //These are field values to be modified to
-  //auto T_mid_r_m = utput.get_view<Pack**>();
   view_2d<Pack> T_mid_r_m_out("T_mid_r_m_out",m_num_cols,m_num_levs);
 
   const view_2d<Pack> T_mid_r_m(reinterpret_cast<Pack*>(T_mid_r_v_g.data()),m_num_cols,m_num_src_levs); 
   const view_2d<Pack> p_mid_r_m(reinterpret_cast<Pack*>(p_mid_r_v_g.data()),m_num_cols,m_num_src_levs);
-  //T_mid_r_m =  view_2d<Pack>(reinterpret_cast<Pack*>(T_mid_r_v.data()),m_num_cols,m_num_src_levs);
-  //p_mid_r_m =  view_2d<Pack>(reinterpret_cast<Pack*>(p_mid_r_v.data()),m_num_cols,m_num_src_levs);
 
   perform_vertical_interpolation(p_mid_r_m,
                                  p_mid,
@@ -132,15 +159,34 @@ void NUDGING::run_impl (const int dt)
                                  m_num_src_levs,
                                  m_num_levs);
 
-  //Need to parallelize this
   std::cout<<"T_mid.extent(0): "<<T_mid.extent(0)<<std::endl;
   std::cout<<"T_mid.extent(1): "<<T_mid.extent(1)<<std::endl;
+  
+  const int num_cols = T_mid.extent(0);
+  const int num_vert_packs = T_mid.extent(1);
+  const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);
+  Kokkos::parallel_for("scream_vert_interp_setup_loop", policy,
+     	       KOKKOS_LAMBDA(MemberType const& team) {
+      const int icol = team.league_rank();
+      auto T_mid_1d = ekat::subview(T_mid,icol);
+      auto T_mid_r_m_1d = ekat::subview(T_mid_r_m,icol);
+      const auto range = Kokkos::TeamThreadRange(team, num_vert_packs);
+      Kokkos::parallel_for(range, [&] (const Int & k) {
+        T_mid_1d(k)=T_mid_r_m_1d(k);
+      });
+      team.team_barrier();
+  });
+  Kokkos::fence();   
+  
+
+  /*		       
   for (int i=0; i<T_mid.extent(0); ++i) { 
     for (int k=0; k<T_mid.extent(1); ++k) {
       T_mid(i,k)=T_mid_r_m(i,k);
       std::cout<<"T_mid("<<i<<","<<k<<"): "<<T_mid(i,k)<<std::endl;
     }
   }
+  */
 
 }
 
