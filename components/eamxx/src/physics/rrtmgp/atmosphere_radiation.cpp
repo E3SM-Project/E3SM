@@ -719,49 +719,50 @@ void RRTMGPRadiation::run_impl (const int dt) {
     // If we *are* doing subcolumn sampling for MCICA, then keep cloud fraction as input
     // from cloud fraction parameterization, wherever that is computed.
     auto do_subcol_sampling = m_do_subcol_sampling;
-    if (not do_subcol_sampling) {
-      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
-      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-        const int i = team.league_rank();
-        const int icol = i + beg;
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
-          if (d_cldfrac_tot(icol,k) > 0) {
-            cldfrac_tot(i+1,k+1) = 1;
-          } else {
-            cldfrac_tot(i+1,k+1) = 0;
-          }
-        });
-      });
-    } else {
-      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
-      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-        const int i = team.league_rank();
-        const int icol = i + beg;
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
-          cldfrac_tot(i+1,k+1) = d_cldfrac_tot(icol,k);
-        });
-      });
-    }
-    Kokkos::fence();
-
-    // Compute layer cloud mass (per unit area)
     auto lwp = m_buffer.lwp;
     auto iwp = m_buffer.iwp;
-    scream::rrtmgp::mixing_ratio_to_cloud_mass(qc, cldfrac_tot, p_del, lwp);
-    scream::rrtmgp::mixing_ratio_to_cloud_mass(qi, cldfrac_tot, p_del, iwp);
-    // Convert to g/m2 (needed by RRTMGP)
-    {
-    const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
-    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-      const int i = team.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
-        // Note that for YAKL arrays i and k start with index 1
-        lwp(i+1,k+1) *= 1e3;
-        iwp(i+1,k+1) *= 1e3;
+    if (update_rad) {
+      if (not do_subcol_sampling) {
+        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+          const int i = team.league_rank();
+          const int icol = i + beg;
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+            if (d_cldfrac_tot(icol,k) > 0) {
+              cldfrac_tot(i+1,k+1) = 1;
+            } else {
+              cldfrac_tot(i+1,k+1) = 0;
+            }
+          });
+        });
+      } else {
+        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+          const int i = team.league_rank();
+          const int icol = i + beg;
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+            cldfrac_tot(i+1,k+1) = d_cldfrac_tot(icol,k);
+          });
+        });
+      }
+      Kokkos::fence();
+      // Compute layer cloud mass (per unit area)
+      scream::rrtmgp::mixing_ratio_to_cloud_mass(qc, cldfrac_tot, p_del, lwp);
+      scream::rrtmgp::mixing_ratio_to_cloud_mass(qi, cldfrac_tot, p_del, iwp);
+      // Convert to g/m2 (needed by RRTMGP)
+      {
+      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+        const int i = team.league_rank();
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+          // Note that for YAKL arrays i and k start with index 1
+          lwp(i+1,k+1) *= 1e3;
+          iwp(i+1,k+1) *= 1e3;
+        });
       });
-    });
+      }
+      Kokkos::fence();
     }
-    Kokkos::fence();
 
     // Compute band-by-band surface_albedos. This is needed since
     // the AD passes broadband albedos, but rrtmgp require band-by-band.
