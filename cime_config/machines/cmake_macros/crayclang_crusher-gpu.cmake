@@ -1,9 +1,7 @@
 if (compile_threaded)
-  if (NOT COMP_NAME STREQUAL pio2)
-    string(APPEND CFLAGS " -fopenmp")
-    string(APPEND FFLAGS " -fopenmp")
-    string(APPEND CXXFLAGS " -fopenmp")
-  endif ()
+  string(APPEND CFLAGS " -fopenmp")
+  string(APPEND FFLAGS " -fopenmp")
+  string(APPEND CXXFLAGS " -fopenmp")
   string(APPEND LDFLAGS " -fopenmp")
 endif()
 
