@@ -111,18 +111,18 @@ void perform_vertical_interpolation(
   const int nlevs_src,
   const int nlevs_tgt);
 
-template<typename T, int P, int N> 
+template<typename T, int P> 
 KOKKOS_FUNCTION
 void perform_vertical_interpolation_impl_1d(
-  const view_1d<Pack<T,P>>& x_src,
-  const view_1d<Pack<T,P>>& x_tgt,
-  const view_1d<Pack<T,P>>& input,
-  const view_1d<Pack<T,P>>& output,
-  const view_1d<Mask<P>>& mask,
+  const view_1d<const Pack<T,P>>& x_src,
+  const view_1d<const Pack<T,P>>& x_tgt,
+  const view_1d<const Pack<T,P>>& input,
+  const view_1d<      Pack<T,P>>& output,
+  const view_1d<      Mask<P>>&   mask,
   const int nlevs_src,
   const int nlevs_tgt,
   const int icol,
-  const Real msk_val,
+  const T msk_val,
   const MemberType& team,
   const LIV<T,P>& vert_interp);
 
@@ -169,17 +169,6 @@ void apply_interpolation(
   const view_Nd<const Pack<T,P>,4>& input,
   const view_Nd<      Pack<T,P>,4>& output,
   const view_Nd<        Mask<P>,4>& mask);
-  
-template<typename T, int P>
-KOKKOS_FUNCTION
-void apply_masking(
-  const MemberType& team,
-  const T           mask_val,
-  const T           min_val,
-  const T           max_val,
-  const view_1d<const Pack<T,P>>& x_tgt,
-  const view_1d<      Pack<T,P>>& out,
-  const view_1d<      Mask<P>>&   mask);
 
 template<int P, int N>
 view_Nd<Mask<P>,N> allocate_mask(const std::vector<int>& extents);

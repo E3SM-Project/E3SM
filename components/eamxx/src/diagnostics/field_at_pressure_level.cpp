@@ -66,8 +66,7 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
   // The setup for interpolation varies depending on the rank of the input field:
   const int rank = f.rank();
 
-  if (rank == 1) { // A single vertical column, 
-  } else if (rank==2) {
+  if (rank==2) {
     const auto f_data_src = f.get_view<const mPack**>();
     auto fdat = view_Nd<mPack,2>("",f_data_src.extent_int(0),f_data_src.extent_int(1));
     Kokkos::deep_copy(fdat,f_data_src);
@@ -98,7 +97,7 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
 
     perform_vertical_interpolation<Real,1,4>(pres,m_p_tgt,fdat,data_tgt_tmp,m_num_levs,1,m_mask_val);
   } else {
-    EKAT_ERROR_MSG("Error! field at pressure level only supports fields w/ rank <= 4\n");
+    EKAT_ERROR_MSG("Error! field at pressure level only supports fields ranks 2, 3 and 4\n");
   }
 
 }

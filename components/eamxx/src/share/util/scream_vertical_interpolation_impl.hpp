@@ -89,14 +89,14 @@ view_Nd<Mask<P>,N> allocate_mask(const std::vector<int>& extents)
 template<typename T, int P> 
 KOKKOS_FUNCTION
 void perform_vertical_interpolation_impl_1d(
-  const view_1d<Pack<T,P>>& x_src,
-  const view_1d<Pack<T,P>>& x_tgt,
-  const view_1d<Pack<T,P>>& input,
-  const view_1d<Pack<T,P>>& output,
-  const view_1d<Mask<P>>& mask,
+  const view_1d<const Pack<T,P>>& x_src,
+  const view_1d<const Pack<T,P>>& x_tgt,
+  const view_1d<const Pack<T,P>>& input,
+  const view_1d<      Pack<T,P>>& output,
+  const view_1d<      Mask<P>>&   mask,
   const int nlevs_src,
   const int icol,
-  const Real msk_val,
+  const T msk_val,
   const MemberType& team,
   const LIV<T,P>& vert_interp)
 {
@@ -175,17 +175,11 @@ void apply_interpolation(
         		 
     const int icol  = team.league_rank();
     const auto x1   = ekat::subview(x_src,  icol);
-    const auto x1_s = ekat::scalarize(x1);
     const auto in   = ekat::subview(input,  icol);
     const auto out  = ekat::subview(output, icol);
     const auto mask = ekat::subview(mask_out, icol);
     
-    vert_interp.setup(team, x1, x_tgt);
-    vert_interp.lin_interp(team, x1, x_tgt, in, out, icol);
-
-    const int ivec     = num_levs % P;
-    apply_masking<T,P>(team, mask_val, x1_s[0], x1_s[num_levs-1], x_tgt, out, mask);   
-    team.team_barrier();
+    perform_vertical_interpolation_impl_1d<T,P>(x1,x_tgt,in,out,mask,num_levs,icol,icol,mask_val,team,vert_interp);
   });
   Kokkos::fence();
 }
@@ -211,17 +205,11 @@ void apply_interpolation(
     const int icol  = team.league_rank() / num_vars;
     const int ivar  = team.league_rank() % num_vars;
     const auto x1   = ekat::subview(x_src,  icol);
-    const auto x1_s = ekat::scalarize(x1);
     const auto in   = ekat::subview(input,  icol, ivar);
     const auto out  = ekat::subview(output, icol, ivar);
     const auto mask = ekat::subview(mask_out, icol, ivar);
-    
-    vert_interp.setup(team, x1, x_tgt);
-    vert_interp.lin_interp(team, x1, x_tgt, in, out, icol);
 
-    const int ivec     = num_levs % P;
-    apply_masking<T,P>(team, mask_val, x1_s[0], x1_s[num_levs-1], x_tgt, out, mask);   
-    team.team_barrier();
+    perform_vertical_interpolation_impl_1d<T,P>(x1,x_tgt,in,out,mask,num_levs,icol,icol,mask_val,team,vert_interp);
   });
   Kokkos::fence();   
 }
@@ -251,43 +239,15 @@ void apply_interpolation(
     const int islc_1 = ivar / d_2;
     const int islc_2 = ivar % d_2;
     const auto x1    = ekat::subview(x_src,  icol);
-    const auto x1_s  = ekat::scalarize(x1);
     const auto in    = ekat::subview(input,  icol, islc_1, islc_2);
     const auto out   = ekat::subview(output, icol, islc_1, islc_2);
     const auto mask  = ekat::subview(mask_out, icol, islc_1, islc_2);
     
-    vert_interp.setup(team, x1, x_tgt);
-    vert_interp.lin_interp(team, x1, x_tgt, in, out, icol);
-
-    const int ivec     = num_levs % P;
-    apply_masking<T,P>(team, mask_val, x1_s[0], x1_s[num_levs-1], x_tgt, out, mask);   
-    team.team_barrier();
+    perform_vertical_interpolation_impl_1d<T,P>(x1,x_tgt,in,out,mask,num_levs,icol,icol,mask_val,team,vert_interp);
   });
   Kokkos::fence();   
 }
   
-template<typename T, int P>
-KOKKOS_FUNCTION
-void apply_masking(
-  const MemberType& team,
-  const T           mask_val,
-  const T           min_val,
-  const T           max_val,
-  const view_1d<const Pack<T,P>>& x_tgt,
-  const view_1d<      Pack<T,P>>& out,
-  const view_1d<      Mask<P>>&   mask)
-{
-  const auto range = Kokkos::TeamThreadRange(team, x_tgt.extent(0));
-  Kokkos::parallel_for(range, [&] (const Int & k) {
-    const auto above_max = x_tgt(k) > max_val;
-    const auto below_min = x_tgt(k) < min_val;
-    const auto combined_m = above_max || below_min;
-    mask(k) = combined_m;
-    out(k).set(combined_m,mask_val);
-  });
-  team.team_barrier();
-}
-
 } // namespace vinterp
 } // namespace scream
 

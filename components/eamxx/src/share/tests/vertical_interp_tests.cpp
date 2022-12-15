@@ -125,11 +125,11 @@ void run(){
       Kokkos::parallel_for("scream_vert_interp_setup_loop", policy,
          	       KOKKOS_LAMBDA(MemberType const& team) {
           const int icol = team.league_rank();
-          view_1d<Pack<Real,P>> x1=ekat::subview(p_src, icol);
-          view_1d<Pack<Real,P>> in=ekat::subview(tmp_src, icol);
-          view_1d<Pack<Real,P>> out_1d=ekat::subview(out_1d_test, icol);
-          view_1d<Mask<P>> msk=ekat::subview(mask_1d_test, icol);
-          perform_vertical_interpolation_impl_1d(x1,
+          const auto x1=ekat::subview(p_src, icol);
+          const auto in=ekat::subview(tmp_src, icol);
+          const auto out_1d=ekat::subview(out_1d_test, icol);
+          const auto msk=ekat::subview(mask_1d_test, icol);
+          perform_vertical_interpolation_impl_1d<Real,P>(x1,
                                                  p_tgt,
                                                  in,
                                                  out_1d,
@@ -294,11 +294,11 @@ TEST_CASE("testing_masking"){
   Kokkos::parallel_for("scream_vert_interp_setup_loop", policy,
      	       KOKKOS_LAMBDA(MemberType const& team) {
       const int icol = team.league_rank();
-      view_1d<Pack<Real,P>> x1=ekat::subview(p_src, icol);
-      view_1d<Pack<Real,P>> in=ekat::subview(tmp_src, icol);
-      view_1d<Pack<Real,P>> out_1d=ekat::subview(out_1d_test, icol);
-      view_1d<Mask<P>> msk=ekat::subview(mask_1d_test, icol);
-      perform_vertical_interpolation_impl_1d(x1,
+      const auto x1=ekat::subview(p_src, icol);
+      const auto in=ekat::subview(tmp_src, icol);
+      const auto out_1d=ekat::subview(out_1d_test, icol);
+      const auto msk=ekat::subview(mask_1d_test, icol);
+      perform_vertical_interpolation_impl_1d<Real,P>(x1,
                                              p_tgt,
                                              in,
                                              out_1d,
