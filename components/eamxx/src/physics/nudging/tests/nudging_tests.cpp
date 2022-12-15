@@ -207,7 +207,7 @@ TEST_CASE("nudging") {
                 for (int j=0; j<fl.dim(1); ++j) {
                   if (fname == "T_mid_r"){
                     //v(i,j) = (-j)*100 + i + 1;
-                    v(i,j) = (i-1)*100+2*j;
+                    v(i,j) = (i-1)*100+2*j+dt*ii*0.1;
                     std::cout<<"v("<<i<<","<<j<<"): "<<v(i,j)<<std::endl;
                   }
                   if (fname == "p_mid_r"){
@@ -250,35 +250,12 @@ TEST_CASE("nudging") {
   std::cout<<"Columns outside: "<<ncols<<std::endl;
   std::cout<<"Levs outside: "<<nlevs<<std::endl;
 
-
-
-  /*
-  FieldIdentifier fid_mid ("T_mid",FL({COL,LEV},{ncols,nlevs}),units,grid->name());
-  Field f_mid (fid_mid);
-  //f_mid.get_header().get_alloc_properties().request_allocation(packsize);
-  f_mid.get_header().get_alloc_properties().request_allocation(1);
-  f_mid.allocate_view();
-  f_mid.get_header().get_tracking().update_time_stamp(t0);
-  */
-  /*
-  FieldIdentifier pid_mid ("p_mid",FL({COL,LEV},{ncols,nlevs}),units,grid->name());
-  Field p_mid (fid_mid);
-  //p_mid.get_header().get_alloc_properties().request_allocation(packsize);
-  p_mid.get_header().get_alloc_properties().request_allocation(1);
-  p_mid.allocate_view();
-  p_mid.get_header().get_tracking().update_time_stamp(t0);
-  */
-
-
   ekat::ParameterList params_mid;
   std::vector<std::string> fnames = {"T_mid_r","p_mid_r"};
   //std::vector<std::string> fnames = {"T_mid_r"};
   params_mid.set<std::vector<std::string>>("Field Names",fnames);
   auto nudging_mid = std::make_shared<NUDGING>(io_comm,params_mid);
   nudging_mid->set_grids(gm);
-  //nudging_mid->set_required_field(f_mid);
-  //nudging_mid->set_required_field(p_mid);
-  
   
   std::map<std::string,Field> input_fields;
   for (const auto& req : nudging_mid->get_required_field_requests()) {
@@ -292,17 +269,17 @@ TEST_CASE("nudging") {
     nudging_mid->set_required_field(f);
     input_fields.emplace(name,f);
   }
-  
-
 
   Field p_mid = input_fields["p_mid"];
   Field f_mid = input_fields["T_mid"];
   //fill data
+  //Need to fill data in time as well
   auto f_mid_v_h   = f_mid.get_view<Real**, Host>();
   auto p_mid_v_h   = p_mid.get_view<Real**, Host>();
   for (int icol=0; icol<ncols; icol++){
     for (int ilev=0; ilev<nlevs; ilev++){ 
-      f_mid_v_h(icol,ilev) = (-ilev)*100 + icol;
+      f_mid_v_h(icol,ilev) = (-ilev)*100 + icol+0.1;
+      //f_mid_v_h(icol,ilev) = 0;
       //f_mid_v_h(icol,ilev) = 100*(icol-1) + 2*ilev;
       //p_mid_v_h(icol,ilev) = 2+ilev*2;
       p_mid_v_h(icol,ilev) = 2*ilev+2;
@@ -310,13 +287,44 @@ TEST_CASE("nudging") {
   }
   f_mid.sync_to_dev();
   p_mid.sync_to_dev();
-
+  auto ft = f_mid.get_header_ptr()->get_tracking();
+  auto pt = p_mid.get_header_ptr()->get_tracking();
+  auto ts = ft.get_time_stamp();
+  auto ts_p = pt.get_time_stamp();
+  std::cout<<"time_stamp year: "<<ts.get_year()<<std::endl;
+  std::cout<<"time_stamp month: "<<ts.get_month()<<std::endl;
+  std::cout<<"time_stamp day: "<<ts.get_day()<<std::endl;
+  std::cout<<"time_stamp hours: "<<ts.get_hours()<<std::endl;
+  std::cout<<"time_stamp minutes: "<<ts.get_minutes()<<std::endl;
+  std::cout<<"time_stamp seconds: "<<ts.get_seconds()<<std::endl;
+  ft.update_time_stamp(ts+dt);
+  pt.update_time_stamp(ts_p+dt);
+  auto ts2 = ft.get_time_stamp();
+  std::cout<<"time_stamp year: "<<ts2.get_year()<<std::endl;
+  std::cout<<"time_stamp month: "<<ts2.get_month()<<std::endl;
+  std::cout<<"time_stamp day: "<<ts2.get_day()<<std::endl;
+  std::cout<<"time_stamp hours: "<<ts2.get_hours()<<std::endl;
+  std::cout<<"time_stamp minutes: "<<ts2.get_minutes()<<std::endl;
+  std::cout<<"time_stamp seconds: "<<ts2.get_seconds()<<std::endl;
+  
+  for (int icol=0; icol<ncols; icol++){
+    for (int ilev=0; ilev<nlevs; ilev++){ 
+      //f_mid_v_h(icol,ilev) = (-ilev)*100 + icol;
+      f_mid_v_h(icol,ilev) = 0;
+      //f_mid_v_h(icol,ilev) = 100*(icol-1) + 2*ilev;
+      //p_mid_v_h(icol,ilev) = 2+ilev*2;
+      p_mid_v_h(icol,ilev) = 2*ilev+2;
+    }
+  }
+  
+  f_mid.sync_to_dev();
+  p_mid.sync_to_dev();
 
   //initialize
   nudging_mid->initialize(t0,RunType::Initial);
 
   //run
-  nudging_mid->run(100);
+  nudging_mid->run(1);
   f_mid.sync_to_host();
   //p_mid.sync_to_host();
 
