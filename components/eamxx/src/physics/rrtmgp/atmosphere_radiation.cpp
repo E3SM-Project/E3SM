@@ -873,10 +873,12 @@ void RRTMGPRadiation::run_impl (const int dt) {
     // does not matter in practice, as clouds probably should not be produced above 50 hPa and we
     // should not be encountering surface pressure above 1200 hPa, but in the event that things go off
     // the rails we might want to look at these still.
-    rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts, 700e2, std::numeric_limits<Real>::max(), p_lay, cld_tau_lw_gpt, cldlow);
-    rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts, 400e2,                            700e2, p_lay, cld_tau_lw_gpt, cldmed);
-    rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts,     0,                            400e2, p_lay, cld_tau_lw_gpt, cldhgh);
-    rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts,     0, std::numeric_limits<Real>::max(), p_lay, cld_tau_lw_gpt, cldtot);
+    if (update_rad) {
+      rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts, 700e2, std::numeric_limits<Real>::max(), p_lay, cld_tau_lw_gpt, cldlow);
+      rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts, 400e2,                            700e2, p_lay, cld_tau_lw_gpt, cldmed);
+      rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts,     0,                            400e2, p_lay, cld_tau_lw_gpt, cldhgh);
+      rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts,     0, std::numeric_limits<Real>::max(), p_lay, cld_tau_lw_gpt, cldtot);
+    }
 
     // Copy output data back to FieldManager
     if (update_rad) {
