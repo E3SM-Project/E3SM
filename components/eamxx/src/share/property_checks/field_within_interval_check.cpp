@@ -198,7 +198,7 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
   }
   PropertyCheck::ResultAndMsg res_and_msg;
 
-  bool pass_lower, pass_upper;
+  bool pass_lower = false, pass_upper = false;
 
   if (minmaxloc.min_val>=m_lb && minmaxloc.max_val<=m_ub) {
     res_and_msg.result = CheckResult::Pass;
