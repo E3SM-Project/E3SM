@@ -12345,8 +12345,8 @@ contains
          config_itd_conversion_type_int, &
          config_category_bounds_type_int
 
-    character(len=strKIND) :: &
-         tmp_config_shortwave
+    character(len=strKIND), pointer :: tmp
+    character(len=strKIND), pointer :: tmp_config_shortwave
 
     call MPAS_pool_get_config(domain % configs, "config_thermodynamics_type", config_thermodynamics_type)
     call MPAS_pool_get_config(domain % configs, "config_heat_conductivity_type", config_heat_conductivity_type)
@@ -12556,10 +12556,12 @@ contains
     config_itd_conversion_type_int = config_cice_int("config_itd_conversion_type", config_itd_conversion_type)
     config_category_bounds_type_int = config_cice_int("config_category_bounds_type", config_category_bounds_type)
 
-    if (config_use_snicar_ad .and. trim(config_shortwave_type) == 'dEdd') then
-       tmp_config_shortwave = 'dEdd_snicar_ad'
-    else
-       tmp_config_shortwave = trim(config_shortwave_type)
+    tmp_config_shortwave => config_shortwave_type
+    if (config_use_snicar_ad .and. (trim(config_shortwave_type(1:4)) == "dEdd")) then
+       allocate (tmp)                    !echmod: is tmp necessary?
+       tmp = 'dEdd_snicar_ad'
+       tmp_config_shortwave => tmp
+       deallocate (tmp)
     endif
 
     call icepack_init_parameters(&
