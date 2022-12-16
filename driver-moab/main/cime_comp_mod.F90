@@ -1974,16 +1974,6 @@ contains
 
     endif
 
-    !  need to finish up the computation of the atm - ocean map (tempest)
-    ! this needs to be in prep_ocn_mod, because it is for projection to ocean!
-    if (iamin_CPLALLATMID .and. atm_c2_ocn) call prep_atm_ocn_moab(infodata)
-
-    ! this needs to be in prep_ocn_mod, because it is for ice projection to ocean!
-    if (iamin_CPLALLICEID .and. ice_c2_ocn) call prep_ice_ocn_moab(infodata)
-
-    !  need to finish up the computation of the atm - land map ( point cloud)
-    if (iamin_CPLALLATMID .and. atm_c2_lnd) call prep_atm_lnd_moab(infodata)
-
     !  need to finish up the migration of mesh for rof 2 ocn map ( read from file)
     if (iamin_CPLALLROFID .and. rof_c2_ocn) call prep_rof_ocn_moab(infodata)
 
@@ -4307,7 +4297,7 @@ contains
     integer  :: ent_type 
 #endif 
 
-    call prep_ocn_calc_i2x_ox_moab() ! this does projection from ice to ocean on coupler, by simply matching
+    ! call prep_ocn_calc_i2x_ox_moab() ! this does projection from ice to ocean on coupler, by simply matching
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCNP_BARRIER')
        call t_drvstartf ('CPL:ATMOCNP',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(7))
@@ -4784,9 +4774,6 @@ contains
        ! if we do a proper component_exch, then would need another hop, just on coupler pes
        !  TODO when do we need to send from ice to ocn? Usually after ice run ? 
        call component_exch_moab(ice(1), mpsiid, mbixid, 0, seq_flds_i2x_fields) ! this migrates all fields from ice to coupler
-       if (ice_c2_ocn ) then
-         call prep_ocn_calc_i2x_ox_moab() ! this does projection ice-ocn with one hop 
-       endif
     endif
 
     !----------------------------------------------------------

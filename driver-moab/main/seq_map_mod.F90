@@ -366,7 +366,7 @@ end subroutine moab_map_init_rcfile
 
 #ifdef HAVE_MOAB
        ! check whether the application ID is defined on the current process
-       if ( mapper%src_mbid .lt. 0 .or. mapper%tgt_mbid .lt. 0 .or. mapper%intx_mbid .lt.0 ) then
+       if ( mapper%src_mbid .lt. 0 .or. mapper%tgt_mbid .lt. 0 ) then
          valid_moab_context = .FALSE.
        else
          valid_moab_context = .TRUE.
@@ -459,44 +459,37 @@ end subroutine moab_map_init_rcfile
 
 #ifdef HAVE_MOAB
        if ( valid_moab_context ) then
-         ! first get data from source tag and store in a temporary
-         ! then set it back to target tag to mimic a copy
-         allocate(moab_tag_data(ntagdatalength))
+          ! right now, this is used for ice-ocn projection, which involves just a send/recv, usually
          if (seq_comm_iamroot(CPLID)) then
-            write(logunit, *) subname,' iMOAB_mapper  rearrange context TODO fix parcommgraph'
+            write(logunit, *) subname,' iMOAB rearrange mapper before sending ', trim(fldlist_moab)
             call shr_sys_flush(logunit)
          endif
-
-         allocate(globalIds(mapper % nentities))
-         ierr = iMOAB_GetIntTagStorage( mapper%src_mbid,        &
-                                    'GLOBAL_ID'//C_NULL_CHAR,  &
-                                    mapper % nentities,                  &
-                                    mapper % tag_entity_type,           &
-                                    globalIds )
-         if (ierr > 0 )  &
-            call shr_sys_abort( subname//'MOAB Error: failed to get GLOBAL_ID tag ')
-
-         ! this should set up a par comm graph in init, not use this
-         ierr = iMOAB_GetDoubleTagStorage( mapper%src_mbid,     &
-                                    fldlist_moab,                   &
-                                    ntagdatalength,            &
-                                    mapper % tag_entity_type,           &
-                                    moab_tag_data )
-         if (ierr > 0 )  &
-            call shr_sys_abort( subname//'MOAB Error: failed to get fields tag ')
-
-         !! TODO: Compute a comm graph and store it so that it is used for application at runtime
-         ierr = iMOAB_SetDoubleTagStorageWithGid( mapper%tgt_mbid, &
-                                             fldlist_moab,               &
-                                             ntagdatalength,        &
-                                             mapper % tag_entity_type,       &
-                                             moab_tag_data,         &
-                                             globalIds )
-         if (ierr > 0 )  &
-            call shr_sys_abort( subname//'MOAB Error: failed to set fields tag ')
-
-         deallocate(globalIds)
-         deallocate(moab_tag_data)
+         ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
+         if (ierr .ne. 0) then
+            if (seq_comm_iamroot(CPLID)) then
+               write(logunit, *) subname,' iMOAB mapper error in sending tags ', trim(fldlist_moab)
+               call shr_sys_flush(logunit)
+            endif
+            valid_moab_context = .false. 
+         endif
+       endif
+       if ( valid_moab_context ) then
+         if (seq_comm_iamroot(CPLID)) then
+            write(logunit, *) subname,' iMOAB mapper before receiving ', trim(fldlist_moab)
+            call shr_sys_flush(logunit)
+         endif
+         ! receive in the intx app, because it is redistributed according to coverage (trick)
+         ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in receiving tags ', trim(fldlist_moab)
+            !call shr_sys_abort(subname//' ERROR in receiving tags')
+         endif
+         ! now free buffers
+         ierr = iMOAB_FreeSenderBuffers( mapper%src_mbid, mapper%intx_context )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in freeing buffers ', trim(fldlist_moab)
+            call shr_sys_abort(subname//' ERROR in freeing buffers') ! serious enough
+         endif
        endif
 #endif
 

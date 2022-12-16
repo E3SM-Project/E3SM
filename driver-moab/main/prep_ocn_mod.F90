@@ -23,8 +23,7 @@ module prep_ocn_mod
   use seq_comm_mct,     only : mhid     ! iMOAB id for atm instance
   use seq_comm_mct,     only : mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   use dimensions_mod,   only : np     ! for atmosphere degree 
-  use seq_comm_mct,     only : mphaid   ! iMOAB id for phys atm on atm pes
-  use seq_comm_mct,     only : mpsiid   ! iMOAB id for sea-ice, mpas model
+  use seq_comm_mct,     only : mbixid   ! iMOAB for sea-ice migrated to coupler
   use seq_comm_mct,     only : CPLALLICEID
   use seq_comm_mct,     only : seq_comm_iamin
   use seq_comm_mct,     only : num_moab_exports
@@ -62,10 +61,8 @@ module prep_ocn_mod
   public :: prep_ocn_accum_avg
 
   public :: prep_ocn_calc_a2x_ox
-  public :: prep_ocn_calc_a2x_ox_moab
 
   public :: prep_ocn_calc_i2x_ox
-  public :: prep_ocn_calc_i2x_ox_moab
   public :: prep_ocn_calc_r2x_ox
   public :: prep_ocn_calc_g2x_ox
   public :: prep_ocn_shelf_calc_g2x_ox
@@ -97,7 +94,6 @@ module prep_ocn_mod
   public :: prep_ocn_get_mapper_Fg2o
   public :: prep_ocn_get_mapper_Sw2o
 
-  public :: prep_atm_ocn_moab, prep_ice_ocn_moab, prep_ocn_migrate_moab
   !--------------------------------------------------------------------------
   ! Private interfaces
   !--------------------------------------------------------------------------
@@ -166,7 +162,7 @@ contains
        wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn)
 
     use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
-      iMOAB_WriteMesh 
+      iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -206,11 +202,22 @@ contains
     character(*), parameter  :: F00 = "('"//subname//" : ', 4A )"
     character(*), parameter  :: F01 = "('"//subname//" : ', A, I8 )"
 
-    character*32             :: appname ! to register moab app
+    ! MOAB stuff
+   integer                  :: ierr, idintx, rank
+   character*32             :: appname, outfile, wopts, lnum
+   character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdef
+   integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
+   integer                  :: fNoBubble, monotonicity
+! will do comm graph over coupler PES, in 2-hop strategy
+   integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
+
+   integer                  :: type1, type2 ! type for computing graph; should be the same type for ocean, 3 (FV)
+   integer                  :: tagtype, numco, tagindex
+   character(CXX)           :: tagName
+
     integer                  :: rmapid  ! external id to identify the moab app
-    integer                  :: ierr, type_grid ! 
-    integer                  :: idintx, rank
-    character*32             :: outfile, wopts, lnum
+    integer                  :: type_grid ! 
+
     
     !---------------------------------------------------------------
 
@@ -320,6 +327,7 @@ contains
                'seq_maps.rc','atm2ocn_fmapname:','atm2ocn_fmaptype:',samegrid_ao, &
                'mapper_Fa2o initialization',esmf_map_flag)
           call shr_sys_flush(logunit)
+#ifdef HAVE_MOAB
           ! Call moab intx only if atm and ocn are init in moab
           if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
             appname = "ATM_OCN_COU"//C_NULL_CHAR
@@ -338,6 +346,81 @@ contains
             if (iamroot_CPLID) then
               write(logunit,*) 'iMOAB intersection between atm and ocean with id:', idintx
             end if
+
+
+            ! we also need to compute the comm graph for the second hop, from the atm on coupler to the 
+            ! atm for the intx atm-ocn context (coverage)
+            !    
+            call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID) 
+            if (atm_pg_active) then
+              type1 = 3; !  fv for both ocean and atm; fv-cgll does not work anyway
+            else
+              type1 = 1 ! this works in this direction, but it will not be used
+            endif
+            type2 = 3;
+            ! ierr      = iMOAB_ComputeCommGraph( mboxid, mbintxoa, &mpicom_CPLID, &mpigrp_CPLID, &mpigrp_CPLID, &type1, &type2,
+            !                              &ocn_id, &idintx)
+            ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                        atm(1)%cplcompid, idintx)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing comm graph for second hop, atm-ocn'
+               call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, atm-ocn')
+            endif
+            ! now take care of the mapper 
+            mapper_Fa2o%src_mbid = mbaxid
+            mapper_Fa2o%tgt_mbid = mboxid
+            mapper_Fa2o%intx_mbid = mbintxao 
+            mapper_Fa2o%src_context = atm(1)%cplcompid
+            mapper_Fa2o%intx_context = idintx
+            wgtIdef = 'scalar'//C_NULL_CHAR
+            mapper_Fa2o%weight_identifier = wgtIdef
+            ! because we will project fields from atm to ocn grid, we need to define 
+            ! atm a2x fields to ocn grid on coupler side
+            
+            tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+            tagtype = 1 ! dense
+            numco = 1 ! 
+            ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on ocn cpl'
+               call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on ocn cpl')
+            endif
+            volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL; 
+            
+            if (atm_pg_active) then
+              dm1 = "fv"//C_NULL_CHAR
+              dofnameS="GLOBAL_ID"//C_NULL_CHAR
+              orderS = 1 !  fv-fv
+            else
+              dm1 = "cgll"//C_NULL_CHAR
+              dofnameS="GLOBAL_DOFS"//C_NULL_CHAR
+              orderS = np !  it should be 4
+            endif
+            dm2 = "fv"//C_NULL_CHAR
+            dofnameT="GLOBAL_ID"//C_NULL_CHAR
+            orderT = 1  !  not much arguing
+            fNoBubble = 1
+            monotonicity = 0 !
+            noConserve = 0
+            validate = 1
+            fInverseDistanceMap = 0
+            if (iamroot_CPLID) then
+               write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxao=', mbintxao, ' wgtIdef=', wgtIdef, &
+                   'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
+                                               fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                               noConserve, validate, &
+                                               trim(dofnameS), trim(dofnameT)
+            endif
+            ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, wgtIdef, &
+                                               trim(dm1), orderS, trim(dm2), orderT, &
+                                               fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                               noConserve, validate, &
+                                               trim(dofnameS), trim(dofnameT) )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing ao weights '
+               call shr_sys_abort(subname//' ERROR in computing ao weights ')
+            endif
+
 #ifdef MOABDEBUG
             wopts = C_NULL_CHAR
             call shr_mpi_commrank( mpicom_CPLID, rank )
@@ -351,9 +434,10 @@ contains
               endif
             endif
 #endif
-         end if
-
-       end if
+         end if ! if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0))
+! endif HAVE_MOAB 
+#endif
+       end if ! if (atm_present)
 
        ! atm_c2_ice flag is here because ice and ocn are constrained to be on the same
        ! grid so the atm->ice mapping is set to the atm->ocn mapping to improve performance
@@ -379,7 +463,28 @@ contains
              write(logunit,F00) 'Initializing mapper_Va2o vect with vect_map = ',trim(vect_map)
           end if
           call seq_map_initvect(mapper_Va2o, vect_map, atm(1), ocn(1), string='mapper_Va2o initvect')
-       endif
+
+          ! will use the same map for mapper_Sa2o and Va2o, although it is using bilinear option
+          ! in  seq_maps.rc
+          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
+   ! now take care of the 2 new mappers 
+            mapper_Sa2o%src_mbid = mbaxid
+            mapper_Sa2o%tgt_mbid = mboxid
+            mapper_Sa2o%intx_mbid = mbintxao 
+            mapper_Sa2o%src_context = atm(1)%cplcompid
+            mapper_Sa2o%intx_context = idintx
+            wgtIdef = 'scalar'//C_NULL_CHAR
+            mapper_Sa2o%weight_identifier = wgtIdef  
+
+            mapper_Va2o%src_mbid = mbaxid
+            mapper_Va2o%tgt_mbid = mboxid
+            mapper_Va2o%intx_mbid = mbintxao 
+            mapper_Va2o%src_context = atm(1)%cplcompid
+            mapper_Va2o%intx_context = idintx
+            wgtIdef = 'scalar'//C_NULL_CHAR
+            mapper_Va2o%weight_identifier = wgtIdef  
+          endif ! if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) 
+       endif ! if (atm_c2_ocn .or. atm_c2_ice)
        call shr_sys_flush(logunit)
 
        ! needed for domain checking
@@ -389,7 +494,45 @@ contains
              write(logunit,F00) 'Initializing mapper_SFi2o'
           end if
           call seq_map_init_rearrolap(mapper_SFi2o, ice(1), ocn(1), 'mapper_SFi2o')
-       endif
+#ifdef HAVE_MOAB
+          if ( (mbixid .ge. 0) .and. (mboxid .ge. 0)) then
+            ! moab also will do just a rearrange, hopefully, in this case, based on the comm graph
+            !   that is computed here
+            call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
+   
+            type1 = 3
+            type2 = 3 ! fv-fv graph  
+
+   ! imoab compute comm graph ice-ocn, based on the same global id
+   ! it will be a simple migrate from ice mesh directly to ocean, using the comm graph computed here
+
+            ierr = iMOAB_ComputeCommGraph( mbixid, mboxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
+               type1, type2, ice(1)%cplcompid, ocn(1)%cplcompid)
+            if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing graph ice - ocn x '
+                  call shr_sys_abort(subname//' ERROR  in computing graph ice - ocn x ')
+            endif
+
+ 
+               ! define tags according to the seq_flds_i2x_fields 
+            tagtype = 1  ! dense, double
+            numco = 1 !  one value per cell / entity
+            tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
+            ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
+            if ( ierr == 1 ) then
+               call shr_sys_abort( subname//' ERROR: cannot define tags for ice proj to ocn' )
+            end if
+            mapper_SFi2o%src_mbid = mbixid
+            mapper_SFi2o%tgt_mbid = mboxid
+            ! no intersection, so will have to do without it
+            mapper_Va2o%src_context = ice(1)%cplcompid
+            mapper_Va2o%intx_context = ocn(1)%cplcompid
+
+         endif 
+ 
+#endif
+
+       endif ! if (ice_present)
        call shr_sys_flush(logunit)
 
        if (rof_c2_ocn) then
@@ -401,7 +544,6 @@ contains
                'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
                'mapper_Rr2o_liq  initialization',esmf_map_flag)
 
-               
           appname = "ROF_OCN_COU"//CHAR(0)
             ! rmapid  is a unique external number of MOAB app that takes care of map between rof and ocn mesh
           rmapid = 100*rof(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it
@@ -2140,187 +2282,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
   end subroutine prep_ocn_calc_a2x_ox
 
-subroutine prep_ocn_calc_a2x_ox_moab(timer, infodata)
- ! start copy from prep_atm_migrate_moab
-   use iMOAB, only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers, &
-      iMOAB_ApplyScalarProjectionWeights, iMOAB_WriteMesh
-   !---------------------------------------------------------------
-    
-    ! Arguments
-    character(len=*)     , intent(in) :: timer
-
-    type(seq_infodata_type) , intent(in)    :: infodata
-    !
-    ! Local Variables
-    type(mct_avect), pointer :: a2x_ax
-    character(*), parameter  :: subname = '(prep_ocn_calc_a2x_ox_moab)'
-
-
-    integer :: ierr
-
-    logical                          :: atm_present    ! .true.  => atm is present
-    logical                          :: ocn_present    ! .true.  => ocn is present
-    logical                          :: ocn_prognostic ! .true.  => ocn is prognostic  
-    integer                  :: id_join
-    integer                  :: mpicom_join
-    integer                  :: atm_id
-    integer                  :: context_id ! we will use ocean context 
-    character*32             :: dm1, dm2, wgtIdef
-    character*50             :: outfile, wopts, lnum
-    character(CXX)            :: tagName, tagnameProj, tagNameExt
-    !---------------------------------------------------------------
-
-    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
-
-    a2x_ax => component_get_c2x_cx(atm(1)) ! is this needed? just to see if we have data on here
-
-    call seq_infodata_getData(infodata, &
-      atm_present=atm_present,       &
-      ocn_present=ocn_present,       &
-      ocn_prognostic=ocn_prognostic)
-
-    !  it involves initial atm app; mhid; also migrate atm mesh on coupler pes, mbaxid
-    !  intx ocean atm are in mbintxao ; remapper also has some info about coverage mesh
-    ! after this, the sending of tags from atm pes to coupler pes will use the new par comm graph, that has more precise info about
-    ! how to get mpicomm for joint atm + coupler
-    id_join = atm(1)%cplcompid
-    atm_id   = atm(1)%compid
-
-    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
-
-    ! we should do this only if ocn_present
-
-    context_id = ocn(1)%cplcompid
-    wgtIdef = 'scalar'//C_NULL_CHAR
-
-    if (atm_present .and. ocn_present .and. ocn_prognostic) then
-      if (atm_pg_active ) then ! use data from AtmPhys mesh, but mesh from pg
-        ! in this case, we will send from phys grid directly to intx atm ocn context!
-        tagname=trim(seq_flds_a2x_fields)//C_NULL_CHAR
-        if (mphaid .ge. 0) then !  send because we are on atm pes, also mphaid >= 0
-          context_id = 100*atm(1)%cplcompid + ocn(1)%cplcompid !send to atm/ocn intx ! ~ 618
-          ierr = iMOAB_SendElementTag(mphaid, tagName, mpicom_join, context_id)
-          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in sending tag from phys atm to ocn atm intx '
-            call shr_sys_abort(subname//' ERROR  in sending tag from phys atm to ocn atm intx')
-          endif
-
-        endif
-        if (mbintxao .ge. 0 ) then ! we are for sure on coupler pes!
-          ! context_id = atm(1)%cplcompid == atm_id above (5)
-          ! we use the same name as spectral case, even thought in pg2 case, the size of tag is 1, not 16
-          ! in imoab_apg2_ol_coupler.cpp we use at this stage, receiver, the same name as sender, T_ph
-          ierr = iMOAB_ReceiveElementTag(mbintxao, tagName, mpicom_join, atm_id)
-          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in receiving tag from phys atm to ocn atm intx '
-            call shr_sys_abort(subname//' ERROR  in receiving tag from phys atm to ocn atm intx')
-          endif
-
-        endif
-        ! we can now free the sender buffers
-        if (mhpgid .ge. 0) then
-          ierr = iMOAB_FreeSenderBuffers(mphaid, context_id)
-          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in freeing buffers'
-            call shr_sys_abort(subname//' ERROR  in freeing buffers')
-          endif
-        endif
-
-        if (mbintxao .ge. 0 ) then !  we are on coupler pes, for sure
-          ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
-          !  hard coded now, it should be a runtime option in the future
-  
-          ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxao, wgtIdef, tagName, tagName)
-          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in applying weights '
-            call shr_sys_abort(subname//' ERROR in applying weights')
-          endif
-#ifdef MOABDEBUG
-          ! we can also write the ocean mesh to file, just to see the projectd tag
-          !      write out the mesh file to disk
-          write(lnum,"(I0.2)")num_moab_exports
-          outfile = 'ocnCplProj'//trim(lnum)//'.h5m'//C_NULL_CHAR
-          wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-          ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
-          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in writing ocn mesh after projection '
-            call shr_sys_abort(subname//' ERROR in writing ocn mesh after projection')
-          endif
-#endif
-        !CHECKRC(ierr, "cannot receive tag values")
-        endif
-
-      else  ! original send from spectral elements is replaced by send from phys grid
-        ! this will be reworked for all fields, send from phys grid atm:
-        tagName = trim(seq_flds_a2x_fields)//C_NULL_CHAR ! they are exported on phys grid directly
-        tagNameExt = trim(seq_flds_a2x_ext_fields)//C_NULL_CHAR ! these are special moab tags
-        !  the separator will be ':' as in mct
-
-        if (mphaid .ge. 0) then !  send because we are on atm pes
-          !
-          context_id = 100*atm(1)%cplcompid + ocn(1)%cplcompid !send to atm/ocn intx ! ~ 618
-          ierr = iMOAB_SendElementTag(mphaid, tagName, mpicom_join, context_id)
-          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in sending tag from atm spectral to ocn atm intx '
-            call shr_sys_abort(subname//' ERROR  in sending tag from atm spectral to ocn atm intx')
-          endif
-        endif
-        if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
-          ! receive on atm on coupler pes, that was redistributed according to coverage
-          context_id =  atm(1)%compid ! atm_id
-          ierr = iMOAB_ReceiveElementTag(mbintxao, tagNameExt, mpicom_join, context_id)
-          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in receiving tag from atm phys grid to ocn atm intx spectral '
-            call shr_sys_abort(subname//' ERROR  in receiving tag from atm phys grid to ocn atm intx spectral')
-          endif
-        endif
-
-        ! we can now free the sender buffers
-        if (mphaid .ge. 0) then
-          context_id = 100*atm(1)%cplcompid + ocn(1)%cplcompid !send to atm/ocn intx ! ~ 618
-          ierr = iMOAB_FreeSenderBuffers(mphaid, context_id)
-          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in freeing buffers '
-            call shr_sys_abort(subname//' ERROR  in freeing buffers')
-          endif
-        endif
-        ! we could do the projection now, on the ocean mesh, because we are on the coupler pes;
-        ! the actual migrate could happen later , from coupler pes to the ocean pes
-        if (mbintxao .ge. 0 ) then !  we are on coupler pes, for sure
-          ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
-          !  hard coded now, it should be a runtime option in the future
-
-          ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxao, wgtIdef, tagNameExt, tagName)
-          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in applying weights '
-            call shr_sys_abort(subname//' ERROR in applying weights')
-          endif
-#ifdef MOABDEBUG
-          ! we can also write the ocean mesh to file, just to see the projectd tag
-          !      write out the mesh file to disk
-          write(lnum,"(I0.2)")num_moab_exports
-          outfile = 'ocnCplProj'//trim(lnum)//'.h5m'//C_NULL_CHAR
-          wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-          ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
-          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in writing ocn mesh after projection '
-            call shr_sys_abort(subname//' ERROR in writing ocn mesh after projection')
-          endif
-#endif
-        endif ! if  (mbintxao .ge. 0 ) 
-        !CHECKRC(ierr, "cannot receive tag values")
-      endif ! if (atp_pg_active)
-
-    endif  ! if atm and ocn
-
-    ! end copy 
-
-
-    call t_drvstopf  (trim(timer))
-
-  end subroutine prep_ocn_calc_a2x_ox_moab
-  !================================================================================================
-
   subroutine prep_ocn_calc_i2x_ox(timer)
     !---------------------------------------------------------------
     ! Description
@@ -2343,70 +2304,6 @@ subroutine prep_ocn_calc_a2x_ox_moab(timer, infodata)
     call t_drvstopf  (trim(timer))
 
   end subroutine prep_ocn_calc_i2x_ox
-
-  subroutine prep_ocn_calc_i2x_ox_moab()
-   !---------------------------------------------------------------
-   ! Description
-   ! simply migrate tags to ocean, from ice model, using comm graph computed at prep_ocn_init 
-   !    ierr = iMOAB_ComputeCommGraph( mpsiid, mboxid,...
-   !
-   ! Local Variables
-   use iMOAB , only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers, iMOAB_WriteMesh
-   character(*), parameter  :: subname = '(prep_ocn_calc_i2x_ox_moab)'
-   character(CXX)           :: tagname
-   character*32             :: outfile, wopts, lnum
-   integer                  :: ocn_id_x, ice_id, id_join, mpicom_join, ierr, context_id
-   !---------------------------------------------------------------
-   ocn_id_x = ocn(1)%cplcompid
-   ice_id   = ice(1)%compid
-
-   id_join = ice(1)%cplcompid
-   call seq_comm_getinfo(ID_join,mpicom=mpicom_join) 
-
-   ! send from sea ice to ocean 
-   ! if we are on sea ice pes:
-   
-   tagName=trim(seq_flds_i2x_fields)//C_NULL_CHAR
-   if (mpsiid .ge. 0) then !  send because we are on ice pes
-
-      context_id = ocn(1)%cplcompid
-      ierr = iMOAB_SendElementTag(mpsiid, tagName, mpicom_join, context_id)
-      if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in sending tag for ice proj to ocean'
-         call shr_sys_abort(subname//' ERROR in sending tag for ice proj to ocean')
-      endif
-   endif
-   if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure; no need to project anything
-      ! receive on ocn on coupler pes, from ice
-      context_id=ice(1)%compid
-      ierr = iMOAB_ReceiveElementTag(mboxid, tagName, mpicom_join, context_id)
-      if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in receiving tag for ice-ocn proj'
-         call shr_sys_abort(subname//' ERROR in receiving tag for ice-ocn proj')
-      endif
-   endif
-
-
-    ! we can now free the sender buffers
-   if (mpsiid .ge. 0) then
-      context_id = ocn(1)%cplcompid
-      ierr = iMOAB_FreeSenderBuffers(mpsiid, context_id)
-      if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in freeing buffers ice-ocn'
-         call shr_sys_abort(subname//' ERROR in freeing buffers ice-ocn')
-      endif
-   endif
-
-#ifdef MOABDEBUG
-   if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
-     write(lnum,"(I0.2)")num_moab_exports
-     outfile = 'OcnCplAftIce'//trim(lnum)//'.h5m'//C_NULL_CHAR
-     wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-     ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
-   endif
-#endif
-
-   end subroutine prep_ocn_calc_i2x_ox_moab
 
   !================================================================================================
 
@@ -2619,260 +2516,5 @@ subroutine prep_ocn_calc_a2x_ox_moab(timer, infodata)
     type(seq_map), pointer :: prep_ocn_get_mapper_Sw2o
     prep_ocn_get_mapper_Sw2o => mapper_Sw2o
   end function prep_ocn_get_mapper_Sw2o
-
-
-  ! exposed method to migrate projected tag from coupler pes to ocean pes
-  subroutine prep_ocn_migrate_moab(infodata)
-   use iMOAB , only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers, iMOAB_WriteMesh
-  !---------------------------------------------------------------
-    ! Description
-    ! After a2oTbot_proj, a2oVbot_proj, a2oUbot_proj were computed on ocn mesh on coupler, they need
-    !   to be migrated to the ocean pes
-    !  maybe the ocean solver will use it (later)?
-    ! in this method, ocn values on coupler pes from atm are moved to ocean pes
-    ! Arguments
-    type(seq_infodata_type) , intent(in)    :: infodata
-
-    integer :: ierr
-
-    logical                          :: atm_present    ! .true.  => atm is present
-    logical                          :: ocn_present    ! .true.  => ocn is present
-    integer                  :: id_join
-    integer                  :: mpicom_join
-    integer                  :: ocnid1
-    integer                  :: context_id
-    character*32             :: dm1, dm2
-    character*50             :: tagName
-    character*32             :: outfile, wopts, lnum
-    integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
-
-    call seq_infodata_getData(infodata, &
-         atm_present=atm_present,       &
-         ocn_present=ocn_present)
-
-  !  it involves initial ocn app; mpoid; also migrated ocn mesh mesh on coupler pes, mbaxid
-  ! after this, the sending of tags from coupler pes to ocn pes will use initial graph
-       !  (not processed for coverage)
-  ! how to get mpicomm for joint ocn + coupler
-    id_join = ocn(1)%cplcompid
-    ocnid1   = ocn(1)%compid
-
-  end subroutine prep_ocn_migrate_moab
-
-  subroutine prep_atm_ocn_moab(infodata)
-
-   use iMOAB, only: iMOAB_CoverageGraph, iMOAB_ComputeScalarProjectionWeights, &
-     iMOAB_ComputeCommGraph, iMOAB_DefineTagStorage
-   !---------------------------------------------------------------
-   ! Description
-   ! After intersection of atm and ocean mesh, correct the communication graph
-   !   between atm instance and atm on coupler (due to coverage)
-   !  also, compute the map; this would be equivalent to seq_map_init_rcfile on the
-   !  mapping file computed offline (this will be now online)
-   !
-   ! Arguments
-   type(seq_infodata_type) , intent(in)    :: infodata
-
-   character(*), parameter          :: subname = '(prep_atm_ocn_moab)'
-   integer :: ierr
-
-   logical                          :: atm_present    ! .true.  => atm is present
-   logical                          :: ocn_present    ! .true.  => ocn is present
-   logical                          :: ocn_prognostic    ! .true.  => ocn is present and expects input
-   integer                  :: id_join
-   integer                  :: mpicom_join
-   integer                  :: context_id ! used to define context for coverage (this case, ocean on coupler)
-   integer                  :: atm_id
-   character*32             :: dm1, dm2, dofnameATM, dofnameOCN, wgtIdef
-   integer                  :: orderOCN, orderATM, volumetric, noConserve, validate, fInverseDistanceMap
-   integer                  :: fNoBubble, monotonicity
-
-   integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
-   integer                  :: mpigrp_old   !  component group pes (phys grid atm) == atm group
-   integer                  :: typeA, typeB ! type for computing graph;
-   integer                  :: idintx ! in this case, id of moab intersection between atm and ocn, on coupler pes
-   
-   character(CXX)           :: tagname 
-   integer                  ::  tagtype, numco,  tagindex  ! used to define tags
-
-
-   call seq_infodata_getData(infodata, &
-        atm_present=atm_present,       &
-        ocn_present=ocn_present,       &
-        ocn_prognostic=ocn_prognostic)
-
- !  it involves initial atm app; mhid; also migrate atm mesh on coupler pes, mbaxid
- !  intx atm ocean are in mbintxao ; remapper also has some info about coverage mesh
- ! after this, the sending of tags from atm pes to coupler pes will use the new par comm graph, that has more precise info about
- ! how to get mpicomm for joint atm + coupler
-   id_join = atm(1)%cplcompid
-   atm_id   = atm(1)%compid
-   ! maybe we can use a moab-only id, defined like mbintxao, mhid, somewhere else (seq_comm_mct)
-   ! we cannot use mbintxao because it may not exist on atm comp yet;
-   context_id = ocn(1)%cplcompid
-   call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
-
-   ! ! it happens over joint communicator, only if ocn_prognostic true
-   if (ocn_prognostic) then
-
-      if (atm_pg_active ) then ! use mhpgid mesh
-         ierr = iMOAB_CoverageGraph(mpicom_join, mhpgid, mbaxid, mbintxao, atm_id, id_join, context_id);
-         if (iamroot_CPLID) then
-            write(logunit,*) 'iMOAB graph atmpg2-intxao context: ', context_id
-         end if
-      else
-         ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxao, atm_id, id_join, context_id);
-         if (iamroot_CPLID) then
-            write(logunit,*) 'iMOAB graph atmnp4-intxao context: ', context_id
-         end if
-      endif
-      if (ierr .ne. 0) then
-      write(logunit,*) subname,' error in computing coverage graph atm/ocn '
-      call shr_sys_abort(subname//' ERROR in computing coverage graph atm/ocn ')
-      endif
-   endif
-
-   if ( mbintxao .ge. 0 ) then
-     volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL; 
-     wgtIdef = 'scalar'//C_NULL_CHAR
-     if (atm_pg_active) then
-       dm1 = "fv"//C_NULL_CHAR
-       dofnameATM="GLOBAL_ID"//C_NULL_CHAR
-       orderATM = 1 !  fv-fv
-     else
-       dm1 = "cgll"//C_NULL_CHAR
-       dofnameATM="GLOBAL_DOFS"//C_NULL_CHAR
-       orderATM = np !  it should be 4
-     endif
-     dm2 = "fv"//C_NULL_CHAR
-     dofnameOCN="GLOBAL_ID"//C_NULL_CHAR
-     orderOCN = 1  !  not much arguing
-     fNoBubble = 1
-     monotonicity = 0 !
-     noConserve = 0
-     validate = 1
-     fInverseDistanceMap = 0
-     if (iamroot_CPLID) then
-       write(logunit,*) 'launch iMOAB weights with args ', mbintxao, wgtIdef, &
-                                           trim(dm1), orderATM, trim(dm2), orderOCN, &
-                                           fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
-                                           noConserve, validate, &
-                                           trim(dofnameATM), trim(dofnameOCN)
-     end if
-     ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxao, wgtIdef, &
-                                               trim(dm1), orderATM, trim(dm2), orderOCN, &
-                                               fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
-                                               noConserve, validate, &
-                                               trim(dofnameATM), trim(dofnameOCN) )
-     if (ierr .ne. 0) then
-       write(logunit,*) subname,' error in computing weights atm/ocn '
-       call shr_sys_abort(subname//' ERROR in computing weights atm/ocn ')
-     endif
-     if (iamroot_CPLID) then
-       write(logunit,*) 'finish iMOAB weights in atm-ocn'
-     endif
-     ! define here the tags atm-ocn projection 
-      ! define tags according to the seq_flds_a2x_fields 
-     tagtype = 1  ! dense, double
-     numco = 1 !  one value per cell / entity
-     tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
-     ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
-     if ( ierr == 1 ) then
-         call shr_sys_abort( subname//' ERROR: cannot define tags in moab' )
-     end if
-
-   endif ! only if atm and ocn intersect  mbintxao >= 0
-   
-   ! I removed comm graph computed for one hop, from atm phys to intxao 
-
-   ! compute the comm graph, used in a 2 hop migration, between atm grid on coupler and intx ao on coupler,
-   ! so first atm fields will be migrated to coupler, and then in another hop, distributed to the processors that actually need the
-   !  those degrees of freedom 
-   ! start copy
-     ! compute the comm graph between atm on coupler side  and intx-atm-ocn, to be able to send in a second hop
-     ! from atm to ocean
-   typeA = 3 ! (atm_pg_active)
-   typeB = 3 ! (atm_pg_active)
-   idintx = atm(1)%cplcompid * 100 + ocn(1)%cplcompid
-   call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  the coupler group CPLID is global variable
-   if (iamroot_CPLID) then
-       ! mpicom_CPLID is a module local variable, already initialized
-       write(logunit,*) 'launch iMOAB computecommgraph with args ',  &
-        mbaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
-         typeA, typeB, id_join, idintx
-       call shr_sys_flush(logunit)
-   end if
-   ! for these to work, we need to define the tags of size 16 (np x np) on coupler atm, 
-   !   corresponding to this phys grid graph
-   if (mbaxid .ge. 0) then
-      ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxao, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
-            typeA, typeB, id_join, idintx)
-      if (ierr .ne. 0) then
-      write(logunit,*) subname,' error in computing graph phys grid - atm/ocn intx '
-      call shr_sys_abort(subname//' ERROR  in computing graph phys grid - atm/ocn intx ')
-      endif
-      if (iamroot_CPLID) then
-         write(logunit,*) 'finish iMOAB graph in atm-ocn prep  '
-      end if
-   endif
-
-   ! end copy
- end subroutine prep_atm_ocn_moab
-
- subroutine prep_ice_ocn_moab(infodata)
-
-   use iMOAB, only:  iMOAB_ComputeCommGraph, iMOAB_DefineTagStorage
-   type(seq_infodata_type) , intent(in)    :: infodata
-
-   character(*), parameter          :: subname = '(prep_ice_ocn_moab)'
-
-   integer                  :: typeA, typeB ! type for computing graph;
-   integer                  :: ocn_id_x, ice_id, id_join, ierr
-   integer                  :: mpicom_join ! join comm between ice and coupler
-   character(CXX)           :: tagname 
-   integer                  ::  tagtype, numco,  tagindex  ! used to define tags
-   integer                  :: mpigrp_CPLID ! coupler pes group 
-   integer                  :: mpigrp_old   !  component group pes (ice here)
-   logical                  :: ice_present, ocn_present, ocn_prognostic
-
-   call seq_infodata_getData(infodata, &
-        ice_present=ice_present,       &
-        ocn_present=ocn_present,       &
-        ocn_prognostic=ocn_prognostic)
-
-   if ( ice_present .and. ocn_present .and.  ocn_prognostic  ) then
-
-      ocn_id_x = ocn(1)%cplcompid
-      ice_id   = ice(1)%compid
-
-      id_join = ice(1)%cplcompid
-      call seq_comm_getinfo(ID_join,mpicom=mpicom_join)  ! joint comm over ice and coupler
-      call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
-      call seq_comm_getinfo(ice_id, mpigrp=mpigrp_old)
-      typeA = 3
-      typeB = 3 ! fv-fv graph  
-
-      ! imoab compute comm graph ice-ocn, based on the same global id
-      ! it will be a simple migrate from ice mesh directly to ocean, using the comm graph computed here
-
-      ierr = iMOAB_ComputeCommGraph( mpsiid, mboxid, mpicom_join, mpigrp_old, mpigrp_CPLID, &
-         typeA, typeB, ice_id, ocn_id_x)
-      if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in computing graph ice - ocn x '
-            call shr_sys_abort(subname//' ERROR  in computing graph ice - ocn x ')
-      endif
-
-      if (mboxid .ge. 0) then ! we are on coupler pes, ocean app on coupler
-            ! define tags according to the seq_flds_i2x_fields 
-         tagtype = 1  ! dense, double
-         numco = 1 !  one value per cell / entity
-         tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
-         if ( ierr == 1 ) then
-            call shr_sys_abort( subname//' ERROR: cannot define tags for ice proj to ocn' )
-         end if
-      endif
-   endif
- end subroutine prep_ice_ocn_moab
 
 end module prep_ocn_mod

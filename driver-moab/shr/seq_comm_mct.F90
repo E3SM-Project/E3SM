@@ -227,6 +227,7 @@ module seq_comm_mct
   integer, public :: mblx2id   ! iMOAB id for land mesh instanced from MCT on coupler pes
   integer, public :: mbox2id   ! iMOAB id for ocn mesh instanced from MCT on coupler pes
   integer, public :: mbintxla ! iMOAB id for intx mesh between land and atmosphere
+  integer, public :: mbintxal ! iMOAB id for intx mesh between atmosphere and land
   integer, public :: mpsiid   ! iMOAB id for sea-ice, mpas model
   integer, public :: mbixid   ! iMOAB id for sea-ice migrated to coupler pes
   integer, public :: mbintxia ! iMOAB id for intx mesh between ice and atmosphere
@@ -637,6 +638,7 @@ contains
     mblxid = -1   ! iMOAB id for land on coupler pes
     mbox2id = -1  ! iMOAB id for ocn from mct on coupler pes
     mbintxla = -1 ! iMOAB id for land intx with atm on coupler pes
+    mbintxal = -1 ! iMOAB id for atm intx with lnd on coupler pes
     mpsiid = -1   ! iMOAB for sea-ice
     mbixid = -1   ! iMOAB for sea-ice migrated to coupler
     mbintxia = -1 ! iMOAB id for ice intx with atm on coupler pes
