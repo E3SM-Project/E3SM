@@ -23,7 +23,7 @@ namespace vinterp {
  *   a 2D view for the source vertical levels to interpolate from
  *   a 1D view for the target vertical levels to interpolate onto
  *   a set of Nd views for the input data, output data and an optional mask
- *     where Nd is a N-dimensional view of dimension 2-4.
+ *     where Nd is a N-dimensional view of dimension 2 or 3.
  * There is a function, perform_vertical_interpolation_impl_1d which 
  * is provided for 1d views (or lambdas). However, in this 
  * case the user must provide the team and ekat::LinInterp as input as well.
@@ -54,9 +54,6 @@ using view_2d = typename KT::template view_2d<T>;
 
 template <typename T>
 using view_3d = typename KT::template view_3d<T>;
-
-template <typename T>
-using view_4d = typename KT::template view_ND<T,4>;
 
 template <typename T, int N>
 using view_Nd = typename KT::template view_ND<T,N>;
@@ -159,17 +156,6 @@ void apply_interpolation(
   const view_3d<      Pack<T,P>>& output,
   const view_3d<        Mask<P>>& mask);
 
-template<typename T, int P> 
-void apply_interpolation(
-  const                      int  num_levs,
-  const                        T  mask_val,
-  const                 LIV<T,P>& vert_interp,
-  const view_2d<const Pack<T,P>>& x_src,
-  const view_2d<const Pack<T,P>>& x_tgt,
-  const view_4d<const Pack<T,P>>& input,
-  const view_4d<      Pack<T,P>>& output,
-  const view_4d<        Mask<P>>& mask);
-
 /* ---------------------------------------------------------------------- 
  * Versions where x_tgt is a single 1-D vertical profile
  * ---------------------------------------------------------------------- */
@@ -203,17 +189,6 @@ void apply_interpolation(
   const view_3d<const Pack<T,P>>& input,
   const view_3d<      Pack<T,P>>& output,
   const view_3d<        Mask<P>>& mask);
-
-template<typename T, int P> 
-void apply_interpolation(
-  const                      int  num_levs,
-  const                        T  mask_val,
-  const                 LIV<T,P>& vert_interp,
-  const view_2d<const Pack<T,P>>& x_src,
-  const view_1d<const Pack<T,P>>& x_tgt,
-  const view_4d<const Pack<T,P>>& input,
-  const view_4d<      Pack<T,P>>& output,
-  const view_4d<        Mask<P>>& mask);
 
 // Helper function to allocate memory for an Nd mask on the fly.
 template<int P, int N>
