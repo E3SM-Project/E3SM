@@ -236,8 +236,6 @@ void RRTMGPRadiation::init_buffers(const ATMBufferManager &buffer_manager)
   mem += m_buffer.sw_heating.totElems();
   m_buffer.lw_heating = decltype(m_buffer.lw_heating)("lw_heating", mem, m_col_chunk_size, m_nlay);
   mem += m_buffer.lw_heating.totElems();
-  m_buffer.rad_heating = decltype(m_buffer.rad_heating)("rad_heating", mem, m_col_chunk_size, m_nlay);
-  mem += m_buffer.rad_heating.totElems();
   // 3d arrays
   m_buffer.p_lev = decltype(m_buffer.p_lev)("p_lev", mem, m_col_chunk_size, m_nlay+1);
   mem += m_buffer.p_lev.totElems();
@@ -442,11 +440,14 @@ void RRTMGPRadiation::run_impl (const int dt) {
   const auto nswbands = m_nswbands;
   const auto nlwgpts = m_nlwgpts;
 
+  // Are we going to update fluxes and heating this step?
+  auto ts = timestamp();
+  auto update_rad = scream::rrtmgp::radiation_do(m_rad_freq_in_steps, ts.get_num_steps());
+
   // Compute orbital parameters; these are used both for computing
   // the solar zenith angle and also for computing total solar
   // irradiance scaling (tsi_scaling).
   double obliqr, lambm0, mvelpp;
-  auto ts = timestamp();
   auto orbital_year = m_orbital_year;
   auto eccen = m_orbital_eccen;
   auto obliq = m_orbital_obliq;
@@ -467,9 +468,6 @@ void RRTMGPRadiation::run_impl (const int dt) {
   auto calday = ts.frac_of_year_in_days() + 1;  // Want day + fraction; calday 1 == Jan 1 0Z
   shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
                    obliqr, &delta, &eccf);
-
-  // Are we going to update fluxes and heating this step?
-  auto update_rad = scream::rrtmgp::radiation_do(m_rad_freq_in_steps, ts.get_num_steps());
 
   // On each chunk, we internally "reset" the GasConcs object to subview the concs 3d array
   // with the correct ncol dimension. So let's keep a copy of the original (ref-counted)
@@ -795,8 +793,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
       );
     }
 
-    // Compute and apply heating tendency
-    auto rad_heating = m_buffer.rad_heating;
+    // Update heating tendency
     if (update_rad) {
       auto sw_heating  = m_buffer.sw_heating;
       auto lw_heating  = m_buffer.lw_heating;
@@ -812,34 +809,9 @@ void RRTMGPRadiation::run_impl (const int dt) {
           const int idx = team.league_rank();
           const int icol = idx+beg;
           Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& ilay) {
+            // Combine SW and LW heating into a net heating tendency; use d_rad_heating_pdel temporarily
             // Note that for YAKL arrays i and k start with index 1
-            int i = idx + 1;
-            int k = ilay + 1;
-            // Combine SW and LW heating into a net heating tendency
-            rad_heating(i,k) = sw_heating(i,k) + lw_heating(i,k);
-            // Apply heating tendency to temperature
-            t_lay(i,k) = t_lay(i,k) + rad_heating(i,k) * dt;
-            // Compute pdel * rad_heating to conserve energy across timesteps in case
-            // levels change before next heating update.
-            d_rad_heating_pdel(icol,k-1) = d_pdel(icol,k-1) * rad_heating(i,k);
-          });
-        });
-      }
-      Kokkos::fence();
-    } else {
-      {
-        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-          const int idx = team.league_rank();
-          const int icol = idx+beg;
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& ilay) {
-            // Note that for YAKL arrays i and k start with index 1
-            int i = idx + 1;
-            int k = ilay + 1;
-            // Back out net heating tendency from the pdel weighted quantity we keep in the FM
-            rad_heating(i,k) = d_rad_heating_pdel(icol,k-1) / d_pdel(icol,k-1);
-            // Apply heating tendency to temperature
-            t_lay(i,k) = t_lay(i,k) + rad_heating(i,k) * dt;
+            d_rad_heating_pdel(icol,ilay) = sw_heating(idx+1,ilay+1) + lw_heating(idx+1,ilay+1);
           });
         });
       }
@@ -916,18 +888,26 @@ void RRTMGPRadiation::run_impl (const int dt) {
         });
       });
     }
-    // Temperature is always updated
-    {
-      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
-      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-        const int i = team.league_rank();
-        const int icol = i + beg;
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
-          d_tmid(icol,k) = t_lay(i+1,k+1);
-        });
-      });
-    }
   } // loop over chunk
+
+  // Update temperature
+  const int ncols = m_ncol;
+  const int nlays = m_nlay;
+  const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols, nlays);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    const int i = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlays), [&] (const int& k) {
+      // Apply temperature tendency
+      if (update_rad) {
+        d_tmid(i,k) = d_tmid(i,k) + d_rad_heating_pdel(i,k) * dt;
+        // Carry pdel * qrad across timesteps to conserve energy
+        d_rad_heating_pdel(i,k) = d_pdel(i,k) * d_rad_heating_pdel(i,k);
+      } else {
+        auto rad_heat = d_rad_heating_pdel(i,k) / d_pdel(i,k);
+        d_tmid(i,k) = d_tmid(i,k) + rad_heat * dt;
+      }
+    });
+  });
 
   // If necessary, set appropriate boundary fluxes for energy and mass conservation checks.
   // Any boundary fluxes not included in radiation interface are set to 0.
