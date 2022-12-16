@@ -129,16 +129,16 @@ void run(){
           const auto in=ekat::subview(tmp_src, icol);
           const auto out_1d=ekat::subview(out_1d_test, icol);
           const auto msk=ekat::subview(mask_1d_test, icol);
-          perform_vertical_interpolation_impl_1d<Real,P>(x1,
-                                                 p_tgt,
-                                                 in,
-                                                 out_1d,
-                                                 msk,
-                                                 loc_layers_src,
-                                                 icol,
-                                                 masked_val,
-                                                 team,
-                                                 vert_interp); 
+          apply_interpolation_impl_1d<Real,P>(x1,
+                                              p_tgt,
+                                              in,
+                                              out_1d,
+                                              msk,
+                                              loc_layers_src,
+                                              icol,
+                                              masked_val,
+                                              team,
+                                              vert_interp); 
       });
       Kokkos::fence();
 
@@ -298,16 +298,16 @@ TEST_CASE("testing_masking"){
       const auto in=ekat::subview(tmp_src, icol);
       const auto out_1d=ekat::subview(out_1d_test, icol);
       const auto msk=ekat::subview(mask_1d_test, icol);
-      perform_vertical_interpolation_impl_1d<Real,P>(x1,
-                                             p_tgt,
-                                             in,
-                                             out_1d,
-                                             msk,
-                                             n_layers_src,
-                                             icol,
-                                             masked_val,
-                                             team,
-                                             vert_interp);
+      apply_interpolation_impl_1d<Real,P>(x1,
+                                          p_tgt,
+                                          in,
+                                          out_1d,
+                                          msk,
+                                          n_layers_src,
+                                          icol,
+                                          masked_val,
+                                          team,
+                                          vert_interp);
   });
   Kokkos::fence();
 

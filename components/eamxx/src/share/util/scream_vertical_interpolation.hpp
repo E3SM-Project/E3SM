@@ -49,6 +49,9 @@ using LIV = ekat::LinInterp<T,P>;
 template <typename T>
 using view_1d = typename KT::template view_1d<T>;
 
+template <typename T>
+using view_2d = typename KT::template view_2d<T>;
+
 template <typename T, int P>
 using view_Nd = typename KT::template view_ND<T,P>;
 template <typename T, int P>
@@ -56,67 +59,55 @@ using view_Nd_host = typename KT::template view_ND<T,P>::HostMirror;
     
 constexpr Real masked_val = -std::numeric_limits<Real>::max();
 
-//This is the generic function call where the user provides source levels, 
-//target levels, the input to interpolate, the output that has been interpolated,
-//a Nd-mask from the user which is filled based on what values
-//should have a mask (i.e. are out-of-bounds and require an extrapolation),
-//the number of source and target levels,
-//and a mask value provided by the user (msk_val)
-//The Nd-mask should have the same dimensions as the output
 template<typename T, int P, int N> 
 void perform_vertical_interpolation(
-  const view_Nd<Pack<T,P>,2>& x_src,
-  const view_1d<Pack<T,P>>& x_tgt,
-  const view_Nd<Pack<T,P>,N>& input,
-  const view_Nd<Pack<T,P>,N>& output,
-  const view_Nd<Mask<P>,N>& mask,
+  const view_2d<const Pack<T,P>>&   x_src,
+  const view_1d<const Pack<T,P>>&   x_tgt,
+  const view_Nd<const Pack<T,P>,N>& input,
+  const view_Nd<      Pack<T,P>,N>& output,
   const int nlevs_src,
   const int nlevs_tgt,
-  const Real msk_val);
+  const Real msk_val = masked_val);
 
-// This is the same as the generic function above, but in the case where the user
-// does not want to output the masked array.
 template<typename T, int P, int N> 
 void perform_vertical_interpolation(
-  const view_Nd<Pack<T,P>,2>& x_src,
-  const view_1d<Pack<T,P>>& x_tgt,
-  const view_Nd<Pack<T,P>,N>& input,
-  const view_Nd<Pack<T,P>,N>& output,
+  const view_2d<const Pack<T,P>>&   x_src,
+  const view_1d<const Pack<T,P>>&   x_tgt,
+  const view_Nd<const Pack<T,P>,N>& input,
+  const view_Nd<      Pack<T,P>,N>& output,
+  const view_Nd<      Mask<P>,N>&   mask,
   const int nlevs_src,
   const int nlevs_tgt,
-  const Real msk_val);
+  const Real msk_val = masked_val);
 
-//This function call does not have a mask value provided by user
-//so uses the default masked value (masked_val) in the
-//scream_vertical_interpolation.hpp file
 template<typename T, int P, int N> 
 void perform_vertical_interpolation(
-  const view_Nd<Pack<T,P>,2>& x_src,
-  const view_1d<Pack<T,P>>& x_tgt,
-  const view_Nd<Pack<T,P>,N>& input,
-  const view_Nd<Pack<T,P>,N>& output,
-  const view_Nd<Mask<P>,N>& mask,
+  const view_2d<const Pack<T,P>>&   x_src,
+  const view_2d<const Pack<T,P>>&   x_tgt,
+  const view_Nd<const Pack<T,P>,N>& input,
+  const view_Nd<      Pack<T,P>,N>& output,
   const int nlevs_src,
-  const int nlevs_tgt);
+  const int nlevs_tgt,
+  const Real msk_val = masked_val);
 
-//This function call does not have a mask value provided by user
-//so uses the default masked value (masked_val) defined 
-//in the scream_vertical_interpolation.hpp file.
-//In addition, this function does not require a Nd mask from the user
-//so one is setup since this is what perform_vertical_interpolation_impl_Nd
-//requires  
 template<typename T, int P, int N> 
 void perform_vertical_interpolation(
-  const view_Nd<Pack<T,P>,2>& x_src,
-  const view_1d<Pack<T,P>>& x_tgt,
-  const view_Nd<Pack<T,P>,N>& input,
-  const view_Nd<Pack<T,P>,N>& output,
+  const view_2d<const Pack<T,P>>&   x_src,
+  const view_2d<const Pack<T,P>>&   x_tgt,
+  const view_Nd<const Pack<T,P>,N>& input,
+  const view_Nd<      Pack<T,P>,N>& output,
+  const view_Nd<      Mask<P>,N>&   mask,
   const int nlevs_src,
-  const int nlevs_tgt);
+  const int nlevs_tgt,
+  const Real msk_val = masked_val);
 
+/* ---------------------------------------------------------------------- 
+ * Main interpolation routine that applies vertical interpolation to a
+ * single vertical slice of data. 
+ * ---------------------------------------------------------------------- */
 template<typename T, int P> 
 KOKKOS_FUNCTION
-void perform_vertical_interpolation_impl_1d(
+void apply_interpolation_impl_1d(
   const view_1d<const Pack<T,P>>& x_src,
   const view_1d<const Pack<T,P>>& x_tgt,
   const view_1d<const Pack<T,P>>& input,
@@ -128,16 +119,62 @@ void perform_vertical_interpolation_impl_1d(
   const MemberType& team,
   const LIV<T,P>& vert_interp);
 
+/* ---------------------------------------------------------------------- 
+ * Versions where x_tgt is a 2-D view
+ * ---------------------------------------------------------------------- */
 template<typename T, int P, int N> 
-void perform_vertical_interpolation_impl_Nd(
-  const view_Nd<const Pack<T,P>,2>& x_src,
+void perform_checks(
+  const view_2d<const Pack<T,P>>&   x_src,
+  const view_2d<const Pack<T,P>>&   x_tgt,
+  const view_Nd<const Pack<T,P>,N>& input,
+  const view_Nd<      Pack<T,P>,N>& output,
+  const int                         nlevs_src,
+  const int                         nlevs_tgt);
+
+template<typename T, int P> 
+void apply_interpolation(
+  const                        int  num_levs,
+  const                          T  mask_val,
+  const                   LIV<T,P>& vert_interp,
+  const view_2d<const Pack<T,P>>&   x_src,
+  const view_2d<const Pack<T,P>>&   x_tgt,
+  const view_Nd<const Pack<T,P>,2>& input,
+  const view_Nd<      Pack<T,P>,2>& output,
+  const view_Nd<        Mask<P>,2>& mask);
+
+template<typename T, int P> 
+void apply_interpolation(
+  const                        int  num_levs,
+  const                          T  mask_val,
+  const                   LIV<T,P>& vert_interp,
+  const view_2d<const Pack<T,P>>&   x_src,
+  const view_2d<const Pack<T,P>>&   x_tgt,
+  const view_Nd<const Pack<T,P>,3>& input,
+  const view_Nd<      Pack<T,P>,3>& output,
+  const view_Nd<        Mask<P>,3>& mask);
+
+template<typename T, int P> 
+void apply_interpolation(
+  const                        int  num_levs,
+  const                          T  mask_val,
+  const                   LIV<T,P>& vert_interp,
+  const view_2d<const Pack<T,P>>&   x_src,
+  const view_2d<const Pack<T,P>>&   x_tgt,
+  const view_Nd<const Pack<T,P>,4>& input,
+  const view_Nd<      Pack<T,P>,4>& output,
+  const view_Nd<        Mask<P>,4>& mask);
+
+/* ---------------------------------------------------------------------- 
+ * Versions where x_tgt is a single 1-D vertical profile
+ * ---------------------------------------------------------------------- */
+template<typename T, int P, int N> 
+void perform_checks(
+  const view_2d<const Pack<T,P>>&   x_src,
   const view_1d<const Pack<T,P>>&   x_tgt,
   const view_Nd<const Pack<T,P>,N>& input,
-  const view_Nd<Pack<T,P>,N>&       output,
-  const view_Nd<Mask<P>,N>&         mask,
+  const view_Nd<      Pack<T,P>,N>& output,
   const int                         nlevs_src,
-  const int                         nlevs_tgt,
-  const Real                        msk_val);
+  const int                         nlevs_tgt);
 
 template<typename T, int P> 
 void apply_interpolation(
