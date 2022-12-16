@@ -444,212 +444,212 @@ void RRTMGPRadiation::run_impl (const int dt) {
   auto ts = timestamp();
   auto update_rad = scream::rrtmgp::radiation_do(m_rad_freq_in_steps, ts.get_num_steps());
 
-  // Compute orbital parameters; these are used both for computing
-  // the solar zenith angle and also for computing total solar
-  // irradiance scaling (tsi_scaling).
-  double obliqr, lambm0, mvelpp;
-  auto orbital_year = m_orbital_year;
-  auto eccen = m_orbital_eccen;
-  auto obliq = m_orbital_obliq;
-  auto mvelp = m_orbital_mvelp;
-  if (eccen >= 0 && obliq >= 0 && mvelp >= 0) {
-    // use fixed orbital parameters; to force this, we need to set
-    // orbital_year to SHR_ORB_UNDEF_INT, which is exposed through
-    // our c2f bridge as shr_orb_undef_int_c2f
-    orbital_year = shr_orb_undef_int_c2f;
-  } else if (orbital_year < 0) {
-    // compute orbital parameters based on current year
-    orbital_year = ts.get_year();
-  }
-  shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp,
-                     &obliqr, &lambm0, &mvelpp);
-  // Use the orbital parameters to calculate the solar declination and eccentricity factor
-  double delta, eccf;
-  auto calday = ts.frac_of_year_in_days() + 1;  // Want day + fraction; calday 1 == Jan 1 0Z
-  shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
-                   obliqr, &delta, &eccf);
+  if (update_rad) {
+    // On each chunk, we internally "reset" the GasConcs object to subview the concs 3d array
+    // with the correct ncol dimension. So let's keep a copy of the original (ref-counted)
+    // array, to restore at the end inside the m_gast_concs object.
+    auto gas_concs = m_gas_concs.concs;
 
-  // On each chunk, we internally "reset" the GasConcs object to subview the concs 3d array
-  // with the correct ncol dimension. So let's keep a copy of the original (ref-counted)
-  // array, to restore at the end inside the m_gast_concs object.
-
-  auto gas_concs = m_gas_concs.concs;
-  // Loop over each chunk of columns
-  for (int ic=0; ic<m_num_col_chunks; ++ic) {
-    const int beg  = m_col_chunk_beg[ic];
-    const int ncol = m_col_chunk_beg[ic+1] - beg;
-    this->log(LogLevel::debug,
-              "[RRTMGP::run_impl] Col chunk beg,end: " + std::to_string(beg) + ", " + std::to_string(beg+ncol) + "\n");
-
-
-    // Create YAKL arrays. RRTMGP expects YAKL arrays with styleFortran, i.e., data has ncol
-    // as the fastest index. For this reason we must copy the data.
-    auto subview_1d = [&](const real1d v) -> real1d {
-      return real1d(v.label(),v.myData,ncol);
-    };
-    auto subview_2d = [&](const real2d v) -> real2d {
-      return real2d(v.label(),v.myData,ncol,v.dimension[1]);
-    };
-    auto subview_3d = [&](const real3d v) -> real3d {
-      return real3d(v.label(),v.myData,ncol,v.dimension[1],v.dimension[2]);
-    };
-
-    auto p_lay           = subview_2d(m_buffer.p_lay);
-    auto t_lay           = subview_2d(m_buffer.t_lay);
-    auto p_lev           = subview_2d(m_buffer.p_lev);
-    auto p_del           = subview_2d(m_buffer.p_del);
-    auto t_lev           = subview_2d(m_buffer.t_lev);
-    auto mu0             = subview_1d(m_buffer.mu0);
-    auto sfc_alb_dir     = subview_2d(m_buffer.sfc_alb_dir);
-    auto sfc_alb_dif     = subview_2d(m_buffer.sfc_alb_dif);
-    auto sfc_alb_dir_vis = subview_1d(m_buffer.sfc_alb_dir_vis);
-    auto sfc_alb_dir_nir = subview_1d(m_buffer.sfc_alb_dir_nir);
-    auto sfc_alb_dif_vis = subview_1d(m_buffer.sfc_alb_dif_vis);
-    auto sfc_alb_dif_nir = subview_1d(m_buffer.sfc_alb_dif_nir);
-    auto qc              = subview_2d(m_buffer.qc);
-    auto qi              = subview_2d(m_buffer.qi);
-    auto cldfrac_tot     = subview_2d(m_buffer.cldfrac_tot);
-    auto rel             = subview_2d(m_buffer.eff_radius_qc);
-    auto rei             = subview_2d(m_buffer.eff_radius_qi);
-    auto sw_flux_up      = subview_2d(m_buffer.sw_flux_up);
-    auto sw_flux_dn      = subview_2d(m_buffer.sw_flux_dn);
-    auto sw_flux_dn_dir  = subview_2d(m_buffer.sw_flux_dn_dir);
-    auto lw_flux_up      = subview_2d(m_buffer.lw_flux_up);
-    auto lw_flux_dn      = subview_2d(m_buffer.lw_flux_dn);
-    auto sw_clrsky_flux_up      = subview_2d(m_buffer.sw_clrsky_flux_up);
-    auto sw_clrsky_flux_dn      = subview_2d(m_buffer.sw_clrsky_flux_dn);
-    auto sw_clrsky_flux_dn_dir  = subview_2d(m_buffer.sw_clrsky_flux_dn_dir);
-    auto lw_clrsky_flux_up      = subview_2d(m_buffer.lw_clrsky_flux_up);
-    auto lw_clrsky_flux_dn      = subview_2d(m_buffer.lw_clrsky_flux_dn);
-    auto sw_bnd_flux_up  = subview_3d(m_buffer.sw_bnd_flux_up);
-    auto sw_bnd_flux_dn  = subview_3d(m_buffer.sw_bnd_flux_dn);
-    auto sw_bnd_flux_dir = subview_3d(m_buffer.sw_bnd_flux_dir);
-    auto sw_bnd_flux_dif = subview_3d(m_buffer.sw_bnd_flux_dif);
-    auto lw_bnd_flux_up  = subview_3d(m_buffer.lw_bnd_flux_up);
-    auto lw_bnd_flux_dn  = subview_3d(m_buffer.lw_bnd_flux_dn);
-    auto sfc_flux_dir_vis = subview_1d(m_buffer.sfc_flux_dir_vis);
-    auto sfc_flux_dir_nir = subview_1d(m_buffer.sfc_flux_dir_nir);
-    auto sfc_flux_dif_vis = subview_1d(m_buffer.sfc_flux_dif_vis);
-    auto sfc_flux_dif_nir = subview_1d(m_buffer.sfc_flux_dif_nir);
-    auto aero_tau_sw     = subview_3d(m_buffer.aero_tau_sw);
-    auto aero_ssa_sw     = subview_3d(m_buffer.aero_ssa_sw);
-    auto aero_g_sw       = subview_3d(m_buffer.aero_g_sw);
-    auto aero_tau_lw     = subview_3d(m_buffer.aero_tau_lw);
-    auto cld_tau_sw_gpt  = subview_3d(m_buffer.cld_tau_sw_gpt);
-    auto cld_tau_lw_gpt  = subview_3d(m_buffer.cld_tau_lw_gpt);
-
-    // Set gas concs to "view" only the first ncol columns
-    m_gas_concs.ncol = ncol;
-    m_gas_concs.concs = subview_3d(gas_concs);
-
-    // Copy data from the FieldManager to the YAKL arrays
-    {
-      // Determine the cosine zenith angle
-      // NOTE: Since we are bridging to F90 arrays this must be done on HOST and then
-      //       deep copied to a device view.
-      auto d_mu0 = m_buffer.cosine_zenith;
-      auto h_mu0 = Kokkos::create_mirror_view(d_mu0);
-      if (m_fixed_solar_zenith_angle > 0) {
-        for (int i=0; i<ncol; i++) {
-          h_mu0(i) = m_fixed_solar_zenith_angle;
-        }
-      } else {
-        // Now use solar declination to calculate zenith angle for all points
-        for (int i=0;i<ncol;i++) {
-          double lat = h_lat(i+beg)*PC::Pi/180.0;  // Convert lat/lon to radians
-          double lon = h_lon(i+beg)*PC::Pi/180.0;
-          h_mu0(i) = shr_orb_cosz_c2f(calday, lat, lon, delta, m_rad_freq_in_steps * dt);
-        }
-      }
-      Kokkos::deep_copy(d_mu0,h_mu0);
-
-      // dz and T_int will need to be computed
-      view_2d_real d_tint("T_int", ncol, m_nlay+1);
-      view_2d_real d_dz  ("dz",    ncol, m_nlay);
-
-      const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
-      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
-        const int i = team.league_rank();
-        const int icol = i+beg;
-
-        // Calculate dz
-        const auto pseudo_density = ekat::subview(d_pdel, icol);
-        const auto p_mid          = ekat::subview(d_pmid, icol);
-        const auto T_mid          = ekat::subview(d_tmid, icol);
-        const auto qv             = ekat::subview(d_qv,   icol);
-        const auto dz             = ekat::subview(d_dz,   i);
-        PF::calculate_dz<Real>(team, pseudo_density, p_mid, T_mid, qv, dz);
-        team.team_barrier();
-
-        // Calculate T_int from longwave flux up from the surface, assuming
-        // blackbody emission with emissivity of 1.
-        // TODO: Does land model assume something other than emissivity of 1? If so
-        // we should use that here rather than assuming perfect blackbody emission.
-        // NOTE: RRTMGP can accept vertical ordering surface to toa, or toa to
-        // surface. The input data for the standalone test is ordered surface to
-        // toa, but SCREAM in general assumes data is toa to surface. We account
-        // for this here by swapping bc_top and bc_bot in the case that the input
-        // data is ordered surface to toa.
-        const auto T_int = ekat::subview(d_tint, i);
-        const auto P_mid = ekat::subview(d_pmid, icol);
-        const int itop = (P_mid(0) < P_mid(nlay-1)) ? 0 : nlay-1;
-        const Real bc_top = T_mid(itop);
-        const Real bc_bot = sqrt(sqrt(d_surf_lw_flux_up(icol)/stebol));
-        if (itop == 0) {
-            CO::compute_interface_values_linear(team, nlay, T_mid, dz, bc_top, bc_bot, T_int);
-        } else {
-            CO::compute_interface_values_linear(team, nlay, T_mid, dz, bc_bot, bc_top, T_int);
-        }
-        team.team_barrier();
-
-        mu0(i+1) = d_mu0(i);
-        sfc_alb_dir_vis(i+1) = d_sfc_alb_dir_vis(icol);
-        sfc_alb_dir_nir(i+1) = d_sfc_alb_dir_nir(icol);
-        sfc_alb_dif_vis(i+1) = d_sfc_alb_dif_vis(icol);
-        sfc_alb_dif_nir(i+1) = d_sfc_alb_dif_nir(icol);
-
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
-          p_lay(i+1,k+1)       = d_pmid(icol,k);
-          t_lay(i+1,k+1)       = d_tmid(icol,k);
-          p_del(i+1,k+1)       = d_pdel(icol,k);
-          qc(i+1,k+1)          = d_qc(icol,k);
-          qi(i+1,k+1)          = d_qi(icol,k);
-          rel(i+1,k+1)         = d_rel(icol,k);
-          rei(i+1,k+1)         = d_rei(icol,k);
-          p_lev(i+1,k+1)       = d_pint(icol,k);
-          t_lev(i+1,k+1)       = d_tint(i,k);
-        });
-
-        p_lev(i+1,nlay+1) = d_pint(icol,nlay);
-        t_lev(i+1,nlay+1) = d_tint(i,nlay);
-
-        // Note that RRTMGP expects ordering (col,lay,bnd) but the FM keeps things in (col,bnd,lay) order
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nswbands*nlay), [&] (const int&idx) {
-            auto b = idx / nlay;
-            auto k = idx % nlay;
-            aero_tau_sw(i+1,k+1,b+1) = d_aero_tau_sw(icol,b,k);
-            aero_ssa_sw(i+1,k+1,b+1) = d_aero_ssa_sw(icol,b,k);
-            aero_g_sw  (i+1,k+1,b+1) = d_aero_g_sw  (icol,b,k);
-        });
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlwbands*nlay), [&] (const int&idx) {
-            auto b = idx / nlay;
-            auto k = idx % nlay;
-            aero_tau_lw(i+1,k+1,b+1) = d_aero_tau_lw(icol,b,k);
-        });
-      });
+    // Compute orbital parameters; these are used both for computing
+    // the solar zenith angle and also for computing total solar
+    // irradiance scaling (tsi_scaling).
+    double obliqr, lambm0, mvelpp;
+    auto orbital_year = m_orbital_year;
+    auto eccen = m_orbital_eccen;
+    auto obliq = m_orbital_obliq;
+    auto mvelp = m_orbital_mvelp;
+    if (eccen >= 0 && obliq >= 0 && mvelp >= 0) {
+      // use fixed orbital parameters; to force this, we need to set
+      // orbital_year to SHR_ORB_UNDEF_INT, which is exposed through
+      // our c2f bridge as shr_orb_undef_int_c2f
+      orbital_year = shr_orb_undef_int_c2f;
+    } else if (orbital_year < 0) {
+      // compute orbital parameters based on current year
+      orbital_year = ts.get_year();
     }
-    Kokkos::fence();
+    shr_orb_params_c2f(&orbital_year, &eccen, &obliq, &mvelp,
+                       &obliqr, &lambm0, &mvelpp);
+    // Use the orbital parameters to calculate the solar declination and eccentricity factor
+    double delta, eccf;
+    auto calday = ts.frac_of_year_in_days() + 1;  // Want day + fraction; calday 1 == Jan 1 0Z
+    shr_orb_decl_c2f(calday, eccen, mvelpp, lambm0,
+                     obliqr, &delta, &eccf);
 
-    // Populate GasConcs object to pass to RRTMGP driver
-    // set_vmr requires the input array size to have the correct size,
-    // and the last chunk may have less columns, so create a temp of
-    // correct size that uses m_buffer.tmp2d's pointer
-    //
-    // h2o is taken from qv and requies no initialization here;
-    // o3 is computed elsewhere (either read from file or computed by chemistry);
-    // n2 and co are set to constants and are not handled by trcmix;
-    // the rest are handled by trcmix
-    if (update_rad) {
+    // Loop over each chunk of columns
+    for (int ic=0; ic<m_num_col_chunks; ++ic) {
+      const int beg  = m_col_chunk_beg[ic];
+      const int ncol = m_col_chunk_beg[ic+1] - beg;
+      this->log(LogLevel::debug,
+                "[RRTMGP::run_impl] Col chunk beg,end: " + std::to_string(beg) + ", " + std::to_string(beg+ncol) + "\n");
+
+
+      // Create YAKL arrays. RRTMGP expects YAKL arrays with styleFortran, i.e., data has ncol
+      // as the fastest index. For this reason we must copy the data.
+      auto subview_1d = [&](const real1d v) -> real1d {
+        return real1d(v.label(),v.myData,ncol);
+      };
+      auto subview_2d = [&](const real2d v) -> real2d {
+        return real2d(v.label(),v.myData,ncol,v.dimension[1]);
+      };
+      auto subview_3d = [&](const real3d v) -> real3d {
+        return real3d(v.label(),v.myData,ncol,v.dimension[1],v.dimension[2]);
+      };
+
+      auto p_lay           = subview_2d(m_buffer.p_lay);
+      auto t_lay           = subview_2d(m_buffer.t_lay);
+      auto p_lev           = subview_2d(m_buffer.p_lev);
+      auto p_del           = subview_2d(m_buffer.p_del);
+      auto t_lev           = subview_2d(m_buffer.t_lev);
+      auto mu0             = subview_1d(m_buffer.mu0);
+      auto sfc_alb_dir     = subview_2d(m_buffer.sfc_alb_dir);
+      auto sfc_alb_dif     = subview_2d(m_buffer.sfc_alb_dif);
+      auto sfc_alb_dir_vis = subview_1d(m_buffer.sfc_alb_dir_vis);
+      auto sfc_alb_dir_nir = subview_1d(m_buffer.sfc_alb_dir_nir);
+      auto sfc_alb_dif_vis = subview_1d(m_buffer.sfc_alb_dif_vis);
+      auto sfc_alb_dif_nir = subview_1d(m_buffer.sfc_alb_dif_nir);
+      auto qc              = subview_2d(m_buffer.qc);
+      auto qi              = subview_2d(m_buffer.qi);
+      auto cldfrac_tot     = subview_2d(m_buffer.cldfrac_tot);
+      auto rel             = subview_2d(m_buffer.eff_radius_qc);
+      auto rei             = subview_2d(m_buffer.eff_radius_qi);
+      auto sw_flux_up      = subview_2d(m_buffer.sw_flux_up);
+      auto sw_flux_dn      = subview_2d(m_buffer.sw_flux_dn);
+      auto sw_flux_dn_dir  = subview_2d(m_buffer.sw_flux_dn_dir);
+      auto lw_flux_up      = subview_2d(m_buffer.lw_flux_up);
+      auto lw_flux_dn      = subview_2d(m_buffer.lw_flux_dn);
+      auto sw_clrsky_flux_up      = subview_2d(m_buffer.sw_clrsky_flux_up);
+      auto sw_clrsky_flux_dn      = subview_2d(m_buffer.sw_clrsky_flux_dn);
+      auto sw_clrsky_flux_dn_dir  = subview_2d(m_buffer.sw_clrsky_flux_dn_dir);
+      auto lw_clrsky_flux_up      = subview_2d(m_buffer.lw_clrsky_flux_up);
+      auto lw_clrsky_flux_dn      = subview_2d(m_buffer.lw_clrsky_flux_dn);
+      auto sw_bnd_flux_up  = subview_3d(m_buffer.sw_bnd_flux_up);
+      auto sw_bnd_flux_dn  = subview_3d(m_buffer.sw_bnd_flux_dn);
+      auto sw_bnd_flux_dir = subview_3d(m_buffer.sw_bnd_flux_dir);
+      auto sw_bnd_flux_dif = subview_3d(m_buffer.sw_bnd_flux_dif);
+      auto lw_bnd_flux_up  = subview_3d(m_buffer.lw_bnd_flux_up);
+      auto lw_bnd_flux_dn  = subview_3d(m_buffer.lw_bnd_flux_dn);
+      auto sfc_flux_dir_vis = subview_1d(m_buffer.sfc_flux_dir_vis);
+      auto sfc_flux_dir_nir = subview_1d(m_buffer.sfc_flux_dir_nir);
+      auto sfc_flux_dif_vis = subview_1d(m_buffer.sfc_flux_dif_vis);
+      auto sfc_flux_dif_nir = subview_1d(m_buffer.sfc_flux_dif_nir);
+      auto aero_tau_sw     = subview_3d(m_buffer.aero_tau_sw);
+      auto aero_ssa_sw     = subview_3d(m_buffer.aero_ssa_sw);
+      auto aero_g_sw       = subview_3d(m_buffer.aero_g_sw);
+      auto aero_tau_lw     = subview_3d(m_buffer.aero_tau_lw);
+      auto cld_tau_sw_gpt  = subview_3d(m_buffer.cld_tau_sw_gpt);
+      auto cld_tau_lw_gpt  = subview_3d(m_buffer.cld_tau_lw_gpt);
+
+      // Set gas concs to "view" only the first ncol columns
+      m_gas_concs.ncol = ncol;
+      m_gas_concs.concs = subview_3d(gas_concs);
+
+      // Copy data from the FieldManager to the YAKL arrays
+      {
+        // Determine the cosine zenith angle
+        // NOTE: Since we are bridging to F90 arrays this must be done on HOST and then
+        //       deep copied to a device view.
+        auto d_mu0 = m_buffer.cosine_zenith;
+        auto h_mu0 = Kokkos::create_mirror_view(d_mu0);
+        if (m_fixed_solar_zenith_angle > 0) {
+          for (int i=0; i<ncol; i++) {
+            h_mu0(i) = m_fixed_solar_zenith_angle;
+          }
+        } else {
+          // Now use solar declination to calculate zenith angle for all points
+          for (int i=0;i<ncol;i++) {
+            double lat = h_lat(i+beg)*PC::Pi/180.0;  // Convert lat/lon to radians
+            double lon = h_lon(i+beg)*PC::Pi/180.0;
+            h_mu0(i) = shr_orb_cosz_c2f(calday, lat, lon, delta, m_rad_freq_in_steps * dt);
+          }
+        }
+        Kokkos::deep_copy(d_mu0,h_mu0);
+
+        // dz and T_int will need to be computed
+        view_2d_real d_tint("T_int", ncol, m_nlay+1);
+        view_2d_real d_dz  ("dz",    ncol, m_nlay);
+
+        const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+          const int i = team.league_rank();
+          const int icol = i+beg;
+
+          // Calculate dz
+          const auto pseudo_density = ekat::subview(d_pdel, icol);
+          const auto p_mid          = ekat::subview(d_pmid, icol);
+          const auto T_mid          = ekat::subview(d_tmid, icol);
+          const auto qv             = ekat::subview(d_qv,   icol);
+          const auto dz             = ekat::subview(d_dz,   i);
+          PF::calculate_dz<Real>(team, pseudo_density, p_mid, T_mid, qv, dz);
+          team.team_barrier();
+
+          // Calculate T_int from longwave flux up from the surface, assuming
+          // blackbody emission with emissivity of 1.
+          // TODO: Does land model assume something other than emissivity of 1? If so
+          // we should use that here rather than assuming perfect blackbody emission.
+          // NOTE: RRTMGP can accept vertical ordering surface to toa, or toa to
+          // surface. The input data for the standalone test is ordered surface to
+          // toa, but SCREAM in general assumes data is toa to surface. We account
+          // for this here by swapping bc_top and bc_bot in the case that the input
+          // data is ordered surface to toa.
+          const auto T_int = ekat::subview(d_tint, i);
+          const auto P_mid = ekat::subview(d_pmid, icol);
+          const int itop = (P_mid(0) < P_mid(nlay-1)) ? 0 : nlay-1;
+          const Real bc_top = T_mid(itop);
+          const Real bc_bot = sqrt(sqrt(d_surf_lw_flux_up(icol)/stebol));
+          if (itop == 0) {
+              CO::compute_interface_values_linear(team, nlay, T_mid, dz, bc_top, bc_bot, T_int);
+          } else {
+              CO::compute_interface_values_linear(team, nlay, T_mid, dz, bc_bot, bc_top, T_int);
+          }
+          team.team_barrier();
+
+          mu0(i+1) = d_mu0(i);
+          sfc_alb_dir_vis(i+1) = d_sfc_alb_dir_vis(icol);
+          sfc_alb_dir_nir(i+1) = d_sfc_alb_dir_nir(icol);
+          sfc_alb_dif_vis(i+1) = d_sfc_alb_dif_vis(icol);
+          sfc_alb_dif_nir(i+1) = d_sfc_alb_dif_nir(icol);
+
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+            p_lay(i+1,k+1)       = d_pmid(icol,k);
+            t_lay(i+1,k+1)       = d_tmid(icol,k);
+            p_del(i+1,k+1)       = d_pdel(icol,k);
+            qc(i+1,k+1)          = d_qc(icol,k);
+            qi(i+1,k+1)          = d_qi(icol,k);
+            rel(i+1,k+1)         = d_rel(icol,k);
+            rei(i+1,k+1)         = d_rei(icol,k);
+            p_lev(i+1,k+1)       = d_pint(icol,k);
+            t_lev(i+1,k+1)       = d_tint(i,k);
+          });
+
+          p_lev(i+1,nlay+1) = d_pint(icol,nlay);
+          t_lev(i+1,nlay+1) = d_tint(i,nlay);
+
+          // Note that RRTMGP expects ordering (col,lay,bnd) but the FM keeps things in (col,bnd,lay) order
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nswbands*nlay), [&] (const int&idx) {
+              auto b = idx / nlay;
+              auto k = idx % nlay;
+              aero_tau_sw(i+1,k+1,b+1) = d_aero_tau_sw(icol,b,k);
+              aero_ssa_sw(i+1,k+1,b+1) = d_aero_ssa_sw(icol,b,k);
+              aero_g_sw  (i+1,k+1,b+1) = d_aero_g_sw  (icol,b,k);
+          });
+          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlwbands*nlay), [&] (const int&idx) {
+              auto b = idx / nlay;
+              auto k = idx % nlay;
+              aero_tau_lw(i+1,k+1,b+1) = d_aero_tau_lw(icol,b,k);
+          });
+        });
+      }
+      Kokkos::fence();
+
+      // Populate GasConcs object to pass to RRTMGP driver
+      // set_vmr requires the input array size to have the correct size,
+      // and the last chunk may have less columns, so create a temp of
+      // correct size that uses m_buffer.tmp2d's pointer
+      //
+      // h2o is taken from qv and requies no initialization here;
+      // o3 is computed elsewhere (either read from file or computed by chemistry);
+      // n2 and co are set to constants and are not handled by trcmix;
+      // the rest are handled by trcmix
       real2d tmp2d = subview_2d(m_buffer.tmp2d);
       const auto gas_mol_weights = m_gas_mol_weights;
       for (int igas = 0; igas < m_ngas; igas++) {
@@ -706,22 +706,20 @@ void RRTMGPRadiation::run_impl (const int dt) {
         // Populate GasConcs object
         m_gas_concs.set_vmr(name, tmp2d);
       }
-    }
 
-    // Set layer cloud fraction.
-    //
-    // If not doing subcolumn sampling for mcica, we want to make sure we use grid-mean
-    // condensate for computing cloud optical properties, because we are assuming the
-    // entire column is completely clear or cloudy. Thus, in this case we want to set
-    // cloud fraction to 0 or 1. Note that we could choose an alternative threshold
-    // criteria here, like qc + qi > 1e-5 or something.
-    //
-    // If we *are* doing subcolumn sampling for MCICA, then keep cloud fraction as input
-    // from cloud fraction parameterization, wherever that is computed.
-    auto do_subcol_sampling = m_do_subcol_sampling;
-    auto lwp = m_buffer.lwp;
-    auto iwp = m_buffer.iwp;
-    if (update_rad) {
+      // Set layer cloud fraction.
+      //
+      // If not doing subcolumn sampling for mcica, we want to make sure we use grid-mean
+      // condensate for computing cloud optical properties, because we are assuming the
+      // entire column is completely clear or cloudy. Thus, in this case we want to set
+      // cloud fraction to 0 or 1. Note that we could choose an alternative threshold
+      // criteria here, like qc + qi > 1e-5 or something.
+      //
+      // If we *are* doing subcolumn sampling for MCICA, then keep cloud fraction as input
+      // from cloud fraction parameterization, wherever that is computed.
+      auto do_subcol_sampling = m_do_subcol_sampling;
+      auto lwp = m_buffer.lwp;
+      auto iwp = m_buffer.iwp;
       if (not do_subcol_sampling) {
         const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
@@ -762,22 +760,18 @@ void RRTMGPRadiation::run_impl (const int dt) {
       });
       }
       Kokkos::fence();
-    }
 
-    // Compute band-by-band surface_albedos. This is needed since
-    // the AD passes broadband albedos, but rrtmgp require band-by-band.
-    if (update_rad) {
+      // Compute band-by-band surface_albedos. This is needed since
+      // the AD passes broadband albedos, but rrtmgp require band-by-band.
       rrtmgp::compute_band_by_band_surface_albedos(
         ncol, nswbands,
         sfc_alb_dir_vis, sfc_alb_dir_nir,
         sfc_alb_dif_vis, sfc_alb_dif_nir,
         sfc_alb_dir, sfc_alb_dif);
-    }
 
-    // Compute cloud optical properties here?
+      // Compute cloud optical properties here?
 
-    // Run RRTMGP driver
-    if (update_rad) {
+      // Run RRTMGP driver
       rrtmgp::rrtmgp_main(
         ncol, m_nlay,
         p_lay, t_lay, p_lev, t_lev,
@@ -791,10 +785,8 @@ void RRTMGPRadiation::run_impl (const int dt) {
         sw_bnd_flux_up   , sw_bnd_flux_dn   , sw_bnd_flux_dir      , lw_bnd_flux_up   , lw_bnd_flux_dn, 
         eccf, m_atm_logger
       );
-    }
 
-    // Update heating tendency
-    if (update_rad) {
+      // Update heating tendency
       auto sw_heating  = m_buffer.sw_heating;
       auto lw_heating  = m_buffer.lw_heating;
       rrtmgp::compute_heating_rate(
@@ -816,13 +808,11 @@ void RRTMGPRadiation::run_impl (const int dt) {
         });
       }
       Kokkos::fence();
-    }
 
-    // Index to surface (bottom of model); used to get surface fluxes below
-    const int kbot = nlay+1;
+      // Index to surface (bottom of model); used to get surface fluxes below
+      const int kbot = nlay+1;
 
-    // Compute diffuse flux as difference between total and direct
-    if (update_rad) {
+      // Compute diffuse flux as difference between total and direct
       Kokkos::parallel_for(Kokkos::RangePolicy<ExeSpace>(0,nswbands*(nlay+1)*ncol),
                            KOKKOS_LAMBDA (const int idx) {
         // CAREFUL: these are YAKL arrays, with "LayoutLeft". So make the indices stride accordingly, and add 1.
@@ -838,28 +828,24 @@ void RRTMGPRadiation::run_impl (const int dt) {
           sfc_flux_dir_vis, sfc_flux_dir_nir, 
           sfc_flux_dif_vis, sfc_flux_dif_nir
       );
-    }
 
-    // Compute diagnostic total cloud area (vertically-projected cloud cover)
-    auto cldlow = real1d("cldlow", ncol);
-    auto cldmed = real1d("cldmed", ncol);
-    auto cldhgh = real1d("cldhgh", ncol);
-    auto cldtot = real1d("cldtot", ncol);
-    // NOTE: limits for low, mid, and high clouds are mostly taken from EAM F90 source, with the
-    // exception that I removed the restriction on low clouds to be above (numerically lower pressures)
-    // 1200 hPa, and on high clouds to be below (numerically high pressures) 50 hPa. This probably
-    // does not matter in practice, as clouds probably should not be produced above 50 hPa and we
-    // should not be encountering surface pressure above 1200 hPa, but in the event that things go off
-    // the rails we might want to look at these still.
-    if (update_rad) {
+      // Compute diagnostic total cloud area (vertically-projected cloud cover)
+      auto cldlow = real1d("cldlow", ncol);
+      auto cldmed = real1d("cldmed", ncol);
+      auto cldhgh = real1d("cldhgh", ncol);
+      auto cldtot = real1d("cldtot", ncol);
+      // NOTE: limits for low, mid, and high clouds are mostly taken from EAM F90 source, with the
+      // exception that I removed the restriction on low clouds to be above (numerically lower pressures)
+      // 1200 hPa, and on high clouds to be below (numerically high pressures) 50 hPa. This probably
+      // does not matter in practice, as clouds probably should not be produced above 50 hPa and we
+      // should not be encountering surface pressure above 1200 hPa, but in the event that things go off
+      // the rails we might want to look at these still.
       rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts, 700e2, std::numeric_limits<Real>::max(), p_lay, cld_tau_lw_gpt, cldlow);
       rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts, 400e2,                            700e2, p_lay, cld_tau_lw_gpt, cldmed);
       rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts,     0,                            400e2, p_lay, cld_tau_lw_gpt, cldhgh);
       rrtmgp::compute_cloud_area(ncol, nlay, nlwgpts,     0, std::numeric_limits<Real>::max(), p_lay, cld_tau_lw_gpt, cldtot);
-    }
 
-    // Copy output data back to FieldManager
-    if (update_rad) {
+      // Copy output data back to FieldManager
       const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncol, m_nlay);
       Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
         const int i = team.league_rank();
@@ -887,20 +873,25 @@ void RRTMGPRadiation::run_impl (const int dt) {
           d_lw_clrsky_flux_dn(icol,k)     = lw_clrsky_flux_dn(i+1,k+1);
         });
       });
-    }
-  } // loop over chunk
+    } // loop over chunk
+ 
+    // Restore the refCounted array.
+    m_gas_concs.concs = gas_concs;
 
-  // Update temperature
+  } // update_rad
+
+  // Apply temperature tendency; if we updated radiation this timestep, then d_rad_heating_pdel should
+  // contain actual heating rate, not pdel scaled heating rate. Otherwise, if we have NOT updated the
+  // radiative heating, then we need to back out the heating from the rad_heating*pdel term that we carry
+  // across timesteps to conserve energy.
   const int ncols = m_ncol;
   const int nlays = m_nlay;
   const auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(ncols, nlays);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     const int i = team.league_rank();
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlays), [&] (const int& k) {
-      // Apply temperature tendency
       if (update_rad) {
         d_tmid(i,k) = d_tmid(i,k) + d_rad_heating_pdel(i,k) * dt;
-        // Carry pdel * qrad across timesteps to conserve energy
         d_rad_heating_pdel(i,k) = d_pdel(i,k) * d_rad_heating_pdel(i,k);
       } else {
         auto rad_heat = d_rad_heating_pdel(i,k) / d_pdel(i,k);
@@ -935,9 +926,6 @@ void RRTMGPRadiation::run_impl (const int dt) {
       heat_flux(icol) = (fsnt - fsns) - (flnt - flns);
     });
   }
-
-  // Restore the refCounted array.
-  m_gas_concs.concs = gas_concs;
 
 }
 // =========================================================================================
