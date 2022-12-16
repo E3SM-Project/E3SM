@@ -1069,13 +1069,16 @@ contains
 
        real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
        real (kind=RKIND), dimension(:), pointer :: landIceThkObserved, landIceDraftObserved, &
-                                                   landIceFracObserved, landIceGroundedFracObserved
+                                                   landIceFracObserved, &
+                                                   landIceFloatingFracObserved, &
+                                                   landIceGroundedFracObserved
 
-       real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceFraction, ssh, &
+       real (kind=RKIND), dimension(:), pointer :: landIcePressure, landIceFraction, &
+                                                   landIceFloatingFraction, ssh, &
                                                    bottomDepth
 
        integer, pointer :: nCells
-       integer, dimension(:), pointer :: maxLevelCell, landIceMask
+       integer, dimension(:), pointer :: maxLevelCell, landIceMask, landIceFloatingMask
 
        integer :: iCell
 
@@ -1093,6 +1096,7 @@ contains
           call mpas_pool_get_array(landIceInitPool, 'landIceDraftObserved', landIceDraftObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceThkObserved', landIceThkObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceFracObserved', landIceFracObserved)
+          call mpas_pool_get_array(landIceInitPool, 'landIceFloatingFracObserved', landIceFloatingFracObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceGroundedFracObserved', landIceGroundedFracObserved)
 
           if (config_global_ocean_topography_method .eq. "nearest_neighbor") then
@@ -1194,6 +1198,9 @@ contains
 
              if(landIceMask(iCell) == 1) then
                 landIceFraction(iCell) = landIceFracObserved(iCell)
+             end if
+             if(landIceFloatingMask(iCell) == 1) then
+                landIceFloatingFraction(iCell) = landIceFloatingFracObserved(iCell)
              end if
 
              ! nothing to do here if the cell is land
