@@ -176,7 +176,7 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: tThreshMLD, tGradientMLD, landIceDraft
       real (kind=RKIND), dimension(:), pointer :: dGradientMLD, landIcePressure
-      integer, dimension(:), pointer :: landIceMask
+      integer, dimension(:), pointer :: landIceFloatingMask
       real (kind=RKIND), dimension(:,:,:), pointer :: tracers
       integer :: interp_local
       real (kind=RKIND), allocatable, dimension(:,:) :: densityGradient, temperatureGradient
@@ -214,7 +214,7 @@ contains
          call mpas_pool_get_array(tracersPool, 'activeTracers', tracers, timeLevel)
          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
          call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
-         call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+         call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
          call mpas_pool_get_array(meshPool, 'latCell', latCell)
          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
 
@@ -286,11 +286,11 @@ contains
                !$omp end do
                !$omp end parallel
 
-               if (associated(landIceMask) ) then
+               if (associated(landIceFloatingMask) ) then
                   !$omp parallel
                   !$omp do schedule(runtime)
                   do iCell = 1, nCells
-                     tThreshMLD(iCell) = tThreshMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
+                     tThreshMLD(iCell) = tThreshMLD(iCell) - abs(landIceDraft(iCell))*landIceFloatingMask(iCell)
                   end do
                   !$omp end do
                   !$omp end parallel
@@ -352,11 +352,11 @@ contains
          !$omp end parallel
 
          !normalize MLD to top of ice cavity
-         if (associated(landIceMask) ) then
+         if (associated(landIceFloatingMask) ) then
            !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
-             tGradientMLD(iCell) = tGradientMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
+             tGradientMLD(iCell) = tGradientMLD(iCell) - abs(landIceDraft(iCell))*landIceFloatingMask(iCell)
            end do
            !$omp end do
            !$omp end parallel
@@ -417,11 +417,11 @@ contains
          !$omp end do
          !$omp end parallel
 
-         if (associated(landIceMask) ) then
+         if (associated(landIceFloatingMask) ) then
            !$omp parallel
            !$omp do schedule(runtime)
            do iCell = 1, nCells
-             dGradientMLD(iCell) = dGradientMLD(iCell) - abs(landIceDraft(iCell))*landIceMask(iCell)
+             dGradientMLD(iCell) = dGradientMLD(iCell) - abs(landIceDraft(iCell))*landIceFloatingMask(iCell)
            end do
            !$omp end do
            !$omp end parallel

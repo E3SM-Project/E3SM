@@ -234,7 +234,7 @@ contains
 
       integer, parameter :: kMaxVariables = 1024 ! this must be a little more than double the number of variables to be reduced
       integer, dimension(:), pointer :: minLevelCell, minLevelEdgeBot, minLevelVertexTop, maxLevelCell, &
-          maxLevelEdgeTop, maxLevelVertexBot, landiceMask
+          maxLevelEdgeTop, maxLevelVertexBot, landIceMask, landIceFloatingMask
 
       type (MPAS_Time_type) :: xtime_timeType, simulationStartTime_timeType
       type (MPAS_TimeInterval_type) :: timeStep
@@ -365,6 +365,7 @@ contains
          call mpas_pool_get_array(forcingPool, 'frazilLayerThicknessTendency', frazilLayerThicknessTendency)
          call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
          call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+         call mpas_pool_get_array(forcingPool, 'landIceFloatingMask', landIceFloatingMask)
 
          call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
          call mpas_pool_get_array(tracersSurfaceRestoringFieldsPool, 'activeTracersPistonVelocity', &
@@ -381,8 +382,8 @@ contains
          areaEdge = dcEdge(1:nEdgesSolve)*dvEdge(1:nEdgesSolve)
 
          allocate(landIceFloatingArea(1:nCellsSolve))
-         if ( associated(landIceMask) ) then
-            landIceFloatingArea = landIceMask(1:nCellsSolve)*areaCell(1:nCellsSolve)
+         if ( associated(landIceFloatingMask) ) then
+            landIceFloatingArea = landIceFloatingMask(1:nCellsSolve)*areaCell(1:nCellsSolve)
          else
             landIceFloatingArea = 0.
          end if
