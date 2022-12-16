@@ -86,18 +86,8 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
     view_Nd<mPack,3> data_tgt_tmp(reinterpret_cast<mPack*>(d_data_tgt.data()),d_data_tgt.extent_int(0),d_data_tgt.extent_int(1),1);  // Note, vertical interp wants a 2D view, so we create a temporary one
 
     perform_vertical_interpolation<Real,1,3>(pres,m_p_tgt,fdat,data_tgt_tmp,m_num_levs,1,m_mask_val);
-  } else if (rank==4) {
-    const auto f_data_src = f.get_view<const mPack****>();
-    auto fdat = view_Nd<mPack,4>("",f_data_src.extent_int(0),f_data_src.extent_int(1),f_data_src.extent_int(2),f_data_src.extent_int(3));
-    Kokkos::deep_copy(fdat,f_data_src);
-    //output field on new grid
-    auto d_data_tgt = m_diagnostic_output.get_view<Real***>();
-    auto ddat = view_Nd<mPack,4>("",d_data_tgt.extent_int(0),d_data_tgt.extent_int(1),d_data_tgt.extent_int(2),1);
-    view_Nd<mPack,4> data_tgt_tmp(reinterpret_cast<mPack*>(d_data_tgt.data()),m_num_cols,1);  // Note, vertical interp wants a 2D view, so we create a temporary one
-
-    perform_vertical_interpolation<Real,1,4>(pres,m_p_tgt,fdat,data_tgt_tmp,m_num_levs,1,m_mask_val);
   } else {
-    EKAT_ERROR_MSG("Error! field at pressure level only supports fields ranks 2, 3 and 4\n");
+    EKAT_ERROR_MSG("Error! field at pressure level only supports fields ranks 2 and 3 \n");
   }
 
 }
