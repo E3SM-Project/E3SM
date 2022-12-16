@@ -1,4 +1,5 @@
 #include "atmosphere_nudging.hpp"
+#include "share/util/scream_time_stamp.hpp"
 
 namespace scream
 {
@@ -26,6 +27,7 @@ NUDGING::NUDGING (const ekat::Comm& comm, const ekat::ParameterList& params)
   // Nothing to do here
   //m_comm=comm;
   m_fnames=m_params.get<std::vector<std::string>>("Field Names");
+  //This needs to be input parameter
   //std::cout<<"fnames_ size: "<<fnames_.size()<<std::endl;
   //std::cout<<fnames_[0]<<std::endl;
 }
@@ -90,21 +92,23 @@ void NUDGING::initialize_impl (const RunType /* run_type */)
   auto gm_l = create_gm(m_comm,m_num_cols,m_num_src_levs);
   auto grid_l = gm_l->get_grid("Point Grid");
 
-  //This needs to be input parameter
+
   ekat::ParameterList data_in_params;
   data_in_params.set("Field Names",m_fnames);
   data_in_params.set("Filename",datafile);
   data_in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
-  AtmosphereInput data_input(m_comm,data_in_params);
+  AtmosphereInput data_input0(m_comm,data_in_params);
+  data_input0.init(grid_l,host_views,layouts);
+  data_input=data_input0;
+  //data_input = AtmosphereInput(m_comm,data_in_params);
   //data_input.init(m_grid,host_views,layouts);
-  data_input.init(grid_l,host_views,layouts);
+  //data_input.init(grid_l,host_views,layouts);
   //This is where I read in time index
-  data_input.read_variables(0);
-  data_input.finalize();
 
   T_mid_r_v_g = T_mid_r_v;
   p_mid_r_v_g = p_mid_r_v;
-  
+  //auto ts = timestamp();
+  //data_input.read_variables(0);
 }
 
 // =========================================================================================
@@ -112,14 +116,15 @@ void NUDGING::run_impl (const int dt)
 {
   using namespace scream::vinterp;
   std::cout<<"I get in run_impl of atmosphere nudging"<<std::endl;
-
+  
   //auto ts = timestamp()+dt;
-  auto ts = timestamp();
-  std::cout<<"time_stamp year: "<<ts.get_year()<<std::endl;
-  std::cout<<"time_stamp month: "<<ts.get_month()<<std::endl;
-  std::cout<<"time_stamp day: "<<ts.get_day()<<std::endl;
-  std::cout<<"time_stamp hours: "<<ts.get_hours()<<std::endl;
-  std::cout<<"time_stamp minutes: "<<ts.get_minutes()<<std::endl;
+  auto ts = timestamp()+dt;
+  data_input.read_variables(dt);
+  //std::cout<<"time_stamp year: "<<ts.get_year()<<std::endl;
+  //std::cout<<"time_stamp month: "<<ts.get_month()<<std::endl;
+  //std::cout<<"time_stamp day: "<<ts.get_day()<<std::endl;
+  //std::cout<<"time_stamp hours: "<<ts.get_hours()<<std::endl;
+  //std::cout<<"time_stamp minutes: "<<ts.get_minutes()<<std::endl;
   std::cout<<"time_stamp seconds: "<<ts.get_seconds()<<std::endl;
 
   
@@ -134,8 +139,6 @@ void NUDGING::run_impl (const int dt)
       std::cout<<"Before T_mid("<<i<<","<<k<<"): "<<T_mid(i,k)<<std::endl;
     }
   }
-  
-
   
   /*
   auto ft = T_mid.get_header_ptr()->get_tracking();
@@ -194,6 +197,9 @@ void NUDGING::run_impl (const int dt)
 void NUDGING::finalize_impl()
 {
   // Do nothing
+  data_input.finalize();
+
+
 }
 
 } // namespace scream
