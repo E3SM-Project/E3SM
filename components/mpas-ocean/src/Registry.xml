@@ -1640,6 +1640,8 @@
 			<var name="landIcePressure"/>
 			<var name="landIceFraction"/>
 			<var name="landIceDraft"/>
+			<var name="landIceFloatingMask"/>
+			<var name="landIceFloatingFraction"/>
 		</stream>
 
 		<stream name="forcing_data_init"
@@ -1749,6 +1751,8 @@
 			<var name="landIcePressure"/>
 			<var name="landIceFraction"/>
 			<var name="landIceDraft"/>
+			<var name="landIceFloatingMask"/>
+			<var name="landIceFloatingFraction"/>
 		</stream>
 		<stream name="block_debug_output"
 				type="output"
@@ -1848,6 +1852,8 @@
 			<var name="landIceDraft"/>
 			<var name="landIceFraction"/>
 			<var name="landIceMask"/>
+			<var name="landIceFloatingMask"/>
+			<var name="landIceFloatingFraction"/>
 			<var name="seaIcePressure"/>
 			<var name="atmosphericPressure"/>
 			<var_array name="tracersSurfaceValue"/>
@@ -2106,6 +2112,8 @@
 			<var name="nAccumulatedCoupled"/>
 			<var name="landIceFraction"/>
 			<var name="landIceMask"/>
+			<var name="landIceFloatingMask"/>
+			<var name="landIceFloatingFraction"/>
 			<var_array name="landIceInterfaceTracers"/>
 			<var_array name="landIceBoundaryLayerTracers"/>
 			<var name="landIceFrictionVelocity"/>
@@ -3610,6 +3618,14 @@
 		/>
 		<var name="landIceMask" type="integer" dimensions="nCells Time"
 			description="Mask indicating where land-ice is present (1) or absent (0)"
+			packages="landIcePressurePKG"
+		/>
+		<var name="landIceFloatingFraction" type="real" dimensions="nCells Time" units="1"
+			description="The fraction of each cell covered by an ice shelf"
+			packages="landIcePressurePKG"
+		/>
+		<var name="landIceFloatingMask" type="integer" dimensions="nCells Time"
+			description="Mask indicating where an ice shelf is present (1) or absent (0)"
 			packages="landIcePressurePKG"
 		/>
 		<var name="landIcePressure" type="real" dimensions="nCells Time" units="Pa"
