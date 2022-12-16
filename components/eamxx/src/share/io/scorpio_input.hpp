@@ -80,6 +80,7 @@ public:
   //          group in the overall atm comm, but it *might* be smaller
   //          (and likely *will* be smaller, for large scale runs).
   //  - params: a parameter list containing info on the file/fields to load.
+  AtmosphereInput ();
   AtmosphereInput (const ekat::Comm& comm,
                    const ekat::ParameterList& params);
   // Creates input to read into FieldManager-owned fields.

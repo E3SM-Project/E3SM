@@ -94,6 +94,7 @@ protected:
   std::vector<std::string> m_fnames;
   view_2d<Real> T_mid_r_v_g;
   view_2d<Real> p_mid_r_v_g;
+  AtmosphereInput data_input;
   //FieldLayout scalar3d_layout_mid_;
   // DOF information
   //view_1d_dof m_dofs_gids;
