@@ -64,7 +64,7 @@ void perform_checks(
   const int                         nlevs_src,
   const int                         nlevs_tgt)
 {
-  auto rank = input.rank;
+  auto rank = N;
   EKAT_REQUIRE_MSG (rank>1 &&rank<=4,"Error::scream_vertical_interpolation, passed view of rank (" + std::to_string(rank) +"), only support ranks 2-4\n");
 
   // The input data and x_src data should match in the appropriate size
@@ -74,9 +74,6 @@ void perform_checks(
   EKAT_REQUIRE(x_tgt.extent_int(0) == output.extent_int(0));
   EKAT_REQUIRE(x_tgt.extent_int(1) == output.extent_int(input.rank-1));
 
-
-  // The output and input data should match in rank
-  EKAT_REQUIRE(input.rank == output.rank);
   // The output data and the input data should match in all sizes except the last one
   for (int ii=0;ii<rank-1;ii++) {
     EKAT_REQUIRE(input.extent_int(ii)==output.extent_int(ii));
@@ -130,14 +127,14 @@ void perform_vertical_interpolation(
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                        int  num_levs,
-  const                          T  mask_val,
-  const                   LIV<T,P>& vert_interp,
-  const view_2d<const Pack<T,P>>&   x_src,
-  const view_2d<const Pack<T,P>>&   x_tgt,
-  const view_Nd<const Pack<T,P>,2>& input,
-  const view_Nd<      Pack<T,P>,2>& output,
-  const view_Nd<        Mask<P>,2>& mask_out)
+  const                      int  num_levs,
+  const                        T  mask_val,
+  const                 LIV<T,P>& vert_interp,
+  const view_2d<const Pack<T,P>>& x_src,
+  const view_2d<const Pack<T,P>>& x_tgt,
+  const view_2d<const Pack<T,P>>& input,
+  const view_2d<      Pack<T,P>>& output,
+  const view_2d<        Mask<P>>& mask_out)
 {
   const int d_0      = input.extent_int(0);
   const int npacks   = output.extent_int(output.rank-1);
@@ -159,14 +156,14 @@ void apply_interpolation(
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                        int  num_levs,
-  const                          T  mask_val,
-  const                   LIV<T,P>& vert_interp,
-  const view_2d<const Pack<T,P>>&   x_src,
-  const view_2d<const Pack<T,P>>&   x_tgt,
-  const view_Nd<const Pack<T,P>,3>& input,
-  const view_Nd<      Pack<T,P>,3>& output,
-  const view_Nd<        Mask<P>,3>& mask_out)
+  const                      int  num_levs,
+  const                        T  mask_val,
+  const                 LIV<T,P>& vert_interp,
+  const view_2d<const Pack<T,P>>& x_src,
+  const view_2d<const Pack<T,P>>& x_tgt,
+  const view_3d<const Pack<T,P>>& input,
+  const view_3d<      Pack<T,P>>& output,
+  const view_3d<        Mask<P>>& mask_out)
 {
   const int d_0      = input.extent_int(0);
   const int num_vars = input.extent_int(1);
@@ -190,14 +187,14 @@ void apply_interpolation(
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                        int  num_levs,
-  const                          T  mask_val,
-  const                   LIV<T,P>& vert_interp,
-  const view_2d<const Pack<T,P>>&   x_src,
-  const view_2d<const Pack<T,P>>&   x_tgt,
-  const view_Nd<const Pack<T,P>,4>& input,
-  const view_Nd<      Pack<T,P>,4>& output,
-  const view_Nd<        Mask<P>,4>& mask_out)
+  const                      int  num_levs,
+  const                        T  mask_val,
+  const                 LIV<T,P>& vert_interp,
+  const view_2d<const Pack<T,P>>& x_src,
+  const view_2d<const Pack<T,P>>& x_tgt,
+  const view_4d<const Pack<T,P>>& input,
+  const view_4d<      Pack<T,P>>& output,
+  const view_4d<        Mask<P>>& mask_out)
 {
   const int d_0 = input.extent_int(0);
   const int d_1 = input.extent_int(1);
@@ -300,14 +297,14 @@ void perform_vertical_interpolation(
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                        int  num_levs,
-  const                          T  mask_val,
-  const                   LIV<T,P>& vert_interp,
-  const view_Nd<const Pack<T,P>,2>& x_src,
-  const view_1d<const Pack<T,P>>&   x_tgt,
-  const view_Nd<const Pack<T,P>,2>& input,
-  const view_Nd<      Pack<T,P>,2>& output,
-  const view_Nd<        Mask<P>,2>& mask_out)
+  const                      int  num_levs,
+  const                        T  mask_val,
+  const                 LIV<T,P>& vert_interp,
+  const view_2d<const Pack<T,P>>& x_src,
+  const view_1d<const Pack<T,P>>& x_tgt,
+  const view_2d<const Pack<T,P>>& input,
+  const view_2d<      Pack<T,P>>& output,
+  const view_2d<        Mask<P>>& mask_out)
 {
   const int d_0      = input.extent_int(0);
   const int npacks   = output.extent_int(output.rank-1);
@@ -328,14 +325,14 @@ void apply_interpolation(
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                        int  num_levs,
-  const                          T  mask_val,
-  const                   LIV<T,P>& vert_interp,
-  const view_Nd<const Pack<T,P>,2>& x_src,
-  const view_1d<const Pack<T,P>>&   x_tgt,
-  const view_Nd<const Pack<T,P>,3>& input,
-  const view_Nd<      Pack<T,P>,3>& output,
-  const view_Nd<        Mask<P>,3>& mask_out)
+  const                      int  num_levs,
+  const                        T  mask_val,
+  const                 LIV<T,P>& vert_interp,
+  const view_2d<const Pack<T,P>>& x_src,
+  const view_1d<const Pack<T,P>>& x_tgt,
+  const view_3d<const Pack<T,P>>& input,
+  const view_3d<      Pack<T,P>>& output,
+  const view_3d<        Mask<P>>& mask_out)
 {
   const int d_0      = input.extent_int(0);
   const int num_vars = input.extent_int(1);
@@ -358,14 +355,14 @@ void apply_interpolation(
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                        int  num_levs,
-  const                          T  mask_val,
-  const                   LIV<T,P>& vert_interp,
-  const view_Nd<const Pack<T,P>,2>& x_src,
-  const view_1d<const Pack<T,P>>&   x_tgt,
-  const view_Nd<const Pack<T,P>,4>& input,
-  const view_Nd<      Pack<T,P>,4>& output,
-  const view_Nd<        Mask<P>,4>& mask_out)
+  const                      int  num_levs,
+  const                        T  mask_val,
+  const                 LIV<T,P>& vert_interp,
+  const view_2d<const Pack<T,P>>& x_src,
+  const view_1d<const Pack<T,P>>& x_tgt,
+  const view_4d<const Pack<T,P>>& input,
+  const view_4d<      Pack<T,P>>& output,
+  const view_4d<        Mask<P>>& mask_out)
 {
   const int d_0 = input.extent_int(0);
   const int d_1 = input.extent_int(1);

@@ -25,7 +25,7 @@ namespace vinterp {
  *   a set of Nd views for the input data, output data and an optional mask
  *     where Nd is a N-dimensional view of dimension 2-4.
  * There is a function, perform_vertical_interpolation_impl_1d which 
- * where what is provided is all 1d views (or lambdas). However, in this 
+ * is provided for 1d views (or lambdas). However, in this 
  * case the user must provide the team and ekat::LinInterp as input as well.
  */
 
@@ -52,10 +52,16 @@ using view_1d = typename KT::template view_1d<T>;
 template <typename T>
 using view_2d = typename KT::template view_2d<T>;
 
-template <typename T, int P>
-using view_Nd = typename KT::template view_ND<T,P>;
-template <typename T, int P>
-using view_Nd_host = typename KT::template view_ND<T,P>::HostMirror;
+template <typename T>
+using view_3d = typename KT::template view_3d<T>;
+
+template <typename T>
+using view_4d = typename KT::template view_ND<T,4>;
+
+template <typename T, int N>
+using view_Nd = typename KT::template view_ND<T,N>;
+template <typename T, int N>
+using view_Nd_host = typename KT::template view_ND<T,N>::HostMirror;
     
 constexpr Real masked_val = -std::numeric_limits<Real>::max();
 
@@ -133,36 +139,36 @@ void perform_checks(
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                        int  num_levs,
-  const                          T  mask_val,
-  const                   LIV<T,P>& vert_interp,
-  const view_2d<const Pack<T,P>>&   x_src,
-  const view_2d<const Pack<T,P>>&   x_tgt,
-  const view_Nd<const Pack<T,P>,2>& input,
-  const view_Nd<      Pack<T,P>,2>& output,
-  const view_Nd<        Mask<P>,2>& mask);
+  const                      int  num_levs,
+  const                        T  mask_val,
+  const                 LIV<T,P>& vert_interp,
+  const view_2d<const Pack<T,P>>& x_src,
+  const view_2d<const Pack<T,P>>& x_tgt,
+  const view_2d<const Pack<T,P>>& input,
+  const view_2d<      Pack<T,P>>& output,
+  const view_2d<        Mask<P>>& mask);
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                        int  num_levs,
-  const                          T  mask_val,
-  const                   LIV<T,P>& vert_interp,
-  const view_2d<const Pack<T,P>>&   x_src,
-  const view_2d<const Pack<T,P>>&   x_tgt,
-  const view_Nd<const Pack<T,P>,3>& input,
-  const view_Nd<      Pack<T,P>,3>& output,
-  const view_Nd<        Mask<P>,3>& mask);
+  const                      int  num_levs,
+  const                        T  mask_val,
+  const                 LIV<T,P>& vert_interp,
+  const view_2d<const Pack<T,P>>& x_src,
+  const view_2d<const Pack<T,P>>& x_tgt,
+  const view_3d<const Pack<T,P>>& input,
+  const view_3d<      Pack<T,P>>& output,
+  const view_3d<        Mask<P>>& mask);
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                        int  num_levs,
-  const                          T  mask_val,
-  const                   LIV<T,P>& vert_interp,
-  const view_2d<const Pack<T,P>>&   x_src,
-  const view_2d<const Pack<T,P>>&   x_tgt,
-  const view_Nd<const Pack<T,P>,4>& input,
-  const view_Nd<      Pack<T,P>,4>& output,
-  const view_Nd<        Mask<P>,4>& mask);
+  const                      int  num_levs,
+  const                        T  mask_val,
+  const                 LIV<T,P>& vert_interp,
+  const view_2d<const Pack<T,P>>& x_src,
+  const view_2d<const Pack<T,P>>& x_tgt,
+  const view_4d<const Pack<T,P>>& input,
+  const view_4d<      Pack<T,P>>& output,
+  const view_4d<        Mask<P>>& mask);
 
 /* ---------------------------------------------------------------------- 
  * Versions where x_tgt is a single 1-D vertical profile
@@ -178,36 +184,36 @@ void perform_checks(
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                        int  num_levs,
-  const                          T  mask_val,
-  const                   LIV<T,P>& vert_interp,
-  const view_Nd<const Pack<T,P>,2>& x_src,
-  const view_1d<const Pack<T,P>>&   x_tgt,
-  const view_Nd<const Pack<T,P>,2>& input,
-  const view_Nd<      Pack<T,P>,2>& output,
-  const view_Nd<        Mask<P>,2>& mask);
+  const                      int  num_levs,
+  const                        T  mask_val,
+  const                 LIV<T,P>& vert_interp,
+  const view_2d<const Pack<T,P>>& x_src,
+  const view_1d<const Pack<T,P>>& x_tgt,
+  const view_2d<const Pack<T,P>>& input,
+  const view_2d<      Pack<T,P>>& output,
+  const view_2d<        Mask<P>>& mask);
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                        int  num_levs,
-  const                          T  mask_val,
-  const                   LIV<T,P>& vert_interp,
-  const view_Nd<const Pack<T,P>,2>& x_src,
-  const view_1d<const Pack<T,P>>&   x_tgt,
-  const view_Nd<const Pack<T,P>,3>& input,
-  const view_Nd<      Pack<T,P>,3>& output,
-  const view_Nd<        Mask<P>,3>& mask);
+  const                      int  num_levs,
+  const                        T  mask_val,
+  const                 LIV<T,P>& vert_interp,
+  const view_2d<const Pack<T,P>>& x_src,
+  const view_1d<const Pack<T,P>>& x_tgt,
+  const view_3d<const Pack<T,P>>& input,
+  const view_3d<      Pack<T,P>>& output,
+  const view_3d<        Mask<P>>& mask);
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                        int  num_levs,
-  const                          T  mask_val,
-  const                   LIV<T,P>& vert_interp,
-  const view_Nd<const Pack<T,P>,2>& x_src,
-  const view_1d<const Pack<T,P>>&   x_tgt,
-  const view_Nd<const Pack<T,P>,4>& input,
-  const view_Nd<      Pack<T,P>,4>& output,
-  const view_Nd<        Mask<P>,4>& mask);
+  const                      int  num_levs,
+  const                        T  mask_val,
+  const                 LIV<T,P>& vert_interp,
+  const view_2d<const Pack<T,P>>& x_src,
+  const view_1d<const Pack<T,P>>& x_tgt,
+  const view_4d<const Pack<T,P>>& input,
+  const view_4d<      Pack<T,P>>& output,
+  const view_4d<        Mask<P>>& mask);
 
 // Helper function to allocate memory for an Nd mask on the fly.
 template<int P, int N>
