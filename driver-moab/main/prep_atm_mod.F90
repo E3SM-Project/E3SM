@@ -106,111 +106,111 @@ contains
 
   subroutine prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_atm)
 
-    use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
-      iMOAB_WriteMesh , iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights, &
-      iMOAB_DefineTagStorage
-    !---------------------------------------------------------------
-    ! Description
-    ! Initialize module attribute vectors and  mappers
-    !
-    ! Arguments
-    type (seq_infodata_type) , intent(inout) :: infodata
-    logical                  , intent(in)    :: ocn_c2_atm ! .true.  => ocn to atm coupling on
-    logical                  , intent(in)    :: ice_c2_atm ! .true.  => ice to atm coupling on
-    logical                  , intent(in)    :: lnd_c2_atm ! .true.  => lnd to atm coupling on
-    logical                  , intent(in)    :: iac_c2_atm ! .true.  => iac to atm coupling on
-    !
-    ! Local Variables
-    integer                          :: lsize_a
-    integer                          :: eli, eii, emi
-    logical                          :: samegrid_ao    ! samegrid atm and ocean
-    logical                          :: samegrid_al    ! samegrid atm and land
-    logical                          :: esmf_map_flag  ! .true. => use esmf for mapping
-    logical                          :: atm_present    ! .true.  => atm is present
-    logical                          :: ocn_present    ! .true.  => ocn is present
-    logical                          :: ice_present    ! .true.  => ice is present
-    logical                          :: lnd_present    ! .true.  => lnd is prsent
-    character(CL)                    :: ocn_gnam       ! ocn grid
-    character(CL)                    :: atm_gnam       ! atm grid
-    character(CL)                    :: lnd_gnam       ! lnd grid
-    type(mct_avect), pointer         :: a2x_ax
-    character(*), parameter          :: subname = '(prep_atm_init)'
-    character(*), parameter          :: F00 = "('"//subname//" : ', 4A )"
-    integer ierr, idintx, rank
-    character*32             :: appname, outfile, wopts, lnum
+   use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
+   iMOAB_WriteMesh , iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights, &
+   iMOAB_DefineTagStorage
+   !---------------------------------------------------------------
+   ! Description
+   ! Initialize module attribute vectors and  mappers
+   !
+   ! Arguments
+   type (seq_infodata_type) , intent(inout) :: infodata
+   logical                  , intent(in)    :: ocn_c2_atm ! .true.  => ocn to atm coupling on
+   logical                  , intent(in)    :: ice_c2_atm ! .true.  => ice to atm coupling on
+   logical                  , intent(in)    :: lnd_c2_atm ! .true.  => lnd to atm coupling on
+   logical                  , intent(in)    :: iac_c2_atm ! .true.  => iac to atm coupling on
+   !
+   ! Local Variables
+   integer                          :: lsize_a
+   integer                          :: eli, eii, emi
+   logical                          :: samegrid_ao    ! samegrid atm and ocean
+   logical                          :: samegrid_al    ! samegrid atm and land
+   logical                          :: esmf_map_flag  ! .true. => use esmf for mapping
+   logical                          :: atm_present    ! .true.  => atm is present
+   logical                          :: ocn_present    ! .true.  => ocn is present
+   logical                          :: ice_present    ! .true.  => ice is present
+   logical                          :: lnd_present    ! .true.  => lnd is prsent
+   character(CL)                    :: ocn_gnam       ! ocn grid
+   character(CL)                    :: atm_gnam       ! atm grid
+   character(CL)                    :: lnd_gnam       ! lnd grid
+   type(mct_avect), pointer         :: a2x_ax
+   character(*), parameter          :: subname = '(prep_atm_init)'
+   character(*), parameter          :: F00 = "('"//subname//" : ', 4A )"
+   integer ierr, idintx, rank
+   character*32             :: appname, outfile, wopts, lnum
 
-    ! MOAB stuff 
-    character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdef
-    integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
-    integer                  :: fNoBubble, monotonicity
-   ! will do comm graph over coupler PES, in 2-hop strategy
-    integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
+   ! MOAB stuff 
+   character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdef
+   integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
+   integer                  :: fNoBubble, monotonicity
+! will do comm graph over coupler PES, in 2-hop strategy
+   integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
 
-    integer                  :: type1, type2 ! type for computing graph; should be the same type for ocean, 3 (FV)
-    integer                  :: tagtype, numco, tagindex
-    character(CXX)           :: tagName
+   integer                  :: type1, type2 ! type for computing graph; should be the same type for ocean, 3 (FV)
+   integer                  :: tagtype, numco, tagindex
+   character(CXX)           :: tagName
 
-    !---------------------------------------------------------------
+   !---------------------------------------------------------------
 
 
-    call seq_infodata_getData(infodata, &
-         atm_present=atm_present,       &
-         ocn_present=ocn_present,       &
-         ice_present=ice_present,       &
-         lnd_present=lnd_present,       &
-         atm_gnam=atm_gnam,             &
-         ocn_gnam=ocn_gnam,             &
-         lnd_gnam=lnd_gnam,             &
-         esmf_map_flag=esmf_map_flag)
+   call seq_infodata_getData(infodata, &
+      atm_present=atm_present,       &
+      ocn_present=ocn_present,       &
+      ice_present=ice_present,       &
+      lnd_present=lnd_present,       &
+      atm_gnam=atm_gnam,             &
+      ocn_gnam=ocn_gnam,             &
+      lnd_gnam=lnd_gnam,             &
+      esmf_map_flag=esmf_map_flag)
 
-    allocate(mapper_So2a)
-    allocate(mapper_Sl2a)
-    allocate(mapper_Si2a)
-    allocate(mapper_Fo2a)
-    allocate(mapper_Fl2a)
-    allocate(mapper_Fi2a)
+   allocate(mapper_So2a)
+   allocate(mapper_Sl2a)
+   allocate(mapper_Si2a)
+   allocate(mapper_Fo2a)
+   allocate(mapper_Fl2a)
+   allocate(mapper_Fi2a)
 
-    if (atm_present) then
+   if (atm_present) then
 
-       call seq_comm_getData(CPLID, &
-            mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
+      call seq_comm_getData(CPLID, &
+         mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
-       a2x_ax => component_get_c2x_cx(atm(1))
-       lsize_a = mct_aVect_lsize(a2x_ax)
+      a2x_ax => component_get_c2x_cx(atm(1))
+      lsize_a = mct_aVect_lsize(a2x_ax)
 
-       allocate(l2x_ax(num_inst_lnd))
-       do eli = 1,num_inst_lnd
-          call mct_aVect_init(l2x_ax(eli), rList=seq_flds_l2x_fields, lsize=lsize_a)
-          call mct_aVect_zero(l2x_ax(eli))
-       end do
-       allocate(o2x_ax(num_inst_max))
-       do emi = 1,num_inst_max
-          call mct_aVect_init(o2x_ax(emi), rList=seq_flds_o2x_fields, lsize=lsize_a)
-          call mct_aVect_zero(o2x_ax(emi))
-       enddo
-       allocate(i2x_ax(num_inst_ice))
-       do eii = 1,num_inst_ice
-          call mct_aVect_init(i2x_ax(eii), rList=seq_flds_i2x_fields, lsize=lsize_a)
-          call mct_aVect_zero(i2x_ax(eii))
-       enddo
+      allocate(l2x_ax(num_inst_lnd))
+      do eli = 1,num_inst_lnd
+         call mct_aVect_init(l2x_ax(eli), rList=seq_flds_l2x_fields, lsize=lsize_a)
+         call mct_aVect_zero(l2x_ax(eli))
+      end do
+      allocate(o2x_ax(num_inst_max))
+      do emi = 1,num_inst_max
+         call mct_aVect_init(o2x_ax(emi), rList=seq_flds_o2x_fields, lsize=lsize_a)
+         call mct_aVect_zero(o2x_ax(emi))
+      enddo
+      allocate(i2x_ax(num_inst_ice))
+      do eii = 1,num_inst_ice
+         call mct_aVect_init(i2x_ax(eii), rList=seq_flds_i2x_fields, lsize=lsize_a)
+         call mct_aVect_zero(i2x_ax(eii))
+      enddo
 
-       samegrid_al = .true.
-       samegrid_ao = .true.
-       if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
-       if (trim(atm_gnam) /= trim(ocn_gnam)) samegrid_ao = .false.
+      samegrid_al = .true.
+      samegrid_ao = .true.
+      if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
+      if (trim(atm_gnam) /= trim(ocn_gnam)) samegrid_ao = .false.
 
-       if (ocn_c2_atm) then
-          if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_So2a'
-          end if
-          call seq_map_init_rcfile(mapper_So2a, ocn(1), atm(1), &
-               'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
-               'mapper_So2a initialization',esmf_map_flag)
+      if (ocn_c2_atm) then
+         if (iamroot_CPLID) then
+            write(logunit,*) ' '
+            write(logunit,F00) 'Initializing mapper_So2a'
+         endif
+         call seq_map_init_rcfile(mapper_So2a, ocn(1), atm(1), &
+            'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
+            'mapper_So2a initialization',esmf_map_flag)
 
 #ifdef HAVE_MOAB
-          ! Call moab intx only if atm and ocn are init in moab
-          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
+         ! Call moab intx only if atm and ocn are init in moab
+         if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
             appname = "OCN_ATM_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between atm and ocn mesh
             idintx = 100*ocn(1)%cplcompid + atm(1)%cplcompid ! something different, to differentiate it
@@ -226,7 +226,7 @@ contains
             endif
             if (iamroot_CPLID) then
               write(logunit,*) 'iMOAB intersection between ocean and atm with id:', idintx
-            end if
+            endif
 
 
             ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the 
@@ -262,9 +262,9 @@ contains
                   write(logunit,*) subname,' error in defining tags for seq_flds_o2x_fields'
                   call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_o2x_fields')
                endif
-            else ! spectral case, fix later
-
-            endif
+            else ! spectral case, fix later TODO
+               numco = np*np ! 
+            endif ! 
 
             volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL; 
             
@@ -291,7 +291,7 @@ contains
                                                fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                noConserve, validate, &
                                                trim(dofnameS), trim(dofnameT)
-            end if
+            endif
             ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxoa, wgtIdef, &
                                                trim(dm1), orderS, trim(dm2), orderT, &
                                                fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
@@ -306,7 +306,7 @@ contains
 #ifdef MOABDEBUG
             wopts = C_NULL_CHAR
             call shr_mpi_commrank( mpicom_CPLID, rank )
-            if (rank .lt. 5) then
+            if (rank .lt. 3) then
               write(lnum,"(I0.2)")rank !
               outfile = 'intx_oa_'//trim(lnum)// '.h5m' // C_NULL_CHAR
               ierr = iMOAB_WriteMesh(mbintxoa, outfile, wopts) ! write local intx file
@@ -317,24 +317,24 @@ contains
             endif
 ! endif for MOABDEBUG            
 #endif
+         endif ! if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then 
 ! endif for HAVE_MOAB
 #endif  
-         end if ! if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then 
-       end if  ! if (ocn_c2_atm) then
+         
+      endif  ! if (ocn_c2_atm) then
 
-       ! needed for domain checking
-       if (ocn_present) then
-          if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Fo2a'
-          end if
-          call seq_map_init_rcfile(mapper_Fo2a, ocn(1), atm(1), &
-               'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
-               'mapper_Fo2a initialization',esmf_map_flag)
+      ! needed for domain checking
+      if (ocn_present) then
+         if (iamroot_CPLID) then
+            write(logunit,*) ' '
+            write(logunit,F00) 'Initializing mapper_Fo2a'
+         endif
+         call seq_map_init_rcfile(mapper_Fo2a, ocn(1), atm(1), &
+            'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
+            'mapper_Fo2a initialization',esmf_map_flag)
 ! copy mapper_So2a , maybe change the matrix ? still based on intersection ?
 #ifdef HAVE_MOAB
-          ! Call moab intx only if atm and ocn are init in moab
-          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
+         if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
             ! now take care of the mapper 
             mapper_Fo2a%src_mbid = mboxid
             mapper_Fo2a%tgt_mbid = mbaxid
@@ -343,26 +343,26 @@ contains
             mapper_Fo2a%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fo2a%weight_identifier = wgtIdef
-          endif 
+         endif 
 ! endif for HAVE_MOAB
 #endif  
 
-       endif ! end if (ocn_present) then
-       call shr_sys_flush(logunit)
+      endif ! endif (ocn_present) then
+      call shr_sys_flush(logunit)
 
-       if (ice_c2_atm) then
-          if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Si2a'
-          end if
-          call seq_map_init_rcfile(mapper_Si2a, ice(1), atm(1), &
-               'seq_maps.rc','ice2atm_smapname:','ice2atm_smaptype:',samegrid_ao, &
-               'mapper_Si2a initialization',esmf_map_flag)
-               ! similar to ocn-atm mapping, do ice 2 atm mapping / set up
+      if (ice_c2_atm) then
+         if (iamroot_CPLID) then
+            write(logunit,*) ' '
+            write(logunit,F00) 'Initializing mapper_Si2a'
+         endif
+         call seq_map_init_rcfile(mapper_Si2a, ice(1), atm(1), &
+            'seq_maps.rc','ice2atm_smapname:','ice2atm_smaptype:',samegrid_ao, &
+            'mapper_Si2a initialization',esmf_map_flag)
+            ! similar to ocn-atm mapping, do ice 2 atm mapping / set up
 
 #ifdef HAVE_MOAB
-          ! Call moab intx only if atm and ice are init in moab coupler
-          if ((mbaxid .ge. 0) .and.  (mbixid .ge. 0)) then
+         ! Call moab intx only if atm and ice are init in moab coupler
+         if ((mbaxid .ge. 0) .and.  (mbixid .ge. 0)) then
             appname = "ICE_ATM_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between ice and atm mesh
             idintx = 100*ice(1)%cplcompid + atm(1)%cplcompid ! something different, to differentiate it
@@ -378,7 +378,7 @@ contains
             endif
             if (iamroot_CPLID) then
               write(logunit,*) 'iMOAB intersection between ice and atm with id:', idintx
-            end if
+            endif
 
 
             ! we also need to compute the comm graph for the second hop, from the ice on coupler to the 
@@ -414,7 +414,7 @@ contains
                   write(logunit,*) subname,' error in defining tags for seq_flds_i2x_fields'
                   call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_i2x_fields')
                endif
-            else ! spectral case, fix later
+            else ! spectral case, TODO
                tagtype = 1 ! dense
             endif
 
@@ -443,7 +443,7 @@ contains
                                                fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
                                                noConserve, validate, &
                                                trim(dofnameS), trim(dofnameT)
-            end if
+            endif
             ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxia, wgtIdef, &
                                                trim(dm1), orderS, trim(dm2), orderT, &
                                                fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
@@ -459,31 +459,32 @@ contains
             wopts = C_NULL_CHAR
             call shr_mpi_commrank( mpicom_CPLID, rank )
             if (rank .lt. 3) then
-              write(lnum,"(I0.2)")rank !
-              outfile = 'intx_ia_'//trim(lnum)// '.h5m' // C_NULL_CHAR
-              ierr = iMOAB_WriteMesh(mbintxia, outfile, wopts) ! write local intx file
-              if (ierr .ne. 0) then
-                write(logunit,*) subname,' error in writing intx file ice-atm '
-                call shr_sys_abort(subname//' ERROR in writing intx file ice-atm ')
-              endif
+               write(lnum,"(I0.2)")rank !
+               outfile = 'intx_ia_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+               ierr = iMOAB_WriteMesh(mbintxia, outfile, wopts) ! write local intx file
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in writing intx file ice-atm '
+                  call shr_sys_abort(subname//' ERROR in writing intx file ice-atm ')
+               endif
             endif
 ! endif for MOABDEBUG            
 #endif
+         endif ! if ((mbaxid .ge. 0) .and.  (mbixid .ge. 0)) then
 ! endif for HAVE_MOAB
 #endif  
-          endif ! if ((mbaxid .ge. 0) .and.  (mbixid .ge. 0)) then
-       endif ! if (ice_c2_atm) then
 
-       ! needed for domain checking
-       if (ice_present) then
-          if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Fi2a'
-          end if
-          call seq_map_init_rcfile(mapper_Fi2a, ice(1), atm(1), &
-               'seq_maps.rc','ice2atm_fmapname:','ice2atm_fmaptype:',samegrid_ao, &
-               'mapper_Fi2a initialization',esmf_map_flag)
-            
+      endif ! if (ice_c2_atm) then
+
+      ! needed for domain checking
+      if (ice_present) then
+         if (iamroot_CPLID) then
+            write(logunit,*) ' '
+            write(logunit,F00) 'Initializing mapper_Fi2a'
+         endif
+         call seq_map_init_rcfile(mapper_Fi2a, ice(1), atm(1), &
+            'seq_maps.rc','ice2atm_fmapname:','ice2atm_fmaptype:',samegrid_ao, &
+            'mapper_Fi2a initialization',esmf_map_flag)
+         
 #ifdef HAVE_MOAB
            ! now take care of the mapper for MOAB
             mapper_Fi2a%src_mbid = mbixid
@@ -494,69 +495,119 @@ contains
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fi2a%weight_identifier = wgtIdef 
 #endif
-       endif
-       call shr_sys_flush(logunit)
+      endif !  if (ice_present) then
+      call shr_sys_flush(logunit)
 
-       ! needed for domain checking
-       if (lnd_present) then
-          if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Fl2a'
-          end if
-          call seq_map_init_rcfile(mapper_Fl2a, lnd(1), atm(1), &
-               'seq_maps.rc','lnd2atm_fmapname:','lnd2atm_fmaptype:',samegrid_al, &
-               'mapper_Fl2a initialization',esmf_map_flag)
-       endif
-       call shr_sys_flush(logunit)
+      ! needed for domain checking
+      if (lnd_present) then
+         if (iamroot_CPLID) then
+            write(logunit,*) ' '
+            write(logunit,F00) 'Initializing mapper_Fl2a'
+         endif
+         call seq_map_init_rcfile(mapper_Fl2a, lnd(1), atm(1), &
+            'seq_maps.rc','lnd2atm_fmapname:','lnd2atm_fmaptype:',samegrid_al, &
+            'mapper_Fl2a initialization',esmf_map_flag)
 
-       if (lnd_c2_atm) then
-          if (iamroot_CPLID) then
-             write(logunit,*) ' '
-             write(logunit,F00) 'Initializing mapper_Sl2a'
-          end if
-          call seq_map_init_rcfile(mapper_Sl2a, lnd(1), atm(1), &
-               'seq_maps.rc','lnd2atm_smapname:','lnd2atm_smaptype:',samegrid_al, &
-               'mapper_Sl2a initialization',esmf_map_flag)
-
-          ! important change: do not compute intx at all between atm and land when we have samegrid_al 
-          ! we will use just a comm graph to send data from phys grid to land on coupler
-          ! this is just a rearrange in a way 
-          if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) .and. .not. samegrid_al ) then
-            appname = "ATM_LND_COU"//C_NULL_CHAR
+#ifdef HAVE_MOAB
+         ! important change: do not compute intx at all between atm and land when we have samegrid_al 
+         ! we will use just a comm graph to send data from phys grid to land on coupler
+         ! this is just a rearrange in a way 
+         if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
+            appname = "LND_ATM_COU"//C_NULL_CHAR
             ! idintx is a unique number of MOAB app that takes care of intx between lnd and atm mesh
-            idintx = 100*atm(1)%cplcompid + lnd(1)%cplcompid ! something different, to differentiate it
+            idintx = 100*lnd(1)%cplcompid + atm(1)%cplcompid ! something different, to differentiate it
             ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxla)
             if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in registering atm lnd intx '
-              call shr_sys_abort(subname//' ERROR in registering atm lnd intx ')
+              write(logunit,*) subname,' error in registering lnd atm intx '
+              call shr_sys_abort(subname//' ERROR in registering lnd atm intx ')
             endif
-            if (iamroot_CPLID) then
-              write(logunit,*) 'iMOAB intersection between atm and land with id:', idintx
-            end if
-            ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbaxid, mblxid, mbintxla)
-            if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in computing atm lnd intx'
-              call shr_sys_abort(subname//' ERROR in computing atm lnd intx')
-            endif
+            mapper_Fl2a%src_mbid = mblxid
+            mapper_Fl2a%tgt_mbid = mbaxid
+            mapper_Fl2a%src_mbid = mbintxla
+            mapper_Fl2a%src_context = lnd(1)%cplcompid
+            mapper_Fl2a%intx_context = idintx
+            wgtIdef = 'scalar'//C_NULL_CHAR
+            mapper_Fl2a%weight_identifier = wgtIdef 
+
+            if (.not. samegrid_al) then ! tri grid case
+               if (iamroot_CPLID) then
+                  write(logunit,*) 'iMOAB intersection between atm and land with id:', idintx
+               endif
+               ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mblxid, mbaxid, mbintxla)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing atm lnd intx'
+                  call shr_sys_abort(subname//' ERROR in computing atm lnd intx')
+               endif
 #ifdef MOABDEBUG
-            ! write intx only if true intx file:
-            wopts = C_NULL_CHAR
-            call shr_mpi_commrank( mpicom_CPLID, rank )
-            if (rank .lt. 5) then ! write only a few intx files
-              write(lnum,"(I0.2)")rank !
-              outfile = 'intx_la'//trim(lnum)// '.h5m' // C_NULL_CHAR
-              ierr = iMOAB_WriteMesh(mbintxla, outfile, wopts) ! write local intx file
-              if (ierr .ne. 0) then
-                write(logunit,*) subname,' error in writing intx file land atm '
-                call shr_sys_abort(subname//' ERROR in writing intx file ')
-              endif
-            endif ! if tri-grid
+               ! write intx only if true intx file:
+               wopts = C_NULL_CHAR
+               call shr_mpi_commrank( mpicom_CPLID, rank )
+                  if (rank .lt. 5) then ! write only a few intx files
+                  write(lnum,"(I0.2)")rank !
+                  outfile = 'intx_la'//trim(lnum)// '.h5m' // C_NULL_CHAR
+                  ierr = iMOAB_WriteMesh(mbintxla, outfile, wopts) ! write local intx file
+                  if (ierr .ne. 0) then
+                     write(logunit,*) subname,' error in writing intx file land atm '
+                     call shr_sys_abort(subname//' ERROR in writing intx file ')
+                  endif
+               endif
 #endif
-          endif
-       end if
+               
+               ! we also need to compute the comm graph for the second hop, from the lnd on coupler to the 
+               ! lnd for the intx ice-atm context (coverage)
+               !    
+               call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID) 
+               type1 = 3; !  fv for lnd and atm; fv-cgll does not work anyway
+               type2 = 3;
+               ! ierr      = iMOAB_ComputeCommGraph( mboxid, mbintxoa, &mpicom_CPLID, &mpigrp_CPLID, &mpigrp_CPLID, &type1, &type2,
+               !                              &ocn_id, &idintx)
+               ierr = iMOAB_ComputeCommGraph( mblxid, mbintxla, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                          lnd(1)%cplcompid, idintx)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing comm graph for second hop, ice-atm'
+                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ice-atm')
+               endif
+            else  ! the same mesh , atm and lnd use the same dofs, but restricted 
+               ! we do not compute intersection, so we will have to just send data from atm to land and viceversa, by GLOBAL_ID matching
+               ! so we compute just a comm graph, between lnd and atm dofs, on the coupler; target is atm 
+               ! land is point cloud in this case, type1 = 2
+               type1 = 2; !  point cloud for lnd
+               type2 = 3;  ! fv for target atm
+               ierr = iMOAB_ComputeCommGraph( mblxid, mbaxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                        lnd(1)%cplcompid, atm(1)%cplcompid)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing comm graph for second hop, lnd-atm'
+                  call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, lnd-atm')
+               endif
 
+            endif ! if tri-grid
+         endif    ! if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then          
+#endif  
+      endif ! if lnd_present
+      call shr_sys_flush(logunit)
 
-    end if
+      if (lnd_c2_atm) then
+         if (iamroot_CPLID) then
+            write(logunit,*) ' '
+            write(logunit,F00) 'Initializing mapper_Sl2a'
+         endif
+         call seq_map_init_rcfile(mapper_Sl2a, lnd(1), atm(1), &
+            'seq_maps.rc','lnd2atm_smapname:','lnd2atm_smaptype:',samegrid_al, &
+            'mapper_Sl2a initialization',esmf_map_flag)
+#ifdef HAVE_MOAB
+         if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
+            mapper_Fl2a%src_mbid = mblxid
+            mapper_Fl2a%tgt_mbid = mbaxid
+            mapper_Fl2a%src_mbid = mbintxla
+            mapper_Fl2a%src_context = lnd(1)%cplcompid
+            mapper_Fl2a%intx_context = idintx
+            wgtIdef = 'scalar'//C_NULL_CHAR
+            mapper_Fl2a%weight_identifier = wgtIdef 
+         endif
+#endif
+      endif ! if (lnd_c2_atm) then
+
+   endif ! if atm_present
 
   end subroutine prep_atm_init
 
@@ -1084,65 +1135,65 @@ contains
           mrgstr(ka) = subname//'x2a%'//trim(field_atm(ka))//' ='
           if (field_atm(ka)(1:2) == 'PF') then
              cycle ! if flux has first character as P, pass straight through
-          end if
+          endif
           if (field_atm(ka)(1:1) == 'S' .and. field_atm(ka)(2:2) /= 'x') then
              cycle ! any state fields that are not Sx_ will just be copied
-          end if
+          endif
 
           do kl = 1,nlflds
              if (trim(itemc_atm(ka)) == trim(itemc_lnd(kl))) then
                 if ((trim(field_atm(ka)) == trim(field_lnd(kl)))) then
                    if (field_lnd(kl)(1:1) == 'F') lmerge(ka) = .false.
-                end if
+                endif
                 ! --- make sure only one field matches ---
                 if (lindx(ka) /= 0) then
                    write(logunit,*) subname,' ERROR: found multiple kl field matches for ',trim(itemc_lnd(kl))
                    call shr_sys_abort(subname//' ERROR multiple kl field matches')
                 endif
                 lindx(ka) = kl
-             end if
+             endif
           end do
           do ki = 1,niflds
              if (field_ice(ki)(1:1) == 'F' .and. field_ice(ki)(2:4) == 'ioi') then
                 cycle ! ignore all fluxes that are ice/ocn fluxes
-             end if
+             endif
              if (trim(itemc_atm(ka)) == trim(itemc_ice(ki))) then
                 if ((trim(field_atm(ka)) == trim(field_ice(ki)))) then
                    if (field_ice(ki)(1:1) == 'F') imerge(ka) = .false.
-                end if
+                endif
                 ! --- make sure only one field matches ---
                 if (iindx(ka) /= 0) then
                    write(logunit,*) subname,' ERROR: found multiple ki field matches for ',trim(itemc_ice(ki))
                    call shr_sys_abort(subname//' ERROR multiple ki field matches')
                 endif
                 iindx(ka) = ki
-             end if
+             endif
           end do
           do kx = 1,nxflds
              if (trim(itemc_atm(ka)) == trim(itemc_xao(kx))) then
                 if ((trim(field_atm(ka)) == trim(field_xao(kx)))) then
                    if (field_xao(kx)(1:1) == 'F') xmerge(ka) = .false.
-                end if
+                endif
                 ! --- make sure only one field matches ---
                 if (xindx(ka) /= 0) then
                    write(logunit,*) subname,' ERROR: found multiple kx field matches for ',trim(itemc_xao(kx))
                    call shr_sys_abort(subname//' ERROR multiple kx field matches')
                 endif
                 xindx(ka) = kx
-             end if
+             endif
           end do
           do ko = 1,noflds
              if (trim(itemc_atm(ka)) == trim(itemc_ocn(ko))) then
                 if ((trim(field_atm(ka)) == trim(field_ocn(ko)))) then
                    if (field_ocn(ko)(1:1) == 'F') omerge(ka) = .false.
-                end if
+                endif
                 ! --- make sure only one field matches ---
                 if (oindx(ka) /= 0) then
                    write(logunit,*) subname,' ERROR: found multiple ko field matches for ',trim(itemc_ocn(ko))
                    call shr_sys_abort(subname//' ERROR multiple ko field matches')
                 endif
                 oindx(ka) = ko
-             end if
+             endif
           end do
 
           ! --- add some checks ---
@@ -1180,7 +1231,7 @@ contains
           endif
 
        end do
-    end if
+    endif
 
     ! Zero attribute vector
 
@@ -1260,30 +1311,30 @@ contains
                 mrgstr(ka) = trim(mrgstr(ka))//' + lfrac*l2x%'//trim(field_lnd(lindx(ka)))
              else
                 mrgstr(ka) = trim(mrgstr(ka))//' = lfrac*l2x%'//trim(field_lnd(lindx(ka)))
-             end if
-          end if
+             endif
+          endif
           if (iindx(ka) > 0) then
              if (imerge(ka)) then
                 mrgstr(ka) = trim(mrgstr(ka))//' + ifrac*i2x%'//trim(field_ice(iindx(ka)))
              else
                 mrgstr(ka) = trim(mrgstr(ka))//' = ifrac*i2x%'//trim(field_ice(iindx(ka)))
-             end if
-          end if
+             endif
+          endif
           if (xindx(ka) > 0) then
              if (xmerge(ka)) then
                 mrgstr(ka) = trim(mrgstr(ka))//' + ofrac*xao%'//trim(field_xao(xindx(ka)))
              else
                 mrgstr(ka) = trim(mrgstr(ka))//' = ofrac*xao%'//trim(field_xao(xindx(ka)))
-             end if
-          end if
+             endif
+          endif
           if (oindx(ka) > 0) then
              if (omerge(ka)) then
                 mrgstr(ka) = trim(mrgstr(ka))//' + ofrac*o2x%'//trim(field_ocn(oindx(ka)))
-             end if
+             endif
              if (.not. omerge(ka)) then
                 mrgstr(ka) = trim(mrgstr(ka))//' + (ifrac+ofrac)*o2x%'//trim(field_ocn(oindx(ka)))
-             end if
-          end if
+             endif
+          endif
        endif
 
        do n = 1,lsize
@@ -1295,32 +1346,32 @@ contains
                 x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + l2x_a%rAttr(lindx(ka),n) * fracl
              else
                 x2a_a%rAttr(ka,n) = l2x_a%rAttr(lindx(ka),n) * fracl
-             end if
-          end if
+             endif
+          endif
           if (iindx(ka) > 0 .and. fraci > 0._r8) then
              if (imerge(ka)) then
                 x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + i2x_a%rAttr(iindx(ka),n) * fraci
              else
                 x2a_a%rAttr(ka,n) = i2x_a%rAttr(iindx(ka),n) * fraci
-             end if
-          end if
+             endif
+          endif
           if (xindx(ka) > 0 .and. fraco > 0._r8) then
              if (xmerge(ka)) then
                 x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + xao_a%rAttr(xindx(ka),n) * fraco
              else
                 x2a_a%rAttr(ka,n) = xao_a%rAttr(xindx(ka),n) * fraco
-             end if
-          end if
+             endif
+          endif
           if (oindx(ka) > 0) then
              if (omerge(ka) .and. fraco > 0._r8) then
                 x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + o2x_a%rAttr(oindx(ka),n) * fraco
-             end if
+             endif
              if (.not. omerge(ka)) then
                 !--- NOTE: This IS using the ocean fields and ice fraction !! ---
                 x2a_a%rAttr(ka,n) = o2x_a%rAttr(oindx(ka),n) * fraci
                 x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + o2x_a%rAttr(oindx(ka),n) * fraco
-             end if
-          end if
+             endif
+          endif
        end do
     end do
 
@@ -1382,19 +1433,19 @@ contains
        endif
        call seq_map_map(mapper_Fo2a, o2x_ox, o2x_ax(emi),&
             fldlist=seq_flds_o2x_fluxes,norm=.true.)
+    enddo
 
 #ifdef MOABDEBUG
-               ! projection of atm to ocean fields
-            write(lnum,"(I0.2)")num_moab_exports
-            outfile = 'Ocn2Atm'//trim(lnum)//'.h5m'//C_NULL_CHAR
-            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-            ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
-            if (ierr .ne. 0) then
-              write(logunit,*) subname,' error in writing ocean to atm projection'
-              call shr_sys_abort(subname//' ERROR in writing ocean to atm projection')
-            endif
+            ! projections on atm 
+         write(lnum,"(I0.2)")num_moab_exports
+         outfile = 'OIL2Atm'//trim(lnum)//'.h5m'//C_NULL_CHAR
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+         ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing ocean to atm projection'
+            call shr_sys_abort(subname//' ERROR in writing ocean to atm projection')
+         endif
 #endif
-    enddo
     call t_drvstopf  (trim(timer))
 
   end subroutine prep_atm_calc_o2x_ax
@@ -1463,6 +1514,7 @@ contains
             fldlist=seq_flds_l2x_fluxes, norm=.true., &
             avwts_s=fractions_lx(efi), avwtsfld_s='lfrin')
     enddo
+
     call t_drvstopf  (trim(timer))
 
   end subroutine prep_atm_calc_l2x_ax
