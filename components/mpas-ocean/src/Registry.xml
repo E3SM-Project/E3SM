@@ -1996,6 +1996,7 @@
 				immutable="true">
 			<var name="landIcePressureForcing"/>
 			<var name="landIceFractionForcing"/>
+			<var name="landIceFloatingFractionForcing"/>
 			<var name="landIceDraftForcing"/>
 		</stream>
 
@@ -3822,6 +3823,10 @@
 			packages="timeVaryingAtmosphericForcingPKG"
 		/>
 		<var name="landIceFractionForcing" type="real" dimensions="nCells Time" units="1"
+			description="The fraction of each cell covered by land ice"
+			packages="timeVaryingLandIceForcingPKG"
+		/>
+		<var name="landIceFloatingFractionForcing" type="real" dimensions="nCells Time" units="1"
 			description="The fraction of each cell covered by land ice"
 			packages="timeVaryingLandIceForcingPKG"
 		/>
