@@ -32,7 +32,8 @@ module prep_lnd_mod
   use iso_c_binding
 #ifdef  HAVE_MOAB
   use iMOAB , only: iMOAB_ComputeCommGraph, iMOAB_ComputeMeshIntersectionOnSphere, &
-    iMOAB_ComputeScalarProjectionWeights, iMOAB_DefineTagStorage, iMOAB_RegisterApplication
+    iMOAB_ComputeScalarProjectionWeights, iMOAB_DefineTagStorage, iMOAB_RegisterApplication, & 
+    iMOAB_WriteMesh
 #endif
   implicit none
   save
@@ -242,7 +243,8 @@ contains
             mapper_Sa2l%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Sa2l%weight_identifier = wgtIdef 
-
+            
+            call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID) 
             if (.not. samegrid_al) then ! tri grid case
               if (iamroot_CPLID) then
                 write(logunit,*) 'iMOAB intersection between atm and land with id:', idintx
@@ -270,7 +272,7 @@ contains
               ! we also need to compute the comm graph for the second hop, from the atm on coupler to the 
               ! lnd for the intx atm-lnd context (coverage)
               !    
-              call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)          
+         
               type1 = 1 ! this projection works (cgll to fv), but reverse does not ( fv - cgll)
               type2 = 3; ! land is fv in this case (separate grid)
               ! ierr      = iMOAB_ComputeCommGraph( mboxid, mbintxoa, &mpicom_CPLID, &mpigrp_CPLID, &mpigrp_CPLID, &type1, &type2,
