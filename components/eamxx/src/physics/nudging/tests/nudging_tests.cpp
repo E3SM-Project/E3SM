@@ -95,7 +95,7 @@ TEST_CASE("nudging") {
   io_control.frequency_units         = "nsteps";
   std::vector<std::string> output_stamps; 
 
-  const Int dt        = 1;
+  const Int dt        = 100;
   const Int max_steps = 12;
   {
     util::TimeStamp time  = t0;
@@ -162,8 +162,6 @@ TEST_CASE("nudging") {
     // Set up parameter list control for output
     
     ekat::ParameterList params;
-    //ekat::parse_yaml_file("io_test_" + output_type + ".yaml",params);
-    //params.set<std::string>("Floating Point Precision","real");
     params.set<std::string>("Casename","io_output_test");
     params.set<std::string>("Averaging Type","Instant");
     params.set<int>("Max Snapshots Per File",10);
@@ -171,15 +169,11 @@ TEST_CASE("nudging") {
     std::vector<std::string> fnames = {"T_mid_r","p_mid_r"};
     //params_sub_f.set<std::vector<std::string>>("Field Names",fnames);
     params.set<std::vector<std::string>>("Field Names",fnames);
-    //params_sub.set<std::string>("frequency_units","T_mid_r");
     auto& params_sub = params.sublist("output_control");
-    //params_sub.set<std::string>("frequency_units",output_freq_units);
     params_sub.set<std::string>("frequency_units","nsteps");
     params_sub.set<int>("Frequency",1);
     params_sub.set<bool>("MPI Ranks in Filename",true);
     io_control.frequency = params_sub.get<int>("Frequency");
-    //io_control.frequency = 1;
-    
 
     // Set up output manager.
     OutputManager om;
@@ -208,7 +202,7 @@ TEST_CASE("nudging") {
                   if (fname == "T_mid_r"){
                     //v(i,j) = (-j)*100 + i + 1;
                     //v(i,j) = (i-1)*100*10+2*j*10+dt*ii*0.1;
-		    v(i,j) = (i-1)*100*10+2*j*10+dt*ii;
+		    v(i,j) = (i-1)*100*10+2*j*10+(dt/100.)*ii;
                     std::cout<<"v("<<i<<","<<j<<"): "<<v(i,j)<<std::endl;
                   }
                   if (fname == "p_mid_r"){
@@ -281,10 +275,10 @@ TEST_CASE("nudging") {
 
   auto f_mid_v_h   = f_mid.get_view<Real**, Host>();
   auto p_mid_v_h   = p_mid.get_view<Real**, Host>();
-  /*
+  
   for (int icol=0; icol<ncols; icol++){
     for (int ilev=0; ilev<nlevs; ilev++){ 
-      f_mid_v_h(icol,ilev) = (-ilev)*100 + icol+0.1;
+      //f_mid_v_h(icol,ilev) = (-ilev)*100 + icol+0.1;
       //f_mid_v_h(icol,ilev) = 0;
       //f_mid_v_h(icol,ilev) = 100*(icol-1) + 2*ilev;
       //p_mid_v_h(icol,ilev) = 2+ilev*2;
@@ -293,7 +287,7 @@ TEST_CASE("nudging") {
   }
   f_mid.sync_to_dev();
   p_mid.sync_to_dev();
-
+  /*
   auto ft = f_mid.get_header_ptr()->get_tracking();
   auto pt = p_mid.get_header_ptr()->get_tracking();
   auto ts = ft.get_time_stamp();
@@ -329,10 +323,13 @@ TEST_CASE("nudging") {
   */
   //This checks that nudging works as expected if nudging times internally
   //are the same as in the file
+  //For some reason can't start at t = 0; Complains
   for (int time_s = 1; time_s < 10; time_s++){
     f_mid.sync_to_dev();
     p_mid.sync_to_dev();
-  
+
+    //int time_in=time_s*100;
+    //int time_in=time_s*250;
     //run
     //nudging_mid->run(1);
     nudging_mid->run(time_s);
@@ -347,7 +344,7 @@ TEST_CASE("nudging") {
         //REQUIRE(f_mid_v_h(icol,ilev) == (-ilev)*100 + icol + 1);
         //REQUIRE(f_mid_v_h(icol,ilev) == 100*(icol-1) + 2*ilev+time_s*0.1);
 	//REQUIRE(f_mid_v_h(icol,ilev) == 100*(icol-1) + 2*ilev+0.1);
-	REQUIRE(f_mid_v_h(icol,ilev) == 1000*(icol-1) + 2*10*ilev+time_s*1);
+	REQUIRE(f_mid_v_h(icol,ilev) == 1000*(icol-1) + 10 + 20*ilev +(time_s)*1);
       }
     }
 }
