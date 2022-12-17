@@ -309,7 +309,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: &
          atmosphericPressure,   &
          iceFraction,          &
-         landIceFraction,      &
+         landIceFloatingFraction,      &
          windSpeedSquared10m,  &
          iceFluxDMS,           &
          iceFluxDMSP,          &
@@ -343,7 +343,7 @@ contains
 
       call mpas_pool_get_array(forcingPool, 'atmosphericPressure', atmosphericPressure)
       call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
-      call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+      call mpas_pool_get_array(forcingPool, 'landIceFloatingFraction', landIceFloatingFraction)
 
       call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
       call mpas_pool_get_array(ecosysAuxiliary, 'windSpeedSquared10m', windSpeedSquared10m)
@@ -374,8 +374,8 @@ contains
          DMS_forcing%surfacePressure(column) = atmosphericPressure(iCell)*PascalsToAtmospheres
          DMS_forcing%iceFraction(column) = iceFraction(iCell)
 !maltrud assume for now that if there is any land ice, it is all land ice
-         if (associated(landIceFraction)) then
-            if (landIceFraction(iCell) > 0.0_RKIND) DMS_forcing%iceFraction(column) = 1.0_RKIND
+         if (associated(landIceFloatingFraction)) then
+            if (landIceFloatingFraction(iCell) > 0.0_RKIND) DMS_forcing%iceFraction(column) = 1.0_RKIND
          endif
          DMS_forcing%windSpeedSquared10m(column) = windSpeedSquared10m(iCell)*mSquared_to_cmSquared
          DMS_forcing%SST(column) = activeTracers(indexTemperature,iLevelSurface,iCell)
