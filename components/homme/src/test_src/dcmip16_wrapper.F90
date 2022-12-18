@@ -629,6 +629,8 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     precl(:,:,ie) = 0.0d0
 
     ! get current element state
+    !returns p at midlevels just like we need for pprime
+    ! we do not need p at interfaces and at surface, only pi
     call get_state(u,v,w,T,p,dp,ps,rho,z,zi,g,elem(ie),hvcoord,nt,ntQ)
 
     ! get mixing ratios
