@@ -71,9 +71,10 @@ module ocn_time_integration_si
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_time_integrator_si, &
-             ocn_time_integration_si_init, &
-             ocn_time_integrator_si_preconditioner
+   public :: ocn_time_integrator_si,                  &
+             ocn_time_integration_si_init,            &
+             ocn_time_integrator_si_preconditioner,   &
+             ocn_time_integrator_si_variable_destroy
 
    !--------------------------------------------------------------------
    !
@@ -3286,6 +3287,13 @@ module ocn_time_integration_si
          call mpas_log_write( &
          '       (Default is sbicg.)')
          si_algorithm = 'scg'
+
+         ! Allocate temporary arrays for reproducible summation
+         allocate( globalReprodSum2fld1(nCellsOwned,2),  &
+                   globalReprodSum2fld2(nCellsOwned,2),  &
+                   globalReprodSum3fld1(nCellsOwned,3),  &
+                   globalReprodSum3fld2(nCellsOwned,3) )
+
       endif
 
       ! Restricted Additive Schwarz preconditioner --------------------!
@@ -4230,6 +4238,33 @@ module ocn_time_integration_si
      !-------------------------------------------------------------!
 
    end subroutine si_solver_sbicg !}}}
+
+!***********************************************************************
+!
+!  routine ocn_time_integrator_si_variable_destroy
+!
+!> \brief   Destroy SI-related variables including CPU & GPU arrays
+!
+!> \author  Hyun-Gyu Kang
+!
+!> \details
+!   This routine deallocates CPU arrays and deletes GPU arrays
+!   allocated in the SI solver.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_time_integrator_si_variable_destroy()
+
+      integer :: info
+
+      if ( config_btr_si_partition_match_mode ) then
+         deallocate( globalReprodSum2fld1,  &
+                     globalReprodSum2fld2,  &
+                     globalReprodSum3fld1,  &
+                     globalReprodSum3fld2 )
+      endif
+
+   end subroutine ocn_time_integrator_si_variable_destroy
 
 !***********************************************************************
 
