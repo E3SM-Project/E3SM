@@ -92,11 +92,14 @@ void perform_vertical_interpolation(
   const view_Nd<      Mask<P>,N>&   mask,
   const int nlevs_src,
   const int nlevs_tgt,
-  const Real msk_val = masked_val)
+  const Real msk_val)
 {
-  const int ncols = x_src.extent(0);
+  int ndofs = x_src.extent(0);
+  for (int ii=1; ii<N-1; ii++) {
+    ndofs *= input.extent_int(ii);
+  }
   perform_checks<T,P,N>(x_src, x_tgt, input, output, nlevs_src, nlevs_tgt);
-  LIV<T,P> vert_interp(ncols,nlevs_src,nlevs_tgt);
+  LIV<T,P> vert_interp(ndofs,nlevs_src,nlevs_tgt);
   apply_interpolation(nlevs_src, msk_val, vert_interp, x_src, x_tgt, input, output, mask);
 }
 
@@ -108,9 +111,12 @@ void perform_vertical_interpolation(
   const view_Nd<      Pack<T,P>,N>& output,
   const int nlevs_src,
   const int nlevs_tgt,
-  const Real msk_val = masked_val)
+  const Real msk_val)
 {
-  const int ncols = x_src.extent(0);
+  int ndofs = x_src.extent(0);
+  for (int ii=1; ii<N-1; ii++) {
+    ndofs *= input.extent_int(ii);
+  }
   perform_checks<T,P,N>(x_src, x_tgt, input, output, nlevs_src, nlevs_tgt);
 
   std::vector<int> extents;
@@ -119,7 +125,10 @@ void perform_vertical_interpolation(
   }
   const auto mask = allocate_mask<P,N>(extents);
 
-  LIV<T,P> vert_interp(ncols,nlevs_src,nlevs_tgt);
+  LIV<T,P> vert_interp(ndofs,nlevs_src,nlevs_tgt);
+  for (int ii=1; ii<N-1; ii++) {
+    ndofs *= input.extent_int(ii);
+  }
   apply_interpolation(nlevs_src, msk_val, vert_interp, x_src, x_tgt, input, output, mask);
 }
 
@@ -202,7 +211,7 @@ void perform_checks(
   EKAT_REQUIRE(x_src.extent_int(0) == input.extent_int(0));
   EKAT_REQUIRE(x_src.extent_int(1) == input.extent_int(input.rank-1));
   // The output data and x_tgt data should match in the appropriate size
-  EKAT_REQUIRE(x_tgt.extent_int(0) == output.extent_int(input.rank-1));
+  EKAT_REQUIRE_MSG(x_tgt.extent_int(0) == output.extent_int(input.rank-1),"Error! vertical_interpolation::perform_checks " + std::to_string(x_tgt.extent_int(0)) + " != " + std::to_string(output.extent_int(input.rank-1)) + ".");
 
 
   // The output and input data should match in rank
@@ -227,11 +236,14 @@ void perform_vertical_interpolation(
   const view_Nd<      Mask<P>,N>&   mask,
   const int nlevs_src,
   const int nlevs_tgt,
-  const Real msk_val = masked_val)
+  const Real msk_val)
 {
-  const int ncols = x_src.extent(0);
+  int ndofs = x_src.extent(0);
+  for (int ii=1; ii<N-1; ii++) {
+    ndofs *= input.extent_int(ii);
+  }
   perform_checks<T,P,N>(x_src, x_tgt, input, output, nlevs_src, nlevs_tgt);
-  LIV<T,P> vert_interp(ncols,nlevs_src,nlevs_tgt);
+  LIV<T,P> vert_interp(ndofs,nlevs_src,nlevs_tgt);
   apply_interpolation(nlevs_src, msk_val, vert_interp, x_src, x_tgt, input, output, mask);
 }
 
@@ -243,9 +255,12 @@ void perform_vertical_interpolation(
   const view_Nd<      Pack<T,P>,N>& output,
   const int nlevs_src,
   const int nlevs_tgt,
-  const Real msk_val = masked_val)
+  const Real msk_val)
 {
-  const int ncols = x_src.extent(0);
+  int ndofs = x_src.extent(0);
+  for (int ii=1; ii<N-1; ii++) {
+    ndofs *= input.extent_int(ii);
+  }
   perform_checks<T,P,N>(x_src, x_tgt, input, output, nlevs_src, nlevs_tgt);
 
   std::vector<int> extents;
@@ -254,7 +269,7 @@ void perform_vertical_interpolation(
   }
   const auto mask = allocate_mask<P,N>(extents);
 
-  LIV<T,P> vert_interp(ncols,nlevs_src,nlevs_tgt);
+  LIV<T,P> vert_interp(ndofs,nlevs_src,nlevs_tgt);
   apply_interpolation(nlevs_src, msk_val, vert_interp, x_src, x_tgt, input, output, mask);
 }
 
@@ -311,7 +326,7 @@ void apply_interpolation(
     const auto out  = ekat::subview(output, icol, ivar);
     const auto mask = ekat::subview(mask_out, icol, ivar);
 
-    apply_interpolation_impl_1d<T,P>(x1,x_tgt,in,out,mask,num_levs,icol,mask_val,team,vert_interp);
+    apply_interpolation_impl_1d<T,P>(x1,x_tgt,in,out,mask,num_levs,team.league_rank(),mask_val,team,vert_interp);
   });
   Kokkos::fence();   
 }
