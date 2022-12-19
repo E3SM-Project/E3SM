@@ -966,6 +966,9 @@ contains
       ! ---------------------------------------------------------------------------------
       call fates_hist%flush_hvars(nc,upfreq_in=1)
 
+      ! Frequency 5 is routine that processes FATES history
+      ! on the dynamics (daily) step, but before disturbance
+      call fates_hist%flush_hvars(nc,upfreq_in=5)
 
       ! ---------------------------------------------------------------------------------
       ! Part II: Call the FATES model now that input boundary conditions have been
@@ -999,7 +1002,8 @@ contains
       ! ---------------------------------------------------------------------------------
       call fates_hist%update_history_dyn( nc,                    &
            this%fates(nc)%nsites, &
-           this%fates(nc)%sites)
+           this%fates(nc)%sites,  &
+           this%fates(nc)%bc_in)
 
       if (masterproc) then
          write(iulog, *) 'FATES dynamics complete'
@@ -1636,7 +1640,8 @@ contains
                end do
                call fates_hist%update_history_dyn( nc, &
                     this%fates(nc)%nsites,                 &
-                    this%fates(nc)%sites)
+                    this%fates(nc)%sites,  &
+                    this%fates(nc)%bc_in)
 
 
             end if
@@ -1793,7 +1798,8 @@ contains
            end do
            call fates_hist%update_history_dyn( nc, &
                 this%fates(nc)%nsites,                 &
-                this%fates(nc)%sites)
+                this%fates(nc)%sites,  &
+                this%fates(nc)%bc_in)
 
 
 
