@@ -464,7 +464,7 @@ end subroutine rj_old
 
 
 
-subroutine kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ptop,zi_c,massout,energyout, &
+subroutine kessler_new_hy(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ptop,zi_c,massout,energyout, &
                                             dt,wasiactive)
 
   real(rl), dimension(nlev), intent(in)    :: p_c, dp_c
@@ -505,33 +505,33 @@ subroutine kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ptop,zi_c,massout,energyout, 
      !not exactly, as below conditions might not get triggered
      wasiactive = .true.
      ! Cr, Ar stages ----------------------------------------------------------
-     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,zbottom,energy_before)
+     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_before)
      energy_start_timestep = energy_before
      call accrecion_and_accumulation(qcdry_c, qrdry_c, dt)
-     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,zbottom,energy_after)
+     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_after)
      !print *, 'enbef - enafter', (energy_before - energy_after)/energy_after
 
      ! sedimentation ----------------------------------------------------------
      ! right now nh term is not used, so, no need to recompute wet hydro pressure and total nh pressure
      !so far, it is only part that has fluxes out
-     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,zbottom,energy_before)
+     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_before)
      call sedimentation(qvdry_c,qcdry_c,qrdry_c, T_c, dpdry_c,ppidry, zbottom, loc_mass_p,loc_energy_p,dt)
-     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,zbottom,energy_after)
+     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_after)
      !print *, 'Sedime:enbefore - enafter(up to flux)', (energy_before - energy_after - loc_energy_p)/energy_before
      massout = massout + loc_mass_p; energyout = energyout + loc_energy_p;
 
      ! evaporation of rain ----------------------------------------------------
-     call recompute_pressures(qvdry_c,qcdry_c,qrdry_c, dpdry_c,ppidry,pprime, ppi,ploc_c,dploc_c)
-     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,zbottom,energy_before)
+  !call recompute_pressures(qvdry_c,qcdry_c,qrdry_c, dpdry_c,ppidry,pprime, ppi,ploc_c,dploc_c)
+     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_before)
      call rain_evaporation(qvdry_c,qcdry_c,qrdry_c, T_c, zbottom, dpdry_c,dploc_c,ppidry,ppi,ploc_c)
-     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,zbottom,energy_after)
+     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_after)
      !print *, 'Rain evap: enbefore - enafter(up to flux)', (energy_before - energy_after)/energy_before
 
      ! condensation <-> evaporation -------------------------------------------
-     call recompute_pressures(qvdry_c,qcdry_c,qrdry_c, dpdry_c,ppidry,pprime, ppi,ploc_c,dploc_c)
-     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,zbottom,energy_before)
+  !call recompute_pressures(qvdry_c,qcdry_c,qrdry_c, dpdry_c,ppidry,pprime, ppi,ploc_c,dploc_c)
+     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_before)
      call condensation_and_back_again(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,dploc_c,ppi,ploc_c)
-     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,zbottom,energy_after)
+     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_after)
      !print *, 'Condensation: enbefore - enafter(up to flux)', (energy_before - energy_after)/energy_before
 
      !this works for now
@@ -551,7 +551,7 @@ subroutine kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ptop,zi_c,massout,energyout, 
 
   endif ! any water >0
 
-end subroutine kessler_new
+end subroutine kessler_new_hy
 
 
 
@@ -573,7 +573,7 @@ subroutine energy_hy_via_mass(dpdry_c,dpv_c,dpc_c,dpr_c,T_c,ptop,zi_c,energy)
   !derived pressure values
   !call construct_hydro_pressure(dp_c,ptop,ppi)
 
-  energy = zbottom * ps * gravit
+  energy = zbottom * pis * gravit
 
   do k=1,nlev
     cpterm = cpdry*dpdry_c(k) + cpv * dpv_c(k) + cl * (dpc_c(k) + dpr_c(k))
@@ -596,7 +596,7 @@ subroutine energy_nh_via_mass(dpdry_c,dpv_c,dpc_c,dpr_c,T_c,ptop,zi_c,pprime,ene
 
   real(rl) :: zbottom, pis, cpterm, Lterm, nhterm, rstar
   integer  :: k
-  real(rl), dimension(nlevp):: ppi
+  real(rl), dimension(nlev) :: ppi
   real(rl), dimension(nlev) :: pnh, dpi
 
   zbottom = zi_c(nlevp)
@@ -614,7 +614,7 @@ subroutine energy_nh_via_mass(dpdry_c,dpv_c,dpc_c,dpr_c,T_c,ptop,zi_c,pprime,ene
 
     Lterm  = (latvap+latice) * dpv_c(k) + latice * (dpc_c(k) + dpr_c(k))
 
-    rstart = rdry*dpdry_c(k)/dpi(k) + rvapor*dpv_c(k)/dpi(k)
+    rstar = rdry*dpdry_c(k)/dpi(k) + rvapor*dpv_c(k)/dpi(k)
 
     nhterm = rstar*T_c(k)*(ppi(k)/pnh(k)-1.0)*dpi(k)
 
@@ -660,14 +660,14 @@ subroutine energy_nh_via_dry(qvdry,qcdry,qrdry,tempe,dpdry,ptop,zbottom,pprime,e
 
   real(rl), dimension(nlev), intent(in)    :: qrdry, pprime
   real(rl), dimension(nlev), intent(inout) :: qvdry,qcdry,tempe
-  real(rl), dimension(nlev), intent(in)    :: dpdry, pi
+  real(rl), dimension(nlev), intent(in)    :: dpdry
   real(rl),                  intent(inout) :: energy
-  real(rl),                  intent(in)    :: zbottom
+  real(rl),                  intent(in)    :: zbottom, ptop
 
   integer  :: k
   real(rl) :: cpterm, Lterm, rstar, nhterm, pis
   real(rl), dimension(nlev) :: pnh, dpi
-  real(rl), dimension(nlevp):: ppi
+  real(rl), dimension(nlev) :: ppi
 
   dpi = dpdry*(1.0 + qvdry + qcdry + qrdry)
 

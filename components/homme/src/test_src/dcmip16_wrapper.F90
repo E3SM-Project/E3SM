@@ -690,7 +690,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
         call energy_hy_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ppi_upper,zi_c,energy_before)
 
         !this one conserves after PA
-        call kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ppi_upper,zi_c,mass_prect,energy_prect,dt,wasiactive)
+        call kessler_new_hy(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ppi_upper,zi_c,mass_prect,energy_prect,dt,wasiactive)
 
         call energy_hy_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ppi_upper,zi_c,energy_after)
 
