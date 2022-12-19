@@ -220,19 +220,27 @@ end subroutine recompute_pressures
 
 
 
-subroutine rain_evaporation(qvdry,qcdry,qrdry,tempe,zbottom,dpdry,dp,pidry,pi,pnh)
+subroutine rain_evaporation(qvdry,qcdry,qrdry,tempe,dpdry,ptop,zbottom,pprime)
 
   real(rl), dimension(nlev), intent(in)    :: qcdry
   real(rl), dimension(nlev), intent(inout) :: qvdry,qrdry,tempe
-  real(rl), dimension(nlev), intent(in)    :: dpdry, dp, pidry, pi, pnh
-  real(rl),                  intent(in)    :: zbottom
+  real(rl), dimension(nlev), intent(in)    :: dpdry,pprime
+  real(rl),                  intent(in)    :: zbottom,ptop
 
   integer  :: k
   real(rl) :: dq, qsat, qsatdry, cval
-  real(rl), dimension(nlev)  :: zm,dz,rhodry
+  real(rl), dimension(nlev)  :: zm,dz,rhodry,dpi,ppi,pnh,pidry
   real(rl), dimension(nlevp) :: zi
 
-  !we can use wet pho, but we will ignore thah here
+  dpi = dpdry*(1.0 + qvdry + qcdry + qrdry)
+
+  !derived pressure values
+  call construct_hydro_pressure(dpi,  ptop,ppi  )
+  call construct_hydro_pressure(dpdry,ptop,pidry)
+  pnh = ppi + pprime
+  
+  !we can use wet rho, but we will ignore thah here
+                          !input                        !output
   call get_geo_from_drydp(tempe, dpdry, pidry, zbottom, zi, zm, dz)
   rhodry = dpdry / dz / gravit
 
@@ -242,7 +250,7 @@ subroutine rain_evaporation(qvdry,qcdry,qrdry,tempe,zbottom,dpdry,dp,pidry,pi,pn
     !r4=1.6,r5=124.9,r6=0.2046
 
     call qsat_kessler2(pnh(k), tempe(k), qsat)
-    qsatdry = qsat*dp(k)/dpdry(k)
+    qsatdry = qsat*dpi(k)/dpdry(k)
 
     cval = r4 + r5*( (rhodry(k)*qrdry(k))**r6 )
     dq = (1 - qvdry(k)/qsatdry) * cval**r1
@@ -254,7 +262,7 @@ subroutine rain_evaporation(qvdry,qcdry,qrdry,tempe,zbottom,dpdry,dp,pidry,pi,pn
     ! new values: qv = qv - dq, qr = qr + dq
     !notice liquid_in_use var is now qrdry
     call phase_change_gas_liquid_level( &
-         qvdry(k),qrdry(k),qcdry(k),dq,tempe(k),dpdry(k),dp(k),pi(k),pnh(k) )
+         qvdry(k),qrdry(k),qcdry(k),dq,tempe(k),dpdry(k),dpi(k),ppi(k),pnh(k) )
 
 !if (dq > 0) then
 ! print *, 'yay, condensation',' qc', qcdry(k)
@@ -266,19 +274,26 @@ end subroutine rain_evaporation
 
 
 
-
-subroutine condensation_and_back_again(qvdry,qcdry,qrdry,tempe,dpdry,dp,pi,pnh)
+subroutine condensation_and_back_again(qvdry,qcdry,qrdry,tempe,dpdry,ptop,zbottom,pprime)
 
   real(rl), dimension(nlev), intent(in)    :: qrdry
   real(rl), dimension(nlev), intent(inout) :: qvdry,qcdry,tempe
-  real(rl), dimension(nlev), intent(in)    :: dpdry, dp, pi, pnh
+  real(rl), dimension(nlev), intent(in)    :: dpdry, pprime
+  real(rl),                  intent(in)    :: zbottom,ptop
 
   integer  :: k
   real(rl) :: dq, qsat, qsatdry
+  real(rl), dimension(nlev)  :: dpi,ppi,pnh
+
+  dpi = dpdry*(1.0 + qvdry + qcdry + qrdry)
+
+  !derived pressure values
+  call construct_hydro_pressure(dpi,ptop,ppi)
+  pnh = ppi + pprime
 
   do k=1, nlev
     call qsat_kessler2(pnh(k), tempe(k), qsat)
-    qsatdry = qsat*dp(k)/dpdry(k)
+    qsatdry = qsat*dpi(k)/dpdry(k)
 
     !assume condensation
     dq = qvdry(k) - qsatdry
@@ -290,7 +305,7 @@ subroutine condensation_and_back_again(qvdry,qcdry,qrdry,tempe,dpdry,dp,pi,pnh)
     ! new values: qv = qv - dq, qc = qc + dq
 
     call phase_change_gas_liquid_level( &
-         qvdry(k),qcdry(k),qrdry(k),dq,tempe(k),dpdry(k),dp(k),pi(k),pnh(k) )
+         qvdry(k),qcdry(k),qrdry(k),dq,tempe(k),dpdry(k),dpi(k),ppi(k),pnh(k) )
 
 !if (dq > 0) then
 ! print *, 'yay, condensation',' qc', qcdry(k)
@@ -515,7 +530,7 @@ subroutine kessler_new_hy(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ptop,zi_c,massout,energyou
      ! right now nh term is not used, so, no need to recompute wet hydro pressure and total nh pressure
      !so far, it is only part that has fluxes out
      call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_before)
-     call sedimentation(qvdry_c,qcdry_c,qrdry_c, T_c, dpdry_c,ppidry, zbottom, loc_mass_p,loc_energy_p,dt)
+     call sedimentation(qvdry_c,qcdry_c,qrdry_c, T_c, dpdry_c,                    ppidry, zbottom, loc_mass_p,loc_energy_p,dt)
      call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_after)
      !print *, 'Sedime:enbefore - enafter(up to flux)', (energy_before - energy_after - loc_energy_p)/energy_before
      massout = massout + loc_mass_p; energyout = energyout + loc_energy_p;
@@ -523,14 +538,14 @@ subroutine kessler_new_hy(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ptop,zi_c,massout,energyou
      ! evaporation of rain ----------------------------------------------------
   !call recompute_pressures(qvdry_c,qcdry_c,qrdry_c, dpdry_c,ppidry,pprime, ppi,ploc_c,dploc_c)
      call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_before)
-     call rain_evaporation(qvdry_c,qcdry_c,qrdry_c, T_c, zbottom, dpdry_c,dploc_c,ppidry,ppi,ploc_c)
+     call rain_evaporation(qvdry_c,qcdry_c,qrdry_c, T_c, dpdry_c,ptop,zbottom,pprime)
      call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_after)
      !print *, 'Rain evap: enbefore - enafter(up to flux)', (energy_before - energy_after)/energy_before
 
      ! condensation <-> evaporation -------------------------------------------
   !call recompute_pressures(qvdry_c,qcdry_c,qrdry_c, dpdry_c,ppidry,pprime, ppi,ploc_c,dploc_c)
      call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_before)
-     call condensation_and_back_again(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,dploc_c,ppi,ploc_c)
+     call condensation_and_back_again(qvdry_c,qcdry_c,qrdry_c,T_c, dpdry_c,ptop,zbottom,pprime)
      call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_after)
      !print *, 'Condensation: enbefore - enafter(up to flux)', (energy_before - energy_after)/energy_before
 
