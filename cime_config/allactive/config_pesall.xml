@@ -2627,7 +2627,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4.pg2_l%.+_oi%EC30to60E2r2.+w%wQU225EC30to60E2r2">
-    <mach name="anvil|chrysalis">
+    <mach name="anvil">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+WW3." pesize="M">
         <comment> --compset WCYCL* --res ne30pg2_EC30to60E2r2_wQU225EC30to60E2r2 on 48 nodes pure-MPI, ~8.8 sypd </comment>
         <ntasks>
