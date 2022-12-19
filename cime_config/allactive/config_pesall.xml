@@ -1225,16 +1225,16 @@
         <comment>anvil: --compset BGC* --res ne30pg2_r05_EC30to60E2r2 on 30 nodes pure-MPI, ~3 sypd </comment>
         <ntasks>
           <ntasks_atm>675</ntasks_atm>
-          <ntasks_lnd>144</ntasks_lnd>
-          <ntasks_rof>144</ntasks_rof>
-          <ntasks_ice>540</ntasks_ice>
+          <ntasks_lnd>684</ntasks_lnd>
+          <ntasks_rof>684</ntasks_rof>
+          <ntasks_ice>684</ntasks_ice>
           <ntasks_ocn>396</ntasks_ocn>
           <ntasks_cpl>684</ntasks_cpl>
         </ntasks>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>540</rootpe_lnd>
-          <rootpe_rof>540</rootpe_rof>
+          <rootpe_lnd>0</rootpe_lnd>
+          <rootpe_rof>0</rootpe_rof>
           <rootpe_ice>0</rootpe_ice>
           <rootpe_ocn>684</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
