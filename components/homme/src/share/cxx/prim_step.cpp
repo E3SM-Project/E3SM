@@ -60,7 +60,7 @@ static void set_tracer_transport_derived_values (
       }
     });
   }
-  ExecSpace::impl_static_fence();
+  Kokkos::fence();
   GPTLstop("tl-s deep_copy+derived_dp");  
 }
 
@@ -196,9 +196,11 @@ void prim_step_flexible (const Real dt, const bool compute_diagnostics) {
     context.get<Diagnostics>().run_diagnostics(false, 3);
 
   // Remap tracers.
+#ifdef HOMME_ENABLE_COMPOSE	  
   if (params.qsize > 0)
     Context::singleton().get<ComposeTransport>().remap_q(tl);
-  
+#endif
+
   GPTLstop("tl-s prim_step_flexible");
 #else
   Errors::runtime_abort("prim_step_flexible not supported in non-theta-l builds.");

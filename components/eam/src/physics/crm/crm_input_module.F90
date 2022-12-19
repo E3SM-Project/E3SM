@@ -47,6 +47,7 @@ module crm_input_module
 
       real(crm_rknd), allocatable :: t_vt(:,:)           ! CRM input of variance used for forcing tendency
       real(crm_rknd), allocatable :: q_vt(:,:)           ! CRM input of variance used for forcing tendency
+      real(crm_rknd), allocatable :: u_vt(:,:)           ! CRM input of variance used for forcing tendency
 
    end type crm_input_type
    !------------------------------------------------------------------------------------------------
@@ -112,15 +113,15 @@ contains
          call prefetch(input%hygro)
       end if
 
-#if defined(MMF_ESMT)
       if (.not. allocated(input%ul_esmt))  allocate(input%ul_esmt(ncrms,nlev))
       if (.not. allocated(input%vl_esmt))  allocate(input%vl_esmt(ncrms,nlev))
-#endif
 
       if (.not. allocated(input%t_vt)) allocate(input%t_vt(ncrms,nlev))
       if (.not. allocated(input%q_vt)) allocate(input%q_vt(ncrms,nlev))
+      if (.not. allocated(input%u_vt)) allocate(input%u_vt(ncrms,nlev))
       call prefetch(input%t_vt)
       call prefetch(input%q_vt)
+      call prefetch(input%u_vt)
 
       ! Initialize
       input%zmid    = 0
@@ -152,13 +153,12 @@ contains
          input%hygro    = 0
       end if
 
-#if defined( MMF_ESMT )
       input%ul_esmt = 0
       input%vl_esmt = 0
-#endif
 
       input%t_vt = 0
       input%q_vt = 0
+      input%u_vt = 0
 
    end subroutine crm_input_initialize
    !------------------------------------------------------------------------------------------------
@@ -195,13 +195,12 @@ contains
          if (allocated(input%hygro))      deallocate(input%hygro)
       end if
 
-#if defined(MMF_ESMT)
       if (allocated(input%ul_esmt)) deallocate(input%ul_esmt)
       if (allocated(input%vl_esmt)) deallocate(input%vl_esmt)
-#endif
 
       if (allocated(input%t_vt)) deallocate(input%t_vt)
       if (allocated(input%q_vt)) deallocate(input%q_vt)
+      if (allocated(input%u_vt)) deallocate(input%u_vt)
 
    end subroutine crm_input_finalize 
 

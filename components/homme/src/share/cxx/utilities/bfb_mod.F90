@@ -29,6 +29,18 @@ module bfb_mod
      end subroutine tridiag_diagdom_bfb_a1x1
   end interface
 
+  interface
+    function cxx_log(input) bind(C)
+      use iso_c_binding, only: c_double
+
+      !arguments:
+      real(kind=c_double), value, intent(in) :: input
+
+      ! return
+      real(kind=c_double)            :: cxx_log
+    end function cxx_log
+  end interface
+
   interface bfb_pow
     module procedure bfb_pow_0d
     module procedure bfb_pow_1d
@@ -94,7 +106,7 @@ contains
     real (kind=real_kind), intent(in)  :: a
 
     real (kind=real_kind) :: y
-#ifdef CUDA_BUILD
+#ifdef HOMMEXX_ENABLE_GPU
     real (kind=real_kind) :: x,tmp,factor,e
     integer :: i,n,k
     integer, parameter :: order = 5

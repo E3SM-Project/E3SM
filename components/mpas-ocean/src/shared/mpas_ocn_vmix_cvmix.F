@@ -23,6 +23,7 @@ module ocn_vmix_cvmix
    use ocn_config
    use ocn_mesh
    use ocn_diagnostics_variables
+   use ocn_stokes_drift
 
    use cvmix_kinds_and_types
    use cvmix_put_get
@@ -143,7 +144,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: &
         latCell, lonCell, bottomDepth, fCell, &
         ssh, dcEdge, dvEdge, areaCell, iceFraction, &
-        windSpeed10m
+        windSpeed10m, langmuirNumber
 
       real (kind=RKIND), dimension(:,:), pointer :: &
         layerThickness, &
@@ -167,7 +168,14 @@ contains
       real (kind=RKIND), dimension(:), allocatable, target :: RiSmoothed, BVFSmoothed, OBLDepths, interfaceForcings
       logical :: bulkRichardsonFlag
 
-      real (kind=RKIND) :: langmuirEnhancementFactor, langmuirNumber
+      real (kind=RKIND) :: langmuirEnhancementFactor, alphaAngle
+
+      real(kind=RKIND), dimension(:,:), pointer :: stokesDriftZonalWavenumber
+      real(kind=RKIND), dimension(:,:), pointer :: stokesDriftMeridionalWavenumber
+      real(kind=RKIND), dimension(:), pointer :: significantWaveHeight
+      real(kind=RKIND), dimension(:), pointer :: windStressZonal, windStressMeridional
+
+
 
       !-----------------------------------------------------------------
       !
@@ -233,6 +241,13 @@ contains
       !
       call mpas_pool_get_array(forcingPool, 'iceFraction', iceFraction)
       call mpas_pool_get_array(forcingPool, 'windSpeed10m', windSpeed10m)
+      call mpas_pool_get_array(forcingPool, 'windStressZonal', windStressZonal)
+      call mpas_pool_get_array(forcingPool, 'windStressMeridional', windStressMeridional)
+      call mpas_pool_get_array(forcingPool, 'langmuirNumber', langmuirNumber)
+
+      call mpas_pool_get_array(forcingPool, 'significantWaveHeight', significantWaveHeight)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftZonalWavenumber', stokesDriftZonalWavenumber)
+      call mpas_pool_get_array(forcingPool, 'stokesDriftMeridionalWavenumber', stokesDriftMeridionalWavenumber)
 
       nCells = nCellsArray( size(nCellsArray) )
 
@@ -305,17 +320,22 @@ contains
       end do
       Nsqr_iface(nVertLevelsP1) = 0.0_RKIND
 
+      if (config_use_active_wave) then
+        !call ocn_stokes_drift_reconstruct(forcingPool)
+        call ocn_surface_stokes_drift(forcingPool)
+      end if
+
       call mpas_timer_start('cvmix cell loop', .false.)
       do kpp_stage = 1,2
       ! TODO, mdt: determine where the openmp data race is coming from in this loop
 !      !$omp parallel
 !      !$omp do schedule(runtime) &
-!      !$omp private(k, RiSmoothed, RiTemp, nsmooth, BVFSmoothed, langmuirNumber, &
+!      !$omp private(k, RiSmoothed, RiTemp, nsmooth, BVFSmoothed, alphaAngle, &
 !      !$omp         langmuirEnhancementFactor, bulkRichardsonNumberStop, bulkRichardsonFlag, &
 !      !$omp         topIndex, kIndexOBL, deltaVelocitySquared, sigma, OBLDepths, interfaceForcings, &
 !      !$omp         surfaceAverageIndex, sfc_layer_depth, kav, i, iEdge, &
 !      !$omp         normalVelocitySum, layerThicknessEdgeSum, normalVelocityAv, delU2, potentialDensitySum, &
-!      !$omp         layerThicknessSum, blTemp) &
+!      !$omp         layerThicknessSum, blTemp, zonalWavenumberCoeff, meridionalWavenumberCoeff) &
 !      !$omp firstprivate(cvmix_variables, Nsqr_iface, turbulentScalarVelocityScale)
       do iCell = 1, nCells
 
@@ -456,9 +476,8 @@ contains
               Nsqr_iface(k:maxLevelCell(iCell)+1) = Nsqr_iface(k-1)
 
               ! compute Langmuir number and Langmuir enhancement factor
-              ! TODO: theory-wave is the only option to get Langmuir number and enhancement factor for now <06-09-18, Qing Li> !
               if (config_cvmix_kpp_use_theory_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
-                 langmuirNumber =  sqrt(surfaceFrictionVelocity(iCell) / ( &
+                 langmuirNumber(iCell) =  sqrt(surfaceFrictionVelocity(iCell) / ( &
                          cvmix_kpp_ustokes_SL_model(windSpeed10m(iCell), &
                                                     boundaryLayerDepth(iCell), &
                                                     cvmix_global_params)+1e-15_RKIND) )
@@ -467,9 +486,22 @@ contains
                                                  surfaceFrictionVelocity(iCell), &
                                                  boundaryLayerDepth(iCell), &
                                                  cvmix_global_params)
+              else if (config_cvmix_kpp_use_active_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
+                 call ocn_stokes_drift_langmuir_number(windStressZonal(iCell), &
+                                                       windStressMeridional(iCell), &
+                                                       surfaceFrictionVelocity(iCell), &
+                                                       significantWaveHeight(iCell), &
+                                                       boundaryLayerDepth(iCell), &
+                                                       stokesDriftZonalWavenumber(:,iCell), &
+                                                       stokesDriftMeridionalWavenumber(:,iCell), &
+                                                       alphaAngle, &
+                                                       langmuirNumber(iCell))
+                 call ocn_stokes_drift_kpp_enhancement_factor(alphaAngle, &
+                                                              langmuirNumber(iCell), &
+                                                              langmuirEnhancementFactor)
               else
                  ! arbitrarily large Langmuir number
-                 langmuirNumber = 1.e10_RKIND
+                 langmuirNumber(iCell) = 1.e10_RKIND
                  langmuirEnhancementFactor = 1.0_RKIND
               end if
 
@@ -523,13 +555,13 @@ contains
                  deltaVelocitySquared(1:minLevelCell(iCell)) = 0.0_RKIND
 
                  normalVelocitySum(minLevelCell(iCell)) = normalVelocity(minLevelCell(iCell), iEdge)* &
-                                                          layerThickEdge(minLevelCell(iCell),iEdge)
-                 layerThicknessEdgeSum(minLevelCell(iCell)) = layerThickEdge(minLevelCell(iCell),iEdge)
+                                                          layerThickEdgeMean(minLevelCell(iCell),iEdge)
+                 layerThicknessEdgeSum(minLevelCell(iCell)) = layerThickEdgeMean(minLevelCell(iCell),iEdge)
 
                  do kIndexOBL = minLevelCell(iCell)+1, maxLevelCell(iCell)
                     normalVelocitySum(kIndexOBL) = normalVelocitySum(kIndexOBL-1) + &
-                                      layerThickEdge(kIndexOBL, iEdge)*normalVelocity(kIndexOBL, iEdge)
-                    layerThicknessEdgeSum(kIndexOBL) = layerThicknessEdgeSum(kIndexOBL-1) + layerThickEdge(kIndexOBL, iEdge)
+                                      layerThickEdgeMean(kIndexOBL, iEdge)*normalVelocity(kIndexOBL, iEdge)
+                    layerThicknessEdgeSum(kIndexOBL) = layerThicknessEdgeSum(kIndexOBL-1) + layerThickEdgeMean(kIndexOBL, iEdge)
                  end do
 
                  do kIndexOBL = minLevelCell(iCell), maxLevelCell(iCell)
@@ -567,7 +599,7 @@ contains
                    ws_cntr = turbulentScalarVelocityScale(:), &
                    Nsqr_iface = Nsqr_iface(minLevelCell(iCell):maxLevelCell(iCell)+1), &
                    EFactor = langmuirEnhancementFactor, &
-                   LaSL = langmuirNumber, &
+                   LaSL = langmuirNumber(iCell), &
                    bfsfc = cvmix_variables%SurfaceBuoyancyForcing, &
                    ustar = cvmix_variables%SurfaceFriction )
               ! TODO: the surface buoyancy forcing here does not include penetrative solar radiation? <05-09-18, Qing Li> !
@@ -636,13 +668,25 @@ contains
                           OBL_depth = boundaryLayerDepth(iCell) )
 
             ! update Langmuir enhancement factor
-            ! TODO: theory-wave is the only option to get Langmuir number and enhancement factor for now <06-09-18, Qing Li> !
             if (config_cvmix_kpp_use_theory_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
                langmuirEnhancementFactor =  &
                        cvmix_kpp_EFactor_model(windSpeed10m(iCell), &
                                                surfaceFrictionVelocity(iCell), &
                                                boundaryLayerDepth(iCell), &
                                                cvmix_global_params)
+            else if (config_cvmix_kpp_use_active_wave .and. iceFraction(iCell) .lt. 0.05_RKIND) then
+                 call ocn_stokes_drift_langmuir_number(windStressZonal(iCell), &
+                                                       windStressMeridional(iCell), &
+                                                       surfaceFrictionVelocity(iCell), &
+                                                       significantWaveHeight(iCell), &
+                                                       boundaryLayerDepth(iCell), &
+                                                       stokesDriftZonalWavenumber(:,iCell), &
+                                                       stokesDriftMeridionalWavenumber(:,iCell), &
+                                                       alphaAngle, &
+                                                       langmuirNumber(iCell))
+                 call ocn_stokes_drift_kpp_enhancement_factor(alphaAngle, &
+                                                              langmuirNumber(iCell), &
+                                                              langmuirEnhancementFactor)
             else
                langmuirEnhancementFactor = 1.0_RKIND
             end if

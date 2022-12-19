@@ -55,6 +55,7 @@ character(len=16) :: shallow_scheme       = unset_str  ! shallow convection pack
 character(len=16) :: eddy_scheme          = unset_str  ! vertical diffusion package
 character(len=16) :: microp_scheme        = unset_str  ! microphysics package
 character(len=16) :: macrop_scheme        = unset_str  ! macrophysics package
+character(len=128) :: ideal_phys_option   = unset_str  ! Option for idealized physics
 character(len=16) :: radiation_scheme     = unset_str  ! radiation package
 integer           :: srf_flux_avg         = unset_int  ! 1 => smooth surface fluxes, 0 otherwise
 integer           :: conv_water_in_rad    = unset_int  ! 0==> No; 1==> Yes-Arithmetic average;
@@ -66,6 +67,7 @@ logical           :: use_MMF              = .false.    ! true => use MMF / super
 logical           :: use_ECPP             = .false.    ! true => use explicit-cloud parameterized-pollutants
 logical           :: use_MMF_VT           = .false.    ! true => use MMF variance transport
 integer           :: MMF_VT_wn_max        = 0          ! if >0 then use filtered MMF variance transport
+logical           :: use_MMF_ESMT         = .false.    ! true => use MMF explicit scalar momentum transport (ESMT)
 logical           :: use_crm_accel        = .false.    ! true => use MMF CRM mean-state acceleration (MSA)
 real(r8)          :: crm_accel_factor     = 2.D0       ! CRM acceleration factor
 logical           :: crm_accel_uv         = .true.     ! true => apply MMF CRM MSA to momentum fields
@@ -191,7 +193,7 @@ subroutine phys_ctl_readnl(nlfile)
    namelist /phys_ctl_nl/ cam_physpkg, cam_chempkg, waccmx_opt, deep_scheme, shallow_scheme, &
       eddy_scheme, microp_scheme,  macrop_scheme, radiation_scheme, srf_flux_avg, &
       MMF_microphysics_scheme, MMF_orientation_angle, use_MMF, use_ECPP, &
-      use_MMF_VT, MMF_VT_wn_max, &
+      use_MMF_VT, MMF_VT_wn_max, use_MMF_ESMT, &
       use_crm_accel, crm_accel_factor, crm_accel_uv, &
       use_subcol_microp, atm_dep_flux, history_amwg, history_verbose, history_vdiag, &
       history_aerosol, history_aero_optics, &
@@ -210,7 +212,7 @@ subroutine phys_ctl_readnl(nlfile)
       mam_amicphys_optaa, n_so4_monolayers_pcage,micro_mg_accre_enhan_fac, &
       l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
       l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad, prc_coef1,prc_exp,prc_exp1,cld_sed,mg_prc_coeff_fix, &
-      rrtmg_temp_fix
+      rrtmg_temp_fix, ideal_phys_option
    !-----------------------------------------------------------------------------
 
    if (masterproc) then
@@ -238,6 +240,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(microp_scheme,    len(microp_scheme)    , mpichar, 0, mpicom)
    call mpibcast(radiation_scheme, len(radiation_scheme) , mpichar, 0, mpicom)
    call mpibcast(macrop_scheme,    len(macrop_scheme)    , mpichar, 0, mpicom)
+   call mpibcast(ideal_phys_option,len(ideal_phys_option), mpichar, 0, mpicom)
    call mpibcast(srf_flux_avg,                    1 , mpiint,  0, mpicom)
    call mpibcast(MMF_microphysics_scheme, len(MMF_microphysics_scheme) , mpichar, 0, mpicom)
    call mpibcast(MMF_orientation_angle,           1 , mpir8,   0, mpicom)
@@ -245,6 +248,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(use_ECPP,                        1 , mpilog,  0, mpicom)
    call mpibcast(use_MMF_VT,                      1 , mpilog,  0, mpicom)
    call mpibcast(MMF_VT_wn_max,                   1 , mpiint,  0, mpicom)
+   call mpibcast(use_MMF_ESMT,                    1 , mpilog,  0, mpicom)
    call mpibcast(use_crm_accel,                   1 , mpilog,  0, mpicom)
    call mpibcast(crm_accel_factor,                1 , mpir8,   0, mpicom)
    call mpibcast(crm_accel_uv,                    1 , mpilog,  0, mpicom)
@@ -457,9 +461,9 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         history_aerosol_out, history_aero_optics_out, history_eddy_out, &
                         history_budget_out, history_budget_histfile_num_out, history_waccm_out, &
                         history_clubb_out, ieflx_opt_out, conv_water_in_rad_out, cam_chempkg_out, &
-                        prog_modal_aero_out, macrop_scheme_out, &
+                        prog_modal_aero_out, macrop_scheme_out, ideal_phys_option_out, &
                         use_MMF_out, use_ECPP_out, MMF_microphysics_scheme_out, &
-                        MMF_orientation_angle_out, use_MMF_VT_out, MMF_VT_wn_max_out, &
+                        MMF_orientation_angle_out, use_MMF_VT_out, MMF_VT_wn_max_out, use_MMF_ESMT_out, &
                         use_crm_accel_out, crm_accel_factor_out, crm_accel_uv_out, &
                         do_clubb_sgs_out, do_tms_out, state_debug_checks_out, &
                         linearize_pbl_winds_out, export_gustiness_out, &
@@ -490,12 +494,14 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    character(len=16), intent(out), optional :: microp_scheme_out
    character(len=16), intent(out), optional :: radiation_scheme_out
    character(len=16), intent(out), optional :: macrop_scheme_out
+   character(len=128), intent(out), optional :: ideal_phys_option_out 
    character(len=16), intent(out), optional :: MMF_microphysics_scheme_out
    real(r8),          intent(out), optional :: MMF_orientation_angle_out
    logical,           intent(out), optional :: use_MMF_out
    logical,           intent(out), optional :: use_ECPP_out
    logical,           intent(out), optional :: use_MMF_VT_out
    integer,           intent(out), optional :: MMF_VT_wn_max_out
+   logical,           intent(out), optional :: use_MMF_ESMT_out
    logical,           intent(out), optional :: use_crm_accel_out
    real(r8),          intent(out), optional :: crm_accel_factor_out
    logical,           intent(out), optional :: crm_accel_uv_out
@@ -571,6 +577,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(use_ECPP_out            ) ) use_ECPP_out             = use_ECPP
    if ( present(use_MMF_VT_out          ) ) use_MMF_VT_out           = use_MMF_VT
    if ( present(MMF_VT_wn_max_out       ) ) MMF_VT_wn_max_out        = MMF_VT_wn_max
+   if ( present(use_MMF_ESMT_out        ) ) use_MMF_ESMT_out         = use_MMF_ESMT
    
    if ( present(use_crm_accel_out       ) ) use_crm_accel_out        = use_crm_accel
    if ( present(crm_accel_factor_out    ) ) crm_accel_factor_out     = crm_accel_factor
@@ -578,6 +585,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
 
    if ( present(use_subcol_microp_out   ) ) use_subcol_microp_out    = use_subcol_microp
    if ( present(macrop_scheme_out       ) ) macrop_scheme_out        = macrop_scheme
+   if ( present(ideal_phys_option_out   ) ) ideal_phys_option_out    = ideal_phys_option
    if ( present(atm_dep_flux_out        ) ) atm_dep_flux_out         = atm_dep_flux
    if ( present(history_aerosol_out     ) ) history_aerosol_out      = history_aerosol
    if ( present(history_aero_optics_out ) ) history_aero_optics_out  = history_aero_optics

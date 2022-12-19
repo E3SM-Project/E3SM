@@ -305,25 +305,17 @@ contains
     tod     = tod1
     do while( reday < reday2) ! mid-interval t-steps thru interval [LB,UB]
 
+       !--- get next cosz value for t-avg ---
+       call shr_tInterp_getCosz(cosz,lonr,latr,ymd,tod,eccen,mvelpp,lambm0,obliqr,calendar)
+       n = n + ldt
+       tavCosz = tavCosz + cosz*real(ldt,SHR_KIND_R8)  ! add to partial sum
+
        !--- advance to next time in [LB,UB] ---
        ymd0 = ymd
        tod0 = tod
        reday0 = reday
        call shr_cal_advDateInt(ldt,'seconds',ymd0,tod0,ymd,tod,calendar)
        call shr_cal_timeSet(reday,ymd,tod,calendar)
-
-       if (reday > reday2) then
-          ymd = ymd2
-          tod = tod2
-          timeint = reday2-reday0
-          call ESMF_TimeIntervalGet(timeint,s_i8=dtsec)
-          ldt = dtsec
-       endif
-
-       !--- get next cosz value for t-avg ---
-       call shr_tInterp_getCosz(cosz,lonr,latr,ymd,tod,eccen,mvelpp,lambm0,obliqr,calendar)
-       n = n + ldt
-       tavCosz = tavCosz + cosz*real(ldt,SHR_KIND_R8)  ! add to partial sum
 
     end do
     tavCosz = tavCosz/real(n,SHR_KIND_R8) ! form t-avg

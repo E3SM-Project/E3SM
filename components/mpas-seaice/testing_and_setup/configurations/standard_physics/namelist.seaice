@@ -382,6 +382,7 @@
     config_AM_conservationCheck_compute_on_startup = false
     config_AM_conservationCheck_write_on_startup = false
     config_AM_conservationCheck_write_to_logfile = true
+    config_AM_conservationCheck_carbon_failure_abort = false
 /
 &AM_geographicalVectors
     config_AM_geographicalVectors_enable = false

@@ -32,6 +32,7 @@ module elm_cpl_indices
   integer, public ::index_l2x_Flrl_Tqsur      ! lnd->rtm input surface runoff temperature
   integer, public ::index_l2x_Flrl_Tqsub      ! lnd->rtm input subsurface runoff temperature
   integer, public ::index_l2x_coszen_str      ! lnd->rtm cosine of zenith  
+  integer, public ::index_l2x_Flrl_inundinf   ! lnd->rtm infiltration from floodplain inundation
   integer, public ::index_l2x_Sl_t            ! temperature
   integer, public ::index_l2x_Sl_tref         ! 2m reference temperature
   integer, public ::index_l2x_Sl_qref         ! 2m reference specific humidity
@@ -114,6 +115,8 @@ module elm_cpl_indices
   integer, public ::index_x2l_Flrr_volrmch    ! rtm->lnd rof volr main channel volume
   integer, public ::index_x2l_Flrr_supply     ! rtm->lnd rof supply for land use
   integer, public ::index_x2l_Flrr_deficit    ! rtm->lnd supply deficit
+  integer, public ::index_x2l_Sr_h2orof       ! rtm->lnd floodplain inundation volume
+  integer, public ::index_x2l_Sr_frac_h2orof  ! rtm->lnd floodplain inundation fraction
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
   integer, public ::index_x2l_Sg_frac(0:glc_nec_max)   = 0   ! Fraction of glacier from glc model
@@ -137,7 +140,8 @@ contains
     ! interface.
     !
     ! !USES:
-    use seq_flds_mod   , only: seq_flds_x2l_fields, seq_flds_l2x_fields
+    use seq_flds_mod   , only: seq_flds_x2l_fields, seq_flds_l2x_fields,       &
+                               lnd_rof_two_way
     use mct_mod        , only: mct_aVect, mct_aVect_init, mct_avect_indexra
     use mct_mod        , only: mct_aVect_clean, mct_avect_nRattr
     use seq_drydep_mod , only: drydep_fields_token, lnd_drydep
@@ -180,7 +184,10 @@ contains
     index_l2x_Flrl_demand   = mct_avect_indexra(l2x,'Flrl_demand')
     index_l2x_Flrl_Tqsur    = mct_avect_indexra(l2x,'Flrl_Tqsur')
     index_l2x_Flrl_Tqsub    = mct_avect_indexra(l2x,'Flrl_Tqsub')
-    index_l2x_coszen_str	= mct_avect_indexra(l2x,'coszen_str')	
+    index_l2x_coszen_str    = mct_avect_indexra(l2x,'coszen_str')
+    if (lnd_rof_two_way) then
+      index_l2x_Flrl_inundinf = mct_avect_indexra(l2x,'Flrl_inundinf')
+    endif
     index_l2x_Sl_t          = mct_avect_indexra(l2x,'Sl_t')
     index_l2x_Sl_snowh      = mct_avect_indexra(l2x,'Sl_snowh')
     index_l2x_Sl_avsdr      = mct_avect_indexra(l2x,'Sl_avsdr')
@@ -249,7 +256,7 @@ contains
     index_x2l_Flrr_volrmch  = mct_avect_indexra(x2l,'Flrr_volrmch')
     index_x2l_Flrr_supply   = mct_avect_indexra(x2l,'Flrr_supply')
     index_x2l_Flrr_deficit  = mct_avect_indexra(x2l,'Flrr_deficit')
-	
+
     index_x2l_Faxa_lwdn     = mct_avect_indexra(x2l,'Faxa_lwdn')
     index_x2l_Faxa_rainc    = mct_avect_indexra(x2l,'Faxa_rainc')
     index_x2l_Faxa_rainl    = mct_avect_indexra(x2l,'Faxa_rainl')
@@ -275,6 +282,10 @@ contains
     index_x2l_Faxa_dstwet4  = mct_avect_indexra(x2l,'Faxa_dstwet4')
 
     index_x2l_Flrr_flood    = mct_avect_indexra(x2l,'Flrr_flood')
+    if (lnd_rof_two_way) then
+       index_x2l_Sr_h2orof     = mct_avect_indexra(x2l,'Sr_h2orof')
+       index_x2l_Sr_frac_h2orof= mct_avect_indexra(x2l,'Sr_frac_h2orof')
+    endif
 
     !-------------------------------------------------------------
     ! glc coupling

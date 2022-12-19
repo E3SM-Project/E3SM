@@ -174,6 +174,7 @@ logical  :: scm_diurnal_avg
 logical  :: scm_crm_mode
 logical  :: scm_observed_aero
 logical  :: precip_off
+logical  :: scm_zero_non_iop_tracers
 
 contains
 
@@ -324,7 +325,8 @@ contains
    namelist /cam_inparm/ iopfile,scm_iop_srf_prop,scm_relaxation, &
                          scm_relaxation_low, scm_relaxation_high, &
                          scm_diurnal_avg,scm_crm_mode,scm_clubb_iop_name, &
-                         scm_observed_aero, precip_off
+                         scm_observed_aero, precip_off, &
+                         scm_zero_non_iop_tracers
 
 !-----------------------------------------------------------------------
 
@@ -369,7 +371,8 @@ contains
         scm_crm_mode_out=scm_crm_mode, &
         scm_observed_aero_out=scm_observed_aero, &
         precip_off_out=precip_off, &
-        scm_clubb_iop_name_out=scm_clubb_iop_name)
+        scm_clubb_iop_name_out=scm_clubb_iop_name, &
+        scm_zero_non_iop_tracers_out=scm_zero_non_iop_tracers)
    end if
 
    ! Read in the cam_inparm namelist from input filename
@@ -446,7 +449,8 @@ contains
                             scm_crm_mode_in=scm_crm_mode, &
                             scm_observed_aero_in=scm_observed_aero, &
                             precip_off_in=precip_off, &
-                            scm_clubb_iop_name_in=scm_clubb_iop_name)
+                            scm_clubb_iop_name_in=scm_clubb_iop_name, &
+                            scm_zero_non_iop_tracers_in=scm_zero_non_iop_tracers)
       end if
    endif
 

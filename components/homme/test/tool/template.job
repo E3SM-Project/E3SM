@@ -16,7 +16,7 @@ set mesh = ne${NE}np${NPTS}
 
 cd $WDIR
 if (!  -x $exe ) then
-  # configure  set output = `$TOOLDIR/../../../../cime/scripts/Tools/get_case_env`
+  # configure  set output = `$TOOLDIR/../../../../cime/CIME/Tools/get_case_env`
   eval $output
   cmake -C $MACH -DPREQX_NP=$NPTS -DPREQX_PLEV=26 $TOOLDIR/../..
   # compile the tool

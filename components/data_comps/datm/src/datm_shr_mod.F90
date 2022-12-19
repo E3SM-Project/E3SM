@@ -154,6 +154,7 @@ CONTAINS
          trim(datamode) == 'CORE2_NYF' .or. &
          trim(datamode) == 'CORE2_IAF' .or. &
          trim(datamode) == 'CORE_IAF_JRA' .or. &
+         trim(datamode) == 'IAF_JRA_1p5' .or. &
          trim(datamode) == 'CORE_RYF_JRA' .or. &
          trim(datamode) == 'CLMNCEP'   .or. &
          trim(datamode) == 'COPYALL'   ) then

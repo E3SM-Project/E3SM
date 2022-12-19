@@ -2,17 +2,17 @@
 #include "forcing.h"
 
 void forcing() {
-  auto &ncrms         = ::ncrms;
-  auto &t             = ::t;
-  auto &ttend         = ::ttend;
-  auto &dtn           = ::dtn;
-  auto &micro_field   = ::micro_field;
-  auto &qtend         = ::qtend;
-  auto &dudt          = ::dudt;
-  auto &dvdt          = ::dvdt;
-  auto &na            = ::na;
-  auto &utend         = ::utend;
-  auto &vtend         = ::vtend;
+  YAKL_SCOPE( ncrms         , ::ncrms );
+  YAKL_SCOPE( t             , ::t );
+  YAKL_SCOPE( ttend         , ::ttend );
+  YAKL_SCOPE( dtn           , ::dtn );
+  YAKL_SCOPE( micro_field   , ::micro_field );
+  YAKL_SCOPE( qtend         , ::qtend );
+  YAKL_SCOPE( dudt          , ::dudt );
+  YAKL_SCOPE( dvdt          , ::dvdt );
+  YAKL_SCOPE( na            , ::na );
+  YAKL_SCOPE( utend         , ::utend );
+  YAKL_SCOPE( vtend         , ::vtend );
 
   real2d qneg("qneg",nzm,ncrms);
   real2d qpoz("poz" ,nzm,ncrms);

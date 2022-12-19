@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet type="text/xsl" href="namelist_definition.xsl"?>
+
+<namelist_definition>
+
+<!-- ========================================================================================  -->
+<!-- WAVEWATCHIII Namelist -->
+<!-- ========================================================================================  -->
+
+<entry id="stafile" 
+       type="char*1024" 
+       category="ww3_inparm"
+       group="ww3_inparm" 
+       valid_values="" >
+WaveWatchIII station output file
+</entry>
+
+<entry id="pnt_out_freq" 
+       type="integer" 
+       category="ww3_inparm"
+       group="ww3_inparm" 
+       valid_values="" >
+WaveWatchIII point output frequency
+</entry>
+
+<entry id="grd_out_freq" 
+       type="integer" 
+       category="ww3_inparm"
+       group="ww3_inparm" 
+       valid_values="" >
+WaveWatchIII gridded output frequency
+</entry>
+
+<entry id="fldout" 
+       type="char*1024" 
+       category="ww3_inparm"
+       group="ww3_inparm" 
+       valid_values="" >
+WaveWatchIII output fields 
+</entry>
+
+<entry id="fldcou" 
+       type="char*1024" 
+       category="ww3_inparm"
+       group="ww3_inparm" 
+       valid_values="" >
+WaveWatchIII coupling fields 
+</entry>
+
+</namelist_definition>

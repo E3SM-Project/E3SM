@@ -179,7 +179,7 @@ function(build_model COMP_CLASS COMP_NAME)
     get_filename_component(BASENAME ${SRC_FILE} NAME)
     add_custom_command (
       OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${BASENAME}
-      COMMAND ${CIMEROOT}/src/externals/genf90/genf90.pl
+      COMMAND ${CIMEROOT}/CIME/non_py/externals/genf90/genf90.pl
       ${PROJECT_SOURCE_DIR}/${SRC_FILE}.in > ${CMAKE_CURRENT_BINARY_DIR}/${BASENAME}
       DEPENDS ${PROJECT_SOURCE_DIR}/${SRC_FILE}.in genf90)
     list(REMOVE_ITEM SOURCES ${SRC_FILE})

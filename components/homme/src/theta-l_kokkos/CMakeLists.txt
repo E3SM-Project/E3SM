@@ -6,14 +6,13 @@ MACRO(THETAL_KOKKOS_SETUP)
 
   SET(THETA_SHARE_DIR   ${HOMME_SOURCE_DIR}/src/theta-l/share)
   SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/theta-l_kokkos)
-  SET(UTILS_SHARE_DIR   ${HOMME_SOURCE_DIR}/utils/csm_share)
   SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
   SET(SRC_SHARE_DIR     ${HOMME_SOURCE_DIR}/src/share)
   SET(TEST_SRC_DIR      ${HOMME_SOURCE_DIR}/src/test_src)
   SET(ARKODE_DIR        ${HOMME_SOURCE_DIR}/src/arkode)
 
-  SET(UTILS_TIMING_SRC_DIR  ${CMAKE_SOURCE_DIR}/utils/cime/src/share/timing)
-  SET(UTILS_TIMING_DIR      ${CMAKE_BINARY_DIR}/utils/cime/src/share/timing)
+  SET(UTILS_TIMING_SRC_DIR  ${CMAKE_SOURCE_DIR}/utils/cime/CIME/non_py/src/timing)
+  SET(UTILS_TIMING_DIR      ${CMAKE_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
 
   # Make INCLUDE_DIRS global so the tests can access it
   SET (EXEC_LIB_INCLUDE_DIRS
@@ -24,6 +23,9 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/compose
     ${CMAKE_BINARY_DIR}/src/share/cxx
   )
+  IF (NOT HOMME_ENABLE_COMPOSE)
+    LIST(REMOVE_ITEM EXEC_LIB_INCLUDE_DIRS ${SRC_SHARE_DIR}/compose)
+  ENDIF()
 
   SET (EXEC_INCLUDE_DIRS
     ${EXEC_LIB_INCLUDE_DIRS}
@@ -106,6 +108,11 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/planar_mesh_mod.F90
   )
 
+  IF (NOT HOMME_ENABLE_COMPOSE)
+    LIST(REMOVE_ITEM SRC_SHARE_F90 ${SRC_SHARE_DIR}/compose_mod.F90)
+    LIST(REMOVE_ITEM SRC_SHARE_F90 ${SRC_SHARE_DIR}/compose_test_mod.F90)
+  ENDIF()
+
   SET(TEST_SRC_F90
     ${TEST_SRC_DIR}/asp_tests.F90
     ${TEST_SRC_DIR}/baroclinic_inst_mod.F90
@@ -129,27 +136,8 @@ MACRO(THETAL_KOKKOS_SETUP)
   SET(THETAL_DEPS_F90
     ${TARGET_F90}
     ${SRC_SHARE_F90}
-    ${TEST_SRC_F90}
-    ${SRC_DIR}/checksum_mod.F90 
-    ${SRC_DIR}/common_io_mod.F90
-    ${SRC_DIR}/common_movie_mod.F90
-    ${SRC_DIR}/interpolate_driver_mod.F90
-    ${SRC_DIR}/interp_movie_mod.F90
-    ${SRC_DIR}/netcdf_io_mod.F90
-    ${SRC_DIR}/pio_io_mod.F90
-    ${SRC_DIR}/prim_movie_mod.F90
-    ${SRC_DIR}/theta_restart_mod.F90
+    ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90
     ${SRC_DIR}/repro_sum_mod.F90
-    ${SRC_DIR}/restart_io_mod.F90
-    ${SRC_DIR}/surfaces_mod.F90
-    ${SRC_DIR}/test_mod.F90
-    ${UTILS_SHARE_DIR}/shr_kind_mod.F90
-    ${UTILS_SHARE_DIR}/shr_mpi_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_sys_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_file_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_vmath_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_const_mod.F90 
-    ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
   )
 
   SET(THETAL_DEPS_CXX
@@ -193,14 +181,6 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${SRC_SHARE_DIR}/cxx/mpi/Connectivity.cpp
     ${SRC_SHARE_DIR}/cxx/mpi/MpiBuffersManager.cpp
     ${SRC_SHARE_DIR}/cxx/mpi/mpi_cxx_f90_interface.cpp
-  )
-
-  SET(THETAL_DEPS_F90
-    ${THETAL_DEPS_F90}
-    ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90
-  )
-  SET(THETAL_DEPS_CXX
-    ${THETAL_DEPS_CXX}
     ${SRC_SHARE_DIR}/cxx/utilities/BfbUtils.cpp
   )
 
@@ -234,7 +214,23 @@ MACRO(THETAL_KOKKOS_SETUP)
     ${THETAL_DEPS_CXX}
   )
 
-  SET(EXEC_SOURCES ${THETAL_DEPS} ${SRC_DIR}/prim_main.F90)
+  SET(EXEC_SOURCES
+    ${THETAL_DEPS}
+    ${TEST_SRC_F90}
+    ${SRC_DIR}/checksum_mod.F90 
+    ${SRC_DIR}/common_io_mod.F90
+    ${SRC_DIR}/common_movie_mod.F90
+    ${SRC_DIR}/interpolate_driver_mod.F90
+    ${SRC_DIR}/interp_movie_mod.F90
+    ${SRC_DIR}/netcdf_io_mod.F90
+    ${SRC_DIR}/pio_io_mod.F90
+    ${SRC_DIR}/prim_movie_mod.F90
+    ${SRC_DIR}/theta_restart_mod.F90
+    ${SRC_DIR}/restart_io_mod.F90
+    ${SRC_DIR}/surfaces_mod.F90
+    ${SRC_DIR}/test_mod.F90
+    ${SRC_DIR}/prim_main.F90
+  )
 
   # Set up defaults
   IF (NOT PREQX_NP)
