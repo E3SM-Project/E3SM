@@ -453,7 +453,7 @@
 
       <modules compiler="gnu">
         <command name="load">PrgEnv-gnu/8.3.3</command>
-        <command name="load">gcc/11.2.0</command>
+        <command name="load">gcc/12.1.0</command>
       </modules>
 
       <modules compiler="nvidia">
@@ -470,10 +470,10 @@
         <command name="load">craype-accel-host</command>
         <command name="load">cray-libsci</command>
         <command name="load">craype</command>
-        <command name="load">cray-mpich/8.1.17</command>
-        <command name="load">cray-hdf5-parallel/1.12.1.5</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.8.1.5</command>
-        <command name="load">cray-parallel-netcdf/1.12.2.5</command>
+        <command name="load">cray-mpich/8.1.22</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.1</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.1</command>
         <command name="load">cmake/3.22.0</command>
       </modules>
     </module_system>
@@ -491,6 +491,7 @@
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="PERL5LIB">/global/cfs/cdirs/e3sm/perl/lib/perl5-only-switch</env>
       <env name="FI_CXI_RX_MATCH_MODE">software</env>
+      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
@@ -584,8 +585,8 @@
     <OS>CNL</OS>
     <COMPILERS>gnu,crayclang,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
-    <PROJECT>cli133</PROJECT>
-    <CIME_OUTPUT_ROOT>/gpfs/alpine/$PROJECT/proj-shared/$ENV{USER}/e3sm_scratch/crusher</CIME_OUTPUT_ROOT>
+    <PROJECT>cli133_crusher</PROJECT>
+    <CIME_OUTPUT_ROOT>/gpfs/alpine/cli133/proj-shared/$ENV{USER}/e3sm_scratch/crusher</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/gpfs/alpine/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/gpfs/alpine/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
@@ -4284,6 +4285,8 @@
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.2</TEST_TPUT_TOLERANCE>
+    <TEST_MEMLEAK_TOLERANCE>0.20</TEST_MEMLEAK_TOLERANCE>
     <environment_variables compiler="gnu">
       <env name="HDF5_PATH">$SHELL{dirname $(dirname $(which h5diff))}</env>
       <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>

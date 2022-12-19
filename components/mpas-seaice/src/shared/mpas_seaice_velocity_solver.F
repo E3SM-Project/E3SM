@@ -99,7 +99,7 @@ contains
          domain !< Input/Output:
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     character(len=strKIND), pointer :: &
          config_strain_scheme, &
@@ -118,12 +118,7 @@ contains
          config_reuse_halo_exch
 
     type (MPAS_pool_type), pointer :: &
-         mesh, &
-         boundary, &
-         velocitySolver, &
-         velocity_weak, &
-         velocity_variational, &
-         velocity_pwl
+         velocitySolverPool
 
     real(kind=RKIND), pointer :: &
          dynamicsTimeStep, &
@@ -142,22 +137,22 @@ contains
     call dynamically_locked_cell_mask(domain)
 
     ! set timesteps even with velocity turned off
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
-       call MPAS_pool_get_config(block % configs, "config_dynamics_subcycle_number", config_dynamics_subcycle_number)
-       call MPAS_pool_get_config(block % configs, "config_elastic_subcycle_number", config_elastic_subcycle_number)
+       call MPAS_pool_get_config(blockPtr % configs, "config_dt", config_dt)
+       call MPAS_pool_get_config(blockPtr % configs, "config_dynamics_subcycle_number", config_dynamics_subcycle_number)
+       call MPAS_pool_get_config(blockPtr % configs, "config_elastic_subcycle_number", config_elastic_subcycle_number)
 
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolver)
-       call MPAS_pool_get_array(velocitySolver, "dynamicsTimeStep", dynamicsTimeStep)
-       call MPAS_pool_get_array(velocitySolver, "elasticTimeStep", elasticTimeStep)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_array(velocitySolverPool, "dynamicsTimeStep", dynamicsTimeStep)
+       call MPAS_pool_get_array(velocitySolverPool, "elasticTimeStep", elasticTimeStep)
 
        dynamicsTimeStep = config_dt / real(config_dynamics_subcycle_number,RKIND)
 
        elasticTimeStep = dynamicsTimeStep / real(config_elastic_subcycle_number,RKIND)
 
-       block => block % next
+       blockPtr => blockPtr % next
     enddo
 
     ! check if we initialize velocity solver
@@ -206,51 +201,20 @@ contains
        ! initialize the evp solver
        call seaice_init_evp(domain)
 
-       block => domain % blocklist
-       do while (associated(block))
+       ! init solvers
+       if (strainSchemeType           == WEAK_STRAIN_SCHEME .or. &
+           stressDivergenceSchemeType == WEAK_STRESS_DIVERGENCE_SCHEME) then
 
-          call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
-          call MPAS_pool_get_subpool(block % structs, "boundary", boundary)
-          call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocity_weak)
-          call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocity_variational)
+          call seaice_init_velocity_solver_weak(domain)
 
-          call MPAS_pool_get_config(block % configs, "config_variational_basis", config_variational_basis)
-          call MPAS_pool_get_config(block % configs, "config_variational_denominator_type", config_variational_denominator_type)
-          call MPAS_pool_get_config(block % configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
-          call MPAS_pool_get_config(block % configs, "config_include_metric_terms", config_include_metric_terms)
-          call MPAS_pool_get_config(block % configs, "config_wachspress_integration_type", config_wachspress_integration_type)
-          call MPAS_pool_get_config(block % configs, "config_wachspress_integration_order", config_wachspress_integration_order)
+       endif
 
-          ! init solvers
-          if (strainSchemeType           == WEAK_STRAIN_SCHEME .or. &
-              stressDivergenceSchemeType == WEAK_STRESS_DIVERGENCE_SCHEME) then
+       if (strainSchemeType           == VARIATIONAL_STRAIN_SCHEME .or. &
+           stressDivergenceSchemeType == VARIATIONAL_STRESS_DIVERGENCE_SCHEME) then
 
-             call seaice_init_velocity_solver_weak(&
-                  mesh, &
-                  boundary, &
-                  velocity_weak, &
-                  config_rotate_cartesian_grid)
+          call seaice_init_velocity_solver_variational(domain)
 
-          endif
-
-          if (strainSchemeType           == VARIATIONAL_STRAIN_SCHEME .or. &
-              stressDivergenceSchemeType == VARIATIONAL_STRESS_DIVERGENCE_SCHEME) then
-
-             call seaice_init_velocity_solver_variational(&
-                  mesh, &
-                  velocity_variational, &
-                  boundary, &
-                  config_rotate_cartesian_grid, &
-                  config_include_metric_terms, &
-                  config_variational_basis, &
-                  config_variational_denominator_type, &
-                  config_wachspress_integration_type, &
-                  config_wachspress_integration_order)
-
-          endif
-
-          block => block % next
-       enddo
+       endif
 
     endif
 
@@ -408,7 +372,7 @@ contains
          domain !< Input/Output:
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          velocitySolverPool, &
@@ -431,12 +395,12 @@ contains
          iVertexOnCell, &
          iVertex
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
-       call MPAS_pool_get_subpool(block % structs, "boundary", boundaryPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "boundary", boundaryPool)
 
        call MPAS_pool_get_array(velocitySolverPool, "dynamicallyLockedCellsMask", dynamicallyLockedCellsMask)
 
@@ -445,7 +409,7 @@ contains
        call MPAS_pool_get_array(meshPool, "nEdgesOnCell", nEdgesOnCell)
        call MPAS_pool_get_array(meshPool, "verticesOnCell", verticesOnCell)
 
-       call MPAS_pool_get_dimension(block % dimensions, "nCells", nCells)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nCells", nCells)
 
        do iCell = 1, nCells
 
@@ -464,7 +428,7 @@ contains
 
        enddo ! iCell
 
-       block => block % next
+       blockPtr => blockPtr % next
     enddo
 
   end subroutine dynamically_locked_cell_mask
@@ -487,7 +451,7 @@ contains
          domain !< Input/Output:
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          oceanCouplingPool, &
@@ -509,19 +473,19 @@ contains
          iVertex, &
          iCellOnVertex
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCouplingPool)
-       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "ocean_coupling", oceanCouplingPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
 
        call MPAS_pool_get_array(oceanCouplingPool, "landIceMask", landIceMask)
        call MPAS_pool_get_array(oceanCouplingPool, "landIceMaskVertex", landIceMaskVertex)
 
        call MPAS_pool_get_array(meshPool, "cellsOnVertex", cellsOnVertex)
 
-       call MPAS_pool_get_dimension(block % dimensions, "vertexDegree", vertexDegree)
-       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "vertexDegree", vertexDegree)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nVerticesSolve", nVerticesSolve)
 
        landIceMaskVertex(:) = 0
 
@@ -541,7 +505,7 @@ contains
 
        enddo ! iVertex
 
-       block => block % next
+       blockPtr => blockPtr % next
     enddo
 
   end subroutine init_ice_shelve_vertex_mask
@@ -695,7 +659,7 @@ contains
          domain
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          tracersPool, &
@@ -719,14 +683,14 @@ contains
     integer :: &
          iCell
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_dimension(block % dimensions, "nCells", nCellsSolve)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nCells", nCellsSolve)
 
-       call MPAS_pool_get_subpool(block % structs, "tracers", tracersPool)
-       call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
-       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "tracers", tracersPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "tracers_aggregate", tracersAggregatePool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "icestate", icestatePool)
 
        call MPAS_pool_get_array(tracersPool, "iceAreaCategory", iceAreaCategory, 1)
        call MPAS_pool_get_array(tracersPool, "iceVolumeCategory", iceVolumeCategory, 1)
@@ -749,7 +713,7 @@ contains
 
        enddo ! iCell
 
-       block => block % next
+       blockPtr => blockPtr % next
     enddo
 
   end subroutine aggregate_mass_and_area!}}}
@@ -778,7 +742,7 @@ contains
          domain
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          icestatePool, &
@@ -811,17 +775,17 @@ contains
     if (.not. config_use_column_package .or. &
          (config_use_column_package .and. .not. config_use_column_vertical_thermodynamics)) then
 
-       block => domain % blocklist
-       do while (associated(block))
+       blockPtr => domain % blocklist
+       do while (associated(blockPtr))
 
-          call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
-          call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
+          call MPAS_pool_get_subpool(blockPtr % structs, "tracers_aggregate", tracersAggregatePool)
+          call MPAS_pool_get_subpool(blockPtr % structs, "icestate", icestatePool)
           call MPAS_pool_get_array(tracersAggregatePool, "iceAreaCell", iceAreaCell)
           call MPAS_pool_get_array(icestatePool, "iceAreaCellInitial", iceAreaCellInitial)
 
           iceAreaCellInitial = iceAreaCell
 
-          block => block % next
+          blockPtr => blockPtr % next
        end do
 
     endif
@@ -872,11 +836,11 @@ contains
     call seaice_load_balance_timers(domain, "vel prep after")
 
     ! interpolate area and mass from cells to vertices
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
-       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "icestate", icestatePool)
 
        call MPAS_pool_get_array(icestatePool, "iceAreaVertex", iceAreaVertex)
        call MPAS_pool_get_array(icestatePool, "totalMassCell", totalMassCell)
@@ -893,7 +857,7 @@ contains
             totalMassVertex, &
             totalMassCell)
 
-       block => block % next
+       blockPtr => blockPtr % next
     end do
 
     ! calculate computational masks
@@ -967,7 +931,7 @@ contains
          domain
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          meshPool, &
@@ -997,15 +961,15 @@ contains
     integer, dimension(:,:), pointer :: &
          cellsOnCell
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_dimension(block % dimensions, "nCells", nCells)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nCells", nCells)
 
-       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
-       call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCouplingPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "ocean_coupling", oceanCouplingPool)
 
        call MPAS_pool_get_array(meshPool, "nEdgesOnCell", nEdgesOnCell)
        call MPAS_pool_get_array(meshPool, "cellsOnCell", cellsOnCell)
@@ -1056,7 +1020,7 @@ contains
 
        enddo ! iCell
 
-       block => block % next
+       blockPtr => blockPtr % next
     enddo
 
   end subroutine stress_calculation_mask!}}}
@@ -1079,7 +1043,7 @@ contains
          domain
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          velocitySolverPool, &
@@ -1105,16 +1069,16 @@ contains
          nVerticesSolve, &
          nVertices
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
-       call MPAS_pool_get_dimension(block % dimensions, "nVertices", nVertices)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nVerticesSolve", nVerticesSolve)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nVertices", nVertices)
 
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
-       call MPAS_pool_get_subpool(block % structs, "boundary", boundaryPool)
-       call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCouplingPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "boundary", boundaryPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "ocean_coupling", oceanCouplingPool)
 
        call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
 
@@ -1147,7 +1111,7 @@ contains
 
        enddo ! iVertex
 
-       block => block % next
+       blockPtr => blockPtr % next
     enddo
 
   end subroutine velocity_calculation_mask!}}}
@@ -1176,7 +1140,7 @@ contains
          domain
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          velocitySolverPool, &
@@ -1213,14 +1177,14 @@ contains
          config_aggregate_halo_exch, &
          config_reuse_halo_exch
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nVerticesSolve", nVerticesSolve)
 
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
-       call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCouplingPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "ocean_coupling", oceanCouplingPool)
 
        call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
        call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
@@ -1279,7 +1243,7 @@ contains
        uVelocityInitial = uVelocity
        vVelocityInitial = vVelocity
 
-       block => block % next
+       blockPtr => blockPtr % next
     enddo
 
     ! halo exchange velocities
@@ -1359,7 +1323,7 @@ contains
          domain
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          velocitySolverPool, &
@@ -1398,22 +1362,21 @@ contains
     character(len=strKIND), pointer :: &
          config_column_physics_type
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_config(block % configs, "config_column_physics_type", config_column_physics_type)
+       call MPAS_pool_get_config(blockPtr % configs, "config_column_physics_type", config_column_physics_type)
+       call MPAS_pool_get_config(blockPtr % configs, "config_use_column_package", config_use_column_package)
+       call MPAS_pool_get_config(blockPtr % configs, "config_use_column_vertical_thermodynamics", &
+                                                      config_use_column_vertical_thermodynamics)
 
-       call MPAS_pool_get_config(block % configs, "config_use_column_package", config_use_column_package)
-       call MPAS_pool_get_config(block % configs, "config_use_column_vertical_thermodynamics", &
-                                                   config_use_column_vertical_thermodynamics)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nCellsSolve", nCellsSolve)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nCategories", nCategories)
 
-       call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
-       call MPAS_pool_get_dimension(block % dimensions, "nCategories", nCategories)
-
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-       call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
-       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
-       call MPAS_pool_get_subpool(block % structs, "tracers", tracersPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "tracers_aggregate", tracersAggregatePool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "tracers", tracersPool)
 
        call MPAS_pool_get_array(velocitySolverPool, "icePressure", icePressure)
        call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
@@ -1490,7 +1453,7 @@ contains
 
        endif
 
-       block => block % next
+       blockPtr => blockPtr % next
     enddo
 
     ! halo exchange ice strength
@@ -1563,7 +1526,7 @@ contains
          domain
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     logical, pointer :: &
          config_use_column_package, &
@@ -1599,14 +1562,14 @@ contains
     ! check for no air stress
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_air_stress", config_use_air_stress)
     if (.not. config_use_air_stress) then
-       block => domain % blocklist
-       do while (associated(block))
-          call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       blockPtr => domain % blocklist
+       do while (associated(blockPtr))
+          call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
           call MPAS_pool_get_array(velocitySolverPool, "airStressCellU", airStressCellU)
           call MPAS_pool_get_array(velocitySolverPool, "airStressCellV", airStressCellV)
           airStressCellU = 0.0_RKIND
           airStressCellV = 0.0_RKIND
-          block => block % next
+          blockPtr => blockPtr % next
        end do
     endif ! .not. config_use_air_stress
 
@@ -1656,11 +1619,11 @@ contains
     call seaice_load_balance_timers(domain, "vel prep after")
 
     ! interpolate air stress
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
 
        call MPAS_pool_get_array(velocitySolverPool, "airStressCellU", airStressCellU)
        call MPAS_pool_get_array(velocitySolverPool, "airStressCellV", airStressCellV)
@@ -1677,7 +1640,7 @@ contains
             airStressVertexV, &
             airStressCellV)
 
-       block => block % next
+       blockPtr => blockPtr % next
     end do
 
   end subroutine air_stress
@@ -1700,7 +1663,7 @@ contains
          domain
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          velocitySolverPool, &
@@ -1727,14 +1690,14 @@ contains
     real(kind=RKIND), parameter :: &
          airStressCoeff = 0.0012_RKIND
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nCellsSolve", nCellsSolve)
 
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-       call MPAS_pool_get_subpool(block % structs, "atmos_coupling", atmosCouplingPool)
-       call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracersAggregatePool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "atmos_coupling", atmosCouplingPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "tracers_aggregate", tracersAggregatePool)
 
        call MPAS_pool_get_array(velocitySolverPool, "airStressCellU", airStressCellU)
        call MPAS_pool_get_array(velocitySolverPool, "airStressCellV", airStressCellV)
@@ -1754,7 +1717,7 @@ contains
 
        enddo ! iCell
 
-       block => block % next
+       blockPtr => blockPtr % next
     end do
 
   end subroutine constant_air_stress
@@ -1777,7 +1740,7 @@ contains
          domain
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          icestatePool, &
@@ -1795,14 +1758,14 @@ contains
     integer :: &
          iVertex
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nVerticesSolve", nVerticesSolve)
 
-       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
 
        call MPAS_pool_get_array(icestatePool, "totalMassVertex", totalMassVertex)
        call MPAS_pool_get_array(velocitySolverPool, "totalMassVertexfVertex", totalMassVertexfVertex)
@@ -1814,7 +1777,7 @@ contains
 
        enddo ! iVertex
 
-       block => block % next
+       blockPtr => blockPtr % next
     end do
 
   end subroutine coriolis_force_coefficient
@@ -1837,7 +1800,7 @@ contains
          domain
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          velocitySolverPool, &
@@ -1862,15 +1825,15 @@ contains
     integer :: &
          iVertex
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_config(block % configs, "config_use_ocean_stress", configUseOceanStress)
+       call MPAS_pool_get_config(blockPtr % configs, "config_use_ocean_stress", configUseOceanStress)
 
-       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nVerticesSolve", nVerticesSolve)
 
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
 
        call MPAS_pool_get_array(velocitySolverPool, "oceanStressU", oceanStressU)
        call MPAS_pool_get_array(velocitySolverPool, "oceanStressV", oceanStressV)
@@ -1909,7 +1872,7 @@ contains
 
        endif
 
-       block => block % next
+       blockPtr => blockPtr % next
     end do
 
   end subroutine ocean_stress
@@ -1976,7 +1939,7 @@ contains
          domain
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          icestatePool, &
@@ -2000,14 +1963,14 @@ contains
     integer :: &
          iVertex
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nVerticesSolve", nVerticesSolve)
 
-       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
 
        call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceU", surfaceTiltForceU)
        call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceV", surfaceTiltForceV)
@@ -2036,7 +1999,7 @@ contains
 
        enddo ! iVertex
 
-       block => block % next
+       blockPtr => blockPtr % next
     end do
 
   end subroutine surface_tilt_geostrophic
@@ -2068,7 +2031,7 @@ contains
          domain
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          icestatePool, &
@@ -2145,15 +2108,15 @@ contains
 
     call seaice_load_balance_timers(domain, "vel prep after")
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nVerticesSolve", nVerticesSolve)
 
-       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-       call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCouplingPool)
-       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "ocean_coupling", oceanCouplingPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
 
        call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceU", surfaceTiltForceU)
        call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceV", surfaceTiltForceV)
@@ -2195,7 +2158,7 @@ contains
 
        enddo ! iVertex
 
-       block => block % next
+       blockPtr => blockPtr % next
     end do
 
   end subroutine surface_tilt_ssh_gradient
@@ -2218,7 +2181,7 @@ contains
          domain
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          velocitySolverPool
@@ -2227,10 +2190,10 @@ contains
          surfaceTiltForceU, &
          surfaceTiltForceV
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
 
        call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceU", surfaceTiltForceU)
        call MPAS_pool_get_array(velocitySolverPool, "surfaceTiltForceV", surfaceTiltForceV)
@@ -2239,7 +2202,7 @@ contains
        surfaceTiltForceU = 0.0_RKIND
        surfaceTiltForceV = 0.0_RKIND
 
-       block => block % next
+       blockPtr => blockPtr % next
     end do
 
   end subroutine no_surface_tilt
@@ -2260,7 +2223,7 @@ contains
 
     type(domain_type) :: domain
 
-    type(block_type), pointer :: block
+    type(block_type), pointer :: blockPtr
 
     type(MPAS_pool_type), pointer :: &
          velocitySolverPool, &
@@ -2307,10 +2270,10 @@ contains
 
     call MPAS_pool_get_config(domain % configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
 
        ! divergence of stress
        call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
@@ -2326,7 +2289,7 @@ contains
        call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
        call MPAS_pool_get_array(velocitySolverPool, "oceanStressCoeff", oceanStressCoeff)
 
-       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nVerticesSolve", nVerticesSolve)
 
        do iVertex = 1, nVerticesSolve
 
@@ -2344,7 +2307,7 @@ contains
        if (trim(config_stress_divergence_scheme) == "variational") then
           ! variational
 
-          call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocityVariationalPool)
+          call MPAS_pool_get_subpool(blockPtr % structs, "velocity_variational", velocityVariationalPool)
 
           ! strains
           call MPAS_pool_get_array(velocityVariationalPool, "strain11", strain11Var)
@@ -2362,7 +2325,7 @@ contains
           call MPAS_pool_get_array(velocityVariationalPool, "stress22", stress22Var)
           call MPAS_pool_get_array(velocityVariationalPool, "stress12", stress12Var)
 
-          call MPAS_pool_get_dimension(block % dimensions, "nCells", nCells)
+          call MPAS_pool_get_dimension(blockPtr % dimensions, "nCells", nCells)
 
           do iCell = 1, nCells
 
@@ -2378,7 +2341,7 @@ contains
 
        else if (trim(config_stress_divergence_scheme) == "weak") then
 
-          call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocityWeakPool)
+          call MPAS_pool_get_subpool(blockPtr % structs, "velocity_weak", velocityWeakPool)
 
           ! strains
           call MPAS_pool_get_array(velocityWeakPool, "strain11", strain11Weak)
@@ -2396,7 +2359,7 @@ contains
           call MPAS_pool_get_array(velocityWeakPool, "stress22", stress22Weak)
           call MPAS_pool_get_array(velocityWeakPool, "stress12", stress12Weak)
 
-          call MPAS_pool_get_dimension(block % dimensions, "nCells", nCells)
+          call MPAS_pool_get_dimension(blockPtr % dimensions, "nCells", nCells)
 
           do iCell = 1, nCells
 
@@ -2412,7 +2375,7 @@ contains
 
        endif ! config_stress_divergence_scheme
 
-       block => block % next
+       blockPtr => blockPtr % next
     enddo
 
   end subroutine init_subcycle_variables
@@ -2637,23 +2600,6 @@ contains
 
   subroutine seaice_internal_stress(domain)
 
-    use seaice_mesh_pool, only: &
-         basisGradientU, &
-         basisGradientV, &
-         basisIntegralsMetric, &
-         basisIntegralsU, &
-         basisIntegralsV, &
-         cellVerticesAtVertex, &
-         icePressure, &
-         solveStress, &
-         solveVelocity, &
-         stress11var => stress11, &
-         stress22var => stress22, &
-         stress12var => stress12, &
-         tanLatVertexRotatedOverRadius, &
-         uVelocity, &
-         vVelocity
-
     use seaice_velocity_solver_weak, only: &
          seaice_strain_tensor_weak, &
          seaice_stress_tensor_weak, &
@@ -2668,229 +2614,66 @@ contains
     type(domain_type), intent(inout) :: &
          domain
 
-    type(block_type), pointer :: &
-         blockPtr
+    ! strain
+    if (strainSchemeType == WEAK_STRAIN_SCHEME) then
 
-    type (MPAS_pool_type), pointer :: &
-         meshPool, &
-         velocityWeakPool, &
-         velocityVariationalPool, &
-         velocityWeakVariationalPool, &
-         velocitySolverPool
+       call mpas_timer_start("Velocity solver strain tensor")
+       call seaice_strain_tensor_weak(domain)
+       call mpas_timer_stop("Velocity solver strain tensor")
 
-    real(kind=RKIND), pointer :: &
-         elasticTimeStep
+    else if (strainSchemeType == VARIATIONAL_STRAIN_SCHEME) then
 
-    real(kind=RKIND), dimension(:), pointer :: &
-         stressDivergenceU, &
-         stressDivergenceV
+       call mpas_timer_start("Velocity solver strain tensor")
+       call seaice_strain_tensor_variational(domain)
+       call mpas_timer_stop("Velocity solver strain tensor")
 
-    real(kind=RKIND), dimension(:), pointer :: &
-         replacementPressureWeak, &
-         strain11weak, &
-         strain22weak, &
-         strain12weak, &
-         stress11weak, &
-         stress22weak, &
-         stress12weak, &
-         latCellRotated, &
-         latVertexRotated, &
-         areaCell
+    endif
 
-    real(kind=RKIND), dimension(:,:,:), pointer :: &
-         normalVectorPolygon, &
-         normalVectorTriangle
+    ! average variational strains around vertex
+    if (strainSchemeType == VARIATIONAL_STRAIN_SCHEME .and. &
+         averageVariationalStrains) then
+       call seaice_average_strains_on_vertex(domain)
+    endif
 
-    real(kind=RKIND), dimension(:,:), pointer :: &
-         replacementPressureVar, &
-         strain11var, &
-         strain22var, &
-         strain12var
+    ! weak strain / variational stress divergence
+    if (strainSchemeType           == WEAK_STRAIN_SCHEME .and. &
+         stressDivergenceSchemeType == VARIATIONAL_STRESS_DIVERGENCE_SCHEME) then
 
-    real(kind=RKIND), dimension(:), pointer :: &
-         variationalDenominator
+       call mpas_timer_start("Velocity solver interpolate strain")
+       call interpolate_strains_weak_to_variational(domain)
+       call mpas_timer_stop("Velocity solver interpolate strain")
 
-    blockPtr => domain % blocklist
-    do while (associated(blockPtr))
+    endif
 
-       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
-       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_weak", velocityWeakPool)
-       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_variational", velocityVariationalPool)
-       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_weak_variational", velocityWeakVariationalPool)
-       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
+    ! consitutive relation
+    if (stressDivergenceSchemeType == WEAK_STRESS_DIVERGENCE_SCHEME) then
 
-       call MPAS_pool_get_array(velocitySolverPool, "elasticTimeStep", elasticTimeStep)
-       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
-       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
+       call mpas_timer_start("Velocity solver stress tensor")
+       call seaice_stress_tensor_weak(domain)
+       call mpas_timer_stop("Velocity solver stress tensor")
 
-       if (strainSchemeType           == WEAK_STRAIN_SCHEME .or. &
-           stressDivergenceSchemeType == WEAK_STRESS_DIVERGENCE_SCHEME) then
+    else if (stressDivergenceSchemeType == VARIATIONAL_STRESS_DIVERGENCE_SCHEME) then
 
-          call MPAS_pool_get_array(velocityWeakPool, "normalVectorPolygon", normalVectorPolygon)
-          call MPAS_pool_get_array(velocityWeakPool, "normalVectorTriangle", normalVectorTriangle)
-          call MPAS_pool_get_array(velocityWeakPool, "latCellRotated", latCellRotated)
-          call MPAS_pool_get_array(velocityWeakPool, "latVertexRotated", latVertexRotated)
-          call MPAS_pool_get_array(velocityWeakPool, "strain11", strain11weak)
-          call MPAS_pool_get_array(velocityWeakPool, "strain22", strain22weak)
-          call MPAS_pool_get_array(velocityWeakPool, "strain12", strain12weak)
-          call MPAS_pool_get_array(velocityWeakPool, "stress11", stress11weak)
-          call MPAS_pool_get_array(velocityWeakPool, "stress22", stress22weak)
-          call MPAS_pool_get_array(velocityWeakPool, "stress12", stress12weak)
-          call MPAS_pool_get_array(velocityWeakPool, "replacementPressure", replacementPressureWeak)
+       call mpas_timer_start("Velocity solver stress tensor")
+       call seaice_stress_tensor_variational(domain)
+       call mpas_timer_stop("Velocity solver stress tensor")
 
-       endif
+    endif
 
-       if (strainSchemeType           == VARIATIONAL_STRAIN_SCHEME .or. &
-           stressDivergenceSchemeType == VARIATIONAL_STRESS_DIVERGENCE_SCHEME) then
+    ! stress divergence
+    if (stressDivergenceSchemeType == WEAK_STRESS_DIVERGENCE_SCHEME) then
 
-          call MPAS_pool_get_array(velocityVariationalPool, "strain11", strain11var)
-          call MPAS_pool_get_array(velocityVariationalPool, "strain22", strain22var)
-          call MPAS_pool_get_array(velocityVariationalPool, "strain12", strain12var)
-          call MPAS_pool_get_array(velocityVariationalPool, "replacementPressure", replacementPressureVar)
-          call MPAS_pool_get_array(velocityVariationalPool, "variationalDenominator", variationalDenominator)
+       call mpas_timer_start("Velocity solver stress divergence")
+       call seaice_stress_divergence_weak(domain)
+       call mpas_timer_stop("Velocity solver stress divergence")
 
-       endif
+    else if (stressDivergenceSchemeType == VARIATIONAL_STRESS_DIVERGENCE_SCHEME) then
 
-       ! strain
-       if (strainSchemeType == WEAK_STRAIN_SCHEME) then
+       call mpas_timer_start("Velocity solver stress divergence")
+       call seaice_stress_divergence_variational(domain)
+       call mpas_timer_stop("Velocity solver stress divergence")
 
-          call mpas_timer_start("Velocity solver strain tensor")
-          call seaice_strain_tensor_weak(&
-               meshPool, &
-               strain11weak, &
-               strain22weak, &
-               strain12weak, &
-               uVelocity, &
-               vVelocity, &
-               normalVectorPolygon, &
-               latCellRotated, &
-               solveStress)
-          call mpas_timer_stop("Velocity solver strain tensor")
-
-       else if (strainSchemeType == VARIATIONAL_STRAIN_SCHEME) then
-
-          call mpas_timer_start("Velocity solver strain tensor")
-          call seaice_strain_tensor_variational(&
-               meshPool, &
-               strain11var, &
-               strain22var, &
-               strain12var, &
-               uVelocity, &
-               vVelocity, &
-               basisGradientU, &
-               basisGradientV, &
-               tanLatVertexRotatedOverRadius, &
-               solveStress)
-          call mpas_timer_stop("Velocity solver strain tensor")
-
-       endif
-
-       ! average variational strains around vertex
-       if (strainSchemeType == VARIATIONAL_STRAIN_SCHEME .and. &
-           averageVariationalStrains) then
-
-          call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
-          call seaice_average_strains_on_vertex(&
-                areaCell, &
-                strain11var, &
-                strain22var, &
-                strain12var)
-       endif
-
-       ! weak strain / variational stress divergence
-       if (strainSchemeType           == WEAK_STRAIN_SCHEME .and. &
-           stressDivergenceSchemeType == VARIATIONAL_STRESS_DIVERGENCE_SCHEME) then
-
-          call mpas_timer_start("Velocity solver interpolate strain")
-          call interpolate_strains_weak_to_variational(&
-               meshPool, &
-               velocityWeakVariationalPool, &
-               strain11weak, &
-               strain22weak, &
-               strain12weak, &
-               strain11var, &
-               strain22var, &
-               strain12var)
-          call mpas_timer_stop("Velocity solver interpolate strain")
-
-       endif
-
-       ! consitutive relation
-       if (stressDivergenceSchemeType == WEAK_STRESS_DIVERGENCE_SCHEME) then
-
-          call mpas_timer_start("Velocity solver stress tensor")
-          call seaice_stress_tensor_weak(&
-               meshPool, &
-               stress11weak, &
-               stress22weak, &
-               stress12weak, &
-               strain11weak, &
-               strain22weak, &
-               strain12weak, &
-               icePressure, &
-               replacementPressureWeak, &
-               solveStress, &
-               elasticTimeStep)
-          call mpas_timer_stop("Velocity solver stress tensor")
-
-       else if (stressDivergenceSchemeType == VARIATIONAL_STRESS_DIVERGENCE_SCHEME) then
-
-          call mpas_timer_start("Velocity solver stress tensor")
-          call seaice_stress_tensor_variational(&
-               meshPool, &
-               stress11var, &
-               stress22var, &
-               stress12var, &
-               strain11var, &
-               strain22var, &
-               strain12var, &
-               icePressure, &
-               replacementPressureVar, &
-               solveStress, &
-               elasticTimeStep)
-          call mpas_timer_stop("Velocity solver stress tensor")
-
-       endif
-
-       ! stress divergence
-       if (stressDivergenceSchemeType == WEAK_STRESS_DIVERGENCE_SCHEME) then
-
-          call mpas_timer_start("Velocity solver stress divergence")
-          call seaice_stress_divergence_weak(&
-               meshPool, &
-               stressDivergenceU, &
-               stressDivergenceV, &
-               stress11weak, &
-               stress22weak, &
-               stress12weak, &
-               normalVectorTriangle, &
-               latVertexRotated, &
-               solveVelocity)
-          call mpas_timer_stop("Velocity solver stress divergence")
-
-       else if (stressDivergenceSchemeType == VARIATIONAL_STRESS_DIVERGENCE_SCHEME) then
-
-          call mpas_timer_start("Velocity solver stress divergence")
-          call seaice_stress_divergence_variational(&
-               meshPool, &
-               stressDivergenceU, &
-               stressDivergenceV, &
-               stress11var, &
-               stress22var, &
-               stress12var, &
-               basisIntegralsU, &
-               basisIntegralsV, &
-               basisIntegralsMetric, &
-               variationalDenominator, &
-               tanLatVertexRotatedOverRadius, &
-               cellVerticesAtVertex, &
-               solveVelocity)
-          call mpas_timer_stop("Velocity solver stress divergence")
-
-       endif
-
-       blockPtr => blockPtr % next
-    end do
+    endif
 
   end subroutine seaice_internal_stress
 
@@ -2906,15 +2689,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine interpolate_strains_weak_to_variational(&
-       meshPool, &
-       velocityWeakVariationalPool, &
-       strain11weak, &
-       strain22weak, &
-       strain12weak, &
-       strain11var, &
-       strain22var, &
-       strain12var)
+  subroutine interpolate_strains_weak_to_variational(domain)
 
     use seaice_mesh_pool, only: &
          nCells, &
@@ -2924,19 +2699,27 @@ contains
          nEdgesOnCell, &
          verticesOnCell
 
+    type(domain_type), intent(inout) :: &
+         domain
+
+    type(block_type), pointer :: &
+         blockPtr
+
     type (MPAS_pool_type), pointer :: &
          meshPool, &
+         velocityWeakPool, &
+         velocityVariationalPool, &
          velocityWeakVariationalPool
 
-    real(kind=RKIND), dimension(:), intent(in) :: &
-         strain11weak, & !< Input/Output:
-         strain22weak, & !< Input/Output:
-         strain12weak    !< Input/Output:
+    real(kind=RKIND), dimension(:), pointer :: &
+         strain11weak, &
+         strain22weak, &
+         strain12weak
 
-    real(kind=RKIND), dimension(:,:), intent(out) :: &
-         strain11var, & !< Input/Output:
-         strain22var, & !< Input/Output:
-         strain12var    !< Input/Output:
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         strain11var, &
+         strain22var, &
+         strain12var
 
     real(kind=RKIND), dimension(:), pointer :: &
          strain11Vertex, &
@@ -2955,51 +2738,70 @@ contains
          iCell, &
          iVertexOnCell
 
-    call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-    call MPAS_pool_get_array(velocityWeakVariationalPool, "strain11Vertex", strain11Vertex)
-    call MPAS_pool_get_array(velocityWeakVariationalPool, "strain22Vertex", strain22Vertex)
-    call MPAS_pool_get_array(velocityWeakVariationalPool, "strain12Vertex", strain12Vertex)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_weak", velocityWeakPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_variational", velocityVariationalPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_weak_variational", velocityWeakVariationalPool)
 
-    do iVertex = 1, nVerticesSolve
+       call MPAS_pool_get_array(meshPool, "areaCell", areaCell)
 
-       strain11Vertex(iVertex) = 0.0_RKIND
-       strain22Vertex(iVertex) = 0.0_RKIND
-       strain12Vertex(iVertex) = 0.0_RKIND
-       denom = 0.0_RKIND
+       call MPAS_pool_get_array(velocityVariationalPool, "strain11", strain11var)
+       call MPAS_pool_get_array(velocityVariationalPool, "strain22", strain22var)
+       call MPAS_pool_get_array(velocityVariationalPool, "strain12", strain12var)
 
-       do iCellOnVertex = 1, vertexDegree
+       call MPAS_pool_get_array(velocityWeakPool, "strain11", strain11weak)
+       call MPAS_pool_get_array(velocityWeakPool, "strain22", strain22weak)
+       call MPAS_pool_get_array(velocityWeakPool, "strain12", strain12weak)
 
-          iCell = cellsOnVertex(iCellOnVertex,iVertex)
+       call MPAS_pool_get_array(velocityWeakVariationalPool, "strain11Vertex", strain11Vertex)
+       call MPAS_pool_get_array(velocityWeakVariationalPool, "strain22Vertex", strain22Vertex)
+       call MPAS_pool_get_array(velocityWeakVariationalPool, "strain12Vertex", strain12Vertex)
 
-          if (iCell >= 1 .and. iCell <= nCells) then
-             strain11Vertex(iVertex) = strain11Vertex(iVertex) + areaCell(iCell) * strain11weak(iCell)
-             strain22Vertex(iVertex) = strain22Vertex(iVertex) + areaCell(iCell) * strain22weak(iCell)
-             strain12Vertex(iVertex) = strain12Vertex(iVertex) + areaCell(iCell) * strain12weak(iCell)
-             denom = denom + areaCell(iCell)
-          endif
+       do iVertex = 1, nVerticesSolve
 
-       enddo ! iCellOnVertex
+          strain11Vertex(iVertex) = 0.0_RKIND
+          strain22Vertex(iVertex) = 0.0_RKIND
+          strain12Vertex(iVertex) = 0.0_RKIND
+          denom = 0.0_RKIND
 
-       strain11Vertex(iVertex) = strain11Vertex(iVertex) / denom
-       strain22Vertex(iVertex) = strain22Vertex(iVertex) / denom
-       strain12Vertex(iVertex) = strain12Vertex(iVertex) / denom
+          do iCellOnVertex = 1, vertexDegree
 
-    enddo ! iVertex
+             iCell = cellsOnVertex(iCellOnVertex,iVertex)
 
-    do iCell = 1, nCells
+             if (iCell >= 1 .and. iCell <= nCells) then
+                strain11Vertex(iVertex) = strain11Vertex(iVertex) + areaCell(iCell) * strain11weak(iCell)
+                strain22Vertex(iVertex) = strain22Vertex(iVertex) + areaCell(iCell) * strain22weak(iCell)
+                strain12Vertex(iVertex) = strain12Vertex(iVertex) + areaCell(iCell) * strain12weak(iCell)
+                denom = denom + areaCell(iCell)
+             endif
 
-       do iVertexOnCell = 1, nEdgesOnCell(iCell)
+          enddo ! iCellOnVertex
 
-          iVertex = verticesOnCell(iVertexOnCell,iCell)
+          strain11Vertex(iVertex) = strain11Vertex(iVertex) / denom
+          strain22Vertex(iVertex) = strain22Vertex(iVertex) / denom
+          strain12Vertex(iVertex) = strain12Vertex(iVertex) / denom
 
-          strain11var(iVertexOnCell,iCell) = strain11Vertex(iVertex)
-          strain22var(iVertexOnCell,iCell) = strain22Vertex(iVertex)
-          strain12var(iVertexOnCell,iCell) = strain12Vertex(iVertex)
+       enddo ! iVertex
 
-       enddo ! iVertexOnCell
+       do iCell = 1, nCells
 
-    enddo ! iCell
+          do iVertexOnCell = 1, nEdgesOnCell(iCell)
+
+             iVertex = verticesOnCell(iVertexOnCell,iCell)
+
+             strain11var(iVertexOnCell,iCell) = strain11Vertex(iVertex)
+             strain22var(iVertexOnCell,iCell) = strain22Vertex(iVertex)
+             strain12var(iVertexOnCell,iCell) = strain12Vertex(iVertex)
+
+          enddo ! iVertexOnCell
+
+       enddo ! iCell
+
+       blockPtr => blockPtr % next
+    end do
 
   end subroutine interpolate_strains_weak_to_variational
 
@@ -3025,7 +2827,7 @@ contains
          domain
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          velocitySolverPool, &
@@ -3051,15 +2853,15 @@ contains
     integer :: &
          iVertex
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_config(block % configs, "config_use_ocean_stress", configUseOceanStress)
+       call MPAS_pool_get_config(blockPtr % configs, "config_use_ocean_stress", configUseOceanStress)
 
-       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nVerticesSolve", nVerticesSolve)
 
-       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
 
        call MPAS_pool_get_array(velocitySolverPool, "oceanStressCoeff", oceanStressCoeff)
 
@@ -3108,7 +2910,7 @@ contains
 
        endif ! configUseOceanStress
 
-       block => block % next
+       blockPtr => blockPtr % next
     end do
 
   end subroutine ocean_stress_coefficient
@@ -3131,7 +2933,7 @@ contains
          domain
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          velocitySolverPool, &
@@ -3173,13 +2975,13 @@ contains
     integer :: &
          iVertex
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nVerticesSolve", nVerticesSolve)
 
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "icestate", icestatePool)
 
        call MPAS_pool_get_array(icestatePool, "totalMassVertex", totalMassVertex)
 
@@ -3234,7 +3036,7 @@ contains
 
        enddo ! iVertex
 
-       block => block % next
+       blockPtr => blockPtr % next
     end do
 
   end subroutine solve_velocity
@@ -3260,7 +3062,7 @@ contains
          domain
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          velocitySolverPool, &
@@ -3304,13 +3106,13 @@ contains
     integer :: &
          iVertex
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nVerticesSolve", nVerticesSolve)
 
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "icestate", icestatePool)
 
        call MPAS_pool_get_array(icestatePool, "totalMassVertex", totalMassVertex)
 
@@ -3368,7 +3170,7 @@ contains
 
        enddo ! iVertex
 
-       block => block % next
+       blockPtr => blockPtr % next
     end do
 
   end subroutine solve_velocity_revised
@@ -3434,29 +3236,20 @@ contains
     type(domain_type), intent(inout) :: &
          domain
 
-    type(block_type), pointer :: &
-         block
-
     character(len=strKIND), pointer :: &
          config_stress_divergence_scheme
 
-    block => domain % blocklist
-    do while (associated(block))
+    call MPAS_pool_get_config(domain % configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
 
-       call MPAS_pool_get_config(block % configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
+    if (trim(config_stress_divergence_scheme) == "weak") then
 
-       if (trim(config_stress_divergence_scheme) == "weak") then
+       call seaice_final_divergence_shear_weak(domain)
 
-          call seaice_final_divergence_shear_weak(block)
+    else if (trim(config_stress_divergence_scheme) == "variational") then
 
-       else if (trim(config_stress_divergence_scheme) == "variational") then
+       call seaice_final_divergence_shear_variational(domain)
 
-          call seaice_final_divergence_shear_variational(block)
-
-       endif
-
-       block => block % next
-    enddo
+    endif
 
   end subroutine final_divergence_shear
 
@@ -3478,7 +3271,7 @@ contains
          domain
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          velocityWeakPool, &
@@ -3518,17 +3311,17 @@ contains
     character(len=strKIND), pointer :: &
          config_stress_divergence_scheme
 
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_config(block % configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
+       call MPAS_pool_get_config(blockPtr % configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
 
-       call MPAS_pool_get_dimension(block % dimensions, "nCellsSolve", nCellsSolve)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nCellsSolve", nCellsSolve)
 
        ! calculate the principal stresses
        if (trim(config_stress_divergence_scheme) == "weak") then
 
-          call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocityWeakPool)
+          call MPAS_pool_get_subpool(blockPtr % structs, "velocity_weak", velocityWeakPool)
 
           call MPAS_pool_get_array(velocityWeakPool, "stress11", stress11Weak)
           call MPAS_pool_get_array(velocityWeakPool, "stress22", stress22Weak)
@@ -3551,8 +3344,8 @@ contains
 
        else if (trim(config_stress_divergence_scheme) == "variational") then
 
-          call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocityVariationalPool)
-          call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+          call MPAS_pool_get_subpool(blockPtr % structs, "velocity_variational", velocityVariationalPool)
+          call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
 
           call MPAS_pool_get_array(meshPool, "nEdgesOnCell", nEdgesOnCell)
 
@@ -3579,7 +3372,7 @@ contains
 
        endif
 
-       block => block % next
+       blockPtr => blockPtr % next
     enddo
 
   end subroutine principal_stresses_driver!}}}
@@ -3665,7 +3458,7 @@ contains
          domain
 
     type(block_type), pointer :: &
-         block
+         blockPtr
 
     type(MPAS_pool_type), pointer :: &
          meshPool, &
@@ -3709,14 +3502,14 @@ contains
     call MPAS_pool_get_config(domain % blocklist % configs, "config_use_ocean_stress", configUseOceanStress)
 
     ! get ocean stress on vertices
-    block => domain % blocklist
-    do while (associated(block))
+    blockPtr => domain % blocklist
+    do while (associated(blockPtr))
 
-       call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+       call MPAS_pool_get_dimension(blockPtr % dimensions, "nVerticesSolve", nVerticesSolve)
 
-       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
-       call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
-       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "icestate", icestatePool)
+       call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
 
        call MPAS_pool_get_array(velocitySolverPool, "oceanStressU", oceanStressU)
        call MPAS_pool_get_array(velocitySolverPool, "oceanStressV", oceanStressV)
@@ -3771,7 +3564,7 @@ contains
 
        endif
 
-       block => block % next
+       blockPtr => blockPtr % next
     end do
 
     ! get ocean stress on cells
@@ -3822,15 +3615,15 @@ contains
 
        call seaice_load_balance_timers(domain, "vel prep after")
 
-       block => domain % blocklist
-       do while (associated(block))
+       blockPtr => domain % blocklist
+       do while (associated(blockPtr))
 
-          call MPAS_pool_get_dimension(block % dimensions, "nVerticesSolve", nVerticesSolve)
+          call MPAS_pool_get_dimension(blockPtr % dimensions, "nVerticesSolve", nVerticesSolve)
 
-          call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
-          call MPAS_pool_get_subpool(block % structs, "boundary", boundaryPool)
-          call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
-          call MPAS_pool_get_subpool(block % structs, "icestate", icestatePool)
+          call MPAS_pool_get_subpool(blockPtr % structs, "mesh", meshPool)
+          call MPAS_pool_get_subpool(blockPtr % structs, "boundary", boundaryPool)
+          call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
+          call MPAS_pool_get_subpool(blockPtr % structs, "icestate", icestatePool)
 
           call MPAS_pool_get_array(icestatePool, "iceAreaVertex", iceAreaVertex)
 
@@ -3856,15 +3649,15 @@ contains
 
           enddo ! iVertex
 
-          block => block % next
+          blockPtr => blockPtr % next
        end do
 
     else
 
-       block => domain % blocklist
-       do while (associated(block))
+       blockPtr => domain % blocklist
+       do while (associated(blockPtr))
 
-          call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+          call MPAS_pool_get_subpool(blockPtr % structs, "velocity_solver", velocitySolverPool)
 
           call MPAS_pool_get_array(velocitySolverPool, "oceanStressCellU", oceanStressCellU)
           call MPAS_pool_get_array(velocitySolverPool, "oceanStressCellV", oceanStressCellV)
@@ -3872,7 +3665,7 @@ contains
           oceanStressCellU = 0.0_RKIND
           oceanStressCellV = 0.0_RKIND
 
-          block => block % next
+          blockPtr => blockPtr % next
        end do
 
     endif ! configUseOceanStress
