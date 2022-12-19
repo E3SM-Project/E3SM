@@ -653,20 +653,6 @@ module ocn_time_integration_si
          call mpas_pool_get_array(forcingPool, 'landIceDraft', landIceDraft)
       endif
 
-      if ( config_btr_si_partition_match_mode ) then
-         if (si_algorithm == 'sbicg' ) then
-            allocate( globalReprodSum2fld1(nCellsOwned,2),  &
-                      globalReprodSum2fld2(nCellsOwned,2),  &
-                      globalReprodSum9fld1(nCellsOwned,9),  &
-                      globalReprodSum9fld2(nCellsOwned,9) )
-         else if ( si_algorithm == 'scg' ) then
-            allocate( globalReprodSum2fld1(nCellsOwned,2),  &
-                      globalReprodSum2fld2(nCellsOwned,2),  &
-                      globalReprodSum3fld1(nCellsOwned,3),  &
-                      globalReprodSum3fld2(nCellsOwned,3) )
-         endif
-      endif
-
 #ifdef MPAS_OPENACC
       !$acc exit data delete(normalVelocityCur, normalBarotropicVelocityCur, &
       !$acc    sshCur, layerThicknessCur)
@@ -2484,16 +2470,6 @@ module ocn_time_integration_si
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! END large iteration loop
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      if ( config_btr_si_partition_match_mode ) then
-         if ( si_algorithm == 'sbicg' ) then
-            deallocate( globalReprodSum2fld1,globalReprodSum2fld2,  &
-                        globalReprodSum9fld1,globalReprodSum9fld2 )
-         else if ( si_algorithm == 'scg' ) then
-            deallocate( globalReprodSum2fld1,globalReprodSum2fld2,  &
-                        globalReprodSum3fld1,globalReprodSum3fld2 )
-         end if
-      endif
 
       call mpas_timer_start("si implicit vert mix")
 
