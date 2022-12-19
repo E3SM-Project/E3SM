@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 module compose_mod
 
   implicit none
@@ -370,9 +374,9 @@ contains
   subroutine compose_finalize(finalize_kokkos)
     logical, optional, intent(in) :: finalize_kokkos
 
+#ifdef HOMME_ENABLE_COMPOSE
     logical :: call_finalize_kokkos
 
-#ifdef HOMME_ENABLE_COMPOSE
     call cedr_finalize()
     call slmm_finalize()
 

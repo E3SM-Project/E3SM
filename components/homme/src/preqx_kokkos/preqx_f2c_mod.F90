@@ -142,8 +142,9 @@ interface
     !
     ! Inputs
     !
-    integer(kind=c_int),  intent(in) :: nstep, nm1, n0, np1, next_output_step, nsplit_iteration
-    real (kind=c_double), intent(in) :: tstep
+    integer(kind=c_int),  intent(inout) :: nstep, nm1, n0, np1
+    integer(kind=c_int),  intent(in)    :: next_output_step, nsplit_iteration
+    real (kind=c_double), intent(in)    :: tstep
   end subroutine prim_run_subcycle_c
 
   ! Copy results from C++ views back to f90 arrays

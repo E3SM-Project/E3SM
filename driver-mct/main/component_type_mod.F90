@@ -246,6 +246,7 @@ contains
        ! c2x_cc is allocated even if not used such as in stub models
        ! do not test this case.
        if(lsize <= 1 .and. nflds <= 1) return
+#ifndef CPRFJ
        if(any(shr_infnan_isnan(comp%c2x_cc%rattr))) then
           do fld=1,nflds
              do n=1,lsize
@@ -259,6 +260,7 @@ contains
              enddo
           enddo
        endif
+#endif
     endif
   end subroutine check_fields
 

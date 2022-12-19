@@ -74,7 +74,8 @@ contains
                               ftype, prescribed_wind, moisture, disable_diagnostics,   &
                               use_cpstar, transport_alg, theta_hydrostatic_mode,       &
                               dcmip16_mu, theta_advect_form, test_case,                &
-                              MAX_STRING_LEN, dt_remap_factor, dt_tracer_factor
+                              MAX_STRING_LEN, dt_remap_factor, dt_tracer_factor,       &
+                              pgrad_correction
     !
     ! Input(s)
     !
@@ -108,7 +109,8 @@ contains
                                    transport_alg,                                                 &
                                    LOGICAL(theta_hydrostatic_mode,c_bool),                        &
                                    c_loc(test_name),                                              &
-                                   dt_remap_factor, dt_tracer_factor, rearth, nsplit)
+                                   dt_remap_factor, dt_tracer_factor, rearth, nsplit,             &
+                                   LOGICAL(pgrad_correction==1,c_bool))
 
     ! Initialize time level structure in C++
     call init_time_level_c(tl%nm1, tl%n0, tl%np1, tl%nstep, tl%nstep0)
@@ -530,8 +532,9 @@ contains
     push_to_f = .false.
 
 #elif defined(SCREAM)
-!SCREAM run, do nothing
-
+!SCREAM run, only compute_diagnostics
+    push_to_f = compute_diagnostics
+    
 #elif defined(CAM)
 !CAM run, push at the end of nsplit loop
     if (nsplit_iter == nsplit) then

@@ -167,6 +167,7 @@ contains
                            call mpas_duplicate_field(ptr1DReal, ptr1DRealNew)
 
                            ptr1DRealNew % fieldName = trim(ptr1DReal % fieldName) // trim(AMFieldNameSuffix)
+                           ptr1DRealNew % outputFieldName = ptr1DRealNew % fieldName
                            PWAM_DEBUG_WRITE(' -- New Name: ' // trim(ptr1DRealNew % fieldName))
 
                            ! Change constituent names, if it's a var array
@@ -233,6 +234,7 @@ contains
                            call mpas_duplicate_field(ptr2DReal, ptr2DRealNew)
 
                            ptr2DRealNew % fieldName = trim(ptr2DReal % fieldName) // trim(AMFieldNameSuffix)
+                           ptr2DRealNew % outputFieldName = ptr2DRealNew % fieldName
                            PWAM_DEBUG_WRITE(' -- New Name: ' // trim(ptr2DRealNew % fieldName))
 
                            if ( ptr2DRealNew % isVarArray ) then
@@ -299,6 +301,7 @@ contains
                            call mpas_duplicate_field(ptr3DReal, ptr3DRealNew)
 
                            ptr3DRealNew % fieldName = trim(ptr3DReal % fieldName) // trim(AMFieldNameSuffix)
+                           ptr3DRealNew % outputFieldName = ptr3DRealNew % fieldName
                            PWAM_DEBUG_WRITE(' -- New Name: ' // trim(ptr3DRealNew % fieldName))
 
                            if ( ptr3DRealNew % isVarArray ) then
@@ -365,6 +368,7 @@ contains
                            call mpas_duplicate_field(ptr4DReal, ptr4DRealNew)
 
                            ptr4DRealNew % fieldName = trim(ptr4DReal % fieldName) // trim(AMFieldNameSuffix)
+                           ptr4DRealNew % outputFieldName = ptr4DRealNew % fieldName
                            PWAM_DEBUG_WRITE(' -- New Name: ' // trim(ptr4DRealNew % fieldName))
 
                            if ( ptr4DRealNew % isVarArray ) then
@@ -431,6 +435,7 @@ contains
                            call mpas_duplicate_field(ptr5DReal, ptr5DRealNew)
 
                            ptr5DRealNew % fieldName = trim(ptr5DReal % fieldName) // trim(AMFieldNameSuffix)
+                           ptr5DRealNew % outputFieldName = ptr5DRealNew % fieldName
                            PWAM_DEBUG_WRITE(' -- New Name: ' // trim(ptr5DRealNew % fieldName))
 
                            if ( ptr5DRealNew % isVarArray ) then
@@ -502,6 +507,7 @@ contains
                            call mpas_duplicate_field(ptr1DInt, ptr1DIntNew)
 
                            ptr1DIntNew % fieldName = trim(ptr1DInt % fieldName) // trim(AMFieldNameSuffix)
+                           ptr1DIntNew % outputFieldName = ptr1DIntNew % fieldName
                            PWAM_DEBUG_WRITE(' -- New Name: ' // trim(ptr1DIntNew % fieldName))
 
                            if ( ptr1DIntNew % isVarArray ) then
@@ -567,6 +573,7 @@ contains
                            call mpas_duplicate_field(ptr2DInt, ptr2DIntNew)
 
                            ptr2DIntNew % fieldName = trim(ptr2DInt % fieldName) // trim(AMFieldNameSuffix)
+                           ptr2DIntNew % outputFieldName = ptr2DIntNew % fieldName
                            PWAM_DEBUG_WRITE(' -- New Name: ' // trim(ptr2DIntNew % fieldName))
 
                            if ( ptr2DIntNew % isVarArray ) then
@@ -632,6 +639,7 @@ contains
                            call mpas_duplicate_field(ptr3DInt, ptr3DIntNew)
 
                            ptr3DIntNew % fieldName = trim(ptr3DInt % fieldName) // trim(AMFieldNameSuffix)
+                           ptr3DIntNew % outputFieldName = ptr3DIntNew % fieldName
                            PWAM_DEBUG_WRITE(' -- New Name: ' // trim(ptr3DIntNew % fieldName))
 
                            if ( ptr3DIntNew % isVarArray ) then

@@ -1,17 +1,17 @@
 #include "coriolis.h"
 
 void coriolis() {
-  auto &u      = ::u;
-  auto &v      = ::v;
-  auto &w      = ::w;
-  auto &fcory  = ::fcory;
-  auto &fcorzy = ::fcorzy;
-  auto &dudt   = ::dudt;
-  auto &dvdt   = ::dvdt;
-  auto &na     = ::na;
-  auto &vg0    = ::vg0;
-  auto &ug0    = ::ug0;
-  auto &ncrms  = ::ncrms;
+  YAKL_SCOPE( u       , ::u);
+  YAKL_SCOPE( v       , ::v);
+  YAKL_SCOPE( w       , ::w);
+  YAKL_SCOPE( fcory   , ::fcory);
+  YAKL_SCOPE( fcorzy  , ::fcorzy);
+  YAKL_SCOPE( dudt    , ::dudt);
+  YAKL_SCOPE( dvdt    , ::dvdt);
+  YAKL_SCOPE( na      , ::na);
+  YAKL_SCOPE( vg0     , ::vg0);
+  YAKL_SCOPE( ug0     , ::ug0);
+  YAKL_SCOPE( ncrms   , ::ncrms);
 
   if (RUN3D) {
     // for (int k=0; k<nzm; k++) {

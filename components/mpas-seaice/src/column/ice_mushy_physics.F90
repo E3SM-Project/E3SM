@@ -19,6 +19,7 @@ module ice_mushy_physics
        enthalpy_of_melting, &
        temperature_snow, &
        temperature_mush, &
+       temperature_brine, &
        temperature_mush_liquid_fraction, &
        liquidus_brine_salinity_mush, &
        liquidus_temperature_mush, &
@@ -407,6 +408,20 @@ contains
     zTin = q_melt * zqin * I_liq + (c1 - q_melt) * zTin
 
   end function temperature_mush
+
+!=======================================================================
+
+  function temperature_brine(qbr) result(zTin)
+
+    real(kind=dbl_kind), intent(in) :: &
+         qbr ! enthalpy of brine (fully liquid)
+
+    real(kind=dbl_kind) :: &
+         zTin ! ice layer temperature (C)
+
+    zTin = qbr / (cp_ocn * rhow)
+
+  end function temperature_brine
 
 !=======================================================================
 

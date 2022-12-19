@@ -5,7 +5,7 @@ module se_single_column_mod
 
 use element_mod, only: element_t
 use scamMod
-use constituents, only: cnst_get_ind
+use constituents, only: cnst_get_ind, pcnst
 use dimensions_mod, only: nelemd, np
 use time_manager, only: get_nstep, dtime, is_first_step
 use ppgrid, only: begchunk
@@ -27,11 +27,13 @@ contains
 
 subroutine scm_setinitial(elem)
 
+  use constituents, only: qmin
+
   implicit none
 
   type(element_t), intent(inout) :: elem(:)
 
-  integer i, j, k, ie, thelev
+  integer i, j, k, cix, ie, thelev
   integer inumliq, inumice, icldliq, icldice
 
   if (.not. use_replay .and. get_nstep() .eq. 0) then
@@ -74,6 +76,9 @@ subroutine scm_setinitial(elem)
           endif
 
           if (get_nstep() .eq. 0) then
+            do cix = 1, pcnst
+               if (scm_zero_non_iop_tracers) elem(ie)%state%Q(i,j,:,cix) = qmin(cix)
+            end do
             do k=thelev, PLEV
 #ifdef MODEL_THETA_L
               if (have_t) elem(ie)%derived%FT(i,j,k)=tobs(k)
@@ -132,7 +137,6 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     use element_mod, only : element_t
     use physical_constants, only : Cp, Rgas, cpwater_vapor
     use time_mod
-    use constituents, only: pcnst
     use time_manager, only: get_nstep
     use shr_const_mod, only: SHR_CONST_PI
 

@@ -141,7 +141,7 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
          'dry dgnum, interstitial, mode '//trnum(2:3))
       call addfld('dgnw_a'//trnum(2:3), (/ 'lev' /), 'A', 'm', &
          'wet dgnum, interstitial, mode '//trnum(2:3))
-      call addfld('wat_a'//trnum(3:3), (/ 'lev' /), 'A', 'm', &
+      call addfld('wat_a'//trnum(3:3), (/ 'lev' /), 'A', 'kg/kg', &
          'aerosol water, interstitial, mode '//trnum(2:3))
       
       if (history_aerosol) then  
@@ -156,7 +156,7 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
 
    ! Add total aerosol water
    if (history_aerosol .and. .not. history_verbose) then
-      call addfld('aero_water', (/ 'lev' /), 'A', 'm', &
+      call addfld('aero_water', (/ 'lev' /), 'A', 'kg/kg', &
          'sum of aerosol water of interstitial modes wat_a1+wat_a2+wat_a3+wat_a4' )
       call add_default( 'aero_water',  1, ' ')
    endif

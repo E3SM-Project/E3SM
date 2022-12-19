@@ -10,6 +10,7 @@ Module HydrologyNoDrainageMod
   use elm_varctl        , only : iulog, use_vichydro, use_extrasnowlayers
   use elm_varcon        , only : e_ice, denh2o, denice, rpi, spval
   use atm2lndType       , only : atm2lnd_type
+  use lnd2atmType       , only : lnd2atm_type
   use AerosolType       , only : aerosol_type
   use EnergyFluxType    , only : energyflux_type
   use CanopyStateType  , only  : canopystate_type
@@ -17,13 +18,11 @@ Module HydrologyNoDrainageMod
   use SoilStateType     , only : soilstate_type
   use LandunitType      , only : lun_pp
   use ColumnType        , only : col_pp
-  use ColumnDataType    , only : col_es, col_ws
+  use ColumnDataType    , only : col_es, col_ws, col_wf
   use VegetationType    , only : veg_pp
   use TopounitDataType  , only : top_as, top_af ! Atmospheric state and flux variables
   use elm_instMod       , only : alm_fates , ep_betr
 
-  use WaterFluxType  ,only  : waterflux_vars
-  use WaterStateType ,only  : waterstate_vars
 
   use timeinfoMod
   !
@@ -45,8 +44,8 @@ contains
        num_urbanc, filter_urbanc, &
        num_snowc, filter_snowc, &
        num_nosnowc, filter_nosnowc, canopystate_vars, &
-       atm2lnd_vars, soilstate_vars, energyflux_vars, &
-       soilhydrology_vars, aerosol_vars)
+       atm2lnd_vars, lnd2atm_vars, soilstate_vars,    &
+       energyflux_vars, soilhydrology_vars, aerosol_vars)
     ! !DESCRIPTION:
     ! This is the main subroutine to execute the calculation of soil/snow
     ! hydrology
@@ -94,6 +93,7 @@ contains
     integer                  , intent(inout) :: num_nosnowc          ! number of column non-snow points
     integer                  , intent(inout) :: filter_nosnowc(:)    ! column filter for non-snow points
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
+    type(lnd2atm_type)       , intent(in)    :: lnd2atm_vars
     type(soilstate_type)     , intent(inout) :: soilstate_vars
     type(energyflux_type)    , intent(in)    :: energyflux_vars
     type(canopystate_type)   , intent(in)  :: canopystate_vars
@@ -194,14 +194,14 @@ contains
       if (use_pflotran .and. pf_hmode) then
 
         call Infiltration(bounds, num_hydrononsoic, filter_hydrononsoic, &
-             num_urbanc, filter_urbanc, &
+             num_urbanc, filter_urbanc, atm2lnd_vars, lnd2atm_vars,      &
              energyflux_vars, soilhydrology_vars, soilstate_vars, dtime)
 
       else
       !------------------------------------------------------------------------------------
 
         call Infiltration(bounds, num_hydrologyc, filter_hydrologyc, num_urbanc, filter_urbanc, &
-             energyflux_vars, soilhydrology_vars, soilstate_vars, dtime)
+             atm2lnd_vars, lnd2atm_vars, energyflux_vars, soilhydrology_vars, soilstate_vars, dtime)
 
       !------------------------------------------------------------------------------------
       end if
@@ -210,7 +210,7 @@ contains
       !!TODO:  need to fix the waterstate_vars dependence here.
 #ifndef _OPENACC
       if (use_betr) then
-        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
+        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws)
         call ep_betr%PreDiagSoilColWaterFlux(num_hydrologyc, filter_hydrologyc)
       endif
 #endif
@@ -248,12 +248,12 @@ contains
 
 #ifndef _OPENACC
        if (use_betr) then
-          call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars, &
-             waterflux_vars=waterflux_vars, soilhydrology_vars = soilhydrology_vars)
+          call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws, &
+             waterflux_vars=col_wf, soilhydrology_vars = soilhydrology_vars)
 
           call ep_betr%DiagAdvWaterFlux(num_hydrologyc, filter_hydrologyc)
 
-          call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=waterflux_vars)
+          call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=col_wf)
        endif
 #endif
 

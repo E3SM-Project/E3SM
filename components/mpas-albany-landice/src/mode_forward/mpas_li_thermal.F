@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 
 
@@ -724,6 +724,7 @@ module li_thermal
            temperature,              & ! interior ice temperature (K)
            waterFrac,                & ! interior water fraction (unitless)
            enthalpy,                 & ! interior ice enthalpy (J m^{-3})
+           drainedInternalMeltRate,         & ! excess internal melt drained to the bed
            heatDissipation             ! interior heat dissipation (deg/s)
 
       real(kind=RKIND), dimension(:), allocatable :: &
@@ -829,6 +830,7 @@ module li_thermal
          call mpas_pool_get_array(thermalPool, 'temperature', temperature)
          call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
          call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
+         call mpas_pool_get_array(thermalPool, 'drainedInternalMeltRate', drainedInternalMeltRate)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
          call mpas_pool_get_array(thermalPool, 'basalTemperature',   basalTemperature)
          call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
@@ -915,7 +917,7 @@ module li_thermal
                      call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
                      call mpas_log_write('surfaceAirTemperature = $r', realArgs=(/surfaceAirTemperature(iCell)/))
                      call mpas_log_write(' ')
-                     call mpas_log_write('Initial column temperatures, iCell = $i', intArgs=(/iCell/))
+                     call mpas_log_write('Initial column temperatures, indexToCellID = $i', intArgs=(/indexToCellID(iCell)/))
                      call mpas_log_write("0 $r", realArgs=(/surfaceTemperature(iCell)/))
                      do k = 1, nVertLevels
                         call mpas_log_write("$i $r", intArgs=(/k/), realArgs=(/temperature(k,iCell)/))
@@ -964,7 +966,7 @@ module li_thermal
 
                      if (verboseColumn) then
                         call mpas_log_write(' ')
-                        call mpas_log_write('Before prognostic enthalpy, iCell = $i', intArgs=(/indexToCellID(iCell)/))
+                        call mpas_log_write('Before prognostic enthalpy, indexToCellID = $i', intArgs=(/indexToCellID(iCell)/))
                         call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
                         call mpas_log_write('Temperature (C), waterFrac, enthalpy/(rhoi*cp_ice):')
                         call mpas_log_write('0 $r', realArgs=(/surfaceEnthalpy/(rhoi*cp_ice)/))
@@ -1007,7 +1009,7 @@ module li_thermal
 
                      if (verboseColumn) then
                         call mpas_log_write(' ')
-                        call mpas_log_write('After matrix elements, iCell = $i', intArgs=(/indexToCellID(iCell)/))
+                        call mpas_log_write('After matrix elements, indexToCellID = $i', intArgs=(/indexToCellID(iCell)/))
                         call mpas_log_write('k, subd, diag, supd, rhs/(rhoi*ci):')
                         do k = 1, nVertLevels+2
                            call mpas_log_write('$i $r $r $r $r', intArgs=(/k-1/), realArgs= &
@@ -1071,7 +1073,7 @@ module li_thermal
 
                      if (verboseColumn) then
                         call mpas_log_write(' ')
-                        call mpas_log_write('After prognostic enthalpy, iCell = $i', intArgs=(/indexToCellID(iCell)/))
+                        call mpas_log_write('After prognostic enthalpy, indexToCellID = $i', intArgs=(/indexToCellID(iCell)/))
                         call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
                         call mpas_log_write('Temperature, waterFrac, enthalpy/(rhoi*cp_ice):')
                         call mpas_log_write('0 $r', realArgs=(/surfaceEnthalpy/(rhoi*cp_ice)/))
@@ -1093,7 +1095,7 @@ module li_thermal
 
                      if (verboseColumn) then
                         call mpas_log_write(' ')
-                        call mpas_log_write('Before prognostic temperature, iCell = $i', intArgs=(/indexToCellID(iCell)/))
+                        call mpas_log_write('Before prognostic temperature, indexToCellID = $i', intArgs=(/indexToCellID(iCell)/))
                         call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
                         call mpas_log_write('0 $r', realArgs=(/surfaceTemperature(iCell)/))
                         do k = 1, nVertLevels
@@ -1132,7 +1134,7 @@ module li_thermal
                      if (verboseColumn) then
                         call mpas_log_write(' ')
                         call mpas_log_write('deltat = $r', realArgs=(/deltat/))
-                        call mpas_log_write('After matrix elements, iCell = $i', intArgs=(/indexToCellID(iCell)/))
+                        call mpas_log_write('After matrix elements, indexToCellID = $i', intArgs=(/indexToCellID(iCell)/))
                         call mpas_log_write('k, subd, diag, supd, rhs:')
                         do k = 1, nVertLevels+2
                            call mpas_log_write('$i $r $r $r $r', intArgs=(/k-1/), realArgs= &
@@ -1170,7 +1172,7 @@ module li_thermal
 
                      if (verboseColumn) then
                         call mpas_log_write(' ')
-                        call mpas_log_write('After prognostic temperature, iCell = $i', intArgs=(/indexToCellID(iCell)/))
+                        call mpas_log_write('After prognostic temperature, indexToCellID = $i', intArgs=(/indexToCellID(iCell)/))
                         call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
                         call mpas_log_write('0 $r', realArgs=(/surfaceTemperature(iCell)/))
                         do k = 1, nVertLevels
@@ -1235,7 +1237,7 @@ module li_thermal
                            realArgs=(/basalFrictionFlux(iCell) + basalHeatFlux(iCell) + basalConductiveFlux(iCell)/))
                      endif   ! verboseColumn
 
-                     call mpas_log_write('li_thermal, energy conservation error: iCell=$i, imbalance=$r (W/m2):', MPAS_LOG_WARN, &
+                     call mpas_log_write('li_thermal, energy conservation error: indexToCellID=$i, imbalance=$r (W/m2):', MPAS_LOG_WARN, &
                              intArgs=(/indexToCellID(iCell)/), realArgs=(/(finalEnergy - initialEnergy - deltaEnergy)/deltat/))
                      !err = ior(err, 1)
 
@@ -1285,6 +1287,7 @@ module li_thermal
                  basalHeatFlux,                &
                  basalConductiveFlux,          &
                  basalWaterThickness,          &
+                 drainedInternalMeltRate,             &
                  groundedBasalMassBal)
 
             ! Convert temperatures from Celsius back to Kelvin
@@ -1302,7 +1305,7 @@ module li_thermal
                mintemp = minval(temperature(:,iCell))
 
                if (maxtemp > maxtempThreshold) then
-                  call mpas_log_write('maxtemp > maxtempThreshold: iCell=$i, maxtemp = $r', intArgs=(/iCell/), &
+                  call mpas_log_write('maxtemp > maxtempThreshold: indexToCellID=$i, maxtemp = $r', intArgs=(/indexToCellID(iCell)/), &
                      realArgs=(/maxtemp/))
                   call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
                   call mpas_log_write('temperature:')
@@ -1313,7 +1316,7 @@ module li_thermal
                endif
 
                if (mintemp < mintempThreshold) then
-                  call mpas_log_write('mintemp < mintempThreshold: iCell=$i, mintemp = $r', intArgs=(/iCell/), &
+                  call mpas_log_write('mintemp < mintempThreshold: indexToCellID=$i, mintemp = $r', intArgs=(/indexToCellID(iCell)/), &
                      realArgs=(/mintemp/))
                   call mpas_log_write('thickness = $r', realArgs=(/thickness(iCell)/))
                   call mpas_log_write('temperature:')
@@ -1331,23 +1334,9 @@ module li_thermal
          end select   ! config_thermal_solver
 
          ! It is possible that internal melting was computed above for floating ice and assigned
-         !  to the groundedBasalMassBal array.  If so, then add it to floatingBasalMassBal.
+         ! to the groundedBasalMassBal array.  If so, then this is added to basalMassBal for floating cells in
+         ! mpas_li_advection.F. floatingBasalMassBal should never be altered because it is an input variable.
          ! Note: Subroutine basal_melt_floating_ice should be called earlier in the time step, before adding this term.
-
-         do iCell = 1, nCellsSolve
-
-            if (thermalCellMask(iCell) == 1 .and. li_mask_is_floating_ice(cellMask(iCell)) .and. &
-                 groundedBasalMassBal(iCell) /= 0.0_RKIND) then
-               floatingBasalMassBal(iCell) = floatingBasalMassBal(iCell) + groundedBasalMassBal(iCell)
-               groundedBasalMassBal(iCell) = 0.0_RKIND
-            endif
-
-            if (config_print_thermal_info .and. indexToCellID(iCell) == config_stats_cell_ID) then
-               call mpas_log_write('iCell=$i, basal mass balance (m/yr): grounded=$r, floating=$r', &
-                    intArgs=(/iCell/), realArgs=(/groundedBasalMassBal(iCell)*scyr/rhoi, floatingBasalMassBal(iCell)*scyr/rhoi/) )
-            endif
-
-         enddo
 
          ! clean up
          call mpas_deallocate_scratch_field(thermalCellMaskField, .true.)
@@ -1774,8 +1763,8 @@ module li_thermal
         if (config_print_thermal_info) then
            do iCell = 1, nCellsSolve
               if (indexToCellID(iCell) == config_stats_cell_ID) then
-                 call mpas_log_write('iCell=$i, betaSolve=$r, basalSpeed=$r, basalFrictionFlux=$r', &
-                   intArgs=(/iCell/), realArgs=(/betaSolve(iCell), basalSpeed(iCell), basalFrictionFlux(iCell)/))
+                 call mpas_log_write('indexToCellID=$i, betaSolve=$r, basalSpeed=$r, basalFrictionFlux=$r', &
+                   intArgs=(/indexToCellID(iCell)/), realArgs=(/betaSolve(iCell), basalSpeed(iCell), basalFrictionFlux(iCell)/))
               endif
            enddo
         endif
@@ -2716,6 +2705,7 @@ module li_thermal
          basalHeatFlux,               &
          basalConductiveFlux,         &
          basalWaterThickness,         &
+         drainedInternalMeltRate,            &
          groundedBasalMassBal)
 
       !-----------------------------------------------------------------
@@ -2780,8 +2770,9 @@ module li_thermal
       !-----------------------------------------------------------------
 
       real(kind=RKIND), dimension(:), intent(out):: &
-           groundedBasalMassBal     !< Output: basal mass balance for grounded ice (kg/m^2/s): < 0 for melting, > 0 for freeze-on
-
+           groundedBasalMassBal  !< Output: basal mass balance for grounded ice (kg/m^2/s): < 0 for melting, > 0 for freeze-on
+      real(kind=RKIND), dimension(:,:), intent(out):: &
+           drainedInternalMeltRate         !< Output: excess internal melt drained to the bed
       !-----------------------------------------------------------------
       ! local variables
       !-----------------------------------------------------------------
@@ -2796,7 +2787,6 @@ module li_thermal
       real(kind=RKIND) :: netBasalFlux          ! heat flux available for basal melting (W/m^2)
       real(kind=RKIND) :: layerThickness        ! layer thickness (m)
       real(kind=RKIND) :: meltEnergy            ! energy available for internal melting (J/m^2)
-      real(kind=RKIND) :: internalMeltRate      ! internal melt rate, transferred to bed (m/s)
       real(kind=RKIND) :: excessWater           ! thickness of excess meltwater (m)
 
       real(kind=RKIND) :: maxwaterFrac          ! maximum allowed water fraction; excess drains to bed
@@ -2812,6 +2802,7 @@ module li_thermal
       ! Compute melt rate for grounded ice
 
       groundedBasalMassBal(:) = 0.0_RKIND
+      drainedInternalMeltRate(:,:) = 0.0_RKIND
 
       do iCell = 1, nCellsSolve
 
@@ -2878,12 +2869,8 @@ module li_thermal
                      ! compute melt rate associated with excess water
                      excessWater = (waterFrac(k,iCell) - maxwaterFrac) * thickness(iCell) * (layerInterfaceSigma(k+1) &
                         - layerInterfaceSigma(k))  ! m
-                     internalMeltRate = excessWater / deltat
-
-                     ! transfer meltwater to the bed
-                     ! Note: It is possible to have internal melting for floating ice.
-                     !       If so, then this melting will later be switched from groundedBasalMassBall to floatingBasalMassBal.
-                     groundedBasalMassBal(iCell) = groundedBasalMassBal(iCell) - internalMeltRate      ! m/s
+                     drainedInternalMeltRate(k, iCell) = excessWater / deltat
+                     ! transfer meltwater to the bed in mpas_li_advection.F
 
                      ! reset waterFrac to max value
                      waterFrac(k,iCell) = maxwaterFrac
@@ -2906,12 +2893,9 @@ module li_thermal
                      ! compute excess energy available for melting
                      layerThickness = thickness(iCell) * (layerInterfaceSigma(k+1) - layerInterfaceSigma(k))     ! m
                      meltEnergy = rhoi*cp_ice * (temperature(k,iCell) - pmpTemperature(k)) * layerThickness    ! J/m^2
-                     internalMeltRate = meltEnergy / (rhoi * latent_heat_ice * deltat)  ! m/s
+                     drainedInternalMeltRate(k, iCell) = meltEnergy / (rhoi * latent_heat_ice * deltat)  ! m/s
 
-                     ! transfer meltwater to the bed
-                     ! Note: It is possible to have internal melting for floating ice.
-                     !       If so, then this melting will later be switched from groundedBasalMassBall to floatingBasalMassBal.
-                     groundedBasalMassBal(iCell) = groundedBasalMassBal(iCell) - internalMeltRate      ! m/s
+                     ! transfer meltwater to the bed in mpas_li_advection.F
 
                      ! reset T to Tpmp
                      temperature(k,iCell) = pmpTemperature(k)

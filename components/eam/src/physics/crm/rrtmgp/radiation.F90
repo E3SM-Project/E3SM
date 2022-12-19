@@ -1,3 +1,4 @@
+#define _IDX321(i, j, k, nx, ny, nz) (nx * (ny * (k - 1) + (j - 1)) + i)
 module radiation
 !---------------------------------------------------------------------------------
 ! Purpose:
@@ -1110,6 +1111,8 @@ contains
       use modal_aero_data, only: ntot_amode
 #endif
 
+      ! For running CFMIP Observation Simulator Package (COSP)
+      use cospsimulator_intr, only: docosp, cospsimulator_intr_run, cosp_nradsteps
 
       ! ---------------------------------------------------------------------------
       ! Arguments
@@ -1184,7 +1187,7 @@ contains
       integer :: ncol, ncol_tot
 
       ! Loop indices
-      integer :: icall, ic, ix, iy, iz, ilev, j, igas, iband, igpt
+      integer :: icall, ix, iy, iz, ilev, j, igas, iband, igpt
 
       ! Everyone needs a name
       character(*), parameter :: subname = 'radiation_tend'
@@ -1213,6 +1216,9 @@ contains
       ! Temporary heating rates on radiation vertical grid
       real(r8), dimension(pcols * crm_nx_rad * crm_ny_rad,pver) :: qrl_all, qrlc_all
 
+      ! Packed optics for COSP
+      real(r8), dimension(pcols * crm_nx_rad * crm_ny_rad, pver) :: dtau_packed, dems_packed
+
       ! Pointers to CRM fields on physics buffer
       real(r8), pointer, dimension(:,:) :: &
          cld, cldfsnow, &
@@ -1220,6 +1226,7 @@ contains
          mu, lambdac, dei, des, rei, rel
       real(r8), dimension(pcols,pver), target :: zeros
       real(r8), pointer, dimension(:,:,:,:) :: crm_t, crm_qv, crm_qc, crm_qi, crm_cld, crm_qrad
+      real(r8), pointer, dimension(:,:,:,:) :: crm_rel, crm_rei
       real(r8), dimension(pcols,pver) :: iclwp_save, iciwp_save, cld_save
       integer :: ixwatvap, ixcldliq, ixcldice
 
@@ -1282,8 +1289,13 @@ contains
       real(r8), dimension(pcols,pver,nswbands) :: liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw
       real(r8), dimension(pcols,pver,nlwbands) :: liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw
 
+      real(r8), dimension(pcols,pver) :: cld_emis_lw
+
       integer, dimension(nswgpts) :: gpoint_bands_sw
       integer, dimension(nlwgpts) :: gpoint_bands_lw
+
+      integer :: cosp_lwband  ! index to LW band used by COSP passive simulators
+      integer :: cosp_swband  ! index to SW band used by COSP passive simulators
 
       ! Loop variables
       integer :: icol, ilay
@@ -1338,11 +1350,13 @@ contains
 #endif
       ! CRM fields
       if (use_MMF) then
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_T_RAD'  ), crm_t  )
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QV_RAD' ), crm_qv )
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QC_RAD' ), crm_qc )
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QI_RAD' ), crm_qi )
-         call pbuf_get_field(pbuf, pbuf_get_index('CRM_CLD_RAD'), crm_cld)
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_T_RAD'  ), crm_t   )
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QV_RAD' ), crm_qv  )
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QC_RAD' ), crm_qc  )
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_QI_RAD' ), crm_qi  )
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_CLD_RAD'), crm_cld )
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_REL')    , crm_rel )
+         call pbuf_get_field(pbuf, pbuf_get_index('CRM_REI')    , crm_rei )
          ! Output CRM cloud fraction
          call outfld('CRM_CLD_RAD', crm_cld(1:ncol,:,:,:), state%ncol, state%lchnk)
       end if
@@ -1372,6 +1386,10 @@ contains
       call cnst_get_ind('CLDLIQ', ixcldliq)
       call cnst_get_ind('CLDICE', ixcldice)
 
+      ! Find bands used for cloud simulator calculations
+      cosp_lwband = get_band_index_lw(10.5_r8, 'micron')
+      cosp_swband = get_band_index_sw(0.67_r8, 'micron')
+
       ! Loop over "diagnostic calls"; these are additional configurations of
       ! gases used to calculate radiative effects for diagnostic purposes only,
       ! without affecting the climate. The only version that affects the
@@ -1387,9 +1405,20 @@ contains
             ! shortwave and longwave.
             if (radiation_do('sw') .or. radiation_do('lw')) then
 
-               ! Calculate effective radius for optics used with single-moment microphysics
-               if (use_MMF .and. (trim(MMF_microphysics_scheme) .eq. 'sam1mom')) then 
+               ! Calculate effective radius for optics used with single-moment microphysics and for COSP
+               if (use_MMF) then 
                   call cldefr(state%lchnk, ncol, state%t, rel, rei, state%ps, state%pmid, landfrac, icefrac, snowh)
+                  do iz = 1,crm_nz
+                     do iy = 1,crm_ny_rad
+                        do ix = 1,crm_nx_rad
+                           do icol = 1,ncol
+                              ilay = pver - iz + 1
+                              crm_rel(icol,ix,iy,iz) = rel(icol,ilay)
+                              crm_rei(icol,ix,iy,iz) = rei(icol,ilay)
+                           end do
+                        end do
+                     end do
+                  end do
                end if
 
                ! Get albedo. This uses CAM routines internally and just provides a
@@ -1459,16 +1488,15 @@ contains
 
                ! make sure water path variables are zeroed out
                do ilay = 1, pver
-                  do ic = 1,ncol
-                     iclwp(ic,ilay) = 0_r8
-                     iciwp(ic,ilay) = 0_r8
+                  do icol = 1,ncol
+                     iclwp(icol,ilay) = 0_r8
+                     iciwp(icol,ilay) = 0_r8
                   end do
                end do
 
                ! Loop over CRM columns; call routines designed to work with
                ! pbuf/state over ncol columns for each CRM column index, and pack
                ! into arrays dimensioned ncol_tot = ncol * ncrms
-               j = 1
                do iy = 1,crm_ny_rad
                   do ix = 1,crm_nx_rad
 
@@ -1477,30 +1505,30 @@ contains
                         call t_startf('rad_overwrite_state')
                         do iz = 1,crm_nz
                            ilev = pver - iz + 1
-                           do ic = 1,ncol
+                           do icol = 1,ncol
                               ! NOTE: I do not think these are used by optics
-                              state%q(ic,ilev,ixcldliq) = crm_qc(ic,ix,iy,iz)
-                              state%q(ic,ilev,ixcldice) = crm_qi(ic,ix,iy,iz)
-                              state%q(ic,ilev,ixwatvap) = crm_qv(ic,ix,iy,iz)
-                              state%t(ic,ilev)          = crm_t (ic,ix,iy,iz)
+                              state%q(icol,ilev,ixcldliq) = crm_qc(icol,ix,iy,iz)
+                              state%q(icol,ilev,ixcldice) = crm_qi(icol,ix,iy,iz)
+                              state%q(icol,ilev,ixwatvap) = crm_qv(icol,ix,iy,iz)
+                              state%t(icol,ilev)          = crm_t (icol,ix,iy,iz)
 
                               ! In-cloud liquid and ice water paths (used by cloud optics)
-                              cld(ic,ilev) = crm_cld(ic,ix,iy,iz)
-                              if (cld(ic,ilev) > 0) then
-                                 iclwp(ic,ilev) = crm_qc(ic,ix,iy,iz)          &
-                                                * state%pdel(ic,ilev) / gravit &
-                                                / max(0.01_r8, cld(ic,ilev))
-                                 iciwp(ic,ilev) = crm_qi(ic,ix,iy,iz)          &
-                                                * state%pdel(ic,ilev) / gravit &
-                                                / max(0.01_r8, cld(ic,ilev))
+                              cld(icol,ilev) = crm_cld(icol,ix,iy,iz)
+                              if (cld(icol,ilev) > 0) then
+                                 iclwp(icol,ilev) = crm_qc(icol,ix,iy,iz)          &
+                                                * state%pdel(icol,ilev) / gravit &
+                                                / max(0.01_r8, cld(icol,ilev))
+                                 iciwp(icol,ilev) = crm_qi(icol,ix,iy,iz)          &
+                                                * state%pdel(icol,ilev) / gravit &
+                                                / max(0.01_r8, cld(icol,ilev))
                               else
-                                 iclwp(ic,ilev) = 0
-                                 iciwp(ic,ilev) = 0
+                                 iclwp(icol,ilev) = 0
+                                 iciwp(icol,ilev) = 0
                               end if
 
                               ! DEI is used for 2-moment optics
                               dei(1:ncol,1:pver) = 2._r8 * rei(1:ncol,1:pver)
-                           end do  ! ic = 1,ncol
+                           end do  ! icol = 1,ncol
                         end do  ! iz = 1,crm_nz
                         call t_stopf('rad_overwrite_state')
                      end if  ! use_MMF
@@ -1580,6 +1608,15 @@ contains
                         call handle_error(clip_values(aer_tau_bnd_sw,  0._r8, huge(aer_tau_bnd_sw), trim(subname) // ' aer_tau_bnd_sw', tolerance=1e-10_r8))
                         call handle_error(clip_values(aer_ssa_bnd_sw,  0._r8,                1._r8, trim(subname) // ' aer_ssa_bnd_sw', tolerance=1e-10_r8))
                         call handle_error(clip_values(aer_asm_bnd_sw, -1._r8,                1._r8, trim(subname) // ' aer_asm_bnd_sw', tolerance=1e-10_r8))
+                        ! Save CRM cloud optics for cosp
+                        if (docosp) then
+                           do ilay = 1,pver
+                              do icol = 1,ncol
+                                 j = _IDX321(icol, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
+                                 dtau_packed(j,ilay) = cld_tau_bnd_sw(icol,ilay,cosp_swband)
+                              end do
+                           end do
+                        end if 
                      end if
 
                      ! Longwave cloud optics
@@ -1599,31 +1636,40 @@ contains
                         )
                         call output_cloud_optics_lw(state, cld_tau_bnd_lw)
                         call t_stopf('rad_cloud_optics_lw')
+
+                        ! Save CRM cloud optics for cosp
+                        if (docosp) then
+                           do ilay = 1,pver
+                              do icol = 1,ncol
+                                 j = _IDX321(icol, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
+                                 dems_packed(j,ilay) = 1._r8 - exp(-cld_tau_bnd_lw(icol,ilay,cosp_lwband))
+                              end do
+                           end do
+                        end if 
                      end if
 
                      ! Pack data
                      call t_startf('rad_pack_columns')
-                     do ic = 1,ncol
-                        coszrs_all(j) = coszrs(ic)
-                        albedo_dir_all(:,j) = albedo_dir_col(:,ic)
-                        albedo_dif_all(:,j) = albedo_dif_col(:,ic)
-                        pmid(j,:) = pmid_col(ic,:)
-                        tmid(j,:) = tmid_col(ic,:)
-                        pint(j,:) = pint_col(ic,:)
-                        tint(j,:) = tint_col(ic,:)
-                        cld_tau_gpt_lw_all(j,:,:) = cld_tau_gpt_lw(ic,:,:)
-                        cld_tau_gpt_sw_all(j,:,:) = cld_tau_gpt_sw(ic,:,:)
-                        cld_ssa_gpt_sw_all(j,:,:) = cld_ssa_gpt_sw(ic,:,:)
-                        cld_asm_gpt_sw_all(j,:,:) = cld_asm_gpt_sw(ic,:,:)
-                        aer_tau_bnd_lw_all(j,:,:) = aer_tau_bnd_lw(ic,:,:)
-                        aer_tau_bnd_sw_all(j,:,:) = aer_tau_bnd_sw(ic,:,:)
-                        aer_ssa_bnd_sw_all(j,:,:) = aer_ssa_bnd_sw(ic,:,:)
-                        aer_asm_bnd_sw_all(j,:,:) = aer_asm_bnd_sw(ic,:,:)
-                        vmr_all(:,j,:) = vmr_col(:,ic,:)
-                        j = j + 1
-                     end do  ! ic = 1,ncol
+                     do icol = 1,ncol
+                        j = _IDX321(icol, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
+                        coszrs_all(j) = coszrs(icol)
+                        albedo_dir_all(:,j) = albedo_dir_col(:,icol)
+                        albedo_dif_all(:,j) = albedo_dif_col(:,icol)
+                        pmid(j,:) = pmid_col(icol,:)
+                        tmid(j,:) = tmid_col(icol,:)
+                        pint(j,:) = pint_col(icol,:)
+                        tint(j,:) = tint_col(icol,:)
+                        cld_tau_gpt_lw_all(j,:,:) = cld_tau_gpt_lw(icol,:,:)
+                        cld_tau_gpt_sw_all(j,:,:) = cld_tau_gpt_sw(icol,:,:)
+                        cld_ssa_gpt_sw_all(j,:,:) = cld_ssa_gpt_sw(icol,:,:)
+                        cld_asm_gpt_sw_all(j,:,:) = cld_asm_gpt_sw(icol,:,:)
+                        aer_tau_bnd_lw_all(j,:,:) = aer_tau_bnd_lw(icol,:,:)
+                        aer_tau_bnd_sw_all(j,:,:) = aer_tau_bnd_sw(icol,:,:)
+                        aer_ssa_bnd_sw_all(j,:,:) = aer_ssa_bnd_sw(icol,:,:)
+                        aer_asm_bnd_sw_all(j,:,:) = aer_asm_bnd_sw(icol,:,:)
+                        vmr_all(:,j,:) = vmr_col(:,icol,:)
+                     end do  ! icol = 1,ncol
                      call t_stopf('rad_pack_columns')
-
                   end do  ! ix = 1,crm_nx_rad
                end do  ! iy = 1,crm_ny_rad
             end if  !(radiation_do('sw') .or. radiation_do('lw')) then
@@ -1703,16 +1749,15 @@ contains
 
                ! Map to CRM columns
                if (use_MMF) then
-                  j = 1
                   do iy = 1,crm_ny_rad
                      do ix = 1,crm_nx_rad
-                        do ic = 1,ncol
+                        do icol = 1,ncol
+                           j = _IDX321(icol, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
                            do iz = 1,crm_nz
                               ilev = pver - iz + 1
-                              crm_qrs (ic,ix,iy,iz) = qrs_all(j,ilev)
-                              crm_qrsc(ic,ix,iy,iz) = qrsc_all(j,ilev)
+                              crm_qrs (icol,ix,iy,iz) = qrs_all(j,ilev)
+                              crm_qrsc(icol,ix,iy,iz) = qrsc_all(j,ilev)
                            end do
-                           j = j + 1
                         end do
                      end do
                   end do
@@ -1794,16 +1839,15 @@ contains
 
                ! Map to CRM columns
                if (use_MMF) then
-                  j = 1
                   do iy = 1,crm_ny_rad
                      do ix = 1,crm_nx_rad
-                        do ic = 1,ncol
+                        do icol = 1,ncol
+                           j = _IDX321(icol, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
                            do iz = 1,crm_nz
                               ilev = pver - iz + 1
-                              crm_qrl(ic,ix,iy,iz) = qrl_all(j,ilev)
-                              crm_qrlc(ic,ix,iy,iz) = qrlc_all(j,ilev)
+                              crm_qrl(icol,ix,iy,iz) = qrl_all(j,ilev)
+                              crm_qrlc(icol,ix,iy,iz) = qrlc_all(j,ilev)
                            end do
-                           j = j + 1
                         end do
                      end do
                   end do
@@ -1834,6 +1878,35 @@ contains
 
          end if  ! active calls
       end do  ! loop over diagnostic calls
+
+      ! If we ran radiation this timestep, check if we should run COSP
+      if (radiation_do('sw') .or. radiation_do('lw')) then
+         if (docosp) then
+            ! Advance counter and run COSP if new count value is equal to cosp_nradsteps
+            cosp_cnt(state%lchnk) = cosp_cnt(state%lchnk) + 1
+            if (cosp_cnt(state%lchnk) == cosp_nradsteps) then
+
+               ! Find bands used for cloud simulator calculations
+               cosp_lwband = get_band_index_lw(10.5_r8, 'micron')
+               cosp_swband = get_band_index_sw(0.67_r8, 'micron')
+
+               ! Compute quantities needed for COSP
+               cld_emis_lw = 1._r8 - exp(-cld_tau_bnd_lw(:,:,cosp_lwband))
+
+               ! Call cosp
+               call t_startf('cospsimulator_intr_run')
+               call cospsimulator_intr_run( &
+                  ncol_tot, state, pbuf, cam_in, coszrs, &
+                  dtau_packed, dems_packed &
+               )
+               call t_stopf('cospsimulator_intr_run')
+
+               ! Reset counter
+               cosp_cnt(state%lchnk) = 0
+            end if
+         end if
+      end if
+
 
       ! Restore pbuf fields
       iclwp = iclwp_save
@@ -1877,11 +1950,11 @@ contains
             do iz = 1,crm_nz
                do iy = 1,crm_ny_rad
                   do ix = 1,crm_nx_rad
-                     do ic = 1,ncol
-                        crm_qrad(ic,ix,iy,iz) = (crm_qrs(ic,ix,iy,iz) + crm_qrl(ic,ix,iy,iz)) / cpair
+                     do icol = 1,ncol
+                        crm_qrad(icol,ix,iy,iz) = (crm_qrs(icol,ix,iy,iz) + crm_qrl(icol,ix,iy,iz)) / cpair
                         if (conserve_energy) then
                            ilev = pver - iz + 1
-                           crm_qrad(ic,ix,iy,iz) = crm_qrad(ic,ix,iy,iz) * state%pdel(ic,ilev)
+                           crm_qrad(icol,ix,iy,iz) = crm_qrad(icol,ix,iy,iz) * state%pdel(icol,ilev)
                         end if
                      end do
                   end do
@@ -2137,7 +2210,7 @@ contains
       real(r8), intent(out) :: array_avg(:,:)
       integer :: ncol, ncol_tot
       real(r8) :: area_factor
-      integer :: ic, ix, iy, iz, j
+      integer :: icol, ix, iy, iz, j
 
       if (crm_nx_rad * crm_ny_rad > 1) then
          area_factor = 1._r8 / (crm_nx_rad * crm_ny_rad)
@@ -2150,12 +2223,11 @@ contains
       call assert(size(array_packed,1) == ncol_tot, 'size(array_packed,1) /= ncol_tot')
       call assert(size(array_packed,2) == size(array_avg,2), 'size(array_packed,2) /= size(array_avg,2)')
       do iz = 1,size(array_packed,2)
-         j = 1
          do iy = 1,crm_ny_rad
             do ix = 1,crm_nx_rad
-               do ic = 1,ncol
-                  array_avg(ic,iz) = array_avg(ic,iz) + array_packed(j,iz) * area_factor
-                  j = j + 1
+               do icol = 1,ncol
+                  j = _IDX321(icol, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
+                  array_avg(icol,iz) = array_avg(icol,iz) + array_packed(j,iz) * area_factor
                end do
             end do
          end do 

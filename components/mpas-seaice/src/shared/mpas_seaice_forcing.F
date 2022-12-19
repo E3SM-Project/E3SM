@@ -120,6 +120,8 @@ contains
     select case (trim(config_atmospheric_forcing_type))
     case ("CORE")
        call init_atmospheric_forcing_CORE(domain)
+    case ("hourly_velocities")
+       call init_atmospheric_forcing_hourly_velocities(domain)
     case default
        call mpas_log_write("Atmospheric forcing type unknown: "//trim(config_atmospheric_forcing_type), MPAS_LOG_CRIT)
     end select
@@ -286,6 +288,96 @@ contains
 
   end subroutine init_atmospheric_forcing_CORE
 
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_atmospheric_forcing_hourly_velocities
+!
+!> \brief Initialize the forcing objects
+!> \author Adrian K. Turner, LANL
+!> \date 18th November 2021
+!> \details
+!>  This routine calls the MPAS_forcing module subroutines that initializes
+!>  the forcings type
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_atmospheric_forcing_hourly_velocities(domain)
+
+    type(domain_type) :: domain
+
+    real(kind=RKIND), pointer :: &
+         config_dt
+
+    character(len=strKIND), pointer :: &
+         config_forcing_start_time, &
+         config_forcing_cycle_start, &
+         config_forcing_cycle_duration
+
+    logical, pointer :: &
+         config_do_restart
+
+    character(len=strKIND) :: &
+         forcingIntervalHourlyVelocities, &
+         forcingReferenceTimeHourlyVelocities, &
+         forcingIntervalMonthly, &
+         forcingReferenceTimeMonthly
+
+    ! get atmospheric forcing configuration options
+    call MPAS_pool_get_config(domain % configs, "config_forcing_start_time", config_forcing_start_time)
+    call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
+    call MPAS_pool_get_config(domain % configs, "config_forcing_cycle_start", config_forcing_cycle_start)
+    call MPAS_pool_get_config(domain % configs, "config_forcing_cycle_duration", config_forcing_cycle_duration)
+    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+
+    ! create the six hourly forcing group
+    call MPAS_forcing_init_group(&
+         seaiceForcingGroups, &
+         "seaice_atmospheric_forcing_hourly_velocities", &
+         domain, &
+         config_forcing_start_time, &
+         config_forcing_cycle_start, &
+         config_forcing_cycle_duration, &
+         config_do_restart, &
+         .false.)
+
+    forcingIntervalHourlyVelocities = "01:00:00"
+    forcingReferenceTimeHourlyVelocities = "2000-01-01_00:00:00"
+
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_atmospheric_forcing_hourly_velocities", &
+         "uAirVelocity", &
+         "airHourlyVelocitiesForcing", &
+         "atmos_coupling", &
+         "uAirVelocity", &
+         "linear", &
+         forcingReferenceTimeHourlyVelocities, &
+         forcingIntervalHourlyVelocities, &
+         "next")
+
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_atmospheric_forcing_hourly_velocities", &
+         "vAirVelocity", &
+         "airHourlyVelocitiesForcing", &
+         "atmos_coupling", &
+         "vAirVelocity", &
+         "linear", &
+         forcingReferenceTimeHourlyVelocities, &
+         forcingIntervalHourlyVelocities, &
+         "next")
+
+    call MPAS_forcing_init_field_data(&
+         seaiceForcingGroups, &
+         "seaice_atmospheric_forcing_hourly_velocities", &
+         domain % streamManager, &
+         config_do_restart, &
+         .false.)
+
+  end subroutine init_atmospheric_forcing_hourly_velocities
+
 !-----------------------------------------------------------------------
 ! runtime
 !-----------------------------------------------------------------------
@@ -401,6 +493,14 @@ contains
             streamManager, &
             config_dt)
 
+    else if (trim(config_atmospheric_forcing_type) == "hourly_velocities") then
+
+       call MPAS_forcing_get_forcing(&
+            seaiceForcingGroups, &
+            "seaice_atmospheric_forcing_hourly_velocities", &
+            streamManager, &
+            config_dt)
+
     endif
 
     block => domain % blocklist
@@ -471,6 +571,9 @@ contains
          latCell, &
          iceAreaCell
 
+    logical, pointer :: &
+         config_limit_air_temperatures
+
     type (MPAS_time_type) :: &
          currentForcingTime
 
@@ -489,6 +592,8 @@ contains
     call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
     call MPAS_pool_get_subpool(block % structs, "ocean_coupling", oceanCoupling)
     call MPAS_pool_get_subpool(block % structs, "tracers_aggregate", tracers_aggregate)
+
+    call MPAS_pool_get_config(block % configs, "config_limit_air_temperatures", config_limit_air_temperatures)
 
     call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
 
@@ -531,7 +636,7 @@ contains
     do iCell = 1, nCellsSolve
 
        ! limit air temperature values where ice is present
-       if (iceAreaCell(iCell) > 0.1_RKIND) then
+       if (iceAreaCell(iCell) > 0.1_RKIND .and. config_limit_air_temperatures) then
           airTemperature(iCell) = min(airTemperature(iCell), seaiceFreshWaterFreezingPoint + 0.1_RKIND)
        endif
 
@@ -633,7 +738,8 @@ contains
          sphere_radius
 
     logical, pointer :: &
-         config_rotate_cartesian_grid
+         config_rotate_cartesian_grid, &
+         on_a_sphere
 
     integer, pointer :: &
          nCellsSolve
@@ -646,6 +752,7 @@ contains
     call MPAS_pool_get_subpool(block % structs, "atmos_forcing", atmosForcing)
 
     call MPAS_pool_get_config(block % configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
+    call MPAS_pool_get_config(mesh, "on_a_sphere", on_a_sphere)
 
     call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
     call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
@@ -671,19 +778,31 @@ contains
        ! wind speed
        windSpeed(iCell) = sqrt(uAirVelocity(iCell)**2 + vAirVelocity(iCell)**2)
 
-       ! rotate velocities from geographical to local
-       call seaice_latlon_vector_rotation_forward(&
-            uAirVelocity(iCell), &
-            vAirVelocity(iCell), &
-            uAirVelocity(iCell), &
-            vAirVelocity(iCell), &
-            latCell(iCell), &
-            lonCell(iCell), &
-            xCell(iCell), &
-            yCell(iCell), &
-            zCell(iCell), &
-            sphere_radius, &
-            config_rotate_cartesian_grid)
+    enddo ! iCell
+
+    if (on_a_sphere .and. config_rotate_cartesian_grid) then
+
+       do iCell = 1, nCellsSolve
+
+          ! rotate velocities from geographical to local
+          call seaice_latlon_vector_rotation_forward(&
+               uAirVelocity(iCell), &
+               vAirVelocity(iCell), &
+               uAirVelocity(iCell), &
+               vAirVelocity(iCell), &
+               latCell(iCell), &
+               lonCell(iCell), &
+               xCell(iCell), &
+               yCell(iCell), &
+               zCell(iCell), &
+               sphere_radius, &
+               config_rotate_cartesian_grid)
+
+       enddo ! iCell
+
+    endif !
+
+    do iCell = 1, nCellsSolve
 
        ! shortwave - comment out for bit for bit tests
        shortwaveDown(iCell) = &
@@ -1167,6 +1286,10 @@ contains
     select case (trim(config_forcing_sst_type))
     case ("ncar")
        call init_oceanic_forcing_ncar(domain)
+    case ("hourly_velocities")
+       call init_oceanic_forcing_hourly_velocities(domain)
+    case ("som_varying_thickness")
+       call init_oceanic_forcing_som_varying_thickness(domain)
     case default
        call mpas_log_write("Oceanic forcing type unknown: "//trim(config_forcing_sst_type), MPAS_LOG_CRIT)
     end select
@@ -1205,7 +1328,7 @@ contains
     ! create the sea surface temperature forcing group
     call MPAS_forcing_init_group(&
          seaiceForcingGroups, &
-         "seaice_sst_forcing_monthly", &
+         "seaice_oceanic_forcing_init", &
          domain, &
          '0000-01-01_00:00:00', &
          '0000-01-01_00:00:00', &
@@ -1216,7 +1339,7 @@ contains
     call MPAS_forcing_init_field(&
          domain % streamManager, &
          seaiceForcingGroups, &
-         "seaice_sst_forcing_monthly", &
+         "seaice_oceanic_forcing_init", &
          "seaSurfaceTemperature", &
          "NCARMonthlySSTForcing", &
          "ocean_coupling", &
@@ -1227,7 +1350,7 @@ contains
 
     call MPAS_forcing_init_field_data(&
          seaiceForcingGroups, &
-         "seaice_sst_forcing_monthly", &
+         "seaice_oceanic_forcing_init", &
          domain % streamManager, &
          config_do_restart, &
          .false.)
@@ -1344,6 +1467,265 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
+!  init_oceanic_forcing_hourly_velocities
+!
+!> \brief Initialize the forcing objects
+!> \author Adrian K. Turner, LANL
+!> \date 18th November 2021
+!> \details
+!>  This routine calls the MPAS_forcing module subroutines that initializes
+!>  the forcings type
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_oceanic_forcing_hourly_velocities(domain)
+
+    type(domain_type) :: domain
+
+    real(kind=RKIND), pointer :: &
+         config_dt
+
+    character(len=strKIND), pointer :: &
+         config_forcing_start_time, &
+         config_forcing_cycle_start, &
+         config_forcing_cycle_duration
+
+    logical, pointer :: &
+         config_do_restart
+
+    character(len=strKIND) :: &
+         forcingIntervalHourlyVelocities, &
+         forcingReferenceTimeHourlyVelocities, &
+         forcingIntervalMonthly, &
+         forcingReferenceTimeMonthly
+
+    ! get atmospheric forcing configuration options
+    call MPAS_pool_get_config(domain % configs, "config_forcing_start_time", config_forcing_start_time)
+    call MPAS_pool_get_config(domain % configs, "config_dt", config_dt)
+    call MPAS_pool_get_config(domain % configs, "config_forcing_cycle_start", config_forcing_cycle_start)
+    call MPAS_pool_get_config(domain % configs, "config_forcing_cycle_duration", config_forcing_cycle_duration)
+    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+
+    ! create the six hourly forcing group
+    call MPAS_forcing_init_group(&
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_hourly_velocities", &
+         domain, &
+         config_forcing_start_time, &
+         config_forcing_cycle_start, &
+         config_forcing_cycle_duration, &
+         config_do_restart, &
+         .false.)
+
+    forcingIntervalHourlyVelocities = "01:00:00"
+    forcingReferenceTimeHourlyVelocities = "2000-01-01_00:00:00"
+
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_hourly_velocities", &
+         "uOceanVelocity", &
+         "oceanHourlyVelocitiesForcing", &
+         "ocean_coupling", &
+         "uOceanVelocity", &
+         "linear", &
+         forcingReferenceTimeHourlyVelocities, &
+         forcingIntervalHourlyVelocities, &
+         "next")
+
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_hourly_velocities", &
+         "vOceanVelocity", &
+         "oceanHourlyVelocitiesForcing", &
+         "ocean_coupling", &
+         "vOceanVelocity", &
+         "linear", &
+         forcingReferenceTimeHourlyVelocities, &
+         forcingIntervalHourlyVelocities, &
+         "next")
+
+    call MPAS_forcing_init_field_data(&
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_hourly_velocities", &
+         domain % streamManager, &
+         config_do_restart, &
+         .false.)
+
+  end subroutine init_oceanic_forcing_hourly_velocities
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  init_oceanic_forcing_som_varying_thickness
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 14th September 2022
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine init_oceanic_forcing_som_varying_thickness(domain)
+
+    type (domain_type) :: domain
+
+    logical, pointer :: &
+         config_do_restart
+
+    character(len=strKIND) :: &
+         forcingIntervalMonthly, &
+         forcingReferenceTimeMonthly
+
+    ! get oceanic forcing configuration options
+    call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+
+    forcingIntervalMonthly = "00-01-00_00:00:00"
+    forcingReferenceTimeMonthly = "0001-01-15_00:00:00"
+
+    ! create the sea surface temperature forcing group
+    call MPAS_forcing_init_group(&
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_init", &
+         domain, &
+         '0000-01-01_00:00:00', &
+         '0000-01-01_00:00:00', &
+         '0001-00-00_00:00:00', &
+         config_do_restart)
+
+    ! sea surface temperature
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_init", &
+         "seaSurfaceTemperature", &
+         "SOMVaryingThicknessInitForcing", &
+         "ocean_coupling", &
+         "seaSurfaceTemperature", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! sea surface salinity
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_init", &
+         "seaSurfaceSalinity", &
+         "SOMVaryingThicknessInitForcing", &
+         "ocean_coupling", &
+         "seaSurfaceSalinity", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! ocean mixed layer depth
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_init", &
+         "oceanMixedLayerDepth", &
+         "SOMVaryingThicknessInitForcing", &
+         "ocean_coupling", &
+         "oceanMixedLayerDepth", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    call MPAS_forcing_init_field_data(&
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_init", &
+         domain % streamManager, &
+         config_do_restart, &
+         .false.)
+
+    ! create the monthly forcing group
+    call MPAS_forcing_init_group(&
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         domain, &
+         '0000-01-01_00:00:00', &
+         '0000-01-01_00:00:00', &
+         '0001-00-00_00:00:00', &
+         config_do_restart)
+
+    ! u ocean velocity
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "uOceanVelocity", &
+         "SOMVaryingThicknessMonthlyForcing", &
+         "ocean_coupling", &
+         "uOceanVelocity", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! v ocean velocity
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "vOceanVelocity", &
+         "SOMVaryingThicknessMonthlyForcing", &
+         "ocean_coupling", &
+         "vOceanVelocity", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! u surface tilt
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "seaSurfaceTiltU", &
+         "SOMVaryingThicknessMonthlyForcing", &
+         "ocean_coupling", &
+         "seaSurfaceTiltU", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! v surface tilt
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "seaSurfaceTiltV", &
+         "SOMVaryingThicknessMonthlyForcing", &
+         "ocean_coupling", &
+         "seaSurfaceTiltV", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    ! deep ocean heat flux convergence
+    call MPAS_forcing_init_field(&
+         domain % streamManager, &
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         "oceanHeatFluxConvergence", &
+         "SOMVaryingThicknessMonthlyForcing", &
+         "ocean_coupling", &
+         "oceanHeatFluxConvergence", &
+         "linear", &
+         forcingReferenceTimeMonthly, &
+         forcingIntervalMonthly)
+
+    call MPAS_forcing_init_field_data(&
+         seaiceForcingGroups, &
+         "seaice_oceanic_forcing_monthly", &
+         domain % streamManager, &
+         config_do_restart, &
+         .false.)
+
+  end subroutine init_oceanic_forcing_som_varying_thickness
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
 !  oceanic_forcing
 !
 !> \brief
@@ -1387,7 +1769,8 @@ contains
     call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
 
     ! use the forcing layer to get data
-    if (trim(config_forcing_sst_type) == 'ncar') then
+    if (trim(config_forcing_sst_type) == 'ncar' .or. &
+        trim(config_forcing_sst_type) == 'som_varying_thickness') then
 
        call MPAS_forcing_get_forcing(&
             seaiceForcingGroups, &
@@ -1400,22 +1783,31 @@ contains
 
           call MPAS_forcing_get_forcing(&
                seaiceForcingGroups, &
-               "seaice_sst_forcing_monthly", &
+               "seaice_oceanic_forcing_init", &
                streamManager, &
                config_dt)
 
        endif
+
+    else if (trim(config_forcing_sst_type) == 'hourly_velocities') then
+
+       call MPAS_forcing_get_forcing(&
+            seaiceForcingGroups, &
+            "seaice_oceanic_forcing_hourly_velocities", &
+            streamManager, &
+            config_dt)
 
     endif
 
     block => domain % blocklist
     do while (associated(block))
 
-       ! convert the input forcing variables to the coupling variables
-       select case (trim(config_forcing_sst_type))
-       case ("ncar")
+       if (trim(config_forcing_sst_type) == 'ncar' .or. &
+           trim(config_forcing_sst_type) == 'som_varying_thickness') then
+
           call prepare_oceanic_coupling_variables_ncar(block, firstTimeStep)
-       end select
+
+       endif
 
        call post_oceanic_coupling(block)
 
@@ -1545,6 +1937,7 @@ contains
          zCell
 
     logical, pointer :: &
+         on_a_sphere, &
          config_rotate_cartesian_grid
 
     real(kind=RKIND), pointer :: &
@@ -1561,52 +1954,57 @@ contains
     call MPAS_pool_get_subpool(block % structs, "mesh", mesh)
     call MPAS_pool_get_subpool(block % structs, "ocean_coupling", ocean_coupling)
 
-    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+    call MPAS_pool_get_config(mesh, "on_a_sphere", on_a_sphere)
+    if (on_a_sphere .and. config_rotate_cartesian_grid) then
 
-    ! rotate currents from geographical
-    call MPAS_pool_get_array(ocean_coupling, "uOceanVelocity", uOceanVelocity)
-    call MPAS_pool_get_array(ocean_coupling, "vOceanVelocity", vOceanVelocity)
-    call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTiltU", seaSurfaceTiltU)
-    call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTiltV", seaSurfaceTiltV)
+       call MPAS_pool_get_dimension(mesh, "nCells", nCells)
 
-    call MPAS_pool_get_array(mesh, "latCell", latCell)
-    call MPAS_pool_get_array(mesh, "lonCell", lonCell)
-    call MPAS_pool_get_array(mesh, "xCell", xCell)
-    call MPAS_pool_get_array(mesh, "yCell", yCell)
-    call MPAS_pool_get_array(mesh, "zCell", zCell)
+       ! rotate currents from geographical
+       call MPAS_pool_get_array(ocean_coupling, "uOceanVelocity", uOceanVelocity)
+       call MPAS_pool_get_array(ocean_coupling, "vOceanVelocity", vOceanVelocity)
+       call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTiltU", seaSurfaceTiltU)
+       call MPAS_pool_get_array(ocean_coupling, "seaSurfaceTiltV", seaSurfaceTiltV)
 
-    call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
+       call MPAS_pool_get_array(mesh, "latCell", latCell)
+       call MPAS_pool_get_array(mesh, "lonCell", lonCell)
+       call MPAS_pool_get_array(mesh, "xCell", xCell)
+       call MPAS_pool_get_array(mesh, "yCell", yCell)
+       call MPAS_pool_get_array(mesh, "zCell", zCell)
 
-    ! make rotated ocean velocity available across all cells
-    do iCell = 1, nCells
+       call MPAS_pool_get_config(mesh, "sphere_radius", sphere_radius)
 
-       call seaice_latlon_vector_rotation_forward(&
-            uOceanVelocity(iCell), &
-            vOceanVelocity(iCell), &
-            uOceanVelocity(iCell), &
-            vOceanVelocity(iCell), &
-            latCell(iCell), &
-            lonCell(iCell), &
-            xCell(iCell), &
-            yCell(iCell), &
-            zCell(iCell), &
-            sphere_radius, &
-            config_rotate_cartesian_grid)
+       ! make rotated ocean velocity available across all cells
+       do iCell = 1, nCells
 
-       call seaice_latlon_vector_rotation_forward(&
-            seaSurfaceTiltU(iCell), &
-            seaSurfaceTiltV(iCell), &
-            seaSurfaceTiltU(iCell), &
-            seaSurfaceTiltV(iCell), &
-            latCell(iCell), &
-            lonCell(iCell), &
-            xCell(iCell), &
-            yCell(iCell), &
-            zCell(iCell), &
-            sphere_radius, &
-            config_rotate_cartesian_grid)
+          call seaice_latlon_vector_rotation_forward(&
+               uOceanVelocity(iCell), &
+               vOceanVelocity(iCell), &
+               uOceanVelocity(iCell), &
+               vOceanVelocity(iCell), &
+               latCell(iCell), &
+               lonCell(iCell), &
+               xCell(iCell), &
+               yCell(iCell), &
+               zCell(iCell), &
+               sphere_radius, &
+               config_rotate_cartesian_grid)
 
-    enddo ! iCell
+          call seaice_latlon_vector_rotation_forward(&
+               seaSurfaceTiltU(iCell), &
+               seaSurfaceTiltV(iCell), &
+               seaSurfaceTiltU(iCell), &
+               seaSurfaceTiltV(iCell), &
+               latCell(iCell), &
+               lonCell(iCell), &
+               xCell(iCell), &
+               yCell(iCell), &
+               zCell(iCell), &
+               sphere_radius, &
+               config_rotate_cartesian_grid)
+
+       enddo ! iCell
+
+    endif ! on_a_sphere
 
   end subroutine post_oceanic_coupling
 

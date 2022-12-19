@@ -63,11 +63,8 @@
 /* Whether to use OpenMP4 */
 #cmakedefine OMP4
 
-/* commit sha */
-#define HOMME_SHA1 "${LAST_GIT_COMMIT_SHA}"
-
-/* Whether this is a build for CUDA (used mostly for f90-vs-cxx bfb math functions impl) */
-#cmakedefine CUDA_BUILD
+/* Whether this is a build for CUDA/HIP (used mostly for f90-vs-cxx bfb math functions impl) */
+#cmakedefine HOMMEXX_ENABLE_GPU
 
 /* temporary flag to compare f90-cxx until we settle on either cxx or f90 implementation */
 #cmakedefine XX_NONBFB_COMING
@@ -77,3 +74,6 @@
 
 /* Detect whether this is a kokkos target */
 #cmakedefine01 KOKKOS_TARGET
+
+/* Detect whether COMPOSE passive tracer transport is enabled */
+#cmakedefine HOMME_ENABLE_COMPOSE

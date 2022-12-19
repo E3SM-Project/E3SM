@@ -10,7 +10,7 @@ IF (NOT DEFINED PROJECT_NAME)
                      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
                      OUTPUT_VARIABLE LAST_GIT_COMMIT_SHA
                      OUTPUT_STRIP_TRAILING_WHITESPACE)
-  SET (LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA} CACHE STRING "The sha of the last git commit.")
+  SET (LAST_GIT_COMMIT_SHA ${LAST_GIT_COMMIT_SHA})
   MESSAGE (STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
 
 ELSE ()
@@ -197,7 +197,10 @@ IF (${HOMME_USE_KOKKOS})
   SET (HOMMEXX_EXEC_SPACE "Default" CACHE STRING "Select the kokkos exec space")
 
   STRING (TOUPPER ${HOMMEXX_EXEC_SPACE} HOMMEXX_EXEC_SPACE_UPPER)
-  IF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "CUDA")
+
+  IF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "HIP")
+    SET (HOMMEXX_HIP_SPACE ON)
+  ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "CUDA")
     SET (HOMMEXX_CUDA_SPACE ON)
   ELSEIF (${HOMMEXX_EXEC_SPACE_UPPER} STREQUAL "OPENMP")
     SET (HOMMEXX_OPENMP_SPACE ON)
@@ -229,6 +232,19 @@ IF (HOMME_STANDALONE)
   INCLUDE(${HOMME_SOURCE_DIR}/cmake/SetCompilerFlags.cmake)
 ENDIF()
 
+# Create CsmShare target needed for test execs. If Homme is built
+# inside another project, then the host project is in charge of
+# ensuring that a csm_share target exists at this point
+if (HOMME_STANDALONE)
+  add_subdirectory(utils/csm_share)
+elseif (NOT TARGET csm_share)
+  string (CONCAT msg
+    "Error! Homme needs to link against csm_share libraries.\n"
+    "       Please ensure that a csm_share target is built by\n"
+    "       the host project *before* entering the homme directory.\n")
+  message ("${msg}")
+  message (FATAL_ERROR "Aborting.")
+endif()
 
 OPTION(HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" FALSE)
 IF(HOMME_USE_MKL)
@@ -274,16 +290,19 @@ MESSAGE(STATUS "C Flags = ${CMAKE_C_FLAGS}")
 MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
 MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 
+SET (HOMMEXX_ENABLE_GPU FALSE) 
+
 IF (${HOMME_USE_KOKKOS})
 
-  IF (CUDA_BUILD)
+  IF (CUDA_BUILD OR HIP_BUILD)
     SET (DEFAULT_VECTOR_SIZE 1)
+    SET (HOMMEXX_ENABLE_GPU TRUE) 
   ELSE ()
     SET (DEFAULT_VECTOR_SIZE 8)
   ENDIF()
 
   SET (HOMMEXX_VECTOR_SIZE ${DEFAULT_VECTOR_SIZE} CACHE STRING
-    "If AVX or Cuda don't take priority, use this software vector size.")
+	  "If AVX or Cuda or HIP don't take priority, use this software vector size.")
 
   IF (CMAKE_BUILD_TYPE_UPPER MATCHES "DEBUG" OR CMAKE_BUILD_TYPE_UPPER MATCHES "RELWITHDEBINFO")
     SET (HOMMEXX_DEBUG ON)
@@ -292,6 +311,8 @@ IF (${HOMME_USE_KOKKOS})
   CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/src/share/cxx/Hommexx_config.h.in ${HOMME_BINARY_DIR}/src/share/cxx/Hommexx_config.h)
 
 ENDIF ()
+
+CONFIGURE_FILE (${CMAKE_CURRENT_SOURCE_DIR}/cmake/homme_git_sha.h.in ${HOMME_BINARY_DIR}//homme_git_sha.h)
 
 
 ##############################################################################
@@ -328,7 +349,7 @@ IF (${ENABLE_NANOTIMERS})
     ADD_DEFINITIONS(-DBIT64)
   ENDIF ()
 ENDIF ()
-ADD_SUBDIRECTORY(utils/cime/src/share/timing)
+ADD_SUBDIRECTORY(utils/cime/CIME/non_py/src/timing)
 
 
 # CMAKE_CURRENT_SOURCE_DIR == homme
@@ -359,13 +380,15 @@ message("-- NetCDF_C_PATH = ${NetCDF_C_PATH}")
 message("-- PnetCDF_Fortran_PATH = ${PnetCDF_Fortran_PATH}")
 message("-- PnetCDF_C_PATH = ${PnetCDF_C_PATH}")
 # pio needs cime/externals/genf90/genf90.pl
-SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/genf90)
 if (HOMME_USE_SCORPIO)
+  # Need to use scorpio's older genf90 for now
+  SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/utils/externals/scorpio/src/genf90)
   SET(PIO_ENABLE_TOOLS OFF CACHE BOOL "Disabling Scorpio tool build")
   ADD_SUBDIRECTORY(utils/externals/scorpio)
 else ()
   # The default I/O library used in "Scorpio classic"
   ADD_SUBDIRECTORY(utils/externals/scorpio_classic)
+  SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/externals/genf90)
 endif ()
 ENDIF()
 
@@ -396,20 +419,20 @@ if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
     set(NETCDF_INCLUDE_DIR ${NetCDF_Fortran_INCLUDE_DIRS})
 
     # needed for CPRNC build system
-    set (cprnc_dummy_file "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake")
+    set (cprnc_dummy_file "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/cprnc/Macros.cmake")
     if (NOT EXISTS "${cprnc_dummy_file}")
       file(WRITE "${cprnc_dummy_file}" "#dummy Macros file for non-CIME machines")
     endif ()
 
     # cprnc's CMake system needs various nonstandard variables:
     set(FFLAGS ${CMAKE_Fortran_FLAGS})
-    set(BLDROOT ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc)
+    set(BLDROOT ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/CIME/non_py/cprnc)
     set(SFC ${CMAKE_Fortran_COMPILER})
     set(SCC ${CMAKE_C_COMPILER})
     
-    SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc)
-    SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
-    ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
+    SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/cprnc)
+    SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/cprnc/cprnc)
+    ADD_SUBDIRECTORY(utils/cime/CIME/non_py/cprnc)
   ENDIF ()
 ENDIF ()
 
@@ -432,7 +455,6 @@ if (HOMME_ENABLE_COMPOSE)
     # Fortran dycore(s) and the homme_tool exec do need composef90
     set (HOMME_BUILD_COMPOSE_F90 TRUE)
   endif()
-  add_definitions(-DHOMME_ENABLE_COMPOSE)
 else ()
   message (STATUS "COMPOSE semi-Lagrangian transport was explicitly disabled")
 endif()

@@ -33,8 +33,6 @@
       logical  ::  doloop
       logical  ::  lexist
       
-      integer  ::  strlen
-      
       inquire( file = trim( temp_path ) // 'mo_adjrxt.F', exist = lexist )
       if( lexist ) then
          call system( 'rm ' // trim( temp_path ) // 'mo_adjrxt.F' )
@@ -191,9 +189,9 @@
                   write(line(len_trim(line)+1:),'(i3)') rxno 
                   line(len_trim(line)+1:) = ')'
                   do l = 2,j+1
-                     line(strlen(line)+1:) = ' * inv(:,'
-                     write(line(strlen(line)+1:),'(i2)') fixmap(k,l,j)
-                     line(strlen(line)+1:) = ')'
+                     line(len_trim(line)+1:) = ' * inv(:,'
+                     write(line(len_trim(line)+1:),'(i2)') fixmap(k,l,j)
+                     line(len_trim(line)+1:) = ')'
                   end do
                else
                   if( trim(march) /= 'VECTOR' ) then
@@ -203,9 +201,9 @@
                      write(line(len_trim(line)+1:),'(i3)') rxno 
                      line(len_trim(line)+1:) = ')'
                      do l = 2,j+1
-                        line(strlen(line)+1:) = ' * inv(:,:,'
-                        write(line(strlen(line)+1:),'(i2)') fixmap(k,l,j)
-                        line(strlen(line)+1:) = ')'
+                        line(len_trim(line)+1:) = ' * inv(:,:,'
+                        write(line(len_trim(line)+1:),'(i2)') fixmap(k,l,j)
+                        line(len_trim(line)+1:) = ')'
                      end do
                   else
                      line(10:) = 'rate(k,'
@@ -214,20 +212,20 @@
                      write(line(len_trim(line)+1:),'(i3)') rxno 
                      line(len_trim(line)+1:) = ')'
                      do l = 2,j+1
-                        line(strlen(line)+1:) = ' * inv(k,'
-                        write(line(strlen(line)+1:),'(i2)') fixmap(k,l,j)
-                        line(strlen(line)+1:) = ')'
+                        line(len_trim(line)+1:) = ' * inv(k,'
+                        write(line(len_trim(line)+1:),'(i2)') fixmap(k,l,j)
+                        line(len_trim(line)+1:) = ')'
                      end do
                   end if
                end if
                if( fixmap(k,1,j) < 0 ) then
                   if( trim(model) /= 'CAM' ) then
-                     line(strlen(line)+1:) = ' * im(:)'
+                     line(len_trim(line)+1:) = ' * im(:)'
                   else
                      if( trim(march) /= 'VECTOR' ) then
-                        line(strlen(line)+1:) = ' * im(:,:)'
+                        line(len_trim(line)+1:) = ' * im(:,:)'
                      else
-                        line(strlen(line)+1:) = ' * im(k)'
+                        line(len_trim(line)+1:) = ' * im(k)'
                      end if
                   end if
                end if

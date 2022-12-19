@@ -2,7 +2,7 @@
 
 
 void diffuse_scalar(real5d &tkh, int ind_tkh, real4d &f, real3d &fluxb, real3d &fluxt, real2d &fdiff, real2d &flux) {
-  auto &ncrms = ::ncrms;
+  YAKL_SCOPE( ncrms , ::ncrms );
   real4d df("df", nzm, dimy_s, dimx_s, ncrms);
   
   // for (int k=0; k<nzm; k++) {
@@ -37,7 +37,7 @@ void diffuse_scalar(real5d &tkh, int ind_tkh, real4d &f, real3d &fluxb, real3d &
 
 void diffuse_scalar(real5d &tkh, int ind_tkh, real5d &f, int ind_f, real3d &fluxb,
                     real3d &fluxt, real2d &fdiff, real2d &flux) {
-  auto &ncrms = ::ncrms;
+  YAKL_SCOPE( ncrms , ::ncrms );
   real4d df("df", nzm, dimy_s, dimx_s, ncrms);
   
   // for (int k=0; k<nzm; k++) {
@@ -72,7 +72,7 @@ void diffuse_scalar(real5d &tkh, int ind_tkh, real5d &f, int ind_f, real3d &flux
 
 void diffuse_scalar(real5d &tkh, int ind_tkh, real5d &f, int ind_f, real4d &fluxb, int ind_fluxb,
                     real4d &fluxt, int ind_fluxt, real3d &fdiff, int ind_fdiff, real3d &flux, int ind_flux) {
-  auto &ncrms = ::ncrms;
+  YAKL_SCOPE( ncrms , ::ncrms );
   real4d df("df", nzm, dimy_s, dimx_s, ncrms);
   
   // for (int k=0; k<nzm; k++) {

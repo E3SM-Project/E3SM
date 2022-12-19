@@ -672,7 +672,7 @@ CONTAINS
     rDateUB = real(mDateUB,R8) + real(mSecUB,R8)/spd
     call t_stopf(trim(lstr)//'_setup')
 
-    if (rDateM < rDateLB .or. rDateM > rDateUB) then
+    if (rDateM < rDateLB .or. rDateM >= rDateUB) then
        call t_startf(trim(lstr)//'_fbound')
        if (my_task == master_task) then
           !       call shr_stream_findBounds(stream,mDate,mSec,                 &

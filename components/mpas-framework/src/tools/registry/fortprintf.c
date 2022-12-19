@@ -3,7 +3,7 @@
 //
 // Unless noted otherwise source code is licensed under the BSD license.
 // Additional copyright and license information can be found in the LICENSE file
-// distributed with this code, or at http://mpas-dev.github.com/license.html
+// distributed with this code, or at http://mpas-dev.github.io/license.html
 //
 #include <stdio.h>
 #include <stdarg.h>
@@ -14,7 +14,7 @@
 #define MAX_LINE_LEN 132
 #endif
 
-char printbuf[MAX_LINE_LEN+2];
+char printbuf[MAX_LINE_LEN+3];
 char fbuffer[1024];
 int nbuf = 0;
 

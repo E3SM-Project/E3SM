@@ -4,11 +4,19 @@
   call mpas_duplicate_field(src, dst)
 
   dst % fieldName = outname
+  dst % outputFieldName = outname
 
   if (associated(dst % constituentNames)) then
     do i = 1, size(dst % constituentNames, dim=1)
       dst % constituentNames(i) = trim(outname) // '_' // &
         trim(dst % constituentNames(i))
+    end do
+  end if
+
+  if (associated(dst % outputConstituentNames)) then
+    do i = 1, size(dst % outputConstituentNames, dim=1)
+      dst % outputConstituentNames(i) = trim(outname) // '_' // &
+        trim(dst % outputConstituentNames(i))
     end do
   end if
 
