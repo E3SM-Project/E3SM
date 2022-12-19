@@ -1933,10 +1933,10 @@ module ocn_time_integration_si
          if (splitImplicitStep < numTSIterations) then
 
             ! Get indices for dynamic tracers (Includes T&S).
-            call mpas_pool_get_dimension(tracersPool,'activeGRP_start',&
-                                                      startIndex)
-            call mpas_pool_get_dimension(tracersPool,'activeGRP_end', &
-                                                      endIndex)
+            call mpas_pool_get_dimension_scalar(tracersPool,'activeGRP_start',&
+                                                             startIndex)
+            call mpas_pool_get_dimension_scalar(tracersPool,'activeGRP_end', &
+                                                             endIndex)
 
             ! Only need T & S for earlier iterations,
             ! then all the tracers needed the last time through.
