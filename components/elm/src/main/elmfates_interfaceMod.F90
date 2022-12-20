@@ -370,9 +370,6 @@ contains
      integer, parameter :: successful_ignitions = 3
      integer, parameter :: anthro_ignitions= 4
 
-     ! We will use this switch temporarily, until  we complete
-     ! the ELM-FATES harvest integration
-     logical, parameter :: do_elm_fates_harvest = .true.
      ! Another switch to determine if we want to harvest forest 
      ! by ignoring the harvest criteria
      ! This is only useful when performing carbon-based harvest
@@ -472,7 +469,6 @@ contains
            pass_logging = 0
         end if
 
-!        if(do_elm_fates_harvest) then
         if(get_do_harvest()) then
            pass_logging = 1
            pass_num_lu_harvest_types = num_harvest_vars
@@ -837,6 +833,7 @@ contains
          top_af_inst, atm2lnd_inst, soilstate_inst, temperature_inst, &
          canopystate_inst, frictionvel_inst )
 
+      use FatesConstantsMod     , only : m2_per_km2
 
       ! This wrapper is called daily from clm_driver
       ! This wrapper calls ed_driver, which is the daily dynamics component of FATES
@@ -951,7 +948,7 @@ contains
             this%fates(nc)%bc_in(s)%hlm_harvest_catnames = harvest_varnames
             this%fates(nc)%bc_in(s)%hlm_harvest_units = wood_harvest_units
          end if
-         this%fates(nc)%bc_in(s)%site_area=col_pp%wtgcell(c)*grc_pp%area(g)*1e6_r8
+         this%fates(nc)%bc_in(s)%site_area=col_pp%wtgcell(c)*grc_pp%area(g)*m2_per_km2
 
       end do
 
@@ -2287,6 +2284,8 @@ contains
 
  subroutine wrap_WoodProducts(this, bounds_clump, fc, filterc)
 
+   use FatesConstantsMod     , only : g_per_kg
+
    ! !ARGUMENTS:
    class(hlm_fates_interface_type), intent(inout) :: this
    type(bounds_type)              , intent(in)    :: bounds_clump
@@ -2309,13 +2308,13 @@ contains
        c = filterc(icc)
        s = this%f2hmap(nc)%hsites(c)
 
-       ! Shijie: Pass harvested wood products to ELM variable
+       ! Pass harvested wood products to ELM variable
        hrv_deadstemc_to_prod10c(c)  = this%fates(nc)%bc_out(s)%hrv_deadstemc_to_prod10c
        hrv_deadstemc_to_prod100c(c) = this%fates(nc)%bc_out(s)%hrv_deadstemc_to_prod100c
 
        ! Pass LUC related C fluxes which are calculated in FATES [gC m-2 s-1]
-       gpp(c) = this%fates(nc)%bc_out(s)%gpp_site*1e3
-       ar(c) = this%fates(nc)%bc_out(s)%ar_site*1e3
+       gpp(c) = this%fates(nc)%bc_out(s)%gpp_site*g_per_kg
+       ar(c) = this%fates(nc)%bc_out(s)%ar_site*g_per_kg
 
     end do
 

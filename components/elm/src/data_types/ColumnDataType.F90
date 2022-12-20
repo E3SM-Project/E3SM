@@ -5773,7 +5773,7 @@ contains
            call hist_addfld1d (fname='HR', units='gC/m^2/s', &
                 avgflag='A', long_name='total heterotrophic respiration', &
                  ptr_col=this%hr)
-! Shijie
+
           this%hrv_deadstemc_to_prod10c(begc:endc) = spval
           call hist_addfld1d (fname='HRV_DEADSTEMC_TO_PROD10C', units='gC/m^2/s', &
                avgflag='A', long_name='flux into 10-yr wood product C', &
@@ -5799,7 +5799,6 @@ contains
                avgflag='A', long_name='net ecosystem exchange of carbon, includes fire, landuse,'&
                //' harvest, and hrv_xsmrpool flux, positive for source', &
                 ptr_col=this%nee)
-! Shijie
 
        end if
        ! end of use_fates (C12) block
