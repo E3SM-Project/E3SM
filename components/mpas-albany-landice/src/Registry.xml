@@ -752,9 +752,9 @@
                         <!-- these variables just for ISMIP6 ice shelf forcing -->
                         <var name="ismip6shelfMelt_basin" packages="ismip6ShelfMelt"/>
                         <var name="ismip6shelfMelt_gamma0" packages="ismip6ShelfMelt"/>
-                        <var name="ismip6shelfMelt_3dThermalForcing" packages="ismip6ShelfMelt"/>
-                        <var name="ismip6shelfMelt_deltaT" packages="ismip6ShelfMelt"/>
-                        <var name="ismip6shelfMelt_zOcean" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_3dThermalForcing" packages="ismip6ShelfMelt;ismip6GroundedFaceMelt"/>
+                        <var name="ismip6shelfMelt_deltaT" packages="ismip6ShelfMelt;ismip6GroundedFaceMelt"/>
+                        <var name="ismip6shelfMelt_zOcean" packages="ismip6ShelfMelt;ismip6GroundedFaceMelt"/>
                         <var name="ismip6shelfMelt_offset" packages="ismip6ShelfMelt"/>
 			<!-- these variables just for ISMIP6 grounded glacier forcing -->
 			<var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />

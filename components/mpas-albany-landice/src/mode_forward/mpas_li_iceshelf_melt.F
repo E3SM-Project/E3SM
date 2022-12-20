@@ -1373,7 +1373,7 @@ module li_iceshelf_melt
       !-----------------------------------------------------------------
       integer :: iCell, iNeighbor, iEdge, nEmptyNeighbors
       real (kind=RKIND), pointer :: rhoi
-      integer, pointer :: nCells, nCellsSolve
+      integer, pointer :: nCells, nCellsSolve, nISMIP6OceanLayers
       integer, dimension(:,:), pointer :: cellsOnCell, edgesOnCell
       real (kind=RKIND) :: waterDepth
       type (block_type), pointer :: block
@@ -1445,24 +1445,30 @@ module li_iceshelf_melt
          call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
 
          if ( config_use_3d_thermal_forcing_for_face_melt ) then
+            call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
-            call mpas_pool_get_array(geometryPool, "ismip6shelfMelt_zOcean", zOcean)
-            call mpas_pool_get_array(geometryPool, "ismip6shelfMelt_deltaT", ismip6shelfMelt_deltaT)
+            call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_zOcean', zOcean)
+            call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_deltaT', ismip6shelfMelt_deltaT)
 
             ! Calculate thermal forcing based on bedTopography
             TFocean(:) = 0.0_RKIND
             do iCell = 1, nCellsSolve
                if (bedTopography(iCell) < 0.0_RKIND) then
                   kk = 1
-                  ! Calculate TF at ocean floor, assuming slope from layers above
-                  do while ( zOcean(kk) >= bedTopography(iCell) )
+                  ! Find deepest zOcean above ocean floor
+                  do while ( (zOcean(kk) >= bedTopography(iCell)) .and. (kk < nISMIP6OceanLayers) )
                      kk = kk + 1
                   enddo
-                  TFocean(iCell) = (ismip6shelfMelt_3dThermalForcing(kk-1, iCell) - &
+                  ! Calculate thermal forcing at ocean floor. If possible, extrapolate slope from layers above.
+                  ! If too shallow (k<=2), just use TF at closest layer. This can probably be improved.
+                  if (kk <= 2 ) then
+                     TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell) + ismip6shelfMelt_deltaT(iCell)
+                  else
+                     TFocean(iCell) = (ismip6shelfMelt_3dThermalForcing(kk-1, iCell) - &
                                    ismip6shelfMelt_3dThermalForcing(kk-2, iCell)) / (zOcean(kk-1) - &
                                    zOcean(kk-2)) * (bedTopography(iCell) - zOcean(kk-1)) + &
                                    ismip6shelfMelt_3dThermalForcing(kk-1, iCell) + ismip6shelfMelt_deltaT(iCell)
-                           
+                  endif 
                endif
             end do
          endif
