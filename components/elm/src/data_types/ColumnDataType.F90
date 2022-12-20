@@ -6985,13 +6985,9 @@ contains
 
        ! total product loss
        this%product_closs(c) = &
-            this%prod10c_loss(c) + &
+            this%prod10c_loss(c)  + &
             this%prod100c_loss(c) + &
             this%prod1c_loss(c)
-       ! if (masterproc) then
-       !    write(iulog,*) "this%prod10c_loss?", this%prod10c_loss(c), "this%prod100c_loss?", &
-       !        this%prod100c_loss(c), "this%prod1c_loss?", this%prod1c_loss(c)
-       ! endif
 
        ! soil organic matter fire losses (SOMFIRE)
        this%somfire(c) = 0._r8
@@ -7492,18 +7488,18 @@ contains
 
     if(.not.use_fates) return
 
-     do fc = 1,num_soilc
-        c = filter_soilc(fc)
-        this%gpp(c) = 0._r8
-        this%ar(c) = 0._r8
-        this%npp(c) = 0._r8
-        this%vegfire(c) = 0._r8
-        this%wood_harvestc(c) = 0._r8
-        this%fire_closs_p2c(c) = 0._r8
-        !this%litfall(c) = 0._r8 (overwritten)
-        this%hrv_xsmrpool_to_atm(c) = 0._r8
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%gpp(c) = 0._r8
+       this%ar(c) = 0._r8
+       this%npp(c) = 0._r8
+       this%vegfire(c) = 0._r8
+       this%wood_harvestc(c) = 0._r8
+       this%fire_closs_p2c(c) = 0._r8
+       !this%litfall(c) = 0._r8 (overwritten)
+       this%hrv_xsmrpool_to_atm(c) = 0._r8
 
-     end do
+    end do
 
 
   end subroutine col_cf_zero_forfates_veg
