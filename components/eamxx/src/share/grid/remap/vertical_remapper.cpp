@@ -51,7 +51,6 @@ VerticalRemapper (const grid_ptr_type& src_grid,
   // the correct number of level
   auto tgt_grid = src_grid->clone("Point Grid",false);  //<-- ?? For Luca, why does the 1st arg have to be PointGrid?  Shouldn't the tgt_grid be of the same type as the src_grid if being cloned?  Note, choosing any other string threw an error for an "unsupported grid".
   tgt_grid->reset_num_vertical_lev(m_num_remap_levs);
-  printf("ASD - tgt_grid num of levs = %d\n",tgt_grid->get_num_vertical_levels());
   this->set_grids(src_grid,tgt_grid);
 
   // Set the LEV and ILEV vertical profiles for interpolation from
@@ -144,6 +143,10 @@ create_tgt_layout (const FieldLayout& src_layout) const
 
 void VerticalRemapper::
 set_pressure_levels(const std::string& map_file) {
+  // TODO: I have concerns here with packsize.  I am using SCREAM_PACK_SIZE, which appears to work
+  //       but maybe it is possible for different variables to have different packsizes, and if so
+  //       then we can't hardcode the packsize for the target_levels.  Can we define as REAL and
+  //       still get_view using a different packsize?  Or some other strategy?
   scorpio::register_file(map_file,scorpio::FileMode::Read);
   m_num_remap_levs = scorpio::get_dimlen_c2f(map_file.c_str(),"nlevs");
   std::vector<Real> remap_pres_levs(m_num_remap_levs);
@@ -210,14 +213,16 @@ do_register_field (const identifier_type& src, const identifier_type& tgt)
 void VerticalRemapper::
 do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
 {
+  auto name = src.name();
+  EKAT_REQUIRE_MSG(src.get_header().get_identifier().get_layout()==src.get_header().get_identifier().get_layout(),"ERROR! vert_remap:do_bind_field:" + name + ", tgt and src do not have the same layout");
   EKAT_REQUIRE_MSG (
       src.get_header().get_identifier().get_layout().rank()>1 ||
       src.get_header().get_alloc_properties().get_padding()==0,
-      "Error! We don't support 2d scalar fields that are padded.\n");
+      "Error! vert_remap:do_bind_field:check_src:" + name + ", We don't support 2d scalar fields that are padded.\n");
   EKAT_REQUIRE_MSG (
       tgt.get_header().get_identifier().get_layout().rank()>1 ||
       tgt.get_header().get_alloc_properties().get_padding()==0,
-      "Error! We don't support 2d scalar fields that are padded.\n");
+      "Error! vert_remap:do_bind_field:check_tgt:" + name + ", We don't support 2d scalar fields that are padded.\n");
   m_src_fields[ifield] = src;
   m_tgt_fields[ifield] = tgt;
 
@@ -257,62 +262,22 @@ void VerticalRemapper::do_remap_fwd ()
       src_lev_f = src_mid;
     }
     auto src_lev  = src_lev_f.get_view<const Pack**>();
-    printf("ASD - do remap: %s, SCREAM_PACK_SIZE = %d\n",f_src.name().c_str(),SCREAM_PACK_SIZE);
-    auto fap = f_tgt.get_header().get_alloc_properties();
-    if (fap.is_compatible<ekat::Pack<Real,16>>()) {
-      printf("    -    Compatible w/ packsize=16    \n");
-    }
-    else if (fap.is_compatible<ekat::Pack<Real,8>>()) {
-      printf("    -    Compatible w/ packsize=8    \n");
-    }
-    else if (fap.is_compatible<ekat::Pack<Real,4>>()) {
-      printf("    -    Compatible w/ packsize=4    \n");
-    } else {
-      printf("    -    Compatible w/ REAL    \n");
-    } 
     if (do_remap) { 
       switch(rank) {
-        case 1:
-        {
-          // This must be a single vertical profile
-          break;
-        }
         case 2:
         {
           auto src_view = f_src.get_view<const Pack**>();
           auto tgt_view = f_tgt.get_view<      Pack**>();
-          perform_vertical_interpolation(src_lev,m_remap_pres_view,src_view,tgt_view,src_num_levs,m_num_remap_levs,m_mask_val);
+          perform_vertical_interpolation<Real,Pack::n,2>(src_lev,m_remap_pres_view,src_view,tgt_view,src_num_levs,m_num_remap_levs,m_mask_val);
           break;
         }
-//ASD TODO; perform vertical interpolation needs to be extended to views of size >2
-//ASD        case 3:
-//ASD        {
-//ASD          auto src_view = f_src.get_view<const Pack***>();
-//ASD          auto tgt_view = f_src.get_view<      Pack***>();
-//ASD          perform_vertical_interpolation(src_lev,m_remap_pres_view,src_view,tgt_view,src_num_levs,m_num_remap_levs);
-//ASD          break;
-//ASD        }
-//ASD        case 4:
-//ASD        {
-//ASD          auto src_view = f_src.get_view<const Pack****>();
-//ASD          auto tgt_view = f_src.get_view<      Pack****>();
-//ASD          perform_vertical_interpolation(src_lev,m_remap_pres_view,src_view,tgt_view,src_num_levs,m_num_remap_levs);
-//ASD          break;
-//ASD        }
-//ASD        case 5:
-//ASD        {
-//ASD          auto src_view = f_src.get_view<const Pack*****>();
-//ASD          auto tgt_view = f_src.get_view<      Pack*****>();
-//ASD          perform_vertical_interpolation(src_lev,m_remap_pres_view,src_view,tgt_view,src_num_levs,m_num_remap_levs);
-//ASD          break;
-//ASD        }
-//ASD        case 6:
-//ASD        {
-//ASD          auto src_view = f_src.get_view<const Pack******>();
-//ASD          auto tgt_view = f_src.get_view<      Pack******>();
-//ASD          perform_vertical_interpolation(src_lev,m_remap_pres_view,src_view,tgt_view,src_num_levs,m_num_remap_levs);
-//ASD          break;
-//ASD        }
+        case 3:
+        {
+          auto src_view = f_src.get_view<const Pack***>();
+          auto tgt_view = f_tgt.get_view<      Pack***>();
+          perform_vertical_interpolation<Real,Pack::n,3>(src_lev,m_remap_pres_view,src_view,tgt_view,src_num_levs,m_num_remap_levs,m_mask_val);
+          break;
+        }
         default:
           EKAT_ERROR_MSG ("Error! Field rank (" + std::to_string(rank) + ") not supported by VerticalRemapper.\n");
       }

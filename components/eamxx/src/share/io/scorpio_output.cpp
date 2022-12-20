@@ -95,20 +95,29 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   // Register any diagnostics needed by this output stream
   set_diagnostics();
 
-  // Check if remapping vertically and if so create a VerticalRemapper and initialize it.
-  if (true) {  //TODO trigger true if output_control.yaml requests it.
+  // Check if remapping and if so create the appropriate remapper 
+  bool vert_remap_from_file = params.isParameter("vertical_remap_file");
+  bool horiz_remap_from_file = params.isParameter("horiz_remap_file");
+  if (vert_remap_from_file && horiz_remap_from_file) {
+    // TODO - support both horizontal and vertical remapping together.
+    EKAT_ERROR_MSG("Error! scorpio_output:: We currently do not support both vertical and horizontal remapping.");
+  }
+
+  // Setup remappers - if needed
+  if (vert_remap_from_file) {  
+    using namespace ShortFieldTagsNames;
     // We build a remapper, to remap fields from the fm grid to the io grid
-    auto remap_file   = params.get<std::string>("vertical_remap_file");
+    auto vert_remap_file   = params.get<std::string>("vertical_remap_file");
     auto f_lev = get_field("p_mid",m_sim_field_mgr);
     auto f_ilev = get_field("p_int",m_sim_field_mgr);
-    m_vert_remapper = std::make_shared<VerticalRemapper>(io_grid,remap_file,f_lev,f_ilev,-9999.0);
+    m_vert_remapper = std::make_shared<VerticalRemapper>(io_grid,vert_remap_file,f_lev,f_ilev,-9999.0);
     io_grid = m_vert_remapper->get_tgt_grid();
     set_grid(io_grid);
-    printf("ASD - IO:: number of io grid levels = %d\n",io_grid->get_num_vertical_levels());
 
     // Register all output fields in the remapper.
     m_vert_remapper->registration_begins();
     for (const auto& fname : m_fields_names) {
+      // Note, we skip any fields that don't have a vertical extent
       auto f = get_field(fname,m_sim_field_mgr);
       const auto& src_fid = f.get_header().get_identifier();
       EKAT_REQUIRE_MSG(src_fid.data_type()==DataType::RealType,
@@ -122,13 +131,10 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     io_fm->registration_begins();
     for (int i=0; i<m_vert_remapper->get_num_fields(); ++i) {
       const auto& tgt_fid = m_vert_remapper->get_tgt_field_id(i);
-      const auto& dims = tgt_fid.get_layout().dims();
-      printf("ASD - layout at registration for var = %s, with # dims = %d\n     ",tgt_fid.name().c_str(),dims.size());
-      for (auto ii : dims) {
-        printf("%d, ",ii);
-      }
-      printf("\n");
-      io_fm->register_field(FieldRequest(tgt_fid,SCREAM_PACK_SIZE)); //TODO: Maybe not hard code ps, but instead query it based on the src field.
+      const auto  name    = tgt_fid.name();
+      const auto  src     = get_field(name,m_sim_field_mgr);
+      const auto packsize = src.get_header().get_alloc_properties().get_largest_pack_size();
+      io_fm->register_field(FieldRequest(tgt_fid,packsize)); 
     }
     io_fm->registration_ends();
 
@@ -136,6 +142,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     for (const auto& fname : m_fields_names) {
       auto src = get_field(fname,m_sim_field_mgr);
       auto tgt = io_fm->get_field(src.name());
+      const auto& src_fid = src.get_header().get_identifier();
       m_vert_remapper->bind_field(src,tgt);
     }
 
@@ -147,13 +154,11 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     set_field_manager(io_fm,"io");
   }
 
-  bool remap_from_file = params.isParameter("remap_file");
-
-  if (io_grid->name()!=fm_grid->name() || remap_from_file) {
+  if (io_grid->name()!=fm_grid->name() || horiz_remap_from_file) {
     // We build a remapper, to remap fields from the fm grid to the io grid
-    if (remap_from_file) {
-      auto remap_file   = params.get<std::string>("remap_file");
-      m_horiz_remapper = std::make_shared<CoarseningRemapper>(io_grid,remap_file);
+    if (horiz_remap_from_file) {
+      auto horiz_remap_file   = params.get<std::string>("horiz_remap_file");
+      m_horiz_remapper = std::make_shared<CoarseningRemapper>(io_grid,horiz_remap_file);
       io_grid = m_horiz_remapper->get_tgt_grid();
       set_grid(io_grid);
     } else {
@@ -287,11 +292,6 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
     const auto  field = get_field(name,m_io_field_mgr);
     const auto& layout = m_layouts.at(name);
     const auto& dims = layout.dims();
-    printf("ASD - dims() = ");
-    for (auto ii : dims) {
-      printf("%d, ",ii);
-    }
-    printf("\n");
     const auto  rank = layout.rank();
 
     // Safety check: make sure that the field was written at least once before using it.
