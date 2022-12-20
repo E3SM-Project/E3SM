@@ -1180,8 +1180,7 @@ contains
       character(*), parameter :: subname = 'radiation_tend'
 
       ! Radiative fluxes
-      type(fluxes_t) :: fluxes_allsky    , fluxes_clrsky, &
-                                fluxes_allsky_all, fluxes_clrsky_all
+      type(fluxes_t) :: fluxes_allsky, fluxes_clrsky, fluxes_allsky_packed, fluxes_clrsky_packed
 
       ! Copy of state
       type(physics_state) :: state
@@ -1192,92 +1191,76 @@ contains
       ! State fields that are passed into RRTMGP. Some of these may need to
       ! modified from what exists in the physics_state object, i.e. to clip
       ! temperatures to make sure they are within the valid range.
-      real(r8), dimension(pcols * crm_nx_rad * crm_ny_rad, nlev_rad) :: tmid, pmid
-      real(r8), dimension(pcols * crm_nx_rad * crm_ny_rad, nlev_rad+1) :: tint, pint
-      real(r8), dimension(pcols, nlev_rad) :: tmid_col, pmid_col
-      real(r8), dimension(pcols, nlev_rad+1) :: tint_col, pint_col
-      real(r8), dimension(pcols,pver) :: tint_tmp
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad) :: tmid_packed, pmid_packed
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad+1) :: tint_packed, pint_packed
+      real(r8), dimension(pcols,nlev_rad) :: tmid_col, pmid_col
+      real(r8), dimension(pcols,nlev_rad+1) :: tint_col, pint_col
 
       ! Surface emissivity needed for longwave
-      real(r8) :: surface_emissivity(nlwbands,pcols * crm_nx_rad * crm_ny_rad)
+      real(r8) :: surface_emissivity(nlwbands,pcols*crm_nx_rad*crm_ny_rad)
 
       ! Temporary heating rates on radiation vertical grid
-      real(r8), dimension(pcols * crm_nx_rad * crm_ny_rad,pver) :: qrl_all, qrlc_all
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,pver) :: qrl_packed, qrlc_packed
 
       ! Packed optics for COSP
-      real(r8), dimension(pcols * crm_nx_rad * crm_ny_rad, pver) :: dtau_packed, dems_packed
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,pver) :: dtau_packed, dems_packed
 
-      ! Pointers to CRM fields on physics buffer
-      real(r8), pointer, dimension(:,:) :: &
-         cld, cldfsnow, &
-         iclwp, iciwp, icswp, &
-         mu, lambdac, dei, des, rei, rel
+      ! Cloud properties for optics
+      real(r8), dimension(pcols,pver) :: rel, rei, dei, cld, iclwp, iciwp
+
+      ! Pointers to fields on physics buffer
+      real(r8), pointer, dimension(:,:) :: cldfsnow, icswp, mu, lambdac, des
       real(r8), dimension(pcols,pver), target :: zeros
       real(r8), pointer, dimension(:,:,:,:) :: crm_t, crm_qv, crm_qc, crm_qi, crm_cld, crm_qrad
       real(r8), pointer, dimension(:,:,:,:) :: crm_rel, crm_rei
-      real(r8), dimension(pcols,pver) :: iclwp_save, iciwp_save, cld_save
-      integer :: ixwatvap, ixcldliq, ixcldice
 
-      real(r8), pointer, dimension(:,:,:) :: qaerwat, dgnumwet
-      real(r8), dimension(pcols,pver) :: dei_save, rei_save, rel_save
+      ! Indices to water tracers
+      integer, parameter :: ixwatvap = 1
 
       ! Arrays to hold gas volume mixing ratios
-      real(r8), dimension(size(active_gases),pcols,pver) :: vmr_col
-      real(r8), dimension(size(active_gases),pcols * crm_nx_rad * crm_ny_rad,pver) :: vmr_all
+      real(r8), dimension(size(active_gases),pcols,nlev_rad) :: vmr_col
+      real(r8), dimension(size(active_gases),pcols*crm_nx_rad*crm_ny_rad,nlev_rad) :: vmr_packed
 
-      ! Clear-sky CRM heating (for debugging)
-      real(r8), dimension(pcols,crm_nx_rad,crm_ny_rad,crm_nz) :: &
-               crm_qrs, crm_qrsc, crm_qrl, crm_qrlc
+      ! CRM heating rates
+      real(r8), dimension(pcols,crm_nx_rad,crm_ny_rad,crm_nz) :: crm_qrs, crm_qrsc, crm_qrl, crm_qrlc
 
       ! Albedo for shortwave calculations
-      real(r8), dimension(nswbands,pcols) :: albedo_dir_col, albedo_dif_col, &
-                                             albedo_dir_day, albedo_dif_day
-      real(r8), dimension(nswbands,pcols * crm_nx_rad * crm_ny_rad) :: &
-                                             albedo_dir_all, albedo_dif_all
+      real(r8), dimension(nswbands,pcols) :: albedo_dir_col, albedo_dif_col
+      real(r8), dimension(nswbands,pcols*crm_nx_rad*crm_ny_rad) :: albedo_dir_packed, albedo_dif_packed
 
-      ! Cosine solar zenith angle for all columns in chunk
-      real(r8) :: coszrs(pcols), coszrs_all(pcols * crm_nx_rad * crm_ny_rad)
-
-      ! Incoming solar radiation, scaled for solar zenith angle 
-      ! and earth-sun distance
-      real(r8) :: solar_irradiance_by_gpt(pcols,nswgpts)
+      ! Cosine solar zenith angle
+      real(r8) :: coszrs(pcols), coszrs_packed(pcols*crm_nx_rad*crm_ny_rad)
 
       ! Gathered indicies of day and night columns 
       ! chunk_column_index = day_indices(daylight_column_index)
       integer :: nday, nnight     ! Number of daylight columns
       integer :: day_indices(pcols), night_indices(pcols)   ! Indicies of daylight coumns
 
-
       ! Scaling factor for total sky irradiance; used to account for orbital
       ! eccentricity, and could be used to scale total sky irradiance for different
       ! climates as well (i.e., paleoclimate simulations)
       real(r8) :: tsi_scaling
 
-      real(r8), dimension(pcols * crm_nx_rad * crm_ny_rad,pver) :: qrs_all, qrsc_all
-
-      ! Area factor for calculating CRM domain averages
-      real(r8), parameter :: area_factor = 1._r8 / (crm_nx_rad * crm_ny_rad)
+      ! Temporary packed heating rates
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,pver) :: qrs_packed, qrsc_packed
 
       ! Working variables for optics
       real(r8), dimension(pcols,pver,nlwbands) :: cld_tau_bnd_lw, aer_tau_bnd_lw
       real(r8), dimension(pcols,pver,nlwgpts) :: cld_tau_gpt_lw
-      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,pver,nlwgpts) :: cld_tau_gpt_lw_all
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad,nlwgpts) :: cld_tau_gpt_lw_packed
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad,nlwbands) :: aer_tau_bnd_lw_packed
       real(r8), dimension(pcols,pver,nswbands) :: &
          cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
          aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw
       real(r8), dimension(pcols,pver,nswgpts) :: &
          cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw
-      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,pver,nswgpts) :: &
-         cld_tau_gpt_sw_all, cld_ssa_gpt_sw_all, cld_asm_gpt_sw_all
-      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,pver,nswbands) :: &
-         aer_tau_bnd_sw_all, aer_ssa_bnd_sw_all, aer_asm_bnd_sw_all
-      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,pver,nlwbands) :: &
-         aer_tau_bnd_lw_all
-      ! NOTE: these are diagnostic only
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad,nswgpts) :: &
+         cld_tau_gpt_sw_packed, cld_ssa_gpt_sw_packed, cld_asm_gpt_sw_packed
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad,nswbands) :: &
+         aer_tau_bnd_sw_packed, aer_ssa_bnd_sw_packed, aer_asm_bnd_sw_packed
+      ! NOTE: these are diagnostic only (and only output in non-MMF version, but needed for optics calls)
       real(r8), dimension(pcols,pver,nswbands) :: liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw
       real(r8), dimension(pcols,pver,nlwbands) :: liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw
-
-      real(r8) :: dy
 
       integer, dimension(nswgpts) :: gpoint_bands_sw
       integer, dimension(nlwgpts) :: gpoint_bands_lw
@@ -1316,12 +1299,6 @@ contains
       if (radiation_do('sw') .or. radiation_do('lw')) then
 
          ! Get pbuf fields
-         call pbuf_get_field(pbuf, pbuf_get_index('CLD'), cld)
-         call pbuf_get_field(pbuf, pbuf_get_index('ICLWP'), iclwp)
-         call pbuf_get_field(pbuf, pbuf_get_index('ICIWP'), iciwp)
-         call pbuf_get_field(pbuf, pbuf_get_index('DEI'), dei)
-         call pbuf_get_field(pbuf, pbuf_get_index('REL'), rel)
-         call pbuf_get_field(pbuf, pbuf_get_index('REI'), rei)
          call pbuf_get_field(pbuf, pbuf_get_index('LAMBDAC'), lambdac)
          call pbuf_get_field(pbuf, pbuf_get_index('MU'), mu)
          ! Snow properties may or may not be present, depending on microphysics
@@ -1335,10 +1312,7 @@ contains
             icswp => zeros
             des => zeros
          end if
-#ifdef MODAL_AERO
-         call pbuf_get_field(pbuf, pbuf_get_index('QAERWAT'), qaerwat)
-         call pbuf_get_field(pbuf, pbuf_get_index('DGNUMWET'), dgnumwet)
-#endif
+
          ! CRM fields
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_T_RAD'  ), crm_t   )
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_QV_RAD' ), crm_qv  )
@@ -1350,24 +1324,6 @@ contains
 
          ! Output CRM cloud fraction
          call outfld('CRM_CLD_RAD', crm_cld(1:ncol,:,:,:), state%ncol, state%lchnk)
-
-         ! Save pbuf things to restore when we are done working with them. This is
-         ! needed because the CAM optics routines bury pbuf dependencies down deep
-         ! in the call stack, so we need to overwrite with CRM state here in order
-         ! to use CRM information to calculate optics. This can go away if we
-         ! refactor the optics routines to take array arguments instead of the high
-         ! level pbuf and state data structures.
-         iclwp_save = iclwp
-         iciwp_save = iciwp
-         cld_save   = cld
-         dei_save   = dei
-         rei_save   = rei
-         rel_save   = rel
-    
-         ! Indices into rad constituents arrays
-         ixwatvap = 1
-         call cnst_get_ind('CLDLIQ', ixcldliq)
-         call cnst_get_ind('CLDICE', ixcldice)
 
          ! Find bands used for cloud simulator calculations
          cosp_lwband = get_band_index_lw(10.5_r8, 'micron')
@@ -1447,33 +1403,30 @@ contains
                            aer_asm_bnd_sw(icol,ilay,:) = reordered(aer_asm_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
                         end do
                      end do
-                     call handle_error(clip_values(aer_tau_bnd_sw,  0._r8, huge(aer_tau_bnd_sw), trim(subname) // ' aer_tau_bnd_sw', tolerance=1e-10_r8))
-                     call handle_error(clip_values(aer_ssa_bnd_sw,  0._r8,                1._r8, trim(subname) // ' aer_ssa_bnd_sw', tolerance=1e-10_r8))
-                     call handle_error(clip_values(aer_asm_bnd_sw, -1._r8,                1._r8, trim(subname) // ' aer_asm_bnd_sw', tolerance=1e-10_r8))
                      call t_stopf('rad_aerosol_optics_sw')
                   end if ! radiation_do('sw')
                   if (radiation_do('lw')) then
                      call t_startf('rad_aerosol_optics_lw')
                      call set_aerosol_optics_lw(icall, dt, state, pbuf, is_cmip6_volc, aer_tau_bnd_lw)
-                     call handle_error(clip_values(aer_tau_bnd_lw,  0._r8, huge(aer_tau_bnd_lw), trim(subname) // ': aer_tau_bnd_lw', tolerance=1e-10_r8))
                      call t_stopf('rad_aerosol_optics_lw')
                   end if ! radiation_do('lw')
                end if ! do_aerosol_rad
 
-               cld_tau_gpt_lw_all = 0._r8
-               cld_tau_gpt_sw_all = 0._r8
-               cld_ssa_gpt_sw_all = 0._r8
-               cld_asm_gpt_sw_all = 0._r8
-               aer_tau_bnd_lw_all = 0._r8
-               aer_tau_bnd_sw_all = 0._r8
-               aer_ssa_bnd_sw_all = 0._r8
-               aer_asm_bnd_sw_all = 0._r8
+               cld_tau_gpt_lw_packed = 0._r8
+               cld_tau_gpt_sw_packed = 0._r8
+               cld_ssa_gpt_sw_packed = 0._r8
+               cld_asm_gpt_sw_packed = 0._r8
+               aer_tau_bnd_lw_packed = 0._r8
+               aer_tau_bnd_sw_packed = 0._r8
+               aer_ssa_bnd_sw_packed = 0._r8
+               aer_asm_bnd_sw_packed = 0._r8
 
                ! make sure water path variables are zeroed out
                do ilay = 1, pver
                   do icol = 1,ncol
                      iclwp(icol,ilay) = 0_r8
                      iciwp(icol,ilay) = 0_r8
+                     cld(icol,ilay) = 0_r8
                   end do
                end do
 
@@ -1505,7 +1458,7 @@ contains
                      end do  ! iz = 1,crm_nz
                      call t_stopf('rad_overwrite_state')
 
-                     ! Setup state arrays, which may contain an extra level above model top to handle heating above the model
+                     ! Setup state arrays, which contain an extra level above model top to handle heating above the model
                      call t_startf('rad_set_state')
                      call set_rad_state(                                            &
                         state                      , cam_in                       , &
@@ -1516,7 +1469,8 @@ contains
 
                      ! Set gas concentrations
                      call t_startf('rad_gas_concentrations')
-                     call get_gas_vmr(icall, state, pbuf, active_gases, vmr_col)
+                     call get_gas_vmr(icall, state, pbuf, active_gases, vmr_col(:,:,ktop:kbot))
+                     vmr_col(:,:,1) = vmr_col(:,:,2)  ! Extra layer above model top
                      call t_stopf('rad_gas_concentrations')
 
                      ! Do shortwave cloud and aerosol optics calculations
@@ -1597,22 +1551,23 @@ contains
                      call t_startf('rad_pack_columns')
                      do icol = 1,ncol
                         j = _IDX321(icol, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
-                        coszrs_all(j) = coszrs(icol)
-                        albedo_dir_all(:,j) = albedo_dir_col(:,icol)
-                        albedo_dif_all(:,j) = albedo_dif_col(:,icol)
-                        pmid(j,:) = pmid_col(icol,:)
-                        tmid(j,:) = tmid_col(icol,:)
-                        pint(j,:) = pint_col(icol,:)
-                        tint(j,:) = tint_col(icol,:)
-                        cld_tau_gpt_lw_all(j,:,:) = cld_tau_gpt_lw(icol,:,:)
-                        cld_tau_gpt_sw_all(j,:,:) = cld_tau_gpt_sw(icol,:,:)
-                        cld_ssa_gpt_sw_all(j,:,:) = cld_ssa_gpt_sw(icol,:,:)
-                        cld_asm_gpt_sw_all(j,:,:) = cld_asm_gpt_sw(icol,:,:)
-                        aer_tau_bnd_lw_all(j,:,:) = aer_tau_bnd_lw(icol,:,:)
-                        aer_tau_bnd_sw_all(j,:,:) = aer_tau_bnd_sw(icol,:,:)
-                        aer_ssa_bnd_sw_all(j,:,:) = aer_ssa_bnd_sw(icol,:,:)
-                        aer_asm_bnd_sw_all(j,:,:) = aer_asm_bnd_sw(icol,:,:)
-                        vmr_all(:,j,:) = vmr_col(:,icol,:)
+                        coszrs_packed(j) = coszrs(icol)
+                        albedo_dir_packed(:,j) = albedo_dir_col(:,icol)
+                        albedo_dif_packed(:,j) = albedo_dif_col(:,icol)
+                        pmid_packed(j,:) = pmid_col(icol,:)
+                        tmid_packed(j,:) = tmid_col(icol,:)
+                        pint_packed(j,:) = pint_col(icol,:)
+                        tint_packed(j,:) = tint_col(icol,:)
+                        ! Note: leave top level empty for cloud optics
+                        cld_tau_gpt_lw_packed(j,ktop:kbot,:) = cld_tau_gpt_lw(icol,:,:)
+                        cld_tau_gpt_sw_packed(j,ktop:kbot,:) = cld_tau_gpt_sw(icol,:,:)
+                        cld_ssa_gpt_sw_packed(j,ktop:kbot,:) = cld_ssa_gpt_sw(icol,:,:)
+                        cld_asm_gpt_sw_packed(j,ktop:kbot,:) = cld_asm_gpt_sw(icol,:,:)
+                        aer_tau_bnd_lw_packed(j,ktop:kbot,:) = aer_tau_bnd_lw(icol,:,:)
+                        aer_tau_bnd_sw_packed(j,ktop:kbot,:) = aer_tau_bnd_sw(icol,:,:)
+                        aer_ssa_bnd_sw_packed(j,ktop:kbot,:) = aer_ssa_bnd_sw(icol,:,:)
+                        aer_asm_bnd_sw_packed(j,ktop:kbot,:) = aer_asm_bnd_sw(icol,:,:)
+                        vmr_packed(:,j,:) = vmr_col(:,icol,:)
                      end do  ! icol = 1,ncol
                      call t_stopf('rad_pack_columns')
                   end do  ! ix = 1,crm_nx_rad
@@ -1620,14 +1575,16 @@ contains
 
                ! Check (and possibly clip) values before passing to RRTMGP driver
                call t_startf('rad_check_inputs')
-               call handle_error(clip_values(tint(1:ncol_tot,1:nlev_rad+1), get_min_temperature(), get_max_temperature(), trim(subname) // ' tint'), &
+               call handle_error(clip_values(tint_packed(1:ncol_tot,1:nlev_rad+1), get_min_temperature(), get_max_temperature(), trim(subname) // ' tint'), &
                   fatal=.false., warn=rrtmgp_enable_temperature_warnings)
-               call handle_error(clip_values(cld_tau_gpt_sw_all,  0._r8, huge(cld_tau_gpt_sw_all), trim(subname) // ' cld_tau_gpt_sw', tolerance=1e-10_r8))
-               call handle_error(clip_values(cld_ssa_gpt_sw_all,  0._r8,                1._r8, trim(subname) // ' cld_ssa_gpt_sw', tolerance=1e-10_r8))
-               call handle_error(clip_values(cld_asm_gpt_sw_all, -1._r8,                1._r8, trim(subname) // ' cld_asm_gpt_sw', tolerance=1e-10_r8))
-               call handle_error(clip_values(aer_tau_bnd_sw_all,  0._r8, huge(aer_tau_bnd_sw_all), trim(subname) // ' aer_tau_bnd_sw', tolerance=1e-10_r8))
-               call handle_error(clip_values(aer_ssa_bnd_sw_all,  0._r8,                1._r8, trim(subname) // ' aer_ssa_bnd_sw', tolerance=1e-10_r8))
-               call handle_error(clip_values(aer_asm_bnd_sw_all, -1._r8,                1._r8, trim(subname) // ' aer_asm_bnd_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(cld_tau_gpt_sw_packed,  0._r8, huge(cld_tau_gpt_sw_packed), trim(subname) // ' cld_tau_gpt_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(cld_ssa_gpt_sw_packed,  0._r8,                    1._r8, trim(subname) // ' cld_ssa_gpt_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(cld_asm_gpt_sw_packed, -1._r8,                    1._r8, trim(subname) // ' cld_asm_gpt_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(cld_tau_gpt_lw_packed,  0._r8, huge(cld_tau_gpt_lw_packed), trim(subname) // ' cld_tau_gpt_lw', tolerance=1e-10_r8))
+               call handle_error(clip_values(aer_tau_bnd_sw_packed,  0._r8, huge(aer_tau_bnd_sw_packed), trim(subname) // ' aer_tau_bnd_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(aer_ssa_bnd_sw_packed,  0._r8,                    1._r8, trim(subname) // ' aer_ssa_bnd_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(aer_asm_bnd_sw_packed, -1._r8,                    1._r8, trim(subname) // ' aer_asm_bnd_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(aer_tau_bnd_lw_packed,  0._r8, huge(aer_tau_bnd_lw_packed), trim(subname) // ' aer_tau_bnd_lw', tolerance=1e-10_r8))
                call t_stopf('rad_check_inputs')
 
                ! Do shortwave stuff...
@@ -1649,54 +1606,57 @@ contains
                   ! have vertical dimension nlev_rad (defined at midpoints).
                   call initialize_fluxes(ncol    , nlev_rad+1, nswbands, fluxes_allsky    , do_direct=.true.)
                   call initialize_fluxes(ncol    , nlev_rad+1, nswbands, fluxes_clrsky    , do_direct=.true.)
-                  call initialize_fluxes(ncol_tot, nlev_rad+1, nswbands, fluxes_allsky_all, do_direct=.true.)
-                  call initialize_fluxes(ncol_tot, nlev_rad+1, nswbands, fluxes_clrsky_all, do_direct=.true.)
+                  call initialize_fluxes(ncol_tot, nlev_rad+1, nswbands, fluxes_allsky_packed, do_direct=.true.)
+                  call initialize_fluxes(ncol_tot, nlev_rad+1, nswbands, fluxes_clrsky_packed, do_direct=.true.)
 
                   ! Calculate shortwave fluxes
                   call t_startf('rad_radiation_driver_sw')
                   call radiation_driver_sw(ncol_tot, &
-                                     vmr_all, &
-                                     pmid, pint, tmid, albedo_dir_all, albedo_dif_all, coszrs_all, &
-                                     cld_tau_gpt_sw_all, cld_ssa_gpt_sw_all, cld_asm_gpt_sw_all, &
-                                     aer_tau_bnd_sw_all, aer_ssa_bnd_sw_all, aer_asm_bnd_sw_all, &
-                                     fluxes_allsky_all, fluxes_clrsky_all)
+                       vmr_packed, &
+                       pmid_packed, pint_packed, tmid_packed, &
+                       albedo_dir_packed, albedo_dif_packed, coszrs_packed, &
+                       cld_tau_gpt_sw_packed, cld_ssa_gpt_sw_packed, cld_asm_gpt_sw_packed, &
+                       aer_tau_bnd_sw_packed, aer_ssa_bnd_sw_packed, aer_asm_bnd_sw_packed, &
+                       fluxes_allsky_packed, fluxes_clrsky_packed, tsi_scaling)
                   call t_stopf('rad_radiation_driver_sw')
+
                   ! Calculate heating rates
                   call t_startf('rad_heating_rate_sw')
-                  call calculate_heating_rate(fluxes_allsky_all%flux_up(1:ncol_tot,ktop:kbot+1), &
-                     fluxes_allsky_all%flux_dn(1:ncol_tot,ktop:kbot+1), &
-                     pint(1:ncol_tot,ktop:kbot+1), &
-                     qrs_all(1:ncol_tot,1:pver) &
+                  call calculate_heating_rate(fluxes_allsky_packed%flux_up(1:ncol_tot,ktop:kbot+1), &
+                     fluxes_allsky_packed%flux_dn(1:ncol_tot,ktop:kbot+1), &
+                     pint_packed(1:ncol_tot,ktop:kbot+1), &
+                     qrs_packed(1:ncol_tot,1:pver) &
                   )
-                  call calculate_heating_rate(fluxes_clrsky_all%flux_up(1:ncol_tot,ktop:kbot+1), &
-                     fluxes_clrsky_all%flux_dn(1:ncol_tot,ktop:kbot+1), &
-                     pint(1:ncol_tot,ktop:kbot+1), &
-                     qrsc_all(1:ncol_tot,1:pver) &
+                  call calculate_heating_rate(fluxes_clrsky_packed%flux_up(1:ncol_tot,ktop:kbot+1), &
+                     fluxes_clrsky_packed%flux_dn(1:ncol_tot,ktop:kbot+1), &
+                     pint_packed(1:ncol_tot,ktop:kbot+1), &
+                     qrsc_packed(1:ncol_tot,1:pver) &
                   )
                   call t_stopf('rad_heating_rate_sw')
+
                   ! Calculate CRM domain averages
                   call t_startf('rad_average_fluxes_sw')
-                  call average_packed_array(qrs_all (1:ncol_tot,:)                     , qrs (1:ncol,:)                     )
-                  call average_packed_array(qrsc_all(1:ncol_tot,:)                     , qrsc(1:ncol,:)                     )
-                  call average_packed_array(fluxes_allsky_all%flux_up    (1:ncol_tot,:), fluxes_allsky%flux_up    (1:ncol,:))
-                  call average_packed_array(fluxes_allsky_all%flux_dn    (1:ncol_tot,:), fluxes_allsky%flux_dn    (1:ncol,:))
-                  call average_packed_array(fluxes_allsky_all%flux_net   (1:ncol_tot,:), fluxes_allsky%flux_net   (1:ncol,:))
-                  call average_packed_array(fluxes_allsky_all%flux_dn_dir(1:ncol_tot,:), fluxes_allsky%flux_dn_dir(1:ncol,:))
+                  call average_packed_array(qrs_packed (1:ncol_tot,:)                     , qrs (1:ncol,:)                     )
+                  call average_packed_array(qrsc_packed(1:ncol_tot,:)                     , qrsc(1:ncol,:)                     )
+                  call average_packed_array(fluxes_allsky_packed%flux_up    (1:ncol_tot,:), fluxes_allsky%flux_up    (1:ncol,:))
+                  call average_packed_array(fluxes_allsky_packed%flux_dn    (1:ncol_tot,:), fluxes_allsky%flux_dn    (1:ncol,:))
+                  call average_packed_array(fluxes_allsky_packed%flux_net   (1:ncol_tot,:), fluxes_allsky%flux_net   (1:ncol,:))
+                  call average_packed_array(fluxes_allsky_packed%flux_dn_dir(1:ncol_tot,:), fluxes_allsky%flux_dn_dir(1:ncol,:))
                   do iband = 1,nswbands
-                     call average_packed_array(fluxes_allsky_all%bnd_flux_up    (1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_up    (1:ncol,:,iband))
-                     call average_packed_array(fluxes_allsky_all%bnd_flux_dn    (1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_dn    (1:ncol,:,iband))
-                     call average_packed_array(fluxes_allsky_all%bnd_flux_net   (1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_net   (1:ncol,:,iband))
-                     call average_packed_array(fluxes_allsky_all%bnd_flux_dn_dir(1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_dn_dir(1:ncol,:,iband))
+                     call average_packed_array(fluxes_allsky_packed%bnd_flux_up    (1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_up    (1:ncol,:,iband))
+                     call average_packed_array(fluxes_allsky_packed%bnd_flux_dn    (1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_dn    (1:ncol,:,iband))
+                     call average_packed_array(fluxes_allsky_packed%bnd_flux_net   (1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_net   (1:ncol,:,iband))
+                     call average_packed_array(fluxes_allsky_packed%bnd_flux_dn_dir(1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_dn_dir(1:ncol,:,iband))
                   end do
-                  call average_packed_array(fluxes_clrsky_all%flux_up    (1:ncol_tot,:), fluxes_clrsky%flux_up    (1:ncol,:))
-                  call average_packed_array(fluxes_clrsky_all%flux_dn    (1:ncol_tot,:), fluxes_clrsky%flux_dn    (1:ncol,:))
-                  call average_packed_array(fluxes_clrsky_all%flux_net   (1:ncol_tot,:), fluxes_clrsky%flux_net   (1:ncol,:))
-                  call average_packed_array(fluxes_clrsky_all%flux_dn_dir(1:ncol_tot,:), fluxes_clrsky%flux_dn_dir(1:ncol,:))
+                  call average_packed_array(fluxes_clrsky_packed%flux_up    (1:ncol_tot,:), fluxes_clrsky%flux_up    (1:ncol,:))
+                  call average_packed_array(fluxes_clrsky_packed%flux_dn    (1:ncol_tot,:), fluxes_clrsky%flux_dn    (1:ncol,:))
+                  call average_packed_array(fluxes_clrsky_packed%flux_net   (1:ncol_tot,:), fluxes_clrsky%flux_net   (1:ncol,:))
+                  call average_packed_array(fluxes_clrsky_packed%flux_dn_dir(1:ncol_tot,:), fluxes_clrsky%flux_dn_dir(1:ncol,:))
                   do iband = 1,nswbands
-                     call average_packed_array(fluxes_clrsky_all%bnd_flux_up    (1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_up    (1:ncol,:,iband))
-                     call average_packed_array(fluxes_clrsky_all%bnd_flux_dn    (1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_dn    (1:ncol,:,iband))
-                     call average_packed_array(fluxes_clrsky_all%bnd_flux_net   (1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_net   (1:ncol,:,iband))
-                     call average_packed_array(fluxes_clrsky_all%bnd_flux_dn_dir(1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_dn_dir(1:ncol,:,iband))
+                     call average_packed_array(fluxes_clrsky_packed%bnd_flux_up    (1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_up    (1:ncol,:,iband))
+                     call average_packed_array(fluxes_clrsky_packed%bnd_flux_dn    (1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_dn    (1:ncol,:,iband))
+                     call average_packed_array(fluxes_clrsky_packed%bnd_flux_net   (1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_net   (1:ncol,:,iband))
+                     call average_packed_array(fluxes_clrsky_packed%bnd_flux_dn_dir(1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_dn_dir(1:ncol,:,iband))
                   end do
                   call t_stopf('rad_average_fluxes_sw')
 
@@ -1707,8 +1667,8 @@ contains
                            j = _IDX321(icol, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
                            do iz = 1,crm_nz
                               ilev = pver - iz + 1
-                              crm_qrs (icol,ix,iy,iz) = qrs_all(j,ilev)
-                              crm_qrsc(icol,ix,iy,iz) = qrsc_all(j,ilev)
+                              crm_qrs (icol,ix,iy,iz) = qrs_packed(j,ilev)
+                              crm_qrsc(icol,ix,iy,iz) = qrsc_packed(j,ilev)
                            end do
                         end do
                      end do
@@ -1728,8 +1688,8 @@ contains
                   ! Free memory allocated for shortwave fluxes
                   call free_fluxes(fluxes_allsky)
                   call free_fluxes(fluxes_clrsky)
-                  call free_fluxes(fluxes_allsky_all)
-                  call free_fluxes(fluxes_clrsky_all)
+                  call free_fluxes(fluxes_allsky_packed)
+                  call free_fluxes(fluxes_clrsky_packed)
 
                else
                   ! Back heating out of pdel scaled heating from previous step
@@ -1745,43 +1705,43 @@ contains
                   ! dimension nlev_rad+1
                   call initialize_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_allsky)
                   call initialize_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_clrsky)
-                  call initialize_fluxes(ncol_tot, nlev_rad+1, nlwbands, fluxes_allsky_all)
-                  call initialize_fluxes(ncol_tot, nlev_rad+1, nlwbands, fluxes_clrsky_all)
+                  call initialize_fluxes(ncol_tot, nlev_rad+1, nlwbands, fluxes_allsky_packed)
+                  call initialize_fluxes(ncol_tot, nlev_rad+1, nlwbands, fluxes_clrsky_packed)
 
                   ! Calculate longwave fluxes
                   call t_startf('rad_fluxes_lw')
-                  call radiation_driver_lw(                                        &
-                     vmr_all(:,1:ncol_tot,1:pver),               &
-                     surface_emissivity(1:nlwbands,1:ncol_tot),                    &
-                     pmid(1:ncol_tot,1:nlev_rad  ), tmid(1:ncol_tot,1:nlev_rad  ), &
-                     pint(1:ncol_tot,1:nlev_rad+1), tint(1:ncol_tot,1:nlev_rad+1), &
-                     cld_tau_gpt_lw_all           , aer_tau_bnd_lw_all,            &
-                     fluxes_allsky_all            , fluxes_clrsky_all              &
+                  call radiation_driver_lw(                                                &
+                     vmr_packed(:,1:ncol_tot,1:nlev_rad),                                     &
+                     surface_emissivity(1:nlwbands,1:ncol_tot),                            &
+                     pmid_packed(1:ncol_tot,1:nlev_rad  ), tmid_packed(1:ncol_tot,1:nlev_rad  ), &
+                     pint_packed(1:ncol_tot,1:nlev_rad+1), tint_packed(1:ncol_tot,1:nlev_rad+1), &
+                     cld_tau_gpt_lw_packed               , aer_tau_bnd_lw_packed,                &
+                     fluxes_allsky_packed                , fluxes_clrsky_packed                  &
                   )
                   call t_stopf('rad_fluxes_lw')
 
                   ! Calculate heating rates
                   call t_startf('rad_heating_lw')
-                  call calculate_heating_rate(fluxes_allsky_all%flux_up(:,ktop:kbot+1), &
-                                              fluxes_allsky_all%flux_dn(:,ktop:kbot+1), &
-                                              pint(1:ncol_tot,ktop:kbot+1)            , &
-                                              qrl_all(1:ncol_tot,1:pver)                )
-                  call calculate_heating_rate(fluxes_clrsky_all%flux_up(:,ktop:kbot+1), &
-                                              fluxes_clrsky_all%flux_dn(:,ktop:kbot+1), &
-                                              pint(1:ncol_tot,ktop:kbot+1)            , &
-                                              qrlc_all(1:ncol_tot,1:pver)               )
+                  call calculate_heating_rate(fluxes_allsky_packed%flux_up(:,ktop:kbot+1), &
+                                              fluxes_allsky_packed%flux_dn(:,ktop:kbot+1), &
+                                              pint_packed(1:ncol_tot,ktop:kbot+1)            , &
+                                              qrl_packed(1:ncol_tot,1:pver)                )
+                  call calculate_heating_rate(fluxes_clrsky_packed%flux_up(:,ktop:kbot+1), &
+                                              fluxes_clrsky_packed%flux_dn(:,ktop:kbot+1), &
+                                              pint_packed(1:ncol_tot,ktop:kbot+1)            , &
+                                              qrlc_packed(1:ncol_tot,1:pver)               )
                   call t_stopf('rad_heating_lw')
 
                   ! Calculate domain averages
                   call t_startf('rad_average_fluxes_lw')
-                  call average_packed_array(qrl_all (1:ncol_tot,:)                  , qrl (1:ncol,:))
-                  call average_packed_array(qrlc_all(1:ncol_tot,:)                  , qrlc(1:ncol,:))
-                  call average_packed_array(fluxes_allsky_all%flux_up (1:ncol_tot,:), fluxes_allsky%flux_up (1:ncol,:))
-                  call average_packed_array(fluxes_allsky_all%flux_dn (1:ncol_tot,:), fluxes_allsky%flux_dn (1:ncol,:))
-                  call average_packed_array(fluxes_allsky_all%flux_net(1:ncol_tot,:), fluxes_allsky%flux_net(1:ncol,:))
-                  call average_packed_array(fluxes_clrsky_all%flux_up (1:ncol_tot,:), fluxes_clrsky%flux_up (1:ncol,:))
-                  call average_packed_array(fluxes_clrsky_all%flux_dn (1:ncol_tot,:), fluxes_clrsky%flux_dn (1:ncol,:))
-                  call average_packed_array(fluxes_clrsky_all%flux_net(1:ncol_tot,:), fluxes_clrsky%flux_net(1:ncol,:))
+                  call average_packed_array(qrl_packed (1:ncol_tot,:)                  , qrl (1:ncol,:))
+                  call average_packed_array(qrlc_packed(1:ncol_tot,:)                  , qrlc(1:ncol,:))
+                  call average_packed_array(fluxes_allsky_packed%flux_up (1:ncol_tot,:), fluxes_allsky%flux_up (1:ncol,:))
+                  call average_packed_array(fluxes_allsky_packed%flux_dn (1:ncol_tot,:), fluxes_allsky%flux_dn (1:ncol,:))
+                  call average_packed_array(fluxes_allsky_packed%flux_net(1:ncol_tot,:), fluxes_allsky%flux_net(1:ncol,:))
+                  call average_packed_array(fluxes_clrsky_packed%flux_up (1:ncol_tot,:), fluxes_clrsky%flux_up (1:ncol,:))
+                  call average_packed_array(fluxes_clrsky_packed%flux_dn (1:ncol_tot,:), fluxes_clrsky%flux_dn (1:ncol,:))
+                  call average_packed_array(fluxes_clrsky_packed%flux_net(1:ncol_tot,:), fluxes_clrsky%flux_net(1:ncol,:))
                   call t_stopf('rad_average_fluxes_lw')
                             
                   ! Map to CRM columns
@@ -1791,8 +1751,8 @@ contains
                            j = _IDX321(icol, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
                            do iz = 1,crm_nz
                               ilev = pver - iz + 1
-                              crm_qrl(icol,ix,iy,iz) = qrl_all(j,ilev)
-                              crm_qrlc(icol,ix,iy,iz) = qrlc_all(j,ilev)
+                              crm_qrl(icol,ix,iy,iz) = qrl_packed(j,ilev)
+                              crm_qrlc(icol,ix,iy,iz) = qrlc_packed(j,ilev)
                            end do
                         end do
                      end do
@@ -1812,8 +1772,8 @@ contains
                   ! Free memory allocated for fluxes
                   call free_fluxes(fluxes_allsky)
                   call free_fluxes(fluxes_clrsky)
-                  call free_fluxes(fluxes_allsky_all)
-                  call free_fluxes(fluxes_clrsky_all)
+                  call free_fluxes(fluxes_allsky_packed)
+                  call free_fluxes(fluxes_clrsky_packed)
 
                else
                   ! Back heating out of pdel scaled heating rate from previous step
@@ -1821,14 +1781,6 @@ contains
                end if
             end if  ! active calls
          end do  ! loop over diagnostic calls
-
-         ! Restore pbuf fields (only need to do if we updated heating this step)
-         iclwp = iclwp_save
-         iciwp = iciwp_save
-         cld   = cld_save
-         dei   = dei_save
-         rei   = rei_save
-         rel   = rel_save
 
          ! Update net CRM heating tendency
          ! TODO: should we be updating this every timestep, even if using
@@ -1901,7 +1853,7 @@ contains
                                   pmid, pint, tmid, albedo_dir, albedo_dif, coszrs, &
                                   cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt, &
                                   aer_tau_bnd, aer_ssa_bnd, aer_asm_bnd, &
-                                  fluxes_allsky, fluxes_clrsky)
+                                  fluxes_allsky, fluxes_clrsky, tsi_scaling)
      
       use perf_mod, only: t_startf, t_stopf
       use radiation_utils, only: calculate_heating_rate
@@ -1915,28 +1867,27 @@ contains
       real(r8), intent(in), dimension(:) :: coszrs
       real(r8), intent(in), dimension(:,:,:) :: cld_tau_gpt, cld_ssa_gpt, cld_asm_gpt
       real(r8), intent(in), dimension(:,:,:) :: aer_tau_bnd, aer_ssa_bnd, aer_asm_bnd
+      ! Scaling factor for total sky irradiance; used to account for orbital
+      ! eccentricity, and could be used to scale total sky irradiance for different
+      ! climates as well (i.e., paleoclimate simulations)
+      real(r8), intent(in) :: tsi_scaling
 
       ! Compressed daytime-only arrays
       real(r8), dimension(ncol) :: coszrs_day
       real(r8), dimension(nswbands,ncol) :: albedo_dir_day, albedo_dif_day
       real(r8), dimension(ncol,nlev_rad) :: pmid_day, tmid_day
       real(r8), dimension(ncol,nlev_rad+1) :: pint_day
-      real(r8), dimension(size(gas_vmr, 1),ncol,pver) :: gas_vmr_day
-      real(r8), dimension(size(gas_vmr, 1),ncol,nlev_rad) :: gas_vmr_rad
+      real(r8), dimension(size(gas_vmr, 1),ncol,nlev_rad) :: gas_vmr_day
       real(r8), dimension(ncol,pver,nswgpts) :: cld_tau_gpt_day, cld_ssa_gpt_day, cld_asm_gpt_day
       real(r8), dimension(ncol,pver,nswbands) :: aer_tau_bnd_day, aer_ssa_bnd_day, aer_asm_bnd_day
       type(fluxes_t) :: fluxes_allsky_day, fluxes_clrsky_day
 
-      real(r8), dimension(size(cld_tau_gpt,1),size(cld_tau_gpt,2)+1,size(cld_tau_gpt,3)) :: cld_tau_gpt_rad
-      real(r8), dimension(size(cld_ssa_gpt,1),size(cld_ssa_gpt,2)+1,size(cld_ssa_gpt,3)) :: cld_ssa_gpt_rad
-      real(r8), dimension(size(cld_asm_gpt,1),size(cld_asm_gpt,2)+1,size(cld_asm_gpt,3)) :: cld_asm_gpt_rad
-      real(r8), dimension(size(aer_tau_bnd,1),size(aer_tau_bnd,2)+1,size(aer_tau_bnd,3)) :: aer_tau_bnd_rad
-      real(r8), dimension(size(aer_ssa_bnd,1),size(aer_ssa_bnd,2)+1,size(aer_ssa_bnd,3)) :: aer_ssa_bnd_rad
-      real(r8), dimension(size(aer_asm_bnd,1),size(aer_asm_bnd,2)+1,size(aer_asm_bnd,3)) :: aer_asm_bnd_rad
-
-      ! Incoming solar radiation, scaled for solar zenith angle 
-      ! and earth-sun distance
-      real(r8) :: solar_irradiance_by_gpt(ncol,nswgpts)
+      real(r8), dimension(size(cld_tau_gpt,1),nlev_rad,size(cld_tau_gpt,3)) :: cld_tau_gpt_rad
+      real(r8), dimension(size(cld_ssa_gpt,1),nlev_rad,size(cld_ssa_gpt,3)) :: cld_ssa_gpt_rad
+      real(r8), dimension(size(cld_asm_gpt,1),nlev_rad,size(cld_asm_gpt,3)) :: cld_asm_gpt_rad
+      real(r8), dimension(size(aer_tau_bnd,1),nlev_rad,size(aer_tau_bnd,3)) :: aer_tau_bnd_rad
+      real(r8), dimension(size(aer_ssa_bnd,1),nlev_rad,size(aer_ssa_bnd,3)) :: aer_ssa_bnd_rad
+      real(r8), dimension(size(aer_asm_bnd,1),nlev_rad,size(aer_asm_bnd,3)) :: aer_asm_bnd_rad
 
       ! Gathered indicies of day and night columns 
       ! chunk_column_index = day_indices(daylight_column_index)
@@ -1944,24 +1895,10 @@ contains
       integer :: nday, nnight     ! Number of daylight columns
       integer :: day_indices(ncol), night_indices(ncol)   ! Indicies of daylight coumns
 
-      ! Scaling factor for total sky irradiance; used to account for orbital
-      ! eccentricity, and could be used to scale total sky irradiance for different
-      ! climates as well (i.e., paleoclimate simulations)
-      real(r8) :: tsi_scaling
 
       ! Everybody needs a name
       character(*), parameter :: subroutine_name = 'radiation_driver_sw'
 
-
-      if (fixed_total_solar_irradiance<0) then
-         ! Get orbital eccentricity factor to scale total sky irradiance
-         tsi_scaling = get_eccentricity_factor()
-      else
-         ! For fixed TSI we divide by the default solar constant of 1360.9
-         ! At some point we will want to replace this with a method that 
-         ! retrieves the solar constant
-         tsi_scaling = fixed_total_solar_irradiance / 1360.9_r8
-      end if
 
       ! Gather night/day column indices for subsetting SW inputs; we only want to
       ! do the shortwave radiative transfer during the daytime to save
@@ -1988,12 +1925,12 @@ contains
          albedo_dif_day(:,iday) = albedo_dif(:,icol)
          coszrs_day(iday) = coszrs(icol)
          gas_vmr_day(:,iday,:) = gas_vmr(:,icol,:)
-         cld_tau_gpt_day(iday,:,:) = cld_tau_gpt(icol,:,:)
-         cld_ssa_gpt_day(iday,:,:) = cld_ssa_gpt(icol,:,:)
-         cld_asm_gpt_day(iday,:,:) = cld_asm_gpt(icol,:,:)
-         aer_tau_bnd_day(iday,:,:) = aer_tau_bnd(icol,:,:)
-         aer_ssa_bnd_day(iday,:,:) = aer_ssa_bnd(icol,:,:)
-         aer_asm_bnd_day(iday,:,:) = aer_asm_bnd(icol,:,:)
+         cld_tau_gpt_rad(iday,:,:) = cld_tau_gpt(icol,:,:)
+         cld_ssa_gpt_rad(iday,:,:) = cld_ssa_gpt(icol,:,:)
+         cld_asm_gpt_rad(iday,:,:) = cld_asm_gpt(icol,:,:)
+         aer_tau_bnd_rad(iday,:,:) = aer_tau_bnd(icol,:,:)
+         aer_ssa_bnd_rad(iday,:,:) = aer_ssa_bnd(icol,:,:)
+         aer_asm_bnd_rad(iday,:,:) = aer_asm_bnd(icol,:,:)
       end do
 
       ! Allocate shortwave fluxes (allsky and clearsky)
@@ -2006,29 +1943,11 @@ contains
       call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_allsky_day, do_direct=.true.)
       call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
 
-      ! Add an empty level above model top
-      ! TODO: combine with day compression above
-      ! TODO: combine with extra layer handling for the state variables as well
-      cld_tau_gpt_rad = 0
-      cld_ssa_gpt_rad = 0
-      cld_asm_gpt_rad = 0
-      cld_tau_gpt_rad(1:nday,ktop:kbot,:) = cld_tau_gpt_day(1:nday,1:pver,:)
-      cld_ssa_gpt_rad(1:nday,ktop:kbot,:) = cld_ssa_gpt_day(1:nday,1:pver,:)
-      cld_asm_gpt_rad(1:nday,ktop:kbot,:) = cld_asm_gpt_day(1:nday,1:pver,:)
-      aer_tau_bnd_rad = 0
-      aer_ssa_bnd_rad = 0
-      aer_asm_bnd_rad = 0
-      aer_tau_bnd_rad(1:nday,ktop:kbot,:) = aer_tau_bnd_day(1:nday,:,:)
-      aer_ssa_bnd_rad(1:nday,ktop:kbot,:) = aer_ssa_bnd_day(1:nday,:,:)
-      aer_asm_bnd_rad(1:nday,ktop:kbot,:) = aer_asm_bnd_day(1:nday,:,:)
-      gas_vmr_rad(:,1:nday,1) = gas_vmr_day(:,1:nday,1)
-      gas_vmr_rad(:,1:nday,ktop:kbot) = gas_vmr_day(:,1:nday,1:pver)
-
       ! Do shortwave radiative transfer calculations
       call t_startf('rad_rrtmgp_run_sw')
       call rrtmgp_run_sw( &
          size(active_gases), nday, nlev_rad, &
-         gas_vmr_rad(:,1:nday,1:nlev_rad), &
+         gas_vmr_day(:,1:nday,1:nlev_rad), &
          pmid_day(1:nday,1:nlev_rad), &
          tmid_day(1:nday,1:nlev_rad), &
          pint_day(1:nday,1:nlev_rad+1), &
@@ -2074,30 +1993,17 @@ contains
 
       integer :: ncol, nlev, igas
 
-      ! Arrays with extra level above model top
-      real(r8), dimension(size(cld_tau_gpt,1),size(cld_tau_gpt,2)+1,size(cld_tau_gpt,3)) :: cld_tau_gpt_rad
-      real(r8), dimension(size(aer_tau_bnd,1),size(aer_tau_bnd,2)+1,size(aer_tau_bnd,3)) :: aer_tau_bnd_rad
-      real(r8), dimension(size(gas_vmr,1),size(gas_vmr,2),size(gas_vmr,3)+1) :: gas_vmr_rad
-
       ncol = size(pmid,1)
       nlev = size(pmid,2)
-
-      ! Add an empty level above model top
-      cld_tau_gpt_rad = 0
-      cld_tau_gpt_rad(:,ktop:kbot,:) = cld_tau_gpt(:,:,:)
-      aer_tau_bnd_rad = 0
-      aer_tau_bnd_rad(:,ktop:kbot,:) = aer_tau_bnd(:,:,:)
-      gas_vmr_rad(:,1:ncol,1) = gas_vmr(:,1:ncol,1)
-      gas_vmr_rad(:,1:ncol,ktop:kbot) = gas_vmr(:,1:ncol,:)
 
       ! Compute fluxes
       call t_startf('rrtmgp_run_lw')
       call rrtmgp_run_lw( &
          size(active_gases), ncol, nlev_rad, &
-         gas_vmr_rad(:,1:ncol,:), &
+         gas_vmr(:,1:ncol,:), &
          pmid(1:ncol,1:nlev_rad), tmid(1:ncol,1:nlev_rad), pint(1:ncol,1:nlev_rad+1), tint(1:ncol,1:nlev_rad+1), &
          surface_emissivity(1:nlwbands,1:ncol), &
-         cld_tau_gpt_rad(1:ncol,:,:)  , aer_tau_bnd_rad(1:ncol,:,:)  , &
+         cld_tau_gpt(1:ncol,:,:)  , aer_tau_bnd(1:ncol,:,:)  , &
          fluxes_allsky%flux_up    , fluxes_allsky%flux_dn    , fluxes_allsky%flux_net    , &
          fluxes_allsky%bnd_flux_up, fluxes_allsky%bnd_flux_dn, fluxes_allsky%bnd_flux_net, &
          fluxes_clrsky%flux_up    , fluxes_clrsky%flux_dn    , fluxes_clrsky%flux_net    , &
