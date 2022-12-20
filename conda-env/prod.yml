@@ -6,7 +6,7 @@ channels:
 dependencies:
   # Base
   # =================
-  - python=3.9.10
-  - pip=22.0.3
+  - python=3.10.8
+  - pip=22.3.1
   - e3sm_diags=2.8.0
 prefix: /opt/miniconda3/envs/e3sm_diags_prod

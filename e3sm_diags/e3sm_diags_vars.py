@@ -100,7 +100,7 @@ def check_for_derived_vars(e3sm_vars: Dict[Any, Any]):
     Given a path to a file, we get the vars in that file and
     decided whether to use ('pr',) or ('PRECC', 'PRECL').
     """
-    vars_used = []  # type: List[Any]
+    vars_used: List[Any] = []
     vars_in_user_file = set(list_of_vars_in_user_file())
     for var in e3sm_vars:
         if var in derived_variables:

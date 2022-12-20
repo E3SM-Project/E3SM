@@ -57,13 +57,13 @@ def create_viewer(root_dir, parameters):
     #       }
     #   }
     # }
-    ROW_INFO = (
-        collections.OrderedDict()
-    )  # type: OrderedDict[str, Dict[str, Dict[str, Dict[str, Dict[str, str]]]]]
+    ROW_INFO: OrderedDict[
+        str, Dict[str, Dict[str, Dict[str, Dict[str, str]]]]
+    ] = collections.OrderedDict()
     # A similar dict, but for creating the lat-lon tables.
-    LAT_LON_TABLE_INFO = (
-        collections.OrderedDict()
-    )  # type: OrderedDict[str, Dict[str, Dict[str, Dict[str, str]]]]
+    LAT_LON_TABLE_INFO: OrderedDict[
+        str, Dict[str, Dict[str, Dict[str, str]]]
+    ] = collections.OrderedDict()
 
     # Since we're only having one set for each
     # create_viewer() call, this works.
