@@ -9,10 +9,10 @@ module cplcomp_exchange_mod
   use seq_map_type_mod
   use component_type_mod
   use seq_flds_mod, only: seq_flds_dom_coord, seq_flds_dom_other
-  use seq_flds_mod, only: seq_flds_a2x_ext_fields, seq_flds_a2x_fields ! 
+  use seq_flds_mod, only: seq_flds_a2x_ext_fields, seq_flds_a2x_fields, seq_flds_x2a_fields ! 
   use seq_flds_mod, only: seq_flds_o2x_fields ! needed for MOAB init of ocean fields o2x to be able to transfer to coupler
   use seq_flds_mod, only: seq_flds_x2o_fields ! needed for MOAB init of ocean fields x2o to be able to transfer from coupler
-  use seq_flds_mod, only: seq_flds_i2x_fields ! needed for MOAB init of ice fields x2o on coupler side, to save them
+  use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_x2i_fields ! needed for MOAB init of ice fields x2o on coupler side, to save them
   use seq_comm_mct, only: cplid, logunit
   use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs, seq_comm_iamin
   use seq_diag_mct
@@ -1154,6 +1154,13 @@ contains
                write(logunit,*) subname,' error in defining tags on atm on coupler '
                call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
+            tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR ! TODO should be also x2a_ext for spectral case 
+            ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags seq_flds_x2a_fields on atm on coupler '
+               call shr_sys_abort(subname//' ERROR in defining tags ')
+            endif
+
          endif
       endif
       ! ocean
@@ -1354,7 +1361,12 @@ contains
          tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
          ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
          if ( ierr == 1 ) then
-            call shr_sys_abort( subname//' ERROR: cannot define tags for ice proj to ocn' )
+            call shr_sys_abort( subname//' ERROR: cannot define tags for ice on coupler' )
+         end if
+         tagname = trim(seq_flds_x2i_fields)//C_NULL_CHAR
+         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+         if ( ierr == 1 ) then
+            call shr_sys_abort( subname//' ERROR: cannot define tags for ice on coupler' )
          end if
 #ifdef MOABDEBUG
    !      debug test

@@ -1309,7 +1309,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     if (ierr .ne. 0) then
          call shr_sys_abort(subname//' error in getting fractions_om from ocean instance ')
     endif
-   ! fill the r2x_om, etc double array fields noflds
+   ! fill the o2x_om, etc double array fields noflds
     tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
     arrsize = noflds * lsize
     ierr = iMOAB_GetDoubleTagStorage ( mboxid, tagname, arrsize , ent_type, x2o_om(1,1))
