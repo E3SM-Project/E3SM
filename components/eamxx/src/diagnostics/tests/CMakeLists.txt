@@ -7,8 +7,6 @@ if (NOT SCREAM_BASELINES_ONLY)
   # Test extracting a single level of a field
   CreateUnitTest(field_at_level "field_at_level_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 
-#  # Test vertically remapping of field: TODO, doesn't work w/ new version.  Will need to decide if we keep this, if so then we need to fix it.
-#  CreateUnitTest(vertically_remapped_field "vertically_remapped_field_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test interpolating a field onto a single pressure level
   CreateUnitTest(field_at_pressure_level "field_at_pressure_level_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 
