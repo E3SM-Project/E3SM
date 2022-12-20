@@ -235,8 +235,6 @@ void VerticalRemapper::do_registration_ends ()
     "Field for vertical profile of the source data for layout LEV has not been set.\n");
   EKAT_REQUIRE_MSG(int_set,"Error::VerticalRemapper:registration_ends,\n"
     "Field for vertical profile of the source data for layout ILEV has not been set.\n");
-
-  do_print();
 }
 
 void VerticalRemapper::do_remap_fwd ()
