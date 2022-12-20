@@ -1383,6 +1383,9 @@ module li_iceshelf_melt
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: lowerSurface
       real (kind=RKIND), dimension(:), pointer :: TFocean, ismip6Runoff
+      real (kind=RKIND), dimension(:,:), pointer :: ismip6shelfMelt_3dThermalForcing
+      real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_deltaT
+      real (kind=RKIND), dimension(:), pointer :: zOcean
       real (kind=RKIND), dimension(:), pointer :: areaCell
       integer, dimension(:), pointer :: cellMask, edgeMask, nEdgesOnCell
       real (kind=RKIND), pointer :: aSubglacial ! param A
@@ -1392,13 +1395,14 @@ module li_iceshelf_melt
       real (kind=RKIND), pointer :: addTFocean ! adjust ocean thermal forcing
       real (kind=RKIND), pointer :: config_uniform_face_melt_rate
       character(len=StrKIND), pointer :: config_front_mass_bal_grounded
+      logical, pointer :: config_use_3d_thermal_forcing_for_face_melt
       real (kind=RKIND), parameter :: secPerDay = 86400.0_RKIND
       real (kind=RKIND), parameter :: rhow = 1000.0_RKIND ! subglacial runoff density
       real (kind=RKIND), dimension(:), pointer :: faceMeltSpeed
       real (kind=RKIND), dimension(:), allocatable :: faceMeltSpeedVertAvg !vertically averaged faceMeltSpeed
                                                                 !to pass to  li_apply_front_ablation_velocity,
                                                                 !because faceMeltSpeed is only below water-line
-      integer :: err_tmp
+      integer :: err_tmp, kk
 
       err = 0
       call mpas_log_write('Starting face melt routine')
@@ -1415,6 +1419,7 @@ module li_iceshelf_melt
       call mpas_pool_get_config(liConfigs, 'config_add_ocean_thermal_forcing', addTFocean)
       call mpas_pool_get_config(liConfigs, 'config_uniform_face_melt_rate', config_uniform_face_melt_rate)
       call mpas_pool_get_config(liConfigs, 'config_front_mass_bal_grounded', config_front_mass_bal_grounded)
+      call mpas_pool_get_config(liConfigs, 'config_use_3d_thermal_forcing_for_face_melt', config_use_3d_thermal_forcing_for_face_melt)
 
       block => domain % blocklist
       do while (associated(block))
@@ -1423,9 +1428,32 @@ module li_iceshelf_melt
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcing', TFocean)
 
          ! Get ISMIP6 forcing fields
-         call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcing', TFocean)
+         if ( config_use_3d_thermal_forcing_for_face_melt ) then
+            call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
+            call mpas_pool_get_array(geometryPool, "ismip6shelfMelt_zOcean", zOcean)
+            call mpas_pool_get_array(geometryPool, "ismip6shelfMelt_deltaT", ismip6shelfMelt_deltaT)
+
+            ! Vertically average thermal forcing based on bedTopography
+            TFocean(:) = 0.0_RKIND
+            do iCell = 1, nCellsSolve
+               if (bedTopography(iCell) < 0.0_RKIND) then
+                  kk = 1
+                  ! Calculate TF at ocean floor, assuming slope from layers above
+                  do while ( zOcean(kk) >= bedTopography(iCell) )
+                     kk = kk + 1
+                  enddo
+                  TFocean(iCell) = (ismip6shelfMelt_3dThermalForcing(kk-1, iCell) - &
+                                   ismip6shelfMelt_3dThermalForcing(kk-2, iCell)) / (zOcean(kk-1) - &
+                                   zOcean(kk-2)) * (bedTopography(iCell) - zOcean(kk-1)) + &
+                                   ismip6shelfMelt_3dThermalForcing(kk-1, iCell) + ismip6shelfMelt_deltaT(iCell)
+                           
+               endif
+            end do
+         endif
+
          call mpas_pool_get_array(geometryPool, 'ismip6Runoff', ismip6Runoff)
 
          ! Get mesh and geometry arrays

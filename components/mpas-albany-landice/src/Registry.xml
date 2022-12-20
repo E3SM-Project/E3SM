@@ -413,6 +413,10 @@
                             description="Selection of the method for computing the frontal mass balance of submarine grounded ice.  'none' sets the front mass balance field to 0 everywhere. 'uniform' sets faceMeltSpeed to the value given by config_uniform_face_melt_rate. 'ismip6' uses the parameterization provided by ISMIP6 and requires an ocean thermal forcing field and subglacial hydrology."
                             possible_values="'none', 'uniform', 'ismip6'"
                 />
+                <nml_option name="config_use_3d_thermal_forcing_for_face_melt" type="logical" default_value=".false." units="unitless"
+                            description="If true, use ismip6shelfMelt_3dThermalForcing and associated variables to calculate a depth-averaged thermal forcing for use with the config_front_mass_bal_grounded = 'ismip6' melt paramterization."
+                            possible_values=".true. or .false."
+                />
                 <nml_option name="config_beta_ocean_thermal_forcing" type="real" default_value="1.18" units="unitless"
 			    description="Exponent of the ocean thermal forcing in ISMIP6 grounded ice front melting parameterization"
                             possible_values="any real value"
@@ -843,9 +847,9 @@
                         <!-- these variables just for ISMIP6 forcing -->
                         <var name="ismip6shelfMelt_basin" packages="ismip6ShelfMelt"/>
                         <var name="ismip6shelfMelt_gamma0" packages="ismip6ShelfMelt"/>
-                        <var name="ismip6shelfMelt_3dThermalForcing" packages="ismip6ShelfMelt"/>
-                        <var name="ismip6shelfMelt_deltaT" packages="ismip6ShelfMelt"/>
-                        <var name="ismip6shelfMelt_zOcean" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_3dThermalForcing" packages="ismip6ShelfMelt;ismip6GroundedFaceMelt"/>
+                        <var name="ismip6shelfMelt_deltaT" packages="ismip6ShelfMelt;ismip6GroundedFaceMelt"/>
+                        <var name="ismip6shelfMelt_zOcean" packages="ismip6ShelfMelt;ismip6GroundedFaceMelt"/>
                         <var name="ismip6shelfMelt_offset" packages="ismip6ShelfMelt"/>
                         <!-- these variables just for ISMIP6 grounded glacier forcing -->
                         <var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
@@ -1321,17 +1325,17 @@ is the value of that variable from the *previous* time level!
                      description="gamma0 value prescribed for ISMIP6 ice-shelf melting method, input to model.  Defaults to 0 so that missing input value will zero melt field."
                 />
                 <var name="ismip6shelfMelt_deltaT" type="real" dimensions="nCells" units="K" default_value="0.0"
-                     packages="ismip6ShelfMelt"
+                     packages="ismip6ShelfMelt;ismip6GroundedFaceMelt"
                      description="basin-by-basin temperature bias correction for ISMIP6 ice-shelf melting method, input to model"
                 />
                 <var name="ismip6shelfMelt_TFdraft" type="real" dimensions="nCells Time" units="deg. C" packages="ismip6ShelfMelt"
                      description="thermal forcing at ice shelf draft used for ISMIP6 ice-shelf melting method, calculated by param."
                 />
                 <var name="ismip6shelfMelt_3dThermalForcing" type="real" dimensions="nISMIP6OceanLayers nCells Time" units="deg. C" 
-                     default_value="0.0" packages="ismip6ShelfMelt"
+                     default_value="0.0" packages="ismip6ShelfMelt;ismip6GroundedFaceMelt"
                      description="thermal forcing for ISMIP6 ice-shelf melting method, input to model"
                 />
-                <var name="ismip6shelfMelt_zOcean" type="real" dimensions="nISMIP6OceanLayers" units="m" packages="ismip6ShelfMelt"
+                <var name="ismip6shelfMelt_zOcean" type="real" dimensions="nISMIP6OceanLayers" units="m" packages="ismip6ShelfMelt;ismip6GroundedFaceMelt"
                      description="depth coordinate associated with ismip6shelfMelt_3dThermalForcing field, input to model"
                 />
                 <var name="ismip6shelfMelt_offset" type="real" dimensions="nCells" units="kg m^{-2} s^{-1}" packages="ismip6ShelfMelt" default_value="0.0"
