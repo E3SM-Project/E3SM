@@ -1429,14 +1429,27 @@ module li_iceshelf_melt
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcing', TFocean)
+         call mpas_pool_get_array(geometryPool, 'ismip6Runoff', ismip6Runoff)
 
-         ! Get ISMIP6 forcing fields
+         ! Get mesh and geometry arrays
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+         call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+         call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
+         call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
+         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+         call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
+
          if ( config_use_3d_thermal_forcing_for_face_melt ) then
             call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_3dThermalForcing', ismip6shelfMelt_3dThermalForcing)
             call mpas_pool_get_array(geometryPool, "ismip6shelfMelt_zOcean", zOcean)
             call mpas_pool_get_array(geometryPool, "ismip6shelfMelt_deltaT", ismip6shelfMelt_deltaT)
 
-            ! Vertically average thermal forcing based on bedTopography
+            ! Calculate thermal forcing based on bedTopography
             TFocean(:) = 0.0_RKIND
             do iCell = 1, nCellsSolve
                if (bedTopography(iCell) < 0.0_RKIND) then
@@ -1453,21 +1466,6 @@ module li_iceshelf_melt
                endif
             end do
          endif
-
-         call mpas_pool_get_array(geometryPool, 'ismip6Runoff', ismip6Runoff)
-
-         ! Get mesh and geometry arrays
-         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-         call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-         call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
-         call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
-         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
-         call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
-         call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
-         call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-         call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
 
          faceMeltSpeed(:) = 0.0_RKIND
          allocate(faceMeltSpeedVertAvg(nCells+1))
