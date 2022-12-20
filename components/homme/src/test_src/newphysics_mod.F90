@@ -112,19 +112,26 @@ subroutine get_geo_from_drydp(Tempe, dpdry, pidry, zbottom, zi, zm, dz)
 end subroutine get_geo_from_drydp
 
 
-subroutine sedimentation(qvdry,qcdry,qrdry,tempe,dpdry,pidry,zbottom,massleft,energyleft,dt)
+subroutine sedimentation(qvdry,qcdry,qrdry,tempe,dpdry,ptop,zbottom,pprime,massleft,energyleft,dt)
 
   real(rl), dimension(nlev), intent(inout) :: qvdry,qcdry,qrdry,tempe
-  real(rl), dimension(nlev), intent(in)    :: dpdry, pidry
-  real(rl),                  intent(in)    :: zbottom,dt
-  real(rl),                  intent(out)   :: massleft, energyleft
+  real(rl), dimension(nlev), intent(in)    :: dpdry, pprime
+  real(rl),                  intent(in)    :: zbottom,dt,ptop
+  real(rl),                  intent(inout) :: massleft, energyleft
 
   integer  :: k, kk, d_ind
   real(rl) :: change, positt, velqr, T_new, cptermold, cptermnew
-  real(rl), dimension(nlev)  :: zm, dz, rhodry
+  real(rl), dimension(nlev)  :: zm, dz, rhodry, dpi, pidry, ppi, pnh
   real(rl), dimension(nlevp) :: zi
 
   massleft = 0.0; energyleft = 0.0
+
+  dpi = dpdry*(1.0 + qvdry + qcdry + qrdry)
+
+  !derived pressure values
+  call construct_hydro_pressure(dpi,  ptop,ppi  )
+  call construct_hydro_pressure(dpdry,ptop,pidry)
+  pnh = ppi + pprime
 
   call get_geo_from_drydp(tempe, dpdry, pidry, zbottom, zi, zm, dz)
 
@@ -140,15 +147,15 @@ subroutine sedimentation(qvdry,qcdry,qrdry,tempe,dpdry,pidry,zbottom,massleft,en
 !print *, 'k, velqr, qr', k, velqr(k), qrdry(k)
 
       !check where it ends
-       d_ind = k
-       positt = zm(k) - velqr * dt
-       !cell with kk index has boundaries zi(kk) and zi(kk+1)
-       do kk=k+1,nlev
-         if ( (positt > zi(kk)) .and. (positt <= zi(kk+1)) ) then
-           d_ind = kk
-           !kk = nlev ! does F allow this
-         endif
-       enddo
+      d_ind = k
+      positt = zm(k) - velqr * dt
+      !cell with kk index has boundaries zi(kk) and zi(kk+1)
+      do kk=k+1,nlev
+        if ( (positt > zi(kk)) .and. (positt <= zi(kk+1)) ) then
+          d_ind = kk
+          !kk = nlev ! does F allow this
+        endif
+      enddo
 
 !print *, 'positt - zm(k)', positt - zm(k)
 !if(d_ind > kk) then
@@ -166,32 +173,32 @@ else
 endif
 
 
-       if(positt < zi(nlevp)) then
-         !hit the bottom
-         d_ind = -1
-         massleft   = massleft   + qrdry(k) * dpdry(k)
+      if(positt < zi(nlevp)) then
+        !hit the bottom
+        d_ind = -1
+        massleft   = massleft   + qrdry(k) * dpdry(k)
 !add nh term later
-         energyleft = energyleft + qrdry(k) * dpdry(k) * ( cl*tempe(k) + latice )
-         qrdry(k) = 0.0
-       else
-         !stuck in between
-         !arrives to dest cell, recompute ratio for the dest cell
-         change = qrdry(k)*dpdry(k)/dpdry(d_ind)
-         !compute average temperature with new mass
-         cptermold = cpdry + cpv * qvdry(d_ind) + cl * (qcdry(d_ind) + qrdry(d_ind))
-         cptermnew = cptermold + cl*change
+        energyleft = energyleft + qrdry(k) * dpdry(k) * ( cl*tempe(k) + latice + zbottom*gravit )
+        qrdry(k) = 0.0
+      else
+        !stuck in between
+        !arrives to dest cell, recompute ratio for the dest cell
+        change = qrdry(k)*dpdry(k)/dpdry(d_ind)
+        !compute average temperature with new mass
+        cptermold = cpdry + cpv * qvdry(d_ind) + cl * (qcdry(d_ind) + qrdry(d_ind))
+        cptermnew = cptermold + cl*change
 !add nh term later
-         T_new = ( tempe(d_ind) * dpdry(d_ind) * cptermold + tempe(k) * dpdry(k) * qrdry(k) * cl ) / &
-                  cptermnew / dpdry(d_ind)
+        T_new = ( tempe(d_ind) * dpdry(d_ind) * cptermold + tempe(k) * dpdry(k) * qrdry(k) * cl ) / &
+                 cptermnew / dpdry(d_ind)
 
 !print *, 'T_new', T_new 
-         tempe(d_ind) = T_new
+        tempe(d_ind) = T_new
 
-         qrdry(k) = 0.0
-         qrdry(d_ind) = qrdry(d_ind) + change
-       endif
-     endif !there was rain in cell
-   end do ! k loop for sedim
+        qrdry(k) = 0.0
+        qrdry(d_ind) = qrdry(d_ind) + change
+      endif
+    endif !there was rain in cell
+  end do ! k loop for sedim
 
 end subroutine sedimentation
 
@@ -530,20 +537,22 @@ subroutine kessler_new_hy(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ptop,zi_c,massout,energyou
      ! right now nh term is not used, so, no need to recompute wet hydro pressure and total nh pressure
      !so far, it is only part that has fluxes out
      call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_before)
-     call sedimentation(qvdry_c,qcdry_c,qrdry_c, T_c, dpdry_c,                    ppidry, zbottom, loc_mass_p,loc_energy_p,dt)
+     call sedimentation(qvdry_c,qcdry_c,qrdry_c, T_c, dpdry_c,ptop, zbottom, pprime,           loc_mass_p,loc_energy_p,dt)
      call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_after)
-     !print *, 'Sedime:enbefore - enafter(up to flux)', (energy_before - energy_after - loc_energy_p)/energy_before
+     !if(loc_energy_p > 300.0)then
+     !print *, 'Sedime:enbefore - enafter(up to flux)', (energy_before - energy_after - loc_energy_p)/energy_before, loc_energy_p
+     !print *, 'mass out', loc_mass_p
+     !stop
+     !endif
      massout = massout + loc_mass_p; energyout = energyout + loc_energy_p;
 
      ! evaporation of rain ----------------------------------------------------
-  !call recompute_pressures(qvdry_c,qcdry_c,qrdry_c, dpdry_c,ppidry,pprime, ppi,ploc_c,dploc_c)
      call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_before)
      call rain_evaporation(qvdry_c,qcdry_c,qrdry_c, T_c, dpdry_c,ptop,zbottom,pprime)
      call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_after)
      !print *, 'Rain evap: enbefore - enafter(up to flux)', (energy_before - energy_after)/energy_before
 
      ! condensation <-> evaporation -------------------------------------------
-  !call recompute_pressures(qvdry_c,qcdry_c,qrdry_c, dpdry_c,ppidry,pprime, ppi,ploc_c,dploc_c)
      call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_before)
      call condensation_and_back_again(qvdry_c,qcdry_c,qrdry_c,T_c, dpdry_c,ptop,zbottom,pprime)
      call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_after)
@@ -561,7 +570,7 @@ subroutine kessler_new_hy(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ptop,zi_c,massout,energyou
 
      !update q fields
      !WITH RESPECT TO OLD PRESSURE!
-     ! this is wrong: dp_c = dpdry_c*(1.0 + qvdry_c + qcdry_c + qrdry_c)
+     ! this is wrong to do: dp_c = dpdry_c*(1.0 + qvdry_c + qcdry_c + qrdry_c)
      call convert_to_wet(qvdry_c, qcdry_c, qrdry_c, dp_c, dpdry_c, qv_c, qc_c, qr_c)
 
   endif ! any water >0
