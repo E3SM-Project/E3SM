@@ -332,7 +332,7 @@ TEST_CASE("nudging") {
     //int time_in=time_s*250;
     //run
     //nudging_mid->run(1);
-    nudging_mid->run(time_s);
+    nudging_mid->run(time_s*100);
     f_mid.sync_to_host();
     p_mid.sync_to_host();
 
@@ -344,7 +344,8 @@ TEST_CASE("nudging") {
         //REQUIRE(f_mid_v_h(icol,ilev) == (-ilev)*100 + icol + 1);
         //REQUIRE(f_mid_v_h(icol,ilev) == 100*(icol-1) + 2*ilev+time_s*0.1);
 	//REQUIRE(f_mid_v_h(icol,ilev) == 100*(icol-1) + 2*ilev+0.1);
-	REQUIRE(f_mid_v_h(icol,ilev) == 1000*(icol-1) + 10 + 20*ilev +(time_s)*1);
+	//REQUIRE(f_mid_v_h(icol,ilev) == 1000*(icol-1) + 10 + 20*ilev +(time_s)*1);
+	REQUIRE(f_mid_v_h(icol,ilev) == 1000*(icol-1) + 10 + 20*ilev +int(time_s)*1 -1);
       }
     }
 }
