@@ -86,10 +86,10 @@ inline void compute_crm_feedback_tendencies( pam::PamCoupler &coupler , real gcm
   real2d crm_feedback_tend_qv  ("",nz,nens);
   real2d crm_feedback_tend_ql  ("",nz,nens);
   real2d crm_feedback_tend_qi  ("",nz,nens);
-  real micro_cp_d = coupler.get_option("micro_cp_d");
+  real cp_d = coupler.get_option<real>("cp_d");
   real r_gcm_dt = 1._fp / gcm_dt;  // precompute reciprocal to avoid costly divisions
   parallel_for( "Compute CRM feedback tendencies", SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
-    real crm_dse = crm_hmean_temp (k,iens) * micro_cp_d;
+    real crm_dse = crm_hmean_temp (k,iens) * cp_d;
     real crm_qv  = crm_hmean_rho_v(k,iens) / (crm_hmean_rho_d(k,iens) + crm_hmean_rho_v(k,iens));
     real crm_ql  = crm_hmean_rho_l(k,iens) / (crm_hmean_rho_d(k,iens) + crm_hmean_rho_l(k,iens));
     real crm_qi  = crm_hmean_rho_i(k,iens) / (crm_hmean_rho_d(k,iens) + crm_hmean_rho_i(k,iens));

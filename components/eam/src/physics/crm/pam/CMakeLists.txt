@@ -3,7 +3,6 @@ set(PAM_DRIVER_SRC
     pam_driver.F90  
     pam_driver.cpp  
     pam_feedback.h  
-    pam_output.h  
     pam_rad_update.cpp  
     pam_state_update.h  
     params.F90)
@@ -15,16 +14,10 @@ set(PAM_DYCORE awfl)
 set(PAM_MICRO  p3)
 set(PAM_SGS    shoc)
 
-set (YAMLCPP_SOURCE_DIR
-    ${CMAKE_CURRENT_SOURCE_DIR}/external/externals/yaml-cpp)
-set (YAMLCPP_BINARY_DIR
-    ${CMAKE_BINARY_DIR}/externals/yaml-cpp)
-
 add_subdirectory(external/pam_core)
 add_subdirectory(external/physics)
 add_subdirectory(external/dynamics)
 add_subdirectory(external/externals/eigen)
-add_subdirectory(external/externals/yaml-cpp)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
    set(PAM_Fortran_FLAGS -real-size 64)
@@ -60,5 +53,5 @@ target_compile_options(pam_driver PUBLIC
   $<$<COMPILE_LANGUAGE:Fortran>:${PAM_Fortran_FLAGS}>
 )
 
-target_link_libraries(pam_driver pam_core physics dynamics yaml-cpp)
+target_link_libraries( pam_driver pam_core physics dynamics )
 
