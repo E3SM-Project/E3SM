@@ -791,7 +791,7 @@ contains
 
 #ifdef HAVE_MOAB
   subroutine init_land_moab(bounds, samegrid_al)
-    use seq_flds_mod     , only :  seq_flds_l2x_fields
+    use seq_flds_mod     , only :  seq_flds_l2x_fields, seq_flds_x2l_fields
     use shr_kind_mod     , only : CXX => SHR_KIND_CXX
     use spmdMod     , only: iam  ! rank on the land communicator
     use domainMod   , only: ldomain ! ldomain is coming from module, not even passed
@@ -1029,6 +1029,12 @@ contains
     if ( ierr > 0) then
         call endrun('Error: fail to define seq_flds_l2x_fields for land moab mesh')
     endif
+    tagname = trim(seq_flds_x2l_fields)//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+    if ( ierr > 0) then
+        call endrun('Error: fail to define seq_flds_x2l_fields for land moab mesh')
+    endif
+
   end subroutine init_land_moab
 
   subroutine lnd_export_moab( bounds, lnd2atm_vars, lnd2glc_vars)
