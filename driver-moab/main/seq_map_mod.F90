@@ -401,7 +401,7 @@ end subroutine moab_map_init_rcfile
          endif
 
          if (seq_comm_iamroot(CPLID)) then
-            write(logunit,*) subname,' iMOAB_mapper  nfields', &
+            write(logunit,*) subname, 'iMOAB mapper ',trim(mapper%mbname), ' iMOAB_mapper  nfields', &
                   nfields,  ' fldlist_moab=', trim(fldlist_moab)
             call shr_sys_flush(logunit)
          endif
@@ -424,7 +424,7 @@ end subroutine moab_map_init_rcfile
          ! then set it back to target tag to mimic a copy
 #ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
-            write(logunit, *) subname,' iMOAB copy_only between mbids:  ', mapper%src_mbid, ' and ',  mapper%tgt_mbid, trim(fldlist_moab)
+            write(logunit, *) subname, 'iMOAB mapper', trim(mapper%mbname), ' iMOAB copy_only between mbids:  ', mapper%src_mbid, ' and ',  mapper%tgt_mbid, trim(fldlist_moab)
             call shr_sys_flush(logunit)
          endif
 #endif

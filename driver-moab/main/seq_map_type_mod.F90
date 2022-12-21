@@ -44,6 +44,7 @@ module seq_map_type_mod
      ! source and target app ids also make sense only on the coupler pes
      integer                 :: src_mbid, tgt_mbid, intx_mbid, src_context, intx_context
      character*32            :: weight_identifier ! 'state' OR 'flux'
+     character*16            :: mbname
      integer                 :: tag_entity_type
      integer                 :: nentities ! this should be used only if copy_only is true
      !
@@ -152,10 +153,11 @@ contains
     mapper%mapfile        = "undefined"
 
 #ifdef HAVE_MOAB
-    mapper%src_mbid = -1
-    mapper%tgt_mbid = -1
+    mapper%src_mbid  = -1
+    mapper%tgt_mbid  = -1
     mapper%intx_mbid = -1
-    mapper%nentities = 0
+    mapper%nentities =  0
+    mapper%mbname    = "undefined"
 #endif
 
   end subroutine seq_map_mapinit
@@ -196,6 +198,27 @@ contains
     endif
 
   end subroutine seq_map_gsmapcheck
+  
+  !===============================================================================
 
+  subroutine seq_map_set_type(mapper, mbid, ent_type)
+    use iMOAB, only: iMOAB_GetMeshInfo
+    type(seq_map)   ,intent(in),pointer :: mapper
+    integer         ,intent(in) :: mbid
+    integer         ,intent(in) :: ent_type
+    
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3), ierr
+
+
+    ierr  = iMOAB_GetMeshInfo ( mbid, nvert, nvise, nbl, nsurf, nvisBC ); 
+    if (ent_type .eq. 0) then
+       mapper%nentities = nvert(1)
+    else if (ent_type .eq. 1) then
+       mapper%nentities = nvise(1)
+    endif
+
+    mapper%tag_entity_type = ent_type
+
+  end  subroutine seq_map_set_type
 
 end module seq_map_type_mod

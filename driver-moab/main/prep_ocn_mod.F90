@@ -32,7 +32,7 @@ module prep_ocn_mod
 
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
   use seq_map_type_mod
-  use seq_map_mod        !  will have also moab_map_init_rcfile 
+  use seq_map_mod        !  will have also moab_map_init_rcfile , seq_map_set_type 
   use seq_flds_mod
   use t_drv_timers_mod
   use mct_mod
@@ -374,6 +374,7 @@ contains
             mapper_Fa2o%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fa2o%weight_identifier = wgtIdef
+            mapper_Fa2o%mbname = 'mapper_Fa2o'
             ! because we will project fields from atm to ocn grid, we need to define 
             ! atm a2x fields to ocn grid on coupler side
             
@@ -475,6 +476,7 @@ contains
             mapper_Sa2o%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Sa2o%weight_identifier = wgtIdef  
+            mapper_Sa2o%mbname = 'mapper_Sa2o'
 
             mapper_Va2o%src_mbid = mbaxid
             mapper_Va2o%tgt_mbid = mboxid
@@ -483,6 +485,7 @@ contains
             mapper_Va2o%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Va2o%weight_identifier = wgtIdef  
+            mapper_Va2o%mbname = 'mapper_Va2o'
           endif ! if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) 
        endif ! if (atm_c2_ocn .or. atm_c2_ice)
        call shr_sys_flush(logunit)
@@ -527,6 +530,10 @@ contains
             ! no intersection, so will have to do without it
             mapper_Va2o%src_context = ice(1)%cplcompid
             mapper_Va2o%intx_context = ocn(1)%cplcompid
+
+            if(mapper_SFi2o%copy_only) then
+               call seq_map_set_type(mapper_SFi2o, mbixid, 1) ! type is cells 
+            endif
 
          endif 
  

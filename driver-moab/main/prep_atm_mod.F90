@@ -265,6 +265,7 @@ contains
             mapper_So2a%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_So2a%weight_identifier = wgtIdef
+            mapper_So2a%mbname = 'mapper_So2a'
             ! because we will project fields from ocean to atm phys grid, we need to define 
             ! ocean o2x fields to atm phys grid (or atm spectral ext ) on coupler side
             if (atm_pg_active) then
@@ -357,6 +358,7 @@ contains
             mapper_Fo2a%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fo2a%weight_identifier = wgtIdef
+            mapper_Fo2a%mbname = 'mapper_Fo2a'
          endif 
 ! endif for HAVE_MOAB
 #endif  
@@ -417,6 +419,7 @@ contains
             mapper_Si2a%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Si2a%weight_identifier = wgtIdef
+            mapper_Si2a%mbname = 'mapper_Si2a'
             ! because we will project fields from ocean to atm phys grid, we need to define 
             ! ice i2x fields to atm phys grid (or atm spectral ext ) on coupler side
             if (atm_pg_active) then
@@ -508,6 +511,7 @@ contains
             mapper_Fi2a%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fi2a%weight_identifier = wgtIdef 
+            mapper_Fi2a%mbname = 'mapper_Fi2a'
 #endif
       endif !  if (ice_present) then
       call shr_sys_flush(logunit)
@@ -542,6 +546,7 @@ contains
             mapper_Fl2a%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fl2a%weight_identifier = wgtIdef 
+            mapper_Fl2a%mbname = 'mapper_Fl2a'
 
             if (.not. samegrid_al) then ! tri grid case
                if (iamroot_CPLID) then
@@ -623,13 +628,14 @@ contains
             'mapper_Sl2a initialization',esmf_map_flag)
 #ifdef HAVE_MOAB
          if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
-            mapper_Fl2a%src_mbid = mblxid
-            mapper_Fl2a%tgt_mbid = mbaxid
-            mapper_Fl2a%src_mbid = mbintxla
-            mapper_Fl2a%src_context = lnd(1)%cplcompid
-            mapper_Fl2a%intx_context = idintx
+            mapper_Sl2a%src_mbid = mblxid
+            mapper_Sl2a%tgt_mbid = mbaxid
+            mapper_Sl2a%src_mbid = mbintxla
+            mapper_Sl2a%src_context = lnd(1)%cplcompid
+            mapper_Sl2a%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
-            mapper_Fl2a%weight_identifier = wgtIdef 
+            mapper_Sl2a%weight_identifier = wgtIdef 
+            mapper_Sl2a%mbname = 'mapper_Sl2a'
          endif
 #endif
       endif ! if (lnd_c2_atm) then
