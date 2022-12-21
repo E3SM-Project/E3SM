@@ -4026,6 +4026,8 @@ contains
        endif
        if (associated(xao_ax)) then
           call prep_atm_mrg(infodata, fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:atmprep_mrgx2a')
+          ! call moab atm merge too 
+          call  prep_atm_mrg_moab(infodata, xao_ax)
        endif
 
        call component_diag(infodata, atm, flow='x2c', comment= 'send atm', info_debug=info_debug, &

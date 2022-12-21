@@ -422,6 +422,12 @@ end subroutine moab_map_init_rcfile
        if ( valid_moab_context ) then
          ! first get data from source tag and store in a temporary
          ! then set it back to target tag to mimic a copy
+#ifdef MOABDEBUG
+         if (seq_comm_iamroot(CPLID)) then
+            write(logunit, *) subname,' iMOAB copy_only between mbids:  ', mapper%src_mbid, ' and ',  mapper%tgt_mbid, trim(fldlist_moab)
+            call shr_sys_flush(logunit)
+         endif
+#endif
          ntagdatalength = nfields * mapper % nentities
          allocate(moab_tag_data(ntagdatalength))
 
@@ -532,10 +538,6 @@ end subroutine moab_map_init_rcfile
          endif
        endif
        if ( valid_moab_context ) then
-         if (seq_comm_iamroot(CPLID)) then
-            write(logunit, *) subname,' iMOAB mapper before receiving ', trim(fldlist_moab)
-            call shr_sys_flush(logunit)
-         endif
          ! receive in the intx app, because it is redistributed according to coverage (trick)
          ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
          if (ierr .ne. 0) then
@@ -551,6 +553,12 @@ end subroutine moab_map_init_rcfile
          endif
        endif
        if ( valid_moab_context ) then
+#ifdef MOABDEBUG
+         if (seq_comm_iamroot(CPLID)) then
+            write(logunit, *) subname,' iMOAB mapper: between ', mapper%src_mbid, ' and ',  mapper%tgt_mbid, trim(fldlist_moab)
+            call shr_sys_flush(logunit)
+         endif
+#endif
          ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, mapper%weight_identifier, fldlist_moab, fldlist_moab)
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in applying weights '
@@ -559,12 +567,6 @@ end subroutine moab_map_init_rcfile
        endif
 #endif
     endif
-
-#ifdef HAVE_MOAB
-    if ( valid_moab_context ) then
-
-    endif
-#endif
 
   end subroutine seq_map_map
 

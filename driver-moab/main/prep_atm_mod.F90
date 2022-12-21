@@ -1382,7 +1382,7 @@ contains
     call mct_list_init(temp_list ,seq_flds_x2a_fields)
     size_list=mct_list_nitem (temp_list)
     ent_type = 1 ! cell for atm, atm_pg_active
-    if (iamroot) print *, num_moab_exports, trim(seq_flds_x2a_fields)
+    if (iamroot) print *, subname, num_moab_exports, trim(seq_flds_x2a_fields)
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)
