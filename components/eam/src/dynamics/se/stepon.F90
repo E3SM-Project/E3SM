@@ -153,7 +153,10 @@ subroutine stepon_init(dyn_in, dyn_out )
   call addfld('DYN_W'    ,(/ 'ilev' /),'A', 'm/s',  'Vertical velocity',      gridname='GLL')
   call addfld('DYN_Z3'   ,(/ 'ilev' /),'A', 'm',    'Geopotential Height (above sea level)', gridname='GLL')
   call addfld('DYN_MU'   ,(/ 'ilev' /),'A', 'Pa/Pa','dPNH/dPH',               gridname='GLL')
-  call addfld('DYN_PV'    ,(/ 'lev' /), 'A', 'm2 K/kg/s',    'Ertel Potential Vorticity (dyn grid)', gridname='GLL')
+  ! DYN_PV disabled; vertical structure of the output is corrupt, and
+  ! is not consistent with equivalent output on GLL physics grid 
+  ! Other occurences of DYN_PV also commented out below
+  !call addfld('DYN_PV'    ,(/ 'lev' /), 'A', 'm2 K/kg/s',    'Ertel Potential Vorticity (dyn grid)', gridname='GLL')
 
 end subroutine stepon_init
 
@@ -446,12 +449,12 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          call outfld('DYN_MU',tmp_dyn_i(:,:,:),npsq,ie)
       enddo
    endif
-   if (hist_fld_active('DYN_PV')) then
-      do ie=1,nelemd
-         call get_pot_vort(dyn_in%elem(ie),potvort,hvcoord,tl_f)
-         call outfld('DYN_PV',potvort,npsq,ie)
-      enddo
-   endif
+   !if (hist_fld_active('DYN_PV')) then
+   !   do ie=1,nelemd
+   !      call get_pot_vort(dyn_in%elem(ie),potvort,hvcoord,tl_f)
+   !      call outfld('DYN_PV',potvort,npsq,ie)
+   !   enddo
+   !endif
 
    if (hist_fld_active('FU') .or. hist_fld_active('FV') ) then
       do ie=1,nelemd
