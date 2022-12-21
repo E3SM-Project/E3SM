@@ -19,11 +19,15 @@ use constituents,   only: pcnst
 use rad_constituents, only: rad_cnst_get_mode_num_idx, &
                             rad_cnst_get_mam_mmr_idx
 use physics_types,  only: physics_state, physics_ptend, physics_ptend_init
+use phys_control,     only: phys_getopts ! namelist variable
 !kzm --
 use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_old_tim_idx, pbuf_get_field
 use phys_control,   only: use_hetfrz_classnuc
 use rad_constituents, only: rad_cnst_get_info, rad_cnst_get_aer_mmr, rad_cnst_get_aer_props, &
-                            rad_cnst_get_mode_num, rad_cnst_get_mode_props
+                            rad_cnst_get_mode_num, rad_cnst_get_mode_props,rad_cnst_get_mode_num_idx, &
+                            rad_cnst_get_mam_mmr_idx
+use physics_buffer, only: pbuf_set_field
+use wv_saturation,  only: svp_water, svp_ice
 
 use physics_buffer, only: pbuf_add_field, dtype_r8, pbuf_old_tim_idx, &
                           pbuf_get_index, pbuf_get_field
@@ -58,8 +62,8 @@ logical, public, protected :: use_nie_nucleate = .false.
 logical, public, protected :: use_dem_nucleate = .false.
 !real(r8)                   :: nucleate_ice_subgrid
 real(r8)                   :: so4_sz_thresh_icenuc = huge(1.0_r8) !ice nucleation SO2 size threshold for aitken mode
-logical                    :: nucleate_ice_use_troplev = .true.  !kzm ++
-logical                    :: nucleate_ice_use_troplev_old = .false. !kzm ++
+logical                    :: nucleate_ice_use_troplev = .false.  !kzm ++
+logical                    :: aero_nucleation_removal = .false. !kzm
 logical                    :: nucleate_ice_incloud = .false. !kzm ++
 real(r8)                   :: nucleate_ice_subgrid = -1._r8 !kzm ++
 real(r8)                   :: nucleate_ice_subgrid_strat = -1._r8  !kzm ++
@@ -99,7 +103,11 @@ logical :: clim_modal_aero
 !kzm ++
 logical :: prog_modal_aero
 real(r8) :: sigmag_accum
-
+!logical :: lq(pcnst) = .false. ! set flags true for constituents with non-zero tendencies
+integer :: cnum_coarse_idx, ccoarse_dst_idx, ccoarse_so4_idx
+integer :: cnum_strat_coarse_idx, cstrat_coarse_so4_idx!kzm
+integer :: accum_so4_idx,accum_pom_idx,accum_soa_idx,accum_bc_idx,accum_dst_idx,accum_ncl_idx,accum_mom_idx
+!kzm --
 integer :: nmodes = -1
 integer :: mode_accum_idx  = -1  ! index of accumulation mode
 integer :: mode_aitken_idx = -1  ! index of aitken mode
@@ -110,10 +118,15 @@ integer :: coarse_dust_idx = -1  ! index of dust in coarse mode
 integer :: coarse_nacl_idx = -1  ! index of nacl in coarse mode
 
 integer :: coarse_so4_idx = -1  ! index of so4 in coarse mode
+! kzm ++
+! for so4 only aitken mode so4 to get so4_num for nucleation
+! if defined MAM7S add stratosphere aitken to troposphere aitken
+integer :: mode_strat_sulfate1_idx = -1 
+integer :: mode_strat_coarse_idx = -1 
+integer :: strat_coarse_so4_idx = -1
+real(r8) :: sigmag_coarse, sigmag_strat_coarse
 
-
-integer :: mode_strat_sulfate1_idx = -1 !kzm
-integer :: mode_strat_coarse_idx = -1 !kzm
+! kzm --
 #if (defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_5MODE)
 integer :: coarse_mom_idx = -1  ! index of mom in coarse mode
 #endif
@@ -149,7 +162,6 @@ subroutine nucleate_ice_cam_readnl(nlfile)
   ! Local variables
   integer :: unitn, ierr
   character(len=*), parameter :: subname = 'nucleate_ice_cam_readnl'
-
   namelist /nucleate_ice_nl/ use_preexisting_ice, hist_preexisting_ice, &
                              use_nie_nucleate, use_dem_nucleate,        &
                              nucleate_ice_subgrid, so4_sz_thresh_icenuc 
@@ -198,23 +210,29 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
 
    real(r8), intent(in) :: mincld_in
    real(r8), intent(in) :: bulk_scale_in
-
+   
    ! local variables
    integer  :: iaer
    integer  :: m, n, nspec
 
    character(len=32) :: str32
    character(len=*), parameter :: routine = 'nucleate_ice_cam_init'
+   logical :: modal_strat_sulfate_ice_nucleation !SICE
+   logical :: modal_strat_sulfate_wet_removal 
    !--------------------------------------------------------------------------------------------
 
    mincld     = mincld_in
    bulk_scale = bulk_scale_in
 !kzm ++
       ! Initialize naai.
-   !if (is_first_step()) then
-   !   call pbuf_set_field(pbuf2d, naai_idx, 0.0_r8)
-   !end if
-
+    ! determine default variables
+   call phys_getopts(modal_strat_sulfate_ice_nucleation_out &
+                     = modal_strat_sulfate_ice_nucleation,  &
+                     modal_strat_sulfate_wet_removal_out    &
+                     = modal_strat_sulfate_wet_removal  )             
+   nucleate_ice_use_troplev = modal_strat_sulfate_ice_nucleation
+   aero_nucleation_removal = modal_strat_sulfate_wet_removal
+!kzm --   
    if( masterproc ) then
       write(iulog,*) 'nucleate_ice parameters:'
       write(iulog,*) '  mincld                     = ', mincld_in !set as 1.0E-04 in WACCM6
@@ -227,6 +245,8 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
       write(iulog,*) '  nucleate_ice_strat         = ', nucleate_ice_strat !set as 1.0 in WACCM6
 !      write(iulog,*) '  nucleate_ice_incloud       = ', nucleate_ice_incloud !set as F in WACCM6
       write(iulog,*) '  nucleate_ice_use_troplev   = ', nucleate_ice_use_troplev !set as T in WACCM6
+      write(iulog,*) '  modal_strat_sulfate_wet_removal   = ', modal_strat_sulfate_wet_removal 
+      write(iulog,*) '  aero_nucleation_removal    = ', aero_nucleation_removal ! remove through nucleation process
    end if
 
 !kzm --
@@ -392,6 +412,44 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
             coarse_dust_idx, coarse_nacl_idx
          call endrun(routine//': ERROR required mode-species type not found')
       end if
+!kzm ++
+      if (mode_strat_coarse_idx>0) then
+         call rad_cnst_get_info(0, mode_strat_coarse_idx, nspec=nspec)
+         do n = 1, nspec
+            call rad_cnst_get_info(0, mode_strat_coarse_idx, n, spec_type=str32)
+            select case (trim(str32))
+            case ('sulfate')
+               strat_coarse_so4_idx = n    ! find sulfate
+            end select
+         end do
+      endif
+      !for accumulation mode
+!      write(iulog,*)'kzm_mode_accum_idx', mode_accum_idx
+      if (mode_accum_idx>0) then
+         call rad_cnst_get_info(0, mode_accum_idx, nspec=nspec)
+         do n = 1, nspec
+            call rad_cnst_get_info(0, mode_accum_idx, n, spec_type=str32)
+            write(iulog,*) trim(str32)
+            select case (trim(str32))
+            case ('sulfate')
+               accum_so4_idx = n    ! find sulfate
+            case ('p-organic')
+               accum_pom_idx = n    ! find pom
+            case ('s-organic')
+               accum_soa_idx = n    ! find soa
+            case ('black-c')
+               accum_bc_idx = n    ! find bc
+            case ('dust')
+               accum_dst_idx = n    ! find dust
+            case ('seasalt')
+               accum_ncl_idx = n    ! find dust 
+            case ('m-organic')
+               accum_mom_idx = n    ! find dust   
+            end select
+         end do
+      endif
+      write(iulog,*)'kzm_nuc_ini_point1'
+!kzm --       
 
       if (mode_coarse_idx > 0) then
          call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)
@@ -472,6 +530,27 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
       if (use_nie_nucleate .or. use_dem_nucleate) then
          call rad_cnst_get_mode_props(0, mode_coarse_dst_idx, sigmag=sigmag_coarse)
       end if
+!kzm ++
+      !call rad_cnst_get_mode_props(0, mode_accum_idx, sigmag=sigmag_accum) !kzm ++
+!      write(iulog,*)'kzm_nuc_ini_point2' 
+      if (prog_modal_aero .and. aero_nucleation_removal) then
+         !call rad_cnst_get_mode_num_idx(mode_coarse_dst_idx, cnum_coarse_idx)
+         !call rad_cnst_get_mam_mmr_idx(mode_coarse_dst_idx, coarse_dust_idx, ccoarse_dst_idx) !question
+         !if (mode_coarse_idx>0) then
+         !   call rad_cnst_get_mam_mmr_idx(mode_coarse_idx, coarse_so4_idx,ccoarse_so4_idx) !question
+         !end if
+         !lq(cnum_coarse_idx) = .true.
+         !lq(ccoarse_dst_idx) = .true.
+         !lq(ccoarse_so4_idx) = .true.
+         !kzm to remove strat coarse sulfate
+         !if (mode_strat_coarse_idx>0) then
+         !   call rad_cnst_get_mode_num_idx(mode_strat_coarse_idx, cnum_strat_coarse_idx) !strat_coarse mode number
+         !   call rad_cnst_get_mam_mmr_idx(mode_strat_coarse_idx, strat_coarse_so4_idx, cstrat_coarse_so4_idx) !strat_coarse mode mass
+         !endif
+         !lq(cnum_strat_coarse_idx) = .true.
+         !lq(cstrat_coarse_so4_idx) = .true.
+      endif
+!kzm --
 
    else
 
@@ -544,6 +623,30 @@ subroutine nucleate_ice_cam_calc( &
    real(r8), pointer :: coarse_nacl(:,:) ! mass m.r. of coarse nacl
 
    real(r8), pointer :: coarse_so4(:,:) ! mass m.r. of coarse so4
+!kzm ++
+#if (defined MODAL_AERO_7MODE_S)
+   real(r8), pointer :: num_strat_sulfate1(:,:) ! number m.r. of aitken mode
+#endif
+   real(r8), pointer :: num_strcrs(:,:)  ! number m.r. of strat. coarse mode !kzm
+   real(r8), pointer :: cld_num_coarse(:,:) ! number m.r. of coarse mode
+   real(r8), pointer :: cld_num_strat_coarse(:,:) ! number m.r. of strat coarse mode
+   real(r8), pointer :: cld_coarse_dust(:,:) ! mass m.r. of coarse dust
+   real(r8), pointer :: cld_coarse_so4(:,:) ! mass m.r. of coarse so4
+   real(r8), pointer :: cld_strat_coarse_so4(:,:) ! mass m.r. of strat coarse dust
+   real(r8), pointer :: strat_coarse_so4(:,:) ! mass m.r. of strat coarse so4
+   !accum_so4,accum_pom,accum_soa,accum_bc,accum_dst,accum_ncl,accum_mom
+   real(r8), pointer :: accum_so4(:,:)
+   real(r8), pointer :: accum_pom(:,:)
+   real(r8), pointer :: accum_soa(:,:)
+   real(r8), pointer :: accum_bc(:,:)
+   real(r8), pointer :: accum_dst(:,:)
+   real(r8), pointer :: accum_ncl(:,:)
+   real(r8), pointer :: accum_mom(:,:)
+   !cld_num_accum, cld_accum_so4
+   real(r8), pointer :: cld_num_accum(:,:)
+   real(r8), pointer :: cld_accum_so4(:,:)
+   real(r8), pointer :: cld_accum_bc(:,:)
+!kzm --   
 
    real(r8), pointer :: num_strcrs(:,:)  ! number m.r. of strat. coarse mode !kzm 
 #if (defined MODAL_AERO_4MODE_MOM  || defined MODAL_AERO_5MODE)
@@ -595,14 +698,20 @@ subroutine nucleate_ice_cam_calc( &
    real(r8) :: dso4_num
    real(r8) :: so4_num_ac
    real(r8) :: so4_num_at!kzm so4 num in aitken																		
-   real(r8) :: so4_num_cr
-   real(r8) :: so4_num_st_cr
-
+   real(r8) :: so4_num_cr,bc_num_accum
+   real(r8) :: so4_num_st_cr,fso4_m3,fso4_m5
+   real(r8) :: so4mc_accum,pommc_accum,soamc_accum,bcmc_accum,dstmc_accum,nclmc_accum,mommc_accum,so4_num_accum             
    real(r8) :: ramp
 
 !   real(r8) :: subgrid(pcols,pver) !kzm note: not add in for now
    real(r8) :: trop_pd(pcols,pver)
    integer :: nstep                             ! current timestep number
+   real(r8) :: regm(pcols,pver)  !output temperature thershold for nucleation regime
+   real(r8) :: cld_num_strat_coarse_tend2, num_strcrs_tend2,cld_mass_strat_coarse_so4_tend2,mass_strat_coarse_so4_tend2
+   real(r8) :: num_accum_tend2,cld_num_accum_tend2,num_coarse_tend2,cld_num_coarse_tend2
+   real(r8) :: cld_mass_accum_so4_tend2,mass_accum_so4_tend2,cld_mass_coarse_so4_tend2,mass_coarse_so4_tend2   
+   real(r8) :: cld_num_coarse_tend1, num_coarse_tend1,cld_mass_coarse_dust_tend1,mass_coarse_dust_tend1
+   real(r8) :: cld_num_accum_tend1,num_accum_tend1,cld_mass_accum_bc_tend1,mass_accum_bc_tend1
 !kzm --
 
 
@@ -656,10 +765,13 @@ subroutine nucleate_ice_cam_calc( &
       ! mode specie mass m.r.
       call rad_cnst_get_aer_mmr(0, mode_coarse_dst_idx, coarse_dust_idx, 'a', state, pbuf, coarse_dust)
       call rad_cnst_get_aer_mmr(0, mode_coarse_slt_idx, coarse_nacl_idx, 'a', state, pbuf, coarse_nacl)
-!kzm ++
+      !kzm ++
       if (mode_strat_coarse_idx > 0) then
           call rad_cnst_get_mode_num(0, mode_strat_coarse_idx,  'a', state, pbuf, num_strcrs) !kzm
       endif
+      ! mode specie mass m.r.
+      call rad_cnst_get_aer_mmr(0, mode_coarse_dst_idx, coarse_dust_idx, 'a', state, pbuf, coarse_dust)
+      call rad_cnst_get_aer_mmr(0, mode_coarse_slt_idx, coarse_nacl_idx, 'a', state, pbuf, coarse_nacl)
 !kzm --    
       if (mode_coarse_idx > 0) then
          call rad_cnst_get_aer_mmr(0, mode_coarse_idx, coarse_so4_idx, 'a', state, pbuf, coarse_so4)
@@ -682,6 +794,34 @@ subroutine nucleate_ice_cam_calc( &
      ! call rad_cnst_get_mode_num(0, mode_coarse_dst_idx, 'c', state, pbuf, cld_num_coarse)
      ! call rad_cnst_get_aer_mmr(0, mode_coarse_dst_idx, coarse_dust_idx, 'c', state, pbuf, cld_coarse_dust)
      ! call physics_ptend_init(ptend, state%psetcols, 'nucleatei', lq=lq) !kzm not now
+     !get accumulation mode aerosols
+     !accum_so4,accum_pom,accum_soa,accum_bc,accum_dst,accum_ncl,accum_mom
+      call rad_cnst_get_aer_mmr(0, mode_accum_idx, accum_so4_idx, 'a', state, pbuf, accum_so4)
+      call rad_cnst_get_aer_mmr(0, mode_accum_idx, accum_pom_idx, 'a', state, pbuf, accum_pom)
+      call rad_cnst_get_aer_mmr(0, mode_accum_idx, accum_soa_idx, 'a', state, pbuf, accum_soa)
+      call rad_cnst_get_aer_mmr(0, mode_accum_idx, accum_bc_idx, 'a', state, pbuf, accum_bc)
+      call rad_cnst_get_aer_mmr(0, mode_accum_idx, accum_dst_idx, 'a', state, pbuf, accum_dst)
+      call rad_cnst_get_aer_mmr(0, mode_accum_idx, accum_ncl_idx, 'a', state, pbuf, accum_ncl)
+      call rad_cnst_get_aer_mmr(0, mode_accum_idx, accum_mom_idx, 'a', state, pbuf, accum_mom)
+      !write(iulog,*)'kzm_nuc_cal_point3'
+      !write(iulog,*)'kzm_pass_point1_nuc_calc'
+      if (aero_nucleation_removal) then
+      if (mode_strat_coarse_idx > 0) then
+      ! strat coarse mode so4 to removal        
+      call rad_cnst_get_aer_mmr(0, mode_strat_coarse_idx, strat_coarse_so4_idx, 'a', state, pbuf, strat_coarse_so4)
+      call rad_cnst_get_aer_mmr(0, mode_strat_coarse_idx, strat_coarse_so4_idx, 'c', state, pbuf, cld_strat_coarse_so4)
+
+      endif
+      ! coarse mode dst and so4 to removal
+      call rad_cnst_get_mode_num(0, mode_coarse_dst_idx, 'c', state, pbuf, cld_num_coarse)
+      call rad_cnst_get_aer_mmr(0, mode_coarse_dst_idx, coarse_dust_idx, 'c', state, pbuf, cld_coarse_dust)
+      call rad_cnst_get_aer_mmr(0, mode_coarse_dst_idx, coarse_so4_idx, 'c', state, pbuf, cld_coarse_so4)
+      ! accum mode so4 to removal cld_num_accum, cld_accum_so4
+      call rad_cnst_get_mode_num(0, mode_accum_idx, 'c', state, pbuf, cld_num_accum)
+      call rad_cnst_get_aer_mmr(0, mode_accum_idx, accum_so4_idx, 'c', state, pbuf, cld_accum_so4)
+      call rad_cnst_get_aer_mmr(0, mode_accum_idx, accum_bc_idx, 'c', state, pbuf, cld_accum_bc)
+      !call physics_ptend_init(ptend, state%psetcols, 'nucleatei', lq=lq) !kzm
+      endif
 !kzm --
    else
       ! init number/mass arrays for bulk aerosols
@@ -897,6 +1037,22 @@ subroutine nucleate_ice_cam_calc( &
                     so4_num_cr = 0.0_r8
                   end if
                endif
+
+               !accum_so4,accum_pom,accum_soa,accum_bc,accum_dst,accum_ncl,accum_mom
+               !so4mc_accum,pommc_accum,soamc_accum,bcmc_accum,dstmc_accum,nclmc_accum,mommc_accum,so4_num_accum
+               so4mc_accum = accum_so4(i,k)
+               pommc_accum = accum_pom(i,k)
+               soamc_accum = accum_soa(i,k)
+               bcmc_accum = accum_bc(i,k)
+               dstmc_accum = accum_dst(i,k)
+               nclmc_accum = accum_ncl(i,k)
+               mommc_accum = accum_mom(i,k)
+               wght = so4mc_accum/(so4mc_accum+pommc_accum+soamc_accum+bcmc_accum+dstmc_accum+nclmc_accum+mommc_accum)
+               so4_num_accum = wght*num_accum(i,k)
+               so4_num_accum = so4_num_accum*rho(i,k)*1.0e-6_r8 
+               wght = bcmc_accum/(so4mc_accum+pommc_accum+soamc_accum+bcmc_accum+dstmc_accum+nclmc_accum+mommc_accum)
+               bc_num_accum = wght*num_accum(i,k)
+               bc_num_accum = bc_num_accum*rho(i,k)*1.0e-6_r8
 !kzm --
 
 
@@ -957,18 +1113,73 @@ subroutine nucleate_ice_cam_calc( &
             ! Move aerosol used for nucleation from interstial to cloudborne,
             ! otherwise the same coarse mode aerosols will be available again
             ! in the next timestep and will supress homogeneous freezing.
-            !if (prog_modal_aero .and. use_preexisting_ice) then
-!            if ( use_preexisting_ice) then
-!               if (separate_dust) then
-!                  call endrun('nucleate_ice_cam: use_preexisting_ice is not supported in separate_dust mode (MAM7)')
-!               endif
-!               write(iulog,*)'kzm_dust_removal_in_cirrus_cloud'
-!               ptend%q(i,k,cnum_idx) = -(odst_num * icldm(i,k))/rho(i,k)/1e-6_r8/dtime
-!               cld_num_coarse(i,k)   = cld_num_coarse(i,k) + (odst_num * icldm(i,k))/rho(i,k)/1e-6_r8
+            if (odst_num > 0.0_r8) then
+               ! write(iulog,*)'kzm_odst_num', odst_num
+               ! write(iulog,*)'kzm_osoot_num', osoot_num
+            endif
+            if (prog_modal_aero .and. use_preexisting_ice .and. aero_nucleation_removal) then
+            if ( aero_nucleation_removal) then
+               if (separate_dust) then
+                  call endrun('nucleate_ice_cam: use_preexisting_ice is not supported in separate_dust mode (MAM7)')
+               endif
+               !write(iulog,*)'kzm_dust_removal_in_cirrus_cloud'
+               ! removal coarse dst num
+               if (aero_nucleation_removal)then
+                  !cld_num_coarse_tend1, num_coarse_tend1,cld_mass_coarse_dust_tend1,mass_coarse_dust_tend1
+                  !cld_num_accum_tend1,num_accum_tend1,cld_mass_accum_bc_tend1,mass_accum_bc_tend1     
+                  cld_num_coarse_tend1 = 0.0_r8  
+                  num_coarse_tend1 = 0.0_r8
 
-!               ptend%q(i,k,cdst_idx) = - odst_num / dst_num * icldm(i,k) * coarse_dust(i,k) / dtime!
-!               cld_coarse_dust(i,k) = cld_coarse_dust(i,k) + odst_num / dst_num *icldm(i,k) * coarse_dust(i,k)
-!            end if
+                  cld_mass_coarse_dust_tend1 = 0.0_r8
+                  mass_coarse_dust_tend1 = 0.0_r8
+
+                  cld_num_accum_tend1 = 0.0_r8
+                  num_accum_tend1 = 0.0_r8
+
+                  cld_mass_accum_bc_tend1 = 0.0_r8
+                  mass_accum_bc_tend1 = 0.0_r8
+
+
+
+               if (odst_num > 0.0_r8) then
+                  ! transfer number from interstial to cloudborne
+                  !cld_num_coarse(i,k) = max((cld_num_coarse(i,k) + (odst_num * icldm(i,k))/rho(i,k)/1e-6_r8), 0.0_r8)
+                  !num_coarse(i,k) = max((num_coarse(i,k) - (odst_num * icldm(i,k))/rho(i,k)/1e-6_r8), 0.0_r8)
+                  cld_num_coarse_tend1 = max( (odst_num * icldm(i,k))/rho(i,k)/1e-6_r8, 0.0_r8)
+                  num_coarse_tend1 = -max( (odst_num * icldm(i,k))/rho(i,k)/1e-6_r8, 0.0_r8)
+
+                  ! transfer mass from interstial to cloudborne
+                  !cld_coarse_dust(i,k) = max((cld_coarse_dust(i,k) + odst_num / dst_num *icldm(i,k) * coarse_dust(i,k)), 0.0_r8)
+                  !coarse_dust(i,k) = max((coarse_dust(i,k) - odst_num / dst_num *icldm(i,k) * coarse_dust(i,k)), 0.0_r8)
+                  cld_mass_coarse_dust_tend1 = max((odst_num / dst_num *icldm(i,k) * coarse_dust(i,k)), 0.0_r8)
+                  mass_coarse_dust_tend1 = -max((odst_num / dst_num *icldm(i,k) * coarse_dust(i,k)), 0.0_r8)
+
+
+                  !cnum_coarse_idx is the inter coarse number
+                  !this ptend is to remove the interstatial number      
+                  !ptend%q(i,k,cnum_coarse_idx) = -(odst_num * icldm(i,k))/rho(i,k)/1e-6_r8/dtime
+                  !cld_num_coarse(i,k)   = cld_num_coarse(i,k) + (odst_num * icldm(i,k))/rho(i,k)/1e-6_r8
+               ! removal coarse dst mass
+                  !ptend%q(i,k,ccoarse_dst_idx) = - odst_num / dst_num * icldm(i,k) * coarse_dust(i,k) / dtime!
+                  !cld_coarse_dust(i,k) = cld_coarse_dust(i,k) + odst_num / dst_num *icldm(i,k) * coarse_dust(i,k)
+               end if
+               if (osoot_num > 0.0_r8) then
+                  ! transfer number from interstial to cloudborne
+                  !cld_num_accum(i,k) = max((cld_num_accum(i,k) + (osoot_num * icldm(i,k))/rho(i,k)/1e-6_r8), 0.0_r8)
+                  !num_accum(i,k) = max((num_accum(i,k) - (osoot_num * icldm(i,k))/rho(i,k)/1e-6_r8), 0.0_r8)
+                  cld_num_accum_tend1 = max(osoot_num * icldm(i,k)/rho(i,k)/1e-6_r8, 0.0_r8)
+                  num_accum_tend1 = -max(osoot_num * icldm(i,k)/rho(i,k)/1e-6_r8, 0.0_r8)
+                  ! transfer mass from interstial to cloudborne
+                  !cld_accum_bc(i,k) = max((cld_accum_bc(i,k) + osoot_num/soot_num *icldm(i,k) *accum_bc(i,k)), 0.0_r8)
+                  !accum_bc(i,k) = max((accum_bc(i,k) - osoot_num/soot_num *icldm(i,k) *accum_bc(i,k)), 0.0_r8)
+                  cld_mass_accum_bc_tend1 = max((osoot_num/soot_num *icldm(i,k) *accum_bc(i,k)), 0.0_r8)
+                  mass_accum_bc_tend1 = -max((osoot_num/soot_num *icldm(i,k) *accum_bc(i,k)), 0.0_r8)
+                  !write(iulog,*)'kzm_osoot_num', osoot_num     
+               endif
+               endif
+            end if
+            endif
+
 
             ! Liu&Penner does not generate enough nucleation in the polar winter
             ! stratosphere, which affects surface area density, dehydration and
@@ -987,31 +1198,151 @@ subroutine nucleate_ice_cam_calc( &
             ! particles. It may not represent the proper saturation threshold for
             ! nucleation, and wsubi from CLUBB is probably not representative of
             ! wave driven varaibility in the polar stratosphere.
-             if (nucleate_ice_use_troplev .and. clim_modal_aero) then
-              if ((k < (troplev(i)) ) .and. (nucleate_ice_strat > 0._r8)) then 
-                 !if (nstep > 4 .and. ((t(i,k) - 273.15_r8) .le. -40.0_r8)) then !after first day    
-                 !write(iulog,*)'kzm_nihf_num ',nihf(i,k)    
-                 !write(iulog,*)'kzm_so4_num ',so4_num   
-                 !end if  
+            if ( clim_modal_aero) then
+               !cld_num_strat_coarse_tend2, num_strcrs_tend2,cld_mass_strat_coarse_so4_tend2,mass_strat_coarse_so4_tend2 
+               !num_accum_tend2,cld_num_accum_tend2,num_coarse_tend2,cld_num_coarse_tend2
+                     !cld_mass_accum_so4_tend2,mass_accum_so4_tend2,cld_mass_coarse_so4_tend2,mass_coarse_so4_tend2
+               cld_num_strat_coarse_tend2 = 0._r8
+               num_strcrs_tend2 = 0._r8
+               cld_mass_strat_coarse_so4_tend2 = 0._r8
+               mass_strat_coarse_so4_tend2 = 0._r8
+               !num_accum_tend2,cld_num_accum_tend2,num_coarse_tend2,cld_num_coarse_tend2
+                     !cld_mass_accum_so4_tend2,mass_accum_so4_tend2,cld_mass_coarse_so4_tend2,mass_coarse_so4_tend2
+               num_accum_tend2 = 0._r8
+               cld_num_accum_tend2 = 0._r8
+               num_coarse_tend2 = 0._r8
+               cld_num_coarse_tend2 = 0._r8
+              cld_mass_accum_so4_tend2 = 0._r8
+              mass_accum_so4_tend2 = 0._r8
+              cld_mass_coarse_so4_tend2 = 0._r8
+              mass_coarse_so4_tend2 = 0._r8      
+              !num_coarse_tend2,num_accum_tend2
+
+              !if ((k < troplev(i)) .and. (nucleate_ice_strat > 0._r8)) then
+              if ( (nucleate_ice_strat > 0._r8)) then
                  if (oso4_num > 0._r8) then
-                    so4_num_ac = num_accum(i,k)*rho(i,k)*1.0e-6_r8
-                    if (mode_strat_coarse_idx > 0) then
+                    !so4_num_ac = num_accum(i,k)*rho(i,k)*1.0e-6_r8
+                    if (mode_strat_coarse_idx > 0._r8) then
                         so4_num_st_cr = num_strcrs(i,k)*rho(i,k)*1.0e-6_r8 !kzm add in stratosphere coarse
-                        dso4_num = max(0._r8, (nucleate_ice_strat * (so4_num_cr + so4_num_ac + so4_num_st_cr)) &
-                                   - oso4_num) * 1e6_r8 / rho(i,k) !kzm
-                        write(iulog,*)'kzm_mam5_sice_working'  
-
+                        dso4_num = max(0._r8, (nucleate_ice_strat * (so4_num_cr + so4_num_st_cr + so4_num_accum)) &  !kzm change only include coarse
+                                   ) * 1e6_r8 / rho(i,k) !kzm
                     else
-                        dso4_num = max(0._r8, (nucleate_ice_strat * (so4_num_cr + so4_num_ac)) - oso4_num) * 1e6_r8 / rho(i,k)
-                        write(iulog,*)'kzm_mam4_sice_working'
-
+                        dso4_num = max(0._r8, (nucleate_ice_strat * (so4_num_cr + so4_num_accum)) ) * 1e6_r8 / rho(i,k)
                     endif
-                    !dso4_num = max(0._r8, (nucleate_ice_strat * (so4_num_cr + so4_num_ac)) - oso4_num) * 1e6_r8 / rho(i,k)
-                    write(iulog,*)'kzm_dso4_num ', dso4_num
+                    if (2>1) then
+                       if (mode_coarse_idx > 0._r8  .and. mode_strat_coarse_idx > 0._r8 ) then
+                          write(iulog,*)'kzm_oso4_num', oso4_num, so4_num_accum, so4_num_cr, so4_num_st_cr
+                          write(iulog,*)'kzm_nuc_mass_removal', accum_so4(i,k)*icldm(i,k), coarse_so4(i,k)*icldm(i,k), strat_coarse_so4(i,k)*icldm(i,k)
+                       else if  (mode_coarse_idx > 0._r8) then
+                          write(iulog,*)'kzm_oso4_num', oso4_num, so4_num_accum, so4_num_cr
+                          write(iulog,*)'kzm_nuc_mass_removal', accum_so4(i,k)*icldm(i,k), coarse_so4(i,k)*icldm(i,k)
+                       endif      
+                    endif
+
+                    if (aero_nucleation_removal .and. dso4_num > 0.0_r8) then !if we need to remove it
+                    if ( mode_coarse_idx > 0._r8 ) then !MAM4 case
+                          !remove coarse mode so4
+                      
+                           ! transfer number from interstial to cloudborne
+                           !accumulation mode
+                           !cld_num_accum(i,k) = max((cld_num_accum(i,k) + (so4_num_accum* 1e6_r8 / rho(i,k) * icldm(i,k))), 0.0_r8)
+                           !num_accum(i,k) = max((num_coarse(i,k) - ( so4_num_accum* 1e6_r8 / rho(i,k)* icldm(i,k))), 0.0_r8) 
+                           cld_num_accum_tend2 = max(((so4_num_accum* 1e6_r8 / rho(i,k) * icldm(i,k))), 0.0_r8)!cld accumulation number
+                           num_accum_tend2 = -max(((so4_num_accum* 1e6_r8 / rho(i,k) * icldm(i,k))), 0.0_r8)!accum number
+                           !coarse mode
+                           !cld_num_coarse(i,k) = max((cld_num_coarse(i,k) + (so4_num_cr* 1e6_r8 / rho(i,k) * icldm(i,k))), 0.0_r8)
+                           !num_coarse(i,k) = max((num_coarse(i,k) - (so4_num_cr* 1e6_r8 / rho(i,k) * icldm(i,k))), 0.0_r8)
+                           cld_num_coarse_tend2 = max(((so4_num_cr* 1e6_r8 / rho(i,k) * icldm(i,k))), 0.0_r8)!cld coarse num
+                           num_coarse_tend2 = -max(((so4_num_cr* 1e6_r8 / rho(i,k) * icldm(i,k))), 0.0_r8) 
+
+                           ! transfer mass from interstial to cloudborne
+                           !accumulation mode
+                           !cld_accum_so4(i,k) = max((cld_accum_so4(i,k) &
+                           !        +  accum_so4(i,k) *icldm(i,k) ), 0.0_r8)
+                           !accum_so4(i,k) = max((accum_so4(i,k) &
+                           !        -  accum_so4(i,k) *icldm(i,k) ), 0.0_r8)
+                           cld_mass_accum_so4_tend2 = max(accum_so4(i,k) *icldm(i,k), 0.0_r8) 
+                           mass_accum_so4_tend2 = -max(accum_so4(i,k) *icldm(i,k),0.0_r8) 
+                           !coarse mode
+                           !cld_coarse_so4(i,k) = max((cld_coarse_so4(i,k) &
+                           !        + coarse_so4(i,k) *icldm(i,k)), 0.0_r8)
+                           !coarse_so4(i,k) = max((coarse_so4(i,k) &
+                           !        - coarse_so4(i,k) *icldm(i,k) ), 0.0_r8)
+                           cld_mass_coarse_so4_tend2 = max(coarse_so4(i,k) *icldm(i,k), 0.0_r8)
+                           mass_coarse_so4_tend2 = -max(coarse_so4(i,k) *icldm(i,k), 0.0_r8)
+                          !ptend%q(i,k,cnum_coarse_idx) = -(dso4_num * icldm(i,k))/rho(i,k)/1e-6_r8/dtime
+                          !cld_num_coarse(i,k)   = cld_num_coarse(i,k) + (dso4_num * icldm(i,k))/rho(i,k)/1e-6_r8
+                          ! removal coarse so4 mass
+                          !ptend%q(i,k,ccoarse_so4_idx) = - dso4_num / so4_num_cr * icldm(i,k) * coarse_so4(i,k) / dtime!
+                          !cld_coarse_so4(i,k) = cld_coarse_dust(i,k) + dso4_num / so4_num_cr *icldm(i,k) * coarse_so4(i,k)
+                    endif! end coarse mode removal  
+                    if (mode_strat_coarse_idx > 0._r8) then !MAM5 case
+                          !remove as fraction of so4_num_st_cr to so4_num_cr
+                          !fso4_m3 = so4_num_cr / (so4_num_st_cr + so4_num_cr +) !fraction of mode 3 so4
+                          !fso4_m5 = so4_num_st_cr / (so4_num_st_cr + so4_num_cr) !fraction of mode 5 so4
+                          !strat coarse mode num
+                           !cld_num_strat_coarse(i,k) = max((cld_num_strat_coarse(i,k) + (so4_num_st_cr* 1e6_r8 / rho(i,k) * icldm(i,k))), 0.0_r8)
+                           !num_strcrs(i,k) = max((num_strcrs(i,k) - (so4_num_st_cr* 1e6_r8 / rho(i,k) * icldm(i,k))), 0.0_r8)
+                           cld_num_strat_coarse_tend2 = max(((so4_num_st_cr* 1e6_r8 / rho(i,k) * icldm(i,k))), 0.0_r8)
+                           num_strcrs_tend2 = -max(((so4_num_st_cr* 1e6_r8 / rho(i,k) * icldm(i,k))), 0.0_r8)
+                          !strat coarse mass 
+                          !cld_strat_coarse_so4(i,k) = max((cld_strat_coarse_so4(i,k) &
+                          !         + strat_coarse_so4(i,k) *icldm(i,k)), 0.0_r8)
+                          !strat_coarse_so4(i,k) = max((strat_coarse_so4(i,k) &
+                          !         - strat_coarse_so4(i,k) *icldm(i,k) ), 0.0_r8)
+                          cld_mass_strat_coarse_so4_tend2 = max(strat_coarse_so4(i,k) *icldm(i,k), 0.0_r8)
+                          mass_strat_coarse_so4_tend2 = -max(strat_coarse_so4(i,k) *icldm(i,k), 0.0_r8)
+
+
+                          !remove coarse mode so4
+                          !write(iulog,*) 'kzm_cnum_coarse_idx', cnum_coarse_idx
+                          !write(iulog,*) 'kzm_q_cnum_coarse_idx ', -(dso4_num * fso4_m3 * icldm(i,k))/rho(i,k)/1e-6_r8/dtime
+                    endif!mode5 removal
+                    endif ! aero_nucleation_removal
+!kzm --
+                    ! end of removal
                     naai(i,k) = naai(i,k) + dso4_num
                     nihf(i,k) = nihf(i,k) + dso4_num
-                 end if
-              end if
+                 end if !if oso4_num > 0
+               end if !if nucleate_ice_strat > 0
+               if (aero_nucleation_removal) then
+                  if (mode_coarse_idx > 0._r8) then 
+                     !num_accum_tend2,cld_num_accum_tend2,num_coarse_tend2,cld_num_coarse_tend2
+                     !cld_mass_accum_so4_tend2,mass_accum_so4_tend2,cld_mass_coarse_so4_tend2,mass_coarse_so4_tend2     
+                     num_accum(i,k) = num_accum(i,k) + num_accum_tend1 + num_accum_tend2
+                     cld_num_accum(i,k) = cld_num_accum(i,k) + cld_num_accum_tend1 + cld_num_accum_tend2
+
+                     num_coarse(i,k) = num_coarse(i,k) + num_coarse_tend1 + num_coarse_tend2
+                     cld_num_coarse(i,k) = cld_num_coarse(i,k) + cld_num_coarse_tend1 + cld_num_coarse_tend2
+                     
+                     !remove bc in accumulation
+                     accum_bc(i,k) = accum_bc(i,k) + mass_accum_bc_tend1
+                     cld_accum_bc(i,k) = cld_accum_bc(i,k) + cld_mass_accum_bc_tend1 
+
+                     !remove dst in coarse
+                     cld_coarse_dust(i,k) = cld_coarse_dust(i,k) + cld_mass_coarse_dust_tend1
+                     coarse_dust(i,k) = coarse_dust(i,k) + mass_coarse_dust_tend1
+
+                     !remove so4 in accum
+                     cld_accum_so4(i,k) = cld_accum_so4(i,k) + cld_mass_accum_so4_tend2
+                     accum_so4(i,k) = accum_so4(i,k) + mass_accum_so4_tend2
+                           
+                     !remove so4 in coarse
+                     cld_coarse_so4(i,k) = cld_coarse_so4(i,k) + cld_mass_coarse_so4_tend2
+                     coarse_so4(i,k) = coarse_so4(i,k) + mass_coarse_so4_tend2                   
+                  endif
+                  if (mode_strat_coarse_idx > 0._r8 ) then
+                     !cld_num_strat_coarse_tend2, num_strcrs_tend2,cld_mass_strat_coarse_so4_tend2,mass_strat_coarse_so4_tend2       
+                     cld_num_strat_coarse(i,k) = cld_num_strat_coarse(i,k) + cld_num_strat_coarse_tend2
+                     num_strcrs(i,k) = num_strcrs(i,k) + num_strcrs_tend2
+                     !remove so4 in strat coarse
+                     cld_strat_coarse_so4(i,k) = cld_strat_coarse_so4(i,k) + cld_mass_strat_coarse_so4_tend2
+                     strat_coarse_so4(i,k) = strat_coarse_so4(i,k) + mass_strat_coarse_so4_tend2    
+                  endif   
+               endif
+          
+
+                   
             else
                                   ! This maintains backwards compatibility with the previous version.
               if (pmid(i,k) <= 12500._r8 .and. pmid(i,k) > 100._r8 .and. abs(state%lat(i)) >= 60._r8 * pi / 180._r8) then
