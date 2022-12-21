@@ -1099,8 +1099,8 @@ contains
 
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate
-      use mmf_optics, only: set_aerosol_optics_lw, set_aerosol_optics_sw, & 
-                            get_cloud_optics_sw, sample_cloud_optics_sw, &
+      use cam_optics, only: set_aerosol_optics_lw, set_aerosol_optics_sw
+      use mmf_optics, only: get_cloud_optics_sw, sample_cloud_optics_sw, &
                             get_cloud_optics_lw, sample_cloud_optics_lw
 
 #ifdef MODAL_AERO

@@ -11,9 +11,7 @@ module mmf_optics
    public get_cloud_optics_sw, &
           get_cloud_optics_lw, &
           sample_cloud_optics_sw, &
-          sample_cloud_optics_lw, &
-          set_aerosol_optics_sw, &
-          set_aerosol_optics_lw
+          sample_cloud_optics_lw
 
 contains
 
@@ -133,13 +131,11 @@ contains
 
    !----------------------------------------------------------------------------
 
-   !----------------------------------------------------------------------------
-
    ! Do MCICA sampling of optics here. This will map bands to gpoints,
    ! while doing stochastic sampling of cloud state
    subroutine sample_cloud_optics_sw( &
-         ncol, nlev, ngpt, gpt2bnd, &
-         pmid, cld, &
+         ncol, nlev, ngpt, &
+         gpt2bnd, pmid, cld, &
          tau_bnd, ssa_bnd, asm_bnd, &
          tau_gpt, ssa_gpt, asm_gpt)
       use mcica_subcol_gen, only: mcica_subcol_mask
@@ -181,13 +177,11 @@ contains
 
    !----------------------------------------------------------------------------
 
-   !----------------------------------------------------------------------------
-
    ! Do MCICA sampling of optics here. This will map bands to gpoints,
    ! while doing stochastic sampling of cloud state
-   subroutine sample_cloud_optics_lw( &
-         ncol, nlev, ngpt, gpt2bnd, &
-         pmid, cld, &
+   subroutine sample_cloud_optics_lw(&
+         ncol, nlev, ngpt, &
+         gpt2bnd, pmid, cld, &
          tau_bnd, tau_gpt)
       use mcica_subcol_gen, only: mcica_subcol_mask
 
@@ -227,104 +221,6 @@ contains
       end do
    end subroutine sample_cloud_optics_lw
 
-   !----------------------------------------------------------------------------
-
-   subroutine set_aerosol_optics_sw(icall, dt, state, pbuf, &
-                                    night_indices, &
-                                    is_cmip6_volc, &
-                                    tau_out, ssa_out, asm_out, &
-                                    clear_rh)
-      use ppgrid, only: pcols, pver
-      use physics_types, only: physics_state
-      use physics_buffer, only: physics_buffer_desc
-      use aer_rad_props, only: aer_rad_props_sw
-      use radconstants, only: nswbands
-      integer, intent(in) :: icall
-      real(r8), intent(in):: dt
-      type(physics_state), intent(in) :: state
-      type(physics_buffer_desc), pointer :: pbuf(:)
-      integer, intent(in) :: night_indices(:)
-      logical, intent(in) :: is_cmip6_volc
-      real(r8), intent(out), dimension(:,:,:) :: tau_out, ssa_out, asm_out
-      real(r8), optional,  intent(in)    :: clear_rh(pcols,pver) ! optional clear air relative humidity
-                                                                 ! that gets passed to modal_aero_wateruptake_dr
-
-      ! NOTE: aer_rad_props expects 0:pver indexing on these! It appears this is to
-      ! account for the extra layer added above model top, but it is not entirely
-      ! clear. This is not done for the longwave, and it is not really documented
-      ! anywhere that I can find. Regardless, optical properties for the zero index
-      ! are set to zero in aer_rad_props_sw as far as I can tell.
-      !
-      ! NOTE: dimension ordering is different than for cloud optics!
-      real(r8), dimension(pcols,0:pver,nswbands) :: tau, tau_w, tau_w_g, tau_w_f
-
-      integer :: ncol
-      integer :: icol, ilay
-
-      ! Everyone needs a name
-      character(len=*), parameter :: subroutine_name = 'set_aerosol_optics_sw'
-
-      ncol = state%ncol
-
-      ! Get aerosol absorption optical depth from CAM routine
-      tau = 0._r8
-      tau_w = 0._r8
-      tau_w_g = 0._r8
-      tau_w_f = 0._r8
-      call aer_rad_props_sw(icall, dt, state, pbuf, &
-           count(night_indices > 0), night_indices, is_cmip6_volc, &
-           tau, tau_w, tau_w_g, tau_w_f, clear_rh=clear_rh)
-
-      ! Extract quantities from products
-      do icol = 1,ncol
-         ! Copy cloud optical depth over directly
-         tau_out(icol,1:pver,1:nswbands) = tau(icol,1:pver,1:nswbands)
-         ! Extract single scattering albedo from the product-defined fields
-         where (tau(icol,1:pver,1:nswbands) > 0)
-            ssa_out(icol,1:pver,1:nswbands) &
-               = tau_w(icol,1:pver,1:nswbands) / tau(icol,1:pver,1:nswbands)
-         elsewhere
-            ssa_out(icol,1:pver,1:nswbands) = 1._r8
-         endwhere
-         ! Extract assymmetry parameter from the product-defined fields
-         where (tau_w(icol,1:pver,1:nswbands) > 0)
-            asm_out(icol,1:pver,1:nswbands) &
-               = tau_w_g(icol,1:pver,1:nswbands) / tau_w(icol,1:pver,1:nswbands)
-         elsewhere
-            asm_out(icol,1:pver,1:nswbands) = 0._r8
-         endwhere
-      end do
-
-   end subroutine set_aerosol_optics_sw
-
-   !----------------------------------------------------------------------------
-
-   subroutine set_aerosol_optics_lw(icall, dt, state, pbuf, is_cmip6_volc, tau)
-     
-      use ppgrid, only: pcols, pver
-      use physics_types, only: physics_state
-      use physics_buffer, only: physics_buffer_desc, pbuf_get_index, &
-                                pbuf_get_field, pbuf_old_tim_idx
-      use aer_rad_props, only: aer_rad_props_lw
-      use radconstants, only: nlwbands
-
-      integer, intent(in) :: icall
-      real(r8), intent(in) :: dt   ! time step(s)
-      type(physics_state), intent(in) :: state
-      type(physics_buffer_desc), pointer :: pbuf(:)
-      logical, intent(in) :: is_cmip6_volc
-      real(r8), intent(out), dimension(:,:,:) :: tau(pcols,pver,nlwbands)
-
-      ! Subroutine name for error messages
-      character(len=*), parameter :: subroutine_name = 'set_aerosol_optics_lw'
-
-      ! Get aerosol absorption optical depth from CAM routine
-      tau = 0._r8
-      call aer_rad_props_lw(is_cmip6_volc, icall, dt, state, pbuf, tau)
-
-   end subroutine set_aerosol_optics_lw
-
-   !----------------------------------------------------------------------------
    !----------------------------------------------------------------------------
 
 end module mmf_optics
