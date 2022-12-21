@@ -40,7 +40,7 @@ CONTAINS
     use dyn_comp,                only: frontgf_idx, frontga_idx, hvcoord
     use phys_control,            only: use_gw_front
     use dyn_comp,                only: dom_mt
-    use gllfvremap_mod,          only: gfr_dyn_to_fv_phys, gfr_potvort_dyn_to_fv_phys
+    use gllfvremap_mod,          only: gfr_dyn_to_fv_phys, gfr_dyn_to_fv_phys_potvort
     use spmd_utils,              only: masterproc
 
     implicit none
@@ -119,7 +119,7 @@ CONTAINS
         call t_startf('dyn_to_fv_phys')
         call gfr_dyn_to_fv_phys(par, dom_mt, tl_f, hvcoord, elem, ps_tmp, zs_tmp, &
              T_tmp, uv_tmp, om_tmp, q_tmp)
-        call gfr_potvort_dyn_to_fv_phys(par, dom_mt, tl_f, hvcoord, elem, pv_tmp)
+        call gfr_dyn_to_fv_phys_potvort(par, dom_mt, tl_f, hvcoord, elem, pv_tmp)
         call t_stopf('dyn_to_fv_phys')
 
         !-----------------------------------------------------------------------
