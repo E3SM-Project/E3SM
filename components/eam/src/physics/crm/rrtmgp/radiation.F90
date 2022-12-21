@@ -35,6 +35,7 @@ module radiation
       rrtmgp_run_sw, rrtmgp_run_lw, &
       get_min_temperature, get_max_temperature, &
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
+      get_subsampled_clouds_lw, &
       nswgpts, nlwgpts
 
    ! Use my assertion routines to perform sanity checks
@@ -1098,7 +1099,7 @@ contains
 
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate
-      use cam_optics, only: set_aerosol_optics_lw, set_aerosol_optics_sw, & 
+      use mmf_optics, only: set_aerosol_optics_lw, set_aerosol_optics_sw, & 
                             get_cloud_optics_sw, sample_cloud_optics_sw, &
                             get_cloud_optics_lw, sample_cloud_optics_lw
 
@@ -1206,11 +1207,9 @@ contains
       real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,pver) :: dtau_packed, dems_packed
 
       ! Cloud properties for optics
-      real(r8), dimension(pcols,pver) :: rel, rei, dei, cld, iclwp, iciwp
+      real(r8), dimension(pcols,pver) :: rel, rei, cld, iclwp, iciwp
 
       ! Pointers to fields on physics buffer
-      real(r8), pointer, dimension(:,:) :: cldfsnow, icswp, mu, lambdac, des
-      real(r8), dimension(pcols,pver), target :: zeros
       real(r8), pointer, dimension(:,:,:,:) :: crm_t, crm_qv, crm_qc, crm_qi, crm_cld, crm_qrad
       real(r8), pointer, dimension(:,:,:,:) :: crm_rel, crm_rei
 
@@ -1298,21 +1297,6 @@ contains
       ! shortwave and longwave.
       if (radiation_do('sw') .or. radiation_do('lw')) then
 
-         ! Get pbuf fields
-         call pbuf_get_field(pbuf, pbuf_get_index('LAMBDAC'), lambdac)
-         call pbuf_get_field(pbuf, pbuf_get_index('MU'), mu)
-         ! Snow properties may or may not be present, depending on microphysics
-         if (do_snow_optics()) then
-            call pbuf_get_field(pbuf, pbuf_get_index('CLDFSNOW'), cldfsnow)
-            call pbuf_get_field(pbuf, pbuf_get_index('ICSWP'), icswp)
-            call pbuf_get_field(pbuf, pbuf_get_index('DES'), des)
-         else
-            zeros = 0
-            cldfsnow => zeros
-            icswp => zeros
-            des => zeros
-         end if
-
          ! CRM fields
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_T_RAD'  ), crm_t   )
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_QV_RAD' ), crm_qv  )
@@ -1345,8 +1329,6 @@ contains
             if (active_calls(icall)) then
                ! Calculate effective radius for optics used with single-moment microphysics and for COSP
                call cldefr(state%lchnk, ncol, state%t, rel, rei, state%ps, state%pmid, landfrac, icefrac, snowh)
-               ! DEI is used for 2-moment optics
-               dei(1:ncol,1:pver) = 2._r8 * rei(1:ncol,1:pver)
                ! Populate CRM effective radii (used for COSP)
                do iz = 1,crm_nz
                   do iy = 1,crm_ny_rad
@@ -1422,13 +1404,9 @@ contains
                aer_asm_bnd_sw_packed = 0._r8
 
                ! make sure water path variables are zeroed out
-               do ilay = 1, pver
-                  do icol = 1,ncol
-                     iclwp(icol,ilay) = 0_r8
-                     iciwp(icol,ilay) = 0_r8
-                     cld(icol,ilay) = 0_r8
-                  end do
-               end do
+               iclwp = 0_r8
+               iciwp = 0_r8
+               cld   = 0_r8
 
                ! Loop over CRM columns; call routines designed to work with
                ! pbuf/state over ncol columns for each CRM column index, and pack
@@ -1481,11 +1459,10 @@ contains
                         cld_ssa_gpt_sw = 0._r8
                         cld_asm_gpt_sw = 0._r8
                         call get_cloud_optics_sw( &
-                           ncol, pver, nswbands, do_snow_optics(), &
-                           cld, cldfsnow, iclwp, iciwp, icswp, &
-                           lambdac, mu, dei, des, rel, rei, &
-                           cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
-                           liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw &
+                           ncol, pver, nswbands, &
+                           cld, iclwp, iciwp, &
+                           rel, rei, &
+                           cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw &
                         )
                         ! Now reorder bands to be consistent with RRTMGP
                         ! We need to fix band ordering because the old input files assume RRTMG
@@ -1502,7 +1479,7 @@ contains
                         call get_gpoint_bands_sw(gpoint_bands_sw)
                         call sample_cloud_optics_sw( &
                            ncol, pver, nswgpts, gpoint_bands_sw, &
-                           state%pmid, cld, cldfsnow, &
+                           pmid_col(:,ktop:kbot), cld, &
                            cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
                            cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw &
                         )
@@ -1520,25 +1497,21 @@ contains
 
                      ! Longwave cloud optics
                      if (radiation_do('lw')) then
-                        !call mmf_optics_lw(ncol, pver, nlwbands, cld, iclwp, iciwp, rel, rei, cld_tau_bnd_lw)
-                        !call mmf_sample_optics_lw(ncol, pver, nlwgpts, gpoint_bands_lw
                         ! Compute cloud optics
                         call t_startf('rad_get_cloud_optics_lw')
-                        cld_tau_gpt_lw = 0._r8
-                        call get_cloud_optics_lw( &
-                           ncol, pver, nlwbands, do_snow_optics(), cld, cldfsnow, iclwp, iciwp, icswp, &
-                           lambdac, mu, dei, des, rei, &
-                           cld_tau_bnd_lw, liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw &
-                        )
+                        call get_cloud_optics_lw(ncol, pver, nlwbands, cld, iclwp, iciwp, rei, cld_tau_bnd_lw)
                         call t_stopf('rad_get_cloud_optics_lw')
                         ! Do mcica sampling of cloud optics
                         call t_startf('rad_sample_cloud_optics_lw')
                         call get_gpoint_bands_lw(gpoint_bands_lw)
                         call sample_cloud_optics_lw( &
                            ncol, pver, nlwgpts, gpoint_bands_lw, &
-                           state%pmid, cld, cldfsnow, &
+                           pmid_col(:,ktop:kbot), cld, &
                            cld_tau_bnd_lw, cld_tau_gpt_lw &
                         )
+                        !call get_subsampled_clouds_lw( &
+                        !   ncol, pver, nlwbands, nlwgpts, gpoint_bands_lw, &
+                        !   pmid_col(:,ktop:kbot), cld, cld_tau_bnd_lw, cld_tau_gpt_lw)
                         call t_stopf('rad_sample_cloud_optics_lw')
                         ! Save CRM cloud optics for cosp
                         if (docosp) then
@@ -1563,6 +1536,10 @@ contains
                         pint_packed(j,:) = pint_col(icol,:)
                         tint_packed(j,:) = tint_col(icol,:)
                         ! Note: leave top level empty for cloud optics
+                        ! Note: packing these appears to be very expensive on
+                        ! GPU; need to port these to GPU, and work on packed
+                        ! cloud physical properties rather than packing derived
+                        ! optical properties
                         cld_tau_gpt_lw_packed(j,ktop:kbot,:) = cld_tau_gpt_lw(icol,:,:)
                         cld_tau_gpt_sw_packed(j,ktop:kbot,:) = cld_tau_gpt_sw(icol,:,:)
                         cld_ssa_gpt_sw_packed(j,ktop:kbot,:) = cld_ssa_gpt_sw(icol,:,:)
