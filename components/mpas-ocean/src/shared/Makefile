@@ -74,7 +74,8 @@ OBJS = mpas_ocn_init_routines.o \
 	   mpas_ocn_vel_forcing_topographic_wave_drag.o \
 	   mpas_ocn_transport_tests.o \
 	   mpas_ocn_vel_self_attraction_loading.o \
-	   mpas_ocn_vertical_advection.o
+	   mpas_ocn_vertical_advection.o \
+           mpas_ocn_stokes_drift.o
 
 all: $(OBJS)
 
@@ -88,7 +89,7 @@ mpas_ocn_diagnostics_variables.o: mpas_ocn_config.o
 
 mpas_ocn_mesh.o: mpas_ocn_config.o
 
-mpas_ocn_thick_ale.o: mpas_ocn_constants.o mpas_ocn_config.o
+mpas_ocn_thick_ale.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
 mpas_ocn_time_average_coupled.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_tracer_ecosys.o mpas_ocn_tracer_DMS.o mpas_ocn_tracer_MacroMolecules.o mpas_ocn_diagnostics_variables.o
 
@@ -156,7 +157,7 @@ mpas_ocn_tracer_short_wave_absorption_jerlov.o: mpas_ocn_constants.o mpas_ocn_co
 
 mpas_ocn_vmix.o: mpas_ocn_vmix_cvmix.o mpas_ocn_vmix_coefs_redi.o mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o mpas_ocn_vmix_gotm.o
 
-mpas_ocn_vmix_cvmix.o:  mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o mpas_ocn_mesh.o mpas_ocn_mesh.o
+mpas_ocn_vmix_cvmix.o:  mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o mpas_ocn_mesh.o mpas_ocn_stokes_drift.o
 
 mpas_ocn_vmix_coefs_redi.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o
 
@@ -186,9 +187,9 @@ mpas_ocn_tidal_forcing.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_equati
 
 mpas_ocn_transport_tests.o: mpas_ocn_config.o
 
-mpas_ocn_effective_density_in_land_ice.o: mpas_ocn_constants.o mpas_ocn_config.o
+mpas_ocn_effective_density_in_land_ice.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
-mpas_ocn_forcing_restoring.o: mpas_ocn_constants.o mpas_ocn_config.o
+mpas_ocn_forcing_restoring.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_mesh.o
 
 mpas_ocn_tracer_surface_restoring.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_framework_forcing.o mpas_ocn_diagnostics_variables.o
 
@@ -231,6 +232,8 @@ mpas_ocn_vertical_advection.o: mpas_ocn_config.o
 mpas_ocn_vertical_regrid.o: mpas_ocn_config.o mpas_ocn_constants.o mpas_ocn_mesh.o
 
 mpas_ocn_vertical_remap.o: mpas_ocn_config.o mpas_ocn_constants.o mpas_ocn_diagnostics_variables.o mpas_ocn_mesh.o mpas_ocn_vertical_regrid.o
+
+mpas_ocn_stokes_drift.o: mpas_ocn_constants.o mpas_ocn_config.o mpas_ocn_diagnostics_variables.o mpas_ocn_mesh.o
 
 clean:
 	$(RM) *.o *.i *.mod *.f90

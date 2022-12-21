@@ -1266,7 +1266,7 @@ contains
          ! Check temperatures to make sure they are within the bounds of the
          ! absorption coefficient look-up tables. If out of bounds, clip
          ! values to min/max specified
-         call t_startf('rrtmgp_check_temperatures')
+         call t_startf('rad_rrtmgp_check_temperatures')
          call handle_error(clip_values( &
             tmid(1:ncol,1:nlev_rad), get_min_temperature(), get_max_temperature(), &
             trim(subname) // ' tmid' &
@@ -1275,7 +1275,7 @@ contains
             tint(1:ncol,1:nlev_rad+1), get_min_temperature(), get_max_temperature(), &
             trim(subname) // ' tint' &
          ), fatal=.false., warn=rrtmgp_enable_temperature_warnings)
-         call t_stopf('rrtmgp_check_temperatures')
+         call t_stopf('rad_rrtmgp_check_temperatures')
       end if
 
       ! Do shortwave stuff...
@@ -1929,7 +1929,7 @@ contains
       gas_vmr_rad(:,1:ncol,ktop:kbot) = gas_vmr(:,1:ncol,:)
 
       ! Do longwave radiative transfer calculations
-      call t_startf('rrtmgp_run_lw')
+      call t_startf('rad_rrtmgp_run_lw')
       call rrtmgp_run_lw( &
          size(active_gases), ncol, nlev_rad, &
          gas_vmr_rad(:,1:ncol,:), &
@@ -1941,7 +1941,7 @@ contains
          fluxes_clrsky%flux_up    , fluxes_clrsky%flux_dn    , fluxes_clrsky%flux_net    , &
          fluxes_clrsky%bnd_flux_up, fluxes_clrsky%bnd_flux_dn, fluxes_clrsky%bnd_flux_net  &
          )
-      call t_stopf('rrtmgp_run_lw')
+      call t_stopf('rad_rrtmgp_run_lw')
 
       ! Calculate heating rates
       call calculate_heating_rate(  &

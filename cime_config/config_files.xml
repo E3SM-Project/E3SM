@@ -127,7 +127,7 @@
       <value component="satm"                        >$SRCROOT/components/stub_comps/satm</value>
       <value component="xatm"                        >$SRCROOT/components/xcpl_comps/xatm</value>
       <value component="eam"                         >$SRCROOT/components/eam/</value>
-      <value component="scream"                      >$SRCROOT/components/scream/</value>
+      <value component="scream"                      >$SRCROOT/components/eamxx/</value>
     </values>
     <group>case_comps</group>
     <file>env_case.xml</file>
@@ -288,7 +288,7 @@
       <value component="mpaso"    >$SRCROOT/components/mpas-ocean/cime_config/config_pes.xml</value>
       <value component="mali"     >$SRCROOT/components/mpas-albany-landice/cime_config/config_pes.xml</value>
       <value component="mpassi"   >$SRCROOT/components/mpas-seaice/cime_config/config_pes.xml</value>
-      <value component="ww3"      >$SRCROOT/cime_config/allactive/config_pesall.xml</value>
+      <value component="ww3"      >$SRCROOT/components/ww3/cime_config/config_pes.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -533,7 +533,7 @@
   <entry id="BUILD_LIB_FILE">
     <type>char</type>
     <values>
-      <value lib="kokkos">$CIMEROOT/CIME/build_scripts/buildlib.kokkos</value>
+      <value lib="kokkos">$SRCROOT/share/build/buildlib.kokkos</value>
       <value lib="gptl">$SRCROOT/share/build/buildlib.gptl</value>
       <value lib="pio">$CIMEROOT/CIME/build_scripts/buildlib.pio</value>
       <value lib="mct">$CIMEROOT/CIME/build_scripts/buildlib.mct</value>

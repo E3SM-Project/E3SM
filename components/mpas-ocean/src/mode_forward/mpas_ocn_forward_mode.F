@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -77,6 +77,7 @@ module ocn_forward_mode
    use ocn_tracer_surface_restoring
    use ocn_gm
    use ocn_submesoscale_eddies
+   use ocn_stokes_drift 
 
    use ocn_high_freq_thickness_hmix_del2
 
@@ -496,6 +497,7 @@ module ocn_forward_mode
       call ocn_vertical_advection_init(err_tmp)
       if ( configVertAdvMethod == vertAdvRemap ) &
          call ocn_vertical_remap_init(err_tmp)
+      call ocn_stokes_drift_init(err_tmp)
       ierr = ior(ierr,err_tmp)
 
       if (ierr /= 0) then
