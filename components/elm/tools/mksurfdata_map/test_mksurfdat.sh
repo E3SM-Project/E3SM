@@ -1,11 +1,18 @@
 #!/bin/bash
 
+display_help() {
+    echo "Usage: $0 " >&2
+    echo
+    echo "  -e, --e3sm_root <e3sm_root_directory>   Specify location of E3SM"
+    echo "  -h, --help                              Display this message"
+    echo "  -i, --inputdata_root <data_directory>   Specify location of climate inputdata"
+    echo
+    echo "NOTE: requires tempestremap and ESMF tools to be in PATH environment variable"
+}    
+
 # get arguments
 # Need --e3sm_root=
-#      --ESMFBIN=
 #      --inputdata_root=
-
-# Also need tempest in PATH for now...
 
 # test mkdurfdat.pl to generate land surface data
 # See step 7 in
@@ -13,7 +20,6 @@
 
 e3sm_root="default"
 test_root="default"
-esmfbin="default"
 inputdata_root="default"
 
 for arg in "$@"
@@ -24,14 +30,19 @@ case $arg in
 	shift
 	;;
 
-    -E=*|--ESMFBIN=*)
-	esmfbin="${arg#*=}"
-	shift
-	;;
-    
     -i=*|--inputdata_root=*)
 	inputdata_root="${arg#*=}"
 	shift
+	;;
+
+    -*)
+	display_help
+	exit 1;
+	;;
+    
+    -h|--help)
+	display_help
+	exit 0;
 	;;
 
 esac
@@ -39,18 +50,14 @@ done
 
 if [[ ${inputdata_root} == "default" ]]; then
     echo "Error: inputdata_root not set" >&2
+    display_help
     exit 1;
 fi
 if [[ ${e3sm_root} == "default" ]]; then
     echo "Error: e3sm_root not set" >&2
+    display_help
     exit 1;
 fi
-if [[ ${esmfbin} == "default" ]]; then
-    echo "Error: ESMFBIN not set" >&2
-    exit 1;
-fi
-
-export ESMFBIN_PATH=${esmfbin}
 
 output_root=$PWD
 cime_root=${e3sm_root}/cime
@@ -73,10 +80,37 @@ rm -f ${test_log}
 # example, the ne1024np4 grid file is at
 #   https://web.lcrc.anl.gov/public/e3sm/mapping/grids/ne1024np4_scrip_c20191023.nc)
 
-generatecsmesh=`which GenerateCSMesh`
-generatevolumetricmesh=`which GenerateVolumetricMesh`
-convertexodustoscrip=`which ConvertMeshToSCRIP`
-mksurfdata_map=`which mksurfdata_map`
+generatecsmesh=$(which GenerateCSMesh)
+generatevolumetricmesh=$(which GenerateVolumetricMesh)
+convertmeshtoscrip=$(which ConvertMeshToSCRIP)
+esmfregridweightgen=$(which ESMF_RegridWeightGen)
+
+#test for tempestremap and ESMF tools
+if [ "${esmfregridweightgen}x" == "x" ]; then
+    echo "ERROR: ESMF tool ESMF_RegridWeightGen not found in PATH" >&2
+    echo "cat ${test_log} for more info" >&2
+    exit 1
+fi
+
+if [ "${generatecsmesh}x" == "x" ]; then
+    echo "ERROR: tempestremap tool GenerateCSMesh not found in PATH" >&2
+    echo "cat ${test_log} for more info" >&2
+    exit 1
+fi
+
+if [ "${generatevolumetricmesh}x" == "x" ]; then
+    echo "ERROR: tempestremap tool GenerateVolumetricMesh not found in PATH" >&2
+    echo "cat ${test_log} for more info" >&2
+    exit 1
+fi
+
+if [ "${convertmeshtoscrip}x" == "x" ]; then
+    echo "ERROR: tempestremap tool ConvertMeshToScrip not found in PATH" >&2
+    echo "cat ${test_log} for more info" >&2
+    exit 1
+fi
+
+
 
 # These files will be created
 meshfile=ne4.g
@@ -84,9 +118,9 @@ gridfile=ne4pg2.g
 scripfile=ne4pg2_scrip.nc
 
 echo "Running ${generatecsmesh}" >> ${test_log} 2>&1
-(${generatecsmesh} --alt --res 30 --file ${meshfile}) >> ${test_log} 2>&1
+(${generatecsmesh} --alt --res 4 --file ${meshfile}) >> ${test_log} 2>&1
 if [ ! -f ${meshfile} ]; then
-    echo "ERROR: GenerateVolumetricMesh: no ${meshfile} file created" >&2
+    echo "ERROR: GenerateCSMesh: no ${meshfile} file created" >&2
     echo "cat ${test_log} for more info" >&2
     exit 1
 fi
@@ -99,8 +133,8 @@ if [ ! -f ${gridfile} ]; then
     exit 1
 fi
 
-echo "Running ${convertexodustoscrip}" >> ${test_log} 2>&1
-(${convertexodustoscrip} --in ${meshfile} --out ${scripfile}) >> ${test_log} 2>&1
+echo "Running ${convertmeshtoscrip}" >> ${test_log} 2>&1
+(${convertmeshtoscrip} --in ${meshfile} --out ${scripfile}) >> ${test_log} 2>&1
 if [ ! -f ${scripfile} ]; then
     echo "ERROR: ConvertExodusToSCRIP: no ${scripfile} file created" >&2
     echo "cat ${test_log} for more info" >&2

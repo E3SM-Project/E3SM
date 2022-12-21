@@ -1,9 +1,19 @@
 #!/bin/bash
 
-# get arguments
-# Need --e3sm_root=
-#      --reference_files=
-#      --inputdata_root=
+display_help() {
+    echo "Usage: $0 " >&2
+    echo
+    echo "  -e, --e3sm_root <e3sm_root_directory>   Specify location of E3SM"
+    echo "  -h, --help                              Display this message"
+    echo "  -i, --inputdata_root <data_directory>   Specify location of climate inputdata"
+    echo "  -r, --reference_files <ref_directory>   Specify location where files"
+    
+    echo "                                          1x1d.nc, ne30np4_pentagons.091226.nc,"
+    echo "                                          map_1x1_to_ne30np4_aave.nc"
+    echo "                                          are located" 
+    echo
+    echo "NOTE: requires tempestremap and ESMF tools to be in PATH environment variable"
+}    
 
 e3sm_root="default"
 test_root="default"
@@ -28,21 +38,34 @@ case $arg in
 	shift
 	;;
 
+    -*)
+	display_help
+	exit 1;
+	;;
+    
+    -h|--help)
+	display_help
+	exit 0;
+	;;
+
 esac
 done
 
 if [[ ${e3sm_root} == "default" ]]; then
     echo "Error: e3sm_root not set" >&2
+    display_help
     exit 1;
 fi
 
 if [[ ${inputdata_root} == "default" ]]; then
     echo "Error: inputdata_root not set" >&2
+    display_help
     exit 1;
 fi
 
 if [[ ${reference_files} == "default" ]]; then
     echo "Error: reference_files not set" >&2
+    display_help
     exit 1;
 fi
 

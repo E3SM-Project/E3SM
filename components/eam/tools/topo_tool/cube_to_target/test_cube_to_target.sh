@@ -1,5 +1,15 @@
 #!/bin/bash
 
+display_help() {
+    echo "Usage: $0 " >&2
+    echo
+    echo "  -e, --e3sm_root <e3sm_root_directory>   Specify location of E3SM"
+    echo "  -h, --help                              Display this message"
+    echo "  -i, --inputdata_root <data_directory>   Specify location of climate inputdata"
+    echo
+}    
+ 
+    
 # get arguments
 # Need --e3sm_root=
 #      --reference_files=
@@ -8,7 +18,6 @@
 e3sm_root="default"
 test_root="default"
 inputdata_root="default"
-reference_files="default"
 
 for arg in "$@"
 do
@@ -23,9 +32,14 @@ case $arg in
 	shift
 	;;
 
-    -r=*|--reference_files=*)
-	reference_files="${arg#*=}"
-	shift
+    -*)
+	display_help
+	exit 1;
+	;;
+    
+    -h|--help)
+	display_help
+	exit 0;
 	;;
 
 esac
@@ -33,16 +47,13 @@ done
 
 if [[ ${e3sm_root} == "default" ]]; then
     echo "Error: e3sm_root not set" >&2
+    display_help
     exit 1;
 fi
 
 if [[ ${inputdata_root} == "default" ]]; then
     echo "Error: inputdata_root not set" >&2
-    exit 1;
-fi
-
-if [[ ${reference_files} == "default" ]]; then
-    echo "Error: reference_files not set" >&2
+    display_help
     exit 1;
 fi
 
@@ -58,9 +69,60 @@ test_log=${PWD}/test.out
 rm -f ${test_log}
 
 
+generatecsmesh=`which GenerateCSMesh`
+generatevolumetricmesh=`which GenerateVolumetricMesh`
+convertmeshtoscrip=`which ConvertMeshToSCRIP`
+
+if [ "${generatecsmesh}x" == "x" ]; then
+    echo "ERROR: tempestremap tool GenerateCSMesh not found in PATH" >&2
+    echo "cat ${test_log} for more info" >&2
+    exit 1
+fi
+
+if [ "${generatevolumetricmesh}x" == "x" ]; then
+    echo "ERROR: tempestremap tool GenerateVolumetricMesh not found in PATH" >&2
+    echo "cat ${test_log} for more info" >&2
+    exit 1
+fi
+
+if [ "${convertmeshtoscrip}x" == "x" ]; then
+    echo "ERROR: tempestremap tool ConvertMeshToScrip not found in PATH" >&2
+    echo "cat ${test_log} for more info" >&2
+    exit 1
+fi
+
+
+meshfile=ne30.g
+gridfile=ne30pg4.g
+scripfile=ne30pg4_scrip.nc
 target_grid=${reference_files}/ne30pg4_scrip.nc
 input_topo=${inputdata_root}/atm/cam/topo/USGS-topo-cube3000.nc
 output_topo=${PWD}/output.nc
+
+echo "Running ${generatecsmesh}" >> ${test_log} 2>&1
+(${generatecsmesh} --alt --res 30 --file ${meshfile}) >> ${test_log} 2>&1
+if [ ! -f ${meshfile} ]; then
+    echo "ERROR: GenerateCSMesh: no ${meshfile} file created" >&2
+    echo "cat ${test_log} for more info" >&2
+    exit 1
+fi
+
+echo "Running ${generatevolumetricmesh}" >> ${test_log} 2>&1
+(${generatevolumetricmesh} --in ${meshfile} --out ${gridfile}) >> ${test_log} 2>&1
+if [ ! -f ${gridfile} ]; then
+    echo "ERROR: GenerateVolumetricMesh: no ${gridfile} file created" >&2
+    echo "cat ${test_log} for more info" >&2
+    exit 1
+fi
+
+echo "Running ${convertmeshtoscrip}" >> ${test_log} 2>&1
+(${convertmeshtoscrip} --in ${meshfile} --out ${scripfile}) >> ${test_log} 2>&1
+if [ ! -f ${scripfile} ]; then
+    echo "ERROR: ConvertMeshToSCRIP: no ${scripfile} file created" >&2
+    echo "cat ${test_log} for more info" >&2
+    exit 1
+fi
+
 
 echo "build cube_to_data in ${PWD}/builds ..." >> ${test_log}
 mkdir -p builds
@@ -94,6 +156,6 @@ if [ ! -f cube_to_target ]; then
 fi
 
 echo "Running cube_to_target" >> ${test_log} 2>&1
-(. .env_mach_specific.sh && ./cube_to_target --target-grid ${target_grid} --input-topography ${input_topo} --output-topography ${output_topo} )  >> ${test_log}
+(. .env_mach_specific.sh && ./build/cube_to_target --target-grid ${target_grid} --input-topography ${input_topo} --output-topography ${output_topo} )  >> ${test_log}
 
 exit 0
