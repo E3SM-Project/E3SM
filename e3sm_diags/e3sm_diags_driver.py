@@ -1,14 +1,15 @@
 #!/usr/bin/env python
-from __future__ import print_function
+# The above line is needed for `test_all_sets.test_all_sets_mpl`.
+# Otherwise, OSError: [Errno 8] Exec format error: 'e3sm_diags_driver.py'.
 
 import importlib
 import os
 import subprocess
 import sys
 import traceback
-from typing import Dict, Tuple
+from typing import Dict, List, Tuple
 
-import cdp.cdp_run
+import dask
 
 import e3sm_diags
 from e3sm_diags.logger import custom_logger
@@ -38,23 +39,6 @@ def get_default_diags_path(set_name, run_type, print_path=True):
             )
         )
     return pth
-
-
-def _collapse_results(parameters):
-    """
-    When using cdp_run, parameters is a list of lists: [[Parameters], ...].
-    Make this just a list: [Parameters, ...].
-    """
-    output_parameters = []
-
-    for p1 in parameters:
-        if isinstance(p1, list):
-            for p2 in p1:
-                output_parameters.append(p2)
-        else:
-            output_parameters.append(p1)
-
-    return output_parameters
 
 
 def _save_env_yml(results_dir):
@@ -256,29 +240,6 @@ def get_parameters(parser=CoreParser()):
     return parameters
 
 
-def run_diag(parameters):
-    """
-    For a single set of parameters, run the corresponding diags.
-    """
-    results = []
-    for set_name in parameters.sets:
-
-        parameters.current_set = set_name
-        mod_str = "e3sm_diags.driver.{}_driver".format(set_name)
-        try:
-            module = importlib.import_module(mod_str)
-            single_result = module.run_diag(parameters)
-            print("")
-            results.append(single_result)
-        except Exception:
-            logger.exception("Error in {}".format(mod_str), exc_info=True)
-            traceback.print_exc()
-            if parameters.debug:
-                sys.exit()
-
-    return results
-
-
 def create_parameter_dict(parameters):
     d: Dict[type, int] = dict()
     for parameter in parameters:
@@ -290,58 +251,210 @@ def create_parameter_dict(parameters):
     return d
 
 
+def run_diag(parameter: CoreParameter) -> List[CoreParameter]:
+    """Run the corresponding diagnostics for a set of parameters.
+
+    Additional CoreParameter (or CoreParameter sub-class) objects are derived
+    from the CoreParameter `sets` attribute, hence this function returns a
+    list of CoreParameter objects.
+
+    This function loops over the specified diagnostic sets and runs the
+    diagnostic using the parameters.
+
+    Parameters
+    ----------
+    parameter : CoreParameter
+        The CoreParameter object to run diagnostics on.
+
+    Returns
+    -------
+    List[CoreParameter]
+        The list of CoreParameter objects with results from the diagnostic run.
+    """
+    results = []
+
+    for set_name in parameter.sets:
+        # FIXME: The parameter and driver for a diagnostic should be mapped
+        # together. If this is done, the `run_diag` function should be
+        # accessible by the parameter class without needing to perform a static
+        # string reference for the module name.
+        parameter.current_set = set_name
+        mod_str = "e3sm_diags.driver.{}_driver".format(set_name)
+
+        # Check if there is a matching driver module for the `set_name`.
+        try:
+            module = importlib.import_module(mod_str)
+        except ModuleNotFoundError as e:
+            logger.error(f"'Error with set name {set_name}'", exc_info=e)
+            continue
+
+        # If the module exists, call the driver module's `run_diag` function.
+        try:
+            single_result = module.run_diag(parameter)
+            results.append(single_result)
+        except Exception:
+            logger.exception(f"Error in {mod_str}", exc_info=True)
+
+            if parameter.debug:
+                sys.exit()
+
+    return results
+
+
+def _run_serially(parameters: List[CoreParameter]) -> List[CoreParameter]:
+    """Run diagnostics with the parameters serially.
+
+    Parameters
+    ----------
+    parameters : List[CoreParameter]
+        The list of CoreParameter objects to run diagnostics on.
+
+    Returns
+    -------
+    List[CoreParameter]
+        The list of CoreParameter objects with results from the diagnostic run.
+    """
+    results = []
+
+    for p in parameters:
+        results.append(run_diag(p))
+
+    # `results` becomes a list of lists of parameters so it needs to be
+    # collapsed a level.
+    collapsed_results = _collapse_results(results)
+
+    return collapsed_results
+
+
+def _run_with_dask(parameters: List[CoreParameter]) -> List[CoreParameter]:
+    """Run diagnostics with the parameters in parallel using Dask.
+
+    This function passes ``run_diag`` to ``dask.bag.map``, which gets executed
+    in parallel with ``.compute``.
+
+    The first CoreParameter object's `num_workers` attribute is used to set
+    the number of workers for ``.compute``.
+
+    Parameters
+    ----------
+    parameters : List[CoreParameter]
+        The list of CoreParameter objects to run diagnostics on.
+
+    Returns
+    -------
+    List[CoreParameter]
+        The list of CoreParameter objects with results from the diagnostic run.
+
+    Notes
+    -----
+    https://docs.dask.org/en/stable/generated/dask.bag.map.html
+    https://docs.dask.org/en/stable/generated/dask.dataframe.DataFrame.compute.html
+    """
+    bag = dask.bag.from_sequence(parameters)
+    config = {"scheduler": "processes", "context": "fork"}
+
+    num_workers = getattr(parameters[0], "num_workers", None)
+    if num_workers is None:
+        raise ValueError(
+            "The `num_workers` attribute is required for multiprocessing but it is not "
+            "defined on the CoreParameter object. Set this attribute and try running "
+            "again."
+        )
+
+    with dask.config.set(config):
+        results = bag.map(run_diag).compute(num_workers=num_workers)
+
+    # `results` becomes a list of lists of parameters so it needs to be
+    # collapsed a level.
+    collapsed_results = _collapse_results(results)
+
+    return collapsed_results
+
+
+def _collapse_results(parameters: List[List[CoreParameter]]) -> List[CoreParameter]:
+    """Collapses the results of diagnostic runs by one list level.
+
+    Parameters
+    ----------
+    parameters : List[List[CoreParameter]]
+        A list of lists of CoreParameter objects with results from the
+        diagnostic run.
+
+    Returns
+    -------
+    List[CoreParameter]
+        A list of CoreParameter objects with results from the diagnostic run.
+    """
+    output_parameters = []
+
+    for p1 in parameters:
+        if isinstance(p1, list):
+            for p2 in p1:
+                output_parameters.append(p2)
+        else:
+            output_parameters.append(p1)
+
+    return output_parameters
+
+
 def main(parameters=[]):
+    # Get the diagnostic run parameters
+    # ---------------------------------
     parser = CoreParser()
+
+    # If no parameters are passed, use the parser args as defaults. Otherwise,
+    # create the dictionary of expected parameters.
     if not parameters:
         parameters = get_parameters(parser)
     expected_parameters = create_parameter_dict(parameters)
-
-    # each case id (aka, variable) has a set of parameters specified.
-    # print out the parameters for each variable for trouble shootting
-    # for p in parameters:
-    #    attrs = vars(p)
-    #    print (', '.join("%s: %s" % item for item in attrs.items()))
 
     if not os.path.exists(parameters[0].results_dir):
         os.makedirs(parameters[0].results_dir, 0o755)
     if not parameters[0].no_viewer:  # Only save provenance for full runs.
         save_provenance(parameters[0].results_dir, parser)
 
+    # Perform the diagnostic run
+    # --------------------------
     if parameters[0].multiprocessing:
-        parameters = cdp.cdp_run.multiprocess(run_diag, parameters, context="fork")
-    elif parameters[0].distributed:
-        parameters = cdp.cdp_run.distribute(run_diag, parameters)
+        parameters_results = _run_with_dask(parameters)
     else:
-        parameters = cdp.cdp_run.serial(run_diag, parameters)
+        parameters_results = _run_serially(parameters)
 
-    parameters = _collapse_results(parameters)
-
-    if not parameters:
+    # Generate the viewer outputs using results
+    # -----------------------------------------
+    if not parameters_results:
         logger.warning(
             "There was not a single valid diagnostics run, no viewer created."
         )
     else:
-        # If you get `AttributeError: 'NoneType' object has no attribute 'no_viewer'` on this line
-        # then `run_diag` likely returns `None`.
-
-        if parameters[0].no_viewer:
+        # If you get `AttributeError: 'NoneType' object has no attribute
+        # `'no_viewer'` on this line then `run_diag` likely returns `None`.
+        if parameters_results[0].no_viewer:
             logger.info("Viewer not created because the no_viewer parameter is True.")
         else:
-            path = os.path.join(parameters[0].results_dir, "viewer")
+            path = os.path.join(parameters_results[0].results_dir, "viewer")
             if not os.path.exists(path):
                 os.makedirs(path)
 
-            index_path = create_viewer(path, parameters)
+            index_path = create_viewer(path, parameters_results)
             logger.info("Viewer HTML generated at {}".format(index_path))
 
-    actual_parameters = create_parameter_dict(parameters)
-    if parameters[0].fail_on_incomplete and (actual_parameters != expected_parameters):
+    # Validate actual and expected parameters are aligned
+    # ---------------------------------------------------
+    actual_parameters = create_parameter_dict(parameters_results)
+    if parameters_results[0].fail_on_incomplete and (
+        actual_parameters != expected_parameters
+    ):
         d: Dict[type, Tuple[int, int]] = dict()
+
         # Loop through all expected parameter types.
         for t in expected_parameters.keys():
             d[t] = (actual_parameters[t], expected_parameters[t])
-        message = "Not all parameters completed successfully. Check output above for errors/exceptions. The following dictionary maps parameter types to their actual and expected numbers: {}".format(
-            d
+
+        message = (
+            "Not all parameters completed successfully. Check output above for "
+            "errors/exceptions. The following dictionary maps parameter types to their "
+            f"actual and expected numbers: {d}"
         )
         raise Exception(message)
 

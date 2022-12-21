@@ -460,15 +460,6 @@ class CoreParser(cdp.cdp_parser.CDPParser):
         )
 
         self.add_argument(
-            "--distributed",
-            dest="distributed",
-            help="Run the diags distributedly.",
-            action="store_const",
-            const=True,
-            required=False,
-        )
-
-        self.add_argument(
             "--save_netcdf",
             dest="save_netcdf",
             help="Save the NetCDF files.",

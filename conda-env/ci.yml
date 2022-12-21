@@ -16,6 +16,7 @@ dependencies:
   - cdp
   - cdms2
   - cdutil
+  - dask
   - genutil
   - lxml
   - mache
@@ -23,6 +24,10 @@ dependencies:
   - netcdf4
   - numpy
   - xarray
-  # Required in test suite
+  # Testing
+  # ==================
   - scipy
+  - pytest
+  - pytest-cov
+
 prefix: /opt/miniconda3/envs/e3sm_diags_ci

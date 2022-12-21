@@ -78,7 +78,6 @@ class CoreParameter(cdp.cdp_parameter.CDPParameter):
         self.diff_units = ""
 
         self.multiprocessing = False
-        self.distributed = False
         self.num_workers = 4
 
         self.no_viewer = False

@@ -35,14 +35,10 @@
     "python.linting.mypyArgs": ["--config=setup.cfg"],
     // Testing
     // ---------------------------
-    "python.testing.unittestEnabled": true,
-    "python.testing.unittestArgs": [
-      "-v",
-      "-s",
-      "./tests/e3sm_diags",
-      "-p",
-      "test_*.py"
-    ],
+    // NOTE: Debugger doesn't work if pytest-cov is enabled, so set "--no-cov"
+    // https://github.com/microsoft/vscode-python/issues/693
+    "python.testing.pytestArgs": ["--no-cov"],
+    "python.testing.pytestEnabled": true,
     // ===================
     // Extension settings
     // ===================
