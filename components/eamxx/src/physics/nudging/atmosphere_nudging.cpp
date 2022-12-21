@@ -3,6 +3,8 @@
 
 namespace scream
 {
+
+
 std::shared_ptr<GridsManager>
 create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
@@ -51,7 +53,7 @@ void NUDGING::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
 
   //Now need to read in the file
-  datafile = "io_output_test.INSTANT.nsteps_x1.np1.2000-01-01-00100.nc";
+  datafile = "io_output_test.INSTANT.nsteps_x1.np1.2000-01-01-00250.nc";
   scorpio::register_file(datafile,scorpio::Read);
   m_num_src_levs = scorpio::get_dimlen_c2f(datafile.c_str(),"lev");
   scorpio::eam_pio_closefile(datafile);
@@ -111,10 +113,43 @@ void NUDGING::initialize_impl (const RunType /* run_type */)
   //data_input.read_variables(0);
 }
 
-  /*
-view_2d<Real> time_interpolation (view_2d<Real>& var_bef, view_2d<Real>& var_after, const int time_since_before) {
+
+
+void NUDGING::time_interpolation (const int dt) {
+  const int time_index = dt/time_step_file;
+  std::cout<<"time_index: "<<time_index<<std::endl;
+  data_input.read_variables(time_index-1);
+  //return;
+  view_2d<Real> T_mid_bef("",T_mid_ext.extent_int(0),T_mid_ext.extent_int(1));
+  Kokkos::deep_copy(T_mid_bef,T_mid_ext);
+  data_input.read_variables(time_index);
+  view_2d<Real> T_mid_aft("",T_mid_ext.extent_int(0),T_mid_ext.extent_int(1));
+  Kokkos::deep_copy(T_mid_aft,T_mid_ext);
+
+  
+  for (int i=0; i<T_mid_ext.extent(0); ++i) { 
+    for (int k=0; k<T_mid_ext.extent(1); ++k) {
+      //double w_bef = dt-time_index*time_step_file;
+      double w_bef = (time_index+1)*time_step_file-dt;
+      //double w_aft = (time_index+1)*time_step_file-dt;
+      double w_aft = dt-(time_index)*time_step_file;
+      std::cout<<"w_bef: "<<w_bef<<std::endl;
+      std::cout<<"w_aft: "<<w_aft<<std::endl;
+      std::cout<<"Before T_mid_bef("<<i<<","<<k<<"): "<<T_mid_bef(i,k)<<std::endl;
+      std::cout<<"Before T_mid_aft("<<i<<","<<k<<"): "<<T_mid_aft(i,k)<<std::endl;
+      T_mid_ext(i,k)=( w_bef*T_mid_bef(i,k) + w_aft*T_mid_aft(i,k) )
+	             / time_step_file;
+      std::cout<<"T_mid_ext("<<i<<","<<k<<"): "<<T_mid_ext(i,k)<<std::endl;
+    }
+  }
+
+  
+  //return T_mid_bef;  
 }
-  */
+
+
+
+
   
 // =========================================================================================
 void NUDGING::run_impl (const int dt)
@@ -132,11 +167,12 @@ void NUDGING::run_impl (const int dt)
   //std::cout<<"time_stamp minutes: "<<ts.get_minutes()<<std::endl;
   //std::cout<<"time_stamp seconds: "<<ts.get_seconds()<<std::endl;
 
-  //auto T_mid_ext_tmp = time_interpolation(dt);
-
-  std::cout<<"time_stamp seconds: "<<ts.seconds_from(timestamp())<<std::endl;
-  int dt_ = dt/time_step_internal;
-  data_input.read_variables(dt_-1);
+  if (dt < time_step_file){ return;}
+  time_interpolation(dt);
+  //return;
+  //std::cout<<"time_stamp seconds: "<<ts.seconds_from(timestamp())<<std::endl;
+  //int dt_ = dt/time_step_internal;
+  //data_input.read_variables(dt_-1);
 
 
   //Code here
@@ -220,6 +256,7 @@ void NUDGING::run_impl (const int dt)
     }
   }
   */
+
   
   perform_vertical_interpolation(p_mid_r_m,
                                  p_mid,
@@ -227,7 +264,8 @@ void NUDGING::run_impl (const int dt)
                                  T_mid_r_m_out,
                                  m_num_src_levs,
                                  m_num_levs);
-
+  
+  
   /*
   for (int i=0; i<T_mid_r_m_out.extent(0); ++i) { 
     for (int k=0; k<T_mid_r_m_out.extent(1); ++k) {
@@ -247,6 +285,7 @@ void NUDGING::run_impl (const int dt)
       const int icol = team.league_rank();
       auto T_mid_1d = ekat::subview(T_mid,icol);
       auto T_mid_r_m_1d = ekat::subview(T_mid_r_m_out,icol);
+      //auto T_mid_r_m_1d = ekat::subview(T_mid_ext,icol);
       const auto range = Kokkos::TeamThreadRange(team, num_vert_packs);
       Kokkos::parallel_for(range, [&] (const Int & k) {
         T_mid_1d(k)=T_mid_r_m_1d(k);

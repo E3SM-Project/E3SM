@@ -95,7 +95,7 @@ TEST_CASE("nudging") {
   io_control.frequency_units         = "nsteps";
   std::vector<std::string> output_stamps; 
 
-  const Int dt        = 100;
+  const Int dt        = 250;
   const Int max_steps = 12;
   {
     util::TimeStamp time  = t0;
@@ -202,7 +202,7 @@ TEST_CASE("nudging") {
                   if (fname == "T_mid_r"){
                     //v(i,j) = (-j)*100 + i + 1;
                     //v(i,j) = (i-1)*100*10+2*j*10+dt*ii*0.1;
-		    v(i,j) = (i-1)*100*10+2*j*10+(dt/100.)*ii;
+		    v(i,j) = (i-1)*10000+200*j+10*(dt/250.)*ii;
                     std::cout<<"v("<<i<<","<<j<<"): "<<v(i,j)<<std::endl;
                   }
                   if (fname == "p_mid_r"){
@@ -336,7 +336,39 @@ TEST_CASE("nudging") {
     f_mid.sync_to_host();
     p_mid.sync_to_host();
 
-  
+    if(time_s<3){continue;}
+    for (int icol=0; icol<ncols; icol++){
+      for (int ilev=0; ilev<nlevs; ilev++){ 
+        const int time_index = time_s*100./250.;
+        double val_before = 10000*(icol-1) + 200*ilev + 10*int(time_index-1);
+        double val_after = 10000*(icol-1) + 200*ilev + 10*int(time_index);
+        double w_aft = time_s*100.-time_index*250.;
+        double w_bef = (time_index+1)*250-time_s*100.;
+	std::cout<<"val_before: "<<val_before<<std::endl;
+        std::cout<<"val_after: "<<val_after<<std::endl;
+	std::cout<<"w_before: "<<w_bef<<std::endl;
+        std::cout<<"w_after: "<<w_aft<<std::endl;
+	double val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
+
+        double val_before_n = 10000*(icol-1) + 200*(ilev+1) + 10*int(time_index-1);
+        double val_after_n = 10000*(icol-1) + 200*(ilev+1) + 10*int(time_index);
+        double w_aft_n = time_s*100.-time_index*250.;
+        double w_bef_n = (time_index+1)*250-time_s*100.;
+	/*
+	std::cout<<"val_before: "<<val_before<<std::endl;
+        std::cout<<"val_after: "<<val_after<<std::endl;
+	std::cout<<"w_before: "<<w_bef<<std::endl;
+        std::cout<<"w_after: "<<w_aft<<std::endl;
+	*/
+	double val_tim_avg_next = (val_before_n*w_bef_n + val_after_n*w_aft_n) / 250.;
+        double val_avg = (val_tim_avg_next + val_tim_avg)/2.;
+
+	std::cout<<"f_mid_v_h("<<icol<<","<<ilev<<"): "<<f_mid_v_h(icol,ilev)<<std::endl;
+	REQUIRE(f_mid_v_h(icol,ilev) == val_avg);
+      }
+    }
+    continue;
+    //This is for 100 second intervals in file and with just nudging
     //Now check that I was able to nudge it by a value of 1
     for (int icol=0; icol<ncols; icol++){
       for (int ilev=0; ilev<nlevs; ilev++){ 
