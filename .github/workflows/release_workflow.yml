@@ -21,7 +21,7 @@ jobs:
         uses: actions/cache@v3
         env:
           # Increase this value to reset cache if conda-env/docs.yml has not changed in the workflow
-          CACHE_NUMBER: 0
+          CACHE_NUMBER: 1
         with:
           path: ~/conda_pkgs_dir
           key: ${{ runner.os }}-conda-${{ env.CACHE_NUMBER }}-${{

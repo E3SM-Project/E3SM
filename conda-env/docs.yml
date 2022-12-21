@@ -6,8 +6,8 @@ channels:
 dependencies:
   # Base
   # =================
-  - python=3.10.8
-  - pip=22.3.1
+  - python>=3.8
+  - pip
   # Documentation
   # =================
   - sphinx=5.3.0
