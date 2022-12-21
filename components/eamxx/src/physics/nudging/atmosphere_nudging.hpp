@@ -88,12 +88,14 @@ protected:
   int m_num_levs;
   //int m_num_src_levs;
   int m_num_src_levs;
+  int time_step_file;
+  int time_step_internal;
   std::string datafile;
   std::map<std::string,view_1d_host<Real>> host_views;
   std::map<std::string,FieldLayout>  layouts;
   std::vector<std::string> m_fnames;
-  view_2d<Real> T_mid_r_v_g;
-  view_2d<Real> p_mid_r_v_g;
+  view_2d<Real> T_mid_ext;
+  view_2d<Real> p_mid_ext;
   AtmosphereInput data_input;
   //FieldLayout scalar3d_layout_mid_;
   // DOF information

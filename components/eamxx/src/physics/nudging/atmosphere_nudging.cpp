@@ -102,40 +102,68 @@ void NUDGING::initialize_impl (const RunType /* run_type */)
   //data_input.init(grid_l,host_views,layouts);
   //This is where I read in time index
 
-  T_mid_r_v_g = T_mid_r_v;
-  p_mid_r_v_g = p_mid_r_v;
-  //auto ts = timestamp();
+  T_mid_ext = T_mid_r_v;
+  p_mid_ext = p_mid_r_v;
+  auto ts = timestamp();
+  time_step_file=250;
+  time_step_internal=100;
+  //std::cout<<"ts at start time is: "<<time.seconds_from(ts)<<std::endl;
   //data_input.read_variables(0);
 }
 
+  /*
+view_2d<Real> time_interpolation (view_2d<Real>& var_bef, view_2d<Real>& var_after, const int time_since_before) {
+}
+  */
+  
 // =========================================================================================
 void NUDGING::run_impl (const int dt)
 {
   using namespace scream::vinterp;
   std::cout<<"I get in run_impl of atmosphere nudging"<<std::endl;
   
-  //auto ts = timestamp()+dt;
-  //auto ts = timestamp()+dt;
+  auto ts = timestamp()+dt;
+  //auto ts0_ = timestamp()+dt;
 
-  data_input.read_variables(dt);
+  //std::cout<<"time_stamp year: "<<ts.get_year()<<std::endl;
+  //std::cout<<"time_stamp month: "<<ts.get_month()<<std::endl;
+  //std::cout<<"time_stamp day: "<<ts.get_day()<<std::endl;
+  //std::cout<<"time_stamp hours: "<<ts.get_hours()<<std::endl;
+  //std::cout<<"time_stamp minutes: "<<ts.get_minutes()<<std::endl;
+  //std::cout<<"time_stamp seconds: "<<ts.get_seconds()<<std::endl;
+
+  //auto T_mid_ext_tmp = time_interpolation(dt);
+
+  std::cout<<"time_stamp seconds: "<<ts.seconds_from(timestamp())<<std::endl;
+  int dt_ = dt/time_step_internal;
+  data_input.read_variables(dt_-1);
+
+
+  //Code here
+  //Check if time from internal is greater than lowest value in file
+  //Then check what two external values are needed
+  //Do this by calculating dt value and comparing to time_set_file
+
   /*
-  view_2d<Real> T_mid_bef = T_mid_r_v_g;
+  //view_2d<Real> T_mid_bef = T_mid_ext;
   //view_2d<Real> T_mid_bef;
-  auto T_mid_bef_h       = Kokkos::create_mirror_view(T_mid_bef);      
+  //auto T_mid_bef_h       = Kokkos::create_mirror_view(T_mid_bef);      
   //Kokkos::deep_copy(T_mid_bef_h,T_mid_bef);
+  view_2d<Real> T_mid_bef("",T_mid_ext.extent_int(0),T_mid_ext.extent_int(1));
+  Kokkos::deep_copy(T_mid_bef,T_mid_ext);
   
-  for (int i=0; i<T_mid_r_v_g.extent(0); ++i) { 
-    for (int k=0; k<T_mid_r_v_g.extent(1); ++k) {
+  for (int i=0; i<T_mid_ext.extent(0); ++i) { 
+    for (int k=0; k<T_mid_ext.extent(1); ++k) {
       //T_mid_out(i,k)=0;
-      std::cout<<"T_mid_bef_h("<<i<<","<<k<<"): "<<T_mid_bef_h(i,k)<<std::endl;
-      //std::cout<<"T_mid_r_v_g("<<i<<","<<k<<"): "<<T_mid_r_v_g(i,k)<<std::endl;
+      std::cout<<"T_mid_bef("<<i<<","<<k<<"): "<<T_mid_bef(i,k)<<std::endl;
+      std::cout<<"T_mid_ext("<<i<<","<<k<<"): "<<T_mid_ext(i,k)<<std::endl;
       //std::cout<<"T_mid_aft("<<i<<","<<k<<"): "<<T_mid_aft(i,k)<<std::endl;
     }
   }
 
-  //view_2d<Real> T_mid_out = T_mid_r_v_g;
-  data_input.read_variables(dt+1);
-  //view_2d<Real> T_mid_aft = T_mid_r_v_g;
+  //view_2d<Real> T_mid_out = T_mid_ext;
+  data_input.read_variables(dt_+1);
+  //view_2d<Real> T_mid_aft = T_mid_ext;
   //std::cout<<"time_stamp year: "<<ts.get_year()<<std::endl;
   //std::cout<<"time_stamp month: "<<ts.get_month()<<std::endl;
   //std::cout<<"time_stamp day: "<<ts.get_day()<<std::endl;
@@ -145,31 +173,29 @@ void NUDGING::run_impl (const int dt)
   std::cout<<"time_stamp seconds: "<<ts.seconds_from(timestamp())<<std::endl;
 
   
-  for (int i=0; i<T_mid_r_v_g.extent(0); ++i) { 
-    for (int k=0; k<T_mid_r_v_g.extent(1); ++k) {
+  for (int i=0; i<T_mid_ext.extent(0); ++i) { 
+    for (int k=0; k<T_mid_ext.extent(1); ++k) {
       //T_mid_out(i,k)=0;
-      std::cout<<"T_mid_bef_h("<<i<<","<<k<<"): "<<T_mid_bef_h(i,k)<<std::endl;
-      std::cout<<"T_mid_r_v_g("<<i<<","<<k<<"): "<<T_mid_r_v_g(i,k)<<std::endl;
+      std::cout<<"T_mid_bef("<<i<<","<<k<<"): "<<T_mid_bef(i,k)<<std::endl;
+      std::cout<<"T_mid_ext("<<i<<","<<k<<"): "<<T_mid_ext(i,k)<<std::endl;
       //std::cout<<"T_mid_aft("<<i<<","<<k<<"): "<<T_mid_aft(i,k)<<std::endl;
     }
   }
- */    
+  */
   
   //perform time interpolation
   
   //These are fields before modifications
   auto T_mid          = get_field_in("T_mid").get_view<Pack**>();
   const auto p_mid    = get_field_in("p_mid").get_view<Pack**>();
-
-  		       
  
   //These are field values to be modified to
   view_2d<Pack> T_mid_r_m_out("T_mid_r_m_out",m_num_cols,m_num_levs);
-  const view_2d<Pack> T_mid_r_m(reinterpret_cast<Pack*>(T_mid_r_v_g.data()),
+  const view_2d<Pack> T_mid_r_m(reinterpret_cast<Pack*>(T_mid_ext.data()),
   				m_num_cols,m_num_src_levs); 
   //const view_2d<Pack> T_mid_r_m(reinterpret_cast<Pack*>(T_mid_bef.data()),
   //				m_num_cols,m_num_src_levs); 
-  const view_2d<Pack> p_mid_r_m(reinterpret_cast<Pack*>(p_mid_r_v_g.data()),
+  const view_2d<Pack> p_mid_r_m(reinterpret_cast<Pack*>(p_mid_ext.data()),
 				m_num_cols,m_num_src_levs);
 
   for (int i=0; i<p_mid.extent(0); ++i) { 
