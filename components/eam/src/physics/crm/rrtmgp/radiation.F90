@@ -1174,7 +1174,7 @@ contains
       integer :: ncol, ncol_tot
 
       ! Loop indices
-      integer :: icall, ix, iy, iz, ilev, j, igas, iband, igpt
+      integer :: icall, ix, iy, iz, ilev, j, iband, igpt
 
       ! Everyone needs a name
       character(*), parameter :: subname = 'radiation_tend'
@@ -1520,21 +1520,26 @@ contains
 
                      ! Longwave cloud optics
                      if (radiation_do('lw')) then
-                        call t_startf('rad_cloud_optics_lw')
+                        !call mmf_optics_lw(ncol, pver, nlwbands, cld, iclwp, iciwp, rel, rei, cld_tau_bnd_lw)
+                        !call mmf_sample_optics_lw(ncol, pver, nlwgpts, gpoint_bands_lw
                         ! Compute cloud optics
+                        call t_startf('rad_get_cloud_optics_lw')
                         cld_tau_gpt_lw = 0._r8
                         call get_cloud_optics_lw( &
                            ncol, pver, nlwbands, do_snow_optics(), cld, cldfsnow, iclwp, iciwp, icswp, &
                            lambdac, mu, dei, des, rei, &
                            cld_tau_bnd_lw, liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw &
                         )
+                        call t_stopf('rad_get_cloud_optics_lw')
                         ! Do mcica sampling of cloud optics
+                        call t_startf('rad_sample_cloud_optics_lw')
                         call get_gpoint_bands_lw(gpoint_bands_lw)
                         call sample_cloud_optics_lw( &
                            ncol, pver, nlwgpts, gpoint_bands_lw, &
                            state%pmid, cld, cldfsnow, &
                            cld_tau_bnd_lw, cld_tau_gpt_lw &
                         )
+                        call t_stopf('rad_sample_cloud_optics_lw')
                         ! Save CRM cloud optics for cosp
                         if (docosp) then
                            do ilay = 1,pver
@@ -1544,7 +1549,6 @@ contains
                               end do
                            end do
                         end if 
-                        call t_stopf('rad_cloud_optics_lw')
                      end if
 
                      ! Pack data
@@ -1711,7 +1715,7 @@ contains
                   ! Calculate longwave fluxes
                   call t_startf('rad_fluxes_lw')
                   call radiation_driver_lw(                                                &
-                     vmr_packed(:,1:ncol_tot,1:nlev_rad),                                     &
+                     size(active_gases), ncol_tot, nlev_rad, vmr_packed(:,1:ncol_tot,1:nlev_rad),                                     &
                      surface_emissivity(1:nlwbands,1:ncol_tot),                            &
                      pmid_packed(1:ncol_tot,1:nlev_rad  ), tmid_packed(1:ncol_tot,1:nlev_rad  ), &
                      pint_packed(1:ncol_tot,1:nlev_rad+1), tint_packed(1:ncol_tot,1:nlev_rad+1), &
@@ -1978,30 +1982,26 @@ contains
 
    !----------------------------------------------------------------------------
 
-   subroutine radiation_driver_lw(gas_vmr, surface_emissivity, &
-                                pmid, tmid, pint, tint, &
-                                cld_tau_gpt, aer_tau_bnd, &
-                                fluxes_allsky, fluxes_clrsky)
+   subroutine radiation_driver_lw(ngas, ncol, nlev, gas_vmr, surface_emissivity, &
+                                  pmid, tmid, pint, tint, &
+                                  cld_tau_gpt, aer_tau_bnd, &
+                                  fluxes_allsky, fluxes_clrsky)
 
       use perf_mod, only: t_startf, t_stopf
 
+      integer, intent(in) :: ngas, ncol, nlev
       real(r8), intent(in) :: gas_vmr(:,:,:)
       real(r8), intent(in) :: surface_emissivity(:,:)
       real(r8), intent(in) :: pmid(:,:), tmid(:,:), pint(:,:), tint(:,:)
       real(r8), intent(in) :: cld_tau_gpt(:,:,:), aer_tau_bnd(:,:,:)
       type(fluxes_t), intent(inout) :: fluxes_allsky, fluxes_clrsky
 
-      integer :: ncol, nlev, igas
-
-      ncol = size(pmid,1)
-      nlev = size(pmid,2)
-
       ! Compute fluxes
       call t_startf('rrtmgp_run_lw')
       call rrtmgp_run_lw( &
-         size(active_gases), ncol, nlev_rad, &
+         ngas, ncol, nlev, &
          gas_vmr(:,1:ncol,:), &
-         pmid(1:ncol,1:nlev_rad), tmid(1:ncol,1:nlev_rad), pint(1:ncol,1:nlev_rad+1), tint(1:ncol,1:nlev_rad+1), &
+         pmid(1:ncol,1:nlev), tmid(1:ncol,1:nlev), pint(1:ncol,1:nlev+1), tint(1:ncol,1:nlev+1), &
          surface_emissivity(1:nlwbands,1:ncol), &
          cld_tau_gpt(1:ncol,:,:)  , aer_tau_bnd(1:ncol,:,:)  , &
          fluxes_allsky%flux_up    , fluxes_allsky%flux_dn    , fluxes_allsky%flux_net    , &
