@@ -66,6 +66,9 @@ public:
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
+  //Time interpolation function
+  void time_interpolation(const int dt);
+  
 protected:
 
   // The three main overrides for the subcomponent
