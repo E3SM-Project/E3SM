@@ -3308,9 +3308,13 @@ contains
 
   subroutine column_ridging(domain)
 
-    use ice_colpkg, only: &
-         colpkg_step_ridge, &
-         colpkg_clear_warnings
+    use icepack_intfc, only: &
+         icepack_step_ridge, &
+         icepack_warnings_clear
+
+!    use ice_colpkg, only: &
+!         colpkg_step_ridge, &
+!         colpkg_clear_warnings
 
     type(domain_type), intent(inout) :: domain
 
@@ -3502,53 +3506,55 @@ contains
           call set_cice_tracer_array_category(block, ciceTracerObject, &
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
-          call colpkg_clear_warnings()
-          call colpkg_step_ridge(&
-               dynamicsTimeStep, &
-               config_dynamics_subcycle_number, &
-               nIceLayers, &
-               nSnowLayers, &
-               nBioLayers, &
-               nCategories, &
-               categoryThicknessLimits, & ! hin_max, dimension(0:ncat), intent(inout)
-               ridgeConvergence(iCell), &
-               ridgeShear(iCell), &
-               seaFreezingTemperature(iCell), &
-               iceAreaCategory(1,:,iCell), &
-               tracerArrayCategory, &              ! trcrn, dimension(:,:), intent(inout)
-               iceVolumeCategory(1,:,iCell), &
-               snowVolumeCategory(1,:,iCell), &
-               openWaterArea(iCell), &
-               ciceTracerObject % parentIndex, & ! trcr_depend
-               ciceTracerObject % firstAncestorMask, & ! trcr_base
-               ciceTracerObject % ancestorNumber, & ! n_trcr_strata
-               ciceTracerObject % ancestorIndices, & ! nt_strata
-               areaLossRidge(iCell), &
-               areaGainRidge(iCell), &
-               iceVolumeRidged(iCell), &
-               openingRateRidge(iCell), &
-               pondFreshWaterFlux(iCell), &
-               oceanFreshWaterFlux(iCell), &
-               oceanHeatFlux(iCell), &
-               nAerosols, &
-               oceanAerosolFlux(:,iCell), &
-               ridgeParticipationFunction(:,iCell), &
-               ratioRidgeThicknessToIce(:,iCell), &
-               fractionNewRidgeArea(:,iCell), &
-               fractionNewRidgeVolume(:,iCell), &
-               areaLossRidgeCategory(:,iCell), &
-               areaGainRidgeCategory(:,iCell), &
-               iceVolumeRidgedCategory(:,iCell), &
-               raftingIceArea(:,iCell), &
-               raftingIceVolume(:,iCell), &
-               iceAreaCell(iCell), &
-               oceanSaltFlux(iCell), &
-               newlyFormedIceLogical(:), &
-               zSalinityFlux(iCell), &
-               oceanBioFluxes(:,iCell), &
-               abortFlag, &
-               abortMessage)
-          call column_write_warnings(abortFlag)
+!          call colpkg_clear_warnings()
+          call icepack_warnings_clear()
+          call icepack_step_ridge(&
+               dt=dynamicsTimeStep, &
+               ndtd=config_dynamics_subcycle_number, &
+               nilyr=nIceLayers, &
+               nslyr=nSnowLayers, &
+               nblyr=nBioLayers, &
+               ncat=nCategories, &
+               hin_max=categoryThicknessLimits, & ! hin_max, dimension(0:ncat), intent(inout)
+               rdg_conv=ridgeConvergence(iCell), &
+               rdg_shear=ridgeShear(iCell), &
+               aicen=iceAreaCategory(1,:,iCell), &
+               trcrn=tracerArrayCategory, &              ! trcrn, dimension(:,:), intent(inout)
+               vicen=iceVolumeCategory(1,:,iCell), &
+               vsnon=snowVolumeCategory(1,:,iCell), &
+               aice0=openWaterArea(iCell), &
+               trcr_depend=ciceTracerObject % parentIndex, & ! trcr_depend
+               trcr_base=ciceTracerObject % firstAncestorMask, & ! trcr_base
+               n_trcr_strata=ciceTracerObject % ancestorNumber, & ! n_trcr_strata
+               nt_strata=ciceTracerObject % ancestorIndices, & ! nt_strata
+               dardg1dt=areaLossRidge(iCell), &
+               dardg2dt=areaGainRidge(iCell), &
+               dvirdgdt=iceVolumeRidged(iCell), &
+               opening=openingRateRidge(iCell), &
+               fpond=pondFreshWaterFlux(iCell), &
+               fresh=oceanFreshWaterFlux(iCell), &
+               fhocn=oceanHeatFlux(iCell), &
+               n_aero=nAerosols, &
+               faero_ocn=oceanAerosolFlux(:,iCell), & ! DC no fiso_ocn argument
+               aparticn=ridgeParticipationFunction(:,iCell), &
+               krdgn=ratioRidgeThicknessToIce(:,iCell), &
+               aredistn=fractionNewRidgeArea(:,iCell), &
+               vredistn=fractionNewRidgeVolume(:,iCell), &
+               dardg1ndt=areaLossRidgeCategory(:,iCell), &
+               dardg2ndt=areaGainRidgeCategory(:,iCell), &
+               dvirdgndt=iceVolumeRidgedCategory(:,iCell), &
+               araftn=raftingIceArea(:,iCell), &
+               vraftn=raftingIceVolume(:,iCell), &
+               aice=iceAreaCell(iCell), &
+               fsalt=oceanSaltFlux(iCell), &
+               first_ice=newlyFormedIceLogical(:), &
+               fzsal=zSalinityFlux(iCell), &
+               flux_bio=oceanBioFluxes(:,iCell)) ! DC no closing argument
+!dc removed unsure          call column_write_warnings(abortFlag)
+
+!dc added unsure          call column_write_warnings(.false.)
+
+!          call column_write_warnings(abortFlag)
 
           ! update
           do iCategory = 1, nCategories
