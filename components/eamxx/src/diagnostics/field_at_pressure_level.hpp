@@ -19,6 +19,8 @@ public:
   using KT = KokkosTypes<DefaultDevice>;
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
+  template <typename S>
+  using view_2d = typename KT::template view_2d<S>;
 
   // Constructors
   FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params);

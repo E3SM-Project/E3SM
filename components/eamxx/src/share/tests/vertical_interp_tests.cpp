@@ -11,27 +11,27 @@ using Spack = SmallPack<Real>;
 
 using Smask = ekat::Mask<Spack::n>;
 
-template<int N>
+template<int P>
 void run(){
   //This function first tests cases where the output levels are the same
   //as the input levels to make sure you get the same output as input
   //In this case only two cases are investigated:
-  //1) n_layers_src = n_layers_tgt = 2*N
-  //2) n_layers_src = n_layers_tgt = 2*N+1
-  //where N is the pack size
+  //1) n_layers_src = n_layers_tgt = 2*P
+  //2) n_layers_src = n_layers_tgt = 2*P+1
+  //where P is the pack size
   //Then the function tests 4 different scenarios where the 
   //the output levels are different from the input levels:
-  //1) n_layers_src= 2*N,   n_layers_tgt= 2*N
-  //2) n_layers_src= 2*N+1, n_layers_tgt= 2*N
-  //3) n_layers_src= 2*N,   n_layers_tgt= 2*N-1
-  //4) n_layers_src= 2*N+1, n_layers_tgt= 2*N-1
+  //1) n_layers_src= 2*P,   n_layers_tgt= 2*P
+  //2) n_layers_src= 2*P+1, n_layers_tgt= 2*P
+  //3) n_layers_src= 2*P,   n_layers_tgt= 2*P-1
+  //4) n_layers_src= 2*P+1, n_layers_tgt= 2*P-1
   //For each scenario target levels are at the midpoint and so should be the average
   //of the source layers. 
 
-  int n_layers_src[4] = {2*N,2*N+1,2*N,2*N+1};
-  int n_layers_tgt[4] = {2*N,2*N,2*N-1,2*N-1};
+  int n_layers_src[4] = {2*P,2*P+1,2*P,2*P+1};
+  int n_layers_tgt[4] = {2*P,2*P,2*P-1,2*P-1};
 
-  printf (" -- Testing vertical interpolation with Pack size %d --\n",N);
+  printf (" -- Testing vertical interpolation with Pack size %d --\n",P);
 
   for (double perturb : {0, 1}){
     printf ("    -> Target pressure levels: p_tgt = p_src + %f\n",perturb);
@@ -50,21 +50,21 @@ void run(){
         printf ("      -> Testing %d source layers, %d target layers\n",
                 n_layers_src[i],n_layers_tgt[i]);
       }
-      auto npacks_src = ekat::PackInfo<N>::num_packs(n_layers_src[i]);
-      auto npacks_tgt = ekat::PackInfo<N>::num_packs(n_layers_tgt[i]);
-      auto p_tgt = view_1d<Pack<Real,N>>("",npacks_tgt);
+      auto npacks_src = ekat::PackInfo<P>::num_packs(n_layers_src[i]);
+      auto npacks_tgt = ekat::PackInfo<P>::num_packs(n_layers_tgt[i]);
+      auto p_tgt = view_1d<Pack<Real,P>>("",npacks_tgt);
       auto p_tgt_h = Kokkos::create_mirror_view(p_tgt);
       auto p_tgt_h_s = ekat::scalarize(p_tgt_h);
-      auto tmp_src = view_2d<Pack<Real,N>>("",2,npacks_src);
+      auto tmp_src = view_Nd<Pack<Real,P>,2>("",2,npacks_src);
       auto tmp_src_h = Kokkos::create_mirror_view(tmp_src);
       auto tmp_src_h_s = ekat::scalarize(tmp_src_h);
-      auto p_src = view_2d<Pack<Real,N>>("",2,npacks_src);
+      auto p_src = view_Nd<Pack<Real,P>,2>("",2,npacks_src);
       auto p_src_h = Kokkos::create_mirror_view(p_src);
       auto p_src_h_s = ekat::scalarize(p_src_h);
-      auto out = view_2d<Pack<Real,N>>("",2,npacks_tgt);
+      auto out = view_Nd<Pack<Real,P>,2>("",2,npacks_tgt);
       auto out_h = Kokkos::create_mirror_view(out);
       auto out_h_s = ekat::scalarize(out_h);
-      auto mask = view_2d<Mask<N>>("",2,npacks_tgt);
+      auto mask = view_Nd<Mask<P>,2>("",2,npacks_tgt);
       auto mask_h = Kokkos::create_mirror_view(mask);
   
       //Set target levels    
@@ -82,7 +82,7 @@ void run(){
       Kokkos::deep_copy(p_src,p_src_h);
       Kokkos::deep_copy(p_tgt,p_tgt_h);
       Kokkos::deep_copy(tmp_src,tmp_src_h);
-      perform_vertical_interpolation(p_src,
+      perform_vertical_interpolation<Real,P,2>(p_src,
                                      p_tgt,
                                      tmp_src,
                                      out,
@@ -96,8 +96,8 @@ void run(){
       //Check that output of interpolation is as expected
       for(int col=0; col<2; col++){
         for(int lev=0; lev<(n_layers_tgt[i]-1); lev++){
-          const int ipack = lev / N;
-          const int jpack  = lev % N;
+          const int ipack = lev / P;
+          const int jpack  = lev % P;
           REQUIRE(mask_h(col,ipack)[jpack] == false);
 
           if (perturb == 0){
@@ -110,35 +110,35 @@ void run(){
         }//end of looping over levels
       }//end of looping over columns
 
-      auto out_1d_test = view_2d<Pack<Real,N>>("",2,npacks_tgt);
+      auto out_1d_test = view_Nd<Pack<Real,P>,2>("",2,npacks_tgt);
       auto out_1d_test_h = Kokkos::create_mirror_view(out_1d_test);
       auto out_1d_test_h_s = ekat::scalarize(out_1d_test_h);
-      auto mask_1d_test = view_2d<Mask<N>>("",2,npacks_tgt);
+      auto mask_1d_test = view_Nd<Mask<P>,2>("",2,npacks_tgt);
       auto mask_1d_test_h = Kokkos::create_mirror_view(mask_1d_test);
   
       //Take subview and run through the 1d interpolator function 
       //and make sure get same thing back
-      ekat::LinInterp<Real,N> vert_interp(2,n_layers_src[i],n_layers_tgt[i]);
+      ekat::LinInterp<Real,P> vert_interp(2,n_layers_src[i],n_layers_tgt[i]);
       const int num_vert_packs = p_tgt.extent(0);
       const auto policy = ESU::get_default_team_policy(2, num_vert_packs);
       auto loc_layers_src = n_layers_src[i];
       Kokkos::parallel_for("scream_vert_interp_setup_loop", policy,
          	       KOKKOS_LAMBDA(MemberType const& team) {
           const int icol = team.league_rank();
-          view_1d<Pack<Real,N>> x1=ekat::subview(p_src, icol);
-          view_1d<Pack<Real,N>> in=ekat::subview(tmp_src, icol);
-          view_1d<Pack<Real,N>> out_1d=ekat::subview(out_1d_test, icol);
-          view_1d<Mask<N>> msk=ekat::subview(mask_1d_test, icol);
-          perform_vertical_interpolation_impl_1d(x1,
-                                                 p_tgt,
-                                                 in,
-                                                 out_1d,
-                                                 msk,
-                                                 loc_layers_src,
-                                                 icol,
-                                                 masked_val,
-                                                 team,
-                                                 vert_interp); 
+          const auto x1=ekat::subview(p_src, icol);
+          const auto in=ekat::subview(tmp_src, icol);
+          const auto out_1d=ekat::subview(out_1d_test, icol);
+          const auto msk=ekat::subview(mask_1d_test, icol);
+          apply_interpolation_impl_1d<Real,P>(x1,
+                                              p_tgt,
+                                              in,
+                                              out_1d,
+                                              msk,
+                                              loc_layers_src,
+                                              icol,
+                                              masked_val,
+                                              team,
+                                              vert_interp); 
       });
       Kokkos::fence();
 
@@ -148,8 +148,8 @@ void run(){
       //Check that 1d interpolator output is consistent with what is expected
       for(int col=0; col<2; col++){
         for(int lev=0; lev<(n_layers_tgt[i]-1); lev++){
-          const int ipack = lev / N;
-          const int jpack  = lev % N;
+          const int ipack = lev / P;
+          const int jpack  = lev % P;
           REQUIRE(mask_1d_test_h(col,ipack)[jpack] == false);
 
           if (perturb == 0){
@@ -176,10 +176,10 @@ TEST_CASE("main_vertical_interpolation_test"){
   }
 }
 
-template<int N>
-void check_mask(const view_2d_host<Mask<N>>& mask, int col, int lev){
-  const int ipack = lev / N;
-  const int jpack  = lev % N;
+template<int P>
+void check_mask(const view_Nd_host<Mask<P>,2>& mask, int col, int lev){
+  const int ipack = lev / P;
+  const int jpack  = lev % P;
   if ((col == 0 && lev == 16) || (col == 1 && lev == 0)){
     REQUIRE(mask(col,ipack)[jpack] == true);
   }
@@ -199,22 +199,22 @@ TEST_CASE("testing_masking"){
   //   using the 1d interpolation function
   const int n_layers_src = 9;
   const int n_layers_tgt = 17;
-  const int N = SCREAM_PACK_SIZE;
+  const int P = SCREAM_PACK_SIZE;
 
-  auto npacks_src  = ekat::PackInfo<N>::num_packs(n_layers_src);
-  auto npacks_tgt  = ekat::PackInfo<N>::num_packs(n_layers_tgt);
-  auto p_tgt       = view_1d<Pack<Real,N>>("",npacks_tgt);
+  auto npacks_src  = ekat::PackInfo<P>::num_packs(n_layers_src);
+  auto npacks_tgt  = ekat::PackInfo<P>::num_packs(n_layers_tgt);
+  auto p_tgt       = view_1d<Pack<Real,P>>("",npacks_tgt);
   auto p_tgt_h     = Kokkos::create_mirror_view(p_tgt);
   auto p_tgt_h_s   = ekat::scalarize(p_tgt_h);
-  auto tmp_src     = view_2d<Pack<Real,N>>("",2,npacks_src);
+  auto tmp_src     = view_Nd<Pack<Real,P>,2>("",2,npacks_src);
   auto tmp_src_h   = Kokkos::create_mirror_view(tmp_src);
   auto tmp_src_h_s = ekat::scalarize(tmp_src_h);
-  auto p_src       = view_2d<Pack<Real,N>>("",2,npacks_src);
+  auto p_src       = view_Nd<Pack<Real,P>,2>("",2,npacks_src);
   auto p_src_h     = Kokkos::create_mirror_view(p_src);
   auto p_src_h_s   = ekat::scalarize(p_src_h);
-  auto out         = view_2d<Pack<Real,N>>("",2,npacks_tgt);
+  auto out         = view_Nd<Pack<Real,P>,2>("",2,npacks_tgt);
   auto out_h       = Kokkos::create_mirror_view(out);
-  auto mask        = view_2d<Mask<N>>("",2,npacks_tgt);
+  auto mask        = view_Nd<Mask<P>,2>("",2,npacks_tgt);
   auto mask_h      = Kokkos::create_mirror_view(mask);
 
   //Fist test to see if interpolate properly using 2d views
@@ -248,7 +248,7 @@ TEST_CASE("testing_masking"){
   Kokkos::deep_copy(p_tgt,p_tgt_h);
   Kokkos::deep_copy(tmp_src,tmp_src_h);
 
-  perform_vertical_interpolation(p_src,
+  perform_vertical_interpolation<Real,P,2>(p_src,
 				 p_tgt,
 				 tmp_src,
 				 out,
@@ -276,38 +276,38 @@ TEST_CASE("testing_masking"){
   for(int col=0; col<2; col++){
     for(int lev=0; lev<17; lev++){
       REQUIRE(out_h_s(col,lev) == correct_val[col][lev]);
-      check_mask<N>(mask_h,col,lev);
+      check_mask<P>(mask_h,col,lev);
     }
   }
 
   //Test to see if get same answer when call 1D interpolation function 
   //instead of 2D interpolation function
-  auto out_1d_test = view_2d<Pack<Real,N>>("",2,npacks_tgt);
+  auto out_1d_test = view_Nd<Pack<Real,P>,2>("",2,npacks_tgt);
   auto out_1d_test_h = Kokkos::create_mirror_view(out_1d_test);
   auto out_1d_test_h_s = ekat::scalarize(out_1d_test_h);
-  auto mask_1d_test = view_2d<Mask<N>>("",2,npacks_tgt);
+  auto mask_1d_test = view_Nd<Mask<P>,2>("",2,npacks_tgt);
   auto mask_1d_test_h = Kokkos::create_mirror_view(mask_1d_test);
 
-  ekat::LinInterp<Real,N> vert_interp(2,n_layers_src,n_layers_tgt);
+  ekat::LinInterp<Real,P> vert_interp(2,n_layers_src,n_layers_tgt);
   const int num_vert_packs = p_tgt.extent(0);
   const auto policy = ESU::get_default_team_policy(2, num_vert_packs);
   Kokkos::parallel_for("scream_vert_interp_setup_loop", policy,
      	       KOKKOS_LAMBDA(MemberType const& team) {
       const int icol = team.league_rank();
-      view_1d<Pack<Real,N>> x1=ekat::subview(p_src, icol);
-      view_1d<Pack<Real,N>> in=ekat::subview(tmp_src, icol);
-      view_1d<Pack<Real,N>> out_1d=ekat::subview(out_1d_test, icol);
-      view_1d<Mask<N>> msk=ekat::subview(mask_1d_test, icol);
-      perform_vertical_interpolation_impl_1d(x1,
-                                             p_tgt,
-                                             in,
-                                             out_1d,
-                                             msk,
-                                             n_layers_src,
-                                             icol,
-                                             masked_val,
-                                             team,
-                                             vert_interp);
+      const auto x1=ekat::subview(p_src, icol);
+      const auto in=ekat::subview(tmp_src, icol);
+      const auto out_1d=ekat::subview(out_1d_test, icol);
+      const auto msk=ekat::subview(mask_1d_test, icol);
+      apply_interpolation_impl_1d<Real,P>(x1,
+                                          p_tgt,
+                                          in,
+                                          out_1d,
+                                          msk,
+                                          n_layers_src,
+                                          icol,
+                                          masked_val,
+                                          team,
+                                          vert_interp);
   });
   Kokkos::fence();
 
@@ -317,18 +317,18 @@ TEST_CASE("testing_masking"){
   for(int col=0; col<2; col++){
     for(int lev=0; lev<17; lev++){
       REQUIRE(out_1d_test_h_s(col,lev) == correct_val[col][lev]);
-      check_mask<N>(mask_h,col,lev);
+      check_mask<P>(mask_h,col,lev);
     }
   }
 
   //Check to see if choose different masked value than default that it returns as expected
-  auto out_usr_msk = view_2d<Pack<Real,N>>("",2,npacks_tgt);
+  auto out_usr_msk = view_Nd<Pack<Real,P>,2>("",2,npacks_tgt);
   auto out_usr_msk_h = Kokkos::create_mirror_view(out_usr_msk);
   auto out_usr_msk_h_s = ekat::scalarize(out_usr_msk_h);
-  auto mask_usr_msk = view_2d<Mask<N>>("",2,npacks_tgt);
+  auto mask_usr_msk = view_Nd<Mask<P>,2>("",2,npacks_tgt);
   auto mask_usr_msk_h = Kokkos::create_mirror_view(mask_usr_msk);
   Real mod_mask_val = -999.;
-  perform_vertical_interpolation(p_src,
+  perform_vertical_interpolation<Real,P,2>(p_src,
 				 p_tgt,
 				 tmp_src,
 				 out_usr_msk,
@@ -345,7 +345,7 @@ TEST_CASE("testing_masking"){
   for(int col=0; col<2; col++){
     for(int lev=0; lev<17; lev++){
       REQUIRE(out_usr_msk_h_s(col,lev) == correct_val[col][lev]);
-      check_mask<N>(mask_h,col,lev);
+      check_mask<P>(mask_h,col,lev);
     }
   }
 
