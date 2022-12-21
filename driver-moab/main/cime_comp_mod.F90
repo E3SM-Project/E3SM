@@ -4417,7 +4417,8 @@ contains
 !----------------------------------------------------------------------------------
 
   subroutine cime_run_lnd_setup_send()
-
+    use seq_flds_mod, only : seq_flds_x2l_fields
+    use seq_comm_mct, only : mblxid, mlnid
     !----------------------------------------------------
     !| lnd prep-merge
     !----------------------------------------------------
@@ -4456,6 +4457,7 @@ contains
             mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
             timer_barrier='CPL:C2L_BARRIER', timer_comp_exch='CPL:C2L', &
             timer_map_exch='CPL:c2l_lndx2lndl', timer_infodata_exch='CPL:c2l_infoexch')
+       call component_exch_moab(lnd(1), mblxid, mlnid, 1, seq_flds_x2l_fields)
     endif
 
   end subroutine cime_run_lnd_setup_send
@@ -4669,6 +4671,8 @@ contains
 
   subroutine cime_run_rof_recv_post()
 
+    use seq_comm_mct, only: mrofid, mbrxid
+    use seq_flds_mod, only: seq_flds_r2x_fields
     !----------------------------------------------------------
     ! rof -> cpl
     !----------------------------------------------------------
@@ -4678,6 +4682,9 @@ contains
             mpicom_barrier=mpicom_CPLALLROFID, run_barriers=run_barriers, &
             timer_barrier='CPL:R2C_BARRIER', timer_comp_exch='CPL:R2C', &
             timer_map_exch='CPL:r2c_rofr2rofx', timer_infodata_exch='CPL:r2c_infoexch')
+       ! this is for one hop 
+       call component_exch_moab(rof(1), mrofid, mbrxid, 0, seq_flds_r2x_fields)
+
        call prep_rof_migrate_moab(infodata)
     endif
 
@@ -4706,6 +4713,8 @@ contains
 
   subroutine cime_run_ice_setup_send()
   
+   use seq_flds_mod, only : seq_flds_x2i_fields
+   use seq_comm_mct, only : mpsiid, mbixid
     !  Note that for atm->ice mapping below will leverage the assumption that the
     !  ice and ocn are on the same grid and that mapping of atm to ocean is
     !  done already for use by atmocn flux and ice model prep
@@ -4750,6 +4759,7 @@ contains
             mpicom_barrier=mpicom_CPLALLICEID, run_barriers=run_barriers, &
             timer_barrier='CPL:C2I_BARRIER', timer_comp_exch='CPL:C2I', &
             timer_map_exch='CPL:c2i_icex2icei', timer_infodata_exch='CPL:ice_infoexch')
+       call component_exch_moab(ice(1), mbixid, mpsiid, 1, seq_flds_x2i_fields)
     endif
 
   end subroutine cime_run_ice_setup_send
@@ -4757,7 +4767,8 @@ contains
 !----------------------------------------------------------------------------------
 
   subroutine cime_run_ice_recv_post()
-
+    use seq_comm_mct, only : mpsiid, mbixid
+    use seq_flds_mod, only : seq_flds_i2x_fields
     !----------------------------------------------------------
     ! ice -> cpl
     !----------------------------------------------------------

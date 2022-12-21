@@ -578,6 +578,9 @@ contains
 #ifndef CPL_BYPASS       
        call t_startf ('lc_lnd_export')
        call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
+#ifdef HAVE_MOAB
+       call lnd_export_moab(bounds, lnd2atm_vars, lnd2glc_vars) ! it is private here
+#endif
        call t_stopf ('lc_lnd_export')
 #endif
 
@@ -1043,6 +1046,7 @@ contains
     use shr_megan_mod      , only : shr_megan_mechcomps_n
     use iMOAB,  only       : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
     use seq_flds_mod, only : seq_flds_l2x_fields
+    use seq_comm_mct, only : num_moab_exports
     !
     ! !ARGUMENTS:
     implicit none
@@ -1057,7 +1061,7 @@ contains
     integer  :: dtime ! time step   
     integer  :: num   ! counter
     character(len=*), parameter :: sub = 'lnd_export_moab'
-    integer, save :: num_mb_exports = 0  ! used for debugging
+
     integer :: ent_type, ierr
     character(len=100) :: outfile, wopts, lnum
    character(len=400) :: tagname
@@ -1157,8 +1161,7 @@ contains
        call shr_sys_abort( sub//' Error: fail to set moab '// trim(seq_flds_l2x_fields) )
  
 #ifdef MOABDEBUG
-       num_mb_exports = num_mb_exports +1
-       write(lnum,"(I0.2)")num_mb_exports
+       write(lnum,"(I0.2)")num_moab_exports
        outfile = 'lnd_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
        wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
        ierr = iMOAB_WriteMesh(mlnid, outfile, wopts)

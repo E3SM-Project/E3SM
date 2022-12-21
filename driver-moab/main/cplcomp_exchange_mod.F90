@@ -13,6 +13,7 @@ module cplcomp_exchange_mod
   use seq_flds_mod, only: seq_flds_o2x_fields ! needed for MOAB init of ocean fields o2x to be able to transfer to coupler
   use seq_flds_mod, only: seq_flds_x2o_fields ! needed for MOAB init of ocean fields x2o to be able to transfer from coupler
   use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_x2i_fields ! needed for MOAB init of ice fields x2o on coupler side, to save them
+  use seq_flds_mod, only: seq_flds_l2x_fields, seq_flds_x2l_fields ! 
   use seq_comm_mct, only: cplid, logunit
   use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs, seq_comm_iamin
   use seq_diag_mct
@@ -1289,7 +1290,24 @@ contains
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in receiving coupler land mesh'
             call shr_sys_abort(subname//' ERROR in receiving coupler land mesh')
-            endif
+         endif
+
+!  need to define tags on land too
+         tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR 
+         tagtype = 1  ! dense, double
+         numco = 1 !  one value per cell
+         ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags l2x on coupler land'
+            call shr_sys_abort(subname//' ERROR in defining tags l2x on coupler ')
+         endif
+         ! need also to define seq_flds_x2o_fields on coupler instance, and on ocean comp instance
+         tagname = trim(seq_flds_x2l_fields)//C_NULL_CHAR 
+         ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags x2l on coupler land'
+            call shr_sys_abort(subname//' ERROR in defining tags x2l on coupler land')
+         endif        
 
 #ifdef MOABDEBUG
          ! debug test
