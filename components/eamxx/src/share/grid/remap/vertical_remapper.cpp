@@ -149,24 +149,19 @@ set_pressure_levels(const std::string& map_file) {
   //       still get_view using a different packsize?  Or some other strategy?
   scorpio::register_file(map_file,scorpio::FileMode::Read);
   m_num_remap_levs = scorpio::get_dimlen_c2f(map_file.c_str(),"nlevs");
-  std::vector<Real> remap_pres_levs(m_num_remap_levs);
+
+  auto npacks = ekat::PackInfo<SCREAM_PACK_SIZE>::num_packs(m_num_remap_levs);
+  m_remap_pres_view = view_1d<Pack>("",npacks);
+  auto remap_pres_scal = ekat::scalarize(m_remap_pres_view);
+
   std::vector<scorpio::offset_t> dofs_offsets(m_num_remap_levs);
   std::iota(dofs_offsets.begin(),dofs_offsets.end(),0);
   const std::string idx_decomp_tag = "vertical_remapper::" + std::to_string(m_num_remap_levs);
   scorpio::get_variable(map_file, "p_levs", "p_levs", {"nlevs"}, "real", idx_decomp_tag);
   scorpio::set_dof(map_file,"p_levs",m_num_remap_levs,dofs_offsets.data());
   scorpio::set_decomp(map_file);
-  scorpio::grid_read_data_array(map_file,"p_levs",-1,remap_pres_levs.data(),remap_pres_levs.size());
+  scorpio::grid_read_data_array(map_file,"p_levs",-1,remap_pres_scal.data(),remap_pres_scal.size());
   scorpio::eam_pio_closefile(map_file);
-
-  auto npacks = ekat::PackInfo<SCREAM_PACK_SIZE>::num_packs(m_num_remap_levs);
-  m_remap_pres_view = view_1d<Pack>("",npacks);
-  auto remap_pres_host = Kokkos::create_mirror_view(m_remap_pres_view);
-  auto remap_pres_scal = ekat::scalarize(remap_pres_host);
-  for (int ii=0;ii<m_num_remap_levs;ii++) {
-    remap_pres_scal(ii) = remap_pres_levs[ii];
-  }
-  Kokkos::deep_copy(m_remap_pres_view,remap_pres_host);  
 }
 
 void VerticalRemapper::

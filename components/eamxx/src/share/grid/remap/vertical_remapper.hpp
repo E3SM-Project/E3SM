@@ -1,6 +1,7 @@
 #ifndef EAMXX_VERTICAL_REMAPPER_HPP
 #define EAMXX_VERTICAL_REMAPPER_HPP
 
+#include "share/field/field_tag.hpp"
 #include "share/grid/remap/abstract_remapper.hpp"
 #include "share/util/scream_vertical_interpolation.hpp"
 
@@ -40,18 +41,33 @@ public:
     // Same type of layout, and same sizes except for possibly the first one
     // Note: we can't do tgt.size()/tgt.dim(0), since there may be 0 tgt gids
     //       on some ranks, which means tgt.dim(0)=0.
-    return true;
-    // TODO: Set this up as appropriate
-//ASD    int src_col_size = 1;
-//ASD    for (int i=1; i<src.rank(); ++i) {
-//ASD      src_col_size *= src.dim(i);
-//ASD    }
-//ASD    int tgt_col_size = 1;
-//ASD    for (int i=1; i<tgt.rank(); ++i) {
-//ASD      tgt_col_size *= tgt.dim(i);
-//ASD    }
-//ASD    return get_layout_type(src.tags())==get_layout_type(tgt.tags()) &&
-//ASD           src_col_size == tgt_col_size;
+    // Note: for vertical remapping we strip out the LEV or ILEV dimension when
+    //       calculating the size.
+    auto src_dims = src.dims();
+    auto tgt_dims = tgt.dims();
+    auto src_size = src.rank();
+    auto tgt_size = tgt.rank();
+
+    using namespace ShortFieldTagsNames;
+    if (src.has_tag(LEV) || src.has_tag(ILEV)) {
+      // Then we ignore the last dimension:
+      src_size -= 1; 
+    } 
+    if (tgt.has_tag(LEV) || tgt.has_tag(ILEV)) {
+      // Then we ignore the last dimension:
+      tgt_size -= 1; 
+    } 
+
+    int src_col_size = 1;
+    for (int i=0; i<src_size; ++i) {
+      src_col_size *= src_dims[i];
+    }
+    int tgt_col_size = 1;
+    for (int i=0; i<tgt_size; ++i) {
+      tgt_col_size *= tgt_dims[i];
+    }
+    return get_layout_type(src.tags())==get_layout_type(tgt.tags()) &&
+           src_col_size == tgt_col_size;
   }
 
 protected:

@@ -253,36 +253,31 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
     compute_diagnostic(it.first);
   }
 
-  // If needed, remap fields from their grid to the unique grid, for I/O
-  if (m_vert_remapper) {
-    start_timer("EAMxx::IO::vert_remap");
-    m_vert_remapper->remap(true);
+  auto apply_remap = [&](const std::shared_ptr<AbstractRemapper> remapper)
+  {
+    remapper->remap(true);
 
-    for (int i=0; i<m_vert_remapper->get_num_fields(); ++i) {
+    for (int i=0; i<remapper->get_num_fields(); ++i) {
       // Need to update the time stamp of the fields on the IO grid,
       // to avoid throwing an exception later
-      auto src = m_vert_remapper->get_src_field(i);
-      auto tgt = m_vert_remapper->get_tgt_field(i);
+      auto src = remapper->get_src_field(i);
+      auto tgt = remapper->get_tgt_field(i);
 
       auto src_t = src.get_header().get_tracking().get_time_stamp();
       tgt.get_header().get_tracking().update_time_stamp(src_t);
     }
+  }; // end apply_remap
+
+  // If needed, remap fields from their grid to the unique grid, for I/O
+  if (m_vert_remapper) {
+    start_timer("EAMxx::IO::vert_remap");
+    apply_remap(m_vert_remapper);
     stop_timer("EAMxx::IO::vert_remap");
   }
 
   if (m_horiz_remapper) {
     start_timer("EAMxx::IO::horiz_remap");
-    m_horiz_remapper->remap(true);
-
-    for (int i=0; i<m_horiz_remapper->get_num_fields(); ++i) {
-      // Need to update the time stamp of the fields on the IO grid,
-      // to avoid throwing an exception later
-      auto src = m_horiz_remapper->get_src_field(i);
-      auto tgt = m_horiz_remapper->get_tgt_field(i);
-
-      auto src_t = src.get_header().get_tracking().get_time_stamp();
-      tgt.get_header().get_tracking().update_time_stamp(src_t);
-    }
+    apply_remap(m_horiz_remapper);
     stop_timer("EAMxx::IO::horiz_remap");
   }
 
