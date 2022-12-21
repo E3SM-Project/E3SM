@@ -1208,6 +1208,8 @@ contains
 
       ! Cloud properties for optics
       real(r8), dimension(pcols,pver) :: rel, rei, cld, iclwp, iciwp
+      ! PACKED cloud physical properties for optics
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,pver) :: rel_p, rei_p, cld_p, iclwp_p, iciwp_p
 
       ! Pointers to fields on physics buffer
       real(r8), pointer, dimension(:,:,:,:) :: crm_t, crm_qv, crm_qc, crm_qi, crm_cld, crm_qrad
@@ -1244,17 +1246,15 @@ contains
       real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,pver) :: qrs_packed, qrsc_packed
 
       ! Working variables for optics
-      real(r8), dimension(pcols,pver,nlwbands) :: cld_tau_bnd_lw, aer_tau_bnd_lw
-      real(r8), dimension(pcols,pver,nlwgpts) :: cld_tau_gpt_lw
-      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad,nlwgpts) :: cld_tau_gpt_lw_packed
-      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad,nlwbands) :: aer_tau_bnd_lw_packed
+      real(r8), dimension(pcols,pver,nlwbands) :: aer_tau_bnd_lw
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad,nlwgpts) :: cld_tau_gpt_lw
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad,nlwbands) :: aer_tau_bnd_lw_packed, cld_tau_bnd_lw
       real(r8), dimension(pcols,pver,nswbands) :: &
-         cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
          aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw
-      real(r8), dimension(pcols,pver,nswgpts) :: &
-         cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad,nswbands) :: &
+         cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw
       real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad,nswgpts) :: &
-         cld_tau_gpt_sw_packed, cld_ssa_gpt_sw_packed, cld_asm_gpt_sw_packed
+         cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw
       real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad,nswbands) :: &
          aer_tau_bnd_sw_packed, aer_ssa_bnd_sw_packed, aer_asm_bnd_sw_packed
       ! NOTE: these are diagnostic only (and only output in non-MMF version, but needed for optics calls)
@@ -1308,10 +1308,6 @@ contains
 
          ! Output CRM cloud fraction
          call outfld('CRM_CLD_RAD', crm_cld(1:ncol,:,:,:), state%ncol, state%lchnk)
-
-         ! Find bands used for cloud simulator calculations
-         cosp_lwband = get_band_index_lw(10.5_r8, 'micron')
-         cosp_swband = get_band_index_sw(0.67_r8, 'micron')
 
          ! Set surface emissivity to 1 here. There is a note in the RRTMG
          ! implementation that this is treated in the land model, but the old
@@ -1394,10 +1390,6 @@ contains
                   end if ! radiation_do('lw')
                end if ! do_aerosol_rad
 
-               cld_tau_gpt_lw_packed = 0._r8
-               cld_tau_gpt_sw_packed = 0._r8
-               cld_ssa_gpt_sw_packed = 0._r8
-               cld_asm_gpt_sw_packed = 0._r8
                aer_tau_bnd_lw_packed = 0._r8
                aer_tau_bnd_sw_packed = 0._r8
                aer_ssa_bnd_sw_packed = 0._r8
@@ -1408,9 +1400,7 @@ contains
                iciwp = 0_r8
                cld   = 0_r8
 
-               ! Loop over CRM columns; call routines designed to work with
-               ! pbuf/state over ncol columns for each CRM column index, and pack
-               ! into arrays dimensioned ncol_tot = ncol * ncrms
+               ! Populate fields with CRM data and pack into arrays dimensioned ncol_tot = ncol*crm_nx_rad*crm_ny_rad
                do iy = 1,crm_ny_rad
                   do ix = 1,crm_nx_rad
                      ! Fill GCM columns with CRM data
@@ -1422,12 +1412,8 @@ contains
                            state%t(icol,ilev)          = crm_t (icol,ix,iy,iz)
                            cld(icol,ilev) = crm_cld(icol,ix,iy,iz)
                            if (cld(icol,ilev) > 0) then
-                              iclwp(icol,ilev) = crm_qc(icol,ix,iy,iz)          &
-                                             * state%pdel(icol,ilev) / gravit &
-                                             / max(0.01_r8, cld(icol,ilev))
-                              iciwp(icol,ilev) = crm_qi(icol,ix,iy,iz)          &
-                                             * state%pdel(icol,ilev) / gravit &
-                                             / max(0.01_r8, cld(icol,ilev))
+                              iclwp(icol,ilev) = crm_qc(icol,ix,iy,iz) * state%pdel(icol,ilev) / gravit / max(0.01_r8, cld(icol,ilev))
+                              iciwp(icol,ilev) = crm_qi(icol,ix,iy,iz) * state%pdel(icol,ilev) / gravit / max(0.01_r8, cld(icol,ilev))
                            else
                               iclwp(icol,ilev) = 0
                               iciwp(icol,ilev) = 0
@@ -1451,83 +1437,15 @@ contains
                      vmr_col(:,:,1) = vmr_col(:,:,2)  ! Extra layer above model top
                      call t_stopf('rad_gas_concentrations')
 
-                     ! Do shortwave cloud and aerosol optics calculations
-                     if (radiation_do('sw')) then
-                        ! Do cloud optics
-                        call t_startf('rad_cloud_optics_sw')
-                        cld_tau_gpt_sw = 0._r8
-                        cld_ssa_gpt_sw = 0._r8
-                        cld_asm_gpt_sw = 0._r8
-                        call get_cloud_optics_sw( &
-                           ncol, pver, nswbands, &
-                           cld, iclwp, iciwp, &
-                           rel, rei, &
-                           cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw &
-                        )
-                        ! Now reorder bands to be consistent with RRTMGP
-                        ! We need to fix band ordering because the old input files assume RRTMG
-                        ! band ordering, but this has changed in RRTMGP.
-                        ! TODO: fix the input files themselves!
-                        do icol = 1,size(cld_tau_bnd_sw,1)
-                           do ilay = 1,size(cld_tau_bnd_sw,2)
-                              cld_tau_bnd_sw(icol,ilay,:) = reordered(cld_tau_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
-                              cld_ssa_bnd_sw(icol,ilay,:) = reordered(cld_ssa_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
-                              cld_asm_bnd_sw(icol,ilay,:) = reordered(cld_asm_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
-                           end do
-                        end do
-                        ! MCICA sampling to get cloud optical properties by gpoint/cloud state
-                        call get_gpoint_bands_sw(gpoint_bands_sw)
-                        call sample_cloud_optics_sw( &
-                           ncol, pver, nswgpts, gpoint_bands_sw, &
-                           pmid_col(:,ktop:kbot), cld, &
-                           cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw, &
-                           cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw &
-                        )
-                        ! Save CRM cloud optics for cosp
-                        if (docosp) then
-                           do ilay = 1,pver
-                              do icol = 1,ncol
-                                 j = _IDX321(icol, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
-                                 dtau_packed(j,ilay) = cld_tau_bnd_sw(icol,ilay,cosp_swband)
-                              end do
-                           end do
-                        end if 
-                        call t_stopf('rad_cloud_optics_sw')
-                     end if
-
-                     ! Longwave cloud optics
-                     if (radiation_do('lw')) then
-                        ! Compute cloud optics
-                        call t_startf('rad_get_cloud_optics_lw')
-                        call get_cloud_optics_lw(ncol, pver, nlwbands, cld, iclwp, iciwp, rei, cld_tau_bnd_lw)
-                        call t_stopf('rad_get_cloud_optics_lw')
-                        ! Do mcica sampling of cloud optics
-                        call t_startf('rad_sample_cloud_optics_lw')
-                        call get_gpoint_bands_lw(gpoint_bands_lw)
-                        call sample_cloud_optics_lw( &
-                           ncol, pver, nlwgpts, gpoint_bands_lw, &
-                           pmid_col(:,ktop:kbot), cld, &
-                           cld_tau_bnd_lw, cld_tau_gpt_lw &
-                        )
-                        !call get_subsampled_clouds_lw( &
-                        !   ncol, pver, nlwbands, nlwgpts, gpoint_bands_lw, &
-                        !   pmid_col(:,ktop:kbot), cld, cld_tau_bnd_lw, cld_tau_gpt_lw)
-                        call t_stopf('rad_sample_cloud_optics_lw')
-                        ! Save CRM cloud optics for cosp
-                        if (docosp) then
-                           do ilay = 1,pver
-                              do icol = 1,ncol
-                                 j = _IDX321(icol, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
-                                 dems_packed(j,ilay) = 1._r8 - exp(-cld_tau_bnd_lw(icol,ilay,cosp_lwband))
-                              end do
-                           end do
-                        end if 
-                     end if
-
                      ! Pack data
                      call t_startf('rad_pack_columns')
                      do icol = 1,ncol
                         j = _IDX321(icol, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
+                        cld_p(j,:) = cld(icol,:)
+                        iclwp_p(j,:) = iclwp(icol,:)
+                        iciwp_p(j,:) = iciwp(icol,:)
+                        rel_p(j,:) = rel(icol,:)
+                        rei_p(j,:) = rei(icol,:)
                         coszrs_packed(j) = coszrs(icol)
                         albedo_dir_packed(:,j) = albedo_dir_col(:,icol)
                         albedo_dif_packed(:,j) = albedo_dif_col(:,icol)
@@ -1535,22 +1453,15 @@ contains
                         tmid_packed(j,:) = tmid_col(icol,:)
                         pint_packed(j,:) = pint_col(icol,:)
                         tint_packed(j,:) = tint_col(icol,:)
-                        ! Note: leave top level empty for cloud optics
-                        ! Note: packing these appears to be very expensive on
-                        ! GPU; need to port these to GPU, and work on packed
-                        ! cloud physical properties rather than packing derived
-                        ! optical properties
-                        cld_tau_gpt_lw_packed(j,ktop:kbot,:) = cld_tau_gpt_lw(icol,:,:)
-                        cld_tau_gpt_sw_packed(j,ktop:kbot,:) = cld_tau_gpt_sw(icol,:,:)
-                        cld_ssa_gpt_sw_packed(j,ktop:kbot,:) = cld_ssa_gpt_sw(icol,:,:)
-                        cld_asm_gpt_sw_packed(j,ktop:kbot,:) = cld_asm_gpt_sw(icol,:,:)
+                        ! Note: leave top level empty for optics
                         aer_tau_bnd_lw_packed(j,ktop:kbot,:) = aer_tau_bnd_lw(icol,:,:)
                         aer_tau_bnd_sw_packed(j,ktop:kbot,:) = aer_tau_bnd_sw(icol,:,:)
                         aer_ssa_bnd_sw_packed(j,ktop:kbot,:) = aer_ssa_bnd_sw(icol,:,:)
                         aer_asm_bnd_sw_packed(j,ktop:kbot,:) = aer_asm_bnd_sw(icol,:,:)
                         vmr_packed(:,j,:) = vmr_col(:,icol,:)
-                     end do  ! icol = 1,ncol
+                     end do
                      call t_stopf('rad_pack_columns')
+
                   end do  ! ix = 1,crm_nx_rad
                end do  ! iy = 1,crm_ny_rad
 
@@ -1558,10 +1469,6 @@ contains
                call t_startf('rad_check_inputs')
                call handle_error(clip_values(tint_packed(1:ncol_tot,1:nlev_rad+1), get_min_temperature(), get_max_temperature(), trim(subname) // ' tint'), &
                   fatal=.false., warn=rrtmgp_enable_temperature_warnings)
-               call handle_error(clip_values(cld_tau_gpt_sw_packed,  0._r8, huge(cld_tau_gpt_sw_packed), trim(subname) // ' cld_tau_gpt_sw', tolerance=1e-10_r8))
-               call handle_error(clip_values(cld_ssa_gpt_sw_packed,  0._r8,                    1._r8, trim(subname) // ' cld_ssa_gpt_sw', tolerance=1e-10_r8))
-               call handle_error(clip_values(cld_asm_gpt_sw_packed, -1._r8,                    1._r8, trim(subname) // ' cld_asm_gpt_sw', tolerance=1e-10_r8))
-               call handle_error(clip_values(cld_tau_gpt_lw_packed,  0._r8, huge(cld_tau_gpt_lw_packed), trim(subname) // ' cld_tau_gpt_lw', tolerance=1e-10_r8))
                call handle_error(clip_values(aer_tau_bnd_sw_packed,  0._r8, huge(aer_tau_bnd_sw_packed), trim(subname) // ' aer_tau_bnd_sw', tolerance=1e-10_r8))
                call handle_error(clip_values(aer_ssa_bnd_sw_packed,  0._r8,                    1._r8, trim(subname) // ' aer_ssa_bnd_sw', tolerance=1e-10_r8))
                call handle_error(clip_values(aer_asm_bnd_sw_packed, -1._r8,                    1._r8, trim(subname) // ' aer_asm_bnd_sw', tolerance=1e-10_r8))
@@ -1570,6 +1477,41 @@ contains
 
                ! Do shortwave stuff...
                if (radiation_do('sw')) then
+
+                  ! Do cloud optics
+                  call t_startf('rad_cloud_optics_sw')
+                  cld_tau_gpt_sw = 0._r8
+                  cld_ssa_gpt_sw = 0._r8
+                  cld_asm_gpt_sw = 0._r8
+                  call get_cloud_optics_sw( &
+                     ncol_tot, pver, nswbands, &
+                     cld_p, iclwp_p, iciwp_p, &
+                     rel_p, rei_p, &
+                     cld_tau_bnd_sw(:,ktop:kbot,:), cld_ssa_bnd_sw(:,ktop:kbot,:), cld_asm_bnd_sw(:,ktop:kbot,:) &
+                  )
+                  ! Now reorder bands to be consistent with RRTMGP
+                  ! We need to fix band ordering because the old input files assume RRTMG
+                  ! band ordering, but this has changed in RRTMGP.
+                  ! TODO: fix the input files themselves!
+                  do icol = 1,ncol_tot
+                     do ilay = 1,nlev_rad
+                        cld_tau_bnd_sw(icol,ilay,:) = reordered(cld_tau_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                        cld_ssa_bnd_sw(icol,ilay,:) = reordered(cld_ssa_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                        cld_asm_bnd_sw(icol,ilay,:) = reordered(cld_asm_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                     end do
+                  end do
+                  ! MCICA sampling to get cloud optical properties by gpoint/cloud state
+                  call get_gpoint_bands_sw(gpoint_bands_sw)
+                  call sample_cloud_optics_sw( &
+                     ncol_tot, pver, nswgpts, gpoint_bands_sw, &
+                     pmid_packed(:,ktop:kbot), cld_p, &
+                     cld_tau_bnd_sw(:,ktop:kbot,:), cld_ssa_bnd_sw(:,ktop:kbot,:), cld_asm_bnd_sw(:,ktop:kbot,:), &
+                     cld_tau_gpt_sw(:,ktop:kbot,:), cld_ssa_gpt_sw(:,ktop:kbot,:), cld_asm_gpt_sw(:,ktop:kbot,:) &
+                  )
+                  call handle_error(clip_values(cld_tau_gpt_sw,  0._r8, huge(cld_tau_gpt_sw), trim(subname) // ' cld_tau_gpt_sw', tolerance=1e-10_r8))
+                  call handle_error(clip_values(cld_ssa_gpt_sw,  0._r8,                1._r8, trim(subname) // ' cld_ssa_gpt_sw', tolerance=1e-10_r8))
+                  call handle_error(clip_values(cld_asm_gpt_sw, -1._r8,                1._r8, trim(subname) // ' cld_asm_gpt_sw', tolerance=1e-10_r8))
+                  call t_stopf('rad_cloud_optics_sw')
 
                   if (fixed_total_solar_irradiance<0) then
                      ! Get orbital eccentricity factor to scale total sky irradiance
@@ -1596,7 +1538,7 @@ contains
                        vmr_packed, &
                        pmid_packed, pint_packed, tmid_packed, &
                        albedo_dir_packed, albedo_dif_packed, coszrs_packed, &
-                       cld_tau_gpt_sw_packed, cld_ssa_gpt_sw_packed, cld_asm_gpt_sw_packed, &
+                       cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw, &
                        aer_tau_bnd_sw_packed, aer_ssa_bnd_sw_packed, aer_asm_bnd_sw_packed, &
                        fluxes_allsky_packed, fluxes_clrsky_packed, tsi_scaling)
                   call t_stopf('rad_radiation_driver_sw')
@@ -1679,11 +1621,26 @@ contains
 
                ! Do longwave stuff...
                if (radiation_do('lw')) then
+                  ! Compute cloud optics
+                  call t_startf('rad_cloud_optics_lw')
+                  cld_tau_gpt_lw = 0._r8
+                  call get_cloud_optics_lw(ncol_tot, pver, nlwbands, cld_p, iclwp_p, iciwp_p, rei_p, cld_tau_bnd_lw(:,ktop:kbot,:))
+                  ! Do mcica sampling of cloud optics
+                  call get_gpoint_bands_lw(gpoint_bands_lw)
+                  call sample_cloud_optics_lw( &
+                     ncol_tot, pver, nlwgpts, gpoint_bands_lw, &
+                     pmid_packed(:,ktop:kbot), cld_p, &
+                     cld_tau_bnd_lw(:,ktop:kbot,:), cld_tau_gpt_lw(:,ktop:kbot,:) &
+                  )
+                  !call get_subsampled_clouds_lw( &
+                  !   ncol, pver, nlwbands, nlwgpts, gpoint_bands_lw, &
+                  !   pmid_col(:,ktop:kbot), cld, cld_tau_bnd_lw, cld_tau_gpt_lw)
+                  ! Save CRM cloud optics for cosp
+                  call handle_error(clip_values(cld_tau_gpt_lw,  0._r8, huge(cld_tau_gpt_lw), trim(subname) // ' cld_tau_gpt_lw', tolerance=1e-10_r8))
+                  call t_stopf('rad_cloud_optics_lw')
 
-                  ! Allocate longwave outputs; why is this not part of the
-                  ! fluxes_t object?
-                  ! NOTE: fluxes defined at interfaces, so initialize to have vertical
-                  ! dimension nlev_rad+1
+                  ! Allocate longwave outputs
+                  ! NOTE: fluxes defined at interfaces, so initialize to have vertical dimension nlev_rad+1
                   call initialize_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_allsky)
                   call initialize_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_clrsky)
                   call initialize_fluxes(ncol_tot, nlev_rad+1, nlwbands, fluxes_allsky_packed)
@@ -1696,7 +1653,7 @@ contains
                      surface_emissivity(1:nlwbands,1:ncol_tot),                            &
                      pmid_packed(1:ncol_tot,1:nlev_rad  ), tmid_packed(1:ncol_tot,1:nlev_rad  ), &
                      pint_packed(1:ncol_tot,1:nlev_rad+1), tint_packed(1:ncol_tot,1:nlev_rad+1), &
-                     cld_tau_gpt_lw_packed               , aer_tau_bnd_lw_packed,                &
+                     cld_tau_gpt_lw                      , aer_tau_bnd_lw_packed,                &
                      fluxes_allsky_packed                , fluxes_clrsky_packed                  &
                   )
                   call t_stopf('rad_fluxes_lw')
@@ -1726,6 +1683,7 @@ contains
                   call t_stopf('rad_average_fluxes_lw')
                             
                   ! Map to CRM columns
+                  call t_startf('rad_unpack_qrl')
                   do iy = 1,crm_ny_rad
                      do ix = 1,crm_nx_rad
                         do icol = 1,ncol
@@ -1738,6 +1696,7 @@ contains
                         end do
                      end do
                   end do
+                  call t_stopf('rad_unpack_qrl')
                   call outfld('CRM_QRL', crm_qrl(1:ncol,:,:,:)/cpair, ncol, state%lchnk)
                   call outfld('CRM_QRLC', crm_qrlc(1:ncol,:,:,:)/cpair, ncol, state%lchnk)
 
@@ -1791,6 +1750,15 @@ contains
             ! Advance counter and run COSP if new count value is equal to cosp_nradsteps
             cosp_cnt(state%lchnk) = cosp_cnt(state%lchnk) + 1
             if (cosp_cnt(state%lchnk) == cosp_nradsteps) then
+               ! Extract LW and SW bands we need
+               cosp_lwband = get_band_index_lw(10.5_r8, 'micron')
+               cosp_swband = get_band_index_sw(0.67_r8, 'micron')
+               do ilay = 1,pver
+                  do j = 1,ncol_tot
+                     dems_packed(j,ilay) = 1._r8 - exp(-cld_tau_bnd_lw(j,ilay,cosp_lwband))
+                     dtau_packed(j,ilay) = cld_tau_bnd_sw(j,ilay,cosp_swband)
+                  end do
+               end do
                ! Call cosp
                call t_startf('cospsimulator_intr_run')
                call cospsimulator_intr_run( &
@@ -1837,7 +1805,6 @@ contains
                                   fluxes_allsky, fluxes_clrsky, tsi_scaling)
      
       use perf_mod, only: t_startf, t_stopf
-      use radiation_utils, only: calculate_heating_rate
 
       ! Inputs
       integer, intent(in) :: ncol
