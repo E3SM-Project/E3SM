@@ -97,6 +97,7 @@ protected:
   std::map<std::string,view_1d_host<Real>> host_views;
   std::map<std::string,FieldLayout>  layouts;
   std::vector<std::string> m_fnames;
+  std::map<std::string,view_2d<Real>> fields_ext;
   view_2d<Real> T_mid_ext;
   view_2d<Real> p_mid_ext;
   AtmosphereInput data_input;

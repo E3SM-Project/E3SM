@@ -75,24 +75,31 @@ void NUDGING::init_buffers(const ATMBufferManager &buffer_manager)
 void NUDGING::initialize_impl (const RunType /* run_type */)
 {
 
-  //DO I NEED TO ADD FIELDS FOR BELOW/ABOVE SO THAT CAN INTERPOLATE?
-  //WHAT ABOUT MAKING THE T_mid_r same name, so T_mid?
+  //Need to make this more general so it is not ju
+  //This defines the fields we are going to get from the nudging file
   using namespace ShortFieldTagsNames;
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
-  view_2d<Real> T_mid_r_v("T_mid",m_num_cols,m_num_src_levs);
-  view_2d<Real> p_mid_r_v("p_mid",m_num_cols,m_num_src_levs);
-  auto T_mid_r_v_h       = Kokkos::create_mirror_view(T_mid_r_v);      
-  auto p_mid_r_v_h       = Kokkos::create_mirror_view(p_mid_r_v);      
-  host_views["T_mid"] = view_1d_host<Real>(T_mid_r_v_h.data(),T_mid_r_v_h.size());
-  layouts.emplace("T_mid", scalar3d_layout_mid);
-  host_views["p_mid"] = view_1d_host<Real>(p_mid_r_v_h.data(),p_mid_r_v_h.size());
-  layouts.emplace("p_mid", scalar3d_layout_mid);
+  for (auto &s: m_fnames) {
+    FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
+    fields_ext[s] = view_2d<Real>(s,m_num_cols,m_num_src_levs);
+    auto T_mid_r_v_h       = Kokkos::create_mirror_view(fields_ext[s]);      
+    host_views[s] = view_1d_host<Real>(T_mid_r_v_h.data(),T_mid_r_v_h.size());
+    layouts.emplace(s, scalar3d_layout_mid);
+  }
+  //FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
+  //view_2d<Real> T_mid_r_v("T_mid",m_num_cols,m_num_src_levs);
+  //view_2d<Real> p_mid_r_v("p_mid",m_num_cols,m_num_src_levs);
+  //auto T_mid_r_v_h       = Kokkos::create_mirror_view(T_mid_r_v);      
+  //auto p_mid_r_v_h       = Kokkos::create_mirror_view(p_mid_r_v);      
+  //host_views["T_mid"] = view_1d_host<Real>(T_mid_r_v_h.data(),T_mid_r_v_h.size());
+  //layouts.emplace("T_mid", scalar3d_layout_mid);
+  //host_views["p_mid"] = view_1d_host<Real>(p_mid_r_v_h.data(),p_mid_r_v_h.size());
+  //layouts.emplace("p_mid", scalar3d_layout_mid);
+
 
   //auto grid_l = std::make_shared<PointGrid>("grid_l",m_num_cols,m_num_src_levs,m_comm);
   //grid_l->set_dofs(m_num_cols);
   auto gm_l = create_gm(m_comm,m_num_cols,m_num_src_levs);
   auto grid_l = gm_l->get_grid("Point Grid");
-
 
   ekat::ParameterList data_in_params;
   data_in_params.set("Field Names",m_fnames);
@@ -102,8 +109,10 @@ void NUDGING::initialize_impl (const RunType /* run_type */)
   data_input0.init(grid_l,host_views,layouts);
   data_input=data_input0;
 
-  T_mid_ext = T_mid_r_v;
-  p_mid_ext = p_mid_r_v;
+  //T_mid_ext = T_mid_r_v;
+  T_mid_ext = fields_ext["T_mid"];
+  //p_mid_ext = p_mid_r_v;
+  p_mid_ext = fields_ext["p_mid"];
   auto ts = timestamp();
   time_step_file=250;
   time_step_internal=100;
@@ -169,6 +178,9 @@ void NUDGING::run_impl (const int dt)
 
   if (dt < time_step_file){ return;}
   time_interpolation(dt);
+
+  //TO ADD: need to loop over fields instead of just define them below.
+  //probably want to define p_mid/p_in differently because will always them
   
   //These are fields before modifications
   auto T_mid          = get_field_in("T_mid").get_view<Pack**>();
