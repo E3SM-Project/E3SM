@@ -500,6 +500,11 @@
 			description="A multiplier on the minimum allowable time step calculated from the calving CFL condition. This should be conservative given the calving CFL calculation is lagged"
 			possible_values="Any positive real value.  Note that values greater than 1.0 are allowed and may be desired.  This is because the calving CFL is an approximate calculation.  A value between 0.75 and 1.0, possibly as large as 1.25, was found to maintain converged accuracy for many configurations explored, so it is recommended to use values in this range.  However, much larger values (up to 2 or 3) provide acceptable accuracy for some configurations (but it is not clear what conditions allow it).  If values much greater than 1.0 are used, it is recommended to set config_distribute_unablatedVolumeDynCell to true."
 		/>
+                <nml_option name="config_adaptive_timestep_faceMeltingCFL_fraction" type="real" default_value="1.0" units="none"
+                        description="A multiplier on the minimum allowable time step calculated from the face-melting CFL condition. This should be conservative given the calving CFL calculation is lagged"
+                        possible_values="Any positive real value.  Note that values greater than 1.0 are allowed and may be desired.  This is because the face-melting CFL is an approximate calculation.  A value between 0.75 and 1.0, possibly as large as 1.25, was found to maintain converged accuracy for the analogous calving CFL fraction, so it is recommended to use values in this range. If values much greater than 1.0 are used, it is recommended to set config_distribute_unablatedVolumeDynCell to true."
+                />
+
 		<nml_option name="config_adaptive_timestep_include_DCFL" type="logical" default_value=".false." units="none"
 			description="Option of whether to include the diffusive CFL condition in the determination of the maximum allowable timestep. The diffusive CFL condition at any location is estimated based on the local ice flux and surface slope."
 			possible_values=".true. or .false."
@@ -508,6 +513,10 @@
 			description="Option of whether to include the calving CFL condition in the determination of the maximum allowable timestep. This only is applied if config_calving is set to a method that uses a calvingVelocity.  Note that this is an approximate CFL condition and is lagged a timestep."
 			possible_values=".true. or .false."
 		/>
+                <nml_option name="config_adaptive_timestep_include_face_melting" type="logical" default_value=".true." units="none"
+                        description="Option of whether to include the face-melting CFL condition in the determination of the maximum allowable timestep. This only is applied if config_front_mass_bal_grounded is not set to 'none'.  Note that this is an approximate CFL condition and is lagged a timestep."
+                        possible_values=".true. or .false."
+                />
 		<nml_option name="config_adaptive_timestep_force_interval" type="character" default_value="1000-00-00_00:00:00" units="unitless"
 		            description="If adaptive timestep is enabled, the model will ensure a timestep ends at multiples of this interval.  This is useful for ensuring that model output is written at a specific desired interval (rather than the closest time after) or when running coupled to an earth system model that expects a certain interval."
 		            possible_values="Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'. (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)"
@@ -1357,6 +1366,12 @@ is the value of that variable from the *previous* time level!
 		<var name="faceMeltingThickness" type="real" dimensions="nCells Time" units="m" time_levs="1"
                      description="Equivalent plan-view averaged thickness of ice that melts on a given timestep from front ablation (less than or equal to ice thickness)"
 		/>
+                <var name="faceMeltingCFLdt" type="real" dimensions="Time" units="s" time_levs="1" default_value="1.0e16"
+                        description="approximation of maximum allowable timestep based on faceMeltSpeed"
+                />
+                <var name="dtFaceMeltingCFLratio" type="real" dimensions="Time" units="none" time_levs="1" default_value="0.0"
+                        description="ratio of timestep being used to the maximum timestep calculated for the face-melting CFL condition.  This metric can be used to assess the accuracy of the face-melting CFL calculation being lagged by a timestep."
+                />
                <var name="unmeltedVolume" type="real" dimensions="nCells Time" units="m^3" time_levs="1"
                      description="volume of ice that was left unmelted from required facemelt flux due to only applying flux over immediate neighbors (diagnostic field to assess if this limitation is a problem)"
 	        />

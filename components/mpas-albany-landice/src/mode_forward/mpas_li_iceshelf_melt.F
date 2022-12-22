@@ -1379,6 +1379,8 @@ module li_iceshelf_melt
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool, meshPool, velocityPool
       real (kind=RKIND), pointer :: seaLevel
+      real (kind=RKIND), pointer :: faceMeltingCFLdt
+      real (kind=RKIND), pointer :: dtFaceMeltingCFLratio
       real (kind=RKIND), dimension(:), pointer :: thickness, faceMeltingThickness
       real (kind=RKIND), dimension(:), pointer :: bedTopography
       real (kind=RKIND), dimension(:), pointer :: lowerSurface
@@ -1443,6 +1445,8 @@ module li_iceshelf_melt
          call mpas_pool_get_array(geometryPool, 'faceMeltingThickness', faceMeltingThickness)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'faceMeltSpeed', faceMeltSpeed)
+         call mpas_pool_get_array(geometryPool, 'faceMeltingCFLdt', faceMeltingCFLdt)
+         call mpas_pool_get_array(geometryPool, 'dtFaceMeltingCFLratio', dtFaceMeltingCFLratio)
 
          if ( config_use_3d_thermal_forcing_for_face_melt ) then
             call mpas_pool_get_dimension(meshPool, 'nISMIP6OceanLayers', nISMIP6OceanLayers)
@@ -1505,7 +1509,8 @@ module li_iceshelf_melt
          ! Distribute melt among neighbors
          call li_apply_front_ablation_velocity(meshPool, geometryPool, velocityPool, &
                                             faceMeltingThickness, faceMeltSpeedVertAvg, applyToGrounded, &
-                                            applyToFloating, applyToGroundingLine, domain, err=err_tmp)
+                                            applyToFloating, applyToGroundingLine, domain, & 
+                                            maxDt=faceMeltingCFLdt, CFLratio=dtFaceMeltingCFLratio, err=err_tmp)
          err = ior(err, err_tmp)
 
 
