@@ -3374,7 +3374,7 @@
     <DIN_LOC_ROOT_CLMFORC>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/usr/projects/climate/SHARED_CLIMATE/software/badger/cprnc</CCSM_CPRNC>
     <GMAKE_J>10</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -3417,8 +3417,8 @@
       </modules>
 
       <modules compiler="gnu">
-        <command name="load">PrgEnv-gnu/8.3.2</command>
-        <command name="load">gcc/11.2.0</command>
+        <command name="load">PrgEnv-gnu/8.3.3</command>
+        <command name="load">gcc/12.1.0</command>
       </modules>
 
       <modules compiler="nvidia">
@@ -3440,10 +3440,11 @@
         <command name="load">craype-accel-host</command>
         <command name="load">cray-libsci</command>
         <command name="load">craype</command>
-        <command name="load">cray-mpich/8.1.14</command>
-        <command name="load">cray-hdf5-parallel/1.12.1.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.8.1.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.2.1</command>
+        <command name="load">cray-mpich/8.1.21</command>
+        <command name="load">libfabric/1.15.0.0</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.1</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.1</command>
         <command name="load">cmake/3.20.3</command>
       </modules>
     </module_system>
@@ -3462,7 +3463,7 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-      <env name="PERL5LIB">/usr/projects/climate/SHARED_CLIMATE/software/chicoma-cpu/perl5/lib/perl5</env>
+      <env name="PERL5LIB">/usr/projects/climate/SHARED_CLIMATE/software/chicoma-cpu/perl5-only-switch/lib/perl5</env>
       <env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable;romio_cb_write=enable;romio_cb_read=enable</env>
     </environment_variables>
     <resource_limits>
