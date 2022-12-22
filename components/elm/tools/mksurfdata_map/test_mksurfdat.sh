@@ -69,6 +69,8 @@ PATH=${test_root}/bin:${PATH}
 # versions of this file first
 test_log=${PWD}/test.out
 rm -f ${test_log}
+mkdir -p src
+cd src
 
 ###########
 ###  1  ### Create mapping files for each land surface type if needed
@@ -114,8 +116,8 @@ fi
 
 # These files will be created
 meshfile=ne4.g
-gridfile=ne4pg2.g
-scripfile=ne4pg2_scrip.nc
+gridfile=ne4pg4.g
+scripfile=ne4pg4_scrip.nc
 
 echo "Running ${generatecsmesh}" >> ${test_log} 2>&1
 (${generatecsmesh} --alt --res 4 --file ${meshfile}) >> ${test_log} 2>&1
@@ -126,7 +128,7 @@ if [ ! -f ${meshfile} ]; then
 fi
 
 echo "Running ${generatevolumetricmesh}" >> ${test_log} 2>&1
-(${generatevolumetricmesh} --in ${meshfile} --out ${gridfile} --np 2 --uniform) >> ${test_log} 2>&1
+(${generatevolumetricmesh} --in ${meshfile} --out ${gridfile} --np 4 --uniform) >> ${test_log} 2>&1
 if [ ! -f ${gridfile} ]; then
     echo "ERROR: GenerateVolumetricMesh: no ${gridfile} file created" >&2
     echo "cat ${test_log} for more info" >&2
@@ -159,7 +161,7 @@ fi
 ${cime_root}/CIME/scripts/configure --mpilib mpich --macros-format Makefile >> ${test_log} 2>&1
 
 echo "Running ${mkmapdata}" >> ${test_log} 2>&1
-(. .env_mach_specific.sh && set -x && ${mkmapdata} --gridfile ${scripfile} --inputdata-path ${inputdata_root} --res ne4pg2 --gridtype global --output-filetype 64bit_offset) >> ${test_log} 2>&1
+(. .env_mach_specific.sh && set -x && ${mkmapdata} --gridfile ${scripfile} --inputdata-path ${inputdata_root} --res ne4pg4 --gridtype global --output-filetype 64bit_offset) >> ${test_log} 2>&1
 
 
 # d) Create mapping file
@@ -167,28 +169,18 @@ echo "Running ${mkmapdata}" >> ${test_log} 2>&1
 ##############
 ####  3  #####
 ##############
-
-echo "build mksurfdata_map" >> ${test_log}
-if [ ! -f .env_mach_specific.sh ]; then
-    # try without mpi-serial flag
-    echo "ERROR running ${cime_root}/CIME/scripts/configure" >&2
-    echo "It's possible mpi-serial doesn't work on this machine. Trying again with default" >&2
-    ${cime_root}/CIME/scripts/configure --clean >> ${test_log} 2>&1
-    (. .env_mach_specific.sh && ${cime_root}/CIME/scripts/configure --macros-format Makefile) >> ${test_log} 2>&1
-    if [ ! -f .env_mach_specific.sh ]; then
-        echo "ERROR running ${cime_root}/CIME/scripts/configure" >&2
-        echo "cat ${test_log} for more info" >&2
-        exit 1
-    fi
-else
-    (. .env_mach_specific.sh && ${cime_root}/CIME/scripts/configure --macros-format Makefile --mpilib mpi-serial) >> ${test_log} 2>&1
-fi
-
+echo "build mksurfdata_map" >> ${test_log} 2>&1
+today=$(date +%y%m%d)
 cp ${e3sm_root}/components/elm/tools/mksurfdata_map/src/* .
-echo 'export USER_FC=$FC' >> .env_mach_specific.sh
-echo 'export USER_CC=$CC' >> .env_mach_specific.sh
-echo 'export LIB_NETCDF=$NETCDF_PATH/lib' >> .env_mach_specific.sh
-echo 'export INC_NETCDF=$NETCDF_PATH/include' >> .env_mach_specific.sh
+cat <<EOF >> .env_mach_specific.sh
+export USER_FC="$(awk '/MPIFC :=/ {$1=$2=""; print $0}' Macros.make)"
+export USER_CPPDEFS="$(awk '/CPPDEFS :=/ {$1=$2=$3=""; print $0}' Macros.make)"
+export USER_FFLAGS="$(awk '/FFLAGS :=/ {$1=$2=""; print $0}' Macros.make)"
+export USER_LDFLAGS="$(awk '/SLIBS :=/ {$1=$2=$3=""; print $0}' Macros.make)"
+export LIB_NETCDF=$NETCDF_PATH/lib
+export INC_NETCDF=$NETCDF_PATH/include
+EOF
+sed -i  's|\.\./\.\./\.\.|..|' Makefile.common
 (. .env_mach_specific.sh && make) >> ${test_log} 2>&1
 if [ ! -f ${mksurfdat_map} ]; then
     echo "ERROR finding/building mksurfdata_map" >&2
@@ -197,8 +189,8 @@ if [ ! -f ${mksurfdat_map} ]; then
 fi
 
 echo "Running mksurfdata.pl" >> ${test_log} 2>&1
-mapdir=${inputdat_root}/lnd/clm2/mappingdata/maps/ne4np4
-(. .env_mach_specific.sh && ${e3sm_root}/components/elm/tools/mksurfdata_map/mksurfdata.pl -res ne4np4 -y 2010 -d -dinlc ${inputdata_root} -usr_mapdir ${mapdir}) >> ${test_log}
+echo "${e3sm_root}/components/elm/tools/mksurfdata_map/mksurfdata.pl -res usrspec -usr_gname ne4pg4 -usr_gdate ${today} -y 2010 -d -dinlc ${inputdata_root} -usr_mapdir ${PWD}"  >> ${test_log} 2>&1
+(. .env_mach_specific.sh && ${e3sm_root}/components/elm/tools/mksurfdata_map/mksurfdata.pl -res usrspec -usr_gname ne4pg4 -usr_gdate ${today} -y 2010 -d -dinlc ${inputdata_root} -usr_mapdir ${PWD}) >> ${test_log} 2>&1
 
 
 exit 0
