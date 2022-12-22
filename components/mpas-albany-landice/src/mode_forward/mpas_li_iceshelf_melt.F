@@ -1458,21 +1458,18 @@ module li_iceshelf_melt
             TFocean(:) = 0.0_RKIND
             do iCell = 1, nCellsSolve
                if (bedTopography(iCell) < 0.0_RKIND) then
-                  kk = 1
-                  ! Find deepest zOcean above ocean floor
-                  do while ( (zOcean(kk) >= bedTopography(iCell)) .and. (kk < nISMIP6OceanLayers) )
-                     kk = kk + 1
-                  enddo
-                  ! Calculate thermal forcing at ocean floor. If possible, extrapolate slope from layers above.
-                  ! If too shallow (k<=2), just use TF at closest layer. This can probably be improved.
-                  if (kk <= 2 ) then
-                     TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell) + ismip6shelfMelt_deltaT(iCell)
-                  else
-                     TFocean(iCell) = (ismip6shelfMelt_3dThermalForcing(kk-1, iCell) - &
-                                   ismip6shelfMelt_3dThermalForcing(kk-2, iCell)) / (zOcean(kk-1) - &
-                                   zOcean(kk-2)) * (bedTopography(iCell) - zOcean(kk-1)) + &
-                                   ismip6shelfMelt_3dThermalForcing(kk-1, iCell) + ismip6shelfMelt_deltaT(iCell)
-                  endif 
+                     kk = 1
+                     ! Find deepest zOcean above ocean floor
+                     do while ( (zOcean(kk) >= bedTopography(iCell)) .and. (kk < nISMIP6OceanLayers) )
+                        kk = kk + 1
+                     enddo
+                     ! Calculate thermal forcing at ocean floor, using deepest ocean layer above seafloor.
+                     ! If bed is shallower than first layer, use TF from the first layer.
+                     if ( (kk == 1) .or. (kk == nISMIP6OceanLayers) ) then
+                        TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell) + ismip6shelfMelt_deltaT(iCell)
+                     else
+                        TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk-1, iCell) + ismip6shelfMelt_deltaT(iCell)
+                     endif
                endif
             end do
          endif
