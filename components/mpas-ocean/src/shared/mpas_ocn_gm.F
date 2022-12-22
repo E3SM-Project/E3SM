@@ -150,7 +150,8 @@ contains
 
       type(mpas_pool_type), pointer :: tracersPool
       real(kind=RKIND), dimension(:, :, :), pointer :: activeTracers
-      integer, pointer :: indexTemperature, indexSalinity
+      integer, pointer :: indexTemperaturePtr, indexSalinityPtr
+      integer :: indexTemperature, indexSalinity
       integer :: timeLevel
 
       if (present(timeLevelIn)) then
@@ -166,8 +167,10 @@ contains
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
       call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
-      call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
-      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
+      call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperaturePtr)
+      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinityPtr)
+      indexTemperature = indexTemperaturePtr
+      indexSalinity    = indexSalinityPtr
 
       call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
       call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
