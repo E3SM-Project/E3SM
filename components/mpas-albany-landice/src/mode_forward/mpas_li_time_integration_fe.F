@@ -847,7 +847,7 @@ module li_time_integration_fe
       ! output variables
       !-----------------------------------------------------------------
       real (kind=RKIND), intent(out) :: dtSeconds  !< Output: time step in seconds determined by this routine
-      integer, intent(out) :: CFLprocess !< Output: flag for which process limits the CFL: 1=advective, 2=diffusive, 3=calving
+      integer, intent(out) :: CFLprocess !< Output: flag for which process limits the CFL: 1=advective, 2=diffusive, 3=calving, 4=face-melting
       integer, intent(out) :: err !< Output: error flag
 
       !-----------------------------------------------------------------
