@@ -1181,7 +1181,7 @@ contains
       character(*), parameter :: subname = 'radiation_tend'
 
       ! Radiative fluxes
-      type(fluxes_t) :: fluxes_allsky, fluxes_clrsky, fluxes_allsky_packed, fluxes_clrsky_packed
+      type(fluxes_t) :: fluxes_allsky, fluxes_clrsky, fluxes_allsky_packed, fluxes_clrsky_packed, fluxes_allsky_day, fluxes_clrsky_day
 
       ! Copy of state
       type(physics_state) :: state
@@ -1197,6 +1197,11 @@ contains
       real(r8), dimension(pcols,nlev_rad) :: tmid_col, pmid_col
       real(r8), dimension(pcols,nlev_rad+1) :: tint_col, pint_col
 
+      ! Daytime subsets
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad) :: tmid_day, pmid_day
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad+1) :: tint_day, pint_day
+      real(r8), dimension(nswbands,pcols*crm_nx_rad*crm_ny_rad) :: albedo_dir_day, albedo_dif_day
+
       ! Surface emissivity needed for longwave
       real(r8) :: surface_emissivity(nlwbands,pcols*crm_nx_rad*crm_ny_rad)
 
@@ -1209,7 +1214,9 @@ contains
       ! Cloud properties for optics
       real(r8), dimension(pcols,pver) :: rel, rei, cld, iclwp, iciwp
       ! PACKED cloud physical properties for optics
-      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,pver) :: rel_p, rei_p, cld_p, iclwp_p, iciwp_p
+      real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,pver) :: &
+         rel_p, rei_p, cld_p, iclwp_p, iciwp_p, &
+         rel_d, rei_d, cld_d, iclwp_d, iciwp_d
 
       ! Pointers to fields on physics buffer
       real(r8), pointer, dimension(:,:,:,:) :: crm_t, crm_qv, crm_qc, crm_qi, crm_cld, crm_qrad
@@ -1220,7 +1227,7 @@ contains
 
       ! Arrays to hold gas volume mixing ratios
       real(r8), dimension(size(active_gases),pcols,nlev_rad) :: vmr_col
-      real(r8), dimension(size(active_gases),pcols*crm_nx_rad*crm_ny_rad,nlev_rad) :: vmr_packed
+      real(r8), dimension(size(active_gases),pcols*crm_nx_rad*crm_ny_rad,nlev_rad) :: vmr_packed, vmr_day
 
       ! CRM heating rates
       real(r8), dimension(pcols,crm_nx_rad,crm_ny_rad,crm_nz) :: crm_qrs, crm_qrsc, crm_qrl, crm_qrlc
@@ -1231,11 +1238,13 @@ contains
 
       ! Cosine solar zenith angle
       real(r8) :: coszrs(pcols), coszrs_packed(pcols*crm_nx_rad*crm_ny_rad)
+      real(r8) :: coszrs_day(pcols*crm_nx_rad*crm_ny_rad)
 
       ! Gathered indicies of day and night columns 
       ! chunk_column_index = day_indices(daylight_column_index)
       integer :: nday, nnight     ! Number of daylight columns
       integer :: day_indices(pcols), night_indices(pcols)   ! Indicies of daylight coumns
+      integer, dimension(pcols*crm_nx_rad*crm_ny_rad) :: day_indices_packed, night_indices_packed
 
       ! Scaling factor for total sky irradiance; used to account for orbital
       ! eccentricity, and could be used to scale total sky irradiance for different
@@ -1252,11 +1261,12 @@ contains
       real(r8), dimension(pcols,pver,nswbands) :: &
          aer_tau_bnd_sw, aer_ssa_bnd_sw, aer_asm_bnd_sw
       real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad,nswbands) :: &
-         cld_tau_bnd_sw, cld_ssa_bnd_sw, cld_asm_bnd_sw
+         cld_tau_bnd_day, cld_ssa_bnd_day, cld_asm_bnd_day
       real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad,nswgpts) :: &
-         cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw
+         cld_tau_gpt_day, cld_ssa_gpt_day, cld_asm_gpt_day
       real(r8), dimension(pcols*crm_nx_rad*crm_ny_rad,nlev_rad,nswbands) :: &
-         aer_tau_bnd_sw_packed, aer_ssa_bnd_sw_packed, aer_asm_bnd_sw_packed
+         aer_tau_bnd_sw_packed, aer_ssa_bnd_sw_packed, aer_asm_bnd_sw_packed, &
+         aer_tau_bnd_day, aer_ssa_bnd_day, aer_asm_bnd_day
       ! NOTE: these are diagnostic only (and only output in non-MMF version, but needed for optics calls)
       real(r8), dimension(pcols,pver,nswbands) :: liq_tau_bnd_sw, ice_tau_bnd_sw, snw_tau_bnd_sw
       real(r8), dimension(pcols,pver,nlwbands) :: liq_tau_bnd_lw, ice_tau_bnd_lw, snw_tau_bnd_lw
@@ -1268,7 +1278,7 @@ contains
       integer :: cosp_swband  ! index to SW band used by COSP passive simulators
 
       ! Loop variables
-      integer :: icol, ilay
+      integer :: icol, ilay, iday
 
       !----------------------------------------------------------------------
 
@@ -1355,8 +1365,8 @@ contains
                ! do the shortwave radiative transfer during the daytime to save
                ! computational cost (and because RRTMGP will fail for cosine solar zenith
                ! angles less than or equal to zero)
+               day_indices_packed = 0
                call set_daynight_indices(coszrs(1:ncol), day_indices(1:ncol), night_indices(1:ncol))
-               nday = count(day_indices(1:ncol) > 0)
                nnight = count(night_indices(1:ncol) > 0)
 
                ! Do aerosol optics; this was moved outside the CRM loop to 
@@ -1456,6 +1466,7 @@ contains
                         aer_ssa_bnd_sw_packed(j,ktop:kbot,:) = aer_ssa_bnd_sw(icol,:,:)
                         aer_asm_bnd_sw_packed(j,ktop:kbot,:) = aer_asm_bnd_sw(icol,:,:)
                         vmr_packed(:,j,:) = vmr_col(:,icol,:)
+                        day_indices_packed(j) = day_indices(icol)
                      end do
                      call t_stopf('rad_pack_columns')
 
@@ -1472,41 +1483,6 @@ contains
 
                ! Do shortwave stuff...
                if (radiation_do('sw')) then
-
-                  ! Do cloud optics
-                  call t_startf('rad_cloud_optics_sw')
-                  cld_tau_gpt_sw = 0._r8
-                  cld_ssa_gpt_sw = 0._r8
-                  cld_asm_gpt_sw = 0._r8
-                  call get_cloud_optics_sw( &
-                     ncol_tot, pver, nswbands, &
-                     cld_p, iclwp_p, iciwp_p, &
-                     rel_p, rei_p, &
-                     cld_tau_bnd_sw(:,ktop:kbot,:), cld_ssa_bnd_sw(:,ktop:kbot,:), cld_asm_bnd_sw(:,ktop:kbot,:) &
-                  )
-                  ! Now reorder bands to be consistent with RRTMGP
-                  ! We need to fix band ordering because the old input files assume RRTMG
-                  ! band ordering, but this has changed in RRTMGP.
-                  ! TODO: fix the input files themselves!
-                  do icol = 1,ncol_tot
-                     do ilay = 1,nlev_rad
-                        cld_tau_bnd_sw(icol,ilay,:) = reordered(cld_tau_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
-                        cld_ssa_bnd_sw(icol,ilay,:) = reordered(cld_ssa_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
-                        cld_asm_bnd_sw(icol,ilay,:) = reordered(cld_asm_bnd_sw(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
-                     end do
-                  end do
-                  ! MCICA sampling to get cloud optical properties by gpoint/cloud state
-                  call get_gpoint_bands_sw(gpoint_bands_sw)
-                  call sample_cloud_optics_sw( &
-                     ncol_tot, pver, nswgpts, gpoint_bands_sw, &
-                     pmid_packed(:,ktop:kbot), cld_p, &
-                     cld_tau_bnd_sw(:,ktop:kbot,:), cld_ssa_bnd_sw(:,ktop:kbot,:), cld_asm_bnd_sw(:,ktop:kbot,:), &
-                     cld_tau_gpt_sw(:,ktop:kbot,:), cld_ssa_gpt_sw(:,ktop:kbot,:), cld_asm_gpt_sw(:,ktop:kbot,:) &
-                  )
-                  call handle_error(clip_values(cld_tau_gpt_sw,  0._r8, huge(cld_tau_gpt_sw), trim(subname) // ' cld_tau_gpt_sw', tolerance=1e-10_r8))
-                  call handle_error(clip_values(cld_ssa_gpt_sw,  0._r8,                1._r8, trim(subname) // ' cld_ssa_gpt_sw', tolerance=1e-10_r8))
-                  call handle_error(clip_values(cld_asm_gpt_sw, -1._r8,                1._r8, trim(subname) // ' cld_asm_gpt_sw', tolerance=1e-10_r8))
-                  call t_stopf('rad_cloud_optics_sw')
 
                   if (fixed_total_solar_irradiance<0) then
                      ! Get orbital eccentricity factor to scale total sky irradiance
@@ -1530,15 +1506,118 @@ contains
                   call t_stopf('rad_initialize_fluxes_sw')
 
                   ! Calculate shortwave fluxes
-                  call t_startf('rad_radiation_driver_sw')
-                  call radiation_driver_sw(ncol_tot, &
-                       vmr_packed, &
-                       pmid_packed, pint_packed, tmid_packed, &
-                       albedo_dir_packed, albedo_dif_packed, coszrs_packed, &
-                       cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw, &
-                       aer_tau_bnd_sw_packed, aer_ssa_bnd_sw_packed, aer_asm_bnd_sw_packed, &
-                       fluxes_allsky_packed, fluxes_clrsky_packed, tsi_scaling)
-                  call t_stopf('rad_radiation_driver_sw')
+                  !call t_startf('rad_radiation_driver_sw')
+                  !call radiation_driver_sw(ncol_tot, &
+                  !     vmr_packed, &
+                  !     pmid_packed, pint_packed, tmid_packed, &
+                  !     albedo_dir_packed, albedo_dif_packed, coszrs_packed, &
+                  !     cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw, &
+                  !     aer_tau_bnd_sw_packed, aer_ssa_bnd_sw_packed, aer_asm_bnd_sw_packed, &
+                  !     fluxes_allsky_packed, fluxes_clrsky_packed, tsi_scaling)
+                  !call t_stopf('rad_radiation_driver_sw')
+                  ! If no daytime columns in this chunk, then we return zeros
+                  call set_daynight_indices(coszrs_packed(1:ncol_tot), day_indices_packed(1:ncol_tot), night_indices_packed(1:ncol_tot))
+                  nday = count(day_indices_packed(1:ncol_tot) > 0)
+                  if (nday == 0) then
+                     call reset_fluxes(fluxes_allsky_packed)
+                     call reset_fluxes(fluxes_clrsky_packed)
+                  end if
+
+                  ! Compress to daytime-only arrays
+                  ! TODO: do this BEFORE computing optics, because packing cloud optics is expensive
+                  call t_startf('rad_compress_day_columns')
+                  do iday = 1,nday
+                     icol = day_indices_packed(iday)
+                     tmid_day(iday,:) = tmid_packed(icol,:)
+                     pmid_day(iday,:) = pmid_packed(icol,:)
+                     pint_day(iday,:) = pint_packed(icol,:)
+                     albedo_dir_day(:,iday) = albedo_dir_packed(:,icol)
+                     albedo_dif_day(:,iday) = albedo_dif_packed(:,icol)
+                     coszrs_day(iday) = coszrs_packed(icol)
+                     vmr_day(:,iday,:) = vmr_packed(:,icol,:)
+                     cld_d(iday,:) = cld_p(icol,:)
+                     iclwp_d(iday,:) = iclwp_p(icol,:)
+                     iciwp_d(iday,:) = iciwp_p(icol,:)
+                     rel_d(iday,:) = rel_p(icol,:)
+                     rei_d(iday,:) = rei_p(icol,:)
+                     aer_tau_bnd_day(iday,:,:) = aer_tau_bnd_sw_packed(icol,:,:)
+                     aer_ssa_bnd_day(iday,:,:) = aer_ssa_bnd_sw_packed(icol,:,:)
+                     aer_asm_bnd_day(iday,:,:) = aer_asm_bnd_sw_packed(icol,:,:)
+                  end do
+                  call t_stopf('rad_compress_day_columns')
+
+                  ! Do cloud optics
+                  call t_startf('rad_cloud_optics_sw')
+                  cld_tau_gpt_day = 0._r8
+                  cld_ssa_gpt_day = 0._r8
+                  cld_asm_gpt_day = 0._r8
+                  call get_cloud_optics_sw( &
+                     nday, pver, nswbands, &
+                     cld_d, iclwp_d, iciwp_d, &
+                     rel_d, rei_d, &
+                     cld_tau_bnd_day(:,ktop:kbot,:), cld_ssa_bnd_day(:,ktop:kbot,:), cld_asm_bnd_day(:,ktop:kbot,:) &
+                  )
+                  ! Now reorder bands to be consistent with RRTMGP
+                  ! We need to fix band ordering because the old input files assume RRTMG
+                  ! band ordering, but this has changed in RRTMGP.
+                  ! TODO: fix the input files themselves!
+                  do icol = 1,nday
+                     do ilay = 1,nlev_rad
+                        cld_tau_bnd_day(icol,ilay,:) = reordered(cld_tau_bnd_day(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                        cld_ssa_bnd_day(icol,ilay,:) = reordered(cld_ssa_bnd_day(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                        cld_asm_bnd_day(icol,ilay,:) = reordered(cld_asm_bnd_day(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                     end do
+                  end do
+                  ! MCICA sampling to get cloud optical properties by gpoint/cloud state
+                  call get_gpoint_bands_sw(gpoint_bands_sw)
+                  call sample_cloud_optics_sw( &
+                     nday, pver, nswgpts, gpoint_bands_sw, &
+                     pmid_day(:,ktop:kbot), cld_d, &
+                     cld_tau_bnd_day(:,ktop:kbot,:), cld_ssa_bnd_day(:,ktop:kbot,:), cld_asm_bnd_day(:,ktop:kbot,:), &
+                     cld_tau_gpt_day(:,ktop:kbot,:), cld_ssa_gpt_day(:,ktop:kbot,:), cld_asm_gpt_day(:,ktop:kbot,:) &
+                  )
+                  call handle_error(clip_values(cld_tau_gpt_day,  0._r8, huge(cld_tau_gpt_day), trim(subname) // ' cld_tau_gpt_day', tolerance=1e-10_r8))
+                  call handle_error(clip_values(cld_ssa_gpt_day,  0._r8,                1._r8, trim(subname) // ' cld_ssa_gpt_day', tolerance=1e-10_r8))
+                  call handle_error(clip_values(cld_asm_gpt_day, -1._r8,                1._r8, trim(subname) // ' cld_asm_gpt_day', tolerance=1e-10_r8))
+                  call t_stopf('rad_cloud_optics_sw')
+
+                  ! Allocate shortwave fluxes (allsky and clearsky)
+                  ! NOTE: fluxes defined at interfaces, so initialize to have vertical
+                  ! dimension nlev_rad+1, while we initialized the RRTMGP input variables to
+                  ! have vertical dimension nlev_rad (defined at midpoints).
+                  call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_allsky_day, do_direct=.true.)
+                  call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
+
+                  ! Do shortwave radiative transfer calculations
+                  call t_startf('rad_rrtmgp_run_sw')
+                  call rrtmgp_run_sw( &
+                     size(active_gases), nday, nlev_rad, &
+                     vmr_day(:,1:nday,1:nlev_rad), &
+                     pmid_day(1:nday,1:nlev_rad), &
+                     tmid_day(1:nday,1:nlev_rad), &
+                     pint_day(1:nday,1:nlev_rad+1), &
+                     coszrs_day(1:nday), &
+                     albedo_dir_day(1:nswbands,1:nday), &
+                     albedo_dif_day(1:nswbands,1:nday), &
+                     cld_tau_gpt_day(1:nday,1:nlev_rad,1:nswgpts), cld_ssa_gpt_day(1:nday,1:nlev_rad,1:nswgpts), cld_asm_gpt_day(1:nday,1:nlev_rad,1:nswgpts), &
+                     aer_tau_bnd_day(1:nday,1:nlev_rad,1:nswbands), aer_ssa_bnd_day(1:nday,1:nlev_rad,1:nswbands), aer_asm_bnd_day(1:nday,1:nlev_rad,1:nswbands), &
+                     fluxes_allsky_day%flux_up    , fluxes_allsky_day%flux_dn    , fluxes_allsky_day%flux_net    , fluxes_allsky_day%flux_dn_dir    , &
+                     fluxes_allsky_day%bnd_flux_up, fluxes_allsky_day%bnd_flux_dn, fluxes_allsky_day%bnd_flux_net, fluxes_allsky_day%bnd_flux_dn_dir, &
+                     fluxes_clrsky_day%flux_up    , fluxes_clrsky_day%flux_dn    , fluxes_clrsky_day%flux_net    , fluxes_clrsky_day%flux_dn_dir    , &
+                     fluxes_clrsky_day%bnd_flux_up, fluxes_clrsky_day%bnd_flux_dn, fluxes_clrsky_day%bnd_flux_net, fluxes_clrsky_day%bnd_flux_dn_dir, &
+                     tsi_scaling &
+                  )
+                  call t_stopf('rad_rrtmgp_run_sw')
+
+                  ! Expand fluxes from daytime-only arrays to full chunk arrays
+                  call t_startf('rad_expand_fluxes_sw')
+                  call expand_day_fluxes(fluxes_allsky_day, fluxes_allsky_packed, day_indices_packed(1:nday))
+                  call expand_day_fluxes(fluxes_clrsky_day, fluxes_clrsky_packed, day_indices_packed(1:nday))
+                  call t_stopf('rad_expand_fluxes_sw')
+
+                  ! Clean up after ourselves
+                  call free_fluxes(fluxes_allsky_day)
+                  call free_fluxes(fluxes_clrsky_day)
 
                   ! Calculate heating rates
                   call t_startf('rad_heating_rate_sw')
@@ -1556,25 +1635,25 @@ contains
 
                   ! Calculate CRM domain averages
                   call t_startf('rad_average_fluxes_sw')
-                  call average_packed_array(qrs_packed (1:ncol_tot,:)                     , qrs (1:ncol,:)                     )
-                  call average_packed_array(qrsc_packed(1:ncol_tot,:)                     , qrsc(1:ncol,:)                     )
-                  call average_packed_array(fluxes_allsky_packed%flux_up    (1:ncol_tot,:), fluxes_allsky%flux_up    (1:ncol,:))
-                  call average_packed_array(fluxes_allsky_packed%flux_dn    (1:ncol_tot,:), fluxes_allsky%flux_dn    (1:ncol,:))
-                  call average_packed_array(fluxes_allsky_packed%flux_net   (1:ncol_tot,:), fluxes_allsky%flux_net   (1:ncol,:))
-                  call average_packed_array(fluxes_allsky_packed%flux_dn_dir(1:ncol_tot,:), fluxes_allsky%flux_dn_dir(1:ncol,:))
-                  call average_packed_array(fluxes_clrsky_packed%flux_up    (1:ncol_tot,:), fluxes_clrsky%flux_up    (1:ncol,:))
-                  call average_packed_array(fluxes_clrsky_packed%flux_dn    (1:ncol_tot,:), fluxes_clrsky%flux_dn    (1:ncol,:))
-                  call average_packed_array(fluxes_clrsky_packed%flux_net   (1:ncol_tot,:), fluxes_clrsky%flux_net   (1:ncol,:))
-                  call average_packed_array(fluxes_clrsky_packed%flux_dn_dir(1:ncol_tot,:), fluxes_clrsky%flux_dn_dir(1:ncol,:))
+                  call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, qrs_packed (1:ncol_tot,:), qrs (1:ncol,:))
+                  call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, qrsc_packed(1:ncol_tot,:), qrsc(1:ncol,:))
+                  call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_allsky_packed%flux_up, fluxes_allsky%flux_up)
+                  call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_allsky_packed%flux_dn, fluxes_allsky%flux_dn)
+                  call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_allsky_packed%flux_net   , fluxes_allsky%flux_net   )
+                  call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_allsky_packed%flux_dn_dir, fluxes_allsky%flux_dn_dir)
+                  call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_clrsky_packed%flux_up    , fluxes_clrsky%flux_up    )
+                  call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_clrsky_packed%flux_dn    , fluxes_clrsky%flux_dn    )
+                  call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_clrsky_packed%flux_net   , fluxes_clrsky%flux_net   )
+                  call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_clrsky_packed%flux_dn_dir, fluxes_clrsky%flux_dn_dir)
                   do iband = 1,nswbands
-                     call average_packed_array(fluxes_allsky_packed%bnd_flux_up    (1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_up    (1:ncol,:,iband))
-                     call average_packed_array(fluxes_allsky_packed%bnd_flux_dn    (1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_dn    (1:ncol,:,iband))
-                     call average_packed_array(fluxes_allsky_packed%bnd_flux_net   (1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_net   (1:ncol,:,iband))
-                     call average_packed_array(fluxes_allsky_packed%bnd_flux_dn_dir(1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_dn_dir(1:ncol,:,iband))
-                     call average_packed_array(fluxes_clrsky_packed%bnd_flux_up    (1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_up    (1:ncol,:,iband))
-                     call average_packed_array(fluxes_clrsky_packed%bnd_flux_dn    (1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_dn    (1:ncol,:,iband))
-                     call average_packed_array(fluxes_clrsky_packed%bnd_flux_net   (1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_net   (1:ncol,:,iband))
-                     call average_packed_array(fluxes_clrsky_packed%bnd_flux_dn_dir(1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_dn_dir(1:ncol,:,iband))
+                     call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_allsky_packed%bnd_flux_up    (:,:,iband), fluxes_allsky%bnd_flux_up    (:,:,iband))
+                     call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_allsky_packed%bnd_flux_dn    (:,:,iband), fluxes_allsky%bnd_flux_dn    (:,:,iband))
+                     call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_allsky_packed%bnd_flux_net   (:,:,iband), fluxes_allsky%bnd_flux_net   (:,:,iband))
+                     call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_allsky_packed%bnd_flux_dn_dir(:,:,iband), fluxes_allsky%bnd_flux_dn_dir(:,:,iband))
+                     call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_clrsky_packed%bnd_flux_up    (:,:,iband), fluxes_clrsky%bnd_flux_up    (:,:,iband))
+                     call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_clrsky_packed%bnd_flux_dn    (:,:,iband), fluxes_clrsky%bnd_flux_dn    (:,:,iband))
+                     call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_clrsky_packed%bnd_flux_net   (:,:,iband), fluxes_clrsky%bnd_flux_net   (:,:,iband))
+                     call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_clrsky_packed%bnd_flux_dn_dir(:,:,iband), fluxes_clrsky%bnd_flux_dn_dir(:,:,iband))
                   end do
                   call t_stopf('rad_average_fluxes_sw')
 
@@ -1669,14 +1748,14 @@ contains
 
                   ! Calculate domain averages
                   call t_startf('rad_average_fluxes_lw')
-                  call average_packed_array(qrl_packed (1:ncol_tot,:)                  , qrl (1:ncol,:))
-                  call average_packed_array(qrlc_packed(1:ncol_tot,:)                  , qrlc(1:ncol,:))
-                  call average_packed_array(fluxes_allsky_packed%flux_up (1:ncol_tot,:), fluxes_allsky%flux_up (1:ncol,:))
-                  call average_packed_array(fluxes_allsky_packed%flux_dn (1:ncol_tot,:), fluxes_allsky%flux_dn (1:ncol,:))
-                  call average_packed_array(fluxes_allsky_packed%flux_net(1:ncol_tot,:), fluxes_allsky%flux_net(1:ncol,:))
-                  call average_packed_array(fluxes_clrsky_packed%flux_up (1:ncol_tot,:), fluxes_clrsky%flux_up (1:ncol,:))
-                  call average_packed_array(fluxes_clrsky_packed%flux_dn (1:ncol_tot,:), fluxes_clrsky%flux_dn (1:ncol,:))
-                  call average_packed_array(fluxes_clrsky_packed%flux_net(1:ncol_tot,:), fluxes_clrsky%flux_net(1:ncol,:))
+                  call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, qrl_packed (1:ncol_tot,:)    , qrl (1:ncol,:))
+                  call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, qrlc_packed(1:ncol_tot,:)    , qrlc(1:ncol,:))
+                  call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_allsky_packed%flux_up , fluxes_allsky%flux_up )
+                  call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_allsky_packed%flux_dn , fluxes_allsky%flux_dn )
+                  call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_allsky_packed%flux_net, fluxes_allsky%flux_net)
+                  call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_clrsky_packed%flux_up , fluxes_clrsky%flux_up )
+                  call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_clrsky_packed%flux_dn , fluxes_clrsky%flux_dn )
+                  call average_packed_array(ncol, crm_nx_rad, crm_ny_rad, fluxes_clrsky_packed%flux_net, fluxes_clrsky%flux_net)
                   call t_stopf('rad_average_fluxes_lw')
                             
                   ! Map to CRM columns
@@ -1749,7 +1828,12 @@ contains
                do ilay = 1,pver
                   do j = 1,ncol_tot
                      dems_packed(j,ilay) = 1._r8 - exp(-cld_tau_bnd_lw(j,ilay,cosp_lwband))
-                     dtau_packed(j,ilay) = cld_tau_bnd_sw(j,ilay,cosp_swband)
+                  end do
+               end do
+               do ilay = 1,pver
+                  do j = 1,nday
+                     icol = day_indices(j)
+                     dtau_packed(j,ilay) = cld_tau_bnd_day(icol,ilay,cosp_swband)
                   end do
                end do
                ! Call cosp
@@ -1833,7 +1917,7 @@ contains
       ! Gathered indicies of day and night columns 
       ! chunk_column_index = day_indices(daylight_column_index)
       integer :: iday, icol
-      integer :: nday, nnight     ! Number of daylight columns
+      integer :: nday  ! Number of daylight columns
       integer :: day_indices(ncol), night_indices(ncol)   ! Indicies of daylight coumns
 
 
@@ -1847,7 +1931,6 @@ contains
       ! angles less than or equal to zero)
       call set_daynight_indices(coszrs(1:ncol), day_indices(1:ncol), night_indices(1:ncol))
       nday = count(day_indices(1:ncol) > 0)
-      nnight = count(night_indices(1:ncol) > 0)
 
       ! If no daytime columns in this chunk, then we return zeros
       if (nday == 0) then
@@ -1958,28 +2041,28 @@ contains
    ! crm_nx_rad * crm_ny_rad and nlev is number of vertical levels. Output will
    ! be 2D arrays dimensioned (ncol,nlev), where the averaging has been done
    ! over the CRM columns.
-   subroutine average_packed_array(array_packed, array_avg)
+   subroutine average_packed_array(ncol, nx, ny, array_packed, array_avg)
+      integer, intent(in) :: ncol, nx, ny
       real(r8), intent(in) :: array_packed(:,:)
       real(r8), intent(out) :: array_avg(:,:)
-      integer :: ncol, ncol_tot
+      integer :: ncol_tot
       real(r8) :: area_factor
       integer :: icol, ix, iy, iz, j
 
-      if (crm_nx_rad * crm_ny_rad > 1) then
-         area_factor = 1._r8 / (crm_nx_rad * crm_ny_rad)
+      if (nx * ny > 1) then
+         area_factor = 1._r8 / (nx * ny)
       else
          area_factor = 1
       end if
       array_avg = 0
-      ncol = size(array_avg, 1)
-      ncol_tot = ncol * crm_nx_rad * crm_ny_rad
+      ncol_tot = ncol * nx * ny
       call assert(size(array_packed,1) == ncol_tot, 'size(array_packed,1) /= ncol_tot')
       call assert(size(array_packed,2) == size(array_avg,2), 'size(array_packed,2) /= size(array_avg,2)')
       do iz = 1,size(array_packed,2)
-         do iy = 1,crm_ny_rad
-            do ix = 1,crm_nx_rad
+         do iy = 1,ny
+            do ix = 1,nx
                do icol = 1,ncol
-                  j = _IDX321(icol, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
+                  j = _IDX321(icol, ix, iy, ncol, nx, ny)
                   array_avg(icol,iz) = array_avg(icol,iz) + array_packed(j,iz) * area_factor
                end do
             end do
