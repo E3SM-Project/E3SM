@@ -622,9 +622,10 @@ contains
        endif !config_use_effective_snow_density
 
        if (config_use_snow_grain_radius) then
-          if (.not. config_do_restart_snow_grain_radius) then
 
-             call MPAS_pool_get_array(tracers, "snowGrainRadius", snowGrainRadius, 1)
+          call MPAS_pool_get_array(tracers, "snowGrainRadius", snowGrainRadius, 1)
+
+          if (.not. config_do_restart_snow_grain_radius) then
 
              snowGrainRadius(:,:,:) = config_fallen_snow_radius
 
@@ -2908,6 +2909,7 @@ contains
          config_dt
 
     logical, pointer :: &
+         config_use_snow_grain_radius, &
          config_use_shortwave_bioabsorption, &
          config_use_brine, &
          config_use_modal_aerosols, &
@@ -2990,13 +2992,15 @@ contains
     character(len=strKIND) :: &
          calendarType ! needed for CESM like coupled simulations
 
-    ! aerosols array
+    ! aerosols and snow grain radius arrays
     real(kind=RKIND), dimension(:,:), allocatable :: &
-         aerosolsArray
+         aerosolsArray, &
+         snow_grain_radius
 
     ! local
     integer :: &
          iCell, &
+         iSnowLayer, &
          iCategory, &
          iAerosol, &
          iBioTracers
@@ -3027,6 +3031,7 @@ contains
     ! get days in year
     call get_days_in_year(domain, clock, daysInYear)
 
+    call MPAS_pool_get_config(domain % configs, "config_use_snow_grain_radius", config_use_snow_grain_radius)
     call MPAS_pool_get_config(domain % configs, "config_use_brine", config_use_brine)
     call MPAS_pool_get_config(domain % configs, "config_use_shortwave_bioabsorption", config_use_shortwave_bioabsorption)
     call MPAS_pool_get_config(domain % configs, "config_use_modal_aerosols",config_use_modal_aerosols)
@@ -3139,6 +3144,9 @@ contains
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
 
+       ! snow grain radius array
+       allocate(snow_grain_radius(nSnowLayers,nCategories))
+
        !$omp parallel do default(shared) firstprivate(aerosolsArray,index_shortwaveAerosol) &
        !$omp&                                 private(iCategory,iAerosol,lonCellColumn)
        do iCell = 1, nCellsSolve
@@ -3154,6 +3162,15 @@ contains
 
              enddo ! iAerosol
           enddo ! iCategory
+
+          snow_grain_radius(:,:) = 0.0_RKIND
+          if (config_use_snow_grain_radius) then           
+             do iCategory = 1, nCategories
+                do iSnowLayer = 1, nSnowLayers
+                   snow_grain_radius(iSnowLayer, iCategory) = snowGrainRadius(iSnowLayer,iCategory,iCell)
+                enddo ! iSnowLayer
+             enddo ! iCategory
+          endif
 
           lonCellColumn = lonCell(iCell)
           if (lonCellColumn > pii) lonCellColumn = lonCellColumn - 2.0_RKIND * pii
@@ -3214,7 +3231,7 @@ contains
                snowfracn=snowFractionCategory(:,iCell), &
                dhsn=pondSnowDepthDifference(:,iCell), &
                ffracn=pondLidMeltFluxFraction(:,iCell), &
-               rsnow=snowGrainRadius(:,:,iCell), &
+               rsnow=snow_grain_radius(:,:), &
                l_print_point=.false., &
                initonly=lInitialization)
           call column_write_warnings(.false.)
@@ -3224,6 +3241,8 @@ contains
                  tracerArrayCategory, iCell, setGetPhysicsTracers, setGetBGCTracers)
 
        enddo ! iCell
+
+       deallocate(snow_grain_radius)
 
        ! aerosols array
        deallocate(aerosolsArray)
