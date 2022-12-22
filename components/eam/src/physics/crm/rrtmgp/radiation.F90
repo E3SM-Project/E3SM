@@ -1404,7 +1404,7 @@ contains
                do iy = 1,crm_ny_rad
                   do ix = 1,crm_nx_rad
                      ! Fill GCM columns with CRM data
-                     call t_startf('rad_overwrite_state')
+                     call t_startf('rad_set_state')
                      do iz = 1,crm_nz
                         ilev = pver - iz + 1
                         do icol = 1,ncol
@@ -1420,10 +1420,7 @@ contains
                            end if
                         end do  ! icol = 1,ncol
                      end do  ! iz = 1,crm_nz
-                     call t_stopf('rad_overwrite_state')
-
                      ! Setup state arrays, which contain an extra level above model top to handle heating above the model
-                     call t_startf('rad_set_state')
                      call set_rad_state(                                            &
                         state                      , cam_in                       , &
                         tmid_col(1:ncol,1:nlev_rad), tint_col(1:ncol,1:nlev_rad+1), &
@@ -1466,14 +1463,12 @@ contains
                end do  ! iy = 1,crm_ny_rad
 
                ! Check (and possibly clip) values before passing to RRTMGP driver
-               call t_startf('rad_check_inputs')
                call handle_error(clip_values(tint_packed(1:ncol_tot,1:nlev_rad+1), get_min_temperature(), get_max_temperature(), trim(subname) // ' tint'), &
                   fatal=.false., warn=rrtmgp_enable_temperature_warnings)
                call handle_error(clip_values(aer_tau_bnd_sw_packed,  0._r8, huge(aer_tau_bnd_sw_packed), trim(subname) // ' aer_tau_bnd_sw', tolerance=1e-10_r8))
-               call handle_error(clip_values(aer_ssa_bnd_sw_packed,  0._r8,                    1._r8, trim(subname) // ' aer_ssa_bnd_sw', tolerance=1e-10_r8))
-               call handle_error(clip_values(aer_asm_bnd_sw_packed, -1._r8,                    1._r8, trim(subname) // ' aer_asm_bnd_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(aer_ssa_bnd_sw_packed,  0._r8,                       1._r8, trim(subname) // ' aer_ssa_bnd_sw', tolerance=1e-10_r8))
+               call handle_error(clip_values(aer_asm_bnd_sw_packed, -1._r8,                       1._r8, trim(subname) // ' aer_asm_bnd_sw', tolerance=1e-10_r8))
                call handle_error(clip_values(aer_tau_bnd_lw_packed,  0._r8, huge(aer_tau_bnd_lw_packed), trim(subname) // ' aer_tau_bnd_lw', tolerance=1e-10_r8))
-               call t_stopf('rad_check_inputs')
 
                ! Do shortwave stuff...
                if (radiation_do('sw')) then
@@ -1527,10 +1522,12 @@ contains
                   ! NOTE: fluxes defined at interfaces, so initialize to have vertical
                   ! dimension nlev_rad+1, while we initialized the RRTMGP input variables to
                   ! have vertical dimension nlev_rad (defined at midpoints).
+                  call t_startf('rad_initialize_fluxes_sw')
                   call initialize_fluxes(ncol    , nlev_rad+1, nswbands, fluxes_allsky    , do_direct=.true.)
                   call initialize_fluxes(ncol    , nlev_rad+1, nswbands, fluxes_clrsky    , do_direct=.true.)
                   call initialize_fluxes(ncol_tot, nlev_rad+1, nswbands, fluxes_allsky_packed, do_direct=.true.)
                   call initialize_fluxes(ncol_tot, nlev_rad+1, nswbands, fluxes_clrsky_packed, do_direct=.true.)
+                  call t_stopf('rad_initialize_fluxes_sw')
 
                   ! Calculate shortwave fluxes
                   call t_startf('rad_radiation_driver_sw')
@@ -1565,17 +1562,15 @@ contains
                   call average_packed_array(fluxes_allsky_packed%flux_dn    (1:ncol_tot,:), fluxes_allsky%flux_dn    (1:ncol,:))
                   call average_packed_array(fluxes_allsky_packed%flux_net   (1:ncol_tot,:), fluxes_allsky%flux_net   (1:ncol,:))
                   call average_packed_array(fluxes_allsky_packed%flux_dn_dir(1:ncol_tot,:), fluxes_allsky%flux_dn_dir(1:ncol,:))
-                  do iband = 1,nswbands
-                     call average_packed_array(fluxes_allsky_packed%bnd_flux_up    (1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_up    (1:ncol,:,iband))
-                     call average_packed_array(fluxes_allsky_packed%bnd_flux_dn    (1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_dn    (1:ncol,:,iband))
-                     call average_packed_array(fluxes_allsky_packed%bnd_flux_net   (1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_net   (1:ncol,:,iband))
-                     call average_packed_array(fluxes_allsky_packed%bnd_flux_dn_dir(1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_dn_dir(1:ncol,:,iband))
-                  end do
                   call average_packed_array(fluxes_clrsky_packed%flux_up    (1:ncol_tot,:), fluxes_clrsky%flux_up    (1:ncol,:))
                   call average_packed_array(fluxes_clrsky_packed%flux_dn    (1:ncol_tot,:), fluxes_clrsky%flux_dn    (1:ncol,:))
                   call average_packed_array(fluxes_clrsky_packed%flux_net   (1:ncol_tot,:), fluxes_clrsky%flux_net   (1:ncol,:))
                   call average_packed_array(fluxes_clrsky_packed%flux_dn_dir(1:ncol_tot,:), fluxes_clrsky%flux_dn_dir(1:ncol,:))
                   do iband = 1,nswbands
+                     call average_packed_array(fluxes_allsky_packed%bnd_flux_up    (1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_up    (1:ncol,:,iband))
+                     call average_packed_array(fluxes_allsky_packed%bnd_flux_dn    (1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_dn    (1:ncol,:,iband))
+                     call average_packed_array(fluxes_allsky_packed%bnd_flux_net   (1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_net   (1:ncol,:,iband))
+                     call average_packed_array(fluxes_allsky_packed%bnd_flux_dn_dir(1:ncol_tot,:,iband), fluxes_allsky%bnd_flux_dn_dir(1:ncol,:,iband))
                      call average_packed_array(fluxes_clrsky_packed%bnd_flux_up    (1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_up    (1:ncol,:,iband))
                      call average_packed_array(fluxes_clrsky_packed%bnd_flux_dn    (1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_dn    (1:ncol,:,iband))
                      call average_packed_array(fluxes_clrsky_packed%bnd_flux_net   (1:ncol_tot,:,iband), fluxes_clrsky%bnd_flux_net   (1:ncol,:,iband))
@@ -1596,11 +1591,11 @@ contains
                         end do
                      end do
                   end do
-                  call outfld('CRM_QRS' , crm_qrs (1:ncol,:,:,:)/cpair, ncol, state%lchnk)
-                  call outfld('CRM_QRSC', crm_qrsc(1:ncol,:,:,:)/cpair, ncol, state%lchnk)
 
                   ! Send fluxes to history buffer
                   call output_fluxes_sw(icall, state, fluxes_allsky, fluxes_clrsky, qrs,  qrsc)
+                  call outfld('CRM_QRS' , crm_qrs (1:ncol,:,:,:)/cpair, ncol, state%lchnk)
+                  call outfld('CRM_QRSC', crm_qrsc(1:ncol,:,:,:)/cpair, ncol, state%lchnk)
 
                   ! Set net fluxes used by other components (land?) 
                   call set_net_fluxes_sw(fluxes_allsky, fsds, fsns, fsnt)
@@ -1641,10 +1636,12 @@ contains
 
                   ! Allocate longwave outputs
                   ! NOTE: fluxes defined at interfaces, so initialize to have vertical dimension nlev_rad+1
+                  call t_startf('rad_initialize_fluxes_lw')
                   call initialize_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_allsky)
                   call initialize_fluxes(ncol, nlev_rad+1, nlwbands, fluxes_clrsky)
                   call initialize_fluxes(ncol_tot, nlev_rad+1, nlwbands, fluxes_allsky_packed)
                   call initialize_fluxes(ncol_tot, nlev_rad+1, nlwbands, fluxes_clrsky_packed)
+                  call t_stopf('rad_initialize_fluxes_lw')
 
                   ! Calculate longwave fluxes
                   call t_startf('rad_fluxes_lw')
@@ -1662,11 +1659,11 @@ contains
                   call t_startf('rad_heating_lw')
                   call calculate_heating_rate(fluxes_allsky_packed%flux_up(:,ktop:kbot+1), &
                                               fluxes_allsky_packed%flux_dn(:,ktop:kbot+1), &
-                                              pint_packed(1:ncol_tot,ktop:kbot+1)            , &
+                                              pint_packed(1:ncol_tot,ktop:kbot+1)        , &
                                               qrl_packed(1:ncol_tot,1:pver)                )
                   call calculate_heating_rate(fluxes_clrsky_packed%flux_up(:,ktop:kbot+1), &
                                               fluxes_clrsky_packed%flux_dn(:,ktop:kbot+1), &
-                                              pint_packed(1:ncol_tot,ktop:kbot+1)            , &
+                                              pint_packed(1:ncol_tot,ktop:kbot+1)        , &
                                               qrlc_packed(1:ncol_tot,1:pver)               )
                   call t_stopf('rad_heating_lw')
 
@@ -1683,7 +1680,6 @@ contains
                   call t_stopf('rad_average_fluxes_lw')
                             
                   ! Map to CRM columns
-                  call t_startf('rad_unpack_qrl')
                   do iy = 1,crm_ny_rad
                      do ix = 1,crm_nx_rad
                         do icol = 1,ncol
@@ -1696,12 +1692,11 @@ contains
                         end do
                      end do
                   end do
-                  call t_stopf('rad_unpack_qrl')
+
+                  ! Send fluxes and heating rates to history buffer
+                  call output_fluxes_lw(icall, state, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
                   call outfld('CRM_QRL', crm_qrl(1:ncol,:,:,:)/cpair, ncol, state%lchnk)
                   call outfld('CRM_QRLC', crm_qrlc(1:ncol,:,:,:)/cpair, ncol, state%lchnk)
-
-                  ! Send fluxes to history buffer
-                  call output_fluxes_lw(icall, state, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
 
                   ! Set net fluxes used in other components
                   call set_net_fluxes_lw(fluxes_allsky, flns, flnt)
@@ -1725,7 +1720,6 @@ contains
          ! Update net CRM heating tendency
          ! TODO: should we be updating this every timestep, even if using
          ! previous heating tendency since pdel would have changed?
-         call t_startf('rad_update_crm_heating')
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_QRAD'), crm_qrad)
          crm_qrad = 0
          do iz = 1,crm_nz
@@ -1740,7 +1734,6 @@ contains
             end do
          end do
          call outfld('CRM_QRAD', crm_qrad(1:ncol,:,:,:), ncol, state%lchnk)
-         call t_stopf('rad_update_crm_heating')
 
       end if  ! sw or lw
 
@@ -1787,8 +1780,8 @@ contains
             hr(icol,ilay) = (qrs(icol,ilay) + qrl(icol,ilay)) / cpair * (1.e5_r8 / state%pmid(icol,ilay))**cappa
          end do
       end do
-      call t_stopf ('rad_heating_rate')
       call outfld('HR', hr(1:ncol,:), ncol, state%lchnk)
+      call t_stopf ('rad_heating_rate')
 
       ! convert radiative heating rates to Q*dp to carry across timesteps
       ! for energy conservation
@@ -1864,6 +1857,8 @@ contains
       end if
 
       ! Compress to daytime-only arrays
+      ! TODO: do this BEFORE computing optics, because packing cloud optics is expensive
+      call t_startf('rad_compress_day_columns')
       do iday = 1,nday
          icol = day_indices(iday)
          tmid_day(iday,:) = tmid(icol,:)
@@ -1880,11 +1875,9 @@ contains
          aer_ssa_bnd_rad(iday,:,:) = aer_ssa_bnd(icol,:,:)
          aer_asm_bnd_rad(iday,:,:) = aer_asm_bnd(icol,:,:)
       end do
+      call t_stopf('rad_compress_day_columns')
 
       ! Allocate shortwave fluxes (allsky and clearsky)
-      ! TODO: why do I need to provide my own routines to do this? Why is 
-      ! this not part of the fluxes_t object?
-      !
       ! NOTE: fluxes defined at interfaces, so initialize to have vertical
       ! dimension nlev_rad+1, while we initialized the RRTMGP input variables to
       ! have vertical dimension nlev_rad (defined at midpoints).
