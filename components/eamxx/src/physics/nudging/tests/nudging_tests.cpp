@@ -125,8 +125,8 @@ TEST_CASE("nudging") {
 
     const std::string& gn = grid2->name();
 
-    FieldIdentifier fid2("p_mid_r",FL{tag_2d,dims_2d},Pa,gn);
-    FieldIdentifier fid3("T_mid_r",FL{tag_2d,dims_2d},K,gn);
+    FieldIdentifier fid2("p_mid",FL{tag_2d,dims_2d},Pa,gn);
+    FieldIdentifier fid3("T_mid",FL{tag_2d,dims_2d},K,gn);
 
     // Register fields with fm
     // Make sure packsize isn't bigger than the packsize for this machine, but not so big   that we end up with only 1 pack.
@@ -166,7 +166,7 @@ TEST_CASE("nudging") {
     params.set<std::string>("Averaging Type","Instant");
     params.set<int>("Max Snapshots Per File",10);
     //auto& params_sub_f = params.sublist("Field Names");
-    std::vector<std::string> fnames = {"T_mid_r","p_mid_r"};
+    std::vector<std::string> fnames = {"T_mid","p_mid"};
     //params_sub_f.set<std::vector<std::string>>("Field Names",fnames);
     params.set<std::vector<std::string>>("Field Names",fnames);
     auto& params_sub = params.sublist("output_control");
@@ -199,13 +199,13 @@ TEST_CASE("nudging") {
               auto v = f.get_view<Real**,Host>();
               for (int i=0; i<fl.dim(0); ++i) {
                 for (int j=0; j<fl.dim(1); ++j) {
-                  if (fname == "T_mid_r"){
+                  if (fname == "T_mid"){
                     //v(i,j) = (-j)*100 + i + 1;
                     //v(i,j) = (i-1)*100*10+2*j*10+dt*ii*0.1;
 		    v(i,j) = (i-1)*10000+200*j+10*(dt/250.)*ii;
                     std::cout<<"v("<<i<<","<<j<<"): "<<v(i,j)<<std::endl;
                   }
-                  if (fname == "p_mid_r"){
+                  if (fname == "p_mid"){
                     v(i,j) = 2*j+1;
 		  }
                 }
@@ -236,7 +236,8 @@ TEST_CASE("nudging") {
 
   // Create a grids manager
   const int ncols = 3;
-  const int nlevs = packsize*2 + 1;  // Note, we need at least 3 levels for the test to work
+  //const int nlevs = packsize*2 + 1;  // Note, we need at least 3 levels for the test to work
+  const int nlevs = 33;  // Note, we need at least 3 levels for the test to work
   auto gm = create_gm(io_comm,ncols,nlevs);
   auto grid = gm->get_grid("Physics");
 
@@ -246,7 +247,11 @@ TEST_CASE("nudging") {
   std::cout<<"Levs outside: "<<nlevs<<std::endl;
 
   ekat::ParameterList params_mid;
-  std::vector<std::string> fnames = {"T_mid_r","p_mid_r"};
+  std::vector<std::string> fnames = {"T_mid","p_mid"};
+  //std::vector<std::string> fnames = {"T_mid"};
+  std::string nudging_f = "io_output_test.INSTANT.nsteps_x1."\
+                          "np1.2000-01-01-00250.nc";
+  params_mid.set<std::string>("Nudging Filename",nudging_f);
   //std::vector<std::string> fnames = {"T_mid_r"};
   params_mid.set<std::vector<std::string>>("Field Names",fnames);
   auto nudging_mid = std::make_shared<NUDGING>(io_comm,params_mid);
@@ -275,7 +280,7 @@ TEST_CASE("nudging") {
 
   auto f_mid_v_h   = f_mid.get_view<Real**, Host>();
   auto p_mid_v_h   = p_mid.get_view<Real**, Host>();
-  
+  //Don't fill Temperature because it is going to be nudged anyways  
   for (int icol=0; icol<ncols; icol++){
     for (int ilev=0; ilev<nlevs; ilev++){ 
       //f_mid_v_h(icol,ilev) = (-ilev)*100 + icol+0.1;
@@ -287,51 +292,12 @@ TEST_CASE("nudging") {
   }
   f_mid.sync_to_dev();
   p_mid.sync_to_dev();
-  /*
-  auto ft = f_mid.get_header_ptr()->get_tracking();
-  auto pt = p_mid.get_header_ptr()->get_tracking();
-  auto ts = ft.get_time_stamp();
-  auto ts_p = pt.get_time_stamp();
-  std::cout<<"time_stamp year: "<<ts.get_year()<<std::endl;
-  std::cout<<"time_stamp month: "<<ts.get_month()<<std::endl;
-  std::cout<<"time_stamp day: "<<ts.get_day()<<std::endl;
-  std::cout<<"time_stamp hours: "<<ts.get_hours()<<std::endl;
-  std::cout<<"time_stamp minutes: "<<ts.get_minutes()<<std::endl;
-  std::cout<<"time_stamp seconds: "<<ts.get_seconds()<<std::endl;
-  ft.update_time_stamp(ts+dt);
-  pt.update_time_stamp(ts_p+dt);
-  auto ts2 = ft.get_time_stamp();
-  std::cout<<"time_stamp year: "<<ts2.get_year()<<std::endl;
-  std::cout<<"time_stamp month: "<<ts2.get_month()<<std::endl;
-  std::cout<<"time_stamp day: "<<ts2.get_day()<<std::endl;
-  std::cout<<"time_stamp hours: "<<ts2.get_hours()<<std::endl;
-  std::cout<<"time_stamp minutes: "<<ts2.get_minutes()<<std::endl;
-  std::cout<<"time_stamp seconds: "<<ts2.get_seconds()<<std::endl;
-  
-  for (int icol=0; icol<ncols; icol++){
-    for (int ilev=0; ilev<nlevs; ilev++){ 
-      //f_mid_v_h(icol,ilev) = (-ilev)*100 + icol;
-      f_mid_v_h(icol,ilev) = 0;
-      //f_mid_v_h(icol,ilev) = 100*(icol-1) + 2*ilev;
-      //p_mid_v_h(icol,ilev) = 2+ilev*2;
-      p_mid_v_h(icol,ilev) = 2*ilev+2;
-    }
-  }
-  
-  f_mid.sync_to_dev();
-  p_mid.sync_to_dev();
-  */
-  //This checks that nudging works as expected if nudging times internally
-  //are the same as in the file
-  //For some reason can't start at t = 0; Complains
+
+  //10 timesteps of 100 s
   for (int time_s = 1; time_s < 10; time_s++){
     f_mid.sync_to_dev();
     p_mid.sync_to_dev();
 
-    //int time_in=time_s*100;
-    //int time_in=time_s*250;
-    //run
-    //nudging_mid->run(1);
     nudging_mid->run(time_s*100);
     f_mid.sync_to_host();
     p_mid.sync_to_host();
@@ -344,22 +310,16 @@ TEST_CASE("nudging") {
         double val_after = 10000*(icol-1) + 200*ilev + 10*int(time_index);
         double w_aft = time_s*100.-time_index*250.;
         double w_bef = (time_index+1)*250-time_s*100.;
-	std::cout<<"val_before: "<<val_before<<std::endl;
-        std::cout<<"val_after: "<<val_after<<std::endl;
-	std::cout<<"w_before: "<<w_bef<<std::endl;
-        std::cout<<"w_after: "<<w_aft<<std::endl;
+	//std::cout<<"val_before: "<<val_before<<std::endl;
+        //std::cout<<"val_after: "<<val_after<<std::endl;
+	//std::cout<<"w_before: "<<w_bef<<std::endl;
+        //std::cout<<"w_after: "<<w_aft<<std::endl;
 	double val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
 
         double val_before_n = 10000*(icol-1) + 200*(ilev+1) + 10*int(time_index-1);
         double val_after_n = 10000*(icol-1) + 200*(ilev+1) + 10*int(time_index);
         double w_aft_n = time_s*100.-time_index*250.;
         double w_bef_n = (time_index+1)*250-time_s*100.;
-	/*
-	std::cout<<"val_before: "<<val_before<<std::endl;
-        std::cout<<"val_after: "<<val_after<<std::endl;
-	std::cout<<"w_before: "<<w_bef<<std::endl;
-        std::cout<<"w_after: "<<w_aft<<std::endl;
-	*/
 	double val_tim_avg_next = (val_before_n*w_bef_n + val_after_n*w_aft_n) / 250.;
         double val_avg = (val_tim_avg_next + val_tim_avg)/2.;
 
@@ -367,19 +327,7 @@ TEST_CASE("nudging") {
 	REQUIRE(f_mid_v_h(icol,ilev) == val_avg);
       }
     }
-    continue;
-    //This is for 100 second intervals in file and with just nudging
-    //Now check that I was able to nudge it by a value of 1
-    for (int icol=0; icol<ncols; icol++){
-      for (int ilev=0; ilev<nlevs; ilev++){ 
-        std::cout<<"f_mid_v_h("<<icol<<","<<ilev<<"): "<<f_mid_v_h(icol,ilev)<<std::endl;
-        //REQUIRE(f_mid_v_h(icol,ilev) == (-ilev)*100 + icol + 1);
-        //REQUIRE(f_mid_v_h(icol,ilev) == 100*(icol-1) + 2*ilev+time_s*0.1);
-	//REQUIRE(f_mid_v_h(icol,ilev) == 100*(icol-1) + 2*ilev+0.1);
-	//REQUIRE(f_mid_v_h(icol,ilev) == 1000*(icol-1) + 10 + 20*ilev +(time_s)*1);
-	REQUIRE(f_mid_v_h(icol,ilev) == 1000*(icol-1) + 10 + 20*ilev +int(time_s)*1 -1);
-      }
-    }
+
 }
 
 nudging_mid->finalize();
