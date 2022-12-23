@@ -1707,7 +1707,7 @@ subroutine parse_mode_defs(nl_in, modes)
       integer :: i
 
       do i = 1, num_mode_types
-         write(iulog,*) 'kzm_', trim(mode_type_names(i)) !kzm
+         !write(iulog,*) 'kzm_', trim(mode_type_names(i)) !kzm
          if (str(ib:ie) == trim(mode_type_names(i))) return
       end do
 
