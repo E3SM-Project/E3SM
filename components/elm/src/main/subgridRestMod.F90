@@ -476,6 +476,11 @@ contains
          dim1name='landunit',                                                      &
          long_name='landunit weight relative to corresponding gridcell',           &
          interpinic_flag='skip', readvar=readvar, data=lun_pp%wtgcell)
+    
+    call restartvar(ncid=ncid, flag=flag, varname='land1d_wttopounit', xtype=ncd_double, &
+         dim1name='landunit',                                                            &
+         long_name='landunit weight relative to corresponding topounit', units='',         &
+         interpinic_flag='skip', readvar=readvar, data=lun_pp%wttopounit)
 
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_wtxy', xtype=ncd_double,  &
          dim1name='column',                                                         &
@@ -491,6 +496,11 @@ contains
          dim1name='column',                                                             &
          long_name='mean elevation on glacier elevation classes', units='m',            &
          interpinic_flag='skip', readvar=readvar, data=col_pp%glc_topo)
+    
+    call restartvar(ncid=ncid, flag=flag, varname='cols1d_wttopounit', xtype=ncd_double, &
+         dim1name='column',                                                            &
+         long_name='column weight relative to corresponding topounit', units='',         &
+         interpinic_flag='skip', readvar=readvar, data=col_pp%wttopounit)
 
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_wtxy', xtype=ncd_double,  &
          dim1name='pft',                                                            &
