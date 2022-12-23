@@ -1329,7 +1329,7 @@ end subroutine physics_ptend_copy
     do k = 1, pver
        do i = 1, ncol
           state_out%t(i,k)         = state_in%t(i,k) 
-          state_out%pv(i,k)        = state_in%t(i,k) 
+          state_out%pv(i,k)        = state_in%pv(i,k) 
           state_out%u(i,k)         = state_in%u(i,k) 
           state_out%v(i,k)         = state_in%v(i,k) 
           state_out%s(i,k)         = state_in%s(i,k) 
