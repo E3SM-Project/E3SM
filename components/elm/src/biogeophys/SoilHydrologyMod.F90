@@ -1846,9 +1846,9 @@ contains
           enddo
 
           jss(c) = nlevbed
-          do j = 1,nlevbed
+          do j = nlevbed,1,-1
              if(ocn2lnd_vars%ssh_grc(g) <= ldomain%topo(g) - zi(c,j)) then
-                jss(c) = j-1
+                jss(c) = j
                 exit
              end if
           enddo
@@ -1866,16 +1866,18 @@ contains
           if (col_pp%topo_slope(c) > 0.16_r8) then
              f = 5._r8
           else
-             f  = 120._r8/(1._r8 + 150._r8*col_pp%topo_slope(c))
+             f = 120._r8/(1._r8 + 150._r8*col_pp%topo_slope(c))
           endif
 
           if (ldomain%topo(g)-zwt(c) > ocn2lnd_vars%ssh_grc(g)) then
-             jtran = jss(c) + 1
-             dz_jtran = ocn2lnd_vars%ssh_grc(g)-(ldomain%topo(g)-zi(c,jtran))
+             jtran = jss(c)
+             dz_jtran = ldomain%topo(g)-zi(c,jtran) - ocn2lnd_vars%ssh_grc(g)
           else
              jtran = jwt(c) + 1
-             dz_jtran = zi(c,jtran)-zwt(c)
+             dz_jtran = zi(c,jtran) - zwt(c)
           endif
+
+          dz_jtran = max(dz_jtran, 0.0_r8)
 
           ! Transmissivity equation from Fan et al., 2007, and 
           if (jtran <= nlevbed) then
@@ -1891,15 +1893,15 @@ contains
           else
              ! SSH is below the soil column
              if (ldomain%topo(g)-zwt(c) > ocn2lnd_vars%ssh_grc(g)) then
-                T2 = 1.e-3_r8*hksat(c,nlevbed)*f*exp(((ldomain%topo(g)-zi(c,nlevbed))-ocn2lnd_vars%ssh_grc(g))/f)
+                T2 = 1.e-3_r8*hksat(c,nlevbed)*f*exp((ocn2lnd_vars%ssh_grc(g)-(ldomain%topo(g)-80._r8))/f)
              else
-                T2 = 1.e-3_r8*hksat(c,nlevbed)*f*exp((zwt(c)-zi(c,nlevbed))/f)
+                T2 = 1.e-3_r8*hksat(c,nlevbed)*f*exp((80._r8 - zwt(c))/f)
              endif
           endif
           ! positive: lnd->ocn, negative: ocn->lnd
           if (ldomain%topo(g) - ocn2lnd_vars%ssh_grc(g) < 80._r8) then
              head = ldomain%topo(g) - zwt(c) - ocn2lnd_vars%ssh_grc(g);
-             qflx_lnd2ocn(c) = imped*2._r8*(T1+T2)*(head)/ldomain%area(g)/1.e3_r8
+             qflx_lnd2ocn(c) = imped*2._r8*(T1+T2)*(head)/ (ldomain%frac(g) * ldomain%area(g) * 1.e6_r8) * 1.e3_r8
           else
              ! Land surface is much higher than the SSH, then there is no lateral flow
              qflx_lnd2ocn(c) = 0._r8
