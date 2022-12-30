@@ -1224,6 +1224,16 @@ CONTAINS
     if (ierr > 0 )  &
       call endrun('Error: fail to set area tag ')
 
+    tagname='aream'//C_NULL_CHAR
+    tagtype = 1 ! dense, double
+    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create aream tag ')
+
+    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols , ent_type, areavals)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set aream tag ')
+
     ierr = iMOAB_UpdateMeshInfo(mphaid)
 
 #ifdef MOABDEBUG
