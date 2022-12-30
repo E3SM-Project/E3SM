@@ -918,6 +918,15 @@ contains
         if (ierr > 0 )  &
           call endrun('Error: fail to set area tag ')
 
+        ! aream needed in cime_init for now.
+        tagname='aream'//C_NULL_CHAR
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to create aream tag ')
+        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to set aream tag ')
+
         deallocate(moabconn)
         ! use merge vertices new imoab method to fix cells
         deallocate(vgids) ! use it for global ids, for elements in full mesh or vertices in point cloud
@@ -1009,6 +1018,15 @@ contains
         ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords )
         if (ierr > 0 )  &
           call endrun('Error: fail to set area tag ')
+
+        ! aream needed in cime_init for now.
+        tagname='aream'//C_NULL_CHAR
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to create aream tag ')
+        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to set aream tag ')
     endif
     deallocate(moab_vert_coords)
     deallocate(vgids)
