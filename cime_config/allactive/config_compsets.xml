@@ -70,6 +70,29 @@
   <lname>20TRSOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
 </compset>
 
+<!-- ************************************************ -->
+<!-- coupled + prescribed aerosols for MMF comparison -->
+<!-- ************************************************ -->
+<compset>
+  <alias>WCYCL1950-MMF1</alias>
+  <lname>1950SOI_EAM%CMIP6-MMF1_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+<compset>
+  <alias>WCYCL1950-PAERO</alias>
+  <lname>1950SOI_EAM%CMIP6-PAERO_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>WCYCL20TR-MMF1</alias>
+  <lname>20TRSOI_EAM%CMIP6-MMF1_ELM%SP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+<compset>
+  <alias>WCYCL20TR-PAERO</alias>
+  <lname>20TRSOI_EAM%CMIP6-PAERO_ELM%SP_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
+</compset>
+<!-- ************************************************** -->
+<!-- ************************************************** -->
+
 <compset>
   <alias>WCYCLSSP585</alias>
   <lname>SSP585SOI_EAM%CMIP6_ELM%SPBC_MPASSI_MPASO_MOSART_SGLC_SWAV</lname>
