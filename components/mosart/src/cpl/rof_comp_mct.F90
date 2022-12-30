@@ -800,9 +800,10 @@ contains
     integer,allocatable :: gindex(:)  ! Number the local grid points; used for global ID
     integer lsz !  keep local size
     integer gsize ! global size, that we do not need, actually
-    integer n
+    integer n, ni
     ! local variables to fill in data
     integer, dimension(:), allocatable :: vgids
+    real(r8), dimension(:), allocatable :: coords
     !  retrieve everything we need from rtmCTL
     ! number of vertices is the size of local rof gsmap ?
     real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
@@ -810,6 +811,7 @@ contains
     integer   dims, i, iv, ilat, ilon, igdx, ierr, tagindex
     integer tagtype, numco, ent_type, mbtype, block_ID
     character*100 outfile, wopts, localmeshfile, tagname
+    real(r8) :: re = SHR_CONST_REARTH*0.001_r8 ! radius of earth (km)
     character(len=32), parameter :: sub = 'init_rof_moab'
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
 
@@ -819,6 +821,7 @@ contains
     lsz = rtmCTL%lnumr
 
     allocate(vgids(lsz)) ! use it for global ids, for elements in full mesh or vertices in point cloud
+    allocate(coords(lsz)) ! use it for area, lats lons
 
     do n = 1, lsz
        vgids(n) = rtmCTL%gindex(rtmCTL%begr+n-1)  ! local to global !
@@ -880,8 +883,36 @@ contains
     if (ierr > 0 )  &
       call shr_sys_abort( sub//' Error: fail to set mask tag ')
 
+    ni = 0
+    do n = rtmCTL%begr,rtmCTL%endr
+       ni = ni + 1
+       coords(ni) = rtmCTL%area(n)*1.0e-6_r8/(re*re)
+    end do
+
+    tagname='area'//C_NULL_CHAR
+    tagtype = 1 ! dense, double
+    ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call shr_sys_abort(sub//' Error: fail to create area tag ')
+
+    ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsz , ent_type, coords)
+    if (ierr > 0 )  &
+      call shr_sys_abort(sub//' Error: fail to set area tag ')
+
+    tagname='aream'//C_NULL_CHAR
+    tagtype = 1 ! dense, double
+    ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call shr_sys_abort(sub//' Error: fail to create aream tag ')
+
+    ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsz , ent_type, coords)
+    if (ierr > 0 )  &
+      call shr_sys_abort(sub//' Error: fail to set aream tag ')
+
+
     deallocate(moab_vert_coords)
     deallocate(vgids)
+    deallocate(coords)
 #ifdef MOABDEBUG
     !     write out the mesh file to disk, in parallel
     outfile = 'wholeRof.h5m'//C_NULL_CHAR
