@@ -541,7 +541,7 @@ contains
             endif
             mapper_Fl2a%src_mbid = mblxid
             mapper_Fl2a%tgt_mbid = mbaxid
-            mapper_Fl2a%src_mbid = mbintxla
+            mapper_Fl2a%intx_mbid = mbintxla
             mapper_Fl2a%src_context = lnd(1)%cplcompid
             mapper_Fl2a%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
