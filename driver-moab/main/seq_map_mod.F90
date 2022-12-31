@@ -531,7 +531,7 @@ end subroutine moab_map_init_rcfile
          ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
          if (ierr .ne. 0) then
             if (seq_comm_iamroot(CPLID)) then
-               write(logunit, *) subname,' iMOAB mapper error in sending tags ', trim(fldlist_moab)
+               write(logunit, *) subname,' iMOAB mapper error in sending tags ', mapper%mbname,  trim(fldlist_moab)
                call shr_sys_flush(logunit)
             endif
             valid_moab_context = .false. 
@@ -541,7 +541,7 @@ end subroutine moab_map_init_rcfile
          ! receive in the intx app, because it is redistributed according to coverage (trick)
          ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in receiving tags ', trim(fldlist_moab)
+            write(logunit,*) subname,' error in receiving tags ', mapper%mbname,   trim(fldlist_moab)
             !call shr_sys_abort(subname//' ERROR in receiving tags')
             valid_moab_context = .false. ! do not attempt to project
          endif

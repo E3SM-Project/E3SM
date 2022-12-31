@@ -528,8 +528,9 @@ contains
             mapper_SFi2o%src_mbid = mbixid
             mapper_SFi2o%tgt_mbid = mboxid
             ! no intersection, so will have to do without it
-            mapper_Va2o%src_context = ice(1)%cplcompid
-            mapper_Va2o%intx_context = ocn(1)%cplcompid
+            mapper_SFi2o%src_context = ice(1)%cplcompid
+            mapper_SFi2o%intx_context = ocn(1)%cplcompid
+            mapper_SFi2o%mbname = 'mapper_SFi2o'
 
             if(mapper_SFi2o%copy_only) then
                call seq_map_set_type(mapper_SFi2o, mbixid, 1) ! type is cells 
