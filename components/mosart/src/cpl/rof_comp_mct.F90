@@ -871,15 +871,16 @@ contains
 
     ! mask
     tagname='mask'//C_NULL_CHAR
+    tagtype = 1 ! dense, double; make mask double too
     ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  &
       call shr_sys_abort( sub//' Error: fail to create new mask tag ')
 
     do n = 1, lsz
-       vgids(n) = rtmCTL%mask(rtmCTL%begr+n-1)  ! local to global !
+       coords(n) = rtmCTL%mask(rtmCTL%begr+n-1)  ! local to global !
     end do
 
-    ierr = iMOAB_SetIntTagStorage ( mrofid, tagname, lsz , ent_type, vgids)
+    ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsz , ent_type, coords)
     if (ierr > 0 )  &
       call shr_sys_abort( sub//' Error: fail to set mask tag ')
 
