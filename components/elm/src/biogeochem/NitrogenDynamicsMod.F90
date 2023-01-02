@@ -175,7 +175,9 @@ contains
     real(r8) :: t                     ! temporary
     real(r8) :: secspyr               ! seconds per yr
     logical  :: do_et_bnf = .false.
-    real(r8),parameter  :: test_mult = 0.5_r8  ! 1.5_r8          ! Test mutliplier of fixation rate
+
+    ! Test mutliplier of fixation rate, leave as 1 to use base rates
+    real(r8),parameter  :: test_mult = 1.0_r8  
 
     !-----------------------------------------------------------------------
 
