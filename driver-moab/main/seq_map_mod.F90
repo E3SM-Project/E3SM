@@ -467,13 +467,13 @@ end subroutine moab_map_init_rcfile
        if ( valid_moab_context ) then
           ! right now, this is used for ice-ocn projection, which involves just a send/recv, usually
          if (seq_comm_iamroot(CPLID)) then
-            write(logunit, *) subname,' iMOAB rearrange mapper before sending ', trim(fldlist_moab)
+            write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' rearrange mapper before sending ', trim(fldlist_moab)
             call shr_sys_flush(logunit)
          endif
          ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
          if (ierr .ne. 0) then
             if (seq_comm_iamroot(CPLID)) then
-               write(logunit, *) subname,' iMOAB mapper error in sending tags ', trim(fldlist_moab)
+               write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' error in sending tags ', trim(fldlist_moab)
                call shr_sys_flush(logunit)
             endif
             valid_moab_context = .false. 
@@ -484,10 +484,11 @@ end subroutine moab_map_init_rcfile
             write(logunit, *) subname,' iMOAB mapper before receiving ', trim(fldlist_moab)
             call shr_sys_flush(logunit)
          endif
-         ! receive in the intx app, because it is redistributed according to coverage (trick)
+         ! receive in the target app
          ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in receiving tags ', trim(fldlist_moab)
+            write(logunit,*) subname,' error in receiving tags iMOAB mapper ', mapper%mbname,  trim(fldlist_moab)
+            call shr_sys_flush(logunit)
             !call shr_sys_abort(subname//' ERROR in receiving tags')
          endif
          ! now free buffers

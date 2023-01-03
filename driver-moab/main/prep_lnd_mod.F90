@@ -342,6 +342,7 @@ contains
                 write(logunit,*) subname,' error in computing comm graph for second hop, atm-lnd'
                 call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, atm-lnd')
               endif
+              mapper_Sa2l%intx_context = lnd(1)%cplcompid
 
             endif ! if tri-grid
 
@@ -350,7 +351,7 @@ contains
             mapper_Fa2l%tgt_mbid = mblxid
             mapper_Fa2l%intx_mbid = mbintxal
             mapper_Fa2l%src_context = lnd(1)%cplcompid
-            mapper_Fa2l%intx_context = idintx
+            mapper_Fa2l%intx_context = mapper_Sa2l%intx_context
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fa2l%weight_identifier = wgtIdef 
             mapper_Fa2l%mbname = 'mapper_Fa2l'

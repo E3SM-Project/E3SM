@@ -598,6 +598,8 @@ contains
                   write(logunit,*) subname,' error in computing comm graph for second hop, lnd-atm'
                   call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, lnd-atm')
                endif
+               ! context for rearrange is target in this case
+               mapper_Fl2a%intx_context = atm(1)%cplcompid
 
             endif ! if tri-grid
             ! we still need to defne seq_flds_l2x_fields on atm cpl mesh
@@ -632,7 +634,7 @@ contains
             mapper_Sl2a%tgt_mbid = mbaxid
             mapper_Sl2a%src_mbid = mbintxla
             mapper_Sl2a%src_context = lnd(1)%cplcompid
-            mapper_Sl2a%intx_context = idintx
+            mapper_Sl2a%intx_context = mapper_Fl2a%intx_context
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Sl2a%weight_identifier = wgtIdef 
             mapper_Sl2a%mbname = 'mapper_Sl2a'
