@@ -4231,8 +4231,6 @@ module ocn_time_integration_si
 
    subroutine ocn_time_integrator_si_variable_destroy()
 
-      integer :: info
-
       if ( config_btr_si_partition_match_mode ) then
          deallocate( globalReprodSum2fld1,  &
                      globalReprodSum2fld2,  &
