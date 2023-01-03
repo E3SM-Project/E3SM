@@ -869,17 +869,19 @@ contains
     if (ierr > 0 )  &
       call shr_sys_abort( sub//' Error: fail to set partition tag ')
 
-    ! mask
-    tagname='mask'//C_NULL_CHAR
-    tagtype = 1 ! dense, double; make mask double too
+  ! set domain tags
+    tagtype = 1 ! dense, double;
+
+    tagname=seq_flds_dom_fields//C_NULL_CHAR
     ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  &
-      call shr_sys_abort( sub//' Error: fail to create new mask tag ')
+      call shr_sys_abort( sub//' Error: fail to create domain tags ')
 
     do n = 1, lsz
        coords(n) = rtmCTL%mask(rtmCTL%begr+n-1)  ! local to global !
     end do
 
+    tagname='mask'//C_NULL_CHAR
     ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsz , ent_type, coords)
     if (ierr > 0 )  &
       call shr_sys_abort( sub//' Error: fail to set mask tag ')
@@ -891,20 +893,12 @@ contains
     end do
 
     tagname='area'//C_NULL_CHAR
-    tagtype = 1 ! dense, double
-    ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
-    if (ierr > 0 )  &
-      call shr_sys_abort(sub//' Error: fail to create area tag ')
 
     ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsz , ent_type, coords)
     if (ierr > 0 )  &
       call shr_sys_abort(sub//' Error: fail to set area tag ')
 
     tagname='aream'//C_NULL_CHAR
-    tagtype = 1 ! dense, double
-    ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
-    if (ierr > 0 )  &
-      call shr_sys_abort(sub//' Error: fail to create aream tag ')
 
     ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, lsz , ent_type, coords)
     if (ierr > 0 )  &
