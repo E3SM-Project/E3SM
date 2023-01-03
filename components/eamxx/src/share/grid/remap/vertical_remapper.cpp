@@ -58,36 +58,6 @@ VerticalRemapper (const grid_ptr_type& src_grid,
   register_vertical_source_field(ilev_prof,"int");
 }
 
-VerticalRemapper::
-~VerticalRemapper ()
-{
-  // Nothing to do
-}
-
-void VerticalRemapper::
-do_print() {
-  // Helper function to print the setup of the vertical remapper:
-  const auto src_grid = get_src_grid();
-  const auto tgt_grid = get_tgt_grid();
-  if (m_comm.am_i_root()) {
-    printf("-------------------------------------\n");
-    printf("  Setup for vertical remapper\n");
-    printf("  ---------------------------\n");
-    // Print the remap layout
-    printf("  Layout of src->tgt:  (%d, %d) -> (%d, %d)\n",src_grid->get_num_global_dofs(),src_grid->get_num_vertical_levels(),
-                  tgt_grid->get_num_global_dofs(),tgt_grid->get_num_vertical_levels());
-    // Print the set of fields to be mapped
-    printf("  ---------------------------\n");
-    printf("  Map pairs for %d fields:\n",m_num_fields);
-    for (int i=0; i<m_num_fields; ++i) {
-      const auto& f_src  = m_src_fields[i];
-      const auto& f_tgt  = m_tgt_fields[i];
-      printf("      %s -> %s\n",f_src.name().c_str(),f_tgt.name());
-    }
-    printf("-------------------------------------\n");
-  }
-}
-
 FieldLayout VerticalRemapper::
 create_src_layout (const FieldLayout& tgt_layout) const
 {
@@ -181,8 +151,8 @@ register_vertical_source_field(const Field& src, const std::string& mode)
       " - field name  : " + name + "\n"
       " - field layout: " + to_string(layout) + "\n");
     EKAT_REQUIRE_MSG(src.is_allocated(), "Error! LEV source field is not yet allocated.\n");
-    src_mid = src;
-    mid_set = true; 
+    m_src_mid = src;
+    m_mid_set = true; 
    } else {  // mode=="int"
     auto layout = src_fid.get_layout();
     auto name   = src_fid.name();
@@ -192,8 +162,8 @@ register_vertical_source_field(const Field& src, const std::string& mode)
       " - field name  : " + name + "\n"
       " - field layout: " + to_string(layout) + "\n");
     EKAT_REQUIRE_MSG(src.is_allocated(), "Error! ILEV source field is not yet allocated.\n");
-    src_int = src;
-    int_set = true; 
+    m_src_int = src;
+    m_int_set = true; 
   }
 }
 
@@ -209,7 +179,7 @@ void VerticalRemapper::
 do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
 {
   auto name = src.name();
-  EKAT_REQUIRE_MSG(src.get_header().get_identifier().get_layout()==src.get_header().get_identifier().get_layout(),"ERROR! vert_remap:do_bind_field:" + name + ", tgt and src do not have the same layout");
+  EKAT_REQUIRE_MSG(src.get_header().get_identifier().get_layout()==tgt.get_header().get_identifier().get_layout(),"ERROR! vert_remap:do_bind_field:" + name + ", tgt and src do not have the same layout");
   EKAT_REQUIRE_MSG (
       src.get_header().get_identifier().get_layout().rank()>1 ||
       src.get_header().get_alloc_properties().get_padding()==0,
@@ -226,9 +196,9 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
 void VerticalRemapper::do_registration_ends ()
 {
   // Check that the vertical profiles for the source data have been set
-  EKAT_REQUIRE_MSG(mid_set,"Error::VerticalRemapper:registration_ends,\n"
+  EKAT_REQUIRE_MSG(m_mid_set,"Error::VerticalRemapper:registration_ends,\n"
     "Field for vertical profile of the source data for layout LEV has not been set.\n");
-  EKAT_REQUIRE_MSG(int_set,"Error::VerticalRemapper:registration_ends,\n"
+  EKAT_REQUIRE_MSG(m_int_set,"Error::VerticalRemapper:registration_ends,\n"
     "Field for vertical profile of the source data for layout ILEV has not been set.\n");
 }
 
@@ -250,9 +220,9 @@ void VerticalRemapper::do_remap_fwd ()
     src_num_levs = layout.dim(src_tag);
     const bool do_remap = ekat::contains(std::vector<FieldTag>{ILEV,LEV},src_tag);
     if (src_tag == ILEV) {
-      src_lev_f = src_int;
+      src_lev_f = m_src_int;
     } else {
-      src_lev_f = src_mid;
+      src_lev_f = m_src_mid;
     }
     auto src_lev  = src_lev_f.get_view<const Pack**>();
     if (do_remap) { 

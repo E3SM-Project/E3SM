@@ -11,10 +11,6 @@
 
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
-#include "ekat/ekat_pack_utils.hpp"
-#include "ekat/ekat_pack_kokkos.hpp"
-
-#include <numeric>
 /*  The AtmosphereOutput class handles an output stream in SCREAM.
  *  Typical usage is to register an AtmosphereOutput object with the OutputManager (see scream_output_manager.hpp
  *

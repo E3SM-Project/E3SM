@@ -400,7 +400,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
 long long AtmosphereOutput::
 res_dep_memory_footprint () const {
   long long rdmf = 0;
-  if (m_horiz_remapper) {
+  if (m_io_field_mgr != m_sim_field_mgr) {
     // The IO is done on a different grid. The FM stored here is
     // not shared with anyone else, so we can safely add its footprint
     for (const auto& it : *m_io_field_mgr) {

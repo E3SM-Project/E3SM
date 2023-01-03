@@ -3,11 +3,6 @@
 
 #include "share/field/field_tag.hpp"
 #include "share/grid/remap/abstract_remapper.hpp"
-#include "share/util/scream_vertical_interpolation.hpp"
-
-#include "scream_config.h"
-
-#include <mpi.h>
 
 namespace scream
 {
@@ -31,7 +26,7 @@ public:
                     const Field& lev_prof,
                     const Field& ilev_prof);
 
-  ~VerticalRemapper ();
+  ~VerticalRemapper () = default;
 
   FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override;
   FieldLayout create_tgt_layout (const FieldLayout& src_layout) const override;
@@ -126,10 +121,10 @@ protected:
   int                   m_num_remap_levs;
   view_1d<Pack>         m_remap_pres_view;
   Real                  m_mask_val;
-  Field                 src_mid;  // Src vertical profile for LEV layouts
-  Field                 src_int;  // Src vertical profile for ILEV layouts
-  bool                  mid_set = false;
-  bool                  int_set = false;
+  Field                 m_src_mid;  // Src vertical profile for LEV layouts
+  Field                 m_src_int;  // Src vertical profile for ILEV layouts
+  bool                  m_mid_set = false;
+  bool                  m_int_set = false;
 };
 
 } // namespace scream
