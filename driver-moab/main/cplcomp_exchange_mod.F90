@@ -993,7 +993,7 @@ contains
       use iMOAB, only: iMOAB_RegisterApplication, iMOAB_ReceiveMesh, iMOAB_SendMesh, &
       iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, &
       iMOAB_SetIntTagStorage, iMOAB_FreeSenderBuffers, iMOAB_ComputeCommGraph
-      use component_mod,      only: component_exch_moab
+      ! use component_mod,      only: component_exch_moab
       !
       type(component_type), intent(inout) :: comp
       !
@@ -1161,10 +1161,10 @@ contains
          endif
 
          ! send aream values from component to coupler
-         tagname = 'aream'
-         if (MPI_COMM_NULL /= mpicom_join ) then !  we are on the joint pes
-           call component_exch_moab(comp, mphaid, mbaxid, 0, tagname)
-         endif
+         ! tagname = 'aream'
+         ! if (MPI_COMM_NULL /= mpicom_join ) then !  we are on the joint pes
+         !   call component_exch_moab(comp, mphaid, mbaxid, 0, tagname)
+         ! endif
 
 #ifdef MOABDEBUG
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
