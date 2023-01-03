@@ -162,6 +162,8 @@ cat << EOF >> user_nl_eam
  zmconv_clos_dyn_adj=.true.
  ! Run with MCSP
  zmconv_MCSP_heat_coeff=0.3
+ ! Turn on tpert fix
+ zmconv_tpert_fix = .true.
 
  ! Tunings
  zmconv_ke=2.5e-6
