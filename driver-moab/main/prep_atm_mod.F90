@@ -632,7 +632,7 @@ contains
          if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
             mapper_Sl2a%src_mbid = mblxid
             mapper_Sl2a%tgt_mbid = mbaxid
-            mapper_Sl2a%src_mbid = mbintxla
+            mapper_Sl2a%intx_mbid = mbintxla
             mapper_Sl2a%src_context = lnd(1)%cplcompid
             mapper_Sl2a%intx_context = mapper_Fl2a%intx_context
             wgtIdef = 'scalar'//C_NULL_CHAR
