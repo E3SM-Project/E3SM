@@ -239,7 +239,7 @@ contains
             mapper_Sa2l%src_mbid = mbaxid
             mapper_Sa2l%tgt_mbid = mblxid
             mapper_Sa2l%intx_mbid = mbintxal
-            mapper_Sa2l%src_context = lnd(1)%cplcompid
+            mapper_Sa2l%src_context = atm(1)%cplcompid
             mapper_Sa2l%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Sa2l%weight_identifier = wgtIdef 
@@ -350,7 +350,7 @@ contains
             mapper_Fa2l%src_mbid = mbaxid
             mapper_Fa2l%tgt_mbid = mblxid
             mapper_Fa2l%intx_mbid = mbintxal
-            mapper_Fa2l%src_context = lnd(1)%cplcompid
+            mapper_Fa2l%src_context = atm(1)%cplcompid
             mapper_Fa2l%intx_context = mapper_Sa2l%intx_context
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fa2l%weight_identifier = wgtIdef 
