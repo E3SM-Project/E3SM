@@ -854,7 +854,6 @@ contains
         if (ierr > 0 )  &
             call endrun('Error: fail to create MOAB vertices in land model')
 
-
         mbtype = 2 ! triangle
         if (ldomain%nv .eq. 4) mbtype = 3 ! quad
         if (ldomain%nv .gt. 4) mbtype = 4 ! polygon
@@ -1028,6 +1027,29 @@ contains
         if (ierr > 0 )  &
           call endrun('Error: fail to set aream tag ')
     endif
+    ! add more domain fields that are missing from domain fields: lat, lon, mask, hgt
+    tagname = 'lat:lon:mask:hgt'//C_NULL_CHAR
+    tagtype = 1 ! dense, double
+    numco = 1
+    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create lat:lon:mask:hgt tags ')
+ ! moab_vert_coords is big enough in both case to hold enough data for us: lat, lon, mask
+    do i = 1, lsz
+      n = i-1 + bounds%begg
+      moab_vert_coords(i) = ldomain%latc(n)  ! lat
+      moab_vert_coords(lsz + i) = ldomain%lonc(n) ! lon
+      moab_vert_coords(2*lsz + i) = ldomain%mask(n) ! mask
+    enddo
+    tagname = 'lat:lon:mask'//C_NULL_CHAR
+
+    ent_type = 0 ! point cloud usually
+    if (ldomain%nv .ge. 3 .and.  .not.samegrid_al) then
+      ent_type = 1 ! cell in tri-grid case
+    endif
+    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz*3 , ent_type, moab_vert_coords)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set lat lon mask tag ')
     deallocate(moab_vert_coords)
     deallocate(vgids)
 #ifdef MOABDEBUG
