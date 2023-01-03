@@ -21,18 +21,23 @@ endif()
 if (SCREAM_ENABLE_MAM4)
   # We use CMake's ExternalProject capability to build and install Haero.
   include(ExternalProject)
+
+  # Build and install the Haero aerosol package interface.
   if (SCREAM_DOUBLE_PRECISION)
     set(HAERO_PRECISION "double")
   else()
     set(HAERO_PRECISION "single")
   endif()
+  set(HAERO_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/externals/haero")
   set(HAERO_CMAKE_OPTS
-    -DHAERO_ENABLE_GPU=${Kokkos_ENAVBLE_CUDA}
+    -DCMAKE_INSTALL_PREFIX=${HAERO_INSTALL_PREFIX}
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
+    -DHAERO_ENABLE_GPU=${Kokkos_ENABLE_CUDA}
     -DHAERO_ENABLE_MPI=ON
     -DHAERO_PRECISION=${HAERO_PRECISION}
     -DEKAT_INCLUDE_DIR=${PROJECT_BINARY_DIR}../../../externals/ekat/src
     -DEKAT_LIBRARY=${PROJECT_BINARY_DIR}/../../../externals/ekat/src/libekat.a)
-
   ExternalProject_Add(haero_proj
                       PREFIX ${PROJECT_BINARY_DIR}/externals/haero
                       SOURCE_DIR ../../../externals/haero
@@ -43,5 +48,33 @@ if (SCREAM_ENABLE_MAM4)
                       BUILD_COMMAND ${MAKE} -j
                       LOG_BUILD TRUE
                       INSTALL_COMMAND ${MAKE} install
-                      LOG_INSTALL TRUE
+                      LOG_INSTALL TRUE)
+
+  # Bring in Haero-related targets by including the generated haero.cmake
+  list(APPEND CMAKE_MODULE_PATH ${HAERO_INSTALL_PREFIX}/share)
+  include(haero)
+
+  # Build and install MAM4xx.
+  set(MAM4XX_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/externals/mam4xx")
+  set(MAM4XX_CMAKE_OPTS
+    -DCMAKE_INSTALL_PREFIX=${MAM4XX_INSTALL_PREFIX}
+    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
+    -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
+    -DMAM4XX_HAERO_DIR=${HAERO_INSTALL_PREFIX})
+  ExternalProject_Add(mam4xx_proj
+                      PREFIX ${PROJECT_BINARY_DIR}/externals/mam4xx
+                      SOURCE_DIR ../../../externals/mam4xx
+                      BINARY_DIR ${PROJECT_BINARY_DIR}/externals/mam4xx
+                      CMAKE_ARGS ${MAM4XX_CMAKE_OPTS}
+                      DEPENDS haero
+                      LOG_CONFIGURE TRUE
+                      BUILD_COMMAND ${MAKE} -j
+                      LOG_BUILD TRUE
+                      INSTALL_COMMAND ${MAKE} install
+                      LOG_INSTALL TRUE)
+
+  # Bring in MAM4xx-related targets by including the generated mam4xx.cmake
+#  list(APPEND CMAKE_MODULE_PATH ${MAM4XX_INSTALL_PREFIX}/share)
+#  include(mam4xx)
+
 endif()
