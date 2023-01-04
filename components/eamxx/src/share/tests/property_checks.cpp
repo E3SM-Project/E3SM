@@ -206,8 +206,8 @@ TEST_CASE("property_checks", "") {
     res_and_msg = interval_check->check();
     REQUIRE(res_and_msg.result==CheckResult::Pass);
 
-    // Re-assign an out-of-bounds value to the field, but only in the upper-bound.  Check if it
-    // fails and reports just the max fail.
+    // Re-assign an out-of-bounds value to the field, but only in the lower-bound.  Check if it
+    // fails and reports just the min fail.
     std::vector<int> exp_fail_loc = {0,0,1};
     f_data[1] = -2;
     f.sync_to_dev();
