@@ -33,11 +33,10 @@ void RefStates::init(const int num_elems) {
   m_tu     = TeamUtils<ExecSpace>(m_policy);
 }
 
-void RefStates::compute(const bool hydrostatic,
-                        const HybridVCoord& hvcoord,
+void RefStates::compute(const HybridVCoord& hvcoord,
                         const ExecViewUnmanaged<Real *[NP][NP]>& phis) {
   EquationOfState eos;
-  eos.init(hydrostatic,hvcoord);
+  eos.init(true,hvcoord); // hydrostatic boolean is not relevant for these computations
 
   ElementOps elem_ops;
   elem_ops.init(hvcoord);
@@ -77,9 +76,7 @@ void RefStates::compute(const bool hydrostatic,
       hvcoord.compute_dp_ref(kv,ps_ref,dpRef);
 
       // Step 2: compute p_ref = p(p_i(dp))
-      p_i(0)[0] = hvcoord.hybrid_ai0*hvcoord.ps0;
-      ColumnOps::column_scan_mid_to_int<true>(kv,dpRef,p_i);
-      ColumnOps::compute_midpoint_values(kv,p_i,p);
+      elem_ops.compute_hydrostatic_p(kv,dpRef,p_i,p);
 
       // Step 3: compute theta_ref = theta(exner(p_ref))
       elem_ops.compute_theta_ref(kv,p,thetaRef);
@@ -345,7 +342,7 @@ void ElementsState::push_to_f90_pointers (F90Ptr& state_v, F90Ptr& state_w_i, F9
 static bool all_good_elems (const ElementsState& s, const int tlvl) {
   using Kokkos::ALL;
   using Kokkos::parallel_for;
-  
+
   const int nelem = s.num_elems();
   const int nplev = NUM_PHYSICAL_LEV;
 
@@ -378,14 +375,14 @@ static bool all_good_elems (const ElementsState& s, const int tlvl) {
   };
   int nerr;
   parallel_reduce(get_default_team_policy<ExecSpace>(nelem), check, nerr);
-  
+
   return nerr == 0;
 }
 
 void check_print_abort_on_bad_elems (const std::string& label, const int tlvl,
                                      const int error_code) {
   const auto& s = Context::singleton().get<ElementsState>();
-  
+
   // On device and, thus, efficient.
   if (all_good_elems(s, tlvl)) return;
 

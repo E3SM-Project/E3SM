@@ -90,7 +90,7 @@ TEST_CASE("elem_ops", "elem_ops") {
       const Real* Q_ptr = Q_f90.data();
       Real* R_ptr = R_f90.data();
       compute_r_star_f90(num_elems,moist,Q_ptr,R_ptr);
-    
+
       // Compare answers
       auto R_cxx = Kokkos::create_mirror_view(dp_cxx);
       Kokkos::deep_copy(R_cxx,dp_cxx);
@@ -133,10 +133,7 @@ TEST_CASE("elem_ops", "elem_ops") {
         auto dp  = Homme::subview(dp_cxx,kv.ie,igp,jgp);
         auto p   = Homme::subview(p_cxx,kv.ie,igp,jgp);
         auto p_i = Homme::subview(p_i_cxx,kv.ie,igp,jgp);
-        p_i(0)[0] = hvcoord.hybrid_ai0*hvcoord.ps0;
-
-        ColumnOps::column_scan_mid_to_int<true>(kv,dp,p_i);
-        ColumnOps::compute_midpoint_values(kv,p_i,p);
+        elem_ops.compute_hydrostatic_p(kv,dp,p_i,p);
 
         auto theta = Homme::subview(theta_ref_cxx,kv.ie,igp,jgp);
         elem_ops.compute_theta_ref(kv,p,theta);

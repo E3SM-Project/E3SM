@@ -148,7 +148,7 @@ TEST_CASE("hvf", "biharmonic") {
   params.nu_div            = RPDF(1e-6,1e-3)(engine);
   params.hypervis_scaling  = RPDF(0.1,1.0)(engine);
   params.hypervis_subcycle = IPDF(1,3)(engine);
-  params.hypervis_subcycle_tom = 0; 
+  params.hypervis_subcycle_tom = 0;
   params.params_set = true;
 
   // Sync params across ranks
@@ -422,23 +422,25 @@ TEST_CASE("hvf", "biharmonic") {
 
   SECTION ("hypervis") {
     std::cout << "Hypervis test:\n";
+
+    // Compute ref states. These are not dependent
+    // on choice for hydrostatic mode or hv_scaling.
+    state.m_ref_states.compute(hvcoord,geo.m_phis);
+
+    HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]> dp_ref_f90("",num_elems);
+    HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]> theta_ref_f90("",num_elems);
+    HostViewManaged<Real*[NUM_INTERFACE_LEV][NP][NP]> phi_ref_f90("",num_elems);
+
+    sync_to_host(state.m_ref_states.dp_ref,dp_ref_f90);
+    sync_to_host(state.m_ref_states.theta_ref,theta_ref_f90);
+    sync_to_host(state.m_ref_states.phi_i_ref,phi_ref_f90);
+
+    const Real* dp_ref_ptr    = dp_ref_f90.data();
+    const Real* theta_ref_ptr = theta_ref_f90.data();
+    const Real* phi_ref_ptr   = phi_ref_f90.data();
+
     for (const bool hydrostatic : {true, false}) {
       std::cout << " -> " << (hydrostatic ? "hydrostatic" : "non-hydrostatic") << "\n";
-
-      // Compute ref states, given the choice for hydrostatic mode
-      state.m_ref_states.compute(hydrostatic,hvcoord,geo.m_phis);
-
-      HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]> dp_ref_f90("",num_elems);
-      HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]> theta_ref_f90("",num_elems);
-      HostViewManaged<Real*[NUM_INTERFACE_LEV][NP][NP]> phi_ref_f90("",num_elems);
-
-      sync_to_host(state.m_ref_states.dp_ref,dp_ref_f90);
-      sync_to_host(state.m_ref_states.theta_ref,theta_ref_f90);
-      sync_to_host(state.m_ref_states.phi_i_ref,phi_ref_f90);
-
-      const Real* dp_ref_ptr    = dp_ref_f90.data();
-      const Real* theta_ref_ptr = theta_ref_f90.data();
-      const Real* phi_ref_ptr   = phi_ref_f90.data();
 
       for (Real hv_scaling : {0.0, 1.2345}) {
         std::cout << "   -> hypervis scaling = " << hv_scaling << "\n";
@@ -464,7 +466,6 @@ TEST_CASE("hvf", "biharmonic") {
 
         // Generate random states
         state.randomize(seed);
-        state.m_ref_states.compute(hydrostatic,hvcoord,geo.m_phis);
 
         // The HV functor as a whole is more delicate than biharmonic_wk.
         // In particular, the EOS is used a couple of times. This means

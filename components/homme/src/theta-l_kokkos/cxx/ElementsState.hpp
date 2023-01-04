@@ -27,7 +27,7 @@ struct RefStates {
   {}
 
   void init (const int num_elems);
-  void compute (const bool hydrostatic,const HybridVCoord& hvcoord,
+  void compute (const HybridVCoord& hvcoord,
                 const ExecViewUnmanaged<Real *[NP][NP]>& phis);
 
   int num_elems () const { return m_num_elems; }
