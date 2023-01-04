@@ -10,13 +10,6 @@ namespace scream
 {
 
 /* ---------------------------------------------------------- */
-
-AtmosphereInput::AtmosphereInput ()
-{
-
-}
-
-
 AtmosphereInput::
 AtmosphereInput (const ekat::Comm& comm,
                  const ekat::ParameterList& params)
