@@ -179,7 +179,10 @@ void VerticalRemapper::
 do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
 {
   auto name = src.name();
-  EKAT_REQUIRE_MSG(src.get_header().get_identifier().get_layout()==tgt.get_header().get_identifier().get_layout(),"ERROR! vert_remap:do_bind_field:" + name + ", tgt and src do not have the same layout");
+  EKAT_REQUIRE_MSG(src.get_header().get_identifier().get_layout().rank()==tgt.get_header().get_identifier().get_layout().rank(),
+      "ERROR! vert_remap:do_bind_field:" + name + ", tgt and src do not have the same rank");
+  EKAT_REQUIRE_MSG(src.get_header().get_identifier().get_layout().tags()==tgt.get_header().get_identifier().get_layout().tags(),
+      "ERROR! vert_remap:do_bind_field:" + name + ", tgt and src do not have the same set of field tags");
   EKAT_REQUIRE_MSG (
       src.get_header().get_identifier().get_layout().rank()>1 ||
       src.get_header().get_alloc_properties().get_padding()==0,
