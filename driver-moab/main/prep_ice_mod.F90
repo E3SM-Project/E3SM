@@ -8,6 +8,11 @@ module prep_ice_mod
   use seq_comm_mct    , only: num_inst_ice, num_inst_frc, num_inst_rof
   use seq_comm_mct    , only: CPLID, ICEID, logunit
   use seq_comm_mct    , only: seq_comm_getData=>seq_comm_setptrs
+  use seq_comm_mct,     only: mboxid ! iMOAB id for mpas ocean migrated mesh to coupler pes
+  use seq_comm_mct,     only : mbixid   ! iMOAB for sea-ice migrated to coupler
+
+  use seq_comm_mct,     only : seq_comm_getinfo => seq_comm_setptrs
+
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
   use seq_map_type_mod
   use seq_map_mod
@@ -17,6 +22,7 @@ module prep_ice_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: ice, atm, ocn, glc, rof
+  use iso_c_binding
 
   implicit none
   save
@@ -78,6 +84,8 @@ contains
 
   subroutine prep_ice_init(infodata, ocn_c2_ice, glc_c2_ice, glcshelf_c2_ice, rof_c2_ice)
 
+    use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
+      iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -105,6 +113,20 @@ contains
     type(mct_avect), pointer         :: i2x_ix
     character(*), parameter          :: subname = '(prep_ice_init)'
     character(*), parameter          :: F00 = "('"//subname//" : ', 4A )"
+!MOAB stuff
+    ! MOAB stuff
+    integer                  :: ierr, idintx, rank
+    character*32             :: appname, outfile, wopts, lnum
+    character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdef
+    integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
+    integer                  :: fNoBubble, monotonicity
+! will do comm graph over coupler PES, in 2-hop strategy
+    integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
+
+    integer                  :: type1, type2 ! type for computing graph; should be the same type for ocean, 3 (FV)
+    integer                  :: tagtype, numco, tagindex
+    character(CXX)           :: tagName
+
     !---------------------------------------------------------------
 
     call seq_infodata_getData(infodata, &
@@ -161,6 +183,47 @@ contains
              write(logunit,F00) 'Initializing mapper_SFo2i'
           end if
           call seq_map_init_rearrolap(mapper_SFo2i, ocn(1), ice(1), 'mapper_SFo2i')
+
+#ifdef HAVE_MOAB
+          if ( (mbixid .ge. 0) .and. (mboxid .ge. 0)) then
+            ! moab also will do just a rearrange, hopefully, in this case, based on the comm graph
+            !   that is computed here
+            call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
+
+            type1 = 3
+            type2 = 3 ! fv-fv graph
+   ! imoab compute comm graph ice-ocn, based on the same global id
+   ! it will be a simple migrate from ice mesh directly to ocean, using the comm graph computed here
+   ! TODO: find if CommGraph already exists.
+
+            ierr = iMOAB_ComputeCommGraph( mboxid, mbixid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, &
+               type1, type2, ocn(1)%cplcompid, ice(1)%cplcompid)
+            if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in computing graph ocn - ice x '
+                  call shr_sys_abort(subname//' ERROR  in computing graph ocn -ice x ')
+            endif
+
+               ! define tags according to the seq_flds_i2x_fields
+            tagtype = 1  ! dense, double
+            numco = 1 !  one value per cell / entity
+            tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
+            ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+            if ( ierr == 1 ) then
+               call shr_sys_abort( subname//' ERROR: cannot define tags for ice proj to ocn' )
+            end if
+            mapper_SFo2i%src_mbid = mboxid
+            mapper_SFo2i%tgt_mbid = mbixid
+            ! no intersection, so willihave to do without it
+            mapper_SFo2i%src_context = ocn(1)%cplcompid
+            mapper_SFo2i%intx_context = ice(1)%cplcompid
+            mapper_SFo2i%mbname = 'mapper_SFo2i'
+
+            if(mapper_SFo2i%copy_only) then
+               call seq_map_set_type(mapper_SFo2i, mboxid, 1) ! type is cells
+            endif
+
+         endif
+#endif
        endif
 
        if (glc_c2_ice) then
