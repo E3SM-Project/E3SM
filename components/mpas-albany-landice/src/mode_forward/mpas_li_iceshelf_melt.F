@@ -1463,12 +1463,15 @@ module li_iceshelf_melt
                      do while ( (zOcean(kk) >= bedTopography(iCell)) .and. (kk < nISMIP6OceanLayers) )
                         kk = kk + 1
                      enddo
-                     ! Calculate thermal forcing at ocean floor, using deepest ocean layer above seafloor.
                      ! If bed is shallower than first layer, use TF from the first layer.
+                     ! If bed is deeper than the bottomg ocean layer, use TF from the bottom layer.
                      if ( (kk == 1) .or. ( (kk == nISMIP6OceanLayers) .and. (zOcean(kk) >= bedTopography(iCell)) ) ) then
                         TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell) + ismip6shelfMelt_deltaT(iCell)
+                     ! For all other bed depths, interpolate linearly between layers above and below bed depth.
                      else
-                        TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk-1, iCell) + ismip6shelfMelt_deltaT(iCell)
+                        TFocean(iCell) = ( (zOcean(kk-1) - bedTopography(iCell)) * ismip6shelfMelt_3dThermalForcing(kk, iCell) + &
+                                           (bedTopography(iCell) - zOcean(kk)) * ismip6shelfMelt_3dThermalForcing(kk-1, iCell) ) / &
+                                           (zOcean(kk-1) - zOcean(kk)) + ismip6shelfMelt_deltaT(iCell)
                      endif
                endif
             end do
