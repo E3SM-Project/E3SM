@@ -1757,6 +1757,9 @@ contains
     domain_check = .true.
     if (single_column         ) domain_check = .false.
     if (dead_comps            ) domain_check = .false.
+#ifdef HAVE_MOAB
+    domain_check = .false.
+#endif
 
     ! set skip_ocean_run flag, used primarily for ocn run on first timestep
     ! use reading a restart as a surrogate from whether this is a startup run
@@ -1986,6 +1989,11 @@ contains
        call t_adj_detailf(+2)
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+       if (iamroot_CPLID) then
+          write(logunit,*) ' '
+          write(logunit,F00) 'Updating aream'
+          call shr_sys_flush(logunit)
+       endif
 
        call component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, &
             samegrid_ro, samegrid_lg)
@@ -2047,6 +2055,11 @@ contains
 
     call t_startf ('CPL:init_areacor')
     call t_adj_detailf(+2)
+    if (iamroot_CPLID) then
+       write(logunit,*) ' '
+       write(logunit,F00) 'Calculating area corrections, sending initial data'
+       call shr_sys_flush(logunit)
+    endif
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (atm_present) call component_init_areacor(atm, areafact_samegrid, seq_flds_a2x_fluxes)
