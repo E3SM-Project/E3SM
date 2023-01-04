@@ -1465,7 +1465,7 @@ module li_iceshelf_melt
                      enddo
                      ! Calculate thermal forcing at ocean floor, using deepest ocean layer above seafloor.
                      ! If bed is shallower than first layer, use TF from the first layer.
-                     if ( (kk == 1) .or. (kk == nISMIP6OceanLayers) ) then
+                     if ( (kk == 1) .or. ( (kk == nISMIP6OceanLayers) .and. (zOcean(kk) >= bedTopography(iCell)) ) ) then
                         TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk, iCell) + ismip6shelfMelt_deltaT(iCell)
                      else
                         TFocean(iCell) = ismip6shelfMelt_3dThermalForcing(kk-1, iCell) + ismip6shelfMelt_deltaT(iCell)
