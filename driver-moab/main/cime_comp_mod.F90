@@ -1393,8 +1393,9 @@ contains
   !===============================================================================
 
   subroutine cime_init()
-    use seq_flds_mod , only : seq_flds_x2a_fields, seq_flds_a2x_fields
-    use seq_comm_mct , only :  mphaid, mbaxid !
+    use seq_flds_mod , only : seq_flds_x2a_fields, seq_flds_a2x_fields, seq_flds_l2x_fields, &
+     seq_flds_o2x_fields, seq_flds_r2x_fields, seq_flds_i2x_fields
+    use seq_comm_mct , only :  mphaid, mbaxid, mlnid, mblxid,  mrofid, mbrxid, mpoid, mboxid,  mpsiid, mbixid
 #ifdef MOABDEBUG
     real(r8) :: difference
     character(20) :: mct_field, tagname
@@ -2063,18 +2064,24 @@ contains
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (atm_present) call component_init_areacor(atm, areafact_samegrid, seq_flds_a2x_fluxes)
+    ! send initial data to coupler
+    if (atm_present) call component_exch_moab(atm(1), mphaid, mbaxid, 0, seq_flds_a2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (lnd_present) call component_init_areacor(lnd, areafact_samegrid, seq_flds_l2x_fluxes)
+    if (lnd_present) call component_exch_moab(lnd(1), mlnid, mblxid, 0, seq_flds_l2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (rof_present) call component_init_areacor(rof, areafact_samegrid, seq_flds_r2x_fluxes)
+    if (rof_present) call component_exch_moab(rof(1), mrofid, mbrxid, 0, seq_flds_r2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (ocn_present) call component_init_areacor(ocn, areafact_samegrid, seq_flds_o2x_fluxes)
+    if (ocn_present) call component_exch_moab(ocn(1), mpoid, mboxid, 0, seq_flds_o2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (ice_present) call component_init_areacor(ice, areafact_samegrid, seq_flds_i2x_fluxes)
+    if (ice_present) call component_exch_moab(ice(1), mpsiid, mbixid, 0, seq_flds_i2x_fields) 
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (glc_present) call component_init_areacor(glc, areafact_samegrid, seq_flds_g2x_fluxes)

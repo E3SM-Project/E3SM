@@ -478,8 +478,8 @@ contains
             mapper_Sa2o%weight_identifier = wgtIdef  
             mapper_Sa2o%mbname = 'mapper_Sa2o'
 
-            mapper_Va2o%src_mbid = mbaxid
-            mapper_Va2o%tgt_mbid = mboxid
+            !mapper_Va2o%src_mbid = mbaxid
+            !mapper_Va2o%tgt_mbid = mboxid
             mapper_Va2o%intx_mbid = mbintxao 
             mapper_Va2o%src_context = atm(1)%cplcompid
             mapper_Va2o%intx_context = idintx
