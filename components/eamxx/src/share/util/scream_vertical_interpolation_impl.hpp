@@ -56,17 +56,9 @@ void perform_vertical_interpolation(
   const int nlevs_src,
   const int nlevs_tgt)
 {
-  if (x_tgt.Rank == 1){
-    const view_2d<Mask<N>> mask("",x_src.extent(0),x_tgt.extent(0));
-    perform_vertical_interpolation_impl_2d(x_src, x_tgt, input, output, mask,
-                                           nlevs_src, nlevs_tgt, masked_val);
-  }
-  if (x_tgt.Rank == 2){
-    const view_2d<Mask<N>> mask("",x_src.extent(0),x_tgt.extent(1));
-    perform_vertical_interpolation_impl_2d(x_src, x_tgt, input, output, mask,
-                                           nlevs_src, nlevs_tgt, masked_val);
-  }
-
+  const view_2d<Mask<N>> mask("",x_src.extent(0),x_tgt.extent(0));
+  perform_vertical_interpolation_impl_2d(x_src, x_tgt, input, output, mask,
+                                         nlevs_src, nlevs_tgt, masked_val);
 }
 
 template<typename Src, typename Tgt, typename Input, typename T, int N> 
@@ -83,14 +75,12 @@ void perform_vertical_interpolation_impl_2d(
   const int ncols = x_src.extent(0);
   //Do a bunch of checks to make sure that Pack<T,N>s are consistent
   auto npacks_tgt = ekat::PackInfo<Pack<T,N>::n>::num_packs(nlevs_tgt);
-  const int tgt_rank = x_tgt.Rank;
   EKAT_REQUIRE(x_src.extent(0)==input.extent(0));
   EKAT_REQUIRE(x_src.extent(1)==input.extent(1));
   EKAT_REQUIRE(x_src.extent_int(1)*N >= nlevs_src);
-  if (x_tgt.Rank == 1){
-    EKAT_REQUIRE(x_tgt.extent(0)==output.extent(1));
-    EKAT_REQUIRE(x_tgt.extent_int(0)==npacks_tgt);
-  }
+  EKAT_REQUIRE(x_tgt.extent(0)==output.extent(1));
+  EKAT_REQUIRE(x_tgt.extent_int(0)==npacks_tgt);
+  
   LIV<T,N> vert_interp(ncols,nlevs_src,nlevs_tgt);
 
   const int num_vert_packs = x_tgt.extent(0);
@@ -103,36 +93,16 @@ void perform_vertical_interpolation_impl_2d(
     auto in=ekat::subview(input, icol);
     auto out=ekat::subview(output, icol);
     auto msk=ekat::subview(mask, icol);
-    //auto x_out=x_tgt;
-    auto x_out=ekat::subview(x_tgt, icol);
-    //Src x_out = x_tgt.Rank == 1 ? x_tgt : ekat::subview(x_tgt,icol);
-    /*
-    view_1d<Pack<T,N>> x_out("",num_vert_packs);
-    if (tgt_rank==1) {
-      Kokkos::deep_copy(x_out,x_tgt);
-    }
-    else {
-      auto tmp = ekat::subview(x_tgt,icol);
-      Kokkos::deep_copy(x_out,tmp);
-    }
-    */
-    /*
-    if (x_tgt.Rank == 1){
-      auto x_out=x_tgt;
-    }
-    if (x_tgt.Rank == 2){
-      auto x_out=ekat::subview(x_tgt, icol);
-    }
-    */
-    vert_interp.setup(team, x1, x_out);
-    vert_interp.lin_interp(team, x1, x_out, in, out, icol);
+    
+    vert_interp.setup(team, x1, x_tgt);
+    vert_interp.lin_interp(team, x1, x_tgt, in, out, icol);
     const auto x_src_s = ekat::scalarize(x1);
-    const auto x_tgt_s = ekat::scalarize(x_out);
-    const auto range = Kokkos::TeamThreadRange(team, x_out.extent(0));
+    const auto x_tgt_s = ekat::scalarize(x_tgt);
+    const auto range = Kokkos::TeamThreadRange(team, x_tgt.extent(0));
     //Mask out values above (below) maximum (minimum) source grid
     Kokkos::parallel_for(range, [&] (const Int & k) {
-      const auto above_max = x_out[k] > x_src_s[nlevs_src-1];
-      const auto below_min = x_out[k] < x_src_s[0];
+      const auto above_max = x_tgt[k] > x_src_s[nlevs_src-1];
+      const auto below_min = x_tgt[k] < x_src_s[0];
       const auto combined_m = above_max || below_min;
       msk(k) = combined_m;
       out(k).set(combined_m,msk_val);
