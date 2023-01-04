@@ -36,23 +36,19 @@ if (SCREAM_ENABLE_MAM4)
     -DHAERO_ENABLE_GPU=${Kokkos_ENABLE_CUDA}
     -DHAERO_ENABLE_MPI=ON
     -DHAERO_PRECISION=${HAERO_PRECISION}
-    -DEKAT_INCLUDE_DIR=${PROJECT_BINARY_DIR}../../../externals/ekat/src
-    -DEKAT_LIBRARY=${PROJECT_BINARY_DIR}/../../../externals/ekat/src/libekat.a)
+    -DEKAT_INCLUDE_DIR=${PROJECT_BINARY_DIR}/../../../externals/ekat/src
+    -DEKAT_LIBRARY=${PROJECT_BINARY_DIR}/externals/ekat/src/ekat/libekat.a)
   ExternalProject_Add(haero_proj
                       PREFIX ${PROJECT_BINARY_DIR}/externals/haero
-                      SOURCE_DIR ../../../externals/haero
+                      SOURCE_DIR ../../../../externals/haero
                       BINARY_DIR ${PROJECT_BINARY_DIR}/externals/haero
                       CMAKE_ARGS ${HAERO_CMAKE_OPTS}
                       DEPENDS ekat
                       LOG_CONFIGURE TRUE
-                      BUILD_COMMAND ${MAKE} -j
+                      BUILD_COMMAND make -j
                       LOG_BUILD TRUE
-                      INSTALL_COMMAND ${MAKE} install
+                      INSTALL_COMMAND make install
                       LOG_INSTALL TRUE)
-
-  # Bring in Haero-related targets by including the generated haero.cmake
-  list(APPEND CMAKE_MODULE_PATH ${HAERO_INSTALL_PREFIX}/share)
-  include(haero)
 
   # Build and install MAM4xx.
   set(MAM4XX_INSTALL_PREFIX "${PROJECT_BINARY_DIR}/externals/mam4xx")
@@ -63,18 +59,18 @@ if (SCREAM_ENABLE_MAM4)
     -DMAM4XX_HAERO_DIR=${HAERO_INSTALL_PREFIX})
   ExternalProject_Add(mam4xx_proj
                       PREFIX ${PROJECT_BINARY_DIR}/externals/mam4xx
-                      SOURCE_DIR ../../../externals/mam4xx
+                      SOURCE_DIR ../../../../externals/mam4xx
                       BINARY_DIR ${PROJECT_BINARY_DIR}/externals/mam4xx
                       CMAKE_ARGS ${MAM4XX_CMAKE_OPTS}
-                      DEPENDS haero
+                      DEPENDS haero_proj
                       LOG_CONFIGURE TRUE
-                      BUILD_COMMAND ${MAKE} -j
+                      BUILD_COMMAND make -j
                       LOG_BUILD TRUE
-                      INSTALL_COMMAND ${MAKE} install
+                      INSTALL_COMMAND make install
                       LOG_INSTALL TRUE)
 
   # Bring in MAM4xx-related targets by including the generated mam4xx.cmake
-#  list(APPEND CMAKE_MODULE_PATH ${MAM4XX_INSTALL_PREFIX}/share)
-#  include(mam4xx)
+  #  list(APPEND CMAKE_MODULE_PATH ${MAM4XX_INSTALL_PREFIX}/share)
+  #  include(mam4xx)
 
 endif()
