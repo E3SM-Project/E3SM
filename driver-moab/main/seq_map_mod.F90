@@ -463,11 +463,10 @@ end subroutine moab_map_init_rcfile
          endif
          ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
          if (ierr .ne. 0) then
-            if (seq_comm_iamroot(CPLID)) then
-               write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' error in sending tags ', trim(fldlist_moab)
-               call shr_sys_flush(logunit)
-            endif
-            valid_moab_context = .false.
+            write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' error in sending tags ', trim(fldlist_moab)
+            call shr_sys_flush(logunit)
+            call shr_sys_abort(subname//' ERROR in sending tags')
+            !valid_moab_context = .false.
          endif
        endif
        if ( valid_moab_context ) then
@@ -480,7 +479,7 @@ end subroutine moab_map_init_rcfile
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in receiving tags iMOAB mapper ', mapper%mbname,  trim(fldlist_moab)
             call shr_sys_flush(logunit)
-            !call shr_sys_abort(subname//' ERROR in receiving tags')
+            call shr_sys_abort(subname//' ERROR in receiving tags')
          endif
          ! now free buffers
          ierr = iMOAB_FreeSenderBuffers( mapper%src_mbid, mapper%intx_context )
@@ -498,17 +497,14 @@ end subroutine moab_map_init_rcfile
          ! first have to do the second hop, iMOAB_ComputeCommGraph( src_mbid, intx_mbid,
          ! wgtIdef = 'scalar'//C_NULL_CHAR
          !
-         if (seq_comm_iamroot(CPLID)) then
-            write(logunit, *) subname,' iMOAB mapper before sending ', trim(fldlist_moab)
-            call shr_sys_flush(logunit)
-         endif
+         write(logunit, *) subname,' iMOAB real mapper before sending ', trim(fldlist_moab)
+         call shr_sys_flush(logunit)
          ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
          if (ierr .ne. 0) then
-            if (seq_comm_iamroot(CPLID)) then
-               write(logunit, *) subname,' iMOAB mapper error in sending tags ', mapper%mbname,  trim(fldlist_moab)
-               call shr_sys_flush(logunit)
-            endif
-            valid_moab_context = .false.
+            write(logunit, *) subname,' iMOAB mapper error in sending tags ', mapper%mbname,  trim(fldlist_moab)
+            call shr_sys_flush(logunit)
+            call shr_sys_abort(subname//' ERROR in sending tags')
+            !valid_moab_context = .false.
          endif
        endif
        if ( valid_moab_context ) then
@@ -516,8 +512,9 @@ end subroutine moab_map_init_rcfile
          ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in receiving tags ', mapper%mbname,   trim(fldlist_moab)
-            !call shr_sys_abort(subname//' ERROR in receiving tags')
-            valid_moab_context = .false. ! do not attempt to project
+            call shr_sys_flush(logunit)
+            call shr_sys_abort(subname//' ERROR in receiving tags')
+            !valid_moab_context = .false. ! do not attempt to project
          endif
          ! now free buffers
          ierr = iMOAB_FreeSenderBuffers( mapper%src_mbid, mapper%intx_context )
