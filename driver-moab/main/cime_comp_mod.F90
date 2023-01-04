@@ -201,7 +201,6 @@ module cime_comp_mod
 #endif
 
 #ifdef MOABDEBUG
-    use seq_comm_mct , only : mboxid
     use iso_c_binding
 #endif
 
@@ -1396,6 +1395,7 @@ contains
     use seq_flds_mod , only : seq_flds_x2a_fields, seq_flds_a2x_fields, seq_flds_l2x_fields, &
      seq_flds_o2x_fields, seq_flds_r2x_fields, seq_flds_i2x_fields
     use seq_comm_mct , only :  mphaid, mbaxid, mlnid, mblxid,  mrofid, mbrxid, mpoid, mboxid,  mpsiid, mbixid
+    use seq_comm_mct,        only: num_moab_exports  ! used to count the steps for moab files
 #ifdef MOABDEBUG
     real(r8) :: difference
     character(20) :: mct_field, tagname
@@ -2061,6 +2061,9 @@ contains
        write(logunit,F00) 'Calculating area corrections, sending initial data'
        call shr_sys_flush(logunit)
     endif
+
+    ! mostly for debug mode
+    num_moab_exports = num_moab_exports + 1
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (atm_present) call component_init_areacor(atm, areafact_samegrid, seq_flds_a2x_fluxes)
