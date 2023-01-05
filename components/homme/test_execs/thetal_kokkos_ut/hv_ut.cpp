@@ -482,8 +482,14 @@ TEST_CASE("hvf", "biharmonic") {
         // dp>0, vtheta>0, and d(phi)>0. This is very unlikely with random
         // inputs coming from state.randomize(seed), so we generate data
         // as "realistic" as possible, and perturb it.
+        // This computation mimics that of
+        // src/theta-l/share/element_ops.F90:initialize_reference_states().
         using PDF = std::uniform_real_distribution<Real>;
         ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> perturb("",num_elems);
+
+        static constexpr Real T1 =
+          PhysicalConstants::Tref_lapse_rate*PhysicalConstants::Tref*PhysicalConstants::cp/PhysicalConstants::g;
+        static constexpr Real T0 = PhysicalConstants::Tref-T1;
 
         constexpr Real noise_lvl = 0.05;
         genRandArray(perturb,engine,PDF(-noise_lvl,noise_lvl));
@@ -517,16 +523,19 @@ TEST_CASE("hvf", "biharmonic") {
             // Compute pressure
             elem_ops.compute_hydrostatic_p(kv,dp,buf_i,buf_m);
 
-            // Compute vtheta_dp = theta_ref*dp
-            elem_ops.compute_theta_ref(kv,buf_m,theta);
+            // Compute vtheta_dp = theta_ref*dp, where
+            // theta_ref = T0/exner + T1, exner = (p/p0)^k
+            // theta_ref mimics computation in src/theta-l/share/element_ops.F90:set_theta_ref()
             Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                                  [&](const int ilev){
+              theta(ilev) = pow(buf_m(ilev)/PhysicalConstants::p0,PhysicalConstants::kappa);
+              theta(ilev) = T0/theta(ilev) + T1;
               theta(ilev) *= dp(ilev);
             });
 
             // Compute phi
             eos.compute_phi_i(kv,geo.m_phis(kv.ie,igp,jgp),
-                                 theta,buf_m,phi);
+                              theta,buf_m,phi);
           });
         });
 
