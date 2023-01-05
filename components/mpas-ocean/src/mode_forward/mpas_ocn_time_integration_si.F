@@ -918,6 +918,21 @@ module ocn_time_integration_si
          call mpas_dmpar_field_halo_exch(domain, 'barotropicForcing')
          call mpas_timer_stop('si halo barotropicForcing')
 
+
+!        call mpas_timer_start("si halo btr vel")
+!        call mpas_dmpar_exch_group_create(domain, iterGroupName)
+!        call mpas_dmpar_exch_group_add_field(domain, &
+!                  iterGroupName, 'barotropicForcing')
+!        call mpas_dmpar_exch_group_add_field(domain,             &
+!                  iterGroupName,                             &
+!                             'bottomDepthEdge')
+!        call mpas_dmpar_exch_group_full_halo_exch(domain, &
+!                  iterGroupName)
+!        call mpas_dmpar_exch_group_destroy(domain, iterGroupName)
+!        call mpas_timer_stop("si halo btr vel")
+
+
+
          call mpas_timer_stop("si bcl vel")
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1117,6 +1132,7 @@ module ocn_time_integration_si
    
                do i = 1, nEdgesOnCell(iCell)
                   iEdge = edgesOnCell(i, iCell)
+                  if (maxLevelEdgeTop(iEdge).eq.0) cycle
    
                   cell1 = cellsOnEdge(1, iEdge)
                   cell2 = cellsOnEdge(2, iEdge)
@@ -1125,11 +1141,8 @@ module ocn_time_integration_si
                   sshEdgeCur = 0.5_RKIND * ( sshSubcycleCur(cell1)  &
                                            + sshSubcycleCur(cell2) )
    
-                  ! method 1, matches method 0 without pbcs, 
-                  ! works with pbcs.
                   thicknessSumCur = si_ismf * sshEdgeCur    &
-                                  + min(bottomDepth(cell1), &
-                                        bottomDepth(cell2))
+                                  + bottomDepthEdge(iEdge)
    
                   ! nabla (ssh^0)
                   sshDiffCur = (  sshSubcycleCur(cell2)   &
@@ -1175,7 +1188,8 @@ module ocn_time_integration_si
    
             ! SpMV -------------------------------------------------------!
    
-            call si_matvec_mul(SIvec_rh0,SIvec_w0,sshSubcycleCur)
+            call si_matvec_mul(SIvec_rh0,bottomDepthEdge, &
+                               SIvec_w0,sshSubcycleCur)
 
             if ( si_algorithm == 'sbicg' ) then !!!
 
@@ -1189,7 +1203,8 @@ module ocn_time_integration_si
       
                ! SpMV -------------------------------------------------------!
       
-               call si_matvec_mul(SIvec_wh0,SIvec_t0,sshSubcycleCur)
+               call si_matvec_mul(SIvec_wh0,bottomDepthEdge, &
+                                  SIvec_t0,sshSubcycleCur)
    
                ! Reduction --------------------------------------------------!
    
@@ -1247,13 +1262,14 @@ module ocn_time_integration_si
             call mpas_timer_start("si btr iteration")
 
             if ( si_algorithm == 'sbicg' ) then
-               call si_solver_sbicg(domain,                           &
-                    sshSubcycleNew,sshSubcycleCur,tolerance_outer,    &
-                    SIcst_alpha0,SIcst_beta0,SIcst_gamma0,SIcst_rho0)
+               call si_solver_sbicg(domain,                                &
+                    sshSubcycleNew,sshSubcycleCur,bottomDepthEdge,         &
+                    tolerance_outer,SIcst_alpha0,SIcst_beta0,SIcst_gamma0, &
+                    SIcst_rho0)
             else if ( si_algorithm == 'scg' ) then
-               call si_solver_scg(domain,                          &
-                    sshSubcycleNew,sshSubcycleCur,tolerance_outer, &
-                    SIcst_alpha0,SIcst_beta0,SIcst_gamma0)
+               call si_solver_scg(domain,                                  &
+                    sshSubcycleNew,sshSubcycleCur,bottomDepthEdge,         &
+                    tolerance_outer,SIcst_alpha0,SIcst_beta0,SIcst_gamma0)
             endif
 
             !   boundary update on sshNew
@@ -1390,6 +1406,7 @@ module ocn_time_integration_si
    
                do i = 1, nEdgesOnCell(iCell)
                   iEdge = edgesOnCell(i, iCell)
+                  if (maxLevelEdgeTop(iEdge).eq.0) cycle
    
                   cell1 = cellsOnEdge(1, iEdge)
                   cell2 = cellsOnEdge(2, iEdge)
@@ -1403,14 +1420,11 @@ module ocn_time_integration_si
                   ! method 1, matches method 0 without pbcs,
                   ! works with pbcs.
                   thicknessSumCur = si_ismf * sshEdgeCur    &
-                                  + min(bottomDepth(cell1), &
-                                        bottomDepth(cell2))
+                                  + bottomDepthEdge(iEdge)
                   thicknessSumLag = si_ismf * sshEdgeLag    &
-                                  + min(bottomDepth(cell1), &
-                                        bottomDepth(cell2))
+                                  + bottomDepthEdge(iEdge)
                   thicknessSumMid = si_ismf * sshEdgeMid    &
-                                  + min(bottomDepth(cell1), &
-                                        bottomDepth(cell2))
+                                  + bottomDepthEdge(iEdge)
    
                   ! nabla (ssh^0)
                   sshDiffCur = ( sshSubcycleCur(cell2)   &
@@ -1459,7 +1473,7 @@ module ocn_time_integration_si
    
             ! SpMV -------------------------------------------------------!
 
-            call si_matvec_mul(SIvec_rh0,SIvec_w0,sshNew)
+            call si_matvec_mul(SIvec_rh0,bottomDepthEdge,SIvec_w0,sshNew)
 
             if ( si_algorithm == 'sbicg' ) then !!!
 
@@ -1473,7 +1487,7 @@ module ocn_time_integration_si
       
                ! SpMV -------------------------------------------------------!
       
-               call si_matvec_mul(SIvec_wh0,SIvec_t0,sshNew)
+               call si_matvec_mul(SIvec_wh0,bottomDepthEdge,SIvec_t0,sshNew)
    
                ! Reduction --------------------------------------------------!
    
@@ -1529,13 +1543,14 @@ module ocn_time_integration_si
             call mpas_timer_start("si btr iteration")
 
             if ( si_algorithm == 'sbicg' ) then
-               call si_solver_sbicg(domain,                           &
-                    sshSubcycleNew,sshNew,tolerance_inner,            &
-                    SIcst_alpha0,SIcst_beta0,SIcst_gamma0,SIcst_rho0)
+               call si_solver_sbicg(domain,                                &
+                    sshSubcycleNew,sshNew,bottomDepthEdge,                 &
+                    tolerance_inner,SIcst_alpha0,SIcst_beta0,SIcst_gamma0, &
+                    SIcst_rho0)
             else if ( si_algorithm == 'scg' ) then
-               call si_solver_scg(domain,                  &
-                    sshSubcycleNew,sshNew,tolerance_inner, &
-                    SIcst_alpha0,SIcst_beta0,SIcst_gamma0)
+               call si_solver_scg(domain,                                  &
+                    sshSubcycleNew,sshNew,bottomDepthEdge,                 &
+                    tolerance_inner,SIcst_alpha0,SIcst_beta0,SIcst_gamma0)
             endif
 
             ! boundary update on SSHnew
@@ -1618,6 +1633,8 @@ module ocn_time_integration_si
             !$omp do schedule(runtime) &
             !$omp private(cell1,cell2,sshEdge,thicknessSum)
             do iEdge = 1, nEdgesOwned
+               if (maxLevelEdgeTop(iEdge).eq.0) cycle
+
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
    
@@ -1633,8 +1650,7 @@ module ocn_time_integration_si
                        + 0.25_RKIND * (  sshSubcycleNew(cell1)   &
                                        + sshSubcycleNew(cell2) )
    
-               thicknessSum = sshEdge + min(bottomDepth(cell1), &
-                                            bottomDepth(cell2))
+               thicknessSum = sshEdge + bottomDepthEdge(iEdge)
    
                barotropicThicknessFlux(iEdge) &
                   = 0.5*(  normalBarotropicVelocitySubcycleNew(iEdge) &
@@ -3486,11 +3502,12 @@ module ocn_time_integration_si
 !
 !-----------------------------------------------------------------------
 
-   subroutine si_matvec_mul(SIvec_in,SIvec_out,ssh) !{{{
+   subroutine si_matvec_mul(SIvec_in,bottomDepthEdge,SIvec_out,ssh) !{{{
 
       real(kind=RKIND),dimension(:),intent(in)  :: &
-          SIvec_in, &! Input SI vector
-          ssh        ! Intermediate ssh
+          SIvec_in,      &! Input SI vector
+          ssh,           &! Intermediate ssh
+          bottomDepthEdge ! Bottom Depth at Edge
 
       real(kind=RKIND),dimension(:),intent(out) :: &
           SIvec_out  ! Output SI vector
@@ -3509,6 +3526,7 @@ module ocn_time_integration_si
 
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
+            if (maxLevelEdgeTop(iEdge).eq.0) cycle
 
             cell1 = cellsOnEdge(1, iEdge)
             cell2 = cellsOnEdge(2, iEdge)
@@ -3520,8 +3538,7 @@ module ocn_time_integration_si
             ! method 1, matches method 0 without pbcs,
             ! works with pbcs.
             thicknessSum = si_ismf * sshEdge    &
-                         + min(bottomDepth(cell1), &
-                               bottomDepth(cell2))
+                         + bottomDepthEdge(iEdge)
 
             ! nabla (ssh^0)
             sshDiff = (SIvec_in(cell2)-SIvec_in(cell1)) &
@@ -3898,8 +3915,9 @@ module ocn_time_integration_si
 !
 !-----------------------------------------------------------------------
 
-   subroutine si_solver_scg(domain,sshSolved,ssh,tolerance,       & !{{{
-                            SIcst_alpha0,SIcst_beta0,SIcst_gamma0)
+   subroutine si_solver_scg(domain,sshSolved,ssh,bottomDepthEdge, & !{{{
+                            tolerance,SIcst_alpha0,SIcst_beta0,   &
+                            SIcst_gamma0)
 
       type (domain_type), intent(inout) :: &
          domain  !< [inout] model state to advance forward
@@ -3909,6 +3927,9 @@ module ocn_time_integration_si
 
       real(kind=RKIND), dimension(:), pointer, intent(inout) :: &
          sshSolved                              ! ssh to be solved
+
+      real(kind=RKIND), dimension(:), intent(inout) :: &
+         bottomDepthEdge                        ! Bottome depth at Edge
 
       real(kind=RKIND), intent(in) :: tolerance ! Tolerance of solver
 
@@ -3957,7 +3978,7 @@ module ocn_time_integration_si
   
   
          ! SpMV ----------------------------------------------------!
-         call si_matvec_mul(SIvec_rh1,SIvec_w1,ssh)
+         call si_matvec_mul(SIvec_rh1,bottomDepthEdge,SIvec_w1,ssh)
   
          ! Reduction -----------------------------------------------!
 
@@ -4035,8 +4056,9 @@ module ocn_time_integration_si
 !
 !-----------------------------------------------------------------------
 
-   subroutine si_solver_sbicg(domain,sshSolved,ssh,tolerance,       & !{{{
-                 SIcst_alpha0,SIcst_beta0,SIcst_gamma0,SIcst_rho0)
+   subroutine si_solver_sbicg(domain,sshSolved,ssh,bottomDepthEdge, & !{{{
+                 tolerance,SIcst_alpha0,SIcst_beta0,SIcst_gamma0,   &
+                 SIcst_rho0)
 
       type (domain_type), intent(inout) :: &
          domain  !< [inout] model state to advance forward
@@ -4046,6 +4068,9 @@ module ocn_time_integration_si
 
       real(kind=RKIND), dimension(:), pointer, intent(inout) :: &
          sshSolved                              ! ssh to be solved
+
+      real(kind=RKIND), dimension(:), intent(inout) :: &
+         bottomDepthEdge                        ! Bottome depth at Edge
 
       real(kind=RKIND), intent(in) :: tolerance ! Tolerance of solver
 
@@ -4113,7 +4138,7 @@ module ocn_time_integration_si
  
          ! SpMV ----------------------------------------------------!
  
-         call si_matvec_mul(SIvec_zh1,SIvec_v0,ssh)
+         call si_matvec_mul(SIvec_zh1,bottomDepthEdge,SIvec_v0,ssh)
  
          ! Reduction -----------------------------------------------!
  
@@ -4176,7 +4201,7 @@ module ocn_time_integration_si
  
          ! SpMV ----------------------------------------------------!
  
-         call si_matvec_mul(SIvec_wh1,SIvec_t1,ssh)
+         call si_matvec_mul(SIvec_wh1,bottomDepthEdge,SIvec_t1,ssh)
  
          SIcst_rho1 = SIcst_r00q0_global - SIcst_omega0 * SIcst_r00y0_global 
  
