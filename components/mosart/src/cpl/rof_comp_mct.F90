@@ -310,6 +310,9 @@ contains
        if ( ierr == 1 ) then
            call shr_sys_abort( sub//' ERROR: cannot define tags in moab' )
        end if
+       ! also load initial data to moab tags
+       call rof_export_moab()
+
 !  endif HAVE_MOAB
 #endif
     else

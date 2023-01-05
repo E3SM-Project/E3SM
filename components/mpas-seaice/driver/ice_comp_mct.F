@@ -781,6 +781,9 @@ contains
     if (errorCode /= 0) then
        call mpas_log_write('Error in ice_export_mct', MPAS_LOG_CRIT)
     endif
+#ifdef HAVE_MOAB
+    call ice_export_moab()
+#endif
 
     call t_stopf ('mpassi_mct_init')
 

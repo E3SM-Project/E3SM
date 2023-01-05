@@ -1314,7 +1314,10 @@ CONTAINS
     character(CXX) ::  tagname ! 
 
     integer ierr, c, nlcols, ig, i, ncols
-
+#ifdef MOABDEBUG
+    integer, save :: local_count = 0
+    character*100 lnum2
+#endif 
     ! Copy from component arrays into chunk array data structure
     ! Rearrange data from chunk structure into lat-lon buffer and subsequently
     ! create double array for moab tags
@@ -1377,7 +1380,9 @@ CONTAINS
     endif
 #ifdef MOABDEBUG
     write(lnum,"(I0.2)")num_moab_exports
-    outfile = 'AtmPhys_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    local_count = local_count + 1
+    write(lnum2,"(I0.2)")local_count
+    outfile = 'AtmPhys_'//trim(lnum)//'_'//trim(lnum2)//'.h5m'//C_NULL_CHAR
     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
     ierr = iMOAB_WriteMesh(mphaid, outfile, wopts)
     if (ierr > 0 )  &
