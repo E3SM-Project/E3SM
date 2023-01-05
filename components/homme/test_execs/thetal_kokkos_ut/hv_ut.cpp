@@ -36,6 +36,10 @@ void init_geo_views_f90 (Real*& d_ptr,Real*& dinv_ptr,
                Real*& sphmp_ptr, Real*& rspmp_ptr,
                Real*& tVisc_ptr, Real*& sph2c_ptr,
                Real*& metdet_ptr, Real*& metinv_ptr);
+void initialize_reference_states_f90 (const Real*& phis,
+                                      const Real*& dp_ref,
+                                      const Real*& theta_ref,
+                                      const Real*& phi_ref);
 void biharmonic_wk_theta_f90 (const int& np1, const Real& hv_scaling, const bool& hydrostatic,
                               const Real*& dp, const Real*& vtheta_dp,
                               const Real*& w,  const Real*& phi, const Real*& v,
@@ -423,21 +427,26 @@ TEST_CASE("hvf", "biharmonic") {
   SECTION ("hypervis") {
     std::cout << "Hypervis test:\n";
 
-    // Compute ref states. These are not dependent
-    // on choice for hydrostatic mode or hv_scaling.
-    state.m_ref_states.compute(hvcoord,geo.m_phis);
-
+    HostViewManaged<Real*[NP][NP]> phis_f90("",num_elems);
     HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]> dp_ref_f90("",num_elems);
     HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]> theta_ref_f90("",num_elems);
     HostViewManaged<Real*[NUM_INTERFACE_LEV][NP][NP]> phi_ref_f90("",num_elems);
 
-    sync_to_host(state.m_ref_states.dp_ref,dp_ref_f90);
-    sync_to_host(state.m_ref_states.theta_ref,theta_ref_f90);
-    sync_to_host(state.m_ref_states.phi_i_ref,phi_ref_f90);
+    sync_to_host(geo.m_phis, phis_f90);
 
+    const Real* phis_ptr      = phis_f90.data();
     const Real* dp_ref_ptr    = dp_ref_f90.data();
     const Real* theta_ref_ptr = theta_ref_f90.data();
     const Real* phi_ref_ptr   = phi_ref_f90.data();
+
+    // Have F90 compute reference states and initialize
+    // in C++ RefStates. These are not dependent
+    // on choice for hydrostatic mode or hv_scaling,
+    // nor do the values change when state is randomized.
+    initialize_reference_states_f90(phis_ptr,
+                                    dp_ref_ptr,
+                                    theta_ref_ptr,
+                                    phi_ref_ptr);
 
     for (const bool hydrostatic : {true, false}) {
       std::cout << " -> " << (hydrostatic ? "hydrostatic" : "non-hydrostatic") << "\n";
