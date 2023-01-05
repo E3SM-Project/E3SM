@@ -198,15 +198,16 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
   }
   PropertyCheck::ResultAndMsg res_and_msg;
 
-  bool pass_lower = false, pass_upper = false;
+  bool pass_lower = true, pass_upper = true;
 
   if (minmaxloc.min_val>=m_lb && minmaxloc.max_val<=m_ub) {
     res_and_msg.result = CheckResult::Pass;
-    pass_lower = pass_upper = true;
   } else if  (minmaxloc.min_val<m_lb_repairable || minmaxloc.max_val>m_ub_repairable) {
+    // Check if the min_val fails test
     if (minmaxloc.min_val<m_lb_repairable) {
       pass_lower = false;
     }
+    // Check if the max_val fails test
     if (minmaxloc.max_val>m_ub_repairable) {
       pass_upper = false;
     }
@@ -214,9 +215,11 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
     res_and_msg.result = CheckResult::Fail;
   } else {
     res_and_msg.result = CheckResult::Repairable;
+    // Check if the min_val fails test
     if (minmaxloc.min_val<m_lb) {
       pass_lower = false;
     }
+    // Check if the max_val fails test
     if (minmaxloc.max_val>m_ub) {
       pass_upper = false;
     }
