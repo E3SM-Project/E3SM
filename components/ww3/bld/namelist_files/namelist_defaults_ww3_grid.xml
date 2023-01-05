@@ -30,7 +30,7 @@ attributes to express the dependency.
 <timesteps%dtkth>450.0</timesteps%dtkth>
 <timesteps%dtmin>30.0</timesteps%dtmin>
 
-<grid%name>wQU225EC60to30</grid%name>
+<grid%name>wQU225EC30to60E2r2</grid%name>
 <grid%nml>ww3_grid_namelists.nml</grid%nml>
 <grid%type>UNST</grid%type>
 <grid%coord>SPHE</grid%coord>
