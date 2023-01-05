@@ -610,7 +610,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 
   real(rl) :: zi(np,np,nlevp), zi_c(nlevp)
 
-  real(rl) :: energy_before, energy_after, mass_before, mass_after
+  real(rl) :: energy_before, energy_after, mass_before, mass_after, discrepancy
   logical :: wasiactive
 
 
@@ -658,7 +658,8 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       p_c  = p(i,j,:); dp_c = dp(i,j,:); T_c = T(i,j,:); zi_c = zi(i,j,:);
       !also needed, pressure-derived values
       ppi_upper = hvcoord%hyai(1) * hvcoord%ps0
-      pprime = p_c - dp_c
+      call construct_hydro_pressure(dp_c,ppi_upper,ppi)
+      pprime = p_c - ppi
       dpdry_c = dp_c*(1.0 - qv_c - qc_c - qr_c)
 
       !set them here in case physics is not activated
@@ -687,17 +688,28 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
           print *, 'A, in kessler planar bubble! switch to NH';  stop
         endif
 
-        call energy_hy_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ppi_upper,zi_c,energy_before)
+        mass_before = sum(dp_c)+ppi_upper
+        !call energy_hy_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ppi_upper,zi_c,energy_before)
+        call energy_nh_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ppi_upper,zi_c, pprime,energy_before)
 
         !this one conserves after PA
         call kessler_new_hy(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ppi_upper,zi_c,mass_prect,energy_prect,dt,wasiactive)
 
-        call energy_hy_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ppi_upper,zi_c,energy_after)
+        !in dry to wet conversion kessler used old dp to convert
+!subroutine energy_nh_via_mass(dpdry_c,dpv_c,dpc_c,dpr_c,T_c,ptop,zi_c,pprime,energy)
+!        call energy_hy_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ppi_upper,zi_c,energy_after)
+        call energy_nh_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ppi_upper,zi_c, pprime,energy_after)
+        mass_after = sum( dpdry_c+dp_c*(qv_c+qc_c+qr_c) )+ppi_upper
 
-        !if(energy_prect > 10.0 )then
+        discrepancy = (energy_before - energy_after - energy_prect)
+        !if( (discrepancy/energy_prect > 0.5) .and. (energy_prect>300.0) )then
+        if( (energy_prect>300.0) )then
         !print *, 'Total: en - en(up to flux)', (energy_before - energy_after - energy_prect)/energy_before
+        !print *, '          Total: en - en', (energy_before - energy_after - energy_prect)
         !print *, 'energy flux, total energy after', energy_prect, energy_after
-        !endif
+        print *, '------- Discrepancy, discrepancy/energy_prect ', discrepancy, discrepancy/energy_prect
+        !print *, 'Total: mass - mass(up to flux)', (mass_before - mass_after - mass_prect)/mass_before
+        endif
 
       endif ! RJ or Kessler choice
 

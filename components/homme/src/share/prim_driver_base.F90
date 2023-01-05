@@ -1618,7 +1618,7 @@ contains
 #ifdef SCREAM
      adjust_ps=.false.  ! Lagrangian case can support adjusting dp3d or ps
 #else
-     adjust_ps=.true.   ! Lagrangian case can support adjusting dp3d or ps
+     adjust_ps=.false.   ! Lagrangian case can support adjusting dp3d or ps
 #endif
   endif
 #else
@@ -1776,7 +1776,7 @@ contains
    
    elem%derived%FPHI(:,:,:) = &
         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
-   
+  
 #endif
 
   call t_stopf("ApplyCAMForcing_tracers")
