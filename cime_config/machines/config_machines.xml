@@ -3422,7 +3422,7 @@
       </modules>
 
       <modules compiler="nvidia">
-        <command name="load">PrgEnv-nvidia</command>
+	      <command name="load">PrgEnv-nvidia/8.3.3</command>
         <command name="load">nvidia/22.3</command>
       </modules>
 
@@ -3465,6 +3465,8 @@
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
       <env name="PERL5LIB">/usr/projects/climate/SHARED_CLIMATE/software/chicoma-cpu/perl5-only-switch/lib/perl5</env>
       <env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable;romio_cb_write=enable;romio_cb_read=enable</env>
+      <env name="FI_CXI_RX_MATCH_MODE">software</env>
+      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
