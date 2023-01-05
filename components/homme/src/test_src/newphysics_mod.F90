@@ -112,7 +112,7 @@ subroutine get_geo_from_drydp(Tempe, dpdry, pidry, zbottom, zi, zm, dz)
 end subroutine get_geo_from_drydp
 
 
-subroutine sedimentation(qvdry,qcdry,qrdry,tempe,dpdry,ptop,zbottom,pprime,massleft,energyleft,dt)
+subroutine sedimentation_hy(qvdry,qcdry,qrdry,tempe,dpdry,ptop,zbottom,pprime,massleft,energyleft,dt)
 
   real(rl), dimension(nlev), intent(inout) :: qvdry,qcdry,qrdry,tempe
   real(rl), dimension(nlev), intent(in)    :: dpdry, pprime
@@ -169,7 +169,7 @@ if (k < nlev) then
   positt = zm(k+1)
   d_ind = k+1
 else
-  positt = -100.0
+  positt = zi(nlevp)-100.0 !to ensure cond below
 endif
 
 
@@ -256,7 +256,8 @@ subroutine rain_evaporation(qvdry,qcdry,qrdry,tempe,dpdry,ptop,zbottom,pprime)
     !r1=0.525,r2=5.4e5,r3=2.55e6 
     !r4=1.6,r5=124.9,r6=0.2046
 
-    call qsat_kessler2(pnh(k), tempe(k), qsat)
+    !call qsat_kessler2(pnh(k), tempe(k), qsat)
+    call qsat_kessler2(pidry(k), tempe(k), qsat)
     qsatdry = qsat*dpi(k)/dpdry(k)
 
     cval = r4 + r5*( (rhodry(k)*qrdry(k))**r6 )
@@ -290,16 +291,18 @@ subroutine condensation_and_back_again(qvdry,qcdry,qrdry,tempe,dpdry,ptop,zbotto
 
   integer  :: k
   real(rl) :: dq, qsat, qsatdry
-  real(rl), dimension(nlev)  :: dpi,ppi,pnh
+  real(rl), dimension(nlev)  :: dpi,ppi,pnh,pidry
 
   dpi = dpdry*(1.0 + qvdry + qcdry + qrdry)
 
   !derived pressure values
   call construct_hydro_pressure(dpi,ptop,ppi)
+  call construct_hydro_pressure(dpdry,ptop,pidry)
   pnh = ppi + pprime
 
   do k=1, nlev
-    call qsat_kessler2(pnh(k), tempe(k), qsat)
+    !call qsat_kessler2(pnh(k), tempe(k), qsat)
+    call qsat_kessler2(pidry(k), tempe(k), qsat)
     qsatdry = qsat*dpi(k)/dpdry(k)
 
     !assume condensation
@@ -394,7 +397,8 @@ subroutine rj_new(qv_c,T_c,dp_c,p_c,ptop,massout,wasiactive)
   call construct_hydro_pressure(dp_c,ptop,pi)
 
   do k=1, nlev
-    call qsat_rj2(p_c(k), T_c(k), qsat)
+    !call qsat_rj2(p_c(k), T_c(k), qsat)
+    call qsat_rj2(pi(k), T_c(k), qsat)
 
     if (qv_c(k) > qsat) then
 !print *, 'HEY RAIN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
@@ -464,11 +468,14 @@ subroutine rj_old(qv_c,T_c,dp_c,p_c,massout,wasiactive)
 
   real(rl) :: qsat, dq_loc
   integer :: k
+  real(rl), dimension(nlev) :: pi
 
   massout = 0.0
+  call construct_hydro_pressure(dp_c,ptop,pi)
 
   do k=1, nlev
-    call qsat_rj2(p_c(k), T_c(k), qsat)
+    !call qsat_rj2(p_c(k), T_c(k), qsat)
+    call qsat_rj2(pi(k), T_c(k), qsat)
 
     if (qv_c(k) > qsat) then
        wasiactive = .true.
@@ -537,7 +544,7 @@ subroutine kessler_new_hy(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ptop,zi_c,massout,energyou
      ! right now nh term is not used, so, no need to recompute wet hydro pressure and total nh pressure
      !so far, it is only part that has fluxes out
      call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_before)
-     call sedimentation(qvdry_c,qcdry_c,qrdry_c, T_c, dpdry_c,ptop, zbottom, pprime,           loc_mass_p,loc_energy_p,dt)
+     call sedimentation_hy(qvdry_c,qcdry_c,qrdry_c, T_c, dpdry_c,ptop, zbottom, pprime, loc_mass_p,loc_energy_p,dt)
      call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energy_after)
      !if(loc_energy_p > 300.0)then
      !print *, 'Sedime:enbefore - enafter(up to flux)', (energy_before - energy_after - loc_energy_p)/energy_before, loc_energy_p
