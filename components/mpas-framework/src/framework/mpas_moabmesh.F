@@ -188,7 +188,7 @@ module mpas_moabmesh
        enddo
 
        ! add domain tags
-       tagname=seq_flds_dom_fields//C_NULL_CHAR
+       tagname=trim(seq_flds_dom_fields)//C_NULL_CHAR
        tagtype = 1
        ierr = iMOAB_DefineTagStorage(pid, tagname, tagtype, numco,  tagindex )
        if (ierr > 0 )  &

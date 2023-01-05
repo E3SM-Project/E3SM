@@ -872,7 +872,7 @@ contains
   ! set domain tags
     tagtype = 1 ! dense, double;
 
-    tagname=seq_flds_dom_fields//C_NULL_CHAR
+    tagname=trim(seq_flds_dom_fields)//C_NULL_CHAR
     ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  &
       call shr_sys_abort( sub//' Error: fail to create domain tags ')
