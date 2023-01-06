@@ -105,7 +105,6 @@ function(build_model COMP_CLASS COMP_NAME)
                              cmake/atm/../../eam/src/physics/crm/crm_ecpp_output_module.F90 )
     endif()
 
-    # if samxx is needed, build samxx as a static library
     if (USE_PAM)
       message(STATUS "Building PAM")
       # PAM_HOME is where the samxx source code lives
@@ -117,9 +116,7 @@ function(build_model COMP_CLASS COMP_NAME)
       # Add samxx F90 files to the main E3SM build
       set(SOURCES ${SOURCES} cmake/atm/../../eam/src/physics/crm/pam/params.F90
                              cmake/atm/../../eam/src/physics/crm/crm_ecpp_output_module.F90
-                             cmake/atm/../../eam/src/physics/crm/pam/pam_driver.F90
-                             cmake/atm/../../eam/src/physics/crm/pam/pam_driver.cpp
-                             cmake/atm/../../eam/src/physics/crm/pam/pam_rad_update.cpp )
+                             cmake/atm/../../eam/src/physics/crm/pam/pam_driver.F90 )
     endif()
 
     # Add rrtmgp++ source code if asked for

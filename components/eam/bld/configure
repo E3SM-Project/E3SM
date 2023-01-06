@@ -1734,7 +1734,12 @@ if (defined $opts{'use_MMF'}) {
     my $yes3Dval = 1;
     if ($crm_ny eq 1) {$yes3Dval = 0;}
     if (defined $opts{'crm_adv'}) { $cfg_cppdefs .= " -D_$crm_adv "; }
-    $cfg_cppdefs .= " -D$MMF_microphysics_scheme -DYES3DVAL=$yes3Dval";
+    $cfg_cppdefs .= " -DYES3DVAL=$yes3Dval";
+    if ($MMF_microphysics_scheme eq 'sam1mom') {
+        $cfg_cppdefs .= " -D$MMF_microphysics_scheme ";
+    } elsif ($MMF_microphysics_scheme eq 'm2005') {
+        $cfg_cppdefs .= " -D$MMF_microphysics_scheme ";
+    }
     $cfg_cppdefs .= " -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz ";
     $cfg_cppdefs .= " -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
     if (defined $opts{'use_ECPP'}) { $cfg_cppdefs .= " -DECPP " }

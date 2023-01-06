@@ -1,9 +1,9 @@
 
 set(PAM_DRIVER_SRC 
     pam_driver.F90  
-    pam_driver.cpp  
+    pam_driver.h  
     pam_feedback.h  
-    pam_rad_update.cpp  
+    pam_rad_update.h  
     pam_state_update.h  
     params.F90)
 
