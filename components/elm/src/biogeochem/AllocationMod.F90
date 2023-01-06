@@ -1122,7 +1122,6 @@ contains
                     ft = elm_fates%fates(ci)%bc_out(s)%ft_index(f)
 
                     ! [gN/m3/s] = [gC/m3] * [gN/gC/s]
-                    ! JUST USING THE NH4 VMAX PARAMETER FOR UPTAKE
                     col_plant_ndemand_vr(c,j) = col_plant_ndemand_vr(c,j) + &
                          elm_fates%fates(ci)%bc_out(s)%veg_rootc(f,j) * &
                          (elm_fates%fates(ci)%bc_pconst%vmax_nh4(ft) + &
