@@ -459,12 +459,9 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    call outfld('CRM_T   ',crm_state%temperature(icol_beg:icol_end,:,:,:), ncol, lchnk )
 
    if (MMF_microphysics_scheme .eq. 'sam1mom') then
-      call outfld('CRM_QV  ',(crm_state%qt(icol_beg:icol_end,:,:,:)    &
-                              -crm_output%qcl(icol_beg:icol_end,:,:,:) &
-                              -crm_output%qci(icol_beg:icol_end,:,:,:)), ncol, lchnk )
+      call outfld('CRM_QV  ',crm_state%qv(icol_beg:icol_end,:,:,:) , ncol, lchnk )
    else if (MMF_microphysics_scheme .eq. 'm2005') then 
-      call outfld('CRM_QV  ', crm_state%qt(icol_beg:icol_end,:,:,:)    &
-                              -crm_output%qcl(icol_beg:icol_end,:,:,:), ncol, lchnk )
+      call outfld('CRM_QV  ',crm_state%qv(icol_beg:icol_end,:,:,:), ncol, lchnk )
    endif
 
    !----------------------------------------------------------------------------
