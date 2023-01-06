@@ -35,7 +35,6 @@ module radiation
       rrtmgp_run_sw, rrtmgp_run_lw, &
       get_min_temperature, get_max_temperature, &
       get_gpoint_bands_sw, get_gpoint_bands_lw, &
-      get_subsampled_clouds_lw, &
       nswgpts, nlwgpts
 
    ! Use my assertion routines to perform sanity checks
@@ -540,7 +539,6 @@ contains
       ! package. Also move most of this to cospsimulator package to handle itself,
       ! rather than relying on radiation driver handling this logic. Too much
       ! duplicate code.
-      !if (docosp) call cospsimulator_intr_init()
       if (docosp) then
          ! Initialization for the simulator package.
          call cospsimulator_intr_init
@@ -922,7 +920,7 @@ contains
       ! Wrap modes in an ifdef for now since this is not implemented here, and I
       ! have some work to do to figure out what the heck this is meant to do.
 #ifdef DO_PERGRO_MODS
-      !Modification needed by pergro_mods for generating random numbers
+      ! Modification needed by pergro_mods for generating random numbers
       if (pergro_mods) then
          max_chnks_in_blk = maxval(npchunks(:))  !maximum of the number for chunks in each procs
          allocate(clm_rand_seed(pcols,kiss_seed_num,max_chnks_in_blk), stat=astat)
@@ -1699,9 +1697,6 @@ contains
                      pmid_packed(:,ktop:kbot), cld_p, &
                      cld_tau_bnd_lw(:,ktop:kbot,:), cld_tau_gpt_lw(:,ktop:kbot,:) &
                   )
-                  !call get_subsampled_clouds_lw( &
-                  !   ncol, pver, nlwbands, nlwgpts, gpoint_bands_lw, &
-                  !   pmid_col(:,ktop:kbot), cld, cld_tau_bnd_lw, cld_tau_gpt_lw)
                   ! Save CRM cloud optics for cosp
                   call handle_error(clip_values(cld_tau_gpt_lw,  0._r8, huge(cld_tau_gpt_lw), trim(subname) // ' cld_tau_gpt_lw', tolerance=1e-10_r8))
                   call t_stopf('rad_cloud_optics_lw')
