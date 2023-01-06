@@ -2608,11 +2608,22 @@ table_val_qi_fallspd,acn,lamc, mu_c,qc_incld,qccol,    &
    real(rtype), intent(out) :: vtrmi1
    real(rtype), intent(out) :: rho_qm_cloud
 
-   real(rtype) :: iTc = 0.0_rtype
-   real(rtype) :: Vt_qc = 0.0_rtype
-   real(rtype) :: D_c  = 0.0_rtype
-   real(rtype) :: V_impact = 0.0_rtype
-   real(rtype) :: Ri = 0.0_rtype
+   real(rtype) :: iTc,Vt_qc,D_c,V_impact,Ri
+   iTc = 0.0_rtype
+   Vt_qc = 0.0_rtype
+   D_c  = 0.0_rtype
+   V_impact = 0.0_rtype
+   Ri = 0.0_rtype
+
+!   real(rtype) :: iTc = 0.0_rtype
+!   real(rtype) :: Vt_qc = 0.0_rtype
+!   real(rtype) :: D_c  = 0.0_rtype
+!   real(rtype) :: V_impact = 0.0_rtype
+!   real(rtype) :: Ri = 0.0_rtype
+!   <Shanyp These variable declaring and initialization are combined together in a single line. 
+!   These variables are considered shared variables, causing the problems with threading. 
+!   Declaring them first and then initializing them at the start of the subroutine make these variables private and fix the problem.
+!   Shanyp>
 
    ! if (qi_incld(i,k).ge.qsmall .and. t_atm(i,k).lt.T_zerodegc) then
    !  NOTE:  condition applicable for cloud only; modify when rain is added back
