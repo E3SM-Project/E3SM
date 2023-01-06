@@ -212,9 +212,6 @@ void BoundaryExchange::registration_completed()
   // Note: for 2d/3d fields, we have 1 Real per GP (per level, in 3d). For 1d fields,
   //       we have 2 Real per level (max and min over element).
 
-  if (m_connectivity->get_comm().root())
-    fprintf(stderr, "amb> num fields: 1d %d 2d %d 3d %d 3d_int %d\n",
-            m_num_1d_fields, m_num_2d_fields, m_num_3d_fields, m_num_3d_int_fields);
   int single_ptr_buf_size = m_num_2d_fields + m_num_3d_int_fields*NUM_LEV_P*VECTOR_SIZE;
   for (int i = 0; i < m_num_3d_fields; ++i)
     single_ptr_buf_size += m_3d_nlev_pack[i]*VECTOR_SIZE;

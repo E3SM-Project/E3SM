@@ -259,7 +259,7 @@ private:
   // * shared connection: point to the corresponding mpi buffer;
   // * missing connection: point to the send/recv blackhole.
 
-  //#define AMB_BE
+#define AMB_BE
 #ifdef AMB_BE
   // Index as m_*_?d_buffers(ifield, iconn), where iconn ranges over all
   // connections in this rank.

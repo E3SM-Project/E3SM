@@ -73,7 +73,9 @@ inline std::string remapAlg2str (const RemapAlg alg) {
   return "UNKNOWN";
 }
 
+// Currently unused. Test case forcings are done in the F90 code.
 enum class TestCase {
+  UNUSED, // be clear that we don't use this information
   ASP_BAROCLINIC,
   ASP_GRAVITY_WAVE,
   ASP_MOUNTAIN,
