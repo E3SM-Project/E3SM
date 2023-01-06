@@ -116,8 +116,9 @@ function(build_model COMP_CLASS COMP_NAME)
       # Add samxx F90 files to the main E3SM build
       set(SOURCES ${SOURCES} cmake/atm/../../eam/src/physics/crm/pam/params.F90
                              cmake/atm/../../eam/src/physics/crm/crm_ecpp_output_module.F90
-                             cmake/atm/../../eam/src/physics/crm/pam/pam_driver.F90 
-                             cmake/atm/../../eam/src/physics/crm/pam/pam_fortran_interface.F90)
+                             cmake/atm/../../eam/src/physics/crm/pam/pam_driver.F90) 
+      # Pam interface need to include modules from pam
+      include_directories(${PAM_BIN}/external/pam_core)
     endif()
 
     # Add rrtmgp++ source code if asked for
