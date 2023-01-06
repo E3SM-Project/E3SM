@@ -430,16 +430,22 @@ end subroutine moab_map_init_rcfile
                                     ntagdatalength,        &
                                     mapper % tag_entity_type,       &
                                     moab_tag_data )
-         if (ierr > 0 )  &
-            call shr_sys_abort( subname//'MOAB Error: failed to get source double tag ')
+         if (ierr > 0 ) then
+!           call shr_sys_abort( subname//'MOAB Error: failed to get source double tag ')
+            write(logunit, *) subname,' iMOAB copy get Error ', trim(fldlist_moab)
+            valid_moab_context = .false.
+         endif
 
          ierr = iMOAB_SetDoubleTagStorage( mapper%tgt_mbid, &
                                     fldlist_moab,               &
                                     ntagdatalength,        &
                                     mapper % tag_entity_type,       &
                                     moab_tag_data )
-         if (ierr > 0 )  &
-            call shr_sys_abort( subname//'MOAB Error: failed to set target double tag ')
+         if (ierr > 0 ) then
+!           call shr_sys_abort( subname//'MOAB Error: failed to set target double tag ')
+            write(logunit, *) subname,' iMOAB copy Set Error ', trim(fldlist_moab)
+            valid_moab_context = .false.
+         endif
 
          deallocate(moab_tag_data)
        endif
