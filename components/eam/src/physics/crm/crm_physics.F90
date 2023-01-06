@@ -506,6 +506,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    use cpp_interface_mod,     only: crm
 #elif defined(MMF_PAM)
    use pam_fortran_interface
+   use pam_driver_mod
 #elif defined(MMF_SAM) || defined(MMF_SAMOMP)
    use crm_module,            only: crm
 #endif
