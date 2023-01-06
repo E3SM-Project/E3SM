@@ -142,7 +142,9 @@ subroutine crm_physics_register()
    !----------------------------------------------------------------------------
    ! Setup CRM internal parameters
    !----------------------------------------------------------------------------
+#if defined(MMF_SAMXX) || defined(MMF_SAM) || defined(MMF_SAMOMP)
    call setparm()
+#endif
 
    if (use_MMF_VT) then
       ! add variance tracers
@@ -497,7 +499,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    use physics_types,         only: physics_state, physics_tend, physics_ptend, physics_ptend_init
    use camsrfexch,            only: cam_in_t, cam_out_t
    use time_manager,          only: is_first_step, get_nstep
-   use crmdims,               only: crm_nx, crm_ny, crm_nz, crm_nx_rad, crm_ny_rad
+   use crmdims,               only: crm_nx, crm_ny, crm_nz, crm_nx_rad, crm_ny_rad, crm_dx, crm_dy, crm_dt
    use physconst,             only: cpair, latvap, latice, gravit, cappa, pi
    use constituents,          only: pcnst, cnst_get_ind
 #if defined(MMF_SAMXX)
@@ -1254,11 +1256,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_mirror_array_readwrite( 'state_q_prev',      crm_state%q_prev      )
 
       ! SHOC variables
-      call pam_mirror_array_readwrite( 'state_shoc_wthv_sec',crm_stat%shoc_wthv_sec )
-      call pam_mirror_array_readwrite( 'state_shoc_tk',      crm_stat%shoc_tk       )
-      call pam_mirror_array_readwrite( 'state_shoc_tkh',     crm_stat%shoc_tkh      )
-      call pam_mirror_array_readwrite( 'state_shoc_cldfrac', crm_stat%shoc_cldfrac  )
-      call pam_mirror_array_readwrite( 'state_shoc_relvar',  crm_stat%shoc_relvar   )
+      call pam_mirror_array_readwrite( 'state_shoc_wthv_sec',crm_state%shoc_wthv_sec )
+      call pam_mirror_array_readwrite( 'state_shoc_tk',      crm_state%shoc_tk       )
+      call pam_mirror_array_readwrite( 'state_shoc_tkh',     crm_state%shoc_tkh      )
+      call pam_mirror_array_readwrite( 'state_shoc_cldfrac', crm_state%shoc_cldfrac  )
+      call pam_mirror_array_readwrite( 'state_shoc_relvar',  crm_state%shoc_relvar   )
 
       ! Radiation tendency and output conditions
       call pam_mirror_array_readwrite( 'rad_qrad',        crm_rad%qrad        )
@@ -1344,23 +1346,23 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
       call pam_mirror_array_readonly( 'gcolp', gcolp )
 
-      pam_set_option('ncrms', ncrms )
-      pam_set_option('gcm_nlev', pver )
-      pam_set_option('crm_nz', crm_nz )
-      pam_set_option('crm_nx', crm_nx )
-      pam_set_option('crm_ny', crm_ny )
-      pam_set_option('crm_dx', crm_dx )
-      pam_set_option('crm_dy', crm_dy )
-      pam_set_option('gcm_dt', ztodt )
-      pam_set_option('crm_dt', crm_dt )
+      call pam_set_option('ncrms', ncrms )
+      call pam_set_option('gcm_nlev', pver )
+      call pam_set_option('crm_nz', crm_nz )
+      call pam_set_option('crm_nx', crm_nx )
+      call pam_set_option('crm_ny', crm_ny )
+      call pam_set_option('crm_dx', crm_dx )
+      call pam_set_option('crm_dy', crm_dy )
+      call pam_set_option('gcm_dt', ztodt )
+      call pam_set_option('crm_dt', crm_dt )
 
-      pam_set_option('use_MMF_VT', use_MMF_VT )
-      pam_set_option('MMF_VT_wn_max', MMF_VT_wn_max )
-      pam_set_option('use_MMF_ESMT', use_MMF_ESMT )
-      pam_set_option('use_crm_accel', use_crm_accel )
-      pam_set_option('crm_accel_factor', crm_accel_factor )
+      call pam_set_option('use_MMF_VT', use_MMF_VT_tmp )
+      call pam_set_option('MMF_VT_wn_max', MMF_VT_wn_max )
+      call pam_set_option('use_MMF_ESMT', use_MMF_ESMT_tmp )
+      call pam_set_option('use_crm_accel', use_crm_accel_tmp )
+      call pam_set_option('crm_accel_factor', crm_accel_factor )
 
-      pam_set_option('is_first_step', (nstep<=1) )
+      call pam_set_option('is_first_step', (nstep<=1) )
 
       call t_startf ('crm_call')
       call pam_driver()

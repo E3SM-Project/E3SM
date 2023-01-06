@@ -44,8 +44,15 @@ module crm_state_module
       real(crm_rknd), allocatable :: bm(:,:,:,:) ! averaged riming volume
 
       ! "previous" state variables needed for P3
-      real(crm_rknd), allocatable :: t_prev(:,:,:,:)  ! previous CRM time step temperature
+      real(crm_rknd), allocatable :: t_prev(:,:,:,:) ! previous CRM time step temperature
       real(crm_rknd), allocatable :: q_prev(:,:,:,:) ! previous CRM time step water vapor
+
+      ! SHOC quantities that need to persist between CRM calls
+      real(crm_rknd), allocatable :: shoc_wthv_sec(:,:,:,:) ! buoyancy flux                 [K m/s]
+      real(crm_rknd), allocatable :: shoc_tk      (:,:,:,:) ! eddy coefficient for momentum [m2/s]
+      real(crm_rknd), allocatable :: shoc_tkh     (:,:,:,:) ! eddy coefficient for heat     [m2/s]
+      real(crm_rknd), allocatable :: shoc_cldfrac (:,:,:,:) ! Cloud fraction
+      real(crm_rknd), allocatable :: shoc_relvar  (:,:,:,:) ! relative cloud water variance
 
    end type crm_state_type
    !------------------------------------------------------------------------------------------------
@@ -99,6 +106,17 @@ contains
          call prefetch(state%bm)
          call prefetch(state%t_prev)
          call prefetch(state%q_prev)
+         ! SHOC variables
+         if (.not. allocated(state%shoc_wthv_sec))  allocate(state%shoc_wthv_sec(ncrms,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(state%shoc_tk      ))  allocate(state%shoc_tk      (ncrms,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(state%shoc_tkh     ))  allocate(state%shoc_tkh     (ncrms,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(state%shoc_cldfrac ))  allocate(state%shoc_cldfrac (ncrms,crm_nx,crm_ny,crm_nz))
+         if (.not. allocated(state%shoc_relvar  ))  allocate(state%shoc_relvar  (ncrms,crm_nx,crm_ny,crm_nz))
+         call prefetch(state%shoc_wthv_sec)
+         call prefetch(state%shoc_tk      )
+         call prefetch(state%shoc_tkh     )
+         call prefetch(state%shoc_cldfrac )
+         call prefetch(state%shoc_relvar  )
       end if
 
    end subroutine crm_state_initialize
@@ -127,6 +145,13 @@ contains
       if (allocated(state%bm)) deallocate(state%bm)
       if (allocated(state%t_prev)) deallocate(state%t_prev)
       if (allocated(state%q_prev)) deallocate(state%q_prev)
+
+      ! SHOC variables
+      if (allocated(state%shoc_wthv_sec)) deallocate(state%shoc_wthv_sec)
+      if (allocated(state%shoc_tk      )) deallocate(state%shoc_tk      )
+      if (allocated(state%shoc_tkh     )) deallocate(state%shoc_tkh     )
+      if (allocated(state%shoc_cldfrac )) deallocate(state%shoc_cldfrac )
+      if (allocated(state%shoc_relvar  )) deallocate(state%shoc_relvar  )
       
    end subroutine crm_state_finalize
 end module crm_state_module
