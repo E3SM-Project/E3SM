@@ -1506,118 +1506,111 @@ contains
                   call t_stopf('rad_initialize_fluxes_sw')
 
                   ! Calculate shortwave fluxes
-                  !call t_startf('rad_radiation_driver_sw')
-                  !call radiation_driver_sw(ncol_tot, &
-                  !     vmr_packed, &
-                  !     pmid_packed, pint_packed, tmid_packed, &
-                  !     albedo_dir_packed, albedo_dif_packed, coszrs_packed, &
-                  !     cld_tau_gpt_sw, cld_ssa_gpt_sw, cld_asm_gpt_sw, &
-                  !     aer_tau_bnd_sw_packed, aer_ssa_bnd_sw_packed, aer_asm_bnd_sw_packed, &
-                  !     fluxes_allsky_packed, fluxes_clrsky_packed, tsi_scaling)
-                  !call t_stopf('rad_radiation_driver_sw')
                   ! If no daytime columns in this chunk, then we return zeros
                   call set_daynight_indices(coszrs_packed(1:ncol_tot), day_indices_packed(1:ncol_tot), night_indices_packed(1:ncol_tot))
                   nday = count(day_indices_packed(1:ncol_tot) > 0)
-                  if (nday == 0) then
+                  if (nday > 0) then
+                     ! Compress to daytime-only arrays
+                     call t_startf('rad_compress_day_columns')
+                     do iday = 1,nday
+                        icol = day_indices_packed(iday)
+                        tmid_day(iday,:) = tmid_packed(icol,:)
+                        pmid_day(iday,:) = pmid_packed(icol,:)
+                        pint_day(iday,:) = pint_packed(icol,:)
+                        albedo_dir_day(:,iday) = albedo_dir_packed(:,icol)
+                        albedo_dif_day(:,iday) = albedo_dif_packed(:,icol)
+                        coszrs_day(iday) = coszrs_packed(icol)
+                        vmr_day(:,iday,:) = vmr_packed(:,icol,:)
+                        cld_d(iday,:) = cld_p(icol,:)
+                        iclwp_d(iday,:) = iclwp_p(icol,:)
+                        iciwp_d(iday,:) = iciwp_p(icol,:)
+                        rel_d(iday,:) = rel_p(icol,:)
+                        rei_d(iday,:) = rei_p(icol,:)
+                        aer_tau_bnd_day(iday,:,:) = aer_tau_bnd_sw_packed(icol,:,:)
+                        aer_ssa_bnd_day(iday,:,:) = aer_ssa_bnd_sw_packed(icol,:,:)
+                        aer_asm_bnd_day(iday,:,:) = aer_asm_bnd_sw_packed(icol,:,:)
+                     end do
+                     call t_stopf('rad_compress_day_columns')
+
+                     ! Do cloud optics
+                     call t_startf('rad_cloud_optics_sw')
+                     cld_tau_gpt_day = 0._r8
+                     cld_ssa_gpt_day = 0._r8
+                     cld_asm_gpt_day = 0._r8
+                     call get_cloud_optics_sw( &
+                        nday, pver, nswbands, &
+                        cld_d, iclwp_d, iciwp_d, &
+                        rel_d, rei_d, &
+                        cld_tau_bnd_day(:,ktop:kbot,:), cld_ssa_bnd_day(:,ktop:kbot,:), cld_asm_bnd_day(:,ktop:kbot,:) &
+                     )
+                     ! Now reorder bands to be consistent with RRTMGP
+                     ! We need to fix band ordering because the old input files assume RRTMG
+                     ! band ordering, but this has changed in RRTMGP.
+                     ! TODO: fix the input files themselves!
+                     do icol = 1,nday
+                        do ilay = 1,nlev_rad
+                           cld_tau_bnd_day(icol,ilay,:) = reordered(cld_tau_bnd_day(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                           cld_ssa_bnd_day(icol,ilay,:) = reordered(cld_ssa_bnd_day(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                           cld_asm_bnd_day(icol,ilay,:) = reordered(cld_asm_bnd_day(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
+                        end do
+                     end do
+                     ! MCICA sampling to get cloud optical properties by gpoint/cloud state
+                     call get_gpoint_bands_sw(gpoint_bands_sw)
+                     call sample_cloud_optics_sw( &
+                        nday, pver, nswgpts, gpoint_bands_sw, &
+                        pmid_day(:,ktop:kbot), cld_d, &
+                        cld_tau_bnd_day(:,ktop:kbot,:), cld_ssa_bnd_day(:,ktop:kbot,:), cld_asm_bnd_day(:,ktop:kbot,:), &
+                        cld_tau_gpt_day(:,ktop:kbot,:), cld_ssa_gpt_day(:,ktop:kbot,:), cld_asm_gpt_day(:,ktop:kbot,:) &
+                     )
+                     call handle_error(clip_values(cld_tau_gpt_day,  0._r8, huge(cld_tau_gpt_day), trim(subname) // ' cld_tau_gpt_day', tolerance=1e-10_r8))
+                     call handle_error(clip_values(cld_ssa_gpt_day,  0._r8,                1._r8, trim(subname) // ' cld_ssa_gpt_day', tolerance=1e-10_r8))
+                     call handle_error(clip_values(cld_asm_gpt_day, -1._r8,                1._r8, trim(subname) // ' cld_asm_gpt_day', tolerance=1e-10_r8))
+                     call t_stopf('rad_cloud_optics_sw')
+
+                     ! Allocate shortwave fluxes (allsky and clearsky)
+                     ! NOTE: fluxes defined at interfaces, so initialize to have vertical
+                     ! dimension nlev_rad+1, while we initialized the RRTMGP input variables to
+                     ! have vertical dimension nlev_rad (defined at midpoints).
+                     call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_allsky_day, do_direct=.true.)
+                     call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
+
+                     ! Do shortwave radiative transfer calculations
+                     call t_startf('rad_rrtmgp_run_sw')
+                     call rrtmgp_run_sw( &
+                        size(active_gases), nday, nlev_rad, &
+                        vmr_day(:,1:nday,1:nlev_rad), &
+                        pmid_day(1:nday,1:nlev_rad), &
+                        tmid_day(1:nday,1:nlev_rad), &
+                        pint_day(1:nday,1:nlev_rad+1), &
+                        coszrs_day(1:nday), &
+                        albedo_dir_day(1:nswbands,1:nday), &
+                        albedo_dif_day(1:nswbands,1:nday), &
+                        cld_tau_gpt_day(1:nday,1:nlev_rad,1:nswgpts), cld_ssa_gpt_day(1:nday,1:nlev_rad,1:nswgpts), cld_asm_gpt_day(1:nday,1:nlev_rad,1:nswgpts), &
+                        aer_tau_bnd_day(1:nday,1:nlev_rad,1:nswbands), aer_ssa_bnd_day(1:nday,1:nlev_rad,1:nswbands), aer_asm_bnd_day(1:nday,1:nlev_rad,1:nswbands), &
+                        fluxes_allsky_day%flux_up    , fluxes_allsky_day%flux_dn    , fluxes_allsky_day%flux_net    , fluxes_allsky_day%flux_dn_dir    , &
+                        fluxes_allsky_day%bnd_flux_up, fluxes_allsky_day%bnd_flux_dn, fluxes_allsky_day%bnd_flux_net, fluxes_allsky_day%bnd_flux_dn_dir, &
+                        fluxes_clrsky_day%flux_up    , fluxes_clrsky_day%flux_dn    , fluxes_clrsky_day%flux_net    , fluxes_clrsky_day%flux_dn_dir    , &
+                        fluxes_clrsky_day%bnd_flux_up, fluxes_clrsky_day%bnd_flux_dn, fluxes_clrsky_day%bnd_flux_net, fluxes_clrsky_day%bnd_flux_dn_dir, &
+                        tsi_scaling &
+                     )
+                     call t_stopf('rad_rrtmgp_run_sw')
+
+                     ! Expand fluxes from daytime-only arrays to full chunk arrays
+                     call t_startf('rad_expand_fluxes_sw')
+                     call expand_day_fluxes(fluxes_allsky_day, fluxes_allsky_packed, day_indices_packed(1:nday))
+                     call expand_day_fluxes(fluxes_clrsky_day, fluxes_clrsky_packed, day_indices_packed(1:nday))
+                     call t_stopf('rad_expand_fluxes_sw')
+
+                     ! Clean up after ourselves
+                     call free_fluxes(fluxes_allsky_day)
+                     call free_fluxes(fluxes_clrsky_day)
+
+                  else
+
                      call reset_fluxes(fluxes_allsky_packed)
                      call reset_fluxes(fluxes_clrsky_packed)
-                  end if
 
-                  ! Compress to daytime-only arrays
-                  ! TODO: do this BEFORE computing optics, because packing cloud optics is expensive
-                  call t_startf('rad_compress_day_columns')
-                  do iday = 1,nday
-                     icol = day_indices_packed(iday)
-                     tmid_day(iday,:) = tmid_packed(icol,:)
-                     pmid_day(iday,:) = pmid_packed(icol,:)
-                     pint_day(iday,:) = pint_packed(icol,:)
-                     albedo_dir_day(:,iday) = albedo_dir_packed(:,icol)
-                     albedo_dif_day(:,iday) = albedo_dif_packed(:,icol)
-                     coszrs_day(iday) = coszrs_packed(icol)
-                     vmr_day(:,iday,:) = vmr_packed(:,icol,:)
-                     cld_d(iday,:) = cld_p(icol,:)
-                     iclwp_d(iday,:) = iclwp_p(icol,:)
-                     iciwp_d(iday,:) = iciwp_p(icol,:)
-                     rel_d(iday,:) = rel_p(icol,:)
-                     rei_d(iday,:) = rei_p(icol,:)
-                     aer_tau_bnd_day(iday,:,:) = aer_tau_bnd_sw_packed(icol,:,:)
-                     aer_ssa_bnd_day(iday,:,:) = aer_ssa_bnd_sw_packed(icol,:,:)
-                     aer_asm_bnd_day(iday,:,:) = aer_asm_bnd_sw_packed(icol,:,:)
-                  end do
-                  call t_stopf('rad_compress_day_columns')
-
-                  ! Do cloud optics
-                  call t_startf('rad_cloud_optics_sw')
-                  cld_tau_gpt_day = 0._r8
-                  cld_ssa_gpt_day = 0._r8
-                  cld_asm_gpt_day = 0._r8
-                  call get_cloud_optics_sw( &
-                     nday, pver, nswbands, &
-                     cld_d, iclwp_d, iciwp_d, &
-                     rel_d, rei_d, &
-                     cld_tau_bnd_day(:,ktop:kbot,:), cld_ssa_bnd_day(:,ktop:kbot,:), cld_asm_bnd_day(:,ktop:kbot,:) &
-                  )
-                  ! Now reorder bands to be consistent with RRTMGP
-                  ! We need to fix band ordering because the old input files assume RRTMG
-                  ! band ordering, but this has changed in RRTMGP.
-                  ! TODO: fix the input files themselves!
-                  do icol = 1,nday
-                     do ilay = 1,nlev_rad
-                        cld_tau_bnd_day(icol,ilay,:) = reordered(cld_tau_bnd_day(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
-                        cld_ssa_bnd_day(icol,ilay,:) = reordered(cld_ssa_bnd_day(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
-                        cld_asm_bnd_day(icol,ilay,:) = reordered(cld_asm_bnd_day(icol,ilay,:), rrtmg_to_rrtmgp_swbands)
-                     end do
-                  end do
-                  ! MCICA sampling to get cloud optical properties by gpoint/cloud state
-                  call get_gpoint_bands_sw(gpoint_bands_sw)
-                  call sample_cloud_optics_sw( &
-                     nday, pver, nswgpts, gpoint_bands_sw, &
-                     pmid_day(:,ktop:kbot), cld_d, &
-                     cld_tau_bnd_day(:,ktop:kbot,:), cld_ssa_bnd_day(:,ktop:kbot,:), cld_asm_bnd_day(:,ktop:kbot,:), &
-                     cld_tau_gpt_day(:,ktop:kbot,:), cld_ssa_gpt_day(:,ktop:kbot,:), cld_asm_gpt_day(:,ktop:kbot,:) &
-                  )
-                  call handle_error(clip_values(cld_tau_gpt_day,  0._r8, huge(cld_tau_gpt_day), trim(subname) // ' cld_tau_gpt_day', tolerance=1e-10_r8))
-                  call handle_error(clip_values(cld_ssa_gpt_day,  0._r8,                1._r8, trim(subname) // ' cld_ssa_gpt_day', tolerance=1e-10_r8))
-                  call handle_error(clip_values(cld_asm_gpt_day, -1._r8,                1._r8, trim(subname) // ' cld_asm_gpt_day', tolerance=1e-10_r8))
-                  call t_stopf('rad_cloud_optics_sw')
-
-                  ! Allocate shortwave fluxes (allsky and clearsky)
-                  ! NOTE: fluxes defined at interfaces, so initialize to have vertical
-                  ! dimension nlev_rad+1, while we initialized the RRTMGP input variables to
-                  ! have vertical dimension nlev_rad (defined at midpoints).
-                  call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_allsky_day, do_direct=.true.)
-                  call initialize_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
-
-                  ! Do shortwave radiative transfer calculations
-                  call t_startf('rad_rrtmgp_run_sw')
-                  call rrtmgp_run_sw( &
-                     size(active_gases), nday, nlev_rad, &
-                     vmr_day(:,1:nday,1:nlev_rad), &
-                     pmid_day(1:nday,1:nlev_rad), &
-                     tmid_day(1:nday,1:nlev_rad), &
-                     pint_day(1:nday,1:nlev_rad+1), &
-                     coszrs_day(1:nday), &
-                     albedo_dir_day(1:nswbands,1:nday), &
-                     albedo_dif_day(1:nswbands,1:nday), &
-                     cld_tau_gpt_day(1:nday,1:nlev_rad,1:nswgpts), cld_ssa_gpt_day(1:nday,1:nlev_rad,1:nswgpts), cld_asm_gpt_day(1:nday,1:nlev_rad,1:nswgpts), &
-                     aer_tau_bnd_day(1:nday,1:nlev_rad,1:nswbands), aer_ssa_bnd_day(1:nday,1:nlev_rad,1:nswbands), aer_asm_bnd_day(1:nday,1:nlev_rad,1:nswbands), &
-                     fluxes_allsky_day%flux_up    , fluxes_allsky_day%flux_dn    , fluxes_allsky_day%flux_net    , fluxes_allsky_day%flux_dn_dir    , &
-                     fluxes_allsky_day%bnd_flux_up, fluxes_allsky_day%bnd_flux_dn, fluxes_allsky_day%bnd_flux_net, fluxes_allsky_day%bnd_flux_dn_dir, &
-                     fluxes_clrsky_day%flux_up    , fluxes_clrsky_day%flux_dn    , fluxes_clrsky_day%flux_net    , fluxes_clrsky_day%flux_dn_dir    , &
-                     fluxes_clrsky_day%bnd_flux_up, fluxes_clrsky_day%bnd_flux_dn, fluxes_clrsky_day%bnd_flux_net, fluxes_clrsky_day%bnd_flux_dn_dir, &
-                     tsi_scaling &
-                  )
-                  call t_stopf('rad_rrtmgp_run_sw')
-
-                  ! Expand fluxes from daytime-only arrays to full chunk arrays
-                  call t_startf('rad_expand_fluxes_sw')
-                  call expand_day_fluxes(fluxes_allsky_day, fluxes_allsky_packed, day_indices_packed(1:nday))
-                  call expand_day_fluxes(fluxes_clrsky_day, fluxes_clrsky_packed, day_indices_packed(1:nday))
-                  call t_stopf('rad_expand_fluxes_sw')
-
-                  ! Clean up after ourselves
-                  call free_fluxes(fluxes_allsky_day)
-                  call free_fluxes(fluxes_clrsky_day)
+                  end if  ! nday > 0
 
                   ! Calculate heating rates
                   call t_startf('rad_heating_rate_sw')
