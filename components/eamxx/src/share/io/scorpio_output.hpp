@@ -169,6 +169,7 @@ protected:
   // sim_field_manager points to the simulation field manager
   // when remapping horizontally these two field managers may be different.
   std::shared_ptr<const fm_type>      m_io_field_mgr;
+  std::shared_ptr<const fm_type>      m_int_field_mgr;
   std::shared_ptr<const fm_type>      m_sim_field_mgr;
   std::shared_ptr<const grid_type>    m_io_grid;
   std::shared_ptr<remapper_type>      m_horiz_remapper;
