@@ -34,8 +34,7 @@ use cam_abortutils,  only: endrun
 use error_messages,  only: handle_err
 use cam_control_mod, only: lambm0, obliqr, mvelpp, eccen
 use scamMod,         only: scm_crm_mode, single_column,have_cld,cldobs,&
-                           have_clwp,clwpobs,have_tg,tground,swrad_off,&
-                           lwrad_off
+                           have_clwp,clwpobs,have_tg,tground
 use perf_mod,        only: t_startf, t_stopf
 use cam_logfile,     only: iulog
 
@@ -51,6 +50,7 @@ public :: &
    radiation_nextsw_cday, &! calendar day of next radiation calculation
    radiation_do,          &! query which radiation calcs are done this timestep
    radiation_init,        &! calls radini
+   radiation_final,       &! deallocate
    radiation_readnl,      &! read radiation namelist
    radiation_tend          ! moved from radctl.F90
 
@@ -324,20 +324,24 @@ function radiation_do(op, timestep)
    end if
 
    select case (op)
-
-   case ('sw') ! do a shortwave heating calc this timestep?
-      radiation_do = nstep == 0  .or.  iradsw == 1                     &
-                    .or. (mod(nstep-1,iradsw) == 0  .and.  nstep /= 1) &
-                    .or. nstep <= irad_always
-
-   case ('lw') ! do a longwave heating calc this timestep?
-      radiation_do = nstep == 0  .or.  iradlw == 1                     &
-                    .or. (mod(nstep-1,iradlw) == 0  .and.  nstep /= 1) &
-                    .or. nstep <= irad_always
-
-   case default
-      call endrun('radiation_do: unknown operation:'//op)
-
+      case ('sw') ! do a shortwave heating calc this timestep?
+         if (iradsw==0) then
+            radiation_do = .false.
+         else
+            radiation_do = nstep == 0 .or. iradsw == 1                     &
+                          .or. (mod(nstep-1,iradsw) == 0 .and. nstep /= 1) &
+                          .or. nstep <= irad_always
+         end if
+      case ('lw') ! do a longwave heating calc this timestep?
+         if (iradlw==0) then
+            radiation_do = .false.
+         else
+            radiation_do = nstep == 0 .or. iradlw == 1                     &
+                          .or. (mod(nstep-1,iradlw) == 0 .and. nstep /= 1) &
+                          .or. nstep <= irad_always
+         end if
+      case default
+         call endrun('radiation_do: unknown operation:'//op)
    end select
 end function radiation_do
 
@@ -364,18 +368,17 @@ real(r8) function radiation_nextsw_cday()
    nstep  = get_nstep()
    dtime  = get_step_size()
    offset = 0
-   do while (.not. dosw)
-      nstep = nstep + 1
-      offset = offset + dtime
-      if (radiation_do('sw', nstep)) then
-         radiation_nextsw_cday = get_curr_calday(offset=offset) 
-         dosw = .true.
-      end if
-   end do
-   if(radiation_nextsw_cday == -1._r8) then
-      call endrun('error in radiation_nextsw_cday')
+   if (iradsw/=0) then
+      do while (.not. dosw)
+         nstep = nstep + 1
+         offset = offset + dtime
+         if (radiation_do('sw', nstep)) then
+            radiation_nextsw_cday = get_curr_calday(offset=offset) 
+            dosw = .true.
+         end if
+      end do
    end if
-        
+
 end function radiation_nextsw_cday
 
 !================================================================================================
@@ -838,10 +841,17 @@ end function radiation_nextsw_cday
   end subroutine radiation_init
 
 !===============================================================================
+
+  subroutine radiation_final()
+    ! Do any needed clean-up and deallocation before model exit. Empty for now
+    ! but required for consistency with RRTMGPXX interface.
+  end subroutine radiation_final
+  
+!===============================================================================
   
   subroutine radiation_tend( state, ptend,pbuf, &
        cam_out, cam_in, &
-       landfrac,landm,icefrac,snowh, &
+       landfrac,icefrac,snowh, &
        fsns,    fsnt, flns,    flnt,  &
        fsds, net_flx, is_cmip6_volc)
 
@@ -935,7 +945,6 @@ end function radiation_nextsw_cday
     ! Arguments
     logical,  intent(in)    :: is_cmip6_volc    ! true if cmip6 style volcanic file is read otherwise false 
     real(r8), intent(in)    :: landfrac(pcols)  ! land fraction
-    real(r8), intent(in)    :: landm(pcols)     ! land fraction ramp
     real(r8), intent(in)    :: icefrac(pcols)   ! land fraction
     real(r8), intent(in)    :: snowh(pcols)     ! Snow depth (liquid water equivalent)
 #ifdef MODAL_AERO
@@ -1330,21 +1339,13 @@ end function radiation_nextsw_cday
     calday = get_curr_calday()
     call zenith (calday, clat, clon, coszrs, ncol, dt_avg)
     
-    ! We can bypass the shortwave calculation by setting the cosine of the solar
-    ! zenith angle to zero for all columns, because the shortwave code collapses
-    ! the inputs to daytime-only arrays. In case the swrad_off flag is set then,
-    ! we force shortwave to not be calculated by setting coszrs = 0.
-    if (swrad_off) then
-      coszrs(:)=0._r8
-    endif    
-
     ! Output cosine solar zenith angle
     call outfld('COSZRS', coszrs(1:ncol), ncol, lchnk)
 
     ! The output_rad_data routine is intended to output all of the data needed
     ! to run the radiation code offline. This functionality may or may not be
     ! supported, and definitely is NOT for SP simulations.
-    call output_rad_data(  pbuf, state, cam_in, landm, coszrs )
+    call output_rad_data(  pbuf, state, cam_in, coszrs )
 
     ! Gather night/day column indices.
     Nday = 0
@@ -1518,7 +1519,7 @@ end function radiation_nextsw_cday
 
       ! calculate effective radius - moved outside of ii,jj loops for 1-moment microphysics
       if (MMF_microphysics_scheme .eq. 'sam1mom') then 
-        call cldefr( lchnk, ncol, landfrac, state%t, rel, rei, state%ps, state%pmid, landm, icefrac, snowh )
+        call cldefr( lchnk, ncol, state%t, rel, rei, state%ps, state%pmid, landfrac, icefrac, snowh )
       end if
 
       ! Start loop over CRM columns; the strategy here is to loop over each CRM
@@ -2106,21 +2107,6 @@ end function radiation_nextsw_cday
                          clm_seed,     lu,           ld                                            )
                 call t_stopf ('rad_rrtmg_lw')
 
-                if (lwrad_off) then
-                  qrl(:,:) = 0._r8
-                  qrlc(:,:) = 0._r8
-                  flns(:) = 0._r8
-                  flnt(:) = 0._r8
-                  flnsc(:) = 0._r8
-                  flntc(:) = 0._r8
-                  cam_out%flwds(:) = 0._r8
-                  flut(:) = 0._r8
-                  flutc(:) = 0._r8
-                  fnl(:,:) = 0._r8
-                  fcnl(:,:) = 0._r8
-                  fldsc(:) = 0._r8
-                end if !lwrad_off
-    
                 do i=1,ncol
                   lwcf(i)=flutc(i) - flut(i)
                 end do
@@ -2343,8 +2329,8 @@ end function radiation_nextsw_cday
 
                  call t_startf ('cosp_run')
                  call cospsimulator_intr_run(state,  pbuf, cam_in, emis, coszrs, &
-                      cld_swtau_in=cld_tau(rrtmg_sw_cloudsim_band,:,:),&
-                      snow_tau_in=gb_snow_tau,snow_emis_in=gb_snow_lw)
+                      cld_tau(rrtmg_sw_cloudsim_band,:,:),&
+                      snow_tau=gb_snow_tau,snow_emis=gb_snow_lw)
                  cosp_cnt(lchnk) = 0  !! reset counter
                  call t_stopf ('cosp_run')
 

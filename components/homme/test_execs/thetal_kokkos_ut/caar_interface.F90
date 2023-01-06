@@ -95,7 +95,7 @@ contains
       theta_advect_form = 1
     endif
 
-    call compute_andor_apply_rhs(np1,nm1,n0,1,dt,            &
+    call compute_andor_apply_rhs(np1,nm1,n0,dt,            &
                                  elem,hvcoord,hybrid,deriv,  &
                                  1,nelemd,.false.,eta_ave_w, &
                                  scale1,scale2,scale3)

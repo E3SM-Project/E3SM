@@ -1,0 +1,2 @@
+fsurdat = '$DIN_LOC_ROOT/lnd/clm2/surfdata_map/surfdata_0.9x1.25_simyr2000_c220129.nc'
+use_top_solar_rad = .true.

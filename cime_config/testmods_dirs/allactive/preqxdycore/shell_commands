@@ -1,0 +1,3 @@
+#!/bin/bash
+./xmlchange CAM_TARGET=preqx
+

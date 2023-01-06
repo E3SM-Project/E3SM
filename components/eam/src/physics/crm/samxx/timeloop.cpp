@@ -2,13 +2,15 @@
 #include "timeloop.h"
 
 void timeloop() {
-  auto &crm_output_subcycle_factor = :: crm_output_subcycle_factor;
-  auto &t                        = :: t;
-  auto &crm_rad_qrad             = :: crm_rad_qrad;
-  auto &dtn                      = :: dtn;
-  auto &ncrms                    = :: ncrms;
-  auto &na                       = :: na;
-  auto &dt3                      = :: dt3;
+  YAKL_SCOPE( crm_output_subcycle_factor , :: crm_output_subcycle_factor );
+  YAKL_SCOPE( t                        , :: t );
+  YAKL_SCOPE( crm_rad_qrad             , :: crm_rad_qrad );
+  YAKL_SCOPE( dtn                      , :: dtn );
+  YAKL_SCOPE( ncrms                    , :: ncrms );
+  YAKL_SCOPE( na                       , :: na );
+  YAKL_SCOPE( dt3                      , :: dt3 );
+  YAKL_SCOPE( use_VT                   , :: use_VT );
+  YAKL_SCOPE( use_ESMT                 , :: use_ESMT );
 
   nstep = 0;
 
@@ -113,9 +115,11 @@ void timeloop() {
         sgs_mom();
       }
 
-#ifdef MMF_ESMT
-      scalar_momentum_tend();
-#endif
+      //----------------------------------------------------------
+      //  Explicit scalar momentum transport scheme (ESMT)
+      if (use_ESMT) {
+        scalar_momentum_tend();
+      }
 
       //-----------------------------------------------------------
       //       Coriolis force:

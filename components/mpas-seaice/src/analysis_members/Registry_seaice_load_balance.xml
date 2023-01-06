@@ -1,0 +1,54 @@
+	<nml_record name="AM_loadBalance">
+		<nml_option name="config_AM_loadBalance_enable" type="logical" default_value="false" units="unitless"
+			description="If true, ocean analysis member loadBalance is called."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_loadBalance_compute_interval" type="character" default_value="output_interval" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_loadBalance_output_stream" type="character" default_value="loadBalanceOutput" units="unitless"
+			description="Name of the stream that the loadBalance analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_loadBalance_compute_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_loadBalance_write_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_loadBalance_nProcs" type="integer" default_value="32" units="unitless"
+			description="Number of processors to output results for"
+			possible_values="Any positive integer"
+		/>
+	</nml_record>
+	<dims>
+		<dim name="nProcs" definition="namelist:config_AM_loadBalance_nProcs"/>
+	</dims>
+	<packages>
+		<package name="loadBalanceAMPKG" description="This package includes variables required for the loadBalance analysis member."/>
+	</packages>
+	<var_struct name="loadBalanceAM" time_levs="1" packages="loadBalanceAMPKG">
+		<var name="nCellsProcWithSeaIce" type="integer" dimensions="nProcs Time" units="-"
+			description="Number of cells with sea ice present per processor"
+		/>
+		<var name="nCellsProc" type="integer" dimensions="nProcs" units="-"
+			description="Number of cells per processor"
+		/>
+	</var_struct>
+	<streams>
+		<stream name="loadBalanceOutput" type="output"
+				filename_template="analysis_members/seaice_loadBalance.nc"
+				filename_interval="none"
+				output_interval="00-00-00_01:00:00"
+				reference_time="0000-01-01_00:00:00"
+				packages="loadBalanceAMPKG"
+				clobber_mode="truncate"
+				runtime_format="single_file">
+			<var name="xtime"/>
+			<var name="nCellsProcWithSeaIce"/>
+			<var name="nCellsProc"/>
+		</stream>
+	</streams>

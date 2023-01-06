@@ -12,7 +12,7 @@ module histFileMod
   use shr_sys_mod    , only : shr_sys_flush
   use spmdMod        , only : masterproc
   use abortutils     , only : endrun
-  use elm_varctl     , only : iulog, use_vertsoilc, use_fates
+  use elm_varctl     , only : iulog, use_vertsoilc, use_fates, use_extrasnowlayers
   use elm_varcon     , only : spval, ispval, dzsoi_decomp 
   use elm_varcon     , only : grlnd, nameg, namet, namel, namec, namep
   use decompMod      , only : get_proc_bounds, get_proc_global, bounds_type
@@ -26,11 +26,14 @@ module histFileMod
   use FatesInterfaceTypesMod , only : nlevsclass_fates => nlevsclass
   use FatesInterfaceTypesMod , only : nlevage_fates    => nlevage
   use FatesInterfaceTypesMod , only : nlevheight_fates => nlevheight
+  use FatesInterfaceTypesMod , only : nlevdamage_fates => nlevdamage
   use FatesInterfaceTypesMod , only : nlevcoage
   use EDTypesMod        , only : nfsc_fates       => nfsc
   use FatesLitterMod    , only : ncwd_fates       => ncwd
   use FatesInterfaceTypesMod , only : numpft_fates     => numpft
   use PRTGenericMod          , only : nelements_fates  => num_elements
+  use TopounitType      , only : top_pp
+  use topounit_varcon   , only: max_topounits, has_topounit
 
   !
   implicit none
@@ -210,16 +213,16 @@ module histFileMod
   end type history_tape
 
   type elmpoint_rs                             ! Pointer to real scalar data (1D)
-     real(r8), pointer :: ptr(:)
+     real(r8), pointer :: ptr(:) => null()
   end type elmpoint_rs
   type elmpoint_ra                             ! Pointer to real array data (2D)
-     real(r8), pointer :: ptr(:,:)
+     real(r8), pointer :: ptr(:,:) => null()
   end type elmpoint_ra
 
   ! Pointers into datatype  arrays
   integer, parameter :: max_mapflds = 2500     ! Maximum number of fields to track
-  type (elmpoint_rs) :: elmptr_rs(max_mapflds) ! Real scalar data (1D)
-  type (elmpoint_ra) :: elmptr_ra(max_mapflds) ! Real array data (2D)
+  type (elmpoint_rs), public :: elmptr_rs(max_mapflds) ! Real scalar data (1D)
+  type (elmpoint_ra), public :: elmptr_ra(max_mapflds) ! Real array data (2D)
   !
   ! Master list: an array of master_entry entities
   !
@@ -227,7 +230,7 @@ module histFileMod
   !
   ! History tape: an array of history_tape entities (only active fields)
   !
-  type (history_tape) :: tape(max_tapes)       ! array history tapes
+  type (history_tape), public :: tape(max_tapes)       ! array history tapes
   !
   ! Namelist input
   !
@@ -1171,6 +1174,9 @@ contains
        else if (type1d == namel) then
           check_active = .true.
           active =>lun_pp%active
+       else if (type1d == namet) then
+          check_active = .true.
+          active =>top_pp%active
        else
           check_active = .false.
        end if
@@ -1452,7 +1458,10 @@ contains
        else if (type1d == namel) then
           check_active = .true.
           active =>lun_pp%active
-       else
+       else if (type1d == namet) then
+          check_active = .true.
+          active =>top_pp%active
+       else             
           check_active = .false.
        end if
 
@@ -1630,13 +1639,21 @@ contains
        ! Fill output field appropriately for each layer
        ! When only a subset of snow layers exist, it is the LAST num_snow_layers that exist
 
-       do level = 1, num_nonexistent_layers
-          field_out(point, level) = no_snow_val
-       end do
-       do level = (num_nonexistent_layers + 1), num_levels
-          field_out(point, level) = field_in(point, level)
-       end do
-          
+       if (.not. use_extrasnowlayers) then
+          do level = 1, num_nonexistent_layers
+             field_out(point, level) = no_snow_val
+          end do
+          do level = (num_nonexistent_layers + 1), num_levels
+             field_out(point, level) = field_in(point, level)
+          end do
+       else ! Levels are rearranged such that the top snow layer (surface layer) becomes level 1, etc.
+          do level = num_levels, (num_levels-num_nonexistent_layers+1), -1
+             field_out(point, level) = no_snow_val
+          end do
+          do level = (num_levels-num_nonexistent_layers), 1, -1
+             field_out(point, level) = field_in(point, level+num_nonexistent_layers)
+          end do
+       end if
     end do
 
     end associate
@@ -1727,6 +1744,7 @@ contains
     ! !USES:
     use elm_varpar      , only : nlevgrnd, nlevsno, nlevlak, nlevurb, numrad, nmonth
     use elm_varpar      , only : natpft_size, cft_size, maxpatch_glcmec, nlevdecomp_full, nlevtrc_full, nvegwcs
+    use elm_varpar      , only : nlevsoi
     use landunit_varcon , only : max_lunit
     use elm_varctl      , only : caseid, ctitle, fsurdat, finidat, paramfile
     use elm_varctl      , only : version, hostname, username, conventions, source
@@ -1878,6 +1896,7 @@ contains
 
     ! "level" dimensions
     call ncd_defdim(lnfid, 'levgrnd', nlevgrnd, dimid)
+    call ncd_defdim(lnfid, 'levsoi', nlevsoi,dimid)
     if (nlevurb > 0) then
        call ncd_defdim(lnfid, 'levurb' , nlevurb, dimid)
     end if
@@ -1920,6 +1939,9 @@ contains
        call ncd_defdim(lnfid, 'fates_levcan', nclmax_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcnlf', nlevleaf_fates * nclmax_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levcnlfpf', nlevleaf_fates * nclmax_fates * numpft_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levcdsc', nlevdamage_fates * nlevsclass_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levcdpf', nlevdamage_fates * nlevsclass_fates * numpft_fates, dimid)
+       call ncd_defdim(lnfid, 'fates_levcdam', nlevdamage_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levscagpf', nlevsclass_fates * nlevage_fates * numpft_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levagepft', nlevage_fates * numpft_fates, dimid)
        call ncd_defdim(lnfid, 'fates_levheight', nlevheight_fates, dimid)
@@ -2318,6 +2340,7 @@ contains
     !
     ! !USES:
     use elm_varcon      , only : zsoi, zlak, secspday
+    use elm_varpar      , only : nlevsoi
     use domainMod       , only : ldomain, lon1d, lat1d
     use clm_time_manager, only : get_nstep, get_curr_date, get_curr_time
     use clm_time_manager, only : get_ref_date, get_calendar, NO_LEAP_C, GREGORIAN_C
@@ -2334,6 +2357,8 @@ contains
     use FatesInterfaceTypesMod, only : fates_hdim_levfuel
     use FatesInterfaceTypesMod, only : fates_hdim_levcwdsc
     use FatesInterfaceTypesMod, only : fates_hdim_levcan
+    use FatesInterfaceTypesMod, only : fates_hdim_levleaf
+    use FatesInterfaceTypesMod, only : fates_hdim_levdamage
     use FatesInterfaceTypesMod, only : fates_hdim_canmap_levcnlf
     use FatesInterfaceTypesMod, only : fates_hdim_lfmap_levcnlf
     use FatesInterfaceTypesMod, only : fates_hdim_canmap_levcnlfpf
@@ -2354,7 +2379,11 @@ contains
     use FatesInterfaceTypesMod, only : fates_hdim_agemap_levelage
     use FatesInterfaceTypesMod, only : fates_hdim_agmap_levagefuel
     use FatesInterfaceTypesMod, only : fates_hdim_fscmap_levagefuel
-
+    use FatesInterfaceTypesMod, only : fates_hdim_scmap_levcdsc
+    use FatesInterfaceTypesMod, only : fates_hdim_cdmap_levcdsc
+    use FatesInterfaceTypesMod, only : fates_hdim_scmap_levcdpf
+    use FatesInterfaceTypesMod, only : fates_hdim_cdmap_levcdpf
+    use FatesInterfaceTypesMod, only : fates_hdim_pftmap_levcdpf
 
 
     !
@@ -2406,7 +2435,11 @@ contains
                 long_name='coordinate lake levels', units='m', ncid=nfid(t))
           call ncd_defvar(varname='levdcmp', xtype=tape(t)%ncprec, dim1name='levdcmp', &
                 long_name='coordinate soil levels', units='m', ncid=nfid(t))
-
+          call ncd_defvar(varname='levsoi', xtype=tape(t)%ncprec, &
+               dim1name='levsoi', &
+               long_name='coordinate soil levels (equivalent to top nlevsoi levels of levgrnd)', &
+               units='m', ncid=nfid(t))
+          
           if(use_fates)then
 
              call ncd_defvar(varname='fates_levscls', xtype=tape(t)%ncprec, dim1name='fates_levscls', &
@@ -2435,6 +2468,8 @@ contains
                    long_name='FATES cwd size class', ncid=nfid(t))
              call ncd_defvar(varname='fates_levcan',xtype=ncd_int, dim1name='fates_levcan', &
                    long_name='FATES canopy level', ncid=nfid(t))
+             call ncd_defvar(varname='fates_levleaf',xtype=ncd_int, dim1name='fates_levleaf', &
+                   long_name='FATES leaf+stem level', units='VAI', ncid=nfid(t))
              call ncd_defvar(varname='fates_canmap_levcnlf',xtype=ncd_int, dim1name='fates_levcnlf', &
                    long_name='FATES canopy level of combined canopy-leaf dimension', ncid=nfid(t))
              call ncd_defvar(varname='fates_lfmap_levcnlf',xtype=ncd_int, dim1name='fates_levcnlf', &
@@ -2475,13 +2510,26 @@ contains
                   long_name='FATES age-class map into patch age x fuel size', units='-', ncid=nfid(t))
              call ncd_defvar(varname='fates_fscmap_levagefuel', xtype=ncd_int, dim1name='fates_levagefuel', &
                   long_name='FATES fuel size-class map into patch age x fuel size', units='-', ncid=nfid(t))
-
+             call ncd_defvar(varname='fates_cdmap_levcdsc',xtype=ncd_int, dim1name='fates_levcdsc', &
+                  long_name='FATES damage index of the combined damage-size dimension', ncid=nfid(t))
+             call ncd_defvar(varname='fates_scmap_levcdsc',xtype=ncd_int, dim1name='fates_levcdsc', &
+                  long_name='FATES size index of the combined damage-size dimension', ncid=nfid(t))
+             call ncd_defvar(varname='fates_cdmap_levcdpf',xtype=ncd_int, dim1name='fates_levcdpf', &
+                  long_name='FATES damage index of the combined damage-size-PFT dimension', ncid=nfid(t))
+             call ncd_defvar(varname='fates_scmap_levcdpf',xtype=ncd_int, dim1name='fates_levcdpf', &
+                  long_name='FATES size index of the combined damage-size-PFT dimension', ncid=nfid(t))
+             call ncd_defvar(varname='fates_pftmap_levcdpf',xtype=ncd_int, dim1name='fates_levcdpf', &
+                  long_name='FATES pft index of the combined damage-size-PFT dimension', ncid=nfid(t))
+             call ncd_defvar(varname='fates_levcdam', xtype=tape(t)%ncprec, dim1name='fates_levcdam', &
+                  long_name='FATES damage class lower bound', units='unitless', ncid=nfid(t))
+             
           end if
 
        elseif (mode == 'write') then
           if ( masterproc ) write(iulog, *) ' zsoi:',zsoi
           call ncd_io(varname='levgrnd', data=zsoi, ncid=nfid(t), flag='write')
           call ncd_io(varname='levlak' , data=zlak, ncid=nfid(t), flag='write')
+          call ncd_io(varname='levsoi', data=zsoi(1:nlevsoi), ncid=nfid(t), flag='write')
           if (use_vertsoilc) then
              call ncd_io(varname='levdcmp', data=zsoi, ncid=nfid(t), flag='write')
           else
@@ -2502,6 +2550,8 @@ contains
              call ncd_io(varname='fates_levfuel',data=fates_hdim_levfuel, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_levcwdsc',data=fates_hdim_levcwdsc, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_levcan',data=fates_hdim_levcan, ncid=nfid(t), flag='write')
+             call ncd_io(varname='fates_levleaf',data=fates_hdim_levleaf, ncid=nfid(t), flag='write')
+             call ncd_io(varname='fates_levcdam',data=fates_hdim_levdamage, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_canmap_levcnlf',data=fates_hdim_canmap_levcnlf, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_lfmap_levcnlf',data=fates_hdim_lfmap_levcnlf, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_canmap_levcnlfpf',data=fates_hdim_canmap_levcnlfpf, ncid=nfid(t), flag='write')
@@ -2522,6 +2572,11 @@ contains
              call ncd_io(varname='fates_agemap_levelage',data=fates_hdim_agemap_levelage, ncid=nfid(t),flag='write')
              call ncd_io(varname='fates_agmap_levagefuel',data=fates_hdim_agmap_levagefuel, ncid=nfid(t), flag='write')
              call ncd_io(varname='fates_fscmap_levagefuel',data=fates_hdim_fscmap_levagefuel, ncid=nfid(t), flag='write')
+             call ncd_io(varname='fates_scmap_levcdsc',data=fates_hdim_scmap_levcdsc, ncid=nfid(t), flag='write')
+             call ncd_io(varname='fates_cdmap_levcdsc',data=fates_hdim_cdmap_levcdsc, ncid=nfid(t), flag='write')
+             call ncd_io(varname='fates_scmap_levcdpf',data=fates_hdim_scmap_levcdpf, ncid=nfid(t), flag='write')
+             call ncd_io(varname='fates_cdmap_levcdpf',data=fates_hdim_cdmap_levcdpf, ncid=nfid(t), flag='write')
+             call ncd_io(varname='fates_pftmap_levcdpf',data=fates_hdim_pftmap_levcdpf, ncid=nfid(t), flag='write')
           end if
 
        endif
@@ -2693,6 +2748,19 @@ contains
               long_name='pft real/fake mask (0.=fake and 1.=real)', ncid=nfid(t), &
               imissing_value=ispval, ifill_value=ispval)
        end if
+       if(max_topounits > 1) then
+          if (ldomain%isgrid2d) then
+             call ncd_defvar(varname='topoPerGrid' , xtype=ncd_int, &
+                 dim1name='lon', dim2name='lat', &
+                 long_name='Number of topounits per grid', ncid=nfid(t), &
+                 imissing_value=ispval, ifill_value=ispval)
+          else
+             call ncd_defvar(varname='topoPerGrid' , xtype=ncd_int, &
+                 dim1name=grlnd, &
+                 long_name='Number of topounits per grid', ncid=nfid(t), &
+                 imissing_value=ispval, ifill_value=ispval)
+          end if
+       end if
 
     else if (mode == 'write') then
 
@@ -2711,7 +2779,10 @@ contains
        call ncd_io(varname='landfrac', data=ldomain%frac, dim1name=grlnd, ncid=nfid(t), flag='write')
        call ncd_io(varname='landmask', data=ldomain%mask, dim1name=grlnd, ncid=nfid(t), flag='write')
        call ncd_io(varname='pftmask' , data=ldomain%pftm, dim1name=grlnd, ncid=nfid(t), flag='write')
-
+       call ncd_io(varname='pftmask' , data=ldomain%pftm, dim1name=grlnd, ncid=nfid(t), flag='write')
+       if(max_topounits > 1) then
+          call ncd_io(varname='topoPerGrid' , data=ldomain%num_tunits_per_grd, dim1name=grlnd, ncid=nfid(t), flag='write')
+       end if
     end if  ! (define/write mode
 
   end subroutine htape_timeconst
@@ -2897,10 +2968,12 @@ contains
     integer :: g,c,l,topo,p              ! indices
     integer :: ier                       ! errir status
     real(r8), pointer :: rgarr(:)        ! temporary
+    real(r8), pointer :: rtarr(:)        ! temporary
     real(r8), pointer :: rcarr(:)        ! temporary
     real(r8), pointer :: rlarr(:)        ! temporary
     real(r8), pointer :: rparr(:)        ! temporary
     integer , pointer :: igarr(:)        ! temporary
+    integer , pointer :: itarr(:)        ! temporary
     integer , pointer :: icarr(:)        ! temporary
     integer , pointer :: ilarr(:)        ! temporary
     integer , pointer :: iparr(:)        ! temporary
@@ -2928,6 +3001,23 @@ contains
 
           call ncd_defvar(varname='grid1d_jxy', xtype=ncd_int, dim1name=nameg, &
                long_name='2d latitude index of corresponding gridcell', ncid=ncid)
+          
+          ! Define topounit info
+
+          call ncd_defvar(varname='topo1d_lon', xtype=ncd_double, dim1name=namet, &
+               long_name='topounit longitude', units='degrees_east', ncid=ncid)
+
+          call ncd_defvar(varname='topo1d_lat', xtype=ncd_double, dim1name=namet, &
+               long_name='topounit latitude', units='degrees_north', ncid=ncid)
+
+          call ncd_defvar(varname='topo1d_ixy', xtype=ncd_int, dim1name=namet, &
+               long_name='2d longitude index of corresponding topounit', ncid=ncid)
+
+          call ncd_defvar(varname='topo1d_jxy', xtype=ncd_int, dim1name=namet, &
+               long_name='2d latitude index of corresponding topounit', ncid=ncid)
+
+          call ncd_defvar(varname='topo1d_wtgcell', xtype=ncd_double, dim1name=namet, &
+               long_name='topounit weight relative to corresponding gridcell', ncid=ncid)
 
           ! Define landunit info
 
@@ -2950,6 +3040,12 @@ contains
 
           call ncd_defvar(varname='land1d_wtgcell', xtype=ncd_double, dim1name=namel, &
                long_name='landunit weight relative to corresponding gridcell', ncid=ncid)
+          
+          call ncd_defvar(varname='land1d_wttopounit', xtype=ncd_double, dim1name=namel, &
+               long_name='landunit weight relative to corresponding topounit', ncid=ncid)
+          
+          call ncd_defvar(varname='land1d_topounit', xtype=ncd_int, dim1name=namel, &
+               long_name='topounit index of landunit', ncid=ncid)
 
           call ncd_defvar(varname='land1d_ityplunit', xtype=ncd_int, dim1name=namel, &
                long_name='landunit type (vegetated,urban,lake,wetland,glacier or glacier_mec)', &
@@ -2982,6 +3078,12 @@ contains
 
           call ncd_defvar(varname='cols1d_wtgcell', xtype=ncd_double, dim1name=namec, &
                long_name='column weight relative to corresponding gridcell', ncid=ncid)
+          
+          call ncd_defvar(varname='cols1d_wttopounit', xtype=ncd_double, dim1name=namec, &
+               long_name='colum weight relative to corresponding topounit', ncid=ncid)
+          
+          call ncd_defvar(varname='cols1d_topounit', xtype=ncd_int, dim1name=namec, &
+               long_name='topounit index of colum', ncid=ncid)
 
           call ncd_defvar(varname='cols1d_wtlunit', xtype=ncd_double, dim1name=namec, &
                long_name='column weight relative to corresponding landunit', ncid=ncid)
@@ -3020,6 +3122,12 @@ contains
 
           call ncd_defvar(varname='pfts1d_wtgcell', xtype=ncd_double, dim1name=namep, &
                long_name='pft weight relative to corresponding gridcell', ncid=ncid)
+          
+          call ncd_defvar(varname='pfts1d_wttopounit', xtype=ncd_double, dim1name=namep, &
+               long_name='pft weight relative to corresponding topounit', ncid=ncid)
+          
+          call ncd_defvar(varname='pfts1d_topounit', xtype=ncd_int, dim1name=namep, &
+               long_name='topounit index of pft', ncid=ncid)
 
           call ncd_defvar(varname='pfts1d_wtlunit', xtype=ncd_double, dim1name=namep, &
                long_name='pft weight relative to corresponding landunit', ncid=ncid)
@@ -3043,6 +3151,7 @@ contains
 
        allocate(&
             rgarr(bounds%begg:bounds%endg),&
+            rtarr(bounds%begt:bounds%endt),&
             rlarr(bounds%begl:bounds%endl),&
             rcarr(bounds%begc:bounds%endc),&
             rparr(bounds%begp:bounds%endp),&
@@ -3053,6 +3162,7 @@ contains
 
        allocate(&
             igarr(bounds%begg:bounds%endg),&
+            itarr(bounds%begt:bounds%endt),&
             ilarr(bounds%begl:bounds%endl),&
             icarr(bounds%begc:bounds%endc),&
             iparr(bounds%begp:bounds%endp),stat=ier)
@@ -3072,6 +3182,26 @@ contains
          igarr(g)= (ldecomp%gdc2glo(g) - 1)/ldomain%ni + 1
        enddo
        call ncd_io(varname='grid1d_jxy', data=igarr      , dim1name=nameg, ncid=ncid, flag='write')
+       
+       ! Write topounit info
+
+       do topo = bounds%begt,bounds%endt
+         rtarr(topo) = grc_pp%londeg(top_pp%gridcell(topo))
+       enddo
+       call ncd_io(varname='topo1d_lon', data=rtarr, dim1name=namet, ncid=ncid, flag='write')
+       do topo = bounds%begt,bounds%endt
+         rtarr(topo) = grc_pp%latdeg(top_pp%gridcell(topo))
+       enddo
+       call ncd_io(varname='topo1d_lat', data=rtarr, dim1name=namet, ncid=ncid, flag='write')
+       do topo= bounds%begt,bounds%endt
+         itarr(topo) = mod(ldecomp%gdc2glo(top_pp%gridcell(topo))-1,ldomain%ni) + 1
+       enddo
+       call ncd_io(varname='ltopo1d_ixy', data=itarr, dim1name=namet, ncid=ncid, flag='write')
+       do topo = bounds%begt,bounds%endt
+         itarr(topo) = (ldecomp%gdc2glo(top_pp%gridcell(topo))-1)/ldomain%ni + 1
+       enddo
+       call ncd_io(varname='topo1d_jxy'      , data=itarr        , dim1name=namet, ncid=ncid, flag='write')
+       call ncd_io(varname='topo1d_wtgcell'  , data=top_pp%wtgcell , dim1name=namet, ncid=ncid, flag='write')
 
        ! Write landunit info
 
@@ -3095,6 +3225,8 @@ contains
        !call ncd_io(varname='land1d_gi'       , data=lun_pp%gridcell, dim1name=namel, ncid=ncid, flag='write')
        ! ----------------------------------------------------------------
        call ncd_io(varname='land1d_wtgcell'  , data=lun_pp%wtgcell , dim1name=namel, ncid=ncid, flag='write')
+       call ncd_io(varname='land1d_wttopounit'  , data=lun_pp%wttopounit , dim1name=namel, ncid=ncid, flag='write')
+       call ncd_io(varname='land1d_topounit'  , data=lun_pp%topounit , dim1name=namel, ncid=ncid, flag='write')
        call ncd_io(varname='land1d_ityplunit', data=lun_pp%itype   , dim1name=namel, ncid=ncid, flag='write')
        call ncd_io(varname='land1d_active'   , data=lun_pp%active  , dim1name=namel, ncid=ncid, flag='write')
 
@@ -3121,6 +3253,8 @@ contains
        !call ncd_io(varname='cols1d_li'     , data=col_pp%landunit, dim1name=namec, ncid=ncid, flag='write')
        ! ----------------------------------------------------------------
        call ncd_io(varname='cols1d_wtgcell', data=col_pp%wtgcell , dim1name=namec, ncid=ncid, flag='write')
+       call ncd_io(varname='cols1d_wttopounit', data=col_pp%wttopounit , dim1name=namec, ncid=ncid, flag='write')
+       call ncd_io(varname='cols1d_topounit', data=col_pp%topounit , dim1name=namec, ncid=ncid, flag='write')
        call ncd_io(varname='cols1d_wtlunit', data=col_pp%wtlunit , dim1name=namec, ncid=ncid, flag='write')
        do c = bounds%begc,bounds%endc
          icarr(c) = lun_pp%itype(col_pp%landunit(c))
@@ -3152,6 +3286,8 @@ contains
        !call ncd_io(varname='pfts1d_ci'       , data=veg_pp%column  , dim1name=namep, ncid=ncid, flag='write')
        ! ----------------------------------------------------------------
        call ncd_io(varname='pfts1d_wtgcell'  , data=veg_pp%wtgcell , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_wttopounit'  , data=veg_pp%wttopounit , dim1name=namep, ncid=ncid, flag='write')
+       call ncd_io(varname='pfts1d_topounit'  , data=veg_pp%topounit , dim1name=namep, ncid=ncid, flag='write')
        call ncd_io(varname='pfts1d_wtlunit'  , data=veg_pp%wtlunit , dim1name=namep, ncid=ncid, flag='write')
        call ncd_io(varname='pfts1d_wtcol'    , data=veg_pp%wtcol   , dim1name=namep, ncid=ncid, flag='write')
        call ncd_io(varname='pfts1d_itype_veg', data=veg_pp%itype   , dim1name=namep, ncid=ncid, flag='write')
@@ -3162,8 +3298,8 @@ contains
        call ncd_io(varname='pfts1d_itype_lunit', data=iparr      , dim1name=namep, ncid=ncid, flag='write')
        call ncd_io(varname='pfts1d_active'   , data=veg_pp%active  , dim1name=namep, ncid=ncid, flag='write')
 
-       deallocate(rgarr,rlarr,rcarr,rparr)
-       deallocate(igarr,ilarr,icarr,iparr)
+       deallocate(rgarr,rtarr,rlarr,rcarr,rparr)
+       deallocate(igarr,itarr,ilarr,icarr,iparr)
 
     end if
 
@@ -4550,6 +4686,7 @@ contains
     ! !USES:
     use elm_varpar      , only : nlevgrnd, nlevsno, nlevlak, numrad, nlevdecomp_full, nlevtrc_soil, nmonth, nvegwcs
     use elm_varpar      , only : natpft_size, cft_size, maxpatch_glcmec
+    use elm_varpar      , only : nlevsoi
     use landunit_varcon , only : max_lunit
     !
     ! !ARGUMENTS:
@@ -4626,6 +4763,8 @@ contains
     select case (type2d)
     case ('levgrnd')
        num2d = nlevgrnd
+    case ('levsoi')
+       num2d = nlevsoi
     case ('levlak')
        num2d = nlevlak
     case ('numrad')
@@ -4704,6 +4843,12 @@ contains
        num2d = nlevleaf_fates * nclmax_fates
     case ('fates_levcnlfpf')
        num2d = nlevleaf_fates * nclmax_fates * numpft_fates
+    case ('fates_levcdsc')
+       num2d = nlevdamage_fates * nlevsclass_fates
+    case ('fates_levcdpf')
+       num2d = nlevdamage_fates * nlevsclass_fates * numpft_fates
+    case ('fates_levcdam')
+       num2d = nlevdamage_fates
     case ('fates_levheight')
        num2d = nlevheight_fates
     case ('fates_levscagpf')
@@ -4713,7 +4858,7 @@ contains
     case default
        write(iulog,*) trim(subname),' ERROR: unsupported 2d type ',type2d, &
           ' currently supported types for multi level fields are: ', &
-          '[levgrnd,levlak,numrad,nmonthlevdcmp,levtrc,ltype,natpft,cft,glc_nec,elevclas,levsno]'
+          '[levgrnd,levlak,numrad,nmonthlevdcmp,levtrc,ltype,natpft,cft,glc_nec,elevclas,levsno,levsoi]'
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end select
 

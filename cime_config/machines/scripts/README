@@ -1,0 +1,3 @@
+This scripts should only be needed temporarily during the
+transition from config_compilers.xml to cmake-macros.
+The evaluator script may have longer-term usefulness.

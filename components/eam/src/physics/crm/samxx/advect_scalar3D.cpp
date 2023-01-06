@@ -1,16 +1,16 @@
 #include "advect_scalar3D.h"
 
 void advect_scalar3D(real4d &f, real2d &flux) {
-  auto &dowallx = ::dowallx;
-  auto &dowally = ::dowally;
-  auto &rank    = ::rank;
-  auto &u       = ::u;
-  auto &v       = ::v;
-  auto &w       = ::w;
-  auto &rho     = ::rho;
-  auto &adz     = ::adz;
-  auto &rhow    = ::rhow;
-  auto &ncrms   = ::ncrms;
+  YAKL_SCOPE( dowallx  , ::dowallx);
+  YAKL_SCOPE( dowally  , ::dowally);
+  YAKL_SCOPE( rank     , ::rank);
+  YAKL_SCOPE( u        , ::u);
+  YAKL_SCOPE( v        , ::v);
+  YAKL_SCOPE( w        , ::w);
+  YAKL_SCOPE( rho      , ::rho);
+  YAKL_SCOPE( adz      , ::adz);
+  YAKL_SCOPE( rhow     , ::rhow);
+  YAKL_SCOPE( ncrms    , ::ncrms);
 
   bool constexpr nonos    = true;
   real constexpr eps      = 1.0e-10;
@@ -298,16 +298,16 @@ void advect_scalar3D(real4d &f, real2d &flux) {
 }
 
 void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
-  auto &dowallx = ::dowallx;
-  auto &dowally = ::dowally;
-  auto &rank    = ::rank;
-  auto &u       = ::u;
-  auto &v       = ::v;
-  auto &w       = ::w;
-  auto &rho     = ::rho;
-  auto &adz     = ::adz;
-  auto &rhow    = ::rhow;
-  auto &ncrms   = ::ncrms;
+  YAKL_SCOPE( dowallx  , ::dowallx);
+  YAKL_SCOPE( dowally  , ::dowally);
+  YAKL_SCOPE( rank     , ::rank);
+  YAKL_SCOPE( u        , ::u);
+  YAKL_SCOPE( v        , ::v);
+  YAKL_SCOPE( w        , ::w);
+  YAKL_SCOPE( rho      , ::rho);
+  YAKL_SCOPE( adz      , ::adz);
+  YAKL_SCOPE( rhow     , ::rhow);
+  YAKL_SCOPE( ncrms    , ::ncrms);
 
   bool constexpr nonos    = true;
   real constexpr eps      = 1.0e-10;
@@ -595,16 +595,16 @@ void advect_scalar3D(real5d &f, int ind_f, real2d &flux) {
 }
 
 void advect_scalar3D(real5d &f, int ind_f, real3d &flux, int ind_flux) {
-  auto &dowallx = ::dowallx;
-  auto &dowally = ::dowally;
-  auto &rank    = ::rank;
-  auto &u       = ::u;
-  auto &v       = ::v;
-  auto &w       = ::w;
-  auto &rho     = ::rho;
-  auto &adz     = ::adz;
-  auto &rhow    = ::rhow;
-  auto &ncrms   = ::ncrms;
+  YAKL_SCOPE( dowallx  , ::dowallx);
+  YAKL_SCOPE( dowally  , ::dowally);
+  YAKL_SCOPE( rank     , ::rank);
+  YAKL_SCOPE( u        , ::u);
+  YAKL_SCOPE( v        , ::v);
+  YAKL_SCOPE( w        , ::w);
+  YAKL_SCOPE( rho      , ::rho);
+  YAKL_SCOPE( adz      , ::adz);
+  YAKL_SCOPE( rhow     , ::rhow);
+  YAKL_SCOPE( ncrms    , ::ncrms);
 
   bool constexpr nonos    = true;
   real constexpr eps      = 1.0e-10;

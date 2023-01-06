@@ -8,6 +8,10 @@
 #define HOMMEXX_HYPERVISCOSITY_FUNCTOR_HPP
 
 #include "Types.hpp"
+#include "ElementsGeometry.hpp"
+#include "ElementsState.hpp"
+#include "ElementsDerivedState.hpp"
+#include "SimulationParams.hpp"
 
 #include <memory>
 
@@ -16,6 +20,7 @@ namespace Homme
 
 class HyperviscosityFunctorImpl;
 struct FunctorsBuffersManager;
+class SimulationParams;
 
 class HyperviscosityFunctor
 {
@@ -23,7 +28,14 @@ public:
 
   HyperviscosityFunctor ();
 
+  HyperviscosityFunctor (const int num_elems, const SimulationParams& params);
+
   ~HyperviscosityFunctor ();
+
+  bool setup_needed() { return !is_setup; }
+  void setup(const ElementsGeometry&     geometry,
+             const ElementsState&        state,
+             const ElementsDerivedState& derived);
 
   int requested_buffer_size () const;
   void init_buffers    (const FunctorsBuffersManager& fbm);
@@ -35,6 +47,7 @@ public:
 private:
 
   std::unique_ptr<HyperviscosityFunctorImpl>  m_hvf_impl;
+  bool is_setup;
 };
 
 } // namespace Homme

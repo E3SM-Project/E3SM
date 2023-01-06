@@ -17,7 +17,7 @@ public:
   ElementsForcing() = default;
 
   void init (const int num_elems);
-  void randomize (const int seed);
+  void randomize (const int seed, const Real min_f = -1.0, const Real max_f = 1.0);
 
   int num_elems () const { return m_num_elems; }
 

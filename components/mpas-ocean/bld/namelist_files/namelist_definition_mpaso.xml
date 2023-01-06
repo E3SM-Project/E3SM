@@ -107,7 +107,7 @@ Default: Defined in namelist_defaults.xml
 	category="time_management" group="time_management">
 Selection of the type of calendar that should be used in the simulation.
 
-Valid values: 'gregorian', 'gregorian_noleap'
+Valid values: 'gregorian', 'noleap'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -196,7 +196,7 @@ Default: Defined in namelist_defaults.xml
 	category="time_integration" group="time_integration">
 Time integration method.
 
-Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'semi_implicit'
+Valid values: 'split_explicit', 'RK4', 'unsplit_explicit', 'split_implicit'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -357,33 +357,6 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- mesoscale_eddy_parameterizations -->
-
-<entry id="config_eddying_resolution_taper" type="char*1024"
-	category="mesoscale_eddy_parameterizations" group="mesoscale_eddy_parameterizations">
-Control how the Redi and GM Bolus $\kappa$ value varies as a function of horizontal resolution
-
-Valid values: 'none' and 'ramp'
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_eddying_resolution_ramp_min" type="real"
-	category="mesoscale_eddy_parameterizations" group="mesoscale_eddy_parameterizations">
-Minimum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp.
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_eddying_resolution_ramp_max" type="real"
-	category="mesoscale_eddy_parameterizations" group="mesoscale_eddy_parameterizations">
-Maximum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp.
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-
 <!-- Redi_isopycnal_mixing -->
 
 <entry id="config_use_Redi" type="logical"
@@ -396,9 +369,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_Redi_closure" type="char*1024"
 	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-Control what type of function is used for Redi $\kappa$.
+Control what type of function is used for Redi $\kappa$. For 'equalGM', RediKappa is set to gmBolusKappa, so picks up the closure used by GM. Note that equalGM should only be used with 2D GM schemes (e.g. config_GM_closure=constant or Visbeck), not with EdenGreatbatch.
 
-Valid values: 'constant', 'data'
+Valid values: 'constant', 'equalGM', 'data'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -452,9 +425,84 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_Redi_N2_based_taper_limit_term1" type="logical"
 	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-If true, the N2 lim iting is applied to the horizontal diffusion term
+If true, the N2 limiting is applied to the horizontal diffusion term
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_min_layers_diag_terms" type="integer"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+Redi diagonal terms (2 and 3) are turned off from layer 1 through config_Redi_min_layers_diag_terms-1, and on from config_Redi_min_layers_diag_terms to nVertLevels. The Redi diagonal terms are not guaranteed to produce bounded tracer fields, and in practice produce growing temperatures in a few columns with fewer than 5 vertical cells. Redi is meant for isopycnal mixing in the deep ocean, so not applying Redi diagonal terms in very shallow regions is an acceptable solution.
+
+Valid values: any integer between 0 (all layers on) and nVertLevels (all layers off)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_horizontal_taper" type="char*1024"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+Control how the Redi $\kappa$ value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007
+
+Valid values: 'none', 'ramp', 'RossbyRadius'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_horizontal_ramp_min" type="real"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+Minimum value in grid cell size for Redi $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_Redi_horizontal_taper is set to ramp.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_horizontal_ramp_max" type="real"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+Maximum value in grid cell size for Redi $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_Redi_horizontal_taper is set to ramp.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- submesoscale_eddy_parameterization -->
+
+<entry id="config_submesoscale_enable" type="logical"
+	category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+flag to enable the FK2011 parameterization for submesoscale eddies
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_submesoscale_tau" type="real"
+	category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+timescale for frictional slumping of front (in seconds)
+
+Valid values: positive reals, between 1-10 days
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_submesoscale_Ce" type="real"
+	category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+efficiency of submesoscale eddies
+
+Valid values: 0.06 - 0.08
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_submesoscale_Lfmin" type="real"
+	category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+minimum frontal width (meters)
+
+Valid values: between 200 and 5000m
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_submesoscale_ds_max" type="real"
+	category="submesoscale_eddy_parameterization" group="submesoscale_eddy_parameterization">
+maximum grid scale to scale up buoyancy gradient
+
+Valid values: around 1 degree
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -485,11 +533,19 @@ Valid values: MISSING POSSIBLE VALUES
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_GM_constant_gravWaveSpeed" type="real"
+<entry id="config_GM_constant_bclModeSpeed" type="real"
 	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
-Gravity wave speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004).
+The parameter setting for the first baroclinic mode speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004).
 
 Valid values: Positive real numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_minBclModeSpeed_method" type="char*1024"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Determines how the GM setting for the minimum of the first baroclinic mode speed is computed. If 'constant' then use config_GM_constant_bclModeSpeed. If 'computed' then compute at every edge at every time step using the Brunt-Vaisala frequency
+
+Valid values: 'constant' and 'computed'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -562,6 +618,81 @@ Default: Defined in namelist_defaults.xml
 factor multiplying the Rhines length in the scheme from Eden Greatbatch (2008) Ocean Modeling -- Equation (28)
 
 Valid values: small positive values less than equal to one
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_horizontal_taper" type="char*1024"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Control how the GM Bolus value varies as a function of horizontal resolution. 'none' is constant, 'ramp' is strictly based on resolution, 'RossbyRadius' follows Hallberg (2013) - https://doi.org/10.1016/j.ocemod.2013.08.007
+
+Valid values: 'none', 'ramp', 'RossbyRadius'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_horizontal_ramp_min" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Minimum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_horizontal_taper is set to ramp.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_horizontal_ramp_max" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Maximum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_horizontal_taper is set to ramp.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GMRedi_Rossby_ramp_min" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Minimum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM and Redi $\kappa$ ramp functions. Used when config_GM_horizontal_taper and/or config_Redi_horizontal_taper are set to RossbyRadius.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GMRedi_Rossby_ramp_max" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Maximum value of the ratio between grid-cell size (dcEdge) and Rossby radius for GM and Redi $\kappa$ ramp functions. Used when config_GM_horizontal_taper and/or config_Redi_horizontal_taper are set to RossbyRadius.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- eddy_parameterization -->
+
+<entry id="config_eddyMLD_dens_threshold" type="real"
+	category="eddy_parameterization" group="eddy_parameterization">
+potential density change relative to surface for mixed layer depth threshold method.  This calculation is used for the Redi tapering, GM N2_dependent bolus kappa, and the submesoscale eddy parameterization
+
+Valid values: suggested range 0.01 less than or equal to thresh less than or equal to 0.5
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eddyMLD_reference_depth" type="real"
+	category="eddy_parameterization" group="eddy_parameterization">
+reference depth for threshold computation
+
+Valid values: any positive real, near 10
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eddyMLD_reference_pressure" type="real"
+	category="eddy_parameterization" group="eddy_parameterization">
+reference pressure for original mixed layer depth calculation
+
+Valid values: positive reals around 1.0e5
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eddyMLD_use_old" type="logical"
+	category="eddy_parameterization" group="eddy_parameterization">
+switches from old dThreshMLD calculation to new (fixed one)
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -939,6 +1070,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_cvmix_kpp_use_active_wave" type="logical"
+	category="cvmix" group="cvmix">
+Flag for use of active WAVEWATCH III coupling to calculate the Langmuir number and enhancement factor
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_cvmix_kpp_langmuir_mixing_opt" type="char*1024"
 	category="cvmix" group="cvmix">
 Option of Langmuir enhanced mixing parameterization
@@ -952,6 +1091,25 @@ Default: Defined in namelist_defaults.xml
 Option of Langmuir enhanced entrainment parameterization
 
 Valid values: NONE, LWF16, LF17, RWHGK16
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- wave coupling -->
+
+<entry id="config_use_active_wave" type="logical"
+	category="wave_coupling" group="wave_coupling">
+Flag for using prognostic waves
+
+Valid values: 
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_n_stokes_drift_wavenumber_partitions" type="integer"
+	category="wave_coupling" group="wave_coupling">
+Number of wavenumbers used to reconstruct Stokes drift profile
+
+Valid values: 3, 4, and 6
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1090,6 +1248,97 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_enable_shortwave_energy_fixer" type="logical"
 	category="shortwaveRadiation" group="shortwaveRadiation">
 Flag to enable the shortwave energy fixer for shallow ocean cells
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- self_attraction_loading -->
+
+<entry id="config_use_self_attraction_loading" type="logical"
+	category="self_attraction_loading" group="self_attraction_loading">
+Controls if self-attraction and loading is applied to ssh
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_self_attraction_loading_smoothing_width" type="real"
+	category="self_attraction_loading" group="self_attraction_loading">
+Defines region over which ssh is smoothed to zero at coasts for SAL calculation.
+
+Valid values: Any positive real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_mpas_to_grid_weights_file" type="char*1024"
+	category="self_attraction_loading" group="self_attraction_loading">
+Location of the file containing the interpolation weights for transformation from the MPAS mesh to a Gaussian Grid.
+
+Valid values: Any file name string
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_grid_to_mpas_weights_file" type="char*1024"
+	category="self_attraction_loading" group="self_attraction_loading">
+Location of the file containing the interpolation weights for transformation from a Gaussian Grid to the MPAS mesh.
+
+Valid values: Any file name string
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_self_attraction_loading_compute_interval" type="char*1024"
+	category="self_attraction_loading" group="self_attraction_loading">
+Interval for computing full SAL.
+
+Valid values: 'YYYY-MM-DD_HH:MM:SS'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_nLatitude" type="integer"
+	category="self_attraction_loading" group="self_attraction_loading">
+Numer of latitude points in the Gaussian Grid.
+
+Valid values: Any positive integer value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_nLongitude" type="integer"
+	category="self_attraction_loading" group="self_attraction_loading">
+Numer of longitude points in the Gaussian Grid.
+
+Valid values: Any positive integer value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_parallel_self_attraction_loading" type="logical"
+	category="self_attraction_loading" group="self_attraction_loading">
+Controls if self-attraction and loading is computed with parallel or serial algorithm
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_parallel_self_attraction_loading_order" type="integer"
+	category="self_attraction_loading" group="self_attraction_loading">
+Controls the order of the sperical harmonic expansion used in the parallel self attraction and loading algorithm
+
+Valid values: Any positive integer value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_parallel_self_attraction_loading_n_cells_per_block" type="integer"
+	category="self_attraction_loading" group="self_attraction_loading">
+Controls the number of blocks used for spherical harmonics calculation
+
+Valid values: Any positive integer value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_parallel_self_attraction_loading_bfb" type="logical"
+	category="self_attraction_loading" group="self_attraction_loading">
+Controls whether a reproducible sum is used for the parallel spherical harmonics calculations
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -1403,17 +1652,33 @@ Default: Defined in namelist_defaults.xml
 
 <!-- advection -->
 
-<entry id="config_vert_tracer_adv" type="char*1024"
+<entry id="config_vert_advection_method" type="char*1024"
 	category="advection" group="advection">
-Method for interpolating tracer values from layer centers to layer edges
+Method for advecting tracers, momentum, and thickness vertically.
 
-Valid values: 'spline' and 'stencil'
+Valid values: 'flux-form' and 'remap'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_vert_tracer_adv_order" type="integer"
+<entry id="config_vert_remap_order" type="integer"
 	category="advection" group="advection">
-Order of polynomial used for tracer reconstruction at layer edges
+Order of remapping method used for momentum and tracer advection
+
+Valid values: 1, 2, 3 and 5
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vert_remap_interval" type="integer"
+	category="advection" group="advection">
+Number of timesteps between each remapping. If 0, remapping occurs every timestep
+
+Valid values: Any integer greater than or equal to 0
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vert_tracer_adv_flux_order" type="integer"
+	category="advection" group="advection">
+Order of polynomial used for tracer reconstruction at layer edges for flux-form method
 
 Valid values: 2, 3 and 4
 Default: Defined in namelist_defaults.xml
@@ -1435,11 +1700,19 @@ Valid values: any real between 0 and 1
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_monotonic" type="logical"
+<entry id="config_flux_limiter" type="char*1024"
 	category="advection" group="advection">
-If .true. then fluxes are limited to produce a monotonic advection scheme
+Slope limiter for the flux-form advection scheme.
 
-Valid values: .true. and .false.
+Valid values: 'none','monotonic'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_remap_limiter" type="char*1024"
+	category="advection" group="advection">
+Slope limiter for the vertical remap advection scheme.
+
+Valid values: 'none','monotonic','weno'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1804,10 +2077,10 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- semi_implicit_ts -->
+<!-- split_implicit_ts -->
 
 <entry id="config_btr_si_preconditioner" type="char*1024"
-	category="semi_implicit_ts" group="semi_implicit_ts">
+	category="split_implicit_ts" group="split_implicit_ts">
 Type of preconditioner for the barotropic mode solver
 
 Valid values: ras, block_jacobi, jacobi, none
@@ -1815,24 +2088,24 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_btr_si_tolerance" type="real"
-	category="semi_implicit_ts" group="semi_implicit_ts">
+	category="split_implicit_ts" group="split_implicit_ts">
 Tolerance for the barotropic mode solver
 
 Valid values: any positive real, but typically less than 1.0e-9
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_n_btr_si_outer_iter" type="integer"
-	category="semi_implicit_ts" group="semi_implicit_ts">
-number of outer iterations
+<entry id="config_n_btr_si_large_iter" type="integer"
+	category="split_implicit_ts" group="split_implicit_ts">
+number of large barotropic system iterations
 
-Valid values: any positive integer, but typically 2
+Valid values: any positive integer, but typically 1 and less than 2
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_btr_si_partition_match_mode" type="logical"
-	category="semi_implicit_ts" group="semi_implicit_ts">
-If true, the semi-implicit method uses the Jacobi preconditioner with the bit-for-bit all-reduce. This is less performant, so should only be used for testing.
+	category="split_implicit_ts" group="split_implicit_ts">
+If true, the split-implicit method uses the Jacobi preconditioner with the bit-for-bit all-reduce. This is less performant, so should only be used for testing.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -2009,7 +2282,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_check_tracer_monotonicity" type="logical"
 	category="debug" group="debug">
-Enables a change on tracer monotonicity at the end of the monotonic advection routine. Only used if config_monotonic is set to .true.
+Enables a change on tracer monotonicity at the end of the monotonic advection routine. Only used if config_flux_limiter is set to monotonic
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -2065,7 +2338,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_disable_vel_coriolis" type="logical"
 	category="debug" group="debug">
-Diables tendencies on the velocity field from the Coriolis force and momentum advection.
+Disables tendencies on the velocity field from the Coriolis force and momentum advection.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -2219,6 +2492,41 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- transport_tests -->
+
+<entry id="config_transport_tests_vert_levels" type="integer"
+	category="transport_tests" group="transport_tests">
+Number of vertical levels in transport_tests. Typical value is 3 for 2D tests.
+
+Valid values: Any positive integer number greater than 0.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_transport_tests_temperature" type="real"
+	category="transport_tests" group="transport_tests">
+Temperature of the ocean.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_transport_tests_salinity" type="real"
+	category="transport_tests" group="transport_tests">
+Salinity of the ocean.
+
+Valid values: Any real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_transport_tests_flow_id" type="integer"
+	category="transport_tests" group="transport_tests">
+integer id of transport test.
+
+Valid values: 1 = rotation, 2 = nondivergent2D, 3 = divergent2D, 4 = correlatedTracers2D
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- init_mode_vert_levels -->
 
 <entry id="config_vert_levels" type="integer"
@@ -2314,7 +2622,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_salinity_restoring_max_difference" type="real"
 	category="tracer_forcing_activeTracers" group="tracer_forcing_activeTracers">
-Maximum allowable difference between surface salinity and climatology.
+Maximum allowable difference between surface salinity and climatology, in grams salt per kilogram seawater.
 
 Valid values: any non-negative number
 Default: Defined in namelist_defaults.xml
@@ -2497,6 +2805,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_use_ecosysTracers_surface_value" type="logical"
 	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
 if true, surface value is computed for 'ecosysGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_ecosysTracers_river_inputs_from_coupler" type="logical"
+	category="tracer_forcing_ecosysTracers" group="tracer_forcing_ecosysTracers">
+if true, get river nutrient inputs from the coupler, else from ecosys monthly forcing file
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -2695,6 +3011,140 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_use_MacroMoleculesTracers_sea_ice_coupling" type="logical"
 	category="tracer_forcing_MacroMoleculesTracers" group="tracer_forcing_MacroMoleculesTracers">
 if true, couple MacroMolecules fields with sea ice
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- tracer_forcing_idealAgeTracers -->
+
+<entry id="config_use_idealAgeTracers" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, the 'idealAgeTracers' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_idealAgeTracers_surface_bulk_forcing" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'idealAgeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_idealAgeTracers_surface_restoring" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, surface restoring source is applied to tracers in 'idealAgeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_idealAgeTracers_interior_restoring" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, interior restoring source is applied to tracers in 'idealAgeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_idealAgeTracers_exponential_decay" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, exponential decay source is applied to tracers in 'idealAgeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_idealAgeTracers_idealAge_forcing" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, idealAge forcing source is applied to tracers in 'idealAgeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_idealAgeTracers_ttd_forcing" type="logical"
+	category="tracer_forcing_idealAgeTracers" group="tracer_forcing_idealAgeTracers">
+if true, transit time distribution forcing source is applied to tracers in 'idealAgeTracers' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- tracer_forcing_CFCTracers -->
+
+<entry id="config_use_CFCTracers" type="logical"
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, the 'CFCGRP' category is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFCTracers_surface_bulk_forcing" type="logical"
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, surface bulk forcing from coupler is added to surfaceTracerFlux in 'CFCGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFCTracers_surface_restoring" type="logical"
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, surface restoring source is applied to tracers in 'CFCGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFCTracers_interior_restoring" type="logical"
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, interior restoring source is applied to tracers in 'CFCGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFCTracers_exponential_decay" type="logical"
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, exponential decay source is applied to tracers in 'CFCGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFCTracers_idealAge_forcing" type="logical"
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, idealAge forcing source is applied to tracers in 'CFCGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFCTracers_ttd_forcing" type="logical"
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, transit time distribution forcing source is applied to tracers in 'CFCGRP' category
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFC11" type="logical"
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, CFC11 is enabled for the run
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_CFC12" type="logical"
+	category="tracer_forcing_CFCTracers" group="tracer_forcing_CFCTracers">
+if true, CFC12 is enabled for the run
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -3675,27 +4125,11 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_mixedLayerDepths_Dthreshold" type="logical"
-	category="AM_mixedLayerDepths" group="AM_mixedLayerDepths">
-Logical flag that determines if MLDs are calculated using a critical density threshold
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_AM_mixedLayerDepths_crit_temp_threshold" type="real"
 	category="AM_mixedLayerDepths" group="AM_mixedLayerDepths">
 temperature change relative to surface for threshold method
 
 Valid values: all real positive values, suggested range 0.2 less than or equal to thresh less than or equal to 1
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_AM_mixedLayerDepths_crit_dens_threshold" type="real"
-	category="AM_mixedLayerDepths" group="AM_mixedLayerDepths">
-potential density change relative to surface for threshold method
-
-Valid values: suggested range 0.01 less than or equal to thresh less than or equal to 0.5
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -5666,19 +6100,19 @@ Valid values: Any valid time stamp, 'dt', or 'output_interval'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_harmonicAnalysis_start" type="char*1024"
+<entry id="config_AM_harmonicAnalysis_start_delay" type="real"
 	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
-Timestamp determining when harmonic analysis begins
+Number of days after start of simulation when harmonic analysis begins. This is referenced relative to the start of the original simulation, not the restart date.
 
-Valid values: 'YYYY-MM-DD_HH:MM:SS'
+Valid values: any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_AM_harmonicAnalysis_end" type="char*1024"
+<entry id="config_AM_harmonicAnalysis_duration" type="real"
 	category="AM_harmonicAnalysis" group="AM_harmonicAnalysis">
-Timestamp determining when harmonic analysis ends
+Length of harmonic analysis period. The analysis begins after config_AM_harmonicAnalysis_start_delay days and ends after config_AM_harmonicAnalysis_start_delay + config_AM_harmonicAnalysis_duration days relative to the start of the original simulation, not the restart date.
 
-Valid values: 'YYYY-MM-DD_HH:MM:SS'
+Valid values: any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -5775,6 +6209,65 @@ Default: Defined in namelist_defaults.xml
 Controls if P1 constituent is used in harmonic analysis
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- AM_conservationCheck -->
+
+<entry id="config_AM_conservationCheck_enable" type="logical"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+If true, ocean analysis member conservationCheck is called.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_compute_interval" type="char*1024"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Timestamp determining how often analysis member computation should be performed.
+
+Valid values: Any valid time stamp, 'dt', or 'output_interval'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_output_stream" type="char*1024"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Name of the stream that the conservationCheck analysis member should be tied to.
+
+Valid values: Any existing stream name or 'none'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_compute_on_startup" type="logical"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Logical flag determining if an analysis member computation occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_write_on_startup" type="logical"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Logical flag determining if an analysis member write occurs on start-up.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_write_to_logfile" type="logical"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Logical flag determining if the conservation check is written to the log file.
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_AM_conservationCheck_restart_stream" type="char*1024"
+	category="AM_conservationCheck" group="AM_conservationCheck">
+Name of the restart stream the analysis member will use to initialize itself if restart is enabled.
+
+Valid values: A restart stream with state of the conservation check.
 Default: Defined in namelist_defaults.xml
 </entry>
 

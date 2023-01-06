@@ -4,7 +4,7 @@ module mo_chm_diags
   use chem_mods,    only : gas_pcnst
   use mo_tracname,  only : solsym
   use chem_mods,    only : rxntot, nfs, gas_pcnst, indexm, adv_mass
-  use ppgrid,       only : pver
+  use ppgrid,       only : pcols, pver
   use mo_constants, only : pi, rgrav, rearth, avogadro
   use mo_chem_utls, only : get_rxt_ndx, get_spc_ndx
   use cam_history,  only : fieldname_len
@@ -46,7 +46,6 @@ module mo_chm_diags
   real(r8), parameter :: S_molwgt = 32.066_r8
 
   ! constants for converting O3 mixing ratio to DU
-  real(r8), parameter :: air_molwgt = 28.97_r8 ! molar mass of dry air, g/mol
   real(r8), parameter :: DUfac = 2.687e20_r8   ! 1 DU in molecules per m^2
 
   character(len=32) :: chempkg
@@ -326,6 +325,7 @@ contains
     endif
 
     call addfld( 'MASS', (/ 'lev' /), 'A', 'kg', 'mass of grid box' )
+    call addfld( 'DRYMASS', (/ 'lev' /), 'A', 'kg', 'dry air mass of grid box' )
     call addfld( 'AREA', horiz_only,    'A', 'm2', 'area of grid box' )
 
     call addfld( 'WD_NOY', horiz_only, 'A', 'kg/s', 'NOy wet deposition' )
@@ -338,10 +338,14 @@ contains
     call addfld( 'DF_NHX', horiz_only, 'I', 'kg/m2/s', 'NHx dry deposition flux ' )
 
     call addfld( 'TOZ', horiz_only,    'A', 'DU', 'Total column ozone' )
+    call addfld( 'TCO', horiz_only,    'A', 'DU', 'Tropospheric column ozone based on chemistry tropopause' )
+    call add_default( 'TCO', 1, ' ' )
+    call addfld( 'SCO', horiz_only,    'A', 'DU', 'Stratospheric column ozone based on chemistry tropopause' )
+    call add_default( 'SCO', 1, ' ' )
 
   end subroutine chm_diags_inti
 
-  subroutine chm_diags( lchnk, ncol, vmr, mmr, rxt_rates, invariants, depvel, depflx, mmr_tend, pdel, pbuf )
+  subroutine chm_diags( lchnk, ncol, vmr, mmr, rxt_rates, invariants, depvel, depflx, mmr_tend, pdel, pdeldry, pbuf, ltrop )
     !--------------------------------------------------------------------
     !	... utility routine to output chemistry diagnostic variables
     !--------------------------------------------------------------------
@@ -350,6 +354,7 @@ contains
     use constituents, only : pcnst
     use constituents, only : cnst_get_ind
     use phys_grid,    only : get_area_all_p, pcols
+    use physconst,    only : mwdry                   ! molecular weight of dry air
     use physics_buffer, only : physics_buffer_desc
 
 ! here and below for the calculations of total aerosol mass mixing ratios for each aerosol class
@@ -376,6 +381,8 @@ contains
     real(r8), intent(in)  :: depflx(ncol, gas_pcnst)
     real(r8), intent(in)  :: mmr_tend(ncol,pver,gas_pcnst)
     real(r8), intent(in)  :: pdel(ncol,pver)
+    real(r8), intent(in)  :: pdeldry(ncol,pver)
+    integer,  intent(in)  :: ltrop(pcols)  ! index of the lowest stratospheric level
     type(physics_buffer_desc), pointer :: pbuf(:)
 
     !--------------------------------------------------------------------
@@ -390,7 +397,8 @@ contains
     real(r8), dimension(ncol,pver) :: mmr_noy, mmr_sox, mmr_nhx, net_chem
     real(r8), dimension(ncol)      :: df_noy, df_sox, df_nhx
 
-    real(r8) :: area(ncol), mass(ncol,pver)
+    real(r8) :: area(ncol), mass(ncol,pver), drymass(ncol,pver)
+    real(r8) :: wrk1d(ncol)
     real(r8) :: wgt
     character(len=16) :: spc_name
     real(r8), pointer :: fldcw(:,:)  !working pointer to extract data from pbuf for sum of mass for aerosol classes
@@ -448,18 +456,45 @@ contains
 
     do k = 1,pver
        mass(:ncol,k) = pdel(:ncol,k) * area(:ncol) * rgrav
+       drymass(:ncol,k) = pdeldry(:ncol,k) * area(:ncol) * rgrav
     enddo
 
     call outfld( 'AREA', area(:ncol),   ncol, lchnk )
     call outfld( 'MASS', mass(:ncol,:), ncol, lchnk )
+    call outfld( 'DRYMASS', drymass(:ncol,:), ncol, lchnk )
 
-    ! convert ozone from mol/mol to DU
-    wrk(:ncol,:) = pdel(:ncol,:)*vmr(:ncol,:,id_o3)*avogadro*rgrav/air_molwgt/DUfac*1.e3_r8
-    ! total column ozone, vertical integration
-    do k = 2,pver
-       wrk(:ncol,1) = wrk(:ncol,1) + wrk(:ncol,k)
+    ! convert ozone from mol/mol (w.r.t. dry air mass) to DU
+    wrk(:ncol,:) = pdeldry(:ncol,:)*vmr(:ncol,:,id_o3)*avogadro*rgrav/mwdry/DUfac*1.e3_r8
+    ! total column ozone
+    wrk1d(:) = 0._r8
+    do k = 1,pver ! loop from top of atmosphere to surface
+       wrk1d(:) = wrk1d(:) + wrk(:ncol,k)
     end do
-    call outfld( 'TOZ', wrk,   ncol, lchnk )
+    call outfld( 'TOZ', wrk1d,   ncol, lchnk )
+
+    ! stratospheric column ozone
+    wrk1d(:) = 0._r8
+    do i = 1,ncol
+       do k = 1,pver
+          if (k > ltrop(i)) then
+            exit
+          end if
+          wrk1d(i) = wrk1d(i) + wrk(i,k)
+       end do
+    end do
+    call outfld( 'SCO', wrk1d,   ncol, lchnk )
+
+    ! tropospheric column ozone
+    wrk1d(:) = 0._r8
+    do i = 1,ncol
+       do k = 1,pver
+          if (k <= ltrop(i)) then
+            cycle
+          end if
+          wrk1d(i) = wrk1d(i) + wrk(i,k)
+       end do
+    end do
+    call outfld( 'TCO', wrk1d,   ncol, lchnk )
 
     do m = 1,gas_pcnst
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from string import *
 import os, commands, getopt, sys, exceptions
 import numpy as np

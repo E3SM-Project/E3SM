@@ -1,0 +1,113 @@
+CICE and MPAS-Seaice Column Physics Package
+June 30, 2015 (CHANGE FOR RELEASE)
+
+A very large community, including many climate modeling and forecast 
+centers, uses the CICE model.  Several of these centers and collaborators 
+have been active in the development of CICE, particularly in the column 
+physics.  As part of the ACME proposal, DOE's CICE developers specifically 
+outlined an approach for continued support of this CICE community during 
+the transition to the new DOE MPAS-based sea-ice model.  The CICE column 
+physics package is a set of modules that are completely independent of 
+grid and other infrastructural CICE elements (e.g. MPI tasks, calendar).  
+It also includes an interface of subroutine calls that translate from 
+model-specific arrays and other variables to the model-independent column 
+physics calculations.  The package is callable by both the older CICE 
+model (modified v5.1) and the new MPAS-Seaice model to enable continued 
+development of the CICE column physics during the transition.
+
+The column package code is available to approved collaborators through the 
+CICE subversion repository, at  (CHANGE THIS FOR RELEASE)
+http://oceans11.lanl.gov/svn/CICE/branches/column_pkg/source_colpkg.
+Complete documentation of the included physics is available in the CICE
+documentation (cicedoc.pdf) available from 
+http://oceans11.lanl.gov/trac/CICE/attachment/wiki/WikiStart/cicedoc.pdf?format=raw.
+
+Collaborations, and access to the repository, must be approved by the DOE
+developers of the column package (contact E. Hunke, eclare@lanl.gov), and
+are subject to the collaboration agreement included in this directory
+(see CollaborationAgreement).  The code may not be redistributed beyond the
+approved collaboration.
+
+To be incorporated into the column package, community development code must 
+be accompanied with a complete description of the changes necessary to the 
+column package interface.  A form detailing the information needed is 
+provided in this directory (see DocForChanges).  
+
+Requirements:
+1. Modules within the column package shall use no modules that are not part
+of the column package (see module designations below).
+2. Modules outside the column package shall use only the column packag 
+interface modules.
+3. Column package modules shall contain as much of the 'physics' for each
+column parameterization as possible, leaving only infrastructure related
+elements outside, such as array declarations and I/O.
+
+Notes regarding coding style:
+1. Most 'use' statements should be restricted to use of subroutines, with
+variables passed through argument lists rather than being used.  
+2. In most cases, tracers are passed into the column package as individual
+arrays named according to their physical representation.  Pass the tracer
+tracer arrays, with tracer indices, only when unavoidable.
+3. Variables declared at the tops of modules should include only those 
+that are used strictly within the module, except for 'shared' modules.
+4. All variable declarations should include comments identifying the
+variable and its units.
+5. Comment code subroutines and subsections freely and verbosely.
+6. There are exceptions to these rules in the existing column
+package.  We are still working on it.
+
+Source Code:
+
+Interface modules, marked with *, contain all code that needs to be 
+accessed from outside the column package in CICE and MPAS-Seaice. In turn, 
+the interface modules call other, internal column package code.  Although 
+it is not included in the column package, corresponding code must be 
+included outside of the column package to declare spatial arrays, assign 
+namelist and other parameter values, call subroutines within the column 
+package, etc.  In the column-package version of CICE, these modules are 
+source/ice_arrays_column.F90
+source/ice_init_column.F90
+source/ice_restart_column.F90
+source/ice_step_mod.F90.
+
+Column Package Source Code:
+
+source_colpkg/
+
+constants/
+constants/cesm/ice_constants_colpkg.F90
+constants/cice/ice_constants_colpkg.F90
+constants/hadgem3/ice_constants_colpkg.F90
+
+documentation/
+documentation/CollaborationAgreement.pdf
+documentation/DocForChanges.pdf
+documentation/DocForChanges.rtf
+documentation/README
+
+*ice_kinds_mod.F90
+ice_aerosol.F90
+ice_age.F90
+ice_algae.F90
+ice_atmo.F90
+*ice_colpkg.F90
+*ice_colpkg_shared.F90
+*ice_colpkg_tracers.F90
+ice_firstyear.F90
+ice_flux_colpkg.F90
+ice_itd.F90
+ice_mechred.F90
+ice_meltpond_cesm.F90
+ice_meltpond_lvl.F90
+ice_meltpond_topo.F90
+ice_mushy_physics.F90
+ice_orbital.F90
+ice_shortwave.F90
+ice_therm_0layer.F90
+ice_therm_bl99.F90
+ice_therm_itd.F90
+ice_therm_mushy.F90
+ice_therm_shared.F90
+ice_therm_vertical.F90
+ice_zbgc.F90
+ice_zbgc_shared.F90

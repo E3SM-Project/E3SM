@@ -1,0 +1,14 @@
+# get the data required by the single cell test case
+cd E3SM/components/mpas-seaice/testing_and_setup/testing/DATA/
+python get_data.py
+
+# build the model
+cd E3SM/components/mpas-seaice/
+make [options]
+
+# run the test case
+cd E3SM/components/mpas-seaice/testing_and_setup/testcases/single_cell
+python run_testcase.py
+
+# examine the output plot
+single_cell.png

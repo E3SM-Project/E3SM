@@ -22,6 +22,7 @@ use phys_control,  only: phys_getopts
 use wv_saturation, only: qsat, qsat_water, svp_ice
 use time_manager,  only: is_first_step
 
+use scamMod,       only: single_column, wfld
 use cam_abortutils,    only: endrun
 
 implicit none
@@ -94,9 +95,12 @@ integer  ::      snow_sed_idx = 0
 integer  ::      prec_pcw_idx = 0
 integer  ::      snow_pcw_idx = 0
 
+integer  ::      wsresp_idx = 0
+integer  ::      tau_est_idx = 0
 
 integer :: tpert_idx=-1, qpert_idx=-1, pblh_idx=-1
-logical :: prog_modal_aero 
+logical :: prog_modal_aero
+logical :: linearize_pbl_winds
 contains
 
 ! ===============================================================================
@@ -165,7 +169,8 @@ subroutine diag_init()
    integer :: ixcldice, ixcldliq ! constituent indices for cloud liquid and ice water.
    integer :: ierr
 
-   call phys_getopts(prog_modal_aero_out = prog_modal_aero )
+   call phys_getopts(prog_modal_aero_out = prog_modal_aero, &
+                     linearize_pbl_winds_out = linearize_pbl_winds)
 
    ! outfld calls in diag_phys_writeout
 
@@ -213,6 +218,7 @@ subroutine diag_init()
    call addfld ('Z200',horiz_only,    'A','m','Geopotential Z at 200 mbar pressure surface')
    call addfld ('Z100',horiz_only,    'A','m','Geopotential Z at 100 mbar pressure surface')
    call addfld ('Z050',horiz_only,    'A','m','Geopotential Z at 50 mbar pressure surface')
+   call addfld ('Z010',horiz_only,    'A','m','Geopotential Z at 10 mbar pressure surface')
 
    call addfld ('ZZ',(/ 'lev' /), 'A','m2','Eddy height variance' )
    call addfld ('VZ',(/ 'lev' /), 'A','m2/s','Meridional transport of geopotential energy')
@@ -296,6 +302,7 @@ subroutine diag_init()
    call addfld ('MQ',(/ 'lev' /), 'A','kg/m2','Water vapor mass in layer')
    call addfld ('TMQ',horiz_only,    'A','kg/m2','Total (vertically integrated) precipitable water', &
    standard_name='atmosphere_mass_content_of_water_vapor')
+   call addfld ('TTQ',horiz_only,   'A', 'kg/m/s','Total (vertically integrated) vapor transport')
    call addfld ('TUQ',horiz_only,    'A','kg/m/s','Total (vertically integrated) zonal water flux')
    call addfld ('TVQ',horiz_only,    'A','kg/m/s','Total (vertically integrated) meridional water flux')
    call addfld ('TUH',horiz_only,    'A','W/m',   'Total (vertically integrated) zonal MSE flux')
@@ -347,6 +354,8 @@ subroutine diag_init()
    call addfld ('V250',horiz_only,    'A','m/s','Meridional wind at 250 mbar pressure surface')
    call addfld ('V200',horiz_only,    'A','m/s','Meridional wind at 200 mbar pressure surface')
    call addfld ('V100',horiz_only,    'A','m/s','Meridional wind at 100 mbar pressure surface')
+   call addfld ('V050',horiz_only,    'A','m/s','Meridional wind at  50 mbar pressure surface')
+   call addfld ('V010',horiz_only,    'A','m/s','Meridional wind at  10 mbar pressure surface')
 
    call addfld ('TT',(/ 'lev' /), 'A','K2','Eddy temperature variance' )
 
@@ -379,6 +388,8 @@ subroutine diag_init()
    call addfld ('Q400',horiz_only,   'A','kg/kg','Specific Humidity at 400 mbar pressure surface')
    call addfld ('Q300',horiz_only,   'A','kg/kg','Specific Humidity at 300 mbar pressure surface')
    call addfld ('Q100',horiz_only,   'A','kg/kg','Specific Humidity at 100 mbar pressure surface')
+   call addfld ('Q050',horiz_only,   'A','kg/kg','Specific Humidity at 050 mbar pressure surface')
+   call addfld ('Q010',horiz_only,   'A','kg/kg','Specific Humidity at 010 mbar pressure surface')
 
    call addfld ('T7001000',horiz_only,   'A','K','Temperature difference 700 mb - 1000 mb')
    call addfld ('TH7001000',horiz_only,   'A','K','Theta difference 700 mb - 1000 mb')
@@ -390,6 +401,8 @@ subroutine diag_init()
    call addfld ('T9251000',horiz_only,   'A','K','Temperature difference 925 mb - 1000 mb') 
    call addfld ('TH9251000',horiz_only,   'A','K','Theta difference 925 mb - 1000 mb')   
    call addfld ('THE9251000',horiz_only,   'A','K','ThetaE difference 925 mb - 1000 mb') 
+   call addfld ('UOVERN',horiz_only,   'A','m','wind speed/brunt vaisalla frequency 800-100 mb') 
+
 
    ! Add in fields for T and U (not already included) to track Sudden Stratospheric Warming events
    ! Levels include: 250, 200, 150, 100, 50, 25, 10, 5, 2, 1, and TOP (numbers in hPa)
@@ -603,6 +616,11 @@ subroutine diag_init()
    call addfld ('PRECSC',horiz_only,    'A','m/s','Convective snow rate (water equivalent)'                            )
    call addfld ('PRECCav',horiz_only,    'A','m/s','Average large-scale precipitation (liq + ice)'                      )
    call addfld ('PRECLav',horiz_only,    'A','m/s','Average convective precipitation  (liq + ice)'                      )
+
+   if (linearize_pbl_winds) then
+      call addfld ('wsresp',horiz_only,    'A','m/s/Pa','first order response of winds to stress')
+      call addfld ('tau_est',horiz_only,    'A','Pa','estimated equilibrium wind stress')
+   end if
 
    ! outfld calls in diag_surf
 
@@ -834,6 +852,11 @@ subroutine diag_init()
   prec_pcw_idx = pbuf_get_index('PREC_PCW')
   snow_pcw_idx = pbuf_get_index('SNOW_PCW')
 
+  if (linearize_pbl_winds) then
+     wsresp_idx  = pbuf_get_index('wsresp')
+     tau_est_idx  = pbuf_get_index('tau_est')
+  end if
+
 end subroutine diag_init
 
 !===============================================================================
@@ -962,6 +985,8 @@ end subroutine diag_conv_tend_ini
     real(r8) ftem(pcols,pver) ! temporary workspace
     real(r8) ftem1(pcols,pver) ! another temporary workspace
     real(r8) ftem2(pcols,pver) ! another temporary workspace
+    real(r8) ftem4(pcols,pver) ! another temporary workspace
+    real(r8) ftem5(pcols,pver) ! another temporary workspace
     real(r8) psl_tmp(pcols)   ! Sea Level Pressure
     real(r8) z3(pcols,pver)   ! geo-potential height
     real(r8) p_surf(pcols)    ! data interpolated to a pressure surface
@@ -1090,6 +1115,10 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid,  5000._r8, z3, p_surf)
        call outfld('Z050    ', p_surf, pcols, lchnk)
     end if
+    if (hist_fld_active('Z010')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  1000._r8, z3, p_surf)
+       call outfld('Z010    ', p_surf, pcols, lchnk)
+    end if
 !
 ! Quadratic height fiels Z3*Z3
 !
@@ -1204,7 +1233,11 @@ end subroutine diag_conv_tend_ini
 
 ! Vertical velocity and advection
 
-    call outfld('OMEGA   ',state%omega,    pcols,   lchnk     )
+    if (single_column) then
+       call outfld('OMEGA   ',wfld,    pcols,   lchnk     )
+    else
+       call outfld('OMEGA   ',state%omega,    pcols,   lchnk     )
+    endif
 
 #if (defined E3SM_SCM_REPLAY )
     call outfld('omega   ',state%omega,    pcols,   lchnk     )
@@ -1293,19 +1326,20 @@ end subroutine diag_conv_tend_ini
     end do
     call outfld ('TMQ     ',ftem, pcols   ,lchnk     )
 !
-! Mass of vertically integrated q flux
+! Mass of vertically integrated water vapor flux
 !
-    ftem(:ncol,:) = state%u(:ncol,:)*state%q(:ncol,:,1)*state%pdel(:ncol,:)*rga
+    ftem4(:ncol,:) = state%u(:ncol,:)*state%q(:ncol,:,1)*state%pdel(:ncol,:)*rga
+    ftem5(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,1)*state%pdel(:ncol,:)*rga
     do k=2,pver
-       ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
+       ftem4(:ncol,1) = ftem4(:ncol,1) + ftem4(:ncol,k)
+       ftem5(:ncol,1) = ftem5(:ncol,1) + ftem5(:ncol,k)
     end do
-    call outfld ('TUQ     ',ftem, pcols   ,lchnk     )
 
-    ftem(:ncol,:) = state%v(:ncol,:)*state%q(:ncol,:,1)*state%pdel(:ncol,:)*rga
-    do k=2,pver
-       ftem(:ncol,1) = ftem(:ncol,1) + ftem(:ncol,k)
-    end do
-    call outfld ('TVQ     ',ftem, pcols   ,lchnk     )
+    ftem(:ncol,1) = sqrt( ftem4(:ncol,1)**2 + ftem5(:ncol,1)**2)
+
+    call outfld ('TUQ     ',ftem4, pcols   ,lchnk     )
+    call outfld ('TVQ     ',ftem5, pcols   ,lchnk     )
+    call outfld ('TTQ     ',ftem, pcols   ,lchnk     )
 
 !
 ! Mass of vertically integrated MSE flux
@@ -1534,6 +1568,14 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%q(1,1,1), p_surf)
        call outfld('Q100    ', p_surf, pcols, lchnk )
     end if
+    if (hist_fld_active('Q050')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 5000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q050    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('Q010')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 1000._r8, state%q(1,1,1), p_surf)
+       call outfld('Q010    ', p_surf, pcols, lchnk )
+    end if
     if (hist_fld_active('U1000')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 100000._r8, state%u, p_surf)
        call outfld('U1000   ', p_surf, pcols, lchnk )
@@ -1593,6 +1635,10 @@ end subroutine diag_conv_tend_ini
     if (hist_fld_active('U100')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%u, p_surf)
        call outfld('U100    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('U050')) then
+       call vertinterp(ncol, pcols, pver, state%pmid,  5000._r8, state%u, p_surf)
+       call outfld('U050    ', p_surf, pcols, lchnk )
     end if
     if (hist_fld_active('U010')) then
        call vertinterp(ncol, pcols, pver, state%pmid,  1000._r8, state%u, p_surf)
@@ -1654,6 +1700,19 @@ end subroutine diag_conv_tend_ini
        call vertinterp(ncol, pcols, pver, state%pmid, 20000._r8, state%v, p_surf)
        call outfld('V200    ', p_surf, pcols, lchnk )
     end if
+    if (hist_fld_active('V100')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%v, p_surf)
+       call outfld('V100    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V050')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 5000._r8, state%v, p_surf)
+       call outfld('V050    ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('V010')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 1000._r8, state%v, p_surf)
+       call outfld('V010    ', p_surf, pcols, lchnk )
+    end if
+
     if (hist_fld_active('U90M')) then
        call vertinterpz(ncol, pcols, pver, state%zm, 90._r8, state%u, p_surf)
        call outfld('U90M    ', p_surf, pcols, lchnk )
@@ -1662,10 +1721,6 @@ end subroutine diag_conv_tend_ini
        call vertinterpz(ncol, pcols, pver, state%zm, 90._r8, state%v, p_surf)
        call outfld('V90M    ', p_surf, pcols, lchnk )
     endif
-    if (hist_fld_active('V100')) then
-       call vertinterp(ncol, pcols, pver, state%pmid, 10000._r8, state%v, p_surf)
-       call outfld('V100    ', p_surf, pcols, lchnk )
-    end if
 
     ftem(:ncol,:) = state%t(:ncol,:)*state%t(:ncol,:)
     call outfld('TT      ',ftem    ,pcols   ,lchnk   )
@@ -1815,11 +1870,6 @@ end subroutine diag_conv_tend_ini
        call outfld('THE7001000    ', p_surf, pcols, lchnk )
     end if
 
-    if (hist_fld_active('T010')) then
-       call vertinterp(ncol, pcols, pver, state%pmid, 1000._r8, state%t, p_surf)
-       call outfld('T010           ', p_surf, pcols, lchnk )
-    end if
-
     if (hist_fld_active('T250')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 25000._r8, state%t, p_surf)
        call outfld('T250           ', p_surf, pcols, lchnk )
@@ -1835,6 +1885,10 @@ end subroutine diag_conv_tend_ini
     if (hist_fld_active('T025')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 2500._r8, state%t, p_surf)
        call outfld('T025           ', p_surf, pcols, lchnk )
+    end if
+    if (hist_fld_active('T010')) then
+       call vertinterp(ncol, pcols, pver, state%pmid, 1000._r8, state%t, p_surf)
+       call outfld('T010           ', p_surf, pcols, lchnk )
     end if
     if (hist_fld_active('T005')) then
        call vertinterp(ncol, pcols, pver, state%pmid, 500._r8, state%t, p_surf)
@@ -1916,6 +1970,9 @@ subroutine diag_conv(state, ztodt, pbuf)
    real(r8), pointer :: prec_pcw(:)                ! total precipitation   from Hack convection
    real(r8), pointer :: snow_pcw(:)                ! snow from Hack   convection
 
+   real(r8), pointer :: wsresp(:)                  ! first order response of winds to stress
+   real(r8), pointer :: tau_est(:)                 ! estimated equilibrium stress
+
 ! Local variables:
    
    integer :: i, k, m, lchnk, ncol
@@ -1942,6 +1999,10 @@ subroutine diag_conv(state, ztodt, pbuf)
    call pbuf_get_field(pbuf, snow_sed_idx, snow_sed)
    call pbuf_get_field(pbuf, prec_pcw_idx, prec_pcw)
    call pbuf_get_field(pbuf, snow_pcw_idx, snow_pcw)
+   if (linearize_pbl_winds) then
+      call pbuf_get_field(pbuf, wsresp_idx, wsresp)
+      call pbuf_get_field(pbuf, tau_est_idx, tau_est)
+   end if
 
 ! Precipitation rates (multi-process)
    precc(:ncol) = prec_dp(:ncol)  + prec_sh(:ncol)
@@ -1961,6 +2022,11 @@ subroutine diag_conv(state, ztodt, pbuf)
 
    call outfld('PRECLav ', precl, pcols, lchnk )
    call outfld('PRECCav ', precc, pcols, lchnk )
+
+   if (linearize_pbl_winds) then
+      call outfld('wsresp', wsresp, pcols, lchnk)
+      call outfld('tau_est', tau_est, pcols, lchnk)
+   end if
 
 #if ( defined E3SM_SCM_REPLAY )
    call outfld('Prec   ' , prect, pcols, lchnk )

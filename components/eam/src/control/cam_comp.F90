@@ -151,8 +151,13 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 
    if ( nsrest == 0 )then
 
+      call t_startf('cam_initfiles_open')
       call cam_initfiles_open()
+      call t_stopf('cam_initfiles_open')
+
+      call t_startf('cam_initial')
       call cam_initial(dyn_in, dyn_out, NLFileName=filein)
+      call t_stopf('cam_initial')
 
       ! Allocate and setup surface exchange data
       call atm2hub_alloc(cam_out)
@@ -160,7 +165,9 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 
    else
 
+      call t_startf('cam_read_restart')
       call cam_read_restart ( cam_in, cam_out, dyn_in, dyn_out, pbuf2d, stop_ymd, stop_tod, NLFileName=filein )
+      call t_stopf('cam_read_restart')
 
      ! Commented out the hub2atm_alloc call as it overwrite cam_in, which is undesirable. The fields in cam_in are necessary for getting BFB restarts
 	 ! There are no side effects of commenting out this call as this call allocates cam_in and cam_in allocation has already been done in cam_init
@@ -170,7 +177,9 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 #endif
    end if
 
+   call t_startf('phys_init')
    call phys_init( phys_state, phys_tend, pbuf2d,  cam_out )
+   call t_stopf('phys_init')
 
    call bldfld ()       ! master field list (if branch, only does hash tables)
 
@@ -188,7 +197,6 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
 
    if (single_column) call scm_intht()
    call intht()
-
 
 end subroutine cam_init
 

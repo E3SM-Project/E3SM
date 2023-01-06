@@ -2,15 +2,15 @@
 #include "pressure.h"
 
 void pressure() {
-  auto &p             = :: p;
-  auto &rhow          = :: rhow;
-  auto &adz           = :: adz;
-  auto &adzw          = :: adzw;
-  auto &dz            = :: dz;
-  auto &dx            = :: dx;
-  auto &dy            = :: dy;
-  auto &rho           = :: rho;
-  auto &ncrms         = :: ncrms;
+  YAKL_SCOPE( p             , :: p );
+  YAKL_SCOPE( rhow          , :: rhow );
+  YAKL_SCOPE( adz           , :: adz );
+  YAKL_SCOPE( adzw          , :: adzw );
+  YAKL_SCOPE( dz            , :: dz );
+  YAKL_SCOPE( dx            , :: dx );
+  YAKL_SCOPE( dy            , :: dy );
+  YAKL_SCOPE( rho           , :: rho );
+  YAKL_SCOPE( ncrms         , :: ncrms );
 
   int npressureslabs = nsubdomains;
   int nzslab = max(1,nzm/npressureslabs); 
@@ -49,39 +49,8 @@ void pressure() {
 
   #ifndef USE_ORIG_FFT
 
-    yakl::FFT<nx> fftx;
-    yakl::FFT<fftySize> ffty;
-
-    // for (int k=0; k<nzslab; k++) {
-    //  for (int j=0; j<ny; j++) {
-    //      for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<3>(nzslab,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
-      real ftmp[nx+2];
-      real tmp [nx];
-
-      for (int i=0; i<nx ; i++) { ftmp[i] = f(k,j,i,icrm); }
-
-      fftx.forward(ftmp, tmp);
-
-      for (int i=0; i<nx2; i++) { f(k,j,i,icrm) = ftmp[i]; }
-    });
-
-    if (RUN3D) {
-      // for (int k=0; k<nzslab; k++) {
-      //  for (int i=0; j<nx+1; i++) {
-      //    for(int l=0; l<ny2; l++) {
-      //      for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( SimpleBounds<3>(nzslab,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
-        real ftmp[ny+2];
-        real tmp [ny];
-
-        for (int j=0; j<ny ; j++) { ftmp[j] = f(k,j,i,icrm); }
-
-        ffty.forward(ftmp, tmp);
-
-        for (int j=0; j<ny2; j++) { f(k,j,i,icrm) = ftmp[j]; }
-      });
-    }
+    pressure_fftx.forward_real(f, 2, nx);
+    if (RUN3D) { pressure_ffty.forward_real(f, 1, ny); }
 
   #else
 
@@ -205,35 +174,8 @@ void pressure() {
 
   #ifndef USE_ORIG_FFT
 
-    if (RUN3D) {
-      // for (int k=0; k<nzslab; k++) {
-      //   for (int i=0; i<nx+1; i++) {
-      //     for (int icrm=0; icrm<ncrms; icrm++) {
-      parallel_for( SimpleBounds<3>(nzslab,nx+1,ncrms) , YAKL_LAMBDA (int k, int i, int icrm) {
-        real ftmp[ny+2];
-        real tmp [ny];
-        
-        for(int j=0; j<ny+2; j++) { ftmp[j] = f(k,j,i,icrm); }
-
-        ffty.inverse(ftmp,tmp);
-
-        for(int j=0; j<ny  ; j++) { f(k,j,i,icrm) = ftmp[j]; } 
-      });
-    }
-
-    // for (int k=0; k<nzslab; k++) {
-    //   for (int j=0; i<ny; i++) {
-    //     for (int icrm=0; icrm<ncrms; icrm++) {
-    parallel_for( SimpleBounds<3>(nzslab,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
-      real ftmp[nx+2];
-      real tmp [nx];
-
-      for(int i=0; i<nx+2; i++) { ftmp[i] = f(k,j,i,icrm); }
-
-      fftx.inverse(ftmp,tmp);
-
-      for(int i=0; i<nx  ; i++) { f(k,j,i,icrm) = ftmp[i]; }
-    });
+    if (RUN3D) { pressure_ffty.inverse_real(f); }
+    pressure_fftx.inverse_real(f);
 
   #else
 

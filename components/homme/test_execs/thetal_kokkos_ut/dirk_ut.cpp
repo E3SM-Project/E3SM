@@ -10,6 +10,7 @@
 #include "mpi/Connectivity.hpp"
 #include "SimulationParams.hpp"
 #include "Elements.hpp"
+#include "PhysicalConstants.hpp"
 
 #include "utilities/TestUtils.hpp"
 #include "utilities/SyncUtils.hpp"
@@ -86,6 +87,8 @@ struct Session {
 
     nelemd = c.get<Connectivity>().get_num_local_elements();
     e = c.create<Elements>();
+    e.m_state = c.create<ElementsState>();
+    e.m_geometry = c.create<ElementsGeometry>();
   }
 
   void cleanup () {
@@ -103,7 +106,10 @@ struct Session {
   }
 
   // Call only in last line of last TEST_CASE.
-  static void delete_singleton () { s_session = nullptr; }
+  static void delete_singleton () {
+    if (s_session) s_session->cleanup();
+    s_session = nullptr;
+  }
 
 private:
   static std::shared_ptr<Session> s_session;
@@ -408,11 +414,11 @@ TEST_CASE ("dirk_pieces_testing") {
     for (int i = 0; i < np; ++i)
       for (int j = 0; j < np; ++j) {
         static const int n = NUM_PHYSICAL_LEV;
-        Real _dl[n], _d[n], _du[n];
-        for (int k = 0; k < nlev-1; ++k) _dl[k] = dlf(k,i,j);
-        for (int k = 0; k < nlev  ; ++k) _d [k] = df (k,i,j);
-        for (int k = 0; k < nlev-1; ++k) _du[k] = duf(k,i,j);
-        tridiag_diagdom_bfb_a1x1(nlev, _dl, _d, _du, &x3(i,j,0), sizeof(Real));
+        Real dl[n], d[n], du[n];
+        for (int k = 0; k < nlev-1; ++k) dl[k] = dlf(k,i,j);
+        for (int k = 0; k < nlev  ; ++k) d [k] = df (k,i,j);
+        for (int k = 0; k < nlev-1; ++k) du[k] = duf(k,i,j);
+        tridiag_diagdom_bfb_a1x1(nlev, dl, d, du, &x3(i,j,0), sizeof(Real));
         const auto
           idx = np*i + j,
           pi = idx / dfi::packn,
@@ -625,7 +631,7 @@ static void init_elems (int, int nelemd, Random& r, const HybridVCoord& hvcoord,
   const int nlev = NUM_PHYSICAL_LEV, np = NP;
   const auto all = Kokkos::ALL();
 
-  e.init(nelemd, false, true);
+  e.init(nelemd, false, true, PhysicalConstants::rearth0);
   const auto max_pressure = 1000 + hvcoord.ps0;
   auto& geo = e.m_geometry;
   e.m_geometry.randomize(r.gen_seed());
@@ -846,7 +852,7 @@ TEST_CASE ("dirk_toplevel_testing") {
       c2f(e);
       compute_stage_value_dirk_f90(nm1+1, alphadtwt_nm1*dt2, n0+1, alphadtwt_n0*dt2, np1+1, dt2);
       Elements ef90;
-      ef90.init(nelemd, false, true);
+      ef90.init(nelemd, false, true, PhysicalConstants::rearth0);
       f2c(ef90);
 
       const auto phif = cmvdc(ef90.m_state.m_phinh_i);

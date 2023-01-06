@@ -1,0 +1,21 @@
+The namelist and streams file under directory  …/testing_and_setup/seaice/configurations/snicar_shortwave can be used to run MPAS-seaice model with the following updated solar radiative treatment for snow on sea ice:
+
+1. Using 5-band inherent optical properties (i.e. single-scattering properties) for snow and aerosols follow SNICAR (Flanner and Zender , 2005, Snowpack radiative heating: Influence on Tibetan Plateau climate), which is used to simulate the solar properties of snow on land in E3SM.
+
+2. Remove snow grain size adjustment in subroutine “compute_dEdd” of program "…/src/core_seaice/colume/ice_shortwave.F90". Direct solar and diffuse solar properties of snow-covered sea ice are computed separated using physical snow grain size and the corresponding snow inherent optical properties for clear sky and cloudy sky, respectively.
+
+3. Correct for the under-estimated direct near-infrared snow-covered sea ice albedo using parameterization by Dang et al., 2018, in prep.
+
+4. To turn on SNICAR system, set  “config_use_snicar_ad = true” in namelist.seaice.
+
+5. 5-band inherent optical properties of snow and aerosols are stored in file “snicar_optics_5bnd_snow_and_aerosols.nc”, as shown in streams.seaice:
+<immutable_stream name="SnicarInput"
+                  type="input"
+                  filename_template="snicar_optics_5bnd_snow_and_aerosols.nc"
+                  filename_interval="none"
+                  input_interval="initial_only" />
+
+6. Please see subroutine “compute_dEdd_5bd” in program "…/src/core_seaice/colume/ice_shortwave.F90" for implementation.
+
+7. For questions and more details, please contact: Cheng Dang, cdang5@uci.edu, UC Irvine.
+

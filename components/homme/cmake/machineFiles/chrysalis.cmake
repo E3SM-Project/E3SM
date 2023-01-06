@@ -40,7 +40,7 @@ SET (NetCDF_C_PATH "${NCCONFIG_OUTPUT}" CACHE STRING "")
 
 SET (USE_QUEUING FALSE CACHE BOOL "")
 # for standalone HOMME builds:
-SET (CPRNC_DIR /lcrc/group/e3sm/soft/tools/cprnc CACHE FILEPATH "")
+SET (CPRNC_DIR /lcrc/group/e3sm/tools/cprnc CACHE FILEPATH "")
 
 IF (${IFORT_RESULT} EQUAL 0)
   SET (HOMME_USE_MKL "TRUE" CACHE FILEPATH "")

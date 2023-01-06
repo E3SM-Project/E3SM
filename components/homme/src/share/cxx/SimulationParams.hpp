@@ -9,6 +9,8 @@
 
 #include "HommexxEnums.hpp"
 
+#include <iostream>
+
 namespace Homme
 {
 
@@ -18,17 +20,17 @@ namespace Homme
  */
 struct SimulationParams
 {
-  SimulationParams() : ftype(ForcingAlg::FORCING_OFF), params_set(false) {}
+  void print(std::ostream& out = std::cout);
 
   TimeStepType  time_step_type;
   MoistDry      moisture;
   RemapAlg      remap_alg;
   TestCase      test_case;
-  ForcingAlg    ftype;
+  ForcingAlg    ftype = ForcingAlg::FORCING_OFF;
   AdvectionForm theta_adv_form; // Only for theta model
 
-  int           rsplit;
-  int           qsplit;
+  int           rsplit, dt_remap_factor;
+  int           qsplit, dt_tracer_factor;
   int           qsize;
 
 
@@ -38,7 +40,7 @@ struct SimulationParams
 
   int       state_frequency;
   bool      disable_diagnostics;
-  bool      use_semi_lagrangian_transport;
+  int       transport_alg;
   bool      use_cpstar;
   bool      theta_hydrostatic_mode;   // Only for theta model
 
@@ -51,12 +53,54 @@ struct SimulationParams
   double    nu_div;
   int       hypervis_order;
   int       hypervis_subcycle;
+  int       hypervis_subcycle_tom;
   double    hypervis_scaling;
   double    nu_ratio1, nu_ratio2; //control balance between div and vort components in vector laplace
+  int       nsplit = 0;
+  int       nsplit_iteration;
+  double    rearth; //propagated then to Geometry and SphereOps
+  bool      pgrad_correction;
 
   // Use this member to check whether the struct has been initialized
-  bool      params_set;
+  bool      params_set = false;
 };
+
+inline void SimulationParams::print (std::ostream& out) {
+
+  out << "\n************** CXX SimulationParams **********************\n\n";
+  out << "   time_step_type: " << etoi(time_step_type) << "\n";
+  out << "   moisture: " << (moisture==MoistDry::DRY ? "dry" : "moist") << "\n";
+  out << "   remap_alg: " << etoi(remap_alg) << "\n";
+  out << "   test case: " << etoi(test_case) << "\n";
+  out << "   ftype: " << etoi(ftype) << "\n";
+  out << "   theta_adv_form: " << etoi(theta_adv_form) << "\n";
+  out << "   rsplit: " << rsplit << "\n";
+  out << "   qsplit: " << qsplit << "\n";
+  out << "   qsize: " << qsize << "\n";
+  out << "   limiter_option: " << limiter_option << "\n";
+  out << "   state_frequency: " << state_frequency << "\n";
+  out << "   dcmip16_mu: " << dcmip16_mu << "\n";
+  out << "   nu: " << nu << "\n";
+  out << "   nu_p: " << nu_p << "\n";
+  out << "   nu_q: " << nu_q << "\n";
+  out << "   nu_s: " << nu_s << "\n";
+  out << "   nu_top: " << nu_top << "\n";
+  out << "   nu_div: " << nu_div << "\n";
+  out << "   hypervis_order: " << hypervis_order << "\n";
+  out << "   hypervis_subcycle: " << hypervis_subcycle << "\n";
+  out << "   hypervis_subcycle_tom: " << hypervis_subcycle_tom << "\n";
+  out << "   hypervis_scaling: " << hypervis_scaling << "\n";
+  out << "   nu_ratio1: " << nu_ratio1 << "\n";
+  out << "   nu_ratio2: " << nu_ratio2 << "\n";
+  out << "   use_cpstar: " << (use_cpstar ? "yes" : "no") << "\n";
+  out << "   transport_alg: " << transport_alg << "\n";
+  out << "   disable_diagnostics: " << (disable_diagnostics ? "yes" : "no") << "\n";
+  out << "   theta_hydrostatic_mode: " << (theta_hydrostatic_mode ? "yes" : "no") << "\n";
+  out << "   prescribed_wind: " << (prescribed_wind ? "yes" : "no") << "\n";
+  out << "   nsplit: " << nsplit << "\n";
+  out << "   rearth: " << rearth << "\n";
+  out << "\n**********************************************************\n";
+}
 
 } // namespace Homme
 

@@ -4,7 +4,7 @@ module restart_physics
   use spmd_utils,         only: masterproc
   use co2_cycle,          only: co2_transport
   use constituents,       only: pcnst
-  use comsrf,             only: sgh, sgh30, landm, trefmxav, trefmnav, initialize_comsrf 
+  use comsrf,             only: sgh, sgh30, trefmxav, trefmnav, initialize_comsrf 
   use ioFileMod
   use cam_abortutils,     only: endrun
   use camsrfexch,         only: cam_in_t, cam_out_t
@@ -18,6 +18,7 @@ module restart_physics
                                 pio_put_var, pio_get_var
   use cospsimulator_intr, only: docosp
   use radiation,          only: cosp_cnt_init, cosp_cnt, rad_randn_seedrst, kiss_seed_num
+  use perf_mod,           only: t_startf, t_stopf
 
   implicit none
   private
@@ -37,7 +38,7 @@ module restart_physics
 
     logical           :: pergro_mods = .false.
 
-    type(var_desc_t) :: trefmxav_desc, trefmnav_desc, flwds_desc, landm_desc, sgh_desc, &
+    type(var_desc_t) :: trefmxav_desc, trefmnav_desc, flwds_desc, sgh_desc, &
          sgh30_desc, solld_desc, co2prog_desc, co2diag_desc, sols_desc, soll_desc, &
          solsd_desc, emstot_desc, absnxt_desc(4)
 
@@ -115,7 +116,6 @@ module restart_physics
 
        call cam_pio_def_dim(File, 'pcnst', pcnst, dimids(hdimcnt+1), existOK=.true.)
     
-       ierr = pio_def_var(File, 'LANDM',    pio_double, hdimids, landm_desc)
        ierr = pio_def_var(File, 'SGH',      pio_double, hdimids, sgh_desc)
        ierr = pio_def_var(File, 'SGH30',    pio_double, hdimids, sgh30_desc)
        ierr = pio_def_var(File, 'TREFMXAV', pio_double, hdimids, trefmxav_desc)
@@ -216,14 +216,18 @@ module restart_physics
       !-----------------------------------------------------------------------
 
       ! Write grid vars
+      call t_startf("cam_grid_write_var")
       call cam_grid_write_var(File, phys_decomp)
+      call t_stopf("cam_grid_write_var")
 
       ! Physics buffer
       if (is_subcol_on()) then
          call subcol_write_restart(File)
       end if
 
+      call t_startf("pbuf_write_restart")
       call pbuf_write_restart(File, pbuf2d)
+      call t_stopf("pbuf_write_restart")
 
       physgrid = cam_grid_id('physgrid')
       call cam_grid_dimensions(physgrid, gdims(1:2), nhdims)
@@ -231,17 +235,24 @@ module restart_physics
       if ( .not. adiabatic .and. .not. ideal_phys )then
 
          ! data for chemistry
+         call t_startf("chem_write_restart")
          call chem_write_restart(File)
+         call t_stopf("chem_write_restart")
 
          call write_prescribed_ozone_restart(File)
          call write_prescribed_ghg_restart(File)
+
+         call t_startf("write_prescribed_aero_restart")
          call write_prescribed_aero_restart(File)
+         call t_stopf("write_prescribed_aero_restart")
+
+         call t_startf("write_prescribed_volcaero_restart")
          call write_prescribed_volcaero_restart(File)
+         call t_stopf("write_prescribed_volcaero_restart")
  
          do i=begchunk,endchunk
             ncol = cam_out(i)%ncol
             if(ncol<pcols) then
-               landm(ncol+1:pcols,i) = fillvalue
                sgh(ncol+1:pcols,i) = fillvalue
                sgh30(ncol+1:pcols,i) = fillvalue
 
@@ -252,11 +263,10 @@ module restart_physics
 
          ! Comsrf module variables (can following coup_csm definitions be removed?)
          ! This is a group of surface variables so can reuse dims
-         dims(1) = size(landm, 1) ! Should be pcols
-         dims(2) = size(landm, 2) ! Should be endchunk - begchunk + 1
+         dims(1) = size(sgh, 1) ! Should be pcols
+         dims(2) = size(sgh, 2) ! Should be endchunk - begchunk + 1
          call cam_grid_get_decomp(physgrid, dims(1:2), gdims(1:nhdims),          &
               pio_double, iodesc)
-         call pio_write_darray(File, landm_desc, iodesc, landm, ierr)
          call pio_write_darray(File, sgh_desc,   iodesc,   sgh, ierr)
          call pio_write_darray(File, sgh30_desc, iodesc, sgh30, ierr)
          
@@ -461,7 +471,9 @@ module restart_physics
         call subcol_read_restart(File)
      end if
 
+     call t_startf("pbuf_read_restart")
      call pbuf_read_restart(File, pbuf2d)
+     call t_stopf("pbuf_read_restart")
 
      csize=endchunk-begchunk+1
      dims(1) = pcols
@@ -482,18 +494,21 @@ module restart_physics
      if ( .not. adiabatic .and. .not. ideal_phys )then
 
         ! data for chemistry
+        call t_startf ('chem_read_restart')
         call chem_read_restart(File)
+        call t_stopf ('chem_read_restart')
 
         call read_prescribed_ozone_restart(File)
         call read_prescribed_ghg_restart(File)
+
+        call t_startf ('read_prescribed_aero_restart')
         call read_prescribed_aero_restart(File)
+        call t_stopf ('read_prescribed_aero_restart')
+
         call read_prescribed_volcaero_restart(File)
 
         allocate(tmpfield2(pcols, begchunk:endchunk))
         tmpfield2 = fillvalue
-
-        ierr = pio_inq_varid(File, 'LANDM', vardesc)
-        call pio_read_darray(File, vardesc, iodesc, landm, ierr)
 
         ierr = pio_inq_varid(File, 'SGH', vardesc)
         call pio_read_darray(File, vardesc, iodesc, sgh, ierr)

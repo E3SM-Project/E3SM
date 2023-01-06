@@ -12,7 +12,7 @@
 <config_start_time>'0001-01-01_00:00:00'</config_start_time>
 <config_stop_time>'none'</config_stop_time>
 <config_run_duration>'0010_00:00:00'</config_run_duration>
-<config_calendar_type CALENDAR="NO_LEAP">'gregorian_noleap'</config_calendar_type>
+<config_calendar_type CALENDAR="NO_LEAP">'noleap'</config_calendar_type>
 <config_calendar_type>'gregorian'</config_calendar_type>
 
 <!-- io -->
@@ -32,20 +32,16 @@
 <config_dt ocn_grid="oQU240">'01:00:00'</config_dt>
 <config_dt ocn_grid="oQU240wLI">'02:00:00'</config_dt>
 <config_dt ocn_grid="oQU120">'00:30:00'</config_dt>
-<config_dt ocn_grid="oEC60to30">'00:30:00'</config_dt>
 <config_dt ocn_grid="oEC60to30v3">'00:30:00'</config_dt>
-<config_dt ocn_grid="oEC60to30wLI">'00:30:00'</config_dt>
 <config_dt ocn_grid="oEC60to30v3wLI">'00:30:00'</config_dt>
 <config_dt ocn_grid="ECwISC30to60E1r2">'00:30:00'</config_dt>
-<config_dt ocn_grid="oRRS30to10">'00:06:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10v3">'00:10:00'</config_dt>
-<config_dt ocn_grid="oRRS30to10wLI">'00:10:00'</config_dt>
 <config_dt ocn_grid="oRRS30to10v3wLI">'00:10:00'</config_dt>
-<config_dt ocn_grid="oRRS18to6">'00:06:00'</config_dt>
 <config_dt ocn_grid="oRRS18to6v3">'00:06:00'</config_dt>
 <config_dt ocn_grid="oRRS15to5">'00:03:45'</config_dt>
 <config_dt ocn_grid="oARRM60to10">'00:10:00'</config_dt>
 <config_dt ocn_grid="oARRM60to6">'00:05:00'</config_dt>
+<config_dt ocn_grid="ARRM10to60E2r1">'00:10:00'</config_dt>
 <config_dt ocn_grid="EC30to60E2r2">'00:30:00'</config_dt>
 <config_dt ocn_grid="WC14to60E2r3">'00:10:00'</config_dt>
 <config_dt ocn_grid="WCAtl12to45E2r4">'00:10:00'</config_dt>
@@ -58,20 +54,16 @@
 <config_hmix_scaleWithMesh ocn_grid="oQU240">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oQU240wLI">.false.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oQU120">.false.</config_hmix_scaleWithMesh>
-<config_hmix_scaleWithMesh ocn_grid="oEC60to30">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oEC60to30v3">.true.</config_hmix_scaleWithMesh>
-<config_hmix_scaleWithMesh ocn_grid="oEC60to30wLI">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oEC60to30v3wLI">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="ECwISC30to60E1r2">.true.</config_hmix_scaleWithMesh>
-<config_hmix_scaleWithMesh ocn_grid="oRRS30to10">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS30to10v3">.true.</config_hmix_scaleWithMesh>
-<config_hmix_scaleWithMesh ocn_grid="oRRS30to10wLI">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS30to10v3wLI">.true.</config_hmix_scaleWithMesh>
-<config_hmix_scaleWithMesh ocn_grid="oRRS18to6">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS18to6v3">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oRRS15to5">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oARRM60to10">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="oARRM60to6">.true.</config_hmix_scaleWithMesh>
+<config_hmix_scaleWithMesh ocn_grid="ARRM10to60E2r1">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="EC30to60E2r2">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="WC14to60E2r3">.true.</config_hmix_scaleWithMesh>
 <config_hmix_scaleWithMesh ocn_grid="WCAtl12to45E2r4">.true.</config_hmix_scaleWithMesh>
@@ -84,9 +76,7 @@
 
 <!-- hmix_del2 -->
 <config_use_mom_del2>.false.</config_use_mom_del2>
-<config_use_mom_del2 ocn_grid="oEC60to30">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="oEC60to30v3">.true.</config_use_mom_del2>
-<config_use_mom_del2 ocn_grid="oEC60to30wLI">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="oEC60to30v3wLI">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="ECwISC30to60E1r2">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="EC30to60E2r2">.true.</config_use_mom_del2>
@@ -95,9 +85,7 @@
 <config_use_mom_del2 ocn_grid="SOwISC12to60E2r4">.true.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="ECwISC30to60E2r1">.true.</config_use_mom_del2>
 <config_mom_del2>10.0</config_mom_del2>
-<config_mom_del2 ocn_grid="oEC60to30">1000.0</config_mom_del2>
 <config_mom_del2 ocn_grid="oEC60to30v3">1000.0</config_mom_del2>
-<config_mom_del2 ocn_grid="oEC60to30wLI">1000.0</config_mom_del2>
 <config_mom_del2 ocn_grid="oEC60to30v3wLI">1000.0</config_mom_del2>
 <config_mom_del2 ocn_grid="ECwISC30to60E1r2">1000.0</config_mom_del2>
 <config_mom_del2 ocn_grid="EC30to60E2r2">1000.0</config_mom_del2>
@@ -114,20 +102,16 @@
 <config_mom_del4 ocn_grid="oQU240">2.0e14</config_mom_del4>
 <config_mom_del4 ocn_grid="oQU240wLI">2.0e14</config_mom_del4>
 <config_mom_del4 ocn_grid="oQU120">2.6e13</config_mom_del4>
-<config_mom_del4 ocn_grid="oEC60to30">1.2e11</config_mom_del4>
 <config_mom_del4 ocn_grid="oEC60to30v3">1.2e11</config_mom_del4>
-<config_mom_del4 ocn_grid="oEC60to30wLI">1.2e11</config_mom_del4>
 <config_mom_del4 ocn_grid="oEC60to30v3wLI">1.2e11</config_mom_del4>
 <config_mom_del4 ocn_grid="ECwISC30to60E1r2">1.2e11</config_mom_del4>
-<config_mom_del4 ocn_grid="oRRS30to10">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10v3">1.5e10</config_mom_del4>
-<config_mom_del4 ocn_grid="oRRS30to10wLI">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS30to10v3wLI">1.5e10</config_mom_del4>
-<config_mom_del4 ocn_grid="oRRS18to6">3.2e09</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS18to6v3">3.2e09</config_mom_del4>
 <config_mom_del4 ocn_grid="oRRS15to5">1.9e09</config_mom_del4>
 <config_mom_del4 ocn_grid="oARRM60to10">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="oARRM60to6">3.2e09</config_mom_del4>
+<config_mom_del4 ocn_grid="ARRM10to60E2r1">1.5e10</config_mom_del4>
 <config_mom_del4 ocn_grid="EC30to60E2r2">1.2e11</config_mom_del4>
 <config_mom_del4 ocn_grid="WC14to60E2r3">1.18e10</config_mom_del4>
 <config_mom_del4 ocn_grid="WCAtl12to45E2r4">1.18e10</config_mom_del4>
@@ -143,20 +127,10 @@
 <config_Leith_dx>15000.0</config_Leith_dx>
 <config_Leith_visc2_max>2.5e3</config_Leith_visc2_max>
 
-<!-- mesoscale_eddy_parameterizations -->
-<config_eddying_resolution_taper>'ramp'</config_eddying_resolution_taper>
-<config_eddying_resolution_ramp_min>20e3</config_eddying_resolution_ramp_min>
-<config_eddying_resolution_ramp_min ocn_grid="WCAtl12to45E2r4">30e3</config_eddying_resolution_ramp_min>
-<config_eddying_resolution_ramp_max>30e3</config_eddying_resolution_ramp_max>
-<config_eddying_resolution_ramp_max ocn_grid="WCAtl12to45E2r4">40e3</config_eddying_resolution_ramp_max>
-
 <!-- Redi_isopycnal_mixing -->
 <config_use_Redi>.true.</config_use_Redi>
-<config_use_Redi ocn_grid="oRRS30to10">.false.</config_use_Redi>
 <config_use_Redi ocn_grid="oRRS30to10v3">.false.</config_use_Redi>
-<config_use_Redi ocn_grid="oRRS30to10wLI">.false.</config_use_Redi>
 <config_use_Redi ocn_grid="oRRS30to10v3wLI">.false.</config_use_Redi>
-<config_use_Redi ocn_grid="oRRS18to6">.false.</config_use_Redi>
 <config_use_Redi ocn_grid="oRRS18to6v3">.false.</config_use_Redi>
 <config_use_Redi ocn_grid="oRRS15to5">.false.</config_use_Redi>
 <config_Redi_closure>'constant'</config_Redi_closure>
@@ -168,22 +142,35 @@
 <config_Redi_N2_based_taper_enable>.true.</config_Redi_N2_based_taper_enable>
 <config_Redi_N2_based_taper_min>0.1</config_Redi_N2_based_taper_min>
 <config_Redi_N2_based_taper_limit_term1>.true.</config_Redi_N2_based_taper_limit_term1>
+<config_Redi_min_layers_diag_terms>6</config_Redi_min_layers_diag_terms>
+<config_Redi_min_layers_diag_terms ocn_grid="ARRM10to60E2r1">15</config_Redi_min_layers_diag_terms>
+<config_Redi_horizontal_taper>'ramp'</config_Redi_horizontal_taper>
+<config_Redi_horizontal_taper ocn_grid="SOwISC12to60E2r4">'RossbyRadius'</config_Redi_horizontal_taper>
+<config_Redi_horizontal_taper ocn_grid="ECwISC30to60E2r1">'RossbyRadius'</config_Redi_horizontal_taper>
+<config_Redi_horizontal_ramp_min>20e3</config_Redi_horizontal_ramp_min>
+<config_Redi_horizontal_ramp_min ocn_grid="WCAtl12to45E2r4">30e3</config_Redi_horizontal_ramp_min>
+<config_Redi_horizontal_ramp_max>30e3</config_Redi_horizontal_ramp_max>
+<config_Redi_horizontal_ramp_max ocn_grid="WCAtl12to45E2r4">40e3</config_Redi_horizontal_ramp_max>
+
+<!-- submesoscale_eddy_parameterization -->
+<config_submesoscale_enable>.true.</config_submesoscale_enable>
+<config_submesoscale_tau>172800</config_submesoscale_tau>
+<config_submesoscale_Ce>0.08</config_submesoscale_Ce>
+<config_submesoscale_Lfmin>1000.0</config_submesoscale_Lfmin>
+<config_submesoscale_ds_max>100000.0</config_submesoscale_ds_max>
 
 <!-- GM_eddy_parameterization -->
 <config_use_GM>.true.</config_use_GM>
-<config_use_GM ocn_grid="oRRS30to10">.false.</config_use_GM>
 <config_use_GM ocn_grid="oRRS30to10v3">.false.</config_use_GM>
-<config_use_GM ocn_grid="oRRS30to10wLI">.false.</config_use_GM>
 <config_use_GM ocn_grid="oRRS30to10v3wLI">.false.</config_use_GM>
-<config_use_GM ocn_grid="oRRS18to6">.false.</config_use_GM>
 <config_use_GM ocn_grid="oRRS18to6v3">.false.</config_use_GM>
 <config_use_GM ocn_grid="oRRS15to5">.false.</config_use_GM>
 <config_GM_closure>'EdenGreatbatch'</config_GM_closure>
 <config_GM_closure ocn_grid="EC30to60E2r2">'constant'</config_GM_closure>
 <config_GM_closure ocn_grid="WC14to60E2r3">'constant'</config_GM_closure>
 <config_GM_closure ocn_grid="WCAtl12to45E2r4">'constant'</config_GM_closure>
-<config_GM_closure ocn_grid="SOwISC12to60E2r4">'constant'</config_GM_closure>
-<config_GM_closure ocn_grid="ECwISC30to60E2r1">'constant'</config_GM_closure>
+<config_GM_closure ocn_grid="SOwISC12to60E2r4">'N2_dependent'</config_GM_closure>
+<config_GM_closure ocn_grid="ECwISC30to60E2r1">'N2_dependent'</config_GM_closure>
 <config_GM_constant_kappa>900.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="oEC60to30v3wLI">600.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="ECwISC30to60E1r2">600.0</config_GM_constant_kappa>
@@ -192,16 +179,34 @@
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="WCAtl12to45E2r4">600.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="SOwISC12to60E2r4">600.0</config_GM_constant_kappa>
 <config_GM_constant_kappa ocn_forcing="datm_forced_restoring" ocn_grid="ECwISC30to60E2r1">600.0</config_GM_constant_kappa>
-<config_GM_constant_gravWaveSpeed>0.3</config_GM_constant_gravWaveSpeed>
+<config_GM_constant_bclModeSpeed>0.3</config_GM_constant_bclModeSpeed>
+<config_GM_minBclModeSpeed_method>'constant'</config_GM_minBclModeSpeed_method>
 <config_GM_spatially_variable_min_kappa>300.0</config_GM_spatially_variable_min_kappa>
 <config_GM_spatially_variable_max_kappa>1800.0</config_GM_spatially_variable_max_kappa>
 <config_GM_spatially_variable_baroclinic_mode>3.0</config_GM_spatially_variable_baroclinic_mode>
+<config_GM_spatially_variable_baroclinic_mode ocn_grid="SOwISC12to60E2r4">1.0</config_GM_spatially_variable_baroclinic_mode>
+<config_GM_spatially_variable_baroclinic_mode ocn_grid="ECwISC30to60E2r1">1.0</config_GM_spatially_variable_baroclinic_mode>
 <config_GM_Visbeck_alpha>0.13</config_GM_Visbeck_alpha>
 <config_GM_Visbeck_max_depth>1000.0</config_GM_Visbeck_max_depth>
 <config_GM_EG_riMin>200.0</config_GM_EG_riMin>
 <config_GM_EG_kappa_factor>3.0</config_GM_EG_kappa_factor>
 <config_GM_EG_Rossby_factor>2.0</config_GM_EG_Rossby_factor>
 <config_GM_EG_Rhines_factor>0.3</config_GM_EG_Rhines_factor>
+<config_GM_horizontal_taper>'ramp'</config_GM_horizontal_taper>
+<config_GM_horizontal_taper ocn_grid="SOwISC12to60E2r4">'RossbyRadius'</config_GM_horizontal_taper>
+<config_GM_horizontal_taper ocn_grid="ECwISC30to60E2r1">'RossbyRadius'</config_GM_horizontal_taper>
+<config_GM_horizontal_ramp_min>20e3</config_GM_horizontal_ramp_min>
+<config_GM_horizontal_ramp_min ocn_grid="WCAtl12to45E2r4">30e3</config_GM_horizontal_ramp_min>
+<config_GM_horizontal_ramp_max>30e3</config_GM_horizontal_ramp_max>
+<config_GM_horizontal_ramp_max ocn_grid="WCAtl12to45E2r4">40e3</config_GM_horizontal_ramp_max>
+<config_GMRedi_Rossby_ramp_min>0.5</config_GMRedi_Rossby_ramp_min>
+<config_GMRedi_Rossby_ramp_max>3.0</config_GMRedi_Rossby_ramp_max>
+
+<!-- eddy_parameterization -->
+<config_eddyMLD_dens_threshold>0.03</config_eddyMLD_dens_threshold>
+<config_eddyMLD_reference_depth>10</config_eddyMLD_reference_depth>
+<config_eddyMLD_reference_pressure>1.0e5</config_eddyMLD_reference_pressure>
+<config_eddyMLD_use_old>.true.</config_eddyMLD_use_old>
 
 <!-- Rayleigh_damping -->
 <config_Rayleigh_friction>.false.</config_Rayleigh_friction>
@@ -252,8 +257,14 @@
 <config_cvmix_kpp_use_enhanced_diff>.true.</config_cvmix_kpp_use_enhanced_diff>
 <config_cvmix_kpp_nonlocal_with_implicit_mix>.false.</config_cvmix_kpp_nonlocal_with_implicit_mix>
 <config_cvmix_kpp_use_theory_wave>.false.</config_cvmix_kpp_use_theory_wave>
+<config_cvmix_kpp_use_active_wave>.false.</config_cvmix_kpp_use_active_wave>
 <config_cvmix_kpp_langmuir_mixing_opt>'NONE'</config_cvmix_kpp_langmuir_mixing_opt>
 <config_cvmix_kpp_langmuir_entrainment_opt>'NONE'</config_cvmix_kpp_langmuir_entrainment_opt>
+
+
+<!-- wave coupling-->
+<config_use_active_wave>.false.</config_use_active_wave>
+<config_n_stokes_drift_wavenumber_partitions>6</config_n_stokes_drift_wavenumber_partitions>
 
 <!-- gotm -->
 <config_use_gotm>.false.</config_use_gotm>
@@ -278,6 +289,19 @@
 <config_jerlov_water_type>3</config_jerlov_water_type>
 <config_surface_buoyancy_depth>1</config_surface_buoyancy_depth>
 <config_enable_shortwave_energy_fixer>.true.</config_enable_shortwave_energy_fixer>
+
+<!-- self_attraction_loading -->
+<config_use_self_attraction_loading>.false.</config_use_self_attraction_loading>
+<config_self_attraction_loading_smoothing_width>1.0</config_self_attraction_loading_smoothing_width>
+<config_mpas_to_grid_weights_file>'mpas_to_grid.nc'</config_mpas_to_grid_weights_file>
+<config_grid_to_mpas_weights_file>'grid_to_mpas.nc'</config_grid_to_mpas_weights_file>
+<config_self_attraction_loading_compute_interval>'0000-00-00_00:30:00'</config_self_attraction_loading_compute_interval>
+<config_nLatitude>128</config_nLatitude>
+<config_nLongitude>256</config_nLongitude>
+<config_use_parallel_self_attraction_loading>.false.</config_use_parallel_self_attraction_loading>
+<config_parallel_self_attraction_loading_order>10</config_parallel_self_attraction_loading_order>
+<config_parallel_self_attraction_loading_n_cells_per_block>600</config_parallel_self_attraction_loading_n_cells_per_block>
+<config_parallel_self_attraction_loading_bfb>.true.</config_parallel_self_attraction_loading_bfb>
 
 <!-- tidal_potential_forcing -->
 <config_use_tidal_potential_forcing>.false.</config_use_tidal_potential_forcing>
@@ -310,10 +334,8 @@
 <!-- land_ice_fluxes -->
 <config_land_ice_flux_mode>'off'</config_land_ice_flux_mode>
 <config_land_ice_flux_mode ocn_grid="oQU240wLI">'standalone'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="oEC60to30wLI">'standalone'</config_land_ice_flux_mode>
 <config_land_ice_flux_mode ocn_grid="oEC60to30v3wLI">'standalone'</config_land_ice_flux_mode>
 <config_land_ice_flux_mode ocn_grid="ECwISC30to60E1r2">'standalone'</config_land_ice_flux_mode>
-<config_land_ice_flux_mode ocn_grid="oRRS30to10wLI">'standalone'</config_land_ice_flux_mode>
 <config_land_ice_flux_mode ocn_grid="oRRS30to10v3wLI">'standalone'</config_land_ice_flux_mode>
 <config_land_ice_flux_mode ocn_grid="SOwISC12to60E2r4">'standalone'</config_land_ice_flux_mode>
 <config_land_ice_flux_mode ocn_grid="ECwISC30to60E2r1">'standalone'</config_land_ice_flux_mode>
@@ -343,11 +365,14 @@
 <config_land_ice_flux_jenkins_salt_transfer_coefficient ocn_grid="ECwISC30to60E2r1">8.42e-5</config_land_ice_flux_jenkins_salt_transfer_coefficient>
 
 <!-- advection -->
-<config_vert_tracer_adv>'stencil'</config_vert_tracer_adv>
-<config_vert_tracer_adv_order>3</config_vert_tracer_adv_order>
+<config_vert_advection_method>'flux-form'</config_vert_advection_method>
+<config_vert_remap_order>3</config_vert_remap_order>
+<config_vert_remap_interval>0</config_vert_remap_interval>
+<config_vert_tracer_adv_flux_order>3</config_vert_tracer_adv_flux_order>
 <config_horiz_tracer_adv_order>3</config_horiz_tracer_adv_order>
 <config_coef_3rd_order>0.25</config_coef_3rd_order>
-<config_monotonic>.true.</config_monotonic>
+<config_flux_limiter>'monotonic'</config_flux_limiter>
+<config_remap_limiter>'monotonic'</config_remap_limiter>
 
 <!-- bottom_drag -->
 <config_use_implicit_bottom_drag>.true.</config_use_implicit_bottom_drag>
@@ -403,20 +428,16 @@
 <config_btr_dt ocn_grid="oQU240">'0000_00:03:00'</config_btr_dt>
 <config_btr_dt ocn_grid="oQU240wLI">'0000_00:03:00'</config_btr_dt>
 <config_btr_dt ocn_grid="oQU120">'0000_00:01:30'</config_btr_dt>
-<config_btr_dt ocn_grid="oEC60to30">'0000_00:01:00'</config_btr_dt>
 <config_btr_dt ocn_grid="oEC60to30v3">'0000_00:01:00'</config_btr_dt>
-<config_btr_dt ocn_grid="oEC60to30wLI">'0000_00:01:00'</config_btr_dt>
 <config_btr_dt ocn_grid="oEC60to30v3wLI">'0000_00:01:00'</config_btr_dt>
 <config_btr_dt ocn_grid="ECwISC30to60E1r2">'0000_00:01:00'</config_btr_dt>
-<config_btr_dt ocn_grid="oRRS30to10">'0000_00:00:18'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS30to10v3">'0000_00:00:24'</config_btr_dt>
-<config_btr_dt ocn_grid="oRRS30to10wLI">'0000_00:00:18'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS30to10v3wLI">'0000_00:00:18'</config_btr_dt>
-<config_btr_dt ocn_grid="oRRS18to6">'0000_00:00:12'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS18to6v3">'0000_00:00:12'</config_btr_dt>
 <config_btr_dt ocn_grid="oRRS15to5">'0000_00:00:11.25'</config_btr_dt>
 <config_btr_dt ocn_grid="oARRM60to10">'0000_00:00:24'</config_btr_dt>
 <config_btr_dt ocn_grid="oARRM60to6">'0000_00:00:10'</config_btr_dt>
+<config_btr_dt ocn_grid="ARRM10to60E2r1">'0000_00:00:24'</config_btr_dt>
 <config_btr_dt ocn_grid="EC30to60E2r2">'0000_00:01:00'</config_btr_dt>
 <config_btr_dt ocn_grid="WC14to60E2r3">'0000_00:00:15'</config_btr_dt>
 <config_btr_dt ocn_grid="WCAtl12to45E2r4">'0000_00:00:15'</config_btr_dt>
@@ -430,10 +451,10 @@
 <config_btr_gam3_velWt2>1.0</config_btr_gam3_velWt2>
 <config_btr_solve_SSH2>.false.</config_btr_solve_SSH2>
 
-<!-- semi_implicit_ts -->
+<!-- split_implicit_ts -->
 <config_btr_si_preconditioner>'ras'</config_btr_si_preconditioner>
 <config_btr_si_tolerance>1.0e-9</config_btr_si_tolerance>
-<config_n_btr_si_outer_iter>2</config_n_btr_si_outer_iter>
+<config_n_btr_si_large_iter>1</config_n_btr_si_large_iter>
 <config_btr_si_partition_match_mode>.false.</config_btr_si_partition_match_mode>
 
 <!-- ALE_vertical_grid -->
@@ -495,6 +516,12 @@
 <config_test_tensors>.false.</config_test_tensors>
 <config_tensor_test_function>'sph_uCosCos'</config_tensor_test_function>
 
+<!-- transport_tests -->
+<config_transport_tests_vert_levels>3</config_transport_tests_vert_levels>
+<config_transport_tests_temperature>15.0</config_transport_tests_temperature>
+<config_transport_tests_salinity>35.0</config_transport_tests_salinity>
+<config_transport_tests_flow_id>0</config_transport_tests_flow_id>
+
 <!-- init_mode_vert_levels -->
 <config_vert_levels>-1</config_vert_levels>
 
@@ -536,6 +563,7 @@
 <config_use_ecosysTracers_idealAge_forcing>.false.</config_use_ecosysTracers_idealAge_forcing>
 <config_use_ecosysTracers_ttd_forcing>.false.</config_use_ecosysTracers_ttd_forcing>
 <config_use_ecosysTracers_surface_value>.false.</config_use_ecosysTracers_surface_value>
+<config_use_ecosysTracers_river_inputs_from_coupler>.false.</config_use_ecosysTracers_river_inputs_from_coupler>
 <config_use_ecosysTracers_sea_ice_coupling>.false.</config_use_ecosysTracers_sea_ice_coupling>
 <config_ecosysTracers_diagnostic_fields_level1>.false.</config_ecosysTracers_diagnostic_fields_level1>
 <config_ecosysTracers_diagnostic_fields_level2>.false.</config_ecosysTracers_diagnostic_fields_level2>
@@ -564,6 +592,26 @@
 <config_use_MacroMoleculesTracers_ttd_forcing>.false.</config_use_MacroMoleculesTracers_ttd_forcing>
 <config_use_MacroMoleculesTracers_surface_value>.false.</config_use_MacroMoleculesTracers_surface_value>
 <config_use_MacroMoleculesTracers_sea_ice_coupling>.false.</config_use_MacroMoleculesTracers_sea_ice_coupling>
+
+<!-- tracer_forcing_idealAgeTracers -->
+<config_use_idealAgeTracers>.false.</config_use_idealAgeTracers>
+<config_use_idealAgeTracers_surface_bulk_forcing>.false.</config_use_idealAgeTracers_surface_bulk_forcing>
+<config_use_idealAgeTracers_surface_restoring>.false.</config_use_idealAgeTracers_surface_restoring>
+<config_use_idealAgeTracers_interior_restoring>.false.</config_use_idealAgeTracers_interior_restoring>
+<config_use_idealAgeTracers_exponential_decay>.false.</config_use_idealAgeTracers_exponential_decay>
+<config_use_idealAgeTracers_idealAge_forcing>.true.</config_use_idealAgeTracers_idealAge_forcing>
+<config_use_idealAgeTracers_ttd_forcing>.false.</config_use_idealAgeTracers_ttd_forcing>
+
+<!-- tracer_forcing_CFCTracers -->
+<config_use_CFCTracers>.false.</config_use_CFCTracers>
+<config_use_CFCTracers_surface_bulk_forcing>.false.</config_use_CFCTracers_surface_bulk_forcing>
+<config_use_CFCTracers_surface_restoring>.false.</config_use_CFCTracers_surface_restoring>
+<config_use_CFCTracers_interior_restoring>.false.</config_use_CFCTracers_interior_restoring>
+<config_use_CFCTracers_exponential_decay>.false.</config_use_CFCTracers_exponential_decay>
+<config_use_CFCTracers_idealAge_forcing>.false.</config_use_CFCTracers_idealAge_forcing>
+<config_use_CFCTracers_ttd_forcing>.false.</config_use_CFCTracers_ttd_forcing>
+<config_use_CFC11>.true.</config_use_CFC11>
+<config_use_CFC12>.true.</config_use_CFC12>
 
 <!-- AM_globalStats -->
 <config_AM_globalStats_enable>.true.</config_AM_globalStats_enable>
@@ -707,9 +755,7 @@
 <config_AM_mixedLayerDepths_write_on_startup>.false.</config_AM_mixedLayerDepths_write_on_startup>
 <config_AM_mixedLayerDepths_compute_on_startup>.true.</config_AM_mixedLayerDepths_compute_on_startup>
 <config_AM_mixedLayerDepths_Tthreshold>.true.</config_AM_mixedLayerDepths_Tthreshold>
-<config_AM_mixedLayerDepths_Dthreshold>.true.</config_AM_mixedLayerDepths_Dthreshold>
 <config_AM_mixedLayerDepths_crit_temp_threshold>0.2</config_AM_mixedLayerDepths_crit_temp_threshold>
-<config_AM_mixedLayerDepths_crit_dens_threshold>0.03</config_AM_mixedLayerDepths_crit_dens_threshold>
 <config_AM_mixedLayerDepths_reference_pressure>1.0E5</config_AM_mixedLayerDepths_reference_pressure>
 <config_AM_mixedLayerDepths_Tgradient>.false.</config_AM_mixedLayerDepths_Tgradient>
 <config_AM_mixedLayerDepths_Dgradient>.false.</config_AM_mixedLayerDepths_Dgradient>
@@ -931,20 +977,16 @@
 <config_AM_mocStreamfunction_enable ocn_grid="oQU240">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oQU240wLI">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oQU120">.false.</config_AM_mocStreamfunction_enable>
-<config_AM_mocStreamfunction_enable ocn_grid="oEC60to30">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oEC60to30v3wLI">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="ECwISC30to60E1r2">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oEC60to30v3">.true.</config_AM_mocStreamfunction_enable>
-<config_AM_mocStreamfunction_enable ocn_grid="oEC60to30wLI">.false.</config_AM_mocStreamfunction_enable>
-<config_AM_mocStreamfunction_enable ocn_grid="oRRS30to10">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oRRS30to10v3">.false.</config_AM_mocStreamfunction_enable>
-<config_AM_mocStreamfunction_enable ocn_grid="oRRS30to10wLI">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oRRS30to10v3wLI">.false.</config_AM_mocStreamfunction_enable>
-<config_AM_mocStreamfunction_enable ocn_grid="oRRS18to6">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oRRS18to6v3">.true.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oRRS15to5">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oARRM60to10">.false.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="oARRM60to6">.false.</config_AM_mocStreamfunction_enable>
+<config_AM_mocStreamfunction_enable ocn_grid="ARRM10to60E2r1">.true.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="EC30to60E2r2">.true.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="WC14to60E2r3">.true.</config_AM_mocStreamfunction_enable>
 <config_AM_mocStreamfunction_enable ocn_grid="WCAtl12to45E2r4">.true.</config_AM_mocStreamfunction_enable>
@@ -1012,8 +1054,8 @@
 <!-- AM_harmonicAnalysis -->
 <config_AM_harmonicAnalysis_enable>.false.</config_AM_harmonicAnalysis_enable>
 <config_AM_harmonicAnalysis_compute_interval>'output_interval'</config_AM_harmonicAnalysis_compute_interval>
-<config_AM_harmonicAnalysis_start>'0001-01-01_00:00:00'</config_AM_harmonicAnalysis_start>
-<config_AM_harmonicAnalysis_end>'0001-01-01_00:00:00'</config_AM_harmonicAnalysis_end>
+<config_AM_harmonicAnalysis_start_delay>20</config_AM_harmonicAnalysis_start_delay>
+<config_AM_harmonicAnalysis_duration>90</config_AM_harmonicAnalysis_duration>
 <config_AM_harmonicAnalysis_output_stream>'harmonicAnalysisOutput'</config_AM_harmonicAnalysis_output_stream>
 <config_AM_harmonicAnalysis_restart_stream>'harmonicAnalysisRestart'</config_AM_harmonicAnalysis_restart_stream>
 <config_AM_harmonicAnalysis_compute_on_startup>.false.</config_AM_harmonicAnalysis_compute_on_startup>
@@ -1026,5 +1068,14 @@
 <config_AM_harmonicAnalysis_use_O1>.true.</config_AM_harmonicAnalysis_use_O1>
 <config_AM_harmonicAnalysis_use_Q1>.true.</config_AM_harmonicAnalysis_use_Q1>
 <config_AM_harmonicAnalysis_use_P1>.true.</config_AM_harmonicAnalysis_use_P1>
+
+<!-- AM_conservationCheck -->
+<config_AM_conservationCheck_enable>.false.</config_AM_conservationCheck_enable>
+<config_AM_conservationCheck_compute_interval>'dt'</config_AM_conservationCheck_compute_interval>
+<config_AM_conservationCheck_output_stream>'conservationCheckOutput'</config_AM_conservationCheck_output_stream>
+<config_AM_conservationCheck_compute_on_startup>.false.</config_AM_conservationCheck_compute_on_startup>
+<config_AM_conservationCheck_write_on_startup>.false.</config_AM_conservationCheck_write_on_startup>
+<config_AM_conservationCheck_write_to_logfile>.true.</config_AM_conservationCheck_write_to_logfile>
+<config_AM_conservationCheck_restart_stream>'conservationCheckRestart'</config_AM_conservationCheck_restart_stream>
 
 </namelist_defaults>

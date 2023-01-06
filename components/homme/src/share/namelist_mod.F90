@@ -1,6 +1,9 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
+#if !defined(CAM) && !defined(SCREAM)
+#include "homme_git_sha.h"
+#endif
 
 module namelist_mod
 
@@ -15,6 +18,7 @@ module namelist_mod
   use arkode_mod, only: rel_tol, abs_tol, calc_nonlinear_stats, use_column_solver
 #endif
 use physical_constants, only : rearth, rrearth, DD_PI
+
 use physical_constants, only : scale_factor, scale_factor_inv, domain_size, laplacian_rigid_factor
 use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 
@@ -28,10 +32,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     geometry,      &       ! Mesh geometry
     test_case,     &       ! test case
     planar_slice,     &
-    uselapi,       &
     numnodes,      &
     sub_case,      &
-    tasknum,       &       ! used dg model in AIX machine
     statefreq,     &       ! number of steps per printstate call
     restartfreq,   &
     restartfile,   &       ! name of the restart file for INPUT
@@ -55,14 +57,13 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     prescribed_wind, &
     ftype,         &
     limiter_option,&
-    fine_ne,       &
-    max_hypervis_courant, &
     nu,            &
     nu_s,          &
     nu_q,          &
     nu_div,        &
     nu_p,          &
     nu_top,        &
+    tom_sponge_start, &
     dcmip16_mu,     &
     dcmip16_mu_s,   &
     dcmip16_mu_q,   &
@@ -71,9 +72,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     interp_lon0,    &
     hypervis_scaling,   &  ! use tensor HV instead of scalar coefficient
     disable_diagnostics, & ! use to disable diagnostics for timing reasons
-    psurf_vis,    &
     hypervis_order,       &
-    hypervis_power,       &
     hypervis_subcycle,    &
     hypervis_subcycle_tom,&
     hypervis_subcycle_q,  &
@@ -84,7 +83,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     u_perturb,     &        ! J&W baroclinic test perturbation size
     moisture,      &
     use_moisture,      &
-    vform,         &
     vfile_mid,     &
     vfile_int,     &
     vanalytic,     &
@@ -100,10 +98,33 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     hv_theta_correction, &
     hv_theta_thresh, &
     vert_remap_q_alg, &
+    vert_remap_u_alg, &
     se_fv_phys_remap_alg, &
     timestep_make_subcycle_parameters_consistent
 
-#ifndef CAM
+
+!PLANAR setup
+#if !defined(CAM) && !defined(SCREAM)
+  use control_mod, only:              &
+    set_planar_defaults,&
+    bubble_T0, &
+    bubble_dT, &
+    bubble_xycenter, &
+    bubble_zcenter, &
+    bubble_ztop, &
+    bubble_xyradius, &
+    bubble_zradius, &
+    bubble_cosine, &
+    bubble_moist, &
+    bubble_moist_drh, &
+    bubble_rh_background, &
+    bubble_prec_type, &
+    case_planar_bubble
+#endif
+
+
+! control parameters for dcmip stand-alone tests
+#if !defined(CAM) && !defined(SCREAM)
   use control_mod, only:              &
     pertlim,                          &
     dcmip2_0_h0,                      &
@@ -119,7 +140,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 
   use thread_mod,     only: nthreads, omp_set_num_threads, omp_get_max_threads, vthreads
   use dimensions_mod, only: ne, ne_x, ne_y, np, nnodes, nmpi_per_node, npart, qsize, qsize_d, set_mesh_dimensions
-#ifdef CAM
+#if defined(CAM) || defined(SCREAM)
   use time_mod,       only: tstep, nsplit, smooth
 #else
   use time_mod,       only: tstep, ndays,nmax, nendstep,secpday, smooth, secphr, nsplit
@@ -128,7 +149,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
        partitionfornodes, mpireal_t, mpilogical_t, mpiinteger_t, mpichar_t
   use cg_mod,         only: cg_no_debug
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
   use interpolate_mod, only : vector_uvars, vector_vvars, max_vecvars, interpolate_analysis, replace_vec_by_vordiv
   use common_io_mod, only : &
        output_prefix,       &
@@ -174,9 +195,9 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
   ! read in the namelists...
   ! ============================================
 
-#ifdef CAM
+#if defined(CAM) || defined(SCREAM)
   subroutine readnl(par, NLFileName)
-    use units, only : getunit, freeunit
+    use shr_file_mod,      only: getunit=>shr_file_getUnit, freeunit=>shr_file_freeUnit
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     use mesh_mod, only : MeshOpen
 #endif
@@ -196,7 +217,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     integer  :: ierr
     character(len=80) :: errstr, arg
     real(kind=real_kind) :: dt_max, se_tstep
-#ifdef CAM
+#if defined(CAM) || defined(SCREAM)
     character(len=MAX_STRING_LEN) :: se_topology
     integer :: se_partmethod
     integer :: se_ne
@@ -212,7 +233,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
                       Z2_MAP_METHOD,             &         ! Zoltan2 processor mapping (network-topology aware) method.
                       TOPOLOGY,                  &         ! mesh topology
                       GEOMETRY,                  &         ! mesh geometry
-#ifdef CAM
+#if defined(CAM) || defined(SCREAM)
       se_partmethod,     &
       se_topology,       &
       se_ne,             &
@@ -230,12 +251,10 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       Z2_MAP_METHOD,  &
       vthreads,      &             ! number of vertical/column threads per horizontal thread
       npart,         &
-      uselapi,       &
       numnodes,      &
       ne,            &             ! element resolution factor
       ne_x,            &             ! element resolution factor in x-dir for planar
       ne_y,            &             ! element resolution factor in y-dir for planar
-      tasknum,       &
       statefreq,     &             ! number of steps per printstate call
       integration,   &             ! integration method
       theta_hydrostatic_mode,       &   
@@ -255,22 +274,19 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       disable_diagnostics, &
       prescribed_wind, &
       se_ftype,        &           ! forcing type
-      fine_ne,         &
-      max_hypervis_courant, &
       nu,            &
       nu_s,          &
       nu_q,          &
       nu_div,        &
       nu_p,          &
       nu_top,        &
+      tom_sponge_start, &
       dcmip16_mu,     &
       dcmip16_mu_s,   &
       dcmip16_mu_q,   &
       dcmip16_prec_type,&
       dcmip16_pbl_type,&
-      psurf_vis,     &
       hypervis_order,    &
-      hypervis_power,    &
       hypervis_subcycle, &
       hypervis_subcycle_tom, &
       hypervis_subcycle_q, &
@@ -289,10 +305,11 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       hv_theta_correction,   &
       hv_theta_thresh,   &
       vert_remap_q_alg, &
+      vert_remap_u_alg, &
       se_fv_phys_remap_alg
 
 
-#ifdef CAM
+#if defined(CAM) || defined(SCREAM)
     namelist  /ctl_nl/ SE_NSPLIT,  &                ! number of dynamics steps per physics timestep
       se_tstep
 #else
@@ -318,8 +335,23 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       dcmip2_x_xi,        & !dcmip2-x mountain wavelength       (m)
       dcmip4_moist,       & !dcmip4   moist, 0 or 1
       dcmip4_X              !dcmip4   scaling factor, nondim
+!PLANAR
+    namelist /ctl_nl/ &
+      lx, ly, &
+      sx, sy, &
+      bubble_T0, &
+      bubble_dT, &
+      bubble_xycenter, &
+      bubble_zcenter, &
+      bubble_ztop, &
+      bubble_xyradius, &
+      bubble_zradius, &
+      bubble_cosine, &
+      bubble_moist, &
+      bubble_moist_drh, &
+      bubble_rh_background, &
+      bubble_prec_type
     namelist /vert_nl/        &
-      vform,              &
       vfile_mid,          &
       vfile_int,          &
       vanalytic,          & ! use analytically generated vertical levels
@@ -375,9 +407,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     COORD_TRANSFORM_METHOD = SPHERE_COORDS
     Z2_MAP_METHOD = Z2_NO_TASK_MAPPING
     npart         = 1
-    uselapi       = .TRUE.
     se_tstep=-1
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     ndays         = 0
     nmax          = 12
     nthreads = 1
@@ -391,7 +422,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     restartdir    = "./restart/"
     runtype       = 0
     statefreq     = 1
-    tasknum       =-1
     integration   = "explicit"
     moisture      = "dry"
     nu_top=0
@@ -422,9 +452,8 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
 !   write(iulog,*) "masterproc=",par%masterproc
 
     if (par%masterproc) then
-
        write(iulog,*)"reading ctl namelist..."
-#if defined(CAM)
+#if defined(CAM) || defined(SCREAM)
        unitn=getunit()
        open( unitn, file=trim(nlfilename), status='old' )
        ierr = 1
@@ -465,7 +494,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
        ! moviefreq and restartfreq are interpreted to be in units of days.
        ! Both must be converted to numbers of steps.
        ! ================================================
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
        if (tstep <= 0) then
           call abortmp('tstep must be > 0')
        end if
@@ -489,12 +518,27 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
           endif
        endif
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
 
+       !checks before the next NL
+       !check on ne
+       if (topology == "plane" .and. ne /= 0) then
+          call abortmp('cannot set ne for planar topology, use ne_x and ne_y instead')
+       end if
 
-if (topology == "plane" .and. ne /= 0) then
-call abortmp('cannot set ne for planar topology, use ne_x and ne_y instead')
-end if
+       !setting default PLANAR values if they are not set in ctl_nl
+       call set_planar_defaults()
+
+       !checks on planar tests
+       if (test_case(1:7)=="planar_") then
+
+       !check on Lx, Ly
+       if(lx .le. 0.d0 .or. ly .le. 0.d0) then
+          call abortmp('for planar tests, planar_lx and planar_ly should be >0')
+       endif
+
+       endif
+
 
 #ifdef _PRIM
        write(iulog,*) "reading physics namelist..."
@@ -524,11 +568,9 @@ end if
 #else
          read(*,nml=vert_nl)
 #endif
-         vform      = trim(adjustl(vform))
          vfile_mid  = trim(adjustl(vfile_mid))
          vfile_int  = trim(adjustl(vfile_int))
 
-         write(iulog,*) '  vform =',trim(vform)
          write(iulog,*) '  vfile_mid=',trim(vfile_mid)
          write(iulog,*) '  vfile_int=',trim(vfile_int)
          write(iulog,*) '  vanalytic=',vanalytic
@@ -646,11 +688,11 @@ end if
        close(unit=7)
 #endif
 #endif
-! ^ ifndef CAM
+! ^ if !defined(CAM) && !defined(SCREAM)
        ierr = timestep_make_subcycle_parameters_consistent(par, rsplit, qsplit, &
             dt_remap_factor, dt_tracer_factor)
 
-#ifdef CAM
+#if defined(CAM) || defined(SCREAM)
        limiter_option=se_limiter_option
        partmethod = se_partmethod
        ne         = se_ne
@@ -682,7 +724,6 @@ end if
     call MPI_bcast(TOPOLOGY,        MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
     call MPI_bcast(geometry,        MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
     call MPI_bcast(test_case,       MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
-    call MPI_bcast(tasknum,         1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(ne,              1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(ne_x,              1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(ne_y,              1,MPIinteger_t,par%root,par%comm,ierr)
@@ -692,7 +733,7 @@ end if
     call MPI_bcast(restartfreq,     1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(runtype,         1,MPIinteger_t,par%root,par%comm,ierr)
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     if(test_case == "dcmip2012_test4") then
        rearth = rearth/dcmip4_X
        omega = omega*dcmip4_X
@@ -731,15 +772,15 @@ end if
     call MPI_bcast(hv_theta_correction,1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(hv_theta_thresh,1, MPIreal_t, par%root,par%comm,ierr)
     call MPI_bcast(vert_remap_q_alg,1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(vert_remap_u_alg,1, MPIinteger_t, par%root,par%comm,ierr)
 
-    call MPI_bcast(fine_ne,         1, MPIinteger_t, par%root,par%comm,ierr)
-    call MPI_bcast(max_hypervis_courant,1,MPIreal_t, par%root,par%comm,ierr)
     call MPI_bcast(nu,              1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(nu_s,            1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(nu_q,            1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(nu_div,          1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(nu_p,            1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(nu_top,          1, MPIreal_t   , par%root,par%comm,ierr)
+    call MPI_bcast(tom_sponge_start,1, MPIreal_t   , par%root,par%comm,ierr)
 
     call MPI_bcast(dcmip16_mu,      1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(dcmip16_mu_s,    1, MPIreal_t   , par%root,par%comm,ierr)
@@ -749,9 +790,7 @@ end if
     call MPI_bcast(dcmip16_pbl_type , 1, MPIinteger_t, par%root,par%comm,ierr)
 
     call MPI_bcast(disable_diagnostics,1,MPIlogical_t,par%root,par%comm,ierr)
-    call MPI_bcast(psurf_vis,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_order,1,MPIinteger_t   ,par%root,par%comm,ierr)
-    call MPI_bcast(hypervis_power,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_scaling,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle,1,MPIinteger_t   ,par%root,par%comm,ierr)
     call MPI_bcast(hypervis_subcycle_tom,1,MPIinteger_t   ,par%root,par%comm,ierr)
@@ -766,8 +805,33 @@ end if
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     call MPI_bcast(mesh_file,MAX_FILE_LEN,MPIChar_t ,par%root,par%comm,ierr)
 #endif
-    call MPI_bcast(theta_hydrostatic_mode ,1,MPIlogical_t,par%root,par%comm,ierr)
+
+!PLANAR
+    call MPI_bcast(lx     ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(ly     ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(sx     ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(sy     ,1,MPIreal_t   ,par%root,par%comm,ierr)
     call MPI_bcast(planar_slice ,1,MPIlogical_t,par%root,par%comm,ierr)
+
+!PLANAR
+#if !defined(CAM) && !defined (SCREAM)
+    call MPI_bcast(bubble_T0 ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_dT ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_xycenter,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_zcenter ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_ztop ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_xyradius ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_zradius ,1,MPIreal_t   ,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_cosine ,1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_moist ,1,MPIlogical_t,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_moist_drh ,1,MPIreal_t,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_rh_background ,1,MPIreal_t,par%root,par%comm,ierr)
+    call MPI_bcast(bubble_prec_type, 1, MPIinteger_t, par%root,par%comm,ierr)
+
+    call MPI_bcast(case_planar_bubble,1,MPIlogical_t,par%root,par%comm,ierr)
+#endif
+
+    call MPI_bcast(theta_hydrostatic_mode ,1,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(transport_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(semi_lagrange_cdr_alg ,1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(semi_lagrange_cdr_check ,1,MPIlogical_t,par%root,par%comm,ierr)
@@ -788,21 +852,18 @@ end if
     call MPI_bcast(restartfile,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(restartdir,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
 
-    call MPI_bcast(uselapi,1,MPIlogical_t,par%root,par%comm,ierr)
-
     if (integration == "full_imp") then
        call MPI_bcast(precon_method,MAX_STRING_LEN,MPIChar_t,par%root,par%comm,ierr)
        call MPI_bcast(maxits     ,1,MPIinteger_t,par%root,par%comm,ierr)
        call MPI_bcast(tol        ,1,MPIreal_t   ,par%root,par%comm,ierr)
     end if
 
-    call MPI_bcast(vform    , MAX_STRING_LEN, MPIChar_t   , par%root, par%comm,ierr)
     call MPI_bcast(vfile_mid, MAX_STRING_LEN, MPIChar_t   , par%root, par%comm,ierr)
     call MPI_bcast(vfile_int, MAX_STRING_LEN, MPIChar_t   , par%root, par%comm,ierr)
     call MPI_bcast(vanalytic, 1,              MPIinteger_t, par%root, par%comm,ierr)
     call MPI_bcast(vtop     , 1,              MPIreal_t   , par%root, par%comm,ierr)
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     call MPI_bcast(output_prefix,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
     call MPI_bcast(output_timeunits ,max_output_streams,MPIinteger_t,par%root,par%comm,ierr)
@@ -834,11 +895,18 @@ end if
     use_moisture = ( moisture /= "dry") 
     if (qsize<1) use_moisture = .false.  
 
+    if(par%masterproc) print *, "use moisture:", use_moisture
 
 
     ! use maximum available:
-    if (NThreads == -1) NThreads = omp_get_max_threads()
-
+    if (NThreads == -1) then
+#if defined(HORIZ_OPENMP) || defined (COLUMN_OPENMP)
+       NThreads = omp_get_max_threads()
+#else
+       NThreads = 1  
+#endif       
+    endif
+    
     ! sanity check on thread count
     ! HOMME will run if if nthreads > max, but gptl will print out GB of warnings.
     if (NThreads > omp_get_max_threads()) then
@@ -865,7 +933,9 @@ end if
        endif
     endif
 #endif
-
+    ! set defautl for dynamics remap
+    if (vert_remap_u_alg == -2) vert_remap_u_alg = vert_remap_q_alg
+    
     ! more thread error checks:  
 #ifdef HORIZ_OPENMP
     if(par%masterproc) write(iulog,*)'-DHORIZ_OPENMP enabled'
@@ -881,11 +951,6 @@ end if
 if (topology == "plane" .and. mesh_file /= "none") then
   call abortmp("RRM grids not yet supported for plane")
 end if
-
-if (topology == "plane" .and. transport_alg /= 0) then
-  call abortmp("SL advection not yet supported for plane")
-end if
-
 
     if (ne /=0 .or. ne_x /=0 .or. ne_y /=0) then
     if (mesh_file /= "none" .and. mesh_file /= "/dev/null") then
@@ -923,97 +988,29 @@ end if
       scale_factor = 1.0D0
       scale_factor_inv = 1.0D0
       laplacian_rigid_factor = 0.0D0 !this eliminates the correction to ensure the Laplacian doesn't damp rigid motion
-    if (test_case == "planar_dbl_vrtx") then
-      Lx = 5000.0D0 * 1000.0D0
-      Ly = 5000.0D0 * 1000.0D0
-      Sx = 0.0D0
-      Sy = 0.0D0
-    else if (test_case == "planar_hydro_gravity_wave") then
-       Lx = 6000.0D0 * 1000.0D0
-       Ly = 6000.0D0 * 1000.0D0
-       Sx = -3000.0D0 * 1000.0D0
-       Sy = -3000.0D0 * 1000.0D0
-    else if (test_case == "planar_nonhydro_gravity_wave") then
-       Lx = 300.0D0 * 1000.0D0
-       Ly = 300.0D0 * 1000.0D0
-       Sx = -150.0D0 * 1000.0D0
-       Sy = -150.0D0 * 1000.0D0
-    else if (test_case == "planar_hydro_mtn_wave") then
-       Lx = 240.0D0 * 1000.0D0
-       Ly = 240.0D0 * 1000.0D0
-       Sx = 0.0D0 * 1000.0D0
-       Sy = 0.0D0 * 1000.0D0
-    else if (test_case == "planar_nonhydro_mtn_wave") then
-       Lx = 144.0D0 * 1000.0D0
-       Ly = 144.0D0 * 1000.0D0
-       Sx = 0.0D0 * 1000.0D0
-       Sy = 0.0D0 * 1000.0D0
-    else if (test_case == "planar_schar_mtn_wave") then
-       Lx = 100.0D0 * 1000.0D0
-       Ly = 100.0D0 * 1000.0D0
-       Sx = 0.0D0 * 1000.0D0
-       Sy = 0.0D0 * 1000.0D0
-    else if (test_case == "planar_density_current" .OR. test_case == "planar_moist_density_current") then
-       Lx = 51.2D0 * 1000.0D0
-       Ly = 51.2D0 * 1000.0D0
-       Sx = -25.6D0 * 1000.0D0
-       Sy = -25.6D0 * 1000.0D0
-    else if (test_case == "planar_rising_bubble" .OR. test_case == "planar_moist_rising_bubble") then
-       Lx = 1.0D0 * 1000.0D0
-       Ly = 1.0D0 * 1000.0D0
-       Sx = 0.0D0
-       Sy = 0.0D0
-! THESE ARE WRONG AND NEED TO BE FIXED WHEN THESE CASES ARE ACTUALLY IMPLEMENTED....
-!else if (test_case == "planar_baroclinic_instab" .OR. test_case == "planar_moist_baroclinic_instab") then
-!       Lx = 5000.0D0 * 1000.0D0
-!       Ly = 5000.0D0 * 1000.0D0
-!       Sx = 0.0D0
-!       Sy = 0.0D0
-!    else if (test_case == "planar_tropical_cyclone") then
-!       Lx = 5000.0D0 * 1000.0D0
-!       Ly = 5000.0D0 * 1000.0D0
-!       Sx = 0.0D0
-!       Sy = 0.0D0
-!    else if (test_case == "planar_supercell") then
-!       Lx = 5000.0D0 * 1000.0D0
-!       Ly = 5000.0D0 * 1000.0D0
-!       Sx = 0.0D0
-!       Sy = 0.0D0
-    end if
 
 ! makes the y-direction cells identical in size to the x-dir cells
 ! this is important for hyperviscosity, etc.
 ! Also adjusts Sy so y-dir domain is centered at 0
-    if (planar_slice .eqv. .true.) then
-    Ly = (Lx / ne_x) * ne_y
-    Sy = -Ly/2.0D0
-    end if
+      if (planar_slice .eqv. .true.) then
+        Ly = (Lx / ne_x) * ne_y
+        Sy = -Ly/2.0D0
+      end if
 
-    domain_size = Lx * Ly
-    dx = Lx/ne_x
-    dy = Ly/ne_y
-    dx_ref = 1.0D0/ne_x
-    dy_ref = 1.0D0/ne_y
+      domain_size = Lx * Ly
+      dx = Lx/ne_x
+      dy = Ly/ne_y
+      dx_ref = 1.0D0/ne_x
+      dy_ref = 1.0D0/ne_y
 
-  else if (geometry == "sphere") then
+    else if (geometry == "sphere") then
       scale_factor = rearth
       scale_factor_inv = rrearth
       domain_size = 4.0D0*DD_PI
       laplacian_rigid_factor = rrearth
-    end if
+    end if ! if plane
 
-!logic around different hyperviscosity options
-    if (hypervis_power /= 0) then
-      if (hypervis_scaling /= 0) then
-        print *,'Both hypervis_power and hypervis_scaling are nonzero.'
-        print *,'(1) Set hypervis_power=1, hypervis_scaling=0 for HV based on an element area.'
-        print *,'(2) Set hypervis_power=0 and hypervis_scaling=1 for HV based on a tensor.'
-        print *,'(3) Set hypervis_power=0 and hypervis_scaling=0 for constant HV.'
-          call abortmp("Error: hypervis_power>0 and hypervis_scaling>0")
-      endif
-    endif
-
-    if (topology == "plane" .and. .not. (hypervis_power == 0 .and. hypervis_scaling > 0)) then
+    if (topology == "plane" .and. hypervis_scaling==0) then
       call abortmp("Error: planar grids require the use of tensor HV")
     end if
 
@@ -1030,7 +1027,7 @@ end if
     end if
 #endif
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
 !standalone homme does not support ftype=1 (cause it is identical to ftype=0).
 !also, standalone ftype=0 is the same as standalone ftype=2.
     if ((ftype == 0).or.(ftype == 2).or.(ftype == 3).or.(ftype == 4).or.(ftype == -1)) then
@@ -1044,10 +1041,10 @@ end if
     endif
 
 !=======================================================================================================!
-#ifdef CAM
+#if defined(CAM) || defined(SCREAM)
     nmpi_per_node=1
 #endif
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     call MPI_bcast(interpolate_analysis, 7,MPIlogical_t,par%root,par%comm,ierr)
     call MPI_bcast(interp_nlat , 1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(interp_nlon , 1,MPIinteger_t,par%root,par%comm,ierr)
@@ -1107,7 +1104,7 @@ end if
 
        write(iulog,*)"readnl: topology      = ",TRIM( TOPOLOGY )
        write(iulog,*)"readnl: geometry      = ",TRIM( geometry )
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
        write(iulog,*)"readnl: test_case     = ",TRIM(test_case)
        write(iulog,*)"readnl: omega         = ",omega
        write(iulog,*)"readnl: sub_case      = ",sub_case
@@ -1160,9 +1157,10 @@ end if
        if (hv_ref_profiles==0 .and. hv_theta_correction==1) then
           call abortmp("hv_theta_correction=1 requires hv_ref_profiles=1 or 2")
        endif
-
+       
        write(iulog,*)"readnl: vert_remap_q_alg  = ",vert_remap_q_alg
-#ifdef CAM
+       write(iulog,*)"readnl: vert_remap_u_alg  = ",vert_remap_u_alg
+#if defined(CAM) || defined(SCREAM)
        write(iulog,*)"readnl: se_nsplit         = ", NSPLIT
        write(iulog,*)"readnl: se_tstep         = ", tstep
        write(iulog,*)"readnl: se_ftype          = ",ftype
@@ -1180,11 +1178,7 @@ end if
        write(iulog,*)"readnl: runtype       = ",runtype
        write(iulog,*)"readnl: se_fv_phys_remap_alg = ",se_fv_phys_remap_alg
 
-       if (hypervis_power /= 0)then
-          write(iulog,*)"Variable scalar hyperviscosity: hypervis_power=",hypervis_power
-          write(iulog,*)"max_hypervis_courant = ", max_hypervis_courant
-          write(iulog,*)"Equivalent ne in fine region = ", fine_ne
-       elseif(hypervis_scaling /=0)then
+       if(hypervis_scaling /=0)then
           write(iulog,*)"Tensor hyperviscosity:  hypervis_scaling=",hypervis_scaling
        else
           write(iulog,*)"Constant (hyper)viscosity used."
@@ -1198,6 +1192,7 @@ end if
        write(iulog,'(a,2e9.2)')"viscosity:  nu_q      = ",nu_q
        write(iulog,'(a,2e9.2)')"viscosity:  nu_p      = ",nu_p
        write(iulog,'(a,2e9.2)')"viscosity:  nu_top      = ",nu_top
+       write(iulog,'(a,2e9.2)')"viscosity:  tom_sponge_start  = ",tom_sponge_start
 
        if(dcmip16_mu/=0)  write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu   = ",dcmip16_mu
        if(dcmip16_mu_s/=0)write(iulog,'(a,2e9.2)')"1st order viscosity:  dcmip16_mu_s = ",dcmip16_mu_s
@@ -1207,7 +1202,7 @@ end if
           write(iulog,*) "initial_total_mass = ",initial_total_mass
        end if
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
 #ifndef HOMME_WITHOUT_PIOLIBRARY
        write(iulog,*)"  analysis: output_prefix = ",TRIM(output_prefix)
        write(iulog,*)"  analysis: io_stride = ",io_stride
@@ -1251,7 +1246,7 @@ end if
        write(iulog,*)""
 #endif
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
        write(iulog,*)" analysis interpolation = ", interpolate_analysis
 
        if(any(interpolate_analysis)) then
@@ -1264,10 +1259,8 @@ end if
 #endif
 ! ^ ifndef CAM
 
-#ifndef CAM
-#ifdef HOMME_SHA1
+#if !defined(CAM) && !defined(SCREAM)
       write(iulog,*)"HOMME SHA = ", HOMME_SHA1
-#endif
 #endif
 
       call print_clear_message()

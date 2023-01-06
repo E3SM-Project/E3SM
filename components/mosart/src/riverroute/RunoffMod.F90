@@ -11,7 +11,7 @@ module RunoffMod
 ! !USES:
   use shr_kind_mod, only : r8 => shr_kind_r8
   use mct_mod
-  use RtmVar         , only : iulog, spval, heatflag
+  use RtmVar         , only : iulog, spval, heatflag, data_bgc_fluxes_to_ocean_flag
   use rof_cpl_indices, only : nt_rtm
 
 ! !PUBLIC TYPES:
@@ -77,6 +77,17 @@ module RunoffMod
      real(r8), pointer :: inundwf(:)       ! Inundation floodplain water volume (m3)
      real(r8), pointer :: inundhf(:)       ! Inundation floodplain water depth (m)
      real(r8), pointer :: inundff(:)       ! Inundation floodplain water area fraction (no unit)
+     real(r8), pointer :: concDIN(:)       ! Concentration of river outflow DIN (kg-N/kg-water)
+     real(r8), pointer :: concDIP(:)       ! Concentration of river outflow DIP (kg-P/kg-water)
+     real(r8), pointer :: concDON(:)       ! Concentration of river outflow DON (kg-N/kg-water)
+     real(r8), pointer :: concDOP(:)       ! Concentration of river outflow DOP (kg-P/kg-water)
+     real(r8), pointer :: concDOC(:)       ! Concentration of river outflow DOC (kg-C/kg-water)
+     real(r8), pointer :: concPP(:)        ! Concentration of river outflow PP (kg-P/kg-water)
+     real(r8), pointer :: concDSi(:)       ! Concentration of river outflow DSi (kg-Si/kg-water)
+     real(r8), pointer :: concPOC(:)       ! Concentration of river outflow POC (kg-C/kg-water)
+     real(r8), pointer :: concPN(:)        ! Concentration of river outflow PN (kg-N/kg-water)
+     real(r8), pointer :: concDIC(:)       ! Concentration of river outflow DIC (kg-C/kg-water)
+     real(r8), pointer :: concFe(:)        ! Concentration of river outflow Fe (kg-Fe/kg-water)
 
      !    - restarts
      real(r8), pointer :: wh(:,:)          ! MOSART hillslope surface water storage (m)
@@ -104,6 +115,7 @@ module RunoffMod
      real(r8), pointer :: flood(:)         ! coupler return flood water sent back to clm [m3/s]
      real(r8), pointer :: runoff(:,:)      ! coupler return mosart basin derived flow [m3/s]
      real(r8), pointer :: direct(:,:)      ! coupler return direct flow [m3/s]
+     real(r8), pointer :: inundinf(:)      ! coupler return drainage from floodplain inundation  [mm/s]
 
      !    - history (currently needed)
      real(r8), pointer :: runofflnd_nt1(:)
@@ -144,6 +156,9 @@ module RunoffMod
      real(r8), pointer :: templand_Tqsub_nt2(:)
      real(r8), pointer :: templand_Ttrib_nt2(:)
      real(r8), pointer :: templand_Tchanr_nt2(:)
+
+     real(r8), pointer :: ssh(:)
+     real(r8), pointer :: yr_nt1(:)
      
   end type runoff_flow
 
@@ -160,6 +175,7 @@ module RunoffMod
                                   ! i.e., if the time step of the incoming runoff data is 3-hr, and num_dt is set to 10, 
                                   ! then deltaT = 3*3600/10 = 1080 seconds
      real(r8) :: DeltaT           ! Time step in seconds 
+     real(r8) :: coupling_period  ! couping period of rof in seconds
      integer  :: DLevelH2R        ! The base number of channel routing sub-time-steps within one hillslope routing step. 
                                   ! Usually channel routing requires small time steps than hillslope routing.
      integer  :: DLevelR          ! The number of channel routing sub-time-steps at a higher level within one channel routing step at a lower level. 
@@ -232,6 +248,8 @@ module RunoffMod
      real(r8), pointer :: frac(:)      ! fraction of cell included in the study area, [-]
      real(r8), pointer :: domainfrac(:)! fraction of cell included in the study area from domain file, [-]
      logical , pointer :: euler_calc(:)! flag for calculating tracers in euler
+     integer , pointer :: ocn_rof_coupling_ID(:)  ! ocn rof 2-way coupling ID, 0=off, 1=on
+     real(r8), pointer :: vdatum_conversion(:)    ! ocn rof 2-way coupling vertical datum conversion
 
      ! hillslope properties
      real(r8), pointer :: nh(:)        ! manning's roughness of the hillslope (channel network excluded) 
@@ -551,6 +569,7 @@ contains
              rtmCTL%fthresh(begr:endr),           &
              rtmCTL%flood(begr:endr),             &
              rtmCTL%direct(begr:endr,nt_rtm),     &
+             rtmCTL%inundinf(begr:endr),          &
              rtmCTL%wh(begr:endr,nt_rtm),         &
              rtmCTL%wt(begr:endr,nt_rtm),         &
              rtmCTL%wr(begr:endr,nt_rtm),         &
@@ -564,10 +583,31 @@ contains
              rtmCTL%qgwl(begr:endr,nt_rtm),       &
              rtmCTL%qdto(begr:endr,nt_rtm),       &
              rtmCTL%qdem(begr:endr,nt_rtm),       & 
+             rtmCTL%yr_nt1(begr:endr),            &
+             rtmCTL%ssh(begr:endr),               &
              stat=ier)
     if (ier /= 0) then
        write(iulog,*)'Rtmini ERROR allocation of runoff local arrays'
        call shr_sys_abort
+    end if
+
+    if (data_bgc_fluxes_to_ocean_flag) then
+      allocate(rtmCTL%concDIN(begr:endr),           &
+               rtmCTL%concDIP(begr:endr),           &
+               rtmCTL%concDON(begr:endr),           &
+               rtmCTL%concDOP(begr:endr),           &
+               rtmCTL%concDOC(begr:endr),           &
+               rtmCTL%concPP(begr:endr),            &
+               rtmCTL%concDSi(begr:endr),           &
+               rtmCTL%concPOC(begr:endr),           &
+               rtmCTL%concPN(begr:endr),            &
+               rtmCTL%concDIC(begr:endr),           &
+               rtmCTL%concFe(begr:endr),            &
+               stat=ier)
+      if (ier /= 0) then
+         write(iulog,*)'Rtmini ERROR allocation of BGC local arrays'
+         call shr_sys_abort
+      end if
     end if
 
     rtmCTL%iDown(:) = 0
@@ -585,6 +625,7 @@ contains
     rtmCTL%volr(:,:)       = 0._r8
     rtmCTL%flood(:)        = 0._r8
     rtmCTL%direct(:,:)     = 0._r8
+    rtmCTL%inundinf(:)     = 0._r8
     rtmCTL%inundwf(:)      = 0._r8
     rtmCTL%inundhf(:)      = 0._r8
     rtmCTL%inundff(:)      = 0._r8
@@ -594,6 +635,19 @@ contains
     rtmCTL%qgwl(:,:)       = 0._r8
     rtmCTL%qdto(:,:)       = 0._r8
     rtmCTL%qdem(:,:)       = 0._r8
+    if (data_bgc_fluxes_to_ocean_flag) then
+      rtmCTL%concDIN(:)      = 0._r8
+      rtmCTL%concDIP(:)      = 0._r8
+      rtmCTL%concDON(:)      = 0._r8
+      rtmCTL%concDOP(:)      = 0._r8
+      rtmCTL%concDOC(:)      = 0._r8
+      rtmCTL%concPP(:)       = 0._r8
+      rtmCTL%concDSi(:)      = 0._r8
+      rtmCTL%concPOC(:)      = 0._r8
+      rtmCTL%concPN(:)       = 0._r8
+      rtmCTL%concDIC(:)      = 0._r8
+      rtmCTL%concFe(:)       = 0._r8
+    end if
     
     if (heatflag) then
       allocate(rtmCTL%Tqsur(begr:endr),                 &

@@ -23,6 +23,11 @@ class EulerStepFunctor {
 public:
   EulerStepFunctor();
 
+  EulerStepFunctor(const int num_elems);
+
+  bool setup_needed() { return !is_setup; }
+  void setup();
+
   void reset(const SimulationParams& params);
 
   int requested_buffer_size () const;
@@ -40,6 +45,9 @@ public:
   static bool is_quasi_monotone (const int& limiter_option) {
     return limiter_option == 8 || limiter_option == 9;
   }
+
+private:
+  bool is_setup;
 };
 
 } // namespace Homme

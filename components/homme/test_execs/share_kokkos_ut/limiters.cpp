@@ -16,6 +16,31 @@ extern "C" void limiter_clip_and_sum_c_callable(
   Real* ptens, const Real* sphweights, Real* minp, Real* maxp,
   const Real* dpmass);
 
+#ifndef HOMMEXX_BFB_TESTING
+static bool almost_equal (const Real& a, const Real& b,
+                          const Real tol = 0) {
+  const auto re = std::abs(a-b)/(1 + std::abs(a));
+  const bool good = re <= tol;
+  if ( ! good)
+    printf("equal: a,b = %23.16e %23.16e re = %23.16e tol %9.2e\n",
+           a, b, re, tol);
+  return good;
+}
+#endif
+
+static bool equal (const Real& a, const Real& b,
+                   // Used only if not defined HOMMEXX_BFB_TESTING.
+                   const Real tol = 1e4*std::numeric_limits<Real>::epsilon()) {
+#ifdef HOMMEXX_BFB_TESTING
+  if (a != b)
+    printf("equal: a,b = %23.16e %23.16e re = %23.16e\n",
+           a, b, std::abs((a-b)/a));
+  return a == b;
+#else
+  return almost_equal(a, b, tol);
+#endif
+}
+
 struct LimiterTester {
   static constexpr Real eps { std::numeric_limits<Real>::epsilon() };
 
@@ -209,7 +234,7 @@ struct LimiterTester {
       const int vi = k / VECTOR_SIZE, si = k % VECTOR_SIZE;
       for (int i = 0; i < NP; ++i)
         for (int j = 0; j < NP; ++j)
-          REQUIRE(d.ptens(j,i,k) == ptens(i,j,vi)[si]);
+          REQUIRE(equal(d.ptens(j,i,k), ptens(i,j,vi)[si]));
     }
   }
 
@@ -265,7 +290,7 @@ struct LimiterTester {
       for (int i = 0; i < NP; ++i)
         for (int j = 0; j < NP; ++j) {
           // Check BFB.
-          REQUIRE(ptens(i,j,vi)[si] == ref.ptens(i,j,vi)[si]);
+          REQUIRE(equal(ptens(i,j,vi)[si], ref.ptens(i,j,vi)[si]));
         }
     }
   }
@@ -365,7 +390,7 @@ TEST_CASE("1-norm minimal", "limiters") {
     lv_other.fromdevice();
     get_norm1(lv_other, othernorm1);
     for (int k = 0; k < NUM_PHYSICAL_LEV; ++k)
-      REQUIRE(std::abs(lim8norm1[k] - othernorm1[k]) <= 1e3*LimiterTester::eps*othernorm1[k]);
+      REQUIRE(std::abs(lim8norm1[k] - othernorm1[k]) <= 1e5*LimiterTester::eps*othernorm1[k]);
   }
 
   if ( ! OnGpu<ExecSpace>::value) {

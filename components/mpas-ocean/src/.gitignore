@@ -1,0 +1,6 @@
+.*.zip
+
+# Ignore processed registry files.
+*/Registry_processed.xml
+
+

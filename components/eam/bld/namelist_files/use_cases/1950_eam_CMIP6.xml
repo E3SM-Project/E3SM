@@ -52,7 +52,7 @@
 <!-- Prescribed oxidants for aerosol chemistry.   Ozone is from CMIP6 input4MIPS file -->
 <tracer_cnst_type    >CYCLICAL</tracer_cnst_type>
 <tracer_cnst_cycle_yr>1955</tracer_cnst_cycle_yr>
-<tracer_cnst_file    >oxid_1.9x2.5_L26_1850-2015_c180203.nc</tracer_cnst_file>
+<tracer_cnst_file    >oxid_1.9x2.5_L26_1850-2015_c20181106.nc</tracer_cnst_file>
 <tracer_cnst_filelist>''</tracer_cnst_filelist>
 <!-- <tracer_cnst_filelist>this_field_is_not_used</tracer_cnst_filelist> -->
 

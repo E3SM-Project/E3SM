@@ -26,7 +26,7 @@ function(build_model COMP_CLASS COMP_NAME)
   endif()
 
   if (COMP_NAME STREQUAL "cpl")
-    list(APPEND INCLDIR "${EXEROOT}/cmake-bld/mpas-source/src")
+    list(APPEND INCLDIR "${EXEROOT}/cmake-bld/mpas-framework/src")
     foreach(ITEM IN LISTS COMP_CLASSES)
       list(APPEND INCLDIR "${EXEROOT}/cmake-bld/cmake/${ITEM}")
     endforeach()
@@ -67,17 +67,16 @@ function(build_model COMP_CLASS COMP_NAME)
 
     # If YAKL is needed, then set YAKL CMake vars
     if (USE_YAKL)
-      # ARCH can be CUDA, HIP, or unset
+      # YAKL_ARCH can be CUDA, HIP, SYCL, OPENMP45, or empty
+      # USE_CUDA is set through Macros.cmake / config_compilers.xml
       if (USE_CUDA)
-        set(ARCH "CUDA")
+        set(YAKL_ARCH "CUDA")
         # CUDA_FLAGS is set through Macros.cmake / config_compilers.xml
-        # We can't have duplicate flags with nvcc, so we only specify CPPDEFS,
-        # and the rest is up to CUDAFLAGS
-        set(YAKL_CXX_FLAGS "${CPPDEFS}")
+        set(YAKL_CUDA_FLAGS "${CPPDEFS} ${CUDA_FLAGS}")
       else()
-        # For normal C++ compilers duplicate flags are fine, the last ones win typically
+        # For CPU C++ compilers duplicate flags are fine, the last ones win typically
         set(YAKL_CXX_FLAGS "${CPPDEFS} ${CXXFLAGS}")
-        set(ARCH "")
+        set(YAKL_ARCH "")
       endif()
       message(STATUS "Building YAKL")
       # Build YAKL as a static library
@@ -85,14 +84,10 @@ function(build_model COMP_CLASS COMP_NAME)
       set(YAKL_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../../externals/YAKL)
       # YAKL_BIN is where we're placing the YAKL library
       set(YAKL_BIN  ${CMAKE_CURRENT_BINARY_DIR}/yakl)
-      # YAKL_CUB_HOME is where Nvidia's cub repo lives (submodule)
-      if (USE_CUDA)
-        set(YAKL_CUB_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../../externals/cub)
-      endif()
       # Build the YAKL static library
       add_subdirectory(${YAKL_HOME} ${YAKL_BIN})
-      # Add both YAKL source and YAKL binary directories to the include paths
-      include_directories(${YAKL_HOME} ${YAKL_BIN})
+      # Add the YAKL bin directory, mainly due to a Fortran module if it's needed
+      include_directories(${YAKL_BIN})
     endif()
 
     # if samxx is needed, build samxx as a static library
@@ -107,9 +102,34 @@ function(build_model COMP_CLASS COMP_NAME)
       # Add samxx F90 files to the main E3SM build
       set(SOURCES ${SOURCES} cmake/atm/../../eam/src/physics/crm/samxx/cpp_interface_mod.F90
                              cmake/atm/../../eam/src/physics/crm/samxx/params.F90
-                             cmake/atm/../../eam/src/physics/crm/samxx/crm_ecpp_output_module.F90 )
+                             cmake/atm/../../eam/src/physics/crm/crm_ecpp_output_module.F90 )
     endif()
 
+    # Add rrtmgp++ source code if asked for
+    if (USE_RRTMGPXX)
+      message(STATUS "Building RRTMGPXX")
+      # Build the static rrtmgpxx library
+      set(RRTMGPXX_BIN ${CMAKE_CURRENT_BINARY_DIR}/rrtmgp)
+      add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/external/cpp ${RRTMGPXX_BIN})
+      # Build the interface code
+      set(RRTMGPXX_INTERFACE_BIN ${CMAKE_CURRENT_BINARY_DIR}/rrtmgp_interface)
+      add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/cpp ${RRTMGPXX_INTERFACE_BIN})
+      # Interface code needs some additional headers
+      target_include_directories(rrtmgp_interface PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/external/cpp/extensions/fluxes_byband
+          ${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/external/cpp/extensions/cloud_optics
+          ${CMAKE_CURRENT_SOURCE_DIR}/../../eam/src/physics/rrtmgp/cpp
+      )
+      # The interface code needs to know about the NETCDF includes defined
+      # above. The easiest way I know of to do this is to pass all of the
+      # accumulated includes to the target.
+      # TODO: this can go away if the above NETCDF section is refactored to
+      # use find_library instead of appending to INCLDIR.
+      target_include_directories(rrtmgp_interface PRIVATE ${INCLDIR})
+      # Add the source files for the interface code to the main E3SM build
+      set(RRTMGPXX_F90 cmake/atm/../../eam/src/physics/rrtmgp/cpp/rrtmgp_interface.F90)
+      set(SOURCES ${SOURCES} ${RRTMGPXX_F90})
+    endif()
   endif()
 
   #-------------------------------------------------------------------------------
@@ -159,7 +179,7 @@ function(build_model COMP_CLASS COMP_NAME)
     get_filename_component(BASENAME ${SRC_FILE} NAME)
     add_custom_command (
       OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${BASENAME}
-      COMMAND ${CIMEROOT}/src/externals/genf90/genf90.pl
+      COMMAND ${CIMEROOT}/CIME/non_py/externals/genf90/genf90.pl
       ${PROJECT_SOURCE_DIR}/${SRC_FILE}.in > ${CMAKE_CURRENT_BINARY_DIR}/${BASENAME}
       DEPENDS ${PROJECT_SOURCE_DIR}/${SRC_FILE}.in genf90)
     list(REMOVE_ITEM SOURCES ${SRC_FILE})
@@ -252,6 +272,9 @@ function(build_model COMP_CLASS COMP_NAME)
       endif()
       if (USE_SAMXX)
         target_link_libraries(${TARGET_NAME} PRIVATE samxx)
+      endif()
+      if (USE_RRTMGPXX)
+          target_link_libraries(${TARGET_NAME} PRIVATE rrtmgp rrtmgp_interface)
       endif()
     endif()
     if (USE_KOKKOS)

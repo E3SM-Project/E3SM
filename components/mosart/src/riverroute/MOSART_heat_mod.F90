@@ -75,21 +75,19 @@ MODULE MOSART_heat_mod
         integer, intent(in) :: iunit
         real(r8), intent(in) :: theDeltaT    
         
-        real(r8) :: Qsur, Qsub ! flow rate of surface and subsurface runoff separately
-        !if(TUnit%fdir(iunit) >= 0 .and. TUnit%areaTotal(iunit) > TINYVALUE1) then
-                THeat%Hs_t(iunit) = 0._r8
-                THeat%Hl_t(iunit) = 0._r8
-                THeat%He_t(iunit) = 0._r8
-                THeat%Hh_t(iunit) = 0._r8
-                THeat%Hc_t(iunit) = 0._r8
+        THeat%Hs_t(iunit) = 0._r8
+        THeat%Hl_t(iunit) = 0._r8
+        THeat%He_t(iunit) = 0._r8
+        THeat%Hh_t(iunit) = 0._r8
+        THeat%Hc_t(iunit) = 0._r8
 
-                THeat%Ha_h2t(iunit) = 0._r8
-                THeat%Ha_t2r(iunit) = -cr_advectheat(abs(TRunoff%etout(iunit,nt_nliq)+TRunoff%etout(iunit,nt_nice)), THeat%Tt(iunit))
-            ! change of energy due to heat exchange with the environment
-            THeat%deltaH_t(iunit) = theDeltaT * (THeat%Hs_t(iunit) + THeat%Hl_t(iunit) + THeat%He_t(iunit) + THeat%Hc_t(iunit) + THeat%Hh_t(iunit))
-            ! change of energy due to advective heat flux
-            THeat%deltaM_t(iunit) = theDeltaT * (THeat%Ha_h2t(iunit)-cr_advectheat(Qsur + Qsub, THeat%Tt(iunit)))
-        !end if
+        THeat%Ha_h2t(iunit) = 0._r8
+        THeat%Ha_t2r(iunit) = -cr_advectheat(abs(TRunoff%etout(iunit,nt_nliq)+TRunoff%etout(iunit,nt_nice)), THeat%Tt(iunit))
+        ! change of energy due to heat exchange with the environment
+        THeat%deltaH_t(iunit) = 0._r8 
+        ! change of energy due to advective heat flux
+        THeat%deltaM_t(iunit) = 0._r8 
+
     end subroutine subnetworkHeat_simple
 
     

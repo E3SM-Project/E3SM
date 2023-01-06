@@ -17,12 +17,13 @@ void ElementsForcing::init (const int num_elems) {
   m_fphi    = ExecViewManaged<Scalar *    [NP][NP][NUM_LEV_P]>("F_Phi",         m_num_elems);
 }
 
-void ElementsForcing::randomize (const int seed) {
+void ElementsForcing::randomize (const int seed, const Real min_f, const Real max_f) {
   // Check forcing was inited
   assert (m_num_elems>0);
+  assert (max_f > min_f);
 
   std::mt19937_64 engine(seed);
-  std::uniform_real_distribution<Real> random_dist(-1.0, 1.0);
+  std::uniform_real_distribution<Real> random_dist(min_f, max_f);
 
   genRandArray(m_fm,      engine, random_dist);
   genRandArray(m_fvtheta, engine, random_dist);

@@ -12,7 +12,7 @@ module RtmMod
   use shr_kind_mod    , only : r8 => shr_kind_r8
   use shr_sys_mod     , only : shr_sys_flush
   use shr_const_mod   , only : SHR_CONST_PI, SHR_CONST_CDAY
-  use rof_cpl_indices , only : nt_rtm, rtm_tracers 
+  use rof_cpl_indices , only : nt_rtm, rtm_tracers, KW, DW
   use RtmSpmd         , only : masterproc, npes, iam, mpicom_rof, ROFID, mastertask, &
                                MPI_REAL8,MPI_INTEGER,MPI_CHARACTER,MPI_LOGICAL,MPI_MAX
   use RtmVar          , only : re, spval, rtmlon, rtmlat, iulog, ice_runoff, &
@@ -20,7 +20,7 @@ module RtmMod
                                nsrContinue, nsrBranch, nsrStartup, nsrest, &
                                inst_index, inst_suffix, inst_name, wrmflag, inundflag, &
                                smat_option, decomp_option, barrier_timers, heatflag, sediflag, &
-                               isgrid2d
+                               isgrid2d, data_bgc_fluxes_to_ocean_flag, use_lnd_rof_two_way, use_ocn_rof_two_way
   use RtmFileUtils    , only : getfil, getavu, relavu
   use RtmTimeManager  , only : timemgr_init, get_nstep, get_curr_date, advance_timestep
   use RtmHistFlds     , only : RtmHistFldsInit, RtmHistFldsSet 
@@ -80,6 +80,17 @@ module RtmMod
   integer , pointer :: ID0_global(:)  ! local ID index
   integer , pointer :: dnID_global(:) ! downstream ID based on ID0
   real(r8), pointer :: area_global(:) ! area
+  real(r8), pointer :: DIN_global(:)  !
+  real(r8), pointer :: DIP_global(:)  !
+  real(r8), pointer :: DON_global(:)  !
+  real(r8), pointer :: DOP_global(:)  !
+  real(r8), pointer :: DOC_global(:)  !
+  real(r8), pointer :: PP_global(:)   !
+  real(r8), pointer :: DSi_global(:)  !
+  real(r8), pointer :: POC_global(:)  !
+  real(r8), pointer :: PN_global(:)   !
+  real(r8), pointer :: DIC_global(:)  !
+  real(r8), pointer :: Fe_global(:)   !
   integer , pointer :: IDkey(:)       ! translation key from ID to gindex
 
 !local (gdc)
@@ -242,6 +253,7 @@ contains
     real(r8) :: wd_chnl                       ! Channel water depth (m).
     real(r8) :: hydrR                         ! Hydraulic radius (= wet A / wet P) (m).
     real(r8) :: v_chnl                        ! Channel flow velocity (m/s).#endif
+
 !-----------------------------------------------------------------------
 
     !-------------------------------------------------------
@@ -254,8 +266,8 @@ contains
          rtmhist_fincl1,  rtmhist_fincl2, rtmhist_fincl3, &
          rtmhist_fexcl1,  rtmhist_fexcl2, rtmhist_fexcl3, &
          rtmhist_avgflag_pertape, decomp_option, wrmflag,rstraflag,ngeom,nlayers,rinittemp, &
-         inundflag, smat_option, delt_mosart, barrier_timers, &
-         RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag
+         inundflag, smat_option, delt_mosart, barrier_timers,          &
+         RoutingMethod, DLevelH2R, DLevelR, sediflag, heatflag, data_bgc_fluxes_to_ocean_flag
 
     namelist /inund_inparm / opt_inund, &
          opt_truedw, opt_calcnr, nr_max, nr_min, &
@@ -282,9 +294,10 @@ contains
     delt_mosart = 3600
     decomp_option = 'basin'
     smat_option = 'opt'
-    RoutingMethod = 1
+    RoutingMethod = KW
     DLevelH2R = 5
     DLevelR = 3
+    data_bgc_fluxes_to_ocean_flag = .false.
 
     OPT_inund = 0
     OPT_trueDW = 2
@@ -334,6 +347,9 @@ contains
           end do
           call relavu( unitn )
        end if
+       if (.not. inundflag .and. use_lnd_rof_two_way) then
+          call shr_sys_abort(trim(subname)//' inundation model must be turned on for land river two way coupling')
+       end if
     end if
 
     call mpi_bcast (coupling_period,   1, MPI_INTEGER, 0, mpicom_rof, ier)
@@ -359,8 +375,11 @@ contains
     call mpi_bcast (ngeom,          1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (nlayers,        1, MPI_INTEGER, 0, mpicom_rof, ier)
     call mpi_bcast (inundflag,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (use_lnd_rof_two_way, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (heatflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (use_ocn_rof_two_way, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (barrier_timers, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (data_bgc_fluxes_to_ocean_flag, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
 
     call mpi_bcast (rtmhist_nhtfrq, size(rtmhist_nhtfrq), MPI_INTEGER,   0, mpicom_rof, ier)
     call mpi_bcast (rtmhist_mfilt , size(rtmhist_mfilt) , MPI_INTEGER,   0, mpicom_rof, ier)
@@ -398,9 +417,16 @@ contains
     runtyp(nsrContinue + 1) = 'restart'
     runtyp(nsrBranch   + 1) = 'branch '
 
+    if ( use_ocn_rof_two_way ) then
+       RoutingMethod = DW
+    end if 
+
     Tctl%RoutingMethod = RoutingMethod
     Tctl%DLevelH2R     = DLevelH2R
     Tctl%DLevelR       = DLevelR
+    if(.not.(Tctl%RoutingMethod==KW .or. Tctl%RoutingMethod==DW)) then 
+	   call shr_sys_abort('Error in routing method setup! There are only 2 options available: 1==KW, 2==DW')
+    end if
 
     if (inundflag) then
        Tctl%OPT_inund = OPT_inund     !
@@ -432,11 +458,13 @@ contains
        write(iulog,*) '   smat_option           = ',trim(smat_option)
        write(iulog,*) '   wrmflag               = ',wrmflag
        write(iulog,*) '   inundflag             = ',inundflag
+       write(iulog,*) '   use_lnd_rof_two_way   = ',use_lnd_rof_two_way
        write(iulog,*) '   heatflag              = ',heatflag
        write(iulog,*) '   barrier_timers        = ',barrier_timers
        write(iulog,*) '   RoutingMethod         = ',Tctl%RoutingMethod
        write(iulog,*) '   DLevelH2R             = ',Tctl%DLevelH2R
        write(iulog,*) '   DLevelR               = ',Tctl%DLevelR
+       write(iulog,*) '   data_bgc_fluxes_to_ocean_flag = ',data_bgc_fluxes_to_ocean_flag
        if (nsrest == nsrStartup .and. finidat_rtm /= ' ') then
           write(iulog,*) '   MOSART initial data   = ',trim(finidat_rtm)
        end if
@@ -593,6 +621,21 @@ contains
        call shr_sys_abort(subname//' ERROR alloc for ID0')
     end if
 
+    if (data_bgc_fluxes_to_ocean_flag) then
+      allocate ( &
+                DIN_global(rtmlon*rtmlat), DIP_global(rtmlon*rtmlat), &
+                DON_global(rtmlon*rtmlat), DOP_global(rtmlon*rtmlat), &
+                DOC_global(rtmlon*rtmlat), PP_global(rtmlon*rtmlat) , &
+                DSi_global(rtmlon*rtmlat), POC_global(rtmlon*rtmlat), &
+                PN_global(rtmlon*rtmlat) , DIC_global(rtmlon*rtmlat), &
+                Fe_global(rtmlon*rtmlat) ,  &
+                stat=ier)
+      if (ier /= 0) then
+         write(iulog,*) subname, ' : Allocation error for global BGC variables'
+         call shr_sys_abort(subname//' ERROR alloc for BGC variables')
+      end if
+    end if
+
     allocate(tempr(rtmlon,rtmlat))  
     allocate(itempr(rtmlon,rtmlat))  
 
@@ -653,6 +696,131 @@ contains
     end do
     end do
     if (masterproc) write(iulog,*) 'dnID ',minval(itempr),maxval(itempr)
+
+    if (data_bgc_fluxes_to_ocean_flag) then
+
+      call ncd_io(ncid=ncid, varname='Ld_DIN_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART DIN')
+      if (masterproc) write(iulog,*) 'Read DIN ',minval(tempr),maxval(tempr)
+      do j=1,rtmlat
+      do i=1,rtmlon
+         n = (j-1)*rtmlon + i
+         DIN_global(n) = tempr(i,j)
+      end do
+      end do
+      if (masterproc) write(iulog,*) 'DIN ',minval(tempr),maxval(tempr)
+
+      call ncd_io(ncid=ncid, varname='Ld_DIP_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART DIP')
+      if (masterproc) write(iulog,*) 'Read DIP ',minval(tempr),maxval(tempr)
+      do j=1,rtmlat
+      do i=1,rtmlon
+         n = (j-1)*rtmlon + i
+         DIP_global(n) = tempr(i,j)
+      end do
+      end do
+      if (masterproc) write(iulog,*) 'DIP ',minval(tempr),maxval(tempr)
+
+      call ncd_io(ncid=ncid, varname='Ld_DON_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART DON')
+      if (masterproc) write(iulog,*) 'Read DON ',minval(tempr),maxval(tempr)
+      do j=1,rtmlat
+      do i=1,rtmlon
+         n = (j-1)*rtmlon + i
+         DON_global(n) = tempr(i,j)
+      end do
+      end do
+      if (masterproc) write(iulog,*) 'DON ',minval(tempr),maxval(tempr)
+
+      call ncd_io(ncid=ncid, varname='Ld_DOP_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART DOP')
+      if (masterproc) write(iulog,*) 'Read DOP ',minval(tempr),maxval(tempr)
+      do j=1,rtmlat
+      do i=1,rtmlon
+         n = (j-1)*rtmlon + i
+         DOP_global(n) = tempr(i,j)
+      end do
+      end do
+      if (masterproc) write(iulog,*) 'DOP ',minval(tempr),maxval(tempr)
+
+      call ncd_io(ncid=ncid, varname='Ld_DOC_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART DOC')
+      if (masterproc) write(iulog,*) 'Read DOC ',minval(tempr),maxval(tempr)
+      do j=1,rtmlat
+      do i=1,rtmlon
+         n = (j-1)*rtmlon + i
+         DOC_global(n) = tempr(i,j)
+      end do
+      end do
+      if (masterproc) write(iulog,*) 'DOC ',minval(tempr),maxval(tempr)
+
+      call ncd_io(ncid=ncid, varname='Ld_PP_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART PP')
+      if (masterproc) write(iulog,*) 'Read PP ',minval(tempr),maxval(tempr)
+      do j=1,rtmlat
+      do i=1,rtmlon
+         n = (j-1)*rtmlon + i
+         PP_global(n) = tempr(i,j)
+      end do
+      end do
+      if (masterproc) write(iulog,*) 'PP ',minval(tempr),maxval(tempr)
+
+      call ncd_io(ncid=ncid, varname='Ld_DSi_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART DSi')
+      if (masterproc) write(iulog,*) 'Read DSi ',minval(tempr),maxval(tempr)
+      do j=1,rtmlat
+      do i=1,rtmlon
+         n = (j-1)*rtmlon + i
+         DSi_global(n) = tempr(i,j)
+      end do
+      end do
+      if (masterproc) write(iulog,*) 'DSi ',minval(tempr),maxval(tempr)
+
+      call ncd_io(ncid=ncid, varname='Ld_POC_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART POC')
+      if (masterproc) write(iulog,*) 'Read POC ',minval(tempr),maxval(tempr)
+      do j=1,rtmlat
+      do i=1,rtmlon
+         n = (j-1)*rtmlon + i
+         POC_global(n) = tempr(i,j)
+      end do
+      end do
+      if (masterproc) write(iulog,*) 'POC ',minval(tempr),maxval(tempr)
+
+      call ncd_io(ncid=ncid, varname='Ld_PN_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART PN')
+      if (masterproc) write(iulog,*) 'Read PN ',minval(tempr),maxval(tempr)
+      do j=1,rtmlat
+      do i=1,rtmlon
+         n = (j-1)*rtmlon + i
+         PN_global(n) = tempr(i,j)
+      end do
+      end do
+      if (masterproc) write(iulog,*) 'PN ',minval(tempr),maxval(tempr)
+
+      call ncd_io(ncid=ncid, varname='Ld_DIC_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART DIC')
+      if (masterproc) write(iulog,*) 'Read DIC ',minval(tempr),maxval(tempr)
+      do j=1,rtmlat
+      do i=1,rtmlon
+         n = (j-1)*rtmlon + i
+         DIC_global(n) = tempr(i,j)
+      end do
+      end do
+      if (masterproc) write(iulog,*) 'DIC ',minval(tempr),maxval(tempr)
+
+      call ncd_io(ncid=ncid, varname='Ld_Fe_mosart_half', flag='read', data=tempr, readvar=found)
+      if ( .not. found ) call shr_sys_abort( trim(subname)//' ERROR: read MOSART Fe')
+      if (masterproc) write(iulog,*) 'Read Fe ',minval(tempr),maxval(tempr)
+      do j=1,rtmlat
+      do i=1,rtmlon
+         n = (j-1)*rtmlon + i
+         Fe_global(n) = tempr(i,j)
+      end do
+      end do
+      if (masterproc) write(iulog,*) 'Fe ',minval(tempr),maxval(tempr)
+
+    end if  !  data_bgc_fluxes_to_ocean_flag
 
     deallocate(tempr)
     deallocate(itempr)             
@@ -1254,7 +1422,11 @@ contains
           call shr_sys_abort(subname//' ERROR gdc2glo values')
        endif
        rtmCTL%lonc(nr) = rtmCTL%rlon(i)
-       rtmCTL%latc(nr) = rtmCTL%rlat(j)
+       if (isgrid2d) then 
+          rtmCTL%latc(nr) = rtmCTL%rlat(j)
+       else 
+          rtmCTL%latc(nr) = rtmCTL%rlat(i)
+       endif
 
        rtmCTL%outletg(nr) = idxocn(n)
        rtmCTL%area(nr) = area_global(n)
@@ -1272,6 +1444,19 @@ contains
           rtmCTL%iDown(nr) = rglo2gdc(dnID_global(n))
        endif
        rtmCTL%nUp_dstrm(nr) = nUp_dstrm_global(n)
+       if (data_bgc_fluxes_to_ocean_flag) then
+         rtmCTL%concDIN(nr) = DIN_global(n)
+         rtmCTL%concDIP(nr) = DIP_global(n)
+         rtmCTL%concDON(nr) = DON_global(n)
+         rtmCTL%concDOP(nr) = DOP_global(n)
+         rtmCTL%concDOC(nr) = DOC_global(n)
+         rtmCTL%concPP(nr)  = PP_global(n)
+         rtmCTL%concDSi(nr) = DSi_global(n)
+         rtmCTL%concPOC(nr) = POC_global(n)
+         rtmCTL%concPN(nr)  = PN_global(n)
+         rtmCTL%concDIC(nr) = DIC_global(n)
+         rtmCTL%concFe(nr)  = Fe_global(n)
+       end if
     enddo
     
     rtmCTL%iUp = 0
@@ -1291,6 +1476,14 @@ contains
     deallocate(dnID_global,area_global)
     deallocate(nUp_global,nUp_dstrm_global)
     deallocate(idxocn)
+    if (data_bgc_fluxes_to_ocean_flag) then
+      deallocate (DIN_global,DIP_global)
+      deallocate (DON_global,DOP_global)
+      deallocate (DOC_global,PP_global)
+      deallocate (DSi_global,POC_global)
+      deallocate (PN_global ,DIC_global)
+      deallocate (Fe_global)
+    end if
     call shr_mpi_sum(lrtmarea,rtmCTL%totarea,mpicom_rof,'mosart totarea',all=.true.)
     if (masterproc) write(iulog,*) subname,'  earth area ',4.0_r8*shr_const_pi*1.0e6_r8*re*re
     if (masterproc) write(iulog,*) subname,' MOSART area ',rtmCTL%totarea
@@ -2027,6 +2220,17 @@ contains
            if ( rtmCTL%mask(nr) .eq. 1 .or. rtmCTL%mask(nr) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
              budget_terms(bv_fp_i, 1) = budget_terms(bv_fp_i, 1) + TRunoff%wf_ini( nr )
              !budget_terms(bv_fp_i, 1) = budget_terms(bv_fp_i, 1) + rtmCTL%inundwf(nr)        ! 17-6-7
+           endif
+
+           ! land river two way coupling, update floodplain inundation volume with drainage from lnd
+           if (use_lnd_rof_two_way) then
+             TRunoff%wf_ini(nr) = TRunoff%wf_ini(nr) - rtmCTL%inundinf(nr) * coupling_period
+
+             if ( TRunoff%wf_ini(nr) < 0._r8 ) then
+               TRunoff%wr(nr, 1) = TRunoff%wr(nr, 1) + TRunoff%wf_ini(nr)
+               TRunoff%wf_ini(nr) = 0._r8
+               TRunoff%yr(nr, 1) = TRunoff%wr(nr, 1) / TUnit%rlen(nr) / TUnit%rwidth(nr)
+             endif
            endif
 
          end do
@@ -3446,6 +3650,21 @@ contains
      if (masterproc) write(iulog,FORMR) trim(subname),' read rdepth ',minval(Tunit%rdepth),maxval(Tunit%rdepth)
      call shr_sys_flush(iulog)
 
+     ! define outlets and relevant parameters where ocn rof two-way coupling is on
+     if ( use_ocn_rof_two_way ) then
+        allocate(TUnit%ocn_rof_coupling_ID(begr:endr))
+        ier = pio_inq_varid(ncid, name='ocn_rof_coupling_ID', vardesc=vardesc)
+        call pio_read_darray(ncid, vardesc, iodesc_int, TUnit%ocn_rof_coupling_ID, ier)
+        if (masterproc) write(iulog,FORMR) trim(subname),' read ocn_rof_coupling_ID',minval(Tunit%ocn_rof_coupling_ID),maxval(Tunit%ocn_rof_coupling_ID)
+        call shr_sys_flush(iulog)
+
+        allocate(TUnit%vdatum_conversion(begr:endr))
+        ier = pio_inq_varid(ncid, name='vdatum_conversion', vardesc=vardesc)
+        call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%vdatum_conversion, ier)
+        if (masterproc) write(iulog,FORMR) trim(subname),' read vdatum_conversion',minval(Tunit%vdatum_conversion),maxval(Tunit%vdatum_conversion)
+        call shr_sys_flush(iulog)
+     end if
+
      allocate(TUnit%nr(begr:endr))
   
      if (inundflag) then
@@ -3544,7 +3763,7 @@ contains
      end if
 
      if (inundflag) then
-       if ( Tctl%RoutingMethod == 2 ) then       ! Use diffusion wave method in channel routing computation.
+       if ( Tctl%RoutingMethod == DW ) then       ! Use diffusion wave method in channel routing computation.
           allocate (TUnit%rlen_dstrm(begr:endr))
           allocate (TUnit%rslp_dstrm(begr:endr))
 
@@ -3590,8 +3809,9 @@ contains
           ! --------------------------------- 
           ! (assign elevation values to TUnit%e_eprof_in2( :, : ) ).
 
-          call read_elevation_profile(ncid, 'ele', TUnit%e_eprof_in2)
-     
+          if ( Tctl%OPT_elevProf .eq. 1 ) then 
+            call read_elevation_profile(ncid, 'ele', TUnit%e_eprof_in2)
+          endif
           ! --------------------------------- 
 
           allocate (TUnit%a_eprof(begr:endr,12))
@@ -3763,7 +3983,7 @@ contains
      allocate (TPara%c_twid(begr:endr))
      TPara%c_twid = 1.0_r8
 
-     if ( Tctl%RoutingMethod == 2 ) then       ! Use diffusion wave method in channel routing computation.
+     if ( Tctl%RoutingMethod == DW ) then       ! Use diffusion wave method in channel routing computation.
         allocate (TRunoff%rslp_energy(begr:endr))
         TRunoff%rslp_energy = 0.0_r8
         
@@ -3800,7 +4020,7 @@ contains
         allocate (TRunoff%yr_exchg(begr:endr))
         TRunoff%yr_exchg = 0.0_r8
 
-        if ( Tctl%RoutingMethod == 2 ) then       ! Use diffusion wave method in channel routing computation.
+        if ( Tctl%RoutingMethod == DW ) then       ! Use diffusion wave method in channel routing computation.
            allocate (TRunoff%wr_exchg_dstrm(begr:endr))
            TRunoff%wr_exchg_dstrm = 0.0_r8
 
@@ -3992,8 +4212,10 @@ contains
            if(TUnit%twidth(iunit) < 0._r8) then
               TUnit%twidth(iunit) = 0._r8
            end if
-           if(TUnit%tlen(iunit) > 0._r8 .and. (TUnit%rlenTotal(iunit)-TUnit%rlen(iunit))/TUnit%tlen(iunit) > 1._r8) then
-              TUnit%twidth(iunit) = TPara%c_twid(iunit)*TUnit%twidth(iunit)*((TUnit%rlenTotal(iunit)-TUnit%rlen(iunit))/TUnit%tlen(iunit))
+           if(TUnit%tlen(iunit) > 0._r8) then
+              if ((TUnit%rlenTotal(iunit)-TUnit%rlen(iunit))/TUnit%tlen(iunit) > 1._r8) then
+                  TUnit%twidth(iunit) = TPara%c_twid(iunit)*TUnit%twidth(iunit)*((TUnit%rlenTotal(iunit)-TUnit%rlen(iunit))/TUnit%tlen(iunit))
+              end if
            end if
           
            if(TUnit%tlen(iunit) > 0._r8 .and. TUnit%twidth(iunit) <= 0._r8) then
@@ -4009,9 +4231,7 @@ contains
         if(TUnit%rslp(iunit) <= 0._r8) then
 
         if (inundflag) then
-           if (inundflag) then
-              TUnit%rslp(iunit) = Tctl%rslp_assume
-           endif
+           TUnit%rslp(iunit) = Tctl%rslp_assume
         else
            TUnit%rslp(iunit) = 0.0001_r8
         endif
@@ -4030,7 +4250,7 @@ contains
   end if  ! endr >= begr
 
   ! retrieve the downstream channel attributes after some post-processing above
-  if (Tctl%RoutingMethod == 2 ) then       ! Use diffusion wave method in channel routing computation.
+  if (Tctl%RoutingMethod == DW ) then       ! Use diffusion wave method in channel routing computation.
      allocate (TUnit%rlen_dstrm(begr:endr))
      allocate (TUnit%rslp_dstrm(begr:endr))
 

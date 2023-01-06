@@ -63,7 +63,7 @@ program convterr
   integer :: im, jm, ncoarse
   integer :: ncube !dimension of cubed-sphere grid
   
-  real(r8),  allocatable, dimension(:) :: landm_coslat, landfrac, terr, sgh30
+  real(r8),  allocatable, dimension(:) :: landfrac, terr, sgh30
   real(r8),  allocatable, dimension(:) :: terr_coarse !for internal smoothing
   
   integer :: alloc_error,dealloc_error
@@ -77,9 +77,7 @@ program convterr
   
   logical :: ldbg
   real(r8), allocatable, dimension(:)   :: lon  , lat
-  real(r8), allocatable, dimension(:)   :: lon_landm  , lat_landm
   real(r8), allocatable, dimension(:)   :: area
-  integer :: im_landm, jm_landm
   integer :: lonid, latid, phisid
   !
   ! constants
@@ -92,7 +90,6 @@ program convterr
   real(r8) :: wt,dlat
   integer  :: ipanel,icube,jcube
   real(r8), allocatable, dimension(:,:,:)   :: weight,terr_cube,landfrac_cube,sgh30_cube
-  real(r8), allocatable, dimension(:,:,:)   :: landm_coslat_cube
   integer, allocatable, dimension(:,:) :: idx,idy,idp
   integer :: npatch, isub,jsub, itmp, iplm1,jmin,jmax
   real(r8) :: sum,dx,scale,dmax,arad,jof,term,s1,c1,clon,iof,dy,s2,c2,dist
@@ -108,7 +105,7 @@ program convterr
   integer :: n_a,n_b,n_s,n_aid,n_bid,n_sid
   integer :: count
   real(r8), allocatable, dimension(:) :: landfrac_target, terr_target, sgh30_target, sgh_target
-  real(r8), allocatable, dimension(:) :: landm_coslat_target, area_target
+  real(r8), allocatable, dimension(:) :: area_target
   !
   ! this is only used if target grid is a lat-lon grid
   !
@@ -307,18 +304,6 @@ program convterr
   ncube = INT(SQRT(DBLE(n/6)))
   WRITE(*,*) "cubed-sphere dimension, ncube: ",ncube
   
-  allocate ( landm_coslat(n),stat=alloc_error )
-  if( alloc_error /= 0 ) then
-    print*,'Program could not allocate space for landfrac'
-    stop
-  end if
-  
-  status = NF_INQ_VARID(ncid, 'LANDM_COSLAT', landid)
-  IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
-
-  status = NF_GET_VAR_DOUBLE(ncid, landid,landm_coslat)
-  IF (status .NE. NF_NOERR) CALL HANDLE_ERR(status)
-  WRITE(*,*) "min/max of landm_coslat",MINVAL(landm_coslat),MAXVAL(landm_coslat)
   !
   ! read LANDFRAC
   !
@@ -368,7 +353,7 @@ program convterr
   status = nf_close (ncid)
   if (status .ne. NF_NOERR) call handle_err(status)
   
-  WRITE(*,*) 'done reading in LANDM_COSLAT data from netCDF file'
+  WRITE(*,*) 'done reading in data from netCDF file'
   !
   !*********************************************************
   !
@@ -386,11 +371,6 @@ program convterr
     print*,'Program could not allocate space for landfrac_target'
     stop
   end if
-  allocate (landm_coslat_target(ntarget),stat=alloc_error )
-  if( alloc_error /= 0 ) then
-    print*,'Program could not allocate space for landfrac_target'
-    stop
-  end if
   allocate (sgh30_target(ntarget),stat=alloc_error )
   if( alloc_error /= 0 ) then
     print*,'Program could not allocate space for sgh30_target'
@@ -400,7 +380,6 @@ program convterr
   terr_target     = 0.0
   landfrac_target = 0.0
   sgh30_target    = 0.0
-  landm_coslat_target = 0.0
   area_target = 0.0
   
   tmp = 0.0
@@ -425,7 +404,6 @@ program convterr
     
     terr_target        (i) = terr_target        (i) + wt*terr        (ii)/area_target(i)
     landfrac_target    (i) = landfrac_target    (i) + wt*landfrac    (ii)/area_target(i)
-    landm_coslat_target(i) = landm_coslat_target(i) + wt*landm_coslat(ii)/area_target(i)
     sgh30_target       (i) = sgh30_target       (i) + wt*sgh30       (ii)/area_target(i)
     
     tmp = tmp+wt*terr(ii)
@@ -468,8 +446,6 @@ program convterr
   
   WRITE(*,*) "min/max of unsmoothed terr_target        : ",MINVAL(terr_target    ),MAXVAL(terr_target    )
   WRITE(*,*) "min/max of landfrac_target               : ",MINVAL(landfrac_target),MAXVAL(landfrac_target)
-  WRITE(*,*) "min/max of landm_coslat_target           : ",&
-       MINVAL(landm_coslat_target),MAXVAL(landm_coslat_target)
   WRITE(*,*) "min/max of var30_target                  : ",MINVAL(sgh30_target   ),MAXVAL(sgh30_target   )
   !
   ! compute mean height (globally) of topography about sea-level for target grid unfiltered elevation
@@ -901,17 +877,17 @@ program convterr
   WRITE(*,*) "min/max of sgh_target     : ",MINVAL(sgh_target),MAXVAL(sgh_target)
   WRITE(*,*) "min/max of sgh30_target   : ",MINVAL(sgh30_target),MAXVAL(sgh30_target)
   
-  DEALLOCATE(terr,weights_all,weights_eul_index_all,landfrac,landm_coslat)
+  DEALLOCATE(terr,weights_all,weights_eul_index_all,landfrac)
   
   
   IF (ltarget_latlon) THEN
     CALL wrtncdf_rll(nlon,nlat,lpole,ntarget,terr_target,landfrac_target,sgh_target,sgh30_target,&
-         landm_coslat_target,target_center_lon,target_center_lat,.true.,output_topography_file)
+         target_center_lon,target_center_lat,.true.,output_topography_file)
   ELSE
     CALL wrtncdf_unstructured(ntarget,terr_target,landfrac_target,sgh_target,sgh30_target,&
-         landm_coslat_target,target_center_lon,target_center_lat,output_topography_file)
+         target_center_lon,target_center_lat,output_topography_file)
   END IF
-  DEALLOCATE(terr_target,landfrac_target,sgh30_target,sgh_target,landm_coslat_target)
+  DEALLOCATE(terr_target,landfrac_target,sgh30_target,sgh_target)
   
 end program convterr
 
@@ -1040,7 +1016,7 @@ end subroutine usage
 !
 !
 !
-subroutine wrtncdf_unstructured(n,terr,landfrac,sgh,sgh30,landm_coslat,lon,lat,fout)
+subroutine wrtncdf_unstructured(n,terr,landfrac,sgh,sgh30,lon,lat,fout)
   use shr_kind_mod, only: r8 => shr_kind_r8
   implicit none
   
@@ -1050,7 +1026,7 @@ subroutine wrtncdf_unstructured(n,terr,landfrac,sgh,sgh30,landm_coslat,lon,lat,f
   ! Dummy arguments
   !
   integer, intent(in) :: n
-  real(r8),dimension(n)  , intent(in) :: terr, landfrac,sgh,sgh30,lon, lat, landm_coslat
+  real(r8),dimension(n)  , intent(in) :: terr, landfrac,sgh,sgh30,lon, lat
   !
   ! Local variables
   !
@@ -1059,7 +1035,7 @@ subroutine wrtncdf_unstructured(n,terr,landfrac,sgh,sgh30,landm_coslat,lon,lat,f
   integer            :: lonid, lonvid
   integer            :: latid, latvid
   integer            :: terrid,nid
-  integer            :: terrdim,landfracid,sghid,sgh30id,landm_coslatid
+  integer            :: terrdim,landfracid,sghid,sgh30id
   integer            :: status    ! return value for error control of netcdf routin
   integer            :: i,j
   integer, dimension(2) :: nc_lat_vid,nc_lon_vid
@@ -1094,10 +1070,7 @@ subroutine wrtncdf_unstructured(n,terr,landfrac,sgh,sgh30,landm_coslat,lon,lat,f
   
   status = nf_def_var (foutid,'SGH30', NF_DOUBLE, 1, nid, sgh30id)
   if (status .ne. NF_NOERR) call handle_err(status)
-  
-  status = nf_def_var (foutid,'LANDM_COSLAT', NF_DOUBLE, 1, nid, landm_coslatid)
-  if (status .ne. NF_NOERR) call handle_err(status)
-  !
+
   status = nf_def_var (foutid,'lat', NF_DOUBLE, 1, nid, latvid)
   if (status .ne. NF_NOERR) call handle_err(status)
   
@@ -1126,11 +1099,6 @@ subroutine wrtncdf_unstructured(n,terr,landfrac,sgh,sgh30,landm_coslat,lon,lat,f
        'standard deviation of 30s elevation from 3km cubed-sphere cell average height')
   status = nf_put_att_text   (foutid, sgh30id, 'units'     , 1, 'm')
   !        status = nf_put_att_text   (foutid, sgh30id, 'filter'    , 4, 'none')
-  
-  status = nf_put_att_double (foutid, landm_coslatid, 'missing_value', nf_double, 1, fillvalue)
-  status = nf_put_att_double (foutid, landm_coslatid, '_FillValue'   , nf_double, 1, fillvalue)
-  status = nf_put_att_text   (foutid, landm_coslatid, 'long_name' , 23, 'smoothed land fraction')
-  status = nf_put_att_text   (foutid, landm_coslatid, 'filter'    , 4, 'none')
   
   status = nf_put_att_double (foutid, landfracid, 'missing_value', nf_double, 1, fillvalue)
   status = nf_put_att_double (foutid, landfracid, '_FillValue'   , nf_double, 1, fillvalue)
@@ -1188,11 +1156,6 @@ subroutine wrtncdf_unstructured(n,terr,landfrac,sgh,sgh30,landm_coslat,lon,lat,f
   if (status .ne. NF_NOERR) call handle_err(status)
   print*,"done writing sgh30 data"
   
-  print*,"writing landm_coslat data",MINVAL(landm_coslat),MAXVAL(landm_coslat)
-  status = nf_put_var_double (foutid, landm_coslatid, landm_coslat)
-  if (status .ne. NF_NOERR) call handle_err(status)
-  print*,"done writing sgh30 data"
-  !
   print*,"writing lat data"
   status = nf_put_var_double (foutid, latvid, lat)
   if (status .ne. NF_NOERR) call handle_err(status)
@@ -1216,7 +1179,7 @@ end subroutine wrtncdf_unstructured
 !
 !**************************************************************     
 !
-subroutine wrtncdf_rll(nlon,nlat,lpole,n,terr_in,landfrac_in,sgh_in,sgh30_in,landm_coslat_in,lon,lat,lprepare_fv_smoothing_routine,fout)
+subroutine wrtncdf_rll(nlon,nlat,lpole,n,terr_in,landfrac_in,sgh_in,sgh30_in,lon,lat,lprepare_fv_smoothing_routine,fout)
   use shr_kind_mod, only: r8 => shr_kind_r8
   implicit none
   
@@ -1230,7 +1193,7 @@ subroutine wrtncdf_rll(nlon,nlat,lpole,n,terr_in,landfrac_in,sgh_in,sgh30_in,lan
   ! lprepare_fv_smoothing_routine is to make a NetCDF file that can be used with the CAM-FV smoothing software
   !
   logical , intent(in) :: lpole,lprepare_fv_smoothing_routine
-  real(r8),dimension(n)  , intent(in) :: terr_in, landfrac_in,sgh_in,sgh30_in,lon, lat, landm_coslat_in
+  real(r8),dimension(n)  , intent(in) :: terr_in, landfrac_in,sgh_in,sgh30_in,lon, lat
   !
   ! Local variables
   !
@@ -1239,7 +1202,7 @@ subroutine wrtncdf_rll(nlon,nlat,lpole,n,terr_in,landfrac_in,sgh_in,sgh30_in,lan
   integer            :: lonid, lonvid
   integer            :: latid, latvid
   integer            :: terrid,nid
-  integer            :: terrdim,landfracid,sghid,sgh30id,landm_coslatid
+  integer            :: terrdim,landfracid,sghid,sgh30id
   integer            :: status    ! return value for error control of netcdf routin
   integer            :: i,j
   integer, dimension(2) :: nc_lat_vid,nc_lon_vid
@@ -1251,8 +1214,8 @@ subroutine wrtncdf_rll(nlon,nlat,lpole,n,terr_in,landfrac_in,sgh_in,sgh30_in,lan
   real(r8),dimension(nlon) :: lonar       ! longitude array
   real(r8),dimension(nlat) :: latar       ! latitude array
   
-  integer, dimension(2) :: htopodim,landfdim,sghdim,sgh30dim,landmcoslatdim
-  real(r8),dimension(n) :: terr, landfrac,sgh,sgh30,landm_coslat
+  integer, dimension(2) :: htopodim,landfdim,sghdim,sgh30dim
+  real(r8),dimension(n) :: terr, landfrac,sgh,sgh30
   
   IF (nlon*nlat.NE.n) THEN
     WRITE(*,*) "inconsistent input for wrtncdf_rll"
@@ -1277,7 +1240,6 @@ subroutine wrtncdf_rll(nlon,nlat,lpole,n,terr_in,landfrac_in,sgh_in,sgh30_in,lan
   sgh=sgh_in
   sgh30 =sgh30_in
   landfrac = landfrac_in
-  landm_coslat = landm_coslat_in
   
   if (lpole) then
     write(*,*) "average pole control volume"
@@ -1349,22 +1311,6 @@ subroutine wrtncdf_rll(nlon,nlat,lpole,n,terr_in,landfrac_in,sgh_in,sgh30_in,lan
     end do
     landfrac(n-(nlon+1):n) = ave/DBLE(nlon)
     
-    !
-    ! North pole - landm_coslat
-    !
-    ave = 0.0
-    do i=1,nlon
-      ave = ave + landm_coslat_in(i)
-    end do
-    landm_coslat(1:nlon) = ave/DBLE(nlon)
-    !
-    ! South pole
-    !
-    ave = 0.0
-    do i=n-(nlon+1),n
-      ave = ave + landm_coslat_in(i)
-    end do
-    landm_coslat(n-(nlon+1):n) = ave/DBLE(nlon)
   end if
   
   
@@ -1420,12 +1366,6 @@ subroutine wrtncdf_rll(nlon,nlat,lpole,n,terr_in,landfrac_in,sgh_in,sgh30_in,lan
   status = nf_def_var (foutid,'SGH30', NF_DOUBLE, 2, sgh30dim, sgh30id)
   if (status .ne. NF_NOERR) call handle_err(status)
   
-  landmcoslatdim(1)=lonid
-  landmcoslatdim(2)=latid
-  
-  status = nf_def_var (foutid,'LANDM_COSLAT', NF_DOUBLE, 2, landmcoslatdim, landm_coslatid)
-  if (status .ne. NF_NOERR) call handle_err(status)
-  
   status = nf_def_var (foutid,'lat', NF_DOUBLE, 1, latid, latvid)
   if (status .ne. NF_NOERR) call handle_err(status)
   
@@ -1455,11 +1395,6 @@ subroutine wrtncdf_rll(nlon,nlat,lpole,n,terr_in,landfrac_in,sgh_in,sgh30_in,lan
        'standard deviation of 30s elevation from 3km cubed-sphere cell average height')
   status = nf_put_att_text   (foutid, sgh30id, 'units'     , 1, 'm')
   status = nf_put_att_text   (foutid, sgh30id, 'filter'    , 4, 'none')
-  
-  status = nf_put_att_double (foutid, landm_coslatid, 'missing_value', nf_double, 1, fillvalue)
-  status = nf_put_att_double (foutid, landm_coslatid, '_FillValue'   , nf_double, 1, fillvalue)
-  status = nf_put_att_text   (foutid, landm_coslatid, 'long_name' , 23, 'smoothed land fraction')
-  status = nf_put_att_text   (foutid, landm_coslatid, 'filter'    , 4, 'none')
   
   status = nf_put_att_double (foutid, landfracid, 'missing_value', nf_double, 1, fillvalue)
   status = nf_put_att_double (foutid, landfracid, '_FillValue'   , nf_double, 1, fillvalue)
@@ -1521,11 +1456,6 @@ subroutine wrtncdf_rll(nlon,nlat,lpole,n,terr_in,landfrac_in,sgh_in,sgh30_in,lan
   if (status .ne. NF_NOERR) call handle_err(status)
   print*,"done writing sgh30 data"
   
-  print*,"writing landm_coslat data",MINVAL(landm_coslat),MAXVAL(landm_coslat)
-  status = nf_put_var_double (foutid, landm_coslatid, landm_coslat)
-  if (status .ne. NF_NOERR) call handle_err(status)
-  print*,"done writing sgh30 data"
-  !
   print*,"writing lat data"
   status = nf_put_var_double (foutid, latvid, latar)
   if (status .ne. NF_NOERR) call handle_err(status)

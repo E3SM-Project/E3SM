@@ -285,14 +285,14 @@ contains
 !-------------------------------------------------------------------------------------
     ! constants:
     elm_idata%bgc%ndecomp_pools          = ndecomp_pools
-    elm_idata%bgc%decomp_pool_name(:)    = decomp_pool_name(:)
-    elm_idata%bgc%floating_cn_ratio(:)   = floating_cn_ratio(:)
-    elm_idata%bgc%floating_cp_ratio(:)   = floating_cp_ratio(:)
+    elm_idata%bgc%decomp_pool_name(1:ndecomp_pools)    = decomp_pool_name(1:ndecomp_pools)
+    elm_idata%bgc%floating_cn_ratio(1:ndecomp_pools)   = floating_cn_ratio(1:ndecomp_pools)
+    elm_idata%bgc%floating_cp_ratio(1:ndecomp_pools)   = floating_cp_ratio(1:ndecomp_pools)
 
-    elm_idata%bgc%initial_cn_ratio(:)    = initial_cn_ratio(:)
-    elm_idata%bgc%initial_cp_ratio(:)    = initial_cp_ratio(:)
-    elm_idata%bgc%decomp_k_pools(:)      = decomp_k_pools(1:ndecomp_pools)
-    elm_idata%bgc%adfactor_kd_pools(:)   = adfactor_kd_pools(1:ndecomp_pools)
+    elm_idata%bgc%initial_cn_ratio(0:ndecomp_pools)    = initial_cn_ratio(0:ndecomp_pools)
+    elm_idata%bgc%initial_cp_ratio(0:ndecomp_pools)    = initial_cp_ratio(0:ndecomp_pools)
+    elm_idata%bgc%decomp_k_pools(1:ndecomp_pools)      = decomp_k_pools(1:ndecomp_pools)
+    elm_idata%bgc%adfactor_kd_pools(1:ndecomp_pools)   = adfactor_kd_pools(1:ndecomp_pools)
 
     do fc = 1, num_soilc
         c = filter_soilc(fc)
@@ -1360,6 +1360,7 @@ contains
 
     ! USES:
     use SoilLittDecompMod          , only: SoilLittDecompAlloc
+    use clm_time_manager           , only: get_step_size
 
     ! ARGUMENTS:
     type(bounds_type)                   , intent(in)    :: bounds
@@ -1381,7 +1382,9 @@ contains
     type(phosphorusflux_type)           , intent(inout) :: phosphorusflux_vars
 
     type(elm_interface_data_type)       , intent(inout) :: elm_interface_data
+    real(r8) :: dt
 
+    dt = real(get_step_size(),r8)
     !-------------------------------------------------------------
     ! STEP-2: (i) pass data from elm_bgc_data to SoilLittDecompAlloc
     call elm_bgc_get_data(elm_interface_data, bounds,       &
@@ -1397,11 +1400,7 @@ contains
     call SoilLittDecompAlloc (bounds, num_soilc, filter_soilc,    &
                num_soilp, filter_soilp,                     &
                canopystate_vars, soilstate_vars,            &
-               temperature_vars, waterstate_vars,           &
-               cnstate_vars, ch4_vars,                      &
-               carbonstate_vars, carbonflux_vars,           &
-               nitrogenstate_vars, nitrogenflux_vars,       &
-               phosphorusstate_vars,phosphorusflux_vars)
+               cnstate_vars, ch4_vars, dt )
 
     ! STEP-2: (iii) update elm_bgc_data from SoilLittDecompAlloc
     call elm_bgc_update_data(elm_interface_data%bgc, bounds, &

@@ -1,0 +1,39 @@
+	<nml_record name="AM_miscellaneous">
+		<nml_option name="config_AM_miscellaneous_enable" type="logical" default_value="false" units="unitless"
+			description="If true, ocean analysis member miscellaneous is called."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_miscellaneous_compute_interval" type="character" default_value="dt" units="unitless"
+			description="Timestamp determining how often analysis member computation should be performed."
+			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
+		/>
+		<nml_option name="config_AM_miscellaneous_output_stream" type="character" default_value="none" units="unitless"
+			description="Name of the stream that the miscellaneous analysis member should be tied to."
+			possible_values="Any existing stream name or 'none'"
+		/>
+		<nml_option name="config_AM_miscellaneous_compute_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member computation occurs on start-up."
+			possible_values="true or false"
+		/>
+		<nml_option name="config_AM_miscellaneous_write_on_startup" type="logical" default_value="false" units="unitless"
+			description="Logical flag determining if an analysis member write occurs on start-up."
+			possible_values="true or false"
+		/>
+	</nml_record>
+	<packages>
+		<package name="miscellaneousAMPKG" description="This package includes variables required for the miscellaneous analysis member."/>
+	</packages>
+	<var_struct name="miscellaneousAM" time_levs="1" packages="miscellaneousAMPKG">
+		<var name="bulkSalinity" type="real" dimensions="nCells Time" units="ppt"
+			description="Bulk salinity of ice in a cell"
+		/>
+		<var name="broadbandAlbedo" type="real" dimensions="nCells Time" units="-"
+			description="snow/sea ice broadband albedo"
+		/>
+		<var name="coriolisStressVertexU" type="real" dimensions="nVertices Time" units=""
+			description="Coriolis stress in U direction"
+		/>
+		<var name="coriolisStressVertexV" type="real" dimensions="nVertices Time" units=""
+			description="Coriolis stress in V direction"
+		/>
+	</var_struct>

@@ -53,7 +53,6 @@ set u_perturb = 1         # size of perturbation (0 or 1)
 set rotate = 0            # rotation, in degrees.  0, 45 and 90
 
 # other defaults:
-set psurf = 0
 set npdg=0
 set nu_p = 0
 set nu_div = -1
@@ -226,7 +225,6 @@ set sfreq = `echo "$sfreq / $tstep " | bc`
 #       set name = HOMME-$caseno-$rindex-$qindex-$resolution-L26-nu$nu-sub$qsplit
 #    endif
 # endif
-# if ( $psurf == 1 ) set name = $name-psurf
 
 set name = jwasp-ne${ne}-nu$nu
 if ( $nu != $nu_div ) then
@@ -258,7 +256,7 @@ set run = $wdir/$name
 cd $input
 rm -f $run/explicit.nl
 sed s/NE/$ne/ explicit26.nl.sed |\
-sed s/TSTEP/"$tstep qsplit=$qsplit rsplit=$rsplit psurf_vis=$psurf  "/ |\
+sed s/TSTEP/"$tstep qsplit=$qsplit rsplit=$rsplit "/ |\
 sed s/SFREQ/$sfreq/ |\
 sed s/tracer_advection_formulation.\*/"tstep_type = $RK2  hypervis_subcycle = $hsub"/ |\
 sed s/NU1/$nu/ | sed s/NU2/$nu_q/ | \

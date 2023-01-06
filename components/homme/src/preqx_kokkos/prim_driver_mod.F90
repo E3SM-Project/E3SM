@@ -8,6 +8,7 @@ module prim_driver_mod
   use element_mod,          only : element_t
   use prim_driver_base,     only : deriv1, smooth_topo_datasets
   use prim_cxx_driver_base, only : prim_init1, prim_finalize
+  use physical_constants, only : rearth
 
   implicit none
 
@@ -57,7 +58,8 @@ contains
                                  tstep_type, statefreq, rsplit, qsplit, ftype,          &
                                  prescribed_wind, limiter_option, disable_diagnostics,  &
                                  nu, nu_p, nu_q, nu_s, nu_div, nu_top, moisture,        &
-                                 hypervis_order, hypervis_scaling, hypervis_subcycle
+                                 hypervis_order, hypervis_scaling, hypervis_subcycle,   &
+                                 dt_remap_factor, dt_tracer_factor
     use preqx_f2c_mod,    only : init_reference_element_c, init_simulation_params_c, &
                                  init_hvcoord_c, init_time_level_c, init_elements_c
     !
@@ -69,7 +71,6 @@ contains
     !
     ! Local(s)
     !
-    logical (kind=c_bool) :: use_semi_lagrange_transport
     real (kind=real_kind), dimension(np,np), target :: dvv, elem_mp
 
     type (c_ptr) :: hybrid_am_ptr, hybrid_ai_ptr, hybrid_bm_ptr, hybrid_bi_ptr
@@ -80,7 +81,6 @@ contains
     call init_reference_element_c(c_loc(dvv),c_loc(elem_mp))
 
     ! Fill the simulation params structures in C++
-    use_semi_lagrange_transport = transport_alg > 0
     call init_simulation_params_c (vert_remap_q_alg, limiter_option, rsplit, qsplit, tstep_type,  &
                                    qsize, statefreq, nu, nu_p, nu_q, nu_s, nu_div, nu_top,        &
                                    hypervis_order, hypervis_subcycle, hypervis_scaling, ftype,    &
@@ -88,7 +88,8 @@ contains
                                    LOGICAL(moisture/="dry",c_bool),                               &
                                    LOGICAL(disable_diagnostics,c_bool),                           &
                                    LOGICAL(use_cpstar==1,c_bool),                                 &
-                                   LOGICAL(use_semi_lagrange_transport,c_bool))
+                                   transport_alg,                                                 &
+                                   dt_remap_factor, dt_tracer_factor, rearth)
 
     ! Initialize time level structure in C++
     call init_time_level_c(tl%nm1, tl%n0, tl%np1, tl%nstep, tl%nstep0)
@@ -201,7 +202,7 @@ contains
 
   end subroutine prim_init_kokkos_functors
 
-  subroutine prim_run_subcycle(elem, hybrid, nets, nete, dt, single_column, tl, hvcoord,nsubstep)
+  subroutine prim_run_subcycle(elem, hybrid, nets, nete, dt, single_column, tl, hvcoord, nsplit_iteration)
     use iso_c_binding,  only : c_int, c_ptr, c_loc
     use control_mod,    only : qsplit, rsplit, statefreq
     use dimensions_mod, only : nelemd
@@ -217,12 +218,12 @@ contains
     use perf_mod,       only: t_startf, t_stopf
     use prim_state_mod, only: prim_printstate
     interface
-      subroutine prim_run_subcycle_c(tstep,nstep,nm1,n0,np1,next_output_step) bind(c)
+      subroutine prim_run_subcycle_c(tstep,nstep,nm1,n0,np1,next_output_step,nsplit_iteration) bind(c)
         use iso_c_binding, only: c_int, c_double
         !
         ! Inputs
         !
-        integer(kind=c_int),  intent(in) :: nstep, nm1, n0, np1, next_output_step
+        integer(kind=c_int),  intent(in) :: nstep, nm1, n0, np1, next_output_step, nsplit_iteration
         real (kind=c_double), intent(in) :: tstep
       end subroutine prim_run_subcycle_c
 
@@ -250,7 +251,7 @@ contains
     real(kind=real_kind), intent(in)    :: dt                           ! "timestep dependent" timestep
     logical,              intent(in)    :: single_column
     type (TimeLevel_t),   intent(inout) :: tl
-    integer,              intent(in)    :: nsubstep                     ! nsubstep = 1 .. nsplit
+    integer,              intent(in)    :: nsplit_iteration             ! nsplit_iteration = 1 .. nsplit
     !
     ! Locals
     !
@@ -273,7 +274,7 @@ contains
       compute_diagnostics = .true.
     endif
 
-    call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nextOutputStep)
+    call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nextOutputStep,nsplit_iteration)
 
     ! Set final timelevels from C into Fortran structure
     tl%nstep = nstep_c

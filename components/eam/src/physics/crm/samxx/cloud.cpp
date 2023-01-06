@@ -1,12 +1,12 @@
 #include "cloud.h"
 
 void cloud(real5d &q, int ind_q, real5d &qp, int ind_qp) {
-  auto &tabs  = ::tabs;
-  auto &gamaz = ::gamaz;
-  auto &pres  = ::pres;
-  auto &qn    = ::qn;
-  auto &t     = ::t;
-  auto &ncrms = ::ncrms;
+  YAKL_SCOPE( tabs  , ::tabs );
+  YAKL_SCOPE( gamaz , ::gamaz );
+  YAKL_SCOPE( pres  , ::pres );
+  YAKL_SCOPE( qn    , ::qn );
+  YAKL_SCOPE( t     , ::t );
+  YAKL_SCOPE( ncrms , ::ncrms );
 
   real constexpr an   = 1.0/(tbgmax-tbgmin);
   real constexpr bn   = tbgmin * an;

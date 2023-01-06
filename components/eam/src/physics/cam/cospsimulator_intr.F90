@@ -986,6 +986,12 @@ CONTAINS
        call addfld ('CLWMODIS',horiz_only,'A','%','MODIS Liquid Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
        ! float climodis ( time, loc )
        call addfld ('CLIMODIS',horiz_only,'A','%','MODIS Ice Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
+       ! float cltmodisic ( time, loc )
+       call addfld ('CLTMODISIC',horiz_only,'A','%','In-cloud MODIS Total Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
+       ! float clwmodisic ( time, loc )
+       call addfld ('CLWMODISIC',horiz_only,'A','%','In-cloud MODIS Liquid Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
+       ! float climodisic ( time, loc )
+       call addfld ('CLIMODISIC',horiz_only,'A','%','In-cloud MODIS Ice Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
        ! float clhmodis ( time, loc )
        call addfld ('CLHMODIS',horiz_only,'A','%','MODIS High Level Cloud Fraction',flag_xyfill=.true., fill_value=R_UNDEF)
        ! float clmmodis ( time, loc )
@@ -1037,6 +1043,9 @@ CONTAINS
        call add_default ('CLTMODIS',cosp_histfile_num,' ')
        call add_default ('CLWMODIS',cosp_histfile_num,' ')
        call add_default ('CLIMODIS',cosp_histfile_num,' ')
+       call add_default ('CLTMODISIC',cosp_histfile_num,' ')
+       call add_default ('CLWMODISIC',cosp_histfile_num,' ')
+       call add_default ('CLIMODISIC',cosp_histfile_num,' ')
        call add_default ('CLHMODIS',cosp_histfile_num,' ')
        call add_default ('CLMMODIS',cosp_histfile_num,' ')
        call add_default ('CLLMODIS',cosp_histfile_num,' ')
@@ -1346,7 +1355,7 @@ CONTAINS
     integer, parameter :: nf_calipso=28                  ! number of calipso outputs
     integer, parameter :: nf_isccp=9                     ! number of isccp outputs
     integer, parameter :: nf_misr=1                      ! number of misr outputs
-    integer, parameter :: nf_modis=20                    ! number of modis outputs
+    integer, parameter :: nf_modis=23                    ! number of modis outputs
     
     ! Cloudsat outputs
     character(len=max_fieldname_len),dimension(nf_radar),parameter ::          &
@@ -1382,6 +1391,7 @@ CONTAINS
     ! MODIS outputs
     character(len=max_fieldname_len),dimension(nf_modis) :: &
          fname_modis=(/'CLTMODIS    ','CLWMODIS    ','CLIMODIS    ','CLHMODIS    ','CLMMODIS    ',&
+                       'CLTMODISIC  ','CLWMODISIC  ','CLIMODISIC  ',&
                        'CLLMODIS    ','TAUTMODIS   ','TAUWMODIS   ','TAUIMODIS   ','TAUTLOGMODIS',&
                        'TAUWLOGMODIS','TAUILOGMODIS','REFFCLWMODIS','REFFCLIMODIS',&
                        'PCTMODIS    ','LWPMODIS    ','IWPMODIS    ','CLMODIS     ','CLRIMODIS   ',&
@@ -1526,6 +1536,9 @@ CONTAINS
     real(r8) :: cltmodis(pcols)
     real(r8) :: clwmodis(pcols)
     real(r8) :: climodis(pcols)
+    real(r8) :: cltmodisic(pcols)
+    real(r8) :: clwmodisic(pcols)
+    real(r8) :: climodisic(pcols)
     real(r8) :: clhmodis(pcols)
     real(r8) :: clmmodis(pcols)
     real(r8) :: cllmodis(pcols)
@@ -1664,6 +1677,9 @@ CONTAINS
     cltmodis(1:pcols)                                = R_UNDEF
     clwmodis(1:pcols)                                = R_UNDEF
     climodis(1:pcols)                                = R_UNDEF
+    cltmodisic(1:pcols)                              = R_UNDEF
+    clwmodisic(1:pcols)                              = R_UNDEF
+    climodisic(1:pcols)                              = R_UNDEF
     clhmodis(1:pcols)                                = R_UNDEF
     clmmodis(1:pcols)                                = R_UNDEF
     cllmodis(1:pcols)                                = R_UNDEF
@@ -2086,7 +2102,6 @@ CONTAINS
     cospstateIN%phalf(1:ncol,1)                = 0._r8
     cospstateIN%phalf(1:ncol,2:pver+1)         = pbot(1:ncol,pver:1:-1)  
     cospstateIN%hgt_matrix                     = zmid(1:ncol,1:pver) 
-    cospstateIN%hgt_matrix_half(1:ncol,pver+1) = 0._r8
     cospstateIN%hgt_matrix_half(1:ncol,1:pver) = zbot(1:ncol,pver:1:-1) 
     cospstateIN%surfelev(1:ncol)               = zbot(1:ncol,1)
     call t_stopf("construct_cospstateIN")
@@ -2741,7 +2756,31 @@ CONTAINS
           reffclimodis(:ncol) = reffclimodis(:ncol)*climodis(:ncol)
        end where
        call outfld('REFFCLIMODIS',reffclimodis    ,pcols,lchnk)
+        
+       where (reffclwmodis(:ncol) .eq. R_UNDEF) 
+          clwmodisic(:ncol) = R_UNDEF
+       elsewhere
+          !! cloud fraction with retrieved reffclwmodis
+          clwmodisic(:ncol) = clwmodis(:ncol)
+       end where
+       call outfld('CLWMODISIC',clwmodisic   ,pcols,lchnk)
        
+       where (reffclimodis(:ncol)  .eq. R_UNDEF)
+          climodisic(:ncol) = R_UNDEF
+       elsewhere
+          !! cloud fraction with retrieved reffclimodis
+          climodisic(:ncol) = climodis(:ncol)
+       end where
+       call outfld('CLIMODISIC',climodisic    ,pcols,lchnk)
+
+       where (tautmodis(:ncol) .eq. R_UNDEF)
+          cltmodisic(:ncol) = R_UNDEF
+       elsewhere
+          !! cloud fraction with retrieved tautmodis
+          cltmodisic(:ncol) = cltmodis(:ncol)
+       end where
+       call outfld('CLTMODISIC',cltmodisic    ,pcols,lchnk)
+ 
        where ((pctmodis(:ncol)  .eq. R_UNDEF) .or. ( cltmodis(:ncol) .eq. R_UNDEF))
           pctmodis(:ncol) = R_UNDEF
        elsewhere
@@ -3334,7 +3373,7 @@ CONTAINS
              y%v_sfc(npoints),y%lat(npoints),y%lon(nPoints),y%emis_sfc(nchan),           &
              y%cloudIce(nPoints,nLevels),y%cloudLiq(nPoints,nLevels),y%surfelev(nPoints),&
              y%fl_snow(nPoints,nLevels),y%fl_rain(nPoints,nLevels),y%seaice(npoints),    &
-             y%tca(nPoints,nLevels),y%hgt_matrix_half(npoints,nlevels+1))
+             y%tca(nPoints,nLevels),y%hgt_matrix_half(npoints,nlevels))
 
   end subroutine construct_cospstateIN
   ! ######################################################################################

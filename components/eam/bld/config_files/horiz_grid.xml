@@ -75,6 +75,7 @@
 <horiz_grid dyn="se" hgrid="ne0np4_northamericax4v1.pg2"      ncol="57816"  csne="0" csnp="4" npg="2" />
 <horiz_grid dyn="se" hgrid="ne0np4_antarcticax4v1"            ncol="109883" csne="0" csnp="4" npg="0" />
 <horiz_grid dyn="se" hgrid="ne0np4_antarcticax4v1.pg2"        ncol="48836"  csne="0" csnp="4" npg="2" />
+<horiz_grid dyn="se" hgrid="ne0np4_arcticx4v1.pg2"            ncol="97200"  csne="0" csnp="4" npg="2" />
 <horiz_grid dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"      ncol="71912"  csne="0" csnp="4" npg="0" />
 <horiz_grid dyn="se" hgrid="ne0np4_enax4v1"                   ncol="78788"  csne="0" csnp="4" npg="0" />
 <horiz_grid dyn="se" hgrid="ne0np4_twpx4v1"                   ncol="81434"  csne="0" csnp="4" npg="0" />

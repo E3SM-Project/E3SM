@@ -1,0 +1,8 @@
+.mpas_core_seaice
+default_inputs/
+namelist.seaice
+seaice_model
+src/Registry_processed.xml
+src/default_inputs/
+src/inc/
+streams.seaice
