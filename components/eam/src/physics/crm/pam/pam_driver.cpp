@@ -85,7 +85,7 @@ extern "C" void pam_driver() {
     // parallel_for("set perturbation seeds", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
     //   seeds(iens) = gcolp(iens);
     // });
-    modules::perturb_temperature( coupler , gcolp ); 
+    //modules::perturb_temperature( coupler , gcolp ); 
   }
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
@@ -97,7 +97,7 @@ extern "C" void pam_driver() {
     if (etime_crm + crm_dt > gcm_dt) { crm_dt = gcm_dt - etime_crm; }
 
     coupler.run_module( "apply_gcm_forcing_tendencies" , modules::apply_gcm_forcing_tendencies );
-    coupler.run_module( "apply_rad_tendencies"         , modules::apply_rad_tendencies );
+    //coupler.run_module( "apply_rad_tendencies"         , modules::apply_rad_tendencies );
     coupler.run_module( "sponge_layer"                 , modules::sponge_layer );
     coupler.run_module( "dycore"                       , [&] (pam::PamCoupler &coupler) {dycore.timeStep(coupler);} );
     coupler.run_module( "sgs"                          , [&] (pam::PamCoupler &coupler) {sgs   .timeStep(coupler);} );
