@@ -47,10 +47,13 @@ module scamMod
   real(r8), allocatable, public :: scm_dgnum( : ),scm_std( : ),&
                                    scm_num( :), scm_div(:,:)
 
+  integer, allocatable, public :: tsec(:)
+  integer, public :: ntime
+
   integer, parameter :: num_switches = 20
   integer, parameter :: max_path_len = 128
   
-  integer bdate
+  integer bdate, last_date, last_sec
 
   logical, public ::  single_column         ! Using IOP file or not
   logical, public ::  use_iop               ! Using IOP file or not
@@ -441,18 +444,14 @@ subroutine setiopupdate_init
 
    integer NCID,i
    integer tsec_varID, time_dimID
-   integer, allocatable :: tsec(:)
-   integer  ntime
    integer bdate_varID
    integer STATUS
-   integer next_date, next_sec, last_date, last_sec
+   integer next_date, next_sec
    integer next_date_print, next_sec_print
    integer :: ncsec,ncdate                      ! current time of day,date
    integer :: yr, mon, day                      ! year, month, and day component
    integer :: start_ymd,start_tod
    logical :: doiter
-   save tsec, ntime
-   save last_date, last_sec
 !------------------------------------------------------------------------------
 
 !     
@@ -534,8 +533,6 @@ subroutine setiopupdate_init
        write(iulog,*) ' IOP end is          ',last_date,' and ',last_sec,'seconds'
        call endrun
     endif
-    
-    write(*,*) 'FUCK', bdate
 
     doiopupdate = .true.
 
@@ -562,18 +559,14 @@ subroutine setiopupdate
 
    integer NCID,i
    integer tsec_varID, time_dimID
-   integer, allocatable :: tsec(:)
-   integer  ntime
    integer bdate_varID
    integer STATUS
-   integer next_date, next_sec, last_date, last_sec
+   integer next_date, next_sec
    integer next_date_print, next_sec_print
    integer :: ncsec,ncdate                      ! current time of day,date
    integer :: yr, mon, day                      ! year, month, and day component
    integer :: start_ymd,start_tod
    logical :: doiter
-   save tsec, ntime
-   save last_date, last_sec
 !------------------------------------------------------------------------------
 
 !------------------------------------------------------------------------------
@@ -582,8 +575,6 @@ subroutine setiopupdate
 
    call get_curr_date(yr, mon, day, ncsec)
    ncdate = yr*10000 + mon*100 + day
-   
-   write(*,*) 'FUCKSHIT', yr, mon, day, ncsec, bdate
 
    doiopupdate = .false.
    iopTimeIdx = iopTimeIdx
@@ -606,7 +597,7 @@ subroutine setiopupdate
    !  IOP timestep.  
    if (iopTimeIdx .gt. ntime) then
      iopTimeIdx = ntime
-   endif      
+   endif
 
    if (doiopupdate) then
 
@@ -674,7 +665,7 @@ end subroutine setiopupdate
    integer nlev, nmod, nsps
    integer total_levs
 
-   integer bdate, ntime, thelev
+   integer bdate, thelev
    integer, allocatable :: tsec(:)
    integer k, m
    integer icldliq,icldice
