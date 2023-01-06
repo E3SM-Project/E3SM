@@ -1179,7 +1179,6 @@ contains
        call update_hlm_dynamics(this%fates(nc)%nsites, &
             this%fates(nc)%sites,  &
             this%f2hmap(nc)%fcolumn, &
-            this%fates(nc)%bc_in, &
             this%fates(nc)%bc_out )
 
        !---------------------------------------------------------------------------------
