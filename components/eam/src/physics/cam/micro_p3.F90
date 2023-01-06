@@ -86,6 +86,14 @@ module micro_p3
   ! lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
   real(rtype), protected, dimension(300,10) :: vn_table_vals,vm_table_vals,revap_table_vals
 
+!<shanyp 20221218
+! set lookup tables as threadprivate variables to see if this change can address the threading issue.
+!  !$OMP THREADPRIVATE(ice_table_vals,collect_table_vals,mu_r_table_vals,vn_table_vals,vm_table_vals,revap_table_vals)
+! !$OMP THREADPRIVATE(ice_table_vals) 
+ !,vn_table_vals,vm_table_vals)
+!shanyp 20221218>
+
+
   type realptr
      real(rtype), dimension(:), pointer :: p
   end type realptr
@@ -2608,11 +2616,13 @@ table_val_qi_fallspd,acn,lamc, mu_c,qc_incld,qccol,    &
    real(rtype), intent(out) :: vtrmi1
    real(rtype), intent(out) :: rho_qm_cloud
 
-   real(rtype) :: iTc = 0.0_rtype
-   real(rtype) :: Vt_qc = 0.0_rtype
-   real(rtype) :: D_c  = 0.0_rtype
-   real(rtype) :: V_impact = 0.0_rtype
-   real(rtype) :: Ri = 0.0_rtype
+   real(rtype) :: iTc, Vt_qc,  D_c, V_impact, Ri
+
+   iTc = 0.0_rtype
+   Vt_qc = 0.0_rtype
+   D_c  = 0.0_rtype
+   V_impact = 0.0_rtype
+   Ri = 0.0_rtype
 
    ! if (qi_incld(i,k).ge.qsmall .and. t_atm(i,k).lt.T_zerodegc) then
    !  NOTE:  condition applicable for cloud only; modify when rain is added back
