@@ -1,14 +1,14 @@
 module scamMod
 !----------------------------------------------------------------------- 
-!BOP
 !
-! !MODULE: scamMod
+! Module for routines related to reading information for the
+! single column model (SCM)
 ! 
-! !DESCRIPTION: 
-! scam specific routines and data
-!
-! !USES:
-!
+! Originally adapted from CAM in 2017.
+! Modified and updated for E3SM by Peter Bogenschutz 2017-present
+! Contact: bogenschutz1@llnl.gov
+!-----------------------------------------------------------------------
+
   use shr_kind_mod, only: r8 => shr_kind_r8, i8 => shr_kind_i8
   use pmgrid,       only: plon,plev,plevp,plat
   use wrap_nf
@@ -55,7 +55,6 @@ module scamMod
 
   logical, public ::  single_column         ! Using IOP file or not
   logical, public ::  use_iop               ! Using IOP file or not
-  logical, public ::  scm_diurnal_avg       ! If using diurnal averaging or not +PAB look into
   logical, public ::  scm_crm_mode          ! column radiation mode
   logical, public ::  isrestart             ! If this is a restart step or not
   logical, public ::  l_uvphys              ! If true, update u/v after TPHYS
@@ -188,7 +187,7 @@ module scamMod
 subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
         single_column_out,scm_iop_srf_prop_out, scm_relaxation_out, &
         scm_relaxation_low_out, scm_relaxation_high_out, &
-        scm_diurnal_avg_out, scm_crm_mode_out, scm_observed_aero_out, &
+        scm_crm_mode_out, scm_observed_aero_out, &
         precip_off_out, scm_clubb_iop_name_out, scm_zero_non_iop_tracers_out)
 !-----------------------------------------------------------------------
    real(r8), intent(out), optional :: scmlat_out,scmlon_out
@@ -196,7 +195,6 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    logical, intent(out), optional ::  single_column_out
    logical, intent(out), optional ::  scm_iop_srf_prop_out
    logical, intent(out), optional ::  scm_relaxation_out
-   logical, intent(out), optional ::  scm_diurnal_avg_out
    logical, intent(out), optional ::  scm_crm_mode_out
    logical, intent(out), optional ::  scm_observed_aero_out
    logical, intent(out), optional ::  precip_off_out
@@ -213,7 +211,6 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    if ( present(scm_relaxation_out) )   scm_relaxation_out  = .false.
    if ( present(scm_relaxation_low_out) ) scm_relaxation_low_out = 1050.0_r8
    if ( present(scm_relaxation_high_out) ) scm_relaxation_high_out = 0.e3_r8   
-   if ( present(scm_diurnal_avg_out) )  scm_diurnal_avg_out = .false.
    if ( present(scm_crm_mode_out) )     scm_crm_mode_out  = .false.
    if ( present(scm_observed_aero_out)) scm_observed_aero_out = .false.
    if ( present(precip_off_out))        precip_off_out = .false.
@@ -225,7 +222,7 @@ end subroutine scam_default_opts
 subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                          scm_iop_srf_prop_in, scm_relaxation_in, &
                          scm_relaxation_low_in, scm_relaxation_high_in, &
-                         scm_diurnal_avg_in, scm_crm_mode_in, scm_observed_aero_in, &
+                         scm_crm_mode_in, scm_observed_aero_in, &
                          precip_off_in, scm_clubb_iop_name_in, &
                          scm_zero_non_iop_tracers_in)
 !-----------------------------------------------------------------------
@@ -234,7 +231,6 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   logical, intent(in), optional        :: single_column_in
   logical, intent(in), optional        :: scm_iop_srf_prop_in
   logical, intent(in), optional        :: scm_relaxation_in
-  logical, intent(in), optional        :: scm_diurnal_avg_in
   logical, intent(in), optional        :: scm_crm_mode_in
   logical, intent(in), optional        :: scm_observed_aero_in
   logical, intent(in), optional        :: precip_off_in
@@ -264,10 +260,6 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   
   if (present (scm_relaxation_high_in)) then
      scm_relaxation_high=scm_relaxation_high_in
-  endif   
-  
-  if (present (scm_diurnal_avg_in)) then
-     scm_diurnal_avg=scm_diurnal_avg_in
   endif
   
   if (present (scm_crm_mode_in)) then

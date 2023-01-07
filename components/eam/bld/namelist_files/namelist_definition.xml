@@ -4047,12 +4047,6 @@ Column radiation mode.
 Default: FALSE
 </entry>
 
-<entry id="scm_diurnal_avg" type="logical" category="scam"
-       group="cam_inparm" valid_values="">
-If using diurnal averaging or not.
-Default: FALSE
-</entry>
-
 <entry id="scm_iop_srf_prop" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Use the specified surface properties.
