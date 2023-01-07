@@ -30,7 +30,6 @@ module scamMod
 !
 ! !PUBLIC INTERFACES:
 !
-  public scam_clm_default_opts    ! SCAM default run-time options for CLM
   public scam_default_opts        ! SCAM default run-time options 
   public scam_setopts             ! SCAM run-time options 
   public setiopupdate_init
@@ -50,22 +49,15 @@ module scamMod
   integer, allocatable, public :: tsec(:)
   integer, public :: ntime
 
-  integer, parameter :: num_switches = 20
   integer, parameter :: max_path_len = 128
   
   integer bdate, last_date, last_sec
 
   logical, public ::  single_column         ! Using IOP file or not
   logical, public ::  use_iop               ! Using IOP file or not
-  logical, public ::  use_analysis
-  logical, public ::  use_saveinit
-  logical, public ::  use_pert_init         ! perturb initial values
-  logical, public ::  use_pert_frc          ! perturb forcing 
-  logical, public ::  scm_diurnal_avg       ! If using diurnal averaging or not
+  logical, public ::  scm_diurnal_avg       ! If using diurnal averaging or not +PAB look into
   logical, public ::  scm_crm_mode          ! column radiation mode
-  logical, public ::  use_userdata
   logical, public ::  isrestart             ! If this is a restart step or not
-  logical, public ::  switch(num_switches)  ! Logical flag settings from GUI
   logical, public ::  l_uvphys              ! If true, update u/v after TPHYS
   logical, public ::  l_uvadvect            ! If true, T, U & V will be passed to SLT
   logical, public ::  l_conv                ! use flux divergence terms for T and q?     
@@ -78,22 +70,7 @@ module scamMod
   integer :: closelatidx,closelonidx,latid,lonid,levid,timeid
   real(r8):: closelat,closelon
 
-  character*(max_path_len), public ::  modelfile
-  character*(max_path_len), public ::  analysisfile
-  character*(max_path_len), public ::  sicfile
-  character*(max_path_len), public ::  userfile
-  character*(max_path_len), public ::  sstfile
-  character*(max_path_len), public ::  lsmpftfile
-  character*(max_path_len), public ::  pressfile
-  character*(max_path_len), public ::  topofile
-  character*(max_path_len), public ::  ozonefile
   character*(max_path_len), public ::  iopfile
-  character*(max_path_len), public ::  absemsfile
-  character*(max_path_len), public ::  aermassfile
-  character*(max_path_len), public ::  aeropticsfile
-  character*(max_path_len), public ::  timeinvfile
-  character*(max_path_len), public ::  lsmsurffile
-  character*(max_path_len), public ::  lsminifile
 
   real(r8), public ::  fixmascam
   real(r8), public ::  betacam
@@ -369,11 +346,6 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                  if (ret/=NF90_NOERR) then
                     call endrun('SCAM_SETOPTS: error reading latitude variable from iopfile')
                  end if
-!!$                 if (ioplon-scmlon.gt.5.) then
-!!$                    write(iulog,*)'WARNING: SCMLON/SCMLAT specified in namelist is different'
-!!$                    write(iulog,*)'from the IOP file lat,lon by more than 5 degrees'
-!!$                    write(iulog,*)'Using specified SCMLAT and SCMLON for all boundary data'
-!!$                 endif
                  call shr_scam_GetCloseLatLon(ncid,scmlat,scmlon,ioplat,ioplon,latidx,lonidx)
                  if (ioplon.lt. 0._r8) ioplon=ioplon+360._r8
                  scmlat=ioplat
@@ -392,13 +364,6 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
            call endrun('namelist variables SCMLAT and SCMLON must be specified for single column mode')
         endif
      endif
-!!jt fix this for crm
-!!jt   if(scm_crm_modes) then
-!!jt      iyear_AD_out     = (base_date-mod(base_date,10000))/10000 ! year AD to calculate the orbital parameters for.
-!!jt   else
-!!jt      iyear_AD_out     = 1950
-!!jt   end if
-
   else
      if (plon ==1 .and. plat ==1) then 
         call endrun('SCAM_SETOPTS: single_column namelist option must be set to true when running in single column mode')
@@ -407,20 +372,6 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
 
 
 end subroutine scam_setopts
-!
-!-----------------------------------------------------------------------
-!
-
-subroutine scam_clm_default_opts( pftfile_out, srffile_out, inifile_out )
-!-----------------------------------------------------------------------
-   character(len=*), intent(out) :: pftfile_out
-   character(len=*), intent(out) :: srffile_out
-   character(len=*), intent(out) :: inifile_out
-
-   pftfile_out = lsmpftfile
-   inifile_out = lsminifile
-   srffile_out = lsmsurffile
-end subroutine scam_clm_default_opts
 
 subroutine setiopupdate_init
 
@@ -501,6 +452,7 @@ subroutine setiopupdate_init
     if ( STATUS .NE. NF90_NOERR )then
        write(iulog,*)'ERROR - setiopupdate.F:Cant get variable bdate'
     endif
+
 !   Close the netCDF file
     STATUS = NF90_CLOSE( NCID )
 !     
@@ -509,7 +461,6 @@ subroutine setiopupdate_init
     call timemgr_time_inc(bdate, 0, last_date, last_sec, inc_s=tsec(ntime))
 !     
 !   set the iop dataset index
-!    
     iopTimeIdx=0
     do i=1,ntime           ! set the first ioptimeidx
        call timemgr_time_inc(bdate, 0, next_date, next_sec, inc_s=tsec(i))
@@ -600,7 +551,6 @@ subroutine setiopupdate
    endif
 
    if (doiopupdate) then
-
        write(iulog,*) 'iopTimeIdx (IOP index) =', iopTimeIdx
        write(iulog,*) 'nstep = ',get_nstep()
        write(iulog,*) 'ncdate (E3SM date) =',ncdate,' ncsec=',ncsec
@@ -615,12 +565,8 @@ subroutine setiopupdate
 !
    if ( ncdate .gt. last_date .or. (ncdate .eq. last_date &
       .and. ncsec .gt. last_sec))  then
-      if ( .not. use_userdata ) then
-         write(iulog,*)'ERROR - setiopupdate.c:Reached the end of the time varient dataset'
-         stop
-      else
-         doiopupdate = .false.
-      end if
+      write(iulog,*)'ERROR - setiopupdate.c:Reached the end of the time varient dataset'
+      stop
    endif
 
 #if DEBUG > 1
@@ -939,12 +885,8 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr ) then
        have_ps = .false.
        write(iulog,*)'Could not find variable Ps'
-       if ( .not. use_userdata ) then
-         status = NF90_CLOSE( ncid )
-         return
-       else
-         if ( get_nstep() .eq. 0 ) write(iulog,*) 'Using value from Analysis Dataset'
-       endif
+       status = NF90_CLOSE( ncid )
+       return
      else
        !+ PAB, check the time levels for all variables
        status = nf90_get_var(ncid, varid, psobs, strt4)
@@ -1012,12 +954,8 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr ) then
        have_t = .false.
        write(iulog,*)'Could not find variable T'
-       if ( .not. use_userdata ) then
-         status = NF90_CLOSE( ncid )
-         return
-       else
-         write(iulog,*) 'Using value from Analysis Dataset'
-       endif
+       status = NF90_CLOSE( ncid )
+       return
 !     
 !     set T3 to Tobs on first time step
 !     
@@ -1060,12 +998,8 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr ) then
        have_q = .false.
        write(iulog,*)'Could not find variable q'
-       if ( .not. use_userdata ) then
-         status = nf90_close( ncid )
-         return
-       else
-         write(iulog,*) 'Using values from Analysis Dataset'
-       endif
+       status = nf90_close( ncid )
+       return
      else
        have_q=.true.
      endif
@@ -1162,11 +1096,9 @@ endif !scm_observed_aero
           have_srf, srf(1), fill_ends, scm_crm_mode, &
          dplevs, nlev,psobs, hyam, hybm, tmpdata, status )
        if ( status .ne. nf90_noerr ) then
-!         have_cnst(m) = .false.
          alphacam(m)=0._r8
        else
          alphacam(m)=tmpdata(1)
-!        have_cnst(m) = .true.
        endif
 
      end do
@@ -1414,7 +1346,6 @@ endif !scm_observed_aero
 !  Analagous changes made for the surface heat flux
 
      call shr_sys_flush( iulog )
-
 !
 !     fill in 3d forcing variables if we have both horizontal
 !     and vertical components, but not the 3d
@@ -1444,13 +1375,6 @@ endif !scm_observed_aero
        use_3dfrc = .true.
      endif
      call shr_sys_flush( iulog )
-
-!   status =  nf90_inq_varid( ncid, 'CLAT', varid   )
-!   if ( status .eq. nf90_noerr ) then
-!      call wrap_get_vara_realx (ncid,varid,strt4,cnt4,clat)
-!      clat_p(1)=clat(1)
-!      latdeg(1) = clat(1)*45._r8/atan(1._r8)
-!   endif
 
      status =  nf90_inq_varid( ncid, 'beta', varid   )
      if ( status .ne. nf90_noerr ) then
@@ -1491,12 +1415,8 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr ) then
         have_omega = .false.
         write(iulog,*)'Could not find variable omega'
-        if ( .not. use_userdata ) then
-          status = nf90_close( ncid )
-          return
-        else
-          write(iulog,*) 'Using value from Analysis Dataset'
-        endif
+        status = nf90_close( ncid )
+        return
      else
         have_omega = .true.
      endif     
