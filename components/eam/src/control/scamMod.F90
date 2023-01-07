@@ -57,15 +57,9 @@ module scamMod
   logical, public ::  use_iop               ! Using IOP file or not
   logical, public ::  scm_crm_mode          ! column radiation mode
   logical, public ::  isrestart             ! If this is a restart step or not
-  logical, public ::  l_uvphys              ! If true, update u/v after TPHYS
-  logical, public ::  l_uvadvect            ! If true, T, U & V will be passed to SLT
-  logical, public ::  l_conv                ! use flux divergence terms for T and q?     
-  logical, public ::  l_divtr               ! use flux divergence terms for constituents?
-  logical, public ::  l_diag                ! do we want available diagnostics?
 
   integer, public ::  error_code            ! Error code from netCDF reads
   integer, public ::  initTimeIdx
-  integer, public ::  seedval
   integer :: closelatidx,closelonidx,latid,lonid,levid,timeid
   real(r8):: closelat,closelon
 
@@ -170,8 +164,6 @@ module scamMod
   logical*4, public ::  use_replay    ! use e3sm generated forcing 
   logical*4, public ::  use_3dfrc     ! use 3d forcing
   logical*4, public ::  have_heat_glob ! dataset contains global energy fixer
-
-  character(len=200), public ::  scm_clubb_iop_name   ! IOP name for CLUBB
   
   save bdate
 
@@ -188,7 +180,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
         single_column_out,scm_iop_srf_prop_out, scm_relaxation_out, &
         scm_relaxation_low_out, scm_relaxation_high_out, &
         scm_crm_mode_out, scm_observed_aero_out, &
-        precip_off_out, scm_clubb_iop_name_out, scm_zero_non_iop_tracers_out)
+        precip_off_out, scm_zero_non_iop_tracers_out)
 !-----------------------------------------------------------------------
    real(r8), intent(out), optional :: scmlat_out,scmlon_out
    character*(max_path_len), intent(out), optional ::  iopfile_out
@@ -200,7 +192,6 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    logical, intent(out), optional ::  precip_off_out
    real(r8), intent(out), optional ::  scm_relaxation_low_out
    real(r8), intent(out), optional ::  scm_relaxation_high_out   
-   character(len=*), intent(out), optional ::  scm_clubb_iop_name_out
    logical, intent(out), optional ::  scm_zero_non_iop_tracers_out
 
    if ( present(scmlat_out) )           scmlat_out     = -999._r8
@@ -214,7 +205,6 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    if ( present(scm_crm_mode_out) )     scm_crm_mode_out  = .false.
    if ( present(scm_observed_aero_out)) scm_observed_aero_out = .false.
    if ( present(precip_off_out))        precip_off_out = .false.
-   if ( present(scm_clubb_iop_name_out) ) scm_clubb_iop_name_out  = ' '
    if ( present(scm_zero_non_iop_tracers_out) ) scm_zero_non_iop_tracers_out = .false.
 
 end subroutine scam_default_opts
@@ -223,8 +213,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                          scm_iop_srf_prop_in, scm_relaxation_in, &
                          scm_relaxation_low_in, scm_relaxation_high_in, &
                          scm_crm_mode_in, scm_observed_aero_in, &
-                         precip_off_in, scm_clubb_iop_name_in, &
-                         scm_zero_non_iop_tracers_in)
+                         precip_off_in, scm_zero_non_iop_tracers_in)
 !-----------------------------------------------------------------------
   real(r8), intent(in), optional       :: scmlon_in, scmlat_in
   character*(max_path_len), intent(in), optional :: iopfile_in
@@ -234,7 +223,6 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   logical, intent(in), optional        :: scm_crm_mode_in
   logical, intent(in), optional        :: scm_observed_aero_in
   logical, intent(in), optional        :: precip_off_in
-  character(len=*), intent(in), optional :: scm_clubb_iop_name_in
   real(r8), intent(in), optional       :: scm_relaxation_low_in
   real(r8), intent(in), optional       :: scm_relaxation_high_in  
   logical, intent(in), optional        :: scm_zero_non_iop_tracers_in
@@ -272,10 +260,6 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   
   if (present (precip_off_in)) then
      precip_off=precip_off_in
-  endif
-
-  if (present (scm_clubb_iop_name_in)) then
-     scm_clubb_iop_name=scm_clubb_iop_name_in
   endif
 
   if (present (scm_zero_non_iop_tracers_in)) then

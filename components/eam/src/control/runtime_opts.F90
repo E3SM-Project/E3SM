@@ -167,7 +167,6 @@ real(r8) :: scm_relaxation_low
 real(r8) :: scm_relaxation_high
 integer, parameter :: max_chars = 128
 character(len=max_chars) iopfile
-character(len=200) :: scm_clubb_iop_name
 logical  :: scm_iop_srf_prop
 logical  :: scm_relaxation
 logical  :: scm_crm_mode
@@ -323,8 +322,7 @@ contains
    ! scam
    namelist /cam_inparm/ iopfile,scm_iop_srf_prop,scm_relaxation, &
                          scm_relaxation_low, scm_relaxation_high, &
-                         scm_crm_mode,scm_clubb_iop_name, &
-                         scm_observed_aero, precip_off, &
+                         scm_crm_mode, scm_observed_aero, precip_off, &
                          scm_zero_non_iop_tracers
 
 !-----------------------------------------------------------------------
@@ -369,7 +367,6 @@ contains
         scm_crm_mode_out=scm_crm_mode, &
         scm_observed_aero_out=scm_observed_aero, &
         precip_off_out=precip_off, &
-        scm_clubb_iop_name_out=scm_clubb_iop_name, &
         scm_zero_non_iop_tracers_out=scm_zero_non_iop_tracers)
    end if
 
@@ -446,7 +443,6 @@ contains
                             scm_crm_mode_in=scm_crm_mode, &
                             scm_observed_aero_in=scm_observed_aero, &
                             precip_off_in=precip_off, &
-                            scm_clubb_iop_name_in=scm_clubb_iop_name, &
                             scm_zero_non_iop_tracers_in=scm_zero_non_iop_tracers)
       end if
    endif

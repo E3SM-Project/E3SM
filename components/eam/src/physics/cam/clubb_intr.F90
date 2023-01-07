@@ -1097,7 +1097,7 @@ end subroutine clubb_init_cnst
 
 #ifdef CLUBB_SGS
    use hb_diff,                   only: pblintd
-   use scamMOD,                   only: single_column,scm_clubb_iop_name
+   use scamMOD,                   only: single_column
    use phys_grid,                 only: get_gcol_p
    use cldfrc2m,                  only: aist_vector
    use cam_history,               only: outfld
@@ -1963,45 +1963,6 @@ end subroutine clubb_init_cnst
 
       if (single_column) then
 
-        !  Initialize zo if variable ustar is used
-
-        if (cam_in%landfrac(i) .ge. 0.5_r8) then
-           zo = 0.035_r8
-        else
-           zo = 0.0001_r8
-        endif
-
-        !  Compute surface wind (ubar)
-        ubar = sqrt(um(i,pver)**2+vm(i,pver)**2)
-        if (ubar .lt. 0.25_r8) ubar = 0.25_r8
-
-        !  Below denotes case specifics for surface momentum
-        !  and thermodynamic fluxes, depending on the case
-
-        !  Define ustar (based on case, if not variable)
-        ustar = 0.25_r8   ! Initialize ustar in case no case
-
-        if(trim(scm_clubb_iop_name) .eq. 'BOMEX_5day') then
-           ustar = 0.28_r8
-        endif
-
-        if(trim(scm_clubb_iop_name) .eq. 'ATEX_48hr') then
-           ustar = 0.30_r8
-        endif
-
-        if(trim(scm_clubb_iop_name) .eq. 'RICO_3day') then
-           ustar = 0.28_r8
-        endif
-
-        if(trim(scm_clubb_iop_name) .eq. 'arm97' .or. trim(scm_clubb_iop_name) .eq. 'gate' .or. &
-           trim(scm_clubb_iop_name) .eq. 'toga' .or. trim(scm_clubb_iop_name) .eq. 'mpace' .or. &
-           trim(scm_clubb_iop_name) .eq. 'ARM_CC') then
-
-             dum1   = real(zt_g(2), kind = r8)
-             bflx22 = (gravit/real(theta0, kind = r8))*real(wpthlp_sfc, kind = r8)
-             ustar  = diag_ustar(dum1,bflx22,ubar,zo)
-        endif
-
         !  Compute the surface momentum fluxes, if this is a SCAM simulation
         upwp_sfc = -real((um(i,pver)*ustar**2/ubar), kind = core_rknd)
         vpwp_sfc = -real((vm(i,pver)*ustar**2/ubar), kind = core_rknd)
@@ -2810,20 +2771,6 @@ end subroutine clubb_init_cnst
          concld(i,k) = min(cloud_frac(i,k)-alst(i,k)+deepcu(i,k),0.80_r8)
       enddo
    enddo
-
-   if (single_column) then
-      if (trim(scm_clubb_iop_name) .eq. 'ATEX_48hr'       .or. &
-          trim(scm_clubb_iop_name) .eq. 'BOMEX_5day'      .or. &
-          trim(scm_clubb_iop_name) .eq. 'DYCOMSrf01_4day' .or. &
-          trim(scm_clubb_iop_name) .eq. 'DYCOMSrf02_06hr' .or. &
-          trim(scm_clubb_iop_name) .eq. 'RICO_3day'       .or. &
-          trim(scm_clubb_iop_name) .eq. 'ARM_CC') then
-
-             deepcu(:,:) = 0.0_r8
-             concld(:,:) = 0.0_r8
-
-      endif
-   endif
 
    ! --------------------------------------------------------------------------------- !
    !  COMPUTE THE ICE CLOUD FRACTION PORTION                                           !

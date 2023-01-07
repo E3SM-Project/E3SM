@@ -4053,12 +4053,6 @@ Use the specified surface properties.
 Default: FALSE
 </entry>
 
-<entry id="scm_clubb_iop_name" type="char*200" category="scam"
-       group="cam_inparm" valid_values="">
-IOP name for CLUBB running in single column mode
-Default: ""
-</entry>
-
 <entry id="scm_relaxation" type="logical" category="scam"
        group="cam_inparm" valid_values="">
 Use relaxation.
