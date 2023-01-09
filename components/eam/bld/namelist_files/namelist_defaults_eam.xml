@@ -250,6 +250,30 @@
 <mam_so402  rad="rrtmgp">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_so402>
 <mam_so403  rad="rrtmgp">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_so403>
 <mam_so404  rad="rrtmgp">atm/cam/physprops/sulfate_rrtmg_c080918.nc</mam_so404>
+<mam_soa01  rad="rrtmg">atm/cam/physprops/ocphi_rrtmg_c100508.nc</mam_soa01>
+<mam_soa02  rad="rrtmg">atm/cam/physprops/ocphi_rrtmg_c100508.nc</mam_soa02>
+<mam_soa03  rad="rrtmg">atm/cam/physprops/ocphi_rrtmg_c100508.nc</mam_soa03>
+<mam_soa04  rad="rrtmg">atm/cam/physprops/ocphi_rrtmg_c100508.nc</mam_soa04>
+<mam_soa01  rad="rrtmgp">atm/cam/physprops/ocphi_rrtmg_c100508.nc</mam_soa01>
+<mam_soa02  rad="rrtmgp">atm/cam/physprops/ocphi_rrtmg_c100508.nc</mam_soa02>
+<mam_soa03  rad="rrtmgp">atm/cam/physprops/ocphi_rrtmg_c100508.nc</mam_soa03>
+<mam_soa04  rad="rrtmgp">atm/cam/physprops/ocphi_rrtmg_c100508.nc</mam_soa04>
+<mam_pom01  rad="rrtmg">atm/cam/physprops/ocpho_rrtmg_c130709.nc</mam_pom01>
+<mam_pom02  rad="rrtmg">atm/cam/physprops/ocpho_rrtmg_c130709.nc</mam_pom02>
+<mam_pom03  rad="rrtmg">atm/cam/physprops/ocpho_rrtmg_c130709.nc</mam_pom03>
+<mam_pom04  rad="rrtmg">atm/cam/physprops/ocpho_rrtmg_c130709.nc</mam_pom04>
+<mam_pom01  rad="rrtmgp">atm/cam/physprops/ocpho_rrtmg_c130709.nc</mam_pom01>
+<mam_pom02  rad="rrtmgp">atm/cam/physprops/ocpho_rrtmg_c130709.nc</mam_pom02>
+<mam_pom03  rad="rrtmgp">atm/cam/physprops/ocpho_rrtmg_c130709.nc</mam_pom03>
+<mam_pom04  rad="rrtmgp">atm/cam/physprops/ocpho_rrtmg_c130709.nc</mam_pom04>
+<mam_bc01  rad="rrtmg">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc01>
+<mam_bc02  rad="rrtmg">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc02>
+<mam_bc03  rad="rrtmg">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc03>
+<mam_bc04  rad="rrtmg">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc04>
+<mam_bc01  rad="rrtmgp">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc01>
+<mam_bc02  rad="rrtmgp">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc02>
+<mam_bc03  rad="rrtmgp">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc03>
+<mam_bc04  rad="rrtmgp">atm/cam/physprops/bcpho_rrtmg_c100508.nc</mam_bc04>
 
 <!-- Marine organic matter optical properties -->
 <mam_mpoly  rad="rrtmg">atm/cam/physprops/poly_rrtmg_c130816.nc</mam_mpoly>
