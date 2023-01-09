@@ -11,6 +11,7 @@ module prep_aoflux_mod
   use seq_comm_mct,     only : mbox2id !
   use seq_comm_mct,     only : mbaxid ! iMOAB app id for atm on cpl pes
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
+  use seq_comm_mct, only : num_moab_exports
   use seq_infodata_mod, only: seq_infodata_getdata, seq_infodata_type
   use seq_map_type_mod
   use seq_map_mod
@@ -245,6 +246,9 @@ contains
     ! Uses
     use prep_atm_mod, only: prep_atm_get_mapper_So2a
     use prep_atm_mod, only: prep_atm_get_mapper_Fo2a
+#ifdef MOABDEBUG
+    use iMOAB, only :  iMOAB_WriteMesh
+#endif
     !
     ! Arguments
     type(mct_aVect) , intent(in)    :: fractions_ox(:)
@@ -257,6 +261,10 @@ contains
     integer :: exi, efi
     character(*), parameter :: subname = '(prep_aoflux_calc_xao_ax)'
     character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
+#ifdef MOABDEBUG
+    character*50             :: outfile, wopts, lnum
+    integer :: ierr
+#endif
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
@@ -285,6 +293,17 @@ contains
                fldlist=seq_flds_xao_fluxes, norm=.true., &
                avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
        enddo
+#ifdef MOABDEBUG
+            ! projections on atm
+         write(lnum,"(I0.2)")num_moab_exports
+         outfile = 'FlxAlb2Atm'//trim(lnum)//'.h5m'//C_NULL_CHAR
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+         ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing ocean to atm projection'
+            call shr_sys_abort(subname//' ERROR in writing ocean to atm projection')
+         endif
+#endif
     end if
     call t_drvstopf  (trim(timer))
 
