@@ -1961,6 +1961,7 @@ end subroutine clubb_init_cnst
       ! global simulations                                !
       ! ------------------------------------------------- !
 
+!     DPAB, EVENTUALLY REMOVE THIS when you get to non b4b changes
       if (single_column) then
 
         !  Compute the surface momentum fluxes, if this is a SCAM simulation

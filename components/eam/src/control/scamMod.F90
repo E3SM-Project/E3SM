@@ -23,22 +23,21 @@ module scamMod
   use cam_abortutils,   only: endrun
   use phys_control, only: phys_getopts
   use dycore, only: dycore_is
-!
+
   implicit none
 
   private    ! By default all data is public to this module
-!
-! !PUBLIC INTERFACES:
-!
+
+  ! PUBLIC INTERFACES:
+
   public scam_default_opts        ! SCAM default run-time options 
   public scam_setopts             ! SCAM run-time options 
   public setiopupdate_init
   public setiopupdate
   public readiopdata         
 
-!
-! !PUBLIC MODULE DATA:
-!
+  ! PUBLIC MODULE DATA:
+
   real(r8), public ::  pressure_levels(plev)
   real(r8), public ::  scmlat   ! input namelist latitude for scam
   real(r8), public ::  scmlon   ! input namelist longitude for scam
@@ -116,7 +115,7 @@ module scamMod
 					       
   real(r8), public, pointer :: loniop(:)
   real(r8), public, pointer :: latiop(:)
-!
+
   integer, public ::     iopTimeIdx            ! index into iop dataset
   integer, public ::     steplength            ! Length of time-step
   integer, public ::     base_date             ! Date in (yyyymmdd) of start time
@@ -171,17 +170,12 @@ module scamMod
   contains
 !=======================================================================
 
-!
-!-----------------------------------------------------------------------
-!
-
-
 subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
         single_column_out,scm_iop_srf_prop_out, scm_relaxation_out, &
         scm_relaxation_low_out, scm_relaxation_high_out, &
         scm_crm_mode_out, scm_observed_aero_out, &
         precip_off_out, scm_zero_non_iop_tracers_out)
-!-----------------------------------------------------------------------
+   !-----------------------------------------------------------------------
    real(r8), intent(out), optional :: scmlat_out,scmlon_out
    character*(max_path_len), intent(out), optional ::  iopfile_out
    logical, intent(out), optional ::  single_column_out
@@ -214,7 +208,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                          scm_relaxation_low_in, scm_relaxation_high_in, &
                          scm_crm_mode_in, scm_observed_aero_in, &
                          precip_off_in, scm_zero_non_iop_tracers_in)
-!-----------------------------------------------------------------------
+  !-----------------------------------------------------------------------
   real(r8), intent(in), optional       :: scmlon_in, scmlat_in
   character*(max_path_len), intent(in), optional :: iopfile_in
   logical, intent(in), optional        :: single_column_in
@@ -381,14 +375,12 @@ subroutine setiopupdate_init
    logical :: doiter
 !------------------------------------------------------------------------------
 
-!     
-!   Open  IOP dataset
-!    
+    ! Open and read pertinent information from the IOP file
 
     STATUS = NF90_OPEN( iopfile, NF90_NOWRITE, NCID )
-!     
-!   Read time (tsec) variable 
-!     
+
+    ! Read time (tsec) variable
+
     STATUS = NF90_INQ_VARID( NCID, 'tsec', tsec_varID )
     if ( STATUS .NE. NF90_NOERR ) write(iulog,*)'ERROR - setiopupdate.F:', &
        'Cant get variable ID for tsec'
@@ -429,14 +421,14 @@ subroutine setiopupdate_init
        write(iulog,*)'ERROR - setiopupdate.F:Cant get variable bdate'
     endif
 
-!   Close the netCDF file
+    ! Close the netCDF file
     STATUS = NF90_CLOSE( NCID )
-!     
-!   determine the last date in the iop dataset
-!     
+
+    ! determine the last date in the iop dataset
+
     call timemgr_time_inc(bdate, 0, last_date, last_sec, inc_s=tsec(ntime))
-!     
-!   set the iop dataset index
+
+    ! set the iop dataset index
     iopTimeIdx=0
     do i=1,ntime           ! set the first ioptimeidx
        call timemgr_time_inc(bdate, 0, next_date, next_sec, inc_s=tsec(i))
@@ -474,7 +466,7 @@ subroutine setiopupdate
 !---------------------------Code history--------------------------------
 !
 ! Written by John Truesdale    August, 1996
-! Modified for E3SM by  Peter Bogenschutz 2017 - onward
+! Modified for E3SM by Peter Bogenschutz 2017 - onward
 ! 
 !-----------------------------------------------------------------------
   implicit none
@@ -496,10 +488,7 @@ subroutine setiopupdate
    logical :: doiter
 !------------------------------------------------------------------------------
 
-!------------------------------------------------------------------------------
-!     Check if iop data needs to be updated and set doiopupdate accordingly
-!------------------------------------------------------------------------------
-
+   ! Check if iop data needs to be updated and set doiopupdate accordingly
    call get_curr_date(yr, mon, day, ncsec)
    ncdate = yr*10000 + mon*100 + day
 
@@ -535,10 +524,7 @@ subroutine setiopupdate
        write(iulog,*)'******* do iop update'
    endif
 
-!
-!  make sure we're
-!  not going past end of iop data
-!
+   ! make sure we're not going past end of iop data
    if ( ncdate .gt. last_date .or. (ncdate .eq. last_date &
       .and. ncsec .gt. last_sec))  then
       write(iulog,*)'ERROR - setiopupdate.c:Reached the end of the time varient dataset'
@@ -562,6 +548,7 @@ end subroutine setiopupdate
 !---------------------------Code history--------------------------------
 !     
 !     Written by J.  Truesdale    August, 1996, revised January, 1998
+!     Further revised by Peter Bogenschutz for E3SM 2017-onward
 !     
 !-----------------------------------------------------------------------
         use comsrf
@@ -577,7 +564,7 @@ end subroutine setiopupdate
    implicit automatic ( a-z )
 #endif
 !------------------------------Locals-----------------------------------
-!     
+
    logical, intent(in) :: iop_update_phase1
    integer NCID, status
    integer time_dimID, lev_dimID,lev_varID,mod_dimID,&
@@ -613,21 +600,16 @@ end subroutine setiopupdate
    character(len=16) :: lowername
    real(r8), parameter :: rad2deg = 180.0_r8/SHR_CONST_PI
 
-!   type(dyn_export_t), intent(inout) :: dyn_out
-
    fill_ends= .false.
 
-!   t1f = Timelevel%n0
-!     
-!     Open IOP dataset
-!     
-  call handle_ncerr( nf90_open (iopfile, 0, ncid),&
+   ! Open IOP dataset
+
+   call handle_ncerr( nf90_open (iopfile, 0, ncid),&
        'readiopdata.F90', __LINE__)
 
-!
-!     if the dataset is a CAM generated dataset set use_replay to true
-!       E3SM IOP datasets have a global attribute called E3SM_GENERATED_IOP      
-!
+   !  If the dataset is a CAM generated dataset set use_replay to true
+   !    E3SM IOP datasets have a global attribute called E3SM_GENERATED_IOP
+
    if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_GENERATED_FORCING',attnum=i ).EQ. NF90_NOERR ) then
       use_replay = .true.
    else
@@ -636,7 +618,7 @@ end subroutine setiopupdate
 
 !=====================================================================
 !     
-!     Read time variables
+!  Read time variables
 
 
    status = nf90_inq_dimid (ncid, 'time', time_dimID )
@@ -670,10 +652,9 @@ end subroutine setiopupdate
    call handle_ncerr( nf90_get_var (ncid, bdate_varID, bdate),&
         'readiopdata.F90', __LINE__)
 
-!     
-!======================================================
-!     read level data
-!     
+   !======================================================
+   ! read level data
+
    status = NF90_INQ_DIMID( ncid, 'lev', lev_dimID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable dim ID  for lev'
@@ -696,10 +677,10 @@ end subroutine setiopupdate
    call handle_ncerr( nf90_get_var (ncid, lev_varID, dplevs(:nlev)),&
                     'readiopdata.F90', __LINE__)
 
-! =====================================================
-!     read observed aersol data
+   ! =====================================================
+   ! read observed aersol data
 
- if(scm_observed_aero .and. .not. iop_update_phase1) then
+   if(scm_observed_aero .and. .not. iop_update_phase1) then
    status = NF90_INQ_DIMID( ncid, 'mod', mod_dimID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable dim ID  for lev'
@@ -741,7 +722,7 @@ end subroutine setiopupdate
       scm_div= 1.0e30_R8
    end if
 
-  status = NF90_INQ_VARID( ncid, 'mod', mod_varID )
+   status = NF90_INQ_VARID( ncid, 'mod', mod_varID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
       status = NF90_CLOSE ( ncid )
@@ -751,7 +732,7 @@ end subroutine setiopupdate
    call handle_ncerr( nf90_get_var (ncid, mod_varID, dmods(:nmod)),&
                     'readiopdata.F90', __LINE__)
 
-status = NF90_INQ_VARID( ncid, 'scm_num', mod_varID )
+   status = NF90_INQ_VARID( ncid, 'scm_num', mod_varID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
       status = NF90_CLOSE ( ncid )
@@ -761,7 +742,7 @@ status = NF90_INQ_VARID( ncid, 'scm_num', mod_varID )
    call handle_ncerr( nf90_get_var (ncid, mod_varID, scm_num(:nmod)),&
                     'readiopdata.F90', __LINE__)
 
-status = NF90_INQ_VARID( ncid, 'scm_diam', mod_varID )
+   status = NF90_INQ_VARID( ncid, 'scm_diam', mod_varID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
       status = NF90_CLOSE ( ncid )
@@ -771,7 +752,7 @@ status = NF90_INQ_VARID( ncid, 'scm_diam', mod_varID )
    call handle_ncerr( nf90_get_var (ncid, mod_varID, scm_dgnum(:nmod)),&
                     'readiopdata.F90', __LINE__)
 
-status = NF90_INQ_VARID( ncid, 'scm_std', mod_varID )
+   status = NF90_INQ_VARID( ncid, 'scm_std', mod_varID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
       status = NF90_CLOSE ( ncid )
@@ -781,7 +762,7 @@ status = NF90_INQ_VARID( ncid, 'scm_std', mod_varID )
    call handle_ncerr( nf90_get_var (ncid, mod_varID, scm_std(:nmod)),&
                     'readiopdata.F90', __LINE__)
 
-status = NF90_INQ_VARID( ncid, 'scm_accum_div', sps_varID )
+   status = NF90_INQ_VARID( ncid, 'scm_accum_div', sps_varID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
       status = NF90_CLOSE ( ncid )
@@ -792,7 +773,7 @@ status = NF90_INQ_VARID( ncid, 'scm_accum_div', sps_varID )
                     'readiopdata.F90', __LINE__)
 
 
-status = NF90_INQ_VARID( ncid, 'scm_aitken_div', sps_varID )
+   status = NF90_INQ_VARID( ncid, 'scm_aitken_div', sps_varID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
       status = NF90_CLOSE ( ncid )
@@ -802,7 +783,7 @@ status = NF90_INQ_VARID( ncid, 'scm_aitken_div', sps_varID )
    call handle_ncerr( nf90_get_var (ncid, sps_varID, scm_div(2,:nsps)),&
                     'readiopdata.F90', __LINE__)
 
-status = NF90_INQ_VARID( ncid, 'scm_coarse_div', sps_varID )
+   status = NF90_INQ_VARID( ncid, 'scm_coarse_div', sps_varID )
    if ( status .ne. nf90_noerr ) then
       write(iulog,* )'ERROR - readiopdata.F:Could not find variable ID for mode'
       status = NF90_CLOSE ( ncid )
@@ -813,15 +794,13 @@ status = NF90_INQ_VARID( ncid, 'scm_coarse_div', sps_varID )
                     'readiopdata.F90', __LINE__)
 
 endif !scm_observed_aero 
-!======================================================================
-!
-!CAM generated forcing already has pressure on millibars
-!
+
+
+   ! CAM generated forcing already has pressure on millibars
+
    if (.not. use_replay) then
-!
-!     convert pressure to millibars ( lev is expressed in pascals in iop
-!     datasets )
-!
+
+     ! convert pressure to millibars (lev is expressed in pascals in iop datasets)
       do i=1,nlev
          dplevs( i ) = dplevs( i )/100._r8
       end do
@@ -869,10 +848,10 @@ endif !scm_observed_aero
        have_ps = .true.
      endif
 
-!  for reproducing CAM output don't do interpolation.
-!  the most expedient way of doing this is to set      
-!  the dataset pressure levels to the current
-!  scam model levels
+     ! For reproducing CAM output don't do interpolation.
+     !   The most expedient way of doing this is to set
+     !   the dataset pressure levels to the current
+     !   scam model levels
         
      if ( use_replay ) then
        do i = 1, plev
@@ -880,10 +859,9 @@ endif !scm_observed_aero
        end do
      endif
 
-!     add the surface pressure to the pressure level data, so that
-!     surface boundary condition will be set properly,
-!     making sure that it is the highest pressure in the array.
-!
+     ! Add the surface pressure to the pressure level data, so that
+     !   surface boundary condition will be set properly,
+     !   making sure that it is the highest pressure in the array.
 
      total_levs = nlev+1
      dplevs(nlev+1) = psobs/100.0_r8 ! ps is expressed in pascals
@@ -912,12 +890,10 @@ endif !scm_observed_aero
        have_tsair = .true.
      endif
 
-!
-!      read in Tobs  For cam generated iop readin small t to avoid confusion
-!      with capital T defined in cam
-!
+     ! Read in Tobs  For cam generated iop readin small t to avoid confusion
+     !   with capital T defined in cam
 
-!!!!!!!force fill_end to be .true in getinterpncdata () for temperature !!!!!!!!
+     !!!!!!!force fill_end to be .true in getinterpncdata () for temperature !!!!!!!!
      if ( use_replay ) then
        call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,'t', have_tsair, &
           tsair(1), .true. , scm_crm_mode, &
@@ -932,9 +908,9 @@ endif !scm_observed_aero
        write(iulog,*)'Could not find variable T'
        status = NF90_CLOSE( ncid )
        return
-!     
-!     set T3 to Tobs on first time step
-!     
+
+     ! Set T3 to Tobs on first time step
+
      else
        have_t = .true.
      endif
@@ -966,8 +942,8 @@ endif !scm_observed_aero
        status = nf90_get_var(ncid, varid, srf(1), strt4)
        have_srf = .true.
      endif
-!
-!!!!!!!force fill_end to be .true in getinterpncdata () for humidity!!!!!!!!
+
+     !!!!!!!force fill_end to be .true in getinterpncdata () for humidity!!!!!!!!
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx,  'q', have_srf, &
        srf(1), .true., scm_crm_mode, &
        dplevs, nlev,psobs, hyam, hybm, qobs, status )
@@ -996,9 +972,8 @@ endif !scm_observed_aero
        have_clwp = .true.
      endif
 
-!
-!       read divq (horizontal advection)
-!      
+     ! Read divq (horizontal advection)
+
      status = nf90_inq_varid( ncid, 'divqsrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
@@ -1016,9 +991,8 @@ endif !scm_observed_aero
        have_divq = .true.
      endif
 
-!
-!     read vertdivq if available
-!
+     ! Read vertdivq if available
+
      status = nf90_inq_varid( ncid, 'vertdivqsrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
@@ -1044,9 +1018,8 @@ endif !scm_observed_aero
        have_srf = .true.
      endif
 
-!
-!   add calls to get dynamics tendencies for all prognostic consts
-!
+     ! Add calls to get dynamics tendencies for all prognostic consts
+
      do m = 1, pcnst
 
        call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, trim(cnst_name(m))//'_dten', &
@@ -1078,7 +1051,6 @@ endif !scm_observed_aero
        endif
 
      end do
-
 
      call cnst_get_ind('NUMLIQ', inumliq, abrtf=.false.)
      if ( inumliq > 0 ) then
@@ -1130,9 +1102,8 @@ endif !scm_observed_aero
        endif
      end if
 
-!
-!       read divu (optional field)
-!      
+     ! Read divu (optional field)
+
      status = nf90_inq_varid( ncid, 'divusrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
@@ -1149,9 +1120,9 @@ endif !scm_observed_aero
      else
        have_divu = .true.
      endif
-!
-!       read divv (optional field)
-!      
+
+     ! Read divv (optional field)
+
      status = nf90_inq_varid( ncid, 'divvsrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
@@ -1168,9 +1139,9 @@ endif !scm_observed_aero
      else
        have_divv = .true.
      endif
-!
-!       read divt (optional field)
-!      
+
+     ! Read divt (optional field)
+
      status = nf90_inq_varid( ncid, 'divtsrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
@@ -1188,9 +1159,8 @@ endif !scm_observed_aero
        have_divt = .true.
      endif
 
-!
-!     read vertdivt if available
-!
+     ! Read vertdivt if available
+
      status = nf90_inq_varid( ncid, 'vertdivTsrf', varid   )
      if ( status .ne. nf90_noerr ) then
        have_srf = .false.
@@ -1207,9 +1177,9 @@ endif !scm_observed_aero
      else
        have_vertdivt = .true.
      endif
-!
-!       read divt3d (combined vertical/horizontal advection)
-!      (optional field)
+
+     ! Read divt3d (combined vertical/horizontal advection)
+     !   (optional field)
 
      status = nf90_inq_varid( ncid, 'divT3dsrf', varid   )
      if ( status .ne. nf90_noerr ) then
@@ -1241,10 +1211,10 @@ endif !scm_observed_aero
 
      call plevs0(1    ,plon   ,plev    ,psobs   ,pint,pmid ,pdel)
      call shr_sys_flush( iulog )
-!
-! Build interface vector for the specified omega profile
-! (weighted average in pressure of specified level values)
-!
+
+     ! Build interface vector for the specified omega profile
+     !   (weighted average in pressure of specified level values)
+
      wfldh(1) = 0.0_r8
 
      do k=2,plev
@@ -1263,7 +1233,7 @@ endif !scm_observed_aero
        have_srf = .true.
      endif
 
-!!!!!!!force fill_end to be .true in getinterpncdata () for u-wind !!!!!!!!
+     !!!!!!!force fill_end to be .true in getinterpncdata () for u-wind !!!!!!!!
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
        'u', have_srf, srf(1), .true. , scm_crm_mode, &
        dplevs, nlev,psobs, hyam, hybm, uobs, status )
@@ -1281,7 +1251,7 @@ endif !scm_observed_aero
        have_srf = .true.
      endif
 
-!!!!!!!force fill_end to be .true in getinterpncdata () for v-wind !!!!!!!!
+     !!!!!!!force fill_end to be .true in getinterpncdata () for v-wind !!!!!!!!
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
        'v', have_srf, srf(1), .true. , scm_crm_mode, &
        dplevs, nlev,psobs, hyam, hybm, vobs, status )
@@ -1318,14 +1288,14 @@ endif !scm_observed_aero
        have_q2 = .true.
      endif
 
-!  Test for BOTH 'lhflx' and 'lh' without overwriting 'have_lhflx'.  
-!  Analagous changes made for the surface heat flux
+     ! Test for BOTH 'lhflx' and 'lh' without overwriting 'have_lhflx'.
+     !   Analagous changes made for the surface heat flux
 
      call shr_sys_flush( iulog )
-!
-!     fill in 3d forcing variables if we have both horizontal
-!     and vertical components, but not the 3d
-!
+
+     ! Fill in 3d forcing variables if we have both horizontal
+     !   and vertical components, but not the 3d forcing.
+
      if ( .not. have_cnst(1) .and. have_divq .and. have_vertdivq ) then
        do k=1,plev
          do m=1,pcnst
@@ -1342,11 +1312,9 @@ endif !scm_observed_aero
         enddo
         have_divt3d = .true.
      endif
-!
-!     make sure that use_3dfrc flag is set to true if we only have
-!     3d forcing available
-!
-!   if ( .not. have_divt .or. .not. have_divq ) then
+
+     ! Make sure that use_3dfrc flag is set to true if we only have
+     !   3d forcing available.
      if (have_divt3d .or. have_divq3d) then
        use_3dfrc = .true.
      endif

@@ -5,8 +5,7 @@ subroutine forecast(chunk, ps_in, u_in, v_in, &         ! In
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
-! Eularian forecast of t, u, and v.   Advection terms are also converted
-! to flux form and integrated to check conservation
+! Eularian forecast of t, q, u, and v.
 ! 
 ! Author: 
 ! Original version: Adopted from CAM3.5/CAM5
@@ -60,8 +59,6 @@ subroutine forecast(chunk, ps_in, u_in, v_in, &         ! In
 !
 !  variables for relaxation addition
 !
-  real(r8) dist
-  real(r8) denom
   real(r8) rtau(plev)
   real(r8) relaxt(plev)
   real(r8) relaxq(plev)
