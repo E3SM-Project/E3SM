@@ -2,6 +2,7 @@
 
 #include "share/io/scorpio_input.hpp"
 #include "share/io/scream_scorpio_interface.hpp"
+#include "share/util/scream_timing.hpp"
 
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
@@ -166,6 +167,8 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 {
   using namespace scorpio;
 
+  std::string timer_root = m_is_model_restart_output ? "EAMxx::IO::restart" : "EAMxx::IO::standard";
+  start_timer(timer_root); 
   // Check if we need to open a new file
   ++m_output_control.nsamples_since_last_write;
   ++m_checkpoint_control.nsamples_since_last_write;
@@ -182,6 +185,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   auto& filename  = filespecs.filename;
 
   // Compute filename (if write step)
+  start_timer(timer_root+"::get_new_file"); 
   if (is_write_step) {
     // Check if we need to open a new file
     if (not filespecs.is_open) {
@@ -251,14 +255,17 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       set_int_attribute_c2f(filename.c_str(),"nsteps",timestamp.get_num_steps());
     }
   }
+  stop_timer(timer_root+"::get_new_file"); 
 
   // Run the output streams
+  start_timer(timer_root+"::run_output_streams"); 
   for (auto& it : m_output_streams) {
     // Note: filename might reference an invalid string, but it's only used
     //       in case is_write_step=true, in which case it will *for sure* contain
     //       a valid file name.
     it->run(filename,is_write_step,m_output_control.nsamples_since_last_write);
   }
+  stop_timer(timer_root+"::run_output_streams"); 
 
   if (is_write_step) {
     for (const auto& it : m_globals) {
@@ -278,6 +285,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     }
   }
 
+  start_timer(timer_root+"::update_snapshot_tally"); 
   if (is_write_step) {
     // We're adding one snapshot to the file
     ++filespecs.num_snapshots_in_file;
@@ -303,6 +311,8 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     m_checkpoint_control.nsamples_since_last_write = 0;
     m_checkpoint_control.timestamp_of_last_write = timestamp;
   }
+  stop_timer(timer_root+"::update_snapshot_tally"); 
+  stop_timer(timer_root); 
 }
 /*===============================================================================================*/
 void OutputManager::finalize()
