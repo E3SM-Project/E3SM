@@ -200,7 +200,7 @@ endif
     endif !there was rain in cell
   end do ! k loop for sedim
 
-end subroutine sedimentation
+end subroutine sedimentation_hy
 
 
 subroutine recompute_pressures(qvdry,qcdry,qrdry,dpdry,pidry,pprime,pi,pnh,dp)
