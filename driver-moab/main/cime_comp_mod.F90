@@ -2063,7 +2063,7 @@ contains
     endif
 
     ! mostly for debug mode
-    num_moab_exports = num_moab_exports + 1
+    num_moab_exports = 0
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (atm_present) call component_init_areacor(atm, areafact_samegrid, seq_flds_a2x_fluxes)
@@ -2337,6 +2337,7 @@ contains
           endif
        enddo
 
+       num_moab_exports = num_moab_exports + 1
        ! Run atm_init_mct with init phase of 2
        call component_init_cc(Eclock_a, atm, atm_init,                   &
             infodata, NLFilename,                                        &
