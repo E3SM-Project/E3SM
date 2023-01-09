@@ -5,6 +5,7 @@
 #include "pam_interface.h"
 #include "perturb_temperature.h"
 #include "gcm_forcing.h"
+#include "gcm_rad_coupling.h"
 #include "pam_feedback.h"
 #include "pam_state_update.h"
 #include "pam_rad_update.h"
@@ -40,7 +41,7 @@ extern "C" void pam_driver() {
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
   //------------------------------------------------------------------------------------------------
   // wrap host data in YAKL arrays
-  auto gcolp = dm_host.get<int const,1>("gcolp").createDeviceCopy();
+  auto gcolp = dm_host.get<int,1>("gcolp").createDeviceCopy();
 
   // auto input_bflxls        = dm_host.get<real const,2>("input_bflxls").createDeviceCopy();
   // auto input_wndls         = dm_host.get<real const,2>("input_wndls").createDeviceCopy();
@@ -80,12 +81,8 @@ extern "C" void pam_driver() {
   modules::compute_gcm_forcing_tendencies( coupler );
   //------------------------------------------------------------------------------------------------
   // Perturb the CRM only at the beginning of the run
-  if (is_first_step) { 
-    // int1d seeds("seeds",nens);
-    // parallel_for("set perturbation seeds", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
-    //   seeds(iens) = gcolp(iens);
-    // });
-    //modules::perturb_temperature( coupler , gcolp ); 
+  if (is_first_step) {
+    modules::perturb_temperature( coupler , gcolp );
   }
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
@@ -97,7 +94,7 @@ extern "C" void pam_driver() {
     if (etime_crm + crm_dt > gcm_dt) { crm_dt = gcm_dt - etime_crm; }
 
     coupler.run_module( "apply_gcm_forcing_tendencies" , modules::apply_gcm_forcing_tendencies );
-    //coupler.run_module( "apply_rad_tendencies"         , modules::apply_rad_tendencies );
+    coupler.run_module( "apply_rad_tendencies"         , modules::apply_rad_tendencies );
     coupler.run_module( "sponge_layer"                 , modules::sponge_layer );
     coupler.run_module( "dycore"                       , [&] (pam::PamCoupler &coupler) {dycore.timeStep(coupler);} );
     coupler.run_module( "sgs"                          , [&] (pam::PamCoupler &coupler) {sgs   .timeStep(coupler);} );
