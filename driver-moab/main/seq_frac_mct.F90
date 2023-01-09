@@ -383,30 +383,26 @@ contains
          arrSize = nvise(1) * 5 ! there are 5 tags that need to be zeroed out 
          allocate(tagValues(arrSize) )
          ent_type = 1 ! cell type
-         tagValues = 0 
+         tagValues = 0.0_r8
          ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrSize , ent_type, tagValues)
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in zeroing out fracs  '
             call shr_sys_abort(subname//' ERROR in zeroing out fracs on phys atm')
          endif
+         deallocate(tagValues)
 
+
+         allocate(tagValues(nvise(1)))
          tagname = 'afrac'//C_NULL_CHAR
-         tagValues = 1 
+         tagValues = 1.0_r8
          ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, nvise(1) , ent_type, tagValues)
+
+
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in setting afrac tag on phys atm  '
             call shr_sys_abort(subname//' ERROR in setting afrac tag on phys atm')
          endif
          deallocate(tagValues)
-#ifdef MOABDEBUG    
-         outfile = 'atmCplFr.h5m'//C_NULL_CHAR
-         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
-         ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
-         if (ierr .ne. 0) then
-           write(logunit,*) subname,' error in writing mesh '
-           call shr_sys_abort(subname//' ERROR in writing mesh ')
-         endif
-#endif
        endif
     endif
 
@@ -478,18 +474,6 @@ contains
          deallocate(GlobalIds)
          deallocate(tagValues)
 
-#ifdef MOABDEBUG
-        ! debug test
-        
-        outfile = 'lndCplFr.h5m'//C_NULL_CHAR
-        wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
- !      write out the mesh file to disk
-        ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in writing mesh '
-          call shr_sys_abort(subname//' ERROR in writing mesh ')
-        endif
-#endif
        endif
 
        if (atm_present) then
@@ -545,18 +529,6 @@ contains
          deallocate(GlobalIds)
          deallocate(tagValues)
 
-#ifdef MOABDEBUG
-        ! debug test
-        
-        outfile = 'rofCplFr.h5m'//C_NULL_CHAR
-        wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
- !      write out the mesh file to disk
-        ierr = iMOAB_WriteMesh(mbrxid, trim(outfile), trim(wopts))
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in writing mesh '
-          call shr_sys_abort(subname//' ERROR in writing mesh ')
-        endif
-#endif
        endif
     end if
 
@@ -628,18 +600,6 @@ contains
          deallocate(tagValues)
          ! TODO : project ice ofrac to atm , using the mapper i2a in MOAB (that we do not have yet)
 
-#ifdef MOABDEBUG
-        ! debug test
-        
-        outfile = 'iceCplFr.h5m'//C_NULL_CHAR
-        wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
- !      write out the mesh file to disk
-        ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
-        if (ierr .ne. 0) then
-          write(logunit,*) subname,' error in writing mesh '
-          call shr_sys_abort(subname//' ERROR in writing mesh ')
-        endif
-#endif
          ! end copy from rof
        endif
 
@@ -788,20 +748,6 @@ contains
        endif
 
 
-#ifdef MOABDEBUG
-        ! debug test
-        if (mboxid .ge. 0  ) then
-            outfile = 'ocnCplFr.h5m'//C_NULL_CHAR
-            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
-      !      write out the mesh file to disk
-            ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in writing mesh '
-               call shr_sys_abort(subname//' ERROR in writing mesh ')
-            endif
-        endif
-#endif
-
        if (ice_present) then
           ! --- this should be an atm2ice call above, but atm2ice doesn't work
           mapper_o2i => prep_ice_get_mapper_SFo2i()
@@ -876,6 +822,49 @@ contains
     if (atm_present .and. (lnd_present.or.ice_present.or.ocn_present)) &
          call seq_frac_check(fractions_a,'atm init')
     seq_frac_debug = debug_old
+#ifdef MOABDEBUG
+    wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+    if (mbaxid .ge. 0  ) then
+        outfile = 'atmCplFr.h5m'//C_NULL_CHAR
+        ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
+        if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing mesh '
+          call shr_sys_abort(subname//' ERROR in writing mesh ')
+        endif
+    endif
+    if (mblxid .ge. 0  ) then
+        outfile = 'lndCplFr.h5m'//C_NULL_CHAR
+        ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
+        if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing mesh '
+          call shr_sys_abort(subname//' ERROR in writing mesh ')
+        endif
+    endif
+    if (mbrxid .ge. 0  ) then
+        outfile = 'rofCplFr.h5m'//C_NULL_CHAR
+        ierr = iMOAB_WriteMesh(mbrxid, trim(outfile), trim(wopts))
+        if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing mesh '
+          call shr_sys_abort(subname//' ERROR in writing mesh ')
+        endif
+    endif
+    if (mbixid .ge. 0  ) then
+        outfile = 'iceCplFr.h5m'//C_NULL_CHAR
+        ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
+        if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in writing mesh '
+          call shr_sys_abort(subname//' ERROR in writing mesh ')
+        endif
+    endif
+    if (mboxid .ge. 0  ) then
+        outfile = 'ocnCplFr.h5m'//C_NULL_CHAR
+        ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing mesh '
+            call shr_sys_abort(subname//' ERROR in writing mesh ')
+         endif
+    endif
+#endif
 
   end subroutine seq_frac_init
 
