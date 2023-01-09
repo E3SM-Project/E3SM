@@ -203,6 +203,12 @@ module cime_comp_mod
   use component_type_mod , only: expose_mct_grid_moab
 #endif
 
+#ifdef MOABDEBUG
+    use seq_comm_mct , only : mboxid
+    use iso_c_binding
+#endif
+
+
   implicit none
 
   private
@@ -1407,6 +1413,14 @@ contains
   !===============================================================================
 
   subroutine cime_init()
+    use seq_flds_mod , only : seq_flds_x2a_fields, seq_flds_a2x_fields
+    use seq_comm_mct , only :  mphaid, mbaxid !
+#ifdef MOABDEBUG
+    real(r8) :: difference
+    character(20) :: mct_field, tagname
+    integer  :: ent_type
+#endif
+
 
 103 format( 5A )
 104 format( A, i10.8, i8)
@@ -1992,16 +2006,6 @@ contains
 
     endif
 
-    !  need to finish up the computation of the atm - ocean map (tempest)
-    ! this needs to be in prep_ocn_mod, because it is for projection to ocean!
-    if (iamin_CPLALLATMID .and. atm_c2_ocn) call prep_atm_ocn_moab(infodata)
-
-    ! this needs to be in prep_ocn_mod, because it is for ice projection to ocean!
-    if (iamin_CPLALLICEID .and. ice_c2_ocn) call prep_ice_ocn_moab(infodata)
-
-    !  need to finish up the computation of the atm - land map ( point cloud)
-    if (iamin_CPLALLATMID .and. atm_c2_lnd) call prep_atm_lnd_moab(infodata)
-
     !  need to finish up the migration of mesh for rof 2 ocn map ( read from file)
     if (iamin_CPLALLROFID .and. rof_c2_ocn) call prep_rof_ocn_moab(infodata)
 
@@ -2247,6 +2251,7 @@ contains
              xao_ox => prep_aoflux_get_xao_ox()        ! array over all instances
              a2x_ox => prep_ocn_get_a2x_ox()
              call seq_flux_ocnalb_mct(infodata, ocn(1), a2x_ox(eai), fractions_ox(efi), xao_ox(exi))
+
           enddo
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -2300,6 +2305,8 @@ contains
              if (associated(xao_ax)) then
                 call  prep_atm_mrg(infodata, &
                      fractions_ax=fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:init_atminit')
+                     ! MOAB 
+                call  prep_atm_mrg_moab(infodata, xao_ax)
              endif
           endif
 
@@ -2328,6 +2335,8 @@ contains
        if (atm_prognostic) then
           call component_exch(atm, flow='x2c', infodata=infodata, &
                infodata_string='cpl2atm_init')
+          ! moab too
+          call component_exch_moab(atm(1), mbaxid, mphaid, 1, seq_flds_x2a_fields)
        endif
 
        ! Set atm init phase to 2 for all atm instances on component instance pes
@@ -2346,6 +2355,8 @@ contains
        ! Map atm output data from atm pes to cpl pes
        call component_exch(atm, flow='c2x', infodata=infodata, &
             infodata_string='atm2cpl_init')
+       ! 
+       call component_exch_moab(atm(1), mphaid, mbaxid, 0, seq_flds_a2x_fields)
 
        if (iamin_CPLID) then
           if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -2874,6 +2885,10 @@ contains
 
           if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
           call t_drvstopf  ('CPL:OCNPRE1',cplrun=.true.,hashint=hashint(3))
+       endif
+       ! is this really needed here ?
+       if ( atm_c2_ocn) then
+          !call  prep_ocn_calc_a2x_ox_moab(timer='CPL:ocnpre1_atm2ocn_moab', infodata=infodata)
        endif
 
        !----------------------------------------------------------
@@ -3856,7 +3871,8 @@ contains
 !----------------------------------------------------------------------------------
 
   subroutine cime_run_atm_setup_send()
-
+    use seq_flds_mod , only : seq_flds_x2a_fields
+    use seq_comm_mct , only :  mphaid, mbaxid !
     !----------------------------------------------------------
     !| atm prep-merge
     !----------------------------------------------------------
@@ -3908,6 +3924,8 @@ contains
             mpicom_barrier=mpicom_CPLALLATMID, run_barriers=run_barriers, &
             timer_barrier='CPL:C2A_BARRIER', timer_comp_exch='CPL:C2A', &
             timer_map_exch='CPL:c2a_atmx2atmg', timer_infodata_exch='CPL:c2a_infoexch')
+       ! will migrate the tag from coupler pes to component pes, on atm mesh
+       call component_exch_moab(atm(1), mbaxid, mphaid, 1, seq_flds_x2a_fields)
     endif
 
   end subroutine cime_run_atm_setup_send
@@ -3916,7 +3934,7 @@ contains
 
   subroutine cime_run_atm_recv_post()
      use seq_flds_mod , only : seq_flds_a2x_fields
-     use seq_comm_mct , only :  mphaid, mphaxid !
+     use seq_comm_mct , only :  mphaid, mbaxid !
     !----------------------------------------------------------
     !| atm -> cpl
     !----------------------------------------------------------
@@ -3927,8 +3945,8 @@ contains
             timer_map_exch='CPL:a2c_atma2atmx', timer_infodata_exch='CPL:a2c_infoexch')
 
        ! will migrate the tag from component pes to coupler pes, on atm mesh
-       call component_exch_moab(atm(1), mphaid, mphaxid, 0, seq_flds_a2x_fields)
-       call prep_atm_migrate_moab(infodata)
+       call component_exch_moab(atm(1), mphaid, mbaxid, 0, seq_flds_a2x_fields)
+       !call prep_atm_migrate_moab(infodata)
     endif
 
     !----------------------------------------------------------
@@ -4155,7 +4173,13 @@ contains
 
   subroutine cime_run_atmocn_setup(hashint)
     integer, intent(inout) :: hashint(:)
+#ifdef MOABDEBUG
+    real(r8) :: difference
+    character(20) :: mct_field, tagname
+    integer  :: ent_type 
+#endif 
 
+    ! call prep_ocn_calc_i2x_ox_moab() ! this does projection from ice to ocean on coupler, by simply matching
     if (iamin_CPLID) then
        call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:ATMOCNP_BARRIER')
        call t_drvstartf ('CPL:ATMOCNP',cplrun=.true.,barrier=mpicom_CPLID,hashint=hashint(7))
@@ -4169,6 +4193,7 @@ contains
           ! Map to ocn
           if (ice_c2_ocn) then
             call prep_ocn_calc_i2x_ox(timer='CPL:atmocnp_ice2ocn')
+
           endif
           if (wav_c2_ocn) call prep_ocn_calc_w2x_ox(timer='CPL:atmocnp_wav2ocn')
           if (trim(cpl_seq_option(1:5)) == 'NUOPC') then
@@ -4637,9 +4662,6 @@ contains
        ! if we do a proper component_exch, then would need another hop, just on coupler pes
        !  TODO when do we need to send from ice to ocn? Usually after ice run ? 
        call component_exch_moab(ice(1), mpsiid, mbixid, 0, seq_flds_i2x_fields) ! this migrates all fields from ice to coupler
-       if (ice_c2_ocn ) then
-         call prep_ocn_calc_i2x_ox_moab() ! this does projection ice-ocn with one hop 
-       endif
     endif
 
     !----------------------------------------------------------

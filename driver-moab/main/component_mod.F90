@@ -1015,10 +1015,13 @@ contains
        source_id = comp%cplcompid
        target_id = comp%compid
     endif
-    ! for atm, add 200 to target and source (see ID_JOIN_ATMPHYS and ID_OLD_ATMPHYS)
-    if (comp%oneletterid == 'a') then
-      ! more hacks
+    ! for atm, add 200 to component side, because we will involve always the point cloud 
+    ! we are not supporting anymore the spectral case, at least for the time being 
+    ! we need to fix fv-cgll projection first 
+    if (comp%oneletterid == 'a' .and. direction .eq. 0 ) then
        source_id = source_id + 200
+    endif
+    if (comp%oneletterid == 'a' .and. direction .eq. 1 ) then
        target_id = target_id + 200
     endif
     if (mbAPPid1 .ge. 0) then !  send 

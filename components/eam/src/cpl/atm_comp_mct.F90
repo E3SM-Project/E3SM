@@ -9,7 +9,7 @@ module atm_comp_mct
   use seq_cdata_mod
   use esmf
 
-  use seq_flds_mod
+  use seq_flds_mod ! for seq_flds_x2a_fields
   use seq_infodata_mod
   use seq_timemgr_mod
 
@@ -25,7 +25,7 @@ module atm_comp_mct
   use cam_cpl_indices
   ! it has atm_import, atm_export 
   use atm_import_export
-  !  cam_moab_phys_export is private here
+  !  atm_export_moab is private here, atm_import_moab too
 
   !   we defined cam_moab_export in cam_comp; it has cam_init, cam_run1, 2, 3, 4, cam_final
   use cam_comp
@@ -63,6 +63,10 @@ module atm_comp_mct
 #ifdef HAVE_MOAB
   use seq_comm_mct     , only: mphaid ! atm physics grid id in MOAB, on atm pes
   use iso_c_binding 
+  use seq_comm_mct,     only : num_moab_exports
+#endif
+#ifdef MOABDEBUG
+  !use seq_comm_mct, only:  compare_to_moab_tag
 #endif
 
 !
@@ -111,9 +115,14 @@ module atm_comp_mct
 
 #ifdef HAVE_MOAB
   ! to store all fields to be set in moab 
-  integer , private :: mblsize, totalmbls, nsend 
-  real(r8) , allocatable, private :: a2x_am(:,:) ! atm to coupler, on atm mesh 
+  integer , private :: mblsize, totalmbls, nsend, totalmbls_r, nrecv
+  real(r8) , allocatable, private :: a2x_am(:,:) ! atm to coupler, on atm mesh, on atm component pes
+  real(r8) , allocatable, private :: x2a_am(:,:) ! coupler to atm, on atm mesh, on atm component pes
 #endif 
+#ifdef MOABDEBUG
+  integer  :: mpicom_atm_moab ! used just for mpi-reducing the difference betweebn moab tags and mct avs
+  integer :: rank2
+#endif
 !
 !================================================================================
 CONTAINS
@@ -175,6 +184,15 @@ CONTAINS
                                 ! data structure, If 1D data structure, then
                                 ! hdim2_d == 1.
     character(len=64) :: filein ! Input namelist filename
+
+#ifdef MOABDEBUG
+    real(r8)                 :: difference
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list, ent_type
+    type(mct_string)    :: mctOStr  !
+    character(CXX) ::tagname, mct_field
+#endif 
+
     !-----------------------------------------------------------------------
     !
     ! Determine cdata points
@@ -188,7 +206,10 @@ CONTAINS
 
     call seq_cdata_setptrs(cdata_a, ID=ATMID, mpicom=mpicom_atm, &
          gsMap=gsMap_atm, dom=dom_a, infodata=infodata)
-
+#ifdef MOABDEBUG
+    mpicom_atm_moab = mpicom_atm ! just store it now, for later use
+    call shr_mpi_commrank( mpicom_atm_moab, rank2 )
+#endif 
     if (first_time) then
        
        call cam_instance_init(ATMID)
@@ -400,6 +421,15 @@ CONTAINS
        nsend = mct_avect_nRattr(a2x_a)
        totalmbls = mblsize * nsend   ! size of the double array
        allocate (a2x_am(mblsize, nsend) )
+
+       nrecv = mct_avect_nRattr(x2a_a)
+       totalmbls_r = mblsize * nrecv   ! size of the double array used to receive 
+       allocate (x2a_am(mblsize, nrecv) ) ! these will be received by moab tags, then used to set cam in surf data
+       !
+       ! Create initial atm export state inside moab 
+       !
+       call atm_export_moab( cam_out )
+
 #endif
 
        first_time = .false.
@@ -426,6 +456,29 @@ CONTAINS
 
        call seq_timemgr_EClockGetData(EClock,curr_ymd=CurrentYMD, StepNo=StepNo, dtime=DTime_Sync )
        if (StepNo == 0) then
+#ifdef MOABDEBUG
+  !compare_to_moab_tag(mpicom_atm_moab, attrVect, field, imoabApp, tag_name, ent_type, difference)
+    !x2o_o => component_get_x2c_cx(ocn(1))
+    ! loop over all fields in seq_flds_x2a_fields
+    call mct_list_init(temp_list ,seq_flds_x2a_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 0 ! entity type is vertex for phys atm
+    if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2a_fields), ' atm import check'
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call compare_to_moab_tag(mpicom_atm_moab, x2a_a, mct_field,  mphaid, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+
+#endif
+
+#ifdef HAVE_MOAB
+          call atm_import_moab(cam_in)
+#endif    
+          ! move moab import before cam import
+          ! so the cam import takes precedence, and fixes eventual problems in moab import     
           call atm_import( x2a_a%rattr, cam_in )
 
           call t_startf('CAM_run1')
@@ -433,6 +486,9 @@ CONTAINS
           call t_stopf('CAM_run1')
           
           call atm_export( cam_out, a2x_a%rattr )
+#ifdef HAVE_MOAB
+          call atm_export_moab(cam_out)
+#endif   
        else
 
           call t_startf('atm_read_srfrest_mct')
@@ -535,6 +591,13 @@ CONTAINS
     integer :: lbnum
     character(len=*), parameter :: subname="atm_run_mct"
     !-----------------------------------------------------------------------
+#ifdef MOABDEBUG
+    real(r8)                 :: difference
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list, ent_type
+    type(mct_string)    :: mctOStr  !
+    character(CXX) ::tagname, mct_field
+#endif 
 
 #if (defined _MEMTRACE)
     if(masterproc) then
@@ -565,7 +628,30 @@ CONTAINS
     ! Map input from mct to cam data structure
 
     call t_startf ('CAM_import')
-    call atm_import( x2a_a%rattr, cam_in )
+   
+#ifdef MOABDEBUG
+  !compare_to_moab_tag(mpicom_atm_moab, attrVect, field, imoabApp, tag_name, ent_type, difference)
+    !x2o_o => component_get_x2c_cx(ocn(1))
+    ! loop over all fields in seq_flds_a2x_fields
+    call mct_list_init(temp_list ,seq_flds_x2a_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 0 ! entity type is vertex for phys atm
+    if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2a_fields)
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call compare_to_moab_tag(mpicom_atm_moab, x2a_a, mct_field,  mphaid, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+
+#endif
+
+#ifdef HAVE_MOAB
+     call atm_import_moab(cam_in)
+#endif
+   ! move moab import before regular atm import, so it would hopefully not be a problem
+     call atm_import( x2a_a%rattr, cam_in )
     call t_stopf  ('CAM_import')
     
     ! Cycle over all time steps in the atm coupling interval
@@ -626,20 +712,21 @@ CONTAINS
        
        call t_startf ('CAM_export')
        call atm_export( cam_out, a2x_a%rattr )
-       call t_stopf ('CAM_export')
-       
-    end do
-
 #ifdef HAVE_MOAB
     ! move method out of the  do while (.not. do send) loop; do not send yet
-    call cam_moab_export()
+    ! call cam_moab_export()
 
     ! call method to set all seq_flds_a2x_fields  on phys grid point cloud;
     ! it will be moved then to Atm Spectral mesh on coupler ; just to show how to move it to atm spectral
     ! on coupler
-    call cam_moab_phys_export(cam_out)
+       call atm_export_moab(cam_out)
 
 #endif
+       call t_stopf ('CAM_export')
+       
+    end do
+
+
 
     ! Get time of next radiation calculation - albedos will need to be 
     ! calculated by each surface model at this time
@@ -915,7 +1002,7 @@ CONTAINS
           call pio_read_darray(File, varid, iodesc, tmp, rcode)
           x2a_a%rattr(k,:) = tmp(:)
        else
-	  if (masterproc) then
+	    if (masterproc) then
              write(iulog,*)'srfrest warning: field ',trim(itemc),' is not on restart file'
              write(iulog,*)'for backwards compatibility will set it to 0'
           end if
@@ -1024,7 +1111,6 @@ CONTAINS
 #ifdef HAVE_MOAB
   subroutine initialize_moab_atm_phys( cdata_a )
 
-    use seq_comm_mct, only: mphaid ! imoab pid for atm physics
     use shr_mpi_mod,       only: shr_mpi_commrank, shr_mpi_commsize
     use shr_const_mod, only: SHR_CONST_PI
 !-------------------------------------------------------------------
@@ -1179,6 +1265,13 @@ CONTAINS
     if ( ierr > 0) then
        call endrun('Error: fail to define seq_flds_a2x_fields for atm physgrid moab mesh')
     endif
+    ! make sure this is defined too; it could have the same fields, but in different order, or really different 
+    ! fields; need to make sure we have them
+    tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
+    if ( ierr > 0) then
+       call endrun('Error: fail to define seq_flds_x2a_fields for atm physgrid moab mesh')
+    endif
 
     deallocate(moab_vert_coords)
     deallocate(vgids)
@@ -1187,13 +1280,12 @@ CONTAINS
 
   end subroutine initialize_moab_atm_phys
 
-  subroutine cam_moab_phys_export(cam_out)
+  subroutine atm_export_moab(cam_out)
   !-------------------------------------------------------------------
     use camsrfexch, only: cam_out_t
     use phys_grid , only: get_ncols_p, get_nlcols_p
     use ppgrid    , only: begchunk, endchunk
     use seq_comm_mct, only: mphaid ! imoab pid for atm physics
-    use seq_comm_mct, only : num_moab_exports !
     use cam_abortutils       , only: endrun
     use iMOAB, only:  iMOAB_WriteMesh,  iMOAB_SetDoubleTagStorage
     use iso_c_binding 
@@ -1278,8 +1370,311 @@ CONTAINS
 #endif
     
 
-  end subroutine cam_moab_phys_export
+  end subroutine atm_export_moab
 
+subroutine atm_import_moab(cam_in, restart_init )
+
+    !-----------------------------------------------------------------------
+    use cam_cpl_indices
+    use camsrfexch,     only: cam_in_t
+    use phys_grid ,     only: get_ncols_p
+    use ppgrid    ,     only: begchunk, endchunk       
+    use shr_const_mod,  only: shr_const_stebol
+    use seq_drydep_mod, only: n_drydep
+    use co2_cycle     , only: c_i, co2_readFlux_ocn, co2_readFlux_fuel
+    use co2_cycle     , only: co2_transport, co2_time_interp_ocn, co2_time_interp_fuel
+    use co2_cycle     , only: data_flux_ocn, data_flux_fuel
+    use physconst     , only: mwco2
+    use time_manager  , only: is_first_step
+    use iMOAB, only:  iMOAB_WriteMesh,  iMOAB_GetDoubleTagStorage
+    use iso_c_binding
+    !
+    ! Arguments
+    !
+    ! real(r8)      , intent(in)    :: x2a_am(:,:) will be retrieved from moab tags, and used to set cam_in 
+    type(cam_in_t), intent(inout) :: cam_in(begchunk:endchunk)
+    logical, optional, intent(in) :: restart_init
+    !
+    ! Local variables
+    !		
+    integer            :: i,lat,n,c,ig  ! indices
+    integer            :: ncols         ! number of columns
+    logical, save      :: first_time = .true.
+    integer, parameter :: ndst = 2
+    integer, target    :: spc_ndx(ndst)
+    integer, pointer   :: dst_a5_ndx, dst_a7_ndx
+    integer, pointer   :: dst_a1_ndx, dst_a3_ndx
+    logical :: overwrite_flds
+
+    character(CXX) ::  tagname ! 
+    integer  :: ent_type, ierr
+    !-----------------------------------------------------------------------
+    overwrite_flds = .true.
+    ! don't overwrite fields if invoked during the initialization phase 
+    ! of a 'continue' or 'branch' run type with data from .rs file
+    if (present(restart_init)) overwrite_flds = .not. restart_init
+
+    ! ccsm sign convention is that fluxes are positive downward
+    tagname=trim(seq_flds_x2a_fields)//C_NULL_CHAR
+    ent_type = 0 ! vertices, point cloud
+    ierr = iMOAB_GetDoubleTagStorage ( mphaid, tagname, totalmbls_r , ent_type, x2a_am(1,1) )
+    if ( ierr > 0) then
+      call endrun('Error: fail to get  seq_flds_a2x_fields for atm physgrid moab mesh')
+    endif
+
+    ig=1
+    do c=begchunk,endchunk
+       ncols = get_ncols_p(c) 
+
+       ! initialize constituent surface fluxes to zero
+       ! NOTE:overwrite_flds is .FALSE. for the first restart
+       ! time step making cflx(:,1)=0.0 for the first restart time step.
+       ! cflx(:,1) should not be zeroed out, start the second index of cflx from 2.
+       cam_in(c)%cflx(:,2:) = 0._r8 
+                                               
+       do i =1,ncols                                                               
+          if (overwrite_flds) then
+             ! Prior to this change, "overwrite_flds" was always .true. therefore wsx and wsy were always updated.
+             ! Now, overwrite_flds is .false. for the first time step of the restart run. Move wsx and wsy out of 
+             ! this if-condition so that they are still updated everytime irrespective of the value of overwrite_flds.
+
+             ! Move lhf to this if-block so that it is not overwritten to ensure BFB restarts when qneg4 correction 
+             ! occurs at the restart time step
+             ! Modified by Wuyin Lin
+             cam_in(c)%shf(i)    = -x2a_am(ig,index_x2a_Faxx_sen)     
+             cam_in(c)%cflx(i,1) = -x2a_am(ig,index_x2a_Faxx_evap)                
+             cam_in(c)%lhf(i)    = -x2a_am(ig,index_x2a_Faxx_lat)     
+          endif
+
+          if (index_x2a_Faoo_h2otemp /= 0) then
+             cam_in(c)%h2otemp(i) = -x2a_am(ig,index_x2a_Faoo_h2otemp)
+          end if
+           
+          cam_in(c)%wsx(i)    = -x2a_am(ig,index_x2a_Faxx_taux)     
+          cam_in(c)%wsy(i)    = -x2a_am(ig,index_x2a_Faxx_tauy)     
+          cam_in(c)%lwup(i)      = -x2a_am(ig,index_x2a_Faxx_lwup)    
+          cam_in(c)%asdir(i)     =  x2a_am(ig,index_x2a_Sx_avsdr)  
+          cam_in(c)%aldir(i)     =  x2a_am(ig,index_x2a_Sx_anidr)  
+          cam_in(c)%asdif(i)     =  x2a_am(ig,index_x2a_Sx_avsdf)  
+          cam_in(c)%aldif(i)     =  x2a_am(ig,index_x2a_Sx_anidf)
+          cam_in(c)%ts(i)        =  x2a_am(ig,index_x2a_Sx_t)  
+          cam_in(c)%sst(i)       =  x2a_am(ig,index_x2a_So_t)             
+          cam_in(c)%snowhland(i) =  x2a_am(ig,index_x2a_Sl_snowh)  
+          cam_in(c)%snowhice(i)  =  x2a_am(ig,index_x2a_Si_snowh)  
+          cam_in(c)%tref(i)      =  x2a_am(ig,index_x2a_Sx_tref)  
+          cam_in(c)%qref(i)      =  x2a_am(ig,index_x2a_Sx_qref)
+          cam_in(c)%u10(i)       =  x2a_am(ig,index_x2a_Sx_u10)
+          cam_in(c)%icefrac(i)   =  x2a_am(ig,index_x2a_Sf_ifrac)  
+          cam_in(c)%ocnfrac(i)   =  x2a_am(ig,index_x2a_Sf_ofrac)
+          cam_in(c)%landfrac(i)  =  x2a_am(ig,index_x2a_Sf_lfrac)
+          if ( associated(cam_in(c)%ram1) ) &
+               cam_in(c)%ram1(i) =  x2a_am(ig,index_x2a_Sl_ram1 )
+          if ( associated(cam_in(c)%fv) ) &
+               cam_in(c)%fv(i)   =  x2a_am(ig,index_x2a_Sl_fv   )
+          if ( associated(cam_in(c)%soilw) ) &
+               cam_in(c)%soilw(i) =  x2a_am(ig,index_x2a_Sl_soilw)
+          if ( associated(cam_in(c)%dstflx) ) then
+             cam_in(c)%dstflx(i,1) = x2a_am(ig,index_x2a_Fall_flxdst1)
+             cam_in(c)%dstflx(i,2) = x2a_am(ig,index_x2a_Fall_flxdst2)
+             cam_in(c)%dstflx(i,3) = x2a_am(ig,index_x2a_Fall_flxdst3)
+             cam_in(c)%dstflx(i,4) = x2a_am(ig,index_x2a_Fall_flxdst4)
+          endif
+          if ( associated(cam_in(c)%meganflx) ) then
+             cam_in(c)%meganflx(i,1:shr_megan_mechcomps_n) = &
+                  x2a_am(ig,index_x2a_Fall_flxvoc:index_x2a_Fall_flxvoc+shr_megan_mechcomps_n-1)
+          endif
+
+          ! dry dep velocities
+          if ( index_x2a_Sl_ddvel/=0 .and. n_drydep>0 ) then
+             cam_in(c)%depvel(i,:n_drydep) = &
+                  x2a_am(ig,index_x2a_Sl_ddvel:index_x2a_Sl_ddvel+n_drydep-1)
+          endif
+          !
+          ! fields needed to calculate water isotopes to ocean evaporation processes
+          !
+          cam_in(c)%ustar(i) = x2a_am(ig,index_x2a_So_ustar)
+          cam_in(c)%re(i)    = x2a_am(ig,index_x2a_So_re   )
+          cam_in(c)%ssq(i)   = x2a_am(ig,index_x2a_So_ssq  )
+          !
+          ! bgc scenarios
+          !
+          if (index_x2a_Fall_fco2_lnd /= 0) then
+             cam_in(c)%fco2_lnd(i) = -x2a_am(ig,index_x2a_Fall_fco2_lnd)
+          end if
+          if (index_x2a_Faoo_fco2_ocn /= 0) then
+             cam_in(c)%fco2_ocn(i) = -x2a_am(ig,index_x2a_Faoo_fco2_ocn)
+          end if
+          if (index_x2a_Faoo_fdms_ocn /= 0) then
+             cam_in(c)%fdms(i)     = -x2a_am(ig,index_x2a_Faoo_fdms_ocn)
+          end if
+
+          ig=ig+1
+
+       end do
+    end do
+
+    ! Get total co2 flux from components,
+    ! Note - co2_transport determines if cam_in(c)%cflx(i,c_i(1:4)) is allocated
+
+    if (co2_transport().and.overwrite_flds) then
+
+       ! Interpolate in time for flux data read in
+       if (co2_readFlux_ocn) then
+          call co2_time_interp_ocn
+       end if
+       if (co2_readFlux_fuel) then
+          call co2_time_interp_fuel
+       end if
+       
+       ! from ocn : data read in or from coupler or zero
+       ! from fuel: data read in or zero
+       ! from lnd : through coupler or zero
+       do c=begchunk,endchunk
+          ncols = get_ncols_p(c)                                                 
+          do i=1,ncols                                                               
+             
+             ! all co2 fluxes in unit kgCO2/m2/s ! co2 flux from ocn 
+             if (index_x2a_Faoo_fco2_ocn /= 0) then
+                cam_in(c)%cflx(i,c_i(1)) = cam_in(c)%fco2_ocn(i)
+             else if (co2_readFlux_ocn) then 
+                ! convert from molesCO2/m2/s to kgCO2/m2/s
+! The below section involves a temporary workaround for fluxes from data (read in from a file)
+! There is an issue with infld that does not allow time-varying 2D files to be read correctly.
+! The work around involves adding a singleton 3rd dimension offline and reading the files as 
+! 3D fields.  Once this issue is corrected, the old implementation can be reinstated.
+! This is the case for both data_flux_ocn and data_flux_fuel
+!++BEH  vvv old implementation vvv
+!                cam_in(c)%cflx(i,c_i(1)) = &
+!                     -data_flux_ocn%co2flx(i,c)*(1._r8- cam_in(c)%landfrac(i)) &
+!                     *mwco2*1.0e-3_r8
+!       ^^^ old implementation ^^^   ///    vvv new implementation vvv
+                cam_in(c)%cflx(i,c_i(1)) = &
+                     -data_flux_ocn%co2flx(i,1,c)*(1._r8- cam_in(c)%landfrac(i)) &
+                     *mwco2*1.0e-3_r8
+!--BEH  ^^^ new implementation ^^^
+             else
+                cam_in(c)%cflx(i,c_i(1)) = 0._r8
+             end if
+             
+             ! co2 flux from fossil fuel
+             if (co2_readFlux_fuel) then
+!++BEH  vvv old implementation vvv
+!                cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,c)
+!       ^^^ old implementation ^^^   ///    vvv new implementation vvv
+                cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,1,c)
+!--BEH  ^^^ new implementation ^^^
+             else
+                cam_in(c)%cflx(i,c_i(2)) = 0._r8
+             end if
+             
+             ! co2 flux from land (cpl already multiplies flux by land fraction)
+             if (index_x2a_Fall_fco2_lnd /= 0) then
+                cam_in(c)%cflx(i,c_i(3)) = cam_in(c)%fco2_lnd(i)
+             else
+                cam_in(c)%cflx(i,c_i(3)) = 0._r8
+             end if
+             
+             ! merged co2 flux
+             cam_in(c)%cflx(i,c_i(4)) = cam_in(c)%cflx(i,c_i(1)) + &
+                                        cam_in(c)%cflx(i,c_i(2)) + &
+                                        cam_in(c)%cflx(i,c_i(3))
+          end do
+       end do
+    end if
+    !
+    ! if first step, determine longwave up flux from the surface temperature 
+    !
+    if (first_time) then
+       if (is_first_step()) then
+          do c=begchunk, endchunk
+             ncols = get_ncols_p(c)
+             do i=1,ncols
+                cam_in(c)%lwup(i) = shr_const_stebol*(cam_in(c)%ts(i)**4)
+             end do
+          end do
+       end if
+       first_time = .false.
+    end if
+
+
+  end subroutine atm_import_moab
+
+! endif for HAVE_MOAB
 #endif
+
+
+#ifdef MOABDEBUG
+ ! assumes everything is on component side, to compare before imports
+  subroutine compare_to_moab_tag(mpicom, attrVect, mct_field, appId, tagname, ent_type, difference)
+    
+    use shr_mpi_mod,       only: shr_mpi_sum,  shr_mpi_commrank
+    use shr_kind_mod,     only:  CXX => shr_kind_CXX
+    use seq_comm_mct , only : CPLID, seq_comm_iamroot
+    use seq_comm_mct, only:   seq_comm_setptrs
+    use iMOAB, only : iMOAB_DefineTagStorage,  iMOAB_GetDoubleTagStorage, &
+       iMOAB_SetDoubleTagStorageWithGid, iMOAB_GetMeshInfo
+    
+    use iso_c_binding 
+
+    integer, intent(in) :: mpicom
+    integer , intent(in) :: appId, ent_type
+    type(mct_aVect) , intent(in)      :: attrVect
+    character(*) , intent(in)       :: mct_field
+    character(*) , intent(in)       :: tagname
+
+    real(r8)      , intent(out)     :: difference
+
+    real(r8)  :: differenceg ! global, reduced diff
+    integer   :: mbSize, nloc, index_avfield, rank2
+
+     ! moab
+     integer                  :: tagtype, numco,  tagindex, ierr
+     character(CXX)           :: tagname_mct
+     
+     real(r8) , allocatable :: values(:), mct_values(:)
+     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+     logical   :: iamroot
+
+
+     character(*),parameter :: subName = '(compare_to_moab_tag) '
+
+     nloc = mct_avect_lsize(attrVect)
+     allocate(mct_values(nloc))
+
+     index_avfield     = mct_aVect_indexRA(attrVect,trim(mct_field))
+     mct_values(:) = attrVect%rAttr(index_avfield,:) 
+
+     ! now get moab tag values; first get info
+     ierr  = iMOAB_GetMeshInfo ( appId, nvert, nvise, nbl, nsurf, nvisBC );
+     if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to get mesh info')
+     if (ent_type .eq. 0) then
+        mbSize = nvert(1)
+     else if (ent_type .eq. 1) then
+        mbSize = nvise(1)
+     endif
+     allocate(values(mbSize))
+
+     ierr = iMOAB_GetDoubleTagStorage ( appId, tagname, mbSize , ent_type, values)
+     if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to get moab tag values')
+      
+     values  = mct_values - values
+
+     difference = dot_product(values, values)
+     call shr_mpi_sum(difference,differenceg,mpicom,subname)
+     difference = sqrt(differenceg)
+     call shr_mpi_commrank( mpicom, rank2 )
+     if ( rank2 .eq. 0 ) then
+        print * , subname, ' , difference on tag ', trim(tagname), ' = ', difference
+        !call shr_sys_abort(subname//'differences between mct and moab values')
+     endif
+     deallocate(values)
+     deallocate(mct_values)
+
+  end subroutine compare_to_moab_tag
+  !  #endif for MOABDEBUG
+#endif
+
 
 end module atm_comp_mct

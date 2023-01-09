@@ -7,11 +7,12 @@ module seq_flux_mct
   use shr_mct_mod,       only: shr_mct_queryConfigFile, shr_mct_sMatReaddnc
 
   use seq_comm_mct,     only : mboxid ! iMOAB app id for ocn on cpl pes
-  use seq_comm_mct,     only : mphaxid ! iMOAB app id for atm phys grid on cpl pes
+  use seq_comm_mct,     only : mbaxid ! iMOAB app id for atm phys grid on cpl pes
 
   use prep_aoflux_mod,   only: prep_aoflux_get_xao_omct, prep_aoflux_get_xao_amct
 
-  use iMOAB, only :  iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh, iMOAB_SetDoubleTagStorage
+  use iMOAB, only :  iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh, iMOAB_SetDoubleTagStorage, iMOAB_GetDoubleTagStorage
+  use iMOAB, only : iMOAB_GetMeshInfo
   use seq_comm_mct, only :  num_moab_exports ! for debugging
 
   use mct_mod
@@ -127,6 +128,9 @@ module seq_flux_mct
   real(r8)  :: seq_flux_mct_albdif = -1.0_r8  ! albedo, diffuse
   real(r8)  :: seq_flux_mct_albdir = -1.0_r8  ! albedo, direct
   real(r8)  :: seq_flux_atmocn_minwind ! minimum wind temperature for atmocn flux routines
+
+  ! moab 
+  real(r8),  allocatable :: tagValues(:) ! used for copying tag values from frac to frad
 
   ! Coupler field indices
 
@@ -818,6 +822,12 @@ contains
     integer(in)         :: kx,kr                ! fractions indices
     integer(in)         :: klat,klon       ! field indices
     logical             :: update_alb           ! was albedo updated
+
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
+    character(CXX) ::tagname
+    integer :: ent_type, ierr
+    integer , save  :: arrSize ! local size for moab tag arrays (number of cells locally)
+
     logical,save        :: first_call = .true.
     !
     character(*),parameter :: subName =   '(seq_flux_ocnalb_mct) '
@@ -860,6 +870,14 @@ contains
           lats(n) = dom_o%data%rAttr(klat,n)
           lons(n) = dom_o%data%rAttr(klon,n)
        enddo
+      
+       if (mboxid .ge. 0) then
+          ! allocate a local small array to copy a tag from another 
+          ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC );
+          arrSize = nvise(1) * 2 !  we have ifrac and ofrac to copy to ifrad, ofrad
+          allocate(tagValues(arrSize) )
+       endif
+
        first_call = .false.
     endif
 
@@ -956,6 +974,21 @@ contains
        kx = mct_aVect_indexRA(fractions_o,"ofrac")
        kr = mct_aVect_indexRA(fractions_o,"ofrad")
        fractions_o%rAttr(kr,:) = fractions_o%rAttr(kx,:)
+       ! copy here fractions ifrad and ofrad to moab tags
+       tagname = 'ifrac:ofrac'//C_NULL_CHAR
+       ent_type = 1 ! cells for ocean mesh
+       ierr = iMOAB_GetDoubleTagStorage( mboxid, tagname,  arrSize, ent_type, tagValues)
+       if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in getting ifrac, ofrac  '
+         call shr_sys_abort(subname//' ERROR in getting ifrac, ofrac')
+       endif
+       tagname = 'ifrad:ofrad'//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage( mboxid, tagname,  arrSize, ent_type, tagValues)
+       if (ierr .ne. 0) then
+         write(logunit,*) subname,' error in setting ifrad, ofrad  '
+         call shr_sys_abort(subname//' ERROR in setting ifrad, ofrad ')
+       endif
+
     endif
 
   end subroutine seq_flux_ocnalb_mct
@@ -1702,7 +1735,7 @@ contains
 
 
      if (comp%oneletterid == 'a' ) then
-        appId = mphaxid ! ocn on coupler
+        appId = mbaxid ! atm on coupler
         local_xao_mct => prep_aoflux_get_xao_amct()
      else if (comp%oneletterid == 'o') then
         appId = mbofxid  ! atm phys
@@ -1719,11 +1752,11 @@ contains
      allocate(GlobalIds(nloc))
      GlobalIds = dom%data%iAttr(kgg,:)
 
-     do i = 1, nloc
-        do j = 1, listSize
-           local_xao_mct(i, j) = xao%rAttr(j, i)
-        enddo
+
+     do j = 1, listSize
+       local_xao_mct(:, j) = xao%rAttr(j, :)
      enddo
+
      tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
      arrSize = nloc * listSize
      ent_type = 1 ! cells
