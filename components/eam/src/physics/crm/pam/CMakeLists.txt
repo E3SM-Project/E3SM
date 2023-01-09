@@ -1,7 +1,7 @@
 
 set(PAM_DRIVER_SRC 
     pam_driver.F90  
-    pam_driver.h  
+    pam_driver.cpp 
     pam_feedback.h  
     pam_rad_update.h  
     pam_state_update.h  
@@ -53,5 +53,5 @@ target_compile_options(pam_driver PUBLIC
   $<$<COMPILE_LANGUAGE:Fortran>:${PAM_Fortran_FLAGS}>
 )
 
-target_link_libraries( pam_driver pam_core physics dynamics )
+target_link_libraries(pam_driver pam_core physics dynamics eigen)
 
