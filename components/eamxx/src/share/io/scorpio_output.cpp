@@ -854,6 +854,7 @@ create_diagnostic (const std::string& diag_field_name) {
     // If last is bot or top, will simply use that
     params.set("Field Level", lev_and_idx.back());
   } else if (lev_str=="mb" || lev_str=="hPa" || lev_str=="Pa") {
+    EKAT_REQUIRE_MSG(!m_horiz_remapper,"Error! scorpio_output:" + diag_field_name + ", horizontal remapping of pressure level slices not supported.");
     // Diagnostic is a horizontal slice at a specific pressure level
     diag_name = "FieldAtPressureLevel";
     auto pres_str = lev_and_idx[0].substr(0,pos);
