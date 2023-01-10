@@ -24,7 +24,6 @@ module prep_atm_mod
   use seq_comm_mct, only : mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
   use seq_comm_mct, only : mbofxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
   use seq_comm_mct, only : mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere
-  use seq_comm_mct, only : mbintxofa ! iMOAB id for intx mesh between flux ocean and atmosphere
   use seq_comm_mct, only : mbintxao ! iMOAB id for intx mesh between atm and ocean
   use seq_comm_mct, only : mbixid   ! iMOAB id for mpas ice migrated mesh to coupler pes
   use seq_comm_mct, only : mbintxia  ! iMOAB id for intx mesh between ice and atm
