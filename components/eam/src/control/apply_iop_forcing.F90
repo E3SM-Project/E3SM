@@ -30,6 +30,7 @@ subroutine advance_iop_forcing(ps_in, u_in, v_in, &         ! In
 ! Author: 
 ! Original version: Adopted from CAM3.5/CAM5
 ! Updated version for E3SM: Peter Bogenschutz (bogenschutz1@llnl.gov)
+!  and replaces the Forecast.F90 routine in CAM3.5/CAM5/CAM6/E3SMv1/E3SMv2
 !
 !-----------------------------------------------------------------------
 

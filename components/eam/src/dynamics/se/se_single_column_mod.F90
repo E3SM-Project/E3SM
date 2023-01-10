@@ -220,16 +220,16 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 
   ! Call the main subroutine to update t, q, u, and v according to
   !  large scale forcing as specified in IOP file.
-  call advance_iop_forcing(elem(ie)%state%ps_v(i,j,t1),&          ! In
-     elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,2,:,t1),&  ! In
-     temperature(i,j,:),stateQin(:,:),dt,temp_tend,&              ! In
-     t_update,q_update,u_update,v_update)                         ! Out
+  call advance_iop_forcing(elem(ie)%state%ps_v(i,j,t1),&         ! In
+     elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,2,:,t1),& ! In
+     temperature(i,j,:),stateQin(:,:),dt,temp_tend,&             ! In
+     t_update,q_update,u_update,v_update)                        ! Out
 
   ! Nudge to observations if desired
   if (scm_relaxation) then
     call advance_iop_nudging(dt,elem(ie)%state%ps_v(i,j,t1),& ! In
-       t_update,q_update(:,1),&                             ! In
-       t_update,q_update(:,1),relaxt,relaxq)                ! Out
+       t_update,q_update(:,1),&                               ! In
+       t_update,q_update(:,1),relaxt,relaxq)                  ! Out
   endif
 
   elem(ie)%state%Q(i,j,:,:) = q_update(:,:)

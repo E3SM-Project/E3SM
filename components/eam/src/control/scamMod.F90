@@ -163,7 +163,7 @@ module scamMod
   logical*4, public ::  use_replay    ! use e3sm generated forcing 
   logical*4, public ::  use_3dfrc     ! use 3d forcing
   logical*4, public ::  have_heat_glob ! dataset contains global energy fixer
-  
+
   save bdate
 
 !=======================================================================
