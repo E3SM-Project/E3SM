@@ -8,7 +8,8 @@
 #include "gcm_rad_coupling.h"
 #include "pam_feedback.h"
 #include "pam_state_update.h"
-#include "pam_rad_update.h"
+#include "pam_radiation.h"
+#include "pam_statistics.h"
 #include "sponge_layer.h"
 #include "saturation_adjustment.h"
 #include "broadcast_initial_gcm_column.h"
@@ -71,11 +72,12 @@ extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
   // update the coupler GCM state variables using the input GCM state
   update_gcm_state( coupler );
-  //------------------------------------------------------------------------------------------------
   // Copy the input CRM state saved by the GCM to the PAM coupler state
   copy_input_state_to_coupler( coupler );
   // Copy input radiation tendencies to coupler
-  copy_input_rad_to_coupler( coupler );
+  pam_radiation_copy_input_to_coupler( coupler );
+  // initialize variables for statistical calculations
+  pam_statistics_init( coupler );
   //------------------------------------------------------------------------------------------------
   // Compute CRM forcing tendencies
   modules::compute_gcm_forcing_tendencies( coupler );
@@ -93,6 +95,7 @@ extern "C" void pam_driver() {
     if (crm_dt == 0.) { crm_dt = dycore.compute_time_step(coupler); }
     if (etime_crm + crm_dt > gcm_dt) { crm_dt = gcm_dt - etime_crm; }
 
+    // run a PAM time step
     coupler.run_module( "apply_gcm_forcing_tendencies" , modules::apply_gcm_forcing_tendencies );
     coupler.run_module( "apply_rad_tendencies"         , modules::apply_rad_tendencies );
     coupler.run_module( "sponge_layer"                 , modules::sponge_layer );
@@ -100,34 +103,28 @@ extern "C" void pam_driver() {
     coupler.run_module( "sgs"                          , [&] (pam::PamCoupler &coupler) {sgs   .timeStep(coupler);} );
     coupler.run_module( "micro"                        , [&] (pam::PamCoupler &coupler) {micro .timeStep(coupler);} );
 
+    pam_statistics_timestep_aggregation( coupler );
+
     etime_crm += crm_dt;
   }
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
-  // Compute primary feedback tendencies for GCM
-  compute_crm_feedback_tendencies( coupler, gcm_dt );
+  // Compute primary feedback tendencies and copy to GCM
+  pam_feedback_compute_crm_feedback_tendencies( coupler, gcm_dt );
   
   // Compute horizontal means of CRM state variables that are not forced
-  compute_crm_mean_state( coupler );
+  pam_feedback_compute_crm_mean_state( coupler );
 
   // Copy the output CRM state from the PAM coupler to the GCM
-  // copy_output_state_to_gcm( coupler );
+  pam_feedback_copy_output_state_to_gcm( coupler );
 
-  // Copy input radiation tendencies to coupler
-  // copy_output_rad_to_gcm( coupler );
+  // Copy radiation column quantities to host
+  // pam_radiation_copy_output_to_gcm( coupler );
 
-  //------------------------------------------------------------------------------------------------
-  // Output aggregated surface flux of water specices
-  // precip_liq = dm_device.get<real const,2>("p3_output_prec_liq")
-  // precip_ice = dm_device.get<real const,2>("p3_output_prec_ice")
-  // precip_tot = precip_liq + precip_ice
-  // auto precip_tot_host = dm_host.get<real,1>("output_precc");
-  // auto precip_liq_host = dm_host.get<real,1>("output_precl");
-  // auto precip_ice_host = dm_host.get<real,1>("output_precsc");
-  // precip_tot.deep_copy_to(precip_tot_host);
-  // precip_liq.deep_copy_to(precip_liq_host);
-  // precip_ice.deep_copy_to(precip_ice_host);
+  // copy aggregated statistical quantities to host
+  pam_statistics_copy_to_host( coupler, gcm_dt );
+
   //------------------------------------------------------------------------------------------------
   // Finalize the coupler and clean up
   dycore.finalize( coupler );

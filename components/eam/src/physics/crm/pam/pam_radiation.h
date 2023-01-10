@@ -3,7 +3,7 @@
 #include "pam_coupler.h"
 
 // Copy the CRM radiation tendencies into the PAM coupler
-inline void copy_input_rad_to_coupler( pam::PamCoupler &coupler ) {
+inline void pam_radiation_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
@@ -30,7 +30,7 @@ inline void copy_input_rad_to_coupler( pam::PamCoupler &coupler ) {
 
 
 // Copy the CRM radiation state into the PAM coupler
-inline void copy_output_rad_to_gcm( pam::PamCoupler &coupler ) {
+inline void pam_radiation_copy_output_to_gcm( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
