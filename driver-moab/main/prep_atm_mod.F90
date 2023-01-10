@@ -168,6 +168,7 @@ contains
    integer                  :: type1, type2 ! type for computing graph; should be the same type for ocean, 3 (FV)
    integer                  :: tagtype, numco, tagindex
    character(CXX)           :: tagName
+   integer                  :: context_id ! we will use a special context for the extra flux ocean instance
 
    !---------------------------------------------------------------
 
@@ -360,8 +361,11 @@ contains
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
             type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
             type2 = 3;
+            ! we ideintified the app mbofxid with !id_join = id_join + 1000! kind of random 
+            ! line 1267 in cplcomp_exchange_mod.F90
+            context_id = ocn(1)%cplcompid + 1000 
             ierr = iMOAB_ComputeCommGraph( mbofxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
-                                        ocn(1)%cplcompid, idintx)
+                                        context_id, idintx)
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in computing comm graph for second hop, ocnf -atm'
                call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocnf-atm')
@@ -370,7 +374,7 @@ contains
             mapper_Sof2a%src_mbid = mbofxid
             mapper_Sof2a%tgt_mbid = mbaxid
             mapper_Sof2a%intx_mbid = mbintxoa
-            mapper_Sof2a%src_context = ocn(1)%cplcompid
+            mapper_Sof2a%src_context = context_id
             mapper_Sof2a%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Sof2a%weight_identifier = wgtIdef

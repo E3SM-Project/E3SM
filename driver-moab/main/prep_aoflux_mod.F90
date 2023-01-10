@@ -182,7 +182,7 @@ contains
          call shr_sys_abort(subname//' ERROR in zeroing out xao_fields on mct instance ocn ')
        endif
        deallocate(tagValues)
-       deallocate(xao_omct)
+       !deallocate(xao_omct)
 #ifdef MOABDEBUG
         ! debug out file
       outfile = 'o_flux.h5m'//C_NULL_CHAR
