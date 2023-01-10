@@ -226,7 +226,10 @@ void BoundaryExchange::registration_completed()
     bool need_nlev_pack = false;
     for (int i = 0; i < m_num_3d_fields; ++i)
       if (m_3d_nlev_pack[i] != NUM_LEV) {
-        assert(m_3d_nlev_pack[i] < NUM_LEV);
+        Errors::runtime_check(m_3d_nlev_pack[i] < NUM_LEV,
+                              "Optional nlev must be <= NUM_LEV");
+        Errors::runtime_check(m_3d_nlev_pack[i] > 0,
+                              "Optional nlev must be > 0");
         need_nlev_pack = true;
         break;
       }
