@@ -151,27 +151,17 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
   logical :: t_before_advance, do_column_scm
   real(kind=real_kind), parameter :: rad2deg = 180.0_real_kind / SHR_CONST_PI
 
-  integer :: ie,k,i,j,t,nm_f
-  real (kind=real_kind), dimension(np,np,nlev)  :: dpt1,dpt2   ! delta pressure
-  real (kind=real_kind), dimension(np,np)  :: E
-  real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
-  real (kind=real_kind), dimension(np,np,nlev)  :: sumlk, suml2k
-  real (kind=real_kind), dimension(np,np,nlev)  :: p,T_v,phi, pnh
+  integer :: ie, k, i, j, t
+  real (kind=real_kind), dimension(np,np,nlev)  :: p, T_v, phi, pnh
   real (kind=real_kind), dimension(np,np,nlev+1) :: dpnh_dp_i
   real (kind=real_kind), dimension(np,np,nlev)  :: dp, exner, vtheta_dp, Rstar
   real (kind=real_kind), dimension(np,np,nlev) :: dpscm
-  real (kind=real_kind) :: cp_star1,cp_star2,qval_t1,qval_t2
-  real (kind=real_kind) :: Qt,dt
-  real (kind=real_kind), dimension(nlev,pcnst) :: stateQin1, stateQin2, stateQin_update
-  real (kind=real_kind), dimension(nlev,pcnst) :: update_q
-  real (kind=real_kind), dimension(nlev) :: temp_tend, dummy2, update_t, update_u, update_v
-  real (kind=real_kind) :: update_ps
+  real (kind=real_kind) :: cp_star1, cp_star2, qval_t1, qval_t2, dt
+  real (kind=real_kind), dimension(nlev,pcnst) :: stateQin, update_q
+  real (kind=real_kind), dimension(nlev) :: temp_tend, update_t, update_u, update_v
+  real (kind=real_kind), dimension(nlev) :: relaxt, relaxq
   real (kind=real_kind) :: temperature(np,np,nlev)
-  logical :: wet
 
-  integer:: icount
-
-  nm_f = 1
   if (t_before_advance) then
      t1=tl%nm1
      t2=tl%n0
@@ -208,17 +198,13 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
   i=1
   j=1
 
-  stateQin_update(:,:) = elem(ie)%state%Q(i,j,:,:)
-  stateQin1(:,:) = stateQin_update(:,:)
-  stateQin2(:,:) = stateQin_update(:,:)
+  stateQin(:,:) = elem(ie)%state%Q(i,j,:,:)
 
   if (.not. use_3dfrc) then
     temp_tend(:) = 0.0_real_kind
   else
     temp_tend(:) = elem(ie)%derived%fT(i,j,:)
   endif
-  dummy2(:) = 0.0_real_kind
-  update_ps = elem(ie)%state%ps_v(i,j,t1)
 
 #ifdef MODEL_THETA_L
   ! At first time step the tendency term is set to the
@@ -229,18 +215,22 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
   endif
 #endif
 
-  call advance_iop_forcing(begchunk,elem(ie)%state%ps_v(i,j,t1),&  ! In
-     elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,2,:,t1),&   ! In
-     temperature(i,j,:),stateQin1(:,:),dt,temp_tend,&              ! In
-     update_t,update_q,update_u,update_v)                          ! Out
+  ! Call the main subroutine to update t, q, u, and v according to
+  !  large scale forcing as specified in IOP file.
+  call advance_iop_forcing(begchunk,elem(ie)%state%ps_v(i,j,t1),& ! In
+     elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,2,:,t1),&  ! In
+     temperature(i,j,:),stateQin(:,:),dt,temp_tend,&              ! In
+     update_t,update_q,update_u,update_v)                         ! Out
 
   ! Nudge to observations if desired
   if (scm_relaxation) then
-
+    call apply_iop_nudging(dt,update_t,update_q(:,1),& ! In
+       update_t,update_q(:,1),relaxt,relaxq)           ! Out
   endif
 
   elem(ie)%state%Q(i,j,:,:) = update_q(:,:)
 
+  ! Update prognostic variables to the current values
 #ifdef MODEL_THETA_L
   ! If running theta-l model then the updated temperature needs
   !   to be converted back to potential temperature on reference levels, 
@@ -253,6 +243,31 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 #endif
   elem(ie)%state%v(i,j,1,:,t1) = update_u(:)
   elem(ie)%state%v(i,j,2,:,t1) = update_v(:)
+
+  ! Evaluate the differences in state information from observed
+  !  (done for diganostic purposes only)
+  do k = 1, plev
+    tdiff(k) = t_update(k)   - tobs(k)
+    qdiff(k) = q_update(k,1) - qobs(k)
+    udiff(k) = u_update(k)   - uobs(k)
+    vdiff(k) = v_update(k)   - vobs(k)
+  end do
+
+  ! Add various diganostic outfld calls
+  call outfld('TOBS',tobs,plon,chunk)
+  call outfld('QOBS',qobs,plon,chunk)
+  call outfld('TDIFF',tdiff,plon,chunk)
+  call outfld('QDIFF',qdiff,plon,chunk)
+  call outfld('DIVQ',divq,plon,chunk)
+  call outfld('DIVT',divt,plon,chunk)
+  call outfld('DIVQ3D',divq3d,plon,chunk)
+  call outfld('DIVT3D',divt3d,plon,chunk)
+  call outfld('PRECOBS',precobs,plon,chunk)
+  call outfld('LHFLXOBS',lhflxobs,plon,chunk)
+  call outfld('SHFLXOBS',shflxobs,plon,chunk)
+
+  call outfld('TRELAX',relaxt,plon,chunk)
+  call outfld('QRELAX',relaxq,plon,chunk)
 
 end subroutine apply_SC_forcing
 

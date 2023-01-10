@@ -132,39 +132,13 @@ subroutine advance_iop_forcing(chunk, ps_in, u_in, v_in, &  ! In
       v_update(k) = v_in(k)
     enddo
   endif
-     
-  ! evaluate the difference in state information from observed
-  do k = 1, plev
-    tdiff(k) = t_update(k)   - tobs(k)
-    qdiff(k) = q_update(k,1) - qobs(k)
-    udiff(k) = u_update(k)   - uobs(k)
-    vdiff(k) = v_update(k)   - vobs(k)
-  end do
-
-  ! outfld calls related to SCM
-
-  call outfld('TOBS',tobs,plon,chunk)
-  call outfld('QOBS',qobs,plon,chunk)
-  call outfld('TDIFF',tdiff,plon,chunk)
-  call outfld('QDIFF',qdiff,plon,chunk)
-  call outfld('DIVQ',divq,plon,chunk)
-  call outfld('DIVT',divt,plon,chunk)
-  call outfld('DIVQ3D',divq3d,plon,chunk)
-  call outfld('DIVT3D',divt3d,plon,chunk)
-  call outfld('PRECOBS',precobs,plon,chunk)
-  call outfld('LHFLXOBS',lhflxobs,plon,chunk)
-  call outfld('SHFLXOBS',shflxobs,plon,chunk)
-
-  call outfld('TRELAX',relaxt,plon,chunk)
-  call outfld('QRELAX',relaxq,plon,chunk)
-  call outfld('TAURELAX',rtau,plon,chunk)
 
 end subroutine advance_iop_forcing
 
 !=========================================================================
 
-subroutine apply_iop_nudging(scm_dt, t_in, q_in, &                 ! In
-                             t_update, q_update, relaxt, relaxq &) ! Out
+subroutine apply_iop_nudging(scm_dt, t_in, q_in, &                ! In
+                             t_update, q_update, relaxt, relaxq ) ! Out
 
 !----------------------------------------------------------------------- 
 ! 
@@ -172,19 +146,17 @@ subroutine apply_iop_nudging(scm_dt, t_in, q_in, &                 ! In
 ! Option to nudge t and q to observations as specified by the IOP file
 !-----------------------------------------------------------------------
 
-  real(r8), intent(in) :: scm_dt            ! model time step [s]
-  real(r8), intent(in) :: t_in(plev)        ! temperature [K]
-  real(r8), intent(in) :: q_in(plev,pcnst)  ! q tracer array [units vary]
+  real(r8), intent(in) :: scm_dt           ! model time step [s]
+  real(r8), intent(in) :: t_in(plev)       ! temperature [K]
+  real(r8), intent(in) :: q_in(plev)       ! water vapor mixing ratio [kg/kg]
 
   ! Output arguments
-  real(r8), intent(out) :: t_update(plev)      ! updated temperature [K]
-  real(r8), intent(out) :: q_update(plev,pcnst)! updated q tracer array [units vary]
-  real(r8), intent(out) :: relaxt(plev)      ! updated zonal wind [m/s]
-  real(r8), intent(out) :: relaxq(plev)      ! updated meridional wind [m/s]
+  real(r8), intent(out) :: t_update(plev)  ! updated temperature [K]
+  real(r8), intent(out) :: q_update(plev)  ! updated water vapor [kg/kg]
+  real(r8), intent(out) :: relaxt(plev)    ! relaxation of temperature [K/s]
+  real(r8), intent(out) :: relaxq(plev)    ! relaxation of vapor [kg/kg/s]
 
-  ! THIS IS WHERE WE RELAX THE SOLUTION IF REQUESTED 
-  !   The relaxation can be thought of as a part of the "adjustment" physics
-
+  ! Set relaxation arrays to zero
   do k=1,plev
     relaxt(k) = 0.0_r8
     relaxq(k) = 0.0_r8
@@ -197,11 +169,11 @@ subroutine apply_iop_nudging(scm_dt, t_in, q_in, &                 ! In
 
       rtau(k)   = 10800._r8          ! 3-hr adj. time scale
       rtau(k)   = max(scm_dt,rtau(k))
-      relaxt(k) = -(t_update(k)   - tobs(k))/rtau(k)
-      relaxq(k) = -(q_update(k,1) - qobs(k))/rtau(k)
+      relaxt(k) = -(t_update(k) - tobs(k))/rtau(k)
+      relaxq(k) = -(q_update(k) - qobs(k))/rtau(k)
 
-      t_update(k)   = t_update(k)   + relaxt(k)*scm_dt
-      q_update(k,1) = q_update(k,1) + relaxq(k)*scm_dt
+      t_update(k) = t_update(k) + relaxt(k)*scm_dt
+      q_update(k) = q_update(k) + relaxq(k)*scm_dt
 
     endif
 
