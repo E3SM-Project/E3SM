@@ -370,12 +370,15 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
    ncnst = size(cnst_names)
    do m = 1, ncnst
       call cnst_get_ind(cnst_names(m), mm)
-      if ( any(mm == (/ ixcldliq, ixcldice, ixrain, ixsnow /)) ) then
+      if ( any(mm == (/ ixcldliq, ixcldice, ixrain, ixsnow, ixcldrim /)) ) then
          ! mass mixing ratios
          call addfld(cnst_name(mm), (/ 'lev' /), 'A', 'kg/kg', cnst_longname(mm)                   )
       else if ( any(mm == (/ ixnumliq, ixnumice, ixnumrain, ixnumsnow /)) ) then
          ! number concentrations
          call addfld(cnst_name(mm), (/ 'lev' /), 'A', '1/kg', cnst_longname(mm)                   )
+      else if ( any(mm == (/ ixrimvol /)) ) then
+         ! rime volume
+         call addfld(cnst_name(mm), (/ 'lev' /), 'A', 'm3/kg', cnst_longname(mm)                   )
       else
          call endrun( "crm_physics_init: Could not call addfld for constituent with unknown units.")
       endif
@@ -396,18 +399,18 @@ subroutine crm_physics_init(state, pbuf2d, species_class)
       call addfld(bpcnst(ixcldliq ),(/'lev'/),'A','kg/kg',trim(cnst_name(ixcldliq ))//' before physics' )
       call addfld(apcnst(ixcldice ),(/'lev'/),'A','kg/kg',trim(cnst_name(ixcldice ))//' after physics'  )
       call addfld(bpcnst(ixcldice ),(/'lev'/),'A','kg/kg',trim(cnst_name(ixcldice ))//' before physics' )
-      call addfld(apcnst(ixnumliq ),(/'lev'/),'A','kg/kg',trim(cnst_name(ixnumliq ))//' after physics'  )
-      call addfld(bpcnst(ixnumliq ),(/'lev'/),'A','kg/kg',trim(cnst_name(ixnumliq ))//' before physics' )
-      call addfld(apcnst(ixnumice ),(/'lev'/),'A','kg/kg',trim(cnst_name(ixnumice ))//' after physics'  )
-      call addfld(bpcnst(ixnumice ),(/'lev'/),'A','kg/kg',trim(cnst_name(ixnumice ))//' before physics' )
+      call addfld(apcnst(ixnumliq ),(/'lev'/),'A',  '/kg',trim(cnst_name(ixnumliq ))//' after physics'  )
+      call addfld(bpcnst(ixnumliq ),(/'lev'/),'A',  '/kg',trim(cnst_name(ixnumliq ))//' before physics' )
+      call addfld(apcnst(ixnumice ),(/'lev'/),'A',  '/kg',trim(cnst_name(ixnumice ))//' after physics'  )
+      call addfld(bpcnst(ixnumice ),(/'lev'/),'A',  '/kg',trim(cnst_name(ixnumice ))//' before physics' )
       call addfld(apcnst(ixrain   ),(/'lev'/),'A','kg/kg',trim(cnst_name(ixrain   ))//' after physics'  )
       call addfld(bpcnst(ixrain   ),(/'lev'/),'A','kg/kg',trim(cnst_name(ixrain   ))//' before physics' )
-      call addfld(apcnst(ixnumrain),(/'lev'/),'A','kg/kg',trim(cnst_name(ixnumrain))//' after physics'  )
-      call addfld(bpcnst(ixnumrain),(/'lev'/),'A','kg/kg',trim(cnst_name(ixnumrain))//' before physics' )
+      call addfld(apcnst(ixnumrain),(/'lev'/),'A',  '/kg',trim(cnst_name(ixnumrain))//' after physics'  )
+      call addfld(bpcnst(ixnumrain),(/'lev'/),'A',  '/kg',trim(cnst_name(ixnumrain))//' before physics' )
       call addfld(apcnst(ixcldrim ),(/'lev'/),'A','kg/kg',trim(cnst_name(ixcldrim ))//' after physics'  )
       call addfld(bpcnst(ixcldrim ),(/'lev'/),'A','kg/kg',trim(cnst_name(ixcldrim ))//' before physics' )
-      call addfld(apcnst(ixrimvol ),(/'lev'/),'A','kg/kg',trim(cnst_name(ixrimvol ))//' after physics'  )
-      call addfld(bpcnst(ixrimvol ),(/'lev'/),'A','kg/kg',trim(cnst_name(ixrimvol ))//' before physics' )
+      call addfld(apcnst(ixrimvol ),(/'lev'/),'A','m3/kg',trim(cnst_name(ixrimvol ))//' after physics'  )
+      call addfld(bpcnst(ixrimvol ),(/'lev'/),'A','m3/kg',trim(cnst_name(ixrimvol ))//' before physics' )
    end if
 
    if (use_MMF_VT) then
