@@ -1,11 +1,12 @@
-subroutine forecast(chunk, ps_in, u_in, v_in, &         ! In
-                    t_in, q_in, scm_dt, t_phys_frc,&    ! In
-                    t_fcst, q_fcst, u_fcst, v_fcst)     ! Out
+subroutine advance_iop_forcing(chunk, ps_in, u_in, v_in, &  ! In
+                    t_in, q_in, scm_dt, t_phys_frc,&        ! In
+                    t_update, q_update, u_update, v_update) ! Out
 
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
-! Eularian forecast of t, q, u, and v.
+! Apply large scale forcing for t, q, u, and v as provided by the
+!   case IOP forcing file.
 ! 
 ! Author: 
 ! Original version: Adopted from CAM3.5/CAM5
@@ -24,9 +25,9 @@ subroutine forecast(chunk, ps_in, u_in, v_in, &         ! In
 !-----------------------------------------------------------------------
   implicit none
 !-----------------------------------------------------------------------
-!
-! Input arguments
-!
+
+  ! Input arguments
+
   integer, intent(in) :: chunk              ! begchunk identifier for output
   real(r8), intent(in) :: ps_in             ! surface pressure [Pa]
   real(r8), intent(in) :: u_in(plev)        ! zonal wind [m/s]
@@ -36,15 +37,14 @@ subroutine forecast(chunk, ps_in, u_in, v_in, &         ! In
   real(r8), intent(in) :: t_phys_frc(plev)  ! temperature forcing from physics [K/s]
   real(r8), intent(in) :: scm_dt            ! model time step [s]
 
-! Output arguments
-  real(r8), intent(out) :: t_fcst(plev)      ! updated temperature [K]
-  real(r8), intent(out) :: q_fcst(plev,pcnst)! updated q tracer array [units vary]
-  real(r8), intent(out) :: u_fcst(plev)      ! updated zonal wind [m/s]
-  real(r8), intent(out) :: v_fcst(plev)      ! updated meridional wind [m/s]
+  ! Output arguments
+  real(r8), intent(out) :: t_update(plev)      ! updated temperature [K]
+  real(r8), intent(out) :: q_update(plev,pcnst)! updated q tracer array [units vary]
+  real(r8), intent(out) :: u_update(plev)      ! updated zonal wind [m/s]
+  real(r8), intent(out) :: v_update(plev)      ! updated meridional wind [m/s]
 
-!
 !---------------------------Local variables-----------------------------
-!
+
   real(r8) pmidm1(plev)  ! pressure at model levels
   real(r8) pintm1(plevp) ! pressure at model interfaces
   real(r8) pdelm1(plev)  ! pdel(k)   = pint  (k+1)-pint  (k)
@@ -56,16 +56,16 @@ subroutine forecast(chunk, ps_in, u_in, v_in, &         ! In
 
   integer i,k,m           ! longitude, level, constituent indices
   integer nlon
-!
-!  variables for relaxation addition
-!
+
+  ! variables for relaxation addition
+
   real(r8) rtau(plev)
   real(r8) relaxt(plev)
   real(r8) relaxq(plev)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-! Perform weight averaged in pressure of the omega profile to get from
-!   the midpoint grid to the interface grid
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
+  ! Perform weight averaged in pressure of the omega profile to get from
+  !   the midpoint grid to the interface grid
 
   nlon = 1 ! number of columns for plevs0 routine
   call plevs0(nlon    ,plon   ,plev    ,ps_in   ,pintm1  ,pmidm1 ,pdelm1)
@@ -79,8 +79,8 @@ subroutine forecast(chunk, ps_in, u_in, v_in, &         ! In
 
   wfldint(plevp) = 0.0_r8
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
-!  Advance T and Q due to large scale forcing
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !  Advance T and Q due to large scale forcing
 
   if (use_3dfrc) then
     t_lsf(:plev) = divt3d(:plev)
@@ -102,35 +102,35 @@ subroutine forecast(chunk, ps_in, u_in, v_in, &         ! In
       t_expan = scm_dt*wfld(k)*t_in(k)*rair/(cpair*pmidm1(k))
     endif
 #endif  
-    t_fcst(k) = t_in(k) + t_expan + scm_dt*(t_phys_frc(k) + t_lsf(k))
+    t_update(k) = t_in(k) + t_expan + scm_dt*(t_phys_frc(k) + t_lsf(k))
     do m=1,pcnst
-      q_fcst(k,m) = q_in(k,m) + scm_dt*q_lsf(k,m)
+      q_update(k,m) = q_in(k,m) + scm_dt*q_lsf(k,m)
     end do
   enddo
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
-!  Set U and V fields
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !  Set U and V fields
 
   if (have_v .and. have_u) then
     do k=1,plev
-      u_fcst(k) = uobs(k)
-      v_fcst(k) = vobs(k)
+      u_update(k) = uobs(k)
+      v_update(k) = vobs(k)
     enddo
   else
     do k=1,plev
-      u_fcst(k) = u_in(k)
-      v_fcst(k) = v_in(k)
+      u_update(k) = u_in(k)
+      v_update(k) = v_in(k)
     enddo
   endif
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
-!  Set U and V fields
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !  Set U and V fields
 
   if (scm_relaxation) then
-!
-!    THIS IS WHERE WE RELAX THE SOLUTION IF REQUESTED
-!    The relaxation can be thought of as a part of the "adjustment" physics
-!
+
+  ! THIS IS WHERE WE RELAX THE SOLUTION IF REQUESTED
+  !   The relaxation can be thought of as a part of the "adjustment" physics
+
     do k=1,plev
       relaxt(k) = 0.0_r8
       relaxq(k) = 0.0_r8
@@ -143,11 +143,11 @@ subroutine forecast(chunk, ps_in, u_in, v_in, &         ! In
 
         rtau(k)   = 10800._r8          ! 3-hr adj. time scale
         rtau(k)   = max(scm_dt,rtau(k))
-        relaxt(k) = -(t_fcst(k)   - tobs(k))/rtau(k)
-        relaxq(k) = -(q_fcst(k,1) - qobs(k))/rtau(k)
+        relaxt(k) = -(t_update(k)   - tobs(k))/rtau(k)
+        relaxq(k) = -(q_update(k,1) - qobs(k))/rtau(k)
 
-        t_fcst(k)   = t_fcst(k)   + relaxt(k)*scm_dt
-        q_fcst(k,1) = q_fcst(k,1) + relaxq(k)*scm_dt
+        t_update(k)   = t_update(k)   + relaxt(k)*scm_dt
+        q_update(k,1) = q_update(k,1) + relaxq(k)*scm_dt
 
       endif
 
@@ -159,17 +159,17 @@ subroutine forecast(chunk, ps_in, u_in, v_in, &         ! In
     
   end if ! end relaxation logical
      
-!  evaluate the difference in state information from observed
+  ! evaluate the difference in state information from observed
   do k = 1, plev
-    tdiff(k) = t_fcst(k)   - tobs(k)
-    qdiff(k) = q_fcst(k,1) - qobs(k)
-    udiff(k) = u_fcst(k)   - uobs(k)
-    vdiff(k) = v_fcst(k)   - vobs(k)
+    tdiff(k) = t_update(k)   - tobs(k)
+    qdiff(k) = q_update(k,1) - qobs(k)
+    udiff(k) = u_update(k)   - uobs(k)
+    vdiff(k) = v_update(k)   - vobs(k)
   end do
-!
+
 !===============================================================
-!
-!  outfld calls related to SCM
+
+  ! outfld calls related to SCM
 
   call outfld('TOBS',tobs,plon,chunk)
   call outfld('QOBS',qobs,plon,chunk)
@@ -183,7 +183,7 @@ subroutine forecast(chunk, ps_in, u_in, v_in, &         ! In
   call outfld('LHFLXOBS',lhflxobs,plon,chunk)
   call outfld('SHFLXOBS',shflxobs,plon,chunk)
 
-end subroutine forecast
+end subroutine advance_iop_forcing
 
 
 !
