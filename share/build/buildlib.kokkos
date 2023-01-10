@@ -47,7 +47,26 @@ OR
 
 ###############################################################################
 def buildlib(bldroot, installpath, case):
-    ###############################################################################
+###############################################################################
+    installed_kokkos_dir = os.environ.get("KOKKOS_PATH")
+    if installed_kokkos_dir is not None:
+        # We are trying to use a pre-installed kokkos. Look for the relevant folders/libs,
+        # and if all looks good, return. Otherwise, crap out
+        kokkos_root = os.path.abspath(installed_kokkos_dir)
+        include_dir = os.path.join(kokkos_root,'include')
+
+        expect (os.path.isdir(kokkos_root),f"Non-existent kokkos install dir '{kokkos_root}'")
+        expect (os.path.isdir(include_dir),f"Missing include subfolder in kokkos install dir '{kokkos_root}'")
+        expect (os.path.isfile(os.path.join(include_dir,'Kokkos_Core.hpp')),f"Missing kokkos headers in '{include_dir}'")
+
+        # TODO: should I check for libs too? The problem is that the lib subfolder is
+        # often arch dependent (e.g., $prefix/lib or $prefix/lib64)... The best thing
+        # would be to run a small cmake script, that calls find_package. But E3SM's
+        # cmake build system will do that soon enough, so any error will be caught there.
+        return
+    else:
+        print ("no value foudn in env for KOKKOS_PATH. building from scratch")
+
     srcroot = case.get_value("SRCROOT")
     kokkos_dir = os.path.join(srcroot, "externals", "kokkos")
     expect(os.path.isdir(kokkos_dir), "Missing kokkos submodule")
