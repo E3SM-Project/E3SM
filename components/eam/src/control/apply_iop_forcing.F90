@@ -1,4 +1,4 @@
-module apply_iop_forcing
+module apply_iop_forcing_mod
 
 use shr_kind_mod,   only: r8 => shr_kind_r8, i8 => shr_kind_i8
 use pmgrid
@@ -7,18 +7,17 @@ use pspect
 use physconst,      only: rair,cpair
 use cam_logfile,    only: iulog
 use scamMod
-use cam_history,    only: outfld
 
 implicit none
 
 public advance_iop_forcing
-public apply_iop_nudging
+public advance_iop_nudging
 
 !=========================================================================
 contains
 !=========================================================================
 
-subroutine advance_iop_forcing(chunk, ps_in, u_in, v_in, &  ! In
+subroutine advance_iop_forcing(ps_in, u_in, v_in, &         ! In
                     t_in, q_in, scm_dt, t_phys_frc,&        ! In
                     t_update, q_update, u_update, v_update) ! Out
 
@@ -38,7 +37,6 @@ subroutine advance_iop_forcing(chunk, ps_in, u_in, v_in, &  ! In
 
   ! Input arguments
 
-  integer, intent(in) :: chunk              ! begchunk identifier for output
   real(r8), intent(in) :: ps_in             ! surface pressure [Pa]
   real(r8), intent(in) :: u_in(plev)        ! zonal wind [m/s]
   real(r8), intent(in) :: v_in(plev)        ! meridional wind [m/s]
@@ -53,7 +51,7 @@ subroutine advance_iop_forcing(chunk, ps_in, u_in, v_in, &  ! In
   real(r8), intent(out) :: u_update(plev)      ! updated zonal wind [m/s]
   real(r8), intent(out) :: v_update(plev)      ! updated meridional wind [m/s]
 
-!---------------------------Local variables-----------------------------
+  ! Local variables
 
   real(r8) pmidm1(plev)  ! pressure at model levels
   real(r8) pintm1(plevp) ! pressure at model interfaces
@@ -78,7 +76,7 @@ subroutine advance_iop_forcing(chunk, ps_in, u_in, v_in, &  ! In
   !   the midpoint grid to the interface grid
 
   nlon = 1 ! number of columns for plevs0 routine
-  call plevs0(nlon    ,plon   ,plev    ,ps_in   ,pintm1  ,pmidm1 ,pdelm1)
+  call plevs0(nlon, plon, plev, ps_in, pintm1, pmidm1, pdelm1)
 
   wfldint(1) = 0.0_r8
 
@@ -137,7 +135,7 @@ end subroutine advance_iop_forcing
 
 !=========================================================================
 
-subroutine apply_iop_nudging(scm_dt, t_in, q_in, &                ! In
+subroutine advance_iop_nudging(scm_dt, ps_in, t_in, q_in, &       ! In
                              t_update, q_update, relaxt, relaxq ) ! Out
 
 !----------------------------------------------------------------------- 
@@ -147,6 +145,7 @@ subroutine apply_iop_nudging(scm_dt, t_in, q_in, &                ! In
 !-----------------------------------------------------------------------
 
   real(r8), intent(in) :: scm_dt           ! model time step [s]
+  real(r8), intent(in) :: ps_in            ! surface pressure [Pa]
   real(r8), intent(in) :: t_in(plev)       ! temperature [K]
   real(r8), intent(in) :: q_in(plev)       ! water vapor mixing ratio [kg/kg]
 
@@ -155,6 +154,16 @@ subroutine apply_iop_nudging(scm_dt, t_in, q_in, &                ! In
   real(r8), intent(out) :: q_update(plev)  ! updated water vapor [kg/kg]
   real(r8), intent(out) :: relaxt(plev)    ! relaxation of temperature [K/s]
   real(r8), intent(out) :: relaxq(plev)    ! relaxation of vapor [kg/kg/s]
+
+  ! Local variables
+  integer :: k, nlon
+  real(r8) rtau(plev)
+  real(r8) pmidm1(plev)  ! pressure at model levels
+  real(r8) pintm1(plevp) ! pressure at model interfaces
+  real(r8) pdelm1(plev)  ! pdel(k)   = pint  (k+1)-pint  (k)
+
+  nlon = 1 ! number of columns for plevs0 routine
+  call plevs0(nlon, plon, plev, ps_in, pintm1, pmidm1, pdelm1)
 
   ! Set relaxation arrays to zero
   do k=1,plev
@@ -179,12 +188,12 @@ subroutine apply_iop_nudging(scm_dt, t_in, q_in, &                ! In
 
   end do
 
-end subroutine apply_iop_nudging
+end subroutine advance_iop_nudging
 
 !
 !-----------------------------------------------------------------------
 !
 
-end module apply_iop_forcing
+end module apply_iop_forcing_mod
 
 

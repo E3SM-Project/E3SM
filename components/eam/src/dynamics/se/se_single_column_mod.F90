@@ -9,11 +9,13 @@ use constituents, only: cnst_get_ind, pcnst
 use dimensions_mod, only: nelemd, np
 use time_manager, only: get_nstep, dtime, is_first_step
 use ppgrid, only: begchunk
+use pmgrid
 #ifdef MODEL_THETA_L
 use element_ops, only: get_R_star
 use eos, only: pnh_and_exner_from_eos
 #endif
 use element_ops, only: get_temperature
+use cam_history, only: outfld
 
 implicit none
 
@@ -143,6 +145,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
   use time_mod
   use time_manager, only: get_nstep
   use shr_const_mod, only: SHR_CONST_PI
+  use apply_iop_forcing_mod, only: advance_iop_forcing, advance_iop_nudging
 
   integer :: t1,t2,n,nets,nete,pp
   type (element_t)     , intent(inout), target :: elem(:)
@@ -157,8 +160,8 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
   real (kind=real_kind), dimension(np,np,nlev)  :: dp, exner, vtheta_dp, Rstar
   real (kind=real_kind), dimension(np,np,nlev) :: dpscm
   real (kind=real_kind) :: cp_star1, cp_star2, qval_t1, qval_t2, dt
-  real (kind=real_kind), dimension(nlev,pcnst) :: stateQin, update_q
-  real (kind=real_kind), dimension(nlev) :: temp_tend, update_t, update_u, update_v
+  real (kind=real_kind), dimension(nlev,pcnst) :: stateQin, q_update
+  real (kind=real_kind), dimension(nlev) :: temp_tend, t_update, u_update, v_update
   real (kind=real_kind), dimension(nlev) :: relaxt, relaxq
   real (kind=real_kind) :: temperature(np,np,nlev)
 
@@ -217,18 +220,19 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 
   ! Call the main subroutine to update t, q, u, and v according to
   !  large scale forcing as specified in IOP file.
-  call advance_iop_forcing(begchunk,elem(ie)%state%ps_v(i,j,t1),& ! In
+  call advance_iop_forcing(elem(ie)%state%ps_v(i,j,t1),&          ! In
      elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,2,:,t1),&  ! In
      temperature(i,j,:),stateQin(:,:),dt,temp_tend,&              ! In
-     update_t,update_q,update_u,update_v)                         ! Out
+     t_update,q_update,u_update,v_update)                         ! Out
 
   ! Nudge to observations if desired
   if (scm_relaxation) then
-    call apply_iop_nudging(dt,update_t,update_q(:,1),& ! In
-       update_t,update_q(:,1),relaxt,relaxq)           ! Out
+    call advance_iop_nudging(dt,elem(ie)%state%ps_v(i,j,t1),& ! In
+       t_update,q_update(:,1),&                             ! In
+       t_update,q_update(:,1),relaxt,relaxq)                ! Out
   endif
 
-  elem(ie)%state%Q(i,j,:,:) = update_q(:,:)
+  elem(ie)%state%Q(i,j,:,:) = q_update(:,:)
 
   ! Update prognostic variables to the current values
 #ifdef MODEL_THETA_L
@@ -236,17 +240,17 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
   !   to be converted back to potential temperature on reference levels, 
   !   which is what dp_coupling expects
   call get_R_star(Rstar,elem(ie)%state%Q(:,:,:,1))
-  elem(ie)%state%vtheta_dp(i,j,:,t1) = (update_t(:)*Rstar(i,j,:)*dp(i,j,:))/&
+  elem(ie)%state%vtheta_dp(i,j,:,t1) = (t_update(:)*Rstar(i,j,:)*dp(i,j,:))/&
               (Rgas*exner(i,j,:))
 #else
-  elem(ie)%state%T(i,j,:,t1) = update_t(:)
+  elem(ie)%state%T(i,j,:,t1) = t_update(:)
 #endif
-  elem(ie)%state%v(i,j,1,:,t1) = update_u(:)
-  elem(ie)%state%v(i,j,2,:,t1) = update_v(:)
+  elem(ie)%state%v(i,j,1,:,t1) = u_update(:)
+  elem(ie)%state%v(i,j,2,:,t1) = v_update(:)
 
   ! Evaluate the differences in state information from observed
   !  (done for diganostic purposes only)
-  do k = 1, plev
+  do k = 1, nlev
     tdiff(k) = t_update(k)   - tobs(k)
     qdiff(k) = q_update(k,1) - qobs(k)
     udiff(k) = u_update(k)   - uobs(k)
@@ -254,20 +258,20 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
   end do
 
   ! Add various diganostic outfld calls
-  call outfld('TOBS',tobs,plon,chunk)
-  call outfld('QOBS',qobs,plon,chunk)
-  call outfld('TDIFF',tdiff,plon,chunk)
-  call outfld('QDIFF',qdiff,plon,chunk)
-  call outfld('DIVQ',divq,plon,chunk)
-  call outfld('DIVT',divt,plon,chunk)
-  call outfld('DIVQ3D',divq3d,plon,chunk)
-  call outfld('DIVT3D',divt3d,plon,chunk)
-  call outfld('PRECOBS',precobs,plon,chunk)
-  call outfld('LHFLXOBS',lhflxobs,plon,chunk)
-  call outfld('SHFLXOBS',shflxobs,plon,chunk)
+  call outfld('TOBS',tobs,plon,begchunk)
+  call outfld('QOBS',qobs,plon,begchunk)
+  call outfld('TDIFF',tdiff,plon,begchunk)
+  call outfld('QDIFF',qdiff,plon,begchunk)
+  call outfld('DIVQ',divq,plon,begchunk)
+  call outfld('DIVT',divt,plon,begchunk)
+  call outfld('DIVQ3D',divq3d,plon,begchunk)
+  call outfld('DIVT3D',divt3d,plon,begchunk)
+  call outfld('PRECOBS',precobs,plon,begchunk)
+  call outfld('LHFLXOBS',lhflxobs,plon,begchunk)
+  call outfld('SHFLXOBS',shflxobs,plon,begchunk)
 
-  call outfld('TRELAX',relaxt,plon,chunk)
-  call outfld('QRELAX',relaxq,plon,chunk)
+  call outfld('TRELAX',relaxt,plon,begchunk)
+  call outfld('QRELAX',relaxq,plon,begchunk)
 
 end subroutine apply_SC_forcing
 
