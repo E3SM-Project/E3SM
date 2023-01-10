@@ -1,3 +1,23 @@
+module apply_iop_forcing
+
+use shr_kind_mod,   only: r8 => shr_kind_r8, i8 => shr_kind_i8
+use pmgrid
+use constituents,   only: pcnst, cnst_get_ind
+use pspect
+use physconst,      only: rair,cpair
+use cam_logfile,    only: iulog
+use scamMod
+use cam_history,    only: outfld
+
+implicit none
+
+public advance_iop_forcing
+public apply_iop_nudging
+
+!=========================================================================
+contains
+!=========================================================================
+
 subroutine advance_iop_forcing(chunk, ps_in, u_in, v_in, &  ! In
                     t_in, q_in, scm_dt, t_phys_frc,&        ! In
                     t_update, q_update, u_update, v_update) ! Out
@@ -14,17 +34,7 @@ subroutine advance_iop_forcing(chunk, ps_in, u_in, v_in, &  ! In
 !
 !-----------------------------------------------------------------------
 
-  use shr_kind_mod,   only: r8 => shr_kind_r8, i8 => shr_kind_i8
-  use pmgrid
-  use constituents,   only: pcnst, cnst_get_ind
-  use pspect
-  use physconst,      only: rair,cpair
-  use cam_logfile,    only: iulog
-  use scamMod
-  use cam_history,    only: outfld
-!-----------------------------------------------------------------------
   implicit none
-!-----------------------------------------------------------------------
 
   ! Input arguments
 
@@ -122,42 +132,6 @@ subroutine advance_iop_forcing(chunk, ps_in, u_in, v_in, &  ! In
       v_update(k) = v_in(k)
     enddo
   endif
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
-  !  Set U and V fields
-
-  if (scm_relaxation) then
-
-  ! THIS IS WHERE WE RELAX THE SOLUTION IF REQUESTED
-  !   The relaxation can be thought of as a part of the "adjustment" physics
-
-    do k=1,plev
-      relaxt(k) = 0.0_r8
-      relaxq(k) = 0.0_r8
-    end do
-
-    do k=1,plev
-
-      if (pmidm1(k) .le. scm_relaxation_low*100._r8 .and. &
-        pmidm1(k) .ge. scm_relaxation_high*100._r8) then
-
-        rtau(k)   = 10800._r8          ! 3-hr adj. time scale
-        rtau(k)   = max(scm_dt,rtau(k))
-        relaxt(k) = -(t_update(k)   - tobs(k))/rtau(k)
-        relaxq(k) = -(q_update(k,1) - qobs(k))/rtau(k)
-
-        t_update(k)   = t_update(k)   + relaxt(k)*scm_dt
-        q_update(k,1) = q_update(k,1) + relaxq(k)*scm_dt
-
-      endif
-
-    end do
-
-    call outfld('TRELAX',relaxt,plon,chunk)
-    call outfld('QRELAX',relaxq,plon,chunk)
-    call outfld('TAURELAX',rtau,plon,chunk)
-    
-  end if ! end relaxation logical
      
   ! evaluate the difference in state information from observed
   do k = 1, plev
@@ -166,8 +140,6 @@ subroutine advance_iop_forcing(chunk, ps_in, u_in, v_in, &  ! In
     udiff(k) = u_update(k)   - uobs(k)
     vdiff(k) = v_update(k)   - vobs(k)
   end do
-
-!===============================================================
 
   ! outfld calls related to SCM
 
@@ -183,14 +155,64 @@ subroutine advance_iop_forcing(chunk, ps_in, u_in, v_in, &  ! In
   call outfld('LHFLXOBS',lhflxobs,plon,chunk)
   call outfld('SHFLXOBS',shflxobs,plon,chunk)
 
+  call outfld('TRELAX',relaxt,plon,chunk)
+  call outfld('QRELAX',relaxq,plon,chunk)
+  call outfld('TAURELAX',rtau,plon,chunk)
+
 end subroutine advance_iop_forcing
 
+!=========================================================================
+
+subroutine apply_iop_nudging(scm_dt, t_in, q_in, &                 ! In
+                             t_update, q_update, relaxt, relaxq &) ! Out
+
+!----------------------------------------------------------------------- 
+! 
+! Purpose: 
+! Option to nudge t and q to observations as specified by the IOP file
+!-----------------------------------------------------------------------
+
+  real(r8), intent(in) :: scm_dt            ! model time step [s]
+  real(r8), intent(in) :: t_in(plev)        ! temperature [K]
+  real(r8), intent(in) :: q_in(plev,pcnst)  ! q tracer array [units vary]
+
+  ! Output arguments
+  real(r8), intent(out) :: t_update(plev)      ! updated temperature [K]
+  real(r8), intent(out) :: q_update(plev,pcnst)! updated q tracer array [units vary]
+  real(r8), intent(out) :: relaxt(plev)      ! updated zonal wind [m/s]
+  real(r8), intent(out) :: relaxq(plev)      ! updated meridional wind [m/s]
+
+  ! THIS IS WHERE WE RELAX THE SOLUTION IF REQUESTED 
+  !   The relaxation can be thought of as a part of the "adjustment" physics
+
+  do k=1,plev
+    relaxt(k) = 0.0_r8
+    relaxq(k) = 0.0_r8
+  end do
+
+  do k=1,plev
+
+    if (pmidm1(k) .le. scm_relaxation_low*100._r8 .and. &
+      pmidm1(k) .ge. scm_relaxation_high*100._r8) then
+
+      rtau(k)   = 10800._r8          ! 3-hr adj. time scale
+      rtau(k)   = max(scm_dt,rtau(k))
+      relaxt(k) = -(t_update(k)   - tobs(k))/rtau(k)
+      relaxq(k) = -(q_update(k,1) - qobs(k))/rtau(k)
+
+      t_update(k)   = t_update(k)   + relaxt(k)*scm_dt
+      q_update(k,1) = q_update(k,1) + relaxq(k)*scm_dt
+
+    endif
+
+  end do
+
+end subroutine apply_iop_nudging
 
 !
 !-----------------------------------------------------------------------
 !
 
-!
-!-----------------------------------------------------------------------
+end module apply_iop_forcing
 
 
