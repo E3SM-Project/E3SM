@@ -603,12 +603,9 @@
       <executable>srun</executable>
       <arguments>
         <arg name="num_tasks"> -l -K -n {{ total_tasks }} -N {{ num_nodes }} </arg>
-        <!-- <arg name="binding">cpu_bind=cores</arg>  -->
-        <!-- <arg name="binding">threads-per-core=1 -c 2</arg> -->
         <arg name="binding">--threads-per-core=1</arg>
         <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
         <arg name="placement">-m *:block</arg>
-        <!--<arg name="placement">-m plane={{ tasks_per_node }}</arg>-->
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
