@@ -106,6 +106,7 @@ contains
          call prefetch(state%bm)
          call prefetch(state%t_prev)
          call prefetch(state%q_prev)
+
          ! SHOC variables
          if (.not. allocated(state%shoc_wthv_sec))  allocate(state%shoc_wthv_sec(ncrms,crm_nx,crm_ny,crm_nz))
          if (.not. allocated(state%shoc_tk      ))  allocate(state%shoc_tk      (ncrms,crm_nx,crm_ny,crm_nz))
@@ -117,6 +118,7 @@ contains
          call prefetch(state%shoc_tkh     )
          call prefetch(state%shoc_cldfrac )
          call prefetch(state%shoc_relvar  )
+
       end if
 
    end subroutine crm_state_initialize
