@@ -798,7 +798,7 @@ contains
     use shr_const_mod, only: SHR_CONST_PI
     use iMOAB,  only       : iMOAB_CreateVertices, iMOAB_WriteMesh, &
     iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
-    iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_MergeVertices
+    iMOAB_ResolveSharedEntities, iMOAB_CreateElements, iMOAB_MergeVertices, iMOAB_UpdateMeshInfo
 
     integer,allocatable :: gindex(:)  ! Number the local grid points; used for global ID
     integer lsz !  keep local size
@@ -907,7 +907,9 @@ contains
     if (ierr > 0 )  &
       call shr_sys_abort(sub//' Error: fail to set aream tag ')
 
-
+    ierr = iMOAB_UpdateMeshInfo ( mrofid )
+    if (ierr > 0 )  &
+      call shr_sys_abort(sub//' Error: fail to update mesh info ')
     deallocate(moab_vert_coords)
     deallocate(vgids)
     deallocate(coords)
