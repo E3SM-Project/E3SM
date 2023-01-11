@@ -21,6 +21,10 @@
 #include <hip/hip_runtime.h>
 #endif
 
+#ifdef KOKKOS_ENABLE_SYCL
+#include ???
+#endif
+
 namespace Homme {
 
 // Since we're initializing from inside a Fortran code and don't have access to
@@ -52,7 +56,13 @@ void initialize_kokkos () {
     // It isn't a big deal if we can't get the device count.
     nd = 1;
   }
+#elif defined(KOKKOS_ENABLE_SYCL)
+
+????????
+
 #endif
+
+
 #ifdef HOMMEXX_ENABLE_GPU  
   std::stringstream ss;
   ss << "--kokkos-num-devices=" << nd;
