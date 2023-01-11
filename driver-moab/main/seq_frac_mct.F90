@@ -875,42 +875,47 @@ contains
 
        call seq_frac_check(fractions_i,'ice set')
 
+       ! update ice fractions on moab instance
+       if (first_time) then  ! allocate some local arrays
+          lSize = mct_aVect_lSize(dom_i%data)
+          allocate(tagValues(lSize) )
+          allocate(GlobalIds(lSize) )
+          kgg = mct_aVect_indexIA(dom_o%data ,"GlobGridNum" ,perrWith=subName)
+          GlobalIds = dom_i%data%iAttr(kgg,:)
+          ent_type = 1 ! cells for mpas sea ice
+       endif
+
+          ! something like this:
+       if (mbixid > 0 ) then
+
+          tagname = 'ifrac'//C_NULL_CHAR
+          ! fraclist_i = 'afrac:ifrac:ofrac'
+          !
+          tagValues = fractions_i%rAttr(ki,:)
+          ierr = iMOAB_SetDoubleTagStorageWithGid ( mbixid, tagname, lSize , ent_type, tagValues, GlobalIds )
+          if (ierr .ne. 0) then
+             write(logunit,*) subname,' error in setting ifrac on ice moab instance  '
+             call shr_sys_abort(subname//' ERROR in setting ifrac on ice moab instance ')
+          endif
+
+          tagname = 'ofrac'//C_NULL_CHAR
+          tagValues = fractions_i%rAttr(ko,:)
+          ierr = iMOAB_SetDoubleTagStorageWithGid ( mbixid, tagname, lSize , ent_type, tagValues, GlobalIds )
+          if (ierr .ne. 0) then
+             write(logunit,*) subname,' error in setting ofrac on ice moab instance  '
+             call shr_sys_abort(subname//' ERROR in setting ofrac on ice moab instance ')
+          endif
+
+          first_time = .false.
+       endif
+
        if (ocn_present) then
           mapper_i2o => prep_ocn_get_mapper_SFi2o()
           call seq_map_map(mapper_i2o, fractions_i, fractions_o, &
                fldlist='ofrac:ifrac',norm=.false.)
           call seq_frac_check(fractions_o, 'ocn set')
-          ! update ocean fractions on moab instance 
-          if (first_time) then  ! allocate some local arrays
-             lSize = mct_aVect_lSize(dom_o%data)
-             allocate(tagValues(lSize) )
-             allocate(GlobalIds(lSize) )
-             kgg = mct_aVect_indexIA(dom_o%data ,"GlobGridNum" ,perrWith=subName)
-             GlobalIds = dom_o%data%iAttr(kgg,:)
-             ent_type = 1 ! cells for mpas ocean
-          endif 
-          ! something like this:
-
-         tagname = 'ofrac'//C_NULL_CHAR
-         !   fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
-         tagValues = fractions_o%rAttr(3,:)
-         ierr = iMOAB_SetDoubleTagStorageWithGid ( mboxid, tagname, lSize , ent_type, tagValues, GlobalIds )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in setting ofrac on ocn moab instance  '
-            call shr_sys_abort(subname//' ERROR in setting ofrac on ocn moab instance ')
-         endif
-         tagname = 'ifrac'//C_NULL_CHAR
-         !   fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
-         tagValues = fractions_o%rAttr(2,:)
-         ierr = iMOAB_SetDoubleTagStorageWithGid ( mboxid, tagname, lSize , ent_type, tagValues, GlobalIds )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in setting ofrac on ocn moab instance  '
-            call shr_sys_abort(subname//' ERROR in setting ofrac on ocn moab instance ')
-         endif
-
-         first_time = .false.
-
        endif
+
 
        if (atm_present) then
           mapper_i2a => prep_atm_get_mapper_Fi2a()
