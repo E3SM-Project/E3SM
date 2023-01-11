@@ -1272,6 +1272,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_mirror_array_readwrite( 'rad_qv',          crm_rad%qv          )
       call pam_mirror_array_readwrite( 'rad_qc',          crm_rad%qc          )
       call pam_mirror_array_readwrite( 'rad_qi',          crm_rad%qi          )
+      call pam_mirror_array_readwrite( 'rad_nc',          crm_rad%nc          )
+      call pam_mirror_array_readwrite( 'rad_ni',          crm_rad%ni          )
       call pam_mirror_array_readwrite( 'rad_cld',         crm_rad%cld         )
 
       ! call pam_mirror_array_readwrite( 'output_prectend',    crm_output%prectend,    '' )
@@ -1352,13 +1354,15 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
       call pam_set_option('ncrms', ncrms )
       call pam_set_option('gcm_nlev', pver )
-      call pam_set_option('crm_nz', crm_nz )
-      call pam_set_option('crm_nx', crm_nx )
-      call pam_set_option('crm_ny', crm_ny )
-      call pam_set_option('crm_dx', crm_dx )
-      call pam_set_option('crm_dy', crm_dy )
-      call pam_set_option('gcm_dt', ztodt )
-      call pam_set_option('crm_dt', crm_dt )
+      call pam_set_option('crm_nz',crm_nz )
+      call pam_set_option('crm_nx',crm_nx )
+      call pam_set_option('crm_ny',crm_ny )
+      call pam_set_option('rad_nx',crm_nx_rad)
+      call pam_set_option('rad_ny',crm_ny_rad)
+      call pam_set_option('crm_dx',crm_dx )
+      call pam_set_option('crm_dy',crm_dy )
+      call pam_set_option('gcm_dt',ztodt )
+      call pam_set_option('crm_dt',crm_dt )
 
       call pam_set_option('use_MMF_VT', use_MMF_VT_tmp )
       call pam_set_option('MMF_VT_wn_max', MMF_VT_wn_max )
@@ -1371,6 +1375,18 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call t_startf ('crm_call')
       call pam_driver()
       call t_stopf('crm_call')
+
+      ! TEMPORARY - set the clear RH to 0 until we get PAM working
+      ncol_sum = 0
+      do c=begchunk, endchunk
+         do i = 1,ncol
+            icrm = ncol_sum+i
+            do m = 1,crm_nz
+               crm_clear_rh(icrm,m) = 0.
+            end do ! m = 1,crm_nz
+         end do ! i = 1,ncol
+         ncol_sum = ncol_sum + ncol
+      end do ! c=begchunk, endchunk
 
 #endif
 
