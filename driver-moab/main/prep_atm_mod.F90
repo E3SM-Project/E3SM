@@ -1261,12 +1261,14 @@ contains
 
     !call mct_avect_zero(x2a_a) ?
 
-    !x2a_am = 0
+    x2a_am = 0._r8
     ent_type = 1 ! cells
     tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
     arrsize = naflds * lsize
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, x2a_am(1,1))
-
+   !  ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, x2a_am(1,1))
+   !  if (ierr .ne. 0) then
+   !       call shr_sys_abort(subname//' error in setting moab tags with 0 ')
+   !  endif
     ! Update surface fractions
     !    fraclist_a = 'afrac:ifrac:ofrac:lfrac:lfrin'
     kif = 2 ! kif=mct_aVect_indexRA(fractions_a,"ifrac")
