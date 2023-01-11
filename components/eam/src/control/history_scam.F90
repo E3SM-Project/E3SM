@@ -40,7 +40,6 @@ CONTAINS
       use ppgrid, only: pver, pverp
       use constituents
       use cam_history, only: add_default
-      use dycore, only: dycore_is
 !-----------------------------------------------------------------------
 !
 !-----------------------------------------------------------------------
@@ -50,11 +49,7 @@ CONTAINS
       real(r8) dummy
       character(len=100) dyngrid
 
-      if (dycore_is('EUL')) then
-        dyngrid = 'gauss_grid'
-      else
-        dyngrid = 'physgrid'
-      endif
+      dyngrid = 'physgrid'
 !
 ! Call addfld to add each field to the Master Field List.
 !
@@ -77,7 +72,6 @@ CONTAINS
       call addfld ('LHFLXOBS',horiz_only,    'A','W/m2','Obs Surface latent heat flux',gridname=trim(dyngrid))
       call addfld ('TRELAX',(/ 'lev' /),    'A','K','t relaxation amount',gridname=trim(dyngrid))
       call addfld ('QRELAX',(/ 'lev' /),    'A','kg/kg','q relaxation amount',gridname=trim(dyngrid))
-      call addfld ('TAURELAX',(/ 'lev' /),    'A','seconds','relaxation time constant',gridname=trim(dyngrid))
       call add_default ('TDIFF     ', 1, ' ')
       call add_default ('QDIFF     ', 1, ' ')
    end subroutine scm_intht   

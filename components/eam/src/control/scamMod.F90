@@ -131,7 +131,6 @@ module scamMod
   logical*4, public ::  have_divu     ! dataset contains divu
   logical*4, public ::  have_divv     ! dataset contains divv 
   logical*4, public ::  have_omega    ! dataset contains omega
-  logical*4, public ::  have_phis     ! dataset contains phis
   logical*4, public ::  have_ptend    ! dataset contains ptend
   logical*4, public ::  have_ps       ! dataset contains ps
   logical*4, public ::  have_q        ! dataset contains q
@@ -151,10 +150,6 @@ module scamMod
   logical*4, public ::  have_numliq   ! dataset contains numliq
   logical*4, public ::  have_numice   ! dataset contains numice
   logical*4, public ::  have_clwp     ! dataset contains clwp
-  logical*4, public ::  have_aldir    ! dataset contains aldir
-  logical*4, public ::  have_aldif    ! dataset contains aldif
-  logical*4, public ::  have_asdir    ! dataset contains asdir
-  logical*4, public ::  have_asdif    ! dataset contains asdif
   logical*4, public ::  scm_iop_srf_prop   ! use the specified surface properties
   logical*4, public ::  scm_relaxation! use relaxation
   logical*4, public ::  scm_observed_aero ! use observed aerosols in SCM file
