@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 module ocn_core_interface
 
@@ -135,6 +135,7 @@ module ocn_core_interface
       logical, pointer :: timeVaryingLandIceForcingPKGActive
       logical, pointer :: gotmPKGActive
       logical, pointer :: verticalRemapPKGActive
+      logical, pointer :: activeWavePKGActive
 
       type (mpas_pool_iterator_type) :: pkgItr
       logical, pointer :: packageActive
@@ -168,6 +169,7 @@ module ocn_core_interface
       logical, pointer :: config_use_time_varying_atmospheric_forcing
       logical, pointer :: config_use_time_varying_land_ice_forcing
       logical, pointer :: config_use_gotm
+      logical, pointer :: config_use_active_wave
 
       character (len=StrKIND), pointer :: config_time_integrator
       character (len=StrKIND), pointer :: config_ocean_run_mode
@@ -399,6 +401,16 @@ module ocn_core_interface
       if (config_vert_advection_method == 'remap') then
          verticalRemapPKGActive = .true.
       end if
+
+      ! test for active waves 
+      !
+      call mpas_pool_get_package(packagePool, 'activeWavePKGActive', activeWavePKGActive)
+      call mpas_pool_get_config(configPool, &
+                               'config_use_active_wave', &
+                                config_use_active_wave)
+      if (config_use_active_wave) then
+         activeWavePKGActive = .true.
+      endif
 
       !
       ! call into analysis member driver to set analysis member packages

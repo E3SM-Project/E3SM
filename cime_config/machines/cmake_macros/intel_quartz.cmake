@@ -12,3 +12,6 @@ set(NETCDF_PATH "/usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.
 set(PNETCDF_PATH "$ENV{PNETCDFROOT}")
 execute_process(COMMAND /usr/tce/packages/netcdf-fortran/netcdf-fortran-4.4.4-intel-19.0.4/bin/nf-config --flibs OUTPUT_VARIABLE SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0 OUTPUT_STRIP_TRAILING_WHITESPACE)
 string(APPEND SLIBS " ${SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0}")
+string(APPEND CXXFLAGS " -cxxlib=/usr/tce/packages/gcc/gcc-8.3.1/rh")
+string(APPEND LDFLAGS " -cxxlib=/usr/tce/packages/gcc/gcc-8.3.1/rh")
+string(APPEND KOKKOS_OPTIONS " -DKokkos_ARCH_BDW=On -DCMAKE_CXX_FLAGS='-cxxlib=/usr/tce/packages/gcc/gcc-8.3.1/rh'")

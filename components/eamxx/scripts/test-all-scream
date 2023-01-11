@@ -1,0 +1,161 @@
+#!/usr/bin/env python3
+
+"""
+Drive ctest testing of scream for a complete set of tests. This will be our
+gold standard to determine if the code is working or not on the current platform.
+For batch machines, this script expects to already be on a compute node; it does not
+do batch submissions.
+
+IMPORTANT: the default behavior of this script *changes your environment*,
+           by loading machine-specific modules and setting machine-specific
+           env vars. To prevent this behavior, use --preserve-env flag.
+"""
+
+from utils import check_minimum_python_version
+check_minimum_python_version(3, 4)
+
+import argparse, sys, pathlib
+
+from test_all_scream import TestAllScream
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <ARGS> [--verbose]
+OR
+{0} --help
+
+\033[1mEXAMPLES (assumes user is on machine melvin):\033[0m
+    \033[1;32m# Run all tests on current machine using the SCREAM-approved env for this machine (this is the default env behavior) and your origin/master common ancestor for baseline generation (the default baseline behavior) \033[0m
+    > cd $scream_repo/components/eamxx
+    > ./scripts/{0} -m melvin
+
+    \033[1;32m# Run all tests on current machine with defaut behavior except using your current shell env \033[0m
+    > cd $scream_repo/components/eamxx
+    > ./scripts/{0} --preserve-env -m melvin
+
+    \033[1;32m# Run all tests on current machine with default behavior except using a custom ref for baseline generation\033[0m
+    > cd $scream_repo/components/eamxx
+    > ./scripts/{0} -m melvin -b BASELINE_REF
+
+    \033[1;32m# Run all tests on current machine with default behavior except using pre-existing baselines (skips baseline generation) \033[0m
+    > cd $scream_repo/components/eamxx
+    > ./scripts/{0} -m melvin --baseline-dir=PATH_TO_BASELINES
+
+    \033[1;32m# Run only the dbg test on current machine with default behavior otherwise\033[0m
+    > cd $scream_repo/components/eamxx
+    > ./scripts/{0} -m melvin -t dbg
+
+    \033[1;32m# Run all tests on current machine with default behavior on a repo with uncommitted changes\033[0m
+    > cd $scream_repo/components/eamxx
+    > ./scripts/{0} -m melvin -k -b HEAD
+""".format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("-cxx","--cxx-compiler", help="C++ compiler", default=None)
+    parser.add_argument("-f90","--f90-compiler", help="F90 compiler", default=None)
+    parser.add_argument("--c-compiler", help="C compiler", default=None)
+
+    parser.add_argument("-s", "--submit", action="store_true", help="Submit results to dashboad")
+    parser.add_argument("-p", "--parallel", action="store_true",
+                        help="Launch the different build types stacks in parallel")
+
+    parser.add_argument("-f", "--fast-fail", action="store_true",
+                        help="Stop testing when the first failure is detected")
+
+    parser.add_argument("-b", "--baseline-ref", default=None, # default will be computed later
+        help="What commit to use to generate baselines. Default is merge-base of current commit and origin/master (or HEAD if --keep-tree)")
+
+    parser.add_argument("--baseline-dir", default=None,
+        help="Use baselines from the given directory, skip baseline creation.")
+
+    parser.add_argument("-u", "--update-expired-baselines", action="store_true",
+        help="Update baselines that appear to be expired.")
+
+    parser.add_argument("-m", "--machine",
+        help="Provide machine name. This is *always* required")
+
+    parser.add_argument("--no-tests", action="store_true", help="Only build baselines, skip testing phase")
+    parser.add_argument("--config-only", action="store_true",
+            help="In the testing phase, only run config step, skip build and tests")
+
+    parser.add_argument("-k", "--keep-tree", action="store_true",
+        help="Allow to keep the current work tree when testing against HEAD (only valid with `-b HEAD`)")
+
+    parser.add_argument("-c", "--custom-cmake-opts", action="append", default=[],
+        help="Extra custom options to pass to cmake. Can use multiple times for multiple cmake options. The -D is added for you")
+
+    parser.add_argument("-e", "--custom-env-vars", action="append", default=[],
+        help="Extra custom environment variables to be used. These will override (if applicable) whatever was found in machine_specs. Each -e flag supports a single env var, so to pass multiple env var, do -e ""KEY1=VALUE1"" -e ""KEY2=VALUE2"" ")
+    parser.add_argument("--preserve-env", action="store_true",
+                        help="Whether to skip machine env setup, and preserve the current user env (useful to manually test new modules)")
+
+    choices_doc = ", ".join(["'{}' ({})".format(k, v) for k, v in TestAllScream.get_test_name_desc().items()])
+    parser.add_argument("-t", "--test", dest="tests", action="append", default=[],
+                        help=f"Only run specific test configurations, choices={choices_doc}")
+
+    parser.add_argument("-i", "--integration-test", action="store_true",
+                        help="Merge origin/master into this branch before testing.")
+
+    parser.add_argument("-l", "--local", action="store_true",
+                        help="Allow to not specify a machine name, and have test-all-scream to look"
+                             "for '~/.cime/scream_mach_specs.py' for machine specifications.")
+
+    parser.add_argument("-r", "--root-dir",
+                        help="The root directory of the scream src you want to test. "
+                        "Default will be the scream src containing this script.")
+
+    parser.add_argument("-w", "--work-dir",
+        help="The work directory where all the building/testing will happen. Defaults to ${root_dir}/ctest-build")
+    parser.add_argument("--quick-rerun", action="store_true",
+                        help="Do not clean the build dir, and do not reconfigure. Just (incremental) build and test.")
+
+    parser.add_argument("--quick-rerun-failed", action="store_true",
+                        help="Do not clean the build dir, and do not reconfigure. Just (incremental) build and retest failed tests only.")
+
+    parser.add_argument("-d", "--dry-run", action="store_true",
+                        help="Do a dry run, commands will be printed but not executed")
+
+    parser.add_argument("--make-parallel-level", action="store", type=int, default=0,
+        help="Max number of jobs to be created during compilation. If not provided, use default for given machine.")
+
+    parser.add_argument("--ctest-parallel-level", action="store", type=int, default=0,
+        help="Force to use this value for CTEST_PARALLEL_LEVEL. If not provided, use default for given machine.")
+
+    parser.add_argument("-x", "--extra-verbose", action="store_true",
+                        help="Have ctest run in extra-verbose mode, which should print full output from all tests")
+
+    parser.add_argument("--limit-test-regex",
+                        help="Limit ctest to running only tests that match this regex")
+
+    parser.add_argument("--test-level", action="store", choices=("at", "nightly", "experimental"), default="at",
+                        help="Set the testing level.")
+
+    parser.add_argument("--mem-check", action="store_true",
+                        help="Run the tests you've selected with memory checking on. "
+                        "This will use valgrind for CPU, cuda-mem-check for GPU etc."
+                        "This will dramatically slow down tests and also disables baseline checking.")
+
+    parser.add_argument("--force-baseline-regen", action="store_true",
+                        help="Existing baseline will always be considered expired even if they do not appear to be.")
+
+    return parser.parse_args(args[1:])
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    tas = TestAllScream(**vars(parse_command_line(sys.argv, description)))
+
+    success = tas.test_all_scream()
+
+    print("OVERALL STATUS: {}".format("PASS" if success else "FAIL"))
+
+    sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

@@ -56,43 +56,6 @@
     </directives>
   </batch_system>
 
-   <batch_system MACH="spock" type="slurm">
-     <queues>
-       <queue strict="true" nodemin="1" nodemax="4" walltimemax="03:00:00" default="true">ecp</queue>
-       <queue strict="true" nodemin="1" nodemax="4" walltimemax="03:00:00">caar</queue>
-       <queue strict="true" nodemin="5" nodemax="16" walltimemax="01:00:00">caar</queue>
-     </queues>
-   </batch_system>
-
-   <batch_system MACH="crusher" type="slurm">
-     <batch_submit>/gpfs/alpine/cli133/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
-     <queues>
-       <queue strict="true" nodemin="1" nodemax="8" walltimemax="01:00:00" default="true">batch</queue>
-       <queue strict="true" nodemin="9" nodemax="64" walltimemax="01:00:00">batch</queue>
-       <queue strict="true" nodemin="65" nodemax="160" walltimemax="01:00:00">batch</queue>
-     </queues>
-   </batch_system>
-
-
-   <batch_system MACH="crusher-cpu" type="slurm">
-     <queues>
-       <queue strict="true" nodemin="1" nodemax="8" walltimemax="08:00:00" default="true">batch</queue>
-       <queue strict="true" nodemin="9" nodemax="64" walltimemax="04:00:00">batch</queue>
-       <queue strict="true" nodemin="65" nodemax="160" walltimemax="02:00:00">batch</queue>
-     </queues>
-   </batch_system>
-
-
-   <batch_system MACH="crusher-gpu" type="slurm">
-     <batch_submit>/gpfs/alpine/cli133/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
-     <queues>
-       <queue strict="true" nodemin="1" nodemax="8" walltimemax="01:00:00" default="true">batch</queue>
-       <queue strict="true" nodemin="9" nodemax="64" walltimemax="01:00:00">batch</queue>
-       <queue strict="true" nodemin="65" nodemax="160" walltimemax="01:00:00">batch</queue>
-     </queues>
-   </batch_system>
-
-
   <batch_system type="cobalt" >
     <batch_query>qstat</batch_query>
     <batch_submit>qsub</batch_submit>
@@ -230,7 +193,7 @@
       <directive>-t {{ job_wallclock_time }}</directive>
       <directive>-o {{ job_id }}.out</directive>
       <directive>-e {{ job_id }}.err</directive>
-      <directive> -A {{ project }} </directive>
+      <directive>-A {{ project }}</directive>
     </directives>
     <queues>
       <queue walltimemax="01:00:00" nodemax="270" default="true">pbatch</queue>
@@ -633,6 +596,43 @@
      </queues>
    </batch_system>
 
+   <batch_system MACH="spock" type="slurm">
+     <queues>
+       <queue strict="true" nodemin="1" nodemax="4" walltimemax="03:00:00" default="true">ecp</queue>
+       <queue strict="true" nodemin="1" nodemax="4" walltimemax="03:00:00">caar</queue>
+       <queue strict="true" nodemin="5" nodemax="16" walltimemax="01:00:00">caar</queue>
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="crusher" type="slurm">
+     <batch_submit>/gpfs/alpine/cli133/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
+     <queues>
+       <queue strict="true" nodemin="1" nodemax="8" walltimemax="01:00:00" default="true">batch</queue>
+       <queue strict="true" nodemin="9" nodemax="64" walltimemax="01:00:00">batch</queue>
+       <queue strict="true" nodemin="65" nodemax="160" walltimemax="01:00:00">batch</queue>
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="crusher-cpu" type="slurm">
+     <queues>
+       <queue strict="true" nodemin="1" nodemax="8" walltimemax="08:00:00" default="true">batch</queue>
+       <queue strict="true" nodemin="9" nodemax="64" walltimemax="04:00:00">batch</queue>
+       <queue strict="true" nodemin="65" nodemax="160" walltimemax="02:00:00">batch</queue>
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="crusher-gpu" type="slurm">
+     <batch_submit>/gpfs/alpine/cli133/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
+     <directives>
+       <directive> -S 0</directive>
+     </directives>
+     <queues>
+       <queue strict="true" nodemin="1" nodemax="8" walltimemax="01:00:00" default="true">batch</queue>
+       <queue strict="true" nodemin="9" nodemax="64" walltimemax="01:00:00">batch</queue>
+       <queue strict="true" nodemin="65" nodemax="160" walltimemax="01:00:00">batch</queue>
+     </queues>
+   </batch_system>
+
    <batch_system MACH="snl-white" type="lsf" >
      <queues>
        <queue walltimemax="02:00" default="true">rhel7G</queue>
@@ -708,5 +708,74 @@
        <queue walltimemax="1:00:00" default="true" strict="true">default</queue>
      </queues>
    </batch_system>
+
+  <batch_system MACH="onyx" type="pbs" >
+    <directives queue="debug">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+    </directives>
+    <directives queue="standard">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+    </directives>
+    <directives queue="transfer">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select=1:ncpus=1</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:59:00" nodemax="155" strict="true">debug</queue>
+      <queue walltimemax="04:00:00" default="true">standard</queue>
+      <queue default="true" walltimemax="12:00:00" jobmin="1" jobmax="1">transfer</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="narwhal" type="pbs" >
+    <directives queue="debug">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+    </directives>
+    <directives queue="standard">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+    </directives>
+    <directives queue="transfer">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select=1:ncpus=1</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:30:00" nodemax="64" strict="true">debug</queue>
+      <queue walltimemax="04:00:00" default="true">standard</queue>
+      <queue default="true" walltimemax="12:00:00" jobmin="1" jobmax="1">transfer</queue>
+    </queues>
+  </batch_system>
+
+  <batch_system MACH="warhawk" type="pbs" >
+    <directives queue="debug">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+    </directives>
+    <directives queue="standard">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select={{ num_nodes }}:ncpus={{ MAX_MPITASKS_PER_NODE }}:mpiprocs={{ tasks_per_node }}</directive>
+    </directives>
+    <directives queue="transfer">
+      <directive>-A {{ PROJECT }}</directive>
+      <directive>-l application=Regional-Arctic-System-Model</directive>
+      <directive>-l select=1:ncpus=1</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="00:59:00" nodemax="22" strict="true">debug</queue>
+      <queue walltimemax="04:00:00" default="true">standard</queue>
+      <queue default="true" walltimemax="12:00:00" jobmin="1" jobmax="1">transfer</queue>
+    </queues>
+  </batch_system>
 
 </config_batch>

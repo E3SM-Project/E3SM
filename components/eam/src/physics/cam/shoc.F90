@@ -2285,6 +2285,8 @@ subroutine shoc_assumed_pdf(&
   real(rtype) :: qwthl_sec_zt(shcol,nlev)
   real(rtype) :: qw_sec_zt(shcol,nlev)
 
+  real(rtype), parameter :: Tl_min = 100._rtype
+
 #ifdef SCREAM_CONFIG_IS_CMAKE
   if (use_cxx) then
      call shoc_assumed_pdf_f(&
@@ -2396,15 +2398,14 @@ subroutine shoc_assumed_pdf(&
         thl1_2,basepres,pval,& ! Input
         Tl1_2)                 ! Output
 
-      ! Check to ensure Tl1_1 and Tl1_2 are not negative. endrun otherwise
-      if (Tl1_1 .le. 0._rtype) then
-         write(err_msg,*)'ERROR: Tl1_1 is .le. 0 before shoc_assumed_pdf_compute_qs in shoc. Tl1_1 is:',Tl1_1
-         call endscreamrun(err_msg)
+      ! Check to ensure Tl1_1 and Tl1_2 are not excessively small.
+      !  Temporary fix to set to minimum value if so.
+      if (Tl1_1 .le. Tl_min) then
+         Tl1_1 = Tl_min
       endif
 
-      if (Tl1_2 .le. 0._rtype) then
-         write(err_msg,*)'ERROR: Tl1_2 is .le. 0 before shoc_assumed_pdf_compute_qs in shoc. Tl1_2 is:',Tl1_2
-         call endscreamrun(err_msg)
+      if (Tl1_2 .le. Tl_min) then
+         Tl1_2 = Tl_min
       endif
 
       ! Now compute qs

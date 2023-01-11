@@ -1024,7 +1024,7 @@ CONTAINS
   ! ######################################################################################
   ! SUBROUTINE cospsimulator_intr_run
   ! ######################################################################################
-  subroutine cospsimulator_intr_run(state,pbuf, cam_in,emis,coszrs,cld_swtau,snow_tau,snow_emis)    
+  subroutine cospsimulator_intr_run(npoints, state, pbuf, cam_in, coszrs, cld_swtau, emis, snow_tau, snow_emis)    
     use physics_types,        only: physics_state
     use physics_buffer,       only: physics_buffer_desc
     use camsrfexch,           only: cam_in_t
@@ -1035,18 +1035,18 @@ CONTAINS
 #endif
 
     ! Inputs
+    integer, intent(in) :: npoints
     type(physics_state), intent(in),target  :: state
     type(physics_buffer_desc),      pointer :: pbuf(:)
     type(cam_in_t),      intent(in)         :: cam_in
-    real(r8), intent(in) :: emis(pcols,pver)               ! cloud longwave emissivity
     real(r8), intent(in) :: coszrs(pcols)                  ! cosine solar zenith angle (to tell if day or night)
-    real(r8), intent(in) :: cld_swtau(pcols,pver)          ! cld_swtau, read in using this variable
-    real(r8), intent(in),optional :: snow_tau(pcols,pver)  ! grid-box mean SW snow optical depth
-    real(r8), intent(in),optional :: snow_emis(pcols,pver) ! grid-box mean LW snow optical depth
+    real(r8), intent(in) :: cld_swtau(npoints,pver)          ! cld_swtau, read in using this variable
+    real(r8), intent(in) :: emis(npoints,pver)               ! cloud longwave emissivity
+    real(r8), intent(in),optional :: snow_tau(npoints,pver)  ! grid-box mean SW snow optical depth
+    real(r8), intent(in),optional :: snow_emis(npoints,pver) ! grid-box mean LW snow optical depth
 
 #ifdef USE_COSP
     ! Local variables
-    integer :: npoints ! Number of points to use in COSP call
     integer :: ncol    ! number of active atmospheric columns
     
     ! COSP-related local vars
@@ -1061,13 +1061,6 @@ CONTAINS
 
     ! Number of columns in this physics chunk
     ncol = state%ncol
-
-    ! Number of points to use in COSP call; could be packed GCM/CRM if using MMF
-    if (use_MMF) then
-       npoints = ncol * crm_nx_rad * crm_ny_rad
-    else
-       npoints = ncol
-    end if
 
     ! Construct COSP output derived type.
     call t_startf('cosp_construct_cosp_outputs')
@@ -1251,10 +1244,10 @@ CONTAINS
     integer, intent(in) :: npoints
     type(physics_state), intent(in),target  :: state
     type(physics_buffer_desc),      pointer :: pbuf(:)
-    real(r8), intent(in) :: emis(pcols,pver)                  ! cloud longwave emissivity
-    real(r8), intent(in) :: cld_swtau(pcols,pver)             ! RRTM cld_swtau, read in using this variable
-    real(r8), intent(in),optional :: snow_tau(pcols,pver)  ! RRTM grid-box mean SW snow optical depth, used for CAM5 simulations 
-    real(r8), intent(in),optional :: snow_emis(pcols,pver) ! RRTM grid-box mean LW snow optical depth, used for CAM5 simulations 
+    real(r8), intent(in) :: emis(npoints,pver)                  ! cloud longwave emissivity
+    real(r8), intent(in) :: cld_swtau(npoints,pver)             ! RRTM cld_swtau, read in using this variable
+    real(r8), intent(in),optional :: snow_tau(npoints,pver)  ! RRTM grid-box mean SW snow optical depth, used for CAM5 simulations 
+    real(r8), intent(in),optional :: snow_emis(npoints,pver) ! RRTM grid-box mean LW snow optical depth, used for CAM5 simulations 
 
     ! ######################################################################################
     ! Local variables
@@ -1343,7 +1336,7 @@ CONTAINS
                                            ! fail runtime if compiled more strictly, like in debug mode 
     real(r8), dimension(npoints,pver) :: cld_s, cld_c
     real(r8), pointer, dimension(:,:,:,:) :: &
-       crm_cld, crm_dtau, crm_emis, crm_qc, crm_qi, crm_rel, crm_rei
+       crm_cld, crm_qc, crm_qi, crm_rel, crm_rei
 
     ncol = state%ncol
     lchnk = state%lchnk
@@ -1569,44 +1562,21 @@ CONTAINS
     end if  ! use_MMF
 
     ! Set optical depth and emissivity
-    if (use_MMF) then
-       call pbuf_get_field(pbuf, pbuf_get_index('CRM_EMIS'), crm_emis)
-       call pbuf_get_field(pbuf, pbuf_get_index('CRM_DTAU'), crm_dtau)
-       dtau_s = 0
-       dtau_c = 0
-       dem_s = 0
-       dem_c = 0
-       do iz = 1,crm_nz
-         do iy = 1,crm_ny_rad
-           do ix = 1,crm_nx_rad
-             do i = 1,ncol
-               j = _IDX321(i, ix, iy, ncol, crm_nx_rad, crm_ny_rad)
-               k = pver - iz + 1
-               dtau_s(j,k) = crm_dtau(i,ix,iy,iz)
-               dtau_c(j,k) = crm_dtau(i,ix,iy,iz)
-               dem_s (j,k) = crm_emis(i,ix,iy,iz)
-               dem_c (j,k) = crm_emis(i,ix,iy,iz)
-             end do
-           end do
-         end do
-       end do
+    ! NOTES:
+    ! 1) EAM assumes same radiative properties for stratiform and convective clouds, 
+    ! 2) COSP wants in-cloud values. EAM values of cld_swtau are in-cloud means.
+    ! 3) snow_tau and snow_emis are passed without modification to COSP
+    dtau_s(1:npoints,1:pver)      = cld_swtau(1:npoints,1:pver)     ! 0.67 micron optical depth of stratiform (in-cloud)
+    dtau_c(1:npoints,1:pver)      = cld_swtau(1:npoints,1:pver)     ! 0.67 micron optical depth of convective (in-cloud)
+    dem_s(1:npoints,1:pver)       = emis(1:npoints,1:pver)          ! 10.5 micron longwave emissivity of stratiform (in-cloud)
+    dem_c(1:npoints,1:pver)       = emis(1:npoints,1:pver)          ! 10.5 micron longwave emissivity of convective (in-cloud)
+    if (present(snow_tau) .and. present(snow_emis)) then
+       dem_s_snow(1:npoints,1:pver)  = snow_emis(1:npoints,1:pver)  ! 10.5 micron grid-box mean optical depth of stratiform snow
+       dtau_s_snow(1:npoints,1:pver) = snow_tau(1:npoints,1:pver)   ! 0.67 micron grid-box mean optical depth of stratiform snow
     else
-       ! NOTES:
-       ! 1) EAM assumes same radiative properties for stratiform and convective clouds, 
-       ! 2) COSP wants in-cloud values. EAM values of cld_swtau are in-cloud means.
-       ! 3) snow_tau and snow_emis are passed without modification to COSP
-       dtau_s(1:ncol,1:pver)      = cld_swtau(1:ncol,1:pver)     ! 0.67 micron optical depth of stratiform (in-cloud)
-       dtau_c(1:ncol,1:pver)      = cld_swtau(1:ncol,1:pver)     ! 0.67 micron optical depth of convective (in-cloud)
-       dem_s(1:ncol,1:pver)       = emis(1:ncol,1:pver)          ! 10.5 micron longwave emissivity of stratiform (in-cloud)
-       dem_c(1:ncol,1:pver)       = emis(1:ncol,1:pver)          ! 10.5 micron longwave emissivity of convective (in-cloud)
-       if (present(snow_tau) .and. present(snow_emis)) then
-          dem_s_snow(1:ncol,1:pver)  = snow_emis(1:ncol,1:pver)  ! 10.5 micron grid-box mean optical depth of stratiform snow
-          dtau_s_snow(1:ncol,1:pver) = snow_tau(1:ncol,1:pver)   ! 0.67 micron grid-box mean optical depth of stratiform snow
-       else
-          dem_s_snow(1:ncol,1:pver) = 0._r8
-          dtau_s_snow(1:ncol,1:pver) = 0._r8
-       end if
-    end if  ! use_MMF
+       dem_s_snow(1:npoints,1:pver) = 0._r8
+       dtau_s_snow(1:npoints,1:pver) = 0._r8
+    end if
 
     if (lradar_sim) then 
        cospIN%rcfg_cloudsat = rcfg_cs(lchnk)

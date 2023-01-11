@@ -277,11 +277,13 @@
     </values>
   </entry-->
 
-  <!--entry id="CPL_PIO_TYPENAME">
+  <entry id="CPL_PIO_TYPENAME">
     <values>
-      <value></value>
+      <value mach="onyx">netcdf</value>
+      <value mach="narwhal">netcdf</value>
+      <value mach="warhawk">netcdf</value>
     </values>
-  </entry-->
+  </entry>
 
   <!--- uncomment and fill in relevant sections
   <entry id="GLC_PIO_STRIDE">

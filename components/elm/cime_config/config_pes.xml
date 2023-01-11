@@ -279,12 +279,12 @@
       <pes compset=".*ELM%CN.*" pesize="any">
         <comment>elm: ascent|summit PEs for grid l%360x720cru</comment>
         <ntasks>
-          <ntasks_atm>-1</ntasks_atm>
-          <ntasks_lnd>-1</ntasks_lnd>
-          <ntasks_rof>-1</ntasks_rof>
-          <ntasks_ice>-1</ntasks_ice>
-          <ntasks_ocn>-1</ntasks_ocn>
-          <ntasks_cpl>-1</ntasks_cpl>
+          <ntasks_atm>-2</ntasks_atm>
+          <ntasks_lnd>-2</ntasks_lnd>
+          <ntasks_rof>-2</ntasks_rof>
+          <ntasks_ice>-2</ntasks_ice>
+          <ntasks_ocn>-2</ntasks_ocn>
+          <ntasks_cpl>-2</ntasks_cpl>
         </ntasks>
       </pes>
     </mach>
@@ -531,6 +531,19 @@
           <ntasks_glc>-4</ntasks_glc>
           <ntasks_wav>-4</ntasks_wav>
           <ntasks_cpl>-4</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+    <mach name="ascent|summit">
+      <pes compset="any" pesize="any">
+        <comment>elm: ascent|summit PEs for grid l%r05_*r%r05</comment>
+        <ntasks>
+          <ntasks_atm>-2</ntasks_atm>
+          <ntasks_lnd>-2</ntasks_lnd>
+          <ntasks_rof>-2</ntasks_rof>
+          <ntasks_ice>-2</ntasks_ice>
+          <ntasks_ocn>-2</ntasks_ocn>
+          <ntasks_cpl>-2</ntasks_cpl>
         </ntasks>
       </pes>
     </mach>

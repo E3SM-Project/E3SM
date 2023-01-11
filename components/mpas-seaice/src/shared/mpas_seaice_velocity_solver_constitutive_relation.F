@@ -186,7 +186,7 @@ contains
        replacementPressure, &
        areaCell, &
        dtElastic)
-#ifdef CPRINTEL
+#if defined CPRINTEL && defined MPAS_OPENMP
 !$omp declare simd(seaice_evp_constitutive_relation) uniform(dtElastic), notinbranch &
 !$omp& linear(ref(stress11,stress22,stress12,strain11,strain22,strain12,replacementPressure,icePressure,areaCell))
 #endif
@@ -269,7 +269,7 @@ contains
        icePressure, &
        replacementPressure, &
        areaCell)
-#ifdef CPRINTEL
+#if defined CPRINTEL && defined MPAS_OPENMP
 !$omp declare simd(seaice_evp_constitutive_relation_revised) uniform(icePressure,areaCell), notinbranch &
 !$omp& linear(ref(stress11,stress22,stress12,strain11,strain22,strain12,replacementPressure))
 #endif
@@ -348,7 +348,7 @@ contains
        strain11, &
        strain22, &
        strain12)
-#ifdef CPRINTEL
+#if defined CPRINTEL && defined MPAS_OPENMP
 !$omp declare simd(seaice_linear_constitutive_relation) notinbranch &
 !$omp& linear(ref(stress11,stress22,stress12,strain11,strain22,strain12))
 #endif

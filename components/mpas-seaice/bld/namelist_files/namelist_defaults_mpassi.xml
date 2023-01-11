@@ -113,6 +113,10 @@
 <!-- testing -->
 <config_use_test_ice_shelf>false</config_use_test_ice_shelf>
 <config_testing_system_test>false</config_testing_system_test>
+<config_use_congelation_basal_melt>true</config_use_congelation_basal_melt>
+<config_use_lateral_melt>true</config_use_lateral_melt>
+<config_use_latent_processes>true</config_use_latent_processes>
+<config_limit_air_temperatures>true</config_limit_air_temperatures>
 
 <!-- velocity_solver -->
 <config_dynamics_subcycle_number>1</config_dynamics_subcycle_number>
@@ -399,6 +403,7 @@
 
 <!-- ocean -->
 <config_use_ocean_mixed_layer>false</config_use_ocean_mixed_layer>
+<config_ocean_mixed_layer_type>'cice'</config_ocean_mixed_layer_type>
 <config_min_friction_velocity>0.0005</config_min_friction_velocity>
 <config_ocean_heat_transfer_type>'constant'</config_ocean_heat_transfer_type>
 <config_sea_freezing_temperature_type>'mushy'</config_sea_freezing_temperature_type>
@@ -464,6 +469,7 @@
 <config_AM_conservationCheck_write_to_logfile>true</config_AM_conservationCheck_write_to_logfile>
 <config_AM_conservationCheck_restart_stream>'conservationCheckRestart'</config_AM_conservationCheck_restart_stream>
 <config_AM_conservationCheck_carbon_failure_abort>true</config_AM_conservationCheck_carbon_failure_abort>
+<config_AM_conservationCheck_include_ocean>false</config_AM_conservationCheck_include_ocean>
 
 <!-- AM_geographicalVectors -->
 <config_AM_geographicalVectors_enable>true</config_AM_geographicalVectors_enable>

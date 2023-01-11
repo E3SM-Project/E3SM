@@ -1,7 +1,6 @@
 
 #include "vars.h"
 
-
 void allocate() {
   t00              = real2d( "t00                "      , nzm, ncrms);
   tln              = real2d( "tln                "      ,plev, ncrms);
@@ -667,6 +666,14 @@ void finalize() {
   t_vt_pert        = real4d();
   q_vt_pert        = real4d();
   u_vt_pert        = real4d();
+
+  yakl::fence();
+
+  pressure_fftx.cleanup();
+  pressure_ffty.cleanup();
+  vt_fftx.cleanup();
+  vt_ffty.cleanup();
+  esmt_fftx.cleanup();
 }
 
 
@@ -1966,7 +1973,11 @@ bool crm_accel_ceaseflag;
 
 int igstep;
 
-
+yakl::RealFFT1D<real> pressure_fftx;
+yakl::RealFFT1D<real> pressure_ffty;
+yakl::RealFFT1D<real> vt_fftx;
+yakl::RealFFT1D<real> vt_ffty;
+yakl::RealFFT1D<real> esmt_fftx;
 
 
 
