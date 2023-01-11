@@ -298,24 +298,31 @@ contains
                fldlist=seq_flds_xao_fluxes, norm=.true., &
                avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
        enddo
+    end if
 #ifdef MOABDEBUG
-            ! projections on atm
+! albedos is called second so wait until then to write
+    if (trim(flds) == 'albedos') then
          wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
          write(lnum,"(I0.2)")num_moab_exports
+      if(mbaxid > 0 ) then
+            ! projections on atm
          outfile = 'FlxAlb2Atm'//trim(lnum)//'.h5m'//C_NULL_CHAR
          ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in writing ocean to atm projection'
             call shr_sys_abort(subname//' ERROR in writing ocean to atm projection')
          endif
+      endif
+      if(mbofxid > 0) then
          outfile = 'FlxAlb2Ocn'//trim(lnum)//'.h5m'//C_NULL_CHAR
          ierr = iMOAB_WriteMesh(mbofxid, trim(outfile), trim(wopts))
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in writing ocean to atm projection'
             call shr_sys_abort(subname//' ERROR in writing ocean to atm projection')
          endif
-#endif
+      endif
     end if
+#endif
     call t_drvstopf  (trim(timer))
 
   end subroutine prep_aoflux_calc_xao_ax
