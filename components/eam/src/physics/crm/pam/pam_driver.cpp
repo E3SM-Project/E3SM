@@ -56,38 +56,46 @@ extern "C" void pam_driver() {
   SGS          sgs;
   Dycore       dycore;
   Radiation    rad;
-  micro .init( coupler );
-  sgs   .init( coupler );
-  dycore.init( coupler );
-  rad   .init( coupler );
-  //------------------------------------------------------------------------------------------------
-  // Set the vertical grid in the coupler
-  coupler.set_grid( crm_dx , crm_dy , input_zint );
+  micro .init(coupler);
+  sgs   .init(coupler);
+  dycore.init(coupler);
+  rad   .init(coupler);
   //------------------------------------------------------------------------------------------------
 
-  // update the coupler GCM state variables using the input GCM state
-  update_gcm_state( coupler );
-  // Copy the input CRM state saved by the GCM to the PAM coupler state
-  copy_input_state_to_coupler( coupler );
-  // initialize variables for output radiative columns
-  pam_radiation_init( coupler );
-  // Copy input radiation tendencies to coupler
-  pam_radiation_copy_input_to_coupler( coupler );
-  // initialize variables for statistical calculations
-  pam_statistics_init( coupler );
-  //------------------------------------------------------------------------------------------------
-  // Define hydrostasis (only for PAM-A / AWFL dycor)
-  coupler.update_hydrostasis();
-  //------------------------------------------------------------------------------------------------
+  // Set the vertical grid in the coupler
+  coupler.set_grid( crm_dx , crm_dy , input_zint );
+
+  // update coupler GCM state with input GCM state
+  update_gcm_state(coupler);
+
+  // Copy input CRM state saved by the GCM to coupler
+  copy_input_state_to_coupler(coupler);
+
+  // Copy input rad tendencies to coupler
+  pam_radiation_copy_input_to_coupler(coupler);
+
+  // initialize rad output variables
+  pam_radiation_init(coupler);
+
+  // initialize stat variables
+  pam_statistics_init(coupler);
+
+  // set CRM dry density using gcm_density_dry (set in update_gcm_state)
+  modules::broadcast_initial_gcm_column_dry_density(coupler); 
+
   // Compute CRM forcing tendencies
-  modules::compute_gcm_forcing_tendencies( coupler );
-  //------------------------------------------------------------------------------------------------
-  // Perturb the CRM only at the beginning of the run
+  modules::compute_gcm_forcing_tendencies(coupler);
+
+  // Define hydrostasis (only for PAM-A/AWFL)
+  coupler.update_hydrostasis();
+
+  // Perturb the CRM at the beginning of the run
   auto is_first_step = coupler.get_option<bool>("is_first_step");
   if (is_first_step) {
     auto gcolp = dm_host.get<int const,1>("gcolp").createDeviceCopy();
     modules::perturb_temperature( coupler , gcolp );
   }
+
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
@@ -105,31 +113,36 @@ extern "C" void pam_driver() {
     coupler.run_module( "sgs"                          , [&] (pam::PamCoupler &coupler) {sgs   .timeStep(coupler);} );
     coupler.run_module( "micro"                        , [&] (pam::PamCoupler &coupler) {micro .timeStep(coupler);} );
 
-    pam_radiation_timestep_aggregation( coupler );
-    pam_statistics_timestep_aggregation( coupler );
+    pam_radiation_timestep_aggregation(coupler);
+    pam_statistics_timestep_aggregation(coupler);
 
     etime_crm += crm_dt;
   }
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
+
   // Compute primary feedback tendencies and copy to GCM
   pam_feedback_compute_crm_feedback_tendencies( coupler, gcm_dt );
   
   // Compute horizontal means of CRM state variables that are not forced
-  pam_feedback_compute_crm_mean_state( coupler );
+  pam_feedback_compute_crm_mean_state(coupler);
 
   // Copy the output CRM state from the PAM coupler to the GCM
-  pam_feedback_copy_output_state_to_gcm( coupler );
+  pam_feedback_copy_output_state_to_gcm(coupler);
 
   // Copy radiation column quantities to host
-  pam_radiation_copy_output_to_gcm( coupler );
+  pam_radiation_copy_output_to_gcm(coupler);
 
   // copy aggregated statistical quantities to host
   pam_statistics_copy_to_host( coupler, gcm_dt );
 
   //------------------------------------------------------------------------------------------------
-  // Finalize the coupler and clean up
-  dycore.finalize( coupler );
+  // Finalize and clean up
+  micro .finalize(coupler);
+  sgs   .finalize(coupler);
+  dycore.finalize(coupler);
+  rad   .finalize(coupler);
   pam_interface::finalize();
+  //------------------------------------------------------------------------------------------------
 }
