@@ -20,7 +20,6 @@
   use modal_aero_data, only:  ntot_aspectype, ntot_amode, nsoag, nsoa, npoa, nbc
 ! use ref_pres,        only:  top_lev => clim_modal_aero_top_lev  ! this is for gg02a
   use ref_pres,        only:  top_lev => trop_cloud_top_lev       ! this is for ee02c
-!  use perf_mod,       only: t_startf, t_stopf 
   implicit none
   private
   save
@@ -914,7 +913,6 @@ main_i_loop: &
 !        qsub4, qqcwsub4,                         &
 !        qsub_tendaa, qqcwsub_tendaa              )
 
-!      call t_startf ('mam_amicphys_1gridcell')
       call mam_amicphys_1gridcell(                &
          do_cond,             do_rename,          &
          do_newnuc,           do_coag,            &
@@ -2235,7 +2233,6 @@ do_cond_if_block10: &
               qgas_avg,          qgas_netprod_otrproc,                   &
               uptkrate_h2so4,    misc_vars_aa_sub                        )
       else
-#endif
          call mam_gasaerexch_1subarea(                                &
            nstep,             lchnk,                                  &
            i,                 k,                jsub,                 &
@@ -2388,6 +2385,7 @@ do_newnuc_if_block50: &
 
       qnum_sv1 = qnum_cur
       qaer_sv1 = qaer_cur
+
       call mam_coag_1subarea(                                       &
          nstep,             lchnk,                                  &
          i,                 k,                jsub,                 &
@@ -2399,6 +2397,7 @@ do_newnuc_if_block50: &
          qnum_cur,                                                  &
          qaer_cur,          qaer_delsub_coag_in,                    &
          qwtr_cur                                                   )
+
       qnum_delsub_coag = qnum_cur - qnum_sv1
       qaer_delsub_coag = qaer_cur - qaer_sv1
 
@@ -2411,6 +2410,7 @@ do_newnuc_if_block50: &
 !
 !
       if ( n_agepair > 0 ) then
+
       call mam_pcarbon_aging_1subarea(                              &
          nstep,             lchnk,                                  &
          i,                 k,                jsub,                 &
@@ -2421,6 +2421,7 @@ do_newnuc_if_block50: &
          qaer_cur,          qaer_delsub_cond, qaer_delsub_coag,     &
          qaer_delsub_coag_in,                                       &
          qwtr_cur                                                   )
+
       end if
 
 
@@ -2915,6 +2916,7 @@ do_newnuc_if_block50: &
         !         arg list:
         !         gam_ratio, iter_mesa, aH2O_a,jaerosolstate, mass_dry_a_bgn, mass_dry_a, 
         !         dens_dry_a_bgn, dens_dry_a, water_a_hyst, jaerosolstate_bgn
+
         call mosaic_box_aerchemistry(               aH2O,               T_K,            &!Intent-ins
              P_atm,                   RH_pc,        dtchem,                             &
              mcall_load_mosaic_parameters,          mcall_print_aer_in, sigmag_a,       &
