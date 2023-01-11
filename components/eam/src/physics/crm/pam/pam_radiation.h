@@ -102,13 +102,14 @@ inline void pam_radiation_timestep_aggregation( pam::PamCoupler &coupler ) {
   auto rad_nx = coupler.get_option<int>("rad_nx");
   //------------------------------------------------------------------------------------------------
   // Get current CRM state
-  auto temp  = dm.get<real,4>("temp"           );
-  auto rho_d = dm.get<real,4>("density_dry"    );
-  auto rho_v = dm.get<real,4>("water_vapor"    );
-  auto rho_l = dm.get<real,4>("cloud_water"    );
-  auto rho_i = dm.get<real,4>("ice"            );
-  auto num_l = dm.get<real,4>("cloud_water_num");
-  auto num_i = dm.get<real,4>("ice_num"        );
+  auto temp    = dm.get<real,4>("temp"           );
+  auto rho_d   = dm.get<real,4>("density_dry"    );
+  auto rho_v   = dm.get<real,4>("water_vapor"    );
+  auto rho_l   = dm.get<real,4>("cloud_water"    );
+  auto rho_i   = dm.get<real,4>("ice"            );
+  auto num_l   = dm.get<real,4>("cloud_water_num");
+  auto num_i   = dm.get<real,4>("ice_num"        );
+  auto cldfrac = dm.get<real,4>("cldfrac"        );
   //------------------------------------------------------------------------------------------------
   // Get aggregated rad variables
   auto rad_temperature     = dm.get<real,4>("rad_temperature");
@@ -131,14 +132,13 @@ inline void pam_radiation_timestep_aggregation( pam::PamCoupler &coupler ) {
     real qv = rho_v(k,j,i,iens) / rho_total;
     real ql = rho_l(k,j,i,iens) / rho_total;
     real qi = rho_i(k,j,i,iens) / rho_total;
-    atomicAdd( rad_temperature(k,j_rad,i_rad,iens), temp(k,j,i,iens)  * r_nx_ny );
-    atomicAdd( rad_qv         (k,j_rad,i_rad,iens), qv                * r_nx_ny );
-    atomicAdd( rad_qc         (k,j_rad,i_rad,iens), ql                * r_nx_ny );
-    atomicAdd( rad_qi         (k,j_rad,i_rad,iens), qi                * r_nx_ny );
-    atomicAdd( rad_nc         (k,j_rad,i_rad,iens), num_l(k,j,i,iens) * r_nx_ny );
-    atomicAdd( rad_ni         (k,j_rad,i_rad,iens), num_i(k,j,i,iens) * r_nx_ny );
-    // TODO: get cloud fraction from SHOC
-    atomicAdd( rad_cld        (k,j_rad,i_rad,iens), 1.                * r_nx_ny ); 
+    atomicAdd( rad_temperature(k,j_rad,i_rad,iens), temp(k,j,i,iens)   * r_nx_ny );
+    atomicAdd( rad_qv         (k,j_rad,i_rad,iens), qv                 * r_nx_ny );
+    atomicAdd( rad_qc         (k,j_rad,i_rad,iens), ql                 * r_nx_ny );
+    atomicAdd( rad_qi         (k,j_rad,i_rad,iens), qi                 * r_nx_ny );
+    atomicAdd( rad_nc         (k,j_rad,i_rad,iens), num_l(k,j,i,iens)  * r_nx_ny );
+    atomicAdd( rad_ni         (k,j_rad,i_rad,iens), num_i(k,j,i,iens)  * r_nx_ny );
+    atomicAdd( rad_cld        (k,j_rad,i_rad,iens), cldfrac(k,j,i,iens)* r_nx_ny );
   });
   parallel_for("update radiation aggregation count", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
     rad_aggregation_cnt(iens) += 1;
