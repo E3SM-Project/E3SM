@@ -4709,7 +4709,7 @@ contains
        ! this is for one hop 
        call component_exch_moab(rof(1), mrofid, mbrxid, 0, seq_flds_r2x_fields)
 
-       call prep_rof_migrate_moab(infodata)
+       !call prep_rof_migrate_moab(infodata)
     endif
 
     !----------------------------------------------------------

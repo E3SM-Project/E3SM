@@ -1477,7 +1477,17 @@ contains
             if ( ierr .ne. 0  ) then
                call shr_sys_abort( subname//' ERROR: cannot read rof mesh on coupler' )
             end if
-
+#ifdef MOABDEBUG
+   !      debug test
+            outfile = 'recRof.h5m'//C_NULL_CHAR
+            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+      !      write out the mesh file to disk
+            ierr = iMOAB_WriteMesh(mbrxid, trim(outfile), trim(wopts))
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in writing rof mesh on coupler '
+               call shr_sys_abort(subname//' ERROR in writing rof mesh on coupler ')
+            endif
+#endif
             tagtype = 1  ! dense, double
             numco = 1 !  one value per cell / entity
             tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
@@ -1497,17 +1507,7 @@ contains
                write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on rof on coupler '
                call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
-#ifdef MOABDEBUG
-   !      debug test
-            outfile = 'recRof.h5m'//C_NULL_CHAR
-            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-      !      write out the mesh file to disk
-            ierr = iMOAB_WriteMesh(mbrxid, trim(outfile), trim(wopts))
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in writing rof mesh on coupler '
-               call shr_sys_abort(subname//' ERROR in writing rof mesh on coupler ')
-            endif
-#endif
+
          endif
          ! we are now on joint pes, compute comm graph between rof and coupler model 
          typeA = 2 ! point cloud on component PEs

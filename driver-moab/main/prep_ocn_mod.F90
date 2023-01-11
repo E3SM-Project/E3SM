@@ -16,6 +16,7 @@ module prep_ocn_mod
   use seq_comm_mct,     only: mboxid ! iMOAB id for mpas ocean migrated mesh to coupler pes
   use seq_comm_mct,     only: mbrmapro ! iMOAB id for map read from rof2ocn map file
   use seq_comm_mct,     only: mbrxoid ! iMOAB id for rof on coupler in ocean context; 
+  use seq_comm_mct,     only: mbrxid   ! iMOAB id of moab rof read on couple pes
   use seq_comm_mct,     only : atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
   use seq_comm_mct,     only : mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   use seq_comm_mct,     only : mbintxao ! iMOAB id for intx mesh between atm and ocean
@@ -162,7 +163,8 @@ contains
        wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn)
 
     use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
-      iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights
+      iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights, &
+      iMOAB_MigrateMapMesh, iMOAB_WriteLocalMesh
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -215,8 +217,11 @@ contains
    integer                  :: tagtype, numco, tagindex
    character(CXX)           :: tagName
 
-    integer                  :: rmapid  ! external id to identify the moab app
+    integer                  :: rmapid, rmapid2  ! external id to identify the moab app ; 2 is for rof in ocean context (coverage)
     integer                  :: type_grid ! 
+    integer                  :: context_id, direction
+    character*32             :: prefix_output ! for writing a coverage file for debugging
+    integer                  :: rank_on_cpl ! just for debugging
 
     
     !---------------------------------------------------------------
@@ -551,7 +556,8 @@ contains
           call seq_map_init_rcfile(mapper_Rr2o_liq, rof(1), ocn(1), &
                'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
                'mapper_Rr2o_liq  initialization',esmf_map_flag)
-
+     
+#ifdef HAVE_MOAB
           appname = "ROF_OCN_COU"//CHAR(0)
             ! rmapid  is a unique external number of MOAB app that takes care of map between rof and ocn mesh
           rmapid = 100*rof(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it
@@ -565,14 +571,91 @@ contains
           call moab_map_init_rcfile(mbrmapro, mboxid, type_grid, rof(1), ocn(1), &
                'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
                'mapper_Rr2o_liq moab initialization',esmf_map_flag)
-          appname = "ROF_COU"//C_NULL_CHAR
-               ! rmapid  is a unique external number of MOAB app that identifies runoff on coupler side
-          rmapid = 100*rof(1)%cplcompid ! this is a special case, because we also have a regular coupler instance mbrxid
-          ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, rmapid, mbrxoid)
+          ! this is a special rof mesh redistribution, for the ocean context
+          ! it will be used to project from rof to ocean
+          ! the mesh will be migrated, to be able to do the second hop 
+          appname = "ROF_OCOU"//C_NULL_CHAR
+          ! rmapid  is a unique external number of MOAB app that identifies runoff on coupler side
+          rmapid2 = 100*rof(1)%cplcompid ! this is a special case, because we also have a regular coupler instance mbrxid
+          ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, rmapid2, mbrxoid)
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in registering rof on coupler in ocean context '
              call shr_sys_abort(subname//' ERROR in registering  rof on coupler in ocean context ')
           endif
+          ! this code was moved from prep_rof_ocn_moab, because we will do everything on coupler side, not 
+          ! needed to be on joint comm anymore for the second hop
+
+      !  it read on the coupler side, from file, the scrip mosart, that has a full mesh;  
+      !  also migrate rof mesh on coupler pes, in ocean context, mbrxoid
+      !  map between rof 2 ocn is in  mbrmapro ; 
+      ! after this, the sending of tags for second hop (ocn context) will use the new par comm graph, 
+      !  that has more precise info 
+         call seq_comm_getData(CPLID,  mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
+
+         call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
+
+         type1 = 3 ! fv mesh nowadays
+         direction = 1 ! 
+         context_id = ocn(1)%cplcompid
+         ierr = iMOAB_MigrateMapMesh (mbrxid, mbrmapro, mbrxoid, mpicom_CPLID, mpigrp_CPLID, &
+            mpigrp_CPLID, type1, rof(1)%cplcompid, context_id, direction)
+         
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in migrating rof mesh for map rof c2 ocn '
+            call shr_sys_abort(subname//' ERROR in migrating rof mesh for map rof c2 ocn ')
+         endif
+         if (iamroot_CPLID)  then
+            write(logunit,*) subname,' migrated mesh for map rof 2 ocn '
+         endif
+         if (mbrxoid .ge. 0) then ! we are on coupler side pes
+            tagname=trim(seq_flds_r2x_fields)//C_NULL_CHAR
+            tagtype = 1 ! dense, double
+            numco= 1 ! 1  scalar per node
+            ierr = iMOAB_DefineTagStorage(mbrxoid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining ' // trim(seq_flds_r2x_fields) // ' tags on coupler side in MOAB'
+               call shr_sys_abort(subname//' ERROR in defining MOAB tags ')
+            endif
+         endif
+
+         if (mboxid .ge. 0) then ! we are on coupler side pes, for ocean mesh
+            tagname=trim(seq_flds_r2x_fields)//C_NULL_CHAR
+            tagtype = 1 ! dense, double
+            numco= 1 ! 1  scalar per node
+            ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining ' // trim(seq_flds_r2x_fields) // ' tags on coupler side in MOAB, for ocean app'
+               call shr_sys_abort(subname//' ERROR in defining MOAB tags ')
+            endif
+         endif
+
+         
+         if (iamroot_CPLID)  then
+            write(logunit,*) subname,' created moab tags for seq_flds_r2x_fields '
+         endif
+         ! now we have to populate the map with the right moab attibutes, so that it does the right projection
+#ifdef MOABDEBUG
+         if (mbrxoid.ge.0) then  ! we are on coupler PEs
+            call mpi_comm_rank(mpicom_CPLID, rank_on_cpl  , ierr)
+            if (rank_on_cpl .lt. 4) then
+               prefix_output = "rof_cov"//CHAR(0)
+               ierr = iMOAB_WriteLocalMesh(mbrxoid, prefix_output)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in writing coverage mesh rof 2 ocn '
+               endif
+            endif
+         endif
+#endif
+! now take care of the mapper for MOAB mapper_Rr2o_liq
+            mapper_Rr2o_liq%src_mbid = mbrxid
+            mapper_Rr2o_liq%tgt_mbid = mbrxoid
+            mapper_Rr2o_liq%intx_mbid = mbrmapro 
+            mapper_Rr2o_liq%src_context = rof(1)%cplcompid
+            mapper_Rr2o_liq%intx_context = rmapid
+            wgtIdef = 'scalar'//C_NULL_CHAR
+            mapper_Rr2o_liq%weight_identifier = wgtIdef 
+            mapper_Rr2o_liq%mbname = 'mapper_Rr2o_liq'
+#endif
 
           if (iamroot_CPLID) then
              write(logunit,*) ' '
@@ -581,7 +664,18 @@ contains
           call seq_map_init_rcfile(mapper_Rr2o_ice, rof(1), ocn(1), &
                'seq_maps.rc', 'rof2ocn_ice_rmapname:', 'rof2ocn_ice_rmaptype:',samegrid_ro, &
                'mapper_Rr2o_ice  initialization',esmf_map_flag)
-
+! us the same one for mapper_Rr2o_ice and mapper_Fr2o
+#ifdef HAVE_MOAB
+! now take care of the mapper for MOAB mapper_Rr2o_ice
+            mapper_Rr2o_ice%src_mbid = mbrxid
+            mapper_Rr2o_ice%tgt_mbid = mbrxoid
+            mapper_Rr2o_ice%intx_mbid = mbrmapro 
+            mapper_Rr2o_ice%src_context = rof(1)%cplcompid
+            mapper_Rr2o_ice%intx_context = rmapid
+            wgtIdef = 'scalar'//C_NULL_CHAR
+            mapper_Rr2o_ice%weight_identifier = wgtIdef 
+            mapper_Rr2o_ice%mbname = 'mapper_Rr2o_ice'
+#endif
           if (flood_present) then
              if (iamroot_CPLID) then
                 write(logunit,*) ' '
@@ -590,6 +684,17 @@ contains
              call seq_map_init_rcfile( mapper_Fr2o, rof(1), ocn(1), &
                   'seq_maps.rc', 'rof2ocn_fmapname:', 'rof2ocn_fmaptype:',samegrid_ro, &
                   string='mapper_Fr2o initialization', esmf_map=esmf_map_flag)
+#ifdef HAVE_MOAB
+! now take care of the mapper for MOAB mapper_Fr2o
+               mapper_Fr2o%src_mbid = mbrxid
+               mapper_Fr2o%tgt_mbid = mbrxoid
+               mapper_Fr2o%intx_mbid = mbrmapro 
+               mapper_Fr2o%src_context = rof(1)%cplcompid
+               mapper_Fr2o%intx_context = rmapid
+               wgtIdef = 'scalar'//C_NULL_CHAR
+               mapper_Fr2o%weight_identifier = wgtIdef 
+               mapper_Fr2o%mbname = 'mapper_Fr2o'
+#endif
           endif
        endif
        call shr_sys_flush(logunit)
