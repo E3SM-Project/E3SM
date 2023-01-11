@@ -143,6 +143,8 @@ public:
 #endif
   template<int N>
   void local_mat_vec (const Field& f_src, const Field& f_tgt, const Field* mask = nullptr) const;
+  template<int N>
+  void rescale_masked_fields (const Field& f_tgt, const Field& f_mask) const;
   void pack_and_send ();
   void recv_and_unpack ();
 
@@ -170,8 +172,9 @@ protected:
 
   // Mask fields, if needed
   bool                      m_track_mask;
-  std::vector<Field>        m_mask_fields;
-  std::map<std::string,int> m_mask_map;
+  std::vector<Field>        m_mask_fields_src;
+  std::map<std::string,int> m_mask_map_src;
+  std::map<int,int>         m_mask_map_tgt;
 
   // ----- Sparse matrix CRS representation ---- //
   view_1d<int>    m_row_offsets;

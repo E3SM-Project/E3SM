@@ -19,8 +19,8 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   : CoarseningRemapper(src_grid,map_file)
 {
   m_track_mask  = true;
-  m_mask_fields = mask_fields;
-  m_mask_map    = mask_map;
+  m_mask_fields_src = mask_fields;
+  m_mask_map_src    = mask_map;
 }
 
 CoarseningRemapper::
@@ -269,9 +269,11 @@ void CoarseningRemapper::do_registration_ends ()
 {
   // Before finishing the registration we need to also register the set of masks, if needed.
   if (m_track_mask) {
-    for (auto f : m_mask_fields) {
+    for (int idx=0; idx<m_mask_fields_src.size(); ++idx) {
+      auto f   = m_mask_fields_src[idx];
       auto fid = f.get_header().get_identifier();
       register_field_from_src(fid);
+      m_mask_map_tgt.emplace(idx,m_num_registered_fields-1);
     }
     // Update the number of fields.
     m_num_fields = m_num_registered_fields;
@@ -280,8 +282,8 @@ void CoarseningRemapper::do_registration_ends ()
     // flag to not be masked at all.
     for (auto f : m_src_fields) {
       auto name = f.name();
-      if (!m_mask_map.count(name)) {
-        m_mask_map.emplace(name,-1);
+      if (!m_mask_map_src.count(name)) {
+        m_mask_map_src.emplace(name,-1);
       }
       // TODO: If there is a mask attached to this add a check that it is compatible with the field layout,
       // i.e. if layout = COL then mask should equal COL.  If layout is COL,LEV then mask is COL,LEV and anything
@@ -321,12 +323,12 @@ void CoarseningRemapper::do_remap_fwd ()
 
     int mask_idx = -1;
     if (m_track_mask) {
-      mask_idx = m_mask_map.at(f_src.name());
+      mask_idx = m_mask_map_src.at(f_src.name());
     }
 
     if (mask_idx != -1) {
       // Pass the mask to the local_mat_vec routine
-      auto mask = m_mask_fields[mask_idx];
+      auto mask = m_mask_fields_src[mask_idx];
       // Dispatch kernel with the largest possible pack size
       const auto& src_ap = f_src.get_header().get_alloc_properties();
       const auto& ov_tgt_ap = f_ov_tgt.get_header().get_alloc_properties();
@@ -374,6 +376,120 @@ void CoarseningRemapper::do_remap_fwd ()
         "Error! Something whent wrong while waiting on persistent send requests.\n"
         "  - send rank: " + std::to_string(m_comm.rank()) + "\n");
   }
+
+  // Rescale any fields that had the mask applied.
+  for (int i=0; i<m_num_fields; ++i) {
+    const auto& f_ov_tgt = m_ov_tgt_fields[i];
+  }
+  if (m_track_mask) {
+    for (int i=0; i<m_num_fields; ++i) {
+      const auto& f_tgt = m_tgt_fields[i];
+      const int   mask_idx = m_mask_map_src.at(f_tgt.name());
+      if (mask_idx != -1) {
+        // Then this field did use a mask
+        const int mask_f_idx = m_mask_map_tgt.at(mask_idx);
+        const auto& mask = m_tgt_fields[mask_f_idx];
+        const auto  rank = f_tgt.get_header().get_identifier().get_layout().rank();
+        const auto& tgt_ap = f_tgt.get_header().get_alloc_properties();
+        if (can_pack && tgt_ap.is_compatible<RPack<16>>()) {
+          rescale_masked_fields<16>(f_tgt,mask);
+        } else if (can_pack && tgt_ap.is_compatible<RPack<8>>()) {
+          rescale_masked_fields<8>(f_tgt,mask);
+        } else if (can_pack && tgt_ap.is_compatible<RPack<4>>()) {
+          rescale_masked_fields<4>(f_tgt,mask);
+        } else {
+          rescale_masked_fields<1>(f_tgt,mask);
+        }
+      }
+    }
+  }
+}
+
+template<int PackSize>
+void CoarseningRemapper::
+rescale_masked_fields (const Field& x, const Field& mask) const
+{
+  using RangePolicy = typename KT::RangePolicy;
+  using MemberType  = typename KT::MemberType;
+  using ESU         = ekat::ExeSpaceUtils<typename KT::ExeSpace>;
+  using Pack        = ekat::Pack<Real,PackSize>;
+  using PackInfo    = ekat::PackInfo<PackSize>;
+
+  const auto& layout = x.get_header().get_identifier().get_layout();
+  const int rank = layout.rank();
+  const int ncols = m_ov_tgt_grid->get_num_local_dofs();
+  const Real mask_val = -99999.0;  // TODO: Maybe not hard code what a fully masked value will be set too.
+  const Real mask_threshold = 1e-8;  //TODO: Should we not hardcode the threshold for simply masking out the column.
+  switch (rank) {
+    // Note: in each case, handle 1st contribution to each row separately,
+    //       using = instead of +=. This allows to avoid doing an extra
+    //       loop to zero out y before the mat-vec.
+    case 1:
+    {
+      auto x_view = x.get_view<Real*>();
+      auto m_view = mask.get_view<const Real*>();
+      Kokkos::parallel_for(RangePolicy(0,ncols),
+                           KOKKOS_LAMBDA(const int& icol) {
+        if (m_view(icol)>mask_threshold) {
+          x_view(icol) /= m_view(icol);
+        } else {
+          x_view(icol) = mask_val;
+        }
+      });
+      break;
+    }
+    case 2:
+    {
+      auto x_view = x.get_view<Pack**>();
+      auto m_view = x.get_view<const Pack**>();
+      const int dim1 = PackInfo::num_packs(layout.dim(1));
+      auto policy = ESU::get_default_team_policy(ncols,dim1);
+      Kokkos::parallel_for(policy,
+                           KOKKOS_LAMBDA(const MemberType& team) {
+        const auto icol = team.league_rank();
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dim1),
+                            [&](const int j){
+          auto masked = m_view(icol,j) > mask_threshold;
+          x_view(icol,j).set(masked,x_view(icol,j)/m_view(icol,j));
+          x_view(icol,j).set(!masked,mask_val);
+        });
+      });
+      break;
+    }
+//ASD    case 3:
+//ASD    {
+//ASD      auto x_view = x.get_view<const Pack***>();
+//ASD      auto y_view = y.get_view<      Pack***>();
+//ASD      // Note, the mask is still assumed to be defined on COLxLEV so still only 2D for case 3.
+//ASD      view_2d<Real> mask_view("",x_view.extent_int(0),x_view.extent_int(2));
+//ASD      if (mask != NULL) {
+//ASD        mask_view = mask->get_view<Real**>();
+//ASD      } else {
+//ASD        Kokkos::deep_copy(mask_view,1.0);
+//ASD      }
+//ASD      const int dim1 = src_layout.dim(1);
+//ASD      const int dim2 = PackInfo::num_packs(src_layout.dim(2));
+//ASD      auto policy = ESU::get_default_team_policy(nrows,dim1*dim2);
+//ASD      Kokkos::parallel_for(policy,
+//ASD                           KOKKOS_LAMBDA(const MemberType& team) {
+//ASD        const auto row = team.league_rank();
+//ASD
+//ASD        const auto beg = row_offsets(row);
+//ASD        const auto end = row_offsets(row+1);
+//ASD        Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dim1*dim2),
+//ASD                            [&](const int idx){
+//ASD          const int j = idx / dim2;
+//ASD          const int k = idx % dim2;
+//ASD          y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k);
+//ASD          for (int icol=beg+1; icol<end; ++icol) {
+//ASD            y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k);
+//ASD          }
+//ASD        });
+//ASD      });
+//ASD      break;
+//ASD    }
+  }
+  
 
 }
 
@@ -477,6 +593,10 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
         });
       });
       break;
+    }
+    default:
+    {
+      EKAT_ERROR_MSG("Error::coarsening_remapper::local_mat_vec doesn't support fields of rank 4 or greater");
     }
   }
 }
