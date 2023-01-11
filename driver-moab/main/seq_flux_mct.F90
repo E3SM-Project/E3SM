@@ -7,6 +7,7 @@ module seq_flux_mct
   use shr_mct_mod,       only: shr_mct_queryConfigFile, shr_mct_sMatReaddnc
 
   use seq_comm_mct,     only : mboxid ! iMOAB app id for ocn on cpl pes
+  use seq_comm_mct,     only : mbofxid ! iMOAB app id for ocn on cpl pes
   use seq_comm_mct,     only : mbaxid ! iMOAB app id for atm phys grid on cpl pes
 
   use prep_aoflux_mod,   only: prep_aoflux_get_xao_omct, prep_aoflux_get_xao_amct
@@ -128,6 +129,8 @@ module seq_flux_mct
 
   ! moab 
   real(r8),  allocatable :: tagValues(:) ! used for copying tag values from frac to frad
+  real(r8),  allocatable :: tagValues2(:) ! used for copying tag values for albedos
+  integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
 
   ! Coupler field indices
 
@@ -794,9 +797,10 @@ contains
     integer(in)         :: klat,klon       ! field indices
     logical             :: update_alb           ! was albedo updated
 
+
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
     character(CXX) ::tagname
-    integer :: ent_type, ierr
+    integer :: ent_type, ierr, kgg, lSize
     integer , save  :: arrSize ! local size for moab tag arrays (number of cells locally)
 
     logical,save        :: first_call = .true.
@@ -849,8 +853,17 @@ contains
           allocate(tagValues(arrSize) )
        endif
 
+       if (mbofxid .ge. 0) then
+          lSize = mct_aVect_lSize(xao_o)
+          allocate(tagValues2(lSize) )
+          allocate(GlobalIds(lSize) )
+          kgg = mct_aVect_indexIA(dom_o%data ,"GlobGridNum" ,perrWith=subName)
+          GlobalIds = dom_o%data%iAttr(kgg,:)
+       endif
+
        first_call = .false.
     endif
+    ent_type = 1 ! cells for mpas ocean
 
     if (flux_albav) then
 
@@ -936,28 +949,67 @@ contains
           update_alb = .true.
        endif    ! nextsw_cday
     end if   ! flux_albav
-    !--- update current ifrad/ofrad values if albedo was updated
 
+! update MOAB versions
+    if (mbofxid > 0 ) then
+       tagname = 'So_avsdr'//C_NULL_CHAR
+       tagValues2 = xao_o%rAttr(index_xao_So_avsdr,:)
+       ierr = iMOAB_SetDoubleTagStorageWithGid ( mbofxid, tagname, lSize , ent_type, tagValues2, GlobalIds )
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in setting avsdr on ocnf moab instance  '
+          call shr_sys_abort(subname//' ERROR in setting avsdr on ocnf moab instance ')
+       endif
+
+       tagname = 'So_anidr'//C_NULL_CHAR
+       tagValues2 = xao_o%rAttr(index_xao_So_anidr,:)
+       ierr = iMOAB_SetDoubleTagStorageWithGid ( mbofxid, tagname, lSize , ent_type, tagValues2, GlobalIds )
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in setting anidr on ocnf moab instance  '
+          call shr_sys_abort(subname//' ERROR in setting anidr on ocnf moab instance ')
+       endif
+
+       tagname = 'So_avsdf'//C_NULL_CHAR
+       tagValues2 = xao_o%rAttr(index_xao_So_avsdf,:)
+       ierr = iMOAB_SetDoubleTagStorageWithGid ( mbofxid, tagname, lSize , ent_type, tagValues2, GlobalIds )
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in setting avsdf on ocnf moab instance  '
+          call shr_sys_abort(subname//' ERROR in setting avsdf on ocnf moab instance ')
+       endif
+
+       tagname = 'So_anidf'//C_NULL_CHAR
+       tagValues2 = xao_o%rAttr(index_xao_So_anidf,:)
+       ierr = iMOAB_SetDoubleTagStorageWithGid ( mbofxid, tagname, lSize , ent_type, tagValues2, GlobalIds )
+       if (ierr .ne. 0) then
+          write(logunit,*) subname,' error in setting anidf on ocnf moab instance  '
+          call shr_sys_abort(subname//' ERROR in setting anidf on ocnf moab instance ')
+       endif
+    endif
+
+    !--- update current ifrad/ofrad values if albedo was updated
     if (update_alb) then
        kx = mct_aVect_indexRA(fractions_o,"ifrac")
        kr = mct_aVect_indexRA(fractions_o,"ifrad")
        fractions_o%rAttr(kr,:) = fractions_o%rAttr(kx,:)
+
        kx = mct_aVect_indexRA(fractions_o,"ofrac")
        kr = mct_aVect_indexRA(fractions_o,"ofrad")
        fractions_o%rAttr(kr,:) = fractions_o%rAttr(kx,:)
+
        ! copy here fractions ifrad and ofrad to moab tags
-       tagname = 'ifrac:ofrac'//C_NULL_CHAR
-       ent_type = 1 ! cells for ocean mesh
-       ierr = iMOAB_GetDoubleTagStorage( mboxid, tagname,  arrSize, ent_type, tagValues)
-       if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in getting ifrac, ofrac  '
-         call shr_sys_abort(subname//' ERROR in getting ifrac, ofrac')
-       endif
-       tagname = 'ifrad:ofrad'//C_NULL_CHAR
-       ierr = iMOAB_SetDoubleTagStorage( mboxid, tagname,  arrSize, ent_type, tagValues)
-       if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in setting ifrad, ofrad  '
-         call shr_sys_abort(subname//' ERROR in setting ifrad, ofrad ')
+       if (mboxid > 0 ) then
+         tagname = 'ifrac:ofrac'//C_NULL_CHAR
+         ent_type = 1 ! cells for ocean mesh
+         ierr = iMOAB_GetDoubleTagStorage( mboxid, tagname,  arrSize, ent_type, tagValues)
+         if (ierr .ne. 0) then
+           write(logunit,*) subname,' error in getting ifrac, ofrac  '
+           call shr_sys_abort(subname//' ERROR in getting ifrac, ofrac')
+         endif
+         tagname = 'ifrad:ofrad'//C_NULL_CHAR
+         ierr = iMOAB_SetDoubleTagStorage( mboxid, tagname,  arrSize, ent_type, tagValues)
+         if (ierr .ne. 0) then
+           write(logunit,*) subname,' error in setting ifrad, ofrad  '
+           call shr_sys_abort(subname//' ERROR in setting ifrad, ofrad ')
+         endif
        endif
 
     endif
