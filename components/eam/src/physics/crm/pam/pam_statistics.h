@@ -22,15 +22,15 @@ inline void pam_statistics_init( pam::PamCoupler &coupler ) {
   // aggregted quantities
   dm_device.register_and_allocate<real>("precip_liq_aggregated","aggregated sfc liq precip rate",{nens},{"nens"});
   dm_device.register_and_allocate<real>("precip_ice_aggregated","aggregated sfc ice precip rate",{nens},{"nens"});
-  dm_device.register_and_allocate<real>("aggregation_cnt","number of aggregated samples",{nens},{"nens"});
+  dm_device.register_and_allocate<real>("stat_aggregation_cnt","number of aggregated samples",{nens},{"nens"});
   //------------------------------------------------------------------------------------------------
   auto precip_liq_aggregated = dm_device.get<real,1>("precip_liq_aggregated");
   auto precip_ice_aggregated = dm_device.get<real,1>("precip_ice_aggregated");
-  auto aggregation_cnt       = dm_device.get<real,1>("aggregation_cnt");
+  auto stat_aggregation_cnt  = dm_device.get<real,1>("stat_aggregation_cnt");
   parallel_for("Initialize aggregated precipitation", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
     precip_liq_aggregated(iens) = 0;
     precip_ice_aggregated(iens) = 0;
-    aggregation_cnt(iens) = 0;
+    stat_aggregation_cnt(iens) = 0;
   });
   //------------------------------------------------------------------------------------------------
 }
@@ -53,13 +53,15 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
   auto precip_ice = dm_device.get<real,3>("precip_ice_surf_out");
   auto precip_liq_aggregated = dm_device.get<real,1>("precip_liq_aggregated");
   auto precip_ice_aggregated = dm_device.get<real,1>("precip_ice_aggregated");
-  auto aggregation_cnt       = dm_device.get<real,1>("aggregation_cnt");
+  auto stat_aggregation_cnt  = dm_device.get<real,1>("stat_aggregation_cnt");
   // aggregate surface precipitation
   real r_nx_ny  = 1._fp / (nx*ny);
-  parallel_for("Horz mean of CRM state", SimpleBounds<3>(ny,nx,nens), YAKL_LAMBDA (int j, int i, int iens) {
+  parallel_for("aggregate statistics", SimpleBounds<3>(ny,nx,nens), YAKL_LAMBDA (int j, int i, int iens) {
     atomicAdd( precip_liq_aggregated(iens), precip_liq_aggregated(iens) + precip_liq(j,i,iens)*r_nx_ny );
     atomicAdd( precip_ice_aggregated(iens), precip_ice_aggregated(iens) + precip_ice(j,i,iens)*r_nx_ny );
-    aggregation_cnt(iens) = aggregation_cnt(iens) + 1;
+  });
+  parallel_for("update statistics aggregation count", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
+    stat_aggregation_cnt(iens) = stat_aggregation_cnt(iens) + 1;
   });
   //------------------------------------------------------------------------------------------------
 }

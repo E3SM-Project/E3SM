@@ -35,7 +35,7 @@ inline void update_gcm_state( pam::PamCoupler &coupler ) {
   //------------------------------------------------------------------------------------------------
   // Define GCM state for forcing - adjusted to avoid directly forcing cloud liquid and ice fields
   parallel_for( Bounds<2>(nz,nens) , YAKL_LAMBDA (int k, int iens) {
-    gcm_rho_d(k,iens) = input_pmid(k,iens) / ( R_d * input_tl(k,iens) );
+    gcm_rho_d(k,iens) = ( input_pmid(k,iens) / ( R_d * input_tl(k,iens) ) ) * (1.-input_ql(k,iens)) ;
     gcm_uvel (k,iens) = input_ul(k,iens);
     gcm_vvel (k,iens) = input_vl(k,iens);
     // convert total water mixing ratio to water vapor density
@@ -61,22 +61,27 @@ inline void copy_input_state_to_coupler( pam::PamCoupler &coupler ) {
   int nens = dm_device.get_dimension_size("nens");
   //------------------------------------------------------------------------------------------------
   // get the coupler state variables
-  auto crm_rho_d  = dm_device.get<real,4>("density_dry");
-  auto crm_uvel   = dm_device.get<real,4>("uvel");
-  auto crm_vvel   = dm_device.get<real,4>("vvel");
-  auto crm_wvel   = dm_device.get<real,4>("wvel");
-  auto crm_temp   = dm_device.get<real,4>("temp");
-  auto crm_qv     = dm_device.get<real,4>("water_vapor");
-  auto crm_qc     = dm_device.get<real,4>("cloud_water");
-  auto crm_nc     = dm_device.get<real,4>("cloud_water_num");
-  auto crm_qr     = dm_device.get<real,4>("rain");
-  auto crm_nr     = dm_device.get<real,4>("rain_num");
-  auto crm_qi     = dm_device.get<real,4>("ice");
-  auto crm_ni     = dm_device.get<real,4>("ice_num");
-  auto crm_qm     = dm_device.get<real,4>("ice_rime");
-  auto crm_bm     = dm_device.get<real,4>("ice_rime_vol");
-  auto crm_t_prev = dm_device.get<real,4>("qv_prev");
-  auto crm_q_prev = dm_device.get<real,4>("t_prev");
+  auto crm_rho_d         = dm_device.get<real,4>("density_dry");
+  auto crm_uvel          = dm_device.get<real,4>("uvel");
+  auto crm_vvel          = dm_device.get<real,4>("vvel");
+  auto crm_wvel          = dm_device.get<real,4>("wvel");
+  auto crm_temp          = dm_device.get<real,4>("temp");
+  auto crm_qv            = dm_device.get<real,4>("water_vapor");
+  auto crm_qc            = dm_device.get<real,4>("cloud_water");
+  auto crm_nc            = dm_device.get<real,4>("cloud_water_num");
+  auto crm_qr            = dm_device.get<real,4>("rain");
+  auto crm_nr            = dm_device.get<real,4>("rain_num");
+  auto crm_qi            = dm_device.get<real,4>("ice");
+  auto crm_ni            = dm_device.get<real,4>("ice_num");
+  auto crm_qm            = dm_device.get<real,4>("ice_rime");
+  auto crm_bm            = dm_device.get<real,4>("ice_rime_vol");
+  auto crm_t_prev        = dm_device.get<real,4>("qv_prev");
+  auto crm_q_prev        = dm_device.get<real,4>("t_prev");
+  auto crm_shoc_wthv_sec = dm_device.get<real,4>("wthv_sec");
+  auto crm_shoc_tk       = dm_device.get<real,4>("tk");
+  auto crm_shoc_tkh      = dm_device.get<real,4>("tkh");
+  auto crm_shoc_cldfrac  = dm_device.get<real,4>("cldfrac");
+  auto crm_shoc_relvar   = dm_device.get<real,4>("relvar");
   //------------------------------------------------------------------------------------------------
   // wrap the host CRM state data in YAKL arrays
   auto state_u_wind       = dm_host.get<real const,4>("state_u_wind").createDeviceCopy();
@@ -94,24 +99,37 @@ inline void copy_input_state_to_coupler( pam::PamCoupler &coupler ) {
   auto state_bm           = dm_host.get<real const,4>("state_bm").createDeviceCopy();
   auto state_t_prev       = dm_host.get<real const,4>("state_t_prev").createDeviceCopy();
   auto state_q_prev       = dm_host.get<real const,4>("state_q_prev").createDeviceCopy();  
+  auto state_shoc_wthv_sec= dm_host.get<real const,4>("state_shoc_wthv_sec").createDeviceCopy();  
+  auto state_shoc_tk      = dm_host.get<real const,4>("state_shoc_tk").createDeviceCopy();  
+  auto state_shoc_tkh     = dm_host.get<real const,4>("state_shoc_tkh").createDeviceCopy();  
+  auto state_shoc_cldfrac = dm_host.get<real const,4>("state_shoc_cldfrac").createDeviceCopy();  
+  auto state_shoc_relvar  = dm_host.get<real const,4>("state_shoc_relvar").createDeviceCopy();  
+  // use homogenized dry density
+  // auto input_rho_dry      = dm_host.get<real const,4>("input_rho_dry").createDeviceCopy();
   //------------------------------------------------------------------------------------------------
   // Copy the host CRM data to the coupler
   parallel_for("Horz mean of CRM state", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
-    crm_uvel  (k,j,i,iens) = state_u_wind      (k,j,i,iens);
-    crm_vvel  (k,j,i,iens) = state_v_wind      (k,j,i,iens);
-    crm_wvel  (k,j,i,iens) = state_w_wind      (k,j,i,iens);
-    crm_temp  (k,j,i,iens) = state_temperature (k,j,i,iens);
-    crm_qv    (k,j,i,iens) = state_qv          (k,j,i,iens);
-    crm_qc    (k,j,i,iens) = state_qc          (k,j,i,iens);
-    crm_nc    (k,j,i,iens) = state_nc          (k,j,i,iens);
-    crm_qr    (k,j,i,iens) = state_qr          (k,j,i,iens);
-    crm_nr    (k,j,i,iens) = state_nr          (k,j,i,iens);
-    crm_qi    (k,j,i,iens) = state_qi          (k,j,i,iens);
-    crm_ni    (k,j,i,iens) = state_ni          (k,j,i,iens);
-    crm_qm    (k,j,i,iens) = state_qm          (k,j,i,iens);
-    crm_bm    (k,j,i,iens) = state_bm          (k,j,i,iens);
-    crm_t_prev(k,j,i,iens) = state_t_prev      (k,j,i,iens);
-    crm_q_prev(k,j,i,iens) = state_q_prev      (k,j,i,iens);
+    // crm_rho_d (k,j,i,iens) = input_rho_dry     (k,iens);
+    crm_uvel         (k,j,i,iens) = state_u_wind       (k,j,i,iens);
+    crm_vvel         (k,j,i,iens) = state_v_wind       (k,j,i,iens);
+    crm_wvel         (k,j,i,iens) = state_w_wind       (k,j,i,iens);
+    crm_temp         (k,j,i,iens) = state_temperature  (k,j,i,iens);
+    crm_qv           (k,j,i,iens) = state_qv           (k,j,i,iens);
+    crm_qc           (k,j,i,iens) = state_qc           (k,j,i,iens);
+    crm_nc           (k,j,i,iens) = state_nc           (k,j,i,iens);
+    crm_qr           (k,j,i,iens) = state_qr           (k,j,i,iens);
+    crm_nr           (k,j,i,iens) = state_nr           (k,j,i,iens);
+    crm_qi           (k,j,i,iens) = state_qi           (k,j,i,iens);
+    crm_ni           (k,j,i,iens) = state_ni           (k,j,i,iens);
+    crm_qm           (k,j,i,iens) = state_qm           (k,j,i,iens);
+    crm_bm           (k,j,i,iens) = state_bm           (k,j,i,iens);
+    crm_t_prev       (k,j,i,iens) = state_t_prev       (k,j,i,iens);
+    crm_q_prev       (k,j,i,iens) = state_q_prev       (k,j,i,iens);
+    crm_shoc_wthv_sec(k,j,i,iens) = state_shoc_wthv_sec(k,j,i,iens);
+    crm_shoc_tk      (k,j,i,iens) = state_shoc_tk      (k,j,i,iens);
+    crm_shoc_tkh     (k,j,i,iens) = state_shoc_tkh     (k,j,i,iens);
+    crm_shoc_cldfrac (k,j,i,iens) = state_shoc_cldfrac (k,j,i,iens);
+    crm_shoc_relvar  (k,j,i,iens) = state_shoc_relvar  (k,j,i,iens);
   });
   //------------------------------------------------------------------------------------------------
 }
