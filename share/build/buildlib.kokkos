@@ -106,6 +106,17 @@ def buildlib(bldroot, installpath, case):
         installpath=installpath,
     )
 
+    # When later we use find_package to get kokkos in CMake, the folder
+    # install_sharedpath/kokkos (which is bldroot here) gets picked over
+    # the actual install folders. Since a KokkosConfig.cmake file *is* present
+    # there, but the other cmake config files aren't, this causes config errors.
+    # To prevent find_package from picking up that folder, we actually use
+    # ${bldroot}/build as a binary dir, so that CMake won't consider it when
+    # executing find_package.
+    bldroot = f"{bldroot}/build"
+    if not os.path.isdir(bldroot):
+        os.makedirs(bldroot)
+
     run_bld_cmd_ensure_logging(gen_makefile_cmd, logger, from_dir=bldroot)
     run_bld_cmd_ensure_logging(
         "{} VERBOSE=1 -j {}".format(gmake_cmd, gmake_j), logger, from_dir=bldroot
