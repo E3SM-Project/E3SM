@@ -155,10 +155,46 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   }
 
   if (io_grid->name()!=fm_grid->name() || horiz_remap_from_file) {
+
     // We build a remapper, to remap fields from the fm grid to the io grid
+    // We may need to track masked fields in the horizontal remapper, so we
+    // declare the need variables here.
+    std::vector<Field>        mask_fields;
     if (horiz_remap_from_file) {
+      std::map<std::string,int> mask_map;
+      // First we check if we need to support masking
+      for (const auto& fname : m_fields_names) {
+        auto f = get_field(fname,m_sim_field_mgr);
+        auto f_extra = f.get_header().get_extra_data();
+        if (f_extra.count("mask_data")) {
+          // Then this field has a mask attached to it.
+          // We only want to tally up a unique set of masks, some fields
+          // may share a mask.  We check if a specific mask has already
+          // been added.
+          auto f_mask = ekat::any_cast<Field>(f_extra.at("mask_data"));
+          bool found  = false;
+          for (int ii=0; ii<mask_fields.size(); ii++) {
+            auto fi = mask_fields[ii];
+            if (f_mask.equivalent(fi)) {
+              // Then we have already registered an equivalent mask so don't need to do it again.
+              mask_map.emplace(fname,ii);
+              found = true;
+              break;
+            }
+          }
+          // If we haven't already add this mask, we do that now. 
+          if (!found) {
+            mask_fields.push_back(f_mask);
+            mask_map.emplace(fname,mask_fields.size()-1);
+          }
+        } else {
+          // No mask attached, give this field an index of -1 to flag it as unmasked
+          mask_map.emplace(fname,-1);
+        }
+      }
+      // Construct the coarsening remapper
       auto horiz_remap_file   = params.get<std::string>("horiz_remap_file");
-      m_horiz_remapper = std::make_shared<CoarseningRemapper>(io_grid,horiz_remap_file);
+      m_horiz_remapper = std::make_shared<CoarseningRemapper>(io_grid,horiz_remap_file,mask_fields,mask_map);
       io_grid = m_horiz_remapper->get_tgt_grid();
       set_grid(io_grid);
     } else {
@@ -189,6 +225,13 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     for (const auto& fname : m_fields_names) {
       auto src = get_field(fname,m_sim_field_mgr);
       auto tgt = io_fm->get_field(src.name());
+      m_horiz_remapper->bind_field(src,tgt);
+    }
+    // Bind any masked fields, since they won't be listed in the `m_fields_names`
+    // TODO: Maybe we shouldn't add the mask fields to the io_fm at all, that would
+    // mean fixing the loop above to not just cycle through all fields in the remapper.
+    for (const auto& src : mask_fields) {
+      auto tgt  = io_fm->get_field(src.name());
       m_horiz_remapper->bind_field(src,tgt);
     }
 
@@ -779,7 +822,7 @@ Field AtmosphereOutput::get_field(const std::string& name, const std::shared_ptr
   } else if (m_diagnostics.find(name) != m_diagnostics.end() && field_mgr==m_sim_field_mgr) {
     const auto& diag = m_diagnostics.at(name);
     return diag->get_diagnostic();
-  } else if (m_fields_alt_name.find(name) != m_fields_alt_name.end() && field_mgr->has_field(m_fields_alt_name.at(name))) {
+  } else if (m_fields_alt_name.find(name) != m_fields_alt_name.end()) {// && field_mgr->has_field(m_fields_alt_name.at(name))) {
     return field_mgr->get_field(m_fields_alt_name.at(name));
   } else {
     EKAT_ERROR_MSG ("Field " + name + " not found in output field manager or diagnostics list, or requesting a diag not on the simualation field manager.");
@@ -836,7 +879,6 @@ create_diagnostic (const std::string& diag_field_name) {
     diag_name = "FieldAtLevel";
     tokens.pop_back();
     auto fname = ekat::join(tokens,"_");
-    m_fields_alt_name.emplace(diag_field_name,fname);
     // If the field is itself a diagnostic, make sure it's built
     if (diag_factory.has_product(fname) and
         m_diagnostics.count(fname)==0) {
@@ -854,7 +896,6 @@ create_diagnostic (const std::string& diag_field_name) {
     // If last is bot or top, will simply use that
     params.set("Field Level", lev_and_idx.back());
   } else if (lev_str=="mb" || lev_str=="hPa" || lev_str=="Pa") {
-    EKAT_REQUIRE_MSG(!m_horiz_remapper,"Error! scorpio_output:" + diag_field_name + ", horizontal remapping of pressure level slices not supported.");
     // Diagnostic is a horizontal slice at a specific pressure level
     diag_name = "FieldAtPressureLevel";
     auto pres_str = lev_and_idx[0].substr(0,pos);
@@ -866,7 +907,6 @@ create_diagnostic (const std::string& diag_field_name) {
     }
     tokens.pop_back();
     auto fname = ekat::join(tokens,"_");
-    m_fields_alt_name.emplace(diag_field_name,fname);
     // If the field is itself a diagnostic, make sure it's built
     if (diag_factory.has_product(fname) and
         m_diagnostics.count(fname)==0) {
@@ -890,6 +930,7 @@ create_diagnostic (const std::string& diag_field_name) {
   auto diag = diag_factory.create(diag_name,m_comm,params);
   diag->set_grids(m_grids_manager);
   m_diagnostics.emplace(diag_field_name,diag);
+  m_fields_alt_name.emplace(diag_field_name,diag->name());
 }
 
 } // namespace scream

@@ -108,7 +108,7 @@ build_src_grid(const ekat::Comm& comm, const int nldofs_src)
 
 // Helper function to create fields
 Field
-create_field(const std::string& name, const std::shared_ptr<const AbstractGrid>& grid, const bool twod, const bool vec, const bool mid = false, const int ps = 1)
+create_field(const std::string& name, const std::shared_ptr<const AbstractGrid>& grid, const bool twod, const bool vec, const bool mid = false, const int ps = 1, const bool add_mask = false)
 {
   constexpr int vec_dim = 3;
   constexpr auto CMP = FieldTag::Component;
@@ -122,6 +122,16 @@ create_field(const std::string& name, const std::shared_ptr<const AbstractGrid>&
   Field f(fid);
   f.get_header().get_alloc_properties().request_allocation(ps);
   f.allocate_view();
+
+  if (add_mask) {
+    // Add a mask to the field
+    FieldIdentifier fid_mask(name+"_mask",fl,units,grid->name());
+    Field f_mask(fid_mask);
+    f_mask.get_header().get_alloc_properties().request_allocation(ps);
+    f_mask.allocate_view();
+    f.get_header().set_extra_data("mask_data",f_mask);
+  }
+
   return f;
 }
 
@@ -226,7 +236,7 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
   // Here we will simplify and just remap a simple 2D horizontal field.
   auto tgt_grid = remap->get_tgt_grid();
 
-  auto src_s2d   = create_field("s2d",  src_grid,true,false);
+  auto src_s2d   = create_field("s2d",  src_grid,true,false,false,1,true);
   auto tgt_s2d   = create_field("s2d",  tgt_grid,true,false);
 
   std::vector<Field> src_f = {src_s2d};

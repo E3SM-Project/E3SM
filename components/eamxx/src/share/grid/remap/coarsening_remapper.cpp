@@ -13,10 +13,23 @@ namespace scream
 
 CoarseningRemapper::
 CoarseningRemapper (const grid_ptr_type& src_grid,
+                    const std::string& map_file,
+                    const std::vector<Field>& mask_fields,
+                    const std::map<std::string,int>& mask_map)
+  : CoarseningRemapper(src_grid,map_file)
+{
+  m_track_mask  = true;
+  m_mask_fields = mask_fields;
+  m_mask_map    = mask_map;
+}
+
+CoarseningRemapper::
+CoarseningRemapper (const grid_ptr_type& src_grid,
                     const std::string& map_file)
  : AbstractRemapper()
  , m_comm (src_grid->get_comm())
 {
+ m_track_mask = false;
   using namespace ShortFieldTagsNames;
 
   // Sanity checks
@@ -254,6 +267,16 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
 
 void CoarseningRemapper::do_registration_ends ()
 {
+  // Before finishing the registration we need to also register the set of masks, if needed.
+  if (m_track_mask) {
+    for (auto f : m_mask_fields) {
+      auto fid = f.get_header().get_identifier();
+      register_field_from_src(fid);
+    }
+    // Update the number of fields.
+    m_num_fields = m_num_registered_fields;
+  }
+
   if (this->m_num_bound_fields==this->m_num_registered_fields) {
     create_ov_tgt_fields ();
     setup_mpi_data_structures ();
