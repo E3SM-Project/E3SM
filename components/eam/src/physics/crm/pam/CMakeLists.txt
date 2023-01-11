@@ -14,6 +14,7 @@ add_library(pam_driver
 set(PAM_DYCORE awfl)
 set(PAM_MICRO  p3)
 set(PAM_SGS    shoc)
+set(PAM_RAD    forced)
 
 add_subdirectory(external/pam_core)
 add_subdirectory(external/physics)
@@ -38,6 +39,8 @@ target_include_directories(pam_driver PUBLIC
       ${CMAKE_CURRENT_BINARY_DIR}/external/physics/micro/p3
       ${CMAKE_CURRENT_SOURCE_DIR}/external/physics/sgs/shoc
       ${CMAKE_CURRENT_BINARY_DIR}/external/physics/sgs/shoc
+      ${CMAKE_CURRENT_SOURCE_DIR}/external/physics/radiation/forced
+      ${CMAKE_CURRENT_BINARY_DIR}/external/physics/radiation/forced
       ${CMAKE_CURRENT_SOURCE_DIR}/external/dynamics/awfl
       ${CMAKE_CURRENT_BINARY_DIR}/external/dynamics/awfl
       ${YAMLCPP_SOURCE_DIR}/include
