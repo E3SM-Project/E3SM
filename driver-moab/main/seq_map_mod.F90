@@ -373,17 +373,6 @@ end subroutine moab_map_init_rcfile
        endif
 
        if ( valid_moab_context ) then
-         ! if ( mapper % nentities == 0 ) then
-         !    ! tag_entity_type = 1 ! 0 = vertices, 1 = elements
-         !    ! find out the number of local elements in moab mesh ocean instance on coupler
-         !    ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC )
-         !    if (ierr .ne. 0) then
-         !          write(logunit,*) subname,' error in getting mesh info '
-         !          call shr_sys_abort(subname//' error in getting mesh info ')
-         !    endif
-         !   !! check tag_entity_type and then set nentieis accordingly
-         ! endif
-
          nfields = 1
          ! first get data from source tag and store in a temporary
          ! then set it back to target tag to mimic a copy

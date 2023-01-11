@@ -647,7 +647,7 @@ contains
          endif
 #endif
 ! now take care of the mapper for MOAB mapper_Rr2o_liq
-            mapper_Rr2o_liq%src_mbid = mbrxid
+            !mapper_Rr2o_liq%src_mbid = mbrxid
             mapper_Rr2o_liq%tgt_mbid = mbrxoid
             mapper_Rr2o_liq%intx_mbid = mbrmapro 
             mapper_Rr2o_liq%src_context = rof(1)%cplcompid
@@ -667,7 +667,7 @@ contains
 ! us the same one for mapper_Rr2o_ice and mapper_Fr2o
 #ifdef HAVE_MOAB
 ! now take care of the mapper for MOAB mapper_Rr2o_ice
-            mapper_Rr2o_ice%src_mbid = mbrxid
+            !mapper_Rr2o_ice%src_mbid = mbrxid
             mapper_Rr2o_ice%tgt_mbid = mbrxoid
             mapper_Rr2o_ice%intx_mbid = mbrmapro 
             mapper_Rr2o_ice%src_context = rof(1)%cplcompid
@@ -686,7 +686,7 @@ contains
                   string='mapper_Fr2o initialization', esmf_map=esmf_map_flag)
 #ifdef HAVE_MOAB
 ! now take care of the mapper for MOAB mapper_Fr2o
-               mapper_Fr2o%src_mbid = mbrxid
+               !mapper_Fr2o%src_mbid = mbrxid
                mapper_Fr2o%tgt_mbid = mbrxoid
                mapper_Fr2o%intx_mbid = mbrmapro 
                mapper_Fr2o%src_context = rof(1)%cplcompid
