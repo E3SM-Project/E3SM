@@ -275,6 +275,21 @@ void CoarseningRemapper::do_registration_ends ()
     }
     // Update the number of fields.
     m_num_fields = m_num_registered_fields;
+
+    // Make sure that all fields registered so far are representing in the mask map, if missing
+    // flag to not be masked at all.
+    for (auto f : m_src_fields) {
+      auto name = f.name();
+      if (!m_mask_map.count(name)) {
+        m_mask_map.emplace(name,-1);
+      }
+      // TODO: If there is a mask attached to this add a check that it is compatible with the field layout,
+      // i.e. if layout = COL then mask should equal COL.  If layout is COL,LEV then mask is COL,LEV and anything
+      // with higher dimensionality will use a mask of COL,LEV (for now).
+      //
+      // TODO also check that all mask fields are not themselves set to be masked...
+    }
+
   }
 
   if (this->m_num_bound_fields==this->m_num_registered_fields) {
@@ -294,6 +309,8 @@ void CoarseningRemapper::do_remap_fwd ()
         "  - recv rank: " + std::to_string(m_comm.rank()) + "\n");
   }
 
+  // TODO: Add check that if there are mask values they are either 1's or 0's for unmasked/masked.
+
   // Loop over each field
   constexpr auto can_pack = SCREAM_PACK_SIZE>1;
   for (int i=0; i<m_num_fields; ++i) {
@@ -302,20 +319,45 @@ void CoarseningRemapper::do_remap_fwd ()
     const auto& f_src    = m_src_fields[i];
     const auto& f_ov_tgt = m_ov_tgt_fields[i];
 
-    // Dispatch kernel with the largest possible pack size
-    const auto& src_ap = f_src.get_header().get_alloc_properties();
-    const auto& ov_tgt_ap = f_ov_tgt.get_header().get_alloc_properties();
-    if (can_pack && src_ap.is_compatible<RPack<16>>() &&
-                    ov_tgt_ap.is_compatible<RPack<16>>()) {
-      local_mat_vec<16>(f_src,f_ov_tgt);
-    } else if (can_pack && src_ap.is_compatible<RPack<8>>() &&
-                           ov_tgt_ap.is_compatible<RPack<8>>()) {
-      local_mat_vec<8>(f_src,f_ov_tgt);
-    } else if (can_pack && src_ap.is_compatible<RPack<4>>() &&
-                           ov_tgt_ap.is_compatible<RPack<4>>()) {
-      local_mat_vec<4>(f_src,f_ov_tgt);
+    int mask_idx = -1;
+    if (m_track_mask) {
+      mask_idx = m_mask_map.at(f_src.name());
+    }
+
+    if (mask_idx != -1) {
+      // Pass the mask to the local_mat_vec routine
+      auto mask = m_mask_fields[mask_idx];
+      // Dispatch kernel with the largest possible pack size
+      const auto& src_ap = f_src.get_header().get_alloc_properties();
+      const auto& ov_tgt_ap = f_ov_tgt.get_header().get_alloc_properties();
+      if (can_pack && src_ap.is_compatible<RPack<16>>() &&
+                      ov_tgt_ap.is_compatible<RPack<16>>()) {
+        local_mat_vec<16>(f_src,f_ov_tgt,&mask);
+      } else if (can_pack && src_ap.is_compatible<RPack<8>>() &&
+                             ov_tgt_ap.is_compatible<RPack<8>>()) {
+        local_mat_vec<8>(f_src,f_ov_tgt,&mask);
+      } else if (can_pack && src_ap.is_compatible<RPack<4>>() &&
+                             ov_tgt_ap.is_compatible<RPack<4>>()) {
+        local_mat_vec<4>(f_src,f_ov_tgt,&mask);
+      } else {
+        local_mat_vec<1>(f_src,f_ov_tgt,&mask);
+      }
     } else {
-      local_mat_vec<1>(f_src,f_ov_tgt);
+      // Dispatch kernel with the largest possible pack size
+      const auto& src_ap = f_src.get_header().get_alloc_properties();
+      const auto& ov_tgt_ap = f_ov_tgt.get_header().get_alloc_properties();
+      if (can_pack && src_ap.is_compatible<RPack<16>>() &&
+                      ov_tgt_ap.is_compatible<RPack<16>>()) {
+        local_mat_vec<16>(f_src,f_ov_tgt);
+      } else if (can_pack && src_ap.is_compatible<RPack<8>>() &&
+                             ov_tgt_ap.is_compatible<RPack<8>>()) {
+        local_mat_vec<8>(f_src,f_ov_tgt);
+      } else if (can_pack && src_ap.is_compatible<RPack<4>>() &&
+                             ov_tgt_ap.is_compatible<RPack<4>>()) {
+        local_mat_vec<4>(f_src,f_ov_tgt);
+      } else {
+        local_mat_vec<1>(f_src,f_ov_tgt);
+      }
     }
   }
 
@@ -337,7 +379,7 @@ void CoarseningRemapper::do_remap_fwd ()
 
 template<int PackSize>
 void CoarseningRemapper::
-local_mat_vec (const Field& x, const Field& y) const
+local_mat_vec (const Field& x, const Field& y, const Field* mask) const
 {
   using RangePolicy = typename KT::RangePolicy;
   using MemberType  = typename KT::MemberType;
@@ -359,13 +401,19 @@ local_mat_vec (const Field& x, const Field& y) const
     {
       auto x_view = x.get_view<const Real*>();
       auto y_view = y.get_view<      Real*>();
+      view_1d<Real> mask_view("",x_view.extent_int(0));
+      if (mask != NULL) {
+        mask_view = mask->get_view<Real*>();
+      } else {
+        Kokkos::deep_copy(mask_view,1.0);
+      }
       Kokkos::parallel_for(RangePolicy(0,nrows),
                            KOKKOS_LAMBDA(const int& row) {
         const auto beg = row_offsets(row);
         const auto end = row_offsets(row+1);
-        y_view(row) = weights(beg)*x_view(col_lids(beg));
+        y_view(row) = weights(beg)*x_view(col_lids(beg))*mask_view(col_lids(beg));
         for (int icol=beg+1; icol<end; ++icol) {
-          y_view(row) += weights(icol)*x_view(col_lids(icol));
+          y_view(row) += weights(icol)*x_view(col_lids(icol))*mask_view(col_lids(icol));
         }
       });
       break;
@@ -374,6 +422,12 @@ local_mat_vec (const Field& x, const Field& y) const
     {
       auto x_view = x.get_view<const Pack**>();
       auto y_view = y.get_view<      Pack**>();
+      view_2d<Real> mask_view("",x_view.extent_int(0),x_view.extent_int(1));
+      if (mask != NULL) {
+        mask_view = mask->get_view<Real**>();
+      } else {
+        Kokkos::deep_copy(mask_view,1.0);
+      }
       const int dim1 = PackInfo::num_packs(src_layout.dim(1));
       auto policy = ESU::get_default_team_policy(nrows,dim1);
       Kokkos::parallel_for(policy,
@@ -396,6 +450,13 @@ local_mat_vec (const Field& x, const Field& y) const
     {
       auto x_view = x.get_view<const Pack***>();
       auto y_view = y.get_view<      Pack***>();
+      // Note, the mask is still assumed to be defined on COLxLEV so still only 2D for case 3.
+      view_2d<Real> mask_view("",x_view.extent_int(0),x_view.extent_int(2));
+      if (mask != NULL) {
+        mask_view = mask->get_view<Real**>();
+      } else {
+        Kokkos::deep_copy(mask_view,1.0);
+      }
       const int dim1 = src_layout.dim(1);
       const int dim2 = PackInfo::num_packs(src_layout.dim(2));
       auto policy = ESU::get_default_team_policy(nrows,dim1*dim2);

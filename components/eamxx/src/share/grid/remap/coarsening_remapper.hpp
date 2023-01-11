@@ -142,7 +142,7 @@ protected:
 public:
 #endif
   template<int N>
-  void local_mat_vec (const Field& f_src, const Field& f_tgt) const;
+  void local_mat_vec (const Field& f_src, const Field& f_tgt, const Field* mask = nullptr) const;
   void pack_and_send ();
   void recv_and_unpack ();
 
