@@ -426,7 +426,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
     //       loop to zero out y before the mat-vec.
     case 1:
     {
-      auto x_view = x.get_view<Real*>();
+      auto x_view =    x.get_view<      Real*>();
       auto m_view = mask.get_view<const Real*>();
       Kokkos::parallel_for(RangePolicy(0,ncols),
                            KOKKOS_LAMBDA(const int& icol) {
@@ -440,8 +440,8 @@ rescale_masked_fields (const Field& x, const Field& mask) const
     }
     case 2:
     {
-      auto x_view = x.get_view<Pack**>();
-      auto m_view = x.get_view<const Pack**>();
+      auto x_view =    x.get_view<      Pack**>();
+      auto m_view = mask.get_view<const Pack**>();
       const int dim1 = PackInfo::num_packs(layout.dim(1));
       auto policy = ESU::get_default_team_policy(ncols,dim1);
       Kokkos::parallel_for(policy,
@@ -456,38 +456,31 @@ rescale_masked_fields (const Field& x, const Field& mask) const
       });
       break;
     }
-//ASD    case 3:
-//ASD    {
-//ASD      auto x_view = x.get_view<const Pack***>();
-//ASD      auto y_view = y.get_view<      Pack***>();
-//ASD      // Note, the mask is still assumed to be defined on COLxLEV so still only 2D for case 3.
-//ASD      view_2d<Real> mask_view("",x_view.extent_int(0),x_view.extent_int(2));
-//ASD      if (mask != NULL) {
-//ASD        mask_view = mask->get_view<Real**>();
-//ASD      } else {
-//ASD        Kokkos::deep_copy(mask_view,1.0);
-//ASD      }
-//ASD      const int dim1 = src_layout.dim(1);
-//ASD      const int dim2 = PackInfo::num_packs(src_layout.dim(2));
-//ASD      auto policy = ESU::get_default_team_policy(nrows,dim1*dim2);
-//ASD      Kokkos::parallel_for(policy,
-//ASD                           KOKKOS_LAMBDA(const MemberType& team) {
-//ASD        const auto row = team.league_rank();
-//ASD
-//ASD        const auto beg = row_offsets(row);
-//ASD        const auto end = row_offsets(row+1);
-//ASD        Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dim1*dim2),
-//ASD                            [&](const int idx){
-//ASD          const int j = idx / dim2;
-//ASD          const int k = idx % dim2;
-//ASD          y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k);
-//ASD          for (int icol=beg+1; icol<end; ++icol) {
-//ASD            y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k);
-//ASD          }
-//ASD        });
-//ASD      });
-//ASD      break;
-//ASD    }
+    case 3:
+    {
+      auto x_view =    x.get_view<      Pack***>();
+      auto m_view = mask.get_view<const Pack***>();
+      const int dim1 = layout.dim(1);
+      const int dim2 = PackInfo::num_packs(layout.dim(2));
+      auto policy = ESU::get_default_team_policy(ncols,dim1*dim2);
+      Kokkos::parallel_for(policy,
+                           KOKKOS_LAMBDA(const MemberType& team) {
+        const auto icol = team.league_rank();
+
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dim1*dim2),
+                            [&](const int idx){
+          const int j = idx / dim2;
+          const int k = idx % dim2;
+          auto x_sub = ekat::subview(x_view,icol,j);
+          auto m_sub = ekat::subview(m_view,icol,j);
+          auto masked = m_sub(k) > mask_threshold;
+
+          x_sub(k).set(masked,x_sub(k)/m_sub(k));
+          x_sub(k).set(!masked,mask_val);
+        });
+      });
+      break;
+    }
   }
   
 
