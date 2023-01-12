@@ -330,6 +330,7 @@ module ocn_tracer_advection_mono
            do k = 1, nVertLevels
               wgtTmp(k) = normalThicknessFlux(k,iEdge)* &
                           advMaskHighOrder(k,iEdge)
+              !print*, 'normalThicknessFlux(k,iEdge) ', normalThicknessFlux(k,iEdge)
               sgnTmp(k) = sign(1.0_RKIND, &
                                normalThicknessFlux(k,iEdge))
               flxTmp(k) = 0.0_RKIND

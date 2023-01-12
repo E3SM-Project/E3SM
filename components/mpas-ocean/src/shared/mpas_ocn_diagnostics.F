@@ -1179,10 +1179,10 @@ contains
          !$omp    private(k, cell1, cell2, vertex1, vertex2, invLength)
 #endif
          do iEdge = 1,nEdges
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-            vertex1 = verticesOnedge(1,iEdge)
-            vertex2 = verticesOnedge(2,iEdge)
+            cell1 = cellsOnEdge(1, iEdge)
+            cell2 = cellsOnEdge(2, iEdge)
+            vertex1 = verticesOnEdge(1, iEdge)
+            vertex2 = verticesOnEdge(2, iEdge)
 
             ! Compute gradient of PV in normal direction
 
@@ -1954,15 +1954,15 @@ contains
       !$acc            layerThicknessEdgeFlux, dcEdge, dvEdge, &
       !$acc            invAreaCell, nEdgesOnCell, edgesOnCell, &
       !$acc            edgeSignOnCell, minLevelCell, maxLevelCell) &
-      !$acc    private(div_hu, div_huTransport, i, k, kmin, kmax, & 
-      !$acc            iEdge, invAreaCell1, r_tmp, dcEdge_temp, & 
-      !$acc            dvEdge_temp, edgeSignOnCell_temp)  
+      !$acc    private(div_hu, div_huTransport, i, k, kmin, kmax, &
+      !$acc            iEdge, invAreaCell1, r_tmp, dcEdge_temp, &
+      !$acc            dvEdge_temp, edgeSignOnCell_temp)
 #else
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp    private(div_hu, div_huTransport, i, k, kmin, kmax, & 
-      !$omp            iEdge, invAreaCell1, r_tmp, dcEdge_temp, & 
-      !$omp            dvEdge_temp, edgeSignOnCell_temp)  
+      !$omp    private(div_hu, div_huTransport, i, k, kmin, kmax, &
+      !$omp            iEdge, invAreaCell1, r_tmp, dcEdge_temp, &
+      !$omp            dvEdge_temp, edgeSignOnCell_temp)
 #endif
       do iCell = 1, nCells
          divergence(:,iCell) = 0.0_RKIND

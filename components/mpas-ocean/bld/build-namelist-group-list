@@ -25,6 +25,7 @@ my @groups = qw(run_modes
                 advection
                 bottom_drag
                 ocean_constants
+                nonhydrostatic_pressure
                 pressure_gradient
                 eos
                 eos_linear

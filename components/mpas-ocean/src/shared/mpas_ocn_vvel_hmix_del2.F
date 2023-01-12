@@ -3,24 +3,24 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.io/license.html
+! distributed with this code, or at http://mpas-dev.github.com/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_tracer_hmix_del2
+!  ocn_vvel_hmix_del2
 !
-!> \brief MPAS ocean horizontal tracer mixing driver
-!> \author Doug Jacobsen, Mark Petersen, Todd Ringler
-!> \date   September 2011
+!> \brief MPAS ocean horizontal mixing driver for vertical momentum
+!> \author Luke VanRoekel, Sara Calandrini
+!> \date   July 2022
 !> \details
 !>  This module contains the main driver routine for computing
-!>  horizontal mixing tendencies.
+!>  horizontal mixing tendencies in the vertical momentum.
 !>
 !>  It provides an init and a tend function. Each are described below.
 !
 !-----------------------------------------------------------------------
 
-module ocn_tracer_hmix_del2
+module ocn_vvel_hmix_del2
 
    use mpas_timer
    use mpas_derived_types
@@ -48,8 +48,8 @@ module ocn_tracer_hmix_del2
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_tracer_hmix_del2_tend, &
-             ocn_tracer_hmix_del2_init
+   public :: ocn_vvel_hmix_del2_tend, &
+             ocn_vvel_hmix_del2_init
 
    !--------------------------------------------------------------------
    !
@@ -58,7 +58,9 @@ module ocn_tracer_hmix_del2
    !--------------------------------------------------------------------
 
    logical :: del2On
-   real (kind=RKIND) :: eddyDiff2
+   real (kind=RKIND) :: eddyVisc2
+   real (kind=RKIND), dimension(:,:), allocatable :: eddyViscArr
+
 
 !***********************************************************************
 
@@ -66,31 +68,32 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_tracer_hmix_del2_tend
+!  routine vvel_hmix_del2_tend
 !
-!> \brief   Computes Laplacian tendency term for horizontal tracer mixing
-!> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
-!> \date    September 2011
+!> \brief   Computes Laplacian tendency term for horizontal vertical velocity mixing
+!> \author  Luke Van Roekel -- Copied from tracer_hmix_del2
+!> \date    December 2020
 !> \details
-!>  This routine computes the horizontal mixing tendency for tracers
+!>  This routine computes the horizontal mixing tendency for vertical velocity
 !>  based on current state using a Laplacian parameterization.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_del2_tend(meshPool, layerThickEdgeMean, tracers, tend, err)!{{{
+   subroutine ocn_vvel_hmix_del2_tend(layerThicknessEdge, vertVelocityNonhydro, tend, err)!{{{
+
+      implicit none
+
       !-----------------------------------------------------------------
       !
       ! input variables
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         layerThicknessEdge !< Input: thickness at edges
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         layerThickEdgeMean !< Input: mean thickness at edges
-
-      real (kind=RKIND), dimension(:,:,:), intent(in) :: &
-        tracers !< Input: tracer quantities
+        vertVelocityNonhydro !< Input: tracer quantities
 
       !-----------------------------------------------------------------
       !
@@ -98,7 +101,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
+      real (kind=RKIND), dimension(:,:), intent(inout) :: &
          tend          !< Input/Output: velocity tendency
 
       !-----------------------------------------------------------------
@@ -116,48 +119,29 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell, iEdge, cell1, cell2
-      integer :: i, k, iTracer, num_tracers, nCells
-      integer, dimension(:), pointer :: nCellsArray
-
-      integer, dimension(:), pointer :: minLevelEdgeBot, maxLevelEdgeTop, nEdgesOnCell
-      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell, edgeSignOnCell
+      integer :: i, k, nCells, nEdges
 
       real (kind=RKIND) :: invAreaCell
-      real (kind=RKIND) :: tracer_turb_flux, flux, r_tmp
-
-      real (kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
-      real (kind=RKIND), dimension(:), pointer :: meshScalingDel2
+      real (kind=RKIND) :: vvel_turb_flux, flux, r_tmp
 
       err = 0
 
       if (.not.del2On) return
 
-      call mpas_timer_start("tracer del2")
+      call mpas_timer_start("vertical velocity del2")
 
-      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
-      num_tracers = size(tracers, dim=1)
+      nCells = nCellsOwned
+      nEdges = nEdgesHalo( 1 )
 
-      call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', minLevelEdgeBot)
-      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
-      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
-      call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
-      call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-      call mpas_pool_get_array(meshPool, 'dcEdge', dcEdge)
-      call mpas_pool_get_array(meshPool, 'meshScalingDel2', meshScalingDel2)
-
-      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
-      call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
-      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
-
-      nCells = nCellsArray( 1 )
+      allocate(eddyViscArr(nVertLevels+1, nEdges))
 
       !
       ! compute a boundary mask to enforce insulating boundary conditions in the horizontal
       !
       !$omp parallel
       !$omp do schedule(runtime) &
-      !$omp private(invAreaCell, i, iEdge, cell1, cell2, r_tmp, k, iTracer, &
-      !$omp         tracer_turb_flux, flux)
+      !$omp private(invAreaCell, i, iEdge, cell1, cell2, r_tmp, k, &
+      !$omp         vvel_turb_flux, flux)
       do iCell = 1, nCells
         invAreaCell = 1.0_RKIND / areaCell(iCell)
         do i = 1, nEdgesOnCell(iCell)
@@ -165,45 +149,44 @@ contains
           cell1 = cellsOnEdge(1,iEdge)
           cell2 = cellsOnEdge(2,iEdge)
 
-          r_tmp = meshScalingDel2(iEdge) * eddyDiff2 * dvEdge(iEdge) / dcEdge(iEdge)
+          r_tmp = meshScalingDel2(iEdge) * eddyVisc2 * dvEdge(iEdge) / dcEdge(iEdge)
 
-          do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
-            do iTracer = 1, num_tracers
+          do k = 2, maxLevelEdgeTop(iEdge)
               ! \kappa_2 \nabla \phi on edge
-              tracer_turb_flux = tracers(iTracer, k, cell2) - tracers(iTracer, k, cell1)
+              vvel_turb_flux = vertVelocityNonhydro(k, cell2) - vertVelocityNonhydro(k, cell1)
 
               ! div(h \kappa_2 \nabla \phi) at cell center
-              flux = layerThickEdgeMean(k, iEdge) * tracer_turb_flux * r_tmp
+              flux = 0.5_RKIND*(layerThicknessEdge(k, iEdge) + layerThicknessEdge(k-1,iEdge)) &
+                        * vvel_turb_flux * r_tmp
 
-              tend(iTracer, k, iCell) = tend(iTracer, k, iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
-            end do
+              tend(k, iCell) = tend(k, iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
           end do
-
         end do
       end do
       !$omp end do
       !$omp end parallel
 
-      call mpas_timer_stop("tracer del2")
+      deallocate(eddyViscArr)
+      call mpas_timer_stop("vertical velocity del2")
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_tracer_hmix_del2_tend!}}}
+   end subroutine ocn_vvel_hmix_del2_tend!}}}
 
 !***********************************************************************
 !
-!  routine ocn_tracer_hmix_del2_init
+!  routine ocn_vvel_hmix_del2_init
 !
-!> \brief   Initializes ocean tracer horizontal mixing quantities
-!> \author  Doug Jacobsen, Mark Petersen, Todd Ringler
-!> \date    September 2011
+!> \brief   Initializes ocean vertical velocity horizontal mixing quantities
+!> \author  Luke VanRoekel
+!> \date    December 2020
 !> \details
 !>  This routine initializes a variety of quantities related to
 !>  Laplacian horizontal velocity mixing in the ocean.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_hmix_del2_init(err)!{{{
+   subroutine ocn_vvel_hmix_del2_init(err)!{{{
 
    !--------------------------------------------------------------------
 
@@ -219,20 +202,21 @@ contains
 
       del2on = .false.
 
-      if ( config_use_tracer_del2 ) then
-         if ( config_tracer_del2 > 0.0_RKIND ) then
+      !if ( config_use_vertMom_del2 .or. config_use_two_equation_turbulence_model ) then
+      if ( config_use_vertMom_del2 ) then
+         if ( config_vertMom_del2 > 0.0_RKIND ) then
             del2On = .true.
-            eddyDiff2 = config_tracer_del2
+            eddyVisc2 = config_vertMom_del2
          endif
       endif
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_tracer_hmix_del2_init!}}}
+   end subroutine ocn_vvel_hmix_del2_init!}}}
 
 !***********************************************************************
 
-end module ocn_tracer_hmix_del2
+end module ocn_vvel_hmix_del2
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 ! vim: foldmethod=marker

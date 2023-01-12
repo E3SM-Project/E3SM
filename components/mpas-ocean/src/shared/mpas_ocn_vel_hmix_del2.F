@@ -24,6 +24,7 @@ module ocn_vel_hmix_del2
    use ocn_constants
    use ocn_config
    use ocn_mesh
+   use ocn_diagnostics_variables
 
    implicit none
    private

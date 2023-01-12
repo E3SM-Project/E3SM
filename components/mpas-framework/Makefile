@@ -470,7 +470,26 @@ CPPINCLUDES =
 FCINCLUDES =
 LIBS =
 
-#
+# Add links to PETSC links if requested
+ifeq "$(USE_PETSC)" "true"
+ifndef PETSC
+$(error PETSC is not set.  Please set PETSC to the PETSC install directory when USE_PETSC=true)
+endif
+ifneq (, $(shell ls $(PETSC)/lib/libpetsc.*))
+	LIBS += -L$(PETSC)/lib
+	CPPINCLUDES += -I$(PETSC)/include
+	FCINCLUDES += -I$(PETSC)/include
+else ifneq (, $(shell ls $(PETSC)/libpetsc.*))
+	LIBS += -L$(PETSC)
+	CPPINCLUDES += -I$(PETSC)
+	FCINCLUDES += -I$(PETSC)
+else
+$(error libpetsc.* does NOT exist in $(PETSC) or $(PETSC)/lib)
+endif
+	LIBS += -lpetsc
+	override CPPFLAGS += -DUSE_PETSC
+endif
+
 # If user has indicated a PIO2 library, define USE_PIO2 pre-processor macro
 #
 ifeq "$(USE_PIO2)" "true"
@@ -486,7 +505,7 @@ ifneq ($(wildcard $(PIO)/lib), )
 else
 	PIO_LIB = $(PIO)
 endif
-LIBS = -L$(PIO_LIB)
+LIBS += -L$(PIO_LIB)
 
 #
 # Regardless of PIO library version, look for an include subdirectory of PIO path
