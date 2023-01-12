@@ -93,7 +93,7 @@ public:
   // Unstructured connections to handle RRM case. Connections for an element
   // having local ID ie are
   //   ucon(ucon_ptr(ie)):ucon(ucon_ptr(ie+1)-1).
-  // Device d_ucon(i) is 1-1 with host h_ucon(i) but has a different, ~8x
+  // Device d_ucon(i) is 1-1 with host h_ucon(i) but has a different, ~2.5x
   // smaller, format.
   ExecViewUnmanaged<const HaloExchangeUnstructuredConnectionInfo*> get_d_ucon () const { return d_ucon; }
   ExecViewUnmanaged<const int*> get_d_ucon_ptr () const { return d_ucon_ptr; }

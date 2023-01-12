@@ -8,7 +8,6 @@
 
 #include "MpiBuffersManager.hpp"
 #include "KernelVariables.hpp"
-#include "ErrorDefs.hpp"
 #include "profiling.hpp"
 
 #include "utilities/VectorUtils.hpp"

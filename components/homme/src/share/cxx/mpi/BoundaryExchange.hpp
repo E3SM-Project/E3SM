@@ -12,6 +12,7 @@
 
 #include "Types.hpp"
 #include "MpiHelpers.hpp"
+#include "ErrorDefs.hpp"
 #include "Hommexx_Debug.hpp"
 
 #include <memory>
@@ -140,7 +141,8 @@ public:
   template<typename... Properties>
   void register_field (ExecView<Scalar***[NP][NP][NUM_LEV], Properties...> field, int idim_out, int num_dims, int start_dim, int nlev=NUM_LEV);
 
-  // Handle both NUM_LEV and NUM_LEV_P
+  // Handle both NUM_LEV and NUM_LEV_P. register_field does not support nlev !=
+  // NUM_LEV_P.
   template<int NUM_LEV_IN, typename... Properties>
   void register_field (ExecView<Scalar*[NP][NP][NUM_LEV_IN], Properties...> field, int nlev=NUM_LEV_IN) {
     register_field_impl<NUM_LEV_IN,Properties...>(field,nlev);
@@ -523,6 +525,10 @@ void BoundaryExchange::register_field_impl (
   assert (m_num_3d_int_fields+1<=m_3d_int_fields.extent_int(1));
   assert (m_num_1d_fields==0);
 
+  Errors::runtime_check(
+    nlev == NUM_LEV_IN,
+    "register_field for 3D interface fields does not support nlev < NUM_LEV_P.");
+
   {
     auto l_num_3d_int_fields = m_num_3d_int_fields;
     auto l_3d_int_fields = m_3d_int_fields;
@@ -579,6 +585,10 @@ void BoundaryExchange::register_field_impl (
   assert (start_dim+num_dims<=field.extent_int(1));
   assert (m_num_3d_int_fields+1<=m_3d_int_fields.extent_int(1));
   assert (m_num_1d_fields==0);
+
+  Errors::runtime_check(
+    nlev == NUM_LEV_IN,
+    "register_field for 3D interface fields does not support nlev < NUM_LEV_P.");
 
   {
     auto l_num_3d_int_fields = m_num_3d_int_fields;
