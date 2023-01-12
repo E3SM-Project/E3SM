@@ -304,7 +304,7 @@ contains
             endif
             ! now take care of the mapper 
             mapper_Fa2r%src_mbid = mbrxid
-            mapper_Fa2r%tgt_mbid = mbaxid
+            mapper_Fa2r%tgt_mbid = mbintxra
             mapper_Fa2r%intx_mbid = mbintxra 
             mapper_Fa2r%src_context = rof(1)%cplcompid
             mapper_Fa2r%intx_context = idintx
@@ -385,7 +385,7 @@ contains
 #ifdef HAVE_MOAB
             ! now take care of the mapper, use the same one as before
             mapper_Sa2r%src_mbid = mbrxid
-            mapper_Sa2r%tgt_mbid = mbaxid
+            mapper_Sa2r%tgt_mbid = mbintxra
             mapper_Sa2r%intx_mbid = mbintxra 
             mapper_Sa2r%src_context = rof(1)%cplcompid
             mapper_Sa2r%intx_context = idintx

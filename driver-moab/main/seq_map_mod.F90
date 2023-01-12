@@ -498,7 +498,9 @@ end subroutine moab_map_init_rcfile
        endif
        if ( valid_moab_context ) then
          ! receive in the intx app, because it is redistributed according to coverage (trick)
-         ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
+         ! for true intx cases, tgt_mbid is set to be the same as intx_mbid
+         ! just read map is special 
+         ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in receiving tags ', mapper%mbname,   trim(fldlist_moab)
             call shr_sys_flush(logunit)

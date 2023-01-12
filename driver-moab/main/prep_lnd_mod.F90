@@ -237,7 +237,7 @@ contains
               call shr_sys_abort(subname//' ERROR in registering atm lnd intx ')
             endif
             mapper_Sa2l%src_mbid = mbaxid
-            mapper_Sa2l%tgt_mbid = mblxid
+            mapper_Sa2l%tgt_mbid = mbintxal
             mapper_Sa2l%intx_mbid = mbintxal
             mapper_Sa2l%src_context = atm(1)%cplcompid
             mapper_Sa2l%intx_context = idintx
@@ -320,10 +320,6 @@ contains
                   write(logunit,*) subname,' error in computing weights for atm-lnd   '
                   call shr_sys_abort(subname//' ERROR in computing weights for atm-lnd ')
               endif
-  
-
-    
-
 
             else  ! the same mesh , atm and lnd use the same dofs, but lnd is a subset of atm 
                 ! we do not compute intersection, so we will have to just send data from atm to land and viceversa, by GLOBAL_ID matching
@@ -342,13 +338,14 @@ contains
                 write(logunit,*) subname,' error in computing comm graph for second hop, atm-lnd'
                 call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, atm-lnd')
               endif
+              mapper_Sa2l%tgt_mbid = mblxid
               mapper_Sa2l%intx_context = lnd(1)%cplcompid
 
             endif ! if tri-grid
 
              ! use the same map for fluxes too
             mapper_Fa2l%src_mbid = mbaxid
-            mapper_Fa2l%tgt_mbid = mblxid
+            mapper_Fa2l%tgt_mbid = mapper_Sa2l%tgt_mbid
             mapper_Fa2l%intx_mbid = mbintxal
             mapper_Fa2l%src_context = atm(1)%cplcompid
             mapper_Fa2l%intx_context = mapper_Sa2l%intx_context

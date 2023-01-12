@@ -373,7 +373,7 @@ contains
             endif
             ! now take care of the mapper 
             mapper_Fa2o%src_mbid = mbaxid
-            mapper_Fa2o%tgt_mbid = mboxid
+            mapper_Fa2o%tgt_mbid = mbintxao
             mapper_Fa2o%intx_mbid = mbintxao 
             mapper_Fa2o%src_context = atm(1)%cplcompid
             mapper_Fa2o%intx_context = idintx
@@ -475,7 +475,7 @@ contains
           if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
    ! now take care of the 2 new mappers 
             mapper_Sa2o%src_mbid = mbaxid
-            mapper_Sa2o%tgt_mbid = mboxid
+            mapper_Sa2o%tgt_mbid = mbintxao
             mapper_Sa2o%intx_mbid = mbintxao 
             mapper_Sa2o%src_context = atm(1)%cplcompid
             mapper_Sa2o%intx_context = idintx
@@ -484,7 +484,7 @@ contains
             mapper_Sa2o%mbname = 'mapper_Sa2o'
 
             mapper_Va2o%src_mbid = mbaxid
-            mapper_Va2o%tgt_mbid = mboxid
+            mapper_Va2o%tgt_mbid = mbintxao
             mapper_Va2o%intx_mbid = mbintxao 
             mapper_Va2o%src_context = atm(1)%cplcompid
             mapper_Va2o%intx_context = idintx
@@ -586,10 +586,11 @@ contains
           ! needed to be on joint comm anymore for the second hop
 
       !  it read on the coupler side, from file, the scrip mosart, that has a full mesh;  
-      !  also migrate rof mesh on coupler pes, in ocean context, mbrxoid
+      !  also migrate rof mesh on coupler pes, in ocean context, mbrxoid (this will be like coverage mesh, 
+      !    it will cover ocean target per process)
       !  map between rof 2 ocn is in  mbrmapro ; 
       ! after this, the sending of tags for second hop (ocn context) will use the new par comm graph, 
-      !  that has more precise info 
+      !  that has more precise info, that got created
          call seq_comm_getData(CPLID,  mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
 
          call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
@@ -648,10 +649,10 @@ contains
 #endif
 ! now take care of the mapper for MOAB mapper_Rr2o_liq
             !mapper_Rr2o_liq%src_mbid = mbrxid
-            mapper_Rr2o_liq%tgt_mbid = mbrxoid
+            mapper_Rr2o_liq%tgt_mbid = mbrxoid ! this is special, it will really need this coverage type mesh
             mapper_Rr2o_liq%intx_mbid = mbrmapro 
             mapper_Rr2o_liq%src_context = rof(1)%cplcompid
-            mapper_Rr2o_liq%intx_context = rmapid
+            mapper_Rr2o_liq%intx_context = ocn(1)%cplcompid
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Rr2o_liq%weight_identifier = wgtIdef 
             mapper_Rr2o_liq%mbname = 'mapper_Rr2o_liq'
@@ -668,10 +669,10 @@ contains
 #ifdef HAVE_MOAB
 ! now take care of the mapper for MOAB mapper_Rr2o_ice
             !mapper_Rr2o_ice%src_mbid = mbrxid
-            mapper_Rr2o_ice%tgt_mbid = mbrxoid
+            mapper_Rr2o_ice%tgt_mbid = mbrxoid ! special 
             mapper_Rr2o_ice%intx_mbid = mbrmapro 
             mapper_Rr2o_ice%src_context = rof(1)%cplcompid
-            mapper_Rr2o_ice%intx_context = rmapid
+            mapper_Rr2o_ice%intx_context = ocn(1)%cplcompid
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Rr2o_ice%weight_identifier = wgtIdef 
             mapper_Rr2o_ice%mbname = 'mapper_Rr2o_ice'
@@ -687,10 +688,10 @@ contains
 #ifdef HAVE_MOAB
 ! now take care of the mapper for MOAB mapper_Fr2o
                !mapper_Fr2o%src_mbid = mbrxid
-               mapper_Fr2o%tgt_mbid = mbrxoid
+               mapper_Fr2o%tgt_mbid = mbrxoid ! special
                mapper_Fr2o%intx_mbid = mbrmapro 
                mapper_Fr2o%src_context = rof(1)%cplcompid
-               mapper_Fr2o%intx_context = rmapid
+               mapper_Fr2o%intx_context = ocn(1)%cplcompid
                wgtIdef = 'scalar'//C_NULL_CHAR
                mapper_Fr2o%weight_identifier = wgtIdef 
                mapper_Fr2o%mbname = 'mapper_Fr2o'
