@@ -90,19 +90,6 @@ public:
   //@name Getters
   //@{
 
-  // Get the view with all connections
-  template<typename MemSpace>
-  KOKKOS_INLINE_FUNCTION
-  typename std::enable_if<std::is_same<MemSpace,HostMemSpace>::value,
-                 HostViewUnmanaged<const ConnectionInfo*[NUM_CONNECTIONS]>>::type
-  get_connections () const { return h_connections; }
-
-  template<typename MemSpace>
-  KOKKOS_INLINE_FUNCTION
-  typename std::enable_if<std::is_same<MemSpace,ExecMemSpace>::value && !std::is_same<ExecMemSpace,HostMemSpace>::value,
-                 ExecViewUnmanaged<const ConnectionInfo*[NUM_CONNECTIONS]>>::type
-  get_connections () const { return m_connections; }
-
   // Unstructured connections to handle RRM case. Connections for an element
   // having local ID ie are
   //   ucon(ucon_ptr(ie)):ucon(ucon_ptr(ie+1)-1).
@@ -112,11 +99,6 @@ public:
   ExecViewUnmanaged<const int*> get_d_ucon_ptr () const { return d_ucon_ptr; }
   HostViewUnmanaged<const ConnectionInfo*> get_h_ucon () const { return h_ucon; }
   HostViewUnmanaged<const int*> get_h_ucon_ptr () const { return h_ucon_ptr; }
-
-  // Get a particular connection
-  template<typename MemSpace>
-  KOKKOS_INLINE_FUNCTION
-  const ConnectionInfo& get_connection (const int ie, const int iconn) const { return get_connections<MemSpace>()(ie,iconn); }
 
   // Get number of connections with given kind and sharing
   template<typename MemSpace>
@@ -167,9 +149,6 @@ private:
   // TODO: do we need the counters on the device? It appears we never use them...
   ExecViewManaged<int[NUM_CONNECTION_SHARINGS+1][NUM_CONNECTION_KINDS+1]>             m_num_connections;
   ExecViewManaged<int[NUM_CONNECTION_SHARINGS+1][NUM_CONNECTION_KINDS+1]>::HostMirror h_num_connections;
-
-  ExecViewManaged<ConnectionInfo*[NUM_CONNECTIONS]>             m_connections;
-  ExecViewManaged<ConnectionInfo*[NUM_CONNECTIONS]>::HostMirror h_connections;
 
   ExecViewManaged<HaloExchangeUnstructuredConnectionInfo*> d_ucon;
   ExecViewManaged<ConnectionInfo*>::HostMirror h_ucon;

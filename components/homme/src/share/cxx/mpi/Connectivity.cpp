@@ -41,33 +41,8 @@ void Connectivity::set_num_elements (const int num_local_elements)
 
   m_num_local_elements  = num_local_elements;
 
-  m_connections = ExecViewManaged<ConnectionInfo*[NUM_CONNECTIONS]>("Connections", m_num_local_elements);
-  h_connections = Kokkos::create_mirror_view(m_connections);
-
   m_num_connections = ExecViewManaged<int[NUM_CONNECTION_SHARINGS+1][NUM_CONNECTION_KINDS+1]>("Connections counts");
   h_num_connections = Kokkos::create_mirror_view(m_num_connections);
-
-  // Initialize all connections to MISSING
-  // Note: we still include local element/position, since we need that even for
-  //       missing connections! Everything else is set to invalid numbers (for safety)
-  for (int ie=0; ie<m_num_local_elements; ++ie) {
-    for (int iconn=0; iconn<NUM_CONNECTIONS; ++iconn) {
-      ConnectionInfo& info = h_connections(ie,iconn);
-
-      info.sharing = etoi(ConnectionSharing::MISSING);
-      info.kind    = etoi(ConnectionKind::MISSING);
-
-      info.local.lid = ie;
-      info.local.dir = iconn;
-      info.local.dir_idx = 0;
-
-      info.local.gid  = INVALID_ID;
-      info.remote.lid = INVALID_ID;
-      info.remote.gid = INVALID_ID;
-      info.remote.dir = INVALID_DIR;
-      info.remote.dir = INVALID_DIR;
-    }
-  }
 
   // Initialize all counters to 0 (even the missing ones)
   Kokkos::deep_copy (h_num_connections,0);
@@ -101,7 +76,7 @@ void Connectivity::add_connection (
     // The elem lid on the local side must be valid!
     assert (e1_lid>=0);
 
-    ConnectionInfo& info = h_connections(e1_lid,e1_dir);
+    ConnectionInfo info;
     LidGidPos& local  = info.local;
     LidGidPos& remote = info.remote;
 
@@ -151,28 +126,6 @@ void Connectivity::add_connection (
 
 void Connectivity::finalize(const bool sanity_check)
 {
-  // Homme does not allow fewer than 2*2 elements on each of the cube's faces,
-  // so each element should have at most ONE missing connection
-  constexpr int corners[NUM_CORNERS] = { etoi(ConnectionName::SWEST), etoi(ConnectionName::SEAST), etoi(ConnectionName::NWEST), etoi(ConnectionName::NEAST)};
-
-  for (int ie=0; ie<m_num_local_elements; ++ie) {
-    std::array<bool,NUM_CORNERS> missing = {{false, false, false, false}};
-
-    for (int ic : corners) {
-      if (h_connections(ie,ic).kind == etoi(ConnectionKind::MISSING)) {
-        missing[ic % NUM_CORNERS] = true;
-
-        // Just for tracking purposes
-        //++h_num_connections(etoi(ConnectionSharing::MISSING),etoi(ConnectionKind::MISSING));
-        h_num_connections(2,2) += 1;//etoi(ConnectionSharing::MISSING),etoi(ConnectionKind::MISSING)) += 1;
-      }
-    }
-
-    Errors::runtime_check(!sanity_check || std::count(missing.cbegin(),missing.cend(),true)<=1,
-                          "Error! On real geometries, each element should have at most ONE missing connection.\n"
-                          "       If this is a unit test, you may want to call finalize(false) to disable this check.\n",-1);
-  }
-
   // Update counters for groups with same sharing/kind
   for (int kind=0; kind<NUM_CONNECTION_KINDS; ++kind) {
     for (int sharing=0; sharing<NUM_CONNECTION_SHARINGS; ++sharing) {
@@ -181,10 +134,6 @@ void Connectivity::finalize(const bool sanity_check)
     }
     h_num_connections(etoi(ConnectionKind::ANY),etoi(ConnectionKind::ANY)) += h_num_connections(etoi(ConnectionSharing::ANY),kind);
   }
-
-  // Copying to device
-  Kokkos::deep_copy(m_connections, h_connections);
-  Kokkos::deep_copy(m_num_connections, h_num_connections);
 
   setup_ucon();
 
@@ -366,11 +315,6 @@ void Connectivity::setup_ucon () {
 
 void Connectivity::clean_up()
 {
-  m_connections = ExecViewManaged<ConnectionInfo*[NUM_CONNECTIONS]>("",0);
-  Kokkos::deep_copy(m_num_connections,0);
-
-  // Cleaning up also the host mirrors
-  Kokkos::deep_copy(h_connections, m_connections);
   // Cleaning the elements counter
   Kokkos::deep_copy(h_num_connections,0);
 
