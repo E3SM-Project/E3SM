@@ -13,8 +13,7 @@ module mpas_io
    use mpas_log
 
    use pio
-   use piolib_mod
-   use pionfatt_mod
+   use pio_kinds
    use pio_types
 
 #ifdef SINGLE_PRECISION
