@@ -98,7 +98,6 @@ public:
 
   // Get geometry-related fields
   Field get_geometry_data (const std::string& name) const;
-  Field get_geometry_data_nonconst (const std::string& name) const;
 
   // Create geometry data, throws if already existing. Returns writable field
   Field create_geometry_data (const FieldIdentifier& fid);
