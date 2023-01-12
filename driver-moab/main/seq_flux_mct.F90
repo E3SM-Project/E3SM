@@ -7,7 +7,7 @@ module seq_flux_mct
   use shr_mct_mod,       only: shr_mct_queryConfigFile, shr_mct_sMatReaddnc
 
   use seq_comm_mct,     only : mboxid ! iMOAB app id for ocn on cpl pes
-  use seq_comm_mct,     only : mbofxid ! iMOAB app id for ocn on cpl pes
+  use seq_comm_mct,     only : mbofxid ! iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
   use seq_comm_mct,     only : mbaxid ! iMOAB app id for atm phys grid on cpl pes
 
   use prep_aoflux_mod,   only: prep_aoflux_get_xao_omct, prep_aoflux_get_xao_amct

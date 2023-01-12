@@ -7,7 +7,7 @@ module prep_aoflux_mod
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct,     only: num_inst_xao, num_inst_frc, num_inst_ocn
   use seq_comm_mct,     only: CPLID, logunit
-  use seq_comm_mct,     only : mbofxid ! iMOAB app id for ocn on cpl pes, the second copy of mboxid
+  use seq_comm_mct,     only : mbofxid ! iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
   use seq_comm_mct,     only : mbox2id !
   use seq_comm_mct,     only : mbaxid ! iMOAB app id for atm on cpl pes
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
