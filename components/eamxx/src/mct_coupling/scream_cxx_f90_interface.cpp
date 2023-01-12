@@ -75,7 +75,12 @@ extern "C"
 // WARNING: make sure input_yaml_file is a null-terminated string!
 void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
                                  const char* input_yaml_file,
-                                 const char* atm_log_file) {
+                                 const char* atm_log_file,
+                                 const int run_start_ymd,
+                                 const int run_start_tod,
+                                 const int case_start_ymd,
+                                 const int case_start_tod)
+{
   using namespace scream;
   using namespace scream::control;
 
@@ -107,9 +112,28 @@ void scream_create_atm_instance (const MPI_Fint f_comm, const int atm_id,
     // Create the bare ad, then start the initialization sequence
     auto& ad = c.create<AtmosphereDriver>();
 
+    // Recall that e3sm uses the int YYYYMMDD to store a date
+    int yy,mm,dd,hr,min,sec;
+    yy  = (run_start_ymd / 100) / 100;
+    mm  = (run_start_ymd / 100) % 100;
+    dd  =  run_start_ymd % 100;
+    hr  = (run_start_tod / 60) / 60;
+    min = (run_start_tod / 60) % 60;
+    sec =  run_start_tod % 60;
+    util::TimeStamp run_t0 (yy,mm,dd,hr,min,sec);
+
+    yy  = (case_start_ymd / 100) / 100;
+    mm  = (case_start_ymd / 100) % 100;
+    dd  =  case_start_ymd % 100;
+    hr  = (case_start_tod / 60) / 60;
+    min = (case_start_tod / 60) % 60;
+    sec =  case_start_tod % 60;
+    util::TimeStamp case_t0 (yy,mm,dd,hr,min,sec);
+
     ad.set_comm(atm_comm);
     ad.set_params(scream_params);
     ad.init_scorpio(atm_id);
+    ad.init_time_stamps(run_t0,case_t0);
     ad.create_atm_processes ();
     ad.create_grids ();
     ad.create_fields ();
@@ -170,27 +194,8 @@ void scream_init_atm (const int run_start_ymd,
     // Get the ad, then complete initialization
     auto& ad = get_ad_nonconst();
 
-    // Recall that e3sm uses the int YYYYMMDD to store a date
-    int yy,mm,dd,hr,min,sec;
-    yy  = (run_start_ymd / 100) / 100;
-    mm  = (run_start_ymd / 100) % 100;
-    dd  =  run_start_ymd % 100;
-    hr  = (run_start_tod / 60) / 60;
-    min = (run_start_tod / 60) % 60;
-    sec =  run_start_tod % 60;
-    util::TimeStamp run_t0 (yy,mm,dd,hr,min,sec);
-
-    yy  = (case_start_ymd / 100) / 100;
-    mm  = (case_start_ymd / 100) % 100;
-    dd  =  case_start_ymd % 100;
-    hr  = (case_start_tod / 60) / 60;
-    min = (case_start_tod / 60) % 60;
-    sec =  case_start_tod % 60;
-    util::TimeStamp case_t0 (yy,mm,dd,hr,min,sec);
-
-    // Init and run (to finalize, wait till checks are completed,
-    // or you'll clear the field managers!)
-    ad.initialize_fields (run_t0,case_t0);
+    // Init all fields, atm processes, and output streams
+    ad.initialize_fields ();
     ad.initialize_output_managers ();
     ad.initialize_atm_procs ();
   });

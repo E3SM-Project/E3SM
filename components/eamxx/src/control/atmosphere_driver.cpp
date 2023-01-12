@@ -153,6 +153,17 @@ init_scorpio(const int atm_id)
   m_ad_status |= s_scorpio_inited;
 }
 
+void AtmosphereDriver::
+init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0)
+{
+  m_atm_logger->info("  [EAMxx] Run  start time stamp: " + run_t0.to_string());
+  m_atm_logger->info("  [EAMxx] Case start time stamp: " + case_t0.to_string());
+
+  // Initialize time stamps
+  m_run_t0 = m_current_ts = run_t0;
+  m_case_t0 = case_t0;
+}
+
 void AtmosphereDriver::create_atm_processes()
 {
   m_atm_logger->info("[EAMxx] create_atm_processes  ...");
@@ -183,7 +194,7 @@ void AtmosphereDriver::create_grids()
   start_timer("EAMxx::create_grids");
 
   // Must have procs created by now (and comm/params set)
-  check_ad_status (s_procs_created | s_comm_set | s_params_set);
+  check_ad_status (s_procs_created | s_comm_set | s_params_set | s_ts_inited);
 
   // Create the grids manager
   auto& gm_params = m_atm_params.sublist("grids_manager");
@@ -605,18 +616,17 @@ void AtmosphereDriver::initialize_output_managers () {
 }
 
 void AtmosphereDriver::
-initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0)
+initialize_fields ()
 {
+  check_ad_status (s_fields_created | s_ts_inited);
+
   m_atm_logger->info("[EAMxx] initialize_fields ...");
   start_timer("EAMxx::init");
   start_timer("EAMxx::initialize_fields");
 
-  m_atm_logger->info("  [EAMxx] Run  start time stamp: " + run_t0.to_string());
-  m_atm_logger->info("  [EAMxx] Case start time stamp: " + case_t0.to_string());
-
 #ifdef SCREAM_CIME_BUILD
   // See the [rrtmgp active gases] note in dynamics/homme/atmosphere_dynamics_fv_phys.cpp.
-  if (fvphyshack) fv_phys_rrtmgp_active_gases_set_restart(case_t0 < run_t0);
+  if (fvphyshack) fv_phys_rrtmgp_active_gases_set_restart(m_case_t0 < m_run_t0);
 #endif
 
   // See if we need to print a DAG. We do this first, cause if any input
@@ -640,10 +650,6 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
     // Write a dot file for visualization
     dag.write_dag("scream_atm_dag.dot",std::max(verb_lvl,0));
   }
-
-  // Initialize time stamps
-  m_run_t0 = m_current_ts = run_t0;
-  m_case_t0 = case_t0;
 
   // Initialize fields
   if (m_case_t0<m_run_t0) {
@@ -1187,13 +1193,15 @@ initialize (const ekat::Comm& atm_comm,
 
   init_scorpio ();
 
+  init_time_stamps (run_t0, case_t0);
+
   create_atm_processes ();
 
   create_grids ();
 
   create_fields ();
 
-  initialize_fields (run_t0, case_t0);
+  initialize_fields ();
 
   initialize_output_managers ();
 
