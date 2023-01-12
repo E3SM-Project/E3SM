@@ -154,6 +154,13 @@ module prep_ocn_mod
   real (kind=r8) , allocatable, private :: r2x_om (:,:)
   real (kind=r8) , allocatable, private :: xao_om (:,:)
 
+  ! this will be constructed first time, and be used to copy fields for shared indices
+  ! between xao and x2o 
+  character(CXX) :: shared_fields_xao_x2o
+  ! will need some array to hold the data for copying 
+  real(r8) , allocatable, save :: shared_values(:) ! will be the size of shared indices * lsize
+  integer    :: size_of_shared_values
+
   logical                  :: iamin_CPLALLICEID     ! pe associated with CPLALLICEID
 contains
 
@@ -1018,6 +1025,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     logical, save :: first_time = .true.
 
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
+   
     character(CXX) ::tagname, mct_field
     integer :: ent_type, ierr
 #ifdef MOABDEBUG
@@ -1315,6 +1323,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
     !--- document copy operations ---
     if (first_time) then
+       shared_fields_xao_x2o='' ! nothing in it yet
        !--- document merge ---
        do i=1,a2x_SharedIndices%shared_real%num_indices
           i1=a2x_SharedIndices%shared_real%aVindices1(i)
@@ -1340,7 +1349,12 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
           i1=xao_SharedIndices%shared_real%aVindices1(i)
           o1=xao_SharedIndices%shared_real%aVindices2(i)
           mrgstr(o1) = trim(mrgstr(o1))//' = xao%'//trim(field_xao(i1))
+          ! will build tagname for moab set/get tag values
+          shared_fields_xao_x2o = trim(shared_fields_xao_x2o)//trim(field_xao(i1))//':'
+          size_of_shared_values = size_of_shared_values + lSize
        enddo
+       ! first time, allocate data for values_holder
+       allocate(shared_values (size_of_shared_values))
       !  do i=1,g2x_SharedIndices%shared_real%num_indices
       !    i1=g2x_SharedIndices%shared_real%aVindices1(i)
       !    o1=g2x_SharedIndices%shared_real%aVindices2(i)
@@ -1645,6 +1659,20 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting x2o_om array ')
     endif
+
+    ! we still need to get/set the shared fields between xao and x2o:
+    tagname = trim(shared_fields_xao_x2o)//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, size_of_shared_values , ent_type, shared_values)
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in getting shared_values array ')
+    endif
+    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, size_of_shared_values , ent_type, shared_values)
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in setting shared_values array on ocean instance')
+    endif
+
+
+
 #ifdef MOABDEBUG
   !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
     x2o_o => component_get_x2c_cx(ocn(1))
@@ -1675,6 +1703,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
           do ko = 1,noflds
              write(logunit,'(A)') trim(mrgstr(ko))
           enddo
+          write(logunit,'(A)') subname//' shared fields between xao and x2o '//trim(shared_fields_xao_x2o)
        endif
        deallocate(mrgstr)
        deallocate(field_atm,itemc_atm)
