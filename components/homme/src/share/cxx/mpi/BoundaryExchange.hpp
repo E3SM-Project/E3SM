@@ -259,8 +259,6 @@ private:
   // * shared connection: point to the corresponding mpi buffer;
   // * missing connection: point to the send/recv blackhole.
 
-#define AMB_BE
-#ifdef AMB_BE
   // Index as m_*_?d_buffers(ifield, iconn), where iconn ranges over all
   // connections in this rank.
   ExecViewManaged<ExecViewUnmanaged<Scalar[2][NUM_LEV]>**>  m_send_1d_buffers;
@@ -277,23 +275,7 @@ private:
   //       only one meaningful value (the rest is garbage, most likely nan's).
   ExecViewManaged<ExecViewUnmanaged<Scalar**>**>  m_send_3d_int_buffers;
   ExecViewManaged<ExecViewUnmanaged<Scalar**>**>  m_recv_3d_int_buffers;  
-#else
-  // Index as m_*_?d_buffers(ielem, ifield, iedge).
-  ExecViewManaged<ExecViewUnmanaged<Scalar[2][NUM_LEV]>**[NUM_CONNECTIONS]>  m_send_1d_buffers;
-  ExecViewManaged<ExecViewUnmanaged<Scalar[2][NUM_LEV]>**[NUM_CONNECTIONS]>  m_recv_1d_buffers;
 
-  ExecViewManaged<ExecViewUnmanaged<Real*>**[NUM_CONNECTIONS]>               m_send_2d_buffers;
-  ExecViewManaged<ExecViewUnmanaged<Real*>**[NUM_CONNECTIONS]>               m_recv_2d_buffers;
-
-  ExecViewManaged<ExecViewUnmanaged<Scalar**>**[NUM_CONNECTIONS]>            m_send_3d_buffers;
-  ExecViewManaged<ExecViewUnmanaged<Scalar**>**[NUM_CONNECTIONS]>            m_recv_3d_buffers;
-  
-  // TODO: optimize: you only need to pack/unpack the first entry of the NUM_LEV_P-th pack.
-  //       This is because, if NUM_LEV!=NUM_LEV_P, then the NUM_LEV_P-th pack contains
-  //       only one meaningful value (the rest is garbage, most likely nan's).
-  ExecViewManaged<ExecViewUnmanaged<Scalar**>**[NUM_CONNECTIONS]>  m_send_3d_int_buffers;
-  ExecViewManaged<ExecViewUnmanaged<Scalar**>**[NUM_CONNECTIONS]>  m_recv_3d_int_buffers;
-#endif
   std::vector<int> m_3d_nlev_pack;        // during registration
   ExecViewManaged<int*> m_3d_nlev_pack_d; //  after registration
 
