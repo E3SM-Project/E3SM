@@ -251,9 +251,9 @@ TEST_CASE("nudging") {
   //std::vector<std::string> fnames = {"T_mid"};
   std::string nudging_f = "io_output_test.INSTANT.nsteps_x1."\
                           "np1.2000-01-01-00250.nc";
-  params_mid.set<std::string>("Nudging Filename",nudging_f);
+  params_mid.set<std::string>("Nudging_Filename",nudging_f);
   //std::vector<std::string> fnames = {"T_mid_r"};
-  params_mid.set<std::vector<std::string>>("Field Names",fnames);
+  params_mid.set<std::vector<std::string>>("Field_Names",fnames);
   auto nudging_mid = std::make_shared<NUDGING>(io_comm,params_mid);
   nudging_mid->set_grids(gm);
 
@@ -294,11 +294,12 @@ TEST_CASE("nudging") {
   p_mid.sync_to_dev();
 
   //10 timesteps of 100 s
-  for (int time_s = 1; time_s < 10; time_s++){
+  for (int time_s = 0; time_s < 10; time_s++){
     f_mid.sync_to_dev();
     p_mid.sync_to_dev();
 
-    nudging_mid->run(time_s*100);
+    //nudging_mid->run(time_s*100);
+    nudging_mid->run(100);
     f_mid.sync_to_host();
     p_mid.sync_to_host();
 

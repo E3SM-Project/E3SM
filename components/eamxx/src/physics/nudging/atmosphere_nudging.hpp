@@ -1,5 +1,5 @@
-#ifndef SCREAM_ATMOSPHERE_NUDGING_HPP
-#define SCREAM_ATMOSPHERE_NUDGING_HPP
+#ifndef SCREAM_NUDGING_HPP
+#define SCREAM_NUDGING_HPP
 
 #include "share/atm_process/atmosphere_process.hpp"
 #include "ekat/ekat_parameter_list.hpp"
@@ -36,12 +36,12 @@ public:
   //using view_1d = typename KT::template view_1d<S>;
   //using view_1d_dof     = typename view_1d<gid_type>;
   
-  template <typename S>
-  using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
+  //template <typename S>
+  //using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
 
-  using Spack = SmallPack<Real>;
+  //using Spack = SmallPack<Real>;
   //using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-  using Pack = ekat::Pack<Real,1>;
+  using mPack = ekat::Pack<Real,1>;
   using KT = KokkosTypes<DefaultDevice>;
 
   template <typename S>
@@ -92,7 +92,7 @@ protected:
   //int m_num_src_levs;
   int m_num_src_levs;
   int time_step_file;
-  int time_step_internal;
+  int time_step_internal=-999;
   std::string datafile;
   std::map<std::string,view_1d_host<Real>> host_views;
   std::map<std::string,FieldLayout>  layouts;
@@ -101,6 +101,7 @@ protected:
   view_2d<Real> T_mid_ext;
   view_2d<Real> p_mid_ext;
   AtmosphereInput data_input;
+  TimeStamp ts0;
   //FieldLayout scalar3d_layout_mid_;
   // DOF information
   //view_1d_dof m_dofs_gids;
@@ -112,4 +113,4 @@ protected:
 
 } // namespace scream
 
-#endif // SCREAM_ATMOSPHERE_NUDGING_HPP
+#endif // SCREAM_NUDGING_HPP
