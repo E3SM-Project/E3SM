@@ -199,6 +199,21 @@ void AtmosphereDriver::create_grids()
   // Create the grids manager
   auto& gm_params = m_atm_params.sublist("grids_manager");
   const std::string& gm_type = gm_params.get<std::string>("Type");
+
+  // The GridsManager might load some geometric data from IC file.
+  // To avoid having to pass the same data twice in the input file,
+  // we have the AD add the IC file name to the GM params
+  const auto& ic_pl = m_atm_params.sublist("initial_conditions");
+  if (m_case_t0<m_run_t0) {
+    // Restarted run -> read geo data from restart file
+    const auto& casename = ic_pl.get<std::string>("restart_casename");
+    auto filename = find_filename_in_rpointer (casename,true,m_atm_comm,m_run_t0);
+    gm_params.set("ic_filename", filename);
+  } else if (ic_pl.isParameter("Filename")) {
+    // Initial run, if an IC file is present, pass it.
+    gm_params.set("ic_filename", ic_pl.get<std::string>("Filename"));
+  }
+
   m_atm_logger->debug("  [EAMxx] Creating grid manager '" + gm_type + "' ...");
   m_grids_manager = GridsManagerFactory::instance().create(gm_type,m_atm_comm,gm_params);
 

@@ -69,6 +69,7 @@ TEST_CASE("remap", "") {
   // Create the grids
   ekat::ParameterList params;
   params.set<std::string>("physics_grid_type","GLL");
+  params.set<std::string>("vertical_coordinate_filename","NONE");
   HommeGridsManager gm(comm,params);
   gm.build_grids();
 
@@ -602,6 +603,7 @@ TEST_CASE("combo_remap", "") {
   // Create the grids
   ekat::ParameterList params;
   params.set<std::string>("physics_grid_type","GLL");
+  params.set<std::string>("vertical_coordinate_filename","NONE");
   HommeGridsManager gm(comm,params);
   gm.build_grids();
 

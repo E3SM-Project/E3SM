@@ -179,11 +179,7 @@ void HommeGridsManager::build_dynamics_grid () {
   }
 #endif
 
-  if (m_params.isParameter("vertical_coordinate_filename")) {
-    // Read vertical coordinates, store in geometry data,
-    // and set in hommexx's structures.
-    initialize_vertical_coordinates(dyn_grid);
-  }
+  initialize_vertical_coordinates(dyn_grid);
 
   add_grid(dyn_grid);
 }
@@ -250,6 +246,7 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
 #endif
 
   // If one of the hybrid vcoord arrays is there, they all are
+  // NOTE: we may have none in some unit tests that don't need them (e.g. pd remap)
   if (get_grid("Dynamics")->has_geometry_data("hyam")) {
     // Copy hybrid coords from dyn grid into phys grid
     auto hyai = get_grid("Dynamics")->get_geometry_data("hyai");
@@ -265,7 +262,8 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   add_grid(phys_grid);
 }
 
-void HommeGridsManager::initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
+void HommeGridsManager::
+initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
   using view_1d_host = AtmosphereInput::view_1d_host; 
   using vos_t = std::vector<std::string>;
   using namespace ShortFieldTagsNames;
@@ -273,9 +271,22 @@ void HommeGridsManager::initialize_vertical_coordinates (const nonconstgrid_ptr_
   const int nlev_int = HOMMEXX_NUM_INTERFACE_LEV;
   const int nlev_mid = HOMMEXX_NUM_PHYSICAL_LEV;
 
+  // If we put vcoords in the IC file, we open the ic file, whose name
+  // was set by the AD in the param list. This allows users to change
+  // nc files only once in the input file.
+  const auto& vcoord_filename = m_params.get<std::string>("vertical_coordinate_filename");
+  if (vcoord_filename=="NONE") {
+    return;
+  }
+
+  std::string filename = vcoord_filename;
+  if (filename=="IC_FILE") {
+    filename =  m_params.get<std::string>("ic_filename");
+  }
+
   // Read vcoords into host views
   ekat::ParameterList vcoord_reader_pl;
-  vcoord_reader_pl.set("Filename",m_params.get<std::string>("vertical_coordinate_filename"));
+  vcoord_reader_pl.set("Filename",filename);
   vcoord_reader_pl.set<vos_t>("Field Names",{"hyai","hybi","hyam","hybm"});
 
   FieldLayout layout_mid ({ LEV},{nlev_mid});

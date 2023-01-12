@@ -46,7 +46,7 @@ grids_manager:
   Type: Homme
   physics_grid_type: GLL
   dynamics_namelist_file_name: namelist.nl
-  vertical_coordinate_filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_128lev}
+  vertical_coordinate_filename: IC_FILE
 
 # The parameters for I/O control
 Scorpio:

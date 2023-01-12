@@ -81,21 +81,17 @@ build_grids ()
     dof_gids.sync_to_dev();
     lid2idx.sync_to_dev();
 
+    add_geo_data(se_grid);
+
     add_grid(se_grid);
   }
   if (build_pt) {
     const int num_global_cols  = m_params.get<int>("number_of_global_columns");
     auto pt_grid = create_point_grid("Point Grid",num_global_cols,num_vertical_levels,m_comm);
 
-    using namespace ShortFieldTagsNames;
     const auto units = ekat::units::Units::nondimensional();
-    FieldLayout layout_mid ({LEV},{num_vertical_levels});
 
     auto area = pt_grid->create_geometry_data("area", pt_grid->get_2d_scalar_layout(), units);
-    auto lat  = pt_grid->create_geometry_data("lat" , pt_grid->get_2d_scalar_layout(), units);
-    auto lon  = pt_grid->create_geometry_data("lon" , pt_grid->get_2d_scalar_layout(), units);
-    auto hyam = pt_grid->create_geometry_data("hyam", layout_mid, units);
-    auto hybm = pt_grid->create_geometry_data("hybm", layout_mid, units);
 
     // Estimate cell area for a uniform grid by taking the surface area
     // of the earth divided by the number of columns.  Note we do this in
@@ -106,39 +102,62 @@ build_grids ()
     area.deep_copy(cell_area);
     area.sync_to_host();
 
-    const auto nan = ekat::ScalarTraits<Real>::invalid();
+    add_geo_data(pt_grid);
 
-    // Load lat/lon if latlon_filename param is given.
-    if (m_params.isParameter("latlon_filename")) {
-      load_lat_lon(pt_grid);
-    } else {
-      lat.deep_copy(nan);
-      lon.deep_copy(nan);
-      lat.sync_to_host();
-      lon.sync_to_host();
-    }
-
-    // Load hyam/hybm if hybrid_coefficients_filename param is given.
-    if (m_params.isParameter("vertical_coordinate_filename")) {
-      load_vertical_coordinates(pt_grid);
-    } else {
-      hyam.deep_copy(nan);
-      hybm.deep_copy(nan);
-      hyam.sync_to_host();
-      hybm.sync_to_host();
-    }
     add_grid(pt_grid);
     this->alias_grid("Point Grid", "Physics");
   }
 }
 
 void MeshFreeGridsManager::
-load_lat_lon (const nonconstgrid_ptr_type& grid) const
+add_geo_data (const nonconstgrid_ptr_type& grid) const
+{
+  if (!m_params.isParameter("geo_data_source")) {
+    return;
+  }
+
+  // Load geo data fields if geo data filename is present, and file contains them
+  const auto& geo_data_source = m_params.get<std::string>("geo_data_source");
+  if (geo_data_source=="CREATE_EMPTY_DATA") {
+    using namespace ShortFieldTagsNames;
+    FieldLayout layout_mid ({LEV},{grid->get_num_vertical_levels()});
+    const auto units = ekat::units::Units::nondimensional();
+
+    auto lat  = grid->create_geometry_data("lat" , grid->get_2d_scalar_layout(), units);
+    auto lon  = grid->create_geometry_data("lon" , grid->get_2d_scalar_layout(), units);
+    auto hyam  = grid->create_geometry_data("hyam" , layout_mid, units);
+    auto hybm  = grid->create_geometry_data("hybm" , layout_mid, units);
+
+    lat.deep_copy(ekat::ScalarTraits<Real>::invalid());
+    lon.deep_copy(ekat::ScalarTraits<Real>::invalid());
+    hyam.deep_copy(ekat::ScalarTraits<Real>::invalid());
+    hybm.deep_copy(ekat::ScalarTraits<Real>::invalid());
+    lat.sync_to_dev();
+    lon.sync_to_dev();
+    hyam.sync_to_dev();
+    hybm.sync_to_dev();
+  } else if (geo_data_source=="IC_FILE"){
+    const auto& filename = m_params.get<std::string>("ic_filename");
+    if (scorpio::has_variable_c2f(filename.c_str(),"lat") &&
+        scorpio::has_variable_c2f(filename.c_str(),"lon")) {
+      load_lat_lon(grid,filename);
+    }
+
+    if (scorpio::has_variable_c2f(filename.c_str(),"hyam") &&
+        scorpio::has_variable_c2f(filename.c_str(),"hybm")) {
+      load_vertical_coordinates(grid,filename);
+    }
+  }
+}
+
+void MeshFreeGridsManager::
+load_lat_lon (const nonconstgrid_ptr_type& grid, const std::string& filename) const
 {
   using geo_view_host = AtmosphereInput::view_1d_host;
+  const auto units = ekat::units::Units::nondimensional();
 
-  auto lat = grid->get_geometry_data_nonconst("lat");
-  auto lon = grid->get_geometry_data_nonconst("lon");
+  auto lat  = grid->create_geometry_data("lat" , grid->get_2d_scalar_layout(), units);
+  auto lon  = grid->create_geometry_data("lon" , grid->get_2d_scalar_layout(), units);
 
   // Create host mirrors for reading in data
   std::map<std::string,geo_view_host> host_views = {
@@ -154,7 +173,7 @@ load_lat_lon (const nonconstgrid_ptr_type& grid) const
 
   // Read lat/lon into host views
   ekat::ParameterList lat_lon_reader_pl;
-  lat_lon_reader_pl.set("Filename",m_params.get<std::string>("latlon_filename"));
+  lat_lon_reader_pl.set("Filename",filename);
   lat_lon_reader_pl.set<std::vector<std::string>>("Field Names",{"lat","lon"});
 
   AtmosphereInput lat_lon_reader(m_comm, lat_lon_reader_pl);
@@ -179,12 +198,16 @@ load_lat_lon (const nonconstgrid_ptr_type& grid) const
 }
 
 void MeshFreeGridsManager::
-load_vertical_coordinates (const nonconstgrid_ptr_type& grid) const
+load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string& filename) const
 {
   using geo_view_host = AtmosphereInput::view_1d_host;
 
-  auto hyam = grid->get_geometry_data_nonconst("hyam");
-  auto hybm = grid->get_geometry_data_nonconst("hybm");
+  using namespace ShortFieldTagsNames;
+  FieldLayout layout_mid ({LEV},{grid->get_num_vertical_levels()});
+  const auto units = ekat::units::Units::nondimensional();
+
+  auto hyam = grid->create_geometry_data("hyam", layout_mid, units);
+  auto hybm = grid->create_geometry_data("hybm", layout_mid, units);
 
   // Create host mirrors for reading in data
   std::map<std::string,geo_view_host> host_views = {
@@ -201,7 +224,7 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid) const
 
   // Read hyam/hybm into host views
   ekat::ParameterList vcoord_reader_pl;
-  vcoord_reader_pl.set("Filename",m_params.get<std::string>("vertical_coordinate_filename"));
+  vcoord_reader_pl.set("Filename",filename);
   vcoord_reader_pl.set<std::vector<std::string>>("Field Names",{"hyam","hybm"});
 
   AtmosphereInput vcoord_reader(m_comm,vcoord_reader_pl);
