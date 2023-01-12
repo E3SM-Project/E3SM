@@ -1048,42 +1048,32 @@ contains
       integer, dimension(:), pointer :: cellMask
       integer :: iCell, iEdgeOnCell, iEdge
       integer :: cellCount
+      real(kind=RKIND) :: scaling_factor
 
       call mpas_pool_get_config(liConfigs, 'config_unrealistic_velocity', config_unrealistic_velocity)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
-      call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
-      call mpas_pool_get_array(geometryPool, 'calvingThicknessFromThreshold', calvingThicknessFromThreshold)
-      call mpas_pool_get_array(geometryPool, 'upperSurface', upperSurface)
-      call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
 
 
       cellCount = 0
       do iCell = 1, nCells
          if ((li_mask_is_ice(cellMask(iCell))) .and. &
             (sqrt(uReconstructX(1,iCell)**2 + uReconstructY(1,iCell)**2) > config_unrealistic_velocity)) then
-         ! "fast" ice that is removed is added to the calving flux
-            calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
-            calvingThicknessFromThreshold(iCell) = calvingThicknessFromThreshold(iCell) + thickness(iCell)
-            thickness(iCell) = 0.0_RKIND
-            uReconstructX(:,iCell) = 0.0_RKIND
-            uReconstructY(:,iCell) = 0.0_RKIND
+            scaling_factor = config_unrealistic_velocity / sqrt(uReconstructX(1,iCell)**2 + uReconstructY(1,iCell)**2)
+            uReconstructX(:,iCell) = uReconstructX(:,iCell) * scaling_factor
+            uReconstructY(:,iCell) = uReconstructY(:,iCell) * scaling_factor
             do iEdgeOnCell = 1, nEdgesOnCell(iCell)
                iEdge = edgesOnCell(iEdgeOnCell,iCell)
-               normalVelocity(:,iEdge) = 0.0_RKIND
+               normalVelocity(:,iEdge) = normalVelocity(:,iEdge) * scaling_factor
             enddo
-            upperSurface(iCell) = 0.0_RKIND
-            lowerSurface(iCell) = 0.0_RKIND
-            ! TODO Should also zero temperature/tracers
             cellCount = cellCount + 1
          endif
       end do
 
       if (cellCount > 0) then
-         call mpas_log_write("Removed $i cells due to speeds greater than $r m/s.", &
+         call mpas_log_write("Limited velocity in $i cells to $r m/s.", &
             intArgs=(/cellCount/), realArgs=(/config_unrealistic_velocity/))
       endif
 
