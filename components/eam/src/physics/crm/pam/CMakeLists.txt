@@ -5,7 +5,7 @@ set(PAM_DRIVER_SRC
     pam_feedback.h  
     pam_radiation.h  
     pam_statistics.h  
-    pam_state_update.h  
+    pam_state.h  
     params.F90)
 
 add_library(pam_driver 

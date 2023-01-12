@@ -23,7 +23,6 @@ inline void pam_feedback_compute_crm_feedback_tendencies( pam::PamCoupler &coupl
   using yakl::atomicAdd;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
-
   int nz   = dm_device.get_dimension_size("z"   );
   int ny   = dm_device.get_dimension_size("y"   );
   int nx   = dm_device.get_dimension_size("x"   );
@@ -125,7 +124,6 @@ inline void pam_feedback_compute_crm_mean_state( pam::PamCoupler &coupler ) {
   using yakl::atomicAdd;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
-
   int nz   = dm_device.get_dimension_size("z"   );
   int ny   = dm_device.get_dimension_size("y"   );
   int nx   = dm_device.get_dimension_size("x"   );
@@ -182,35 +180,6 @@ inline void pam_feedback_compute_crm_mean_state( pam::PamCoupler &coupler ) {
   nr_mean.deep_copy_to(output_nr_mean);
   qm_mean.deep_copy_to(output_qm_mean);
   bm_mean.deep_copy_to(output_bm_mean);
-}
-
-// 
-inline void pam_feedback_copy_output_state_to_gcm( pam::PamCoupler &coupler ) {
-  using yakl::c::parallel_for;
-  using yakl::c::SimpleBounds;
-  using yakl::atomicAdd;
-  auto &dm_device = coupler.get_data_manager_device_readwrite();
-  auto &dm_host   = coupler.get_data_manager_host_readwrite();
-
-  int nz   = dm_device.get_dimension_size("z"   );
-  int ny   = dm_device.get_dimension_size("y"   );
-  int nx   = dm_device.get_dimension_size("x"   );
-  int nens = dm_device.get_dimension_size("nens");
-
-  auto rho_dry         = dm_device.get<real,4>("density_dry"      );
-  auto temp            = dm_device.get<real,4>("temp"             );
-  auto cloud_water     = dm_device.get<real,4>( "cloud_water"     );
-  auto cloud_water_num = dm_device.get<real,4>( "cloud_water_num" );
-  auto rain            = dm_device.get<real,4>( "rain"            );
-  auto rain_num        = dm_device.get<real,4>( "rain_num"        );
-  auto ice             = dm_device.get<real,4>( "ice"             );
-  auto ice_num         = dm_device.get<real,4>( "ice_num"         );
-  auto ice_rime        = dm_device.get<real,4>( "ice_rime"        );
-  auto ice_rime_vol    = dm_device.get<real,4>( "ice_rime_vol"    );
-  auto water_vapor     = dm_device.get<real,4>( "water_vapor"     );
-  auto qv_prev         = dm_device.get<real,4>( "qv_prev"         );
-  auto t_prev          = dm_device.get<real,4>( "t_prev"          );
-
-  //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
 }
+

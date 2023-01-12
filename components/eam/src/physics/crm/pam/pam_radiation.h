@@ -122,8 +122,8 @@ inline void pam_radiation_timestep_aggregation( pam::PamCoupler &coupler ) {
   auto rad_aggregation_cnt = dm.get<real,1>("rad_aggregation_cnt");
   //------------------------------------------------------------------------------------------------
   // aggregate surface precipitation
-  auto rad_nx_fac = coupler.get_option<int>("rad_nx_fac");
-  auto rad_ny_fac = coupler.get_option<int>("rad_ny_fac");
+  auto rad_nx_fac = coupler.get_option<real>("rad_nx_fac");
+  auto rad_ny_fac = coupler.get_option<real>("rad_ny_fac");
   real r_nx_ny  = rad_nx_fac * rad_ny_fac;
   parallel_for("aggregate rad state", SimpleBounds<4>(nz,crm_ny,crm_nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     int i_rad = i / (crm_nx/rad_nx);

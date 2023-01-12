@@ -6,15 +6,14 @@
 #include "pam_interface.h"
 #include "perturb_temperature.h"
 #include "gcm_forcing.h"
-// #include "gcm_rad_coupling.h"
 #include "pam_feedback.h"
-#include "pam_state_update.h"
+#include "pam_state.h"
 #include "pam_radiation.h"
 #include "pam_statistics.h"
 #include "sponge_layer.h"
 #include "saturation_adjustment.h"
 #include "broadcast_initial_gcm_column.h"
-// #include "output.h"
+#include "surface_friction.h"
 
 extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
@@ -33,23 +32,11 @@ extern "C" void pam_driver() {
   auto gcm_dt      = coupler.get_option<double>("gcm_dt");
   auto crm_dt      = coupler.get_option<double>("crm_dt");
   coupler.set_option<real>("gcm_physics_dt",gcm_dt);
-  // auto rad_ny      = coupler.get_option<int>("rad_ny");
-  // auto rad_nx      = coupler.get_option<int>("rad_nx");
   //------------------------------------------------------------------------------------------------
   // Allocate the coupler state and retrieve host/device data managers
   coupler.allocate_coupler_state( crm_nz , crm_ny , crm_nx , nens );
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
-  //------------------------------------------------------------------------------------------------
-  // wrap host data in YAKL arrays
-  auto input_zint          = dm_host.get<real const,2>("input_zint").createDeviceCopy();
-  // auto input_zmid          = dm_host.get<real const,2>("input_zmid").createDeviceCopy();
-  // auto input_pint          = dm_host.get<real const,2>("input_pint").createDeviceCopy();
-  // auto input_pmid          = dm_host.get<real const,2>("input_pmid").createDeviceCopy();
-  // auto input_pdel          = dm_host.get<real const,2>("input_pdel").createDeviceCopy();
-  // auto input_tau00         = dm_host.get<real const,2>("input_tau00").createDeviceCopy();
-  // auto input_bflxls        = dm_host.get<real const,2>("input_bflxls").createDeviceCopy();
-  // auto input_wndls         = dm_host.get<real const,2>("input_wndls").createDeviceCopy();
   //------------------------------------------------------------------------------------------------
   // Create objects for dycor, microphysics, and turbulence and initialize them
   Microphysics micro;
@@ -63,13 +50,17 @@ extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
 
   // Set the vertical grid in the coupler
+  auto input_zint = dm_host.get<real const,2>("input_zint").createDeviceCopy();
   coupler.set_grid( crm_dx , crm_dy , input_zint );
 
   // update coupler GCM state with input GCM state
-  update_gcm_state(coupler);
+  pam_state_update_gcm_state(coupler);
+
+  // set CRM dry density using gcm_density_dry (set in update_gcm_state)
+  modules::broadcast_initial_gcm_column_dry_density(coupler); 
 
   // Copy input CRM state saved by the GCM to coupler
-  copy_input_state_to_coupler(coupler);
+  pam_state_copy_input_to_coupler(coupler);
 
   // Copy input rad tendencies to coupler
   pam_radiation_copy_input_to_coupler(coupler);
@@ -80,22 +71,45 @@ extern "C" void pam_driver() {
   // initialize stat variables
   pam_statistics_init(coupler);
 
-  // set CRM dry density using gcm_density_dry (set in update_gcm_state)
-  modules::broadcast_initial_gcm_column_dry_density(coupler); 
-
   // Compute CRM forcing tendencies
   modules::compute_gcm_forcing_tendencies(coupler);
 
   // Define hydrostasis (only for PAM-A/AWFL)
   coupler.update_hydrostasis();
 
+  // initilize quantities for surface "psuedo-friction"
+  auto input_tau  = dm_host.get<real,1>("input_tau00").createDeviceCopy();
+  auto input_bflx = dm_host.get<real,1>("input_bflxls").createDeviceCopy();
+  modules::surface_friction_init(coupler, input_tau, input_bflx);
+
   // Perturb the CRM at the beginning of the run
   auto is_first_step = coupler.get_option<bool>("is_first_step");
   if (is_first_step) {
     auto gcolp = dm_host.get<int const,1>("gcolp").createDeviceCopy();
     modules::perturb_temperature( coupler , gcolp );
+    // modules::broadcast_initial_gcm_column( coupler ); // This is redundant... just checking if it will fix unit conversion issue
   }
-
+  //------------------------------------------------------------------------------------------------
+  // auto crm_rho           = dm_device.get<real,4>("density_dry");
+  // auto crm_temp          = dm_device.get<real,4>("temp");
+  // auto crm_qv            = dm_device.get<real,4>("water_vapor");
+  // int i = 0;
+  // int j = 0;
+  // int iens = 0;
+  // for (int k=0; k<crm_nz; k++) {
+  //   // for (int i=0; i<crm_nx; i++) {
+  //     std::cout <<"WHDEBUG "
+  //               <<"  i:"<<i 
+  //               // <<"  j:"<<j 
+  //               <<"  k:"<<k 
+  //               // <<"  icrm:"<<iens
+  //               <<"  crm_temp:"<<crm_temp(k,j,i,iens)
+  //               <<"  crm_qv:"  <<crm_qv  (k,j,i,iens)
+  //               <<"  crm_rho:" <<crm_rho (k,j,i,iens)
+  //               <<std::endl;
+  //   // }
+  // }
+  // endrun("stopping for debug");
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
@@ -110,6 +124,7 @@ extern "C" void pam_driver() {
     coupler.run_module( "sponge_layer"                 , modules::sponge_layer );
     coupler.run_module( "radiation"                    , [&] (pam::PamCoupler &coupler) {rad   .timeStep(coupler);} );
     coupler.run_module( "dycore"                       , [&] (pam::PamCoupler &coupler) {dycore.timeStep(coupler);} );
+    // coupler.run_module( "compute_surface_friction"     , modules::compute_surface_friction );
     coupler.run_module( "sgs"                          , [&] (pam::PamCoupler &coupler) {sgs   .timeStep(coupler);} );
     coupler.run_module( "micro"                        , [&] (pam::PamCoupler &coupler) {micro .timeStep(coupler);} );
 
@@ -129,7 +144,7 @@ extern "C" void pam_driver() {
   pam_feedback_compute_crm_mean_state(coupler);
 
   // Copy the output CRM state from the PAM coupler to the GCM
-  pam_feedback_copy_output_state_to_gcm(coupler);
+  pam_state_copy_output_to_gcm(coupler);
 
   // Copy radiation column quantities to host
   pam_radiation_copy_output_to_gcm(coupler);
