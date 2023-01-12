@@ -6,6 +6,7 @@
 #ifndef NDEBUG
 #include "share/property_checks/field_nan_check.hpp"
 #include "share/property_checks/field_lower_bound_check.hpp"
+#include "share/property_checks/field_within_interval_check.hpp"
 #endif
 
 #include "share/io/scorpio_input.hpp"
@@ -171,12 +172,11 @@ void HommeGridsManager::build_dynamics_grid () {
   lon.sync_to_dev();
 
 #ifndef NDEBUG
-  auto lat_check = std::make_shared<FieldNaNCheck>(lat,dyn_grid)->check();
-  EKAT_REQUIRE_MSG (lat_check.result==CheckResult::Pass,
-      "ERROR! NaN values detected in latitude field.\n" + lat_check.msg);
-  auto lon_check = std::make_shared<FieldNaNCheck>(lon,dyn_grid)->check();
-  EKAT_REQUIRE_MSG (lon_check.result==CheckResult::Pass,
-      "ERROR! NaN values detected in longitude field.\n" + lon_check.msg);
+  for (auto f : {lat, lon}) {
+    auto nan_check = std::make_shared<FieldNaNCheck>(f,dyn_grid)->check();
+    EKAT_REQUIRE_MSG (nan_check.result==CheckResult::Pass,
+        "ERROR! NaN values detected in " + f.name() + " field.\n" + nan_check.msg);
+  }
 #endif
 
   if (m_params.isParameter("vertical_coordinate_filename")) {
@@ -236,19 +236,17 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   area.sync_to_dev();
 
 #ifndef NDEBUG
-  auto lat_check = std::make_shared<FieldNaNCheck>(lat,phys_grid)->check();
-  EKAT_REQUIRE_MSG (lat_check.result==CheckResult::Pass,
-      "ERROR! NaN values detected in latitude field.\n" + lat_check.msg);
-  auto lon_check = std::make_shared<FieldNaNCheck>(lon,phys_grid)->check();
-  EKAT_REQUIRE_MSG (lon_check.result==CheckResult::Pass,
-      "ERROR! NaN values detected in longitude field.\n" + lon_check.msg);
-  auto area_check1 = std::make_shared<FieldNaNCheck>(area,phys_grid)->check();
-  EKAT_REQUIRE_MSG (area_check1.result==CheckResult::Pass,
-      "ERROR! NaN values detected in area field.\n" + area_check1.msg);
+  for (auto f : {lat, lon, area}) {
+    auto nan_check = std::make_shared<FieldNaNCheck>(f,phys_grid)->check();
+    EKAT_REQUIRE_MSG (nan_check.result==CheckResult::Pass,
+        "ERROR! NaN values detected in " + f.name() + " field.\n" + nan_check.msg);
+  }
+
+  // Also check area for non-negativity
   const auto eps = std::numeric_limits<Real>::epsilon();
-  auto area_check2 = std::make_shared<FieldLowerBoundCheck>(area,phys_grid,eps)->check();
-  EKAT_REQUIRE_MSG (area_check2.result==CheckResult::Pass,
-      "ERROR! NaN values detected in area field.\n" + area_check2.msg);
+  auto area_check = std::make_shared<FieldLowerBoundCheck>(area,phys_grid,eps)->check();
+  EKAT_REQUIRE_MSG (area_check.result==CheckResult::Pass,
+      "ERROR! NaN values detected in area field.\n" + area_check.msg);
 #endif
 
   // If one of the hybrid vcoord arrays is there, they all are
@@ -317,6 +315,7 @@ void HommeGridsManager::initialize_vertical_coordinates (const nonconstgrid_ptr_
   const auto ps0 = Homme::PhysicalConstants::p0;
 
   // Set vcoords in f90
+  // NOTE: homme does the check for these arrays, so no need to do any property check here
   prim_set_hvcoords_f90 (ps0,
                          host_views["hyai"].data(),
                          host_views["hybi"].data(),

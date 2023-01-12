@@ -2,6 +2,8 @@
 #include "share/grid/point_grid.hpp"
 #include "share/grid/se_grid.hpp"
 #include "share/grid/remap/do_nothing_remapper.hpp"
+#include "share/property_checks/field_nan_check.hpp"
+#include "share/property_checks/field_within_interval_check.hpp"
 #include "share/io/scorpio_input.hpp"
 
 #include "physics/share/physics_constants.hpp"
@@ -163,6 +165,17 @@ load_lat_lon (const nonconstgrid_ptr_type& grid) const
   // Sync to dev
   lat.sync_to_dev();
   lon.sync_to_dev();
+
+#ifndef NDEBUG
+  for (auto f : {lat, lon}) {
+  auto lat_check = std::make_shared<FieldNaNCheck>(lat,grid)->check();
+  EKAT_REQUIRE_MSG (lat_check.result==CheckResult::Pass,
+      "ERROR! NaN values detected in latitude field.\n" + lat_check.msg);
+  auto lon_check = std::make_shared<FieldNaNCheck>(lon,grid)->check();
+  EKAT_REQUIRE_MSG (lon_check.result==CheckResult::Pass,
+      "ERROR! NaN values detected in longitude field.\n" + lon_check.msg);
+  }
+#endif
 }
 
 void MeshFreeGridsManager::
@@ -199,6 +212,17 @@ load_vertical_coordinates (const nonconstgrid_ptr_type& grid) const
   // Sync to dev
   hyam.sync_to_dev();
   hybm.sync_to_dev();
+
+#ifndef NDEBUG
+  for (auto f : {hyam, hybm}) {
+    auto nan_check = std::make_shared<FieldNaNCheck>(f,grid)->check();
+    EKAT_REQUIRE_MSG (nan_check.result==CheckResult::Pass,
+        "ERROR! NaN values detected in " + f.name() + " field.\n" + nan_check.msg);
+    auto interval_check = std::make_shared<FieldWithinIntervalCheck>(f,grid,0,1)->check();
+    EKAT_REQUIRE_MSG (nan_check.result==CheckResult::Pass,
+        "ERROR! Field " + f.name() + " has values not in [0,1].\n" + nan_check.msg);
+  }
+#endif
 }
 
 std::shared_ptr<GridsManager>
