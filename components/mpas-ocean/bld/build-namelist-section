@@ -63,6 +63,8 @@ add_default($nl, 'config_apvm_scale_factor');
 add_default($nl, 'config_use_mom_del2');
 add_default($nl, 'config_mom_del2');
 add_default($nl, 'config_use_tracer_del2');
+add_default($nl, 'config_use_vertMom_del2');
+add_default($nl, 'config_vertMom_del2');
 add_default($nl, 'config_tracer_del2');
 
 #############################
@@ -208,8 +210,8 @@ add_default($nl, 'config_cvmix_kpp_use_active_wave');
 # Namelist group: wave_coupling #
 #################################
 
-add_default($nl, 'config_n_stokes_drift_wavenumber_partitions');
 add_default($nl, 'config_use_active_wave');
+add_default($nl, 'config_n_stokes_drift_wavenumber_partitions');
 
 ########################
 # Namelist group: gotm #
@@ -474,6 +476,9 @@ add_default($nl, 'config_disable_thick_vadv');
 add_default($nl, 'config_disable_thick_sflux');
 add_default($nl, 'config_disable_vel_all_tend');
 add_default($nl, 'config_disable_vel_coriolis');
+add_default($nl, 'config_disable_vvel_all_tend');
+add_default($nl, 'config_disable_vvel_coriolis');
+add_default($nl, 'config_disable_vvel_adv');
 add_default($nl, 'config_disable_vel_pgrad');
 add_default($nl, 'config_disable_vel_hmix');
 add_default($nl, 'config_disable_vel_surface_stress');

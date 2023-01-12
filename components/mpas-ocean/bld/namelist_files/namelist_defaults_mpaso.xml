@@ -14,6 +14,7 @@
 <config_run_duration>'0010_00:00:00'</config_run_duration>
 <config_calendar_type CALENDAR="NO_LEAP">'noleap'</config_calendar_type>
 <config_calendar_type>'gregorian'</config_calendar_type>
+<config_output_reference_time>'0001-01-01_00:00:00'</config_output_reference_time>
 
 <!-- io -->
 <config_write_output_on_startup>.false.</config_write_output_on_startup>
@@ -94,6 +95,8 @@
 <config_mom_del2 ocn_grid="SOwISC12to60E2r4">462.0</config_mom_del2>
 <config_mom_del2 ocn_grid="ECwISC30to60E2r1">1000.0</config_mom_del2>
 <config_use_tracer_del2>.false.</config_use_tracer_del2>
+<config_use_vertMom_del2>.false.</config_use_vertMom_del2>
+<config_vertMom_del2>0.0</config_vertMom_del2>
 <config_tracer_del2>10.0</config_tracer_del2>
 
 <!-- hmix_del4 -->
@@ -257,12 +260,11 @@
 <config_cvmix_kpp_use_enhanced_diff>.true.</config_cvmix_kpp_use_enhanced_diff>
 <config_cvmix_kpp_nonlocal_with_implicit_mix>.false.</config_cvmix_kpp_nonlocal_with_implicit_mix>
 <config_cvmix_kpp_use_theory_wave>.false.</config_cvmix_kpp_use_theory_wave>
-<config_cvmix_kpp_use_active_wave>.false.</config_cvmix_kpp_use_active_wave>
 <config_cvmix_kpp_langmuir_mixing_opt>'NONE'</config_cvmix_kpp_langmuir_mixing_opt>
 <config_cvmix_kpp_langmuir_entrainment_opt>'NONE'</config_cvmix_kpp_langmuir_entrainment_opt>
+<config_cvmix_kpp_use_active_wave>.false.</config_cvmix_kpp_use_active_wave>
 
-
-<!-- wave coupling-->
+<!-- wave_coupling -->
 <config_use_active_wave>.false.</config_use_active_wave>
 <config_n_stokes_drift_wavenumber_partitions>6</config_n_stokes_drift_wavenumber_partitions>
 
@@ -505,6 +507,9 @@
 <config_disable_thick_sflux>.false.</config_disable_thick_sflux>
 <config_disable_vel_all_tend>.false.</config_disable_vel_all_tend>
 <config_disable_vel_coriolis>.false.</config_disable_vel_coriolis>
+<config_disable_vvel_all_tend>.false.</config_disable_vvel_all_tend>
+<config_disable_vvel_coriolis>.false.</config_disable_vvel_coriolis>
+<config_disable_vvel_adv>.false.</config_disable_vvel_adv>
 <config_disable_vel_pgrad>.false.</config_disable_vel_pgrad>
 <config_disable_vel_hmix>.false.</config_disable_vel_hmix>
 <config_disable_vel_surface_stress>.false.</config_disable_vel_surface_stress>
