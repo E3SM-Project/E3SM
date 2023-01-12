@@ -648,12 +648,12 @@ contains
          endif
 #endif
 ! now take care of the mapper for MOAB mapper_Rr2o_liq
-            !mapper_Rr2o_liq%src_mbid = mbrxid
+            mapper_Rr2o_liq%src_mbid = mbrxid
             mapper_Rr2o_liq%tgt_mbid = mbrxoid ! this is special, it will really need this coverage type mesh
             mapper_Rr2o_liq%intx_mbid = mbrmapro 
             mapper_Rr2o_liq%src_context = rof(1)%cplcompid
             mapper_Rr2o_liq%intx_context = ocn(1)%cplcompid
-            wgtIdef = 'scalar'//C_NULL_CHAR
+            wgtIdef = 'map-from-file'//C_NULL_CHAR
             mapper_Rr2o_liq%weight_identifier = wgtIdef 
             mapper_Rr2o_liq%mbname = 'mapper_Rr2o_liq'
 #endif
@@ -668,12 +668,12 @@ contains
 ! us the same one for mapper_Rr2o_ice and mapper_Fr2o
 #ifdef HAVE_MOAB
 ! now take care of the mapper for MOAB mapper_Rr2o_ice
-            !mapper_Rr2o_ice%src_mbid = mbrxid
+            mapper_Rr2o_ice%src_mbid = mbrxid
             mapper_Rr2o_ice%tgt_mbid = mbrxoid ! special 
             mapper_Rr2o_ice%intx_mbid = mbrmapro 
             mapper_Rr2o_ice%src_context = rof(1)%cplcompid
             mapper_Rr2o_ice%intx_context = ocn(1)%cplcompid
-            wgtIdef = 'scalar'//C_NULL_CHAR
+            wgtIdef = 'map-from-file'//C_NULL_CHAR
             mapper_Rr2o_ice%weight_identifier = wgtIdef 
             mapper_Rr2o_ice%mbname = 'mapper_Rr2o_ice'
 #endif
@@ -687,12 +687,12 @@ contains
                   string='mapper_Fr2o initialization', esmf_map=esmf_map_flag)
 #ifdef HAVE_MOAB
 ! now take care of the mapper for MOAB mapper_Fr2o
-               !mapper_Fr2o%src_mbid = mbrxid
+               mapper_Fr2o%src_mbid = mbrxid
                mapper_Fr2o%tgt_mbid = mbrxoid ! special
                mapper_Fr2o%intx_mbid = mbrmapro 
                mapper_Fr2o%src_context = rof(1)%cplcompid
                mapper_Fr2o%intx_context = ocn(1)%cplcompid
-               wgtIdef = 'scalar'//C_NULL_CHAR
+               wgtIdef = 'map-from-file'//C_NULL_CHAR
                mapper_Fr2o%weight_identifier = wgtIdef 
                mapper_Fr2o%mbname = 'mapper_Fr2o'
 #endif
