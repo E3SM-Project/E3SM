@@ -36,3 +36,5 @@ string(APPEND SLIBS " -Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_l
 set(NETCDF_C_PATH "$ENV{NETCDF_C_PATH}")
 set(NETCDF_FORTRAN_PATH "$ENV{NETCDF_FORTRAN_PATH}")
 set(PNETCDF_PATH "$ENV{PNETCDF_PATH}")
+set(PETSC_PATH "$ENV{PETSC_PATH}")
+string(APPEND SLIBS " -L$ENV{PETSC_PATH}/lib -lpetsc")

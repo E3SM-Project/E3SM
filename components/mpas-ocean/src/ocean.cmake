@@ -12,6 +12,8 @@ if(LAPACK_FOUND AND BLAS_FOUND)
   list(APPEND CPPDEFS "-DUSE_LAPACK")
   list(APPEND SLIBS "${LAPACK_LIBRARIES} ${BLAS_LIBRARIES}")
 endif()
+list(APPEND CPPDEFS "-DUSE_PETSC")
+list(APPEND INCLUDES "/lcrc/soft/climate/compass/anvil/spack/spack_for_mache_1.4.1/var/spack/environments/compass_1_1_0_intel_impi_netlib_lapack_petsc/.spack-env/view/include")
 
 # driver (files live in E3SM)
 list(APPEND RAW_SOURCES
@@ -105,6 +107,13 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_wetting_drying.F
   core_ocean/shared/mpas_ocn_vel_tidal_potential.F
   core_ocean/shared/mpas_ocn_stokes_drift.F
+  core_ocean/shared/mpas_ocn_vvel_hmix_del2.F
+  core_ocean/shared/mpas_ocn_nonhydrostatic_pressure_solve.F
+  core_ocean/shared/mpas_ocn_vvel_pgrad.F
+  core_ocean/shared/mpas_ocn_vvel_coriolis.F
+  core_ocean/shared/mpas_ocn_vvel_advection.F
+  core_ocean/shared/mpas_ocn_vvel_horiz_advection.F
+  core_ocean/shared/mpas_ocn_vvel_vert_advection.F
 )
 
 set(OCEAN_DRIVER
