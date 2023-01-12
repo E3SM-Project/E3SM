@@ -68,6 +68,7 @@ extern "C" {
   int get_int_attribute_c2f (const char*&& filename, const char*&& attr_name);
   void set_int_attribute_c2f (const char*&& filename, const char*&& attr_name, const int& value);
   int get_dimlen_c2f(const char*&& filename, const char*&& dimname);
+  bool has_variable_c2f (const char*&& filename, const char*&& varname);
 } // extern "C"
 
 // The strings returned by e2str(const FieldTag&) are different from

@@ -253,6 +253,21 @@ contains
 
   end function get_dimlen_c2f
 !=====================================================================!
+  function has_variable_c2f(filename_in,varname_in) result(has) bind(c)
+    use scream_scorpio_interface, only : has_variable
+    type(c_ptr), intent(in) :: filename_in
+    type(c_ptr), intent(in) :: varname_in
+    logical(kind=c_bool)     :: has
+
+    character(len=256) :: filename
+    character(len=256) :: varname
+
+    call convert_c_string(filename_in,filename)
+    call convert_c_string(varname_in,varname)
+    has = LOGICAL(has_variable(filename,varname),kind=c_bool)
+
+  end function has_variable_c2f
+!=====================================================================!
   subroutine eam_pio_enddef_c2f(filename_in) bind(c)
     use scream_scorpio_interface, only : eam_pio_enddef
     type(c_ptr), intent(in) :: filename_in

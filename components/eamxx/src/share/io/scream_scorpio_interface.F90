@@ -47,7 +47,8 @@ module scream_scorpio_interface
                           pio_noerr, pio_global, &
                           PIO_int, PIO_real, PIO_double, PIO_float=>PIO_real
   use pio_kinds,    only: PIO_OFFSET_KIND
-  use pio_nf,       only: PIO_enddef, PIO_inq_dimid, PIO_inq_dimlen, PIO_inq_varid
+  use pio_nf,       only: PIO_enddef, PIO_inq_dimid, PIO_inq_dimlen, PIO_inq_varid, &
+                          PIO_inquire, PIO_inquire_variable
   use pionfatt_mod, only: PIO_put_att   => put_att
 
   use mpi, only: mpi_abort, mpi_comm_size, mpi_comm_rank
@@ -75,7 +76,8 @@ module scream_scorpio_interface
             eam_update_time,             & ! Update the timestamp (i.e. time variable) for a given pio netCDF file
             get_int_attribute,           & ! Retrieves an integer global attribute from the nc file
             set_int_attribute,           & ! Writes an integer global attribute to the nc file
-            get_dimlen                     ! Returns the length of a specific dimension in a file
+            get_dimlen,                  & ! Returns the length of a specific dimension in a file
+            has_variable                   ! Checks if given file contains a certain variable
 
   private :: errorHandle
   ! Universal PIO variables for the module
@@ -1359,6 +1361,33 @@ contains
     ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,dim_id,val)
 
   end function get_dimlen
+
+  function has_variable(filename,varname) result(has)
+    character(len=*), intent(in) :: filename
+    character(len=*), intent(in) :: varname
+
+    logical                       :: has, found
+    type(pio_atm_file_t), pointer :: pio_atm_file
+    integer                       :: nvars, ivar, ierr
+    character (len=256)           :: vname
+
+    call register_file(filename,file_purpose_in)
+    call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
+
+    ierr = PIO_inquire(pio_atm_file%pioFileDesc,nVariables=nvars)
+    call errorHandle("pio_inquire on file "//trim(filename)//" returned nonzero error code.",ierr)
+
+    has = .false.
+    do ivar=1,nvars
+      ierr = pio_inquire_variable(pio_atm_file%pioFileDesc, ivar, name=vname)
+      if (trim(vname) == trim(varname)) then
+        has = .true.
+        exit
+      endif
+    enddo
+
+    call eam_pio_closefile(filename)
+  end function has_variable
 !=====================================================================!
   ! Write output to file based on type (int or real)
   ! --Note-- that any dimensionality could be written if it is flattened to 1D
