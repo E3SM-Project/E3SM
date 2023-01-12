@@ -800,10 +800,11 @@ contains
 
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
     character(CXX) ::tagname
-    integer :: ent_type, ierr, kgg, lSize
+    integer :: ent_type, ierr, kgg
     integer , save  :: arrSize ! local size for moab tag arrays (number of cells locally)
 
     logical,save        :: first_call = .true.
+    integer, save       :: lSize
     !
     character(*),parameter :: subName =   '(seq_flux_ocnalb_mct) '
     !
@@ -1701,7 +1702,7 @@ contains
      ! moab
      integer                  :: tagtype, numco,  tagindex, ent_type, ierr, arrSize
      character(CXX)           :: tagname
-     integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
+     integer ,    allocatable :: GlobalIdsLocal(:) ! used for setting values associated with ids
      character*100 outfile, wopts, lnum
      
 
@@ -1723,8 +1724,8 @@ contains
      dom => component_get_dom_cx(comp)
      kgg = mct_aVect_indexIA(dom%data ,"GlobGridNum" ,perrWith=subName)
 
-     allocate(GlobalIds(nloc))
-     GlobalIds = dom%data%iAttr(kgg,:)
+     allocate(GlobalIdsLocal(nloc))
+     GlobalIdsLocal = dom%data%iAttr(kgg,:)
 
 
      do j = 1, listSize
@@ -1734,12 +1735,12 @@ contains
      tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
      arrSize = nloc * listSize
      ent_type = 1 ! cells
-     ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname, arrSize , ent_type, local_xao_mct, GlobalIds )
+     ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname, arrSize , ent_type, local_xao_mct, GlobalIdsLocal )
      if (ierr .ne. 0) then
        write(logunit,*) subname,' error in setting atm-ocn fluxes  '
        call shr_sys_abort(subname//' ERROR in setting atm-ocn fluxes')
      endif
-     deallocate(GlobalIds)
+     deallocate(GlobalIdsLocal)
 
 #ifdef MOABDEBUG
         ! debug out file
