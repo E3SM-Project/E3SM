@@ -22,6 +22,7 @@ module prep_atm_mod
   use seq_comm_mct, only : mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   use seq_comm_mct, only : mphaid   ! iMOAB id for phys atm on atm pes
   use seq_comm_mct, only : mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
+  use seq_comm_mct, only : mbofxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
   use seq_comm_mct, only : mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere
   use seq_comm_mct, only : mbintxao ! iMOAB id for intx mesh between atm and ocean
   use seq_comm_mct, only : mbixid   ! iMOAB id for mpas ice migrated mesh to coupler pes
@@ -66,6 +67,8 @@ module prep_atm_mod
 
   public :: prep_atm_get_mapper_So2a
   public :: prep_atm_get_mapper_Fo2a
+  public :: prep_atm_get_mapper_Sof2a
+  public :: prep_atm_get_mapper_Fof2a
   public :: prep_atm_get_mapper_Sl2a
   public :: prep_atm_get_mapper_Fl2a
   public :: prep_atm_get_mapper_Si2a
@@ -85,9 +88,11 @@ module prep_atm_mod
 
   ! mappers
   type(seq_map), pointer :: mapper_So2a
+  type(seq_map), pointer :: mapper_Sof2a          ! for moab fluxes
   type(seq_map), pointer :: mapper_Sl2a
   type(seq_map), pointer :: mapper_Si2a
   type(seq_map), pointer :: mapper_Fo2a           ! needed for seq_frac_init
+  type(seq_map), pointer :: mapper_Fof2a
   type(seq_map), pointer :: mapper_Fl2a           ! needed for seq_frac_init
   type(seq_map), pointer :: mapper_Fi2a           ! needed for seq_frac_init
 
@@ -163,6 +168,7 @@ contains
    integer                  :: type1, type2 ! type for computing graph; should be the same type for ocean, 3 (FV)
    integer                  :: tagtype, numco, tagindex
    character(CXX)           :: tagName
+   integer                  :: context_id ! we will use a special context for the extra flux ocean instance
 
    !---------------------------------------------------------------
 
@@ -178,9 +184,11 @@ contains
       esmf_map_flag=esmf_map_flag)
 
    allocate(mapper_So2a)
+   allocate(mapper_Sof2a)
    allocate(mapper_Sl2a)
    allocate(mapper_Si2a)
    allocate(mapper_Fo2a)
+   allocate(mapper_Fof2a)
    allocate(mapper_Fl2a)
    allocate(mapper_Fi2a)
 
@@ -222,6 +230,14 @@ contains
             'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
             'mapper_So2a initialization',esmf_map_flag)
 
+         if (iamroot_CPLID) then
+            write(logunit,*) ' '
+            write(logunit,F00) 'Initializing mapper_Sof2a'
+         endif
+         call seq_map_init_rcfile(mapper_Sof2a, ocn(1), atm(1), &
+            'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
+            'mapper_Sof2a initialization',esmf_map_flag)
+
 #ifdef HAVE_MOAB
          ! Call moab intx only if atm and ocn are init in moab
          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
@@ -257,6 +273,7 @@ contains
                write(logunit,*) subname,' error in computing comm graph for second hop, ocn-atm'
                call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocn-atm')
             endif
+
             ! now take care of the mapper 
             mapper_So2a%src_mbid = mboxid
             mapper_So2a%tgt_mbid = mbaxid
@@ -265,8 +282,11 @@ contains
             mapper_So2a%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_So2a%weight_identifier = wgtIdef
+            mapper_So2a%mbname = 'mapper_So2a'
+
             ! because we will project fields from ocean to atm phys grid, we need to define 
             ! ocean o2x fields to atm phys grid (or atm spectral ext ) on coupler side
+
             if (atm_pg_active) then
                tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
                tagtype = 1 ! dense
@@ -331,7 +351,36 @@ contains
             endif
 ! endif for MOABDEBUG            
 #endif
-         endif ! if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then 
+         endif ! if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
+
+! FLUX make the app and mapper for the a2o flux mappings
+         if ((mbaxid .ge. 0) .and.  (mbofxid .ge. 0)) then
+            ! we also need to compute the comm graph for the second hop, from the ocn on coupler to the
+            ! ocean for the intx ocean-atm context (coverage)
+            !
+            call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID)
+            type1 = 3; !  fv for ocean and atm; fv-cgll does not work anyway
+            type2 = 3;
+            ! we ideintified the app mbofxid with !id_join = id_join + 1000! kind of random 
+            ! line 1267 in cplcomp_exchange_mod.F90
+            context_id = ocn(1)%cplcompid + 1000 
+            ierr = iMOAB_ComputeCommGraph( mbofxid, mbintxoa, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                        context_id, idintx)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing comm graph for second hop, ocnf -atm'
+               call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ocnf-atm')
+            endif
+
+            mapper_Sof2a%src_mbid = mbofxid
+            mapper_Sof2a%tgt_mbid = mbaxid
+            mapper_Sof2a%intx_mbid = mbintxoa
+            mapper_Sof2a%src_context = context_id
+            mapper_Sof2a%intx_context = idintx
+            wgtIdef = 'scalar'//C_NULL_CHAR
+            mapper_Sof2a%weight_identifier = wgtIdef
+            mapper_Sof2a%mbname = 'mapper_Sof2a'
+         endif
+
 ! endif for HAVE_MOAB
 #endif  
          
@@ -346,6 +395,15 @@ contains
          call seq_map_init_rcfile(mapper_Fo2a, ocn(1), atm(1), &
             'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
             'mapper_Fo2a initialization',esmf_map_flag)
+
+         if (iamroot_CPLID) then
+            write(logunit,*) ' '
+            write(logunit,F00) 'Initializing mapper_Fof2a'
+         endif
+         call seq_map_init_rcfile(mapper_Fof2a, ocn(1), atm(1), &
+            'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
+            'mapper_Fof2a initialization',esmf_map_flag)
+
 ! copy mapper_So2a , maybe change the matrix ? still based on intersection ?
 #ifdef HAVE_MOAB
          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
@@ -357,7 +415,18 @@ contains
             mapper_Fo2a%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fo2a%weight_identifier = wgtIdef
+            mapper_Fo2a%mbname = 'mapper_Fo2a'
          endif 
+         if ((mbaxid .ge. 0) .and.  (mbofxid .ge. 0)) then
+            mapper_Fof2a%src_mbid = mbofxid
+            mapper_Fof2a%tgt_mbid = mbaxid
+            mapper_Fof2a%intx_mbid = mbintxoa
+            mapper_Fof2a%src_context = ocn(1)%cplcompid
+            mapper_Fof2a%intx_context = idintx
+            wgtIdef = 'scalar'//C_NULL_CHAR
+            mapper_Fof2a%weight_identifier = wgtIdef
+            mapper_Fof2a%mbname = 'mapper_Fof2a'
+         endif
 ! endif for HAVE_MOAB
 #endif  
 
@@ -417,6 +486,7 @@ contains
             mapper_Si2a%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Si2a%weight_identifier = wgtIdef
+            mapper_Si2a%mbname = 'mapper_Si2a'
             ! because we will project fields from ocean to atm phys grid, we need to define 
             ! ice i2x fields to atm phys grid (or atm spectral ext ) on coupler side
             if (atm_pg_active) then
@@ -508,6 +578,7 @@ contains
             mapper_Fi2a%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fi2a%weight_identifier = wgtIdef 
+            mapper_Fi2a%mbname = 'mapper_Fi2a'
 #endif
       endif !  if (ice_present) then
       call shr_sys_flush(logunit)
@@ -537,11 +608,12 @@ contains
             endif
             mapper_Fl2a%src_mbid = mblxid
             mapper_Fl2a%tgt_mbid = mbaxid
-            mapper_Fl2a%src_mbid = mbintxla
+            mapper_Fl2a%intx_mbid = mbintxla
             mapper_Fl2a%src_context = lnd(1)%cplcompid
             mapper_Fl2a%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fl2a%weight_identifier = wgtIdef 
+            mapper_Fl2a%mbname = 'mapper_Fl2a'
 
             if (.not. samegrid_al) then ! tri grid case
                if (iamroot_CPLID) then
@@ -593,6 +665,8 @@ contains
                   write(logunit,*) subname,' error in computing comm graph for second hop, lnd-atm'
                   call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, lnd-atm')
                endif
+               ! context for rearrange is target in this case
+               mapper_Fl2a%intx_context = atm(1)%cplcompid
 
             endif ! if tri-grid
             ! we still need to defne seq_flds_l2x_fields on atm cpl mesh
@@ -623,13 +697,14 @@ contains
             'mapper_Sl2a initialization',esmf_map_flag)
 #ifdef HAVE_MOAB
          if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
-            mapper_Fl2a%src_mbid = mblxid
-            mapper_Fl2a%tgt_mbid = mbaxid
-            mapper_Fl2a%src_mbid = mbintxla
-            mapper_Fl2a%src_context = lnd(1)%cplcompid
-            mapper_Fl2a%intx_context = idintx
+            mapper_Sl2a%src_mbid = mblxid
+            mapper_Sl2a%tgt_mbid = mbaxid
+            mapper_Sl2a%intx_mbid = mbintxla
+            mapper_Sl2a%src_context = lnd(1)%cplcompid
+            mapper_Sl2a%intx_context = mapper_Fl2a%intx_context
             wgtIdef = 'scalar'//C_NULL_CHAR
-            mapper_Fl2a%weight_identifier = wgtIdef 
+            mapper_Sl2a%weight_identifier = wgtIdef 
+            mapper_Sl2a%mbname = 'mapper_Sl2a'
          endif
 #endif
       endif ! if (lnd_c2_atm) then
@@ -1186,12 +1261,14 @@ contains
 
     !call mct_avect_zero(x2a_a) ?
 
-    !x2a_am = 0
+    x2a_am = 0._r8
     ent_type = 1 ! cells
     tagname = trim(seq_flds_x2a_fields)//C_NULL_CHAR
     arrsize = naflds * lsize
-    ierr = iMOAB_GetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, x2a_am(1,1))
-
+   !  ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrsize , ent_type, x2a_am(1,1))
+   !  if (ierr .ne. 0) then
+   !       call shr_sys_abort(subname//' error in setting moab tags with 0 ')
+   !  endif
     ! Update surface fractions
     !    fraclist_a = 'afrac:ifrac:ofrac:lfrac:lfrin'
     kif = 2 ! kif=mct_aVect_indexRA(fractions_a,"ifrac")
@@ -1382,7 +1459,7 @@ contains
     call mct_list_init(temp_list ,seq_flds_x2a_fields)
     size_list=mct_list_nitem (temp_list)
     ent_type = 1 ! cell for atm, atm_pg_active
-    if (iamroot) print *, num_moab_exports, trim(seq_flds_x2a_fields)
+    if (iamroot) print *, subname, num_moab_exports, trim(seq_flds_x2a_fields)
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)
@@ -1958,6 +2035,16 @@ contains
     type(seq_map), pointer :: prep_atm_get_mapper_Fo2a
     prep_atm_get_mapper_Fo2a => mapper_Fo2a
   end function prep_atm_get_mapper_Fo2a
+
+  function prep_atm_get_mapper_Sof2a()
+    type(seq_map), pointer :: prep_atm_get_mapper_Sof2a
+    prep_atm_get_mapper_Sof2a => mapper_Sof2a
+  end function prep_atm_get_mapper_Sof2a
+
+  function prep_atm_get_mapper_Fof2a()
+    type(seq_map), pointer :: prep_atm_get_mapper_Fof2a
+    prep_atm_get_mapper_Fof2a => mapper_Fof2a
+  end function prep_atm_get_mapper_Fof2a
 
   function prep_atm_get_mapper_Sl2a()
     type(seq_map), pointer :: prep_atm_get_mapper_Sl2a

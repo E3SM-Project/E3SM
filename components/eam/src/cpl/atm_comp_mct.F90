@@ -9,7 +9,7 @@ module atm_comp_mct
   use seq_cdata_mod
   use esmf
 
-  use seq_flds_mod ! for seq_flds_x2a_fields
+  use seq_flds_mod ! for seq_flds_x2a_fields, seq_flds_dom_fields, etc
   use seq_infodata_mod
   use seq_timemgr_mod
 
@@ -1120,7 +1120,7 @@ CONTAINS
     real(r8) :: lons(pcols)           ! array of chunk longitude
     real(r8) :: area(pcols)           ! area in radians squared for each grid point
     integer , dimension(:), allocatable :: chunk_index(:)    ! temporary
-    !real(r8), parameter:: radtodeg = 180.0_r8/SHR_CONST_PI
+    real(r8), parameter:: radtodeg = 180.0_r8/SHR_CONST_PI
 
     character*100 outfile, wopts
     character(CXX) :: tagname ! will store all seq_flds_a2x_fields 
@@ -1189,6 +1189,10 @@ CONTAINS
     if (ierr > 0 )  &
       call endrun('Error: fail to resolve shared entities')
 
+    ierr = iMOAB_UpdateMeshInfo(mphaid)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to update mesh info')
+
     !there are no shared entities, but we will set a special partition tag, in order to see the
     ! partitions ; it will be visible with a Pseudocolor plot in VisIt
     tagname='partition'//C_NULL_CHAR
@@ -1209,22 +1213,57 @@ CONTAINS
 
     ierr = iMOAB_SetIntTagStorage ( mphaid, tagname, nlcols , ent_type, chunk_index)
     if (ierr > 0 )  &
-      call endrun('Error: fail to set partition tag ')
+      call endrun('Error: fail to set chunk id tag tag ')
 
-    ! use areavals for areas
+    ! use areavals for area, aream; define also dom fields 
+    ! define all  on moab 
 
-    tagname='area'//C_NULL_CHAR
+    tagname=trim(seq_flds_dom_fields)//C_NULL_CHAR !  mask is double too lat:lon:hgt:area:aream:mask:frac
     tagtype = 1 ! dense, double
     ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  &
-      call endrun('Error: fail to create area tag ')
+      call endrun('Error: fail to create  tags from seq_flds_dom_fields ')
 
-
+    tagname='area'//C_NULL_CHAR
     ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols , ent_type, areavals)
     if (ierr > 0 )  &
       call endrun('Error: fail to set area tag ')
 
-    ierr = iMOAB_UpdateMeshInfo(mphaid)
+    tagname='aream'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols , ent_type, areavals)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set aream tag ')
+
+    areavals = 1._r8 ! double
+    tagname='mask'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols , ent_type, areavals)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set mask tag ')
+
+    areavals = 1._r8 ! double
+    
+    ! set lat, lon, and frac tags at the same time, reusing the moab_vert_coords array already allocated
+    ! we set all at the same time, so use the 1-d array carefully, with values interlaced/or not 
+    n=0
+    do c = begchunk, endchunk
+       ncols = get_ncols_p(c)
+       call get_rlat_all_p(c, ncols, lats) !
+       call get_rlon_all_p(c, ncols, lons)
+       do i = 1,ncols
+          n=n+1
+          vgids(n) = get_gcol_p(c,i)
+          latv = lats(i) ! these are in rads ?
+          lonv = lons(i)
+          moab_vert_coords(            n ) = lats(i) * radtodeg
+          moab_vert_coords(  nlcols +  n ) = lons(i) * radtodeg
+          moab_vert_coords( 2*nlcols + n )= 1._r8 ! this for fractions
+       end do
+    end do
+    tagname = 'lat:lon:frac'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols*3 , ent_type, moab_vert_coords)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set lat lon frac tag ')
+
 
 #ifdef MOABDEBUG
     outfile = 'AtmPhys.h5m'//C_NULL_CHAR
@@ -1275,7 +1314,10 @@ CONTAINS
     character(CXX) ::  tagname ! 
 
     integer ierr, c, nlcols, ig, i, ncols
-
+#ifdef MOABDEBUG
+    integer, save :: local_count = 0
+    character*100 lnum2
+#endif 
     ! Copy from component arrays into chunk array data structure
     ! Rearrange data from chunk structure into lat-lon buffer and subsequently
     ! create double array for moab tags
@@ -1338,7 +1380,9 @@ CONTAINS
     endif
 #ifdef MOABDEBUG
     write(lnum,"(I0.2)")num_moab_exports
-    outfile = 'AtmPhys_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    local_count = local_count + 1
+    write(lnum2,"(I0.2)")local_count
+    outfile = 'AtmPhys_'//trim(lnum)//'_'//trim(lnum2)//'.h5m'//C_NULL_CHAR
     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
     ierr = iMOAB_WriteMesh(mphaid, outfile, wopts)
     if (ierr > 0 )  &

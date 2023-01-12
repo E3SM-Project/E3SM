@@ -238,11 +238,12 @@ contains
             endif
             mapper_Sa2l%src_mbid = mbaxid
             mapper_Sa2l%tgt_mbid = mblxid
-            mapper_Sa2l%src_mbid = mbintxal
-            mapper_Sa2l%src_context = lnd(1)%cplcompid
+            mapper_Sa2l%intx_mbid = mbintxal
+            mapper_Sa2l%src_context = atm(1)%cplcompid
             mapper_Sa2l%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Sa2l%weight_identifier = wgtIdef 
+            mapper_Sa2l%mbname = 'mapper_Sa2l'
             
             call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID) 
             if (.not. samegrid_al) then ! tri grid case
@@ -341,17 +342,19 @@ contains
                 write(logunit,*) subname,' error in computing comm graph for second hop, atm-lnd'
                 call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, atm-lnd')
               endif
+              mapper_Sa2l%intx_context = lnd(1)%cplcompid
 
             endif ! if tri-grid
 
              ! use the same map for fluxes too
             mapper_Fa2l%src_mbid = mbaxid
             mapper_Fa2l%tgt_mbid = mblxid
-            mapper_Fa2l%src_mbid = mbintxal
-            mapper_Fa2l%src_context = lnd(1)%cplcompid
-            mapper_Fa2l%intx_context = idintx
+            mapper_Fa2l%intx_mbid = mbintxal
+            mapper_Fa2l%src_context = atm(1)%cplcompid
+            mapper_Fa2l%intx_context = mapper_Sa2l%intx_context
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fa2l%weight_identifier = wgtIdef 
+            mapper_Fa2l%mbname = 'mapper_Fa2l'
 
              
             ! in any case, we need to define the tags on landx from the phys atm seq_flds_a2x_fields

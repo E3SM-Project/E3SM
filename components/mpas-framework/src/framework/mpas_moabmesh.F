@@ -29,7 +29,8 @@ module mpas_moabmesh
      iMOAB_CreateVertices, iMOAB_CreateElements, &
      iMOAB_ResolveSharedEntities, iMOAB_DetermineGhostEntities, &
      iMOAB_DefineTagStorage,  iMOAB_SetIntTagStorage , &
-     iMOAB_UpdateMeshInfo
+     iMOAB_UpdateMeshInfo, iMOAB_SetDoubleTagStorage
+    use seq_flds_mod, only: seq_flds_dom_fields
 
     type (domain_type), intent(inout) :: domain
     integer , intent(in) :: ext_comp_id
@@ -43,20 +44,21 @@ module mpas_moabmesh
     integer, dimension(:), pointer :: nEdgesOnCell
     integer, dimension(:), pointer :: indexToVertexID, indexToCellID
     real(kind=RKIND), dimension(:), pointer :: xVertex, yVertex, zVertex
-    real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell
+    real (kind=RKIND), dimension(:), pointer :: xCell, yCell, zCell, areaCell
     logical, pointer :: on_a_sphere, is_periodic
     real(kind=RKIND), pointer :: x_period, y_period
     integer, pointer :: nCellsSolve, nEdgesSolve, nVerticesSolve
 
-    integer :: c_comm, i1, j1, ic, lastvertex
+    integer :: c_comm, i1, j1, ic, lastvertex,n
     character*12 appname
     integer :: ierr, num_verts_in_cells
-    real(kind=RKIND), allocatable, target :: moab_vert_coords(:)
+    real(kind=RKIND), allocatable, target :: moab_vert_coords(:), data(:)
     integer, allocatable, target :: indexUsed(:), invMap(:), localIds(:)
     integer dimcoord, dimen, mbtype, block_ID, proc_id
     integer  ,allocatable , target :: all_connects(:)
     character*100  tagname, lnum
     integer tagtype, numco, tag_sto_len, ent_type, tagindex, currentVertex
+    real (kind=RKIND), pointer :: sphere_radius
 
     c_comm = domain % dminfo % comm
     write(lnum,"(I0.2)")ext_comp_id
@@ -91,6 +93,8 @@ module mpas_moabmesh
        call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
        call mpas_pool_get_dimension(meshPool, 'nEdgesSolve', nEdgesSolve)
        call mpas_pool_get_dimension(meshPool, 'nVerticesSolve', nVerticesSolve)
+       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+       call mpas_pool_get_config(meshPool, 'sphere_radius', sphere_radius)
 !       call mpas_pool_get_array(meshPool, 'xCell', xCell)
 !       call mpas_pool_get_array(meshPool, 'yCell', yCell)
 !       call mpas_pool_get_array(meshPool, 'zCell', zCell)
@@ -151,6 +155,7 @@ module mpas_moabmesh
 
        ierr = iMOAB_CreateElements( pid, nCellsSolve, mbtype, maxEdges, all_connects, block_ID );
        call errorout(ierr, 'fail to create polygons')
+ 
 !      set the global id for vertices
 !   first, retrieve the tag
        tagname='GLOBAL_ID'//C_NULL_CHAR
@@ -166,6 +171,7 @@ module mpas_moabmesh
        enddo
        ierr = iMOAB_SetIntTagStorage ( pid, tagname, currentVertex , ent_type, localIds )
        call errorout(ierr, 'fail to set global id tag for vertices')
+
        ! set global id tag for elements
        ent_type = 1 ! now set the global id tag on elements
        ierr = iMOAB_SetIntTagStorage ( pid, tagname, nCellsSolve, ent_type, indexToCellID)
@@ -174,7 +180,32 @@ module mpas_moabmesh
        ierr = iMOAB_ResolveSharedEntities( pid, currentVertex, localIds );
        call errorout(ierr, 'fail to resolve shared entities')
 
+       allocate(data(nCellsSolve))
+       n=0
+       do ic=1, nCellsSolve
+         n= n+1
+         data(n)=areaCell(ic) / (sphere_radius * sphere_radius)
+       enddo
+
+       ! add domain tags
+       tagname=trim(seq_flds_dom_fields)//C_NULL_CHAR
+       tagtype = 1
+       ierr = iMOAB_DefineTagStorage(pid, tagname, tagtype, numco,  tagindex )
+       if (ierr > 0 )  &
+          call errorout(ierr, 'Error: fail to define domain tags ')
+
+       tagname='area'//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage ( pid, tagname, nCellsSolve , ent_type, data)
+       if (ierr > 0 )  &
+          call errorout(ierr,'Error: fail to set area tag ')
+
+       tagname='aream'//C_NULL_CHAR
+       ierr = iMOAB_SetDoubleTagStorage ( pid, tagname, nCellsSolve , ent_type, data)
+       if (ierr > 0 )  &
+          call errorout(ierr,'Error: fail to set aream tag ')
+
        deallocate (moab_vert_coords)
+       deallocate (data)
        deallocate (all_connects)
        deallocate (indexUsed)
        deallocate (invMap)

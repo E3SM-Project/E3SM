@@ -704,6 +704,11 @@ contains
     if ( ierrmb == 1 ) then
       call mpas_log_write('cannot define tags for MOAB i2x fields ' // trim(seq_flds_i2x_fields), MPAS_LOG_ERR)
     endif
+    tagname = trim(seq_flds_x2i_fields)//C_NULL_CHAR
+    ierrmb = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
+    if ( ierrmb == 1 ) then
+      call mpas_log_write('cannot define tags for MOAB i2x fields ' // trim(seq_flds_x2i_fields), MPAS_LOG_ERR)
+    endif
 #endif
     
 
@@ -776,6 +781,9 @@ contains
     if (errorCode /= 0) then
        call mpas_log_write('Error in ice_export_mct', MPAS_LOG_CRIT)
     endif
+#ifdef HAVE_MOAB
+    call ice_export_moab()
+#endif
 
     call t_stopf ('mpassi_mct_init')
 

@@ -9,10 +9,13 @@ module cplcomp_exchange_mod
   use seq_map_type_mod
   use component_type_mod
   use seq_flds_mod, only: seq_flds_dom_coord, seq_flds_dom_other
+  use seq_flds_mod, only: seq_flds_dom_fields
   use seq_flds_mod, only: seq_flds_a2x_ext_fields, seq_flds_a2x_fields, seq_flds_x2a_fields ! 
   use seq_flds_mod, only: seq_flds_o2x_fields ! needed for MOAB init of ocean fields o2x to be able to transfer to coupler
   use seq_flds_mod, only: seq_flds_x2o_fields ! needed for MOAB init of ocean fields x2o to be able to transfer from coupler
   use seq_flds_mod, only: seq_flds_i2x_fields, seq_flds_x2i_fields ! needed for MOAB init of ice fields x2o on coupler side, to save them
+  use seq_flds_mod, only: seq_flds_l2x_fields, seq_flds_x2l_fields ! 
+  use seq_flds_mod, only: seq_flds_r2x_fields, seq_flds_x2r_fields !
   use seq_comm_mct, only: cplid, logunit
   use seq_comm_mct, only: seq_comm_getinfo => seq_comm_setptrs, seq_comm_iamin
   use seq_diag_mct
@@ -989,7 +992,8 @@ contains
       !
       use iMOAB, only: iMOAB_RegisterApplication, iMOAB_ReceiveMesh, iMOAB_SendMesh, &
       iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo, &
-      iMOAB_SetIntTagStorage, iMOAB_FreeSenderBuffers, iMOAB_ComputeCommGraph
+      iMOAB_SetIntTagStorage, iMOAB_FreeSenderBuffers, iMOAB_ComputeCommGraph, iMOAB_LoadMesh
+      ! use component_mod,      only: component_exch_moab
       !
       type(component_type), intent(inout) :: comp
       !
@@ -1008,13 +1012,11 @@ contains
       integer                  :: mpigrp_cplid ! coupler pes
       integer                  :: mpigrp_old   !  component group pes
       integer                  :: ierr, context_id
-      character*32             :: appname, outfile, wopts, tagnameProj
+      character*100            :: appname, outfile, wopts, ropts
       integer                  :: maxMH, maxMPO, maxMLID, maxMSID, maxMRID ! max pids for moab apps atm, ocn, lnd, sea-ice, rof
-      integer                  :: tagtype, numco,  tagindex, partMethod
+      integer                  :: tagtype, numco,  tagindex, partMethod, nghlay
       integer                  :: rank, ent_type
       integer                  :: typeA, typeB, ATM_PHYS_CID ! used to compute par graph between atm phys
-      integer                  :: ID_JOIN_ATMPHYS ! 200 + 6
-      integer                  :: ID_OLD_ATMPHYS  ! 200 + 5
                                                             ! and atm spectral on coupler
       character(CXX)             :: tagname
 #ifdef MOABDEBUG
@@ -1085,21 +1087,7 @@ contains
                write(logunit,*) subname,' error in receiving mesh on atm coupler '
                call shr_sys_abort(subname//' ERROR in receiving mesh on atm coupler ')
             endif
-#ifdef MOABDEBUG
-            ! debug test
-            if (atm_pg_active) then !
-               outfile = 'recMeshAtmPG.h5m'//C_NULL_CHAR
-            else
-               outfile = 'recMeshAtm.h5m'//C_NULL_CHAR
-            endif
-            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
-      !      write out the mesh file to disk
-            ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
-            if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in writing mesh '
-               call shr_sys_abort(subname//' ERROR in writing mesh ')
-            endif
-#endif
+
          endif
          !  iMOAB_FreeSenderBuffers needs to be called after receiving the mesh
 
@@ -1161,7 +1149,41 @@ contains
                call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
 
+            tagname = trim(seq_flds_dom_fields)//C_NULL_CHAR
+            ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on atm on coupler '
+               call shr_sys_abort(subname//' ERROR in defining tags ')
+            endif
+
          endif
+
+         ! send aream values from component to coupler
+         ! tagname = 'aream'
+         ! if (MPI_COMM_NULL /= mpicom_join ) then !  we are on the joint pes
+         !   call component_exch_moab(comp, mphaid, mbaxid, 0, tagname)
+         ! endif
+
+#ifdef MOABDEBUG
+         if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
+            ! debug test
+            if (atm_pg_active) then !
+               outfile = 'recMeshAtmPG.h5m'//C_NULL_CHAR
+            else
+               outfile = 'recMeshAtm.h5m'//C_NULL_CHAR
+            endif
+            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR
+      !      write out the mesh file to disk
+            ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in writing mesh '
+               call shr_sys_abort(subname//' ERROR in writing mesh ')
+            endif
+         endif
+#endif
+
+
+
       endif
       ! ocean
       if (comp%oneletterid == 'o'  .and. maxMPO /= -1) then
@@ -1208,6 +1230,13 @@ contains
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining tags x2o on coupler'
                call shr_sys_abort(subname//' ERROR in defining tags x2o on coupler ')
+            endif
+
+            tagname = trim(seq_flds_dom_fields)//C_NULL_CHAR
+            ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on ocn on coupler '
+               call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
 
 #ifdef MOABDEBUG
@@ -1279,7 +1308,7 @@ contains
          endif
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
          appname = "COUPLE_LAND"//C_NULL_CHAR
-         ! migrated mesh gets another app id, moab ocean to coupler (mbox)
+         ! migrated mesh gets another app id, moab land to coupler (mblx)
          ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mblxid)
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in registering coupler land '
@@ -1289,7 +1318,31 @@ contains
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in receiving coupler land mesh'
             call shr_sys_abort(subname//' ERROR in receiving coupler land mesh')
-            endif
+         endif
+
+!  need to define tags on land too
+         tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR 
+         tagtype = 1  ! dense, double
+         numco = 1 !  one value per cell
+         ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags l2x on coupler land'
+            call shr_sys_abort(subname//' ERROR in defining tags l2x on coupler ')
+         endif
+         ! need also to define seq_flds_x2l_fields on coupler instance, and on land comp instance
+         tagname = trim(seq_flds_x2l_fields)//C_NULL_CHAR 
+         ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags x2l on coupler land'
+            call shr_sys_abort(subname//' ERROR in defining tags x2l on coupler land')
+         endif        
+
+         tagname = trim(seq_flds_dom_fields)//C_NULL_CHAR
+         ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on lnd on coupler '
+            call shr_sys_abort(subname//' ERROR in defining tags ')
+         endif
 
 #ifdef MOABDEBUG
          ! debug test
@@ -1353,7 +1406,7 @@ contains
          endif
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
          appname = "COUPLE_MPASSI"//C_NULL_CHAR
-         ! migrated mesh gets another app id, moab moab sea ice to coupler (mbox)
+         ! migrated mesh gets another app id, moab moab sea ice to coupler (mbix)
          ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbixid)
          ierr = iMOAB_ReceiveMesh(mbixid, mpicom_join, mpigrp_old, id_old)
          tagtype = 1  ! dense, double
@@ -1368,6 +1421,13 @@ contains
          if ( ierr == 1 ) then
             call shr_sys_abort( subname//' ERROR: cannot define tags for ice on coupler' )
          end if
+
+         tagname = trim(seq_flds_dom_fields)//C_NULL_CHAR
+         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on ice on coupler '
+            call shr_sys_abort(subname//' ERROR in defining tags ')
+         endif
 #ifdef MOABDEBUG
    !      debug test
          outfile = 'recSeaIce.h5m'//C_NULL_CHAR
@@ -1395,41 +1455,79 @@ contains
          call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
          call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
 
-         if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component p
+         ! if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component p
 
-         ierr = iMOAB_SendMesh(mrofid, mpicom_join, mpigrp_cplid, id_join, partMethod)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in sending rof mesh to coupler '
-            call shr_sys_abort(subname//' ERROR in sending rof mesh to coupler ')
-         endif
+         !    ierr = iMOAB_SendMesh(mrofid, mpicom_join, mpigrp_cplid, id_join, partMethod)
+         !    if (ierr .ne. 0) then
+         !       write(logunit,*) subname,' error in sending rof mesh to coupler '
+         !       call shr_sys_abort(subname//' ERROR in sending rof mesh to coupler ')
+         !    endif
 
-         endif
+         ! endif
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-         appname = "COUPLE_MROF"//C_NULL_CHAR
-         ! migrated mesh gets another app id, moab moab rof to coupler (mbox)
-         ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbrxid)
-         ierr = iMOAB_ReceiveMesh(mbrxid, mpicom_join, mpigrp_old, id_old)
+            appname = "COUPLE_MROF"//C_NULL_CHAR
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbrxid)
+
+            ! load mesh from scrip file,then send it locally, maybe it will defeat the crash in writing it
+            outfile = '/home/iulian/rofscrip/SCRIPgrid_2x2_nomask_c210211.nc'//C_NULL_CHAR
+            ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=RCBZOLTAN'//C_NULL_CHAR
+         
+            nghlay = 0 ! no ghost layers 
+            ierr = iMOAB_LoadMesh(mbrxid, outfile, ropts, nghlay)
+            if ( ierr .ne. 0  ) then
+               call shr_sys_abort( subname//' ERROR: cannot read rof mesh on coupler' )
+            end if
 #ifdef MOABDEBUG
    !      debug test
-         outfile = 'recRof.h5m'//C_NULL_CHAR
-         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-   !      write out the mesh file to disk
-         ierr = iMOAB_WriteMesh(mbrxid, trim(outfile), trim(wopts))
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in writing rof mesh on coupler '
-            call shr_sys_abort(subname//' ERROR in writing rof mesh on coupler ')
-         endif
-#endif
-         endif
-         if (mrofid .ge. 0) then  ! we are on component sea ice pes
-            context_id = id_join
-            ierr = iMOAB_FreeSenderBuffers(mrofid, context_id)
+            outfile = 'recRof.h5m'//C_NULL_CHAR
+            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+      !      write out the mesh file to disk
+            ierr = iMOAB_WriteMesh(mbrxid, trim(outfile), trim(wopts))
             if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in freeing buffers '
-            call shr_sys_abort(subname//' ERROR in freeing buffers ')
+               write(logunit,*) subname,' error in writing rof mesh on coupler '
+               call shr_sys_abort(subname//' ERROR in writing rof mesh on coupler ')
             endif
+#endif
+            tagtype = 1  ! dense, double
+            numco = 1 !  one value per cell / entity
+            tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
+            ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
+            if ( ierr == 1 ) then
+               call shr_sys_abort( subname//' ERROR: cannot define tags for rof on coupler' )
+            end if
+            tagname = trim(seq_flds_x2r_fields)//C_NULL_CHAR
+            ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
+            if ( ierr == 1 ) then
+               call shr_sys_abort( subname//' ERROR: cannot define tags for rof on coupler' )
+            end if
+
+            tagname = trim(seq_flds_dom_fields)//C_NULL_CHAR
+            ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on rof on coupler '
+               call shr_sys_abort(subname//' ERROR in defining tags ')
+            endif
+
          endif
-      endif ! end for rof coupler send 
+         ! we are now on joint pes, compute comm graph between rof and coupler model 
+         typeA = 2 ! point cloud on component PEs
+         typeB = 3 ! full mesh on coupler pes, we just read it
+         ierr = iMOAB_ComputeCommGraph( mrofid, mbrxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+             typeA, typeB, id_old, id_join) 
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in computing comm graph for rof model '
+            call shr_sys_abort(subname//' ERROR in computing comm graph for rof model ')
+         endif
+
+         ! if (mrofid .ge. 0) then  ! we are on component rof  pes
+         !    context_id = id_join
+         !    ierr = iMOAB_FreeSenderBuffers(mrofid, context_id)
+         !    if (ierr .ne. 0) then
+         !    write(logunit,*) subname,' error in freeing buffers '
+         !    call shr_sys_abort(subname//' ERROR in freeing buffers ')
+         !    endif
+         ! endif
+      endif ! end for rof coupler set up 
 
    end subroutine cplcomp_moab_Init
 

@@ -801,7 +801,10 @@ contains
     if (errorCode /= 0) then
        call mpas_log_write('ERROR in ocn_export_mct', MPAS_LOG_CRIT)
     endif
-
+#ifdef HAVE_MOAB
+    ! initial state has to be exported to moab too
+    call ocn_export_moab()
+#endif
     ! Setup clock for initial runs
     if (runtype == "continue" .or. runtype == "branch" ) then
        block_ptr => domain % blocklist

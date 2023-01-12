@@ -578,6 +578,9 @@ contains
 #ifndef CPL_BYPASS       
        call t_startf ('lc_lnd_export')
        call lnd_export(bounds, lnd2atm_vars, lnd2glc_vars, l2x_l%rattr)
+#ifdef HAVE_MOAB
+       call lnd_export_moab(bounds, lnd2atm_vars, lnd2glc_vars) ! it is private here
+#endif
        call t_stopf ('lc_lnd_export')
 #endif
 
@@ -788,7 +791,7 @@ contains
 
 #ifdef HAVE_MOAB
   subroutine init_land_moab(bounds, samegrid_al)
-    use seq_flds_mod     , only :  seq_flds_l2x_fields
+    use seq_flds_mod     , only :  seq_flds_l2x_fields, seq_flds_x2l_fields
     use shr_kind_mod     , only : CXX => SHR_KIND_CXX
     use spmdMod     , only: iam  ! rank on the land communicator
     use domainMod   , only: ldomain ! ldomain is coming from module, not even passed
@@ -850,7 +853,6 @@ contains
         ierr = iMOAB_CreateVertices(mlnid, lsz * 3 * ldomain%nv, dims, moab_vert_coords)
         if (ierr > 0 )  &
             call endrun('Error: fail to create MOAB vertices in land model')
-
 
         mbtype = 2 ! triangle
         if (ldomain%nv .eq. 4) mbtype = 3 ! quad
@@ -914,6 +916,15 @@ contains
         ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords )
         if (ierr > 0 )  &
           call endrun('Error: fail to set area tag ')
+
+        ! aream needed in cime_init for now.
+        tagname='aream'//C_NULL_CHAR
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to create aream tag ')
+        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to set aream tag ')
 
         deallocate(moabconn)
         ! use merge vertices new imoab method to fix cells
@@ -1006,7 +1017,39 @@ contains
         ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords )
         if (ierr > 0 )  &
           call endrun('Error: fail to set area tag ')
+
+        ! aream needed in cime_init for now.
+        tagname='aream'//C_NULL_CHAR
+        ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to create aream tag ')
+        ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords )
+        if (ierr > 0 )  &
+          call endrun('Error: fail to set aream tag ')
     endif
+    ! add more domain fields that are missing from domain fields: lat, lon, mask, hgt
+    tagname = 'lat:lon:mask:hgt'//C_NULL_CHAR
+    tagtype = 1 ! dense, double
+    numco = 1
+    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create lat:lon:mask:hgt tags ')
+ ! moab_vert_coords is big enough in both case to hold enough data for us: lat, lon, mask
+    do i = 1, lsz
+      n = i-1 + bounds%begg
+      moab_vert_coords(i) = ldomain%latc(n)  ! lat
+      moab_vert_coords(lsz + i) = ldomain%lonc(n) ! lon
+      moab_vert_coords(2*lsz + i) = ldomain%mask(n) ! mask
+    enddo
+    tagname = 'lat:lon:mask'//C_NULL_CHAR
+
+    ent_type = 0 ! point cloud usually
+    if (ldomain%nv .ge. 3 .and.  .not.samegrid_al) then
+      ent_type = 1 ! cell in tri-grid case
+    endif
+    ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz*3 , ent_type, moab_vert_coords)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set lat lon mask tag ')
     deallocate(moab_vert_coords)
     deallocate(vgids)
 #ifdef MOABDEBUG
@@ -1026,6 +1069,12 @@ contains
     if ( ierr > 0) then
         call endrun('Error: fail to define seq_flds_l2x_fields for land moab mesh')
     endif
+    tagname = trim(seq_flds_x2l_fields)//C_NULL_CHAR
+    ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
+    if ( ierr > 0) then
+        call endrun('Error: fail to define seq_flds_x2l_fields for land moab mesh')
+    endif
+
   end subroutine init_land_moab
 
   subroutine lnd_export_moab( bounds, lnd2atm_vars, lnd2glc_vars)
@@ -1043,6 +1092,7 @@ contains
     use shr_megan_mod      , only : shr_megan_mechcomps_n
     use iMOAB,  only       : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
     use seq_flds_mod, only : seq_flds_l2x_fields
+    use seq_comm_mct, only : num_moab_exports
     !
     ! !ARGUMENTS:
     implicit none
@@ -1057,7 +1107,7 @@ contains
     integer  :: dtime ! time step   
     integer  :: num   ! counter
     character(len=*), parameter :: sub = 'lnd_export_moab'
-    integer, save :: num_mb_exports = 0  ! used for debugging
+
     integer :: ent_type, ierr
     character(len=100) :: outfile, wopts, lnum
    character(len=400) :: tagname
@@ -1157,8 +1207,7 @@ contains
        call shr_sys_abort( sub//' Error: fail to set moab '// trim(seq_flds_l2x_fields) )
  
 #ifdef MOABDEBUG
-       num_mb_exports = num_mb_exports +1
-       write(lnum,"(I0.2)")num_mb_exports
+       write(lnum,"(I0.2)")num_moab_exports
        outfile = 'lnd_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
        wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
        ierr = iMOAB_WriteMesh(mlnid, outfile, wopts)
