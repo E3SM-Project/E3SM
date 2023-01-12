@@ -7,6 +7,7 @@
 #include "share/property_checks/field_nan_check.hpp"
 #include "share/util/scream_setup_random_test.hpp"
 #include "share/grid/point_grid.hpp"
+#include "share/field/field_utils.hpp"
 
 #include "ekat/ekat_pack.hpp"
 #include "ekat/ekat_pack_utils.hpp"
@@ -203,6 +204,7 @@ TEST_CASE("property_checks", "") {
     REQUIRE(res_and_msg.msg == expected_msg);
 
     interval_check->repair();
+    f.sync_to_host();
     res_and_msg = interval_check->check();
     REQUIRE(res_and_msg.result==CheckResult::Pass);
 
@@ -216,6 +218,7 @@ TEST_CASE("property_checks", "") {
     REQUIRE(res_and_msg.fail_loc_indices == exp_fail_loc);
     // Repair for next check.
     interval_check->repair();
+    f.sync_to_host();
 
     // Re-assign an out-of-bounds value to the field, but only in the upper-bound.  Check if it
     // fails and reports just the max fail.
@@ -225,7 +228,6 @@ TEST_CASE("property_checks", "") {
     res_and_msg = interval_check->check();
     REQUIRE(res_and_msg.result==CheckResult::Fail);
     REQUIRE(res_and_msg.fail_loc_indices == exp_fail_loc);
-    
   }
 
   // Check that the values of a field are above a lower bound
