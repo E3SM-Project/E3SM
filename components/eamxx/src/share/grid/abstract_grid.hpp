@@ -141,6 +141,13 @@ public:
   // dofs have been set to something that satisfies any requirement of the grid type.
   virtual bool check_valid_dofs()        const { return true; }
   virtual bool check_valid_lid_to_idx () const { return true; }
+
+  // This member is used mostly by IO: if a field exists on multiple grids
+  // with the same name, IO can use this as a suffix to diambiguate the fields in
+  // the IO file, by appending each grid's suffix to the fields names.
+  // NOTE: we'd need setter/getter for this, so we might as well make it public
+  std::string m_short_name = "";
+
 protected:
 
   void copy_data (const AbstractGrid& src, const bool shallow = true);

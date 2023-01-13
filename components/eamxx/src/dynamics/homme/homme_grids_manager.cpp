@@ -181,6 +181,7 @@ void HommeGridsManager::build_dynamics_grid () {
 
   initialize_vertical_coordinates(dyn_grid);
 
+  dyn_grid->m_short_name = "_dyn";
   add_grid(dyn_grid);
 }
 
@@ -259,6 +260,7 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
     phys_grid->set_geometry_data(hybm);
   }
 
+  phys_grid->m_short_name = type;
   add_grid(phys_grid);
 }
 

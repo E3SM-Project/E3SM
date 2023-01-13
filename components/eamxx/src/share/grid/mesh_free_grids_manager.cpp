@@ -81,6 +81,7 @@ build_grids ()
     dof_gids.sync_to_dev();
     lid2idx.sync_to_dev();
 
+    se_grid->m_short_name = "se";
     add_geo_data(se_grid);
 
     add_grid(se_grid);
@@ -103,6 +104,7 @@ build_grids ()
     area.sync_to_host();
 
     add_geo_data(pt_grid);
+    pt_grid->m_short_name = "pt";
 
     add_grid(pt_grid);
     this->alias_grid("Point Grid", "Physics");
