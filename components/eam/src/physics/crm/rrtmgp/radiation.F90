@@ -1532,6 +1532,9 @@ contains
 
                      ! Do cloud optics
                      call t_startf('rad_cloud_optics_sw')
+                     cld_tau_bnd_day = 0._r8
+                     cld_ssa_bnd_day = 0._r8
+                     cld_asm_bnd_day = 0._r8
                      cld_tau_gpt_day = 0._r8
                      cld_ssa_gpt_day = 0._r8
                      cld_asm_gpt_day = 0._r8
@@ -1689,6 +1692,7 @@ contains
                   ! Compute cloud optics
                   call t_startf('rad_cloud_optics_lw')
                   cld_tau_gpt_lw = 0._r8
+                  cld_tau_bnd_lw = 0._r8
                   call get_cloud_optics_lw(ncol_tot, pver, nlwbands, cld_p, iclwp_p, iciwp_p, rei_p, cld_tau_bnd_lw(:,ktop:kbot,:))
                   ! Do mcica sampling of cloud optics
                   call get_gpoint_bands_lw(gpoint_bands_lw)
@@ -1815,13 +1819,13 @@ contains
                cosp_swband = get_band_index_sw(0.67_r8, 'micron')
                do ilay = 1,pver
                   do j = 1,ncol_tot
-                     dems_packed(j,ilay) = 1._r8 - exp(-cld_tau_bnd_lw(j,ilay,cosp_lwband))
+                     dems_packed(j,ilay) = 1._r8 - exp(-cld_tau_bnd_lw(j,ilay+1,cosp_lwband))
                   end do
                end do
                do ilay = 1,pver
                   do j = 1,nday
-                     icol = day_indices(j)
-                     dtau_packed(j,ilay) = cld_tau_bnd_day(icol,ilay,cosp_swband)
+                     icol = day_indices_packed(j)
+                     dtau_packed(j,ilay) = cld_tau_bnd_day(icol,ilay+1,cosp_swband)
                   end do
                end do
                ! Call cosp
