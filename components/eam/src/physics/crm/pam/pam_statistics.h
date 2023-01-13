@@ -57,8 +57,8 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
   // aggregate surface precipitation
   real r_nx_ny  = 1._fp / (nx*ny);
   parallel_for("aggregate statistics", SimpleBounds<3>(ny,nx,nens), YAKL_LAMBDA (int j, int i, int iens) {
-    atomicAdd( precip_liq_aggregated(iens), precip_liq_aggregated(iens) + precip_liq(j,i,iens)*r_nx_ny );
-    atomicAdd( precip_ice_aggregated(iens), precip_ice_aggregated(iens) + precip_ice(j,i,iens)*r_nx_ny );
+    atomicAdd( precip_liq_aggregated(iens), precip_liq(j,i,iens)*r_nx_ny );
+    atomicAdd( precip_ice_aggregated(iens), precip_ice(j,i,iens)*r_nx_ny );
   });
   parallel_for("update statistics aggregation count", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
     stat_aggregation_cnt(iens) = stat_aggregation_cnt(iens) + 1;
@@ -71,7 +71,6 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
 inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler , real gcm_dt ) {
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
-  using yakl::atomicAdd;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
 

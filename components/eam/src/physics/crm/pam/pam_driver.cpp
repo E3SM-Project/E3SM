@@ -59,7 +59,7 @@ extern "C" void pam_driver() {
   // set CRM dry density using gcm_density_dry (set in update_gcm_state)
   modules::broadcast_initial_gcm_column_dry_density(coupler); 
 
-  // Copy input CRM state saved by the GCM to coupler
+  // Copy input CRM state (saved by the GCM) to coupler
   pam_state_copy_input_to_coupler(coupler);
 
   // Copy input rad tendencies to coupler
@@ -78,8 +78,8 @@ extern "C" void pam_driver() {
   coupler.update_hydrostasis();
 
   // initilize quantities for surface "psuedo-friction"
-  auto input_tau  = dm_host.get<real,1>("input_tau00").createDeviceCopy();
-  auto input_bflx = dm_host.get<real,1>("input_bflxls").createDeviceCopy();
+  auto input_tau  = dm_host.get<real const,1>("input_tau00").createDeviceCopy();
+  auto input_bflx = dm_host.get<real const,1>("input_bflxls").createDeviceCopy();
   modules::surface_friction_init(coupler, input_tau, input_bflx);
 
   // Perturb the CRM at the beginning of the run
