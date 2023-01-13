@@ -147,6 +147,10 @@ public:
   void finalize() {}
 
   long long res_dep_memory_footprint () const;
+
+  std::shared_ptr<const AbstractGrid> get_io_grid () const {
+    return m_io_grid;
+  }
 protected:
   // Internal functions
   void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::string& mode);
