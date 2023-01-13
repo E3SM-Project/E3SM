@@ -1012,7 +1012,7 @@ contains
       integer                  :: mpigrp_cplid ! coupler pes
       integer                  :: mpigrp_old   !  component group pes
       integer                  :: ierr, context_id
-      character*100            :: appname, outfile, wopts, ropts
+      character*200            :: appname, outfile, wopts, ropts
       integer                  :: maxMH, maxMPO, maxMLID, maxMSID, maxMRID ! max pids for moab apps atm, ocn, lnd, sea-ice, rof
       integer                  :: tagtype, numco,  tagindex, partMethod, nghlay
       integer                  :: rank, ent_type
@@ -1293,91 +1293,78 @@ contains
       if (comp%oneletterid == 'l'  .and. maxMLID /= -1) then
          call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
          call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
-
-         if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (ocean)
-         !  send mesh to coupler
-#ifdef MOAB_HAVE_ZOLTAN
-         partMethod = 2  !  RCB for point cloud
-#endif
-         ierr = iMOAB_SendMesh(mlnid, mpicom_join, mpigrp_cplid, id_join, partMethod)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in sending land mesh '
-            call shr_sys_abort(subname//' ERROR in sending land mesh ')
-         endif
-
-         endif
+         ! use land full mesh 
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
-         appname = "COUPLE_LAND"//C_NULL_CHAR
-         ! migrated mesh gets another app id, moab land to coupler (mblx)
-         ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mblxid)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in registering coupler land '
-            call shr_sys_abort(subname//' ERROR in registering coupler land')
-         endif
-         ierr = iMOAB_ReceiveMesh(mblxid, mpicom_join, mpigrp_old, id_old)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in receiving coupler land mesh'
-            call shr_sys_abort(subname//' ERROR in receiving coupler land mesh')
-         endif
-
-!  need to define tags on land too
-         tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR 
-         tagtype = 1  ! dense, double
-         numco = 1 !  one value per cell
-         ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags l2x on coupler land'
-            call shr_sys_abort(subname//' ERROR in defining tags l2x on coupler ')
-         endif
-         ! need also to define seq_flds_x2l_fields on coupler instance, and on land comp instance
-         tagname = trim(seq_flds_x2l_fields)//C_NULL_CHAR 
-         ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags x2l on coupler land'
-            call shr_sys_abort(subname//' ERROR in defining tags x2l on coupler land')
-         endif        
-
-         tagname = trim(seq_flds_dom_fields)//C_NULL_CHAR
-         ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on lnd on coupler '
-            call shr_sys_abort(subname//' ERROR in defining tags ')
-         endif
-
+            appname = "COUPLE_LAND"//C_NULL_CHAR
+            ! migrated mesh gets another app id, moab land to coupler (mblx)
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mblxid)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in registering coupler land '
+               call shr_sys_abort(subname//' ERROR in registering coupler land')
+            endif
+            ! do not receive the mesh anymore, read it from file, then pair it with mlnid, component land PC mesh
+            ! similar to rof mosart mesh  
+            ! on lcrc:
+            ! outfile = '/lcrc/group/e3sm/data/inputdata/share/meshes/lnd/land_np4pg2_oQU480_230112.h5m'//C_NULL_CHAR
+            ! on gce:
+            ! /nfs/gce/projects/climate/inputdata/share/meshes/lnd/land_np4pg2_oQU480_230112.h5m'//C_NULL_CHAR
+            ! iulian's laptop
+            outfile = '/media/iulian/ExtraDrive1/inputdata/share/meshes/lnd/land_np4pg2_oQU480_230112.h5m'//C_NULL_CHAR
+            ropts = 'PARALLEL=READ_PART;PARTITION=PARALLEL_PARTITION;PARALLEL_RESOLVE_SHARED_ENTS'//C_NULL_CHAR
+            
+            nghlay = 0 ! no ghost layers 
+            ierr = iMOAB_LoadMesh(mblxid, outfile, ropts, nghlay)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in reading land coupler mesh'
+               call shr_sys_abort(subname//' ERROR in reading land coupler mesh')
+            endif
 #ifdef MOABDEBUG
-         ! debug test
-         ! if only vertices, set a partition tag for help in visualizations
-         ierr = iMOAB_GetMeshInfo(mblxid, nverts, nelem, nblocks, nsbc, ndbc)
-         if (nelem(1) .eq. 0) then ! we have only vertices locally?
-            !there are no shared entities, but we will set a special partition tag, in order to see the
-            ! partitions ; it will be visible with a Pseudocolor plot in VisIt
-            tagname='partition'//C_NULL_CHAR
-            tagtype = 0  ! dense, integer
+            outfile = 'recLand.h5m'//C_NULL_CHAR
+            wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+      !       write out the mesh file to disk
+            ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in writing land coupler mesh'
+               call shr_sys_abort(subname//' ERROR in writing land coupler mesh')
+            endif
+#endif
+   !  need to define tags on land too
+            tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR 
+            tagtype = 1  ! dense, double
             numco = 1 !  one value per cell
             ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
-            allocate(vgids(nverts(1)))
-            vgids = rank
-            ent_type = 0 ! vertex type
-            ierr = iMOAB_SetIntTagStorage ( mblxid, tagname, nverts(1) , ent_type, vgids)
-         endif
-         outfile = 'recLand.h5m'//C_NULL_CHAR
-         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-   !       write out the mesh file to disk
-         ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in writing land coupler mesh'
-            call shr_sys_abort(subname//' ERROR in writing land coupler mesh')
-         endif
-#endif
-         endif
-         if (mlnid .ge. 0) then  ! we are on component land pes
-            context_id = id_join
-            ierr = iMOAB_FreeSenderBuffers(mlnid, context_id)
             if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in freeing buffers'
-            call shr_sys_abort(subname//' ERROR in freeing buffers')
+               write(logunit,*) subname,' error in defining tags l2x on coupler land'
+               call shr_sys_abort(subname//' ERROR in defining tags l2x on coupler ')
+            endif
+            ! need also to define seq_flds_x2l_fields on coupler instance, and on land comp instance
+            tagname = trim(seq_flds_x2l_fields)//C_NULL_CHAR 
+            ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags x2l on coupler land'
+               call shr_sys_abort(subname//' ERROR in defining tags x2l on coupler land')
+            endif        
+
+            tagname = trim(seq_flds_dom_fields)//C_NULL_CHAR
+            ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on lnd on coupler '
+               call shr_sys_abort(subname//' ERROR in defining tags ')
+            endif
+
+
          endif
+
+         ! we are now on joint pes, compute comm graph between lnd and coupler model 
+         typeA = 2 ! point cloud on component PEs, land
+         typeB = 3 ! full mesh on coupler pes, we just read it
+         ierr = iMOAB_ComputeCommGraph( mlnid, mblxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
+             typeA, typeB, id_old, id_join) 
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in computing comm graph for rof model '
+            call shr_sys_abort(subname//' ERROR in computing comm graph for rof model ')
          endif
+
       endif
 
       ! sea - ice
@@ -1455,21 +1442,17 @@ contains
          call seq_comm_getinfo(cplid ,mpigrp=mpigrp_cplid)  ! receiver group
          call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
 
-         ! if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component p
-
-         !    ierr = iMOAB_SendMesh(mrofid, mpicom_join, mpigrp_cplid, id_join, partMethod)
-         !    if (ierr .ne. 0) then
-         !       write(logunit,*) subname,' error in sending rof mesh to coupler '
-         !       call shr_sys_abort(subname//' ERROR in sending rof mesh to coupler ')
-         !    endif
-
-         ! endif
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
             appname = "COUPLE_MROF"//C_NULL_CHAR
             ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbrxid)
 
-            ! load mesh from scrip file,then send it locally, maybe it will defeat the crash in writing it
-            outfile = '/home/iulian/rofscrip/SCRIPgrid_2x2_nomask_c210211.nc'//C_NULL_CHAR
+            ! load mesh from scrip file 
+            ! on lcrc:
+            ! outfile = '/lcrc/group/e3sm/data/inputdata/share/meshes/rof/SCRIPgrid_2x2_nomask_c210211.nc'//C_NULL_CHAR
+            ! on gce:
+            ! /nfs/gce/projects/climate/inputdata/share/meshes/rof/SCRIPgrid_2x2_nomask_c210211.nc'//C_NULL_CHAR
+            ! iulian's laptop
+            outfile = '/media/iulian/ExtraDrive1/inputdata/share/meshes/rof/SCRIPgrid_2x2_nomask_c210211.nc'//C_NULL_CHAR
             ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=RCBZOLTAN'//C_NULL_CHAR
          
             nghlay = 0 ! no ghost layers 

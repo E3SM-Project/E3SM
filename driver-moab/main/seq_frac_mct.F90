@@ -168,7 +168,7 @@ module seq_frac_mct
   use seq_comm_mct, only : mblx2id !           iMOAB id for land mesh instanced from MCT on coupler pes
   use seq_comm_mct, only : mbox2id !           iMOAB id for ocn mesh instanced from MCT on coupler pes
   use seq_comm_mct, only : mboxid !            iMOAB app id for ocn on cpl pes
-  use seq_comm_mct, only : mbofxid !            iMOAB app id for ocn on cpl pes
+  use seq_comm_mct, only : mbofxid !           iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
   use seq_comm_mct, only : mbixid !            iMOAB for sea-ice migrated to coupler
   use seq_comm_mct, only : atm_pg_active !     flag if PG mesh instanced
   use seq_comm_mct, only : mbintxao ! iMOAB id for intx mesh between ocean and atmosphere
@@ -435,14 +435,10 @@ contains
             call shr_sys_abort(subname//' ERROR in defining tags on lnd phys mesh on cpl')
          endif
          ierr  = iMOAB_GetMeshInfo ( mblxid, nvert, nvise, nbl, nsurf, nvisBC );
-         
-         if (nvise(1) .eq. 0)  then
-            ent_type = 0  ! vertex type, land on atm grid, no cells
-            arrSize = 3 * nVert(1)
-         else 
-            ent_type = 1 ! cell type, tri-grid case
-            arrSize = 3 * nvise(1) 
-         endif ! real land mesh
+         ! this should have some cells 
+         ent_type = 1 ! cells from now on
+         arrSize = 3 * nvise(1) 
+
          allocate(tagValues(arrSize) )
          tagValues = 0 
          ierr = iMOAB_SetDoubleTagStorage ( mblxid, tagname, arrSize , ent_type, tagValues)
@@ -468,6 +464,7 @@ contains
          allocate(GlobalIds(lSize))
          GlobalIds = dom_l%data%iAttr(kgg,:)
 
+         ! ent_type should be 3, FV
          ierr = iMOAB_SetDoubleTagStorageWithGid ( mblxid, tagname, lSize , ent_type, tagValues, GlobalIds )
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in setting lfrin on lnd   '

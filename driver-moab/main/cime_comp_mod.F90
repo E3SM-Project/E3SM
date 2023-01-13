@@ -4092,7 +4092,6 @@ contains
 
        ! will migrate the tag from component pes to coupler pes, on atm mesh
        call component_exch_moab(atm(1), mphaid, mbaxid, 0, seq_flds_a2x_fields)
-       !call prep_atm_migrate_moab(infodata)
     endif
 
     !----------------------------------------------------------
