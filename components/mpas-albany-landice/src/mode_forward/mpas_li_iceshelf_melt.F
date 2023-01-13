@@ -523,8 +523,9 @@ module li_iceshelf_melt
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       do iCell = 1, nCells
-         if ( (.not. li_mask_is_ice(cellMask(iCell))) ) then
+         if ( (.not. li_mask_is_ice(cellMask(iCell))) .and. (bedTopography(iCell) < config_sea_level) ) then
               seedMask(iCell) = 1
          else if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
               growMask(iCell) = 1
