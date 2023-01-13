@@ -90,6 +90,32 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     }
   }
 
+  // For normal output, setup the geometry data streams, which we used to write the
+  // geo data in the output file when we create it.
+  if (!m_is_model_restart_output) {
+    std::set<std::shared_ptr<const AbstractGrid>> grids;
+    for (auto& it : m_output_streams) {
+      grids.insert(it->get_io_grid());
+    }
+
+    // If 2+ grids are present, we mandate suffix on all geo_data fields,
+    // to avoid clashes of names.
+    bool use_suffix = grids.size()>1;
+    for (auto grid : grids) {
+      std::vector<Field> fields;
+      for (const auto& fn : grid->get_geometry_data_names()) {
+        const auto& f = grid->get_geometry_data(fn);
+        if (use_suffix) {
+          fields.push_back(f.clone(f.name()+"_"+grid->m_short_name));
+        } else {
+          fields.push_back(f.clone());
+        }
+      }
+      auto output = std::make_shared<output_type>(m_io_comm,fields,grid);
+      m_geo_data_streams.push_back(output);
+    }
+  }
+
   const auto has_restart_data = (m_avg_type!=OutputAvgType::Instant && m_output_control.frequency>1);
   if (has_restart_data && m_params.isSublist("Checkpoint Control")) {
     // Output control
@@ -189,6 +215,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   if (is_write_step) {
     // Check if we need to open a new file
     if (not filespecs.is_open) {
+      // Register all dims/vars, write geometry data (e.g. lat/lon/hyam/hybm)
       setup_file(filespecs,control,timestamp);
     }
 
@@ -408,6 +435,13 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
     it->setup_output_file(filename,fp_precision);
   }
 
+  if (!m_is_model_restart_output && !is_checkpoint_step) {
+    // If not a restart file, also register geo data fields.
+    for (auto& it : m_geo_data_streams) {
+      it->setup_output_file(filename,fp_precision);
+    }
+  }
+
   // Set degree of freedom for "time"
   std::int64_t time_dof[1] = {0};
   set_dof(filename,"time",0,time_dof);
@@ -418,6 +452,13 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
   auto t0_time = m_case_t0.get_time()[0]*10000 + m_case_t0.get_time()[1]*100 + m_case_t0.get_time()[2];
   set_int_attribute_c2f(filename.c_str(),"start_date",t0_date);
   set_int_attribute_c2f(filename.c_str(),"start_time",t0_time);
+
+  if (!m_is_model_restart_output && !is_checkpoint_step) {
+    // Immediately run the geo data streams
+    for (const auto& it : m_geo_data_streams) {
+      it->run(filename,true,0);
+    }
+  }
 
   filespecs.is_open = true;
 }

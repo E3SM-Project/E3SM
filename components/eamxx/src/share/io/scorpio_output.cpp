@@ -48,7 +48,13 @@ AtmosphereOutput (const ekat::Comm& comm,
   m_avg_type = OutputAvgType::Instant;
   m_add_time_dim = false;
 
+  // Create a FieldManager with the input fields
   auto fm = std::make_shared<FieldManager> (grid);
+  fm->registration_begins();
+  fm->registration_ends();
+  for (auto f : fields) {
+    fm->add_field(f);
+  }
 
   set_field_manager (fm,"sim");
 

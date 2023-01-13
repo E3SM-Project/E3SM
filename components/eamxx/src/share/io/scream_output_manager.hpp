@@ -130,6 +130,8 @@ protected:
   using output_ptr_type = std::shared_ptr<output_type>;
 
   std::vector<output_ptr_type>   m_output_streams;
+  std::vector<output_ptr_type>   m_geo_data_streams;
+
   globals_map_t                  m_globals;
 
   ekat::Comm                     m_io_comm;
