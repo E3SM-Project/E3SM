@@ -48,6 +48,8 @@ module prep_lnd_mod
 
   public :: prep_lnd_init
   public :: prep_lnd_mrg
+  ! moab version
+  public :: prep_lnd_mrg_moab
 
   public :: prep_lnd_calc_a2x_lx
   public :: prep_lnd_calc_r2x_lx
@@ -572,6 +574,94 @@ contains
 
   end subroutine prep_lnd_mrg
 
+! this does almost nothing now, except documenting 
+  subroutine prep_lnd_mrg_moab (infodata)
+    type(seq_infodata_type) , intent(in) :: infodata
+
+
+    type(mct_avect) , pointer   :: a2x_l  ! used just for indexing 
+    type(mct_avect) , pointer   :: r2x_l
+    type(mct_avect) , pointer   :: g2x_l
+    type(mct_avect) , pointer   :: x2l_l
+
+    !--------------------------------------------------
+
+    character(*), parameter  :: subname = '(prep_lnd_mrg_moab)'
+
+    ! this routine does mostly nothing for moab, no fields are actually combined
+    ! keep it here for documentation mostly
+    ! Description
+    ! Create input land state directly from atm, runoff and glc outputs
+    !
+    !-----------------------------------------------------------------------
+    integer       :: nflds,i,i1,o1
+    logical       :: iamroot
+    logical, save :: first_time = .true.
+    character(CL),allocatable :: mrgstr(:)   ! temporary string
+    character(CL) :: field   ! string converted to char
+    type(mct_aVect_sharedindices),save :: a2x_sharedindices
+    type(mct_aVect_sharedindices),save :: r2x_sharedindices
+    type(mct_aVect_sharedindices),save :: g2x_sharedindices
+
+    !-----------------------------------------------------------------------
+
+    call seq_comm_getdata(CPLID, iamroot=iamroot)
+
+    if (first_time) then
+      a2x_l => a2x_lx(1)
+      r2x_l => r2x_lx(1)
+      g2x_l => g2x_lx(1)
+      x2l_l => component_get_x2c_cx(lnd(1))
+       nflds = mct_aVect_nRattr(x2l_l)
+
+       allocate(mrgstr(nflds))
+       do i = 1,nflds
+          field = mct_aVect_getRList2c(i, x2l_l)
+          mrgstr(i) = subname//'x2l%'//trim(field)//' ='
+       enddo
+
+       call mct_aVect_setSharedIndices(a2x_l, x2l_l, a2x_SharedIndices)
+       call mct_aVect_setSharedIndices(r2x_l, x2l_l, r2x_SharedIndices)
+       call mct_aVect_setSharedIndices(g2x_l, x2l_l, g2x_SharedIndices)
+
+       !--- document copy operations ---
+       do i=1,a2x_SharedIndices%shared_real%num_indices
+          i1=a2x_SharedIndices%shared_real%aVindices1(i)
+          o1=a2x_SharedIndices%shared_real%aVindices2(i)
+          field = mct_aVect_getRList2c(i1, a2x_l)
+          mrgstr(o1) = trim(mrgstr(o1))//' = a2x%'//trim(field)
+       enddo
+       do i=1,r2x_SharedIndices%shared_real%num_indices
+          i1=r2x_SharedIndices%shared_real%aVindices1(i)
+          o1=r2x_SharedIndices%shared_real%aVindices2(i)
+          field = mct_aVect_getRList2c(i1, r2x_l)
+          mrgstr(o1) = trim(mrgstr(o1))//' = r2x%'//trim(field)
+       enddo
+       do i=1,g2x_SharedIndices%shared_real%num_indices
+          i1=g2x_SharedIndices%shared_real%aVindices1(i)
+          o1=g2x_SharedIndices%shared_real%aVindices2(i)
+          field = mct_aVect_getRList2c(i1, g2x_l)
+          mrgstr(o1) = trim(mrgstr(o1))//' = g2x%'//trim(field)
+       enddo
+    endif
+
+    ! call mct_aVect_copy(aVin=a2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=a2x_SharedIndices)
+    ! call mct_aVect_copy(aVin=r2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=r2x_SharedIndices)
+    ! call mct_aVect_copy(aVin=g2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
+
+    if (first_time) then
+       if (iamroot) then
+          write(logunit,'(A)') subname//' Summary:'
+          do i = 1,nflds
+             write(logunit,'(A)') trim(mrgstr(i))
+          enddo
+       endif
+       deallocate(mrgstr)
+    endif
+
+    first_time = .false.
+
+  end subroutine prep_lnd_mrg_moab 
   !================================================================================================
 
   subroutine prep_lnd_merge( a2x_l, r2x_l, g2x_l, x2l_l )

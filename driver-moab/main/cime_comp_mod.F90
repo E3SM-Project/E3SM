@@ -4462,6 +4462,7 @@ contains
 
        if (lnd_prognostic) then
           call prep_lnd_mrg(infodata, timer_mrg='CPL:lndprep_mrgx2l')
+          call prep_lnd_mrg_moab(infodata) 
 
           call component_diag(infodata, lnd, flow='x2c', comment= 'send lnd', &
                info_debug=info_debug, timer_diag='CPL:lndprep_diagav')

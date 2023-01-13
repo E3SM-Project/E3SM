@@ -1524,7 +1524,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
             x2o_om(n,index_x2o_Faxa_snow )
 
        x2o_om(n,index_x2o_Foxx_rofl) = (r2x_om(n,index_r2x_Forr_rofl ) + &
-            r2x_om(n,index_r2x_Flrr_flood) ) * flux_epbalfact
+            r2x_om(n,index_r2x_Flrr_flood) ) 
            ! g2x_om(n,index_g2x_Fogg_rofl )) * flux_epbalfact
        x2o_om(n,index_x2o_Foxx_rofi) = (r2x_om(n,index_r2x_Forr_rofi ) ) * flux_epbalfact
           !  g2x_om(n,index_g2x_Fogg_rofi )) * flux_epbalfact
