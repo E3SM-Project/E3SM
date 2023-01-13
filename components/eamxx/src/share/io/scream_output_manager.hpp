@@ -122,6 +122,10 @@ protected:
   void set_params (const ekat::ParameterList& params,
                    const std::map<std::string,std::shared_ptr<fm_type>>& field_mgrs);
 
+  void setup_file (      IOFileSpecs& filespecs,
+                   const IOControl& control,
+                   const util::TimeStamp& timestamp);
+
   using output_type     = AtmosphereOutput;
   using output_ptr_type = std::shared_ptr<output_type>;
 
