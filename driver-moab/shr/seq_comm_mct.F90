@@ -237,6 +237,7 @@ module seq_comm_mct
                               ! similar to intx id, oa, la; 
   integer, public :: mbrxoid  ! iMOAB id for rof migrated to coupler for ocean context (r2o mapping)
   integer, public :: mbintxar ! iMOAB id for intx mesh between atm and river
+  integer, public :: mbintxlr ! iMOAB id for intx mesh between land and river
 
   integer, public :: num_moab_exports   ! iMOAB id for atm phys grid, on atm pes
 
@@ -647,6 +648,8 @@ contains
     mbrxid = -1   ! iMOAB id of moab rof migrated to coupler
     mbrmapro = -1 ! iMOAB id of moab instance of map read from rof2ocn map file 
     mbrxoid = -1  ! iMOAB id of moab instance rof to coupler in ocean context
+    mbintxar = -1 ! iMOAB id for intx mesh between atm and river
+    mbintxlr = -1 ! iMOAB id for intx mesh between land and river
     num_moab_exports = 0 ! mostly used in debugging
 
     deallocate(comps,comms)
