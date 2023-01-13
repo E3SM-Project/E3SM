@@ -252,7 +252,7 @@ contains
             mapper_Fl2r%src_mbid = mblxid
             mapper_Fl2r%tgt_mbid = mbintxlr
             mapper_Fl2r%intx_mbid = mbintxlr 
-            mapper_Fl2r%src_context = rof(1)%cplcompid
+            mapper_Fl2r%src_context = lnd(1)%cplcompid
             mapper_Fl2r%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fl2r%weight_identifier = wgtIdef
@@ -312,7 +312,7 @@ contains
               endif
             endif
 #endif
-         end if ! if ((mbrxid .ge. 0) .and.  (mbaxid .ge. 0))
+         end if ! if ((mblxid .ge. 0) .and.  (mbrxid .ge. 0))
 ! endif HAVE_MOAB 
 #endif
           ! We'll map irrigation specially, so exclude this from the list of l2r fields
