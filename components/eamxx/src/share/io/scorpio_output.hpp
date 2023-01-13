@@ -138,6 +138,11 @@ public:
                    const std::shared_ptr<const fm_type>& field_mgr,
                    const std::shared_ptr<const gm_type>& grids_mgr);
 
+  // Short version for outputing a list of fields (no remapping supported)
+  AtmosphereOutput(const ekat::Comm& comm,
+                   const std::vector<Field>& fields,
+                   const std::shared_ptr<const grid_type>& grid);
+
   // Main Functions
   void restart (const std::string& filename);
   void init();
@@ -195,6 +200,8 @@ protected:
   // Local views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_1d_host>    m_host_views_1d;
   std::map<std::string,view_1d_dev>     m_dev_views_1d;
+
+  bool m_add_time_dim;
 };
 
 } //namespace scream

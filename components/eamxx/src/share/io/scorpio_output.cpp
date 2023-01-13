@@ -39,10 +39,37 @@ void combine (const Real& new_val, Real& curr_val, const OutputAvgType avg_type)
 }
 
 AtmosphereOutput::
+AtmosphereOutput (const ekat::Comm& comm,
+                  const std::vector<Field>& fields,
+                  const std::shared_ptr<const grid_type>& grid)
+ : m_comm (comm)
+{
+  // This version of AtmosphereOutput is for quick output of fields
+  m_avg_type = OutputAvgType::Instant;
+  m_add_time_dim = false;
+
+  auto fm = std::make_shared<FieldManager> (grid);
+
+  set_field_manager (fm,"sim");
+
+  for (auto f : fields) {
+    m_fields_names.push_back(f.name());
+  }
+
+  set_grid (grid);
+  set_field_manager (fm,"io");
+
+  // Setup I/O structures
+  init ();
+}
+
+
+AtmosphereOutput::
 AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
                   const std::shared_ptr<const fm_type>& field_mgr,
                   const std::shared_ptr<const gm_type>& grids_mgr)
- : m_comm      (comm)
+ : m_comm         (comm)
+ , m_add_time_dim (true)
 {
   using vos_t = std::vector<std::string>;
 
@@ -533,16 +560,16 @@ register_variables(const std::string& filename,
       }
       vec_of_dims.push_back(tag_name); // Add dimensions string to vector of dims.
     }
-    // TODO: Do we expect all vars to have a time dimension?  If not then how to trigger? 
-    // Should we register dimension variables (such as ncol and lat/lon) elsewhere
-    // in the dimension registration?  These won't have time. 
-    io_decomp_tag += "-time";
+
     // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO,
     // may need to delete this line when switching to fully C++/C implementation.
     std::reverse(vec_of_dims.begin(),vec_of_dims.end());
-    vec_of_dims.push_back("time");  //TODO: See the above comment on time.
+    if (m_add_time_dim) {
+      io_decomp_tag += "-time";
+      vec_of_dims.push_back("time");  //TODO: See the above comment on time.
+    }
 
-     // TODO  Need to change dtype to allow for other variables.
+    // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
     // but in the future if non-Real variables are added we will want to accomodate that.
 
