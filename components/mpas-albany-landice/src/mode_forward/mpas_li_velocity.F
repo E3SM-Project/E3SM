@@ -1007,11 +1007,11 @@ contains
 !
 !  routine remove_fast_ice
 !
-!> \brief  Removes ice with a fast surface speed, presumably an iceberg
-!> \author Matt Hoffman
-!> \date   March 2018
+!> \brief  Limits maximum ice velocity
+!> \author Matt Hoffman, Trevor Hillebrand
+!> \date   March 2018, updated Jan 2023
 !> \details
-!>  Inspired by BISICLES/Dan Martin.  Could/should make an option to disable.
+!>  Inspired by BISICLES/Dan Martin and Penn State Ice Sheet model.  Could/should make an option to disable.
 !
 !-----------------------------------------------------------------------
 
