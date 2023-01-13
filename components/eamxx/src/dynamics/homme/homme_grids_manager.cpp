@@ -249,15 +249,19 @@ build_physics_grid (const ci_string& type, const ci_string& rebalance) {
   // If one of the hybrid vcoord arrays is there, they all are
   // NOTE: we may have none in some unit tests that don't need them (e.g. pd remap)
   if (get_grid("Dynamics")->has_geometry_data("hyam")) {
-    // Copy hybrid coords from dyn grid into phys grid
-    auto hyai = get_grid("Dynamics")->get_geometry_data("hyai");
-    auto hybi = get_grid("Dynamics")->get_geometry_data("hybi");
-    auto hyam = get_grid("Dynamics")->get_geometry_data("hyam");
-    auto hybm = get_grid("Dynamics")->get_geometry_data("hybm");
-    phys_grid->set_geometry_data(hyai);
-    phys_grid->set_geometry_data(hybi);
-    phys_grid->set_geometry_data(hyam);
-    phys_grid->set_geometry_data(hybm);
+    auto layout_mid = phys_grid->get_vertical_layout(true);
+    auto layout_int = phys_grid->get_vertical_layout(false);
+    const auto nondim = ekat::units::Units::nondimensional();
+
+    auto hyai = phys_grid->create_geometry_data("hyai",layout_int,nondim);
+    auto hybi = phys_grid->create_geometry_data("hybi",layout_int,nondim);
+    auto hyam = phys_grid->create_geometry_data("hyam",layout_mid,nondim);
+    auto hybm = phys_grid->create_geometry_data("hybm",layout_mid,nondim);
+
+    for (auto f : {hyai, hybi, hyam, hybm}) {
+      auto f_d = get_grid("Dynamics")->get_geometry_data(f.name());
+      f.deep_copy(f_d);
+    }
   }
 
   phys_grid->m_short_name = type;
@@ -269,9 +273,6 @@ initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
   using view_1d_host = AtmosphereInput::view_1d_host; 
   using vos_t = std::vector<std::string>;
   using namespace ShortFieldTagsNames;
-
-  const int nlev_int = HOMMEXX_NUM_INTERFACE_LEV;
-  const int nlev_mid = HOMMEXX_NUM_PHYSICAL_LEV;
 
   // If we put vcoords in the IC file, we open the ic file, whose name
   // was set by the AD in the param list. This allows users to change
@@ -291,8 +292,8 @@ initialize_vertical_coordinates (const nonconstgrid_ptr_type& dyn_grid) {
   vcoord_reader_pl.set("Filename",filename);
   vcoord_reader_pl.set<vos_t>("Field Names",{"hyai","hybi","hyam","hybm"});
 
-  FieldLayout layout_mid ({ LEV},{nlev_mid});
-  FieldLayout layout_int ({ILEV},{nlev_int});
+  auto layout_mid = dyn_grid->get_vertical_layout(true);
+  auto layout_int = dyn_grid->get_vertical_layout(false);
   constexpr auto nondim = ekat::units::Units::nondimensional();
 
   auto hyai = dyn_grid->create_geometry_data("hyai",layout_int,nondim);
