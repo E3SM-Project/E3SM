@@ -331,7 +331,7 @@ contains
               else
                   type1 = 1 ! this projection works (cgll to fv), but reverse does not ( fv - cgll)
               endif 
-              type2 = 2;  ! point cloud for target lnd in this case
+              type2 = 3;  ! FV mesh on coupler land
               ierr = iMOAB_ComputeCommGraph( mbaxid, mblxid, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                       atm(1)%cplcompid, lnd(1)%cplcompid)
               if (ierr .ne. 0) then
