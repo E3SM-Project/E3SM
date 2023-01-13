@@ -642,7 +642,7 @@ contains
          ! --- (Removed ice is added to calving flux)
          ! --- (TODO: make this a namelist option?)
          ! ---
-         call remove_fast_ice(meshPool, uReconstructX, uReconstructY, normalVelocity, geometryPool)
+         call limit_fast_ice(meshPool, uReconstructX, uReconstructY, normalVelocity, geometryPool)
 
          ! ---
          ! --- Calculate diagnostic speed arrays
@@ -1005,7 +1005,7 @@ contains
 
 !***********************************************************************
 !
-!  routine remove_fast_ice
+!  routine limit_fast_ice
 !
 !> \brief  Limits maximum ice velocity
 !> \author Matt Hoffman, Trevor Hillebrand
@@ -1015,7 +1015,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine remove_fast_ice(meshPool, uReconstructX, uReconstructY, normalVelocity, geometryPool)
+   subroutine limit_fast_ice(meshPool, uReconstructX, uReconstructY, normalVelocity, geometryPool)
 
       use li_mask
 
@@ -1078,7 +1078,7 @@ contains
       endif
 
    !--------------------------------------------------------------------
-   end subroutine remove_fast_ice
+   end subroutine limit_fast_ice
 
 !***********************************************************************
 
