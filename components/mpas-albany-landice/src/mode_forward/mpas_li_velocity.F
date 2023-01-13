@@ -1060,8 +1060,8 @@ contains
       cellCount = 0
       do iCell = 1, nCells
          if ((li_mask_is_ice(cellMask(iCell))) .and. &
-            (sqrt(uReconstructX(1,iCell)**2 + uReconstructY(1,iCell)**2) > config_unrealistic_velocity)) then
-            scaling_factor = config_unrealistic_velocity / sqrt(uReconstructX(1,iCell)**2 + uReconstructY(1,iCell)**2)
+            (maxval(sqrt(uReconstructX(:,iCell)**2 + uReconstructY(:,iCell)**2)) > config_unrealistic_velocity)) then
+            scaling_factor = config_unrealistic_velocity / maxval(sqrt(uReconstructX(:,iCell)**2 + uReconstructY(:,iCell)**2))
             uReconstructX(:,iCell) = uReconstructX(:,iCell) * scaling_factor
             uReconstructY(:,iCell) = uReconstructY(:,iCell) * scaling_factor
             do iEdgeOnCell = 1, nEdgesOnCell(iCell)
