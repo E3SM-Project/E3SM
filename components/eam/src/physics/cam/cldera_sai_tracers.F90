@@ -53,11 +53,11 @@ module cldera_sai_tracers
   real(r8) :: cldera_sai_Mash              ! total ash mass (Mt)
   real(r8) :: cldera_sai_w                 ! SO2->sulfate reaction mass weighting (dimensionless)
   real(r8) :: cldera_sai_duration          ! injection duration (hours)
-  real(r8) :: cldera_sai_t0                ! time of injection after simulation start (hours)
+  real(r8) :: cldera_sai_t0                ! time of injection after simulation start (days)
   real(r8) :: cldera_sai_rkSO2             ! SO2 e-folding (1/day)
   real(r8) :: cldera_sai_rkash             ! ash e-folding (1/day)
   real(r8) :: cldera_sai_rksulf            ! ash e-folding (1/day)
-  real(r8) :: cldera_sai_z_cool            ! max height to apply surface cooling by AOD (km)
+  real(r8) :: cldera_sai_z_cool            ! max height to apply surface cooling by AOD (m)
   real(r8) :: cldera_sai_zeta              ! surface cooling efficiency (dimensionless)
   real(r8) :: cldera_sai_bsw_so2           ! shortwave mass extinction coeff. for SO2 (m2/kg)
   real(r8) :: cldera_sai_bsw_sulf          ! shortwave mass extinction coeff. for sulfate (m2/kg)
@@ -90,7 +90,6 @@ module cldera_sai_tracers
   real(r8) :: t0                        ! initial time of injection (s)
   real(r8) :: tf                        ! final time of injection (s)
   real(r8) :: ttol  = 60.0_r8           ! time tolerance (s)
-  real(r8) :: source_toggle             ! masking
   real(r8) :: z0                        ! peak of injection vertical distribution (m) 
   real(r8) :: sigma = 1.5_r8 * km2m      ! vertical width parameter (m)
   
@@ -153,8 +152,9 @@ contains
                                      cldera_sai_duration, cldera_sai_t0, &
                                      cldera_sai_rkSO2, cldera_sai_rkash, cldera_sai_rksulf, &
                                      cldera_sai_z_cool, cldera_sai_zeta, &
-                                     cldera_sai_bsw_so2, cldera_sai_bsw_sulf, cldera_sai_bsw_ash, & 
-                                     cldera_sai_blw_so2, cldera_sai_blw_sulf, cldera_sai_blw_ash, & 
+                                     cldera_sai_bsw_so2, cldera_sai_blw_so2, & 
+                                     cldera_sai_bsw_sulf, cldera_sai_blw_sulf, & 
+                                     cldera_sai_bsw_ash, cldera_sai_blw_ash, & 
                                      cldera_sai_formSulfate, cldera_sai_stratHeating, &
                                      cldera_sai_surfCooling
 
@@ -181,14 +181,14 @@ contains
        M_ash  = cldera_sai_Mash     * Mt2kg      
        w      = cldera_sai_w                 
        dur    = cldera_sai_duration * hr2s
-       t0     = cldera_sai_t0       * hr2s          
+       t0     = cldera_sai_t0       * day2s          
        tf     = t0 + dur
        
        k_so2  = 1.0_r8 / (cldera_sai_rkSO2  * day2s)
        k_ash  = 1.0_r8 / (cldera_sai_rkash  * day2s)     
        k_sulf = 1.0_r8 / (cldera_sai_rksulf * day2s)     
        
-       z_cool   = cldera_sai_z_cool * km2m
+       z_cool   = cldera_sai_z_cool
        zeta     = cldera_sai_zeta
        bsw_so2  = cldera_sai_bsw_so2
        bsw_sulf = cldera_sai_bsw_sulf
@@ -357,14 +357,16 @@ contains
     call add_default('AIR_MASS', 1, ' ')
     call addfld('COL_MASS',  horiz_only, 'A', 'kg', 'total air mass of column' )
     call add_default('COL_MASS', 1, ' ')
-    ! strat. heating quantities
-    call addfld('SAI_HEAT',  (/ 'lev' /), 'A', 'K/day', 'stratospheric heating rate' )
+    call addfld('SAI_HEAT',  (/ 'lev' /), 'A', 'K/day', 'radiative heating rate' )
     call add_default('SAI_HEAT', 1, ' ')
-    call addfld('EXT_LW',  horiz_only, 'A', 'dimensionless', 'longwave extinction' )
-    call add_default('EXT_LW', 1, ' ')
+    ! strat. heating quantities
+    call addfld('I_LW',  horiz_only, 'A', 'W/m2', 'incident longwave flux density' )
+    call add_default('I_LW', 1, ' ')
+    call addfld('ATTEN_LW',  (/ 'lev' /), 'A', 'dimensionless', 'longwave extinction' )
+    call add_default('ATTEN_LW', 1, ' ')
     ! surface cooling quantities
-    call addfld('SAI_COOL',  (/ 'lev' /), 'A', 'K/day', 'surface cooling rate' )
-    call add_default('SAI_COOL', 1, ' ')
+    call addfld('I_SW',  horiz_only, 'A', 'W/m2', 'incident shortwave flux density' )
+    call add_default('I_SW', 1, ' ')
     call addfld('AOD',  horiz_only, 'A', 'dimensionless', 'total AOD from all constituents' )
     call add_default('AOD', 1, ' ')
     call addfld('COL_SO2',  horiz_only, 'A', 'kg', 'total SO2 mass in column' )
@@ -373,8 +375,10 @@ contains
     call add_default('COL_SULF', 1, ' ')
     call addfld('COL_ASH',  horiz_only, 'A', 'kg', 'total ash mass in column' )
     call add_default('COL_ASH', 1, ' ')
-    call addfld('EXT_SW',  horiz_only, 'A', 'dimensionless', 'shortwave extinction' )
-    call add_default('EXT_SW', 1, ' ')
+    call addfld('COL_SAI',  horiz_only, 'A', 'kg', 'total of all tracer masses in column' )
+    call add_default('COL_SAI', 1, ' ')
+    call addfld('ATTEN_SW',  horiz_only, 'A', 'dimensionless', 'shortwave extinction' )
+    call add_default('ATTEN_SW', 1, ' ')
 
 
   end subroutine cldera_sai_tracers_init
@@ -388,7 +392,7 @@ contains
 
     use physics_types,   only: physics_state, physics_ptend, physics_ptend_init
     use phys_grid,       only: get_area_p, get_area_all_p, phys_grid_find_col  
-    use physconst,       only: rearth, cpair, rair, rgrav=>rga, rearth, stebol=>sb
+    use physconst,       only: rearth, cpair, rair, rgrav=>rga, rearth, sb=>stebol
     use time_manager,    only: get_curr_time
     use time_manager,    only: get_nstep
     use cam_history,     only: outfld
@@ -419,14 +423,14 @@ contains
     
     ! for injection source localization
     real(r8) :: V(pver)                  ! vertical profile (1/m)
-    real(r8) :: sVk   = 0.0              ! vertical profile sum (1/m)
-    real(r8) :: inj_dist                 ! distance of matched col from requested location (m)
+    real(r8) :: sVk = 0.0                ! vertical profile sum (1/m)
     logical  :: inject                   ! true => this rank contains the injection column
     integer  :: inj_owner                ! MPI rank owning injection column
     integer  :: inji                     ! injection column index within chunk
     integer  :: injc                     ! injection local chunk index
     integer  :: myrank                   ! rank of this MPI process
     integer  :: ier                      ! return error status
+    real(r8) :: source_on                ! switch for source term
 
     ! for tracer mass normalization
     real(r8) :: A_so2 = 0.0              ! SO2 normalization (kg m / s)
@@ -441,22 +445,28 @@ contains
     real(r8) :: col_mass_ash(ncol)       ! total column ash mass (kg)
     
     ! for stratospheric heating
-    real(r8) :: strat_heating(ncol,pver) ! stratospheric heating (J/kg/s)
-    real(r8) :: ext_lw(ncol,pver)        ! longwave extinction (dimensionless)
     real(r8) :: Ilw(ncol)                ! longwave incident flux density (W/m^2)
     real(r8) :: cell_od = 0.0            ! optical depth of a single cell (dimensionless)
     real(r8) :: cell_od_sum = 0.0        ! total optical depth below a cell (dimensionless)
+    real(r8) :: dI_lw(ncol,pver)         ! longwave attenuation (W/m2)
+    real(r8) :: local_heating(ncol,pver) ! stratospheric heating (J/kg/s)
     
     ! for surface cooling
-    real(r8) :: surf_cooling(ncol,pver)  ! surface cooling (J/kg/s)
-    real(r8) :: aod(ncol)                ! total AOD (dimensionless)
-    real(r8) :: aod_so2(ncol)            ! SO2 AOD (dimensionless)
-    real(r8) :: aod_ash(ncol)            ! ash AOD (dimensionless)
-    real(r8) :: aod_sulf(ncol)           ! sulfate AOD (dimensionless)
-    real(r8) :: mass_cool(ncol)          ! air mass within z_cool os surface (kg)
-    real(r8) :: ext_sw_so2(ncol)         ! shortwave extinction (dimensionless)
-    real(r8) :: Isw(ncol)                ! shortwave incident flux density (W/m^2)
+    real(r8) :: Isw(ncol)               ! shortwave incident flux density (W/m^2)
+    real(r8) :: aod(ncol)               ! total AOD (dimensionless)
+    real(r8) :: aod_so2(ncol)           ! SO2 AOD (dimensionless)
+    real(r8) :: aod_ash(ncol)           ! ash AOD (dimensionless)
+    real(r8) :: aod_sulf(ncol)          ! sulfate AOD (dimensionless)
+    real(r8) :: mass_cool(ncol)         ! air mass within z_cool os surface (kg)
+    real(r8) :: dI_sw(ncol)             ! shortwave attenuation (W/m2)
+    real(r8) :: surf_cooling(ncol,pver) ! surface cooling (J/kg/s)
     
+    V = 0.0
+    dI_sw = 0.0
+    dI_lw = 0.0
+    local_heating = 0.0
+    surf_cooling = 0.0
+
     !------------------------------------------------------------------
 
     if (.not. cldera_sai_tracers_flag) then
@@ -488,11 +498,11 @@ contains
     ! may cause a segfault, don't do it
     call phys_grid_find_col(lat0 * rad2deg, lon0 * rad2deg, inj_owner, injc, inji)
     call mpi_comm_rank (mpicom, myrank, ier)
-    ! turn on 'inject' bool if this process's chunk contains theinjection column, 
+    ! turn on 'inject' bool if this process contains the injection column, 
     ! and if the injection time has not elapsed
-    inject = myrank == inj_owner .and. lchnk == injc .and. ( t > (t0-ttol) .and. t < (tf-ttol)
+    inject = myrank == inj_owner .and. lchnk == injc .and. &
+             t > (t0-ttol) .and. t < (tf-ttol)
    
-
     ! =============== COMPUTE VERTICAL PROFILE & NORMALIZATION ===============
     ! Compute V(k) with input z(inji, k) for myrank == inj_owner
     ! For myrank /= inj_owner, V(:), A_so2, A_ash, sVk = 0
@@ -505,12 +515,7 @@ contains
         sVk = SUM(V(:))
         A_so2 = M_so2 / (dur * sVk) 
         A_ash = M_ash / (dur * sVk)
-    else
-        ! if inject is false, normalization goes to zero, and will eliminate 
-        ! the source term in the loop below
-        A_so2 = 0.0
-        A_ash = 0.0
-       
+    endif 
 
     ! =============== COMPUTE GRID AND COLUMN MASS, AOD, LW AND SW PROFILES  =============== 
     call get_area_all_p(lchnk, ncol, area)
@@ -550,37 +555,45 @@ contains
 
         ! compute AOD; mass extinction coefficients times cumulative sum of tracer mass, 
         ! normalized by column area 
-        aod_so2(i)  = bsw_so2  * col_mass_so2(i)  / area
-        aod_sulf(i) = bsw_sulf * col_mass_sulf(i) / area
-        aod_ash(i)  = bsw_ash  * col_mass_ash(i)  / area
+        aod_so2(i)  = bsw_so2  * col_mass_so2(i)  / area(i)
+        aod_sulf(i) = bsw_sulf * col_mass_sulf(i) / area(i)
+        aod_ash(i)  = bsw_ash  * col_mass_ash(i)  / area(i)
         aod(i) = aod_so2(i) + aod_sulf(i) + aod_ash(i)
 
         ! check consistency of cumulative mass calculation against reference pressures at
         ! model top, surface; raise warning if disagrees more than 5%
-        col_mass_check = (psurf_ref - ptop_ref) * area(i) * rgrav
-        if ( ABS(col_mass(i,pver) -col_mass_check) / col_mass_check  > 0.05_r8) then
-             write(iulog,*) "CLDERA_SAI_TRACERS cumulative mass error at col ", i
-             write(iulog,*) "   expected:               ", col_mass_check
-             write(iulog,*) "   measured cumulative:    ", col_mass(i, pver)
-             write(iulog,*) "   relative err:           ",   &
-                            100.0 * ABS(col_mass(i, pver) - col_mass_check)/col_mass_check, "%"
-             ! uncomment to end model run if this check fails
-             !call endrun()
-        end if
+        !col_mass_check = (psurf_ref - ptop_ref) * area(i) * rgrav
+        !if ( ABS(col_mass(i) - col_mass_check) / col_mass_check  > 0.05_r8) then
+        !     write(iulog,*) "CLDERA_SAI_TRACERS cumulative mass error at col ", i
+        !     write(iulog,*) "   expected:               ", col_mass_check
+        !     write(iulog,*) "   measured cumulative:    ", col_mass(i)
+        !     write(iulog,*) "   relative err:           ",   &
+        !                    100.0 * ABS(col_mass(i) - col_mass_check)/col_mass_check, "%"
+        !     ! uncomment to end model run if this check fails
+        !     !call endrun()
+        !end if
     enddo
     
     ! record air mass on grid to history files
+    call outfld('AOD',      aod(:), ncol, lchnk)
+    call outfld('I_SW',     Isw(:), ncol, lchnk)
+    call outfld('I_LW',     Ilw(:), ncol, lchnk)
     call outfld('AREA',     area(:), ncol, lchnk)
     call outfld('AIR_MASS', grid_mass(:,:), ncol, lchnk)
-    call outfld('COL_MASS', col_mass(:,:), ncol, lchnk)
-    call outfld('COL_SO2',  col_mass_so2(:,:), ncol, lchnk)
-    call outfld('COL_SULF', col_mass_sulf(:,:), ncol, lchnk)
-    call outfld('COL_ASH',  col_mass_ash(:,:), ncol, lchnk)
-    call outfld('AOD',      aod(:), ncol, lchnk)
+    call outfld('COL_MASS', col_mass(:), ncol, lchnk)
+    call outfld('COL_SO2',  col_mass_so2(:), ncol, lchnk)
+    call outfld('COL_SULF', col_mass_sulf(:), ncol, lchnk)
+    call outfld('COL_ASH',  col_mass_ash(:), ncol, lchnk)
+    call outfld('COL_SAI',  col_mass_ash(:)+col_mass_so2(:)+col_mass_sulf(:), ncol, lchnk)
     
 
     ! =============== COMPUTE TENDENCIES ===============
     do i = 1, ncol
+        
+        ! check that this column of this process is the injection column
+        source_on = 0.0
+        if(inject .and. i==inji) source_on = 1.0
+        
         do k = pver, 1, -1
           ! index k decrements from pver to 1, 
           ! so that cell_od_sum accumulates optical depth starting at the surface
@@ -592,13 +605,13 @@ contains
           ! ---- source + decay
           ptend%q(i,k,ixso2) = 1/grid_mass(i, k) * &
                                (-k_so2 * state%q(i, k, ixso2) * grid_mass(i, k) + &
-                                A_so2 * V(k) * source_toggle)
+                                A_so2 * V(k) * source_on)
 
           ! =============== ASH ===============
           ! ---- source + decay
           ptend%q(i,k,ixash) = 1/grid_mass(i, k) * &
                                (-k_ash * state%q(i, k, ixash) * grid_mass(i, k) + &
-                                A_ash * V(k) * source_toggle)
+                                A_ash * V(k) * source_on)
 
           ! =============== SULFATE ===============
           ptend%q(i,k,ixsulf) = 0.0
@@ -608,42 +621,50 @@ contains
                                     w * k_so2 * state%q(i, k, ixso2)
           endif
           
-          ! =============== STRATOSPHERIC HEATING ===============
-          strat_heating(i, k) = 0.0
+          ! =============== LOCAL HEATING ===============
+          local_heating(i, k) = 0.0
           if(cldera_sai_stratHeating) then
               
               ! compute optical depth of this grid cell
-              cell_od = (grid_mass(i,k)/area) * (blw_so2 * state%q(i,k,ixso2) + &
-                                                  blw_sulf * state%q(i,k,ixsulf) + &
-                                                  blw_ash * state%q(i,k,izash)) 
+              cell_od = (grid_mass(i,k)/area(i)) * (blw_so2 * state%q(i,k,ixso2) + &
+                                                    blw_sulf * state%q(i,k,ixsulf) + &
+                                                    blw_ash * state%q(i,k,ixash)) 
               ! update cumulative optical depth of column beneath grid cell; 
-              ! restart at 0 for each column
-              if(k==pver) cell_od_sum = 0.0
-              cell_od_sum = cell_old_sum + (grid_mass(i,k+1)/area) * &
-                                             (blw_so2 * state%q(i,k+1,ixso2) + &
-                                              blw_sulf * state%q(i,k+1,ixsulf) + &
-                                              blw_ash * state%q(i,k+1,izash)) 
-
-              strat_heating(i, k) = (area / grid_mass(i,k)) * Ilw(i) * &
-                                    EXP(-cell_od_sum) * (1.0 - EXP(-cell_od))
+              ! reset to at 0 for each new column
+              if(k == pver) then 
+                  cell_od_sum = 0.0
+              else 
+                  cell_od_sum = cell_od_sum + (grid_mass(i,k+1)/area(i)) * &
+                                               (blw_so2 * state%q(i,k+1,ixso2) + &
+                                                blw_sulf * state%q(i,k+1,ixsulf) + &
+                                                blw_ash * state%q(i,k+1,ixash))
+              endif
+    
+              dI_lw(i,k) = Ilw(i) * EXP(-cell_od_sum) * (1.0 - EXP(-cell_od))
+              local_heating(i, k) = (area(i) / grid_mass(i,k)) * dI_lw(i,k)
+       
           endif
     
           ! =============== SURFACE COOLING ===============
           surf_cooling(i, k) = 0.0
           if(cldera_sai_surfCooling .and. state%zm(i,k) <= z_cool) then
-              surf_cooling(i, k) = (zeta * area / mass_cool(i)) * &
-                                   Isw(i) * (EXP(-aod(i)) - 1.0)
+              
+              dI_sw(i) = Isw(i) * (EXP(-aod(i)) - 1.0)
+              surf_cooling(i, k) = (zeta * area(i) / mass_cool(i)) * dI_sw(i)
+          
+          endif
 
-          ! --- total heating
-          ptend%s(i, k) = strat_heating(i, k) + surf_cooling(i, k)
+          ! --- total heating in J/kg/s
+          ptend%s(i, k) = local_heating(i, k) + surf_cooling(i, k)
 
        end do
     end do
     
     ! record heating rates on grid to history files,
     ! convert from heating rate in J/kg/s to temperature rate of change in K/day
-    call outfld('SAI_HEAT', strat_heating(:,:) / cpair / s2day, ncol, lchnk)
-    call outfld('SAI_COOL', surf_cooling(:,:) / cpair / s2day, ncol, lchnk)
+    call outfld('SAI_HEAT', (local_heating(:,:)+surf_cooling(:,:)) / cpair / s2day, ncol, lchnk)
+    call outfld('ATTEN_LW', dI_lw(:,:), ncol, lchnk)
+    call outfld('ATTEN_SW', dI_sw(:), ncol, lchnk)
     
   end subroutine cldera_sai_tracers_timestep_tend
 
