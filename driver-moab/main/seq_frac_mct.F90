@@ -507,9 +507,9 @@ contains
             call shr_sys_abort(subname//' ERROR in defining tags on rof phys mesh on cpl')
          endif
          ierr  = iMOAB_GetMeshInfo ( mbrxid, nvert, nvise, nbl, nsurf, nvisBC );
-         arrSize = 3 * nVert(1) ! there are 3 tags 
+         arrSize = 3 * nvise(1) ! there are 3 tags 
          allocate(tagValues(arrSize) )
-         ent_type = 0  ! vertex type, rof is point cloud
+         ent_type = 1 ! vertex type, rof is now FV
          tagValues = 0. 
          ierr = iMOAB_SetDoubleTagStorage ( mbrxid, tagname, arrSize , ent_type, tagValues)
          deallocate(tagValues)

@@ -280,7 +280,7 @@ contains
             fNoBubble = 1
             monotonicity = 0 !
             noConserve = 0
-            validate = 1
+            validate = 0
             fInverseDistanceMap = 0
             if (iamroot_CPLID) then
                write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxlr=', mbintxlr, ' wgtIdef=', wgtIdef, &
@@ -304,11 +304,11 @@ contains
             call shr_mpi_commrank( mpicom_CPLID, rank )
             if (rank .lt. 5) then
               write(lnum,"(I0.2)")rank !
-              outfile = 'intx_ar_'//trim(lnum)// '.h5m' // C_NULL_CHAR
-              ierr = iMOAB_WriteMesh(mbintxar, outfile, wopts) ! write local intx file
+              outfile = 'intx_lr_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+              ierr = iMOAB_WriteMesh(mbintxlr, outfile, wopts) ! write local intx file
               if (ierr .ne. 0) then
-                write(logunit,*) subname,' error in writing intx ar file '
-                call shr_sys_abort(subname//' ERROR in writing intx ar file ')
+                write(logunit,*) subname,' error in writing intx lr file '
+                call shr_sys_abort(subname//' ERROR in writing intx lr file ')
               endif
             endif
 #endif
