@@ -37,6 +37,15 @@ void AbstractGrid::add_alias (const std::string& alias)
   }
 }
 
+FieldLayout AbstractGrid::
+get_vertical_layout (const bool midpoints) const
+{
+  using namespace ShortFieldTagsNames;
+  return midpoints ? FieldLayout ({ LEV},{m_num_vert_levs})
+                   : FieldLayout ({ILEV},{m_num_vert_levs+1});
+
+}
+
 bool AbstractGrid::is_unique () const {
   // Get a copy of gids on host. CAREFUL: do not use the stored dofs,
   // since we need to sort dofs in order to call unique, and we don't
