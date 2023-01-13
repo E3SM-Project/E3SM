@@ -15,7 +15,10 @@ module prep_lnd_mod
   use seq_comm_mct,     only: mphaid   ! iMOAB id for phys atm on atm pes
   use seq_comm_mct,     only: mhpgid   ! iMOAB id for atm pgx grid, on atm pes; created with se and gll grids
   use seq_comm_mct,     only: mblxid ! iMOAB id for mpas ocean migrated mesh to coupler pes
-  use seq_comm_mct,     only: mbintxal ! iMOAB id for intx mesh between land and atmosphere
+  use seq_comm_mct,     only: mbrxid   !          iMOAB id of moab rof on coupler pes (FV now)
+  use seq_comm_mct,     only: mbintxal ! iMOAB id for intx mesh between atm and lnd
+  use seq_comm_mct,     only: mbintxrl ! iMOAB id for intx mesh between river and land
+  
   use seq_comm_mct,     only: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   use seq_comm_mct,     only: atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
   use dimensions_mod,   only: np     ! for atmosphere
@@ -205,6 +208,106 @@ contains
                'seq_maps.rc','rof2lnd_fmapname:','rof2lnd_fmaptype:',samegrid_lr, &
                string='mapper_Fr2l initialization',esmf_map=esmf_map_flag)
        end if
+! symmetric of l2r, from prep_rof
+#ifdef HAVE_MOAB
+          ! Call moab intx only if land and river are init in moab
+          if ((mbrxid .ge. 0) .and.  (mblxid .ge. 0)) then
+            appname = "ROF_LND_COU"//C_NULL_CHAR
+            ! idintx is a unique number of MOAB app that takes care of intx between rof and lnd mesh
+            idintx = 100*rof(1)%cplcompid + lnd(1)%cplcompid ! something different, to differentiate it
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxrl)
+            if (ierr .ne. 0) then
+              write(logunit,*) subname,' error in registering  rof lnd intx'
+              call shr_sys_abort(subname//' ERROR in registering rof lnd intx')
+            endif
+            ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbrxid, mblxid, mbintxrl)
+            if (ierr .ne. 0) then
+              write(logunit,*) subname,' error in computing   rof lnd intx'
+              call shr_sys_abort(subname//' ERROR in computing  rof lnd intx')
+            endif
+            if (iamroot_CPLID) then
+              write(logunit,*) 'iMOAB intersection between  rof and lnd with id:', idintx
+            end if
+            ! we also need to compute the comm graph for the second hop, from the rof on coupler to the 
+            ! rof for the intx rof-lnd context (coverage)
+            !    
+            call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID) 
+            type1 = 3 ! land is FV now on coupler side
+            type2 = 3;
+
+            ierr = iMOAB_ComputeCommGraph( mbrxid, mbintxrl, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                        rof(1)%cplcompid, idintx)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing comm graph for second hop, lnd-rof'
+               call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, lnd-rof')
+            endif
+            ! now take care of the mapper 
+            mapper_Fr2l%src_mbid = mbrxid
+            mapper_Fr2l%tgt_mbid = mbintxrl
+            mapper_Fr2l%intx_mbid = mbintxrl 
+            mapper_Fr2l%src_context = rof(1)%cplcompid
+            mapper_Fr2l%intx_context = idintx
+            wgtIdef = 'scalar'//C_NULL_CHAR
+            mapper_Fr2l%weight_identifier = wgtIdef
+            mapper_Fr2l%mbname = 'mapper_Fr2l'
+            ! because we will project fields from rof to lnd grid, we need to define 
+            !  the r2x fields to lnd grid on coupler side
+            
+            tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
+            tagtype = 1 ! dense
+            numco = 1 ! 
+            ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags for seq_flds_r2x_fields on lnd cpl'
+               call shr_sys_abort(subname//' ERROR in  defining tags for seq_flds_r2x_fields on lnd cpl')
+            endif
+            volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL; 
+            
+            dm1 = "fv"//C_NULL_CHAR
+            dofnameS="GLOBAL_ID"//C_NULL_CHAR
+            orderS = 1 !  fv-fv
+           
+            dm2 = "fv"//C_NULL_CHAR
+            dofnameT="GLOBAL_ID"//C_NULL_CHAR
+            orderS = 1  !  not much arguing
+            fNoBubble = 1
+            monotonicity = 0 !
+            noConserve = 0
+            validate = 0 !! important
+            fInverseDistanceMap = 0
+            if (iamroot_CPLID) then
+               write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxrl=', mbintxrl, ' wgtIdef=', wgtIdef, &
+                   'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
+                                               fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                               noConserve, validate, &
+                                               trim(dofnameS), trim(dofnameT)
+            endif
+            ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxrl, wgtIdef, &
+                                               trim(dm1), orderS, trim(dm2), orderT, &
+                                               fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                               noConserve, validate, &
+                                               trim(dofnameS), trim(dofnameT) )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing rl weights '
+               call shr_sys_abort(subname//' ERROR in computing rl weights ')
+            endif
+
+#ifdef MOABDEBUG
+            wopts = C_NULL_CHAR
+            call shr_mpi_commrank( mpicom_CPLID, rank )
+            if (rank .lt. 5) then
+              write(lnum,"(I0.2)")rank !
+              outfile = 'intx_rl_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+              ierr = iMOAB_WriteMesh(mbintxrl, outfile, wopts) ! write local intx file
+              if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in writing intx rl file '
+                call shr_sys_abort(subname//' ERROR in writing intx rl file ')
+              endif
+            endif
+#endif
+         end if ! if ((mbrxid .ge. 0) .and.  (mblxid .ge. 0))
+! endif HAVE_MOAB 
+#endif
        call shr_sys_flush(logunit)
 
        if (atm_c2_lnd) then
