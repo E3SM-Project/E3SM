@@ -22,7 +22,7 @@
 #endif
 
 #ifdef KOKKOS_ENABLE_SYCL
-#include ???
+#include <CL/sycl.hpp>
 #endif
 
 namespace Homme {
@@ -58,7 +58,10 @@ void initialize_kokkos () {
   }
 #elif defined(KOKKOS_ENABLE_SYCL)
 
-????????
+//https://developer.codeplay.com/products/computecpp/ce/2.11.0/guides/sycl-for-cuda-developers/migrating-from-cuda-to-sycl
+
+//to make it build
+  int nd = 1;
 
 #endif
 
