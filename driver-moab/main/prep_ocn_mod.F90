@@ -605,6 +605,8 @@ contains
          type1 = 3 ! fv mesh nowadays
          direction = 1 ! 
          context_id = ocn(1)%cplcompid
+         ! this creates a par comm graph between mbrxid and mbrxoid, with ids rof(1)%cplcompid, context ocn(1)%cplcompid
+         ! this will be used in send/receive mappers
          ierr = iMOAB_MigrateMapMesh (mbrxid, mbrmapro, mbrxoid, mpicom_CPLID, mpigrp_CPLID, &
             mpigrp_CPLID, type1, rof(1)%cplcompid, context_id, direction)
          
@@ -659,7 +661,7 @@ contains
             mapper_Rr2o_liq%tgt_mbid = mbrxoid ! this is special, it will really need this coverage type mesh
             mapper_Rr2o_liq%intx_mbid = mbrmapro 
             mapper_Rr2o_liq%src_context = rof(1)%cplcompid
-            mapper_Rr2o_liq%intx_context = ocn(1)%cplcompid
+            mapper_Rr2o_liq%intx_context = ocn(1)%cplcompid ! this context was used in migrate mesh
             wgtIdef = 'map-from-file'//C_NULL_CHAR
             mapper_Rr2o_liq%weight_identifier = wgtIdef 
             mapper_Rr2o_liq%mbname = 'mapper_Rr2o_liq'
@@ -679,7 +681,7 @@ contains
             mapper_Rr2o_ice%tgt_mbid = mbrxoid ! special 
             mapper_Rr2o_ice%intx_mbid = mbrmapro 
             mapper_Rr2o_ice%src_context = rof(1)%cplcompid
-            mapper_Rr2o_ice%intx_context = ocn(1)%cplcompid
+            mapper_Rr2o_ice%intx_context = ocn(1)%cplcompid ! this context was used in migrate mesh
             wgtIdef = 'map-from-file'//C_NULL_CHAR
             mapper_Rr2o_ice%weight_identifier = wgtIdef 
             mapper_Rr2o_ice%mbname = 'mapper_Rr2o_ice'
@@ -698,7 +700,7 @@ contains
                mapper_Fr2o%tgt_mbid = mbrxoid ! special
                mapper_Fr2o%intx_mbid = mbrmapro 
                mapper_Fr2o%src_context = rof(1)%cplcompid
-               mapper_Fr2o%intx_context = ocn(1)%cplcompid
+               mapper_Fr2o%intx_context = ocn(1)%cplcompid ! this context was used in migrate mesh
                wgtIdef = 'map-from-file'//C_NULL_CHAR
                mapper_Fr2o%weight_identifier = wgtIdef 
                mapper_Fr2o%mbname = 'mapper_Fr2o'
