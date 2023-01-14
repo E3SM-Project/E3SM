@@ -254,7 +254,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
     const auto  rank = layout.rank();
 
     // Safety check: make sure that the field was written at least once before using it.
-    EKAT_REQUIRE_MSG (field.get_header().get_tracking().get_time_stamp().is_valid(),
+    EKAT_REQUIRE_MSG (!m_add_time_dim || field.get_header().get_tracking().get_time_stamp().is_valid(),
         "Error! Output field '" + name + "' has not been initialized yet\n.");
 
     const bool is_diagnostic = (m_diagnostics.find(name) != m_diagnostics.end());
