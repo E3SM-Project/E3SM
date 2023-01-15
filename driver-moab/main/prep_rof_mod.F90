@@ -8,7 +8,6 @@ module prep_rof_mod
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct,     only: num_inst_lnd, num_inst_rof, num_inst_frc, num_inst_atm
   use seq_comm_mct,     only: CPLID, ROFID, logunit
-  use seq_comm_mct,     only: mrofid ! id for rof comp 
   use seq_comm_mct,     only: mblxid   ! iMOAB id for land on coupler (read now from h5m file)
   use seq_comm_mct,     only: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes (migrate either mhid or mhpgx, depending on atm_pg_active)
   use seq_comm_mct,     only: mbrxid   ! iMOAB id of moab rof read on couple pes
@@ -32,6 +31,9 @@ module prep_rof_mod
   use map_lnd2rof_irrig_mod, only: map_lnd2rof_irrig
 
   use iso_c_binding
+#ifdef MOABDEBUG
+  use component_type_mod, only:  compare_mct_av_moab_tag
+#endif
 
   implicit none
   save
@@ -43,6 +45,10 @@ module prep_rof_mod
 
   public :: prep_rof_init
   public :: prep_rof_mrg
+
+#ifdef HAVE_MOAB
+  public :: prep_rof_mrg_moab
+#endif
 
   public :: prep_rof_accum_lnd
   public :: prep_rof_accum_atm
@@ -95,6 +101,15 @@ module prep_rof_mod
   logical :: have_irrig_field
   ! samegrid atm and lnd
   logical :: samegrid_al   ! samegrid atm and lnd
+
+  ! moab stuff
+   real (kind=r8) , allocatable, private :: fractions_rm (:,:) ! will retrieve the fractions from rof, and use them
+  !  they were init with 
+  ! character(*),parameter :: fraclist_r = 'lfrac:lfrin:rfrac'  in moab, on the fractions 
+  real (kind=r8) , allocatable, private :: x2r_rm (:,:) ! result of merge
+  real (kind=r8) , allocatable, private :: a2x_rm (:,:)
+  real (kind=r8) , allocatable, private :: l2x_rm (:,:)
+
   !================================================================================================
 
 contains
@@ -260,7 +275,7 @@ contains
             ! because we will project fields from lnd to rof grid, we need to define 
             !  the l2x fields to rof grid on coupler side
             
-            tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
+            tagname = trim(seq_flds_l2x_fluxes_to_rof)//C_NULL_CHAR
             tagtype = 1 ! dense
             numco = 1 ! 
             ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
@@ -411,13 +426,13 @@ contains
             ! because we will project fields from atm to rof grid, we need to define 
             ! rof a2x fields to rof grid on coupler side
             
-            tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+            tagname = trim(seq_flds_a2x_fields_to_rof)//C_NULL_CHAR
             tagtype = 1 ! dense
             numco = 1 ! 
             ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on rof cpl'
-               call shr_sys_abort(subname//' ERROR in  defining tags for seq_flds_a2x_fields on rof cpl')
+               write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields_to_rof on rof cpl'
+               call shr_sys_abort(subname//' ERROR in  defining tags for seq_flds_a2x_fields_to_rof on rof cpl')
             endif
             volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL; 
             
@@ -906,7 +921,392 @@ contains
     first_time = .false.
 
   end subroutine prep_rof_merge
+#ifdef HAVE_MOAB
+  subroutine prep_rof_mrg_moab  (infodata, cime_model)
+   use iMOAB , only : iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
+     iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
+     use seq_comm_mct, only : num_moab_exports ! for debug
 
+    type(seq_infodata_type) , intent(in)    :: infodata
+
+    ! type(mct_aVect)         , intent(in)    :: fractions_rx(:) they should have been saved as tags on rof coupler component
+    character(len=*)        , intent(in)    :: cime_model
+    !-----------------------------------------------------------------------
+    ! Description
+    ! Merge land rof and ice forcing for rof input
+    !
+    ! used for indexing 
+    type(mct_avect) , pointer   :: l2x_r
+    type(mct_avect) , pointer   :: a2x_r
+    type(mct_avect) , pointer    :: fractions_r
+    type(mct_avect) , pointer :: x2r_r
+    !
+    ! Local variables
+    integer       :: i
+    integer, save :: index_l2x_Flrl_rofsur
+    integer, save :: index_l2x_Flrl_rofgwl
+    integer, save :: index_l2x_Flrl_rofsub
+    integer, save :: index_l2x_Flrl_rofdto
+    integer, save :: index_l2x_Flrl_rofi
+    integer, save :: index_l2x_Flrl_demand
+    integer, save :: index_l2x_Flrl_irrig
+    integer, save :: index_x2r_Flrl_rofsur
+    integer, save :: index_x2r_Flrl_rofgwl
+    integer, save :: index_x2r_Flrl_rofsub
+    integer, save :: index_x2r_Flrl_rofdto
+    integer, save :: index_x2r_Flrl_rofi
+    integer, save :: index_x2r_Flrl_demand
+    integer, save :: index_x2r_Flrl_irrig
+    integer, save :: index_l2x_Flrl_rofl_16O
+    integer, save :: index_l2x_Flrl_rofi_16O
+    integer, save :: index_x2r_Flrl_rofl_16O
+    integer, save :: index_x2r_Flrl_rofi_16O
+    integer, save :: index_l2x_Flrl_rofl_18O
+    integer, save :: index_l2x_Flrl_rofi_18O
+    integer, save :: index_x2r_Flrl_rofl_18O
+    integer, save :: index_x2r_Flrl_rofi_18O
+    integer, save :: index_l2x_Flrl_rofl_HDO
+    integer, save :: index_l2x_Flrl_rofi_HDO
+    integer, save :: index_x2r_Flrl_rofl_HDO
+    integer, save :: index_x2r_Flrl_rofi_HDO
+	
+    integer, save :: index_l2x_Flrl_Tqsur
+    integer, save :: index_l2x_Flrl_Tqsub
+    integer, save :: index_a2x_Sa_tbot
+    integer, save :: index_a2x_Sa_pbot
+    integer, save :: index_a2x_Sa_u
+    integer, save :: index_a2x_Sa_v
+    integer, save :: index_a2x_Sa_shum
+    integer, save :: index_a2x_Faxa_swndr
+    integer, save :: index_a2x_Faxa_swndf
+    integer, save :: index_a2x_Faxa_swvdr
+    integer, save :: index_a2x_Faxa_swvdf
+    integer, save :: index_a2x_Faxa_lwdn
+    integer, save :: index_x2r_Flrl_Tqsur
+    integer, save :: index_x2r_Flrl_Tqsub
+    integer, save :: index_x2r_Sa_tbot
+    integer, save :: index_x2r_Sa_pbot
+    integer, save :: index_x2r_Sa_u
+    integer, save :: index_x2r_Sa_v
+    integer, save :: index_x2r_Sa_shum
+    integer, save :: index_x2r_Faxa_swndr
+    integer, save :: index_x2r_Faxa_swndf
+    integer, save :: index_x2r_Faxa_swvdr
+    integer, save :: index_x2r_Faxa_swvdf
+    integer, save :: index_x2r_Faxa_lwdn
+    
+    integer, save :: index_l2x_coszen_str
+    integer, save :: index_x2r_coszen_str
+
+    integer, save :: index_frac
+    real(r8)      :: frac
+    character(CL) :: fracstr
+    logical, save :: first_time = .true.
+    logical, save :: flds_wiso_rof = .false.
+    integer, save :: nflds, lsize
+    logical       :: iamroot
+    character(CL) :: field        ! field string
+    character(CL),allocatable :: mrgstr(:)   ! temporary string
+    character(*), parameter   :: subname = '(prep_rof_mrg_moab) '
+
+ integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
+   
+    character(CXX) ::tagname, mct_field
+    integer :: ent_type, ierr, arrsize
+    integer, save :: naflds, nlflds ! these are saved the first time 
+#ifdef MOABDEBUG
+    character*32             :: outfile, wopts, lnum
+    real(r8)                 :: difference
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list
+    type(mct_string)    :: mctOStr  !
+#endif 
+    !-----------------------------------------------------------------------
+
+    call seq_comm_getdata(CPLID, iamroot=iamroot)
+    
+! character(*),parameter :: fraclist_r = 'lfrac:lfrin:rfrac' 
+    if (first_time) then
+      ! find out the number of local elements in moab mesh rof instance on coupler
+      ierr  = iMOAB_GetMeshInfo ( mbrxid, nvert, nvise, nbl, nsurf, nvisBC );
+      if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in getting info '
+            call shr_sys_abort(subname//' error in getting info ')
+      endif
+      lsize = nvise(1) ! number of active cells
+       ! mct avs are used just for their fields metadata, not the actual reals 
+       ! (name of the fields)
+       ! need these always, not only the first time
+      l2x_r => l2r_rx(1)
+      a2x_r => a2r_rx(1)
+
+      x2r_r => component_get_x2c_cx(rof(1))
+      nflds = mct_aVect_nRattr(x2r_r) ! these are saved after first time
+      naflds = mct_aVect_nRattr(a2x_r)
+      nlflds = mct_aVect_nRattr(l2x_r)
+
+      allocate(x2r_rm (lsize, nflds))
+      allocate(a2x_rm (lsize, naflds))
+      allocate(l2x_rm (lsize, nlflds))
+      ! allocate fractions too
+      ! use the fraclist fraclist_r = 'lfrac:lfrin:rfrac'
+      allocate(fractions_rm(lsize,3)) ! there are 3 fields here
+
+       allocate(mrgstr(nflds))
+       do i = 1,nflds
+          field = mct_aVect_getRList2c(i, x2r_r)
+          mrgstr(i) = subname//'x2r%'//trim(field)//' ='
+       enddo
+
+       index_l2x_Flrl_rofsur = mct_aVect_indexRA(l2x_r,'Flrl_rofsur' )
+       index_l2x_Flrl_rofgwl = mct_aVect_indexRA(l2x_r,'Flrl_rofgwl' )
+       index_l2x_Flrl_rofsub = mct_aVect_indexRA(l2x_r,'Flrl_rofsub' )
+       index_l2x_Flrl_rofdto = mct_aVect_indexRA(l2x_r,'Flrl_rofdto' )
+       if (have_irrig_field) then
+          index_l2x_Flrl_irrig  = mct_aVect_indexRA(l2x_r,'Flrl_irrig' )
+       end if
+       index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_r,'Flrl_rofi' )
+       if(trim(cime_model) .eq. 'e3sm') then
+          index_l2x_Flrl_demand = mct_aVect_indexRA(l2x_r,'Flrl_demand' )
+          index_x2r_Flrl_demand = mct_aVect_indexRA(x2r_r,'Flrl_demand' )
+       endif
+       index_x2r_Flrl_rofsur = mct_aVect_indexRA(x2r_r,'Flrl_rofsur' )
+       index_x2r_Flrl_rofgwl = mct_aVect_indexRA(x2r_r,'Flrl_rofgwl' )
+       index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub' )
+       index_x2r_Flrl_rofdto = mct_aVect_indexRA(x2r_r,'Flrl_rofdto' )
+       index_x2r_Flrl_rofi   = mct_aVect_indexRA(x2r_r,'Flrl_rofi' )
+       if (have_irrig_field) then
+          index_x2r_Flrl_irrig  = mct_aVect_indexRA(x2r_r,'Flrl_irrig' )
+       end if
+       if(trim(cime_model) .eq. 'e3sm') then
+         index_l2x_Flrl_Tqsur = mct_aVect_indexRA(l2x_r,'Flrl_Tqsur' )
+         index_l2x_Flrl_Tqsub = mct_aVect_indexRA(l2x_r,'Flrl_Tqsub' )
+         index_x2r_Flrl_Tqsur = mct_aVect_indexRA(x2r_r,'Flrl_Tqsur' )
+         index_x2r_Flrl_Tqsub = mct_aVect_indexRA(x2r_r,'Flrl_Tqsub' )
+       endif
+
+       index_l2x_Flrl_rofl_16O = mct_aVect_indexRA(l2x_r,'Flrl_rofl_16O', perrWith='quiet' )
+       if ( index_l2x_Flrl_rofl_16O /= 0 ) flds_wiso_rof = .true.
+       if ( flds_wiso_rof ) then
+          index_l2x_Flrl_rofi_16O = mct_aVect_indexRA(l2x_r,'Flrl_rofi_16O' )
+          index_x2r_Flrl_rofl_16O = mct_aVect_indexRA(x2r_r,'Flrl_rofl_16O' )
+          index_x2r_Flrl_rofi_16O = mct_aVect_indexRA(x2r_r,'Flrl_rofi_16O' )
+
+          index_l2x_Flrl_rofl_18O = mct_aVect_indexRA(l2x_r,'Flrl_rofl_18O' )
+          index_l2x_Flrl_rofi_18O = mct_aVect_indexRA(l2x_r,'Flrl_rofi_18O' )
+          index_x2r_Flrl_rofl_18O = mct_aVect_indexRA(x2r_r,'Flrl_rofl_18O' )
+          index_x2r_Flrl_rofi_18O = mct_aVect_indexRA(x2r_r,'Flrl_rofi_18O' )
+
+          index_l2x_Flrl_rofl_HDO = mct_aVect_indexRA(l2x_r,'Flrl_rofl_HDO' )
+          index_l2x_Flrl_rofi_HDO = mct_aVect_indexRA(l2x_r,'Flrl_rofi_HDO' )
+          index_x2r_Flrl_rofl_HDO = mct_aVect_indexRA(x2r_r,'Flrl_rofl_HDO' )
+          index_x2r_Flrl_rofi_HDO = mct_aVect_indexRA(x2r_r,'Flrl_rofi_HDO' )
+       end if
+
+       if (samegrid_al) then ! fraclist_r = 'lfrac:lfrin:rfrac'
+       ! check, in our case, is it always 1  ? 
+          index_frac = 1 ! mct_aVect_indexRA(fractions_r,"lfrac")
+          fracstr = 'lfrac'
+       else
+          index_frac = 2 ! mct_aVect_indexRA(fractions_r,"lfrin")
+          fracstr = 'lfrin'
+       endif
+
+       mrgstr(index_x2r_Flrl_rofsur) = trim(mrgstr(index_x2r_Flrl_rofsur))//' = '// &
+            trim(fracstr)//'*l2x%Flrl_rofsur'
+       mrgstr(index_x2r_Flrl_rofgwl) = trim(mrgstr(index_x2r_Flrl_rofgwl))//' = '// &
+            trim(fracstr)//'*l2x%Flrl_rofgwl'
+       mrgstr(index_x2r_Flrl_rofsub) = trim(mrgstr(index_x2r_Flrl_rofsub))//' = '// &
+            trim(fracstr)//'*l2x%Flrl_rofsub'
+       mrgstr(index_x2r_Flrl_rofdto) = trim(mrgstr(index_x2r_Flrl_rofdto))//' = '// &
+            trim(fracstr)//'*l2x%Flrl_rofdto'
+       mrgstr(index_x2r_Flrl_rofi) = trim(mrgstr(index_x2r_Flrl_rofi))//' = '// &
+            trim(fracstr)//'*l2x%Flrl_rofi'
+       if (trim(cime_model).eq.'e3sm') then
+          mrgstr(index_x2r_Flrl_demand) = trim(mrgstr(index_x2r_Flrl_demand))//' = '// &
+               trim(fracstr)//'*l2x%Flrl_demand'
+       endif
+       if (have_irrig_field) then
+          mrgstr(index_x2r_Flrl_irrig) = trim(mrgstr(index_x2r_Flrl_irrig))//' = '// &
+               trim(fracstr)//'*l2x%Flrl_irrig'
+       end if
+       if(trim(cime_model) .eq. 'e3sm') then
+          mrgstr(index_x2r_Flrl_Tqsur) = trim(mrgstr(index_x2r_Flrl_Tqsur))//' = '//'l2x%Flrl_Tqsur'
+          mrgstr(index_x2r_Flrl_Tqsur) = trim(mrgstr(index_x2r_Flrl_Tqsub))//' = '//'l2x%Flrl_Tqsub'
+       endif
+       if ( flds_wiso_rof ) then
+          mrgstr(index_x2r_Flrl_rofl_16O) = trim(mrgstr(index_x2r_Flrl_rofl_16O))//' = '// &
+               trim(fracstr)//'*l2x%Flrl_rofl_16O'
+          mrgstr(index_x2r_Flrl_rofi_16O) = trim(mrgstr(index_x2r_Flrl_rofi_16O))//' = '// &
+               trim(fracstr)//'*l2x%Flrl_rofi_16O'
+          mrgstr(index_x2r_Flrl_rofl_18O) = trim(mrgstr(index_x2r_Flrl_rofl_18O))//' = '// &
+               trim(fracstr)//'*l2x%Flrl_rofl_18O'
+          mrgstr(index_x2r_Flrl_rofi_18O) = trim(mrgstr(index_x2r_Flrl_rofi_18O))//' = '// &
+               trim(fracstr)//'*l2x%Flrl_rofi_18O'
+          mrgstr(index_x2r_Flrl_rofl_HDO) = trim(mrgstr(index_x2r_Flrl_rofl_HDO))//' = '// &
+               trim(fracstr)//'*l2x%Flrl_rofl_HDO'
+          mrgstr(index_x2r_Flrl_rofi_HDO) = trim(mrgstr(index_x2r_Flrl_rofi_HDO))//' = '// &
+               trim(fracstr)//'*l2x%Flrl_rofi_HDO'
+       end if
+	   
+       if ( rof_heat ) then
+          index_a2x_Sa_tbot    = mct_aVect_indexRA(a2x_r,'Sa_tbot')
+          index_a2x_Sa_pbot    = mct_aVect_indexRA(a2x_r,'Sa_pbot')
+          index_a2x_Sa_u       = mct_aVect_indexRA(a2x_r,'Sa_u')
+          index_a2x_Sa_v       = mct_aVect_indexRA(a2x_r,'Sa_v')
+          index_a2x_Sa_shum    = mct_aVect_indexRA(a2x_r,'Sa_shum')
+          index_a2x_Faxa_swndr = mct_aVect_indexRA(a2x_r,'Faxa_swndr')
+          index_a2x_Faxa_swndf = mct_aVect_indexRA(a2x_r,'Faxa_swndf')
+          index_a2x_Faxa_swvdr = mct_aVect_indexRA(a2x_r,'Faxa_swvdr')
+          index_a2x_Faxa_swvdf = mct_aVect_indexRA(a2x_r,'Faxa_swvdf')
+          index_a2x_Faxa_lwdn  = mct_aVect_indexRA(a2x_r,'Faxa_lwdn')
+     
+          index_x2r_Sa_tbot    = mct_aVect_indexRA(x2r_r,'Sa_tbot')
+          index_x2r_Sa_pbot    = mct_aVect_indexRA(x2r_r,'Sa_pbot')
+          index_x2r_Sa_u       = mct_aVect_indexRA(x2r_r,'Sa_u')
+          index_x2r_Sa_v       = mct_aVect_indexRA(x2r_r,'Sa_v')
+          index_x2r_Sa_shum    = mct_aVect_indexRA(x2r_r,'Sa_shum')
+          index_x2r_Faxa_swndr = mct_aVect_indexRA(x2r_r,'Faxa_swndr')
+          index_x2r_Faxa_swndf = mct_aVect_indexRA(x2r_r,'Faxa_swndf')
+          index_x2r_Faxa_swvdr = mct_aVect_indexRA(x2r_r,'Faxa_swvdr')
+          index_x2r_Faxa_swvdf = mct_aVect_indexRA(x2r_r,'Faxa_swvdf')
+          index_x2r_Faxa_lwdn  = mct_aVect_indexRA(x2r_r,'Faxa_lwdn')
+
+          mrgstr(index_x2r_Sa_tbot)    = trim(mrgstr(index_x2r_Sa_tbot))//' = '//'a2x%Sa_tbot'
+          mrgstr(index_x2r_Sa_pbot)    = trim(mrgstr(index_x2r_Sa_pbot))//' = '//'a2x%Sa_pbot'
+          mrgstr(index_x2r_Sa_u)       = trim(mrgstr(index_x2r_Sa_u))//' = '//'a2x%Sa_u'
+          mrgstr(index_x2r_Sa_v)       = trim(mrgstr(index_x2r_Sa_v))//' = '//'a2x%Sa_v'
+          mrgstr(index_x2r_Sa_shum)    = trim(mrgstr(index_x2r_Sa_shum))//' = '//'a2x%Sa_shum'
+          mrgstr(index_x2r_Faxa_swndr) = trim(mrgstr(index_x2r_Faxa_swndr))//' = '//'a2x%Faxa_swndr'
+          mrgstr(index_x2r_Faxa_swndf) = trim(mrgstr(index_x2r_Faxa_swndf))//' = '//'a2x%Faxa_swndf'
+          mrgstr(index_x2r_Faxa_swvdr) = trim(mrgstr(index_x2r_Faxa_swvdr))//' = '//'a2x%Faxa_swvdr'
+          mrgstr(index_x2r_Faxa_swvdf) = trim(mrgstr(index_x2r_Faxa_swvdf))//' = '//'a2x%Faxa_swvdf'
+          mrgstr(index_x2r_Faxa_lwdn)  = trim(mrgstr(index_x2r_Faxa_lwdn))//' = '//'a2x%Faxa_lwdn'
+       endif 
+
+    end if
+! fill in with data from moab tags
+
+! fill with fractions from river instance
+! fractions_rm, 
+    ent_type = 1 ! cells
+    tagname = 'lfrac:lfrin:rfrac'//C_NULL_CHAR
+    arrsize = 3 * lsize
+    ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, fractions_rm(1,1))
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting fractions_om from rof instance ')
+    endif
+   ! fill the r2x_rm, etc double array fields nflds
+    tagname = trim(seq_flds_x2r_fields)//C_NULL_CHAR
+    arrsize = nflds * lsize
+    ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, x2r_rm(1,1))
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in getting x2r_rm array ')
+    endif    
+    ! a2x_rm (lsize, naflds))
+
+    tagname = trim(seq_flds_a2x_fields_to_rof)//C_NULL_CHAR
+    arrsize = naflds * lsize !        allocate (a2x_rm (lsize, naflds))
+    ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, a2x_rm(1,1))
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in getting a2x_rm array ')
+    endif
+    !  l2x_rm
+    tagname = trim(seq_flds_l2x_fluxes_to_rof)//C_NULL_CHAR
+    arrsize = nlflds * lsize !        
+    ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, l2x_rm(1,1))
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in getting l2x_rm array ')
+    endif
+
+! replace x2r_r%rAttr(index ,i) with x2r_rm(i,index), etc from formula in prep_rof_merge
+! x2r_r%rAttr( -> x2r_rm(i, %rAttr( -> m(,i)  ,i) -> )
+    do i = 1,lsize
+       frac = fractions_rm(i,index_frac)
+       x2r_rm(i,index_x2r_Flrl_rofsur) = l2x_rm(i,index_l2x_Flrl_rofsur) * frac
+       x2r_rm(i,index_x2r_Flrl_rofgwl) = l2x_rm(i,index_l2x_Flrl_rofgwl) * frac
+       x2r_rm(i,index_x2r_Flrl_rofsub) = l2x_rm(i,index_l2x_Flrl_rofsub) * frac
+       x2r_rm(i,index_x2r_Flrl_rofdto) = l2x_rm(i,index_l2x_Flrl_rofdto) * frac
+       x2r_rm(i,index_x2r_Flrl_rofi) = l2x_rm(i,index_l2x_Flrl_rofi) * frac
+       if (trim(cime_model).eq.'e3sm') then
+          x2r_rm(i,index_x2r_Flrl_demand) = l2x_rm(i,index_l2x_Flrl_demand) * frac
+       endif
+       if (have_irrig_field) then
+          x2r_rm(i,index_x2r_Flrl_irrig) = l2x_rm(i,index_l2x_Flrl_irrig) * frac
+       end if
+       if(trim(cime_model) .eq. 'e3sm') then
+         x2r_rm(i,index_x2r_Flrl_Tqsur) = l2x_rm(i,index_l2x_Flrl_Tqsur)
+         x2r_rm(i,index_x2r_Flrl_Tqsub) = l2x_rm(i,index_l2x_Flrl_Tqsub)
+       endif
+       if ( flds_wiso_rof ) then
+          x2r_rm(i,index_x2r_Flrl_rofl_16O) = l2x_rm(i,index_l2x_Flrl_rofl_16O) * frac
+          x2r_rm(i,index_x2r_Flrl_rofi_16O) = l2x_rm(i,index_l2x_Flrl_rofi_16O) * frac
+          x2r_rm(i,index_x2r_Flrl_rofl_18O) = l2x_rm(i,index_l2x_Flrl_rofl_18O) * frac
+          x2r_rm(i,index_x2r_Flrl_rofi_18O) = l2x_rm(i,index_l2x_Flrl_rofi_18O) * frac
+          x2r_rm(i,index_x2r_Flrl_rofl_HDO) = l2x_rm(i,index_l2x_Flrl_rofl_HDO) * frac
+          x2r_rm(i,index_x2r_Flrl_rofi_HDO) = l2x_rm(i,index_l2x_Flrl_rofi_HDO) * frac
+       end if
+      
+       if ( rof_heat ) then
+          x2r_rm(i,index_x2r_Sa_tbot)    = a2x_rm(i,index_a2x_Sa_tbot)
+          x2r_rm(i,index_x2r_Sa_pbot)    = a2x_rm(i,index_a2x_Sa_pbot)
+          x2r_rm(i,index_x2r_Sa_u)       = a2x_rm(i,index_a2x_Sa_u)
+          x2r_rm(i,index_x2r_Sa_v)       = a2x_rm(i,index_a2x_Sa_v)
+          x2r_rm(i,index_x2r_Sa_shum)    = a2x_rm(i,index_a2x_Sa_shum)
+          x2r_rm(i,index_x2r_Faxa_swndr) = a2x_rm(i,index_a2x_Faxa_swndr)
+          x2r_rm(i,index_x2r_Faxa_swndf) = a2x_rm(i,index_a2x_Faxa_swndf)
+          x2r_rm(i,index_x2r_Faxa_swvdr) = a2x_rm(i,index_a2x_Faxa_swvdr)
+          x2r_rm(i,index_x2r_Faxa_swvdf) = a2x_rm(i,index_a2x_Faxa_swvdf)
+          x2r_rm(i,index_x2r_Faxa_lwdn)  = a2x_rm(i,index_a2x_Faxa_lwdn)
+       endif
+
+    end do
+    ! after we are done, set x2r_rm to the mbrxid
+
+    tagname = trim(seq_flds_x2r_fields)//C_NULL_CHAR
+    arrsize = nflds * lsize
+    ierr = iMOAB_SetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, x2r_rm(1,1))
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in setting x2r_rm array ')
+    endif
+    if (first_time) then
+       if (iamroot) then
+          write(logunit,'(A)') subname//' Summary:'
+          do i = 1,nflds
+             write(logunit,'(A)') trim(mrgstr(i))
+          enddo
+       endif
+       deallocate(mrgstr)
+    endif
+    first_time = .false.
+
+#ifdef MOABDEBUG
+  !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
+    x2r_r => component_get_x2c_cx(rof(1))
+    ! loop over all fields in seq_flds_x2r_fields
+    call mct_list_init(temp_list ,seq_flds_x2r_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 1 ! cell for river
+    if (iamroot) print *, num_moab_exports, trim(seq_flds_x2r_fields)
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call compare_mct_av_moab_tag(rof(1), x2r_r, mct_field,  mbrxid, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+
+
+    if (mbrxid .ge. 0 ) then !  we are on coupler pes, for sure
+     write(lnum,"(I0.2)")num_moab_exports
+     outfile = 'RofCplAftMm'//trim(lnum)//'.h5m'//C_NULL_CHAR
+     wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+     ierr = iMOAB_WriteMesh(mbrxid, trim(outfile), trim(wopts))
+   endif
+#endif
+
+  end subroutine prep_rof_mrg_moab
+#endif 
   !================================================================================================
 
   subroutine prep_rof_calc_l2r_rx(fractions_lx, timer)
