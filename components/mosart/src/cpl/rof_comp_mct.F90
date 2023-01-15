@@ -78,8 +78,10 @@ module rof_comp_mct
 #ifdef HAVE_MOAB
   private :: init_rof_moab   ! create moab mesh (cloud of points)
   private :: rof_export_moab          ! Export the river runoff model data to the MOAB coupler
-  integer , private :: mblsize, totalmbls
-  real (r8) , allocatable, private :: r2x_rm(:,:)  !  moab fields, similar to r2x_rx transpose
+  private :: rof_import_moab          ! import the river runoff model data from the MOAB coupler
+  integer , private :: mblsize, totalmbls, totalmbls_r
+  real (r8) , allocatable, private :: r2x_rm(:,:)  !  moab fields, similar to r2x_r transpose ! used in export to coupler
+  real (r8) , allocatable, private :: x2r_rm(:,:)  !  moab fields, similar to x2r_r transpose ! used in import from coupler
 #endif
 ! PRIVATE DATA MEMBERS:
 
@@ -102,6 +104,7 @@ contains
 #ifdef HAVE_MOAB
     use iMOAB , only : iMOAB_RegisterApplication
     integer :: nsend ! number of fields in seq_flds_r2x_fields
+    integer :: nrecv ! number of fields in seq_flds_x2r_fields
 #endif
     type(ESMF_Clock),           intent(inout) :: EClock     ! Input synchronization clock
     type(seq_cdata),            intent(inout) :: cdata_r    ! Input runoff-model driver data
@@ -308,10 +311,22 @@ contains
        tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
        ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
        if ( ierr == 1 ) then
-           call shr_sys_abort( sub//' ERROR: cannot define tags in moab' )
+           call shr_sys_abort( sub//' ERROR: cannot define tags fro seq_flds_r2x_fields in moab' )
        end if
        ! also load initial data to moab tags
        call rof_export_moab()
+       ! allocate now the import from coupler array
+       nrecv = mct_avect_nRattr(x2r_r)
+       totalmbls_r = mblsize * nrecv ! size of the double array
+       allocate (x2r_rm(lsize, nrecv) )
+      ! define tags according to the seq_flds_r2x_fields 
+       tagtype = 1  ! dense, double
+       numco = 1 !  one value per cell / entity
+       tagname = trim(seq_flds_x2r_fields)//C_NULL_CHAR
+       ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
+       if ( ierr == 1 ) then
+           call shr_sys_abort( sub//' ERROR: cannot define tags for seq_flds_x2r_fields in moab' )
+       end if
 
 !  endif HAVE_MOAB
 #endif
@@ -392,6 +407,9 @@ contains
 
     ! Map MCT to land data type (output is totrunin, subrunin)
     call t_startf ('lc_rof_import')
+#ifdef HAVE_MOAB
+    call rof_import_moab( )
+#endif
     call rof_import_mct( x2r_r)
     call t_stopf ('lc_rof_import')
 
@@ -1043,6 +1061,176 @@ subroutine rof_export_moab()
 
 ! end copy
 end subroutine rof_export_moab
+
+!====================================================================================
+ 
+  subroutine rof_import_moab( )
+
+    use iMOAB, only : iMOAB_GetDoubleTagStorage
+    !---------------------------------------------------------------------------
+    ! DESCRIPTION:
+    ! Obtain the runoff input from the moab coupler
+    ! convert from kg/m2s to m3/s
+    !
+    ! ARGUMENTS:
+    implicit none
+     
+    !
+    ! LOCAL VARIABLES
+    integer :: n2, n, nt, begr, endr, nliq, nfrz
+    real(R8) :: tmp1, tmp2
+    real(R8) :: shum
+    character(CXX) ::  tagname ! 
+    integer  :: ent_type, ierr
+
+    character(len=32), parameter :: sub = 'rof_import_moab'
+    !---------------------------------------------------------------------------
+    
+    ! populate the array x2r_rm with data from MOAB tags
+    tagname=trim(seq_flds_x2r_fields)//C_NULL_CHAR
+    ent_type = 0 ! vertices, point cloud
+    ierr = iMOAB_GetDoubleTagStorage ( mrofid, tagname, totalmbls_r , ent_type, x2r_rm(1,1) )
+    if ( ierr > 0) then
+      call shr_sys_abort(sub//'Error: fail to get  seq_flds_a2x_fields for atm physgrid moab mesh')
+    endif
+
+    ! Note that ***runin are fluxes
+    nliq = 0
+    nfrz = 0
+    do nt = 1,nt_rtm
+       if (trim(rtm_tracers(nt)) == 'LIQ') then
+          nliq = nt
+       endif
+       if (trim(rtm_tracers(nt)) == 'ICE') then
+          nfrz = nt
+       endif
+    enddo
+    if (nliq == 0 .or. nfrz == 0) then
+       write(iulog,*) trim(sub),': ERROR in rtm_tracers LIQ ICE ',nliq,nfrz,rtm_tracers
+       call shr_sys_abort()
+    endif
+
+  ! %rAttr( -> m(n2,    ,n2) -> )
+    begr = rtmCTL%begr
+    endr = rtmCTL%endr
+    do n = begr,endr
+       n2 = n - begr + 1
+
+       rtmCTL%qsur(n,nliq) = x2r_rm(n2,index_x2r_Flrl_rofsur) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qsub(n,nliq) = x2r_rm(n2,index_x2r_Flrl_rofsub) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qgwl(n,nliq) = x2r_rm(n2,index_x2r_Flrl_rofgwl) * (rtmCTL%area(n)*0.001_r8)
+       if (index_x2r_Flrl_rofdto > 0) then
+          rtmCTL%qdto(n,nliq) = x2r_rm(n2,index_x2r_Flrl_rofdto) * (rtmCTL%area(n)*0.001_r8)
+       else
+          rtmCTL%qdto(n,nliq) = 0.0_r8
+       endif
+       if (wrmflag) then
+          rtmCTL%qdem(n,nliq) = x2r_rm(n2,index_x2r_Flrl_demand) / TUnit%domainfrac(n) * (rtmCTL%area(n)*0.001_r8)
+       else
+          rtmCTL%qdem(n,nliq) = 0.0_r8
+       endif
+       rtmCTL%qsur(n,nfrz) = x2r_rm(n2,index_x2r_Flrl_rofi) * (rtmCTL%area(n)*0.001_r8)
+       rtmCTL%qsub(n,nfrz) = 0.0_r8
+       rtmCTL%qgwl(n,nfrz) = 0.0_r8
+       rtmCTL%qdto(n,nfrz) = 0.0_r8
+       rtmCTL%qdem(n,nfrz) = 0.0_r8
+
+       if(heatflag) then
+          rtmCTL%Tqsur(n) = x2r_rm(n2,index_x2r_Flrl_Tqsur)
+          rtmCTL%Tqsub(n) = x2r_rm(n2,index_x2r_Flrl_Tqsub)
+          THeat%Tqsur(n) = rtmCTL%Tqsur(n)
+          THeat%Tqsub(n) = rtmCTL%Tqsub(n)
+       
+          THeat%forc_t(n) = x2r_rm(n2,index_x2r_Sa_tbot)
+          THeat%forc_pbot(n) = x2r_rm(n2,index_x2r_Sa_pbot)
+          tmp1 = x2r_rm(n2,index_x2r_Sa_u   )
+          tmp2 = x2r_rm(n2,index_x2r_Sa_v   )
+          THeat%forc_wind(n) = sqrt(tmp1*tmp1 + tmp2*tmp2)
+          THeat%forc_lwrad(n)= x2r_rm(n2,index_x2r_Faxa_lwdn )
+          THeat%forc_solar(n)= x2r_rm(n2,index_x2r_Faxa_swvdr) + x2r_rm(n2,index_x2r_Faxa_swvdf) + &
+                               x2r_rm(n2,index_x2r_Faxa_swndr) + x2r_rm(n2,index_x2r_Faxa_swndf)
+          shum = x2r_rm(n2,index_x2r_Sa_shum)
+          THeat%forc_vp(n)   = shum * THeat%forc_pbot(n)  / (0.622_r8 + 0.378_r8 * shum)
+          THeat%coszen(n)    = x2r_rm(n2,index_x2r_coszen_str)
+       end if
+    enddo
+
+  end subroutine rof_import_moab
+
+
+#ifdef MOABDEBUG
+ ! assumes everything is on component side, to compare before imports
+  subroutine compare_to_moab_tag_rof(mpicom, attrVect, mct_field, appId, tagname, ent_type, difference)
+    
+    use shr_mpi_mod,       only: shr_mpi_sum,  shr_mpi_commrank
+    use shr_kind_mod,     only:  CXX => shr_kind_CXX
+    use seq_comm_mct , only : CPLID, seq_comm_iamroot
+    use seq_comm_mct, only:   seq_comm_setptrs
+    use iMOAB, only : iMOAB_DefineTagStorage,  iMOAB_GetDoubleTagStorage, &
+       iMOAB_SetDoubleTagStorageWithGid, iMOAB_GetMeshInfo
+    
+    use iso_c_binding 
+
+    integer, intent(in) :: mpicom
+    integer , intent(in) :: appId, ent_type
+    type(mct_aVect) , intent(in)      :: attrVect
+    character(*) , intent(in)       :: mct_field
+    character(*) , intent(in)       :: tagname
+
+    real(r8)      , intent(out)     :: difference
+
+    real(r8)  :: differenceg ! global, reduced diff
+    integer   :: mbSize, nloc, index_avfield, rank2
+
+     ! moab
+     integer                  :: tagtype, numco,  tagindex, ierr
+     character(CXX)           :: tagname_mct
+     
+     real(r8) , allocatable :: values(:), mct_values(:)
+     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+     logical   :: iamroot
+
+
+     character(*),parameter :: subName = '(compare_to_moab_tag_rof) '
+
+     nloc = mct_avect_lsize(attrVect)
+     allocate(mct_values(nloc))
+
+     index_avfield     = mct_aVect_indexRA(attrVect,trim(mct_field))
+     mct_values(:) = attrVect%rAttr(index_avfield,:) 
+
+     ! now get moab tag values; first get info
+     ierr  = iMOAB_GetMeshInfo ( appId, nvert, nvise, nbl, nsurf, nvisBC );
+     if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to get mesh info')
+     if (ent_type .eq. 0) then
+        mbSize = nvert(1)
+     else if (ent_type .eq. 1) then
+        mbSize = nvise(1)
+     endif
+     allocate(values(mbSize))
+
+     ierr = iMOAB_GetDoubleTagStorage ( appId, tagname, mbSize , ent_type, values)
+     if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to get moab tag values')
+      
+     values  = mct_values - values
+
+     difference = dot_product(values, values)
+     call shr_mpi_sum(difference,differenceg,mpicom,subname)
+     difference = sqrt(differenceg)
+     call shr_mpi_commrank( mpicom, rank2 )
+     if ( rank2 .eq. 0 ) then
+        print * , subname, ' , difference on tag ', trim(tagname), ' = ', difference
+        !call shr_sys_abort(subname//'differences between mct and moab values')
+     endif
+     deallocate(values)
+     deallocate(mct_values)
+
+  end subroutine compare_to_moab_tag_rof
+  !  #endif for MOABDEBUG
+#endif
+
 
 ! end #ifdef HAVE_MOAB
 #endif 
