@@ -534,7 +534,7 @@ contains
 
   end subroutine prep_ice_merge
 
-  subroutine prep_ice_mrg_moab(infodata)
+  subroutine prep_ice_mrg_moab(infodata, rof_c2_ice)
     use iMOAB , only : iMOAB_GetDoubleTagStorage, &
     iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh, iMOAB_GetMeshInfo
 
@@ -542,6 +542,7 @@ contains
     !
     ! Arguments
     type(seq_infodata_type) , intent(in)    :: infodata
+    logical,                   intent(in)    :: rof_c2_ice ! .true.  => rof to ice coupling on
     !
     ! Local variables
     real(r8)        :: flux_epbalfact
@@ -772,7 +773,11 @@ contains
 ! no glacier yet
 !       x2i_im(n,index_x2i_Fixx_rofi) = g2x_im(n,index_g2x_Figg_rofi) + &
 !            r2x_im(n,index_r2x_Firr_rofi)
-        x2i_im(n,index_x2i_Fixx_rofi) = r2x_im(n,index_r2x_Firr_rofi)
+        if(rof_c2_ice) then
+            x2i_im(n,index_x2i_Fixx_rofi) = r2x_im(n,index_r2x_Firr_rofi)
+        else
+            x2i_im(n,index_x2i_Fixx_rofi) = 0._r8
+        endif
 
        x2i_im(n,index_x2i_Faxa_rain) = x2i_im(n,index_x2i_Faxa_rain) * flux_epbalfact
        x2i_im(n,index_x2i_Faxa_snow) = x2i_im(n,index_x2i_Faxa_snow) * flux_epbalfact
@@ -866,12 +871,12 @@ contains
     call t_drvstopf  (trim(timer))
 
 #ifdef MOABDEBUG
-    if (mbixid .ge. 0 ) then !  we are on coupler pes, for sure
-       write(lnum,"(I0.2)")num_moab_exports
-       outfile = 'IceCplAfto2i'//trim(lnum)//'.h5m'//C_NULL_CHAR
-       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-       ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
-    endif
+!   if (mbixid .ge. 0 ) then !  we are on coupler pes, for sure
+!      write(lnum,"(I0.2)")num_moab_exports
+!      outfile = 'IceCplAfto2i'//trim(lnum)//'.h5m'//C_NULL_CHAR
+!      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+!      ierr = iMOAB_WriteMesh(mbixid, trim(outfile), trim(wopts))
+!   endif
 #endif
 
   end subroutine prep_ice_calc_a2x_ix

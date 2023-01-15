@@ -4769,7 +4769,7 @@ contains
 
        call prep_ice_mrg(infodata, timer_mrg='CPL:iceprep_mrgx2i')
 
-       call prep_ice_mrg_moab(infodata)
+       call prep_ice_mrg_moab(infodata,rof_c2_ice)
 
        call component_diag(infodata, ice, flow='x2c', comment= 'send ice', &
             info_debug=info_debug, timer_diag='CPL:iceprep_diagav')
