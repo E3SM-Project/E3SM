@@ -1415,6 +1415,25 @@ contains
             write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on ice on coupler '
             call shr_sys_abort(subname//' ERROR in defining tags ')
          endif
+
+         tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
+         tagtype = 1 ! dense
+         numco = 1 ! 
+         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on ice cpl'
+            call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on ice cpl')
+         endif
+
+         tagname = trim(seq_flds_r2x_fields)//C_NULL_CHAR
+         tagtype = 1 ! dense
+         numco = 1 ! 
+         ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in defining tags for seq_flds_r2x_fields on ice cpl'
+            call shr_sys_abort(subname//' ERROR in coin defining tags for seq_flds_a2x_fields on ice cpl')
+         endif
+
 #ifdef MOABDEBUG
    !      debug test
          outfile = 'recSeaIce.h5m'//C_NULL_CHAR
