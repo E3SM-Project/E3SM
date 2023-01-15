@@ -271,7 +271,7 @@ contains
            
             dm2 = "fv"//C_NULL_CHAR
             dofnameT="GLOBAL_ID"//C_NULL_CHAR
-            orderS = 1  !  not much arguing
+            orderT = 1  !  not much arguing
             fNoBubble = 1
             monotonicity = 0 !
             noConserve = 0
