@@ -1116,6 +1116,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        allocate(a2x_om (lsize, naflds))
        allocate(i2x_om (lsize, niflds))
        allocate(r2x_om (lsize, nrflds))
+       r2x_om = 0._r8 ! should we zero out all of them ?
        allocate(xao_om (lsize, nxflds))
        ! allocate fractions too
        ! use the fraclist fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'

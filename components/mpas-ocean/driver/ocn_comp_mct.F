@@ -42,7 +42,7 @@ module ocn_comp_mct
    use mpas_moabmesh
    use seq_comm_mct, only: MPOID
    use seq_comm_mct,      only: num_moab_exports
-   use iMOAB, only: iMOAB_DefineTagStorage
+   use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage
 #endif
    use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
    use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
@@ -228,7 +228,7 @@ contains
 
 #ifdef HAVE_MOAB
     character*100 outfile, wopts
-    integer :: ierrmb, numco, tagtype, tagindex
+    integer :: ierrmb, numco, tagtype, tagindex, ent_type
     character(CXX) :: tagname
 #endif
     interface
@@ -639,12 +639,10 @@ contains
 #ifdef HAVE_MOAB
     ! initialize moab tag fields array
    mblsize = lsize
-   totalmbls = mblsize * nsend ! size of the double array
+   totalmbls = mblsize * nsend ! size of the double array for exporting to coupler
    allocate (o2x_om(lsize, nsend) )
-
-   totalmbls_r = mblsize * nrecv ! size of the double array for importing 
-   allocate (x2o_om(lsize, nrecv) )
-   ! define tags according to the seq_flds_o2x_fields 
+   o2x_om = 0._r8
+  ! define tags according to the seq_flds_o2x_fields 
    tagtype = 1  ! dense, double
    numco = 1 !  one value per cell / entity
    tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
@@ -652,11 +650,32 @@ contains
    if ( ierrmb == 1 ) then
       call mpas_log_write('cannot define tags for MOAB o2x fields ' // trim(seq_flds_o2x_fields), MPAS_LOG_ERR)
    endif
+   !  set all tags to 0 in one method
+   ent_type = 1! cells
+   ierr = iMOAB_SetDoubleTagStorage ( MPOID, tagname, totalmbls , ent_type, o2x_om(1, 1) )
+   if ( ierr /= 0 ) then
+      write(ocnLogUnit,*) 'Fail to set MOAB fields '
+   endif
+
+   totalmbls_r = mblsize * nrecv ! size of the double array for importing 
+   allocate (x2o_om(lsize, nrecv) )
+   x2o_om = 0._r8
+
    tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
    ierrmb = iMOAB_DefineTagStorage(MPOID, tagname, tagtype, numco,  tagindex )
    if ( ierrmb == 1 ) then
       call mpas_log_write('cannot define tags for MOAB x2o fields ' // trim(seq_flds_x2o_fields), MPAS_LOG_ERR)
    endif
+   !  set all tags to 0 in one method
+   ierr = iMOAB_SetDoubleTagStorage ( MPOID, tagname, totalmbls_r , ent_type, x2o_om(1, 1) )
+   if ( ierr /= 0 ) then
+      write(ocnLogUnit,*) 'Fail to set MOAB fields '
+   endif
+   
+   
+   ent_type = 1 ! cells
+      
+
 #endif
 !-----------------------------------------------------------------------
 !
@@ -850,10 +869,10 @@ contains
     call mpas_get_timeInterval(timeStep, dt=dt)
 
 #ifdef HAVE_MOAB
-   !  call ocn_import_moab(errorCode)
-   !  if (errorCode /= 0) then
-   !     call mpas_log_write('Error in ocn_import_moab', MPAS_LOG_CRIT)
-   !  endif
+    call ocn_import_moab(errorCode)
+    if (errorCode /= 0) then
+       call mpas_log_write('Error in ocn_import_moab', MPAS_LOG_CRIT)
+    endif
 #endif
     call ocn_import_mct(x2o_o, errorCode)  
     if (errorCode /= 0) then
@@ -969,10 +988,10 @@ contains
 
     ! Import state from moab coupler
 #ifdef HAVE_MOAB
-     ! call ocn_import_moab(ierr)
-     ! if (ierr /= 0) then
-     !    call mpas_log_write('Error in ocn_import_moab', MPAS_LOG_CRIT)
-     ! endif
+      call ocn_import_moab(ierr)
+      if (ierr /= 0) then
+         call mpas_log_write('Error in ocn_import_moab', MPAS_LOG_CRIT)
+      endif
 #endif
       ! Import state from coupler
       call ocn_import_mct(x2o_o, ierr)
