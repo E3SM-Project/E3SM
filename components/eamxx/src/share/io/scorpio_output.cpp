@@ -462,9 +462,9 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
       } else {
         tag_len = layout.dim(i);
       }
-      m_dims.emplace(std::make_pair(get_nc_tag_name(tags[i],dims[i]),tag_len));
+      m_dims[get_nc_tag_name(tags[i],dims[i])] = std::make_pair(tag_len,is_partitioned);
     } else {  
-      EKAT_REQUIRE_MSG(m_dims.at(tag_name)==dims[i] or is_partitioned,
+      EKAT_REQUIRE_MSG(m_dims.at(tag_name).first==dims[i] or is_partitioned,
         "Error! Dimension " + tag_name + " on field " + name + " has conflicting lengths");
     }
   }
@@ -694,7 +694,7 @@ setup_output_file(const std::string& filename,
 
   // Register dimensions with netCDF file.
   for (auto it : m_dims) {
-    register_dimension(filename,it.first,it.first,it.second);
+    register_dimension(filename,it.first,it.first,it.second.first,it.second.second);
   }
 
   // Register variables with netCDF file.  Must come after dimensions are registered.

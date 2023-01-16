@@ -79,7 +79,8 @@ module scream_scorpio_interface
             get_dimlen,                  & ! Returns the length of a specific dimension in a file
             has_variable                   ! Checks if given file contains a certain variable
 
-  private :: errorHandle
+  private :: errorHandle, get_coord
+
   ! Universal PIO variables for the module
   integer               :: atm_mpicom
   integer               :: pio_iotype
@@ -102,6 +103,7 @@ module scream_scorpio_interface
     integer                  :: dimid               ! Unique PIO Id for this dimension
     character(len=max_chars) :: long_name = ''      ! 'long_name' attribute
     character(len=max_chars) :: units = ''          ! 'units' attribute
+    logical                  :: is_partitioned      ! whether the dimension is partitioned across ranks
   end type hist_coord_t
 
   type, public :: hist_var_t
@@ -120,6 +122,7 @@ module scream_scorpio_interface
     integer, allocatable :: dimlen(:)         ! array of PIO dimension lengths for this variable
     logical              :: has_t_dim         ! true, if variable has a time dimension
     logical              :: is_set = .false.  ! Safety measure to ensure a deallocated hist_var_t is never used
+    logical              :: is_partitioned    ! Whether at least one of the dims is partitioned
   end type hist_var_t
 
   ! The iodesc_list allows us to cache existing PIO decompositions
@@ -243,13 +246,14 @@ contains
   ! length:    The dimension length (must be >=0).  Choosing 0 marks the
   !            dimensions as having "unlimited" length which is used for
   !            dimensions such as time.
-  subroutine register_dimension(filename,shortname,longname,length)
+  subroutine register_dimension(filename,shortname,longname,length,is_partitioned)
     use pio_types, only: pio_unlimited
     use pio_nf,    only: PIO_def_dim
 
     character(len=*), intent(in)        :: filename   ! Name of file to register the dimension on.
     character(len=*), intent(in)        :: shortname,longname ! Short- and long- names for this dimension, short: brief identifier and name for netCDF output, long: longer descriptor sentence to be included as meta-data in file.
     integer, intent(in)                 :: length             ! Length of the dimension, 0: unlimited (like time), >0 actual length of dimension
+    logical, intent(in)                 :: is_partitioned   ! whether this dimension is partitioned across ranks
 
     type(pio_atm_file_t), pointer       :: pio_atm_file
     type(hist_coord_t), pointer         :: hist_coord
@@ -286,10 +290,12 @@ contains
       curr => prev%next
       allocate(curr%coord)
       hist_coord => curr%coord
+
       ! Register this dimension
-      hist_coord%name      = trim(shortname)
-      hist_coord%long_name = trim(longname)
-      hist_coord%dimsize   = length
+      hist_coord%name           = trim(shortname)
+      hist_coord%long_name      = trim(longname)
+      hist_coord%dimsize        = length
+      hist_coord%is_partitioned = is_partitioned
 
       if (length.eq.0) then
         ierr = PIO_def_dim(pio_atm_file%pioFileDesc, trim(shortname), pio_unlimited , hist_coord%dimid)
@@ -383,6 +389,7 @@ contains
       ! Determine the dimension id's saved in the netCDF file and associated with
       ! this variable, check if variable has a time dimension
       hist_var%has_t_dim = .false.
+      hist_var%is_partitioned = .false.
       allocate(hist_var%dimid(numdims),hist_var%dimlen(numdims))
       do dim_ii = 1,numdims
         ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim(var_dimensions(dim_ii)),hist_var%dimid(dim_ii))
@@ -475,6 +482,7 @@ contains
     logical                      :: found,var_found
     integer                      :: ierr
     character(len=256)           :: dimlen_str
+    type(hist_coord_t), pointer  :: hist_coord
 
     type(hist_var_list_t), pointer :: curr, prev
     
@@ -518,6 +526,7 @@ contains
       ! Determine the dimension id's saved in the netCDF file and associated with
       ! this variable, check if variable has a time dimension
       hist_var%has_t_dim = .false.
+      hist_var%is_partitioned = .false.
       allocate(hist_var%dimid(numdims),hist_var%dimlen(numdims))
       do dim_ii = 1,numdims
         ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim(var_dimensions(dim_ii)),hist_var%dimid(dim_ii))
@@ -527,6 +536,11 @@ contains
         if (hist_var%dimlen(dim_ii).eq.0) hist_var%has_t_dim = .true.
         call convert_int_2_str(hist_var%dimlen(dim_ii),dimlen_str)
         hist_var%pio_decomp_tag = hist_var%pio_decomp_tag//"_"//trim(dimlen_str)
+
+        call get_coord (filename,var_dimensions(dim_ii),hist_coord)
+        if (hist_coord%is_partitioned) then
+          hist_var%is_partitioned = .true.
+        endif
       end do
 
       ierr = PIO_def_var(pio_atm_file%pioFileDesc, trim(shortname), hist_var%nc_dtype, hist_var%dimid(:numdims), hist_var%piovar)
@@ -1659,5 +1673,40 @@ contains
     end if 
 
   end subroutine convert_int_2_str
+
+  subroutine get_coord (filename,shortname,hist_coord)
+    character(len=256), intent(in)           :: filename
+    character(len=256), intent(in)           :: shortname
+    type(hist_coord_t), pointer, intent(out) :: hist_coord
+
+    type(pio_atm_file_t), pointer    :: pio_atm_file
+    type(hist_coord_list_t), pointer :: curr, prev
+    logical                          :: file_found, dim_found
+
+    hist_coord => NULL()
+
+    call lookup_pio_atm_file(trim(filename),pio_atm_file,file_found)
+    if (.not. file_found ) then
+      call errorHandle("PIO ERROR: error retrieving dimension "//trim(shortname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
+    endif
+
+    curr => pio_atm_file%coord_list_top
+    do while (associated(curr))
+      if (associated(curr%coord)) then
+        if(trim(curr%coord%name)==trim(shortname)) then
+          dim_found = .true.
+          exit
+        endif
+      end if
+      prev => curr
+      curr => prev%next
+    end do
+
+    if (.not. dim_found ) then
+      call errorHandle("PIO ERROR: error retrieving dimension "//trim(shortname)//" from file "//trim(filename)//". Dimension not found.",-999)
+    endif
+
+    hist_coord => curr%coord
+  end subroutine get_coord
 !=====================================================================!
 end module scream_scorpio_interface

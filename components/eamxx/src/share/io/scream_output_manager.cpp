@@ -415,7 +415,7 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
   // Note: time has an unknown length. Setting its "length" to 0 tells the scorpio to
   // set this dimension as having an 'unlimited' length, thus allowing us to write
   // as many timesnaps to file as we desire.
-  register_dimension(filename,"time","time",0);
+  register_dimension(filename,"time","time",0,false);
 
   // Register time as a variable.
   auto time_units="days since " + m_case_t0.get_date_string() + " " + m_case_t0.get_time_string();

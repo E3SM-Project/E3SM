@@ -220,12 +220,14 @@ contains
 
   end subroutine set_variable_metadata_c2f
 !=====================================================================!
-  subroutine register_dimension_c2f(filename_in, shortname_in, longname_in, length) bind(c)
+  subroutine register_dimension_c2f(filename_in, shortname_in, longname_in, length, partitioned) bind(c)
     use scream_scorpio_interface, only : register_dimension
-    type(c_ptr), intent(in)                :: filename_in
-    type(c_ptr), intent(in)                :: shortname_in
-    type(c_ptr), intent(in)                :: longname_in
-    integer(kind=c_int), value, intent(in) :: length
+
+    type(c_ptr), intent(in)                 :: filename_in
+    type(c_ptr), intent(in)                 :: shortname_in
+    type(c_ptr), intent(in)                 :: longname_in
+    integer(kind=c_int), value, intent(in)  :: length
+    logical(kind=c_bool), value, intent(in) :: partitioned
 
     character(len=256) :: filename
     character(len=256) :: shortname
@@ -234,7 +236,7 @@ contains
     call convert_c_string(filename_in,filename)
     call convert_c_string(shortname_in,shortname)
     call convert_c_string(longname_in,longname)
-    call register_dimension(filename,shortname,longname,length)
+    call register_dimension(filename,shortname,longname,length,LOGICAL(partitioned))
 
   end subroutine register_dimension_c2f
 !=====================================================================!
