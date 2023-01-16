@@ -1419,6 +1419,7 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_float(filename, varname, buf, buf_size)
+    use pionfput_mod, only: PIO_put_var   => put_var
     use piolib_mod, only: PIO_setframe
     use piodarray,  only: PIO_write_darray
 
@@ -1438,14 +1439,21 @@ contains
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)
 
-    ! Set the timesnap we are reading
-    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    if (var%has_t_dim) then
+      ! Set the time index we are writing
+      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    endif
 
+    if (var%is_partitioned) then
+      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
+    else
+      ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,buf)
+    endif
 
-    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
     call errorHandle( 'eam_grid_write_darray_float: Error writing variable '//trim(varname),ierr)
   end subroutine grid_write_darray_float
   subroutine grid_write_darray_double(filename, varname, buf, buf_size)
+    use pionfput_mod, only: PIO_put_var   => put_var
     use piolib_mod, only: PIO_setframe
     use piodarray,  only: PIO_write_darray
 
@@ -1465,14 +1473,21 @@ contains
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)
 
-    ! Set the timesnap we are reading
-    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    if (var%has_t_dim) then
+      ! Set the time index we are writing
+      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    endif
 
+    if (var%is_partitioned) then
+      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
+    else
+      ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,buf)
+    endif
 
-    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
     call errorHandle( 'eam_grid_write_darray_double: Error writing variable '//trim(varname),ierr)
   end subroutine grid_write_darray_double
   subroutine grid_write_darray_int(filename, varname, buf, buf_size)
+    use pionfput_mod, only: PIO_put_var   => put_var
     use piolib_mod, only: PIO_setframe
     use piodarray,  only: PIO_write_darray
 
@@ -1492,11 +1507,17 @@ contains
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)
 
-    ! Set the timesnap we are reading
-    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    if (var%has_t_dim) then
+      ! Set the time index we are writing
+      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    endif
 
+    if (var%is_partitioned) then
+      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
+    else
+      ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,buf)
+    endif
 
-    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
     call errorHandle( 'eam_grid_write_darray_int: Error writing variable '//trim(varname),ierr)
   end subroutine grid_write_darray_int
 !=====================================================================!

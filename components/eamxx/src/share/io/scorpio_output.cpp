@@ -262,7 +262,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
 
     // Safety check: make sure that the field was written at least once before using it.
     EKAT_REQUIRE_MSG (!m_add_time_dim || field.get_header().get_tracking().get_time_stamp().is_valid(),
-        "Error! Output field '" + name + "' has not been initialized yet\n.");
+        "Error! Time-dependent output field '" + name + "' has not been initialized yet\n.");
 
     const bool is_diagnostic = (m_diagnostics.find(name) != m_diagnostics.end());
     const bool is_aliasing_field_view =
@@ -580,6 +580,8 @@ register_variables(const std::string& filename,
     if (m_add_time_dim) {
       io_decomp_tag += "-time";
       vec_of_dims.push_back("time");  //TODO: See the above comment on time.
+    } else {
+      io_decomp_tag += "-notime";
     }
 
     // TODO  Need to change dtype to allow for other variables.
