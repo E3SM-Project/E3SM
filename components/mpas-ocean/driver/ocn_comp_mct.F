@@ -90,8 +90,11 @@ module ocn_comp_mct
 ! !PRIVATE MODULE VARIABLES
 #ifdef HAVE_MOAB
   private :: ocn_export_moab
-  integer , private :: mblsize, totalmbls
+  private :: ocn_import_moab
+  integer , private :: mblsize, totalmbls, totalmbls_r
   real (kind=RKIND) , allocatable, private :: o2x_om(:,:) 
+
+  real (kind=RKIND) , allocatable, private :: x2o_om(:,:) 
 #endif
 
 
@@ -638,7 +641,10 @@ contains
    mblsize = lsize
    totalmbls = mblsize * nsend ! size of the double array
    allocate (o2x_om(lsize, nsend) )
-   ! define tags according to the seq_flds_i2x_fields 
+
+   totalmbls_r = mblsize * nrecv ! size of the double array for importing 
+   allocate (x2o_om(lsize, nrecv) )
+   ! define tags according to the seq_flds_o2x_fields 
    tagtype = 1  ! dense, double
    numco = 1 !  one value per cell / entity
    tagname = trim(seq_flds_o2x_fields)//C_NULL_CHAR
@@ -843,6 +849,12 @@ contains
     timeStep = mpas_get_clock_timestep(domain_ptr % clock, ierr=ierr)
     call mpas_get_timeInterval(timeStep, dt=dt)
 
+#ifdef HAVE_MOAB
+   !  call ocn_import_moab(errorCode)
+   !  if (errorCode /= 0) then
+   !     call mpas_log_write('Error in ocn_import_moab', MPAS_LOG_CRIT)
+   !  endif
+#endif
     call ocn_import_mct(x2o_o, errorCode)  
     if (errorCode /= 0) then
        call mpas_log_write('Error in ocn_import_mct', MPAS_LOG_CRIT)
@@ -955,6 +967,13 @@ contains
       call mpas_get_timeInterval(timeStep, dt=dt)
       call mpas_reset_clock_alarm(domain_ptr % clock, coupleAlarmID, ierr=ierr)
 
+    ! Import state from moab coupler
+#ifdef HAVE_MOAB
+     ! call ocn_import_moab(ierr)
+     ! if (ierr /= 0) then
+     !    call mpas_log_write('Error in ocn_import_moab', MPAS_LOG_CRIT)
+     ! endif
+#endif
       ! Import state from coupler
       call ocn_import_mct(x2o_o, ierr)
 
@@ -2779,6 +2798,803 @@ contains
    end subroutine datetime!}}}
 
 #ifdef HAVE_MOAB
+
+! import method from moab
+! copied from ocn_import_mct, will replace x2o_o AV with x2o_om array read locally
+ subroutine ocn_import_moab( errorCode)!{{{
+
+! !DESCRIPTION:
+!-----------------------------------------------------------------------
+!  This routine receives message from cpl7 driver
+!
+!    The following fields are always received from the coupler:
+! 
+!    o  taux   -- zonal wind stress (taux)                 (W/m2   )
+!    o  tauy   -- meridonal wind stress (tauy)             (W/m2   )
+!    o  snow   -- water flux due to snow                   (kg/m2/s)
+!    o  rain   -- water flux due to rain                   (kg/m2/s)
+!    o  evap   -- evaporation flux                         (kg/m2/s)
+!    o  meltw  -- snow melt flux                           (kg/m2/s)
+!    o  salt   -- salt                                     (kg(salt)/m2/s)
+!    o  swnet  -- net short-wave heat flux                 (W/m2   )
+!    o  sen    -- sensible heat flux                       (W/m2   )
+!    o  lwup   -- longwave radiation (up)                  (W/m2   )
+!    o  lwdn   -- longwave radiation (down)                (W/m2   )
+!    o  melth  -- heat flux from snow&ice melt             (W/m2   )
+!    o  ifrac  -- ice fraction                             (%)
+!    o  rofl   -- river runoff flux                        (kg/m2/s)
+!    o  rofi   -- ice runoff flux                          (kg/m2/s)
+! 
+!    The following fields are sometimes received from the coupler,
+!      depending on model options:
+! 
+!    o  pbot   -- bottom atm pressure                      (Pa)
+!    o  duu10n -- 10m wind speed squared                   (m^2/s^2)
+!    o  co2prog-- bottom atm level prognostic co2
+!    o  co2diag-- bottom atm level diagnostic co2
+! 
+!-----------------------------------------------------------------------
+!
+! !REVISION HISTORY:
+!  same as module
+
+! !INPUT/OUTPUT PARAMETERS:
+
+   ! type(mct_aVect)   , intent(inout) :: x2o_o
+   ! instead, we will get x2o_om from MPOID 
+
+! !OUTPUT PARAMETERS:
+
+   use iMOAB,  only       : iMOAB_GetDoubleTagStorage
+     !EOP
+     !BOC
+     !-----------------------------------------------------------------------
+     !
+     !  local variables
+      !-----------------------------------------------------------------------
+      !
+      !  local variables
+      !
+      !-----------------------------------------------------------------------
+      integer :: ent_type, ierr
+      character(CXX) :: tagname
+
+   integer, intent(out) :: &
+      errorCode              ! returned error code
+
+!EOP
+!BOC
+!-----------------------------------------------------------------------
+!
+!  local variables
+!
+!-----------------------------------------------------------------------
+
+   character (len=StrKIND) ::   &
+      label,                 &
+      message
+
+   integer ::  &
+      i,n
+
+   integer, pointer :: indexIT, indexIS
+
+   logical, pointer :: config_use_ecosysTracers, &
+                       config_use_ecosysTracers_sea_ice_coupling, &
+                       config_use_DMSTracers,    &
+                       config_use_DMSTracers_sea_ice_coupling,  &
+                       config_use_MacroMoleculesTracers,  &
+                       config_use_MacroMoleculesTracers_sea_ice_coupling, &
+                       config_remove_AIS_coupler_runoff, &
+                       config_cvmix_kpp_use_theory_wave
+
+   character(len=StrKIND), pointer :: config_ecosys_atm_co2_option, &
+                                      config_ecosys_atm_alt_co2_option
+
+   real (kind=RKIND), pointer :: config_ecosys_atm_co2_constant_value
+
+   real (kind=RKIND), pointer :: config_density0
+
+   real (kind=RKIND), pointer :: totalRemovedRiverRunoffFlux, totalRemovedIceRunoffFlux
+
+   type (block_type), pointer :: block_ptr
+
+   type (mpas_pool_type), pointer :: meshPool,             &
+                                     forcingPool,          &
+                                     ecosysAuxiliary,      &
+                                     ecosysSeaIceCoupling, &
+                                     DMSSeaIceCoupling,    &
+                                     MacroMoleculesSeaIceCoupling
+
+   integer, pointer :: nCellsSolve
+
+   type (field1DReal), pointer :: windStressZonalField, windStressMeridionalField, &
+                                  latentHeatFluxField, sensibleHeatFluxField, &
+                                  longWaveHeatFluxUpField, &
+                                  longWaveHeatFluxDownField, &
+                                  evaporationFluxField, seaIceHeatFluxField, icebergHeatFluxField, &
+                                  snowFluxField, seaIceFreshWaterFluxField, icebergFreshWaterFluxField, &
+                                  seaIceSalinityFluxField, &
+                                  riverRunoffFluxField, iceRunoffFluxField, &
+                                  removedRiverRunoffFluxField, removedIceRunoffFluxField, &
+                                  shortWaveHeatFluxField, rainFluxField, &
+                                  atmosphericPressureField, iceFractionField, &
+                                  seaIcePressureField, windSpeedSquared10mField, &
+                                  atmosphericCO2Field, atmosphericCO2_ALT_CO2Field,  &
+                                  iceFluxDICField, &
+                                  iceFluxDONField, &
+                                  iceFluxNO3Field, &
+                                  iceFluxSiO3Field, &
+                                  iceFluxNH4Field, &
+                                  iceFluxDMSField, &
+                                  iceFluxDMSPField, &
+                                  iceFluxDOCrField, &
+                                  iceFluxFeParticulateField, &
+                                  iceFluxFeDissolvedField, &
+                                  iceFluxDustField, &
+                                  landIceFreshwaterFluxField, &
+                                  landIceHeatFluxField, &
+                                  landIceFractionField, &
+                                  windSpeed10mField
+                                  !landIcePressureField
+
+   type (field2DReal), pointer :: iceFluxPhytoCField, &
+                                  iceFluxDOCField
+
+   type (field2DReal), pointer :: landIceInterfaceTracersField
+
+   real (kind=RKIND), dimension(:), pointer :: windStressZonal, windStressMeridional, &
+                                               latentHeatFlux, sensibleHeatFlux, &
+                                               longWaveHeatFluxUp, &
+                                               longWaveHeatFluxDown, &
+                                               evaporationFlux, seaIceHeatFlux, icebergHeatFlux, &
+                                               snowFlux, seaIceFreshWaterFlux, icebergFreshWaterFlux, &
+                                               seaIceSalinityFlux, &
+                                               riverRunoffFlux, iceRunoffFlux, &
+                                               removedRiverRunoffFlux, removedIceRunoffFlux, &
+                                               shortWaveHeatFlux, rainFlux, &
+                                               atmosphericPressure, iceFraction, &
+                                               seaIcePressure, windSpeedSquared10m, &
+                                               atmosphericCO2, atmosphericCO2_ALT_CO2,  &
+                                               iceFluxDIC,       &
+                                               iceFluxDON, &
+                                               iceFluxNO3, &
+                                               iceFluxSiO3, &
+                                               iceFluxNH4, &
+                                               iceFluxDMS, &
+                                               iceFluxDMSP, &
+                                               iceFluxDOCr, &
+                                               iceFluxFeParticulate, &
+                                               iceFluxFeDissolved, &
+                                               iceFluxDust, &
+                                               landIceFreshwaterFlux, &
+                                               landIceHeatFlux, &
+                                               landIceFraction, &
+                                               windSpeed10m
+                                               !landIcePressure
+
+   real (kind=RKIND), dimension(:), pointer :: latCell
+
+   real (kind=RKIND), dimension(:,:), pointer :: iceFluxPhytoC, &
+                                                 iceFluxDOC
+
+   real (kind=RKIND) :: removedRiverRunoffFluxThisProc, removedIceRunoffFluxThisProc
+   real (kind=RKIND) :: removedRiverRunoffFluxReduced, removedIceRunoffFluxReduced
+
+   real (kind=RKIND), dimension(:,:), pointer :: landIceInterfaceTracers
+
+!-----------------------------------------------------------------------
+!
+!  zero out padded cells 
+!
+!-----------------------------------------------------------------------
+
+   errorCode = 0
+
+!  get moab tags from MPOID
+
+
+   ent_type = 1 ! cells
+   !  get all tags in one method
+   tagname = trim(seq_flds_x2o_fields)//C_NULL_CHAR
+   ierr = iMOAB_GetDoubleTagStorage ( MPOID, tagname, totalmbls_r , ent_type, x2o_om(1, 1) )
+   if ( ierr /= 0 ) then
+      write(ocnLogUnit,*) 'Fail to get MOAB fields '
+   endif
+
+!-----------------------------------------------------------------------
+!
+!  unpack and distribute wind stress, then convert to correct units
+!  and rotate components to local coordinates
+!
+!-----------------------------------------------------------------------
+
+   ! get configure options
+   call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers', config_use_ecosysTracers)
+   call mpas_pool_get_config(domain % configs, 'config_use_DMSTracers', config_use_DMSTracers)
+   call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers', config_use_MacroMoleculesTracers)
+   call mpas_pool_get_config(domain % configs, 'config_density0', config_density0)
+   call mpas_pool_get_config(domain % configs, 'config_use_ecosysTracers_sea_ice_coupling',  &
+                                                config_use_ecosysTracers_sea_ice_coupling)
+   call mpas_pool_get_config(domain % configs, 'config_use_DMSTracers_sea_ice_coupling',  &
+                                                config_use_DMSTracers_sea_ice_coupling)
+   call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers_sea_ice_coupling',  &
+                                                config_use_MacroMoleculesTracers_sea_ice_coupling)
+   call mpas_pool_get_config(domain % configs, 'config_remove_AIS_coupler_runoff', config_remove_AIS_coupler_runoff)
+   call mpas_pool_get_config(domain % configs, 'config_cvmix_kpp_use_theory_wave', config_cvmix_kpp_use_theory_wave)
+
+   n = 0
+   removedRiverRunoffFluxThisProc = 0.0_RKIND
+   removedIceRunoffFluxThisProc = 0.0_RKIND
+
+   block_ptr => domain % blocklist
+   do while(associated(block_ptr))
+      call mpas_pool_get_subpool(block_ptr % structs, 'mesh',    meshPool)
+      call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+      call mpas_pool_get_field(forcingPool, 'windStressZonal', windStressZonalField)
+      call mpas_pool_get_field(forcingPool, 'windStressMeridional', windStressMeridionalField)
+      call mpas_pool_get_field(forcingPool, 'latentHeatFlux', latentHeatFluxField)
+      call mpas_pool_get_field(forcingPool, 'sensibleHeatFlux', sensibleHeatFluxField)
+      call mpas_pool_get_field(forcingPool, 'longWaveHeatFluxUp', longWaveHeatFluxUpField)
+      call mpas_pool_get_field(forcingPool, 'longWaveHeatFluxDown', longWaveHeatFluxDownField)
+      call mpas_pool_get_field(forcingPool, 'evaporationFlux', evaporationFluxField)
+      call mpas_pool_get_field(forcingPool, 'seaIceHeatFlux', seaIceHeatFluxField)
+      call mpas_pool_get_field(forcingPool, 'icebergHeatFlux', icebergHeatFluxField)
+      call mpas_pool_get_field(forcingPool, 'snowFlux', snowFluxField)
+      call mpas_pool_get_field(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFluxField)
+      call mpas_pool_get_field(forcingPool, 'icebergFreshWaterFlux', icebergFreshWaterFluxField)
+      call mpas_pool_get_field(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFluxField)
+      call mpas_pool_get_field(forcingPool, 'riverRunoffFlux', riverRunoffFluxField)
+      call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
+      call mpas_pool_get_field(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFluxField)
+      call mpas_pool_get_field(forcingPool, 'rainFlux', rainFluxField)
+      call mpas_pool_get_field(forcingPool, 'atmosphericPressure', atmosphericPressureField)
+      call mpas_pool_get_field(forcingPool, 'seaIcePressure', seaIcePressureField)
+      call mpas_pool_get_field(forcingPool, 'iceFraction', iceFractionField)
+      call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
+      call mpas_pool_get_field(forcingPool, 'removedRiverRunoffFlux', removedRiverRunoffFluxField)
+      call mpas_pool_get_field(forcingPool, 'removedIceRunoffFlux', removedIceRunoffFluxField)
+
+      call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
+      call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
+      call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
+      call mpas_pool_get_field(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracersField)
+
+      call mpas_pool_get_field(forcingPool, 'windSpeed10m', windSpeed10mField)
+
+      call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceTemperature', indexIT)
+      call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceSalinity', indexIS)
+
+   !call mpas_pool_get_field(forcingPool, 'landIcePressure', landIcePressureField)
+
+      windStressZonal => windStressZonalField % array
+      windStressMeridional => windStressMeridionalField % array
+      latentHeatFlux => latentHeatFluxField % array
+      sensibleHeatFlux => sensibleHeatFluxField % array
+      longWaveHeatFluxUp => longWaveHeatFluxUpField % array
+      longWaveHeatFluxDown => longWaveHeatFluxDownField % array
+      evaporationFlux => evaporationFluxField % array
+      seaIceHeatFlux => seaIceHeatFluxField % array
+      icebergHeatFlux => icebergHeatFluxField % array
+      snowFlux => snowFluxField % array
+      seaIceFreshWaterFlux => seaIceFreshWaterFluxField % array
+      icebergFreshWaterFlux => icebergFreshWaterFluxField % array
+      seaIceSalinityFlux => seaIceSalinityFluxField % array
+      riverRunoffFlux => riverRunoffFluxField % array
+      iceRunoffFlux => iceRunoffFluxField % array
+      shortWaveHeatFlux => shortWaveHeatFluxField % array
+      rainFlux => rainFluxField % array
+      atmosphericPressure => atmosphericPressureField % array
+      seaIcePressure => seaIcePressureField % array
+      iceFraction => iceFractionField % array
+      iceRunoffFlux => iceRunoffFluxField % array
+      removedRiverRunoffFlux => removedRiverRunoffFluxField % array
+      removedIceRunoffFlux => removedIceRunoffFluxField % array
+      landIceFreshwaterFlux => landIceFreshwaterFluxField % array
+      landIceHeatFlux => landIceHeatFluxField % array
+      landIceInterfaceTracers => landIceInterfaceTracersField % array
+      landIceFraction => landIceFractionField % array
+      windSpeed10m => windSpeed10mField % array
+      !landIcePressure => landIcePressureField % array
+
+      call mpas_pool_get_array(meshPool, 'latCell', latCell)
+
+      ! BGC fields
+      if (config_use_ecosysTracers) then
+         call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
+
+         call mpas_pool_get_field(ecosysAuxiliary, 'windSpeedSquared10m', windSpeedSquared10mField)
+         windSpeedSquared10m => windSpeedSquared10mField % array
+         call mpas_pool_get_field(ecosysAuxiliary, 'atmosphericCO2', atmosphericCO2Field)
+         atmosphericCO2 => atmosphericCO2Field % array
+         call mpas_pool_get_field(ecosysAuxiliary, 'atmosphericCO2_ALT_CO2', atmosphericCO2_ALT_CO2Field)
+         atmosphericCO2_ALT_CO2 => atmosphericCO2_ALT_CO2Field % array
+
+         call mpas_pool_get_config(domain % configs, 'config_ecosys_atm_co2_option',   &
+            config_ecosys_atm_co2_option)
+         call mpas_pool_get_config(domain % configs, 'config_ecosys_atm_alt_co2_option',   &
+            config_ecosys_atm_alt_co2_option)
+         call mpas_pool_get_config(domain % configs, 'config_ecosys_atm_co2_constant_value',   &
+            config_ecosys_atm_co2_constant_value)
+
+         if (config_use_ecosysTracers_sea_ice_coupling) then
+            call mpas_pool_get_subpool(forcingPool, 'ecosysSeaIceCoupling', ecosysSeaIceCoupling)
+
+            call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxPhytoC', iceFluxPhytoCField)
+            call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDIC', iceFluxDICField)
+            call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxNO3', iceFluxNO3Field)
+            call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxSiO3', iceFluxSiO3Field)
+            call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxNH4', iceFluxNH4Field)
+            call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDOCr', iceFluxDOCrField)
+            call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxFeParticulate', iceFluxFeParticulateField)
+            call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxFeDissolved', iceFluxFeDissolvedField)
+            call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDust', iceFluxDustField)
+            call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDOC', iceFluxDOCField)
+            call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDON', iceFluxDONField)
+
+            iceFluxPhytoC => iceFluxPhytoCField % array
+            iceFluxDIC => iceFluxDICField % array
+            iceFluxNO3 => iceFluxNO3Field % array
+            iceFluxSiO3 => iceFluxSiO3Field % array
+            iceFluxNH4 => iceFluxNH4Field % array
+            iceFluxDOCr => iceFluxDOCrField % array
+            iceFluxFeParticulate => iceFluxFeParticulateField % array
+            iceFluxFeDissolved => iceFluxFeDissolvedField % array
+            iceFluxDust => iceFluxDustField % array
+            iceFluxDOC => iceFluxDOCField % array
+            iceFluxDON => iceFluxDONField % array
+         endif
+      endif
+      if (config_use_DMSTracers .and. config_use_DMSTracers_sea_ice_coupling) then
+         call mpas_pool_get_subpool(forcingPool, 'DMSSeaIceCoupling', DMSSeaIceCoupling)
+
+         call mpas_pool_get_field(DMSSeaIceCoupling, 'iceFluxDMS', iceFluxDMSField)
+         call mpas_pool_get_field(DMSSeaIceCoupling, 'iceFluxDMSP', iceFluxDMSPField)
+
+         iceFluxDMS => iceFluxDMSField % array
+         iceFluxDMSP => iceFluxDMSPField % array
+      endif
+
+      if (config_remove_AIS_coupler_runoff) then
+         ! Initialize these fields
+         removedRiverRunoffFlux(:) = 0.0_RKIND
+         removedIceRunoffFlux(:) = 0.0_RKIND
+      endif
+
+      if (config_cvmix_kpp_use_theory_wave) then
+         ! Initialize these fields
+         windSpeed10m(:) = 0.0_RKIND
+      endif
+
+!  replace 'x2o_o % rAttr(' to 'x2o_om(n, '  and ', n)' with ')'
+      do i = 1, nCellsSolve
+        n = n + 1
+        if ( windStressZonalField % isActive ) then
+           windStressZonal(i) = x2o_om(n, index_x2o_Foxx_taux)
+        end if
+        if ( windStressMeridionalField % isActive ) then
+           windStressMeridional(i) = x2o_om(n, index_x2o_Foxx_tauy)
+        end if
+
+        if ( latentHeatFluxField % isActive ) then
+           latentHeatFlux(i) = x2o_om(n, index_x2o_Foxx_lat)
+        end if
+        if ( sensibleHeatFluxField % isActive ) then
+           sensibleHeatFlux(i) = x2o_om(n, index_x2o_Foxx_sen)
+        end if
+        if ( longWaveHeatFluxUpField % isActive ) then
+           longWaveHeatFluxUp(i) = x2o_om(n, index_x2o_Foxx_lwup)
+        end if
+        if ( longWaveHeatFluxDownField % isActive ) then
+           longWaveHeatFluxDown(i) = x2o_om(n, index_x2o_Faxa_lwdn)
+        end if
+        if ( evaporationFluxField % isActive ) then
+           evaporationFlux(i) = x2o_om(n, index_x2o_Foxx_evap)
+        end if
+        if ( seaIceHeatFluxField % isActive ) then
+           seaIceHeatFlux(i) = x2o_om(n, index_x2o_Fioi_melth)
+        end if
+        if ( icebergHeatFluxField % isActive ) then
+           icebergHeatFlux(i) = x2o_om(n, index_x2o_Fioi_bergh)
+        end if
+        if ( snowFluxField % isActive ) then
+           snowFlux(i) = x2o_om(n, index_x2o_Faxa_snow)
+        end if
+        if ( seaIceFreshWaterFluxField % isActive ) then
+           seaIceFreshWaterFlux(i) = x2o_om(n, index_x2o_Fioi_meltw)
+        end if
+        if ( icebergFreshWaterFluxField % isActive ) then
+           icebergFreshWaterFlux(i) = x2o_om(n, index_x2o_Fioi_bergw)
+        end if
+        if ( seaIceSalinityFluxField % isActive ) then
+           seaIceSalinityFlux(i) = x2o_om(n, index_x2o_Fioi_salt)
+        end if
+        if ( riverRunoffFluxField % isActive ) then
+           riverRunoffFlux(i) = x2o_om(n, index_x2o_Foxx_rofl)
+           if (config_remove_AIS_coupler_runoff) then
+              if (latCell(i) < -1.04719666667_RKIND) then ! 60S in radians
+                 removedRiverRunoffFlux(i) = riverRunoffFlux(i)
+                 riverRunoffFlux(i) = 0.0_RKIND
+                 removedRiverRunoffFluxThisProc = removedRiverRunoffFluxThisProc + removedRiverRunoffFlux(i)
+               endif
+           endif
+        end if
+        if ( iceRunoffFluxField % isActive ) then
+           iceRunoffFlux(i) = x2o_om(n, index_x2o_Foxx_rofi)
+           if(iceRunoffFlux(n) < 0.0_RKIND) then
+               call shr_sys_abort ('Error: incoming rofi_F is negative')
+           end if
+           if (config_remove_AIS_coupler_runoff) then
+              if (latCell(i) < -1.04719666667_RKIND) then ! 60S in radians
+                 removedIceRunoffFlux(i) = iceRunoffFlux(i)
+                 iceRunoffFlux(i) = 0.0_RKIND
+                 removedIceRunoffFluxThisProc = removedIceRunoffFluxThisProc + removedIceRunoffFlux(i)
+              endif
+           endif
+        end if
+        if ( shortWaveHeatFluxField % isActive ) then
+           shortWaveHeatFlux(i) = max(x2o_om(n, index_x2o_Foxx_swnet), 0.0_RKIND)
+        end if
+
+        if ( rainFluxField % isActive ) then
+           rainFlux(i) = x2o_om(n, index_x2o_Faxa_rain)
+        end if
+        if ( atmosphericPressureField % isActive ) then
+           atmosphericPressure(i) = x2o_om(n, index_x2o_Sa_pbot)
+        end if
+        if ( seaIcePressureField % isActive ) then
+           ! Set seaIcePressure to be limited to 5m of pressure
+           seaIcePressure(i) =  min( x2o_om(n, index_x2o_Si_bpress), config_density0 * gravity * 5.0_RKIND )
+        end if
+        if ( iceFractionField % isActive ) then
+           iceFraction(i) = x2o_om(n, index_x2o_Si_ifrac)
+        end if
+
+        if (config_cvmix_kpp_use_theory_wave) then
+           if ( windSpeed10mField% isActive ) then
+              windSpeed10m(i) = sqrt( x2o_om(n, index_x2o_So_duu10n))
+           end if
+        endif
+
+        if ( landIceFreshwaterFluxField % isActive ) then
+           !landIceFreshwaterFlux(i) = x2o_om(n, index_x2o_Fogx_qicelo)
+        end if
+        if ( landIceHeatFluxField % isActive ) then
+           !landIceHeatFlux(i) = x2o_om(n, index_x2o_Fogx_qiceho)
+        end if
+        if ( landIceInterfaceTracersField % isActive ) then
+           !landIceInterfaceTracers(indexIT, i) = x2o_om(n, index_x2o_Sg_blit)
+           !landIceInterfaceTracers(indexIS, i) = x2o_om(n, index_x2o_Sg_blis)
+        end if
+        if ( landIceFractionField % isActive ) then
+           !landIceFraction(i) = x2o_om(n, index_x2o_Sg_icemask)
+        end if
+        !if ( landIcePressureField % isActive ) then
+           !landIcePressure(i) = x2o_om(n, index_x2o_Sg_lithop)
+        !end if
+
+        ! BGC fields
+        if (config_use_ecosysTracers) then
+           if ( windSpeedSquared10mField % isActive ) then
+              windSpeedSquared10m(i) = x2o_om(n, index_x2o_So_duu10n)
+           end if
+           if ( atmosphericCO2Field % isActive ) then
+              if ( config_ecosys_atm_co2_option == 'prognostic') then
+                 atmosphericCO2(i) = x2o_om(n, index_x2o_Sa_co2prog)
+              else if ( config_ecosys_atm_co2_option == 'diagnostic') then
+                 atmosphericCO2(i) = x2o_om(n, index_x2o_Sa_co2diag)
+              else if ( config_ecosys_atm_co2_option == 'bcrc') then
+                 atmosphericCO2(i) = config_ecosys_atm_co2_constant_value
+              else if ( config_ecosys_atm_co2_option == 'bcrd') then
+                 atmosphericCO2(i) = config_ecosys_atm_co2_constant_value
+              else if ( config_ecosys_atm_co2_option == 'bdrc') then
+                 atmosphericCO2(i) = x2o_om(n, index_x2o_Sa_co2diag)
+              else if ( config_ecosys_atm_co2_option == 'bdrd') then
+                 atmosphericCO2(i) = x2o_om(n, index_x2o_Sa_co2diag)
+              else
+                 atmosphericCO2(i) = config_ecosys_atm_co2_constant_value
+              end if
+           end if
+           if ( atmosphericCO2_ALT_CO2Field % isActive ) then
+              if ( config_ecosys_atm_alt_co2_option == 'prognostic') then
+                 atmosphericCO2_ALT_CO2(i) = x2o_om(n, index_x2o_Sa_co2prog)
+              else if ( config_ecosys_atm_alt_co2_option == 'diagnostic') then
+                 atmosphericCO2_ALT_CO2(i) = x2o_om(n, index_x2o_Sa_co2diag)
+              else if ( config_ecosys_atm_alt_co2_option == 'bcrc') then
+                 atmosphericCO2_ALT_CO2(i) = config_ecosys_atm_co2_constant_value
+              else if ( config_ecosys_atm_alt_co2_option == 'bcrd') then
+                 atmosphericCO2_ALT_CO2(i) = x2o_om(n, index_x2o_Sa_co2diag)
+              else if ( config_ecosys_atm_alt_co2_option == 'bdrc') then
+                 atmosphericCO2_ALT_CO2(i) = config_ecosys_atm_co2_constant_value
+              else if ( config_ecosys_atm_alt_co2_option == 'bdrd') then
+                 atmosphericCO2_ALT_CO2(i) = x2o_om(n,  index_x2o_Sa_co2diag)
+              else
+                 atmosphericCO2_ALT_CO2(i) = config_ecosys_atm_co2_constant_value
+              end if
+           end if
+
+           if (config_use_ecosysTracers_sea_ice_coupling) then
+              if ( iceFluxPhytoCField % isActive ) then
+                 iceFluxPhytoC(1,i) = x2o_om(n, index_x2o_Fioi_algae1)
+                 iceFluxPhytoC(2,i) = x2o_om(n, index_x2o_Fioi_algae2)
+                 iceFluxPhytoC(3,i) = x2o_om(n, index_x2o_Fioi_algae3)
+              endif
+              if ( iceFluxDICField % isActive ) then
+                 iceFluxDIC(i) = x2o_om(n, index_x2o_Fioi_dic1)
+              endif
+              if ( iceFluxNO3Field % isActive ) then
+                 iceFluxNO3(i) = x2o_om(n, index_x2o_Fioi_no3)
+              endif
+              if ( iceFluxSiO3Field % isActive ) then
+                 iceFluxSiO3(i) = x2o_om(n, index_x2o_Fioi_sio3)
+              endif
+              if ( iceFluxNH4Field % isActive ) then
+                 iceFluxNH4(i) = x2o_om(n, index_x2o_Fioi_nh4)
+              endif
+              if ( iceFluxDOCrField % isActive ) then
+                 iceFluxDOCr(i) = x2o_om(n, index_x2o_Fioi_docr)
+              endif
+              if ( iceFluxFeParticulateField % isActive ) then
+                 iceFluxFeParticulate(i) = x2o_om(n, index_x2o_Fioi_fep1)
+              endif
+              if ( iceFluxFeDissolvedField % isActive ) then
+                 iceFluxFeDissolved(i) = x2o_om(n, index_x2o_Fioi_fed1)
+              endif
+              if ( iceFluxDustField % isActive ) then
+                 iceFluxDust(i) = x2o_om(n, index_x2o_Fioi_dust1)
+              endif
+              if ( iceFluxDOCField % isActive ) then
+                 iceFluxDOC(1,i) = x2o_om(n, index_x2o_Fioi_doc1)
+                 iceFluxDOC(2,i) = x2o_om(n, index_x2o_Fioi_doc2)
+              endif
+              if ( iceFluxDONField % isActive ) then
+                 iceFluxDON(i) = x2o_om(n, index_x2o_Fioi_don1)
+              endif
+            endif
+         endif
+         if (config_use_DMSTracers .and. config_use_DMSTracers_sea_ice_coupling) then
+           if ( iceFluxDMSField % isActive ) then
+              iceFluxDMS(i) = x2o_om(n, index_x2o_Fioi_dms)
+           endif
+           if ( iceFluxDMSPField % isActive ) then
+              !JW TODO: dmspp? dmspd? the sum? 
+              iceFluxDMSP(i) = x2o_om(n, index_x2o_Fioi_dmspp)
+           endif
+         endif
+
+      end do
+
+      block_ptr => block_ptr % next
+   end do
+
+   call mpas_pool_get_subpool(domain % blocklist % structs, 'forcing', forcingPool)
+
+   call mpas_pool_get_field(forcingPool, 'windStressZonal', windStressZonalField)
+   call mpas_pool_get_field(forcingPool, 'windStressMeridional', windStressMeridionalField)
+   call mpas_pool_get_field(forcingPool, 'latentHeatFlux', latentHeatFluxField)
+   call mpas_pool_get_field(forcingPool, 'sensibleHeatFlux', sensibleHeatFluxField)
+   call mpas_pool_get_field(forcingPool, 'longWaveHeatFluxUp', longWaveHeatFluxUpField)
+   call mpas_pool_get_field(forcingPool, 'longWaveHeatFluxDown', longWaveHeatFluxDownField)
+   call mpas_pool_get_field(forcingPool, 'evaporationFlux', evaporationFluxField)
+   call mpas_pool_get_field(forcingPool, 'seaIceHeatFlux', seaIceHeatFluxField)
+   call mpas_pool_get_field(forcingPool, 'icebergHeatFlux', icebergHeatFluxField)
+   call mpas_pool_get_field(forcingPool, 'snowFlux', snowFluxField)
+   call mpas_pool_get_field(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFluxField)
+   call mpas_pool_get_field(forcingPool, 'icebergFreshWaterFlux', icebergFreshWaterFluxField)
+   call mpas_pool_get_field(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFluxField)
+   call mpas_pool_get_field(forcingPool, 'riverRunoffFlux', riverRunoffFluxField)
+   call mpas_pool_get_field(forcingPool, 'iceRunoffFlux', iceRunoffFluxField)
+   call mpas_pool_get_field(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFluxField)
+   call mpas_pool_get_field(forcingPool, 'rainFlux', rainFluxField)
+   call mpas_pool_get_field(forcingPool, 'atmosphericPressure', atmosphericPressureField)
+   call mpas_pool_get_field(forcingPool, 'seaIcePressure', seaIcePressureField)
+   call mpas_pool_get_field(forcingPool, 'iceFraction', iceFractionField)
+
+   call mpas_pool_get_field(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFluxField)
+   call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
+   call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
+   call mpas_pool_get_field(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracersField)
+
+   call mpas_pool_get_field(forcingPool, 'windSpeed10m', windSpeed10mField)
+
+   call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceTemperature', indexIT)
+   call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceSalinity', indexIS)
+   !call mpas_pool_get_field(forcingPool, 'landIcePressure', landIcePressureField)
+
+   ! BGC fields
+   if (config_use_ecosysTracers) then
+      call mpas_pool_get_subpool(forcingPool, 'ecosysAuxiliary', ecosysAuxiliary)
+
+      call mpas_pool_get_field(ecosysAuxiliary, 'windSpeedSquared10m', windSpeedSquared10mField)
+      call mpas_pool_get_field(ecosysAuxiliary, 'atmosphericCO2', atmosphericCO2Field)
+      call mpas_pool_get_field(ecosysAuxiliary, 'atmosphericCO2_ALT_CO2', atmosphericCO2_ALT_CO2Field)
+
+      if (config_use_ecosysTracers_sea_ice_coupling) then
+         call mpas_pool_get_subpool(forcingPool, 'ecosysSeaIceCoupling', ecosysSeaIceCoupling)
+
+         call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxPhytoC', iceFluxPhytoCField)
+         call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDIC', iceFluxDICField)
+         call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxNO3', iceFluxNO3Field)
+         call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxSiO3', iceFluxSiO3Field)
+         call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxNH4', iceFluxNH4Field)
+         call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDOCr', iceFluxDOCrField)
+         call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxFeParticulate', iceFluxFeParticulateField)
+         call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxFeDissolved', iceFluxFeDissolvedField)
+         call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDust', iceFluxDustField)
+         call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDOC', iceFluxDOCField)
+         call mpas_pool_get_field(ecosysSeaIceCoupling, 'iceFluxDON', iceFluxDONField)
+      endif
+   endif
+   if (config_use_DMSTracers .and. config_use_DMSTracers_sea_ice_coupling) then
+      call mpas_pool_get_subpool(forcingPool, 'DMSSeaIceCoupling', DMSSeaIceCoupling)
+
+      call mpas_pool_get_field(DMSSeaIceCoupling, 'iceFluxDMS', iceFluxDMSField)
+      call mpas_pool_get_field(DMSSeaIceCoupling, 'iceFluxDMSP', iceFluxDMSPField)
+   endif
+
+   if ( windStressMeridionalField % isActive ) then
+      call mpas_dmpar_exch_halo_field(windStressMeridionalField)
+   end if
+   if ( windStressZonalField % isActive ) then
+      call mpas_dmpar_exch_halo_field(windStressZonalField)
+   end if
+   if ( latentHeatFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(latentHeatFluxField)
+   end if
+   if ( sensibleHeatFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(sensibleHeatFluxField)
+   end if
+   if ( longWaveHeatFluxUpField % isActive ) then
+      call mpas_dmpar_exch_halo_field(longWaveHeatFluxUpField)
+   end if
+   if ( longWaveHeatFluxDownField % isActive ) then
+      call mpas_dmpar_exch_halo_field(longWaveHeatFluxDownField)
+   end if
+   if ( evaporationFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(evaporationFluxField)
+   end if
+   if ( seaIceHeatFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(seaIceHeatFluxField)
+   end if
+   if ( icebergHeatFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(icebergHeatFluxField)
+   end if
+   if ( snowFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(snowFluxField)
+   end if
+   if ( seaIceFreshWaterFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(seaIceFreshWaterFluxField)
+   end if
+   if ( icebergFreshWaterFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(icebergFreshWaterFluxField)
+   end if
+   if ( seaIceSalinityFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(seaIceSalinityFluxField)
+   end if
+   if ( riverRunoffFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(riverRunoffFluxField)
+   end if
+   if ( iceRunoffFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(iceRunoffFluxField)
+   end if
+   if ( shortWaveHeatFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(shortWaveHeatFluxField)
+   end if
+   if ( rainFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(rainFluxField)
+   end if
+   if ( atmosphericPressureField % isActive ) then
+      call mpas_dmpar_exch_halo_field(atmosphericPressureField)
+   end if
+   if ( seaIcePressureField % isActive ) then
+      call mpas_dmpar_exch_halo_field(seaIcePressureField)
+   end if
+   if ( iceFractionField % isActive ) then
+      call mpas_dmpar_exch_halo_field(iceFractionField)
+   end if
+
+   if ( landIceFreshwaterFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(landIceFreshwaterFluxField)
+   end if
+   if ( landIceHeatFluxField % isActive ) then
+      call mpas_dmpar_exch_halo_field(landIceHeatFluxField)
+   end if
+   if ( landIceInterfaceTracersField % isActive ) then
+      call mpas_dmpar_exch_halo_field(landIceInterfaceTracersField)
+   end if
+   if ( landIceFractionField % isActive ) then
+      call mpas_dmpar_exch_halo_field(landIceFractionField)
+   end if
+!   if ( landIcePressureField % isActive ) then
+!      call mpas_dmpar_exch_halo_field(landIcePressureField)
+!   end if
+
+   if ( windSpeed10mField % isActive ) then
+      call mpas_dmpar_exch_halo_field(windSpeed10mField)
+   end if
+
+   ! BGC fields
+   if (config_use_ecosysTracers) then
+
+      if ( windSpeedSquared10mField % isActive ) then
+         call mpas_dmpar_exch_halo_field(windSpeedSquared10mField)
+      end if
+      if ( atmosphericCO2Field % isActive ) then
+         call mpas_dmpar_exch_halo_field(atmosphericCO2Field)
+      end if
+      if ( atmosphericCO2_ALT_CO2Field % isActive ) then
+         call mpas_dmpar_exch_halo_field(atmosphericCO2_ALT_CO2Field)
+      end if
+
+      if (config_use_ecosysTracers_sea_ice_coupling) then
+         if ( iceFluxPhytoCField % isActive ) then
+            call mpas_dmpar_exch_halo_field(iceFluxPhytoCField)
+         endif
+         if ( iceFluxDICField % isActive ) then
+            call mpas_dmpar_exch_halo_field(iceFluxDICField)
+         endif
+         if ( iceFluxNO3Field % isActive ) then
+            call mpas_dmpar_exch_halo_field(iceFluxNO3Field)
+         endif
+         if ( iceFluxSiO3Field % isActive ) then
+            call mpas_dmpar_exch_halo_field(iceFluxSiO3Field)
+         endif
+         if ( iceFluxNH4Field % isActive ) then
+            call mpas_dmpar_exch_halo_field(iceFluxNH4Field)
+         endif
+         if ( iceFluxDOCrField % isActive ) then
+            call mpas_dmpar_exch_halo_field(iceFluxDOCrField)
+         endif
+         if ( iceFluxFeParticulateField % isActive ) then
+            call mpas_dmpar_exch_halo_field(iceFluxFeParticulateField)
+         endif
+         if ( iceFluxFeDissolvedField % isActive ) then
+            call mpas_dmpar_exch_halo_field(iceFluxFeDissolvedField)
+         endif
+         if ( iceFluxDustField % isActive ) then
+            call mpas_dmpar_exch_halo_field(iceFluxDustField)
+         endif
+         if ( iceFluxDOCField % isActive ) then
+            call mpas_dmpar_exch_halo_field(iceFluxDOCField)
+         endif
+         if ( iceFluxDONField % isActive ) then
+            call mpas_dmpar_exch_halo_field(iceFluxDONField)
+         endif
+      endif
+   endif
+   if (config_use_DMSTracers .and. config_use_DMSTracers_sea_ice_coupling) then
+      if ( iceFluxDMSField % isActive ) then
+         call mpas_dmpar_exch_halo_field(iceFluxDMSField)
+      endif
+      if ( iceFluxDMSPField % isActive ) then
+         call mpas_dmpar_exch_halo_field(iceFluxDMSPField)
+      endif
+   endif
+
+   ! global sum of removed runoff
+   if (config_remove_AIS_coupler_runoff) then
+      call MPAS_dmpar_sum_real(domain % dminfo, removedRiverRunoffFluxThisProc, removedRiverRunoffFluxReduced)
+      call MPAS_dmpar_sum_real(domain % dminfo, removedIceRunoffFluxThisProc, removedIceRunoffFluxReduced)
+      block_ptr => domain % blocklist
+      do while(associated(block_ptr))
+         call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+
+         call mpas_pool_get_array(forcingPool, 'totalRemovedRiverRunoffFlux', totalRemovedRiverRunoffFlux)
+         call mpas_pool_get_array(forcingPool, 'totalRemovedIceRunoffFlux', totalRemovedIceRunoffFlux)
+         totalRemovedRiverRunoffFlux = removedRiverRunoffFluxReduced
+         totalRemovedIceRunoffFlux = removedIceRunoffFluxReduced
+
+         block_ptr => block_ptr % next
+      end do
+   endif
+
+!-----------------------------------------------------------------------
+!EOC
+
+ end subroutine ocn_import_moab!}}}
 
    subroutine ocn_export_moab()   !{{{
 
