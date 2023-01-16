@@ -36,7 +36,7 @@ module prep_lnd_mod
 #ifdef  HAVE_MOAB
   use iMOAB , only: iMOAB_ComputeCommGraph, iMOAB_ComputeMeshIntersectionOnSphere, &
     iMOAB_ComputeScalarProjectionWeights, iMOAB_DefineTagStorage, iMOAB_RegisterApplication, & 
-    iMOAB_WriteMesh
+    iMOAB_WriteMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage
 #endif
   implicit none
   save
@@ -151,6 +151,13 @@ contains
     integer                  :: tagtype, numco, tagindex
     character(CXX)           :: tagName
 
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
+    integer  mlsize ! moab land size
+    integer  nrflds  ! number of rof fields projected on land
+    integer arrsize  ! for setting the r2x fields on land to 0
+    integer ent_type ! for setting tags
+    real (kind=r8) , allocatable :: tmparray (:) ! used to set the r2x fields to 0
+
 #endif
     character(*), parameter  :: subname = '(prep_lnd_init)'
     character(*), parameter  :: F00 = "('"//subname//" : ', 4A )"
@@ -252,6 +259,7 @@ contains
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fr2l%weight_identifier = wgtIdef
             mapper_Fr2l%mbname = 'mapper_Fr2l'
+
             ! because we will project fields from rof to lnd grid, we need to define 
             !  the r2x fields to lnd grid on coupler side
             
@@ -263,6 +271,29 @@ contains
                write(logunit,*) subname,' error in defining tags for seq_flds_r2x_fields on lnd cpl'
                call shr_sys_abort(subname//' ERROR in  defining tags for seq_flds_r2x_fields on lnd cpl')
             endif
+                
+ ! find out the number of local elements in moab mesh land instance on coupler
+            ierr  = iMOAB_GetMeshInfo ( mblxid, nvert, nvise, nbl, nsurf, nvisBC )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' cant get size of land mesh'
+               call shr_sys_abort(subname//' ERROR in getting size of land mesh')
+            endif
+            ! land is now cell mesh on coupler side
+            mlsize = nvise(1)
+            ent_type = 1 ! cell 
+            ! set to 0 all fields that are projected from river
+            nrflds = mct_aVect_nRattr(r2x_lx(1)) !  these are the numbers of fields in seq_flds_r2x_fields
+            arrsize = nrflds*mlsize
+            allocate (tmparray(arrsize)) ! mlsize is the size of local land
+            ! do we need to zero out others or just river ? 
+            tmparray = 0._r8
+            ierr = iMOAB_SetDoubleTagStorage(mblxid, tagname, arrsize , ent_type, tmparray(1))
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' cant zero out r2x tags on land'
+               call shr_sys_abort(subname//' cant zero out r2x tags on land')
+            endif
+            deallocate (tmparray)
+
             volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL; 
             
             dm1 = "fv"//C_NULL_CHAR

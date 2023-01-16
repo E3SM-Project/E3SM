@@ -54,7 +54,7 @@ module rof_comp_mct
 #ifdef HAVE_MOAB
   use seq_comm_mct,     only : mrofid ! id of moab rof app
   use iso_c_binding
-  use iMOAB, only: iMOAB_DefineTagStorage
+  use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage
 #endif
 !
 ! PUBLIC MEMBER FUNCTIONS:
@@ -150,6 +150,7 @@ contains
     integer :: ierr, tagtype, numco,  tagindex 
     character*32  appname
     character(CXX) ::  tagname ! for fields 
+    integer ::  ent_type
 #endif
     !---------------------------------------------------------------------------
 
@@ -313,13 +314,17 @@ contains
        if ( ierr == 1 ) then
            call shr_sys_abort( sub//' ERROR: cannot define tags fro seq_flds_r2x_fields in moab' )
        end if
-       ! also load initial data to moab tags
-       call rof_export_moab()
+       ! set those fields to 0 in moab
+       r2x_rm = 0._r8
+       ent_type = 0 ! rof is point cloud on this side
+       ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, totalmbls , ent_type, r2x_rm(1,1))
+       if (ierr > 0 )  &
+          call shr_sys_abort( sub//' Error: fail to set to 0 seq_flds_x2r_fields ')
        ! allocate now the import from coupler array
        nrecv = mct_avect_nRattr(x2r_r)
        totalmbls_r = mblsize * nrecv ! size of the double array
        allocate (x2r_rm(lsize, nrecv) )
-      ! define tags according to the seq_flds_r2x_fields 
+      ! define tags according to the seq_flds_x2r_fields 
        tagtype = 1  ! dense, double
        numco = 1 !  one value per cell / entity
        tagname = trim(seq_flds_x2r_fields)//C_NULL_CHAR
@@ -327,6 +332,13 @@ contains
        if ( ierr == 1 ) then
            call shr_sys_abort( sub//' ERROR: cannot define tags for seq_flds_x2r_fields in moab' )
        end if
+       ! set those fields to 0 in moab
+       x2r_rm = 0._r8
+       ierr = iMOAB_SetDoubleTagStorage ( mrofid, tagname, totalmbls_r , ent_type, x2r_rm(1,1))
+       if (ierr > 0 )  &
+          call shr_sys_abort( sub//' Error: fail to set to 0 seq_flds_x2r_fields ')
+  ! also load initial data to moab tags, fill with some initial data
+       call rof_export_moab()
 
 !  endif HAVE_MOAB
 #endif

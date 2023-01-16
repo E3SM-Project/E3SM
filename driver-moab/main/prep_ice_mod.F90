@@ -635,6 +635,7 @@ contains
        allocate(x2i_im(lsize,niflds))
        allocate(a2x_im(lsize,naflds))
        allocate(r2x_im(lsize,nrflds))
+       r2x_im = 0._r8 ! should we zero out all of them ?
 
        allocate(mrgstr(niflds))
        index_a2x_Faxa_snowc = mct_aVect_indexRA(a2x_i,'Faxa_snowc')

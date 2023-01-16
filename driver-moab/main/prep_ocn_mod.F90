@@ -171,7 +171,7 @@ contains
 
     use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
       iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights, &
-      iMOAB_MigrateMapMesh, iMOAB_WriteLocalMesh
+      iMOAB_MigrateMapMesh, iMOAB_WriteLocalMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -229,7 +229,13 @@ contains
     integer                  :: context_id, direction
     character*32             :: prefix_output ! for writing a coverage file for debugging
     integer                  :: rank_on_cpl ! just for debugging
-
+! these are just to zero out r2x fields on ocean
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
+    integer  mlsize ! moab land size
+    integer  nrflds  ! number of rof fields projected on land
+    integer arrsize  ! for setting the r2x fields on land to 0
+    integer ent_type ! for setting tags
+    real (kind=r8) , allocatable :: tmparray (:) ! used to set the r2x fields to 0
     
     !---------------------------------------------------------------
 
@@ -637,12 +643,34 @@ contains
                write(logunit,*) subname,' error in defining ' // trim(seq_flds_r2x_fields) // ' tags on coupler side in MOAB, for ocean app'
                call shr_sys_abort(subname//' ERROR in defining MOAB tags ')
             endif
-         endif
-
-         
+         endif   
          if (iamroot_CPLID)  then
             write(logunit,*) subname,' created moab tags for seq_flds_r2x_fields '
          endif
+         
+! find out the number of local elements in moab mesh land instance on coupler
+         ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' cant get size of ocn mesh'
+            call shr_sys_abort(subname//' ERROR in getting size of ocn mesh')
+         endif
+         ! ocn is cell mesh on coupler side
+         mlsize = nvise(1)
+         ent_type = 1 ! cell 
+         ! zero out the values just for r2x fields, on ocean instance
+         nrflds = mct_aVect_nRattr(r2x_ox(1)) ! this is the size of r2x_fields
+         arrsize = nrflds*mlsize
+         allocate (tmparray(arrsize)) ! mlsize is the size of local land
+         ! do we need to zero out others or just river ? 
+         tmparray = 0._r8
+         ierr = iMOAB_SetDoubleTagStorage(mboxid, tagname, arrsize , ent_type, tmparray(1))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' cant zero out r2x tags on ocn'
+            call shr_sys_abort(subname//' cant zero out r2x tags on ocn')
+         endif
+         deallocate (tmparray)
+
+
          ! now we have to populate the map with the right moab attibutes, so that it does the right projection
 #ifdef MOABDEBUG
          if (mbrxoid.ge.0) then  ! we are on coupler PEs
