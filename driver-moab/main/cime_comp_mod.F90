@@ -4651,7 +4651,7 @@ contains
 
   subroutine cime_run_rof_setup_send()
 
-    use seq_flds_mod , only : seq_flds_r2x_fields
+    use seq_flds_mod , only : seq_flds_x2r_fields
     use seq_comm_mct , only : mrofid, mbrxid !
     !----------------------------------------------------
     ! rof prep-merge
@@ -4688,7 +4688,7 @@ contains
             timer_barrier='CPL:C2R_BARRIER', timer_comp_exch='CPL:C2R', &
             timer_map_exch='CPL:c2r_rofx2rofr', timer_infodata_exch='CPL:c2r_infoexch')
 
-       call component_exch_moab(rof(1), mrofid, mbrxid, 0, seq_flds_r2x_fields)
+       call component_exch_moab(rof(1), mbrxid, mrofid, 1, seq_flds_x2r_fields)
     endif
 
   end subroutine cime_run_rof_setup_send
