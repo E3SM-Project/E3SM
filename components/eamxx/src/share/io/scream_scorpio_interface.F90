@@ -1432,7 +1432,7 @@ contains
 
     type(pio_atm_file_t), pointer :: pio_atm_file
     type(hist_var_t), pointer     :: var
-    integer                       :: ierr,var_size
+    integer                       :: ierr
     logical                       :: found
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
@@ -1441,10 +1441,7 @@ contains
     ! Set the timesnap we are reading
     call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
 
-    ! We don't want the extent along the 'time' dimension
-    var_size = SIZE(var%compdof)
 
-    ! Now we know the exact size of the array, and can shape the f90 pointer
     call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
     call errorHandle( 'eam_grid_write_darray_float: Error writing variable '//trim(varname),ierr)
   end subroutine grid_write_darray_float
@@ -1462,7 +1459,7 @@ contains
 
     type(pio_atm_file_t), pointer :: pio_atm_file
     type(hist_var_t), pointer     :: var
-    integer                       :: ierr,var_size
+    integer                       :: ierr
     logical                       :: found
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
@@ -1471,10 +1468,7 @@ contains
     ! Set the timesnap we are reading
     call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
 
-    ! We don't want the extent along the 'time' dimension
-    var_size = SIZE(var%compdof)
 
-    ! Now we know the exact size of the array, and can shape the f90 pointer
     call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
     call errorHandle( 'eam_grid_write_darray_double: Error writing variable '//trim(varname),ierr)
   end subroutine grid_write_darray_double
@@ -1492,7 +1486,7 @@ contains
 
     type(pio_atm_file_t), pointer :: pio_atm_file
     type(hist_var_t), pointer     :: var
-    integer                       :: ierr,var_size
+    integer                       :: ierr
     logical                       :: found
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
@@ -1501,10 +1495,7 @@ contains
     ! Set the timesnap we are reading
     call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
 
-    ! We don't want the extent along the 'time' dimension
-    var_size = SIZE(var%compdof)
 
-    ! Now we know the exact size of the array, and can shape the f90 pointer
     call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
     call errorHandle( 'eam_grid_write_darray_int: Error writing variable '//trim(varname),ierr)
   end subroutine grid_write_darray_int
