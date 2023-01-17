@@ -174,6 +174,8 @@ protected:
   std::shared_ptr<remapper_type>      m_horiz_remapper;
   std::shared_ptr<remapper_type>      m_vert_remapper;
   std::shared_ptr<const gm_type>      m_grids_manager;
+  bool                                m_horiz_remap_from_file = false;
+  bool                                m_vert_remap_from_file = false;
 
   // How to combine multiple snapshots in the output: Instant, Max, Min, Average
   OutputAvgType     m_avg_type;

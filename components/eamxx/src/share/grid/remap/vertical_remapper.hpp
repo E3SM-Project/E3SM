@@ -65,6 +65,7 @@ public:
            src_col_size == tgt_col_size;
   }
 
+
 protected:
 
   void register_vertical_source_field(const Field& src, const std::string& mode);
@@ -99,12 +100,20 @@ protected:
   void set_pressure_levels (const std::string& map_file);
   void do_print();
 
+#ifdef KOKKOS_ENABLE_CUDA
+public:
+#endif
+  template<int N>
+  void apply_vertical_interpolation (const Field& f_src, const Field& f_tgt) const;
 protected:
 
   using KT = KokkosTypes<DefaultDevice>;
   using gid_t = AbstractGrid::gid_type;
 
-  using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
+  template<int N>
+  using RPack = ekat::Pack<Real,N>;
+
+  using mPack = RPack<SCREAM_PACK_SIZE>;
 
   template<typename T>
   using view_1d = typename KT::template view_1d<T>;
@@ -119,8 +128,8 @@ protected:
 
   // Vertical profile fields, both for source and target
   int                   m_num_remap_levs;
-  view_1d<Pack>         m_remap_pres_view;
   Real                  m_mask_val;
+  Field                 m_remap_pres;
   Field                 m_src_mid;  // Src vertical profile for LEV layouts
   Field                 m_src_int;  // Src vertical profile for ILEV layouts
   bool                  m_mid_set = false;

@@ -89,22 +89,22 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
         "Error! Bad formatting of output yaml file. Missing 'Fields->$grid_name` sublist.\n");
   }
 
+  // Check if remapping and if so create the appropriate remapper 
+  bool m_vert_remap_from_file = params.isParameter("vertical_remap_file");
+  bool m_horiz_remap_from_file = params.isParameter("horiz_remap_file");
+  if (m_vert_remap_from_file && m_horiz_remap_from_file) {
+    // TODO - support both horizontal and vertical remapping together.
+    EKAT_ERROR_MSG("Error! scorpio_output:: We currently do not support both vertical and horizontal remapping.");
+  }
+
   // Try to set the IO grid (checks will be performed)
   set_grid (io_grid);
 
   // Register any diagnostics needed by this output stream
   set_diagnostics();
 
-  // Check if remapping and if so create the appropriate remapper 
-  bool vert_remap_from_file = params.isParameter("vertical_remap_file");
-  bool horiz_remap_from_file = params.isParameter("horiz_remap_file");
-  if (vert_remap_from_file && horiz_remap_from_file) {
-    // TODO - support both horizontal and vertical remapping together.
-    EKAT_ERROR_MSG("Error! scorpio_output:: We currently do not support both vertical and horizontal remapping.");
-  }
-
   // Setup remappers - if needed
-  if (vert_remap_from_file) {  
+  if (m_vert_remap_from_file) {  
     using namespace ShortFieldTagsNames;
     // We build a remapper, to remap fields from the fm grid to the io grid
     auto vert_remap_file   = params.get<std::string>("vertical_remap_file");
@@ -154,9 +154,9 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     set_field_manager(io_fm,"io");
   }
 
-  if (io_grid->name()!=fm_grid->name() || horiz_remap_from_file) {
+  if (io_grid->name()!=fm_grid->name() || m_horiz_remap_from_file) {
     // We build a remapper, to remap fields from the fm grid to the io grid
-    if (horiz_remap_from_file) {
+    if (m_horiz_remap_from_file) {
       auto horiz_remap_file   = params.get<std::string>("horiz_remap_file");
       m_horiz_remapper = std::make_shared<CoarseningRemapper>(io_grid,horiz_remap_file);
       io_grid = m_horiz_remapper->get_tgt_grid();
@@ -854,7 +854,7 @@ create_diagnostic (const std::string& diag_field_name) {
     // If last is bot or top, will simply use that
     params.set("Field Level", lev_and_idx.back());
   } else if (lev_str=="mb" || lev_str=="hPa" || lev_str=="Pa") {
-    EKAT_REQUIRE_MSG(!m_horiz_remapper,"Error! scorpio_output:" + diag_field_name + ", horizontal remapping of pressure level slices not supported.");
+    EKAT_REQUIRE_MSG(!m_horiz_remap_from_file,"Error! scorpio_output:" + diag_field_name + ", horizontal remapping of pressure level slices not supported.");
     // Diagnostic is a horizontal slice at a specific pressure level
     diag_name = "FieldAtPressureLevel";
     auto pres_str = lev_and_idx[0].substr(0,pos);

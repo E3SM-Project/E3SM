@@ -209,7 +209,7 @@ void perform_checks(
 
   // The input data and x_src data should match in the appropriate size
   EKAT_REQUIRE(x_src.extent_int(0) == input.extent_int(0));
-  EKAT_REQUIRE(x_src.extent_int(1) == input.extent_int(input.rank-1));
+  EKAT_REQUIRE_MSG(x_src.extent_int(1) == input.extent_int(input.rank-1),"Error! vertical_interpolation::perform_checks " + std::to_string(x_src.extent_int(1)) + " != " + std::to_string(input.extent_int(input.rank-1)) + ".");
   // The output data and x_tgt data should match in the appropriate size
   EKAT_REQUIRE_MSG(x_tgt.extent_int(0) == output.extent_int(input.rank-1),"Error! vertical_interpolation::perform_checks " + std::to_string(x_tgt.extent_int(0)) + " != " + std::to_string(output.extent_int(input.rank-1)) + ".");
 
