@@ -57,6 +57,8 @@ module seq_comm_mct
   public seq_comm_printcomms
   public seq_comm_get_ncomps
 
+  public seq_comm_compare_mb_mct
+
   !--------------------------------------------------------------------------
   ! Public data
   !--------------------------------------------------------------------------
@@ -1489,4 +1491,74 @@ contains
 
   end subroutine seq_comm_mkname
   !---------------------------------------------------------
+
+  subroutine seq_comm_compare_mb_mct( modelstr, mpicom, attrVect, mct_field, appId, tagname, ent_type, difference)
+
+    use shr_mpi_mod,       only: shr_mpi_sum,  shr_mpi_commrank
+    use shr_kind_mod,     only:  CXX => shr_kind_CXX
+    use shr_kind_mod     , only : r8 => shr_kind_r8
+    use mct_mod
+    use iMOAB, only : iMOAB_DefineTagStorage,  iMOAB_GetDoubleTagStorage, iMOAB_GetMeshInfo
+    
+    use iso_c_binding 
+    character(*), intent (in) :: modelstr
+    integer, intent(in) :: mpicom
+    integer , intent(in) :: appId, ent_type
+    type(mct_aVect) , intent(in)      :: attrVect
+    character(*) , intent(in)       :: mct_field
+    character(*) , intent(in)       :: tagname
+
+    real(r8)      , intent(out)     :: difference
+
+    real(r8)  :: differenceg ! global, reduced diff
+    integer   :: mbSize, nloc, index_avfield, rank2
+
+     ! moab
+     integer                  :: tagtype, numco,  tagindex, ierr
+     character(CXX)           :: tagname_mct
+     
+     real(r8) , allocatable :: values(:), mct_values(:)
+     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
+     logical   :: iamroot
+
+
+     character(*),parameter :: subName = '(seq_comm_compare_mb_mct) '
+
+     nloc = mct_avect_lsize(attrVect)
+     allocate(mct_values(nloc))
+
+     index_avfield     = mct_aVect_indexRA(attrVect,trim(mct_field))
+     mct_values(:) = attrVect%rAttr(index_avfield,:) 
+
+     ! now get moab tag values; first get info
+     ierr  = iMOAB_GetMeshInfo ( appId, nvert, nvise, nbl, nsurf, nvisBC );
+     if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to get mesh info')
+     if (ent_type .eq. 0) then
+        mbSize = nvert(1)
+     else if (ent_type .eq. 1) then
+        mbSize = nvise(1)
+     endif
+     allocate(values(mbSize))
+
+     ierr = iMOAB_GetDoubleTagStorage ( appId, tagname, mbSize , ent_type, values)
+     if (ierr > 0 )  &
+        call shr_sys_abort(subname//'Error: fail to get moab tag values')
+      
+     values  = mct_values - values
+
+     difference = dot_product(values, values)
+     call shr_mpi_sum(difference,differenceg,mpicom,subname)
+     difference = sqrt(differenceg)
+     call shr_mpi_commrank( mpicom, rank2 )
+     if ( rank2 .eq. 0 ) then
+        print * , trim(modelStr), subname, ' , difference on tag ', trim(tagname), ' = ', difference
+        !call shr_sys_abort(subname//'differences between mct and moab values')
+     endif
+     deallocate(values)
+     deallocate(mct_values)
+
+  end subroutine seq_comm_compare_mb_mct
+
+
 end module seq_comm_mct

@@ -45,6 +45,8 @@ module ice_comp_mct
    use seq_comm_mct, only: MPSIID
    use iMOAB, only: iMOAB_DefineTagStorage
    use shr_kind_mod    , only: cxx => SHR_KIND_CXX
+   use seq_comm_mct, only:  seq_comm_compare_mb_mct
+   use seq_comm_mct,      only: num_moab_exports
 #endif
 
    use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
@@ -95,6 +97,7 @@ module ice_comp_mct
   integer , private :: mblsize, totalmbls,totalmblr
   real (kind=RKIND) , allocatable, private :: i2x_im(:,:)
   real (kind=RKIND) , allocatable, private :: x2i_im(:,:)
+  integer :: mpicom_moab  ! save it for runtime debug
 #endif
 ! !PRIVATE MODULE VARIABLES
 
@@ -220,6 +223,14 @@ contains
 #ifdef HAVE_MOAB
     integer :: ierrmb, numco, tagtype, tagindex
     character(CXX) :: tagname
+#ifdef MOABDEBUG
+    real(r8)                 :: difference
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list, ent_type
+    type(mct_string)    :: mctOStr  !
+    character(CXX) :: mct_field, modelStr
+#endif 
+
 #endif
     logical, pointer :: tempLogicalConfig
     character(len=StrKIND), pointer :: tempCharConfig
@@ -798,7 +809,28 @@ contains
 !   get intial state from driver
 !
 !-----------------------------------------------------------------------
+#ifdef HAVE_MOAB
+
+#ifdef MOABDEBUG
+    mpicom_moab = mpicom_i ! save it for run method 
+    ! loop over all fields in seq_flds_x2i_fields
+    call mct_list_init(temp_list ,seq_flds_x2i_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 1 ! entity type is cell for ice
+    print *, num_moab_exports, trim(seq_flds_x2i_fields), ' ice import check'
+    modelStr='ice init'
+
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call seq_comm_compare_mb_mct(modelStr, mpicom_moab, x2i_i, mct_field,  MPSIID, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+#endif
+
     call ice_import_moab()
+#endif 
     call ice_import_mct(x2i_i, errorCode)  
     if (errorCode /= 0) then
        call mpas_log_write('Error in ice_import_mct', MPAS_LOG_CRIT)
@@ -1087,6 +1119,15 @@ contains
       real(kind=RKIND), pointer :: &
             dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
 
+#ifdef MOABDEBUG
+      real(r8)                 :: difference
+      type(mct_list) :: temp_list
+      integer :: size_list, index_list, ent_type
+      type(mct_string)    :: mctOStr  !
+      character(CXX) :: mct_field, modelStr, tagname
+#endif 
+
+
       iam = domain % dminfo % my_proc_id
 
       debugOn = .false.
@@ -1107,9 +1148,26 @@ contains
 
       ! reinitialize fluxes
       call seaice_column_reinitialize_fluxes(domain)
+#ifdef HAVE_MOAB
+#ifdef MOABDEBUG
+    ! loop over all fields in seq_flds_x2i_fields
+    call mct_list_init(temp_list ,seq_flds_x2i_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 1 ! entity type is cell for ice
+    print *, num_moab_exports, trim(seq_flds_x2i_fields), ' ice import check'
+    modelStr='ice'
 
-      ! Import state from coupler
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call seq_comm_compare_mb_mct(modelStr, mpicom_moab, x2i_i, mct_field,  MPSIID, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+#endif
       call ice_import_moab()
+#endif
+      ! Import state from coupler
       call ice_import_mct(x2i_i, ierr)
 
       ! Post coupling calls
@@ -2916,7 +2974,6 @@ contains
    !  This routine calls the routines necessary to send MPASSI fields to MOAB coupler
    !
      use iMOAB,  only       : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
-     use seq_comm_mct,      only: num_moab_exports
    !EOP
    !BOC
    !-----------------------------------------------------------------------
@@ -3347,7 +3404,6 @@ contains
 ! !REVISION HISTORY:
 !  same as module
      use iMOAB,  only       : iMOAB_GetDoubleTagStorage, iMOAB_WriteMesh
-     use seq_comm_mct,      only: num_moab_exports
 
 !EOP
 !BOC

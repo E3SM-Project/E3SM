@@ -53,6 +53,8 @@ module rof_comp_mct
   use ESMF
 #ifdef HAVE_MOAB
   use seq_comm_mct,     only : mrofid ! id of moab rof app
+ use seq_comm_mct,     only : seq_comm_compare_mb_mct ! for debugging
+ use seq_comm_mct,      only: num_moab_exports
   use iso_c_binding
   use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage
 #endif
@@ -400,6 +402,14 @@ contains
     character(len=32), parameter    :: sub = "rof_run_mct"
     !-------------------------------------------------------
 
+#ifdef MOABDEBUG
+    real(r8)                 :: difference
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list, ent_type
+    type(mct_string)    :: mctOStr  !
+    character(CXX) ::tagname, mct_field, modelStr
+#endif 
+
 #if (defined _MEMTRACE)
     if(masterproc) then
        lbnum=1
@@ -420,6 +430,24 @@ contains
     ! Map MCT to land data type (output is totrunin, subrunin)
     call t_startf ('lc_rof_import')
 #ifdef HAVE_MOAB
+
+#ifdef MOABDEBUG
+    ! loop over all fields in seq_flds_x2r_fields
+    call mct_list_init(temp_list ,seq_flds_x2r_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 0 ! entity type is vertex for phys atm
+    if (masterproc) print *, num_moab_exports, trim(seq_flds_x2r_fields), ' rof import check'
+    modelStr='rof'
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call seq_comm_compare_mb_mct(modelStr, mpicom_rof, x2r_r, mct_field,  mrofid, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+
+#endif
+
     call rof_import_moab( )
 #endif
     call rof_import_mct( x2r_r)
@@ -891,7 +919,7 @@ contains
       call shr_sys_abort( sub//' Error: fail to resolve shared entities')
 
     !there are no shared entities, but we will set a special partition tag, in order to see the
-    ! partitions ; it will be visible with a Pseudocolor plot in VisIt
+    ! partitions ; it will be visible with a Pseudocolor plot in VisItinit_rof_moab
     tagname='partition'//C_NULL_CHAR
     ierr = iMOAB_DefineTagStorage(mrofid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  &
@@ -963,7 +991,6 @@ subroutine rof_export_moab()
     !
     ! ARGUMENTS:
    use seq_comm_mct,      only: mrofid  ! id of moab rof app
-   use seq_comm_mct,      only: num_moab_exports
 
    use iMOAB,  only       : iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
    implicit none
@@ -1168,80 +1195,6 @@ end subroutine rof_export_moab
     enddo
 
   end subroutine rof_import_moab
-
-
-#ifdef MOABDEBUG
- ! assumes everything is on component side, to compare before imports
-  subroutine compare_to_moab_tag_rof(mpicom, attrVect, mct_field, appId, tagname, ent_type, difference)
-    
-    use shr_mpi_mod,       only: shr_mpi_sum,  shr_mpi_commrank
-    use shr_kind_mod,     only:  CXX => shr_kind_CXX
-    use seq_comm_mct , only : CPLID, seq_comm_iamroot
-    use seq_comm_mct, only:   seq_comm_setptrs
-    use iMOAB, only : iMOAB_DefineTagStorage,  iMOAB_GetDoubleTagStorage, &
-       iMOAB_SetDoubleTagStorageWithGid, iMOAB_GetMeshInfo
-    
-    use iso_c_binding 
-
-    integer, intent(in) :: mpicom
-    integer , intent(in) :: appId, ent_type
-    type(mct_aVect) , intent(in)      :: attrVect
-    character(*) , intent(in)       :: mct_field
-    character(*) , intent(in)       :: tagname
-
-    real(r8)      , intent(out)     :: difference
-
-    real(r8)  :: differenceg ! global, reduced diff
-    integer   :: mbSize, nloc, index_avfield, rank2
-
-     ! moab
-     integer                  :: tagtype, numco,  tagindex, ierr
-     character(CXX)           :: tagname_mct
-     
-     real(r8) , allocatable :: values(:), mct_values(:)
-     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
-     logical   :: iamroot
-
-
-     character(*),parameter :: subName = '(compare_to_moab_tag_rof) '
-
-     nloc = mct_avect_lsize(attrVect)
-     allocate(mct_values(nloc))
-
-     index_avfield     = mct_aVect_indexRA(attrVect,trim(mct_field))
-     mct_values(:) = attrVect%rAttr(index_avfield,:) 
-
-     ! now get moab tag values; first get info
-     ierr  = iMOAB_GetMeshInfo ( appId, nvert, nvise, nbl, nsurf, nvisBC );
-     if (ierr > 0 )  &
-        call shr_sys_abort(subname//'Error: fail to get mesh info')
-     if (ent_type .eq. 0) then
-        mbSize = nvert(1)
-     else if (ent_type .eq. 1) then
-        mbSize = nvise(1)
-     endif
-     allocate(values(mbSize))
-
-     ierr = iMOAB_GetDoubleTagStorage ( appId, tagname, mbSize , ent_type, values)
-     if (ierr > 0 )  &
-        call shr_sys_abort(subname//'Error: fail to get moab tag values')
-      
-     values  = mct_values - values
-
-     difference = dot_product(values, values)
-     call shr_mpi_sum(difference,differenceg,mpicom,subname)
-     difference = sqrt(differenceg)
-     call shr_mpi_commrank( mpicom, rank2 )
-     if ( rank2 .eq. 0 ) then
-        print * , subname, ' , difference on tag ', trim(tagname), ' = ', difference
-        !call shr_sys_abort(subname//'differences between mct and moab values')
-     endif
-     deallocate(values)
-     deallocate(mct_values)
-
-  end subroutine compare_to_moab_tag_rof
-  !  #endif for MOABDEBUG
-#endif
 
 
 ! end #ifdef HAVE_MOAB

@@ -43,6 +43,7 @@ module ocn_comp_mct
    use seq_comm_mct, only: MPOID
    use seq_comm_mct,      only: num_moab_exports
    use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage
+   use seq_comm_mct, only:  seq_comm_compare_mb_mct
 #endif
    use iso_c_binding, only : c_char, c_loc, c_ptr, c_int
    use mpas_c_interfacing, only : mpas_f_to_c_string, mpas_c_to_f_string
@@ -95,6 +96,7 @@ module ocn_comp_mct
   real (kind=RKIND) , allocatable, private :: o2x_om(:,:) 
 
   real (kind=RKIND) , allocatable, private :: x2o_om(:,:) 
+  integer :: mpicom_moab
 #endif
 
 
@@ -230,6 +232,14 @@ contains
     character*100 outfile, wopts
     integer :: ierrmb, numco, tagtype, tagindex, ent_type
     character(CXX) :: tagname
+#ifdef MOABDEBUG
+    real(r8)                 :: difference
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list
+    type(mct_string)    :: mctOStr  !
+    character(CXX) :: mct_field, modelStr
+#endif 
+
 #endif
     interface
        subroutine xml_stream_parser(xmlname, mgr_p, comm, ierr) bind(c)
@@ -869,6 +879,24 @@ contains
     call mpas_get_timeInterval(timeStep, dt=dt)
 
 #ifdef HAVE_MOAB
+
+#ifdef MOABDEBUG
+    ! loop over all fields in seq_flds_x2o_fields
+    call mct_list_init(temp_list ,seq_flds_x2o_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 1 ! entity type is cell for ocn
+    print *, num_moab_exports, trim(seq_flds_x2o_fields), ' ocn import check'
+    modelStr='ocn init'
+    mpicom_moab = mpicom_o ! save it for run method 
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call seq_comm_compare_mb_mct(modelStr, mpicom_moab, x2o_o, mct_field,  MPOID, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+#endif
+
     call ocn_import_moab(errorCode)
     if (errorCode /= 0) then
        call mpas_log_write('Error in ocn_import_moab', MPAS_LOG_CRIT)
@@ -961,6 +989,16 @@ contains
       real (kind=RKIND), pointer :: config_ssh_grad_relax_timescale
       real (kind=RKIND) :: timeFilterFactor
 
+#ifdef HAVE_MOAB
+#ifdef MOABDEBUG
+    real(r8)                 :: difference
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list, ent_type
+    type(mct_string)    :: mctOStr  !
+    character(CXX) :: mct_field, modelStr, tagname
+#endif 
+#endif
+
       iam = domain % dminfo % my_proc_id
 
       debugOn = .false.
@@ -988,6 +1026,24 @@ contains
 
     ! Import state from moab coupler
 #ifdef HAVE_MOAB
+
+
+#ifdef MOABDEBUG
+    ! loop over all fields in seq_flds_x2o_fields
+    call mct_list_init(temp_list ,seq_flds_x2o_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 1 ! entity type is cell for ocn
+    print *, num_moab_exports, trim(seq_flds_x2o_fields), ' ocn import check'
+    modelStr='ocn run'
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call seq_comm_compare_mb_mct(modelStr, mpicom_moab, x2o_o, mct_field,  MPOID, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+#endif
+
       call ocn_import_moab(ierr)
       if (ierr /= 0) then
          call mpas_log_write('Error in ocn_import_moab', MPAS_LOG_CRIT)
