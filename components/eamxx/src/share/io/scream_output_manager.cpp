@@ -70,6 +70,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_output_file_specs.filename_with_mpiranks    = out_control_pl.get("MPI Ranks in Filename",false);
   m_output_file_specs.filename_with_avg_type    = out_control_pl.get("avg_type_in_filename",true);
   m_output_file_specs.filename_with_frequency   = out_control_pl.get("frequency_in_filename",true);
+  m_output_file_specs.save_grid_data            = out_control_pl.get("save_grid_data",!m_is_model_restart_output);
 
   // For each grid, create a separate output stream.
   if (field_mgrs.size()==1) {
@@ -92,7 +93,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
   // For normal output, setup the geometry data streams, which we used to write the
   // geo data in the output file when we create it.
-  if (!m_is_model_restart_output) {
+  if (m_output_file_specs.save_grid_data) {
     std::set<std::shared_ptr<const AbstractGrid>> grids;
     for (auto& it : m_output_streams) {
       grids.insert(it->get_io_grid());
@@ -435,7 +436,7 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
     it->setup_output_file(filename,fp_precision);
   }
 
-  if (!m_is_model_restart_output && !is_checkpoint_step) {
+  if (filespecs.save_grid_data) {
     // If not a restart file, also register geo data fields.
     for (auto& it : m_geo_data_streams) {
       it->setup_output_file(filename,fp_precision);
@@ -453,7 +454,7 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
   set_int_attribute_c2f(filename.c_str(),"start_date",t0_date);
   set_int_attribute_c2f(filename.c_str(),"start_time",t0_time);
 
-  if (!m_is_model_restart_output && !is_checkpoint_step) {
+  if (filespecs.save_grid_data) {
     // Immediately run the geo data streams
     for (const auto& it : m_geo_data_streams) {
       it->run(filename,true,0);
