@@ -21,17 +21,34 @@ view_Nd<Mask<P>,N> allocate_mask(const std::vector<int>& extents)
 template<typename T, int P> 
 KOKKOS_FUNCTION
 void apply_interpolation_impl_1d(
-  const view_1d<const Pack<T,P>>& x_src,
-  const view_1d<const Pack<T,P>>& x_tgt,
-  const view_1d<const Pack<T,P>>& input,
-  const view_1d<      Pack<T,P>>& output,
-  const view_1d<      Mask<P>>&   mask,
+  const view_1d<const Pack<T,P>>& x_src_col,
+  const view_1d<const Pack<T,P>>& x_tgt_col,
+  const view_1d<const Pack<T,P>>& input_col,
+  const view_1d<      Pack<T,P>>& output_col,
+  const view_1d<      Mask<P>>&   mask_col,
   const int nlevs_src,
+  const int nlevs_tgt,
   const int icol,
   const T msk_val,
   const MemberType& team,
   const LIV<T,P>& vert_interp)
 {
+  // Recast source views to support different packsizes
+  using PackInfo = ekat::PackInfo<P>;
+  const int num_src_packs = PackInfo::num_packs(nlevs_src);
+  const int num_tgt_packs = PackInfo::num_packs(nlevs_tgt);
+
+  auto x_src  = Kokkos::subview(x_src_col,Kokkos::pair<int,int>(0,num_src_packs));
+  auto input  = Kokkos::subview(input_col,Kokkos::pair<int,int>(0,num_src_packs));
+
+  auto x_tgt  = Kokkos::subview(x_tgt_col, Kokkos::pair<int,int>(0,num_tgt_packs));
+  auto output = Kokkos::subview(output_col,Kokkos::pair<int,int>(0,num_tgt_packs));
+  auto mask   = Kokkos::subview(mask_col,  Kokkos::pair<int,int>(0,num_tgt_packs));
+
+  // The input/output data and x_src/x_tgt data should match in the appropriate size, respectively.
+  EKAT_REQUIRE_MSG(x_tgt.size() == output.size(),"Error! vertical_interpolation::perform_checks " + std::to_string(x_tgt.size()) + " != " + std::to_string(output.size()) + ".");
+  EKAT_REQUIRE_MSG(x_src.size() == input.size(), "Error! vertical_interpolation::perform_checks " + std::to_string(x_src.size()) + " != " + std::to_string(input.size()) + ".");
+
   //Setup linear interpolation
   vert_interp.setup(team, x_src, x_tgt);
   //Run linear interpolation
@@ -100,7 +117,7 @@ void perform_vertical_interpolation(
   }
   perform_checks<T,P,N>(x_src, x_tgt, input, output, nlevs_src, nlevs_tgt);
   LIV<T,P> vert_interp(ndofs,nlevs_src,nlevs_tgt);
-  apply_interpolation(nlevs_src, msk_val, vert_interp, x_src, x_tgt, input, output, mask);
+  apply_interpolation(nlevs_src, nlevs_tgt, msk_val, vert_interp, x_src, x_tgt, input, output, mask);
 }
 
 template<typename T, int P, int N> 
@@ -129,12 +146,13 @@ void perform_vertical_interpolation(
   for (int ii=1; ii<N-1; ii++) {
     ndofs *= input.extent_int(ii);
   }
-  apply_interpolation(nlevs_src, msk_val, vert_interp, x_src, x_tgt, input, output, mask);
+  apply_interpolation(nlevs_src, nlevs_tgt, msk_val, vert_interp, x_src, x_tgt, input, output, mask);
 }
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                      int  num_levs,
+  const                      int  num_levs_src,
+  const                      int  num_levs_tgt,
   const                        T  mask_val,
   const                 LIV<T,P>& vert_interp,
   const view_2d<const Pack<T,P>>& x_src,
@@ -156,14 +174,15 @@ void apply_interpolation(
     const auto out  = ekat::subview(output, icol);
     const auto mask = ekat::subview(mask_out, icol);
     
-    apply_interpolation_impl_1d<T,P>(x1,xt,in,out,mask,num_levs,icol,mask_val,team,vert_interp);
+    apply_interpolation_impl_1d<T,P>(x1,xt,in,out,mask,num_levs_src,num_levs_tgt,icol,mask_val,team,vert_interp);
   });
   Kokkos::fence();
 }
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                      int  num_levs,
+  const                      int  num_levs_src,
+  const                      int  num_levs_tgt,
   const                        T  mask_val,
   const                 LIV<T,P>& vert_interp,
   const view_2d<const Pack<T,P>>& x_src,
@@ -187,7 +206,7 @@ void apply_interpolation(
     const auto out  = ekat::subview(output, icol, ivar);
     const auto mask = ekat::subview(mask_out, icol, ivar);
 
-    apply_interpolation_impl_1d<T,P>(x1,xt,in,out,mask,num_levs,icol,mask_val,team,vert_interp);
+    apply_interpolation_impl_1d<T,P>(x1,xt,in,out,mask,num_levs_src,num_levs_tgt,icol,mask_val,team,vert_interp);
   });
   Kokkos::fence();   
 }
@@ -209,9 +228,6 @@ void perform_checks(
 
   // The input data and x_src data should match in the appropriate size
   EKAT_REQUIRE(x_src.extent_int(0) == input.extent_int(0));
-  EKAT_REQUIRE_MSG(x_src.extent_int(1) == input.extent_int(input.rank-1),"Error! vertical_interpolation::perform_checks " + std::to_string(x_src.extent_int(1)) + " != " + std::to_string(input.extent_int(input.rank-1)) + ".");
-  // The output data and x_tgt data should match in the appropriate size
-  EKAT_REQUIRE_MSG(x_tgt.extent_int(0) == output.extent_int(input.rank-1),"Error! vertical_interpolation::perform_checks " + std::to_string(x_tgt.extent_int(0)) + " != " + std::to_string(output.extent_int(input.rank-1)) + ".");
 
 
   // The output and input data should match in rank
@@ -244,7 +260,7 @@ void perform_vertical_interpolation(
   }
   perform_checks<T,P,N>(x_src, x_tgt, input, output, nlevs_src, nlevs_tgt);
   LIV<T,P> vert_interp(ndofs,nlevs_src,nlevs_tgt);
-  apply_interpolation(nlevs_src, msk_val, vert_interp, x_src, x_tgt, input, output, mask);
+  apply_interpolation(nlevs_src, nlevs_tgt, msk_val, vert_interp, x_src, x_tgt, input, output, mask);
 }
 
 template<typename T, int P, int N> 
@@ -270,12 +286,13 @@ void perform_vertical_interpolation(
   const auto mask = allocate_mask<P,N>(extents);
 
   LIV<T,P> vert_interp(ndofs,nlevs_src,nlevs_tgt);
-  apply_interpolation(nlevs_src, msk_val, vert_interp, x_src, x_tgt, input, output, mask);
+  apply_interpolation(nlevs_src, nlevs_tgt, msk_val, vert_interp, x_src, x_tgt, input, output, mask);
 }
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                      int  num_levs,
+  const                      int  num_levs_src,
+  const                      int  num_levs_tgt,
   const                        T  mask_val,
   const                 LIV<T,P>& vert_interp,
   const view_2d<const Pack<T,P>>& x_src,
@@ -296,14 +313,15 @@ void apply_interpolation(
     const auto out  = ekat::subview(output, icol);
     const auto mask = ekat::subview(mask_out, icol);
     
-    apply_interpolation_impl_1d<T,P>(x1,x_tgt,in,out,mask,num_levs,icol,mask_val,team,vert_interp);
+    apply_interpolation_impl_1d<T,P>(x1,x_tgt,in,out,mask,num_levs_src,num_levs_tgt,icol,mask_val,team,vert_interp);
   });
   Kokkos::fence();
 }
 
 template<typename T, int P> 
 void apply_interpolation(
-  const                      int  num_levs,
+  const                      int  num_levs_src,
+  const                      int  num_levs_tgt,
   const                        T  mask_val,
   const                 LIV<T,P>& vert_interp,
   const view_2d<const Pack<T,P>>& x_src,
@@ -326,7 +344,7 @@ void apply_interpolation(
     const auto out  = ekat::subview(output, icol, ivar);
     const auto mask = ekat::subview(mask_out, icol, ivar);
 
-    apply_interpolation_impl_1d<T,P>(x1,x_tgt,in,out,mask,num_levs,team.league_rank(),mask_val,team,vert_interp);
+    apply_interpolation_impl_1d<T,P>(x1,x_tgt,in,out,mask,num_levs_src,num_levs_tgt,team.league_rank(),mask_val,team,vert_interp);
   });
   Kokkos::fence();   
 }
