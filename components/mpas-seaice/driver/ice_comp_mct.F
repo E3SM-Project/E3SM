@@ -798,7 +798,7 @@ contains
 !   get intial state from driver
 !
 !-----------------------------------------------------------------------
-
+    call ice_import_moab()
     call ice_import_mct(x2i_i, errorCode)  
     if (errorCode /= 0) then
        call mpas_log_write('Error in ice_import_mct', MPAS_LOG_CRIT)
@@ -1109,6 +1109,7 @@ contains
       call seaice_column_reinitialize_fluxes(domain)
 
       ! Import state from coupler
+      call ice_import_moab()
       call ice_import_mct(x2i_i, ierr)
 
       ! Post coupling calls
