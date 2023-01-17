@@ -9,7 +9,7 @@ module atm_comp_mct
   use seq_cdata_mod
   use esmf
 
-  use seq_flds_mod ! for seq_flds_x2a_fields
+  use seq_flds_mod ! for seq_flds_x2a_fields, seq_flds_dom_fields, etc
   use seq_infodata_mod
   use seq_timemgr_mod
 
@@ -64,10 +64,10 @@ module atm_comp_mct
   use seq_comm_mct     , only: mphaid ! atm physics grid id in MOAB, on atm pes
   use iso_c_binding 
   use seq_comm_mct,     only : num_moab_exports
+  use seq_comm_mct, only:  seq_comm_compare_mb_mct
 #endif
-#ifdef MOABDEBUG
-  !use seq_comm_mct, only:  compare_to_moab_tag
-#endif
+
+
 
 !
 ! !PUBLIC TYPES:
@@ -190,7 +190,7 @@ CONTAINS
     type(mct_list) :: temp_list
     integer :: size_list, index_list, ent_type
     type(mct_string)    :: mctOStr  !
-    character(CXX) ::tagname, mct_field
+    character(CXX) ::tagname, mct_field, modelStr
 #endif 
 
     !-----------------------------------------------------------------------
@@ -464,11 +464,12 @@ CONTAINS
     size_list=mct_list_nitem (temp_list)
     ent_type = 0 ! entity type is vertex for phys atm
     if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2a_fields), ' atm import check'
+    modelStr='atminit'
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)
       tagname= trim(mct_field)//C_NULL_CHAR
-      call compare_to_moab_tag(mpicom_atm_moab, x2a_a, mct_field,  mphaid, tagname, ent_type, difference)
+      call seq_comm_compare_mb_mct(modelStr, mpicom_atm_moab, x2a_a, mct_field,  mphaid, tagname, ent_type, difference)
     enddo
     call mct_list_clean(temp_list)
 
@@ -596,7 +597,7 @@ CONTAINS
     type(mct_list) :: temp_list
     integer :: size_list, index_list, ent_type
     type(mct_string)    :: mctOStr  !
-    character(CXX) ::tagname, mct_field
+    character(CXX) ::tagname, mct_field, modelStr
 #endif 
 
 #if (defined _MEMTRACE)
@@ -630,21 +631,20 @@ CONTAINS
     call t_startf ('CAM_import')
    
 #ifdef MOABDEBUG
-  !compare_to_moab_tag(mpicom_atm_moab, attrVect, field, imoabApp, tag_name, ent_type, difference)
     !x2o_o => component_get_x2c_cx(ocn(1))
     ! loop over all fields in seq_flds_a2x_fields
     call mct_list_init(temp_list ,seq_flds_x2a_fields)
     size_list=mct_list_nitem (temp_list)
     ent_type = 0 ! entity type is vertex for phys atm
     if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2a_fields)
+    modelStr ='atm'
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)
       tagname= trim(mct_field)//C_NULL_CHAR
-      call compare_to_moab_tag(mpicom_atm_moab, x2a_a, mct_field,  mphaid, tagname, ent_type, difference)
+      call seq_comm_compare_mb_mct(modelStr, mpicom_atm_moab, x2a_a, mct_field,  mphaid, tagname, ent_type, difference)
     enddo
     call mct_list_clean(temp_list)
-
 #endif
 
 #ifdef HAVE_MOAB
@@ -1144,7 +1144,7 @@ CONTAINS
     real(r8) :: lons(pcols)           ! array of chunk longitude
     real(r8) :: area(pcols)           ! area in radians squared for each grid point
     integer , dimension(:), allocatable :: chunk_index(:)    ! temporary
-    !real(r8), parameter:: radtodeg = 180.0_r8/SHR_CONST_PI
+    real(r8), parameter:: radtodeg = 180.0_r8/SHR_CONST_PI
 
     character*100 outfile, wopts
     character(CXX) :: tagname ! will store all seq_flds_a2x_fields 
@@ -1213,6 +1213,10 @@ CONTAINS
     if (ierr > 0 )  &
       call endrun('Error: fail to resolve shared entities')
 
+    ierr = iMOAB_UpdateMeshInfo(mphaid)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to update mesh info')
+
     !there are no shared entities, but we will set a special partition tag, in order to see the
     ! partitions ; it will be visible with a Pseudocolor plot in VisIt
     tagname='partition'//C_NULL_CHAR
@@ -1233,22 +1237,57 @@ CONTAINS
 
     ierr = iMOAB_SetIntTagStorage ( mphaid, tagname, nlcols , ent_type, chunk_index)
     if (ierr > 0 )  &
-      call endrun('Error: fail to set partition tag ')
+      call endrun('Error: fail to set chunk id tag tag ')
 
-    ! use areavals for areas
+    ! use areavals for area, aream; define also dom fields 
+    ! define all  on moab 
 
-    tagname='area'//C_NULL_CHAR
+    tagname=trim(seq_flds_dom_fields)//C_NULL_CHAR !  mask is double too lat:lon:hgt:area:aream:mask:frac
     tagtype = 1 ! dense, double
     ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
     if (ierr > 0 )  &
-      call endrun('Error: fail to create area tag ')
+      call endrun('Error: fail to create  tags from seq_flds_dom_fields ')
 
-
+    tagname='area'//C_NULL_CHAR
     ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols , ent_type, areavals)
     if (ierr > 0 )  &
       call endrun('Error: fail to set area tag ')
 
-    ierr = iMOAB_UpdateMeshInfo(mphaid)
+    tagname='aream'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols , ent_type, areavals)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set aream tag ')
+
+    areavals = 1._r8 ! double
+    tagname='mask'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols , ent_type, areavals)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set mask tag ')
+
+    areavals = 1._r8 ! double
+    
+    ! set lat, lon, and frac tags at the same time, reusing the moab_vert_coords array already allocated
+    ! we set all at the same time, so use the 1-d array carefully, with values interlaced/or not 
+    n=0
+    do c = begchunk, endchunk
+       ncols = get_ncols_p(c)
+       call get_rlat_all_p(c, ncols, lats) !
+       call get_rlon_all_p(c, ncols, lons)
+       do i = 1,ncols
+          n=n+1
+          vgids(n) = get_gcol_p(c,i)
+          latv = lats(i) ! these are in rads ?
+          lonv = lons(i)
+          moab_vert_coords(            n ) = lats(i) * radtodeg
+          moab_vert_coords(  nlcols +  n ) = lons(i) * radtodeg
+          moab_vert_coords( 2*nlcols + n )= 1._r8 ! this for fractions
+       end do
+    end do
+    tagname = 'lat:lon:frac'//C_NULL_CHAR
+    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols*3 , ent_type, moab_vert_coords)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set lat lon frac tag ')
+
 
 #ifdef MOABDEBUG
     outfile = 'AtmPhys.h5m'//C_NULL_CHAR
@@ -1299,7 +1338,10 @@ CONTAINS
     character(CXX) ::  tagname ! 
 
     integer ierr, c, nlcols, ig, i, ncols
-
+#ifdef MOABDEBUG
+    integer, save :: local_count = 0
+    character*100 lnum2
+#endif 
     ! Copy from component arrays into chunk array data structure
     ! Rearrange data from chunk structure into lat-lon buffer and subsequently
     ! create double array for moab tags
@@ -1362,7 +1404,9 @@ CONTAINS
     endif
 #ifdef MOABDEBUG
     write(lnum,"(I0.2)")num_moab_exports
-    outfile = 'AtmPhys_'//trim(lnum)//'.h5m'//C_NULL_CHAR
+    local_count = local_count + 1
+    write(lnum2,"(I0.2)")local_count
+    outfile = 'AtmPhys_'//trim(lnum)//'_'//trim(lnum2)//'.h5m'//C_NULL_CHAR
     wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
     ierr = iMOAB_WriteMesh(mphaid, outfile, wopts)
     if (ierr > 0 )  &
@@ -1602,79 +1646,6 @@ subroutine atm_import_moab(cam_in, restart_init )
 ! endif for HAVE_MOAB
 #endif
 
-
-#ifdef MOABDEBUG
- ! assumes everything is on component side, to compare before imports
-  subroutine compare_to_moab_tag(mpicom, attrVect, mct_field, appId, tagname, ent_type, difference)
-    
-    use shr_mpi_mod,       only: shr_mpi_sum,  shr_mpi_commrank
-    use shr_kind_mod,     only:  CXX => shr_kind_CXX
-    use seq_comm_mct , only : CPLID, seq_comm_iamroot
-    use seq_comm_mct, only:   seq_comm_setptrs
-    use iMOAB, only : iMOAB_DefineTagStorage,  iMOAB_GetDoubleTagStorage, &
-       iMOAB_SetDoubleTagStorageWithGid, iMOAB_GetMeshInfo
-    
-    use iso_c_binding 
-
-    integer, intent(in) :: mpicom
-    integer , intent(in) :: appId, ent_type
-    type(mct_aVect) , intent(in)      :: attrVect
-    character(*) , intent(in)       :: mct_field
-    character(*) , intent(in)       :: tagname
-
-    real(r8)      , intent(out)     :: difference
-
-    real(r8)  :: differenceg ! global, reduced diff
-    integer   :: mbSize, nloc, index_avfield, rank2
-
-     ! moab
-     integer                  :: tagtype, numco,  tagindex, ierr
-     character(CXX)           :: tagname_mct
-     
-     real(r8) , allocatable :: values(:), mct_values(:)
-     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
-     logical   :: iamroot
-
-
-     character(*),parameter :: subName = '(compare_to_moab_tag) '
-
-     nloc = mct_avect_lsize(attrVect)
-     allocate(mct_values(nloc))
-
-     index_avfield     = mct_aVect_indexRA(attrVect,trim(mct_field))
-     mct_values(:) = attrVect%rAttr(index_avfield,:) 
-
-     ! now get moab tag values; first get info
-     ierr  = iMOAB_GetMeshInfo ( appId, nvert, nvise, nbl, nsurf, nvisBC );
-     if (ierr > 0 )  &
-        call shr_sys_abort(subname//'Error: fail to get mesh info')
-     if (ent_type .eq. 0) then
-        mbSize = nvert(1)
-     else if (ent_type .eq. 1) then
-        mbSize = nvise(1)
-     endif
-     allocate(values(mbSize))
-
-     ierr = iMOAB_GetDoubleTagStorage ( appId, tagname, mbSize , ent_type, values)
-     if (ierr > 0 )  &
-        call shr_sys_abort(subname//'Error: fail to get moab tag values')
-      
-     values  = mct_values - values
-
-     difference = dot_product(values, values)
-     call shr_mpi_sum(difference,differenceg,mpicom,subname)
-     difference = sqrt(differenceg)
-     call shr_mpi_commrank( mpicom, rank2 )
-     if ( rank2 .eq. 0 ) then
-        print * , subname, ' , difference on tag ', trim(tagname), ' = ', difference
-        !call shr_sys_abort(subname//'differences between mct and moab values')
-     endif
-     deallocate(values)
-     deallocate(mct_values)
-
-  end subroutine compare_to_moab_tag
-  !  #endif for MOABDEBUG
-#endif
 
 
 end module atm_comp_mct

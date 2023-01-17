@@ -204,7 +204,6 @@ module cime_comp_mod
 #endif
 
 #ifdef MOABDEBUG
-    use seq_comm_mct , only : mboxid
     use iso_c_binding
 #endif
 
@@ -1413,8 +1412,10 @@ contains
   !===============================================================================
 
   subroutine cime_init()
-    use seq_flds_mod , only : seq_flds_x2a_fields, seq_flds_a2x_fields
-    use seq_comm_mct , only :  mphaid, mbaxid !
+    use seq_flds_mod , only : seq_flds_x2a_fields, seq_flds_a2x_fields, seq_flds_l2x_fields, &
+     seq_flds_o2x_fields, seq_flds_r2x_fields, seq_flds_i2x_fields
+    use seq_comm_mct , only :  mphaid, mbaxid, mlnid, mblxid,  mrofid, mbrxid, mpoid, mboxid,  mpsiid, mbixid
+    use seq_comm_mct,        only: num_moab_exports  ! used to count the steps for moab files
 #ifdef MOABDEBUG
     real(r8) :: difference
     character(20) :: mct_field, tagname
@@ -1781,6 +1782,9 @@ contains
     domain_check = .true.
     if (single_column         ) domain_check = .false.
     if (dead_comps            ) domain_check = .false.
+#ifdef HAVE_MOAB
+    domain_check = .false.
+#endif
 
     ! set skip_ocean_run flag, used primarily for ocn run on first timestep
     ! use reading a restart as a surrogate from whether this is a startup run
@@ -2007,7 +2011,7 @@ contains
     endif
 
     !  need to finish up the migration of mesh for rof 2 ocn map ( read from file)
-    if (iamin_CPLALLROFID .and. rof_c2_ocn) call prep_rof_ocn_moab(infodata)
+    ! if (iamin_CPLALLROFID .and. rof_c2_ocn) call prep_rof_ocn_moab(infodata)
 
     !----------------------------------------------------------
     !| Update aream in domains where appropriate
@@ -2018,6 +2022,11 @@ contains
        call t_adj_detailf(+2)
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+       if (iamroot_CPLID) then
+          write(logunit,*) ' '
+          write(logunit,F00) 'Updating aream'
+          call shr_sys_flush(logunit)
+       endif
 
        call component_init_aream(infodata, rof_c2_ocn, samegrid_ao, samegrid_al, &
             samegrid_ro, samegrid_lg)
@@ -2079,21 +2088,35 @@ contains
 
     call t_startf ('CPL:init_areacor')
     call t_adj_detailf(+2)
+    if (iamroot_CPLID) then
+       write(logunit,*) ' '
+       write(logunit,F00) 'Calculating area corrections, sending initial data'
+       call shr_sys_flush(logunit)
+    endif
+
+    ! mostly for debug mode
+    num_moab_exports = 0
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (atm_present) call component_init_areacor(atm, areafact_samegrid, seq_flds_a2x_fluxes)
+    ! send initial data to coupler
+    if (atm_present) call component_exch_moab(atm(1), mphaid, mbaxid, 0, seq_flds_a2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (lnd_present) call component_init_areacor(lnd, areafact_samegrid, seq_flds_l2x_fluxes)
+    if (lnd_present) call component_exch_moab(lnd(1), mlnid, mblxid, 0, seq_flds_l2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (rof_present) call component_init_areacor(rof, areafact_samegrid, seq_flds_r2x_fluxes)
+    if (rof_present) call component_exch_moab(rof(1), mrofid, mbrxid, 0, seq_flds_r2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (ocn_present) call component_init_areacor(ocn, areafact_samegrid, seq_flds_o2x_fluxes)
+    if (ocn_present) call component_exch_moab(ocn(1), mpoid, mboxid, 0, seq_flds_o2x_fields)
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (ice_present) call component_init_areacor(ice, areafact_samegrid, seq_flds_i2x_fluxes)
+    if (ice_present) call component_exch_moab(ice(1), mpsiid, mbixid, 0, seq_flds_i2x_fields) 
 
     call mpi_barrier(mpicom_GLOID,ierr)
     if (glc_present) call component_init_areacor(glc, areafact_samegrid, seq_flds_g2x_fluxes)
@@ -2346,6 +2369,7 @@ contains
           endif
        enddo
 
+       num_moab_exports = num_moab_exports + 1
        ! Run atm_init_mct with init phase of 2
        call component_init_cc(Eclock_a, atm, atm_init,                   &
             infodata, NLFilename,                                        &
@@ -3906,6 +3930,8 @@ contains
        endif
        if (associated(xao_ax)) then
           call prep_atm_mrg(infodata, fractions_ax, xao_ax=xao_ax, timer_mrg='CPL:atmprep_mrgx2a')
+          ! call moab atm merge too 
+          call  prep_atm_mrg_moab(infodata, xao_ax)
        endif
 
        call component_diag(infodata, atm, flow='x2c', comment= 'send atm', info_debug=info_debug, &
@@ -3946,7 +3972,6 @@ contains
 
        ! will migrate the tag from component pes to coupler pes, on atm mesh
        call component_exch_moab(atm(1), mphaid, mbaxid, 0, seq_flds_a2x_fields)
-       !call prep_atm_migrate_moab(infodata)
     endif
 
     !----------------------------------------------------------
@@ -4297,7 +4322,8 @@ contains
 !----------------------------------------------------------------------------------
 
   subroutine cime_run_lnd_setup_send()
-
+    use seq_flds_mod, only : seq_flds_x2l_fields
+    use seq_comm_mct, only : mblxid, mlnid
     !----------------------------------------------------
     !| lnd prep-merge
     !----------------------------------------------------
@@ -4318,6 +4344,7 @@ contains
 
        if (lnd_prognostic) then
           call prep_lnd_mrg(infodata, timer_mrg='CPL:lndprep_mrgx2l')
+          call prep_lnd_mrg_moab(infodata) 
 
           call component_diag(infodata, lnd, flow='x2c', comment= 'send lnd', &
                info_debug=info_debug, timer_diag='CPL:lndprep_diagav')
@@ -4336,6 +4363,7 @@ contains
             mpicom_barrier=mpicom_CPLALLLNDID, run_barriers=run_barriers, &
             timer_barrier='CPL:C2L_BARRIER', timer_comp_exch='CPL:C2L', &
             timer_map_exch='CPL:c2l_lndx2lndl', timer_infodata_exch='CPL:c2l_infoexch')
+       call component_exch_moab(lnd(1), mblxid, mlnid, 1, seq_flds_x2l_fields)
     endif
 
   end subroutine cime_run_lnd_setup_send
@@ -4505,7 +4533,7 @@ contains
 
   subroutine cime_run_rof_setup_send()
 
-    use seq_flds_mod , only : seq_flds_r2x_fields
+    use seq_flds_mod , only : seq_flds_x2r_fields
     use seq_comm_mct , only : mrofid, mbrxid !
     !----------------------------------------------------
     ! rof prep-merge
@@ -4524,6 +4552,8 @@ contains
 
        if (ocn_c2_rof) call prep_rof_calc_o2r_rx(timer='CPL:rofprep_ocn2rof')
        call prep_rof_mrg(infodata, fractions_rx, timer_mrg='CPL:rofprep_mrgx2r', cime_model=cime_model)
+       !moab version
+       call prep_rof_mrg_moab(infodata, cime_model=cime_model)
 
        call component_diag(infodata, rof, flow='x2c', comment= 'send rof', &
             info_debug=info_debug, timer_diag='CPL:rofprep_diagav')
@@ -4542,7 +4572,7 @@ contains
             timer_barrier='CPL:C2R_BARRIER', timer_comp_exch='CPL:C2R', &
             timer_map_exch='CPL:c2r_rofx2rofr', timer_infodata_exch='CPL:c2r_infoexch')
 
-       call component_exch_moab(rof(1), mrofid, mbrxid, 0, seq_flds_r2x_fields)
+       call component_exch_moab(rof(1), mbrxid, mrofid, 1, seq_flds_x2r_fields)
     endif
 
   end subroutine cime_run_rof_setup_send
@@ -4551,6 +4581,8 @@ contains
 
   subroutine cime_run_rof_recv_post()
 
+    use seq_comm_mct, only: mrofid, mbrxid
+    use seq_flds_mod, only: seq_flds_r2x_fields
     !----------------------------------------------------------
     ! rof -> cpl
     !----------------------------------------------------------
@@ -4560,7 +4592,10 @@ contains
             mpicom_barrier=mpicom_CPLALLROFID, run_barriers=run_barriers, &
             timer_barrier='CPL:R2C_BARRIER', timer_comp_exch='CPL:R2C', &
             timer_map_exch='CPL:r2c_rofr2rofx', timer_infodata_exch='CPL:r2c_infoexch')
-       call prep_rof_migrate_moab(infodata)
+       ! this is for one hop 
+       call component_exch_moab(rof(1), mrofid, mbrxid, 0, seq_flds_r2x_fields)
+
+       !call prep_rof_migrate_moab(infodata)
     endif
 
     !----------------------------------------------------------
@@ -4592,6 +4627,8 @@ contains
 
   subroutine cime_run_ice_setup_send()
   
+   use seq_flds_mod, only : seq_flds_x2i_fields
+   use seq_comm_mct, only : mpsiid, mbixid
     !  Note that for atm->ice mapping below will leverage the assumption that the
     !  ice and ocn are on the same grid and that mapping of atm to ocean is
     !  done already for use by atmocn flux and ice model prep
@@ -4620,6 +4657,8 @@ contains
 
        call prep_ice_mrg(infodata, timer_mrg='CPL:iceprep_mrgx2i')
 
+       call prep_ice_mrg_moab(infodata,rof_c2_ice)
+
        call component_diag(infodata, ice, flow='x2c', comment= 'send ice', &
             info_debug=info_debug, timer_diag='CPL:iceprep_diagav')
 
@@ -4636,6 +4675,7 @@ contains
             mpicom_barrier=mpicom_CPLALLICEID, run_barriers=run_barriers, &
             timer_barrier='CPL:C2I_BARRIER', timer_comp_exch='CPL:C2I', &
             timer_map_exch='CPL:c2i_icex2icei', timer_infodata_exch='CPL:ice_infoexch')
+       call component_exch_moab(ice(1), mbixid, mpsiid, 1, seq_flds_x2i_fields)
     endif
 
   end subroutine cime_run_ice_setup_send
@@ -4643,7 +4683,8 @@ contains
 !----------------------------------------------------------------------------------
 
   subroutine cime_run_ice_recv_post()
-
+    use seq_comm_mct, only : mpsiid, mbixid
+    use seq_flds_mod, only : seq_flds_i2x_fields
     !----------------------------------------------------------
     ! ice -> cpl
     !----------------------------------------------------------

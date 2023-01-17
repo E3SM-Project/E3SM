@@ -16,6 +16,7 @@ module prep_ocn_mod
   use seq_comm_mct,     only: mboxid ! iMOAB id for mpas ocean migrated mesh to coupler pes
   use seq_comm_mct,     only: mbrmapro ! iMOAB id for map read from rof2ocn map file
   use seq_comm_mct,     only: mbrxoid ! iMOAB id for rof on coupler in ocean context; 
+  use seq_comm_mct,     only: mbrxid   ! iMOAB id of moab rof read on couple pes
   use seq_comm_mct,     only : atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
   use seq_comm_mct,     only : mbaxid   ! iMOAB id for atm migrated mesh to coupler pes
   use seq_comm_mct,     only : mbintxao ! iMOAB id for intx mesh between atm and ocean
@@ -32,7 +33,7 @@ module prep_ocn_mod
 
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
   use seq_map_type_mod
-  use seq_map_mod        !  will have also moab_map_init_rcfile 
+  use seq_map_mod        !  will have also moab_map_init_rcfile , seq_map_set_type 
   use seq_flds_mod
   use t_drv_timers_mod
   use mct_mod
@@ -153,6 +154,13 @@ module prep_ocn_mod
   real (kind=r8) , allocatable, private :: r2x_om (:,:)
   real (kind=r8) , allocatable, private :: xao_om (:,:)
 
+  ! this will be constructed first time, and be used to copy fields for shared indices
+  ! between xao and x2o 
+  character(CXX) :: shared_fields_xao_x2o
+  ! will need some array to hold the data for copying 
+  real(r8) , allocatable, save :: shared_values(:) ! will be the size of shared indices * lsize
+  integer    :: size_of_shared_values
+
   logical                  :: iamin_CPLALLICEID     ! pe associated with CPLALLICEID
 contains
 
@@ -162,7 +170,8 @@ contains
        wav_c2_ocn, glc_c2_ocn, glcshelf_c2_ocn)
 
     use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
-      iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights
+      iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights, &
+      iMOAB_MigrateMapMesh, iMOAB_WriteLocalMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -215,9 +224,18 @@ contains
    integer                  :: tagtype, numco, tagindex
    character(CXX)           :: tagName
 
-    integer                  :: rmapid  ! external id to identify the moab app
+    integer                  :: rmapid, rmapid2  ! external id to identify the moab app ; 2 is for rof in ocean context (coverage)
     integer                  :: type_grid ! 
-
+    integer                  :: context_id, direction
+    character*32             :: prefix_output ! for writing a coverage file for debugging
+    integer                  :: rank_on_cpl ! just for debugging
+! these are just to zero out r2x fields on ocean
+    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
+    integer  mlsize ! moab land size
+    integer  nrflds  ! number of rof fields projected on land
+    integer arrsize  ! for setting the r2x fields on land to 0
+    integer ent_type ! for setting tags
+    real (kind=r8) , allocatable :: tmparray (:) ! used to set the r2x fields to 0
     
     !---------------------------------------------------------------
 
@@ -368,12 +386,13 @@ contains
             endif
             ! now take care of the mapper 
             mapper_Fa2o%src_mbid = mbaxid
-            mapper_Fa2o%tgt_mbid = mboxid
+            mapper_Fa2o%tgt_mbid = mbintxao
             mapper_Fa2o%intx_mbid = mbintxao 
             mapper_Fa2o%src_context = atm(1)%cplcompid
             mapper_Fa2o%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fa2o%weight_identifier = wgtIdef
+            mapper_Fa2o%mbname = 'mapper_Fa2o'
             ! because we will project fields from atm to ocn grid, we need to define 
             ! atm a2x fields to ocn grid on coupler side
             
@@ -469,20 +488,22 @@ contains
           if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
    ! now take care of the 2 new mappers 
             mapper_Sa2o%src_mbid = mbaxid
-            mapper_Sa2o%tgt_mbid = mboxid
+            mapper_Sa2o%tgt_mbid = mbintxao
             mapper_Sa2o%intx_mbid = mbintxao 
             mapper_Sa2o%src_context = atm(1)%cplcompid
             mapper_Sa2o%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Sa2o%weight_identifier = wgtIdef  
+            mapper_Sa2o%mbname = 'mapper_Sa2o'
 
             mapper_Va2o%src_mbid = mbaxid
-            mapper_Va2o%tgt_mbid = mboxid
+            mapper_Va2o%tgt_mbid = mbintxao
             mapper_Va2o%intx_mbid = mbintxao 
             mapper_Va2o%src_context = atm(1)%cplcompid
             mapper_Va2o%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Va2o%weight_identifier = wgtIdef  
+            mapper_Va2o%mbname = 'mapper_Va2o'
           endif ! if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) 
        endif ! if (atm_c2_ocn .or. atm_c2_ice)
        call shr_sys_flush(logunit)
@@ -525,8 +546,13 @@ contains
             mapper_SFi2o%src_mbid = mbixid
             mapper_SFi2o%tgt_mbid = mboxid
             ! no intersection, so will have to do without it
-            mapper_Va2o%src_context = ice(1)%cplcompid
-            mapper_Va2o%intx_context = ocn(1)%cplcompid
+            mapper_SFi2o%src_context = ice(1)%cplcompid
+            mapper_SFi2o%intx_context = ocn(1)%cplcompid
+            mapper_SFi2o%mbname = 'mapper_SFi2o'
+
+            if(mapper_SFi2o%copy_only) then
+               call seq_map_set_type(mapper_SFi2o, mbixid, 1) ! type is cells 
+            endif
 
          endif 
  
@@ -543,7 +569,8 @@ contains
           call seq_map_init_rcfile(mapper_Rr2o_liq, rof(1), ocn(1), &
                'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
                'mapper_Rr2o_liq  initialization',esmf_map_flag)
-
+     
+#ifdef HAVE_MOAB
           appname = "ROF_OCN_COU"//CHAR(0)
             ! rmapid  is a unique external number of MOAB app that takes care of map between rof and ocn mesh
           rmapid = 100*rof(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it
@@ -557,14 +584,116 @@ contains
           call moab_map_init_rcfile(mbrmapro, mboxid, type_grid, rof(1), ocn(1), &
                'seq_maps.rc', 'rof2ocn_liq_rmapname:', 'rof2ocn_liq_rmaptype:',samegrid_ro, &
                'mapper_Rr2o_liq moab initialization',esmf_map_flag)
-          appname = "ROF_COU"//C_NULL_CHAR
-               ! rmapid  is a unique external number of MOAB app that identifies runoff on coupler side
-          rmapid = 100*rof(1)%cplcompid ! this is a special case, because we also have a regular coupler instance mbrxid
-          ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, rmapid, mbrxoid)
+          ! this is a special rof mesh redistribution, for the ocean context
+          ! it will be used to project from rof to ocean
+          ! the mesh will be migrated, to be able to do the second hop 
+          appname = "ROF_OCOU"//C_NULL_CHAR
+          ! rmapid  is a unique external number of MOAB app that identifies runoff on coupler side
+          rmapid2 = 100*rof(1)%cplcompid ! this is a special case, because we also have a regular coupler instance mbrxid
+          ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, rmapid2, mbrxoid)
           if (ierr .ne. 0) then
              write(logunit,*) subname,' error in registering rof on coupler in ocean context '
              call shr_sys_abort(subname//' ERROR in registering  rof on coupler in ocean context ')
           endif
+          ! this code was moved from prep_rof_ocn_moab, because we will do everything on coupler side, not 
+          ! needed to be on joint comm anymore for the second hop
+
+      !  it read on the coupler side, from file, the scrip mosart, that has a full mesh;  
+      !  also migrate rof mesh on coupler pes, in ocean context, mbrxoid (this will be like coverage mesh, 
+      !    it will cover ocean target per process)
+      !  map between rof 2 ocn is in  mbrmapro ; 
+      ! after this, the sending of tags for second hop (ocn context) will use the new par comm graph, 
+      !  that has more precise info, that got created
+         call seq_comm_getData(CPLID,  mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
+
+         call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
+
+         type1 = 3 ! fv mesh nowadays
+         direction = 1 ! 
+         context_id = ocn(1)%cplcompid
+         ! this creates a par comm graph between mbrxid and mbrxoid, with ids rof(1)%cplcompid, context ocn(1)%cplcompid
+         ! this will be used in send/receive mappers
+         ierr = iMOAB_MigrateMapMesh (mbrxid, mbrmapro, mbrxoid, mpicom_CPLID, mpigrp_CPLID, &
+            mpigrp_CPLID, type1, rof(1)%cplcompid, context_id, direction)
+         
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in migrating rof mesh for map rof c2 ocn '
+            call shr_sys_abort(subname//' ERROR in migrating rof mesh for map rof c2 ocn ')
+         endif
+         if (iamroot_CPLID)  then
+            write(logunit,*) subname,' migrated mesh for map rof 2 ocn '
+         endif
+         if (mbrxoid .ge. 0) then ! we are on coupler side pes
+            tagname=trim(seq_flds_r2x_fields)//C_NULL_CHAR
+            tagtype = 1 ! dense, double
+            numco= 1 ! 1  scalar per node
+            ierr = iMOAB_DefineTagStorage(mbrxoid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining ' // trim(seq_flds_r2x_fields) // ' tags on coupler side in MOAB'
+               call shr_sys_abort(subname//' ERROR in defining MOAB tags ')
+            endif
+         endif
+
+         if (mboxid .ge. 0) then ! we are on coupler side pes, for ocean mesh
+            tagname=trim(seq_flds_r2x_fields)//C_NULL_CHAR
+            tagtype = 1 ! dense, double
+            numco= 1 ! 1  scalar per node
+            ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining ' // trim(seq_flds_r2x_fields) // ' tags on coupler side in MOAB, for ocean app'
+               call shr_sys_abort(subname//' ERROR in defining MOAB tags ')
+            endif
+         endif   
+         if (iamroot_CPLID)  then
+            write(logunit,*) subname,' created moab tags for seq_flds_r2x_fields '
+         endif
+         
+! find out the number of local elements in moab mesh land instance on coupler
+         ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' cant get size of ocn mesh'
+            call shr_sys_abort(subname//' ERROR in getting size of ocn mesh')
+         endif
+         ! ocn is cell mesh on coupler side
+         mlsize = nvise(1)
+         ent_type = 1 ! cell 
+         ! zero out the values just for r2x fields, on ocean instance
+         nrflds = mct_aVect_nRattr(r2x_ox(1)) ! this is the size of r2x_fields
+         arrsize = nrflds*mlsize
+         allocate (tmparray(arrsize)) ! mlsize is the size of local land
+         ! do we need to zero out others or just river ? 
+         tmparray = 0._r8
+         ierr = iMOAB_SetDoubleTagStorage(mboxid, tagname, arrsize , ent_type, tmparray(1))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' cant zero out r2x tags on ocn'
+            call shr_sys_abort(subname//' cant zero out r2x tags on ocn')
+         endif
+         deallocate (tmparray)
+
+
+         ! now we have to populate the map with the right moab attibutes, so that it does the right projection
+#ifdef MOABDEBUG
+         if (mbrxoid.ge.0) then  ! we are on coupler PEs
+            call mpi_comm_rank(mpicom_CPLID, rank_on_cpl  , ierr)
+            if (rank_on_cpl .lt. 4) then
+               prefix_output = "rof_cov"//CHAR(0)
+               ierr = iMOAB_WriteLocalMesh(mbrxoid, prefix_output)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in writing coverage mesh rof 2 ocn '
+               endif
+            endif
+         endif
+#endif
+! now take care of the mapper for MOAB mapper_Rr2o_liq
+            mapper_Rr2o_liq%src_mbid = mbrxid
+            mapper_Rr2o_liq%tgt_mbid = mbrxoid ! this is special, it will really need this coverage type mesh
+            mapper_Rr2o_liq%intx_mbid = mbrmapro 
+            mapper_Rr2o_liq%src_context = rof(1)%cplcompid
+            mapper_Rr2o_liq%intx_context = ocn(1)%cplcompid ! this context was used in migrate mesh
+            wgtIdef = 'map-from-file'//C_NULL_CHAR
+            mapper_Rr2o_liq%weight_identifier = wgtIdef 
+            mapper_Rr2o_liq%mbname = 'mapper_Rr2o_liq'
+#endif
 
           if (iamroot_CPLID) then
              write(logunit,*) ' '
@@ -573,7 +702,18 @@ contains
           call seq_map_init_rcfile(mapper_Rr2o_ice, rof(1), ocn(1), &
                'seq_maps.rc', 'rof2ocn_ice_rmapname:', 'rof2ocn_ice_rmaptype:',samegrid_ro, &
                'mapper_Rr2o_ice  initialization',esmf_map_flag)
-
+! us the same one for mapper_Rr2o_ice and mapper_Fr2o
+#ifdef HAVE_MOAB
+! now take care of the mapper for MOAB mapper_Rr2o_ice
+            mapper_Rr2o_ice%src_mbid = mbrxid
+            mapper_Rr2o_ice%tgt_mbid = mbrxoid ! special 
+            mapper_Rr2o_ice%intx_mbid = mbrmapro 
+            mapper_Rr2o_ice%src_context = rof(1)%cplcompid
+            mapper_Rr2o_ice%intx_context = ocn(1)%cplcompid ! this context was used in migrate mesh
+            wgtIdef = 'map-from-file'//C_NULL_CHAR
+            mapper_Rr2o_ice%weight_identifier = wgtIdef 
+            mapper_Rr2o_ice%mbname = 'mapper_Rr2o_ice'
+#endif
           if (flood_present) then
              if (iamroot_CPLID) then
                 write(logunit,*) ' '
@@ -582,6 +722,17 @@ contains
              call seq_map_init_rcfile( mapper_Fr2o, rof(1), ocn(1), &
                   'seq_maps.rc', 'rof2ocn_fmapname:', 'rof2ocn_fmaptype:',samegrid_ro, &
                   string='mapper_Fr2o initialization', esmf_map=esmf_map_flag)
+#ifdef HAVE_MOAB
+! now take care of the mapper for MOAB mapper_Fr2o
+               mapper_Fr2o%src_mbid = mbrxid
+               mapper_Fr2o%tgt_mbid = mbrxoid ! special
+               mapper_Fr2o%intx_mbid = mbrmapro 
+               mapper_Fr2o%src_context = rof(1)%cplcompid
+               mapper_Fr2o%intx_context = ocn(1)%cplcompid ! this context was used in migrate mesh
+               wgtIdef = 'map-from-file'//C_NULL_CHAR
+               mapper_Fr2o%weight_identifier = wgtIdef 
+               mapper_Fr2o%mbname = 'mapper_Fr2o'
+#endif
           endif
        endif
        call shr_sys_flush(logunit)
@@ -904,6 +1055,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     logical, save :: first_time = .true.
 
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
+   
     character(CXX) ::tagname, mct_field
     integer :: ent_type, ierr
 #ifdef MOABDEBUG
@@ -964,6 +1116,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        allocate(a2x_om (lsize, naflds))
        allocate(i2x_om (lsize, niflds))
        allocate(r2x_om (lsize, nrflds))
+       r2x_om = 0._r8 ! should we zero out all of them ?
        allocate(xao_om (lsize, nxflds))
        ! allocate fractions too
        ! use the fraclist fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
@@ -1201,6 +1354,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
     !--- document copy operations ---
     if (first_time) then
+       shared_fields_xao_x2o='' ! nothing in it yet
        !--- document merge ---
        do i=1,a2x_SharedIndices%shared_real%num_indices
           i1=a2x_SharedIndices%shared_real%aVindices1(i)
@@ -1226,7 +1380,12 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
           i1=xao_SharedIndices%shared_real%aVindices1(i)
           o1=xao_SharedIndices%shared_real%aVindices2(i)
           mrgstr(o1) = trim(mrgstr(o1))//' = xao%'//trim(field_xao(i1))
+          ! will build tagname for moab set/get tag values
+          shared_fields_xao_x2o = trim(shared_fields_xao_x2o)//trim(field_xao(i1))//':'
+          size_of_shared_values = size_of_shared_values + lSize
        enddo
+       ! first time, allocate data for values_holder
+       allocate(shared_values (size_of_shared_values))
       !  do i=1,g2x_SharedIndices%shared_real%num_indices
       !    i1=g2x_SharedIndices%shared_real%aVindices1(i)
       !    o1=g2x_SharedIndices%shared_real%aVindices2(i)
@@ -1396,7 +1555,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
             x2o_om(n,index_x2o_Faxa_snow )
 
        x2o_om(n,index_x2o_Foxx_rofl) = (r2x_om(n,index_r2x_Forr_rofl ) + &
-            r2x_om(n,index_r2x_Flrr_flood) ) * flux_epbalfact
+            r2x_om(n,index_r2x_Flrr_flood) ) 
            ! g2x_om(n,index_g2x_Fogg_rofl )) * flux_epbalfact
        x2o_om(n,index_x2o_Foxx_rofi) = (r2x_om(n,index_r2x_Forr_rofi ) ) * flux_epbalfact
           !  g2x_om(n,index_g2x_Fogg_rofi )) * flux_epbalfact
@@ -1531,6 +1690,20 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting x2o_om array ')
     endif
+
+    ! we still need to get/set the shared fields between xao and x2o:
+    tagname = trim(shared_fields_xao_x2o)//C_NULL_CHAR
+    ierr = iMOAB_GetDoubleTagStorage ( mbofxid, tagname, size_of_shared_values , ent_type, shared_values)
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in getting shared_values array ')
+    endif
+    ierr = iMOAB_SetDoubleTagStorage ( mboxid, tagname, size_of_shared_values , ent_type, shared_values)
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in setting shared_values array on ocean instance')
+    endif
+
+
+
 #ifdef MOABDEBUG
   !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
     x2o_o => component_get_x2c_cx(ocn(1))
@@ -1561,6 +1734,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
           do ko = 1,noflds
              write(logunit,'(A)') trim(mrgstr(ko))
           enddo
+          write(logunit,'(A)') subname//' shared fields between xao and x2o '//trim(shared_fields_xao_x2o)
        endif
        deallocate(mrgstr)
        deallocate(field_atm,itemc_atm)

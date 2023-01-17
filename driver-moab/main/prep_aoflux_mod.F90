@@ -7,10 +7,11 @@ module prep_aoflux_mod
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct,     only: num_inst_xao, num_inst_frc, num_inst_ocn
   use seq_comm_mct,     only: CPLID, logunit
-  use seq_comm_mct,     only : mbofxid ! iMOAB app id for ocn on cpl pes, the second copy of mboxid
+  use seq_comm_mct,     only : mbofxid ! iMOAB id for mpas ocean migrated mesh to coupler pes, just for xao flux calculations
   use seq_comm_mct,     only : mbox2id !
   use seq_comm_mct,     only : mbaxid ! iMOAB app id for atm on cpl pes
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
+  use seq_comm_mct, only : num_moab_exports
   use seq_infodata_mod, only: seq_infodata_getdata, seq_infodata_type
   use seq_map_type_mod
   use seq_map_mod
@@ -159,7 +160,7 @@ contains
        arrSize = nvise(1) * size_list ! there are size_list tags that need to be zeroed out
        allocate(tagValues(arrSize) )
        ent_type = 1 ! cell type
-       tagValues = 0 
+       tagValues = 0._r8
        ierr = iMOAB_SetDoubleTagStorage ( mbofxid, tagname, arrSize , ent_type, tagValues)
        if (ierr .ne. 0) then
          write(logunit,*) subname,' error in zeroing out xao_fields  '
@@ -172,7 +173,7 @@ contains
           write(logunit,*) subname,' error in defining tags on ocn mct mesh on cpl '
           call shr_sys_abort(subname//' ERROR in defining tags on ocn mct mesh on cpl')
        endif
-       xao_omct = 0.
+       xao_omct = 0._r8
        ent_type = 0 ! cell type, this is point cloud mct
        arrSize = lsize_o * size_list
        ierr = iMOAB_SetDoubleTagStorage ( mbox2id, tagname, arrSize , ent_type, xao_omct)
@@ -181,6 +182,7 @@ contains
          call shr_sys_abort(subname//' ERROR in zeroing out xao_fields on mct instance ocn ')
        endif
        deallocate(tagValues)
+       !deallocate(xao_omct)
 #ifdef MOABDEBUG
         ! debug out file
       outfile = 'o_flux.h5m'//C_NULL_CHAR
@@ -224,7 +226,7 @@ contains
        arrSize = nvise(1) * size_list ! there are size_list tags that need to be zeroed out
        allocate(tagValues(arrSize) )
        ent_type = 1 ! cell type now, not a point cloud anymore
-       tagValues = 0 
+       tagValues = 0._r8
        ierr = iMOAB_SetDoubleTagStorage ( mbaxid, tagname, arrSize , ent_type, tagValues)
        if (ierr .ne. 0) then
          write(logunit,*) subname,' error in zeroing out xao_fields  '
@@ -245,6 +247,11 @@ contains
     ! Uses
     use prep_atm_mod, only: prep_atm_get_mapper_So2a
     use prep_atm_mod, only: prep_atm_get_mapper_Fo2a
+    use prep_atm_mod, only: prep_atm_get_mapper_Sof2a
+    use prep_atm_mod, only: prep_atm_get_mapper_Fof2a
+#ifdef MOABDEBUG
+    use iMOAB, only :  iMOAB_WriteMesh
+#endif
     !
     ! Arguments
     type(mct_aVect) , intent(in)    :: fractions_ox(:)
@@ -254,9 +261,15 @@ contains
     ! Local Variables
     type(seq_map)   , pointer :: mapper_So2a
     type(seq_map)   , pointer :: mapper_Fo2a
+    type(seq_map)   , pointer :: mapper_Sof2a
+    type(seq_map)   , pointer :: mapper_Fof2a
     integer :: exi, efi
     character(*), parameter :: subname = '(prep_aoflux_calc_xao_ax)'
     character(*), parameter :: F00 = "('"//subname//" : ', 4A )"
+#ifdef MOABDEBUG
+    character*50             :: outfile, wopts, lnum
+    integer :: ierr
+#endif
     !---------------------------------------------------------------
 
     call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
@@ -264,8 +277,8 @@ contains
        do exi = 1,num_inst_xao
           efi = mod((exi-1),num_inst_frc) + 1
 
-          mapper_So2a => prep_atm_get_mapper_So2a()
-          call seq_map_map(mapper_So2a, xao_ox(exi), xao_ax(exi), &
+          mapper_Sof2a => prep_atm_get_mapper_Sof2a()
+          call seq_map_map(mapper_Sof2a, xao_ox(exi), xao_ax(exi), &
                fldlist=seq_flds_xao_albedo, norm=.true., &
                avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
        enddo
@@ -275,17 +288,41 @@ contains
        do exi = 1,num_inst_xao
           efi = mod((exi-1),num_inst_frc) + 1
 
-          mapper_So2a => prep_atm_get_mapper_So2a()
-          call seq_map_map(mapper_So2a, xao_ox(exi), xao_ax(exi), &
+          mapper_Sof2a => prep_atm_get_mapper_Sof2a()
+          call seq_map_map(mapper_Sof2a, xao_ox(exi), xao_ax(exi), &
                fldlist=seq_flds_xao_states, norm=.true., &
                avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
 
-          mapper_Fo2a => prep_atm_get_mapper_Fo2a()
-          call seq_map_map(mapper_Fo2a, xao_ox(exi), xao_ax(exi),&
+          mapper_Fof2a => prep_atm_get_mapper_Fof2a()
+          call seq_map_map(mapper_Fof2a, xao_ox(exi), xao_ax(exi),&
                fldlist=seq_flds_xao_fluxes, norm=.true., &
                avwts_s=fractions_ox(efi),avwtsfld_s='ofrac')
        enddo
     end if
+#ifdef MOABDEBUG
+! albedos is called second so wait until then to write
+    if (trim(flds) == 'albedos') then
+         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+         write(lnum,"(I0.2)")num_moab_exports
+      if(mbaxid > 0 ) then
+            ! projections on atm
+         outfile = 'FlxAlb2Atm'//trim(lnum)//'.h5m'//C_NULL_CHAR
+         ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing ocean to atm projection'
+            call shr_sys_abort(subname//' ERROR in writing ocean to atm projection')
+         endif
+      endif
+      if(mbofxid > 0) then
+         outfile = 'FlxAlb2Ocn'//trim(lnum)//'.h5m'//C_NULL_CHAR
+         ierr = iMOAB_WriteMesh(mbofxid, trim(outfile), trim(wopts))
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in writing ocean to atm projection'
+            call shr_sys_abort(subname//' ERROR in writing ocean to atm projection')
+         endif
+      endif
+    end if
+#endif
     call t_drvstopf  (trim(timer))
 
   end subroutine prep_aoflux_calc_xao_ax

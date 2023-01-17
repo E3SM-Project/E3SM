@@ -373,17 +373,6 @@ end subroutine moab_map_init_rcfile
        endif
 
        if ( valid_moab_context ) then
-         ! if ( mapper % nentities == 0 ) then
-         !    ! tag_entity_type = 1 ! 0 = vertices, 1 = elements
-         !    ! find out the number of local elements in moab mesh ocean instance on coupler
-         !    ierr  = iMOAB_GetMeshInfo ( mboxid, nvert, nvise, nbl, nsurf, nvisBC )
-         !    if (ierr .ne. 0) then
-         !          write(logunit,*) subname,' error in getting mesh info '
-         !          call shr_sys_abort(subname//' error in getting mesh info ')
-         !    endif
-         !   !! check tag_entity_type and then set nentieis accordingly
-         ! endif
-
          nfields = 1
          ! first get data from source tag and store in a temporary
          ! then set it back to target tag to mimic a copy
@@ -401,7 +390,7 @@ end subroutine moab_map_init_rcfile
          endif
 
          if (seq_comm_iamroot(CPLID)) then
-            write(logunit,*) subname,' iMOAB_mapper  nfields', &
+            write(logunit,*) subname, 'iMOAB mapper ',trim(mapper%mbname), ' iMOAB_mapper  nfields', &
                   nfields,  ' fldlist_moab=', trim(fldlist_moab)
             call shr_sys_flush(logunit)
          endif
@@ -418,39 +407,6 @@ end subroutine moab_map_init_rcfile
           call mct_aVect_copy(aVin=av_s,aVout=av_d,vector=mct_usevector)
        endif
 
-#ifdef HAVE_MOAB
-       if ( valid_moab_context ) then
-         ! first get data from source tag and store in a temporary
-         ! then set it back to target tag to mimic a copy
-         ntagdatalength = nfields * mapper % nentities
-         allocate(moab_tag_data(ntagdatalength))
-
-         ierr = iMOAB_GetDoubleTagStorage( mapper%src_mbid, &
-                                    fldlist_moab,               &
-                                    ntagdatalength,        &
-                                    mapper % tag_entity_type,       &
-                                    moab_tag_data )
-         if (ierr > 0 ) then
-!           call shr_sys_abort( subname//'MOAB Error: failed to get source double tag ')
-            write(logunit, *) subname,' iMOAB copy get Error ', trim(fldlist_moab)
-            valid_moab_context = .false.
-         endif
-
-         ierr = iMOAB_SetDoubleTagStorage( mapper%tgt_mbid, &
-                                    fldlist_moab,               &
-                                    ntagdatalength,        &
-                                    mapper % tag_entity_type,       &
-                                    moab_tag_data )
-         if (ierr > 0 ) then
-!           call shr_sys_abort( subname//'MOAB Error: failed to set target double tag ')
-            write(logunit, *) subname,' iMOAB copy Set Error ', trim(fldlist_moab)
-            valid_moab_context = .false.
-         endif
-
-         deallocate(moab_tag_data)
-       endif
-#endif
-
     else if (mapper%rearrange_only) then
        !-------------------------------------------
        ! REARRANGE data
@@ -462,42 +418,6 @@ end subroutine moab_map_init_rcfile
           call mct_rearr_rearrange(av_s, av_d, mapper%rearr, tag=ltag, VECTOR=mct_usevector, &
                ALLTOALL=mct_usealltoall)
        endif
-
-#ifdef HAVE_MOAB
-       if ( valid_moab_context ) then
-          ! right now, this is used for ice-ocn projection, which involves just a send/recv, usually
-         if (seq_comm_iamroot(CPLID)) then
-            write(logunit, *) subname,' iMOAB rearrange mapper before sending ', trim(fldlist_moab)
-            call shr_sys_flush(logunit)
-         endif
-         ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
-         if (ierr .ne. 0) then
-            if (seq_comm_iamroot(CPLID)) then
-               write(logunit, *) subname,' iMOAB mapper error in sending tags ', trim(fldlist_moab)
-               call shr_sys_flush(logunit)
-            endif
-            valid_moab_context = .false. 
-         endif
-       endif
-       if ( valid_moab_context ) then
-         if (seq_comm_iamroot(CPLID)) then
-            write(logunit, *) subname,' iMOAB mapper before receiving ', trim(fldlist_moab)
-            call shr_sys_flush(logunit)
-         endif
-         ! receive in the intx app, because it is redistributed according to coverage (trick)
-         ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in receiving tags ', trim(fldlist_moab)
-            !call shr_sys_abort(subname//' ERROR in receiving tags')
-         endif
-         ! now free buffers
-         ierr = iMOAB_FreeSenderBuffers( mapper%src_mbid, mapper%intx_context )
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in freeing buffers ', trim(fldlist_moab)
-            call shr_sys_abort(subname//' ERROR in freeing buffers') ! serious enough
-         endif
-       endif
-#endif
 
     else
        !-------------------------------------------
@@ -519,22 +439,23 @@ end subroutine moab_map_init_rcfile
           endif
        endif
 
+    endif
+
+    if (mapper%copy_only .or. mapper%rearrange_only) then
+
 #ifdef HAVE_MOAB
        if ( valid_moab_context ) then
-         ! first have to do the second hop, iMOAB_ComputeCommGraph( src_mbid, intx_mbid,
-         ! wgtIdef = 'scalar'//C_NULL_CHAR
-         ! 
+          ! right now, this is used for ice-ocn projection, which involves just a send/recv, usually
          if (seq_comm_iamroot(CPLID)) then
-            write(logunit, *) subname,' iMOAB mapper before sending ', trim(fldlist_moab)
+            write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' rearrange mapper before sending ', trim(fldlist_moab)
             call shr_sys_flush(logunit)
          endif
          ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
          if (ierr .ne. 0) then
-            if (seq_comm_iamroot(CPLID)) then
-               write(logunit, *) subname,' iMOAB mapper error in sending tags ', trim(fldlist_moab)
-               call shr_sys_flush(logunit)
-            endif
-            valid_moab_context = .false. 
+            write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' error in sending tags ', trim(fldlist_moab)
+            call shr_sys_flush(logunit)
+            call shr_sys_abort(subname//' ERROR in sending tags')
+            !valid_moab_context = .false.
          endif
        endif
        if ( valid_moab_context ) then
@@ -542,12 +463,49 @@ end subroutine moab_map_init_rcfile
             write(logunit, *) subname,' iMOAB mapper before receiving ', trim(fldlist_moab)
             call shr_sys_flush(logunit)
          endif
-         ! receive in the intx app, because it is redistributed according to coverage (trick)
-         ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
+         ! receive in the target app
+         ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in receiving tags ', trim(fldlist_moab)
-            !call shr_sys_abort(subname//' ERROR in receiving tags')
-            valid_moab_context = .false. ! do not attempt to project
+            write(logunit,*) subname,' error in receiving tags iMOAB mapper ', mapper%mbname,  trim(fldlist_moab)
+            call shr_sys_flush(logunit)
+            call shr_sys_abort(subname//' ERROR in receiving tags')
+         endif
+         ! now free buffers
+         ierr = iMOAB_FreeSenderBuffers( mapper%src_mbid, mapper%intx_context )
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in freeing buffers ', trim(fldlist_moab)
+            call shr_sys_abort(subname//' ERROR in freeing buffers') ! serious enough
+         endif
+       endif
+#endif
+
+      else
+
+#ifdef HAVE_MOAB
+       if ( valid_moab_context ) then
+         ! first have to do the second hop, iMOAB_ComputeCommGraph( src_mbid, intx_mbid,
+         ! wgtIdef = 'scalar'//C_NULL_CHAR
+         !
+         write(logunit, *) subname,' iMOAB real mapper before sending ', trim(fldlist_moab)
+         call shr_sys_flush(logunit)
+         ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
+         if (ierr .ne. 0) then
+            write(logunit, *) subname,' iMOAB mapper error in sending tags ', mapper%mbname,  trim(fldlist_moab)
+            call shr_sys_flush(logunit)
+            call shr_sys_abort(subname//' ERROR in sending tags')
+            !valid_moab_context = .false.
+         endif
+       endif
+       if ( valid_moab_context ) then
+         ! receive in the intx app, because it is redistributed according to coverage (trick)
+         ! for true intx cases, tgt_mbid is set to be the same as intx_mbid
+         ! just read map is special 
+         ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
+         if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in receiving tags ', mapper%mbname,   trim(fldlist_moab)
+            call shr_sys_flush(logunit)
+            call shr_sys_abort(subname//' ERROR in receiving tags')
+            !valid_moab_context = .false. ! do not attempt to project
          endif
          ! now free buffers
          ierr = iMOAB_FreeSenderBuffers( mapper%src_mbid, mapper%intx_context )
@@ -557,6 +515,12 @@ end subroutine moab_map_init_rcfile
          endif
        endif
        if ( valid_moab_context ) then
+#ifdef MOABDEBUG
+         if (seq_comm_iamroot(CPLID)) then
+            write(logunit, *) subname,' iMOAB mapper: between ', mapper%src_mbid, ' and ',  mapper%tgt_mbid, trim(fldlist_moab)
+            call shr_sys_flush(logunit)
+         endif
+#endif
          ierr = iMOAB_ApplyScalarProjectionWeights ( mapper%intx_mbid, mapper%weight_identifier, fldlist_moab, fldlist_moab)
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in applying weights '
@@ -564,13 +528,8 @@ end subroutine moab_map_init_rcfile
          endif
        endif
 #endif
-    endif
-
-#ifdef HAVE_MOAB
-    if ( valid_moab_context ) then
 
     endif
-#endif
 
   end subroutine seq_map_map
 

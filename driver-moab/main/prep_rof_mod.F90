@@ -8,10 +8,13 @@ module prep_rof_mod
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct,     only: num_inst_lnd, num_inst_rof, num_inst_frc, num_inst_atm, num_inst_ocn
   use seq_comm_mct,     only: CPLID, ROFID, logunit
-  use seq_comm_mct,     only: mrofid ! id for rof comp 
-  use seq_comm_mct,     only: mbrmapro ! iMOAB id of moab instance of map read from rof2ocn map file 
-  use seq_comm_mct,     only: mbrxoid  ! iMOAB id for rof instance on coupler for ocn 
-  use seq_comm_mct,     only: mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
+  use seq_comm_mct,     only: mblxid   ! iMOAB id for land on coupler (read now from h5m file)
+  use seq_comm_mct,     only: mbaxid   ! iMOAB id for atm migrated mesh to coupler pes (migrate either mhid or mhpgx, depending on atm_pg_active)
+  use seq_comm_mct,     only: mbrxid   ! iMOAB id of moab rof read on couple pes
+  use seq_comm_mct,     only: mbintxar ! iMOAB id for intx mesh between atm and river
+  use seq_comm_mct,     only: mbintxlr ! iMOAB id for intx mesh between land and river
+  use seq_comm_mct,     only : atm_pg_active  ! whether the atm uses FV mesh or not ; made true if fv_nphys > 0
+  use dimensions_mod,   only : np     ! for atmosphere degree 
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
   use shr_log_mod     , only: errMsg => shr_log_errMsg
@@ -28,6 +31,9 @@ module prep_rof_mod
   use map_lnd2rof_irrig_mod, only: map_lnd2rof_irrig
 
   use iso_c_binding
+#ifdef MOABDEBUG
+  use component_type_mod, only:  compare_mct_av_moab_tag
+#endif
 
   implicit none
   save
@@ -39,6 +45,10 @@ module prep_rof_mod
 
   public :: prep_rof_init
   public :: prep_rof_mrg
+
+#ifdef HAVE_MOAB
+  public :: prep_rof_mrg_moab
+#endif
 
   public :: prep_rof_accum_lnd
   public :: prep_rof_accum_atm
@@ -59,7 +69,6 @@ module prep_rof_mod
   public :: prep_rof_get_mapper_Sa2r
   public :: prep_rof_get_mapper_Fa2r
 
-  public :: prep_rof_ocn_moab, prep_rof_migrate_moab
   !--------------------------------------------------------------------------
   ! Private interfaces
   !--------------------------------------------------------------------------
@@ -100,6 +109,15 @@ module prep_rof_mod
   logical :: have_irrig_field
   ! samegrid atm and lnd
   logical :: samegrid_al   ! samegrid atm and lnd
+
+  ! moab stuff
+   real (kind=r8) , allocatable, private :: fractions_rm (:,:) ! will retrieve the fractions from rof, and use them
+  !  they were init with 
+  ! character(*),parameter :: fraclist_r = 'lfrac:lfrin:rfrac'  in moab, on the fractions 
+  real (kind=r8) , allocatable, private :: x2r_rm (:,:) ! result of merge
+  real (kind=r8) , allocatable, private :: a2x_rm (:,:)
+  real (kind=r8) , allocatable, private :: l2x_rm (:,:)
+
   !================================================================================================
 
 contains
@@ -108,6 +126,8 @@ contains
 
   subroutine prep_rof_init(infodata, lnd_c2_rof, atm_c2_rof, ocn_c2_rof)
 
+   use iMOAB, only: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterApplication, &
+      iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_ComputeCommGraph, iMOAB_ComputeScalarProjectionWeights
     !---------------------------------------------------------------
     ! Description
     ! Initialize module attribute vectors and all other non-mapping
@@ -145,6 +165,20 @@ contains
     integer                     :: index_irrig
     character(*)    , parameter :: subname = '(prep_rof_init)'
     character(*)    , parameter :: F00 = "('"//subname//" : ', 4A )"
+
+    ! MOAB stuff
+   integer                  :: ierr, idintx, rank
+   character*32             :: appname, outfile, wopts, lnum
+   character*32             :: dm1, dm2, dofnameS, dofnameT, wgtIdef
+   integer                  :: orderS, orderT, volumetric, noConserve, validate, fInverseDistanceMap
+   integer                  :: fNoBubble, monotonicity
+! will do comm graph over coupler PES, in 2-hop strategy
+   integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> atm-ocn
+
+   integer                  :: type1, type2 ! type for computing graph; should be the same type for ocean, 3 (FV)
+   integer                  :: tagtype, numco, tagindex
+   character(CXX)           :: tagName
+
     !---------------------------------------------------------------
 
     call seq_infodata_getData(infodata , &
@@ -212,7 +246,106 @@ contains
           call seq_map_init_rcfile(mapper_Fl2r, lnd(1), rof(1), &
                'seq_maps.rc','lnd2rof_fmapname:','lnd2rof_fmaptype:',samegrid_lr, &
                string='mapper_Fl2r initialization', esmf_map=esmf_map_flag)
+! similar to a2r, from below 
+#ifdef HAVE_MOAB
+          ! Call moab intx only if land and river are init in moab
+          if ((mblxid .ge. 0) .and.  (mbrxid .ge. 0)) then
+            appname = "LND_ROF_COU"//C_NULL_CHAR
+            ! idintx is a unique number of MOAB app that takes care of intx between lnd and rof mesh
+            idintx = 100*lnd(1)%cplcompid + rof(1)%cplcompid ! something different, to differentiate it
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxlr)
+            if (ierr .ne. 0) then
+              write(logunit,*) subname,' error in registering lnd rof intx'
+              call shr_sys_abort(subname//' ERROR in registering lnd rof intx')
+            endif
+            ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mblxid, mbrxid, mbintxlr)
+            if (ierr .ne. 0) then
+              write(logunit,*) subname,' error in computing  land rof intx'
+              call shr_sys_abort(subname//' ERROR in computing land rof intx')
+            endif
+            if (iamroot_CPLID) then
+              write(logunit,*) 'iMOAB intersection between  land and rof with id:', idintx
+            end if
+            ! we also need to compute the comm graph for the second hop, from the lnd on coupler to the 
+            ! lnd for the intx lnd-rof context (coverage)
+            !    
+            call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID) 
+            type1 = 3 ! land is FV now on coupler side
+            type2 = 3;
 
+            ierr = iMOAB_ComputeCommGraph( mblxid, mbintxlr, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                        lnd(1)%cplcompid, idintx)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing comm graph for second hop, lnd-rof'
+               call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, lnd-rof')
+            endif
+            ! now take care of the mapper 
+            mapper_Fl2r%src_mbid = mblxid
+            mapper_Fl2r%tgt_mbid = mbintxlr
+            mapper_Fl2r%intx_mbid = mbintxlr 
+            mapper_Fl2r%src_context = lnd(1)%cplcompid
+            mapper_Fl2r%intx_context = idintx
+            wgtIdef = 'scalar'//C_NULL_CHAR
+            mapper_Fl2r%weight_identifier = wgtIdef
+            mapper_Fl2r%mbname = 'mapper_Fl2r'
+            ! because we will project fields from lnd to rof grid, we need to define 
+            !  the l2x fields to rof grid on coupler side
+            
+            tagname = trim(seq_flds_l2x_fluxes_to_rof)//C_NULL_CHAR
+            tagtype = 1 ! dense
+            numco = 1 ! 
+            ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields on rof cpl'
+               call shr_sys_abort(subname//' ERROR in  defining tags for seq_flds_a2x_fields on rof cpl')
+            endif
+            volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL; 
+            
+            dm1 = "fv"//C_NULL_CHAR
+            dofnameS="GLOBAL_ID"//C_NULL_CHAR
+            orderS = 1 !  fv-fv
+           
+            dm2 = "fv"//C_NULL_CHAR
+            dofnameT="GLOBAL_ID"//C_NULL_CHAR
+            orderT = 1  !  not much arguing
+            fNoBubble = 1
+            monotonicity = 0 !
+            noConserve = 0
+            validate = 0
+            fInverseDistanceMap = 0
+            if (iamroot_CPLID) then
+               write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxlr=', mbintxlr, ' wgtIdef=', wgtIdef, &
+                   'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
+                                               fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                               noConserve, validate, &
+                                               trim(dofnameS), trim(dofnameT)
+            endif
+            ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxlr, wgtIdef, &
+                                               trim(dm1), orderS, trim(dm2), orderT, &
+                                               fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                               noConserve, validate, &
+                                               trim(dofnameS), trim(dofnameT) )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing lr weights '
+               call shr_sys_abort(subname//' ERROR in computing lr weights ')
+            endif
+
+#ifdef MOABDEBUG
+            wopts = C_NULL_CHAR
+            call shr_mpi_commrank( mpicom_CPLID, rank )
+            if (rank .lt. 5) then
+              write(lnum,"(I0.2)")rank !
+              outfile = 'intx_lr_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+              ierr = iMOAB_WriteMesh(mbintxlr, outfile, wopts) ! write local intx file
+              if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in writing intx lr file '
+                call shr_sys_abort(subname//' ERROR in writing intx lr file ')
+              endif
+            endif
+#endif
+         end if ! if ((mblxid .ge. 0) .and.  (mbrxid .ge. 0))
+! endif HAVE_MOAB 
+#endif
           ! We'll map irrigation specially, so exclude this from the list of l2r fields
           ! that are mapped "normally".
           !
@@ -260,6 +393,115 @@ contains
           call seq_map_init_rcfile(mapper_Fa2r, atm(1), rof(1), &
                'seq_maps.rc','atm2rof_fmapname:','atm2rof_fmaptype:',samegrid_ar, &
                string='mapper_Fa2r initialization', esmf_map=esmf_map_flag)
+! similar to a2o, prep_ocn 
+#ifdef HAVE_MOAB
+          ! Call moab intx only if atm  and river are init in moab
+          if ((mbrxid .ge. 0) .and.  (mbaxid .ge. 0)) then
+            appname = "ATM_ROF_COU"//C_NULL_CHAR
+            ! idintx is a unique number of MOAB app that takes care of intx between rof and atm mesh
+            idintx = 100*atm(1)%cplcompid + rof(1)%cplcompid ! something different, to differentiate it
+            ierr = iMOAB_RegisterApplication(trim(appname), mpicom_CPLID, idintx, mbintxar)
+            if (ierr .ne. 0) then
+              write(logunit,*) subname,' error in registering atm rof intx'
+              call shr_sys_abort(subname//' ERROR in registering atm rof intx')
+            endif
+            ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbaxid, mbrxid, mbintxar)
+            if (ierr .ne. 0) then
+              write(logunit,*) subname,' error in computing  atm rof intx'
+              call shr_sys_abort(subname//' ERROR in computing atm rof intx')
+            endif
+            if (iamroot_CPLID) then
+              write(logunit,*) 'iMOAB intersection between  atm and rof with id:', idintx
+            end if
+            ! we also need to compute the comm graph for the second hop, from the atm on coupler to the 
+            ! atm for the intx atm-rof context (coverage)
+            !    
+            call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID) 
+            if (atm_pg_active) then
+              type1 = 3; !  fv for both rof and atm; fv-cgll does not work anyway
+            else
+              type1 = 1 ! this does not work anyway in this direction
+            endif
+            type2 = 3;
+
+            ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxar, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
+                                        atm(1)%cplcompid, idintx)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing comm graph for second hop, rof-atm'
+               call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, rof-atm')
+            endif
+            ! now take care of the mapper 
+            mapper_Fa2r%src_mbid = mbaxid
+            mapper_Fa2r%tgt_mbid = mbintxar
+            mapper_Fa2r%intx_mbid = mbintxar 
+            mapper_Fa2r%src_context = rof(1)%cplcompid
+            mapper_Fa2r%intx_context = idintx
+            wgtIdef = 'scalar'//C_NULL_CHAR
+            mapper_Fa2r%weight_identifier = wgtIdef
+            mapper_Fa2r%mbname = 'mapper_Fa2r'
+            ! because we will project fields from atm to rof grid, we need to define 
+            ! rof a2x fields to rof grid on coupler side
+            
+            tagname = trim(seq_flds_a2x_fields_to_rof)//C_NULL_CHAR
+            tagtype = 1 ! dense
+            numco = 1 ! 
+            ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in defining tags for seq_flds_a2x_fields_to_rof on rof cpl'
+               call shr_sys_abort(subname//' ERROR in  defining tags for seq_flds_a2x_fields_to_rof on rof cpl')
+            endif
+            volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL; 
+            
+            if (atm_pg_active) then
+              dm1 = "fv"//C_NULL_CHAR
+              dofnameS="GLOBAL_ID"//C_NULL_CHAR
+              orderS = 1 !  fv-fv
+            else ! this part does not work, anyway
+              dm1 = "cgll"//C_NULL_CHAR
+              dofnameS="GLOBAL_DOFS"//C_NULL_CHAR
+              orderS = np !  it should be 4
+            endif
+            dm2 = "fv"//C_NULL_CHAR
+            dofnameT="GLOBAL_ID"//C_NULL_CHAR
+            orderS = 1  !  not much arguing
+            fNoBubble = 1
+            monotonicity = 0 !
+            noConserve = 0
+            validate = 1
+            fInverseDistanceMap = 0
+            if (iamroot_CPLID) then
+               write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxar=', mbintxar, ' wgtIdef=', wgtIdef, &
+                   'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
+                                               fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                               noConserve, validate, &
+                                               trim(dofnameS), trim(dofnameT)
+            endif
+            ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxar, wgtIdef, &
+                                               trim(dm1), orderS, trim(dm2), orderT, &
+                                               fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                               noConserve, validate, &
+                                               trim(dofnameS), trim(dofnameT) )
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error in computing ar weights '
+               call shr_sys_abort(subname//' ERROR in computing ar weights ')
+            endif
+
+#ifdef MOABDEBUG
+            wopts = C_NULL_CHAR
+            call shr_mpi_commrank( mpicom_CPLID, rank )
+            if (rank .lt. 5) then
+              write(lnum,"(I0.2)")rank !
+              outfile = 'intx_ar_'//trim(lnum)// '.h5m' // C_NULL_CHAR
+              ierr = iMOAB_WriteMesh(mbintxar, outfile, wopts) ! write local intx file
+              if (ierr .ne. 0) then
+                write(logunit,*) subname,' error in writing intx ar file '
+                call shr_sys_abort(subname//' ERROR in writing intx ar file ')
+              endif
+            endif
+#endif
+         end if ! if ((mbrxid .ge. 0) .and.  (mbaxid .ge. 0))
+! endif HAVE_MOAB 
+#endif
 
           if (iamroot_CPLID) then
              write(logunit,*) ' '
@@ -268,6 +510,17 @@ contains
           call seq_map_init_rcfile(mapper_Sa2r, atm(1), rof(1), &
                'seq_maps.rc','atm2rof_smapname:','atm2rof_smaptype:',samegrid_ar, &
                string='mapper_Sa2r initialization', esmf_map=esmf_map_flag)
+#ifdef HAVE_MOAB
+            ! now take care of the mapper, use the same one as before
+            mapper_Sa2r%src_mbid = mbaxid
+            mapper_Sa2r%tgt_mbid = mbintxar
+            mapper_Sa2r%intx_mbid = mbintxar 
+            mapper_Sa2r%src_context = atm(1)%cplcompid
+            mapper_Sa2r%intx_context = idintx
+            wgtIdef = 'scalar'//C_NULL_CHAR
+            mapper_Sa2r%weight_identifier = wgtIdef
+            mapper_Sa2r%mbname = 'mapper_Sa2r'
+#endif
        endif
 	   
        call shr_sys_flush(logunit)
@@ -317,239 +570,6 @@ contains
 
   end subroutine prep_rof_init
 
-  subroutine prep_rof_ocn_moab(infodata)
-!---------------------------------------------------------------
-    ! Description
-    ! After loading of rof 2 ocn map, migrate the rof mesh to coupler
-    !  and create the comm graph between rof comp and rof instance on coupler 
-    !   this is a similar call compared to prep_atm_ocn_moab, that 
-    !  computes the comm graph after intersection
-    !
-    ! Arguments
-
-   use iMOAB, only: iMOAB_MigrateMapMesh, iMOAB_WriteLocalMesh, iMOAB_DefineTagStorage
-   type(seq_infodata_type) , intent(in)    :: infodata
-   character(*), parameter          :: subname = '(prep_rof_ocn_moab)'
-   integer :: ierr
-
-   logical                          :: rof_present    ! .true.  => rof is present
-   logical                          :: ocn_present    ! .true.  => ocn is present
-   logical                          :: ocn_prognostic ! if true, component is prognostic
-
-   integer                  :: id_join
-   integer                  :: rank_on_cpl ! just for debugging
-   integer                  :: mpicom_join
-   integer                  :: context_id ! used to define context for coverage (this case, runoff on coupler)
-   integer                  :: rof_id
-
-   integer                  :: mpigrp_CPLID ! coupler pes group, used for comm graph phys <-> rof-ocn, to migrate map mesh
-   integer                  :: mpigrp_rof   !  component group pes (rof ) == rof group
-   integer                  :: typeA   ! type for computing graph, in this case it is 2 (point cloud)
-   integer                  :: direction ! will be 1, source to coupler
-   character*32             :: prefix_output ! for writing a coverage file for debugging
-   character*100            :: tagname ! define some tags for receiving later
-   integer                  :: tagtype, numco,  tagindex ! for tag definition
-   logical                  :: iamroot_CPLID ! .true. => CPLID masterproc
-
-   call seq_infodata_getData(infodata, &
-        rof_present=rof_present,       &
-        ocn_present=ocn_present,       &
-        ocn_prognostic=ocn_prognostic)
-
- !  it involves initial rof app; mhid; also migrate rof mesh on coupler pes, in ocean context, mbrxoid
- !  map between rof 2 ocn is in  mbrmapro ; 
- ! after this, the sending of tags from rof pes to coupler pes will use the new par comm graph, that has more precise info about
- ! how to get mpicomm for joint rof + coupler
-   call seq_comm_getData(CPLID,  mpicom=mpicom_CPLID, iamroot=iamroot_CPLID)
-   id_join  =  rof(1)%cplcompid  ! migrate rof mesh towards ocean on coupler ! 
-   rof_id   = rof(1)%compid
-  
-   context_id = rof(1)%cplcompid ! maybe it should be clear it is for ocean ?
-   call seq_comm_getData(ID_join,mpicom=mpicom_join) ! this is joint comm
-
-   call seq_comm_getData(CPLID ,mpigrp=mpigrp_CPLID)   !  second group, the coupler group CPLID is global variable
-   call seq_comm_getData(rof_id, mpigrp=mpigrp_rof)    !  component group pes, from rof id ( also ROFID(1) )
-   typeA = 2 ! point cloud
-   direction = 1 ! 
-   context_id = ocn(1)%cplcompid
-   ierr = iMOAB_MigrateMapMesh (mrofid, mbrmapro, mbrxoid, mpicom_join, mpigrp_rof, &
-      mpigrp_CPLID, typeA, rof_id, context_id, direction)
-   
-   if (ierr .ne. 0) then
-     write(logunit,*) subname,' error in migrating rof mesh for map rof c2 ocn '
-     call shr_sys_abort(subname//' ERROR in migrating rof mesh for map rof c2 ocn ')
-   endif
-   if (iamroot_CPLID)  then
-      write(logunit,*) subname,' migrated mesh for map rof 2 ocn '
-   endif
-   if (mbrxoid .ge. 0) then ! we are on coupler side pes
-      tagname=trim(seq_flds_r2x_fields)//C_NULL_CHAR
-      tagtype = 1 ! dense, double
-      numco= 1 ! 1  scalar per node
-      ierr = iMOAB_DefineTagStorage(mbrxoid, tagname, tagtype, numco,  tagindex )
-      if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in defining ' // trim(seq_flds_r2x_fields) // ' tags on coupler side in MOAB'
-         call shr_sys_abort(subname//' ERROR in defining MOAB tags ')
-      endif
-   endif
-
-   if (mboxid .ge. 0) then ! we are on coupler side pes, for ocean mesh
-      tagname=trim(seq_flds_r2x_fields)//C_NULL_CHAR
-      tagtype = 1 ! dense, double
-      numco= 1 ! 1  scalar per node
-      ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
-      if (ierr .ne. 0) then
-         write(logunit,*) subname,' error in defining ' // trim(seq_flds_r2x_fields) // ' tags on coupler side in MOAB, for ocean app'
-         call shr_sys_abort(subname//' ERROR in defining MOAB tags ')
-      endif
-   endif
-
-   
-   if (iamroot_CPLID)  then
-      write(logunit,*) subname,' created moab tags for seq_flds_r2x_fields '
-   endif
-#ifdef MOABDEBUG
-   call seq_comm_getData(CPLID ,mpicom=mpicom_CPLID)
-   if (mbrxoid.ge.0) then  ! we are on coupler PEs
-      call mpi_comm_rank(mpicom_CPLID, rank_on_cpl  , ierr)
-      prefix_output = "rof_cov"//CHAR(0)
-      if (rank_on_cpl .lt. 16) then
-         ierr = iMOAB_WriteLocalMesh(mbrxoid, prefix_output)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in writing coverage mesh rof 2 ocn '
-          endif
-      endif
-   endif
-#endif
-  
-  end subroutine prep_rof_ocn_moab
-
-  !================================================================================================
-  subroutine prep_rof_migrate_moab(infodata)
-   ! 
-   use iMOAB, only: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers, &
-     iMOAB_ApplyScalarProjectionWeights, iMOAB_WriteMesh
-   !---------------------------------------------------------------
-   ! Description similar to prep_atm_migrate_moab; will also do the projection on coupler pes
-   ! After seq_flds_r2x_fields tags were loaded on rof mesh,
-   !  they need to be migrated to the coupler pes, for weight application ; later, we will send it to ocean pes
-   !
-   ! Arguments
-   type(seq_infodata_type) , intent(in)    :: infodata
-
-   character(*), parameter          :: subname = '(prep_rof_migrate_moab)'
-
-   integer :: ierr
-
-   logical                          :: rof_present    ! .true.  => rof is present
-   logical                          :: ocn_present    ! .true.  => ocn is present
-   logical                          :: ocn_prognostic ! 
-   
-   integer                  :: id_join
-   integer                  :: mpicom_join
-   integer                  :: rof_id
-   integer                  :: context_id ! we will use ocean context on coupler 
-   integer, save            :: num_prof = 0  ! use to count the projections
-   character*32             :: dm1, dm2, wgtIdef
-   character*50             :: outfile, wopts, lnum
-   character*400             :: tagname ! for seq_flds_r2x_fields
-   integer                  :: orderROF, orderOCN, volumetric, noConserve, validate
-   integer, save            :: num_proj = 0 ! for counting projections
-
-
-   call seq_infodata_getData(infodata, &
-      rof_present=rof_present,       &
-      ocn_present=ocn_present,       &
-      ocn_prognostic=ocn_prognostic)
-
-   !  it involves initial rof app;  mesh on coupler pes, 
-   ! use seq_comm_mct,     only: mrofid ! id for rof comp 
-   ! mbrmapro ! iMOAB id of moab instance of map read from rof2ocn map file 
-   ! mbrxoid  ! iMOAB id for rof instance on coupler for ocn ; it exists as a coverage mesh, it receives data from ocean
-
-   ! after this, the sending of tags from rof pes to coupler pes will use the par comm graph, that has more precise info about
-   ! how to get mpicomm for joint rof + coupler
-   id_join = rof(1)%cplcompid
-   rof_id   = rof(1)%compid
-
-   call seq_comm_getData(ID_join,mpicom=mpicom_join) ! this is the joint comm between rof and coupler
-
-   ! should id_join be multiplied by 100 ? because it is not corresponding to the regular mbrxid , it is mbroxid
-   ! no need, because id_join is used now only to get the communicator 
-   ! TODO understand better this
-   ! we should do this only if ocn_present
-   context_id = ocn(1)%cplcompid
-   wgtIdef = 'map-from-file'//C_NULL_CHAR
-   tagName = trim(seq_flds_r2x_fields)//C_NULL_CHAR  
-   num_proj = num_proj + 1
-
-   if (rof_present .and. ocn_present .and. ocn_prognostic) then
-
-      if (mrofid .ge. 0) then !  send because we are on rof pes
-
-         ! basically, adjust the migration of the tag we want to project; it was sent initially with
-         ! trivial partitioning, now we need to adjust it for "coverage" mesh
-         ! as always, use nonblocking sends
-         
-         context_id = ocn(1)%cplcompid !send to rof/ocn on coupler !
-         ierr = iMOAB_SendElementTag(mrofid, tagName, mpicom_join, context_id)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in sending tag from rof to rof cover for ocn on coupler '
-            call shr_sys_abort(subname//' ERROR  in sending tag from rof to rof cover for ocn on coupler')
-         endif
-
-      endif
-
-      if (mbrxoid .ge. 0 ) then ! we are for sure on coupler pes!
-         !
-         ierr = iMOAB_ReceiveElementTag(mbrxoid, tagName, mpicom_join, rof_id)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in receiving tag from rof to rof cover for ocn on coupler  '
-            call shr_sys_abort(subname//' ERROR  in receiving tag from rof to rof cover for ocn on coupler ')
-         endif
-
-      endif
-      ! we can now free the sender buffers
-      if (mrofid .ge. 0) then
-         ierr = iMOAB_FreeSenderBuffers(mrofid, context_id)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in freeing buffers'
-            call shr_sys_abort(subname//' ERROR  in freeing buffers')
-         endif
-      endif
-      
-
-      ! we could do the projection now, on the ocean mesh, because we are on the coupler pes;
-      ! the actual migrate could happen later , from coupler pes to the ocean pes
-      ! we should do this for consistency in the file prep_ocn_mode.F90, because this is part of ocean preparation
-      if (mbrmapro .ge. 0 ) then !  we are on coupler pes, for sure
-         ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
-         !  hard coded now, it should be a runtime option in the future
-
-         ierr = iMOAB_ApplyScalarProjectionWeights ( mbrmapro, wgtIdef, tagName, tagName)
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in applying weights '
-            call shr_sys_abort(subname//' ERROR in applying weights')
-         endif
-#ifdef MOABDEBUG
-         ! we can also write the ocean mesh to file, just to see the projectd tag
-         !      write out the mesh file to disk
-         write(lnum,"(I0.2)")num_proj
-         outfile = 'ocnProj_fromRof'//trim(lnum)//'.h5m'//C_NULL_CHAR
-         wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
-         ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
-         if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in writing ocn mesh after projection '
-            call shr_sys_abort(subname//' ERROR in writing ocn mesh after projection')
-         endif
-#endif
-
-      !CHECKRC(ierr, "cannot receive tag values")
-      endif
-
-   endif  ! if rof and ocn
-   ! end copy
-  end subroutine prep_rof_migrate_moab
   !================================================================================================
   subroutine prep_rof_accum_lnd(timer)
 
@@ -1033,7 +1053,392 @@ contains
     first_time = .false.
 
   end subroutine prep_rof_merge
+#ifdef HAVE_MOAB
+  subroutine prep_rof_mrg_moab  (infodata, cime_model)
+   use iMOAB , only : iMOAB_GetMeshInfo, iMOAB_GetDoubleTagStorage, &
+     iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
+     use seq_comm_mct, only : num_moab_exports ! for debug
 
+    type(seq_infodata_type) , intent(in)    :: infodata
+
+    ! type(mct_aVect)         , intent(in)    :: fractions_rx(:) they should have been saved as tags on rof coupler component
+    character(len=*)        , intent(in)    :: cime_model
+    !-----------------------------------------------------------------------
+    ! Description
+    ! Merge land rof and ice forcing for rof input
+    !
+    ! used for indexing 
+    type(mct_avect) , pointer   :: l2x_r
+    type(mct_avect) , pointer   :: a2x_r
+    type(mct_avect) , pointer    :: fractions_r
+    type(mct_avect) , pointer :: x2r_r
+    !
+    ! Local variables
+    integer       :: i
+    integer, save :: index_l2x_Flrl_rofsur
+    integer, save :: index_l2x_Flrl_rofgwl
+    integer, save :: index_l2x_Flrl_rofsub
+    integer, save :: index_l2x_Flrl_rofdto
+    integer, save :: index_l2x_Flrl_rofi
+    integer, save :: index_l2x_Flrl_demand
+    integer, save :: index_l2x_Flrl_irrig
+    integer, save :: index_x2r_Flrl_rofsur
+    integer, save :: index_x2r_Flrl_rofgwl
+    integer, save :: index_x2r_Flrl_rofsub
+    integer, save :: index_x2r_Flrl_rofdto
+    integer, save :: index_x2r_Flrl_rofi
+    integer, save :: index_x2r_Flrl_demand
+    integer, save :: index_x2r_Flrl_irrig
+    integer, save :: index_l2x_Flrl_rofl_16O
+    integer, save :: index_l2x_Flrl_rofi_16O
+    integer, save :: index_x2r_Flrl_rofl_16O
+    integer, save :: index_x2r_Flrl_rofi_16O
+    integer, save :: index_l2x_Flrl_rofl_18O
+    integer, save :: index_l2x_Flrl_rofi_18O
+    integer, save :: index_x2r_Flrl_rofl_18O
+    integer, save :: index_x2r_Flrl_rofi_18O
+    integer, save :: index_l2x_Flrl_rofl_HDO
+    integer, save :: index_l2x_Flrl_rofi_HDO
+    integer, save :: index_x2r_Flrl_rofl_HDO
+    integer, save :: index_x2r_Flrl_rofi_HDO
+	
+    integer, save :: index_l2x_Flrl_Tqsur
+    integer, save :: index_l2x_Flrl_Tqsub
+    integer, save :: index_a2x_Sa_tbot
+    integer, save :: index_a2x_Sa_pbot
+    integer, save :: index_a2x_Sa_u
+    integer, save :: index_a2x_Sa_v
+    integer, save :: index_a2x_Sa_shum
+    integer, save :: index_a2x_Faxa_swndr
+    integer, save :: index_a2x_Faxa_swndf
+    integer, save :: index_a2x_Faxa_swvdr
+    integer, save :: index_a2x_Faxa_swvdf
+    integer, save :: index_a2x_Faxa_lwdn
+    integer, save :: index_x2r_Flrl_Tqsur
+    integer, save :: index_x2r_Flrl_Tqsub
+    integer, save :: index_x2r_Sa_tbot
+    integer, save :: index_x2r_Sa_pbot
+    integer, save :: index_x2r_Sa_u
+    integer, save :: index_x2r_Sa_v
+    integer, save :: index_x2r_Sa_shum
+    integer, save :: index_x2r_Faxa_swndr
+    integer, save :: index_x2r_Faxa_swndf
+    integer, save :: index_x2r_Faxa_swvdr
+    integer, save :: index_x2r_Faxa_swvdf
+    integer, save :: index_x2r_Faxa_lwdn
+    
+    integer, save :: index_l2x_coszen_str
+    integer, save :: index_x2r_coszen_str
+
+    integer, save :: index_frac
+    real(r8)      :: frac
+    character(CL) :: fracstr
+    logical, save :: first_time = .true.
+    logical, save :: flds_wiso_rof = .false.
+    integer, save :: nflds, lsize
+    logical       :: iamroot
+    character(CL) :: field        ! field string
+    character(CL),allocatable :: mrgstr(:)   ! temporary string
+    character(*), parameter   :: subname = '(prep_rof_mrg_moab) '
+
+ integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
+   
+    character(CXX) ::tagname, mct_field
+    integer :: ent_type, ierr, arrsize
+    integer, save :: naflds, nlflds ! these are saved the first time 
+#ifdef MOABDEBUG
+    character*32             :: outfile, wopts, lnum
+    real(r8)                 :: difference
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list
+    type(mct_string)    :: mctOStr  !
+#endif 
+    !-----------------------------------------------------------------------
+
+    call seq_comm_getdata(CPLID, iamroot=iamroot)
+    
+! character(*),parameter :: fraclist_r = 'lfrac:lfrin:rfrac' 
+    if (first_time) then
+      ! find out the number of local elements in moab mesh rof instance on coupler
+      ierr  = iMOAB_GetMeshInfo ( mbrxid, nvert, nvise, nbl, nsurf, nvisBC );
+      if (ierr .ne. 0) then
+            write(logunit,*) subname,' error in getting info '
+            call shr_sys_abort(subname//' error in getting info ')
+      endif
+      lsize = nvise(1) ! number of active cells
+       ! mct avs are used just for their fields metadata, not the actual reals 
+       ! (name of the fields)
+       ! need these always, not only the first time
+      l2x_r => l2r_rx(1)
+      a2x_r => a2r_rx(1)
+
+      x2r_r => component_get_x2c_cx(rof(1))
+      nflds = mct_aVect_nRattr(x2r_r) ! these are saved after first time
+      naflds = mct_aVect_nRattr(a2x_r)
+      nlflds = mct_aVect_nRattr(l2x_r)
+
+      allocate(x2r_rm (lsize, nflds))
+      allocate(a2x_rm (lsize, naflds))
+      allocate(l2x_rm (lsize, nlflds))
+      ! allocate fractions too
+      ! use the fraclist fraclist_r = 'lfrac:lfrin:rfrac'
+      allocate(fractions_rm(lsize,3)) ! there are 3 fields here
+
+       allocate(mrgstr(nflds))
+       do i = 1,nflds
+          field = mct_aVect_getRList2c(i, x2r_r)
+          mrgstr(i) = subname//'x2r%'//trim(field)//' ='
+       enddo
+
+       index_l2x_Flrl_rofsur = mct_aVect_indexRA(l2x_r,'Flrl_rofsur' )
+       index_l2x_Flrl_rofgwl = mct_aVect_indexRA(l2x_r,'Flrl_rofgwl' )
+       index_l2x_Flrl_rofsub = mct_aVect_indexRA(l2x_r,'Flrl_rofsub' )
+       index_l2x_Flrl_rofdto = mct_aVect_indexRA(l2x_r,'Flrl_rofdto' )
+       if (have_irrig_field) then
+          index_l2x_Flrl_irrig  = mct_aVect_indexRA(l2x_r,'Flrl_irrig' )
+       end if
+       index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_r,'Flrl_rofi' )
+       if(trim(cime_model) .eq. 'e3sm') then
+          index_l2x_Flrl_demand = mct_aVect_indexRA(l2x_r,'Flrl_demand' )
+          index_x2r_Flrl_demand = mct_aVect_indexRA(x2r_r,'Flrl_demand' )
+       endif
+       index_x2r_Flrl_rofsur = mct_aVect_indexRA(x2r_r,'Flrl_rofsur' )
+       index_x2r_Flrl_rofgwl = mct_aVect_indexRA(x2r_r,'Flrl_rofgwl' )
+       index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub' )
+       index_x2r_Flrl_rofdto = mct_aVect_indexRA(x2r_r,'Flrl_rofdto' )
+       index_x2r_Flrl_rofi   = mct_aVect_indexRA(x2r_r,'Flrl_rofi' )
+       if (have_irrig_field) then
+          index_x2r_Flrl_irrig  = mct_aVect_indexRA(x2r_r,'Flrl_irrig' )
+       end if
+       if(trim(cime_model) .eq. 'e3sm') then
+         index_l2x_Flrl_Tqsur = mct_aVect_indexRA(l2x_r,'Flrl_Tqsur' )
+         index_l2x_Flrl_Tqsub = mct_aVect_indexRA(l2x_r,'Flrl_Tqsub' )
+         index_x2r_Flrl_Tqsur = mct_aVect_indexRA(x2r_r,'Flrl_Tqsur' )
+         index_x2r_Flrl_Tqsub = mct_aVect_indexRA(x2r_r,'Flrl_Tqsub' )
+       endif
+
+       index_l2x_Flrl_rofl_16O = mct_aVect_indexRA(l2x_r,'Flrl_rofl_16O', perrWith='quiet' )
+       if ( index_l2x_Flrl_rofl_16O /= 0 ) flds_wiso_rof = .true.
+       if ( flds_wiso_rof ) then
+          index_l2x_Flrl_rofi_16O = mct_aVect_indexRA(l2x_r,'Flrl_rofi_16O' )
+          index_x2r_Flrl_rofl_16O = mct_aVect_indexRA(x2r_r,'Flrl_rofl_16O' )
+          index_x2r_Flrl_rofi_16O = mct_aVect_indexRA(x2r_r,'Flrl_rofi_16O' )
+
+          index_l2x_Flrl_rofl_18O = mct_aVect_indexRA(l2x_r,'Flrl_rofl_18O' )
+          index_l2x_Flrl_rofi_18O = mct_aVect_indexRA(l2x_r,'Flrl_rofi_18O' )
+          index_x2r_Flrl_rofl_18O = mct_aVect_indexRA(x2r_r,'Flrl_rofl_18O' )
+          index_x2r_Flrl_rofi_18O = mct_aVect_indexRA(x2r_r,'Flrl_rofi_18O' )
+
+          index_l2x_Flrl_rofl_HDO = mct_aVect_indexRA(l2x_r,'Flrl_rofl_HDO' )
+          index_l2x_Flrl_rofi_HDO = mct_aVect_indexRA(l2x_r,'Flrl_rofi_HDO' )
+          index_x2r_Flrl_rofl_HDO = mct_aVect_indexRA(x2r_r,'Flrl_rofl_HDO' )
+          index_x2r_Flrl_rofi_HDO = mct_aVect_indexRA(x2r_r,'Flrl_rofi_HDO' )
+       end if
+
+       if (samegrid_al) then ! fraclist_r = 'lfrac:lfrin:rfrac'
+       ! check, in our case, is it always 1  ? 
+          index_frac = 1 ! mct_aVect_indexRA(fractions_r,"lfrac")
+          fracstr = 'lfrac'
+       else
+          index_frac = 2 ! mct_aVect_indexRA(fractions_r,"lfrin")
+          fracstr = 'lfrin'
+       endif
+
+       mrgstr(index_x2r_Flrl_rofsur) = trim(mrgstr(index_x2r_Flrl_rofsur))//' = '// &
+            trim(fracstr)//'*l2x%Flrl_rofsur'
+       mrgstr(index_x2r_Flrl_rofgwl) = trim(mrgstr(index_x2r_Flrl_rofgwl))//' = '// &
+            trim(fracstr)//'*l2x%Flrl_rofgwl'
+       mrgstr(index_x2r_Flrl_rofsub) = trim(mrgstr(index_x2r_Flrl_rofsub))//' = '// &
+            trim(fracstr)//'*l2x%Flrl_rofsub'
+       mrgstr(index_x2r_Flrl_rofdto) = trim(mrgstr(index_x2r_Flrl_rofdto))//' = '// &
+            trim(fracstr)//'*l2x%Flrl_rofdto'
+       mrgstr(index_x2r_Flrl_rofi) = trim(mrgstr(index_x2r_Flrl_rofi))//' = '// &
+            trim(fracstr)//'*l2x%Flrl_rofi'
+       if (trim(cime_model).eq.'e3sm') then
+          mrgstr(index_x2r_Flrl_demand) = trim(mrgstr(index_x2r_Flrl_demand))//' = '// &
+               trim(fracstr)//'*l2x%Flrl_demand'
+       endif
+       if (have_irrig_field) then
+          mrgstr(index_x2r_Flrl_irrig) = trim(mrgstr(index_x2r_Flrl_irrig))//' = '// &
+               trim(fracstr)//'*l2x%Flrl_irrig'
+       end if
+       if(trim(cime_model) .eq. 'e3sm') then
+          mrgstr(index_x2r_Flrl_Tqsur) = trim(mrgstr(index_x2r_Flrl_Tqsur))//' = '//'l2x%Flrl_Tqsur'
+          mrgstr(index_x2r_Flrl_Tqsur) = trim(mrgstr(index_x2r_Flrl_Tqsub))//' = '//'l2x%Flrl_Tqsub'
+       endif
+       if ( flds_wiso_rof ) then
+          mrgstr(index_x2r_Flrl_rofl_16O) = trim(mrgstr(index_x2r_Flrl_rofl_16O))//' = '// &
+               trim(fracstr)//'*l2x%Flrl_rofl_16O'
+          mrgstr(index_x2r_Flrl_rofi_16O) = trim(mrgstr(index_x2r_Flrl_rofi_16O))//' = '// &
+               trim(fracstr)//'*l2x%Flrl_rofi_16O'
+          mrgstr(index_x2r_Flrl_rofl_18O) = trim(mrgstr(index_x2r_Flrl_rofl_18O))//' = '// &
+               trim(fracstr)//'*l2x%Flrl_rofl_18O'
+          mrgstr(index_x2r_Flrl_rofi_18O) = trim(mrgstr(index_x2r_Flrl_rofi_18O))//' = '// &
+               trim(fracstr)//'*l2x%Flrl_rofi_18O'
+          mrgstr(index_x2r_Flrl_rofl_HDO) = trim(mrgstr(index_x2r_Flrl_rofl_HDO))//' = '// &
+               trim(fracstr)//'*l2x%Flrl_rofl_HDO'
+          mrgstr(index_x2r_Flrl_rofi_HDO) = trim(mrgstr(index_x2r_Flrl_rofi_HDO))//' = '// &
+               trim(fracstr)//'*l2x%Flrl_rofi_HDO'
+       end if
+	   
+       if ( rof_heat ) then
+          index_a2x_Sa_tbot    = mct_aVect_indexRA(a2x_r,'Sa_tbot')
+          index_a2x_Sa_pbot    = mct_aVect_indexRA(a2x_r,'Sa_pbot')
+          index_a2x_Sa_u       = mct_aVect_indexRA(a2x_r,'Sa_u')
+          index_a2x_Sa_v       = mct_aVect_indexRA(a2x_r,'Sa_v')
+          index_a2x_Sa_shum    = mct_aVect_indexRA(a2x_r,'Sa_shum')
+          index_a2x_Faxa_swndr = mct_aVect_indexRA(a2x_r,'Faxa_swndr')
+          index_a2x_Faxa_swndf = mct_aVect_indexRA(a2x_r,'Faxa_swndf')
+          index_a2x_Faxa_swvdr = mct_aVect_indexRA(a2x_r,'Faxa_swvdr')
+          index_a2x_Faxa_swvdf = mct_aVect_indexRA(a2x_r,'Faxa_swvdf')
+          index_a2x_Faxa_lwdn  = mct_aVect_indexRA(a2x_r,'Faxa_lwdn')
+     
+          index_x2r_Sa_tbot    = mct_aVect_indexRA(x2r_r,'Sa_tbot')
+          index_x2r_Sa_pbot    = mct_aVect_indexRA(x2r_r,'Sa_pbot')
+          index_x2r_Sa_u       = mct_aVect_indexRA(x2r_r,'Sa_u')
+          index_x2r_Sa_v       = mct_aVect_indexRA(x2r_r,'Sa_v')
+          index_x2r_Sa_shum    = mct_aVect_indexRA(x2r_r,'Sa_shum')
+          index_x2r_Faxa_swndr = mct_aVect_indexRA(x2r_r,'Faxa_swndr')
+          index_x2r_Faxa_swndf = mct_aVect_indexRA(x2r_r,'Faxa_swndf')
+          index_x2r_Faxa_swvdr = mct_aVect_indexRA(x2r_r,'Faxa_swvdr')
+          index_x2r_Faxa_swvdf = mct_aVect_indexRA(x2r_r,'Faxa_swvdf')
+          index_x2r_Faxa_lwdn  = mct_aVect_indexRA(x2r_r,'Faxa_lwdn')
+
+          mrgstr(index_x2r_Sa_tbot)    = trim(mrgstr(index_x2r_Sa_tbot))//' = '//'a2x%Sa_tbot'
+          mrgstr(index_x2r_Sa_pbot)    = trim(mrgstr(index_x2r_Sa_pbot))//' = '//'a2x%Sa_pbot'
+          mrgstr(index_x2r_Sa_u)       = trim(mrgstr(index_x2r_Sa_u))//' = '//'a2x%Sa_u'
+          mrgstr(index_x2r_Sa_v)       = trim(mrgstr(index_x2r_Sa_v))//' = '//'a2x%Sa_v'
+          mrgstr(index_x2r_Sa_shum)    = trim(mrgstr(index_x2r_Sa_shum))//' = '//'a2x%Sa_shum'
+          mrgstr(index_x2r_Faxa_swndr) = trim(mrgstr(index_x2r_Faxa_swndr))//' = '//'a2x%Faxa_swndr'
+          mrgstr(index_x2r_Faxa_swndf) = trim(mrgstr(index_x2r_Faxa_swndf))//' = '//'a2x%Faxa_swndf'
+          mrgstr(index_x2r_Faxa_swvdr) = trim(mrgstr(index_x2r_Faxa_swvdr))//' = '//'a2x%Faxa_swvdr'
+          mrgstr(index_x2r_Faxa_swvdf) = trim(mrgstr(index_x2r_Faxa_swvdf))//' = '//'a2x%Faxa_swvdf'
+          mrgstr(index_x2r_Faxa_lwdn)  = trim(mrgstr(index_x2r_Faxa_lwdn))//' = '//'a2x%Faxa_lwdn'
+       endif 
+
+    end if
+! fill in with data from moab tags
+
+! fill with fractions from river instance
+! fractions_rm, 
+    ent_type = 1 ! cells
+    tagname = 'lfrac:lfrin:rfrac'//C_NULL_CHAR
+    arrsize = 3 * lsize
+    ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, fractions_rm(1,1))
+    if (ierr .ne. 0) then
+         call shr_sys_abort(subname//' error in getting fractions_om from rof instance ')
+    endif
+   ! fill the r2x_rm, etc double array fields nflds
+    tagname = trim(seq_flds_x2r_fields)//C_NULL_CHAR
+    arrsize = nflds * lsize
+    ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, x2r_rm(1,1))
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in getting x2r_rm array ')
+    endif    
+    ! a2x_rm (lsize, naflds))
+
+    tagname = trim(seq_flds_a2x_fields_to_rof)//C_NULL_CHAR
+    arrsize = naflds * lsize !        allocate (a2x_rm (lsize, naflds))
+    ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, a2x_rm(1,1))
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in getting a2x_rm array ')
+    endif
+    !  l2x_rm
+    tagname = trim(seq_flds_l2x_fluxes_to_rof)//C_NULL_CHAR
+    arrsize = nlflds * lsize !        
+    ierr = iMOAB_GetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, l2x_rm(1,1))
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in getting l2x_rm array ')
+    endif
+
+! replace x2r_r%rAttr(index ,i) with x2r_rm(i,index), etc from formula in prep_rof_merge
+! x2r_r%rAttr( -> x2r_rm(i, %rAttr( -> m(,i)  ,i) -> )
+    do i = 1,lsize
+       frac = fractions_rm(i,index_frac)
+       x2r_rm(i,index_x2r_Flrl_rofsur) = l2x_rm(i,index_l2x_Flrl_rofsur) * frac
+       x2r_rm(i,index_x2r_Flrl_rofgwl) = l2x_rm(i,index_l2x_Flrl_rofgwl) * frac
+       x2r_rm(i,index_x2r_Flrl_rofsub) = l2x_rm(i,index_l2x_Flrl_rofsub) * frac
+       x2r_rm(i,index_x2r_Flrl_rofdto) = l2x_rm(i,index_l2x_Flrl_rofdto) * frac
+       x2r_rm(i,index_x2r_Flrl_rofi) = l2x_rm(i,index_l2x_Flrl_rofi) * frac
+       if (trim(cime_model).eq.'e3sm') then
+          x2r_rm(i,index_x2r_Flrl_demand) = l2x_rm(i,index_l2x_Flrl_demand) * frac
+       endif
+       if (have_irrig_field) then
+          x2r_rm(i,index_x2r_Flrl_irrig) = l2x_rm(i,index_l2x_Flrl_irrig) * frac
+       end if
+       if(trim(cime_model) .eq. 'e3sm') then
+         x2r_rm(i,index_x2r_Flrl_Tqsur) = l2x_rm(i,index_l2x_Flrl_Tqsur)
+         x2r_rm(i,index_x2r_Flrl_Tqsub) = l2x_rm(i,index_l2x_Flrl_Tqsub)
+       endif
+       if ( flds_wiso_rof ) then
+          x2r_rm(i,index_x2r_Flrl_rofl_16O) = l2x_rm(i,index_l2x_Flrl_rofl_16O) * frac
+          x2r_rm(i,index_x2r_Flrl_rofi_16O) = l2x_rm(i,index_l2x_Flrl_rofi_16O) * frac
+          x2r_rm(i,index_x2r_Flrl_rofl_18O) = l2x_rm(i,index_l2x_Flrl_rofl_18O) * frac
+          x2r_rm(i,index_x2r_Flrl_rofi_18O) = l2x_rm(i,index_l2x_Flrl_rofi_18O) * frac
+          x2r_rm(i,index_x2r_Flrl_rofl_HDO) = l2x_rm(i,index_l2x_Flrl_rofl_HDO) * frac
+          x2r_rm(i,index_x2r_Flrl_rofi_HDO) = l2x_rm(i,index_l2x_Flrl_rofi_HDO) * frac
+       end if
+      
+       if ( rof_heat ) then
+          x2r_rm(i,index_x2r_Sa_tbot)    = a2x_rm(i,index_a2x_Sa_tbot)
+          x2r_rm(i,index_x2r_Sa_pbot)    = a2x_rm(i,index_a2x_Sa_pbot)
+          x2r_rm(i,index_x2r_Sa_u)       = a2x_rm(i,index_a2x_Sa_u)
+          x2r_rm(i,index_x2r_Sa_v)       = a2x_rm(i,index_a2x_Sa_v)
+          x2r_rm(i,index_x2r_Sa_shum)    = a2x_rm(i,index_a2x_Sa_shum)
+          x2r_rm(i,index_x2r_Faxa_swndr) = a2x_rm(i,index_a2x_Faxa_swndr)
+          x2r_rm(i,index_x2r_Faxa_swndf) = a2x_rm(i,index_a2x_Faxa_swndf)
+          x2r_rm(i,index_x2r_Faxa_swvdr) = a2x_rm(i,index_a2x_Faxa_swvdr)
+          x2r_rm(i,index_x2r_Faxa_swvdf) = a2x_rm(i,index_a2x_Faxa_swvdf)
+          x2r_rm(i,index_x2r_Faxa_lwdn)  = a2x_rm(i,index_a2x_Faxa_lwdn)
+       endif
+
+    end do
+    ! after we are done, set x2r_rm to the mbrxid
+
+    tagname = trim(seq_flds_x2r_fields)//C_NULL_CHAR
+    arrsize = nflds * lsize
+    ierr = iMOAB_SetDoubleTagStorage ( mbrxid, tagname, arrsize , ent_type, x2r_rm(1,1))
+    if (ierr .ne. 0) then
+      call shr_sys_abort(subname//' error in setting x2r_rm array ')
+    endif
+    if (first_time) then
+       if (iamroot) then
+          write(logunit,'(A)') subname//' Summary:'
+          do i = 1,nflds
+             write(logunit,'(A)') trim(mrgstr(i))
+          enddo
+       endif
+       deallocate(mrgstr)
+    endif
+    first_time = .false.
+
+#ifdef MOABDEBUG
+  !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
+    x2r_r => component_get_x2c_cx(rof(1))
+    ! loop over all fields in seq_flds_x2r_fields
+    call mct_list_init(temp_list ,seq_flds_x2r_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 1 ! cell for river
+    if (iamroot) print *, num_moab_exports, trim(seq_flds_x2r_fields)
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call compare_mct_av_moab_tag(rof(1), x2r_r, mct_field,  mbrxid, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+
+
+    if (mbrxid .ge. 0 ) then !  we are on coupler pes, for sure
+     write(lnum,"(I0.2)")num_moab_exports
+     outfile = 'RofCplAftMm'//trim(lnum)//'.h5m'//C_NULL_CHAR
+     wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+     ierr = iMOAB_WriteMesh(mbrxid, trim(outfile), trim(wopts))
+   endif
+#endif
+
+  end subroutine prep_rof_mrg_moab
+#endif 
   !================================================================================================
 
   subroutine prep_rof_calc_l2r_rx(fractions_lx, timer)
