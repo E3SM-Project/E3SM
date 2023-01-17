@@ -91,8 +91,10 @@ module ice_comp_mct
 !
 #ifdef HAVE_MOAB
   private :: ice_export_moab
-  integer , private :: mblsize, totalmbls
-  real (kind=RKIND) , allocatable, private :: i2x_im(:,:) 
+  private :: ice_import_moab
+  integer , private :: mblsize, totalmbls,totalmblr
+  real (kind=RKIND) , allocatable, private :: i2x_im(:,:)
+  real (kind=RKIND) , allocatable, private :: x2i_im(:,:)
 #endif
 ! !PRIVATE MODULE VARIABLES
 
@@ -695,7 +697,9 @@ contains
    ! initialize moab tag fields array
     mblsize = lsize
     totalmbls = mblsize * nsend ! size of the double array
+    totalmblr = mblsize * nrecv ! size of the double array
     allocate (i2x_im(lsize, nsend) )
+    allocate (x2i_im(lsize, nrecv) )
     ! define tags according to the seq_flds_i2x_fields 
     tagtype = 1  ! dense, double
     numco = 1 !  one value per cell / entity
@@ -1434,6 +1438,7 @@ contains
 #ifdef HAVE_MOAB
    ! deallocate moab fields array
     deallocate (i2x_im)
+    deallocate (x2i_im)
 #endif
     ! Reset I/O logs
     call shr_file_setLogUnit (shrlogunit)
@@ -3249,13 +3254,604 @@ contains
       endif
       
 
-!#ifdef MOABDEBUG
+#ifdef MOABDEBUG
       write(lnum,"(I0.2)")num_moab_exports
       outfile = 'ice_export_'//trim(lnum)//'.h5m'//C_NULL_CHAR
       wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
       ierr = iMOAB_WriteMesh(MPSIID, outfile, wopts)
-!#endif
+#endif
    end subroutine ice_export_moab
+!***********************************************************************
+!BOP
+! !IROUTINE: ice_import_moab
+! !INTERFACE:
+
+ subroutine ice_import_moab()!{{{
+
+! !DESCRIPTION:
+!-----------------------------------------------------------------------
+!  This routine receives message from cpl7 driver
+!
+!    The following fields are always received from the coupler:
+!
+!    o  t        -- ocn layer temperature
+!    o  s        -- ocn salinity
+!    o  u        -- ocn u velocity
+!    o  v        -- ocn v velocity
+!    o  z        -- bottom atm level height
+!    o  u        -- bottom atm level zon wind
+!    o  v        -- bottom atm level mer wind
+!    o  tbot     -- bottom atm level temp
+!    o  pbot     -- bottom atm level pressure
+!    o  ptem     -- bottom atm level pot temp
+!    o  shum     -- bottom atm level spec hum
+!    o  dens     -- bottom atm level air den
+!    o  dhdx     -- ocn surface slope, zonal
+!    o  dhdy     -- ocn surface slope, meridional
+!    o  lwdn     -- downward lw heat flux
+!    o  rain     -- prec: liquid 
+!    o  snow     -- prec: frozen 
+!    o  swndr    -- sw: nir direct  downward
+!    o  swvdr    -- sw: vis direct  downward
+!    o  swndf    -- sw: nir diffuse downward
+!    o  swvdf    -- sw: vis diffuse downward
+!    o  swnet    -- sw: net
+!    o  q        -- ocn frazil heat flux(+) / melt potential(-)
+!    o  frazil   -- ocn frazil mass flux 
+!    o  bcphidry -- Black Carbon hydrophilic dry deposition flux
+!    o  bcphodry -- Black Carbon hydrophobic dry deposition flux
+!    o  bcphiwet -- Black Carbon hydrophilic wet deposition flux
+!    o  ocphidry -- Organic Carbon hydrophilic dry deposition flux
+!    o  ocphodry -- Organic Carbon hydrophobic dry deposition flux
+!    o  ocphiwet -- Organic Carbon hydrophilic dry deposition flux
+!    o  dstwet1  -- Size 1 dust -- wet deposition flux
+!    o  dstwet2  -- Size 2 dust -- wet deposition flux
+!    o  dstwet3  -- Size 3 dust -- wet deposition flux
+!    o  dstwet4  -- Size 4 dust -- wet deposition flux
+!    o  dstdry1  -- Size 1 dust -- dry deposition flux
+!    o  dstdry2  -- Size 2 dust -- dry deposition flux
+!    o  dstdry3  -- Size 3 dust -- dry deposition flux
+!    o  dstdry4  -- Size 4 dust -- dry deposition flux
+! 
+!    The following fields are sometimes received from the coupler,
+!      depending on model options:
+! 
+!    o  algae1   --
+!    o  algae2   --
+!    o  algae3   --
+!    o  doc1     --
+!    o  doc2     --
+!    o  doc3     --
+!    o  dic1     --
+!    o  don1     --
+!    o  no3      --
+!    o  sio3     --
+!    o  nh4      --
+!    o  dms      --
+!    o  dmsp     --
+!    o  docr     --
+!    o  fep1     --
+!    o  fep2     --
+!    o  fed1     --
+!    o  fed2     --
+!    o  zaer1    --
+!    o  zaer2    --
+!    o  zaer3    --
+!    o  zaer4    --
+!    o  zaer5    --
+!    o  zaer6    --
+! 
+!-----------------------------------------------------------------------
+!
+! !REVISION HISTORY:
+!  same as module
+     use iMOAB,  only       : iMOAB_GetDoubleTagStorage, iMOAB_WriteMesh
+     use seq_comm_mct,      only: num_moab_exports
+
+!EOP
+!BOC
+!-----------------------------------------------------------------------
+!
+!  local variables
+!
+!-----------------------------------------------------------------------
+
+   character (len=StrKIND) :: &
+      label,                  &
+      message
+ 
+   integer ::  &
+      i,n
+
+   real (kind=RKIND) :: &
+      frazilMassFlux, &
+      frazilMassFluxRev
+
+   type (block_type), pointer :: block_ptr
+
+   type (mpas_pool_type), pointer :: &
+      configs,        &
+      meshPool,       &
+      aerosols,       &
+      atmosCoupling,  &
+      oceanCoupling,  &
+      biogeochemistry
+
+   integer, pointer :: nCellsSolve
+
+   logical, pointer :: &
+      config_use_aerosols,              &
+      config_use_modal_aerosols,        &
+      config_use_zaerosols,             &
+      config_use_column_biogeochemistry
+
+   character(len=strKIND), pointer ::   &
+      config_thermodynamics_type,       &
+      config_ocean_surface_type
+
+   type (field1DReal), pointer ::       &
+      seaSurfaceTemperatureField,       &
+      seaSurfaceSalinityField,          &
+      seaFreezingTemperatureField,      &
+      freezingMeltingPotentialField,    &
+      frazilMassAdjustField,            &
+      uOceanVelocityField,              &
+      vOceanVelocityField,              &
+      seaSurfaceTiltUField,             &
+      seaSurfaceTiltVField,             &
+      airLevelHeightField,              &
+      airPotentialTemperatureField,     &
+      airTemperatureField,              &
+      airSpecificHumidityField,         &
+      airDensityField,                  &
+      shortwaveVisibleDirectDownField,  &
+      shortwaveVisibleDiffuseDownField, &
+      shortwaveIRDirectDownField,       &
+      shortwaveIRDiffuseDownField,      &
+      longwaveDownField,                &
+      rainfallRateField,                &
+      snowfallRateField,                &
+      uAirVelocityField,                &
+      vAirVelocityField,                &
+      oceanNitrateConcField,            &
+      oceanSilicateConcField,           &
+      oceanAmmoniumConcField,           &
+      oceanDMSConcField,                &
+      oceanDMSPConcField,               &
+      oceanHumicsConcField
+
+   type (field2DReal), pointer ::       &
+      oceanAlgaeConcField,              &
+      oceanDOCConcField,                &
+      oceanDICConcField,                &
+      oceanDONConcField,                &
+      oceanParticulateIronConcField,    &
+      oceanDissolvedIronConcField,      &
+      oceanZAerosolConcField,           &
+      atmosAerosolFluxField,            &
+      atmosBlackCarbonFluxField,        &
+      atmosDustFluxField
+
+   real (kind=RKIND), dimension(:), pointer :: &
+      seaSurfaceTemperature,       &
+      seaSurfaceSalinity,          &
+      seaFreezingTemperature,      &
+      freezingMeltingPotential,    &
+      frazilMassAdjust,            &
+      uOceanVelocity,              &
+      vOceanVelocity,              &
+      seaSurfaceTiltU,             &
+      seaSurfaceTiltV,             &
+      airLevelHeight,              &
+      airPotentialTemperature,     &
+      airTemperature,              &
+      airSpecificHumidity,         &
+      airDensity,                  &
+      shortwaveVisibleDirectDown,  &
+      shortwaveVisibleDiffuseDown, &
+      shortwaveIRDirectDown,       &
+      shortwaveIRDiffuseDown,      &
+      longwaveDown,                &
+      rainfallRate,                &
+      snowfallRate,                &
+      uAirVelocity,                &
+      vAirVelocity,                &
+      oceanNitrateConc,            &
+      oceanSilicateConc,           &
+      oceanAmmoniumConc,           &
+      oceanDMSConc,                &
+      oceanDMSPConc,               &
+      oceanHumicsConc,             &
+      carbonToNitrogenRatioAlgae,  &
+      carbonToNitrogenRatioDON
+
+   real (kind=RKIND), dimension(:,:), pointer :: &
+      oceanAlgaeConc,              &
+      oceanDOCConc,                &
+      oceanDICConc,                &
+      oceanDONConc,                &
+      oceanParticulateIronConc,    &
+      oceanDissolvedIronConc,      &
+      oceanZAerosolConc,           &
+      atmosAerosolFlux,            &
+      atmosBlackCarbonFlux,        &
+      atmosDustFlux
+   character(CXX) :: tagname
+   integer        :: ierr, ent_type
+!----------------------------------------------------------------------- 
+!
+!  zero out padded cells 
+!
+!-----------------------------------------------------------------------
+
+
+!-----------------------------------------------------------------------
+!
+!
+!-----------------------------------------------------------------------
+
+   n = 0
+   x2i_im(: ,:) = 0.0_RKIND
+
+   ent_type = 1 ! cells
+  !  set all tags in one method
+   tagname = trim(seq_flds_x2i_fields)//C_NULL_CHAR
+   ierr = iMOAB_GetDoubleTagStorage ( MPSIID, tagname, totalmblr , ent_type, x2i_im(1, 1) )
+   if ( ierr /= 0 ) then
+      write(iceLogUnit,*) 'Fail to get seq_flds_x2i_fields '
+   endif
+   block_ptr => domain % blocklist
+   do while(associated(block_ptr))
+
+      configs => block_ptr % configs
+      call mpas_pool_get_config(configs, "config_thermodynamics_type", config_thermodynamics_type)
+      call mpas_pool_get_config(configs, "config_ocean_surface_type", config_ocean_surface_type)
+      call mpas_pool_get_config(configs, "config_use_aerosols", config_use_aerosols)
+      call mpas_pool_get_config(configs, "config_use_modal_aerosols", config_use_modal_aerosols)
+      call mpas_pool_get_config(configs, "config_use_column_biogeochemistry", config_use_column_biogeochemistry)
+
+      call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+      call mpas_pool_get_subpool(block_ptr % structs, 'ocean_coupling', oceanCoupling)
+      call mpas_pool_get_subpool(block_ptr % structs, 'atmos_coupling', atmosCoupling)
+
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+
+      call mpas_pool_get_array(oceanCoupling, 'seaSurfaceTemperature', seaSurfaceTemperature)
+      call mpas_pool_get_array(oceanCoupling, 'seaSurfaceSalinity', seaSurfaceSalinity)
+      call mpas_pool_get_array(oceanCoupling, 'seaFreezingTemperature', seaFreezingTemperature)
+      call mpas_pool_get_array(oceanCoupling, 'freezingMeltingPotential', freezingMeltingPotential)
+      call mpas_pool_get_array(oceanCoupling, 'frazilMassAdjust', frazilMassAdjust)
+      call mpas_pool_get_array(oceanCoupling, 'uOceanVelocity', uOceanVelocity)
+      call mpas_pool_get_array(oceanCoupling, 'vOceanVelocity', vOceanVelocity)
+      call mpas_pool_get_array(oceanCoupling, 'seaSurfaceTiltU', seaSurfaceTiltU)
+      call mpas_pool_get_array(oceanCoupling, 'seaSurfaceTiltV', seaSurfaceTiltV)
+
+      call mpas_pool_get_array(atmosCoupling, 'airLevelHeight', airLevelHeight)
+      call mpas_pool_get_array(atmosCoupling, 'airPotentialTemperature', airPotentialTemperature)
+      call mpas_pool_get_array(atmosCoupling, 'airTemperature', airTemperature)
+      call mpas_pool_get_array(atmosCoupling, 'airSpecificHumidity', airSpecificHumidity)
+      call mpas_pool_get_array(atmosCoupling, 'airDensity', airDensity)
+      call mpas_pool_get_array(atmosCoupling, 'shortwaveVisibleDirectDown', shortwaveVisibleDirectDown)
+      call mpas_pool_get_array(atmosCoupling, 'shortwaveVisibleDiffuseDown', shortwaveVisibleDiffuseDown)
+      call mpas_pool_get_array(atmosCoupling, 'shortwaveIRDirectDown', shortwaveIRDirectDown)
+      call mpas_pool_get_array(atmosCoupling, 'shortwaveIRDiffuseDown', shortwaveIRDiffuseDown)
+      call mpas_pool_get_array(atmosCoupling, 'longwaveDown', longwaveDown)
+      call mpas_pool_get_array(atmosCoupling, 'rainfallRate', rainfallRate)
+      call mpas_pool_get_array(atmosCoupling, 'snowfallRate', snowfallRate)
+      call mpas_pool_get_array(atmosCoupling, 'uAirVelocity', uAirVelocity)
+      call mpas_pool_get_array(atmosCoupling, 'vAirVelocity', vAirVelocity)
+
+      if (config_use_aerosols) then
+         call mpas_pool_get_subpool(block_ptr % structs, 'aerosols', aerosols)
+
+         call mpas_pool_get_array(aerosols, "atmosAerosolFlux", atmosAerosolFlux)
+      endif
+
+      if (config_use_column_biogeochemistry) then
+         call mpas_pool_get_config(configs, "config_use_zaerosols", config_use_zaerosols)
+         call mpas_pool_get_subpool(block_ptr % structs, 'biogeochemistry', biogeochemistry)
+
+         call mpas_pool_get_array(biogeochemistry, 'oceanAlgaeConc', oceanAlgaeConc)
+         call mpas_pool_get_array(biogeochemistry, 'oceanDOCConc', oceanDOCConc)
+         call mpas_pool_get_array(biogeochemistry, 'oceanDICConc', oceanDICConc)
+         call mpas_pool_get_array(biogeochemistry, 'oceanDONConc', oceanDONConc)
+         call mpas_pool_get_array(biogeochemistry, 'oceanNitrateConc', oceanNitrateConc)
+         call mpas_pool_get_array(biogeochemistry, 'oceanSilicateConc', oceanSilicateConc)
+         call mpas_pool_get_array(biogeochemistry, 'oceanAmmoniumConc', oceanAmmoniumConc)
+         call mpas_pool_get_array(biogeochemistry, 'oceanDMSConc', oceanDMSConc)
+         call mpas_pool_get_array(biogeochemistry, 'oceanDMSPConc', oceanDMSPConc)
+         call mpas_pool_get_array(biogeochemistry, 'oceanHumicsConc', oceanHumicsConc)
+         call mpas_pool_get_array(biogeochemistry, 'oceanParticulateIronConc', oceanParticulateIronConc)
+         call mpas_pool_get_array(biogeochemistry, 'oceanDissolvedIronConc', oceanDissolvedIronConc)
+         call mpas_pool_get_array(biogeochemistry, 'oceanZAerosolConc', oceanZAerosolConc)
+         call mpas_pool_get_array(biogeochemistry, 'carbonToNitrogenRatioAlgae', carbonToNitrogenRatioAlgae)
+         call mpas_pool_get_array(biogeochemistry, 'carbonToNitrogenRatioDON', carbonToNitrogenRatioDON)
+         if (config_use_zaerosols) then
+            call mpas_pool_get_array(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFlux)
+            call mpas_pool_get_array(biogeochemistry, "atmosDustFlux", atmosDustFlux)
+         endif
+      endif
+
+      do i = 1, nCellsSolve
+        n = n + 1
+        seaSurfaceTemperature(i)       = x2i_im(n,index_x2i_So_t)
+        seaSurfaceSalinity(i)          = x2i_im(n,index_x2i_So_s)
+
+        seaFreezingTemperature(i) = colpkg_sea_freezing_temperature(seaSurfaceSalinity(i))
+
+        uOceanVelocity(i)              = x2i_im(n,index_x2i_So_u)
+        vOceanVelocity(i)              = x2i_im(n,index_x2i_So_v)
+        seaSurfaceTiltU(i)             = x2i_im(n,index_x2i_So_dhdx)
+        seaSurfaceTiltV(i)             = x2i_im(n,index_x2i_So_dhdy)
+
+        if (trim(config_ocean_surface_type) == "free") then ! free surface (MPAS-O)
+        
+           ! freezingMeltingPotential(i) is the ocean energy associated with frazil formation 
+           ! when it is positive and frazilMassFlux is positive. Conversely, freezingMeltingPotential(i)
+           ! is negative when there is the melting potential in which case frazilMassFlux is zero.
+
+           freezingMeltingPotential(i) = x2i_im(n,index_x2i_Fioo_q)
+
+           frazilMassFlux              = x2i_im(n,index_x2i_Fioo_frazil)
+
+           ! Now determine the sea ice mass associated with the frazil heat flux given when
+           ! freezingMeltingPotential(i) is positive. This produces a revised mass flux, given 
+           ! in frazilMassFluxRev for the given sea surface salinity. The resulting difference
+           ! is assigned to frazilMassAdjust(i) which is exported to the ocean in the subsequent
+           ! coupling step as a freshwater and salt flux. This step is required to balance mass
+           ! and heat with the ocean.
+
+           call frazil_mass(freezingMeltingPotential(i), frazilMassFluxRev, seaSurfaceSalinity(i), &
+                                   config_thermodynamics_type)
+
+           frazilMassAdjust(i) = frazilMassFlux-frazilMassFluxRev 
+
+        else ! non-free surface (SOM)
+
+           freezingMeltingPotential(i) = x2i_im(n,index_x2i_Fioo_q)
+
+        endif
+
+        airLevelHeight(i)              = x2i_im(n,index_x2i_Sa_z)
+        airPotentialTemperature(i)     = x2i_im(n,index_x2i_Sa_ptem)
+        airTemperature(i)              = x2i_im(n,index_x2i_Sa_tbot)
+        airSpecificHumidity(i)         = x2i_im(n,index_x2i_Sa_shum)
+        airDensity(i)                  = x2i_im(n,index_x2i_Sa_dens)
+        shortwaveVisibleDirectDown(i)  = x2i_im(n,index_x2i_Faxa_swvdr)
+        shortwaveVisibleDiffuseDown(i) = x2i_im(n,index_x2i_Faxa_swvdf)
+        shortwaveIRDirectDown(i)       = x2i_im(n,index_x2i_Faxa_swndr)
+        shortwaveIRDiffuseDown(i)      = x2i_im(n,index_x2i_Faxa_swndf)
+        longwaveDown(i)                = x2i_im(n,index_x2i_Faxa_lwdn)
+        rainfallRate(i)                = x2i_im(n,index_x2i_Faxa_rain)
+        snowfallRate(i)                = x2i_im(n,index_x2i_Faxa_snow)
+        uAirVelocity(i)                = x2i_im(n,index_x2i_Sa_u)
+        vAirVelocity(i)                = x2i_im(n,index_x2i_Sa_v)
+
+        ! set aerosols, if configured
+        if (config_use_aerosols) then
+           if (config_use_modal_aerosols) then
+              atmosAerosolFlux(1,i) = x2i_im(n,index_x2i_Faxa_bcphodry) &
+                                    + x2i_im(n,index_x2i_Faxa_bcphidry)
+              atmosAerosolFlux(2,i) = x2i_im(n,index_x2i_Faxa_bcphiwet)
+              ! combine all the dust into one category
+              atmosAerosolFlux(3,i) = x2i_im(n,index_x2i_Faxa_dstwet1) &
+                                    + x2i_im(n,index_x2i_Faxa_dstwet2) &
+                                    + x2i_im(n,index_x2i_Faxa_dstwet3) &
+                                    + x2i_im(n,index_x2i_Faxa_dstwet4) &
+                                    + x2i_im(n,index_x2i_Faxa_dstdry1) &
+                                    + x2i_im(n,index_x2i_Faxa_dstdry2) &
+                                    + x2i_im(n,index_x2i_Faxa_dstdry3) &
+                                    + x2i_im(n,index_x2i_Faxa_dstdry4)
+           else
+              atmosAerosolFlux(1,i) = x2i_im(n,index_x2i_Faxa_bcphodry)
+              atmosAerosolFlux(2,i) = x2i_im(n,index_x2i_Faxa_bcphidry) &
+                                    + x2i_im(n,index_x2i_Faxa_bcphiwet)
+              ! combine all the dust into one category
+              atmosAerosolFlux(3,i) = x2i_im(n,index_x2i_Faxa_dstwet1) &
+                                    + x2i_im(n,index_x2i_Faxa_dstwet2) &
+                                    + x2i_im(n,index_x2i_Faxa_dstwet3) &
+                                    + x2i_im(n,index_x2i_Faxa_dstwet4) &
+                                    + x2i_im(n,index_x2i_Faxa_dstdry1) &
+                                    + x2i_im(n,index_x2i_Faxa_dstdry2) &
+                                    + x2i_im(n,index_x2i_Faxa_dstdry3) &
+                                    + x2i_im(n,index_x2i_Faxa_dstdry4)
+           endif
+        endif
+
+        ! import biogeochemistry fields, if configured
+        if (config_use_column_biogeochemistry) then
+           oceanAlgaeConc(1,i)           = x2i_im(n,index_x2i_So_algae1)
+           oceanAlgaeConc(2,i)           = x2i_im(n,index_x2i_So_algae2)
+           oceanAlgaeConc(3,i)           = x2i_im(n,index_x2i_So_algae3)
+           oceanDOCConc(1,i)             = x2i_im(n,index_x2i_So_doc1)
+           oceanDOCConc(2,i)             = x2i_im(n,index_x2i_So_doc2)
+           oceanDOCConc(3,i)             = 0.0_RKIND
+           oceanDICConc(1,i)             = x2i_im(n,index_x2i_So_dic1) !JW not used, set to 0?
+           oceanDONConc(1,i)             = x2i_im(n,index_x2i_So_don1)
+           oceanNitrateConc(i)           = x2i_im(n,index_x2i_So_no3)
+           oceanSilicateConc(i)          = x2i_im(n,index_x2i_So_sio3)
+           oceanAmmoniumConc(i)          = x2i_im(n,index_x2i_So_nh4)
+           oceanDMSConc(i)               = x2i_im(n,index_x2i_So_dms)
+           oceanDMSPConc(i)              = x2i_im(n,index_x2i_So_dmsp)
+           oceanHumicsConc(i)            = x2i_im(n,index_x2i_So_docr)
+           oceanParticulateIronConc(1,i) = x2i_im(n,index_x2i_So_fep1)
+           oceanParticulateIronConc(2,i) = x2i_im(n,index_x2i_So_fep2)
+           oceanDissolvedIronConc(1,i)   = x2i_im(n,index_x2i_So_fed1)
+           oceanDissolvedIronConc(2,i)   = x2i_im(n,index_x2i_So_fed2)
+           oceanZAerosolConc(1,i)        = 0.0_RKIND
+           oceanZAerosolConc(2,i)        = 0.0_RKIND
+           oceanZAerosolConc(3,i)        = 0.0_RKIND
+           oceanZAerosolConc(4,i)        = 0.0_RKIND
+           oceanZAerosolConc(5,i)        = 0.0_RKIND
+           oceanZAerosolConc(6,i)        = 0.0_RKIND
+           ! set aerosols, if configured
+           if (config_use_zaerosols) then
+              if (config_use_modal_aerosols) then
+                 atmosBlackCarbonFlux(1,i) = x2i_im(n,index_x2i_Faxa_bcphodry) &
+                                           + x2i_im(n,index_x2i_Faxa_bcphidry)
+                 atmosBlackCarbonFlux(2,i) = x2i_im(n,index_x2i_Faxa_bcphiwet)
+                 ! combine wet and dry dust
+                 atmosDustFlux(1,i) = x2i_im(n,index_x2i_Faxa_dstwet1) &
+                                    + x2i_im(n,index_x2i_Faxa_dstdry1)
+                 atmosDustFlux(2,i) = x2i_im(n,index_x2i_Faxa_dstwet2) &
+                                    + x2i_im(n,index_x2i_Faxa_dstdry2)
+                 atmosDustFlux(3,i) = x2i_im(n,index_x2i_Faxa_dstwet3) &
+                                    + x2i_im(n,index_x2i_Faxa_dstdry3)
+                 atmosDustFlux(4,i) = x2i_im(n,index_x2i_Faxa_dstwet4) &
+                                    + x2i_im(n,index_x2i_Faxa_dstdry4)
+              else
+                 atmosBlackCarbonFlux(1,i) = x2i_im(n,index_x2i_Faxa_bcphodry)
+                 atmosBlackCarbonFlux(2,i) = x2i_im(n,index_x2i_Faxa_bcphidry) &
+                                           + x2i_im(n,index_x2i_Faxa_bcphiwet)
+                 ! combine wet and dry dust
+                 atmosDustFlux(1,i) = x2i_im(n,index_x2i_Faxa_dstwet1) &
+                                    + x2i_im(n,index_x2i_Faxa_dstdry1)
+                 atmosDustFlux(2,i) = x2i_im(n,index_x2i_Faxa_dstwet2) &
+                                    + x2i_im(n,index_x2i_Faxa_dstdry2)
+                 atmosDustFlux(3,i) = x2i_im(n,index_x2i_Faxa_dstwet3) &
+                                    + x2i_im(n,index_x2i_Faxa_dstdry3)
+                 atmosDustFlux(4,i) = x2i_im(n,index_x2i_Faxa_dstwet4) &
+                                    + x2i_im(n,index_x2i_Faxa_dstdry4)
+              endif
+           endif
+        endif
+      end do
+
+!----------------------------------------------------------------------- 
+!
+!  unit conversions and any manipulation of coupled fields
+!
+!-----------------------------------------------------------------------
+      do i = 1, nCellsSolve
+
+        seaSurfaceTemperature(i)  = seaSurfaceTemperature(i) - seaiceFreshWaterFreezingPoint
+
+        if (config_use_column_biogeochemistry) then
+           ! convert from mmol C/m^3 to mmol N/m^3
+           oceanAlgaeConc(1,i)           = oceanAlgaeConc(1,i) / carbonToNitrogenRatioAlgae(1)
+           oceanAlgaeConc(2,i)           = oceanAlgaeConc(2,i) / carbonToNitrogenRatioAlgae(2)
+           oceanAlgaeConc(3,i)           = oceanAlgaeConc(3,i) / carbonToNitrogenRatioAlgae(3)
+           ! convert from mmol Fe/m^3 to umol Fe/m^3
+           oceanParticulateIronConc(1,i) = oceanParticulateIronConc(1,i) * 1000._RKIND
+           oceanParticulateIronConc(2,i) = oceanParticulateIronConc(2,i) * 1000._RKIND
+           oceanDissolvedIronConc(1,i)   = oceanDissolvedIronConc(1,i)   * 1000._RKIND
+           oceanDissolvedIronConc(2,i)   = oceanDissolvedIronConc(2,i)   * 1000._RKIND
+        endif
+      end do
+
+      block_ptr => block_ptr % next
+   end do
+
+   call mpas_pool_get_subpool(domain % blocklist % structs, 'ocean_coupling', oceanCoupling)
+   call mpas_pool_get_subpool(domain % blocklist % structs, 'atmos_coupling', atmosCoupling)
+
+   call mpas_pool_get_field(oceanCoupling, 'seaSurfaceTemperature', seaSurfaceTemperatureField)
+   call mpas_pool_get_field(oceanCoupling, 'seaSurfaceSalinity', seaSurfaceSalinityField)
+   call mpas_pool_get_field(oceanCoupling, 'seaFreezingTemperature', seaFreezingTemperatureField)
+   call mpas_pool_get_field(oceanCoupling, 'freezingMeltingPotential', freezingMeltingPotentialField)
+   call mpas_pool_get_field(oceanCoupling, 'frazilMassAdjust', frazilMassAdjustField)
+   call mpas_pool_get_field(oceanCoupling, 'uOceanVelocity', uOceanVelocityField)
+   call mpas_pool_get_field(oceanCoupling, 'vOceanVelocity', vOceanVelocityField)
+   call mpas_pool_get_field(oceanCoupling, 'seaSurfaceTiltU', seaSurfaceTiltUField)
+   call mpas_pool_get_field(oceanCoupling, 'seaSurfaceTiltV', seaSurfaceTiltVField)
+
+   call mpas_pool_get_field(atmosCoupling, 'airLevelHeight', airLevelHeightField)
+   call mpas_pool_get_field(atmosCoupling, 'airPotentialTemperature', airPotentialTemperatureField)
+   call mpas_pool_get_field(atmosCoupling, 'airTemperature', airTemperatureField)
+   call mpas_pool_get_field(atmosCoupling, 'airSpecificHumidity', airSpecificHumidityField)
+   call mpas_pool_get_field(atmosCoupling, 'airDensity', airDensityField)
+   call mpas_pool_get_field(atmosCoupling, 'shortwaveVisibleDirectDown', shortwaveVisibleDirectDownField)
+   call mpas_pool_get_field(atmosCoupling, 'shortwaveVisibleDiffuseDown', shortwaveVisibleDiffuseDownField)
+   call mpas_pool_get_field(atmosCoupling, 'shortwaveIRDirectDown', shortwaveIRDirectDownField)
+   call mpas_pool_get_field(atmosCoupling, 'shortwaveIRDiffuseDown', shortwaveIRDiffuseDownField)
+   call mpas_pool_get_field(atmosCoupling, 'longwaveDown', longwaveDownField)
+   call mpas_pool_get_field(atmosCoupling, 'rainfallRate', rainfallRateField)
+   call mpas_pool_get_field(atmosCoupling, 'snowfallRate', snowfallRateField)
+   call mpas_pool_get_field(atmosCoupling, 'uAirVelocity', uAirVelocityField)
+   call mpas_pool_get_field(atmosCoupling, 'vAirVelocity', vAirVelocityField)
+
+   if (config_use_aerosols) then
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'aerosols', aerosols)
+
+      call mpas_pool_get_field(aerosols, "atmosAerosolFlux", atmosAerosolFluxField)
+   endif
+
+   if (config_use_column_biogeochemistry) then
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'biogeochemistry', biogeochemistry)
+
+      call mpas_pool_get_field(biogeochemistry, 'oceanAlgaeConc', oceanAlgaeConcField)
+      call mpas_pool_get_field(biogeochemistry, 'oceanDOCConc', oceanDOCConcField)
+      call mpas_pool_get_field(biogeochemistry, 'oceanDICConc', oceanDICConcField)
+      call mpas_pool_get_field(biogeochemistry, 'oceanDONConc', oceanDONConcField)
+      call mpas_pool_get_field(biogeochemistry, 'oceanNitrateConc', oceanNitrateConcField)
+      call mpas_pool_get_field(biogeochemistry, 'oceanSilicateConc', oceanSilicateConcField)
+      call mpas_pool_get_field(biogeochemistry, 'oceanAmmoniumConc', oceanAmmoniumConcField)
+      call mpas_pool_get_field(biogeochemistry, 'oceanDMSConc', oceanDMSConcField)
+      call mpas_pool_get_field(biogeochemistry, 'oceanDMSPConc', oceanDMSPConcField)
+      call mpas_pool_get_field(biogeochemistry, 'oceanHumicsConc', oceanHumicsConcField)
+      call mpas_pool_get_field(biogeochemistry, 'oceanParticulateIronConc', oceanParticulateIronConcField)
+      call mpas_pool_get_field(biogeochemistry, 'oceanDissolvedIronConc', oceanDissolvedIronConcField)
+      call mpas_pool_get_field(biogeochemistry, 'oceanZAerosolConc', oceanZAerosolConcField)
+      if (config_use_zaerosols) then
+         call mpas_pool_get_field(biogeochemistry, "atmosBlackCarbonFlux", atmosBlackCarbonFluxField)
+         call mpas_pool_get_field(biogeochemistry, "atmosDustFlux", atmosDustFluxField)
+      endif
+   endif
+
+   call mpas_dmpar_exch_halo_field(seaSurfaceTemperatureField)
+   call mpas_dmpar_exch_halo_field(seaSurfaceSalinityField)
+   call mpas_dmpar_exch_halo_field(seaFreezingTemperatureField)
+   call mpas_dmpar_exch_halo_field(freezingMeltingPotentialField)
+   call mpas_dmpar_exch_halo_field(frazilMassAdjustField)
+   call mpas_dmpar_exch_halo_field(uOceanVelocityField)
+   call mpas_dmpar_exch_halo_field(vOceanVelocityField)
+   call mpas_dmpar_exch_halo_field(seaSurfaceTiltUField)
+   call mpas_dmpar_exch_halo_field(seaSurfaceTiltVField)
+
+   call mpas_dmpar_exch_halo_field(airLevelHeightField)
+   call mpas_dmpar_exch_halo_field(airPotentialTemperatureField)
+   call mpas_dmpar_exch_halo_field(airTemperatureField)
+   call mpas_dmpar_exch_halo_field(airSpecificHumidityField)
+   call mpas_dmpar_exch_halo_field(airDensityField)
+   call mpas_dmpar_exch_halo_field(shortwaveVisibleDirectDownField)
+   call mpas_dmpar_exch_halo_field(shortwaveVisibleDiffuseDownField)
+   call mpas_dmpar_exch_halo_field(shortwaveIRDirectDownField)
+   call mpas_dmpar_exch_halo_field(shortwaveIRDiffuseDownField)
+   call mpas_dmpar_exch_halo_field(longwaveDownField)
+   call mpas_dmpar_exch_halo_field(rainfallRateField)
+   call mpas_dmpar_exch_halo_field(snowfallRateField)
+   call mpas_dmpar_exch_halo_field(uAirVelocityField)
+   call mpas_dmpar_exch_halo_field(vAirVelocityField)
+
+   if (config_use_aerosols) then
+      call mpas_dmpar_exch_halo_field(atmosAerosolFluxField)
+   endif
+
+   if (config_use_column_biogeochemistry) then
+      call mpas_dmpar_exch_halo_field(oceanAlgaeConcField)
+      call mpas_dmpar_exch_halo_field(oceanDOCConcField)
+      call mpas_dmpar_exch_halo_field(oceanDICConcField)
+      call mpas_dmpar_exch_halo_field(oceanDONConcField)
+      call mpas_dmpar_exch_halo_field(oceanNitrateConcField)
+      call mpas_dmpar_exch_halo_field(oceanSilicateConcField)
+      call mpas_dmpar_exch_halo_field(oceanAmmoniumConcField)
+      call mpas_dmpar_exch_halo_field(oceanDMSConcField)
+      call mpas_dmpar_exch_halo_field(oceanDMSPConcField)
+      call mpas_dmpar_exch_halo_field(oceanHumicsConcField)
+      call mpas_dmpar_exch_halo_field(oceanParticulateIronConcField)
+      call mpas_dmpar_exch_halo_field(oceanDissolvedIronConcField)
+      call mpas_dmpar_exch_halo_field(oceanZAerosolConcField)
+      if (config_use_zaerosols) then
+         call mpas_dmpar_exch_halo_field(atmosBlackCarbonFluxField)
+         call mpas_dmpar_exch_halo_field(atmosDustFluxField)
+      endif
+   endif
+
+! REVISION HISTORY:
+!-----------------------------------------------------------------------
+!EOC
+
+ end subroutine ice_import_moab!}}}
 #endif
 end module ice_comp_mct
 
