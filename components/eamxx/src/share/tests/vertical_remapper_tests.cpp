@@ -210,17 +210,17 @@ TEST_CASE ("vertical_remap") {
   // For now we can only support PS = SCREAM_PACK_SIZE because the source and target pressure levels will assume that packsize.
   // If we use a smaller packsize we throw an error in the property check step of the vertical interpolation scheme.
   // TODO: Fix that.
-  auto src_s3d_m = create_field("s3d_m",src_grid,false,false,true, SCREAM_PACK_SIZE); //1);
-  auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,SCREAM_PACK_SIZE); //std::min(SCREAM_PACK_SIZE,4));
-  auto src_v3d_m = create_field("v3d_m",src_grid,false,true ,true, SCREAM_PACK_SIZE); //std::min(SCREAM_PACK_SIZE,8));
-  auto src_v3d_i = create_field("v3d_i",src_grid,false,true ,false,SCREAM_PACK_SIZE); //std::min(SCREAM_PACK_SIZE,16));
+  auto src_s3d_m = create_field("s3d_m",src_grid,false,false,true, 1);
+  auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,std::min(SCREAM_PACK_SIZE,4));
+  auto src_v3d_m = create_field("v3d_m",src_grid,false,true ,true, std::min(SCREAM_PACK_SIZE,8));
+  auto src_v3d_i = create_field("v3d_i",src_grid,false,true ,false,std::min(SCREAM_PACK_SIZE,16));
 
   auto tgt_s2d   = create_field("s2d",  tgt_grid,true,false);
   auto tgt_v2d   = create_field("v2d",  tgt_grid,true,true);
-  auto tgt_s3d_m = create_field("s3d_m",tgt_grid,false,false,true, SCREAM_PACK_SIZE); //1);
-  auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,true, SCREAM_PACK_SIZE); //std::min(SCREAM_PACK_SIZE,4));
-  auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,true ,true, SCREAM_PACK_SIZE); //std::min(SCREAM_PACK_SIZE,8));
-  auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,true ,true, SCREAM_PACK_SIZE); //std::min(SCREAM_PACK_SIZE,16));
+  auto tgt_s3d_m = create_field("s3d_m",tgt_grid,false,false,true, 1);
+  auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,true, std::min(SCREAM_PACK_SIZE,4));
+  auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,true ,true, std::min(SCREAM_PACK_SIZE,8));
+  auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,true ,true, std::min(SCREAM_PACK_SIZE,16));
 
   std::vector<Field> src_f = {src_s2d,src_v2d,src_s3d_m,src_s3d_i,src_v3d_m,src_v3d_i};
   std::vector<Field> tgt_f = {tgt_s2d,tgt_v2d,tgt_s3d_m,tgt_s3d_i,tgt_v3d_m,tgt_v3d_i};
@@ -312,7 +312,7 @@ TEST_CASE ("vertical_remap") {
   print (" -> generate src fields data ... done!\n",comm);
 
   // No bwd remap
-//ASD why doesn't this work?  REQUIRE_THROWS(remap->remap(false));
+  REQUIRE_THROWS(remap->remap(false));
 
   for (int irun=0; irun<5; ++irun) {
     print (" -> run remap ...\n",comm);

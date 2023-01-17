@@ -231,6 +231,7 @@ void VerticalRemapper::do_remap_fwd ()
   using namespace ShortFieldTagsNames;
   // Loop over each field
   constexpr auto can_pack = SCREAM_PACK_SIZE>1;
+  const auto& tgt_pres_ap = m_remap_pres.get_header().get_alloc_properties();
   for (int i=0; i<m_num_fields; ++i) {
     const auto& f_src    = m_src_fields[i];
           auto  f_tgt    = m_tgt_fields[i];
@@ -241,17 +242,26 @@ void VerticalRemapper::do_remap_fwd ()
       // Dispatch kernel with the largest possible pack size
       const auto& src_ap = f_src.get_header().get_alloc_properties();
       const auto& tgt_ap = f_tgt.get_header().get_alloc_properties();
+      const auto& src_pres_ap = src_tag == LEV ? m_src_mid.get_header().get_alloc_properties() : m_src_int.get_header().get_alloc_properties();
       if (can_pack && src_ap.is_compatible<RPack<16>>() &&
-                      tgt_ap.is_compatible<RPack<16>>()) {
+                      tgt_ap.is_compatible<RPack<16>>() &&
+                      src_pres_ap.is_compatible<RPack<16>>() &&
+                      tgt_pres_ap.is_compatible<RPack<16>>()) {
         apply_vertical_interpolation<16>(f_src,f_tgt); 
       } else if (can_pack && src_ap.is_compatible<RPack<8>>() &&
-                             tgt_ap.is_compatible<RPack<8>>()) {
+                             tgt_ap.is_compatible<RPack<8>>() &&
+                             src_pres_ap.is_compatible<RPack<8>>() &&
+                             tgt_pres_ap.is_compatible<RPack<8>>()) {
         apply_vertical_interpolation<8>(f_src,f_tgt); 
       } else if (can_pack && src_ap.is_compatible<RPack<4>>() &&
-                             tgt_ap.is_compatible<RPack<4>>()) {
+                             tgt_ap.is_compatible<RPack<4>>() &&
+                             src_pres_ap.is_compatible<RPack<4>>() &&
+                             tgt_pres_ap.is_compatible<RPack<4>>()) {
         apply_vertical_interpolation<4>(f_src,f_tgt); 
       } else if (can_pack && src_ap.is_compatible<RPack<2>>() &&
-                             tgt_ap.is_compatible<RPack<2>>()) {
+                             tgt_ap.is_compatible<RPack<2>>() &&
+                             src_pres_ap.is_compatible<RPack<2>>() &&
+                             tgt_pres_ap.is_compatible<RPack<2>>()) {
         apply_vertical_interpolation<2>(f_src,f_tgt); 
       } else {
         apply_vertical_interpolation<1>(f_src,f_tgt); 
@@ -268,6 +278,7 @@ template<int Packsize>
 void VerticalRemapper::
 apply_vertical_interpolation(const Field& f_src, const Field& f_tgt) const
 {
+    
     using Pack = ekat::Pack<Real,Packsize>;
     using namespace ShortFieldTagsNames;
     using namespace scream::vinterp;
