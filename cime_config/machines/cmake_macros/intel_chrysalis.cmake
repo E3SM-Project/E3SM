@@ -23,6 +23,7 @@ string(APPEND SLIBS " ${SHELL_CMD_OUTPUT_BUILD_INTERNAL_IGNORE0} ${SHELL_CMD_OUT
 set(NETCDF_C_PATH "$ENV{NETCDF_C_PATH}")
 set(NETCDF_FORTRAN_PATH "$ENV{NETCDF_FORTRAN_PATH}")
 set(PNETCDF_PATH "$ENV{PNETCDF_PATH}")
+set(MOAB_PATH "/lcrc/soft/climate/moab/chrysalis/intel")
 string(APPEND LDFLAGS " -static-intel")
 if (MPILIB STREQUAL impi)
   set(MPICC "mpiicc")
