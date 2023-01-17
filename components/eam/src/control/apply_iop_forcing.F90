@@ -177,6 +177,7 @@ subroutine advance_iop_nudging(scm_dt, ps_in, t_in, q_in, &       ! In
     if (pmidm1(k) .le. scm_relaxation_low*100._r8 .and. &
       pmidm1(k) .ge. scm_relaxation_high*100._r8) then
 
+!!Make this adjustment a namelist variable!
       rtau(k)   = 10800._r8          ! 3-hr adj. time scale
       rtau(k)   = max(scm_dt,rtau(k))
       relaxt(k) = -(t_update(k) - tobs(k))/rtau(k)
