@@ -87,6 +87,7 @@ module scream_scorpio_interface
   type(iosystem_desc_t), pointer, public :: pio_subsystem
   integer               :: pio_rearranger
   integer               :: pio_mode
+  integer               :: time_dimid = -1
 
   ! TYPES to handle history coordinates and files
   integer,parameter :: max_hcoordname_len = 16
@@ -299,6 +300,7 @@ contains
 
       if (length.eq.0) then
         ierr = PIO_def_dim(pio_atm_file%pioFileDesc, trim(shortname), pio_unlimited , hist_coord%dimid)
+        time_dimid = hist_coord%dimid
       else
         ierr = PIO_def_dim(pio_atm_file%pioFileDesc, trim(shortname), length , hist_coord%dimid)
       end if
@@ -1421,6 +1423,7 @@ contains
   subroutine grid_write_darray_float(filename, varname, buf, buf_size)
     use pionfput_mod, only: PIO_put_var   => put_var
     use piolib_mod, only: PIO_setframe
+    use pio_types, only: PIO_max_var_dims
     use piodarray,  only: PIO_write_darray
 
     ! Dummy arguments
@@ -1433,7 +1436,8 @@ contains
 
     type(pio_atm_file_t), pointer :: pio_atm_file
     type(hist_var_t), pointer     :: var
-    integer                       :: ierr
+    integer                       :: ierr,jdim
+    integer                       :: start(pio_max_var_dims), count(pio_max_var_dims)
     logical                       :: found
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
@@ -1447,13 +1451,27 @@ contains
     if (var%is_partitioned) then
       call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
     else
-      ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,buf)
+      if (var%has_t_dim) then
+        do jdim=1,var%numdims
+          if (var%dimid(jdim) .eq. time_dimid) then
+            start (jdim) = int(max(1,pio_atm_file%numRecs))
+            count (jdim) = 1
+          else
+            start (jdim) = 1
+            count (jdim) = var%dimlen(jdim)
+          endif
+        enddo
+        ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,start(:var%numdims),count(:var%numdims),buf)
+      else
+        ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,buf)
+      endif
     endif
 
     call errorHandle( 'eam_grid_write_darray_float: Error writing variable '//trim(varname),ierr)
   end subroutine grid_write_darray_float
   subroutine grid_write_darray_double(filename, varname, buf, buf_size)
     use pionfput_mod, only: PIO_put_var   => put_var
+    use pio_types, only: PIO_max_var_dims
     use piolib_mod, only: PIO_setframe
     use piodarray,  only: PIO_write_darray
 
@@ -1467,7 +1485,8 @@ contains
 
     type(pio_atm_file_t), pointer :: pio_atm_file
     type(hist_var_t), pointer     :: var
-    integer                       :: ierr
+    integer                       :: ierr,jdim
+    integer                       :: start(pio_max_var_dims), count(pio_max_var_dims)
     logical                       :: found
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
@@ -1481,7 +1500,20 @@ contains
     if (var%is_partitioned) then
       call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
     else
-      ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,buf)
+      if (var%has_t_dim) then
+        do jdim=1,var%numdims
+          if (var%dimid(jdim) .eq. time_dimid) then
+            start (jdim) = int(max(1,pio_atm_file%numRecs))
+            count (jdim) = 1
+          else
+            start (jdim) = 1
+            count (jdim) = var%dimlen(jdim)
+          endif
+        enddo
+        ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,start(:var%numdims),count(:var%numdims),buf)
+      else
+        ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,buf)
+      endif
     endif
 
     call errorHandle( 'eam_grid_write_darray_double: Error writing variable '//trim(varname),ierr)
@@ -1489,6 +1521,7 @@ contains
   subroutine grid_write_darray_int(filename, varname, buf, buf_size)
     use pionfput_mod, only: PIO_put_var   => put_var
     use piolib_mod, only: PIO_setframe
+    use pio_types, only: PIO_max_var_dims
     use piodarray,  only: PIO_write_darray
 
     ! Dummy arguments
@@ -1501,7 +1534,8 @@ contains
 
     type(pio_atm_file_t), pointer :: pio_atm_file
     type(hist_var_t), pointer     :: var
-    integer                       :: ierr
+    integer                       :: ierr,jdim
+    integer                       :: start(pio_max_var_dims), count(pio_max_var_dims)
     logical                       :: found
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
@@ -1515,7 +1549,20 @@ contains
     if (var%is_partitioned) then
       call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
     else
-      ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,buf)
+      if (var%has_t_dim) then
+        do jdim=1,var%numdims
+          if (var%dimid(jdim) .eq. time_dimid) then
+            start (jdim) = int(max(1,pio_atm_file%numRecs))
+            count (jdim) = 1
+          else
+            start (jdim) = 1
+            count (jdim) = var%dimlen(jdim)
+          endif
+        enddo
+        ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,start(:var%numdims),count(:var%numdims),buf)
+      else
+        ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,buf)
+      endif
     endif
 
     call errorHandle( 'eam_grid_write_darray_int: Error writing variable '//trim(varname),ierr)
