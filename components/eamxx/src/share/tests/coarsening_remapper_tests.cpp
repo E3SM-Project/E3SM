@@ -131,9 +131,9 @@ void create_remap_file(const std::string& filename, std::vector<std::int64_t>& d
 
   scorpio::register_file(filename, scorpio::FileMode::Write);
 
-  scorpio::register_dimension(filename,"n_a", "n_a", na);
-  scorpio::register_dimension(filename,"n_b", "n_b", nb);
-  scorpio::register_dimension(filename,"n_s", "n_s", ns);
+  scorpio::register_dimension(filename,"n_a", "n_a", na, true);
+  scorpio::register_dimension(filename,"n_b", "n_b", nb, true);
+  scorpio::register_dimension(filename,"n_s", "n_s", ns, true);
 
   scorpio::register_variable(filename,"col","col","none",{"n_s"},"real","int","int-nnz");
   scorpio::register_variable(filename,"row","row","none",{"n_s"},"real","int","int-nnz");

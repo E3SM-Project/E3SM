@@ -225,10 +225,10 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min
   // Register the output file
   scorpio::register_file(filename,scorpio::Write);
   //   - Dimensions
-  scorpio::register_dimension(filename,"n_s","n_s",n_s);
-  scorpio::register_dimension(filename,"n_a","n_a",num_src_cols);
-  scorpio::register_dimension(filename,"n_b","n_b",num_tgt_cols);
-  scorpio::register_dimension(filename,"ncol","ncol",num_src_cols);
+  scorpio::register_dimension(filename,"n_s","n_s",n_s,true);
+  scorpio::register_dimension(filename,"n_a","n_a",num_src_cols,false);
+  scorpio::register_dimension(filename,"n_b","n_b",num_tgt_cols,false);
+  scorpio::register_dimension(filename,"ncol","ncol",num_src_cols,true);
   //   - Variables
   std::string remap_decomp_tag_r = "n_s_real";
   std::string data_decomp_tag_r  = "data_real";
