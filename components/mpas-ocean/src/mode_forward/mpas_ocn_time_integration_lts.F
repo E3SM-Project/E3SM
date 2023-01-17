@@ -1317,7 +1317,6 @@ module ocn_time_integration_lts
             invdcEdge = 1.0_RKIND / dcEdge(iEdge)
             kMin = minLevelEdgeBot(iEdge)
             kMax = maxLevelEdgeTop(iEdge)
-            !TODO: in the tidal potential the for starts from 1, not from kMin, is that OK to have it start from kMin here?
             do k=kMin,kMax
                normalVelocityTend(k,iEdge) = normalVelocityTend(k,iEdge) &
                                              - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1)) &
