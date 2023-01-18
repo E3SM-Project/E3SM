@@ -1024,8 +1024,8 @@
 					description="The density of land ice."
 					possible_values="Any positive real number"
 		/>
-		<nml_option name="config_land_ice_flux_topDragCoeff" type="real" default_value="2.5e-3"
-					description="The top drag coefficient."
+		<nml_option name="config_land_ice_flux_explicit_topDragCoeff" type="real" default_value="2.5e-3"
+					description="The top drag coefficient if config_use_implicit_top_drag_coeff is false."
 					possible_values="Any positive real number"
 		/>
 		<nml_option name="config_land_ice_flux_ISOMIP_gammaT" type="real" default_value="1e-4" units="m s^-1"

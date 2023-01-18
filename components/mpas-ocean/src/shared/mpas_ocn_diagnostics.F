@@ -75,6 +75,7 @@ module ocn_diagnostics
 
    integer :: ke_cell_flag, ke_vertex_flag
    real (kind=RKIND) ::  fCoef
+   real (kind=RKIND) ::  landIceTopDragCoeff
    real (kind=RKIND), pointer ::  coef_3rd_order
 
    ! Methods for computing thickness at edges for flux calculations
@@ -3306,7 +3307,7 @@ contains
          velocityMagnitude = sqrt(kineticEnergyCell(minLevelCell(cell1),cell1) + kineticEnergyCell(minLevelCell(cell2),cell2))
          landIceEdgeFraction = 0.5_RKIND*(landIceFraction(cell1)+landIceFraction(cell2))
 
-         topDrag(iEdge) = - rho_sw * landIceEdgeFraction * config_land_ice_flux_topDragCoeff &
+         topDrag(iEdge) = - rho_sw * landIceEdgeFraction * landIceTopDragCoeff &
                           * velocityMagnitude * normalVelocity(minLevelEdgeBot(iEdge),iEdge)
 
       end do
@@ -3324,11 +3325,11 @@ contains
       do iCell = 1, nCellsAll
          ! the magnitude of the top drag is CD*u**2 = CD*(2*KE)
          topDragMag(iCell) = rho_sw * landIceFraction(iCell) &
-                           * 2.0_RKIND * config_land_ice_flux_topDragCoeff *  kineticEnergyCell(minLevelCell(iCell),iCell)
+                           * 2.0_RKIND * landIceTopDragCoeff *  kineticEnergyCell(minLevelCell(iCell),iCell)
 
          ! the friction velocity is the square root of the top drag + variance of tidal velocity
          ! (computed regardless of land-ice coverage)
-         landIceFrictionVelocity(iCell) = sqrt(config_land_ice_flux_topDragCoeff * &
+         landIceFrictionVelocity(iCell) = sqrt(landIceTopDragCoeff * &
                                    (2.0_RKIND * kineticEnergyCell(minLevelCell(iCell),iCell) &
                                    + config_land_ice_flux_rms_tidal_velocity**2))
       end do
@@ -4228,6 +4229,13 @@ contains
                  & 'is not known', MPAS_LOG_CRIT)
          end if
       end if
+
+      ! Initialize coefficient choice for computing land ice drag
+      if (config_use_implicit_top_drag) then
+         landIceTopDragCoeff = config_implicit_top_drag_coeff
+      else
+         landIceTopDragCoeff = config_land_ice_flux_explicit_topDragCoeff
+      endif
 
       call ocn_diagnostics_variables_init(domain, jenkinsOn, &
                                           hollandJenkinsOn, err)
