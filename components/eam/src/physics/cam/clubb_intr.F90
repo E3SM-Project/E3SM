@@ -1955,21 +1955,6 @@ end subroutine clubb_init_cnst
         wm_zt(k+1) = real(dum1, kind = core_rknd)
       enddo
 
-      ! ------------------------------------------------- !
-      ! Begin case specific code for SCAM cases.          !
-      ! This section of code block NOT called in          !
-      ! global simulations                                !
-      ! ------------------------------------------------- !
-
-!     DPAB, EVENTUALLY REMOVE THIS when you get to non b4b changes
-      if (single_column) then
-
-        !  Compute the surface momentum fluxes, if this is a SCAM simulation
-        upwp_sfc = -real((um(i,pver)*ustar**2/ubar), kind = core_rknd)
-        vpwp_sfc = -real((vm(i,pver)*ustar**2/ubar), kind = core_rknd)
-
-      endif
-
       !  Set stats output and increment equal to CLUBB and host dt
       stats_tsamp = dtime
       stats_tout  = hdtime_core_rknd
