@@ -27,11 +27,10 @@ extern "C" void pam_driver() {
   auto crm_nz      = coupler.get_option<int>("crm_nz");
   auto crm_nx      = coupler.get_option<int>("crm_nx");
   auto crm_ny      = coupler.get_option<int>("crm_ny");
-  auto crm_dx      = coupler.get_option<double>("crm_dx");
-  auto crm_dy      = coupler.get_option<double>("crm_dy");
   auto gcm_dt      = coupler.get_option<double>("gcm_dt");
   auto crm_dt      = coupler.get_option<double>("crm_dt");
   coupler.set_option<real>("gcm_physics_dt",gcm_dt);
+  coupler.set_option<std::string>("p3_lookup_data_path","./p3_data");
   //------------------------------------------------------------------------------------------------
   // Allocate the coupler state and retrieve host/device data managers
   coupler.allocate_coupler_state( crm_nz , crm_ny , crm_nx , nens );
@@ -49,20 +48,16 @@ extern "C" void pam_driver() {
   rad   .init(coupler);
   //------------------------------------------------------------------------------------------------
 
-  // Set the vertical grid in the coupler
-  auto input_zint = dm_host.get<real const,2>("input_zint").createDeviceCopy();
-  coupler.set_grid( crm_dx , crm_dy , input_zint );
-
   // update coupler GCM state with input GCM state
   pam_state_update_gcm_state(coupler);
 
-  // set CRM dry density using gcm_density_dry (set in update_gcm_state)
+  // set CRM dry density using gcm_density_dry (set in pam_state_update_gcm_state)
   modules::broadcast_initial_gcm_column_dry_density(coupler); 
 
   // Copy input CRM state (saved by the GCM) to coupler
   pam_state_copy_input_to_coupler(coupler);
 
-  // Copy input rad tendencies to coupler
+  // Copy input rad tendencies to coupler (also sets up vertical grid)
   pam_radiation_copy_input_to_coupler(coupler);
 
   // initialize rad output variables
@@ -90,25 +85,44 @@ extern "C" void pam_driver() {
     // modules::broadcast_initial_gcm_column( coupler ); // This is redundant... just checking if it will fix unit conversion issue
   }
   //------------------------------------------------------------------------------------------------
-  // auto crm_rho           = dm_device.get<real,4>("density_dry");
-  // auto crm_temp          = dm_device.get<real,4>("temp");
-  // auto crm_qv            = dm_device.get<real,4>("water_vapor");
-  // int i = 0;
-  // int j = 0;
-  // int iens = 0;
-  // for (int k=0; k<crm_nz; k++) {
-  //   // for (int i=0; i<crm_nx; i++) {
-  //     std::cout <<"WHDEBUG "
-  //               <<"  i:"<<i 
-  //               // <<"  j:"<<j 
-  //               <<"  k:"<<k 
-  //               // <<"  icrm:"<<iens
-  //               <<"  crm_temp:"<<crm_temp(k,j,i,iens)
-  //               <<"  crm_qv:"  <<crm_qv  (k,j,i,iens)
-  //               <<"  crm_rho:" <<crm_rho (k,j,i,iens)
-  //               <<std::endl;
-  //   // }
-  // }
+  auto crm_zmid          = dm_device.get<real,2>("vertical_midpoint_height" );
+  auto crm_rho           = dm_device.get<real,4>("density_dry");
+  auto crm_temp          = dm_device.get<real,4>("temp");
+  auto crm_qv            = dm_device.get<real,4>("water_vapor");
+  auto crm_qc            = dm_device.get<real,4>("cloud_water");
+  auto crm_qi            = dm_device.get<real,4>("ice");
+  auto crm_pmid = coupler.compute_pressure_array();
+  int i = 0;
+  int j = 0;
+  int iens = 0;
+  auto input_tl   = dm_host.get<real const,2>("input_tl").createDeviceCopy();
+  auto input_qccl = dm_host.get<real const,2>("input_qccl").createDeviceCopy();
+  auto input_qiil = dm_host.get<real const,2>("input_qiil").createDeviceCopy();
+  auto input_ql   = dm_host.get<real const,2>("input_ql").createDeviceCopy();
+  auto input_pmid = dm_host.get<real const,2>("input_pmid").createDeviceCopy();
+  for (int k=0; k<crm_nz; k++) {
+    int k_gcm = crm_nz-1-k;
+    // for (int i=0; i<crm_nx; i++) {
+      std::cout <<"WHDEBUG0 "
+                <<"  i:"<<i 
+                // <<"  j:"<<j 
+                <<"  k:"<<k 
+                // <<"  icrm:"<<iens
+                <<"  crm_zmid:"  <<crm_zmid  (k,iens)
+                <<"  crm_temp:"  <<crm_temp  (k,j,i,iens)
+                <<"  input_tl:"  <<input_tl  (k_gcm,iens)
+                <<"  crm_qv:"    <<crm_qv    (k,j,i,iens)
+                <<"  input_ql:"  <<input_ql  (k_gcm,iens)
+                <<"  crm_qc:"    <<crm_qc    (k,j,i,iens)
+                <<"  input_qccl:"<<input_qccl(k_gcm,iens)
+                <<"  crm_qi:"    <<crm_qi    (k,j,i,iens)
+                <<"  input_qiil:"<<input_qiil(k_gcm,iens)
+                <<"  crm_rho:"   <<crm_rho   (k,j,i,iens)
+                <<"  crm_pmid:"  <<crm_pmid  (k,j,i,iens)
+                <<"  input_pmid:"<<input_pmid(k_gcm,iens)
+                <<std::endl;
+    // }
+  }
   // endrun("stopping for debug");
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
