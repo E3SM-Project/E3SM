@@ -21,7 +21,7 @@ OBJS =  icepack_aerosol.o \
 	icepack_orbital.o \
 	icepack_parameters.o \
 	icepack_shortwave.o \
-        icepack_shortwave_data.o \
+	icepack_shortwave_data.o \
 	icepack_snow.o \
 	icepack_therm_0layer.o \
 	icepack_therm_bl99.o \
