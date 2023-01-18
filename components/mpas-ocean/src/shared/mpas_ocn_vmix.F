@@ -1443,6 +1443,12 @@ contains
       implicitBottomDragCoef = 0.0_RKIND
       implicitTopDragCoef = 0.0_RKIND
 
+      if (config_use_implicit_top_drag .and. &
+          .not. config_use_implicit_bottom_drag) then
+         call mpas_log_write('Implicit top drag can only be used with ' //&
+              & 'implicit bottom drag', MPAS_LOG_CRIT)
+      endif
+
       if (config_use_implicit_bottom_drag) then
           implicitBottomDragCoef = config_implicit_bottom_drag_coeff
       endif
