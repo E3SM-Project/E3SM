@@ -1182,7 +1182,9 @@
       real (kind=dbl_kind) :: &
          qbotm       , &
          qbotp       , &
-         qbot0
+         qbot0       , &
+         mass        , & ! total snow ice + liq (kg/m2)
+         massi           ! ice mass change factor
 
       !-----------------------------------------------------------------
       ! Initialize
@@ -1221,7 +1223,7 @@
       ! For l_brine = true, this should not be necessary.
       !-----------------------------------------------------------------
 
-      if (.not. l_brine) then 
+      if (.not. l_brine) then
 
          do k = 1, nslyr
             Ts = (Lfresh + zqsn(k)/rhos) / cp_ice
@@ -1232,6 +1234,7 @@
                smicetot(k) = max(c0,smicetot(k) - smice_precs) ! dhs << dzs
                smliqtot(k) = max(c0,smliqtot(k) + smice_precs)
                dzs (k) = dzs(k) - dhs
+               melts = melts + dhs
                zqsn(k) = -rhos*Lfresh
             endif
          enddo
@@ -1274,7 +1277,12 @@
 
       if (hsn > puny) then    ! add snow with enthalpy zqsn(1)
          dhs = econ / (zqsn(1) - rhos*Lvap) ! econ < 0, dhs > 0
-         smicetot(1) = dhs*rhos + smicetot(1)   ! new snow ice
+
+         mass = smicetot(1) + smliqtot(1)
+         massi = c0
+         if (dzs(1) > puny) massi = c1 + dhs/dzs(1)
+         smicetot(1) = smicetot(1) * massi
+         smliqtot(1) = max(c0, mass + rhos*dhs - smicetot(1))
          dzs(1) = dzs(1) + dhs
          evapn = evapn + dhs*rhos
       else                        ! add ice with enthalpy zqin(1)
@@ -1282,7 +1290,7 @@
          dzi(1) = dzi(1) + dhi
          evapn = evapn + dhi*rhoi
          ! enthalpy of melt water
-         emlt_atm = emlt_atm - qmlt(1) * dhi 
+         emlt_atm = emlt_atm - qmlt(1) * dhi
       endif
 
       !--------------------------------------------------------------
@@ -1349,15 +1357,13 @@
       do k = 1, nslyr
 
          !--------------------------------------------------------------
-         ! Remove internal snow melt 
+         ! Remove internal snow melt
          !--------------------------------------------------------------
-         
+
          if (ktherm == 2 .and. zqsn(k) > -rhos * Lfresh) then
 
             dhs = max(-dzs(k), &
-                -((zqsn(k) + rhos*Lfresh) / (rhos*Lfresh)) * dzs(k)) ! dhs < 0 
-            smice_precs = c0
-            if (abs(dzs(k)) > puny) smice_precs = smicetot(k)/dzs(k) * dhs
+                -((zqsn(k) + rhos*Lfresh) / (rhos*Lfresh)) * dzs(k)) ! dhs < 0
             smicetot(k) = max(c0,smicetot(k) + smice_precs) ! -dhs <= dzs
             smliqtot(k) = max(c0,smliqtot(k) - smice_precs)
             dzs (k) = dzs(k) + dhs
@@ -1373,9 +1379,12 @@
 
          qsub = zqsn(k) - rhos*Lvap ! qsub < 0
          dhs  = max (-dzs(k), esub/qsub)  ! esub > 0, dhs < 0
-         smice_precs = c0
-         if (abs(dzs(k)) > puny) smice_precs = dhs * smicetot(k)/dzs(k)
-         smicetot(k) = max(c0,smicetot(k) + smice_precs)
+         mass = smicetot(k) + smliqtot(k)
+         massi = c0
+         if (dzs(k) > puny) massi = c1 + dhs/dzs(k)
+         smicetot(k) = smicetot(k) * massi
+         smliqtot(k) = max(c0, mass + rhos*dhs - smicetot(k)) ! conserve new total mass
+
          dzs(k) = dzs(k) + dhs
          esub = esub - dhs*qsub
          esub = max(esub, c0)   ! in case of roundoff error
@@ -1386,10 +1395,11 @@
          !--------------------------------------------------------------
 
          dhs = max(-dzs(k), etop_mlt/zqsn(k))
-         smice_precs = c0
-         if (abs(dzs(k)) > puny) smice_precs = smicetot(k)/dzs(k) * dhs
-         smicetot(k) = max(c0,smicetot(k) + smice_precs)
-         smliqtot(k) = max(c0,smliqtot(k) - smice_precs)
+         mass = smicetot(k) + smliqtot(k)
+         massi = c0
+         if (dzs(k) > puny) massi = max(c0, c1 + dhs/dzs(k))
+         smicetot(k) = smicetot(k) * massi
+         smliqtot(k) = mass - smicetot(k) ! conserve mass
          dzs(k) = dzs(k) + dhs         ! zqsn < 0, dhs < 0
          etop_mlt = etop_mlt - dhs*zqsn(k)
          etop_mlt = max(etop_mlt, c0) ! in case of roundoff error
@@ -1701,6 +1711,11 @@
                                     zs1(:),   zs2(:),   &
                                     hslyr,    hsn,      &
                                     smliq(:))
+
+              do k = 1, nslyr
+                 smicetot(k) = smice(k) * hslyr
+                 smliqtot(k) = smliq(k) * hslyr
+              end do
         endif
 
       endif   ! nslyr > 1
@@ -1717,7 +1732,7 @@
                zqsn(k) = -rhos*Lfresh
                if (tr_snow) then
                  meltsliq = meltsliq + smicetot(k)  ! add to meltponds
-                 smice(k) = c0
+                 smice(k) = rhos
                  smliq(k) = c0
                endif
                hslyr = c0

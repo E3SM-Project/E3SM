@@ -3696,15 +3696,15 @@
         ! the sign is negative so that if R_snw is 1, then the
         ! snow grain radius is reduced and thus albedo increased.
         rsnw_nm = rsnw_nonmelt - R_snw*rsnw_sig
-        rsnw_nm = max(rsnw_nm, rsnw_fresh)
-        rsnw_nm = min(rsnw_nm, rsnw_mlt) 
-      
+        rsnw_nm = max(rsnw_nm, rsnw_fall)
+        rsnw_nm = min(rsnw_nm, rsnw_mlt)
+
         do ks = 1, nslyr
            ! snow density ccsm3 constant value
            rhosnw(ks) = rhos
            ! snow grain radius between rsnw_nonmelt and rsnw_mlt
            rsnw(ks) = rsnw_nm + (rsnw_mlt-rsnw_nm)*fT
-           rsnw(ks) = max(rsnw(ks), rsnw_fresh)
+           rsnw(ks) = max(rsnw(ks), rsnw_fall)
            rsnw(ks) = min(rsnw(ks), rsnw_mlt)
         enddo        ! ks
 
