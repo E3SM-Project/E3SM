@@ -12,12 +12,14 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
   int ny   = dm_device.get_dimension_size("y"   );
   int nx   = dm_device.get_dimension_size("x"   );
   int nens = dm_device.get_dimension_size("nens");
+  int gcm_nlev = coupler.get_option<int>("gcm_nlev");
   real R_d = coupler.get_option<real>("R_d");
+  real R_v = coupler.get_option<real>("R_v");
   real cp_d = coupler.get_option<real>("cp_d");
-  //------------------------------------------------------------------------------------------------
-  // get the coupler GCM state arrays used to force the CRM
   real Lv = coupler.get_option<real>("latvap") ;
   real Lf = coupler.get_option<real>("latice") ;
+  //------------------------------------------------------------------------------------------------
+  // get the coupler GCM state arrays used to force the CRM
   auto gcm_rho_d = dm_device.get<real,2>("gcm_density_dry");
   auto gcm_uvel  = dm_device.get<real,2>("gcm_uvel"       );
   auto gcm_vvel  = dm_device.get<real,2>("gcm_vvel"       );
@@ -35,14 +37,15 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
   //------------------------------------------------------------------------------------------------
   // Define GCM state for forcing - adjusted to avoid directly forcing cloud liquid and ice fields
   parallel_for( Bounds<2>(nz,nens) , YAKL_LAMBDA (int k, int iens) {
-    gcm_rho_d(k,iens) = ( input_pmid(k,iens) / ( R_d * input_tl(k,iens) ) ) * (1.-input_ql(k,iens)) ;
-    gcm_uvel (k,iens) = input_ul(k,iens);
-    gcm_vvel (k,iens) = input_vl(k,iens);
+    int k_gcm = gcm_nlev-1-k;
+    gcm_rho_d(k,iens) = input_pmid(k_gcm,iens) * ( 1 - input_ql(k_gcm,iens) ) / ( input_tl(k_gcm,iens)*R_d );
+    gcm_uvel (k,iens) = input_ul(k_gcm,iens);
+    gcm_vvel (k,iens) = input_vl(k_gcm,iens);
     // convert total water mixing ratio to water vapor density
-    real input_qt = input_ql(k,iens) + input_qccl(k,iens) + input_qiil(k,iens);
+    real input_qt = input_ql(k_gcm,iens) + input_qccl(k_gcm,iens) + input_qiil(k_gcm,iens);
     gcm_rho_v(k,iens) = input_qt * gcm_rho_d(k,iens) / ( 1 - input_qt );
     // adjust temperature to account for liq/ice to vapor conversion
-    real input_t_adj = input_tl(k,iens) - ( input_qccl(k,iens)*Lv + input_qiil(k,iens)*Lf ) / cp_d ;
+    real input_t_adj = input_tl(k_gcm,iens) - ( input_qccl(k_gcm,iens)*Lv + input_qiil(k_gcm,iens)*Lf ) / cp_d ;
     gcm_temp(k,iens) = input_t_adj;
   });
   //------------------------------------------------------------------------------------------------
@@ -55,10 +58,24 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   using yakl::c::SimpleBounds;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
-  int nz   = dm_device.get_dimension_size("z"   );
-  int ny   = dm_device.get_dimension_size("y"   );
-  int nx   = dm_device.get_dimension_size("x"   );
-  int nens = dm_device.get_dimension_size("nens");
+  int nens        = dm_device.get_dimension_size("nens");
+  int gcm_nlev    = coupler.get_option<int>("gcm_nlev");
+  int nz          = dm_device.get_dimension_size("z"   );
+  int ny          = dm_device.get_dimension_size("y"   );
+  int nx          = dm_device.get_dimension_size("x"   );
+  auto crm_dx     = coupler.get_option<double>("crm_dx");
+  auto crm_dy     = coupler.get_option<double>("crm_dy");
+  //------------------------------------------------------------------------------------------------
+  // Set the vertical grid in the coupler (need to flip the vertical dimension of input data)
+  auto input_zint = dm_host.get<real const,2>("input_zint").createDeviceCopy();
+  auto input_phis = dm_host.get<real const,1>("input_phis").createDeviceCopy();
+  real2d zint_tmp("zint_tmp",nz+1,nens);
+  auto grav = coupler.get_option<double>("grav");
+  parallel_for( Bounds<2>(nz+1,nens) , YAKL_LAMBDA (int k, int iens) {
+    int k_gcm = gcm_nlev+1-1-k;
+    zint_tmp(k,iens) = input_zint(k_gcm,iens) + input_phis(iens)/grav;
+  });
+  coupler.set_grid( crm_dx , crm_dy , zint_tmp );
   //------------------------------------------------------------------------------------------------
   // get the coupler state variables
   auto crm_rho_d         = dm_device.get<real,4>("density_dry");
@@ -203,7 +220,7 @@ inline void pam_state_copy_output_to_gcm( pam::PamCoupler &coupler ) {
   real4d qr("qr",nz,ny,nx,nens);
   real4d qi("qi",nz,ny,nx,nens);
   parallel_for("Horz mean of CRM state", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
-    // convert specific mixing ratios to density
+    // convert density to specific mixing ratio
     qv(k,j,i,iens) = crm_rho_v(k,j,i,iens) / (crm_rho_d(k,j,i,iens)+crm_rho_v(k,j,i,iens));
     qc(k,j,i,iens) = crm_rho_c(k,j,i,iens) / (crm_rho_d(k,j,i,iens)+crm_rho_c(k,j,i,iens));
     qr(k,j,i,iens) = crm_rho_r(k,j,i,iens) / (crm_rho_d(k,j,i,iens)+crm_rho_r(k,j,i,iens));

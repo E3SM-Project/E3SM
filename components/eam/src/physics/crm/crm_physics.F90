@@ -881,6 +881,15 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             end do
          end do
 
+         !do i = 1,ncol
+         !   do k = 1,crm_nz
+         !      m = pver-k+1
+         !      write(iulog,222) i, k, state(c)%q(i,m,ixcldice)
+         !      call shr_sys_flush(iulog)
+         !   end do
+         !end do
+222 format('WHDEBUG00 - i:',i3,' k=',i2,'  crm_qi: ',E12.6)
+
          !------------------------------------------------------------------------------------------
          ! Initialize radiation variables
          !------------------------------------------------------------------------------------------
@@ -1229,6 +1238,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_mirror_array_readonly( 'input_pmid',    crm_input%pmid    )
       call pam_mirror_array_readonly( 'input_pint',    crm_input%pint    )
       call pam_mirror_array_readonly( 'input_pdel',    crm_input%pdel    )
+      call pam_mirror_array_readonly( 'input_phis',    crm_input%phis    )
 
       call pam_mirror_array_readonly( 'input_ul',      crm_input%ul      )
       call pam_mirror_array_readonly( 'input_vl',      crm_input%vl      )
