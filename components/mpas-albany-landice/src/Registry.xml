@@ -453,6 +453,10 @@
 			    descrption="Apply a uniform linear submarine melt rate at all grounded marine margins. config_mass_bal_grounded must be set to 'uniform'."
 			    possible_values="any non-negative value"
 		/>
+                <nml_option name="config_ocean_data_extrapolation" type="logical" default_value=".false." units="unitless"
+                            description="If true, extrapolate ocean data (temperature, salinity, thermal forcing) from external source into underneath the ice draft."
+                            possible_values=".true. or .false."
+                />
         </nml_record>
 
 	<nml_record name="physical_parameters" in_defaults="true">
