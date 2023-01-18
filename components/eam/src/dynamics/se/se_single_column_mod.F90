@@ -226,7 +226,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
      t_update,q_update,u_update,v_update)                        ! Out
 
   ! Nudge to observations if desired
-  if (scm_relaxation) then
+  if (scm_nudge) then
     call advance_iop_nudging(dt,elem(ie)%state%ps_v(i,j,t1),& ! In
        t_update,q_update(:,1),&                               ! In
        t_update,q_update(:,1),relaxt,relaxq)                  ! Out
