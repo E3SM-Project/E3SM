@@ -397,12 +397,14 @@ contains
 
       deallocate(moab_vert_coords)
       deallocate(vgids)
+#ifdef MOABDEBUG
       !     write out the mesh file to disk, in parallel
       outfile = 'WHOLE_cx_'//comp%ntype//'.h5m'//CHAR(0)
       wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
       ierr = iMOAB_WriteMesh(imoabAPI, outfile, wopts)
       if (ierr > 0 )  &
         call shr_sys_abort(subname//'Error: fail to write the land mesh file')
+#endif
     endif
 
   end subroutine expose_mct_grid_moab
