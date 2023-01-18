@@ -27,6 +27,7 @@
   dcmip2_x_xi       = 4000.0                    ! mountain wavelength   (m)
   limiter_option    = 9
   vert_remap_q_alg  = 1
+  hv_ref_profiles   = 1
 /
 &vert_nl
   vanalytic         = 1                         ! set vcoords in initialization routine
