@@ -67,7 +67,7 @@
    <batch_system MACH="crusher" type="slurm">
      <batch_submit>/gpfs/alpine/cli133/world-shared/e3sm/tools/sbatch/throttle</batch_submit>
      <directives>
-       <directive> --core-spec=0</directive>
+       <directive> --core-spec=$SHELL{ppn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [[ $ppn > 56 ]]; then echo "64-$ppn"|bc; else echo 8; fi; }</directive>
      </directives>
      <queues>
        <queue strict="true" nodemin="1" nodemax="8" walltimemax="01:00:00" default="true">batch</queue>
