@@ -1089,6 +1089,14 @@
 					description="Dimensionless bottom drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
+		<nml_option name="config_use_implicit_top_drag" type="logical" default_value=".false."
+					description="If true, implicit top drag is used on the momentum equation."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_implicit_top_drag_coeff" type="real" default_value="1.0e-3"
+					description="Dimensionless top drag coefficient, $c_{drag}$."
+					possible_values="any positive real, typically 1.0e-3"
+		/>
 		<nml_option name="config_use_implicit_bottom_roughness" type="logical" default_value=".false."
 					description="If true, depends on bottom roughness z0"
 					possible_values=".true. or .false."
