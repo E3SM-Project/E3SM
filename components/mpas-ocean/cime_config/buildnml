@@ -49,6 +49,7 @@ def buildnml(case, caseroot, compname):
     run_refcase       = case.get_value("RUN_REFCASE")
     run_refdate       = case.get_value("RUN_REFDATE")
     run_reftod        = case.get_value("RUN_REFTOD")
+    is_test           = case.get_value("TEST")
     stream_name       = 'streams.ocean'
 
     mpasoconf_dir = os.path.join(casebuild, "mpasoconf")
@@ -461,7 +462,8 @@ def buildnml(case, caseroot, compname):
             lines.append('        filename_interval="00-01-00_00:00:00"')
             lines.append('        clobber_mode="truncate"')
             lines.append('        reference_time="01-01-01_00:00:00"')
-            lines.append('        output_interval="none">')
+            # We want history files for tests
+            lines.append('        output_interval="{}">'.format("00-00-01_00:00:00" if is_test else "none"))
             lines.append('')
             lines.append('    <var_array name="activeTracerHorizontalAdvectionTendency"/>')
             lines.append('    <var_array name="activeTracerVerticalAdvectionTendency"/>')

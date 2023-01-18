@@ -46,6 +46,7 @@ def buildnml(case, caseroot, compname):
     run_reftod       = case.get_value("RUN_REFTOD")
     ncpl_base_period = case.get_value("NCPL_BASE_PERIOD")
     atm_ncpl         = case.get_value("ATM_NCPL")
+    is_test          = case.get_value("TEST")
     stream_name      = 'streams.seaice'
 
     mpassiconf_dir = os.path.join(casebuild, "mpassiconf")
@@ -438,7 +439,8 @@ def buildnml(case, caseroot, compname):
             lines.append('        filename_interval="00-01-00_00:00:00"')
             lines.append('        clobber_mode="truncate"')
             lines.append('        reference_time="01-01-01_00:00:00"')
-            lines.append('        output_interval="none">')
+            # We want history files for tests
+            lines.append('        output_interval="{}">'.format("00-00-01_00:00:00" if is_test else "none"))
             lines.append('')
             lines.append('    <stream name="mesh"/>')
             lines.append('    <var name="xtime"/>')

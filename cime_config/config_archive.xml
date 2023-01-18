@@ -77,7 +77,7 @@
   <comp_archive_spec compname="mpassi" compclass="ice">
     <rest_file_extension>rst</rest_file_extension>
     <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
-    <hist_file_extension>hist.*[.]nc</hist_file_extension>
+    <hist_file_extension>hist[.]\d.*[.]nc$</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.ice$NINST_STRING</rpointer_file>
@@ -95,7 +95,7 @@
   <comp_archive_spec compname="mpaso" compclass="ocn">
     <rest_file_extension>rst</rest_file_extension>
     <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
-    <hist_file_extension>hist.*[.]nc</hist_file_extension>
+    <hist_file_extension>hist[.]\d.*[.]nc$</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.ocn$NINST_STRING</rpointer_file>
@@ -113,7 +113,7 @@
   <comp_archive_spec compname="mali" compclass="glc">
     <rest_file_extension>rst</rest_file_extension>
     <rest_file_extension>rst.am.timeSeriesStatsMonthly</rest_file_extension>
-    <hist_file_extension>hist.*[.]nc</hist_file_extension>
+    <hist_file_extension>hist[.]\d.*[.]nc$</hist_file_extension>
     <rest_history_varname>unset</rest_history_varname>
     <rpointer>
       <rpointer_file>rpointer.glc$NINST_STRING</rpointer_file>
