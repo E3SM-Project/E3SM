@@ -21,10 +21,12 @@ add_subdirectory(external/physics)
 add_subdirectory(external/dynamics)
 add_subdirectory(external/externals/eigen)
 
+set(YAKL_CXX_FLAGS -g )
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-   set(PAM_Fortran_FLAGS -real-size 64)
+   set(PAM_Fortran_FLAGS -g -real-size 64)
 else()
-   set(PAM_Fortran_FLAGS -fdefault-real-8 -fdefault-double-8 -ffree-line-length-none -ffixed-line-length-none )
+   set(PAM_Fortran_FLAGS -g -fdefault-real-8 -fdefault-double-8 -ffree-line-length-none -ffixed-line-length-none )
 endif()
 
 target_include_directories(pam_driver PUBLIC 
@@ -43,8 +45,9 @@ target_include_directories(pam_driver PUBLIC
       ${CMAKE_CURRENT_BINARY_DIR}/external/physics/radiation/forced
       ${CMAKE_CURRENT_SOURCE_DIR}/external/dynamics/awfl
       ${CMAKE_CURRENT_BINARY_DIR}/external/dynamics/awfl
-      ${YAMLCPP_SOURCE_DIR}/include
-      ${YAMLCPP_BINARY_DIR}/include)
+      #${YAMLCPP_SOURCE_DIR}/include
+      #${YAMLCPP_BINARY_DIR}/include
+      )
 
 include(${YAKL_HOME}/yakl_utils.cmake)
 yakl_process_target(pam_driver)
