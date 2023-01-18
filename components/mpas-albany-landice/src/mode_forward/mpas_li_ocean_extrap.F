@@ -95,6 +95,21 @@ contains
       if ( config_ocean_data_extrapolation ) then
          ! call the extrapolation scheme
          call mpas_log_write('ocean data will be extrapolated into the MALI ice draft')
+         
+         ! process temperature field
+             ! get geometry pool of data e.g., 'ismip6shelfMelt_3dThermalForcing'
+             ! get a valid mask (preprocessed valid ocean data mask)
+             ! get an updated seedMask
+             ! call horizontal extrapolation
+             ! call vertical extrapolation 
+                 ! switch between horizontal and vertical extrap ??
+         ! process salinity field
+             ! get a valid mask (proprocessed valid ocean data mask)
+             ! get an updated seedMask 
+             ! call horizontal extrapolation
+             ! call vertical extrapolation 
+             
+         ! calculate thermal forcing
       else
          ! do nothing
          call mpas_log_write('ocean data will NOT be extrapolated into the MALI ice draft')
@@ -102,7 +117,6 @@ contains
    !--------------------------------------------------------------------
 
    end subroutine li_ocean_extrap_solve
-
 
 end module li_ocean_extrap
 
