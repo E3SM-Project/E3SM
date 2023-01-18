@@ -101,12 +101,12 @@ inline void pam_feedback_compute_crm_feedback_tendencies( pam::PamCoupler &coupl
   });
   //------------------------------------------------------------------------------------------------
   // Copy the CRM feedback tendencies to host arrays
-  auto output_sltend_host  = dm_host.get<real,1>("output_sltend");
-  auto output_qltend_host  = dm_host.get<real,1>("output_qltend");
-  auto output_qcltend_host = dm_host.get<real,1>("output_qcltend");
-  auto output_qiltend_host = dm_host.get<real,1>("output_qiltend");
-  auto output_ultend_host  = dm_host.get<real,1>("output_ultend");
-  auto output_vltend_host  = dm_host.get<real,1>("output_vltend");
+  auto output_sltend_host  = dm_host.get<real,2>("output_sltend");
+  auto output_qltend_host  = dm_host.get<real,2>("output_qltend");
+  auto output_qcltend_host = dm_host.get<real,2>("output_qcltend");
+  auto output_qiltend_host = dm_host.get<real,2>("output_qiltend");
+  auto output_ultend_host  = dm_host.get<real,2>("output_ultend");
+  auto output_vltend_host  = dm_host.get<real,2>("output_vltend");
   crm_feedback_tend_uvel.deep_copy_to(output_ultend_host);
   crm_feedback_tend_vvel.deep_copy_to(output_vltend_host);
   crm_feedback_tend_dse .deep_copy_to(output_sltend_host);
