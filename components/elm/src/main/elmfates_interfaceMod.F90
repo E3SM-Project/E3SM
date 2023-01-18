@@ -157,7 +157,6 @@ module ELMFatesInterfaceMod
 
    use dynHarvestMod          , only : num_harvest_vars, harvest_varnames, wood_harvest_units
    use dynHarvestMod          , only : harvest_rates ! these are dynamic in space and time
-   use dynHarvestMod          , only : num_harvest_vars, harvest_varnames, wood_harvest_units
 
    use FatesConstantsMod      , only : hlm_harvest_area_fraction
    use FatesConstantsMod      , only : hlm_harvest_carbon
