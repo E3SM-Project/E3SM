@@ -859,7 +859,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_w(i,:,:,k) = 0.
                crm_t(i,:,:,k) = state(c)%t(i,m)
 
-                              ! Initialize microphysics arrays
+               ! Initialize microphysics arrays
                if (MMF_microphysics_scheme .eq. 'sam1mom') then
                   crm_qv(i,:,:,k) = state(c)%q(i,m,1)!+state(c)%q(i,m,ixcldliq)+state(c)%q(i,m,ixcldice)
                   crm_qp(i,:,:,k) = 0.0_r8
@@ -1230,6 +1230,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
 #elif defined(MMF_PAM)
 
+      write(iulog,*) 'WHDEBUG - start data mirroring '
+
       call pam_mirror_array_readonly( 'input_bflxls',  crm_input%bflxls  )
       call pam_mirror_array_readonly( 'input_wndls',   crm_input%wndls   )
 
@@ -1362,6 +1364,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
       call pam_mirror_array_readonly( 'gcolp', gcolp )
 
+      write(iulog,*) 'WHDEBUG - end data mirroring - set options '
+
       call pam_set_option('ncrms', ncrms )
       call pam_set_option('gcm_nlev', pver )
       call pam_set_option('crm_nz',crm_nz )
@@ -1381,6 +1385,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_set_option('crm_accel_factor', crm_accel_factor )
 
       call pam_set_option('is_first_step', (nstep<=1) )
+
+      write(iulog,*) 'WHDEBUG - call pam_driver '
 
       call t_startf ('crm_call')
       call pam_driver()
