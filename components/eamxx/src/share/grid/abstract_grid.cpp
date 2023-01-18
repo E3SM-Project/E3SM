@@ -1,5 +1,7 @@
 #include "share/grid/abstract_grid.hpp"
 
+#include "share/field/field_utils.hpp"
+
 #include <algorithm>
 #include <cstring>
 #include <string>
@@ -35,15 +37,21 @@ void AbstractGrid::add_alias (const std::string& alias)
   }
 }
 
-bool AbstractGrid::is_unique () const {
-  EKAT_REQUIRE_MSG (m_dofs_set,
-      "Error! We cannot establish if this grid is unique before the dofs GIDs are set.\n");
+FieldLayout AbstractGrid::
+get_vertical_layout (const bool midpoints) const
+{
+  using namespace ShortFieldTagsNames;
+  return midpoints ? FieldLayout ({ LEV},{m_num_vert_levs})
+                   : FieldLayout ({ILEV},{m_num_vert_levs+1});
 
-  // Get a copy of gids on host. CAREFUL: do not use create_mirror_view,
-  // since it would create a shallow copy on CPU devices, but we need a
-  // deep copy, to prevent altering order of gids.
-  decltype(m_dofs_gids)::HostMirror dofs_h("",m_dofs_gids.size());
-  Kokkos::deep_copy(dofs_h,m_dofs_gids);
+}
+
+bool AbstractGrid::is_unique () const {
+  // Get a copy of gids on host. CAREFUL: do not use the stored dofs,
+  // since we need to sort dofs in order to call unique, and we don't
+  // want to alter the order of gids in this grid.
+  auto dofs = m_dofs_gids.clone();
+  auto dofs_h = dofs.get_view<gid_type*,Host>();
 
   std::sort(dofs_h.data(),dofs_h.data()+m_num_local_dofs);
   auto unique_end = std::unique(dofs_h.data(),dofs_h.data()+m_num_local_dofs);
@@ -58,7 +66,7 @@ bool AbstractGrid::is_unique () const {
   // Each rank has unique gids locally. Now it's time to verify if they are also globally unique.
   int max_dofs;
   m_comm.all_reduce(&m_num_local_dofs,&max_dofs,1,MPI_MAX);
-  std::vector<int> gids(max_dofs);
+  std::vector<gid_type> gids(max_dofs,-1);
   int unique_gids = 1;
 
   for (int pid=0; pid<m_comm.size(); ++pid) {
@@ -98,148 +106,88 @@ bool AbstractGrid::is_unique () const {
   return unique_gids;
 }
 
-void AbstractGrid::
-set_dofs (const dofs_list_type& dofs)
+auto AbstractGrid::
+get_global_min_dof_gid () const ->gid_type
 {
-  // Sanity checks
-  EKAT_REQUIRE_MSG (not m_dofs_set, "Error! Dofs cannot be re-set, once set.\n");
-
-  EKAT_REQUIRE_MSG (dofs.extent_int(0)==m_num_local_dofs,
-      "Error! Wrong size for the input dofs list. It should match the number of local dofs stored in the mesh.\n"
-      "       Expected gids list size: " + std::to_string(m_num_local_dofs) + "\n"
-      "       Input gids list size   : " + std::to_string(dofs.size()) + "\n");
-
-  m_dofs_gids  = dofs;
-  m_dofs_set = true;
-
-#ifndef NDEBUG
-  EKAT_REQUIRE_MSG(this->valid_dofs_list(dofs), "Error! Invalid list of dofs gids.\n");
-#endif
-
-  m_dofs_gids_host = Kokkos::create_mirror_view(m_dofs_gids);
-  Kokkos::deep_copy(m_dofs_gids_host,m_dofs_gids);
-
-  set_global_min_dof_gid();
-  set_global_max_dof_gid();
+  // Lazy calculation
+  if (m_global_min_dof_gid==std::numeric_limits<gid_type>::max()) {
+    m_global_min_dof_gid = field_min<gid_type>(m_dofs_gids,&get_comm());
+  }
+  return m_global_min_dof_gid;
 }
 
-const AbstractGrid::dofs_list_type&
-AbstractGrid::get_dofs_gids () const {
-  // Sanity check
-  EKAT_REQUIRE_MSG (m_dofs_set, "Error! You must call 'set_dofs' first.\n");
+auto AbstractGrid::
+get_global_max_dof_gid () const ->gid_type
+{
+  // Lazy calculation
+  if (m_global_max_dof_gid==-std::numeric_limits<gid_type>::max()) {
+    m_global_max_dof_gid = field_max<gid_type>(m_dofs_gids,&get_comm());
+  }
+  return m_global_max_dof_gid;
+}
 
+Field
+AbstractGrid::get_dofs_gids () const {
+  return m_dofs_gids.get_const();
+}
+
+Field
+AbstractGrid::get_dofs_gids () {
   return m_dofs_gids;
 }
 
-const AbstractGrid::dofs_list_h_type&
-AbstractGrid::get_dofs_gids_host () const {
-  // Sanity check
-  EKAT_REQUIRE_MSG (m_dofs_set, "Error! You must call 'set_dofs' first.\n");
-
-  return m_dofs_gids_host;
-}
-
-
-void AbstractGrid::
-set_lid_to_idx_map (const lid_to_idx_map_type& lid_to_idx)
-{
-  // Sanity checks
-  EKAT_REQUIRE_MSG (not m_lid_to_idx_set, "Error! The lid->idx map cannot be re-set, once set.\n");
-
-  EKAT_REQUIRE_MSG (lid_to_idx.extent_int(0)==m_num_local_dofs &&
-                    lid_to_idx.extent_int(1)==get_2d_scalar_layout().rank(),
-      "Error! Wrong size(s) for the input lid_to_idx map. They should match (num_local_dofs, 2d layout rank).\n"
-      "       Expected sizes: (" + std::to_string(m_num_local_dofs) + "," + std::to_string(get_2d_scalar_layout().rank()) + ")\n"
-      "       Input map sizes: (" + std::to_string(lid_to_idx.extent(0)) + "," + std::to_string(lid_to_idx.extent(1)) + ")\n");
-
-#ifndef NDEBUG
-  EKAT_REQUIRE_MSG(this->valid_lid_to_idx_map(lid_to_idx), "Error! Invalid lid->idx map.\n");
-#endif
-
-  m_lid_to_idx = lid_to_idx;
-  m_lid_to_idx_set = true;
-}
-
-const AbstractGrid::lid_to_idx_map_type&
+Field
 AbstractGrid::get_lid_to_idx_map () const {
-  // Sanity check
-  EKAT_REQUIRE_MSG (m_dofs_gids.size()>0, "Error! You must call 'set_dofs' first.\n");
+  return m_lid_to_idx.get_const();
+}
 
+Field
+AbstractGrid::get_lid_to_idx_map () {
   return m_lid_to_idx;
 }
 
-void AbstractGrid::
-set_geometry_data (const std::string& name, const geo_view_type& data) {
-  m_geo_views[name] = data;
-  m_geo_views_host[name] = Kokkos::create_mirror_view(data);
-  Kokkos::deep_copy(m_geo_views_host[name],data);
-}
-
-const AbstractGrid::geo_view_type&
+Field
 AbstractGrid::get_geometry_data (const std::string& name) const {
-  EKAT_REQUIRE_MSG (m_geo_views.find(name)!=m_geo_views.end(),
-                    "Error! Grid '" + m_name + "' does not store geometric data '" + name + "'.\n");
-  return m_geo_views.at(name);
+  EKAT_REQUIRE_MSG (has_geometry_data(name),
+      "Error! Geometry data '" + name + "' not found.\n");
+
+  return m_geo_fields.at(name).get_const();
 }
 
-const AbstractGrid::geo_view_h_type&
-AbstractGrid::get_geometry_data_host (const std::string& name) const {
-  EKAT_REQUIRE_MSG (m_geo_views_host.find(name)!=m_geo_views_host.end(),
-                    "Error! Grid '" + m_name + "' does not store geometric data '" + name + "'.\n");
-  return m_geo_views_host.at(name);
+Field
+AbstractGrid::create_geometry_data (const FieldIdentifier& fid)
+{
+  const auto& name = fid.name();
+
+  EKAT_REQUIRE_MSG (not has_geometry_data(name),
+      "Error! Cannot create geometry data, since it already exists.\n"
+      "  - grid name: " + this->name() + "\n"
+      "  - geo data name: " + name + "\n"
+      "  - geo data layout: " + to_string(m_geo_fields.at(name).get_header().get_identifier().get_layout()) + "\n"
+      "  - input layout: " + to_string(fid.get_layout()) + "\n");
+
+  // Create field and the read only copy as well
+  auto& f = m_geo_fields[name] = Field(fid);
+  f.allocate_view();
+  return f;
 }
 
 void
-AbstractGrid::set_global_min_dof_gid ()
+AbstractGrid::set_geometry_data (const Field& f)
 {
-  EKAT_REQUIRE_MSG (m_dofs_set,
-      "Error! You need to set dofs gids before you can compute the global min dof.\n");
-  gid_type local_min = get_num_global_dofs(); // the local min should be <= than the size of the grid.
-  gid_type global_min;
-  if (get_num_local_dofs()>0) {
-    auto dofs = get_dofs_gids();
-    Kokkos::parallel_reduce(Kokkos::RangePolicy<>(0,get_num_local_dofs()),
-        KOKKOS_LAMBDA (const int& i, gid_type& lmin) {
-          if (dofs(i) < lmin) {
-            lmin = dofs(i);
-          }
-        },Kokkos::Min<gid_type>(local_min));
-    Kokkos::fence();
-  }
+  EKAT_REQUIRE_MSG (not has_geometry_data(f.name()),
+      "Error! Cannot set geometry data, since it already exists.\n"
+      "  - grid name: " + this->name() + "\n"
+      "  - geo data name: " + f.name() + "\n");
 
-  m_comm.all_reduce(&local_min,&global_min,1,MPI_MIN);
-
-  m_global_min_dof_gid = global_min;
-}
-
-void
-AbstractGrid::set_global_max_dof_gid ()
-{
-  EKAT_REQUIRE_MSG (m_dofs_set,
-      "Error! You need to set dofs gids before you can compute the global max dof.\n");
-  gid_type local_max = -1;
-  gid_type global_max;
-  if (get_num_local_dofs()>0) {
-    auto dofs = get_dofs_gids();
-    Kokkos::parallel_reduce(Kokkos::RangePolicy<>(0,get_num_local_dofs()),
-        KOKKOS_LAMBDA (const int& i, gid_type& lmax) {
-          if (dofs(i) > lmax) {
-            lmax = dofs(i);
-          }
-        },Kokkos::Max<gid_type>(local_max));
-    Kokkos::fence();
-  }
-
-  m_comm.all_reduce(&local_max,&global_max,1,MPI_MAX);
-
-  m_global_max_dof_gid = global_max;
+  m_geo_fields[f.name()] = f;
 }
 
 std::list<std::string>
 AbstractGrid::get_geometry_data_names () const
 {
   std::list<std::string> names;
-  for (const auto& it : m_geo_views) {
+  for (const auto& it : m_geo_fields) {
     names.push_back(it.first);
   }
   return names;
@@ -252,9 +200,8 @@ void AbstractGrid::reset_num_vertical_lev (const int num_vertical_lev) {
   //       invalidate all geo data whose FieldLayout contains LEV/ILEV
 }
 
-auto
+std::vector<AbstractGrid::gid_type>
 AbstractGrid::get_unique_gids () const
- -> dofs_list_type
 {
   // Gather local sizes across all ranks
   std::vector<int> ngids (m_comm.size());
@@ -271,7 +218,8 @@ AbstractGrid::get_unique_gids () const
   // Gather all dofs
   const auto mpi_gid_t = ekat::get_mpi_type<gid_type>();
   std::vector<gid_type> all_gids (m_num_global_dofs);
-  MPI_Allgatherv (m_dofs_gids_host.data(),m_num_local_dofs,mpi_gid_t,
+  auto dofs_gids_h = m_dofs_gids.get_view<const gid_type*,Host>();
+  MPI_Allgatherv (dofs_gids_h.data(),m_num_local_dofs,mpi_gid_t,
                   all_gids.data(),ngids.data(),offsets.data(),
                   mpi_gid_t,m_comm.mpi_comm());
 
@@ -279,28 +227,20 @@ AbstractGrid::get_unique_gids () const
   std::vector<gid_type> unique_dofs;
   const auto all_gids_beg = all_gids.begin();
   const auto all_gids_end = all_gids.begin() + offsets[m_comm.rank()];
-  const auto my_gids_beg = m_dofs_gids_host.data();
-  const auto my_gids_end = m_dofs_gids_host.data() + m_num_local_dofs;
+  const auto my_gids_beg = dofs_gids_h.data();
+  const auto my_gids_end = dofs_gids_h.data() + m_num_local_dofs;
   for (auto it=my_gids_beg; it!=my_gids_end; ++it) {
     if (std::find(all_gids_beg,all_gids_end,*it)==all_gids_end) {
       unique_dofs.push_back(*it);
     }
   }
 
-  dofs_list_type unique_gids_d("",unique_dofs.size());
-  auto unique_gids_h = Kokkos::create_mirror_view(unique_gids_d);
-  std::memcpy(unique_gids_h.data(),unique_dofs.data(),sizeof(gid_type)*unique_dofs.size());
-  Kokkos::deep_copy(unique_gids_d,unique_gids_h);
-  return unique_gids_d;
+  return unique_dofs;
 }
 
-auto AbstractGrid::
-get_owners (const hview_1d<const gid_type>& gids) const
- -> hview_1d<int>
+std::vector<int> AbstractGrid::
+get_owners (const gid_view_h& gids) const
 {
-  EKAT_REQUIRE_MSG (m_dofs_set,
-      "Error! Cannot retrieve gids owners until dofs gids have been set.\n");
-
   const auto& comm = get_comm();
 
   // Init owners to in
@@ -313,7 +253,11 @@ get_owners (const hview_1d<const gid_type>& gids) const
 
   // Let each rank bcast its owned gids, so that other procs can
   // check against their input list
-  auto my_gids_h = m_dofs_gids_host;
+  // Note: we can't use a view of const, since the view ptr needs to be passed
+  //       to MPI bcast routines, which expect pointer to nonconst. It's an
+  //       innocuous issue though, since only the send rank will use the ptr
+  //       from the view, and it's not writing in it.
+  auto my_gids_h = m_dofs_gids.get_view<gid_type*,Host>();
   gid_type* data;
   std::vector<gid_type> pid_gids;
   for (int pid=0; pid<comm.size(); ++pid) {
@@ -351,7 +295,7 @@ get_owners (const hview_1d<const gid_type>& gids) const
 
 
   // Now create and fill output view
-  hview_1d<int> result("",num_gids_in);
+  std::vector<int> result(num_gids_in);
   for (int i=0; i<num_gids_in; ++i) {
     result[i] = owners.at(gids[i]);
   }
@@ -359,49 +303,42 @@ get_owners (const hview_1d<const gid_type>& gids) const
   return result;
 }
 
-void AbstractGrid::copy_views (const AbstractGrid& src, const bool shallow)
+void AbstractGrid::create_dof_fields (const int scalar2d_layout_rank)
 {
-  if (src.m_dofs_set) {
-    m_dofs_set = false;
-    if (shallow) {
-      set_dofs (src.m_dofs_gids);
-      // set_dof created a new host mirror, so assing that too
-      m_dofs_gids_host = src.m_dofs_gids_host;
-    } else {
-      decltype (src.m_dofs_gids) dofs ("",m_num_local_dofs);
-      Kokkos::deep_copy (dofs,src.get_dofs_gids());
-      set_dofs (dofs);
-    }
+  using namespace ShortFieldTagsNames;
+  const auto units = ekat::units::Units::nondimensional();
+
+  // The dof gids field is a 1d field, while lid2idx has rank 2.
+  // For both, the 1st dim is the num of local dofs. The 2nd dime of
+  // lid2idx is the rank of a 2d scalar layout.
+  FieldLayout dof_layout({COL},{get_num_local_dofs()});
+  FieldLayout lid2idx_layout({COL,CMP},{get_num_local_dofs(),scalar2d_layout_rank});
+  m_dofs_gids = Field(FieldIdentifier("gids",dof_layout,units,m_name,DataType::IntType));
+  m_lid_to_idx = Field(FieldIdentifier("lid2idx",lid2idx_layout,units,m_name,DataType::IntType));
+
+  m_dofs_gids.allocate_view();
+  m_lid_to_idx.allocate_view();
+}
+
+void AbstractGrid::copy_data (const AbstractGrid& src, const bool shallow)
+{
+  if (shallow) {
+    m_dofs_gids = src.m_dofs_gids;
+  } else {
+    m_dofs_gids = src.m_dofs_gids.clone();
   }
 
-  if (src.m_lid_to_idx_set) {
-    m_lid_to_idx_set = false;
-    if (shallow) {
-      set_lid_to_idx_map (src.get_lid_to_idx_map());
-    } else {
-      decltype (src.m_lid_to_idx) lid2idx ("",m_num_local_dofs,get_2d_scalar_layout().rank());
-      Kokkos::deep_copy (lid2idx,src.m_lid_to_idx);
-      set_lid_to_idx_map (lid2idx);
-    }
+  if (shallow) {
+    m_lid_to_idx = src.m_lid_to_idx;
+  } else {
+    m_lid_to_idx = src.m_lid_to_idx.clone();
   }
 
-  for (const auto& it : src.m_geo_views) {
-    const auto& name = it.first;
+  for (const auto& name : src.get_geometry_data_names()) {
     if (shallow) {
-      m_geo_views[name] = it.second;
+      m_geo_fields[name] = src.m_geo_fields.at(name);
     } else {
-      m_geo_views[name] = geo_view_type("",it.second.size());
-      Kokkos::deep_copy (m_geo_views[name],it.second);
-    }
-  }
-
-  for (const auto& it : src.m_geo_views_host) {
-    const auto& name = it.first;
-    if (shallow) {
-      m_geo_views_host[name] = it.second;
-    } else {
-      m_geo_views_host[name] = geo_view_h_type("",it.second.size());
-      Kokkos::deep_copy (m_geo_views_host[name],it.second);
+      m_geo_fields[name] = src.m_geo_fields.at(name).clone();
     }
   }
 }

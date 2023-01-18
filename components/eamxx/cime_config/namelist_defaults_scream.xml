@@ -165,9 +165,6 @@ tweaking their $case/namelist_scream.xml file.
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
       <Grid>Dynamics</Grid>
-      <vertical_coordinate_filename type="file">UNSET</vertical_coordinate_filename>
-      <vertical_coordinate_filename nlev="72">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L72_20220927.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename nlev="128">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L128_20220927.nc</vertical_coordinate_filename>
       <Moisture>moist</Moisture>
     </homme>
 
@@ -278,6 +275,9 @@ tweaking their $case/namelist_scream.xml file.
     <physics_grid_type hgrid=".*pg2">PG2</physics_grid_type>
     <physics_grid_rebalance>None</physics_grid_rebalance>
     <dynamics_namelist_file_name>./data/namelist.nl</dynamics_namelist_file_name>
+    <vertical_coordinate_filename type="file">UNSET</vertical_coordinate_filename>
+    <vertical_coordinate_filename nlev="72">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L72_20220927.nc</vertical_coordinate_filename>
+    <vertical_coordinate_filename nlev="128">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L128_20220927.nc</vertical_coordinate_filename>
   </grids_manager>
 
   <!-- List of nc files for loading inputs on specified grids -->

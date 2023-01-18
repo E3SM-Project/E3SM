@@ -87,7 +87,7 @@ if (NOT SCREAM_LIB_ONLY)
     grid/mesh_free_grids_manager.cpp
     util/scream_test_session.cpp
   )
-  target_link_libraries(scream_test_support PUBLIC scream_share)
+  target_link_libraries(scream_test_support PUBLIC scream_share scream_io)
 
   add_subdirectory(tests)
 endif()

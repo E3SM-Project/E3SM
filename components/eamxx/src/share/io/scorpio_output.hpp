@@ -138,6 +138,11 @@ public:
                    const std::shared_ptr<const fm_type>& field_mgr,
                    const std::shared_ptr<const gm_type>& grids_mgr);
 
+  // Short version for outputing a list of fields (no remapping supported)
+  AtmosphereOutput(const ekat::Comm& comm,
+                   const std::vector<Field>& fields,
+                   const std::shared_ptr<const grid_type>& grid);
+
   // Main Functions
   void restart (const std::string& filename);
   void init();
@@ -147,6 +152,10 @@ public:
   void finalize() {}
 
   long long res_dep_memory_footprint () const;
+
+  std::shared_ptr<const AbstractGrid> get_io_grid () const {
+    return m_io_grid;
+  }
 protected:
   // Internal functions
   void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::string& mode);
@@ -183,7 +192,7 @@ protected:
   std::map<std::string,std::string>                     m_fields_alt_name;
   std::map<std::string,FieldLayout>                     m_layouts;
   std::map<std::string,int>                             m_dofs;
-  std::map<std::string,int>                             m_dims;
+  std::map<std::string,std::pair<int,bool>>             m_dims;
   std::map<std::string,std::shared_ptr<atm_diag_type>>  m_diagnostics;
   std::map<std::string,std::vector<std::string>>        m_diag_depends_on_diags;
   std::map<std::string,bool>                            m_diag_computed;
@@ -191,6 +200,8 @@ protected:
   // Local views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_1d_host>    m_host_views_1d;
   std::map<std::string,view_1d_dev>     m_dev_views_1d;
+
+  bool m_add_time_dim;
 };
 
 } //namespace scream

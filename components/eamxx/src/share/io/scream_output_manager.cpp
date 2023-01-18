@@ -70,6 +70,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_output_file_specs.filename_with_mpiranks    = out_control_pl.get("MPI Ranks in Filename",false);
   m_output_file_specs.filename_with_avg_type    = out_control_pl.get("avg_type_in_filename",true);
   m_output_file_specs.filename_with_frequency   = out_control_pl.get("frequency_in_filename",true);
+  m_output_file_specs.save_grid_data            = out_control_pl.get("save_grid_data",!m_is_model_restart_output);
 
   // For each grid, create a separate output stream.
   if (field_mgrs.size()==1) {
@@ -87,6 +88,32 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
       auto output = std::make_shared<output_type>(m_io_comm,m_params,field_mgrs.at(gname),grids_mgr);
       m_output_streams.push_back(output);
+    }
+  }
+
+  // For normal output, setup the geometry data streams, which we used to write the
+  // geo data in the output file when we create it.
+  if (m_output_file_specs.save_grid_data) {
+    std::set<std::shared_ptr<const AbstractGrid>> grids;
+    for (auto& it : m_output_streams) {
+      grids.insert(it->get_io_grid());
+    }
+
+    // If 2+ grids are present, we mandate suffix on all geo_data fields,
+    // to avoid clashes of names.
+    bool use_suffix = grids.size()>1;
+    for (auto grid : grids) {
+      std::vector<Field> fields;
+      for (const auto& fn : grid->get_geometry_data_names()) {
+        const auto& f = grid->get_geometry_data(fn);
+        if (use_suffix) {
+          fields.push_back(f.clone(f.name()+"_"+grid->m_short_name));
+        } else {
+          fields.push_back(f.clone());
+        }
+      }
+      auto output = std::make_shared<output_type>(m_io_comm,fields,grid);
+      m_geo_data_streams.push_back(output);
     }
   }
 
@@ -189,52 +216,8 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   if (is_write_step) {
     // Check if we need to open a new file
     if (not filespecs.is_open) {
-      // Compute new file name
-      std::string suffix =
-        is_checkpoint_step ? ".rhist"
-                           : (m_is_model_restart_output ? ".r" : "");
-      filename = compute_filename (control,filespecs,suffix,timestamp);
-
-      // Register new netCDF file for output. First, check no other output managers
-      // are trying to write on the same file
-      EKAT_REQUIRE_MSG (not is_file_open_c2f(filename.c_str(),Write),
-          "Error! File '" + filename + "' is currently open for write. Cannot share with other output managers.\n");
-      register_file(filename,Write);
-
-      // Note: time has an unknown length. Setting its "length" to 0 tells the scorpio to
-      // set this dimension as having an 'unlimited' length, thus allowing us to write
-      // as many timesnaps to file as we desire.
-      register_dimension(filename,"time","time",0);
-
-      // Register time as a variable.
-      auto time_units="days since " + m_case_t0.get_date_string() + " " + m_case_t0.get_time_string();
-      register_variable(filename,"time","time",time_units,{"time"}, "double", "double","time");
-#ifdef SCREAM_HAS_LEAP_YEAR
-      set_variable_metadata (filename,"time","calendar","gregorian");
-#else
-      set_variable_metadata (filename,"time","calendar","noleap");
-#endif
-
-      std::string fp_precision = is_checkpoint_step
-                               ? "real"
-                               : m_params.get<std::string>("Floating Point Precision");
-
-      // Make all output streams register their dims/vars
-      for (auto& it : m_output_streams) {
-        it->setup_output_file(filename,fp_precision);
-      }
-
-      // Set degree of freedom for "time"
-      std::int64_t time_dof[1] = {0};
-      set_dof(filename,"time",0,time_dof);
-
-      // Finish the definition phase for this file.
-      eam_pio_enddef (filename); 
-      auto t0_date = m_case_t0.get_date()[0]*10000 + m_case_t0.get_date()[1]*100 + m_case_t0.get_date()[2];
-      auto t0_time = m_case_t0.get_time()[0]*10000 + m_case_t0.get_time()[1]*100 + m_case_t0.get_time()[2];
-      set_int_attribute_c2f(filename.c_str(),"start_date",t0_date);
-      set_int_attribute_c2f(filename.c_str(),"start_time",t0_time);
-      filespecs.is_open = true;
+      // Register all dims/vars, write geometry data (e.g. lat/lon/hyam/hybm)
+      setup_file(filespecs,control,timestamp);
     }
 
     // If we are going to write an output checkpoint file, or a model restart file,
@@ -409,4 +392,76 @@ set_params (const ekat::ParameterList& params,
   }
 }
 /*===============================================================================================*/
+void OutputManager::
+setup_file (      IOFileSpecs& filespecs, const IOControl& control,
+            const util::TimeStamp& timestamp)
+{
+  using namespace scorpio;
+
+  const bool is_checkpoint_step = &control==&m_checkpoint_control;
+  auto& filename = filespecs.filename;
+
+  // Compute new file name
+  std::string suffix =
+    is_checkpoint_step ? ".rhist"
+                       : (m_is_model_restart_output ? ".r" : "");
+  filename = compute_filename (control,filespecs,suffix,timestamp);
+
+  // Register new netCDF file for output. First, check no other output managers
+  // are trying to write on the same file
+  EKAT_REQUIRE_MSG (not is_file_open_c2f(filename.c_str(),Write),
+      "Error! File '" + filename + "' is currently open for write. Cannot share with other output managers.\n");
+  register_file(filename,Write);
+
+  // Note: time has an unknown length. Setting its "length" to 0 tells the scorpio to
+  // set this dimension as having an 'unlimited' length, thus allowing us to write
+  // as many timesnaps to file as we desire.
+  register_dimension(filename,"time","time",0,false);
+
+  // Register time as a variable.
+  auto time_units="days since " + m_case_t0.get_date_string() + " " + m_case_t0.get_time_string();
+  register_variable(filename,"time","time",time_units,{"time"}, "double", "double","time");
+#ifdef SCREAM_HAS_LEAP_YEAR
+  set_variable_metadata (filename,"time","calendar","gregorian");
+#else
+  set_variable_metadata (filename,"time","calendar","noleap");
+#endif
+
+  std::string fp_precision = is_checkpoint_step
+                           ? "real"
+                           : m_params.get<std::string>("Floating Point Precision");
+
+  // Make all output streams register their dims/vars
+  for (auto& it : m_output_streams) {
+    it->setup_output_file(filename,fp_precision);
+  }
+
+  if (filespecs.save_grid_data) {
+    // If not a restart file, also register geo data fields.
+    for (auto& it : m_geo_data_streams) {
+      it->setup_output_file(filename,fp_precision);
+    }
+  }
+
+  // Set degree of freedom for "time"
+  std::int64_t time_dof[1] = {0};
+  set_dof(filename,"time",0,time_dof);
+
+  // Finish the definition phase for this file.
+  eam_pio_enddef (filename); 
+  auto t0_date = m_case_t0.get_date()[0]*10000 + m_case_t0.get_date()[1]*100 + m_case_t0.get_date()[2];
+  auto t0_time = m_case_t0.get_time()[0]*10000 + m_case_t0.get_time()[1]*100 + m_case_t0.get_time()[2];
+  set_int_attribute_c2f(filename.c_str(),"start_date",t0_date);
+  set_int_attribute_c2f(filename.c_str(),"start_time",t0_time);
+
+  if (filespecs.save_grid_data) {
+    // Immediately run the geo data streams
+    for (const auto& it : m_geo_data_streams) {
+      it->run(filename,true,0);
+    }
+  }
+
+  filespecs.is_open = true;
+}
+
 } // namespace scream

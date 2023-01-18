@@ -275,7 +275,7 @@ void AtmosphereProcess::run_property_check (const prop_check_ptr&       property
           idx.erase(idx.begin()+pos);
         } else if (iti!=tags.end()) {
           auto pos = std::distance(tags.begin(),iti);
-          tags.erase(itm);
+          tags.erase(iti);
           idx.erase(idx.begin()+pos);
         }
         ss << "\n *************************** INPUT FIELDS ******************************\n";

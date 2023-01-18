@@ -17,7 +17,7 @@ HorizontalMap::HorizontalMap(const ekat::Comm& comm, const std::string& map_name
   m_dofs_set = false;
 }
 /*-----------------------------------------------------------------------------------------------*/
-HorizontalMap::HorizontalMap(const ekat::Comm& comm, const std::string& map_name, const view_1d<gid_type>& dofs_gids, const gid_type min_dof)
+HorizontalMap::HorizontalMap(const ekat::Comm& comm, const std::string& map_name, const view_1d<const gid_type>& dofs_gids, const gid_type min_dof)
   : m_name (map_name)
   , m_comm (comm)
 {

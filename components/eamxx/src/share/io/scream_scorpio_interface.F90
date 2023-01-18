@@ -47,7 +47,8 @@ module scream_scorpio_interface
                           pio_noerr, pio_global, &
                           PIO_int, PIO_real, PIO_double, PIO_float=>PIO_real
   use pio_kinds,    only: PIO_OFFSET_KIND
-  use pio_nf,       only: PIO_enddef, PIO_inq_dimid, PIO_inq_dimlen, PIO_inq_varid
+  use pio_nf,       only: PIO_enddef, PIO_inq_dimid, PIO_inq_dimlen, PIO_inq_varid, &
+                          PIO_inquire, PIO_inquire_variable
   use pionfatt_mod, only: PIO_put_att   => put_att
 
   use mpi, only: mpi_abort, mpi_comm_size, mpi_comm_rank
@@ -75,15 +76,18 @@ module scream_scorpio_interface
             eam_update_time,             & ! Update the timestamp (i.e. time variable) for a given pio netCDF file
             get_int_attribute,           & ! Retrieves an integer global attribute from the nc file
             set_int_attribute,           & ! Writes an integer global attribute to the nc file
-            get_dimlen                     ! Returns the length of a specific dimension in a file
+            get_dimlen,                  & ! Returns the length of a specific dimension in a file
+            has_variable                   ! Checks if given file contains a certain variable
 
-  private :: errorHandle
+  private :: errorHandle, get_coord
+
   ! Universal PIO variables for the module
   integer               :: atm_mpicom
   integer               :: pio_iotype
   type(iosystem_desc_t), pointer, public :: pio_subsystem
   integer               :: pio_rearranger
   integer               :: pio_mode
+  integer               :: time_dimid = -1
 
   ! TYPES to handle history coordinates and files
   integer,parameter :: max_hcoordname_len = 16
@@ -100,6 +104,7 @@ module scream_scorpio_interface
     integer                  :: dimid               ! Unique PIO Id for this dimension
     character(len=max_chars) :: long_name = ''      ! 'long_name' attribute
     character(len=max_chars) :: units = ''          ! 'units' attribute
+    logical                  :: is_partitioned      ! whether the dimension is partitioned across ranks
   end type hist_coord_t
 
   type, public :: hist_var_t
@@ -118,6 +123,7 @@ module scream_scorpio_interface
     integer, allocatable :: dimlen(:)         ! array of PIO dimension lengths for this variable
     logical              :: has_t_dim         ! true, if variable has a time dimension
     logical              :: is_set = .false.  ! Safety measure to ensure a deallocated hist_var_t is never used
+    logical              :: is_partitioned    ! Whether at least one of the dims is partitioned
   end type hist_var_t
 
   ! The iodesc_list allows us to cache existing PIO decompositions
@@ -241,13 +247,14 @@ contains
   ! length:    The dimension length (must be >=0).  Choosing 0 marks the
   !            dimensions as having "unlimited" length which is used for
   !            dimensions such as time.
-  subroutine register_dimension(filename,shortname,longname,length)
+  subroutine register_dimension(filename,shortname,longname,length,is_partitioned)
     use pio_types, only: pio_unlimited
     use pio_nf,    only: PIO_def_dim
 
     character(len=*), intent(in)        :: filename   ! Name of file to register the dimension on.
     character(len=*), intent(in)        :: shortname,longname ! Short- and long- names for this dimension, short: brief identifier and name for netCDF output, long: longer descriptor sentence to be included as meta-data in file.
     integer, intent(in)                 :: length             ! Length of the dimension, 0: unlimited (like time), >0 actual length of dimension
+    logical, intent(in)                 :: is_partitioned   ! whether this dimension is partitioned across ranks
 
     type(pio_atm_file_t), pointer       :: pio_atm_file
     type(hist_coord_t), pointer         :: hist_coord
@@ -284,13 +291,16 @@ contains
       curr => prev%next
       allocate(curr%coord)
       hist_coord => curr%coord
+
       ! Register this dimension
-      hist_coord%name      = trim(shortname)
-      hist_coord%long_name = trim(longname)
-      hist_coord%dimsize   = length
+      hist_coord%name           = trim(shortname)
+      hist_coord%long_name      = trim(longname)
+      hist_coord%dimsize        = length
+      hist_coord%is_partitioned = is_partitioned
 
       if (length.eq.0) then
         ierr = PIO_def_dim(pio_atm_file%pioFileDesc, trim(shortname), pio_unlimited , hist_coord%dimid)
+        time_dimid = hist_coord%dimid
       else
         ierr = PIO_def_dim(pio_atm_file%pioFileDesc, trim(shortname), length , hist_coord%dimid)
       end if
@@ -381,6 +391,7 @@ contains
       ! Determine the dimension id's saved in the netCDF file and associated with
       ! this variable, check if variable has a time dimension
       hist_var%has_t_dim = .false.
+      hist_var%is_partitioned = .false.
       allocate(hist_var%dimid(numdims),hist_var%dimlen(numdims))
       do dim_ii = 1,numdims
         ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim(var_dimensions(dim_ii)),hist_var%dimid(dim_ii))
@@ -473,6 +484,7 @@ contains
     logical                      :: found,var_found
     integer                      :: ierr
     character(len=256)           :: dimlen_str
+    type(hist_coord_t), pointer  :: hist_coord
 
     type(hist_var_list_t), pointer :: curr, prev
     
@@ -516,6 +528,7 @@ contains
       ! Determine the dimension id's saved in the netCDF file and associated with
       ! this variable, check if variable has a time dimension
       hist_var%has_t_dim = .false.
+      hist_var%is_partitioned = .false.
       allocate(hist_var%dimid(numdims),hist_var%dimlen(numdims))
       do dim_ii = 1,numdims
         ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim(var_dimensions(dim_ii)),hist_var%dimid(dim_ii))
@@ -525,6 +538,11 @@ contains
         if (hist_var%dimlen(dim_ii).eq.0) hist_var%has_t_dim = .true.
         call convert_int_2_str(hist_var%dimlen(dim_ii),dimlen_str)
         hist_var%pio_decomp_tag = hist_var%pio_decomp_tag//"_"//trim(dimlen_str)
+
+        call get_coord (filename,var_dimensions(dim_ii),hist_coord)
+        if (hist_coord%is_partitioned) then
+          hist_var%is_partitioned = .true.
+        endif
       end do
 
       ierr = PIO_def_var(pio_atm_file%pioFileDesc, trim(shortname), hist_var%nc_dtype, hist_var%dimid(:numdims), hist_var%piovar)
@@ -1359,6 +1377,33 @@ contains
     ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,dim_id,val)
 
   end function get_dimlen
+
+  function has_variable(filename,varname) result(has)
+    character(len=*), intent(in) :: filename
+    character(len=*), intent(in) :: varname
+
+    logical                       :: has, found
+    type(pio_atm_file_t), pointer :: pio_atm_file
+    integer                       :: nvars, ivar, ierr
+    character (len=256)           :: vname
+
+    call register_file(filename,file_purpose_in)
+    call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
+
+    ierr = PIO_inquire(pio_atm_file%pioFileDesc,nVariables=nvars)
+    call errorHandle("pio_inquire on file "//trim(filename)//" returned nonzero error code.",ierr)
+
+    has = .false.
+    do ivar=1,nvars
+      ierr = pio_inquire_variable(pio_atm_file%pioFileDesc, ivar, name=vname)
+      if (trim(vname) == trim(varname)) then
+        has = .true.
+        exit
+      endif
+    enddo
+
+    call eam_pio_closefile(filename)
+  end function has_variable
 !=====================================================================!
   ! Write output to file based on type (int or real)
   ! --Note-- that any dimensionality could be written if it is flattened to 1D
@@ -1376,7 +1421,9 @@ contains
   !
   !---------------------------------------------------------------------------
   subroutine grid_write_darray_float(filename, varname, buf, buf_size)
+    use pionfput_mod, only: PIO_put_var   => put_var
     use piolib_mod, only: PIO_setframe
+    use pio_types, only: PIO_max_var_dims
     use piodarray,  only: PIO_write_darray
 
     ! Dummy arguments
@@ -1389,23 +1436,42 @@ contains
 
     type(pio_atm_file_t), pointer :: pio_atm_file
     type(hist_var_t), pointer     :: var
-    integer                       :: ierr,var_size
+    integer                       :: ierr,jdim
+    integer                       :: start(pio_max_var_dims), count(pio_max_var_dims)
     logical                       :: found
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)
 
-    ! Set the timesnap we are reading
-    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    if (var%has_t_dim) then
+      ! Set the time index we are writing
+      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    endif
 
-    ! We don't want the extent along the 'time' dimension
-    var_size = SIZE(var%compdof)
+    if (var%is_partitioned) then
+      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
+    else
+      if (var%has_t_dim) then
+        do jdim=1,var%numdims
+          if (var%dimid(jdim) .eq. time_dimid) then
+            start (jdim) = int(max(1,pio_atm_file%numRecs))
+            count (jdim) = 1
+          else
+            start (jdim) = 1
+            count (jdim) = var%dimlen(jdim)
+          endif
+        enddo
+        ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,start(:var%numdims),count(:var%numdims),buf)
+      else
+        ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,buf)
+      endif
+    endif
 
-    ! Now we know the exact size of the array, and can shape the f90 pointer
-    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
     call errorHandle( 'eam_grid_write_darray_float: Error writing variable '//trim(varname),ierr)
   end subroutine grid_write_darray_float
   subroutine grid_write_darray_double(filename, varname, buf, buf_size)
+    use pionfput_mod, only: PIO_put_var   => put_var
+    use pio_types, only: PIO_max_var_dims
     use piolib_mod, only: PIO_setframe
     use piodarray,  only: PIO_write_darray
 
@@ -1419,24 +1485,43 @@ contains
 
     type(pio_atm_file_t), pointer :: pio_atm_file
     type(hist_var_t), pointer     :: var
-    integer                       :: ierr,var_size
+    integer                       :: ierr,jdim
+    integer                       :: start(pio_max_var_dims), count(pio_max_var_dims)
     logical                       :: found
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)
 
-    ! Set the timesnap we are reading
-    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    if (var%has_t_dim) then
+      ! Set the time index we are writing
+      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    endif
 
-    ! We don't want the extent along the 'time' dimension
-    var_size = SIZE(var%compdof)
+    if (var%is_partitioned) then
+      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
+    else
+      if (var%has_t_dim) then
+        do jdim=1,var%numdims
+          if (var%dimid(jdim) .eq. time_dimid) then
+            start (jdim) = int(max(1,pio_atm_file%numRecs))
+            count (jdim) = 1
+          else
+            start (jdim) = 1
+            count (jdim) = var%dimlen(jdim)
+          endif
+        enddo
+        ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,start(:var%numdims),count(:var%numdims),buf)
+      else
+        ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,buf)
+      endif
+    endif
 
-    ! Now we know the exact size of the array, and can shape the f90 pointer
-    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
     call errorHandle( 'eam_grid_write_darray_double: Error writing variable '//trim(varname),ierr)
   end subroutine grid_write_darray_double
   subroutine grid_write_darray_int(filename, varname, buf, buf_size)
+    use pionfput_mod, only: PIO_put_var   => put_var
     use piolib_mod, only: PIO_setframe
+    use pio_types, only: PIO_max_var_dims
     use piodarray,  only: PIO_write_darray
 
     ! Dummy arguments
@@ -1449,20 +1534,37 @@ contains
 
     type(pio_atm_file_t), pointer :: pio_atm_file
     type(hist_var_t), pointer     :: var
-    integer                       :: ierr,var_size
+    integer                       :: ierr,jdim
+    integer                       :: start(pio_max_var_dims), count(pio_max_var_dims)
     logical                       :: found
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
     call get_var(pio_atm_file,varname,var)
 
-    ! Set the timesnap we are reading
-    call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    if (var%has_t_dim) then
+      ! Set the time index we are writing
+      call PIO_setframe(pio_atm_file%pioFileDesc,var%piovar,int(max(1,pio_atm_file%numRecs),kind=pio_offset_kind))
+    endif
 
-    ! We don't want the extent along the 'time' dimension
-    var_size = SIZE(var%compdof)
+    if (var%is_partitioned) then
+      call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
+    else
+      if (var%has_t_dim) then
+        do jdim=1,var%numdims
+          if (var%dimid(jdim) .eq. time_dimid) then
+            start (jdim) = int(max(1,pio_atm_file%numRecs))
+            count (jdim) = 1
+          else
+            start (jdim) = 1
+            count (jdim) = var%dimlen(jdim)
+          endif
+        enddo
+        ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,start(:var%numdims),count(:var%numdims),buf)
+      else
+        ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,buf)
+      endif
+    endif
 
-    ! Now we know the exact size of the array, and can shape the f90 pointer
-    call pio_write_darray(pio_atm_file%pioFileDesc, var%piovar, var%iodesc, buf, ierr)
     call errorHandle( 'eam_grid_write_darray_int: Error writing variable '//trim(varname),ierr)
   end subroutine grid_write_darray_int
 !=====================================================================!
@@ -1630,5 +1732,40 @@ contains
     end if 
 
   end subroutine convert_int_2_str
+
+  subroutine get_coord (filename,shortname,hist_coord)
+    character(len=256), intent(in)           :: filename
+    character(len=256), intent(in)           :: shortname
+    type(hist_coord_t), pointer, intent(out) :: hist_coord
+
+    type(pio_atm_file_t), pointer    :: pio_atm_file
+    type(hist_coord_list_t), pointer :: curr, prev
+    logical                          :: file_found, dim_found
+
+    hist_coord => NULL()
+
+    call lookup_pio_atm_file(trim(filename),pio_atm_file,file_found)
+    if (.not. file_found ) then
+      call errorHandle("PIO ERROR: error retrieving dimension "//trim(shortname)//" in file "//trim(filename)//".\n PIO file not found or not open.",-999)
+    endif
+
+    curr => pio_atm_file%coord_list_top
+    do while (associated(curr))
+      if (associated(curr%coord)) then
+        if(trim(curr%coord%name)==trim(shortname)) then
+          dim_found = .true.
+          exit
+        endif
+      end if
+      prev => curr
+      curr => prev%next
+    end do
+
+    if (.not. dim_found ) then
+      call errorHandle("PIO ERROR: error retrieving dimension "//trim(shortname)//" from file "//trim(filename)//". Dimension not found.",-999)
+    endif
+
+    hist_coord => curr%coord
+  end subroutine get_coord
 !=====================================================================!
 end module scream_scorpio_interface

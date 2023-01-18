@@ -37,8 +37,8 @@ namespace scream {
   using KT = KokkosTypes<DefaultDevice>;
   using ExeSpace = KT::ExeSpace;
   using MemberType = KT::MemberType;
-       
-    /* 
+
+    /*
      * Run standalone test through SCREAM driver this time
      */
     TEST_CASE("rrtmgp_scream_standalone", "") {
@@ -97,8 +97,14 @@ namespace scream {
         const auto& field_mgr = *ad.get_field_mgr(grid->name());
         int ncol  = grid->get_num_local_dofs();
         int nlay  = grid->get_num_vertical_levels();
-        auto& lat = grid->get_geometry_data("lat");
-        auto& lon = grid->get_geometry_data("lon");
+
+        // In this test, we need to hack lat/lon. But the fields we get
+        // from the grid are read-only. Therefore, hack a bit, and cast
+        // away constness. It's bad, but it's only for this unit test
+        auto clat = grid->get_geometry_data("lat").get_view<const Real*>();
+        auto clon = grid->get_geometry_data("lon").get_view<const Real*>();
+        auto lat = const_cast<Real*>(clat.data());
+        auto lon = const_cast<Real*>(clon.data());
 
         // Get number of shortwave bands and number of gases from RRTMGP
         int ngas     =   8;  // TODO: get this intelligently
@@ -264,10 +270,10 @@ namespace scream {
 
             // Set lat and lon to single value for just this test:
             // Note, these values will ensure that the cosine zenith
-            // angle will end up matching the constant velue meant for
+            // angle will end up matching the constant value meant for
             // the test, which is 0.86
-            lat(i) = 5.224000000000;
-            lon(i) = 167.282000000000; 
+            lat[i] = 5.224000000000;
+            lon[i] = 167.282000000000;
 
             d_sfc_alb_dir_vis(i) = sfc_alb_dir_vis(i+1);
             d_sfc_alb_dir_nir(i) = sfc_alb_dir_nir(i+1);

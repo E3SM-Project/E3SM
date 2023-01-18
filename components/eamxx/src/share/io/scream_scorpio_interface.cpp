@@ -29,7 +29,7 @@ extern "C" {
   void eam_pio_finalize_c2f();
   void eam_pio_closefile_c2f(const char*&& filename);
   void pio_update_time_c2f(const char*&& filename,const double time);
-  void register_dimension_c2f(const char*&& filename, const char*&& shortname, const char*&& longname, const int length);
+  void register_dimension_c2f(const char*&& filename, const char*&& shortname, const char*&& longname, const int global_length, const bool partitioned);
   void register_variable_c2f(const char*&& filename, const char*&& shortname, const char*&& longname,
                              const char*&& units, const int numdims, const char** var_dimensions,
                              const int dtype, const int nc_dtype, const char*&& pio_decomp_tag);
@@ -100,9 +100,9 @@ void pio_update_time(const std::string& filename, const double time) {
   pio_update_time_c2f(filename.c_str(),time);
 }
 /* ----------------------------------------------------------------- */
-void register_dimension(const std::string &filename, const std::string& shortname, const std::string& longname, const int length) {
+void register_dimension(const std::string &filename, const std::string& shortname, const std::string& longname, const int length, const bool partitioned) {
 
-  register_dimension_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), length);
+  register_dimension_c2f(filename.c_str(), shortname.c_str(), longname.c_str(), length, partitioned);
 }
 /* ----------------------------------------------------------------- */
 void get_variable(const std::string &filename, const std::string& shortname, const std::string& longname,

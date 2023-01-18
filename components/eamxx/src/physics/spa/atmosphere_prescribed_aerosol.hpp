@@ -31,7 +31,7 @@ public:
   using view_1d         = typename SPAFunc::view_1d<Spack>;
   using view_2d         = typename SPAFunc::view_2d<Spack>;
   using view_3d         = typename SPAFunc::view_3d<Spack>;
-  using view_1d_dof     = typename SPAFunc::view_1d<gid_type>;
+  using view_1d_dof     = typename SPAFunc::view_1d<const gid_type>;
 
   template<typename ScalarT>
   using uview_1d = Unmanaged<typename KT::template view_1d<ScalarT>>;

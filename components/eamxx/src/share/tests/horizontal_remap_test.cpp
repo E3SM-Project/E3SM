@@ -78,9 +78,8 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min
   auto grid_tgt         = gm_tgt->get_grid("Point Grid");     // Retrieve the actual grid from the grids manager.
   auto num_loc_tgt_cols = grid_tgt->get_num_local_dofs();     // Number of columns (dofs) on this rank.
   auto tgt_min_dof      = grid_tgt->get_global_min_dof_gid(); // The starting index of the EAMxx grid.
-  auto dofs_gids        = grid_tgt->get_dofs_gids();          // A view of the dofs on this rank with their global id.
-  auto dofs_gids_h      = Kokkos::create_mirror_view(dofs_gids);
-  Kokkos::deep_copy(dofs_gids_h,dofs_gids);
+  auto dofs_gids        = grid_tgt->get_dofs_gids().get_view<const gid_type*>();          // A view of the dofs on this rank with their global id.
+  auto dofs_gids_h      = grid_tgt->get_dofs_gids().get_view<const gid_type*,Host>();
 
 //----------------------
 // Step 1: Generate a random remapping (source col, target col, weight) and random source data.
@@ -226,10 +225,10 @@ void run(std::mt19937_64& engine, const ekat::Comm& comm, const gid_type src_min
   // Register the output file
   scorpio::register_file(filename,scorpio::Write);
   //   - Dimensions
-  scorpio::register_dimension(filename,"n_s","n_s",n_s);
-  scorpio::register_dimension(filename,"n_a","n_a",num_src_cols);
-  scorpio::register_dimension(filename,"n_b","n_b",num_tgt_cols);
-  scorpio::register_dimension(filename,"ncol","ncol",num_src_cols);
+  scorpio::register_dimension(filename,"n_s","n_s",n_s,true);
+  scorpio::register_dimension(filename,"n_a","n_a",num_src_cols,false);
+  scorpio::register_dimension(filename,"n_b","n_b",num_tgt_cols,false);
+  scorpio::register_dimension(filename,"ncol","ncol",num_src_cols,true);
   //   - Variables
   std::string remap_decomp_tag_r = "n_s_real";
   std::string data_decomp_tag_r  = "data_real";
