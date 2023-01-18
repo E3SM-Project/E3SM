@@ -23,10 +23,11 @@ inline void pam_feedback_compute_crm_feedback_tendencies( pam::PamCoupler &coupl
   using yakl::atomicAdd;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
-  int nz   = dm_device.get_dimension_size("z"   );
-  int ny   = dm_device.get_dimension_size("y"   );
-  int nx   = dm_device.get_dimension_size("x"   );
-  int nens = dm_device.get_dimension_size("nens");
+  int nz       = dm_device.get_dimension_size("z"   );
+  int ny       = dm_device.get_dimension_size("y"   );
+  int nx       = dm_device.get_dimension_size("x"   );
+  int nens     = dm_device.get_dimension_size("nens");
+  int gcm_nlev = coupler.get_option<int>("gcm_nlev");
   //------------------------------------------------------------------------------------------------
   // Get current CRM state
   auto rho_d = dm_device.get<real,4>("density_dry");
@@ -79,40 +80,74 @@ inline void pam_feedback_compute_crm_feedback_tendencies( pam::PamCoupler &coupl
   });
   //------------------------------------------------------------------------------------------------
   // Compute feedback tendencies
-  real2d crm_feedback_tend_uvel("",nz,nens);
-  real2d crm_feedback_tend_vvel("",nz,nens);
-  real2d crm_feedback_tend_dse ("",nz,nens);
-  real2d crm_feedback_tend_qv  ("",nz,nens);
-  real2d crm_feedback_tend_ql  ("",nz,nens);
-  real2d crm_feedback_tend_qi  ("",nz,nens);
-  real cp_d = coupler.get_option<real>("cp_d");
-  real r_gcm_dt = 1._fp / gcm_dt;  // precompute reciprocal to avoid costly divisions
-  parallel_for( "Compute CRM feedback tendencies", SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
-    real crm_dse = crm_hmean_temp (k,iens) * cp_d;
-    real crm_qv  = crm_hmean_rho_v(k,iens) / (crm_hmean_rho_d(k,iens) + crm_hmean_rho_v(k,iens));
-    real crm_ql  = crm_hmean_rho_l(k,iens) / (crm_hmean_rho_d(k,iens) + crm_hmean_rho_l(k,iens));
-    real crm_qi  = crm_hmean_rho_i(k,iens) / (crm_hmean_rho_d(k,iens) + crm_hmean_rho_i(k,iens));
-    crm_feedback_tend_uvel(k,iens) = ( crm_hmean_uvel (k,iens) - gcm_ul  (k,iens) ) * r_gcm_dt;
-    crm_feedback_tend_vvel(k,iens) = ( crm_hmean_vvel (k,iens) - gcm_vl  (k,iens) ) * r_gcm_dt;
-    crm_feedback_tend_dse (k,iens) = ( crm_dse                 - gcm_tl  (k,iens) ) * r_gcm_dt;
-    crm_feedback_tend_qv  (k,iens) = ( crm_qv                  - gcm_ql  (k,iens) ) * r_gcm_dt;
-    crm_feedback_tend_ql  (k,iens) = ( crm_ql                  - gcm_qccl(k,iens) ) * r_gcm_dt;
-    crm_feedback_tend_qi  (k,iens) = ( crm_qi                  - gcm_qiil(k,iens) ) * r_gcm_dt;
-  });
-  //------------------------------------------------------------------------------------------------
-  // Copy the CRM feedback tendencies to host arrays
+  auto output_ultend_host  = dm_host.get<real,2>("output_ultend");
+  auto output_vltend_host  = dm_host.get<real,2>("output_vltend");
   auto output_sltend_host  = dm_host.get<real,2>("output_sltend");
   auto output_qltend_host  = dm_host.get<real,2>("output_qltend");
   auto output_qcltend_host = dm_host.get<real,2>("output_qcltend");
   auto output_qiltend_host = dm_host.get<real,2>("output_qiltend");
-  auto output_ultend_host  = dm_host.get<real,2>("output_ultend");
-  auto output_vltend_host  = dm_host.get<real,2>("output_vltend");
-  crm_feedback_tend_uvel.deep_copy_to(output_ultend_host);
-  crm_feedback_tend_vvel.deep_copy_to(output_vltend_host);
-  crm_feedback_tend_dse .deep_copy_to(output_sltend_host);
-  crm_feedback_tend_qv  .deep_copy_to(output_qltend_host);
-  crm_feedback_tend_ql  .deep_copy_to(output_qcltend_host);
-  crm_feedback_tend_qi  .deep_copy_to(output_qiltend_host);
+  real cp_d = coupler.get_option<real>("cp_d");
+  real r_gcm_dt = 1._fp / gcm_dt;  // precompute reciprocal to avoid costly divisions
+  parallel_for( "Compute CRM feedback tendencies", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
+    // int k_gcm = gcm_nlev-1-k;
+    int k_crm = nz-1-k_gcm;
+    if (k_crm>=0) {
+      real crm_dse = crm_hmean_temp (k_crm,iens) * cp_d;
+      real crm_qv  = crm_hmean_rho_v(k_crm,iens) / (crm_hmean_rho_d(k_crm,iens) + crm_hmean_rho_v(k_crm,iens));
+      real crm_ql  = crm_hmean_rho_l(k_crm,iens) / (crm_hmean_rho_d(k_crm,iens) + crm_hmean_rho_l(k_crm,iens));
+      real crm_qi  = crm_hmean_rho_i(k_crm,iens) / (crm_hmean_rho_d(k_crm,iens) + crm_hmean_rho_i(k_crm,iens));
+      output_ultend_host (k_gcm,iens) = ( crm_hmean_uvel (k_crm,iens) - gcm_ul  (k_gcm,iens) ) * r_gcm_dt;
+      output_vltend_host (k_gcm,iens) = ( crm_hmean_vvel (k_crm,iens) - gcm_vl  (k_gcm,iens) ) * r_gcm_dt;
+      output_sltend_host (k_gcm,iens) = ( crm_dse                     - gcm_tl  (k_gcm,iens) ) * r_gcm_dt;
+      output_qltend_host (k_gcm,iens) = ( crm_qv                      - gcm_ql  (k_gcm,iens) ) * r_gcm_dt;
+      output_qcltend_host(k_gcm,iens) = ( crm_ql                      - gcm_qccl(k_gcm,iens) ) * r_gcm_dt;
+      output_qiltend_host(k_gcm,iens) = ( crm_qi                      - gcm_qiil(k_gcm,iens) ) * r_gcm_dt;
+    } else {
+      output_ultend_host (k_gcm,iens) = 0.
+      output_vltend_host (k_gcm,iens) = 0.
+      output_sltend_host (k_gcm,iens) = 0.
+      output_qltend_host (k_gcm,iens) = 0.
+      output_qcltend_host(k_gcm,iens) = 0.
+      output_qiltend_host(k_gcm,iens) = 0.
+    }
+  });
+  //------------------------------------------------------------------------------------------------
+  // Compute feedback tendencies
+  // real2d crm_feedback_tend_uvel("crm_feedback_tend_uvel",nz,nens);
+  // real2d crm_feedback_tend_vvel("crm_feedback_tend_vvel",nz,nens);
+  // real2d crm_feedback_tend_dse ("crm_feedback_tend_dse" ,nz,nens);
+  // real2d crm_feedback_tend_qv  ("crm_feedback_tend_qv"  ,nz,nens);
+  // real2d crm_feedback_tend_ql  ("crm_feedback_tend_ql"  ,nz,nens);
+  // real2d crm_feedback_tend_qi  ("crm_feedback_tend_qi"  ,nz,nens);
+  // real cp_d = coupler.get_option<real>("cp_d");
+  // real r_gcm_dt = 1._fp / gcm_dt;  // precompute reciprocal to avoid costly divisions
+  // parallel_for( "Compute CRM feedback tendencies", SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
+  //   int k_gcm = gcm_nlev-1-k;
+  //   real crm_dse = crm_hmean_temp (k,iens) * cp_d;
+  //   real crm_qv  = crm_hmean_rho_v(k,iens) / (crm_hmean_rho_d(k,iens) + crm_hmean_rho_v(k,iens));
+  //   real crm_ql  = crm_hmean_rho_l(k,iens) / (crm_hmean_rho_d(k,iens) + crm_hmean_rho_l(k,iens));
+  //   real crm_qi  = crm_hmean_rho_i(k,iens) / (crm_hmean_rho_d(k,iens) + crm_hmean_rho_i(k,iens));
+  //   crm_feedback_tend_uvel(k,iens) = ( crm_hmean_uvel (k,iens) - gcm_ul  (k_gcm,iens) ) * r_gcm_dt;
+  //   crm_feedback_tend_vvel(k,iens) = ( crm_hmean_vvel (k,iens) - gcm_vl  (k_gcm,iens) ) * r_gcm_dt;
+  //   crm_feedback_tend_dse (k,iens) = ( crm_dse                 - gcm_tl  (k_gcm,iens) ) * r_gcm_dt;
+  //   crm_feedback_tend_qv  (k,iens) = ( crm_qv                  - gcm_ql  (k_gcm,iens) ) * r_gcm_dt;
+  //   crm_feedback_tend_ql  (k,iens) = ( crm_ql                  - gcm_qccl(k_gcm,iens) ) * r_gcm_dt;
+  //   crm_feedback_tend_qi  (k,iens) = ( crm_qi                  - gcm_qiil(k_gcm,iens) ) * r_gcm_dt;
+  // });
+  //------------------------------------------------------------------------------------------------
+  // Copy the CRM feedback tendencies to host arrays
+  // auto output_sltend_host  = dm_host.get<real,2>("output_sltend");
+  // auto output_qltend_host  = dm_host.get<real,2>("output_qltend");
+  // auto output_qcltend_host = dm_host.get<real,2>("output_qcltend");
+  // auto output_qiltend_host = dm_host.get<real,2>("output_qiltend");
+  // auto output_ultend_host  = dm_host.get<real,2>("output_ultend");
+  // auto output_vltend_host  = dm_host.get<real,2>("output_vltend");
+  // crm_feedback_tend_uvel.deep_copy_to(output_ultend_host);
+  // crm_feedback_tend_vvel.deep_copy_to(output_vltend_host);
+  // crm_feedback_tend_dse .deep_copy_to(output_sltend_host);
+  // crm_feedback_tend_qv  .deep_copy_to(output_qltend_host);
+  // crm_feedback_tend_ql  .deep_copy_to(output_qcltend_host);
+  // crm_feedback_tend_qi  .deep_copy_to(output_qiltend_host);
   //------------------------------------------------------------------------------------------------
 }
 

@@ -38,7 +38,8 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
   // Define GCM state for forcing - adjusted to avoid directly forcing cloud liquid and ice fields
   parallel_for( Bounds<2>(nz,nens) , YAKL_LAMBDA (int k, int iens) {
     int k_gcm = gcm_nlev-1-k;
-    gcm_rho_d(k,iens) = input_pmid(k_gcm,iens) * ( 1 - input_ql(k_gcm,iens) ) / ( input_tl(k_gcm,iens)*R_d );
+    real pmid_dry = input_pmid(k_gcm,iens) * ( 1 - input_ql(k_gcm,iens) );
+    gcm_rho_d(k,iens) = pmid_dry / ( input_tl(k_gcm,iens)*R_d );
     gcm_uvel (k,iens) = input_ul(k_gcm,iens);
     gcm_vvel (k,iens) = input_vl(k_gcm,iens);
     // convert total water mixing ratio to water vapor density
@@ -129,19 +130,14 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
     real rho_c = state_qc(k,j,i,iens) * ( crm_rho_d(k,j,i,iens) + rho_v ) ;
     real rho_r = state_qr(k,j,i,iens) * ( crm_rho_d(k,j,i,iens) + rho_v ) ;
     real rho_i = state_qi(k,j,i,iens) * ( crm_rho_d(k,j,i,iens) + rho_v ) ;
-
-    crm_uvel         (k,j,i,iens) = state_u_wind       (k,j,i,iens);
-    crm_vvel         (k,j,i,iens) = state_v_wind       (k,j,i,iens);
-    crm_wvel         (k,j,i,iens) = state_w_wind       (k,j,i,iens);
-    crm_temp         (k,j,i,iens) = state_temperature  (k,j,i,iens);
-    // crm_qv           (k,j,i,iens) = state_qv           (k,j,i,iens);
-    // crm_qc           (k,j,i,iens) = state_qc           (k,j,i,iens);
-    // crm_qr           (k,j,i,iens) = state_qr           (k,j,i,iens);
-    // crm_qi           (k,j,i,iens) = state_qi           (k,j,i,iens);
     crm_qv           (k,j,i,iens) = rho_v;
     crm_qc           (k,j,i,iens) = rho_c;
     crm_qr           (k,j,i,iens) = rho_r;
     crm_qi           (k,j,i,iens) = rho_i;
+    crm_uvel         (k,j,i,iens) = state_u_wind       (k,j,i,iens);
+    crm_vvel         (k,j,i,iens) = state_v_wind       (k,j,i,iens);
+    crm_wvel         (k,j,i,iens) = state_w_wind       (k,j,i,iens);
+    crm_temp         (k,j,i,iens) = state_temperature  (k,j,i,iens);
     crm_nc           (k,j,i,iens) = state_nc           (k,j,i,iens);
     crm_nr           (k,j,i,iens) = state_nr           (k,j,i,iens);
     crm_ni           (k,j,i,iens) = state_ni           (k,j,i,iens);
