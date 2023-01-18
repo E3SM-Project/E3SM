@@ -349,7 +349,6 @@ contains
      integer                                        :: pass_cohort_age_tracking
      integer                                        :: pass_num_lu_harvest_types
      integer                                        :: pass_lu_harvest
-     integer                                        :: pass_harvest_bypass_criteria
      integer                                        :: pass_tree_damage
 
      ! ----------------------------------------------------------------------------------
@@ -369,13 +368,7 @@ contains
      integer, parameter :: external_lightning = 2
      integer, parameter :: successful_ignitions = 3
      integer, parameter :: anthro_ignitions= 4
-
-     ! Another switch to determine if we want to harvest forest 
-     ! by ignoring the harvest criteria
-     ! This is only useful when performing carbon-based harvest
-     ! Need to update as a namelist option in the future
-     logical, parameter :: allow_harvest_bypass_criteria = .false.
-     
+  
      if (use_fates) then
 
         ! Send parameters individually
@@ -473,19 +466,12 @@ contains
            pass_logging = 1
            pass_num_lu_harvest_types = num_harvest_vars
            pass_lu_harvest = 1
-           if(allow_harvest_bypass_criteria) then
-              pass_harvest_bypass_criteria = 1
-           else
-              pass_harvest_bypass_criteria = 0
-           end if
         else
            pass_lu_harvest = 0
            pass_num_lu_harvest_types = 0
-           pass_harvest_bypass_criteria = 0
         end if
 
         call set_fates_ctrlparms('use_lu_harvest',ival=pass_lu_harvest)
-        call set_fates_ctrlparms('use_harvest_bypass_criteria',ival=pass_harvest_bypass_criteria)
         call set_fates_ctrlparms('num_lu_harvest_cats',ival=pass_num_lu_harvest_types)
         call set_fates_ctrlparms('use_logging',ival=pass_logging)
 
