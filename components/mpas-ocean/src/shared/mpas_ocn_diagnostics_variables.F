@@ -88,7 +88,8 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:,:), pointer :: landIceBoundaryLayerTracers
    real (kind=RKIND), dimension(:,:), pointer :: landIceTracerTransferVelocities
 
-   integer, pointer :: indexBLT, indexBLS, indexHeatTrans, indexSaltTrans
+   integer :: indexBLT, indexBLS, &
+              indexHeatTrans, indexSaltTrans
 
    real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFluxOBL
    real (kind=RKIND), dimension(:), pointer :: bottomLayerShortwaveTemperatureFlux
@@ -168,7 +169,7 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: boundaryLayerDepth
    real (kind=RKIND), dimension(:), pointer :: boundaryLayerDepthSmooth
    real (kind=RKIND), dimension(:), pointer :: indexBoundaryLayerDepth
-   integer, pointer :: index_vertNonLocalFluxTemp
+   integer :: index_vertNonLocalFluxTemp
 
    real (kind=RKIND), dimension(:), pointer :: salinitySurfaceRestoringTendency
 
@@ -183,8 +184,8 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: barotropicThicknessFlux
 
    real (kind=RKIND), dimension(:, :), pointer :: SSHGradient
-   integer, pointer :: indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
-   integer, pointer :: indexSSHGradientZonal, indexSSHGradientMeridional
+   integer :: indexSurfaceVelocityZonal, indexSurfaceVelocityMeridional
+   integer :: indexSSHGradientZonal, indexSSHGradientMeridional
 
    type (field1DInteger), pointer :: smoothingMaskField
    type (field2DReal), pointer :: verticalStretchField
@@ -234,6 +235,16 @@ contains
       integer, intent(out) :: err !< Output: Error flag
 
       type (mpas_pool_type), pointer :: diagnosticsPool
+
+      ! Local pointers for pool retrievals
+      integer, pointer :: &
+         indexBLTPtr, indexBLSPtr, &
+         indexHeatTransPtr, indexSaltTransPtr, &
+         index_vertNonLocalFluxTempPtr, &
+         indexSurfaceVelocityZonalPtr, &
+         indexSurfaceVelocityMeridionalPtr, &
+         indexSSHGradientZonalPtr, &
+         indexSSHGradientMeridionalPtr
 
       err = 0
 
@@ -318,13 +329,18 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'topDrag', topDrag)
          call mpas_pool_get_array(diagnosticsPool, 'topDragMagnitude', topDragMag)
          call mpas_pool_get_dimension(diagnosticsPool, &
-                   'index_landIceBoundaryLayerTemperature', indexBLT)
+                   'index_landIceBoundaryLayerTemperature', indexBLTPtr)
          call mpas_pool_get_dimension(diagnosticsPool, &
-                   'index_landIceBoundaryLayerSalinity', indexBLS)
+                   'index_landIceBoundaryLayerSalinity', indexBLSPtr)
          call mpas_pool_get_dimension(diagnosticsPool, &
-                   'index_landIceHeatTransferVelocity', indexHeatTrans)
+                   'index_landIceHeatTransferVelocity', indexHeatTransPtr)
          call mpas_pool_get_dimension(diagnosticsPool, &
-                   'index_landIceSaltTransferVelocity', indexSaltTrans)
+                   'index_landIceSaltTransferVelocity', indexSaltTransPtr)
+         indexBLT = indexBLTPtr
+         indexBLS = indexBLSPtr
+         indexHeatTrans = indexHeatTransPtr
+         indexSaltTrans = indexSaltTransPtr
+
          call mpas_pool_get_array(diagnosticsPool, &
                    'landIceBoundaryLayerTracers', landIceBoundaryLayerTracers)
          call mpas_pool_get_array(diagnosticsPool, &
@@ -535,16 +551,16 @@ contains
          ! Set pointer for index variables
          call mpas_pool_get_dimension(diagnosticsPool, &
                   'index_surfaceVelocityZonal', &
-                   indexSurfaceVelocityZonal)
+                   indexSurfaceVelocityZonalPtr)
          call mpas_pool_get_dimension(diagnosticsPool, &
                   'index_surfaceVelocityMeridional', &
-                   indexSurfaceVelocityMeridional)
+                   indexSurfaceVelocityMeridionalPtr)
          call mpas_pool_get_dimension(diagnosticsPool, &
                   'index_vertNonLocalFluxTemp', &
-                   index_vertNonLocalFluxTemp)
+                   index_vertNonLocalFluxTempPtr)
          call mpas_pool_get_dimension(diagnosticsPool, &
                   'index_SSHGradientMeridional', &
-                   indexSSHGradientMeridional)
+                   indexSSHGradientMeridionalPtr)
          call mpas_pool_get_array(diagnosticsPool, &
                   'indexSurfaceLayerDepth', &
                    indexSurfaceLayerDepth)
@@ -553,7 +569,12 @@ contains
                    indexBoundaryLayerDepth)
          call mpas_pool_get_dimension(diagnosticsPool, &
                   'index_SSHGradientZonal', &
-                   indexSSHGradientZonal)
+                   indexSSHGradientZonalPtr)
+         indexSurfaceVelocityZonal = indexSurfaceVelocityZonalPtr
+         indexSurfaceVelocityMeridional = indexSurfaceVelocityMeridionalPtr
+         index_vertNonLocalFluxTemp = index_vertNonLocalFluxTempPtr
+         indexSSHGradientMeridional = indexSSHGradientMeridionalPtr
+         indexSSHGradientZonal = indexSSHGradientZonalPtr
       end if
 
       call mpas_pool_get_array(diagnosticsPool, &
@@ -650,10 +671,6 @@ contains
          !$acc enter data create(                                 &
          !$acc                   topDrag,                         &
          !$acc                   topDragMag,                      &
-         !$acc                   indexBLT,                        &
-         !$acc                   indexBLS,                        &
-         !$acc                   indexHeatTrans,                  &
-         !$acc                   indexSaltTrans,                  &
          !$acc                   landIceBoundaryLayerTracers,     &
          !$acc                   landIceTracerTransferVelocities, &
          !$acc                   landIceFrictionVelocity)
@@ -736,7 +753,6 @@ contains
          !$acc                   mleVelocityZonal,                &
          !$acc                   bulkRichardsonNumber,            &
          !$acc                   gmStreamFuncTopOfEdge,           &
-         !$acc                   indexSSHGradientZonal,           &
          !$acc                   relativeVorticityCell,           &
          !$acc                   normalGMBolusVelocity,           &
          !$acc                   normalMLEvelocity,               &
@@ -756,13 +772,9 @@ contains
          !$acc                   GMBolusVelocityMeridional,       &
          !$acc                   mleVelocityMeridional,           &
          !$acc                   bulkRichardsonNumberShear,       &
-         !$acc                   indexSurfaceVelocityZonal,       &
          !$acc                   normalVelocitySurfaceLayer,      &
-         !$acc                   index_vertNonLocalFluxTemp,      &
-         !$acc                   indexSSHGradientMeridional,      &
          !$acc                   transportVelocityMeridional,     &
          !$acc                   penetrativeTemperatureFluxOBL,   &
-         !$acc                   indexSurfaceVelocityMeridional,  &
          !$acc                   normalizedRelativeVorticityCell  &
          !$acc                   )
       end if
@@ -899,11 +911,7 @@ contains
       if ( trim(config_land_ice_flux_mode) /= 'off' ) then
          !$acc exit data delete(                                  &
          !$acc                   topDrag,                         &
-         !$acc                   indexBLT,                        &
-         !$acc                   indexBLS,                        &
          !$acc                   topDragMag,                      &
-         !$acc                   indexHeatTrans,                  &
-         !$acc                   indexSaltTrans,                  &
          !$acc                   landIceBoundaryLayerTracers,     &
          !$acc                   landIceTracerTransferVelocities, &
          !$acc                   landIceFrictionVelocity)
@@ -986,7 +994,6 @@ contains
          !$acc                   mleVelocityZonal,                &
          !$acc                   bulkRichardsonNumber,            &
          !$acc                   gmStreamFuncTopOfEdge,           &
-         !$acc                   indexSSHGradientZonal,           &
          !$acc                   relativeVorticityCell,           &
          !$acc                   normalGMBolusVelocity,           &
          !$acc                   normalMLEvelocity,               &
@@ -1006,13 +1013,9 @@ contains
          !$acc                   mleVelocityMeridional,           &
          !$acc                   GMBolusVelocityMeridional,       &
          !$acc                   bulkRichardsonNumberShear,       &
-         !$acc                   indexSurfaceVelocityZonal,       &
          !$acc                   normalVelocitySurfaceLayer,      &
-         !$acc                   index_vertNonLocalFluxTemp,      &
-         !$acc                   indexSSHGradientMeridional,      &
          !$acc                   transportVelocityMeridional,     &
          !$acc                   penetrativeTemperatureFluxOBL,   &
-         !$acc                   indexSurfaceVelocityMeridional,  &
          !$acc                   normalizedRelativeVorticityCell  &
          !$acc                   )
       end if
@@ -1118,10 +1121,6 @@ contains
       if ( trim(config_land_ice_flux_mode) /= 'off' ) then
          nullify(topDrag,                         &
                  topDragMag,                      &
-                 indexBLT,                        &
-                 indexBLS,                        &
-                 indexHeatTrans,                  &
-                 indexSaltTrans,                  &
                  landIceBoundaryLayerTracers,     &
                  landIceTracerTransferVelocities, &
                  landIceFrictionVelocity)
@@ -1194,7 +1193,6 @@ contains
                  mleVelocityZonal,                &
                  bulkRichardsonNumber,            &
                  gmStreamFuncTopOfEdge,           &
-                 indexSSHGradientZonal,           &
                  relativeVorticityCell,           &
                  normalGMBolusVelocity,           &
                  normalMLEvelocity,               &
@@ -1214,13 +1212,9 @@ contains
                  mleVelocityMeridional,           &
                  GMBolusVelocityMeridional,       &
                  bulkRichardsonNumberShear,       &
-                 indexSurfaceVelocityZonal,       &
                  normalVelocitySurfaceLayer,      &
-                 index_vertNonLocalFluxTemp,      &
-                 indexSSHGradientMeridional,      &
                  transportVelocityMeridional,     &
                  penetrativeTemperatureFluxOBL,   &
-                 indexSurfaceVelocityMeridional,  &
                  normalizedRelativeVorticityCell)
       end if
       if ( trim(config_ocean_run_mode) == 'forward' ) then

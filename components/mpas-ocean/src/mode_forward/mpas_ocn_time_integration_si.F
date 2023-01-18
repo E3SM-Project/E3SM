@@ -285,8 +285,9 @@ module ocn_time_integration_si
 
       integer, pointer :: &
          startIndex, endIndex, &! start, end index for tracer groups
-         indexSalinity          ! tracer index for salinity
+         indexSalinityPtr       ! tracer index for salinity
 
+      integer :: indexSalinity
       integer :: iTracer, numTracers, numActiveTracers
 
       type (mpas_pool_iterator_type) :: &
@@ -433,7 +434,8 @@ module ocn_time_integration_si
                                            lowFreqDivergenceNew, 2)
 
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', &
-                                                 indexSalinity)
+                                                 indexSalinityPtr)
+      indexSalinity = indexSalinityPtr
 
       !*** Retrieve tendency variables
 

@@ -140,10 +140,6 @@ module ocn_time_integration_rk4
       logical, pointer :: config_zero_drying_velocity
       character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
-      ! State indices
-      integer, pointer :: indexTemperature
-      integer, pointer :: indexSalinity
-
       ! Diagnostics Indices
 
       ! Mesh array pointers
@@ -1540,7 +1536,7 @@ module ocn_time_integration_rk4
       real (kind=RKIND), intent(in) :: dt
       integer, intent(out) :: err
 
-      integer, pointer :: nCells, nEdges, indexTemperature, indexSalinity
+      integer, pointer :: nCells, nEdges
       integer :: iCell, iEdge, k
 
       type (mpas_pool_type), pointer :: statePool, meshPool, forcingPool
@@ -1587,8 +1583,6 @@ module ocn_time_integration_rk4
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityNew, 2)
       call mpas_pool_get_array(statePool, 'ssh', sshNew, 2)
 
-      call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
-      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracersNew, 2)
 
       call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
