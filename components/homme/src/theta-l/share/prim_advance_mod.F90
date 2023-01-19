@@ -518,7 +518,7 @@ contains
   real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete
-
+#if 0
   integer :: k,ie
   do ie=nets,nete
 
@@ -535,7 +535,7 @@ contains
      elem(ie)%state%w_i(:,:,nlevp,np1) = (elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
           elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))/g
   enddo
-  
+#endif
   end subroutine applyCAMforcing_dynamics
 
 

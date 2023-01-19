@@ -1602,6 +1602,15 @@ contains
   real (kind=real_kind)  :: dpnh_dp_i(np,np,nlevp)
 #endif
 
+
+
+
+!disable it
+#if 0
+
+
+
+
 #ifdef HOMMEXX_BFB_TESTING
   ! BFB comparison with C++ requires to perform the reduction
   ! of FQ over the whole column *before* adding to ps
@@ -1780,6 +1789,9 @@ contains
 #endif
 
   call t_stopf("ApplyCAMForcing_tracers")
+
+!disable if
+#endif
 
   end subroutine applyCAMforcing_tracers
   

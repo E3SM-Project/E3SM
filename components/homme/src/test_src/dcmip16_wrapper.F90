@@ -598,14 +598,14 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   type(TimeLevel_t),  intent(in)            :: tl                       ! time level structure
 
   integer :: i,j,k,kk,ie,qind,d_ind
-  real(rl), dimension(np,np,nlev) :: u,v,w,T,p,dp,rho,z,qv,qc,qr
+  real(rl), dimension(np,np,nlev) :: u,v,w,T,p,dp,rho,zm,qv,qc,qr
   real(rl), dimension(np,np,nlev) :: T0,qv0,qc0,qr0
   real(rl), dimension(np,np)      :: ps 
   real(rl), dimension(nlev)       :: p_c,qv_c,qc_c,qr_c,dp_c,T_c,ppi,dz_c, pprime
   real(rl), dimension(nlev)       :: dpdry_c, massd_c
   real(rl) :: max_w, max_precl, min_ps
 
-  real(rl) :: ppi_upper
+  real(rl) :: ptop
   real(rl) :: loc_mass_p, mass_prect, loc_energy_p, energy_prect
 
   real(rl) :: zi(np,np,nlevp), zi_c(nlevp)
@@ -631,7 +631,8 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
     ! get current element state
     !returns p at midlevels just like we need for pprime
     ! we do not need p at interfaces and at surface, only pi
-    call get_state(u,v,w,T,p,dp,ps,rho,z,zi,g,elem(ie),hvcoord,nt,ntQ)
+    ! 'g' here is gravity
+    call get_state(u,v,w,T,p,dp,ps,rho,zm,zi,g,elem(ie),hvcoord,nt,ntQ)
 
     ! get mixing ratios
     ! use qind to avoid compiler warnings when qsize_d<5
@@ -657,9 +658,8 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       qv_c = qv(i,j,:); qc_c = qc(i,j,:); qr_c = qr(i,j,:); 
       p_c  = p(i,j,:); dp_c = dp(i,j,:); T_c = T(i,j,:); zi_c = zi(i,j,:);
       !also needed, pressure-derived values
-      ppi_upper = hvcoord%hyai(1) * hvcoord%ps0
-      call construct_hydro_pressure(dp_c,ppi_upper,ppi)
-      pprime = p_c - ppi
+      ptop = hvcoord%hyai(1) * hvcoord%ps0
+
       dpdry_c = dp_c*(1.0 - qv_c - qc_c - qr_c)
 
       !set them here in case physics is not activated
@@ -673,12 +673,12 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
         if(bubble_rj_cpstar) then
 
           !this one is expected to conserve only after PA
-          call rj_new(qv_c,T_c,dp_c,p_c,ppi_upper,mass_prect,wasiactive)
+          call rj_new(qv_c,T_c,dp_c,p_c,ptop,mass_prect,wasiactive)
 
         elseif(bubble_rj_cpdry) then
 
           !this one conserves with const dp
-          call rj_old(qv_c,T_c,dp_c,p_c,mass_prect,wasiactive)
+          call rj_old(qv_c,T_c,dp_c,p_c,ptop,mass_prect,wasiactive)
         endif
 
       ! Kessler precipitation
@@ -688,18 +688,17 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
           print *, 'A, in kessler planar bubble! switch to NH';  stop
         endif
 
-        mass_before = sum(dp_c)+ppi_upper
-        !call energy_hy_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ppi_upper,zi_c,energy_before)
-        call energy_nh_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ppi_upper,zi_c, pprime,energy_before)
+        mass_before = sum(dp_c)+ptop
+        call energy_hy_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,energy_before)
+        !call energy_nh_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,energy_before)
 
         !this one conserves after PA
-        call kessler_new_hy(qv_c,qc_c,qr_c,T_c,dp_c,p_c,ppi_upper,zi_c,mass_prect,energy_prect,dt,wasiactive)
+        call kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,dpdry_c,p_c,ptop,zi_c,mass_prect,energy_prect,dt,wasiactive)
 
         !in dry to wet conversion kessler used old dp to convert
-!subroutine energy_nh_via_mass(dpdry_c,dpv_c,dpc_c,dpr_c,T_c,ptop,zi_c,pprime,energy)
-!        call energy_hy_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ppi_upper,zi_c,energy_after)
-        call energy_nh_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ppi_upper,zi_c, pprime,energy_after)
-        mass_after = sum( dpdry_c+dp_c*(qv_c+qc_c+qr_c) )+ppi_upper
+        call energy_hy_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,energy_after)
+        !call energy_nh_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,energy_after)
+        mass_after = sum( dp_c )+ptop
 
         discrepancy = (energy_before - energy_after - energy_prect)
         !if( (discrepancy/energy_prect > 0.5) .and. (energy_prect>300.0) )then
@@ -714,7 +713,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       endif ! RJ or Kessler choice
 
       precl(i,j,ie) = mass_prect / (dt * rhow) / g
-
+#if 0
       !now update 3d fields here
       T(i,j,:)  = T_c(:)
       qv(i,j,:) = qv_c(:)
@@ -730,6 +729,28 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       elem(ie)%derived%FQ(i,j,:,1) = (qv(i,j,:) - qv0(i,j,:))/dt !(rho_dry/rho)*dp*(qv-qv0)/dt
       elem(ie)%derived%FQ(i,j,:,2) = (qc(i,j,:) - qc0(i,j,:))/dt !(rho_dry/rho)*dp*(qv-qv0)/dt
       elem(ie)%derived%FQ(i,j,:,3) = (qr(i,j,:) - qr0(i,j,:))/dt !(rho_dry/rho)*dp*(qv-qv0)/dt
+#endif
+      ! use qind to avoid compiler warnings when qsize_d<5
+
+!if(maxval(qc_c) > 0.0) then
+!print *, 'q1 before ', elem(ie)%state%Qdp(i,j,:,1,ntQ)
+!endif
+      qind=1;  elem(ie)%state%Qdp(i,j,:,qind,ntQ) = dp_c*qv_c
+
+!if(maxval(qc_c) > 0.0) then
+!print *, 'q1 after ', elem(ie)%state%Qdp(i,j,:,1,ntQ)
+!print *, 'dp is ', dp_c(:)
+!print *, 'zi is ', zi_c(:)
+!endif
+
+      qind=2;  elem(ie)%state%Qdp(i,j,:,qind,ntQ) = dp_c*qc_c
+      qind=3;  elem(ie)%state%Qdp(i,j,:,qind,ntQ) = dp_c*qr_c
+      elem(ie)%state%dp3d(i,j,:,nt) = dp_c
+      elem(ie)%state%phinh_i(i,j,:,nt) = gravit*zi_c
+      elem(ie)%state%vtheta_dp(i,j,:,nt) = dp_c * &
+                    T_c * (p0/p_c)**kappa
+     
+
 
     enddo; enddo; !j,i loop
 

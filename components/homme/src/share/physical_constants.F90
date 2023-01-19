@@ -75,6 +75,9 @@ module physical_constants
   real (kind=real_kind), public            :: rrearth      = rrearth0
   real (kind=real_kind), public            :: rhow         = 1000.0D0
 
+  real (kind=real_kind), public            :: cvdry        = cp - rgas
+  real (kind=real_kind), public            :: cvv          = cpwater_vapor - rwater_vapor
+
 !consts for kessler-defined qsat
   real (kind=real_kind), public :: bubble_const1=3.8, bubble_const2=17.27, bubble_const3=273.0, bubble_const4=36.0
 !consts for RJ-defined qsat
