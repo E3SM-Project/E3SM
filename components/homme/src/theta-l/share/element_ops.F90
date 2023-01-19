@@ -766,8 +766,8 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
    ! compute dp_ref
    ps_ref(:,:) = hvcoord%ps0*exp(-phis(:,:)/(Rgas*TREF))
    do k=1,nlev
-   dp_ref(:,:,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-   (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_ref(:,:)
+     dp_ref(:,:,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+                     (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_ref(:,:)
    enddo
 
    ! compute theta_ref
@@ -779,16 +779,12 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
    ! keep profiles, based on the value of hv_ref_profiles
    if (hv_ref_profiles == 0) then
-   ! keep PHI profile, but dont use theta and dp:
-   theta_ref = 0
-   dp_ref = 0
+     ! keep phi profile, but dont use theta and dp:
+     theta_ref = 0
+     dp_ref = 0
    endif
    if (hv_ref_profiles == 1) then
-   ! keep all profiles
-   endif
-   if (hv_ref_profiles == 2) then
-   ! keep only dp_ref
-   theta_ref = 0
+     ! keep all profiles
    endif
 
    end subroutine initialize_reference_states
