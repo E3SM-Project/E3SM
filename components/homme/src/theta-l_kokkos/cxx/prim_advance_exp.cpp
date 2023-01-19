@@ -5,6 +5,7 @@
  *******************************************************************************/
 
 #include "CaarFunctor.hpp"
+#include "LimiterFunctor.hpp"
 #include "DirkFunctor.hpp"
 #include "Context.hpp"
 #include "Diagnostics.hpp"
@@ -230,6 +231,7 @@ void ttype9_imex_timestep(const TimeLevel& tl,
   auto& hvcoord  = c.get<HybridVCoord>();
   auto& dirk     = c.get<DirkFunctor>();
   auto& caar     = c.get<CaarFunctor>();
+  auto& limiter  = c.get<LimiterFunctor>();
 
   const int nm1 = tl.nm1;
   const int n0  = tl.n0;
@@ -238,9 +240,15 @@ void ttype9_imex_timestep(const TimeLevel& tl,
 
   // Stage 1
   Real dt = dt_dyn/5.0;
+
+// subroutine compute_andor_apply_rhs(np1,nm1,n0,dt2,...
+//
 // if one wants to map F call compute_andor_apply_rhs(n1,n2,n3,qn0,...
 // to caar call below, then they need to use timelevels this way
 //         caar(n2,n3,n1,qn0,...
+//
+// Names of timelevels in RK:
+//         RKStageData (const int nm1_in, const int n0_in, const int np1_in, const int n0_qdp_in ...
   caar.run(RKStageData(n0, n0, nm1, qn0, dt, eta_ave_w/4.0, 1.0, 0.0, 1.0));
   dirk.run(nm1, 0.0, n0, 0.0, nm1, dt, elements, hvcoord);
 
@@ -298,9 +306,9 @@ void ttype9_imex_timestep(const TimeLevel& tl,
            w(ie,np1,igp,jgp,LAST_INT)  += (w(ie,nm1,igp,jgp,LAST_INT)-w(ie,n0,igp,jgp,LAST_INT))/4.0;
       });  
     }
-    //LIMITER TO ADD!
   }
   Kokkos::fence();
+  limiter.run(np1);
 
   Real a1 = 5.0*dt_dyn/18.0;
   Real a2 = dt_dyn/36.0;

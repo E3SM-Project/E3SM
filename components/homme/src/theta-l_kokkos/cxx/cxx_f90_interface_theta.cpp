@@ -17,6 +17,7 @@
 #include "HommexxEnums.hpp"
 #include "HybridVCoord.hpp"
 #include "HyperviscosityFunctor.hpp"
+#include "LimiterFunctor.hpp"
 #include "ReferenceElement.hpp"
 #include "SimulationParams.hpp"
 #include "SphereOperators.hpp"
@@ -45,7 +46,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
                                const int& ftype, const int& theta_adv_form, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
                                const bool& use_cpstar, const int& transport_alg, const bool& theta_hydrostatic_mode, const char** test_case,
                                const int& dt_remap_factor, const int& dt_tracer_factor,
-                               const double& rearth, const int& nsplit, const bool& pgrad_correction)
+                               const double& rearth, const int& nsplit, const bool& pgrad_correction,
+                               const double& dp3d_thresh, const double& vtheta_thresh)
 {
   // Check that the simulation options are supported. This helps us in the future, since we
   // are currently 'assuming' some option have/not have certain values. As we support for more
@@ -61,6 +63,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   Errors::check_option("init_simulation_params_c","ftype",ftype, {-1, 0, 2});
   Errors::check_option("init_simulation_params_c","nu_p",nu_p,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","nu",nu,0.0,Errors::ComparisonOp::GT);
+  Errors::check_option("init_simulation_params_c","dp3d_thresh",dp3d_thresh,0.0,Errors::ComparisonOp::GT);
+  Errors::check_option("init_simulation_params_c","vtheta_thresh",vtheta_thresh,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","nu_div",nu_div,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","theta_advection_form",theta_adv_form,{0,1});
 #ifndef SCREAM
@@ -114,6 +118,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.nsplit                        = nsplit;
   params.rearth                        = rearth;
   params.pgrad_correction              = pgrad_correction;
+  params.dp3d_thresh                   = dp3d_thresh;
+  params.vtheta_thresh                 = vtheta_thresh;
 
   if (time_step_type==5) {
     //5 stage, 3rd order, explicit
@@ -338,6 +344,7 @@ void init_functors_c (const bool& allocate_buffer)
 
   // First, sphere operators, then the others
   auto& sph_op = c.create<SphereOperators>(elems.m_geometry,ref_FE);
+  auto& limiter = c.create_if_not_there<LimiterFunctor>(elems,hvcoord,params);
 
   // Some functors might have been previously created, so
   // use the create_if_not_there() function.
@@ -346,12 +353,14 @@ void init_functors_c (const bool& allocate_buffer)
 #ifdef HOMME_ENABLE_COMPOSE
   else                           c.create_if_not_there<ComposeTransport>();
 #endif
-  auto& hvf  = c.create_if_not_there<HyperviscosityFunctor>();
-  auto& ff   = c.create_if_not_there<ForcingFunctor>();
-  auto& diag = c.create_if_not_there<Diagnostics> (elems.num_elems(),params.theta_hydrostatic_mode);
-  auto& vrm  = c.create_if_not_there<VerticalRemapManager>(elems.num_elems());
+  auto& hvf     = c.create_if_not_there<HyperviscosityFunctor>();
+  auto& ff      = c.create_if_not_there<ForcingFunctor>();
+  auto& diag    = c.create_if_not_there<Diagnostics> (elems.num_elems(),params.theta_hydrostatic_mode);
+  auto& vrm     = c.create_if_not_there<VerticalRemapManager>(elems.num_elems());
 
-  auto& fbm  = c.create_if_not_there<FunctorsBuffersManager>();
+  auto& fbm     = c.create_if_not_there<FunctorsBuffersManager>();
+
+//OG why are if-statement here -- above calls define which constructor is called
 
   // If any Functor was constructed only partially, setup() must be called.
   // This does not apply to Diagnostics or DirkFunctor since they only
@@ -402,6 +411,7 @@ void init_functors_c (const bool& allocate_buffer)
     fbm.request_size(diag.requested_buffer_size());
     fbm.request_size(ff.requested_buffer_size());
     fbm.request_size(vrm.requested_buffer_size());
+    fbm.request_size(limiter.requested_buffer_size());
     if (need_dirk) {
       const auto& dirk = Context::singleton().get<DirkFunctor>();
       fbm.request_size(dirk.requested_buffer_size());
@@ -422,6 +432,7 @@ void init_functors_c (const bool& allocate_buffer)
   diag.init_buffers(fbm);
   ff.init_buffers(fbm);
   vrm.init_buffers(fbm);
+  limiter.init_buffers(fbm);
   if (need_dirk) {
     auto& dirk = Context::singleton().get<DirkFunctor>();
     dirk.init_buffers(fbm);
