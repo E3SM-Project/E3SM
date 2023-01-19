@@ -490,9 +490,9 @@ contains
     !
     ! Initialize physics grid, using dynamics grid
     ! a) column coordinates
-    if (single_column .and. dycore_is ('SE')) lbal_opt = -1 !+PAB make this default option for SCM
+    if (single_column) lbal_opt = -1
     call get_horiz_grid_dim_d(hdim1_d,hdim2_d)
-    if (single_column .and. dycore_is('SE')) then
+    if (single_column) then
       ngcols = 1
     else
       ngcols = hdim1_d*hdim2_d
@@ -504,7 +504,7 @@ contains
     allocate( cdex(1:ngcols) )
     clat_d = 100000.0_r8
     clon_d = 100000.0_r8
-    if (single_column .and. dycore_is('SE')) then
+    if (single_column) then
       lat_d = scmlat
       lon_d = scmlon
       clat_d = scmlat * deg2rad
@@ -724,7 +724,7 @@ contains
        !
        ! Calculate maximum block size for each process
        !
-       if (single_column .and. dycore_is('SE')) then
+       if (single_column) then
           maxblksiz_proc(:) = 1
        else
           maxblksiz_proc(:) = 0
@@ -772,7 +772,7 @@ contains
        !
        ! Determine total number of chunks
        !
-       if (single_column .and. dycore_is('SE')) then
+       if (single_column) then
          nchunks = 1
        else
 	 nchunks = (lastblock-firstblock+1)
@@ -795,7 +795,7 @@ contains
 
        do cid=1,nchunks
           ! get number of global column indices in block
-          if (single_column .and. dycore_is('SE')) then
+          if (single_column) then
 	    max_ncols = 1
 	  else
 	    max_ncols = get_block_gcol_cnt_d(cid+firstblock-1)
@@ -1037,7 +1037,7 @@ contains
     area_d = 0.0_r8
     wght_d = 0.0_r8
 
-    if (single_column .and. dycore_is('SE')) then
+    if (single_column) then
       area_d = 4.0_r8*pi
       wght_d = 4.0_r8*pi
     else
