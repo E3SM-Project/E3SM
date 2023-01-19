@@ -13,11 +13,12 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
   int nx   = dm_device.get_dimension_size("x"   );
   int nens = dm_device.get_dimension_size("nens");
   int gcm_nlev = coupler.get_option<int>("gcm_nlev");
-  real R_d = coupler.get_option<real>("R_d");
-  real R_v = coupler.get_option<real>("R_v");
+  real R_d  = coupler.get_option<real>("R_d");
+  real R_v  = coupler.get_option<real>("R_v");
+  real P0   = coupler.get_option<real>("p0");
   real cp_d = coupler.get_option<real>("cp_d");
-  real Lv = coupler.get_option<real>("latvap") ;
-  real Lf = coupler.get_option<real>("latice") ;
+  real Lv   = coupler.get_option<real>("latvap") ;
+  real Lf   = coupler.get_option<real>("latice") ;
   //------------------------------------------------------------------------------------------------
   // get the coupler GCM state arrays used to force the CRM
   auto gcm_rho_d = dm_device.get<real,2>("gcm_density_dry");
@@ -27,19 +28,25 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
   auto gcm_rho_v = dm_device.get<real,2>("gcm_water_vapor");
   //------------------------------------------------------------------------------------------------
   // wrap the host GCM state data in YAKL arrays
-  auto input_ul   = dm_host.get<real const,2>("input_ul").createDeviceCopy();
-  auto input_vl   = dm_host.get<real const,2>("input_vl").createDeviceCopy();
-  auto input_tl   = dm_host.get<real const,2>("input_tl").createDeviceCopy();
+  auto input_ul   = dm_host.get<real const,2>("input_ul"  ).createDeviceCopy();
+  auto input_vl   = dm_host.get<real const,2>("input_vl"  ).createDeviceCopy();
+  auto input_tl   = dm_host.get<real const,2>("input_tl"  ).createDeviceCopy();
   auto input_qccl = dm_host.get<real const,2>("input_qccl").createDeviceCopy();
   auto input_qiil = dm_host.get<real const,2>("input_qiil").createDeviceCopy();
-  auto input_ql   = dm_host.get<real const,2>("input_ql").createDeviceCopy();
+  auto input_ql   = dm_host.get<real const,2>("input_ql"  ).createDeviceCopy();
   auto input_pmid = dm_host.get<real const,2>("input_pmid").createDeviceCopy();
   //------------------------------------------------------------------------------------------------
   // Define GCM state for forcing - adjusted to avoid directly forcing cloud liquid and ice fields
   parallel_for( Bounds<2>(nz,nens) , YAKL_LAMBDA (int k, int iens) {
     int k_gcm = gcm_nlev-1-k;
-    real pmid_dry = input_pmid(k_gcm,iens) * ( 1 - input_ql(k_gcm,iens) );
+    // real pmid_dry = input_pmid(k_gcm,iens) * ( 1 - input_ql(k_gcm,iens) );
+    // gcm_rho_d(k,iens) = pmid_dry / ( input_tl(k_gcm,iens)*R_d );
+
+    // alternate method suggested by Kyle
+    real qv = input_ql(k_gcm,iens);
+    real pmid_dry = P0 * ( 1 - qv ) / ( 1 - qv + (R_v/R_d)*qv )
     gcm_rho_d(k,iens) = pmid_dry / ( input_tl(k_gcm,iens)*R_d );
+
     gcm_uvel (k,iens) = input_ul(k_gcm,iens);
     gcm_vvel (k,iens) = input_vl(k_gcm,iens);
     // convert total water mixing ratio to water vapor density

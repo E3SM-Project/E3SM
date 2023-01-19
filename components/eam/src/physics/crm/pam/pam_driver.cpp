@@ -84,6 +84,7 @@ extern "C" void pam_driver() {
     modules::perturb_temperature( coupler , gcolp );
   }
   //------------------------------------------------------------------------------------------------
+  auto crm_zint          = dm_device.get<real,2>("vertical_interface_height" );
   auto crm_zmid          = dm_device.get<real,2>("vertical_midpoint_height" );
   auto crm_rho_d         = dm_device.get<real,4>("density_dry");
   auto crm_temp          = dm_device.get<real,4>("temp");
@@ -111,24 +112,20 @@ extern "C" void pam_driver() {
                 // <<"  j:"<<j 
                 <<"  k:"<<k 
                 // <<"  icrm:"<<iens
-                <<"  crm_zmid:"  <<crm_zmid  (k,iens)
-                
+                <<"  crm_zint:"  <<crm_zint  (k,iens)
+                <<"  crm_zmid:"  <<crm_zmid  (k,iens)              
                 <<"  crm_temp:"  <<crm_temp  (k,j,i,iens)
-                <<"  state_temp:"<<state_temperature  (k,j,i,iens)
-                <<"  input_tl:"  <<input_tl  (k_gcm,iens)
-                
-                <<"  crm_qv:"    <<crm_qv    (k,j,i,iens)
-                <<"  state_qv:"  <<state_qv  (k,j,i,iens)
-                <<"  input_ql:"  <<input_ql  (k_gcm,iens)
-                
+                // <<"  state_temp:"<<state_temperature  (k,j,i,iens)
+                // <<"  input_tl:"  <<input_tl  (k_gcm,iens)                
+                // <<"  crm_qv:"    <<crm_qv    (k,j,i,iens)
+                // <<"  state_qv:"  <<state_qv  (k,j,i,iens)
+                // <<"  input_ql:"  <<input_ql  (k_gcm,iens)                
                 // <<"  crm_qc:"    <<crm_qc    (k,j,i,iens)
                 // // <<"  input_qccl:"<<input_qccl(k_gcm,iens)
                 // <<"  state_qc:"<<state_qc(k,j,i,iens)
-
                 // <<"  crm_qi:"    <<crm_qi    (k,j,i,iens)
                 // // <<"  input_qiil:"<<input_qiil(k_gcm,iens)
                 // <<"  state_qi:"<<state_qi(k,j,i,iens)
-
                 <<"  crm_rho_d:" <<crm_rho_d   (k,j,i,iens)
                 <<"  crm_pmid:"  <<crm_pmid  (k,j,i,iens)
                 <<"  input_pmid:"<<input_pmid(k_gcm,iens)

@@ -56,6 +56,8 @@ set_target_properties(pam_driver PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/modules
 )
 
+add_compile_options($<$<COMPILE_LANGUAGE:CXX>: -g >)
+
 target_compile_options(pam_driver PUBLIC
   $<$<COMPILE_LANGUAGE:Fortran>:${PAM_Fortran_FLAGS}>
 )

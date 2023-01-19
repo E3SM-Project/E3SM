@@ -103,12 +103,12 @@ inline void pam_feedback_compute_crm_feedback_tendencies( pam::PamCoupler &coupl
       output_qcltend_host(k_gcm,iens) = ( crm_ql                      - gcm_qccl(k_gcm,iens) ) * r_gcm_dt;
       output_qiltend_host(k_gcm,iens) = ( crm_qi                      - gcm_qiil(k_gcm,iens) ) * r_gcm_dt;
     } else {
-      output_ultend_host (k_gcm,iens) = 0.
-      output_vltend_host (k_gcm,iens) = 0.
-      output_sltend_host (k_gcm,iens) = 0.
-      output_qltend_host (k_gcm,iens) = 0.
-      output_qcltend_host(k_gcm,iens) = 0.
-      output_qiltend_host(k_gcm,iens) = 0.
+      output_ultend_host (k_gcm,iens) = 0.;
+      output_vltend_host (k_gcm,iens) = 0.;
+      output_sltend_host (k_gcm,iens) = 0.;
+      output_qltend_host (k_gcm,iens) = 0.;
+      output_qcltend_host(k_gcm,iens) = 0.;
+      output_qiltend_host(k_gcm,iens) = 0.;
     }
   });
   //------------------------------------------------------------------------------------------------
