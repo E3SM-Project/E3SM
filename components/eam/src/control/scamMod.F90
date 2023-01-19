@@ -22,7 +22,6 @@ module scamMod
   use string_utils, only: to_lower
   use cam_abortutils,   only: endrun
   use phys_control, only: phys_getopts
-  use dycore, only: dycore_is
 
   implicit none
 
@@ -292,7 +291,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
            use_replay = .false.
         endif
 	
-	if (dycore_is('SE') .and. use_replay) then
+	if (use_replay) then
 	  call wrap_inq_dimid( ncid, 'ncol', londimid   )
 	  call wrap_inq_dimlen( ncid, londimid, lonsiz   )
 	  latsiz=lonsiz
@@ -825,7 +824,7 @@ endif !scm_observed_aero
    call wrap_inq_dimid(ncid, 'lev', levid)
    call wrap_inq_dimid(ncid, 'time', timeid)
 
-   if (dycore_is('SE') .and. use_replay) then
+   if (use_replay) then
      strt4(1) = closelonidx
      strt4(2) = iopTimeIdx
      strt4(3) = 1
