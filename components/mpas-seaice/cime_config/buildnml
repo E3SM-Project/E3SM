@@ -436,7 +436,7 @@ def buildnml(case, caseroot, compname):
             lines.append('        type="output"')
             lines.append('        io_type="{}"'.format(ice_pio_typename))
             lines.append('        filename_template="{}.mpassi{}.hist.$Y-$M-$D_$S.nc"'.format(casename, inst_string))
-            lines.append('        filename_interval="00-01-00_00:00:00"')
+            lines.append('        filename_interval="00-00-01_00:00:00"')
             lines.append('        clobber_mode="truncate"')
             lines.append('        reference_time="01-01-01_00:00:00"')
             # We want history files for tests
