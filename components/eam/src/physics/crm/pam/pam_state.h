@@ -39,14 +39,8 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
   // Define GCM state for forcing - adjusted to avoid directly forcing cloud liquid and ice fields
   parallel_for( Bounds<2>(nz,nens) , YAKL_LAMBDA (int k, int iens) {
     int k_gcm = gcm_nlev-1-k;
-    // real pmid_dry = input_pmid(k_gcm,iens) * ( 1 - input_ql(k_gcm,iens) );
-    // gcm_rho_d(k,iens) = pmid_dry / ( input_tl(k_gcm,iens)*R_d );
-
-    // alternate method suggested by Kyle
-    real qv = input_ql(k_gcm,iens);
-    real pmid_dry = P0 * ( 1 - qv ) / ( 1 - qv + (R_v/R_d)*qv )
+    real pmid_dry = input_pmid(k_gcm,iens) * ( 1 - input_ql(k_gcm,iens) );
     gcm_rho_d(k,iens) = pmid_dry / ( input_tl(k_gcm,iens)*R_d );
-
     gcm_uvel (k,iens) = input_ul(k_gcm,iens);
     gcm_vvel (k,iens) = input_vl(k_gcm,iens);
     // convert total water mixing ratio to water vapor density
