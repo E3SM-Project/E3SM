@@ -102,6 +102,13 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_time_varying_forcing.F
   core_ocean/shared/mpas_ocn_wetting_drying.F
   core_ocean/shared/mpas_ocn_vel_tidal_potential.F
+  core_ocean/shared/mpas_ocn_vvel_hmix_del2.F
+  core_ocean/shared/mpas_ocn_nonhydrostatic_pressure_solve.F
+  core_ocean/shared/mpas_ocn_vvel_pgrad.F
+  core_ocean/shared/mpas_ocn_vvel_coriolis.F
+  core_ocean/shared/mpas_ocn_vvel_advection.F
+  core_ocean/shared/mpas_ocn_vvel_horiz_advection.F
+  core_ocean/shared/mpas_ocn_vvel_vert_advection.F
 )
 
 set(OCEAN_DRIVER

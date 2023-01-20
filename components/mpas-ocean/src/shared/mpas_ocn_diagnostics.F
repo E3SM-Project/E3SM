@@ -121,8 +121,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: &
         ssh,  seaIcePressure, atmosphericPressure
       real (kind=RKIND), dimension(:,:), pointer :: &
-        layerThickness, layerThicknessLag, normalVelocity, & 
-        vertVelocityNonhydro
+        layerThickness, layerThicknessLag, normalVelocity
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
@@ -156,7 +155,6 @@ contains
 
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
-      call mpas_pool_get_array(statePool, 'vertVelocityNonhydro', vertVelocityNonhydro, timeLevel)
       call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
 
       call mpas_pool_get_array(forcingPool, 'seaIcePressure', seaIcePressure)
@@ -238,7 +236,7 @@ contains
       ! in and out: vertVelocityTop
       call ocn_diagnostic_solve_vortVel(relativeVorticity, &
              layerThickEdgeFlux, normalVelocity, normalTransportVelocity, &
-             normalGMBolusVelocity, vertVelocityNonhydro, vertVelocityTop, vertTransportVelocityTop, &
+             normalGMBolusVelocity, vertVelocityTop, vertTransportVelocityTop, &
              vertGMBolusVelocityTop, relativeVorticityCell, divergence, &
              kineticEnergyCell, tangentialVelocity)
 
@@ -1529,7 +1527,7 @@ contains
 !-----------------------------------------------------------------------
    subroutine ocn_diagnostic_solve_vortVel(relativeVorticity, &
                 layerThicknessEdgeFlux, normalVelocity, normalTransportVelocity, &
-                normalGMBolusVelocity, vertVelocityNonhydro, vertVelocityTop, &
+                normalGMBolusVelocity, vertVelocityTop, &
                 vertTransportVelocityTop, vertGMBolusVelocityTop, &
                 relativeVorticityCell, divergence, kineticEnergyCell,&
                 tangentialVelocity)!{{{
@@ -1560,7 +1558,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         vertVelocityTop, vertVelocityNonhydro
+         vertVelocityTop
       real (kind=RKIND), dimension(:,:), intent(out) :: &
          vertTransportVelocityTop
       real (kind=RKIND), dimension(:,:), intent(out) :: &
