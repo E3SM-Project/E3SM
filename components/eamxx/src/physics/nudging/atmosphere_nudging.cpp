@@ -32,6 +32,8 @@ void NUDGING::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   constexpr int ps = 1;
   add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name, ps);
   add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
+  //add_field<Required>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
+  //add_field<Computed>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
   /*
   for (auto &s: m_fnames) {
   //  std::cout<<"s: "<<s<<std::endl;
@@ -66,6 +68,7 @@ void NUDGING::initialize_impl (const RunType /* run_type */)
   //Need to make this more general so it is not ju
   //This defines the fields we are going to get from the nudging file
   using namespace ShortFieldTagsNames;
+  /*
   for (auto &s: m_fnames) {
     FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
     fields_ext[s] = view_2d<Real>(s,m_num_cols,m_num_src_levs);
@@ -73,7 +76,18 @@ void NUDGING::initialize_impl (const RunType /* run_type */)
     host_views[s] = view_1d_host<Real>(T_mid_r_v_h.data(),T_mid_r_v_h.size());
     layouts.emplace(s, scalar3d_layout_mid);
   }
+  */
+  FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
+  fields_ext["T_mid"] = view_2d<Real>("T_mid",m_num_cols,m_num_src_levs);
+  auto T_mid_r_v_h       = Kokkos::create_mirror_view(fields_ext["T_mid"]);
+  host_views["T_mid"] = view_1d_host<Real>(T_mid_r_v_h.data(),T_mid_r_v_h.size());
+  layouts.emplace("T_mid", scalar3d_layout_mid);
 
+  fields_ext["p_mid"] = view_2d<Real>("p_mid",m_num_cols,m_num_src_levs);
+  auto p_mid_r_v_h       = Kokkos::create_mirror_view(fields_ext["p_mid"]);
+  host_views["p_mid"] = view_1d_host<Real>(p_mid_r_v_h.data(),p_mid_r_v_h.size());
+  layouts.emplace("p_mid", scalar3d_layout_mid);
+  
   auto grid_l = m_grid->clone("Point Grid", false);
   grid_l->reset_num_vertical_lev(m_num_src_levs);
   
@@ -91,7 +105,8 @@ void NUDGING::initialize_impl (const RunType /* run_type */)
   p_mid_ext = fields_ext["p_mid"];
   ts0 = timestamp();
   //time_step_file=250;
-  time_step_file=300;
+  //time_step_file=300;
+  time_step_file=3600;
   //time_step_internal=100;
   //std::cout<<"ts at start time is: "<<ts.get_seconds()<<std::endl;
   //data_input.read_variables(0);
@@ -169,8 +184,15 @@ void NUDGING::run_impl (const int dt)
     time_step_internal=time_since_zero;
   }  
   if (time_since_zero < time_step_file){ return;}
+  //if (dt < 7200){ return;}
+  if (time_since_zero > 3600){ return;}
+
+  //if (dt < 3600){ return;}
   std::cout<<"Get before time interpolation"<<std::endl;
-  time_interpolation(time_since_zero);
+  //time_interpolation(time_since_zero);
+  const int time_index = time_since_zero/time_step_file;
+  //data_input.read_variables(time_index-1);
+  data_input.read_variables(time_index-1);
   std::cout<<"Get after time interpolation"<<std::endl;
   
   //TO ADD: need to loop over fields instead of just define them below.
@@ -179,15 +201,26 @@ void NUDGING::run_impl (const int dt)
   
   std::cout<<"Get before fields"<<std::endl;
   //These are fields before modifications
-  const auto& T_mid          = get_field_out("T_mid").get_view<mPack**>();
+  //auto T_mid_in  = get_field_in("T_mid").get_view<mPack**>();
+  auto T_mid          = get_field_out("T_mid").get_view<mPack**>();
+
+  //auto T_mid_in = view_Nd<mPack,2>("",T_mid.extent_int(0),T_mid.extent_int(1));
+  //Kokkos::deep_copy(T_mid_in,T_mid);
+  
+  //cont auto& T_mid          = get_field_out("T_mid").get_view<mPack**>();
   std::cout<<"I get here 0"<<std::endl;
-  const auto& p_mid    = get_field_in("p_mid").get_view<const ekat::Pack<Real,1>**>();
+  //const auto& p_mid    = get_field_in("p_mid").get_view<const ekat::Pack<Real,1>**>();
+  const auto& p_mid    = get_field_in("p_mid").get_view<const mPack**>();
+
+
+
+
   //const auto& p_mid    = get_field_in("p_mid").get_view<const ekat::Pack<Real,1>**>();
   std::cout<<"I get here 1"<<std::endl;
   std::cout<<"p_mid.extent_int(0): "<<p_mid.extent_int(0)<<std::endl;
   std::cout<<"p_mid.extent_int(1): "<<p_mid.extent_int(1)<<std::endl;
-  std::cout<<"T_mid.extent_int(0): "<<T_mid.extent_int(0)<<std::endl;
-  std::cout<<"T_mid.extent_int(1): "<<T_mid.extent_int(1)<<std::endl;
+  //std::cout<<"T_mid.extent_int(0): "<<T_mid.extent_int(0)<<std::endl;
+  //std::cout<<"T_mid.extent_int(1): "<<T_mid.extent_int(1)<<std::endl;
   std::cout<<"I get here 1"<<std::endl;
   auto p_mid_v = view_Nd<mPack,2>("",p_mid.extent_int(0),p_mid.extent_int(1));
   std::cout<<"Get after fields"<<std::endl;
@@ -195,25 +228,64 @@ void NUDGING::run_impl (const int dt)
   
   //This is field out of vertical interpolation
   //view_Nd<mPack,2> T_mid_out("T_mid_r_m_out",m_num_cols,m_num_levs);
-  view_Nd<mPack,2> T_mid_out("T_mid_r_m_out",m_num_cols,T_mid.extent(1));
+  view_Nd<mPack,2> T_mid_out("T_mid_r_m_out",m_num_cols,T_mid.extent_int(1));
   //These are field values from external file
-  const view_Nd<mPack,2> T_mid_ext_p(reinterpret_cast<mPack*>(T_mid_ext.data()),
-  				m_num_cols,m_num_src_levs); 
-  const view_Nd<mPack,2> p_mid_ext_p(reinterpret_cast<mPack*>(p_mid_ext.data()),
-				m_num_cols,m_num_src_levs);
+  //const view_Nd<mPack,2> T_mid_ext_p(reinterpret_cast<mPack*>(T_mid_ext.data()),
+  //				m_num_cols,m_num_src_levs); 
+  //const view_Nd<mPack,2> p_mid_ext_p(reinterpret_cast<mPack*>(p_mid_ext.data()),
+  //				m_num_cols,m_num_src_levs);
+  view_Nd<mPack,2> T_mid_ext_p("",T_mid_ext.extent_int(0),T_mid_ext.extent_int(1));
+  Kokkos::deep_copy(T_mid_ext_p,T_mid_ext);
+  view_Nd<mPack,2> p_mid_ext_p("",p_mid_ext.extent_int(0),p_mid_ext.extent_int(1));
+  Kokkos::deep_copy(p_mid_ext_p,p_mid_ext);
+
+  
+  //T_mid_ext_p.sync_to_dev();
+  //p_mid_ext_p.sync_to_dev();
+  
   std::cout<<"p_mid_v.extent(1): "<<p_mid_v.extent(1)<<std::endl;
   std::cout<<"T_mid_out.extent(1): "<<T_mid_out.extent(1)<<std::endl;
   std::cout<<"Get after define new fields"<<std::endl;
+
+  for (int col = 0; col<1; col++){
+    for (int lev = 0; lev<T_mid.extent_int(1); lev++){
+      std::cout<<"Before T_mid(col,lay): ("<<col<<","<<lev<<"): "<<T_mid(col,lev)<<std::endl;
+      std::cout<<"Before T_mid_ext_p(col,lay): ("<<col<<","<<lev<<"): "<<T_mid_ext_p(col,lev)<<std::endl;
+      std::cout<<"Before p_mid(col,lay): ("<<col<<","<<lev<<"): "<<p_mid(col,lev)<<std::endl;
+      std::cout<<"Before p_mid_ext_p(col,lay): ("<<col<<","<<lev<<"): "<<p_mid_ext_p(col,lev)<<std::endl;
+      std::cout<<"Before p_mid_v(col,lay): ("<<col<<","<<lev<<"): "<<p_mid_v(col,lev)<<std::endl;
+      //std::cout<<"Diff before after: "<<T_mid(col,lev)-T_mid_in(col,lev)<<std::endl;
+    }
+  }
+
   
   perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
                                            p_mid_v,
                                            T_mid_ext_p,
                                            T_mid_out,
                                            m_num_src_levs,
-                                           m_num_levs);
+                                           m_num_levs,
+  					   250.);
+  
   std::cout<<"Get after vertical interpolation"<<std::endl;
-  Kokkos::deep_copy(T_mid,T_mid_out);  
+  //auto T_atm          = get_field_out("T_mid").get_view<mPack**>();
+  //Kokkos::deep_copy(T_atm,T_mid_out);
 
+
+  //Kokkos::deep_copy(T_mid,T_mid_out);
+  
+  Kokkos::deep_copy(T_mid,T_mid_out);
+  //Kokkos::deep_copy(T_mid,T_mid_ext);  
+  for (int col = 0; col<1; col++){
+    for (int lev = 0; lev<T_mid.extent_int(1); lev++){
+      std::cout<<"After T_mid(col,lay): ("<<col<<","<<lev<<"): "<<T_mid(col,lev)<<std::endl;
+      std::cout<<"Before T_mid_ext_p(col,lay): ("<<col<<","<<lev<<"): "<<T_mid_ext_p(col,lev)<<std::endl;
+      std::cout<<"After p_mid(col,lay): ("<<col<<","<<lev<<"): "<<p_mid(col,lev)<<std::endl;
+      //std::cout<<"Diff before after: "<<T_mid(col,lev)-T_mid_in(col,lev)<<std::endl;
+    }
+  }
+
+  
 }
 
 // =========================================================================================

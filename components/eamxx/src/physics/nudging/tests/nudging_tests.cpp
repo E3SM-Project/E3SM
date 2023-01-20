@@ -259,6 +259,7 @@ TEST_CASE("nudging") {
 
 
   std::map<std::string,Field> input_fields;
+  std::map<std::string,Field> output_fields;
   for (const auto& req : nudging_mid->get_required_field_requests()) {
     Field f(req.fid);
     auto & f_ap = f.get_header().get_alloc_properties();
@@ -269,6 +270,11 @@ TEST_CASE("nudging") {
     f.get_header().get_tracking().update_time_stamp(t0);
     nudging_mid->set_required_field(f);
     input_fields.emplace(name,f);
+    if (name == "T_mid"){
+      nudging_mid->set_computed_field(f);
+      output_fields.emplace(name,f);
+    }
+
   }
 
   //initialize
@@ -276,8 +282,11 @@ TEST_CASE("nudging") {
   
   Field p_mid = input_fields["p_mid"];
   Field f_mid = input_fields["T_mid"];
-  //fill data
+  //Field p_mid_o = output_fields["p_mid"];
+  Field f_mid_o = output_fields["T_mid"];
 
+  //fill data
+  
   auto f_mid_v_h   = f_mid.get_view<Real**, Host>();
   auto p_mid_v_h   = p_mid.get_view<Real**, Host>();
   //Don't fill Temperature because it is going to be nudged anyways  
@@ -295,12 +304,12 @@ TEST_CASE("nudging") {
 
   //10 timesteps of 100 s
   for (int time_s = 0; time_s < 10; time_s++){
-    f_mid.sync_to_dev();
+    f_mid_o.sync_to_dev();
     p_mid.sync_to_dev();
-
+    auto f_mid_v_h_o   = f_mid_o.get_view<Real**, Host>();
     //nudging_mid->run(time_s*100);
     nudging_mid->run(100);
-    f_mid.sync_to_host();
+    f_mid_o.sync_to_host();
     p_mid.sync_to_host();
 
     if(time_s<3){continue;}
@@ -324,8 +333,8 @@ TEST_CASE("nudging") {
 	double val_tim_avg_next = (val_before_n*w_bef_n + val_after_n*w_aft_n) / 250.;
         double val_avg = (val_tim_avg_next + val_tim_avg)/2.;
 
-	std::cout<<"f_mid_v_h("<<icol<<","<<ilev<<"): "<<f_mid_v_h(icol,ilev)<<std::endl;
-	REQUIRE(f_mid_v_h(icol,ilev) == val_avg);
+	std::cout<<"f_mid_v_h_o("<<icol<<","<<ilev<<"): "<<f_mid_v_h_o(icol,ilev)<<std::endl;
+	REQUIRE(f_mid_v_h_o(icol,ilev) == val_avg);
       }
     }
 
