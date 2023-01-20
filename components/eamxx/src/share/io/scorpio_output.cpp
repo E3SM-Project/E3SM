@@ -92,10 +92,10 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   // Check if remapping and if so create the appropriate remapper 
   bool m_vert_remap_from_file = params.isParameter("vertical_remap_file");
   bool m_horiz_remap_from_file = params.isParameter("horiz_remap_file");
-  if (m_vert_remap_from_file && m_horiz_remap_from_file) {
-    // TODO - support both horizontal and vertical remapping together.
-    EKAT_ERROR_MSG("Error! scorpio_output:: We currently do not support both vertical and horizontal remapping.");
-  }
+//ASD  if (m_vert_remap_from_file && m_horiz_remap_from_file) {
+//ASD    // TODO - support both horizontal and vertical remapping together.
+//ASD    EKAT_ERROR_MSG("Error! scorpio_output:: We currently do not support both vertical and horizontal remapping.");
+//ASD  }
 
   // Try to set the IO grid (checks will be performed)
   set_grid (io_grid);

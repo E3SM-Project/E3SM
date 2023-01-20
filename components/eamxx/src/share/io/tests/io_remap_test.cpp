@@ -37,12 +37,22 @@ bool approx(const Real a, const Real b) {
   return std::abs(a-b) < tol;
 }
 
+void print (const std::string& msg, const ekat::Comm& comm) {
+  if (comm.am_i_root()) {
+    printf("%s",msg.c_str());
+  }
+}
+
 TEST_CASE("io_remap_test","io_remap_test")
 {
   using namespace scream;
 
   // Setup the global structure
   ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
+  print ("Starting io_remap_test ...\n",io_comm);
+
+
+  print (" -> Test Setup ...\n",io_comm);
   MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
   scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
   const int ncols_src = 64*io_comm.size();
@@ -61,11 +71,13 @@ TEST_CASE("io_remap_test","io_remap_test")
   const int  ncols_src_l = grid->get_num_local_dofs();
   auto field_manager = get_test_fm(grid, false);
   field_manager->init_fields_time_stamp(t0);
+  print (" -> Test Setup ... done\n",io_comm);
   
   // Create remap data for both vertical and horizontal remapping
   // The strategy for remapping will be to map every 2 subsequent
   // columns to a single column. So we assume that `ncols_src` is
   // a multiple of 2.
+  print (" -> Create remap file ... \n",io_comm);
   const int ncols_tgt_l = ncols_src_l/2;
   const int ncols_tgt = ncols_src/2;
   std::vector<Real> col, row, S;
@@ -119,6 +131,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   scorpio::grid_write_data_array(remap_filename,"p_levs",p_tgt.data(),nlevs_tgt);
 
   scorpio::eam_pio_closefile(remap_filename);
+  print (" -> Create remap file ... done\n",io_comm);
 
   // Construct source data to be used for remapped output.
   // We want to test cases where some values may be masked, to accomplish
@@ -134,6 +147,8 @@ TEST_CASE("io_remap_test","io_remap_test")
   //                            /    \
   //                           /      \
   //                   --------        ----------
+  print (" -> Create pressure data ... \n",io_comm);
+  print ("    -> setup x_src ... \n",io_comm);
   std::vector<Real> x_src;
   const auto& p_surf_f = field_manager->get_field("p_surf");
   const auto& p_surf   = p_surf_f.get_view<Real*,Host>();
@@ -142,6 +157,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     x_src.push_back(-8.0 + dp_x*ii);
   }
 
+  print ("    -> p_surf ... \n",io_comm);
   Real slope = (p_top + p_bot) / 4.0;
   Real yint  = (p_top + p_bot);
   for (int ii=0; ii<ncols_src_l; ii++) {
@@ -159,11 +175,12 @@ TEST_CASE("io_remap_test","io_remap_test")
   p_surf_f.sync_to_dev();
 
   // With p_surf set we can set the actual data, starting with p_mid and p_int:
+  print ("    -> p_mid and p_int ... \n",io_comm);
   const auto& pm_f = field_manager->get_field("p_mid");
   const auto& pi_f = field_manager->get_field("p_int");
   const auto& pm_v = pm_f.get_view<Real**,Host>();
   const auto& pi_v = pi_f.get_view<Real**,Host>();
-  for (int ii=0; ii<ncols_src; ii++) {
+  for (int ii=0; ii<ncols_src_l; ii++) {
     pi_v(ii,0) = set_pressure(p_top, p_surf(ii), nlevs_src+1, 0);
     for (int jj=0; jj<nlevs_src; jj++) {
       pi_v(ii,jj+1) = set_pressure(p_top, p_surf(ii), nlevs_src+1, jj+1);
@@ -172,10 +189,12 @@ TEST_CASE("io_remap_test","io_remap_test")
   }
   pm_f.sync_to_dev();
   pi_f.sync_to_dev();
+  print (" -> Create pressure data ... done\n",io_comm);
 
   // We will assign the test values using an expression which is linear
   // in pressure, level and component.  This will make it easier to check
   // that the work of the remappers.
+  print (" -> Create source data ... \n",io_comm);
   const auto& Yf_f = field_manager->get_field("Y_flat");
   const auto& Ym_f = field_manager->get_field("Y_mid");
   const auto& Yi_f = field_manager->get_field("Y_int");
@@ -188,7 +207,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   const auto& Vm_v = Vm_f.get_view<Real***,Host>();
   const auto& Vi_v = Vi_f.get_view<Real***,Host>();
 
-  for (int ii=0; ii<ncols_src; ii++) {
+  for (int ii=0; ii<ncols_src_l; ii++) {
     Yf_v(ii)   = calculate_output(pm_v(ii,0),ii,0);
     Yi_v(ii,0) = calculate_output(pi_v(ii,0),ii,0);
     for (int cc=0; cc<2; cc++) {
@@ -209,37 +228,50 @@ TEST_CASE("io_remap_test","io_remap_test")
   Yi_f.sync_to_dev();
   Vm_f.sync_to_dev();
   Vi_f.sync_to_dev();
+  print (" -> Create source data ... done\n",io_comm);
 
   // Setup remapped output streams and run them
+  print (" -> Create output ... \n",io_comm);
   register_diagnostics();
   OutputManager om_source, om_vert, om_horiz, om_vert_horiz;
   const int p_ref = (int)set_pressure(p_top, p_bot, nlevs_src+1,nlevs_src-1);
 
+  print ("    -> source data ... \n",io_comm);
   auto source_remap_control = set_output_params("remap_source",remap_filename,p_ref,false,false);
   om_source.setup(io_comm,source_remap_control,field_manager,gm,t0,t0,false);
   io_comm.barrier();
   om_source.run(t0);
+  print ("    -> source data ... done\n",io_comm);
 
+  print ("    -> vertical remap ... \n",io_comm);
   auto vert_remap_control = set_output_params("remap_vertical",remap_filename,p_ref,true,false);
   om_vert.setup(io_comm,vert_remap_control,field_manager,gm,t0,t0,false);
   io_comm.barrier();
   om_vert.run(t0);
+  print ("    -> vertical remap ... done\n",io_comm);
 
+  print ("    -> horizontal remap ... \n",io_comm);
   auto horiz_remap_control = set_output_params("remap_horizontal",remap_filename,p_ref,false,true);
   om_horiz.setup(io_comm,horiz_remap_control,field_manager,gm,t0,t0,false);
   io_comm.barrier();
   om_horiz.run(t0);
+  print ("    -> horizontal remap ... done\n",io_comm);
 
+  print ("    -> vertical-horizontal remap ... \n",io_comm);
   auto vert_horiz_remap_control = set_output_params("remap_vertical_horizontal",remap_filename,p_ref,true,true);
-//ASD  om_vert_horiz.setup(io_comm,vert_horiz_remap_control,field_manager,gm,t0,t0,false);
-//ASD  io_comm.barrier();
-//ASD  om_vert_horiz.run(t0)
+  om_vert_horiz.setup(io_comm,vert_horiz_remap_control,field_manager,gm,t0,t0,false);
+  io_comm.barrier();
+  om_vert_horiz.run(t0);
+  print ("    -> vertical-horizontal remap ... done\n",io_comm);
+  print (" -> Create output ... done\n",io_comm);
 
 
   // Confirm that remapped fields are correct.
+  print (" -> Test Remapped Output ... \n",io_comm);
   // ------------------------------------------------------------------------------------------------------
   //                                    ---  Vertical Remapping ---
   {
+    print ("    -> vertical remap ... \n",io_comm);
     auto gm_vert   = get_test_gm(io_comm,ncols_src,nlevs_tgt);
     auto grid_vert = gm_vert->get_grid("Point Grid");
     auto fm_vert   = get_test_fm(grid_vert,true,p_ref);
@@ -270,7 +302,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     const auto& Vm_v_vert = Vm_f_vert.get_view<Real***,Host>();
     const auto& Vi_v_vert = Vi_f_vert.get_view<Real***,Host>();
 
-    for (int ii=0; ii<ncols_src; ii++) {
+    for (int ii=0; ii<ncols_src_l; ii++) {
       const bool ref_masked = (p_ref>pi_v(ii,nlevs_src) || p_ref<pi_v(ii,0));
       const Real test_val = ref_masked ? mask_val : calculate_output(p_ref,ii,0);
       REQUIRE(approx(Ys_v_vert(ii),test_val));
@@ -288,10 +320,12 @@ TEST_CASE("io_remap_test","io_remap_test")
         }
       }
     }
+    print ("    -> vertical remap ... done\n",io_comm);
   }
   // ------------------------------------------------------------------------------------------------------
   //                                    ---  Horizontal Remapping ---
   {
+    print ("    -> horizontal remap ... \n",io_comm);
     auto gm_horiz   = get_test_gm(io_comm,ncols_tgt,nlevs_src);
     auto grid_horiz = gm_horiz->get_grid("Point Grid");
     auto fm_horiz   = get_test_fm(grid_horiz,false,p_ref);
@@ -321,7 +355,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     const auto& Vm_v_horiz = Vm_f_horiz.get_view<Real***,Host>();
     const auto& Vi_v_horiz = Vi_f_horiz.get_view<Real***,Host>();
 
-    for (int ii=0; ii<ncols_tgt; ii++) {
+    for (int ii=0; ii<ncols_tgt_l; ii++) {
       const int col1 = 2*ii;
       const int col2 = 2*ii+1;
       REQUIRE(Yf_v_horiz(ii)==Yf_v(col1)*wgt + Yf_v(col2)*(1.0-wgt));
@@ -358,9 +392,11 @@ TEST_CASE("io_remap_test","io_remap_test")
       }
       REQUIRE(Ys_v_horiz(ii) == Ys_exp);
     }
+    print ("    -> horizontal remap ... done\n",io_comm);
   }
 
   // All Done 
+  print (" -> Test Remapped Output ... done\n",io_comm);
   scorpio::eam_pio_finalize();
 
 }
