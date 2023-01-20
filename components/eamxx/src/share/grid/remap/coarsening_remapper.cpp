@@ -418,8 +418,8 @@ rescale_masked_fields (const Field& x, const Field& mask) const
   const auto& layout = x.get_header().get_identifier().get_layout();
   const int rank = layout.rank();
   const int ncols = m_ov_tgt_grid->get_num_local_dofs();
-  const Real mask_val = -99999.0;  // TODO: Maybe not hard code what a fully masked value will be set too.
-  const Real mask_threshold = 1e-8;  //TODO: Should we not hardcode the threshold for simply masking out the column.
+  const Real mask_val = -999999.0;   // TODO: Maybe not hard code what a fully masked value will be set too.
+  const Real mask_threshold = 1e-8;  // TODO: Should we not hardcode the threshold for simply masking out the column.
   switch (rank) {
     // Note: in each case, handle 1st contribution to each row separately,
     //       using = instead of +=. This allows to avoid doing an extra

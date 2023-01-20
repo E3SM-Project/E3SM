@@ -24,7 +24,7 @@ FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_p_tgt = view_1d<mPack>("",1);
   Kokkos::deep_copy(m_p_tgt, m_pressure_level);
 
-  m_mask_val = m_params.get<Real>("mask_value",Real(-99999));
+  m_mask_val = m_params.get<Real>("mask_value",Real(-999999.0));
 }
 
 // =========================================================================================

@@ -110,14 +110,13 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     auto vert_remap_file   = params.get<std::string>("vertical_remap_file");
     auto f_lev = get_field("p_mid",m_sim_field_mgr);
     auto f_ilev = get_field("p_int",m_sim_field_mgr);
-    m_vert_remapper = std::make_shared<VerticalRemapper>(io_grid,vert_remap_file,f_lev,f_ilev,-9999.0);
+    m_vert_remapper = std::make_shared<VerticalRemapper>(io_grid,vert_remap_file,f_lev,f_ilev,-999999.0);
     io_grid = m_vert_remapper->get_tgt_grid();
     set_grid(io_grid);
 
     // Register all output fields in the remapper.
     m_vert_remapper->registration_begins();
     for (const auto& fname : m_fields_names) {
-      // Note, we skip any fields that don't have a vertical extent
       auto f = get_field(fname,m_sim_field_mgr);
       const auto& src_fid = f.get_header().get_identifier();
       EKAT_REQUIRE_MSG(src_fid.data_type()==DataType::RealType,
@@ -160,7 +159,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     // We may need to track masked fields in the horizontal remapper, so we
     // declare the need variables here.
     std::vector<Field>        mask_fields;
-    if (horiz_remap_from_file) {
+    if (m_horiz_remap_from_file) {
       std::map<std::string,int> mask_map;
       // First we check if we need to support masking
       for (const auto& fname : m_fields_names) {
@@ -823,8 +822,8 @@ Field AtmosphereOutput::get_field(const std::string& name, const std::shared_ptr
   } else if (m_diagnostics.find(name) != m_diagnostics.end() && field_mgr==m_sim_field_mgr) {
     const auto& diag = m_diagnostics.at(name);
     return diag->get_diagnostic();
-  } else if (m_fields_alt_name.find(name) != m_fields_alt_name.end()) {// && field_mgr->has_field(m_fields_alt_name.at(name))) {
-    return field_mgr->get_field(m_fields_alt_name.at(name));
+  } else if (m_fields_alt_name.find(name) != m_fields_alt_name.end()) {
+    return get_field(m_fields_alt_name.at(name),field_mgr);
   } else {
     EKAT_ERROR_MSG ("Field " + name + " not found in output field manager or diagnostics list, or requesting a diag not on the simualation field manager.");
   }
@@ -931,7 +930,13 @@ create_diagnostic (const std::string& diag_field_name) {
   auto diag = diag_factory.create(diag_name,m_comm,params);
   diag->set_grids(m_grids_manager);
   m_diagnostics.emplace(diag_field_name,diag);
-  m_fields_alt_name.emplace(diag_field_name,diag->name());
+  // When using remappers with certain diagnostics the get_field command can be called with both the diagnostic
+  // name as saved inside the diagnostic and with the name as it is given in the output control file.  If it is
+  // the case that these names don't match we add their pairings to the alternate name map.
+  if (diag->name() != diag_field_name) {
+    m_fields_alt_name.emplace(diag->name(),diag_field_name);
+    m_fields_alt_name.emplace(diag_field_name,diag->name());
+  }
 }
 
 } // namespace scream

@@ -284,9 +284,8 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt) const
     using namespace scream::vinterp;
     const auto& layout = f_src.get_header().get_identifier().get_layout();
     const auto  rank   = f_src.rank();
-    auto src_tag = layout.tags().back();
-    auto src_num_levs = layout.dim(src_tag);
-    const bool do_remap = ekat::contains(std::vector<FieldTag>{ILEV,LEV},src_tag);
+    const auto src_tag = layout.tags().back();
+    const auto src_num_levs = layout.dim(src_tag);
 
     Field    src_lev_f;
     if (src_tag == ILEV) {
