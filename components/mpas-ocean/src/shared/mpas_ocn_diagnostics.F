@@ -121,8 +121,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: &
         ssh,  seaIcePressure, atmosphericPressure
       real (kind=RKIND), dimension(:,:), pointer :: &
-        layerThickness, layerThicknessLag, normalVelocity, & 
-        vertVelocityNonhydro
+        layerThickness, layerThicknessLag, normalVelocity
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
@@ -156,7 +155,6 @@ contains
 
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
-      call mpas_pool_get_array(statePool, 'vertVelocityNonhydro', vertVelocityNonhydro, timeLevel)
       call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
 
       call mpas_pool_get_array(forcingPool, 'seaIcePressure', seaIcePressure)

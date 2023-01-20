@@ -120,7 +120,9 @@ contains
          montgomeryPotential, &!< [in] Mongomery potential
          zMid,                &!< [in] z-coordinate at layer mid-depth
          density,             &!< [in] density
-         potentialDensity,    &!< [in] potentialDensity
+         potentialDensity      !< [in] potentialDensity
+
+      real (kind=RKIND), dimension(:,:), intent(in), optional :: &
          nonhydrostaticPressure     !< Input: nonhydrostatic pressure correction
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &

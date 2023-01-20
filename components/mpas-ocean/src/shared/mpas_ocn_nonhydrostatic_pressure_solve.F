@@ -100,12 +100,12 @@ module ocn_compute_nonhydrostatic_pressure
       vertVelocityNonhydroNew, layerThickness, layerThicknessEdge, &
       nhPressureCorrection, mpi_comm, dt)
 
-    real,dimension(:,:), intent(in) :: normalVelocityNew, vertVelocityNonhydroNew, &
+    real(kind=RKIND), dimension(:,:), intent(in) :: normalVelocityNew, vertVelocityNonhydroNew, &
       layerThickness, layerThicknessEdge
 
     real(kind=RKIND), intent(in) :: dt
 
-    real,dimension(:,:), intent(inout) :: nhPressureCorrection
+    real(kind=RKIND), dimension(:,:), intent(inout) :: nhPressureCorrection
 
     integer, intent(in) :: mpi_comm
 
@@ -265,7 +265,7 @@ module ocn_compute_nonhydrostatic_pressure
      ! form matrix: del^2(q) = 1/dt * div(u*)
 
      !nnzRowMax = 9 * 2 + 4  ! do this better
-     nnzRowMax = 1 + 2 + 7
+     nnzRowMax = 1 + 2 + maxval(nEdgesOnCell)
 
      call MatZeroEntries(Amat, petsc_err)
 
@@ -451,7 +451,7 @@ module ocn_compute_nonhydrostatic_pressure
      call KSPGetPC(ksp,pc,petsc_err)
      call PCSetType(pc,config_nonhydrostatic_preconditioner,petsc_err)
      call KSPSetFromOptions(ksp,petsc_err)
-     call KSPSetTolerances(ksp,config_petsc_rtol,config_petsc_atol,1.0E4,config_petsc_maxit,petsc_err)
+     call KSPSetTolerances(ksp,config_petsc_rtol,config_petsc_atol,1.0E4_RKIND,config_petsc_maxit,petsc_err)
      call KSPSolve(ksp, b, x, petsc_err)
      call KSPGetIterationNumber(ksp, itNum, petsc_err)
      print *, 'iteration count = ',itNum
@@ -510,7 +510,7 @@ module ocn_compute_nonhydrostatic_pressure
     integer :: k, iCell, iter, nnzRowMax
 
     !nnzRowMax = 9 * 2 + 4
-    nnzRowMax = 1 + 2 + 7
+    nnzRowMax = 1 + 2 + maxval(nEdgesOnCell)
 
 #ifndef USE_PETSC
     call mpas_log_write("nonhydrostatic solver requires PETSC library compiled and linked", &
@@ -587,7 +587,7 @@ module ocn_compute_nonhydrostatic_pressure
     else
       call MatSetType( Amat, MATMPIAIJ, petsc_err )
       call MatSetFromOptions(Amat,petsc_err)
-      call MatMPIAIJSetPreallocation(Amat,2*nnzRowMax, PETSC_NULL_INTEGER, 2*nnzRowMax, PETSC_NULL_INTEGER, petsc_err)
+      call MatMPIAIJSetPreallocation(Amat, 2*nnzRowMax, PETSC_NULL_INTEGER, 2*nnzRowMax, PETSC_NULL_INTEGER, petsc_err)
     end if
 
     !call MatSetFromOptions(Amat,petsc_err)
@@ -688,7 +688,7 @@ module ocn_compute_nonhydrostatic_pressure
        call VecSetType(local_x, VECMPI, petsc_err)
     end if
 
-    allocate(destIndex(globalM), origIndex(globalM))
+    allocate(destIndex(m), origIndex(m))
     ! Try a better way with Index Sets and Vec Scatter for some communication
     ! later move this first part to init as we don't have to do it every time FIXME!
     iter = 1
@@ -704,10 +704,15 @@ module ocn_compute_nonhydrostatic_pressure
     call VecAssemblyBegin(negOneVec, petsc_err)
     call VecAssemblyEnd(negOneVec, petsc_err)
 
-    call ISCreateGeneral(mpi_comm, globalM, origIndex, PETSC_COPY_VALUES, origIS, petsc_err)
-    call ISCreateGeneral(mpi_comm, globalM, destIndex, PETSC_COPY_VALUES, destIS, petsc_err)
+    call ISCreateGeneral(mpi_comm, m, origIndex, PETSC_COPY_VALUES, origIS, petsc_err)
+    call ISCreateGeneral(mpi_comm, m, destIndex, PETSC_COPY_VALUES, destIS, petsc_err)
     call VecScatterCreate(x, origIS, local_x, destIS, scatter, petsc_err)
-    
+
+    deallocate(destIndex, origIndex)
+
+    call ISDestroy(origIS, petsc_err)
+    call ISDestroy(destIS, petsc_err)
+
 #endif
 
     end subroutine ocn_nonhydrostatic_solver_init
@@ -728,8 +733,8 @@ module ocn_compute_nonhydrostatic_pressure
 
 #ifdef USE_PETSC
     !stuff for PETSC_finalize from the scatter routine
-    call ISDestroy(origIS, petsc_err)
-    call ISDestroy(destIS, petsc_err)
+    !call ISDestroy(origIS, petsc_err)
+    !call ISDestroy(destIS, petsc_err)
     call VecScatterDestroy(scatter, petsc_err)
 
     call MatDestroy(Amat,petsc_err)
