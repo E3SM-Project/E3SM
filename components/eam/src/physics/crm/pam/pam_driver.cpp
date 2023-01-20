@@ -32,6 +32,7 @@ extern "C" void pam_driver() {
   auto is_first_step = coupler.get_option<bool>("is_first_step");
   coupler.set_option<real>("gcm_physics_dt",gcm_dt);
   coupler.set_option<std::string>("p3_lookup_data_path","./p3_data");
+  coupler.set_option<int>("sponge_num_layers",crm_nz/4);
   //------------------------------------------------------------------------------------------------
   // Allocate the coupler state and retrieve host/device data managers
   coupler.allocate_coupler_state( crm_nz , crm_ny , crm_nx , nens );
