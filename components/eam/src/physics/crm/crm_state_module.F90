@@ -25,6 +25,7 @@ module crm_state_module
       real(crm_rknd), allocatable :: v_wind(:,:,:,:)       ! CRM v-wind component
       real(crm_rknd), allocatable :: w_wind(:,:,:,:)       ! CRM w-wind component
       real(crm_rknd), allocatable :: temperature(:,:,:,:)  ! CRM temperature
+      real(crm_rknd), allocatable :: rho_dry(:,:,:,:)      ! CRM dry density
       real(crm_rknd), allocatable :: qv(:,:,:,:)           ! CRM water vapor
 
       ! 1-moment microphsics variables
@@ -70,12 +71,14 @@ contains
       if (.not. allocated(state%v_wind))      allocate(state%v_wind(ncrms,crm_nx,crm_ny,crm_nz))
       if (.not. allocated(state%w_wind))      allocate(state%w_wind(ncrms,crm_nx,crm_ny,crm_nz))
       if (.not. allocated(state%temperature)) allocate(state%temperature(ncrms,crm_nx,crm_ny,crm_nz))
+      if (.not. allocated(state%rho_dry))     allocate(state%rho_dry(ncrms,crm_nx,crm_ny,crm_nz))
       if (.not. allocated(state%qv))          allocate(state%qv(ncrms,crm_nx,crm_ny,crm_nz))
 
       call prefetch(state%u_wind)
       call prefetch(state%v_wind)
       call prefetch(state%w_wind)
       call prefetch(state%temperature)
+      call prefetch(state%rho_dry)
       call prefetch(state%qv)
 
       if (trim(MMF_microphysics_scheme) .eq. 'sam1mom') then
@@ -131,6 +134,7 @@ contains
       if (allocated(state%v_wind))      deallocate(state%v_wind)
       if (allocated(state%w_wind))      deallocate(state%w_wind)
       if (allocated(state%temperature)) deallocate(state%temperature)
+      if (allocated(state%rho_dry))     deallocate(state%rho_dry)
       if (allocated(state%qv))          deallocate(state%qv)
 
       if (allocated(state%qp)) deallocate(state%qp)
