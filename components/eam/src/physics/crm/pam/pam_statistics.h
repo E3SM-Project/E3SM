@@ -76,6 +76,7 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   auto nx         = coupler.get_option<int>("crm_nx");
   auto ny         = coupler.get_option<int>("crm_ny");
   //------------------------------------------------------------------------------------------------
+  // convert aggregated values to time means
   auto precip_liq      = dm_device.get<real,1>("precip_liq_aggregated");
   auto precip_ice      = dm_device.get<real,1>("precip_ice_aggregated");
   auto aggregation_cnt = dm_device.get<real,1>("stat_aggregation_cnt");
@@ -85,10 +86,10 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
     precip_ice(iens) = precip_ice(iens) / aggregation_cnt(iens);
     precip_tot(iens) = precip_liq(iens) + precip_ice(iens);
   });
-
+  //------------------------------------------------------------------------------------------------
+  // copy data to host
   auto precip_tot_host = dm_host.get<real,1>("output_precc");
   auto precip_ice_host = dm_host.get<real,1>("output_precsc");
-
   precip_tot.deep_copy_to(precip_tot_host);
   precip_ice.deep_copy_to(precip_ice_host);
   //------------------------------------------------------------------------------------------------
