@@ -9,13 +9,12 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
   int nz   = dm_device.get_dimension_size("z"   );
-  int ny   = dm_device.get_dimension_size("y"   );
-  int nx   = dm_device.get_dimension_size("x"   );
+  // int ny   = dm_device.get_dimension_size("y"   );
+  // int nx   = dm_device.get_dimension_size("x"   );
   int nens = dm_device.get_dimension_size("nens");
   int gcm_nlev = coupler.get_option<int>("gcm_nlev");
   real R_d  = coupler.get_option<real>("R_d");
   real R_v  = coupler.get_option<real>("R_v");
-  real P0   = coupler.get_option<real>("p0");
   real cp_d = coupler.get_option<real>("cp_d");
   real Lv   = coupler.get_option<real>("latvap") ;
   real Lf   = coupler.get_option<real>("latice") ;
@@ -35,12 +34,42 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
   auto input_qiil = dm_host.get<real const,2>("input_qiil").createDeviceCopy();
   auto input_ql   = dm_host.get<real const,2>("input_ql"  ).createDeviceCopy();
   auto input_pmid = dm_host.get<real const,2>("input_pmid").createDeviceCopy();
+  auto input_pint = dm_host.get<real const,2>("input_pint").createDeviceCopy();
+  auto input_pdel = dm_host.get<real const,2>("input_pdel").createDeviceCopy();
+  auto input_zint = dm_host.get<real const,2>("input_zint").createDeviceCopy();
   //------------------------------------------------------------------------------------------------
+  auto state_rho_dry = dm_host.get<real const,4>("state_rho_dry").createDeviceCopy();
   // Define GCM state for forcing - adjusted to avoid directly forcing cloud liquid and ice fields
   parallel_for( Bounds<2>(nz,nens) , YAKL_LAMBDA (int k, int iens) {
     int k_gcm = gcm_nlev-1-k;
-    real pmid_dry = input_pmid(k_gcm,iens) * ( 1 - input_ql(k_gcm,iens) );
+
+    real qv = input_ql(k_gcm,iens);
+    real pmid_dry = input_pmid(k_gcm,iens) * ( 1-qv ) / ( 1-qv+qv*(R_v/R_d) );
     gcm_rho_d(k,iens) = pmid_dry / ( input_tl(k_gcm,iens)*R_d );
+
+    // real pmid_dry = input_pmid(k_gcm,iens) * ( 1 - input_ql(k_gcm,iens) );
+    // gcm_rho_d(k,iens) = pmid_dry / ( input_tl(k_gcm,iens)*R_d );
+
+    // real dp = (input_pint(k_gcm,iens) - input_pint(k_gcm+1,iens))*-1;
+    // // real dp_dry = dp * (1-input_ql(k_gcm,iens));
+    // real dz =  input_zint(k_gcm,iens) - input_zint(k_gcm+1,iens);
+    // real dp_dry = input_pdel(k_gcm,iens) * ( 1 - input_ql(k_gcm,iens) );
+    // gcm_rho_d(k,iens) = dp_dry / dz;
+
+    std::cout <<"WHDEBUG0 "
+    <<"  k:"<<k
+    <<"  k_gcm:"<<k_gcm
+    // <<"  input_zint:"<<input_zint(k_gcm,iens)
+    // <<"  input_pint:"<<input_pint(k_gcm,iens)
+    // <<"  dp:"<<dp
+    // <<"  pdel:"<<input_pdel(k_gcm,iens)
+    // <<"  dp_dry:"<<dp_dry
+    // <<"  dz:"<<dz
+    <<"  gcm_rho_d:"<<gcm_rho_d(k,iens)
+    // <<"  crm_rho_d:"<<crm_rho_d(k,0,0,iens)
+    <<"  state_rho_dry:"<<state_rho_dry(k,0,0,iens)
+    <<std::endl;
+
     gcm_uvel (k,iens) = input_ul(k_gcm,iens);
     gcm_vvel (k,iens) = input_vl(k_gcm,iens);
     // convert total water mixing ratio to water vapor density
@@ -50,6 +79,7 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
     real input_t_adj = input_tl(k_gcm,iens) - ( input_qccl(k_gcm,iens)*Lv + input_qiil(k_gcm,iens)*Lf ) / cp_d ;
     gcm_temp(k,iens) = input_t_adj;
   });
+
   //------------------------------------------------------------------------------------------------
 }
 
@@ -107,6 +137,7 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   auto state_v_wind        = dm_host.get<real const,4>("state_v_wind").createDeviceCopy();
   auto state_w_wind        = dm_host.get<real const,4>("state_w_wind").createDeviceCopy();
   auto state_temperature   = dm_host.get<real const,4>("state_temperature").createDeviceCopy();
+  auto state_rho_dry       = dm_host.get<real const,4>("state_rho_dry").createDeviceCopy();
   auto state_qv            = dm_host.get<real const,4>("state_qv").createDeviceCopy();
   auto state_qc            = dm_host.get<real const,4>("state_qc").createDeviceCopy();
   auto state_nc            = dm_host.get<real const,4>("state_nc").createDeviceCopy();
@@ -126,6 +157,7 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   //------------------------------------------------------------------------------------------------
   // Copy the host CRM data to the coupler
   parallel_for("Horz mean of CRM state", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+    crm_rho_d(k,j,i,iens) = state_rho_dry(k,j,i,iens);
     // convert specific mixing ratios to density
     real rho_v = state_qv(k,j,i,iens) * crm_rho_d(k,j,i,iens) / ( 1 - state_qv(k,j,i,iens) ) ;
     real rho_c = state_qc(k,j,i,iens) * ( crm_rho_d(k,j,i,iens) + rho_v ) ;

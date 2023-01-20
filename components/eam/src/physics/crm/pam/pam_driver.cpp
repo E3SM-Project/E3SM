@@ -53,8 +53,8 @@ extern "C" void pam_driver() {
   // update coupler GCM state with input GCM state
   pam_state_update_gcm_state(coupler);
 
-  // set CRM dry density using gcm_density_dry (set in pam_state_update_gcm_state)
-  modules::broadcast_initial_gcm_column_dry_density(coupler); 
+  // // set CRM dry density using gcm_density_dry (set in pam_state_update_gcm_state)
+  // modules::broadcast_initial_gcm_column_dry_density(coupler);
 
   // Copy input CRM state (saved by the GCM) to coupler
   pam_state_copy_input_to_coupler(coupler);
@@ -108,7 +108,7 @@ extern "C" void pam_driver() {
     int j = 0;
     int iens = 0;
     // for (int i=0; i<crm_nx; i++) {
-      std::cout <<"WHDEBUG0 "
+      std::cout <<"WHDEBUG1 "
                 <<"  i:"<<i 
                 // <<"  j:"<<j 
                 <<"  k:"<<k 
@@ -161,6 +161,26 @@ extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
 
+  std::cout<<std::endl;
+  for (int k=0; k<crm_nz; k++) {
+    int k_gcm = crm_nz-1-k;
+    int i = 0;
+    int j = 0;
+    int iens = 0;
+    std::cout <<"WHDEBUG2 "
+    <<"  i:"<<i 
+    <<"  k:"<<k 
+    <<"  crm_zint:"  <<crm_zint(k,iens)
+    <<"  crm_zmid:"  <<crm_zmid(k,iens)
+    <<"  crm_temp:"  <<crm_temp(k,j,i,iens)
+    <<"  crm_rho_d:" <<crm_rho_d(k,j,i,iens)
+    <<"  crm_pmid:"  <<crm_pmid(k,j,i,iens)
+    <<"  input_pmid:"<<input_pmid(k_gcm,iens)
+    <<std::endl;
+  }
+  endrun("stopping for debug");
+  //------------------------------------------------------------------------------------------------
+
   // Compute primary feedback tendencies and copy to GCM
   pam_feedback_compute_crm_feedback_tendencies( coupler, gcm_dt );
   
@@ -174,7 +194,7 @@ extern "C" void pam_driver() {
   pam_radiation_copy_output_to_gcm(coupler);
 
   // copy aggregated statistical quantities to host
-  pam_statistics_copy_to_host( coupler, gcm_dt );
+  pam_statistics_copy_to_host( coupler );
 
   //------------------------------------------------------------------------------------------------
   // Finalize and clean up

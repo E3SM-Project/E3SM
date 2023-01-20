@@ -13,11 +13,10 @@ inline void pam_statistics_init( pam::PamCoupler &coupler ) {
   using yakl::atomicAdd;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
-
-  int nz   = dm_device.get_dimension_size("z"   );
-  int ny   = dm_device.get_dimension_size("y"   );
-  int nx   = dm_device.get_dimension_size("x"   );
-  int nens = dm_device.get_dimension_size("nens");
+  auto nens       = coupler.get_option<int>("ncrms");
+  auto nz         = coupler.get_option<int>("crm_nz");
+  auto nx         = coupler.get_option<int>("crm_nx");
+  auto ny         = coupler.get_option<int>("crm_ny");
   //------------------------------------------------------------------------------------------------
   // aggregted quantities
   dm_device.register_and_allocate<real>("precip_liq_aggregated","aggregated sfc liq precip rate",{nens},{"nens"});
@@ -43,11 +42,10 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
   using yakl::atomicAdd;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
-
-  int nz   = dm_device.get_dimension_size("z"   );
-  int ny   = dm_device.get_dimension_size("y"   );
-  int nx   = dm_device.get_dimension_size("x"   );
-  int nens = dm_device.get_dimension_size("nens");
+  auto nens       = coupler.get_option<int>("ncrms");
+  auto nz         = coupler.get_option<int>("crm_nz");
+  auto nx         = coupler.get_option<int>("crm_nx");
+  auto ny         = coupler.get_option<int>("crm_ny");
   //------------------------------------------------------------------------------------------------
   auto precip_liq = dm_device.get<real,3>("precip_liq_surf_out");
   auto precip_ice = dm_device.get<real,3>("precip_ice_surf_out");
@@ -68,25 +66,24 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
 
 
 // copy aggregated statistical quantities to host
-inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler , real gcm_dt ) {
+inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
-
-  int nz   = dm_device.get_dimension_size("z"   );
-  int ny   = dm_device.get_dimension_size("y"   );
-  int nx   = dm_device.get_dimension_size("x"   );
-  int nens = dm_device.get_dimension_size("nens");
+  auto nens       = coupler.get_option<int>("ncrms");
+  auto nz         = coupler.get_option<int>("crm_nz");
+  auto nx         = coupler.get_option<int>("crm_nx");
+  auto ny         = coupler.get_option<int>("crm_ny");
   //------------------------------------------------------------------------------------------------
   auto precip_liq      = dm_device.get<real,1>("precip_liq_aggregated");
   auto precip_ice      = dm_device.get<real,1>("precip_ice_aggregated");
-  auto aggregation_cnt = dm_device.get<real,1>("aggregation_cnt");
+  auto aggregation_cnt = dm_device.get<real,1>("stat_aggregation_cnt");
   real1d precip_tot("precip_tot",nens);
   parallel_for("calculate total precipitation", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
-    precip_liq(iens) = precip_liq(iens) / aggregation_cnt(iens) ;
-    precip_ice(iens) = precip_ice(iens) / aggregation_cnt(iens) ;
-    precip_tot(iens) = precip_liq(iens) + precip_ice(iens) ;
+    precip_liq(iens) = precip_liq(iens) / aggregation_cnt(iens);
+    precip_ice(iens) = precip_ice(iens) / aggregation_cnt(iens);
+    precip_tot(iens) = precip_liq(iens) + precip_ice(iens);
   });
 
   auto precip_tot_host = dm_host.get<real,1>("output_precc");
