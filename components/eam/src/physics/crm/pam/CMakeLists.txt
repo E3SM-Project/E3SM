@@ -21,8 +21,6 @@ add_subdirectory(external/physics)
 add_subdirectory(external/dynamics)
 add_subdirectory(external/externals/eigen)
 
-set(YAKL_CXX_FLAGS -g )
-
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
    set(PAM_Fortran_FLAGS -g -real-size 64)
 else()
