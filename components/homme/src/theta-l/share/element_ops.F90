@@ -409,7 +409,32 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   else
      R_star(:,:,:)=Rgas
   endif
-  end subroutine
+  end subroutine get_R_star
+
+
+  !_____________________________________________________________________
+  ! vapor, liquid water, liquid water
+  ! this will be different for EAM
+  ! for standalone homme, we need qsize>=3, this is a mess
+  subroutine get_R_star_dp(R_star,dp,Qdp1,Qdp2,Qdp3)
+  !
+  implicit none
+  real (kind=real_kind), intent(out):: R_star(np,np,nlev)
+  real (kind=real_kind), intent(in) :: dp(np,np,nlev)
+  real (kind=real_kind), intent(in) :: Qdp1(np,np,nlev)
+  real (kind=real_kind), intent(in) :: Qdp2(np,np,nlev)
+  real (kind=real_kind), intent(in) :: Qdp3(np,np,nlev)
+
+  integer :: k
+  if (use_moisture) then
+     do k=1,nlev
+        R_star(:,:,k) = Rgas * ( dp(:,:,k) - Qdp1(np,np,nlev) - Qdp2(np,np,nlev) - Qdp3(np,np,nlev) ) + &
+                        Rwater_vapor*Qdp1(:,:,k)
+     enddo
+  else
+     R_star(:,:,:)=Rgas
+  endif
+  end subroutine get_R_star_dp
 
 
   !_____________________________________________________________________

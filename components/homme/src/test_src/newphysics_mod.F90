@@ -181,12 +181,13 @@ endif
         !hy update in terms of cp
         !compute average temperature with new mass
         !arrives to dest cell, recompute qrdry in terms of dpdry of the dest cell
-        change = deltamass/dpdry(d_ind)
         ctermold = cpdry + cpv * qvdry(d_ind) + cl * (qcdry(d_ind) + qrdry(d_ind))
         ctermnew = cptermold + cl*change
         T_new = ( tempe(d_ind) * dpdry(d_ind) * cptermold + tempe(k) * dpdry(k) * qrdry(k) * cl ) / &
                  cptermnew / dpdry(d_ind)
 #endif
+
+#if 1
         !nh update in terms of cv
         ! Tnew * cvstar * (dp+newmass) + phi(dp+newmass) = Told * cvstar * dp + phi*dp +newenergy
         ! this is CV update, this won't preserve NH pressure
@@ -197,7 +198,7 @@ endif
                 / ctermnew / dpdry(d_ind)
 
         tempe(d_ind) = T_new
-
+#endif
         qrdry(k) = 0.0
         qrdry(d_ind) = qrdry(d_ind) + change
       endif
@@ -312,8 +313,8 @@ subroutine condensation_and_back_again(qvdry,qcdry,qrdry,tempe,dpdry,ptop,zi,pnh
   call construct_hydro_pressure(dpdry,ptop,pidry)
 
   do k=1, nlev
-    !call qsat_kessler2(pnh(k), tempe(k), qsat)
-    call qsat_kessler2(pidry(k), tempe(k), qsat)
+    call qsat_kessler2(pnh(k), tempe(k), qsat)
+    !call qsat_kessler2(pidry(k), tempe(k), qsat)
     qsatdry = qsat*dpi(k)/dpdry(k)
 
     !assume condensation
@@ -325,8 +326,10 @@ subroutine condensation_and_back_again(qvdry,qcdry,qrdry,tempe,dpdry,ptop,zi,pnh
     endif
     ! new values: qv = qv - dq, qc = qc + dq
 
+!if(abs(dq)>0.0)then
 !print *,'qv,qc,qsat,dq',qvdry(k),qcdry(k),qsatdry,dq
 !print *, 'T old', tempe(k)
+!endif
 !rstar = rdry*dpdry(k) + rvapor*dpdry(k)*qvdry(k)
 !print *, 'rstar', rstar
     !pnh = rstar*tempe(k)/dphi*dpi(k)
@@ -339,10 +342,11 @@ subroutine condensation_and_back_again(qvdry,qcdry,qrdry,tempe,dpdry,ptop,zi,pnh
     call phase_change_gas_liquid_level_hydroupdate( &
          qvdry(k),qcdry(k),qrdry(k),dq,tempe(k),dpdry(k) )
 
+!if(abs(dq)>0.0)then
 !print *, 'after update -------------'
 !print *,'qv,qc,qsat,dq',qvdry(k),qcdry(k),qsatdry,dq
 !print *, 'T new', tempe(k)
-
+!endif
 
     !recompute zi for all levels <= k
 !    rstar = rdry*dpdry(k) + rvapor*dpdry(k)*qvdry(k)
@@ -363,10 +367,8 @@ subroutine condensation_and_back_again(qvdry,qcdry,qrdry,tempe,dpdry,ptop,zi,pnh
 
 
 !!!!!!!!!!!!!! this is where init, that is HY phi or NH phi might matter
-
-
 !updating 1 layer at a time (shift all z above k cell)
-!does not seem to work as dphi gets accumulated too much?
+!does not seem to work 
 !let's do a final zi update here instead
 !print *, 'old zi ', zi
 rstar = rdry*dpdry + rvapor*dpdry*qvdry
@@ -623,31 +625,30 @@ subroutine kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,dpdry_c,p_c,ptop,zi_c,&
      ! Cr, Ar stages ----------------------------------------------------------
      ! these can convert masses of qc, qr into each other only
      ! so, no updates of other state variables
-     call energy_nh_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,p_c,energynh_before)
-     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energyhy_before)
+!     call energy_nh_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,p_c,energynh_before)
+!     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energyhy_before)
      energy_start_timestep = energynh_before
-     !call accrecion_and_accumulation(qcdry_c, qrdry_c, dt)
-     call energy_nh_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,p_c,energynh_after)
-     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energyhy_after)
-     !print *, 'enbef - enafter', (energy_before - energy_after)/energy_after
+!     call accrecion_and_accumulation(qcdry_c, qrdry_c, dt)
+!     call energy_nh_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,p_c,energynh_after)
+!     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energyhy_after)
+     !print *, 'ACC-C stage HY: enbef - enafter', (energyhy_before - energyhy_after)/energyhy_after
+     !print *, 'ACC-C stage NH: enbef - enafter', (energynh_before - energynh_after)/energynh_after
 
      ! sedimentation ----------------------------------------------------------
      ! right now nh term is not used, so, no need to recompute wet hydro pressure and total nh pressure
      !so far, it is only part that has fluxes out
-     call energy_nh_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,p_c,energynh_before)
-     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energyhy_before)
-!print *, 'before sed'
-     !call sedimentation_nh (qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zi_c,p_c, loc_mass_p,loc_energy_p,dt)
-!print *, 'after sed'
-
-     call energy_nh_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,p_c,energynh_after)
-     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energyhy_after)
-     !if(loc_energy_p > 300.0)then
-     !print *, 'Sedime:enbefore - enafter(up to flux)', (energy_before - energy_after - loc_energy_p)/energy_before, loc_energy_p
-     !print *, 'mass out', loc_mass_p
+!     call energy_nh_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,p_c,energynh_before)
+!     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energyhy_before)
+!     call sedimentation_nh (qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zi_c,p_c, loc_mass_p,loc_energy_p,dt)
+!     call energy_nh_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,p_c,energynh_after)
+!     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energyhy_after)
+!     if(loc_energy_p > 300.0)then
+!     print *, 'Sedime HY:enb-ena(up to flux)', (energyhy_before - energyhy_after - loc_energy_p)/energyhy_before, loc_energy_p
+!     print *, 'Sedime NH:enb-ena(up to flux)', (energynh_before - energynh_after - loc_energy_p)/energynh_before, loc_energy_p
+!     print *, 'mass out', loc_mass_p
      !stop
-     !endif
-     !massout = massout + loc_mass_p; energyout = energyout + loc_energy_p;
+!     endif
+     massout = massout + loc_mass_p; energyout = energyout + loc_energy_p;
      !!!!!!!!!!! update p here!
 
      !do this later
@@ -681,7 +682,14 @@ subroutine kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,dpdry_c,p_c,ptop,zi_c,&
      !update q fields
      ! if WITH RESPECT TO OLD PRESSURE!
      ! then this is wrong to do: dp_c = dpdry_c*(1.0 + qvdry_c + qcdry_c + qrdry_c)
+
+#if 0
+     ! update that avoids forcing_tracers code
+     ! otherwise, use new pressure below
      dp_c = dpdry_c*(1.0 + qvdry_c + qcdry_c + qrdry_c)
+#else
+     ! update that uses forcing_tracers code: do nothing
+#endif
 
      call convert_to_wet(qvdry_c, qcdry_c, qrdry_c, dp_c, dpdry_c, qv_c, qc_c, qr_c)
 

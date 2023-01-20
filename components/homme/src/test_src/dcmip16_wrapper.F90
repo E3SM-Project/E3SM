@@ -30,7 +30,8 @@ use time_mod,             only: time_at, TimeLevel_t
 use physical_constants,   only: bubble_const1, bubble_const2, bubble_const3, bubble_const4, &
                                 bubble_t0_const, bubble_epsilo, bubble_e0, &
                                 latvap, &
-                                g, cp, p0, kappa
+                                g, cp, p0, kappa, &
+                                rdry=>rgas, rvapor=>rwater_vapor
 use newphysics
 
 implicit none
@@ -608,7 +609,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   real(rl) :: ptop
   real(rl) :: loc_mass_p, mass_prect, loc_energy_p, energy_prect
 
-  real(rl) :: zi(np,np,nlevp), zi_c(nlevp)
+  real(rl) :: zi(np,np,nlevp), zi_c(nlevp), rstar(nlev)
 
   real(rl) :: energy_before, energy_after, mass_before, mass_after, discrepancy
   logical :: wasiactive
@@ -713,7 +714,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       endif ! RJ or Kessler choice
 
       precl(i,j,ie) = mass_prect / (dt * rhow) / g
-#if 0
+#if 1
       !now update 3d fields here
       T(i,j,:)  = T_c(:)
       qv(i,j,:) = qv_c(:)
@@ -732,6 +733,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 #endif
       ! use qind to avoid compiler warnings when qsize_d<5
 
+#if 0
 !if(maxval(qc_c) > 0.0) then
 !print *, 'q1 before ', elem(ie)%state%Qdp(i,j,:,1,ntQ)
 !endif
@@ -747,10 +749,13 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       qind=3;  elem(ie)%state%Qdp(i,j,:,qind,ntQ) = dp_c*qr_c
       elem(ie)%state%dp3d(i,j,:,nt) = dp_c
       elem(ie)%state%phinh_i(i,j,:,nt) = gravit*zi_c
-      elem(ie)%state%vtheta_dp(i,j,:,nt) = dp_c * &
+
+      rstar = rdry * dpdry_c + rvapor * dp_c*qv_c
+      !rstar has dp factor in it
+      elem(ie)%state%vtheta_dp(i,j,:,nt) = rstar/rdry * &
                     T_c * (p0/p_c)**kappa
      
-
+#endif
 
     enddo; enddo; !j,i loop
 
