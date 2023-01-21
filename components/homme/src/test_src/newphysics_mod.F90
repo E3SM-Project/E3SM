@@ -383,7 +383,7 @@ subroutine condensation_and_back_again(qvdry,qcdry,qrdry,tempe,dpdry,ptop,zi,pnh
 rstar = rdry*dpdry*(1.0+qvdry+qcdry+qrdry) + (rvapor-rdry)*dpdry*qvdry
 dphi = rstar*tempe/pnh
 
-#if 1
+#if 0
 
 if(present(ie))then
 print *, '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
@@ -397,8 +397,8 @@ enddo
 
 if(present(ie))then
 print *, 'rstar HOMME here', rstar(ii:jj)
-print *, 'rstar Homme pieces', rdry,dpdry(ii:jj)*(1.0+qvdry(ii:jj)+qcdry(ii:jj)+qrdry(ii:jj)),(rvapor-rdry),dpdry(ii:jj)*qvdry(ii:jj)
-print *, 'rstar WL here', rdry*dpdry(ii:jj) + rvapor*dpdry(ii:jj)*qvdry(ii:jj)
+!print *, 'rstar Homme pieces', rdry,dpdry(ii:jj)*(1.0+qvdry(ii:jj)+qcdry(ii:jj)+qrdry(ii:jj)),(rvapor-rdry),dpdry(ii:jj)*qvdry(ii:jj)
+!print *, 'rstar WL here', rdry*dpdry(ii:jj) + rvapor*dpdry(ii:jj)*qvdry(ii:jj)
 print *, 'new vapor mass', dpdry(ii:jj)*qvdry(ii:jj)
 print *, 'new qc mass', dpdry(ii:jj)*qcdry(ii:jj)
 print *, 'tempe here', tempe(ii:jj)
@@ -693,11 +693,11 @@ subroutine kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,dpdry_c,p_c,ptop,zi_c,&
      !call energy_nh_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,p_c,energynh_before)
      !call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energyhy_before)
 
-if(present(ie))then
-     call condensation_and_back_again(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zi_c,p_c,ie)
-else
+!if(present(ie))then
+!     call condensation_and_back_again(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zi_c,p_c,ie)
+!else
      call condensation_and_back_again(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zi_c,p_c)
-endif
+!endif
 
      !call energy_nh_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,p_c,energynh_after)
      !call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energyhy_after)
@@ -718,9 +718,9 @@ endif
      ! if WITH RESPECT TO OLD PRESSURE!
      ! then this is wrong to do: dp_c = dpdry_c*(1.0 + qvdry_c + qcdry_c + qrdry_c)
 
-#if 0
+#if 1
      ! update that avoids forcing_tracers code
-     ! otherwise, use new pressure below
+     ! otherwise, use old pressure below
      dp_c = dpdry_c*(1.0 + qvdry_c + qcdry_c + qrdry_c)
 #else
      ! update that uses forcing_tracers code: do nothing

@@ -694,11 +694,11 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
         !call energy_nh_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,energy_before)
 
         !this one conserves after PA
-!if(elem(ie)%globalid == 6 .and. i==4 .and. j==4) then
-!        call kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,dpdry_c,p_c,ptop,zi_c,mass_prect,energy_prect,dt,wasiactive,6)
-!else
+if(elem(ie)%globalid == 6 .and. i==4 .and. j==4) then
+        call kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,dpdry_c,p_c,ptop,zi_c,mass_prect,energy_prect,dt,wasiactive,6)
+else
         call kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,dpdry_c,p_c,ptop,zi_c,mass_prect,energy_prect,dt,wasiactive)
-!endif
+endif
         !in dry to wet conversion kessler used old dp to convert
         !call energy_hy_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,energy_after)
         !call energy_nh_via_mass(dpdry_c,dp_c*qv_c,dp_c*qc_c,dp_c*qr_c,T_c,ptop,zi_c,p_c,energy_after)
@@ -719,7 +719,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       precl(i,j,ie) = mass_prect / (dt * rhow) / g
 
 
-#if 1
+#if 0
       !now update 3d fields here
       T(i,j,:)  = T_c(:)
       qv(i,j,:) = qv_c(:)
@@ -742,7 +742,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 !this code is in kessler
 !rstar = rdry*dpdry(1.0+qcdry+qrdry) + rvapor*dpdry*qvdry
 !dphi = rstar*tempe/pnh
-#if 1
+#if 0
 !print what would be the new fields
 if(elem(ie)%globalid == 6 .and. i==4 .and. j==4) then
 ii=110; jj=110;
@@ -768,7 +768,6 @@ print *, 'dphi here ', rstar(ii:jj)*T_c(ii:jj)/p_c(ii:jj), rstar(ii:jj), T_c(ii:
 
 print *, 'old phi',  zi(i,j,ii:jj)*gravit
 print *, 'new phi in wrapper',  gravit*zi_c(ii:jj)
-rstar = rdry * dpdry_c + rvapor * dp_c*qv_c
 vthetaa = rstar/rdry * T_c * (p0/p_c)**kappa
 print *, 'old vtheta', elem(ie)%state%vtheta_dp(i,j,ii:jj,nt)
 print *, 'new theta in wrapper', vthetaa(ii:jj)
@@ -782,14 +781,18 @@ print *,'its parts', rstar(ii:jj),rdry,T_c(ii:jj),p0, (p0/p_c(ii:jj))**kappa
 endif
 #endif
 
-#if 0
+#if 1
       qind=1;  elem(ie)%state%Qdp(i,j,:,qind,ntQ) = dp_c*qv_c
       qind=2;  elem(ie)%state%Qdp(i,j,:,qind,ntQ) = dp_c*qc_c
       qind=3;  elem(ie)%state%Qdp(i,j,:,qind,ntQ) = dp_c*qr_c
       elem(ie)%state%dp3d(i,j,:,nt) = dp_c
       elem(ie)%state%phinh_i(i,j,:,nt) = gravit*zi_c
 
+      !correct rstar
       rstar = rdry * dpdry_c + rvapor * dp_c*qv_c
+
+      !incorrect rstar, homme version
+      !rstar = rdry * dp_c + (rvapor-rdry) * dp_c*qv_c
       !rstar has dp factor in it
       elem(ie)%state%vtheta_dp(i,j,:,nt) = rstar/rdry * &
                     T_c * (p0/p_c)**kappa

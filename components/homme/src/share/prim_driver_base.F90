@@ -1523,18 +1523,23 @@ contains
 !print *, 'old phi in routine', elem%state%phinh_i(4,4,ii:jj,np1)
 !print *, 'old vtheta',elem%state%vtheta_dp(4,4,ii:jj,np1)
 
+#if 0
 !at the end what do we see?
 do ie=nets,nete
 if(elem(ie)%globalid==6)then
 ii=110; jj=110;
 print *,'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM'
 print *, 'Qdp1', elem(ie)%state%Qdp(4,4,ii:jj,n0qdp,1)
+print *, 'Qdp2', elem(ie)%state%Qdp(4,4,ii:jj,n0qdp,2)
+print *, 'Qdp3', elem(ie)%state%Qdp(4,4,ii:jj,n0qdp,3)
 print *, 'vtheta_dp', elem(ie)%state%vtheta_dp(4,4,ii:jj,n0)
 print *, 'dp', elem(ie)%state%dp3d(4,4,ii:jj,n0)
 print *, 'phi', elem(ie)%state%phinh_i(4,4,ii:jj,n0)
 stop
 endif
 enddo
+#endif
+
 
   elseif (ftype==1) then
     !do nothing
@@ -1628,7 +1633,7 @@ enddo
 
 
 !disable it
-#if 1
+#if 0
 
 
 

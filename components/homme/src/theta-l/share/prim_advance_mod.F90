@@ -518,7 +518,7 @@ contains
   real (kind=real_kind),  intent(in)    :: dt
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: np1,nets,nete
-#if 1
+#if 0
   integer :: k,ie
   do ie=nets,nete
 
