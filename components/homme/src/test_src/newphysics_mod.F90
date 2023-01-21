@@ -295,14 +295,16 @@ end subroutine rain_evaporation
 
 
 
-subroutine condensation_and_back_again(qvdry,qcdry,qrdry,tempe,dpdry,ptop,zi,pnh)
+subroutine condensation_and_back_again(qvdry,qcdry,qrdry,tempe,dpdry,ptop,zi,pnh,ie)
 
   real(rl), dimension(nlev), intent(in)    :: qrdry, dpdry
   real(rl), dimension(nlev), intent(inout) :: qvdry,qcdry,tempe,pnh
   real(rl), dimension(nlevp),intent(inout) :: zi
   real(rl),                  intent(in)    :: ptop
 
-  integer  :: k
+  integer, intent(in), optional :: ie
+
+  integer  :: k, ii, jj
   real(rl) :: dq, qsat, qsatdry  !, dphi, rstar, olddphi
   real(rl), dimension(nlev)  :: dpi,ppi,pidry, dphi, rstar
 
@@ -371,13 +373,40 @@ subroutine condensation_and_back_again(qvdry,qcdry,qrdry,tempe,dpdry,ptop,zi,pnh
 !does not seem to work 
 !let's do a final zi update here instead
 !print *, 'old zi ', zi
-rstar = rdry*dpdry + rvapor*dpdry*qvdry
+
+
+
+!!!!!!!!!!!!!! correct R*
+!rstar = rdry*dpdry + rvapor*dpdry*qvdry
+
+!!!!!!!!!!!!!! incorrect, matching homme
+rstar = rdry*dpdry*(1.0+qvdry+qcdry+qrdry) + (rvapor-rdry)*dpdry*qvdry
 dphi = rstar*tempe/pnh
 
+#if 0
+
+if(present(ie))then
+print *, '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
+ii=110; jj=110;
+print *, 'in here old g*zi is', gravit*zi(ii:jj)
+endif
 
 do k=nlev,1,-1
 zi(k) = zi(k+1) + dphi(k)/gravit
 enddo
+
+if(present(ie))then
+print *, 'rstar HOMME here', rstar(ii:jj)
+print *, 'rstar Homme pieces', rdry,dpdry(ii:jj)*(1.0+qvdry(ii:jj)+qcdry(ii:jj)+qrdry(ii:jj)),(rvapor-rdry),dpdry(ii:jj)*qvdry(ii:jj)
+print *, 'rstar WL here', rdry*dpdry(ii:jj) + rvapor*dpdry(ii:jj)*qvdry(ii:jj)
+print *, 'new vapor mass', dpdry(ii:jj)*qvdry(ii:jj)
+print *, 'new qc mass', dpdry(ii:jj)*qcdry(ii:jj)
+print *, 'tempe here', tempe(ii:jj)
+print *, 'pnh here', pnh(ii:jj)
+print *, 'dphi here is',dphi(ii:jj)
+print *, 'in here new g*zi is', gravit*zi(ii:jj)
+endif
+#endif
 
 !print *, 'new zi ', zi(120:128)
 
@@ -585,8 +614,10 @@ end subroutine rj_old
 
 !operate with state
 subroutine kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,dpdry_c,p_c,ptop,zi_c,&
-                             massout,energyout,dt,wasiactive)
+                             massout,energyout,dt,wasiactive, ie)
  
+  integer, intent(in), optional :: ie
+
   real(rl), dimension(nlev), intent(in)    :: dpdry_c
   real(rl), dimension(nlev), intent(inout) :: p_c, dp_c
   real(rl), dimension(nlevp),intent(inout) :: zi_c
@@ -659,13 +690,17 @@ subroutine kessler_new(qv_c,qc_c,qr_c,T_c,dp_c,dpdry_c,p_c,ptop,zi_c,&
      !print *, 'Rain evap: enbefore - enafter(up to flux)', (energy_before - energy_after)/energy_before
 
      ! condensation <-> evaporation -------------------------------------------
-     call energy_nh_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,p_c,energynh_before)
-     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energyhy_before)
+     !call energy_nh_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,p_c,energynh_before)
+     !call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energyhy_before)
 
+if(present(ie))then
+     call condensation_and_back_again(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zi_c,p_c,ie)
+else
      call condensation_and_back_again(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zi_c,p_c)
+endif
 
-     call energy_nh_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,p_c,energynh_after)
-     call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energyhy_after)
+     !call energy_nh_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,p_c,energynh_after)
+     !call energy_hy_via_dry(qvdry_c,qcdry_c,qrdry_c,T_c,dpdry_c,ptop,zbottom,energyhy_after)
      !print *, 'Condensation: enbefore - enafter(up to flux)', (energy_before - energy_after)/energy_before
 
 
