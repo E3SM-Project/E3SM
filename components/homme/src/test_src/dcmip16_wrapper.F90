@@ -717,6 +717,8 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
       endif ! RJ or Kessler choice
 
       precl(i,j,ie) = mass_prect / (dt * rhow) / g
+
+
 #if 1
       !now update 3d fields here
       T(i,j,:)  = T_c(:)
@@ -740,7 +742,7 @@ subroutine bubble_new_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
 !this code is in kessler
 !rstar = rdry*dpdry(1.0+qcdry+qrdry) + rvapor*dpdry*qvdry
 !dphi = rstar*tempe/pnh
-#if 0
+#if 1
 !print what would be the new fields
 if(elem(ie)%globalid == 6 .and. i==4 .and. j==4) then
 ii=110; jj=110;

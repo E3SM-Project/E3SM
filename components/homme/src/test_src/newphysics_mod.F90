@@ -383,7 +383,7 @@ subroutine condensation_and_back_again(qvdry,qcdry,qrdry,tempe,dpdry,ptop,zi,pnh
 rstar = rdry*dpdry*(1.0+qvdry+qcdry+qrdry) + (rvapor-rdry)*dpdry*qvdry
 dphi = rstar*tempe/pnh
 
-#if 0
+#if 1
 
 if(present(ie))then
 print *, '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'

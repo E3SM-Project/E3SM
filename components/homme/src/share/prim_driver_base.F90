@@ -1505,7 +1505,7 @@ contains
   real (kind=real_kind),  intent(in)    :: dt_remap
   type (hvcoord_t),       intent(in)    :: hvcoord
   integer,                intent(in)    :: n0,n0qdp,nets,nete
-  integer                               :: ie
+  integer                               :: ie,         ii,jj
 
   call t_startf("ApplyCAMForcing_remap")
   if (ftype==-1) then
@@ -1514,10 +1514,28 @@ contains
     do ie = nets,nete
        call applyCAMforcing_tracers (elem(ie),hvcoord,n0,n0qdp,dt_remap,.false.,ie)
     enddo
-
-!stop
-
     call applyCAMforcing_dynamics(elem,hvcoord,n0,dt_remap,nets,nete)
+
+
+!print *, 'new vapor mass', elem%state%Qdp(4,4,ii:jj,1,np1_qdp)
+!print *, 'compute rstar from scratch',elem%state%dp3d(4,4,ii:jj,np1)*(rgas + (rvapor-rgas)*elem%state%Q(4,4,ii:jj,1))
+!print *, 'compute rstar from scratch2',elem%state%dp3d(4,4,ii:jj,np1)*rgas + (rvapor-rgas)*elem%state%Qdp(4,4,ii:jj,1,np1_qdp)
+!print *, 'old phi in routine', elem%state%phinh_i(4,4,ii:jj,np1)
+!print *, 'old vtheta',elem%state%vtheta_dp(4,4,ii:jj,np1)
+
+!at the end what do we see?
+do ie=nets,nete
+if(elem(ie)%globalid==6)then
+ii=110; jj=110;
+print *,'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM'
+print *, 'Qdp1', elem(ie)%state%Qdp(4,4,ii:jj,n0qdp,1)
+print *, 'vtheta_dp', elem(ie)%state%vtheta_dp(4,4,ii:jj,n0)
+print *, 'dp', elem(ie)%state%dp3d(4,4,ii:jj,n0)
+print *, 'phi', elem(ie)%state%phinh_i(4,4,ii:jj,n0)
+stop
+endif
+enddo
+
   elseif (ftype==1) then
     !do nothing
   elseif (ftype==2) then
@@ -1792,7 +1810,7 @@ contains
    elem%derived%FPHI(:,:,:) = &
         (phi_n1 - elem%state%phinh_i(:,:,:,np1))/dt
   
-#if 0
+#if 1
 !if( present(ie) .and. ie == 2 ) then
 if(elem%globalid == 6) then
 ii=110; jj=110;
