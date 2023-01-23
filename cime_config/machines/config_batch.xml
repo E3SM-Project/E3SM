@@ -70,9 +70,9 @@
        <directive> --core-spec=$SHELL{ppn=`./xmlquery --value MAX_MPITASKS_PER_NODE`; if [[ $ppn > 56 ]]; then echo "64-$ppn"|bc; else echo 8; fi; }</directive>
      </directives>
      <queues>
-       <queue strict="true" nodemin="1" nodemax="8" walltimemax="01:00:00" default="true">batch</queue>
-       <queue strict="true" nodemin="9" nodemax="64" walltimemax="01:00:00">batch</queue>
-       <queue strict="true" nodemin="65" nodemax="160" walltimemax="01:00:00">batch</queue>
+       <queue strict="true" nodemin="1" nodemax="8" walltimemax="08:00:00" default="true">batch</queue>
+       <queue strict="true" nodemin="9" nodemax="64" walltimemax="04:00:00">batch</queue>
+       <queue strict="true" nodemin="65" nodemax="160" walltimemax="02:00:00">batch</queue>
      </queues>
    </batch_system>
 
