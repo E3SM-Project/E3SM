@@ -629,9 +629,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    real(crm_rknd), dimension(pcols) :: wsy_tmp
 
    real(crm_rknd) :: tmp_dz
-   real(crm_rknd) :: tmp_qv
-   real(crm_rknd) :: tmp_pdel_dry
-   real(crm_rknd) :: tmp_pdry
+   real(crm_rknd) :: tmp_dp
 
    ! CRM types
    type(crm_state_type)  :: crm_state
@@ -869,21 +867,13 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_t(i,:,:,k) = state(c)%t(i,m)
 
                tmp_qv = state(c)%q(i,m,1)
-               tmp_pdry = state(c)%pmid(i,m) * (1-tmp_qv) / (1-tmp_qv+tmp_qv*SHR_CONST_RWV/SHR_CONST_RDAIR)
-               crm_rho_d(i,:,:,k) = tmp_pdry / ( state(c)%t(i,m)*SHR_CONST_RDAIR )
 
-               ! tmp_pdry = state(c)%pmid(i,m) * (1-tmp_qv)
-               ! crm_rho_d(i,:,:,k) = tmp_pdry / ( state(c)%t(i,m)*SHR_CONST_RDAIR )
-
-               ! diagnose density from:
-               !   pdel_dry = rho_dry*dz 
+               ! diagnose dry density from:
                !   pdel = pdel_dry + pdel*qv
-               ! tmp_dz = state(c)%zi(i,k) - state(c)%zi(i,k+1)
-               ! tmp_pdel_dry = state(c)%pdel(i,k) * ( 1 - state(c)%q(i,m,1) )
-               ! crm_rho_d(i,:,:,k) = tmp_pdel_dry / tmp_dz
-
-               ! diagnose dry density as => rho_d = dp * (1-qv) / dz
-               ! crm_rho_d(i,:,:,k) = state(c)%pdel(i,k) * ( 1 - state(c)%q(i,m,1) ) / ( state(c)%zi(i,k) - state(c)%zi(i,k+1) )
+               !   pdel_dry = rho_dry*dz*g
+               tmp_dp = state(c)%pint(i,m+1) - state(c)%pint(i,m)
+               tmp_dz = state(c)%zi(i,m+1) - state(c)%zi(i,m)
+               crm_rho_d(i,:,:,k) = -1 * tmp_dp * ( 1 - state(c)%q(i,m,1) ) / ( tmp_dz * gravit )
 
                ! Initialize microphysics arrays
                if (MMF_microphysics_scheme .eq. 'sam1mom') then
@@ -906,15 +896,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
             end do
          end do
-
-         !do i = 1,ncol
-         !   do k = 1,crm_nz
-         !      m = pver-k+1
-         !      write(iulog,222) i, k, state(c)%q(i,m,ixcldice)
-         !      call shr_sys_flush(iulog)
-         !   end do
-         !end do
-222 format('WHDEBUG00 - i:',i3,' k=',i2,'  crm_qi: ',E12.6)
 
          !------------------------------------------------------------------------------------------
          ! Initialize radiation variables

@@ -85,56 +85,6 @@ extern "C" void pam_driver() {
     modules::perturb_temperature( coupler , gcolp );
   }
   //------------------------------------------------------------------------------------------------
-  auto crm_zint          = dm_device.get<real,2>("vertical_interface_height" );
-  auto crm_zmid          = dm_device.get<real,2>("vertical_midpoint_height" );
-  auto crm_rho_d         = dm_device.get<real,4>("density_dry");
-  auto crm_temp          = dm_device.get<real,4>("temp");
-  auto crm_qv            = dm_device.get<real,4>("water_vapor");
-  auto crm_qc            = dm_device.get<real,4>("cloud_water");
-  auto crm_qi            = dm_device.get<real,4>("ice");
-  auto crm_pmid          = coupler.compute_pressure_array();
-  auto input_tl   = dm_host.get<real const,2>("input_tl").createDeviceCopy();
-  auto input_ql   = dm_host.get<real const,2>("input_ql").createDeviceCopy();
-  // auto input_qccl = dm_host.get<real const,2>("input_qccl").createDeviceCopy();
-  // auto input_qiil = dm_host.get<real const,2>("input_qiil").createDeviceCopy();
-  auto input_pmid = dm_host.get<real const,2>("input_pmid").createDeviceCopy();
-  auto state_temperature   = dm_host.get<real const,4>("state_temperature").createDeviceCopy();
-  auto state_qv            = dm_host.get<real const,4>("state_qv").createDeviceCopy();
-  auto state_qc            = dm_host.get<real const,4>("state_qc").createDeviceCopy();
-  auto state_qi            = dm_host.get<real const,4>("state_qi").createDeviceCopy();
-  for (int k=0; k<crm_nz; k++) {
-    int k_gcm = crm_nz-1-k;
-    int i = 0;
-    int j = 0;
-    int iens = 0;
-    // for (int i=0; i<crm_nx; i++) {
-      std::cout <<"WHDEBUG1 "
-                <<"  i:"<<i 
-                // <<"  j:"<<j 
-                <<"  k:"<<k 
-                // <<"  icrm:"<<iens
-                <<"  crm_zint:"  <<crm_zint  (k,iens)
-                <<"  crm_zmid:"  <<crm_zmid  (k,iens)              
-                <<"  crm_temp:"  <<crm_temp  (k,j,i,iens)
-                // <<"  state_temp:"<<state_temperature  (k,j,i,iens)
-                // <<"  input_tl:"  <<input_tl  (k_gcm,iens)                
-                // <<"  crm_qv:"    <<crm_qv    (k,j,i,iens)
-                // <<"  state_qv:"  <<state_qv  (k,j,i,iens)
-                // <<"  input_ql:"  <<input_ql  (k_gcm,iens)                
-                // <<"  crm_qc:"    <<crm_qc    (k,j,i,iens)
-                // // <<"  input_qccl:"<<input_qccl(k_gcm,iens)
-                // <<"  state_qc:"<<state_qc(k,j,i,iens)
-                // <<"  crm_qi:"    <<crm_qi    (k,j,i,iens)
-                // // <<"  input_qiil:"<<input_qiil(k_gcm,iens)
-                // <<"  state_qi:"<<state_qi(k,j,i,iens)
-                <<"  crm_rho_d:" <<crm_rho_d   (k,j,i,iens)
-                <<"  crm_pmid:"  <<crm_pmid  (k,j,i,iens)
-                <<"  input_pmid:"<<input_pmid(k_gcm,iens)
-                <<std::endl;
-    // }
-  }
-  // endrun("stopping for debug");
-  //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
   // Run the CRM
@@ -161,24 +111,25 @@ extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
 
-  std::cout<<std::endl;
-  for (int k=0; k<crm_nz; k++) {
-    int k_gcm = crm_nz-1-k;
-    int i = 0;
-    int j = 0;
-    int iens = 0;
-    std::cout <<"WHDEBUG2 "
-    <<"  i:"<<i 
-    <<"  k:"<<k 
-    <<"  crm_zint:"  <<crm_zint(k,iens)
-    <<"  crm_zmid:"  <<crm_zmid(k,iens)
-    <<"  crm_temp:"  <<crm_temp(k,j,i,iens)
-    <<"  crm_rho_d:" <<crm_rho_d(k,j,i,iens)
-    <<"  crm_pmid:"  <<crm_pmid(k,j,i,iens)
-    <<"  input_pmid:"<<input_pmid(k_gcm,iens)
-    <<std::endl;
-  }
-  endrun("stopping for debug");
+  // crm_pmid = coupler.compute_pressure_array();
+  // std::cout<<std::endl;
+  // for (int k=0; k<crm_nz; k++) {
+  //   int k_gcm = crm_nz-1-k;
+  //   int i = 0;
+  //   int j = 0;
+  //   int iens = 0;
+  //   std::cout <<"WHDEBUG2 "
+  //   <<"  i:"<<i
+  //   <<"  k:"<<k
+  //   <<"  crm_zint:"  <<crm_zint(k,iens)
+  //   <<"  crm_zmid:"  <<crm_zmid(k,iens)
+  //   <<"  crm_temp:"  <<crm_temp(k,j,i,iens)
+  //   <<"  crm_rho_d:" <<crm_rho_d(k,j,i,iens)
+  //   <<"  crm_pmid:"  <<crm_pmid(k,j,i,iens)
+  //   <<"  input_pmid:"<<input_pmid(k_gcm,iens)
+  //   <<std::endl;
+  // }
+  // endrun("stopping for debug");
   //------------------------------------------------------------------------------------------------
 
   // Compute primary feedback tendencies and copy to GCM

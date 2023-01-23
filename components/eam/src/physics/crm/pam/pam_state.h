@@ -9,13 +9,12 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
   int nz   = dm_device.get_dimension_size("z"   );
-  // int ny   = dm_device.get_dimension_size("y"   );
-  // int nx   = dm_device.get_dimension_size("x"   );
   int nens = dm_device.get_dimension_size("nens");
   int gcm_nlev = coupler.get_option<int>("gcm_nlev");
   real R_d  = coupler.get_option<real>("R_d");
   real R_v  = coupler.get_option<real>("R_v");
   real cp_d = coupler.get_option<real>("cp_d");
+  real grav = coupler.get_option<real>("grav");
   real Lv   = coupler.get_option<real>("latvap") ;
   real Lf   = coupler.get_option<real>("latice") ;
   //------------------------------------------------------------------------------------------------
@@ -43,32 +42,10 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
   parallel_for( Bounds<2>(nz,nens) , YAKL_LAMBDA (int k, int iens) {
     int k_gcm = gcm_nlev-1-k;
 
-    real qv = input_ql(k_gcm,iens);
-    real pmid_dry = input_pmid(k_gcm,iens) * ( 1-qv ) / ( 1-qv+qv*(R_v/R_d) );
-    gcm_rho_d(k,iens) = pmid_dry / ( input_tl(k_gcm,iens)*R_d );
-
-    // real pmid_dry = input_pmid(k_gcm,iens) * ( 1 - input_ql(k_gcm,iens) );
-    // gcm_rho_d(k,iens) = pmid_dry / ( input_tl(k_gcm,iens)*R_d );
-
-    // real dp = (input_pint(k_gcm,iens) - input_pint(k_gcm+1,iens))*-1;
-    // // real dp_dry = dp * (1-input_ql(k_gcm,iens));
-    // real dz =  input_zint(k_gcm,iens) - input_zint(k_gcm+1,iens);
-    // real dp_dry = input_pdel(k_gcm,iens) * ( 1 - input_ql(k_gcm,iens) );
-    // gcm_rho_d(k,iens) = dp_dry / dz;
-
-    std::cout <<"WHDEBUG0 "
-    <<"  k:"<<k
-    <<"  k_gcm:"<<k_gcm
-    // <<"  input_zint:"<<input_zint(k_gcm,iens)
-    // <<"  input_pint:"<<input_pint(k_gcm,iens)
-    // <<"  dp:"<<dp
-    // <<"  pdel:"<<input_pdel(k_gcm,iens)
-    // <<"  dp_dry:"<<dp_dry
-    // <<"  dz:"<<dz
-    <<"  gcm_rho_d:"<<gcm_rho_d(k,iens)
-    // <<"  crm_rho_d:"<<crm_rho_d(k,0,0,iens)
-    <<"  state_rho_dry:"<<state_rho_dry(k,0,0,iens)
-    <<std::endl;
+    real dz = input_zint(k_gcm,iens) - input_zint(k_gcm+1,iens);
+    real dp = input_pint(k_gcm,iens) - input_pint(k_gcm+1,iens);
+    real dp_dry = dp * (1-input_ql(k_gcm,iens));
+    gcm_rho_d(k,iens) = -1*dp_dry / ( dz * grav );
 
     gcm_uvel (k,iens) = input_ul(k_gcm,iens);
     gcm_vvel (k,iens) = input_vl(k_gcm,iens);
@@ -91,10 +68,10 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
   int nens        = dm_device.get_dimension_size("nens");
-  int gcm_nlev    = coupler.get_option<int>("gcm_nlev");
   int nz          = dm_device.get_dimension_size("z"   );
   int ny          = dm_device.get_dimension_size("y"   );
   int nx          = dm_device.get_dimension_size("x"   );
+  int gcm_nlev    = coupler.get_option<int>("gcm_nlev");
   auto crm_dx     = coupler.get_option<double>("crm_dx");
   auto crm_dy     = coupler.get_option<double>("crm_dy");
   //------------------------------------------------------------------------------------------------
@@ -244,16 +221,16 @@ inline void pam_state_copy_output_to_gcm( pam::PamCoupler &coupler ) {
   auto host_state_shoc_relvar   = dm_host.get<real,4>("state_shoc_relvar");
   //------------------------------------------------------------------------------------------------
   // convert densities back to specific mixing ratios
-  real4d qv("qv",nz,ny,nx,nens);
-  real4d qc("qc",nz,ny,nx,nens);
-  real4d qr("qr",nz,ny,nx,nens);
-  real4d qi("qi",nz,ny,nx,nens);
+  real4d tmp_qv("tmp_qv",nz,ny,nx,nens);
+  real4d tmp_qc("tmp_qc",nz,ny,nx,nens);
+  real4d tmp_qr("tmp_qr",nz,ny,nx,nens);
+  real4d tmp_qi("tmp_qi",nz,ny,nx,nens);
   parallel_for("Horz mean of CRM state", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     // convert density to specific mixing ratio
-    qv(k,j,i,iens) = crm_rho_v(k,j,i,iens) / (crm_rho_d(k,j,i,iens)+crm_rho_v(k,j,i,iens));
-    qc(k,j,i,iens) = crm_rho_c(k,j,i,iens) / (crm_rho_d(k,j,i,iens)+crm_rho_c(k,j,i,iens));
-    qr(k,j,i,iens) = crm_rho_r(k,j,i,iens) / (crm_rho_d(k,j,i,iens)+crm_rho_r(k,j,i,iens));
-    qi(k,j,i,iens) = crm_rho_i(k,j,i,iens) / (crm_rho_d(k,j,i,iens)+crm_rho_i(k,j,i,iens));
+    tmp_qv(k,j,i,iens) = crm_rho_v(k,j,i,iens) / (crm_rho_d(k,j,i,iens)+crm_rho_v(k,j,i,iens));
+    tmp_qc(k,j,i,iens) = crm_rho_c(k,j,i,iens) / (crm_rho_d(k,j,i,iens)+crm_rho_c(k,j,i,iens));
+    tmp_qr(k,j,i,iens) = crm_rho_r(k,j,i,iens) / (crm_rho_d(k,j,i,iens)+crm_rho_r(k,j,i,iens));
+    tmp_qi(k,j,i,iens) = crm_rho_i(k,j,i,iens) / (crm_rho_d(k,j,i,iens)+crm_rho_i(k,j,i,iens));
   });
   //------------------------------------------------------------------------------------------------
   // Copy the CRM state to host arrays
@@ -261,10 +238,10 @@ inline void pam_state_copy_output_to_gcm( pam::PamCoupler &coupler ) {
   crm_vvel          .deep_copy_to( host_state_v_wind        );
   crm_wvel          .deep_copy_to( host_state_w_wind        );
   crm_temp          .deep_copy_to( host_state_temperature   );
-  // crm_rho_v         .deep_copy_to( host_state_qv            );
-  // crm_rho_c         .deep_copy_to( host_state_qc            );
-  // crm_rho_i         .deep_copy_to( host_state_qi            );
-  // crm_rho_r         .deep_copy_to( host_state_qr            );
+  tmp_qv            .deep_copy_to( host_state_qv            );
+  tmp_qc            .deep_copy_to( host_state_qc            );
+  tmp_qr            .deep_copy_to( host_state_qi            );
+  tmp_qi            .deep_copy_to( host_state_qr            );
   crm_num_c         .deep_copy_to( host_state_nc            );
   crm_num_r         .deep_copy_to( host_state_nr            );
   crm_num_i         .deep_copy_to( host_state_ni            );

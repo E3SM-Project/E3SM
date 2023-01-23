@@ -89,7 +89,6 @@ inline void pam_feedback_compute_crm_feedback_tendencies( pam::PamCoupler &coupl
   real cp_d = coupler.get_option<real>("cp_d");
   real r_gcm_dt = 1._fp / gcm_dt;  // precompute reciprocal to avoid costly divisions
   parallel_for( "Compute CRM feedback tendencies", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
-    // int k_gcm = gcm_nlev-1-k;
     int k_crm = nz-1-k_gcm;
     if (k_crm>=0) {
       real crm_dse = crm_hmean_temp (k_crm,iens) * cp_d;
