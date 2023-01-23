@@ -189,6 +189,8 @@ TEST_CASE ("vertical_remap") {
       }
     }
   }
+  pmid_src.sync_to_dev();
+  pint_src.sync_to_dev();
   auto remap = std::make_shared<VerticalRemapperTester>(src_grid,filename,pmid_src,pint_src,mask_val);
   print (" -> creating grid and remapper ... done!\n",comm);
 
