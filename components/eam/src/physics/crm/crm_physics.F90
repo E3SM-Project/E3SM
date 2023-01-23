@@ -866,9 +866,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_w(i,:,:,k) = 0.
                crm_t(i,:,:,k) = state(c)%t(i,m)
 
-               tmp_qv = state(c)%q(i,m,1)
-
-               ! diagnose dry density from:
+               ! diagnose dry density for PAM using:
                !   pdel = pdel_dry + pdel*qv
                !   pdel_dry = rho_dry*dz*g
                tmp_dp = state(c)%pint(i,m+1) - state(c)%pint(i,m)

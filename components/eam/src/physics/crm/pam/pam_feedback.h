@@ -91,13 +91,12 @@ inline void pam_feedback_compute_crm_feedback_tendencies( pam::PamCoupler &coupl
   parallel_for( "Compute CRM feedback tendencies", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
     int k_crm = nz-1-k_gcm;
     if (k_crm>=0) {
-      real crm_dse = crm_hmean_temp (k_crm,iens) * cp_d;
       real crm_qv  = crm_hmean_rho_v(k_crm,iens) / (crm_hmean_rho_d(k_crm,iens) + crm_hmean_rho_v(k_crm,iens));
       real crm_ql  = crm_hmean_rho_l(k_crm,iens) / (crm_hmean_rho_d(k_crm,iens) + crm_hmean_rho_l(k_crm,iens));
       real crm_qi  = crm_hmean_rho_i(k_crm,iens) / (crm_hmean_rho_d(k_crm,iens) + crm_hmean_rho_i(k_crm,iens));
       crm_feedback_tend_uvel(k_gcm,iens) = ( crm_hmean_uvel (k_crm,iens) - gcm_ul  (k_gcm,iens) )*r_gcm_dt;
       crm_feedback_tend_vvel(k_gcm,iens) = ( crm_hmean_vvel (k_crm,iens) - gcm_vl  (k_gcm,iens) )*r_gcm_dt;
-      crm_feedback_tend_dse (k_gcm,iens) = ( crm_dse                     - gcm_tl  (k_gcm,iens) )*r_gcm_dt;
+      crm_feedback_tend_dse (k_gcm,iens) = ( crm_hmean_temp (k_crm,iens) - gcm_tl  (k_gcm,iens) )*r_gcm_dt;
       crm_feedback_tend_qv  (k_gcm,iens) = ( crm_qv                      - gcm_ql  (k_gcm,iens) )*r_gcm_dt;
       crm_feedback_tend_ql  (k_gcm,iens) = ( crm_ql                      - gcm_qccl(k_gcm,iens) )*r_gcm_dt;
       crm_feedback_tend_qi  (k_gcm,iens) = ( crm_qi                      - gcm_qiil(k_gcm,iens) )*r_gcm_dt;
