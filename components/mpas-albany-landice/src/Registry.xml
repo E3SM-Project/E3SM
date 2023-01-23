@@ -685,6 +685,7 @@
 
                 <package name="thermal" description="This package includes variables required for the thermal solver."/>
 
+		<package name="extrapOceanData" description="This package includes variables required for extrapolating ocean data into MALI ice shelf cavities." />
 	</packages>
 
 
@@ -1649,6 +1650,23 @@ is the value of that variable from the *previous* time level!
 
 <!-- ================ -->
 
+	<!-- Variables related to the ocean-forcing re-extrapolation -->
+	    <var_struct name="extrapOceanData" time_levs="1">
+		   		<var name="origOceanMask" type="integer" dimensions="nCells" units="none"
+					 description="mask for original valid ocean data (e.g., ISMIP6 original TF data)"
+	            />
+	   			<var name="validOceanMask" type="real" dimensions="nCells" units="none"
+					 description="Mask for indicating where ocean data is present (i.e., seed mask)"
+				/>
+	 			<var name="availMaskOcean" type="real" dimensions="nCells" units="none"
+					 description="Mask for indicating where ocean data can be flood-filled (i.e., grow mask)"
+	       		/>
+			    <var name="ismip6shelfMelt_zBndsOcean" type="real" dimensions="TWO nISMIP6OceanLayers" units="m"
+                     description="bounds for ismip6 ocean layers"
+				/>
+		</var_struct>
+<!-- ================ -->
+
 	<!-- Scratch Variables -->
 	<var_struct name="scratch" time_levs="1">
 	  <var name="iceCellMask" type="integer" dimensions="nCells" units="none"
@@ -1731,7 +1749,6 @@ is the value of that variable from the *previous* time level!
 	       description="grow mask for flood fill"
 	       persistence="scratch"
 	       />
-
 	</var_struct>
 
 <!-- ================ -->
