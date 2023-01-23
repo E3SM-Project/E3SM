@@ -1,5 +1,5 @@
-#ifndef SCREAM_MAM4_AEROSOLS_HPP
-#define SCREAM_MAM4_AEROSOLS_HPP
+#ifndef SCREAM_MAM4_AEROSOL_MICROPHYSICS_HPP
+#define SCREAM_MAM4_AEROSOL_MICROPHYSICS_HPP
 
 #include <share/atm_process/atmosphere_process.hpp>
 //#include <share/util/scream_common_physics_functions.hpp>
@@ -20,7 +20,7 @@ namespace scream
 
 // The process responsible for handling MAM4 aerosols. The AD stores exactly ONE
 // instance of this class in its list of subcomponents.
-class MAM4Aerosols final : public scream::AtmosphereProcess
+class MAM4AerosolMicrophysics final : public scream::AtmosphereProcess
 {
   using PF           = scream::PhysicsFunctions<DefaultDevice>;
   using KT           = ekat::KokkosTypes<DefaultDevice>;
@@ -31,7 +31,8 @@ class MAM4Aerosols final : public scream::AtmosphereProcess
 public:
 
   // Constructor
-  MAM4Aerosols(const ekat::Comm& comm, const ekat::ParameterList& params);
+  MAM4AerosolMicrophysics(const ekat::Comm& comm,
+                          const ekat::ParameterList& params);
 
 protected:
 

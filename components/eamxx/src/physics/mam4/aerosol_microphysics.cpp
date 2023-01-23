@@ -1,5 +1,5 @@
 #include "ekat/ekat_assert.hpp"
-#include "physics/mam4/atmosphere_aerosols.hpp"
+#include "physics/mam4/aerosol_microphysics.hpp"
 
 #include "share/property_checks/field_lower_bound_check.hpp"
 #include "share/property_checks/field_within_interval_check.hpp"
@@ -9,20 +9,21 @@
 namespace scream
 {
 
-MAM4Aerosols::MAM4Aerosols(const ekat::Comm& comm,
-                           const ekat::ParameterList& params)
+MAM4AerosolMicrophysics::MAM4AerosolMicrophysics(
+    const ekat::Comm& comm,
+    const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params) {
 }
 
-MAM4Aerosols::AtmosphereProcessType type() const {
+MAM4AerosolMicrophysics::AtmosphereProcessType type() const {
   return AtmosphereProcessType::Physics;
 }
 
-std::string MAM4Aerosols::name() const {
-  return "MAM4Aerosols";
+std::string MAM4AerosolMicrophysics::name() const {
+  return "MAM4AerosolMicrophysics";
 }
 
-void MAM4Aerosols::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void MAM4AerosolMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
   // The units of mixing ratio q are technically non-dimensional.
@@ -69,7 +70,7 @@ void MAM4Aerosols::set_grids(const std::shared_ptr<const GridsManager> grids_man
   add_group<Updated>("tracers",grid_name,ps,Bundling::Required);
 }
 
-void MAM4Aerosols::
+void MAM4AerosolMicrophysics::
 set_computed_group_impl(const FieldGroup& group) {
   const auto& name = group.m_info->m_group_name;
   EKAT_REQUIRE_MSG(name=="tracers",
@@ -95,7 +96,7 @@ set_computed_group_impl(const FieldGroup& group) {
     "Error! MAM4 requires at least " << num_aero_tracers << " aerosol tracers.");
 }
 
-size_t MAM4Aerosols::requested_buffer_size_in_bytes() const override {
+size_t MAM4AerosolMicrophysics::requested_buffer_size_in_bytes() const override {
   // Number of Reals needed by local views in the interface
   const size_t interface_request = Buffer::num_1d_scalar_ncol*num_cols_*sizeof(Real) +
                                    Buffer::num_1d_scalar_nlev*nlev_packs*sizeof(Spack) +
@@ -112,7 +113,7 @@ size_t MAM4Aerosols::requested_buffer_size_in_bytes() const override {
   return interface_request + wsm_request;
 }
 
-void MAM4Aerosols::init_buffers(const ATMBufferManager &buffer_manager) override {
+void MAM4AerosolMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) override {
   EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(), "Error! Buffers size not sufficient.\n");
 
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
@@ -168,7 +169,7 @@ void MAM4Aerosols::init_buffers(const ATMBufferManager &buffer_manager) override
   EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for SHOCMacrophysics.");
 }
 
-void MAM4Aerosols::initialize_impl(const RunType run_type) {
+void MAM4AerosolMicrophysics::initialize_impl(const RunType run_type) {
   const auto& T_mid = get_field_in("T_mid").get_view<Spack**>();
   const auto& p_mid = get_field_in("p_mid").get_view<const Spack**>();
   const auto& qv = get_field_in("qv").get_view<Spack**>();
@@ -234,7 +235,7 @@ void MAM4Aerosols::initialize_impl(const RunType run_type) {
   // FIXME: aerosol process initialization goes here!
 }
 
-void MAM4Aerosols::run_impl(const int dt) {
+void MAM4AerosolMicrophysics::run_impl(const int dt) {
 
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_cols_, nlev_);
 
@@ -258,7 +259,7 @@ void MAM4Aerosols::run_impl(const int dt) {
   Kokkos::fence();
 }
 
-void MAM4Aerosols::finalize_impl()
+void MAM4AerosolMicrophysics::finalize_impl()
 {
 }
 
