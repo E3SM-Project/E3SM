@@ -2495,6 +2495,10 @@
       <file grid="ice|ocn" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne120pg2_oEC60to30v3.200511.nc</file>
       <file grid="atm|lnd" mask="EC30to60E2r2">$DIN_LOC_ROOT/share/domains/domain.lnd.ne120pg2_EC30to60E2r2.210312.nc</file>
       <file grid="ice|ocn" mask="EC30to60E2r2">$DIN_LOC_ROOT/share/domains/domain.ocn.ne120pg2_EC30to60E2r2.210312.nc</file>
+      <file grid="atm|lnd" mask="ICOS10">$DIN_LOC_ROOT/share/domains/domain.lnd.ne120pg2_ICOS10.230120.nc</file>
+      <file grid="ice|ocn" mask="ICOS10">$DIN_LOC_ROOT/share/domains/domain.ocn.ne120pg2_ICOS10.230120.nc</file>
+      <file grid="atm|lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.ne120pg2_gx1v6.190819.nc</file>
+      <file grid="ice|ocn" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.ocn.ne120pg2_gx1v6.190819.nc</file>
       <desc>ne120np4 is Spectral Elem 1/4-deg grid w/ 2x2 FV physics grid</desc>
     </domain>
 
