@@ -3079,8 +3079,8 @@
         <env name="I_MPI_PIN_ORDER">spread</env>
         <env name="I_MPI_PIN_CELL">unit</env>
      </environment_variables>
-    <environment_variables compiler="oneapi-ifxgpu">
-        <env name="SYCL_DEVICE_FILTER">opencl</env>
+     <environment_variables compiler="oneapi-ifxgpu">
+	<env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
         <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
         <env name="SYCL_CACHE_PERSISTENT">0</env>
         <env name="GATOR_INITIAL_MB">4000MB</env>
