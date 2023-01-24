@@ -81,6 +81,13 @@
       <support_level>Experimental, under development</support_level>
   </compset>
 
+  <compset>
+      <alias>F2010-SCREAMv1-X6T</alias> <!-- Coupled land-atm compset (using SCREAMv1), with X6T topography-->
+      <lname>2010_SCREAM%X6T_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
+
   <entries>
 
     <entry id="RUN_STARTDATE">

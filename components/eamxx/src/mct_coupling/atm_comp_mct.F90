@@ -142,9 +142,13 @@ CONTAINS
     !----------------------------------------------------------------------------
 
     ! Init the AD
+    call seq_timemgr_EClockGetData(EClock, curr_ymd=cur_ymd, curr_tod=cur_tod, start_ymd=case_start_ymd, start_tod=case_start_tod)
     call string_f2c(yaml_fname,yaml_fname_c)
     call string_f2c(trim(atm_log_fname),atm_log_fname_c)
-    call scream_create_atm_instance (mpicom_atm, ATM_ID, yaml_fname_c, atm_log_fname_c)
+    call scream_create_atm_instance (mpicom_atm, ATM_ID, yaml_fname_c, atm_log_fname_c, &
+                          INT(cur_ymd,kind=C_INT),  INT(cur_tod,kind=C_INT), &
+                          INT(case_start_ymd,kind=C_INT), INT(case_start_tod,kind=C_INT))
+
 
     ! Init MCT gsMap
     call atm_Set_gsMap_mct (mpicom_atm, ATM_ID, gsMap_atm)
@@ -166,7 +170,6 @@ CONTAINS
       print *, "[eamxx] ERROR! Unsupported starttype: "//trim(run_type)
       call mpi_abort(mpicom_atm,ierr,mpi_ierr)
     endif
-    call seq_timemgr_EClockGetData(EClock, curr_ymd=cur_ymd, curr_tod=cur_tod, start_ymd=case_start_ymd, start_tod=case_start_tod)
 
     ! Init surface coupling stuff in the AD
     call scream_set_cpl_indices (x2a, a2x)
@@ -180,8 +183,7 @@ CONTAINS
                                         c_loc(export_constant_multiple), c_loc(do_export_during_init), &
                                         num_cpl_exports, num_scream_exports, export_field_size)
 
-    call scream_init_atm (INT(cur_ymd,kind=C_INT),  INT(cur_tod,kind=C_INT), &
-                          INT(case_start_ymd,kind=C_INT), INT(case_start_tod,kind=C_INT))
+    call scream_init_atm ()
 
   end subroutine atm_init_mct
 

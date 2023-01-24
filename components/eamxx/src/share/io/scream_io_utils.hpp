@@ -114,6 +114,7 @@ struct IOFileSpecs {
   bool filename_with_mpiranks    = false;
   bool filename_with_avg_type    = true;
   bool filename_with_frequency   = true;
+  bool save_grid_data            = true;
 };
 
 std::string find_filename_in_rpointer (

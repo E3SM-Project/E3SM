@@ -35,8 +35,8 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
 
-  m_cell_area = m_grid->get_geometry_data("area"); // area of each cell
-  m_cell_lat  = m_grid->get_geometry_data("lat"); // area of each cell
+  m_cell_area = m_grid->get_geometry_data("area").get_view<const Real*>(); // area of each cell
+  m_cell_lat  = m_grid->get_geometry_data("lat").get_view<const Real*>(); // area of each cell
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
@@ -425,8 +425,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   // maximum number of levels in pbl from surface
   const auto pref_mid = m_buffer.pref_mid;
   const auto s_pref_mid = ekat::scalarize(pref_mid);
-  const auto hyam = m_grid->get_geometry_data("hyam");
-  const auto hybm = m_grid->get_geometry_data("hybm");
+  const auto hyam = m_grid->get_geometry_data("hyam").get_view<const Real*>();
+  const auto hybm = m_grid->get_geometry_data("hybm").get_view<const Real*>();
   const auto ps0 = C::P0;
   const auto psref = ps0;
   Kokkos::parallel_for(Kokkos::RangePolicy<>(0, m_num_levs), KOKKOS_LAMBDA (const int lev) {

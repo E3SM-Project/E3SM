@@ -137,7 +137,7 @@ macro (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE)
     # Create library
     set (dynLibName scream_${hommeLibName})
     add_library(${dynLibName} ${SCREAM_DYNAMICS_SOURCES})
-    target_link_libraries(${dynLibName} scream_share ${hommeLibName})
+    target_link_libraries(${dynLibName} scream_share scream_io ${hommeLibName})
     get_target_property(modulesDir ${hommeLibName} Fortran_MODULE_DIRECTORY)
     set_target_properties(${dynLibName} PROPERTIES Fortran_MODULE_DIRECTORY ${modulesDir})
     target_include_directories(${dynLibName} PUBLIC ${modulesDir})

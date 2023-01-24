@@ -165,9 +165,6 @@ tweaking their $case/namelist_scream.xml file.
     <!-- Homme dynamics -->
     <homme inherit="atm_proc_base">
       <Grid>Dynamics</Grid>
-      <vertical_coordinate_filename type="file">UNSET</vertical_coordinate_filename>
-      <vertical_coordinate_filename nlev="72">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L72_20220927.nc</vertical_coordinate_filename>
-      <vertical_coordinate_filename nlev="128">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L128_20220927.nc</vertical_coordinate_filename>
       <Moisture>moist</Moisture>
     </homme>
 
@@ -278,6 +275,9 @@ tweaking their $case/namelist_scream.xml file.
     <physics_grid_type hgrid=".*pg2">PG2</physics_grid_type>
     <physics_grid_rebalance>None</physics_grid_rebalance>
     <dynamics_namelist_file_name>./data/namelist.nl</dynamics_namelist_file_name>
+    <vertical_coordinate_filename type="file">UNSET</vertical_coordinate_filename>
+    <vertical_coordinate_filename nlev="72">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L72_20220927.nc</vertical_coordinate_filename>
+    <vertical_coordinate_filename nlev="128">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L128_20220927.nc</vertical_coordinate_filename>
   </grids_manager>
 
   <!-- List of nc files for loading inputs on specified grids -->
@@ -302,6 +302,7 @@ tweaking their $case/namelist_scream.xml file.
     <topography_filename hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</topography_filename>
     <topography_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc</topography_filename>
     <topography_filename hgrid="ne30np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_16xdel2.c20200108.nc</topography_filename>
+    <topography_filename hgrid="ne30np4.pg2" COMPSET=".*X6T*">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.nc</topography_filename>
     <topography_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4_16xdel2-PFC-consistentSGH.nc</topography_filename>
     <topography_filename hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4pg2_16xdel2.nc</topography_filename>
     <topography_filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4_16xdel2_consistentSGH_20220429.nc</topography_filename>
@@ -310,6 +311,7 @@ tweaking their $case/namelist_scream.xml file.
     <topography_filename hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4pg2_16xconsistentSGH_20190212_converted.nc</topography_filename>
     <topography_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4_16xconsistentSGH_20190528.nc</topography_filename>
     <topography_filename hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_16xconsistentSGH_20190528_converted.nc</topography_filename>
+    <topography_filename hgrid="ne1024np4.pg2" COMPSET=".*X6T*">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_x6t-SGH.nc</topography_filename>
     <topography_filename COMPSET=".*SCREAM%AQUA.*">UNSET</topography_filename>
     <phis COMPSET=".*SCREAM%AQUA.*">0.0</phis>
 
@@ -397,6 +399,7 @@ tweaking their $case/namelist_scream.xml file.
     <nu_top hgrid="ne256np4">4.0e4</nu_top>
     <nu_top hgrid="ne512np4">2.0e4</nu_top>
     <nu_top hgrid="ne1024np4">1.0e4</nu_top>
+    <pgrad_correction COMPSET=".*X6T*">1</pgrad_correction>
     <se_ftype valid_values="0,2">0</se_ftype>
     <se_geometry>sphere</se_geometry>
     <se_limiter_option>9</se_limiter_option>

@@ -40,10 +40,43 @@ void combine (const Real& new_val, Real& curr_val, const OutputAvgType avg_type)
 }
 
 AtmosphereOutput::
+AtmosphereOutput (const ekat::Comm& comm,
+                  const std::vector<Field>& fields,
+                  const std::shared_ptr<const grid_type>& grid)
+ : m_comm (comm)
+{
+  // This version of AtmosphereOutput is for quick output of fields
+  m_avg_type = OutputAvgType::Instant;
+  m_add_time_dim = false;
+
+  // Create a FieldManager with the input fields
+  auto fm = std::make_shared<FieldManager> (grid);
+  fm->registration_begins();
+  fm->registration_ends();
+  for (auto f : fields) {
+    fm->add_field(f);
+  }
+
+  set_field_manager (fm,"sim");
+
+  for (auto f : fields) {
+    m_fields_names.push_back(f.name());
+  }
+
+  set_grid (grid);
+  set_field_manager (fm,"io");
+
+  // Setup I/O structures
+  init ();
+}
+
+
+AtmosphereOutput::
 AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
                   const std::shared_ptr<const fm_type>& field_mgr,
                   const std::shared_ptr<const gm_type>& grids_mgr)
- : m_comm      (comm)
+ : m_comm         (comm)
+ , m_add_time_dim (true)
 {
   using vos_t = std::vector<std::string>;
 
@@ -71,12 +104,19 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   } else if (params.isSublist("Fields")){
     const auto& f_pl = params.sublist("Fields");
     const auto& io_grid_aliases = io_grid->aliases();
-    bool names_found = false;
+    bool grid_found = false;
     for (const auto& grid_name : io_grid_aliases) {
       if (f_pl.isSublist(grid_name)) {
+        grid_found = true;
         const auto& pl = f_pl.sublist(grid_name);
-        m_fields_names = pl.get<vos_t>("Field Names");
-        names_found = true;
+        if (pl.isType<vos_t>("Field Names")) {
+          m_fields_names = pl.get<vos_t>("Field Names");
+        } else if (pl.isType<std::string>("Field Names")) {
+          m_fields_names.resize(1, pl.get<std::string>("Field Names"));
+          if (m_fields_names[0]=="NONE") {
+            m_fields_names.clear();
+          }
+        }
 
         // Check if the user wants to remap fields on a different grid first
         if (pl.isParameter("IO Grid Name")) {
@@ -85,7 +125,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
         break;
       }
     }
-    EKAT_REQUIRE_MSG (names_found,
+    EKAT_REQUIRE_MSG (grid_found,
         "Error! Bad formatting of output yaml file. Missing 'Fields->$grid_name` sublist.\n");
   }
 
@@ -290,8 +330,8 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
     const auto  rank = layout.rank();
 
     // Safety check: make sure that the field was written at least once before using it.
-    EKAT_REQUIRE_MSG (field.get_header().get_tracking().get_time_stamp().is_valid(),
-        "Error! Output field '" + name + "' has not been initialized yet\n.");
+    EKAT_REQUIRE_MSG (!m_add_time_dim || field.get_header().get_tracking().get_time_stamp().is_valid(),
+        "Error! Time-dependent output field '" + name + "' has not been initialized yet\n.");
 
     const bool is_diagnostic = (m_diagnostics.find(name) != m_diagnostics.end());
     const bool is_aliasing_field_view =
@@ -498,9 +538,9 @@ void AtmosphereOutput::register_dimensions(const std::string& name)
       } else {
         tag_len = layout.dim(i);
       }
-      m_dims.emplace(std::make_pair(get_nc_tag_name(tags[i],dims[i]),tag_len));
+      m_dims[get_nc_tag_name(tags[i],dims[i])] = std::make_pair(tag_len,is_partitioned);
     } else {  
-      EKAT_REQUIRE_MSG(m_dims.at(tag_name)==dims[i] or is_partitioned,
+      EKAT_REQUIRE_MSG(m_dims.at(tag_name).first==dims[i] or is_partitioned,
         "Error! Dimension " + tag_name + " on field " + name + " has conflicting lengths");
     }
   }
@@ -602,16 +642,18 @@ register_variables(const std::string& filename,
       }
       vec_of_dims.push_back(tag_name); // Add dimensions string to vector of dims.
     }
-    // TODO: Do we expect all vars to have a time dimension?  If not then how to trigger? 
-    // Should we register dimension variables (such as ncol and lat/lon) elsewhere
-    // in the dimension registration?  These won't have time. 
-    io_decomp_tag += "-time";
+
     // TODO: Reverse order of dimensions to match flip between C++ -> F90 -> PIO,
     // may need to delete this line when switching to fully C++/C implementation.
     std::reverse(vec_of_dims.begin(),vec_of_dims.end());
-    vec_of_dims.push_back("time");  //TODO: See the above comment on time.
+    if (m_add_time_dim) {
+      io_decomp_tag += "-time";
+      vec_of_dims.push_back("time");  //TODO: See the above comment on time.
+    } else {
+      io_decomp_tag += "-notime";
+    }
 
-     // TODO  Need to change dtype to allow for other variables.
+    // TODO  Need to change dtype to allow for other variables.
     // Currently the field_manager only stores Real variables so it is not an issue,
     // but in the future if non-Real variables are added we will want to accomodate that.
 
@@ -641,6 +683,7 @@ AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
   //       the same order as the corresponding entry in the data to be read/written, we're good.
   // NOTE: In the case of regional output this rank may have 0 columns to write, thus, var_dof
   //       should be empty, we check for this special case and return an empty var_dof.
+  auto dofs_h = m_io_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
   if (layout.has_tag(ShortFieldTagsNames::COL)) {
     const int num_cols = m_io_grid->get_num_local_dofs();
     if (num_cols==0) {
@@ -650,10 +693,6 @@ AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
     scorpio::offset_t col_size = layout.size() / num_cols;
-
-    auto dofs = m_io_grid->get_dofs_gids();
-    auto dofs_h = Kokkos::create_mirror_view(dofs);
-    Kokkos::deep_copy(dofs_h,dofs);
 
     // Precompute this *before* the loop, since it involves expensive collectives.
     // Besides, the loop might have different length on different ranks, so
@@ -681,10 +720,6 @@ AtmosphereOutput::get_var_dof_offsets(const FieldLayout& layout)
     // Note: col_size might be *larger* than the number of vertical levels, or even smaller.
     //       E.g., (ncols,2,nlevs), or (ncols,2) respectively.
     scorpio::offset_t col_size = layout.size() / num_cols;
-
-    auto dofs = m_io_grid->get_dofs_gids();
-    auto dofs_h = Kokkos::create_mirror_view(dofs);
-    Kokkos::deep_copy(dofs_h,dofs);
 
     // Precompute this *before* the loop, since it involves expensive collectives.
     // Besides, the loop might have different length on different ranks, so
@@ -737,7 +772,7 @@ setup_output_file(const std::string& filename,
 
   // Register dimensions with netCDF file.
   for (auto it : m_dims) {
-    register_dimension(filename,it.first,it.first,it.second);
+    register_dimension(filename,it.first,it.first,it.second.first,it.second.second);
   }
 
   // Register variables with netCDF file.  Must come after dimensions are registered.

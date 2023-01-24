@@ -60,9 +60,6 @@ protected:
   // Restart homme
   void restart_homme_state ();
 
-  // Read vertical coordinates and set them in hommexx's structures
-  void init_homme_vcoord ();
-
   // Updates p_mid
   void update_pressure (const std::shared_ptr<const AbstractGrid>& grid);
 

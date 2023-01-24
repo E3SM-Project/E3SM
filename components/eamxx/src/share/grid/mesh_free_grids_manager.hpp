@@ -31,6 +31,8 @@ public:
 
 protected:
 
+  void add_geo_data (const nonconstgrid_ptr_type& grid) const;
+
   std::string get_reference_grid_name () const {
     return m_params.get<std::string>("reference_grid");
   }
@@ -39,6 +41,8 @@ protected:
   do_create_remapper (const grid_ptr_type from_grid,
                       const grid_ptr_type to_grid) const;
 
+  void load_lat_lon (const nonconstgrid_ptr_type& grid, const std::string& filename) const;
+  void load_vertical_coordinates (const nonconstgrid_ptr_type& grid, const std::string& filename) const;
   remap_repo_type     m_remappers;
 
   ekat::ParameterList m_params;
