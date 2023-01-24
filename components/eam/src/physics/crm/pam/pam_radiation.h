@@ -170,24 +170,31 @@ inline void pam_radiation_copy_output_to_gcm( pam::PamCoupler &coupler ) {
   auto rad_cld             = dm_device.get<real,4>("rad_cld");
   auto rad_aggregation_cnt = dm_device.get<real,1>("rad_aggregation_cnt");
   //------------------------------------------------------------------------------------------------
-  // wrap the host CRM state data in YAKL arrays
-  auto gcm_rad_temperature = dm_host.get<real,4>("rad_temperature").createDeviceCopy();
-  auto gcm_rad_qv          = dm_host.get<real,4>("rad_qv").createDeviceCopy();
-  auto gcm_rad_qc          = dm_host.get<real,4>("rad_qc").createDeviceCopy();
-  auto gcm_rad_qi          = dm_host.get<real,4>("rad_qi").createDeviceCopy();
-  auto gcm_rad_nc          = dm_host.get<real,4>("rad_nc").createDeviceCopy();
-  auto gcm_rad_ni          = dm_host.get<real,4>("rad_ni").createDeviceCopy();
-  auto gcm_rad_cld         = dm_host.get<real,4>("rad_cld").createDeviceCopy();
-  //------------------------------------------------------------------------------------------------
   // Convert sum to mean and copy the CRM data to the GCM
   parallel_for("copy rad state to GCM", SimpleBounds<4>(nz,rad_ny,rad_nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
-    gcm_rad_temperature(k,j,i,iens) = rad_temperature(k,j,i,iens) / rad_aggregation_cnt(iens);
-    gcm_rad_qv         (k,j,i,iens) = rad_qv         (k,j,i,iens) / rad_aggregation_cnt(iens);
-    gcm_rad_qc         (k,j,i,iens) = rad_qc         (k,j,i,iens) / rad_aggregation_cnt(iens);
-    gcm_rad_qi         (k,j,i,iens) = rad_qi         (k,j,i,iens) / rad_aggregation_cnt(iens);
-    gcm_rad_nc         (k,j,i,iens) = rad_nc         (k,j,i,iens) / rad_aggregation_cnt(iens);
-    gcm_rad_ni         (k,j,i,iens) = rad_ni         (k,j,i,iens) / rad_aggregation_cnt(iens);
-    gcm_rad_cld        (k,j,i,iens) = rad_cld        (k,j,i,iens) / rad_aggregation_cnt(iens);
+    rad_temperature(k,j,i,iens) = rad_temperature(k,j,i,iens) / rad_aggregation_cnt(iens);
+    rad_qv         (k,j,i,iens) = rad_qv         (k,j,i,iens) / rad_aggregation_cnt(iens);
+    rad_qc         (k,j,i,iens) = rad_qc         (k,j,i,iens) / rad_aggregation_cnt(iens);
+    rad_qi         (k,j,i,iens) = rad_qi         (k,j,i,iens) / rad_aggregation_cnt(iens);
+    rad_nc         (k,j,i,iens) = rad_nc         (k,j,i,iens) / rad_aggregation_cnt(iens);
+    rad_ni         (k,j,i,iens) = rad_ni         (k,j,i,iens) / rad_aggregation_cnt(iens);
+    rad_cld        (k,j,i,iens) = rad_cld        (k,j,i,iens) / rad_aggregation_cnt(iens);
   });
+  //------------------------------------------------------------------------------------------------
+  // copy rad column data to host
+  auto gcm_rad_temperature = dm_host.get<real,4>("rad_temperature");
+  auto gcm_rad_qv          = dm_host.get<real,4>("rad_qv");
+  auto gcm_rad_qc          = dm_host.get<real,4>("rad_qc");
+  auto gcm_rad_qi          = dm_host.get<real,4>("rad_qi");
+  auto gcm_rad_nc          = dm_host.get<real,4>("rad_nc");
+  auto gcm_rad_ni          = dm_host.get<real,4>("rad_ni");
+  auto gcm_rad_cld         = dm_host.get<real,4>("rad_cld");
+  rad_temperature.deep_copy_to(gcm_rad_temperature);
+  rad_qv         .deep_copy_to(gcm_rad_qv         );
+  rad_qc         .deep_copy_to(gcm_rad_qc         );
+  rad_qi         .deep_copy_to(gcm_rad_qi         );
+  rad_nc         .deep_copy_to(gcm_rad_nc         );
+  rad_ni         .deep_copy_to(gcm_rad_ni         );
+  rad_cld        .deep_copy_to(gcm_rad_cld        );
   //------------------------------------------------------------------------------------------------
 }
