@@ -28,25 +28,17 @@ void NUDGING::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
   std::cout<<"m_num_levs: "<<m_num_levs<<std::endl;
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_levs} };
+  // Layout for horiz_wind field
+  //FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {m_num_cols,2,m_num_levs} };
+
   //constexpr int ps = Pack::n;
   constexpr int ps = 1;
   add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name, ps);
   add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
-  //add_field<Required>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
-  //add_field<Computed>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
-  /*
-  for (auto &s: m_fnames) {
-  //  std::cout<<"s: "<<s<<std::endl;
-    if (s == "p_mid"){continue;}
-      add_field<Updated>(s, scalar3d_layout_mid, K, grid_name, ps);
-    //add_field<Required>(s, scalar3d_layout_mid, K, grid_name, ps);
-    //add_field<Computed>(s, scalar3d_layout_mid, K, grid_name, ps);
-  }
-  */
-  //add_field<Updated>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
-
+  //add_field<Updated>("qv", scalar3d_layout_mid, Qunit, grid_name, "tracers", ps);
+  //add_field<Updated>("horiz_winds",   horiz_wind_layout,   m/s,     grid_name, ps);
+  
   //Now need to read in the file
-  //datafile = "io_output_test.INSTANT.nsteps_x1.np1.2000-01-01-00250.nc";
   scorpio::register_file(datafile,scorpio::Read);
   m_num_src_levs = scorpio::get_dimlen_c2f(datafile.c_str(),"lev");
   scorpio::eam_pio_closefile(datafile);
@@ -65,18 +57,7 @@ void NUDGING::init_buffers(const ATMBufferManager &buffer_manager)
 void NUDGING::initialize_impl (const RunType /* run_type */)
 {
 
-  //Need to make this more general so it is not ju
-  //This defines the fields we are going to get from the nudging file
   using namespace ShortFieldTagsNames;
-  /*
-  for (auto &s: m_fnames) {
-    FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
-    fields_ext[s] = view_2d<Real>(s,m_num_cols,m_num_src_levs);
-    auto T_mid_r_v_h       = Kokkos::create_mirror_view(fields_ext[s]);      
-    host_views[s] = view_1d_host<Real>(T_mid_r_v_h.data(),T_mid_r_v_h.size());
-    layouts.emplace(s, scalar3d_layout_mid);
-  }
-  */
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
   fields_ext["T_mid"] = view_2d<Real>("T_mid",m_num_cols,m_num_src_levs);
   auto T_mid_r_v_h       = Kokkos::create_mirror_view(fields_ext["T_mid"]);
@@ -87,7 +68,7 @@ void NUDGING::initialize_impl (const RunType /* run_type */)
   auto p_mid_r_v_h       = Kokkos::create_mirror_view(fields_ext["p_mid"]);
   host_views["p_mid"] = view_1d_host<Real>(p_mid_r_v_h.data(),p_mid_r_v_h.size());
   layouts.emplace("p_mid", scalar3d_layout_mid);
-  
+
   auto grid_l = m_grid->clone("Point Grid", false);
   grid_l->reset_num_vertical_lev(m_num_src_levs);
   
@@ -103,13 +84,10 @@ void NUDGING::initialize_impl (const RunType /* run_type */)
   T_mid_ext = fields_ext["T_mid"];
   //p_mid_ext = p_mid_r_v;
   p_mid_ext = fields_ext["p_mid"];
-  ts0 = timestamp();
+  ts0=timestamp();
   //time_step_file=250;
   //time_step_file=300;
-  time_step_file=3600;
-  //time_step_internal=100;
-  //std::cout<<"ts at start time is: "<<ts.get_seconds()<<std::endl;
-  //data_input.read_variables(0);
+  time_step_file=7200;
 }
 
 
@@ -123,17 +101,23 @@ void NUDGING::time_interpolation (const int time_s) {
   
   const int time_index = time_s/time_step_file;
   std::cout<<"time_index: "<<time_index<<std::endl;
+
   data_input.read_variables(time_index-1);
   //return;
   view_2d<Real> T_mid_bef("",T_mid_ext.extent_int(0),T_mid_ext.extent_int(1));
+  view_2d<Real> p_mid_bef("",p_mid_ext.extent_int(0),p_mid_ext.extent_int(1));
   Kokkos::deep_copy(T_mid_bef,T_mid_ext);
+  Kokkos::deep_copy(p_mid_bef,p_mid_ext);
+  
   data_input.read_variables(time_index);
   view_2d<Real> T_mid_aft("",T_mid_ext.extent_int(0),T_mid_ext.extent_int(1));
+  view_2d<Real> T_mid_aft("",p_mid_ext.extent_int(0),p_mid_ext.extent_int(1));
   Kokkos::deep_copy(T_mid_aft,T_mid_ext);
+  Kokkos::deep_copy(p_mid_aft,p_mid_ext);
 
-  double w_bef = (time_index+1)*time_step_file-time_s;
-  double w_aft = time_s-(time_index)*time_step_file;
-  
+  double w_bef = ((time_index+1)*time_step_file-time_s) / time_step_file;
+  double w_aft = (time_s-(time_index)*time_step_file) / time_step_file;
+
   const int num_cols = T_mid_ext.extent(0);
   const int num_vert_packs = T_mid_ext.extent(1);
   const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);
@@ -141,22 +125,22 @@ void NUDGING::time_interpolation (const int time_s) {
      	       KOKKOS_LAMBDA(MemberType const& team) {
       const int icol = team.league_rank();
       auto T_mid_1d = ekat::subview(T_mid_ext,icol);
+      auto p_mid_1d = ekat::subview(p_mid_ext,icol);
       auto T_mid_bef_1d = ekat::subview(T_mid_bef,icol);
+      auto p_mid_bef_1d = ekat::subview(p_mid_bef,icol);
       auto T_mid_aft_1d = ekat::subview(T_mid_aft,icol);
       //auto T_mid_r_m_1d = ekat::subview(T_mid_ext,icol);
       const auto range = Kokkos::TeamThreadRange(team, num_vert_packs);
       Kokkos::parallel_for(range, [&] (const Int & k) {
-	  //T_mid_1d(k)=T_mid_r_m_1d(k);
-	  T_mid_1d(k)=( w_bef*T_mid_bef_1d(k) + w_aft*T_mid_aft_1d(k) )
-	               / time_step_file; 
+          T_mid_1d(k)=T_mid_bef_1d(k);
+	  p_mid_1d(k)=p_mid_bef_1d(k);
+	  //T_mid_1d(k)=w_bef*T_mid_bef_1d(k) + w_aft*T_mid_aft_1d(k);
+	  //p_mid_1d(k)=w_bef*p_mid_bef_1d(k) + w_aft*p_mid_aft_1d(k);
       });
       team.team_barrier();
   });
   Kokkos::fence();   
-  
-  
-  
-  //return T_mid_bef;  
+
 }
   
 // =========================================================================================
@@ -166,98 +150,32 @@ void NUDGING::run_impl (const int dt)
   std::cout<<"I get in run_impl of atmosphere nudging"<<std::endl;
 
   std::cout<<"dt: "<<dt<<std::endl;
-  auto ts = timestamp();
-  /*
-  std::cout<<"time_stamp year: "<<ts.get_year()<<std::endl;
-  std::cout<<"time_stamp month: "<<ts.get_month()<<std::endl;
-  std::cout<<"time_stamp day: "<<ts.get_day()<<std::endl;
-  std::cout<<"time_stamp hours: "<<ts.get_hours()<<std::endl;
-  std::cout<<"time_stamp minutes: "<<ts.get_minutes()<<std::endl;
-  std::cout<<"time_stamp seconds: "<<ts.get_seconds()<<std::endl;
-  */
+  auto ts = timestamp()+dt;
   std::cout<<"time since zero: "<<ts.seconds_from(ts0)<<std::endl;
-  //std::cout<<"time_stamp seconds: "<<ts.get_seconds()<<std::endl;
   auto time_since_zero = ts.seconds_from(ts0);
-  //if (dt < time_step_file){ return;}
-  if (time_step_internal<0){
-    std::cout<<"time_step_internal: "<<time_since_zero<<std::endl;
-    time_step_internal=time_since_zero;
-  }  
+  time_step_internal=dt;
   if (time_since_zero < time_step_file){ return;}
-  //if (dt < 7200){ return;}
-  if (time_since_zero > 3600){ return;}
+  if (time_since_zero > 7200){ return;}
 
-  //if (dt < 3600){ return;}
-  std::cout<<"Get before time interpolation"<<std::endl;
-  //time_interpolation(time_since_zero);
-  const int time_index = time_since_zero/time_step_file;
+  //Have to add dt because first time iteration is at 0 seconds where you will not have
+  //any data from the field. The timestamp is only iterated at the end of the full step in scream.
+  time_interpolation(time_since_zero);
+  //const int time_index = time_since_zero/time_step_file;
   //data_input.read_variables(time_index-1);
-  data_input.read_variables(time_index-1);
-  std::cout<<"Get after time interpolation"<<std::endl;
   
-  //TO ADD: need to loop over fields instead of just define them below.
-  //probably want to define p_mid/p_in differently because will always them
-  //using aPack = ekat::Pack<Real,1>;
-  
-  std::cout<<"Get before fields"<<std::endl;
-  //These are fields before modifications
-  //auto T_mid_in  = get_field_in("T_mid").get_view<mPack**>();
   auto T_mid          = get_field_out("T_mid").get_view<mPack**>();
 
-  //auto T_mid_in = view_Nd<mPack,2>("",T_mid.extent_int(0),T_mid.extent_int(1));
-  //Kokkos::deep_copy(T_mid_in,T_mid);
-  
-  //cont auto& T_mid          = get_field_out("T_mid").get_view<mPack**>();
-  std::cout<<"I get here 0"<<std::endl;
-  //const auto& p_mid    = get_field_in("p_mid").get_view<const ekat::Pack<Real,1>**>();
   const auto& p_mid    = get_field_in("p_mid").get_view<const mPack**>();
-
-
-
-
-  //const auto& p_mid    = get_field_in("p_mid").get_view<const ekat::Pack<Real,1>**>();
-  std::cout<<"I get here 1"<<std::endl;
-  std::cout<<"p_mid.extent_int(0): "<<p_mid.extent_int(0)<<std::endl;
-  std::cout<<"p_mid.extent_int(1): "<<p_mid.extent_int(1)<<std::endl;
-  //std::cout<<"T_mid.extent_int(0): "<<T_mid.extent_int(0)<<std::endl;
-  //std::cout<<"T_mid.extent_int(1): "<<T_mid.extent_int(1)<<std::endl;
-  std::cout<<"I get here 1"<<std::endl;
   auto p_mid_v = view_Nd<mPack,2>("",p_mid.extent_int(0),p_mid.extent_int(1));
-  std::cout<<"Get after fields"<<std::endl;
   Kokkos::deep_copy(p_mid_v,p_mid);
   
   //This is field out of vertical interpolation
   //view_Nd<mPack,2> T_mid_out("T_mid_r_m_out",m_num_cols,m_num_levs);
   view_Nd<mPack,2> T_mid_out("T_mid_r_m_out",m_num_cols,T_mid.extent_int(1));
-  //These are field values from external file
-  //const view_Nd<mPack,2> T_mid_ext_p(reinterpret_cast<mPack*>(T_mid_ext.data()),
-  //				m_num_cols,m_num_src_levs); 
-  //const view_Nd<mPack,2> p_mid_ext_p(reinterpret_cast<mPack*>(p_mid_ext.data()),
-  //				m_num_cols,m_num_src_levs);
   view_Nd<mPack,2> T_mid_ext_p("",T_mid_ext.extent_int(0),T_mid_ext.extent_int(1));
   Kokkos::deep_copy(T_mid_ext_p,T_mid_ext);
   view_Nd<mPack,2> p_mid_ext_p("",p_mid_ext.extent_int(0),p_mid_ext.extent_int(1));
   Kokkos::deep_copy(p_mid_ext_p,p_mid_ext);
-
-  
-  //T_mid_ext_p.sync_to_dev();
-  //p_mid_ext_p.sync_to_dev();
-  
-  std::cout<<"p_mid_v.extent(1): "<<p_mid_v.extent(1)<<std::endl;
-  std::cout<<"T_mid_out.extent(1): "<<T_mid_out.extent(1)<<std::endl;
-  std::cout<<"Get after define new fields"<<std::endl;
-
-  for (int col = 0; col<1; col++){
-    for (int lev = 0; lev<T_mid.extent_int(1); lev++){
-      std::cout<<"Before T_mid(col,lay): ("<<col<<","<<lev<<"): "<<T_mid(col,lev)<<std::endl;
-      std::cout<<"Before T_mid_ext_p(col,lay): ("<<col<<","<<lev<<"): "<<T_mid_ext_p(col,lev)<<std::endl;
-      std::cout<<"Before p_mid(col,lay): ("<<col<<","<<lev<<"): "<<p_mid(col,lev)<<std::endl;
-      std::cout<<"Before p_mid_ext_p(col,lay): ("<<col<<","<<lev<<"): "<<p_mid_ext_p(col,lev)<<std::endl;
-      std::cout<<"Before p_mid_v(col,lay): ("<<col<<","<<lev<<"): "<<p_mid_v(col,lev)<<std::endl;
-      //std::cout<<"Diff before after: "<<T_mid(col,lev)-T_mid_in(col,lev)<<std::endl;
-    }
-  }
-
   
   perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
                                            p_mid_v,
@@ -267,23 +185,8 @@ void NUDGING::run_impl (const int dt)
                                            m_num_levs,
   					   250.);
   
-  std::cout<<"Get after vertical interpolation"<<std::endl;
-  //auto T_atm          = get_field_out("T_mid").get_view<mPack**>();
-  //Kokkos::deep_copy(T_atm,T_mid_out);
-
-
-  //Kokkos::deep_copy(T_mid,T_mid_out);
   
   Kokkos::deep_copy(T_mid,T_mid_out);
-  //Kokkos::deep_copy(T_mid,T_mid_ext);  
-  for (int col = 0; col<1; col++){
-    for (int lev = 0; lev<T_mid.extent_int(1); lev++){
-      std::cout<<"After T_mid(col,lay): ("<<col<<","<<lev<<"): "<<T_mid(col,lev)<<std::endl;
-      std::cout<<"Before T_mid_ext_p(col,lay): ("<<col<<","<<lev<<"): "<<T_mid_ext_p(col,lev)<<std::endl;
-      std::cout<<"After p_mid(col,lay): ("<<col<<","<<lev<<"): "<<p_mid(col,lev)<<std::endl;
-      //std::cout<<"Diff before after: "<<T_mid(col,lev)-T_mid_in(col,lev)<<std::endl;
-    }
-  }
 
   
 }

@@ -99,7 +99,9 @@ protected:
   std::vector<std::string> m_fnames;
   std::map<std::string,view_2d<Real>> fields_ext;
   view_2d<Real> T_mid_ext;
+  //view_2d<Real> T_mid_int;
   view_2d<Real> p_mid_ext;
+  //view_2d<Real> p_mid_int;
   AtmosphereInput data_input;
   TimeStamp ts0;
   //FieldLayout scalar3d_layout_mid_;
