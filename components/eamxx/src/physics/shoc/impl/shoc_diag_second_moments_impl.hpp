@@ -50,7 +50,7 @@ void Functions<S,D>::diag_second_moments(
 
   // Vertical velocity variance is assumed to be propotional to the TKE
   const Int nlev_pack = ekat::npack<Spack>(nlev);
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     w_sec(k) = w2tune*(sp(2.)/sp(3.))*tke(k);
   });
 

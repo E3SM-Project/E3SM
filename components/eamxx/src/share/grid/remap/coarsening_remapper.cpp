@@ -592,7 +592,7 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
 
         const auto beg = row_offsets(row);
         const auto end = row_offsets(row+1);
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dim1),
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
                             [&](const int j){
           if (mask != nullptr) {
             y_view(row,j) = weights(beg)*x_view(col_lids(beg),j)*mask_view(col_lids(beg),j);
@@ -627,7 +627,7 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
 
         const auto beg = row_offsets(row);
         const auto end = row_offsets(row+1);
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dim1*dim2),
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2),
                             [&](const int idx){
           const int j = idx / dim2;
           const int k = idx % dim2;
@@ -697,7 +697,7 @@ void CoarseningRemapper::pack_and_send ()
           const int lidpos = i - pid_lid_start(pid);
           const int offset = f_pid_offsets(pid);
 
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team,ndims),
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,ndims),
                                [&](const int idim) {
             buf(offset + lidpos*ndims + idim) = v(lid,idim);
           });
@@ -716,7 +716,7 @@ void CoarseningRemapper::pack_and_send ()
           const int lidpos = i - pid_lid_start(pid);
           const int offset = f_pid_offsets(pid);
 
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs),
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,nlevs),
                                [&](const int ilev) {
             buf(offset + lidpos*nlevs + ilev) = v(lid,ilev);
           });
@@ -736,7 +736,7 @@ void CoarseningRemapper::pack_and_send ()
           const int lidpos = i - pid_lid_start(pid);
           const int offset = f_pid_offsets(pid);
 
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team,ndims*nlevs),
+          Kokkos::parallel_for(Kokkos::TeamVectorRange(team,ndims*nlevs),
                                [&](const int idx) {
             const int idim = idx / nlevs;
             const int ilev = idx % nlevs;
@@ -826,7 +826,7 @@ void CoarseningRemapper::recv_and_unpack ()
             const int pid = recv_lids_pidpos(irecv,0);
             const int lidpos = recv_lids_pidpos(irecv,1);
             const int offset = f_pid_offsets(pid)+lidpos*ndims;
-            Kokkos::parallel_for(Kokkos::TeamThreadRange(team,ndims),
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team,ndims),
                                  [&](const int idim) {
               v(lid,idim) += buf (offset + idim);
             });
@@ -848,7 +848,7 @@ void CoarseningRemapper::recv_and_unpack ()
             const int lidpos = recv_lids_pidpos(irecv,1);
             const int offset = f_pid_offsets(pid) + lidpos*nlevs;
 
-            Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs),
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team,nlevs),
                                  [&](const int ilev) {
               v(lid,ilev) += buf (offset + ilev);
             });
@@ -871,7 +871,7 @@ void CoarseningRemapper::recv_and_unpack ()
             const int lidpos = recv_lids_pidpos(irecv,1);
             const int offset = f_pid_offsets(pid) + lidpos*ndims*nlevs;
 
-            Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs*ndims),
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team,nlevs*ndims),
                                  [&](const int idx) {
               const int idim = idx / nlevs;
               const int ilev = idx % nlevs;

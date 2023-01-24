@@ -24,7 +24,7 @@ void Functions<S,D>
   const auto sinvar1 = scalarize(invar1);
   const auto sinvar2 = scalarize(invar2);
 
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     // Calculate shift
     Spack invar1_s, invar1_sm1, invar2_s, invar2_sm1;
     auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
