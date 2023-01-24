@@ -98,16 +98,17 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    use cam_pio_utils,    only: init_pio_subsystem
    use cam_instance,     only: inst_suffix
 #if defined(CLDERA_PROFILING)
-use iso_c_binding, only: c_loc
+   use iso_c_binding, only: c_loc
    use cldera_interface_mod, only: cldera_add_partitioned_field, max_str_len, &
                                    cldera_set_field_part_size, &
                                    cldera_set_field_part_data, &
-                                   cldera_commit_all_fields
+                                   cldera_commit_all_fields,   &
+                                   cldera_commit_field
    use physics_buffer,   only: physics_buffer_desc, col_type_grid, pbuf_get_index, &
                                pbuf_get_field_rank, pbuf_get_field_dims, pbuf_get_field, &
                                pbuf_get_field_name, pbuf_has_field
    use ppgrid,           only: begchunk, endchunk, pcols, pver
-   use phys_grid,        only: get_ncols_p
+   use phys_grid,        only: get_ncols_p, get_gcol_all_p
    use constituents,     only: pcnst, cnst_name
 #endif
 
@@ -137,11 +138,11 @@ use iso_c_binding, only: c_loc
    logical :: log_print        ! Flag to print out log information or not
    character(len=cs) :: filein ! Input namelist filename
 #if defined(CLDERA_PROFILING)
-   character(len=max_str_len), allocatable :: cldera_field_names(:)
    character(len=max_str_len) :: fname
    integer :: c, nfields, idx, rank, icmp, nparts, part_dim, ipart, fsize, ncols
    integer :: nlcols
    integer :: dims(3)
+   integer, allocatable :: cols_gids(:)
    character(len=max_str_len) :: dimnames(3)
    logical :: in_pbuf, in_q
    real(r8), pointer :: field1d(:), field2d(:,:), field3d(:,:,:)
@@ -230,9 +231,27 @@ use iso_c_binding, only: c_loc
    part_dim = 1
    nlcols = 0
    do c = begchunk,endchunk
-    nlcols = nlcols +  get_ncols_p(c)
+     nlcols = nlcols +  get_ncols_p(c)
    enddo
    dimnames(1) = "ncol"
+
+   ! Col GIDs
+   fname = "col_gids"
+   dims(1) = nlcols
+   allocate(cols_gids(pcols))
+   call cldera_add_partitioned_field (fname,1,dims,dimnames,nparts,part_dim,.false.,"int")
+   do ipart = 1,nparts
+     c = begchunk+ipart-1
+     ncols = get_ncols_p(c)
+
+     call cldera_set_field_part_size(fname,ipart,ncols)
+   enddo
+   call cldera_commit_field(fname)
+   do ipart = 1,nparts
+     c = begchunk+ipart-1
+     call get_gcol_all_p (c,pcols,cols_gids)
+     call cldera_set_field_part_data(fname,ipart,cols_gids)
+   enddo
 
    ! PBUF fields
    nfields = size(pbuf2d,1)
