@@ -3,16 +3,16 @@
 #endif
 !
 !  getter and setter functions that must be provided by each model
-!  
-!  Note: all routines require dp3d() to be valid, with the exception of 
-!  the initial condition routines which assume reference levels and will initialize dp3d based 
+!
+!  Note: all routines require dp3d() to be valid, with the exception of
+!  the initial condition routines which assume reference levels and will initialize dp3d based
 !  on their 'ps' input argument
-!  
+!
 !
 !
 ! ROUTINES REQUIRED FOR ALL MODELS:
 ! Initial condition routines
-!  set_thermostate()    
+!  set_thermostate()
 !     initial condition interface used by DCMIP 2008 tests, old HOMME tests
 !  set_state(), set_state_i()
 !     initial condition interface used by DCMIP 2012 tests
@@ -22,16 +22,16 @@
 !     initialize geopotential to be in hydrostatic balance
 !     used by DCMIP2012, 2016 tests
 ! Other routines:
-!  get_field() 
+!  get_field()
 !     returns temperature, potential temperature, phi, etc..
-!  get_field_i() 
-!     returns a few quantities on interfaces 
+!  get_field_i()
+!     returns a few quantities on interfaces
 !  copy_state()
-!     copy state variables from one timelevel to another timelevel 
+!     copy state variables from one timelevel to another timelevel
 !  get_state()
 !     return state variables used by some DCMIP forcing functions
 !  save_initial_state()
-!     save t=0 in "state0", used by some DCMIP forcing functions       
+!     save t=0 in "state0", used by some DCMIP forcing functions
 !  set_forcing_rayleigh_friction()
 !     used by dcmip2012 test cases
 !  set_forcing_rayleigh_friction()
@@ -48,7 +48,7 @@
 !  get_cp_star()
 !  get_R_star()
 !  set_theta_ref()
-!  
+!
 !
 module element_ops
 
@@ -60,7 +60,7 @@ module element_ops
   use perf_mod,       only: t_startf, t_stopf, t_barrierf, t_adj_detailf ! _EXTERNAL
   use parallel_mod,   only: abortmp
   use physical_constants, only : p0, Cp, Rgas, Rwater_vapor, Cpwater_vapor, kappa, g, dd_pi, TREF
-  use control_mod,    only: use_moisture, theta_hydrostatic_mode
+  use control_mod,    only: use_moisture, theta_hydrostatic_mode, hv_ref_profiles
   use eos,            only: pnh_and_exner_from_eos, phi_from_eos
   implicit none
   private
@@ -70,7 +70,8 @@ module element_ops
   public get_field, get_field_i, get_state, get_pottemp
   public get_temperature, get_phi, get_R_star, get_hydro_pressure
   public set_thermostate, set_state, set_state_i, set_elem_state
-  public set_forcing_rayleigh_friction, set_theta_ref
+  public set_forcing_rayleigh_friction
+  public initialize_reference_states, set_theta_ref
   public copy_state, tests_finalize
   public state0
 
@@ -167,7 +168,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
       print *,'name = ',trim(name)
       call abortmp('ERROR: get_field_i name not supported in this model')
   end select
- 
+
   end subroutine get_field_i
 
 
@@ -175,24 +176,24 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   subroutine get_pottemp(elem,pottemp,hvcoord,nt,ntQ)
   !
   implicit none
-    
+
   type (element_t), intent(in)        :: elem
   real (kind=real_kind), intent(out)  :: pottemp(np,np,nlev)
   type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
   integer, intent(in) :: nt
   integer, intent(in) :: ntQ
-  
+
   !   local
   real (kind=real_kind) :: dp(np,np,nlev)
   real (kind=real_kind) :: Rstar(np,np,nlev)
   integer :: k
 
   call get_R_star(Rstar,elem%state%Q(:,:,:,1))
-  
+
   pottemp(:,:,:) = Rgas*elem%state%vtheta_dp(:,:,:,nt)/(Rstar(:,:,:)*elem%state%dp3d(:,:,:,nt))
-  
+
   end subroutine get_pottemp
-  
+
 
   !_____________________________________________________________________
   subroutine get_temperature(elem,temperature,hvcoord,nt)
@@ -200,12 +201,12 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   ! Should only be called outside timestep loop, state variables on reference levels
   !
   implicit none
-  
+
   type (element_t), intent(in)        :: elem
   real (kind=real_kind), intent(out)  :: temperature(np,np,nlev)
   type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
   integer, intent(in) :: nt
-  
+
   !   local
   real (kind=real_kind) :: dp(np,np,nlev)
   real (kind=real_kind) :: Rstar(np,np,nlev)
@@ -213,8 +214,8 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   real (kind=real_kind) :: pnh(np,np,nlev)
   real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
   integer :: k
-  
-  
+
+
   dp=elem%state%dp3d(:,:,:,nt)
   call get_R_star(Rstar,elem%state%Q(:,:,:,1))
 
@@ -232,20 +233,20 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   !_____________________________________________________________________
   subroutine get_dpnh_dp(elem,dpnh_dp,hvcoord,nt)
   implicit none
-  
+
   type (element_t), intent(in)        :: elem
   real (kind=real_kind), intent(out)  :: dpnh_dp(np,np,nlev)
   type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
   integer, intent(in) :: nt
-  
+
   !   local
   real (kind=real_kind) :: dp(np,np,nlev)
   real (kind=real_kind) :: exner(np,np,nlev)
   real (kind=real_kind) :: pnh(np,np,nlev)
   real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
   integer :: k
-  
-  
+
+
   dp=elem%state%dp3d(:,:,:,nt)
   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
        dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
@@ -253,7 +254,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   do k=1,nlev
      dpnh_dp(:,:,k)=(dpnh_dp_i(:,:,k)+dpnh_dp_i(:,:,k+1))/2
   enddo
-  end subroutine 
+  end subroutine
 
 !this routine returns mu at interfaces, mu_surface = 1, will be fixed later
   !_____________________________________________________________________
@@ -274,18 +275,18 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   dp=elem%state%dp3d(:,:,:,nt)
   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
        dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
- 
-  end subroutine get_dpnh_dp_i 
+
+  end subroutine get_dpnh_dp_i
 
   !_____________________________________________________________________
   subroutine get_hydro_pressure(p,dp,hvcoord)
   !
   implicit none
-    
+
   real (kind=real_kind), intent(out)  :: p(np,np,nlev)
   real (kind=real_kind), intent(in)   :: dp(np,np,nlev)
   type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
-  
+
   integer :: k
   real(kind=real_kind), dimension(np,np,nlevp) :: p_i
 
@@ -302,21 +303,21 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
      p(:,:,k)=p_i(:,:,k) + dp(:,:,k)/2
   enddo
 #endif
-  
-  
+
+
   end subroutine get_hydro_pressure
-  
+
 
   !_____________________________________________________________________
   subroutine get_nonhydro_pressure(elem,pnh,exner,hvcoord,nt)
     implicit none
-    
+
     type (element_t),       intent(in)  :: elem
     real (kind=real_kind),  intent(out) :: pnh(np,np,nlev)
     real (kind=real_kind),  intent(out) :: exner(np,np,nlev)
     type (hvcoord_t),       intent(in)  :: hvcoord
     integer,                intent(in)  :: nt
-    
+
     real (kind=real_kind), dimension(np,np,nlevp) :: dpnh_dp_i
 
     call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
@@ -328,12 +329,12 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
   subroutine get_nonhydro_pressure_i(elem,pnh_i,hvcoord,nt)
     implicit none
-    
+
     type (element_t),       intent(in)  :: elem
     real (kind=real_kind),  intent(out) :: pnh_i(np,np,nlevp)
     type (hvcoord_t),       intent(in)  :: hvcoord
     integer,                intent(in)  :: nt
-    
+
     real (kind=real_kind), dimension(np,np,nlevp) :: dpnh_dp_i
     real (kind=real_kind), dimension(np,np,nlev) :: pnh,exner
 
@@ -346,13 +347,13 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
   subroutine get_phi(elem,phi,phi_i,hvcoord,nt)
     implicit none
-    
+
     type (element_t),       intent(in)  :: elem
     type (hvcoord_t),       intent(in)  :: hvcoord
     real (kind=real_kind),  intent(out) :: phi(np,np,nlev)
     real (kind=real_kind),  intent(out) :: phi_i(np,np,nlevp)
     integer,                intent(in)  :: nt
-    
+
     real (kind=real_kind), dimension(np,np,nlev) :: dp
     real (kind=real_kind) :: pnh(np,np,nlev)
     real (kind=real_kind) :: exner(np,np,nlev)
@@ -371,7 +372,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
     do k=1,nlev
        phi(:,:,k) = (phi_i(:,:,k)+phi_i(:,:,k+1))/2
     end do
-    
+
   end subroutine
 
 
@@ -415,7 +416,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   !_____________________________________________________________________
   subroutine copy_state(elem,nin,nout)
   implicit none
-  
+
   type (element_t), intent(inout)   :: elem
   integer :: nin,nout
 
@@ -432,19 +433,19 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   subroutine set_thermostate(elem,ps,temperature,hvcoord,qv)
   !
   ! Assuming a hydrostatic intital state and given surface pressure,
-  ! and no moisture, compute theta and phi 
+  ! and no moisture, compute theta and phi
   !
   ! input:  ps_v, temperature
   ! ouput:  state variables:   vtheta_dp, phi
   !
   implicit none
-  
+
   type (element_t), intent(inout)   :: elem
   real (kind=real_kind), intent(in) :: temperature(np,np,nlev)
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
   real (kind=real_kind), intent(in) :: ps(np,np)
   real (kind=real_kind), intent(in), optional :: qv(np,np,nlev)  ! water vapor mixing ratio
-  
+
   !   local
   real (kind=real_kind) :: p(np,np,nlev)
   real (kind=real_kind) :: pi_i(np,np,nlevp)
@@ -508,7 +509,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   !
   ! set state variables at node(i,j,k) at layer midpoints
   ! used by idealized tests for dry initial conditions
-  ! so we use constants cp, kappa  
+  ! so we use constants cp, kappa
   !
   real(real_kind),  intent(in)    :: u,v,w,T,ps,phis,p,dp,zm,g
   integer,          intent(in)    :: i,j,k,n0,n1
@@ -529,7 +530,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   !
   ! set state variables at node(i,j,k) at layer interfaces
   ! used by idealized tests for dry initial conditions
-  ! so we use constants cp, kappa  
+  ! so we use constants cp, kappa
   !
   real(real_kind),  intent(in)    :: u,v,w,T,ps,phis,p,zm,g
   integer,          intent(in)    :: i,j,k,n0,n1
@@ -620,7 +621,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
     if(theta_hydrostatic_mode) then
        ! overwrite w and phi_i computed above
        w = -(elem%derived%omega_p)/(rho*g)
-       
+
        do k=nlev,1,-1
           temp(:,:,k) = Rgas*elem%state%vtheta_dp(:,:,k,nt)*exner(:,:,k)/pnh(:,:,k)
           phi_i(:,:,k)=phi_i(:,:,k+1)+temp(:,:,k)
@@ -644,11 +645,11 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
     type(elem_state_t), intent(inout):: state
     integer,            intent(in)   :: ie     ! element index
 
-!$OMP BARRIER    
+!$OMP BARRIER
 !$OMP MASTER
     if(.not. allocated(state0)) allocate( state0(nelemd) )
 !$OMP END MASTER
-!$OMP BARRIER    
+!$OMP BARRIER
     state0(ie) = state
 
   end subroutine
@@ -690,7 +691,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   where(zi(:,:,1:nlev) .ge. ztop); f_d = 1.0d0; end where
   f_d = -f_d/tau
   elem%derived%FM(:,:,3,:) = f_d * ( elem%state%w_i(:,:,1:nlev,n)  )
-  end subroutine 
+  end subroutine
 
   !_____________________________________________________________________
   subroutine tests_finalize(elem,hvcoord,ie)
@@ -729,7 +730,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
      endif
   enddo
 #endif
-  
+
   do tl = 2,timelevels
     call copy_state(elem,1,tl)
   enddo
@@ -739,6 +740,54 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
   end subroutine tests_finalize
 
+  !_____________________________________________________________________
+  subroutine initialize_reference_states(hvcoord, phis, &
+                                         dp_ref, theta_ref, phi_ref)
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   !
+   ! Compute and sets reference profiles
+   !
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   implicit none
+
+   ! input variables
+   type (hvcoord_t),      intent(in) :: hvcoord     ! hybrid vertical coordinate struct
+   real (kind=real_kind), intent(in) :: phis(np,np) ! surface geopotential
+
+   ! output variables
+   real (kind=real_kind), intent(out) :: dp_ref(np,np,nlev)
+   real (kind=real_kind), intent(out) :: theta_ref(np,np,nlev)
+   real (kind=real_kind), intent(out) :: phi_ref(np,np,nlevp)
+
+   ! local variables
+   integer :: k
+   real (kind=real_kind) :: ps_ref(np,np), temp(np,np,nlev)
+
+   ! compute dp_ref
+   ps_ref(:,:) = hvcoord%ps0*exp(-phis(:,:)/(Rgas*TREF))
+   do k=1,nlev
+     dp_ref(:,:,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+                     (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_ref(:,:)
+   enddo
+
+   ! compute theta_ref
+   call set_theta_ref(hvcoord, dp_ref, theta_ref)
+
+   ! compute phi_ref
+   temp = theta_ref*dp_ref
+   call phi_from_eos(hvcoord, phis, temp, dp_ref, phi_ref)
+
+   ! keep profiles, based on the value of hv_ref_profiles
+   if (hv_ref_profiles == 0) then
+     ! keep phi profile, but dont use theta and dp:
+     theta_ref = 0
+     dp_ref = 0
+   endif
+   if (hv_ref_profiles == 1) then
+     ! keep all profiles
+   endif
+
+   end subroutine initialize_reference_states
 
 
   !_____________________________________________________________________
@@ -752,11 +801,11 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   implicit none
-  
+
   type (hvcoord_t),     intent(in)  :: hvcoord                      ! hybrid vertical coordinate struct
   real (kind=real_kind), intent(in) :: dp(np,np,nlev)
   real (kind=real_kind), intent(out) :: theta_ref(np,np,nlev)
-  
+
   !   local
   real (kind=real_kind) :: p_i(np,np,nlevp)
   real (kind=real_kind) :: exner(np,np,nlev)
@@ -769,7 +818,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   T1 = tref_lapse_rate*TREF*Cp/g ! = 191
   T0 = TREF-T1           ! = 97
 
-  p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0   
+  p_i(:,:,1) =  hvcoord%hyai(1)*hvcoord%ps0
   do k=1,nlev
      p_i(:,:,k+1) = p_i(:,:,k) + dp(:,:,k)
   enddo
