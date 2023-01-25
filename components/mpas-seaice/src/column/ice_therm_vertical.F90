@@ -1364,6 +1364,8 @@
 
             dhs = max(-dzs(k), &
                 -((zqsn(k) + rhos*Lfresh) / (rhos*Lfresh)) * dzs(k)) ! dhs < 0
+            smice_precs = c0
+            if (abs(dzs(k)) > puny) smice_precs = smicetot(k)/dzs(k) * dhs
             smicetot(k) = max(c0,smicetot(k) + smice_precs) ! -dhs <= dzs
             smliqtot(k) = max(c0,smliqtot(k) - smice_precs)
             dzs (k) = dzs(k) + dhs
