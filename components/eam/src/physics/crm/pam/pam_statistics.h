@@ -15,21 +15,24 @@ inline void pam_statistics_init( pam::PamCoupler &coupler ) {
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
   auto nens       = coupler.get_option<int>("ncrms");
   auto nz         = coupler.get_option<int>("crm_nz");
-  auto nx         = coupler.get_option<int>("crm_nx");
-  auto ny         = coupler.get_option<int>("crm_ny");
   //------------------------------------------------------------------------------------------------
   // aggregted quantities
+  dm_device.register_and_allocate<real>("stat_aggregation_cnt", "number of aggregated samples",  {nens},{"nens"});
   dm_device.register_and_allocate<real>("precip_liq_aggregated","aggregated sfc liq precip rate",{nens},{"nens"});
   dm_device.register_and_allocate<real>("precip_ice_aggregated","aggregated sfc ice precip rate",{nens},{"nens"});
-  dm_device.register_and_allocate<real>("stat_aggregation_cnt","number of aggregated samples",{nens},{"nens"});
+  dm_device.register_and_allocate<real>("cldfrac_aggregated",   "aggregated cloud fraction",     {nz,nens},{"z","nens"});
   //------------------------------------------------------------------------------------------------
+  auto stat_aggregation_cnt  = dm_device.get<real,1>("stat_aggregation_cnt");
   auto precip_liq_aggregated = dm_device.get<real,1>("precip_liq_aggregated");
   auto precip_ice_aggregated = dm_device.get<real,1>("precip_ice_aggregated");
-  auto stat_aggregation_cnt  = dm_device.get<real,1>("stat_aggregation_cnt");
+  auto cldfrac_aggregated    = dm_device.get<real,2>("cldfrac_aggregated");
   parallel_for("Initialize aggregated precipitation", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
+    stat_aggregation_cnt(iens)  = 0;
     precip_liq_aggregated(iens) = 0;
     precip_ice_aggregated(iens) = 0;
-    stat_aggregation_cnt(iens) = 0;
+  });
+  parallel_for("Initialize aggregated precipitation", SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
+    cldfrac_aggregated(k,iens)  = 0;
   });
   //------------------------------------------------------------------------------------------------
 }
@@ -47,19 +50,28 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
   auto nx         = coupler.get_option<int>("crm_nx");
   auto ny         = coupler.get_option<int>("crm_ny");
   //------------------------------------------------------------------------------------------------
+  // get CRM variables to be aggregated
   auto precip_liq = dm_device.get<real,3>("precip_liq_surf_out");
   auto precip_ice = dm_device.get<real,3>("precip_ice_surf_out");
+  auto cldfrac    = dm_device.get<real,4>("cldfrac");
+  //------------------------------------------------------------------------------------------------
+  // get aggregation variables
+  auto stat_aggregation_cnt  = dm_device.get<real,1>("stat_aggregation_cnt");
   auto precip_liq_aggregated = dm_device.get<real,1>("precip_liq_aggregated");
   auto precip_ice_aggregated = dm_device.get<real,1>("precip_ice_aggregated");
-  auto stat_aggregation_cnt  = dm_device.get<real,1>("stat_aggregation_cnt");
-  // aggregate surface precipitation
+  auto cldfrac_aggregated    = dm_device.get<real,2>("cldfrac_aggregated");
+  //------------------------------------------------------------------------------------------------
+  // perform aggregation
+  parallel_for("update aggregation count", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
+    stat_aggregation_cnt(iens) = stat_aggregation_cnt(iens) + 1;
+  });
   real r_nx_ny  = 1._fp / (nx*ny);
-  parallel_for("aggregate statistics", SimpleBounds<3>(ny,nx,nens), YAKL_LAMBDA (int j, int i, int iens) {
+  parallel_for("aggregate 0D statistics", SimpleBounds<3>(ny,nx,nens), YAKL_LAMBDA (int j, int i, int iens) {
     atomicAdd( precip_liq_aggregated(iens), precip_liq(j,i,iens)*r_nx_ny );
     atomicAdd( precip_ice_aggregated(iens), precip_ice(j,i,iens)*r_nx_ny );
   });
-  parallel_for("update statistics aggregation count", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
-    stat_aggregation_cnt(iens) = stat_aggregation_cnt(iens) + 1;
+  parallel_for("aggregate 1D statistics", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+    atomicAdd( cldfrac_aggregated(k,iens), cldfrac(k,j,i,iens)*r_nx_ny );
   });
   //------------------------------------------------------------------------------------------------
 }
@@ -73,25 +85,29 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
   auto nens       = coupler.get_option<int>("ncrms");
   auto nz         = coupler.get_option<int>("crm_nz");
-  auto nx         = coupler.get_option<int>("crm_nx");
-  auto ny         = coupler.get_option<int>("crm_ny");
   //------------------------------------------------------------------------------------------------
   // convert aggregated values to time means
+  auto aggregation_cnt = dm_device.get<real,1>("stat_aggregation_cnt");
   auto precip_liq      = dm_device.get<real,1>("precip_liq_aggregated");
   auto precip_ice      = dm_device.get<real,1>("precip_ice_aggregated");
-  auto aggregation_cnt = dm_device.get<real,1>("stat_aggregation_cnt");
+  auto cldfrac         = dm_device.get<real,2>("cldfrac_aggregated");
   real1d precip_tot("precip_tot",nens);
-  parallel_for("calculate total precipitation", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
+  parallel_for("finalize aggregated variables", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
     precip_liq(iens) = precip_liq(iens) / aggregation_cnt(iens);
     precip_ice(iens) = precip_ice(iens) / aggregation_cnt(iens);
     precip_tot(iens) = precip_liq(iens) + precip_ice(iens);
+  });
+  parallel_for("Initialize aggregated precipitation", SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
+    cldfrac(nz,iens) = cldfrac(nz,iens) / aggregation_cnt(iens);
   });
   //------------------------------------------------------------------------------------------------
   // copy data to host
   auto precip_tot_host = dm_host.get<real,1>("output_precc");
   auto precip_ice_host = dm_host.get<real,1>("output_precsc");
+  auto cldfrac_host    = dm_host.get<real,2>("output_cld");
   precip_tot.deep_copy_to(precip_tot_host);
   precip_ice.deep_copy_to(precip_ice_host);
+  cldfrac   .deep_copy_to(cldfrac_host);
   //------------------------------------------------------------------------------------------------
 }
 
