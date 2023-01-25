@@ -66,6 +66,12 @@ module crm_physics
    integer :: crm_t_prev_idx   = -1
    integer :: crm_q_prev_idx   = -1
 
+   integer :: crm_shoc_tk_idx       = -1
+   integer :: crm_shoc_tkh_idx      = -1
+   integer :: crm_shoc_wthv_idx     = -1
+   integer :: crm_shoc_relvar_idx   = -1
+   integer :: crm_shoc_cldfrac_idx  = -1
+
 contains
 !===================================================================================================
 !===================================================================================================
@@ -244,6 +250,11 @@ subroutine crm_physics_register()
       call pbuf_add_field('CRM_T_PREV','global', dtype_r8,dims_crm_3D,crm_t_prev_idx)
       call pbuf_add_field('CRM_Q_PREV','global', dtype_r8,dims_crm_3D,crm_q_prev_idx)
       if (prog_modal_aero) call pbuf_add_field('RATE1_CW2PR_ST','physpkg',dtype_r8,dims_gcm_2D,idx)
+      call pbuf_add_field('CRM_SHOC_TK'     ,'global', dtype_r8,dims_crm_3D,crm_shoc_tk_idx)
+      call pbuf_add_field('CRM_SHOC_THH'    ,'global', dtype_r8,dims_crm_3D,crm_shoc_tkh_idx)
+      call pbuf_add_field('CRM_SHOC_WTHV'   ,'global', dtype_r8,dims_crm_3D,crm_shoc_wthv_idx)
+      call pbuf_add_field('CRM_SHOC_RELVAR' ,'global', dtype_r8,dims_crm_3D,crm_shoc_relvar_idx)
+      call pbuf_add_field('CRM_SHOC_CLDFRAC','global', dtype_r8,dims_crm_3D,crm_shoc_cldfrac_idx)
    end if
 
    ! CRM rad stuff specific to COSP; this does not strictly need to be in
@@ -681,6 +692,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
    real(crm_rknd), pointer :: crm_bm(:,:,:,:)      ! p3 rime volume
    real(crm_rknd), pointer :: crm_q_prev(:,:,:,:)  ! p3 previous qv
    real(crm_rknd), pointer :: crm_t_prev(:,:,:,:)  ! p3 previous t 
+   real(crm_rknd), pointer :: crm_shoc_tk(:,:,:,:)      ! SHOC Eddy coefficient for momentum [m2/s]
+   real(crm_rknd), pointer :: crm_shoc_tkh(:,:,:,:)     ! SHOC Eddy coefficent for heat [m2/s]
+   real(crm_rknd), pointer :: crm_shoc_wthv(:,:,:,:)    ! SHOC Buoyancy flux [K m/s]
+   real(crm_rknd), pointer :: crm_shoc_relvar(:,:,:,:)  ! SHOC Relative cloud water variance
+   real(crm_rknd), pointer :: crm_shoc_cldfrac(:,:,:,:) ! SHOC Cloud fraction [-]
 
    !------------------------------------------------------------------------------------------------
    !------------------------------------------------------------------------------------------------
@@ -839,6 +855,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_BM'), crm_bm)
             call pbuf_get_field(pbuf_chunk, crm_t_prev_idx, crm_t_prev)
             call pbuf_get_field(pbuf_chunk, crm_q_prev_idx, crm_q_prev)
+            call pbuf_get_field(pbuf_chunk, crm_shoc_tk_idx     , crm_shoc_tk)
+            call pbuf_get_field(pbuf_chunk, crm_shoc_tkh_idx    , crm_shoc_tkh)
+            call pbuf_get_field(pbuf_chunk, crm_shoc_wthv_idx   , crm_shoc_wthv)
+            call pbuf_get_field(pbuf_chunk, crm_shoc_relvar_idx , crm_shoc_relvar)
+            call pbuf_get_field(pbuf_chunk, crm_shoc_cldfrac_idx, crm_shoc_cldfrac)
          end if
 
          ! initialize all water to zero (needed for ncol < i <= pcols)
@@ -890,6 +911,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                   crm_bm(i,:,:,k) = 0.0_r8
                   crm_t_prev(i,:,:,k) = state(c)%t(i,m)
                   crm_q_prev(i,:,:,k) = state(c)%q(i,m,1)
+                  crm_shoc_tk     (i,:,:,k) = 0.0_r8
+                  crm_shoc_tkh    (i,:,:,k) = 0.0_r8
+                  crm_shoc_wthv   (i,:,:,k) = 0.0_r8
+                  crm_shoc_relvar (i,:,:,k) = 0.0_r8
+                  crm_shoc_cldfrac(i,:,:,k) = 0.0_r8
                end if
 
             end do
@@ -991,6 +1017,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_BM'), crm_bm)
             call pbuf_get_field(pbuf_chunk, crm_t_prev_idx, crm_t_prev)
             call pbuf_get_field(pbuf_chunk, crm_q_prev_idx, crm_q_prev)
+            call pbuf_get_field(pbuf_chunk, crm_shoc_tk_idx     , crm_shoc_tk)
+            call pbuf_get_field(pbuf_chunk, crm_shoc_tkh_idx    , crm_shoc_tkh)
+            call pbuf_get_field(pbuf_chunk, crm_shoc_wthv_idx   , crm_shoc_wthv)
+            call pbuf_get_field(pbuf_chunk, crm_shoc_relvar_idx , crm_shoc_relvar)
+            call pbuf_get_field(pbuf_chunk, crm_shoc_cldfrac_idx, crm_shoc_cldfrac)
          end if
 
          ! copy pbuf data into crm_state
@@ -1017,6 +1048,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_state%bm      (icrm,:,:,:) = crm_bm(i,:,:,:)
                crm_state%t_prev  (icrm,:,:,:) = crm_t_prev(i,:,:,:)
                crm_state%q_prev  (icrm,:,:,:) = crm_q_prev(i,:,:,:)
+               crm_state%shoc_tk     (icrm,:,:,:) = crm_shoc_tk     (i,:,:,:)
+               crm_state%shoc_tkh    (icrm,:,:,:) = crm_shoc_tkh    (i,:,:,:)
+               crm_state%shoc_wthv   (icrm,:,:,:) = crm_shoc_wthv   (i,:,:,:)
+               crm_state%shoc_relvar (icrm,:,:,:) = crm_shoc_relvar (i,:,:,:)
+               crm_state%shoc_cldfrac(icrm,:,:,:) = crm_shoc_cldfrac(i,:,:,:)
             end if
          end do ! i=1,ncol
 
@@ -1278,11 +1314,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_mirror_array_readwrite( 'state_q_prev',      crm_state%q_prev      )
 
       ! SHOC variables
-      call pam_mirror_array_readwrite( 'state_shoc_wthv_sec',crm_state%shoc_wthv_sec )
       call pam_mirror_array_readwrite( 'state_shoc_tk',      crm_state%shoc_tk       )
       call pam_mirror_array_readwrite( 'state_shoc_tkh',     crm_state%shoc_tkh      )
-      call pam_mirror_array_readwrite( 'state_shoc_cldfrac', crm_state%shoc_cldfrac  )
+      call pam_mirror_array_readwrite( 'state_shoc_wthv',    crm_state%shoc_wthv )
       call pam_mirror_array_readwrite( 'state_shoc_relvar',  crm_state%shoc_relvar   )
+      call pam_mirror_array_readwrite( 'state_shoc_cldfrac', crm_state%shoc_cldfrac  )
 
       ! Radiation tendency and output conditions
       call pam_mirror_array_readwrite( 'rad_qrad',        crm_rad%qrad        )
@@ -1677,6 +1713,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             call pbuf_get_field(pbuf_chunk, pbuf_get_index('CRM_BM'), crm_bm)
             call pbuf_get_field(pbuf_chunk, crm_t_prev_idx, crm_t_prev)
             call pbuf_get_field(pbuf_chunk, crm_q_prev_idx, crm_q_prev)
+            call pbuf_get_field(pbuf_chunk, crm_shoc_tk_idx     , crm_shoc_tk)
+            call pbuf_get_field(pbuf_chunk, crm_shoc_tkh_idx    , crm_shoc_tkh)
+            call pbuf_get_field(pbuf_chunk, crm_shoc_wthv_idx   , crm_shoc_wthv)
+            call pbuf_get_field(pbuf_chunk, crm_shoc_relvar_idx , crm_shoc_relvar)
+            call pbuf_get_field(pbuf_chunk, crm_shoc_cldfrac_idx, crm_shoc_cldfrac)
          end if
 
          do i = 1,ncol
@@ -1702,6 +1743,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                crm_bm(i,:,:,:)     = crm_state%bm    (icrm,:,:,:)
                crm_t_prev(i,:,:,:) = crm_state%t_prev(icrm,:,:,:)
                crm_q_prev(i,:,:,:) = crm_state%q_prev(icrm,:,:,:)
+               crm_shoc_tk     (i,:,:,:) = crm_state%shoc_tk     (icrm,:,:,:)
+               crm_shoc_tkh    (i,:,:,:) = crm_state%shoc_tkh    (icrm,:,:,:)
+               crm_shoc_wthv   (i,:,:,:) = crm_state%shoc_wthv   (icrm,:,:,:)
+               crm_shoc_relvar (i,:,:,:) = crm_state%shoc_relvar (icrm,:,:,:)
+               crm_shoc_cldfrac(i,:,:,:) = crm_state%shoc_cldfrac(icrm,:,:,:)
             end if
          end do
 

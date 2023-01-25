@@ -108,11 +108,11 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   auto crm_bm            = dm_device.get<real,4>("ice_rime_vol");
   auto crm_t_prev        = dm_device.get<real,4>("qv_prev");
   auto crm_q_prev        = dm_device.get<real,4>("t_prev");
-  auto crm_shoc_wthv_sec = dm_device.get<real,4>("wthv_sec");
   auto crm_shoc_tk       = dm_device.get<real,4>("tk");
   auto crm_shoc_tkh      = dm_device.get<real,4>("tkh");
-  auto crm_shoc_cldfrac  = dm_device.get<real,4>("cldfrac");
+  auto crm_shoc_wthv     = dm_device.get<real,4>("wthv_sec");
   auto crm_shoc_relvar   = dm_device.get<real,4>("relvar");
+  auto crm_shoc_cldfrac  = dm_device.get<real,4>("cldfrac");
   //------------------------------------------------------------------------------------------------
   // wrap the host CRM state data in YAKL arrays
   auto state_u_wind        = dm_host.get<real const,4>("state_u_wind").createDeviceCopy();
@@ -130,12 +130,12 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   auto state_qm            = dm_host.get<real const,4>("state_qm").createDeviceCopy();
   auto state_bm            = dm_host.get<real const,4>("state_bm").createDeviceCopy();
   auto state_t_prev        = dm_host.get<real const,4>("state_t_prev").createDeviceCopy();
-  auto state_q_prev        = dm_host.get<real const,4>("state_q_prev").createDeviceCopy();  
-  auto state_shoc_wthv_sec = dm_host.get<real const,4>("state_shoc_wthv_sec").createDeviceCopy();  
-  auto state_shoc_tk       = dm_host.get<real const,4>("state_shoc_tk").createDeviceCopy();  
-  auto state_shoc_tkh      = dm_host.get<real const,4>("state_shoc_tkh").createDeviceCopy();  
-  auto state_shoc_cldfrac  = dm_host.get<real const,4>("state_shoc_cldfrac").createDeviceCopy();  
-  auto state_shoc_relvar   = dm_host.get<real const,4>("state_shoc_relvar").createDeviceCopy();  
+  auto state_q_prev        = dm_host.get<real const,4>("state_q_prev").createDeviceCopy();
+  auto state_shoc_tk       = dm_host.get<real const,4>("state_shoc_tk").createDeviceCopy();
+  auto state_shoc_tkh      = dm_host.get<real const,4>("state_shoc_tkh").createDeviceCopy();
+  auto state_shoc_wthv     = dm_host.get<real const,4>("state_shoc_wthv").createDeviceCopy();
+  auto state_shoc_relvar   = dm_host.get<real const,4>("state_shoc_relvar").createDeviceCopy();
+  auto state_shoc_cldfrac  = dm_host.get<real const,4>("state_shoc_cldfrac").createDeviceCopy();
   //------------------------------------------------------------------------------------------------
   // Copy the host CRM data to the coupler
   parallel_for("Horz mean of CRM state", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
@@ -160,11 +160,11 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
     crm_bm           (k,j,i,iens) = state_bm           (k,j,i,iens);
     crm_t_prev       (k,j,i,iens) = state_t_prev       (k,j,i,iens);
     crm_q_prev       (k,j,i,iens) = state_q_prev       (k,j,i,iens);
-    crm_shoc_wthv_sec(k,j,i,iens) = state_shoc_wthv_sec(k,j,i,iens);
     crm_shoc_tk      (k,j,i,iens) = state_shoc_tk      (k,j,i,iens);
     crm_shoc_tkh     (k,j,i,iens) = state_shoc_tkh     (k,j,i,iens);
-    crm_shoc_cldfrac (k,j,i,iens) = state_shoc_cldfrac (k,j,i,iens);
+    crm_shoc_wthv    (k,j,i,iens) = state_shoc_wthv    (k,j,i,iens);
     crm_shoc_relvar  (k,j,i,iens) = state_shoc_relvar  (k,j,i,iens);
+    crm_shoc_cldfrac (k,j,i,iens) = state_shoc_cldfrac (k,j,i,iens);
   });
   //------------------------------------------------------------------------------------------------
 }
@@ -197,11 +197,11 @@ inline void pam_state_copy_output_to_gcm( pam::PamCoupler &coupler ) {
   auto crm_bm                   = dm_device.get<real,4>("ice_rime_vol");
   auto crm_t_prev               = dm_device.get<real,4>("qv_prev");
   auto crm_q_prev               = dm_device.get<real,4>("t_prev");
-  auto crm_shoc_wthv_sec        = dm_device.get<real,4>("wthv_sec");
   auto crm_shoc_tk              = dm_device.get<real,4>("tk");
   auto crm_shoc_tkh             = dm_device.get<real,4>("tkh");
-  auto crm_shoc_cldfrac         = dm_device.get<real,4>("cldfrac");
+  auto crm_shoc_wthv            = dm_device.get<real,4>("wthv_sec");
   auto crm_shoc_relvar          = dm_device.get<real,4>("relvar");
+  auto crm_shoc_cldfrac         = dm_device.get<real,4>("cldfrac");
   //------------------------------------------------------------------------------------------------
   // wrap the host CRM state data in YAKL arrays
   auto host_state_u_wind        = dm_host.get<real,4>("state_u_wind");
@@ -220,11 +220,11 @@ inline void pam_state_copy_output_to_gcm( pam::PamCoupler &coupler ) {
   auto host_state_bm            = dm_host.get<real,4>("state_bm");
   auto host_state_t_prev        = dm_host.get<real,4>("state_t_prev");
   auto host_state_q_prev        = dm_host.get<real,4>("state_q_prev");
-  auto host_state_shoc_wthv_sec = dm_host.get<real,4>("state_shoc_wthv_sec");
   auto host_state_shoc_tk       = dm_host.get<real,4>("state_shoc_tk");
   auto host_state_shoc_tkh      = dm_host.get<real,4>("state_shoc_tkh");
-  auto host_state_shoc_cldfrac  = dm_host.get<real,4>("state_shoc_cldfrac");
+  auto host_state_shoc_wthv     = dm_host.get<real,4>("state_shoc_wthv");
   auto host_state_shoc_relvar   = dm_host.get<real,4>("state_shoc_relvar");
+  auto host_state_shoc_cldfrac  = dm_host.get<real,4>("state_shoc_cldfrac");
   //------------------------------------------------------------------------------------------------
   // convert densities back to specific mixing ratios
   real4d tmp_qv("tmp_qv",nz,ny,nx,nens);
@@ -257,10 +257,10 @@ inline void pam_state_copy_output_to_gcm( pam::PamCoupler &coupler ) {
   crm_bm            .deep_copy_to( host_state_bm            );
   crm_t_prev        .deep_copy_to( host_state_t_prev        );
   crm_q_prev        .deep_copy_to( host_state_q_prev        );
-  crm_shoc_wthv_sec .deep_copy_to( host_state_shoc_wthv_sec );
   crm_shoc_tk       .deep_copy_to( host_state_shoc_tk       );
   crm_shoc_tkh      .deep_copy_to( host_state_shoc_tkh      );
-  crm_shoc_cldfrac  .deep_copy_to( host_state_shoc_cldfrac  );
+  crm_shoc_wthv     .deep_copy_to( host_state_shoc_wthv     );
   crm_shoc_relvar   .deep_copy_to( host_state_shoc_relvar   );
+  crm_shoc_cldfrac  .deep_copy_to( host_state_shoc_cldfrac  );
   //------------------------------------------------------------------------------------------------
 }
