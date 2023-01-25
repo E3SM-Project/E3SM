@@ -1625,7 +1625,8 @@ module li_calving
                                         calvingVelocity, thickness, &
                                         xvelmean, yvelmean, calvingThickness, &
                                         floatingVonMisesThresholdStress, &
-                                        groundedVonMisesThresholdStress
+                                        groundedVonMisesThresholdStress, &
+                                        surfaceSpeed
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA, &
                                         temperature, layerThickness
       real (kind=RKIND), pointer :: config_default_flowParamA
@@ -1636,6 +1637,9 @@ module li_calving
       real (kind=RKIND), dimension(:), pointer :: vonMisesStress, damage
       real (kind=RKIND), pointer :: totalRatebasedCalvedVolume, totalRatebasedUncalvedVolume
       logical :: applyToGrounded, applyToFloating, applyToGroundingLine
+      logical :: badCell, badNeighbor
+      integer :: kCell, jNeighbor, nGoodNeighbors
+      real (kind=RKIND) :: vMsum
 
       err = 0
 
@@ -1680,6 +1684,7 @@ module li_calving
           call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
           call mpas_pool_get_array(velocityPool, 'xvelmean', xvelmean)
           call mpas_pool_get_array(velocityPool, 'yvelmean', yvelmean)
+          call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
           call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
           call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
           call mpas_pool_get_array(geometryPool, 'calvingCFLdt', calvingCFLdt)
@@ -1758,7 +1763,48 @@ module li_calving
                               thickness(iCell) * ( 0.5_RKIND * ( (max(0.0_RKIND, eMax(iCell)))**2.0_RKIND + &
                               (max(0.0_RKIND, eMin(iCell)))**2.0_RKIND) )**(1.0_RKIND / (2.0_RKIND * config_flowLawExponent))
              endif
+          enddo
+          ! the row of cells that are adjacent to invalid velocity will have garbage strain rates and vM stress
+          ! so extrapolate into those cells from their valid neighbors
+          do iCell = 1,nCells
+             badCell = .false.
+             do iNeighbor = 1, nEdgesOnCell(iCell)
+                jCell = cellsOnCell(iNeighbor, iCell)
+                if (surfaceSpeed(jCell) == 0.0_RKIND) then
+                   ! if one neighbor has a 0 velo, the stress here is bad
+                   badCell = .true.
+                   exit ! no need to keep looping over neighbors
+                endif
+             enddo
+             if (badCell) then
+                vMsum = 0.0_RKIND
+                nGoodNeighbors = 0
+                do iNeighbor = 1, nEdgesOnCell(iCell)
+                   jCell = cellsOnCell(iNeighbor, iCell)
+                   badNeighbor = .false.
+                   do jNeighbor = 1, nEdgesOnCell(jCell)
+                      kCell = cellsOnCell(jNeighbor, jCell)
+                      if (surfaceSpeed(kCell) == 0.0_RKIND) then
+                         ! if one neighbor of this neighbor has a 0 velo, this neighbor is not to be used
+                         badNeighbor = .true.
+                         exit
+                      endif
+                   enddo
+                   if (.not. badNeighbor) then
+                      ! if this neighbor has a usable stress, accumulate its value for averaging
+                      vMsum = vMsum + vonMisesStress(jCell)
+                      nGoodNeighbors = nGoodNeighbors + 1
+                   endif
+                enddo
+                if (nGoodNeighbors > 0) then
+                   vonMisesStress(iCell) = vMsum / real(nGoodNeighbors, kind=RKIND)
+                else
+                   call mpas_log_write('oops, extrapolation failed for von mises stress', MPAS_LOG_WARN)
+                endif
+             endif ! if badCell
+          enddo
 
+          do iCell = 1,nCells
              ! Calculate calving velocity for grounded cells at marine margin
              if ( .not. li_mask_is_floating_ice(cellMask(iCell)) ) then
                 calvingVelocity(iCell) = min(sqrt(xvelmean(iCell)**2.0_RKIND + yvelmean(iCell)**2.0_RKIND) * &
