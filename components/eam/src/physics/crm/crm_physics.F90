@@ -1296,7 +1296,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
       ! call pam_mirror_array_readwrite( 'output_prectend',    crm_output%prectend,    '' )
       ! call pam_mirror_array_readwrite( 'output_precstend',   crm_output%precstend,   '' )
-      ! call pam_mirror_array_readwrite( 'output_cld',         crm_output%cld,         '' )
+      call pam_mirror_array_readwrite( 'output_cld',         crm_output%cld,         '' )
       ! call pam_mirror_array_readwrite( 'output_cldtop',      crm_output%cldtop,      '' )
       ! call pam_mirror_array_readwrite( 'output_gicewp',      crm_output%gicewp,      '' )
       ! call pam_mirror_array_readwrite( 'output_gliqwp',      crm_output%gliqwp,      '' )
