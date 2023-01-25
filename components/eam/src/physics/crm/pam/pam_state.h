@@ -81,7 +81,7 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   real2d zint_tmp("zint_tmp",nz+1,nens);
   auto grav = coupler.get_option<double>("grav");
   parallel_for( Bounds<2>(nz+1,nens) , YAKL_LAMBDA (int k, int iens) {
-    int k_gcm = gcm_nlev+1-1-k;
+    int k_gcm = (gcm_nlev+1)-1-k;
     zint_tmp(k,iens) = input_zint(k_gcm,iens) + input_phis(iens)/grav;
   });
   coupler.set_grid( crm_dx , crm_dy , zint_tmp );
@@ -203,6 +203,7 @@ inline void pam_state_copy_output_to_gcm( pam::PamCoupler &coupler ) {
   auto host_state_v_wind        = dm_host.get<real,4>("state_v_wind");
   auto host_state_w_wind        = dm_host.get<real,4>("state_w_wind");
   auto host_state_temperature   = dm_host.get<real,4>("state_temperature");
+  auto host_state_rho_dry       = dm_host.get<real,4>("state_rho_dry");
   auto host_state_qv            = dm_host.get<real,4>("state_qv");
   auto host_state_qc            = dm_host.get<real,4>("state_qc");
   auto host_state_qr            = dm_host.get<real,4>("state_qr");
@@ -227,10 +228,11 @@ inline void pam_state_copy_output_to_gcm( pam::PamCoupler &coupler ) {
   real4d tmp_qi("tmp_qi",nz,ny,nx,nens);
   parallel_for("Horz mean of CRM state", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     // convert density to specific mixing ratio
-    tmp_qv(k,j,i,iens) = crm_rho_v(k,j,i,iens) / (crm_rho_d(k,j,i,iens)+crm_rho_v(k,j,i,iens));
-    tmp_qc(k,j,i,iens) = crm_rho_c(k,j,i,iens) / (crm_rho_d(k,j,i,iens)+crm_rho_c(k,j,i,iens));
-    tmp_qr(k,j,i,iens) = crm_rho_r(k,j,i,iens) / (crm_rho_d(k,j,i,iens)+crm_rho_r(k,j,i,iens));
-    tmp_qi(k,j,i,iens) = crm_rho_i(k,j,i,iens) / (crm_rho_d(k,j,i,iens)+crm_rho_i(k,j,i,iens));
+    real tmp_rho = crm_rho_d(k,j,i,iens)+crm_rho_v(k,j,i,iens);
+    tmp_qv(k,j,i,iens) = crm_rho_v(k,j,i,iens) / tmp_rho;
+    tmp_qc(k,j,i,iens) = crm_rho_c(k,j,i,iens) / tmp_rho;
+    tmp_qr(k,j,i,iens) = crm_rho_r(k,j,i,iens) / tmp_rho;
+    tmp_qi(k,j,i,iens) = crm_rho_i(k,j,i,iens) / tmp_rho;
   });
   //------------------------------------------------------------------------------------------------
   // Copy the CRM state to host arrays
@@ -238,6 +240,7 @@ inline void pam_state_copy_output_to_gcm( pam::PamCoupler &coupler ) {
   crm_vvel          .deep_copy_to( host_state_v_wind        );
   crm_wvel          .deep_copy_to( host_state_w_wind        );
   crm_temp          .deep_copy_to( host_state_temperature   );
+  crm_rho_d         .deep_copy_to( host_state_rho_dry       );
   tmp_qv            .deep_copy_to( host_state_qv            );
   tmp_qc            .deep_copy_to( host_state_qc            );
   tmp_qr            .deep_copy_to( host_state_qi            );

@@ -170,7 +170,7 @@ inline void pam_radiation_copy_output_to_gcm( pam::PamCoupler &coupler ) {
   auto rad_cld             = dm_device.get<real,4>("rad_cld");
   auto rad_aggregation_cnt = dm_device.get<real,1>("rad_aggregation_cnt");
   //------------------------------------------------------------------------------------------------
-  // Convert sum to mean and copy the CRM data to the GCM
+  // Convert sum to time mean and copy the CRM data to the GCM
   parallel_for("copy rad state to GCM", SimpleBounds<4>(nz,rad_ny,rad_nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     rad_temperature(k,j,i,iens) = rad_temperature(k,j,i,iens) / rad_aggregation_cnt(iens);
     rad_qv         (k,j,i,iens) = rad_qv         (k,j,i,iens) / rad_aggregation_cnt(iens);
