@@ -111,7 +111,7 @@ void NUDGING::time_interpolation (const int time_s) {
   
   data_input.read_variables(time_index);
   view_2d<Real> T_mid_aft("",T_mid_ext.extent_int(0),T_mid_ext.extent_int(1));
-  view_2d<Real> T_mid_aft("",p_mid_ext.extent_int(0),p_mid_ext.extent_int(1));
+  view_2d<Real> p_mid_aft("",p_mid_ext.extent_int(0),p_mid_ext.extent_int(1));
   Kokkos::deep_copy(T_mid_aft,T_mid_ext);
   Kokkos::deep_copy(p_mid_aft,p_mid_ext);
 
