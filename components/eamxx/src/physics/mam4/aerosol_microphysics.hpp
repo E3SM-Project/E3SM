@@ -2,10 +2,11 @@
 #define SCREAM_MAM4_AEROSOL_MICROPHYSICS_HPP
 
 #include <share/atm_process/atmosphere_process.hpp>
-//#include <share/util/scream_common_physics_functions.hpp>
-//#include <share/atm_process/ATMBufferManager.hpp>
+#include <share/util/scream_common_physics_functions.hpp>
+#include <share/atm_process/ATMBufferManager.hpp>
 
 #include <ekat/ekat_parameter_list.hpp>
+#include <ekat/ekat_workspace.hpp>
 #include <mam4xx/mam4.hpp>
 
 #include <string>
@@ -20,10 +21,20 @@ namespace scream
 
 // The process responsible for handling MAM4 aerosols. The AD stores exactly ONE
 // instance of this class in its list of subcomponents.
-class MAM4AerosolMicrophysics final : public scream::AtmosphereProcess
-{
+class MAM4AerosolMicrophysics final : public scream::AtmosphereProcess {
   using PF           = scream::PhysicsFunctions<DefaultDevice>;
   using KT           = ekat::KokkosTypes<DefaultDevice>;
+
+  // views for single- and multi-column data
+  using view_1d_int   = typename KT::template view_1d<int>;
+  using view_1d       = typename KT::template view_1d<Real>;
+  using view_1d_const = typename KT::template view_1d<const Real>;
+  using view_2d       = typename KT::template view_2d<Real>;
+  using view_2d_const = typename KT::template view_2d<const Real>;
+
+  // unmanaged views (for buffer and workspace manager)
+  using uview_1d = Unmanaged<typename KT::template view_1d<Real>>;
+  using uview_2d = Unmanaged<typename KT::template view_2d<Real>>;
 
   using ColumnView   = mam4::ColumnView;
   using ThreadTeam   = mam4::ThreadTeam;
@@ -64,13 +75,13 @@ private:
   // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.
   // This functor implements this step, which is called during run_impl.
-  struct MAM4Preprocess {
-    MAM4Preprocess() = default;
+  struct Preprocess {
+    Preprocess() = default;
 
     KOKKOS_INLINE_FUNCTION
     void operator()(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) const {
       const int i = team.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&](const int k) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [&](const int k) {
         //--------------------------
         // Wet to dry mixing ratios
         //--------------------------
@@ -86,71 +97,72 @@ private:
         // Units of all tracers become [kg/kg(dry-air)] for mass mixing ratios and
         // [#/kg(dry-air)] for number mixing ratios after the following
         // conversion. qv is converted to dry mmr in the next parallel for.
-        q_soag(i,k)  = PF::calculate_drymmr_from_wetmmr(q_soag(i,k), qv(i,k));
-        q_h2so4(i,k) = PF::calculate_drymmr_from_wetmmr(q_h2so4(i,k), qv(i,k));
-        q_nh3(i,k)   = PF::calculate_drymmr_from_wetmmr(q_nh3(i,k), qv(i,k));
+        q_soag_(i,k)  = PF::calculate_drymmr_from_wetmmr(q_soag_(i,k), qv_(i,k));
+        q_h2so4_(i,k) = PF::calculate_drymmr_from_wetmmr(q_h2so4_(i,k), qv_(i,k));
+        q_nh3_(i,k)   = PF::calculate_drymmr_from_wetmmr(q_nh3_(i,k), qv_(i,k));
 
-        q_aitken_so4(i,k = PF::calculate_drymmr_from_wetmmr(q_aitken_so4(i,k), qv(i,k));
+        q_aitken_so4_(i,k) = PF::calculate_drymmr_from_wetmmr(q_aitken_so4_(i,k), qv_(i,k));
 
         // convert qv to dry mmr
-        qv(i,k) = PF::calculate_drymmr_from_wetmmr(qv(i,k), qv(i,k));
+        qv_(i,k) = PF::calculate_drymmr_from_wetmmr(qv_(i,k), qv_(i,k));
       });
       team.team_barrier();
-    } // operator
+    } // operator()
 
-    int ncol, nlev;
+    // number of horizontal columns and vertical levels
+    int ncol_, nlev_;
 
     // used for converting between wet and dry mixing ratios
-    view_1d_int convert_wet_dry_idx_d;
+    view_1d_int convert_wet_dry_idx_d_;
 
     // local atmospheric state column variables
-    view_2d_const T_mid;  // temperature at grid midpoints [K]
-    view_2d_const p_mid;  // total pressure at grid midpoints [Pa]
-    view_2d       qv;     // water vapor mass mixing ratio, not const because it
-                          // must be converted from wet to dry [kg vapor/kg dry air]
-    view_2d       height; // height at grid interfaces [m]
-    view_2d       pdel;   // hydrostatic "pressure thickness" at grid
-                          // interfaces [Pa]
-    view_1d_const pblh;   // planetary boundary layer height [m]
+    view_2d_const T_mid_;  // temperature at grid midpoints [K]
+    view_2d_const p_mid_;  // total pressure at grid midpoints [Pa]
+    view_2d       qv_;     // water vapor mass mixing ratio, not const because it
+                           // must be converted from wet to dry [kg vapor/kg dry air]
+    view_2d       height_; // height at grid interfaces [m]
+    view_2d       pdel_;   // hydrostatic "pressure thickness" at grid
+                           // interfaces [Pa]
+    view_1d_const pblh_;   // planetary boundary layer height [m]
 
     // local aerosol-related gases
-    view_2d       q_soag;  // secondary organic aerosol gas [kg gas/kg dry air]
-    view_2d       q_h2so4; // H2SO3 gas [kg/kg dry air]
-    view_2d       q_nh3;   // NH3 gas [kg/kg dry air]
+    view_2d       q_soag_;  // secondary organic aerosol gas [kg gas/kg dry air]
+    view_2d       q_h2so4_; // H2SO3 gas [kg/kg dry air]
+    view_2d       q_nh3_;   // NH3 gas [kg/kg dry air]
 
     // local aerosols (more to appear as we improve this atm process)
-    view_2d       q_aitken_so4; // SO4 aerosol in aitken mode [kg/kg dry air]
+    view_2d       q_aitken_so4_; // SO4 aerosol in aitken mode [kg/kg dry air]
 
     // assigns local variables
-    void set_variables(const int ncol_, const int nlev_,
-                       const view_2d_const& T_mid_,
-                       const view_2d_const& p_mid_,
-                       const view_2d&       qv_,
-                       const view_2d&       height_,
-                       const view_2d&       pdel_,
-                       const view_1d_const& pblh_,
-                       const view_2d&       q_soag_,
+    void set_variables(const int ncol, const int nlev,
+                       const view_2d_const& T_mid,
+                       const view_2d_const& p_mid,
+                       const view_2d&       qv,
+                       const view_2d&       height,
+                       const view_2d&       pdel,
+                       const view_1d_const& pblh,
+                       const view_2d&       q_soag,
                        const view_2d&       q_h2so4,
                        const view_2d&       q_nh3,
                        const view_2d&       q_aitken_so4) {
-      ncol = ncol_;
-      nlev = nlev_;
-      T_mid = T_mid_;
-      p_mid = p_mid_;
-      qv = qv_;
-      height = height_;
-      pdel = pdel_;
-      pblh = pblh_;
-      q_soag = q_soag_;
-      q_h2so4 = q_h2so4_;
-      q_nh3 = q_nh3_;
-      q_aitken_so4 = q_aitken_so4_;
+      ncol_ = ncol;
+      nlev_ = nlev;
+      T_mid_ = T_mid;
+      p_mid_ = p_mid;
+      qv_ = qv;
+      height_ = height;
+      pdel_ = pdel;
+      pblh_ = pblh;
+      q_soag_ = q_soag;
+      q_h2so4_ = q_h2so4;
+      q_nh3_ = q_nh3;
+      q_aitken_so4_ = q_aitken_so4;
     } // set_variables
-  }; // MAM4Preprocess
+  }; // MAM4AerosolMicrophysics::Preprocess
 
   // Postprocessing functor
-  struct MAM4Postprocess {
-    MAM4Postprocess() = default;
+  struct Postprocess {
+    Postprocess() = default;
 
     KOKKOS_INLINE_FUNCTION
     void operator()(const Kokkos::TeamPolicy<KT::ExeSpace>::member_type& team) const {
@@ -159,51 +171,51 @@ private:
 
       // After these updates, all tracers are converted from dry mmr to wet mmr
       const int i = team.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev), [&](const int k) {
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_), [&](const int k) {
         // Here we convert our dry mmrs back to wet mmrs for EAMxx.
         // NOTE: calculate_wetmmr_from_drymmr takes 2 arguments:
         // 1. dry mmr
         // 2. "dry" water vapor mixing ratio
-        q_soag(i,k)  = PF::calculate_wetmmr_from_drymmr(q_soag(i,k), qv(i,k));
-        q_h2so4(i,k) = PF::calculate_wetmmr_from_drymmr(q_h2so4(i,k), qv(i,k));
-        q_nh3(i,k)   = PF::calculate_wetmmr_from_drymmr(q_nh3(i,k), qv(i,k));
+        q_soag_(i,k)  = PF::calculate_wetmmr_from_drymmr(q_soag_(i,k), qv_(i,k));
+        q_h2so4_(i,k) = PF::calculate_wetmmr_from_drymmr(q_h2so4_(i,k), qv_(i,k));
+        q_nh3_(i,k)   = PF::calculate_wetmmr_from_drymmr(q_nh3_(i,k), qv_(i,k));
 
-        q_aitken_so4(i,k = PF::calculate_wetmmr_from_drymmr(q_aitken_so4(i,k), qv(i,k));
+        q_aitken_so4_(i,k) = PF::calculate_wetmmr_from_drymmr(q_aitken_so4_(i,k), qv_(i,k));
 
-        qv(i,k) = PF::calculate_wetmmr_from_drymmr(qv(i,k), qv(i,k));
+        qv_(i,k) = PF::calculate_wetmmr_from_drymmr(qv_(i,k), qv_(i,k));
       });
       team.team_barrier();
-    } // operator
+    } // operator()
 
     // Local variables
-    int ncol, nlev;
-    view_2d qv;
+    int ncol_, nlev_;
+    view_2d qv_;
 
     // local aerosol-related gases
-    view_2d       q_soag;  // secondary organic aerosol gas [kg gas/kg dry air]
-    view_2d       q_h2so4; // H2SO3 gas [kg/kg dry air]
-    view_2d       q_nh3;   // NH3 gas [kg/kg dry air]
+    view_2d       q_soag_;  // secondary organic aerosol gas [kg gas/kg dry air]
+    view_2d       q_h2so4_; // H2SO3 gas [kg/kg dry air]
+    view_2d       q_nh3_;   // NH3 gas [kg/kg dry air]
 
     // local aerosols (more to appear as we improve this atm process)
-    view_2d       q_aitken_so4; // SO4 aerosol in aitken mode [kg/kg dry air]
+    view_2d       q_aitken_so4_; // SO4 aerosol in aitken mode [kg/kg dry air]
 
     // assigns local variables
-    void set_variables(const int ncol_, const int nlev_,
-                       const view_2d& qv_,
-                       const view_2d& q_soag_,
+    void set_variables(const int ncol,
+                       const int nlev,
+                       const view_2d& qv,
+                       const view_2d& q_soag,
                        const view_2d& q_h2so4,
                        const view_2d& q_nh3,
                        const view_2d& q_aitken_so4) {
-    {
-      ncol = ncol_;
-      nlev = nlev_;
-      qv = qv_;
-      q_soag = q_soag_;
-      q_h2so4 = q_h2so4_;
-      q_nh3 = q_nh3_;
-      q_aitken_so4 = q_aitken_so4_;
+      ncol_ = ncol;
+      nlev_ = nlev;
+      qv_ = qv;
+      q_soag_ = q_soag;
+      q_h2so4_ = q_h2so4;
+      q_nh3_ = q_nh3;
+      q_aitken_so4_ = q_aitken_so4;
     } // set_variables
-  }; // MAM4Postprocess
+  }; // MAM4AerosolMicrophysics::Postprocess
 
   // Structure for storing local variables initialized using the ATMBufferManager
   struct Buffer {
@@ -213,41 +225,31 @@ private:
     static constexpr int num_2d_vector_int  = 13;
     static constexpr int num_2d_vector_tr   = 1;
 
-    uview_1d<Real> cell_length;
-    uview_1d<Real> wpthlp_sfc;
-    uview_1d<Real> wprtp_sfc;
-    uview_1d<Real> upwp_sfc;
-    uview_1d<Real> vpwp_sfc;
+    uview_1d pref_mid_;
 
-    uview_1d<Spack> pref_mid;
+    uview_2d z_mid_;
+    uview_2d z_int_;
 
-    uview_2d<Spack> z_mid;
-    uview_2d<Spack> z_int;
-    uview_2d<Spack> rrho;
-    uview_2d<Spack> rrho_i;
-    uview_2d<Spack> thv;
-    uview_2d<Spack> dz;
-    uview_2d<Spack> zt_grid;
-    uview_2d<Spack> zi_grid;
-    uview_2d<Spack> wtracer_sfc;
-    uview_2d<Spack> wm_zt;
-
-    Spack* wsm_data;
-  };
-  /* --------------------------------------------------------------------------------------------*/
+    Real* wsm_data_;
+  }; // MAM4AerosolMicrophysics::Buffer
 
   // MAM4 aerosol particle size description
   mam4::AeroConfig aero_config_;
 
-  // Aerosol processes
-  mam4::NucleationProcess nucleation_;
+  // aerosol processes
+  std::unique_ptr<mam4::NucleationProcess> nucleation_;
+
+  // pre- and postprocessing scratch pads
+  Preprocess preprocess_;
+  Postprocess postprocess_;
 
   // WSM for internal local variables
-  ekat::WorkspaceManager<Spack, KT::Device> workspace_mgr_;
+  ekat::WorkspaceManager<Real, KT::Device> workspace_mgr_;
+  Buffer buffer_;
 
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;
-};
+}; // MAM4AerosolMicrophysics
 
 } // namespace scream
 

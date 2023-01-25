@@ -51,7 +51,7 @@ endif()
 # to be on. For now, simply ensure Kokkos Serial is enabled
 option (Kokkos_ENABLE_SERIAL "" ON)
 
-set (CMAKE_CXX_STANDARD 14)
+set (CMAKE_CXX_STANDARD 17)
 
 if (NOT SCREAM_CIME_BUILD)
   project(SCREAM CXX C Fortran)

@@ -12,10 +12,11 @@ namespace scream
 MAM4AerosolMicrophysics::MAM4AerosolMicrophysics(
     const ekat::Comm& comm,
     const ekat::ParameterList& params)
-  : AtmosphereProcess(comm, params) {
+  : AtmosphereProcess(comm, params),
+    nucleation_(nullptr) {
 }
 
-MAM4AerosolMicrophysics::AtmosphereProcessType type() const {
+AtmosphereProcessType type() const {
   return AtmosphereProcessType::Physics;
 }
 
@@ -35,24 +36,14 @@ void MAM4AerosolMicrophysics::set_grids(const std::shared_ptr<const GridsManager
   grid_ = grids_manager->get_grid("Physics");
   const auto& grid_name = grid_->name();
 
-  num_cols_ = grid_->get_num_local_dofs(); // Number of columns on this rank
-  num_levs_ = grid_->get_num_vertical_levels();  // Number of levels per column
+  ncol_ = grid_->get_num_local_dofs(); // Number of columns on this rank
+  nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
 
   // Layout for 2D (1d horiz X 1d vertical) variable
-  FieldLayout scalar2d_layout_col{ {COL}, {num_cols_} };
-
-  // Layout for surf_mom_flux
-  FieldLayout  surf_mom_flux_layout { {COL, CMP}, {num_cols_, 2} };
-
-  // Layout for 3D (2d horiz X 1d vertical) variable defined at mid-level and interfaces
-  FieldLayout scalar3d_layout_mid { {COL,LEV}, {num_cols_,num_levs_} };
-  FieldLayout scalar3d_layout_int { {COL,ILEV}, {num_cols_,num_levs_+1} };
-
-  // Layout for horiz_wind field
-  FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {num_cols_,2,num_levs_} };
+  FieldLayout scalar2d_layout_col{ {COL}, {ncol_} };
 
   // Define fields needed in mam4xx.
   const auto m2 = m*m;
@@ -98,19 +89,17 @@ set_computed_group_impl(const FieldGroup& group) {
 
 size_t MAM4AerosolMicrophysics::requested_buffer_size_in_bytes() const override {
   // Number of Reals needed by local views in the interface
-  const size_t interface_request = Buffer::num_1d_scalar_ncol*num_cols_*sizeof(Real) +
-                                   Buffer::num_1d_scalar_nlev*nlev_packs*sizeof(Spack) +
-                                   Buffer::num_2d_vector_mid*num_cols_*nlev_packs*sizeof(Spack) +
-                                   Buffer::num_2d_vector_int*num_cols_*nlevi_packs*sizeof(Spack) +
-                                   Buffer::num_2d_vector_tr*num_cols_*num_tracer_packs*sizeof(Spack);
+  const size_t interface_request = Buffer::num_1d_scalar_ncol*ncol_*sizeof(Real) +
+                                   Buffer::num_1d_scalar_nlev*nlev_packs*sizeof(Real) +
+                                   Buffer::num_2d_vector_mid*ncol_*nlev_packs*sizeof(Real) +
+                                   Buffer::num_2d_vector_int*ncol_*nlevi_packs*sizeof(Real) +
+                                   Buffer::num_2d_vector_tr*ncol_*num_tracer_packs*sizeof(Real);
 
-  // Number of Reals needed by the WorkspaceManager passed to shoc_main
-  const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_cols_, nlev_packs);
-  const int n_wind_slots  = ekat::npack<Spack>(2)*Spack::n;
-  const int n_trac_slots  = ekat::npack<Spack>(num_tracers_+3)*Spack::n;
-  const size_t wsm_request= WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy);
+  // Number of Reals needed by the WorkspaceManager passed to aerosol processes
+//  const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_packs);
+//  const size_t wsm_request= WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy);
 
-  return interface_request + wsm_request;
+  return interface_request;// + wsm_request;
 }
 
 void MAM4AerosolMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) override {
@@ -119,49 +108,49 @@ void MAM4AerosolMicrophysics::init_buffers(const ATMBufferManager &buffer_manage
   Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
 
   // 1d scalar views
-  using scalar_view_t = decltype(m_buffer.cell_length);
+  using scalar_view_t = decltype(buffer_.cell_length);
   scalar_view_t* _1d_scalar_view_ptrs[Buffer::num_1d_scalar_ncol] =
-    {&m_buffer.cell_length, &m_buffer.wpthlp_sfc, &m_buffer.wprtp_sfc, &m_buffer.upwp_sfc, &m_buffer.vpwp_sfc
+    {&buffer_.cell_length, &buffer_.wpthlp_sfc, &buffer_.wprtp_sfc, &buffer_.upwp_sfc, &buffer_.vpwp_sfc
     };
   for (int i = 0; i < Buffer::num_1d_scalar_ncol; ++i) {
-    *_1d_scalar_view_ptrs[i] = scalar_view_t(mem, num_cols_);
+    *_1d_scalar_view_ptrs[i] = scalar_view_t(mem, ncol_);
     mem += _1d_scalar_view_ptrs[i]->size();
   }
 
-  m_buffer.pref_mid = decltype(m_buffer.pref_mid)(s_mem, nlev_packs);
-  s_mem += m_buffer.pref_mid.size();
+  buffer_.pref_mid = decltype(buffer_.pref_mid)(s_mem, nlev_packs);
+  s_mem += buffer_.pref_mid.size();
 
-  using spack_2d_view_t = decltype(m_buffer.z_mid);
+  using spack_2d_view_t = decltype(buffer_.z_mid);
   spack_2d_view_t* _2d_spack_mid_view_ptrs[Buffer::num_2d_vector_mid] = {
-    &m_buffer.z_mid, &m_buffer.rrho, &m_buffer.thv, &m_buffer.dz, &m_buffer.zt_grid, &m_buffer.wm_zt,
-    &m_buffer.inv_exner, &m_buffer.thlm, &m_buffer.qw, &m_buffer.dse, &m_buffer.tke_copy, &m_buffer.qc_copy,
-    &m_buffer.shoc_ql2, &m_buffer.shoc_mix, &m_buffer.isotropy, &m_buffer.w_sec, &m_buffer.wqls_sec, &m_buffer.brunt
+    &buffer_.z_mid, &buffer_.rrho, &buffer_.thv, &buffer_.dz, &buffer_.zt_grid, &buffer_.wm_zt,
+    &buffer_.inv_exner, &buffer_.thlm, &buffer_.qw, &buffer_.dse, &buffer_.tke_copy, &buffer_.qc_copy,
+    &buffer_.shoc_ql2, &buffer_.shoc_mix, &buffer_.isotropy, &buffer_.w_sec, &buffer_.wqls_sec, &buffer_.brunt
   };
 
   spack_2d_view_t* _2d_spack_int_view_ptrs[Buffer::num_2d_vector_int] = {
-    &m_buffer.z_int, &m_buffer.rrho_i, &m_buffer.zi_grid, &m_buffer.thl_sec, &m_buffer.qw_sec,
-    &m_buffer.qwthl_sec, &m_buffer.wthl_sec, &m_buffer.wqw_sec, &m_buffer.wtke_sec, &m_buffer.uw_sec,
-    &m_buffer.vw_sec, &m_buffer.w3
+    &buffer_.z_int, &buffer_.rrho_i, &buffer_.zi_grid, &buffer_.thl_sec, &buffer_.qw_sec,
+    &buffer_.qwthl_sec, &buffer_.wthl_sec, &buffer_.wqw_sec, &buffer_.wtke_sec, &buffer_.uw_sec,
+    &buffer_.vw_sec, &buffer_.w3
   };
 
   for (int i = 0; i < Buffer::num_2d_vector_mid; ++i) {
-    *_2d_spack_mid_view_ptrs[i] = spack_2d_view_t(s_mem, num_cols_, nlev_packs);
+    *_2d_spack_mid_view_ptrs[i] = spack_2d_view_t(s_mem, ncol_, nlev_packs);
     s_mem += _2d_spack_mid_view_ptrs[i]->size();
   }
 
   for (int i = 0; i < Buffer::num_2d_vector_int; ++i) {
-    *_2d_spack_int_view_ptrs[i] = spack_2d_view_t(s_mem, num_cols_, nlevi_packs);
+    *_2d_spack_int_view_ptrs[i] = spack_2d_view_t(s_mem, ncol_, nlevi_packs);
     s_mem += _2d_spack_int_view_ptrs[i]->size();
   }
-  m_buffer.wtracer_sfc = decltype(m_buffer.wtracer_sfc)(s_mem, num_cols_, num_tracer_packs);
-  s_mem += m_buffer.wtracer_sfc.size();
+  buffer_.wtracer_sfc = decltype(buffer_.wtracer_sfc)(s_mem, ncol_, num_tracer_packs);
+  s_mem += buffer_.wtracer_sfc.size();
 
   // WSM data
-  m_buffer.wsm_data = s_mem;
+  buffer_.wsm_data = s_mem;
 
   // Compute workspace manager size to check used memory
   // vs. requested memory
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_cols_, nlev_packs);
+  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_packs);
   const int wsm_size = WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy)/sizeof(Spack);
   s_mem += wsm_size;
 
@@ -170,17 +159,17 @@ void MAM4AerosolMicrophysics::init_buffers(const ATMBufferManager &buffer_manage
 }
 
 void MAM4AerosolMicrophysics::initialize_impl(const RunType run_type) {
-  const auto& T_mid = get_field_in("T_mid").get_view<Spack**>();
-  const auto& p_mid = get_field_in("p_mid").get_view<const Spack**>();
-  const auto& qv = get_field_in("qv").get_view<Spack**>();
+  const auto& T_mid = get_field_in("T_mid").get_view<Real**>();
+  const auto& p_mid = get_field_in("p_mid").get_view<const Real**>();
+  const auto& qv = get_field_in("qv").get_view<Real**>();
   const auto& pblh = get_field_in("pbl_height").get_view<Real*>();
-  const auto& p_del = get_field_in("pseudo_density").get_view<const Spack**>();
-  const auto& cldfrac = get_field_in("cldfrac_tot").get_view<Spack**>(); // FIXME: tot or liq?
+  const auto& p_del = get_field_in("pseudo_density").get_view<const Real**>();
+  const auto& cldfrac = get_field_in("cldfrac_tot").get_view<Real**>(); // FIXME: tot or liq?
   const auto& tracers = get_group_out("tracers");
   const auto& tracers_info = tracers.m_info;
 
   // Alias local variables from temporary buffer
-  // e.g. auto z_mid       = m_buffer.z_mid;
+  // e.g. auto z_mid       = buffer_.z_mid;
 
   // Perform any initialization work.
   if (run_type==RunType::Initial){
@@ -197,25 +186,13 @@ void MAM4AerosolMicrophysics::initialize_impl(const RunType run_type) {
   auto qv_index  = tracer_info->m_subview_idx.at("qv");
   // FIXME
 
-  mam4_preprocess.set_variables(num_cols_, num_levs_, T_mid, p_mid, qv, height,
-                                pdel, pblh, q_soag, q_h2so4, q_nh3, q_aitken_so4);
+  preprocess_.set_variables(ncol_, nlev_, T_mid, p_mid, qv, height,
+                            p_del, pblh, q_soag, q_h2so4, q_nh3, q_aitken_so4);
 
-  // input
-  input.pres        = p_mid;
-  input.pdel        = pseudo_density;
-  input.temp        = mam4_preprocess.t_mid;
+  // FIXME: stuff goes here!
 
-  // input/output
-  // e.g. input_output.host_dse     = mam4_preprocess.shoc_s;
-
-  // output (prognostic)
-  // e.g. output.pblh     = get_field_out("pbl_height").get_view<Real*>();
-
-  // output (diagnostic)
-  // e.g. history_output.shoc_mix  = m_buffer.shoc_mix;
-
-  mam4_postprocess.set_variables(num_cols_, num_levs_, qv, q_soag, q_h2so4,
-                                 q_nh3, q_aitken_so4);
+  postprocess_.set_variables(ncol_, nlev_, qv, q_soag, q_h2so4,
+                             q_nh3, q_aitken_so4);
 
   // Set field property checks for the fields in this process
   /* e.g.
@@ -228,34 +205,28 @@ void MAM4AerosolMicrophysics::initialize_impl(const RunType run_type) {
   */
 
   // Setup WSM for internal local variables
-  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_cols_, nlev_);
+  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
   // FIXME
-  //workspace_mgr.setup(m_buffer.wsm_data, nlev_+1, 13+(n_wind_slots+n_trac_slots), default_policy);
+  //workspace_mgr_.setup(buffer_.wsm_data, nlev_+1, 13+(n_wind_slots+n_trac_slots), default_policy);
 
   // FIXME: aerosol process initialization goes here!
 }
 
 void MAM4AerosolMicrophysics::run_impl(const int dt) {
 
-  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(num_cols_, nlev_);
+  const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
 
   // preprocess input
-  Kokkos::parallel_for("mam4_preprocess", default_policy, mam4_preprocess);
+  Kokkos::parallel_for("preprocess", default_policy, preprocess_);
   Kokkos::fence();
 
-  // For now set the host timestep to the MAM4 timestep. This forces
-  // number of MAM4 timesteps (nadv) to be 1.
-  // TODO: input parameter?
-  hdtime = dt;
-  m_nadv = std::max(hdtime/dt,1);
-
   // Reset internal WSM variables.
-  workspace_mgr.reset_internals();
+  workspace_mgr_.reset_internals();
 
   // FIXME: Aerosol stuff goes here!
 
   // postprocess output
-  Kokkos::parallel_for("mam4_postprocess", default_policy, mam4_postprocess);
+  Kokkos::parallel_for("postprocess", default_policy, postprocess_);
   Kokkos::fence();
 }
 
