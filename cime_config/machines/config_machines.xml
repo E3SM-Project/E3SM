@@ -596,19 +596,16 @@
     <NTEST_PARALLEL_JOBS>1</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>56</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>56</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
         <arg name="num_tasks"> -l -K -n {{ total_tasks }} -N {{ num_nodes }} </arg>
-        <!-- <arg name="binding">cpu_bind=cores</arg>  -->
-        <!-- <arg name="binding">threads-per-core=1 -c 2</arg> -->
         <arg name="binding">--threads-per-core=1</arg>
         <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
         <arg name="placement">-m *:block</arg>
-        <!--<arg name="placement">-m plane={{ tasks_per_node }}</arg>-->
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
@@ -628,7 +625,7 @@
       <modules compiler="amdclang">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-amd/8.3.3</command>
-        <command name="switch">amd amd/5.1.0</command>
+        <command name="switch">amd amd/5.4.0</command>
       </modules>
       <modules compiler="gnu">
         <command name="reset"></command>
