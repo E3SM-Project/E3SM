@@ -103,7 +103,7 @@ contains
     !
     ! Local(s)
     !
-    real(kind=c_double), pointer :: lat (:), lon(:)
+    real(kind=c_double), pointer :: lat (:,:,:), lon(:,:,:)
     integer(kind=c_int), pointer :: cg_gids (:), dg_gids(:), elgpgp(:,:)
 
     ! Sanity check
@@ -112,8 +112,8 @@ contains
     call c_f_pointer (dg_gids_ptr, dg_gids, [nelemd*np*np])
     call c_f_pointer (cg_gids_ptr, cg_gids, [nelemd*np*np])
     call c_f_pointer (elgpgp_ptr,  elgpgp,  [3,nelemd*np*np])
-    call c_f_pointer (lat_ptr,     lat,     [nelemd*np*np])
-    call c_f_pointer (lon_ptr,     lon,     [nelemd*np*np])
+    call c_f_pointer (lat_ptr,     lat,     [np,np,nelemd])
+    call c_f_pointer (lon_ptr,     lon,     [np,np,nelemd])
 
     call get_my_dyn_data (dg_gids, cg_gids, elgpgp, lat, lon)
   end subroutine get_dyn_grid_data_f90

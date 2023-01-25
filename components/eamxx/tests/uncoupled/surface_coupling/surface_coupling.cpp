@@ -349,6 +349,7 @@ TEST_CASE("surface-coupling", "") {
   ad.set_comm(atm_comm);
   ad.set_params(ad_params);
   ad.init_scorpio ();
+  ad.init_time_stamps (t0, t0);
   ad.create_atm_processes ();
   ad.create_grids ();
   ad.create_fields ();
@@ -458,7 +459,7 @@ TEST_CASE("surface-coupling", "") {
                                          export_constant_multiple_view.data(), do_export_during_init_view.data());
 
   // Initialize the AD
-  ad.initialize_fields (t0, t0);
+  ad.initialize_fields ();
   ad.initialize_output_managers ();
   ad.initialize_atm_procs ();
 

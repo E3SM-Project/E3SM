@@ -62,6 +62,9 @@ public:
   // Set AD params
   void set_params (const ekat::ParameterList& params);
 
+  // Init time stamps
+  void init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0);
+
   // Set AD params
   void init_scorpio (const int atm_id = 0);
 
@@ -93,7 +96,7 @@ public:
   void setup_column_conservation_checks ();
 
   // Load initial conditions for atm inputs
-  void initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0);
+  void initialize_fields ();
 
   // Initialie I/O structures for output
   void initialize_output_managers ();
@@ -202,16 +205,17 @@ protected:
   std::shared_ptr<ekat::logger::LoggerBase> m_atm_logger;
 
   // Some status flags, used to make sure we call the init functions in the right order
-  static constexpr int s_comm_set       =   1;
-  static constexpr int s_params_set     =   2;
-  static constexpr int s_scorpio_inited =   4;
-  static constexpr int s_procs_created  =   8;
-  static constexpr int s_grids_created  =  16;
-  static constexpr int s_fields_created =  32;
-  static constexpr int s_sc_set         =  64;
-  static constexpr int s_output_inited  = 128;
-  static constexpr int s_fields_inited  = 256;
-  static constexpr int s_procs_inited   = 512;
+  static constexpr int s_comm_set       =    1;
+  static constexpr int s_params_set     =    2;
+  static constexpr int s_scorpio_inited =    4;
+  static constexpr int s_procs_created  =    8;
+  static constexpr int s_grids_created  =   16;
+  static constexpr int s_fields_created =   32;
+  static constexpr int s_sc_set         =   64;
+  static constexpr int s_output_inited  =  128;
+  static constexpr int s_fields_inited  =  256;
+  static constexpr int s_procs_inited   =  512;
+  static constexpr int s_ts_inited      = 1024;
 
   // Lazy version to ensure s_atm_inited & flag is true for every flag,
   // even if someone adds new flags later on

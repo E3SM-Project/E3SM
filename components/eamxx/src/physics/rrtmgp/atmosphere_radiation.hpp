@@ -51,8 +51,8 @@ public:
   int m_col_chunk_size;
   std::vector<int> m_col_chunk_beg;
   int m_nlay;
-  view_1d_real m_lat;
-  view_1d_real m_lon;
+  Field m_lat;
+  Field m_lon;
 
   // Whether we use aerosol forcing in radiation
   bool m_do_aerosol_rad;

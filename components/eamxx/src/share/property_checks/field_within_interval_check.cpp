@@ -198,15 +198,16 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
   }
   PropertyCheck::ResultAndMsg res_and_msg;
 
-  bool pass_lower = false, pass_upper = false;
+  bool pass_lower = true, pass_upper = true;
 
   if (minmaxloc.min_val>=m_lb && minmaxloc.max_val<=m_ub) {
     res_and_msg.result = CheckResult::Pass;
-    pass_lower = pass_upper = true;
   } else if  (minmaxloc.min_val<m_lb_repairable || minmaxloc.max_val>m_ub_repairable) {
+    // Check if the min_val fails test
     if (minmaxloc.min_val<m_lb_repairable) {
       pass_lower = false;
     }
+    // Check if the max_val fails test
     if (minmaxloc.max_val>m_ub_repairable) {
       pass_upper = false;
     }
@@ -214,9 +215,11 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
     res_and_msg.result = CheckResult::Fail;
   } else {
     res_and_msg.result = CheckResult::Repairable;
+    // Check if the min_val fails test
     if (minmaxloc.min_val<m_lb) {
       pass_lower = false;
     }
+    // Check if the max_val fails test
     if (minmaxloc.max_val>m_ub) {
       pass_upper = false;
     }
@@ -246,20 +249,19 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
   using namespace ShortFieldTagsNames;
 
   int min_col_lid, max_col_lid;
-  AbstractGrid::dofs_list_h_type gids;
-  AbstractGrid::geo_view_h_type lat, lon;
   bool has_latlon;
   bool has_col_info = m_grid and layout.tag(0)==COL;
+  const Real* lat;
+  const Real* lon;
 
   if (has_col_info) {
     // We are storing grid info, and the field is over columns. Get col id and coords.
     min_col_lid = idx_min[0];
     max_col_lid = idx_max[0];
-    gids = m_grid->get_dofs_gids_host();
     has_latlon = m_grid->has_geometry_data("lat") && m_grid->has_geometry_data("lon");
     if (has_latlon) {
-      lat = m_grid->get_geometry_data_host("lat");
-      lon = m_grid->get_geometry_data_host("lon");
+      lat = m_grid->get_geometry_data("lat").get_internal_view_data<const Real,Host>();
+      lon = m_grid->get_geometry_data("lon").get_internal_view_data<const Real,Host>();
     }
   }
 
@@ -267,26 +269,28 @@ PropertyCheck::ResultAndMsg FieldWithinIntervalCheck::check_impl () const
   msg << "  - minimum:\n";
   msg << "    - value: " << minmaxloc.min_val << "\n";
   if (has_col_info) {
+    auto gids = m_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
     msg << "    - entry: (" << gids(min_col_lid);
     for (size_t i=1; i<idx_min.size(); ++i) {
       msg << "," << idx_min[i];
     }
     msg << ")\n";
     if (has_latlon) {
-      msg << "    - lat/lon: (" << lat(min_col_lid) << ", " << lon(min_col_lid) << ")\n";
+      msg << "    - lat/lon: (" << lat[min_col_lid] << ", " << lon[min_col_lid] << ")\n";
     }
   }
 
   msg << "  - maximum:\n";
   msg << "    - value: " << minmaxloc.max_val << "\n";
   if (has_col_info) {
+    auto gids = m_grid->get_dofs_gids().get_view<const AbstractGrid::gid_type*,Host>();
     msg << "    - entry: (" << gids(max_col_lid);
     for (size_t i=1; i<idx_max.size(); ++i) {
       msg << "," << idx_max[i];
     }
     msg << ")\n";
     if (has_latlon) {
-      msg << "    - lat/lon: (" << lat(max_col_lid) << ", " << lon(max_col_lid) << ")\n";
+      msg << "    - lat/lon: (" << lat[max_col_lid] << ", " << lon[max_col_lid] << ")\n";
     }
   }
 

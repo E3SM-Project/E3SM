@@ -153,6 +153,17 @@ init_scorpio(const int atm_id)
   m_ad_status |= s_scorpio_inited;
 }
 
+void AtmosphereDriver::
+init_time_stamps (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0)
+{
+  m_atm_logger->info("  [EAMxx] Run  start time stamp: " + run_t0.to_string());
+  m_atm_logger->info("  [EAMxx] Case start time stamp: " + case_t0.to_string());
+
+  // Initialize time stamps
+  m_run_t0 = m_current_ts = run_t0;
+  m_case_t0 = case_t0;
+}
+
 void AtmosphereDriver::create_atm_processes()
 {
   m_atm_logger->info("[EAMxx] create_atm_processes  ...");
@@ -183,11 +194,26 @@ void AtmosphereDriver::create_grids()
   start_timer("EAMxx::create_grids");
 
   // Must have procs created by now (and comm/params set)
-  check_ad_status (s_procs_created | s_comm_set | s_params_set);
+  check_ad_status (s_procs_created | s_comm_set | s_params_set | s_ts_inited);
 
   // Create the grids manager
   auto& gm_params = m_atm_params.sublist("grids_manager");
   const std::string& gm_type = gm_params.get<std::string>("Type");
+
+  // The GridsManager might load some geometric data from IC file.
+  // To avoid having to pass the same data twice in the input file,
+  // we have the AD add the IC file name to the GM params
+  const auto& ic_pl = m_atm_params.sublist("initial_conditions");
+  if (m_case_t0<m_run_t0) {
+    // Restarted run -> read geo data from restart file
+    const auto& casename = ic_pl.get<std::string>("restart_casename");
+    auto filename = find_filename_in_rpointer (casename,true,m_atm_comm,m_run_t0);
+    gm_params.set("ic_filename", filename);
+  } else if (ic_pl.isParameter("Filename")) {
+    // Initial run, if an IC file is present, pass it.
+    gm_params.set("ic_filename", ic_pl.get<std::string>("Filename"));
+  }
+
   m_atm_logger->debug("  [EAMxx] Creating grid manager '" + gm_type + "' ...");
   m_grids_manager = GridsManagerFactory::instance().create(gm_type,m_atm_comm,gm_params);
 
@@ -202,40 +228,6 @@ void AtmosphereDriver::create_grids()
   // Set the grids in the processes. Do this by passing the grids manager.
   // Each process will grab what they need
   m_atm_process_group->set_grids(m_grids_manager);
-
-  // Load reference/surface pressure fractions if needed. This
-  // is done inside dynamics, however, for standalone runs
-  // without dynamics, these values could be needed.
-  auto& ic_pl = m_atm_params.sublist("initial_conditions");
-  const bool load_hybrid_coeffs = ic_pl.get<bool>("Load Hybrid Coefficients",false);
-  if (load_hybrid_coeffs) {
-    using view_1d_host = AtmosphereInput::view_1d_host;
-    using vos_t = std::vector<std::string>;
-    using namespace ShortFieldTagsNames;
-
-    auto phys_grid = m_grids_manager->get_grid("Physics");
-    const auto nlev = phys_grid->get_num_vertical_levels();
-
-    // Read vcoords into host views
-    ekat::ParameterList vcoord_reader_pl;
-    vcoord_reader_pl.set("Filename",ic_pl.get<std::string>("Filename"));
-    vcoord_reader_pl.set<vos_t>("Field Names",{"hyam","hybm"});
-    std::map<std::string,view_1d_host> host_views = {
-      { "hyam", view_1d_host("hyam",nlev) },
-      { "hybm", view_1d_host("hybm",nlev) }
-    };
-    std::map<std::string,FieldLayout> layouts = {
-      { "hyam", FieldLayout({LEV}, {nlev}) },
-      { "hybm", FieldLayout({LEV}, {nlev}) }
-    };
-
-    AtmosphereInput vcoord_reader(vcoord_reader_pl, phys_grid, host_views, layouts);
-    vcoord_reader.read_variables();
-    vcoord_reader.finalize();
-
-    Kokkos::deep_copy(phys_grid->get_geometry_data("hyam"), host_views["hyam"]);
-    Kokkos::deep_copy(phys_grid->get_geometry_data("hybm"), host_views["hybm"]);
-  }
 
   m_ad_status |= s_grids_created;
 
@@ -639,18 +631,17 @@ void AtmosphereDriver::initialize_output_managers () {
 }
 
 void AtmosphereDriver::
-initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0)
+initialize_fields ()
 {
+  check_ad_status (s_fields_created | s_ts_inited);
+
   m_atm_logger->info("[EAMxx] initialize_fields ...");
   start_timer("EAMxx::init");
   start_timer("EAMxx::initialize_fields");
 
-  m_atm_logger->info("  [EAMxx] Run  start time stamp: " + run_t0.to_string());
-  m_atm_logger->info("  [EAMxx] Case start time stamp: " + case_t0.to_string());
-
 #ifdef SCREAM_CIME_BUILD
   // See the [rrtmgp active gases] note in dynamics/homme/atmosphere_dynamics_fv_phys.cpp.
-  if (fvphyshack) fv_phys_rrtmgp_active_gases_set_restart(case_t0 < run_t0);
+  if (fvphyshack) fv_phys_rrtmgp_active_gases_set_restart(m_case_t0 < m_run_t0);
 #endif
 
   // See if we need to print a DAG. We do this first, cause if any input
@@ -675,59 +666,11 @@ initialize_fields (const util::TimeStamp& run_t0, const util::TimeStamp& case_t0
     dag.write_dag("scream_atm_dag.dot",std::max(verb_lvl,0));
   }
 
-  // Initialize time stamps
-  m_run_t0 = m_current_ts = run_t0;
-  m_case_t0 = case_t0;
-
   // Initialize fields
   if (m_case_t0<m_run_t0) {
     restart_model ();
   } else {
     set_initial_conditions ();
-  }
-
-  // Check if lat/lon needs to be loaded
-  // Check whether we need to load latitude/longitude of physics grid dofs.
-  // This option allows the user to set lat or lon in their own
-  // test or run setup code rather than by file.
-  auto& ic_pl = m_atm_params.sublist("initial_conditions");
-  bool load_latitude  = ic_pl.get<bool>("Load Latitude",false);
-  bool load_longitude = ic_pl.get<bool>("Load Longitude",false);
-
-  if (load_longitude || load_latitude) {
-    using namespace ShortFieldTagsNames;
-    using view_d = AbstractGrid::geo_view_type;
-    using view_h = view_d::HostMirror;
-    auto grid = m_grids_manager->get_grid("Physics");
-    auto layout = grid->get_2d_scalar_layout();
-
-    std::vector<std::string> fnames;
-    std::map<std::string,FieldLayout> layouts;
-    std::map<std::string,view_h> host_views;
-    std::map<std::string,view_d> dev_views;
-    if (load_latitude) {
-      dev_views["lat"] = grid->get_geometry_data("lat");
-      host_views["lat"] = Kokkos::create_mirror_view(dev_views["lat"]);
-      layouts.emplace("lat",layout);
-      fnames.push_back("lat");
-    }
-    if (load_longitude) {
-      dev_views["lon"] = grid->get_geometry_data("lon");
-      host_views["lon"] = Kokkos::create_mirror_view(dev_views["lon"]);
-      layouts.emplace("lon",layout);
-      fnames.push_back("lon");
-    }
-
-    ekat::ParameterList lat_lon_params;
-    lat_lon_params.set("Field Names",fnames);
-    lat_lon_params.set("Filename",ic_pl.get<std::string>("Filename"));
-
-    AtmosphereInput lat_lon_reader(lat_lon_params,grid,host_views,layouts);
-    lat_lon_reader.read_variables();
-    lat_lon_reader.finalize();
-    for (auto& fname : fnames) {
-      Kokkos::deep_copy(dev_views[fname],host_views[fname]);
-    }
   }
 
 #ifdef SCREAM_HAS_MEMORY_USAGE
@@ -1265,13 +1208,15 @@ initialize (const ekat::Comm& atm_comm,
 
   init_scorpio ();
 
+  init_time_stamps (run_t0, case_t0);
+
   create_atm_processes ();
 
   create_grids ();
 
   create_fields ();
 
-  initialize_fields (run_t0, case_t0);
+  initialize_fields ();
 
   initialize_output_managers ();
 
@@ -1434,7 +1379,7 @@ void AtmosphereDriver::report_res_dep_memory_footprint () const {
 
     my_dev_mem_usage += sizeof(AbstractGrid::gid_type)*nldofs;
 
-    my_dev_mem_usage += sizeof(int)*nldofs*grid->get_lid_to_idx_map().extent(1);
+    my_dev_mem_usage += sizeof(int)*grid->get_lid_to_idx_map().get_header().get_identifier().get_layout().size();
 
     const auto& geo_names = grid->get_geometry_data_names();
     my_dev_mem_usage += sizeof(Real)*geo_names.size()*nldofs;

@@ -33,7 +33,8 @@ void RimeWaterPathDiagnostic::set_grids(const std::shared_ptr<const GridsManager
   add_field<Required>("qm",             scalar3d_layout_mid, Q,  grid_name, "tracers", ps);
 
   // Construct and allocate the diagnostic field
-  FieldIdentifier fid (name(), scalar2d_layout_mid, m, grid_name);
+  const auto m2 = m*m;
+  FieldIdentifier fid (name(), scalar2d_layout_mid, kg/m2, grid_name);
   m_diagnostic_output = Field(fid);
   auto& C_ap = m_diagnostic_output.get_header().get_alloc_properties();
   C_ap.request_allocation();

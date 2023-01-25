@@ -134,7 +134,7 @@ if (Kokkos_ENABLE_HIP)
   set (HIP_BUILD TRUE CACHE BOOL "" FORCE) #needed for yakl if kokkos vars are not visible there?
 endif ()
 
-if (NOT HIP_BUILD)
+if( NOT "${CMAKE_CXX_COMPILER_ID}" MATCHES "[Cc]lang" )
   set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -cpp")
 endif()
 
