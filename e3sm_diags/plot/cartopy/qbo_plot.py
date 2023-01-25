@@ -88,7 +88,7 @@ def plot_panel(
     return ax
 
 
-def plot(period_new, parameter, test, ref):
+def plot(parameter, test, ref):
     label_size = 14
 
     fig = plt.figure(figsize=(14, 14))
@@ -160,9 +160,9 @@ def plot(period_new, parameter, test, ref):
     x = dict(
         axis_range=[0, 50],
         axis_scale="linear",
-        data=period_new,
+        data=test["period_new"],
         data_label=test["name"],
-        data2=period_new,
+        data2=ref["period_new"],
         data2_label=ref["name"],
         label="Period (months)",
     )

@@ -200,13 +200,17 @@ def run_diag(parameter):
         x_test = process_u_for_power_spectral_density(test_region)
         x_ref = process_u_for_power_spectral_density(ref_region)
         # Calculate the PSD and interpolate to period_new. Specify periods to plot
-        period_new = np.concatenate((np.arange(2, 33), np.arange(34, 100, 2)), axis=0)
+        period_new = np.concatenate(
+            (np.arange(2.0, 33.0), np.arange(34.0, 100.0, 2.0)), axis=0
+        )
         test["psd_x_new"], test["amplitude_new"] = get_psd_from_deseason(
             x_test, period_new
         )
+        test["period_new"] = period_new
         ref["psd_x_new"], ref["amplitude_new"] = get_psd_from_deseason(
             x_ref, period_new
         )
+        ref["period_new"] = period_new
 
         parameter.var_id = variable
         parameter.main_title = (
@@ -219,19 +223,21 @@ def run_diag(parameter):
 
         test_nc = {}
         ref_nc = {}
+        for key in ["qbo", "level"]:
+            test_nc[key] = test[key]
+            ref_nc[key] = ref[key]
+
         test_json = {}
         ref_json = {}
         for key in test.keys():
-            if key in ["qbo", "level"]:
-                test_nc[key] = test[key]
-                ref_nc[key] = ref[key]
+            if key == "name":
+                test_json[key] = test[key]
+                ref_json[key] = ref[key]
+            elif key == "qbo":
+                continue
             else:
-                if key == "name":
-                    test_json[key] = test[key]
-                    ref_json[key] = ref[key]
-                else:
-                    test_json[key] = list(test[key])
-                    ref_json[key] = list(ref[key])
+                test_json[key] = list(test[key])
+                ref_json[key] = list(ref[key])
 
         parameter.output_file = "qbo_diags"
         # TODO: Check the below works properly by using ncdump on Cori
@@ -261,5 +267,6 @@ def run_diag(parameter):
             )
             logger.info("Metrics saved in: {}".format(json_output_file_name))
 
-        plot(period_new, parameter, test, ref)
+        plot(parameter, test, ref)
+
     return parameter
