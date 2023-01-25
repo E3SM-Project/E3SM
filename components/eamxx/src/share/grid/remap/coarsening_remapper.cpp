@@ -421,9 +421,6 @@ rescale_masked_fields (const Field& x, const Field& mask) const
   const Real mask_val = -999999.0;   // TODO: Maybe not hard code what a fully masked value will be set too.
   const Real mask_threshold = 1e-8;  // TODO: Should we not hardcode the threshold for simply masking out the column.
   switch (rank) {
-    // Note: in each case, handle 1st contribution to each row separately,
-    //       using = instead of +=. This allows to avoid doing an extra
-    //       loop to zero out y before the mat-vec.
     case 1:
     {
       auto x_view =    x.get_view<      Real*>();
@@ -459,7 +456,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
     case 3:
     {
       auto x_view =    x.get_view<      Pack***>();
-      auto m_view = mask.get_view<const Pack***>();
+      auto m_view = mask.get_view<const Pack**>();
       const int dim1 = layout.dim(1);
       const int dim2 = PackInfo::num_packs(layout.dim(2));
       auto policy = ESU::get_default_team_policy(ncols,dim1*dim2);
@@ -472,7 +469,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
           const int j = idx / dim2;
           const int k = idx % dim2;
           auto x_sub = ekat::subview(x_view,icol,j);
-          auto m_sub = ekat::subview(m_view,icol,j);
+          auto m_sub = ekat::subview(m_view,icol);
           auto masked = m_sub(k) > mask_threshold;
 
           x_sub(k).set(masked,x_sub(k)/m_sub(k));

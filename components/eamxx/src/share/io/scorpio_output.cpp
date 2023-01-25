@@ -92,10 +92,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   // Check if remapping and if so create the appropriate remapper 
   bool m_vert_remap_from_file = params.isParameter("vertical_remap_file");
   bool m_horiz_remap_from_file = params.isParameter("horiz_remap_file");
-//ASD  if (m_vert_remap_from_file && m_horiz_remap_from_file) {
-//ASD    // TODO - support both horizontal and vertical remapping together.
-//ASD    EKAT_ERROR_MSG("Error! scorpio_output:: We currently do not support both vertical and horizontal remapping.");
-//ASD  }
 
   // Try to set the IO grid (checks will be performed)
   set_grid (io_grid);
@@ -166,7 +162,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       std::map<std::string,int> mask_map;
       // First we check if we need to support masking
       for (const auto& fname : m_fields_names) {
-        auto f = get_field(fname,m_sim_field_mgr);
+        auto f = get_field(fname,m_int_field_mgr);
         const auto& src_fid = f.get_header().get_identifier();
         auto f_extra = f.get_header().get_extra_data();
         if (f_extra.count("mask_data")) {

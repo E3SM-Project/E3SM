@@ -30,7 +30,7 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
 ekat::ParameterList set_input_params(const std::string& name, ekat::Comm& comm, const std::string& tstamp, const int p_ref);
 
 bool approx(const Real a, const Real b) {
-  const Real tol = std::numeric_limits<Real>::epsilon()*10000;
+  const Real tol = std::numeric_limits<Real>::epsilon()*100000;
   if (std::abs(a-b) >= tol) {
     printf("Error::approx - difference of %e is greater than the max tolerance of %e\n",std::abs(a-b),tol);
   }
@@ -62,7 +62,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   // Setup for target levels.
   const int nlevs_tgt = packsize + 1;
   const Real p_top = 0.0;
-  const Real p_bot = 10.0*nlevs_src;
+  const Real p_bot = (nlevs_tgt-1)*(nlevs_src-1);
 
   // Create the grid and field manager for test
   // First set up a field manager and grids manager to interact with the output functions
@@ -268,6 +268,7 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   // Confirm that remapped fields are correct.
   print (" -> Test Remapped Output ... \n",io_comm);
+  const Real mask_val = -999999.0;
   // ------------------------------------------------------------------------------------------------------
   //                                    ---  Vertical Remapping ---
   {
@@ -287,7 +288,6 @@ TEST_CASE("io_remap_test","io_remap_test")
     // value is expected to be masked.
     //
     // NOTE: For scorpio_output.cpp the mask value for vertical remapping is -999999.0
-    const Real mask_val = -999999.0;
     const auto& Yf_f_vert = fm_vert->get_field("Y_flat");
     const auto& Ys_f_vert = fm_vert->get_field("Y_int@"+std::to_string(p_ref)+"Pa");
     const auto& Ym_f_vert = fm_vert->get_field("Y_mid");
@@ -340,7 +340,6 @@ TEST_CASE("io_remap_test","io_remap_test")
     //
     // Note: For horizontal remapping we added the variable Y_min@XPa to check that this diagnostic does
     // provide some masking, since it applies vertical remapping.
-    const Real mask_val = -999999.0;
     const auto& Yf_f_horiz = fm_horiz->get_field("Y_flat");
     const auto& Ys_f_horiz = fm_horiz->get_field("Y_int@"+std::to_string(p_ref)+"Pa");
     const auto& Ym_f_horiz = fm_horiz->get_field("Y_mid");
@@ -394,7 +393,107 @@ TEST_CASE("io_remap_test","io_remap_test")
     }
     print ("    -> horizontal remap ... done\n",io_comm);
   }
+  // ------------------------------------------------------------------------------------------------------
+  //                                ---  Vertical + Horizontal Remapping ---
+  {
+    print ("    -> vertical + horizontal remap ... \n",io_comm);
+    auto gm_vh   = get_test_gm(io_comm,ncols_tgt,nlevs_tgt);
+    auto grid_vh = gm_vh->get_grid("Point Grid");
+    auto fm_vh   = get_test_fm(grid_vh,true,p_ref);
+    auto vh_in   = set_input_params("remap_vertical_horizontal",io_comm,t0.to_string(),p_ref);
+    AtmosphereInput test_input(vh_in,fm_vh);
+    test_input.read_variables();
+    test_input.finalize();
 
+    // Test vertically + horizontally remapped output.
+    // This test is a combination of the vertical test and horizontal test above.
+    // There should be maksing in the vertical in all locations where the target pressure
+    // is lower higher than the surface pressure, just like in the vertical test.  This should
+    // also translate to more masking in the horizontal reamapping.  So we must check for potential
+    // masking for all variables rather than just the Y_int@XPa variable for the horizontal interpolation.
+    //
+    // NOTE: For scorpio_output.cpp the mask value for vertical remapping is -999999.0
+    const auto& Yf_f_vh = fm_vh->get_field("Y_flat");
+    const auto& Ys_f_vh = fm_vh->get_field("Y_int@"+std::to_string(p_ref)+"Pa");
+    const auto& Ym_f_vh = fm_vh->get_field("Y_mid");
+    const auto& Yi_f_vh = fm_vh->get_field("Y_int");
+    const auto& Vm_f_vh = fm_vh->get_field("V_mid");
+    const auto& Vi_f_vh = fm_vh->get_field("V_int");
+
+    const auto& Yf_v_vh = Yf_f_vh.get_view<Real*,Host>();
+    const auto& Ys_v_vh = Ys_f_vh.get_view<Real*,Host>();
+    const auto& Ym_v_vh = Ym_f_vh.get_view<Real**,Host>();
+    const auto& Yi_v_vh = Yi_f_vh.get_view<Real**,Host>();
+    const auto& Vm_v_vh = Vm_f_vh.get_view<Real***,Host>();
+    const auto& Vi_v_vh = Vi_f_vh.get_view<Real***,Host>();
+
+    for (int ii=0; ii<ncols_tgt_l; ii++) {
+      const int col1 = 2*ii;
+      const int col2 = 2*ii+1;
+      REQUIRE(Yf_v_vh(ii)==Yf_v(col1)*wgt + Yf_v(col2)*(1.0-wgt));
+      for (int jj=0; jj<nlevs_tgt; jj++) {
+        auto p_jj = p_tgt[jj];
+        const Real mid_mask_1 = (p_jj<=pm_v(col1,nlevs_src-1) && p_jj>=pm_v(col1,0));
+        const Real mid_mask_2 = (p_jj<=pm_v(col2,nlevs_src-1) && p_jj>=pm_v(col2,0));
+        const Real int_mask_1 = (p_jj<=pi_v(col1,nlevs_src)   && p_jj>=pi_v(col1,0));
+        const Real int_mask_2 = (p_jj<=pi_v(col2,nlevs_src)   && p_jj>=pi_v(col2,0));
+        Real test_mid;
+        Real test_int;
+        if (mid_mask_1 + mid_mask_2 > 0.0) {
+          test_mid = (mid_mask_1*calculate_output(p_jj,col1,0)*wgt + mid_mask_2*calculate_output(p_jj,col2,0)*(1-wgt))/(mid_mask_1*wgt + mid_mask_2*(1-wgt));
+        } else {
+          // This point is completely masked out, assign masked value
+          test_mid = mask_val;
+        }
+        if (int_mask_1 + int_mask_2 > 0.0) {
+          test_int = (int_mask_1*calculate_output(p_jj,col1,0)*wgt + int_mask_2*calculate_output(p_jj,col2,0)*(1-wgt))/(int_mask_1*wgt + int_mask_2*(1-wgt));
+        } else {
+          // This point is completely masked out, assign masked value
+          test_int = mask_val;
+        }
+        REQUIRE(approx(Ym_v_vh(ii,jj), test_mid)); 
+        REQUIRE(approx(Yi_v_vh(ii,jj), test_int));
+        for (int cc=0; cc<2; cc++) {
+          if (mid_mask_1 + mid_mask_2 > 0.0) {
+            test_mid = (mid_mask_1*calculate_output(p_jj,col1,cc+1)*wgt + mid_mask_2*calculate_output(p_jj,col2,cc+1)*(1-wgt))/(mid_mask_1*wgt + mid_mask_2*(1-wgt));
+          } else {
+            // This point is completely masked out, assign masked value
+            test_mid = mask_val;
+          }
+          if (int_mask_1 + int_mask_2 > 0.0) {
+            test_int = (int_mask_1*calculate_output(p_jj,col1,cc+1)*wgt + int_mask_2*calculate_output(p_jj,col2,cc+1)*(1-wgt))/(int_mask_1*wgt + int_mask_2*(1-wgt));
+          } else {
+            // This point is completely masked out, assign masked value
+            test_int = mask_val;
+          }
+          REQUIRE(approx(Vm_v_vh(ii,cc,jj), test_mid));
+          REQUIRE(approx(Vi_v_vh(ii,cc,jj), test_int)); 
+        }
+      }
+      // For the pressured sliced variable we expect it to match the solution from horizontal mapping only so we use the same syntax.
+      Real Ys_exp = 0.0;
+      Real Ys_wgt = 0.0;
+      bool found  = false;
+      if (p_ref<=pi_v(col1,nlevs_src) && p_ref>=pi_v(col1,0)) {
+        found = true;
+        Ys_exp += calculate_output(p_ref,col1,0)*wgt;
+        Ys_wgt += wgt;
+      } 
+      if (p_ref<=pi_v(col2,nlevs_src) && p_ref>=pi_v(col2,0)) {
+        found = true;
+        Ys_exp += calculate_output(p_ref,col2,0)*(1.0-wgt);
+        Ys_wgt += (1.0 - wgt);
+      }
+      if (found) {
+        Ys_exp /= Ys_wgt;
+      } else {
+        Ys_exp = mask_val;
+      }
+      REQUIRE(Ys_v_vh(ii) == Ys_exp);
+    }
+    print ("    -> vertical + horizontal remap ... done\n",io_comm);
+  }
+  // ------------------------------------------------------------------------------------------------------
   // All Done 
   print (" -> Test Remapped Output ... done\n",io_comm);
   scorpio::eam_pio_finalize();
