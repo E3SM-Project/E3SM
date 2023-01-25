@@ -2,6 +2,7 @@
 #include "share/io/scorpio_input.hpp"
 #include "share/util/scream_array_utils.hpp"
 #include "share/grid/remap/coarsening_remapper.hpp"
+#include "share/grid/remap/vertical_remapper.hpp"
 #include "share/util/scream_timing.hpp"
 
 #include "ekat/util/ekat_units.hpp"
@@ -87,6 +88,9 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       "       Valid options: Instant, Max, Min, Average. Case insensitive.\n");
 
   set_field_manager (field_mgr,"sim");
+  // Need to just set the io_fm to match the sim_fm to start with.  If remapping then
+  // the io_fm will get setup accordingly.
+  set_field_manager (field_mgr,"io");
 
   // By default, IO is done directly on the field mgr grid
   m_grids_manager = grids_mgr;
@@ -125,41 +129,98 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
         "Error! Bad formatting of output yaml file. Missing 'Fields->$grid_name` sublist.\n");
   }
 
+  // Check if remapping and if so create the appropriate remapper 
+  bool m_vert_remap_from_file = params.isParameter("vertical_remap_file");
+  bool m_horiz_remap_from_file = params.isParameter("horiz_remap_file");
+  if (m_vert_remap_from_file && m_horiz_remap_from_file) {
+    // TODO - support both horizontal and vertical remapping together.
+    EKAT_ERROR_MSG("Error! scorpio_output:: We currently do not support both vertical and horizontal remapping.");
+  }
+
   // Try to set the IO grid (checks will be performed)
   set_grid (io_grid);
 
   // Register any diagnostics needed by this output stream
   set_diagnostics();
 
-  bool remap_from_file = params.isParameter("remap_file");
-
-  if (io_grid->name()!=fm_grid->name() || remap_from_file) {
+  // Setup remappers - if needed
+  if (m_vert_remap_from_file) {  
+    using namespace ShortFieldTagsNames;
     // We build a remapper, to remap fields from the fm grid to the io grid
-    if (remap_from_file) {
-      auto remap_file   = params.get<std::string>("remap_file");
-      m_remapper = std::make_shared<CoarseningRemapper>(io_grid,remap_file);
-      io_grid = m_remapper->get_tgt_grid();
+    auto vert_remap_file   = params.get<std::string>("vertical_remap_file");
+    auto f_lev = get_field("p_mid",m_sim_field_mgr);
+    auto f_ilev = get_field("p_int",m_sim_field_mgr);
+    m_vert_remapper = std::make_shared<VerticalRemapper>(io_grid,vert_remap_file,f_lev,f_ilev,-9999.0);
+    io_grid = m_vert_remapper->get_tgt_grid();
+    set_grid(io_grid);
+
+    // Register all output fields in the remapper.
+    m_vert_remapper->registration_begins();
+    for (const auto& fname : m_fields_names) {
+      // Note, we skip any fields that don't have a vertical extent
+      auto f = get_field(fname,m_sim_field_mgr);
+      const auto& src_fid = f.get_header().get_identifier();
+      EKAT_REQUIRE_MSG(src_fid.data_type()==DataType::RealType,
+          "Error! I/O supports only Real data, for now.\n");
+      m_vert_remapper->register_field_from_src(src_fid);
+    }
+    m_vert_remapper->registration_ends();
+
+    // Now create a new FM on io grid, and create copies of output fields from FM.
+    auto io_fm = std::make_shared<fm_type>(io_grid);
+    io_fm->registration_begins();
+    for (int i=0; i<m_vert_remapper->get_num_fields(); ++i) {
+      const auto& tgt_fid = m_vert_remapper->get_tgt_field_id(i);
+      const auto  name    = tgt_fid.name();
+      const auto  src     = get_field(name,m_sim_field_mgr);
+      const auto packsize = src.get_header().get_alloc_properties().get_largest_pack_size();
+      io_fm->register_field(FieldRequest(tgt_fid,packsize)); 
+    }
+    io_fm->registration_ends();
+
+    // Now that fields have been allocated on the io grid, we can bind them in the remapper
+    for (const auto& fname : m_fields_names) {
+      auto src = get_field(fname,m_sim_field_mgr);
+      auto tgt = io_fm->get_field(src.name());
+      const auto& src_fid = src.get_header().get_identifier();
+      m_vert_remapper->bind_field(src,tgt);
+    }
+
+    // This should never fail, but just in case
+    EKAT_REQUIRE_MSG (m_vert_remapper->get_num_fields()==m_vert_remapper->get_num_bound_fields(),
+        "Error! Something went wrong while building the scorpio input remapper.\n");
+
+    // Reset the field manager
+    set_field_manager(io_fm,"io");
+  }
+
+  if (io_grid->name()!=fm_grid->name() || m_horiz_remap_from_file) {
+    // We build a remapper, to remap fields from the fm grid to the io grid
+    if (m_horiz_remap_from_file) {
+      auto horiz_remap_file   = params.get<std::string>("horiz_remap_file");
+      m_horiz_remapper = std::make_shared<CoarseningRemapper>(io_grid,horiz_remap_file);
+      io_grid = m_horiz_remapper->get_tgt_grid();
       set_grid(io_grid);
     } else {
-      m_remapper = grids_mgr->create_remapper(fm_grid,io_grid);
+      m_horiz_remapper = grids_mgr->create_remapper(fm_grid,io_grid);
     }
 
     // Register all output fields in the remapper.
-    m_remapper->registration_begins();
+    m_horiz_remapper->registration_begins();
     for (const auto& fname : m_fields_names) {
       auto f = get_field(fname,m_sim_field_mgr);
       const auto& src_fid = f.get_header().get_identifier();
       EKAT_REQUIRE_MSG(src_fid.data_type()==DataType::RealType,
           "Error! I/O supports only Real data, for now.\n");
-      m_remapper->register_field_from_src(src_fid);
+      m_horiz_remapper->register_field_from_src(src_fid);
     }
-    m_remapper->registration_ends();
+    m_horiz_remapper->registration_ends();
 
     // Now create a new FM on io grid, and create copies of output fields from FM.
     auto io_fm = std::make_shared<fm_type>(io_grid);
     io_fm->registration_begins();
-    for (int i=0; i<m_remapper->get_num_fields(); ++i) {
-      const auto& tgt_fid = m_remapper->get_tgt_field_id(i);
+    for (int i=0; i<m_horiz_remapper->get_num_fields(); ++i) {
+      const auto& tgt_fid = m_horiz_remapper->get_tgt_field_id(i);
       io_fm->register_field(FieldRequest(tgt_fid));
     }
     io_fm->registration_ends();
@@ -168,19 +229,16 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     for (const auto& fname : m_fields_names) {
       auto src = get_field(fname,m_sim_field_mgr);
       auto tgt = io_fm->get_field(src.name());
-      m_remapper->bind_field(src,tgt);
+      m_horiz_remapper->bind_field(src,tgt);
     }
 
     // This should never fail, but just in case
-    EKAT_REQUIRE_MSG (m_remapper->get_num_fields()==m_remapper->get_num_bound_fields(),
+    EKAT_REQUIRE_MSG (m_horiz_remapper->get_num_fields()==m_horiz_remapper->get_num_bound_fields(),
         "Error! Something went wrong while building the scorpio input remapper.\n");
 
     // Reset the field manager
     set_field_manager(io_fm,"io");
-  } else {
-    // Need to just set the io_fm to match the sim_fm
-    set_field_manager (field_mgr,"io");
-  }
+  } 
 
   // Setup I/O structures
   init ();
@@ -235,21 +293,32 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
     compute_diagnostic(it.first);
   }
 
-  // If needed, remap fields from their grid to the unique grid, for I/O
-  if (m_remapper) {
-    start_timer("EAMxx::IO::remap");
-    m_remapper->remap(true);
+  auto apply_remap = [&](const std::shared_ptr<AbstractRemapper> remapper)
+  {
+    remapper->remap(true);
 
-    for (int i=0; i<m_remapper->get_num_fields(); ++i) {
+    for (int i=0; i<remapper->get_num_fields(); ++i) {
       // Need to update the time stamp of the fields on the IO grid,
       // to avoid throwing an exception later
-      auto src = m_remapper->get_src_field(i);
-      auto tgt = m_remapper->get_tgt_field(i);
+      auto src = remapper->get_src_field(i);
+      auto tgt = remapper->get_tgt_field(i);
 
       auto src_t = src.get_header().get_tracking().get_time_stamp();
       tgt.get_header().get_tracking().update_time_stamp(src_t);
     }
-    stop_timer("EAMxx::IO::remap");
+  }; // end apply_remap
+
+  // If needed, remap fields from their grid to the unique grid, for I/O
+  if (m_vert_remapper) {
+    start_timer("EAMxx::IO::vert_remap");
+    apply_remap(m_vert_remapper);
+    stop_timer("EAMxx::IO::vert_remap");
+  }
+
+  if (m_horiz_remapper) {
+    start_timer("EAMxx::IO::horiz_remap");
+    apply_remap(m_horiz_remapper);
+    stop_timer("EAMxx::IO::horiz_remap");
   }
 
   // Take care of updating and possibly writing fields.
@@ -371,7 +440,7 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
 long long AtmosphereOutput::
 res_dep_memory_footprint () const {
   long long rdmf = 0;
-  if (m_remapper) {
+  if (m_io_field_mgr != m_sim_field_mgr) {
     // The IO is done on a different grid. The FM stored here is
     // not shared with anyone else, so we can safely add its footprint
     for (const auto& it : *m_io_field_mgr) {
@@ -820,6 +889,7 @@ create_diagnostic (const std::string& diag_field_name) {
     // If last is bot or top, will simply use that
     params.set("Field Level", lev_and_idx.back());
   } else if (lev_str=="mb" || lev_str=="hPa" || lev_str=="Pa") {
+    EKAT_REQUIRE_MSG(!m_horiz_remap_from_file,"Error! scorpio_output:" + diag_field_name + ", horizontal remapping of pressure level slices not supported.");
     // Diagnostic is a horizontal slice at a specific pressure level
     diag_name = "FieldAtPressureLevel";
     auto pres_str = lev_and_idx[0].substr(0,pos);

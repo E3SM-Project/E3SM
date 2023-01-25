@@ -29,6 +29,10 @@ if (NOT ${SCREAM_BASELINES_ONLY})
   CreateUnitTest(coarsening_remapper "coarsening_remapper_tests.cpp" "scream_share;scream_io"
     MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
 
+  # Test coarsening remap
+  CreateUnitTest(vertical_remapper "vertical_remapper_tests.cpp" "scream_share;scream_io"
+    MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS})
+
   # Test common physics functions
   CreateUnitTest(common_physics "common_physics_functions_tests.cpp" scream_share)
 

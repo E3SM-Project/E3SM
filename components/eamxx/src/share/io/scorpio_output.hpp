@@ -11,7 +11,6 @@
 
 #include "ekat/ekat_parameter_list.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
-
 /*  The AtmosphereOutput class handles an output stream in SCREAM.
  *  Typical usage is to register an AtmosphereOutput object with the OutputManager (see scream_output_manager.hpp
  *
@@ -181,8 +180,11 @@ protected:
   std::shared_ptr<const fm_type>      m_io_field_mgr;
   std::shared_ptr<const fm_type>      m_sim_field_mgr;
   std::shared_ptr<const grid_type>    m_io_grid;
-  std::shared_ptr<remapper_type>      m_remapper;
+  std::shared_ptr<remapper_type>      m_horiz_remapper;
+  std::shared_ptr<remapper_type>      m_vert_remapper;
   std::shared_ptr<const gm_type>      m_grids_manager;
+  bool                                m_horiz_remap_from_file = false;
+  bool                                m_vert_remap_from_file = false;
 
   // How to combine multiple snapshots in the output: Instant, Max, Min, Average
   OutputAvgType     m_avg_type;
