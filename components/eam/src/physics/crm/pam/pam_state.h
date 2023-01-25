@@ -42,16 +42,21 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
   parallel_for( Bounds<2>(nz,nens) , YAKL_LAMBDA (int k, int iens) {
     int k_gcm = gcm_nlev-1-k;
 
+    // use total water for GCM forcing
+    real input_qt = input_ql(k_gcm,iens) + input_qccl(k_gcm,iens) + input_qiil(k_gcm,iens);
+
+    // calculate dry density using same formula as in crm_physics_tend()
     real dz = input_zint(k_gcm,iens) - input_zint(k_gcm+1,iens);
     real dp = input_pint(k_gcm,iens) - input_pint(k_gcm+1,iens);
-    real dp_dry = dp * (1-input_ql(k_gcm,iens));
-    gcm_rho_d(k,iens) = -1*dp_dry / ( dz * grav );
+    // gcm_rho_d(k,iens) = -1 * dp * (1-input_ql(k_gcm,iens)) / ( dz * grav );
+    gcm_rho_d(k,iens) = -1 * dp * (1-input_qt) / ( dz * grav );
 
     gcm_uvel (k,iens) = input_ul(k_gcm,iens);
     gcm_vvel (k,iens) = input_vl(k_gcm,iens);
+
     // convert total water mixing ratio to water vapor density
-    real input_qt = input_ql(k_gcm,iens) + input_qccl(k_gcm,iens) + input_qiil(k_gcm,iens);
     gcm_rho_v(k,iens) = input_qt * gcm_rho_d(k,iens) / ( 1 - input_qt );
+
     // adjust temperature to account for liq/ice to vapor conversion
     real input_t_adj = input_tl(k_gcm,iens) - ( input_qccl(k_gcm,iens)*Lv + input_qiil(k_gcm,iens)*Lf ) / cp_d ;
     gcm_temp(k,iens) = input_t_adj;
