@@ -108,10 +108,10 @@ TEST_CASE("io_remap_test","io_remap_test")
   const std::string remap_filename = "remap_weights_np"+std::to_string(io_comm.size())+".nc";
   scorpio::register_file(remap_filename, scorpio::FileMode::Write);
 
-  scorpio::register_dimension(remap_filename,"n_a",  "n_a",    ncols_src);
-  scorpio::register_dimension(remap_filename,"n_b",  "n_b",    ncols_tgt);
-  scorpio::register_dimension(remap_filename,"n_s",  "n_s",    ncols_src);
-  scorpio::register_dimension(remap_filename,"nlevs", "nlevs", nlevs_tgt);
+  scorpio::register_dimension(remap_filename,"n_a",  "n_a",    ncols_src, true);
+  scorpio::register_dimension(remap_filename,"n_b",  "n_b",    ncols_tgt, true);
+  scorpio::register_dimension(remap_filename,"n_s",  "n_s",    ncols_src, true);
+  scorpio::register_dimension(remap_filename,"nlevs", "nlevs", nlevs_tgt, true);
 
   scorpio::register_variable(remap_filename,"col","col","none",{"n_s"},"real","int","int-nnz");
   scorpio::register_variable(remap_filename,"row","row","none",{"n_s"},"real","int","int-nnz");
