@@ -2,7 +2,7 @@
 
 #include "pam_coupler.h"
 
-// These routines are used to encapsulate the agggregation 
+// These routines are used to encapsulate the aggregation
 // of various quantities, such as precipitation
 
 
