@@ -23,9 +23,6 @@ module prim_driver_mod
   public :: prim_init_ref_states_views
   public :: prim_init_diags_views
 
-  logical, private :: compute_forcing_and_push_to_c
-  logical, private :: push_to_f
-
 contains
 
   subroutine prim_init2(elem, hybrid, nets, nete, tl, hvcoord)
@@ -35,6 +32,7 @@ contains
     use prim_driver_base, only : deriv1, prim_init2_base => prim_init2
     use prim_state_mod,   only : prim_printstate
     use theta_f2c_mod,    only : initialize_dp3d_from_ps_c
+    use control_mod,      only : prescribed_wind
     !
     ! Inputs
     !
@@ -47,6 +45,10 @@ contains
 
     ! Call the base version of prim_init2
     call prim_init2_base(elem,hybrid,nets,nete,tl,hvcoord)
+
+    if (prescribed_wind == 1) then
+       call init_standalone_test(elem,deriv1,hybrid,hvcoord,tl,nets,nete)
+    end if
 
     ! Init the c data structures
     call prim_create_c_data_structures(tl,hvcoord,elem(1)%mp)
@@ -365,7 +367,7 @@ contains
     use hybvcoord_mod,  only : hvcoord_t
     use kinds,          only : real_kind
     use time_mod,       only : timelevel_t, nextOutputStep, nsplit, TimeLevel_Qdp
-    use control_mod,    only : statefreq
+    use control_mod,    only : statefreq, prescribed_wind
     use parallel_mod,   only : abortmp
     use perf_mod,       only : t_startf, t_stopf
     use prim_state_mod, only : prim_printstate
@@ -391,9 +393,9 @@ contains
     type (c_ptr) :: elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr, elem_state_phinh_i_ptr
     type (c_ptr) :: elem_state_dp3d_ptr, elem_state_Qdp_ptr, elem_state_Q_ptr, elem_state_ps_v_ptr
     type (c_ptr) :: elem_derived_omega_p_ptr
-
     integer :: n0_qdp, np1_qdp
-    real(kind=real_kind) :: dt_remap, dt_q
+    real(kind=real_kind) :: dt_remap, dt_q, eta_ave_w
+    logical :: compute_forcing_and_push_to_c, push_to_f
 
     if (nsplit<1) then
       call abortmp ('nsplit_is less than 1.')
@@ -417,7 +419,7 @@ contains
       compute_diagnostics = .false.
     endif
 
-    call init_logic_for_push_to_c(nsplit_iteration)
+    compute_forcing_and_push_to_c = is_push_to_c_required(nsplit_iteration)
 
     dt_q = dt*dt_tracer_factor
     if (dt_remap_factor == 0) then
@@ -430,13 +432,16 @@ contains
 
     ! Test forcing is only for standalone Homme (and only for some tests/configurations)
     if (compute_forcing_and_push_to_c) then
-      call compute_test_forcing_dummy(elem,hybrid,hvcoord,tl%n0,n0_qdp,max(dt_q,dt_remap),nets,nete,tl)
+      call compute_test_forcing_f(elem,hybrid,hvcoord,tl%n0,n0_qdp,max(dt_q,dt_remap),nets,nete,tl)
       call t_startf('push_to_cxx')
       call push_forcing_to_c(elem_derived_FM,   elem_derived_FVTheta, elem_derived_FT, &
                              elem_derived_FPHI, elem_derived_FQ)
       call t_stopf('push_to_cxx')
-    endif
-
+    end if
+    if (prescribed_wind == 1) then ! standalone Homme
+      call set_prescribed_wind_f(elem,deriv1,hybrid,hvcoord,dt,tl,nets,nete)
+    end if
+   
     call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nextOutputStep,nsplit_iteration)
 
     ! Set final timelevels from C into Fortran structure
@@ -445,7 +450,7 @@ contains
     tl%n0    = n0_c  + 1
     tl%np1   = np1_c + 1
 
-    call init_logic_for_push_to_f(tl,statefreq,nextOutputStep,compute_diagnostics,nsplit_iteration)
+    push_to_f = is_push_to_f_required(tl,statefreq,nextOutputStep,compute_diagnostics,nsplit_iteration)
 
     if (push_to_f) then
       ! Set pointers to states
@@ -489,10 +494,13 @@ contains
 !test with forcing (not performant):
 ! (always forcing and push to c) -> (subcycle) -> (always push to f)
 
-  subroutine init_logic_for_push_to_c(nsplit_iter)
-
+  function is_push_to_c_required(nsplit_iter) result(compute_forcing_and_push_to_c)
+    
     use control_mod, only: test_with_forcing
+    
     integer,              intent(in) :: nsplit_iter
+
+    logical :: compute_forcing_and_push_to_c
 
     compute_forcing_and_push_to_c = .false.
 
@@ -512,20 +520,21 @@ contains
     endif
 #endif
 
-  end subroutine init_logic_for_push_to_c
+  end function is_push_to_c_required
 
+  function is_push_to_f_required(tl,statefreq,nextOutputStep,compute_diagnostics,nsplit_iter) &
+       result(push_to_f)
 
-  subroutine init_logic_for_push_to_f(tl,statefreq,nextOutputStep,compute_diagnostics,nsplit_iter)
-
-    use control_mod, only: test_with_forcing
+    use control_mod, only : test_with_forcing, prescribed_wind
     use time_mod,    only : timelevel_t, nsplit
 
     type (TimeLevel_t),   intent(in) :: tl
     integer,              intent(in) :: statefreq, nextOutputStep, nsplit_iter
     logical,              intent(in) :: compute_diagnostics
  
-    logical                          :: time_for_homme_output
+    logical                          :: push_to_f, time_for_homme_output
 
+    push_to_f = .false.
     time_for_homme_output = &
          (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. compute_diagnostics)
 
@@ -563,12 +572,45 @@ contains
        push_to_f = .true.
     endif
 
+    ! In principle this shouldn't be needed, but there are roundoff-level errors
+    ! that develop if this isn't true.
+    if (prescribed_wind == 1) push_to_f = .true.
 #endif
 
-  end subroutine init_logic_for_push_to_f
+  end function is_push_to_f_required
 
+  subroutine init_standalone_test(elem,deriv,hybrid,hvcoord,tl,nets,nete)
+    ! set_prescribed_wind takes hvcoord as intent(inout) because it modifies it
+    ! in the first call. In the C++ dycore init, we need hvcoord already
+    ! established. This routine and set_prescribed_wind_f takes care of this
+    ! detail.
+    use hybrid_mod,       only : hybrid_t
+    use hybvcoord_mod,    only : hvcoord_t
+    use time_mod,         only : timelevel_t
+    use element_mod,      only : element_t
+    use derivative_mod,   only : derivative_t
+#if !defined(CAM) && !defined(SCREAM)
+    use test_mod,         only : set_prescribed_wind
+#endif
 
-  subroutine compute_test_forcing_dummy(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
+    type (element_t),      intent(inout), target  :: elem(:)
+    type (derivative_t),   intent(in)             :: deriv
+    type (hybrid_t),       intent(in)             :: hybrid
+    type (hvcoord_t),      intent(inout)          :: hvcoord
+    type (TimeLevel_t)   , intent(in)             :: tl
+    integer              , intent(in)             :: nets
+    integer              , intent(in)             :: nete
+
+#if !defined(CAM) && !defined(SCREAM)
+    real(kind=real_kind) :: dt, eta_ave_w
+
+    dt = 0        ! value unused in initialization
+    eta_ave_w = 0 ! same
+    call set_prescribed_wind(elem,deriv,hybrid,hvcoord,dt,tl,nets,nete,eta_ave_w)
+#endif        
+  end subroutine init_standalone_test
+
+  subroutine compute_test_forcing_f(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
     use hybrid_mod,       only : hybrid_t
     use hybvcoord_mod,    only : hvcoord_t
     use time_mod,         only : timelevel_t
@@ -587,16 +629,70 @@ contains
 #if !defined(CAM) && !defined(SCREAM)
     call compute_test_forcing(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
 #endif
+  end subroutine compute_test_forcing_f
 
-  end subroutine compute_test_forcing_dummy
+  subroutine set_prescribed_wind_f(elem,deriv,hybrid,hvcoord,dt,tl,nets,nete)
+    use iso_c_binding,    only : c_ptr, c_loc
+    use hybrid_mod,       only : hybrid_t
+    use hybvcoord_mod,    only : hvcoord_t
+    use time_mod,         only : timelevel_t
+    use element_mod,      only : element_t
+    use derivative_mod,   only : derivative_t
+#if !defined(CAM) && !defined(SCREAM)
+    use control_mod,      only : qsplit
+    use perf_mod,         only : t_startf, t_stopf
+    use theta_f2c_mod,    only : push_test_state_to_c
+    use test_mod,         only : set_prescribed_wind
+    use element_state,    only : elem_state_v, elem_state_w_i, elem_state_vtheta_dp,     &
+                                 elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v,   &
+                                 elem_derived_eta_dot_dpdn, elem_derived_vn0
+#endif
+    
+    type (element_t),      intent(inout), target  :: elem(:)
+    type (derivative_t),   intent(in)             :: deriv
+    type (hvcoord_t),      intent(in)             :: hvcoord
+    type (hybrid_t),       intent(in)             :: hybrid
+    real (kind=real_kind), intent(in)             :: dt
+    type (TimeLevel_t)   , intent(in)             :: tl
+    integer              , intent(in)             :: nets
+    integer              , intent(in)             :: nete
 
+#if !defined(CAM) && !defined(SCREAM)
+    type (hvcoord_t) :: hv
+    type (c_ptr) :: elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr, elem_state_phinh_i_ptr
+    type (c_ptr) :: elem_state_dp3d_ptr, elem_state_Qdp_ptr, elem_state_Q_ptr, elem_state_ps_v_ptr
+    type (c_ptr) :: elem_derived_eta_dot_dpdn_ptr, elem_derived_vn0_ptr
+    
+    real(kind=real_kind) :: eta_ave_w
 
+    ! We need to set up an hvcoord_t that can be passed as intent(inout), even
+    ! though at this point, it won't be changed in the set_prescribed_wind call.
+    hv%ps0  = hvcoord%ps0
+    hv%hyai = hvcoord%hyai
+    hv%hyam = hvcoord%hyam
+    hv%hybi = hvcoord%hybi
+    hv%hybm = hvcoord%hybm
+    hv%etam = hvcoord%etam
+    hv%etai = hvcoord%etai
+    hv%dp0  = hvcoord%dp0
 
-
-
-
-
-
-
+    eta_ave_w = 1d0/qsplit
+    call set_prescribed_wind(elem,deriv,hybrid,hv,dt,tl,nets,nete,eta_ave_w)
+    
+    call t_startf('push_to_cxx')
+    elem_state_v_ptr         = c_loc(elem_state_v)
+    elem_state_w_i_ptr       = c_loc(elem_state_w_i)
+    elem_state_vtheta_dp_ptr = c_loc(elem_state_vtheta_dp)
+    elem_state_phinh_i_ptr   = c_loc(elem_state_phinh_i)
+    elem_state_dp3d_ptr      = c_loc(elem_state_dp3d)
+    elem_state_ps_v_ptr      = c_loc(elem_state_ps_v)
+    elem_derived_vn0_ptr     = c_loc(elem_derived_vn0)
+    elem_derived_eta_dot_dpdn_ptr = c_loc(elem_derived_eta_dot_dpdn)
+    call push_test_state_to_c(elem_state_ps_v_ptr, elem_state_dp3d_ptr, &
+         elem_state_vtheta_dp_ptr, elem_state_phinh_i_ptr, elem_state_v_ptr, &
+         elem_state_w_i_ptr, elem_derived_eta_dot_dpdn_ptr, elem_derived_vn0_ptr)
+    call t_stopf('push_to_cxx')
+#endif    
+  end subroutine set_prescribed_wind_f
 
 end module

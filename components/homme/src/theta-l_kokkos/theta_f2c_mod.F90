@@ -191,6 +191,16 @@ interface
     type (c_ptr), intent(in) :: elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr
     type (c_ptr), intent(in) :: elem_state_Qdp_ptr, elem_state_Q_ptr, elem_derived_omega_p_ptr
   end subroutine cxx_push_results_to_f90
+
+  subroutine push_test_state_to_c( &
+       ! state
+       ps_v, dp3d, vtheta_dp, phinh_i, v, w_i, &
+       ! derived
+       eta_dot_dpdn, vn0) bind(c)
+    use iso_c_binding, only: c_ptr
+    
+    type (c_ptr), intent(in) :: ps_v, dp3d, vtheta_dp, phinh_i, v, w_i, eta_dot_dpdn, vn0
+  end subroutine push_test_state_to_c
 end interface
 
 end module theta_f2c_mod
