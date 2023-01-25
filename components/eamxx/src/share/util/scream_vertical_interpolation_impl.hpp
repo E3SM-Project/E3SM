@@ -46,8 +46,8 @@ void apply_interpolation_impl_1d(
   auto mask   = Kokkos::subview(mask_col,  Kokkos::pair<int,int>(0,num_tgt_packs));
 
   // The input/output data and x_src/x_tgt data should match in the appropriate size, respectively.
-  EKAT_REQUIRE_MSG(x_tgt.size() == output.size(),"Error! vertical_interpolation::perform_checks " + std::to_string(x_tgt.size()) + " != " + std::to_string(output.size()) + ".");
-  EKAT_REQUIRE_MSG(x_src.size() == input.size(), "Error! vertical_interpolation::perform_checks " + std::to_string(x_src.size()) + " != " + std::to_string(input.size()) + ".");
+  EKAT_KERNEL_REQUIRE_MSG(x_tgt.size() == output.size(), "Error! vertical_interpolation::apply_interpolation_imple_1d - target pressure level size does not match the size of the target data output.");
+  EKAT_KERNEL_REQUIRE_MSG(x_src.size() == input.size() , "Error! vertical_interpolation::apply_interpolation_imple_1d - source pressure level size does not match the size of the source data input.");
 
   //Setup linear interpolation
   vert_interp.setup(team, x_src, x_tgt);

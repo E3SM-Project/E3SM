@@ -51,14 +51,12 @@ void print (const std::string& msg, const ekat::Comm& comm) {
 std::shared_ptr<AbstractGrid>
 build_src_grid(const ekat::Comm& comm, const int nldofs_src, const int nlevs_src) 
 {
-
-  AbstractGrid::dofs_list_type src_dofs("",nldofs_src);
-  auto src_dofs_h = cmvc(src_dofs);
-  std::iota(src_dofs_h.data(),src_dofs_h.data()+nldofs_src,nldofs_src*comm.rank());
-  Kokkos::deep_copy(src_dofs,src_dofs_h);
-
   auto src_grid = std::make_shared<PointGrid>("src",nldofs_src,nlevs_src,comm);
-  src_grid->set_dofs(src_dofs);
+
+  auto src_dofs = src_grid->get_dofs_gids();
+  auto src_dofs_h = src_dofs.get_view<gid_t*,Host>();
+  std::iota(src_dofs_h.data(),src_dofs_h.data()+nldofs_src,nldofs_src*comm.rank());
+  src_dofs.sync_to_dev();
 
   return src_grid;
 }
@@ -99,7 +97,7 @@ void create_remap_file(const std::string& filename, const int nlevs, const std::
 
   scorpio::register_file(filename, scorpio::FileMode::Write);
 
-  scorpio::register_dimension(filename,"nlevs","nlevs",nlevs);
+  scorpio::register_dimension(filename,"nlevs","nlevs",nlevs, true);
 
   scorpio::register_variable(filename,"p_levs","p_levs","none",{"nlevs"},"real","real","Real-nlevs");
 
@@ -189,6 +187,8 @@ TEST_CASE ("vertical_remap") {
       }
     }
   }
+  pmid_src.sync_to_dev();
+  pint_src.sync_to_dev();
   auto remap = std::make_shared<VerticalRemapperTester>(src_grid,filename,pmid_src,pint_src,mask_val);
   print (" -> creating grid and remapper ... done!\n",comm);
 
@@ -264,7 +264,7 @@ TEST_CASE ("vertical_remap") {
   // values was, even if that data was off rank.
   auto pmid_v = pmid_src.get_view<Real**,Host>();
   auto pint_v = pint_src.get_view<Real**,Host>();
-  auto src_gids    = remap->get_src_grid()->get_dofs_gids_host();
+  auto src_gids    = remap->get_src_grid()->get_dofs_gids().get_view<const gid_t*,Host>();
   for (const auto& f : src_f) {
     const auto& l = f.get_header().get_identifier().get_layout();
     switch (get_layout_type(l.tags())) {
@@ -324,7 +324,7 @@ TEST_CASE ("vertical_remap") {
     // -------------------------------------- //
 
     print (" -> check tgt fields ...\n",comm);
-    const auto tgt_gids = tgt_grid->get_dofs_gids_host();
+    const auto tgt_gids = tgt_grid->get_dofs_gids().get_view<const gid_t*,Host>();
     const int ntgt_gids = tgt_gids.size();
     for (size_t ifield=0; ifield<tgt_f.size(); ++ifield) {
       const auto& f     = tgt_f[ifield];
