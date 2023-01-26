@@ -142,7 +142,6 @@ inline void pam_feedback_compute_crm_mean_state( pam::PamCoupler &coupler ) {
   auto nr      = dm_device.get<real,4>("rain_num");
   auto qm      = dm_device.get<real,4>("ice_rime");
   auto bm      = dm_device.get<real,4>("ice_rime_vol");
-  auto cldfrac = dm_device.get<real,4>("cldfrac");
   //------------------------------------------------------------------------------------------------
   // Create arrays to hold the current column average of the CRM internal columns
   real2d nc_mean("nc_mean",gcm_nlev,nens);
@@ -151,7 +150,6 @@ inline void pam_feedback_compute_crm_mean_state( pam::PamCoupler &coupler ) {
   real2d nr_mean("nr_mean",gcm_nlev,nens);
   real2d qm_mean("qm_mean",gcm_nlev,nens);
   real2d bm_mean("bm_mean",gcm_nlev,nens);
-  real2d cldfrac_mean("cldfrac_mean",gcm_nlev,nens);
   //------------------------------------------------------------------------------------------------
   // We will be essentially reducing a summation to these variables, so initialize them to zero
   parallel_for("Initialize horzontal means", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
@@ -161,7 +159,6 @@ inline void pam_feedback_compute_crm_mean_state( pam::PamCoupler &coupler ) {
     nr_mean       (k_gcm,iens) = 0;
     qm_mean       (k_gcm,iens) = 0;
     bm_mean       (k_gcm,iens) = 0;
-    cldfrac_mean  (k_gcm,iens) = 0;
   });
   //------------------------------------------------------------------------------------------------
   // Compute horizontal means
@@ -175,7 +172,6 @@ inline void pam_feedback_compute_crm_mean_state( pam::PamCoupler &coupler ) {
     atomicAdd( nr_mean        (k_gcm,iens), nr        (k_crm,j,i,iens) * r_nx_ny );
     atomicAdd( qm_mean        (k_gcm,iens), qm        (k_crm,j,i,iens) * r_nx_ny );
     atomicAdd( bm_mean        (k_gcm,iens), bm        (k_crm,j,i,iens) * r_nx_ny );
-    atomicAdd( cldfrac_mean   (k_gcm,iens), cldfrac   (k_crm,j,i,iens) * r_nx_ny );
   });
   //------------------------------------------------------------------------------------------------
   // Copy the CRM mean data to host arrays
@@ -185,14 +181,12 @@ inline void pam_feedback_compute_crm_mean_state( pam::PamCoupler &coupler ) {
   auto output_nr_mean   = dm_host.get<real,2>("output_nr_mean");
   auto output_qm_mean   = dm_host.get<real,2>("output_qm_mean");
   auto output_bm_mean   = dm_host.get<real,2>("output_bm_mean");
-  auto output_cld       = dm_host.get<real,2>("output_cld");
   nc_mean       .deep_copy_to(output_nc_mean);
   ni_mean       .deep_copy_to(output_ni_mean);
   qr_mean       .deep_copy_to(output_qr_mean);
   nr_mean       .deep_copy_to(output_nr_mean);
   qm_mean       .deep_copy_to(output_qm_mean);
   bm_mean       .deep_copy_to(output_bm_mean);
-  cldfrac_mean  .deep_copy_to(output_cld);
   //------------------------------------------------------------------------------------------------
 }
 
