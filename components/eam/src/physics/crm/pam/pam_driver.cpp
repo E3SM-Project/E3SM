@@ -11,8 +11,6 @@
 #include "pam_radiation.h"
 #include "pam_statistics.h"
 #include "sponge_layer.h"
-#include "saturation_adjustment.h"
-#include "broadcast_initial_gcm_column.h"
 #include "surface_friction.h"
 
 extern "C" void pam_driver() {
@@ -55,9 +53,6 @@ extern "C" void pam_driver() {
 
   // update coupler GCM state with input GCM state
   pam_state_update_gcm_state(coupler);
-
-  // // set CRM dry density using gcm_density_dry (set in pam_state_update_gcm_state)
-  // modules::broadcast_initial_gcm_column_dry_density(coupler);
 
   // Copy input CRM state (saved by the GCM) to coupler
   pam_state_copy_input_to_coupler(coupler);
