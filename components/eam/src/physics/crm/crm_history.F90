@@ -414,7 +414,7 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    call outfld('CRM_V   ',crm_state%v_wind     (icol_beg:icol_end,:,:,:), ncol, lchnk )
    call outfld('CRM_W   ',crm_state%w_wind     (icol_beg:icol_end,:,:,:), ncol, lchnk )
    call outfld('CRM_T   ',crm_state%temperature(icol_beg:icol_end,:,:,:), ncol, lchnk )
-   call outfld('CRM_QV  ',crm_state%qv(icol_beg:icol_end,:,:,:) , ncol, lchnk )
+   call outfld('CRM_QV  ',crm_state%qv         (icol_beg:icol_end,:,:,:), ncol, lchnk )
 
    !----------------------------------------------------------------------------
    ! Turbulence parameter on CRM grid
@@ -423,14 +423,16 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
 
    !----------------------------------------------------------------------------
    ! CRM condensate and precipitation on CRM grid
-   call outfld('CRM_QC  ',crm_output%qcl     (icol_beg:icol_end,:,:,:),ncol, lchnk )
-   call outfld('CRM_QI  ',crm_output%qci     (icol_beg:icol_end,:,:,:),ncol, lchnk )
    call outfld('CRM_PREC',crm_output%prec_crm(icol_beg:icol_end,:,:),  ncol, lchnk )
    if (MMF_microphysics_scheme .eq. 'sam1mom') then
-      call outfld('CRM_QPC ',crm_output%qpl     (icol_beg:icol_end,:,:,:),ncol, lchnk )
-      call outfld('CRM_QPI ',crm_output%qpi     (icol_beg:icol_end,:,:,:),ncol, lchnk )
+      call outfld('CRM_QC ',crm_output%qcl(icol_beg:icol_end,:,:,:), ncol, lchnk )
+      call outfld('CRM_QI ',crm_output%qci(icol_beg:icol_end,:,:,:), ncol, lchnk )
+      call outfld('CRM_QPC',crm_output%qpl(icol_beg:icol_end,:,:,:), ncol, lchnk )
+      call outfld('CRM_QPI',crm_output%qpi(icol_beg:icol_end,:,:,:), ncol, lchnk )
    end if
    if (MMF_microphysics_scheme .eq. 'p3') then
+      call outfld('CRM_QC ',crm_state%qc(icol_beg:icol_end,:,:,:), ncol, lchnk )
+      call outfld('CRM_QI ',crm_state%qi(icol_beg:icol_end,:,:,:), ncol, lchnk )
       call outfld('CRM_NC ',crm_state%nc(icol_beg:icol_end,:,:,:), ncol, lchnk )
       call outfld('CRM_NI ',crm_state%ni(icol_beg:icol_end,:,:,:), ncol, lchnk )
       call outfld('CRM_NR ',crm_state%nr(icol_beg:icol_end,:,:,:), ncol, lchnk )
