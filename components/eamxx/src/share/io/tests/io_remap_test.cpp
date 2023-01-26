@@ -111,7 +111,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   scorpio::register_dimension(remap_filename,"n_a",  "n_a",    ncols_src, true);
   scorpio::register_dimension(remap_filename,"n_b",  "n_b",    ncols_tgt, true);
   scorpio::register_dimension(remap_filename,"n_s",  "n_s",    ncols_src, true);
-  scorpio::register_dimension(remap_filename,"nlevs", "nlevs", nlevs_tgt, true);
+  scorpio::register_dimension(remap_filename,"nlevs", "nlevs", nlevs_tgt, false);
 
   scorpio::register_variable(remap_filename,"col","col","none",{"n_s"},"real","int","int-nnz");
   scorpio::register_variable(remap_filename,"row","row","none",{"n_s"},"real","int","int-nnz");

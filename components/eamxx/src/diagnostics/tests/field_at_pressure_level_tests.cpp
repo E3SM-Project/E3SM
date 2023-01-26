@@ -139,7 +139,7 @@ TEST_CASE("field_at_pressure_level_p2")
       auto test2_mask_v = mask_f.get_view<const Real*, Host>();
       //
       for (int icol=0;icol<ncols;icol++) {
-        REQUIRE(approx(test2_diag_v(icol),Real(-99999)));
+        REQUIRE(approx(test2_diag_v(icol),Real(-999999)));
         REQUIRE(approx(test2_mask_v(icol),Real(0.0)));
       }
     }
