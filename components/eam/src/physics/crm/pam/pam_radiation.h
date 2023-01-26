@@ -67,12 +67,12 @@ inline void pam_radiation_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   using yakl::c::SimpleBounds;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
-  auto nens   = coupler.get_option<int>("ncrms");
-  auto nz     = coupler.get_option<int>("crm_nz");
-  auto crm_ny = coupler.get_option<int>("crm_ny");
-  auto crm_nx = coupler.get_option<int>("crm_nx");
-  auto rad_ny = coupler.get_option<int>("rad_ny");
-  auto rad_nx = coupler.get_option<int>("rad_nx");
+  auto nens       = coupler.get_option<int>("ncrms");
+  auto nz         = coupler.get_option<int>("crm_nz");
+  auto crm_ny     = coupler.get_option<int>("crm_ny");
+  auto crm_nx     = coupler.get_option<int>("crm_nx");
+  auto rad_ny     = coupler.get_option<int>("rad_ny");
+  auto rad_nx     = coupler.get_option<int>("rad_nx");
   //------------------------------------------------------------------------------------------------
   // get the coupler rad tendency variable
   auto rad_enthalpy_tend = dm_device.get<real,4>("rad_enthalpy_tend");
@@ -150,12 +150,12 @@ inline void pam_radiation_copy_output_to_gcm( pam::PamCoupler &coupler ) {
   using yakl::c::SimpleBounds;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
-  auto nens   = coupler.get_option<int>("ncrms");
-  auto nz     = coupler.get_option<int>("crm_nz");
-  auto crm_ny = coupler.get_option<int>("crm_ny");
-  auto crm_nx = coupler.get_option<int>("crm_nx");
-  auto rad_ny = coupler.get_option<int>("rad_ny");
-  auto rad_nx = coupler.get_option<int>("rad_nx");
+  auto nens       = coupler.get_option<int>("ncrms");
+  auto nz         = coupler.get_option<int>("crm_nz");
+  auto crm_ny     = coupler.get_option<int>("crm_ny");
+  auto crm_nx     = coupler.get_option<int>("crm_nx");
+  auto rad_ny     = coupler.get_option<int>("rad_ny");
+  auto rad_nx     = coupler.get_option<int>("rad_nx");
   //------------------------------------------------------------------------------------------------
   // get the coupler rad tendency variable
   auto rad_temperature     = dm_device.get<real,4>("rad_temperature");
