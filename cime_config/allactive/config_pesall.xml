@@ -147,7 +147,7 @@
     </mach>
     <mach name="gcp12">
       <pes compset="any" pesize="any">
-        <comment>allactive+gcp12: default</comment>
+        <comment>allactive+gcp12: default 1 node 56x1</comment>
         <ntasks>
           <ntasks_atm>56</ntasks_atm>
           <ntasks_lnd>56</ntasks_lnd>
@@ -162,7 +162,7 @@
     </mach>
     <mach name="gcp10">
       <pes compset="any" pesize="any">
-        <comment>allactive+gcp: default</comment>
+        <comment>allactive+gcp: default 1 node 30x1</comment>
         <ntasks>
           <ntasks_atm>30</ntasks_atm>
           <ntasks_lnd>30</ntasks_lnd>

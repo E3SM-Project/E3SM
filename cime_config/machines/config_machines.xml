@@ -4254,6 +4254,7 @@
 
       <modules>
 	<command name="use">/opt/apps/spack/share/spack/modules/linux-centos7-zen2</command>
+	<command name="use">/opt/apps/spack/share/spack/modules/linux-centos7-x86_64_v3</command>
 	<command name="unload">gcc</command>
 	<command name="unload">openmpi</command>
 	<command name="unload">binutils</command>
