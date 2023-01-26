@@ -281,7 +281,10 @@ class Dataset:
         path = self.parameters.reference_data_path
         data_name = self.parameters.ref_name
 
-        if hasattr(self.parameters, "ref_file"):
+        if (
+            hasattr(self.parameters, "ref_file")
+            and getattr(self.parameters, "ref_file") != ""
+        ):
             fnm = os.path.join(path, self.parameters.ref_file)
             if not os.path.exists(fnm):
                 raise IOError("File not found: {}".format(fnm))

@@ -1,8 +1,9 @@
-from __future__ import print_function
+from __future__ import annotations
 
 import json
 import math
 import os
+from typing import TYPE_CHECKING
 
 import cdms2
 import cdutil
@@ -15,6 +16,10 @@ from e3sm_diags.driver import utils
 from e3sm_diags.logger import custom_logger
 from e3sm_diags.metrics import corr, max_cdms, mean, min_cdms, rmse, std
 from e3sm_diags.plot.cartopy.enso_diags_plot import plot_map, plot_scatter
+
+if TYPE_CHECKING:
+    from e3sm_diags.parameter.enso_diags_parameter import EnsoDiagsParameter
+
 
 logger = custom_logger(__name__)
 
@@ -185,7 +190,7 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     return metrics_dict
 
 
-def run_diag_map(parameter):
+def run_diag_map(parameter: EnsoDiagsParameter) -> EnsoDiagsParameter:
     variables = parameter.variables
     seasons = parameter.seasons
     regions = parameter.regions
@@ -378,7 +383,7 @@ def run_diag_map(parameter):
     return parameter
 
 
-def run_diag_scatter(parameter):
+def run_diag_scatter(parameter: EnsoDiagsParameter) -> EnsoDiagsParameter:
     variables = parameter.variables
     run_type = parameter.run_type
     # We will always use the same regions, so we don't do the following:
@@ -433,7 +438,7 @@ def run_diag_scatter(parameter):
     return parameter
 
 
-def run_diag(parameter):
+def run_diag(parameter: EnsoDiagsParameter) -> EnsoDiagsParameter:
     if parameter.plot_type == "map":
         return run_diag_map(parameter)
     elif parameter.plot_type == "scatter":

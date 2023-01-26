@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import collections
 import json
 import os
+from typing import TYPE_CHECKING
 
 import cdms2
 import cdutil
@@ -10,6 +13,12 @@ from e3sm_diags.driver import utils
 from e3sm_diags.logger import custom_logger
 from e3sm_diags.metrics import mean
 from e3sm_diags.plot.cartopy import area_mean_time_series_plot
+
+if TYPE_CHECKING:
+    from e3sm_diags.parameter.area_mean_time_series_parameter import (
+        AreaMeanTimeSeriesParameter,
+    )
+
 
 logger = custom_logger(__name__)
 
@@ -24,7 +33,7 @@ def create_metrics(ref_domain):
     return {"mean": mean(ref_domain)}
 
 
-def run_diag(parameter):
+def run_diag(parameter: AreaMeanTimeSeriesParameter) -> AreaMeanTimeSeriesParameter:
     variables = parameter.variables
     regions = parameter.regions
     ref_names = parameter.ref_names

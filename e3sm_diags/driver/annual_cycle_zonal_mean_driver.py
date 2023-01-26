@@ -1,4 +1,4 @@
-from __future__ import print_function
+from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Dict, List
 
@@ -19,10 +19,12 @@ if TYPE_CHECKING:
     from cdms2.axis import TransientAxis
     from cdms2.tvariable import TransientVariable
 
-    from e3sm_diags.parameter.core_parameter import CoreParameter
+    from e3sm_diags.parameter.annual_cycle_zonal_mean_parameter import (
+        ACzonalmeanParameter,
+    )
 
 
-def run_diag(parameter: "CoreParameter"):
+def run_diag(parameter: ACzonalmeanParameter) -> ACzonalmeanParameter:
     """Runs the annual cycle zonal mean diagnostic.
 
     :param parameter: Parameters for the run
@@ -128,7 +130,7 @@ def run_diag(parameter: "CoreParameter"):
     return parameter
 
 
-def _create_annual_cycle(dataset: Dataset, variable: str) -> "TransientVariable":
+def _create_annual_cycle(dataset: Dataset, variable: str) -> TransientVariable:
     """Creates the annual climatology cycle for a dataset variable.
 
     :param dataset: Dataset
@@ -144,7 +146,7 @@ def _create_annual_cycle(dataset: Dataset, variable: str) -> "TransientVariable"
     for index, month in enumerate(month_list):
         var = dataset.get_climo_variable(variable, month)
         if month == "01":
-            var_ann_cycle: "TransientVariable" = MV2.zeros([12] + list(var.shape))
+            var_ann_cycle: TransientVariable = MV2.zeros([12] + list(var.shape))
             var_ann_cycle.id = var.id
             var_ann_cycle.long_name = var.long_name
             var_ann_cycle.units = var.units

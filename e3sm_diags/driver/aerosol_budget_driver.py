@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import csv
 import os
 from typing import TYPE_CHECKING  # , Optional
@@ -6,7 +8,6 @@ from e3sm_diags.driver import utils
 
 if TYPE_CHECKING:
     from e3sm_diags.parameter.core_parameter import CoreParameter
-#    from cdms2.tvariable import TransientVariable
 
 import cdutil
 import numpy
@@ -89,7 +90,7 @@ SPECIES_NAMES = {
 MISSING_VALUE = 999.999
 
 
-def run_diag(parameter: "CoreParameter") -> "CoreParameter":
+def run_diag(parameter: CoreParameter) -> CoreParameter:
     """Runs the aerosol aeronet diagnostic.
 
     :param parameter: Parameters for the run

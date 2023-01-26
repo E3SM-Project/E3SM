@@ -1,4 +1,4 @@
-from __future__ import print_function
+from __future__ import annotations
 
 import collections
 import os
@@ -14,8 +14,7 @@ from e3sm_diags.plot.cartopy import tc_analysis_plot
 
 if TYPE_CHECKING:
     from numpy.ma.core import MaskedArray
-
-    from e3sm_diags.parameter.core_parameter import CoreParameter
+    from e3sm_diags.parameter.tc_analysis_parameter import TCAnalysisParameter
 
 from e3sm_diags.logger import custom_logger
 
@@ -38,7 +37,7 @@ BASIN_DICT: Dict[str, BasinInfo] = {
 }
 
 
-def run_diag(parameter: "CoreParameter") -> "CoreParameter":
+def run_diag(parameter: TCAnalysisParameter) -> TCAnalysisParameter:
     """Runs the tropical cyclone analysis diagnostic.
 
     :param parameter: Parameters for the run

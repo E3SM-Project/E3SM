@@ -1,7 +1,8 @@
-from __future__ import print_function
+from __future__ import annotations
 
 import json
 import os
+from typing import TYPE_CHECKING
 
 import cdutil
 import numpy as np
@@ -13,6 +14,9 @@ from e3sm_diags.logger import custom_logger
 from e3sm_diags.plot.cartopy.qbo_plot import plot
 
 logger = custom_logger(__name__)
+
+if TYPE_CHECKING:
+    from e3sm_diags.parameter.qbo_parameter import QboParameter
 
 
 def unify_plev(var):
@@ -154,7 +158,7 @@ def get_psd_from_deseason(xraw, period_new):
     return psd_x_new0, amplitude_new0
 
 
-def run_diag(parameter):
+def run_diag(parameter: QboParameter) -> QboParameter:
     variables = parameter.variables
     # The region will always be 5S5N
     region = "5S5N"

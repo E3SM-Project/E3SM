@@ -351,7 +351,7 @@ def _run_with_dask(parameters: List[CoreParameter]) -> List[CoreParameter]:
     https://docs.dask.org/en/stable/generated/dask.dataframe.DataFrame.compute.html
     """
     bag = dask.bag.from_sequence(parameters)
-    config = {"scheduler": "processes", "context": "fork"}
+    config = {"scheduler": "processes", "multiprocessing.context": "fork"}
 
     num_workers = getattr(parameters[0], "num_workers", None)
     if num_workers is None:

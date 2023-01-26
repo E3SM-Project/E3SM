@@ -1,6 +1,7 @@
-from __future__ import print_function
+from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
 
 import cdms2
 
@@ -11,8 +12,11 @@ from e3sm_diags.plot import plot
 
 logger = custom_logger(__name__)
 
+if TYPE_CHECKING:
+    from e3sm_diags.parameter.diurnal_cycle_parameter import DiurnalCycleParameter
 
-def run_diag(parameter):
+
+def run_diag(parameter: DiurnalCycleParameter) -> DiurnalCycleParameter:
     variables = parameter.variables
     seasons = parameter.seasons
     ref_name = getattr(parameter, "ref_name", "")

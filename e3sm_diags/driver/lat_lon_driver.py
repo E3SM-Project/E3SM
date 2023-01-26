@@ -1,7 +1,8 @@
-from __future__ import print_function
+from __future__ import annotations
 
 import json
 import os
+from typing import TYPE_CHECKING
 
 import cdms2
 
@@ -12,6 +13,9 @@ from e3sm_diags.metrics import corr, mean, rmse, std
 from e3sm_diags.plot import plot
 
 logger = custom_logger(__name__)
+
+if TYPE_CHECKING:
+    from e3sm_diags.parameter.core_parameter import CoreParameter
 
 
 def create_and_save_data_and_metrics(parameter, mv1_domain, mv2_domain):
@@ -107,7 +111,7 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     return metrics_dict
 
 
-def run_diag(parameter):  # noqa: C901
+def run_diag(parameter: CoreParameter) -> CoreParameter:  # noqa: C901
     variables = parameter.variables
     seasons = parameter.seasons
     ref_name = getattr(parameter, "ref_name", "")

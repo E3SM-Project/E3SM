@@ -1,6 +1,7 @@
-from __future__ import print_function
+from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
 
 import cdms2
 
@@ -9,6 +10,9 @@ from e3sm_diags.driver import utils
 from e3sm_diags.logger import custom_logger
 from e3sm_diags.metrics import corr, max_cdms, mean, min_cdms, rmse
 from e3sm_diags.plot import plot
+
+if TYPE_CHECKING:
+    from e3sm_diags.parameter.core_parameter import CoreParameter
 
 logger = custom_logger(__name__)
 
@@ -40,7 +44,7 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     return metrics_dict
 
 
-def run_diag(parameter):
+def run_diag(parameter: CoreParameter) -> CoreParameter:
     variables = parameter.variables
     seasons = parameter.seasons
     ref_name = getattr(parameter, "ref_name", "")

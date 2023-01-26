@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import os
 
 import cdms2
@@ -67,7 +65,9 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     return metrics_dict
 
 
-def run_diag(parameter, default_plevs=ZonalMean2dParameter().plevs):
+def run_diag(
+    parameter: ZonalMean2dParameter, default_plevs=ZonalMean2dParameter().plevs
+) -> ZonalMean2dParameter:
     variables = parameter.variables
     seasons = parameter.seasons
     ref_name = getattr(parameter, "ref_name", "")

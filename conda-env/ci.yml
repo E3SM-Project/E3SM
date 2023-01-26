@@ -29,5 +29,4 @@ dependencies:
   - scipy
   - pytest
   - pytest-cov
-
 prefix: /opt/miniconda3/envs/e3sm_diags_ci

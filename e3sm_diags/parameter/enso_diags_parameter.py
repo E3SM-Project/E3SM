@@ -4,12 +4,17 @@ from .time_series_parameter import TimeSeriesParameter
 class EnsoDiagsParameter(TimeSeriesParameter):
     def __init__(self):
         super(EnsoDiagsParameter, self).__init__()
+        # Override existing attributes
+        # =============================
         self.granulate.remove("seasons")
+        self.ref_timeseries_input = True
+        self.test_timeseries_input = True
+
+        # Custom attributes
+        # =============================
         self.nino_region = "NINO34"
         self.plot_type = "map"
         self.print_statements = False
-        self.ref_timeseries_input = True
-        self.test_timeseries_input = True
 
     def check_values(self):
         super(EnsoDiagsParameter, self).check_values()

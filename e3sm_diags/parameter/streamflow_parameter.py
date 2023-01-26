@@ -4,6 +4,14 @@ from .time_series_parameter import TimeSeriesParameter
 class StreamflowParameter(TimeSeriesParameter):
     def __init__(self):
         super(StreamflowParameter, self).__init__()
+        # Override existing attributes
+        # =============================
+        self.ref_timeseries_input = True
+        self.test_timeseries_input = True
+        self.granulate.remove("seasons")
+
+        # Custom attributes
+        # =============================
         self.gauges_path = None
         self.main_title_seasonality_map = "Seasonality Map"
         self.main_title_annual_map = "Mean Annual Streamflow Map"
@@ -13,6 +21,3 @@ class StreamflowParameter(TimeSeriesParameter):
         self.output_file_annual_map = "annual_map"
         self.output_file_annual_scatter = "annual_scatter"
         self.print_statements = False
-        self.ref_timeseries_input = True
-        self.test_timeseries_input = True
-        self.granulate.remove("seasons")

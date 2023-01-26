@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import collections
 import json
 import os
+from typing import TYPE_CHECKING
 
 import cdms2
 import numpy as np
@@ -10,6 +13,9 @@ import e3sm_diags.derivations.acme
 from e3sm_diags.driver import utils
 from e3sm_diags.logger import custom_logger
 from e3sm_diags.plot.cartopy import arm_diags_plot
+
+if TYPE_CHECKING:
+    from e3sm_diags.parameter.arm_diags_parameter import ARMDiagsParameter
 
 logger = custom_logger(__name__)
 
@@ -50,7 +56,7 @@ def create_metrics(test, ref):
     }
 
 
-def run_diag_diurnal_cycle(parameter):
+def run_diag_diurnal_cycle(parameter: ARMDiagsParameter) -> ARMDiagsParameter:
     variables = parameter.variables
     regions = parameter.regions
     ref_name = parameter.ref_name
@@ -149,7 +155,7 @@ def run_diag_diurnal_cycle(parameter):
     return parameter
 
 
-def run_diag_diurnal_cycle_zt(parameter):
+def run_diag_diurnal_cycle_zt(parameter: ARMDiagsParameter) -> ARMDiagsParameter:
     variables = parameter.variables
     regions = parameter.regions
     ref_name = parameter.ref_name
@@ -259,7 +265,7 @@ def run_diag_diurnal_cycle_zt(parameter):
     return parameter
 
 
-def run_diag_annual_cycle(parameter):
+def run_diag_annual_cycle(parameter: ARMDiagsParameter) -> ARMDiagsParameter:
     variables = parameter.variables
     regions = parameter.regions
     ref_name = parameter.ref_name
@@ -360,7 +366,7 @@ def run_diag_annual_cycle(parameter):
     return parameter
 
 
-def run_diag_convection_onset(parameter):
+def run_diag_convection_onset(parameter: ARMDiagsParameter) -> ARMDiagsParameter:
     regions = parameter.regions
     ref_name = parameter.ref_name
     ref_path = parameter.reference_data_path
@@ -407,11 +413,11 @@ def run_diag_convection_onset(parameter):
     return parameter
 
 
-def run_diag_pdf_daily(parameter):
+def run_diag_pdf_daily(parameter: ARMDiagsParameter):
     logger.info("'run_diag_pdf_daily' is not yet implemented.")
 
 
-def run_diag(parameter):
+def run_diag(parameter: ARMDiagsParameter) -> ARMDiagsParameter:
 
     if parameter.diags_set == "annual_cycle":
         return run_diag_annual_cycle(parameter)

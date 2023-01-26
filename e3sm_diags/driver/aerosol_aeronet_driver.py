@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from typing import TYPE_CHECKING, Optional
 
@@ -7,13 +9,14 @@ from scipy import interpolate
 
 import e3sm_diags
 from e3sm_diags.driver import utils
+from e3sm_diags.logger import custom_logger
 from e3sm_diags.plot.cartopy import aerosol_aeronet_plot
 
 if TYPE_CHECKING:
-    from e3sm_diags.parameter.core_parameter import CoreParameter
     from cdms2.tvariable import TransientVariable
 
-from e3sm_diags.logger import custom_logger
+    from e3sm_diags.parameter.core_parameter import CoreParameter
+
 
 logger = custom_logger(__name__)
 
@@ -21,7 +24,7 @@ logger = custom_logger(__name__)
 # Years include 2006–2015 average climatology for observation according to Feng et al. 2022:doi:10.1002/essoar.10510950.1, and Golaz et al. 2022 E3SMv2 paper.
 
 
-def run_diag(parameter: "CoreParameter") -> "CoreParameter":
+def run_diag(parameter: CoreParameter) -> CoreParameter:
     """Runs the aerosol aeronet diagnostic.
 
     :param parameter: Parameters for the run
@@ -70,7 +73,7 @@ def run_diag(parameter: "CoreParameter") -> "CoreParameter":
 
 
 def interpolate_model_output_to_obs_sites(
-    var: Optional["TransientVariable"], var_id: str
+    var: Optional[TransientVariable], var_id: str
 ):
     """Interpolate model outputs (on regular lat lon grids) to observational sites
 

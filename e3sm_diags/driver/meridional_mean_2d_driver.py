@@ -1,4 +1,6 @@
-from __future__ import print_function
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import cdms2
 import cdutil
@@ -12,6 +14,11 @@ from e3sm_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
 from e3sm_diags.plot import plot
 
 logger = custom_logger(__name__)
+
+if TYPE_CHECKING:
+    from e3sm_diags.parameter.meridional_mean_2d_parameter import (
+        MeridionalMean2dParameter,
+    )
 
 
 def create_metrics(ref, test, ref_regrid, test_regrid, diff):
@@ -66,7 +73,7 @@ def create_metrics(ref, test, ref_regrid, test_regrid, diff):
     return metrics_dict
 
 
-def run_diag(parameter):
+def run_diag(parameter: MeridionalMean2dParameter) -> MeridionalMean2dParameter:
     variables = parameter.variables
     seasons = parameter.seasons
     ref_name = getattr(parameter, "ref_name", "")

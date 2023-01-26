@@ -1,7 +1,8 @@
-from __future__ import print_function
+from __future__ import annotations
 
 import csv
 import os
+from typing import TYPE_CHECKING
 
 import cdms2
 import cdutil
@@ -17,6 +18,9 @@ from e3sm_diags.plot.cartopy.streamflow_plot import (
 )
 
 logger = custom_logger(__name__)
+
+if TYPE_CHECKING:
+    from e3sm_diags.parameter.streamflow_parameter import StreamflowParameter
 
 
 def get_drainage_area_error(
@@ -89,7 +93,7 @@ def get_seasonality(monthly):
     return seasonality_index, peak_month
 
 
-def run_diag(parameter):
+def run_diag(parameter: StreamflowParameter) -> StreamflowParameter:
     # Assume `model` will always be a `nc` file.
     # Assume `obs` will always be a `mat` file.
     using_test_mat_file = False

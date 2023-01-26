@@ -7,6 +7,9 @@ class TimeSeriesParameter(CoreParameter):
 
     def check_values(self):
         # Do not call super -- we want to overwrite check_values from CoreParameter
+        # TODO: These conditionals seem overly complex for mapping whether
+        # attributes are set. There is probably a better way to implement this.
+        # TODO: Write tests to cover this function.
         test_ref_start_yr_both_set = hasattr(self, "test_start_yr") and hasattr(
             self, "ref_start_yr"
         )

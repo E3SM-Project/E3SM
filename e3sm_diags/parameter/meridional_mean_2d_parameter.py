@@ -8,6 +8,8 @@ from .core_parameter import CoreParameter
 class MeridionalMean2dParameter(CoreParameter):
     def __init__(self):
         super(MeridionalMean2dParameter, self).__init__()
+        # Override existing attributes
+        # =============================
         self.plevs = numpy.logspace(2.0, 3.0, num=17).tolist()
         self.plot_log_plevs = False
         self.plot_plevs = False

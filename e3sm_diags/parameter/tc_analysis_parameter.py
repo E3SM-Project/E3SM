@@ -4,13 +4,19 @@ from .core_parameter import CoreParameter
 class TCAnalysisParameter(CoreParameter):
     def __init__(self):
         super(TCAnalysisParameter, self).__init__()
-        # A list of the reference names to run the diags on.
+        # Override existing attributes
+        # ============================
         self.granulate.remove("seasons")
-        self.test_timeseries_input = True
-        self.ref_timeseries_input = True
+        self.test_timeseries_input: bool = True
+        self.ref_timeseries_input: bool = True
 
+        # Custom attributes
+        # =================
+        self.ref_title: str = ""
 
-#    def check_values(self):
-#        if not self.ref_names:
-#            msg = 'You must have a value for ref_names.'
-#            raise RuntimeError(msg)
+        # TODO: There should be some validation checks because these attributes
+        # are used in `tc_analysis_driver.run_diag` when `self.run_type == "model_vs_model"`
+        self.ref_start_yr: str = ""
+        self.ref_end_yr: str = ""
+        self.test_start_yr: str = ""
+        self.test_end_yr: str = ""
