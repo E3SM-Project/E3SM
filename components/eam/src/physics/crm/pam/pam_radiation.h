@@ -129,16 +129,13 @@ inline void pam_radiation_timestep_aggregation( pam::PamCoupler &coupler ) {
     int i_rad = i / (crm_nx/rad_nx);
     int j_rad = j / (crm_nx/rad_ny);
     real rho_total = rho_d(k,j,i,iens) + rho_v(k,j,i,iens);
-    real qv = rho_v(k,j,i,iens) / rho_total;
-    real ql = rho_l(k,j,i,iens) / rho_total;
-    real qi = rho_i(k,j,i,iens) / rho_total;
-    atomicAdd( rad_temperature(k,j_rad,i_rad,iens), temp(k,j,i,iens)   * r_nx_ny );
-    atomicAdd( rad_qv         (k,j_rad,i_rad,iens), qv                 * r_nx_ny );
-    atomicAdd( rad_qc         (k,j_rad,i_rad,iens), ql                 * r_nx_ny );
-    atomicAdd( rad_qi         (k,j_rad,i_rad,iens), qi                 * r_nx_ny );
-    atomicAdd( rad_nc         (k,j_rad,i_rad,iens), num_l(k,j,i,iens)  * r_nx_ny );
-    atomicAdd( rad_ni         (k,j_rad,i_rad,iens), num_i(k,j,i,iens)  * r_nx_ny );
-    atomicAdd( rad_cld        (k,j_rad,i_rad,iens), cldfrac(k,j,i,iens)* r_nx_ny );
+    atomicAdd( rad_temperature(k,j_rad,i_rad,iens), temp(k,j,i,iens)              * r_nx_ny );
+    atomicAdd( rad_qv         (k,j_rad,i_rad,iens), rho_v(k,j,i,iens) / rho_total * r_nx_ny );
+    atomicAdd( rad_qc         (k,j_rad,i_rad,iens), rho_l(k,j,i,iens) / rho_total * r_nx_ny );
+    atomicAdd( rad_qi         (k,j_rad,i_rad,iens), rho_i(k,j,i,iens) / rho_total * r_nx_ny );
+    atomicAdd( rad_nc         (k,j_rad,i_rad,iens), num_l(k,j,i,iens)             * r_nx_ny );
+    atomicAdd( rad_ni         (k,j_rad,i_rad,iens), num_i(k,j,i,iens)             * r_nx_ny );
+    atomicAdd( rad_cld        (k,j_rad,i_rad,iens), cldfrac(k,j,i,iens)           * r_nx_ny );
   });
   parallel_for("update radiation aggregation count", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
     rad_aggregation_cnt(iens) += 1;
