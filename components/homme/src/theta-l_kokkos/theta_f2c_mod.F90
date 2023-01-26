@@ -198,9 +198,13 @@ interface
        ! derived
        eta_dot_dpdn, vn0) bind(c)
     use iso_c_binding, only: c_ptr
-    
+
     type (c_ptr), intent(in) :: ps_v, dp3d, vtheta_dp, phinh_i, v, w_i, eta_dot_dpdn, vn0
   end subroutine push_test_state_to_c
+
+  ! Sync diagnostics computed on device to host
+  subroutine sync_diagnostics_to_host_c() bind(c)
+  end subroutine sync_diagnostics_to_host_c
 end interface
 
 end module theta_f2c_mod
