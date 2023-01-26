@@ -106,6 +106,7 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
   auto nens       = coupler.get_option<int>("ncrms");
   auto nz         = coupler.get_option<int>("crm_nz");
+  auto gcm_nlev   = coupler.get_option<int>("gcm_nlev");
   //------------------------------------------------------------------------------------------------
   // convert aggregated values to time means
   auto aggregation_cnt = dm_device.get<real,1>("stat_aggregation_cnt");
@@ -127,6 +128,17 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
     }
   });
   //------------------------------------------------------------------------------------------------
+  // convert variables to GCM vertical grid
+  real2d cldfrac_gcm("cldfrac_gcm",gcm_nlev,nens);
+  parallel_for("Initialize aggregated precipitation", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
+    int k_crm = gcm_nlev-1-k_gcm;
+    if (k_crm<crm_nz) {
+      cldfrac_gcm(k_gcm,iens) = cldfrac(k_crm,iens) 
+    } else {
+      cldfrac_gcm(k_gcm,iens) = 0.
+    }
+  });
+  //------------------------------------------------------------------------------------------------
   // copy data to host
   auto precip_tot_host = dm_host.get<real,1>("output_precc");
   auto precip_ice_host = dm_host.get<real,1>("output_precsc");
@@ -134,7 +146,7 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   auto clear_rh_host   = dm_host.get<real,2>("output_clear_rh");
   precip_tot    .deep_copy_to(precip_tot_host);
   precip_ice    .deep_copy_to(precip_ice_host);
-  cldfrac       .deep_copy_to(cldfrac_host);
+  cldfrac_gcm   .deep_copy_to(cldfrac_host);
   clear_rh      .deep_copy_to(clear_rh_host);
   //------------------------------------------------------------------------------------------------
 }
