@@ -307,7 +307,7 @@ TEST_CASE("io_remap_test","io_remap_test")
       const Real test_val = ref_masked ? mask_val : calculate_output(p_ref,ii,0);
       REQUIRE(approx(Ys_v_vert(ii),test_val));
   
-      REQUIRE(Yf_v_vert(ii) == Yf_v(ii));
+      REQUIRE(approx(Yf_v_vert(ii), Yf_v(ii)));
       for (int jj=0; jj<nlevs_tgt; jj++) {
         auto p_jj = p_tgt[jj];
         const bool mid_masked = (p_jj>pm_v(ii,nlevs_src-1) || p_jj<pm_v(ii,0)); 
@@ -357,17 +357,17 @@ TEST_CASE("io_remap_test","io_remap_test")
     for (int ii=0; ii<ncols_tgt_l; ii++) {
       const int col1 = 2*ii;
       const int col2 = 2*ii+1;
-      REQUIRE(Yf_v_horiz(ii)==Yf_v(col1)*wgt + Yf_v(col2)*(1.0-wgt));
-      REQUIRE(Yi_v_horiz(ii,0) == Yi_v(col1,0)*wgt + Yi_v(col2,0)*(1.0-wgt));
+      REQUIRE(approx(Yf_v_horiz(ii),Yf_v(col1)*wgt + Yf_v(col2)*(1.0-wgt)));
+      REQUIRE(approx(Yi_v_horiz(ii,0), Yi_v(col1,0)*wgt + Yi_v(col2,0)*(1.0-wgt)));
       for (int cc=0; cc<2; cc++) {
-        REQUIRE(Vi_v_horiz(ii,cc,0) == Vi_v(col1,cc,0)*wgt + Vi_v(col2,cc,0)*(1.0-wgt));
+        REQUIRE(approx(Vi_v_horiz(ii,cc,0), Vi_v(col1,cc,0)*wgt + Vi_v(col2,cc,0)*(1.0-wgt)));
       }
       for (int jj=0; jj<nlevs_src; jj++) {
-        REQUIRE(Ym_v_horiz(ii,jj)   == Ym_v(col1,jj)*wgt   + Ym_v(col2,jj)*(1.0-wgt));
-        REQUIRE(Yi_v_horiz(ii,jj+1) == Yi_v(col1,jj+1)*wgt + Yi_v(col2,jj+1)*(1.0-wgt));
+        REQUIRE(approx(Ym_v_horiz(ii,jj),   Ym_v(col1,jj)*wgt   + Ym_v(col2,jj)*(1.0-wgt)));
+        REQUIRE(approx(Yi_v_horiz(ii,jj+1), Yi_v(col1,jj+1)*wgt + Yi_v(col2,jj+1)*(1.0-wgt)));
         for (int cc=0; cc<2; cc++) {
-          REQUIRE(Vm_v_horiz(ii,cc,jj)   == Vm_v(col1,cc,jj)*wgt   + Vm_v(col2,cc,jj)*(1.0-wgt));
-          REQUIRE(Vi_v_horiz(ii,cc,jj+1) == Vi_v(col1,cc,jj+1)*wgt + Vi_v(col2,cc,jj+1)*(1.0-wgt));
+          REQUIRE(approx(Vm_v_horiz(ii,cc,jj),   Vm_v(col1,cc,jj)*wgt   + Vm_v(col2,cc,jj)*(1.0-wgt)));
+          REQUIRE(approx(Vi_v_horiz(ii,cc,jj+1), Vi_v(col1,cc,jj+1)*wgt + Vi_v(col2,cc,jj+1)*(1.0-wgt)));
         }
       }
       // For the pressured sliced variable we expect some masking which needs to be checked.
@@ -389,7 +389,7 @@ TEST_CASE("io_remap_test","io_remap_test")
       } else {
         Ys_exp = mask_val;
       }
-      REQUIRE(Ys_v_horiz(ii) == Ys_exp);
+      REQUIRE(approx(Ys_v_horiz(ii), Ys_exp));
     }
     print ("    -> horizontal remap ... done\n",io_comm);
   }
@@ -430,7 +430,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     for (int ii=0; ii<ncols_tgt_l; ii++) {
       const int col1 = 2*ii;
       const int col2 = 2*ii+1;
-      REQUIRE(Yf_v_vh(ii)==Yf_v(col1)*wgt + Yf_v(col2)*(1.0-wgt));
+      REQUIRE(approx(Yf_v_vh(ii),Yf_v(col1)*wgt + Yf_v(col2)*(1.0-wgt)));
       for (int jj=0; jj<nlevs_tgt; jj++) {
         auto p_jj = p_tgt[jj];
         const Real mid_mask_1 = (p_jj<=pm_v(col1,nlevs_src-1) && p_jj>=pm_v(col1,0));
@@ -489,7 +489,7 @@ TEST_CASE("io_remap_test","io_remap_test")
       } else {
         Ys_exp = mask_val;
       }
-      REQUIRE(Ys_v_vh(ii) == Ys_exp);
+      REQUIRE(approx(Ys_v_vh(ii), Ys_exp));
     }
     print ("    -> vertical + horizontal remap ... done\n",io_comm);
   }

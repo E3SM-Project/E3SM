@@ -484,7 +484,9 @@ rescale_masked_fields (const Field& x, const Field& mask) const
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dim1),
                             [&](const int j){
           auto masked = m_view(icol,j) > mask_threshold;
-          x_view(icol,j).set(masked,x_view(icol,j)/m_view(icol,j));
+          if (masked.any()) {
+            x_view(icol,j).set(masked,x_view(icol,j)/m_view(icol,j));
+          }
           x_view(icol,j).set(!masked,mask_val);
         });
       });
@@ -509,7 +511,9 @@ rescale_masked_fields (const Field& x, const Field& mask) const
           auto m_sub = ekat::subview(m_view,icol);
           auto masked = m_sub(k) > mask_threshold;
 
-          x_sub(k).set(masked,x_sub(k)/m_sub(k));
+          if (masked.any()) {
+            x_sub(k).set(masked,x_sub(k)/m_sub(k));
+          }
           x_sub(k).set(!masked,mask_val);
         });
       });
