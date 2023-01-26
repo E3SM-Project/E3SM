@@ -23,11 +23,11 @@ inline void pam_feedback_compute_crm_feedback_tendencies( pam::PamCoupler &coupl
   using yakl::atomicAdd;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
-  int crm_nz   = dm_device.get_dimension_size("z"   );
-  int crm_ny   = dm_device.get_dimension_size("y"   );
-  int crm_nx   = dm_device.get_dimension_size("x"   );
-  int nens     = dm_device.get_dimension_size("nens");
-  int gcm_nlev = coupler.get_option<int>("gcm_nlev");
+  int crm_nz      = dm_device.get_dimension_size("z"   );
+  int crm_ny      = dm_device.get_dimension_size("y"   );
+  int crm_nx      = dm_device.get_dimension_size("x"   );
+  int nens        = dm_device.get_dimension_size("nens");
+  int gcm_nlev    = coupler.get_option<int>("gcm_nlev");
   //------------------------------------------------------------------------------------------------
   // Get current CRM state
   auto rho_d = dm_device.get<real,4>("density_dry");
@@ -129,11 +129,11 @@ inline void pam_feedback_compute_crm_mean_state( pam::PamCoupler &coupler ) {
   using yakl::atomicAdd;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
-  int crm_nz   = dm_device.get_dimension_size("z"   );
-  int crm_ny   = dm_device.get_dimension_size("y"   );
-  int crm_nx   = dm_device.get_dimension_size("x"   );
-  int nens     = dm_device.get_dimension_size("nens");
-  int gcm_nlev = coupler.get_option<int>("gcm_nlev");
+  int crm_nz      = dm_device.get_dimension_size("z"   );
+  int crm_ny      = dm_device.get_dimension_size("y"   );
+  int crm_nx      = dm_device.get_dimension_size("x"   );
+  int nens        = dm_device.get_dimension_size("nens");
+  int gcm_nlev    = coupler.get_option<int>("gcm_nlev");
   //------------------------------------------------------------------------------------------------
   // Get current CRM state
   auto nc      = dm_device.get<real,4>("cloud_water_num");
