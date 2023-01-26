@@ -28,6 +28,7 @@ inline void pam_radiation_init( pam::PamCoupler &coupler ) {
   coupler.set_option<real>("rad_ny_fac",rad_ny_fac);
   //------------------------------------------------------------------------------------------------
   // register aggregted quantities
+  dm.register_and_allocate<real>("rad_aggregation_cnt","number of aggregated samples",{nens},{"nens"});
   dm.register_and_allocate<real>("rad_temperature","rad column mean temperature",      {nz,rad_ny,rad_nx,nens},{"z","rad_y","rad_x","nens"});
   dm.register_and_allocate<real>("rad_qv"         ,"rad column mean water vapor",      {nz,rad_ny,rad_nx,nens},{"z","rad_y","rad_x","nens"});
   dm.register_and_allocate<real>("rad_qc"         ,"rad column mean cloud liq amount", {nz,rad_ny,rad_nx,nens},{"z","rad_y","rad_x","nens"});
@@ -35,9 +36,9 @@ inline void pam_radiation_init( pam::PamCoupler &coupler ) {
   dm.register_and_allocate<real>("rad_nc"         ,"rad column mean cloud liq number", {nz,rad_ny,rad_nx,nens},{"z","rad_y","rad_x","nens"});
   dm.register_and_allocate<real>("rad_ni"         ,"rad column mean cloud ice number", {nz,rad_ny,rad_nx,nens},{"z","rad_y","rad_x","nens"});
   dm.register_and_allocate<real>("rad_cld"        ,"rad column mean cloud fraction",   {nz,rad_ny,rad_nx,nens},{"z","rad_y","rad_x","nens"});
-  dm.register_and_allocate<real>("rad_aggregation_cnt","number of aggregated samples",{nens},{"nens"});
   //------------------------------------------------------------------------------------------------
   // initialize aggregted quantities
+  auto rad_aggregation_cnt = dm.get<real,1>("rad_aggregation_cnt");
   auto rad_temperature     = dm.get<real,4>("rad_temperature");
   auto rad_qv              = dm.get<real,4>("rad_qv");
   auto rad_qc              = dm.get<real,4>("rad_qc");
@@ -45,8 +46,7 @@ inline void pam_radiation_init( pam::PamCoupler &coupler ) {
   auto rad_nc              = dm.get<real,4>("rad_nc");
   auto rad_ni              = dm.get<real,4>("rad_ni");
   auto rad_cld             = dm.get<real,4>("rad_cld");
-  auto rad_aggregation_cnt = dm.get<real,1>("rad_aggregation_cnt");
-  parallel_for("Initialize aggregated precipitation", SimpleBounds<4>(nz,rad_ny,rad_nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+  parallel_for("Initialize output for radiation", SimpleBounds<4>(nz,rad_ny,rad_nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
     rad_temperature(k,j,i,iens) = 0.;
     rad_qv         (k,j,i,iens) = 0.;
     rad_qc         (k,j,i,iens) = 0.;
