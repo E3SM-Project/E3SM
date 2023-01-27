@@ -2,6 +2,33 @@
 
 #include "pam_coupler.h"
 
+// Copy the CRM radiation tendencies into the PAM coupler
+inline void pam_radiation_copy_input_to_coupler( pam::PamCoupler &coupler ) {
+  using yakl::c::parallel_for;
+  using yakl::c::SimpleBounds;
+  auto &dm_device = coupler.get_data_manager_device_readwrite();
+  auto &dm_host   = coupler.get_data_manager_host_readwrite();
+  auto nens       = coupler.get_option<int>("ncrms");
+  auto nz         = coupler.get_option<int>("crm_nz");
+  auto crm_ny     = coupler.get_option<int>("crm_ny");
+  auto crm_nx     = coupler.get_option<int>("crm_nx");
+  auto rad_ny     = coupler.get_option<int>("rad_ny");
+  auto rad_nx     = coupler.get_option<int>("rad_nx");
+  //------------------------------------------------------------------------------------------------
+  // get the coupler rad tendency variable
+  auto rad_enthalpy_tend = dm_device.get<real,4>("rad_enthalpy_tend");
+  //------------------------------------------------------------------------------------------------
+  // wrap the host CRM state data in YAKL arrays
+  auto gcm_qrad = dm_host.get<real const,4>("rad_qrad").createDeviceCopy();
+  //------------------------------------------------------------------------------------------------
+  // Copy the host CRM data to the coupler
+  parallel_for("copy rad tendencies to CRM", SimpleBounds<4>(nz,rad_ny,rad_nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+    rad_enthalpy_tend(k,j,i,iens) = gcm_qrad(k,j,i,iens);
+  });
+  //------------------------------------------------------------------------------------------------
+}
+
+
 // register and initialize various quantities for radiation
 inline void pam_radiation_init( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;
@@ -57,32 +84,6 @@ inline void pam_radiation_init( pam::PamCoupler &coupler ) {
   });
   parallel_for("update radiation aggregation count", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
     rad_aggregation_cnt(iens) = 0.;
-  });
-  //------------------------------------------------------------------------------------------------
-}
-
-// Copy the CRM radiation tendencies into the PAM coupler
-inline void pam_radiation_copy_input_to_coupler( pam::PamCoupler &coupler ) {
-  using yakl::c::parallel_for;
-  using yakl::c::SimpleBounds;
-  auto &dm_device = coupler.get_data_manager_device_readwrite();
-  auto &dm_host   = coupler.get_data_manager_host_readwrite();
-  auto nens       = coupler.get_option<int>("ncrms");
-  auto nz         = coupler.get_option<int>("crm_nz");
-  auto crm_ny     = coupler.get_option<int>("crm_ny");
-  auto crm_nx     = coupler.get_option<int>("crm_nx");
-  auto rad_ny     = coupler.get_option<int>("rad_ny");
-  auto rad_nx     = coupler.get_option<int>("rad_nx");
-  //------------------------------------------------------------------------------------------------
-  // get the coupler rad tendency variable
-  auto rad_enthalpy_tend = dm_device.get<real,4>("rad_enthalpy_tend");
-  //------------------------------------------------------------------------------------------------
-  // wrap the host CRM state data in YAKL arrays
-  auto gcm_qrad = dm_host.get<real const,4>("rad_qrad").createDeviceCopy();
-  //------------------------------------------------------------------------------------------------
-  // Copy the host CRM data to the coupler
-  parallel_for("copy rad tendencies to CRM", SimpleBounds<4>(nz,rad_ny,rad_nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
-    rad_enthalpy_tend(k,j,i,iens) = gcm_qrad(k,j,i,iens);
   });
   //------------------------------------------------------------------------------------------------
 }
