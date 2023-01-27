@@ -597,6 +597,9 @@
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>56</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="gnugpu">16</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="crayclanggpu">16</MAX_TASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE compiler="amdclanggpu">16</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>56</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="gnugpu">16</MAX_MPITASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE compiler="crayclanggpu">16</MAX_MPITASKS_PER_NODE>
@@ -606,7 +609,6 @@
       <executable>srun</executable>
       <arguments>
         <arg name="num_tasks"> -l -K -n {{ total_tasks }} -N {{ num_nodes }} </arg>
-        <arg name="binding">--threads-per-core=1</arg>
         <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
         <arg name="distribution">-m *:block</arg>
         <arg name="ntasks_per_gpu">$ENV{NTASKS_PER_GPU}</arg>
@@ -629,7 +631,7 @@
       </modules>
       <modules compiler="crayclanggpu">
         <command name="load">craype-accel-amd-gfx90a</command>
-        <command name="load">rocm/5.2.0</command>
+        <command name="load">rocm/5.4.0</command>
       </modules>
       <modules compiler="amdclang.*">
         <command name="reset"></command>
@@ -638,7 +640,6 @@
       </modules>
       <modules compiler="amdclanggpu">
         <command name="load">craype-accel-amd-gfx90a</command>
-        <command name="load">rocm/5.1.0</command>
       </modules>
       <modules compiler="gnu.*">
         <command name="reset"></command>
@@ -647,7 +648,7 @@
       </modules>
       <modules compiler="gnugpu">
         <command name="load">craype-accel-amd-gfx90a</command>
-        <command name="load">rocm/5.1.0</command>
+        <command name="load">rocm/5.4.0</command>
       </modules>
       <modules>
         <command name="load">cray-python/3.9.12.1</command>
@@ -674,27 +675,14 @@
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LIBSCI_DIR}/amd/4.0/x86_64/lib:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables compiler=".*gpu.*">
-      <env name="NTASKS_PER_GPU">--ntasks-per-gpu=2</env>
+      <env name="NTASKS_PER_GPU">--ntasks-per-gpu=$SHELL{echo "`./xmlquery --value MAX_MPITASKS_PER_NODE`/8"|bc}</env>
       <env name="GPU_BIND_ARGS">--gpu-bind=closest</env>
+      <env name="PNETCDF_HINTS">romio_cb_read=disable</env>
+      <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
     </environment_variables>
     <environment_variables compiler=".*gpu.*" DEBUG="TRUE">
       <env name="AMD_LOG_LEVEL">10</env>
       <env name="CRAY_ACC_DEBUG">3</env>
-    </environment_variables>
-    <environment_variables compiler="gnugpu">
-      <env name="PNETCDF_HINTS">romio_cb_read=disable</env>
-      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
-      <env name="MPIR_CVAR_GPU_EAGER_DEVICE_MEM">0</env>
-    </environment_variables>
-    <environment_variables compiler="crayclanggpu">
-      <env name="PNETCDF_HINTS">romio_cb_read=disable</env>
-      <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
-      <env name="MPIR_CVAR_GPU_EAGER_DEVICE_MEM">0</env>
-    </environment_variables>
-    <environment_variables compiler="amdclanggpu">
-      <env name="PNETCDF_HINTS">romio_cb_read=disable</env>
-      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
-      <env name="MPIR_CVAR_GPU_EAGER_DEVICE_MEM">0</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>

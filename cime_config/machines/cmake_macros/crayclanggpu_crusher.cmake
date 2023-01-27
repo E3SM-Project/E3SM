@@ -41,7 +41,6 @@ string(APPEND FFLAGS " -hipa0 -hzero -em -ef -hnoacc")
 
 set(NETCDF_PATH "$ENV{NETCDF_DIR}")
 set(PNETCDF_PATH "$ENV{PNETCDF_DIR}")
-set(PIO_FILESYSTEM_HINTS "romio_cb_read=disable")
 string(APPEND CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
 string(APPEND CXX_LIBS " -lstdc++")
 
