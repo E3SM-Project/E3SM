@@ -39,12 +39,12 @@ inline void pam_feedback_compute_tendencies( pam::PamCoupler &coupler , real gcm
   auto rho_i = dm_device.get<real,4>("ice"        );
   //------------------------------------------------------------------------------------------------
   // Get input GCM state
-  auto gcm_ul   = dm_host.get<real const,2>("input_ul").createDeviceCopy();
-  auto gcm_vl   = dm_host.get<real const,2>("input_vl").createDeviceCopy();
-  auto gcm_tl   = dm_host.get<real const,2>("input_tl").createDeviceCopy();
-  auto gcm_ql   = dm_host.get<real const,2>("input_ql").createDeviceCopy();
-  auto gcm_qccl = dm_host.get<real const,2>("input_qccl").createDeviceCopy();
-  auto gcm_qiil = dm_host.get<real const,2>("input_qiil").createDeviceCopy();
+  auto gcm_ul = dm_host.get<real const,2>("input_ul").createDeviceCopy();
+  auto gcm_vl = dm_host.get<real const,2>("input_vl").createDeviceCopy();
+  auto gcm_tl = dm_host.get<real const,2>("input_tl").createDeviceCopy();
+  auto gcm_qv = dm_host.get<real const,2>("input_ql").createDeviceCopy();
+  auto gcm_qc = dm_host.get<real const,2>("input_qccl").createDeviceCopy();
+  auto gcm_qi = dm_host.get<real const,2>("input_qiil").createDeviceCopy();
   //------------------------------------------------------------------------------------------------
   // Create arrays to hold the current column average of the CRM internal columns
   real2d crm_hmean_uvel ("crm_hmean_uvel" ,crm_nz,nens);
@@ -98,12 +98,12 @@ inline void pam_feedback_compute_tendencies( pam::PamCoupler &coupler , real gcm
     int k_crm = gcm_nlev-1-k_gcm;
     // avoid coupling top 2 layers (things get weird up there)
     if (k_crm<crm_nz-2) {
-      crm_feedback_tend_uvel(k_gcm,iens) = ( crm_hmean_uvel(k_crm,iens) - gcm_ul  (k_gcm,iens) )*r_gcm_dt;
-      crm_feedback_tend_vvel(k_gcm,iens) = ( crm_hmean_vvel(k_crm,iens) - gcm_vl  (k_gcm,iens) )*r_gcm_dt;
-      crm_feedback_tend_dse (k_gcm,iens) = ( crm_hmean_temp(k_crm,iens) - gcm_tl  (k_gcm,iens) )*r_gcm_dt * cp_d;
-      crm_feedback_tend_qv  (k_gcm,iens) = ( crm_hmean_qv  (k_crm,iens) - gcm_ql  (k_gcm,iens) )*r_gcm_dt;
-      crm_feedback_tend_ql  (k_gcm,iens) = ( crm_hmean_ql  (k_crm,iens) - gcm_qccl(k_gcm,iens) )*r_gcm_dt;
-      crm_feedback_tend_qi  (k_gcm,iens) = ( crm_hmean_qi  (k_crm,iens) - gcm_qiil(k_gcm,iens) )*r_gcm_dt;
+      crm_feedback_tend_uvel(k_gcm,iens) = ( crm_hmean_uvel(k_crm,iens) - gcm_ul(k_gcm,iens) )*r_gcm_dt;
+      crm_feedback_tend_vvel(k_gcm,iens) = ( crm_hmean_vvel(k_crm,iens) - gcm_vl(k_gcm,iens) )*r_gcm_dt;
+      crm_feedback_tend_dse (k_gcm,iens) = ( crm_hmean_temp(k_crm,iens) - gcm_tl(k_gcm,iens) )*r_gcm_dt * cp_d;
+      crm_feedback_tend_qv  (k_gcm,iens) = ( crm_hmean_qv  (k_crm,iens) - gcm_qv(k_gcm,iens) )*r_gcm_dt;
+      crm_feedback_tend_ql  (k_gcm,iens) = ( crm_hmean_ql  (k_crm,iens) - gcm_qc(k_gcm,iens) )*r_gcm_dt;
+      crm_feedback_tend_qi  (k_gcm,iens) = ( crm_hmean_qi  (k_crm,iens) - gcm_qi(k_gcm,iens) )*r_gcm_dt;
     } else {
       crm_feedback_tend_uvel(k_gcm,iens) = 0.;
       crm_feedback_tend_vvel(k_gcm,iens) = 0.;
