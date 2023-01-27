@@ -267,6 +267,7 @@
       <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
       <arg flag="-q" name="$JOB_QUEUE"/>
       <arg flag="--account" name="$PROJECT"/>
+      <arg flag="--cluster-constraint='green'"/>
     </submit_args>
     <directives>
       <directive> --job-name={{ job_id }}</directive>

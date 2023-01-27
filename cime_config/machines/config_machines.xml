@@ -104,55 +104,40 @@
         <command name="unload">cray-hdf5</command>
         <command name="unload">cray-netcdf</command>
         <command name="unload">cray-netcdf-hdf5parallel</command>
-        <command name="load">craype/2.7.12</command>
-      </modules>
-      <modules compiler="intel">
-        <command name="rm">PrgEnv-gnu</command>
-        <command name="rm">PrgEnv-cray</command>
-        <command name="load">PrgEnv-intel/8.1.0</command>
-        <command name="swap">intel/19.1.0.166</command>
+        <command name="load">craype/2.7.15</command>
       </modules>
       <modules compiler="gnu">
         <command name="unload">PrgEnv-cray</command>
-        <command name="load">PrgEnv-gnu/8.1.0</command>
-        <command name="swap">gcc/9.3.0</command>
+        <command name="unload">PrgEnv-gnu</command>
+        <command name="load">PrgEnv-gnu/8.3.3</command>
+        <command name="swap">gcc/12.1.0</command>
       </modules>
       <modules compiler="cray">
-        <command name="unload">PrgEnv-intel</command>
         <command name="unload">PrgEnv-gnu</command>
         <command name="load">gcc/9.3.0</command>
-        <command name="load">PrgEnv-cray/8.1.0</command>
+        <command name="load">PrgEnv-cray/8.3.3</command>
         <command name="rm">darshan</command>
       </modules>
-      <modules compiler="!intel">
-        <command name="swap">cray-libsci/21.06.1.1</command>
-      </modules>
       <modules>
-        <command name="load">cray-mpich/8.1.11</command>
-        <command name="load">cray-hdf5-parallel/1.12.0.7</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.7.4.7</command>
-        <command name="load">cray-parallel-netcdf/1.12.1.7</command>
+        <command name="load">cray-mpich/8.1.16</command>
+        <command name="load">cray-hdf5-parallel/1.12.1.3</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.8.1.3</command>
+        <command name="load">cray-parallel-netcdf/1.12.2.3</command>
       </modules>
-    </module_system>
+    </module_system>    
 
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
     <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
-      <env name="PERL5LIB">/usr/lib/perl5/5.26.1</env>
-      <env name="NETCDF_C_PATH">opt/cray/pe/netcdf-hdf5parallel/4.7.4.4/gnu/9.1/</env>
-      <env name="NETCDF_FORTRAN_PATH">opt/cray/pe/netcdf-hdf5parallel/4.7.4.4/gnu/9.1/</env>
+      <env name="PERL5LIB">/usr/lib/perl5/5.26.2</env>
+      <env name="NETCDF_C_PATH">/opt/cray/pe/netcdf-hdf5parallel/4.8.1.3/gnu/9.1/</env>
+      <env name="NETCDF_FORTRAN_PATH">/opt/cray/pe/netcdf-hdf5parallel/4.8.1.3/gnu/9.1/</env>
       <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
-    </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="intel" MAX_TASKS_PER_NODE="!128">
-      <env name="KMP_AFFINITY">granularity=core,balanced</env>
-    </environment_variables>
-    <environment_variables SMP_PRESENT="TRUE" compiler="intel" MAX_TASKS_PER_NODE="128">
-      <env name="KMP_AFFINITY">granularity=thread,balanced</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="gnu">
       <env name="OMP_PLACES">cores</env>
