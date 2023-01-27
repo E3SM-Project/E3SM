@@ -31,6 +31,7 @@ module DUSTMod
   use ColumnType           , only : col_pp
   use ColumnDataType       , only : col_ws
   use VegetationType       , only : veg_pp
+  use shr_dust_mod         , only : dust_emis_scheme
   !
   ! !PUBLIC TYPES
   implicit none
@@ -92,6 +93,8 @@ contains
     call this%InitHistory  (bounds)
     call this%InitCold     (bounds)
     call this%InitDustVars (bounds)
+
+    write(iulog,*) "elm, DUSTMod.F90, Init: dust_emis_scheme = ",dust_emis_scheme
 
   end subroutine Init
 
