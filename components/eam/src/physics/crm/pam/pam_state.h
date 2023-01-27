@@ -264,8 +264,8 @@ inline void pam_state_copy_to_host( pam::PamCoupler &coupler ) {
   crm_rho_d         .deep_copy_to( host_state_rho_dry       );
   tmp_qv            .deep_copy_to( host_state_qv            );
   tmp_qc            .deep_copy_to( host_state_qc            );
-  tmp_qr            .deep_copy_to( host_state_qi            );
-  tmp_qi            .deep_copy_to( host_state_qr            );
+  tmp_qi            .deep_copy_to( host_state_qi            );
+  tmp_qr            .deep_copy_to( host_state_qr            );
   crm_num_c         .deep_copy_to( host_state_nc            );
   crm_num_r         .deep_copy_to( host_state_nr            );
   crm_num_i         .deep_copy_to( host_state_ni            );
