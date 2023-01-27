@@ -85,6 +85,7 @@ subroutine crm_history_init(species_class)
    character(8)                   :: unit
 #endif
 
+   character(len=10),dimension(3) :: dims_rad_3D = (/'crm_nx_rad','crm_ny_rad','crm_nz    '/)
    character(len=6), dimension(3) :: dims_crm_3D = (/'crm_nx','crm_ny','crm_nz'/)
    character(len=6), dimension(2) :: dims_crm_2D = (/'crm_nx','crm_ny'/)
 
@@ -142,6 +143,13 @@ subroutine crm_history_init(species_class)
       call addfld('CRM_NI  ',dims_crm_3D, 'A', '/kg',  'Cloud ice crystal number from CRM' )
       call addfld('CRM_NR  ',dims_crm_3D, 'A', '/kg',  'Rain particle number from CRM' )
    endif
+
+   !----------------------------------------------------------------------------
+   ! CRM radiation columns
+   call addfld('CRM_RAD_T' ,dims_rad_3D, 'A', 'K',     'CRM rad column temperature' )
+   call addfld('CRM_RAD_QV',dims_rad_3D, 'A', 'kg/kg', 'CRM rad column water vapor' )
+   call addfld('CRM_RAD_QC',dims_rad_3D, 'A', 'kg/kg', 'CRM rad column cloud liquid' )
+   call addfld('CRM_RAD_QI',dims_rad_3D, 'A', 'kg/kg', 'CRM rad column cloud ice' )
 
    !----------------------------------------------------------------------------
    ! ECPP output variables
@@ -438,6 +446,13 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
       call outfld('CRM_NR ',crm_state%nr(icol_beg:icol_end,:,:,:), ncol, lchnk )
       call outfld('CRM_QR ',crm_state%qr(icol_beg:icol_end,:,:,:), ncol, lchnk )
    endif
+
+   !----------------------------------------------------------------------------
+   ! CRM radiation columns
+   call outfld('CRM_RAD_T' ,crm_rad%temperature(icol_beg:icol_end,:,:,:), ncol, lchnk )
+   call outfld('CRM_RAD_QV',crm_rad%qv         (icol_beg:icol_end,:,:,:), ncol, lchnk )
+   call outfld('CRM_RAD_QC',crm_rad%qc         (icol_beg:icol_end,:,:,:), ncol, lchnk )
+   call outfld('CRM_RAD_QI',crm_rad%qi         (icol_beg:icol_end,:,:,:), ncol, lchnk )
 
    !----------------------------------------------------------------------------
    ! CRM domain average condensate and precipitation
