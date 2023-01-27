@@ -11,9 +11,17 @@ set(PAM_DRIVER_SRC
 add_library(pam_driver 
            ${PAM_DRIVER_SRC})
 
-if (${USE_CUDA})
-  # PAM will be CUDA-linked with device symbols resolved at library creation
-  set_target_properties(pam_driver PROPERTIES LINKER_LANGUAGE CUDA CUDA_SEPARABLE_COMPILATION OFF CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+if (DEFINED PAM_CUDA)
+  if (${USE_CUDA})
+    # PAM will be CUDA-linked with device symbols resolved at library creation
+    set_target_properties(pam_driver
+                          PROPERTIES
+                          LINKER_LANGUAGE
+                          CUDA
+                          CUDA_SEPARABLE_COMPILATION OFF
+                          CUDA_RESOLVE_DEVICE_SYMBOLS ON
+                         )
+  endif()
 endif()
 
 set(PAM_DYCORE awfl)
