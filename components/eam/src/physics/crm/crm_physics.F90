@@ -1429,6 +1429,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
 
       call pam_set_option('is_first_step', (nstep<=1) )
 
+      call pam_register_dimension('gcm_lev',pver)
+
       call t_startf ('crm_call')
       call pam_driver()
       call t_stopf('crm_call')

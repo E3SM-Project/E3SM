@@ -17,7 +17,7 @@
 
 
 // Compute feedback tendencies for the GCM
-inline void pam_feedback_compute_crm_feedback_tendencies( pam::PamCoupler &coupler , real gcm_dt ) {
+inline void pam_feedback_compute_tendencies( pam::PamCoupler &coupler , real gcm_dt ) {
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
   using yakl::atomicAdd;
@@ -77,13 +77,21 @@ inline void pam_feedback_compute_crm_feedback_tendencies( pam::PamCoupler &coupl
     atomicAdd( crm_hmean_qi  (k_crm,iens),(rho_i(k_crm,j,i,iens)/tmp_rho) * r_nx_ny );
   });
   //------------------------------------------------------------------------------------------------
+  // Create arrays to hold the feedback tendencies
+  dm_device.register_and_allocate<real>("crm_feedback_tend_uvel", "feedback tendency of uvel", {gcm_nlev,nens},{"gcm_lev","nens"});
+  dm_device.register_and_allocate<real>("crm_feedback_tend_vvel", "feedback tendency of vvel", {gcm_nlev,nens},{"gcm_lev","nens"});
+  dm_device.register_and_allocate<real>("crm_feedback_tend_dse" , "feedback tendency of dse",  {gcm_nlev,nens},{"gcm_lev","nens"});
+  dm_device.register_and_allocate<real>("crm_feedback_tend_qv"  , "feedback tendency of qv",   {gcm_nlev,nens},{"gcm_lev","nens"});
+  dm_device.register_and_allocate<real>("crm_feedback_tend_ql"  , "feedback tendency of ql",   {gcm_nlev,nens},{"gcm_lev","nens"});
+  dm_device.register_and_allocate<real>("crm_feedback_tend_qi"  , "feedback tendency of qi",   {gcm_nlev,nens},{"gcm_lev","nens"});
+  auto crm_feedback_tend_uvel = dm_device.get<real,2>("crm_feedback_tend_uvel");
+  auto crm_feedback_tend_vvel = dm_device.get<real,2>("crm_feedback_tend_vvel");
+  auto crm_feedback_tend_dse  = dm_device.get<real,2>("crm_feedback_tend_dse");
+  auto crm_feedback_tend_qv   = dm_device.get<real,2>("crm_feedback_tend_qv");
+  auto crm_feedback_tend_ql   = dm_device.get<real,2>("crm_feedback_tend_ql");
+  auto crm_feedback_tend_qi   = dm_device.get<real,2>("crm_feedback_tend_qi");
+  //------------------------------------------------------------------------------------------------
   // Compute feedback tendencies
-  real2d crm_feedback_tend_uvel("crm_feedback_tend_uvel",gcm_nlev,nens);
-  real2d crm_feedback_tend_vvel("crm_feedback_tend_vvel",gcm_nlev,nens);
-  real2d crm_feedback_tend_dse ("crm_feedback_tend_dse" ,gcm_nlev,nens);
-  real2d crm_feedback_tend_qv  ("crm_feedback_tend_qv"  ,gcm_nlev,nens);
-  real2d crm_feedback_tend_ql  ("crm_feedback_tend_ql"  ,gcm_nlev,nens);
-  real2d crm_feedback_tend_qi  ("crm_feedback_tend_qi"  ,gcm_nlev,nens);
   real cp_d = coupler.get_option<real>("cp_d");
   real r_gcm_dt = 1._fp / gcm_dt;  // precompute reciprocal to avoid costly divisions
   parallel_for( "Compute CRM feedback tendencies", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
@@ -105,13 +113,32 @@ inline void pam_feedback_compute_crm_feedback_tendencies( pam::PamCoupler &coupl
     }
   });
   //------------------------------------------------------------------------------------------------
-  // Copy the CRM feedback tendencies to host arrays
+}
+
+
+// Compute feedback tendencies for the GCM
+inline void pam_feedback_copy_to_host( pam::PamCoupler &coupler ) {
+  using yakl::c::parallel_for;
+  using yakl::c::SimpleBounds;
+  using yakl::atomicAdd;
+  auto &dm_device = coupler.get_data_manager_device_readwrite();
+  auto &dm_host   = coupler.get_data_manager_host_readwrite();
+  //------------------------------------------------------------------------------------------------
+  auto crm_feedback_tend_uvel = dm_device.get<real,2>("crm_feedback_tend_uvel");
+  auto crm_feedback_tend_vvel = dm_device.get<real,2>("crm_feedback_tend_vvel");
+  auto crm_feedback_tend_dse  = dm_device.get<real,2>("crm_feedback_tend_dse");
+  auto crm_feedback_tend_qv   = dm_device.get<real,2>("crm_feedback_tend_qv");
+  auto crm_feedback_tend_ql   = dm_device.get<real,2>("crm_feedback_tend_ql");
+  auto crm_feedback_tend_qi   = dm_device.get<real,2>("crm_feedback_tend_qi");
+  //------------------------------------------------------------------------------------------------
   auto output_ultend_host  = dm_host.get<real,2>("output_ultend");
   auto output_vltend_host  = dm_host.get<real,2>("output_vltend");
   auto output_sltend_host  = dm_host.get<real,2>("output_sltend");
   auto output_qvltend_host = dm_host.get<real,2>("output_qltend");
   auto output_qcltend_host = dm_host.get<real,2>("output_qcltend");
   auto output_qiltend_host = dm_host.get<real,2>("output_qiltend");
+  //------------------------------------------------------------------------------------------------
+  // Copy the data to host
   crm_feedback_tend_uvel.deep_copy_to(output_ultend_host);
   crm_feedback_tend_vvel.deep_copy_to(output_vltend_host);
   crm_feedback_tend_dse .deep_copy_to(output_sltend_host);
@@ -121,72 +148,4 @@ inline void pam_feedback_compute_crm_feedback_tendencies( pam::PamCoupler &coupl
   //------------------------------------------------------------------------------------------------
 }
 
-
-// Compute horizontal means for feedback tendencies of variables that are not forced
-inline void pam_feedback_compute_crm_mean_state( pam::PamCoupler &coupler ) {
-  using yakl::c::parallel_for;
-  using yakl::c::SimpleBounds;
-  using yakl::atomicAdd;
-  auto &dm_device = coupler.get_data_manager_device_readwrite();
-  auto &dm_host   = coupler.get_data_manager_host_readwrite();
-  int crm_nz      = dm_device.get_dimension_size("z"   );
-  int crm_ny      = dm_device.get_dimension_size("y"   );
-  int crm_nx      = dm_device.get_dimension_size("x"   );
-  int nens        = dm_device.get_dimension_size("nens");
-  int gcm_nlev    = coupler.get_option<int>("gcm_nlev");
-  //------------------------------------------------------------------------------------------------
-  // Get current CRM state
-  auto nc      = dm_device.get<real,4>("cloud_water_num");
-  auto ni      = dm_device.get<real,4>("ice_num");
-  auto qr      = dm_device.get<real,4>("rain");
-  auto nr      = dm_device.get<real,4>("rain_num");
-  auto qm      = dm_device.get<real,4>("ice_rime");
-  auto bm      = dm_device.get<real,4>("ice_rime_vol");
-  //------------------------------------------------------------------------------------------------
-  // Create arrays to hold the current column average of the CRM internal columns
-  real2d nc_mean("nc_mean",gcm_nlev,nens);
-  real2d ni_mean("ni_mean",gcm_nlev,nens);
-  real2d qr_mean("qr_mean",gcm_nlev,nens);
-  real2d nr_mean("nr_mean",gcm_nlev,nens);
-  real2d qm_mean("qm_mean",gcm_nlev,nens);
-  real2d bm_mean("bm_mean",gcm_nlev,nens);
-  //------------------------------------------------------------------------------------------------
-  // We will be essentially reducing a summation to these variables, so initialize them to zero
-  parallel_for("Initialize horzontal means", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
-    nc_mean       (k_gcm,iens) = 0;
-    ni_mean       (k_gcm,iens) = 0;
-    qr_mean       (k_gcm,iens) = 0;
-    nr_mean       (k_gcm,iens) = 0;
-    qm_mean       (k_gcm,iens) = 0;
-    bm_mean       (k_gcm,iens) = 0;
-  });
-  //------------------------------------------------------------------------------------------------
-  // Compute horizontal means
-  real r_nx_ny  = 1._fp / (crm_nx*crm_ny);  // precompute reciprocal to avoid costly divisions
-  parallel_for("Horz mean of CRM state", SimpleBounds<4>(crm_nz,crm_ny,crm_nx,nens), YAKL_LAMBDA (int k_crm, int j, int i, int iens) {
-    int k_gcm = gcm_nlev-1-k_crm;
-    // yakl::atomicAdd ensures only one thread performs an update at a time to avoid data races and wrong answers
-    atomicAdd( nc_mean        (k_gcm,iens), nc        (k_crm,j,i,iens) * r_nx_ny );
-    atomicAdd( ni_mean        (k_gcm,iens), ni        (k_crm,j,i,iens) * r_nx_ny );
-    atomicAdd( qr_mean        (k_gcm,iens), qr        (k_crm,j,i,iens) * r_nx_ny );
-    atomicAdd( nr_mean        (k_gcm,iens), nr        (k_crm,j,i,iens) * r_nx_ny );
-    atomicAdd( qm_mean        (k_gcm,iens), qm        (k_crm,j,i,iens) * r_nx_ny );
-    atomicAdd( bm_mean        (k_gcm,iens), bm        (k_crm,j,i,iens) * r_nx_ny );
-  });
-  //------------------------------------------------------------------------------------------------
-  // Copy the CRM mean data to host arrays
-  auto output_nc_mean   = dm_host.get<real,2>("output_nc_mean");
-  auto output_ni_mean   = dm_host.get<real,2>("output_ni_mean");
-  auto output_qr_mean   = dm_host.get<real,2>("output_qr_mean");
-  auto output_nr_mean   = dm_host.get<real,2>("output_nr_mean");
-  auto output_qm_mean   = dm_host.get<real,2>("output_qm_mean");
-  auto output_bm_mean   = dm_host.get<real,2>("output_bm_mean");
-  nc_mean       .deep_copy_to(output_nc_mean);
-  ni_mean       .deep_copy_to(output_ni_mean);
-  qr_mean       .deep_copy_to(output_qr_mean);
-  nr_mean       .deep_copy_to(output_nr_mean);
-  qm_mean       .deep_copy_to(output_qm_mean);
-  bm_mean       .deep_copy_to(output_bm_mean);
-  //------------------------------------------------------------------------------------------------
-}
 

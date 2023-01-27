@@ -144,8 +144,8 @@ inline void pam_radiation_timestep_aggregation( pam::PamCoupler &coupler ) {
 }
 
 
-// Copy the CRM radiation state into the PAM coupler
-inline void pam_radiation_copy_output_to_gcm( pam::PamCoupler &coupler ) {
+// convert aggregated quantites to means
+inline void pam_radiation_compute_means( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
@@ -177,6 +177,25 @@ inline void pam_radiation_copy_output_to_gcm( pam::PamCoupler &coupler ) {
     rad_ni         (k,j,i,iens) = rad_ni         (k,j,i,iens) / rad_aggregation_cnt(iens);
     rad_cld        (k,j,i,iens) = rad_cld        (k,j,i,iens) / rad_aggregation_cnt(iens);
   });
+  //------------------------------------------------------------------------------------------------
+}
+
+// Copy the CRM radiation state into the PAM coupler
+inline void pam_radiation_copy_output_to_gcm( pam::PamCoupler &coupler ) {
+  using yakl::c::parallel_for;
+  using yakl::c::SimpleBounds;
+  auto &dm_device = coupler.get_data_manager_device_readwrite();
+  auto &dm_host   = coupler.get_data_manager_host_readwrite();
+  //------------------------------------------------------------------------------------------------
+  // get the coupler rad tendency variable
+  auto rad_temperature     = dm_device.get<real,4>("rad_temperature");
+  auto rad_qv              = dm_device.get<real,4>("rad_qv");
+  auto rad_qc              = dm_device.get<real,4>("rad_qc");
+  auto rad_qi              = dm_device.get<real,4>("rad_qi");
+  auto rad_nc              = dm_device.get<real,4>("rad_nc");
+  auto rad_ni              = dm_device.get<real,4>("rad_ni");
+  auto rad_cld             = dm_device.get<real,4>("rad_cld");
+  auto rad_aggregation_cnt = dm_device.get<real,1>("rad_aggregation_cnt");
   //------------------------------------------------------------------------------------------------
   // copy rad column data to host
   auto gcm_rad_temperature = dm_host.get<real,4>("rad_temperature");

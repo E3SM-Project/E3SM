@@ -99,13 +99,13 @@ inline void pam_statistics_timestep_aggregation( pam::PamCoupler &coupler ) {
 
 
 // copy aggregated statistical quantities to host
-inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
+inline void pam_statistics_compute_means( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
   auto nens       = coupler.get_option<int>("ncrms");
-  auto nz         = coupler.get_option<int>("crm_nz");
+  auto crm_nz     = coupler.get_option<int>("crm_nz");
   auto gcm_nlev   = coupler.get_option<int>("gcm_nlev");
   //------------------------------------------------------------------------------------------------
   // convert aggregated values to time means
@@ -115,17 +115,40 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   auto cldfrac         = dm_device.get<real,2>("cldfrac_aggregated");
   auto clear_rh        = dm_device.get<real,2>("clear_rh");
   auto clear_rh_cnt    = dm_device.get<real,2>("clear_rh_cnt");
-  real1d precip_tot("precip_tot",nens);
   parallel_for("finalize aggregated variables", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
     precip_liq(iens) = precip_liq(iens) / aggregation_cnt(iens);
     precip_ice(iens) = precip_ice(iens) / aggregation_cnt(iens);
-    precip_tot(iens) = precip_liq(iens) + precip_ice(iens);
   });
-  parallel_for("Initialize aggregated precipitation", SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
+  parallel_for("Initialize aggregated precipitation", SimpleBounds<2>(crm_nz,nens), YAKL_LAMBDA (int k, int iens) {
     cldfrac(k,iens)  = cldfrac(k,iens)  / aggregation_cnt(iens);
     if (clear_rh_cnt(k,iens)>0) {
       clear_rh(k,iens) = clear_rh(k,iens) / clear_rh_cnt(k,iens);
     }
+  });
+  //------------------------------------------------------------------------------------------------
+}
+
+
+// copy aggregated statistical quantities to host
+inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
+  using yakl::c::parallel_for;
+  using yakl::c::SimpleBounds;
+  auto &dm_device = coupler.get_data_manager_device_readwrite();
+  auto &dm_host   = coupler.get_data_manager_host_readwrite();
+  auto nens       = coupler.get_option<int>("ncrms");
+  auto crm_nz     = coupler.get_option<int>("crm_nz");
+  auto gcm_nlev   = coupler.get_option<int>("gcm_nlev");
+  //------------------------------------------------------------------------------------------------
+  // convert aggregated values to time means
+  auto precip_liq      = dm_device.get<real,1>("precip_liq_aggregated");
+  auto precip_ice      = dm_device.get<real,1>("precip_ice_aggregated");
+  auto cldfrac         = dm_device.get<real,2>("cldfrac_aggregated");
+  auto clear_rh        = dm_device.get<real,2>("clear_rh");
+  //------------------------------------------------------------------------------------------------
+  // calculate total precip
+  real1d precip_tot("precip_tot",nens);
+  parallel_for("finalize aggregated variables", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
+    precip_tot(iens) = precip_liq(iens) + precip_ice(iens);
   });
   //------------------------------------------------------------------------------------------------
   // convert variables to GCM vertical grid
@@ -133,9 +156,9 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   parallel_for("Initialize aggregated precipitation", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
     int k_crm = gcm_nlev-1-k_gcm;
     if (k_crm<crm_nz) {
-      cldfrac_gcm(k_gcm,iens) = cldfrac(k_crm,iens) 
+      cldfrac_gcm(k_gcm,iens) = cldfrac(k_crm,iens);
     } else {
-      cldfrac_gcm(k_gcm,iens) = 0.
+      cldfrac_gcm(k_gcm,iens) = 0.;
     }
   });
   //------------------------------------------------------------------------------------------------
