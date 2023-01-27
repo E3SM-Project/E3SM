@@ -750,6 +750,10 @@
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LIBSCI_DIR}/amd/4.0/x86_64/lib:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
 
+    <environment_variables>
+      <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
+    </environment_variables>
+
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
