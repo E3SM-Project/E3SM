@@ -32,8 +32,8 @@ if (NOT Kokkos_ENABLE_SERIAL)
   message(FATAL_ERROR "Homme's composef90 library requires Kokkos_ENABLE_SERIAL=ON.")
 endif()
 
-# We DON'T want homme's pio support, so force this option
-set(BUILD_HOMME_WITHOUT_PIOLIBRARY ON  CACHE BOOL "" FORCE)
+# We need homme's pio support for RRM grids, so force this option
+set(BUILD_HOMME_WITHOUT_PIOLIBRARY OFF CACHE BOOL "" FORCE)
 
 # Only enable openMP in homme if Kokkos has openmp
 option (ENABLE_OPENMP "OpenMP across elements" ${Kokkos_ENABLE_OPENMP})
