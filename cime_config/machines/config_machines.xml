@@ -610,7 +610,6 @@
       <arguments>
         <arg name="num_tasks"> -l -K -n {{ total_tasks }} -N {{ num_nodes }} </arg>
         <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
-        <arg name="distribution">-m *:block</arg>
         <arg name="ntasks_per_gpu">$ENV{NTASKS_PER_GPU}</arg>
         <arg name="gpu_bind">$ENV{GPU_BIND_ARGS}</arg>
       </arguments>
