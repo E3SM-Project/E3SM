@@ -537,7 +537,7 @@ contains
          !$omp end do
          !$omp end parallel
       endif ! isomipOn
-      
+
       if (jenkinsOn .or. hollandJenkinsOn) then
          if(useHollandJenkinsAdvDiff) then
             ! melting solution
