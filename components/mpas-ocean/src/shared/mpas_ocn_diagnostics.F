@@ -3354,7 +3354,9 @@ contains
 
       !-----------------------------------------------------------------
 
-      if ( trim(config_land_ice_flux_mode) .ne. 'standalone' .and. trim(config_land_ice_flux_mode) .ne. 'coupled' ) then
+      if (( trim(config_land_ice_flux_mode) == "off" ) .or.  &
+          ( trim(config_land_ice_flux_mode) == "pressure_only")) then
+         ! nothing to do here
          return
       end if
 
@@ -3390,9 +3392,9 @@ contains
       !$omp end do
 #endif
 
-      ! compute top drag magnitude and friction velocity at cell centers
+      ! compute top drag magnitude at cell centers
 #ifdef MPAS_OPENACC
-      !$acc parallel loop present(landIceFrictionVelocity, kineticEnergyCell, minLevelCell, topDragMag) &
+      !$acc parallel loop present(kineticEnergyCell, minLevelCell, topDragMag) &
       !$acc    present(landIceFraction)
 #else
       !$omp do schedule(runtime)
@@ -3401,7 +3403,28 @@ contains
          ! the magnitude of the top drag is CD*u**2 = CD*(2*KE)
          topDragMag(iCell) = rho_sw * landIceFraction(iCell) &
                            * 2.0_RKIND * landIceTopDragCoeff *  kineticEnergyCell(minLevelCell(iCell),iCell)
+      end do
+#ifndef MPAS_OPENACC
+      !$omp end do
+      !$omp end parallel
+#endif
 
+      if ( trim(config_land_ice_flux_mode) == "data" ) then
+         ! top drag is set, and that's all we need in data (prescribed) mode
+         call mpas_timer_stop("land_ice_diagnostic_fields")
+         return
+      end if
+
+      ! From here on, were in "standalone" or "coupled" mode
+
+      ! compute friction velocity at cell centers
+#ifdef MPAS_OPENACC
+      !$acc parallel loop present(landIceFrictionVelocity, kineticEnergyCell, minLevelCell) &
+#else
+      !$omp parallel
+      !$omp do schedule(runtime)
+#endif
+      do iCell = 1, nCellsAll
          ! the friction velocity is the square root of the top drag + variance of tidal velocity
          ! (computed regardless of land-ice coverage)
          landIceFrictionVelocity(iCell) = sqrt(landIceTopDragCoeff * &
