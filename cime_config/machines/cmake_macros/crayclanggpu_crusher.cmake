@@ -14,6 +14,9 @@ string(APPEND CPPDEFS " -DFORTRANUNDERSCORE -DNO_R16 -DCPRCRAY")
 string(APPEND FC_AUTO_R8 " -s real64")
 string(APPEND FFLAGS " -f free -N 255 -h byteswapio -em")
 if (NOT compile_threaded)
+	# -M1077 flag used to suppress message about OpenMP directives
+	# that are ignored for non-threaded builds. (-h omp inactive)
+	# Details: `explain ftn-1077`
   string(APPEND FFLAGS " -M1077")
 endif()
 string(APPEND FFLAGS_NOOPT " -O0")
@@ -35,8 +38,13 @@ if (NOT DEBUG)
 endif()
 
 if (COMP_NAME STREQUAL elm)
+	# See Land NaNs in conditionals: https://github.com/E3SM-Project/E3SM/issues/4996
   string(APPEND FFLAGS " -hfp0")
 endif()
+# -em -ef generates modulename.mod (lowercase files) to support
+# Scorpio installs
+# Disable ipa and zero initialization are for other NaN isues:
+# https://github.com/E3SM-Project/E3SM/pull/5208
 string(APPEND FFLAGS " -hipa0 -hzero -em -ef -hnoacc")
 
 set(NETCDF_PATH "$ENV{NETCDF_DIR}")
