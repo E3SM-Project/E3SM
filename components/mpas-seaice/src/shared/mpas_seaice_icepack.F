@@ -3492,7 +3492,7 @@ contains
        setGetBGCTracers     = config_use_column_biogeochemistry
 
        ! code abort
-       abortFlag = .false.
+       abortFlag = .false. ! DC no place where this gets updated here
        abortMessage = ""
 
        do iCell = 1, nCellsSolve
@@ -3549,7 +3549,8 @@ contains
                fsalt=oceanSaltFlux(iCell), &
                first_ice=newlyFormedIceLogical(:), &
                fzsal=zSalinityFlux(iCell), &
-               flux_bio=oceanBioFluxes(:,iCell)) ! DC no closing argument
+               flux_bio=oceanBioFluxes(:,iCell), & ! DC no closing argument
+               Tf=seaFreezingTemperature(iCell))
 !dc removed unsure          call column_write_warnings(abortFlag)
 
 !dc added unsure          call column_write_warnings(.false.)
