@@ -517,7 +517,7 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
   {
     auto test_filename = input_params.get<std::string>("Filename");
     scorpio::register_file(test_filename,scorpio::Read);
-    Real time_val = scorpio::read_time_at_index_c2f(test_filename.c_str());
+    Real time_val = scorpio::read_curr_time_c2f(test_filename.c_str());
     scorpio::eam_pio_closefile(test_filename);
     Real time_in_days = current_t/86400.; // current_t is in seconds, need to convert to days.
     REQUIRE(time_val==time_in_days);

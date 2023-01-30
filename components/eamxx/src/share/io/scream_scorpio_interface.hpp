@@ -70,7 +70,8 @@ extern "C" {
   int get_dimlen_c2f(const char*&& filename, const char*&& dimname);
   bool has_variable_c2f (const char*&& filename, const char*&& varname);
   /* Query a netCDF file for the time variable */
-  double read_time_at_index_c2f(const char*&& filename, const int& time_index = -1);
+  double read_time_at_index_c2f(const char*&& filename, const int& time_index);
+  double read_curr_time_c2f(const char*&& filename);
 } // extern "C"
 
 // The strings returned by e2str(const FieldTag&) are different from

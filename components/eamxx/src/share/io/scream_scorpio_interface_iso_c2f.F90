@@ -270,6 +270,21 @@ contains
 
   end function has_variable_c2f
 !=====================================================================!
+  function read_curr_time_c2f(filename_in) result(val) bind(c)
+    use scream_scorpio_interface, only : read_time_at_index
+    use scream_scorpio_interface, only : get_dimlen
+    type(c_ptr), intent(in)                :: filename_in
+    real(kind=c_double)                    :: val
+
+    integer            :: time_index
+    character(len=256) :: filename
+
+    call convert_c_string(filename_in,filename)
+    time_index = get_dimlen(filename,trim("time"))
+    val        = read_time_at_index(filename,time_index)
+
+  end function read_curr_time_c2f
+!=====================================================================!
   function read_time_at_index_c2f(filename_in,time_index) result(val) bind(c)
     use scream_scorpio_interface, only : read_time_at_index
     type(c_ptr), intent(in)                :: filename_in
@@ -279,7 +294,7 @@ contains
     character(len=256) :: filename
 
     call convert_c_string(filename_in,filename)
-    val =  read_time_at_index(filename,time_index)
+    val = read_time_at_index(filename,time_index)
 
   end function read_time_at_index_c2f
 !=====================================================================!

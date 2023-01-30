@@ -1374,14 +1374,21 @@ contains
     
     type(pio_atm_file_t), pointer :: pio_atm_file
     logical                       :: found
-    integer                       :: ierr
+    integer                       :: dim_id, time_len, ierr
     type(var_desc_t)              :: varid ! netCDF variable ID
     integer                       :: strt(1), cnt(1)
 
     call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
-    if (.not.found) call errorHandle("pio_inq_dimlen ERROR: File "//trim(filename)//" not found",-999)
+    if (.not.found) call errorHandle("read_time_at_index ERROR: File "//trim(filename)//" not found",-999)
     ierr = PIO_inq_varid(pio_atm_file%pioFileDesc,"time",varid)
     call errorHandle('read_time_at_index: Error finding variable ID for "time" in file '//trim(filename)//'.',ierr);
+
+    ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim("time"),dim_id)
+    call errorHandle("read_time_at_index ERROR: dimension 'time' not found in file "//trim(filename)//".",ierr)
+    ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,dim_id,time_len)
+    if (time_index .gt. time_len) then
+      call errorHandle("read_time_at_index ERROR: time_index arg larger than length of time dimension",-999)
+    end if
 
     if (time_index .gt. 0) then
       strt(1) = time_index
