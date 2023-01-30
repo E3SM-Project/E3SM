@@ -270,6 +270,19 @@ contains
 
   end function has_variable_c2f
 !=====================================================================!
+  function read_time_at_index_c2f(filename_in,time_index) result(val) bind(c)
+    use scream_scorpio_interface, only : read_time_at_index
+    type(c_ptr), intent(in)                :: filename_in
+    integer(kind=c_int), intent(in)        :: time_index ! zero-based
+    real(kind=c_double)                    :: val
+
+    character(len=256) :: filename
+
+    call convert_c_string(filename_in,filename)
+    val =  read_time_at_index(filename,time_index)
+
+  end function read_time_at_index_c2f
+!=====================================================================!
   subroutine eam_pio_enddef_c2f(filename_in) bind(c)
     use scream_scorpio_interface, only : eam_pio_enddef
     type(c_ptr), intent(in) :: filename_in
