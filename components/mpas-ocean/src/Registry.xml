@@ -1472,15 +1472,15 @@
 					description="Disables tendencies on the velocity field from the Coriolis force and momentum advection."
 					possible_values=".true. or .false."
 		/>
-                <nml_option name="config_disable_vvel_all_tend" type="logical" default_value=".false." units="unitless"
+                <nml_option name="config_disable_vvel_all_tend" type="logical" default_value=".false."
                                         description="Disables all tendencies on the vertical velocity field."
                                         possible_values=".true. or .false."
                 />
-                <nml_option name="config_disable_vvel_coriolis" type="logical" default_value=".false." units="unitless"
+                <nml_option name="config_disable_vvel_coriolis" type="logical" default_value=".false."
                                         description="Disables tendencies on the vertical velocity field from the Coriolis force."
                                         possible_values=".true. or .false."
                 />
-                <nml_option name="config_disable_vvel_adv" type="logical" default_value=".false." units="unitless"
+                <nml_option name="config_disable_vvel_adv" type="logical" default_value=".false."
                                         description="Disables advection of vertical velocity"
                                         possible_values=".true. or .false."
                 />
@@ -2615,13 +2615,6 @@
 			 description="time tendency of sea-surface height"
 			 packages="forwardMode"
 		/>
-                <var name="tendTKE" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-3}" name_in_code="tendTKE"
-                         description="time tendency of turbulence kinetic energy"
-                         packages="forwardMode"
-                />
-                <var name="tendglsPsi" type="real" dimensions="nVertLevels nCells Time" units="m^2 s^{-4}" name_in_code="tendglsPsi"
-                         description="time tendency of psi variable from Umlauf and Burchard (2003)"
-                />
 		<var name="tendHighFreqThickness" type="real" dimensions="nVertLevels nCells Time" units="m s^-1" name_in_code="highFreqThickness"
 			 description="time tendency of high frequency-filtered layer thickness"
 			 missing_value="FILLVAL" missing_value_mask="cellMask"
@@ -3082,18 +3075,6 @@
 			 description="vertical viscosity defined at the cell center (horizontally) and top (vertically)"
 			 packages="forwardMode;analysisMode"
 		/>
-                <var name="dynamicViscosity" type="real" dimensions="nVertLevelsP1 nCells Time" units="Ns/m^2"
-                         description="dynamic viscosity of water as a function of temperature and salinity"
-                         packages="forwardMode;analysisMode"
-                />
-                <var name="uStar" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
-                  	 description="stress velocity for wall bounded flows"
-                  	 packages="forwardMode;analysisMode"
-    		/>
-    		<var name="yPlus" type="real" dimensions="nVertLevels nCells Time" units="m"
-       			 description="boundary normal coordinate"
-      		         packages="forwardMode;analysisMode"
-    		/>
 		<var name="vertDiffTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^-1"
 			 description="vertical diffusion defined at the cell center (horizontally) and top (vertically)"
 			 packages="forwardMode;analysisMode"
@@ -3162,27 +3143,6 @@
 		<var name="dThreshMLD" type="real" dimensions="nCells Time" units="m"
 			description="mixed layer depth based on density threshold"
 		/>
-                <var name="ugrad" type="real" dimensions="R3 nVertLevels nCells Time" units="s^{-1}"
-                        description="three-dimensional gradient of zonal velocity"
-                />
-                <var name="vgrad" type="real" dimensions="R3 nVertLevels nCells Time" units="s^{-1}"
-                        description="three-dimensional gradient of meridional velocity"
-                />
-                <var name="wgrad" type="real" dimensions="R3 nVertLevels nCells Time" units="s^{-1}"
-                        description="three-dimensional gradient of vertical velocity"
-                />
-                <var name="tgrad" type="real" dimensions="R3 nVertLevels nCells Time" units="s^{-1}"
-                        description="three-dimensional gradient of temperature"
-                />
-                <var name="sgrad" type="real" dimensions="R3 nVertLevels nCells Time" units="s^{-1}"
-                        description="three-dimensional gradient of salinity"
-                />
-                <var name="Sh" type="real" dimensions="nVertLevels nCells Time" units="unitless"
-                        description="Structure function for heat and salt -- may want to consider separating at some point"
-                />
-                <var name="Sm" type="real" dimensions="nVertLevels nCells Time" units="unitless"
-                        description="Structure function for momentum"
-                />
 		<var name="slopeTriadUp" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional" default_value="0.0"
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
 			 packages="forwardMode;analysisMode"
