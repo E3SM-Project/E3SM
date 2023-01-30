@@ -1767,41 +1767,46 @@ module li_calving
           ! the row of cells that are adjacent to invalid velocity will have garbage strain rates and vM stress
           ! so extrapolate into those cells from their valid neighbors
           do iCell = 1,nCells
-             badCell = .false.
-             do iNeighbor = 1, nEdgesOnCell(iCell)
-                jCell = cellsOnCell(iNeighbor, iCell)
-                if (surfaceSpeed(jCell) == 0.0_RKIND) then
-                   ! if one neighbor has a 0 velo, the stress here is bad
-                   badCell = .true.
-                   exit ! no need to keep looping over neighbors
-                endif
-             enddo
-             if (badCell) then
-                vMsum = 0.0_RKIND
-                nGoodNeighbors = 0
+             if (surfaceSpeed(iCell) == 0.0_RKIND) then
+                vonMisesStress(iCell) = 0.0_RKIND  ! remove the vM calculation where there is no velocity - garbage can occur here
+             else
+                ! only clean up cells that have a valid velocity - cells outside the solution can be left alone
+                badCell = .false.
                 do iNeighbor = 1, nEdgesOnCell(iCell)
                    jCell = cellsOnCell(iNeighbor, iCell)
-                   badNeighbor = .false.
-                   do jNeighbor = 1, nEdgesOnCell(jCell)
-                      kCell = cellsOnCell(jNeighbor, jCell)
-                      if (surfaceSpeed(kCell) == 0.0_RKIND) then
-                         ! if one neighbor of this neighbor has a 0 velo, this neighbor is not to be used
-                         badNeighbor = .true.
-                         exit
-                      endif
-                   enddo
-                   if (.not. badNeighbor) then
-                      ! if this neighbor has a usable stress, accumulate its value for averaging
-                      vMsum = vMsum + vonMisesStress(jCell)
-                      nGoodNeighbors = nGoodNeighbors + 1
+                   if (surfaceSpeed(jCell) == 0.0_RKIND) then
+                      ! if one neighbor has a 0 velo, the stress here is bad
+                      badCell = .true.
+                      exit ! no need to keep looping over neighbors
                    endif
                 enddo
-                if (nGoodNeighbors > 0) then
-                   vonMisesStress(iCell) = vMsum / real(nGoodNeighbors, kind=RKIND)
-                else
-                   call mpas_log_write('oops, extrapolation failed for von mises stress', MPAS_LOG_WARN)
-                endif
-             endif ! if badCell
+                if (badCell) then
+                   vMsum = 0.0_RKIND
+                   nGoodNeighbors = 0
+                   do iNeighbor = 1, nEdgesOnCell(iCell)
+                      jCell = cellsOnCell(iNeighbor, iCell)
+                      badNeighbor = .false.
+                      do jNeighbor = 1, nEdgesOnCell(jCell)
+                         kCell = cellsOnCell(jNeighbor, jCell)
+                         if (surfaceSpeed(kCell) == 0.0_RKIND) then
+                            ! if one neighbor of this neighbor has a 0 velo, this neighbor is not to be used
+                            badNeighbor = .true.
+                            exit
+                         endif
+                      enddo
+                      if (.not. badNeighbor) then
+                         ! if this neighbor has a usable stress, accumulate its value for averaging
+                         vMsum = vMsum + vonMisesStress(jCell)
+                         nGoodNeighbors = nGoodNeighbors + 1
+                      endif
+                   enddo
+                   if (nGoodNeighbors > 0) then
+                      vonMisesStress(iCell) = vMsum / real(nGoodNeighbors, kind=RKIND)
+                   else
+                      call mpas_log_write('oops, extrapolation failed for von mises stress', MPAS_LOG_WARN)
+                   endif
+                endif ! if badCell
+             endif ! if velo>0
           enddo
 
           do iCell = 1,nCells
