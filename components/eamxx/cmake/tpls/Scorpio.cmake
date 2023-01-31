@@ -58,12 +58,12 @@ macro (CreateScorpioTargets)
     ######################
 
     # Look for piof lib in INSTALL_SHAREDPATH/lib
-    find_library(SCORPIO_F_LIB piof REQUIRED PATHS ${INSTALL_SHAREDPATH}/lib)
+    find_library(SCORPIO_F_LIB piof REQUIRED PATHS ${SCORPIO_LIB_DIR})
 
     # Create the interface library, and set target properties
     add_library(piof INTERFACE)
-    target_link_libraries (pioc INTERFACE ${SCORPIO_F_LIB} ${netcdf_f_lib} pioc)
-    target_include_directories (pioc INTERFACE ${SCORPIO_INC_DIR} ${netcdf_f_incdir} )
+    target_link_libraries (piof INTERFACE ${SCORPIO_F_LIB} ${netcdf_f_lib} pioc)
+    target_include_directories (piof INTERFACE ${SCORPIO_INC_DIR} ${netcdf_f_incdir} )
 
   else ()
     # Not a CIME build. We'll add scorpio as a subdir
