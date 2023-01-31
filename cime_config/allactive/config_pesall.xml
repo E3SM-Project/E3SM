@@ -781,6 +781,46 @@
     </mach>
   </grid>
   <grid name="a%ne120np4">
+    <mach name="pm-cpu|alvarez">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.*" pesize="any">
+        <comment>ne120-wcycl on 42 nodes 128x1c8 ~0.7 sypd</comment>
+        <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>256</MAX_TASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>3072</ntasks_atm>
+          <ntasks_cpl>384</ntasks_cpl>
+          <ntasks_ice>3072</ntasks_ice>
+          <ntasks_lnd>2560</ntasks_lnd>
+          <ntasks_rof>512</ntasks_rof>
+          <ntasks_ocn>2304</ntasks_ocn>
+          <ntasks_glc>1</ntasks_glc>
+          <ntasks_wav>1</ntasks_wav>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>1</nthrds_atm>
+          <nthrds_cpl>1</nthrds_cpl>
+          <nthrds_ice>1</nthrds_ice>
+          <nthrds_lnd>1</nthrds_lnd>
+          <nthrds_rof>1</nthrds_rof>
+          <nthrds_ocn>1</nthrds_ocn>
+          <nthrds_glc>1</nthrds_glc>
+          <nthrds_wav>1</nthrds_wav>
+        </nthrds>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_cpl>0</rootpe_cpl>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_lnd>0</rootpe_lnd>
+          <rootpe_rof>2560</rootpe_rof>
+          <rootpe_ocn>3072</rootpe_ocn>
+          <rootpe_glc>0</rootpe_glc>
+          <rootpe_wav>0</rootpe_wav>
+        </rootpe>
+        <pstrid>
+          <pstrid_cpl>8</pstrid_cpl>
+        </pstrid>
+      </pes>
+    </mach>
     <mach name="theta">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.*" pesize="any">
         <comment>ne120-wcycl on 145 nodes, MPI-only</comment>
@@ -1225,16 +1265,16 @@
         <comment>anvil: --compset BGC* --res ne30pg2_r05_EC30to60E2r2 on 30 nodes pure-MPI, ~3 sypd </comment>
         <ntasks>
           <ntasks_atm>675</ntasks_atm>
-          <ntasks_lnd>144</ntasks_lnd>
-          <ntasks_rof>144</ntasks_rof>
-          <ntasks_ice>540</ntasks_ice>
+          <ntasks_lnd>684</ntasks_lnd>
+          <ntasks_rof>684</ntasks_rof>
+          <ntasks_ice>684</ntasks_ice>
           <ntasks_ocn>396</ntasks_ocn>
           <ntasks_cpl>684</ntasks_cpl>
         </ntasks>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>540</rootpe_lnd>
-          <rootpe_rof>540</rootpe_rof>
+          <rootpe_lnd>0</rootpe_lnd>
+          <rootpe_rof>0</rootpe_rof>
           <rootpe_ice>0</rootpe_ice>
           <rootpe_ocn>684</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>

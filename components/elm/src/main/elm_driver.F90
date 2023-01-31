@@ -1108,21 +1108,20 @@ contains
                     filter(nc)%num_soilp, filter(nc)%soilp, &
                     cnstate_vars)
              end if
+             
+             if (use_fates_sp) then
+               call SatellitePhenology(bounds_clump,               &
+               filter_inactive_and_active(nc)%num_soilp, filter_inactive_and_active(nc)%soilp,    &
+               waterstate_vars, canopystate_vars)
+             endif
+             
           else ! not ( if-use_cn   or if-use_fates)
-
-             if (.not.use_fates_sp .and. doalb) then
+             if (doalb) then
                 ! Prescribed biogeography - prescribed canopy structure, some prognostic carbon fluxes
                 call SatellitePhenology(bounds_clump,               &
                      filter(nc)%num_nolakep, filter(nc)%nolakep,    &
                      waterstate_vars, canopystate_vars)
              end if
-
-             if (use_fates_sp .and. doalb) then
-               call SatellitePhenology(bounds_clump,               &
-               filter_inactive_and_active(nc)%num_soilp, filter_inactive_and_active(nc)%soilp,    &
-               waterstate_vars, canopystate_vars)
-             endif
-
           end if  ! end of if-use_cn   or if-use_fates
        end if ! end of is_active_betr_bgc
 

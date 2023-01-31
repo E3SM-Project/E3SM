@@ -443,7 +443,8 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: &
                                                     landIceInterfaceTracers
 
-      integer, pointer :: indexIT, indexIS
+      integer, pointer :: indexITPtr, indexISPtr
+      integer :: indexIT, indexIS
 
       ! Scratch Arrays
       !---
@@ -475,8 +476,14 @@ contains
       call mpas_pool_get_array(forcingPool, 'heatFluxToLandIce', heatFluxToLandIce)
 
       call mpas_pool_get_array(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracers)
-      call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceTemperature', indexIT)
-      call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceSalinity', indexIS)
+      call mpas_pool_get_dimension(forcingPool, &
+                                'index_landIceInterfaceTemperature', &
+                                 indexITPtr)
+      call mpas_pool_get_dimension(forcingPool, &
+                                'index_landIceInterfaceSalinity', &
+                                 indexISPtr)
+      indexIT = indexITPtr
+      indexIS = indexISPtr
       call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMassNew, 2)
       call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMassOld, 1)
       call mpas_pool_get_array(statePool, 'accumulatedLandIceHeat', accumulatedLandIceHeatNew, 2)
