@@ -1258,7 +1258,7 @@ contains
 !
 
 
-    real(kind=real_kind), intent(in) :: u(nlev)  ! in lat-lon coordinates
+    real(kind=real_kind), intent(in) :: u(nlev)
     real(kind=real_kind), intent(in) :: etam(nlev)
     real(kind=real_kind) :: du_deta(nlev)
 
