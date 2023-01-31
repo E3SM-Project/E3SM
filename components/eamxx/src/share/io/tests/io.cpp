@@ -304,9 +304,7 @@ void run_multisnap(const std::string& output_freq_units) {
     // Check timestamp, note, with multisnap we also verify that we can grab the timestamp at location tt1
     {
       auto test_filename = input_params.get<std::string>("Filename");
-      scorpio::register_file(test_filename,scorpio::Read);
       Real time_val = scorpio::read_time_at_index_c2f(test_filename.c_str(),tt1);
-      scorpio::eam_pio_closefile(test_filename);
       Real time_in_days = current_t/86400.; // current_t is in seconds, need to convert to days.
       REQUIRE(time_val==time_in_days);
     }
