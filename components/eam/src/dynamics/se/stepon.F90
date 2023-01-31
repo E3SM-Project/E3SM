@@ -153,10 +153,6 @@ subroutine stepon_init(dyn_in, dyn_out )
   call addfld('DYN_W'    ,(/ 'ilev' /),'A', 'm/s',  'Vertical velocity',      gridname='GLL')
   call addfld('DYN_Z3'   ,(/ 'ilev' /),'A', 'm',    'Geopotential Height (above sea level)', gridname='GLL')
   call addfld('DYN_MU'   ,(/ 'ilev' /),'A', 'Pa/Pa','dPNH/dPH',               gridname='GLL')
-  ! DYN_PV disabled; vertical structure of the output is corrupt, and
-  ! is not consistent with equivalent output on GLL physics grid 
-  ! Other occurences of DYN_PV also commented out below
-  !call addfld('DYN_PV'    ,(/ 'lev' /), 'A', 'm2 K/kg/s',    'Ertel Potential Vorticity (dyn grid)', gridname='GLL')
 
 end subroutine stepon_init
 
@@ -236,14 +232,13 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use cam_history,     only: outfld, hist_fld_active
    use prim_driver_base,only: applyCAMforcing_tracers
    use prim_advance_mod,only: applyCAMforcing_dynamics
-   use element_ops,     only: get_temperature, get_pot_vort
+   use element_ops,     only: get_temperature
 
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type(physics_tend),  intent(inout) :: phys_tend(begchunk:endchunk)
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
    real(r8) :: temperature(np,np,nlev)   ! Temperature from dynamics
-   real(r8) :: potvort(np,np,nlev)      ! Potential vorticity from dynamics
    integer :: kptr, ie, ic, m, i, j, k, tl_f, tl_fQdp, velcomp
    real(r8) :: rec2dt
    real(r8) :: dp(np,np,nlev),fq,fq0,qn0, ftmp(npsq,nlev,2)
@@ -449,12 +444,6 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          call outfld('DYN_MU',tmp_dyn_i(:,:,:),npsq,ie)
       enddo
    endif
-   !if (hist_fld_active('DYN_PV')) then
-   !   do ie=1,nelemd
-   !      call get_pot_vort(dyn_in%elem(ie),potvort,hvcoord,tl_f)
-   !      call outfld('DYN_PV',potvort,npsq,ie)
-   !   enddo
-   !endif
 
    if (hist_fld_active('FU') .or. hist_fld_active('FV') ) then
       do ie=1,nelemd
