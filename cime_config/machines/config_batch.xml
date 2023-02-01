@@ -651,11 +651,21 @@
     </queues>
    </batch_system>
 
-   <batch_system MACH="gcp" type="slurm" >
+   <batch_system MACH="gcp10" type="slurm" >
      <queues>
-       <queue walltimemax="01:30:00" default="true">compute-30</queue>
-       <queue walltimemax="01:30:00" default="true">computep</queue>	 <!--enable_placement-->
-       <queue walltimemax="01:30:00" default="true">compute</queue>
+       <queue walltimemax="01:30:00" default="true">compute-30</queue> <!--                 0.14214 -->
+       <queue walltimemax="01:30:00" default="true">computep</queue>   <!--enable_placement 0.28428 -->
+       <queue walltimemax="01:30:00" default="true">compute</queue>    <!--                 0.28428 -->
+     </queues>
+   </batch_system>
+
+   <batch_system MACH="gcp12" type="slurm" >
+     <queues>
+       <queue walltimemax="01:30:00" default="true">c2dh112</queue>   <!-- c2d-highcpu-112     1.88984 -->
+       <queue walltimemax="01:30:00" default="true">c2d32</queue>     <!-- c2d-standard-32     0.30794 -->
+       <queue walltimemax="01:30:00" default="true">c2d56</queue>     <!-- c2d-standard-56     0.53889 -->
+       <queue walltimemax="01:30:00" default="true">c2o60</queue>     <!-- "old" c2-compute-60 0.28428 -->
+       <queue walltimemax="01:30:00" default="true">compute</queue>   <!-- c2d-standard-112    1.07776 -->
      </queues>
    </batch_system>
 
