@@ -722,17 +722,6 @@ contains
                 enddo
                 call nf_put_var(ncdf(ios),var3d,start, count, name='w')
              end if
-             if(nf_selectedvar('w', output_varnames)) then
-                 if (par%masterproc) print *,'writing w...'
-                 st=1
-                 do ie=1,nelemd
-                    en=st+elem(ie)%idxp%NumUniquePts-1
-                    call get_field(elem(ie),'w',vartmp,hvcoord,n0,n0_Q)
-                    call UniquePoints(elem(ie)%idxP,nlev,vartmp,var3d(st:en,:))
-                    st=en+1
-                 enddo
-                 call nf_put_var(ncdf(ios),var3d,start, count, name='w')
-              end if
 
              if(nf_selectedvar('w_i', output_varnames)) then
                 if (par%masterproc) print *,'writing w_i...'
