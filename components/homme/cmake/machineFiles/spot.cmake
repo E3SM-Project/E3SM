@@ -44,20 +44,27 @@ SET(HOMME_ENABLE_COMPOSE FALSE CACHE BOOL "")
 #SET(Kokkos_ENABLE_EXPLICIT_INSTANTIATION OFF CACHE BOOL "")
 
 #set(E3SM_KOKKOS_PATH "/home/onguba/kokkos-build/bld-sycl" CACHE STRING "")
+#bld3 is with unnamed-lambdas flag
+#bld4 is PVC=off, GEN=on
+
+set(KOKKOS_HOME "/home/onguba/kokkos-build/bld-sycl4" CACHE STRING "")
 
 SET(CMAKE_C_COMPILER "mpicc" CACHE STRING "")
 SET(CMAKE_Fortran_COMPILER "mpifort" CACHE STRING "")
 SET(CMAKE_CXX_COMPILER "mpicxx" CACHE STRING "")
 
-#not the proper way!!!
-#SET(MPICH_DIR "/opt/cray/pe/mpich/8.1.12/ofi/crayclang/10.0" CACHE STRING "")
+#set(extra "-fsycl-link-huge-device-code -fsycl-targets=spir64_gen -Xsycl-target-backend \"-device 12.60.7\" -fPIC -Wl")
+set(extra "-fsycl-link-huge-device-code -fPIC")
+set(extra2 "-L/soft/restricted/CNDA/updates/2022.10.15.001/oneapi/compiler/trunk-20221014/compiler/linux/lib")
+#set(extra "-fsycl-link-huge-device-code")
 
-#SET(Extrae_LIBRARY "-I${MPICH_DIR}/include -L${MPICH_DIR}/lib -lmpi -L/opt/cray/pe/mpich/8.1.12/gtl/lib -lmpi_gtl_hsa" CACHE STRING "")
-
-SET(ADD_Fortran_FLAGS "-fc=ifx -O3 -DNDEBUG -DCPRINTEL" CACHE STRING "")
-SET(ADD_C_FLAGS "-cc=icx -O3 -DNDEBUG" CACHE STRING "")
-SET(ADD_CXX_FLAGS "-cxx=icpx -std=c++17 -O3 -fsycl -DNDEBUG -I${E3SM_KOKKOS_PATH}/include" CACHE STRING "")
-SET(ADD_LINKER_FLAGS "-O3 -DNDEBUG" CACHE STRING "")
+SET(ADD_Fortran_FLAGS "-fc=ifx -O3 -DNDEBUG -DCPRINTEL -g" CACHE STRING "")
+SET(ADD_C_FLAGS "-cc=icx -O3 -DNDEBUG -g" CACHE STRING "")
+#fopenmp flag is for compiler error saying kokkos install has openmp space
+#SET(ADD_CXX_FLAGS "-cxx=icpx -std=c++17 -O3 -qopenmp -fsycl ${extra} -DNDEBUG -I$ENV{KOKKOS_HOME}/include" CACHE STRING "")
+SET(ADD_CXX_FLAGS "-cxx=icpx -g -std=c++17 -O3 -fsycl ${extra} -DNDEBUG -I${KOKKOS_HOME}/include" CACHE STRING "")
+#SET(ADD_LINKER_FLAGS "-L$ENV{KOKKOS_HOME}/lib64 ${extra2} -lsycl" CACHE STRING "")
+SET(ADD_LINKER_FLAGS "-L${KOKKOS_HOME}/lib64 -lkokkossimd ${extra2} -lsycl" CACHE STRING "")
 
 
 set (ENABLE_OPENMP OFF CACHE BOOL "")

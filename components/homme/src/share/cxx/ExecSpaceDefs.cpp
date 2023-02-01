@@ -82,6 +82,9 @@ void initialize_kokkos () {
 
   int narg = args.size();
   Kokkos::initialize(narg, args.data());
+
+  std::cout << "AAAAAAAAAAAAAAAAAAAAAAAAAAAAa \n";
+
 }
 
 ThreadPreferences::ThreadPreferences ()
