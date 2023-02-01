@@ -300,7 +300,7 @@ end subroutine check_energy_get_integrals
        call endrun('check_energy_timestep_init: cpairv is not allowed to vary when subcolumns are turned on')
     end if
 
-! Compute vertical integrals of dry static energy and water (vapor, liquid, ice)
+    ! Compute vertical integrals of dry static energy and water (vapor, liquid, ice)
     ke = 0._r8
     se = 0._r8
     wv = 0._r8
@@ -495,7 +495,6 @@ end subroutine check_energy_get_integrals
 
     ! Compute vertical integrals of frozen static energy and total water.
     do i = 1, ncol
-!!     te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*wl(i)
        te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*( wl(i) + wr(i) )
        tw(i) = wv(i) + wl(i) + wi(i) + wr(i) + ws(i)
     end do
