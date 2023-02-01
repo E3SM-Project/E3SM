@@ -473,16 +473,16 @@ extern "C" void rrtmgp_run_lw (
     //   after Abramowitz & Stegun 1972, page 921
     int constexpr max_gauss_pts = 4;
     realHost2d gauss_Ds_host ("gauss_Ds" ,max_gauss_pts,max_gauss_pts);
-    gauss_Ds_host(1,1) = 1.66_wp      ; gauss_Ds_host(2,1) =         0._wp; gauss_Ds_host(3,1) =         0._wp; gauss_Ds_host(4,1) =         0._wp;
-    gauss_Ds_host(1,2) = 1.18350343_wp; gauss_Ds_host(2,2) = 2.81649655_wp; gauss_Ds_host(3,2) =         0._wp; gauss_Ds_host(4,2) =         0._wp;
-    gauss_Ds_host(1,3) = 1.09719858_wp; gauss_Ds_host(2,3) = 1.69338507_wp; gauss_Ds_host(3,3) = 4.70941630_wp; gauss_Ds_host(4,3) =         0._wp;
-    gauss_Ds_host(1,4) = 1.06056257_wp; gauss_Ds_host(2,4) = 1.38282560_wp; gauss_Ds_host(3,4) = 2.40148179_wp; gauss_Ds_host(4,4) = 7.15513024_wp;
+    gauss_Ds_host(1,1) = 1.66      ; gauss_Ds_host(2,1) =         0.; gauss_Ds_host(3,1) =         0.; gauss_Ds_host(4,1) =         0.;
+    gauss_Ds_host(1,2) = 1.18350343; gauss_Ds_host(2,2) = 2.81649655; gauss_Ds_host(3,2) =         0.; gauss_Ds_host(4,2) =         0.;
+    gauss_Ds_host(1,3) = 1.09719858; gauss_Ds_host(2,3) = 1.69338507; gauss_Ds_host(3,3) = 4.70941630; gauss_Ds_host(4,3) =         0.;
+    gauss_Ds_host(1,4) = 1.06056257; gauss_Ds_host(2,4) = 1.38282560; gauss_Ds_host(3,4) = 2.40148179; gauss_Ds_host(4,4) = 7.15513024;
 
     realHost2d gauss_wts_host("gauss_wts",max_gauss_pts,max_gauss_pts);
-    gauss_wts_host(1,1) = 0.5_wp         ; gauss_wts_host(2,1) = 0._wp          ; gauss_wts_host(3,1) = 0._wp          ; gauss_wts_host(4,1) = 0._wp          ;
-    gauss_wts_host(1,2) = 0.3180413817_wp; gauss_wts_host(2,2) = 0.1819586183_wp; gauss_wts_host(3,2) = 0._wp          ; gauss_wts_host(4,2) = 0._wp          ;
-    gauss_wts_host(1,3) = 0.2009319137_wp; gauss_wts_host(2,3) = 0.2292411064_wp; gauss_wts_host(3,3) = 0.0698269799_wp; gauss_wts_host(4,3) = 0._wp          ;
-    gauss_wts_host(1,4) = 0.1355069134_wp; gauss_wts_host(2,4) = 0.2034645680_wp; gauss_wts_host(3,4) = 0.1298475476_wp; gauss_wts_host(4,4) = 0.0311809710_wp;
+    gauss_wts_host(1,1) = 0.5         ; gauss_wts_host(2,1) = 0.          ; gauss_wts_host(3,1) = 0.          ; gauss_wts_host(4,1) = 0.          ;
+    gauss_wts_host(1,2) = 0.3180413817; gauss_wts_host(2,2) = 0.1819586183; gauss_wts_host(3,2) = 0.          ; gauss_wts_host(4,2) = 0.          ;
+    gauss_wts_host(1,3) = 0.2009319137; gauss_wts_host(2,3) = 0.2292411064; gauss_wts_host(3,3) = 0.0698269799; gauss_wts_host(4,3) = 0.          ;
+    gauss_wts_host(1,4) = 0.1355069134; gauss_wts_host(2,4) = 0.2034645680; gauss_wts_host(3,4) = 0.1298475476; gauss_wts_host(4,4) = 0.0311809710;
 
     real2d gauss_Ds ("gauss_Ds" ,max_gauss_pts,max_gauss_pts);
     real2d gauss_wts("gauss_wts",max_gauss_pts,max_gauss_pts);
