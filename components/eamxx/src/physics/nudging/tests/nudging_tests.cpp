@@ -118,21 +118,27 @@ TEST_CASE("nudging") {
     std::vector<FieldTag> tag_h  = {COL};
     std::vector<FieldTag> tag_v  = {LEV};
     std::vector<FieldTag> tag_2d = {COL,LEV};
+    std::vector<FieldTag> tag_3d = {COL,CMP,LEV};
 
     std::vector<Int>     dims_h  = {num_lcols};
     std::vector<Int>     dims_v  = {num_levs};
     std::vector<Int>     dims_2d = {num_lcols,num_levs};
+    std::vector<Int>     dims_3d = {num_lcols,2,num_levs};
 
     const std::string& gn = grid2->name();
 
     FieldIdentifier fid2("p_mid",FL{tag_2d,dims_2d},Pa,gn);
     FieldIdentifier fid3("T_mid",FL{tag_2d,dims_2d},K,gn);
+    FieldIdentifier fid4("qv",FL{tag_2d,dims_2d},kg/kg,gn);
+    FieldIdentifier fid5("horiz_winds",FL{tag_3d,dims_3d},m/s,gn);
 
     // Register fields with fm
     // Make sure packsize isn't bigger than the packsize for this machine, but not so big   that we end up with only 1 pack.
     fm->registration_begins();
     fm->register_field(FR{fid2,"output"});
     fm->register_field(FR{fid3,"output"});
+    fm->register_field(FR{fid4,"output"});
+    fm->register_field(FR{fid5,"output"});
     fm->registration_ends();
 
 
@@ -143,11 +149,19 @@ TEST_CASE("nudging") {
     auto f2 = fm->get_field(fid2);
     auto f2_host = f2.get_view<Real**,Host>();
 
+    auto f4 = fm->get_field(fid4);
+    auto f4_host = f4.get_view<Real**,Host>();
 
+    auto f5 = fm->get_field(fid5);
+    auto f5_host = f5.get_view<Real***,Host>();
+    
     for (int ii=0;ii<num_lcols;++ii) {
       for (int jj=0;jj<num_levs;++jj) {
-        f3_host(ii,jj) = 1;
+        f4_host(ii,jj) = 1;
+	f3_host(ii,jj) = 1;
         f2_host(ii,jj) = 1;
+	f5_host(ii,0,jj) = 1;
+	f5_host(ii,1,jj) = 1;
       }
     }
     // Update timestamp
@@ -156,6 +170,8 @@ TEST_CASE("nudging") {
     // Sync back to device
     f2.sync_to_dev();
     f3.sync_to_dev();
+    f4.sync_to_dev();
+    f5.sync_to_dev();
 
     fm->init_fields_time_stamp(t0);
 
@@ -166,7 +182,7 @@ TEST_CASE("nudging") {
     params.set<std::string>("Averaging Type","Instant");
     params.set<int>("Max Snapshots Per File",10);
     //auto& params_sub_f = params.sublist("Field Names");
-    std::vector<std::string> fnames = {"T_mid","p_mid"};
+    std::vector<std::string> fnames = {"T_mid","p_mid","qv","horiz_winds"};
     //params_sub_f.set<std::vector<std::string>>("Field Names",fnames);
     params.set<std::vector<std::string>>("Field Names",fnames);
     auto& params_sub = params.sublist("output_control");
@@ -199,11 +215,9 @@ TEST_CASE("nudging") {
               auto v = f.get_view<Real**,Host>();
               for (int i=0; i<fl.dim(0); ++i) {
                 for (int j=0; j<fl.dim(1); ++j) {
-                  if (fname == "T_mid"){
-                    //v(i,j) = (-j)*100 + i + 1;
-                    //v(i,j) = (i-1)*100*10+2*j*10+dt*ii*0.1;
-		    v(i,j) = (i-1)*10000+200*j+10*(dt/250.)*ii;
-                    std::cout<<"v("<<i<<","<<j<<"): "<<v(i,j)<<std::endl;
+                  if (fname != "p_mid"){
+		      v(i,j) = (i-1)*10000+200*j+10*(dt/250.)*ii;
+		      std::cout<<"v("<<i<<","<<j<<"): "<<v(i,j)<<std::endl;
                   }
                   if (fname == "p_mid"){
                     v(i,j) = 2*j+1;
@@ -211,6 +225,19 @@ TEST_CASE("nudging") {
                 }
               }
             }
+	    break;
+	case 3:
+            {
+              auto v = f.get_view<Real***,Host>();
+              for (int i=0; i<fl.dim(0); ++i) {
+                for (int j=0; j<fl.dim(2); ++j) {
+		  v(i,0,j) = (i-1)*10000+200*j+10*(dt/250.)*ii;
+		  v(i,1,j) = (i-1)*10000+200*j+10*(dt/250.)*ii;
+		  std::cout<<"horiz 0 v("<<i<<","<<j<<"): "<<v(i,0,j)<<std::endl;
+		  std::cout<<"horiz 1 v("<<i<<","<<j<<"): "<<v(i,1,j)<<std::endl;
+                }
+              }
+	    }
             break;
           default:
             EKAT_ERROR_MSG ("Error! Unexpected field rank.\n");
@@ -231,7 +258,7 @@ TEST_CASE("nudging") {
     // Finalize the output manager (close files)
     om.finalize();
   }
-  
+  std::cout<<"Get Here 1: "<<std::endl;
   //ekat::Comm comm(MPI_COMM_WORLD);
 
   // Create a grids manager
@@ -247,16 +274,18 @@ TEST_CASE("nudging") {
   std::cout<<"Levs outside: "<<nlevs<<std::endl;
 
   ekat::ParameterList params_mid;
-  std::vector<std::string> fnames = {"T_mid","p_mid"};
+  std::vector<std::string> fnames = {"T_mid","p_mid","qv","horiz_winds"};
+  //std::vector<std::string> fnames = {"T_mid","p_mid","qv"};
   //std::vector<std::string> fnames = {"T_mid"};
   std::string nudging_f = "io_output_test.INSTANT.nsteps_x1."\
                           "np1.2000-01-01-00250.nc";
   params_mid.set<std::string>("Nudging_Filename",nudging_f);
+  params_mid.set<Int>("Time_Step_File",250);
   //std::vector<std::string> fnames = {"T_mid_r"};
   params_mid.set<std::vector<std::string>>("Field_Names",fnames);
   auto nudging_mid = std::make_shared<NUDGING>(io_comm,params_mid);
   nudging_mid->set_grids(gm);
-
+  std::cout<<"Get Here 2: "<<std::endl;
 
   std::map<std::string,Field> input_fields;
   std::map<std::string,Field> output_fields;
@@ -270,20 +299,24 @@ TEST_CASE("nudging") {
     f.get_header().get_tracking().update_time_stamp(t0);
     nudging_mid->set_required_field(f);
     input_fields.emplace(name,f);
-    if (name == "T_mid"){
+    if (name != "p_mid"){
       nudging_mid->set_computed_field(f);
       output_fields.emplace(name,f);
     }
 
   }
-
+  std::cout<<"Get Here 4: "<<std::endl;
   //initialize
   nudging_mid->initialize(t0,RunType::Initial);
   
-  Field p_mid = input_fields["p_mid"];
-  Field f_mid = input_fields["T_mid"];
+  Field p_mid       = input_fields["p_mid"];
+  Field f_mid       = input_fields["T_mid"];
+  Field qv          = input_fields["qv"];
+  Field horiz_winds = input_fields["horiz_winds"];
   //Field p_mid_o = output_fields["p_mid"];
   Field f_mid_o = output_fields["T_mid"];
+  Field qv_mid_o = output_fields["qv"];
+  Field hw_mid_o = output_fields["horiz_winds"];
 
   //fill data
   
@@ -300,19 +333,27 @@ TEST_CASE("nudging") {
     }
   }
   f_mid.sync_to_dev();
+  horiz_winds.sync_to_dev();
+  qv.sync_to_dev();
   p_mid.sync_to_dev();
-
+  std::cout<<"Get Here 5: "<<std::endl;
   //10 timesteps of 100 s
-  for (int time_s = 0; time_s < 10; time_s++){
+  for (int time_s = 1; time_s < 10; time_s++){
     f_mid_o.sync_to_dev();
+    qv_mid_o.sync_to_dev();
+    hw_mid_o.sync_to_dev();
     p_mid.sync_to_dev();
     auto f_mid_v_h_o   = f_mid_o.get_view<Real**, Host>();
+    auto qv_h_o   = qv_mid_o.get_view<Real**, Host>();
+    auto hw_h_o   = hw_mid_o.get_view<Real***, Host>();
     //nudging_mid->run(time_s*100);
     nudging_mid->run(100);
     f_mid_o.sync_to_host();
+    qv_mid_o.sync_to_host();
+    hw_mid_o.sync_to_host();
     p_mid.sync_to_host();
 
-    if(time_s<3){continue;}
+    if(time_s<4){continue;}
     for (int icol=0; icol<ncols; icol++){
       for (int ilev=0; ilev<nlevs; ilev++){ 
         const int time_index = time_s*100./250.;
@@ -334,7 +375,14 @@ TEST_CASE("nudging") {
         double val_avg = (val_tim_avg_next + val_tim_avg)/2.;
 
 	std::cout<<"f_mid_v_h_o("<<icol<<","<<ilev<<"): "<<f_mid_v_h_o(icol,ilev)<<std::endl;
-	REQUIRE(f_mid_v_h_o(icol,ilev) == val_avg);
+	std::cout<<"qv_h_o("<<icol<<","<<ilev<<"): "<<qv_h_o(icol,ilev)<<std::endl;
+        std::cout<<"hw_h_o0("<<icol<<","<<ilev<<"): "<<hw_h_o(icol,0,ilev)<<std::endl;
+	std::cout<<"hw_h_o1("<<icol<<","<<ilev<<"): "<<hw_h_o(icol,1,ilev)<<std::endl;
+	//REQUIRE(f_mid_v_h_o(icol,ilev) == val_avg);
+	REQUIRE(abs(f_mid_v_h_o(icol,ilev) - val_avg)<0.1);
+	REQUIRE(abs(qv_h_o(icol,ilev) - val_avg)<0.1);
+	REQUIRE(abs(hw_h_o(icol,0,ilev) - val_avg)<0.1);
+	REQUIRE(abs(hw_h_o(icol,1,ilev) - val_avg)<0.1);
       }
     }
 

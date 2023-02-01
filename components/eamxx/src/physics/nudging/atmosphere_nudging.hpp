@@ -45,8 +45,14 @@ public:
   using KT = KokkosTypes<DefaultDevice>;
 
   template <typename S>
+  using view_1d = typename KT::template view_1d<S>;
+  
+  template <typename S>
   using view_2d = typename KT::template view_2d<S>;
 
+  template <typename S>
+  using view_3d = typename KT::template view_3d<S>;
+  
   template <typename S, int N>
   using view_Nd_host = typename KT::template view_ND<S,N>::HostMirror;
 
@@ -92,23 +98,18 @@ protected:
   //int m_num_src_levs;
   int m_num_src_levs;
   int time_step_file;
-  int time_step_internal=-999;
   std::string datafile;
   std::map<std::string,view_1d_host<Real>> host_views;
   std::map<std::string,FieldLayout>  layouts;
   std::vector<std::string> m_fnames;
   std::map<std::string,view_2d<Real>> fields_ext;
+  std::map<std::string,view_3d<Real>> fields_ext_3d;
   view_2d<Real> T_mid_ext;
-  //view_2d<Real> T_mid_int;
   view_2d<Real> p_mid_ext;
-  //view_2d<Real> p_mid_int;
+  view_3d<Real> horiz_winds_ext;
+  view_2d<Real> qv_ext;
   AtmosphereInput data_input;
   TimeStamp ts0;
-  //FieldLayout scalar3d_layout_mid_;
-  // DOF information
-  //view_1d_dof m_dofs_gids;
-  //int         m_total_global_dofs; // Needed to make sure that remap data matches grid.
-  //gid_type    m_min_global_dof;
 
 
 }; // class NUDGING
