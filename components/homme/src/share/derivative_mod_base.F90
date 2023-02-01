@@ -1243,8 +1243,11 @@ contains
   end function vlaplace_sphere_wk_contra
 
 
-!DIR$ ATTRIBUTES FORCEINLINE :: second_order_findiff
-  function second_order_findiff(u1, u2, u3, zeta1, zeta3) result(du_dzeta)
+!DIR$ ATTRIBUTES FORCEINLINE :: partial_eta
+  function partial_eta(u,etam) result(du_deta)
+    ! input:  u = scalar
+    ! ouput:  du_deta = vertical derivative of u
+    !
     ! This method computes second-order finite difference approximation to a field u at irregularly spaced points.
     ! let u_0, u_1, u_2 be evaluations of a quantity at coordinates z_0, z_1, z_2, respectively.
     ! Let a_1, a_2, a_3 be coeffients of a polynomial $f(z)$ that approximates u, 
@@ -1257,16 +1260,6 @@ contains
     ! [zeta_0^2, zeta_0 ; zeta_2^2, zeta_2 ][a_0; a_1] = [u_0-u_1; u_2-u_1].
     ! We use the standard closed-form way of solving a 2x2 system.
     ! This method returns the value a_1 computed when this system is solved.
-    real(kind=real_kind), intent(in) :: u1, u2, u3, zeta1, zeta3
-    real(kind=real_kind) :: du_dzeta
-    du_dzeta = (u2-u1) * zeta3**2.0_real_kind + (u3-u2) * zeta1**2.0_real_kind
-    du_dzeta = du_dzeta / (zeta1**2.0_real_kind * zeta3 - zeta1 * zeta3**2.0_real_kind)
-  end function second_order_findiff
-
-!DIR$ ATTRIBUTES FORCEINLINE :: partial_eta
-  function partial_eta(u,etam) result(du_deta)
-    ! input:  u = scalar
-    ! ouput:  du_deta = vertical derivative of u
     real(kind=real_kind), intent(in) :: u(nlev)
     real(kind=real_kind), intent(in) :: etam(nlev)
     real(kind=real_kind) :: du_deta(nlev)
@@ -1292,7 +1285,6 @@ contains
     num = (u2-u1)*(eta3-eta2)**2.0_real_kind + (u3-u2)*(eta1-eta2)**2.0_real_kind
     den = (eta1-eta2)**2.0_real_kind * (eta3-eta2) - (eta1-eta2)*(eta3-eta2)**2.0_real_kind
     du_deta  = num/den
-
   end function partial_eta
 
 
