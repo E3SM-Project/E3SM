@@ -203,7 +203,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       // First we check if we need to support masking
       for (const auto& fname : m_fields_names) {
         auto f = get_field(fname,m_int_field_mgr);
-        const auto& src_fid = f.get_header().get_identifier();
         auto f_extra = f.get_header().get_extra_data();
         if (f_extra.count("mask_data")) {
           // Then this field has a mask attached to it.
@@ -224,11 +223,11 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
           // If we haven't already add this mask, we do that now. 
           if (!found) {
             mask_fields.push_back(f_mask);
-            mask_map.emplace(src_fid.name(),mask_fields.size()-1);
+            mask_map.emplace(f.name(),mask_fields.size()-1);
           }
         } else {
           // No mask attached, give this field an index of -1 to flag it as unmasked
-          mask_map.emplace(src_fid.name(),-1);
+          mask_map.emplace(f.name(),-1);
         }
       }
       // Construct the coarsening remapper
@@ -267,8 +266,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
       m_horiz_remapper->bind_field(src,tgt);
     }
     // Bind any masked fields, since they won't be listed in the `m_fields_names`
-    // TODO: Maybe we shouldn't add the mask fields to the io_fm at all, that would
-    // mean fixing the loop above to not just cycle through all fields in the remapper.
     for (const auto& src : mask_fields) {
       auto tgt  = io_fm->get_field(src.name());
       m_horiz_remapper->bind_field(src,tgt);

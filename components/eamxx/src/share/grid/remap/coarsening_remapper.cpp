@@ -315,7 +315,7 @@ void CoarseningRemapper::do_registration_ends ()
     // Update the number of fields.
     m_num_fields = m_num_registered_fields;
 
-    // Make sure that all fields registered so far are representing in the mask map, if missing
+    // Make sure that all fields registered so far are represented in the mask map, if missing
     // flag to not be masked at all.
     for (auto f : m_src_fields) {
       auto name = f.name();
@@ -415,9 +415,6 @@ void CoarseningRemapper::do_remap_fwd ()
   }
 
   // Rescale any fields that had the mask applied.
-  for (int i=0; i<m_num_fields; ++i) {
-    const auto& f_ov_tgt = m_ov_tgt_fields[i];
-  }
   if (m_track_mask) {
     for (int i=0; i<m_num_fields; ++i) {
       const auto& f_tgt = m_tgt_fields[i];
@@ -481,13 +478,15 @@ rescale_masked_fields (const Field& x, const Field& mask) const
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto icol = team.league_rank();
+        auto x_sub = ekat::subview(x_view,icol);
+        auto m_sub = ekat::subview(m_view,icol);
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dim1),
                             [&](const int j){
-          auto masked = m_view(icol,j) > mask_threshold;
+          auto masked = m_sub(j) > mask_threshold;
           if (masked.any()) {
-            x_view(icol,j).set(masked,x_view(icol,j)/m_view(icol,j));
+            x_sub(j).set(masked,x_sub(j)/m_sub(j));
           }
-          x_view(icol,j).set(!masked,mask_val);
+          x_sub(j).set(!masked,mask_val);
         });
       });
       break;
@@ -502,13 +501,13 @@ rescale_masked_fields (const Field& x, const Field& mask) const
       Kokkos::parallel_for(policy,
                            KOKKOS_LAMBDA(const MemberType& team) {
         const auto icol = team.league_rank();
+        auto m_sub      = ekat::subview(m_view,icol);
 
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dim1*dim2),
                             [&](const int idx){
           const int j = idx / dim2;
           const int k = idx % dim2;
           auto x_sub = ekat::subview(x_view,icol,j);
-          auto m_sub = ekat::subview(m_view,icol);
           auto masked = m_sub(k) > mask_threshold;
 
           if (masked.any()) {
@@ -548,10 +547,11 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
     {
       auto x_view = x.get_view<const Real*>();
       auto y_view = y.get_view<      Real*>();
-      view_1d<Real> mask_view("",x_view.extent_int(0));
-      if (mask != NULL) {
+      view_1d<Real> mask_view; //("",x_view.extent_int(0));
+      if (mask != nullptr) {
         mask_view = mask->get_view<Real*>();
       } else {
+        mask_view = view_1d<Real>("",x_view.extent_int(0));
         Kokkos::deep_copy(mask_view,1.0);
       }
       Kokkos::parallel_for(RangePolicy(0,nrows),

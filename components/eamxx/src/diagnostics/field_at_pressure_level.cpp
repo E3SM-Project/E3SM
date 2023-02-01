@@ -50,7 +50,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   m_diagnostic_output.allocate_view();
 
   // Add a field representing the mask as extra data to the diagnostic field.
-  Units nondim(0,0,0,0,0,0,0);
+  auto nondim = Units::nondimensional();
   std::string mask_name = name() + " mask";
   FieldIdentifier mask_fid (mask_name,diag_layout, nondim, gname);
   Field diag_mask(mask_fid);

@@ -336,21 +336,8 @@ void VerticalRemapper::do_remap_fwd ()
     const bool  do_remap = ekat::contains(std::vector<FieldTag>{ILEV,LEV},src_tag);
     if (do_remap) {
       // If we are remapping then we need to initialize the mask source values to 1.0
-      switch(f_src.rank()) {
-        case 1:
-        {
-          auto v_src = f_src.get_view<Real*,Host>();
-          Kokkos::deep_copy(v_src,1.0);
-          break;
-        }
-        case 2:
-        {
-          auto v_src = f_src.get_view<Real**,Host>();
-          Kokkos::deep_copy(v_src,1.0);
-          break;
-        }
-      }
-      f_src.sync_to_dev();
+      f_src.deep_copy(1.0);
+      f_src.sync_to_host();
       // Dispatch kernel with the largest possible pack size
       const auto& src_ap = f_src.get_header().get_alloc_properties();
       const auto& tgt_ap = f_tgt.get_header().get_alloc_properties();
