@@ -38,7 +38,7 @@
       <grid name="rof"    compset="DROF%CPLHIST">r05</grid>
       <grid name="rof"    compset="XROF">r05</grid>
       <grid name="glc"    compset="SGLC">null</grid>
-      <grid name="glc"    compset="CISM1">gland5UM</grid>
+      <grid name="glc"    compset="CISM1">myGrid</grid>
       <grid name="glc"    compset="CISM2">gland4</grid>
       <grid name="glc"    compset="XGLC">gland4</grid>
       <grid name="wav"    compset="SWAV">null</grid>
@@ -910,7 +910,7 @@
       <grid name="lnd">0.9x1.25</grid>
       <grid name="ocnice">gx1v6</grid>
       <grid name="rof">r05</grid>
-      <grid name="glc">mpas.gis20km</grid>
+      <grid name="glc">myGrid</grid>
       <grid name="wav">null</grid>
       <mask>gx1v6</mask>
     </model_grid>
@@ -921,7 +921,7 @@
       <grid name="lnd">0.9x1.25</grid>
       <grid name="ocnice">gx1v6</grid>
       <grid name="rof">r05</grid>
-      <grid name="glc">mpas.ais20km</grid>
+      <grid name="glc">myGrid</grid>
       <grid name="wav">null</grid>
       <mask>gx1v6</mask>
     </model_grid>
@@ -931,7 +931,7 @@
       <grid name="lnd">0.9x1.25</grid>
       <grid name="ocnice">oEC60to30</grid>
       <grid name="rof">r05</grid>
-      <grid name="glc">mpas.ais20km</grid>
+      <grid name="glc">myGrid</grid>
       <grid name="wav">null</grid>
       <mask>oEC60to30</mask>
     </model_grid>
@@ -1284,22 +1284,14 @@
       <mask>oQU120</mask>
     </model_grid>
 
-    <model_grid alias="T62_oQU120_ais20_bisicles" compset="MPASO.*_BISICLES">
-      <grid name="atm">T62</grid>
-      <grid name="lnd">T62</grid>
-      <grid name="ocnice">oQU120</grid>
-      <grid name="rof">rx1</grid>
-      <grid name="glc">mpas.ais20km</grid>
-      <grid name="wav">null</grid>
-      <mask>oQU120</mask>
-    </model_grid>
+   
 
-    <model_grid alias="T62_oQU120_gis20_bisicles" compset="MPASO.*_BISICLES">
+    <model_grid alias="T62_oQU120_myGrid" compset="2000_DATM%NYF_SLND_MPASCICE_MPASO_DROF%NYF_BISICLES_SWAV">
       <grid name="atm">T62</grid>
       <grid name="lnd">T62</grid>
       <grid name="ocnice">oQU120</grid>
       <grid name="rof">rx1</grid>
-      <grid name="glc">mpas.gis20km</grid>
+      <grid name="glc">myGrid</grid>
       <grid name="wav">null</grid>
       <mask>oQU120</mask>
     </model_grid>
@@ -3090,6 +3082,15 @@
       <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oQU120/map_oQU120_to_ais20km_nearestdtos.160331.nc</map>
     </gridmap>
 
+     <gridmap glc_grid="bisicles.gis20km" ocn_grid="oQU120">
+      <map name="GLC2OCN_FMAPNAME">cpl/gridmaps/bisicles.gis20km/map_glcToOcn_aave.nc</map>
+      <map name="OCN2GLC_FMAPNAME">cpl/gridmaps/oQU120/map_OcnToglc_aave.nc</map>
+      <map name="GLC2OCN_SMAPNAME">cpl/gridmaps/bisicles.gis20km/map_glcToOcn.dtos.nc</map>
+      <map name="GLC2OCN_LIQ_RMAPNAME">cpl/gridmaps/bisicles.gis20km/map_glcToOcn.dtos.nc</map>
+      <map name="GLC2OCN_ICE_RMAPNAME">cpl/gridmaps/bisicles.gis20km/map_glcToOcn.dtos.nc</map>
+      <map name="OCN2GLC_SMAPNAME">cpl/gridmaps/oQU120/map_OcnToglc.dtos.nc</map>
+     </gridmap>
+     
   </gridmaps>
 
 </grid_data>

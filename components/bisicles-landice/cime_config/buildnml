@@ -60,7 +60,7 @@ def buildnml(case, caseroot, compname):
 
     os.chdir(caseroot)
 
-    print("GLC_GRID ","(",case.get_value("GLC_GRID"),")",sep="")
+ #   print("GLC_GRID ","(",case.get_value("GLC_GRID"),")",sep="")
     
     cimeroot          = case.get_value("CIMEROOT")
     caseroot          = case.get_value("CASEROOT")
@@ -98,10 +98,16 @@ def buildnml(case, caseroot, compname):
         grid_date += '150922'
         grid_prefix += 'gis20km'
         decomp_prefix += 'mpasli.graph.info.'
+        expect(False, "ERROR: Wrong GLC_GRID: " + glc_grid)
     elif glc_grid == 'mpas.ais20km':
         grid_date += '150910'
         grid_prefix += 'ais20km'
         decomp_prefix += 'mpasli.graph.info.'
+        expect(False, "ERROR: Wrong GLC_GRID: " + glc_grid)
+    elif glc_grid == 'myGrid':
+      grid_date += '241122'
+      grid_prefix += 'bisiclesGis'
+      
     else:
         expect(False, "ERROR: BISICLES buildnml encountered unknown GLC_GRID: " + glc_grid)
     
@@ -110,7 +116,7 @@ def buildnml(case, caseroot, compname):
     # Note: this is not setup for multiple instances
     #--------------------------------------------------------------------
     
-    input_file = "{}/glc/mpasli/{}/{}.{}.nc".format(din_loc_root, glc_grid, grid_prefix, grid_date)
+    input_file = "{}/glc/bisiclesli/{}/{}.{}.nc".format(din_loc_root, glc_grid, grid_prefix, grid_date)
     if run_type == 'hybrid' or run_type == 'branch':
         input_file = "{}/BISICLES.rst.{}_{}.nc".format(rundir, run_refdate, run_reftod)
         expect(os.path.exists(input_file), " ERROR BISICLES buildnml: missing specified restart file for branch or hybrid run: " + input_file)
@@ -120,7 +126,7 @@ def buildnml(case, caseroot, compname):
     #--------------------------------------------------------------------
     
     with open(os.path.join(casebuild, "BISICLES.input_data_list"), "w") as input_list:
-        input_list.write("mesh = {}/glc/mpasli/{}/{}.{}.nc\n".format(din_loc_root, glc_grid, grid_prefix, grid_date))
+        input_list.write("mesh = {}/glc/bisiclesli/{}/{}.{}.nc\n".format(din_loc_root, glc_grid, grid_prefix, grid_date))
     
     
     #--------------------------------------------------------------------

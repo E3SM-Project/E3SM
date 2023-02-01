@@ -21,11 +21,11 @@ temperature.type = LevelData
 
 amr.sigma = 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0
 
-inputLevelData.geometryFile = ../../../cesm-inputdata/glc/bisiclesli/GIS/bedmachine2015withfjord.hdf5
-#inputLevelData.geometryFile = ../../../cesm-inputdata/glc/bisiclesli/GIS/greenland-morlighem-150m-gauss-adjust.hdf5
-inputLevelData.frictionFile = ../../../cesm-inputdata/glc/bisiclesli/GIS/Greenland-betaGrown-300m.hdf5
-inputLevelData.muCoefFile = ../../../cesm-inputdata/glc/bisiclesli/GIS/greenland-fric300m-bvel.hdf5
-inputLevelData.temperatureFile = ../../../cesm-inputdata/glc/bisiclesli/GIS/greenland-temperature-4.8km-morl.hdf5
+inputLevelData.geometryFile = /global/cfs/cdirs/iceocean/bisiclesData/Greenland/bedmachine2015withfjord.hdf5
+#inputLevelData.geometryFile = /global/cfs/cdirs/iceocean/bisiclesData/Greenland/greenland-morlighem-150m-gauss-adjust.hdf5
+inputLevelData.frictionFile = /global/cfs/cdirs/iceocean/bisiclesData/Greenland/Greenland-betaGrown-300m.hdf5
+inputLevelData.muCoefFile = /global/cfs/cdirs/iceocean/bisiclesData/Greenland/greenland-fric300m-bvel.hdf5
+inputLevelData.temperatureFile = /global/cfs/cdirs/iceocean/bisiclesData/Greenland/greenland-temperature-4.8km-morl.hdf5
 inputLevelData.thicknessName = thk
 inputLevelData.topographyName = topg
 inputLevelData.frictionName = beta
@@ -52,7 +52,7 @@ surfaceFlux.type = LevelData
 surfaceFlux.n = 1
 surfaceFlux.timeStep = 1.0e+10
 surfaceFlux.startTime = 0.0
-surfaceFlux.fileFormat = ../../../cesm-inputdata/glc/bisiclesli/GIS/greenland-HIRHAM-1997-2006-4.8km-morl.hdf5
+surfaceFlux.fileFormat = /global/cfs/cdirs/iceocean/bisiclesData/Greenland/greenland-HIRHAM-1997-2006-4.8km-morl.hdf5
 surfaceFlux.name = smb
 
 basalFlux.type =  maskedFlux
@@ -138,7 +138,7 @@ JFNKSolver.bottom_solver_type = 1
 JFNKSolver.solverType = 4
 
 
-amr.restart_file = ../../../cesm-inputdata/glc/bisiclesli/GIS/chk.GrIS.150m.l1l2.4lev.004974.2d.hdf5
+amr.restart_file = /global/cfs/cdirs/iceocean/bisiclesData/Greenland/chk.GrIS.150m.l1l2.4lev.004974.2d.hdf5
 
 #time stepping
 #main.maxTime = 120  # maximum time to run to
