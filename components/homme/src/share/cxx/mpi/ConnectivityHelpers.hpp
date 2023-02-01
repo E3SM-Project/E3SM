@@ -99,7 +99,7 @@ using ArrayGP = Kokkos::Array<GaussPoint,NP>;
 
 // =========== A container struct for the information about connections =========== //
 
-// Here we define a bunch of conxtexpr int's and arrays (of arrays (of arrays)) of ints, which we can
+// Here we define a bunch of constexpr int's and arrays (of arrays (of arrays)) of ints, which we can
 // use to easily retrieve information about a connection, such as the kind (corner or edge), the ordering
 // on the remote (only relevant for edges), the (i,j) coordinates of the Gauss point(s) in the connection,
 // and more.
@@ -128,17 +128,6 @@ struct ConnectionHelpers {
       ConnectionKind::CORNER,   // SE
       ConnectionKind::CORNER,   // NW
       ConnectionKind::CORNER    // NE
-  };
-
-  const Direction CONNECTION_DIRECTION[NUM_CONNECTIONS][NUM_CONNECTIONS] = {
-    {Direction::BACKWARD, Direction::FORWARD , Direction::FORWARD,  Direction::BACKWARD, Direction::INVALID, Direction::INVALID, Direction::INVALID, Direction::INVALID}, // S/(S-N-W-E)
-    {Direction::FORWARD,  Direction::BACKWARD, Direction::BACKWARD, Direction::FORWARD,  Direction::INVALID, Direction::INVALID, Direction::INVALID, Direction::INVALID}, // N/(S-N-W-E)
-    {Direction::FORWARD,  Direction::BACKWARD, Direction::BACKWARD, Direction::FORWARD,  Direction::INVALID, Direction::INVALID, Direction::INVALID, Direction::INVALID}, // W/(S-N-W-E)
-    {Direction::BACKWARD, Direction::FORWARD , Direction::FORWARD,  Direction::BACKWARD, Direction::INVALID, Direction::INVALID, Direction::INVALID, Direction::INVALID}, // E/(S-N-W-E)
-    {Direction::INVALID,  Direction::INVALID,  Direction::INVALID,  Direction::INVALID,  Direction::FORWARD, Direction::FORWARD, Direction::FORWARD, Direction::FORWARD},
-    {Direction::INVALID,  Direction::INVALID,  Direction::INVALID,  Direction::INVALID,  Direction::FORWARD, Direction::FORWARD, Direction::FORWARD, Direction::FORWARD},
-    {Direction::INVALID,  Direction::INVALID,  Direction::INVALID,  Direction::INVALID,  Direction::FORWARD, Direction::FORWARD, Direction::FORWARD, Direction::FORWARD},
-    {Direction::INVALID,  Direction::INVALID,  Direction::INVALID,  Direction::INVALID,  Direction::FORWARD, Direction::FORWARD, Direction::FORWARD, Direction::FORWARD}
   };
 
   // We only need 12 out of these 16, but for clarity, we define them all, plus an invalid one
@@ -195,13 +184,6 @@ struct ConnectionHelpers {
       { SOUTH_PTS_BWD, NORTH_PTS_BWD, WEST_PTS_BWD, EAST_PTS_BWD, SWEST_PTS, SEAST_PTS, NWEST_PTS, NEAST_PTS },
       { NO_PTS }
     };
-
-  // Edges and corners (fwd), used in the unpacking
-  const ArrayGP EDGE_PTS_FWD [NUM_CONNECTIONS_PER_KIND] =
-    { SOUTH_PTS_FWD, NORTH_PTS_FWD, WEST_PTS_FWD, EAST_PTS_FWD };
-
-  const ArrayGP CORNER_PTS_FWD [NUM_CONNECTIONS_PER_KIND] =
-    { SWEST_PTS, SEAST_PTS, NWEST_PTS, NEAST_PTS};
 };
 
 } // namespace Homme

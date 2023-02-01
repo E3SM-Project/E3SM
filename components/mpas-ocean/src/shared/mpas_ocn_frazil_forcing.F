@@ -255,8 +255,10 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell, k, nCells
-      integer, pointer :: indexTemperature
-      integer, pointer :: indexSalinity
+      integer, pointer :: indexTemperaturePtr
+      integer, pointer :: indexSalinityPtr
+      integer :: indexTemperature
+      integer :: indexSalinity
       integer, pointer, dimension(:) :: nCellsArray
       integer, pointer, dimension(:) :: minLevelCell, maxLevelCell
 
@@ -268,8 +270,12 @@ contains
       if ( .not. frazilFormationOn ) return
 
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
-      call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
-      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
+      call mpas_pool_get_dimension(tracersPool, 'index_temperature', &
+                                                 indexTemperaturePtr)
+      call mpas_pool_get_dimension(tracersPool, 'index_salinity', &
+                                                 indexSalinityPtr)
+      indexTemperature = indexTemperaturePtr
+      indexSalinity    = indexSalinityPtr
 
       call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)
       call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
@@ -379,8 +385,10 @@ contains
       real (kind=RKIND), pointer, dimension(:,:,:) :: activeTracers
 
       integer, dimension(:), pointer :: minLevelCell, maxLevelCell
-      integer, pointer :: indexTemperature !< index in tracers array for temperature
-      integer, pointer :: indexSalinity !< index in tracers array for salinity
+      integer, pointer :: indexTemperaturePtr !< index in tracers array for temperature
+      integer, pointer :: indexSalinityPtr !< index in tracers array for salinity
+      integer :: indexTemperature !< index in tracers array for temperature
+      integer :: indexSalinity !< index in tracers array for salinity
       integer :: kBottomFrazil  ! k index where testing for frazil begins
 
       logical :: underLandIce ! indicates if we are under land ice
@@ -400,8 +408,12 @@ contains
       ! get dimensions
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
-      call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
-      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
+      call mpas_pool_get_dimension(tracersPool, 'index_temperature', &
+                                                 indexTemperaturePtr)
+      call mpas_pool_get_dimension(tracersPool, 'index_salinity', &
+                                                 indexSalinityPtr)
+      indexTemperature = indexTemperaturePtr
+      indexSalinity    = indexSalinityPtr
 
       ! get mesh information
       call mpas_pool_get_array(meshPool, 'minLevelCell', minLevelCell)

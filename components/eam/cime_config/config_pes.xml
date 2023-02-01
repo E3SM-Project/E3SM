@@ -1663,6 +1663,36 @@
     </mach>
   </grid>
   <grid name="a%ne120np4">
+    <mach name="pm-cpu|alvarez">
+      <pes compset=".*EAM.+ELM.+MPASSI.+DOCN.+SGLC.+SWAV.*" pesize="any">
+        <comment>pm-cpu ne120pg2 F-compset with MPASSI on 43 nodes 128x1c8 0.6 sypd</comment>
+        <MAX_MPITASKS_PER_NODE>128</MAX_MPITASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>256</MAX_TASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>5504</ntasks_atm>
+          <ntasks_lnd>5504</ntasks_lnd>
+          <ntasks_rof>5504</ntasks_rof>
+          <ntasks_ice>5200</ntasks_ice>
+          <ntasks_ocn>5200</ntasks_ocn>
+          <ntasks_glc>64</ntasks_glc>
+          <ntasks_wav>64</ntasks_wav>
+          <ntasks_cpl>688</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>1</nthrds_atm>
+          <nthrds_lnd>1</nthrds_lnd>
+          <nthrds_rof>1</nthrds_rof>
+          <nthrds_ice>1</nthrds_ice>
+          <nthrds_ocn>1</nthrds_ocn>
+          <nthrds_glc>1</nthrds_glc>
+          <nthrds_wav>1</nthrds_wav>
+          <nthrds_cpl>1</nthrds_cpl>
+        </nthrds>
+        <pstrid>
+          <pstrid_cpl>8</pstrid_cpl>
+        </pstrid>
+      </pes>
+    </mach>
     <mach name="theta">
       <pes compset=".*EAM.+ELM.+DOCN.+SGLC.+SWAV.*" pesize="any">
         <comment>ne120 F-compset on 128 nodes 0.524sypd</comment>
