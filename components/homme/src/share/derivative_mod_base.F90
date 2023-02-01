@@ -1242,33 +1242,38 @@ contains
     enddo
   end function vlaplace_sphere_wk_contra
 
+
 !DIR$ ATTRIBUTES FORCEINLINE :: second_order_findiff
   function second_order_findiff(u1, u2, u3, zeta1, zeta3) result(du_dzeta)
-        real(kind=real_kind), intent(in) :: u1, u2, u3, zeta1, zeta3
-        real(kind=real_kind) :: du_dzeta
-        du_dzeta = (u2-u1) * zeta3**2.0_real_kind + (u3-u2) * zeta1**2.0_real_kind
-        du_dzeta = du_dzeta / (zeta1**2.0_real_kind * zeta3 - zeta1 * zeta3**2.0_real_kind)
-
+    ! This method computes second-order finite difference approximation to a field u at irregularly spaced points.
+    ! let u_0, u_1, u_2 be evaluations of a quantity at coordinates z_0, z_1, z_2, respectively.
+    ! Let a_1, a_2, a_3 be coeffients of a polynomial $f(z)$ that approximates u, 
+    ! such that u_i = a_0 (z_i-z_1)^2 + a_1 (z_i-z_1) + a_2.
+    ! This is a second order polynomial passing through the points (z_i, u_i).
+    ! A second order approximation to du/dz is then f(z_i) = a_1. 
+    ! Noting that u_1 = a_0 * 0^2 + a_1 * 0 + a_2, a_2 = u_1. 
+    ! Define zeta_i = z_i - z_1.
+    ! The other two constraints f(z_0) = u_0 and f(z_2) = u_2 give a 2x2 system of equations
+    ! [zeta_0^2, zeta_0 ; zeta_2^2, zeta_2 ][a_0; a_1] = [u_0-u_1; u_2-u_1].
+    ! We use the standard closed-form way of solving a 2x2 system.
+    ! This method returns the value a_1 computed when this system is solved.
+    real(kind=real_kind), intent(in) :: u1, u2, u3, zeta1, zeta3
+    real(kind=real_kind) :: du_dzeta
+    du_dzeta = (u2-u1) * zeta3**2.0_real_kind + (u3-u2) * zeta1**2.0_real_kind
+    du_dzeta = du_dzeta / (zeta1**2.0_real_kind * zeta3 - zeta1 * zeta3**2.0_real_kind)
   end function second_order_findiff
+
 !DIR$ ATTRIBUTES FORCEINLINE :: partial_eta
   function partial_eta(u,etam) result(du_deta)
-!
-!   input:  u = scalar
-!   ouput:  du_deta = vertical derivative of u
-!
-
-
+    ! input:  u = scalar
+    ! ouput:  du_deta = vertical derivative of u
     real(kind=real_kind), intent(in) :: u(nlev)
     real(kind=real_kind), intent(in) :: etam(nlev)
     real(kind=real_kind) :: du_deta(nlev)
 
     ! Local
-
-
     real(kind=real_kind) :: u1(nlev), u2(nlev), u3(nlev)
-
     real(kind=real_kind) :: eta1(nlev), eta2(nlev), eta3(nlev)
-
     real(kind=real_kind) :: num(nlev), den(nlev)
 
 
@@ -1289,7 +1294,6 @@ contains
     du_deta  = num/den
 
   end function partial_eta
-
 
 
 #if 0
