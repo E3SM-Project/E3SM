@@ -86,6 +86,21 @@ _TESTS = {
             )
         },
 
+        "e3sm_p3_developer" : {
+        "inherit" : ("eam_theta_pg2"),
+        "tests"   : (
+            "ERP_Ln18.ne4_oQU240.F2010.eam-p3",
+            "REP_Ln5.ne4pg2_oQU480.F2010.eam-p3",
+            "ERP_Ln18.ne4_oQU240.F2010.eam-p3",
+            "PET_Ln5.ne4_oQU240.F2010.eam-p3",
+            "PEM_Ln5.ne4pg2_oQU480.F2010.eam-p3",
+            "SMS_Ln5.ne30pg2_r05_EC30to60E2r2.eam-p3",
+            "SMS_D_Ln5.ne4_oQU240.F2010.eam-p3",
+            "SMS_Ln5.ne4pg2_oQU480.F2010.eam-p3",
+            "ERS.ne4_oQU240.F2010.eam-p3"
+            )
+        },
+
     "e3sm_atm_integration" : {
         "inherit" : ("eam_preqx", "eam_theta"),
         "tests" : (
@@ -283,11 +298,11 @@ _TESTS = {
             )
         },
 
-    #e3sm MMF tests for development
+    #e3sm v3atm related tests for development
     "e3sm_v3atm_integration" : {
         "tests" : (
-            "ERP_Ln9.ne4pg2_ne4pg2.F2010-P3",
-            "ERS_Ln9.ne4pg2_ne4pg2.F20TR-P3",
+            "ERP_Ld3.ne4pg2_oQU480.F2010-P3",
+            "ERS_Ld3.ne4pg2_oQU480.F20TR-P3",
             "SMS_Ld1.ne30pg2_EC30to60E2r2.WCYCL1850-P3.allactive-wcprod",
             )
         },
