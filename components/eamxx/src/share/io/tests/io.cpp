@@ -301,6 +301,13 @@ void run_multisnap(const std::string& output_freq_units) {
     int tt1 = tt + 1;
     // Here tt1 is the snap, we need to figure out what time that is in seconds given the frequency units
     const int current_t = get_current_t(tt1,dt,io_control.frequency,output_freq_units);
+    // Check timestamp, note, with multisnap we also verify that we can grab the timestamp at location tt1
+    {
+      auto test_filename = input_params.get<std::string>("Filename");
+      Real time_val = scorpio::read_time_at_index_c2f(test_filename.c_str(),tt1);
+      Real time_in_days = current_t/86400.; // current_t is in seconds, need to convert to days.
+      REQUIRE(time_val==time_in_days);
+    }
     for (int ii=0;ii<num_lcols;++ii) {
       REQUIRE(std::abs(f1_host(ii)-check_data_xy(current_t,dt,ii,0,"instant"))<tol);
       for (int jj=0;jj<num_levs;++jj) {
@@ -504,6 +511,16 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
     }
   }
   Int current_t = max_steps*dt;
+  // Check timestamp
+  {
+    auto test_filename = input_params.get<std::string>("Filename");
+    scorpio::register_file(test_filename,scorpio::Read);
+    Real time_val = scorpio::read_curr_time_c2f(test_filename.c_str());
+    scorpio::eam_pio_closefile(test_filename);
+    Real time_in_days = current_t/86400.; // current_t is in seconds, need to convert to days.
+    REQUIRE(time_val==time_in_days);
+  }
+  // Check values
   for (int ii=0;ii<num_lcols;++ii) {
     REQUIRE(std::abs(f1_host(ii)-check_data_xy(current_t,dt,ii,0,output_type))<tol);
     for (int jj=0;jj<num_levs;++jj) {
