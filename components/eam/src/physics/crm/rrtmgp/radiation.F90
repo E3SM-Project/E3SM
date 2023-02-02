@@ -2815,6 +2815,9 @@ contains
       if (use_MMF .and. (trim(MMF_microphysics_scheme) == 'sam1mom')) then
          do_snow_optics = .false.
       end if
+      if (use_MMF .and. (trim(MMF_microphysics_scheme) == 'p3')) then
+         do_snow_optics = .false.
+      end if
 
       return
    end function do_snow_optics
