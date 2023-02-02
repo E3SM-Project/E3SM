@@ -497,7 +497,6 @@ contains
                  MPAS_LOG_ERR)
             err = ior(err,1)
          endif
- 
          ! Rearrange data into CellID order
          do iCell = 1,nCellsGlobal
             globalArrayThickness(indexToCellIDGathered(iCell)) = gatheredArrayThickness(iCell)
