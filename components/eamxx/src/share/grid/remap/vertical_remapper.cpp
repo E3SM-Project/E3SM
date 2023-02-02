@@ -228,7 +228,7 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
     // NOTE: for now we assume that masking is determined only by the COL,LEV location in space
     //       and that fields with multiple components will have the same masking for each component
     //       at a specific COL,LEV
-    auto src_lay = create_src_layout(src_layout);
+    auto src_lay = src_layout;
     auto tags = src_lay.tags();
     for (auto tag : tags) {
       if (tag != COL && tag != LEV && tag != ILEV) {
