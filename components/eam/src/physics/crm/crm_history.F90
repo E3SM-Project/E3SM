@@ -146,10 +146,11 @@ subroutine crm_history_init(species_class)
 
    !----------------------------------------------------------------------------
    ! CRM radiation columns
-   call addfld('CRM_RAD_T' ,dims_rad_3D, 'A', 'K',     'CRM rad column temperature' )
-   call addfld('CRM_RAD_QV',dims_rad_3D, 'A', 'kg/kg', 'CRM rad column water vapor' )
-   call addfld('CRM_RAD_QC',dims_rad_3D, 'A', 'kg/kg', 'CRM rad column cloud liquid' )
-   call addfld('CRM_RAD_QI',dims_rad_3D, 'A', 'kg/kg', 'CRM rad column cloud ice' )
+   call addfld('CRM_RAD_T'  ,dims_rad_3D, 'A', 'K',     'CRM rad column temperature' )
+   call addfld('CRM_RAD_QV' ,dims_rad_3D, 'A', 'kg/kg', 'CRM rad column water vapor' )
+   call addfld('CRM_RAD_QC' ,dims_rad_3D, 'A', 'kg/kg', 'CRM rad column cloud liquid' )
+   call addfld('CRM_RAD_QI' ,dims_rad_3D, 'A', 'kg/kg', 'CRM rad column cloud ice' )
+   call addfld('CRM_RAD_CLD',dims_rad_3D, 'A', 'kg/kg', 'CRM rad cloud fracton' )
 
    !----------------------------------------------------------------------------
    ! ECPP output variables
@@ -449,10 +450,11 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
 
    !----------------------------------------------------------------------------
    ! CRM radiation columns
-   call outfld('CRM_RAD_T' ,crm_rad%temperature(icol_beg:icol_end,:,:,:), ncol, lchnk )
-   call outfld('CRM_RAD_QV',crm_rad%qv         (icol_beg:icol_end,:,:,:), ncol, lchnk )
-   call outfld('CRM_RAD_QC',crm_rad%qc         (icol_beg:icol_end,:,:,:), ncol, lchnk )
-   call outfld('CRM_RAD_QI',crm_rad%qi         (icol_beg:icol_end,:,:,:), ncol, lchnk )
+   call outfld('CRM_RAD_T'  ,crm_rad%temperature(icol_beg:icol_end,:,:,:), ncol, lchnk )
+   call outfld('CRM_RAD_QV' ,crm_rad%qv         (icol_beg:icol_end,:,:,:), ncol, lchnk )
+   call outfld('CRM_RAD_QC' ,crm_rad%qc         (icol_beg:icol_end,:,:,:), ncol, lchnk )
+   call outfld('CRM_RAD_QI' ,crm_rad%qi         (icol_beg:icol_end,:,:,:), ncol, lchnk )
+   call outfld('CRM_RAD_CLD',crm_rad%cld        (icol_beg:icol_end,:,:,:), ncol, lchnk )
 
    !----------------------------------------------------------------------------
    ! CRM domain average condensate and precipitation
