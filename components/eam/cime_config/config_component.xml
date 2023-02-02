@@ -64,13 +64,15 @@
       <value compset="_EAM%ADIAB"      >-phys adiabatic</value>
 
       <!-- Multiscale modeling framework (MMF) -->
-      <value compset="_EAM%.*MMF1-SAM"  >-crm samxx</value>
-      <value compset="_EAM%.*MMF1-PAM"  >-crm pam</value>
+      <value compset="_EAM%.*MMF1"     >-crm samxx</value>
+      <value compset="_EAM%.*MMF-SAM"  >-crm samxx</value>
+      <value compset="_EAM%.*MMF-PAM"  >-crm pam</value>
       <value compset="_EAM%.*MMF"      >-use_MMF -nlev 60 -crm_nz 50</value>
       <value compset="_EAM%.*MMF"      >-crm_dt 10 -crm_dx 2000 -crm_nx 64 -crm_ny 1 </value>
       <value compset="_EAM%.*MMF"      >-crm_nx_rad 4 -crm_ny_rad 1 -rad rrtmgp -rrtmgpxx</value>
-      <value compset="_EAM%.*MMF1-SAM"     >-MMF_microphysics_scheme sam1mom -chem none</value>
-      <value compset="_EAM%.*MMF1-PAM"     >-MMF_microphysics_scheme p3 -chem none</value>
+      <value compset="_EAM%.*MMF1"     >-MMF_microphysics_scheme sam1mom -chem none</value>
+      <value compset="_EAM%.*MMF-SAM"  >-MMF_microphysics_scheme sam1mom -chem none</value>
+      <value compset="_EAM%.*MMF-PAM"  >-MMF_microphysics_scheme p3 -chem none</value>
       <!-- Temporarily disable these for PAM development -->
       <!-- <value compset="_EAM%.*MMF"      >-use_MMF_VT</value> -->
       <!-- <value compset="_EAM%.*MMF"      >-use_MMF_ESMT</value> -->
@@ -123,6 +125,8 @@
       <!-- MMF / Super-Parameterization -->
       <value compset="2010(?:SOI)?_EAM%MMF1"            >2010_mmf_1mom</value>
       <value compset="2010(?:SOI)?_EAM%MMF2"            >2010_mmf_2mom</value>
+      <value compset="2010(?:SOI)?_EAM%MMF-SAM"         >2010_mmf_1mom</value>
+      <value compset="2010(?:SOI)?_EAM%MMF-PAM"         >2010_mmf_1mom</value>
       <value compset="_EAM%AQP.*MMF"                    >aquaplanet_MMF-1mom</value>
       <value compset="_EAM%RCE.*MMF"                    >RCEMIP_EAMv1</value>
       <value compset="ARM97_EAM%SCM.*MMF"               >scam_arm97_MMF-1mom</value>
