@@ -311,6 +311,9 @@ void CoarseningRemapper::do_registration_ends ()
       auto fid = f.get_header().get_identifier();
       register_field_from_src(fid);
       m_mask_map_tgt.emplace(idx,m_num_registered_fields-1);
+      auto f_mask_extra = f.get_header().get_extra_data();
+      // Make sure fields representing masks are not themselves meant to be masked.
+      EKAT_REQUIRE(!f_mask_extra.count("mask_data"));
     }
     // Update the number of fields.
     m_num_fields = m_num_registered_fields;
@@ -321,12 +324,20 @@ void CoarseningRemapper::do_registration_ends ()
       auto name = f.name();
       if (!m_mask_map_src.count(name)) {
         m_mask_map_src.emplace(name,-1);
+      } else {
+        // If there is a mask attached to this add a check that it is compatible with the field layout,
+        // i.e. if layout = COL then mask should equal COL.  If layout is COL,LEV then mask is COL,LEV and anything
+        // with higher dimensionality will use a mask of COL,LEV (for now).
+        using namespace ShortFieldTagsNames;
+        auto m_idx = m_mask_map_src.at(name);
+        if (m_idx >-1) {
+        auto m_fld = m_mask_fields_src[m_idx];
+        auto m_lt = m_fld.get_header().get_identifier().get_layout(); 
+        auto f_lt = f.get_header().get_identifier().get_layout();
+        EKAT_REQUIRE(f_lt.has_tag(COL) == m_lt.has_tag(COL));
+        EKAT_REQUIRE(f_lt.has_tag(LEV) == m_lt.has_tag(LEV));
+        }
       }
-      // TODO: If there is a mask attached to this add a check that it is compatible with the field layout,
-      // i.e. if layout = COL then mask should equal COL.  If layout is COL,LEV then mask is COL,LEV and anything
-      // with higher dimensionality will use a mask of COL,LEV (for now).
-      //
-      // TODO also check that all mask fields are not themselves set to be masked...
     }
 
   }
