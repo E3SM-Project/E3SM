@@ -56,6 +56,13 @@ module seq_comm_mct
   public seq_comm_printcomms
   public seq_comm_get_ncomps
 
+  ! the function for ECDA communicator
+  public seq_DA_comm_iamin
+  public seq_DA_comm_iamroot
+  public seq_DA_comm_mpicom
+  public seq_DA_comm_iam
+  public seq_DA_comm_npes
+  public seq_DA_comm_inst
   !--------------------------------------------------------------------------
   ! Public data
   !--------------------------------------------------------------------------
@@ -70,6 +77,7 @@ module seq_comm_mct
 
   integer, parameter :: ncomptypes = 9  ! total number of component types
   integer, parameter :: ncouplers  = 1  ! number of couplers
+  integer, parameter :: nDAcomps  = 14  ! number of comms for data assimilation, two for each active component, IAC???, the esp is not real prognostical component
   integer, parameter, public :: num_inst_atm = NUM_COMP_INST_ATM
   integer, parameter, public :: num_inst_lnd = NUM_COMP_INST_LND
   integer, parameter, public :: num_inst_ocn = NUM_COMP_INST_OCN
@@ -157,6 +165,15 @@ module seq_comm_mct
   integer, public :: CPLIACID(num_inst_iac)
   integer, public :: CPLESPID(num_inst_esp)
 
+  != ECDA realted COMM
+  integer, public :: DAATMID,DAATMALLID
+  integer, public :: DALNDID,DALNDALLID
+  integer, public :: DAOCNID,DAOCNALLID
+  integer, public :: DAICEID,DAICEALLID
+  integer, public :: DAGLCID,DAGLCALLID
+  integer, public :: DAROFID,DAROFALLID
+  integer, public :: DAWAVID,DAWAVALLID
+
   integer, parameter, public :: seq_comm_namelen=16
 
   ! taskmap output level specifications for components
@@ -195,6 +212,7 @@ module seq_comm_mct
   end type seq_comm_type
 
   type(seq_comm_type) :: seq_comms(ncomps)
+  type(seq_comm_type) :: seq_DA_comms(nDAcomps)        ! new comm for ECDA
 
   character(*), parameter :: layout_concurrent = 'concurrent'
   character(*), parameter :: layout_sequential = 'sequential'
@@ -237,6 +255,9 @@ contains
     integer :: ierr, n, count
     character(*), parameter :: subName =   '(seq_comm_init) '
     integer :: mype,numpes,myncomps,max_threads,gloroot, global_numpes
+
+    integer :: myGpe     ! for multi-driver,ECDA
+
     integer :: pelist(3,1)       ! start, stop, stride for group
     integer :: exlist(3), mpigrp_world, exgrp
     integer, pointer :: comps(:) ! array with component ids
@@ -612,8 +633,57 @@ contains
 
     deallocate(comps,comms)
 
+!=   build the communicatora for ECDA
+    call mpi_barrier(Global_Comm, ierr)
+    if (num_inst_driver > 1) then
+    !Initialize seq_DA_comms elements
+       call mpi_comm_rank(GLOBAL_COMM, myGpe  , ierr)
+       call shr_mpi_chkerr(ierr,subname//' mpi_comm_rank Global')
+       do n = 1,nDAcomps
+          seq_DA_comms(n)%name = 'unknown'
+          seq_DA_comms(n)%suffix = ' '
+          seq_DA_comms(n)%inst = 0
+          seq_DA_comms(n)%set = .false.
+          seq_DA_comms(n)%mpicom = MPI_COMM_NULL    ! do some initialization here
+          seq_DA_comms(n)%iam = -1
+          seq_DA_comms(n)%iamroot = .false.
+          seq_DA_comms(n)%npes = -1
+          seq_DA_comms(n)%nthreads = -1
+          seq_DA_comms(n)%gloiam = myGpe            ! DA use the real global peID, instead of driver_comm peID
+          seq_DA_comms(n)%gloroot = -1
+          seq_DA_comms(n)%pethreads = -1
+          seq_DA_comms(n)%cplpe = -1
+          seq_DA_comms(n)%cmppe = -1
+       enddo
+       count = 0
+       call DAcomp_comm_init(ATMID,  DAATMALLID, DAATMID,'ATM', count,drv_comm_id &
+               ,atm_rootpe,atm_nthreads, atm_ntasks, atm_pestride, numpes) 
+       call DAcomp_comm_init(LNDID,  DALNDALLID, DALNDID,'LND', count,drv_comm_id &
+               ,lnd_rootpe,lnd_nthreads, lnd_ntasks, lnd_pestride, numpes) 
+       call DAcomp_comm_init(OCNID,  DAOCNALLID, DAOCNID,'OCN', count,drv_comm_id &
+               ,ocn_rootpe,ocn_nthreads, ocn_ntasks, ocn_pestride, numpes) 
+       call DAcomp_comm_init(ICEID,  DAICEALLID, DAICEID,'ICE', count,drv_comm_id &
+               ,ice_rootpe,ice_nthreads, ice_ntasks, ice_pestride, numpes) 
+       call DAcomp_comm_init(ROFID,  DAROFALLID, DAROFID,'ROF', count,drv_comm_id &
+               ,rof_rootpe,rof_nthreads, rof_ntasks, rof_pestride, numpes) 
+       call DAcomp_comm_init(GLCID,  DAGLCALLID, DAGLCID,'GLC', count,drv_comm_id &
+               ,glc_rootpe,glc_nthreads, glc_ntasks, glc_pestride, numpes) 
+       call DAcomp_comm_init(WAVID,  DAWAVALLID, DAWAVID,'WAV', count,drv_comm_id &
+               ,wav_rootpe,wav_nthreads, wav_ntasks, wav_pestride, numpes) 
+
+ !      call DAcomp_comm_init(LNDID,  DALNDALLID, DALNDID,'LND', count, drv_comm_id)
+ !      call DAcomp_comm_init(ICEID,  DAICEALLID, DAICEID,'ICE', count, drv_comm_id)
+ !      call DAcomp_comm_init(OCNID,  DAOCNALLID, DAOCNID,'OCN', count, drv_comm_id)
+ !      call DAcomp_comm_init(ROFID,  DAROFALLID, DAROFID,'ROF', count, drv_comm_id)
+ !      call DAcomp_comm_init(GLCID,  DAGLCALLID, DAGLCID,'GLC', count, drv_comm_id)
+ !      call DAcomp_comm_init(WAVID,  DAWAVALLID, DAWAVID,'WAV', count, drv_comm_id)
+
+    endif
+   
+    call mpi_barrier(GLOBAL_COMM,ierr) ! ensure that all driver_comm processes initialized their comms
 
     call seq_comm_printcomms()
+    call mpi_barrier(GLOBAL_COMM,ierr) ! ensure that all driver_comm processes initialized their comms
 
   end subroutine seq_comm_init
 
@@ -721,6 +791,7 @@ contains
     call seq_comm_joincomm(CPLID, ALLCOMPID, CPLALLCOMPID, 'CPLALL'//name//'ID', 1, 1)
 
   end subroutine comp_comm_init
+
 
   subroutine comp_pelayout_init(numpes, ntasks, rootpe, pestride, nthreads, layout)
     integer,intent(in) :: numpes
@@ -988,7 +1059,62 @@ contains
 
   end subroutine seq_comm_joincomm
 
-  !---------------------------------------------------------
+   !---------------------------------------------------------
+  ! initial the communicators for ECDA, only for multi-driver setting, here the num_inst_comp should be 1.
+    subroutine DAcomp_comm_init(COMPID, DACOMPALLID, DACOMPID,name, count, drv_comm_id, &
+               comp_rootpe, comp_nthreads, comp_ntasks,comp_pestride, drv_numpes)
+    integer, intent(in) :: COMPID(:)
+    integer, intent(out) :: DACOMPALLID
+    integer, intent(out) :: DACOMPID
+    character(len=*), intent(in) :: name
+    integer, intent(inout) :: count
+    integer, intent(in) :: drv_comm_id
+
+    integer, intent(in),optional :: comp_rootpe
+    integer, intent(in),optional :: comp_nthreads
+    integer, intent(in), optional :: comp_ntasks
+    integer, intent(in),optional :: comp_pestride
+    integer, intent(in),optional :: drv_numpes
+    !character(len=*), intent(in), optional :: comp_layout   ! multi-drive has be concurrent, not needed.
+
+    character(len=*), parameter :: subname = "DAcomp_comm_init"
+!    integer :: comp_inst_tasks
+!    integer :: droot
+!    integer :: current_task_rootpe
+    integer :: n
+    integer :: pelist (3,num_inst_driver)
+    integer :: ierr
+    integer :: myGpe
+
+!    if(size(COMPID) .ne. 1  ) then
+!       write(logunit,*) subname,' multi-driver only allow 1 instance, current instance ', size(COMPID)
+!       call shr_sys_abort()
+!    endif
+
+    count = count + 1
+    DACOMPALLID = count
+    count = count + 1
+    DACOMPID = count
+    ! two approached to create the DA COMM
+    if(present(comp_rootpe) .and. present(comp_nthreads) .and.present(comp_ntasks) .and. present(comp_pestride) .and. present(drv_numpes)) then
+       call mpi_comm_rank(GLOBAL_COMM, myGpe, ierr)
+       if (myGpe==0) then
+          do n=1,num_inst_driver
+             pelist(1,n) = comp_rootpe+ drv_numpes*(n-1)
+             pelist(2,n) = pelist(1,n) + (comp_ntasks-1)*comp_pestride
+             pelist(3,n)= comp_pestride
+          enddo
+       endif
+       call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, GLOBAL_COMM, ierr)
+       call seq_comm_DAcomm(COMPID,DACOMPALLID,pelist=pelist,iname='DA'//name//'ALLID',inst=drv_comm_id)
+    else
+       call seq_comm_DAcomm(COMPID,DACOMPALLID,iname='DA'//name//'ALLID',inst=drv_comm_id)
+    endif
+    if(seq_DA_comm_iamin(DACOMPALLID)) &
+       call seq_comm_DAsprtcomm(DACOMPALLID,COMPID,DACOMPID,'DA'//name//'ID')
+
+  end subroutine DAcomp_comm_init
+!-------------------------------
   subroutine seq_comm_jcommarr(IDs,ID,iname,inst,tinst)
 
     implicit none
@@ -1465,5 +1591,353 @@ contains
     oname = trim(str1)//trim(cnum)
 
   end subroutine seq_comm_mkname
+
+  !---------------------------------------------------------
+  ! subroutine related to ECDA
+  !---------------------------------------------------------
+  subroutine seq_comm_DAsprtcomm(ID1,IDs,ID,iname)
+
+    implicit none
+    integer,intent(IN) :: ID1    !  srd id of seq_DA_comm
+    integer,intent(IN) :: IDs(:)    ! srd id of seq_comm
+    integer,intent(IN) :: ID     ! computed id
+    character(len=*),intent(IN),optional :: iname  ! comm name
+
+    integer :: mpigrp
+    integer :: mpicom_ID1,mpicom
+    integer :: nids,n,myGpe
+    integer :: comp_pe_id       ! the mype in the comp_comm
+    integer :: ierr
+    character(len=seq_comm_namelen) :: cname
+    logical :: set_suffix
+    character(*),parameter :: subName =   '(seq_comm_sprtcomm) '
+
+    ! check that IDs are in valid range, that ID1 and IDs have
+    ! been set, and that ID has not been set
+
+    if (ID1 < 1 .or. ID1 > nDAcomps) then
+       write(logunit,*) subname,' ID1 out of range, abort ',ID1
+       call shr_sys_abort()
+    endif
+    if (.not. seq_DA_comms(ID1)%set ) then
+       write(logunit,*) subname,' ID1  not set ',ID1
+       call shr_sys_abort()
+    endif
+
+    nids = size(IDs)
+    do n = 1,nids
+       if (IDs(n) < 1 .or. IDs(n) > ncomps) then
+          write(logunit,*) subname,' IDs out of range, abort ',n,IDs(n)
+          call shr_sys_abort()
+       endif
+       if (.not. seq_comms(IDs(n))%set) then
+          write(logunit,*) subname,' IDs not set ',n,IDs(n)
+          call shr_sys_abort()
+       endif
+
+    enddo
+
+    if (ID < 1 .or. ID > nDAcomps) then
+       write(logunit,*) subname,' ID out of range, abort ',ID
+       call shr_sys_abort()
+    endif
+    if (seq_DA_comms(ID)%set) then
+       write(logunit,*) subname,' ID already set ',ID
+       call shr_sys_abort()
+    endif
+
+!=   use the iam as the index to seperate comm
+    comp_pe_id=-1
+    mpicom = MPI_COMM_NULL
+    mpicom_ID1=seq_DA_comms(ID1)%mpicom  ! the original comm
+
+    call mpi_comm_rank(mpicom_ID1, myGpe  , ierr)
+    call shr_mpi_chkerr(ierr,subname//' mpi_comm_rank Global')
+    
+    do n=1,nids
+        if(seq_comm_iamin(IDs(n))) comp_pe_id=seq_comms(IDs(n))%iam
+    enddo
+    if(mpicom_ID1 /= MPI_COMM_NULL) then
+        call mpi_comm_split(mpicom_ID1, comp_pe_id, myGpe, mpicom, ierr)
+        call shr_mpi_chkerr(ierr,subname//' mpi_comm_split for DA')
+    endif
+    call mpi_comm_group(mpicom, mpigrp, ierr)
+    call shr_mpi_chkerr(ierr,subname//' mpi_comm_group mpigrp')
+    seq_DA_comms(ID)%set = .true.
+    seq_DA_comms(ID)%ID = ID
+    seq_DA_comms(ID)%inst = comp_pe_id  ! here we use the inst to seperte the comms for DA
+    set_suffix = .true.
+
+    if (present(iname)) then
+        seq_DA_comms(ID)%name = trim(iname)
+        if (set_suffix) then
+              call seq_comm_mkname(cname,iname,seq_DA_comms(ID)%inst)
+              seq_DA_comms(ID)%name = trim(cname)
+        endif
+    endif
+
+    if (set_suffix) then
+        call seq_comm_mkname(cname,'_',seq_DA_comms(ID)%inst)
+        seq_DA_comms(ID)%suffix = trim(cname)
+    else
+        seq_DA_comms(ID)%suffix = ' '
+    endif
+
+    seq_DA_comms(ID)%mpicom = mpicom
+    seq_DA_comms(ID)%mpigrp = mpigrp
+
+    seq_DA_comms(ID)%nthreads = 1
+    do n = 1,nids
+       seq_DA_comms(ID)%nthreads = max(seq_DA_comms(ID)%nthreads,seq_comms(IDs(n))%nthreads)
+    enddo
+    seq_DA_comms(ID)%nthreads = max(seq_DA_comms(ID1)%nthreads,seq_DA_comms(ID)%nthreads)
+
+    if (mpicom /= MPI_COMM_NULL) then
+       call mpi_comm_size(mpicom,seq_DA_comms(ID)%npes,ierr)
+       call shr_mpi_chkerr(ierr,subname//' mpi_comm_size')
+       call mpi_comm_rank(mpicom,seq_DA_comms(ID)%iam,ierr)
+       call shr_mpi_chkerr(ierr,subname//' mpi_comm_rank')
+       if (seq_DA_comms(ID)%iam == 0) then
+          seq_DA_comms(ID)%iamroot = .true.
+       else
+          seq_DA_comms(ID)%iamroot = .false.
+       endif
+    else
+       seq_DA_comms(ID)%npes = -1
+       seq_DA_comms(ID)%iam = -1
+       seq_DA_comms(ID)%iamroot = .false.
+    endif
+
+    seq_DA_comms(ID)%cplpe = -1
+    seq_DA_comms(ID)%cmppe = -1
+    
+    if (seq_DA_comms(ID)%iamroot) then
+       if (loglevel > 1) then
+          write(logunit,*) trim(subname),' init ID ',ID1,seq_DA_comms(ID1)%name, &
+               ' separate into ID',ID,seq_DA_comms(ID)%name,', npes =',seq_DA_comms(ID)%npes, &
+               ' nthreads =',seq_DA_comms(ID)%nthreads
+       else
+          write(logunit,*) trim(subname),' init ID ',ID1,seq_DA_comms(ID1)%name, &
+               ' separate into ID',ID,seq_DA_comms(ID)%name,', npes =',seq_DA_comms(ID)%npes, &
+               ' nthreads =',seq_DA_comms(ID)%nthreads
+       endif
+    endif
+
+  end subroutine seq_comm_DAsprtcomm
+
+   !---------------------------------------------------------
+  subroutine seq_comm_DAcomm(IDs,ID,pelist,iname,inst)
+
+    implicit none
+    integer,intent(IN) :: IDs(:) ! src id in seq_comm
+    integer,intent(IN) :: ID     ! computed id in seq_DA_comm
+    integer,intent(IN),optional :: pelist(3,num_inst_driver)
+    character(len=*),intent(IN),optional :: iname  ! comm name
+    integer,intent(IN),optional :: inst
+
+    !local
+    integer :: mpigrp_world
+    integer :: mpigrp, mpigrpp
+    integer :: mpicom, nids
+    integer :: MyGpe, color
+    integer :: ierr
+    integer :: n
+    character(len=seq_comm_namelen) :: cname
+    logical :: set_suffix
+    character(*),parameter :: subName =   '(seq_comm_DAcomm) '
+
+    ! check that IDs are in valid range, that IDs have
+    ! been set, and that ID has not been set
+
+    nids = size(IDs)
+    do n = 1,nids
+       if (IDs(n) < 1 .or. IDs(n) > ncomps) then
+          write(logunit,*) subname,' IDs out of range, abort ',n,IDs(n)
+          call shr_sys_abort()
+       endif
+       if (.not. seq_comms(IDs(n))%set) then
+          write(logunit,*) subname,' IDs not set ',n,IDs(n)
+          call shr_sys_abort()
+       endif
+    enddo
+
+    if (ID < 1 .or. ID > nDAcomps) then
+       write(logunit,*) subname,' ID out of range, abort ',ID
+       call shr_sys_abort()
+    endif
+    if (seq_DA_comms(ID)%set) then
+       write(logunit,*) subname,' ID already set ',ID
+       call shr_sys_abort()
+    endif
+
+    seq_DA_comms(ID)%suffix = ' '
+
+    !   find the Global peID
+    call mpi_comm_rank(GLOBAL_COMM, myGpe  , ierr)
+    call shr_mpi_chkerr(ierr,subname//' mpi_comm_rank Global')
+    
+    if(present(pelist)) then
+       !- approach one :  provide valid pelist, include all ensemble member
+       call mpi_comm_group(GLOBAL_COMM, mpigrp_world, ierr)
+       call shr_mpi_chkerr(ierr,subname//' mpi_comm_group mpigrp_world')
+       call mpi_group_range_incl(mpigrp_world, num_inst_driver, pelist, mpigrp,ierr)
+       call shr_mpi_chkerr(ierr,subname//' mpi_group_range_incl mpigrp')
+       call mpi_comm_create(GLOBAL_COMM, mpigrp, mpicom, ierr)
+    else
+       !- approach two : use color to seperate PEs within the components, Example, all PEs running atmosphere
+       color =  -1  ! (<0) not included in the split list 
+       do n = 1,nids
+          if(seq_comm_iamin(IDs(n))) color=1   ! valide PEs
+       enddo
+       ! The DAcompALLid is created across multiple drivers.
+       call mpi_comm_split(GLOBAL_COMM, color, myGpe, mpicom, ierr)
+       call shr_mpi_chkerr(ierr,subname//' mpi_comm_split mpicom')
+       call mpi_comm_group(mpicom, mpigrp, ierr)
+       call shr_mpi_chkerr(ierr,subname//' mpi_comm_group mpigrp')
+    endif
+
+    seq_DA_comms(ID)%set = .true.
+    seq_DA_comms(ID)%ID = ID
+
+    ! use the inst to indicate the pe belong to the driver number
+    if (present(inst)) then
+       seq_DA_comms(ID)%inst = inst
+    else
+       seq_DA_comms(ID)%inst = 1
+    endif
+
+    if (present(iname)) then
+       seq_DA_comms(ID)%name = trim(iname)
+    endif
+
+    seq_DA_comms(ID)%gloiam=myGpe   ! real global PE ID
+
+    seq_DA_comms(ID)%mpicom = mpicom
+    seq_DA_comms(ID)%mpigrp = mpigrp
+
+    seq_DA_comms(ID)%nthreads = 1
+    do n = 1,nids
+       seq_DA_comms(ID)%nthreads = max(seq_DA_comms(ID)%nthreads,seq_comms(IDs(n))%nthreads)
+    enddo
+
+    if (mpicom /= MPI_COMM_NULL) then
+       call mpi_comm_size(mpicom,seq_DA_comms(ID)%npes,ierr)
+       call shr_mpi_chkerr(ierr,subname//' mpi_comm_size')
+       call mpi_comm_rank(mpicom,seq_DA_comms(ID)%iam,ierr)
+       call shr_mpi_chkerr(ierr,subname//' mpi_comm_rank')
+       if (seq_DA_comms(ID)%iam == 0) then
+          seq_DA_comms(ID)%iamroot = .true.
+       else
+          seq_DA_comms(ID)%iamroot = .false.
+       endif
+    else
+       seq_DA_comms(ID)%npes = -1
+       seq_DA_comms(ID)%iam = -1
+       seq_DA_comms(ID)%iamroot = .false.
+    endif
+
+    seq_DA_comms(ID)%cplpe = -1
+    seq_DA_comms(ID)%cmppe = -1
+
+    if (seq_DA_comms(ID)%iamroot) then
+       if (loglevel > 1) then
+          write(logunit,F14) trim(subname),'init ID ',ID,seq_DA_comms(ID)%name, &
+               ' join multiple comp IDs',' npes =',seq_DA_comms(ID)%npes, &
+               ' nthreads =',seq_DA_comms(ID)%nthreads
+       else
+          write(logunit,F14) trim(subname),'init ID ',ID,seq_DA_comms(ID)%name, &
+               ' join multiple comp IDs',' npes =',seq_DA_comms(ID)%npes, &
+               ' nthreads =',seq_DA_comms(ID)%nthreads
+       endif
+    endif
+
+  end subroutine seq_comm_DAcomm
+  !---------------------------------------------------------
+  integer function seq_DA_comm_inst(ID)
+
+    implicit none
+    integer,intent(in) :: ID
+    character(*),parameter :: subName =   '(seq_DA_comm_inst) '
+
+    if ((ID < 1) .or. (ID > nDAcomps)) then
+       seq_DA_comm_inst = 0
+    else
+       seq_DA_comm_inst = seq_DA_comms(ID)%inst
+    end if
+
+  end function seq_DA_comm_inst
+  !---------------------------------------------------------
+  integer function seq_DA_comm_npes(ID)
+
+    implicit none
+    integer,intent(in) :: ID
+    character(*),parameter :: subName =   '(seq_DA_comm_npes) '
+
+    if ((ID < 1) .or. (ID > nDAcomps)) then
+       seq_DA_comm_npes = 0
+    else
+       seq_DA_comm_npes = seq_DA_comms(ID)%npes
+    end if
+
+  end function seq_DA_comm_npes
+
+  !----------------------------------------------------------
+  logical function seq_DA_comm_iamin(ID)
+
+    implicit none
+    integer,intent(in) :: ID
+    character(*),parameter :: subName =   '(seq_DA_comm_iamin) '
+
+    if ((ID < 1) .or. (ID > nDAcomps)) then
+       seq_DA_comm_iamin = .false.
+    else if (seq_DA_comms(ID)%iam >= 0) then
+       seq_DA_comm_iamin = .true.
+    else
+       seq_DA_comm_iamin = .false.
+    endif
+
+  end function seq_DA_comm_iamin
+    !---------------------------------------------------------
+  logical function seq_DA_comm_iamroot(ID)
+
+    implicit none
+    integer,intent(in) :: ID
+    character(*),parameter :: subName =   '(seq_DA_comm_iamroot) '
+
+    if ((ID < 1) .or. (ID > nDAcomps)) then
+       seq_DA_comm_iamroot = .false.
+    else
+       seq_DA_comm_iamroot = seq_DA_comms(ID)%iamroot
+    end if
+
+  end function seq_DA_comm_iamroot
+  !---------------------------------------------------------
+  integer function seq_DA_comm_mpicom(ID)
+
+    implicit none
+    integer,intent(in) :: ID
+    character(*),parameter :: subName =   '(seq_DA_comm_mpicom) '
+
+    if ((ID < 1) .or. (ID > nDAcomps)) then
+       seq_DA_comm_mpicom = MPI_COMM_NULL
+    else
+       seq_DA_comm_mpicom = seq_DA_comms(ID)%mpicom
+    end if
+
+  end function seq_DA_comm_mpicom
+  !---------------------------------------------------------
+  integer function seq_DA_comm_iam(ID)
+
+    implicit none
+    integer,intent(in) :: ID
+    character(*),parameter :: subName =   '(seq_DA_comm_iam) '
+
+    if ((ID < 1) .or. (ID > nDAcomps)) then
+       seq_DA_comm_iam = -1
+    else
+       seq_DA_comm_iam = seq_DA_comms(ID)%iam
+    end if
+
+  end function seq_DA_comm_iam
   !---------------------------------------------------------
 end module seq_comm_mct

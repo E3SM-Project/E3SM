@@ -2,17 +2,24 @@
 
 OBJS = ocn_comp_mct.o \
        mpaso_cpl_indices.o \
-	   mpaso_mct_vars.o
+	   mpaso_mct_vars.o \
+	      mpaso_DA_mod.o \
+		ECDA_mpaso_obs_mod.o \
+	          ECDA_mpaso_state_mod.o 
 
 OCEAN_SHARED_INCLUDES=-I../core_ocean/mode_forward -I../core_ocean/shared -I../core_ocean/analysis_members -I../core_ocean/cvmix -I../framework -I../operators
 
 all: $(OBJS)
 
-ocn_comp_mct.o: mpaso_cpl_indices.o mpaso_mct_vars.o
+ocn_comp_mct.o: mpaso_cpl_indices.o mpaso_mct_vars.o mpaso_DA_mod.o
 
 mpaso_cpl_indices.o:
 
 mpaso_mct_vars.o:
+
+mpaso_DA_mod.o: ECDA_mpaso_obs_mod.o ECDA_mpaso_state_mod.o
+
+ECDA_mpaso_obs_mod.o: ECDA_mpaso_state_mod.o
 
 clean:
 	$(RM) *.o *.mod *.f90

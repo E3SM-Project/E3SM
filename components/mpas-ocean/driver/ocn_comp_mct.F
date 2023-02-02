@@ -62,6 +62,8 @@ module ocn_comp_mct
    use ocn_config
    use ocn_submesoscale_eddies
    use ocn_eddy_parameterization_helpers
+   
+   use mpaso_DA_mod, only:mpaso_DA_init,mpaso_DA_run ! For ECDA   
 !
 ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -836,6 +838,8 @@ contains
         call memmon_reset_addr()
     endif
 #endif
+  
+    call mpaso_DA_init(mpicom_o,domain_ptr)    ! for ECDA
 
     call mpas_log_write('=== Completed ocn_init_mct ===', flushNow=.true.)
 
@@ -924,6 +928,9 @@ contains
       timeStep = mpas_get_clock_timestep(domain_ptr % clock, ierr=ierr)
       call mpas_get_timeInterval(timeStep, dt=dt)
       call mpas_reset_clock_alarm(domain_ptr % clock, coupleAlarmID, ierr=ierr)
+
+      !   ECDA, location may be adjust @YL
+      call mpaso_DA_run(domain % clock)
 
       ! Import state from coupler
       call ocn_import_mct(x2o_o, ierr)

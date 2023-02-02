@@ -18,6 +18,9 @@ list(APPEND RAW_SOURCES
   ../../mpas-ocean/driver/ocn_comp_mct.F
   ../../mpas-ocean/driver/mpaso_cpl_indices.F
   ../../mpas-ocean/driver/mpaso_mct_vars.F
+  ../../mpas-ocean/driver/mpaso_DA_mod.F
+  ../../mpas-ocean/driver/ECDA_mpaso_obs_mod.F
+  ../../mpas-ocean/driver/ECDA_mpaso_state_mod.F
 )
 
 # dycore
