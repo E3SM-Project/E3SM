@@ -81,6 +81,7 @@ private
   public  :: vlaplace_sphere_wk
   public  :: vlaplace_sphere_wk_contra
   public  :: vlaplace_sphere_wk_cartesian
+  public  :: partial_eta
 !  public  :: laplace_eta
   public  :: laplace_z
   public  :: element_boundary_integral
@@ -1241,6 +1242,50 @@ contains
     enddo
   end function vlaplace_sphere_wk_contra
 
+
+!DIR$ ATTRIBUTES FORCEINLINE :: partial_eta
+  function partial_eta(u,etam) result(du_deta)
+    ! input:  u = scalar
+    ! ouput:  du_deta = vertical derivative of u
+    !
+    ! This method computes second-order finite difference approximation to a field u at irregularly spaced points.
+    ! let u_0, u_1, u_2 be evaluations of a quantity at coordinates z_0, z_1, z_2, respectively.
+    ! Let a_1, a_2, a_3 be coeffients of a polynomial $f(z)$ that approximates u, 
+    ! such that u_i = a_0 (z_i-z_1)^2 + a_1 (z_i-z_1) + a_2.
+    ! This is a second order polynomial passing through the points (z_i, u_i).
+    ! A second order approximation to du/dz is then f(z_i) = a_1. 
+    ! Noting that u_1 = a_0 * 0^2 + a_1 * 0 + a_2, a_2 = u_1. 
+    ! Define zeta_i = z_i - z_1.
+    ! The other two constraints f(z_0) = u_0 and f(z_2) = u_2 give a 2x2 system of equations
+    ! [zeta_0^2, zeta_0 ; zeta_2^2, zeta_2 ][a_0; a_1] = [u_0-u_1; u_2-u_1].
+    ! We use the standard closed-form way of solving a 2x2 system.
+    ! This method returns the value a_1 computed when this system is solved.
+    real(kind=real_kind), intent(in) :: u(nlev)
+    real(kind=real_kind), intent(in) :: etam(nlev)
+    real(kind=real_kind) :: du_deta(nlev)
+
+    ! Local
+    real(kind=real_kind) :: u1(nlev), u2(nlev), u3(nlev)
+    real(kind=real_kind) :: eta1(nlev), eta2(nlev), eta3(nlev)
+    real(kind=real_kind) :: num(nlev), den(nlev)
+
+
+    eta1(2:nlev) = etam(1:nlev-1)
+    eta2 = etam(:)
+    eta3(1:nlev-1) = etam(2:nlev)
+    eta1(1) = etam(3)
+    eta3(nlev) = etam(nlev-2)
+
+    u1(2:nlev) = u(1:nlev-1)
+    u2 = u
+    u3(1:nlev-1) = u(2:nlev)
+    u1(1) = u( 3)
+    u3(nlev) = u(nlev-2)
+
+    num = (u2-u1)*(eta3-eta2)**2.0_real_kind + (u3-u2)*(eta1-eta2)**2.0_real_kind
+    den = (eta1-eta2)**2.0_real_kind * (eta3-eta2) - (eta1-eta2)*(eta3-eta2)**2.0_real_kind
+    du_deta  = num/den
+  end function partial_eta
 
 
 #if 0
