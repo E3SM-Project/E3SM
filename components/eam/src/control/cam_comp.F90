@@ -143,6 +143,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    integer :: nlcols
    integer :: dims(3)
    integer, allocatable :: cols_gids(:)
+   real(r8), allocatable :: cols_area(:)
    character(len=max_str_len) :: dimnames(3)
    logical :: in_pbuf, in_q
    real(r8), pointer :: field1d(:), field2d(:,:), field3d(:,:,:)
@@ -235,23 +236,27 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    enddo
    dimnames(1) = "ncol"
 
-   ! Col GIDs
-   fname = "col_gids"
+   ! Col GIDs and area
+   ! NOTE: .false. is to declare the field as a Copy of input data, rather than a view
    dims(1) = nlcols
    allocate(cols_gids(pcols))
-   call cldera_add_partitioned_field (fname,1,dims,dimnames,nparts,part_dim,.false.,"int")
+   allocate(cols_area(pcols))
+   call cldera_add_partitioned_field ("col_gids",1,dims,dimnames,nparts,part_dim,.false.,"int")
+   call cldera_add_partitioned_field ("area",1,dims,dimnames,nparts,part_dim,.false.)
    do ipart = 1,nparts
      c = begchunk+ipart-1
      ncols = get_ncols_p(c)
 
-     call cldera_set_field_part_size(fname,ipart,ncols)
-   enddo
-   call cldera_commit_field(fname)
-   do ipart = 1,nparts
-     c = begchunk+ipart-1
+     call cldera_set_field_part_size("col_gids",ipart,ncols)
      call get_gcol_all_p (c,pcols,cols_gids)
-     call cldera_set_field_part_data(fname,ipart,cols_gids)
+     call cldera_set_field_part_data("col_gids",ipart,cols_gids)
+
+     call cldera_set_field_part_size("area",ipart,ncols)
+     call get_area_all_p(c,pcols,cols_area)
+     call cldera_set_field_part_data("area",ipart,cols_gids)
    enddo
+   call cldera_commit_field("col_gids")
+   call cldera_commit_field("area")
 
    ! PBUF fields
    nfields = size(pbuf2d,1)
