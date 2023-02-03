@@ -87,6 +87,7 @@ contains
     eto = (c1 * delta * (rn_c - g_c) + gamma1 * (c2/(t_c + c5)) * u * (es_c - ea)) / &
           (delta + gamma1 * (1 + c3 * u))
     eto = max(eto,0._r8)
+
   end subroutine calculate_eto
 
   !-----------------------------------------------------------------------

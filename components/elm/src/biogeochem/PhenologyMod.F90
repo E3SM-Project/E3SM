@@ -284,6 +284,7 @@ contains
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
     type(solarabs_type)      , intent(in)    :: solarabs_vars
+
     !-----------------------------------------------------------------------
 
     ! each of the following phenology type routines includes a filter
@@ -2413,6 +2414,7 @@ contains
     type(cnstate_type)     , intent(inout) :: cnstate_vars
     type(crop_type)        , intent(inout) :: crop_vars
     type(solarabs_type)    , intent(in)    :: solarabs_vars
+
     !
     ! !LOCAL VARIABLES:
     integer :: p,c,m,t,n,h          ! indices

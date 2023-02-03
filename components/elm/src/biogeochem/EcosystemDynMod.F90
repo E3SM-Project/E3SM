@@ -44,7 +44,6 @@ module EcosystemDynMod
   ! for FAN
   use SolarAbsorbedType    , only : solarabs_type
 
-
   use timeinfoMod
   use perfMod_GPU
   use VegetationDataType , only : veg_cf_summary, veg_cf_summary_for_ch4, veg_cf_summary_rr
