@@ -1086,7 +1086,7 @@ contains
                    cnstate_vars,  atm2lnd_vars,          &
                    canopystate_vars, soilstate_vars, crop_vars, ch4_vars, &
                    photosyns_vars, soilhydrology_vars, energyflux_vars,   &
-                   sedflux_vars)
+                   sedflux_vars, solarabs_vars)
 
              !===========================================================================================
              ! clm_interface: 'EcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): END
