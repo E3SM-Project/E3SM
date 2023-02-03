@@ -142,12 +142,11 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   // Setup remappers - if needed
   if (m_vert_remap_from_file) {  
     using namespace ShortFieldTagsNames;
-    Real mask_val = m_horiz_remap_from_file ? 0.0 : -999999.0;
     // We build a remapper, to remap fields from the fm grid to the io grid
     auto vert_remap_file   = params.get<std::string>("vertical_remap_file");
     auto f_lev = get_field("p_mid","sim");
     auto f_ilev = get_field("p_int","sim");
-    m_vert_remapper = std::make_shared<VerticalRemapper>(io_grid,vert_remap_file,f_lev,f_ilev,mask_val);
+    m_vert_remapper = std::make_shared<VerticalRemapper>(io_grid,vert_remap_file,f_lev,f_ilev,std::numeric_limits<Real>::max()/10.0); //TODO, removing the mask arg doesn't work, but the vertical remapper has a constructor that for the case where no mask arg is given.  Note, the issue is caught in set_grid below where the io_grid has an invalid pointer.
     io_grid = m_vert_remapper->get_tgt_grid();
     set_grid(io_grid);
 

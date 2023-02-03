@@ -24,7 +24,7 @@ FieldAtPressureLevel (const ekat::Comm& comm, const ekat::ParameterList& params)
   m_p_tgt = view_1d<mPack>("",1);
   Kokkos::deep_copy(m_p_tgt, m_pressure_level);
 
-  m_mask_val = m_params.get<Real>("mask_value",Real(-999999.0));
+  m_mask_val = m_params.get<Real>("mask_value",Real(std::numeric_limits<Real>::max()/10.0));
 }
 
 // =========================================================================================
@@ -56,6 +56,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   Field diag_mask(mask_fid);
   diag_mask.allocate_view();
   m_diagnostic_output.get_header().set_extra_data("mask_data",diag_mask);
+  m_diagnostic_output.get_header().set_extra_data("mask_value",std::numeric_limits<Real>::max()/10.0);
   
 }
 // =========================================================================================

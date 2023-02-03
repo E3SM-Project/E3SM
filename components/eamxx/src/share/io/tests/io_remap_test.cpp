@@ -32,7 +32,7 @@ ekat::ParameterList set_input_params(const std::string& name, ekat::Comm& comm, 
 bool approx(const Real a, const Real b) {
   const Real tol = std::numeric_limits<Real>::epsilon()*100000;
   if (std::abs(a-b) >= tol) {
-    printf("Error::approx - difference of %e is greater than the max tolerance of %e\n",std::abs(a-b),tol);
+    printf("Error::approx - difference of |%e - %e| = %e is greater than the max tolerance of %e\n",a,b,std::abs(a-b),tol);
   }
   return std::abs(a-b) < tol;
 }
@@ -268,7 +268,8 @@ TEST_CASE("io_remap_test","io_remap_test")
 
   // Confirm that remapped fields are correct.
   print (" -> Test Remapped Output ... \n",io_comm);
-  const Real mask_val = -999999.0;
+  // Note, the vertical remapper defaults to a mask value of std numeric limits scaled by 0.1;
+  const Real mask_val = std::numeric_limits<Real>::max()/10.0;
   // ------------------------------------------------------------------------------------------------------
   //                                    ---  Vertical Remapping ---
   {
@@ -287,7 +288,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     // there isn't a source pressure pair that contains a target pressure value then the verticallyi interpolated
     // value is expected to be masked.
     //
-    // NOTE: For scorpio_output.cpp the mask value for vertical remapping is -999999.0
+    // NOTE: For scorpio_output.cpp the mask value for vertical remapping is std::numeric_limits<Real>::max()/10.0
     const auto& Yf_f_vert = fm_vert->get_field("Y_flat");
     const auto& Ys_f_vert = fm_vert->get_field("Y_int@"+std::to_string(p_ref)+"Pa");
     const auto& Ym_f_vert = fm_vert->get_field("Y_mid");
@@ -412,7 +413,7 @@ TEST_CASE("io_remap_test","io_remap_test")
     // also translate to more masking in the horizontal reamapping.  So we must check for potential
     // masking for all variables rather than just the Y_int@XPa variable for the horizontal interpolation.
     //
-    // NOTE: For scorpio_output.cpp the mask value for vertical remapping is -999999.0
+    // NOTE: For scorpio_output.cpp the mask value for vertical remapping is std::numeric_limits<Real>::max()/10.0 
     const auto& Yf_f_vh = fm_vh->get_field("Y_flat");
     const auto& Ys_f_vh = fm_vh->get_field("Y_int@"+std::to_string(p_ref)+"Pa");
     const auto& Ym_f_vh = fm_vh->get_field("Y_mid");

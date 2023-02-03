@@ -21,7 +21,7 @@ VerticalRemapper (const grid_ptr_type& src_grid,
                   const Field& lev_prof,
                   const Field& ilev_prof)
 {
-  VerticalRemapper(src_grid,map_file,lev_prof,ilev_prof,-999999.0);
+  VerticalRemapper(src_grid,map_file,lev_prof,ilev_prof,std::numeric_limits<Real>::max()/10.0);
 }
 
 VerticalRemapper::
@@ -252,12 +252,18 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
       // We have to create this mask field and add it to the map so we can assign it to this tgt field as an extra data
       FieldIdentifier mask_src_fid (lname, src_lay, nondim, m_src_grid->name() );
       Field           mask_src_fld (mask_src_fid);
+      mask_src_fld.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       mask_src_fld.allocate_view();
       const auto& tgt_lay = create_tgt_layout(src_lay);
       FieldIdentifier mask_tgt_fid (lname, tgt_lay, nondim, m_tgt_grid->name() );
       Field           mask_tgt_fld (mask_tgt_fid);
+      mask_tgt_fld.get_header().get_alloc_properties().request_allocation(SCREAM_PACK_SIZE);
       mask_tgt_fld.allocate_view();
+      auto tgt_extra = tgt.get_header().get_extra_data();
+      EKAT_REQUIRE_MSG(!tgt_extra.count("mask_data"),"ERROR VerticalRemapper::do_bind_field " + src.name() + " already has mask_data assigned!");
       f_tgt.get_header().set_extra_data("mask_data",mask_tgt_fld);
+      EKAT_REQUIRE_MSG(!tgt_extra.count("mask_value"),"ERROR VerticalRemapper::do_bind_field " + src.name() + " already has mask_data assigned!");
+      f_tgt.get_header().set_extra_data("mask_value",m_mask_val);
       m_src_masks.push_back(mask_src_fld);
       m_tgt_masks.push_back(mask_tgt_fld);
     }
@@ -268,7 +274,11 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
     if (src_extra.count("mask_data")) {
       auto& f_tgt = m_tgt_fields[ifield];
       auto f_mask = ekat::any_cast<Field>(src_extra.at("mask_data"));
+      auto tgt_extra = tgt.get_header().get_extra_data();
+      EKAT_REQUIRE_MSG(!tgt_extra.count("mask_data"),"ERROR VerticalRemapper::do_bind_field " + src.name() + " already has mask_data assigned!");
       f_tgt.get_header().set_extra_data("mask_data",f_mask);
+      EKAT_REQUIRE_MSG(!tgt_extra.count("mask_value"),"ERROR VerticalRemapper::do_bind_field " + src.name() + " already has mask_data assigned!");
+      f_tgt.get_header().set_extra_data("mask_value",m_mask_val);
     }
   }
 }
@@ -385,6 +395,7 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt, const bool 
     const auto  rank   = f_src.rank();
     const auto src_tag = layout.tags().back();
     const auto src_num_levs = layout.dim(src_tag);
+    // ARG mask_interp checks if this is a vertical interpolation of the mask array that tracks masked 0.0 or not 1.0
     Real mask_val = mask_interp ? 0.0 : m_mask_val;
 
     Field    src_lev_f;

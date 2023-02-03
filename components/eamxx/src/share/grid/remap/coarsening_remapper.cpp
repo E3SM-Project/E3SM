@@ -206,6 +206,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
     }
   }
   clean_up();
+
 }
 
 CoarseningRemapper::
@@ -463,8 +464,12 @@ rescale_masked_fields (const Field& x, const Field& mask) const
   const auto& layout = x.get_header().get_identifier().get_layout();
   const int rank = layout.rank();
   const int ncols = m_ov_tgt_grid->get_num_local_dofs();
-  const Real mask_val = -999999.0;   // TODO: Maybe not hard code what a fully masked value will be set too.
-  const Real mask_threshold = 1e-8;  // TODO: Should we not hardcode the threshold for simply masking out the column.
+  const auto x_extra  = x.get_header().get_extra_data();
+  Real mask_val = std::numeric_limits<Real>::max()/10.0;
+  if (x_extra.count("mask_value")) {
+    mask_val = ekat::any_cast<Real>(x_extra.at("mask_value")); 
+  }
+  const Real mask_threshold = std::numeric_limits<Real>::epsilon();  // TODO: Should we not hardcode the threshold for simply masking out the column.
   switch (rank) {
     case 1:
     {
@@ -558,20 +563,24 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
     {
       auto x_view = x.get_view<const Real*>();
       auto y_view = y.get_view<      Real*>();
-      view_1d<Real> mask_view; //("",x_view.extent_int(0));
+      view_1d<Real> mask_view;
       if (mask != nullptr) {
         mask_view = mask->get_view<Real*>();
-      } else {
-        mask_view = view_1d<Real>("",x_view.extent_int(0));
-        Kokkos::deep_copy(mask_view,1.0);
       }
       Kokkos::parallel_for(RangePolicy(0,nrows),
                            KOKKOS_LAMBDA(const int& row) {
         const auto beg = row_offsets(row);
         const auto end = row_offsets(row+1);
-        y_view(row) = weights(beg)*x_view(col_lids(beg))*mask_view(col_lids(beg));
-        for (int icol=beg+1; icol<end; ++icol) {
-          y_view(row) += weights(icol)*x_view(col_lids(icol))*mask_view(col_lids(icol));
+        if (mask != nullptr) {
+          y_view(row) = weights(beg)*x_view(col_lids(beg))*mask_view(col_lids(beg));
+          for (int icol=beg+1; icol<end; ++icol) {
+            y_view(row) += weights(icol)*x_view(col_lids(icol))*mask_view(col_lids(icol));
+          }
+        } else {
+          y_view(row) = weights(beg)*x_view(col_lids(beg));
+          for (int icol=beg+1; icol<end; ++icol) {
+            y_view(row) += weights(icol)*x_view(col_lids(icol));
+          }
         }
       });
       break;
@@ -580,11 +589,9 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
     {
       auto x_view = x.get_view<const Pack**>();
       auto y_view = y.get_view<      Pack**>();
-      view_2d<Real> mask_view("",x_view.extent_int(0),x_view.extent_int(1));
-      if (mask != NULL) {
-        mask_view = mask->get_view<Real**>();
-      } else {
-        Kokkos::deep_copy(mask_view,1.0);
+      view_2d<Pack> mask_view;
+      if (mask != nullptr) {
+        mask_view = mask->get_view<Pack**>();
       }
       const int dim1 = PackInfo::num_packs(src_layout.dim(1));
       auto policy = ESU::get_default_team_policy(nrows,dim1);
@@ -596,9 +603,16 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
         const auto end = row_offsets(row+1);
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dim1),
                             [&](const int j){
-          y_view(row,j) = weights(beg)*x_view(col_lids(beg),j);
-          for (int icol=beg+1; icol<end; ++icol) {
-            y_view(row,j) += weights(icol)*x_view(col_lids(icol),j);
+          if (mask != nullptr) {
+            y_view(row,j) = weights(beg)*x_view(col_lids(beg),j)*mask_view(col_lids(beg),j);
+            for (int icol=beg+1; icol<end; ++icol) {
+              y_view(row,j) += weights(icol)*x_view(col_lids(icol),j)*mask_view(col_lids(icol),j);
+            }
+          } else {
+            y_view(row,j) = weights(beg)*x_view(col_lids(beg),j);
+            for (int icol=beg+1; icol<end; ++icol) {
+              y_view(row,j) += weights(icol)*x_view(col_lids(icol),j);
+            }
           }
         });
       });
@@ -609,11 +623,9 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
       auto x_view = x.get_view<const Pack***>();
       auto y_view = y.get_view<      Pack***>();
       // Note, the mask is still assumed to be defined on COLxLEV so still only 2D for case 3.
-      view_2d<Real> mask_view("",x_view.extent_int(0),x_view.extent_int(2));
-      if (mask != NULL) {
-        mask_view = mask->get_view<Real**>();
-      } else {
-        Kokkos::deep_copy(mask_view,1.0);
+      view_2d<Pack> mask_view;
+      if (mask != nullptr) {
+        mask_view = mask->get_view<Pack**>();
       }
       const int dim1 = src_layout.dim(1);
       const int dim2 = PackInfo::num_packs(src_layout.dim(2));
@@ -628,9 +640,16 @@ local_mat_vec (const Field& x, const Field& y, const Field* mask) const
                             [&](const int idx){
           const int j = idx / dim2;
           const int k = idx % dim2;
-          y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k);
-          for (int icol=beg+1; icol<end; ++icol) {
-            y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k);
+          if (mask != nullptr) {
+            y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k)*mask_view(col_lids(beg),k);
+            for (int icol=beg+1; icol<end; ++icol) {
+              y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k)*mask_view(col_lids(icol),k);
+            }
+          } else {
+            y_view(row,j,k) = weights(beg)*x_view(col_lids(beg),j,k);
+            for (int icol=beg+1; icol<end; ++icol) {
+              y_view(row,j,k) += weights(icol)*x_view(col_lids(icol),j,k);
+            }
           }
         });
       });
