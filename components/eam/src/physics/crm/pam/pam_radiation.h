@@ -122,7 +122,7 @@ inline void pam_radiation_timestep_aggregation( pam::PamCoupler &coupler ) {
   auto rad_cld             = dm.get<real,4>("rad_cld");
   auto rad_aggregation_cnt = dm.get<real,1>("rad_aggregation_cnt");
   //------------------------------------------------------------------------------------------------
-  // aggregate surface precipitation
+  // aggregate radiation column data
   auto rad_nx_fac = coupler.get_option<real>("rad_nx_fac");
   auto rad_ny_fac = coupler.get_option<real>("rad_ny_fac");
   real r_nx_ny  = rad_nx_fac * rad_ny_fac;
