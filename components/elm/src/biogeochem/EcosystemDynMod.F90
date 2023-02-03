@@ -41,6 +41,8 @@ module EcosystemDynMod
   use AllocationMod      , only : nu_com_nfix, nu_com_phosphatase
   use elm_varctl         , only : nu_com, use_pheno_flux_limiter
   use PhenologyFLuxLimitMod , only : phenology_flux_limiter, InitPhenoFluxLimiter
+  ! for FAN
+  use SolarAbsorbedType    , only : solarabs_type
 
   use timeinfoMod
   use perfMod_GPU
@@ -478,7 +480,7 @@ contains
        atm2lnd_vars,               &
        canopystate_vars, soilstate_vars,  crop_vars, ch4_vars, &
        photosyns_vars, soilhydrology_vars, energyflux_vars,          &
-       sedflux_vars)
+       sedflux_vars, solarabs_vars)
     !-------------------------------------------------------------------
     ! bgc interface
     ! Phase-2 of EcosystemDynNoLeaching
@@ -536,6 +538,7 @@ contains
     type(photosyns_type)     , intent(in)    :: photosyns_vars
     type(soilhydrology_type) , intent(in)    :: soilhydrology_vars
     type(energyflux_type)    , intent(in)    :: energyflux_vars
+    type(solarabs_type)      , intent(in)    :: solarabs_vars
 !
     type(sedflux_type)       , intent(in)    :: sedflux_vars
     character(len=64) :: event
@@ -592,7 +595,7 @@ contains
         call Phenology(num_soilc, filter_soilc, num_soilp, filter_soilp, &
              num_pcropp, filter_pcropp, num_ppercropp, filter_ppercropp, doalb, atm2lnd_vars, &
              crop_vars, canopystate_vars, soilstate_vars, &
-             cnstate_vars )
+             cnstate_vars, solarabs_vars)
         call t_stop_lnd(event)
 
         !--------------------------------------------
