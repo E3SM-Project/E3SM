@@ -73,6 +73,7 @@ module check_energy
 ! Private module data
 
   logical  :: print_energy_errors = .false.
+  character(len=16) :: microp_scheme 
 
   real(r8) :: teout_glob           ! global mean energy of output state
   real(r8) :: teinp_glob           ! global mean energy of input state
@@ -196,6 +197,7 @@ end subroutine check_energy_get_integrals
 !-----------------------------------------------------------------------
 
     call phys_getopts( history_budget_out = history_budget, &
+                       microp_scheme_out  = microp_scheme,   &
                        history_budget_histfile_num_out = history_budget_histfile_num)
 
 ! register history variables
@@ -264,61 +266,15 @@ end subroutine check_energy_get_integrals
     real(r8) :: te(state%ncol)       
     real(r8) :: tw(state%ncol)
 
-    real(r8),allocatable :: cpairv_loc(:,:,:)      ! specific heat of dry air
-
     integer lchnk                                  ! chunk identifier
     integer ncol                                   ! number of atmospheric columns
     integer  i,k                                   ! column, level indices
     real(r8) :: wr(state%ncol)                     ! vertical integral of rain
     real(r8) :: ws(state%ncol)                     ! vertical integral of snow
-    integer :: ixcldice                            ! Index for CLDICE
-    integer :: ixcldliq                            ! Index for CLDLIQ
-    integer :: ixrain
-    integer :: ixsnow
-    integer :: ixrim                               ! Index for RIME constituent
 !-----------------------------------------------------------------------
 
     lchnk = state%lchnk
     ncol  = state%ncol
-    call cnst_get_ind('CLDICE', ixcldice, abrtf=.false.)
-    call cnst_get_ind('CLDLIQ', ixcldliq, abrtf=.false.)
-    call cnst_get_ind('RAINQM', ixrain, abrtf=.false.)
-    call cnst_get_ind('SNOWQM', ixsnow, abrtf=.false.)
-    call cnst_get_ind('BVRIM ', ixrim,  abrtf=.false.)
-
-    ! cpairv_loc needs to be allocated to a size which matches state and ptend
-    ! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
-    ! If psetcols > pcols and all cpairv match cpair, then assign the constant cpair
-
-    if (state%psetcols == pcols) then
-       allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
-       cpairv_loc(:,:,:) = cpairv(:,:,:)
-    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
-       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
-       cpairv_loc(:,:,:) = cpair
-    else
-       call endrun('check_energy_timestep_init: cpairv is not allowed to vary when subcolumns are turned on')
-    end if
-
-    ! Compute vertical integrals of dry static energy and water (vapor, liquid, ice)
-    ke = 0._r8
-    se = 0._r8
-    wv = 0._r8
-    wl = 0._r8
-    wi = 0._r8
-    wr = 0._r8
-    ws = 0._r8
-
-    do k = 1, pver
-       do i = 1, ncol
-          ke(i) = ke(i) + 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit
-          se(i) = se(i) +         state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit
-          wv(i) = wv(i) + state%q(i,k,1       )*state%pdel(i,k)/gravit
-       end do
-    end do
-    do i = 1, ncol
-       se(i) = se(i) + state%phis(i)*state%ps(i)/gravit
-    end do
 
     call energy_helper_eam_def(state%u,state%v,state%T,state%q,state%ps,state%pdel,state%phis, &
                                    ke,se,wv,wl,wi,wr,ws,te,tw, &
@@ -326,20 +282,6 @@ end subroutine check_energy_get_integrals
 
     state%te_ini(:ncol) = te(:ncol)
     state%tw_ini(:ncol) = tw(:ncol)
-    if (ixrain   > 1) then
-       do k = 1, pver
-          do i = 1, ncol
-             wr(i) = wr(i) + state%q(i,k,ixrain)*state%pdel(i,k)/gravit
-          end do
-       end do
-    end if
-    if (ixsnow > 1) then 
-        do k = 1, pver
-           do i = 1, ncol   
-             ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
-          end do
-       end do
-    end if
 
     state%te_cur(:ncol) = state%te_ini(:ncol)
     state%tw_cur(:ncol) = state%tw_ini(:ncol)
@@ -409,95 +351,19 @@ end subroutine check_energy_get_integrals
     real(r8) :: te(state%ncol)                     ! vertical integral of total energy
     real(r8) :: tw(state%ncol)                     ! vertical integral of total water
 
-    real(r8),allocatable :: cpairv_loc(:,:,:)      ! specific heat of dry air
-
     integer lchnk                                  ! chunk identifier
     integer ncol                                   ! number of atmospheric columns
     integer  i,k                                   ! column, level indices
     real(r8) :: wr(state%ncol)                     ! vertical integral of rain
     real(r8) :: ws(state%ncol)                     ! vertical integral of snow
-    integer :: ixcldice                            ! Index for CLDICE
-    integer :: ixcldliq                            ! Index for CLDLIQ
-    integer :: ixrain
-    integer :: ixsnow
-    integer :: ixrim                               ! Index for RIME constituent
 !-----------------------------------------------------------------------
 
     lchnk = state%lchnk
     ncol  = state%ncol
+
     call energy_helper_eam_def(state%u,state%v,state%T,state%q,state%ps,state%pdel,state%phis, &
                                    ke,se,wv,wl,wi,wr,ws,te,tw, &
                                    ncol)
-    call cnst_get_ind('CLDICE', ixcldice, abrtf=.false.)
-    call cnst_get_ind('CLDLIQ', ixcldliq, abrtf=.false.)
-    call cnst_get_ind('RAINQM', ixrain, abrtf=.false.)
-    call cnst_get_ind('SNOWQM', ixsnow, abrtf=.false.)
-    call cnst_get_ind('BVRIM ', ixrim,  abrtf=.false.)
-
-    ! cpairv_loc needs to be allocated to a size which matches state and ptend
-    ! If psetcols == pcols, cpairv is the correct size and just copy into cpairv_loc
-    ! If psetcols > pcols and all cpairv match cpair, then assign the constant cpair
-
-    if (state%psetcols == pcols) then
-       allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
-       cpairv_loc(:,:,:) = cpairv(:,:,:)
-    else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
-       allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
-       cpairv_loc(:,:,:) = cpair
-    else
-       call endrun('check_energy_chng: cpairv is not allowed to vary when subcolumns are turned on')
-    end if
-
-    ! Compute vertical integrals of dry static energy and water (vapor, liquid, ice)
-    ke = 0._r8
-    se = 0._r8
-    wv = 0._r8
-    wl = 0._r8
-    wi = 0._r8
-    wr = 0._r8
-    ws = 0._r8
-
-    do k = 1, pver
-       do i = 1, ncol
-          ke(i) = ke(i) + 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit
-          se(i) = se(i) +         state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit
-          wv(i) = wv(i) + state%q(i,k,1       )*state%pdel(i,k)/gravit
-       end do
-    end do
-    do i = 1, ncol
-       se(i) = se(i) + state%phis(i)*state%ps(i)/gravit
-    end do
-
-    ! Don't require cloud liq/ice to be present.  Allows for adiabatic/ideal phys.
-    if (ixcldliq > 1  .and.  ixcldice > 1) then
-       do k = 1, pver
-          do i = 1, ncol
-             wl(i) = wl(i) + state%q(i,k,ixcldliq)*state%pdel(i,k)/gravit
-             wi(i) = wi(i) + state%q(i,k,ixcldice)*state%pdel(i,k)/gravit
-          end do
-       end do
-    end if
-
-    if (ixrain   > 1) then
-       do k = 1, pver
-          do i = 1, ncol
-             wr(i) = wr(i) + state%q(i,k,ixrain)*state%pdel(i,k)/gravit
-          end do
-       end do
-    end if
-    if (ixsnow > 1) then 
-         do k = 1, pver
-            do i = 1, ncol   
-             ws(i) = ws(i) + state%q(i,k,ixsnow)*state%pdel(i,k)/gravit
-            end do
-         end do
-    end if
-
-    ! Compute vertical integrals of frozen static energy and total water.
-    do i = 1, ncol
-       te(i) = se(i) + ke(i) + (latvap+latice)*wv(i) + latice*( wl(i) + wr(i) )
-       tw(i) = wv(i) + wl(i) + wi(i) + wr(i) + ws(i)
-    end do
 
     ! compute expected values and tendencies
     do i = 1, ncol
@@ -1360,7 +1226,21 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
        end do
     end if
 
-    if (irain > 1 .and. isnow > 1) then
+    if (microp_scheme == 'P3') then
+       ! In the case where the micro-physics scheme is P3 there is no snow
+       ! constituent and isnow = -1.  So we still calculate the rest of the
+       ! consituents and ensure that ws = 0.0.  NOTE! This change will likely
+       ! lead to conflicts with upstream E3SM any time check_energy is
+       ! changed...  The most important thing is to avoid any SNOW calculations
+       ! when P3 is the microphysics scheme.
+       ws = 0.0_r8
+
+       if (irain > 1) then
+          do k = 1, pver
+             wr = wr + q(k,irain)*pdel(k)/gravit
+          end do
+       end if
+    else if (irain > 1 .and. isnow > 1) then
        do k = 1, pver
           wr = wr + q(k,irain)*pdel(k)/gravit
           ws = ws + q(k,isnow)*pdel(k)/gravit
