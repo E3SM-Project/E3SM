@@ -145,9 +145,24 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="gcp">
+    <mach name="gcp12">
       <pes compset="any" pesize="any">
-        <comment>allactive+gcp: default</comment>
+        <comment>allactive+gcp12: default 1 node 56x1</comment>
+        <ntasks>
+          <ntasks_atm>56</ntasks_atm>
+          <ntasks_lnd>56</ntasks_lnd>
+          <ntasks_rof>56</ntasks_rof>
+          <ntasks_ice>36</ntasks_ice>
+          <ntasks_ocn>36</ntasks_ocn>
+          <ntasks_glc>16</ntasks_glc>
+          <ntasks_wav>16</ntasks_wav>
+          <ntasks_cpl>56</ntasks_cpl>
+        </ntasks>
+      </pes>
+    </mach>
+    <mach name="gcp10">
+      <pes compset="any" pesize="any">
+        <comment>allactive+gcp: default 1 node 30x1</comment>
         <ntasks>
           <ntasks_atm>30</ntasks_atm>
           <ntasks_lnd>30</ntasks_lnd>
@@ -326,9 +341,32 @@
         </nthrds>
       </pes>
     </mach>
-    <mach name="gcp">
+    <mach name="gcp12">
       <pes compset="JRA_ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
-        <comment>"gcp, 8 nodes, 240 partition, 2 threads 30x2"</comment>
+        <comment>"gcp12, 5 nodes, 240 partition, 2 threads 56x2"</comment>
+        <ntasks>
+          <ntasks_atm>280</ntasks_atm>
+          <ntasks_lnd>280</ntasks_lnd>
+          <ntasks_rof>280</ntasks_rof>
+          <ntasks_ice>240</ntasks_ice>
+          <ntasks_ocn>240</ntasks_ocn>
+          <ntasks_glc>-1</ntasks_glc>
+          <ntasks_wav>-1</ntasks_wav>
+          <ntasks_cpl>280</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>2</nthrds_atm>
+          <nthrds_lnd>2</nthrds_lnd>
+          <nthrds_rof>2</nthrds_rof>
+          <nthrds_ice>2</nthrds_ice>
+          <nthrds_ocn>2</nthrds_ocn>
+          <nthrds_cpl>2</nthrds_cpl>
+        </nthrds>
+      </pes>
+    </mach>
+    <mach name="gcp10">
+      <pes compset="JRA_ELM.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
+        <comment>"gcp10, 8 nodes, 240 partition, 2 threads 30x2"</comment>
         <ntasks>
           <ntasks_atm>-8</ntasks_atm>
           <ntasks_lnd>-8</ntasks_lnd>
@@ -1566,9 +1604,38 @@
     </mach>
   </grid>
   <grid name="a%ne30.+_oi%.*EC.*to">
-    <mach name="gcp">
+    <mach name="gcp12">
       <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="any">
-        <comment> -compset A_WCYCL* -res ne30pg2_oECv3 with MPASO on 11 nodes </comment>
+        <comment> gcp12 -compset A_WCYCL* -res ne30pg2_oECv3 with MPASO on 7 nodes </comment>
+        <ntasks>
+          <ntasks_atm>280</ntasks_atm>
+          <ntasks_lnd>280</ntasks_lnd>
+          <ntasks_rof>280</ntasks_rof>
+          <ntasks_ice>240</ntasks_ice>
+          <ntasks_ocn>84</ntasks_ocn>
+          <ntasks_cpl>280</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>2</nthrds_atm>
+          <nthrds_lnd>2</nthrds_lnd>
+          <nthrds_rof>2</nthrds_rof>
+          <nthrds_ice>2</nthrds_ice>
+          <nthrds_ocn>2</nthrds_ocn>
+          <nthrds_cpl>1</nthrds_cpl>
+        </nthrds>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_lnd>0</rootpe_lnd>
+          <rootpe_rof>0</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>280</rootpe_ocn>
+          <rootpe_cpl>0</rootpe_cpl>
+        </rootpe>
+      </pes>
+    </mach>
+    <mach name="gcp10">
+      <pes compset=".*EAM.+ELM.+MPASSI.+MPASO.+MOSART.+SWAV.+" pesize="any">
+        <comment> gcp10 -compset A_WCYCL* -res ne30pg2_oECv3 with MPASO on 11 nodes </comment>
         <ntasks>
           <ntasks_atm>240</ntasks_atm>
           <ntasks_lnd>240</ntasks_lnd>
