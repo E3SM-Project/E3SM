@@ -882,6 +882,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    doslop_moisture = .false.
    doslop_uwind    = .false.
    doslop_vwind    = .false.
+   alphau = 0.0_r8
+   alphav = 0.0_r8
    if( MCSP ) then
         if( MCSP_heat_coeff > 0._r8 ) then
                 doslop_heat = .true.
