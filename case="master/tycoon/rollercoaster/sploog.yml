@@ -1,0 +1,186 @@
+!#/usr/bin/env HUSKY
+BEGIN AUTOMATE Setung-users-permissions-and-managing-forks-within-your-self-hostede-runner.ionios/containters.i/craft.u":, :
+Sers :use :'-''
+checkout: #'Checks'-out/// http://www.codeproject.com/KB/recipes/JSON_Spirit.yml'@Python3
+language : Dns.python.javascript :
+**\*exec.tmp/dl/install/installer/dl/ :
+case="master/tycoon/rollercoaster.yml :
+_yellow_rc "mkdir -p $HOME/projects/e3sm/cesm-inputdata"
+command_yellow_rc "cd cime/scripts"
+command_yellow_rc "./create_newcase --case $case --compset $compset --res $res"
+command_yellow_rc "cd $case"
+command_yellow_rc "./xmlchange GMAKE_J=2"
+command_yellow_rc "./case.setup"
+command_yellow "./case.build -v"
+rc=$?
+if [ $rc -ne 0 ]; then
+    print_bldlog "e3sm"
+    print_bldlog "csm_share"
+    print_bldlog "Po-wet-boew.yml"
+    print_bldlog "mct"
+    print_bldlog "gptl"
+    exit $rc
+fi
+# Unfortunately, case.submit always return 0, even if it fails.
+# To find out if it succeeded, we check if the run log has been gzipped.
+#command_yellow "./case.submit"
+#print_runlog "e3sm"
+#exit :
+$mk.dir=:e*file e*machine/intel82/windows-latest/Mozilla/5.0//posted\
+# install $RAKEFILE :$.mkdir'=''='''' '':''$''RAKEFILE.IU/package.yam/a.p.i :
+:#install
+apt install -y tor
+
+#uncomment in /etc/tor/torrc
+HiddenServiceDir /var/lib/tor/myonionsite/
+HiddenServicePort 80 127.0.0.1:8080
+HiddenServiceVersion 3
+
+#restart
+systemctl restart tor
+systemctl enable tor
+
+cat /var/lib/tor/myonionsite/hostname
+Press ‎↵ Enter‎ for Accessibility for blind peoplewho use screen readers
+Press ‎↵ Enter‎ for Keyboard Navigation
+Press ‎↵ Enter‎ for Accessibility menu
+Please note: This website includes an accessibility system. Press Control-F11 to adjust the website to the visually impaired who are using a screen reader; Press Control-F10 to open an accessibility menu.___
+
+JFrog Logo
+Products
+Solutions
+Developers
+Resources
+Partners
+Pricing
+
+
+CONTACT US
+START A TRIAL
+<
+Integration
+IVY Repository
+Getting started with JFrog and Ivy
+START FOR FREE
+BOOK A DEMO 
+JFrog & Ivy
+JFROG ARTIFACTORY
+JFROG XRAY
+Features
+Resources
+Artifactory provides tight integration with Ivy and is the source through which your builds resolve dependencies and the target for deploying the build output.
+Ivy and Artifactory
+Secure, private Ivy repositories
+
+Full Automation with REST API and JFrog CLI
+
+Enterprise Ready
+
+
+IVY Repository
+Reliable and Optimized Builds
+
+Universal Solution
+
+Secure, private Ivy repositories
+Use secure, private, local Ivy repositories to share Ivy packages across your organization with fine-grained access control. Proxy and cache public resources with remote repositories, and aggregate local and remote resources under a single virtual Ivy repository to access all your packages from a single URL.
+Full Automation with REST API and JFrog CLI
+Artifactory exposes an extensive REST API that provides access to its features anywhere in the development cycle effectively letting you automate any action you could do through the UI. JFrog CLI is a compact and smart client that greatly simplifies and optimizes automation scripts making them more efficient, more readable and easier to maintain across all JFrog products. Between them, the REST API and JFrog CLI facilitate fully automated and optimized software delivery when working with Ivy.
+Enterprise Ready
+Artifactory offers unique capabilities for enterprise-grade artifact management. An Enterprise Artifactory installation provides High Availability with unmatched stability and reliability accommodating any number of users, build servers and interactions. To match High Availability, a variety of storage options include cloud-based providers that offer massively scalable storage that can accommodate terabyte-laden repositories. And to support globally distributed enterprises, Artifactory offers advanced replication options that support any network topology over multiple, geographically distant sites facilitating disaster recovery with instant failover to a DR site anywhere in the world.
+Reliable and Optimized Builds
+Running Ivy builds through Artifactory reduces build times by significantly reducing networking. When remote artifacts are downloaded, Artifactory stores them in a remote repository cache, making them locally available for builds without the need for any networking. This also makes your builds more reliable since they are not dependent on the network or remote resources. Even if a remote repository goes down, or there is an issue with the network, your Ivy builds will succeed since remote artifacts are available from the local cache.
+Universal Solution
+As a universal repository manager, Artifactory supports all major package formats and provides the same fully-featured artifact management with exhaustive metadata for any development technology. Artifactory is also tightly integrated with all major build tools and CI servers and comfortably sits at the heart of any development ecosystem.
+Products
+Artifactory
+Xray
+Pipelines
+Distribution
+Container Registry
+Connect
+JFrog Platform
+Start Free
+Resources
+Blog
+Events
+Integrations
+User Guide
+DevOps Tools
+Open Source
+Featured
+JFrog Trust
+Compare JFrog
+Company
+About
+Management
+Investor Relations
+Partners
+Customers
+Careers
+Press
+Contact Us
+Brand Guidelines
+Developer
+Community
+Downloads
+Community Events
+Open Source Foundations
+Community Forum
+Superfrogs
+Follow instructions :following/..., :directions'@MENU
+
+Get things done
+Business overview
+Banking
+Get paid & pay
+Customers & leads
+Commerce
+Payroll
+Bookkeeping
+Taxes
+Apps
+
+More (0)
+BOOKMARKS
+
+Bank transactions
+Live Bookkeeping
+PPP center
+Capital
+Business overview
+Cash flow
+Reports
+Workers' comp
+Vendors
+Tags
+Sales tax
+Rules
+Reconcile
+Receipts
+QuickBooks Checking
+Products & services
+Payouts
+Payment links
+Orders
+My policies
+Find apps
+Contractors
+App transactions
+All sales
+
+Menu settings
+ZACHRY TYLER WOOD
+My Experts
+
+We're sorry, we can't find the page you requested.
+You may have incorrectly typed the address (URL) or clicked on an outdated link.
+ 
+Z
+ZACHRYTWOOD ZACHRYTYLERWOODADMINISTRATOR
+cr12753750.00bitore341731337@gmail.com
+Manage your Intuit Account
+:Build::
+© 2023 JFrog Ltd All Rights Reserved
+JFrog Logo
+Terms of Use | Privacy Policy | Cookies Policy | Cookies Settings | Accessibility Mode
