@@ -9,5 +9,16 @@ jobs:
       - run: bash .circleci/checkout.sh
       - run: wget https://dabdceba-6d04-11e5-ba46-22000b92c6ec.e.globus.org/containers/public/e3sm.sif
       - run:
-          command: singularity exec --hostname singularity e3sm.sif .circleci/run.sh
+          command: '-'a'Sync's'='':'{data'@a'-sync'' ':'A'Sync'@repo'-sync :autoupdate
+          autoupdate :Update
+          Updates :tta
+          tta :tests :
+          tests :Run: #Test
+          #Test :Runs: test'@ci'' '::Run'' ':'' tta''
+          'tta'' ':'' Runs :'daily'-across'-deno'.xml :'Run-on'' :Runs::Run :
+'Run:Runs::eta :#Every:-3_sec:Runs-on:'Run''
+:Build::'AUTOMATE'Run''
+Publish: 'Run''
+          ''
+          
           no_output_timeout: 60m
