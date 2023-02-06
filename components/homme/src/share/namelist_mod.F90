@@ -746,8 +746,6 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(statefreq,       1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(restartfreq,     1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(runtype,         1,MPIinteger_t,par%root,par%comm,ierr)
-    call MPI_bcast(Lx,              1, MPIreal_t,par%root,par%comm,ierr)
-    call MPI_bcast(Ly,              1, MPIreal_t,par%root,par%comm,ierr)
 
 #if !defined(CAM) && !defined(SCREAM)
     if(test_case == "dcmip2012_test4") then
@@ -1006,9 +1004,6 @@ end if
       scale_factor_inv = 1.0D0
       laplacian_rigid_factor = 0.0D0 !this eliminates the correction to ensure the Laplacian doesn't damp rigid motion
 
-      Sx = 0.0D0
-      Sy = 0.0D0
-
 ! makes the y-direction cells identical in size to the x-dir cells
 ! this is important for hyperviscosity, etc.
 ! Also adjusts Sy so y-dir domain is centered at 0
@@ -1028,7 +1023,7 @@ end if
          call abortmp("Error Lx or Ly = 0")
       endif
 
-   else if (geometry == "sphere") then
+    else if (geometry == "sphere") then
       scale_factor = rearth
       scale_factor_inv = rrearth
       domain_size = 4.0D0*DD_PI
