@@ -3029,7 +3029,10 @@
     <mpirun mpilib="default">
        <executable>mpiexec</executable>
        <arguments>
-          <arg name="num_tasks">-n {{ total_tasks }} --label</arg>
+	  <arg name="total_num_tasks">-np {{ total_tasks }} --label</arg>
+          <arg name="num_ranks">-ppn {{ total_tasks }}</arg>
+	  <arg name="ranks_per_node"> -d {{ tasks_per_numa }} --cpu-bind depth -envall</arg>
+	  <arg name="gpu_maps">/soft/tools/mpi_wrapper_utils/gpu_tile_compact.sh</arg>
        </arguments>
     </mpirun>
     <mpirun mpilib="openmpi">
@@ -3082,8 +3085,11 @@
         <env name="I_MPI_PIN_CELL">unit</env>
      </environment_variables>
      <environment_variables compiler="oneapi-ifxgpu">
-	<env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
+        <env name="ONEAPI_DEVICE_SELECTOR">level_zero:gpu</env>
         <env name="ONEAPI_MPICH_GPU">NO_GPU</env>
+        <env name="MPIR_CVAR_ENABLE_GPU">0</env>
+        <env name="romio_cb_read">disable</env>
+        <env name="romio_cb_write">disable</env>
         <env name="SYCL_CACHE_PERSISTENT">1</env>
         <env name="GATOR_INITIAL_MB">4000MB</env>
         <env name="GATOR_DISABLE">0</env>
