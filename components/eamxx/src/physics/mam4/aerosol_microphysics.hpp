@@ -22,8 +22,8 @@ namespace scream
 // The process responsible for handling MAM4 aerosols. The AD stores exactly ONE
 // instance of this class in its list of subcomponents.
 class MAM4AerosolMicrophysics final : public scream::AtmosphereProcess {
-  using PF           = scream::PhysicsFunctions<DefaultDevice>;
-  using KT           = ekat::KokkosTypes<DefaultDevice>;
+  using PF = scream::PhysicsFunctions<DefaultDevice>;
+  using KT = ekat::KokkosTypes<DefaultDevice>;
 
   // views for single- and multi-column data
   using view_1d_int   = typename KT::template view_1d<int>;
@@ -36,8 +36,8 @@ class MAM4AerosolMicrophysics final : public scream::AtmosphereProcess {
   using uview_1d = Unmanaged<typename KT::template view_1d<Real>>;
   using uview_2d = Unmanaged<typename KT::template view_2d<Real>>;
 
-  using ColumnView   = mam4::ColumnView;
-  using ThreadTeam   = mam4::ThreadTeam;
+  using ColumnView = mam4::ColumnView;
+  using ThreadTeam = mam4::ThreadTeam;
 
 public:
 
@@ -58,9 +58,11 @@ protected:
   // grid
   void set_grids(const std::shared_ptr<const GridsManager> grids_manager) override;
 
+  /*
   // management of common atm process memory
   size_t requested_buffer_size_in_bytes() const override;
   void init_buffers(const ATMBufferManager &buffer_manager) override;
+  */
 
   // process behavior
   void initialize_impl(const RunType run_type) override;
@@ -217,22 +219,6 @@ private:
     } // set_variables
   }; // MAM4AerosolMicrophysics::Postprocess
 
-  // Structure for storing local variables initialized using the ATMBufferManager
-  struct Buffer {
-    static constexpr int num_1d_scalar_ncol = 18;
-    static constexpr int num_1d_scalar_nlev = 1;
-    static constexpr int num_2d_vector_mid  = 22;
-    static constexpr int num_2d_vector_int  = 13;
-    static constexpr int num_2d_vector_tr   = 1;
-
-    uview_1d pref_mid_;
-
-    uview_2d z_mid_;
-    uview_2d z_int_;
-
-    Real* wsm_data_;
-  }; // MAM4AerosolMicrophysics::Buffer
-
   // MAM4 aerosol particle size description
   mam4::AeroConfig aero_config_;
 
@@ -243,9 +229,11 @@ private:
   Preprocess preprocess_;
   Postprocess postprocess_;
 
+  /*
   // WSM for internal local variables
   ekat::WorkspaceManager<Real, KT::Device> workspace_mgr_;
   Buffer buffer_;
+  */
 
   // physics grid for column information
   std::shared_ptr<const AbstractGrid> grid_;

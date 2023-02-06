@@ -37,7 +37,7 @@ void MAM4AerosolMicrophysics::set_grids(const std::shared_ptr<const GridsManager
   const auto& grid_name = grid_->name();
 
   ncol_ = grid_->get_num_local_dofs(); // Number of columns on this rank
-  nlev_ = grid_->get_num_vertical_levels();  // Number of levels per column
+  nlev_ = grid_->get_num_vertical_levels(); // Number of levels per column
 
   // Define the different field layouts that will be used for this process
   using namespace ShortFieldTagsNames;
@@ -50,15 +50,15 @@ void MAM4AerosolMicrophysics::set_grids(const std::shared_ptr<const GridsManager
   const auto s2 = s*s;
 
   // atmospheric quantities
-  add_field<Required>("T_mid", scalar3d_layout_mid, K, grid_name, ps);
-  add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name, ps); // total pressure
-  add_field<Required>("qv", scalar3d_layout_mid, Qunit, grid_name, "tracers", ps);
+  add_field<Required>("T_mid", scalar3d_layout_mid, K, grid_name);
+  add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name); // total pressure
+  add_field<Required>("qv", scalar3d_layout_mid, Qunit, grid_name, "tracers");
   add_field<Required>("pbl_height", scalar2d_layout_col, m, grid_name);
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, Qunit, grid_name, ps); // pdel
-  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name, ps);
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, Qunit, grid_name); // pdel
+  add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name);
 
   // tracer group (stores all aerosol prognostics)
-  add_group<Updated>("tracers",grid_name,ps,Bundling::Required);
+  add_group<Updated>("tracers", grid_name, Bundling::Required);
 }
 
 void MAM4AerosolMicrophysics::
@@ -75,87 +75,16 @@ set_computed_group_impl(const FieldGroup& group) {
   int num_aero_tracers =
     aero_config_.num_gas_ids() +  // gas tracers
     2 * aero_config_.num_modes(); // modal number mixing ratio tracers
-  for (int m = 0; m < aero_config_.num_modes(); ++m) { // aerosol tracers
+  for (int m = 0; m < aero_config_.num_modes(); ++m) {
     for (int a = 0; a < aero_config_.num_aerosol_ids(); ++a) {
       if (aerosol_index_for_mode(m, a) != -1) {
-        num_aero_tracers += 2;
+        num_aero_tracers += 2; // aerosol mass mixing ratios (interstitial, cloudborne)
       }
     }
   }
 
   EKAT_REQUIRE_MSG(group.m_info->size() >= num_aero_tracers,
     "Error! MAM4 requires at least " << num_aero_tracers << " aerosol tracers.");
-}
-
-size_t MAM4AerosolMicrophysics::requested_buffer_size_in_bytes() const override {
-  // Number of Reals needed by local views in the interface
-  const size_t interface_request = Buffer::num_1d_scalar_ncol*ncol_*sizeof(Real) +
-                                   Buffer::num_1d_scalar_nlev*nlev_packs*sizeof(Real) +
-                                   Buffer::num_2d_vector_mid*ncol_*nlev_packs*sizeof(Real) +
-                                   Buffer::num_2d_vector_int*ncol_*nlevi_packs*sizeof(Real) +
-                                   Buffer::num_2d_vector_tr*ncol_*num_tracer_packs*sizeof(Real);
-
-  // Number of Reals needed by the WorkspaceManager passed to aerosol processes
-//  const auto policy       = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_packs);
-//  const size_t wsm_request= WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy);
-
-  return interface_request;// + wsm_request;
-}
-
-void MAM4AerosolMicrophysics::init_buffers(const ATMBufferManager &buffer_manager) override {
-  EKAT_REQUIRE_MSG(buffer_manager.allocated_bytes() >= requested_buffer_size_in_bytes(), "Error! Buffers size not sufficient.\n");
-
-  Real* mem = reinterpret_cast<Real*>(buffer_manager.get_memory());
-
-  // 1d scalar views
-  using scalar_view_t = decltype(buffer_.cell_length);
-  scalar_view_t* _1d_scalar_view_ptrs[Buffer::num_1d_scalar_ncol] =
-    {&buffer_.cell_length, &buffer_.wpthlp_sfc, &buffer_.wprtp_sfc, &buffer_.upwp_sfc, &buffer_.vpwp_sfc
-    };
-  for (int i = 0; i < Buffer::num_1d_scalar_ncol; ++i) {
-    *_1d_scalar_view_ptrs[i] = scalar_view_t(mem, ncol_);
-    mem += _1d_scalar_view_ptrs[i]->size();
-  }
-
-  buffer_.pref_mid = decltype(buffer_.pref_mid)(s_mem, nlev_packs);
-  s_mem += buffer_.pref_mid.size();
-
-  using spack_2d_view_t = decltype(buffer_.z_mid);
-  spack_2d_view_t* _2d_spack_mid_view_ptrs[Buffer::num_2d_vector_mid] = {
-    &buffer_.z_mid, &buffer_.rrho, &buffer_.thv, &buffer_.dz, &buffer_.zt_grid, &buffer_.wm_zt,
-    &buffer_.inv_exner, &buffer_.thlm, &buffer_.qw, &buffer_.dse, &buffer_.tke_copy, &buffer_.qc_copy,
-    &buffer_.shoc_ql2, &buffer_.shoc_mix, &buffer_.isotropy, &buffer_.w_sec, &buffer_.wqls_sec, &buffer_.brunt
-  };
-
-  spack_2d_view_t* _2d_spack_int_view_ptrs[Buffer::num_2d_vector_int] = {
-    &buffer_.z_int, &buffer_.rrho_i, &buffer_.zi_grid, &buffer_.thl_sec, &buffer_.qw_sec,
-    &buffer_.qwthl_sec, &buffer_.wthl_sec, &buffer_.wqw_sec, &buffer_.wtke_sec, &buffer_.uw_sec,
-    &buffer_.vw_sec, &buffer_.w3
-  };
-
-  for (int i = 0; i < Buffer::num_2d_vector_mid; ++i) {
-    *_2d_spack_mid_view_ptrs[i] = spack_2d_view_t(s_mem, ncol_, nlev_packs);
-    s_mem += _2d_spack_mid_view_ptrs[i]->size();
-  }
-
-  for (int i = 0; i < Buffer::num_2d_vector_int; ++i) {
-    *_2d_spack_int_view_ptrs[i] = spack_2d_view_t(s_mem, ncol_, nlevi_packs);
-    s_mem += _2d_spack_int_view_ptrs[i]->size();
-  }
-  buffer_.wtracer_sfc = decltype(buffer_.wtracer_sfc)(s_mem, ncol_, num_tracer_packs);
-  s_mem += buffer_.wtracer_sfc.size();
-
-  // WSM data
-  buffer_.wsm_data = s_mem;
-
-  // Compute workspace manager size to check used memory
-  // vs. requested memory
-  const auto policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_packs);
-  const int wsm_size = WSM::get_total_bytes_needed(nlevi_packs, 13+(n_wind_slots+n_trac_slots), policy)/sizeof(Spack);
-  s_mem += wsm_size;
-
-  size_t used_mem = (reinterpret_cast<Real*>(s_mem) - buffer_manager.get_memory())*sizeof(Real);
-  EKAT_REQUIRE_MSG(used_mem==requested_buffer_size_in_bytes(), "Error! Used memory != requested memory for SHOCMacrophysics.");
 }
 
 void MAM4AerosolMicrophysics::initialize_impl(const RunType run_type) {
