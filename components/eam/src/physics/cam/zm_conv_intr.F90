@@ -1163,8 +1163,8 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
       MCSP_DT(:ncol,:pver) = MCSP_DT(:ncol,:pver)/cpair
       call outfld('MCSP_DT    ',MCSP_DT           ,pcols   ,lchnk   )
       call outfld('MCSP_freq    ',MCSP_freq           ,pcols   ,lchnk   )
-      call outfld('MCSP_DU    ',ptend_loc%u*86400._r8           ,pcols   ,lchnk   )
-      call outfld('MCSP_DV    ',ptend_loc%v*86400._r8           ,pcols   ,lchnk   )
+      if (doslop_uwind) call outfld('MCSP_DU    ',ptend_loc%u*86400._r8           ,pcols   ,lchnk   )
+      if (doslop_vwind) call outfld('MCSP_DV    ',ptend_loc%v*86400._r8           ,pcols   ,lchnk   )
       call outfld('ZM_depth   ',ZM_depth                        ,pcols   ,lchnk   )
       call outfld('MCSP_shear ',MCSP_shear                      ,pcols   ,lchnk   )
 
