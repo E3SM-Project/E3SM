@@ -52,7 +52,8 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   // Add a field representing the mask as extra data to the diagnostic field.
   auto nondim = Units::nondimensional();
   std::string mask_name = name() + " mask";
-  FieldIdentifier mask_fid (mask_name,diag_layout, nondim, gname);
+  FieldLayout mask_layout( {COL}, {m_num_cols});
+  FieldIdentifier mask_fid (mask_name,mask_layout, nondim, gname);
   Field diag_mask(mask_fid);
   diag_mask.allocate_view();
   m_diagnostic_output.get_header().set_extra_data("mask_data",diag_mask);
@@ -81,34 +82,36 @@ void FieldAtPressureLevel::compute_diagnostic_impl()
     auto fdat = view_Nd<mPack,2>("",f_data_src.extent_int(0),f_data_src.extent_int(1));
     Kokkos::deep_copy(fdat,f_data_src);
     //output field on new grid
-    auto d_data_tgt = m_diagnostic_output.get_view<Real*>();
-    view_Nd<mPack,2> data_tgt_tmp(reinterpret_cast<mPack*>(d_data_tgt.data()),d_data_tgt.extent_int(0),1);  // Note, vertical interp wants a 2D view, so we create a temporary one
+    auto d_data_tgt = m_diagnostic_output.get_view<mPack*>();
+    view_Nd<mPack,2> data_tgt_tmp(d_data_tgt.data(),d_data_tgt.extent_int(0),1);  // Note, vertical interp wants a 2D view, so we create a temporary one
     perform_vertical_interpolation<Real,1,2>(pres,m_p_tgt,fdat,data_tgt_tmp,m_num_levs,1,m_mask_val);
 
     // Track mask
-    Kokkos::deep_copy(fdat,1.0); // reuse fdat
+    Kokkos::deep_copy(fdat,1.0); // reuse fdat because ultimately we want to pass a 2d view.
     auto extra_data = m_diagnostic_output.get_header().get_extra_data().at("mask_data");
     auto d_mask     = ekat::any_cast<Field>(extra_data);
-    auto d_mask_tgt = d_mask.get_view<Real*>();
-    view_Nd<mPack,2> mask_tgt_tmp(reinterpret_cast<mPack*>(d_mask_tgt.data()),d_mask_tgt.extent_int(0),1);  // Note, vertical interp wants a 2D view, so we create a temporary one
+    auto d_mask_tgt = d_mask.get_view<mPack*>();
+    view_Nd<mPack,2> mask_tgt_tmp(d_mask_tgt.data(),d_mask_tgt.extent_int(0),1);  
     perform_vertical_interpolation<Real,1,2>(pres,m_p_tgt,fdat,mask_tgt_tmp,m_num_levs,1,0);
   } else if (rank==3) {
     const auto f_data_src = f.get_view<const mPack***>();
     auto fdat = view_Nd<mPack,3>("",f_data_src.extent_int(0),f_data_src.extent_int(1),f_data_src.extent_int(2));
     Kokkos::deep_copy(fdat,f_data_src);
     //output field on new grid
-    auto d_data_tgt = m_diagnostic_output.get_view<Real**>();
-    view_Nd<mPack,3> data_tgt_tmp(reinterpret_cast<mPack*>(d_data_tgt.data()),d_data_tgt.extent_int(0),d_data_tgt.extent_int(1),1);  // Note, vertical interp wants a 2D view, so we create a temporary one
+    auto d_data_tgt = m_diagnostic_output.get_view<mPack**>();
+    view_Nd<mPack,3> data_tgt_tmp(d_data_tgt.data(),d_data_tgt.extent_int(0),d_data_tgt.extent_int(1),1);  
 
     perform_vertical_interpolation<Real,1,3>(pres,m_p_tgt,fdat,data_tgt_tmp,m_num_levs,1,m_mask_val);
 
     // Track mask
-    Kokkos::deep_copy(fdat,1.0); // reuse fdat
+    // We can't reuse fdat for rank=3 because the mask is only concerned with the COLxLEV masking, so we need a 2d view. 
+    auto fdat_msk = view_Nd<mPack,2>("",f_data_src.extent_int(0),f_data_src.extent_int(2));
+    Kokkos::deep_copy(fdat_msk,1.0);
     auto extra_data = m_diagnostic_output.get_header().get_extra_data().at("mask_data");
     auto d_mask     = ekat::any_cast<Field>(extra_data);
-    auto d_mask_tgt = d_mask.get_view<Real*>();
-    view_Nd<mPack,3> mask_tgt_tmp(reinterpret_cast<mPack*>(d_mask_tgt.data()),d_mask_tgt.extent_int(0),1);  // Note, vertical interp wants a 2D view, so we create a temporary one
-    perform_vertical_interpolation<Real,1,3>(pres,m_p_tgt,fdat,mask_tgt_tmp,m_num_levs,1,0);
+    auto d_mask_tgt = d_mask.get_view<mPack*>();
+    view_Nd<mPack,2> mask_tgt_tmp(d_mask_tgt.data(),d_mask_tgt.extent_int(0),1);  
+    perform_vertical_interpolation<Real,1,2>(pres,m_p_tgt,fdat_msk,mask_tgt_tmp,m_num_levs,1,0);
   } else {
     EKAT_ERROR_MSG("Error! field at pressure level only supports fields ranks 2 and 3 \n");
   }

@@ -397,16 +397,16 @@ TEST_CASE ("coarsening_remap") {
   auto src_s2d   = create_field("s2d",  src_grid,true,false);
   auto src_v2d   = create_field("v2d",  src_grid,true,true);
   auto src_s3d_m = create_field("s3d_m",src_grid,false,false,true, 1);
-  auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,std::min(SCREAM_PACK_SIZE,4));
-  auto src_v3d_m = create_field("v3d_m",src_grid,false,true ,true, std::min(SCREAM_PACK_SIZE,8));
-  auto src_v3d_i = create_field("v3d_i",src_grid,false,true ,false,std::min(SCREAM_PACK_SIZE,16));
+  auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,SCREAM_PACK_SIZE);
+  auto src_v3d_m = create_field("v3d_m",src_grid,false,true ,true, 1);
+  auto src_v3d_i = create_field("v3d_i",src_grid,false,true ,false,SCREAM_PACK_SIZE);
 
   auto tgt_s2d   = create_field("s2d",  tgt_grid,true,false);
   auto tgt_v2d   = create_field("v2d",  tgt_grid,true,true);
   auto tgt_s3d_m = create_field("s3d_m",tgt_grid,false,false,true, 1);
-  auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,false,std::min(SCREAM_PACK_SIZE,4));
-  auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,true ,true, std::min(SCREAM_PACK_SIZE,8));
-  auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,true ,false,std::min(SCREAM_PACK_SIZE,16));
+  auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,false,SCREAM_PACK_SIZE);
+  auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,true ,true, 1);
+  auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,true ,false,SCREAM_PACK_SIZE);
 
   std::vector<Field> src_f = {src_s2d,src_v2d,src_s3d_m,src_s3d_i,src_v3d_m,src_v3d_i};
   std::vector<Field> tgt_f = {tgt_s2d,tgt_v2d,tgt_s3d_m,tgt_s3d_i,tgt_v3d_m,tgt_v3d_i};

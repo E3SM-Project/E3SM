@@ -306,6 +306,9 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
 void CoarseningRemapper::do_registration_ends ()
 {
   // Before finishing the registration we need to also register the set of masks, if needed.
+  // NOTE: Every time `register_field` is called the `m_num_registered_fields` value is
+  //       updated.  So we can use that to point to the appropriate mask field in the
+  //       m_mask_map_tgt map by taking `m_num_registered_fields-1`.
   if (m_track_mask) {
     for (int idx=0; idx<m_mask_fields_src.size(); ++idx) {
       auto f   = m_mask_fields_src[idx];
@@ -317,6 +320,9 @@ void CoarseningRemapper::do_registration_ends ()
       EKAT_REQUIRE(!f_mask_extra.count("mask_data"));
     }
     // Update the number of fields.
+    // NOTE: We need to do this again because the `registration_ends()` call in the abstract
+    //       remapper base class set the `m_num_fields` value before calling 
+    //       `do_registration_ends()`.
     m_num_fields = m_num_registered_fields;
 
     // Make sure that all fields registered so far are represented in the mask map, if missing
@@ -381,15 +387,9 @@ void CoarseningRemapper::do_remap_fwd ()
       // Dispatch kernel with the largest possible pack size
       const auto& src_ap = f_src.get_header().get_alloc_properties();
       const auto& ov_tgt_ap = f_ov_tgt.get_header().get_alloc_properties();
-      if (can_pack && src_ap.is_compatible<RPack<16>>() &&
-                      ov_tgt_ap.is_compatible<RPack<16>>()) {
-        local_mat_vec<16>(f_src,f_ov_tgt,&mask);
-      } else if (can_pack && src_ap.is_compatible<RPack<8>>() &&
-                             ov_tgt_ap.is_compatible<RPack<8>>()) {
-        local_mat_vec<8>(f_src,f_ov_tgt,&mask);
-      } else if (can_pack && src_ap.is_compatible<RPack<4>>() &&
-                             ov_tgt_ap.is_compatible<RPack<4>>()) {
-        local_mat_vec<4>(f_src,f_ov_tgt,&mask);
+      if (can_pack && src_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
+                      ov_tgt_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>()) {
+        local_mat_vec<SCREAM_PACK_SIZE>(f_src,f_ov_tgt,&mask);
       } else {
         local_mat_vec<1>(f_src,f_ov_tgt,&mask);
       }
@@ -397,15 +397,9 @@ void CoarseningRemapper::do_remap_fwd ()
       // Dispatch kernel with the largest possible pack size
       const auto& src_ap = f_src.get_header().get_alloc_properties();
       const auto& ov_tgt_ap = f_ov_tgt.get_header().get_alloc_properties();
-      if (can_pack && src_ap.is_compatible<RPack<16>>() &&
-                      ov_tgt_ap.is_compatible<RPack<16>>()) {
-        local_mat_vec<16>(f_src,f_ov_tgt);
-      } else if (can_pack && src_ap.is_compatible<RPack<8>>() &&
-                             ov_tgt_ap.is_compatible<RPack<8>>()) {
-        local_mat_vec<8>(f_src,f_ov_tgt);
-      } else if (can_pack && src_ap.is_compatible<RPack<4>>() &&
-                             ov_tgt_ap.is_compatible<RPack<4>>()) {
-        local_mat_vec<4>(f_src,f_ov_tgt);
+      if (can_pack && src_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
+                      ov_tgt_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>()) {
+        local_mat_vec<SCREAM_PACK_SIZE>(f_src,f_ov_tgt);
       } else {
         local_mat_vec<1>(f_src,f_ov_tgt);
       }
@@ -437,12 +431,8 @@ void CoarseningRemapper::do_remap_fwd ()
         const auto& mask = m_tgt_fields[mask_f_idx];
         const auto  rank = f_tgt.get_header().get_identifier().get_layout().rank();
         const auto& tgt_ap = f_tgt.get_header().get_alloc_properties();
-        if (can_pack && tgt_ap.is_compatible<RPack<16>>()) {
-          rescale_masked_fields<16>(f_tgt,mask);
-        } else if (can_pack && tgt_ap.is_compatible<RPack<8>>()) {
-          rescale_masked_fields<8>(f_tgt,mask);
-        } else if (can_pack && tgt_ap.is_compatible<RPack<4>>()) {
-          rescale_masked_fields<4>(f_tgt,mask);
+        if (can_pack && tgt_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>()) {
+          rescale_masked_fields<SCREAM_PACK_SIZE>(f_tgt,mask);
         } else {
           rescale_masked_fields<1>(f_tgt,mask);
         }

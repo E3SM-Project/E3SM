@@ -137,9 +137,11 @@ TEST_CASE("field_at_pressure_level_p2")
       auto mask_f   = ekat::any_cast<Field>(mask_tmp);
       mask_f.sync_to_host();
       auto test2_mask_v = mask_f.get_view<const Real*, Host>();
+      auto mask_val_tmp = diag_f.get_header().get_extra_data().at("mask_value");
+      Real mask_val = ekat::any_cast<Real>(mask_val_tmp);
       //
       for (int icol=0;icol<ncols;icol++) {
-        REQUIRE(approx(test2_diag_v(icol),Real(-999999)));
+        REQUIRE(approx(test2_diag_v(icol),Real(mask_val)));
         REQUIRE(approx(test2_mask_v(icol),Real(0.0)));
       }
     }

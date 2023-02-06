@@ -309,26 +309,11 @@ void VerticalRemapper::do_remap_fwd ()
       const auto& src_ap = f_src.get_header().get_alloc_properties();
       const auto& tgt_ap = f_tgt.get_header().get_alloc_properties();
       const auto& src_pres_ap = src_tag == LEV ? m_src_mid.get_header().get_alloc_properties() : m_src_int.get_header().get_alloc_properties();
-      if (can_pack && src_ap.is_compatible<RPack<16>>() &&
-                      tgt_ap.is_compatible<RPack<16>>() &&
-                      src_pres_ap.is_compatible<RPack<16>>() &&
-                      tgt_pres_ap.is_compatible<RPack<16>>()) {
-        apply_vertical_interpolation<16>(f_src,f_tgt); 
-      } else if (can_pack && src_ap.is_compatible<RPack<8>>() &&
-                             tgt_ap.is_compatible<RPack<8>>() &&
-                             src_pres_ap.is_compatible<RPack<8>>() &&
-                             tgt_pres_ap.is_compatible<RPack<8>>()) {
-        apply_vertical_interpolation<8>(f_src,f_tgt); 
-      } else if (can_pack && src_ap.is_compatible<RPack<4>>() &&
-                             tgt_ap.is_compatible<RPack<4>>() &&
-                             src_pres_ap.is_compatible<RPack<4>>() &&
-                             tgt_pres_ap.is_compatible<RPack<4>>()) {
-        apply_vertical_interpolation<4>(f_src,f_tgt); 
-      } else if (can_pack && src_ap.is_compatible<RPack<2>>() &&
-                             tgt_ap.is_compatible<RPack<2>>() &&
-                             src_pres_ap.is_compatible<RPack<2>>() &&
-                             tgt_pres_ap.is_compatible<RPack<2>>()) {
-        apply_vertical_interpolation<2>(f_src,f_tgt); 
+      if (can_pack && src_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
+                      tgt_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
+                      src_pres_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
+                      tgt_pres_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>()) {
+        apply_vertical_interpolation<SCREAM_PACK_SIZE>(f_src,f_tgt); 
       } else {
         apply_vertical_interpolation<1>(f_src,f_tgt); 
       }
@@ -352,26 +337,11 @@ void VerticalRemapper::do_remap_fwd ()
       const auto& src_ap = f_src.get_header().get_alloc_properties();
       const auto& tgt_ap = f_tgt.get_header().get_alloc_properties();
       const auto& src_pres_ap = src_tag == LEV ? m_src_mid.get_header().get_alloc_properties() : m_src_int.get_header().get_alloc_properties();
-      if (can_pack && src_ap.is_compatible<RPack<16>>() &&
-                      tgt_ap.is_compatible<RPack<16>>() &&
-                      src_pres_ap.is_compatible<RPack<16>>() &&
-                      tgt_pres_ap.is_compatible<RPack<16>>()) {
-        apply_vertical_interpolation<16>(f_src,f_tgt,true); 
-      } else if (can_pack && src_ap.is_compatible<RPack<8>>() &&
-                             tgt_ap.is_compatible<RPack<8>>() &&
-                             src_pres_ap.is_compatible<RPack<8>>() &&
-                             tgt_pres_ap.is_compatible<RPack<8>>()) {
-        apply_vertical_interpolation<8>(f_src,f_tgt,true); 
-      } else if (can_pack && src_ap.is_compatible<RPack<4>>() &&
-                             tgt_ap.is_compatible<RPack<4>>() &&
-                             src_pres_ap.is_compatible<RPack<4>>() &&
-                             tgt_pres_ap.is_compatible<RPack<4>>()) {
-        apply_vertical_interpolation<4>(f_src,f_tgt,true); 
-      } else if (can_pack && src_ap.is_compatible<RPack<2>>() &&
-                             tgt_ap.is_compatible<RPack<2>>() &&
-                             src_pres_ap.is_compatible<RPack<2>>() &&
-                             tgt_pres_ap.is_compatible<RPack<2>>()) {
-        apply_vertical_interpolation<2>(f_src,f_tgt,true); 
+      if (can_pack && src_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
+                      tgt_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
+                      src_pres_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>() &&
+                      tgt_pres_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>()) {
+        apply_vertical_interpolation<SCREAM_PACK_SIZE>(f_src,f_tgt,true); 
       } else {
         apply_vertical_interpolation<1>(f_src,f_tgt,true); 
       }
