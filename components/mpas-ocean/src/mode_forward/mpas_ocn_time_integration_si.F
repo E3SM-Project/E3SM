@@ -4230,7 +4230,7 @@ module ocn_time_integration_si
 !
 !  routine ocn_time_integrator_si_variable_destroy
 !
-!> \brief   Destroy SI-related variables including CPU & GPU arrays
+!> \brief   Destroy SI solver-related variables
 !
 !> \author  Hyun-Gyu Kang
 !
