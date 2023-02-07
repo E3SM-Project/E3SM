@@ -1077,10 +1077,20 @@
       <grid name="atm">ne16np4.pg2</grid>
       <grid name="lnd">ne16np4.pg2</grid>
       <grid name="ocnice">ne16np4.pg2</grid>
-      <grid name="rof">r05</grid>
+      <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
-      <mask>gx3v7</mask>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne16pg2_oECv3">
+      <grid name="atm">ne16np4.pg2</grid>
+      <grid name="lnd">ne16np4.pg2</grid>
+      <grid name="ocnice">oEC60to30v3</grid>
+      <grid name="rof">null</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
     </model_grid>
 
     <model_grid alias="ne16pg2_r05_oQU240" compset="(EAM.+ELM.+MPASO)">
@@ -2341,9 +2351,11 @@
       <nx>6144</nx>
       <ny>1</ny>
       <file grid="atm|lnd" mask="oQU240">domain.lnd.ne16pg2_oQU240.200527.nc</file>
-      <file grid="ice|ocn" mask="oQU240">domain.ocn.ne16pg2_oQU240.200527.nc</file>
+      <file grid="ice|ocn" mask="oQU240">domain.lnd.ne16pg2_oQU240.200527.nc</file>
       <file grid="atm|lnd" mask="gx1v6">DUMMY</file>
       <file grid="ice|ocn" mask="gx1v6">DUMMY</file>
+      <file grid="atm|lnd" mask="oEC60to30v3">/global/cfs/cdirs/m3312/whannah/init_files/domain_files/domain.lnd.ne16pg2_oEC60to30v3.230201.nc</file>
+      <file grid="ice|ocn" mask="oEC60to30v3">/global/cfs/cdirs/m3312/whannah/init_files/domain_files/domain.ocn.ne16pg2_oEC60to30v3.230201.nc</file>
       <desc>ne16np4.pg2 is Spectral Elem 2-deg grid w/ 2x2 FV physics grid per element:</desc>
     </domain>
 
