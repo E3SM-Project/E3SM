@@ -3,8 +3,8 @@ module thetal_test_interface
   use iso_c_binding,  only: c_int, c_bool, c_double, c_ptr, c_f_pointer
   use derivative_mod, only: derivative_t
   use element_mod,    only: element_t
-  use kinds,          only: real_kind 
-  use hybvcoord_mod,  only: hvcoord_t 
+  use kinds,          only: real_kind
+  use hybvcoord_mod,  only: hvcoord_t
   use parallel_mod,   only: abortmp
   use geometry_mod,   only: set_area_correction_map0
 
@@ -16,6 +16,7 @@ module thetal_test_interface
   public :: init_f90
   public :: cleanup_f90
   public :: init_geo_views_f90
+  public :: initialize_reference_states_f90
 
 contains
 
@@ -48,7 +49,7 @@ contains
     scale_factor = rearth
     scale_factor_inv = rrearth
     laplacian_rigid_factor = rrearth
-    
+
     call derivinit(deriv)
 
     call initmp_f90()
@@ -114,8 +115,8 @@ contains
     call c_f_pointer(d_ptr,    tensor2d, [np,np,2,2,nelemd])
     call c_f_pointer(mdet_ptr, scalar2d, [np,np,    nelemd])
     do ie=1,nelemd
-      tensor2d(:,:,:,:,ie) = elem(ie)%d      
-      scalar2d(:,:,ie)     = elem(ie)%metdet 
+      tensor2d(:,:,:,:,ie) = elem(ie)%d
+      scalar2d(:,:,ie)     = elem(ie)%metdet
     enddo
 
     call c_f_pointer(dinv_ptr, tensor2d, [np,np,2,2,nelemd])
@@ -173,5 +174,40 @@ contains
     call deallocate_element_arrays()
 
   end subroutine cleanup_f90
+
+
+  subroutine initialize_reference_states_f90(phis_ptr, dp_ref_ptr, theta_ref_ptr, phi_ref_ptr) bind(c)
+    use element_ops,    only: initialize_reference_states
+    use dimensions_mod, only: nelemd, nlev, nlevp, np
+    use theta_f2c_mod,  only : init_reference_states_c
+    !
+    ! Inputs
+    !
+    type (c_ptr), intent(in) :: phis_ptr, dp_ref_ptr, theta_ref_ptr, phi_ref_ptr
+    !
+    ! Locals
+    !
+    real (kind=real_kind), dimension(:,:,:),  pointer :: phis
+    real (kind=real_kind), dimension(:,:,:,:),  pointer :: dp_ref, theta_ref, phi_ref
+    integer :: ie
+
+    call c_f_pointer(phis_ptr,      phis,      [np,np,      nelemd])
+    call c_f_pointer(dp_ref_ptr,    dp_ref,    [np,np,nlev, nelemd])
+    call c_f_pointer(theta_ref_ptr, theta_ref, [np,np,nlev, nelemd])
+    call c_f_pointer(phi_ref_ptr,   phi_ref,   [np,np,nlevp,nelemd])
+
+    ! Compute reference states
+    do ie=1,nelemd
+      call initialize_reference_states(hvcoord,             &
+                                       phis(:,:,ie),        &
+                                       dp_ref(:,:,:,ie),    &
+                                       theta_ref(:,:,:,ie), &
+                                       phi_ref(:,:,:,ie))
+    end do
+
+    ! Initialize reference states in C++
+    call init_reference_states_c(dp_ref_ptr,theta_ref_ptr,phi_ref_ptr)
+
+  end subroutine initialize_reference_states_f90
 
 end module thetal_test_interface
