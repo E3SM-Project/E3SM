@@ -50,7 +50,7 @@ void pre_timeloop() {
   YAKL_SCOPE( crm_state_w_wind         , :: crm_state_w_wind );
   YAKL_SCOPE( crm_state_temperature    , :: crm_state_temperature ); 
   YAKL_SCOPE( micro_field              , :: micro_field );
-  YAKL_SCOPE( crm_state_qt             , :: crm_state_qt );
+  YAKL_SCOPE( crm_state_qv             , :: crm_state_qv );
   YAKL_SCOPE( crm_state_qp             , :: crm_state_qp );
   YAKL_SCOPE( crm_state_qn             , :: crm_state_qn );
   YAKL_SCOPE( qn                       , :: qn );
@@ -316,7 +316,7 @@ void pre_timeloop() {
   //     for (int i=0; i<nx; i++) {
   //       for (int icrm=0; icrm<ncrms; icrm++) {
   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
-    micro_field(0,k,j+offy_s,i+offx_s,icrm) = crm_state_qt(k,j,i,icrm);
+    micro_field(0,k,j+offy_s,i+offx_s,icrm) = crm_state_qv(k,j,i,icrm)+crm_state_qn(k,j,i,icrm);
     micro_field(1,k,j+offy_s,i+offx_s,icrm) = crm_state_qp(k,j,i,icrm);
     qn(k,j,i,icrm) = crm_state_qn(k,j,i,icrm);
   });

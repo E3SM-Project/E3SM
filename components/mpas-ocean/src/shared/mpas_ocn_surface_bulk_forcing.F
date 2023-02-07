@@ -456,7 +456,8 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell, nCells
-      integer, pointer :: index_temperature_flux, index_salinity_flux
+      integer, pointer :: index_temperature_fluxPtr, index_salinity_fluxPtr
+      integer :: index_temperature_flux, index_salinity_flux
       integer, dimension(:), pointer :: nCellsArray
 
       type(mpas_pool_type),pointer :: tracersSurfaceFluxPool
@@ -477,8 +478,14 @@ contains
 
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux',tracersSurfaceFluxPool)
 
-      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_temperatureSurfaceFlux', index_temperature_flux)
-      call mpas_pool_get_dimension(tracersSurfaceFluxPool, 'index_salinitySurfaceFlux', index_salinity_flux)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, &
+                                  'index_temperatureSurfaceFlux', &
+                                   index_temperature_fluxPtr)
+      call mpas_pool_get_dimension(tracersSurfaceFluxPool, &
+                                  'index_salinitySurfaceFlux', &
+                                   index_salinity_fluxPtr)
+      index_temperature_flux = index_temperature_fluxPtr
+      index_salinity_flux    = index_salinity_fluxPtr
 
       call mpas_pool_get_array(forcingPool, 'latentHeatFlux', latentHeatFlux)
       call mpas_pool_get_array(forcingPool, 'sensibleHeatFlux', sensibleHeatFlux)

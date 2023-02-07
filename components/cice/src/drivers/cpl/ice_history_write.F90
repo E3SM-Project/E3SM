@@ -491,7 +491,7 @@
          time_bounds=(/time_beg(ns),time_end(ns)/)
          bnd_start=(/1,1/)
          bnd_length=(/2,1/)
-         status = pio_put_var(File,varid,start=bnd_start(:),count=bnd_length(:),ival=time_bounds) 
+         status = pio_put_var(File,varid,bnd_start(:),bnd_length(:),time_bounds)
       endif
       
       !-----------------------------------------------------------------

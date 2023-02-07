@@ -1299,12 +1299,15 @@ contains
                           tracerGroupSurfaceFlux)
                endif
 #ifdef MPAS_OPENACC
-            !$acc enter data copyin(tracerGroupSurfaceFlux)
+               !$acc enter data copyin(tracerGroupSurfaceFlux)
 #endif
 
                call ocn_tracer_vmix_tend_implicit(dt, vertDiffTopOfCell, layerThickness, tracersGroup, &
                         vertNonLocalFlux, tracerGroupSurfaceFlux,  &
                         config_cvmix_kpp_nonlocal_with_implicit_mix, err)
+#ifdef MPAS_OPENACC
+               !$acc exit data delete(tracerGroupSurfaceFlux)
+#endif
             end if
 
             ! difference tracers to compute influence of vertical mixing and divide by dt
@@ -1336,7 +1339,7 @@ contains
             endif
 
 #ifdef MPAS_OPENACC
-      !$acc exit data copyout(tracersGroup) delete(tracerGroupSurfaceFlux)
+      !$acc exit data copyout(tracersGroup)
 #endif
          end if
       end do

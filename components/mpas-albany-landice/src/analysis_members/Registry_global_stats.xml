@@ -97,7 +97,6 @@
                 <var name="basalSpeedMax" type="real" dimensions="Time" units="m yr^{-1}"
                         description="maximum basal speed in the domain"
                 />
-
  	</var_struct>
 	<streams>
 		<stream name="globalStatsOutput" type="output"
@@ -110,7 +109,17 @@
 				clobber_mode="truncate"
 				runtime_format="single_file">
 			<var name="xtime"/>
+			<var name="deltat"/>
                         <var name="daysSinceStart"/>
+                        <var name="simulationStartTime"/>
+                        <var name="allowableDtACFL"/>
+                        <var name="allowableDtDCFL"/>
+                        <var name="calvingCFLdt"/>
+                        <var name="dtCalvingCFLratio"/>
+                        <var name="processLimitingTimestep"/>
+                        <var name="totalRatebasedCalvedVolume"/>
+                        <var name="totalRatebasedUncalvedVolume"/>
+                        <var name="albanyVelocityError"/>
                         <var_struct name="globalStatsAM"/>
 		</stream>
 	</streams>
