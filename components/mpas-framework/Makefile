@@ -675,6 +675,8 @@ SCC=$(CC_SERIAL)
 PARALLEL_MESSAGE="Parallel version is on."
 
 ifeq "$(OPENMP)" "true"
+	CPPINCLUDES += $(OPENMP_INCLUDE)
+	FCINCLUDES += $(OPENMP_INCLUDE)
 	FFLAGS += $(FFLAGS_OMP)
 	CFLAGS += $(CFLAGS_OMP)
 	CXXFLAGS += $(CFLAGS_OMP)
@@ -888,15 +890,15 @@ endif
 openmp_test:
 ifeq "$(OPENMP)" "true"
 	@echo "Testing compiler for OpenMP support"
-	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(SCC) $(CFLAGS) -o conftest.out conftest.c || \
+	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(SCC) $(OPENMP_INCLUDE) $(CFLAGS) -o conftest.out conftest.c || \
 		(echo "$(SCC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
-	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(CC) $(CFLAGS) -o conftest.out conftest.c || \
+	@echo "#include <omp.h>" > conftest.c; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.c; $(CC) $(OPENMP_INCLUDE) $(CFLAGS) -o conftest.out conftest.c || \
 		(echo "$(CC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
-	@echo "#include <omp.h>" > conftest.cpp; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.cpp; $(CXX) $(CFLAGS) -o conftest.out conftest.cpp || \
+	@echo "#include <omp.h>" > conftest.cpp; echo "int main() { int n = omp_get_num_threads(); return 0; }" >> conftest.cpp; $(CXX) $(OPENMP_INCLUDE) $(CXXFLAGS) -o conftest.out conftest.cpp || \
 		(echo "$(CXX) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
-	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(SFC) $(FFLAGS) -o conftest.out conftest.f90 || \
+	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(SFC) $(OPENMP_INCLUDE) $(FFLAGS) -o conftest.out conftest.f90 || \
 		(echo "$(SFC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
-	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(FC) $(FFLAGS) -o conftest.out conftest.f90 || \
+	@echo "program test; use omp_lib; integer n; n = OMP_GET_NUM_THREADS(); stop 0; end program" > conftest.f90; $(FC) $(OPENMP_INCLUDE) $(FFLAGS) -o conftest.out conftest.f90 || \
 		(echo "$(FC) does not support OpenMP - see INSTALL in top-level directory for more information"; rm -fr conftest.*; exit 1)
 	@rm -fr conftest.*
 endif

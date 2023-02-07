@@ -241,6 +241,10 @@ macro(createExecLib libName execType libSrcs inclDirs macroNP
   ENDIF()
 
   target_link_libraries(${execName} csm_share)
+  if (NOT HOMME_BUILD_SCORPIO)
+    # Needed for netcdf.mod usage in mesh_mod.F90.
+    target_link_libraries(${execName} piof)
+  endif()
 
   IF (CXXLIB_SUPPORTED_CACHE)
     MESSAGE(STATUS "   Linking Fortran with -cxxlib")
