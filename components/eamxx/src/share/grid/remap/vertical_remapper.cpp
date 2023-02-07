@@ -129,7 +129,6 @@ set_pressure_levels(const std::string& map_file) {
   m_remap_pres.get_header().get_alloc_properties().request_allocation(mPack::n);
   m_remap_pres.allocate_view();
 
-  auto npacks = ekat::PackInfo<mPack::n>::num_packs(m_num_remap_levs);
   auto remap_pres_scal = m_remap_pres.get_view<Real*>();
 
   std::vector<scorpio::offset_t> dofs_offsets(m_num_remap_levs);
@@ -286,7 +285,6 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt) const
     const auto  rank   = f_src.rank();
     auto src_tag = layout.tags().back();
     auto src_num_levs = layout.dim(src_tag);
-    const bool do_remap = ekat::contains(std::vector<FieldTag>{ILEV,LEV},src_tag);
 
     Field    src_lev_f;
     if (src_tag == ILEV) {
