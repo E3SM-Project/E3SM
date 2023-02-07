@@ -166,7 +166,7 @@ contains
        end do
        call check_ret(nf_def_var(ncid, trim(varname), xtype, ndims, dimid(1:ndims), varid), subname)
     else
-       call check_ret(nf_def_var(ncid, varname, xtype, 0, 0, varid), subname)
+       call check_ret(nf_def_var(ncid, varname, xtype, 0, (/0/), varid), subname)
     end if
     if (present(long_name)) then
        call check_ret(nf_put_att_text(ncid, varid, 'long_name', len_trim(long_name), trim(long_name)), subname)
