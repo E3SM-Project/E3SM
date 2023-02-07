@@ -1147,7 +1147,6 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
    end do ! nmodes
 
    !Add contributions from volcanic aerosols directly read in extinction
-   if (1>2) then!kzm ++
    if(is_cmip6_volc) then
       !update tropopause layer first
       do i = 1, ncol
@@ -1165,8 +1164,6 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
          enddo
       enddo
    endif
-   endif
-   !kzm --
 
    ! Output visible band diagnostics for quantities summed over the modes
    ! These fields are put out for diagnostic lists as well as the climate list.
