@@ -461,7 +461,7 @@ void SHOCMacrophysics::run_impl (const double dt)
   // number of SHOC timesteps (nadv) to be 1.
   // TODO: input parameter?
   hdtime = dt;
-  m_nadv = std::max(static_cast<int>(hdtime/dt),1);
+  m_nadv = std::max(static_cast<int>(round(hdtime/dt)),1);
 
   // Reset internal WSM variables.
   workspace_mgr.reset_internals();

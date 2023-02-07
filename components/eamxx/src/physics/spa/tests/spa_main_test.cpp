@@ -194,7 +194,7 @@ TEST_CASE("spa_main")
   RPDF pdf(0.001,0.999);
   auto dt = (t_end-t_beg) * pdf(engine);
 
-  auto t_mid = t_beg + static_cast<int>(dt);
+  auto t_mid = t_beg + static_cast<int>(round(dt));
   spa_time_state.t_now = t_mid.frac_of_year_in_days();
   SPAFunc::perform_time_interpolation(spa_time_state,spa_beg,spa_end,spa_tmp);
   data_tmp_h.copy_from_dev(spa_tmp.data);

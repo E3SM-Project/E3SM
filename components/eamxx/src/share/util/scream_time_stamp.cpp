@@ -149,7 +149,7 @@ TimeStamp& TimeStamp::operator+=(const double seconds) {
   // Note: (x-int(x)) only works for x small enough that can be stored in an int,
   //       but that should be the case here, for use cases in EAMxx.
   EKAT_REQUIRE_MSG (seconds>0, "Error! Time must move forward.\n");
-  EKAT_REQUIRE_MSG ((seconds-static_cast<int>(seconds))<std::numeric_limits<double>::epsilon()*10,
+  EKAT_REQUIRE_MSG ((seconds-round(seconds))<std::numeric_limits<double>::epsilon()*10,
       "Error! Cannot update TimeStamp with non-integral number of seconds " << seconds << "\n");
 
   EKAT_REQUIRE_MSG(is_valid(),
