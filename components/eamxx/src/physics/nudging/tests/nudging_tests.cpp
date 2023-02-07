@@ -264,7 +264,8 @@ TEST_CASE("nudging") {
   // Create a grids manager
   const int ncols = 3;
   //const int nlevs = packsize*2 + 1;  // Note, we need at least 3 levels for the test to work
-  const int nlevs = 33;  // Note, we need at least 3 levels for the test to work
+  //const int nlevs = 33;  // Note, we need at least 3 levels for the test to work
+  const int nlevs = 34;  
   auto gm = create_gm(io_comm,ncols,nlevs);
   auto grid = gm->get_grid("Physics");
 
@@ -325,11 +326,9 @@ TEST_CASE("nudging") {
   //Don't fill Temperature because it is going to be nudged anyways  
   for (int icol=0; icol<ncols; icol++){
     for (int ilev=0; ilev<nlevs; ilev++){ 
-      //f_mid_v_h(icol,ilev) = (-ilev)*100 + icol+0.1;
-      //f_mid_v_h(icol,ilev) = 0;
       //f_mid_v_h(icol,ilev) = 100*(icol-1) + 2*ilev;
-      //p_mid_v_h(icol,ilev) = 2+ilev*2;
-      p_mid_v_h(icol,ilev) = 2*ilev+2;
+      //p_mid_v_h(icol,ilev) = 2*ilev+2;
+      p_mid_v_h(icol,ilev) = 2*ilev;
     }
   }
   f_mid.sync_to_dev();
@@ -357,8 +356,21 @@ TEST_CASE("nudging") {
     for (int icol=0; icol<ncols; icol++){
       for (int ilev=0; ilev<nlevs; ilev++){ 
         const int time_index = time_s*100./250.;
-        double val_before = 10000*(icol-1) + 200*ilev + 10*int(time_index-1);
-        double val_after = 10000*(icol-1) + 200*ilev + 10*int(time_index);
+	if (ilev == 0){
+	  double val_before = 10000*(icol-1) + 10*int(time_index-1);
+	  double val_after = 10000*(icol-1) + 10*int(time_index);
+	  double w_aft = time_s*100.-time_index*250.;
+	  double w_bef = (time_index+1)*250-time_s*100.;
+	  double val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
+          REQUIRE(abs(f_mid_v_h_o(icol,ilev) - val_tim_avg)<0.1);
+          REQUIRE(abs(qv_h_o(icol,ilev) - val_tim_avg)<0.1);
+          REQUIRE(abs(hw_h_o(icol,0,ilev) - val_tim_avg)<0.1);
+          REQUIRE(abs(hw_h_o(icol,1,ilev) - val_tim_avg)<0.1);
+	  continue;
+	}
+
+        double val_before = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index-1);
+        double val_after = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index);
         double w_aft = time_s*100.-time_index*250.;
         double w_bef = (time_index+1)*250-time_s*100.;
 	//std::cout<<"val_before: "<<val_before<<std::endl;
@@ -367,8 +379,8 @@ TEST_CASE("nudging") {
         //std::cout<<"w_after: "<<w_aft<<std::endl;
 	double val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
 
-        double val_before_n = 10000*(icol-1) + 200*(ilev+1) + 10*int(time_index-1);
-        double val_after_n = 10000*(icol-1) + 200*(ilev+1) + 10*int(time_index);
+        double val_before_n = 10000*(icol-1) + 200*(ilev) + 10*int(time_index-1);
+        double val_after_n = 10000*(icol-1) + 200*(ilev) + 10*int(time_index);
         double w_aft_n = time_s*100.-time_index*250.;
         double w_bef_n = (time_index+1)*250-time_s*100.;
 	double val_tim_avg_next = (val_before_n*w_bef_n + val_after_n*w_aft_n) / 250.;

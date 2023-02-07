@@ -158,8 +158,8 @@ void NUDGING::time_interpolation (const int time_s) {
       auto qv_aft_1d = ekat::subview(qv_aft,icol);
       const auto range = Kokkos::TeamThreadRange(team, num_vert_packs);
       Kokkos::parallel_for(range, [&] (const Int & k) {
-          T_mid_1d(k)=T_mid_bef_1d(k);
-	  p_mid_1d(k)=p_mid_bef_1d(k);
+          //T_mid_1d(k)=T_mid_bef_1d(k);
+	  //p_mid_1d(k)=p_mid_bef_1d(k);
 	  T_mid_1d(k)=w_bef*T_mid_bef_1d(k) + w_aft*T_mid_aft_1d(k);
 	  p_mid_1d(k)=w_bef*p_mid_bef_1d(k) + w_aft*p_mid_aft_1d(k);
 	  hw_2d(0,k)=w_bef*hw_bef_2d(0,k) + w_aft*hw_aft_2d(0,k);
@@ -246,6 +246,38 @@ void NUDGING::run_impl (const int dt)
 
   Kokkos::deep_copy(hw,hw_out);
 
+  const int num_cols = T_mid.extent(0);
+  const int num_vert_packs = T_mid.extent(1);
+  const int num_vert_packs_ext = T_mid_ext.extent(1);
+  const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);
+  Kokkos::parallel_for("check_for_mask", policy,
+     	       KOKKOS_LAMBDA(MemberType const& team) {
+      const int icol = team.league_rank();
+      auto T_mid_1d = ekat::subview(T_mid,icol);
+      auto T_mid_ext_1d = ekat::subview(T_mid_ext,icol);
+      auto hw_2d = ekat::subview(hw, icol);
+      auto hw_ext_2d = ekat::subview(horiz_winds_ext, icol);
+      auto p_mid_1d = ekat::subview(p_mid,icol);
+      auto p_mid_ext_1d = ekat::subview(p_mid_ext,icol);
+      auto qv_1d = ekat::subview(qv,icol);
+      auto qv_ext_1d = ekat::subview(qv_ext,icol);
+      const auto range = Kokkos::TeamThreadRange(team, num_vert_packs);
+      Kokkos::parallel_for(range, [&] (const Int & k) {
+        const auto above_max = p_mid_1d(k) > p_mid_ext_1d(num_vert_packs_ext-1);
+        const auto below_min = p_mid_1d(k) < p_mid_ext_1d(0);
+        T_mid_1d(k).set(above_max,T_mid_ext_1d(num_vert_packs_ext-1));
+        T_mid_1d(k).set(below_min,T_mid_ext_1d(0));
+        qv_1d(k).set(above_max,qv_ext_1d(num_vert_packs_ext-1));
+        qv_1d(k).set(below_min,qv_ext_1d(0));
+        hw_2d(0,k).set(above_max,hw_ext_2d(0,num_vert_packs_ext-1));
+        hw_2d(0,k).set(below_min,hw_ext_2d(0,0));
+        hw_2d(1,k).set(above_max,hw_ext_2d(1,num_vert_packs_ext-1));
+        hw_2d(1,k).set(below_min,hw_ext_2d(1,0));
+      });
+      team.team_barrier();
+  });
+  Kokkos::fence();   
+    
 }
 
 // =========================================================================================
