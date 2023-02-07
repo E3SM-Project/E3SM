@@ -487,6 +487,7 @@ _TESTS = {
             "PEM_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1",
             "ERS_Ln22.ne30pg2_ne30pg2.F2010-SCREAMv1-X6T",
             "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-small_kernels",
+            "ERP_Ln22.conusx4v1pg2_r05_oECv3.F2010-SCREAMv1-noAero",
             )
     },
 
