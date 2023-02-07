@@ -526,7 +526,7 @@ protected:
 
 protected:
 
-  void run_impl        (const int dt);
+  void run_impl        (const double dt);
   void finalize_impl   ();
 
   // SHOC updates the 'tracers' group.

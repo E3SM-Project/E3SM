@@ -61,7 +61,7 @@ void CldFraction::initialize_impl (const RunType /* run_type */)
 }
 
 // =========================================================================================
-void CldFraction::run_impl (const int /* dt */)
+void CldFraction::run_impl (const double /* dt */)
 {
   // Calculate ice cloud fraction and total cloud fraction given the liquid cloud fraction
   // and the ice mass mixing ratio. 

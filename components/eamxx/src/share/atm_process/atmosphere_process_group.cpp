@@ -331,7 +331,7 @@ void AtmosphereProcessGroup::initialize_impl (const RunType run_type) {
   }
 }
 
-void AtmosphereProcessGroup::run_impl (const int dt) {
+void AtmosphereProcessGroup::run_impl (const double dt) {
   if (m_group_schedule_type==ScheduleType::Sequential) {
     run_sequential(dt);
   } else {
@@ -339,7 +339,7 @@ void AtmosphereProcessGroup::run_impl (const int dt) {
   }
 }
 
-void AtmosphereProcessGroup::run_sequential (const Real dt) {
+void AtmosphereProcessGroup::run_sequential (const double dt) {
   // Get the timestamp at the beginning of the step and advance it.
   auto ts = timestamp();
   ts += dt;
@@ -362,7 +362,7 @@ void AtmosphereProcessGroup::run_sequential (const Real dt) {
   }
 }
 
-void AtmosphereProcessGroup::run_parallel (const Real /* dt */) {
+void AtmosphereProcessGroup::run_parallel (const double /* dt */) {
   EKAT_REQUIRE_MSG (false,"Error! Parallel splitting not yet implemented.\n");
 }
 

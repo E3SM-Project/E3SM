@@ -452,7 +452,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   rayleigh_friction_init();
 }
 
-void HommeDynamics::run_impl (const int dt)
+void HommeDynamics::run_impl (const double dt)
 {
   try {
 

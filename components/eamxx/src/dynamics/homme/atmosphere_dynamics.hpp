@@ -100,7 +100,7 @@ public:
   void remap_fv_phys_to_dyn() const;
   
 protected:
-  void run_impl        (const int dt);
+  void run_impl        (const double dt);
   void finalize_impl   ();
 
   // We need to store the size of the tracers group as soon as it is available.
