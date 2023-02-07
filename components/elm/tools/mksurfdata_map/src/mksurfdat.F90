@@ -926,13 +926,13 @@ program mksurfdat
     call check_ret(nf_put_var_double(ncid, varid, landfrac_pft), subname)
 
     call check_ret(nf_inq_varid(ncid, 'mxsoil_color', varid), subname)
-    call check_ret(nf_put_var_int(ncid, varid, (/n,n=1,nsoicol/)), subname)
+    call check_ret(nf_put_var_int(ncid, varid, (/nsoicol/)), subname)
 
     call check_ret(nf_inq_varid(ncid, 'SOIL_COLOR', varid), subname)
     call check_ret(nf_put_var_int(ncid, varid, soicol), subname)
  
     call check_ret(nf_inq_varid(ncid, 'mxsoil_order', varid), subname)
-    call check_ret(nf_put_var_int(ncid, varid, (/n,n=1,nsoiord/)), subname)
+    call check_ret(nf_put_var_int(ncid, varid, (/nsoiord/)), subname)
 
     call check_ret(nf_inq_varid(ncid, 'SOIL_ORDER', varid), subname)
     call check_ret(nf_put_var_int(ncid, varid, soiord), subname) 
