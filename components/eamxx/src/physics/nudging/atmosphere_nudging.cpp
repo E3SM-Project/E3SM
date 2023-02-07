@@ -9,8 +9,6 @@ namespace scream
 NUDGING::NUDGING (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
-  // Nothing to do here
-  //m_comm=comm;
   m_fnames=m_params.get<std::vector<std::string>>("Field_Names");
   datafile=m_params.get<std::string>("Nudging_Filename");
   time_step_file=m_params.get<Int>("Time_Step_File",-9999);
@@ -158,8 +156,6 @@ void NUDGING::time_interpolation (const int time_s) {
       auto qv_aft_1d = ekat::subview(qv_aft,icol);
       const auto range = Kokkos::TeamThreadRange(team, num_vert_packs);
       Kokkos::parallel_for(range, [&] (const Int & k) {
-          //T_mid_1d(k)=T_mid_bef_1d(k);
-	  //p_mid_1d(k)=p_mid_bef_1d(k);
 	  T_mid_1d(k)=w_bef*T_mid_bef_1d(k) + w_aft*T_mid_aft_1d(k);
 	  p_mid_1d(k)=w_bef*p_mid_bef_1d(k) + w_aft*p_mid_aft_1d(k);
 	  hw_2d(0,k)=w_bef*hw_bef_2d(0,k) + w_aft*hw_aft_2d(0,k);
@@ -189,7 +185,8 @@ void NUDGING::run_impl (const int dt)
   //if (time_since_zero > 7200){ return;}
 
   //Have to add dt because first time iteration is at 0 seconds where you will not have
-  //any data from the field. The timestamp is only iterated at the end of the full step in scream.
+  //any data from the field. The timestamp is only iterated at the end of the
+  //full step in scream.
   time_interpolation(time_since_zero);
 
   auto T_mid       = get_field_out("T_mid").get_view<mPack**>();
@@ -223,8 +220,7 @@ void NUDGING::run_impl (const int dt)
                                            T_mid_ext_p,
                                            T_mid_out,
                                            m_num_src_levs,
-                                           m_num_levs);//,
-    //  					   250.);
+                                           m_num_levs);
   Kokkos::deep_copy(T_mid,T_mid_out);
 
   perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
@@ -232,8 +228,7 @@ void NUDGING::run_impl (const int dt)
                                            qv_ext_p,
                                            qv_out,
                                            m_num_src_levs,
-                                           m_num_levs);//,
-  //250.);
+                                           m_num_levs);
   Kokkos::deep_copy(qv,qv_out);
 
   perform_vertical_interpolation<Real,1,3>(p_mid_ext_p,
@@ -241,9 +236,7 @@ void NUDGING::run_impl (const int dt)
                                            hw_ext_p,
                                            hw_out,
                                            m_num_src_levs,
-                                           m_num_levs);//,
-  //250.);
-
+                                           m_num_levs);
   Kokkos::deep_copy(hw,hw_out);
 
   const int num_cols = T_mid.extent(0);
