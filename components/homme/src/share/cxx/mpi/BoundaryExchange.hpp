@@ -134,8 +134,6 @@ public:
   void register_field (ExecView<Real*[DIM][NP][NP], Properties...> field, int num_dims, int start_dim);
 
   // 3d fields (with vertical level dimension at the end)
-  template<typename... Properties>
-  void register_field (ExecView<Scalar**[NP][NP][NUM_LEV], Properties...> field, int num_dims, int start_dim, int nlev=NUM_LEV);
   template<int OUTER_DIM, int DIM, typename... Properties>
   void register_field (ExecView<Scalar*[OUTER_DIM][DIM][NP][NP][NUM_LEV], Properties...> field, int idim_out, int num_dims, int start_dim, int nlev=NUM_LEV);
   template<typename... Properties>
@@ -409,31 +407,6 @@ void BoundaryExchange::register_field (ExecView<Real***[NP][NP], Properties...> 
 
 // --- 3d NUM_LEV fields --- //
 
-template<typename... Properties>
-void BoundaryExchange::register_field (ExecView<Scalar**[NP][NP][NUM_LEV], Properties...> field, int num_dims, int start_dim, int nlev)
-{
-  using Kokkos::ALL;
-
-  // Sanity checks
-  assert (m_registration_started && !m_registration_completed);
-  assert (num_dims>0 && start_dim>=0);
-  assert (start_dim+num_dims<=field.extent_int(1));
-  assert (m_num_3d_fields+num_dims<=m_3d_fields.extent_int(1));
-  assert (m_num_1d_fields==0);
-
-  {
-    auto l_num_3d_fields = m_num_3d_fields;
-    auto l_3d_fields = m_3d_fields;
-    Kokkos::parallel_for(MDRangePolicy<ExecSpace, 2>({0, 0}, {m_connectivity->get_num_local_elements(), num_dims}, {1, 1}),
-                         KOKKOS_LAMBDA(const int ie, const int idim){
-        l_3d_fields(ie, l_num_3d_fields+idim) = Kokkos::subview(field, ie, start_dim+idim, ALL, ALL, ALL);
-    });
-  }
-
-  for (int i = 0; i < num_dims; ++i) m_3d_nlev_pack.push_back(nlev);
-  m_num_3d_fields += num_dims;
-}
-
 template<int OUTER_DIM, int DIM, typename... Properties>
 void BoundaryExchange::register_field (ExecView<Scalar*[OUTER_DIM][DIM][NP][NP][NUM_LEV], Properties...> field, int outer_dim, int num_dims, int start_dim, int nlev)
 {
@@ -541,6 +514,21 @@ void BoundaryExchange::register_field_impl (
   ++m_num_3d_int_fields;
 }
 
+// Workaround for SCREAM issue
+//     https://github.com/E3SM-Project/scream/issues/2146
+// concerning the Perlmutter GPU system.
+template<typename... Properties>
+struct RegisterFieldImpl {
+  int num_dims, num_3d_fields, start_dim;
+  ExecViewManaged<ExecViewManaged<Scalar[NP][NP][NUM_LEV]>**> fields;
+  ExecView<Scalar**[NP][NP][NUM_LEV], Properties...> field;
+  KOKKOS_INLINE_FUNCTION void operator() (const int k) const {
+    using Kokkos::ALL;
+    const int ie = k / num_dims, idim = k % num_dims;
+    fields(ie, num_3d_fields+idim) = Kokkos::subview(field, ie, start_dim+idim, ALL, ALL, ALL);
+  }
+};
+
 template<int NUM_LEV_IN, typename... Properties>
 void BoundaryExchange::register_field_impl (
     typename std::enable_if<NUM_LEV_IN==NUM_LEV,
@@ -558,12 +546,15 @@ void BoundaryExchange::register_field_impl (
   assert (m_num_1d_fields==0);
 
   {
-    auto l_num_3d_fields = m_num_3d_fields;
-    auto l_3d_fields = m_3d_fields;
-    Kokkos::parallel_for(MDRangePolicy<ExecSpace, 2>({0, 0}, {m_connectivity->get_num_local_elements(), num_dims}, {1, 1}),
-                         KOKKOS_LAMBDA(const int ie, const int idim){
-        l_3d_fields(ie, l_num_3d_fields+idim) = Kokkos::subview(field, ie, start_dim+idim, ALL, ALL, ALL);
-    });
+    RegisterFieldImpl<Properties...> f;
+    f.num_dims = num_dims;
+    f.num_3d_fields = m_num_3d_fields;
+    f.start_dim = start_dim;
+    f.fields = m_3d_fields;
+    f.field = field;
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<ExecSpace>(0, m_connectivity->get_num_local_elements()*num_dims),
+      f);
   }
 
   for (int i = 0; i < num_dims; ++i) m_3d_nlev_pack.push_back(nlev);
