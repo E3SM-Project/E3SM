@@ -18,6 +18,7 @@ extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
   using yakl::intrinsics::abs;
   using yakl::intrinsics::maxval;
+  using yakl::atomicAdd; // temporary - only for debugging
   auto &coupler = pam_interface::get_coupler();
   //------------------------------------------------------------------------------------------------
   // retreive coupler options
@@ -64,7 +65,7 @@ extern "C" void pam_driver() {
   pam_radiation_copy_input_to_coupler(coupler);
 
   // Define hydrostasis (only for PAM-A/AWFL)
-  #if PAM_DYCORE == awfl
+  #if PAM_DYCORE==awfl
     coupler.update_hydrostasis();
   #endif
 
@@ -112,27 +113,6 @@ extern "C" void pam_driver() {
   }
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
-  //------------------------------------------------------------------------------------------------
-
-  // crm_pmid = coupler.compute_pressure_array();
-  // std::cout<<std::endl;
-  // for (int k=0; k<crm_nz; k++) {
-  //   int k_gcm = crm_nz-1-k;
-  //   int i = 0;
-  //   int j = 0;
-  //   int iens = 0;
-  //   std::cout <<"WHDEBUG2 "
-  //   <<"  i:"<<i
-  //   <<"  k:"<<k
-  //   <<"  crm_zint:"  <<crm_zint(k,iens)
-  //   <<"  crm_zmid:"  <<crm_zmid(k,iens)
-  //   <<"  crm_temp:"  <<crm_temp(k,j,i,iens)
-  //   <<"  crm_rho_d:" <<crm_rho_d(k,j,i,iens)
-  //   <<"  crm_pmid:"  <<crm_pmid(k,j,i,iens)
-  //   <<"  input_pmid:"<<input_pmid(k_gcm,iens)
-  //   <<std::endl;
-  // }
-  // endrun("stopping for debug");
   //------------------------------------------------------------------------------------------------
 
   // Compute CRM feedback tendencies and copy to host
