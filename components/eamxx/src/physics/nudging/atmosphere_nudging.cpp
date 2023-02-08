@@ -1,5 +1,4 @@
 #include "atmosphere_nudging.hpp"
-#include "share/util/scream_time_stamp.hpp"
 
 namespace scream
 {
@@ -22,10 +21,9 @@ void NUDGING::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   m_grid = grids_manager->get_grid("Physics");
   const auto& grid_name = m_grid->name();
-  std::cout<<"Grid name is : "<<grid_name<<std::endl;
   m_num_cols = m_grid->get_num_local_dofs(); // Number of columns on this rank
   m_num_levs = m_grid->get_num_vertical_levels();  // Number of levels per column
-  std::cout<<"m_num_levs: "<<m_num_levs<<std::endl;
+
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_levs} };
   // Layout for horiz_wind field
   FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {m_num_cols,2,m_num_levs} };
@@ -42,21 +40,12 @@ void NUDGING::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   scorpio::register_file(datafile,scorpio::Read);
   m_num_src_levs = scorpio::get_dimlen_c2f(datafile.c_str(),"lev");
   scorpio::eam_pio_closefile(datafile);
-  std::cout<<"m_num_src_levs: "<<m_num_src_levs<<std::endl;
-
   
-}
-
-// =========================================================================================
-void NUDGING::init_buffers(const ATMBufferManager &buffer_manager)
-{
-
 }
 
 // =========================================================================================
 void NUDGING::initialize_impl (const RunType /* run_type */)
 {
-
   using namespace ShortFieldTagsNames;
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
   FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {m_num_cols,2,m_num_src_levs} };
@@ -97,8 +86,6 @@ void NUDGING::initialize_impl (const RunType /* run_type */)
   qv_ext = fields_ext["qv"];
   ts0=timestamp();
 }
-
-
 
 void NUDGING::time_interpolation (const int time_s) {
 
@@ -172,21 +159,16 @@ void NUDGING::time_interpolation (const int time_s) {
 void NUDGING::run_impl (const int dt)
 {
   using namespace scream::vinterp;
-  std::cout<<"I get in run_impl of atmosphere nudging"<<std::endl;
-
-  std::cout<<"dt: "<<dt<<std::endl;
-  auto ts = timestamp()+dt;
-  //std::cout<<"time since zero: "<<ts.seconds_from(ts0)<<std::endl;
-  //std::cout<<"Time_Step_File: "<<time_step_file<<std::endl;
-  auto time_since_zero = ts.seconds_from(ts0);
-  //Don't nudge for times less than first time step in nudged file to avoid
-  //extrapolation
-  if (time_since_zero < time_step_file){ return;}
-  //if (time_since_zero > 7200){ return;}
 
   //Have to add dt because first time iteration is at 0 seconds where you will not have
   //any data from the field. The timestamp is only iterated at the end of the
   //full step in scream.
+  auto ts = timestamp()+dt;
+  auto time_since_zero = ts.seconds_from(ts0);
+  //Don't nudge for times less than first time step in nudged file to avoid
+  //extrapolation
+  if (time_since_zero < time_step_file){ return;}
+  //perform time interpolation
   time_interpolation(time_since_zero);
 
   auto T_mid       = get_field_out("T_mid").get_view<mPack**>();
@@ -214,7 +196,9 @@ void NUDGING::run_impl (const int dt)
 
   view_Nd<mPack,2> p_mid_ext_p("",p_mid_ext.extent_int(0),p_mid_ext.extent_int(1));
   Kokkos::deep_copy(p_mid_ext_p,p_mid_ext);
-  
+
+  //Now perform the vertical interpolation from the external file to the internal
+  //field levels
   perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
                                            p_mid_v,
                                            T_mid_ext_p,
@@ -239,6 +223,8 @@ void NUDGING::run_impl (const int dt)
                                            m_num_levs);
   Kokkos::deep_copy(hw,hw_out);
 
+  //This code removes any masked values and sets them to the corresponding
+  //values at the lowest/highest pressure levels from the external file
   const int num_cols = T_mid.extent(0);
   const int num_vert_packs = T_mid.extent(1);
   const int num_vert_packs_ext = T_mid_ext.extent(1);
@@ -276,7 +262,6 @@ void NUDGING::run_impl (const int dt)
 // =========================================================================================
 void NUDGING::finalize_impl()
 {
-  // Do nothing
   data_input.finalize();
 }
 

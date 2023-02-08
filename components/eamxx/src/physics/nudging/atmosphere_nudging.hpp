@@ -11,36 +11,20 @@
 #include "share/grid/mesh_free_grids_manager.hpp"
 #include "share/grid/point_grid.hpp"
 #include "share/util/scream_vertical_interpolation.hpp"
-
-//#include "share/scream_types.hpp"
-
+#include "share/util/scream_time_stamp.hpp"
 #include <string>
 
 namespace scream
 {
 
 /*
- * The class responsible to handle the calculation of the subgrid cloud fractions
- *
- * The AD should store exactly ONE instance of this class stored
- * in its list of subcomponents (the AD should make sure of this).
+ * The class responsible to handle the nudging of variables
 */
 
 class NUDGING : public AtmosphereProcess
 {
 public:
 
-  //using gid_type         = AbstractGrid::gid_type;
-  //using KT = KokkosTypes<Device>;
-  //template <typename S>
-  //using view_1d = typename KT::template view_1d<S>;
-  //using view_1d_dof     = typename view_1d<gid_type>;
-  
-  //template <typename S>
-  //using SmallPack = ekat::Pack<S,SCREAM_SMALL_PACK_SIZE>;
-
-  //using Spack = SmallPack<Real>;
-  //using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
   using mPack = ekat::Pack<Real,1>;
   using KT = KokkosTypes<DefaultDevice>;
 
@@ -58,7 +42,6 @@ public:
 
   template <typename S>
   using view_1d_host = view_Nd_host<S,1>;
-
 
   // Constructors
   NUDGING (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -82,20 +65,10 @@ protected:
   void run_impl        (const int dt);
   void finalize_impl   ();
 
-  // Computes total number of bytes needed for local variables
-  //size_t requested_buffer_size_in_bytes() const;
-
-  // Set local variables using memory provided by
-  // the ATMBufferManager
-  void init_buffers(const ATMBufferManager &buffer_manager);
-
-
   std::shared_ptr<const AbstractGrid>   m_grid;
   // Keep track of field dimensions and the iteration count
-  //ekat::Comm m_comm;
   int m_num_cols; 
   int m_num_levs;
-  //int m_num_src_levs;
   int m_num_src_levs;
   int time_step_file;
   std::string datafile;

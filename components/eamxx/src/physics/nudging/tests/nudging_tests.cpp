@@ -19,11 +19,8 @@
 #include "share/scream_types.hpp"
 #include "scream_config.h"
 
-
-
 using namespace scream;
 
-//namespace {
 std::shared_ptr<GridsManager>
 create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
 
@@ -39,56 +36,40 @@ create_gm (const ekat::Comm& comm, const int ncols, const int nlevs) {
   return gm;
 }
 
-
-
 TEST_CASE("nudging") {
-  std::cout<<"Get into nudging test"<<std::endl;
 
-  //using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-  /*
-  using Pack = ekat::Pack<Real,1>;
-  using KT = KokkosTypes<DefaultDevice>;
-  using view_1d = typename KT::template view_1d<Pack>;
-  using view_1d_const = typename KT::template view_1d<const Pack>;
-  */
-
+  //This test makes a netcdf file with 3 columns and 34 levels
+  //with 4 fields, T_mid, p_mid, qv, and horiz_winds
+  //The p_mid field is filled based on the following equation:
+  //2j+1, where j is the level
+  //The T_mid, qv, and horiz_winds fields are filled based on the equations:
+  //(i-1)*10000+200*j+10*(dt/250.)*ii, where i is the column, j is the level,
+  //and ii in the timestep
+  //It then runs then nudging module with the netcdf file as input to nudge
+  //And then checks that the output fields of the nudging module match
+  //what should be in the netcdf file
+  
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
   using FL = FieldLayout;
 
   constexpr int packsize = SCREAM_PACK_SIZE;
-  std::cout<<"packsize: "<<packsize<<std::endl;
-
 
   // A time stamp
-  //util::TimeStamp t0 ({2022,1,1},{0,0,0});
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
-  
-  //Fill data to interpolate   
-  //Create .nc file with just T_mid
-  //Then read that in probably in nudging code
 
-  //const std::string output_type = "output";
   ekat::Comm io_comm(MPI_COMM_WORLD);  // MPI communicator group used for I/O set as ekat object.
-  //Int num_gcols = 2*io_comm.size();
-  //Int num_levs = 33;
   Int num_levs = 34;
-
 
   // Initialize the pio_subsystem for this test:
   MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
   scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
-
-  
   
   // First set up a field manager and grids manager to interact with the output functions
-  //auto gm2 = create_gm(io_comm,ncols,num_levs);
   auto gm2 = create_gm(io_comm,3,num_levs);
   auto grid2 = gm2->get_grid("Point Grid");
   int num_lcols = grid2->get_num_local_dofs();
 
-  // Construct a timestamp
-  //util::TimeStamp t0 ({2000,1,1},{0,0,0});
   IOControl io_control; // Needed for testing input.
   io_control.timestamp_of_last_write = t0;
   io_control.nsamples_since_last_write = 0;
@@ -133,7 +114,6 @@ TEST_CASE("nudging") {
     FieldIdentifier fid5("horiz_winds",FL{tag_3d,dims_3d},m/s,gn);
 
     // Register fields with fm
-    // Make sure packsize isn't bigger than the packsize for this machine, but not so big   that we end up with only 1 pack.
     fm->registration_begins();
     fm->register_field(FR{fid2,"output"});
     fm->register_field(FR{fid3,"output"});
@@ -164,8 +144,6 @@ TEST_CASE("nudging") {
 	f5_host(ii,1,jj) = 1;
       }
     }
-    // Update timestamp
-    //util::TimeStamp time ({2000,1,1},{0,0,0});
     fm->init_fields_time_stamp(time);
     // Sync back to device
     f2.sync_to_dev();
@@ -181,9 +159,7 @@ TEST_CASE("nudging") {
     params.set<std::string>("Casename","io_output_test");
     params.set<std::string>("Averaging Type","Instant");
     params.set<int>("Max Snapshots Per File",10);
-    //auto& params_sub_f = params.sublist("Field Names");
     std::vector<std::string> fnames = {"T_mid","p_mid","qv","horiz_winds"};
-    //params_sub_f.set<std::vector<std::string>>("Field Names",fnames);
     params.set<std::vector<std::string>>("Field Names",fnames);
     auto& params_sub = params.sublist("output_control");
     params_sub.set<std::string>("frequency_units","nsteps");
@@ -202,11 +178,9 @@ TEST_CASE("nudging") {
     for (Int ii=0;ii<max_steps;++ii) {
       time += dt;
       Int time_in_sec = time.seconds_from(time0);
-      std::cout<<"time_in_sec: "<<time_in_sec<<std::endl;
       // Update the fields
       for (const auto& fname : out_fields->m_fields_names) {
         auto f  = fm->get_field(fname);
-	std::cout<<"fname: "<<fname<<std::endl;
         f.sync_to_host();
         auto fl = f.get_header().get_identifier().get_layout();
         switch (fl.rank()) {
@@ -217,7 +191,7 @@ TEST_CASE("nudging") {
                 for (int j=0; j<fl.dim(1); ++j) {
                   if (fname != "p_mid"){
 		      v(i,j) = (i-1)*10000+200*j+10*(dt/250.)*ii;
-		      std::cout<<"v("<<i<<","<<j<<"): "<<v(i,j)<<std::endl;
+		      //std::cout<<"v("<<i<<","<<j<<"): "<<v(i,j)<<std::endl;
                   }
                   if (fname == "p_mid"){
                     v(i,j) = 2*j+1;
@@ -233,8 +207,8 @@ TEST_CASE("nudging") {
                 for (int j=0; j<fl.dim(2); ++j) {
 		  v(i,0,j) = (i-1)*10000+200*j+10*(dt/250.)*ii;
 		  v(i,1,j) = (i-1)*10000+200*j+10*(dt/250.)*ii;
-		  std::cout<<"horiz 0 v("<<i<<","<<j<<"): "<<v(i,0,j)<<std::endl;
-		  std::cout<<"horiz 1 v("<<i<<","<<j<<"): "<<v(i,1,j)<<std::endl;
+		  //std::cout<<"horiz 0 v("<<i<<","<<j<<"): "<<v(i,0,j)<<std::endl;
+		  //std::cout<<"horiz 1 v("<<i<<","<<j<<"): "<<v(i,1,j)<<std::endl;
                 }
               }
 	    }
@@ -248,7 +222,6 @@ TEST_CASE("nudging") {
       // Run the output manager for this time step
       om.run(time);
       if (io_control.is_write_step(time)) {
-	std::cout<<"Get in io_control.is_write_step(time)"<<std::endl;
         output_stamps.push_back(time.to_string());
         io_control.nsamples_since_last_write = 0;
         io_control.timestamp_of_last_write = time;
@@ -258,35 +231,24 @@ TEST_CASE("nudging") {
     // Finalize the output manager (close files)
     om.finalize();
   }
-  std::cout<<"Get Here 1: "<<std::endl;
-  //ekat::Comm comm(MPI_COMM_WORLD);
 
   // Create a grids manager
   const int ncols = 3;
-  //const int nlevs = packsize*2 + 1;  // Note, we need at least 3 levels for the test to work
-  //const int nlevs = 33;  // Note, we need at least 3 levels for the test to work
   const int nlevs = 35;  
   auto gm = create_gm(io_comm,ncols,nlevs);
   auto grid = gm->get_grid("Physics");
 
   const auto units = ekat::units::Units::invalid();
 
-  std::cout<<"Columns outside: "<<ncols<<std::endl;
-  std::cout<<"Levs outside: "<<nlevs<<std::endl;
-
   ekat::ParameterList params_mid;
   std::vector<std::string> fnames = {"T_mid","p_mid","qv","horiz_winds"};
-  //std::vector<std::string> fnames = {"T_mid","p_mid","qv"};
-  //std::vector<std::string> fnames = {"T_mid"};
   std::string nudging_f = "io_output_test.INSTANT.nsteps_x1."\
                           "np1.2000-01-01-00250.nc";
   params_mid.set<std::string>("Nudging_Filename",nudging_f);
   params_mid.set<Int>("Time_Step_File",250);
-  //std::vector<std::string> fnames = {"T_mid_r"};
   params_mid.set<std::vector<std::string>>("Field_Names",fnames);
   auto nudging_mid = std::make_shared<NUDGING>(io_comm,params_mid);
   nudging_mid->set_grids(gm);
-  std::cout<<"Get Here 2: "<<std::endl;
 
   std::map<std::string,Field> input_fields;
   std::map<std::string,Field> output_fields;
@@ -306,7 +268,6 @@ TEST_CASE("nudging") {
     }
 
   }
-  std::cout<<"Get Here 4: "<<std::endl;
   //initialize
   nudging_mid->initialize(t0,RunType::Initial);
   
@@ -326,8 +287,6 @@ TEST_CASE("nudging") {
   //Don't fill Temperature because it is going to be nudged anyways  
   for (int icol=0; icol<ncols; icol++){
     for (int ilev=0; ilev<nlevs; ilev++){ 
-      //f_mid_v_h(icol,ilev) = 100*(icol-1) + 2*ilev;
-      //p_mid_v_h(icol,ilev) = 2*ilev+2;
       p_mid_v_h(icol,ilev) = 2*ilev;
     }
   }
@@ -335,7 +294,7 @@ TEST_CASE("nudging") {
   horiz_winds.sync_to_dev();
   qv.sync_to_dev();
   p_mid.sync_to_dev();
-  std::cout<<"Get Here 5: "<<std::endl;
+
   //10 timesteps of 100 s
   for (int time_s = 1; time_s < 10; time_s++){
     f_mid_o.sync_to_dev();
@@ -345,7 +304,6 @@ TEST_CASE("nudging") {
     auto f_mid_v_h_o   = f_mid_o.get_view<Real**, Host>();
     auto qv_h_o   = qv_mid_o.get_view<Real**, Host>();
     auto hw_h_o   = hw_mid_o.get_view<Real***, Host>();
-    //nudging_mid->run(time_s*100);
     nudging_mid->run(100);
     f_mid_o.sync_to_host();
     qv_mid_o.sync_to_host();
@@ -359,7 +317,6 @@ TEST_CASE("nudging") {
 
 	//First deal with cases where destination pressure levels are outside
 	//the range of the pressure levels from the external file
-	
         //If destination pressure is 0 than it will use pressure value of 1
 	//from external file since that is the lowest value. A time interpolation
 	//is performed but there is no interpolation between levels necessary
@@ -396,10 +353,6 @@ TEST_CASE("nudging") {
         double val_after = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index);
         double w_aft = time_s*100.-time_index*250.;
         double w_bef = (time_index+1)*250-time_s*100.;
-	//std::cout<<"val_before: "<<val_before<<std::endl;
-        //std::cout<<"val_after: "<<val_after<<std::endl;
-	//std::cout<<"w_before: "<<w_bef<<std::endl;
-        //std::cout<<"w_after: "<<w_aft<<std::endl;
 	double val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
 
         double val_before_n = 10000*(icol-1) + 200*(ilev) + 10*int(time_index-1);
@@ -409,11 +362,10 @@ TEST_CASE("nudging") {
 	double val_tim_avg_next = (val_before_n*w_bef_n + val_after_n*w_aft_n) / 250.;
         double val_avg = (val_tim_avg_next + val_tim_avg)/2.;
 
-	std::cout<<"f_mid_v_h_o("<<icol<<","<<ilev<<"): "<<f_mid_v_h_o(icol,ilev)<<std::endl;
-	std::cout<<"qv_h_o("<<icol<<","<<ilev<<"): "<<qv_h_o(icol,ilev)<<std::endl;
-        std::cout<<"hw_h_o0("<<icol<<","<<ilev<<"): "<<hw_h_o(icol,0,ilev)<<std::endl;
-	std::cout<<"hw_h_o1("<<icol<<","<<ilev<<"): "<<hw_h_o(icol,1,ilev)<<std::endl;
-	//REQUIRE(f_mid_v_h_o(icol,ilev) == val_avg);
+	//std::cout<<"f_mid_v_h_o("<<icol<<","<<ilev<<"): "<<f_mid_v_h_o(icol,ilev)<<std::endl;
+	//std::cout<<"qv_h_o("<<icol<<","<<ilev<<"): "<<qv_h_o(icol,ilev)<<std::endl;
+        //std::cout<<"hw_h_o0("<<icol<<","<<ilev<<"): "<<hw_h_o(icol,0,ilev)<<std::endl;
+	//std::cout<<"hw_h_o1("<<icol<<","<<ilev<<"): "<<hw_h_o(icol,1,ilev)<<std::endl;
 	REQUIRE(abs(f_mid_v_h_o(icol,ilev) - val_avg)<0.1);
 	REQUIRE(abs(qv_h_o(icol,ilev) - val_avg)<0.1);
 	REQUIRE(abs(hw_h_o(icol,0,ilev) - val_avg)<0.1);
