@@ -76,7 +76,7 @@
   </compset>
 
   <compset>
-    <alias>FSCM-ARM97-MMF1-SAM</alias>
+    <alias>FSCM-ARM97-MMF-SAM</alias>
     <lname>ARM97_EAM%SCM-MMF1-SAM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
