@@ -5,7 +5,7 @@ namespace scream
 
   //using namespace spa;
 // =========================================================================================
-NUDGING::NUDGING (const ekat::Comm& comm, const ekat::ParameterList& params)
+Nudging::Nudging (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params)
 {
   m_fnames=m_params.get<std::vector<std::string>>("Field_Names");
@@ -14,7 +14,7 @@ NUDGING::NUDGING (const ekat::Comm& comm, const ekat::ParameterList& params)
 }
 
 // =========================================================================================
-void NUDGING::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
@@ -39,11 +39,15 @@ void NUDGING::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   //Now need to read in the file
   scorpio::register_file(datafile,scorpio::Read);
   m_num_src_levs = scorpio::get_dimlen_c2f(datafile.c_str(),"lev");
+  double time_value_0= scorpio::read_time_at_index_c2f(datafile.c_str(),0);
+  std::cout<<"time_value_0: "<<time_value_0<<std::endl;
+  double time_value_1= scorpio::read_time_at_index_c2f(datafile.c_str(),1);
+  std::cout<<"time_value_1: "<<time_value_1<<std::endl;
   scorpio::eam_pio_closefile(datafile);
 }
 
 // =========================================================================================
-void NUDGING::initialize_impl (const RunType /* run_type */)
+void Nudging::initialize_impl (const RunType /* run_type */)
 {
   using namespace ShortFieldTagsNames;
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
@@ -85,7 +89,7 @@ void NUDGING::initialize_impl (const RunType /* run_type */)
   ts0=timestamp();
 }
 
-void NUDGING::time_interpolation (const int time_s) {
+void Nudging::time_interpolation (const int time_s) {
 
   using KT = KokkosTypes<DefaultDevice>;
   using ExeSpace = typename KT::ExeSpace;
@@ -152,7 +156,7 @@ void NUDGING::time_interpolation (const int time_s) {
 }
   
 // =========================================================================================
-void NUDGING::run_impl (const int dt)
+void Nudging::run_impl (const int dt)
 {
   using namespace scream::vinterp;
 
@@ -256,7 +260,7 @@ void NUDGING::run_impl (const int dt)
 }
 
 // =========================================================================================
-void NUDGING::finalize_impl()
+void Nudging::finalize_impl()
 {
   data_input.finalize();
 }

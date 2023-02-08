@@ -247,7 +247,7 @@ TEST_CASE("nudging") {
   params_mid.set<std::string>("Nudging_Filename",nudging_f);
   params_mid.set<Int>("Time_Step_File",250);
   params_mid.set<std::vector<std::string>>("Field_Names",fnames);
-  auto nudging_mid = std::make_shared<NUDGING>(io_comm,params_mid);
+  auto nudging_mid = std::make_shared<Nudging>(io_comm,params_mid);
   nudging_mid->set_grids(gm);
 
   std::map<std::string,Field> input_fields;

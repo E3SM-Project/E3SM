@@ -21,7 +21,7 @@ namespace scream
  * The class responsible to handle the nudging of variables
 */
 
-class NUDGING : public AtmosphereProcess
+class Nudging : public AtmosphereProcess
 {
 public:
 
@@ -44,7 +44,7 @@ public:
   using view_1d_host = view_Nd_host<S,1>;
 
   // Constructors
-  NUDGING (const ekat::Comm& comm, const ekat::ParameterList& params);
+  Nudging (const ekat::Comm& comm, const ekat::ParameterList& params);
 
   // The type of subcomponent
   AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
@@ -84,8 +84,7 @@ protected:
   AtmosphereInput data_input;
   TimeStamp ts0;
 
-
-}; // class NUDGING
+}; // class Nudging
 
 } // namespace scream
 
