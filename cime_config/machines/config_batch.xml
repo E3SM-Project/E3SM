@@ -304,10 +304,41 @@
     </directives>
   </batch_system>
 
+  <batch_system type="slurm_single_node" >
+    <batch_query per_job_arg="-j">squeue</batch_query>
+    <batch_submit>sbatch</batch_submit>
+    <batch_cancel>scancel</batch_cancel>
+    <batch_directive>#SBATCH</batch_directive>
+    <jobid_pattern>(\d+)$</jobid_pattern>
+    <depend_string>--dependency=afterok:jobid</depend_string>
+    <depend_allow_string>--dependency=afterany:jobid</depend_allow_string>
+    <depend_separator>:</depend_separator>
+    <walltime_format>%H:%M:%S</walltime_format>
+    <batch_mail_flag>--mail-user</batch_mail_flag>
+    <batch_mail_type_flag>--mail-type</batch_mail_type_flag>
+    <batch_mail_type>none</batch_mail_type>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-p" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
+    <directives>
+      <directive> --job-name={{ job_id }}</directive>
+      <directive> --nodes=1</directive>
+      <directive> --ntasks={{ total_tasks }}</directive>
+      <directive> --output={{ job_id }}.%j </directive>
+    </directives>
+  </batch_system>
 
     <batch_system MACH="blues" type="slurm">
       <queues>
         <queue walltimemax="01:00:00" nodemax="6" default="true" strict="true">biggpu</queue>
+      </queues>
+    </batch_system>
+
+    <batch_system MACH="mappy" type="slurm_single_node">
+      <queues>
+        <queue walltimemax="12:00:00" nodemax="1" default="true" strict="true">batch</queue>
       </queues>
     </batch_system>
 
