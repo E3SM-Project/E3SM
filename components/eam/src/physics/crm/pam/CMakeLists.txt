@@ -24,13 +24,12 @@ if (DEFINED PAM_CUDA)
   endif()
 endif()
 
-# set(PAM_DYCORE awfl)
-set(PAM_DYCORE  spam++)
+set(PAM_DYCORE  spam++)  # awfl / spam++
 set(PAM_MICRO   p3)
 set(PAM_SGS     shoc)
 set(PAM_RAD     forced)
 set(PAMC_MODEL  extrudedmodel)
-set(PAMC_HAMIL  man) # anelastic
+set(PAMC_HAMIL  man)  # man = anelastic / mce_rho = moist compressible
 set(PAMC_THERMO constkappavirpottemp)
 set(PAMC_IO     serial)
 
