@@ -1199,6 +1199,11 @@ contains
           call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
           call mpas_pool_get_array(forcingPool, 'landIceFloatingFraction', landIceFloatingFraction)
 
+          if (landIceFloatingMask(1) == -1) then
+             call mpas_log_write('landIceFloatingMask contains the default value which likely ' // &
+               'indicates that this field is missing in the initial condition file (e.g. ' // &
+               'because it is meant for an older E3SM version).', MPAS_LOG_CRIT)
+          endif
           ssh(:) = 0.0_RKIND
           landIceFraction(:) = 0.0_RKIND
           modifyLandIcePressureMask(:) = 0

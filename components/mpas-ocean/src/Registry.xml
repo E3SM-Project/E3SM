@@ -3625,7 +3625,7 @@
 			description="The fraction of each cell covered by an ice shelf"
 			packages="landIcePressurePKG"
 		/>
-		<var name="landIceFloatingMask" type="integer" dimensions="nCells Time"
+		<var name="landIceFloatingMask" type="integer" dimensions="nCells Time" default_value="-1"
 			description="Mask indicating where an ice shelf is present (1) or absent (0)"
 			packages="landIcePressurePKG"
 		/>
