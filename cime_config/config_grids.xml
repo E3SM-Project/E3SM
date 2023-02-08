@@ -2552,8 +2552,8 @@
       <ny>1</ny>
       <file grid="atm|lnd" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne256pg2_oRRS18to6v3.200212.nc</file>
       <file grid="ice|ocn" mask="oRRS18to6v3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne256pg2_oRRS18to6v3.200212.nc</file>
-      <file grid="atm|lnd" mask="ICOS10">/global/cfs/cdirs/e3sm/bhillma/grids/ne256pg2/domain_files/domain.lnd.ne256pg2_ICOS10.230201.nc</file>
-      <file grid="ice|ocn" mask="ICOS10">/global/cfs/cdirs/e3sm/bhillma/grids/ne256pg2/domain_files/domain.ocn.ne256pg2_ICOS10.230201.nc</file>
+      <file grid="atm|lnd" mask="ICOS10">$DIN_LOC_ROOT/share/domains/domain.lnd.ne256pg2_ICOS10.230201.nc</file>
+      <file grid="ice|ocn" mask="ICOS10">$DIN_LOC_ROOT/share/domains/domain.ocn.ne256pg2_ICOS10.230201.nc</file>
       <desc>ne256np4.pg2 is Spectral Elem 12km grid w/ 2x2 FV physics grid per element:</desc>
     </domain>
 
