@@ -220,12 +220,14 @@ contains
 
   end subroutine set_variable_metadata_c2f
 !=====================================================================!
-  subroutine register_dimension_c2f(filename_in, shortname_in, longname_in, length) bind(c)
+  subroutine register_dimension_c2f(filename_in, shortname_in, longname_in, length, partitioned) bind(c)
     use scream_scorpio_interface, only : register_dimension
-    type(c_ptr), intent(in)                :: filename_in
-    type(c_ptr), intent(in)                :: shortname_in
-    type(c_ptr), intent(in)                :: longname_in
-    integer(kind=c_int), value, intent(in) :: length
+
+    type(c_ptr), intent(in)                 :: filename_in
+    type(c_ptr), intent(in)                 :: shortname_in
+    type(c_ptr), intent(in)                 :: longname_in
+    integer(kind=c_int), value, intent(in)  :: length
+    logical(kind=c_bool), value, intent(in) :: partitioned
 
     character(len=256) :: filename
     character(len=256) :: shortname
@@ -234,7 +236,7 @@ contains
     call convert_c_string(filename_in,filename)
     call convert_c_string(shortname_in,shortname)
     call convert_c_string(longname_in,longname)
-    call register_dimension(filename,shortname,longname,length)
+    call register_dimension(filename,shortname,longname,length,LOGICAL(partitioned))
 
   end subroutine register_dimension_c2f
 !=====================================================================!
@@ -252,6 +254,49 @@ contains
     val = get_dimlen(filename,dimname)
 
   end function get_dimlen_c2f
+!=====================================================================!
+  function has_variable_c2f(filename_in,varname_in) result(has) bind(c)
+    use scream_scorpio_interface, only : has_variable
+    type(c_ptr), intent(in) :: filename_in
+    type(c_ptr), intent(in) :: varname_in
+    logical(kind=c_bool)     :: has
+
+    character(len=256) :: filename
+    character(len=256) :: varname
+
+    call convert_c_string(filename_in,filename)
+    call convert_c_string(varname_in,varname)
+    has = LOGICAL(has_variable(filename,varname),kind=c_bool)
+
+  end function has_variable_c2f
+!=====================================================================!
+  function read_curr_time_c2f(filename_in) result(val) bind(c)
+    use scream_scorpio_interface, only : read_time_at_index
+    use scream_scorpio_interface, only : get_dimlen
+    type(c_ptr), intent(in)                :: filename_in
+    real(kind=c_double)                    :: val
+
+    integer            :: time_index
+    character(len=256) :: filename
+
+    call convert_c_string(filename_in,filename)
+    time_index = get_dimlen(filename,trim("time"))
+    val        = read_time_at_index(filename,time_index)
+
+  end function read_curr_time_c2f
+!=====================================================================!
+  function read_time_at_index_c2f(filename_in,time_index) result(val) bind(c)
+    use scream_scorpio_interface, only : read_time_at_index
+    type(c_ptr), intent(in)                :: filename_in
+    integer(kind=c_int), intent(in)        :: time_index ! zero-based
+    real(kind=c_double)                    :: val
+
+    character(len=256) :: filename
+
+    call convert_c_string(filename_in,filename)
+    val = read_time_at_index(filename,time_index)
+
+  end function read_time_at_index_c2f
 !=====================================================================!
   subroutine eam_pio_enddef_c2f(filename_in) bind(c)
     use scream_scorpio_interface, only : eam_pio_enddef

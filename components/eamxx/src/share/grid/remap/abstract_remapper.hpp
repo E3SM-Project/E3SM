@@ -252,7 +252,9 @@ protected:
   // and bind the actual field later.
   // NOTE: vector<bool> is a strange beast, and doesn't necessarily behave as
   // expected. Use caution when manipulating this member, and don't rely on the
-  // usual assumptions about how the boolean elements are stored.
+  // usual assumptions about how the boolean elements are stored. In particular,
+  // avoid range for loops and iterators. Instead, use op[] when you need to
+  // access its entries.
   std::vector<bool>   m_fields_are_bound;
   int                 m_num_bound_fields = 0;
 };

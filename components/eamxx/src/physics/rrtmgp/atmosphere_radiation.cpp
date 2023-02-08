@@ -372,10 +372,8 @@ void RRTMGPRadiation::run_impl (const int dt) {
   using CO = scream::ColumnOps<DefaultDevice,Real>;
 
   // get a host copy of lat/lon
-  auto h_lat  = Kokkos::create_mirror_view(m_lat);
-  auto h_lon  = Kokkos::create_mirror_view(m_lon);
-  Kokkos::deep_copy(h_lat,m_lat);
-  Kokkos::deep_copy(h_lon,m_lon);
+  auto h_lat  = m_lat.get_view<const Real*,Host>();
+  auto h_lon  = m_lon.get_view<const Real*,Host>();
 
   // Get data from the FieldManager
   auto d_pmid = get_field_in("p_mid").get_view<const Real**>();
@@ -678,7 +676,7 @@ void RRTMGPRadiation::run_impl (const int dt) {
         } else {
           // This gives (dry) mass mixing ratios
           scream::physics::trcmix(
-            name, m_lat, d_pmid, d_vmr,
+            name, m_lat.get_view<const Real*>(), d_pmid, d_vmr,
             m_co2vmr, m_n2ovmr, m_ch4vmr, m_f11vmr, m_f12vmr
           );
           // Back out volume mixing ratios

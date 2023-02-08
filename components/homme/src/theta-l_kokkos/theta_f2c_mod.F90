@@ -14,7 +14,8 @@ interface
                                        dcmip16_mu, ftype, theta_adv_form, prescribed_wind, moisture, &
                                        disable_diagnostics, use_cpstar, transport_alg,               &
                                        theta_hydrostatic_mode, test_case_name, dt_remap_factor,      &
-                                       dt_tracer_factor, rearth, nsplit, pgrad_correction) bind(c)
+                                       dt_tracer_factor, rearth, nsplit, pgrad_correction,           &
+                                       dp3d_thresh, vtheta_thresh) bind(c)
 
     use iso_c_binding, only: c_int, c_bool, c_double, c_ptr
     !
@@ -24,7 +25,7 @@ interface
     integer(kind=c_int),  intent(in) :: dt_remap_factor, dt_tracer_factor, transport_alg
     integer(kind=c_int),  intent(in) :: state_frequency, qsize
     real(kind=c_double),  intent(in) :: nu, nu_p, nu_q, nu_s, nu_div, nu_top, hypervis_scaling, dcmip16_mu, &
-                                        rearth
+                                        rearth, dp3d_thresh, vtheta_thresh
     integer(kind=c_int),  intent(in) :: hypervis_order, hypervis_subcycle, hypervis_subcycle_tom
     integer(kind=c_int),  intent(in) :: ftype, theta_adv_form
     logical(kind=c_bool), intent(in) :: prescribed_wind, moisture, disable_diagnostics, use_cpstar
@@ -190,6 +191,16 @@ interface
     type (c_ptr), intent(in) :: elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr
     type (c_ptr), intent(in) :: elem_state_Qdp_ptr, elem_state_Q_ptr, elem_derived_omega_p_ptr
   end subroutine cxx_push_results_to_f90
+
+  subroutine push_test_state_to_c( &
+       ! state
+       ps_v, dp3d, vtheta_dp, phinh_i, v, w_i, &
+       ! derived
+       eta_dot_dpdn, vn0) bind(c)
+    use iso_c_binding, only: c_ptr
+    
+    type (c_ptr), intent(in) :: ps_v, dp3d, vtheta_dp, phinh_i, v, w_i, eta_dot_dpdn, vn0
+  end subroutine push_test_state_to_c
 end interface
 
 end module theta_f2c_mod

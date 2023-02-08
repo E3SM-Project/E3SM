@@ -303,15 +303,15 @@ perform_vertical_interpolation(
 template <typename S, typename D>
 void SPAFunctions<S,D>
 ::set_remap_weights_one_to_one(
-    gid_type                 min_dof,
-    const view_1d<gid_type>& dofs_gids,
-          SPAHorizInterp&    spa_horiz_interp
+    gid_type                       min_dof,
+    const view_1d<const gid_type>& dofs_gids,
+          SPAHorizInterp&          spa_horiz_interp
   )
 {
   // There may be cases where the SPA data is defined on the same grid as the simulation
   // and thus no remapping is required.  This simple routine establishes a 1-1 horizontal
   // mapping
-  int num_local_cols = dofs_gids.size();
+  const int num_local_cols = dofs_gids.size();
   auto& spa_horiz_map = spa_horiz_interp.horiz_map;
   spa_horiz_map = HorizontalMap(spa_horiz_interp.m_comm,"SPA 1-1 Remap",dofs_gids,min_dof);
   view_1d<gid_type> src_dofs("",1);
@@ -337,10 +337,10 @@ void SPAFunctions<S,D>
 template <typename S, typename D>
 void SPAFunctions<S,D>
 ::get_remap_weights_from_file(
-    const std::string&       remap_file_name,
-    const gid_type           min_dof,
-    const view_1d<gid_type>& dofs_gids,
-          SPAHorizInterp&    spa_horiz_interp
+    const std::string&             remap_file_name,
+    const gid_type                 min_dof,
+    const view_1d<const gid_type>& dofs_gids,
+          SPAHorizInterp&          spa_horiz_interp
   )
 {
   start_timer("EAMxx::SPA::get_remap_weights_from_file");
@@ -435,7 +435,8 @@ void SPAFunctions<S,D>
   
   // Construct the grid needed for input:
   auto grid = std::make_shared<PointGrid>("grid",num_local_cols,source_data_nlevs,comm);
-  grid->set_dofs(unique_src_dofs);
+  Kokkos::deep_copy(grid->get_dofs_gids().template get_view<gid_type*>(),unique_src_dofs);
+  grid->get_dofs_gids().sync_to_host();
 
   // Check that padding matches source size:
   EKAT_REQUIRE(source_data_nlevs+2 == spa_data.data.nlevs);

@@ -110,7 +110,7 @@ public:
   HorizontalMap() {};
   explicit HorizontalMap(const ekat::Comm& comm);
   HorizontalMap(const ekat::Comm& comm, const std::string& map_name);
-  HorizontalMap(const ekat::Comm& comm, const std::string& map_name, const view_1d<gid_type>& dofs_gids, const gid_type min_dof);
+  HorizontalMap(const ekat::Comm& comm, const std::string& map_name, const view_1d<const gid_type>& dofs_gids, const gid_type min_dof);
  
   // Main remap functions
   void apply_remap(const view_1d<const Real>& source_data, const view_1d<Real>& remapped_data);

@@ -249,7 +249,6 @@ struct PhysicsFunctions
   // rate of 6.5K/km except in very warm conditions. See docs/tech_doc/physics/psl/psl_doc.tex for details
   // INPUTS:
   // T_ground is the air temperature at the bottom of the cell closest to the surface (aka T_int[nlev+1]; K)
-  // p_ground is the pressure at the bottom of the cell closest to the surface (Pa)
   // phi_ground is the geopotential at surface (aka surf_geopotential; m2/s2)
   // OUTPUTS:
   // psl is the sea level pressure (Pa)

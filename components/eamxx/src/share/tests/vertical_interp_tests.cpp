@@ -122,6 +122,7 @@ void run(){
       const int num_vert_packs = p_tgt.extent(0);
       const auto policy = ESU::get_default_team_policy(2, num_vert_packs);
       auto loc_layers_src = n_layers_src[i];
+      auto loc_layers_tgt = n_layers_tgt[i];
       Kokkos::parallel_for("scream_vert_interp_setup_loop", policy,
          	       KOKKOS_LAMBDA(MemberType const& team) {
           const int icol = team.league_rank();
@@ -135,6 +136,7 @@ void run(){
                                               out_1d,
                                               msk,
                                               loc_layers_src,
+                                              loc_layers_tgt,
                                               icol,
                                               masked_val,
                                               team,
@@ -304,6 +306,7 @@ TEST_CASE("testing_masking"){
                                           out_1d,
                                           msk,
                                           n_layers_src,
+                                          n_layers_tgt,
                                           icol,
                                           masked_val,
                                           team,

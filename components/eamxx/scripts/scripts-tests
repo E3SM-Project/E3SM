@@ -311,76 +311,91 @@ class TestTestAllScream(TestBaseOuter.TestBase):
         """
         Test the 'dbg' test in test-all-scream. It should set certain CMake values
         """
-        options = "-b HEAD -k -t dbg --config-only"
-        cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
-                            self._machine, dry_run=False)
-        run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
-        test_cmake_cache_contents(self, "full_debug", "CMAKE_BUILD_TYPE", "Debug")
-        test_cmake_cache_contents(self, "full_debug", "SCREAM_DOUBLE_PRECISION", "TRUE")
-        test_cmake_cache_contents(self, "full_debug", "SCREAM_FPE", "FALSE")
-        if is_cuda_machine(self._machine):
-            test_cmake_cache_contents(self, "full_debug", "SCREAM_PACK_SIZE", "1")
+        if not self._jenkins:
+            options = "-b HEAD -k -t dbg --config-only"
+            cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
+                                self._machine, dry_run=False)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+            test_cmake_cache_contents(self, "full_debug", "CMAKE_BUILD_TYPE", "Debug")
+            test_cmake_cache_contents(self, "full_debug", "SCREAM_DOUBLE_PRECISION", "TRUE")
+            test_cmake_cache_contents(self, "full_debug", "SCREAM_FPE", "FALSE")
+            if is_cuda_machine(self._machine):
+                test_cmake_cache_contents(self, "full_debug", "SCREAM_PACK_SIZE", "1")
+            else:
+                test_cmake_cache_contents(self, "full_debug", "SCREAM_PACK_SIZE", "16")
         else:
-            test_cmake_cache_contents(self, "full_debug", "SCREAM_PACK_SIZE", "16")
+            self.skipTest("Skipping config-only run for jenkins test")
 
     def test_sp_details(self):
         """
         Test the 'sp' test in test-all-scream. It should set certain CMake values
         """
-        options = "-b HEAD -k -t sp --config-only"
-        cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
-                            self._machine, dry_run=False)
-        run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
-        test_cmake_cache_contents(self, "full_sp_debug", "CMAKE_BUILD_TYPE", "Debug")
-        test_cmake_cache_contents(self, "full_sp_debug", "SCREAM_DOUBLE_PRECISION", "FALSE")
-        test_cmake_cache_contents(self, "full_sp_debug", "SCREAM_FPE", "FALSE")
-        if is_cuda_machine(self._machine):
-            test_cmake_cache_contents(self, "full_sp_debug", "SCREAM_PACK_SIZE", "1")
+        if not self._jenkins:
+            options = "-b HEAD -k -t sp --config-only"
+            cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
+                                self._machine, dry_run=False)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+            test_cmake_cache_contents(self, "full_sp_debug", "CMAKE_BUILD_TYPE", "Debug")
+            test_cmake_cache_contents(self, "full_sp_debug", "SCREAM_DOUBLE_PRECISION", "FALSE")
+            test_cmake_cache_contents(self, "full_sp_debug", "SCREAM_FPE", "FALSE")
+            if is_cuda_machine(self._machine):
+                test_cmake_cache_contents(self, "full_sp_debug", "SCREAM_PACK_SIZE", "1")
+            else:
+                test_cmake_cache_contents(self, "full_sp_debug", "SCREAM_PACK_SIZE", "16")
         else:
-            test_cmake_cache_contents(self, "full_sp_debug", "SCREAM_PACK_SIZE", "16")
+            self.skipTest("Skipping config-only run for jenkins test")
 
     def test_fpe_details(self):
         """
         Test the 'fpe' test in test-all-scream. It should set certain CMake values
         """
-        if is_cuda_machine(self._machine):
-            self.skipTest("Skipping FPE check on cuda")
+        if not self._jenkins:
+            if is_cuda_machine(self._machine):
+                self.skipTest("Skipping FPE check on cuda")
+            else:
+                options = "-b HEAD -k -t fpe --config-only"
+                cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
+                                    self._machine, dry_run=False)
+                run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+                test_cmake_cache_contents(self, "debug_nopack_fpe", "CMAKE_BUILD_TYPE", "Debug")
+                test_cmake_cache_contents(self, "debug_nopack_fpe", "SCREAM_DOUBLE_PRECISION", "TRUE")
+                test_cmake_cache_contents(self, "debug_nopack_fpe", "SCREAM_FPE", "TRUE")
+                test_cmake_cache_contents(self, "debug_nopack_fpe", "SCREAM_PACK_SIZE", "1")
         else:
-            options = "-b HEAD -k -t fpe --config-only"
-            cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
-                                self._machine, dry_run=False)
-            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
-            test_cmake_cache_contents(self, "debug_nopack_fpe", "CMAKE_BUILD_TYPE", "Debug")
-            test_cmake_cache_contents(self, "debug_nopack_fpe", "SCREAM_DOUBLE_PRECISION", "TRUE")
-            test_cmake_cache_contents(self, "debug_nopack_fpe", "SCREAM_FPE", "TRUE")
-            test_cmake_cache_contents(self, "debug_nopack_fpe", "SCREAM_PACK_SIZE", "1")
+            self.skipTest("Skipping config-only run for jenkins test")
 
     def test_mem_check_details(self):
         """
         Test the --mem-check flag in test-all-scream. It should set certain CMake values
         """
-        options = "-b HEAD -k -t dbg --mem-check --config-only"
-        cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
-                            self._machine, dry_run=False)
-        run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
-        extension = "cuda_mem_check" if is_cuda_machine(self._machine) else "valgrind"
-        builddir = f"full_debug_{extension}"
-        test_cmake_cache_contents(self, builddir, "CMAKE_BUILD_TYPE", "Debug")
-        test_cmake_cache_contents(self, builddir, "SCREAM_TEST_SIZE", "SHORT")
-        if is_cuda_machine(self._machine):
-            test_cmake_cache_contents(self, builddir, "EKAT_ENABLE_CUDA_MEMCHECK", "TRUE")
+        if not self._jenkins:
+            options = "-b HEAD -k -t dbg --mem-check --config-only"
+            cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
+                                self._machine, dry_run=False)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+            extension = "cuda_mem_check" if is_cuda_machine(self._machine) else "valgrind"
+            builddir = f"full_debug_{extension}"
+            test_cmake_cache_contents(self, builddir, "CMAKE_BUILD_TYPE", "Debug")
+            test_cmake_cache_contents(self, builddir, "SCREAM_TEST_SIZE", "SHORT")
+            if is_cuda_machine(self._machine):
+                test_cmake_cache_contents(self, builddir, "EKAT_ENABLE_CUDA_MEMCHECK", "TRUE")
+            else:
+                test_cmake_cache_contents(self, builddir, "EKAT_ENABLE_VALGRIND", "TRUE")
         else:
-            test_cmake_cache_contents(self, builddir, "EKAT_ENABLE_VALGRIND", "TRUE")
+            self.skipTest("Skipping config-only run for jenkins test")
 
     def test_opt_details(self):
         """
         Test the 'opt' test in test-all-scream. It should set certain CMake values
         """
-        options = "-b HEAD -k -t opt --config-only"
-        cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
-                            self._machine, dry_run=False)
-        run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
-        test_cmake_cache_contents(self, "release", "CMAKE_BUILD_TYPE", "Release")
+        if not self._jenkins:
+            options = "-b HEAD -k -t opt --config-only"
+            cmd = self.get_cmd("./test-all-scream -m $machine {}".format(options),
+                               self._machine, dry_run=False)
+            run_cmd_assert_result(self, cmd, from_dir=TEST_DIR)
+            test_cmake_cache_contents(self, "release", "CMAKE_BUILD_TYPE", "Release")
+        else:
+            self.skipTest("Skipping config-only run for jenkins test")
 
     # Test that a fail in config, build, or run phase of ctest is correctly captured by test-all-scream
     def test_config_fail_captured(self):

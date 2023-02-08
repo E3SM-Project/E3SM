@@ -53,7 +53,7 @@ PhysicsDynamicsRemapper (const grid_ptr_type& phys_grid,
   m_phys_grid = phys_grid;
 
   m_num_phys_cols = phys_grid->get_num_local_dofs();
-  m_lid2elgp      = m_dyn_grid->get_lid_to_idx_map();
+  m_lid2elgp      = m_dyn_grid->get_lid_to_idx_map().get_view<const int**>();
 
   // For each phys dofs, we find a corresponding dof in the dyn grid.
   // Notice that such dyn dof may not be unique (if phys dof is on an edge
@@ -734,8 +734,10 @@ create_p2d_map () {
 
   auto se_dyn = std::dynamic_pointer_cast<const SEGrid>(m_dyn_grid);
   EKAT_REQUIRE_MSG(se_dyn, "Error! Something went wrong casting dyn grid to a SEGrid.\n");
-  auto dyn_gids  = se_dyn->get_cg_dofs_gids();
-  auto phys_gids = m_phys_grid->get_dofs_gids();
+
+  using gid_t = AbstractGrid::gid_type;
+  auto dyn_gids  = se_dyn->get_cg_dofs_gids().get_view<const gid_t*>();
+  auto phys_gids = m_phys_grid->get_dofs_gids().get_view<const gid_t*>();
 
   auto policy = KokkosTypes<DefaultDevice>::RangePolicy(0,num_phys_dofs);
   m_p2d = decltype(m_p2d) ("",num_phys_dofs);

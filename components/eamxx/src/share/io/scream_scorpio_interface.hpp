@@ -33,7 +33,7 @@ namespace scorpio {
   /* Sets the degrees-of-freedom for a particular variable in a particular file.  Called once for each variable, for each file. */
   void set_dof(const std::string &filename, const std::string &varname, const Int dof_len, const offset_t* x_dof);
   /* Register a dimension coordinate with a file. Called during the file setup. */
-  void register_dimension(const std::string& filename,const std::string& shortname, const std::string& longname, const int length);
+  void register_dimension(const std::string& filename,const std::string& shortname, const std::string& longname, const int length, const bool partitioned);
   /* Register a variable with a file.  Called during the file setup, for an output stream. */
   void register_variable(const std::string& filename, const std::string& shortname, const std::string& longname,
                          const std::string& units, const std::vector<std::string>& var_dimensions,
@@ -68,6 +68,10 @@ extern "C" {
   int get_int_attribute_c2f (const char*&& filename, const char*&& attr_name);
   void set_int_attribute_c2f (const char*&& filename, const char*&& attr_name, const int& value);
   int get_dimlen_c2f(const char*&& filename, const char*&& dimname);
+  bool has_variable_c2f (const char*&& filename, const char*&& varname);
+  /* Query a netCDF file for the time variable */
+  double read_time_at_index_c2f(const char*&& filename, const int& time_index);
+  double read_curr_time_c2f(const char*&& filename);
 } // extern "C"
 
 // The strings returned by e2str(const FieldTag&) are different from
