@@ -40,7 +40,6 @@ void NUDGING::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   scorpio::register_file(datafile,scorpio::Read);
   m_num_src_levs = scorpio::get_dimlen_c2f(datafile.c_str(),"lev");
   scorpio::eam_pio_closefile(datafile);
-  
 }
 
 // =========================================================================================
@@ -58,7 +57,6 @@ void NUDGING::initialize_impl (const RunType /* run_type */)
   auto p_mid_h       = Kokkos::create_mirror_view(fields_ext["p_mid"]);
   host_views["p_mid"] = view_1d_host<Real>(p_mid_h.data(),p_mid_h.size());
   layouts.emplace("p_mid", scalar3d_layout_mid);
-
   
   fields_ext["qv"] = view_2d<Real>("qv",m_num_cols,m_num_src_levs);
   auto qv_h       = Kokkos::create_mirror_view(fields_ext["qv"]);
@@ -95,10 +93,8 @@ void NUDGING::time_interpolation (const int time_s) {
   using MemberType = typename KT::MemberType;
   
   const int time_index = time_s/time_step_file;
-  std::cout<<"time_index: "<<time_index<<std::endl;
 
   data_input.read_variables(time_index-1);
-  //return;
   view_2d<Real> T_mid_bef("",T_mid_ext.extent_int(0),T_mid_ext.extent_int(1));
   view_2d<Real> p_mid_bef("",p_mid_ext.extent_int(0),p_mid_ext.extent_int(1));
   Kokkos::deep_copy(T_mid_bef,T_mid_ext);
