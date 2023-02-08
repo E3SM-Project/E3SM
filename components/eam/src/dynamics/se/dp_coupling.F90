@@ -317,8 +317,6 @@ CONTAINS
           call outfld('V&IC', elem(ie)%state%V(:,:,2,:,tl_f), ncol_d,ie)
           call get_temperature(elem(ie),temperature,hvcoord,tl_f)
           call outfld('T&IC',temperature,ncol_d,ie)
-          call get_pot_vort(elem(ie),potvort,hvcoord,tl_f)
-          call outfld('PV&IC',potvort,ncol_d,ie)
           do m = 1,pcnst
             call outfld(trim(cnst_name(m))//'&IC',elem(ie)%state%Q(:,:,:,m), ncol_d,ie)
           end do ! m
@@ -331,7 +329,6 @@ CONTAINS
           call outfld('U&IC', phys_state(lchnk)%u, pcols,lchnk)
           call outfld('V&IC', phys_state(lchnk)%v, pcols,lchnk)
           call outfld('PS&IC',phys_state(lchnk)%ps,pcols,lchnk)
-          call outfld('PV&IC',phys_state(lchnk)%pv,pcols,lchnk)
           do m = 1,pcnst
             call outfld(trim(cnst_name(m))//'&IC',phys_state(lchnk)%q(1,1,m), pcols,lchnk)
           end do ! m
