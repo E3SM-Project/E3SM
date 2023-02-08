@@ -243,7 +243,7 @@ void NUDGING::run_impl (const int dt)
   const int num_vert_packs = T_mid.extent(1);
   const int num_vert_packs_ext = T_mid_ext.extent(1);
   const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);
-  Kokkos::parallel_for("check_for_mask", policy,
+  Kokkos::parallel_for("correct_for_masked_values", policy,
      	       KOKKOS_LAMBDA(MemberType const& team) {
       const int icol = team.league_rank();
       auto T_mid_1d = ekat::subview(T_mid,icol);
