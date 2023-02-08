@@ -1459,16 +1459,12 @@
         <command name="load">acme-netcdf/4.4.1/exo_acme</command>
         <command name="load">acme-pfunit/3.2.8/base</command>
       </modules>
-      <modules mpilib="!mpi-serial">
-        <command name="load">acme-openmpi/4.1.4</command>
-        <command name="load">acme-netcdf/4.7.4/acme</command>
-      </modules>
       <modules mpilib="mpi-serial" compiler="gnu9">
         <command name="load">sems-archive-netcdf/4.7.3/base</command>
       </modules>
-      <modules mpilib="!mpi-serial" compiler="gnu9">
-        <command name="load">sems-archive-openmpi/4.0.2</command>
-        <command name="load">sems-archive-netcdf/4.7.3/parallel</command>
+      <modules mpilib="!mpi-serial">
+        <command name="load">acme-openmpi/4.1.4</command>
+        <command name="load">acme-netcdf/4.7.4/acme</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
