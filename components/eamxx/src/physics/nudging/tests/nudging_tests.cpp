@@ -326,10 +326,10 @@ TEST_CASE("nudging") {
 	  double w_aft       = time_s*100.-time_index*250.;
 	  double w_bef       = (time_index+1)*250-time_s*100.;
 	  double val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
-          REQUIRE(abs(f_mid_v_h_o(icol,ilev) - val_tim_avg)<0.1);
-          REQUIRE(abs(qv_h_o(icol,ilev) - val_tim_avg)<0.1);
-          REQUIRE(abs(hw_h_o(icol,0,ilev) - val_tim_avg)<0.1);
-          REQUIRE(abs(hw_h_o(icol,1,ilev) - val_tim_avg)<0.1);
+          REQUIRE(abs(f_mid_v_h_o(icol,ilev) - val_tim_avg)<0.001);
+          REQUIRE(abs(qv_h_o(icol,ilev) - val_tim_avg)<0.001);
+          REQUIRE(abs(hw_h_o(icol,0,ilev) - val_tim_avg)<0.001);
+          REQUIRE(abs(hw_h_o(icol,1,ilev) - val_tim_avg)<0.001);
 	  continue;
 	}
         //If destination pressure is 68 than it will use highest pressure value
@@ -341,10 +341,10 @@ TEST_CASE("nudging") {
 	  double w_aft       = time_s*100.-time_index*250.;
 	  double w_bef       = (time_index+1)*250-time_s*100.;
 	  double val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
-          REQUIRE(abs(f_mid_v_h_o(icol,ilev) - val_tim_avg)<0.1);
-          REQUIRE(abs(qv_h_o(icol,ilev) - val_tim_avg)<0.1);
-          REQUIRE(abs(hw_h_o(icol,0,ilev) - val_tim_avg)<0.1);
-          REQUIRE(abs(hw_h_o(icol,1,ilev) - val_tim_avg)<0.1);
+          REQUIRE(abs(f_mid_v_h_o(icol,ilev) - val_tim_avg)<0.001);
+          REQUIRE(abs(qv_h_o(icol,ilev) - val_tim_avg)<0.001);
+          REQUIRE(abs(hw_h_o(icol,0,ilev) - val_tim_avg)<0.001);
+          REQUIRE(abs(hw_h_o(icol,1,ilev) - val_tim_avg)<0.001);
 	  continue;
 	}
 
@@ -360,16 +360,16 @@ TEST_CASE("nudging") {
         double w_aft_n = time_s*100.-time_index*250.;
         double w_bef_n = (time_index+1)*250-time_s*100.;
 	double val_tim_avg_next = (val_before_n*w_bef_n + val_after_n*w_aft_n) / 250.;
-        double val_avg = (val_tim_avg_next + val_tim_avg)/2.;
+	double val_avg = (val_tim_avg_next + val_tim_avg)/2.;
 
 	//std::cout<<"f_mid_v_h_o("<<icol<<","<<ilev<<"): "<<f_mid_v_h_o(icol,ilev)<<std::endl;
 	//std::cout<<"qv_h_o("<<icol<<","<<ilev<<"): "<<qv_h_o(icol,ilev)<<std::endl;
         //std::cout<<"hw_h_o0("<<icol<<","<<ilev<<"): "<<hw_h_o(icol,0,ilev)<<std::endl;
 	//std::cout<<"hw_h_o1("<<icol<<","<<ilev<<"): "<<hw_h_o(icol,1,ilev)<<std::endl;
-	REQUIRE(abs(f_mid_v_h_o(icol,ilev) - val_avg)<0.1);
-	REQUIRE(abs(qv_h_o(icol,ilev) - val_avg)<0.1);
-	REQUIRE(abs(hw_h_o(icol,0,ilev) - val_avg)<0.1);
-	REQUIRE(abs(hw_h_o(icol,1,ilev) - val_avg)<0.1);
+	REQUIRE(abs(f_mid_v_h_o(icol,ilev) - val_avg)<0.001);
+	REQUIRE(abs(qv_h_o(icol,ilev) - val_avg)<0.001);
+	REQUIRE(abs(hw_h_o(icol,0,ilev) - val_avg)<0.001);
+	REQUIRE(abs(hw_h_o(icol,1,ilev) - val_avg)<0.001);
       }
     }
 
@@ -379,5 +379,3 @@ nudging_mid->finalize();
   
 }
 
-
-//} // empty namespace
