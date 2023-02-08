@@ -20,9 +20,9 @@ inline void pam_state_set_grid( pam::PamCoupler &coupler ) {
   real2d zint_tmp("zint_tmp",crm_nz+1,nens);
   // auto grav = coupler.get_option<double>("grav");
   real grav = 9.80616; // note - we can't use the coupler grav because it hasn't been set yet
-  parallel_for( Bounds<2>(crm_nz+1,nens) , YAKL_LAMBDA (int k, int iens) {
-    int k_gcm = (gcm_nlev+1)-1-k;
-    zint_tmp(k,iens) = input_zint(k_gcm,iens) + input_phis(iens)/grav;
+  parallel_for( Bounds<2>(crm_nz+1,nens) , YAKL_LAMBDA (int k_crm, int iens) {
+    int k_gcm = (gcm_nlev+1)-1-k_crm;
+    zint_tmp(k_crm,iens) = input_zint(k_gcm,iens) + input_phis(iens)/grav;
   });
   coupler.set_grid( crm_dx , crm_dy , zint_tmp );
   //------------------------------------------------------------------------------------------------
