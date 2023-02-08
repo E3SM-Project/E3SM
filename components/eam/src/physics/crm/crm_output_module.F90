@@ -119,6 +119,9 @@ module crm_output_module
       real(crm_rknd), allocatable :: z0m          (:)    ! surface stress                             [N/m2]
       real(crm_rknd), allocatable :: subcycle_factor(:)    ! crm cpu efficiency
 
+      real(crm_rknd), allocatable :: rho_d_ls     (:,:)  ! large-scale forcing of dry density   [kg/m3/s]
+      real(crm_rknd), allocatable :: rho_v_ls     (:,:)  ! large-scale forcing of vapor density [kg/m3/s]
+
    end type crm_output_type
 
 contains
@@ -264,6 +267,9 @@ contains
       if (.not. allocated(output%z0m          )) allocate(output%z0m          (ncol))
       if (.not. allocated(output%subcycle_factor)) allocate(output%subcycle_factor(ncol))
 
+      if (.not. allocated(output%rho_d_ls     )) allocate(output%rho_d_ls     (ncol,nlev))
+      if (.not. allocated(output%rho_v_ls     )) allocate(output%rho_v_ls     (ncol,nlev))
+
       call prefetch(output%sltend  )
       call prefetch(output%qltend  )
       call prefetch(output%qcltend )
@@ -314,6 +320,9 @@ contains
       call prefetch(output%tauy          )
       call prefetch(output%z0m           )
       call prefetch(output%subcycle_factor )
+
+      call prefetch(output%rho_d_ls)
+      call prefetch(output%rho_v_ls)
 
       ! Initialize 
       output%qcl = 0
@@ -416,6 +425,9 @@ contains
       output%z0m           = 0
       output%subcycle_factor = 0
 
+      output%rho_d_ls = 0
+      output%rho_v_ls = 0
+
    end subroutine crm_output_initialize
    !------------------------------------------------------------------------------------------------
    subroutine crm_output_finalize(output, MMF_microphysics_scheme)
@@ -516,6 +528,9 @@ contains
       if (allocated(output%tauy)) deallocate(output%tauy)
       if (allocated(output%z0m)) deallocate(output%z0m)
       if (allocated(output%subcycle_factor)) deallocate(output%subcycle_factor)
+
+      if (allocated(output%rho_d_ls)) deallocate(output%rho_d_ls)
+      if (allocated(output%rho_v_ls)) deallocate(output%rho_v_ls)
 
    end subroutine crm_output_finalize
    !------------------------------------------------------------------------------------------------

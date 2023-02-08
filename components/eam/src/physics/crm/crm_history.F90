@@ -217,6 +217,8 @@ subroutine crm_history_init(species_class)
    call addfld('MMF_QPSRC',  (/'lev'/), 'A','kg/kg/s','Prec. water source from CRM' )
    call addfld('MMF_QTLS',   (/'lev'/), 'A','kg/kg/s','L.S. Total Water Forcing in CRM' )
    call addfld('MMF_TLS',    (/'lev'/), 'A','kg/kg/s','L.S. LIWSE Forcing in CRM' )
+   call addfld('MMF_RHODLS', (/'lev'/), 'A','kg/kg/s','L.S. dry density Forcing in CRM' )
+   call addfld('MMF_RHOVLS', (/'lev'/), 'A','kg/kg/s','L.S. vapor density Forcing in CRM' )
    call addfld('MMF_TVFLUX', (/'lev'/), 'A', 'W/m2',  'Buoyancy Flux from CRM' )
    call addfld('MMF_BUOY',   (/'lev'/), 'A', 'W/m3',  'Buoyancy Term from CRM' )
    call addfld('MMF_BUOYSD', (/'lev'/), 'A', 'W/m3',  'Std Dev of Buoyancy Term from CRM' )
@@ -486,6 +488,8 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    call outfld('MMF_QPFALL',crm_output%qp_fall   (icol_beg:icol_end,:), ncol, lchnk )
    call outfld('MMF_QPSRC ',crm_output%qp_src    (icol_beg:icol_end,:), ncol, lchnk )
    call outfld('MMF_TLS   ',crm_output%t_ls      (icol_beg:icol_end,:), ncol, lchnk )
+   call outfld('MMF_RHODLS',crm_output%rho_d_ls  (icol_beg:icol_end,:), ncol, lchnk )
+   call outfld('MMF_RHOVLS',crm_output%rho_v_ls  (icol_beg:icol_end,:), ncol, lchnk )
 
    ! NOTE: these should overwrite cloud outputs from non-MMF routines
    call outfld('CLOUD   ',crm_output%cld     (icol_beg:icol_end,:), ncol, lchnk )

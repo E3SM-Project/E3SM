@@ -1372,8 +1372,10 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       ! call pam_mirror_array_readwrite( 'output_qp_fall',     crm_output%qp_fall,     '' )
       ! call pam_mirror_array_readwrite( 'output_qp_evp',      crm_output%qp_evp,      '' )
       ! call pam_mirror_array_readwrite( 'output_qp_src',      crm_output%qp_src,      '' )
-      call pam_mirror_array_readwrite( 'output_qt_ls',       crm_output%qt_ls,       '' )
+      ! call pam_mirror_array_readwrite( 'output_qt_ls',       crm_output%qt_ls,       '' )
       call pam_mirror_array_readwrite( 'output_t_ls',        crm_output%t_ls,        '' )
+      call pam_mirror_array_readwrite( 'output_rho_v_ls',    crm_output%rho_v_ls,    '' )
+      call pam_mirror_array_readwrite( 'output_rho_d_ls',    crm_output%rho_d_ls,    '' )
       ! call pam_mirror_array_readwrite( 'output_jt_crm',      crm_output%jt_crm,      '' )
       ! call pam_mirror_array_readwrite( 'output_mx_crm',      crm_output%mx_crm,      '' )
       ! call pam_mirror_array_readwrite( 'output_cltot',       crm_output%cltot,       '' )
@@ -1556,9 +1558,14 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
             end do
          end do
 
+#if defined(MMF_PAM)
+         ! Currently PAM is coupled the CRM to all levels, so only add rad to levels above CRM
+         ptend(c)%s(1:ncol, 1:pver-crm_nz) = qrs(1:ncol,1:pver-crm_nz) + qrl(1:ncol,1:pver-crm_nz)
+#else
          ! The radiation tendencies in the GCM levels above the CRM and the top 2 CRM levels are set to
          ! be zero in the CRM, So add radiation tendencies to these levels 
          ptend(c)%s(1:ncol, 1:pver-crm_nz+2) = qrs(1:ncol,1:pver-crm_nz+2) + qrl(1:ncol,1:pver-crm_nz+2)
+#endif
 
          ! This will be used to check energy conservation
          mmf_rad_flux(c,:ncol) = 0.0_r8
