@@ -97,7 +97,8 @@ inline void pam_feedback_compute_tendencies( pam::PamCoupler &coupler , real gcm
   parallel_for( "Compute CRM feedback tendencies", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
     int k_crm = gcm_nlev-1-k_gcm;
     // avoid coupling top 2 layers (things get weird up there)
-    if (k_crm<crm_nz-2) {
+    // if (k_crm<crm_nz-2) {
+    if (k_crm<crm_nz) {
       crm_feedback_tend_uvel(k_gcm,iens) = ( crm_hmean_uvel(k_crm,iens) - gcm_ul(k_gcm,iens) )*r_gcm_dt;
       crm_feedback_tend_vvel(k_gcm,iens) = ( crm_hmean_vvel(k_crm,iens) - gcm_vl(k_gcm,iens) )*r_gcm_dt;
       crm_feedback_tend_dse (k_gcm,iens) = ( crm_hmean_temp(k_crm,iens) - gcm_tl(k_gcm,iens) )*r_gcm_dt * cp_d;
