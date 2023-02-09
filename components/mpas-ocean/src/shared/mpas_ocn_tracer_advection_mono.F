@@ -313,9 +313,9 @@ module ocn_tracer_advection_mono
         !$acc            advCellsForEdge, cellsOnEdge, dvEdge, &
         !$acc            advMaskHighOrder, advCoefs, advCoefs3rd, &
         !$acc            tracerCur, normalThicknessFlux, &
-        !$acc            highOrderFlx, lowOrderFlx) &
+        !$acc            highOrderFlx, lowOrderFlx, wgtTmp, sgnTmp, flxTmp) &
         !$acc    private(i, k, icell, cell1, cell2, coef1, coef3, &
-        !$acc            wgtTmp, sgnTmp, flxTmp, tracerWeight)
+        !$acc            tracerWeight)
 #else
         !$omp parallel
         !$omp do schedule(runtime) &
