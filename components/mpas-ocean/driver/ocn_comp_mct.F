@@ -2028,7 +2028,9 @@ contains
         end if
 
         if ( rainFluxField % isActive ) then
-           rainFlux(i) = x2o_o % rAttr(index_x2o_Faxa_rain, n)
+! maltrud precip factor hack
+           rainFlux(i) = x2o_o % rAttr(index_x2o_Faxa_rain, n)*0.95_RKIND
+!          rainFlux(i) = x2o_o % rAttr(index_x2o_Faxa_rain, n)
         end if
         if ( atmosphericPressureField % isActive ) then
            atmosphericPressure(i) = x2o_o % rAttr(index_x2o_Sa_pbot,   n)

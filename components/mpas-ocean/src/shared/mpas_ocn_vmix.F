@@ -1297,6 +1297,10 @@ contains
                   modifiedGroupName = trim(groupItr % memberName) // "SurfaceFlux"
                   call mpas_pool_get_array(tracersSurfaceFluxPool, trim(modifiedGroupName), &
                           tracerGroupSurfaceFlux)
+!maltrud use different background for passive tracers
+                  vertDiffTopOfCell = vertDiffTopOfCell - &
+                      config_cvmix_background_diffusion +  &
+                      config_cvmix_background_diffusion * 10.0_RKIND
                endif
 #ifdef MPAS_OPENACC
             !$acc enter data copyin(tracerGroupSurfaceFlux)
@@ -1305,6 +1309,13 @@ contains
                call ocn_tracer_vmix_tend_implicit(dt, vertDiffTopOfCell, layerThickness, tracersGroup, &
                         vertNonLocalFlux, tracerGroupSurfaceFlux,  &
                         config_cvmix_kpp_nonlocal_with_implicit_mix, err)
+
+!maltrud use different background for passive tracers
+               if (trim(groupItr % memberName) /= 'activeTracers') then
+                  vertDiffTopOfCell = vertDiffTopOfCell + &
+                      config_cvmix_background_diffusion -  &
+                      config_cvmix_background_diffusion * 10.0_RKIND
+               end if
             end if
 
             ! difference tracers to compute influence of vertical mixing and divide by dt
