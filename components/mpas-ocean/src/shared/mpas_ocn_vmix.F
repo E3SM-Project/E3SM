@@ -477,8 +477,8 @@ contains
                       / layerThickEdgeMean(Nsurf,iEdge)
            bTemp(Nsurf) = 1.0_RKIND - C(Nsurf) &
               + dt * implicitTopDragCoef * landIceEdgeFraction(iEdge) &
-                * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / &
-                layerThickEdgeMean(N,iEdge)
+                * sqrt(kineticEnergyCell(Nsurf,cell1) + kineticEnergyCell(Nsurf,cell2)) / &
+                layerThickEdgeMean(Nsurf,iEdge)
            rTemp(Nsurf) = normalVelocity(Nsurf,iEdge)
 
            ! first pass: set the coefficients
