@@ -86,8 +86,8 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
     nstep_end = tl.nstep + (std::max(params.dt_remap_factor, params.dt_tracer_factor));
   }
 
-  // Check if needed to compute diagnostics or energy
-  bool compute_diagnostics =
+  // Check if we need to compute diagnostics or energy.
+  const bool compute_diagnostics =
     ( ! params.disable_diagnostics &&
       ( // periodic display to stdout
         nstep_end % params.state_frequency == 0 ||
@@ -104,22 +104,22 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
 
     // Apply forcing.
 #if defined(CAM) || defined(SCREAM)
-    //CAM and SCREAM, support only ftype0 and 2
+    // CAM and SCREAM support only ftype 0 and 2.
     if (params.ftype == ForcingAlg::FORCING_0){
-         apply_cam_forcing_tracers(dt_remap);
+      apply_cam_forcing_tracers(dt_remap);
     }
     if (params.ftype == ForcingAlg::FORCING_2 && params.nsplit_iteration == 1 ){
-         apply_cam_forcing_tracers(dt_remap*params.nsplit);
+      apply_cam_forcing_tracers(dt_remap*params.nsplit);
     }
 
     apply_cam_forcing_dynamics(dt_remap);
     
 #else
-    //standalone homme, support ftype0 and ftype2
-    //ftype0  = ftype2 if dt_remap>=dt_tracer, but
-    //ftype0 != ftype2 for dt_remap<dt_tracer
-    if(params.ftype == ForcingAlg::FORCING_0 || 
-       params.ftype == ForcingAlg::FORCING_2    ) {
+    // standalone homme, support ftype0 and ftype2
+    // ftype0  = ftype2 if dt_remap>=dt_tracer, but
+    // ftype0 != ftype2 for dt_remap<dt_tracer
+    if (params.ftype == ForcingAlg::FORCING_0 || 
+        params.ftype == ForcingAlg::FORCING_2) {
       apply_cam_forcing(dt_remap);
     }
 #endif

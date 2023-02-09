@@ -44,13 +44,6 @@ HommeGridsManager (const ekat::Comm& comm,
     init_params_f90 (nlname);
   }
 
-  // Check that the global number of 2d elements is no less than the number of MPI ranks
-  EKAT_REQUIRE_MSG (get_homme_param<int>("nelem")>=comm.size(),
-      "Error! We do not yet support running EAMxx with a number of MPI ranks\n"
-      "       larger than the number of 2d elements in Homme.\n"
-      "  - num MPI ranks: " + std::to_string(comm.size()) + "\n"
-      "  - num 2d elems : " + std::to_string(get_homme_param<int>("nelem")) + "\n");
-
   // Create the grid integer codes map (i.e., int->string
   build_pg_codes ();
 }
@@ -109,6 +102,13 @@ build_grids ()
   auto it = std::unique(pg_codes.begin(),pg_codes.end());
   const int* codes_ptr = pg_codes.data();
   init_grids_f90 (codes_ptr,std::distance(pg_codes.begin(),it));
+
+  // Check that the global number of 2d elements is no less than the number of MPI ranks
+  EKAT_REQUIRE_MSG (get_homme_param<int>("nelem") >= m_comm.size(),
+      "Error! We do not yet support running EAMxx with a number of MPI ranks\n"
+      "       larger than the number of 2d elements in Homme.\n"
+      "  - num MPI ranks: " + std::to_string(m_comm.size()) + "\n"
+      "  - num 2d elems : " + std::to_string(get_homme_param<int>("nelem")) + "\n");
 
   // We know we need the dyn grid, so build it
   build_dynamics_grid ();

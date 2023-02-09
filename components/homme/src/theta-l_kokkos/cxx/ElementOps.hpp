@@ -53,32 +53,6 @@ public:
     ColumnOps::compute_midpoint_values(kv,p_i,pi);
   }
 
-  template<typename InputProvider>
-  KOKKOS_INLINE_FUNCTION
-  void compute_theta_ref (const KernelVariables& kv,
-                          const InputProvider& p,
-                          const ExecViewUnmanaged<Scalar[NUM_LEV]>& theta_ref) const {
-    assert (m_hvcoord.m_inited);
-    // theta_ref = T0/exner + T1, with T0,T1 fixed
-    // exner = (p/p0)^k
-    Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                         [&](const int ilev) {
-      using namespace PhysicalConstants;
-      // Compute exner, store in theta_ref
-      // TODO: F90 does p(k) = (p_i(k)+p_i(k+1)) / (2*p0).
-      //       If this is a non BFB source, incorporate p0 scaling
-      //       in the calculation of p
-#ifdef HOMMEXX_BFB_TESTING
-      theta_ref(ilev) = bfb_pow(p(ilev)/p0,kappa);
-#else
-      theta_ref(ilev) = pow(p(ilev)/p0,kappa);
-#endif
-
-      // Compute theta_ref
-      theta_ref(ilev) = T0/theta_ref(ilev) + T1;
-    });
-  }
-
   KOKKOS_FUNCTION
   void get_temperature (const KernelVariables& kv,
                         const EquationOfState& eos,
@@ -97,10 +71,6 @@ public:
   }
 
 private:
-
-  static constexpr Real T1 =
-    PhysicalConstants::Tref_lapse_rate*PhysicalConstants::Tref*PhysicalConstants::cp/PhysicalConstants::g;
-  static constexpr Real T0 = PhysicalConstants::Tref-T1;
 
   HybridVCoord    m_hvcoord;
 };

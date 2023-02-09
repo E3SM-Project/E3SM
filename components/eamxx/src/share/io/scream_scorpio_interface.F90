@@ -77,6 +77,7 @@ module scream_scorpio_interface
             get_int_attribute,           & ! Retrieves an integer global attribute from the nc file
             set_int_attribute,           & ! Writes an integer global attribute to the nc file
             get_dimlen,                  & ! Returns the length of a specific dimension in a file
+            read_time_at_index,          & ! Returns the time stamp for a specific time index
             has_variable                   ! Checks if given file contains a certain variable
 
   private :: errorHandle, get_coord
@@ -649,10 +650,10 @@ contains
     use pionfput_mod, only: PIO_put_var   => put_var
 
     character(len=*), intent(in) :: filename       ! PIO filename
-    real(c_double), intent(in)      :: time
+    real(c_double), intent(in)   :: time
 
     type(hist_var_t), pointer    :: var
-    type(pio_atm_file_t),pointer   :: pio_atm_file
+    type(pio_atm_file_t),pointer :: pio_atm_file
     integer                      :: ierr
     logical                      :: found
 
@@ -1359,6 +1360,47 @@ contains
       endif
     endif
   end subroutine get_pio_atm_file
+!=====================================================================!
+  ! Retrieve the time value for a specific time_index
+  ! If the input arg time_index is <= 0 then it is assumed the user wants
+  ! the last time entry.
+  function read_time_at_index(filename,time_index) result(val)
+    use pio,          only: PIO_get_var
+    use pio_nf,       only: PIO_inq_varid
+    character(len=*), intent(in) :: filename
+    integer, intent(in)          :: time_index
+    real(c_double)               :: val
+    real(c_double)               :: val_buf(1)
+    
+    type(pio_atm_file_t), pointer :: pio_atm_file
+    logical                       :: found
+    integer                       :: dim_id, time_len, ierr
+    type(var_desc_t)              :: varid ! netCDF variable ID
+    integer                       :: strt(1), cnt(1)
+
+    call lookup_pio_atm_file(trim(filename),pio_atm_file,found)
+    if (.not.found) call errorHandle("read_time_at_index ERROR: File "//trim(filename)//" not found",-999)
+    ierr = PIO_inq_varid(pio_atm_file%pioFileDesc,"time",varid)
+    call errorHandle('read_time_at_index: Error finding variable ID for "time" in file '//trim(filename)//'.',ierr);
+
+    ierr = pio_inq_dimid(pio_atm_file%pioFileDesc,trim("time"),dim_id)
+    call errorHandle("read_time_at_index ERROR: dimension 'time' not found in file "//trim(filename)//".",ierr)
+    ierr = pio_inq_dimlen(pio_atm_file%pioFileDesc,dim_id,time_len)
+    if (time_index .gt. time_len) then
+      call errorHandle("read_time_at_index ERROR: time_index arg larger than length of time dimension",-999)
+    end if
+
+    if (time_index .gt. 0) then
+      strt(1) = time_index
+    else
+      strt(1) = int(pio_atm_file%numRecs,kind=pio_offset_kind)
+    end if
+
+    cnt(1)  = 1
+    ierr = PIO_get_var(pio_atm_file%pioFileDesc,varid,strt,cnt,val_buf)
+    call errorHandle('read_time_at_index: Error reading variable "time" in file '//trim(filename)//'.',ierr);
+    val  = val_buf(1)
+  end function read_time_at_index
 !=====================================================================!
   ! Retrieve the dimension length for a file.
   function get_dimlen(filename,dimname) result(val)

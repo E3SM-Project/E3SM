@@ -47,7 +47,26 @@ OR
 
 ###############################################################################
 def buildlib(bldroot, installpath, case):
-    ###############################################################################
+###############################################################################
+    installed_kokkos_dir = os.environ.get("KOKKOS_PATH")
+    if installed_kokkos_dir is not None:
+        # We are trying to use a pre-installed kokkos. Look for the relevant folders/libs,
+        # and if all looks good, return. Otherwise, crap out
+        kokkos_root = os.path.abspath(installed_kokkos_dir)
+        include_dir = os.path.join(kokkos_root,'include')
+
+        expect (os.path.isdir(kokkos_root),f"Non-existent kokkos install dir '{kokkos_root}'")
+        expect (os.path.isdir(include_dir),f"Missing include subfolder in kokkos install dir '{kokkos_root}'")
+        expect (os.path.isfile(os.path.join(include_dir,'Kokkos_Core.hpp')),f"Missing kokkos headers in '{include_dir}'")
+
+        # TODO: should I check for libs too? The problem is that the lib subfolder is
+        # often arch dependent (e.g., $prefix/lib or $prefix/lib64)... The best thing
+        # would be to run a small cmake script, that calls find_package. But E3SM's
+        # cmake build system will do that soon enough, so any error will be caught there.
+        return
+    else:
+        print ("no value foudn in env for KOKKOS_PATH. building from scratch")
+
     srcroot = case.get_value("SRCROOT")
     kokkos_dir = os.path.join(srcroot, "externals", "kokkos")
     expect(os.path.isdir(kokkos_dir), "Missing kokkos submodule")
@@ -86,6 +105,17 @@ def buildlib(bldroot, installpath, case):
         cxx=cxx,
         installpath=installpath,
     )
+
+    # When later we use find_package to get kokkos in CMake, the folder
+    # install_sharedpath/kokkos (which is bldroot here) gets picked over
+    # the actual install folders. Since a KokkosConfig.cmake file *is* present
+    # there, but the other cmake config files aren't, this causes config errors.
+    # To prevent find_package from picking up that folder, we actually use
+    # ${bldroot}/build as a binary dir, so that CMake won't consider it when
+    # executing find_package.
+    bldroot = f"{bldroot}/build"
+    if not os.path.isdir(bldroot):
+        os.makedirs(bldroot)
 
     run_bld_cmd_ensure_logging(gen_makefile_cmd, logger, from_dir=bldroot)
     run_bld_cmd_ensure_logging(

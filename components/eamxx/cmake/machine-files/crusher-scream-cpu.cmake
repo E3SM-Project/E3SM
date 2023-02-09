@@ -3,5 +3,5 @@ set (EKAT_MACH_FILES_PATH ${CMAKE_CURRENT_LIST_DIR}/../../../../externals/ekat/c
 include (${EKAT_MACH_FILES_PATH}/kokkos/serial.cmake)
 
 set(SCREAM_MPIRUN_EXE "srun" CACHE STRING "")
-set(SCREAM_MACHINE "crusher-cpu" CACHE STRING "")
+set(SCREAM_MACHINE "crusher-scream-cpu" CACHE STRING "")
 

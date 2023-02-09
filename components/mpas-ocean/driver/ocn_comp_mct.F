@@ -392,8 +392,8 @@ contains
     ! Process namelist and streams files
     ! ----------
     ! Override the names of the stream and namelist files
-    domain_ptr % namelist_filename = 'mpaso_in'
-    domain_ptr % streams_filename = 'streams.ocean'
+    domain_ptr % namelist_filename = 'mpaso_in' // trim(inst_suffix)
+    domain_ptr % streams_filename = 'streams.ocean' // trim(inst_suffix)
 
     ! Setup namelist variables, and read the namelist
     ierr = domain_ptr % core % setup_namelist(domain_ptr % configs, domain_ptr % namelist_filename, domain_ptr % dminfo)

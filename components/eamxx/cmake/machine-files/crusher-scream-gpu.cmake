@@ -7,7 +7,7 @@ include (${EKAT_MACH_FILES_PATH}/kokkos/mi250.cmake)
 include (${EKAT_MACH_FILES_PATH}/kokkos/hip.cmake)
 
 set(SCREAM_MPIRUN_EXE "srun" CACHE STRING "")
-set(SCREAM_MACHINE "crusher-gpu" CACHE STRING "")
+set(SCREAM_MACHINE "crusher-scream-gpu" CACHE STRING "")
 
 #set(CMAKE_BUILD_TYPE "debug" CACHE STRING "")
 
