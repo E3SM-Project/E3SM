@@ -280,6 +280,7 @@ OPTIONS
      -use_ECPP          use CRM clouds for vertical transport, aqueous chemistry and wet removable of aerosols
      -crm_adv           CRM advection scheme [MPDATA | UM5]
      -crm <model>       CRM model [sam | samomp | samxx | pam]
+     -pam_dycor <dycor> PAM dycor option [ awfl | spam ]
      -rrtmgpxx          Use RRTMGP++ code
 EOF
 }
@@ -354,6 +355,7 @@ GetOptions(
     "MMF_microphysics_scheme=s" => \$opts{'MMF_microphysics_scheme'},
     "crm_adv=s"                 => \$opts{'crm_adv'},
     "crm=s"                     => \$opts{'crm'},
+    "pam_dycor=s"               => \$opts{'pam_dycor'},
     "rrtmgpxx"                  => \$opts{'rrtmgpxx'},
     "debug"                     => \$opts{'debug'},
     "rain_evap_to_coarse_aero"  => \$opts{'rain_evap_to_coarse_aero'},
@@ -1237,6 +1239,7 @@ if (defined $opts{'use_MMF'}) {
     if (defined $opts{'crm_nx_rad'}) { $cfg_ref->set('crm_nx_rad', $opts{'crm_nx_rad'}); }
     if (defined $opts{'crm_ny_rad'}) { $cfg_ref->set('crm_ny_rad', $opts{'crm_ny_rad'}); }
     if (defined $opts{'crm_adv'}) { $cfg_ref->set('crm_adv', $opts{'crm_adv'}); }
+    if (defined $opts{'pam_dycor'})    { $cfg_ref->set('pam_dycor', $opts{'pam_dycor'}); }
     $cfg_ref->set('MMF_microphysics_scheme', $opts{'MMF_microphysics_scheme'});
     $cfg_ref->set('crm', $opts{'crm'});
     if (defined $opts{'use_MMF_VT'})   { $cfg_ref->set('use_MMF_VT',   1); }
@@ -1729,6 +1732,7 @@ if (defined $opts{'use_MMF'}) {
     my $crm_nx_rad = $cfg_ref->get('crm_nx_rad');
     my $crm_ny_rad = $cfg_ref->get('crm_ny_rad');
     my $crm = $cfg_ref->get('crm');
+    my $pam_dycor = $cfg_ref->get('pam_dycor');
     my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
     my $crm_adv = $cfg_ref->get('crm_adv');
     my $yes3Dval = 1;
@@ -1761,7 +1765,9 @@ if (defined $opts{'use_MMF'}) {
     } elsif ($crm eq 'samxx') {
         $cfg_cppdefs .= " -DMMF_SAMXX "
     } elsif ($crm eq 'pam') {
-        $cfg_cppdefs .= " -DMMF_PAM "
+        $cfg_cppdefs .= " -DMMF_PAM ";
+        if ($pam_dycor eq 'awfl') { $cfg_cppdefs .= " -DMMF_PAM_DYCOR_AWFL " }
+        if ($pam_dycor eq 'spam') { $cfg_cppdefs .= " -DMMF_PAM_DYCOR_SPAM " }
     }
 
 }

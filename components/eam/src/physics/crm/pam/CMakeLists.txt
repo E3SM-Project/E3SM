@@ -11,27 +11,38 @@ set(PAM_DRIVER_SRC
 add_library(pam_driver 
            ${PAM_DRIVER_SRC})
 
-if (DEFINED PAM_CUDA)
-  if (${USE_CUDA})
-    # PAM will be CUDA-linked with device symbols resolved at library creation
-    set_target_properties(pam_driver
-                          PROPERTIES
-                          LINKER_LANGUAGE
-                          CUDA
-                          CUDA_SEPARABLE_COMPILATION OFF
-                          CUDA_RESOLVE_DEVICE_SYMBOLS ON
-                         )
-  endif()
+if (${USE_CUDA})
+  # PAM will be CUDA-linked with device symbols resolved at library creation
+  set_target_properties(pam_driver
+                        PROPERTIES
+                        LINKER_LANGUAGE
+                        CUDA
+                        CUDA_SEPARABLE_COMPILATION OFF
+                        CUDA_RESOLVE_DEVICE_SYMBOLS ON
+                       )
 endif()
 
-set(PAM_DYCORE  spam++)  # awfl / spam++
+string(FIND "${CAM_CONFIG_OPTS}" "-pam_dycor awfl" USE_AWFL)
+string(FIND "${CAM_CONFIG_OPTS}" "-pam_dycor spam" USE_SPAM)
+
+if (NOT USE_AWFL EQUAL -1) 
+  set(PAM_DYCORE  awfl)
+endif()
+
+if (NOT USE_SPAM EQUAL -1) 
+  set(PAM_DYCORE  spam++)
+endif()
+
 set(PAM_MICRO   p3)
 set(PAM_SGS     shoc)
 set(PAM_RAD     forced)
-set(PAMC_MODEL  extrudedmodel)
-set(PAMC_HAMIL  man)  # man = anelastic / mce_rho = moist compressible
-set(PAMC_THERMO constkappavirpottemp)
-set(PAMC_IO     serial)
+
+if ("${PAM_DYCORE}" STREQUAL "spam++")
+  set(PAMC_MODEL  extrudedmodel)
+  set(PAMC_HAMIL  man)  # man = anelastic / mce_rho = moist compressible
+  set(PAMC_THERMO constkappavirpottemp)
+  set(PAMC_IO     serial)
+endif()
 
 add_subdirectory(external/pam_core)
 add_subdirectory(external/physics)
@@ -58,10 +69,8 @@ target_include_directories(pam_driver PUBLIC
       ${CMAKE_CURRENT_BINARY_DIR}/external/physics/sgs/shoc
       ${CMAKE_CURRENT_SOURCE_DIR}/external/physics/radiation/forced
       ${CMAKE_CURRENT_BINARY_DIR}/external/physics/radiation/forced
-      ${CMAKE_CURRENT_SOURCE_DIR}/external/dynamics/awfl
-      ${CMAKE_CURRENT_BINARY_DIR}/external/dynamics/awfl
-      #${YAMLCPP_SOURCE_DIR}/include
-      #${YAMLCPP_BINARY_DIR}/include
+      ${CMAKE_CURRENT_SOURCE_DIR}/external/dynamics/${PAM_DYCORE}
+      ${CMAKE_CURRENT_BINARY_DIR}/external/dynamics/${PAM_DYCORE}
       )
 
 include(${YAKL_HOME}/yakl_utils.cmake)

@@ -81,8 +81,13 @@
   </compset>
 
   <compset>
-    <alias>FSCM-ARM97-MMF-PAM</alias>
-    <lname>ARM97_EAM%SCM-MMF-PAM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <alias>FSCM-ARM97-MMF-PAM-A</alias>
+    <lname>ARM97_EAM%SCM-MMF-PAM-A_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FSCM-ARM97-MMF-PAM-C</alias>
+    <lname>ARM97_EAM%SCM-MMF-PAM-C_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <compset>
@@ -163,8 +168,13 @@
   </compset>
 
   <compset>
-    <alias>F2010-MMF-PAM</alias>
-    <lname>2010_EAM%MMF-PAM_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+    <alias>F2010-MMF-PAM-A</alias>
+    <lname>2010_EAM%MMF-PAM-A_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F2010-MMF-PAM-C</alias>
+    <lname>2010_EAM%MMF-PAM-C_ELM%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- F compsets with transient SST (AMIP) -->

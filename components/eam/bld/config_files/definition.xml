@@ -343,6 +343,9 @@ MMF CRM cloud microphysics scheme
 <entry id="crm" valid_values="sam,samomp,samxx,pam" value="sam">
 MMF CRM model
 </entry>
+<entry id="pam_dycor" valid_values="awfl,spam" value="spam">
+MMF PAM dycor option
+</entry>
 <entry id="crm_adv" valid_values="MPDATA,UM5" value="MPDATA">
 MMF CRM advection scheme
 </entry>
