@@ -57,7 +57,7 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   Field diag_mask(mask_fid);
   diag_mask.allocate_view();
   m_diagnostic_output.get_header().set_extra_data("mask_data",diag_mask);
-  m_diagnostic_output.get_header().set_extra_data("mask_value",std::numeric_limits<float>::max()/10.0);
+  m_diagnostic_output.get_header().set_extra_data("mask_value",m_mask_val);
 
   // Allocate helper views
   // Note that mPack is by design a pack of size 1, so we need to take into consideration the size of
