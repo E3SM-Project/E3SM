@@ -21,6 +21,7 @@ module seaice_analysis_driver
 
    use seaice_high_frequency_output
    use seaice_temperatures
+   use seaice_thicknesses
    use seaice_regional_statistics
    use seaice_ridging_diagnostics
    use seaice_conservation_check
@@ -150,6 +151,7 @@ contains
       call mpas_pool_create_pool(analysisMemberList)
       call mpas_pool_add_config(analysisMemberList, 'highFrequencyOutput', 1)
       call mpas_pool_add_config(analysisMemberList, 'temperatures', 1)
+      call mpas_pool_add_config(analysisMemberList, 'thicknesses', 1)
       call mpas_pool_add_config(analysisMemberList, 'regionalStatistics', 1)
       call mpas_pool_add_config(analysisMemberList, 'ridgingDiagnostics', 1)
       call mpas_pool_add_config(analysisMemberList, 'conservationCheck', 1)
@@ -1076,6 +1078,8 @@ contains
          call seaice_bootstrap_high_frequency_output(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
          call seaice_bootstrap_temperatures(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'thicknesses' ) then
+         call seaice_bootstrap_thicknesses(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
          call seaice_bootstrap_regional_statistics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
@@ -1146,6 +1150,8 @@ contains
          call seaice_init_high_frequency_output(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
          call seaice_init_temperatures(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'thicknesses' ) then
+         call seaice_init_thicknesses(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
          call seaice_init_regional_statistics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
@@ -1219,6 +1225,8 @@ contains
          call seaice_precompute_high_frequency_output(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
          call seaice_precompute_temperatures(domain, '', timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'thicknesses' ) then
+         call seaice_precompute_thicknesses(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
          call seaice_precompute_regional_statistics(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
@@ -1290,6 +1298,8 @@ contains
          call seaice_compute_high_frequency_output(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
          call seaice_compute_temperatures(domain, '', timeLevel, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'thicknesses' ) then
+         call seaice_compute_thicknesses(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
          call seaice_compute_regional_statistics(domain, '', timeLevel, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
@@ -1360,6 +1370,8 @@ contains
          call seaice_restart_high_frequency_output(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
          call seaice_restart_temperatures(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'thicknesses' ) then
+         call seaice_restart_thicknesses(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
          call seaice_restart_regional_statistics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
@@ -1430,6 +1442,8 @@ contains
          call seaice_finalize_high_frequency_output(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'temperatures' ) then
          call seaice_finalize_temperatures(domain, '', err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'thicknesses' ) then
+         call seaice_finalize_thicknesses(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'regionalStatistics' ) then
          call seaice_finalize_regional_statistics(domain, '', err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'ridgingDiagnostics' ) then
