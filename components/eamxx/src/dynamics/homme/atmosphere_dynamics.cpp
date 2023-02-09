@@ -461,8 +461,17 @@ void HommeDynamics::run_impl (const double dt)
 
     // NOTE: we did not have atm_dt when we inited homme, so we set nsplit=1.
     //       Now we can compute the actual nsplit, and need to update its value
-    //       in Hommexx's data structures
-    const int nsplit = get_homme_nsplit_f90(dt);
+    //       in Hommexx's data structures.
+    //       Also, nsplit calculation requires an integer atm timestep, so we
+    //       check to ensure that's the case
+    EKAT_REQUIRE_MSG (std::abs(dt-std::round(dt))<std::numeric_limits<double>::epsilon()*10,
+        "[HommeDynamics] Error! Input timestep departure from integer above tolerance.\n"
+        "  - input dt : " << dt << "\n"
+        "  - tolerance: " << std::numeric_limits<double>::epsilon()*10 << "\n");
+
+    const int dt_int = static_cast<int>(std::round(dt));
+
+    const int nsplit = get_homme_nsplit_f90(dt_int);
     const auto& c = Homme::Context::singleton();
     auto& params = c.get<Homme::SimulationParams>();
     params.nsplit = nsplit;
@@ -514,7 +523,7 @@ void HommeDynamics::set_computed_group_impl (const FieldGroup& group)
   }
 }
 
-void HommeDynamics::homme_pre_process (const int dt) {
+void HommeDynamics::homme_pre_process (const double dt) {
   // T and uv tendencies are backed out on the ref grid.
   // Homme takes care of turning the FT tendency into a tendency for VTheta_dp.
   using KT = KokkosTypes<DefaultDevice>;
@@ -618,7 +627,7 @@ void HommeDynamics::homme_pre_process (const int dt) {
   }
 }
 
-void HommeDynamics::homme_post_process (const int dt) {
+void HommeDynamics::homme_post_process (const double dt) {
   const auto& pgn = m_phys_grid->name();
   const auto& c = Homme::Context::singleton();
   const auto& params = c.get<Homme::SimulationParams>();
