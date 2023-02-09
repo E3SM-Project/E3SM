@@ -110,7 +110,7 @@ public:
   //       Whether it's a needed check depends on what resources we init/free, and how.
   // TODO: should we check that initialize has been called, when calling run/finalize?
   void initialize (const TimeStamp& t0, const RunType run_type);
-  void run (const int dt);
+  void run (const double dt);
   void finalize   (/* what inputs? */);
 
   // Return the MPI communicator
@@ -363,7 +363,7 @@ protected:
 
   // Override this method to define how the derived runs forward one step
   // (of size dt). This method is called before the timestamp is updated.
-  virtual void run_impl(const int dt) = 0;
+  virtual void run_impl(const double dt) = 0;
 
   // Override this method to finalize the derived class
   virtual void finalize_impl(/* what inputs? */) = 0;

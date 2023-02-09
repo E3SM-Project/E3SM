@@ -440,7 +440,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
 }
 
 // =========================================================================================
-void SHOCMacrophysics::run_impl (const int dt)
+void SHOCMacrophysics::run_impl (const double dt)
 {
   EKAT_REQUIRE_MSG (dt<=300,
       "Error! SHOC is intended to run with a timestep no longer than 5 minutes.\n"
@@ -461,7 +461,7 @@ void SHOCMacrophysics::run_impl (const int dt)
   // number of SHOC timesteps (nadv) to be 1.
   // TODO: input parameter?
   hdtime = dt;
-  m_nadv = std::max(hdtime/dt,1);
+  m_nadv = std::max(static_cast<int>(round(hdtime/dt)),1);
 
   // Reset internal WSM variables.
   workspace_mgr.reset_internals();

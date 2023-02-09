@@ -37,7 +37,7 @@ public:
 
   // The three main interfaces for the subcomponent
   void initialize_impl (const RunType run_type);
-  void run_impl        (const int dt);
+  void run_impl        (const double dt);
   void finalize_impl   ();
 
   // Register all fields in the proper field manager(s).

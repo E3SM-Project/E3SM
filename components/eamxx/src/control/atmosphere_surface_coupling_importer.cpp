@@ -132,7 +132,7 @@ void SurfaceCouplingImporter::initialize_impl (const RunType /* run_type */)
   if (any_initial_imports) do_import(true);
 }
 // =========================================================================================
-void SurfaceCouplingImporter::run_impl (const int /* dt */)
+void SurfaceCouplingImporter::run_impl (const double /* dt */)
 {
   do_import();
 }

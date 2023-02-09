@@ -223,7 +223,7 @@ void perform_checks(
   const int                         nlevs_src,
   const int                         nlevs_tgt)
 {
-  auto rank = input.rank;
+  constexpr int rank = input.rank;
   EKAT_REQUIRE_MSG (rank>1 &&rank<=3,"Error::scream_vertical_interpolation, passed view of rank (" + std::to_string(rank) +"), only support ranks 2 or 3\n");
 
   // The input data and x_src data should match in the appropriate size
@@ -231,7 +231,7 @@ void perform_checks(
 
 
   // The output and input data should match in rank
-  EKAT_REQUIRE(input.rank == output.rank);
+  EKAT_REQUIRE(static_cast<int>(output.rank)==rank);
   // The output data and the input data should match in all sizes except the last one
   for (int ii=0;ii<rank-1;ii++) {
     EKAT_REQUIRE(input.extent_int(ii)==output.extent_int(ii));

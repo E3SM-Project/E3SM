@@ -202,12 +202,12 @@ void SurfaceCouplingExporter::initialize_impl (const RunType /* run_type */)
   if (any_initial_exports) do_export(0, true);
 }
 // =========================================================================================
-void SurfaceCouplingExporter::run_impl (const int dt)
+void SurfaceCouplingExporter::run_impl (const double dt)
 {
   do_export(dt);
 }
 // =========================================================================================
-void SurfaceCouplingExporter::do_export(const Int dt, const bool called_during_initialization)
+void SurfaceCouplingExporter::do_export(const double dt, const bool called_during_initialization)
 {
   using policy_type = KT::RangePolicy;
   using PC = physics::Constants<Real>;

@@ -182,7 +182,6 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     for (const auto& fname : m_fields_names) {
       auto src = get_field(fname,m_sim_field_mgr);
       auto tgt = io_fm->get_field(src.name());
-      const auto& src_fid = src.get_header().get_identifier();
       m_vert_remapper->bind_field(src,tgt);
     }
 
