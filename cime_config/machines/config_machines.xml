@@ -1420,15 +1420,14 @@
     <CCSM_CPRNC>/sems-data-store/ACME/mappy/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>64</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
-    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <BATCH_SYSTEM>slurm_single_node</BATCH_SYSTEM>
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
-      <executable>mpirun</executable>
+      <executable>srun</executable>
       <arguments>
-        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
-        <arg name="tasks_per_node"> --map-by ppr:{{ tasks_per_numa }}:socket:PE=$ENV{OMP_NUM_THREADS} --bind-to hwthread:overload-allowed</arg>
+        <arg name="binding"> --cpu_bind=threads</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="false">
@@ -1460,16 +1459,12 @@
         <command name="load">acme-netcdf/4.4.1/exo_acme</command>
         <command name="load">acme-pfunit/3.2.8/base</command>
       </modules>
-      <modules mpilib="!mpi-serial" compiler="!gnu9">
-        <command name="load">acme-openmpi/2.1.5</command>
-        <command name="load">acme-netcdf/4.7.4/acme</command>
-      </modules>
       <modules mpilib="mpi-serial" compiler="gnu9">
         <command name="load">sems-archive-netcdf/4.7.3/base</command>
       </modules>
-      <modules mpilib="!mpi-serial" compiler="gnu9">
-        <command name="load">sems-archive-openmpi/4.0.2</command>
-        <command name="load">sems-archive-netcdf/4.7.3/parallel</command>
+      <modules mpilib="!mpi-serial">
+        <command name="load">acme-openmpi/4.1.4</command>
+        <command name="load">acme-netcdf/4.7.4/acme</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
