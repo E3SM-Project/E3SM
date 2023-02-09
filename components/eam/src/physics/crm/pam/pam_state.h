@@ -78,7 +78,13 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
     // calculate dry density using same formula as in crm_physics_tend()
     real dz = input_zint(k_gcm,iens) - input_zint(k_gcm+1,iens);
     real dp = input_pint(k_gcm,iens) - input_pint(k_gcm+1,iens);
-    gcm_rho_d(k_crm,iens) = -1 * dp * (1-input_ql(k_gcm,iens)) / ( dz * grav );
+    #ifdef MMF_PAM_DYCOR_AWFL
+      // when forcing dry density use total water for consistency with temperature forcing
+      gcm_rho_d(k_crm,iens) = -1 * dp * (1-input_qt) / ( dz * grav );
+    #endif
+    #ifdef MMF_PAM_DYCOR_SPAM
+      gcm_rho_d(k_crm,iens) = -1 * dp * (1-input_ql(k_gcm,iens)) / ( dz * grav );
+    #endif
 
     // convert total water mixing ratio to water vapor density
     gcm_rho_v(k_crm,iens) = input_qt * gcm_rho_d(k_crm,iens) / ( 1 - input_qt );
@@ -92,6 +98,36 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
     // gcm_temp(k_crm,iens) = input_tl(k_gcm,iens);
   });
 
+  //------------------------------------------------------------------------------------------------
+}
+
+// update CRM dry density
+inline void pam_state_update_dry_density( pam::PamCoupler &coupler ) {
+  using yakl::c::parallel_for;
+  using yakl::c::SimpleBounds;
+  auto &dm_device = coupler.get_data_manager_device_readwrite();
+  auto &dm_host   = coupler.get_data_manager_host_readwrite();
+  auto nens       = coupler.get_option<int>("ncrms");
+  auto nz         = coupler.get_option<int>("crm_nz");
+  auto nx         = coupler.get_option<int>("crm_nx");
+  auto ny         = coupler.get_option<int>("crm_ny");
+  auto crm_rho_d  = dm_device.get<real,4>("density_dry");
+  //------------------------------------------------------------------------------------------------
+  #ifdef MMF_PAM_DYCOR_AWFL
+    // When forcing dry density we need to restore the previous CRM field, similar to other state variables
+    auto state_rho_dry       = dm_host.get<real const,4>("state_rho_dry").createDeviceCopy();
+    parallel_for("Copy in CRM state dry density", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+      crm_rho_d(k,j,i,iens) = state_rho_dry(k,j,i,iens);
+    });
+    // std::cout<<"WHDEBUG - ERROR - still using AWFL?!"<<std::endl;
+  #endif
+  #ifdef MMF_PAM_DYCOR_SPAM
+    // make sure CRM density matches GCM so that dryd ensity forcing is zero
+    auto gcm_rho_d = dm_device.get<real,2>("gcm_density_dry");
+    parallel_for("Broadcast GCM dry density", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+      crm_rho_d(k,j,i,iens) = gcm_rho_d(k,iens);
+    });
+  #endif
   //------------------------------------------------------------------------------------------------
 }
 
@@ -135,7 +171,6 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   auto state_v_wind        = dm_host.get<real const,4>("state_v_wind").createDeviceCopy();
   auto state_w_wind        = dm_host.get<real const,4>("state_w_wind").createDeviceCopy();
   auto state_temperature   = dm_host.get<real const,4>("state_temperature").createDeviceCopy();
-  auto state_rho_dry       = dm_host.get<real const,4>("state_rho_dry").createDeviceCopy();
   auto state_qv            = dm_host.get<real const,4>("state_qv").createDeviceCopy();
   auto state_qc            = dm_host.get<real const,4>("state_qc").createDeviceCopy();
   auto state_nc            = dm_host.get<real const,4>("state_nc").createDeviceCopy();
@@ -155,7 +190,6 @@ inline void pam_state_copy_input_to_coupler( pam::PamCoupler &coupler ) {
   //------------------------------------------------------------------------------------------------
   // Copy the host CRM data to the coupler
   parallel_for("Horz mean of CRM state", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
-    crm_rho_d(k,j,i,iens) = state_rho_dry(k,j,i,iens);
     // convert specific mixing ratios to density
     real rho_v = state_qv(k,j,i,iens) * crm_rho_d(k,j,i,iens) / ( 1 - state_qv(k,j,i,iens) ) ;
     real rho_c = state_qc(k,j,i,iens) * ( crm_rho_d(k,j,i,iens) + rho_v ) ;

@@ -58,6 +58,9 @@ extern "C" void pam_driver() {
   // update coupler GCM state with input GCM state
   pam_state_update_gcm_state(coupler);
 
+  // update CRM dry density (details depend on dycor option)
+  pam_state_update_dry_density(coupler);
+
   // Copy input CRM state (saved by the GCM) to coupler
   pam_state_copy_input_to_coupler(coupler);
 
@@ -65,7 +68,7 @@ extern "C" void pam_driver() {
   pam_radiation_copy_input_to_coupler(coupler);
 
   // Define hydrostasis (only for PAM-A/AWFL)
-  #if PAM_DYCORE==awfl
+  #ifdef MMF_PAM_DYCOR_AWFL
     coupler.update_hydrostasis();
   #endif
 

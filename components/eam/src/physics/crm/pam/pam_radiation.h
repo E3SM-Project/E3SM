@@ -95,6 +95,7 @@ inline void pam_radiation_timestep_aggregation( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
   using yakl::atomicAdd;
+  using yakl::intrinsics::maxval;
   auto &dm = coupler.get_data_manager_device_readwrite();
   auto nens   = coupler.get_option<int>("ncrms");
   auto nz     = coupler.get_option<int>("crm_nz");
