@@ -21,11 +21,6 @@ namespace scream
  */
 class HommeDynamics : public AtmosphereProcess
 {
-  using Pack = ekat::Pack<Real,SCREAM_PACK_SIZE>;
-  using KT = KokkosTypes<DefaultDevice>;
-  template<typename ScalarT>
-  using view_1d = typename KT::template view_1d<ScalarT>;
-
 public:
 
   // Constructor(s) and Destructor
@@ -137,8 +132,15 @@ protected:
   std::shared_ptr<const AbstractGrid> m_phys_grid; // Column parameterizations grid
   std::shared_ptr<const AbstractGrid> m_cgll_grid; // Unique CGLL
 
+  template<int N>
+  using RPack = ekat::Pack<Real,N>;
+
+  using KT = KokkosTypes<DefaultDevice>;
+  template<typename ScalarT>
+  using view_1d = typename KT::template view_1d<ScalarT>;
+
   // Rayleigh friction decay rate profile
-  view_1d<Pack> m_otau;
+  view_1d<RPack<SCREAM_PACK_SIZE>> m_otau;
 
   // Rayleigh friction paramaters
   int m_rayk0;      // Vertical level at which rayleigh friction term is centered.
