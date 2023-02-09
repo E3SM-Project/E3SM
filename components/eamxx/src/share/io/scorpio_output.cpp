@@ -130,8 +130,13 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   }
 
   // Check if remapping and if so create the appropriate remapper 
-  bool m_vert_remap_from_file = params.isParameter("vertical_remap_file");
-  bool m_horiz_remap_from_file = params.isParameter("horiz_remap_file");
+  // Note: We currently support three remappers
+  //   - vertical remapping from file
+  //   - horizontal remapping from file
+  //   - online remapping which is setup using the create_remapper function
+  const bool use_vertical_remap_from_file = params.isParameter("vertical_remap_file");
+  const bool use_horiz_remap_from_file = params.isParameter("horiz_remap_file");
+  const bool use_online_remapper = io_grid->name()!=fm_grid->name();  // TODO: QUESTION, Do we anticipate online remapping w/ horiz_remap_from file?
 
   // Try to set the IO grid (checks will be performed)
   set_grid (io_grid);
@@ -140,13 +145,13 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   set_diagnostics();
 
   // Setup remappers - if needed
-  if (m_vert_remap_from_file) {  
+  if (use_vertical_remap_from_file) {  
     using namespace ShortFieldTagsNames;
     // We build a remapper, to remap fields from the fm grid to the io grid
     auto vert_remap_file   = params.get<std::string>("vertical_remap_file");
     auto f_lev = get_field("p_mid","sim");
     auto f_ilev = get_field("p_int","sim");
-    m_vert_remapper = std::make_shared<VerticalRemapper>(io_grid,vert_remap_file,f_lev,f_ilev,std::numeric_limits<Real>::max()/10.0); //TODO, removing the mask arg doesn't work, but the vertical remapper has a constructor that for the case where no mask arg is given.  Note, the issue is caught in set_grid below where the io_grid has an invalid pointer.
+    m_vert_remapper = std::make_shared<VerticalRemapper>(io_grid,vert_remap_file,f_lev,f_ilev); // We use the default mask value 
     io_grid = m_vert_remapper->get_tgt_grid();
     set_grid(io_grid);
 
@@ -191,9 +196,10 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 
   }
 
-  if (io_grid->name()!=fm_grid->name() || m_horiz_remap_from_file) {
+  // Online remapper and horizontal remapper follow a similar pattern so we check in the same conditional.
+  if (use_online_remapper || use_horiz_remap_from_file) {
 
-    if (m_vert_remap_from_file) {
+    if (use_vertical_remap_from_file) {
       // Then we set the horizontal remapper fm input to the one after vertical remapping
       const auto fm_tmp = get_field_manager("after_vertical_remap");
       set_field_manager(fm_tmp,"before_horizontal_remap");
@@ -206,7 +212,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     // We may need to track masked fields in the horizontal remapper, so we
     // declare the need variables here.
     std::vector<Field>        mask_fields;
-    if (m_horiz_remap_from_file) {
+    if (use_horiz_remap_from_file) {
       std::map<std::string,int> mask_map;
       // First we check if we need to support masking
       for (const auto& fname : m_fields_names) {

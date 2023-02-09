@@ -167,7 +167,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
   auto tgt_grid_gids = m_ov_tgt_grid->get_unique_gids ();
   const int ngids = tgt_grid_gids.size();
 
-  auto tgt_grid = std::make_shared<PointGrid>("tgt_grid",ngids,nlevs,m_comm);
+  auto tgt_grid = std::make_shared<PointGrid>("horiz_remap_tgt_grid",ngids,nlevs,m_comm);
 
   auto tgt_grid_gids_h = tgt_grid->get_dofs_gids().get_view<gid_t*,Host>();
   std::memcpy(tgt_grid_gids_h.data(),tgt_grid_gids.data(),ngids*sizeof(gid_t));
@@ -185,8 +185,9 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
     const auto& layout = src_data_fid.get_layout();
     if (layout.tags()[0]!=COL) {
       // Not a field to be coarsened (perhaps a vertical coordinate field).
-      // Simply copy it in the tgt grid
-      auto tgt_data = tgt_grid->create_geometry_data(src_data_fid);
+      // Simply copy it in the tgt grid, but we still need to assign the new grid name.
+      FieldIdentifier tgt_data_fid(src_data_fid.name(),src_data_fid.get_layout(),src_data_fid.get_units(),m_tgt_grid->name());
+      auto tgt_data = tgt_grid->create_geometry_data(tgt_data_fid);
       tgt_data.deep_copy(src_data);
     } else {
       // This field needs to be remapped
@@ -455,7 +456,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
   const int rank = layout.rank();
   const int ncols = m_ov_tgt_grid->get_num_local_dofs();
   const auto x_extra  = x.get_header().get_extra_data();
-  Real mask_val = std::numeric_limits<Real>::max()/10.0;
+  Real mask_val = std::numeric_limits<float>::max()/10.0;
   if (x_extra.count("mask_value")) {
     mask_val = ekat::any_cast<Real>(x_extra.at("mask_value")); 
   }

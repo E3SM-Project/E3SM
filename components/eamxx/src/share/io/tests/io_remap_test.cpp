@@ -269,7 +269,7 @@ TEST_CASE("io_remap_test","io_remap_test")
   // Confirm that remapped fields are correct.
   print (" -> Test Remapped Output ... \n",io_comm);
   // Note, the vertical remapper defaults to a mask value of std numeric limits scaled by 0.1;
-  const Real mask_val = std::numeric_limits<Real>::max()/10.0;
+  const Real mask_val = std::numeric_limits<float>::max()/10.0;
   // ------------------------------------------------------------------------------------------------------
   //                                    ---  Vertical Remapping ---
   {
