@@ -15,18 +15,13 @@ SET(CMAKE_C_COMPILER "cc" CACHE STRING "")
 SET(CMAKE_Fortran_COMPILER "ftn" CACHE STRING "")
 SET(CMAKE_CXX_COMPILER "hipcc" CACHE STRING "")
 
-#string(APPEND LDFLAGS " -L$ENV{ROCM_PATH}/lib -lamdhip64 -lmpi_gtl_hsa")
-#string(APPEND CXXFLAGS " -I$ENV{ROCM_PATH}/include -L$ENV{CRAY_MPICH_ROOTDIR}/gtl/lib")
-
 string(APPEND LDFLAGS " -L$ENV{ROCM_PATH}/lib -lamdhip64")
 string(APPEND CXXFLAGS " -I$ENV{ROCM_PATH}/include")
 
-#this resolves a crash in mct in docn init
+# Crusher: this resolves a crash in mct in docn init
 if (NOT DEBUG)
   string(APPEND CFLAGS " -O2 -hnoacc -hfp0 -hipa0")
   string(APPEND FFLAGS " -O2 -hnoacc -hfp0 -hipa0")
 endif()
 
 string(APPEND CPPDEFS " -DCPRCRAY")
-
-#set(SCREAM_MPI_ON_DEVICE OFF CACHE STRING "See SCREAM issue #2080.")
