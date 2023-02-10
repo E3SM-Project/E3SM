@@ -1,5 +1,5 @@
 if (compile_threaded)
-  string(APPEND CFLAGS " -fopenmp")
+  #string(APPEND CFLAGS " -fopenmp")
   string(APPEND FFLAGS " -fopenmp")
   string(APPEND CXXFLAGS " -fopenmp")
   string(APPEND LDFLAGS " -fopenmp")

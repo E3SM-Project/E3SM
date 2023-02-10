@@ -1,5 +1,5 @@
 if (compile_threaded)
-  string(APPEND CFLAGS " -h omp")
+  #string(APPEND CFLAGS " -h omp")
   string(APPEND FFLAGS " -h omp")
   string(APPEND LDFLAGS " -h omp")
 endif()

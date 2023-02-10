@@ -2416,7 +2416,7 @@
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
-          <nthrds_lnd>8</nthrds_lnd>
+          <nthrds_lnd>7</nthrds_lnd>
           <nthrds_rof>1</nthrds_rof>
           <nthrds_ice>1</nthrds_ice>
           <nthrds_ocn>1</nthrds_ocn>
