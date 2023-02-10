@@ -119,21 +119,21 @@ public:
       // Compute Qvar
       Qvar = 0.0;
       Dispatch<>::parallel_reduce(kv.team, Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
-                                  [=](const int ilev, Real& accumulator){
+                                  [&](const int ilev, Real& accumulator){
         accumulator += qdp(ilev)*Q(ilev);
       }, Qvar);
 
       // Compute Qmass
       Qmass = 0.0;
       Dispatch<>::parallel_reduce(kv.team, Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
-                                  [=](const int ilev, Real& accumulator){
+                                  [&](const int ilev, Real& accumulator){
         accumulator += qdp(ilev);
       }, Qmass);
 
       // Compute Q1mass
       Q1mass = 0.0;
       Dispatch<>::parallel_reduce(kv.team, Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
-                                  [=](const int ilev, Real& accumulator){
+                                  [&](const int ilev, Real& accumulator){
         accumulator += qdp(ilev);
       }, Q1mass);
     });
@@ -209,7 +209,7 @@ public:
       // Compute KEner
       KEner = 0.0;
       Dispatch<>::parallel_reduce(kv.team, Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
-                                  [=](const int ilev, Real& accumulator){
+                                  [&](const int ilev, Real& accumulator){
         accumulator += ((u(ilev)*u(ilev) + v(ilev)*v(ilev))/2.0) * dpt1_real(ilev);
       }, KEner);
 
@@ -217,7 +217,7 @@ public:
         Real sum = 0.0;
         auto w_i = viewAsReal(Homme::subview(m_state.m_w_i,kv.ie,t1,igp,jgp));
         Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
-                                    [=](const int ilev, Real& accumulator){
+                                    [&](const int ilev, Real& accumulator){
           accumulator += (w_i(ilev)*w_i(ilev) + w_i(ilev+1)*w_i(ilev+1))/4.0 *dpt1_real(ilev);
         },sum);
 
@@ -230,7 +230,7 @@ public:
       // Compute PEner
       PEner = 0.0;
       Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
-                                  [=](const int ilev, Real& accumulator){
+                                [&](const int ilev, Real& accumulator){
         accumulator += phi_real(ilev)*dpt1_real(ilev);
       },PEner);
 
@@ -238,7 +238,7 @@ public:
       IEner = 0.0;
       Kokkos::Real2 sum;
       Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
-                                  [=](const int ilev, Kokkos::Real2& accumulator){
+                                  [&](const int ilev, Kokkos::Real2& accumulator){
         accumulator.v[0] += PhysicalConstants::cp*vtheta_dp_real(ilev)*exner_real(ilev);
         accumulator.v[1] += (phi_i_real(ilev+1)-phi_i_real(ilev))*pnh_real(ilev);
       },sum);
