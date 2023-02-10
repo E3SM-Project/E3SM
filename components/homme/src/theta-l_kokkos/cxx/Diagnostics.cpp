@@ -11,6 +11,8 @@
 #include "utilities/SyncUtils.hpp"
 #include "utilities/SubviewUtils.hpp"
 
+#include "profiling.hpp"
+
 namespace Homme
 {
 
@@ -107,8 +109,10 @@ void Diagnostics::sync_diagnostics_to_host () {
 
 void Diagnostics::run_diagnostics (const bool before_advance, const int ivar)
 {
+  GPTLstart("prim_diag");
   prim_diag_scalars(before_advance, ivar);
   prim_energy_halftimes(before_advance, ivar);
+  GPTLstop("prim_diag");
 }
 
 void Diagnostics::prim_diag_scalars (const bool before_advance, const int ivar)

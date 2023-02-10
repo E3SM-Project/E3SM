@@ -475,7 +475,9 @@ contains
     ! Print some diagnostic information
 
     if (compute_diagnostics) then
+       call t_startf('sync_diag_to_host')
        call sync_diagnostics_to_host_c()
+       call t_stopf('sync_diag_to_host')
        call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete)
     end if
 
