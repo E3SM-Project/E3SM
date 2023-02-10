@@ -1235,10 +1235,10 @@ subroutine nucleate_ice_cam_calc( &
                     if (2<1) then
                        if (mode_coarse_idx > 0._r8  .and. mode_strat_coarse_idx > 0._r8 ) then
                           write(iulog,*)'kzm_oso4_num', oso4_num, so4_num_accum, so4_num_cr, so4_num_st_cr
-                          write(iulog,*)'kzm_nuc_mass_removal', accum_so4(i,k)*icldm(i,k), coarse_so4(i,k)*icldm(i,k), strat_coarse_so4(i,k)*icldm(i,k)
+                          !write(iulog,*)'kzm_nuc_mass_removal', accum_so4(i,k)*icldm(i,k), coarse_so4(i,k)*icldm(i,k), strat_coarse_so4(i,k)*icldm(i,k)
                        else if  (mode_coarse_idx > 0._r8) then
                           write(iulog,*)'kzm_oso4_num', oso4_num, so4_num_accum, so4_num_cr
-                          write(iulog,*)'kzm_nuc_mass_removal', accum_so4(i,k)*icldm(i,k), coarse_so4(i,k)*icldm(i,k)
+                          !write(iulog,*)'kzm_nuc_mass_removal', accum_so4(i,k)*icldm(i,k), coarse_so4(i,k)*icldm(i,k)
                        endif      
                     endif
 
