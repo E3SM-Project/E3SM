@@ -47,12 +47,18 @@ function(set_compilers_e3sm)
   set(CMAKE_CXX_COMPILER     ${CXX} CACHE STRING "The CXX compiler")
   set(CMAKE_C_COMPILER       ${CC}  CACHE STRING "The C   compiler")
   set(CMAKE_Fortran_COMPILER ${FC}  CACHE STRING "The Fortran compiler")
-  # USE_CUDA is set through Macros.cmake / config_compilers.xml
+  # USE_CUDA or USE_HIP is set through Macros.cmake
+  # For instance: cime_config/machines/cmake_macros/gnugpu_summit.cmake
   # If it exists, then set parent's scope to true; otherwise to false
+  # At this point, we use either CUDA or HIP.
+  # Revisit as needed for future systems.
   if (USE_CUDA)
     set(USE_CUDA TRUE PARENT_SCOPE)
+  elseif (USE_HIP)
+    set(USE_HIP TRUE PARENT_SCOPE)
   else()
     set(USE_CUDA FALSE PARENT_SCOPE)
+    set(USE_HIP FALSE PARENT_SCOPE)
   endif()
 endfunction()
 set_compilers_e3sm()
@@ -61,7 +67,10 @@ project(E3SM C CXX Fortran)
 
 if(USE_CUDA)
   enable_language(CUDA)
+elseif(USE_HIP)
+  enable_language(HIP)
 endif()
+
 
 # Include function definitions
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_util.cmake)
