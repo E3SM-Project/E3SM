@@ -692,8 +692,8 @@
         <arg name="binding">--threads-per-core=1</arg>
         <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
         <arg name="core_specific">--core-spec=8</arg>
-        <arg name="gpu_per_node">--gpus-per-node=8</arg>
-        <arg name="gpu_bind">--gpu-bind=closest</arg>
+        <arg name="gpu_per_node">$ENV{GPU_PER_NODE}</arg>
+        <arg name="gpu_bind">$ENV{GPU_BIND}</arg>
         <arg name="placement">-m *:block</arg>
       </arguments>
     </mpirun>
@@ -771,12 +771,13 @@
       <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
       <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
-      <env name="NTASKS_PER_GPU"> </env>
       <env name="PNETCDF_HINTS">romio_cb_read=disable</env>
     </environment_variables>
 
     <environment_variables compiler="amdclang">
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LIBSCI_DIR}/amd/4.0/x86_64/lib:$ENV{LD_LIBRARY_PATH}</env>
+      <env name="GPU_PER_NODE"></env>
+      <env name="GPU_BIND"></env>
     </environment_variables>
 
     <environment_variables compiler="amdclanggpu">
@@ -784,8 +785,9 @@
       <env name="PE_MPICH_GTL_DIR_amd_gfx90a">"-L$ENV{CRAY_MPICH_ROOTDIR}/gtl/lib"</env>
       <env name="PE_MPICH_GTL_LIBS_amd_gfx90a">"-lmpi_gtl_hsa"</env>
       <env name="MPIR_CVAR_GPU_EAGER_DEVICE_MEM">0</env>
-      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
-      <env name="NTASKS_PER_GPU">--ntasks-per-gpu=2</env>
+      <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
+      <env name="GPU_PER_NODE">--gpus-per-node=8</env>
+      <env name="GPU_BIND">--gpu-bind=closest</env>
     </environment_variables>
 
     <environment_variables compiler="crayclanggpu">
@@ -794,14 +796,17 @@
       <env name="PE_MPICH_GTL_LIBS_amd_gfx90a">"-lmpi_gtl_hsa"</env>
       <env name="MPIR_CVAR_GPU_EAGER_DEVICE_MEM">0</env>
       <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
+      <env name="GPU_PER_NODE">--gpus-per-node=8</env>
+      <env name="GPU_BIND">--gpu-bind=closest</env>
       <env name="GATOR_INITIAL_MB">2048MB</env>
     </environment_variables>
 
     <environment_variables compiler="gnugpu">
       <env name="LD_LIBRARY_PATH">$ENV{ROCM_PATH}/lib:$ENV{MPICH_DIR}/lib:$ENV{MPICH_DIR}/gtl/lib:$ENV{CRAY_LD_LIBRARY_PATH}:$ENV{LD_LIBRARY_PATH}</env>
       <env name="MPIR_CVAR_GPU_EAGER_DEVICE_MEM">0</env>
-      <env name="MPICH_GPU_SUPPORT_ENABLED">1</env>
-      <env name="NTASKS_PER_GPU">--ntasks-per-gpu=2</env>
+      <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
+      <env name="GPU_PER_NODE">--gpus-per-node=8</env>
+      <env name="GPU_BIND">--gpu-bind=closest</env>
     </environment_variables>
 
     <environment_variables SMP_PRESENT="TRUE">
@@ -809,6 +814,10 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
     </environment_variables>
+
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
   </machine>
 
   <machine MACH="cori-haswell">
