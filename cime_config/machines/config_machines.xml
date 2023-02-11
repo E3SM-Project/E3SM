@@ -692,6 +692,8 @@
         <arg name="binding">--threads-per-core=1</arg>
         <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
         <arg name="core_specific">--core-spec=8</arg>
+        <arg name="gpu_per_node">--gpus-per-node=8</arg>
+        <arg name="gpu_bind">--gpu-bind=closest</arg>
         <arg name="placement">-m *:block</arg>
       </arguments>
     </mpirun>
