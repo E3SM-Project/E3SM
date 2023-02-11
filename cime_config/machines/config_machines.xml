@@ -672,7 +672,7 @@
     </environment_variables>
   </machine>
 
-  <machine MACH="Frontier">
+  <machine MACH="frontier">
     <DESC>Frontier exascale supercomputer at ORNL. 9408 nodes, Node: 4 AMD MI250X GPUs (2 GCDs) ~ 8 GPUs, 512 GB HDB2E, AMD EPYC 64 cores, 512GB DDR4 </DESC>
     <NODENAME_REGEX>.*frontier.*</NODENAME_REGEX>
     <OS>CNL</OS>
@@ -683,7 +683,7 @@
     <DIN_LOC_ROOT>/gpfs/alpine/cli115/world-shared/e3sm/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/gpfs/alpine/cli115/world-shared/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-	<BASELINE_ROOT>/gpfs/alpine/cli133/world-shared/e3sm/baselines/frontier/$COMPILER</BASELINE_ROOT>
+    <BASELINE_ROOT>/gpfs/alpine/cli133/world-shared/e3sm/baselines/frontier/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/gpfs/alpine/cli133/world-shared/e3sm/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <NTEST_PARALLEL_JOBS>1</NTEST_PARALLEL_JOBS>
@@ -716,18 +716,18 @@
       <modules compiler="crayclang.*">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-cray/8.3.3</command>
-		<!-- TODO: cce/15.0.0 is default, need to check -->
+        <!-- TODO: cce/15.0.0 is default, need to check -->
         <command name="switch">cce cce/14.0.2</command>
       </modules>
       <modules compiler="crayclanggpu">
         <command name="load">craype-accel-amd-gfx90a</command>
-		<!-- TODO: rocm/5.3.0 is the latest available, crusher has 5.4 -->
+        <!-- TODO: rocm/5.3.0 is the latest available, crusher has 5.4 -->
         <command name="load">rocm/5.3.0</command>
       </modules>
       <modules compiler="amdclang.*">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-amd/8.3.3</command>
-		<!-- TODO: amd/5.3.0 is the latest available, crusher has 5.4 -->
+        <!-- TODO: amd/5.3.0 is the latest available, crusher has 5.4 -->
         <command name="switch">amd amd/5.3.0</command>
       </modules>
       <modules compiler="amdclanggpu">
@@ -736,12 +736,12 @@
       <modules compiler="gnu.*">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-gnu/8.3.3</command>
-		<!-- TODO: gcc/12.2.0 is default, need to check -->
+        <!-- TODO: gcc/12.2.0 is default, need to check -->
         <command name="switch">gcc gcc/11.2.0</command>
       </modules>
       <modules compiler="gnugpu">
         <command name="load">craype-accel-amd-gfx90a</command>
-		<!-- TODO: rocm/5.3.0 is the latest available, crusher has 5.4 -->
+        <!-- TODO: rocm/5.3.0 is the latest available, crusher has 5.4 -->
         <command name="load">rocm/5.3.0</command>
       </modules>
       <modules>
@@ -749,9 +749,9 @@
         <command name="load">subversion/1.14.1</command>
         <command name="load">git/2.36.1</command>
         <command name="load">cmake/3.21.3</command>
-		<!-- Crusher: cray-hdf5-parallel/1.12.1.1 not avail,default is below -->
+        <!-- Crusher: cray-hdf5-parallel/1.12.1.1 not avail,default is below -->
         <command name="load">cray-hdf5-parallel/1.12.2.1</command>
-		<!-- loading default versions below as crusher versions are not available -->
+        <!-- loading default versions below as crusher versions are not available -->
         <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
         <command name="load">cray-parallel-netcdf/1.12.3.1</command>
       </modules>
