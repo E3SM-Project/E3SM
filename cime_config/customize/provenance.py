@@ -411,9 +411,9 @@ def _record_timing(case, lid):
         fd.write(desc)
 
     # Collect syslog if enabled on machine. (Sarat)
-    # Ref: https://github.com/ESMCI/cime/blob/master/CIME/case/case.py#L1696
-    # If machines_dir has a syslog.machine script, use its output.
-    # Otherwise, syslog.noop will run and no output is copied.
+    # Ref: https://github.com/ESMCI/cime/blob/655de638182ba9381a5d6607cdbade3b0a70a040/CIME/case/case.py#L1696
+    # If machines_dir has a syslog.<machine_name> script, it is copied as caseroot/Tools/mach_syslog and run.
+    # Otherwise, syslog.noop is used and no output is produced.
     if job_id is not None:
         _record_syslog(case, lid, job_id, caseroot, rundir, full_timing_dir)
 
