@@ -568,7 +568,7 @@
     <DESC>Crusher. NCCS moderate-security system that contains similar hardware and software as the upcoming Frontier system at ORNL. 192 AMD EPYC 7A53 64C nodes, 128 hwthreads, 512GB DDR4, 4 MI250X GPUs</DESC>
     <NODENAME_REGEX>.*crusher.*</NODENAME_REGEX>
     <OS>CNL</OS>
-    <COMPILERS>gnu,crayclang,amdclang</COMPILERS>
+    <COMPILERS>gnu,crayclang,amdclang,gnugpu,crayclanggpu,amdclanggpu</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <PROJECT>cli133_crusher</PROJECT>
     <CIME_OUTPUT_ROOT>/gpfs/alpine/cli133/proj-shared/$ENV{USER}/e3sm_scratch/crusher</CIME_OUTPUT_ROOT>
@@ -583,14 +583,17 @@
     <SUPPORTED_BY>e3sm</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>56</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>56</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="gnugpu">8</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="crayclanggpu">8</MAX_MPITASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE compiler="amdclanggpu">8</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
         <arg name="num_tasks"> -l -K -n {{ total_tasks }} -N {{ num_nodes }} </arg>
-        <arg name="binding">--threads-per-core=1</arg>
         <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
-        <arg name="placement">-m *:block</arg>
+        <arg name="ntasks_per_gpu">$ENV{NTASKS_PER_GPU}</arg>
+        <arg name="gpu_bind">$ENV{GPU_BIND_ARGS}</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
@@ -602,19 +605,31 @@
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="python">/usr/share/lmod/lmod/libexec/lmod python</cmd_path>
-      <modules compiler="crayclang">
+      <modules compiler="crayclang.*">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-cray/8.3.3</command>
-        <command name="switch">cce cce/14.0.0</command>
+        <command name="switch">cce cce/14.0.2</command>
       </modules>
-      <modules compiler="amdclang">
+      <modules compiler="crayclanggpu">
+        <command name="load">craype-accel-amd-gfx90a</command>
+        <command name="load">rocm/5.4.0</command>
+      </modules>
+      <modules compiler="amdclang.*">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-amd/8.3.3</command>
         <command name="switch">amd amd/5.4.0</command>
       </modules>
-      <modules compiler="gnu">
+      <modules compiler="amdclanggpu">
+        <command name="load">craype-accel-amd-gfx90a</command>
+      </modules>
+      <modules compiler="gnu.*">
         <command name="reset"></command>
         <command name="switch">PrgEnv-cray PrgEnv-gnu/8.3.3</command>
+        <command name="switch">gcc gcc/11.2.0</command>
+      </modules>
+      <modules compiler="gnugpu">
+        <command name="load">craype-accel-amd-gfx90a</command>
+        <command name="load">rocm/5.4.0</command>
       </modules>
       <modules>
         <command name="load">cray-python/3.9.12.1</command>
@@ -634,9 +649,21 @@
     <environment_variables>
       <env name="NETCDF_PATH">$ENV{NETCDF_DIR}</env>
       <env name="PNETCDF_PATH">$ENV{PNETCDF_DIR}</env>
+      <env name="NTASKS_PER_GPU"> </env>
+      <env name="GPU_BIND_ARGS"> </env>
     </environment_variables>
     <environment_variables compiler="amdclang">
       <env name="LD_LIBRARY_PATH">$ENV{CRAY_LIBSCI_DIR}/amd/4.0/x86_64/lib:$ENV{LD_LIBRARY_PATH}</env>
+    </environment_variables>
+    <environment_variables compiler=".*gpu.*">
+      <env name="NTASKS_PER_GPU">--ntasks-per-gpu=$SHELL{echo "`./xmlquery --value MAX_MPITASKS_PER_NODE`/8"|bc}</env>
+      <env name="GPU_BIND_ARGS">--gpu-bind=closest</env>
+      <env name="PNETCDF_HINTS">romio_cb_read=disable</env>
+      <env name="MPICH_GPU_SUPPORT_ENABLED">0</env>
+    </environment_variables>
+    <environment_variables compiler=".*gpu.*" DEBUG="TRUE">
+      <env name="AMD_LOG_LEVEL">10</env>
+      <env name="CRAY_ACC_DEBUG">3</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">128M</env>
