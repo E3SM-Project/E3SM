@@ -144,7 +144,14 @@ void TimeStamp::set_num_steps (const int num_steps) {
   m_num_steps = num_steps;
 }
 
-TimeStamp& TimeStamp::operator+=(const int seconds) {
+TimeStamp& TimeStamp::operator+=(const double seconds) {
+  // Sanity checks
+  // Note: (x-int(x)) only works for x small enough that can be stored in an int,
+  //       but that should be the case here, for use cases in EAMxx.
+  EKAT_REQUIRE_MSG (seconds>0, "Error! Time must move forward.\n");
+  EKAT_REQUIRE_MSG ((seconds-round(seconds))<std::numeric_limits<double>::epsilon()*10,
+      "Error! Cannot update TimeStamp with non-integral number of seconds " << seconds << "\n");
+
   EKAT_REQUIRE_MSG(is_valid(),
       "Error! The time stamp contains uninitialized values.\n"
       "       To use this object, use operator= with a valid rhs first.\n");
@@ -156,7 +163,6 @@ TimeStamp& TimeStamp::operator+=(const int seconds) {
   auto& mm = m_date[1];
   auto& yy = m_date[0];
 
-  EKAT_REQUIRE_MSG (seconds>0, "Error! Time must move forward.\n");
   ++m_num_steps;
   sec += seconds;
 

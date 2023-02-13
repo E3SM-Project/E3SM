@@ -53,7 +53,7 @@ public:
   TimeStamp& operator= (const TimeStamp&) = default;
 
   // This method checks that time shifts forward (i.e. that seconds is positive)
-  TimeStamp& operator+= (const int seconds);
+  TimeStamp& operator+= (const double seconds);
 
 protected:
 

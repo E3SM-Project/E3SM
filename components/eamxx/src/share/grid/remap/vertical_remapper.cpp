@@ -156,7 +156,6 @@ set_pressure_levels(const std::string& map_file) {
   m_remap_pres.get_header().get_alloc_properties().request_allocation(mPack::n);
   m_remap_pres.allocate_view();
 
-  auto npacks = ekat::PackInfo<mPack::n>::num_packs(m_num_remap_levs);
   auto remap_pres_scal = m_remap_pres.get_view<Real*>();
 
   std::vector<scorpio::offset_t> dofs_offsets(m_num_remap_levs);

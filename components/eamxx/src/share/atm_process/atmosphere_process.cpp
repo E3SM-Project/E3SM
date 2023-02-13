@@ -75,18 +75,12 @@ void AtmosphereProcess::initialize (const TimeStamp& t0, const RunType run_type)
   }
 }
 
-void AtmosphereProcess::run (const int dt) {
+void AtmosphereProcess::run (const double dt) {
   start_timer (m_timer_prefix + this->name() + "::run");
   if (m_params.get("enable_precondition_checks", true)) {
     // Run 'pre-condition' property checks stored in this AP
     run_precondition_checks();
   }
-
-  EKAT_REQUIRE_MSG ( (dt % m_num_subcycles)==0,
-      "Error! The number of subcycle iterations does not exactly divide the time step.\n"
-      "  - Atm proc name: " + this->name() + "\n"
-      "  - Num subcycles: " + std::to_string(m_num_subcycles) + "\n"
-      "  - Time step    : " + std::to_string(dt) + "\n");
 
   // Let the derived class do the actual run
   auto dt_sub = dt / m_num_subcycles;
