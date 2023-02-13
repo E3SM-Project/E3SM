@@ -29,7 +29,7 @@ CoarseningRemapper (const grid_ptr_type& src_grid,
  : AbstractRemapper()
  , m_comm (src_grid->get_comm())
 {
- m_track_mask = false;
+  m_track_mask = false;
   using namespace ShortFieldTagsNames;
 
   // Sanity checks
@@ -454,7 +454,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
 
   const auto& layout = x.get_header().get_identifier().get_layout();
   const int rank = layout.rank();
-  const int ncols = m_ov_tgt_grid->get_num_local_dofs();
+  const int ncols = m_tgt_grid->get_num_local_dofs();
   const auto x_extra  = x.get_header().get_extra_data();
   Real mask_val = std::numeric_limits<float>::max()/10.0;
   if (x_extra.count("mask_value")) {

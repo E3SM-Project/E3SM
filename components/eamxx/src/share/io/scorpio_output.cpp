@@ -137,6 +137,10 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
   const bool use_vertical_remap_from_file = params.isParameter("vertical_remap_file");
   const bool use_horiz_remap_from_file = params.isParameter("horiz_remap_file");
   const bool use_online_remapper = io_grid->name()!=fm_grid->name();  // TODO: QUESTION, Do we anticipate online remapping w/ horiz_remap_from file?
+  // Check that we are not requesting online remapping w/ horiz and/or vertical remapping.  Which is not currently supported.
+  if (use_online_remapper) {
+    EKAT_REQUIRE_MSG(!use_vertical_remap_from_file and !use_horiz_remap_from_file,"ERROR: scorpio_output - online remapping not supported with vertical and/or horizontal remapping from file");
+  }
 
   // Try to set the IO grid (checks will be performed)
   set_grid (io_grid);
@@ -497,17 +501,17 @@ res_dep_memory_footprint () const {
 
   // Cycle through all unique field managers in this output,
   // first make a copy so we can grab just unique pointers.
-  std::vector<std::shared_ptr<const fm_type>> unique_fms;
-  unique_fms = m_field_mgrs;
-  std::sort(unique_fms.begin(),unique_fms.end());
-  auto last = std::unique(unique_fms.begin(),unique_fms.end());
-  unique_fms.erase(last,unique_fms.end());
-  // Now that we have only unique pointers, cycle through them to tally mem footprint:
-  for (int ii=0; ii<unique_fms.size(); ii++) {
-    const auto field_mgr  = unique_fms[ii];
+  std::set<std::string> grids;
+  for (auto fm : m_field_mgrs) {
+    auto field_mgr = fm.second;
     if (field_mgr != sim_field_mgr) {
-      // The IO is done on a different grid. The FM stored here is
-      // not shared with anyone else, so we can safely add its footprint
+      const auto& gn = field_mgr->get_grid()->name();
+      if (grids.count(gn)>0) {
+        continue; // Grid has already been parsed
+      }
+      grids.insert(gn);
+      // This FM is done on a different grid than SIM and hasn't been included in
+      // the memory calculation yet.  So we can safely add its footprint
       for (const auto& it : *field_mgr) {
         const auto& fap = it.second->get_header().get_alloc_properties();
         if (fap.is_subfield()) {
@@ -544,14 +548,11 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::v
 
   for (int ii=0; ii<modes.size(); ii++) {
     const auto mode = modes[ii];
-    if (m_field_mgrs_idx.count(mode)) {
-      // This mode has already been set once, so we simply override it.
-      const int idx = m_field_mgrs_idx.at(mode);
-      m_field_mgrs[idx] = field_mgr;
+    if (m_field_mgrs.count(mode)) {
+      // We must redefine the field manager for this location in the map.
+      m_field_mgrs.at(mode) = field_mgr;
     } else {
-      // This is the first time we set this field manager so we need to add it to the list.
-      m_field_mgrs.push_back(field_mgr);
-      m_field_mgrs_idx.emplace(mode,m_field_mgrs.size()-1);
+      m_field_mgrs.emplace(mode, field_mgr);
     }
   }
 
@@ -577,7 +578,7 @@ set_grid (const std::shared_ptr<const AbstractGrid>& grid)
       (grid->get_global_max_dof_gid()-grid->get_global_min_dof_gid()+1)==grid->get_num_global_dofs(),
       "Error! In order for IO to work, the grid must (globally) have dof gids in interval [gid_0,gid_0+num_global_dofs).\n");
 
-//ASD  IS THIS STILL TRUE vv
+//ASD  IS THIS STILL TRUE
 //ASD  EKAT_REQUIRE_MSG(m_comm.size()<=grid->get_num_global_dofs(),
 //ASD      "Error! PIO interface requires the size of the IO MPI group to be\n"
 //ASD      "       no greater than the global number of columns.\n"

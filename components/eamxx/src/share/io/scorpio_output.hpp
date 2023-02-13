@@ -162,9 +162,8 @@ protected:
   void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::vector<std::string>& modes);
 
   std::shared_ptr<const fm_type> get_field_manager (const std::string& mode) const {
-    EKAT_REQUIRE_MSG (m_field_mgrs_idx.count(mode),"ERROR! AtmosphereOutput::get_field_manager FM for mode = " + mode + " not found in list of available field managers!.");
-    const int idx = m_field_mgrs_idx.at(mode);
-    return m_field_mgrs[idx];
+    EKAT_REQUIRE_MSG (m_field_mgrs.count(mode),"ERROR! AtmosphereOutput::get_field_manager FM for mode = " + mode + " not found in list of available field managers!.");
+    return m_field_mgrs.at(mode);
   }
 
   void register_dimensions(const std::string& name);
@@ -184,8 +183,7 @@ protected:
   // io_field_manager stores the fields in the layout for output
   // sim_field_manager points to the simulation field manager
   // when remapping horizontally these two field managers may be different.
-  std::vector<std::shared_ptr<const fm_type>> m_field_mgrs;
-  std::map<std::string,int>                   m_field_mgrs_idx;
+  std::map<std::string,std::shared_ptr<const fm_type>> m_field_mgrs;
   std::shared_ptr<const grid_type>            m_io_grid;
   std::shared_ptr<remapper_type>              m_horiz_remapper;
   std::shared_ptr<remapper_type>              m_vert_remapper;

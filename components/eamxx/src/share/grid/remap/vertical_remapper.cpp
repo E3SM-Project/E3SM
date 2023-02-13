@@ -49,7 +49,10 @@ VerticalRemapper (const grid_ptr_type& src_grid,
   m_bwd_allowed = false;
 
   // Create tgt_grid that is a clone of the src grid but with
-  // the correct number of level
+  // the correct number of levels.  Note that when vertically
+  // remapping the target field will be defined on the same DOFs
+  // as the source field, but will have a different number of 
+  // vertical levels.
   scorpio::register_file(map_file,scorpio::FileMode::Read);
   m_num_remap_levs = scorpio::get_dimlen_c2f(map_file.c_str(),"nlevs");
   scorpio::eam_pio_closefile(map_file);
@@ -246,8 +249,6 @@ do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
   auto nondim = Units::nondimensional();
   if (src_layout.has_tag(LEV) || src_layout.has_tag(ILEV)) {
     auto& f_tgt = m_tgt_fields[ifield];
-    // Use create_source_layout to make a copy of the source layout.
-    // Then we strip all tags that are not COL or LEV,
     // NOTE: for now we assume that masking is determined only by the COL,LEV location in space
     //       and that fields with multiple components will have the same masking for each component
     //       at a specific COL,LEV
@@ -369,7 +370,6 @@ void VerticalRemapper::do_remap_fwd ()
     if (do_remap) {
       // If we are remapping then we need to initialize the mask source values to 1.0
       f_src.deep_copy(1.0);
-      f_src.sync_to_host();
       // Dispatch kernel with the largest possible pack size
       const auto& src_ap = f_src.get_header().get_alloc_properties();
       const auto& tgt_ap = f_tgt.get_header().get_alloc_properties();
@@ -401,7 +401,7 @@ apply_vertical_interpolation(const Field& f_src, const Field& f_tgt, const bool 
     const auto& layout = f_src.get_header().get_identifier().get_layout();
     const auto  rank   = f_src.rank();
     const auto src_tag = layout.tags().back();
-    const auto src_num_levs = layout.dim(src_tag);
+    const auto src_num_levs = layout.dims().back();
     // ARG mask_interp checks if this is a vertical interpolation of the mask array that tracks masked 0.0 or not 1.0
     Real mask_val = mask_interp ? 0.0 : m_mask_val;
 

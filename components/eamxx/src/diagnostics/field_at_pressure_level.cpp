@@ -49,6 +49,14 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   m_diagnostic_output = Field(fid);
   m_diagnostic_output.allocate_view();
 
+  // Take care of mask tracking for this field, in case it is needed.  This has two steps:
+  //   1.  We need to actually track the masked columns, so we create a 2d (COL only) field.
+  //       NOTE: Here we assume that even a source field of rank 3+ will be masked the same
+  //       across all components so the mask is represented by a column-wise slice.
+  //   2.  We also need to create a helper field that is used w/ the vertical remapper to set
+  //       the mask.  This field is 3d (COLxLEV) to mimic the type of interpolation that is
+  //       being conducted on the source field.
+
   // Add a field representing the mask as extra data to the diagnostic field.
   auto nondim = Units::nondimensional();
   std::string mask_name = name() + " mask";
@@ -61,10 +69,9 @@ set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 
   // Allocate helper views
   // Note that mPack is by design a pack of size 1, so we need to take into consideration the size of
-  // the source data which view. which  will be equal to the product of the number of source packs
-  // and the simulation pack size.
-  const int num_src_mask_lev = m_field_layout.tags().back()==LEV ? m_num_levs : m_num_levs+1;
-  FieldLayout mask_src_layout( {COL, LEV}, {m_num_cols, num_src_mask_lev});
+  // the source data which  will be equal to the product of the number of source packs and the simulation
+  // pack size.
+  FieldLayout mask_src_layout( {COL, LEV}, {m_num_cols, m_num_levs});
   FieldIdentifier mask_src_fid ("mask_tmp",mask_src_layout, nondim, gname);
   m_mask_field = Field(mask_src_fid);
   m_mask_field.allocate_view();
