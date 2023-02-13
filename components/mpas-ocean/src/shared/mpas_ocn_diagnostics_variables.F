@@ -73,6 +73,10 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: gradSSH
    real (kind=RKIND), dimension(:), pointer :: pressureAdjustedSSH
    real (kind=RKIND), dimension(:), pointer :: pgf_sal
+   real (kind=RKIND), dimension(:), pointer :: temp_twd
+   real (kind=RKIND), dimension(:), pointer :: normalCoeff 
+   real (kind=RKIND), dimension(:), pointer :: tangentialCoeff 
+   real (kind=RKIND), dimension(:), pointer :: topographicWaveDrag 
 
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceValue
    real (kind=RKIND), dimension(:,:), pointer :: tracersSurfaceLayerValue
@@ -90,6 +94,9 @@ module ocn_diagnostics_variables
    real (kind=RKIND), dimension(:), pointer :: topo_buoyancy_N1B
    real (kind=RKIND), dimension(:), pointer :: bathy_stddev
    real (kind=RKIND), dimension(:), pointer :: bed_slope_edges
+   real (kind=RKIND), dimension(:), pointer :: bottomDepthEdge
+   real (kind=RKIND), dimension(:), pointer :: lonGradEdge
+   real (kind=RKIND), dimension(:), pointer :: latGradEdge
    real (kind=RKIND), dimension(:,:), pointer :: landIceBoundaryLayerTracers
    real (kind=RKIND), dimension(:,:), pointer :: landIceTracerTransferVelocities
 
@@ -263,6 +270,9 @@ contains
          call mpas_pool_get_array(diagnosticsPool, 'topo_buoyancy_N1B', topo_buoyancy_N1B)
          call mpas_pool_get_array(diagnosticsPool, 'bathy_stddev', bathy_stddev)
          call mpas_pool_get_array(diagnosticsPool, 'bed_slope_edges', bed_slope_edges)
+         call mpas_pool_get_array(diagnosticsPool, 'bottomDepthEdge', bottomDepthEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'lonGradEdge', lonGradEdge)
+         call mpas_pool_get_array(diagnosticsPool, 'latGradEdge', latGradEdge)
       end if
 
       if ( trim(config_ocean_run_mode) == 'forward' ) then
@@ -389,6 +399,15 @@ contains
          call mpas_pool_get_array(diagnosticsPool, &
                     'bed_slope_edges', &
                      bed_slope_edges)
+         call mpas_pool_get_array(diagnosticsPool, &
+                    'bottomDepthEdge', &
+                     bottomDepthEdge)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'lonGradEdge', &
+                   lonGradEdge)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'latGradEdge', &
+                   latGradEdge)
       end if
 
       if (config_use_tidal_potential_forcing) then
@@ -396,7 +415,22 @@ contains
                   'pgf_sal', &
                    pgf_sal)
       end if
-
+      if (config_use_topographic_wave_drag) then
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'temp_twd', &
+                   temp_twd)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'normalCoeff', &
+                   normalCoeff)
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'tangentialCoeff', &
+                   tangentialCoeff)
+      end if
+      if (config_use_topographic_wave_drag) then
+         call mpas_pool_get_array(diagnosticsPool, &
+                  'topographicWaveDrag', &
+                   topographicWaveDrag)
+      end if
       if ( trim(config_ocean_run_mode) == 'init' .or. &
                 config_AM_debugDiagnostics_enable ) then
          call mpas_pool_get_array(diagnosticsPool, 'rx1MaxCell', &
@@ -711,6 +745,13 @@ contains
          !$acc enter data create(topo_buoyancy_N1B)
          !$acc enter data create(bathy_stddev)
          !$acc enter data create(bed_slope_edges)
+         !$acc enter data create(bottomDepthEdge)
+         !$acc enter data create(lonGradEdge)
+         !$acc enter data create(latGradEdge)
+         !$acc enter data create(temp_twd)
+         !$acc enter data create(normalCoeff)
+         !$acc enter data create(tangentialCoeff)
+         !$acc enter data create(topographicWaveDrag)
       end if
       if (config_use_self_attraction_loading) then
          !$acc enter data copyin(pgf_sal)
@@ -958,6 +999,10 @@ contains
       end if
       if (config_use_topographic_wave_drag) then
          !$acc exit data delete(topographic_wave_drag)
+         !$acc exit data delete(temp_twd)
+         !$acc exit data delete(normalCoeff)
+         !$acc exit data delete(tangentialCoeff)
+         !$acc exit data delete(topographicWaveDrag)
       end if
       if (config_use_self_attraction_loading) then
          !$acc exit data delete(pgf_sal)
@@ -1298,6 +1343,12 @@ contains
       end if
       if ( config_use_self_attraction_loading ) then
          nullify(pgf_sal)
+      end if
+      if ( config_use_topographic_wave_drag) then
+         nullify(temp_twd)
+         nullify(normalCoeff)
+         nullify(tangentialCoeff)
+         nullify(topographicWaveDrag)
       end if
       if ( trim(config_time_integrator) == 'split_implicit' ) then
          nullify(SIvec_r0,              &

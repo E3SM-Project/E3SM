@@ -46,8 +46,7 @@ module ocn_vel_forcing_topographic_wave_drag
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_vel_forcing_topographic_wave_drag_scalar_tend, &
-             ocn_vel_forcing_topographic_wave_drag_tensor_tend, &
+   public :: ocn_vel_forcing_topographic_wave_drag_tend, &
              ocn_vel_forcing_topographic_wave_drag_init
 
    !--------------------------------------------------------------------
@@ -56,9 +55,9 @@ module ocn_vel_forcing_topographic_wave_drag
    !
    !--------------------------------------------------------------------
 
-   logical :: topographicWaveDragOn
+   logical :: topographicWaveDragOn, tensorScheme 
    real (kind=RKIND) :: topographicWaveDragCoeff
-   real (kind=RKIND), dimension(:), allocatable :: topographicWaveDrag
+!   real (kind=RKIND), dimension(:), allocatable :: topographicWaveDrag
 
 !***********************************************************************
 
@@ -66,7 +65,7 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_vel_forcing_topographic_wave_drag_scalar_tend
+!  routine ocn_vel_forcing_topographic_wave_drag_tend
 !
 !> \brief   Computes tendency term from topographic wave drag
 !> \author  Nairita Pal
@@ -77,7 +76,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_forcing_topographic_wave_drag_scalar_tend(normalVelocity, & !{{{
+   subroutine ocn_vel_forcing_topographic_wave_drag_tend(normalVelocity, & !{{{
                      tend, err)
 
       !-----------------------------------------------------------------
@@ -124,103 +123,39 @@ contains
       !          N(z) = N_0 exp(z/1300)
       ! Drag: rho_0 C u
       
-      !$omp do schedule(runtime) private(k)
-      do iEdge = 1, nEdgesOwned
-        k =  maxLevelEdgeTop(iEdge)
-        ! topographic wave drag term:
-        ! du/dt = ... 1/rinv * u
-        ! rinv is the e-folding time use in HyCOM. Here
-        ! topographic_wave_drag = 1/rinv
-        if (k>0) then
-          tend(k,iEdge) = tend(k,iEdge) - topographicWaveDragCoeff &
-             * topographicWaveDrag(iEdge) * normalVelocity(k,iEdge)
-        endif
-      enddo
-      !$omp end do
+      if ( .not. tensorScheme) then
+          !$omp do schedule(runtime) private(k)
+          do iEdge = 1, nEdgesOwned
+            k =  maxLevelEdgeTop(iEdge)
+            ! topographic wave drag term:
+            ! du/dt = ... 1/rinv * u
+            ! rinv is the e-folding time use in HyCOM. Here
+            ! topographic_wave_drag = 1/rinv
+            if (k>0) then
+              temp_twd(iEdge) = topographicWaveDragCoeff * topographicWaveDrag(iEdge) * normalVelocity(k,iEdge)
+              tend(k,iEdge) = tend(k,iEdge) - topographicWaveDragCoeff &
+                 * topographicWaveDrag(iEdge) * normalVelocity(k,iEdge)
+            endif
+          enddo
+          !$omp end do
+      else
+          !$omp do schedule(runtime) private(k)
+          do iEdge = 1, nEdgesOwned
+            k =  maxLevelEdgeTop(iEdge)
+            if (k>0) then
+              temp_twd(iEdge) = topographicWaveDrag(iEdge) * (normalVelocity(k,iEdge) * normalCoeff(iEdge) + tangentialVelocity(k,iEdge) * tangentialCoeff(iEdge))
+              tend(k,iEdge) = tend(k,iEdge) - topographicWaveDragCoeff * topographicWaveDrag(iEdge) &
+                 * (normalVelocity(k,iEdge) * normalCoeff(iEdge) + tangentialVelocity(k,iEdge) * tangentialCoeff(iEdge))
+            endif
+          enddo
+          !$omp end do
+      endif
 
       call mpas_timer_stop('vel topographic wave drag')
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_vel_forcing_topographic_wave_drag_scalar_tend!}}}
-
-!***********************************************************************
-!
-!  routine ocn_vel_forcing_topographic_wave_drag_tensor_tend
-!
-!> \brief   Computes tendency term from topographic wave drag
-!> \author  Kristin Barton
-!> \date    1 Nov 2022
-!> \details
-!>  This routine computes the topographic wave drag tendency for momentum
-!>  based on current state using the tensor formulation
-!
-!***********************************************************************
-
-   subroutine ocn_vel_forcing_topographic_wave_drag_tensor_tend(normalVelocity, & !{{{
-                     tend, err)
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         normalVelocity   !< Input: velocity
-
-      !-----------------------------------------------------------------
-      !
-      ! input/output variables
-      !
-      !-----------------------------------------------------------------
-
-      real (kind=RKIND), dimension(:,:), intent(inout) :: &
-         tend          !< Input/Output: velocity tendency
-
-      !-----------------------------------------------------------------
-      !
-      ! output variables
-      !
-      !-----------------------------------------------------------------
-
-      integer, intent(out) :: err !< Output: error flag
-
-      !-----------------------------------------------------------------
-      !
-      ! local variables
-      !
-      !-----------------------------------------------------------------
-
-      integer :: iEdge, k
-
-      err = 0
-      if ( .not. topographicWaveDragOn ) return
-
-      call mpas_timer_start('vel topographic wave drag')
-
-      ! JSL: C = pi std(H)^2 N_B / L
-      ! ZAE: C = gamma H (grad(H))^2 N_B bar(N) / (8 * pi^2 * omega)
-      !          N(z) = N_0 exp(z/1300)
-      ! Drag: rho_0 C u
-      
-      !$omp do schedule(runtime) private(k)
-      do iEdge = 1, nEdgesOwned
-        k =  maxLevelEdgeTop(iEdge)
-        ! topographic wave drag term:
-        ! du/dt = ... 1/rinv * u
-        ! rinv is the e-folding time use in HyCOM. Here
-        ! topographic_wave_drag = 1/rinv
-        if (k>0) then
-        endif
-      enddo
-      !$omp end do
-
-      call mpas_timer_stop('vel topographic wave drag')
-
-   !--------------------------------------------------------------------
-
-   end subroutine ocn_vel_forcing_topographic_wave_drag_tensor_tend!}}}
+   end subroutine ocn_vel_forcing_topographic_wave_drag_tend!}}}
 
 !***********************************************************************
 !
@@ -247,44 +182,52 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
+      real (kind=RKIND) :: topoDragCutoffDepth, topoDragCutoffWidth
+      real (kind=RKIND) :: omegaM2 = 1.405189e-4_RKIND
+      real (kind=RKIND), dimension(:), allocatable :: topoDragTurnOff
+
       err = 0
+
 
       topographicWaveDragCoeff = 0.0_RKIND
 
       if (config_use_topographic_wave_drag) then
           topographicWaveDragOn = .true.
           topographicWaveDragCoeff = config_topographic_wave_drag_coeff
+          topoDragCutoffDepth = config_topographic_wave_drag_cutoff_depth
+          topoDragCutoffWidth = config_topographic_wave_drag_cutoff_width
+          topoDragTurnOff = (TANH((-bottomDepthEdge-topoDragCutoffDepth)/topoDragCutoffWidth)+1)/2
           if (config_topographic_wave_drag_scheme.EQ."JSL") then
+              tensorScheme = .false.
               call mpas_log_write("")
               call mpas_log_write(" Topographic wave drag scheme is: Jayne and St. Laurent")
               call mpas_log_write("")
+              topographicWaveDrag = topographicWaveDragCoeff*topoDragTurnOff*pii*(bathy_stddev**2)*topo_buoyancy_N1B/10000.0_RKIND
               ! C = pi std(H)^2 Nb / L, L=10,000
-              topographicWaveDrag = pii*(bathy_stddev**2)*topo_buoyancy_N1B/10000.0_RKIND
+
           else if (config_topographic_wave_drag_scheme.EQ."ZAE") then
+              tensorScheme = .false.
               call mpas_log_write("")
               call mpas_log_write(" Topographic wave drag scheme is: Zaron and Egbert")
               call mpas_log_write("")
+              topographicWaveDrag = topographicWaveDragCoeff*bottomDepthEdge*(bed_slope_edges**2)*topo_buoyancy_N1B*topo_buoyancy_N1V / (8.0_RKIND * 1.405189e-4_RKIND * pii**2)
+!              topographicWaveDrag = topographicWaveDragCoeff*topoDragTurnOff*50.0_RKIND*bottomDepthEdge*(bed_slope_edges**2)*((5.24e-3_RKIND)*1300.0_RKIND*(1 - exp(-bottomDepthEdge/1300.0_RKIND))/bottomDepthEdge)*((5.24e-3_RKIND)*exp(-bottomDepthEdge/1300.0_RKIND))/ (8 * 1.405189e-4_RKIND * pii**2)
               ! C = G*H*(grad H)^2 * Nb * Nv / (8 pi^2 omega), take M2 omega = 1.405189e-4_RKIND
 !              Nv = (5.24e-3_RKIND)*1300*(1 - exp(-bottomDepth/1300))/bottomDepth
 !              Nb = (5.24e-3_RKIND)*exp(-bottomDepth/1300)
-              topographicWaveDrag = bottomDepth*(bed_slope_edges**2)*((5.24e-3_RKIND)*1300.0_RKIND*(1 - exp(-bottomDepth/1300.0_RKIND))/bottomDepth)*((5.24e-3_RKIND)*exp(-bottomDepth/1300.0_RKIND))/ (8 * 1.405189e-4_RKIND * pii**2)
-!              topographicWaveDrag = bottomDepth*(bed_slope_edges**2)*topo_buoyancy_N1B*topo_buoyancy_N1V / (8 * 1.405189e-4_RKIND * pii**2)
-          else if (config_topographic_wave_drag_scheme.EQ."NYC") then
+          else if (config_topographic_wave_drag_scheme.EQ."LGF") then
+              tensorScheme = .true.
               call mpas_log_write("")
-              call mpas_log_write(" Topographic wave drag scheme is: Nycander")
+              call mpas_log_write(" Topographic wave drag scheme is: Local Generation Formula")
               call mpas_log_write("")
-              topographicWaveDrag = topo_rinv
-              ! Preperation for Nycander
+              topographicWaveDrag = topographicWaveDragCoeff*topoDragTurnOff*(sqrt((topo_buoyancy_N1B**2 - omegaM2**2)*(topo_buoyancy_N1V**2 - omegaM2**2)))/(4*pii*omegaM2)
+              normalCoeff = (lonGradEdge**2)*(cos(angleEdge)**2) + (latGradEdge**2)*(sin(angleEdge)**2) - 2*latGradEdge*lonGradEdge*sin(angleEdge)*(cos(angleEdge))
+              tangentialCoeff = sin(angleEdge)*cos(angleEdge)*(lonGradEdge**2 - latGradEdge**2) + latGradEdge*lonGradEdge*(cos(angleEdge)**2 - sin(angleEdge)**2)
+
           else 
               call mpas_log_write("")
-              call mpas_log_write("Invalid parameter for config_topopgraphic_wave_drag_scheme. It must be one of: 'JSL', 'ZAE', or 'NYC'" , MPAS_LOG_CRIT)
-              ! C = Cit sqrt((Nb^2 - omega^2)(Nm^2 - omega^2))/(4 pi omega) * [ [grad(hl)^2, grad(hl)*grad(hp)  ], [ grad(hl) * grad(hp), grad(hp)^2  ]  ]
-              ! Cit = tuning coefficint
-              ! Nb = bottom frequency
-              ! Nm = depth-averaged frequency
-              ! grad(hl) = zonal topo gradient
-              ! grad(hp) = meridional topo gradient
 
+              call mpas_log_write("Invalid parameter for config_topopgraphic_wave_drag_scheme. It must be one of: 'JSL', 'ZAE', or 'LGF'" , MPAS_LOG_CRIT)
               call mpas_log_write("")
           end if
       endif

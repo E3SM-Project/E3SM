@@ -1109,8 +1109,8 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_topographic_wave_drag_scheme" type="character" default_value="JSL" units="unitless"
-					description="hich of the following three wave drag schemes to use: JSL: Jayne and St. Laurent; ZAE: Zaron and Egbert; or NYC: Nycander"
-					possible_values="JSL or ZAE or NYC"
+					description="hich of the following three wave drag schemes to use: JSL: Jayne and St. Laurent; ZAE: Zaron and Egbert; or LGF: Local generation formula"
+					possible_values="JSL or ZAE or LGF"
 		/>
 		<nml_option name="config_topographic_wave_drag_coeff" type="real" default_value="5.0e-4" units="unitless"
 					description="Dimensionless topographic wave drag coefficient, $c_{topo}$."
@@ -1119,6 +1119,14 @@
 		<nml_option name="config_thickness_drag_type" type="character" default_value="centered"
 					description="The type of layerThickness averaging to use on the drag term. The standard MPAS-O approach is 'centered'."
 					possible_values="'harmonic-mean', 'centered'"
+		/>
+		<nml_option name="config_topographic_wave_drag_cutoff_depth" type="real" default_value="500" units="m"
+					description="Specifies minimum depth at which topographic wave drag is applied"
+					possible_values="any positive real"
+		/>
+		<nml_option name="config_topographic_wave_drag_cutoff_width" type="real" default_value="10" units="m"
+					description="Width over which the topographic wave drag is progressively turned off"
+					possible_values="any positive real"
 		/>
 	</nml_record>
 	<nml_record name="Rayleigh_damping" mode="forward">
@@ -1967,6 +1975,10 @@
             <var name="gotmDissTopOfCell"/>
             <var name="gotmLengthTopOfCell"/>
             <var name="pgf_sal"/>
+            <var name="temp_twd"/>
+            <var name="normalCoeff"/>
+            <var name="tangentialCoeff"/>
+            <var name="topographicWaveDrag"/>
 		</stream>
 
 		<stream name="output"
@@ -2271,6 +2283,9 @@
 			<var name="topo_buoyancy_N1B"/>
 			<var name="bathy_stddev"/>
 			<var name="bed_slope_edges"/>
+			<var name="bottomDepthEdge"/>
+			<var name="lonGradEdge"/>
+			<var name="latGradEdge"/>
 		</stream>
 
 	</streams>
@@ -3261,6 +3276,18 @@
 			description="The integral gradient average per cell"
 			packages="topographicWaveDragPKG"
 		/>
+		<var name="bottomDepthEdge" type="real" dimensions="nEdges" units="unitless"
+			description="bottom depth at the cell edges"
+			packages="topographicWaveDragPKG"
+		/>
+		<var name="lonGradEdge" type="real" dimensions="nEdges" units="unitless"
+			description="Meridional gradient of bathymetry"
+			packages="topographicWaveDragPKG"
+		/>
+		<var name="latGradEdge" type="real" dimensions="nEdges" units="unitless"
+			description="Zonal gradient of bathymetry"
+			packages="topographicWaveDragPKG"
+		/>
 		<!-- diagnostic fields for land-ice fluxes -->
 		<var name="landIceFrictionVelocity" type="real" dimensions="nCells Time" units="m s^-1"
 			description="The friction velocity $u_*$ under land ice"
@@ -3459,6 +3486,22 @@
 		<var name="CoriolisTermOld" type="real" dimensions="nVertLevels nEdges Time" units="m s^-2"
                         description="Coriolis term at the previous time step used in the split-explicit AB2 time stepping"
 			packages="splitAB2TimeIntegrator"
+		/>
+		<var name="temp_twd" type="real" dimensions="nEdges Time" units=""
+			description="tendency perturbation due to topographic wave drag"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="normalCoeff" type="real" dimensions="nEdges" units=""
+			description="Coefficient multiplied by the normal velocity in the topographic wave drag"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tangentialCoeff" type="real" dimensions="nEdges" units=""
+			description="Coefficient multiplied by the tangential velocity in the topographic wave drag"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="topographicWaveDrag" type="real" dimensions="nEdges" units=""
+			description="topographic wave drag multiplicative factor"
+			packages="tidalPotentialForcingPKG"
 		/>
 	</var_struct>
 	<var_struct name="shortwave" time_levs="1">
