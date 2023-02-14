@@ -3597,10 +3597,10 @@
       <cmd_path lang="python">/usr/Modules/bin/modulecmd python</cmd_path>
       <modules>
         <command name="purge"/>
-	<command name="load">cmake/3.15.0</command>
+	     <command name="load">cmake/3.15.0</command>
         <command name="load">perl</command>
-	<command name="load">xml-libxml/2.0116</command>
-	<command name="load">python/3.6</command>
+	     <command name="load">xml-libxml/2.0116</command>
+	     <command name="load">python/3.6</command>
       </modules>
       <modules compiler="intel">
         <command name="load">intel/2016.4.072</command>
@@ -3675,10 +3675,10 @@
       <cmd_path lang="perl">/usr/Modules/bin/modulecmd perl</cmd_path>
       <cmd_path lang="python">/usr/Modules/bin/modulecmd python</cmd_path>
       <modules>
-	<command name="purge"/>
+	     <command name="purge"/>
         <command name="load">cmake/3.15.0</command>
         <command name="load">perl</command>
-	<command name="load">xml-libxml/2.0116</command>
+	     <command name="load">xml-libxml/2.0116</command>
         <command name="load">python/3.6</command>
       </modules>
       <modules compiler="intel">
