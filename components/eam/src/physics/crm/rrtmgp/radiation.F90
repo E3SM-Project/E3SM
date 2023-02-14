@@ -1960,7 +1960,11 @@ contains
                   end do
                end do
             end do
-            call outfld('CRM_QRAD', crm_qrad(1:ncol,:,:,:), ncol, state%lchnk)
+            if (conserve_energy) then
+               call outfld('CRM_QRAD', crm_qrad(1:ncol,:,:,:) / state%pdel(icol,ilev), ncol, state%lchnk)
+            else
+               call outfld('CRM_QRAD', crm_qrad(1:ncol,:,:,:), ncol, state%lchnk)
+            end if
          end if
          call t_stopf('rad_update_crm_heating')
       end if  ! use_MMF
