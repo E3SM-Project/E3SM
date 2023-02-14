@@ -22,7 +22,6 @@
 // find blocks that eventually should be removed in favor of a design that
 // accounts for pg2. Some blocks may turn out to be unnecessary, and I simply
 // didn't realize I could do without the workaround.
-#include "scream_config.h" // for SCREAM_CIME_BUILD
 #include "control/fvphyshack.hpp"
 
 #include <fstream>
