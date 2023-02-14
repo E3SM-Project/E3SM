@@ -3618,6 +3618,12 @@ Switch for diagnostic output of the aerosol optics
 Default: .false.
 </entry>
 
+<entry id="is_output_interactive_volc" type="logical"  category="diagnostics"
+       group="phys_ctl_nl" valid_values="" >
+Switch for diagnostic output of the aerosol optics
+Default: .false.
+</entry>
+
 <entry id="history_eddy" type="logical"  category="diagnostics"
        group="phys_ctl_nl" valid_values="" >
 Switch for diagnostic output of eddy variables 

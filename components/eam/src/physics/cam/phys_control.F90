@@ -79,6 +79,7 @@ logical           :: history_vdiag        = .false.    ! output the variables us
 logical           :: get_presc_aero_data  = .false.    ! output MAM variables needed for prescribed run
 logical           :: history_aerosol      = .false.    ! output the MAM aerosol variables and tendencies
 logical           :: history_aero_optics  = .false.    ! output the aerosol
+logical           ::  is_output_interactive_volc = .false.    ! output the stratosphere optics
 logical           :: history_eddy         = .false.    ! output the eddy variables
 logical           :: history_budget       = .false.    ! output tendencies and state variables for CAM4
                                                        ! temperature, water vapor, cloud ice and cloud
@@ -217,6 +218,7 @@ subroutine phys_ctl_readnl(nlfile)
       use_crm_accel, crm_accel_factor, crm_accel_uv, &
       use_subcol_microp, atm_dep_flux, history_amwg, history_verbose, history_vdiag, &
       get_presc_aero_data,history_aerosol, history_aero_optics, &
+      is_output_interactive_volc, &
       history_eddy, history_budget,  history_budget_histfile_num, history_waccm, &
       conv_water_in_rad, history_clubb, do_clubb_sgs, do_tms, state_debug_checks, &
       linearize_pbl_winds, export_gustiness, &
@@ -302,6 +304,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(get_presc_aero_data,             1 , mpilog,  0, mpicom)
    call mpibcast(history_aerosol,                 1 , mpilog,  0, mpicom)
    call mpibcast(history_aero_optics,             1 , mpilog,  0, mpicom)
+   call mpibcast(is_output_interactive_volc,      1 , mpilog,  0, mpicom)
    call mpibcast(history_budget,                  1 , mpilog,  0, mpicom)
    call mpibcast(history_gaschmbudget,            1 , mpilog,  0, mpicom)
    call mpibcast(history_gaschmbudget_2D,         1 , mpilog,  0, mpicom)
@@ -523,6 +526,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         radiation_scheme_out, use_subcol_microp_out, atm_dep_flux_out, &
                         history_amwg_out, history_verbose_out, history_vdiag_out, &
                         get_presc_aero_data_out,&
+                        is_output_interactive_volc_out,&        
                         history_aerosol_out, history_aero_optics_out, history_eddy_out, &
                         history_budget_out, history_gaschmbudget_out, history_gaschmbudget_2D_out, &
                         history_gaschmbudget_num_out, history_gaschmbudget_2D_levels_out, &
@@ -583,6 +587,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    logical,           intent(out), optional :: get_presc_aero_data_out
    logical,           intent(out), optional :: history_aerosol_out
    logical,           intent(out), optional :: history_aero_optics_out
+   logical,           intent(out), optional :: is_output_interactive_volc_out
    logical,           intent(out), optional :: history_budget_out
    logical,           intent(out), optional :: history_gaschmbudget_out
    logical,           intent(out), optional :: history_gaschmbudget_2D_out
@@ -678,6 +683,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(macrop_scheme_out       ) ) macrop_scheme_out        = macrop_scheme
    if ( present(atm_dep_flux_out        ) ) atm_dep_flux_out         = atm_dep_flux
    if ( present(history_aerosol_out     ) ) history_aerosol_out      = history_aerosol
+   if ( present(is_output_interactive_volc_out    ) ) is_output_interactive_volc_out      = is_output_interactive_volc
    if ( present(history_aero_optics_out ) ) history_aero_optics_out  = history_aero_optics
    if ( present(history_budget_out      ) ) history_budget_out       = history_budget
    if ( present(history_gaschmbudget_out) ) history_gaschmbudget_out = history_gaschmbudget
