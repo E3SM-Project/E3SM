@@ -4262,7 +4262,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 
 ! DCAPE-ULL
    real(r8) pblt600(pcols)
-
+   integer top_k(pcols)
 
    real(r8) e
    integer i
@@ -4318,9 +4318,22 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 
 ! DCAPE-ULL
   if ((trigdcape_ull .or. trig_dcape_only ).and. (.not. iclosure)) then
+  !------------------------------------------------------
+  ! Use max moist static energy level that is passed in
+  !------------------------------------------------------
      if (.not.PRESENT(dcapemx)) call endrun('** ZM CONV buoyan_dilute: dcapemx not present **')
      mx(:ncol) = dcapemx(:ncol)
+
   else
+  !----------------------------------------------
+  ! Search for max moist static energy level
+  !----------------------------------------------
+   if (trigdcape_ull .or. trig_ull_only) then !DCAPE-ULL
+      top_k(:ncol) = nint(pblt600(:ncol))
+   else
+      top_k(:ncol) = nint(pblt(:ncol))
+   end if
+
 #ifdef PERGRO
    do k = bot_layer,msg + 1,-1
       do i = 1,ncol
@@ -4330,18 +4343,11 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 !
          rhd = (hmn(i) - hmax(i))/(hmn(i) + hmax(i))
 
-         !DCAPE-ULL
-         if (trigdcape_ull .or. trig_ull_only) then
-           if (k >= nint(pblt600(i)) .and. k <= lon(i) .and. rhd > -1.e-4_r8) then
+           if (k >= top_k(i) .and. k <= lon(i) .and. rhd > -1.e-4_r8) then
               hmax(i) = hmn(i)
               mx(i) = k
            end if
-         else
-           if (k >= nint(pblt(i)) .and. k <= lon(i) .and. rhd > -1.e-4_r8) then
-              hmax(i) = hmn(i)
-              mx(i) = k
-           end if
-         end if
+
       end do
    end do
 #else
@@ -4349,18 +4355,11 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
       do i = 1,ncol
          hmn(i) = cp*t(i,k) + grav*z(i,k) + rl*q(i,k)
 
-         !DCAPE-ULL
-         if (trigdcape_ull .or. trig_ull_only) then
-            if (k >= nint(pblt600(i)) .and. k <= lon(i) .and. hmn(i) > hmax(i)) then
+            if (k >= top_k(i) .and. k <= lon(i) .and. hmn(i) > hmax(i)) then
                hmax(i) = hmn(i)
                mx(i) = k
             end if
-         else
-           if (k >= nint(pblt(i)) .and. k <= lon(i) .and. hmn(i) > hmax(i)) then
-              hmax(i) = hmn(i)
-              mx(i) = k
-           end if
-         end if
+
       end do
    end do
 #endif
