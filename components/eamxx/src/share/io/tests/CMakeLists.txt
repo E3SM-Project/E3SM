@@ -42,3 +42,9 @@ foreach (MPI_RANKS RANGE 1 ${SCREAM_TEST_MAX_RANKS})
   set_property(TEST io_test_restart_check_np${MPI_RANKS}
                PROPERTY FIXTURES_REQUIRED restart_setup)
 endforeach()
+
+## Test remap output
+CreateUnitTest(io_remap_test "io_remap_test.cpp" "scream_io;diagnostics" LABELS "io,remap"
+  MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+)
+

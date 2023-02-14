@@ -26,7 +26,7 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto Q = kg/kg;
   Q.set_string("kg/kg");
-  Units nondim(0,0,0,0,0,0,0);
+  auto nondim = Units::nondimensional();
 
   m_grid = grids_manager->get_grid("Physics");
   const auto& grid_name = m_grid->name();
