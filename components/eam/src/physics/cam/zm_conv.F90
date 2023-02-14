@@ -71,9 +71,12 @@ module zm_conv
    logical :: trigdcape_ull    = .false. !true to use DCAPE trigger and ULL 
    logical :: trig_dcape_only  = .false. !true to use DCAPE trigger, ULL not used
    logical :: trig_ull_only    = .false. !true to use ULL along with default CAPE-based trigger
-   integer, allocatable :: dcapemx(:) ! save maxi from 1st call for CAPE calculation and used in 2nd call when DCAPE-ULL active
-!  May need to change to use local variable !  as passed via dummy argument. For now, making it threadprivate as follows,
-!$omp threadprivate (dcapemx)
+
+!!!---
+!!!   integer, allocatable :: dcapemx(:) ! save maxi from 1st call for CAPE calculation and used in 2nd call when DCAPE-ULL active
+!!!!  May need to change to use local variable !  as passed via dummy argument. For now, making it threadprivate as follows,
+!!!!$omp threadprivate (dcapemx)
+!!!---
 
    real(r8) :: ke           ! Tunable evaporation efficiency set from namelist input zmconv_ke
    real(r8) :: c0_lnd       ! set from namelist input zmconv_c0_lnd
@@ -528,6 +531,7 @@ subroutine zm_convr(lchnk   ,ncol    , &
    real(r8) qdifr
    real(r8) sdifr
 
+   integer dcapemx(pcols)  ! maxi saved from 1st call for CAPE calculation;  used in 2nd call when DCAPE-ULL active
 !
 !--------------------------Data statements------------------------------
 !
@@ -643,30 +647,30 @@ subroutine zm_convr(lchnk   ,ncol    , &
       !    The differewnce of CAPE values from the two calls is DCAPE, based on the same launch level
 
          iclosure = .true.
-         call buoyan_dilute(lchnk   ,ncol    , &
-                  q       ,t       ,p       ,z       ,pf       , &
-                  tp      ,qstp    ,tl      ,rl      ,cape     , &
-                  pblt    ,lcl     ,lel     ,lon     ,maxi     , &
-                  rgas    ,grav    ,cpres   ,msg     , &
-                  tpert   ,iclosure)
+         call buoyan_dilute(lchnk   ,ncol    ,                   &! in
+                  q       ,t       ,p       ,z       ,pf       , &! in
+                  tp      ,qstp    ,tl      ,rl      ,cape     , &! rl = in, others = out
+                  pblt    ,lcl     ,lel     ,lon     ,maxi     , &! pblt = in, others = out
+                  rgas    ,grav    ,cpres   ,msg               , &! in
+                  tpert   ,iclosure                            )  ! in
          
       if (trigdcape_ull .or. trig_dcape_only) then
-         if (.not. allocated(dcapemx)) then
-            allocate (dcapemx(pcols), stat=ierror)
-            if ( ierror /= 0 ) call endrun('ZM_CONVR error: allocation error dcapemx')
-         endif
+!!!         if (.not. allocated(dcapemx)) then
+!!!            allocate (dcapemx(pcols), stat=ierror)
+!!!            if ( ierror /= 0 ) call endrun('ZM_CONVR error: allocation error dcapemx')
+!!!         endif
          dcapemx(:ncol) = maxi(:ncol)
       endif
 
       !DCAPE-ULL
       if (.not. is_first_step() .and. (trigdcape_ull .or. trig_dcape_only)) then
          iclosure = .false.
-         call buoyan_dilute(lchnk   ,ncol    , &
-                 q_star  ,t_star     ,p       ,z       ,pf       , &
-                 tpm1    ,qstpm1  ,tlm1    ,rl      ,capem1   , &
-                 pblt    ,lclm1   ,lelm1   ,lonm1   ,maxim1   , &
-                 rgas    ,grav    ,cpres   ,msg     , &
-                 tpert   ,iclosure)
+         call buoyan_dilute(lchnk   ,ncol    ,                  &! in
+                 q_star  ,t_star     ,p       ,z       ,pf    , &! in
+                 tpm1    ,qstpm1  ,tlm1    ,rl      ,capem1   , &! rl = in, others = out
+                 pblt    ,lclm1   ,lelm1   ,lonm1   ,maxim1   , &! pblt = in; others = out
+                 rgas    ,grav    ,cpres   ,msg               , &! in
+                 tpert   ,iclosure, dcapemx                   )  ! in
 
           dcape(:ncol) = (cape(:ncol)-capem1(:ncol))/(delt*2._r8)
       endif
@@ -3153,7 +3157,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
                   tp      ,qstp    ,tl      ,rl      ,cape    , &
                   pblt    ,lcl     ,lel     ,lon     ,mx      , &
                   rd      ,grav    ,cp      ,msg     , &
-                  tpert   ,iclosure)
+                  tpert   ,iclosure, dcapemx  )
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -3192,9 +3196,18 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
    real(r8), intent(in) :: p(pcols,pver)        ! pressure
    real(r8), intent(in) :: z(pcols,pver)        ! height
    real(r8), intent(in) :: pf(pcols,pver+1)     ! pressure at interfaces
+
    real(r8), intent(in) :: pblt(pcols)          ! index of pbl depth
-   real(r8), intent(in) :: tpert(pcols)         ! perturbation temperature by pbl processes
-   logical, intent(in) :: iclosure              ! true for normal procedure, otherwise use dcapemx from 1st call
+
+   real(r8), intent(in) :: rl
+   real(r8), intent(in) :: rd
+   real(r8), intent(in) :: cp
+   real(r8), intent(in) :: grav
+   integer,  intent(in) :: msg
+   real(r8), intent(in) :: tpert(pcols)          ! perturbation temperature by pbl processes
+   logical,  intent(in) :: iclosure              ! true for normal procedure, otherwise use dcapemx from 1st call
+
+   integer, intent(in), optional :: dcapemx(pcols)
 !
 ! output arguments
 !
@@ -3202,10 +3215,11 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
    real(r8), intent(out) :: qstp(pcols,pver)     ! saturation mixing ratio of parcel (only above lcl, just q below).
    real(r8), intent(out) :: tl(pcols)            ! parcel temperature at lcl
    real(r8), intent(out) :: cape(pcols)          ! convective aval. pot. energy.
-   integer lcl(pcols)        !
-   integer lel(pcols)        !
-   integer lon(pcols)        ! level of onset of deep convection
-   integer mx(pcols)         ! level of max moist static energy
+
+   integer, intent(out) :: lcl(pcols)        !
+   integer, intent(out) :: lel(pcols)        !
+   integer, intent(out) :: lon(pcols)        ! level of onset of deep convection
+   integer, intent(out) :: mx(pcols)         ! level of max moist static energy
 !
 !--------------------------Local Variables------------------------------
 !
@@ -3230,18 +3244,13 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 ! DCAPE-ULL
    real(r8) pblt600(pcols)
 
-   real(r8) cp
-   real(r8) e
-   real(r8) grav
 
+   real(r8) e
    integer i
    integer k
-   integer msg
    integer n
    integer bot_layer
 
-   real(r8) rd
-   real(r8) rl
 #ifdef PERGRO
    real(r8) rhd
 #endif
@@ -3291,6 +3300,7 @@ subroutine buoyan_dilute(lchnk   ,ncol    , &
 
 ! DCAPE-ULL
   if ((trigdcape_ull .or. trig_dcape_only ).and. (.not. iclosure)) then
+     if (.not.PRESENT(dcapemx)) call endrun('** ZM CONV buoyan_dilute: dcapemx not present **')
      mx(:ncol) = dcapemx(:ncol)
   else
 #ifdef PERGRO
