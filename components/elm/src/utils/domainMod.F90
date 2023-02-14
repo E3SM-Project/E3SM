@@ -154,7 +154,7 @@ contains
     if (present(elmlevel)) then
        domain%elmlevel = elmlevel
     else
-       domain%elmlevel = ''
+       domain%elmlevel = 'NOdomain_unsetNO'
     endif
 
     domain%isgrid2d = isgrid2d
