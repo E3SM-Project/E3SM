@@ -43,7 +43,7 @@ character(len=fieldname_len), pointer :: odv_names(:)  ! outfld names for visibl
 integer  :: idx_ext_sw, idx_ssa_sw, idx_af_sw, idx_ext_lw !pbuf indices for volcanic cmip6 file
 integer  :: ihuge ! a huge integer
 
-logical  :: is_output_interactive_volc = .true. !kzm
+logical  :: is_output_interactive_volc = .false.
 !==============================================================================
 contains
 !==============================================================================
@@ -65,7 +65,8 @@ subroutine aer_rad_props_init()
 
    call phys_getopts( history_aero_optics_out    = history_aero_optics, &
                       history_amwg_out           = history_amwg,    &
-                      prog_modal_aero_out        = prog_modal_aero )
+                      prog_modal_aero_out        = prog_modal_aero, &
+                      is_output_interactive_volc_out = is_output_interactive_volc)
 
    ! Limit modal aerosols with top_lev here.
    if (prog_modal_aero) top_lev = clim_modal_aero_top_lev
@@ -78,9 +79,21 @@ subroutine aer_rad_props_init()
         'EXTINCT LW H2O window band 7 output directly read from prescribed input file', flag_xyfill=.true.)
    call addfld ('extinct_sw_inp',(/ 'lev' /),    'A','1/km',&
         'Aerosol extinction directly read from prescribed input file', flag_xyfill=.true.)
-   call add_hist_coord('nlwbands',    nlwbands,    'NLWBANDS')
+   ! add full bands radiation output
+   ! longwave: ext_sao_lw (pcols,pver,nlwbands)
+   ! ext_sao_sw, ssa_sao, af_sao (pcols,pver,nswbands)
+   if (is_output_interactive_volc) then
+   call add_hist_coord('nlwbands',    nlwbands,    'NLWBANDS')  !kzm
+   call add_hist_coord('nswbands',    nswbands,    'NSWBANDS')  !kzm 
    call addfld ('ext_sao_lw',(/ 'lev', 'nlwbands' /),    'A','1/m',&
-        'Aerosol extinction directly read from prescribed input file', flag_xyfill=.true.) !kzm
+        'Aerosol LW radiation properties comparable to prescribed input ext_earth', flag_xyfill=.true.) !kzm
+   call addfld ('ext_sao_sw',(/ 'lev', 'nswbands' /),    'A','1/m',&
+        'Aerosol SW radiation properties comparable to prescribed input ext_sun', flag_xyfill=.true.) !kzm
+   call addfld ('ssa_sao',(/ 'lev', 'nswbands' /),    'A','1/m',&
+        'Aerosol SW radiation properties comparable to prescribed input omega_sun', flag_xyfill=.true.) !kzm
+   call addfld ('af_sao',(/ 'lev', 'nswbands' /),    'A','1/m',&
+        'Aerosol SW radiation properties comparable to prescribed input g_sun', flag_xyfill=.true.) !kzm
+   endif
    !is_output_interactive_volc = .true. !kzm
    ! Contributions to AEROD_v from individual aerosols (climate species).
 
@@ -288,6 +301,10 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
    if (is_output_interactive_volc) then
      !prepare strat. aerosol sw optic properties for output: ext_sao_sw, ssa_sao, af_sao
      call get_strat_aer_optics_sw(state, pbuf, trop_level, tau, tau_w, tau_w_g, tau_w_f, ext_sao_sw, ssa_sao, af_sao)
+     call outfld('ext_sao_sw',ext_sao_sw(:,:,:), pcols, lchnk)
+     call outfld('ssa_sao',ssa_sao(:,:,:), pcols, lchnk)
+     call outfld('af_sao',af_sao(:,:,:), pcols, lchnk)
+
    endif
    !kzm -- 
    ! Contributions from bulk aerosols.
@@ -865,6 +882,7 @@ subroutine get_strat_aer_optics_sw (state, pbuf, trop_level, tau, tau_w, tau_w_g
   real(r8), intent(in) :: tau_w_f(pcols,0:pver,nswbands) ! aerosol forward scattered fraction * tau * w
   
   !Intent-out
+  !ext_sao_sw, ssa_sao, af_sao (pcols,0:pver,nswbands)
   real(r8), intent(inout) :: ext_sao_sw(pcols,0:pver,nswbands) ! 
   real(r8), intent(inout) :: ssa_sao   (pcols,0:pver,nswbands) ! 
   real(r8), intent(inout) :: af_sao    (pcols,0:pver,nswbands) ! 
