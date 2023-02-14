@@ -1409,6 +1409,15 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       ! call pam_mirror_array_readwrite( 'output_precsl',      crm_output%precsl,      '' )
       call pam_mirror_array_readwrite( 'output_prec_crm',    crm_output%prec_crm,    '' )
 
+      call pam_mirror_array_readwrite( 'output_dt_sgs',      crm_output%dt_sgs,      '' )
+      call pam_mirror_array_readwrite( 'output_dqv_sgs',     crm_output%dqv_sgs,     '' )
+      call pam_mirror_array_readwrite( 'output_dqc_sgs',     crm_output%dqc_sgs,     '' )
+      call pam_mirror_array_readwrite( 'output_dqi_sgs',     crm_output%dqi_sgs,     '' )
+      call pam_mirror_array_readwrite( 'output_dt_micro',    crm_output%dt_micro,    '' )
+      call pam_mirror_array_readwrite( 'output_dqv_micro',   crm_output%dqv_micro,   '' )
+      call pam_mirror_array_readwrite( 'output_dqc_micro',   crm_output%dqc_micro,   '' )
+      call pam_mirror_array_readwrite( 'output_dqi_micro',   crm_output%dqi_micro,   '' )
+
       call pam_mirror_array_readonly( 'gcolp', gcolp )
 
       call pam_set_option('ncrms', ncrms )
@@ -1538,14 +1547,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
          end if
 
          !------------------------------------------------------------------------------------------
-         ! set convective heating tendency for gravity wave drag
-         !------------------------------------------------------------------------------------------
-         if (ttend_dp_idx > 0) then
-            call pbuf_get_field(pbuf_chunk, ttend_dp_idx, ttend_dp)
-            ttend_dp(1:ncol,1:pver) = ptend(c)%s(1:ncol,1:pver)/cpair
-         end if
-
-         !------------------------------------------------------------------------------------------
          ! Add radiative heating tendency above CRM
          !------------------------------------------------------------------------------------------
          call pbuf_get_field(pbuf_chunk, pbuf_get_index('QRL'), qrl)
@@ -1574,6 +1575,14 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                mmf_rad_flux(c,i) = mmf_rad_flux(c,i) + ( qrs(i,k) + qrl(i,k) ) * state(c)%pdel(i,k)/gravit
             end do
          end do
+
+         !------------------------------------------------------------------------------------------
+         ! set convective heating tendency for gravity wave drag
+         !------------------------------------------------------------------------------------------
+         if (ttend_dp_idx > 0) then
+            call pbuf_get_field(pbuf_chunk, ttend_dp_idx, ttend_dp)
+            ttend_dp(1:ncol,1:pver) = ( ptend(c)%s(1:ncol,:pver) - qrs(1:ncol,:pver) - qrl(1:ncol,:pver) )/cpair
+         end if
 
          !------------------------------------------------------------------------------------------
          ! CRM cloud/precip output

@@ -34,8 +34,8 @@ extern "C" void pam_driver() {
   // set various coupler options
   coupler.set_option<real>("gcm_physics_dt",gcm_dt);
   coupler.set_option<std::string>("p3_lookup_data_path","./p3_data");
-  coupler.set_option<int>("sponge_num_layers",crm_nz*0.4);
-  coupler.set_option<real>("sponge_time_scale",30);
+  coupler.set_option<int>("sponge_num_layers",crm_nz*0.25);
+  coupler.set_option<real>("sponge_time_scale",60*3);
   //------------------------------------------------------------------------------------------------
   // Allocate the coupler state and retrieve host/device data managers
   coupler.allocate_coupler_state( crm_nz , crm_ny , crm_nx , nens );
@@ -106,8 +106,13 @@ extern "C" void pam_driver() {
     coupler.run_module( "dycore"                       , [&] (pam::PamCoupler &coupler) {dycore.timeStep(coupler);} );
     coupler.run_module( "sponge_layer"                 , modules::sponge_layer );
     // coupler.run_module( "compute_surface_friction"     , modules::compute_surface_friction );
+    pam_statistics_save_state(coupler);
     coupler.run_module( "sgs"                          , [&] (pam::PamCoupler &coupler) {sgs   .timeStep(coupler);} );
+    pam_statistics_aggregate_tendency(coupler,"sgs");
+
+    pam_statistics_save_state(coupler);
     coupler.run_module( "micro"                        , [&] (pam::PamCoupler &coupler) {micro .timeStep(coupler);} );
+    pam_statistics_aggregate_tendency(coupler,"micro");
 
     pam_radiation_timestep_aggregation(coupler);
     pam_statistics_timestep_aggregation(coupler);

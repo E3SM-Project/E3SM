@@ -16,8 +16,10 @@ inline void pam_statistics_init( pam::PamCoupler &coupler ) {
   auto &dm_host   = coupler.get_data_manager_host_readwrite();
   auto nens       = coupler.get_option<int>("ncrms");
   auto nz         = coupler.get_option<int>("crm_nz");
+  auto ny         = coupler.get_option<int>("crm_ny");
+  auto nx         = coupler.get_option<int>("crm_nx");
   //------------------------------------------------------------------------------------------------
-  // aggregted quantities
+  // aggregated quantities
   dm_device.register_and_allocate<real>("stat_aggregation_cnt", "number of aggregated samples",  {nens},{"nens"});
   dm_device.register_and_allocate<real>("precip_liq_aggregated","aggregated sfc liq precip rate",{nens},{"nens"});
   dm_device.register_and_allocate<real>("precip_ice_aggregated","aggregated sfc ice precip rate",{nens},{"nens"});
@@ -25,21 +27,161 @@ inline void pam_statistics_init( pam::PamCoupler &coupler ) {
   dm_device.register_and_allocate<real>("clear_rh"       ,      "clear air rel humidity",        {nz,nens},{"z","nens"});
   dm_device.register_and_allocate<real>("clear_rh_cnt"   ,      "clear air count",               {nz,nens},{"z","nens"});
   //------------------------------------------------------------------------------------------------
+  // aggregated physics tendencies
+  // temporary state variables
+  dm_device.register_and_allocate<real>("phys_tend_save_temp",  "saved state for tendency", {nz,ny,nx,nens}, {"z","y","x","nens"} );
+  dm_device.register_and_allocate<real>("phys_tend_save_qv",    "saved state for tendency", {nz,ny,nx,nens}, {"z","y","x","nens"} );
+  dm_device.register_and_allocate<real>("phys_tend_save_qc",    "saved state for tendency", {nz,ny,nx,nens}, {"z","y","x","nens"} );
+  dm_device.register_and_allocate<real>("phys_tend_save_qi",    "saved state for tendency", {nz,ny,nx,nens}, {"z","y","x","nens"} );
+  // SGS tendencies
+  dm_device.register_and_allocate<real>("phys_tend_sgs_cnt",   "count for aggregated SGS tendency ",  {nens},{"nens"});
+  dm_device.register_and_allocate<real>("phys_tend_sgs_temp",  "aggregated temperature tend from SGS",{nz,nens},{"z","nens"});
+  dm_device.register_and_allocate<real>("phys_tend_sgs_qv",    "aggregated qv tend from SGS",         {nz,nens},{"z","nens"});
+  dm_device.register_and_allocate<real>("phys_tend_sgs_qc",    "aggregated qc tend from SGS",         {nz,nens},{"z","nens"});
+  dm_device.register_and_allocate<real>("phys_tend_sgs_qi",    "aggregated qi tend from SGS",         {nz,nens},{"z","nens"});
+  // micro tendencies
+  dm_device.register_and_allocate<real>("phys_tend_micro_cnt", "count for aggregated micro tendency ",  {nens},{"nens"});
+  dm_device.register_and_allocate<real>("phys_tend_micro_temp","aggregated temperature tend from micro",{nz,nens},{"z","nens"});
+  dm_device.register_and_allocate<real>("phys_tend_micro_qv",  "aggregated qv tend from microphysics",  {nz,nens},{"z","nens"});
+  dm_device.register_and_allocate<real>("phys_tend_micro_qc",  "aggregated qc tend from microphysics",  {nz,nens},{"z","nens"});
+  dm_device.register_and_allocate<real>("phys_tend_micro_qi",  "aggregated qi tend from microphysics",  {nz,nens},{"z","nens"});
+  //------------------------------------------------------------------------------------------------
   auto stat_aggregation_cnt  = dm_device.get<real,1>("stat_aggregation_cnt");
   auto precip_liq_aggregated = dm_device.get<real,1>("precip_liq_aggregated");
   auto precip_ice_aggregated = dm_device.get<real,1>("precip_ice_aggregated");
   auto cldfrac_aggregated    = dm_device.get<real,2>("cldfrac_aggregated");
   auto clear_rh              = dm_device.get<real,2>("clear_rh");
   auto clear_rh_cnt          = dm_device.get<real,2>("clear_rh_cnt");
-  parallel_for("Initialize aggregated precipitation", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
+  auto phys_tend_sgs_cnt     = dm_device.get<real,1>("phys_tend_sgs_cnt");
+  auto phys_tend_sgs_temp    = dm_device.get<real,2>("phys_tend_sgs_temp");
+  auto phys_tend_sgs_qv      = dm_device.get<real,2>("phys_tend_sgs_qv");
+  auto phys_tend_sgs_qc      = dm_device.get<real,2>("phys_tend_sgs_qc");
+  auto phys_tend_sgs_qi      = dm_device.get<real,2>("phys_tend_sgs_qi");
+  auto phys_tend_micro_cnt   = dm_device.get<real,1>("phys_tend_micro_cnt");
+  auto phys_tend_micro_temp  = dm_device.get<real,2>("phys_tend_micro_temp");
+  auto phys_tend_micro_qv    = dm_device.get<real,2>("phys_tend_micro_qv");
+  auto phys_tend_micro_qc    = dm_device.get<real,2>("phys_tend_micro_qc");
+  auto phys_tend_micro_qi    = dm_device.get<real,2>("phys_tend_micro_qi");
+  parallel_for("Initialize aggregated precipitation and aggregation counts", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
     stat_aggregation_cnt(iens)  = 0;
+    phys_tend_sgs_cnt(iens)     = 0;
+    phys_tend_micro_cnt(iens)   = 0;
     precip_liq_aggregated(iens) = 0;
     precip_ice_aggregated(iens) = 0;
   });
-  parallel_for("Initialize aggregated precipitation", SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
-    cldfrac_aggregated(k,iens) = 0;
-    clear_rh          (k,iens) = 0;
-    clear_rh_cnt      (k,iens) = 0;
+  parallel_for("Initialize 2D aggregated quantities", SimpleBounds<2>(nz,nens), YAKL_LAMBDA (int k, int iens) {
+    cldfrac_aggregated  (k,iens) = 0;
+    clear_rh            (k,iens) = 0;
+    clear_rh_cnt        (k,iens) = 0;
+    phys_tend_sgs_temp  (k,iens) = 0;
+    phys_tend_sgs_qv    (k,iens) = 0;
+    phys_tend_sgs_qc    (k,iens) = 0;
+    phys_tend_sgs_qi    (k,iens) = 0;
+    phys_tend_micro_temp(k,iens) = 0;
+    phys_tend_micro_qv  (k,iens) = 0;
+    phys_tend_micro_qc  (k,iens) = 0;
+    phys_tend_micro_qi  (k,iens) = 0;
+  });
+  //------------------------------------------------------------------------------------------------
+}
+
+inline void pam_statistics_save_state( pam::PamCoupler &coupler ) {
+using yakl::c::parallel_for;
+  using yakl::c::SimpleBounds;
+  auto &dm_device = coupler.get_data_manager_device_readwrite();
+  auto &dm_host   = coupler.get_data_manager_host_readwrite();
+  auto nens       = coupler.get_option<int>("ncrms");
+  auto nz         = coupler.get_option<int>("crm_nz");
+  auto nx         = coupler.get_option<int>("crm_nx");
+  auto ny         = coupler.get_option<int>("crm_ny");
+  //------------------------------------------------------------------------------------------------
+  // get CRM variables to be aggregated
+  auto temp       = dm_device.get<real,4>("temp"       );
+  auto rho_d      = dm_device.get<real,4>("density_dry");
+  auto rho_v      = dm_device.get<real,4>("water_vapor");
+  auto rho_l      = dm_device.get<real,4>("cloud_water");
+  auto rho_i      = dm_device.get<real,4>("ice"        );
+  //------------------------------------------------------------------------------------------------
+  // get temporary saved state variables
+  auto phys_tend_save_temp    = dm_device.get<real,4>("phys_tend_save_temp");
+  auto phys_tend_save_qv      = dm_device.get<real,4>("phys_tend_save_qv");
+  auto phys_tend_save_qc      = dm_device.get<real,4>("phys_tend_save_qc");
+  auto phys_tend_save_qi      = dm_device.get<real,4>("phys_tend_save_qi");
+  //------------------------------------------------------------------------------------------------
+  // perform aggregation
+  real r_nx_ny  = 1._fp / (nx*ny);
+  parallel_for("save temporary state for physics tendency calculation", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+    phys_tend_save_temp(k,j,i,iens) = temp(k,j,i,iens);
+    real rho_total = rho_d(k,j,i,iens) + rho_v(k,j,i,iens);
+    phys_tend_save_qv(k,j,i,iens) = rho_v(k,j,i,iens) / rho_total;
+    phys_tend_save_qc(k,j,i,iens) = rho_l(k,j,i,iens) / rho_total;
+    phys_tend_save_qi(k,j,i,iens) = rho_i(k,j,i,iens) / rho_total;
+  });
+  //------------------------------------------------------------------------------------------------
+}
+
+inline void pam_statistics_aggregate_tendency( pam::PamCoupler &coupler, std::string scheme ) {
+  using yakl::c::SimpleBounds;
+  using yakl::atomicAdd;
+  auto &dm_device = coupler.get_data_manager_device_readwrite();
+  auto &dm_host   = coupler.get_data_manager_host_readwrite();
+  auto nens       = coupler.get_option<int>("ncrms");
+  auto nz         = coupler.get_option<int>("crm_nz");
+  auto nx         = coupler.get_option<int>("crm_nx");
+  auto ny         = coupler.get_option<int>("crm_ny");
+  auto crm_dt     = coupler.get_option<double>("crm_dt");
+  //------------------------------------------------------------------------------------------------
+  // get CRM variables to be aggregated
+  auto temp       = dm_device.get<real,4>("temp"       );
+  auto rho_d      = dm_device.get<real,4>("density_dry");
+  auto rho_v      = dm_device.get<real,4>("water_vapor");
+  auto rho_l      = dm_device.get<real,4>("cloud_water");
+  auto rho_i      = dm_device.get<real,4>("ice"        );
+  //------------------------------------------------------------------------------------------------
+  // get temporary saved state variables
+  auto phys_tend_save_temp    = dm_device.get<real,4>("phys_tend_save_temp");
+  auto phys_tend_save_qv      = dm_device.get<real,4>("phys_tend_save_qv");
+  auto phys_tend_save_qc      = dm_device.get<real,4>("phys_tend_save_qc");
+  auto phys_tend_save_qi      = dm_device.get<real,4>("phys_tend_save_qi");
+  //------------------------------------------------------------------------------------------------
+  real1d phys_tend_cnt ("phys_tend_cnt" ,nens);
+  real2d phys_tend_temp("phys_tend_temp",nz,nens);
+  real2d phys_tend_qv  ("phys_tend_qv"  ,nz,nens);
+  real2d phys_tend_qc  ("phys_tend_qc"  ,nz,nens);
+  real2d phys_tend_qi  ("phys_tend_qi"  ,nz,nens);
+  if (scheme=="sgs"){
+    phys_tend_cnt     = dm_device.get<real,1>("phys_tend_sgs_cnt");
+    phys_tend_temp    = dm_device.get<real,2>("phys_tend_sgs_temp");
+    phys_tend_qv      = dm_device.get<real,2>("phys_tend_sgs_qv");
+    phys_tend_qc      = dm_device.get<real,2>("phys_tend_sgs_qc");
+    phys_tend_qi      = dm_device.get<real,2>("phys_tend_sgs_qi");
+  }
+  if (scheme=="micro"){
+    phys_tend_cnt   = dm_device.get<real,1>("phys_tend_micro_cnt");
+    phys_tend_temp  = dm_device.get<real,2>("phys_tend_micro_temp");
+    phys_tend_qv    = dm_device.get<real,2>("phys_tend_micro_qv");
+    phys_tend_qc    = dm_device.get<real,2>("phys_tend_micro_qc");
+    phys_tend_qi    = dm_device.get<real,2>("phys_tend_micro_qi");
+  }
+  //------------------------------------------------------------------------------------------------
+  real r_crm_dt = 1._fp / crm_dt;  // precompute reciprocal to avoid costly divisions
+  real r_nx_ny  = 1._fp / (nx*ny);  // precompute reciprocal to avoid costly divisions
+  parallel_for("save temporary state for physics tendency calculation", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
+    real rho_total = rho_d(k,j,i,iens) + rho_v(k,j,i,iens);
+    real qv_tmp = rho_v(k,j,i,iens) / rho_total;
+    real qc_tmp = rho_l(k,j,i,iens) / rho_total;
+    real qi_tmp = rho_i(k,j,i,iens) / rho_total;
+    real tmp_tend_temp = ( temp(k,j,i,iens) - phys_tend_save_temp(k,j,i,iens) )*r_crm_dt;
+    real tmp_tend_qv   = ( qv_tmp           - phys_tend_save_qv  (k,j,i,iens) )*r_crm_dt;
+    real tmp_tend_qc   = ( qc_tmp           - phys_tend_save_qc  (k,j,i,iens) )*r_crm_dt;
+    real tmp_tend_qi   = ( qi_tmp           - phys_tend_save_qi  (k,j,i,iens) )*r_crm_dt;
+    atomicAdd( phys_tend_temp(k,iens) ,  tmp_tend_temp*r_nx_ny );
+    atomicAdd( phys_tend_qv  (k,iens) ,  tmp_tend_qv  *r_nx_ny );
+    atomicAdd( phys_tend_qc  (k,iens) ,  tmp_tend_qc  *r_nx_ny );
+    atomicAdd( phys_tend_qi  (k,iens) ,  tmp_tend_qi  *r_nx_ny );
+  });
+  parallel_for("update aggregation count for phyics tendencies", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
+    phys_tend_cnt(iens) += 1;
   });
   //------------------------------------------------------------------------------------------------
 }
@@ -109,21 +251,39 @@ inline void pam_statistics_compute_means( pam::PamCoupler &coupler ) {
   auto gcm_nlev   = coupler.get_option<int>("gcm_nlev");
   //------------------------------------------------------------------------------------------------
   // convert aggregated values to time means
-  auto aggregation_cnt = dm_device.get<real,1>("stat_aggregation_cnt");
-  auto precip_liq      = dm_device.get<real,1>("precip_liq_aggregated");
-  auto precip_ice      = dm_device.get<real,1>("precip_ice_aggregated");
-  auto cldfrac         = dm_device.get<real,2>("cldfrac_aggregated");
-  auto clear_rh        = dm_device.get<real,2>("clear_rh");
-  auto clear_rh_cnt    = dm_device.get<real,2>("clear_rh_cnt");
-  parallel_for("finalize aggregated variables", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
+  auto aggregation_cnt       = dm_device.get<real,1>("stat_aggregation_cnt");
+  auto precip_liq            = dm_device.get<real,1>("precip_liq_aggregated");
+  auto precip_ice            = dm_device.get<real,1>("precip_ice_aggregated");
+  auto cldfrac               = dm_device.get<real,2>("cldfrac_aggregated");
+  auto clear_rh              = dm_device.get<real,2>("clear_rh");
+  auto clear_rh_cnt          = dm_device.get<real,2>("clear_rh_cnt");
+  auto phys_tend_sgs_cnt     = dm_device.get<real,1>("phys_tend_sgs_cnt");
+  auto phys_tend_sgs_temp    = dm_device.get<real,2>("phys_tend_sgs_temp");
+  auto phys_tend_sgs_qv      = dm_device.get<real,2>("phys_tend_sgs_qv");
+  auto phys_tend_sgs_qc      = dm_device.get<real,2>("phys_tend_sgs_qc");
+  auto phys_tend_sgs_qi      = dm_device.get<real,2>("phys_tend_sgs_qi");
+  auto phys_tend_micro_cnt   = dm_device.get<real,1>("phys_tend_micro_cnt");
+  auto phys_tend_micro_temp  = dm_device.get<real,2>("phys_tend_micro_temp");
+  auto phys_tend_micro_qv    = dm_device.get<real,2>("phys_tend_micro_qv");
+  auto phys_tend_micro_qc    = dm_device.get<real,2>("phys_tend_micro_qc");
+  auto phys_tend_micro_qi    = dm_device.get<real,2>("phys_tend_micro_qi");
+  parallel_for("finalize 1D aggregated variables", SimpleBounds<1>(nens), YAKL_LAMBDA (int iens) {
     precip_liq(iens) = precip_liq(iens) / aggregation_cnt(iens);
     precip_ice(iens) = precip_ice(iens) / aggregation_cnt(iens);
   });
-  parallel_for("Initialize aggregated precipitation", SimpleBounds<2>(crm_nz,nens), YAKL_LAMBDA (int k, int iens) {
+  parallel_for("finalize 2D aggregated variables", SimpleBounds<2>(crm_nz,nens), YAKL_LAMBDA (int k, int iens) {
     cldfrac(k,iens)  = cldfrac(k,iens)  / aggregation_cnt(iens);
     if (clear_rh_cnt(k,iens)>0) {
       clear_rh(k,iens) = clear_rh(k,iens) / clear_rh_cnt(k,iens);
     }
+    phys_tend_sgs_temp  (k,iens) = phys_tend_sgs_temp  (k,iens) / phys_tend_sgs_cnt  (iens);
+    phys_tend_sgs_qv    (k,iens) = phys_tend_sgs_qv    (k,iens) / phys_tend_sgs_cnt  (iens);
+    phys_tend_sgs_qc    (k,iens) = phys_tend_sgs_qc    (k,iens) / phys_tend_sgs_cnt  (iens);
+    phys_tend_sgs_qi    (k,iens) = phys_tend_sgs_qi    (k,iens) / phys_tend_sgs_cnt  (iens);
+    phys_tend_micro_temp(k,iens) = phys_tend_micro_temp(k,iens) / phys_tend_micro_cnt(iens);
+    phys_tend_micro_qv  (k,iens) = phys_tend_micro_qv  (k,iens) / phys_tend_micro_cnt(iens);
+    phys_tend_micro_qc  (k,iens) = phys_tend_micro_qc  (k,iens) / phys_tend_micro_cnt(iens);
+    phys_tend_micro_qi  (k,iens) = phys_tend_micro_qi  (k,iens) / phys_tend_micro_cnt(iens);
   });
   //------------------------------------------------------------------------------------------------
 }
@@ -140,10 +300,20 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   auto gcm_nlev   = coupler.get_option<int>("gcm_nlev");
   //------------------------------------------------------------------------------------------------
   // convert aggregated values to time means
-  auto precip_liq      = dm_device.get<real,1>("precip_liq_aggregated");
-  auto precip_ice      = dm_device.get<real,1>("precip_ice_aggregated");
-  auto cldfrac         = dm_device.get<real,2>("cldfrac_aggregated");
-  auto clear_rh        = dm_device.get<real,2>("clear_rh");
+  auto precip_liq            = dm_device.get<real,1>("precip_liq_aggregated");
+  auto precip_ice            = dm_device.get<real,1>("precip_ice_aggregated");
+  auto cldfrac               = dm_device.get<real,2>("cldfrac_aggregated");
+  auto clear_rh              = dm_device.get<real,2>("clear_rh");
+  auto phys_tend_sgs_cnt     = dm_device.get<real,1>("phys_tend_sgs_cnt");
+  auto phys_tend_sgs_temp    = dm_device.get<real,2>("phys_tend_sgs_temp");
+  auto phys_tend_sgs_qv      = dm_device.get<real,2>("phys_tend_sgs_qv");
+  auto phys_tend_sgs_qc      = dm_device.get<real,2>("phys_tend_sgs_qc");
+  auto phys_tend_sgs_qi      = dm_device.get<real,2>("phys_tend_sgs_qi");
+  auto phys_tend_micro_cnt   = dm_device.get<real,1>("phys_tend_micro_cnt");
+  auto phys_tend_micro_temp  = dm_device.get<real,2>("phys_tend_micro_temp");
+  auto phys_tend_micro_qv    = dm_device.get<real,2>("phys_tend_micro_qv");
+  auto phys_tend_micro_qc    = dm_device.get<real,2>("phys_tend_micro_qc");
+  auto phys_tend_micro_qi    = dm_device.get<real,2>("phys_tend_micro_qi");
   //------------------------------------------------------------------------------------------------
   // calculate total precip
   real1d precip_tot("precip_tot",nens);
@@ -153,24 +323,64 @@ inline void pam_statistics_copy_to_host( pam::PamCoupler &coupler ) {
   //------------------------------------------------------------------------------------------------
   // convert variables to GCM vertical grid
   real2d cldfrac_gcm("cldfrac_gcm",gcm_nlev,nens);
+  real2d phys_tend_sgs_temp_gcm  ("phys_tend_sgs_temp_gcm",  gcm_nlev,nens);
+  real2d phys_tend_sgs_qv_gcm    ("phys_tend_sgs_qv_gcm",    gcm_nlev,nens);
+  real2d phys_tend_sgs_qc_gcm    ("phys_tend_sgs_qc_gcm",    gcm_nlev,nens);
+  real2d phys_tend_sgs_qi_gcm    ("phys_tend_sgs_qi_gcm",    gcm_nlev,nens);
+  real2d phys_tend_micro_temp_gcm("phys_tend_micro_temp_gcm",gcm_nlev,nens);
+  real2d phys_tend_micro_qv_gcm  ("phys_tend_micro_qv_gcm",  gcm_nlev,nens);
+  real2d phys_tend_micro_qc_gcm  ("phys_tend_micro_qc_gcm",  gcm_nlev,nens);
+  real2d phys_tend_micro_qi_gcm  ("phys_tend_micro_qi_gcm",  gcm_nlev,nens);
   parallel_for("Initialize aggregated precipitation", SimpleBounds<2>(gcm_nlev,nens), YAKL_LAMBDA (int k_gcm, int iens) {
     int k_crm = gcm_nlev-1-k_gcm;
     if (k_crm<crm_nz) {
       cldfrac_gcm(k_gcm,iens) = cldfrac(k_crm,iens);
+      phys_tend_sgs_temp_gcm  (k_gcm,iens) = phys_tend_sgs_temp  (k_crm,iens);
+      phys_tend_sgs_qv_gcm    (k_gcm,iens) = phys_tend_sgs_qv    (k_crm,iens);
+      phys_tend_sgs_qc_gcm    (k_gcm,iens) = phys_tend_sgs_qc    (k_crm,iens);
+      phys_tend_sgs_qi_gcm    (k_gcm,iens) = phys_tend_sgs_qi    (k_crm,iens);
+      phys_tend_micro_temp_gcm(k_gcm,iens) = phys_tend_micro_temp(k_crm,iens);
+      phys_tend_micro_qv_gcm  (k_gcm,iens) = phys_tend_micro_qv  (k_crm,iens);
+      phys_tend_micro_qc_gcm  (k_gcm,iens) = phys_tend_micro_qc  (k_crm,iens);
+      phys_tend_micro_qi_gcm  (k_gcm,iens) = phys_tend_micro_qi  (k_crm,iens);
     } else {
       cldfrac_gcm(k_gcm,iens) = 0.;
+      phys_tend_sgs_temp_gcm  (k_gcm,iens) = 0.;
+      phys_tend_sgs_qv_gcm    (k_gcm,iens) = 0.;
+      phys_tend_sgs_qc_gcm    (k_gcm,iens) = 0.;
+      phys_tend_sgs_qi_gcm    (k_gcm,iens) = 0.;
+      phys_tend_micro_temp_gcm(k_gcm,iens) = 0.;
+      phys_tend_micro_qv_gcm  (k_gcm,iens) = 0.;
+      phys_tend_micro_qc_gcm  (k_gcm,iens) = 0.;
+      phys_tend_micro_qi_gcm  (k_gcm,iens) = 0.;
     }
   });
   //------------------------------------------------------------------------------------------------
   // copy data to host
-  auto precip_tot_host = dm_host.get<real,1>("output_precc");
-  auto precip_ice_host = dm_host.get<real,1>("output_precsc");
-  auto cldfrac_host    = dm_host.get<real,2>("output_cld");
-  auto clear_rh_host   = dm_host.get<real,2>("output_clear_rh");
-  precip_tot    .deep_copy_to(precip_tot_host);
-  precip_ice    .deep_copy_to(precip_ice_host);
-  cldfrac_gcm   .deep_copy_to(cldfrac_host);
-  clear_rh      .deep_copy_to(clear_rh_host);
+  auto precip_tot_host            = dm_host.get<real,1>("output_precc");
+  auto precip_ice_host            = dm_host.get<real,1>("output_precsc");
+  auto cldfrac_host               = dm_host.get<real,2>("output_cld");
+  auto clear_rh_host              = dm_host.get<real,2>("output_clear_rh");
+  auto phys_tend_sgs_temp_host    = dm_host.get<real,2>("output_dt_sgs");
+  auto phys_tend_sgs_qv_host      = dm_host.get<real,2>("output_dqv_sgs");
+  auto phys_tend_sgs_qc_host      = dm_host.get<real,2>("output_dqc_sgs");
+  auto phys_tend_sgs_qi_host      = dm_host.get<real,2>("output_dqi_sgs");
+  auto phys_tend_micro_temp_host  = dm_host.get<real,2>("output_dt_micro");
+  auto phys_tend_micro_qv_host    = dm_host.get<real,2>("output_dqv_micro");
+  auto phys_tend_micro_qc_host    = dm_host.get<real,2>("output_dqc_micro");
+  auto phys_tend_micro_qi_host    = dm_host.get<real,2>("output_dqi_micro");
+  precip_tot              .deep_copy_to(precip_tot_host);
+  precip_ice              .deep_copy_to(precip_ice_host);
+  cldfrac_gcm             .deep_copy_to(cldfrac_host);
+  clear_rh                .deep_copy_to(clear_rh_host);
+  phys_tend_sgs_temp_gcm  .deep_copy_to(phys_tend_sgs_temp_host);
+  phys_tend_sgs_qv_gcm    .deep_copy_to(phys_tend_sgs_qv_host);
+  phys_tend_sgs_qc_gcm    .deep_copy_to(phys_tend_sgs_qc_host);
+  phys_tend_sgs_qi_gcm    .deep_copy_to(phys_tend_sgs_qi_host);
+  phys_tend_micro_temp_gcm.deep_copy_to(phys_tend_micro_temp_host);
+  phys_tend_micro_qv_gcm  .deep_copy_to(phys_tend_micro_qv_host);
+  phys_tend_micro_qc_gcm  .deep_copy_to(phys_tend_micro_qc_host);
+  phys_tend_micro_qi_gcm  .deep_copy_to(phys_tend_micro_qi_host);
   //------------------------------------------------------------------------------------------------
 }
 

@@ -114,10 +114,19 @@ module crm_output_module
       real(crm_rknd), allocatable :: t_ls         (:,:)  ! tend of lwse  due to large-scale           [kg/kg/s] ???
       real(crm_rknd), allocatable :: prectend     (:)    ! column integrated tend in precip water+ice [kg/m2/s]
       real(crm_rknd), allocatable :: precstend    (:)    ! column integrated tend in precip ice       [kg/m2/s]
-      real(crm_rknd), allocatable :: taux     (:)    ! zonal CRM surface stress perturbation      [N/m2]
-      real(crm_rknd), allocatable :: tauy     (:)    ! merid CRM surface stress perturbation      [N/m2]
+      real(crm_rknd), allocatable :: taux         (:)    ! zonal CRM surface stress perturbation      [N/m2]
+      real(crm_rknd), allocatable :: tauy         (:)    ! merid CRM surface stress perturbation      [N/m2]
       real(crm_rknd), allocatable :: z0m          (:)    ! surface stress                             [N/m2]
       real(crm_rknd), allocatable :: subcycle_factor(:)    ! crm cpu efficiency
+
+      real(crm_rknd), allocatable :: dt_sgs       (:,:)  ! CRM temperature tendency from SGS   [K/s]
+      real(crm_rknd), allocatable :: dqv_sgs      (:,:)  ! CRM water vapor tendency from SGS   [kg/kg/s]
+      real(crm_rknd), allocatable :: dqc_sgs      (:,:)  ! CRM cloud water tendency from SGS   [kg/kg/s]
+      real(crm_rknd), allocatable :: dqi_sgs      (:,:)  ! CRM cloud ice tendency from SGS     [kg/kg/s]
+      real(crm_rknd), allocatable :: dt_micro     (:,:)  ! CRM temperature tendency from micro [K/s]
+      real(crm_rknd), allocatable :: dqv_micro    (:,:)  ! CRM water vapor tendency from micro [kg/kg/s]
+      real(crm_rknd), allocatable :: dqc_micro    (:,:)  ! CRM cloud water tendency from micro [kg/kg/s]
+      real(crm_rknd), allocatable :: dqi_micro    (:,:)  ! CRM cloud ice tendency from micro   [kg/kg/s]
 
       real(crm_rknd), allocatable :: rho_d_ls     (:,:)  ! large-scale forcing of dry density   [kg/m3/s]
       real(crm_rknd), allocatable :: rho_v_ls     (:,:)  ! large-scale forcing of vapor density [kg/m3/s]
@@ -267,6 +276,15 @@ contains
       if (.not. allocated(output%z0m          )) allocate(output%z0m          (ncol))
       if (.not. allocated(output%subcycle_factor)) allocate(output%subcycle_factor(ncol))
 
+      if (.not. allocated(output%dt_sgs       )) allocate(output%dt_sgs       (ncol,nlev))
+      if (.not. allocated(output%dqv_sgs      )) allocate(output%dqv_sgs      (ncol,nlev))
+      if (.not. allocated(output%dqc_sgs      )) allocate(output%dqc_sgs      (ncol,nlev))
+      if (.not. allocated(output%dqi_sgs      )) allocate(output%dqi_sgs      (ncol,nlev))
+      if (.not. allocated(output%dt_micro     )) allocate(output%dt_micro     (ncol,nlev))
+      if (.not. allocated(output%dqv_micro    )) allocate(output%dqv_micro    (ncol,nlev))
+      if (.not. allocated(output%dqc_micro    )) allocate(output%dqc_micro    (ncol,nlev))
+      if (.not. allocated(output%dqi_micro    )) allocate(output%dqi_micro    (ncol,nlev))
+
       if (.not. allocated(output%rho_d_ls     )) allocate(output%rho_d_ls     (ncol,nlev))
       if (.not. allocated(output%rho_v_ls     )) allocate(output%rho_v_ls     (ncol,nlev))
 
@@ -320,6 +338,15 @@ contains
       call prefetch(output%tauy          )
       call prefetch(output%z0m           )
       call prefetch(output%subcycle_factor )
+
+      call prefetch(output%dt_sgs)
+      call prefetch(output%dqv_sgs)
+      call prefetch(output%dqc_sgs)
+      call prefetch(output%dqi_sgs)
+      call prefetch(output%dt_micro)
+      call prefetch(output%dqv_micro)
+      call prefetch(output%dqc_micro)
+      call prefetch(output%dqi_micro)
 
       call prefetch(output%rho_d_ls)
       call prefetch(output%rho_v_ls)
@@ -420,10 +447,19 @@ contains
       output%t_ls          = 0
       output%prectend      = 0
       output%precstend     = 0
-      output%taux      = 0
-      output%tauy      = 0
+      output%taux          = 0
+      output%tauy          = 0
       output%z0m           = 0
       output%subcycle_factor = 0
+
+      output%dt_sgs    = 0
+      output%dqv_sgs   = 0
+      output%dqc_sgs   = 0
+      output%dqi_sgs   = 0
+      output%dt_micro  = 0
+      output%dqv_micro = 0
+      output%dqc_micro = 0
+      output%dqi_micro = 0
 
       output%rho_d_ls = 0
       output%rho_v_ls = 0
@@ -528,6 +564,15 @@ contains
       if (allocated(output%tauy)) deallocate(output%tauy)
       if (allocated(output%z0m)) deallocate(output%z0m)
       if (allocated(output%subcycle_factor)) deallocate(output%subcycle_factor)
+
+      if (allocated(output%dt_sgs   )) deallocate(output%dt_sgs)
+      if (allocated(output%dqv_sgs  )) deallocate(output%dqv_sgs)
+      if (allocated(output%dqc_sgs  )) deallocate(output%dqc_sgs)
+      if (allocated(output%dqi_sgs  )) deallocate(output%dqi_sgs)
+      if (allocated(output%dt_micro )) deallocate(output%dt_micro)
+      if (allocated(output%dqv_micro)) deallocate(output%dqv_micro)
+      if (allocated(output%dqc_micro)) deallocate(output%dqc_micro)
+      if (allocated(output%dqi_micro)) deallocate(output%dqi_micro)
 
       if (allocated(output%rho_d_ls)) deallocate(output%rho_d_ls)
       if (allocated(output%rho_v_ls)) deallocate(output%rho_v_ls)
