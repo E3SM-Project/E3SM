@@ -76,7 +76,9 @@ if (NOT SCREAM_BASELINES_ONLY)
   ## Only if running with 2+ ranks configurations
   # This test requires CPRNC
   if (TEST_RANK_END GREATER TEST_RANK_START)
-    foreach (MPI_RANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
+    math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
+    foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
+
       set (SRC_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
       set (TGT_FILE "rrtmgp_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
       set (TEST_NAME "rrtmgp_np${TEST_RANK_START}_vs_np${MPI_RANKS}_bfb")
