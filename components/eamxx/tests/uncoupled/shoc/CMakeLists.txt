@@ -46,3 +46,15 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
               FIXTURES_REQUIRED shoc_generate_output_nc_files)
   endforeach()
 endif()
+
+# Finally, check that the content of sliced vars U and V in all output NC files
+# matches the content of corresponding component of horiz_winds
+foreach (RANK RANGE ${TEST_RANK_START} ${TEST_RANK_END})
+  set (nc_file shoc_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${RANK}.nc)
+  add_test (NAME check_U_V_slices_np${RANK}
+            COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
+            -s ${nc_file} -c "horiz_winds(:,:,1,:)=U(:,:,:)" "horiz_winds(:,:,2,:)=V(:,:,:)"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  set_tests_properties (check_U_V_slices_np${RANK} PROPERTIES
+            FIXTURES_REQUIRED shoc_generate_output_nc_files)
+endforeach()
