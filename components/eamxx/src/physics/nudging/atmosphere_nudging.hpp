@@ -12,6 +12,8 @@
 #include "share/grid/point_grid.hpp"
 #include "share/util/scream_vertical_interpolation.hpp"
 #include "share/util/scream_time_stamp.hpp"
+#include "physics/nudging/nudging_functions.hpp"
+
 #include <string>
 
 namespace scream
@@ -24,10 +26,11 @@ namespace scream
 class Nudging : public AtmosphereProcess
 {
 public:
-
+  //using namespace scream::nudging;
+  using NudgingFunc = nudging::NudgingFunctions;
   using mPack = ekat::Pack<Real,1>;
   using KT = KokkosTypes<DefaultDevice>;
-
+  
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
   
@@ -42,7 +45,7 @@ public:
 
   template <typename S>
   using view_1d_host = view_Nd_host<S,1>;
-
+  
   // Constructors
   Nudging (const ekat::Comm& comm, const ekat::ParameterList& params);
 
@@ -55,8 +58,11 @@ public:
   // Set the grid
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
+  //Update the time step
+  void update_time_step(const int time_s);
+  
   //Time interpolation function
-  void time_interpolation(const int dt);
+  void time_interpolation(const int time_s);
   
 protected:
 
@@ -75,6 +81,7 @@ protected:
   std::map<std::string,view_1d_host<Real>> host_views;
   std::map<std::string,FieldLayout>  layouts;
   std::vector<std::string> m_fnames;
+  std::vector<int> time_steps;
   std::map<std::string,view_2d<Real>> fields_ext;
   std::map<std::string,view_3d<Real>> fields_ext_3d;
   view_2d<Real> T_mid_ext;
@@ -83,7 +90,8 @@ protected:
   view_2d<Real> qv_ext;
   AtmosphereInput data_input;
   TimeStamp ts0;
-
+  NudgingFunc::NudgingData NudgingData_bef;
+  NudgingFunc::NudgingData NudgingData_aft;
 }; // class Nudging
 
 } // namespace scream

@@ -241,12 +241,9 @@ TEST_CASE("nudging") {
   const auto units = ekat::units::Units::invalid();
 
   ekat::ParameterList params_mid;
-  std::vector<std::string> fnames = {"T_mid","p_mid","qv","horiz_winds"};
   std::string nudging_f = "io_output_test.INSTANT.nsteps_x1."\
                           "np1.2000-01-01-00250.nc";
   params_mid.set<std::string>("Nudging_Filename",nudging_f);
-  params_mid.set<Int>("Time_Step_File",250);
-  params_mid.set<std::vector<std::string>>("Field_Names",fnames);
   auto nudging_mid = std::make_shared<Nudging>(io_comm,params_mid);
   nudging_mid->set_grids(gm);
 
@@ -310,7 +307,9 @@ TEST_CASE("nudging") {
     hw_mid_o.sync_to_host();
     p_mid.sync_to_host();
 
-    if(time_s<4){continue;}
+    //Only check in cases for time is larger than first
+    //time step in file (250s), so the checks start at 300s
+    if(time_s<3){continue;}
     for (int icol=0; icol<ncols; icol++){
       for (int ilev=0; ilev<nlevs; ilev++){ 
         const int time_index = time_s*100./250.;
@@ -335,6 +334,7 @@ TEST_CASE("nudging") {
         //If destination pressure is 68 than it will use highest pressure value
 	//from external file. A time interpolation is performed but there is
 	//no interpolation between levels necessary
+	
 	if (ilev == (nlevs-1)){
 	  double val_before  = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index-1);
 	  double val_after   = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index);
@@ -347,7 +347,6 @@ TEST_CASE("nudging") {
           REQUIRE(abs(hw_h_o(icol,1,ilev) - val_tim_avg)<0.001);
 	  continue;
 	}
-
 	
         double val_before = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index-1);
         double val_after = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index);
@@ -362,10 +361,6 @@ TEST_CASE("nudging") {
 	double val_tim_avg_next = (val_before_n*w_bef_n + val_after_n*w_aft_n) / 250.;
 	double val_avg = (val_tim_avg_next + val_tim_avg)/2.;
 
-	//std::cout<<"f_mid_v_h_o("<<icol<<","<<ilev<<"): "<<f_mid_v_h_o(icol,ilev)<<std::endl;
-	//std::cout<<"qv_h_o("<<icol<<","<<ilev<<"): "<<qv_h_o(icol,ilev)<<std::endl;
-        //std::cout<<"hw_h_o0("<<icol<<","<<ilev<<"): "<<hw_h_o(icol,0,ilev)<<std::endl;
-	//std::cout<<"hw_h_o1("<<icol<<","<<ilev<<"): "<<hw_h_o(icol,1,ilev)<<std::endl;
 	REQUIRE(abs(f_mid_v_h_o(icol,ilev) - val_avg)<0.001);
 	REQUIRE(abs(qv_h_o(icol,ilev) - val_avg)<0.001);
 	REQUIRE(abs(hw_h_o(icol,0,ilev) - val_avg)<0.001);
