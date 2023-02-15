@@ -301,6 +301,14 @@ void OutputManager::run(const util::TimeStamp& timestamp)
 /*===============================================================================================*/
 void OutputManager::finalize()
 {
+  // Close any output file still open
+  if (m_output_file_specs.is_open) {
+    scorpio::eam_pio_closefile (m_output_file_specs.filename);
+  }
+  if (m_checkpoint_file_specs.is_open) {
+    scorpio::eam_pio_closefile (m_checkpoint_file_specs.filename);
+  }
+
   // Swapping with an empty mgr is the easiest way to cleanup.
   OutputManager other;
   std::swap(*this,other);
@@ -352,6 +360,7 @@ set_params (const ekat::ParameterList& params,
     EKAT_REQUIRE_MSG (m_avg_type==OutputAvgType::Instant,
         "Error! For restart output, the averaging type must be 'Instant'.\n"
         "   Note: you don't have to specify this parameter for restart output.\n");
+
     m_output_file_specs.max_snapshots_in_file = m_params.get("Max Snapshots Per File",1);
     EKAT_REQUIRE_MSG (m_output_file_specs.max_snapshots_in_file==1,
         "Error! For restart output, max snapshots per file must be 1.\n"
