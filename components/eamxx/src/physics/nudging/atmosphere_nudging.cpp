@@ -37,18 +37,9 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   //Now need to read in the file
   scorpio::register_file(datafile,scorpio::Read);
   m_num_src_levs = scorpio::get_dimlen_c2f(datafile.c_str(),"lev");
-  double time_value_0= scorpio::read_time_at_index_c2f(datafile.c_str(),0);
   double time_value_1= scorpio::read_time_at_index_c2f(datafile.c_str(),1);
   double time_value_2= scorpio::read_time_at_index_c2f(datafile.c_str(),2);
 
-  //The times for time_steps are in units of day, not seconds
-  if (time_value_1>0){
-    time_steps.push_back(time_value_1);
-    int n_time_steps = time_value_0/time_value_1;
-    for (int i = 2; i<(n_time_steps+1); i++){
-      time_steps.push_back(scorpio::read_time_at_index_c2f(datafile.c_str(),i)*86400);
-    }
-  }
   //Here we are assuming that the time in the netcdf file is in days
   //Internally we want this in seconds so need to convert
   //Only consider integer time steps in seconds to resolve any roundoff error
