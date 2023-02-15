@@ -29,7 +29,7 @@ struct PhysicsFunctions
   //   grid_dx = mpdeglat * area
   // where,
   //   mpdeglat is the distance between two points on an ellipsoid
-  //   area     is the area of the column cell in radians. 
+  //   area     is the area of the column cell in radians.
   //   lat      is the latitude of the grid column in radians.
   // NOTE - Here we assume that the column area is a SQUARE so dx=dy.  We will need a different
   //        routine for a rectangular (or other shape) area.
@@ -245,32 +245,32 @@ struct PhysicsFunctions
   static Real calculate_surface_air_T(const Real& T_mid_bot, const Real& z_mid_bot);
 
   //-----------------------------------------------------------------------------------------------//
-  // Calculate sea level pressure assuming dry air between ground and sea level and using a lapse
-  // rate of 6.5K/km except in very warm conditions. See docs/tech_doc/physics/psl/psl_doc.tex for details
-  // INPUTS:
-  // T_ground is the air temperature at the bottom of the cell closest to the surface (aka T_int[nlev+1]; K)
-  // phi_ground is the geopotential at surface (aka surf_geopotential; m2/s2)
-  // OUTPUTS:
-  // psl is the sea level pressure (Pa)
-  //-----------------------------------------------------------------------------------------------//
-  KOKKOS_INLINE_FUNCTION
-  static void lapse_T_for_psl(const Real& T_ground, const Real& phi_ground,
-				 Real& lapse, Real& T_ground_tmp );
-
-  //-----------------------------------------------------------------------------------------------//
   // Compute the lapse rate and effective ground temperature for use in calculating psl. This function should only
   // be used by calculate_psl.
   // INPUTS:
   // T_ground is the air temperature at the bottom of the cell closest to the surface (aka T_int[nlev+1]; K)
-  // p_ground is the pressure at the bottom of the cell closest to the surface (Pa)
   // phi_ground is the geopotential at surface (aka surf_geopotential; m2/s2)
   // OUTPUTS:
   // lapse (K/m) is the lapse rate
   // T_ground_tmp is the effective ground temperature (K)
   //-----------------------------------------------------------------------------------------------//
   KOKKOS_INLINE_FUNCTION
+  static void lapse_T_for_psl(const Real& T_ground, const Real& phi_ground,
+                              Real& lapse, Real& T_ground_tmp );
+
+  //-----------------------------------------------------------------------------------------------//
+  // Calculate sea level pressure assuming dry air between ground and sea level and using a lapse
+  // rate of 6.5K/km except in very warm conditions. See docs/tech_doc/physics/psl/psl_doc.tex for details
+  // INPUTS:
+  // T_ground is the air temperature at the bottom of the cell closest to the surface (aka T_int[nlev+1]; K)
+  // p_ground is the pressure at the bottom of the cell closest to the surface (Pa)
+  // phi_ground is the geopotential at surface (aka surf_geopotential; m2/s2)
+  // OUTPUTS:
+  // psl is the sea level pressure (Pa)
+  //-----------------------------------------------------------------------------------------------//
+  KOKKOS_INLINE_FUNCTION
   static Real calculate_psl(const Real& T_ground, const Real& p_ground, const Real& phi_ground);
-  
+
   //-----------------------------------------------------------------------------------------------//
   // Apply rayleigh friction. Given the decay rate profile, we compute the tendencies in u
   // and v components of the horizontal wind using an Euler backward scheme, and then apply
@@ -288,7 +288,7 @@ struct PhysicsFunctions
   KOKKOS_INLINE_FUNCTION
   static void apply_rayleigh_friction(const Real dt, const ScalarT& otau,
                                       ScalarT& u_wind, ScalarT& v_wind, ScalarT& T_mid);
-  
+
   // ---------------------------------------------------------------- //
   //                     Whole column Functions                       //
   // ---------------------------------------------------------------- //
