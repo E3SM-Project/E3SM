@@ -58,3 +58,37 @@ foreach (RANK RANGE ${TEST_RANK_START} ${TEST_RANK_END})
   set_tests_properties (check_U_V_slices_np${RANK} PROPERTIES
             FIXTURES_REQUIRED shoc_generate_output_nc_files)
 endforeach()
+
+################################
+#        MUST FAIL tests       #
+################################
+
+# These tests ensure that the compare-nc-files script does always pass
+set (nc_file shoc_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc)
+
+# Legitimate diff
+add_test (NAME check_U_V_slices_fail_diff
+          COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
+          -s ${nc_file} -c "horiz_winds(:,:,1,:)=T_mid(:,:,:)"
+          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+set_tests_properties (check_U_V_slices_fail_diff PROPERTIES
+          WILL_FAIL TRUE
+          FIXTURES_REQUIRED shoc_generate_output_nc_files)
+
+# Wrong layout
+add_test (NAME check_U_V_slices_fail_layout
+          COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
+          -s ${nc_file} -c "horiz_winds(:,:,1,:)=U(:,1,:)"
+          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+set_tests_properties (check_U_V_slices_fail_layout PROPERTIES
+          WILL_FAIL TRUE
+          FIXTURES_REQUIRED shoc_generate_output_nc_files)
+
+# Missing variable(s)
+add_test (NAME check_U_V_slices_fail_missing
+          COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
+          -s ${nc_file} -c "T=T"
+          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+set_tests_properties (check_U_V_slices_fail_missing PROPERTIES
+          WILL_FAIL TRUE
+          FIXTURES_REQUIRED shoc_generate_output_nc_files)
