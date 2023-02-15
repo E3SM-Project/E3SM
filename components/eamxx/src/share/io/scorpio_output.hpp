@@ -147,7 +147,8 @@ public:
   void init();
   void reset_dev_views();
   void setup_output_file (const std::string& filename, const std::string& fp_precision);
-  void run (const std::string& filename, const bool write, const int nsteps_since_last_output);
+  void run (const std::string& filename, const bool write, const int nsteps_since_last_output,
+            const bool write_zeros_if_invalid = false);
   void finalize() {}
 
   long long res_dep_memory_footprint () const;

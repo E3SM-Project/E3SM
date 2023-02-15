@@ -332,7 +332,11 @@ void AtmosphereOutput::init()
 
 } // init
 /*-----*/
-void AtmosphereOutput::run (const std::string& filename, const bool is_write_step, const int nsteps_since_last_output)
+void AtmosphereOutput::
+run (const std::string& filename,
+     const bool is_write_step,
+     const int nsteps_since_last_output,
+     const bool write_zeros_if_invalid)
 {
   // If we do INSTANT output, but this is not an write step,
   // we can immediately return
@@ -381,14 +385,20 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
   // Take care of updating and possibly writing fields.
   for (auto const& name : m_fields_names) {
     // Get all the info for this field.
-    const auto  field = get_field(name,"io");
+          auto  field = get_field(name,"io");
     const auto& layout = m_layouts.at(name);
     const auto& dims = layout.dims();
     const auto  rank = layout.rank();
 
-    // Safety check: make sure that the field was written at least once before using it.
-    EKAT_REQUIRE_MSG (!m_add_time_dim || field.get_header().get_tracking().get_time_stamp().is_valid(),
-        "Error! Time-dependent output field '" + name + "' has not been initialized yet\n.");
+    if (not field.get_header().get_tracking().get_time_stamp().is_valid()) {
+      // Safety check: make sure that the user is ok with this
+      if (write_zeros_if_invalid) {
+        field.deep_copy(0);
+      } else {
+        EKAT_REQUIRE_MSG (!m_add_time_dim,
+            "Error! Time-dependent output field '" + name + "' has not been initialized yet\n.");
+      }
+    }
 
     const bool is_diagnostic = (m_diagnostics.find(name) != m_diagnostics.end());
     const bool is_aliasing_field_view =

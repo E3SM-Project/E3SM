@@ -177,7 +177,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     }
   }
 
-  if (m_params.get("Save Initial State", false)) {
+  if (m_run_t0==m_case_t0 && m_avg_type==OutputAvgType::Instant && !m_is_model_restart_output) {
     this->run(m_run_t0);
   }
 }
@@ -201,7 +201,8 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   ++m_checkpoint_control.nsamples_since_last_write;
 
   // Check if this is a write step (and what kind)
-  const bool is_output_step     = m_output_control.is_write_step(timestamp);
+  const bool is_t0_output       = timestamp==m_case_t0;
+  const bool is_output_step     = m_output_control.is_write_step(timestamp) || is_t0_output;
   const bool is_checkpoint_step = m_checkpoint_control.is_write_step(timestamp) && not is_output_step;
   const bool is_write_step      = is_output_step || is_checkpoint_step;
 
@@ -246,7 +247,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     // Note: filename might reference an invalid string, but it's only used
     //       in case is_write_step=true, in which case it will *for sure* contain
     //       a valid file name.
-    it->run(filename,is_write_step,m_output_control.nsamples_since_last_write);
+    it->run(filename,is_write_step,m_output_control.nsamples_since_last_write,is_t0_output);
   }
   stop_timer(timer_root+"::run_output_streams"); 
 

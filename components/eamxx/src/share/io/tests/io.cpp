@@ -239,10 +239,7 @@ void run_multisnap(const std::string& output_freq_units) {
 
   // We can use the produced output files to simultaneously check output quality and the
   // ability to read input.
-  // NOTE: single-snap file start outputing at the final time only,
-  //       while multi-snap starts to output at the first time step
-  REQUIRE(output_stamps.size()>0);
-  auto input_params = get_in_params(output_type,output_freq_units, io_comm,output_stamps.front());
+  auto input_params = get_in_params(output_type,output_freq_units,io_comm,t0.to_string());
   const Real tol = std::numeric_limits<Real>::epsilon();
 
   // TODO: Create a small nc dummy file and a separate unit test which tests all input functions.
@@ -252,6 +249,11 @@ void run_multisnap(const std::string& output_freq_units) {
     scorpio::register_file(test_filename,scorpio::Read);
     Int test_gcols_len = scorpio::get_dimlen_c2f(test_filename.c_str(),"ncol");
     REQUIRE(test_gcols_len==num_gcols);
+
+    // The time dimension should contain 1+output_stamps.size(), since we also wrote t=0
+    unsigned num_steps = scorpio::get_dimlen_c2f(test_filename.c_str(),"time");
+    REQUIRE (num_steps==(1+output_stamps.size()));
+
     scorpio::eam_pio_closefile(test_filename);
   }
 
@@ -288,7 +290,7 @@ void run_multisnap(const std::string& output_freq_units) {
 
   // Check multisnap output; note, tt starts at 1 instead of 0 to follow netcdf time dimension indexing.
   AtmosphereInput multi_input(input_params,field_manager);
-  for (int tt = 0; tt<std::min(max_steps,10); tt++) {
+  for (int tt = 0; tt<=max_steps; tt++) {
     multi_input.read_variables(tt);
     f1.sync_to_host();
     f2.sync_to_host();
@@ -442,8 +444,7 @@ void run(const std::string& output_type,const std::string& output_freq_units) {
   // NOTE: single-snap file start outputing at the final time only,
   //       while multi-snap starts to output at the first time step
   // First we re-construct the timestamp for the input file:
-  REQUIRE(output_stamps.size()>0);
-  auto input_params = get_in_params(output_type,output_freq_units, io_comm,output_stamps.front());
+  auto input_params = get_in_params(output_type,output_freq_units, io_comm,output_stamps.back());
   const Real tol = 1000*std::numeric_limits<Real>::epsilon();
 
   // TODO: Create a small nc dummy file and a separate unit test which tests all input functions.
