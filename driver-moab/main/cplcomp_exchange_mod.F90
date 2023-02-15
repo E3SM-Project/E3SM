@@ -1134,7 +1134,7 @@ contains
               tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
               numco = 1 !  usually 1 value per cell
             else ! this is not supported now, but leave it here
-              tagname = trim(seq_flds_a2x_ext_fields)//C_NULL_CHAR
+              tagname = trim(seq_flds_a2x_ext_fields)//C_NULL_CHAR ! MOAB versions of a2x for spectral
               numco = np*np !  usually 16 values per cell, GLL points; should be 4 x 4 = 16
             endif
             ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
