@@ -64,7 +64,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   m_output_control.timestamp_of_last_write   = m_case_t0;
 
   // File specs
-  m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File");
+  m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File",-1);
   m_output_file_specs.num_snapshots_in_file = 0;
   m_output_file_specs.filename_with_time_string = out_control_pl.get("Timestamp in Filename",true);
   m_output_file_specs.filename_with_mpiranks    = out_control_pl.get("MPI Ranks in Filename",false);
@@ -382,7 +382,7 @@ set_params (const ekat::ParameterList& params,
         "Error! Unsupported averaging type '" + avg_type + "'.\n"
         "       Valid options: Instant, Max, Min, Average. Case insensitive.\n");
 
-    m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File");
+    m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File",-1);
     m_casename = m_params.get<std::string>("Casename");
 
     // Allow user to ask for higher precision for normal model output,
