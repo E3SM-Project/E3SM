@@ -57,7 +57,7 @@ _TESTS = {
         "time"  : "0:45:00",
         "inherit" : ("e3sm_mosart_developer", "e3sm_mosart_exenoshare", "e3sm_land_exeshare", "e3sm_land_exenoshare"),
         "tests" : (
-            "ERS.f19_f19.IELM",
+            "ERS.f19_f19.IELM.elm-ic_f19_f19_ielm",
             "ERS.f19_f19.I1850ELMCN",
             "ERS.f09_g16.I1850ELMCN",
             "ERS.f19_f19.I20TRELMCN",
