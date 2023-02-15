@@ -1,4 +1,6 @@
-from utils import expect
+from utils import expect, ensure_netcdf4
+
+ensure_netcdf4()
 
 from netCDF4 import Dataset
 import numpy as np
