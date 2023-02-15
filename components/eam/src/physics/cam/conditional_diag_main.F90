@@ -399,7 +399,9 @@ subroutine get_values( arrayout, varname, state, pbuf, cam_in, cam_out )
   real(r8),pointer :: ptr2d(:,:)
   real(r8),pointer :: ptr1d(:)
 
-  real(r8) :: tmp(pcols,pver)
+  real(r8) ::   tmp(pcols,pver)
+  real(r8) ::  cape(pcols)
+  real(r8) :: dcape(pcols,3)
 
   character(len=*),parameter :: subname = 'conditional_diag_main:get_values'
 
@@ -593,7 +595,16 @@ subroutine get_values( arrayout, varname, state, pbuf, cam_in, cam_out )
                                    arrayout(:ncol,:)  )                      ! out
 
         case ('CAPE')
-          call compute_cape( state, pbuf, pcols, pver, arrayout(:,1) ) ! in, in, in, out
+          call compute_cape_diags( state, pbuf, pcols, pver, cape ) ! 4xin, 1xout
+          arrayout(:,1) = cape(:)
+
+        case ('dCAPE')
+
+          arrayout(:,:) = 0._r8
+
+          call compute_cape_diags( state, pbuf, pcols, pver, cape, dcape ) ! 4xin, 2xout
+
+          arrayout(:,1:3) = dcape(:,1:3)   ! 1=dCAPE, 2=dCAPEp, 3=dCAPEe
 
         !-----------------------------------------------------------------------------------
         ! The following were added mostly for testing of the conditional diag functionality

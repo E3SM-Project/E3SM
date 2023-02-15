@@ -2000,6 +2000,7 @@ subroutine tphysbc (ztodt,               &
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
     use nudging,         only: Nudge_Model,Nudge_Loc_PhysOut,nudging_calc_tend
     use lnd_infodata,    only: precip_downscaling_method
+    use misc_diagnostics,only: dcape_diags_init
 
     implicit none
 
@@ -2155,6 +2156,10 @@ subroutine tphysbc (ztodt,               &
     logical :: l_rad
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
+    !-----------------------------------------------------------------------
+    call cnd_diag_checkpoint( diag, 'DYNEND', state, pbuf, cam_in, cam_out )
+    if (is_first_step()) call dcape_diags_init( pbuf, state, pver )
+    !-----------------------------------------------------------------------
 
     call phys_getopts( microp_scheme_out      = microp_scheme, &
                        macrop_scheme_out      = macrop_scheme, &
@@ -2169,8 +2174,6 @@ subroutine tphysbc (ztodt,               &
                       ,l_rad_out              = l_rad              &
                       )
     
-    call cnd_diag_checkpoint( diag, 'DYNEND', state, pbuf, cam_in, cam_out )
-
     !-----------------------------------------------------------------------
     call t_startf('bc_init')
 
