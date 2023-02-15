@@ -229,7 +229,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
           // been added.
           auto f_mask = ekat::any_cast<Field>(f_extra.at("mask_data"));
           bool found  = false;
-          for (int ii=0; ii<mask_fields.size(); ii++) {
+          for (unsigned ii=0; ii<mask_fields.size(); ii++) {
             auto fi = mask_fields[ii];
             if (f_mask.equivalent(fi)) {
               // Then we have already registered an equivalent mask so don't need to do it again.
@@ -556,7 +556,7 @@ set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::v
   EKAT_REQUIRE_MSG (field_mgr, "Error! Invalid field manager pointer.\n");
   EKAT_REQUIRE_MSG (field_mgr->get_grid(), "Error! Field manager stores an invalid grid pointer.\n");
 
-  for (int ii=0; ii<modes.size(); ii++) {
+  for (unsigned ii=0; ii<modes.size(); ii++) {
     const auto mode = modes[ii];
     if (m_field_mgrs.count(mode)) {
       // We must redefine the field manager for this location in the map.

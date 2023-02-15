@@ -311,7 +311,7 @@ void CoarseningRemapper::do_registration_ends ()
   //       updated.  So we can use that to point to the appropriate mask field in the
   //       m_mask_map_tgt map by taking `m_num_registered_fields-1`.
   if (m_track_mask) {
-    for (int idx=0; idx<m_mask_fields_src.size(); ++idx) {
+    for (unsigned idx=0; idx<m_mask_fields_src.size(); ++idx) {
       auto f   = m_mask_fields_src[idx];
       auto fid = f.get_header().get_identifier();
       register_field_from_src(fid);
@@ -430,7 +430,6 @@ void CoarseningRemapper::do_remap_fwd ()
         // Then this field did use a mask
         const int mask_f_idx = m_mask_map_tgt.at(mask_idx);
         const auto& mask = m_tgt_fields[mask_f_idx];
-        const auto  rank = f_tgt.get_header().get_identifier().get_layout().rank();
         const auto& tgt_ap = f_tgt.get_header().get_alloc_properties();
         if (can_pack && tgt_ap.is_compatible<RPack<SCREAM_PACK_SIZE>>()) {
           rescale_masked_fields<SCREAM_PACK_SIZE>(f_tgt,mask);
