@@ -300,9 +300,8 @@ struct PhysicsFunctions
   // region; more precisely, they should be called from within the    //
   // outermost parallel_for, which should have been dispatched with a //
   // TeamPolicy. In other words, these routines will dispatch a       //
-  // parallel_for using a TeamVectorRange policy. No third layer of   //
-  // parallelism will be used (no ThreadVectorRange for loop), so the //
-  // team policy on GPU should be built with vector_length=1.         //
+  // parallel_for using a TeamVectorRange policy with no third layer  //
+  // of parallelism (no ThreadVectorRange for loop).                  //
   // The routines are templated on the type of their inputs, so that  //
   // these can be 1d views as well as other routines (e.g. lambdas).  //
   // The only requirement is that the provider supports op()(int k),  //

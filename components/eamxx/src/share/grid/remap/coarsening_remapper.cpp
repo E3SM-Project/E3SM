@@ -322,7 +322,7 @@ void CoarseningRemapper::do_registration_ends ()
     }
     // Update the number of fields.
     // NOTE: We need to do this again because the `registration_ends()` call in the abstract
-    //       remapper base class set the `m_num_fields` value before calling 
+    //       remapper base class set the `m_num_fields` value before calling
     //       `do_registration_ends()`.
     m_num_fields = m_num_registered_fields;
 
@@ -340,7 +340,7 @@ void CoarseningRemapper::do_registration_ends ()
         auto m_idx = m_mask_map_src.at(name);
         if (m_idx >-1) {
         auto m_fld = m_mask_fields_src[m_idx];
-        auto m_lt = m_fld.get_header().get_identifier().get_layout(); 
+        auto m_lt = m_fld.get_header().get_identifier().get_layout();
         auto f_lt = f.get_header().get_identifier().get_layout();
         EKAT_REQUIRE(f_lt.has_tag(COL) == m_lt.has_tag(COL));
         EKAT_REQUIRE(f_lt.has_tag(LEV) == m_lt.has_tag(LEV));
@@ -458,7 +458,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
   const auto x_extra  = x.get_header().get_extra_data();
   Real mask_val = std::numeric_limits<float>::max()/10.0;
   if (x_extra.count("mask_value")) {
-    mask_val = ekat::any_cast<Real>(x_extra.at("mask_value")); 
+    mask_val = ekat::any_cast<Real>(x_extra.at("mask_value"));
   }
   const Real mask_threshold = std::numeric_limits<Real>::epsilon();  // TODO: Should we not hardcode the threshold for simply masking out the column.
   switch (rank) {
@@ -487,7 +487,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
         const auto icol = team.league_rank();
         auto x_sub = ekat::subview(x_view,icol);
         auto m_sub = ekat::subview(m_view,icol);
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dim1),
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1),
                             [&](const int j){
           auto masked = m_sub(j) > mask_threshold;
           if (masked.any()) {
@@ -510,7 +510,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
         const auto icol = team.league_rank();
         auto m_sub      = ekat::subview(m_view,icol);
 
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team,dim1*dim2),
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team,dim1*dim2),
                             [&](const int idx){
           const int j = idx / dim2;
           const int k = idx % dim2;
@@ -526,7 +526,7 @@ rescale_masked_fields (const Field& x, const Field& mask) const
       break;
     }
   }
-  
+
 
 }
 
