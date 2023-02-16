@@ -17,6 +17,7 @@ set(DIAGNOSTIC_SRCS
   rime_water_path.cpp
   sea_level_pressure.cpp
   shortwave_cloud_forcing.cpp
+  total_precip_surf_mass_flux.cpp
   vapor_water_path.cpp
   vertical_layer_interface.cpp
   vertical_layer_midpoint.cpp
