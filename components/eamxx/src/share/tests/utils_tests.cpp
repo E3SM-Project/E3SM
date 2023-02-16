@@ -87,6 +87,7 @@ TEST_CASE ("time_stamp") {
 
     REQUIRE (ts1<ts2);
     REQUIRE (ts2<=ts2);
+    REQUIRE ( (ts2-1)==ts1 );
 
     // Update: check carries
     REQUIRE (ts2.get_seconds()==(ts1.get_seconds()+1));
@@ -228,16 +229,6 @@ TEST_CASE ("array_utils") {
     for (int idx_1d=0; idx_1d<s; ++idx_1d) {
       auto idx_nd = unflatten_idx(dims,idx_1d);    
 
-      std::cout << "idx1d: " << idx_1d << "\n";
-      std::cout << "  indices:";
-      for (auto i : ind) {
-        std::cout << " " << i;
-      }
-      std::cout << "\n  unflatten:";
-      for (auto i : idx_nd) {
-        std::cout << " " << i;
-      }
-      std::cout << "\n";
       REQUIRE (idx_nd==ind);
       add_one(ind.data(),rank-1,dims.data());
     }
