@@ -82,7 +82,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   data_in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
   AtmosphereInput data_input0(m_comm,data_in_params);
   data_input0.init(grid_l,host_views,layouts);
-  data_input=data_input0;
+  data_input=std::make_shared<AtmosphereInput>(data_input0);
 
   T_mid_ext = fields_ext["T_mid"];
   p_mid_ext = fields_ext["p_mid"];
@@ -91,11 +91,11 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   ts0=timestamp();
 
   //Load first data for before and after
-  data_input.read_variables(0);
+  data_input->read_variables(0);
   NudgingData_bef.init(m_num_cols,m_num_src_levs,true);
   NudgingData_bef.time = -999;
   
-  data_input.read_variables(1);
+  data_input->read_variables(1);
   NudgingData_aft.init(m_num_cols,m_num_src_levs,true);
   NudgingData_aft.time = -999;
 }
@@ -115,21 +115,47 @@ void Nudging::time_interpolation (const int time_s) {
   const int num_cols = NudgingData_aft.T_mid.extent(0);
   const int num_vert_packs = NudgingData_aft.T_mid.extent(1);
   const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);
+
+  auto T_mid_bef = view_2d<Real>("",NudgingData_bef.T_mid.extent_int(0),
+				 NudgingData_bef.T_mid.extent_int(1));
+  Kokkos::deep_copy(T_mid_bef,NudgingData_bef.T_mid);
+  auto T_mid_aft = view_2d<Real>("",NudgingData_aft.T_mid.extent_int(0),
+				 NudgingData_aft.T_mid.extent_int(1));
+  Kokkos::deep_copy(T_mid_aft,NudgingData_aft.T_mid);
+  auto hw_bef = view_3d<Real>("",NudgingData_bef.hw.extent_int(0),2,
+				 NudgingData_bef.hw.extent_int(2));
+  Kokkos::deep_copy(hw_bef,NudgingData_bef.hw);
+  auto hw_aft = view_3d<Real>("",NudgingData_aft.hw.extent_int(0),2,
+				 NudgingData_aft.hw.extent_int(2));
+  Kokkos::deep_copy(hw_aft,NudgingData_aft.hw);
+  auto p_mid_bef = view_2d<Real>("",NudgingData_bef.p_mid.extent_int(0),
+				 NudgingData_bef.p_mid.extent_int(1));
+  Kokkos::deep_copy(p_mid_bef,NudgingData_bef.p_mid);
+  auto p_mid_aft = view_2d<Real>("",NudgingData_aft.p_mid.extent_int(0),
+				 NudgingData_aft.p_mid.extent_int(1));
+  Kokkos::deep_copy(p_mid_aft,NudgingData_aft.p_mid);
+  auto qv_bef = view_2d<Real>("",NudgingData_bef.qv.extent_int(0),
+				 NudgingData_bef.qv.extent_int(1));
+  Kokkos::deep_copy(qv_bef,NudgingData_bef.qv);
+  auto qv_aft = view_2d<Real>("",NudgingData_aft.qv.extent_int(0),
+				 NudgingData_aft.qv.extent_int(1));
+  Kokkos::deep_copy(qv_aft,NudgingData_aft.qv);
+  
   Kokkos::parallel_for("nudging_time_interpolation", policy,
      	       KOKKOS_LAMBDA(MemberType const& team) {
       const int icol = team.league_rank();
       auto T_mid_1d = ekat::subview(T_mid_ext,icol);
-      auto T_mid_bef_1d = ekat::subview(NudgingData_bef.T_mid,icol);
-      auto T_mid_aft_1d = ekat::subview(NudgingData_aft.T_mid,icol);
+      auto T_mid_bef_1d = ekat::subview(T_mid_bef,icol);
+      auto T_mid_aft_1d = ekat::subview(T_mid_aft,icol);
       auto hw_2d = ekat::subview(horiz_winds_ext, icol);
-      auto hw_bef_2d = ekat::subview(NudgingData_bef.hw, icol);
-      auto hw_aft_2d = ekat::subview(NudgingData_aft.hw, icol);
+      auto hw_bef_2d = ekat::subview(hw_bef, icol);
+      auto hw_aft_2d = ekat::subview(hw_aft, icol);
       auto p_mid_1d = ekat::subview(p_mid_ext,icol);
-      auto p_mid_bef_1d = ekat::subview(NudgingData_bef.p_mid,icol);
-      auto p_mid_aft_1d = ekat::subview(NudgingData_aft.p_mid,icol);
+      auto p_mid_bef_1d = ekat::subview(p_mid_bef,icol);
+      auto p_mid_aft_1d = ekat::subview(p_mid_aft,icol);
       auto qv_1d = ekat::subview(qv_ext,icol);
-      auto qv_bef_1d = ekat::subview(NudgingData_bef.qv,icol);
-      auto qv_aft_1d = ekat::subview(NudgingData_aft.qv,icol);
+      auto qv_bef_1d = ekat::subview(qv_bef,icol);
+      auto qv_aft_1d = ekat::subview(qv_aft,icol);
       const auto range = Kokkos::TeamThreadRange(team, num_vert_packs);
       Kokkos::parallel_for(range, [&] (const Int & k) {
 	  T_mid_1d(k)=w_bef*T_mid_bef_1d(k) + w_aft*T_mid_aft_1d(k);
@@ -151,14 +177,14 @@ void Nudging::update_time_step (const int time_s)
   if (time_s >= NudgingData_aft.time)
     {
       const int time_index = time_s/time_step_file;
-      data_input.read_variables(time_index-1);
+      data_input->read_variables(time_index-1);
       Kokkos::deep_copy(NudgingData_bef.T_mid,T_mid_ext);
       Kokkos::deep_copy(NudgingData_bef.p_mid,p_mid_ext);
       Kokkos::deep_copy(NudgingData_bef.hw,horiz_winds_ext);
       Kokkos::deep_copy(NudgingData_bef.qv,qv_ext);
       NudgingData_bef.time = time_step_file*(time_index);
 
-      data_input.read_variables(time_index);
+      data_input->read_variables(time_index);
       Kokkos::deep_copy(NudgingData_aft.T_mid,T_mid_ext);
       Kokkos::deep_copy(NudgingData_aft.p_mid,p_mid_ext);
       Kokkos::deep_copy(NudgingData_aft.hw,horiz_winds_ext);
@@ -269,7 +295,7 @@ void Nudging::run_impl (const int dt)
 // =========================================================================================
 void Nudging::finalize_impl()
 {
-  data_input.finalize();
+  data_input->finalize();
 }
 
 } // namespace scream

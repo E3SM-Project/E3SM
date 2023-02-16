@@ -81,17 +81,16 @@ protected:
   std::map<std::string,view_1d_host<Real>> host_views;
   std::map<std::string,FieldLayout>  layouts;
   std::vector<std::string> m_fnames;
-  std::vector<int> time_steps;
   std::map<std::string,view_2d<Real>> fields_ext;
   std::map<std::string,view_3d<Real>> fields_ext_3d;
   view_2d<Real> T_mid_ext;
   view_2d<Real> p_mid_ext;
   view_3d<Real> horiz_winds_ext;
   view_2d<Real> qv_ext;
-  AtmosphereInput data_input;
   TimeStamp ts0;
   NudgingFunc::NudgingData NudgingData_bef;
   NudgingFunc::NudgingData NudgingData_aft;
+  std::shared_ptr<AtmosphereInput> data_input;
 }; // class Nudging
 
 } // namespace scream

@@ -73,8 +73,6 @@ public:
   using view_1d_host = view_Nd_host<1>;
 
   // --- Constructor(s) & Destructor --- //
-  //Empty constructor
-  AtmosphereInput();
   // Creates bare input. Will require a call to one of the two 'init' methods.
   // Constructor inputs:
   //  - comm: the MPI comm used for I/O operations. Notice that the
