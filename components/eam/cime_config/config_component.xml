@@ -74,7 +74,7 @@
       <value compset="_EAM%.*MMF1"     >-MMF_microphysics_scheme sam1mom -chem none</value>
       <value compset="_EAM%.*MMF-SAM"  >-MMF_microphysics_scheme sam1mom -chem none</value>
       <value compset="_EAM%.*MMF-PAM"  >-MMF_microphysics_scheme p3 -chem none</value>
-      <value compset="_EAM%.*MMF-PAM"  >-crm_nx_rad 1 -crm_nx 16 </value> <!-- use single rad column for testing PAM -->
+      <value compset="_EAM%.*MMF"      >-crm_nx_rad 1 -crm_nx 16 </value> <!-- for testing use one rad col and small CRM -->
       <!-- Temporarily disable these for PAM development -->
       <!-- <value compset="_EAM%.*MMF"      >-use_MMF_VT</value> -->
       <!-- <value compset="_EAM%.*MMF"      >-use_MMF_ESMT</value> -->
