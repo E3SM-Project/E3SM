@@ -708,7 +708,7 @@ void HommeDynamics::homme_post_process (const double dt) {
     auto p_dry_mid = ekat::subview(p_dry_mid_view,icol);
     auto p_dry_int = ekat::subview(p_dry_int_view,icol);
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks), [&](const int& jpack) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,npacks), [&](const int& jpack) {
       dp_dry(jpack) = dp(jpack) * (1.0 - qv(jpack));
     });
     ColOps::column_scan<true>(team,nlevs,dp_dry,p_dry_int,ps0);
@@ -720,7 +720,7 @@ void HommeDynamics::homme_post_process (const double dt) {
     auto T      = ekat::subview(T_view,icol);
     auto T_prev = ekat::subview(T_prev_view,icol);
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,npacks),
                          [&](const int ilev) {
       // VTheta_dp->VTheta->Theta->T
       auto& T_val = T(ilev);
@@ -1005,7 +1005,7 @@ void HommeDynamics::restart_homme_state () {
     auto p_mid = ekat::subview(p_mid_view,icol);
     auto qv    = ekat::subview(qv_view,icol);
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,npacks),
                          [&](const int& ilev) {
       // T_prev as of now contains vtheta_dp. Convert to temperature
       auto& T_prev = T_prev_view(icol,ilev);
@@ -1057,7 +1057,7 @@ void HommeDynamics::initialize_homme_state () {
   const auto policy_dp = ESU::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_for(policy_dp, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int icol = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,nlevs),
                         [&](const int ilev) {
        dp_ref(icol,ilev) = (hyai(ilev+1)-hyai(ilev))*ps0
                          + (hybi(ilev+1)-hybi(ilev))*ps_ref(icol);
@@ -1123,7 +1123,7 @@ void HommeDynamics::initialize_homme_state () {
     auto T      = ekat::subview(vth_view,ie,n0,igp,jgp);
     auto vTh_dp = ekat::subview(vth_view,ie,n0,igp,jgp);
     auto qv     = ekat::subview(Q_view,ie,0,igp,jgp);
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks_mid),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,npacks_mid),
                          [&](const int ilev) {
       const auto th = PF::calculate_theta_from_T(T(ilev),p_mid(ilev));
       vTh_dp(ilev) = PF::calculate_virtual_temperature(th,qv(ilev))*dp(ilev);
@@ -1271,7 +1271,7 @@ void HommeDynamics::update_pressure(const std::shared_ptr<const AbstractGrid>& g
     auto p_dry_mid = ekat::subview(p_dry_mid_view,icol);
     auto p_dry_int = ekat::subview(p_dry_int_view,icol);
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks), [&](const int& jpack) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,npacks), [&](const int& jpack) {
       dp_dry(jpack) = dp(jpack) * (1.0 - qv(jpack));
     });
 

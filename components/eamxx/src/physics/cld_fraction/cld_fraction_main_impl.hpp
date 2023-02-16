@@ -52,7 +52,7 @@ void CldFractionFunctions<S,D>
   team.team_barrier();
   const Int nk_pack = ekat::npack<Spack>(nk);
   Kokkos::parallel_for(
-    Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
+    Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
       const Real ice_frac_threshold = 1e-12;
       auto icecld = qi(k) > ice_frac_threshold;
       ice_cld_frac(k) = 0.0;
@@ -74,7 +74,7 @@ void CldFractionFunctions<S,D>
   team.team_barrier();
   const Int nk_pack = ekat::npack<Spack>(nk);
   Kokkos::parallel_for(
-    Kokkos::TeamThreadRange(team, nk_pack), [&] (Int k) {
+    Kokkos::TeamVectorRange(team, nk_pack), [&] (Int k) {
       tot_cld_frac(k) = max(ice_cld_frac(k),liq_cld_frac(k));
   }); // Kokkos_parallel_for nk_pack
   team.team_barrier();

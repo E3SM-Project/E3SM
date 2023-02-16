@@ -22,7 +22,7 @@ void Functions<S,D>
   tmpi(0)[0] = 0;
 
   const Int nlev_pack = ekat::npack<Spack>(nlevi);
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     const auto mask  = ekat::range<IntSmallPack>(k*Spack::n) > 0;
     if (mask.any()) {
       tmpi(k).set(mask, dtime*(ggr*rho_zi(k))/dz_zi(k));
