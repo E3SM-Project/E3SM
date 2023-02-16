@@ -400,6 +400,7 @@ contains
       integer :: unit_num_slm  ! SLM variable
       integer :: itersl, dtime ! SLM variable
       real    :: starttime     ! SLM variable
+      integer, dimension(:), pointer :: cellMask  ! integer bitmask for cells
 
       ! MPI variables
       integer, dimension(:), pointer :: indexToCellID
@@ -456,6 +457,7 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'geometry', geometryPool)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
       if (curProc.eq.0) then
          allocate(globalArrayThickness(nCellsGlobal), gatheredArrayThickness(nCellsGlobal))
@@ -475,8 +477,9 @@ contains
       endif
 
       ! Gather only the nCellsOwned from thickness and bedtopo (does not include Halos)
-      call MPI_GATHERV(thickness, nCellsOwned, MPI_DOUBLE, gatheredArrayThickness, nCellsPerProc, &
-                       nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
+      call MPI_GATHERV((thickness*real(li_mask_is_grounded_ice_int(cellMask),RKIND)), &
+             nCellsOwned, MPI_DOUBLE, gatheredArrayThickness, nCellsPerProc, &
+             nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
       err = ior(err, err_tmp)
       call MPI_GATHERV(bedTopography, nCellsOwned, MPI_DOUBLE, gatheredArrayBedTopography, nCellsPerProc, &
                        nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
@@ -494,7 +497,6 @@ contains
                  MPAS_LOG_ERR)
             err = ior(err,1)
          endif
-
          ! Rearrange data into CellID order
          do iCell = 1,nCellsGlobal
             globalArrayThickness(indexToCellIDGathered(iCell)) = gatheredArrayThickness(iCell)
@@ -601,6 +603,7 @@ contains
       real (kind=RKIND), dimension(nglv*2*nglv) :: slChangeSLgrid1D
       real (kind=RKIND), dimension(nglv*2*nglv) :: thicknessSLgrid1D
       real (kind=RKIND), dimension(nglv*2*nglv) :: maskSLgrid1D
+      integer, dimension(:), pointer :: cellMask
 
       integer :: err, err_tmp
 
@@ -614,6 +617,7 @@ contains
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
       call mpas_pool_get_array(geometryPool, 'bedTopographyChange', bedTopographyChange)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'velocity', velocityPool)
 
@@ -639,7 +643,8 @@ contains
       endif
 
       ! Gather only the nCellsOwned from ice thickness (does not include Halos)
-      call MPI_GATHERV(thickness, nCellsOwned, MPI_DOUBLE, gatheredArrayThickness, nCellsPerProc, &
+      call MPI_GATHERV((thickness*real(li_mask_is_grounded_ice_int(cellMask),RKIND)), &
+                       nCellsOwned, MPI_DOUBLE, gatheredArrayThickness, nCellsPerProc, &
                        nCellsDisplacement, MPI_DOUBLE, 0, domain % dminfo % comm, err_tmp)
       err = ior(err, err_tmp)
 
