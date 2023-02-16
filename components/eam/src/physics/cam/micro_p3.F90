@@ -4547,7 +4547,7 @@ subroutine ice_complete_melting(kts,kte,ktop,kbot,kdir,qi,ni,qm,latent_heat_fusi
             qr(k) = qr(k) + frac_mlt*del_mass
             nr(k) = nr(k) + frac_mlt*del_num
          endif
-         th_atm(k) = th_atm(k) - frac_mlt*del_mass*latent_heat_fusion(k)/cp
+         th_atm(k) = th_atm(k) - exner(k)*frac_mlt*del_mass*latent_heat_fusion(k)/cp
       endif
    enddo k_loop_mlt
    
