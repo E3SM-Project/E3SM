@@ -37,8 +37,8 @@ void PrecipTotalSurfMassFluxDiagnostic::set_grids(const std::shared_ptr<const Gr
 // =========================================================================================
 void PrecipTotalSurfMassFluxDiagnostic::compute_diagnostic_impl()
 {
-  const auto& precip_liq_surf_mass        = get_field_in("precip_liq_surf_mass").get_view<const Real*>();
   const auto& precip_ice_surf_mass        = get_field_in("precip_ice_surf_mass").get_view<const Real*>();
+  const auto& precip_liq_surf_mass        = get_field_in("precip_liq_surf_mass").get_view<const Real*>();
   const auto& precip_total_surf_mass_flux = m_diagnostic_output.get_view<Real*>();
   const auto dt = m_dt;
 
@@ -46,7 +46,7 @@ void PrecipTotalSurfMassFluxDiagnostic::compute_diagnostic_impl()
                        KT::RangePolicy(0,m_num_cols),
                        KOKKOS_LAMBDA(const Int& icol) {
     precip_total_surf_mass_flux(icol) =
-      (precip_liq_surf_mass(icol) + precip_ice_surf_mass(icol))/PC::RHO_H2O/dt;
+      (precip_ice_surf_mass(icol) + precip_liq_surf_mass(icol))/PC::RHO_H2O/dt;
   });
 }
 // =========================================================================================

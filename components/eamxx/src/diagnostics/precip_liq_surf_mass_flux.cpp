@@ -47,7 +47,8 @@ void PrecipLiqSurfMassFluxDiagnostic::compute_diagnostic_impl()
   const auto dt = t_now - t_start;
 
   auto rhodt = PC::RHO_H2O*dt;
-  Kokkos::parallel_for("PrecipLiqMassFluxDiagnostic",
+
+  Kokkos::parallel_for("PrecipLiqSurfMassFluxDiagnostic",
                        KT::RangePolicy(0,m_num_cols),
                        KOKKOS_LAMBDA(const Int& icol) {
     flux_view(icol) = mass_view(icol) / rhodt;
