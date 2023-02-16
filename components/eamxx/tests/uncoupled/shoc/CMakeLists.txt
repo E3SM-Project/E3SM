@@ -47,8 +47,9 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
   endforeach()
 endif()
 
-# Finally, check that the content of sliced vars U and V in all output NC files
-# matches the content of corresponding component of horiz_winds
+# Finally, check that the content of sliced vars U/V and corresponding surf_mom_flux
+# components in all output NC files matches the content of corresponding components
+# of the vector quantities
 foreach (RANK RANGE ${TEST_RANK_START} ${TEST_RANK_END})
   set (nc_file shoc_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${RANK}.nc)
   add_test (NAME check_U_V_slices_np${RANK}
@@ -57,13 +58,20 @@ foreach (RANK RANGE ${TEST_RANK_START} ${TEST_RANK_END})
             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_tests_properties (check_U_V_slices_np${RANK} PROPERTIES
             FIXTURES_REQUIRED shoc_generate_output_nc_files)
+  add_test (NAME check_surf_mom_flux_slices_np${RANK}
+            COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
+            -s ${nc_file} -c "surf_mom_flux(:,:,1)=surf_mom_flux_U(:,:)"
+                             "surf_mom_flux(:,:,2)=surf_mom_flux_V(:,:)"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  set_tests_properties (check_surf_mom_flux_slices_np${RANK} PROPERTIES
+            FIXTURES_REQUIRED shoc_generate_output_nc_files)
 endforeach()
 
 ################################
 #        MUST FAIL tests       #
 ################################
 
-# These tests ensure that the compare-nc-files script does always pass
+# These tests ensure that the compare-nc-files script doesn't always pass
 set (nc_file shoc_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc)
 
 # Legitimate diff

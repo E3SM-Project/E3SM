@@ -424,7 +424,7 @@ auto Field::get_strided_view () const
   }
 
   // Not a subfield, so stride=1, and we can create the strided view from the LayoutRight 1d view.
-  return DstView(get_ND_view<HD,DstValueType>());
+  return DstView(get_ND_view<HD,DstValueType,1>());
 }
 
 template<HostOrDevice HD>

@@ -673,7 +673,8 @@ initialize_fields ()
     set_initial_conditions ();
   }
 
-  // Now that IC have been read, add U/V subfields of horiz_winds.
+  // Now that IC have been read, add U/V subfields of horiz_winds,
+  // as well as U/V component of surf_mom_flux
   // NOTE: if you add them _before_ the IC read, set_initial_conditions
   //       will skip horiz_winds, and only process U/V, which, being
   //       missing in the IC file, would cause horiz_winds=0.
@@ -694,6 +695,22 @@ initialize_fields ()
       }
       if (not fm->has_field("V")) {
         fm->add_field(V);
+      }
+    }
+    if (fm->has_field("surf_mom_flux")) {
+      using namespace ShortFieldTagsNames;
+      auto hw = fm->get_field("surf_mom_flux");
+      const auto& fid = hw.get_header().get_identifier();
+      const auto& layout = fid.get_layout();
+      const int vec_dim = layout.get_vector_dim();
+      const auto& units = fid.get_units();
+      auto surf_mom_flux_U = hw.subfield("surf_mom_flux_U",units,vec_dim,0);
+      auto surf_mom_flux_V = hw.subfield("surf_mom_flux_V",units,vec_dim,1);
+      if (not fm->has_field("surf_mom_flux_U")) {
+        fm->add_field(surf_mom_flux_U);
+      }
+      if (not fm->has_field("surf_mom_flux_V")) {
+        fm->add_field(surf_mom_flux_V);
       }
     }
   }
