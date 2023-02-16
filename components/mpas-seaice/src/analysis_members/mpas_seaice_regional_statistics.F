@@ -505,6 +505,7 @@ contains
 
           ! get the stream id
           streamID = "regionalStatistics_"//trim(reduction % reductionName)
+          !call mpas_log_write("init_runtime_regional_statistics: streams: "//trim(streamID))
 
           ! test stream exists
           if (MPAS_stream_mgr_stream_exists(domain % streamManager, trim(streamID))) then
@@ -513,6 +514,8 @@ contains
              call MPAS_stream_mgr_begin_iteration(domain % streamManager, trim(streamID), ierr=ierrField)
              streamLoop: do while (MPAS_stream_mgr_get_next_field(&
                   domain % streamManager, trim(streamID), inputFieldName, isActive))
+
+                !call mpas_log_write("init_runtime_regional_statistics: fields: "//trim(inputFieldName))
 
                 ! check the input field is of the correct type - must be real(nCells), single time level
                 call MPAS_pool_get_field_info(block % allFields, trim(inputFieldName), inputFieldInfo)
@@ -524,11 +527,15 @@ contains
                         MPAS_LOG_CRIT)
                 endif
 
+                !call mpas_log_write("init_runtime_regional_statistics: field active: $l, nDims: $i ", intArgs=(/inputFieldInfo % nDims/), logicArgs=(/inputFieldInfo % isActive/))
+
                 ! check if field is active
                 if (inputFieldInfo % isActive) then
 
                    ! set the output fieldname
                    outputFieldName = "regionalStatistics_"//trim(inputFieldName)//"_"//trim(reduction % reductionName)
+
+                   !call mpas_log_write("init_runtime_regional_statistics: outputFieldName: "//trim(outputFieldName))
 
                    ! select array rank
                    if (inputFieldInfo % nDims == 1) then
@@ -749,7 +756,8 @@ contains
     outputField % array = 0.0_RKIND
 
     ! fieldname
-    outputField % fieldName = trim(fieldName)
+    outputField % fieldName       = trim(fieldName)
+    outputField % outputFieldName = trim(fieldName)
 
     ! I/O layer
     outputField % dimNames(1)      = "nRegions"
@@ -811,7 +819,8 @@ contains
     outputField % array = 0.0_RKIND
 
     ! fieldname
-    outputField % fieldName = trim(fieldName)
+    outputField % fieldName       = trim(fieldName)
+    outputField % outputFieldName = trim(fieldName)
 
     ! I/O layer
     outputField % dimNames(1)      = inputField % dimNames(1)
@@ -1299,6 +1308,8 @@ contains
        ! get the stream id
        streamID = "regionalStatistics_"//trim(reduction % reductionName)
 
+       !call mpas_log_write("runtime_regional_statistics: streamID: "//trim(streamID)//", $l", logicArgs=(/MPAS_stream_mgr_stream_exists(domain % streamManager, trim(streamID))/))
+
        ! test stream exists
        if (MPAS_stream_mgr_stream_exists(domain % streamManager, trim(streamID))) then
 
@@ -1306,12 +1317,16 @@ contains
           call MPAS_stream_mgr_begin_iteration(domain % streamManager, trim(streamID), ierr=ierrField)
           streamLoop: do while (MPAS_stream_mgr_get_next_field(domain % streamManager, trim(streamID), inputFieldName, isActive))
 
+             !call mpas_log_write("runtime_regional_statistics: inputFieldName: "//trim(inputFieldName))
+
              ! check the input field is active
              call MPAS_pool_get_field_info(domain % blocklist % allFields, trim(inputFieldName), inputFieldInfo)
              if (inputFieldInfo % isActive) then
 
                 ! set the output fieldname
                 outputFieldName = "regionalStatistics_"//trim(inputFieldName)//"_"//trim(reduction % reductionName)
+
+                !call mpas_log_write("runtime_regional_statistics: outputFieldName: "//trim(outputFieldName))
 
                 if (inputFieldInfo % nDims == 1) then
 
