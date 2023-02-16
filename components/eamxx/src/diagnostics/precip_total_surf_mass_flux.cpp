@@ -45,8 +45,8 @@ void PrecipTotalSurfMassFluxDiagnostic::compute_diagnostic_impl()
   Kokkos::parallel_for("PrecipTotalSurfMassFluxDiagnostic",
                        KT::RangePolicy(0,m_num_cols),
                        KOKKOS_LAMBDA(const Int& icol) {
-    precip_total_surf_mass_flux(icol) =
-      (precip_ice_surf_mass(icol) + precip_liq_surf_mass(icol))/PC::RHO_H2O/dt;
+    precip_total_surf_mass_flux(icol) = precip_ice_surf_mass(icol)/PC::RHO_H2O/dt +
+                                        precip_liq_surf_mass(icol)/PC::RHO_H2O/dt;
   });
 }
 // =========================================================================================
