@@ -12,12 +12,12 @@ set(DIAGNOSTIC_SRCS
   potential_temperature.cpp
   precip_ice_surf_mass_flux.cpp
   precip_liq_surf_mass_flux.cpp
+  precip_total_surf_mass_flux.cpp
   rain_water_path.cpp
   relative_humidity.cpp
   rime_water_path.cpp
   sea_level_pressure.cpp
   shortwave_cloud_forcing.cpp
-  total_precip_surf_mass_flux.cpp
   vapor_water_path.cpp
   vertical_layer_interface.cpp
   vertical_layer_midpoint.cpp

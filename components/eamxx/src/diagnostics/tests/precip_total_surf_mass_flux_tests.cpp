@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
-#include "diagnostics/total_precip_surf_mass_flux.hpp"
+#include "diagnostics/precip_total_surf_mass_flux.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
 #include "physics/share/physics_constants.hpp"
@@ -59,7 +59,7 @@ void run(std::mt19937_64& engine)
   ekat::ParameterList params;
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
-  auto diag = diag_factory.create("TotalPrecipSurfMassFlux",comm,params);
+  auto diag = diag_factory.create("PrecipTotalSurfMassFlux",comm,params);
   diag->set_grids(gm);
 
   // Set the required fields for the diagnostic.
@@ -100,7 +100,7 @@ void run(std::mt19937_64& engine)
     theta_f.sync_to_dev();
     const auto& theta_v = theta_f.get_view<Real*>();
     const auto rho_h2o = PC::RHO_H2O;
-    Kokkos::parallel_for("total_precip_surf_mass_flux_test",
+    Kokkos::parallel_for("precip_total_surf_mass_flux_test",
                          typename KT::RangePolicy(0,ncols),
                          KOKKOS_LAMBDA(const int& icol) {
       theta_v(icol) =
@@ -115,7 +115,7 @@ void run(std::mt19937_64& engine)
 
 } // run()
 
-TEST_CASE("total_precip_surf_mass_flux_test", "total_precip_surf_mass_flux_test]"){
+TEST_CASE("precip_total_surf_mass_flux_test", "precip_total_surf_mass_flux_test]"){
   using scream::Real;
   using Device = scream::DefaultDevice;
 

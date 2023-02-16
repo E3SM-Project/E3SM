@@ -1,17 +1,17 @@
-#include "diagnostics/total_precip_surf_mass_flux.hpp"
+#include "diagnostics/precip_total_surf_mass_flux.hpp"
 
 namespace scream
 {
 
 // =========================================================================================
-TotalPrecipSurfMassFluxDiagnostic::TotalPrecipSurfMassFluxDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
+PrecipTotalSurfMassFluxDiagnostic::PrecipTotalSurfMassFluxDiagnostic (const ekat::Comm& comm, const ekat::ParameterList& params)
   : AtmosphereDiagnostic(comm,params)
 {
   // Nothing to do here
 }
 
 // =========================================================================================
-void TotalPrecipSurfMassFluxDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void PrecipTotalSurfMassFluxDiagnostic::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace ekat::units;
   using namespace ShortFieldTagsNames;
@@ -35,17 +35,17 @@ void TotalPrecipSurfMassFluxDiagnostic::set_grids(const std::shared_ptr<const Gr
   m_diagnostic_output.allocate_view();
 }
 // =========================================================================================
-void TotalPrecipSurfMassFluxDiagnostic::compute_diagnostic_impl()
+void PrecipTotalSurfMassFluxDiagnostic::compute_diagnostic_impl()
 {
   const auto& precip_liq_surf_mass        = get_field_in("precip_liq_surf_mass").get_view<const Real*>();
   const auto& precip_ice_surf_mass        = get_field_in("precip_ice_surf_mass").get_view<const Real*>();
-  const auto& total_precip_surf_mass_flux = m_diagnostic_output.get_view<Real*>();
+  const auto& precip_total_surf_mass_flux = m_diagnostic_output.get_view<Real*>();
   const auto dt = m_dt;
 
-  Kokkos::parallel_for("TotalPrecipSurfMassFluxDiagnostic",
+  Kokkos::parallel_for("PrecipTotalSurfMassFluxDiagnostic",
                        KT::RangePolicy(0,m_num_cols),
                        KOKKOS_LAMBDA(const Int& icol) {
-    total_precip_surf_mass_flux(icol) =
+    precip_total_surf_mass_flux(icol) =
       (precip_liq_surf_mass(icol) + precip_ice_surf_mass(icol))/PC::RHO_H2O/dt;
   });
 }

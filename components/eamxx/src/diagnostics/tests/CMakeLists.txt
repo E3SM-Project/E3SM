@@ -47,6 +47,6 @@ if (NOT SCREAM_BASELINES_ONLY)
   # Test precipitation liq mass surface flux
   CreateUnitTest(precip_liq_surf_mass_flux "precip_liq_surf_mass_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
   # Test total precipitation mass surface flux
-  CreateUnitTest(total_precip_surf_mass_flux "total_precip_surf_mass_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
+  CreateUnitTest(precip_total_surf_mass_flux "precip_total_surf_mass_flux_tests.cpp" "${NEED_LIBS}" LABELS "diagnostics" )
 
 endif()
