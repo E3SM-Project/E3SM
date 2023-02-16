@@ -365,7 +365,7 @@ auto Field::get_view () const
   return DstView(view_ND);
 }
 
-template<typename DT, HostOrDevice HD = Device>
+template<typename DT, HostOrDevice HD>
 auto Field::get_strided_view () const
  -> get_strided_view_type<DT,HD>
 {
