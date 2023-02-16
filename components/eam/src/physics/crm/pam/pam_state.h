@@ -51,6 +51,8 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
   auto gcm_vvel  = dm_device.get<real,2>("gcm_vvel"       );
   auto gcm_temp  = dm_device.get<real,2>("gcm_temp"       );
   auto gcm_rho_v = dm_device.get<real,2>("gcm_water_vapor");
+  auto gcm_rho_l = dm_device.get<real,2>("gcm_cloud_water");
+  auto gcm_rho_i = dm_device.get<real,2>("gcm_cloud_ice"  );
   //------------------------------------------------------------------------------------------------
   // wrap the host GCM state data in YAKL arrays
   auto input_ul   = dm_host.get<real const,2>("input_ul"  ).createDeviceCopy();
@@ -80,21 +82,27 @@ inline void pam_state_update_gcm_state( pam::PamCoupler &coupler ) {
     real dp = input_pint(k_gcm,iens) - input_pint(k_gcm+1,iens);
     #ifdef MMF_PAM_DYCOR_AWFL
       // when forcing dry density use total water for consistency with temperature forcing
-      gcm_rho_d(k_crm,iens) = -1 * dp * (1-input_qt) / ( dz * grav );
+      gcm_rho_d(k_crm,iens) = -1 * dp * (1-input_ql(k_gcm,iens)) / ( dz * grav );
     #endif
     #ifdef MMF_PAM_DYCOR_SPAM
       gcm_rho_d(k_crm,iens) = -1 * dp * (1-input_ql(k_gcm,iens)) / ( dz * grav );
     #endif
 
-    // convert total water mixing ratio to water vapor density
+    // convert total water mixing ratio to water vapor density and adjust temperature
     gcm_rho_v(k_crm,iens) = input_qt * gcm_rho_d(k_crm,iens) / ( 1 - input_qt );
-
-    // adjust temperature to account for liq/ice to vapor conversion
+    gcm_rho_l(k_crm,iens) = 0;
+    gcm_rho_i(k_crm,iens) = 0;
     real input_t_adj = input_tl(k_gcm,iens) - ( input_qccl(k_gcm,iens)*Lv + input_qiil(k_gcm,iens)*(Lv+Lf) ) / cp_d ;
     gcm_temp(k_crm,iens) = input_t_adj;
 
     // // Alternate version where we ignore liq/ice cloud in the large-scale forcing
     // gcm_rho_v(k_crm,iens) = input_ql(k_gcm,iens) * gcm_rho_d(k_crm,iens) / ( 1 - input_ql(k_gcm,iens) );
+    // gcm_temp(k_crm,iens) = input_tl(k_gcm,iens);
+
+    // // another alternate where we force cloud water/ice separately
+    // gcm_rho_v(k_crm,iens) = input_ql  (k_gcm,iens) * gcm_rho_d(k_crm,iens) / ( 1 - input_ql(k_gcm,iens) );
+    // gcm_rho_l(k_crm,iens) = input_qccl(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
+    // gcm_rho_i(k_crm,iens) = input_qiil(k_gcm,iens) * ( gcm_rho_d(k_crm,iens) + gcm_rho_v(k_crm,iens) );
     // gcm_temp(k_crm,iens) = input_tl(k_gcm,iens);
   });
 
