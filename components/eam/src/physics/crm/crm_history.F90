@@ -227,6 +227,17 @@ subroutine crm_history_init(species_class)
    call addfld('MMF_DQV_MICRO',(/'lev'/),'A','kg/kg/s','CRM water vapor tendency from micro')
    call addfld('MMF_DQC_MICRO',(/'lev'/),'A','kg/kg/s','CRM cloud water tendency from micro')
    call addfld('MMF_DQI_MICRO',(/'lev'/),'A','kg/kg/s','CRM cloud ice tendency from micro')
+
+   call addfld('MMF_DT_DYCOR  ',(/'lev'/),'A','K/s'    ,'CRM temperature tendency from dycor')
+   call addfld('MMF_DQV_DYCOR ',(/'lev'/),'A','kg/kg/s','CRM water vapor tendency from dycor')
+   call addfld('MMF_DQC_DYCOR ',(/'lev'/),'A','kg/kg/s','CRM cloud water tendency from dycor')
+   call addfld('MMF_DQI_DYCOR ',(/'lev'/),'A','kg/kg/s','CRM cloud ice tendency from dycor')
+
+   call addfld('MMF_DT_SPONGE ',(/'lev'/),'A','K/s'    ,'CRM temperature tendency from sponge')
+   call addfld('MMF_DQV_SPONGE',(/'lev'/),'A','kg/kg/s','CRM water vapor tendency from sponge')
+   call addfld('MMF_DQC_SPONGE',(/'lev'/),'A','kg/kg/s','CRM cloud water tendency from sponge')
+   call addfld('MMF_DQI_SPONGE',(/'lev'/),'A','kg/kg/s','CRM cloud ice tendency from sponge')
+
    call addfld('MMF_TVFLUX', (/'lev'/), 'A', 'W/m2',  'Buoyancy Flux from CRM' )
    call addfld('MMF_BUOY',   (/'lev'/), 'A', 'W/m3',  'Buoyancy Term from CRM' )
    call addfld('MMF_BUOYSD', (/'lev'/), 'A', 'W/m3',  'Std Dev of Buoyancy Term from CRM' )
@@ -507,6 +518,15 @@ subroutine crm_history_out(state, ptend, crm_state, crm_rad, crm_output, &
    call outfld('MMF_DQV_MICRO',crm_output%dqv_micro(icol_beg:icol_end,:), ncol, lchnk )
    call outfld('MMF_DQC_MICRO',crm_output%dqc_micro(icol_beg:icol_end,:), ncol, lchnk )
    call outfld('MMF_DQI_MICRO',crm_output%dqi_micro(icol_beg:icol_end,:), ncol, lchnk )
+
+   call outfld('MMF_DT_DYCOR',  crm_output%dt_dycor  (icol_beg:icol_end,:), ncol, lchnk )
+   call outfld('MMF_DQV_DYCOR', crm_output%dqv_dycor (icol_beg:icol_end,:), ncol, lchnk )
+   call outfld('MMF_DQC_DYCOR', crm_output%dqc_dycor (icol_beg:icol_end,:), ncol, lchnk )
+   call outfld('MMF_DQI_DYCOR', crm_output%dqi_dycor (icol_beg:icol_end,:), ncol, lchnk )
+   call outfld('MMF_DT_SPONGE', crm_output%dt_sponge (icol_beg:icol_end,:), ncol, lchnk )
+   call outfld('MMF_DQV_SPONGE',crm_output%dqv_sponge(icol_beg:icol_end,:), ncol, lchnk )
+   call outfld('MMF_DQC_SPONGE',crm_output%dqc_sponge(icol_beg:icol_end,:), ncol, lchnk )
+   call outfld('MMF_DQI_SPONGE',crm_output%dqi_sponge(icol_beg:icol_end,:), ncol, lchnk )
 
    ! NOTE: these should overwrite cloud outputs from non-MMF routines
    call outfld('CLOUD   ',crm_output%cld     (icol_beg:icol_end,:), ncol, lchnk )

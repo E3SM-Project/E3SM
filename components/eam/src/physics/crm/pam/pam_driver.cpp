@@ -103,8 +103,15 @@ extern "C" void pam_driver() {
     // run a PAM time step
     coupler.run_module( "apply_gcm_forcing_tendencies" , modules::apply_gcm_forcing_tendencies );
     coupler.run_module( "radiation"                    , [&] (pam::PamCoupler &coupler) {rad   .timeStep(coupler);} );
+
+    pam_statistics_save_state(coupler);
     coupler.run_module( "dycore"                       , [&] (pam::PamCoupler &coupler) {dycore.timeStep(coupler);} );
+    pam_statistics_aggregate_tendency(coupler,"dycor");
+
+    pam_statistics_save_state(coupler);
     coupler.run_module( "sponge_layer"                 , modules::sponge_layer );
+    pam_statistics_aggregate_tendency(coupler,"sponge");
+
     // coupler.run_module( "compute_surface_friction"     , modules::compute_surface_friction );
     pam_statistics_save_state(coupler);
     coupler.run_module( "sgs"                          , [&] (pam::PamCoupler &coupler) {sgs   .timeStep(coupler);} );

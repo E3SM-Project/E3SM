@@ -128,6 +128,15 @@ module crm_output_module
       real(crm_rknd), allocatable :: dqc_micro    (:,:)  ! CRM cloud water tendency from micro [kg/kg/s]
       real(crm_rknd), allocatable :: dqi_micro    (:,:)  ! CRM cloud ice tendency from micro   [kg/kg/s]
 
+      real(crm_rknd), allocatable :: dt_dycor  (:,:)
+      real(crm_rknd), allocatable :: dqv_dycor (:,:)
+      real(crm_rknd), allocatable :: dqc_dycor (:,:)
+      real(crm_rknd), allocatable :: dqi_dycor (:,:)
+      real(crm_rknd), allocatable :: dt_sponge (:,:)
+      real(crm_rknd), allocatable :: dqv_sponge(:,:)
+      real(crm_rknd), allocatable :: dqc_sponge(:,:)
+      real(crm_rknd), allocatable :: dqi_sponge(:,:)
+
       real(crm_rknd), allocatable :: rho_d_ls     (:,:)  ! large-scale forcing of dry density   [kg/m3/s]
       real(crm_rknd), allocatable :: rho_v_ls     (:,:)  ! large-scale forcing of vapor density [kg/m3/s]
 
@@ -285,6 +294,15 @@ contains
       if (.not. allocated(output%dqc_micro    )) allocate(output%dqc_micro    (ncol,nlev))
       if (.not. allocated(output%dqi_micro    )) allocate(output%dqi_micro    (ncol,nlev))
 
+      if (.not. allocated(output%dt_dycor  )) allocate(output%dt_dycor        (ncol,nlev))
+      if (.not. allocated(output%dqv_dycor )) allocate(output%dqv_dycor       (ncol,nlev))
+      if (.not. allocated(output%dqc_dycor )) allocate(output%dqc_dycor       (ncol,nlev))
+      if (.not. allocated(output%dqi_dycor )) allocate(output%dqi_dycor       (ncol,nlev))
+      if (.not. allocated(output%dt_sponge )) allocate(output%dt_sponge       (ncol,nlev))
+      if (.not. allocated(output%dqv_sponge)) allocate(output%dqv_sponge      (ncol,nlev))
+      if (.not. allocated(output%dqc_sponge)) allocate(output%dqc_sponge      (ncol,nlev))
+      if (.not. allocated(output%dqi_sponge)) allocate(output%dqi_sponge      (ncol,nlev))
+
       if (.not. allocated(output%rho_d_ls     )) allocate(output%rho_d_ls     (ncol,nlev))
       if (.not. allocated(output%rho_v_ls     )) allocate(output%rho_v_ls     (ncol,nlev))
 
@@ -347,6 +365,15 @@ contains
       call prefetch(output%dqv_micro)
       call prefetch(output%dqc_micro)
       call prefetch(output%dqi_micro)
+
+      call prefetch(output%dt_dycor  )
+      call prefetch(output%dqv_dycor )
+      call prefetch(output%dqc_dycor )
+      call prefetch(output%dqi_dycor )
+      call prefetch(output%dt_sponge )
+      call prefetch(output%dqv_sponge)
+      call prefetch(output%dqc_sponge)
+      call prefetch(output%dqi_sponge)
 
       call prefetch(output%rho_d_ls)
       call prefetch(output%rho_v_ls)
@@ -461,6 +488,15 @@ contains
       output%dqc_micro = 0
       output%dqi_micro = 0
 
+      output%dt_dycor   = 0
+      output%dqv_dycor  = 0
+      output%dqc_dycor  = 0
+      output%dqi_dycor  = 0
+      output%dt_sponge  = 0
+      output%dqv_sponge = 0
+      output%dqc_sponge = 0
+      output%dqi_sponge = 0
+
       output%rho_d_ls = 0
       output%rho_v_ls = 0
 
@@ -573,6 +609,15 @@ contains
       if (allocated(output%dqv_micro)) deallocate(output%dqv_micro)
       if (allocated(output%dqc_micro)) deallocate(output%dqc_micro)
       if (allocated(output%dqi_micro)) deallocate(output%dqi_micro)
+
+      if (allocated(output%dt_dycor  )) deallocate(output%dt_dycor  )
+      if (allocated(output%dqv_dycor )) deallocate(output%dqv_dycor )
+      if (allocated(output%dqc_dycor )) deallocate(output%dqc_dycor )
+      if (allocated(output%dqi_dycor )) deallocate(output%dqi_dycor )
+      if (allocated(output%dt_sponge )) deallocate(output%dt_sponge )
+      if (allocated(output%dqv_sponge)) deallocate(output%dqv_sponge)
+      if (allocated(output%dqc_sponge)) deallocate(output%dqc_sponge)
+      if (allocated(output%dqi_sponge)) deallocate(output%dqi_sponge)
 
       if (allocated(output%rho_d_ls)) deallocate(output%rho_d_ls)
       if (allocated(output%rho_v_ls)) deallocate(output%rho_v_ls)

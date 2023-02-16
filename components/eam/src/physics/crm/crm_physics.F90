@@ -1418,6 +1418,16 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
       call pam_mirror_array_readwrite( 'output_dqc_micro',   crm_output%dqc_micro,   '' )
       call pam_mirror_array_readwrite( 'output_dqi_micro',   crm_output%dqi_micro,   '' )
 
+      call pam_mirror_array_readwrite( 'output_dt_dycor',   crm_output%dt_dycor,     '' )
+      call pam_mirror_array_readwrite( 'output_dqv_dycor',  crm_output%dqv_dycor,    '' )
+      call pam_mirror_array_readwrite( 'output_dqc_dycor',  crm_output%dqc_dycor,    '' )
+      call pam_mirror_array_readwrite( 'output_dqi_dycor',  crm_output%dqi_dycor,    '' )
+
+      call pam_mirror_array_readwrite( 'output_dt_sponge',  crm_output%dt_sponge,    '' )
+      call pam_mirror_array_readwrite( 'output_dqv_sponge', crm_output%dqv_sponge,   '' )
+      call pam_mirror_array_readwrite( 'output_dqc_sponge', crm_output%dqc_sponge,   '' )
+      call pam_mirror_array_readwrite( 'output_dqi_sponge', crm_output%dqi_sponge,   '' )
+
       call pam_mirror_array_readonly( 'gcolp', gcolp )
 
       call pam_set_option('ncrms', ncrms )
@@ -1525,22 +1535,22 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf2d, cam_in, cam_out, 
                   do jj = 1, crm_ny
                      ptend(c)%q(i,m,ixnumliq)  = ptend(c)%q(i,m,ixnumliq)  + crm_state%nc(icrm,ii,jj,k) 
                      ptend(c)%q(i,m,ixnumice)  = ptend(c)%q(i,m,ixnumice)  + crm_state%ni(icrm,ii,jj,k)
-                     if (use_ECPP) then
+                     ! if (use_ECPP) then
                         ptend(c)%q(i,m,ixrain)    = ptend(c)%q(i,m,ixrain)    + crm_state%qr(icrm,ii,jj,k)
                         ptend(c)%q(i,m,ixnumrain) = ptend(c)%q(i,m,ixnumrain) + crm_state%nr(icrm,ii,jj,k)
                         ptend(c)%q(i,m,ixcldrim)  = ptend(c)%q(i,m,ixcldrim)  + crm_state%qm(icrm,ii,jj,k)
                         ptend(c)%q(i,m,ixrimvol)  = ptend(c)%q(i,m,ixrimvol)  + crm_state%bm(icrm,ii,jj,k)
-                     end if
+                     ! end if
                   end do
                   end do
                   ptend(c)%q(i,m,ixnumliq)  = (ptend(c)%q(i,m,ixnumliq) /(crm_nx*crm_ny) - state(c)%q(i,m,ixnumliq)) /ztodt
                   ptend(c)%q(i,m,ixnumice)  = (ptend(c)%q(i,m,ixnumice) /(crm_nx*crm_ny) - state(c)%q(i,m,ixnumice)) /ztodt
-                  if (use_ECPP) then
+                  ! if (use_ECPP) then
                      ptend(c)%q(i,m,ixrain)    = (ptend(c)%q(i,m,ixrain)   /(crm_nx*crm_ny) - state(c)%q(i,m,ixrain))   /ztodt
                      ptend(c)%q(i,m,ixnumrain) = (ptend(c)%q(i,m,ixnumrain)/(crm_nx*crm_ny) - state(c)%q(i,m,ixnumrain))/ztodt
                      ptend(c)%q(i,m,ixcldrim)  = (ptend(c)%q(i,m,ixcldrim) /(crm_nx*crm_ny) - state(c)%q(i,m,ixcldrim)) /ztodt
                      ptend(c)%q(i,m,ixrimvol)  = (ptend(c)%q(i,m,ixrimvol) /(crm_nx*crm_ny) - state(c)%q(i,m,ixrimvol)) /ztodt
-                  end if
+                  ! end if
                end do
             end do
 
