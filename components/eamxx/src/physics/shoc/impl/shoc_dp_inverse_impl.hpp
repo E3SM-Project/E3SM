@@ -19,7 +19,7 @@ void Functions<S,D>
   const auto ggr = C::gravit;
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     rdp_zt(k) = 1/(ggr*rho_zt(k)*dz_zt(k));
   });
 }

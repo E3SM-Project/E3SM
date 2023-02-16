@@ -33,7 +33,7 @@ void Functions<S,D>
   const auto sclr_vwind = scalarize(v_wind); //for v_wind
 
   //compute shear production term
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
 
     auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
     const auto active_range = range_pack1 > 0 && range_pack1 < nlev;

@@ -55,7 +55,7 @@ void apply_interpolation_impl_1d(
   vert_interp.lin_interp(team, x_src, x_tgt, input, output, icol);
   const auto x_src_s = ekat::scalarize(x_src);
   const auto x_tgt_s = ekat::scalarize(x_tgt);
-  const auto range = Kokkos::TeamThreadRange(team, x_tgt.extent(0));
+  const auto range = Kokkos::TeamVectorRange(team, x_tgt.extent(0));
   //Mask out values above (below) maximum (minimum) source grid
   Kokkos::parallel_for(range, [&] (const Int & k) {
     const auto above_max = x_tgt[k] > x_src_s[nlevs_src-1];

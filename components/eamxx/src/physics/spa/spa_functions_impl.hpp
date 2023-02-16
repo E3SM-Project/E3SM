@@ -197,7 +197,7 @@ void SPAFunctions<S,D>
     auto var_end = get_var_column (data_end.data,icol,ivar);
     auto var_out = get_var_column (data_out.data,icol,ivar);
 
-    Kokkos::parallel_for (Kokkos::TeamThreadRange(team,num_vert_packs),
+    Kokkos::parallel_for (Kokkos::TeamVectorRange(team,num_vert_packs),
                           [&] (const int& k) {
       var_out(k) = linear_interp(var_beg(k),var_end(k),delta_t_fraction);
     });
@@ -226,7 +226,7 @@ compute_source_pressure_levels(
   Kokkos::parallel_for("spa_compute_p_src_loop", policy,
     KOKKOS_LAMBDA (const MemberType& team) {
     const int icol = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_vert_packs),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_vert_packs),
                          [&](const int k) {
       p_src(icol,k) = ps_src(icol) * hybm(k)  + P0 * hyam(k);
     });

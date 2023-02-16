@@ -64,7 +64,7 @@ void ZonalVapFluxDiagnostic::compute_diagnostic_impl()
                        default_policy,
                        KOKKOS_LAMBDA(const MemberType& team) {
     const int icol = team.league_rank();
-    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, num_levs), [&] (const Int& idx, Real& lsum) {
+    Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, num_levs), [&] (const Int& idx, Real& lsum) {
       const int jpack = idx / Pack::n;
       const int klev  = idx % Pack::n;
       // Note, horiz_winds contains u (index 0) and v (index 1).  Here we want u

@@ -26,7 +26,7 @@ void Functions<S,D>
   const auto cp = C::CP;
   const auto ggr = C::gravit;
 
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
       Spack temp = (thlm(k)/inv_exner(k))+(lcond/cp)*shoc_ql(k);
       host_dse(k) = cp*temp+ggr*zt_grid(k)+phis;
   });

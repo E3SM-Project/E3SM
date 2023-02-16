@@ -125,7 +125,7 @@ void run(std::mt19937_64& engine)
     const auto& exner_v = exner_f.get_view<Pack**>();
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& jpack) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_mid_packs), [&] (const Int& jpack) {
         exner_v(icol,jpack) = PF::exner_function(p_mid_v(icol,jpack));
       });
       team.team_barrier();

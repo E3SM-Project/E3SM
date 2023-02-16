@@ -18,7 +18,7 @@ void Functions<S,D>
   auto policy = ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(nj, nk);
   Kokkos::parallel_for("get_latent_heat", policy, KOKKOS_LAMBDA(const MemberType& team) {
     int i = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nk), [&] (const int& k) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nk), [&] (const int& k) {
       v(i,k) = lapvap;
       s(i,k) = lapvap + latice;
       f(i,k) = latice;
