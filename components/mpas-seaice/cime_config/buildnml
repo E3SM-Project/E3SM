@@ -252,6 +252,16 @@ def buildnml(case, caseroot, compname):
             grid_date = '210414'
             grid_prefix = 'mpassi.ECwISC30to60E2r1.rstFromG-anvil'
 
+    elif ice_grid == 'ICOS10':
+        grid_date = '211015'
+        grid_prefix = 'seaice.ICOS10'
+        decomp_date = '220110'
+        decomp_prefix = 'mpas-seaice.graph.info.'
+        if ice_ic_mode == 'spunup':
+            grid_date = '211015'
+            # Below is just a placeholder
+            grid_prefix = 'seaice.ICOS10_80Layer.restartFromChrysalis'
+
 
     #--------------------------------------------------------------------
     # Set the initial file

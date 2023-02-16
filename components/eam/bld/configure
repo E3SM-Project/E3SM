@@ -125,6 +125,7 @@ OPTIONS
                           trop_strat_soa | trop_strat_mam3 | trop_strat_mam7 | superfast_mam4_resus_mom_soag |
 			  none ].  Default: trop_mam3.
      -clubb_sgs         Turns on CLUBB_SGS
+     -shoc_sgs          Turns on SHOC_SGS
      -clubb_opts <list> Comma separated list of CLUBB options to turn on/off.  By default they are all off.  Current
                         options are: clubb_do_adv(Advect CLUBB moments), clubb_do_deep(CLUBB does the deep convection),
                         clubb_single_prec (Run CLUBB in single precision)
@@ -142,7 +143,7 @@ OPTIONS
      -mach <name>       Name of target system, for setting system-specific namelist defaults
      -max_n_rad_cnst <n> Maximum number of constituents that are either radiatively
                         active, or in any single diagnostic list for the radiation.
-     -microphys <name>  Specify the microphysics option [mg1 | mg1.5 | mg2 | rk].
+     -microphys <name>  Specify the microphysics option [mg1 | mg1.5 | mg2 | rk | p3].
      -nadv <n>          Set total number of advected species to <n>.
      -nadv_tt <n>       Set number of advected test tracers <n>.
      -nlev <n>          Set number of levels to <n>.
@@ -168,6 +169,10 @@ OPTIONS
      -e3smreplay        Configure E3SM to generate an IOP file that can be used to drive the SCM.
                         This switch only works with the Spectral Element dycore.
      -scam              Compiles model in single column mode.  Only works with SE dycore.
+     
+  Options relevent for doubly periodic cloud resolving model (CRM) mode:
+  
+     -dpcrm_mode
 
   EAM parallelization:
 
@@ -336,6 +341,7 @@ GetOptions(
     "cice_decomptype=s"         => \$opts{'cice_decomptype'},
     "clubb_sgs"                 => \$opts{'clubb_sgs'},
     "clubb_opts=s"              => \$opts{'clubb_opts'},
+    "shoc_sgs"                  => \$opts{'shoc_sgs'},
     "co2_cycle"                 => \$opts{'co2_cycle'},
     "comp_intf=s"               => \$opts{'comp_intf'},
     "cosp"                      => \$opts{'cosp'},
@@ -407,6 +413,7 @@ GetOptions(
     "res=s"                     => \$opts{'res'},
     "rof=s"                     => \$opts{'rof'},
     "scam"                      => \$opts{'scam'},
+    "dpcrm_mode"                => \$opts{'dpcrm_mode'},
     "s|silent"                  => \$opts{'silent'},
     "smp!"                      => \$opts{'smp'},
     "spmd!"                     => \$opts{'spmd'},
@@ -935,10 +942,15 @@ if (defined $opts{'clubb_sgs'}) {
     $microphys_pkg = 'mg2';
 }
 
+#Set the default microphysics package for SHOC to mg2
+if (defined $opts{'shoc_sgs'}) {
+    $microphys_pkg = 'mg2';
+}
+
 # But if the physics package is adiabatic, ideal, change the default
 if ($phys_pkg =~ m/^ideal$|^adiabatic$/) {
     $microphys_pkg = 'rk';
-} elsif ($phys_pkg eq 'default' and !defined $opts{'clubb_sgs'}) {
+} elsif ($phys_pkg eq 'default' and !defined $opts{'clubb_sgs'} and !defined $opts{'shoc_sgs'}) {
     $microphys_pkg = 'mg1';
 }
 
@@ -966,11 +978,11 @@ my $clubb_sgs = $cfg_ref->get('clubb_sgs');
 
 # consistency checks...
 
-# CLUBB_SGS only works with mg microphysics
-if ($clubb_sgs and $microphys_pkg !~ m/^mg/) {
+# CLUBB_SGS only works with mg or p3 microphysics
+if ($clubb_sgs and $microphys_pkg !~ m/^mg/ and $microphys_pkg !~ m/^p3/) {
     die <<"EOF";
 **    ERROR: microphysics package set to: $microphys_pkg
-**    CLUBB_SGS only works with MG microphysics.
+**    CLUBB_SGS only works with MG or P3 microphysics.
 EOF
 }
 
@@ -991,11 +1003,30 @@ if ($print>=2) { print "clubb_do_adv=',$clubb_do_adv,$eol"; }
 if ($print>=2) { print "clubb_single_prec=',$clubb_single_prec,$eol"; }
 
 #-----------------------------------------------------------------------------------------------
+# SHOC
+
+if (defined $opts{'shoc_sgs'}) {
+    $cfg_ref->set('shoc_sgs', $opts{'shoc_sgs'});
+}
+my $shoc_sgs = $cfg_ref->get('shoc_sgs');
+
+# consistency checks...
+
+# SHOC_SGS only works with mg or p3 microphysics
+if ($shoc_sgs and $microphys_pkg !~ m/^mg/ and $microphys_pkg !~ m/^p3/) {
+    die <<"EOF";
+**    ERROR: microphysics package set to: $microphys_pkg
+**    SHOC_SGS only works with MG or P3 microphysics.
+EOF
+}
+
+#-----------------------------------------------------------------------------------------------
 # Macro-physics package
 
 my $macrophys_pkg = 'park';
 if ($phys_pkg =~ /ideal|adiabatic/) { $macrophys_pkg = 'none'; }
 if ($clubb_sgs == 1) { $macrophys_pkg = 'clubb_sgs'; }
+if ($shoc_sgs == 1) { $macrophys_pkg = 'shoc_sgs'; }
 $cfg_ref->set('macrophys', $macrophys_pkg);
 if ($print>=2) { print "Macrophysics package: $macrophys_pkg$eol"; }
 
@@ -1007,9 +1038,9 @@ my $pbl_pkg = 'uw';
 if ($phys_pkg =~ m/ideal|adiabatic/) {
     $pbl_pkg = 'hb';
 }
-
 # Override if using CLUBB
 if ($clubb_sgs == 1) { $pbl_pkg = 'clubb_sgs'; }
+if ($shoc_sgs == 1){ $pbl_pkg = 'shoc_sgs'; }
 
 # Allow the user to override the default via the commandline.
 if (defined $opts{'pbl'}) { $pbl_pkg = lc($opts{'pbl'}); }
@@ -1202,6 +1233,23 @@ EOF
 if ($print>=2) { print "EAM single column mode (SCAM): $scam$eol"; }
 
 #-----------------------------------------------------------------------------------------------
+# Doubly periodic (DP) cloud resolving model (CRM) mode
+if (defined $opts{'dpcrm_mode'}) {
+    $cfg_ref->set('dpcrm_mode', 1);
+}
+my $dpcrm_mode = $cfg_ref->get('dpcrm_mode') ? "ON" : "OFF";
+
+# Currently only Spectral Element dycores support DP CRM mode
+if ($dpcrm_mode eq 'ON' and $dyn_pkg ne 'se') {
+    die <<"EOF";
+**  ERROR: Doubly periodic cloud resolving model only works with Spectral Element dycore.
+**         Requested dycore is: $dyn_pkg
+EOF
+}
+
+if ($print>=2) { print "DP CRM mode: $dpcrm_mode$eol"; }
+
+#-----------------------------------------------------------------------------------------------
 # Generate IOP
 if (defined $opts{'e3smreplay'}) {
     $cfg_ref->set('e3smreplay', 1);
@@ -1338,7 +1386,12 @@ if (!$prog_species) {
   $cfg_ref->set('chem_src_dir', $chem_src_dir);
 }
 
-if (($chem_pkg ne 'none') || ($prog_species)) {
+if ($chem_pkg eq 'spa'){
+    $chem_src_dir = "$cam_root/components/eam/src/chemistry/pp_none";
+    $cfg_ref->set('chem_src_dir', $chem_src_dir);
+}
+
+if ((($chem_pkg ne 'none') && ($chem_pkg ne 'spa')) || ($prog_species)) {
 
     # customize chemistry
     my $edit_chem_mech = $cfg_ref->get('edit_chem_mech');
@@ -1419,10 +1472,19 @@ else {
             $nadv += 8;
             if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
         }
+        elsif ($microphys_pkg =~/^p3/) {
+            $nadv += 8;
+            if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
+        }
 
         if ($clubb_do_adv) {
             $nadv += 9;
                 if ($print>=2) { print "Advected constituents added by $microphys_pkg microphysics: 8$eol"; }
+        }
+
+        if ($shoc_sgs){
+            $nadv += 1;
+            if ($print>=2) { print "Advected constituents added by SHOC: 1$eol";}
         }
 
         # co2_cycle
@@ -1851,6 +1913,11 @@ if ($clubb_sgs == 1) {
     else{
         $cfg_cppdefs .= " -DCLUBB_REAL_TYPE=dp";
     }
+}
+
+# SHOC
+if ($shoc_sgs == 1){
+    $cfg_cppdefs .= ' -DSHOC_SGS';
 }
 
 # GPTL Timing library

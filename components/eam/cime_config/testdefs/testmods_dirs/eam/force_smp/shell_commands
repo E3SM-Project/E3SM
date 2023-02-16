@@ -1,0 +1,2 @@
+#!/bin/bash
+./xmlchange FORCE_BUILD_SMP=TRUE

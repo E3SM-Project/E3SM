@@ -1,0 +1,30 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+Time Stepping:
+  Time Step: ${ATM_TIME_STEP}
+  Start Time: [12, 30, 00]      # Hours, Minutes, Seconds
+  Start Date: [2021, 10, 12]    # Year, Month, Day
+  Number of Steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  atm_procs_list: (spa)
+  spa:
+    spa_remap_file: ${SCREAM_DATA_DIR}/init/map_ne4np4_to_ne2np4_mono.nc
+    spa_data_file: ${SCREAM_DATA_DIR}/init/spa_file_unified_and_complete_ne4_20220428.nc
+
+grids_manager:
+  Type: Mesh Free
+  number_of_global_columns:   218
+  number_of_vertical_levels:  72
+
+initial_conditions:
+  # The name of the file containing the initial conditions for this test.
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["spa_standalone_output.yaml"]
+...

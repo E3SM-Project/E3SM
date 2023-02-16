@@ -441,6 +441,96 @@ _TESTS = {
         "time"    : "03:00:00",
     },
 
+    "e3sm_scream" : {
+        "time"    : "03:00:00",
+        "inherit" : ("e3sm_scream_v0"),
+    },
+
+    "e3sm_scream_v0" : {
+        "time"    : "03:00:00",
+        "inherit" : ("e3sm_scream_v0_lowres"),
+    },
+
+    "e3sm_scream_v0_lowres" : {
+        "time"  : "03:00:00",
+        "tests" : (
+            "SMS_D.ne4pg2_ne4pg2.F2010-SCREAM-HR",
+            "SMS_D.ne4pg2_ne4pg2.F2010-SCREAM-LR",
+            "ERP.ne4pg2_ne4pg2.F2010-SCREAM-HR.eam-double_memleak_tol",
+            "ERP.ne4pg2_ne4pg2.F2010-SCREAM-LR.eam-double_memleak_tol",
+            "ERP_R_Ln10.ne4_ne4.FDPSCREAM-ARM97",
+            )
+    },
+
+    "e3sm_scream_v1" : {
+        "time"    : "03:00:00",
+        "inherit" : ("e3sm_scream_v1_lowres", "e3sm_scream_v1_medres", "e3sm_scream_v1_mpassi"),
+    },
+
+
+    "e3sm_scream_v1_lowres" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "ERP_D_Lh4.ne4_ne4.F2010-SCREAMv1",
+            "ERS_Ln9.ne4_ne4.F2000-SCREAMv1-AQP1",
+            "SMS_D_Ln9.ne4_ne4.F2010-SCREAMv1-noAero",
+            "ERP_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "ERS_D_Ln22.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            )
+    },
+
+    "e3sm_scream_v1_medres" : {
+        "time"  : "02:00:00",
+        "tests" : (
+            #  "SMS_D_Ln2.ne30_ne30.F2000-SCREAMv1-AQP1", # Uncomment once IC file for ne30 is ready
+            "ERS_Ln22.ne30_ne30.F2010-SCREAMv1",
+            "PEM_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1",
+            "ERS_Ln22.ne30pg2_ne30pg2.F2010-SCREAMv1-X6T",
+            "ERS_Ln90.ne30pg2_ne30pg2.F2010-SCREAMv1.scream-small_kernels",
+            "ERP_Ln22.conusx4v1pg2_r05_oECv3.F2010-SCREAMv1-noAero",
+            )
+    },
+
+    "e3sm_scream_v1_hires" : {
+        "time"  : "03:00:00",
+        "tests" : (
+            "SMS_D_Ln12.ne120_r0125_oRRS18to6v3.F2010-SCREAMv1",
+            "SMS_Ln12.ne120_ne120.F2010-SCREAMv1",
+#            "SMS_Ln12.ne120_r0125_oRRS18to6v3.F2000-SCREAMv1-AQP1", add when aquap 120 inputs available
+            )
+    },
+
+    "e3sm_scream_v1_mpassi" : {
+        "time"  : "01:00:00",
+        "tests" : (
+         #  "ERP_D_Ln9.ne4_oQU240.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
+         #  "SMS_D_Ln9.ne4_oQU240.F2010-SCREAMv1-MPASSI-noAero",
+         # Disable the two 111422-commented tests b/c they fail on pm-gpu and
+         # we're not using MPASSI right now.
+         #111422 "ERP_Ln22.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
+         "ERS_D_Ln22.ne4pg2_oQU480.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
+         #  "ERS_Ln22.ne30_oECv3.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
+         #111422 "PEM_Ln90.ne30pg2_EC30to60E2r2.F2010-SCREAMv1-MPASSI",
+         #  "ERS_Ln22.ne30pg2_EC30to60E2r2.F2010-SCREAMv1-MPASSI.atmlndactive-rtm_off",
+            )
+    },
+
+    "e3sm_scream_v1_long" : {
+        "time"  : "01:00:00",
+        "tests" : (
+            "ERP_D_Lh182.ne4pg2_ne4pg2.F2010-SCREAMv1",
+            "ERS_Ln362.ne30pg2_ne30pg2.F2010-SCREAMv1"
+            )
+    },
+
+    "e3sm_scream_v1_long_crusher" : {
+        # _D builds take a long longer on crusher than ascent or pm-gpu, so
+        # don't run the long _D test.
+        "time"  : "01:00:00",
+        "tests" : (
+            "ERS_Ln362.ne30pg2_ne30pg2.F2010-SCREAMv1"
+            )
+    },
 
     "e3sm_gpuacc" : {
         "tests"    : (

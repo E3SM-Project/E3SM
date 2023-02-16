@@ -1,0 +1,43 @@
+%YAML 1.1
+---
+Casename: homme_shoc_cld_spa_p3_rrtmgp_diagnostics
+Averaging Type: Instant
+Max Snapshots Per File: 1
+Fields:
+  Physics GLL:
+    Field Names:
+      - T_mid@lev_2
+      - T_mid@tom
+      - T_mid@bot
+      - T_mid@500mb
+      - T_mid@500hPa
+      - T_mid@50000Pa
+      - PotentialTemperature
+      - AtmosphereDensity
+      - Exner
+      - VirtualTemperature
+      - VerticalLayerInterface
+      - VerticalLayerThickness
+      - VerticalLayerMidpoint
+      - DryStaticEnergy
+      - SeaLevelPressure
+      - LiqWaterPath
+      - IceWaterPath
+      - VapWaterPath
+      - RainWaterPath
+      - RimeWaterPath
+      - ShortwaveCloudForcing
+      - LongwaveCloudForcing
+      - RelativeHumidity
+      - ZonalVapFlux
+      - MeridionalVapFlux
+      - IceCloudMask
+      - PotentialTemperature@tom
+      - PotentialTemperature@500mb
+ 
+output_control:
+  Frequency: ${NUM_STEPS}
+  frequency_units: nsteps
+  Timestamp in Filename: false
+  MPI Ranks in Filename: true
+...

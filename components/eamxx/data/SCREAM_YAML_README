@@ -1,0 +1,52 @@
+
+INTRO:
+
+The scream_input.yaml is the key file for configuring a SCREAM run. This file will be
+processed and copied to $case/run/scream_input.yaml by scream's buidnml script, which
+is called during case.setup. Note, this is for runtime coniguration
+only. Cmake/build-time configuration should be done through SCREAM_CMAKE_OPTIONS.
+
+For inline comments, see the version of scream_input.yaml that lives in the repo
+(components/eamxx/data/scream_input.yaml)
+
+Note, the $case/run/scream_input.yaml will NEVER be overwritten by subsequent
+calls to case.setup/buildnml in order to avoid blowing away potential local
+modifications. To force a regeneration of this file, it should be removed from the
+case and `./case.setup --reset` should be called.
+
+SECTIONS:
+
+  Atmosphere Driver: Contains settings for the AD. Can turn off processes by editing "Number of Entries" and
+  changing the Process N list.
+
+  SCREAM: For general SCREAM settings
+
+  HOMME: For HOMME settings. These settings will be translated into data/namelist.nl
+
+SYNTAX:
+
+This file supports some special syntax in addition to basic YAML:
+'${VAR}' will be used to refer to env variables in the CIME case
+
+'<switch_val : key1 => val1 : key2 => val2 : elseval>' will be used to express conditional
+statements. If switch_val matches key1, then the expression evaluates to val1; if switch_val
+matches key2, then the expression evaluates to val2; if it matches neither, then
+the expression evaluates to elseval. The elseval component of this expression is optional.
+You can have any number (N>=1) of key => val sections.
+
+Example, if you wanted tstep to depend on atm grid resolution:
+
+  tstep: "<${ATM_GRID} : ne4np4 => 300 : 30>"
+
+This would give all ne4 cases a timestep of 300, otherwise it would be 30.
+
+You could specify multiple grid->timestep relationships this way:
+
+  tstep: "<${ATM_GRID} : ne4np4 => 300 : ne30np4 => 100 : 30>"
+
+Regex matching is supported:
+
+  tstep: "<${ATM_GRID} : .*ne4.* => 300 : .*ne30.* => 100 : 30>"
+
+Note: none of this special syntax will be automatically reprocessed if the case XML values
+are changed. Regenerating this file is necessary if relevant case XML values are modified.
