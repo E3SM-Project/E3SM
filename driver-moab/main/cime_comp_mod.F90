@@ -1454,8 +1454,8 @@ contains
     endif
 
    !---------------------------------------------------------------------------------------
-   !  Initialie the comp data type for each model.  Valid on all processors across driver.
-   !  includes allocation, but not definintion, of pointers for gsmap, domain and cdata_cc
+   !  Initialize the comp data type for each model.  Valid on all processors across driver.
+   !  includes allocation, but not definition, of pointers for gsmap, domain and cdata_cc
    !---------------------------------------------------------------------------------------
 
     call t_startf('CPL:comp_init_pre_all')
@@ -1542,12 +1542,16 @@ contains
    ! Initialize coupler-component data
    !  if processor has cpl or model
    !    init the extended gsMap that describes comp on mpijoin
-   !    MOAB: on component, send mesh.  on coupler, register coupler version
-   !       of app and receive mesh.
-   !    MOAB: on both, compute CommGraph between component and coupler versions.
+   !    MOAB: on component, send mesh (except lnd and rof).
+   !       on coupler, register coupler version
+   !       of app and receive mesh (except lnd and rof). The initial CommGraph is computed as part of
+   !       send/receive of the mesh. For atm compute an additional CommGraph between physgrid on comp atm side
+   !       and mesh on coupler side
+   !    MOAB: for lnd and rof, read the mesh on coupler side from file and
+   !         compute CommGraph between component (just a point cloud) and coupler version (full mesh)
    !    MOAB: define c2x, x2c, domain tags
    !    init the mappers that go between comp and coupler instances of mesh
-   !        these will be rearranger-type mappers since the meshs are the same
+   !        these will be rearranger-type mappers since the meshss are the same
    !    initialize extended Avs to match extended GsMaps
    !    initialize extended domain
    !    fill coupler domain with data using a map_exchange call (copy or rearrange only)
@@ -2020,11 +2024,11 @@ contains
     !----------------------------------------------------------
     ! Initialize all attribute vectors from other components that are mapped to each grid.
     ! e.g. for atmosphere, init l2x_ax, o2x_ax, i2x_ax
-    ! MAP Initilize map for each transformaion. States and Fluxes, all sources.
+    ! MAP Initialize map for each transformation. States and Fluxes, all sources.
     !      Includes reading weights from file
     ! MOAB: register coupler apps between components: e.g. OCN_ATM_COU
-    ! MOAB: compute intersection intx for each pair of grids on coupler but
-    !       not weights.
+    ! MOAB: compute intersection intx for each pair of grids on coupler and weights
+    ! MOAB: augment seq_map_type object with MOAB attributes to enable seq_map_map to do MOAB-based projections
     !----------------------------------------------------------
 
     if (iamin_CPLID) then
@@ -2253,7 +2257,8 @@ contains
     !  MOAB set ofrac from dom_i to ocean
     !  if no ice model:  set ofrac from dom_o and map to a
     !  if atm map afrac from a to o
-    !  MOAB do mapping with lots of code
+    !  MOAB do mapping with lots of code !
+    !  !!! iulian: if maps are augmented for MOAB, we do not need additional MOAB code; MOABTODO: check
     ! domatm:
     !     if i or o: lfrac = 1 - ofrac
     !     if land: lfrac = lfrin, ofrac = 1 - lfrin

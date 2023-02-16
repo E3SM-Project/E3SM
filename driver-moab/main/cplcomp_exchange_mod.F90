@@ -1104,15 +1104,6 @@ contains
             endif
          endif
 
-      
-
-   !  comment out now; we will not send directly to atm spectral on coupler; we need to send in the
-   !  context of ocean intx;; or directly to land on coupler, for projection to land
-         ! now we have the spectral atm on coupler pes, and we want to send some data from
-         ! atm physics mesh to atm spectral on coupler side; compute a par comm graph between
-         ! atm phys and spectral atm mesh on coupler PEs
-         ! ierr = iMOAB_ComputeCommGraph(cmpAtmPID, physAtmPID, &joinComm, &atmPEGroup, &atmPhysGroup,
-         !    &typeA, &typeB, &cmpatm, &physatm);
          ! graph between atm phys, mphaid, and atm dyn on coupler, mbaxid
          ! phys atm group is mpigrp_old, coupler group is mpigrp_cplid
          typeA = 2 ! point cloud for mphaid
@@ -1124,7 +1115,6 @@ contains
                                     ! components/cam/src/cpl/atm_comp_mct.F90
          ierr = iMOAB_ComputeCommGraph( mphaid, mbaxid, mpicom_join, mpigrp_old, mpigrp_cplid, &
              typeA, typeB, ATM_PHYS_CID, id_join) ! ID_JOIN is now 6 
-   !  comment out this above part
 
          ! we can receive those tags only on coupler pes, when mbaxid exists
          ! we have to check that before we can define the tag
@@ -1158,12 +1148,6 @@ contains
 
          endif
 
-         ! send aream values from component to coupler
-         ! tagname = 'aream'
-         ! if (MPI_COMM_NULL /= mpicom_join ) then !  we are on the joint pes
-         !   call component_exch_moab(comp, mphaid, mbaxid, 0, tagname)
-         ! endif
-
 #ifdef MOABDEBUG
          if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
             ! debug test
@@ -1191,8 +1175,10 @@ contains
          call seq_comm_getinfo(id_old,mpigrp=mpigrp_old)   !  component group pes
 
          if (MPI_COMM_NULL /= mpicom_old ) then ! it means we are on the component pes (ocean)
-            !     write out the mesh file to disk, in parallel
 #ifdef MOABDEBUG
+            !   write out the mesh file to disk, in parallel
+            !    we did it here because MOABDEBUG was not propagating with FFLAGS; we should move it 
+            !  now to component code, because MOABDEBUG can be propagated now with CPPDEFS  
             outfile = 'wholeOcn.h5m'//C_NULL_CHAR
             wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
             ierr = iMOAB_WriteMesh(MPOID, outfile, wopts)
