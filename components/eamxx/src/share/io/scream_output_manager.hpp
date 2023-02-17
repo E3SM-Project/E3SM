@@ -140,6 +140,8 @@ protected:
   // The output filename root
   std::string       m_casename;
 
+  std::vector<double> m_time_bnds;
+
   // How to combine multiple snapshots in the output: Instant, Max, Min, Average
   OutputAvgType     m_avg_type;
 

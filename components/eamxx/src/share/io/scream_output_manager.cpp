@@ -177,7 +177,11 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     }
   }
 
-  if (m_run_t0==m_case_t0 && m_avg_type==OutputAvgType::Instant && !m_is_model_restart_output) {
+  if (m_avg_type!=OutputAvgType::Instant) {
+    // Init the left hand point of time_bnds based on run/case t0.
+    m_time_bnds.resize(2);
+    m_time_bnds[0] = m_run_t0.days_from(m_case_t0);
+  } else if (m_run_t0==m_case_t0 && !m_is_model_restart_output) {
     this->run(m_run_t0);
   }
 }
@@ -267,12 +271,16 @@ void OutputManager::run(const util::TimeStamp& timestamp)
             " - global type: " + type + "'\n");
       }
     }
-  }
 
-  start_timer(timer_root+"::update_snapshot_tally"); 
-  if (is_write_step) {
+    start_timer(timer_root+"::update_snapshot_tally"); 
     // We're adding one snapshot to the file
     ++filespecs.num_snapshots_in_file;
+
+    if (m_time_bnds.size()>0) {
+      m_time_bnds[1] = timestamp.days_from(m_case_t0);
+      scorpio::grid_write_data_array(filename, "time_bnds", m_time_bnds.data(), 2);
+      m_time_bnds[0] = m_time_bnds[1];
+    }
 
     // Since we wrote to file we need to reset the nsamples_since_last_write, the timestamp ...
     control.nsamples_since_last_write = 0;
@@ -294,8 +302,9 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     // Whether we wrote an output or a checkpoint, the checkpoint counter needs to be reset
     m_checkpoint_control.nsamples_since_last_write = 0;
     m_checkpoint_control.timestamp_of_last_write = timestamp;
+
+    stop_timer(timer_root+"::update_snapshot_tally"); 
   }
-  stop_timer(timer_root+"::update_snapshot_tally"); 
   stop_timer(timer_root); 
 }
 /*===============================================================================================*/
@@ -436,6 +445,21 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
 #else
   set_variable_metadata (filename,"time","calendar","noleap");
 #endif
+  if (m_avg_type!=OutputAvgType::Instant) {
+    // First, ensure a 'dim2' dimension with len=2 is registered.
+    register_dimension(filename,"dim2","dim2",2,false);
+    
+    // Register time_bnds var, with its dofs
+    register_variable(filename,"time_bnds","time_bnds",time_units,{"time","dim2"},"double","double","time");
+    scorpio::offset_t time_bnds_dofs[2] = {0,1};
+    set_dof(filename,"time_bnds",2,time_bnds_dofs);
+
+    // Make it clear how the time_bnds should be interpreted
+    set_variable_metadata(filename,"time_bnds","note","right endpoint accummulation");
+
+    // I'm not sure what's the point of this, but CF conventions seem to require it
+    set_variable_metadata (filename,"time","bounds","time_bnds");
+  }
 
   std::string fp_precision = is_checkpoint_step
                            ? "real"
@@ -454,7 +478,7 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
   }
 
   // Set degree of freedom for "time"
-  std::int64_t time_dof[1] = {0};
+  scorpio::offset_t time_dof[1] = {0};
   set_dof(filename,"time",0,time_dof);
 
   // Finish the definition phase for this file.
@@ -463,6 +487,12 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
   auto t0_time = m_case_t0.get_time()[0]*10000 + m_case_t0.get_time()[1]*100 + m_case_t0.get_time()[2];
   set_int_attribute_c2f(filename.c_str(),"start_date",t0_date);
   set_int_attribute_c2f(filename.c_str(),"start_time",t0_time);
+
+  if (m_avg_type!=OutputAvgType::Instant) {
+    // Unfortunately, attributes cannot be set in define mode (why?), so this could
+    // not be done while we were setting the time_bnds
+    set_int_attribute_c2f(filename.c_str(),"sample_size",control.frequency);
+  }
 
   if (filespecs.save_grid_data) {
     // Immediately run the geo data streams
