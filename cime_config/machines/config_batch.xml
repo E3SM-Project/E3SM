@@ -92,10 +92,12 @@
       <arg flag="--cwd" name="CASEROOT"/>
       <arg flag="-A" name="CHARGE_ACCOUNT"/>
       <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
-      <arg flag="-n" name=" $TOTALPES/$MAX_MPITASKS_PER_NODE"/>
       <arg flag="-q" name="JOB_QUEUE"/>
       <arg flag="--mode script"/>
     </submit_args>
+    <directives>
+      <directive> -n {{ num_nodes }} </directive>
+    </directives>
   </batch_system>
 
   <batch_system type="cobalt_theta" >
@@ -113,10 +115,12 @@
     <submit_args>
       <arg flag="-A" name="CHARGE_ACCOUNT"/>
       <arg flag="-t" name="JOB_WALLCLOCK_TIME"/>
-      <arg flag="-n" name=" $TOTALPES/$MAX_MPITASKS_PER_NODE"/>
       <arg flag="-q" name="JOB_QUEUE"/>
       <arg flag="--mode script"/>
     </submit_args>
+    <directives>
+      <directive> -n {{ num_nodes }} </directive>
+    </directives>
   </batch_system>
 
 <!-- This is the new version on Summit, released as IBM 10.1.0.0 build 476197, Nov 21 2017.  -->
