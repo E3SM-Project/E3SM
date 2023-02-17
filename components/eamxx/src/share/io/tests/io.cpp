@@ -56,7 +56,7 @@ view_2d<Real>::HostMirror
 get_diagnostic_input(const ekat::Comm& comm, const std::shared_ptr<GridsManager>& gm,
                      const int time_index, const std::string& filename);
 
-int get_current_t(const int tt, const int dt, const int freq,  const std::string& frequency_units);
+int get_dt_write(const int dt, const int freq,  const std::string& frequency_units);
 
 Real generate_data_xy(const Int time, const Int i, const Int j);
 Real check_data_xy   (const Int time, const Int dt, const Int i, const Int j, const std::string& avg_Type);
@@ -290,7 +290,9 @@ void run_multisnap(const std::string& output_freq_units) {
 
   // Check multisnap output; note, tt starts at 1 instead of 0 to follow netcdf time dimension indexing.
   AtmosphereInput multi_input(input_params,field_manager);
-  for (int tt = 0; tt<=max_steps; tt++) {
+  const int dt_write = get_dt_write(dt,io_control.frequency,output_freq_units);
+  const int num_output_steps = max_steps*dt / dt_write;
+  for (int tt = 0; tt<=num_output_steps; tt++) {
     multi_input.read_variables(tt);
     f1.sync_to_host();
     f2.sync_to_host();
@@ -300,13 +302,13 @@ void run_multisnap(const std::string& output_freq_units) {
     f3_bot.sync_to_host();
     f3_lev_2.sync_to_host();
 
-    int tt1 = tt + 1;
-    // Here tt1 is the snap, we need to figure out what time that is in seconds given the frequency units
-    const int current_t = get_current_t(tt1,dt,io_control.frequency,output_freq_units);
-    // Check timestamp, note, with multisnap we also verify that we can grab the timestamp at location tt1
+    // Here tt is the snap index, we need to figure out what time that is in seconds given the frequency units
+    const int current_t = tt*get_dt_write(dt,io_control.frequency,output_freq_units);
+    // Check timestamp, note, with multisnap we also verify that we can grab the timestamp at location tt
     {
+      // Note: scorpio uses a 1-based indexing
       auto test_filename = input_params.get<std::string>("Filename");
-      Real time_val = scorpio::read_time_at_index_c2f(test_filename.c_str(),tt1);
+      Real time_val = scorpio::read_time_at_index_c2f(test_filename.c_str(),tt+1);
       Real time_in_days = current_t/86400.; // current_t is in seconds, need to convert to days.
       REQUIRE(time_val==time_in_days);
     }
@@ -723,21 +725,19 @@ get_diagnostic_input(const ekat::Comm& comm, const std::shared_ptr<GridsManager>
   return f_diag_h;
 }
 /*========================================================================================================*/
-int get_current_t(const int tt, const int dt, const int freq, const std::string& frequency_units) {
-      if (frequency_units == "nsteps") {
-        // Just use dt 
-        return tt*dt;
-      // We will need to use timestamp information
-      } else if (frequency_units == "nsecs") {
-        return tt*freq;
-      } else if (frequency_units == "nmins") {
-        return tt*freq*60;
-      } else if (frequency_units == "nhours") {
-        return tt*freq*3600;
-      } else if (frequency_units == "ndays") {
-        return tt*freq*3600*24;
-      }
-  EKAT_REQUIRE_MSG(false,"Error: unknown frequency unit passed to get_current_t");
+int get_dt_write(const int dt, const int freq, const std::string& frequency_units) {
+  if (frequency_units == "nsteps") {
+    return dt;
+  } else if (frequency_units == "nsecs") {
+    return freq;
+  } else if (frequency_units == "nmins") {
+    return freq*60;
+  } else if (frequency_units == "nhours") {
+    return freq*3600;
+  } else if (frequency_units == "ndays") {
+    return freq*3600*24;
+  }
+  EKAT_REQUIRE_MSG(false,"Error: unknown frequency unit passed to get_dt_write");
 }
 /*========================================================================================================*/
 TEST_CASE("input_output_basic","io")
