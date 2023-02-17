@@ -80,9 +80,8 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   data_in_params.set("Field Names",m_fnames);
   data_in_params.set("Filename",datafile);
   data_in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
-  AtmosphereInput data_input0(m_comm,data_in_params);
-  data_input0.init(grid_l,host_views,layouts);
-  data_input=std::make_shared<AtmosphereInput>(data_input0);
+  data_input = std::make_shared<AtmosphereInput>(m_comm,data_in_params);
+  data_input->init(grid_l,host_views,layouts);
 
   T_mid_ext = fields_ext["T_mid"];
   p_mid_ext = fields_ext["p_mid"];
