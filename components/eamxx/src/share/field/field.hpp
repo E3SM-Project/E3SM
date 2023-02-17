@@ -57,6 +57,12 @@ public:
   template<typename DT, typename MT = Kokkos::MemoryManaged>
   using view_host_t = typename kt_host::template view<DT,MT>;
 
+  // Analogue of the above, but with LayoutStride
+  template<typename DT, typename MT = Kokkos::MemoryManaged>
+  using strided_view_dev_t = typename kt_dev::template sview<DT,MT>;
+  template<typename DT, typename MT = Kokkos::MemoryManaged>
+  using strided_view_host_t = typename kt_host::template sview<DT,MT>;
+
 private:
   // A bare DualView-like struct. This is an impl detail, so don't expose it.
   // NOTE: we could use DualView, but all we need is a container-like struct.
@@ -79,6 +85,9 @@ public:
   // Type of a view given data type, HostOrDevice enum, and memory traits
   template<typename DT, HostOrDevice HD, typename MT = Kokkos::MemoryManaged>
   using get_view_type = cond_t<HD==Device,view_dev_t<DT,MT>,view_host_t<DT,MT>>;
+
+  template<typename DT, HostOrDevice HD, typename MT = Kokkos::MemoryManaged>
+  using get_strided_view_type = cond_t<HD==Device,strided_view_dev_t<DT,MT>,strided_view_host_t<DT,MT>>;
 
   // Field stack classes types
   using header_type          = FieldHeader;
@@ -116,6 +125,14 @@ public:
   template<typename DT, HostOrDevice HD = Device>
   get_view_type<DT,HD>
   get_view () const;
+
+  // Like the method above, but only for rank-1 fields, returning a view with LayoutStride.
+  // This is safer to use for fields that could be a subfield of another one, since a
+  // rank-1 view that is the subview of a 2d one along the 2nd index cannot have 
+  // LayoutRight, and must have LayoutStride instead.
+  template<typename DT, HostOrDevice HD = Device>
+  get_strided_view_type<DT,HD>
+  get_strided_view () const;
 
   // These two getters are convenience function for commonly accessed metadata.
   // The same info can be extracted from the metadata stored in the FieldHeader
@@ -346,6 +363,68 @@ auto Field::get_view () const
       "Error! Cannot use all compile-time dimensions for strided views.\n");
 
   return DstView(view_ND);
+}
+
+template<typename DT, HostOrDevice HD>
+auto Field::get_strided_view () const
+ -> get_strided_view_type<DT,HD>
+{
+  // The destination view type on correct mem space
+  using DstView = get_strided_view_type<DT,HD>;
+  // The dst value types
+  using DstValueType = typename DstView::traits::value_type;
+  // We only allow to reshape to a view of the correct rank
+  constexpr int DstRank = DstView::rank;
+  constexpr int DstRankDynamic= DstView::rank_dynamic;
+
+  // Get src details
+  const auto& alloc_prop = m_header->get_alloc_properties();
+  const auto& fl = m_header->get_identifier().get_layout();
+
+  // Checks
+  EKAT_REQUIRE_MSG (DstRank==1 && fl.rank()==1,
+      "Error! Strided view only available for rank-1 fields.\n");
+  EKAT_REQUIRE_MSG (DstRankDynamic==1,
+      "Error! Strided view not allowed with compile-time dimensions.\n");
+  EKAT_REQUIRE_MSG(is_allocated(),
+      "Error! Cannot extract a field's view before allocation happens.\n");
+  EKAT_REQUIRE_MSG (not m_is_read_only || std::is_const<DstValueType>::value,
+      "Error! Cannot get a view to non-const data if the field is read-only.\n");
+  EKAT_REQUIRE_MSG(alloc_prop.template is_compatible<DstValueType>(),
+      "Error! Source field allocation is not compatible with the requested value type.\n");
+
+  // Check if this field is a subview of another field
+  const auto parent = m_header->get_parent().lock();
+  if (parent!=nullptr) {
+    // Parent field has correct layout to reinterpret the view into N+1-dim view
+    // So create the parent field on the fly, use it to get the N+1-dim view, then subview it.
+    // NOTE: we can set protected members, since f is the same type of this class.
+    Field f;
+    f.m_header = parent;
+    f.m_data   = m_data;
+
+    // Take 2 dimensional view with normal LayoutRight
+    auto v_np1 = f.get_ND_view<HD,DstValueType,2>();
+
+    // Now we can subview v_np1 at the correct slice
+    const auto& info = m_header->get_alloc_properties().get_subview_info();
+    const int idim = info.dim_idx;
+    const int k    = info.slice_idx;
+
+    // So far we can only subview at first or second dimension.
+    EKAT_REQUIRE_MSG (idim==0 || idim==1,
+        "Error! Subview dimension index is out of bounds.\n");
+
+    // Use correct subview utility
+    if (idim==0) {
+      return DstView(ekat::subview(v_np1,k));
+    } else {
+      return DstView(ekat::subview_1(v_np1,k));
+    }
+  }
+
+  // Not a subfield, so stride=1, and we can create the strided view from the LayoutRight 1d view.
+  return DstView(get_ND_view<HD,DstValueType,1>());
 }
 
 template<HostOrDevice HD>

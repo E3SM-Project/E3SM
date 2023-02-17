@@ -412,7 +412,9 @@ void AtmosphereOutput::run (const std::string& filename, const bool is_write_ste
       switch (rank) {
         case 1:
         {
-          auto new_view_1d = field.get_view<const Real*,Device>();
+          // For rank-1 views, we use strided layout, since it helps us
+          // handling a few more scenarios
+          auto new_view_1d = field.get_strided_view<const Real*,Device>();
           auto avg_view_1d = view_Nd_dev<1>(data,dims[0]);
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(int i) {
             combine(new_view_1d(i), avg_view_1d(i),avg_type);
