@@ -1,3 +1,1468 @@
+2/16/2023
+
+* Trying to log all the changes I had to make to get this to build in a
+  concise (?) comment for the commit.  Here we go:
+
+---
+Bug fixes and refactors to eam to build E3SM with active GCAM model on
+compy after the rebase.
+
+* Changed location of buildlib.kokkos
+* Added co2flux_fuel_file to eam namelist defaults
+* Added the legacy iac coupling defaults for eam for the fv dycore
+* camsrfexch - co2flux from iac variables, refactored to not use vmag_gust
+  unless do_clubb_sgs is set (as it is only allocated inside clubb)
+* dyn_comp.F90: moved history_defaults() to public so we could call after
+  physics grid init, to get everything initialized correctly
+* Update code in a couple places to work with PIO version 2 (required by
+  elm) (restart_dynamics.F90, metadata.F90)
+* physpkg.F90: vmag_gust_idx indexing in do_clubb_sgs block.
+* Added dimensions_mod.F90 to eam utils from elsewhere, to access nlev and
+  other variables where we need them.
+* Updated NOTES.e3sm file to this branch in gcam/doc
+---
+
+* Also: things to fix before the commit:
+
+@Xwrites in cam_restart.F90
+@Xwrites in restart_dynamics.F90
+@Xwrites in cam_pio_utils.F90
+
+2/13/2023
+
+* Okay, surrounding all references to vmag_gust and vmag_gust_idx with
+  do_clubb_sgs conditionals works - the only wrinkle was I had to then add
+  calls in camsrfexch.F90 to get do_clubb_sgs, and then figure out what (if
+  anything) should be in the cam_out%ubot and %vbot fields in
+  cam_export().  My solution was to calculate what the variables would be
+  if vmag_gust = 0 (i.e. %ubot = state%u, etc.) and put that in the else
+  switch on do_clubb_sgs.
+
+  It might be that nobody cares about %ubot or %vbot absent the gust stuff
+  anyway, but better safe than sorry.  At least it should put something
+  reasonable in there now, and it does compile and run so yay for that.
+
+* Final issue was a PIO version issue in restart_dynamics.F90,
+  init_restart_dynamics().   It was trying to use get_restart_var() to
+  find the inputs to pio_def_var(), including the vdesc.  But, vdesc%varid
+  only gets set after the def_var call to netCDF, so the call to
+  pio_setframe() in pio_def_var() fails.  Apparently, this wasn't an issue
+  for PIO ver 1, but whatever.
+
+  My solution is to NOT call get_restart_var() but instead assign the
+  variables from restartvars(i) array directly before calling
+  pio_def_var().  At this point in the code we don't care about the other
+  things get_restart_var() does, just extracting the bits from
+  restartvars(i) for the ith variable.
+
+* And with that, the code compiles and runs!  I'm doing a full two day,
+  fully coupled (atm/lnd/iac) run now to verify, but I think I'm there.
+
+* One trick: instead of running a fully year each time to debug the eam
+  restart code, which happens only at the end of a run, it's better to run
+  just one day:
+
+    ./xmlchange --id STOP_N --val 1
+    ./xmlchange -id "NCPL_BASE_PERIOD" -val "day"
+    ./xmlchange -id "STOP_OPTION" -val "ndays"
+    ./xmlchange -id "ATM_NCPL" -val 48
+    ./xmlchange --id "JOB_WALLCLOCK_TIME" --val 2:00:00
+
+  This actually ran in about 15 minutes, so the development turnaround time
+  was much faster than figuring out that pio thing.
+
+2/8/2023
+
+* Trying to track down why the call to pbuf_get_index('vmag_gust') ends up
+  crashing out.  The main reason seems to be that vmag_gust is not getting
+  added as a field to the physics buffer, so it can't find an index, which
+  causes an abort call to endrun().
+
+  I've added various surrounding calls to the pbuf_set_field() call using
+  vmag_gust in physpkg.F90 ~L.451, inside the function phys_inidat().  The
+  original fail happens elsewhere - you can grep where, but by the time we
+  get to the pbuf_set_field() it should be set.
+
+  However, there is a note from "KVC" in teh code that calling
+  vmag_gust_idx = pbuf_get_index( 'vmag_gust') is causing an unspecified
+  problem, so they obviously had this issue before.  They "solved" it by
+  simply setting vmag_gust_idx to 1 before calling pbuf_get_index(), which
+  doesn't solve anything - as far as I can tell, the pbuf_set_field() call
+  using vmag_gust_idx=1 does nothing.  Although, it *might* be overwriting
+  the 'TINI' physics field, which really does have a pbuf index of 1.
+  Either way, I can't see how or why this ever worked.
+
+! I'm beginning to suspect that the rebase ended up bringing some pieces of
+  code forward and leaving some behind, so we have this mismatched api and
+  calling sequence in our rebased code.  Plus, we know the 'fv' dycore is
+  deprecated, so perhaps the newer code has developed past the point where
+  the old fv code works out of the box.
+
+* Anyway, here is the calling sequence to get where we are:
+
+  cam_init() -> cam_inital() -> phys_register() -> clubb_register_cam() ->
+  pbuf_add_field('vmag_gust') 
+
+  cam_init() -> phys_init() -> phys_inidat() -> crash by not finding
+  vmag_gust index
+
+  As far as I can tell, the call to cam_inital() happens before teh call to
+  phys_init() in the cam_init() function, like it should, in the fv dycore
+  stuff.  So, it appears some conditional is preventing the actual
+  registering of vmag_gust inside of clubb_register_cam(), which then
+  causes it to fail when trying to find the index in phys_inidat().
+
+* There is a 'do_clubb_sgs' logical saying whether to call
+  clubb_register_cam() in phys_register(), in physpkg.F90 c. L.226.  I'm
+  currently doing a run attempting to write out what that is set to, but my
+  initial attempt seemed to crash before that did get written.  That's why
+  I tracked down the calling sequence as above - I've got another attempt
+  building and running now, so we'll see if it shows up now.
+
+  (Obviously, I'm using the time until it actually runs to catch up my
+  notes on this issue.  I'm having a hard time keeping it straight as I
+  bounce around the code attmpting to see what's happening.)
+
+* Okay! do_clubb_sgs is F!  So we never register the vmag_gust, so we never
+  get an index, and that's why the crash happens.
+
+  So, the solution, it seems, is to simply use the do_clubb_sgs logical
+  whenever we attempt to get vmag_gust_idx.
+
+! Or, perhaps the solution is to *set* do_clubb_sgs to true - the code
+  seems to expect it to be true, or at least all the testing and runs have
+  always run with do_clubb_sgs = .true. and that's why they didn't find
+  this vmag_gust_idx issue before.
+
+* Anyway, the next step is to track down everywhere we use vmag_gust_idx
+  and make sure we only do those things if do_club_sgs == .true., and THEN
+  see if the code will run or not.
+
+  Also, ask if using the clubb stuff is standard or not, and explore what
+  happens if you turn it on, wherever that happens.
+
+2/3/2023
+
+* Eventually, I dug down to where it is bombing in the pio library code, in
+  line ~431 of pionfget_mod.F90.in, the call to
+
+  ierr = nfmpi_get_var_all(File%fh, varid, ival, isize, {MPITYPE})
+
+  ...inside the _PNETCDF block.  The thing is, it's only bombing in the
+  first processor of each node - proc 0, 40, 80, etc.  All the inputs look
+  valid and allocated correctly.
+
+* But!  I finally checked the PIO_VERSION in the zatm_gcam_working case
+  directory, and it is set to 1, whereas for zlnd_gcam_working (which still
+  works), I had set it to 2.  So, my last ditch effort to fix is to try
+  PIO_VERION 2 and see if it gets past this hump.
+
+  Otherwise, the nature of the error suggests it has to do with the
+  parallel netCDF calls and some mpi snafu, which is way beyond my ability
+  to diagnose with my given familiarity with mpi and pnetcdf.
+
+* Okay, I remember some minor issues going to pio 2 for elm - I'm getting:
+
+    .../eam/src/dynamics/fv/metdata.F90(882): error #6284: There is no
+    matching specific function for this generic function reference.
+    [PIO_INQ_ATT] 
+
+  ...type errors, which sounds familiar but apparently I didn't write about
+  here.  My note taking discipline is not as robust as it should be.  Maybe
+  grep for pio_inq_att in elm?  I probably describe the issue there.
+
+  Although, as I recall, these kind of errors might have been why I went to
+  pio 2 in the first place, rather than refactor the code to work with pio
+  1. 
+
+* Huh - I already commented out some declarations in metdata.F90, function
+  read_met_restart_pio(), that mentioned version 2.  So I previously fixed
+  things to work with pio version 1?  Was this before or after the rebase?
+
+* Okay, with pio2 restart_dynamics.F90, function get_restart_var() bombs
+  out on the call to pio_setfram().  I believe pio2 requires a file handle
+  in pio_setfram(), so I modified get_restart_var to pass in and use the
+  File variable available everywhere.  Hopefully that makes things work -
+  who knows?
+
+1/28/2023
+
+* Okay, now that I'm back working and have spent a few hours digging around
+  some more, I think here is the problem:
+
+* In the fv dycore, we have one function dyn_init() called from
+  cam_initial(), which was called before phys_grid_init().  The problem is,
+  we need dyn_init() to register the "fv_centers" grid before we run
+  phys_grid_init(), but we need phys_grid_init() to define the physical
+  constants that dyn_init() needs in history_defaults().  There maybe other
+  circular define issues, too.
+
+  If you look in the se dycore inital.F90 file, you see they now have
+  having dyn_init1(), which they call before the physics init stuff, and
+  dyn_init2(), called afterwards.  I am 93% positive that they broke this
+  out for exactly this reason - the grid init ouroboros required it.  This
+  infrastructure that required this was obviously generated after the fv
+  dycore was deprecated.
+
+  So - I need to dig into dyn_comp.F90 in both fv and se and see how they
+  differ, and see if I can replicate dyn_init1() and dyn_init2() in a way
+  that will allow fv to run.
+
+  But this is exactly what I was worried about - that trying to use the
+  finite volume dycore is causing knockon problems, because eam has evolved
+  since they stopped really supporting it.
+
+1/3/2023
+
+* Iac-coupling slack:
+
+  https://app.slack.com/client/T04B3NH3U/C0382TJTEJ1
+
+* New confluence page:
+
+  https://acme-climate.atlassian.net/wiki/spaces/HESF/pages/3591634957/Testing+the+GCAM-ELM-EAM+coupling
+  
+* Where are all my notes from the last three months!  Sometimes I get bad
+  or inconsistent with recording them, but I know I took copius notes about
+  the testing.  Most of them are probably comments in the code, which is
+  bad because they are hard to find and I clean them up once things are
+  working.  New Year's resolution is to update my notes more consistently,
+  and try to keep important things in this file.
+
+9/23/2022
+
+* Ready to commit everything and push up a new branch for Alan and Ben.
+  The branch is:
+
+  shippert/gcam/active-gcam-post-rebase
+
+  Here is the pre-commit status:
+
+  # Changes to be committed:
+  #   (use "git reset HEAD <file>..." to unstage)
+  #
+  #	modified:   .gitmodules
+  #	new file:   cime
+  #	new file:   cime_config/config_files.xml
+  #	new file:   components/elm/src/main/iac2lndMod.F90
+  #	new file:   components/elm/src/main/lnd2iacMod.F90
+  #	new file:   components/gcam/cime_config/buildlib_cmake
+  #	new file:   giac
+  #
+  # Changes not staged for commit:
+  #   (use "git add <file>..." to update what will be committed)
+  #   (use "git checkout -- <file>..." to discard changes in working directory)
+  #   (commit or discard the untracked or modified content in submodules)
+  #
+  #	modified:   cime_config/machines/cmake_macros/intel_compy.cmake
+  #	modified:   cime_config/machines/config_compilers.xml
+  #	modified:   components/cmake/common_setup.cmake
+  #	modified:   components/elm/src/biogeochem/EcosystemBalanceCheckMod.F90
+  #	modified:   components/elm/src/biogeochem/FireMod.F90
+  #	modified:   components/elm/src/biogeochem/NitrogenDynamicsMod.F90
+  #	modified:   components/elm/src/biogeochem/PhenologyMod.F90
+  #	modified:   components/elm/src/biogeophys/BalanceCheckMod.F90
+  #	modified:   components/elm/src/biogeophys/UrbanRadiationMod.F90
+  #	modified:   components/elm/src/cpl/elm_cpl_indices.F90
+  #	modified:   components/elm/src/cpl/lnd_comp_mct.F90
+  #	modified:   components/elm/src/cpl/lnd_import_export.F90
+  #	modified:   components/elm/src/data_types/ColumnDataType.F90
+  #	modified:   components/elm/src/dyn_subgrid/dynHarvestMod.F90
+  #	modified:   components/elm/src/dyn_subgrid/dynSubgridDriverMod.F90
+  #	modified:   components/elm/src/main/controlMod.F90
+  #	modified:   components/elm/src/main/elm_instMod.F90
+  #	modified:   components/elm/src/main/elm_varctl.F90
+  #	modified:   components/elm/src/main/subgridAveMod.F90
+  #	modified:   components/gcam/bld/build-namelist
+  #	modified:   components/gcam/bld/namelist_files/namelist_defaults_gcam.xml
+  #	modified:   components/gcam/bld/namelist_files/namelist_definition_gcam.xml
+  #	modified:   components/gcam/cime_config/config_compsets.xml
+  #	modified:   components/gcam/src (new commits, modified content, untracked content)
+  #	modified:   driver-mct/cime_config/config_component.xml
+  #	modified:   driver-mct/main/seq_frac_mct.F90
+  #	modified:   externals/kokkos (new commits)
+  #
+  # Untracked files:
+  #   (use "git add <file>..." to include in what will be committed)
+  #
+  #	components/clm/src/external_models/
+  #	components/elm/bld/configure.sbetr_master
+  #	components/elm/bld/hide/
+  #	components/elm/src/biogeochem/hide/
+  #	components/elm/src/biogeophys/hide/
+  #	components/elm/src/data_types/hide/
+  #	components/elm/src/main/hide/
+  #	components/gcam/cime_config/#buildlib#
+  #	components/mpas-source/
+
+* The new files were all things that were not included in Balwinder's
+  rebase, including cime, config_files.xml, the gcam cmake, and the elm
+  version of the coupling files between iac and elm.
+
+* The "not staged" files are things that I've modified, as well as other
+  subcomponents.  I don't know what kokkos has to do with anything, but
+  perhaps there were new commits elsewhere.  Of course, the gcam submodule
+  components/gcam/src has some minor mods, but I've already pushed those
+  up. 
+
+* Any of the not staged .xml files are suspicious - I was playing around
+  with them to try and modify compile and link options, but any changes all
+  had no effect (that I could see).  Apparently the way to add new compiler
+  options is in the cmake files.  So:
+
+@ Review above .xml files and clean up as necessary
+
+* Speaking of cmake, most of my changes are in intel_compy.cmake, which
+  might not be the best place for them.  More importantly,
+  components/cmake/common_setup.cmake has a bunch of hard-coded stuff to
+  allow linking with xerces - that almost certainly needs to be handled
+  better.  So::
+
+@ Clean up common_setup.cmake and review intel_compy.cmake changes and
+  whether they should be implemented elsewhere.
+
+9/22/2022 11:44:39 PDT
+
+* I'm going to use zlnd_v2_test to test how DEBUG might work with -fpe3 -
+  change it in intel.cmake, build and submit and see what happens.
+
+  Hmm - it says that the compy debug option -init=snan overrides -fpe3.  So
+  combine with -init=nosan and see what happens.
+
+9/22/2022 10:05:19 PDT
+
+* Testing changes in intel_compy.cmake, as zlnd_v2_work still has the in
+  the upper intel.cmake macros.  The test is zlnd_v2_test, build to submit,
+  just from the setup in the script.  It built, so now I'm testing the run.
+
+  ...and zlnd_v2_test works, and runs for two years.
+
+* Next up - move everything to a new branch, and email Alan and Ben.  There
+  are at least two things I need to discuss with Alan:
+
+1 the -1 vs. +1 thing in calculating nglu in gcam2glm_mod.F90.  I believe
+  the nglus have been miscalculated, both in this and the before-rebased
+  version, since line 1247 used to be:
+
+  	   nglu = rgmax(r)-rgmin(r)-1
+
+  I'm pretty sure to span the indeces covered by rgmin to rgmax you need a
+  +1.  With a -1, regions with 2 or 1 glus end up the nglu=0 or -1.  
+
+  The most interesting question about this is...why did this actually work
+  in the pre-rebased version?  Where this should bite us is around line
+  1287, where we use this, builds index arrays like:
+
+  	 indxadn=(/i,i=1,nglu/)
+  
+  ...for use in a sort.  My guess is that what this line does is undefined
+  with nglu < 1, so it accidentally worked under the old build, as the
+  memory management turned out okay.  or, it might just keep indxadn(:) the
+  same as it was before, and that depends on the result of the previous
+  regions sort, which might be a memory thing.
+
+  At any rate, this suggests that our previous versions regional
+  reassignments were not working correctly - at least some regions would
+  have sorted incorrectly, as the key regions might have been cut off at
+  the end of the sorting array, since nglu misses the final two regions.
+
+2 The use of harvest_rates(:,:), which we have to allocate ourselves in
+  dyn_iac_int() in dynSubgridDriverMod.F90, since do_harvest isn't set so
+  it doesn't get allocated in dyn_harvest_init() in dynHarvestMod.F90.  But
+  this begs the questions: (a) what if do_harvest IS set and (b) if it
+  isn't, does anything in the rest of elm actually use harvest_rates(:,:).
+
+  In the previous version, the different harvest types were summed in a 1-D
+  harvest(:) function - the change to harvest_rates(:,:) with harvest types
+  seperated out is a change.
+
+9/22/2022
+
+* So, working through the final set of bugs - this time, it was failing
+  deep in gcam, which was alarming since that part shouldn't have failed.
+  But it again came down to DEBUG mode failing when it had to deal with
+  NaNs or, in this case, divide by zero.
+
+  The issue was in carbon_scalars.cpp, in the function excludeOutliers.
+  The first step is this:
+
+    std::transform(scaledNPP.begin(), scaledNPP.end(), mBaseNPPVector.begin(), scaledNPP.begin(), std::divides<double>());
+
+  which turns the absolute NPP returned by elm into a scaled value over the
+  base NPP, read in from a file.  The way it does that is dividing each
+  element of scaledNPP by the corresponding element of mBaseNPPVector.  C++
+  has this transform library that works kind of like a python map - vector
+  applications, I guess heavily optimized or just to save people fom
+  writing three more lines and doing the loop themselves.
+
+  Anyway, mBaseNPPVector has zeroes everywhere, since it covers the global
+  grid and there is no NPP over water.  That's kind of the whole point of
+  this function, to find the scaled zero or NaN values and exclude them.
+  But, because DEBUG mode crashes when it tries to divide by zero, this
+  transform call fails.  In non-DEBUG mode, it happily fills everything in
+  with NaNs, which is what we want, as the newIter line just after cleans
+  those out.
+
+  I thought about enclosing an explicit loop in a #if defined(DEBUG) ||
+  defined (NDEBUG) block, just so we can run with DEBUG mode, and I'll have
+  to do that if we ever need to do a couple years under debug mode (this
+  happens after a whole year of processing, as we couple back land values
+  to iac).  (You need the NDEBUG, since we need to build with -DNDEBUG to
+  prevent all the gcam asserts() from failing under compilation, and NDEBUG
+  turns off DEBUG.)  But for now, I just put a note in the code and left it
+  as it is, since we can only realistically run for a year or more in
+  non-debug mode.
+
+* And with that, the code builds and runs for two years.
+
+? I wonder if setting -fpe3 would turn off the NaN barf?  See:
+
+  http://www.jaist.ac.jp/iscenter-new/mpc/altix/altixdata/opt/intel/fc/10.0.026/doc/main_for/mergedProjects/fpops_for/fortran/fpops_fpew_f.htm
+
+  ...where they talk about options for dealing with floating point
+  behavior with intel compilers.
+
+  ...and, sure enough, the DEBUG options in intel.cmake does indeed have
+  -fpe0 set.  The default is apparently fpe3, so there you go.  The
+  compiler options are causing these NAN issues.
+
+9/17/2022
+
+* I don't know if I've covered this below or something, but I have
+  *finally* discovered the way to make permanent changes to the cmake build
+  routines, that stick around with a case.setup --reset and everything.
+
+  The cmake macros are stored, *in the code* (i.e. not generated during
+  setup or newcase), in:
+
+   .../cime_config/machines/cmake_macros/
+
+  So I've moved all the -mcmodel=medium -shared-intel stuff to APPENDs in
+  intel_compy.cmake.  I also added -DNDEBUG to CXXFLAGS. 
+
+9/13/2022
+
+* May need to gdb - something like this:
+
+0 submit job
+1 find node it's on, ssh over there
+2 gdb /compyfs/d3a230/e3sm_scratch/zlnd_v2_work/bld/e3sm.exe `pidof e3sm.exe`
+
+  If this doesn't work, maybe:
+
+2 gdb -P `pidof e3sm.exe`
+
+  ...or
+
+2 gdb
+a attach <pid>
+
+  You may or may not need the executable name in there somewhere.
+
+9/12/2022
+
+* Huh - ./case.setup -reset apparently reinstalls the cmake_macros files,
+  which overwrote the intel.cmake I fixed for the mcmodel stuff.
+
+  I had to do a setup -reset because the runtime error I got was confusing,
+  so I needed to change NPROC to 1.  It happens during setup, so the
+  multiproc stuff wasn't important.
+
+* Anyway, I need to figure out just how the cmake_macros are created, and
+  what triggers them to be recreated, and how I change how those things
+  happen.  I thought the .xml files would be read during newcase, to
+  generate the macros, but I've modified the .xml files and they didn't
+  take with the setup -reset, so how exactly were these macros overwritten
+  with the reset?  Where are they grabbing/generating these values?
+
+  The date on the overwritten intel.cmake was Jul 21, the creation date for
+  this newcase, so maybe newcase creates macros somewhere which are then
+  recopied over during a reset?
+
+@ The way to determine this is to:
+
+1 Find the .xml file entry that adds the FFLAGS, CFLAGS, and CXX_LDFLAGS
+  entries that I modified in intel.cmake, and add the new -mcmodel lines.
+
+2 Generate a newcase, and see what happens.
+
+9/9/2022
+
+* -mcmodel=large works - it compiles and runs.  
+
+@ Check master to see if the mcmodel compile options are in there.  Check
+  to see if -mcmodel=medium works.
+
+? ...the answer to both questions is yes - the master config_compilers.xml
+  has a intel, os=LINUX variable to append "-mcmodel medium -shared-intel" to
+  FFLAGS.  I'll have to add it to CFLAGS and CXX_LDFLAGS, as well, I think,
+  to get it everywhere it needs to be.
+
+? ...well, maybe not.  Work has the same "os=LINUX compiler=intel" addition
+  to FFLAGS, but I don't recall seeing mcmodel options in any of my fortran
+  compilations.  So maybe we aren't running LINUX on compy?  I'll need to
+  test this out, but maybe a "machine=compy" mod would be best.  And I
+  still have to test a -mcmodel=medium modification.
+
+* Code currently runs but crashes because it can't find gcam_gridfile -
+  which, I think, means we didn't set up the namelist correctly.  
+
+  ...huh, the gcam_in file for work is empty.  Where do we create gcam_in?
+  Is that a manual file copied over, or do we generate it in buildnml or
+  something? 
+
+  Okay, I was right originally - gcam/bld/build-namelist has not been
+  updated to "add_default" all the namelist variables, so gcam_in was being
+  generated empty.  Also check to see if the .xml files need updating
+  (comparing work to current, to make the former namelist stuff look like
+  the latter).
+
+  ...okay, the .xml files in namelist_files need to be copied over from
+  current as well.
+
+* All the cmake configuration stuff happens when you make a newcase, so any
+  mods to .xml don't translate over to an already-created run case, and
+@ require manual changes to the cmake files.  Obviously, I need to do some
+  testing to find the best place to make these compile changes (-mcmodal,
+  Xerces libraries and paths).
+
+9/7/2022
+
+* Okay, it appears that the .xml files are used only when newcase is called
+  - it makes the various cmake_macros files which then govern how
+  everything is built.  So that's why I have to add stuff to
+  common_setup.cmake to get things to go.
+
+  But some flags don't seem to make it through common_setup.cmake, so
+  instead I have to add them directly to cmake_macros/intel.cmake, which
+  have not been modified since they were created in July.  I added
+  -mcmodel=large to CFLAGS and FFLAGS in that file, and common_setup.cmake
+  adds it to CXX_LDFLAGS, so hopefully everything will build AND link with
+  it, and I can finally see if that solves my issue.
+
+9/6/2022
+
+* Sigh.  I've got the library path set up correctly, and now linking
+  doesn't complaing about missing xerces calls anymore.  But...
+
+! Now the linking simply fails, without any explanation.  If you run
+  through e3sm_compile_wrap.py, you at least get a generic error message.
+  If you pull out the mpiifort call directly, it complains about truncating
+  something or another, does NOT say "error" anywhere, exits, and does NOT
+  create a e3sm.exe file.
+
+* So...where do we go from here?  
+
+* One possibility is that xerces was compiled with intel 19.0.3, whereas
+  the latest e3sm build uses (I think) Intel 19.0.5, specifically Intel
+  19.0.5.20190815 (possibly the same thing as intelmpi/2019u3, if 'module
+  avail' default tells you anything).
+
+  The previous build, under E3SM_current, also built with intel 19.0.3,
+  according to include and lib directory names in some of the compile lines
+  in z_rebase.
+
+@ I need to dig a little deeper into maybe config_compilers.xml or
+  config_machine.xml and see if I can get any information about which
+  compiler it is using, and if maybe I can modify it.
+
+  Also examine various environment .xml files in the build directory -
+  anything that lists what modules are loaded prior to building, both in
+  Work and Current builds (zlnd_v2_work and zlnd_v2 or zlnd_rebase).
+
+* Anyway, my conjecture is that *maybe* a shared library compiled with
+  intel 19.0.3 is incompatible with an executable and other libraries built
+  with intel 19.0.5.  I'm trying to remember how link errors manifest
+  themselves, and it always seemed like different compiler versions caused
+  a problem - but I can't remember if they did upon linking, or upon
+  running. 
+
+* To test this, it makes sense to rebuild xerces lib with intel 19.0.5 and
+  see if that solves the issue.  Unfortunately, I never built xerces - we
+  are currently linking in:
+
+      /qfs/people/crai556/xerces_intel_19.0.3
+
+  So crai556 built this for us to use, using the old compiler.
+
+1 Can we ask him to rebuild using intel 19.0.5?
+2 Can I built it myself using intel 19.0.5?
+
+* Okay, I copied over the tar file from crai556, into ~/local/src,
+  untarred, module loaded the build environment from
+  ~/zlnd_v2_work/.env_mach_specific.sh, and ran a ./configure.  Lets see if
+  that works.
+
+  ...after that, I believe the way to get this to build is:
+
+    % cmake .
+    % make
+
+* Not quite: after you do the above, get ready for install:
+
+    % cmake -DCMAKE_INSTALL_PREFIX=/qfs/people/d3a230/local/xerces_intel_19.0.5 --build .
+    % make install
+
+  That's a (possibly not best but working) way to tell the directory you
+  want to install into.
+
+* I also need to link lib to lib64 in the install directory
+
+    % cd /qfs/people/d3a230/local/xerces_intel_19.0.5
+    % ln -s lib64 lib
+
+* Now modify common_setup.cmake as below using the new link directory, and
+  try and build again...
+
+* Good news and bad news - the new library seems to work, but I *still* get
+  the weird non-error error crash.
+
+! https://www.ibm.com/support/pages/intel-compiler-error-relocation-truncated-fit-rx8664pc32
+
+  ...sort of explains what I need to do, I think.  I am seeing errors like
+  this:
+
+  for_diags_intel.c:(.text+0xb29): relocation truncated to fit: R_X86_64_PC32 against symbol `message_catalog' defined in COMMON section in /share/apps/intel/2019u5/compilers_and_libraries_2019.5.281/linux/compiler/lib/intel64_lin/libifcoremt.a(for_diags_intel.o)
+
+  The above suggests: -mcmodel=large -i-dynamic -shared-intel
+
+  ...as linker options.  It's possible mcmodel=medium would work, and maybe
+  without one of the other options.  
+
+  I tried this on the final link, and it doesn't understand -i-dynamic, but
+  it also gave the same "truncated to fit" option, only on a different part
+  of the code:
+
+  /qfs/people/d3a230/E3SM_v2_work/driver-mct/main/cime_comp_mod.F90:2553:(.text+0xeda): relocation truncated to fit: R_X86_64_PC32 against symbol `seq_comm_mct_mp_info_mprof_' defined in COMMON section in /compyfs/d3a230/e3sm_scratch/zlnd_v2_work/bld/intel/impi/nodebug/nothreads/mct/mct/noesmf/c1a1l1i1o1r1g1w1i1e1/lib/libcsm_share.a(seq_comm_mct.o)
+
+  However, the link above *also* suggests that you need to recompile your
+  libraries with these options before it will work.  So, basically, I need
+  to add mcmodel=large as a compiler option for all code as well as the
+  linker to try and fix it this way.  
+
+* Interesting: relocation truncated to fit: R_X86_64_PC32 is different
+  than R_X86_64_32S, although I see both with -mcmodel=large (and
+  =medium). 
+  
+
+* Other possibilities: xerces is currently built as a dynamic library;
+  maybe should make it static?
+
+  Maybe I need something like a -Bdynamic in front of the xerces link line?
+
+9/5/2022
+
+* Okay - here is how it is:
+
+* .../components/cmake/common_setup.cmake is where we set the cmake
+  commands to add a library.  The standard way seems to be something like:
+
+    if (USE_XERCES)
+      ...
+      set(INC_XERCES ${XERCES_PATH}/include)
+      set(LIB_XERCES ${XERCES_PATH}/lib)
+    endif()
+
+  ...with appropriate checks for whether variables are defined or not.
+  Then, later on, do this:
+
+    if (USE_XERCES)
+       set (SLIBS "${SLIBS} -Wl,-rpath,${LIB_XERCES} -L${LIB_XERCES} -lxerces-c -lstdc++")
+    endif()
+
+  That's how you add a library to SLIBS to link with.
+
+* To define USE_XERCES and maybe stuff like XERCES_PATH, modify
+
+    .../driver-mct/cime_config/config_component.xml
+
+  to define the new variables to be used inside the common_setup.cmake.
+
+? WHAT I STILL DON'T KNOW IS WHAT IS THE BEST WAY TO SET USE_XERCES!?!?!?!?
+
+  I'm working with USE_TRILINOS, USE_PETSC, and USE_ALBANY as examples, but
+  none of those values are set anywhere in any .xml files.  Some of them
+  seem to be set automatically if you set CLM_USE_PETSC (e.g.), but I don't
+  know how to do THAT either.  This is very frustrating.   How do I say "if
+  building iac, USE_XERCES", and have it add the right include and link
+  libraries?  It's such a simple thing, but it's buried under layer after
+  layer of configuration files and cmake front ends.
+
+  Anyway, now I'm grepping for CLM_USE_PETSC, to see if I can find ANY FILE
+  ANYWHERE that actually sets that variable.
+
+8/29/2022
+
+* Like clowns out of a Volkswagen, these version incompatibilities just
+  keep coming.
+
+  Now elm_driver doesn't like the BalanceCheckMod.F90 I have in work - the
+  first problem is in the call to BeginGridWaterBalance, as it can't find
+  the waterstate_vars argument, or is getting one when it doesn't know what
+  to do with it, or whatever.
+
+  BalanceCheckMod.F90 is once again very different in master (120 diffs),
+  and it doesn't have any iac dependence, so once again copying over from
+  master seems like the simplest solution.  And, again, hide/*.F90.hide.
+
+! ...and, once again, it looks like I *already* hid this file, this time
+  for elm->clm diffs and a few other things.
+
+  So it seems whenever there are old-style clm calls, which were causing
+  the initial problems, the real problem tends to be that file is actually
+  out of date.  Keep that in mind for the next batch of errors.
+
+* Okay, well, now we have a potential big issue: ColumnDataType.F90 is now
+  out of date slash incompatible with the new BalanceCheckMod.F90.  There
+  are 40 diffs between work and master fo ColumnDataType.F90, so my first
+  instinct is to copy over master as before - but I'm worried now that we
+  are starting to hit code that we've modified for iac stuff.  Hopefully
+  that's what Balwinder focused on while porting, so maybe it won't matter,
+  but I have to run a diff for ColumnDataType.F90 anyway just to make sure
+  none of the work vs. master diffs are from iac modifications.
+
+  ...okay, the only important differences is a change in one of the
+  use_erosion to ero_cycle, and the removal of "use_crop".  My
+  modifications to my version of ColumnDataType were switching on use_crop
+  to prevent dealing with NaNs, which borks whie debugging. 
+
+  There were other differences, but they were all additions for master,
+  one of which stopped the latest compile when it wasn't there.  So copying
+  over ColumnDataType.F90 is appropriate, and if we run into the NaN
+  problem while running again I'll have to refix it, this time without
+  using "use_crop".  (Or maybe adding that back in?  It's possible I added
+  that logical just to do this NaN check...)
+
+* Prediction: I see another NaN trap in VegetationDataType.F90 - my guess
+  is that means it wasn't updated to master during the rebase, either, so I
+  predict the next (or some future) compilation bomb will happen there.
+
+* Not quite - now I need to copy UrbanRadiationMod.F90 from master - I had
+  already fixed and hid that for clm->elm reasons, as well.
+
+! So, I think what is going on is that Balwinder rebased any file that used
+  iac code, but left a lot of other files that we hadn't modified
+  untouched.  It's those untouched files that I am basically rebasing
+  myself, because they cause problems with the partly-rebased other parts
+  of clm.
+
+  I'm copying over (i.e. kind-of-rebasing) files from master, but master
+  has evolved beyond whatever version Balwinder rebased to a few months ago
+  - so it's possible that copying over from master will not work for some
+  of these files.  At that point, I may need to check out the master
+  revision that Balwinder rebased from, and copy from *there*.
+
+  I'm worried that some of our main files that we are using in work still
+  have so many diffs from master (i.e. elm_driver.F90).  Hopefully this
+  thing is modular enough that we don't cause any actual conflicts by
+  having subsections of elm ahead of other subsections, but I'm prepared
+  for the worst.
+
+  Anyway, this explains why I have to fix existing code so it will compile
+  (i.e. clm->elm stuff), and *then*, later, realize I have to copy the
+  whole file from master as *other* parts of the code call those fixed
+  modules.  So a lot of redundent fixing, but there's no way to know that
+  modules don't work until you make them compile first and then have other
+  parts of the code use them.
+
+8/27/2022
+
+* More version mismatch crud - in master, EcosystemBalanceCheckMod.F90 has
+  some public variables called BeginGridCBalance, et al., whereas in work
+  (Balwinder) those variables are called
+  BeginGridCBalanceBeforeDynSubgridDriver et al.  The work elm_driver.F90
+  expects the shorter BeginGridCBalance (master) variables, and
+  EcosystemBalanceCheckMod.F90 is very different (153 differences) between
+  master and work.
+
+  So, once again, the logical solution is to copy
+  EcosystemBalanceCheckMod.F90 over from master and hide the work version,
+  and hope everything works out.   (in src/biogeochem)
+
+  (Again, I made a hide2 variable, as I already had to hide this for some
+  reason - it looks like the major change I made previously was getting rid
+  of use_nitrif_denitrif, so I guess it makes sense that the whole file was
+  out of date).
+
+8/26/2022
+
+* Okay, well, that was a rabbit hole - it turns out the
+  NitrogenDynamicsMod.F90 that I get from Balwinder, which I have modified
+  to do clm->elm on mod names and to get rid of the use_nitrif_denitrif, is
+  actually incompatible with other files that call it.  In particular, the
+  calling sequences for NitrogenLeaching() is NitrogenDynamicsMod.F90 does
+  not match the one calling it in EcosystemDynMod.F90.
+
+  After comparing with master, the Balwinder/v2_work version of
+  EcosystemDynMod.F90 *almost* matches with master.  There's some variable
+  name changes (use_erosion -> ero_ccycle), and also some additions for
+  coupling with iac.  But, the point it, the calling sequence for
+  NitrogenLeaching() should probably follow E3SM_master.
+
+  Thus, I'm going to try copying over NitrogenDynamicsMod.F90 from master
+  to v2_work.  I hate doing this, because it might lead to other
+  incompatibilies - but the NitrogenDynamicsMod.F90 in master has 80
+  differences to the one in Balwinder, so I have no idea if I can modify
+  the latter to work with the EcosysteDynMod.F90 we have here in v2_work.
+
+  Once again, moving to a hide subdirectory and appending with .hide, just
+  to keep everything around but also hidden as source code files.
+
+  ...well, I already hid into hide/NitrogenDynamicsMod.F90.hide, so this
+  one is .hide2.
+
+* Okay, now biogeophys/BalanceCheckMod.F90 is complaining it can't find
+  endrun, which is part of the abortutils package...ah, another case of
+  clm->elm, this time in the explicit argument naming "elmlevel=foo".
+  Apparently, this is one of the few places we use use the
+  endrun_globalindex() version of the endrun() interface.
+
+8/25/2022
+
+* Okay, I'm pretty sure that we assume "use_nitrif_denitrf" is always true,
+  so:
+
+1 In EcosystemBalanceCheckMod.F90, we just comment out the "if
+  (.not. use_nitrif_denirif)" block (checked with master version of this
+  file, line 463, vs. v2_work, line 404 or so).
+
+2 NitrogenDynamicsMod.F90 - we comment out the *other* blocks around
+  if (use_nitrif_denitrif).  Checking now against master.
+
+8/11/2022
+
+* There's a complicated issue with the old use_nitrif_denitrif, which (I
+  think) controls the denitrification stuff.  My working controlMod.F90
+  (i.e. from Balwinder) is out of date with the rest of the code on how
+  denitrification works, and now use_nitrif_denitfif is not set anywhere.
+  So, I commented out all the sections in various places that used it.
+
+  But!  I think that's not necessarily right - I think the denitrif code
+  was enhanced and modified, but NOT deleted.  So there might be other
+  options controlling the process, or it might be on always (rather than
+  off always, like I was kind of assuming).
+
+  So I have to dig into the rest of the code, compare with Master and maybe
+  with Current (old), and see if I can make my controlMod do the right
+  thing with regard to using and passing denitrif options correctly to the
+  correct functions.  The PR will eventually level up this stuff the way it
+  should be, so I mainly have to make it not be so wrong it mungs up our
+  tests. 
+
+* Similarly, use_fates_spitfire is no longer used, but I think there's an
+  enhanced fates_spitfire_mode option that controls this kind of thing.
+
+8/9/2022
+
+* I'm seeing an odd message that seems to be preventing controlMod.F90
+  from being compiled before elm_instMod.F90, which then causes the latter
+  to bomb because it uses the former:
+
+  gmake[2]: Circular cmake/lnd/CMakeFiles/lnd.dir/__/__/elm/src/main/elm_instMod.F90.o <- cmake/lnd/CMakeFiles/lnd.dir/controlmod.mod.stamp dependency dropped
+
+  This suggests to me that both of these modules ultimately depend on each
+  other, causing the circular dependency - so it drops the controlMod
+  dependency from elm_instMod, hence the build error.
+
+  The controlMod.F90 doesn't use elm_instMod directly, but it does use
+  SurfaceAlbedoMod, which in turn uses elm_instMod, so that's at least one
+  circular loop.  Comparing with the controlMod.F90 in E3SM_master, I see
+  the more recent master version of controlMod instead uses
+  SurfaceAlbedoType, which does *not* depend on controlMod.  So, changing
+  the working controlMod.F90 will hopefully remove the dependency.
+
+  Oddly, it looks like in my working version, the albice and
+  lake_melt_icealb vars that controlMod gets from SurfaceAlbedoMod
+  ultimately come from SurfaceAlbedoType anyway - it didn't occur to me you
+  could "use" a public var from one mod through another that uses that mod.
+  Of course, this is a good reason why you shouldn't do that anyway.
+
+  If I still see a circular dependency I'll have to look for another
+  a->b->c->a use chain - one way to do this is to diff the master and
+  working controlMod.F90 files, and see what "use" calls differ between the
+  two, especially for the same variable (which is how I found
+  SurfaceAlbedoMod/Type in the first place).
+
+  I'm also googling for more cmake info - unfortunately, I do not grok
+  cmake like I do regular make, and the E3SM build process apparently
+  translates some configuration stuff to automatic cmake calls, so like
+  everything else it's really hard to track down what is happening.  But
+  I'd really like to get a dependency tree for both controlMod and
+  elm_instMod, which would help track down where the circle(s) are.
+
+* Okay, still a circle error, but we get the same thing with
+  CanopyFluxesMod vs. CanopyStateType - the working controlMod gets the
+  Type variables through the Mod module, while the latter uses elm_instMod
+  and the former does not.  So switch to CanopyStateType. 
+
+  Those are the only "use" circles I found with an ediff in
+  controlMod. It's possible there could be more down in the "use" calls for
+  individual functions - those will be harder to find, since they aren't at
+  the top of the file.  Hopefully the Canopy changes make the difference...
+
+  ...yes, finally. Now it's crapping on various controlMod.F90 calls, so
+  yay. 
+
+8/8/2022 09:58:17 PDT
+
+* Keeping a better track of changes this time around:
+
+  ~/compy/E3SM_v2_work/components/elm/src/biogeochem/EcosystemBalanceCheckMod.F90
+
+  Used to read in 'use_nitrif_denitrif' from clm_varctl - that's not in
+  elm_varctl, so I commented out the section around line 404 where things
+  are switched off it.  But this is exactly the kind of mod I didn't want
+  to do, since I don't know what I'm doing...
+
+* It can't find the elm_time_manager module - that's because
+  elm/src/utils/elm_time_manager.F90 loads teh module "clm_time_manager".
+  So, I guess we use clm_time_manager in the code...
+
+* now .../biogeophys/BalanceCheckMod.F90, again with calls to clm_varctl
+  etc.  So, update those.
+
+* .../biogeophys/UrbanRadiationMod.F90 - same thing.
+
+* .../biogeochem/NitrogenDynamicsMod.F90 - ditto
+  But also: USE_NITRIF_DENITRIF
+
+* ../main/elm_instMod.F90 - okay, this has a few things.
+
+1 needs iac2lndMod and lnd2iacmod, plus types and vars
+2 BETRSIMULATIONALM, plus type - rename
+3 CONTROLMOD - this one is concerning, because one would hope top level
+  control mods would make it through.
+4 NLFILENAME - problem with controlmod
+5 INIT - from iac2lnd etc.
+
+* Ah, of course, I used clm_foo modules in lnd2iac etc.
+
+* Iac2lndMod.F90 has a "harvest" variable that it's not finding...it's in
+  dynHarvestMod, so let's look at that.
+
+! Okay, this is a somewhat major issue - the old dynHarvestMod.F90 used a
+  single harvest(:) variable to hold the combined harvest forcing sets.
+  The new one uses a harvest_rates(:,:) variable, keeping the five
+  different forcings separate for use in fates (or so the comments say).
+
+  So, I need to figure out how we use harvest(:) in iac2lndMod - if we read
+  it in, then I just need to do the sum myself before using it.  But if we
+  write it out, then it could be beyond my understanding - hopefully, if
+  that's the case, we simply scale up the total, so I could simply do the
+  same thing to the five distinct harvest sets.  
+
+  Ah - around line 210 of iac2lndMod.F90 we set the total harvest(g) values
+  by summing up the harvest_frac(g,h) values.  So, instead, we'll simply
+  set each harvest_rates(h1,g) value without summing.
+
+  Note that apparently the harvest_frac(g,h) in iac2lndMod is zero offset
+  in h, while the harvest_rates(h1,g) are one-offset in h1.
+
+* UrbanRadiationMod.F90 - the endrun() interface from abortutils.F90 needs
+  elmlevel instead of clmlevel.
+
+* Okay, this is a big one - the BeTRSimulationELM.F90 code is bombing on
+  build, because it (at least) is using a newer version of
+  ColumnDataType.F90 for it's data types.  The first error is trying to
+  find %rr_vr in a column_carbon_flux type var.  That exists in the
+  E3SM_master version of ColumnDataType.F90, but not in the
+  Balwinder/E3SM_v2_work version.  There are a ton of these things in the
+  build error, which means, ultimately, this master branch version of
+  BeTRSimulationELM.F90 is incompatible with our E3SM_v2_master branch.  I
+  could *try* copying over master's ColumnDataType.F90 and see if it works,
+  but I suspect that will fry something else down the road.
+
+  So, what are my options?
+
+1 Copy ColumnDataType.F90 from master and hope everything still works in
+  the non-sbetr parts of elm
+2 Try and find an earlier commit of sbetr that works with our version of
+  ColumnDataType.F90, AND that works with other parts of our elm that use
+  this BeTRSimulationELM.F90.  Maybe using BeTRSimulationALM.F90?
+3 Go back to the original balwinder 1934b9e commit and try to fix things
+  ad-hoc. 
+4 Punt it back to Balwinder or somebody who knows elm to try and get things
+  to work together
+5 Redo the whole E3SM_v2_work build from scratch and follow more closely
+  what is going on with sbetr at each step. 
+
+* I think I'm going to try [3] first - checkout the original commit that we
+  had a "detached head" from, and try to build, and use the
+  BeTRSimulationALM.F90 from that and see what is going on.
+
+  Also, change ~/compy/E3SM_v2_work/components/elm/bld/configure to build
+  using the external_models/sbetr/src/driver/alm directory, since elm does
+  not work.
+
+  Whoops - I copied configure over with E3SM_master! So, copy back from
+  E3SM_balwinder, then change to alm...except E3SM_balwinder/.../configure
+  *already* uses alm!  So, what was my problem before that made me try
+  sbetr master?
+
+* Anyway, with balwinder sbetr, we get errors with elm_instMod.F90, of
+  course, which calls the sbetr simulation stuff.  Change that to ALM and
+  see what happens...
+
+* Okay, well, elm_instMod.F90 seems to do okay with the ALM stuff, but now,
+  for some reason, controlMod.F90 is not being created, so elm_instMod.F90
+  craps out because we are trying to read nlfilename for the namelist
+  filename. 
+
+  I don't see an error about compiling controlMod.F90, just a confusing
+  message:
+
+    gmake[2]: Circular
+    cmake/lnd/CMakeFiles/lnd.dir/__/__/elm/src/main/elm_instMod.F90.o <-
+    cmake/lnd/CMakeFiles/lnd.dir/controlmod.mod.stamp dependency dropped
+
+  Anyway, controlMod.F90 has a lot of calls to clm_varctl etc, so let's fix
+  those and see if this make things go.
+
+8/8/2022
+
+* Gah - okay, I checked out the master sbetr submodule branch, and now the
+  build is bombing because:
+
+  ~/E3SM_v2_work/components/elm/bld/configure
+
+  has this line:
+
+         "external_models/sbetr/src/driver/alm"
+
+  ...in the @dirs array that builds FilePath.  That directory no longer
+  exists under master sbetr, instead we should use the "elm" driver
+  directory. 
+
+  But, in fact, E3SM_master has a few more changes, all related to sbetr
+  (more subdirs to add), so I think what I'm going to do is copy the
+  E3SM_master configure  over directly.  Since the only diff between
+  balwinder and master configure in this directoy is sbetr stuff, then
+  hopefully that will still work.
+
+  HEre is the latest commit of sbetr submodule master branch that I'm
+  using:
+
+  commit a37d7b09bd8a9a3a9d3f3dae062aa56b0115f5ee
+  Author: Jinyun Tang <jinyuntang@lbl.gov>
+  Date:   Thu Jul 14 08:41:38 2022 -0700
+
+  The Balwinder branch got *this* version of sbetr:
+
+    Head detached from 1934b9e
+
+  ...which seems to be this commit:
+
+  commit 1934b9ec58d2b82db4d52e086e5e5fe31a632d23
+  Author: Azamat Mametjanov <azamat@mcs.anl.gov>
+  Date:   Thu Feb 24 09:32:09 2022 +0900
+
+  ...although when I do a git log there are several after this from 2021.
+  Maybe that's how they represent a merge? (There's a merge involved
+  1934b9e here:
+
+  commit f3258d3214792d48b13230e4a73c901086746061
+  Merge: b9e728b 1934b9e
+  Author: jinyuntang <jinyuntang@lbl.gov>
+  Date:   Wed Apr 13 10:51:25 2022 -0700
+
+* But this is a nightmare - the Balwinder branch seems to mix and match
+  which parts it's using, sometimes using clm_varctl etc, sometimes using
+  ELMfoo modules.  Since the current block is with sbetr, I'm hoping using
+  the most up-to-date branch of that (i.e. master) and tying all the module
+  loads and function calls to stuff in that branch will ultimately work.
+  If not, then I'll probably need to start all over.
+
+* The Balwinder branch did not move the iac2lnd etc. mods into the elm
+  driver section, but they exist in the clm driver section.  There are a
+  fair number of things like that - I guess code that didn't exist in elm
+  wasn't ported over to Balwinder's branch, leaving that to me.
+
+* I don't know, it seems like there are a lot of holes here: missing files
+  in elm vs. my clm branch, and missing or wrong calls in the elm code to
+  new elm-named modules.  My big hope is that it's just a matter of
+  plugging in the right code pieces in the right place to get this to build
+  and run - I thought that was the case before, but now I'm worried that
+  there will be additional development, and I've been spinning my wheels
+  over the last few weeks because of that.
+
+* At any rate, I'll have to redo some of the mods I made before - for any
+  changes to elm that I made before, I saved the original code in a
+  hide/*.F90.hide file, which I copied back up into the main tree after
+  checking out the sbetr submodule.  That means I'm starting over, at least
+  with these sbetr-related and elm-vs-clm file name changes.  But it can't
+  be helped - I was losing track of all the balls I had in the air at once.
+
+8/5/2022
+
+* Okay, this has gotten really really confusing - there are alm and elm and
+  clm directories all over Balwinder's branch, and they are causing
+  problems, and files were trying to load clm_varctl when that's changed to
+  elm_varctl, and I don't know if copying stuff over that's missing from
+  Balwinder from the master branch is a good idea or not, but I'm just
+  trying to get this to build.
+
+  What I *think* happened is that I built before using components/clm
+  stuff, which was what we had before, but that didn't run.  Now that I'm
+  building with components/elm, I'm finding incompatibilities inside the
+  elm code - the clm_varctl stuff, but also code files like controlMod.F90
+  in elm/.../main that are different.
+
+* But I think a lot of this problem is that elm has submodules for things
+  liek "sbetr", in the external_modules directory, and I don't think those
+  were updated correctly.  Remember how I had to manually checkout the gcam
+  and giac submodule branches?  The sbetr (or whatever) submod is still
+  "Detached head".  So it's possible that we need to check out the sbetr
+  master branch for that submodule by hand.  At least, that's my guess as
+  to how to fix all these new incompatibilities I'm seeing.
+
+  I really don't fully understand submodules, but a git log shows that in
+  E3SM_v2_work and E3SM_balwinder, we are using a sbetr branch last
+  committed in February, while E3SM_master has an update from June.  I
+  still don't think this completely explains the (e.g.) lack of an elm
+  directory in the driver subdirectory, but hopefully switching to master
+  will make everything work (at least regards to sbetr stuff).
+
+7/21/2022
+
+* I must have figured this out before, but I didn't write it down, because
+  sometimes I am dumb:
+
+  We don't have a config_files.xml file in Balwinder's branch.  I initially
+  copied it over from .../cime/CIME/data/config/e3sm/config_files.xml, but
+  that one is parsimonious at best, and doesn't find the files we need.
+
+  So, instead, I copy it over from E3SM_master, the master branch - but now
+  I need to add the iac/gcam stuff there, so it can find the right .xml
+  files in .../components/gcam/cime_config.  Use E3SM_current (pre-rebase)
+  as a guide, and the config_files.xml file goes in:
+
+  .../cime_config
+
+  now.
+
+* It looks like they've xml'd things up a lot more than before - first we
+  need to define a COMP_ROOT_DIR_IAC entry, to point to the root dir of the
+  IAC component (and also if siac, but we don't have data or xcpl versions
+  set up).
+
+  Then we use that down in the COMPSETS_SPEC_FILE section to point to
+  config_compsets.xml for component iac, and then we need a CONFIG_IAC_FILE
+  entry to point to config_component.xml.
+
+7/18/2022
+
+* Note: the working rebased branch, with working submodules, is now in
+  ~/E3SM_v2_work.  I keep getting that confused with E3SM_v2_rebase, which
+  is Balwinders branch without any other mods.  I should rename stuff to
+  something better, so E3SM_v2_rebase is now E3SM_balwinder.
+
+* Okay, that was weird - the cime directory went away, I'm not sure why.
+  But, as it turns out, it wasn't added as a submodule in Balwinder's
+  branch in the first place, and I'm not sure how it got there before - did
+  I build off master or something, then swith to my gcam-rebase, then
+  switch to Balwinder?  I get confused by things that git does sometimes.
+
+* Anyway, to add the submodule post-hoc (this is probably how I will add
+  our gcam submodules, as well) we do this:
+
+  git submodule add git@github.com:ESMCI/cime.git
+
+  I found that url looking in the .git/config file in E3SM_master.  And now
+  that file in E3SM_v2_work (my working branch) contains the cime submodule
+  stuff. 
+
+6/15/2022
+
+* Okay, this took me a bit to figure out:
+
+  Balwinder's rebased branch is
+  singhbalwinder/shippert/gcam/active-gcam-rebase-rebase1. He said he
+  didn't modify any of the submodules, which makes sense as they are
+  iac/gcam specific.
+
+  But!  That means if you clone his branch, it can't find the submodules
+  you need.  In order to get the submods right, you have to checkout 
+  shippert/gcam/active-gcam-rebase, then do the git submodule update --init
+  --recursive, then checkout
+  singhbalwinder/shippert/gcam/active-gcam-rebase-rebase1.  That seems to
+  keep the submodule code intact in the code tree - and gives you a hint
+  that the components/gcam/src directory has been modified beyond what's in
+  the branch.
+
+6/2/2022
+
+* Ah.  In order to apply the defaults from the namelist_defaults_gcam.xml
+  file, you actually have to call the function add_default() in
+  build-namelist individually for *every* namelist value that has a
+  default.  So, you need to call "add_default($nl, 'gcam_gridfile');" to
+  use the default value of gcam_gridfile in namelist_defaults_gcam.xml.
+
+  So, not only do you need to update two .xml files to add a namelist
+  variable, but you *also* have to update build-namelist explicitly to look
+  for those defaults.  Also, of course, you have to update the iac source
+  code to read that namelist var in, and to use it appropriately.  So, at
+  least five and probably more files to modify to add a namelist var.
+
+  Of course, you can explicitly set the default in build-namelist by using
+  the optional argument, so you don't have to modify
+  namelist_defaults_gcam.xml at all.
+
+  The namelist_defaults_gcam.xml file *does* allow you to use conditional
+  defaults, with different defaults for different configurations
+  (i.e. with different grid sizes).
+
+6/1/2022
+
+* Trying to understand the namelist stuff, to see if we can't move some of
+  the nl_gcam stuff back to default values xml, like it should.
+
+* Here's some of the variables used in buildnml
+
+--
+   Calling /qfs/people/d3a230/E3SM_current/components/gcam/cime_config/buildnml
+   
+   sysmod = /qfs/people/d3a230/E3SM_current/components/gcam/bld/build-namelist \
+   	      -infile /qfs/people/d3a230/zlnd_v2/Buildconf/gcamconf/namelist \
+	      -caseroot /qfs/people/d3a230/zlnd_v2 \
+	      -scriptsroot /qfs/people/d3a230/E3SM_current/cime/scripts \
+	      -namelist " &gcamexp  /"  -inst_string "" 
+
+   iacconf_dir = /qfs/people/d3a230/zlnd_v2/Buildconf/gcamconf
+--
+
+*  And here is the part of the code where we create the namelist file we
+   see in gcamconf:
+
+==
+    create_namelist_infile(case,
+                           "{}/user_nl_gcam{}".format(caseroot, inst_string),
+                           "{}/namelist".format(iacconf_dir),
+                            infile_text=infile_text)
+==
+
+* So it looks like "namelist" is generated from the user_nl_gcam, and then
+  passed into build-namelist, where I guess each namelist variable is
+  validated against the .xml configuration, and where default values are
+  applied.
+
+  So, why aren't default values being applied?  I need to check this again,
+  because I only tested with num_pft and then didn't want to spend a lot of
+  time filling in namelist_defaults_gcam.xml if it wasn't working.
+
+* ...huh.  The namelist_defaults_gcam.xml file only has "iac_npft" and
+  "gcam_gridfile" defined.  iac_npft is not a defined namelist variable
+  (it's num_pft), so maybe that's it?  We should remove gcam_gridfile from
+  user_nl_gcam and see if the defaults re-applies it, to see if the
+  defaults actually are working.
+
+  Okay, I removed gcam_gridfile from user_nl_gcam, and it then did not make
+  it into gcam_in, so I am right - the default values are not working.
+  Maybe my format of the namelist_default_gcam.xml file is wrong?
+
+5/4/2022
+
+* Pushed up the rebase code, and did a z_rebase, zlnd_rebase, and
+  zatm_rebase test run, all of which finished (after I put the part where
+  we zero out the maxmonmean variables in a "lnd_present" block, since they
+  aren't allocated otherwise, to let the Z case finish).
+
+  Here are the approximate wallclock timings, for a two year run:
+
+  z_rebase: 0:47 hours (ntasks=1)
+  zlnd_rebase: 1:47 hours (ntasks=480)
+  zatm_rebase: 10:04 hours (ntasks=800)
+
+4/29/2022 22:08:08 PDT
+
+* Okay, you have to do a whole new create_newcase to get the new .xml files
+  to modify the env_run.xml file with the new variables.  You can't do it
+  with a case.setup or ./case.setup --reset.  You can *probably* modify the
+  env_run.xml in place, which is probably what I'm going to do, since I
+  don't want to setup a whole new case.
+
+  You can't just ./xmlchange
+  ATM2IAC_SMAPNAME='cpl/gridmaps/1.9x2.5/map_1.9x2.5_TO_0.9x1.25_aave.210910.nc'
+
+  ...without first modifying env_run.xml, because you need the variables to
+  exist before you can change them.  So you might as well add them to
+  env_run.xml with the correct values.
+
+  But I did create_newcase the ~/zlnd_v3 case, which has the env_run.xml
+  changes I need for the namelist to understand the atm2iac_smapxxxx xml
+  variables.  So an ediff between that an zlnd_v2 will get me setup, then
+  I'll have to do the prep_iac_mod.F90 and cime_comp_mod.F90 ediffs with
+  E3SM_alan to fully merge everything Alan had in.
+
+* As I've worked through this, I think whenever there's a conflict that git
+  can't figure out how to merge, it does NOT merge the changes it can, it
+  only gives the syntax for a merge conflict with the changes it can't
+  figure out.  So you gotta fix that, and *then* also merge in the other
+  changes, probably by hand.  That's not what I would expect, but it's the
+  only reason I can find for why I didn't see the non-conflicting changes
+  in prep_iac_mod.F90 and cime_comp_mod.F90 to start with.
+
+4/29/2022 18:59:50 PDT
+
+* Man, sometimes I do NOT understand git.  I think the below message has to
+  do with the merge - it appears that not everything from Alan made it into
+  the merge, and ALSO did not show up as a conflict (?).  At least,
+  prep_iac_mod.F90 has some a2z mapping stuff in it in Alan's code that I
+  did not see in the coupling conflict - maybe other files, too.  I might
+  have to hand check them all.
+
+  I'm cloning E3sM_Current into E3SM_alan, so I can check out Alan's branch
+  and see wtf is going on.
+
+  I'm going to have to ediff all the conflict files, just to make sure
+  eveything worked right there.  Then I might need to track down the merge
+  commit message and see what files changed, and ediff *those* by hand,
+  too. 
+
+  Here are all the files changed by the merge commit:
+
+======
+#	modified:   cime/config/e3sm/config_grids.xml
+#	modified:   cime/src/drivers/mct/cime_config/config_component.xml
+#	modified:   cime/src/drivers/mct/cime_config/namelist_definition_drv.xml
+#	modified:   cime/src/drivers/mct/main/cime_comp_mod.F90
+#	modified:   cime/src/drivers/mct/main/component_mod.F90
+#	modified:   cime/src/drivers/mct/main/prep_atm_mod.F90
+#	modified:   cime/src/drivers/mct/main/prep_iac_mod.F90
+#	modified:   cime/src/drivers/mct/main/seq_domain_mct.F90
+#	modified:   cime/src/drivers/mct/main/seq_frac_mct.F90
+#	modified:   cime/src/drivers/mct/shr/seq_infodata_mod.F90
+#	modified:   cime/src/drivers/mct/shr/seq_timemgr_mod.F90
+#	modified:   cime/src/share/util/shr_scam_mod.F90
+#	modified:   components/cam/src/cpl/atm_comp_mct.F90
+#	modified:   components/clm/src/biogeochem/CNEcosystemDynBetrMod.F90
+#	modified:   components/clm/src/biogeochem/EcosystemDynMod.F90
+#	modified:   components/clm/src/cpl/lnd_comp_mct.F90
+#	modified:   components/clm/src/cpl/lnd_import_export.F90
+#	modified:   components/clm/src/data_types/VegetationType.F90
+#	modified:   components/clm/src/main/clm_initializeMod.F90
+#	modified:   components/clm/src/main/controlMod.F90
+#	modified:   components/clm/src/main/iac2lndMod.F90
+#	modified:   components/clm/src/main/initGridCellsMod.F90
+#	modified:   components/clm/src/main/lnd2iacMod.F90
+#	modified:   components/clm/src/main/subgridRestMod.F90
+#	modified:   components/gcam/doc/NOTES.e3sm
+#	modified:   components/gcam/src
+
+======
+
+4/29/2022 15:19:40 PDT
+
+* Okay, stupid config error I can't figure out.  During a ./case.build
+  --clean-all, I get this:
+
+-----
+ ...
+   Calling /qfs/people/d3a230/E3SM_current/cime/src/drivers/mct/cime_config/buildnml
+ERROR: Namelist default for variable atm2iac_smapname refers to unknown XML variable ATM2IAC_SMAPNAME.
+-----
+
+  ... which is weird, because I don't think we need atm2iac coupling or
+  mapping, but maybe that was something Alan did?
+
+  After some grepping, the only place I see reference to these variables is
+  in:
+
+======
+
+[d3a230@compy01 E3SM_current]$ find . -type f -exec egrep -inH atm2iac_smapname {} \;
+./cime/src/drivers/mct/cime_config/namelist_definition_drv.xml:4335:  <entry id="atm2iac_smapname"    modify_via_xml="ATM2IAC_SMAPNAME">
+./cime/src/drivers/mct/cime_config/namelist_definition_drv.xml:4344:      <value>$ATM2IAC_SMAPNAME</value>
+./cime/src/drivers/mct/cime_config/config_component.xml:1390:  <entry id="ATM2IAC_SMAPNAME">
+./cime/src/drivers/mct/main/prep_iac_mod.F90~:187:          'seq_maps.rc','atm2iac_smapname:','atm2iac_smaptype:',samegrid_az, &
+./cime/src/drivers/mct/main/component_mod.F90:581:          call seq_map_readdata('seq_maps.rc','atm2iac_smapname:',mpicom_CPLID, CPLID, &
+./cime/config/e3sm/config_grids.xml:1867:    <required_gridmap grid1="atm_grid" grid2="iac_grid">ATM2IAC_SMAPNAME</required_gridmap>
+./cime/config/e3sm/config_grids.xml:1882:      <map name="ATM2IAC_SMAPNAME">cpl/gridmaps/1.9x2.5/map_1.9x2.5_TO_0.9x1.25_aave.210910.nc</map>
+
+======
+
+  That prep_iac_mod.F90~ is pretty interesting, suggesting the previous
+  version of prep_iac_mod.F90 (i.e. mine, pre-merge) actually did set
+  something up for atm2iac_smapname!
+
+  A git diff HEAD^ HEAD shows that namelist_definition_drv.xml and
+  config_component.xml were changed just to have these atm2iac_smapname.
+  So I've commented these sections out in the cime_config directories, and
+  let's see what happens.
+
+4/29/2022
+
+* Merge conflicts for Alan's e3sm main branch for the rebase (the giac
+  branch merged in clean):
+
+===========
+[d3a230@compy01 components]$ git merge aldivi/shippert/gcam/active-gcam-debug-31mar22
+error: refs/heads/master does not point to a valid object!
+error: refs/remotes/origin/HEAD does not point to a valid object!
+error: refs/remotes/origin/aldivi/glm-update does not point to a valid object!
+error: refs/remotes/origin/bishtgautam/add-gcam-core does not point to a valid object!
+error: refs/remotes/origin/bishtgautam/fix-compile-error does not point to a valid object!
+error: refs/remotes/origin/master does not point to a valid object!
+error: refs/remotes/origin/shippert/giac-update does not point to a valid object!
+error: refs/remotes/origin/working does not point to a valid object!
+warning: Failed to merge submodule components/gcam/src (not fast-forward)
+Found a possible merge resolution for the submodule:
+ eddc11d0e13821180176d6cc7ce1e74869a9d157: > Merge branch 'aldivi/shippert/merge' into shippert/merge Merging Alan's mods into my branch to get ready for rebase.
+If this is correct simply add it to the index for example
+by using:
+
+  git update-index --cacheinfo 160000 eddc11d0e13821180176d6cc7ce1e74869a9d157 "components/gcam/src"
+
+which will accept this suggestion.
+Auto-merging components/gcam/src
+CONFLICT (submodule): Merge conflict in components/gcam/src
+Auto-merging components/clm/src/main/lnd2iacMod.F90
+CONFLICT (content): Merge conflict in components/clm/src/main/lnd2iacMod.F90
+Auto-merging components/clm/src/dyn_subgrid/dynSubgridDriverMod.F90
+CONFLICT (content): Merge conflict in components/clm/src/dyn_subgrid/dynSubgridDriverMod.F90
+Auto-merging components/clm/src/biogeochem/EcosystemDynMod.F90
+Auto-merging components/cam/src/cpl/atm_comp_mct.F90
+Auto-merging components/cam/cime_config/buildnml
+CONFLICT (content): Merge conflict in components/cam/cime_config/buildnml
+Auto-merging cime/src/drivers/mct/shr/seq_timemgr_mod.F90
+Auto-merging cime/src/drivers/mct/main/prep_iac_mod.F90
+CONFLICT (content): Merge conflict in cime/src/drivers/mct/main/prep_iac_mod.F90
+Auto-merging cime/src/drivers/mct/main/cime_comp_mod.F90
+CONFLICT (content): Merge conflict in cime/src/drivers/mct/main/cime_comp_mod.F90
+Automatic merge failed; fix conflicts and then commit the result.
+
+===========
+
+@XDid the git update-index thing, which presumably will do all the right
+  bookkeeping cruft for our giac submodule in components/gcam/src.
+
+@Xlnd2iacMod.F90: Looks like the commenting out some writes fubard the
+   merge, otherwise the change is just to add some frac and mask stuff to
+   the pftwgt calculation.  Mostly use Alan's, as he's got the right calc.
+
+@Xcomponents/clm/src/dyn_subgrid/dynSubgridDriverMod.F90: same thing, just
+  a munged merge because of commented out write lines.  Use mine.
+
+@Xcomponents/cam/cime_config/buildnml: again, some comments and some white
+  space, so just use mine.
+
+@Xcime/src/drivers/mct/main/prep_iac_mod.F90: slightly trickier, as Alan
+  has a different declaration of l2x_lx(:), making it an array, and then
+  calling prep_iac_get_l2zacc_lx() to setting it.  Since I've changed it to
+  use l2zmax_lx now, and because all of those are internal private module
+  variables, we don't have to call the accessor functions and can just
+  modify the field directly.  So I'm going to use my version, because we
+@ need to use the max field, but I'll review if my methodology is correct
+  or if I really should make a prep_iac_get_l2zmax_lx() function, for
+  whatever reason.  (Honestly, I think either syntax works, and I probably
+  followed some component who set these things up with the accessor because
+  some other part of the code needed to get at those private variables.)
+
+@Xcime/src/drivers/mct/main/cime_comp_mod.F90: I think Alan is right here -
+  he removes prep_lnd_calc_z2x_lx() and prep_atm_calc_z2x_ax() calls from
+  iac post, because those are both called in the lnd/atm setup functions,
+  so the iac post calls are redundant.  I need to keep my
+  prep_iac_zero_max() call, though.
+
 4/28/2022 13:46:30 PDT
 
 * Okay, as far as I can tell everything is running fine - the zlnd_v2 case,
@@ -1345,14 +2810,14 @@ TRS:  33112  15 280 115  348.7500   17.4346    5.8889    5.8889
   cd ~/$build
 
   ./xmlchange --id "RUN_STARTDATE" --val "2015-01-01"
-  ./xmlchange --id STOP_N --val 1
-  ./xmlchange --id DEBUG --val TRUE
+  ./xmlchange --id STOP_N --val 2
+  ./xmlchange --id DEBUG --val FALSE
   ./xmlchange --id NTASKS --val 1
   ./xmlchange -id "NCPL_BASE_PERIOD" -val "year"
   ./xmlchange -id "ATM_NCPL" -val 17520
   ./xmlchange -id "IAC_NCPL" -val 1
   ./xmlchange -id "STOP_OPTION" -val "nyears"
-  ./xmlchange --id "JOB_WALLCLOCK_TIME" --val 4:00:00
+  ./xmlchange --id "JOB_WALLCLOCK_TIME" --val 5:00:00
   ./xmlchange --id "NTASKS_LND" --val 480
   ./xmlchange --id "NTASKS_ATM" --val 480
 

@@ -1292,9 +1292,7 @@ contains
 
     start(:) = 0
     count(:) = 0
-
     if (flag == 'read') then
-
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
 
 #if ({DIMS}==0) 
@@ -1680,7 +1678,6 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
     start(:)=0
     count(:)=0
-
     elmlevel = dim1name      
 
     if (masterproc .and. debug > 1) then
@@ -1904,7 +1901,6 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     type(var_desc_t)                 :: vardesc
     character(len=*),parameter :: subname='ncd_io_3d_{TYPE}' ! subroutine name
     !-----------------------------------------------------------------------
-
     elmlevel = dim1name 
 
     if (masterproc .and. debug > 1) then
@@ -2039,7 +2035,6 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     !-----------------------------------------------------------------------
 
     clmlevel = dim1name      
-
     if (masterproc .and. debug > 1) then
        write(iulog,*) trim(subname),' ',trim(flag),' ',trim(varname),' ',trim(clmlevel)
     end if

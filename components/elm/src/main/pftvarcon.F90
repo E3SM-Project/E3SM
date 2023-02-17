@@ -341,7 +341,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     character(len=256) :: locfn ! local file name
-    integer :: i,n              ! loop indices
+    integer :: i,n,m              ! loop indices
     integer :: ier              ! error code
     type(file_desc_t) :: ncid   ! pio netCDF file id
     integer :: dimid            ! netCDF dimension id
@@ -610,6 +610,7 @@ contains
 
     call ncd_io('pftname',pftname, 'read', ncid, readvar=readv, posNOTonfile=.true.) 
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+
     call ncd_io('z0mr',z0mr, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('displar',displar, 'read', ncid, readvar=readv, posNOTonfile=.true.)
@@ -636,6 +637,7 @@ contains
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('xl',xl, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+
     call ncd_io('roota_par',roota_par, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('rootb_par',rootb_par, 'read', ncid, readvar=readv, posNOTonfile=.true.)
@@ -665,7 +667,6 @@ contains
     call ncd_io('deadwdcn',deadwdcn, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
 
-
     call ncd_io('leafcp',leafcp, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('lflitcp',lflitcp, 'read', ncid, readvar=readv, posNOTonfile=.true.)
@@ -676,7 +677,6 @@ contains
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('deadwdcp',deadwdcp, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
-
 
     call ncd_io('grperc',grperc, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
@@ -723,6 +723,7 @@ contains
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('fstemcn',fstemcn, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
+
     if (use_crop) then
        call ncd_io('presharv',presharv, 'read', ncid, readvar=readv, posNOTonfile=.true.)
        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
@@ -746,6 +747,7 @@ contains
        call ncd_io('rootprof_beta',rootprof_beta, 'read', ncid, readvar=readv, posNOTonfile=.true.)
        if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     end if
+
     call ncd_io('pconv',pconv, 'read', ncid, readvar=readv)  
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
     call ncd_io('pprod10',pprod10, 'read', ncid, readvar=readv)  
@@ -838,7 +840,6 @@ contains
     if ( .not. readv ) call endrun(msg=' ERROR: error in reading in pft data'//errMsg(__FILE__, __LINE__))
 
     if (nu_com .ne. 'RD' ) then
-
         ! These are soil parameters and used for both FATES and big leaf ELM
         call ncd_io('VMAX_MINSURF_P_vr',VMAX_MINSURF_P_vr, 'read', ncid, readvar=readv)
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in soil order VMAX_MINSURF_P_vr'//errMsg(__FILE__, __LINE__))
@@ -957,6 +958,7 @@ contains
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in laimax data'//errMsg(__FILE__, __LINE__))
     end if
     end if
+
     call ncd_io('rsub_top_globalmax', rsub_top_globalmax, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if (.not. readv) rsub_top_globalmax = 10._r8
     !if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
@@ -1024,7 +1026,6 @@ contains
     call ncd_pio_closefile(ncid)
 
     do i = 0, mxpft
-
        if(.not. use_crop .and. i > mxpft_nc) EXIT ! exit the do loop
        
        ! (FATES-INTERF) Later, depending on how the team plans to structure the crop model

@@ -118,7 +118,6 @@
 <!-- (starting from initial file interpolated using interpic) -->
 <ncdata dyn="se" hgrid="ne0np4_enax4v1" nlev="72">atm/cam/inic/homme/cami_0002-01-01_enax4v1_L72_c170706.nc</ncdata>
 
-
 <!-- Topography -->
 <bnd_topo hgrid="64x128"  >atm/cam/topo/USGS-gtopo30_64x128_c050520.nc</bnd_topo>
 
@@ -430,8 +429,11 @@
 
 <!-- Time-variant CO2 fossil fuel emissions -->
 <!-- <co2flux_fuel_file  sim_year="1850-2000">atm/cam/ggas/co2flux_fossil_1751-2006-monthly_0.9x1.25_c20100204.nc</co2flux_fuel_file> -->
+<co2flux_fuel_file  sim_year="1850-2000">atm/cam/ggas/co2flux_fossil_1751-2006-monthly_0.9x1.25_c20100204.nc</co2flux_fuel_file>
 <co2flux_fuel_file  hgrid="ne4np4" npg="2">atm/cam/ggas/ne4pg2_eam_CO2-em-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gr_175001-201412_c20201111.nc</co2flux_fuel_file>
 <co2flux_fuel_file  hgrid="ne30np4" npg="2">atm/cam/ggas/ne30pg2_eam_CO2-em-anthro_input4MIPs_emissions_CMIP_CEDS-2017-05-18_gr_175001-201412_c20201111.nc</co2flux_fuel_file>
+
+
 <ac_CO2_emis hgrid="ne4np4" npg="2">filelist_FUELBURN_hist_ne4pg2.txt</ac_CO2_emis>
 <ac_CO2_emis hgrid="ne30np4" npg="2">filelist_FUELBURN_hist_ne30pg2.txt</ac_CO2_emis>
 <aircraft_datapath>atm/cam/ggas/</aircraft_datapath>
@@ -1734,5 +1736,51 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <so4_sz_thresh_icenuc phys="default"> 0.080e-6   </so4_sz_thresh_icenuc>
 <micro_mg_berg_eff_factor phys="default" clubb_sgs="1"> 0.7D0      </micro_mg_berg_eff_factor>
 <cldfrc_dp1  phys="default"> 0.018D0    </cldfrc_dp1>
+
+<!-- Legacy iac coupling defaults -->
+
+<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="26" ic_ymd="101"      >atm/cam/inic/fv/cami_0000-01-01_1.9x2.5_L26_c070408.nc</ncdata>
+<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="26" ic_ymd="901"      >atm/cam/inic/fv/cami_0000-09-01_1.9x2.5_L26_c040809.nc</ncdata>
+<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="30"  ic_ymd="101"     >atm/cam/inic/fv/cami_0000-01-01_1.9x2.5_L30_c070703.nc</ncdata>
+<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="30"  ic_ymd="901"     >atm/cam/inic/fv/cami_0000-09-01_1.9x2.5_L30_c070109.nc</ncdata>
+<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="64"  ic_ymd="101"     >atm/cam/inic/fv/cami_0000-01-01_1.9x2.5_L64_c070703.nc</ncdata>
+<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="30"  chem="trop_mam3" ic_ymd="101">atm/cam/inic/fv/cami-mam3_0000-01-01_1.9x2.5_L30_c090306.nc</ncdata>
+<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="30"  chem="linoz_mam3" ic_ymd="101">atm/cam/inic/fv/cami-mam3_0000-01-01_1.9x2.5_L30_c090306.nc</ncdata>
+<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="26"  ocn="aquaplanet"  ic_ymd="101" >atm/cam/inic/fv/cami_0000-01-01_1.9x2.5_L26_APE_c080203.nc</ncdata>
+<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="26"  chem="trop_mozart" ic_ymd="19900101" >atm/cam/inic/fv/cami-chem_1990-01-01_1.9x2.5_L26_c080114.nc</ncdata>
+<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="30"  chem="trop_mozart" ic_ymd="19900101" >atm/cam/inic/fv/cami-chem_1990-01-01_1.9x2.5_L30_c080215.nc</ncdata>
+<ncdata dyn="fv" hgrid="1.9x2.5" nlev="26" chem="trop_mozart" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_1.9x2.5_L26_c081104.nc</ncdata>
+<ncdata dyn="fv" hgrid="1.9x2.5" nlev="30" chem="trop_mozart" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_1.9x2.5_L30_c081104.nc</ncdata>
+<ncdata dyn="fv" hgrid="1.9x2.5" nlev="26" chem="trop_mozart_soa" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_1.9x2.5_L26_c081104.nc</ncdata>
+<ncdata dyn="fv" hgrid="1.9x2.5" nlev="30" chem="trop_mozart_soa" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_1.9x2.5_L30_c081104.nc</ncdata>
+<ncdata dyn="fv" hgrid="1.9x2.5" nlev="30" chem="trop_mozart_mam3" ic_ymd="101" >atm/cam/inic/fv/trop_strat_mam3_chem_2000-01-01_1.9x2.5_L30_c120222.nc</ncdata>
+<ncdata dyn="fv" hgrid="1.9x2.5" nlev="30" chem="trop_strat_mam3" ic_ymd="101" >atm/cam/inic/fv/trop_strat_mam3_chem_2000-01-01_1.9x2.5_L30_c121015.nc</ncdata>
+<ncdata dyn="fv" hgrid="1.9x2.5" nlev="30" chem="trop_strat_mam7" ic_ymd="101" >atm/cam/inic/fv/trop_strat_mam7_chem_2000-01-01_1.9x2.5_L30_c121011.nc</ncdata>
+<ncdata dyn="fv" hgrid="1.9x2.5" nlev="26" chem="super_fast_llnl" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_1.9x2.5_L26_c081104.nc</ncdata>
+<ncdata dyn="fv" hgrid="1.9x2.5" nlev="30" chem="super_fast_llnl" ic_ymd="101" >atm/cam/inic/fv/camchemi_0012-01-01_1.9x2.5_L30_c081104.nc</ncdata>
+<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="66"   ic_ymd="20000701" >atm/waccm/ic/cami_2000-07-01_1.9x2.5_L66_c040928.nc</ncdata>
+<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="70"   ic_ymd="20000101" >atm/waccm/ic/f2000.waccm-mam3_1.9x2.5_L70.cam2.i.0017-01-01.c120410.nc</ncdata>
+<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="70"   ic_ymd="18500101" >atm/waccm/ic/b1850.waccm-mam3_1.9x2.5_L70.cam2.i.0156-01-01.c120523.nc</ncdata>
+<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="103"  ic_ymd="20000501" >atm/waccm/ic/cami_2000-05-01_1.9x2.5_L103_c040928.nc</ncdata>
+<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="125"  ic_ymd="20000701" >atm/waccm/ic/cami_2000-07-01_1.9x2.5_L125_c040928.nc</ncdata>
+<ncdata dyn="fv"  hgrid="1.9x2.5"   nlev="81"  waccmx="1"  ic_ymd="20000101" >atm/waccm/ic/WAX3548T08CO_2003top_f2000.waccm_0017bottom_L81_c110906.nc</ncdata>
+<bnd_topo hgrid="1.9x2.5"   >atm/cam/topo/USGS-gtopo30_1.9x2.5_remap_c050602.nc</bnd_topo>
+<cldfrc_rhminl hgrid="1.9x2.5"   phys="cam5" microphys="mg1.5"        > 0.9125D0 </cldfrc_rhminl>
+<cldfrc_rhminl hgrid="1.9x2.5"   phys="cam5"                          > 0.8875D0 </cldfrc_rhminl>
+<cldfrc_rhminl hgrid="1.9x2.5"   phys="cam4"                          > 0.910D0 </cldfrc_rhminl>
+<cldwat_icritc  dyn="fv"  hgrid="1.9x2.5"                             >  9.5e-6  </cldwat_icritc>
+<uwshcu_rpen hgrid="1.9x2.5"                                       >   5.0 </uwshcu_rpen>
+<uwshcu_rpen hgrid="1.9x2.5"  microphys="mg1.5"                    >  10.0 </uwshcu_rpen>
+<finidat hgrid="1.9x2.5"   ic_ymd="101" sim_year="2000">lnd/clm2/initdata/clmi.BCN.2000-01-01_1.9x2.5_gx1v6_simyr2000_c100309.nc</finidat>
+<finidat hgrid="1.9x2.5"   ic_ymd="101" sim_year="1850">ccsm4_init/b40.1850.track1.2deg.003/year_401/b40.1850.track1.2deg.003.clm2.r.0401-01-01-00000.nc</finidat>
+<fsurdat hgrid="1.9x2.5"   sim_year="2000">lnd/clm2/surfdata/surfdata_1.9x2.5_simyr2000_c091005.nc</fsurdat>
+<fsurdat hgrid="1.9x2.5"   sim_year="1850">lnd/clm2/surfdata/surfdata_1.9x2.5_simyr1850_c091108.nc</fsurdat>
+<fatmlndfrc hgrid="1.9x2.5"   >share/domains/domain.lnd.fv1.9x2.5_gx1v6.090206.nc</fatmlndfrc>
+<bndtvs hgrid="1.9x2.5"    sim_year="2000">atm/cam/sst/sst_HadOIBl_bc_1.9x2.5_clim_c061031.nc</bndtvs>
+<bndtvs hgrid="1.9x2.5"    sim_year="1850">atm/cam/sst/sst_HadOIBl_bc_1.9x2.5_clim_pi_c100127.nc</bndtvs>
+<bndtvs hgrid="1.9x2.5"    sim_year="1850-2000">atm/cam/sst/sst_HadOIBl_bc_1.9x2.5_1850_2012_c130411.nc</bndtvs>
+<focndomain hgrid="1.9x2.5"   >atm/cam/ocnfrac/domain.camocn.1.9x2.5_gx1v6_090403.nc</focndomain>
+
+<!-- End Legacy iac coupling defaults -->
 
 </namelist_defaults>

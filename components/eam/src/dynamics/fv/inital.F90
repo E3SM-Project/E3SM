@@ -15,7 +15,7 @@ subroutine cam_initial( dyn_in, dyn_out, NLFileName )
 
    use dyn_comp,             only : dyn_import_t, dyn_export_t, &
                                     dyn_init, frontgf_idx, frontga_idx, &
-                                    uzm_idx
+                                    uzm_idx, history_defaults
    use phys_grid,            only : phys_grid_init
    use physpkg,              only : phys_register
    use phys_control,         only : use_gw_front
@@ -28,6 +28,9 @@ subroutine cam_initial( dyn_in, dyn_out, NLFileName )
    use ref_pres,             only : ref_pres_init
    use dynamics_vars,        only : T_FVDYCORE_STATE   
    use dyn_internal_state,   only : get_dyn_state
+
+   !TRS
+   use cam_logfile      , only: iulog
 
    ! Arguments
    type(dyn_import_t), intent(out) :: dyn_in
@@ -74,6 +77,9 @@ subroutine cam_initial( dyn_in, dyn_out, NLFileName )
    call ref_pres_init()
 
    call initial_conds( dyn_in )
+
+   ! TRS history_defaults, previously from dyn_init
+   call history_defaults()
 
 end subroutine cam_initial
 

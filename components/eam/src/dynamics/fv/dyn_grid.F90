@@ -1216,6 +1216,7 @@ subroutine define_cam_grids()
     nullify(coord_map)
   end if
   ! Cell-centered grid
+  !write(iulog, *) 'TRS: register fv_centers'
   call cam_grid_register('fv_centers', dyn_decomp, lat_coord, lon_coord,      &
        grid_map, unstruct=.false.)
   allocate(rattval(size(w)))

@@ -1671,7 +1671,7 @@ logical function phys_grid_initialized ()
      if ( present(phys_chnk_fdim_in) ) then
         pcols_opt = phys_chnk_fdim_in
      endif
-!
+
      if ( present(phys_chnk_fdim_max_in) ) then
         pcols_max = phys_chnk_fdim_max_in
         if (pcols_opt <= 0) then

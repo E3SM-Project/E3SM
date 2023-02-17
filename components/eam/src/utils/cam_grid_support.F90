@@ -709,6 +709,7 @@ contains
 !!XXgoldyXX: Is this not working in PGI?
 !      attr => attrPtr%getAttr()
       attr => attrPtr%attr
+
       if (trim(name) == trim(attr%name)) then
         exit
       else
@@ -2148,6 +2149,7 @@ contains
            trim(attribute_name),' already exists for ',cam_grids(dest_ind)%name
       call endrun(errormsg)
     else
+
       call find_cam_grid_attr(src_ind, trim(attribute_name), attr)
       if (associated(attr)) then
         ! Copy the attribute

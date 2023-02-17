@@ -235,6 +235,7 @@ end subroutine restart_printopts
       !-----------------------------------------------------------------------
       ! Dynamics, physics, History
       !-----------------------------------------------------------------------
+
       call t_startf("timemgr_write_restart")
       call timemgr_write_restart(File)
       call t_stopf("timemgr_write_restart")

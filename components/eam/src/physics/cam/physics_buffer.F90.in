@@ -1014,6 +1014,8 @@ CONTAINS
     integer,intent(in)  ,optional      :: col_type
 
     integer :: c
+
+    character(len=*), parameter        :: subname = 'set_pbuf2d_field_const_by_index_{TYPE}'
     
     do c=begchunk,endchunk
        if(present(col_type)) then
@@ -1112,6 +1114,7 @@ CONTAINS
     integer :: c
     {VTYPE}, pointer :: fld{DIMSTR}
 
+    character(len=*), parameter        :: subname = 'set_pbuf2d_field_by_index_{DIMS}d_{TYPE}'
 
 #if ({DIMS}==1)
     {VTYPE},pointer :: field(:,:)

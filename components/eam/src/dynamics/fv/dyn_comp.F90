@@ -21,6 +21,10 @@ public dyn_init, dyn_run, dyn_final
 
 public dyn_import_t, dyn_export_t, dyn_state
 
+! TRS - move history_defaults to public, so we can call after physics
+! init
+public history_defaults
+
 type (T_FVDYCORE_STATE), save, target :: dyn_state ! to be moved up later
 
 type dyn_import_t
@@ -575,7 +579,8 @@ subroutine dyn_init(file, dyn_state, dyn_in, dyn_out, NLFileName )
   call ctem_init( NLFileName )
 
   ! Set history defaults (has to be after grids are defined)
-  call history_defaults()
+  ! TRS Now called externally, after physics grid init
+  !call history_defaults()
 
   return
 
@@ -738,106 +743,7 @@ end subroutine dyn_create_interface
 !EOC
       end function INIT_NSPLIT
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine history_defaults
-        !----------------------------------------------------------------------- 
-        ! 
-        ! Purpose: 
-        !
-        ! Build Master Field List of all possible fields in a history file.  Each field has 
-        ! associated with it a "long_name" netcdf attribute that describes what the field is, 
-        ! and a "units" attribute.
-        ! 
-        ! Method: Call a subroutine to add each field
-        ! 
-        ! Author: CCM Core Group
-        ! 
-        !-----------------------------------------------------------------------
-
-        use shr_kind_mod, only: r8 => shr_kind_r8, r4 => shr_kind_r4
-        use constituents, only: pcnst, cnst_name, cnst_longname, tottnam, cnst_get_ind
-        use ppgrid,       only: pver, pverp
-        use pmgrid,       only: plev, plevp
-        use cam_history,  only: addfld, add_default, horiz_only
-        use phys_control, only: phys_getopts
-
-        implicit none
-
-        !-----------------------------------------------------------------------
-        !
-        ! Local workspace
-        !
-        integer m                      ! Index
-        integer :: ixcldice, ixcldliq  ! constituent indices for cloud liquid and ice water.
-        logical :: history_budget      ! output tendencies and state variables for CAM4
-                                       ! temperature, water vapor, cloud ice and cloud
-                                       ! liquid budgets.
-        integer :: history_budget_histfile_num  ! output history file number for budget fields
-
-        !
-        ! Call addfld to add each field to the Master Field List.
-        !
-
-        !----------------------------------------------------------------------------
-        ! Dynamics variables which belong in dynamics specific initialization modules
-        !----------------------------------------------------------------------------
-        call addfld ('US',    (/ 'lev' /),'A','m/s','Zonal wind, staggered', gridname='fv_u_stagger' )
-        call addfld ('VS',    (/ 'lev' /),'A','m/s','Meridional wind, staggered', gridname='fv_v_stagger' )
-        call addfld ('US&IC', (/ 'lev' /),'I','m/s','Zonal wind, staggered',gridname='fv_u_stagger' )
-        call addfld ('VS&IC', (/ 'lev' /),'I','m/s','Meridional wind, staggered',gridname='fv_v_stagger' )
-        call addfld ('PS&IC', horiz_only, 'I','Pa', 'Surface pressure',gridname='fv_centers' )
-        call addfld ('T&IC',  (/ 'lev' /),'I','K',  'Temperature',gridname='fv_centers' )
-        do m = 1,pcnst
-           call addfld (trim(cnst_name(m))//'&IC',(/ 'lev' /),'I','kg/kg',cnst_longname(m),gridname='fv_centers' )
-        end do
-
-        do m=1,pcnst
-           call addfld (tottnam(m),(/ 'lev' /),'A','kg/kg/s',trim(cnst_name(m))//' horz + vert + fixer tendency ',  &
-                gridname='fv_centers')
-        end do
-
-        call addfld ('DUH',      (/ 'lev' /), 'A','K/s','U horizontal diffusive heating',                 gridname='fv_centers')
-        call addfld ('DVH',      (/ 'lev' /), 'A','K/s','V horizontal diffusive heating',                 gridname='fv_centers')
-        call addfld ('ENGYCORR', (/ 'lev' /), 'A','W/m2','Energy correction for over-all conservation',   gridname='fv_centers')
-
-        call addfld ('FU',       (/ 'lev' /), 'A','m/s2','Zonal wind forcing term',                       gridname='fv_centers')
-        call addfld ('FV',       (/ 'lev' /), 'A','m/s2','Meridional wind forcing term',                  gridname='fv_centers')
-        call addfld ('FU_S',     (/ 'lev' /), 'A','m/s2','Zonal wind forcing term on staggered grid',     gridname='fv_u_stagger')
-        call addfld ('FV_S',     (/ 'lev' /), 'A','m/s2','Meridional wind forcing term on staggered grid',gridname='fv_v_stagger')
-        call addfld ('UTEND',    (/ 'lev' /), 'A','m/s2','U tendency',                                    gridname='fv_centers')
-        call addfld ('VTEND',    (/ 'lev' /), 'A','m/s2','V tendency',                                    gridname='fv_centers')
-        call addfld ('TTEND',    (/ 'lev' /), 'A','K/s','Total T tendency (all processes)',               gridname='fv_centers')
-        call addfld ('LPSTEN',   horiz_only,  'A','Pa/s','Surface pressure tendency',                     gridname='fv_centers')
-        call addfld ('VAT',      (/ 'lev' /), 'A','K/s','Vertical advective tendency of T',               gridname='fv_centers')
-        call addfld ('KTOOP',    (/ 'lev' /), 'A','K/s','(Kappa*T)*(omega/P)',                            gridname='fv_centers')
-
-        !----------------------------------------------------------------------------
-        ! Determine defaults variables
-        !----------------------------------------------------------------------------
-        call phys_getopts( history_budget_out = history_budget, history_budget_histfile_num_out = history_budget_histfile_num)
-        if ( history_budget ) then
-           call cnst_get_ind('CLDLIQ', ixcldliq)
-           call cnst_get_ind('CLDICE', ixcldice)
-           call add_default(tottnam(       1), history_budget_histfile_num, ' ')
-           call add_default(tottnam(ixcldliq), history_budget_histfile_num, ' ')
-           call add_default(tottnam(ixcldice), history_budget_histfile_num, ' ')
-           call add_default('TTEND   '       , history_budget_histfile_num, ' ')
-        end if
-
-        call add_default ('US&IC   ', 0, 'I')
-        call add_default ('VS&IC   ', 0, 'I')   
-        call add_default ('PS&IC      ',0, 'I')
-        call add_default ('T&IC       ',0, 'I')
-
-        do m = 1,pcnst
-           call add_default(trim(cnst_name(m))//'&IC',0, 'I')
-        end do
-
-        !-----------------------------------------------------------------------
-        ! End of dynamics variables
-        !-----------------------------------------------------------------------
-
-      end subroutine history_defaults
+! TRS history_defaults moved from here
 
 end subroutine dyn_init
 !---------------------------------------------------------------------
@@ -2524,5 +2430,106 @@ end subroutine dyn_free_interface
 end subroutine dyn_final
 !-----------------------------------------------------------------------
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+subroutine history_defaults
+  !----------------------------------------------------------------------- 
+  ! 
+  ! Purpose: 
+  !
+  ! Build Master Field List of all possible fields in a history file.  Each field has 
+  ! associated with it a "long_name" netcdf attribute that describes what the field is, 
+  ! and a "units" attribute.
+  ! 
+  ! Method: Call a subroutine to add each field
+  ! 
+  ! Author: CCM Core Group
+  ! 
+  !-----------------------------------------------------------------------
+
+  use shr_kind_mod, only: r8 => shr_kind_r8, r4 => shr_kind_r4
+  use constituents, only: pcnst, cnst_name, cnst_longname, tottnam, cnst_get_ind
+  use ppgrid,       only: pver, pverp
+  use pmgrid,       only: plev, plevp
+  use cam_history,  only: addfld, add_default, horiz_only
+  use phys_control, only: phys_getopts
+
+  implicit none
+
+  !-----------------------------------------------------------------------
+  !
+  ! Local workspace
+  !
+  integer m                      ! Index
+  integer :: ixcldice, ixcldliq  ! constituent indices for cloud liquid and ice water.
+  logical :: history_budget      ! output tendencies and state variables for CAM4
+                                 ! temperature, water vapor, cloud ice and cloud
+                                 ! liquid budgets.
+  integer :: history_budget_histfile_num  ! output history file number for budget fields
+
+  !
+  ! Call addfld to add each field to the Master Field List.
+  !
+
+  !----------------------------------------------------------------------------
+  ! Dynamics variables which belong in dynamics specific initialization modules
+  !----------------------------------------------------------------------------
+  call addfld ('US',    (/ 'lev' /),'A','m/s','Zonal wind, staggered', gridname='fv_u_stagger' )
+  call addfld ('VS',    (/ 'lev' /),'A','m/s','Meridional wind, staggered', gridname='fv_v_stagger' )
+  call addfld ('US&IC', (/ 'lev' /),'I','m/s','Zonal wind, staggered',gridname='fv_u_stagger' )
+  call addfld ('VS&IC', (/ 'lev' /),'I','m/s','Meridional wind, staggered',gridname='fv_v_stagger' )
+  call addfld ('PS&IC', horiz_only, 'I','Pa', 'Surface pressure',gridname='fv_centers' )
+  call addfld ('T&IC',  (/ 'lev' /),'I','K',  'Temperature',gridname='fv_centers' )
+
+  do m = 1,pcnst
+     call addfld (trim(cnst_name(m))//'&IC',(/ 'lev' /),'I','kg/kg',cnst_longname(m),gridname='fv_centers' )
+  end do
+
+  do m=1,pcnst
+     call addfld (tottnam(m),(/ 'lev' /),'A','kg/kg/s',trim(cnst_name(m))//' horz + vert + fixer tendency ',  &
+          gridname='fv_centers')
+  end do
+
+  call addfld ('DUH',      (/ 'lev' /), 'A','K/s','U horizontal diffusive heating',                 gridname='fv_centers')
+  call addfld ('DVH',      (/ 'lev' /), 'A','K/s','V horizontal diffusive heating',                 gridname='fv_centers')
+  call addfld ('ENGYCORR', (/ 'lev' /), 'A','W/m2','Energy correction for over-all conservation',   gridname='fv_centers')
+
+  call addfld ('FU',       (/ 'lev' /), 'A','m/s2','Zonal wind forcing term',                       gridname='fv_centers')
+  call addfld ('FV',       (/ 'lev' /), 'A','m/s2','Meridional wind forcing term',                  gridname='fv_centers')
+  call addfld ('FU_S',     (/ 'lev' /), 'A','m/s2','Zonal wind forcing term on staggered grid',     gridname='fv_u_stagger')
+  call addfld ('FV_S',     (/ 'lev' /), 'A','m/s2','Meridional wind forcing term on staggered grid',gridname='fv_v_stagger')
+  call addfld ('UTEND',    (/ 'lev' /), 'A','m/s2','U tendency',                                    gridname='fv_centers')
+  call addfld ('VTEND',    (/ 'lev' /), 'A','m/s2','V tendency',                                    gridname='fv_centers')
+  call addfld ('TTEND',    (/ 'lev' /), 'A','K/s','Total T tendency (all processes)',               gridname='fv_centers')
+  call addfld ('LPSTEN',   horiz_only,  'A','Pa/s','Surface pressure tendency',                     gridname='fv_centers')
+  call addfld ('VAT',      (/ 'lev' /), 'A','K/s','Vertical advective tendency of T',               gridname='fv_centers')
+  call addfld ('KTOOP',    (/ 'lev' /), 'A','K/s','(Kappa*T)*(omega/P)',                            gridname='fv_centers')
+
+  !----------------------------------------------------------------------------
+  ! Determine defaults variables
+  !----------------------------------------------------------------------------
+  call phys_getopts( history_budget_out = history_budget, history_budget_histfile_num_out = history_budget_histfile_num)
+  if ( history_budget ) then
+     call cnst_get_ind('CLDLIQ', ixcldliq)
+     call cnst_get_ind('CLDICE', ixcldice)
+     call add_default(tottnam(       1), history_budget_histfile_num, ' ')
+     call add_default(tottnam(ixcldliq), history_budget_histfile_num, ' ')
+     call add_default(tottnam(ixcldice), history_budget_histfile_num, ' ')
+     call add_default('TTEND   '       , history_budget_histfile_num, ' ')
+  end if
+
+  call add_default ('US&IC   ', 0, 'I')
+  call add_default ('VS&IC   ', 0, 'I')   
+  call add_default ('PS&IC      ',0, 'I')
+  call add_default ('T&IC       ',0, 'I')
+
+  do m = 1,pcnst
+     call add_default(trim(cnst_name(m))//'&IC',0, 'I')
+  end do
+
+  !-----------------------------------------------------------------------
+  ! End of dynamics variables
+  !-----------------------------------------------------------------------
+
+end subroutine history_defaults
 
 end module dyn_comp

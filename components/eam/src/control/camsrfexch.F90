@@ -110,6 +110,7 @@ module camsrfexch
      real(r8), allocatable :: snowhice(:)   ! snow depth over ice
      real(r8), allocatable :: fco2_lnd(:)   ! co2 flux from lnd
      real(r8), allocatable :: fco2_ocn(:)   ! co2 flux from ocn
+     real(r8), allocatable :: fco2_iac(:)   ! co2 flux from iac
      real(r8), allocatable :: fdms(:)       ! dms flux
      real(r8), allocatable :: landfrac(:)   ! land area fraction
      real(r8), allocatable :: icefrac(:)    ! sea-ice areal fraction
@@ -237,6 +238,9 @@ CONTAINS
        allocate (cam_in(c)%fco2_ocn(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error fco2_ocn')
 
+       allocate (cam_in(c)%fco2_iac(pcols), stat=ierror)
+       if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error fco2_iac')
+
        allocate (cam_in(c)%fdms(pcols), stat=ierror)
        if ( ierror /= 0 ) call endrun('HUB2ATM_ALLOC error: allocation error fdms')
 
@@ -314,6 +318,7 @@ CONTAINS
        cam_in(c)%snowhice (:) = 0._r8
        cam_in(c)%fco2_lnd (:) = 0._r8
        cam_in(c)%fco2_ocn (:) = 0._r8
+       cam_in(c)%fco2_iac (:) = 0._r8
        cam_in(c)%fdms     (:) = 0._r8
        cam_in(c)%landfrac (:) = posinf
        cam_in(c)%icefrac  (:) = posinf
@@ -623,6 +628,7 @@ CONTAINS
           deallocate(cam_in(c)%snowhice)
           deallocate(cam_in(c)%fco2_lnd)
           deallocate(cam_in(c)%fco2_ocn)
+          deallocate(cam_in(c)%fco2_iac)
           deallocate(cam_in(c)%fdms)
           deallocate(cam_in(c)%landfrac)
           deallocate(cam_in(c)%icefrac)
@@ -714,6 +720,7 @@ subroutine cam_export(state,cam_out,pbuf)
    real(r8) :: umb(pcols), vmb(pcols),vmag(pcols)
    logical :: linearize_pbl_winds ! Send wsresp and tau_est to coupler.
    logical :: export_gustiness ! Send vmag_gust to coupler
+   logical :: do_clubb_sgs
 
    real(r8), pointer :: prec_dp(:)                 ! total precipitation   from ZM convection
    real(r8), pointer :: snow_dp(:)                 ! snow from ZM   convection
@@ -733,7 +740,8 @@ subroutine cam_export(state,cam_out,pbuf)
    ncol  = state%ncol
 
    call phys_getopts(linearize_pbl_winds_out=linearize_pbl_winds, &
-                     export_gustiness_out=export_gustiness)
+                     export_gustiness_out=export_gustiness, &
+                     do_clubb_sgs_out=do_clubb_sgs)
 
    prec_dp_idx = pbuf_get_index('PREC_DP')
    snow_dp_idx = pbuf_get_index('SNOW_DP')
@@ -743,7 +751,10 @@ subroutine cam_export(state,cam_out,pbuf)
    snow_sed_idx = pbuf_get_index('SNOW_SED')
    prec_pcw_idx = pbuf_get_index('PREC_PCW')
    snow_pcw_idx = pbuf_get_index('SNOW_PCW')
-   vmag_gust_idx = pbuf_get_index('vmag_gust')
+
+   if (do_clubb_sgs) then 
+      vmag_gust_idx = pbuf_get_index('vmag_gust')
+   end if
 
    call pbuf_get_field(pbuf, prec_dp_idx, prec_dp)
    call pbuf_get_field(pbuf, snow_dp_idx, snow_dp)
@@ -753,7 +764,10 @@ subroutine cam_export(state,cam_out,pbuf)
    call pbuf_get_field(pbuf, snow_sed_idx, snow_sed)
    call pbuf_get_field(pbuf, prec_pcw_idx, prec_pcw)
    call pbuf_get_field(pbuf, snow_pcw_idx, snow_pcw)
-   call pbuf_get_field(pbuf, vmag_gust_idx, vmag_gust)
+
+   if (do_clubb_sgs) then
+      call pbuf_get_field(pbuf, vmag_gust_idx, vmag_gust)
+   end if
 
    if (linearize_pbl_winds) then
       wsresp_idx = pbuf_get_index('wsresp')
@@ -764,24 +778,33 @@ subroutine cam_export(state,cam_out,pbuf)
 
 !PMA adds gustiness to surface scheme c20181128
 
+
    do i=1,ncol
-      if (export_gustiness) then
+      ! TRS vmag_gust is only set within clubb, so I'm putting this all in a
+      ! do_clubb_sgs conditional
+      if (do_clubb_sgs) then 
+         if (export_gustiness) then
+            cam_out%ubot(i)  = state%u(i,pver)
+            cam_out%vbot(i)  = state%v(i,pver)
+            cam_out%ugust(i) = vmag_gust(i)
+         else
+            ! If not exporting gustiness as a separate field, we apply it here.
+            umb(i)           = state%u(i,pver)
+            vmb(i)           = state%v(i,pver)
+            vmag(i)          = max(1.e-5_r8,sqrt( umb(i)**2._r8 + vmb(i)**2._r8))
+            cam_out%ubot(i)  = state%u(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
+            cam_out%vbot(i)  = state%v(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
+         end if
+      else
          cam_out%ubot(i)  = state%u(i,pver)
          cam_out%vbot(i)  = state%v(i,pver)
-         cam_out%ugust(i) = vmag_gust(i)
-      else
-         ! If not exporting gustiness as a separate field, we apply it here.
-         umb(i)           = state%u(i,pver)
-         vmb(i)           = state%v(i,pver)
-         vmag(i)          = max(1.e-5_r8,sqrt( umb(i)**2._r8 + vmb(i)**2._r8))
-         cam_out%ubot(i)  = state%u(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
-         cam_out%vbot(i)  = state%v(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
       end if
+
       cam_out%tbot(i)  = state%t(i,pver)
-      cam_out%thbot(i) = state%t(i,pver) * state%exner(i,pver)
-      cam_out%zbot(i)  = state%zm(i,pver)
-      cam_out%pbot(i)  = state%pmid(i,pver)
-      cam_out%rho(i)   = cam_out%pbot(i)/(rair*cam_out%tbot(i))
+         cam_out%thbot(i) = state%t(i,pver) * state%exner(i,pver)
+         cam_out%zbot(i)  = state%zm(i,pver)
+         cam_out%pbot(i)  = state%pmid(i,pver)
+         cam_out%rho(i)   = cam_out%pbot(i)/(rair*cam_out%tbot(i))
       if (linearize_pbl_winds) then
          cam_out%wsresp(i)= max(wsresp(i), 0._r8)
          cam_out%tau_est(i)= tau_est(i)

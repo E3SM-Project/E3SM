@@ -29,7 +29,7 @@ module metdata
   use pio, only: file_desc_t, pio_put_att, pio_global, pio_get_att, pio_inq_att, pio_inq_dimid, pio_inq_dimlen, &
        pio_closefile, pio_get_var, pio_inq_varid
   use cam_pio_utils,      only: cam_pio_openfile
-    
+  use pio_kinds           , only :  pio_offset_kind    
 
   implicit none
 
@@ -874,7 +874,10 @@ contains
   subroutine read_met_restart_pio(File)
     type(file_desc_t), intent(inout) :: File
     
-    integer :: ierr, xtype, slen
+    !integer :: ierr, xtype, slen
+    ! TRS - pio interface for version 2?
+    integer :: ierr, xtype 
+    integer(PIO_OFFSET_KIND) :: slen
 
     ierr = pio_inq_att(File, PIO_GLOBAL, 'current_metdata_filename',xtype, slen)
     ierr = pio_get_att(File, PIO_GLOBAL, 'current_metdata_filename', curr_filename)

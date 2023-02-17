@@ -324,11 +324,13 @@ CONTAINS
        ! Set defaults then override with user-specified input and initialize time manager
        ! Note that the following arguments are needed to cam_init for timemgr_restart only
        !
+
        call t_startf('cam_init')
        call cam_init( cam_out, cam_in, mpicom_atm, &
             start_ymd, start_tod, ref_ymd, ref_tod, stop_ymd, stop_tod, &
             perpetual_run, perpetual_ymd, calendar)
        call t_stopf('cam_init')
+
        !
        ! Check consistency of restart time information with input clock
        !

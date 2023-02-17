@@ -242,8 +242,18 @@ CONTAINS
     call init_restart_varlistw(dyn_out)
 
     do i=1,restartvarcnt
-    
-       call get_restart_var(i, name, timelevels, ndims, vdesc)
+       ! TRS I think this won't work until the var has been defined, so
+       ! we get a good vdesc%varid
+       ! call get_restart_var(File, i, name, timelevels, ndims, vdesc)
+       ! So, get vars directly and allocate vdesc if needed
+       name = restartvars(i)%name
+       timelevels = restartvars(i)%timelevels
+       ndims = restartvars(i)%ndims
+       if(.not.associated(restartvars(i)%vdesc)) then
+          allocate(restartvars(i)%vdesc)
+       end if
+       vdesc => restartvars(i)%vdesc
+
        if(timelevels>1) then
           call endrun('not expecting timelevels>1 in fv dycore')
        else
@@ -256,6 +266,9 @@ CONTAINS
              ierr = PIO_Def_Var(File, name, pio_double, alldims(1:3), vdesc)
           end if
        end if
+       
+       ! Don't know if this matters any more, but here we go
+       call get_restart_var(File, i, name, timelevels, ndims, vdesc)
     end do
 #if ( defined OFFLINE_DYN )
       call write_met_restart( File )
@@ -284,7 +297,7 @@ CONTAINS
     ! Local workspace
     !
     type(io_desc_t) :: iodesc2d, iodesc3d
-    integer :: ierr   ! error status
+
     integer :: ndcur, nscur
     real(r8) :: time, mold(1), null(0)
     integer :: i, s3d(1), s2d(1), ct
@@ -296,6 +309,7 @@ CONTAINS
     character(len=namlen) :: name
     logical :: use_transfer
     type (T_FVDYCORE_STATE), pointer :: dyn_state
+    integer :: ierr   ! error status
     
     call write_restart_hycoef(File)
 
@@ -322,14 +336,13 @@ CONTAINS
     call pio_initdecomp(pio_subsystem, pio_double, (/hdim1, hdim2/), ldof, iodesc2d)
     deallocate(ldof)
 
-
     ierr = pio_put_var(File, tmass0desc, (/tmass0/))
 
     time = ndcur+(real(nscur,kind=r8))/86400._r8
     ierr = pio_put_var(File,timedesc%varid, time)
 
     do i=1,restartvarcnt
-       call get_restart_var(i, name, timelevels, ndims, vdesc)
+       call get_restart_var(File, i, name, timelevels, ndims, vdesc)
        if(ndims==2) then
           if(use_transfer) then
              call pio_write_darray(File, vdesc, iodesc2d, transfer(restartvars(i)%v2d(:,:), mold), ierr)
@@ -390,11 +403,13 @@ CONTAINS
   end function get_restart_decomp
 
 
-  subroutine get_restart_var(i,name, timelevels, ndims, vdesc)
+  subroutine get_restart_var(File, i,name, timelevels, ndims, vdesc)
+    type(file_desc_t) :: File
     integer, intent(in) :: i
     character(len=namlen), intent(out) :: name
     integer, intent(out) :: ndims, timelevels
     type(var_desc_t), pointer :: vdesc
+    integer :: ierr   ! error status
 
     name = restartvars(i)%name
     timelevels = restartvars(i)%timelevels
@@ -403,7 +418,8 @@ CONTAINS
        allocate(restartvars(i)%vdesc)
     end if
     vdesc => restartvars(i)%vdesc
-    call pio_setframe(vdesc,int(-1,kind=pio_offset_kind))
+    ierr = PIO_Inq_varid(File, name, vdesc)
+    call pio_setframe(File, vdesc,int(-1,kind=pio_offset_kind))
   end subroutine get_restart_var
 
   subroutine read_restart_dynamics(File, dyn_in, dyn_out, NLFileName)
@@ -490,7 +506,7 @@ CONTAINS
 
 
     do i=1,restartvarcnt
-       call get_restart_var(i, name, timelevels, ndims, vdesc)
+       call get_restart_var(File, i, name, timelevels, ndims, vdesc)
        ierr = PIO_Inq_varid(File, name, vdesc)
        if(ndims==2) then
           call pio_read_darray(File, vdesc, iodesc2d, tmp(1:s2d), ierr)

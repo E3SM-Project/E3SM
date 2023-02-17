@@ -200,7 +200,6 @@ subroutine phys_register
     call pbuf_add_field('static_ener_ac', 'global', dtype_r8, (/pcols/), static_ener_ac_idx)
     call pbuf_add_field('water_vap_ac',   'global', dtype_r8, (/pcols/), water_vap_ac_idx)
 
-
     ! check energy package
     call check_energy_register
 
@@ -224,7 +223,6 @@ subroutine phys_register
        
        ! Register CLUBB_SGS here
        if (do_clubb_sgs) call clubb_register_cam()
-       
 
        call pbuf_add_field('PREC_STR',  'physpkg',dtype_r8,(/pcols/),prec_str_idx)
        call pbuf_add_field('SNOW_STR',  'physpkg',dtype_r8,(/pcols/),snow_str_idx)
@@ -339,7 +337,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
     use cam_abortutils, only : endrun
 
     use physics_buffer, only : pbuf_get_index, pbuf_get_field, physics_buffer_desc, pbuf_set_field, dyn_time_lvls
-
+    use physics_buffer, only : pbuf_add_field
 
     use cam_initfiles,       only: initial_file_get_id, topo_file_get_id
     use cam_grid_support,    only: cam_grid_check, cam_grid_id
@@ -369,6 +367,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
     character(len=8) :: dim1name, dim2name
     integer :: ixcldice, ixcldliq
     integer                   :: grid_id  ! grid ID for data mapping
+
     nullify(tptr,tptr3d,tptr3d_2,cldptr,convptr_3d)
 
     fh_ini=>initial_file_get_id()
@@ -432,18 +431,17 @@ subroutine phys_inidat( cam_out, pbuf2d )
     tpert_idx = pbuf_get_index( 'tpert')
     call pbuf_set_field(pbuf2d, tpert_idx, tptr)
 
-
-    call infld('vmag_gust', fh_ini, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
-         tptr(:,:), found, gridname='physgrid')
-    if(.not. found) then
-       tptr(:,:) = 0._r8
-       if (masterproc) write(iulog,*) 'vmag_gust initialized to 1.'
-    end if
-! KVC: this is causing a problem
-!    vmag_gust_idx = pbuf_get_index( 'vmag_gust')
-    vmag_gust_idx = 1
-    call pbuf_set_field(pbuf2d, vmag_gust_idx, tptr)
-
+    ! TRS vmag_gust only added in clubb code
+    if (do_clubb_sgs) then 
+       call infld('vmag_gust', fh_ini, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
+            tptr(:,:), found, gridname='physgrid')
+       if(.not. found) then
+          tptr(:,:) = 0._r8
+          if (masterproc) write(iulog,*) 'vmag_gust initialized to 1.'
+       end if
+       vmag_gust_idx = pbuf_get_index( 'vmag_gust')
+       call pbuf_set_field(pbuf2d, vmag_gust_idx, tptr)
+    endif
 
     fieldname='QPERT'  
     qpert_idx = pbuf_get_index( 'qpert',ierr)
