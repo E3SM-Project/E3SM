@@ -862,9 +862,9 @@ contains
             end do
             do k = kmin,kmax
                ! central differenced
-               layerThickEdgeDrag(k,iEdge) = 2.0_RKIND / &
-                                            (1/max(layerThickness(k,cell1), 1e-9_RKIND) + &
-                                             1/max(layerThickness(k,cell2), 1e-9_RKIND))
+               layerThickEdgeDrag(k,iEdge) = &
+                   2.0_RKIND * layerThickness(k,cell1) * layerThickness(k,cell2)/ &
+                   (max(layerThickness(k,cell1)+layerThickness(k,cell2), 1e-9_RKIND))
             end do
          end do
 #ifndef MPAS_OPENACC
