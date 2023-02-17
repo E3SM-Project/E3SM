@@ -252,7 +252,6 @@ TEST_CASE("nudging") {
   for (const auto& req : nudging_mid->get_required_field_requests()) {
     Field f(req.fid);
     auto & f_ap = f.get_header().get_alloc_properties();
-    //f_ap.request_allocation(packsize);
     f_ap.request_allocation(1);
     f.allocate_view();
     const auto name = f.name();

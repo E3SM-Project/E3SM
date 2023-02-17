@@ -39,7 +39,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   m_num_src_levs = scorpio::get_dimlen_c2f(datafile.c_str(),"lev");
   double time_value_1= scorpio::read_time_at_index_c2f(datafile.c_str(),1);
   double time_value_2= scorpio::read_time_at_index_c2f(datafile.c_str(),2);
-
+    
   //Here we are assuming that the time in the netcdf file is in days
   //Internally we want this in seconds so need to convert
   //Only consider integer time steps in seconds to resolve any roundoff error
@@ -90,12 +90,38 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   qv_ext = fields_ext["qv"];
   ts0=timestamp();
 
-  //Load first data for before and after
-  data_input->read_variables(0);
+  //Check that internal timestamp starts at same point as time in external file
+  int start_date=scorpio::get_int_attribute_c2f(datafile.c_str(),"start_date");
+  int start_time=scorpio::get_int_attribute_c2f(datafile.c_str(),"start_time");
+  int start_year=int(start_date/10000);
+  int start_month=int((start_date-start_year*10000)/100);
+  int start_day=int(start_date-start_year*10000-start_month*100);
+  int start_hour=int(start_time/10000);
+  int start_min=int((start_time-start_hour*10000)/100);
+  int start_sec=int(start_time-start_hour*10000-start_min*100);
+
+  EKAT_REQUIRE_MSG(start_year==ts0.get_date()[0],
+		   "ERROR: The start year from the nudging file is "\ 
+		   "different than the internal simulation start year\n");
+  EKAT_REQUIRE_MSG(start_month==ts0.get_date()[1],
+		   "ERROR: The start month from the nudging file is "\ 
+		   "different than the internal simulation start month\n");
+  EKAT_REQUIRE_MSG(start_day==ts0.get_date()[2],
+		   "ERROR: The start day from the nudging file is "\
+		   "different than the internal simulation start day\n");
+  EKAT_REQUIRE_MSG(start_hour==ts0.get_time()[0],
+		   "ERROR: The start hour from the nudging file is "\
+		   "different than the internal simulation start hour\n");
+  EKAT_REQUIRE_MSG(start_min==ts0.get_time()[1],
+		   "ERROR: The start minute from the nudging file is "\
+		   "different than the internal simulation start minute\n");
+  EKAT_REQUIRE_MSG(start_sec==ts0.get_time()[2],
+		   "ERROR: The start second from the nudging file is "\
+		   "different than the internal simulation start second\n");
+		   
+  //Initialize before and after data
   NudgingData_bef.init(m_num_cols,m_num_src_levs,true);
   NudgingData_bef.time = -999;
-  
-  data_input->read_variables(1);
   NudgingData_aft.init(m_num_cols,m_num_src_levs,true);
   NudgingData_aft.time = -999;
 }
