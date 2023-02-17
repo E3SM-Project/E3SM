@@ -450,7 +450,7 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
     register_dimension(filename,"dim2","dim2",2,false);
     
     // Register time_bnds var, with its dofs
-    register_variable(filename,"time_bnds","time_bnds",time_units,{"time","dim2"},"double","double","time");
+    register_variable(filename,"time_bnds","time_bnds",time_units,{"time","dim2"},"double","double","time-dim2");
     scorpio::offset_t time_bnds_dofs[2] = {0,1};
     set_dof(filename,"time_bnds",2,time_bnds_dofs);
 
