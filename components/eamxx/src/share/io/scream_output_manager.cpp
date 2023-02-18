@@ -56,7 +56,8 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   set_params(params,field_mgrs);
 
   // Output control
-  EKAT_REQUIRE_MSG(m_params.isSublist("output_control"),"Error! The output control YAML file for " + m_casename + " is missing the sublist 'output_control'");
+  EKAT_REQUIRE_MSG(m_params.isSublist("output_control"),
+      "Error! The output control YAML file for " + m_casename + " is missing the sublist 'output_control'");
   auto& out_control_pl = m_params.sublist("output_control");
   m_output_control.frequency  = out_control_pl.get<int>("Frequency");
   m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");

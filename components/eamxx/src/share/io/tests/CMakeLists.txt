@@ -5,13 +5,8 @@ include(ScreamUtils)
 include (BuildCprnc)
 BuildCprnc()
 
-## Test output
-
-configure_file(io_test_multisnap.yaml io_test_multisnap.yaml)
-configure_file(io_test_template.yaml io_test_template.yaml)
-configure_file(io_test_control.yaml io_test_control.yaml)
-
-CreateUnitTest(io_test "io.cpp" "scream_io;diagnostics" LABELS "io"
+## Test basic output (no packs, no diags, all avg types, all freq units)
+CreateUnitTest(io_basic "io_basic.cpp" "scream_io" LABELS "io"
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 
