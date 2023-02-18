@@ -10,6 +10,11 @@ CreateUnitTest(io_basic "io_basic.cpp" "scream_io" LABELS "io"
   MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
 )
 
+## Test packed I/O
+CreateUnitTest(io_packed "io_packed.cpp" "scream_io" LABELS "io"
+  MPI_RANKS 1 ${SCREAM_TEST_MAX_RANKS}
+)
+
 # Test output on SE grid
 configure_file(io_test_se_grid.yaml io_test_se_grid.yaml)
 CreateUnitTest(io_test_se_grid "io_se_grid.cpp" scream_io LABELS "io"
