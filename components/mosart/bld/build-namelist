@@ -320,6 +320,7 @@ else {
     add_default($nl, 'ngeom');						 
     add_default($nl, 'nlayers');						 
     add_default($nl, 'frivinp_rtm' , 'rof_grid'=>$ROF_GRID );
+    add_default($nl, 'frivinp_mesh' , 'rof_grid'=>$ROF_GRID );
     add_default($nl, 'ice_runoff'  , 'lnd_grid'=>$LND_GRID );
     add_default($nl, 'rtmhist_mfilt');
     add_default($nl, 'rtmhist_nhtfrq');
