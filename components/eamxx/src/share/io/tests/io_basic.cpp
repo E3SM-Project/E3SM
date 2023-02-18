@@ -184,24 +184,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
   bool instant = avg_type=="INSTANT";
 
   // Time quantities
-  const int dt = get_dt(freq_units);
   auto t0 = get_t0();
-  auto get_nsteps = [&](int output_step) {
-    // The output step 0 is after 0 steps for INSTANT,
-    // and after freq steps otherwise
-    if (instant) {
-      return freq*output_step;
-    } else {
-      return freq*(output_step+1);
-    }
-  };
-  auto get_time = [&](int output_step) {
-    int nsteps = get_nsteps(output_step);
-    // TimeStamp::operator+= requires the rhs to be strictly positive
-    return nsteps==0 ? t0 : t0 + dt*nsteps;
-  };
-
-  auto t_first_write = get_time(0);
   int num_writes = num_output_steps + (instant ? 1 : 0);
 
   // Get gm
@@ -225,7 +208,7 @@ void read (const std::string& avg_type, const std::string& freq_units,
     + "." + freq_units
     + "_x" + std::to_string(freq)
     + ".np" + std::to_string(comm.size())
-    + "." + t_first_write.to_string()
+    + "." + t0.to_string()
     + ".nc";
   reader_pl.set("Filename",filename);
   reader_pl.set("Field Names",fnames);

@@ -350,7 +350,11 @@ compute_filename (const IOControl& control,
     filename += ".np" + std::to_string(m_io_comm.size());
   }
   if (file_specs.filename_with_time_string) {
-    filename += "." + timestamp.to_string();
+    if (m_avg_type==OutputAvgType::Instant) {
+      filename += "." + timestamp.to_string();
+    } else {
+      filename += "." + control.timestamp_of_last_write.to_string();
+    }
   }
 
   return filename + ".nc";
