@@ -166,6 +166,21 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       // NOTE: if you change the output frequency when you restart, this could lead to wonky behavior
       m_output_control.nsamples_since_last_write = m_run_t0.get_num_steps() % m_output_control.frequency;
 
+      if (has_restart_data) {
+        using namespace scorpio;
+        auto fn = find_filename_in_rpointer(hist_restart_casename,false,m_io_comm,m_run_t0);
+        register_file(fn.c_str(),FileMode::Read);
+        auto date = get_int_attribute_c2f (fn.c_str(), "last_write_date");
+        auto time = get_int_attribute_c2f (fn.c_str(), "last_write_time");
+
+        std::vector<int> vdate = {date/10000, (date/100)%100, date%100};
+        std::vector<int> vtime = {time/10000, (time/100)%100, time%100};
+        util::TimeStamp last_write_ts (vdate,vtime);
+        m_output_control.timestamp_of_last_write = last_write_ts;
+        eam_pio_closefile(fn.c_str());
+      } else {
+        m_output_control.timestamp_of_last_write = m_run_t0;
+      }
       // If the type/freq of output needs restart data, we need to read in an output.
       if (has_restart_data && m_output_control.nsamples_since_last_write>0) {
         auto output_restart_filename = find_filename_in_rpointer(hist_restart_casename,false,m_io_comm,m_run_t0);
@@ -242,6 +257,13 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     if (m_is_model_restart_output) {
       // Only write nsteps on model restart
       set_int_attribute_c2f(filename.c_str(),"nsteps",timestamp.get_num_steps());
+    } else if (is_checkpoint_step) {
+      // Update the date of last write
+      const auto& last_write_ts = control.timestamp_of_last_write;
+      auto last_write_date = last_write_ts.get_date()[0]*10000 + last_write_ts.get_date()[1]*100 + last_write_ts.get_date()[2];
+      auto last_write_time = last_write_ts.get_time()[0]*10000 + last_write_ts.get_time()[1]*100 + last_write_ts.get_time()[2];
+      set_int_attribute_c2f(filename.c_str(),"last_write_date",last_write_date);
+      set_int_attribute_c2f(filename.c_str(),"last_write_time",last_write_time);
     }
   }
   stop_timer(timer_root+"::get_new_file"); 
