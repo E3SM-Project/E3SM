@@ -155,6 +155,7 @@ contains
     character(len=SHR_KIND_CL) :: hostname           ! hostname of machine running on
     character(len=SHR_KIND_CL) :: version            ! Model version
     character(len=SHR_KIND_CL) :: username           ! user running the model
+    character(len=SHR_KIND_CL) :: rtm_mesh           ! mesh file path
     character(len=8)           :: c_inst_index       ! instance number
     character(len=8)           :: c_npes             ! number of pes
     character(len=32), parameter :: sub = 'rof_init_mct'
@@ -280,7 +281,7 @@ contains
     use_ocn_rof_two_way = ocn_rof_two_way
 
     ! Read namelist, grid and surface data
-    call Rtmini(rtm_active=rof_prognostic,flood_active=flood_present)
+    call Rtmini(rtm_active=rof_prognostic,flood_active=flood_present,rtm_mesh=rtm_mesh)
 
     if (rof_prognostic) then
        ! Initialize memory for input state
@@ -367,6 +368,10 @@ contains
     call seq_infodata_PutData( infodata, rof_present=rof_prognostic, rof_nx = rtmlon, rof_ny = rtmlat, &
          rof_prognostic=rof_prognostic, rofocn_prognostic=use_ocn_rof_two_way)
     call seq_infodata_PutData( infodata, flood_present=flood_present)
+#ifdef HAVE_MOAB
+    ! send path of river mesh to MOAB coupler.
+    call seq_infodata_PutData( infodata, rof_mesh=rtm_mesh)
+#endif
 
     ! Reset shr logging to original values
     call shr_file_setLogUnit (shrlogunit)
