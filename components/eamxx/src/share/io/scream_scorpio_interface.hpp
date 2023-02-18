@@ -5,6 +5,8 @@
 #include "share/field/field_tag.hpp"
 #include "share/scream_types.hpp"
 
+#include "ekat/mpi/ekat_comm.hpp"
+
 #include <vector>
 
 /* C++/F90 bridge to F90 SCORPIO routines */
@@ -21,6 +23,7 @@ namespace scorpio {
     Write = 2
   };
   /* All scorpio usage requires that the pio_subsystem is initialized. Happens only once per simulation */
+  void eam_init_pio_subsystem(const ekat::Comm& comm);
   void eam_init_pio_subsystem(const int mpicom, const int atm_id = 0);
   /* Cleanup scorpio with pio_finalize */
   void eam_pio_finalize();
