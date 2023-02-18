@@ -785,7 +785,7 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iEdge, k, cell1, cell2, N, Nsurf
-      real (kind=RKIND) :: implicitCd
+      real (kind=RKIND) :: implicitCd, bottomDepthDrag, columnThicknessDrag
 
       real (kind=RKIND), dimension(:), allocatable :: bTemp, C, rTemp
       real (kind=RKIND) :: A, m
@@ -855,7 +855,8 @@ contains
       !$acc parallel loop present(maxLevelEdgeTop, minLevelEdgeBot, cellsOnEdge, &
       !$acc    layerThickEdgeDrag, layerThickEdgeMean, layerThickness, vertViscTopOfEdge, normalVelocity, &
       !$acc    kineticEnergyCell, bottomDrag, vegetationManning, ssh, bottomDepth) &
-      !$acc    private(Nsurf, N, cell1, cell2, implicitCd, A, bTemp, C, m, rTemp, k)
+      !$acc    private(Nsurf, N, cell1, cell2, implicitCd, A, bTemp, C, m, rTemp, k, &
+      !$acc    bottomDepthDrag, columnThicknessDrag)
 #else
       !$omp do schedule(runtime)
 #endif
@@ -867,6 +868,17 @@ contains
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
 
+         if (trim(config_thickness_drag_type) == 'harmonic-mean') then
+           bottomDepthDrag = 2.0_RKIND * bottomDepth(cell1) * bottomDepth(cell2) / &
+                                 (bottomDepth(cell1) + bottomDepth(cell2))
+           columnThicknessDrag = 2.0_RKIND * (ssh(cell1) + bottomDepth(cell1)) * &
+                                             (ssh(cell2) + bottomDepth(cell2)) / &
+                                 (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
+         else
+           bottomDepthDrag = 0.5_RKIND * (bottomDepth(cell1) + bottomDepth(cell2))
+           columnThicknessDrag = 0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2))
+         endif
+
          ! average cell-based implicit bottom drag to edges and convert Mannings n to Cd
          if (dragType == dragTypeLogLaw) then
            ! NCOM's formula for bottom drag coefficient
@@ -876,13 +888,13 @@ contains
            ! averaging the two bottomDepth cells.
            implicitCd = max(0.0025_RKIND, &
                         min(0.1_RKIND, &
-                          0.16_RKIND/(log(250.0_RKIND*(bottomDepth(cell1)+bottomDepth(cell2))))**2 ))
+                            0.16_RKIND/(log(500.0_RKIND*bottomDepthDrag))**2 ))
          elseif (dragType == dragTypeMannings .AND. config_use_vegetation_drag) then
            implicitCd = gravity*(0.5_RKIND*(vegetationManning(cell1) + vegetationManning(cell2)))**2 * &
-            (0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2)))**(-1.0_RKIND/3.0_RKIND)
+                        columnThicknessDrag**(-1.0_RKIND/3.0_RKIND)
          else
            implicitCd = gravity*(0.5_RKIND*(bottomDrag(cell1) + bottomDrag(cell2)))**2 * &
-            (0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2)))**(-1.0_RKIND/3.0_RKIND)
+                        columnThicknessDrag**(-1.0_RKIND/3.0_RKIND)
          endif
 
          ! one active layer
