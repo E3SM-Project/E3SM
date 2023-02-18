@@ -982,7 +982,7 @@ contains
 
   !=======================================================================
 
-   subroutine cplcomp_moab_Init(comp)
+   subroutine cplcomp_moab_Init(infodata,comp)
 
       ! This routine initializes an iMOAB app on the coupler pes,
       !  corresponding to the component pes. It uses send/receive 
@@ -995,6 +995,9 @@ contains
       iMOAB_SetIntTagStorage, iMOAB_FreeSenderBuffers, iMOAB_ComputeCommGraph, iMOAB_LoadMesh
       ! use component_mod,      only: component_exch_moab
       !
+      use seq_infodata_mod
+      !
+      type(seq_infodata_type) ,  intent(in) :: infodata
       type(component_type), intent(inout) :: comp
       !
       ! Local Variables
@@ -1013,6 +1016,7 @@ contains
       integer                  :: mpigrp_old   !  component group pes
       integer                  :: ierr, context_id
       character*200            :: appname, outfile, wopts, ropts
+      character(CL)            :: rtm_mesh
       integer                  :: maxMH, maxMPO, maxMLID, maxMSID, maxMRID ! max pids for moab apps atm, ocn, lnd, sea-ice, rof
       integer                  :: tagtype, numco,  tagindex, partMethod, nghlay
       integer                  :: rank, ent_type
@@ -1451,14 +1455,9 @@ contains
             appname = "COUPLE_MROF"//C_NULL_CHAR
             ierr = iMOAB_RegisterApplication(trim(appname), mpicom_new, id_join, mbrxid)
 
-            ! load mesh from scrip file 
-            ! on lcrc:
-            ! outfile = '/lcrc/group/e3sm/data/inputdata/share/meshes/rof/SCRIPgrid_2x2_nomask_c210211.nc'//C_NULL_CHAR
-            ! on gce:
-            ! /nfs/gce/projects/climate/inputdata/share/meshes/rof/SCRIPgrid_2x2_nomask_c210211.nc'//C_NULL_CHAR
-            ! iulian's laptop
-            !outfile = '/media/iulian/ExtraDrive1/inputdata/share/meshes/rof/SCRIPgrid_2x2_nomask_c210211.nc'//C_NULL_CHAR
-            outfile = '/home/iulian/rofscrip/SCRIPgrid_2x2_nomask_c210211.nc'//C_NULL_CHAR
+            ! load mesh from scrip file passed from river model
+            call seq_infodata_GetData(infodata,rof_mesh=rtm_mesh)
+            outfile = trim(rtm_mesh)//C_NULL_CHAR
             ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=RCBZOLTAN'//C_NULL_CHAR
          
             nghlay = 0 ! no ghost layers 

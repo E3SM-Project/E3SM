@@ -379,7 +379,7 @@ contains
                    call shr_sys_flush(logunit)
                 end if
                 call seq_mctext_gsmapInit(comp(1))
-                call cplcomp_moab_Init(comp(1))
+                call cplcomp_moab_Init(infodata,comp(1))
              endif
 
              ! Create mapper_Cc2x and mapper_Cx2c
