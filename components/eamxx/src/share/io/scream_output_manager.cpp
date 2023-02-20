@@ -178,8 +178,6 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
         util::TimeStamp last_write_ts (vdate,vtime);
         m_output_control.timestamp_of_last_write = last_write_ts;
         eam_pio_closefile(fn.c_str());
-      } else {
-        m_output_control.timestamp_of_last_write = m_run_t0;
       }
       // If the type/freq of output needs restart data, we need to read in an output.
       if (has_restart_data && m_output_control.nsamples_since_last_write>0) {
