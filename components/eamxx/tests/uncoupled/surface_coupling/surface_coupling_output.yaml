@@ -3,6 +3,7 @@
 Casename: surface_coupling_output
 Averaging Type: Instant
 Max Snapshots Per File: 1
+Fill Value: 0.0
 Field Names:
   # IMPORTER
   - sfc_alb_dir_vis
