@@ -80,6 +80,10 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
 {
   using vos_t = std::vector<std::string>;
 
+  if (params.isParameter("Fill Value")) {
+    m_fill_value = static_cast<float>(params.get<double>("Fill Value"));
+  }
+
   // Figure out what kind of averaging is requested
   auto avg_type = params.get<std::string>("Averaging Type");
   m_avg_type = str2avg(avg_type);
@@ -336,7 +340,7 @@ void AtmosphereOutput::
 run (const std::string& filename,
      const bool is_write_step,
      const int nsteps_since_last_output,
-     const bool write_zeros_if_invalid)
+     const bool allow_invalid_fields)
 {
   // If we do INSTANT output, but this is not an write step,
   // we can immediately return
@@ -351,7 +355,7 @@ run (const std::string& filename,
   // First we reset the diag computed map so that all diags are recomputed.
   m_diag_computed.clear();
   for (auto& it : m_diagnostics) {
-    compute_diagnostic(it.first);
+    compute_diagnostic(it.first,allow_invalid_fields);
   }
 
   auto apply_remap = [&](const std::shared_ptr<AbstractRemapper> remapper)
@@ -392,8 +396,8 @@ run (const std::string& filename,
 
     if (not field.get_header().get_tracking().get_time_stamp().is_valid()) {
       // Safety check: make sure that the user is ok with this
-      if (write_zeros_if_invalid) {
-        field.deep_copy(0);
+      if (allow_invalid_fields) {
+        field.deep_copy(m_fill_value);
       } else {
         EKAT_REQUIRE_MSG (!m_add_time_dim,
             "Error! Time-dependent output field '" + name + "' has not been initialized yet\n.");
@@ -875,7 +879,8 @@ setup_output_file(const std::string& filename,
 /* ---------------------------------------------------------- */
 // This routine will evaluate the diagnostics stored in this
 // output instance.
-void AtmosphereOutput::compute_diagnostic(const std::string& name)
+void AtmosphereOutput::
+compute_diagnostic(const std::string& name, const bool allow_invalid_fields)
 {
   auto skip_diag = m_diag_computed[name];
   if (skip_diag) {
@@ -887,10 +892,23 @@ void AtmosphereOutput::compute_diagnostic(const std::string& name)
   // them as well.  Needed if a diagnostic relies on another
   // diagnostic.
   for (const auto& dep : m_diag_depends_on_diags.at(name)) {
-    compute_diagnostic(dep);
+    compute_diagnostic(dep,allow_invalid_fields);
   }
-  diag->compute_diagnostic();
+
   m_diag_computed[name] = true;
+  if (allow_invalid_fields) {
+    // If any input is invalid, fill the diagnostic with invalid data
+    for (auto f : diag->get_fields_in()) {
+      if (not f.get_header().get_tracking().get_time_stamp().is_valid()) {
+        // Fill diag with invalid data and return
+        diag->get_diagnostic().deep_copy(m_fill_value);
+        return;
+      }
+    }
+  }
+
+  // Either allow_invalid_fields=false, or all inputs are valid. Proceed.
+  diag->compute_diagnostic();
 }
 /* ---------------------------------------------------------- */
 // General get_field routine for output.
