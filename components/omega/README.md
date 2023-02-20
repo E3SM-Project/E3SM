@@ -1,6 +1,4 @@
-====================================================
-The Ocean Model for E3SM Global Applications (OMEGA)
-====================================================
+# The Ocean Model for E3SM Global Applications (OMEGA)
 
 OMEGA is the ocean component planned for v4 of the 
 Energy Exascale Earth System Model (E3SM). It is

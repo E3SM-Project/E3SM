@@ -1,6 +1,4 @@
-==========================
-OMEGA doc/design directory
-==========================
+# OMEGA doc/design directory
 
 This directory contains requirement and design documents for the
 Ocean Model for E3SM Global Applications (OMEGA) source code.  A

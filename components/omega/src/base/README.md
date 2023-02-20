@@ -1,6 +1,4 @@
-========================
-OMEGA src/base directory
-========================
+# OMEGA src/base directory
 
 This directory contains source code for the base
 infrastructure of the Ocean Model for E3SM Global

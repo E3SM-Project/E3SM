@@ -1,6 +1,4 @@
-=======================
-OMEGA src/ocn directory
-=======================
+# OMEGA src/ocn directory
 
 This directory contains source code for the actual
 ocean tendencies, physical parameterizations and

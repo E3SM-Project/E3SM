@@ -1,6 +1,4 @@
-====================
-OMEGA test directory
-====================
+# OMEGA test directory
 
 This directory contains a variety of test drivers for the Ocean Model
 for E3SM Global Applications (OMEGA) code. It includes unit tests and

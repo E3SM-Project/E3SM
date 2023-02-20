@@ -1,6 +1,4 @@
-============================
-OMEGA doc/devGuide directory
-============================
+# OMEGA doc/devGuide directory
 
 This directory contains source files for the Ocean Model for E3SM
 Global Applications (OMEGA) Developer Guide, describing code and

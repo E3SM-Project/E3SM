@@ -1,6 +1,4 @@
-=========================
-OMEGA src/infra directory
-=========================
+# OMEGA src/infra directory
 
 This directory contains source code for an intermediate
 infrastructure layer for the Ocean Model for E3SM Global

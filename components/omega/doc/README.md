@@ -1,6 +1,4 @@
-===================
-OMEGA doc directory
-===================
+# OMEGA doc directory
 
 This directory stores source files for various forms of documentation
 for the Ocean Model for E3SM Global Applications (OMEGA). Currently,

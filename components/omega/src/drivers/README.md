@@ -1,6 +1,4 @@
-===========================
-OMEGA src/drivers directory
-===========================
+# OMEGA src/drivers directory
 
 This directory contains the source code for the
 top-level drivers of the Ocean Model for E3SM Global

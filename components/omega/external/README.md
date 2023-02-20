@@ -1,6 +1,4 @@
-=========================
-OMEGA Externals Directory
-=========================
+# OMEGA Externals Directory
 
 This directory holds any needed external libraries, submodules or
 source code for the Ocean Model for E3SM Global Applications (OMEGA).
