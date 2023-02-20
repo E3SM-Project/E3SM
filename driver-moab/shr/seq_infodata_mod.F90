@@ -2489,6 +2489,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%rof_nx,             mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%rof_ny,             mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%flood_present,      mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%rof_mesh,           mpicom, pebcast=cmppe)
        ! dead_comps is true if it's ever set to true
        deads = infodata%dead_comps
        call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)
