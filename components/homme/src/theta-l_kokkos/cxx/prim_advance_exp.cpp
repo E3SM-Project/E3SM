@@ -68,6 +68,7 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
                       (v(ie,n0,0,igp,jgp,LAST_LEV)[LAST_MIDPOINT_VEC_IDX]*gradphis(ie,0,igp,jgp) +
                        v(ie,n0,1,igp,jgp,LAST_LEV)[LAST_MIDPOINT_VEC_IDX]*gradphis(ie,1,igp,jgp))/PhysicalConstants::g;
     });
+    Kokkos::fence();
   }
 
 #if !defined(CAM) && !defined(SCREAM)
