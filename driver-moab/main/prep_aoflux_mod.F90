@@ -149,7 +149,7 @@ contains
           call shr_sys_abort(subname//' ERROR in defining tags on ocn phys mesh on cpl')
        endif
        ! make it zero
-       ! first form a list 
+       ! first form a list and get size.
        call mct_list_init(temp_list ,seq_flds_xao_fields)
        size_list=mct_list_nitem (temp_list)
        call mct_list_clean(temp_list)

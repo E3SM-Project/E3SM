@@ -482,7 +482,7 @@ contains
           call seq_map_map(mapper_a2l, fractions_a, fractions_l, fldlist='afrac', norm=.false.)
        endif
 
-    end if
+    end if  ! end of (if lnd_present)
 
     ! Initialize fractions on ice grid/decomp (initialize ice fraction to zero)
 
@@ -514,7 +514,7 @@ contains
          ierr = iMOAB_SetDoubleTagStorage ( mbrxid, tagname, arrSize , ent_type, tagValues)
          deallocate(tagValues)
 
-         tagname = 'rfrac'//C_NULL_CHAR ! 'lfrin'
+         tagname = 'rfrac'//C_NULL_CHAR ! 'rfrac'
          allocate(tagValues(lSize) )
          tagValues = dom_r%data%rAttr(kf,:)
          kgg = mct_aVect_indexIA(dom_r%data ,"GlobGridNum" ,perrWith=subName)
@@ -599,7 +599,7 @@ contains
           call seq_map_map(mapper_i2a,fractions_i,fractions_a,fldlist='ofrac',norm=.false.)
        endif
 
-    end if
+    end if ! end of ice_present
 
     ! Initialize fractions on ocean grid/decomp (initialize ice fraction to zero)
     ! These are initialized the same as for ice
@@ -658,7 +658,7 @@ contains
           mapper_o2i => prep_ice_get_mapper_SFo2i()
           call seq_map_map(mapper_o2i,fractions_o,fractions_i,fldlist='afrac',norm=.false.)
        endif
-    end if
+    end if  ! end of if ocn present
 
     ! --- Set ofrac and lfrac on atm grid.  These should actually be mapo2a of
     !     ofrac and lfrac but we can't map lfrac from o2a due to masked mapping
