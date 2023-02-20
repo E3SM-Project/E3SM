@@ -61,12 +61,10 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   auto& out_control_pl = m_params.sublist("output_control");
   m_output_control.frequency  = out_control_pl.get<int>("Frequency");
   m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");
-  m_output_control.nsamples_since_last_write = 0;
   m_output_control.timestamp_of_last_write   = m_case_t0;
 
   // File specs
   m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File",-1);
-  m_output_file_specs.num_snapshots_in_file = 0;
   m_output_file_specs.filename_with_time_string = out_control_pl.get("Timestamp in Filename",true);
   m_output_file_specs.filename_with_mpiranks    = out_control_pl.get("MPI Ranks in Filename",false);
   m_output_file_specs.filename_with_avg_type    = out_control_pl.get("avg_type_in_filename",true);
@@ -126,23 +124,19 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     auto& pl = m_params.sublist("Checkpoint Control");
     m_checkpoint_control.frequency                 = pl.get<int>("Frequency");
     m_checkpoint_control.frequency_units           = pl.get<std::string>("frequency_units");
-    m_checkpoint_control.nsamples_since_last_write = 0;
-    m_checkpoint_control.timestamp_of_last_write    = case_t0;
+    m_checkpoint_control.timestamp_of_last_write   = run_t0;
 
     // File specs
     m_checkpoint_file_specs.max_snapshots_in_file = 1;
-    m_checkpoint_file_specs.num_snapshots_in_file = 0;
     m_checkpoint_file_specs.filename_with_time_string = pl.get("Timestamp in Filename",true);
     m_checkpoint_file_specs.filename_with_mpiranks    = pl.get("MPI Ranks in Filename",false);
     m_checkpoint_file_specs.filename_with_avg_type    = pl.get("avg_type_in_filename",true);
     m_checkpoint_file_specs.filename_with_frequency   = pl.get("frequency_in_filename",true);
+    m_checkpoint_file_specs.save_grid_data = false;
   } else {
     // If there is no restart data or there is but no checkpoint control sublist then we initialize
     // the checkpoint control so that it never writes checkpoints.
-    m_checkpoint_control.frequency  = 0;
-    m_checkpoint_control.frequency_units = "none";
-    m_checkpoint_control.nsamples_since_last_write = 0;
-    m_checkpoint_control.timestamp_of_last_write = case_t0;
+    m_checkpoint_control.frequency_units = "never";
   }
 
   // If this is normal output (not the model restart output) and the output specs

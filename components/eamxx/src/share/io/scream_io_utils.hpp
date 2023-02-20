@@ -45,7 +45,7 @@ inline OutputAvgType str2avg (const std::string& s) {
 struct IOControl {
   // A non-positive frequency can be used to signal IO disabled
   int frequency = -1;
-  int nsamples_since_last_write;  // Needed when updating output data, such as with the OAT::Average flag
+  int nsamples_since_last_write = 0;  // Needed when updating output data, such as with the OAT::Average flag
   util::TimeStamp timestamp_of_last_write;
   std::string frequency_units = "none";
 
@@ -102,7 +102,7 @@ struct IOControl {
 struct IOFileSpecs {
   bool is_open = false;
   std::string filename;
-  int num_snapshots_in_file;
+  int num_snapshots_in_file = 0;
   int max_snapshots_in_file;
   bool file_is_full () const { return num_snapshots_in_file==max_snapshots_in_file; }
   // Whether a time string or the number of mpiranks should be attached to the filename.
