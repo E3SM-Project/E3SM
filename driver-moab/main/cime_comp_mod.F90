@@ -1473,14 +1473,14 @@ contains
 
    !---------------------------------------------------------------------------------------
    ! Initialize components including domain/grid info.
-   !  If processor has cpl or model: Do an infodata exchange
+   !  If processor has cpl or model: Do a cpl2mod_init infodata exchange
    !  Initialize pointers to the main _cc attribute vectors in comp datatype
    !  If the model is active on this processor
    !     Call init method for each model
    !       initialize GsMap, Avs (attributes and size) in comp struct
    !       initialize comp%domain and fill it with GlobGridNum, lat, lon, area, mask, frac
    !       MOAB  component app registered, mesh created, tags defined (mesh and data), areas set
-   !  If processor has cpl or model: Do an infodata exchange
+   !  If processor has cpl or model: Do an mod2cpl_init infodata exchange
    !  If processor has model: Copy area to aream for now.
    !---------------------------------------------------------------------------------------
     call t_startf('CPL:comp_init_cc_atm')
@@ -1542,6 +1542,7 @@ contains
    ! Initialize coupler-component data
    !  if processor has cpl or model
    !    init the extended gsMap that describes comp on mpijoin
+   !    call call cplcomp_moab_Init and use infodata
    !    MOAB: on component, send mesh (except lnd and rof).
    !       on coupler, register coupler version
    !       of app and receive mesh (except lnd and rof). The initial CommGraph is computed as part of
