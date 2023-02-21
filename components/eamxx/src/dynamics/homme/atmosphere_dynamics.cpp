@@ -452,7 +452,7 @@ void HommeDynamics::initialize_impl (const RunType run_type)
   rayleigh_friction_init();
 }
 
-void HommeDynamics::run_impl (const int dt)
+void HommeDynamics::run_impl (const double dt)
 {
   try {
 
@@ -461,8 +461,17 @@ void HommeDynamics::run_impl (const int dt)
 
     // NOTE: we did not have atm_dt when we inited homme, so we set nsplit=1.
     //       Now we can compute the actual nsplit, and need to update its value
-    //       in Hommexx's data structures
-    const int nsplit = get_homme_nsplit_f90(dt);
+    //       in Hommexx's data structures.
+    //       Also, nsplit calculation requires an integer atm timestep, so we
+    //       check to ensure that's the case
+    EKAT_REQUIRE_MSG (std::abs(dt-std::round(dt))<std::numeric_limits<double>::epsilon()*10,
+        "[HommeDynamics] Error! Input timestep departure from integer above tolerance.\n"
+        "  - input dt : " << dt << "\n"
+        "  - tolerance: " << std::numeric_limits<double>::epsilon()*10 << "\n");
+
+    const int dt_int = static_cast<int>(std::round(dt));
+
+    const int nsplit = get_homme_nsplit_f90(dt_int);
     const auto& c = Homme::Context::singleton();
     auto& params = c.get<Homme::SimulationParams>();
     params.nsplit = nsplit;
@@ -514,13 +523,12 @@ void HommeDynamics::set_computed_group_impl (const FieldGroup& group)
   }
 }
 
-void HommeDynamics::homme_pre_process (const int dt) {
+void HommeDynamics::homme_pre_process (const double dt) {
   // T and uv tendencies are backed out on the ref grid.
   // Homme takes care of turning the FT tendency into a tendency for VTheta_dp.
-  using KT = KokkosTypes<DefaultDevice>;
 
   constexpr int N = sizeof(Homme::Scalar) / sizeof(Real);
-  using Pack = ekat::Pack<Real,N>;
+  using Pack = RPack<N>;
 
   using namespace Homme;
   const auto& c = Context::singleton();
@@ -618,7 +626,7 @@ void HommeDynamics::homme_pre_process (const int dt) {
   }
 }
 
-void HommeDynamics::homme_post_process (const int dt) {
+void HommeDynamics::homme_post_process (const double dt) {
   const auto& pgn = m_phys_grid->name();
   const auto& c = Homme::Context::singleton();
   const auto& params = c.get<Homme::SimulationParams>();
@@ -638,23 +646,19 @@ void HommeDynamics::homme_post_process (const int dt) {
 
   if (fv_phys_active()) {
     fv_phys_post_process();
-  } else {
-    // Remap outputs to ref grid
-    m_d2p_remapper->remap(true);
-  }
-
-  constexpr int N = HOMMEXX_PACK_SIZE;
-  using KT = KokkosTypes<DefaultDevice>;
-  using Pack = ekat::Pack<Real,N>;
-  using ColOps = ColumnOps<DefaultDevice,Real>;
-  using PF = PhysicsFunctions<DefaultDevice>;
-
-  if (fv_phys_active()) {
     // Apply Rayleigh friction to update temperature and horiz_winds
     rayleigh_friction_apply(dt);
 
     return;
   }
+
+  // Remap outputs to ref grid
+  m_d2p_remapper->remap(true);
+
+  constexpr int N = HOMMEXX_PACK_SIZE;
+  using Pack = RPack<N>;
+  using ColOps = ColumnOps<DefaultDevice,Real>;
+  using PF = PhysicsFunctions<DefaultDevice>;
 
   // Convert VTheta_dp->T, store T,uv, and possibly w in FT, FM,
   // compute p_int on ref grid.
@@ -704,7 +708,7 @@ void HommeDynamics::homme_post_process (const int dt) {
     auto p_dry_mid = ekat::subview(p_dry_mid_view,icol);
     auto p_dry_int = ekat::subview(p_dry_int_view,icol);
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks), [&](const int& jpack) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,npacks), [&](const int& jpack) {
       dp_dry(jpack) = dp(jpack) * (1.0 - qv(jpack));
     });
     ColOps::column_scan<true>(team,nlevs,dp_dry,p_dry_int,ps0);
@@ -716,7 +720,7 @@ void HommeDynamics::homme_post_process (const int dt) {
     auto T      = ekat::subview(T_view,icol);
     auto T_prev = ekat::subview(T_prev_view,icol);
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,npacks),
                          [&](const int ilev) {
       // VTheta_dp->VTheta->Theta->T
       auto& T_val = T(ilev);
@@ -890,8 +894,7 @@ void HommeDynamics::restart_homme_state () {
   }
 
   constexpr int N = HOMMEXX_PACK_SIZE;
-  using Pack = ekat::Pack<Real,N>;
-  using KT = KokkosTypes<DefaultDevice>;
+  using Pack = RPack<N>;
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
   using PF = PhysicsFunctions<DefaultDevice>;
 
@@ -1002,7 +1005,7 @@ void HommeDynamics::restart_homme_state () {
     auto p_mid = ekat::subview(p_mid_view,icol);
     auto qv    = ekat::subview(qv_view,icol);
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,npacks),
                          [&](const int& ilev) {
       // T_prev as of now contains vtheta_dp. Convert to temperature
       auto& T_prev = T_prev_view(icol,ilev);
@@ -1019,8 +1022,7 @@ void HommeDynamics::restart_homme_state () {
 
 void HommeDynamics::initialize_homme_state () {
   // Some types
-  using KT = KokkosTypes<DefaultDevice>;
-  using Pack = ekat::Pack<Real,HOMMEXX_PACK_SIZE>;
+  using Pack = RPack<HOMMEXX_PACK_SIZE>;
   using ColOps = ColumnOps<DefaultDevice,Real>;
   using PF = PhysicsFunctions<DefaultDevice>;
   using ESU = ekat::ExeSpaceUtils<KT::ExeSpace>;
@@ -1055,7 +1057,7 @@ void HommeDynamics::initialize_homme_state () {
   const auto policy_dp = ESU::get_default_team_policy(ncols, nlevs);
   Kokkos::parallel_for(policy_dp, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int icol = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,nlevs),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,nlevs),
                         [&](const int ilev) {
        dp_ref(icol,ilev) = (hyai(ilev+1)-hyai(ilev))*ps0
                          + (hybi(ilev+1)-hybi(ilev))*ps_ref(icol);
@@ -1121,7 +1123,7 @@ void HommeDynamics::initialize_homme_state () {
     auto T      = ekat::subview(vth_view,ie,n0,igp,jgp);
     auto vTh_dp = ekat::subview(vth_view,ie,n0,igp,jgp);
     auto qv     = ekat::subview(Q_view,ie,0,igp,jgp);
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks_mid),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,npacks_mid),
                          [&](const int ilev) {
       const auto th = PF::calculate_theta_from_T(T(ilev),p_mid(ilev));
       vTh_dp(ilev) = PF::calculate_virtual_temperature(th,qv(ilev))*dp(ilev);
@@ -1234,8 +1236,7 @@ copy_dyn_states_to_all_timelevels () {
 //       TODO item to consolidate how we update the pressure during initialization and run, but
 //       for now we have two locations where we do this.
 void HommeDynamics::update_pressure(const std::shared_ptr<const AbstractGrid>& grid) {
-  using KT = KokkosTypes<DefaultDevice>;
-  using Pack = ekat::Pack<Real,HOMMEXX_PACK_SIZE>;
+  using Pack = RPack<HOMMEXX_PACK_SIZE>;
   using ColOps = ColumnOps<DefaultDevice,Real>;
 
   const auto ncols = grid->get_num_local_dofs();
@@ -1270,7 +1271,7 @@ void HommeDynamics::update_pressure(const std::shared_ptr<const AbstractGrid>& g
     auto p_dry_mid = ekat::subview(p_dry_mid_view,icol);
     auto p_dry_int = ekat::subview(p_dry_int_view,icol);
 
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,npacks), [&](const int& jpack) {
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team,npacks), [&](const int& jpack) {
       dp_dry(jpack) = dp(jpack) * (1.0 - qv(jpack));
     });
 

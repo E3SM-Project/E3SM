@@ -38,7 +38,7 @@ void Functions<S,D>
   ekat::impl::set_min_max(ktop, kbot, kmin, kmax, Spack::n);
 
   Kokkos::parallel_for(
-    Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_) {
+    Kokkos::TeamVectorRange(team, kmax-kmin+1), [&] (int pk_) {
 
     bool trap{false};
 

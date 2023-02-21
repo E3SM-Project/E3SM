@@ -227,7 +227,7 @@ protected:
 
   // The run method is responsible for exporting atm states to the e3sm coupler, and
   // import surface states from the e3sm coupler.
-  void run_impl (const int /* dt */) {}
+  void run_impl (const double /* dt */) {}
 
   // Clean up
   void finalize_impl ( /* inputs */ ) {}
@@ -329,7 +329,7 @@ public:
     add_field<Updated>("Field A",lt,K,m_grid_name);
   }
 protected:
-    void run_impl (const int /* dt */) {
+    void run_impl (const double /* dt */) {
     auto v = get_field_out("Field A", m_grid_name).get_view<Real*,Host>();
 
     for (int i=0; i<v.extent_int(0); ++i) {

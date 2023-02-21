@@ -19,7 +19,7 @@ void Functions<S,D>
 {
   const Int nlev_pack = ekat::npack<Spack>(nlev);
   const auto sinvar = scalarize(invar);
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);
     auto range_pack2 = range_pack1;
     range_pack2.set(range_pack1 < 1, 1); // don't want the shift to go below zero. we mask out that result anyway

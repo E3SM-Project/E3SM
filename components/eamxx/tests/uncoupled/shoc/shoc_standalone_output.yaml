@@ -10,6 +10,11 @@ Fields:
       - cldfrac_liq
       - eddy_diff_mom
       - horiz_winds
+      - U
+      - V
+      - surf_mom_flux
+      - surf_mom_flux_U
+      - surf_mom_flux_V
       - qv
       - qc
       - sgs_buoy_flux

@@ -69,7 +69,7 @@ public:
   // If calling in initialize_impl(), set
   // called_during_initialization=true to avoid exporting fields
   // which do not have valid entries.
-  void do_export(const Int dt, const bool called_during_initialization=false);
+  void do_export(const double dt, const bool called_during_initialization=false);
 
   // Take and store data from SCDataManager
   void setup_surface_coupling_data(const SCDataManager &sc_data_manager);
@@ -78,7 +78,7 @@ protected:
 
   // The three main overrides for the subcomponent
   void initialize_impl (const RunType run_type);
-  void run_impl        (const int dt);
+  void run_impl        (const double dt);
   void finalize_impl   ();
 
   // Creates an helper field, not to be shared with the AD's FieldManager

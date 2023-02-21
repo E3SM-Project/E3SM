@@ -106,7 +106,7 @@ build_src_grid(const ekat::Comm& comm, const int nldofs_src)
 
 // Helper function to create fields
 Field
-create_field(const std::string& name, const std::shared_ptr<const AbstractGrid>& grid, const bool twod, const bool vec, const bool mid = false, const int ps = 1)
+create_field(const std::string& name, const std::shared_ptr<const AbstractGrid>& grid, const bool twod, const bool vec, const bool mid = false, const int ps = 1, const bool add_mask = false)
 {
   constexpr int vec_dim = 3;
   constexpr auto CMP = FieldTag::Component;
@@ -120,6 +120,16 @@ create_field(const std::string& name, const std::shared_ptr<const AbstractGrid>&
   Field f(fid);
   f.get_header().get_alloc_properties().request_allocation(ps);
   f.allocate_view();
+
+  if (add_mask) {
+    // Add a mask to the field
+    FieldIdentifier fid_mask(name+"_mask",fl,units,grid->name());
+    Field f_mask(fid_mask);
+    f_mask.get_header().get_alloc_properties().request_allocation(ps);
+    f_mask.allocate_view();
+    f.get_header().set_extra_data("mask_data",f_mask);
+  }
+
   return f;
 }
 
@@ -224,7 +234,7 @@ TEST_CASE("coarsening_remap_nnz>nsrc") {
   // Here we will simplify and just remap a simple 2D horizontal field.
   auto tgt_grid = remap->get_tgt_grid();
 
-  auto src_s2d   = create_field("s2d",  src_grid,true,false);
+  auto src_s2d   = create_field("s2d",  src_grid,true,false,false,1,true);
   auto tgt_s2d   = create_field("s2d",  tgt_grid,true,false);
 
   std::vector<Field> src_f = {src_s2d};
@@ -387,16 +397,16 @@ TEST_CASE ("coarsening_remap") {
   auto src_s2d   = create_field("s2d",  src_grid,true,false);
   auto src_v2d   = create_field("v2d",  src_grid,true,true);
   auto src_s3d_m = create_field("s3d_m",src_grid,false,false,true, 1);
-  auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,std::min(SCREAM_PACK_SIZE,4));
-  auto src_v3d_m = create_field("v3d_m",src_grid,false,true ,true, std::min(SCREAM_PACK_SIZE,8));
-  auto src_v3d_i = create_field("v3d_i",src_grid,false,true ,false,std::min(SCREAM_PACK_SIZE,16));
+  auto src_s3d_i = create_field("s3d_i",src_grid,false,false,false,SCREAM_PACK_SIZE);
+  auto src_v3d_m = create_field("v3d_m",src_grid,false,true ,true, 1);
+  auto src_v3d_i = create_field("v3d_i",src_grid,false,true ,false,SCREAM_PACK_SIZE);
 
   auto tgt_s2d   = create_field("s2d",  tgt_grid,true,false);
   auto tgt_v2d   = create_field("v2d",  tgt_grid,true,true);
   auto tgt_s3d_m = create_field("s3d_m",tgt_grid,false,false,true, 1);
-  auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,false,std::min(SCREAM_PACK_SIZE,4));
-  auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,true ,true, std::min(SCREAM_PACK_SIZE,8));
-  auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,true ,false,std::min(SCREAM_PACK_SIZE,16));
+  auto tgt_s3d_i = create_field("s3d_i",tgt_grid,false,false,false,SCREAM_PACK_SIZE);
+  auto tgt_v3d_m = create_field("v3d_m",tgt_grid,false,true ,true, 1);
+  auto tgt_v3d_i = create_field("v3d_i",tgt_grid,false,true ,false,SCREAM_PACK_SIZE);
 
   std::vector<Field> src_f = {src_s2d,src_v2d,src_s3d_m,src_s3d_i,src_v3d_m,src_v3d_i};
   std::vector<Field> tgt_f = {tgt_s2d,tgt_v2d,tgt_s3d_m,tgt_s3d_i,tgt_v3d_m,tgt_v3d_i};

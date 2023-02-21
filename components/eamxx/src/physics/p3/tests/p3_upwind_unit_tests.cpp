@@ -94,7 +94,7 @@ static void run_phys()
           }
           EKAT_KERNEL_ASSERT((V[0](k) == V[1](k)).all());
         };
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npack), set_fields);
+        Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npack), set_fields);
         team.team_barrier();
       };
       Kokkos::parallel_for(ekat::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, npack),
@@ -113,7 +113,7 @@ static void run_phys()
             const auto sum_mass = [&] (const Int& k, Scalar& mass) {
               mass += srho(k)*sr(k)/sinv_dz(k);
             };
-            Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nk), sum_mass, mass);
+            Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, nk), sum_mass, mass);
 
             const auto find_max_r = [&] (const Int& k, Scalar& r_max) {
               // The background rho is is not advected in P3. Thus, here we
@@ -135,14 +135,14 @@ static void run_phys()
               const auto mixing_ratio_true = sr(k)/sr0(k);
               r_max = ekat::impl::max(mixing_ratio_true, r_max);
             };
-            Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nk), find_max_r,
+            Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, nk), find_max_r,
                                     Kokkos::Max<Scalar>(r_max));
 
             const auto find_min_r = [&] (const Int& k, Scalar& r_min) {
               const auto mixing_ratio_true = sr(k)/sr0(k);
               r_min = ekat::impl::min(mixing_ratio_true, r_min);
             };
-            Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team, nk), find_min_r,
+            Kokkos::parallel_reduce(Kokkos::TeamVectorRange(team, nk), find_min_r,
                                     Kokkos::Min<Scalar>(r_min));
           };
 

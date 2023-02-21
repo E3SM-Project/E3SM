@@ -368,3 +368,4 @@ def _ensure_pylib_impl(libname, min_version=None, pip_libname=None):
 def ensure_yaml():   _ensure_pylib_impl("yaml", pip_libname="pyyaml",min_version='5.1')
 def ensure_pylint(): _ensure_pylib_impl("pylint")
 def ensure_psutil(): _ensure_pylib_impl("psutil")
+def ensure_netcdf4(): _ensure_pylib_impl("netCDF4")

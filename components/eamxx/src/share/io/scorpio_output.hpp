@@ -157,15 +157,21 @@ public:
   }
 protected:
   // Internal functions
-  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::string& mode);
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
+  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::string& mode);
+  void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::vector<std::string>& modes);
+
+  std::shared_ptr<const fm_type> get_field_manager (const std::string& mode) const {
+    EKAT_REQUIRE_MSG (m_field_mgrs.count(mode),"ERROR! AtmosphereOutput::get_field_manager FM for mode = " + mode + " not found in list of available field managers!.");
+    return m_field_mgrs.at(mode);
+  }
 
   void register_dimensions(const std::string& name);
   void register_variables(const std::string& filename, const std::string& fp_precision);
   void set_degrees_of_freedom(const std::string& filename);
   std::vector<scorpio::offset_t> get_var_dof_offsets (const FieldLayout& layout);
   void register_views();
-  Field get_field(const std::string& name, const std::shared_ptr<const fm_type>& field_mgr) const;
+  Field get_field(const std::string& name, const std::string mode) const;
   void compute_diagnostic(const std::string& name);
   void set_diagnostics();
   void create_diagnostic (const std::string& diag_name);
@@ -177,14 +183,11 @@ protected:
   // io_field_manager stores the fields in the layout for output
   // sim_field_manager points to the simulation field manager
   // when remapping horizontally these two field managers may be different.
-  std::shared_ptr<const fm_type>      m_io_field_mgr;
-  std::shared_ptr<const fm_type>      m_sim_field_mgr;
-  std::shared_ptr<const grid_type>    m_io_grid;
-  std::shared_ptr<remapper_type>      m_horiz_remapper;
-  std::shared_ptr<remapper_type>      m_vert_remapper;
-  std::shared_ptr<const gm_type>      m_grids_manager;
-  bool                                m_horiz_remap_from_file = false;
-  bool                                m_vert_remap_from_file = false;
+  std::map<std::string,std::shared_ptr<const fm_type>> m_field_mgrs;
+  std::shared_ptr<const grid_type>            m_io_grid;
+  std::shared_ptr<remapper_type>              m_horiz_remapper;
+  std::shared_ptr<remapper_type>              m_vert_remapper;
+  std::shared_ptr<const gm_type>              m_grids_manager;
 
   // How to combine multiple snapshots in the output: Instant, Max, Min, Average
   OutputAvgType     m_avg_type;

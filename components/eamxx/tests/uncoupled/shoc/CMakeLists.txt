@@ -31,9 +31,12 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
   include (BuildCprnc)
   BuildCprnc()
   SET (BASE_TEST_NAME "shoc")
-  foreach (MPI_RANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
+  math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
+  foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
+
     set (SRC_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
     set (TGT_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
+
     set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_bfb")
     add_test (NAME ${TEST_NAME}
               COMMAND cmake -P ${CMAKE_BINARY_DIR}/bin/CprncTest.cmake ${SRC_FILE} ${TGT_FILE}
@@ -43,3 +46,57 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
               FIXTURES_REQUIRED shoc_generate_output_nc_files)
   endforeach()
 endif()
+
+# Finally, check that the content of sliced vars U/V and corresponding surf_mom_flux
+# components in all output NC files matches the content of corresponding components
+# of the vector quantities
+foreach (RANK RANGE ${TEST_RANK_START} ${TEST_RANK_END})
+  set (nc_file shoc_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${RANK}.nc)
+  add_test (NAME check_U_V_slices_np${RANK}
+            COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
+            -s ${nc_file} -c "horiz_winds(:,:,1,:)=U(:,:,:)" "horiz_winds(:,:,2,:)=V(:,:,:)"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  set_tests_properties (check_U_V_slices_np${RANK} PROPERTIES
+            FIXTURES_REQUIRED shoc_generate_output_nc_files)
+  add_test (NAME check_surf_mom_flux_slices_np${RANK}
+            COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
+            -s ${nc_file} -c "surf_mom_flux(:,:,1)=surf_mom_flux_U(:,:)"
+                             "surf_mom_flux(:,:,2)=surf_mom_flux_V(:,:)"
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  set_tests_properties (check_surf_mom_flux_slices_np${RANK} PROPERTIES
+            FIXTURES_REQUIRED shoc_generate_output_nc_files)
+endforeach()
+
+################################
+#        MUST FAIL tests       #
+################################
+
+# These tests ensure that the compare-nc-files script doesn't always pass
+set (nc_file shoc_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc)
+
+# Legitimate diff
+add_test (NAME check_U_V_slices_fail_diff
+          COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
+          -s ${nc_file} -c "horiz_winds(:,:,1,:)=T_mid(:,:,:)"
+          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+set_tests_properties (check_U_V_slices_fail_diff PROPERTIES
+          WILL_FAIL TRUE
+          FIXTURES_REQUIRED shoc_generate_output_nc_files)
+
+# Wrong layout
+add_test (NAME check_U_V_slices_fail_layout
+          COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
+          -s ${nc_file} -c "horiz_winds(:,:,1,:)=U(:,1,:)"
+          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+set_tests_properties (check_U_V_slices_fail_layout PROPERTIES
+          WILL_FAIL TRUE
+          FIXTURES_REQUIRED shoc_generate_output_nc_files)
+
+# Missing variable(s)
+add_test (NAME check_U_V_slices_fail_missing
+          COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
+          -s ${nc_file} -c "T=T"
+          WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+set_tests_properties (check_U_V_slices_fail_missing PROPERTIES
+          WILL_FAIL TRUE
+          FIXTURES_REQUIRED shoc_generate_output_nc_files)

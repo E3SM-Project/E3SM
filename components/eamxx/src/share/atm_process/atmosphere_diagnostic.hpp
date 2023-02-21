@@ -54,7 +54,7 @@ public:
   void set_computed_field (const Field& f) final;
   void set_computed_group (const FieldGroup& group) final;
 
-  void compute_diagnostic (const int dt=0);
+  void compute_diagnostic (const double dt = 0);
 protected:
 
   virtual void compute_diagnostic_impl () = 0;
@@ -62,11 +62,11 @@ protected:
   // By default, diagnostic don't do any initialization/finalization stuff.
   // Derived classes can override, of course
   void initialize_impl (const RunType /*run_type*/) { /* Nothing to do */ }
-  void run_impl (const int dt);
+  void run_impl (const double dt);
   void finalize_impl   () { /* Nothing to do */ }
 
   // Some diagnostics will need the timestep, store here.
-  int m_dt;
+  double m_dt;
 
   // Diagnostics are meant to return a field
   Field m_diagnostic_output;

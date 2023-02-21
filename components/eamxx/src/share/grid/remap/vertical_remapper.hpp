@@ -104,7 +104,7 @@ protected:
 public:
 #endif
   template<int N>
-  void apply_vertical_interpolation (const Field& f_src, const Field& f_tgt) const;
+  void apply_vertical_interpolation (const Field& f_src, const Field& f_tgt, const bool mask_interp=false) const;
 protected:
 
   using KT = KokkosTypes<DefaultDevice>;
@@ -125,6 +125,8 @@ protected:
   // Source and target fields
   std::vector<Field>    m_src_fields;
   std::vector<Field>    m_tgt_fields;
+  std::vector<Field>    m_tgt_masks;
+  std::vector<Field>    m_src_masks;
 
   // Vertical profile fields, both for source and target
   int                   m_num_remap_levs;
