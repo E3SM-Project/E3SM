@@ -2475,7 +2475,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%lnd_prognostic,     mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%lnd_nx,             mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%lnd_ny,             mpicom, pebcast=cmppe)
-       call shr_mpi_bcast(infodata%lnd_domain,           mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%lnd_domain,         mpicom, pebcast=cmppe)
        ! dead_comps is true if it's ever set to true
        deads = infodata%dead_comps
        call shr_mpi_bcast(deads,                       mpicom, pebcast=cmppe)

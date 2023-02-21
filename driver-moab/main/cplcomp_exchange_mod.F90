@@ -1295,17 +1295,10 @@ contains
             endif
             ! do not receive the mesh anymore, read it from file, then pair it with mlnid, component land PC mesh
             ! similar to rof mosart mesh  
-            ! on lcrc:
-            ! outfile = '/lcrc/group/e3sm/data/inputdata/share/meshes/lnd/land_np4pg2_oQU480_230112.h5m'//C_NULL_CHAR
-            ! on gce:
-            ! /nfs/gce/projects/climate/inputdata/share/meshes/lnd/land_np4pg2_oQU480_230112.h5m'//C_NULL_CHAR
-            ! iulian's laptop
-            !outfile = '/media/iulian/ExtraDrive1/inputdata/share/meshes/lnd/land_np4pg2_oQU480_230112.h5m'//C_NULL_CHAR
-            ropts = 'PARALLEL=READ_PART;PARTITION=PARALLEL_PARTITION;PARALLEL_RESOLVE_SHARED_ENTS'//C_NULL_CHAR
+            ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE='//C_NULL_CHAR
             call seq_infodata_GetData(infodata,lnd_domain=lnd_domain)
             outfile = trim(lnd_domain)//C_NULL_CHAR
             write(logunit,*) subname,' got land domain file ',trim(lnd_domain)
-            outfile = '/home/iulian/rofscrip/land_np4pg2_oQU480_230112.h5m'//C_NULL_CHAR
             nghlay = 0 ! no ghost layers 
             ierr = iMOAB_LoadMesh(mblxid, outfile, ropts, nghlay)
             if (ierr .ne. 0) then
