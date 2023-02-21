@@ -804,6 +804,7 @@ contains
       integer, dimension(:), pointer ::vegetationMask
       real (kind=RKIND) :: old_bottom_Cd, lambda, beta, alpha, total_h
       real (kind=RKIND) :: inundation_depth, von_karman, cff1, cff2, cff3, cff4
+      real (kind=RKIND) :: bottom_roughness, implicitCd_min, implicitCd_max, kappaSq
       integer :: iCell
 
       err = 0
@@ -889,13 +890,23 @@ contains
          ! average cell-based implicit bottom drag to edges and convert Mannings n to Cd
          if (dragType == dragTypeLogLaw) then
            ! NCOM's formula for bottom drag coefficient
-           ! The original formula is cb(i,j) = max(cbmin, (vonk/log(0.5*depth(i,j)/z0))**2 ))
-           ! where vonk=0.16, z0=0.001, bracketed between [0.0025, 0.1]
-           ! The constant below is 250 = 0.5*0.5/z0 with the extra 0.5 from
-           ! averaging the two bottomDepth cells.
-           implicitCd = max(0.0025_RKIND, &
-                        min(0.1_RKIND, &
-                            0.16_RKIND/(log(500.0_RKIND*bottomDepthDrag))**2 ))
+           ! The original formula is cb(i,j) = max(cbmin, (kappaSq/log(z/z0))**2 ))
+           ! where kappaSq is the vonKarman coefficient squared, z0 is the roughness coefficient.
+           ! z is the depth at which the normalVelocity is evaluated. In the original formula,
+           ! this is 0.5*depth(i,j). Here, it is 0.5*layerThickEdgeMean.
+           ! TODO replace layerThickEdgeMean with layerThickEdgeDrag.
+           ! If this is extended to multi-layer formulation, use zMid.
+           ! The solution is bracketed between implicitCd_min and implicitCd_max.
+           implicitCd_min = 0.0025_RKIND
+           implicitCd_max = 0.1_RKIND
+           kappaSq = 0.16_RKIND
+           bottom_roughness = 1.0e-3_RKIND
+           implicitCd = max(implicitCd_min, &
+                            min(implicitCd_max, &
+                                kappaSq / &
+                                (log(0.5_RKIND * layerThickEdgeMean(N,iEdge)/bottom_roughness))**2 &
+                               ) &
+                           )
          elseif (dragType == dragTypeMannings .AND. config_use_vegetation_drag) then
            implicitCd = gravity*(0.5_RKIND*(vegetationManning(cell1) + vegetationManning(cell2)))**2 * &
                         columnThicknessDrag**(-1.0_RKIND/3.0_RKIND)
