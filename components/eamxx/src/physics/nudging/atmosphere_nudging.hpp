@@ -26,7 +26,6 @@ namespace scream
 class Nudging : public AtmosphereProcess
 {
 public:
-  //using namespace scream::nudging;
   using NudgingFunc = nudging::NudgingFunctions;
   using mPack = ekat::Pack<Real,1>;
   using KT = KokkosTypes<DefaultDevice>;
@@ -63,12 +62,18 @@ public:
   
   //Time interpolation function
   void time_interpolation(const int time_s);
+
+#ifndef KOKKOS_ENABLE_CUDA
+  // Cuda requires methods enclosing __device__ lambda's to be public
+protected:
+#endif
+
+  void run_impl        (const int dt);
   
 protected:
 
   // The three main overrides for the subcomponent
   void initialize_impl (const RunType run_type);
-  void run_impl        (const int dt);
   void finalize_impl   ();
 
   std::shared_ptr<const AbstractGrid>   m_grid;
