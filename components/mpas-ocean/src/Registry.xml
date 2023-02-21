@@ -1069,6 +1069,18 @@
 					description="Dimensionless top drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
+		<nml_option name="config_loglaw_bottom_roughness" type="real" default_value="1.0e-3" units="m"
+					description="Bottom roughness, $z_0$, in meters."
+					possible_values="any positive real, typically 1.0e-3"
+		/>
+		<nml_option name="config_loglaw_bottom_drag_min" type="real" default_value="2.5e-3"
+					description="Dimensionless bottom drag minimum used in log-law parameterization."
+					possible_values="any positive real, typically 2.5e-3"
+		/>
+		<nml_option name="config_loglaw_bottom_drag_max" type="real" default_value="1.0e-1"
+					description="Dimensionless bottom drag maximum used in log-law parameterization."
+					possible_values="any positive real, typically 1.0e-1"
+		/>
 		<nml_option name="config_explicit_bottom_drag_coeff" type="real" default_value="1.0e-3"
 					description="Dimensionless explicit bottom drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"

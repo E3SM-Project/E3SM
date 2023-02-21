@@ -84,6 +84,7 @@ module ocn_vmix
       dragTypeVariable    = 3, &! Spatially variable
       dragTypeMannings    = 4   ! Manning's coefficient
 
+   real (kind=RKIND) :: bottom_roughness, implicitCd_min, implicitCd_max
    real (kind=RKIND) :: rayleighDampingCoef, rayleighBottomDampingCoef, &
                         rayleighDepthVariable
 
@@ -804,7 +805,7 @@ contains
       integer, dimension(:), pointer ::vegetationMask
       real (kind=RKIND) :: old_bottom_Cd, lambda, beta, alpha, total_h
       real (kind=RKIND) :: inundation_depth, von_karman, cff1, cff2, cff3, cff4
-      real (kind=RKIND) :: bottom_roughness, implicitCd_min, implicitCd_max, kappaSq
+      real (kind=RKIND) :: kappaSq
       integer :: iCell
 
       err = 0
@@ -897,10 +898,7 @@ contains
            ! TODO replace layerThickEdgeMean with layerThickEdgeDrag.
            ! If this is extended to multi-layer formulation, use zMid.
            ! The solution is bracketed between implicitCd_min and implicitCd_max.
-           implicitCd_min = 0.0025_RKIND
-           implicitCd_max = 0.1_RKIND
            kappaSq = 0.16_RKIND
-           bottom_roughness = 1.0e-3_RKIND
            implicitCd = max(implicitCd_min, &
                             min(implicitCd_max, &
                                 kappaSq / &
@@ -1556,6 +1554,9 @@ contains
         case ('loglaw')
           dragType = dragTypeLogLaw
           call mpas_log_write(' Implicit bottom drag type is: log law-of-the-wall')
+          implicitCd_min = config_loglaw_bottom_drag_min
+          implicitCd_max = config_loglaw_bottom_drag_max
+          bottom_roughness = config_loglaw_bottom_roughness
 
         case ('spatially-variable')
           dragType = dragTypeVariable
