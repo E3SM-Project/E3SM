@@ -10,7 +10,10 @@
 # Note: netcdf4 1.6.2 would not install cleanly on weaver so we had
 # to force a downgrade to 1.6.0.
 
+# Make sure pip itself is installed and at the latest version
 python3 -m pip install --upgrade pip --user
-for item in $(python -m pip list --outdated | grep -v Package | grep -v -- '-----' | cut -f 1 -d ' '); do
+
+# List outdated packages and update them
+for item in $(python -m pip list --outdated | grep -v Package | grep -v -- '-----' | grep -v netcdf | cut -f 1 -d ' '); do
     python3 -m pip install --upgrade --user $item;
 done
