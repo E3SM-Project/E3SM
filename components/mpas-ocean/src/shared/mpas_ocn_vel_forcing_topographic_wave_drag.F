@@ -132,9 +132,8 @@ contains
             ! rinv is the e-folding time use in HyCOM. Here
             ! topographic_wave_drag = 1/rinv
             if (k>0) then
-              temp_twd(iEdge) = topographicWaveDragCoeff * topographicWaveDrag(iEdge) * normalVelocity(k,iEdge)
-              tend(k,iEdge) = tend(k,iEdge) - topographicWaveDragCoeff &
-                 * topographicWaveDrag(iEdge) * normalVelocity(k,iEdge)
+              temp_twd(iEdge) = topographicWaveDrag(iEdge) * normalVelocity(k,iEdge)
+              tend(k,iEdge) = tend(k,iEdge) * topographicWaveDrag(iEdge) * normalVelocity(k,iEdge)
             endif
           enddo
           !$omp end do
@@ -144,7 +143,7 @@ contains
             k =  maxLevelEdgeTop(iEdge)
             if (k>0) then
               temp_twd(iEdge) = topographicWaveDrag(iEdge) * (normalVelocity(k,iEdge) * normalCoeff(iEdge) + tangentialVelocity(k,iEdge) * tangentialCoeff(iEdge))
-              tend(k,iEdge) = tend(k,iEdge) - topographicWaveDragCoeff * topographicWaveDrag(iEdge) &
+              tend(k,iEdge) = tend(k,iEdge) * topographicWaveDrag(iEdge) &
                  * (normalVelocity(k,iEdge) * normalCoeff(iEdge) + tangentialVelocity(k,iEdge) * tangentialCoeff(iEdge))
             endif
           enddo
