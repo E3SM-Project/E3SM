@@ -750,9 +750,6 @@ contains
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          kineticEnergyCell        !< Input: kinetic energy at cell
 
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         vertViscTopOfEdge !< Input: vertical mixing coefficients
-
       real (kind=RKIND), intent(in) :: &
          dt            !< Input: time step
 
@@ -776,6 +773,9 @@ contains
 
       real (kind=RKIND), dimension(:,:), intent(inout) :: &
          normalVelocity             !< Input: velocity
+
+      real (kind=RKIND), dimension(:,:), intent(inout) :: &
+         vertViscTopOfEdge !< Input: vertical mixing coefficients
 
       !-----------------------------------------------------------------
       !
@@ -805,7 +805,7 @@ contains
       integer, dimension(:), pointer ::vegetationMask
       real (kind=RKIND) :: old_bottom_Cd, lambda, beta, alpha, total_h
       real (kind=RKIND) :: inundation_depth, von_karman, cff1, cff2, cff3, cff4
-      real (kind=RKIND) :: kappaSq
+      real (kind=RKIND) :: kappaSq, kappa, kineticEnergyTopOfEdge
       integer :: iCell
 
       err = 0
@@ -898,13 +898,20 @@ contains
            ! TODO replace layerThickEdgeMean with layerThickEdgeDrag.
            ! If this is extended to multi-layer formulation, use zMid.
            ! The solution is bracketed between implicitCd_min and implicitCd_max.
+           kappa = 0.4_RKIND
            kappaSq = 0.16_RKIND
            implicitCd = max(implicitCd_min, &
                             min(implicitCd_max, &
                                 kappaSq / &
-                                (log(0.5_RKIND * layerThickEdgeMean(N,iEdge)/bottom_roughness))**2 &
+                                (log(1.0_RKIND + 0.5_RKIND*layerThickEdgeMean(N,iEdge)/bottom_roughness))**2 &
                                ) &
                            )
+           kineticEnergyTopOfEdge = 0.5_RKIND * (kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2) + &
+                                                 kineticEnergyCell(N-1,cell1) + kineticEnergyCell(N-1,cell2))
+           vertViscTopOfEdge(N,iEdge) = max(vertViscTopOfEdge(N,iEdge), &
+                                            sqrt(implicitCd * kineticEnergyTopOfEdge) * &
+                                            kappa * (layerThickEdgeMean(N,iEdge) + bottom_roughness) &
+                                           )
          elseif (dragType == dragTypeMannings .AND. config_use_vegetation_drag) then
            implicitCd = gravity*(0.5_RKIND*(vegetationManning(cell1) + vegetationManning(cell2)))**2 * &
                         columnThicknessDrag**(-1.0_RKIND/3.0_RKIND)
