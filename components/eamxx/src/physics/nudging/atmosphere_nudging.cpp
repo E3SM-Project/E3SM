@@ -221,7 +221,7 @@ void Nudging::update_time_step (const int time_s)
 
   
 // =========================================================================================
-void Nudging::run_impl (const int dt)
+void Nudging::run_impl (const double dt)
 {
   using namespace scream::vinterp;
 

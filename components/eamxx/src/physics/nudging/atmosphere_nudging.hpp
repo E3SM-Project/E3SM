@@ -68,7 +68,7 @@ public:
 protected:
 #endif
 
-  void run_impl        (const int dt);
+  void run_impl        (const double dt);
   
 protected:
 
