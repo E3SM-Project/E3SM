@@ -113,7 +113,7 @@ module ocn_eddy_parameterization_helpers
      !$omp parallel
      !$omp do schedule(runtime) private(k, cell1, cell2)
      do iEdge = 1, nEdges
-        do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)+1
+        do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
            cell1 = cellsOnEdge(1,iEdge)
            cell2 = cellsOnEdge(2,iEdge)
            dDensityDzTopOfEdge(k,iEdge) = 0.5_RKIND * (dDensityDzTopOfCell(k,cell1) + dDensityDzTopOfCell(k,cell2))
@@ -165,7 +165,7 @@ module ocn_eddy_parameterization_helpers
      !$omp do schedule(runtime) private(k)
      do iEdge = 1, nEdges
         if (maxLevelEdgeTop(iEdge) .GE. minLevelEdgeBot(iEdge)) then
-           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)+1
+           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
               gradDensityEddy(k,iEdge) = (gradDensityTopOfEdge(k,iEdge) - dDensityDzTopOfEdge(k,iEdge) &
                                              * gradZMidTopOfEdge(k,iEdge))
            end do
