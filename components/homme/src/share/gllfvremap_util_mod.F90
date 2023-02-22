@@ -581,7 +581,7 @@ contains
   subroutine gfr_convert_topo(par, elem, nphys, intopofn, outtopoprefix)
     ! Read a pure-GLL topography file. Remap all fields to physgrid. Write a new
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     use common_io_mod, only: varname_len
     use gllfvremap_mod, only: gfr_init, gfr_finish, gfr_dyn_to_fv_phys_topo_data, gfr_f_get_latlon
     use interpolate_driver_mod, only: read_gll_topo_file, write_physgrid_topo_file
@@ -594,7 +594,7 @@ contains
     integer, intent(in) :: nphys
     character(*), intent(in) :: intopofn, outtopoprefix
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     real(real_kind), allocatable :: gll_fields(:,:,:,:), pg_fields(:,:,:), latlon(:,:,:)
     integer :: nf2, vari, ie, i, j, k
     logical :: square, augment
@@ -646,7 +646,7 @@ contains
   end subroutine gfr_convert_topo
 
   function gfr_pgn_to_smoothed_topo(par, elem, output_nphys, intopofn, outtopoprefix) result(stat)
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     use common_io_mod, only: varname_len
     use gllfvremap_mod, only: gfr_init, gfr_finish, gfr_fv_phys_to_dyn_topo, &
          gfr_dyn_to_fv_phys_topo, gfr_f_get_latlon
@@ -666,7 +666,7 @@ contains
     character(*), intent(in) :: intopofn, outtopoprefix
     integer :: stat
 
-#ifndef CAM
+#if !defined(CAM) && !defined(SCREAM)
     real(real_kind), allocatable :: gll_fields(:,:,:,:), pg_fields(:,:,:)
     integer :: intopo_nphys, ie, i, j, k, nvar, nf2
     character(len=varname_len) :: fieldnames(1)

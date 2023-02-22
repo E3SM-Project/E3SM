@@ -214,7 +214,7 @@ struct CaarFunctorImpl {
     profiling_resume();
     GPTLstart("caar compute");
     Kokkos::parallel_for("caar loop pre-boundary exchange", m_policy, *this);
-    ExecSpace::impl_static_fence();
+    Kokkos::fence();
     GPTLstop("caar compute");
 
     GPTLstart("caar_bexchV");
@@ -753,7 +753,7 @@ struct CaarFunctorImpl {
 private:
   template <typename ExecSpaceType>
   KOKKOS_INLINE_FUNCTION typename std::enable_if<
-      !std::is_same<ExecSpaceType, Hommexx_Cuda>::value, void>::type
+      !std::is_same<ExecSpaceType, HommexxGPU>::value, void>::type
   compute_pressure_impl(KernelVariables &kv) const {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
                          [&](const int loop_idx) {
@@ -787,7 +787,7 @@ private:
 
   template <typename ExecSpaceType>
   KOKKOS_INLINE_FUNCTION typename std::enable_if<
-      std::is_same<ExecSpaceType, Hommexx_Cuda>::value, void>::type
+      std::is_same<ExecSpaceType, HommexxGPU>::value, void>::type
   compute_pressure_impl(KernelVariables &kv) const {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
                          [&](const int loop_idx) {
@@ -821,7 +821,7 @@ private:
 
   template <typename ExecSpaceType>
   KOKKOS_INLINE_FUNCTION typename std::enable_if<
-      !std::is_same<ExecSpaceType, Hommexx_Cuda>::value, void>::type
+      !std::is_same<ExecSpaceType, HommexxGPU>::value, void>::type
   preq_hydrostatic_impl(KernelVariables &kv) const {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
                          [&](const int loop_idx) {
@@ -874,10 +874,10 @@ private:
 #endif
   }
 
-  // CUDA version
+  // GPU version
   template <typename ExecSpaceType>
   KOKKOS_INLINE_FUNCTION typename std::enable_if<
-      std::is_same<ExecSpaceType, Hommexx_Cuda>::value, void>::type
+      std::is_same<ExecSpaceType, HommexxGPU>::value, void>::type
   preq_hydrostatic_impl(KernelVariables &kv) const {
     assert_vector_size_1();
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
@@ -929,10 +929,10 @@ private:
     kv.team_barrier();
   }
 
-  // CUDA version
+  // GPU version
   template <typename ExecSpaceType>
   KOKKOS_INLINE_FUNCTION typename std::enable_if<
-      std::is_same<ExecSpaceType, Hommexx_Cuda>::value, void>::type
+      std::is_same<ExecSpaceType, HommexxGPU>::value, void>::type
   preq_omega_ps_impl(KernelVariables &kv) const {
     assert_vector_size_1();
 #ifdef DEBUG_TRACE
@@ -983,10 +983,10 @@ private:
 #endif
   }
 
-  // Non-CUDA version
+  // Non-GPU version
   template <typename ExecSpaceType>
   KOKKOS_INLINE_FUNCTION typename std::enable_if<
-      !std::is_same<ExecSpaceType, Hommexx_Cuda>::value, void>::type
+      !std::is_same<ExecSpaceType, HommexxGPU>::value, void>::type
   preq_omega_ps_impl(KernelVariables &kv) const {
     m_sphere_ops.gradient_sphere(
         kv, Homme::subview(m_buffers.pressure, kv.team_idx),

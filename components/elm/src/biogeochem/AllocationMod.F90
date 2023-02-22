@@ -908,7 +908,7 @@ contains
    real(r8) :: excess_immob_no3_vr(1:nlevdecomp) ! no3 excess flux, if soil microbes are more P limited
    real(r8) :: excess_immob_p_vr(1:nlevdecomp)   ! P excess flux, if soil microbes are more N limited
    real(r8) :: decompmicc(1:nlevdecomp)          ! column-level soil microbial decomposer biomass gC/m3
-   
+   real(r8) :: ndemand, pdemand                  ! Column level N and P demand used for downscaling plant level uptake for FATES
    real(r8) :: fpi_no3_vr(1:nlevdecomp) ! fraction of potential immobilization supplied by no3(no units)
    real(r8) :: fpi_nh4_vr(1:nlevdecomp) ! fraction of potential immobilization supplied by nh4 (no units)
 
@@ -918,8 +918,7 @@ contains
    integer :: fc        ! lake filter column index
    integer :: f         ! loop index for plant competitors
    integer :: ci, s     ! used for FATES BC (clump index, site index)
-   integer :: j_f       ! local index that maps a decomposition
-                        ! layer onto a fates uptake layer
+   integer :: ft        ! FATES PFT index
 
    ! Fractional uptake profiles, that are proportional to root density
    real(r8):: nuptake_prof(bounds%begc:bounds%endc,1:nlevdecomp)
@@ -933,10 +932,8 @@ contains
    integer  :: pci, pcf                        ! (I)nitial and (F)inal plant competitor index
    real(r8), pointer :: veg_rootc_ptr(:,:)     ! points to either native ELM or FATES root carbon array
    integer, pointer  :: ft_index_ptr(:)        ! points to either native ELM or FATES PFT array
-   real(r8), pointer :: cn_scalar_ptr(:)       ! points to either native ELM or FATES C:N scalar array
-   real(r8), pointer :: cn_scalar_runmean_ptr(:)       ! points to either native ELM or FATES C:N scalar array
-   real(r8), pointer :: cp_scalar_ptr(:)       ! points to either native ELM or FATES C:P scalar array
-   real(r8), pointer :: cp_scalar_runmean_ptr(:)       ! points to either native ELM or FATES C:P scalar array
+   real(r8), pointer :: cn_scalar_runmean_ptr(:)
+   real(r8), pointer :: cp_scalar_runmean_ptr(:)
    real(r8), pointer :: plant_nh4demand_vr_ptr(:,:)
    real(r8), pointer :: plant_no3demand_vr_ptr(:,:)
    real(r8), pointer :: plant_pdemand_vr_ptr(:,:)
@@ -1112,13 +1109,34 @@ contains
               ! Overwrite the column level demands, since fates plants are all sharing
               ! the same space, in units per the same square meter, we just add demand
               ! to scale up to column
-              plant_ndemand_col(c) = sum(elm_fates%fates(ci)%bc_out(s)%n_demand(1:n_pcomp))
-              plant_pdemand_col(c) = sum(elm_fates%fates(ci)%bc_out(s)%p_demand(1:n_pcomp))
-
+              plant_ndemand_col(c) = 0._r8
+              plant_pdemand_col(c) = 0._r8
+              
               ! We fill the vertically resolved array to simplify some jointly used code
               do j = 1, nlevdecomp
-                 col_plant_ndemand_vr(c,j) = plant_ndemand_col(c) * nuptake_prof(c,j)
-                 col_plant_pdemand_vr(c,j) = plant_pdemand_col(c) * puptake_prof(c,j)
+
+                 col_plant_ndemand_vr(c,j) = 0._r8
+                 col_plant_pdemand_vr(c,j) = 0._r8
+                 
+                 do f = 1,n_pcomp
+                    ft = elm_fates%fates(ci)%bc_out(s)%ft_index(f)
+
+                    ! [gN/m3/s] = [gC/m3] * [gN/gC/s]
+                    col_plant_ndemand_vr(c,j) = col_plant_ndemand_vr(c,j) + &
+                         elm_fates%fates(ci)%bc_out(s)%veg_rootc(f,j) * &
+                         (elm_fates%fates(ci)%bc_pconst%vmax_nh4(ft) + &
+                          elm_fates%fates(ci)%bc_pconst%vmax_no3(ft))
+
+                    col_plant_pdemand_vr(c,j) = col_plant_pdemand_vr(c,j) + &
+                         elm_fates%fates(ci)%bc_out(s)%veg_rootc(f,j) * &
+                         elm_fates%fates(ci)%bc_pconst%vmax_p(ft)
+
+                 end do
+
+                 ! [gN/m2/s]
+                 plant_ndemand_col(c) = plant_ndemand_col(c) + col_plant_ndemand_vr(c,j)*dzsoi_decomp(j)
+                 plant_pdemand_col(c) = plant_pdemand_col(c) + col_plant_pdemand_vr(c,j)*dzsoi_decomp(j)
+                 
               end do
 
            else  !(ECA)
@@ -1131,19 +1149,17 @@ contains
               ft_index_ptr   => elm_fates%fates(ci)%bc_out(s)%ft_index      ! Should be 
               decompmicc(:)  =  elm_fates%fates(ci)%bc_out(s)%decompmicc(:) ! Should be (nlevdecomp)
 
-              cn_scalar_ptr          => elm_fates%fates(ci)%bc_out(s)%cn_scalar          ! (i,j)
-              cn_scalar_runmean_ptr  => elm_fates%fates(ci)%bc_out(s)%cn_scalar          ! (i,j)
+              cn_scalar_runmean_ptr  => elm_fates%fates(ci)%bc_out(s)%cn_scalar  ! This is 1.0
               plant_nh4demand_vr_ptr => plant_nh4demand_vr_fates
               km_nh4_ptr             => elm_fates%fates(ci)%bc_pconst%eca_km_nh4
-              vmax_nh4_ptr           => elm_fates%fates(ci)%bc_pconst%eca_vmax_nh4
+              vmax_nh4_ptr           => elm_fates%fates(ci)%bc_pconst%vmax_nh4
               plant_no3demand_vr_ptr => plant_no3demand_vr_fates
               km_no3_ptr             => elm_fates%fates(ci)%bc_pconst%eca_km_no3
-              vmax_no3_ptr           => elm_fates%fates(ci)%bc_pconst%eca_vmax_no3
-              cp_scalar_ptr          => elm_fates%fates(ci)%bc_out(s)%cp_scalar
-              cp_scalar_runmean_ptr  => elm_fates%fates(ci)%bc_out(s)%cp_scalar
+              vmax_no3_ptr           => elm_fates%fates(ci)%bc_pconst%vmax_no3
+              cp_scalar_runmean_ptr  => elm_fates%fates(ci)%bc_out(s)%cp_scalar  ! This is 1.0
               plant_pdemand_vr_ptr   => plant_pdemand_vr_fates
               km_p_ptr               => elm_fates%fates(ci)%bc_pconst%eca_km_p
-              vmax_p_ptr             => elm_fates%fates(ci)%bc_pconst%eca_vmax_p
+              vmax_p_ptr             => elm_fates%fates(ci)%bc_pconst%vmax_p
 
            end if
 
@@ -1201,7 +1217,6 @@ contains
               
               km_nh4_ptr    => km_plant_nh4
               vmax_nh4_ptr  => vmax_plant_nh4
-              cn_scalar_ptr => cn_scalar
               cn_scalar_runmean_ptr => cn_scalar_runmean
               km_no3_ptr   => km_plant_no3
               vmax_no3_ptr => vmax_plant_no3
@@ -1700,19 +1715,28 @@ contains
 
               if( plant_ndemand_col(c)>tiny(plant_ndemand_col(c)) ) then
                  do f = 1,n_pcomp
+
+                    ft = elm_fates%fates(ci)%bc_out(s)%ft_index(f)
+
+                    ! [gN/m2/s]
+                    ndemand=0._r8
+                    do j = 1,nlevdecomp
+                       ndemand = ndemand + elm_fates%fates(ci)%bc_out(s)%veg_rootc(f,j) * &
+                            (elm_fates%fates(ci)%bc_pconst%vmax_nh4(ft)+elm_fates%fates(ci)%bc_pconst%vmax_no3(ft)) * &
+                            dzsoi_decomp(j)
+                    end do
+                    
                     do j = 1,nlevdecomp
 
-                       j_f =  elm_fates%fates(ci)%bc_pconst%j_uptake(j)
-
-                       elm_fates%fates(ci)%bc_in(s)%plant_nh4_uptake_flux(f,j_f) = & 
-                            elm_fates%fates(ci)%bc_in(s)%plant_nh4_uptake_flux(f,j_f) + &
+                       elm_fates%fates(ci)%bc_in(s)%plant_nh4_uptake_flux(f,1) = & 
+                            elm_fates%fates(ci)%bc_in(s)%plant_nh4_uptake_flux(f,1) + &
                             smin_nh4_to_plant_vr(c,j)*dt*dzsoi_decomp(j) * &
-                            (elm_fates%fates(ci)%bc_out(s)%n_demand(f)/plant_ndemand_col(c))
+                            (ndemand/plant_ndemand_col(c))
 
-                       elm_fates%fates(ci)%bc_in(s)%plant_no3_uptake_flux(f,j_f) = & 
-                            elm_fates%fates(ci)%bc_in(s)%plant_no3_uptake_flux(f,j_f) + &
+                       elm_fates%fates(ci)%bc_in(s)%plant_no3_uptake_flux(f,1) = & 
+                            elm_fates%fates(ci)%bc_in(s)%plant_no3_uptake_flux(f,1) + &
                             smin_no3_to_plant_vr(c,j)*dt*dzsoi_decomp(j) * &
-                            (elm_fates%fates(ci)%bc_out(s)%n_demand(f)/plant_ndemand_col(c))
+                            (ndemand/plant_ndemand_col(c))
 
                     end do
                  end do
@@ -1720,12 +1744,23 @@ contains
             
             if( plant_pdemand_col(c)>tiny(plant_pdemand_col(c)) ) then
                do f = 1,n_pcomp
+
+                  ft = elm_fates%fates(ci)%bc_out(s)%ft_index(f)
+                  
+                  pdemand=0._r8
                   do j = 1,nlevdecomp
-                     j_f =  elm_fates%fates(ci)%bc_pconst%j_uptake(j)
-                     elm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_f) = & 
-                          elm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_f) + &
+                     ! [gP/m2/s]
+                     pdemand = pdemand+elm_fates%fates(ci)%bc_out(s)%veg_rootc(f,j) * &
+                          elm_fates%fates(ci)%bc_pconst%vmax_p(ft) * &
+                          dzsoi_decomp(j)
+                  end do
+                  
+                  do j = 1,nlevdecomp
+                     ! [gP/m2/step]
+                     elm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,1) = & 
+                          elm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,1) + &
                           sminp_to_plant_vr(c,j)*dt*dzsoi_decomp(j) * &
-                          (elm_fates%fates(ci)%bc_out(s)%p_demand(f)/plant_pdemand_col(c))
+                          (pdemand/plant_pdemand_col(c))
                      
                   end do
                end do
@@ -1735,18 +1770,17 @@ contains
 
             do f = 1,n_pcomp
                do j = 1,nlevdecomp
-                  j_f =  elm_fates%fates(ci)%bc_pconst%j_uptake(j)
                   
-                  elm_fates%fates(ci)%bc_in(s)%plant_nh4_uptake_flux(f,j_f) = & 
-                       elm_fates%fates(ci)%bc_in(s)%plant_nh4_uptake_flux(f,j_f) + & 
+                  elm_fates%fates(ci)%bc_in(s)%plant_nh4_uptake_flux(f,1) = & 
+                       elm_fates%fates(ci)%bc_in(s)%plant_nh4_uptake_flux(f,1) + & 
                        plant_nh4demand_vr_fates(f,j) * fpg_nh4_vr(c,j)  * dzsoi_decomp(j) * dt
                   
-                  elm_fates%fates(ci)%bc_in(s)%plant_no3_uptake_flux(f,j_f) = & 
-                       elm_fates%fates(ci)%bc_in(s)%plant_no3_uptake_flux(f,j_f) + & 
+                  elm_fates%fates(ci)%bc_in(s)%plant_no3_uptake_flux(f,1) = & 
+                       elm_fates%fates(ci)%bc_in(s)%plant_no3_uptake_flux(f,1) + & 
                        plant_no3demand_vr_fates(f,j) * fpg_no3_vr(c,j) * dzsoi_decomp(j) * dt
                   
-                  elm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_f) = & 
-                       elm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_f) + & 
+                  elm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,1) = & 
+                       elm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,1) + & 
                        (plant_pdemand_vr_fates(f,j) * fpg_p_vr(c,j)) * dzsoi_decomp(j) * dt
                   
                end do
@@ -3315,18 +3349,12 @@ contains
        e_km_p = e_km_p + e_decomp_scalar*decompmicc(j)/km_decomp_p + &
             max(0._r8,vmax_minsurf_p_vr(j)-labilep_vr(j))/km_minsurf_p_vr(j)
 
-!       if(carbon_only .or. carbonnitrogen_only) then
-!          do i = 1, n_pcomp
-!             compet_plant(i) = 1._r8
-!          end do
-!       else
-          do i = 1,n_pcomp
-             ip = filter_pcomp(i)
-             ft = ft_index(ip)
-             compet_plant(i) = solution_pconc / & 
-                  (km_plant_p(ft)*(1._r8 + solution_pconc/km_plant_p(ft) + e_km_p))
-          end do
-!       end if
+       do i = 1,n_pcomp
+          ip = filter_pcomp(i)
+          ft = ft_index(ip)
+          compet_plant(i) = solution_pconc / & 
+               (km_plant_p(ft)*(1._r8 + solution_pconc/km_plant_p(ft) + e_km_p))
+       end do
        
        compet_decomp_p = solution_pconc / &
             (km_decomp_p * (1._r8 + solution_pconc/km_decomp_p + e_km_p))

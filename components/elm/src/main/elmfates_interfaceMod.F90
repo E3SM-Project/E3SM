@@ -56,15 +56,16 @@ module ELMFatesInterfaceMod
    use elm_varctl        , only : use_fates_fixed_biogeog
    use elm_varctl        , only : use_fates_nocomp
    use elm_varctl        , only : use_fates_sp
+   use elm_varctl        , only : use_fates_tree_damage
    use elm_varctl        , only : nsrest, nsrBranch
    use elm_varctl        , only : fates_inventory_ctrl_filename
    use elm_varctl        , only : use_lch4
+   use elm_varctl        , only : use_century_decomp
    use elm_varcon        , only : tfrz
    use elm_varcon        , only : spval
    use elm_varcon        , only : denice
    use elm_varcon        , only : ispval
    use elm_varctl        , only : nu_com
-   use elm_varpar        , only : natpft_size
    use elm_varpar        , only : numrad
    use elm_varpar        , only : ivis
    use elm_varpar        , only : inir
@@ -72,7 +73,8 @@ module ELMFatesInterfaceMod
    use elm_varpar        , only : nlevdecomp
    use elm_varpar        , only : nlevdecomp_full
    use elm_varpar        , only : i_met_lit, i_cel_lit, i_lig_lit
-   use elm_varpar        , only : natpft_lb, natpft_ub
+   use elm_varpar        , only : surfpft_lb, surfpft_ub
+   use elm_varpar        , only : natpft_size, cft_size
    use PhotosynthesisType , only : photosyns_type
    Use TopounitDataType  , only : topounit_atmospheric_flux, topounit_atmospheric_state
    use atm2lndType       , only : atm2lnd_type
@@ -117,13 +119,14 @@ module ELMFatesInterfaceMod
    use FatesInterfaceMod     , only : allocate_bcout
    use FatesInterfaceMod     , only : set_bcpconst
    use FatesInterfaceMod     , only : SetFatesTime
-   use FatesInterfaceMod     , only : SetFatesGlobalElements
+   use FatesInterfaceMod     , only : SetFatesGlobalElements1
+   use FatesInterfaceMod     , only : SetFatesGlobalElements2
    use FatesInterfaceMod     , only : set_fates_ctrlparms
    use FatesInterfaceMod     , only : zero_bcs
    use FatesInterfaceMod     , only : FatesInterfaceInit
    use FatesInterfaceMod     , only : UpdateFatesRMeansTStep
    use FatesInterfaceMod     , only : InitTimeAveragingGlobals
-   
+   use FatesInterfaceTypesMod, only : fates_maxPatchesPerSite
    use FatesHistoryInterfaceMod, only : fates_hist
    use FatesRestartInterfaceMod, only : fates_restart_interface_type
 
@@ -152,9 +155,8 @@ module ELMFatesInterfaceMod
    use FatesPlantHydraulicsMod, only : InitHydrSites
    use FatesPlantHydraulicsMod, only : RestartHydrStates
 
-   use dynHarvestMod          , only : num_harvest_vars, harvest_varnames
-   use dynHarvestMod          , only : harvest_rates ! these are dynamic in space and time
    use dynHarvestMod          , only : num_harvest_vars, harvest_varnames, wood_harvest_units
+   use dynHarvestMod          , only : harvest_rates ! these are dynamic in space and time
 
    use FatesConstantsMod      , only : hlm_harvest_area_fraction
    use FatesConstantsMod      , only : hlm_harvest_carbon
@@ -211,6 +213,7 @@ module ELMFatesInterfaceMod
       procedure, public :: wrap_accumulatefluxes
       procedure, public :: prep_canopyfluxes
       procedure, public :: wrap_canopy_radiation
+      procedure, public :: wrap_WoodProducts
       procedure, public :: wrap_update_hifrq_hist
       procedure, public :: TransferZ0mDisp
       procedure, public :: UpdateLitterFluxes
@@ -239,13 +242,90 @@ module ELMFatesInterfaceMod
    character(len=*), parameter, private :: sourcefile = &
         __FILE__
 
-   public  :: ELMFatesGlobals
+   public  :: ELMFatesGlobals1
+   public  :: ELMFatesGlobals2
    public  :: ELMFatesTimesteps
    
 contains
 
+  subroutine ELMFatesGlobals1()
 
-  subroutine ELMFatesGlobals()
+    ! --------------------------------------------------------------------------------
+    ! This is the first call to fates
+    ! We open the fates parameter file. And use that and some info on
+    ! namelist variables to determine how many patches need to be allocated
+    ! in ELM
+    ! --------------------------------------------------------------------------------
+    integer                                        :: pass_biogeog
+    integer                                        :: pass_nocomp
+    integer                                        :: pass_sp
+    integer                                        :: pass_masterproc
+    logical                                        :: verbose_output
+
+    if (use_fates) then
+
+       verbose_output = .false.
+       call FatesInterfaceInit(iulog, verbose_output)
+
+       ! Force FATES parameters that are recieve type, to the unset value
+       call set_fates_ctrlparms('flush_to_unset')
+
+       ! Send parameters individually
+       if(use_fates_fixed_biogeog)then
+          pass_biogeog = 1
+       else
+          pass_biogeog = 0
+       end if
+       call set_fates_ctrlparms('use_fixed_biogeog',ival=pass_biogeog)
+
+       if(use_fates_nocomp)then
+          pass_nocomp = 1
+       else
+          pass_nocomp = 0
+       end if
+       call set_fates_ctrlparms('use_nocomp',ival=pass_nocomp)
+
+       if(use_fates_sp)then
+          pass_sp = 1
+       else
+          pass_sp = 0
+       end if
+       call set_fates_ctrlparms('use_sp',ival=pass_sp)
+
+       if(masterproc)then
+          pass_masterproc = 1
+       else
+          pass_masterproc = 0
+       end if
+       call set_fates_ctrlparms('masterproc',ival=pass_masterproc)
+
+    end if
+
+    ! The following call reads in the parameter file
+    ! and then uses that to determine the number of patches
+    ! FATES requires. We pass that to CLM here
+    ! so that it can perform some of its allocations.
+    ! During init 2, we will perform more size checks
+    ! and allocations on the FATES side, which require
+    ! some allocations from CLM (like soil layering)
+
+    ! The third argument (num crop pfts) should always be zero.
+    ! If use_crop is off then the natpft_size includes the
+    ! crop pfts tacked on. If use_crop is true, then we don't
+    ! want fates to handle crops, so again, it should be ignored.
+    ! (RGK 07-2022)
+    
+    call SetFatesGlobalElements1(use_fates,natpft_size,0)
+
+    natpft_size = fates_maxPatchesPerSite
+
+
+    return
+  end subroutine ELMFatesGlobals1
+  
+  ! ====================================================================================
+   
+  subroutine ELMFatesGlobals2()
 
      ! --------------------------------------------------------------------------------
      ! This is one of the first calls to fates
@@ -257,8 +337,6 @@ contains
      ! over the NL variables to FATES global settings.
      ! --------------------------------------------------------------------------------
 
-     logical                                        :: verbose_output
-     integer                                        :: pass_masterproc
      integer                                        :: pass_vertsoilc
      integer                                        :: pass_ed_st3
      integer                                        :: pass_logging
@@ -268,12 +346,9 @@ contains
      integer                                        :: pass_inventory_init
      integer                                        :: pass_is_restart
      integer                                        :: pass_cohort_age_tracking
-     integer                                        :: pass_biogeog
      integer                                        :: pass_num_lu_harvest_types
      integer                                        :: pass_lu_harvest
-     integer                                        :: pass_nocomp
-     integer                                        :: pass_sp
-
+     integer                                        :: pass_tree_damage
      ! ----------------------------------------------------------------------------------
      ! FATES lightning definitions
      ! 1 : use a global constant lightning rate found in fates_params.
@@ -291,37 +366,37 @@ contains
      integer, parameter :: external_lightning = 2
      integer, parameter :: successful_ignitions = 3
      integer, parameter :: anthro_ignitions= 4
-
-     ! We will use this switch temporarily, until  we complete
-     ! the ELM-FATES harvest integration
-     logical, parameter :: do_elm_fates_harvest = .false.
-
+  
      if (use_fates) then
-
-verbose_output = .false.
-        call FatesInterfaceInit(iulog, verbose_output)
-
-        ! Force FATES parameters that are recieve type, to the unset value
-        call set_fates_ctrlparms('flush_to_unset')
 
         ! Send parameters individually
         call set_fates_ctrlparms('num_sw_bbands',ival=numrad)
         call set_fates_ctrlparms('vis_sw_index',ival=ivis)
         call set_fates_ctrlparms('nir_sw_index',ival=inir)
-
         call set_fates_ctrlparms('num_lev_soil',ival=nlevsoi)
         call set_fates_ctrlparms('hlm_name',cval='ELM')
         call set_fates_ctrlparms('hio_ignore_val',rval=spval)
         call set_fates_ctrlparms('soilwater_ipedof',ival=get_ipedof(0))
-        call set_fates_ctrlparms('max_patch_per_site',ival=(natpft_size-1))
-
-
         call set_fates_ctrlparms('parteh_mode',ival=fates_parteh_mode)
 
+        if(use_fates_tree_damage)then
+           pass_tree_damage = 1
+        else
+           pass_tree_damage = 0
+        end if
+        call set_fates_ctrlparms('use_tree_damage',ival=pass_tree_damage)
+        
         if((trim(nu_com).eq.'ECA') .or. (trim(nu_com).eq.'MIC')) then
            call set_fates_ctrlparms('nu_com',cval='ECA')
         else
            call set_fates_ctrlparms('nu_com',cval='RD')
+        end if
+        
+        ! Tell fates which decomposition method is being used by the host land model
+        if (use_century_decomp) then 
+           call set_fates_ctrlparms('decomp_method',cval='CENTURY')
+        else
+           call set_fates_ctrlparms('decomp_method',cval='CTC')
         end if
 
         ! ELM ALWAYS has nitrogen and phosphorus "on"
@@ -378,27 +453,6 @@ verbose_output = .false.
         call set_fates_ctrlparms('sf_successful_ignitions_def',ival=successful_ignitions)
         call set_fates_ctrlparms('sf_anthro_ignitions_def',ival=anthro_ignitions)
 
-        if(use_fates_fixed_biogeog)then
-           pass_biogeog = 1
-        else
-           pass_biogeog = 0
-        end if
-        call set_fates_ctrlparms('use_fixed_biogeog',ival=pass_biogeog)
-
-        if(use_fates_nocomp)then
-           pass_nocomp = 1
-        else
-           pass_nocomp = 0
-        end if
-        call set_fates_ctrlparms('use_nocomp',ival=pass_nocomp)
-
-        if(use_fates_sp)then
-           pass_sp = 1
-        else
-           pass_sp = 0
-        end if
-        call set_fates_ctrlparms('use_sp',ival=pass_sp)
-
         ! check fates logging namelist value first because hlm harvest overrides it
         if(use_fates_logging) then
            pass_logging = 1
@@ -406,7 +460,6 @@ verbose_output = .false.
            pass_logging = 0
         end if
 
-!        if(do_elm_fates_harvest) then
         if(get_do_harvest()) then
            pass_logging = 1
            pass_num_lu_harvest_types = num_harvest_vars
@@ -457,13 +510,6 @@ verbose_output = .false.
 
         call set_fates_ctrlparms('inventory_ctrl_file',cval=fates_inventory_ctrl_filename)
 
-        if(masterproc)then
-           pass_masterproc = 1
-        else
-           pass_masterproc = 0
-        end if
-        call set_fates_ctrlparms('masterproc',ival=pass_masterproc)
-
         ! Check through FATES parameters to see if all have been set
         call set_fates_ctrlparms('check_allset')
 
@@ -480,10 +526,10 @@ verbose_output = .false.
      ! (Note: this needs to be called when use_fates=.false. as well, becuase
      ! it will return some nominal dimension sizes of 1
 
-     call SetFatesGlobalElements(use_fates)
-
+     call SetFatesGlobalElements2(use_fates)
+     
      return
-   end subroutine ELMFatesGlobals
+   end subroutine ELMFatesGlobals2
    
    ! ====================================================================================
    
@@ -651,7 +697,7 @@ verbose_output = .false.
                ndecomp = 1
             end if
 
-            call allocate_bcin(this%fates(nc)%bc_in(s),col_pp%nlevbed(c),ndecomp,num_harvest_vars)
+            call allocate_bcin(this%fates(nc)%bc_in(s),col_pp%nlevbed(c),ndecomp,num_harvest_vars,surfpft_lb,surfpft_ub)
             call allocate_bcout(this%fates(nc)%bc_out(s),col_pp%nlevbed(c),ndecomp)
             call zero_bcs(this%fates(nc),s)
 
@@ -680,18 +726,17 @@ verbose_output = .false.
 
             ! initialize static layers for reduced complexity FATES versions from HLM
             this%fates(nc)%bc_in(s)%pft_areafrac(:)=0._r8
-            do m = natpft_lb,natpft_ub
-               ft = m-natpft_lb
+            do m = surfpft_lb,surfpft_ub
+               ft = m-surfpft_lb
                this%fates(nc)%bc_in(s)%pft_areafrac(ft)=wt_nat_patch(g,t,m)
             end do
 
-            if(abs(sum(this%fates(nc)%bc_in(s)%pft_areafrac(natpft_lb:natpft_ub))-1.0_r8).gt.1.0e-9)then
+            if(abs(sum(this%fates(nc)%bc_in(s)%pft_areafrac(surfpft_lb:surfpft_ub))-1.0_r8).gt.1.0e-9)then
                write(iulog,*) 'pft_area error in interfc ',s, sum(this%fates(nc)%bc_in(s)%pft_areafrac(:))-1.0_r8
                call endrun(msg=errMsg(sourcefile, __LINE__))
             endif
 
          end do
-
 
          ! Initialize site-level static quantities dictated by the HLM
          ! currently ground layering depth
@@ -772,6 +817,7 @@ verbose_output = .false.
          top_af_inst, atm2lnd_inst, soilstate_inst, temperature_inst, &
          canopystate_inst, frictionvel_inst )
 
+      use FatesConstantsMod     , only : m2_per_km2
 
       ! This wrapper is called daily from clm_driver
       ! This wrapper calls ed_driver, which is the daily dynamics component of FATES
@@ -855,7 +901,7 @@ verbose_output = .false.
          end do
 
          if(use_fates_sp)then
-            do ft = natpft_lb,natpft_ub !set of pfts in HLM
+            do ft = surfpft_lb,surfpft_ub !set of pfts in HLM
                 ! here we are mapping from P space in the HLM to FT space in the sp_input arrays.
                 p = ft + col_pp%pfti(c) ! for an FT of 1 we want to use
                 this%fates(nc)%bc_in(s)%hlm_sp_tlai(ft) = canopystate_inst%tlai_patch(p)
@@ -886,6 +932,7 @@ verbose_output = .false.
             this%fates(nc)%bc_in(s)%hlm_harvest_catnames = harvest_varnames
             this%fates(nc)%bc_in(s)%hlm_harvest_units = wood_harvest_units
          end if
+         this%fates(nc)%bc_in(s)%site_area=col_pp%wtgcell(c)*grc_pp%area(g)*m2_per_km2
 
       end do
 
@@ -900,6 +947,9 @@ verbose_output = .false.
       ! ---------------------------------------------------------------------------------
       call fates_hist%flush_hvars(nc,upfreq_in=1)
 
+      ! Frequency 5 is routine that processes FATES history
+      ! on the dynamics (daily) step, but before disturbance
+      call fates_hist%flush_hvars(nc,upfreq_in=5)
 
       ! ---------------------------------------------------------------------------------
       ! Part II: Call the FATES model now that input boundary conditions have been
@@ -933,7 +983,8 @@ verbose_output = .false.
       ! ---------------------------------------------------------------------------------
       call fates_hist%update_history_dyn( nc,                    &
            this%fates(nc)%nsites, &
-           this%fates(nc)%sites)
+           this%fates(nc)%sites,  &
+           this%fates(nc)%bc_in)
 
       if (masterproc) then
          write(iulog, *) 'FATES dynamics complete'
@@ -1108,7 +1159,7 @@ verbose_output = .false.
             this%fates(nc)%sites,  &
             this%fates(nc)%bc_in)
 
-       ! Canopy diagnostic outputs for HLM
+       ! Canopy diagnostic outputs for HLM, including LUC
        call update_hlm_dynamics(this%fates(nc)%nsites, &
             this%fates(nc)%sites,  &
             this%f2hmap(nc)%fcolumn, &
@@ -1180,7 +1231,6 @@ verbose_output = .false.
 
           ! initialize SP mode pft order index to 0.  Below ground is the 0th patch
           veg_pp%sp_pftorder_index(col_pp%pfti(c)) = 0
-
           areacheck = veg_pp%wt_ed(col_pp%pfti(c))
 
           do ifp = 1, this%fates(nc)%sites(s)%youngest_patch%patchno
@@ -1496,7 +1546,7 @@ verbose_output = .false.
                if(use_fates_sp)then
                   do s = 1,this%fates(nc)%nsites
                      c = this%f2hmap(nc)%fcolumn(s)
-                     do ft = natpft_lb,natpft_ub !set of pfts in HLM
+                     do ft = surfpft_lb,surfpft_ub !set of pfts in HLM
                         ! here we are mapping from P space in the HLM to FT space in the sp_input arrays.
                         p = ft + col_pp%pfti(c) ! for an FT of 1 we want to use
                         this%fates(nc)%bc_in(s)%hlm_sp_tlai(ft) = canopystate_inst%tlai_patch(p)
@@ -1570,7 +1620,8 @@ verbose_output = .false.
                end do
                call fates_hist%update_history_dyn( nc, &
                     this%fates(nc)%nsites,                 &
-                    this%fates(nc)%sites)
+                    this%fates(nc)%sites,  &
+                    this%fates(nc)%bc_in)
 
 
             end if
@@ -1634,7 +1685,7 @@ verbose_output = .false.
             if(use_fates_sp)then
                do s = 1,this%fates(nc)%nsites
                   c = this%f2hmap(nc)%fcolumn(s)
-                  do ft = natpft_lb,natpft_ub !set of pfts in HLM
+                  do ft = surfpft_lb,surfpft_ub !set of pfts in HLM
                      ! here we are mapping from P space in the HLM to FT space in the sp_input arrays.
                      p = ft + col_pp%pfti(c) ! for an FT of 1 we want to use
                      this%fates(nc)%bc_in(s)%hlm_sp_tlai(ft) = canopystate_inst%tlai_patch(p)
@@ -1727,7 +1778,8 @@ verbose_output = .false.
            end do
            call fates_hist%update_history_dyn( nc, &
                 this%fates(nc)%nsites,                 &
-                this%fates(nc)%sites)
+                this%fates(nc)%sites,  &
+                this%fates(nc)%bc_in)
 
 
 
@@ -2213,6 +2265,48 @@ verbose_output = .false.
 
  ! ======================================================================================
 
+ subroutine wrap_WoodProducts(this, bounds_clump, fc, filterc)
+
+   use FatesConstantsMod     , only : g_per_kg
+
+   ! !ARGUMENTS:
+   class(hlm_fates_interface_type), intent(inout) :: this
+   type(bounds_type)              , intent(in)    :: bounds_clump
+   integer                        , intent(in)    :: fc                   ! size of column filter
+   integer                        , intent(in)    :: filterc(fc)          ! column filter
+   
+   ! Locacs
+   integer                                        :: s,c,icc
+   integer                                        :: nc
+
+   associate(&
+         gpp     => col_cf%gpp    , &
+         ar     => col_cf%ar    , &
+         hrv_deadstemc_to_prod10c     => col_cf%hrv_deadstemc_to_prod10c    , &
+         hrv_deadstemc_to_prod100c    => col_cf%hrv_deadstemc_to_prod100c)
+ 
+    nc = bounds_clump%clump_index
+    ! Loop over columns
+    do icc = 1,fc
+       c = filterc(icc)
+       s = this%f2hmap(nc)%hsites(c)
+
+       ! Pass harvested wood products to ELM variable
+       hrv_deadstemc_to_prod10c(c)  = this%fates(nc)%bc_out(s)%hrv_deadstemc_to_prod10c
+       hrv_deadstemc_to_prod100c(c) = this%fates(nc)%bc_out(s)%hrv_deadstemc_to_prod100c
+
+       ! Pass LUC related C fluxes which are calculated in FATES [gC m-2 s-1]
+       gpp(c) = this%fates(nc)%bc_out(s)%gpp_site*g_per_kg
+       ar(c) = this%fates(nc)%bc_out(s)%ar_site*g_per_kg
+
+    end do
+
+    end associate
+    return
+ end subroutine wrap_WoodProducts
+
+ ! ======================================================================================
+ 
  subroutine wrap_canopy_radiation(this, bounds_clump, &
          num_vegsol, filter_vegsol, coszen, surfalb_inst)
 
@@ -2422,6 +2516,7 @@ end subroutine wrap_update_hifrq_hist
    use FatesIOVariableKindMod, only : site_elcwd_r8, site_elage_r8
    use FatesIOVariableKindMod, only : site_coage_r8, site_coage_pft_r8
    use FatesIOVariableKindMod, only : site_can_r8, site_cnlf_r8, site_cnlfpft_r8
+   use FatesIOVariableKindMod, only : site_cdpf_r8, site_cdsc_r8, site_cdam_r8
    use FatesIODimensionsMod, only : fates_bounds_type
 
 
@@ -2520,7 +2615,7 @@ end subroutine wrap_update_hifrq_hist
              site_can_r8,site_cnlf_r8, site_cnlfpft_r8, site_scag_r8, &
              site_scagpft_r8, site_agepft_r8, site_elem_r8, site_elpft_r8, &
              site_elcwd_r8, site_elage_r8, site_coage_r8, site_coage_pft_r8, &
-             site_agefuel_r8)
+             site_agefuel_r8,site_cdsc_r8, site_cdpf_r8, site_cdam_r8)
 
            d_index = fates_hist%dim_kinds(dk_index)%dim2_index
            dim2name = fates_hist%dim_bounds(d_index)%name
@@ -2780,6 +2875,7 @@ end subroutine wrap_update_hifrq_hist
    use FatesInterfaceTypesMod, only : nlevsclass_fates => nlevsclass
    use FatesInterfaceTypesMod, only : nlevage_fates    => nlevage
    use FatesInterfaceTypesMod, only : nlevheight_fates => nlevheight
+   use FatesInterfaceTypesMod, only : nlevdamage_fates => nlevdamage
    use EDtypesMod,        only : nfsc_fates       => nfsc
    use FatesLitterMod,    only : ncwd_fates       => ncwd
    use EDtypesMod,        only : nlevleaf_fates   => nlevleaf
@@ -2819,6 +2915,15 @@ end subroutine wrap_update_hifrq_hist
    fates%fuel_begin = 1
    fates%fuel_end = nfsc_fates
 
+   fates%cdpf_begin = 1
+   fates%cdpf_end = nlevdamage_fates * numpft_fates * nlevsclass_fates
+
+   fates%cdsc_begin = 1
+   fates%cdsc_end = nlevdamage_fates * nlevsclass_fates
+   
+   fates%cdam_begin = 1
+   fates%cdam_end = nlevdamage_fates
+   
    fates%cwdsc_begin = 1
    fates%cwdsc_end = ncwd_fates
 

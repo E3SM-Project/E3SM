@@ -39,15 +39,6 @@ add_default($nl, 'config_number_of_blocks');
 add_default($nl, 'config_explicit_proc_decomp');
 add_default($nl, 'config_proc_decomp_file_prefix');
 
-###################################
-# Namelist group: transport_tests #
-###################################
-
-add_default($nl, 'config_transport_tests_vert_levels');
-add_default($nl, 'config_transport_tests_temperature');
-add_default($nl, 'config_transport_tests_salinity');
-add_default($nl, 'config_transport_tests_flow_id');
-
 ####################################
 # Namelist group: time_integration #
 ####################################
@@ -93,14 +84,6 @@ add_default($nl, 'config_Leith_parameter');
 add_default($nl, 'config_Leith_dx');
 add_default($nl, 'config_Leith_visc2_max');
 
-####################################################
-# Namelist group: mesoscale_eddy_parameterizations #
-####################################################
-
-add_default($nl, 'config_eddying_resolution_taper');
-add_default($nl, 'config_eddying_resolution_ramp_min');
-add_default($nl, 'config_eddying_resolution_ramp_max');
-
 #########################################
 # Namelist group: Redi_isopycnal_mixing #
 #########################################
@@ -115,6 +98,19 @@ add_default($nl, 'config_Redi_N2_based_taper_enable');
 add_default($nl, 'config_Redi_N2_based_taper_min');
 add_default($nl, 'config_Redi_N2_based_taper_limit_term1');
 add_default($nl, 'config_Redi_min_layers_diag_terms');
+add_default($nl, 'config_Redi_horizontal_taper');
+add_default($nl, 'config_Redi_horizontal_ramp_min');
+add_default($nl, 'config_Redi_horizontal_ramp_max');
+
+######################################################
+# Namelist group: submesoscale_eddy_parameterization #
+######################################################
+
+add_default($nl, 'config_submesoscale_enable');
+add_default($nl, 'config_submesoscale_tau');
+add_default($nl, 'config_submesoscale_Ce');
+add_default($nl, 'config_submesoscale_Lfmin');
+add_default($nl, 'config_submesoscale_ds_max');
 
 ############################################
 # Namelist group: GM_eddy_parameterization #
@@ -134,6 +130,20 @@ add_default($nl, 'config_GM_EG_riMin');
 add_default($nl, 'config_GM_EG_kappa_factor');
 add_default($nl, 'config_GM_EG_Rossby_factor');
 add_default($nl, 'config_GM_EG_Rhines_factor');
+add_default($nl, 'config_GM_horizontal_taper');
+add_default($nl, 'config_GM_horizontal_ramp_min');
+add_default($nl, 'config_GM_horizontal_ramp_max');
+add_default($nl, 'config_GMRedi_Rossby_ramp_min');
+add_default($nl, 'config_GMRedi_Rossby_ramp_max');
+
+#########################################
+# Namelist group: eddy_parameterization #
+#########################################
+
+add_default($nl, 'config_eddyMLD_dens_threshold');
+add_default($nl, 'config_eddyMLD_reference_depth');
+add_default($nl, 'config_eddyMLD_reference_pressure');
+add_default($nl, 'config_eddyMLD_use_old');
 
 ####################################
 # Namelist group: Rayleigh_damping #
@@ -192,6 +202,14 @@ add_default($nl, 'config_cvmix_kpp_nonlocal_with_implicit_mix');
 add_default($nl, 'config_cvmix_kpp_use_theory_wave');
 add_default($nl, 'config_cvmix_kpp_langmuir_mixing_opt');
 add_default($nl, 'config_cvmix_kpp_langmuir_entrainment_opt');
+add_default($nl, 'config_cvmix_kpp_use_active_wave');
+
+#################################
+# Namelist group: wave_coupling #
+#################################
+
+add_default($nl, 'config_n_stokes_drift_wavenumber_partitions');
+add_default($nl, 'config_use_active_wave');
 
 ########################
 # Namelist group: gotm #
@@ -301,11 +319,14 @@ add_default($nl, 'config_land_ice_flux_jenkins_salt_transfer_coefficient');
 # Namelist group: advection #
 #############################
 
-add_default($nl, 'config_vert_tracer_adv');
-add_default($nl, 'config_vert_tracer_adv_order');
+add_default($nl, 'config_vert_advection_method');
+add_default($nl, 'config_vert_remap_order');
+add_default($nl, 'config_vert_remap_interval');
+add_default($nl, 'config_vert_tracer_adv_flux_order');
 add_default($nl, 'config_horiz_tracer_adv_order');
 add_default($nl, 'config_coef_3rd_order');
-add_default($nl, 'config_monotonic');
+add_default($nl, 'config_flux_limiter');
+add_default($nl, 'config_remap_limiter');
 
 ###############################
 # Namelist group: bottom_drag #
@@ -463,6 +484,15 @@ add_default($nl, 'config_read_nearest_restart');
 add_default($nl, 'config_conduct_tests');
 add_default($nl, 'config_test_tensors');
 add_default($nl, 'config_tensor_test_function');
+
+###################################
+# Namelist group: transport_tests #
+###################################
+
+add_default($nl, 'config_transport_tests_vert_levels');
+add_default($nl, 'config_transport_tests_temperature');
+add_default($nl, 'config_transport_tests_salinity');
+add_default($nl, 'config_transport_tests_flow_id');
 
 #########################################
 # Namelist group: init_mode_vert_levels #
@@ -760,9 +790,7 @@ add_default($nl, 'config_AM_mixedLayerDepths_output_stream');
 add_default($nl, 'config_AM_mixedLayerDepths_write_on_startup');
 add_default($nl, 'config_AM_mixedLayerDepths_compute_on_startup');
 add_default($nl, 'config_AM_mixedLayerDepths_Tthreshold');
-add_default($nl, 'config_AM_mixedLayerDepths_Dthreshold');
 add_default($nl, 'config_AM_mixedLayerDepths_crit_temp_threshold');
-add_default($nl, 'config_AM_mixedLayerDepths_crit_dens_threshold');
 add_default($nl, 'config_AM_mixedLayerDepths_reference_pressure');
 add_default($nl, 'config_AM_mixedLayerDepths_Tgradient');
 add_default($nl, 'config_AM_mixedLayerDepths_Dgradient');

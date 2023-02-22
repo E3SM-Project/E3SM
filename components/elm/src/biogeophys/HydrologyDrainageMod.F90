@@ -21,8 +21,6 @@ module HydrologyDrainageMod
   use VegetationType    , only : veg_pp
 
   use elm_instMod   , only : ep_betr
-  use WaterStateType, only : waterstate_vars
-  use WaterFluxType , only : waterflux_vars
 
   use timeinfoMod
   !
@@ -53,7 +51,9 @@ contains
     use column_varcon    , only : icol_roof, icol_road_imperv, icol_road_perv, icol_sunwall, icol_shadewall
     use elm_varcon       , only : denh2o, denice, secspday
     use elm_varctl       , only : glc_snow_persistence_max_days, use_vichydro, use_betr
-    use domainMod        , only : ldomain
+    !use domainMod        , only : ldomain
+    use elm_varsur         , only : f_surf
+    use TopounitType       , only : top_pp
     use atm2lndType      , only : atm2lnd_type
     use elm_varpar       , only : nlevgrnd, nlevurb, nlevsoi
     use SoilHydrologyMod , only : ELMVICMap, Drainage
@@ -77,7 +77,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     real(r8) :: dtime
-    integer  :: g,t,l,c,j,fc               ! indices
+    integer  :: g,t,l,c,j,fc,tpu_ind               ! indices
     !-----------------------------------------------------------------------
 
     associate(                                                                  &
@@ -134,7 +134,7 @@ contains
 
 #ifndef _OPENACC
       if (use_betr) then
-        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
+        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws)
         call ep_betr%PreDiagSoilColWaterFlux(num_hydrologyc, filter_hydrologyc)
       endif
 #endif
@@ -147,10 +147,10 @@ contains
 
 #ifndef _OPENACC
       if (use_betr) then
-        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars, &
-          waterflux_vars=waterflux_vars)
+        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws, &
+          waterflux_vars=col_wf)
         call ep_betr%DiagDrainWaterFlux(num_hydrologyc, filter_hydrologyc)
-        call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=waterflux_vars)
+        call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=col_wf)
       endif
 #endif
 
@@ -239,6 +239,7 @@ contains
          c = filter_nolakec(fc)
          l = col_pp%landunit(c)
          t = col_pp%topounit(c)
+         tpu_ind = top_pp%topo_grc_ind(t)  !Get topounit index on the grid
          g = col_pp%gridcell(c)
 
          if (lun_pp%itype(l)==istwet .or. lun_pp%itype(l)==istice      &
@@ -283,7 +284,7 @@ contains
          qflx_runoff(c) = qflx_drain(c) + qflx_surf(c)  + qflx_h2osfc_surf(c) + qflx_qrgwl(c) + qflx_drain_perched(c)
 
          if ((lun_pp%itype(l)==istsoil .or. lun_pp%itype(l)==istcrop) .and. col_pp%active(c)) then
-            qflx_irr_demand(c) = -1.0_r8 * ldomain%f_surf(g)*qflx_irrig(c) !surface water demand send to MOSART
+            qflx_irr_demand(c) = -1.0_r8 * f_surf(g,tpu_ind)*qflx_irrig(c) !surface water demand send to MOSART
          end if
          if (lun_pp%urbpoi(l)) then
             qflx_runoff_u(c) = qflx_runoff(c)

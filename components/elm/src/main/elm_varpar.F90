@@ -11,6 +11,7 @@ module elm_varpar
   use elm_varctl   , only: iulog, create_crop_landunit, irrigate
   use elm_varctl   , only: use_vichydro
   use elm_varctl   , only: use_extrasnowlayers
+
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -53,7 +54,7 @@ module elm_varpar
   integer, parameter :: nlayer      =   3     ! number of VIC soil layer --Added by AWang
   integer            :: nlayert               ! number of VIC soil layer + 3 lower thermal layers
 
-  integer :: numpft      = mxpft   ! actual # of patches (without bare)
+  integer :: numpft      = mxpft   ! actual # of patches (without bare), a total that spans LUs
   integer :: numcft      =  36     ! actual # of crops
   logical :: crop_prog   = .true.  ! If prognostic crops is turned on
   integer :: maxpatch_urb= 5       ! max number of urban patches (columns) in urban landunit
@@ -85,6 +86,15 @@ module elm_varpar
   integer :: cft_ub             ! In PFT arrays, upper bound of Patches on the crop landunit
   integer :: cft_size           ! Number of Patches on crop landunit
 
+                                ! These dimensions are the same as natpft_*
+                                ! when FATES is inactive
+  integer :: surfpft_size       ! Size of the pft array found in the surface file (and/or paramfile)
+  integer :: surfpft_lb         ! Lower bound of PFTs in the surface file
+                                ! synonymous with natpft_lb for non-fates and fates-sp
+  integer :: surfpft_ub         ! Upper bound of PFTs in the surface file
+                                ! synonymous with natpft_ub for non-fates and fates-sp
+
+  
   integer :: maxpatch_glcmec    ! max number of elevation classes
   integer :: max_patch_per_col
 
@@ -92,12 +102,29 @@ module elm_varpar
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   public elm_varpar_init          ! set parameters
+  public update_pft_array_bounds  ! updates the _lbs and the _ubs
   !
   !-----------------------------------------------------------------------
 
 contains
 
+  subroutine update_pft_array_bounds()
+    
+    ! This routine simply defines the upper and lower array endpoints for
+    ! the natural and crop PFT arrays. It assumes that natural PFTs start
+    ! on the zero index, and the crop array bounds start on the next
+    ! index after the natural array is finished.
+    
+    natpft_lb = 0
+    natpft_ub = natpft_lb + natpft_size - 1
+    cft_lb = natpft_ub + 1
+    cft_ub = cft_lb + cft_size - 1
+    
+    return
+  end subroutine update_pft_array_bounds
+  
   !------------------------------------------------------------------------------
+  
   subroutine elm_varpar_init()
     !
     ! !DESCRIPTION:
@@ -109,16 +136,17 @@ contains
     ! !LOCAL VARIABLES:
     !
     character(len=32) :: subname = 'elm_varpar_init'  ! subroutine name
+    integer           :: max_fates_veg ! temporary over-writes natpft_size w/ FATES
     !------------------------------------------------------------------------------
 
     ! Crop settings and consistency checks
 
     if (use_crop) then
-       numpft      = mxpft   ! actual # of patches (without bare)
+       numpft      = mxpft   ! actual # of patches (without bare) (50 = 14+36)
        numcft      =  36     ! actual # of crops
        crop_prog   = .true.  ! If prognostic crops is turned on
     else
-       numpft      = numveg  ! actual # of patches (without bare)
+       numpft      = numveg  ! actual # of patches (without bare) (16 = 14+2)
        numcft      =   2     ! actual # of crops
        mxpft_nc    =  24     ! maximum number of PFT's when use_crop=False;
        crop_prog   = .false. ! If prognostic crops is turned on
@@ -137,11 +165,25 @@ contains
        cft_size    = 0
     end if
 
-    natpft_lb = 0
-    natpft_ub = natpft_lb + natpft_size - 1
-    cft_lb = natpft_ub + 1
-    cft_ub = cft_lb + cft_size - 1
+    ! Determine array start/end indices based on the array sizes
+    call update_pft_array_bounds()
+    
+    ! This extra array is necessary because with FATES there is no longer
+    ! a 1-to-1 correspondance between pfts (in the surface file) and
+    ! the number of veg-patches used, so we have to differentiate
+    ! between the size of the arrays that hold surface-file and pft
+    ! parameter stuff, and the size of the array that is allocated
+    ! Even though fates has its own pfts, when it uses biogeography
+    ! it does need to use the land-fractions from the surface file
+    ! and LAI data when in satellite phenology mode
 
+    surfpft_lb  = natpft_lb
+    surfpft_ub  = natpft_ub
+    surfpft_size = natpft_size
+
+    ! FATES will potentially overwrite natpft_size,natpft_lb,natpft_ub
+    ! following this routine
+    
     max_patch_per_col= max(numpft+1, numcft, maxpatch_urb)
     mach_eps       = epsilon(1.0_r8)
 

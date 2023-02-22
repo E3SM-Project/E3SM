@@ -16,8 +16,6 @@
 !---------------------------------------------------------------------------*/
 #include "scalar_momentum.h"
 
-#ifdef MMF_ESMT
-
 void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    /*!------------------------------------------------------------------
    ! Purpose: calculate pgf for scalar momentum transport
@@ -106,18 +104,11 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    //-----------------------------------------
    // compute forward fft of w
    //-----------------------------------------
-   yakl::RealFFT1D<nx> fftx;
-   fftx.init();
-
-   // for (int k=0; k<nzm; k++) {
-   //   for (int j=0; j<ny; j++) {
-   //     for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
-      SArray<real,1,nx+2> ftmp;
-      for (int i=0; i<nx ; i++) { ftmp(i) = w_i(k,j,i,icrm); }
-      fftx.forward(ftmp, fftx.trig, yakl::FFT_SCALE_ECMWF);
-      for (int i=0; i<nx2; i++) { w_hat(k,j,i,icrm) = ftmp(i); }
+   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      w_hat(k,j,i,icrm) = w_i(k,j,i,icrm);
    });
+
+   esmt_fftx.forward_real(w_hat, 2, nx);
 
    //-----------------------------------------
    //-----------------------------------------
@@ -229,14 +220,9 @@ void scalar_momentum_pgf( real4d& scalar_wind, real4d& tend ) {
    //-----------------------------------------
    // invert fft of pgf_hat to get pgf
    //-----------------------------------------
-   // for (int k=0; k<nzm; k++) {
-   //   for (int j=0; j<ny; j++) {
-   //     for (int icrm=0; icrm<ncrms; icrm++) {
-   parallel_for( SimpleBounds<3>(nzm,ny,ncrms) , YAKL_LAMBDA (int k, int j, int icrm) {
-      SArray<real,1,nx+2> ftmp;
-      for (int i=0; i<nx2; i++) { ftmp(i) = pgf_hat(k,j,i,icrm); }
-      fftx.inverse(ftmp, fftx.trig, yakl::FFT_SCALE_ECMWF);
-      for (int i=0; i<nx ; i++) { pgf(k,j,i,icrm) = ftmp(i); }
+   esmt_fftx.inverse_real(pgf_hat);
+   parallel_for( SimpleBounds<4>(nzm,ny,nx,ncrms) , YAKL_LAMBDA (int k, int j, int i, int icrm) {
+      pgf(k,j,i,icrm) = pgf_hat(k,j,i,icrm);
    });
 
    //-----------------------------------------
@@ -284,4 +270,3 @@ void scalar_momentum_tend() {
    });
 
 }
-#endif

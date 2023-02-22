@@ -61,6 +61,8 @@ mpas_ocn_init_soma.o: $(UTILS)
 
 mpas_ocn_init_lock_exchange.o: $(UTILS)
 
+mpas_ocn_init_dam_break.o: $(UTILS)
+
 mpas_ocn_init_internal_waves.o: $(UTILS)
 
 mpas_ocn_init_overflow.o: $(UTILS)
@@ -86,6 +88,8 @@ mpas_ocn_init_ziso.o: $(UTILS)
 mpas_ocn_init_hurricane.o: $(UTILS)
 
 mpas_ocn_init_tidal_boundary.o: $(UTILS)
+
+mpas_ocn_init_cosine_bell.o: $(UTILS)
 
 mpas_ocn_init_mixed_layer_eddy.o: $(UTILS)
 

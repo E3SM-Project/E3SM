@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -128,6 +128,7 @@ contains
 
       integer, dimension(:), pointer :: maxLevelCell
 
+      real (kind=RKIND), dimension(:, :), pointer :: normalVelocity
       real (kind=RKIND), dimension(:, :, :), pointer :: ecosysTracers, activeTracers, debugTracers, &
            DMSTracers, MacroMoleculesTracers
       integer, pointer :: nVertLevels, nCellsSolve, tracerIndex
@@ -150,6 +151,7 @@ contains
       call mpas_pool_get_subpool(domain % blocklist % structs, 'forcing', forcingPool)
       call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
+      call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, 1)
 
       call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
@@ -166,6 +168,7 @@ contains
       if ( .not. on_a_sphere ) call mpas_log_write('The global ocean configuration can ' &
            // 'only be applied to a spherical mesh. Exiting...', MPAS_LOG_CRIT)
 
+      normalVelocity(:,:) = 0.0_RKIND
       !***********************************************************************
       !
       !  Topography

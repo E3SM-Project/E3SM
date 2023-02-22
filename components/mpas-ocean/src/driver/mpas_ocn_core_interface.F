@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 module ocn_core_interface
 
@@ -130,9 +130,12 @@ module ocn_core_interface
       logical, pointer :: inSituEOSActive
       logical, pointer :: variableShortwaveActive
       logical, pointer :: gmActive
+      logical, pointer :: submesoActive
       logical, pointer :: timeVaryingAtmosphericForcingPKGActive
       logical, pointer :: timeVaryingLandIceForcingPKGActive
       logical, pointer :: gotmPKGActive
+      logical, pointer :: verticalRemapPKGActive
+      logical, pointer :: activeWavePKGActive
 
       type (mpas_pool_iterator_type) :: pkgItr
       logical, pointer :: packageActive
@@ -160,16 +163,19 @@ module ocn_core_interface
       logical, pointer :: config_use_tidal_potential_forcing
       logical, pointer :: config_use_topographic_wave_drag
       logical, pointer :: config_use_GM
+      logical, pointer :: config_submesoscale_enable
       logical, pointer :: config_use_Redi
       logical, pointer :: config_use_vegetation_drag
       logical, pointer :: config_use_time_varying_atmospheric_forcing
       logical, pointer :: config_use_time_varying_land_ice_forcing
       logical, pointer :: config_use_gotm
+      logical, pointer :: config_use_active_wave
 
       character (len=StrKIND), pointer :: config_time_integrator
       character (len=StrKIND), pointer :: config_ocean_run_mode
       character (len=StrKIND), pointer :: config_pressure_gradient_type
       character (len=StrKIND), pointer :: config_sw_absorption_type
+      character (len=StrKIND), pointer :: config_vert_advection_method
 
       logical, pointer :: config_use_variable_drag
       logical, pointer :: config_use_bulk_wind_stress
@@ -353,6 +359,15 @@ module ocn_core_interface
          gmActive = .true.
       end if
 
+      !
+      ! test for use of gm
+      !
+      call mpas_pool_get_package(packagePool, 'submesoActive', submesoActive)
+      call mpas_pool_get_config(configPool, 'config_submesoscale_enable', config_submesoscale_enable)
+      if (config_submesoscale_enable) then
+         submesoActive = .true.
+      end if
+
       ! test for time-varying forcing
       !
       call mpas_pool_get_package(packagePool, 'timeVaryingAtmosphericForcingPKGActive', timeVaryingAtmosphericForcingPKGActive)
@@ -377,6 +392,25 @@ module ocn_core_interface
       if (config_use_gotm) then
          gotmPKGActive = .true.
       end if
+
+      !
+      ! test for use of vertical remapping
+      !
+      call mpas_pool_get_package(packagePool, 'verticalRemapPKGActive', verticalRemapPKGActive)
+      call mpas_pool_get_config(configPool, 'config_vert_advection_method', config_vert_advection_method)
+      if (config_vert_advection_method == 'remap') then
+         verticalRemapPKGActive = .true.
+      end if
+
+      ! test for active waves 
+      !
+      call mpas_pool_get_package(packagePool, 'activeWavePKGActive', activeWavePKGActive)
+      call mpas_pool_get_config(configPool, &
+                               'config_use_active_wave', &
+                                config_use_active_wave)
+      if (config_use_active_wave) then
+         activeWavePKGActive = .true.
+      endif
 
       !
       ! call into analysis member driver to set analysis member packages

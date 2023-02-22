@@ -21,3 +21,6 @@ if (MPILIB STREQUAL impi)
   set(MPICXX "mpipgcxx")
   set(MPIFC "mpipgf90")
 endif()
+if (compile_threaded)
+  string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_OPENMP=Off") # work-around for pgi/19.10 as kokkos has bld error with it 
+endif()

@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -1136,8 +1136,8 @@ contains
                                    layerThickness, zMid, tracerGroup, &
                                    RediKappa, slopeTriadUp, &
                                    slopeTriadDown, dt, isActiveTracer, &
-                                   RediKappaSfcTaper, RediKappaScaling,&
-                                   rediLimiterCount, tracerGroupTend, err)
+                                   RediKappaScaling, rediLimiterCount, &
+                                   tracerGroupTend, err)
 
          if (computeBudgets) then
             ! Finish budget calculation by subtracting before, after

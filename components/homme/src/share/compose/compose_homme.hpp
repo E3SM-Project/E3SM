@@ -144,7 +144,7 @@ struct HommeFormatArray {
     assert(ie_data_ptr[ie]);
     // These routines are not used on the GPU, but they can be called from
     // KOKKOS_FUNCTIONs on CPU in GPU builds. Avoid nvcc warnings as follows:
-#ifdef __CUDA_ARCH__
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
     return unused();
 #else
     return *(ie_data_ptr[ie] + i);
@@ -157,7 +157,7 @@ struct HommeFormatArray {
     assert(lev >= 0);
     assert(ie_data_ptr[ie]);
     check(ie, k, lev);
-#ifdef __CUDA_ARCH__
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
     return unused();
 #else
     return *(ie_data_ptr[ie] + lev*np2 + k);
@@ -172,7 +172,7 @@ struct HommeFormatArray {
     assert(lev >= 0);
     assert(ie_data_ptr[ie]);
     check(ie, k, lev, q_or_timelev);
-#ifdef __CUDA_ARCH__
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
     return unused();
 #else
     return *(ie_data_ptr[ie] + (q_or_timelev*nlev + lev)*np2 + k);
@@ -188,7 +188,7 @@ struct HommeFormatArray {
     assert(lev >= 0);
     assert(ie_data_ptr[ie]);
     check(ie, k, lev, q, timelev);
-#ifdef __CUDA_ARCH__
+#if defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__
     return unused();
 #else
     return *(ie_data_ptr[ie] + ((timelev*qsized + q)*nlev + lev)*np2 + k);
@@ -200,7 +200,7 @@ private:
   std::vector<T*> ie_data_ptr;
   const Int nlev, qsized, ntimelev;
 
-#ifdef KOKKOS_ENABLE_CUDA
+#ifdef COMPOSE_ENABLE_GPU
   COMPOSE_INLINE_FUNCTION static T& unused () {
     static T unused = 0;
     assert(0);
@@ -211,7 +211,7 @@ private:
   COMPOSE_FORCEINLINE_FUNCTION
   void check (Int ie, Int k = -1, Int lev = -1, Int q_or_timelev = -1,
               Int timelev = -1) const {
-#if defined COMPOSE_BOUNDS_CHECK && ! defined __CUDA_ARCH__
+#if defined COMPOSE_BOUNDS_CHECK && ! (defined __CUDA_ARCH__ || defined __HIP_DEVICE_COMPILE__)
     assert(ie >= 0 && ie < static_cast<Int>(ie_data_ptr.size()));
     if (k >= 0) assert(k < np2);
     if (lev >= 0) assert(lev < nlev);

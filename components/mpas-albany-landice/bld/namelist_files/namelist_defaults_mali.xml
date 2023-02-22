@@ -20,9 +20,13 @@
 <config_thickness_advection>'fo'</config_thickness_advection>
 <config_tracer_advection>'none'</config_tracer_advection>
 <config_restore_thickness_after_advection>.false.</config_restore_thickness_after_advection>
+<config_zero_sfcMassBalApplied_over_bare_land>.true.</config_zero_sfcMassBalApplied_over_bare_land>
 
 <!-- solidearth -->
 <config_uplift_method>'none'</config_uplift_method>
+<config_slm_coupling_interval>'0002-00-00_00:00:00'</config_slm_coupling_interval>
+<config_MALI_to_SLM_weights_file>'mpas_to_grid.nc'</config_MALI_to_SLM_weights_file>
+<config_SLM_to_MALI_weights_file>'grid_to_mpas.nc'</config_SLM_to_MALI_weights_file>
 
 <!-- calving -->
 <config_calving>'none'</config_calving>
@@ -41,6 +45,8 @@
 <config_calving_speed_limit>100.0</config_calving_speed_limit>
 <config_grounded_von_Mises_threshold_stress>1.0e6</config_grounded_von_Mises_threshold_stress>
 <config_floating_von_Mises_threshold_stress>1.0e6</config_floating_von_Mises_threshold_stress>
+<config_grounded_von_Mises_threshold_stress_source>'scalar'</config_grounded_von_Mises_threshold_stress_source>
+<config_floating_von_Mises_threshold_stress_source>'scalar'</config_floating_von_Mises_threshold_stress_source>
 <config_finalize_damage_after_advection>.true.</config_finalize_damage_after_advection>
 <config_preserve_damage>.false.</config_preserve_damage>
 <config_calculate_damage>.false.</config_calculate_damage>
@@ -49,8 +55,11 @@
 <config_damage_stiffness_min>0.1</config_damage_stiffness_min>
 <config_damage_rheology_coupling>.false.</config_damage_rheology_coupling>
 <config_damage_gl_setting>'nye'</config_damage_gl_setting>
-<config_damage_calving_method>'threshold'</config_damage_calving_method>
+<config_damage_calving_method>'none'</config_damage_calving_method>
 <config_damagecalvingParameter>1.0e-4</config_damagecalvingParameter>
+<config_ismip6_retreat_k>-170.0</config_ismip6_retreat_k>
+<config_calving_error_threshold>0.1</config_calving_error_threshold>
+<config_distribute_unablatedVolumeDynCell>.false.</config_distribute_unablatedVolumeDynCell>
 
 <!-- thermal_solver -->
 <config_thermal_solver>'none'</config_thermal_solver>
@@ -107,7 +116,9 @@
 <config_min_adaptive_timestep>3600.0</config_min_adaptive_timestep>
 <config_max_adaptive_timestep>3.15e9</config_max_adaptive_timestep>
 <config_adaptive_timestep_CFL_fraction>0.25</config_adaptive_timestep_CFL_fraction>
+<config_adaptive_timestep_calvingCFL_fraction>1.0</config_adaptive_timestep_calvingCFL_fraction>
 <config_adaptive_timestep_include_DCFL>.false.</config_adaptive_timestep_include_DCFL>
+<config_adaptive_timestep_include_calving>.true.</config_adaptive_timestep_include_calving>
 <config_adaptive_timestep_force_interval>'1000-00-00_00:00:00'</config_adaptive_timestep_force_interval>
 
 <!-- time_management -->
@@ -116,7 +127,7 @@
 <config_start_time>'0000-01-01_00:00:00'</config_start_time>
 <config_stop_time>'0000-01-01_00:00:00'</config_stop_time>
 <config_run_duration>'none'</config_run_duration>
-<config_calendar_type CALENDAR="NO_LEAP">'gregorian_noleap'</config_calendar_type>
+<config_calendar_type CALENDAR="NO_LEAP">'noleap'</config_calendar_type>
 <config_calendar_type>'gregorian'</config_calendar_type>
 
 <!-- io -->
