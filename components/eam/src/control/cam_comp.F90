@@ -108,7 +108,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
                                pbuf_get_field_rank, pbuf_get_field_dims, pbuf_get_field, &
                                pbuf_get_field_name, pbuf_has_field
    use ppgrid,           only: begchunk, endchunk, pcols, pver
-   use phys_grid,        only: get_ncols_p, get_gcol_all_p
+   use phys_grid,        only: get_ncols_p, get_gcol_all_p, get_area_all_p
    use constituents,     only: pcnst, cnst_name
 #endif
 
@@ -248,15 +248,17 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
      ncols = get_ncols_p(c)
 
      call cldera_set_field_part_size("col_gids",ipart,ncols)
-     call get_gcol_all_p (c,pcols,cols_gids)
-     call cldera_set_field_part_data("col_gids",ipart,cols_gids)
-
      call cldera_set_field_part_size("area",ipart,ncols)
-     call get_area_all_p(c,pcols,cols_area)
-     call cldera_set_field_part_data("area",ipart,cols_gids)
    enddo
    call cldera_commit_field("col_gids")
    call cldera_commit_field("area")
+   do ipart = 1,nparts
+     c = begchunk+ipart-1
+     call get_gcol_all_p (c,pcols,cols_gids)
+     call cldera_set_field_part_data("col_gids",ipart,cols_gids)
+     call get_area_all_p(c,pcols,cols_area)
+     call cldera_set_field_part_data("area",ipart,cols_area)
+   enddo
 
    ! PBUF fields
    nfields = size(pbuf2d,1)
