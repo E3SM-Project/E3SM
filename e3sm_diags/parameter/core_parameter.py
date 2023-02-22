@@ -144,6 +144,7 @@ class CoreParameter:
         self.diff_colormap: str = "diverging_bwr.rgb"
         self.diff_levels: List[str] = []
         self.diff_units: str = ""
+        self.diff_type: str = "absolute"
 
         # Other settings
         # ------------------------

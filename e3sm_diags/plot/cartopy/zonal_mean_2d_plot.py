@@ -229,6 +229,8 @@ def plot(reference, test, diff, metrics_dict, parameter):
     min3 = metrics_dict["diff"]["min"]
     mean3 = metrics_dict["diff"]["mean"]
     max3 = metrics_dict["diff"]["max"]
+    if parameter.diff_type == "relative":
+        test.units = "%"
 
     r = metrics_dict["misc"]["rmse"]
     c = metrics_dict["misc"]["corr"]

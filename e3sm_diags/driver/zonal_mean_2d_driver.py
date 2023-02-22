@@ -198,6 +198,9 @@ def run_diag(
                 )
                 parameter.main_title = str(" ".join([var, season]))
 
+                if parameter.diff_type == "relative":
+                    diff = diff / mv2_reg * 100.0
+
                 # Use mv2_p and mv1_p on the original horizonal grids for visualization and their own metrics
                 # Use mv2_reg and mv1_reg for rmse and correlation coefficient calculation
                 metrics_dict = create_metrics(mv2_p, mv1_p, mv2_reg, mv1_reg, diff)

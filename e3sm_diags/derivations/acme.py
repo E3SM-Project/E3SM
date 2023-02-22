@@ -133,6 +133,16 @@ def qflxconvert_units(var):
     return var
 
 
+def w_convert_q(var):
+    if var.units == "mol/mol":
+        var = (
+            var * 18.0 / 28.97 * 1000.0
+        )  # convert from volume mixing ratio to mass mixing ratio in units g/kg
+        var.units = "g/kg"
+        var.long_name = "H2OLNZ (radiation)"
+    return var
+
+
 def molec_convert_units(var, molar_weight):
     # Convert molec/cm2/s to kg/m2/s
     if var.units == "molec/cm2/s":
@@ -1350,6 +1360,15 @@ derived_variables = {
             ),
             (("Q",), lambda q: convert_units(rename(q), target_units="g/kg")),
             (("SHUM",), lambda shum: convert_units(shum, target_units="g/kg")),
+        ]
+    ),
+    "H2OLNZ": OrderedDict(
+        [
+            (
+                ("hus",),
+                lambda q: convert_units(rename(q), target_units="g/kg"),
+            ),
+            (("H2OLNZ",), lambda h2o: w_convert_q(h2o)),
         ]
     ),
     "TAUXY": OrderedDict(
