@@ -72,6 +72,10 @@ extern "C" void pam_driver() {
     coupler.update_hydrostasis();
   #endif
 
+  #ifdef MMF_PAM_DYCOR_SPAM
+    dycore.pre_time_loop(coupler);
+  #endif
+
   // Compute CRM forcing tendencies
   modules::compute_gcm_forcing_tendencies(coupler);
 
