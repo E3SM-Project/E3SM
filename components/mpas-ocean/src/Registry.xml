@@ -2923,7 +2923,6 @@
 		/>
 		<var name="normalMLEvelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^-1"
 			description="Velocity from mixed layer eddies (fox kemper 2011 submesoscale parameterization)"
-			missing_value="FILLVAL" missing_value_mask="edgeMask"
 			packages="submeso"
 		/>
 		<var name="cGMphaseSpeed" type="real" dimensions="nEdges Time" units="m s^-1"
