@@ -1073,6 +1073,10 @@
 					description="Bottom roughness, $z_0$, in meters."
 					possible_values="any positive real, typically 1.0e-3"
 		/>
+		<nml_option name="config_loglaw_layer_depth_max" type="real" default_value="10.0" units="m"
+					description="Maximum distance above the seafloor at which log-law drag is applied."
+					possible_values="any positive real, typically 10m"
+		/>
 		<nml_option name="config_loglaw_bottom_drag_min" type="real" default_value="2.5e-3"
 					description="Dimensionless bottom drag minimum used in log-law parameterization."
 					possible_values="any positive real, typically 2.5e-3"

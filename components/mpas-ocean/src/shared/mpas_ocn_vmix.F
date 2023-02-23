@@ -72,6 +72,7 @@ module ocn_vmix
 
    logical :: velVmixOn, tracerVmixOn
    real (kind=RKIND) :: implicitBottomDragCoef, implicitTopDragCoef
+   real (kind=RKIND) :: bottom_roughness, implicitCd_min, implicitCd_max, zDrag_max
 
    integer :: &
       dragType   ! id for pressure gradient method selected
@@ -84,7 +85,6 @@ module ocn_vmix
       dragTypeVariable    = 3, &! Spatially variable
       dragTypeMannings    = 4   ! Manning's coefficient
 
-   real (kind=RKIND) :: bottom_roughness, implicitCd_min, implicitCd_max
    real (kind=RKIND) :: rayleighDampingCoef, rayleighBottomDampingCoef, &
                         rayleighDepthVariable
 
@@ -903,7 +903,7 @@ contains
            CdTemp = 0.0_RKIND
            do k = N, Nsurf, -1
              zMidEdge = 0.5_RKIND * (bottomDepth(cell1) + bottomDepth(cell2) + zMid(k,cell1) + zMid(k,cell2))
-             if (zMidEdge > 10.0_RKIND) exit
+             if (k < N .and. zMidEdge > zDrag_max) exit
              CdTemp(k) = min(implicitCd_max, &
                           max(implicitCd_min, &
                               von_karman_sq / &
@@ -1576,6 +1576,7 @@ contains
           dragType = dragTypeLogLaw
           call mpas_log_write(' Implicit bottom drag type is: log law-of-the-wall')
           implicitCd_min = config_loglaw_bottom_drag_min
+          zDrag_max = config_loglaw_layer_depth_max
           implicitCd_max = config_loglaw_bottom_drag_max
           bottom_roughness = config_loglaw_bottom_roughness
 
