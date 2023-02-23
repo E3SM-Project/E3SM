@@ -350,7 +350,7 @@ contains
                    'landIceTracerTransferVelocities', &
                     landIceTracerTransferVelocities)
          call mpas_pool_get_array(diagnosticsPool, &
-                   'velocityTidalRMS', velocityTidalRMS)
+                   'landIceFrictionVelocity', landIceFrictionVelocity)
          call mpas_pool_get_array(diagnosticsPool, &
                    'velocityTidalRMS', velocityTidalRMS)
       end if
