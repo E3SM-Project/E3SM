@@ -358,6 +358,9 @@ CRM number of grid points in z
 <entry id="crm_dx" value="1">
 CRM horizontal grid spacing, m
 </entry>
+<entry id="crm_dx_scale" value="1">
+scaling coeff for CRM horizontal grid spacing
+</entry>
 <entry id="crm_dt" value="1">
 CRM time step, s
 </entry>

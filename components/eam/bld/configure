@@ -273,6 +273,7 @@ OPTIONS
      -crm_ny <n>        CRM's y-grid.
      -crm_nz <n>        CRM's z-grid.
      -crm_dx <n>        CRM's horizontal grid spacing.
+     -crm_dx_scale <n>  CRM's horizontal grid spacing scaling
      -crm_dt <n>        CRM's timestep.
      -crm_nx_rad <n>    number of averaged columns for CRM radiation calculation in x direction
      -crm_ny_rad <n>    number of averaged columns for CRM radiation calculation in y direction
@@ -348,6 +349,7 @@ GetOptions(
     "crm_ny=s"                  => \$opts{'crm_ny'},
     "crm_nz=s"                  => \$opts{'crm_nz'},
     "crm_dx=s"                  => \$opts{'crm_dx'},
+    "crm_dx_scale=s"            => \$opts{'crm_dx_scale'},
     "crm_dt=s"                  => \$opts{'crm_dt'},
     "crm_nx_rad=s"              => \$opts{'crm_nx_rad'},
     "crm_ny_rad=s"              => \$opts{'crm_ny_rad'},
@@ -1233,6 +1235,7 @@ if (defined $opts{'use_MMF'}) {
     $cfg_ref->set('crm_ny', $opts{'crm_ny'});
     $cfg_ref->set('crm_nz', $opts{'crm_nz'});
     $cfg_ref->set('crm_dx', $opts{'crm_dx'});
+    $cfg_ref->set('crm_dx_scale', $opts{'crm_dx_scale'});
     $cfg_ref->set('crm_dt', $opts{'crm_dt'});
     if (defined $opts{'crm_nx_rad'}) { $cfg_ref->set('crm_nx_rad', $opts{'crm_nx_rad'}); }
     if (defined $opts{'crm_ny_rad'}) { $cfg_ref->set('crm_ny_rad', $opts{'crm_ny_rad'}); }
@@ -1725,6 +1728,7 @@ if (defined $opts{'use_MMF'}) {
     my $crm_ny = $cfg_ref->get('crm_ny');
     my $crm_nz = $cfg_ref->get('crm_nz');
     my $crm_dx = $cfg_ref->get('crm_dx');
+    my $crm_dx_scale = $cfg_ref->get('crm_dx_scale');
     my $crm_dt = $cfg_ref->get('crm_dt');
     my $crm_nx_rad = $cfg_ref->get('crm_nx_rad');
     my $crm_ny_rad = $cfg_ref->get('crm_ny_rad');
@@ -1737,6 +1741,7 @@ if (defined $opts{'use_MMF'}) {
     $cfg_cppdefs .= " -D$MMF_microphysics_scheme -DYES3DVAL=$yes3Dval";
     $cfg_cppdefs .= " -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz ";
     $cfg_cppdefs .= " -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
+    $cfg_cppdefs .= " -DCRM_DX_SCALE=$crm_dx_scale ";
     if (defined $opts{'use_ECPP'}) { $cfg_cppdefs .= " -DECPP " }
     if (defined $opts{'crm_nx_rad'}) {
         $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx_rad "
