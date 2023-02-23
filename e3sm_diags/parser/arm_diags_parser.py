@@ -1,20 +1,15 @@
 from e3sm_diags.parameter.arm_diags_parameter import ARMDiagsParameter
-
-from .core_parser import CoreParser
+from e3sm_diags.parser.core_parser import CoreParser
 
 
 class ARMDiagsParser(CoreParser):
     def __init__(self, *args, **kwargs):
-        if "parameter_cls" in kwargs:
-            super().__init__(*args, **kwargs)
-        else:
-            super().__init__(parameter_cls=ARMDiagsParameter, *args, **kwargs)
+        super().__init__(parameter_cls=ARMDiagsParameter, *args, **kwargs)  # type: ignore
 
-    def load_default_args(self, files=[]):
-        # This has '-p' and '--parameter' reserved.
-        super().load_default_args(files)
+    def add_arguments(self):
+        super().add_arguments()
 
-        self.add_argument(
+        self.parser.add_argument(
             "--ref_names",
             type=str,
             nargs="+",

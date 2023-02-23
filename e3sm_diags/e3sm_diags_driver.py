@@ -183,7 +183,7 @@ def get_parameters(parser=CoreParser()):
     # The unknown args are _.
     # These are any set-specific args that aren't needed
     # for now, we just want to know what args are used.
-    args, _ = parser_for_args.parse_known_args()
+    args, _ = parser_for_args.parser.parse_known_args()
 
     # Below is the legacy way to run this software, pre v2.0.0.
     # There weren't any arguments defined.
@@ -214,7 +214,7 @@ def get_parameters(parser=CoreParser()):
             for set_name in CoreParameter().sets
         ]
 
-        other_parameters = parser.get_other_parameters(
+        other_parameters = parser.get_cfg_parameters(
             files_to_open=default_diags_paths, argparse_vals_only=False
         )
 

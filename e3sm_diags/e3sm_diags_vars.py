@@ -75,7 +75,7 @@ def list_of_vars_in_e3sm_diags():
         # NOT NEEDED:
         # parser.add_argument('path')  # Needed so the filename can be passed in.
         # parser.add_args_and_values([DUMMY_FILE_PATH])
-        parameters = parser.get_other_parameters(
+        parameters = parser.get_cfg_parameters(
             files_to_open=file_paths, check_values=False
         )
 

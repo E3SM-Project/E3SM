@@ -1,19 +1,15 @@
-from .core_parser import CoreParser
+from e3sm_diags.parser.core_parser import CoreParser
 
 
 class MeridionalMean2dParser(CoreParser):
     def __init__(self, *args, **kwargs):
-        if "parameter_cls" in kwargs:
-            super().__init__(*args, **kwargs)
-        else:
-            super().__init__(parameter_cls=MeridionalMean2dParser, *args, **kwargs)
+        super().__init__(parameter_cls=MeridionalMean2dParser, *args, **kwargs)  # type: ignore
 
-    def load_default_args(self, files=[]):
-        # This has '-p' and '--parameter' reserved.
-        super().load_default_args(files)
+    def add_arguments(self):
+        super().add_arguments()
 
         # The parameters unique to MeridionalMean2dParser are added here.
-        self.add_argument(
+        self.parser.add_argument(
             "--plevs",
             type=float,
             nargs="+",
@@ -22,7 +18,7 @@ class MeridionalMean2dParser(CoreParser):
             required=False,
         )
 
-        self.add_argument(
+        self.parser.add_argument(
             "--plot_plevs",
             dest="plot_plevs",
             help="plot specified plevs",
@@ -31,7 +27,7 @@ class MeridionalMean2dParser(CoreParser):
             required=False,
         )
 
-        self.add_argument(
+        self.parser.add_argument(
             "--plot_log_plevs",
             dest="plot_log_plevs",
             help="plot plevs on log-scale",

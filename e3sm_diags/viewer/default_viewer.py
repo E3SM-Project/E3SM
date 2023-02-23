@@ -245,7 +245,7 @@ def create_metadata(parameter):
     parser = SET_TO_PARSER[set_name]()
     cmd = "e3sm_diags {} --no_viewer ".format(set_name)
 
-    args = parser.view_args()  # type: ignore
+    args = parser.view_args()
     supported_cmd_args = list(args.__dict__.keys())
 
     if "other_parameters" in supported_cmd_args:
