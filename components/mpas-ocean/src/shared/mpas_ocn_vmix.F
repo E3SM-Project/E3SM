@@ -794,7 +794,7 @@ contains
       integer :: iEdge, k, cell1, cell2, N, Nsurf
       real (kind=RKIND) :: implicitCd, bottomDepthDrag, columnThicknessDrag
 
-      real (kind=RKIND), dimension(:), allocatable :: bTemp, C, rTemp
+      real (kind=RKIND), dimension(:), allocatable :: bTemp, C, rTemp, CdTemp
       real (kind=RKIND) :: A, m
 
       ! vegetation_drag
@@ -805,11 +805,13 @@ contains
       integer, dimension(:), pointer ::vegetationMask
       real (kind=RKIND) :: old_bottom_Cd, lambda, beta, alpha, total_h
       real (kind=RKIND) :: inundation_depth, von_karman, cff1, cff2, cff3, cff4
-      real (kind=RKIND) :: kappaSq, kappa, kineticEnergyTopOfEdge
+      real (kind=RKIND) :: kappaSq, kappa, kineticEnergyTopOfEdge, zMidEdge
       integer :: iCell
 
       err = 0
       von_karman = 0.4_RKIND
+      kappa = 0.4_RKIND
+      kappaSq = 0.16_RKIND
 
       if(.not.velVmixOn) return
 
@@ -819,7 +821,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'vegetationDiameter', vegetationDiameter)
       call mpas_pool_get_array(forcingPool, 'vegetationManning', vegetationManning)
 
-      allocate(bTemp(nVertLevels),C(nVertLevels),rTemp(nVertLevels))
+      allocate(bTemp(nVertLevels),C(nVertLevels),rTemp(nVertLevels),CdTemp(nVertLevels))
 
 #ifdef MPAS_OPENACC
       !$acc enter data create(bTemp, C, rTemp)
@@ -863,7 +865,7 @@ contains
       !$acc parallel loop present(maxLevelEdgeTop, minLevelEdgeBot, cellsOnEdge, &
       !$acc    layerThickEdgeDrag, layerThickEdgeMean, layerThickness, vertViscTopOfEdge, normalVelocity, &
       !$acc    kineticEnergyCell, bottomDrag, vegetationManning, ssh, bottomDepth) &
-      !$acc    private(Nsurf, N, cell1, cell2, implicitCd, A, bTemp, C, m, rTemp, k, &
+      !$acc    private(Nsurf, N, cell1, cell2, implicitCd, CdTemp, A, bTemp, C, m, rTemp, k, &
       !$acc    bottomDepthDrag, columnThicknessDrag)
 #else
       !$omp do schedule(runtime)
@@ -899,19 +901,23 @@ contains
            ! If this is extended to multi-layer formulation, use zMid.
            ! The solution is bracketed between implicitCd_min and implicitCd_max.
            ! TODO remove implicitCd_max and config option
-           kappa = 0.4_RKIND
-           kappaSq = 0.16_RKIND
-           implicitCd = min(implicitCd_max, &
-                        max(implicitCd_min, &
-                            kappaSq / &
-                            (log(1.0_RKIND + &
-                                 (0.5_RKIND*layerThickEdgeMean(N,iEdge)/bottom_roughness)))**2))
-           kineticEnergyTopOfEdge = 0.5_RKIND * (kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2) + &
-                                                 kineticEnergyCell(N-1,cell1) + kineticEnergyCell(N-1,cell2))
-           vertViscTopOfEdge(N,iEdge) = max(vertViscTopOfEdge(N,iEdge), &
-                                            sqrt(implicitCd * kineticEnergyTopOfEdge) * &
-                                            kappa * (layerThickEdgeMean(N,iEdge) + bottom_roughness) &
-                                           )
+           CdTemp = 0.0_RKIND
+           do k = N, Nsurf, -1
+             zMidEdge = 0.5_RKIND * (bottomDepth(cell1) + bottomDepth(cell2) + zMid(k,cell1) + zMid(k,cell2))
+             if (zMidEdge > 10.0_RKIND) exit
+             CdTemp(k) = min(implicitCd_max, &
+                          max(implicitCd_min, &
+                              kappaSq / &
+                              (log(1.0_RKIND + &
+                                   (zMidEdge/bottom_roughness)))**2))
+             ! For some reason we can use k-1 even when N=Nsurf
+             kineticEnergyTopOfEdge = 0.5_RKIND * (kineticEnergyCell(k,cell1) + kineticEnergyCell(k,cell2) + &
+                                                   kineticEnergyCell(k-1,cell1) + kineticEnergyCell(k-1,cell2))
+             vertViscTopOfEdge(k,iEdge) = max(vertViscTopOfEdge(k,iEdge), &
+                                              sqrt(CdTemp(k) * kineticEnergyTopOfEdge) * &
+                                              kappa * (zMidEdge + bottom_roughness) &
+                                             )
+           enddo
          elseif (dragType == dragTypeMannings .AND. config_use_vegetation_drag) then
            implicitCd = gravity*(0.5_RKIND*(vegetationManning(cell1) + vegetationManning(cell2)))**2 * &
                         columnThicknessDrag**(-1.0_RKIND/3.0_RKIND)
