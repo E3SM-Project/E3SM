@@ -23,8 +23,12 @@ module ocn_thick_surface_flux
    use mpas_timer
    use mpas_derived_types
    use mpas_pool_routines
+   use mpas_timekeeping
+   use mpas_forcing
+   use mpas_stream_manager
    use ocn_constants
    use ocn_config
+   use ocn_framework_forcing
    use ocn_mesh
 
    use ocn_forcing
@@ -46,7 +50,9 @@ module ocn_thick_surface_flux
    !--------------------------------------------------------------------
 
    public :: ocn_thick_surface_flux_tend, &
-             ocn_thick_surface_flux_init
+             ocn_thick_surface_flux_init, &
+             ocn_get_hosingData,  &
+             ocn_hosing_write_restart
 
    !--------------------------------------------------------------------
    !
@@ -182,7 +188,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_thick_surface_flux_init(err)!{{{
+   subroutine ocn_thick_surface_flux_init(domain,err)!{{{
 
    !--------------------------------------------------------------------
 
@@ -192,7 +198,27 @@ contains
       !
       !-----------------------------------------------------------------
 
+      type (domain_type), intent(inout) :: domain !< Input/Output: domain information
+
       integer, intent(out) :: err !< Output: error flag
+
+!-----------------------------------------------------------------
+! variables for freshwater hosing
+!-----------------------------------------------------------------
+
+      type (mpas_pool_type), pointer :: forcingPool
+
+      real (kind=RKIND), dimension(:), pointer :: &
+         hosingFlux,     & ! input flux in forcing pool
+         freshWaterHosing  ! input flux in stream
+
+      character(len=strKIND) :: &
+         forcingIntervalAnnual,  &
+         forcingReferenceTimeAnnual
+
+      type (MPAS_Time_Type) :: currTime
+      integer :: ierr
+      character(len=StrKIND)  :: timeStamp
 
       err = 0
 
@@ -202,11 +228,135 @@ contains
          surfaceThicknessFluxOn = .false.
       end if
 
+!-----------------------------------------------------------------
+! freshwater hosing
+!-----------------------------------------------------------------
+
+      if (.not. config_use_hosing_flux) return
+
+!-----------------------------------------------------------------------
+! initialize annual forcing to be read from file
+!-----------------------------------------------------------------------
+
+      forcingIntervalAnnual = "0001-00-00_00:00:00"
+      forcingReferenceTimeAnnual = "1850-07-01_00:00:00"
+
+      currTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
+      call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
+
+      call MPAS_forcing_init_group( forcingGroupHead,  &
+                "hosingAnnualFreshwaterForcing", &
+                domain, &
+                trim(timeStamp), &
+                '1850-07-01_00:00:00', &
+                '0600-00-00_00:00:00', &
+                config_do_restart)
+
+      call mpas_pool_get_subpool(domain % blocklist % structs, 'forcing', forcingPool)
+      call mpas_pool_get_array(forcingPool, 'freshWaterHosing', freshWaterHosing)
+
+      call MPAS_forcing_init_field( domain % streamManager, &
+                forcingGroupHead, &
+                'hosingAnnualFreshwaterForcing', &
+                'freshWaterHosing', &
+                'hosing_annual_flux', &
+                'forcing',  &
+                'freshWaterHosing',  &
+                'linear',  &
+                forcingReferenceTimeAnnual,  &
+                forcingIntervalAnnual)
+
+      call MPAS_forcing_init_field_data( forcingGroupHead, &
+        'hosingAnnualFreshwaterForcing',  &
+         domain % streamManager,  &
+         config_do_restart, &
+         .false.)
+
    !--------------------------------------------------------------------
 
    end subroutine ocn_thick_surface_flux_init!}}}
 
 !***********************************************************************
+!***********************************************************************
+!
+!  routine ocn_get_hosingData
+!
+!> \brief   retrieve data needed for freshwater hosing surface fluxes
+!> \author  Mathew Maltrud
+!> \date    11/30/2022
+!> \details
+!>  This routine calls mpas_forcing routines to acquire needed hsoing data and interpolates
+!>    between time levels.  directly copied from ocn_get_CFCData.
+!
+!-----------------------------------------------------------------------
+
+    subroutine ocn_get_hosingData( streamManager, &
+        domain, &
+        simulationClock, &
+        firstTimeStep) !{{{
+
+        type (MPAS_streamManager_type), intent(inout) :: streamManager
+
+        type (domain_type) :: domain
+        type (MPAS_timeInterval_type) :: timeStepHosing
+        type (MPAS_clock_type) :: simulationClock
+
+        logical, intent(in) :: firstTimeStep
+        real(kind=RKIND) :: dt
+
+        type (mpas_pool_type), pointer :: forcingPool
+        type (mpas_pool_type), pointer :: meshPool
+
+        real (kind=RKIND), dimension(:), pointer :: &
+         hosingFlux,         &
+         freshWaterHosing
+
+        integer, pointer :: nCells
+        integer :: iCell
+
+        call mpas_set_timeInterval(timeStepHosing,timeString=config_dt)
+        call mpas_get_timeInterval(timeStepHosing,dt=dt)
+
+        if (firstTimeStep .and. config_do_restart) then
+          call MPAS_forcing_get_forcing(forcingGroupHead, &
+             'hosingAnnualFreshwaterForcing', streamManager, 0.0_RKIND)
+        else
+          call MPAS_forcing_get_forcing(forcingGroupHead, &
+             'hosingAnnualFreshwaterForcing', streamManager, dt)
+        endif
+
+        call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
+        call mpas_pool_get_subpool(domain % blocklist % structs, 'forcing', forcingPool)
+        call mpas_pool_get_array(forcingPool, 'hosingFlux', hosingFlux)
+        call mpas_pool_get_array(forcingPool, 'freshWaterHosing', freshWaterHosing)
+
+        call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+        do iCell = 1, nCells
+           hosingFlux(iCell) = freshWaterHosing(iCell)
+        enddo
+    end subroutine ocn_get_hosingData!}}}
+
+!***********************************************************************
+!
+!  routine ocn_hosing_write_restart
+!
+!> \brief   writes restart timestamp for hosing data to be read in on future restart
+!> \author  Mathew Maltrud
+!> \date    11/30/2022
+
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_hosing_write_restart(domain)!{{{
+
+      type(domain_type) :: domain
+
+      call MPAS_forcing_write_restart_times(forcingGroupHead)
+
+    end subroutine ocn_hosing_write_restart!}}}
+
+!-----------------------------------------------------------------------
 
 end module ocn_thick_surface_flux
 

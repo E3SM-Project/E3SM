@@ -62,6 +62,7 @@ module ocn_comp_mct
    use ocn_config
    use ocn_submesoscale_eddies
    use ocn_eddy_parameterization_helpers
+   use ocn_thick_surface_flux
 !
 ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -722,6 +723,11 @@ contains
         call mpas_timer_stop('io_monthly_surface_salinity')
     endif
 
+    ! read next time level data required for hosing
+    if (config_use_hosing_flux) then
+      call ocn_get_hosingData(domain % streamManager, domain, domain_ptr % clock, .true.)
+    endif
+
     ! Setup clock for initial runs
     if ( runtype == 'initial' ) then
        ! Advance clock one coupling interval to be in sync with the coupler clock.
@@ -1031,6 +1037,11 @@ contains
                  call mpas_timer_stop('io_monthly_surface_salinity')
              endif
          endif
+
+         if (config_use_hosing_flux) then
+           call ocn_get_hosingData(domain % streamManager, domain, domain_ptr % clock, .false.)
+         endif
+
          if (iam==0.and.debugOn) then
             call mpas_log_write('   Finished reading forcing streams')
          endif

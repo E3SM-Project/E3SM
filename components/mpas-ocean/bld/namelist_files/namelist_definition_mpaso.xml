@@ -1183,6 +1183,14 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_hosing_flux" type="logical"
+        category="forcing" group="forcing">
+Controls if freshwater hosing thickness flux will be added to surface forcing.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_flux_attenuation_coefficient" type="real"
 	category="forcing" group="forcing">
 The length scale of exponential decay of surface fluxes. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$.

@@ -406,7 +406,7 @@ module ocn_forward_mode
       ierr = ior(ierr, err_tmp)
       call ocn_thick_vadv_init(err_tmp)
       ierr = ior(ierr, err_tmp)
-      call ocn_thick_surface_flux_init(err_tmp)
+      call ocn_thick_surface_flux_init(domain,err_tmp)
       ierr = ior(ierr, err_tmp)
       call ocn_thick_ale_init(err_tmp)
       ierr = ior(ierr,err_tmp)
@@ -655,6 +655,13 @@ module ocn_forward_mode
         call mpas_timer_stop('io_monthly_surface_salinity')
       endif
 
+      ! read initial data required for freshwater hosing forcing
+      if (config_use_hosing_flux) then
+        call mpas_timer_start('io_hosing',.false.)
+        call ocn_get_hosingData(domain % streamManager, domain, domain % clock, .true.)
+        call mpas_timer_stop('io_hosing')
+      endif
+
       ! initialize time-varying forcing
       call ocn_time_varying_forcing_init(domain)
       call ocn_time_varying_forcing_get(domain % streamManager, domain, domain % clock)
@@ -768,6 +775,7 @@ module ocn_forward_mode
             if (trim(config_sw_absorption_type)=='ohlmann00' .or. &
                 config_use_ecosysTracers .or. &
                 (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) .or. &
+                config_use_hosing_flux .or. &
                 config_use_time_varying_atmospheric_forcing .or. &
                 config_use_time_varying_land_ice_forcing) then
 
@@ -818,6 +826,13 @@ module ocn_forward_mode
               call ocn_get_surfaceSalinityData(domain % streamManager, domain, domain % clock, .false.)
               call mpas_timer_stop('io_monthly_surface_salinity')
            endif
+         endif
+
+         ! read next time level data required for freshwater hosing forcing
+         if (config_use_hosing_flux) then
+           call mpas_timer_start('io_hosing',.false.)
+           call ocn_get_hosingData(domain % streamManager, domain, domain % clock, .false.)
+           call mpas_timer_stop('io_hosing')
          endif
 
          ! read in next time level data required for time-varying forcing

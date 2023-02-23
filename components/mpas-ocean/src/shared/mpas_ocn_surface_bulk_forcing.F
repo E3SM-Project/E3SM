@@ -310,6 +310,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: evaporationFlux, snowFlux
       real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, iceRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: rainFlux
+      real (kind=RKIND), dimension(:), pointer :: hosingFlux
 
       err = 0
 
@@ -324,24 +325,26 @@ contains
       call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
+      call mpas_pool_get_array(forcingPool, 'hosingFlux', hosingFlux)
+      if (.not. config_use_hosing_flux) hosingFlux = 0.0_RKIND
 
       nCells = nCellsHalo( 2 )
 
       ! Build surface fluxes at cell centers
 #ifdef MPAS_OPENACC
       !$acc enter data copyin(evaporationFlux, snowFlux, seaIceFreshWaterFlux, icebergFreshWaterFlux, &
-      !$acc     riverRunoffFlux, iceRunoffFlux, rainFlux)
+      !$acc     riverRunoffFlux, iceRunoffFlux, rainFlux, hosingFlux)
 
       !$acc parallel loop &
       !$acc     present(surfaceThicknessFlux, surfaceThicknessFluxRunoff, evaporationFlux, snowFlux, &
-      !$acc     seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, iceRunoffFlux, rainFlux)
+      !$acc     seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, iceRunoffFlux, rainFlux, hosingFlux)
 #else
       !$omp parallel
       !$omp do schedule(runtime)
 #endif
       do iCell = 1, nCells
         surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + ( snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) &
-                                    + seaIceFreshWaterFlux(iCell) + icebergFreshWaterFlux(iCell) + iceRunoffFlux(iCell) ) / rho_sw
+                                    + seaIceFreshWaterFlux(iCell) + icebergFreshWaterFlux(iCell) + iceRunoffFlux(iCell) + hosingFlux(iCell) ) / rho_sw
         surfaceThicknessFluxRunoff(iCell) = riverRunoffFlux(iCell) / rho_sw
       end do
 #ifndef MPAS_OPENACC
@@ -351,7 +354,7 @@ contains
 
 #ifdef MPAS_OPENACC
       !$acc exit data delete(evaporationFlux, snowFlux, seaIceFreshWaterFlux, icebergFreshWaterFlux, &
-      !$acc     riverRunoffFlux, iceRunoffFlux, rainFlux)
+      !$acc     riverRunoffFlux, iceRunoffFlux, rainFlux, hosingFlux)
 #endif
 
       call mpas_timer_stop("bulk_thick")

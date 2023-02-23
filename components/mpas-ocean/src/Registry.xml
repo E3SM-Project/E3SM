@@ -706,6 +706,10 @@
 					description="The length scale of exponential decay of river runoff. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
 					possible_values="Any positive real number."
 		/>
+                <nml_option name="config_use_hosing_flux" type="logical" default_value=".false."
+                                        description="Controls if a hosing thickness flux will be computed for surface forcing."
+                                        possible_values=".true. or .false."
+                />
 	</nml_record>
 	<nml_record name="time_varying_forcing" mode="init;forward">
 		<nml_option name="config_use_time_varying_atmospheric_forcing" type="logical" default_value=".false."
@@ -3513,6 +3517,14 @@
 			 description="Fresh water flux from snow at cell centers from coupler. Positive into the ocean."
 			 packages="activeTracersBulkRestoringPKG;thicknessBulkPKG"
 		/>
+                <var name="hosingFlux" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+                         description="Fresh water flux from fresh water perturbation at cell centers from a file. Positive into the ocean."
+                         packages="activeTracersBulkRestoringPKG;thicknessBulkPKG"
+                />
+                <var name="freshWaterHosing" type="real" dimensions="nCells Time" units="kg m^-2 s^-1"
+                         description="Fresh water flux perturbation array name in the annual input file."
+                         packages="activeTracersBulkRestoringPKG;thicknessBulkPKG"
+                />
 
 		<!-- Misc. coupling fields -->
 		<var name="iceFraction" type="real" dimensions="nCells Time" units="fractional"
