@@ -1618,6 +1618,7 @@ module li_calving
                                     config_damage_calving_threshold
       character (len=StrKIND), pointer :: config_grounded_von_Mises_threshold_stress_source, &
                                           config_floating_von_Mises_threshold_stress_source
+      character (len=StrKIND), pointer :: config_flowParamA_calculation
       character (len=StrKIND), pointer :: config_damage_calving_method
       logical, pointer :: config_use_Albany_flowA_eqn_for_vM
       real (kind=RKIND), dimension(:), pointer :: eMax, eMin, &
@@ -1650,6 +1651,7 @@ module li_calving
       call mpas_pool_get_config(liConfigs, 'config_calving_speed_limit', config_calving_speed_limit)
       call mpas_pool_get_config(liConfigs, 'config_damage_calving_threshold', config_damage_calving_threshold)
       call mpas_pool_get_config(liConfigs, 'config_damage_calving_method', config_damage_calving_method)
+      call mpas_pool_get_config(liConfigs, 'config_flowParamA_calculation', config_flowParamA_calculation)
 
       !call mpas_pool_get_config(liConfigs, 'config_default_flowParamA',
       !config_default_flowParamA) ! REMOVE THIS ONCE YOU CAN GET A FROM
@@ -1734,6 +1736,11 @@ module li_calving
              call mpas_log_write("config_use_Albany_flowA_eqn_for_vM not yet supported", MPAS_LOG_ERR)
              err = 1
           else
+             if (trim(config_flowParamA_calculation) /= "PB1982") then
+                call mpas_log_write("If using von Mises calving, config_flowParamA_calculation must be set to 'PB1982'", MPAS_LOG_ERR)
+                err = 1
+                return
+             endif
              call li_calculate_flowParamA(meshPool, temperature, thickness,flowParamA,err) ! Get MPAS flowParamA
           endif
 
