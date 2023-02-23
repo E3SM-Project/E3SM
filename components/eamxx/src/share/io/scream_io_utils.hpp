@@ -49,6 +49,10 @@ struct IOControl {
   util::TimeStamp timestamp_of_last_write;
   std::string frequency_units = "none";
 
+  bool output_enabled () const {
+    return frequency>0 && frequency_units!="none" && frequency_units!="never";
+  }
+
   bool is_write_step (const util::TimeStamp& ts) {
     // Mini-routine to determine if it is time to write output to file.
     // The current allowable options are nsteps, nsecs, nmins, nhours, ndays, nmonths, nyears
