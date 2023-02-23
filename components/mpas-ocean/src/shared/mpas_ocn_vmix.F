@@ -804,14 +804,13 @@ contains
       real (kind=RKIND), dimension(:), pointer ::vegetationManning
       integer, dimension(:), pointer ::vegetationMask
       real (kind=RKIND) :: old_bottom_Cd, lambda, beta, alpha, total_h
-      real (kind=RKIND) :: inundation_depth, von_karman, cff1, cff2, cff3, cff4
-      real (kind=RKIND) :: kappaSq, kappa, kineticEnergyTopOfEdge, zMidEdge
+      real (kind=RKIND) :: inundation_depth, von_karman, von_karman_sq, cff1, cff2, cff3, cff4
+      real (kind=RKIND) :: kineticEnergyTopOfEdge, zMidEdge
       integer :: iCell
 
       err = 0
       von_karman = 0.4_RKIND
-      kappa = 0.4_RKIND
-      kappaSq = 0.16_RKIND
+      von_karman_sq = 0.16_RKIND
 
       if(.not.velVmixOn) return
 
@@ -907,7 +906,7 @@ contains
              if (zMidEdge > 10.0_RKIND) exit
              CdTemp(k) = min(implicitCd_max, &
                           max(implicitCd_min, &
-                              kappaSq / &
+                              von_karman_sq / &
                               (log(1.0_RKIND + &
                                    (zMidEdge/bottom_roughness)))**2))
              ! For some reason we can use k-1 even when N=Nsurf
@@ -915,7 +914,7 @@ contains
                                                    kineticEnergyCell(k-1,cell1) + kineticEnergyCell(k-1,cell2))
              vertViscTopOfEdge(k,iEdge) = max(vertViscTopOfEdge(k,iEdge), &
                                               sqrt(CdTemp(k) * kineticEnergyTopOfEdge) * &
-                                              kappa * (zMidEdge + bottom_roughness) &
+                                              von_karman * (zMidEdge + bottom_roughness) &
                                              )
            enddo
          elseif (dragType == dragTypeMannings .AND. config_use_vegetation_drag) then
@@ -929,7 +928,7 @@ contains
          ! one active layer
          if (N .eq. Nsurf) then
            normalVelocity(N,iEdge) = normalVelocity(N,iEdge)  &
-                / (1.0_RKIND + dt*implicitCD &
+                / (1.0_RKIND + dt*CdTemp(N) &
                    * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) )
          else
 
@@ -937,7 +936,9 @@ contains
            C(Nsurf)     = -2.0_RKIND*dt*vertViscTopOfEdge(Nsurf+1,iEdge) &
                       / (layerThickEdgeMean(Nsurf,iEdge) + layerThickEdgeMean(Nsurf+1,iEdge)) &
                       / layerThickEdgeMean(Nsurf,iEdge)
-           bTemp(Nsurf) = 1.0_RKIND - C(Nsurf)
+           bTemp(Nsurf) = 1.0_RKIND - C(Nsurf) &
+                     + dt * CdTemp(Nsurf) * sqrt(kineticEnergyCell(Nsurf,cell1) + kineticEnergyCell(Nsurf,cell2)) &
+                     / layerThickEdgeMean(Nsurf,iEdge)
            rTemp(Nsurf) = normalVelocity(Nsurf,iEdge)
 
            ! first pass: set the coefficients
@@ -949,7 +950,9 @@ contains
               C(k)     = -2.0_RKIND*dt*vertViscTopOfEdge(k+1,iEdge) &
                      / (layerThickEdgeMean(k,iEdge) + layerThickEdgeMean(k+1,iEdge)) &
                      / layerThickEdgeMean(k,iEdge)
-              bTemp(k) = 1.0_RKIND - A - C(k) - m*C(k-1)
+              bTemp(k) = 1.0_RKIND - A - C(k) - m*C(k-1) &
+                     + dt * CdTemp(k) * sqrt(kineticEnergyCell(k,cell1) + kineticEnergyCell(k,cell2)) &
+                     / layerThickEdgeMean(k,iEdge)
               rTemp(k) = normalVelocity(k,iEdge) - m*rTemp(k-1)
            enddo
 
@@ -962,8 +965,13 @@ contains
            ! Apply bottom drag boundary condition on the viscous term
            ! using sqrt(2.0*kineticEnergyEdge(k,iEdge))
            normalVelocity(N,iEdge) = (normalVelocity(N,iEdge) - m*rTemp(N-1)) &
+<<<<<<< HEAD
                / (1.0_RKIND - A + dt*implicitCD &
                * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeDrag(N,iEdge) &
+=======
+               / (1.0_RKIND - A + dt*CdTemp(N) &
+               * sqrt(kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2)) / layerThickEdgeMean(N,iEdge) &
+>>>>>>> f927da5a8d (Add drag to multiple levels)
                - m*C(N-1))
            ! second pass: back substitution
            do k = N-1, Nsurf, -1
