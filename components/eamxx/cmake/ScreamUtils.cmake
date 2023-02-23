@@ -49,7 +49,7 @@ list(REMOVE_ITEM SCREAM_CUT_EXEC_OPTIONS EXCLUDE_TEST_SESSION)
 list(REMOVE_ITEM SCREAM_CUT_EXEC_MV_ARGS LIBS)
 
 # MPI stuff is set in scream's cache config and is not configurable per-test
-list(REMOVE_ITEM SCREAM_CUT_TEST_1V_ARGS MPI_EXEC_NAME MPI_NP_FLAG)
+list(REMOVE_ITEM SCREAM_CUT_TEST_1V_ARGS MPI_EXEC_NAME MPI_NP_FLAG MPI_THREAD_FLAG)
 list(REMOVE_ITEM SCREAM_CUT_TEST_MV_ARGS MPI_EXTRA_ARGS)
 
 ###############################################################################
@@ -134,6 +134,10 @@ function(CreateUnitTestFromExec test_name test_exec)
   if (SCREAM_MPI_EXTRA_ARGS)
     list(APPEND options MPI_EXTRA_ARGS ${SCREAM_MPI_EXTRA_ARGS})
   endif ()
+
+  if (SCREAM_MPI_THREAD_FLAG)
+    list(APPEND options MPI_THREAD_FLAG ${SCREAM_MPI_THREAD_FLAG})
+  endif()
 
   EkatCreateUnitTestFromExec("${test_name}" "${test_exec}" ${options}
     MPI_EXEC_NAME ${SCREAM_MPIRUN_EXE} MPI_NP_FLAG ${SCREAM_MPI_NP_FLAG})
