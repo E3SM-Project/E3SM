@@ -890,7 +890,7 @@
       <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
-      <mask>oQU240</mask>
+      <mask>oEC60to30v3</mask>
     </model_grid>
 
     <model_grid alias="ne11_ne11" compset="(DOCN|XOCN|SOCN|AQP1)">
@@ -938,6 +938,16 @@
       <grid name="lnd">r05</grid>
       <grid name="ocnice">oEC60to30v3</grid>
       <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne0_cubeface_grad_ne30x3pg2" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne0np4_cubeface_grad_ne30x3.pg2</grid>
+      <grid name="lnd">ne0np4_cubeface_grad_ne30x3.pg2</grid>
+      <grid name="ocnice">ne0np4_cubeface_grad_ne30x3.pg2</grid>
+      <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
       <mask>oEC60to30v3</mask>
@@ -1080,7 +1090,7 @@
       <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
-      <mask>gx3v7</mask>
+      <mask>oEC60to30v3</mask>
     </model_grid>
 
     <model_grid alias="ne16pg2_r05_oQU240" compset="(EAM.+ELM.+MPASO)">
@@ -1250,7 +1260,7 @@
       <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
-      <mask>gx1v6</mask>
+      <mask>oEC60to30v3</mask>
     </model_grid>
 
     <model_grid alias="ne25_ne25" compset="(DOCN|XOCN|SOCN|AQP1)">
@@ -1383,7 +1393,27 @@
       <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
-      <mask>gx1v6</mask>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne128pg2_ne128pg2" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne128np4.pg2</grid>
+      <grid name="lnd">ne128np4.pg2</grid>
+      <grid name="ocnice">ne128np4.pg2</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne256pg2_ne256pg2" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne256np4.pg2</grid>
+      <grid name="lnd">ne256np4.pg2</grid>
+      <grid name="ocnice">ne256np4.pg2</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
     </model_grid>
 
     <model_grid alias="ne120_ne120" compset="(DOCN|XOCN|SOCN|AQP1)">
@@ -2509,9 +2539,51 @@
       <desc>ne1024np4.pg2 is Spectral Elem 3km grid w/ 2x2 FV physics grid per element:</desc>
     </domain>
 
-
-
-    
+    <!-- New grids for RCE sensitivity test -->
+    <domain name="ne8np4.pg2">
+      <nx>1536</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oEC60to30v3">/global/cfs/projectdirs/m3312/whannah/init_files/domain_files/domain.lnd.ne8pg2_oEC60to30v3.221214.nc</file>
+      <file grid="ice|ocn" mask="oEC60to30v3">/global/cfs/projectdirs/m3312/whannah/init_files/domain_files/domain.ocn.ne8pg2_oEC60to30v3.221214.nc</file>
+      <desc></desc>
+    </domain>
+    <domain name="ne16np4.pg2">
+      <nx>6144</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oEC60to30v3">/global/cfs/projectdirs/m3312/whannah/init_files/domain_files/domain.lnd.ne16pg2_oEC60to30v3.221214.nc</file>
+      <file grid="ice|ocn" mask="oEC60to30v3">/global/cfs/projectdirs/m3312/whannah/init_files/domain_files/domain.ocn.ne16pg2_oEC60to30v3.221214.nc</file>
+      <desc></desc>
+    </domain>
+    <domain name="ne32np4.pg2">
+      <nx>24576</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oEC60to30v3">/global/cfs/projectdirs/m3312/whannah/init_files/domain_files/domain.lnd.ne32pg2_oEC60to30v3.221214.nc</file>
+      <file grid="ice|ocn" mask="oEC60to30v3">/global/cfs/projectdirs/m3312/whannah/init_files/domain_files/domain.ocn.ne32pg2_oEC60to30v3.221214.nc</file>
+      <desc></desc>
+    </domain>
+    <domain name="ne64np4.pg2">
+      <nx>98304</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oEC60to30v3">/global/cfs/projectdirs/m3312/whannah/init_files/domain_files/domain.lnd.ne64pg2_oEC60to30v3.221214.nc</file>
+      <file grid="ice|ocn" mask="oEC60to30v3">/global/cfs/projectdirs/m3312/whannah/init_files/domain_files/domain.ocn.ne64pg2_oEC60to30v3.221214.nc</file>
+      <desc></desc>
+    </domain>
+    <domain name="ne128np4.pg2">
+      <nx>393216</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oEC60to30v3">/global/cfs/projectdirs/m3312/whannah/init_files/domain_files/domain.lnd.ne128pg2_oEC60to30v3.221214.nc</file>
+      <file grid="ice|ocn" mask="oEC60to30v3">/global/cfs/projectdirs/m3312/whannah/init_files/domain_files/domain.ocn.ne128pg2_oEC60to30v3.221214.nc</file>
+      <!-- <file grid="atm|lnd" mask="oEC60to30v3">/global/cfs/projectdirs/m3312/whannah/init_files/domain_files/domain.lnd.ne128pg2_ne128pg2.221214.nc</file> -->
+      <!-- <file grid="ice|ocn" mask="oEC60to30v3">/global/cfs/projectdirs/m3312/whannah/init_files/domain_files/domain.ocn.ne128pg2_ne128pg2.221214.nc</file> -->
+      <desc></desc>
+    </domain>
+    <domain name="ne256np4.pg2">
+      <nx>1572864</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oEC60to30v3">/global/cfs/projectdirs/m3312/whannah/init_files/domain_files/domain.lnd.ne256pg2_oEC60to30v3.221214.nc</file>
+      <file grid="ice|ocn" mask="oEC60to30v3">/global/cfs/projectdirs/m3312/whannah/init_files/domain_files/domain.ocn.ne256pg2_oEC60to30v3.221214.nc</file>
+      <desc></desc>
+    </domain>
 
     <!--=====================================================================-->
     <!--=====================================================================-->
@@ -2788,6 +2860,14 @@
       <file grid="atm|lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.conusx4v1pg2_oEC60to30v3.200518.nc</file>
       <file grid="ice|ocn" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.ocn.conusx4v1pg2_oEC60to30v3.200518.nc</file>
       <desc>1-deg with 1/4-deg over CONUS (version 1):</desc>
+    </domain>
+
+    <domain name="ne0np4_cubeface_grad_ne30x3.pg2">
+      <nx>72628</nx>
+      <ny>1</ny>
+      <file grid="atm|lnd" mask="oEC60to30v3">/global/cfs/projectdirs/m3312/whannah/init_files/domain_files/domain.lnd.RRM_cubeface_grad_ne30x3_oEC60to30v3.221214.nc</file>
+      <file grid="ice|ocn" mask="oEC60to30v3">/global/cfs/projectdirs/m3312/whannah/init_files/domain_files/domain.ocn.RRM_cubeface_grad_ne30x3_oEC60to30v3.221214.nc</file>
+      <desc>regional refined cube face:</desc>
     </domain>
 
     <domain name="ne0np4_northamericax4v1">

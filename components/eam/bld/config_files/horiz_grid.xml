@@ -65,6 +65,14 @@
 <horiz_grid dyn="se"    hgrid="ne512np4.pg2" ncol="6291456"  csne="512"  csnp="4" npg="2" />
 <horiz_grid dyn="se"   hgrid="ne1024np4.pg2" ncol="25165824" csne="1024" csnp="4" npg="2" />
 
+<!-- New grids for RCE sensitivity test -->
+<!-- <horiz_grid dyn="se"    hgrid="ne8np4.pg2"   ncol="1536"     csne="8"   csnp="4" npg="2" /> -->
+<!-- <horiz_grid dyn="se"    hgrid="ne16np4.pg2"  ncol="6144"     csne="16"  csnp="4" npg="2" /> -->
+<horiz_grid dyn="se"    hgrid="ne32np4.pg2"  ncol="24576"    csne="16"  csnp="4" npg="2" />
+<horiz_grid dyn="se"    hgrid="ne64np4.pg2"  ncol="98304"    csne="16"  csnp="4" npg="2" />
+<horiz_grid dyn="se"    hgrid="ne128np4.pg2"  ncol="393216"  csne="16"  csnp="4" npg="2" />
+<!-- <horiz_grid dyn="se"    hgrid="ne256np4.pg2"  ncol="1572864" csne="16"  csnp="4" npg="2" /> -->
+
 
 
 <!-- Spectral Element w/ Regional Refinement -->
@@ -80,5 +88,7 @@
 <horiz_grid dyn="se" hgrid="ne0np4_enax4v1"                   ncol="78788"  csne="0" csnp="4" npg="0" />
 <horiz_grid dyn="se" hgrid="ne0np4_twpx4v1"                   ncol="81434"  csne="0" csnp="4" npg="0" />
 <horiz_grid dyn="se" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon" ncol="105707" csne="0" csnp="4" npg="0" />
+
+<horiz_grid dyn="se" hgrid="ne0np4_cubeface_grad_ne30x3.pg2"    ncol="72628"  csne="0" csnp="4" npg="2" />
 
 </config_horiz_grid>
