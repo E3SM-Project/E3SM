@@ -38,6 +38,12 @@ module prep_lnd_mod
     iMOAB_ComputeScalarProjectionWeights, iMOAB_DefineTagStorage, iMOAB_RegisterApplication, & 
     iMOAB_WriteMesh, iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage
 #endif
+
+#ifdef MOABDEBUG
+  use seq_comm_mct,     only : num_moab_exports
+  use component_type_mod, only:  compare_mct_av_moab_tag
+#endif
+
   implicit none
   save
   private
@@ -633,7 +639,14 @@ contains
     type(mct_aVect_sharedindices),save :: a2x_sharedindices
     type(mct_aVect_sharedindices),save :: r2x_sharedindices
     type(mct_aVect_sharedindices),save :: g2x_sharedindices
-
+#ifdef MOABDEBUG
+    character(CXX)           :: tagname, mct_field
+    character*32             :: outfile, wopts, lnum
+    real(r8)                 :: difference
+    type(mct_list) :: temp_list
+    integer :: size_list, index_list, ent_type, ierr
+    type(mct_string)    :: mctOStr  !
+#endif
     !-----------------------------------------------------------------------
 
     call seq_comm_getdata(CPLID, iamroot=iamroot)
@@ -691,6 +704,30 @@ contains
     endif
 
     first_time = .false.
+#ifdef MOABDEBUG
+  ! land does not do any merge for moab, all fields are directly projected, from atm, river, glacier
+  ! compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
+    x2l_l => component_get_x2c_cx(lnd(1))
+    ! loop over all fields in seq_flds_x2l_fields
+    call mct_list_init(temp_list ,seq_flds_x2l_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 1 ! cell for land now, it is a full mesh
+    if (iamroot) print *, num_moab_exports, trim(seq_flds_x2l_fields)
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call compare_mct_av_moab_tag(lnd(1), x2l_l, mct_field,  mblxid, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+    if (mblxid .ge. 0 ) then !  we are on coupler pes, for sure
+       write(lnum,"(I0.2)")num_moab_exports
+       outfile = 'LndCplAftMm'//trim(lnum)//'.h5m'//C_NULL_CHAR
+       wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
+       ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
+    endif
+
+#endif
 
   end subroutine prep_lnd_mrg_moab 
   !================================================================================================

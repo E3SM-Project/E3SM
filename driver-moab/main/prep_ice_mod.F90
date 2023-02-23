@@ -24,6 +24,9 @@ module prep_ice_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: ice, atm, ocn, glc, rof
   use iso_c_binding
+#ifdef MOABDEBUG
+  use component_type_mod, only:  compare_mct_av_moab_tag
+#endif
 
   implicit none
   save
@@ -605,7 +608,7 @@ contains
 #endif
 
 
-    character(*), parameter   :: subname = '(prep_ice_merge) '
+    character(*), parameter   :: subname = '(prep_ice_mrg_moab) '
     !-----------------------------------------------------------------------
     call seq_infodata_GetData(infodata, &
          flux_epbalfact=flux_epbalfact)
@@ -834,6 +837,21 @@ contains
     first_time = .false.
 
 #ifdef MOABDEBUG
+ !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
+    x2i_i => component_get_x2c_cx(ice(1))
+    ! loop over all fields in seq_flds_x2i_fields
+    call mct_list_init(temp_list ,seq_flds_x2i_fields)
+    size_list=mct_list_nitem (temp_list)
+    ent_type = 1 ! cell for ice/ocean
+    if (iamroot) print *, num_moab_exports, trim(seq_flds_x2i_fields)
+    do index_list = 1, size_list
+      call mct_list_get(mctOStr,index_list,temp_list)
+      mct_field = mct_string_toChar(mctOStr)
+      tagname= trim(mct_field)//C_NULL_CHAR
+      call compare_mct_av_moab_tag(ice(1), x2i_i, mct_field,  mbixid, tagname, ent_type, difference)
+    enddo
+    call mct_list_clean(temp_list)
+
     if (mbixid .ge. 0 ) then !  we are on coupler pes, for sure
        write(lnum,"(I0.2)")num_moab_exports
        outfile = 'IceCplAftMm'//trim(lnum)//'.h5m'//C_NULL_CHAR
