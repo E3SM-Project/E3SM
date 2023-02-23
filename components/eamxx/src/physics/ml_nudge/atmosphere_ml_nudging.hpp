@@ -20,10 +20,6 @@ namespace scream
 class MLNudging : public AtmosphereProcess
 {
 public:
-  using Spack           = MLNudgingFunc::Spack;
-  using Smask           = MLNudgingFunc::Smask;
-  using Pack            = ekat::Pack<Real,Spack::n>;
-
   // Constructors
   MLNudging (const ekat::Comm& comm, const ekat::ParameterList& params);
 

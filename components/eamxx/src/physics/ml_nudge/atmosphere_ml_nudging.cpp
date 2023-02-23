@@ -38,11 +38,10 @@ void MLNudging::set_grids(const std::shared_ptr<const GridsManager> grids_manage
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols,m_num_levs} };
 
   // Set of fields used strictly as input
-  constexpr int ps = Pack::n;
-  add_field<Required>("qv",          scalar3d_layout_mid, Q,      grid_name,"tracers",ps);
+  add_field<Required>("qv",          scalar3d_layout_mid, Q,      grid_name,"tracers");
 
   // Set of fields used strictly as output
-  add_field<Computed>("qv_nudging_tend",  scalar3d_layout_mid, Q, grid_name,ps);
+  add_field<Computed>("qv_nudging_tend",  scalar3d_layout_mid, Q, grid_name);
 
   // Set of fields used as input and output
   // - There are no fields used as both input and output.
@@ -51,16 +50,14 @@ void MLNudging::set_grids(const std::shared_ptr<const GridsManager> grids_manage
 // =========================================================================================
 void MLNudging::initialize_impl (const RunType /* run_type */)
 {
-  // Set property checks for fields in this process
-  using Interval = FieldWithinIntervalCheck;
-  add_postcondition_check<Interval>(get_field_out("qv_nudging"),m_grid,0.0,1e-3,false);
+  // Nothing to do
 }
 
 // =========================================================================================
 void MLNudging::run_impl (const double /* dt */)
 {
-  auto qv          = get_field_in("qv").get_view<const Pack**>();
-  auto qv_nudging = get_field_out("qv_nudging").get_view<Pack**>();
+  auto qv          = get_field_in("qv").get_view<const Real**>();
+  auto qv_nudging = get_field_out("qv_nudging").get_view<Real**>();
 
 // STRATEGY:: 
 // 1. Try calling any type of python code here, ignoring the SCREAM variables and data
