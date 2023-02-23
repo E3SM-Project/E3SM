@@ -93,6 +93,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     debug_level,   &
     theta_advect_form,   &
     vtheta_thresh,   &
+    dp3d_thresh,   &
     pgrad_correction,    &
     hv_ref_profiles,     &
     hv_theta_correction, &
@@ -300,6 +301,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
       mesh_file,     &               ! Name of mesh file
       theta_advect_form,     &
       vtheta_thresh,         &
+      dp3d_thresh,         &
       pgrad_correction,      &
       hv_ref_profiles,       &
       hv_theta_correction,   &
@@ -767,6 +769,7 @@ use physical_constants, only : Sx, Sy, Lx, Ly, dx, dy, dx_ref, dy_ref
     call MPI_bcast(se_ftype,        1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(theta_advect_form,1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(vtheta_thresh,    1, MPIreal_t, par%root,par%comm,ierr)
+    call MPI_bcast(dp3d_thresh,    1, MPIreal_t, par%root,par%comm,ierr)
     call MPI_bcast(pgrad_correction,   1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(hv_ref_profiles,    1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(hv_theta_correction,1, MPIinteger_t, par%root,par%comm,ierr)
@@ -1150,6 +1153,7 @@ end if
        write(iulog,*)"readnl: tstep_type    = ",tstep_type
        write(iulog,*)"readnl: theta_advect_form = ",theta_advect_form
        write(iulog,*)"readnl: vtheta_thresh     = ",vtheta_thresh
+       write(iulog,*)"readnl: dp3d_thresh     = ",dp3d_thresh
        write(iulog,*)"readnl: pgrad_correction  = ",pgrad_correction
        write(iulog,*)"readnl: hv_ref_profiles   = ",hv_ref_profiles
        write(iulog,*)"readnl: hv_theta_correction= ",hv_theta_correction

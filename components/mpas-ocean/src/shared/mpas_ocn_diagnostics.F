@@ -125,7 +125,8 @@ contains
 
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
-      integer, pointer :: indexTemperature, indexSalinity
+      integer, pointer :: indexTemperaturePtr, indexSalinityPtr
+      integer :: indexTemperature, indexSalinity
 
       logical :: full_compute = .true.
 
@@ -149,8 +150,12 @@ contains
          timeLevel = 1
       end if
 
-      call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
-      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
+      call mpas_pool_get_dimension(tracersPool, 'index_temperature', &
+                                                 indexTemperaturePtr)
+      call mpas_pool_get_dimension(tracersPool, 'index_salinity', &
+                                                 indexSalinityPtr)
+      indexTemperature = indexTemperaturePtr
+      indexSalinity    = indexSalinityPtr
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
 
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
@@ -3279,11 +3284,6 @@ contains
 
       call mpas_timer_start("land_ice_diagnostic_fields", .false.)
 
-      indexBLTval = indexBLT
-      indexBLSval = indexBLS
-      indexHeatTransval = indexHeatTrans
-      indexSaltTransval = indexSaltTrans
-
       allocate(blTempScratch(nCellsAll), &
                blSaltScratch(nCellsAll))
       !$acc enter data create(blTempScratch, blSaltScratch)
@@ -3373,16 +3373,16 @@ contains
       !$omp do schedule(runtime) private(weightSum, i, cell2)
 #endif
       do iCell = 1, nCellsAll
-         landIceBoundaryLayerTracers(indexBLTval, iCell) = blTempScratch(iCell)
-         landIceBoundaryLayerTracers(indexBLSval, iCell) = blSaltScratch(iCell)
+         landIceBoundaryLayerTracers(indexBLT, iCell) = blTempScratch(iCell)
+         landIceBoundaryLayerTracers(indexBLS, iCell) = blSaltScratch(iCell)
          if(config_land_ice_flux_boundaryLayerNeighborWeight > 0.0_RKIND) then
             weightSum = 1.0_RKIND
             do i = 1, nEdgesOnCell(iCell)
                cell2 = cellsOnCell(i,iCell)
 
-               landIceBoundaryLayerTracers(indexBLTval, iCell) = landIceBoundaryLayerTracers(indexBLTval, iCell) &
+               landIceBoundaryLayerTracers(indexBLT, iCell) = landIceBoundaryLayerTracers(indexBLT, iCell) &
                  + cellMask(minLevelCell(cell2),cell2)*config_land_ice_flux_boundaryLayerNeighborWeight*blTempScratch(cell2)
-               landIceBoundaryLayerTracers(indexBLSval, iCell) = landIceBoundaryLayerTracers(indexBLSval, iCell) &
+               landIceBoundaryLayerTracers(indexBLS, iCell) = landIceBoundaryLayerTracers(indexBLS, iCell) &
                  + cellMask(minLevelCell(cell2),cell2)*config_land_ice_flux_boundaryLayerNeighborWeight*blSaltScratch(cell2)
                weightSum = weightSum + cellMask(minLevelCell(cell2),cell2)*config_land_ice_flux_boundaryLayerNeighborWeight
             end do
@@ -3403,9 +3403,9 @@ contains
 #endif
          do iCell = 1, nCellsAll
             ! transfer coefficients from namelist
-            landIceTracerTransferVelocities(indexHeatTransval, iCell) = landIceFrictionVelocity(iCell) &
+            landIceTracerTransferVelocities(indexHeatTrans, iCell) = landIceFrictionVelocity(iCell) &
                                              * config_land_ice_flux_jenkins_heat_transfer_coefficient
-            landIceTracerTransferVelocities(indexSaltTransval, iCell) = landIceFrictionVelocity(iCell) &
+            landIceTracerTransferVelocities(indexSaltTrans, iCell) = landIceFrictionVelocity(iCell) &
                                              * config_land_ice_flux_jenkins_salt_transfer_coefficient
          end do
 #ifndef MPAS_OPENACC
@@ -3432,9 +3432,9 @@ contains
                 *xiN/(abs(fCell(iCell))*h_nu))
             end if
 
-            landIceTracerTransferVelocities(indexHeatTransval, iCell) = 1.0_RKIND/(Gamma_turb + 12.5_RKIND &
+            landIceTracerTransferVelocities(indexHeatTrans, iCell) = 1.0_RKIND/(Gamma_turb + 12.5_RKIND &
                                                                    * Pr**(2.0_RKIND/3.0_RKIND) - 6.0_RKIND)
-            landIceTracerTransferVelocities(indexSaltTransval, iCell) = 1.0_RKIND/(Gamma_turb + 12.5_RKIND &
+            landIceTracerTransferVelocities(indexSaltTrans, iCell) = 1.0_RKIND/(Gamma_turb + 12.5_RKIND &
                                                                    * Sc**(2.0_RKIND/3.0_RKIND) - 6.0_RKIND)
          end do
 #ifndef MPAS_OPENACC
