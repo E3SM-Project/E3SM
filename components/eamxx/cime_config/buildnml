@@ -797,6 +797,7 @@ def do_cime_vars_on_yaml_output_files(case,caseroot):
             content['output_control']['Frequency'] = stop_n
             content['output_control']['frequency_units'] = stop_opt
             content['Averaging Type'] = 'AVERAGE'
+            print ("WARNING: ERS/ERP tests hard code output to consist of a single AVERAGE output step at the end of the run.")
 
         ordered_dump(content, open(dst_yaml, "w"))
 
