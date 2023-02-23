@@ -898,14 +898,14 @@ contains
            ! TODO replace layerThickEdgeMean with layerThickEdgeDrag.
            ! If this is extended to multi-layer formulation, use zMid.
            ! The solution is bracketed between implicitCd_min and implicitCd_max.
+           ! TODO remove implicitCd_max and config option
            kappa = 0.4_RKIND
            kappaSq = 0.16_RKIND
-           implicitCd = max(implicitCd_min, &
-                            min(implicitCd_max, &
-                                kappaSq / &
-                                (log(1.0_RKIND + 0.5_RKIND*layerThickEdgeMean(N,iEdge)/bottom_roughness))**2 &
-                               ) &
-                           )
+           implicitCd = min(implicitCd_max, &
+                        max(implicitCd_min, &
+                            kappaSq / &
+                            (log(1.0_RKIND + &
+                                 (0.5_RKIND*layerThickEdgeMean(N,iEdge)/bottom_roughness)))**2))
            kineticEnergyTopOfEdge = 0.5_RKIND * (kineticEnergyCell(N,cell1) + kineticEnergyCell(N,cell2) + &
                                                  kineticEnergyCell(N-1,cell1) + kineticEnergyCell(N-1,cell2))
            vertViscTopOfEdge(N,iEdge) = max(vertViscTopOfEdge(N,iEdge), &
