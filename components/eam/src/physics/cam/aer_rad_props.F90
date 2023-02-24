@@ -258,6 +258,14 @@ subroutine aer_rad_props_sw(list_idx, dt, state, pbuf,  nnite, idxnite, is_cmip6
    !This is done to avoid having optional arguments in modal_aero_sw call
    ext_cmip6_sw => null()
    trop_level(:) = ihuge
+   call tropopause_find(state, trop_level)
+   if (any(trop_level(1:ncol) == -1)) then
+         do icol = 1, ncol
+            write(iulog,*)'tropopause level,state%lchnk,column:',trop_level(icol),lchnk,icol
+         enddo
+         call endrun('aer_rad_props.F90: subr aer_rad_props_sw: tropopause not found')
+   endif
+
    if (is_cmip6_volc) then
       !get extinction so as to supply to modal_aero_sw routine for computing EXTINCT variable
       !converting it from 1/km to 1/m
