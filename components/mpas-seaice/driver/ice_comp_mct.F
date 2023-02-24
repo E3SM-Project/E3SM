@@ -223,7 +223,7 @@ contains
 #ifdef HAVE_MOAB
     integer :: ierrmb, numco, tagtype, tagindex, ent_type
     character(CXX) :: tagname
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
     real(r8)                 :: difference
     type(mct_list) :: temp_list
     integer :: size_list, index_list
@@ -828,7 +828,7 @@ contains
 !-----------------------------------------------------------------------
 #ifdef HAVE_MOAB
 
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
     mpicom_moab = mpicom_i ! save it for run method 
     ! loop over all fields in seq_flds_x2i_fields
     call mct_list_init(temp_list ,seq_flds_x2i_fields)
@@ -1136,7 +1136,7 @@ contains
       real(kind=RKIND), pointer :: &
             dayOfNextShortwaveCalculation ! needed for CESM like coupled simulations
 
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
       real(r8)                 :: difference
       type(mct_list) :: temp_list
       integer :: size_list, index_list, ent_type
@@ -1166,7 +1166,7 @@ contains
       ! reinitialize fluxes
       call seaice_column_reinitialize_fluxes(domain)
 #ifdef HAVE_MOAB
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
     ! loop over all fields in seq_flds_x2i_fields
     call mct_list_init(temp_list ,seq_flds_x2i_fields)
     size_list=mct_list_nitem (temp_list)

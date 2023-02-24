@@ -203,7 +203,7 @@ module cime_comp_mod
   use component_type_mod , only: expose_mct_grid_moab
 #endif
 
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
     use iso_c_binding
 #endif
 
@@ -1422,11 +1422,6 @@ contains
      seq_flds_o2x_fields, seq_flds_r2x_fields, seq_flds_i2x_fields
     use seq_comm_mct , only :  mphaid, mbaxid, mlnid, mblxid,  mrofid, mbrxid, mpoid, mboxid,  mpsiid, mbixid
     use seq_comm_mct,        only: num_moab_exports  ! used to count the steps for moab files
-#ifdef MOABDEBUG
-    real(r8) :: difference
-    character(20) :: mct_field, tagname
-    integer  :: ent_type
-#endif
 
 
 103 format( 5A )
@@ -4293,11 +4288,6 @@ contains
 
   subroutine cime_run_atmocn_setup(hashint)
     integer, intent(inout) :: hashint(:)
-#ifdef MOABDEBUG
-    real(r8) :: difference
-    character(20) :: mct_field, tagname
-    integer  :: ent_type 
-#endif 
 
     ! call prep_ocn_calc_i2x_ox_moab() ! this does projection from ice to ocean on coupler, by simply matching
     if (iamin_CPLID) then

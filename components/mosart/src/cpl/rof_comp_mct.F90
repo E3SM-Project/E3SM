@@ -422,7 +422,7 @@ contains
     character(len=32), parameter    :: sub = "rof_run_mct"
     !-------------------------------------------------------
 
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
     real(r8)                 :: difference
     type(mct_list) :: temp_list
     integer :: size_list, index_list, ent_type
@@ -451,7 +451,7 @@ contains
     call t_startf ('lc_rof_import')
 #ifdef HAVE_MOAB
 
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
     ! loop over all fields in seq_flds_x2r_fields
     call mct_list_init(temp_list ,seq_flds_x2r_fields)
     size_list=mct_list_nitem (temp_list)

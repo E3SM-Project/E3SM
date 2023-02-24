@@ -21,10 +21,6 @@ module cam_comp
    use cam_logfile,       only: iulog
    use physics_buffer,            only: physics_buffer_desc
 
-#ifdef HAVE_MOAB
-   use semoab_mod,        only: moab_export_data
-#endif
-
    implicit none
    private
    save

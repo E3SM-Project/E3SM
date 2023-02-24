@@ -24,7 +24,7 @@ module prep_ice_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
   use component_type_mod, only: ice, atm, ocn, glc, rof
   use iso_c_binding
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
   use component_type_mod, only:  compare_mct_av_moab_tag
 #endif
 
@@ -601,6 +601,8 @@ contains
     integer ent_type, ierr,n
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
+#endif
+#ifdef MOABCOMP
     real(r8)                 :: difference
     type(mct_list) :: temp_list
     integer :: size_list, index_list
@@ -836,7 +838,7 @@ contains
 
     first_time = .false.
 
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
  !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
     x2i_i => component_get_x2c_cx(ice(1))
     ! loop over all fields in seq_flds_x2i_fields
@@ -851,7 +853,9 @@ contains
       call compare_mct_av_moab_tag(ice(1), x2i_i, mct_field,  mbixid, tagname, ent_type, difference)
     enddo
     call mct_list_clean(temp_list)
+#endif
 
+#ifdef MOABDEBUG
     if (mbixid .ge. 0 ) then !  we are on coupler pes, for sure
        write(lnum,"(I0.2)")num_moab_exports
        outfile = 'IceCplAftMm'//trim(lnum)//'.h5m'//C_NULL_CHAR

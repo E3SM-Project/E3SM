@@ -1024,10 +1024,6 @@ contains
       integer                  :: typeA, typeB, ATM_PHYS_CID ! used to compute par graph between atm phys
                                                             ! and atm spectral on coupler
       character(CXX)             :: tagname
-#ifdef MOABDEBUG
-      integer , dimension(1:3) :: nverts, nelem, nblocks, nsbc, ndbc
-      integer, dimension(:), allocatable ::  vgids
-#endif
 
    !-----------------------------------------------------
 

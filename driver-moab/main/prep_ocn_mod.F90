@@ -39,7 +39,7 @@ module prep_ocn_mod
   use mct_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
   use component_type_mod, only:  compare_mct_av_moab_tag
 #endif
   use component_type_mod, only: ocn, atm, ice, rof, wav, glc
@@ -1056,10 +1056,13 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
     integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
    
-    character(CXX) ::tagname, mct_field
+    character(CXX) ::tagname
     integer :: ent_type, ierr
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
+#endif
+#ifdef MOABCOMP
+    character(CXX) :: mct_field
     real(r8)                 :: difference
     type(mct_list) :: temp_list
     integer :: size_list, index_list
@@ -1704,7 +1707,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
 
 
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
   !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
     x2o_o => component_get_x2c_cx(ocn(1))
     ! loop over all fields in seq_flds_x2o_fields
@@ -1719,8 +1722,9 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
       call compare_mct_av_moab_tag(ocn(1), x2o_o, mct_field,  mboxid, tagname, ent_type, difference)
     enddo
     call mct_list_clean(temp_list)
+#endif
 
-
+#ifdef MOABDEBUG
     if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
      write(lnum,"(I0.2)")num_moab_exports
      outfile = 'OcnCplAftMm'//trim(lnum)//'.h5m'//C_NULL_CHAR
@@ -1756,10 +1760,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
        fractions_o, x2o_o )
 
     use prep_glc_mod, only: prep_glc_calculate_subshelf_boundary_fluxes
-#ifdef MOABDEBUG
-    use iMOAB, only :  iMOAB_SetDoubleTagStorageWithGid, iMOAB_WriteMesh
-    use component_type_mod, only : component_get_dom_cx
-#endif
+
     !-----------------------------------------------------------------------
     !
     ! Arguments
@@ -1891,14 +1892,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
     type(mct_aVect_sharedindices),save :: g2x_sharedindices
     logical, save :: first_time = .true.
     character(*),parameter :: subName = '(prep_ocn_merge) '
-#ifdef    MOABDEBUG
-    real(r8) , allocatable :: values(:)
-    type(mct_ggrid), pointer    :: dom
-    integer ,    allocatable :: GlobalIds(:) ! used for setting values associated with ids
-    character(CXX) ::tagname
-    integer :: kgg, ent_type, ierr
-    character*32             :: outfile, wopts, lnum
-#endif
+
     !-----------------------------------------------------------------------
 
     call seq_comm_setptrs(CPLID, iamroot=iamroot)

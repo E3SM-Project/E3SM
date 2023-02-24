@@ -51,7 +51,7 @@ module component_type_mod
 
 ! this is to replicate mct grid of a cx   
   public :: expose_mct_grid_moab
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
   public :: compare_mct_av_moab_tag
 #endif
 
@@ -349,6 +349,7 @@ contains
       if (ierr > 0 )  &
         call shr_sys_abort(subname//'Error: fail to set GLOBAL_ID tag ')
 
+      ! MOAB TODO is this needed ? no vertices should be shared here, maybe just to set the part tag ?
       ierr = iMOAB_ResolveSharedEntities( imoabAPI, lsz, vgids );
       if (ierr > 0 )  &
         call shr_sys_abort(subname//'Error: fail to resolve shared entities')
@@ -409,7 +410,7 @@ contains
 
   end subroutine expose_mct_grid_moab
 
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
   ! assumes everything is on coupler pes here, to make sense
   subroutine compare_mct_av_moab_tag(comp, attrVect, mct_field, appId, tagname, ent_type, difference)
     

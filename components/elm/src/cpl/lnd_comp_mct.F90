@@ -20,7 +20,7 @@ module lnd_comp_mct
   use seq_comm_mct,       only: num_moab_exports
   use seq_flds_mod     , only : seq_flds_x2l_fields, seq_flds_l2x_fields
 
-#ifdef MOABDEBUG 
+#ifdef MOABCOMP 
   use seq_comm_mct , only: seq_comm_compare_mb_mct
 #endif
 #endif
@@ -50,7 +50,7 @@ module lnd_comp_mct
   real (r8) , allocatable, private :: x2l_lm(:,:) ! for tags from MOAB
   logical :: sameg_al ! save it for export :)  
 
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
   integer  :: mpicom_lnd_moab ! used just for mpi-reducing the difference betweebn moab tags and mct avs
   integer :: rank2
 #endif
@@ -171,7 +171,7 @@ contains
     call elm_instance_init( LNDID )
 
     ! Determine attriute vector indices
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
     mpicom_lnd_moab = mpicom_lnd ! just store it now, for later use
     call shr_mpi_commrank( mpicom_lnd_moab, rank2 )
 #endif 
@@ -510,7 +510,7 @@ contains
     type(bounds_type)               :: bounds               ! bounds
     character(len=32)               :: rdate                ! date char string for restart file names
     character(len=32), parameter    :: sub = "lnd_run_mct"
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
     real(r8)                 :: difference
     type(mct_list) :: temp_list
     integer :: size_list, index_list, ent_type
@@ -565,8 +565,9 @@ contains
     ! Map to elm (only when state and/or fluxes need to be updated)
 
     call t_startf ('lc_lnd_import')
+#ifdef HAVE_MOAB
     ! first call moab import 
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
   !compare_to_moab_tag_lnd(mpicom_moab, attrVect, field, imoabApp, tag_name, ent_type, difference)
     !x2o_o => component_get_x2c_cx(ocn(1))
     ! loop over all fields in seq_flds_x2a_fields
@@ -585,8 +586,6 @@ contains
     call mct_list_clean(temp_list)
 
 #endif
-
-#ifdef HAVE_MOAB
     call lnd_import_moab( bounds, atm2lnd_vars, glc2lnd_vars)
 #endif
 

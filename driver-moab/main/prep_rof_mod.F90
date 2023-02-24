@@ -31,7 +31,7 @@ module prep_rof_mod
   use map_lnd2rof_irrig_mod, only: map_lnd2rof_irrig
 
   use iso_c_binding
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
   use component_type_mod, only:  compare_mct_av_moab_tag
 #endif
 
@@ -1148,6 +1148,8 @@ contains
     integer, save :: naflds, nlflds ! these are saved the first time 
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
+#endif
+#ifdef MOABCOMP
     real(r8)                 :: difference
     type(mct_list) :: temp_list
     integer :: size_list, index_list
@@ -1412,7 +1414,7 @@ contains
     endif
     first_time = .false.
 
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
   !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
     x2r_r => component_get_x2c_cx(rof(1))
     ! loop over all fields in seq_flds_x2r_fields
@@ -1427,7 +1429,9 @@ contains
       call compare_mct_av_moab_tag(rof(1), x2r_r, mct_field,  mbrxid, tagname, ent_type, difference)
     enddo
     call mct_list_clean(temp_list)
+#endif
 
+#ifdef MOABDEBUG
 
     if (mbrxid .ge. 0 ) then !  we are on coupler pes, for sure
      write(lnum,"(I0.2)")num_moab_exports

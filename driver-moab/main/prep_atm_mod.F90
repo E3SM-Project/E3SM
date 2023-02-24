@@ -36,7 +36,7 @@ module prep_atm_mod
   use seq_comm_mct, only : num_moab_exports
 
   use dimensions_mod, only : np     ! for atmosphere
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
   use component_type_mod, only:  compare_mct_av_moab_tag
 #endif
 
@@ -810,6 +810,8 @@ contains
     integer :: ent_type, ierr, arrsize
 #ifdef MOABDEBUG
     character*32             :: outfile, wopts, lnum
+#endif
+#ifdef MOABCOMP
     real(r8)                 :: difference
     type(mct_list) :: temp_list
     integer :: size_list, index_list
@@ -1211,7 +1213,7 @@ contains
     if (ierr .ne. 0) then
       call shr_sys_abort(subname//' error in setting x2o_om array ')
     endif
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
   !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
     x2a_a => component_get_x2c_cx(atm(1))
     ! loop over all fields in seq_flds_x2a_fields
@@ -1226,14 +1228,15 @@ contains
       call compare_mct_av_moab_tag(atm(1), x2a_a, mct_field,  mbaxid, tagname, ent_type, difference)
     enddo
     call mct_list_clean(temp_list)
+#endif
 
-
+#ifdef MOABDEBUG
     if (mboxid .ge. 0 ) then !  we are on coupler pes, for sure
      write(lnum,"(I0.2)")num_moab_exports
      outfile = 'AtmCplAftMm'//trim(lnum)//'.h5m'//C_NULL_CHAR
      wopts   = ';PARALLEL=WRITE_PART'//C_NULL_CHAR !
      ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
-   endif
+    endif
 #endif
 
     if (first_time) then
