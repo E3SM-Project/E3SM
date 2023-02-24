@@ -215,7 +215,7 @@ subroutine modal_aer_opt_init()
    call addfld ('ABSORB',(/ 'lev' /),    'A','/m','Aerosol absorption', flag_xyfill=.true.)
    call addfld ('AODVIS',horiz_only,    'A','  ','Aerosol optical depth 550 nm', flag_xyfill=.true., &
    standard_name='atmosphere_optical_thickness_due_to_ambient_aerosol_particles')
-   call addfld ('SAODVIS',horiz_only,    'A','  ','Aerosol optical depth 550 nm', flag_xyfill=.true., &
+   call addfld ('SAODVIS',horiz_only,    'A','  ','Strat. Aerosol optical depth 550 nm', flag_xyfill=.true., &
    standard_name='Stratosphere atmosphere_optical_thickness_due_to_ambient_aerosol_particles')
    !call addfld ('TROP_LEVEL',horiz_only,    'A','  ','tropopause level', flag_xyfill=.true., &
    !standard_name='troppopause level')
@@ -934,6 +934,8 @@ subroutine modal_aero_sw(list_idx, dt, state, pbuf, nnite, idxnite, is_cmip6_vol
                   aodvis(i)    = aodvis(i) + dopaer(i)
                   if ((k .le. trop_level(i)) .and. (is_output_interactive_volc)) then ! in stratosphere
                       saodvis(i)    = saodvis(i) + dopaer(i)
+                  else   
+                      saodvis(i)    = saodvis(i) + 0.0_r8    
                   endif    
                   aodall(i)    = aodall(i) + dopaer(i)
                   aodabs(i)    = aodabs(i) + pabs(i)*mass(i,k)
