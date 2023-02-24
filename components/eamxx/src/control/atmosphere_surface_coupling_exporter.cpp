@@ -217,8 +217,8 @@ void SurfaceCouplingExporter::do_export(const double dt, const bool called_durin
   const auto& p_mid                = get_field_in("p_mid").get_view<const Spack**>();
   const auto& phis                 = get_field_in("phis").get_view<const Real*>();
 
-  const auto& precip_liq_surf_mass = get_field_out("precip_liq_surf_mass").get_view<Real*>();
-  const auto& precip_ice_surf_mass = get_field_out("precip_ice_surf_mass").get_view<Real*>();
+  const auto& precip_liq_surf_mass = get_field_in("precip_liq_surf_mass").get_view<const Real*>();
+  const auto& precip_ice_surf_mass = get_field_in("precip_ice_surf_mass").get_view<const Real*>();
 
   const auto Sa_z       = m_helper_fields.at("Sa_z").get_view<Real*>();
   const auto Sa_ptem    = m_helper_fields.at("Sa_ptem").get_view<Real*>();
