@@ -2157,8 +2157,9 @@ subroutine tphysbc (ztodt,               &
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
     !-----------------------------------------------------------------------
-    call cnd_diag_checkpoint( diag, 'DYNEND', state, pbuf, cam_in, cam_out )
     if (is_first_step()) call dcape_diags_init( pbuf, state, pver )
+
+    call cnd_diag_checkpoint( diag, 'DYNEND', state, pbuf, cam_in, cam_out )
     !-----------------------------------------------------------------------
 
     call phys_getopts( microp_scheme_out      = microp_scheme, &
