@@ -568,9 +568,7 @@ contains
 #ifdef HAVE_MOAB
     ! first call moab import 
 #ifdef MOABCOMP
-  !compare_to_moab_tag_lnd(mpicom_moab, attrVect, field, imoabApp, tag_name, ent_type, difference)
-    !x2o_o => component_get_x2c_cx(ocn(1))
-    ! loop over all fields in seq_flds_x2a_fields
+    ! loop over all fields in seq_flds_x2l_fields
     call mct_list_init(temp_list ,seq_flds_x2l_fields)
     size_list=mct_list_nitem (temp_list)
     ent_type = 0 ! entity type is vertex for land, usually (bigrid case)
@@ -579,7 +577,7 @@ contains
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)
       tagname= trim(mct_field)//C_NULL_CHAR
-      modelStr = 'lnd'
+      modelStr = 'lnd run'
       !call compare_to_moab_tag_lnd(mpicom_lnd_moab, x2l_l, mct_field,  mlnid, tagname, ent_type, difference)
       call seq_comm_compare_mb_mct(modelStr, mpicom_lnd_moab, x2l_l, mct_field,  mlnid, tagname, ent_type, difference)
     enddo

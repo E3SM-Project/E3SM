@@ -457,7 +457,7 @@ contains
     size_list=mct_list_nitem (temp_list)
     ent_type = 0 ! entity type is vertex for phys atm
     if (masterproc) print *, num_moab_exports, trim(seq_flds_x2r_fields), ' rof import check'
-    modelStr='rof'
+    modelStr='rof run'
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)

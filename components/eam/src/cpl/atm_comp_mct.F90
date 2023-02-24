@@ -468,7 +468,7 @@ CONTAINS
     size_list=mct_list_nitem (temp_list)
     ent_type = 0 ! entity type is vertex for phys atm
     if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2a_fields), ' atm import check'
-    modelStr='atminit'
+    modelStr='atm init2'
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)
@@ -643,7 +643,7 @@ CONTAINS
     size_list=mct_list_nitem (temp_list)
     ent_type = 0 ! entity type is vertex for phys atm
     if (rank2 .eq. 0) print *, num_moab_exports, trim(seq_flds_x2a_fields)
-    modelStr ='atm'
+    modelStr ='atm run'
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)
