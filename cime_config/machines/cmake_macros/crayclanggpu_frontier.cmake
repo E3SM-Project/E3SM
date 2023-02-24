@@ -56,12 +56,10 @@ set(PNETCDF_PATH "$ENV{PNETCDF_DIR}")
 string(APPEND CMAKE_OPTS " -DPIO_ENABLE_TOOLS:BOOL=OFF")
 string(APPEND CXX_LIBS " -lstdc++")
 
-# string(APPEND CXXFLAGS " -I$ENV{MPICH_DIR}/include ")
 string(APPEND CXXFLAGS " -I$ENV{MPICH_DIR}/include --amdgpu-target=gfx90a")
 string(APPEND SLIBS    " -L$ENV{MPICH_DIR}/lib -lmpi -L$ENV{CRAY_MPICH_ROOTDIR}/gtl/lib -lmpi_gtl_hsa")
 string(APPEND SLIBS " -L$ENV{ROCM_PATH}/lib -lamdhip64 -L$ENV{OLCF_OPENBLAS_ROOT}/lib -lopenblas $ENV{OLCF_LIBUNWIND_ROOT}/lib/libunwind.a /sw/frontier/spack-envs/base/opt/cray-sles15-zen3/clang-14.0.0-rocm5.2.0/gperftools-2.10-6g5acp4pcilrl62tddbsbxlut67pp7qn/lib/libtcmalloc.a")
 
-# Commenting out for MMF builds for now
 string(APPEND KOKKOS_OPTIONS " -DKokkos_ENABLE_HIP=On -DKokkos_ARCH_ZEN3=On -DKokkos_ARCH_VEGA90A=On")
 
 set(USE_HIP "TRUE")
