@@ -27,7 +27,6 @@ module atm_comp_mct
   use atm_import_export
   !  atm_export_moab is private here, atm_import_moab too
 
-  !   we defined cam_moab_export in cam_comp; it has cam_init, cam_run1, 2, 3, 4, cam_final
   use cam_comp
   use cam_instance     , only: cam_instance_init, inst_index, inst_suffix
   use cam_control_mod  , only: nsrest, aqua_planet, eccen, obliqr, lambm0, mvelpp
@@ -64,9 +63,10 @@ module atm_comp_mct
   use seq_comm_mct     , only: mphaid ! atm physics grid id in MOAB, on atm pes
   use iso_c_binding 
   use seq_comm_mct,     only : num_moab_exports
+#ifdef MOABCOMP
   use seq_comm_mct, only:  seq_comm_compare_mb_mct
 #endif
-
+#endif
 
 
 !
@@ -118,12 +118,14 @@ module atm_comp_mct
   integer , private :: mblsize, totalmbls, nsend, totalmbls_r, nrecv
   real(r8) , allocatable, private :: a2x_am(:,:) ! atm to coupler, on atm mesh, on atm component pes
   real(r8) , allocatable, private :: x2a_am(:,:) ! coupler to atm, on atm mesh, on atm component pes
-#endif 
-#ifdef MOABDEBUG
-  integer  :: mpicom_atm_moab ! used just for mpi-reducing the difference betweebn moab tags and mct avs
+
+#ifdef MOABCOMP
+  integer  :: mpicom_atm_moab ! used just for mpi-reducing the difference between moab tags and mct avs
   integer :: rank2
 #endif
-!
+
+#endif 
+
 !================================================================================
 CONTAINS
 !================================================================================
@@ -185,7 +187,7 @@ CONTAINS
                                 ! hdim2_d == 1.
     character(len=64) :: filein ! Input namelist filename
 
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
     real(r8)                 :: difference
     type(mct_list) :: temp_list
     integer :: size_list, index_list, ent_type
@@ -206,10 +208,12 @@ CONTAINS
 
     call seq_cdata_setptrs(cdata_a, ID=ATMID, mpicom=mpicom_atm, &
          gsMap=gsMap_atm, dom=dom_a, infodata=infodata)
-#ifdef MOABDEBUG
+
+#ifdef MOABCOMP
     mpicom_atm_moab = mpicom_atm ! just store it now, for later use
     call shr_mpi_commrank( mpicom_atm_moab, rank2 )
 #endif 
+
     if (first_time) then
        
        call cam_instance_init(ATMID)
@@ -456,7 +460,7 @@ CONTAINS
 
        call seq_timemgr_EClockGetData(EClock,curr_ymd=CurrentYMD, StepNo=StepNo, dtime=DTime_Sync )
        if (StepNo == 0) then
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
   !compare_to_moab_tag(mpicom_atm_moab, attrVect, field, imoabApp, tag_name, ent_type, difference)
     !x2o_o => component_get_x2c_cx(ocn(1))
     ! loop over all fields in seq_flds_x2a_fields
@@ -592,7 +596,7 @@ CONTAINS
     integer :: lbnum
     character(len=*), parameter :: subname="atm_run_mct"
     !-----------------------------------------------------------------------
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
     real(r8)                 :: difference
     type(mct_list) :: temp_list
     integer :: size_list, index_list, ent_type
@@ -629,8 +633,10 @@ CONTAINS
     ! Map input from mct to cam data structure
 
     call t_startf ('CAM_import')
-   
-#ifdef MOABDEBUG
+
+#ifdef HAVE_MOAB
+
+#ifdef MOABCOMP
     !x2o_o => component_get_x2c_cx(ocn(1))
     ! loop over all fields in seq_flds_a2x_fields
     call mct_list_init(temp_list ,seq_flds_x2a_fields)
@@ -647,7 +653,6 @@ CONTAINS
     call mct_list_clean(temp_list)
 #endif
 
-#ifdef HAVE_MOAB
      call atm_import_moab(cam_in)
 #endif
    ! move moab import before regular atm import, so it would hopefully not be a problem
@@ -713,9 +718,6 @@ CONTAINS
        call t_startf ('CAM_export')
        call atm_export( cam_out, a2x_a%rattr )
 #ifdef HAVE_MOAB
-    ! move method out of the  do while (.not. do send) loop; do not send yet
-    ! call cam_moab_export()
-
     ! call method to set all seq_flds_a2x_fields  on phys grid point cloud;
     ! it will be moved then to Atm Spectral mesh on coupler ; just to show how to move it to atm spectral
     ! on coupler

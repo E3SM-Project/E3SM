@@ -313,17 +313,6 @@ contains
       ierr = iMOAB_GetIntTagStorage ( MHFID, newtagg, nverts , ent_type, vgids)
       if (ierr > 0 )  &
         call endrun('Error: fail to retrieve GLOBAL ID on each task')
-#ifdef MOABDEBUG
-! write in serial, on each task, before ghosting
-      if (par%rank .lt. 4) then
-        write(lnum,"(I0.2)")par%rank
-        localmeshfile = 'fineh_'//trim(lnum)// '.h5m' // C_NULL_CHAR
-        wopts = C_NULL_CHAR
-        ierr = iMOAB_WriteMesh(MHFID, localmeshfile, wopts)
-        if (ierr > 0 )  &
-          call endrun('Error: fail to write local mesh file')
-      endif
-#endif
       ierr = iMOAB_UpdateMeshInfo(MHFID)
       if (ierr > 0 )  &
         call endrun('Error: fail to update mesh info')
@@ -335,15 +324,6 @@ contains
       if (ierr > 0 )  &
         call endrun('Error: fail to write the mesh file')
 #endif
-
-     ! deallocate
-!    deallocate(moabvh)
-!     deallocate(moabconn)
-!     deallocate(vdone)
-!     deallocate(indx)
-!     deallocate(elemids)
-
-
 
 
 !    now create the coarse mesh, but the global dofs will come from fine mesh, after solving
@@ -516,17 +496,6 @@ contains
       if (ierr > 0 )  &
         call endrun('Error: fail to create atm to ocean tag')
 
-#ifdef MOABDEBUG
-! write in serial, on each task, before ghosting
-      if (par%rank .lt. 5) then
-        write(lnum,"(I0.2)")par%rank
-        localmeshfile = 'owned_'//trim(lnum)// '.h5m' // C_NULL_CHAR
-        wopts = C_NULL_CHAR
-        ierr = iMOAB_WriteMesh(MHID, localmeshfile, wopts)
-        if (ierr > 0 )  &
-          call endrun('Error: fail to write local mesh file')
-      endif
-#endif
       ierr = iMOAB_UpdateMeshInfo(MHID)
       if (ierr > 0 )  &
         call endrun('Error: fail to update mesh info')
@@ -810,120 +779,6 @@ contains
 !    end copy
 
   end subroutine create_moab_meshes
-
-  subroutine moab_export_data(elem)
-
-    use iMOAB, only:  iMOAB_GetMeshInfo, iMOAB_SetDoubleTagStorage, iMOAB_WriteMesh
-    type(element_t),    pointer :: elem(:)
-
-    integer num_elem, ierr
-    integer nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3)
-    integer :: size_tag_array, nvalperelem, ie, i, j, je, ix, ent_type, idx
-
-    real(kind=real_kind), allocatable :: valuesTag(:)
-    character*100 outfile, wopts, tagname, lnum
-
-    if (atm_pg_active) return ! do nothing here, as we do not have to migrate from here;
-    ! count number of calls
-    num_calls_export = num_calls_export + 1
-
-    ierr  = iMOAB_GetMeshInfo ( MHID, nvert, nvise, nbl, nsurf, nvisBC );
-    ! find out the number of local elements in moab mesh
-    num_elem = nvise(1)
-    ! now print the temperature from the state, and set it
-    nvalperelem = np*np
-    size_tag_array = nvalperelem*num_elem
-    !print *, 'num_elem  = ', num_elem
-    !print *, ((local_map(i,j), i=1,np), j=1,np)
-    !print *, (moabconn(i), i=1,np*np)
-    ! now load the values on both tags
-    allocate(valuesTag(size_tag_array))  ! will use the same array for vertex array
-
-    do ie=1,num_elem
-      do j=1,np
-        do i=1,np
-          valuesTag ( (ie-1)*np*np+(j-1)*np + i ) = elem(ie)%state%vtheta_dp(i,j,nlev,1) ! time level 1?
-        enddo
-      enddo
-    enddo
-    ! set the tag
-    tagname='a2oTbot'//C_NULL_CHAR !  atm to ocean tag for temperature
-    ent_type = 1 ! element type
-    ierr = iMOAB_SetDoubleTagStorage ( MHID, tagname, size_tag_array, ent_type, valuesTag)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to set a2oTbot tag for coarse elements')
-
-    ! loop now for U velocity ( a2oUbot tag)
-    do ie=1,num_elem
-      do j=1,np
-        do i=1,np
-          valuesTag ( (ie-1)*np*np+(j-1)*np + i ) = elem(ie)%state%v(i,j,1,nlev,1) ! time level 1, U comp
-        enddo
-      enddo
-    enddo
-    ! set the tag
-    tagname='a2oUbot'//C_NULL_CHAR !  atm to ocean tag for U velocity
-    ent_type = 1 ! element type
-    ierr = iMOAB_SetDoubleTagStorage ( MHID, tagname, size_tag_array, ent_type, valuesTag)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to set a2oUbot tag for coarse elements')
-
-    ! loop now for V velocity ( a2oVbot tag)
-    do ie=1,num_elem
-      do j=1,np
-        do i=1,np
-          valuesTag ( (ie-1)*np*np+(j-1)*np + i ) = elem(ie)%state%v(i,j,2,nlev,1) ! time level 1, V comp
-        enddo
-      enddo
-    enddo
-    ! set the tag
-    tagname='a2oVbot'//C_NULL_CHAR !  atm to ocean tag for V velocity
-    ent_type = 1 ! element type
-    ierr = iMOAB_SetDoubleTagStorage ( MHID, tagname, size_tag_array, ent_type, valuesTag)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to set a2oVbot tag for coarse elements')
-
-
-#ifdef MOABDEBUG
-    !     write out the mesh file to disk, in parallel
-    write(lnum,"(I0.2)")num_calls_export
-    outfile = 'wholeATM_T_'//trim(lnum)// '.h5m' // C_NULL_CHAR
-    wopts   = 'PARALLEL=WRITE_PART'//C_NULL_CHAR
-    ierr = iMOAB_WriteMesh(MHID, outfile, wopts)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to write the mesh file')
-#endif
-
-    ! for debugging, set the tag on fine mesh too (for visu)
-    do ie=1,num_elem
-      je = (ie-1)*(np-1)*(np-1)*4
-      do j=1,np
-        do i= 1,np
-         ix = local_map(i,j)
-         idx = moabconn( je + ix ) !
-         valuesTag ( idx ) = elem(ie)%state%vtheta_dp(i,j,nlev,1)
-        end do
-      end do
-    end do
-
-    tagname='a2o_T'//C_NULL_CHAR !  atm to ocean tag, on fine mesh
-    ierr  = iMOAB_GetMeshInfo ( MHFID, nvert, nvise, nbl, nsurf, nvisBC );
-    ent_type = 0 ! vertex type
-    ierr = iMOAB_SetDoubleTagStorage ( MHFID, tagname, nvert(1), ent_type, valuesTag)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to set a2o_T tag for fine vertices')
-
-#ifdef MOABDEBUG
-    !     write out the mesh file to disk, in parallel
-
-    outfile = 'wholeFineATM_T_'//trim(lnum)// '.h5m' // C_NULL_CHAR
-
-    ierr = iMOAB_WriteMesh(MHFID, outfile, wopts)
-    if (ierr > 0 )  &
-      call endrun('Error: fail to write the fine mesh file, with a temperature on it')
-#endif
-
-    deallocate(valuesTag)
-  end subroutine moab_export_data
+  
 #endif
 end module semoab_mod

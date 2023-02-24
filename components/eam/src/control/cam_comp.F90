@@ -37,9 +37,7 @@ module cam_comp
    public cam_run3      ! CAM run method phase 3
    public cam_run4      ! CAM run method phase 4
    public cam_final     ! CAM Finalization
-#ifdef HAVE_MOAB
-   public cam_moab_export ! load data from cam dynamics to moab api
-#endif
+
    !
    ! Private module data
    !
@@ -434,14 +432,6 @@ subroutine cam_run4( cam_out, cam_in, rstwr, nlend, &
 #endif
 
 end subroutine cam_run4
-
-#ifdef HAVE_MOAB
-subroutine  cam_moab_export() ! load data from cam dynamics to moab api
-  !
-  call moab_export_data(dyn_out%elem)
-end subroutine cam_moab_export
-#endif
-
 
 !
 !-----------------------------------------------------------------------
