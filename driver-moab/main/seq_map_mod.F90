@@ -389,11 +389,13 @@ end subroutine moab_map_init_rcfile
             fldlist_moab = trim(mct_aVect_exportRList2c(av_s))//C_NULL_CHAR
          endif
 
+#ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
             write(logunit,*) subname, 'iMOAB mapper ',trim(mapper%mbname), ' iMOAB_mapper  nfields', &
                   nfields,  ' fldlist_moab=', trim(fldlist_moab)
             call shr_sys_flush(logunit)
          endif
+#endif
        endif ! valid_moab_context
 #endif
 
@@ -445,24 +447,14 @@ end subroutine moab_map_init_rcfile
 
 #ifdef HAVE_MOAB
        if ( valid_moab_context ) then
-          ! right now, this is used for ice-ocn projection, which involves just a send/recv, usually
-         if (seq_comm_iamroot(CPLID)) then
-            write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' rearrange mapper before sending ', trim(fldlist_moab)
-            call shr_sys_flush(logunit)
-         endif
          ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
          if (ierr .ne. 0) then
             write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' error in sending tags ', trim(fldlist_moab)
             call shr_sys_flush(logunit)
             call shr_sys_abort(subname//' ERROR in sending tags')
-            !valid_moab_context = .false.
          endif
        endif
        if ( valid_moab_context ) then
-         if (seq_comm_iamroot(CPLID)) then
-            write(logunit, *) subname,' iMOAB mapper before receiving ', trim(fldlist_moab)
-            call shr_sys_flush(logunit)
-         endif
          ! receive in the target app
          ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
          if (ierr .ne. 0) then
@@ -483,17 +475,12 @@ end subroutine moab_map_init_rcfile
 
 #ifdef HAVE_MOAB
        if ( valid_moab_context ) then
-         ! first have to do the second hop, iMOAB_ComputeCommGraph( src_mbid, intx_mbid,
-         ! wgtIdef = 'scalar'//C_NULL_CHAR
          !
-         write(logunit, *) subname,' iMOAB real mapper before sending ', trim(fldlist_moab)
-         call shr_sys_flush(logunit)
          ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
          if (ierr .ne. 0) then
             write(logunit, *) subname,' iMOAB mapper error in sending tags ', mapper%mbname,  trim(fldlist_moab)
             call shr_sys_flush(logunit)
             call shr_sys_abort(subname//' ERROR in sending tags')
-            !valid_moab_context = .false.
          endif
        endif
        if ( valid_moab_context ) then
@@ -517,7 +504,7 @@ end subroutine moab_map_init_rcfile
        if ( valid_moab_context ) then
 #ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
-            write(logunit, *) subname,' iMOAB mapper: between ', mapper%src_mbid, ' and ',  mapper%tgt_mbid, trim(fldlist_moab)
+            write(logunit, *) subname,' iMOAB projection mapper: between ', mapper%src_mbid, ' and ',  mapper%tgt_mbid, trim(fldlist_moab)
             call shr_sys_flush(logunit)
          endif
 #endif

@@ -1294,11 +1294,10 @@ contains
             ropts = 'PARALLEL=READ_PART;PARTITION_METHOD=SQIJ;VARIABLE='//C_NULL_CHAR
             call seq_infodata_GetData(infodata,lnd_domain=lnd_domain)
             outfile = trim(lnd_domain)//C_NULL_CHAR
-            write(logunit,*) subname,' got land domain file ',trim(lnd_domain)
             nghlay = 0 ! no ghost layers 
             ierr = iMOAB_LoadMesh(mblxid, outfile, ropts, nghlay)
             if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in reading land coupler mesh'
+               write(logunit,*) subname,' error in reading land coupler mesh from ', trim(lnd_domain)
                call shr_sys_abort(subname//' ERROR in reading land coupler mesh')
             endif
 #ifdef MOABDEBUG

@@ -1708,7 +1708,6 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
 
 
 #ifdef MOABCOMP
-  !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
     x2o_o => component_get_x2c_cx(ocn(1))
     ! loop over all fields in seq_flds_x2o_fields
     call mct_list_init(temp_list ,seq_flds_x2o_fields)

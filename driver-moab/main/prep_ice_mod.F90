@@ -752,8 +752,6 @@ contains
 ! get the a2x data that was mapped to i
     tagname = trim(seq_flds_a2x_fields)//C_NULL_CHAR
     arrsize = naflds * lsize !        allocate (a2x_om (lsize, naflds))
-! LOOK at this line
-    write(logunit, *) 'MOAB ice merge ',mbixid,  naflds,lsize, ent_type, trim(tagname)
     ierr = iMOAB_GetDoubleTagStorage ( mbixid, tagname, arrsize , ent_type, a2x_im(1,1))
     if (ierr .ne. 0) then 
       write(logunit, *) 'MOAB error ', ierr
