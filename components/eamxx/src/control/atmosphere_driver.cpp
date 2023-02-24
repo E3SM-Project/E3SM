@@ -22,7 +22,6 @@
 // find blocks that eventually should be removed in favor of a design that
 // accounts for pg2. Some blocks may turn out to be unnecessary, and I simply
 // didn't realize I could do without the workaround.
-#include "scream_config.h" // for SCREAM_CIME_BUILD
 #include "control/fvphyshack.hpp"
 
 #include <fstream>
@@ -491,7 +490,8 @@ void AtmosphereDriver::create_fields()
   // Close the FM's, allocate all fields
   for (auto it : m_grids_manager->get_repo()) {
     auto grid = it.second;
-    m_field_mgrs[grid->name()]->registration_ends();
+    auto fm = m_field_mgrs.at(grid->name());
+    fm->registration_ends();
   }
 
   // Set all the fields/groups in the processes. Input fields/groups will be handed
@@ -671,6 +671,48 @@ initialize_fields ()
     restart_model ();
   } else {
     set_initial_conditions ();
+  }
+
+  // Now that IC have been read, add U/V subfields of horiz_winds,
+  // as well as U/V component of surf_mom_flux
+  // NOTE: if you add them _before_ the IC read, set_initial_conditions
+  //       will skip horiz_winds, and only process U/V, which, being
+  //       missing in the IC file, would cause horiz_winds=0.
+  for (auto it : m_grids_manager->get_repo()) {
+    auto grid = it.second;
+    auto fm = m_field_mgrs.at(grid->name());
+    if (fm->has_field("horiz_winds")) {
+      using namespace ShortFieldTagsNames;
+      auto hw = fm->get_field("horiz_winds");
+      const auto& fid = hw.get_header().get_identifier();
+      const auto& layout = fid.get_layout();
+      const int vec_dim = layout.get_vector_dim();
+      const auto& units = fid.get_units();
+      auto U = hw.subfield("U",units,vec_dim,0);
+      auto V = hw.subfield("V",units,vec_dim,1);
+      if (not fm->has_field("U")) {
+        fm->add_field(U);
+      }
+      if (not fm->has_field("V")) {
+        fm->add_field(V);
+      }
+    }
+    if (fm->has_field("surf_mom_flux")) {
+      using namespace ShortFieldTagsNames;
+      auto hw = fm->get_field("surf_mom_flux");
+      const auto& fid = hw.get_header().get_identifier();
+      const auto& layout = fid.get_layout();
+      const int vec_dim = layout.get_vector_dim();
+      const auto& units = fid.get_units();
+      auto surf_mom_flux_U = hw.subfield("surf_mom_flux_U",units,vec_dim,0);
+      auto surf_mom_flux_V = hw.subfield("surf_mom_flux_V",units,vec_dim,1);
+      if (not fm->has_field("surf_mom_flux_U")) {
+        fm->add_field(surf_mom_flux_U);
+      }
+      if (not fm->has_field("surf_mom_flux_V")) {
+        fm->add_field(surf_mom_flux_V);
+      }
+    }
   }
 
 #ifdef SCREAM_HAS_MEMORY_USAGE

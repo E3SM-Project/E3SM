@@ -21,7 +21,7 @@ void Functions<S,D>::compute_brunt_shoc_length(
   const auto s_thv_zi = scalarize(thv_zi);
 
   const Int nlev_pack = ekat::npack<Spack>(nlev);
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
     // Calculate thv_zi shift
     Spack thv_zi_k, thv_zi_kp1;
     auto range_pack1 = ekat::range<IntSmallPack>(k*Spack::n);

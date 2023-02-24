@@ -29,7 +29,7 @@ void Functions<S,D>::vd_shoc_decomp(
   const Int nlev_pack = ekat::npack<Spack>(nlev);
 
   // Compute entries of the tridiagonal system
-  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlev_pack), [&] (const Int& k) {
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlev_pack), [&] (const Int& k) {
 
     // Compute local diagonals
     Spack du_k, dl_k, d_k;

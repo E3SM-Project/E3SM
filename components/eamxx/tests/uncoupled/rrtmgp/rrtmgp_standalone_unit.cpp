@@ -279,7 +279,7 @@ namespace scream {
             d_sfc_alb_dir_nir(i) = sfc_alb_dir_nir(i+1);
             d_sfc_alb_dif_vis(i) = sfc_alb_dif_vis(i+1);
             d_sfc_alb_dif_nir(i) = sfc_alb_dif_nir(i+1);
-            Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay), [&] (const int& k) {
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay), [&] (const int& k) {
               d_pmid(i,k) = p_lay(i+1,k+1);
               d_tmid(i,k) = t_lay(i+1,k+1);
               d_pdel(i,k) = p_del(i+1,k+1);
@@ -332,7 +332,7 @@ namespace scream {
           Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
             const int i = team.league_rank();
 
-            Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nlay+1), [&] (const int& k) {
+            Kokkos::parallel_for(Kokkos::TeamVectorRange(team, nlay+1), [&] (const int& k) {
               if (k < nlay) t_lay(i+1,k+1) = d_tmid(i,k);
 
               sw_flux_up_test(i+1,k+1)     = d_sw_flux_up(i,k);

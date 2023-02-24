@@ -82,7 +82,7 @@ static void copy_prev (const int ncols, const int npacks,
   const auto policy = ESU::get_default_team_policy(ncols, npacks);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA (const KT::MemberType& team) {
     const int& icol = team.league_rank();
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team, npacks),
+    Kokkos::parallel_for(Kokkos::TeamVectorRange(team, npacks),
                          [&] (const int ilev) {
       FT(icol,ilev) = T(icol,ilev);
       FM(icol,0,ilev) = uv(icol,0,ilev);

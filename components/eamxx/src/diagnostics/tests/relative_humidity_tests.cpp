@@ -143,7 +143,7 @@ void run(std::mt19937_64& engine)
     Smask range_mask(true);
     Kokkos::parallel_for("", policy, KOKKOS_LAMBDA(const MemberType& team) {
       const int icol = team.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(team,num_mid_packs), [&] (const Int& jpack) {
+      Kokkos::parallel_for(Kokkos::TeamVectorRange(team,num_mid_packs), [&] (const Int& jpack) {
       auto qv_sat_l = physics::qv_sat(T_mid_v(icol,jpack), p_mid_v(icol,jpack), false, range_mask);
         rh_v(icol,jpack) = qv_v(icol,jpack)/qv_sat_l;
       });
