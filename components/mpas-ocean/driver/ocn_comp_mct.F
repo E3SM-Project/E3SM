@@ -897,7 +897,6 @@ contains
     call mct_list_init(temp_list ,seq_flds_x2o_fields)
     size_list=mct_list_nitem (temp_list)
     ent_type = 1 ! entity type is cell for ocn
-    print *, num_moab_exports, trim(seq_flds_x2o_fields), ' ocn import check'
     modelStr='ocn init'
     mpicom_moab = mpicom_o ! save it for run method 
     do index_list = 1, size_list
@@ -1046,7 +1045,6 @@ contains
     call mct_list_init(temp_list ,seq_flds_x2o_fields)
     size_list=mct_list_nitem (temp_list)
     ent_type = 1 ! entity type is cell for ocn
-    print *, num_moab_exports, trim(seq_flds_x2o_fields), ' ocn import check'
     modelStr='ocn run'
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)

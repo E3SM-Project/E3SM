@@ -834,7 +834,6 @@ contains
     call mct_list_init(temp_list ,seq_flds_x2i_fields)
     size_list=mct_list_nitem (temp_list)
     ent_type = 1 ! entity type is cell for ice
-    print *, num_moab_exports, trim(seq_flds_x2i_fields), ' ice import check'
     modelStr='ice init'
 
     do index_list = 1, size_list
@@ -1171,7 +1170,6 @@ contains
     call mct_list_init(temp_list ,seq_flds_x2i_fields)
     size_list=mct_list_nitem (temp_list)
     ent_type = 1 ! entity type is cell for ice
-    print *, num_moab_exports, trim(seq_flds_x2i_fields), ' ice import check'
     modelStr='ice run'
 
     do index_list = 1, size_list
