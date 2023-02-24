@@ -43,7 +43,7 @@ module ice_comp_mct
 #ifdef HAVE_MOAB
    use mpas_moabmesh
    use seq_comm_mct, only: MPSIID
-   use iMOAB, only: iMOAB_DefineTagStorage
+   use iMOAB, only: iMOAB_DefineTagStorage, iMOAB_SetDoubleTagStorage
    use shr_kind_mod    , only: cxx => SHR_KIND_CXX
    use seq_comm_mct, only:  seq_comm_compare_mb_mct
    use seq_comm_mct,      only: num_moab_exports
@@ -221,12 +221,12 @@ contains
     character(len=strKIND) :: curtime
     character(len=strKIND) :: history
 #ifdef HAVE_MOAB
-    integer :: ierrmb, numco, tagtype, tagindex
+    integer :: ierrmb, numco, tagtype, tagindex, ent_type
     character(CXX) :: tagname
 #ifdef MOABDEBUG
     real(r8)                 :: difference
     type(mct_list) :: temp_list
-    integer :: size_list, index_list, ent_type
+    integer :: size_list, index_list
     type(mct_string)    :: mctOStr  !
     character(CXX) :: mct_field, modelStr
 #endif 
@@ -716,18 +716,30 @@ contains
     totalmblr = mblsize * nrecv ! size of the double array
     allocate (i2x_im(lsize, nsend) )
     allocate (x2i_im(lsize, nrecv) )
+    i2x_im = 0._r8
+    x2i_im = 0._r8
     ! define tags according to the seq_flds_i2x_fields 
+    ! also zero them out
     tagtype = 1  ! dense, double
     numco = 1 !  one value per cell / entity
+    ent_type = 1 ! cells
     tagname = trim(seq_flds_i2x_fields)//C_NULL_CHAR
     ierrmb = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
     if ( ierrmb == 1 ) then
       call mpas_log_write('cannot define tags for MOAB i2x fields ' // trim(seq_flds_i2x_fields), MPAS_LOG_ERR)
     endif
+    ierrmb = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, totalmbls , ent_type, i2x_im(1, 1) )
+    if ( ierrmb /= 0 ) then
+       call mpas_log_write('cannot set tags for MOAB i2x fields to zero' // trim(seq_flds_i2x_fields), MPAS_LOG_ERR)
+    endif
     tagname = trim(seq_flds_x2i_fields)//C_NULL_CHAR
     ierrmb = iMOAB_DefineTagStorage(MPSIID, tagname, tagtype, numco,  tagindex )
     if ( ierrmb == 1 ) then
       call mpas_log_write('cannot define tags for MOAB i2x fields ' // trim(seq_flds_x2i_fields), MPAS_LOG_ERR)
+    endif
+    ierrmb = iMOAB_SetDoubleTagStorage ( MPSIID, tagname, totalmblr , ent_type, x2i_im(1, 1) )
+    if ( ierrmb /= 0 ) then
+       call mpas_log_write('cannot set tags for MOAB x2i fields to zero' // trim(seq_flds_x2i_fields), MPAS_LOG_ERR)
     endif
 #endif
     
@@ -1160,7 +1172,7 @@ contains
     size_list=mct_list_nitem (temp_list)
     ent_type = 1 ! entity type is cell for ice
     print *, num_moab_exports, trim(seq_flds_x2i_fields), ' ice import check'
-    modelStr='ice'
+    modelStr='ice run'
 
     do index_list = 1, size_list
       call mct_list_get(mctOStr,index_list,temp_list)
