@@ -23,13 +23,13 @@ module ColumnDataType
   use elm_varctl      , only : use_fates, use_fates_planthydro, create_glacier_mec_landunit
   use elm_varctl      , only : use_hydrstress
   use elm_varctl      , only : bound_h2osoi, use_cn, iulog, use_vertsoilc, spinup_state
-  use elm_varctl      , only : use_erosion
+  use elm_varctl      , only : ero_ccycle
   use elm_varctl      , only : use_elm_interface, use_pflotran, pf_cmode
   use elm_varctl      , only : hist_wrtch4diag, use_century_decomp
   use elm_varctl      , only : get_carbontag, override_bgc_restart_mismatch_dump
   use elm_varctl      , only : pf_hmode, nu_com
   use ch4varcon       , only : allowlakeprod
-  use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr
+  use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr, pinit_beta1, pinit_beta2
   use soilorder_varcon, only : smax, ks_sorption
   use clm_time_manager, only : is_restart, get_nstep
   use clm_time_manager, only : is_first_step, get_step_size
@@ -108,7 +108,8 @@ module ColumnDataType
     real(r8), pointer :: h2osoi_vol         (:,:) => null() ! volumetric soil water (0<=h2osoi_vol<=watsat) (1:nlevgrnd) (m3/m3)
     real(r8), pointer :: h2osfc             (:)   => null() ! surface water (kg/m2)
     real(r8), pointer :: h2ocan             (:)   => null() ! canopy water integrated to column (kg/m2)
-    real(r8), pointer :: total_plant_stored_h2o(:)=> null() ! total water in plants (used??)
+    real(r8), pointer :: total_plant_stored_h2o(:)=> null() ! total water in plants (kg/m2)
+    real(r8), pointer :: wslake_col         (:)   => null() ! col lake water storage (mm H2O)
     ! Derived water and ice state variables for soil/snow column, depth varying
     real(r8), pointer :: h2osoi_liqvol      (:,:) => null() ! volumetric liquid water content (-nlevsno+1:nlevgrnd) (m3/m3)
     real(r8), pointer :: h2osoi_icevol      (:,:) => null() ! volumetric ice content (-nlevsno+1:nlevgrnd) (m3/m3)
@@ -160,6 +161,8 @@ module ColumnDataType
     real(r8), pointer :: vsfm_mass_col_1d   (:)   => null() ! liquid mass per unit area from VSFM [kg H2O/m^2]
     real(r8), pointer :: vsfm_smpl_col_1d   (:)   => null() ! 1D soil matrix potential liquid from VSFM [m]
     real(r8), pointer :: vsfm_soilp_col_1d  (:)   => null() ! 1D soil liquid pressure from VSFM [Pa]
+    real(r8), pointer :: h2orof             (:)   => null() ! floodplain inundation volume received from rof (mm)
+    real(r8), pointer :: frac_h2orof        (:)   => null() ! floodplain inundation fraction received from rof (-)
 
   contains
     procedure, public :: Init    => col_ws_init
@@ -194,6 +197,9 @@ module ColumnDataType
     real(r8), pointer :: ctrunc               (:)    => null() ! (gC/m2) column-level sink for C truncation
     real(r8), pointer :: totlitc              (:)    => null() ! (gC/m2) total litter carbon
     real(r8), pointer :: totsomc              (:)    => null() ! (gC/m2) total soil organic matter carbon
+    real(r8), pointer :: som1c                (:)    => null()
+    real(r8), pointer :: som2c                (:)    => null()
+    real(r8), pointer :: som3c                (:)    => null()
     real(r8), pointer :: totlitc_1m           (:)    => null() ! (gC/m2) total litter carbon to 1 meter
     real(r8), pointer :: totsomc_1m           (:)    => null() ! (gC/m2) total soil organic matter carbon to 1 meter
     real(r8), pointer :: totecosysc           (:)    => null() ! (gC/m2) total ecosystem carbon, incl veg but excl cpool
@@ -243,6 +249,9 @@ module ColumnDataType
     real(r8), pointer :: cwdn                     (:)     => null() ! (gN/m2) Diagnostic: coarse woody debris N
     real(r8), pointer :: totlitn                  (:)     => null() ! (gN/m2) total litter nitrogen
     real(r8), pointer :: totsomn                  (:)     => null() ! (gN/m2) total soil organic matter nitrogen
+    real(r8), pointer :: som1n                    (:)     => null()
+    real(r8), pointer :: som2n                    (:)     => null()
+    real(r8), pointer :: som3n                    (:)     => null()
     real(r8), pointer :: totlitn_1m               (:)     => null() ! (gN/m2) total litter nitrogen to 1 meter
     real(r8), pointer :: totsomn_1m               (:)     => null() ! (gN/m2) total soil organic matter nitrogen to 1 meter
     real(r8), pointer :: totecosysn               (:)     => null() ! (gN/m2) total ecosystem nitrogen, incl veg
@@ -356,6 +365,9 @@ module ColumnDataType
     real(r8), pointer :: cwdp_end                 (:)      => null()
     real(r8), pointer :: totsomp_end              (:)      => null()
     real(r8), pointer :: cropseedp_deficit        (:)      => null() ! (gP/m2) negative pool tracking seed P for DWT
+    real(r8), pointer :: som1p                    (:)      => null()
+    real(r8), pointer :: som2p                    (:)      => null()
+    real(r8), pointer :: som3p                    (:)      => null()
   contains
     procedure, public :: Init      => col_ps_init
     procedure, public :: Restart   => col_ps_restart
@@ -474,6 +486,7 @@ module ColumnDataType
     real(r8), pointer :: qflx_irrig           (:)   => null() ! col irrigation flux (mm H2O/s)
     real(r8), pointer :: qflx_irr_demand      (:)   => null() ! col surface irrigation demand (mm H2O /s)
     real(r8), pointer :: qflx_over_supply     (:)   => null() ! col over supplied irrigation
+    real(r8), pointer :: qflx_h2orof_drain    (:)   => null() ! drainage from floodplain inundation volume (mm H2O/s))
 
     real(r8), pointer :: mflx_infl_1d         (:)   => null() ! infiltration source in top soil control volume (kg H2O /s)
     real(r8), pointer :: mflx_dew_1d          (:)   => null() ! liquid+snow dew source in top soil control volume (kg H2O /s)
@@ -519,6 +532,7 @@ module ColumnDataType
     real(r8), pointer :: phr_vr                                (:,:)   => null() ! potential hr (not N-limited) (gC/m3/s)
     real(r8), pointer :: fphr                                  (:,:)   => null() ! fraction of potential heterotrophic respiration
     real(r8), pointer :: som_c_leached                         (:)     => null() ! total SOM C loss from vertical transport (gC/m^2/s)
+    real(r8), pointer :: som_c_runoff                          (:)     => null() 
     ! phenology: litterfall and crop fluxes
     real(r8), pointer :: phenology_c_to_litr_met_c             (:,:)   => null() ! C fluxes associated with phenology (litterfall and crop) to litter metabolic pool (gC/m3/s)
     real(r8), pointer :: phenology_c_to_litr_cel_c             (:,:)   => null() ! C fluxes associated with phenology (litterfall and crop) to litter cellulose pool (gC/m3/s)
@@ -593,6 +607,7 @@ module ColumnDataType
     real(r8), pointer :: litterc_loss                          (:)     => null() ! (gC/m2/s) col-level litter C loss
     ! patch averaged to column variables - to remove need for pcf_a instance
     real(r8), pointer :: rr                                    (:)     => null() ! column (gC/m2/s) root respiration (fine root MR + total root GR) (p2c)
+    real(r8), pointer :: rr_vr                                 (:,:)   => null() ! column (gC/m2/s) root respiration (fine root MR + total root GR) (p2c)
     real(r8), pointer :: ar                                    (:)     => null() ! column (gC/m2/s) autotrophic respiration (MR + GR) (p2c)
     real(r8), pointer :: gpp                                   (:)     => null() ! column (gC/m2/s) GPP flux before downregulation  (p2c)
     real(r8), pointer :: npp                                   (:)     => null() ! column (gC/m2/s) net primary production (p2c)
@@ -666,6 +681,8 @@ module ColumnDataType
     real(r8), pointer :: wood_harvestn                         (:)     => null() ! total N losses to wood product pools (gN/m2/s) (p2c)
     ! deposition fluxes
     real(r8), pointer :: ndep_to_sminn                         (:)     => null() ! atmospheric N deposition to soil mineral N (gN/m2/s)
+    real(r8), pointer :: ndep_to_sminn_nh3                     (:)     => null() ! atmospheric N depsotion to soil mineral NH3 (gN/m2/s)
+    real(r8), pointer :: ndep_to_sminn_no3                     (:)     => null() ! atmospheric N depsotion to soil mineral NO3 (gN/m2/s)
     real(r8), pointer :: nfix_to_sminn                         (:)     => null() ! symbiotic/asymbiotic N fixation to soil mineral N (gN/m2/s)
     real(r8), pointer :: nfix_to_ecosysn                       (:)     => null() ! total nitrogen fixation
     real(r8), pointer :: fert_to_sminn                         (:)     => null() ! fertilizer N to soil mineral N (gN/m2/s)
@@ -731,8 +748,11 @@ module ColumnDataType
     ! leaching fluxes
     real(r8), pointer :: smin_no3_leached_vr                   (:,:)   => null() ! vertically-resolved soil mineral NO3 loss to leaching (gN/m3/s)
     real(r8), pointer :: smin_no3_leached                      (:)     => null() ! soil mineral NO3 pool loss to leaching (gN/m2/s)
+    real(r8), pointer :: smin_nh4_leached                      (:)     => null() 
     real(r8), pointer :: smin_no3_runoff_vr                    (:,:)   => null() ! vertically-resolved rate of mineral NO3 loss with runoff (gN/m3/s)
     real(r8), pointer :: smin_no3_runoff                       (:)     => null() ! soil mineral NO3 pool loss to runoff (gN/m2/s)
+    real(r8), pointer :: smin_nh4_runoff                       (:)     => null() 
+    real(r8), pointer :: nh3_soi_flx                           (:)     => null()
     ! nitrification /denitrification diagnostic quantities
     real(r8), pointer :: smin_no3_massdens_vr                  (:,:)   => null() ! (ugN / g soil) soil nitrate concentration
     real(r8), pointer :: soil_bulkdensity                      (:,:)   => null() ! (kg soil / m3) bulk density of soil
@@ -781,6 +801,7 @@ module ColumnDataType
     real(r8), pointer :: ninputs                               (:)     => null() ! column-level N inputs (gN/m2/s)
     real(r8), pointer :: noutputs                              (:)     => null() ! column-level N outputs (gN/m2/s)
     real(r8), pointer :: som_n_leached                         (:)     => null() ! total SOM N loss from vertical transport (gN/m^2/s)
+    real(r8), pointer :: som_n_runoff                          (:)     => null() !
     real(r8), pointer :: decomp_npools_leached                 (:,:)   => null() ! N loss from vertical transport from each decomposing N pool (gN/m^2/s)
     real(r8), pointer :: decomp_npools_transport_tendency      (:,:,:) => null() ! N tendency due to vertical transport in decomposing N pools (gN/m^3/s)
     ! all n pools involved in decomposition
@@ -866,7 +887,7 @@ module ColumnDataType
     real(r8), pointer :: actual_immob_p                        (:)     => null() ! vert-int (diagnostic) actual P immobilization (gP/m2/s)
     real(r8), pointer :: sminp_to_plant_vr                     (:,:)   => null() ! vertically-resolved plant uptake of soil mineral P (gP/m3/s)
     real(r8), pointer :: sminp_to_plant                        (:)     => null() ! vert-int (diagnostic) plant uptake of soil mineral P (gP/m2/s)
-
+    real(r8), pointer :: net_mineralization_p_vr               (:,:)   => null() 
     real(r8), pointer :: supplement_to_sminp_vr                (:,:)   =>null() ! vertically-resolved supplemental P supply (gP/m3/s)
     real(r8), pointer :: supplement_to_sminp                   (:)     =>null() ! vert-int (diagnostic) supplemental P supply (gP/m2/s)
     real(r8), pointer :: gross_pmin_vr                         (:,:)   =>null() ! vertically-resolved gross rate of P mineralization (gP/m3/s)
@@ -888,6 +909,8 @@ module ColumnDataType
     real(r8), pointer :: secondp_to_occlp                      (:)     =>null() ! (gP/m3/s) flux of the occlusion of secondary P to occluded P
     real(r8), pointer :: sminp_leached_vr                      (:,:)   =>null() ! vertically-resolved soil mineral P pool loss to leaching (gP/m3/s)
     real(r8), pointer :: sminp_leached                         (:)     =>null() ! soil mineral P pool loss to leaching (gP/m2/s)
+    real(r8), pointer :: sminp_runoff                          (:)     => null()
+    real(r8), pointer :: som_p_runoff                          (:)     => null()
     real(r8), pointer :: somp_erode                            (:)     =>null() ! SOM P detachment (gP/m^2/s)
     real(r8), pointer :: somp_deposit                          (:)     =>null() ! SOM P hillslope redeposition (gP/m^2/s)
     real(r8), pointer :: somp_yield                            (:)     =>null() ! SOM P loss to inland waters (gP/m^2/s)
@@ -1285,6 +1308,7 @@ contains
   !------------------------------------------------------------------------
   subroutine col_ws_init(this, begc, endc, h2osno_input, snow_depth_input, watsat_input)
     !
+    use elm_varctl  , only : use_lake_wat_storage
     ! !ARGUMENTS:
     class(column_water_state) :: this
     integer , intent(in)      :: begc,endc
@@ -1305,9 +1329,10 @@ contains
     allocate(this%h2osoi_liq         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liq         (:,:) = nan
     allocate(this%h2osoi_ice         (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_ice         (:,:) = nan
     allocate(this%h2osoi_vol         (begc:endc, 1:nlevgrnd))         ; this%h2osoi_vol         (:,:) = nan
-    allocate(this%h2osfc             (begc:endc))                     ; this%h2osfc             (:)   = nan
-    allocate(this%h2ocan             (begc:endc))                     ; this%h2ocan             (:)   = nan
-    allocate(this%total_plant_stored_h2o(begc:endc))                  ; this%total_plant_stored_h2o(:)= nan
+    allocate(this%h2osfc             (begc:endc))                     ; this%h2osfc             (:)   = nan   
+    allocate(this%h2ocan             (begc:endc))                     ; this%h2ocan             (:)   = nan 
+    allocate(this%wslake_col         (begc:endc))                     ; this%wslake_col         (:)   = nan
+    allocate(this%total_plant_stored_h2o(begc:endc))                  ; this%total_plant_stored_h2o(:)= nan  
     allocate(this%h2osoi_liqvol      (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liqvol      (:,:) = nan
     allocate(this%h2osoi_icevol      (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_icevol      (:,:) = nan
     allocate(this%h2osoi_liq_old     (begc:endc,-nlevsno+1:nlevgrnd)) ; this%h2osoi_liq_old     (:,:) = nan
@@ -1355,6 +1380,8 @@ contains
     allocate(this%vsfm_mass_col_1d   (ncells))                        ; this%vsfm_mass_col_1d   (:)   = nan
     allocate(this%vsfm_smpl_col_1d   (ncells))                        ; this%vsfm_smpl_col_1d   (:)   = nan
     allocate(this%vsfm_soilp_col_1d  (ncells))                        ; this%vsfm_soilp_col_1d  (:)   = nan
+    allocate(this%h2orof             (begc:endc))                     ; this%h2orof             (:)   = nan
+    allocate(this%frac_h2orof        (begc:endc))                     ; this%frac_h2orof        (:)   = nan
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_ws
@@ -1508,11 +1535,21 @@ contains
           avgflag='A', long_name='imbalance in snow depth (liquid water)', &
            ptr_col=this%errh2osno, c2l_scale_type='urbanf')
 
+
+    this%wslake_col(begc:endc) = spval
+    if (use_lake_wat_storage) then
+       call hist_addfld1d(fname='WSLAKE', units='mm', &
+         avgflag='A', long_name='lake water storage', &
+         ptr_col=this%wslake_col)
+    end if
+
     !-----------------------------------------------------------------------
     ! set cold-start initial values for select members of col_ws
     !-----------------------------------------------------------------------
 
     ! Arrays that are initialized from input arguments
+    this%wslake_col(begc:endc) = 0._r8
+
     do c = begc,endc
        l = col_pp%landunit(c)
        this%h2osno(c)                 = h2osno_input(c)
@@ -1525,6 +1562,8 @@ contains
        this%h2osfc(c)                 = 0._r8
        this%h2ocan(c)                 = 0._r8
        this%frac_h2osfc(c)            = 0._r8
+       this%h2orof(c)                 = 0._r8
+       this%frac_h2orof(c)            = 0._r8
 
        if (lun_pp%urbpoi(l)) then
           ! From Bonan 1996 (LSM technical note)
@@ -1685,6 +1724,7 @@ contains
     ! Read/Write column water state information to/from restart file.
     !
     ! !USES:
+    use elm_varctl, only : use_lake_wat_storage, do_budgets
     !
     ! !ARGUMENTS:
     class(column_water_state) :: this
@@ -1708,6 +1748,13 @@ contains
     if (flag=='read' .and. .not. readvar) then
        this%h2osfc(bounds%begc:bounds%endc) = 0.0_r8
     end if
+
+    if(do_budgets) then 
+       call restartvar(ncid=ncid, flag=flag, varname='ENDWB', xtype=ncd_double,  &
+         dim1name='column', &
+         long_name='water balance at end of timestep', units='kg/m2', &
+         interpinic_flag='interp', readvar=readvar, data=this%endwb)
+    end if 
 
     call restartvar(ncid=ncid, flag=flag, varname='H2OSOI_LIQ', xtype=ncd_double,  &
          dim1name='column', dim2name='levtot', switchdim=.true., &
@@ -1808,6 +1855,12 @@ contains
             dim1name='column', &
             long_name='', units='', &
             interpinic_flag='interp', readvar=readvar, data=this%wf)
+    end if
+
+    if (use_lake_wat_storage) then
+       call restartvar(ncid=ncid, flag=flag, varname='WSLAKE', xtype=ncd_double, &
+         dim1name='column', long_name='lake water storage', units='kg/m2', &
+         interpinic_flag='interp', readvar=readvar, data=this%wslake_col)
     end if
 
     ! Determine volumetric soil water (for read only)
@@ -1939,6 +1992,9 @@ contains
     allocate(this%cwdc_beg             (begc:endc))     ; this%cwdc_beg             (:)     = nan
     allocate(this%totlitc_beg          (begc:endc))     ; this%totlitc_beg          (:)     = nan
     allocate(this%totsomc_beg          (begc:endc))     ; this%totsomc_beg          (:)     = nan
+    allocate(this%som1c                (begc:endc))     ; this%som1c                (:)     = nan
+    allocate(this%som2c                (begc:endc))     ; this%som2c                (:)     = nan
+    allocate(this%som3c                (begc:endc))     ; this%som3c                (:)     = nan
     allocate(this%totpftc_end          (begc:endc))     ; this%totpftc_end          (:)     = nan
     allocate(this%cwdc_end             (begc:endc))     ; this%cwdc_end             (:)     = nan
     allocate(this%totlitc_end          (begc:endc))     ; this%totlitc_end          (:)     = nan
@@ -2034,22 +2090,22 @@ contains
             avgflag='A', long_name='total column carbon, incl veg and cpool but excl product pools', &
             ptr_col=this%totcolc)
 
+       this%prod10c(begc:endc) = spval
+       call hist_addfld1d (fname='PROD10C', units='gC/m^2', &
+            avgflag='A', long_name='10-yr wood product C', &
+            ptr_col=this%prod10c, default='inactive')
+
+       this%prod100c(begc:endc) = spval
+       call hist_addfld1d (fname='PROD100C', units='gC/m^2', &
+            avgflag='A', long_name='100-yr wood product C', &
+            ptr_col=this%prod100c, default='inactive')
+
        if(.not.use_fates)then
 
           this%seedc(begc:endc) = spval
           call hist_addfld1d (fname='SEEDC', units='gC/m^2', &
                avgflag='A', long_name='pool for seeding new Patches', &
                ptr_col=this%seedc, default='inactive')
-
-          this%prod10c(begc:endc) = spval
-          call hist_addfld1d (fname='PROD10C', units='gC/m^2', &
-               avgflag='A', long_name='10-yr wood product C', &
-               ptr_col=this%prod10c, default='inactive')
-
-          this%prod100c(begc:endc) = spval
-          call hist_addfld1d (fname='PROD100C', units='gC/m^2', &
-               avgflag='A', long_name='100-yr wood product C', &
-               ptr_col=this%prod100c, default='inactive')
 
           this%prod1c(begc:endc) = spval
           call hist_addfld1d (fname='PROD1C', units='gC/m^2', &
@@ -2527,7 +2583,7 @@ contains
                 do j = 1, nlevdecomp
                    if (c12_carbonstate_vars%decomp_cpools_vr(i,j,k) /= spval .and. &
                         .not. isnan(this%decomp_cpools_vr(i,j,k)) ) then
-                         this%decomp_cpools_vr(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr(i,j,k) * c3_r2
+                         this%decomp_cpools_vr(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr(i,j,k) * c14ratio
                    endif
                 end do
              end do
@@ -2749,11 +2805,11 @@ contains
     ! Spinup state
     !--------------------------------
 
-    if (carbon_type == 'c12'  .or. carbon_type == 'c14') then
+    if (carbon_type == 'c12' .or. carbon_type == 'c13' .or. carbon_type == 'c14') then
         if (flag == 'write') then
            idata = spinup_state
         end if
-        if (carbon_type == 'c12' .or. (carbon_type == 'c14' .and. flag == 'read')) then
+        if (carbon_type == 'c12' .or. (carbon_type == 'c13' .and. flag == 'read') .or. (carbon_type == 'c14' .and. flag == 'read')) then
            call restartvar(ncid=ncid, flag=flag, varname='spinup_state', xtype=ncd_int,  &
                 long_name='Spinup state of the model that wrote this restart file: ' &
                 // ' 0 = normal model mode, 1 = AD spinup', units='', &
@@ -3106,6 +3162,9 @@ contains
     allocate(this%cwdn                  (begc:endc))                     ; this%cwdn                  (:)   = nan
     allocate(this%totlitn               (begc:endc))                     ; this%totlitn               (:)   = nan
     allocate(this%totsomn               (begc:endc))                     ; this%totsomn               (:)   = nan
+    allocate(this%som1n                 (begc:endc))                     ; this%som1n                 (:)   = nan
+    allocate(this%som2n                 (begc:endc))                     ; this%som2n                 (:)   = nan
+    allocate(this%som3n                 (begc:endc))                     ; this%som3n                 (:)   = nan
     allocate(this%totlitn_1m            (begc:endc))                     ; this%totlitn_1m            (:)   = nan
     allocate(this%totsomn_1m            (begc:endc))                     ; this%totsomn_1m            (:)   = nan
     allocate(this%totecosysn            (begc:endc))                     ; this%totecosysn            (:)   = nan
@@ -4108,6 +4167,9 @@ contains
     allocate(this%secondp_beg          (begc:endc))                   ; this%secondp_beg          (:)   = nan
     allocate(this%totlitp_beg          (begc:endc))                   ; this%totlitp_beg          (:)   = nan
     allocate(this%cwdp_beg             (begc:endc))                   ; this%cwdp_beg             (:)   = nan
+    allocate(this%som1p                (begc:endc))                   ; this%som1p                (:)   = nan
+    allocate(this%som2p                (begc:endc))                   ; this%som2p                (:)   = nan
+    allocate(this%som3p                (begc:endc))                   ; this%som3p                (:)   = nan
     allocate(this%totsomp_beg          (begc:endc))                   ; this%totsomp_beg          (:)   = nan
     allocate(this%totlitp_end          (begc:endc))                   ; this%totlitp_end          (:)   = nan
     allocate(this%totpftp_end          (begc:endc))                   ; this%totpftp_end          (:)   = nan
@@ -4389,7 +4451,8 @@ contains
     type(cnstate_type)         , intent(in)    :: cnstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer            :: i,j,k,l,c,a,b,d
+    integer            :: i,j,k,l,c
+    real(r8)           :: a,b,d
     logical            :: readvar
     integer            :: idata
     logical            :: exit_spinup = .false.
@@ -4405,9 +4468,9 @@ contains
     ! flags for comparing the model and restart decomposition cascades
     integer            :: decomp_cascade_state, restart_file_decomp_cascade_state
     real(r8)           :: smax_c, ks_sorption_c
-    real(r8)           :: rootfr(1:nlevdecomp)
     real(r8)           :: pinit_prof(1:nlevdecomp)
-    real(r8)           :: rootfr_tot
+    real(r8)           :: depth,pinit_prof_tot,tmp_scalar ! depth threshold for different p initialization profiles
+    integer            :: j_depth    ! jth depth index for different p initializaiton profiles
     !------------------------------------------------------------------------
 
     associate(&
@@ -4604,15 +4667,35 @@ contains
               errMsg(__FILE__, __LINE__))
           end if
 
+          ! calculate P initializtation profile
+          depth = 0.5_r8 ! set 50cm as depth threshold for p initializaiton profiles
           do j = 1, nlevdecomp
-             rootfr(j) = exp(-3.0* zsoi(j))
+             if (zisoi(j) <= depth) then
+                j_depth = j
+             end if
           end do
-          rootfr_tot = 0._r8
-          do j = 1, nlevdecomp
-             rootfr_tot = rootfr_tot + rootfr(j)
-          end do
-          do j = 1, nlevdecomp
-             pinit_prof(j) = rootfr(j) / rootfr_tot / dzsoi_decomp(j) ! 1/m
+          do c = bounds%begc, bounds%endc
+             if (use_vertsoilc) then
+                do j = 1, j_depth
+                   pinit_prof(j) = exp(-1._r8 * pinit_beta1(cnstate_vars%isoilorder(c)) * zisoi(j))
+                end do
+                do j = j_depth+1, nlevdecomp
+                   pinit_prof(j) = exp(-1._r8 * pinit_beta2(cnstate_vars%isoilorder(c)) * zisoi(j))
+                end do
+                ! rescale P profile so that distribution conserves and total P mass (g/m2) match obs for top 50 cm
+                pinit_prof_tot = 0._r8
+                do j = 1, j_depth
+                   pinit_prof_tot = pinit_prof_tot + pinit_prof(j) * dzsoi_decomp(j)
+                end do
+                do j = 1, j_depth ! for top 50 cm (6 layers), rescale
+                   pinit_prof(j) = pinit_prof(j) / pinit_prof_tot
+                end do
+                ! for below 50 cm, make sure 7 layer and 6 layer are consistent and also downward
+                tmp_scalar = pinit_prof(j_depth) / pinit_prof(j_depth+1)
+                do j = j_depth+1, nlevdecomp
+                   pinit_prof(j) = pinit_prof(j) * tmp_scalar
+                end do
+             end if
           end do
 
           do c = bounds%begc, bounds%endc
@@ -4621,9 +4704,6 @@ contains
                    ! solve equilibrium between loosely adsorbed and solution
                    ! phosphorus
                    ! the P maps used in the initialization are generated for the top 50cm soils
-                   ! assume soil below 50 cm has the same p pool concentration
-                   ! divide 0.5m when convert p pools from g/m2 to g/m3
-                   ! assume p pools evenly distributed at dif layers
                    ! Prescribe P initial profile based on exponential rooting profile [need to improve]
                    if ((nu_com .eq. 'ECA') .or. (nu_com .eq. 'MIC')) then
                       a = 1.0_r8
@@ -4636,20 +4716,12 @@ contains
                       this%secondp_vr(c,j) = cnstate_vars%secp_col(c)*pinit_prof(j)
                       this%occlp_vr(c,j) = cnstate_vars%occp_col(c)*pinit_prof(j)
                       this%primp_vr(c,j) = cnstate_vars%prip_col(c)*pinit_prof(j)
-                   else if (nu_com .eq. 'RD') then
-                      a = 1.0_r8
-                      b = smax(cnstate_vars%isoilorder(c)) + &
-                          ks_sorption(cnstate_vars%isoilorder(c)) - cnstate_vars%labp_col(c)/0.5_r8
-                      d = -1.0_r8* cnstate_vars%labp_col(c)/0.5_r8 * ks_sorption(cnstate_vars%isoilorder(c))
-
-                      this%solutionp_vr(c,j) = (-b+(b**2.0_r8-4.0_r8*a*d)**0.5_r8)/(2.0_r8*a)
-                      this%labilep_vr(c,j) = cnstate_vars%labp_col(c)/0.5_r8 - this%solutionp_vr(c,j)
-                      this%secondp_vr(c,j) = cnstate_vars%secp_col(c)/0.5_r8
-                      this%occlp_vr(c,j) = cnstate_vars%occp_col(c)/0.5_r8
-                      this%primp_vr(c,j) = cnstate_vars%prip_col(c)/0.5_r8
                    end if
 
-                   if (nu_com .eq. 'RD') then
+                   ! assume soil below 50 cm has the same p pool concentration
+                   ! divide 0.5m when convert p pools from g/m2 to g/m3
+                   ! assume p pools evenly distributed at dif layers
+                   if (nu_com .eq. 'RD') then 
                        smax_c = smax(isoilorder(c))
                        ks_sorption_c = ks_sorption(isoilorder(c))
                        this%solutionp_vr(c,j) = (cnstate_vars%labp_col(c)/0.5_r8*ks_sorption_c)/&
@@ -5271,6 +5343,7 @@ contains
     allocate(this%qflx_grnd_irrig        (begc:endc))             ; this%qflx_grnd_irrig      (:)   = nan
     allocate(this%qflx_over_supply       (begc:endc))             ; this%qflx_over_supply     (:)   = nan
     allocate(this%qflx_irr_demand        (begc:endc))             ; this%qflx_irr_demand      (:)   = nan
+    allocate(this%qflx_h2orof_drain      (begc:endc))             ; this%qflx_h2orof_drain    (:)   = nan
 
     !VSFM variables
     ncells = endc - begc + 1
@@ -5427,6 +5500,7 @@ contains
     this%qflx_surf_irrig(begc:endc) = 0._r8
     this%qflx_grnd_irrig(begc:endc) = 0._r8
     this%qflx_over_supply(begc:endc) = 0._r8
+    this%qflx_h2orof_drain(begc:endc)= 0._r8
     ! needed for CNNLeaching
     do c = begc, endc
        l = col_pp%landunit(c)
@@ -5557,6 +5631,7 @@ contains
     allocate(this%phr_vr                            (begc:endc,1:nlevdecomp_full)); this%phr_vr                       (:,:) = nan
     allocate(this%fphr                              (begc:endc,1:nlevgrnd))       ; this%fphr                         (:,:) = nan
     allocate(this%som_c_leached                     (begc:endc))                  ; this%som_c_leached                (:)   = nan
+    allocate(this%som_c_runoff                      (begc:endc))                  ; this%som_c_runoff                 (:)   = nan
     allocate(this%phenology_c_to_litr_met_c         (begc:endc,1:nlevdecomp_full)); this%phenology_c_to_litr_met_c    (:,:) = nan
     allocate(this%phenology_c_to_litr_cel_c         (begc:endc,1:nlevdecomp_full)); this%phenology_c_to_litr_cel_c    (:,:) = nan
     allocate(this%phenology_c_to_litr_lig_c         (begc:endc,1:nlevdecomp_full)); this%phenology_c_to_litr_lig_c    (:,:) = nan
@@ -5621,6 +5696,7 @@ contains
     allocate(this%cwdc_loss                         (begc:endc))                  ; this%cwdc_loss                    (:)   = nan
     allocate(this%litterc_loss                      (begc:endc))                  ; this%litterc_loss                 (:)   = nan
     allocate(this%rr                                (begc:endc))                  ; this%rr                           (:)   = nan
+    allocate(this%rr_vr(begc:endc,1:nlevdecomp_full));                            this%rr_vr(:,:) = spval
     allocate(this%ar                                (begc:endc))                  ; this%ar                           (:)   = nan
     allocate(this%gpp                               (begc:endc))                  ; this%gpp                          (:)   = nan
     allocate(this%npp                               (begc:endc))                  ; this%npp                          (:)   = nan
@@ -5687,6 +5763,33 @@ contains
            call hist_addfld1d (fname='HR', units='gC/m^2/s', &
                 avgflag='A', long_name='total heterotrophic respiration', &
                  ptr_col=this%hr)
+
+          this%hrv_deadstemc_to_prod10c(begc:endc) = spval
+          call hist_addfld1d (fname='HRV_DEADSTEMC_TO_PROD10C', units='gC/m^2/s', &
+               avgflag='A', long_name='flux into 10-yr wood product C', &
+               ptr_col=this%hrv_deadstemc_to_prod10c, default='inactive')
+
+          this%hrv_deadstemc_to_prod100c(begc:endc) = spval
+          call hist_addfld1d (fname='HRV_DEADSTEMC_TO_PROD100C', units='gC/m^2/s', &
+               avgflag='A', long_name='flux into 100-yr wood product C', &
+               ptr_col=this%hrv_deadstemc_to_prod100c, default='inactive')
+
+          this%nep(begc:endc) = spval
+          call hist_addfld1d (fname='NEP', units='gC/m^2/s', &
+               avgflag='A', long_name='net ecosystem production, excludes fire, landuse, and harvest flux, positive for sink', &
+                ptr_col=this%nep)
+ 
+          this%nbp(begc:endc) = spval
+          call hist_addfld1d (fname='NBP', units='gC/m^2/s', &
+               avgflag='A', long_name='net biome production, includes fire, landuse, and harvest flux, positive for sink', &
+                ptr_col=this%nbp)
+ 
+          this%nee(begc:endc) = spval
+          call hist_addfld1d (fname='NEE', units='gC/m^2/s', &
+               avgflag='A', long_name='net ecosystem exchange of carbon, includes fire, landuse,'&
+               //' harvest, and hrv_xsmrpool flux, positive for source', &
+                ptr_col=this%nee)
+
        end if
        ! end of use_fates (C12) block
 
@@ -6899,7 +7002,7 @@ contains
     end do
 
     ! vertically integrate column-level carbon erosion flux
-    if (use_erosion) then
+    if (ero_ccycle) then
        do l = 1, ndecomp_pools
           do j = 1, nlev
              do fc = 1, num_soilc
@@ -6960,7 +7063,7 @@ contains
     end do
 
     ! column-level carbon losses due to soil erosion
-    if ( use_erosion ) then
+    if ( ero_ccycle ) then
        do l = 1, ndecomp_pools
           if ( is_soil(l) ) then
              do fc = 1, num_soilc
@@ -7671,6 +7774,8 @@ contains
     ! allocate for each member of col_nf
     !-----------------------------------------------------------------------
     allocate(this%ndep_to_sminn                   (begc:endc))                   ; this%ndep_to_sminn	                 (:)   = nan
+    allocate(this%ndep_to_sminn_nh3               (begc:endc))                   ; this%ndep_to_sminn_nh3                (:)   = nan
+    allocate(this%ndep_to_sminn_no3               (begc:endc))                   ; this%ndep_to_sminn_no3                (:)   = nan
     allocate(this%nfix_to_sminn                   (begc:endc))                   ; this%nfix_to_sminn	                 (:)   = nan
     allocate(this%nfix_to_ecosysn                 (begc:endc))                   ; this%nfix_to_ecosysn                (:)   = nan
 
@@ -7696,6 +7801,7 @@ contains
     allocate(this%fire_decomp_nloss               (begc:endc))                   ; this%fire_decomp_nloss              (:)   = nan
     allocate(this%fire_nloss_p2c                  (begc:endc))                   ; this%fire_nloss_p2c                 (:)   = nan
     allocate(this%som_n_leached                   (begc:endc))                   ; this%som_n_leached	                 (:)   = nan
+    allocate(this%som_n_runoff                    (begc:endc))                   ; this%som_n_runoff                   (:)  = nan
     allocate(this%somn_erode                      (begc:endc))                   ; this%somn_erode                     (:)   = nan
     allocate(this%somn_deposit                    (begc:endc))                   ; this%somn_deposit                   (:)   = nan
     allocate(this%somn_yield                      (begc:endc))                   ; this%somn_yield                     (:)   = nan
@@ -7726,8 +7832,11 @@ contains
     allocate(this%f_denit_vr                      (begc:endc,1:nlevdecomp_full)) ; this%f_denit_vr                     (:,:) = nan
     allocate(this%smin_no3_leached_vr             (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_leached_vr            (:,:) = nan
     allocate(this%smin_no3_leached                (begc:endc))                   ; this%smin_no3_leached               (:)   = nan
+    allocate(this%smin_nh4_leached                (begc:endc))                   ; this%smin_nh4_leached               (:)   = nan
     allocate(this%smin_no3_runoff_vr              (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_runoff_vr             (:,:) = nan
     allocate(this%smin_no3_runoff                 (begc:endc))                   ; this%smin_no3_runoff                (:)   = nan
+    allocate(this%nh3_soi_flx                     (begc:endc))                   ; this%nh3_soi_flx                     (:)  = nan
+    allocate(this%smin_nh4_runoff                 (begc:endc))                   ; this%smin_nh4_runoff                (:)   = nan
     allocate(this%pot_f_nit_vr                    (begc:endc,1:nlevdecomp_full)) ; this%pot_f_nit_vr                   (:,:) = nan
     allocate(this%pot_f_nit                       (begc:endc))                   ; this%pot_f_nit                      (:)   = nan
     allocate(this%pot_f_denit_vr                  (begc:endc,1:nlevdecomp_full)) ; this%pot_f_denit_vr                 (:,:) = nan
@@ -7736,8 +7845,6 @@ contains
     allocate(this%actual_immob_nh4_vr             (begc:endc,1:nlevdecomp_full)) ; this%actual_immob_nh4_vr            (:,:) = nan
     allocate(this%smin_no3_to_plant_vr            (begc:endc,1:nlevdecomp_full)) ; this%smin_no3_to_plant_vr           (:,:) = nan
     allocate(this%smin_nh4_to_plant_vr            (begc:endc,1:nlevdecomp_full)) ; this%smin_nh4_to_plant_vr           (:,:) = nan
-    allocate(this%smin_no3_to_plant               (begc:endc))                   ; this%smin_no3_to_plant              (:)   = nan
-    allocate(this%smin_nh4_to_plant               (begc:endc))                   ; this%smin_nh4_to_plant              (:)   = nan
     allocate(this%f_nit                           (begc:endc))                   ; this%f_nit                          (:)   = nan
     allocate(this%f_denit                         (begc:endc))                   ; this%f_denit                        (:)   = nan
     allocate(this%n2_n2o_ratio_denit_vr           (begc:endc,1:nlevdecomp_full)) ; this%n2_n2o_ratio_denit_vr          (:,:) = nan
@@ -9062,7 +9169,7 @@ contains
     end do
 
     ! vertically integrate column-level N erosion flux
-    if ( use_erosion ) then
+    if ( ero_ccycle ) then
        do l = 1, ndecomp_pools
           do j = 1, nlev
              do fc = 1, num_soilc
@@ -9090,7 +9197,7 @@ contains
     end do
 
     ! total column-level soil erosion N losses
-    if ( use_erosion ) then
+    if ( ero_ccycle ) then
        do k = 1, ndecomp_pools
           if ( decomp_cascade_con%is_soil(k) ) then
              do fc = 1, num_soilc
@@ -9490,6 +9597,7 @@ contains
     allocate(this%potential_immob_p_vr             (begc:endc,1:nlevdecomp_full)) ; this%potential_immob_p_vr          (:,:) = nan
     allocate(this%actual_immob_p_vr                (begc:endc,1:nlevdecomp_full)) ; this%actual_immob_p_vr             (:,:) = nan
     allocate(this%sminp_to_plant_vr                (begc:endc,1:nlevdecomp_full)) ; this%sminp_to_plant_vr             (:,:) = nan
+    allocate(this%net_mineralization_p_vr          (begc:endc,1:nlevdecomp_full)) ; this%net_mineralization_p_vr       (:,:) = nan
     allocate(this%supplement_to_sminp_vr           (begc:endc,1:nlevdecomp_full)) ; this%supplement_to_sminp_vr        (:,:) = nan
     allocate(this%gross_pmin_vr                    (begc:endc,1:nlevdecomp_full)) ; this%gross_pmin_vr                 (:,:) = nan
     allocate(this%net_pmin_vr                      (begc:endc,1:nlevdecomp_full)) ; this%net_pmin_vr                   (:,:) = nan
@@ -9538,6 +9646,8 @@ contains
     allocate(this%secondp_to_occlp                 (begc:endc))                   ; this%secondp_to_occlp              (:)   = nan
     allocate(this%sminp_leached_vr                 (begc:endc,1:nlevdecomp_full)) ; this%sminp_leached_vr              (:,:) = nan
     allocate(this%sminp_leached                    (begc:endc))                   ; this%sminp_leached                 (:)   = nan
+    allocate(this%sminp_runoff                     (begc:endc))                   ; this%sminp_runoff                  (:)   = nan
+    allocate(this%som_p_runoff                     (begc:endc))                   ; this%som_p_runoff                  (:)   = nan
     allocate(this%decomp_ppools_leached            (begc:endc,1:ndecomp_pools  )) ; this%decomp_ppools_leached         (:,:) = nan
     allocate(this%decomp_ppools_transport_tendency (begc:endc,1:nlevdecomp_full,1:ndecomp_pools           )) ; this%decomp_ppools_transport_tendency (:,:,:) = nan
     allocate(this%decomp_ppools_sourcesink         (begc:endc,1:nlevdecomp_full,1:ndecomp_pools           )) ; this%decomp_ppools_sourcesink         (:,:,:) = nan
@@ -10128,13 +10238,14 @@ contains
        if (lun_pp%ifspecial(l)) then
           num_special_col = num_special_col + 1
           special_col(num_special_col) = c
+       else
+          this%col_plant_pdemand_vr (c,1:nlevdecomp) = 0._r8
        end if
     end do
 
     do fc = 1,num_special_col
        c = special_col(fc)
        this%dwt_ploss(c) = 0._r8
-       this%col_plant_pdemand_vr (c,1:nlevdecomp) = 0._r8
     end do
 
     call this%SetValues (num_column=num_special_col, filter_column=special_col, value_column=0._r8)
@@ -10583,7 +10694,7 @@ contains
     end do
 
     ! vertically integrate erosional flux
-    if (use_erosion) then
+    if (ero_ccycle) then
        do j = 1, nlevdecomp
           do fc = 1,num_soilc
              c = filter_soilc(fc)
@@ -10616,7 +10727,7 @@ contains
     end do
 
     ! vertically integrate column-level P erosion flux
-    if (use_erosion) then
+    if (ero_ccycle) then
        do l = 1, ndecomp_pools
           do j = 1, nlevdecomp
              do fc = 1, num_soilc
@@ -10644,7 +10755,7 @@ contains
     end do
 
     ! total column-level soil erosion P losses
-    if ( use_erosion ) then
+    if ( ero_ccycle ) then
        do k = 1, ndecomp_pools
           if ( decomp_cascade_con%is_soil(k) ) then
              do fc = 1, num_soilc

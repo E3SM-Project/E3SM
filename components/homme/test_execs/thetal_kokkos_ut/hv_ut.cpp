@@ -14,6 +14,7 @@
 #include "SphereOperators.hpp"
 #include "mpi/MpiBuffersManager.hpp"
 #include "mpi/Connectivity.hpp"
+#include "PhysicalConstants.hpp"
 
 #include "utilities/TestUtils.hpp"
 #include "utilities/SyncUtils.hpp"
@@ -35,6 +36,10 @@ void init_geo_views_f90 (Real*& d_ptr,Real*& dinv_ptr,
                Real*& sphmp_ptr, Real*& rspmp_ptr,
                Real*& tVisc_ptr, Real*& sph2c_ptr,
                Real*& metdet_ptr, Real*& metinv_ptr);
+void initialize_reference_states_f90 (const Real*& phis,
+                                      const Real*& dp_ref,
+                                      const Real*& theta_ref,
+                                      const Real*& phi_ref);
 void biharmonic_wk_theta_f90 (const int& np1, const Real& hv_scaling, const bool& hydrostatic,
                               const Real*& dp, const Real*& vtheta_dp,
                               const Real*& w,  const Real*& phi, const Real*& v,
@@ -68,7 +73,9 @@ public:
   void set_timestep_data (const int np1, const Real dt, const Real eta_ave_w)
   {
     m_data.np1 = np1;
-    m_data.dt = dt/m_data.hypervis_subcycle;
+    m_data.dt = dt;
+    m_data.dt_hvs = (m_data.hypervis_subcycle > 0 ) ? dt/m_data.hypervis_subcycle : -1.0;
+    m_data.dt_hvs_tom = -1.0;// set to dt/m_data.hypervis_subcycle_tom;
     m_data.eta_ave_w = eta_ave_w;
   }
 
@@ -136,13 +143,16 @@ TEST_CASE("hvf", "biharmonic") {
 
   // Init parameters
   auto& params = c.create<SimulationParams>();
-  params.nu_top            = RPDF(1e-6,1e-3)(engine);
-  params.nu                = RPDF(1e-6,1e-3)(engine);
+  //keep nu_top=0 till nu_scale_top is set here
+  params.nu_top            = 0.0; //RPDF(1e-6,1e-3)(engine);
+  params.nu                = RPDF(1e-1,1e3)(engine);
   params.nu_p              = RPDF(1e-6,1e-3)(engine);
   params.nu_s              = RPDF(1e-6,1e-3)(engine);
+  //do not set to 0 in the test, won't work
   params.nu_div            = RPDF(1e-6,1e-3)(engine);
   params.hypervis_scaling  = RPDF(0.1,1.0)(engine);
   params.hypervis_subcycle = IPDF(1,3)(engine);
+  params.hypervis_subcycle_tom = 0;
   params.params_set = true;
 
   // Sync params across ranks
@@ -151,6 +161,7 @@ TEST_CASE("hvf", "biharmonic") {
   MPI_Bcast(&params.nu_p,1,MPI_DOUBLE,0,c.get<Comm>().mpi_comm());
   MPI_Bcast(&params.nu_s,1,MPI_DOUBLE,0,c.get<Comm>().mpi_comm());
   MPI_Bcast(&params.nu_div,1,MPI_DOUBLE,0,c.get<Comm>().mpi_comm());
+  //reset below, not bcasted
   MPI_Bcast(&params.hypervis_scaling,1,MPI_DOUBLE,0,c.get<Comm>().mpi_comm());
   MPI_Bcast(&params.hypervis_subcycle,1,MPI_INT,0,c.get<Comm>().mpi_comm());
 
@@ -176,6 +187,8 @@ TEST_CASE("hvf", "biharmonic") {
   std::vector<Real> mp(NP*NP);
 
   // This will also init the c connectivity.
+// nu is set differently for tensor than for const hv, move this call down
+// or reset nu only
   init_hv_f90(ne,hyai_ptr,hybi_ptr,hyam_ptr,hybm_ptr,dvv.data(),mp.data(),
               hvcoord.ps0,params.hypervis_subcycle,
               params.nu, params.nu_div, params.nu_top,
@@ -187,7 +200,7 @@ TEST_CASE("hvf", "biharmonic") {
   const int num_elems = c.get<Connectivity>().get_num_local_elements();
 
   auto& geo = c.create<ElementsGeometry>();
-  geo.init(num_elems,false,true);
+  geo.init(num_elems,false,true,PhysicalConstants::rearth0);
   geo.randomize(seed);
 
   auto& state = c.create<ElementsState>();
@@ -378,14 +391,14 @@ TEST_CASE("hvf", "biharmonic") {
                 REQUIRE(ttens_cxx(igp,jgp,k)==ttens_f90(ie,k,igp,jgp));
                 if(vtens_cxx(0,igp,jgp,k)!=vtens_f90(ie,k,0,igp,jgp)) {
                   printf("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf("vtens cxx: %3.17f\n",vtens_cxx(0,igp,jgp,k));
-                  printf("vtens f90: %3.17f\n",vtens_f90(ie,k,0,igp,jgp));
+                  printf("vtens cxx: %3.40f\n",vtens_cxx(0,igp,jgp,k));
+                  printf("vtens f90: %3.40f\n",vtens_f90(ie,k,0,igp,jgp));
                 }
                 REQUIRE(vtens_cxx(0,igp,jgp,k)==vtens_f90(ie,k,0,igp,jgp));
                 if(vtens_cxx(1,igp,jgp,k)!=vtens_f90(ie,k,1,igp,jgp)) {
                   printf("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf("vtens cxx: %3.17f\n",vtens_cxx(1,igp,jgp,k));
-                  printf("vtens f90: %3.17f\n",vtens_f90(ie,k,1,igp,jgp));
+                  printf("vtens cxx: %3.40f\n",vtens_cxx(1,igp,jgp,k));
+                  printf("vtens f90: %3.40f\n",vtens_f90(ie,k,1,igp,jgp));
                 }
                 REQUIRE(vtens_cxx(1,igp,jgp,k)==vtens_f90(ie,k,1,igp,jgp));
 
@@ -413,23 +426,30 @@ TEST_CASE("hvf", "biharmonic") {
 
   SECTION ("hypervis") {
     std::cout << "Hypervis test:\n";
+
+    HostViewManaged<Real*[NP][NP]> phis_f90("",num_elems);
+    HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]> dp_ref_f90("",num_elems);
+    HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]> theta_ref_f90("",num_elems);
+    HostViewManaged<Real*[NUM_INTERFACE_LEV][NP][NP]> phi_ref_f90("",num_elems);
+
+    sync_to_host(geo.m_phis, phis_f90);
+
+    const Real* phis_ptr      = phis_f90.data();
+    const Real* dp_ref_ptr    = dp_ref_f90.data();
+    const Real* theta_ref_ptr = theta_ref_f90.data();
+    const Real* phi_ref_ptr   = phi_ref_f90.data();
+
+    // Have F90 compute reference states and initialize
+    // in C++ RefStates. These are not dependent
+    // on choice for hydrostatic mode or hv_scaling,
+    // nor do the values change when state is randomized.
+    initialize_reference_states_f90(phis_ptr,
+                                    dp_ref_ptr,
+                                    theta_ref_ptr,
+                                    phi_ref_ptr);
+
     for (const bool hydrostatic : {true, false}) {
       std::cout << " -> " << (hydrostatic ? "hydrostatic" : "non-hydrostatic") << "\n";
-
-      // Compute ref states, given the choice for hydrostatic mode
-      state.m_ref_states.compute(hydrostatic,hvcoord,geo.m_phis);
-
-      HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]> dp_ref_f90("",num_elems);
-      HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]> theta_ref_f90("",num_elems);
-      HostViewManaged<Real*[NUM_INTERFACE_LEV][NP][NP]> phi_ref_f90("",num_elems);
-
-      sync_to_host(state.m_ref_states.dp_ref,dp_ref_f90);
-      sync_to_host(state.m_ref_states.theta_ref,theta_ref_f90);
-      sync_to_host(state.m_ref_states.phi_i_ref,phi_ref_f90);
-
-      const Real* dp_ref_ptr    = dp_ref_f90.data();
-      const Real* theta_ref_ptr = theta_ref_f90.data();
-      const Real* phi_ref_ptr   = phi_ref_f90.data();
 
       for (Real hv_scaling : {0.0, 1.2345}) {
         std::cout << "   -> hypervis scaling = " << hv_scaling << "\n";
@@ -437,8 +457,11 @@ TEST_CASE("hvf", "biharmonic") {
 
         // Generate timestep settings
         const Real dt = RPDF(1e-5,1e-3)(engine);
+        //randomize it? also, dpdiss is not tested in here
         const Real eta_ave_w = 1.0;
-        const int  np1 = IPDF(0,2)(engine);
+        int  np1 = IPDF(0,2)(engine);
+        // Sync np1 across ranks. If they are not synced, we may get stuck in an mpi wait
+        MPI_Bcast(&np1,1,MPI_INT,0,c.get<Comm>().mpi_comm());
 
         // Create the HVF tester
         HVFTester hvf(params,geo,state,derived);
@@ -452,7 +475,6 @@ TEST_CASE("hvf", "biharmonic") {
 
         // Generate random states
         state.randomize(seed);
-        state.m_ref_states.compute(hydrostatic,hvcoord,geo.m_phis);
 
         // The HV functor as a whole is more delicate than biharmonic_wk.
         // In particular, the EOS is used a couple of times. This means
@@ -460,12 +482,17 @@ TEST_CASE("hvf", "biharmonic") {
         // dp>0, vtheta>0, and d(phi)>0. This is very unlikely with random
         // inputs coming from state.randomize(seed), so we generate data
         // as "realistic" as possible, and perturb it.
+        // This computation mimics that of
+        // src/theta-l/share/element_ops.F90:initialize_reference_states().
         using PDF = std::uniform_real_distribution<Real>;
         ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> perturb("",num_elems);
 
+        static constexpr Real T1 =
+          PhysicalConstants::Tref_lapse_rate*PhysicalConstants::Tref*PhysicalConstants::cp/PhysicalConstants::g;
+        static constexpr Real T0 = PhysicalConstants::Tref-T1;
+
         constexpr Real noise_lvl = 0.05;
         genRandArray(perturb,engine,PDF(-noise_lvl,noise_lvl));
-
         EquationOfState eos;
         eos.init(hydrostatic,hvcoord);
 
@@ -496,16 +523,19 @@ TEST_CASE("hvf", "biharmonic") {
             // Compute pressure
             elem_ops.compute_hydrostatic_p(kv,dp,buf_i,buf_m);
 
-            // Compute vtheta_dp = theta_ref*dp
-            elem_ops.compute_theta_ref(kv,buf_m,theta);
+            // Compute vtheta_dp = theta_ref*dp, where
+            // theta_ref = T0/exner + T1, exner = (p/p0)^k
+            // theta_ref mimics computation in src/theta-l/share/element_ops.F90:set_theta_ref()
             Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                                  [&](const int ilev){
+              theta(ilev) = pow(buf_m(ilev)/PhysicalConstants::p0,PhysicalConstants::kappa);
+              theta(ilev) = T0/theta(ilev) + T1;
               theta(ilev) *= dp(ilev);
             });
 
             // Compute phi
             eos.compute_phi_i(kv,geo.m_phis(kv.ie,igp,jgp),
-                                 theta,buf_m,phi);
+                              theta,buf_m,phi);
           });
         });
 
@@ -558,7 +588,6 @@ TEST_CASE("hvf", "biharmonic") {
                              dp_ref_ptr, theta_ref_ptr, phi_ref_ptr,
                              v_f90_ptr, w_f90_ptr, vtheta_f90_ptr, dp_f90_ptr, phinh_f90_ptr);
 
-
         // Compare answers
         auto v_cxx      = Kokkos::create_mirror_view(state.m_v);
         auto w_cxx      = Kokkos::create_mirror_view(state.m_w_i);
@@ -581,15 +610,15 @@ TEST_CASE("hvf", "biharmonic") {
 
                 if (v_cxx(ie,np1,0,igp,jgp,ilev)[ivec]!=v_f90(ie,np1,k,0,igp,jgp)) {
                   printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf ("v_cxx: %3.16f\n",v_cxx(ie,np1,0,igp,jgp,ilev)[ivec]);
-                  printf ("v_f90: %3.16f\n",v_f90(ie,np1,k,0,igp,jgp));
+                  printf ("v_cxx: %3.40f\n",v_cxx(ie,np1,0,igp,jgp,ilev)[ivec]);
+                  printf ("v_f90: %3.40f\n",v_f90(ie,np1,k,0,igp,jgp));
                 }
                 REQUIRE (v_cxx(ie,np1,0,igp,jgp,ilev)[ivec]==v_f90(ie,np1,k,0,igp,jgp));
 
                 if (v_cxx(ie,np1,1,igp,jgp,ilev)[ivec]!=v_f90(ie,np1,k,1,igp,jgp)) {
                   printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf ("v_cxx: %3.16f\n",v_cxx(ie,np1,1,igp,jgp,ilev)[ivec]);
-                  printf ("v_f90: %3.16f\n",v_f90(ie,np1,k,1,igp,jgp));
+                  printf ("v_cxx: %3.40f\n",v_cxx(ie,np1,1,igp,jgp,ilev)[ivec]);
+                  printf ("v_f90: %3.40f\n",v_f90(ie,np1,k,1,igp,jgp));
                 }
                 REQUIRE (v_cxx(ie,np1,1,igp,jgp,ilev)[ivec]==v_f90(ie,np1,k,1,igp,jgp));
 

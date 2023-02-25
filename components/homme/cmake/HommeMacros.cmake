@@ -116,6 +116,11 @@ macro(createTestExec execName execType macroNP macroNC
   IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
     TARGET_COMPILE_DEFINITIONS(${execName} PUBLIC HOMME_WITHOUT_PIOLIBRARY)
   ENDIF()
+  IF(BUILD_HOMMEXX_BENCHMARK_NOFORCING)
+    TARGET_COMPILE_DEFINITIONS(${execName} PUBLIC HOMMEXX_BENCHMARK_NOFORCING)
+  ENDIF()
+
+  target_link_libraries(${execName} csm_share)
 
   IF (CXXLIB_SUPPORTED_CACHE)
     MESSAGE(STATUS "   Linking Fortran with -cxxlib")
@@ -151,7 +156,7 @@ macro(createTestExec execName execType macroNP macroNC
   ENDIF ()
 
   IF (HOMME_USE_KOKKOS)
-    TARGET_LINK_LIBRARIES(${execName} kokkos)
+    link_to_kokkos(${execName})
   ENDIF ()
 
   # Move the module files out of the way so the parallel build
@@ -160,7 +165,8 @@ macro(createTestExec execName execType macroNP macroNC
                         PROPERTIES Fortran_MODULE_DIRECTORY ${EXEC_MODULE_DIR})
 
   IF (HOMME_USE_MKL)
-    TARGET_LINK_LIBRARIES(${execName})
+    TARGET_COMPILE_OPTIONS(${execName} PUBLIC -mkl)
+    TARGET_LINK_LIBRARIES(${execName} -mkl)
   ELSE()
     IF (NOT HOMME_FIND_BLASLAPACK)
       TARGET_LINK_LIBRARIES(${execName} lapack blas)
@@ -234,6 +240,11 @@ macro(createExecLib libName execType libSrcs inclDirs macroNP
     TARGET_COMPILE_DEFINITIONS(${libName} PUBLIC HOMME_WITHOUT_PIOLIBRARY)
   ENDIF()
 
+  target_link_libraries(${execName} csm_share)
+  if (NOT HOMME_BUILD_SCORPIO)
+    # Needed for netcdf.mod usage in mesh_mod.F90.
+    target_link_libraries(${execName} piof)
+  endif()
 
   IF (CXXLIB_SUPPORTED_CACHE)
     MESSAGE(STATUS "   Linking Fortran with -cxxlib")
@@ -252,7 +263,10 @@ macro(createExecLib libName execType libSrcs inclDirs macroNP
     TARGET_LINK_LIBRARIES(${libName} kokkos)
   ENDIF ()
 
-  IF (NOT HOMME_USE_MKL)
+  IF (HOMME_USE_MKL)
+    TARGET_COMPILE_OPTIONS(${libName} PUBLIC -mkl)
+    TARGET_LINK_LIBRARIES(${libName} -mkl)
+  ELSE()
     IF (NOT HOMME_FIND_BLASLAPACK)
       TARGET_LINK_LIBRARIES(${libName} lapack blas)
     ENDIF()

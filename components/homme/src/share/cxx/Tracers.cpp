@@ -41,13 +41,12 @@ void Tracers::init(const int num_elems, const int num_tracers)
   m_inited = true;
 }
 
-void Tracers::randomize(const int seed) {
+void Tracers::randomize(const int seed, const Real min, const Real max) {
   // Check tracers were inited
   assert (m_inited);
 
-  constexpr Real min_value = 0.015625;
   std::mt19937_64 engine(seed);
-  std::uniform_real_distribution<Real> random_dist(min_value, 1.0 / min_value);
+  std::uniform_real_distribution<Real> random_dist(min, max);
 
   genRandArray(qdp, engine, random_dist);
   genRandArray(qtens_biharmonic, engine, random_dist);

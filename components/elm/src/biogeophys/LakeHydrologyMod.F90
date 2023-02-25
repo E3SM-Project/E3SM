@@ -74,7 +74,8 @@ contains
       !$acc routine seq
     use elm_varcon      , only : denh2o, denice, spval, hfus, tfrz, cpliq, cpice
     use elm_varpar      , only : nlevsno, nlevgrnd, nlevsoi
-    use elm_varctl      , only : iulog, use_extrasnowlayers
+    use elm_varctl      , only : iulog, use_extrasnowlayers, use_lake_wat_storage
+    use clm_time_manager, only : get_step_size
     use SnowHydrologyMod, only : SnowCompaction, CombineSnowLayers, SnowWater, BuildSnowFilter
     use SnowHydrologyMod, only : DivideSnowLayers, DivideExtraSnowLayers, SnowCapping
     use LakeCon         , only : lsadz
@@ -107,6 +108,7 @@ contains
     real(r8) :: qflx_prec_grnd_snow(bounds%begp:bounds%endp)    ! snow precipitation incident on ground [mm/s]
     real(r8) :: qflx_prec_grnd_rain(bounds%begp:bounds%endp)    ! rain precipitation incident on ground [mm/s]
     real(r8) :: qflx_evap_soi_lim                               ! temporary evap_soi limited by top snow layer content [mm/s]
+    real(r8) :: qflx_snwcp                                      ! temporary snow cap flux
     real(r8) :: h2osno_temp                                     ! temporary h2osno [kg/m^2]
     real(r8) :: sumsnowice(bounds%begc:bounds%endc)             ! sum of snow ice if snow layers found above unfrozen lake [kg/m&2]
     logical  :: unfrozen(bounds%begc:bounds%endc)               ! true if top lake layer is unfrozen with snow layers above
@@ -155,15 +157,16 @@ contains
          sno_liq_top          =>  col_ws%sno_liq_top       , & ! Output: [real(r8) (:)   ]  liquid water fraction in top snow layer [frc]
          frac_sno_eff         =>  col_ws%frac_sno_eff      , & ! Output: [real(r8) (:)   ]  needed for snicar code
          frac_iceold          =>  col_ws%frac_iceold       , & ! Output: [real(r8) (:,:) ]  fraction of ice relative to the tot water
-         snow_depth           =>  col_ws%snow_depth        , & ! Output: [real(r8) (:)   ]  snow height (m)
-         h2osno               =>  col_ws%h2osno            , & ! Output: [real(r8) (:)   ]  snow water (mm H2O)
-         snowice              =>  col_ws%snowice           , & ! Output: [real(r8) (:)   ]  average snow ice lens
-         snowliq              =>  col_ws%snowliq           , & ! Output: [real(r8) (:)   ]  average snow liquid water
-         h2osoi_ice           =>  col_ws%h2osoi_ice        , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)
-         h2osoi_liq           =>  col_ws%h2osoi_liq        , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)
-         h2osoi_vol           =>  col_ws%h2osoi_vol        , & ! Output: [real(r8) (:,:) ]  volumetric soil water [m3/m3]
+         snow_depth           =>  col_ws%snow_depth        , & ! Output: [real(r8) (:)   ]  snow height (m)                         
+         h2osno               =>  col_ws%h2osno            , & ! Output: [real(r8) (:)   ]  snow water (mm H2O)                     
+         snowice              =>  col_ws%snowice           , & ! Output: [real(r8) (:)   ]  average snow ice lens                   
+         snowliq              =>  col_ws%snowliq           , & ! Output: [real(r8) (:)   ]  average snow liquid water               
+         h2osoi_ice           =>  col_ws%h2osoi_ice        , & ! Output: [real(r8) (:,:) ]  ice lens (kg/m2)                      
+         h2osoi_liq           =>  col_ws%h2osoi_liq        , & ! Output: [real(r8) (:,:) ]  liquid water (kg/m2)                  
+         h2osoi_vol           =>  col_ws%h2osoi_vol        , & ! Output: [real(r8) (:,:) ]  volumetric soil water [m3/m3]         
+         wslake               =>  col_ws%wslake_col, &
 
-         qflx_floodc          =>  col_wf%qflx_floodc        , & ! Output: [real(r8) (:)   ]  column flux of flood water from RTM
+         qflx_floodc          =>  col_wf%qflx_floodc        , & ! Output: [real(r8) (:)   ]  column flux of flood water from RTM     
          qflx_prec_grnd       =>  veg_wf%qflx_prec_grnd   , & ! Output: [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]
          qflx_snow_grnd_patch =>  veg_wf%qflx_snow_grnd   , & ! Output: [real(r8) (:)   ]  snow on ground after interception (mm H2O/s) [+]
          qflx_rain_grnd       =>  veg_wf%qflx_rain_grnd   , & ! Output: [real(r8) (:)   ]  rain on ground after interception (mm H2O/s) [+]
@@ -229,6 +232,15 @@ contains
             h2osoi_ice_depth_intg(c) = h2osoi_ice_depth_intg(c) + h2osoi_ice(c,j)
          end do
       end do
+
+      ! Add lake water storage to water balance.
+      if (use_lake_wat_storage) then
+         do fc = 1, num_lakec
+            c = filter_lakec(fc)
+            begwb(c) = begwb(c) + wslake(c)
+         end do
+      end if
+
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Do precipitation onto ground, etc., from CanopyHydrology
@@ -705,13 +717,31 @@ contains
          qflx_irrig_col(c)     = 0._r8
 
          ! Insure water balance using qflx_qrgwl
-         if (.not. use_extrasnowlayers) then
-            qflx_qrgwl(c)     = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp_ice(p) - &
-              (endwb(c)-begwb(c))/dtime + qflx_floodg(g)
-         else ! qlfx_snwcp_ice(c) has been computed in routine SnowCapping
-            qflx_qrgwl(c)     = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp_ice_col(c) - &
-              (endwb(c)-begwb(c))/dtime + qflx_floodg(g)
+         if (use_lake_wat_storage) then
+            qflx_qrgwl(c)     = 0._r8
+            if (wslake(c) >= 5000._r8) then
+               if (.not. use_extrasnowlayers) then
+                  qflx_snwcp = qflx_snwcp_ice(p)
+               else
+                  qflx_snwcp = qflx_snwcp_ice_col(c)
+               end if
+               qflx_qrgwl(c) = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp + &
+               qflx_floodg(g) - (endwb(c) + wslake(c) -begwb(c))/dtime
+            end if
+            wslake(c) = (forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - &
+                qflx_snwcp_ice(p) + qflx_floodg(g) - qflx_qrgwl(c)) * dtime - &
+                (endwb(c) - begwb(c))
+            endwb(c) = endwb(c) + wslake(c)
+         else
+            if (.not. use_extrasnowlayers) then
+               qflx_snwcp = qflx_snwcp_ice(p)
+            else
+               qflx_snwcp = qflx_snwcp_ice_col(c)
+            end if
+            qflx_qrgwl(c) = forc_rain(t) + forc_snow(t) - qflx_evap_tot(p) - qflx_snwcp - &
+                (endwb(c)-begwb(c))/dtime + qflx_floodg(g)
          end if
+
          qflx_floodc(c)    = qflx_floodg(g)
          qflx_runoff(c)    = qflx_drain(c) + qflx_qrgwl(c)
          qflx_top_soil(c)  = qflx_prec_grnd_rain(p) + qflx_snomelt(c)

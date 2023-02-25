@@ -46,7 +46,7 @@ def _main_func():
     makefile = os.path.join(casetools, "Makefile")
     exename = os.path.join(exeroot, model + ".exe")
 
-    cmd = "%s exec_se -j %d EXEC_SE=%s MODEL=%s LIBROOT=%s -f %s "\
+    cmd = "%s exec_se -j %d EXEC_SE=%s COMP_NAME=%s LIBROOT=%s -f %s "\
         % (gmake, gmake_j, exename, "driver", libroot, makefile)
 
     rc, out, _ = run_cmd(cmd, combine_output=True)

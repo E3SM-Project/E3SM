@@ -17,6 +17,7 @@ class QLT : public cedr::qlt::QLT<ES> {
 
   void reconcile_vertical(const Int problem_type, const Int bd_os,
                           const Int bis, const Int bie);
+  void runimpl();
 
 public:
   QLT(const cedr::mpi::Parallel::Ptr& p, const cedr::Int& ncells,

@@ -261,7 +261,6 @@ void fill_perim (LocalMesh<ES>& m) {
   std::vector<Int> external_edges;
   find_external_edges(m, external_edges);
   const Int nee = external_edges.size();
-  const bool already = m.perimp.size() > 0;
   m.perimp = typename LocalMesh<ES>::Ints("perimp", nee);
   m.perimnml = typename LocalMesh<ES>::Ints("perimnml", nee);
   for (Int k = 0; k < nee; ++k) {

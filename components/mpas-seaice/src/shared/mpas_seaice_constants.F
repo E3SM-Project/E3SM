@@ -24,7 +24,9 @@ module seaice_constants
        emissivity, &
        Tffresh, &
        cp_air, &
+       cp_ocn, &
        Lsub, &
+       Lvap, &
        Lfresh, &
        Pstar, &
        Cstar, &
@@ -34,7 +36,9 @@ module seaice_constants
        vonkar, &
        iceruf, &
        zref, &
-       sk_l
+       ice_ref_salinity, &
+       sk_l, &
+       R_gC2molC
 
   private
   save
@@ -72,12 +76,15 @@ module seaice_constants
        seaiceIceSnowEmissivity        = emissivity, &       ! emissivity of snow and ice
        seaiceFreshWaterFreezingPoint  = Tffresh, &          ! freezing temp of fresh ice (K)
        seaiceAirSpecificHeat          = cp_air, &           ! specific heat of air (J/kg/K)
+       seaiceSeaWaterSpecificHeat     = cp_ocn, &           ! specific heat of ocn (J/kg/K)
        seaiceLatentHeatSublimation    = Lsub, &             ! latent heat, sublimation freshwater (J/kg)
+       seaiceLatentHeatVaporization   = Lvap, &             ! latent heat, vaporization freshwater (J/kg)
        seaiceLatentHeatMelting        = Lfresh, &           ! latent heat of melting of fresh ice (J/kg)
        seaiceOceanAlbedo              = albocn, &           ! Ocean albedo
        seaiceVonKarmanConstant        = vonkar, &           ! Von Karman constant
        seaiceIceSurfaceRoughness      = iceruf, &           ! ice surface roughness (m)
-       seaiceStabilityReferenceHeight = zref ! stability reference height (m)
+       seaiceStabilityReferenceHeight = zref, &             ! stability reference height (m)
+       seaiceReferenceSalinity        = ice_ref_salinity    ! ice reference salinity (ppt)
 
   ! dynamics constants
   real(kind=RKIND), parameter, public :: &
@@ -93,7 +100,8 @@ module seaice_constants
 
    ! biogeochemistry constants
    real(kind=RKIND), parameter, public :: &
-        skeletalLayerThickness = sk_l
+        skeletalLayerThickness = sk_l      , &
+        gramsCarbonPerMolCarbon = R_gC2molC    ! g carbon per mol carbon
 
 
 end module seaice_constants

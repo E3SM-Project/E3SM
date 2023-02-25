@@ -34,7 +34,6 @@ hypervis_subcycle = 2
 hypervis_subcycle_tom = 1
 /
 &vert_nl
-vform         = "ccm"
 vfile_mid     = "../vcoord/acme-72m.ascii"
 vfile_int     = "../vcoord/acme-72i.ascii"
 /

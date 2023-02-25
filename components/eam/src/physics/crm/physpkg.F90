@@ -24,7 +24,7 @@ module physpkg
   use phys_grid,               only: get_ncols_p, print_cost_p, update_cost_p
   use phys_gmean,              only: gmean_mass
   use ppgrid,                  only: begchunk, endchunk, pcols, pver, pverp
-  use constituents,            only: pcnst, cnst_name, cnst_get_ind
+  use constituents,            only: pcnst, cnst_name, cnst_get_ind, setup_moist_indices
   use camsrfexch,              only: cam_out_t, cam_in_t
   use phys_control,            only: phys_do_flux_avg, phys_getopts
   use scamMod,                 only: single_column, scm_crm_mode
@@ -84,6 +84,7 @@ subroutine phys_register
   use ghg_data,                 only: ghg_data_register
   use radiation,                only: radiation_register
   use co2_cycle,                only: co2_register
+  use co2_diagnostics,          only: co2_diags_register
   use flux_avg,                 only: flux_avg_register
   use ionosphere,               only: ionos_register
   use prescribed_ozone,         only: prescribed_ozone_register
@@ -156,6 +157,7 @@ subroutine phys_register
 
   ! co2 constituents
   call co2_register()
+  call co2_diags_register()
 
   call prescribed_volcaero_register()
   call prescribed_ozone_register()
@@ -517,6 +519,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   use aircraft_emit,      only: aircraft_emit_init
   use prescribed_volcaero,only: prescribed_volcaero_init
   use co2_cycle,          only: co2_init, co2_transport
+  use co2_diagnostics,    only: co2_diags_init
   use cam_diagnostics,    only: diag_init
   use gw_drag,            only: gw_init
   use radheat,            only: radheat_init
@@ -584,6 +587,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
   ! diag_init makes addfld calls for dyn fields that are output from the physics decomp
   call diag_init()
 
+  call setup_moist_indices()
+
   call check_energy_init()
 
   call tracers_init()
@@ -626,6 +631,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
   ! co2 cycle            
   if (co2_transport()) call co2_init()
+  call co2_diags_init(phys_state)
 
   call gw_init()
 
@@ -985,7 +991,8 @@ subroutine phys_final( phys_state, phys_tend, pbuf2d )
   use physics_buffer, only : physics_buffer_desc, pbuf_deallocate
   use chemistry,      only : chem_final
   use wv_saturation,  only : wv_sat_final
-  use crm_physics, only: crm_physics_final
+  use crm_physics,    only : crm_physics_final
+  use radiation,      only : radiation_final
   !----------------------------------------------------------------------- 
   ! Purpose: Finalization of physics package
   !-----------------------------------------------------------------------
@@ -1010,6 +1017,10 @@ subroutine phys_final( phys_state, phys_tend, pbuf2d )
   call t_startf ('wv_sat_final')
   call wv_sat_final
   call t_stopf ('wv_sat_final')
+
+  call t_startf ('radiation_final')
+  call radiation_final()
+  call t_stopf ('radiation_final')
 
   call t_startf ('crm_physics_final')
   call crm_physics_final()

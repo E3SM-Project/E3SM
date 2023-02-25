@@ -194,6 +194,11 @@ contains
        atm2lnd_vars%supply_grc(g) = x2l(index_x2l_Flrr_supply,i)
        atm2lnd_vars%deficit_grc(g) = x2l(index_x2l_Flrr_deficit,i)
 
+       if (index_x2l_Sr_h2orof /= 0) then
+         atm2lnd_vars%h2orof_grc(g)      = x2l(index_x2l_Sr_h2orof,i)
+         atm2lnd_vars%frac_h2orof_grc(g) = x2l(index_x2l_Sr_frac_h2orof,i)
+       endif
+
        ! Determine required receive fields
 
 #ifdef CPL_BYPASS
@@ -751,7 +756,6 @@ contains
               call mpi_bcast (smap05_lat, 360, MPI_REAL8, 0, mpicom, ier)
             end if
           end if
-        end if
 
           !figure out which point to get
           if (atm2lnd_vars%loaded_bypassdata == 0) then 
@@ -925,7 +929,7 @@ contains
   
           atm2lnd_vars%forc_ndep_grc(g)    = (atm2lnd_vars%ndep1(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt1(1) + &
                                               atm2lnd_vars%ndep2(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt2(1)) / (365._r8 * 86400._r8)
-       end if model_filter
+        end if model_filter
 
    !------------------------------------Aerosol forcing--------------------------------------------------
         if (atm2lnd_vars%loaded_bypassdata .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
@@ -1369,6 +1373,8 @@ contains
     character(len=*), parameter :: sub = 'lnd_export_mct'
     !---------------------------------------------------------------------------
 
+    dtime = get_step_size()
+
     ! cesm sign convention is that fluxes are positive downward
 
     l2x(:,:) = 0.0_r8
@@ -1441,6 +1447,12 @@ contains
        l2x(index_l2x_Flrl_Tqsur,i)  = lnd2atm_vars%Tqsur_grc(g)
        l2x(index_l2x_Flrl_Tqsub,i)  = lnd2atm_vars%Tqsub_grc(g)
        l2x(index_l2x_coszen_str,i) = lnd2atm_vars%coszen_str(g)
+       l2x(index_l2x_Flrl_wslake,i) = lnd2atm_vars%wslake_grc(g)/dtime
+
+       if (index_l2x_Flrl_inundinf /= 0) then
+          l2x(index_l2x_Flrl_inundinf,i) = lnd2atm_vars%qflx_h2orof_drain_grc(g)
+       endif
+       
        ! glc coupling
 
        if (create_glacier_mec_landunit) then

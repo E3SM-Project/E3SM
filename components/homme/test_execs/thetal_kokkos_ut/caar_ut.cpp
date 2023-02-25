@@ -7,6 +7,7 @@
 #include "CaarFunctorImpl.hpp"
 #include "SimulationParams.hpp"
 #include "Tracers.hpp"
+#include "PhysicalConstants.hpp"
 
 #include "utilities/TestUtils.hpp"
 #include "utilities/SyncUtils.hpp"
@@ -79,6 +80,10 @@ TEST_CASE("caar", "caar_testing") {
   // Init parameters
   auto& params = c.create<SimulationParams>();
   params.params_set = true;
+  //since init_params... is not called here and thus F setup is not transferred, manually 
+  //modify thresholds values as in control mod
+  params.dp3d_thresh = 0.125;
+  params.vtheta_thresh = 100.0;
 
   // Create and init hvcoord and ref_elem, needed to init the fortran interface
   auto& hvcoord = c.create<HybridVCoord>();
@@ -110,7 +115,7 @@ TEST_CASE("caar", "caar_testing") {
   const int num_elems = c.get<Connectivity>().get_num_local_elements();
 
   auto& elems = c.create<Elements>();
-  elems.init(num_elems,false,true);
+  elems.init(num_elems,false,true,PhysicalConstants::rearth0);
   const auto max_pressure = 1000.0 + hvcoord.ps0; // This ensures max_p > ps0
   auto& geo = elems.m_geometry;
   elems.m_geometry.randomize(seed); // Only needed for phis and gradphis
@@ -161,6 +166,7 @@ TEST_CASE("caar", "caar_testing") {
   auto& bm = c.create<MpiBuffersManager>();
   auto& sphop = c.create<SphereOperators>();
   auto& tracers = c.create<Tracers>();
+  auto& limiter = c.create<LimiterFunctor>(elems,hvcoord,params);
 
   sphop.setup(geo,ref_FE);
   if (!bm.is_connectivity_set ()) {
@@ -211,6 +217,7 @@ TEST_CASE("caar", "caar_testing") {
 
   auto& comm = c.get<Comm>();
   const int rank = comm.rank();
+
   SECTION ("caar_run") {
     for (const bool hydrostatic : {true,false}) {
       if (comm.root()) {
@@ -272,8 +279,10 @@ TEST_CASE("caar", "caar_testing") {
           CaarFunctorImpl caar(elems,tracers,ref_FE,hvcoord,sphop,params);
           FunctorsBuffersManager fbm;
           fbm.request_size( caar.requested_buffer_size() );
+          fbm.request_size(limiter.requested_buffer_size());
           fbm.allocate();
           caar.init_buffers(fbm);
+          limiter.init_buffers(fbm);
           caar.init_boundary_exchanges(c.get_ptr<MpiBuffersManager>());
 
           // Run cxx
@@ -431,6 +440,7 @@ TEST_CASE("caar", "caar_testing") {
   }
 
   SECTION ("limiter_dp3d") {
+
     // rsplit and hydro_mode are irrelevant for this test, so just pick something
     params.rsplit = 1;
     params.theta_hydrostatic_mode = false;
@@ -448,8 +458,10 @@ TEST_CASE("caar", "caar_testing") {
     CaarFunctorImpl caar(elems,tracers,ref_FE,hvcoord,sphop,params);
     FunctorsBuffersManager fbm;
     fbm.request_size( caar.requested_buffer_size() );
+    fbm.request_size( limiter.requested_buffer_size() );
     fbm.allocate();
     caar.init_buffers(fbm);
+    limiter.init_buffers(fbm);
 
     int  np1 = IPDF(0,2)(engine);
     RKStageData data;
@@ -457,7 +469,7 @@ TEST_CASE("caar", "caar_testing") {
     caar.set_rk_stage_data(data);
 
     // Run cxx limiter
-    Kokkos::parallel_for("limiter_dp3d", caar.m_policy_dp3d_lim, caar);
+    limiter.run(np1);
 
     // Run f90 limiter
     run_limiter_f90(np1+1, dp3d_ptr, vtheta_dp_ptr);

@@ -30,7 +30,6 @@
   dcmip2_x_xi       = 4000.0                    ! mountain wavelength   (m)
 /
 &vert_nl
-  vform             = "ccm"                     ! vertical coordinate type "ccm"=hybrid pressure/terrain
   vanalytic         = 1                         ! set vcoords in initialization routine
   vtop              = 3.2818e-2                 ! vertical coordinate at top of atm (z=30km)
 /

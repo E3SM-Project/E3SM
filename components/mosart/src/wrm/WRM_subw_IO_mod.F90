@@ -171,7 +171,7 @@ MODULE WRM_subw_IO_mod
 
      call ncd_pio_openfile(ncid, trim(ctlSubwWRM%paraFile), 0)
      call shr_sys_flush(iulog)
-     ier = pio_inq_varid   (ncid, name='DamInd_2d', vardesc=vardesc)
+     ier = pio_inq_varid   (ncid, 'DamInd_2d', vardesc)
      ier = pio_inq_vardimid(ncid, vardesc, dids)
      ier = pio_inq_dimlen  (ncid, dids(1),dsizes(1))
      ier = pio_inq_dimlen  (ncid, dids(2),dsizes(2))
@@ -214,7 +214,7 @@ MODULE WRM_subw_IO_mod
 
      allocate (WRMUnit%isDam(begr:endr))
      WRMUnit%isDam = 0
-     ier = pio_inq_varid (ncid, name='DamInd_2d', vardesc=vardesc)
+     ier = pio_inq_varid (ncid, 'DamInd_2d', vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_int_grd2grd , WRMUnit%isDam, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read DamInd_2d',minval(WRMUnit%isDam),maxval(WRMUnit%isDam)
      call shr_sys_flush(iulog)
@@ -673,108 +673,108 @@ MODULE WRM_subw_IO_mod
      end if 
 	 !call WRM_readDemand()  ! initialize demand0
 
-     ier = pio_inq_varid (ncid, name='RUNOFF_CAP'   , vardesc=vardesc)
+     ier = pio_inq_varid (ncid, 'RUNOFF_CAP'   , vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%INVc, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read RUNOFF_CAP',minval(WRMUnit%INVc),maxval(WRMUnit%INVc)
      call shr_sys_flush(iulog)
 
-     ier = pio_inq_varid (ncid, name='Year'         , vardesc=vardesc)
+     ier = pio_inq_varid (ncid, 'Year'         , vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam , WRMUnit%YEAR, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read Year',minval(WRMUnit%YEAR),maxval(WRMUnit%YEAR)
      call shr_sys_flush(iulog)
 
-     ier = pio_inq_varid (ncid, name='dam_hgt'      , vardesc=vardesc)
+     ier = pio_inq_varid (ncid, 'dam_hgt'      , vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%Height, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read dam_hgt',minval(WRMUnit%Height),maxval(WRMUnit%Height)
      call shr_sys_flush(iulog)
 
-     ier = pio_inq_varid (ncid, name='dam_len'      , vardesc=vardesc)
+     ier = pio_inq_varid (ncid, 'dam_len'      , vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%Length, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read dam_len',minval(WRMUnit%Length),maxval(WRMUnit%Length)
      call shr_sys_flush(iulog)
 
-     ier = pio_inq_varid (ncid, name='area_skm'     , vardesc=vardesc)
+     ier = pio_inq_varid (ncid, 'area_skm'     , vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%SurfArea, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read area_skm',minval(WRMUnit%SurfArea),maxval(WRMUnit%SurfArea)
      call shr_sys_flush(iulog)
 
-     ier = pio_inq_varid (ncid, name='cap_mcm'      , vardesc=vardesc)
+     ier = pio_inq_varid (ncid, 'cap_mcm'      , vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%StorCap, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read cap_mcm',minval(WRMUnit%StorCap),maxval(WRMUnit%StorCap)
      call shr_sys_flush(iulog)
      !! Used in reservoir stratification
 	 if (rstraflag) then
-		 ier = pio_inq_varid (ncid, name='DamID_Spatial'      , vardesc=vardesc)
+		 ier = pio_inq_varid (ncid, 'DamID_Spatial'      , vardesc)
 		 call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam , WRMUnit%grandid, ier)
 		 if (masterproc) write(iulog,FORMR) trim(subname),' read DamID_Spatial',minval(WRMUnit%grandid),maxval(WRMUnit%grandid)
 		 call shr_sys_flush(iulog)
 		 
-		 ier = pio_inq_varid (ncid, name='regeom'      , vardesc=vardesc)
+		 ier = pio_inq_varid (ncid, 'regeom'      , vardesc)
 		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%geometry, ier)
 		 if (masterproc) write(iulog,FORMR) trim(subname),' read regeom',minval(WRMUnit%geometry),maxval(WRMUnit%geometry)
 		 call shr_sys_flush(iulog)
 		 
-		 ier = pio_inq_varid (ncid, name='Mean_len'      , vardesc=vardesc)
+		 ier = pio_inq_varid (ncid, 'Mean_len'      , vardesc)
 		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%Length_r, ier)
 		 if (masterproc) write(iulog,FORMR) trim(subname),' read Mean_len',minval(WRMUnit%Length_r),maxval(WRMUnit%Length_r)
 		 call shr_sys_flush(iulog)
 		 
-		 ier = pio_inq_varid (ncid, name='Mean_wid'      , vardesc=vardesc)
+		 ier = pio_inq_varid (ncid, 'Mean_wid'      , vardesc)
 		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%Width_r, ier)
 		 if (masterproc) write(iulog,FORMR) trim(subname),' read Mean_wid',minval(WRMUnit%Width_r),maxval(WRMUnit%Width_r)
 		 call shr_sys_flush(iulog)
 		 
-		 ier = pio_inq_varid (ncid, name='V_err'      , vardesc=vardesc)
+		 ier = pio_inq_varid (ncid, 'V_err'      , vardesc)
 		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%V_errs, ier)
 		 if (masterproc) write(iulog,FORMR) trim(subname),' read V_err',minval(WRMUnit%V_errs),maxval(WRMUnit%V_errs)
 		 call shr_sys_flush(iulog)
 		 
-		 ier = pio_inq_varid (ncid, name='A_err'      , vardesc=vardesc)
+		 ier = pio_inq_varid (ncid, 'A_err'      , vardesc)
 		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%A_errs, ier)
 		 if (masterproc) write(iulog,FORMR) trim(subname),' read A_err',minval(WRMUnit%A_errs),maxval(WRMUnit%A_errs)
 		 call shr_sys_flush(iulog)
 		 
-		 ier = pio_inq_varid (ncid, name='V_str'      , vardesc=vardesc)
+		 ier = pio_inq_varid (ncid, 'V_str'      , vardesc)
 		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%V_str, ier)
 		 if (masterproc) write(iulog,FORMR) trim(subname),' read V_str',minval(WRMUnit%V_str),maxval(WRMUnit%V_str)
 		 call shr_sys_flush(iulog)
 		 
-		 ier = pio_inq_varid (ncid, name='A_str'      , vardesc=vardesc)
+		 ier = pio_inq_varid (ncid, 'A_str'      , vardesc)
 		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%A_str, ier)
 		 if (masterproc) write(iulog,FORMR) trim(subname),' read A_str',minval(WRMUnit%A_str),maxval(WRMUnit%A_str)
 		 call shr_sys_flush(iulog)
 		 
-		 ier = pio_inq_varid (ncid, name='Coeff_v'      , vardesc=vardesc)
+		 ier = pio_inq_varid (ncid, 'Coeff_v'      , vardesc)
 		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%C_vs, ier)
 		 if (masterproc) write(iulog,FORMR) trim(subname),' read Coeff_v',minval(WRMUnit%C_vs),maxval(WRMUnit%C_vs)
 		 call shr_sys_flush(iulog)
 		 
-		 ier = pio_inq_varid (ncid, name='Coeff_a'      , vardesc=vardesc)
+		 ier = pio_inq_varid (ncid, 'Coeff_a'      , vardesc)
 		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%C_as, ier)
 		 if (masterproc) write(iulog,FORMR) trim(subname),' read Coeff_a',minval(WRMUnit%C_as),maxval(WRMUnit%C_as)
 		 call shr_sys_flush(iulog)
 		 
-		 ier = pio_inq_varid (ncid, name='Diff_v'      , vardesc=vardesc)
+		 ier = pio_inq_varid (ncid, 'Diff_v'      , vardesc)
 		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%V_dfs, ier)
 		 if (masterproc) write(iulog,FORMR) trim(subname),' read Diff_v',minval(WRMUnit%V_dfs),maxval(WRMUnit%V_dfs)
 		 call shr_sys_flush(iulog)
 		 
-		 ier = pio_inq_varid (ncid, name='Diff_a'      , vardesc=vardesc)
+		 ier = pio_inq_varid (ncid, 'Diff_a'      , vardesc)
 		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%A_dfs, ier)
 		 if (masterproc) write(iulog,FORMR) trim(subname),' read Diff_a',minval(WRMUnit%A_dfs),maxval(WRMUnit%A_dfs)
 		 call shr_sys_flush(iulog)
 		 
-		 ier = pio_inq_varid (ncid, name='outlet'      , vardesc=vardesc)
+		 ier = pio_inq_varid (ncid, 'outlet'      , vardesc)
 		 call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam , WRMUnit%out_lc, ier)
 		 if (masterproc) write(iulog,FORMR) trim(subname),' read outlet',minval(WRMUnit%out_lc),maxval(WRMUnit%out_lc)
 		 call shr_sys_flush(iulog)
 		 
-		 ier = pio_inq_varid (ncid, name='d_n'      , vardesc=vardesc)
+		 ier = pio_inq_varid (ncid, 'd_n'      , vardesc)
 		 call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam , WRMUnit%d_ns, ier)
 		 if (masterproc) write(iulog,FORMR) trim(subname),' read d_n',minval(WRMUnit%d_ns),maxval(WRMUnit%d_ns)
 		 call shr_sys_flush(iulog)
 		 
-		 ier = pio_inq_varid (ncid, name='purpose'      , vardesc=vardesc)
+		 ier = pio_inq_varid (ncid, 'purpose'      , vardesc)
 		 call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam , WRMUnit%purpose, ier)
 		 if (masterproc) write(iulog,FORMR) trim(subname),' read purpose',minval(WRMUnit%purpose),maxval(WRMUnit%purpose)
 		 call shr_sys_flush(iulog)
@@ -787,52 +787,52 @@ MODULE WRM_subw_IO_mod
      ! NV uncommented out - needed for first year of simulation
      WRMUnit%StorMthStOp = WRMUnit%StorCap*0.85_r8
 
-     ier = pio_inq_varid (ncid, name='depth_m'       , vardesc=vardesc)
+     ier = pio_inq_varid (ncid, 'depth_m'       , vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam  , WRMUnit%Depth, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read depth_m',minval(WRMUnit%Depth),maxval(WRMUnit%Depth)
      call shr_sys_flush(iulog)
 
-     ier = pio_inq_varid (ncid, name='use_irri'      , vardesc=vardesc)
+     ier = pio_inq_varid (ncid, 'use_irri'      , vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam  , WRMUnit%use_Irrig, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read use_irri',minval(WRMUnit%use_Irrig),maxval(WRMUnit%use_Irrig)
      call shr_sys_flush(iulog)
 
-     ier = pio_inq_varid (ncid, name='use_elec'      , vardesc=vardesc)
+     ier = pio_inq_varid (ncid, 'use_elec'      , vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam  , WRMUnit%use_Elec, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read use_elec',minval(WRMUnit%use_Elec),maxval(WRMUnit%use_Elec)
      call shr_sys_flush(iulog)
 
-     ier = pio_inq_varid (ncid, name='use_supp'      , vardesc=vardesc)
+     ier = pio_inq_varid (ncid, 'use_supp'      , vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam  , WRMUnit%use_Supp, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read use_supp',minval(WRMUnit%use_Supp),maxval(WRMUnit%use_Supp)
      call shr_sys_flush(iulog)
 
-     ier = pio_inq_varid (ncid, name='use_fcon'      , vardesc=vardesc)
+     ier = pio_inq_varid (ncid, 'use_fcon'      , vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam  , WRMUnit%use_FCon, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read use_fcon',minval(WRMUnit%use_FCon),maxval(WRMUnit%use_FCon)
      call shr_sys_flush(iulog)
 
-     ier = pio_inq_varid (ncid, name='use_recr'      , vardesc=vardesc)
+     ier = pio_inq_varid (ncid, 'use_recr'      , vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam  , WRMUnit%use_Rec, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read use_recr',minval(WRMUnit%use_Rec),maxval(WRMUnit%use_Rec)
      call shr_sys_flush(iulog)
 
-     ier = pio_inq_varid (ncid, name='use_navi'      , vardesc=vardesc)
+     ier = pio_inq_varid (ncid, 'use_navi'      , vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam  , WRMUnit%use_Navi, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read use_navi',minval(WRMUnit%use_Navi),maxval(WRMUnit%use_Navi)
      call shr_sys_flush(iulog)
 
-     ier = pio_inq_varid (ncid, name='use_fish'      , vardesc=vardesc)
+     ier = pio_inq_varid (ncid, 'use_fish'      , vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_int_grd2dam  , WRMUnit%use_Fish, ier)
      if (masterproc) write(iulog,FORMI) trim(subname),' read use_fish',minval(WRMUnit%use_Fish),maxval(WRMUnit%use_Fish)
      call shr_sys_flush(iulog)
 
-     ier = pio_inq_varid (ncid, name='withdraw'      , vardesc=vardesc)
+     ier = pio_inq_varid (ncid, 'withdraw'      , vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam  , WRMUnit%Withdrawal, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read withdraw',minval(WRMUnit%Withdrawal),maxval(WRMUnit%Withdrawal)
      call shr_sys_flush(iulog)
 
-     ier = pio_inq_varid (ncid, name='conveyance'    , vardesc=vardesc)
+     ier = pio_inq_varid (ncid, 'conveyance'    , vardesc)
      call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2dam  , WRMUnit%Conveyance, ier)
      if (masterproc) write(iulog,FORMR) trim(subname),' read conveyance',minval(WRMUnit%Conveyance),maxval(WRMUnit%Conveyance)
      call shr_sys_flush(iulog)
@@ -845,7 +845,7 @@ MODULE WRM_subw_IO_mod
 
         !--- read mean monthly flow data
         do mth = 1,12
-           ier = pio_inq_varid (ncid, name='Qmon', vardesc=vardesc)
+           ier = pio_inq_varid (ncid, 'Qmon', vardesc)
            frame = mth
            call pio_setframe(ncid,vardesc,frame)
            call pio_read_darray(ncid, vardesc, iodesc_dbl_dam2dam, WRMUnit%MeanMthFlow(:,mth), ier)
@@ -860,7 +860,7 @@ MODULE WRM_subw_IO_mod
 
         !--- read in mean monthly water demand
         do mth = 1,12
-           ier = pio_inq_varid (ncid, name='demand', vardesc=vardesc)
+           ier = pio_inq_varid (ncid, 'demand', vardesc)
            frame = mth
            call pio_setframe(ncid,vardesc,frame)
            call pio_read_darray(ncid, vardesc, iodesc_dbl_dam2dam, WRMUnit%MeanMthDemand(:,mth), ier)
@@ -958,7 +958,7 @@ MODULE WRM_subw_IO_mod
         write(iulog,*) subname, ' reading ',trim(fname)
 
         call ncd_pio_openfile(ncid, trim(fname), 0)
-        ier = pio_inq_varid (ncid, name=ctlSubwWRM%DemandVariableName, vardesc=vardesc)  !! need to be consistent with the NC file, Tian Apr 2018
+        ier = pio_inq_varid (ncid, ctlSubwWRM%DemandVariableName, vardesc)  !! need to be consistent with the NC file, Tian Apr 2018
         call pio_read_darray(ncid, vardesc, iodesc_dbl_grd2grd , StorWater%demand0, ier)
         call ncd_pio_closefile(ncid)
 

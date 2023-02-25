@@ -40,6 +40,7 @@ public :: &
    radiation_nextsw_cday, &! calendar day of next radiation calculation
    radiation_do,          &! query which radiation calcs are done this timestep
    radiation_init,        &! calls radini
+   radiation_final,       &! deallocate
    radiation_readnl,      &! read radiation namelist
    radiation_tend          ! moved from radctl.F90
 
@@ -811,6 +812,13 @@ end function radiation_nextsw_cday
 
   end subroutine radiation_init
 
+!===============================================================================
+
+  subroutine radiation_final()
+    ! Do any needed clean-up and deallocation before model exit. Empty for now
+    ! but required for consistency with RRTMGPXX interface.
+  end subroutine radiation_final
+  
 !===============================================================================
   
   subroutine radiation_tend(state,ptend, pbuf, &

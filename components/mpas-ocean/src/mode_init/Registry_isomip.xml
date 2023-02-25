@@ -92,7 +92,7 @@
 			possible_values="A real number between 0 and 1."
 		/>
 	</nml_record>
-	<var_struct name="scratch" time_levs="0">
+	<var_struct name="scratch" time_levs="1">
 		<var name="isomip_bottomPressure" type="real" dimensions="nCells" persistence="scratch"
 			default_value="0.0" units="Pa"
 			description="Temporary space to hold the pressure at the bottom of the ocean, used to compute estimated sea-surface pressure under landice."

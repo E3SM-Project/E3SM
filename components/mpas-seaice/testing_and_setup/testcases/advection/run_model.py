@@ -35,7 +35,7 @@ def run_model():
                 print("    Gridsize: ", gridSize)
 
                 os.system("rm grid.nc ic.nc namelist.seaice")
-                os.system("ln -s x1.%i.grid.nc grid.nc" %(gridSize))
+                os.system("ln -s grid.%i.nc grid.nc" %(gridSize))
                 os.system("ln -s ic_%s_%i.nc ic.nc" %(icType, gridSize))
 
                 if (advectionMethod == "IR"):

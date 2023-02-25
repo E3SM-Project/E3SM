@@ -59,7 +59,7 @@ module arkode_mod
     type(N_Vector), pointer :: ptr
   end type N_VectorPtr
 
-  public :: parameter_list, evolve_solution, get_hvcoord_ptr, get_qn0
+  public :: parameter_list, evolve_solution, get_hvcoord_ptr
   public :: update_nonlinear_stats, finalize_nonlinear_stats
 
   save
@@ -72,7 +72,7 @@ module arkode_mod
   type(N_VectorPtr)             :: y(3)
   type(c_funptr)                :: efun_ptr, ifun_ptr
   real(real_kind)               :: dt_save, eta_ave_w_save, rout(40)
-  integer                       :: imex_save, qn0_save
+  integer                       :: imex_save
   logical                       :: initialized = .false.
   ! variables used for nonlinear solver stats, not necessary for use of ARKode
   integer :: total_nonlinear_iterations = 0
@@ -190,29 +190,9 @@ contains
 
   !=================================================================
 
-  subroutine get_qn0(qn0)
-    !-----------------------------------------------------------------
-    ! Description: obtains current qn0 value
-    !   Arguments:
-    !     qn0 - (int, output) qn0 value
-    !-----------------------------------------------------------------
-
-    !======= Declarations =========
-    implicit none
-
-    ! calling variables
-    integer, intent(out) :: qn0
-
-    !======= Internals ============
-    qn0 = qn0_save
-
-    return
-  end subroutine get_qn0
-
-  !=================================================================
 
   function evolve_solution(elem, nets, nete, deriv, hvcoord, hybrid, &
-                           dt, eta_ave_w, n0, np1, qn0, arkode_parameters, &
+                           dt, eta_ave_w, n0, np1, arkode_parameters, &
                            table_set) result(ierr)
     !-----------------------------------------------------------------
     ! Description: resets internal ARKode solution without memory allocation
@@ -228,7 +208,6 @@ contains
     !            eta_ave_w - (real, input) average flux value
     !                   n0 - (int, input) timelevel holding current solution
     !                  np1 - (int, input) timelevel for evolved solution
-    !                  qn0 - (int, input) timelevel for tracer mass
     !    arkode_parameters - (parameter, input) object for arkode parameters
     !            table_set - (butcher_table_set, input) Butcher table(s)
     !-----------------------------------------------------------------
@@ -255,7 +234,7 @@ contains
     type(parameter_list),       intent(in) :: arkode_parameters
     type(butcher_table_set),    intent(in) :: table_set
     real(real_kind),            intent(in) :: dt, eta_ave_w
-    integer,                    intent(in) :: nets, nete, n0, np1, qn0
+    integer,                    intent(in) :: nets, nete, n0, np1
     type(element_t),            intent(inout) :: elem(:)
 
     ! local variables
@@ -274,14 +253,13 @@ contains
     dt_save = dt
     eta_ave_w_save = eta_ave_w
     imex_save = table_set%imex
-    qn0_save = qn0
     hybrid_ptr => hybrid
     deriv_ptr => deriv
     hvcoord_ptr => hvcoord
 
     ! Initialize or reinitialize ARKode
     if (.not.initialized) then
-      call initialize(elem, nets, nete, hybrid%par, n0, qn0, tstart, &
+      call initialize(elem, nets, nete, hybrid%par, n0, tstart, &
                       arkode_parameters, table_set)
       initialized = .true.
     else
@@ -371,7 +349,7 @@ contains
 
   !=================================================================
 
-  subroutine initialize(elem, nets, nete, par, n0, qn0, tstart, &
+  subroutine initialize(elem, nets, nete, par, n0, tstart, &
                         arkode_parameters, table_set)
     !-----------------------------------------------------------------
     ! Description: allocates memory for and initializes ARKode
@@ -381,7 +359,6 @@ contains
     !                 nete - (int, input) ending index for elem array
     !                  par - (obj*, input) parallel object
     !                   n0 - (int, input) timelevel holding current solution
-    !                  qn0 - (int, input) timelevel for tracer mass
     !               tstart - (real, input) time to start ARKode solve at
     !    arkode_parameters - (parameter, input) object for arkode parameters
     !            table_set - (butcher_table_set, input) object for Butcher table(s)
@@ -413,7 +390,7 @@ contains
     type(parameter_list), target,       intent(in) :: arkode_parameters
     type(butcher_table_set), target,    intent(in) :: table_set
     real(real_kind),                    intent(in) :: tstart
-    integer,                            intent(in) :: nets, nete, n0, qn0
+    integer,                            intent(in) :: nets, nete, n0
     type(element_t),                    intent(inout) :: elem(:)
 
     ! local variables
@@ -706,14 +683,14 @@ contains
     type(NVec_t), pointer :: y => NULL()
     type(NVec_t), pointer :: ydot => NULL()
     real(real_kind)       :: dt, eta_ave_w, bval, cval, scale1, scale2
-    integer               :: imex, qn0, ie
+    integer               :: imex, ie
     integer               :: farkefun
 
     !======= Internals ============
 
     y => FN_VGetContent(sunvec_y)
     ydot => FN_VGetContent(sunvec_ydot)
-    ierr = farkefun(t, y, ydot, hvcoord_ptr, hybrid_ptr, deriv_ptr, qn0_save, &
+    ierr = farkefun(t, y, ydot, hvcoord_ptr, hybrid_ptr, deriv_ptr, &
                     imex_save, dt_save, eta_ave_w_save)
 
   end function efun
@@ -749,14 +726,14 @@ contains
     type(NVec_t), pointer :: y => NULL()
     type(NVec_t), pointer :: ydot => NULL()
     real(real_kind)       :: dt, eta_ave_w, bval, cval, scale1, scale2
-    integer               :: imex, qn0, ie
+    integer               :: imex, ie
     integer               :: farkifun
 
     !======= Internals ============
 
     y => FN_VGetContent(sunvec_y)
     ydot => FN_VGetContent(sunvec_ydot)
-    ierr = farkifun(t, y, ydot, hvcoord_ptr, hybrid_ptr, deriv_ptr, qn0_save, &
+    ierr = farkifun(t, y, ydot, hvcoord_ptr, hybrid_ptr, deriv_ptr,  &
                     imex_save, dt_save, eta_ave_w_save)
 
   end function ifun

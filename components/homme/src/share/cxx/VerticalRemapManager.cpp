@@ -41,27 +41,7 @@ struct VerticalRemapManager::Impl {
     using namespace Remap::Ppm;
     const int qsize = m_remap_tracers ? m_params.qsize : 0;
     const int capacity = m_remap_tracers ? -1 : m_params.qsize;
-    if (m_params.remap_alg == RemapAlg::PPM_FIXED_PARABOLA) {
-      if (m_params.rsplit != 0) {
-        remapper = std::make_shared<RemapFunctor<
-            true, PpmVertRemap<PpmFixedParabola>> >(
-            qsize, m_elements, m_tracers, m_hvcoord, capacity);
-      } else {
-        remapper = std::make_shared<RemapFunctor<
-            false, PpmVertRemap<PpmFixedParabola>> >(
-            qsize, m_elements, m_tracers, m_hvcoord, capacity);
-      }
-    } else if (m_params.remap_alg == RemapAlg::PPM_FIXED_MEANS) {
-      if (m_params.rsplit != 0) {
-        remapper = std::make_shared<RemapFunctor<
-            true, PpmVertRemap<PpmFixedMeans>> >(
-            qsize, m_elements, m_tracers, m_hvcoord, capacity);
-      } else {
-        remapper = std::make_shared<RemapFunctor<
-            false, PpmVertRemap<PpmFixedMeans>> >(
-            qsize, m_elements, m_tracers, m_hvcoord, capacity);
-      }
-    } else if (m_params.remap_alg == RemapAlg::PPM_MIRRORED) {
+    if (m_params.remap_alg == RemapAlg::PPM_MIRRORED) {
       if (m_params.rsplit != 0) {
         remapper = std::make_shared<RemapFunctor<
             true, PpmVertRemap<PpmMirrored>> >(

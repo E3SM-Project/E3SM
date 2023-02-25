@@ -1,4 +1,4 @@
-set(CONFIG_ARGS "")
+string(APPEND CONFIG_ARGS " ")
 string(APPEND CPPDEFS " ")
 set(ESMF_LIBDIR "")
 set(MPI_LIB_NAME "")

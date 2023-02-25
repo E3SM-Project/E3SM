@@ -15,7 +15,8 @@ contains
     use edge_mod_base, only: initEdgeBuffer, edge_g
     use control_mod, only: transport_alg, semi_lagrange_cdr_alg, semi_lagrange_cdr_check, &
          semi_lagrange_hv_q, limiter_option, nu_q, hypervis_subcycle_q, hypervis_order, &
-         vert_remap_q_alg, qsplit, rsplit, dt_remap_factor, dt_tracer_factor
+         vert_remap_q_alg, qsplit, rsplit, dt_remap_factor, dt_tracer_factor, &
+         theta_hydrostatic_mode
     use geometry_interface_mod, only: GridVertex
     use bndry_mod, only: sort_neighbor_buffer_mapping
     use reduction_mod, only: initreductionbuffer, red_sum, red_min, red_max
@@ -43,6 +44,7 @@ contains
     rsplit = 1
     dt_tracer_factor = -1
     dt_remap_factor = -1
+    theta_hydrostatic_mode = .true.
 
     hypervis_order = 2
     semi_lagrange_hv_q = hv_q

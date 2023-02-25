@@ -6,7 +6,7 @@ import math, os, sys
 def create_ic_file(res, icType):
 
     # grid in
-    gridFilename = "x1.%s.grid.nc" %(res)
+    gridFilename = "grid.%s.nc" %(res)
     gridFile = Dataset(gridFilename, "r")
 
     nCells = len(gridFile.dimensions["nCells"])

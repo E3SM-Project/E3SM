@@ -32,6 +32,8 @@ list(APPEND RAW_SOURCES
 
   core_ocean/shared/mpas_ocn_init_routines.F
   core_ocean/shared/mpas_ocn_gm.F
+  core_ocean/shared/mpas_ocn_submesoscale_eddies.F
+  core_ocean/shared/mpas_ocn_eddy_parameterization_helpers.F
   core_ocean/shared/mpas_ocn_diagnostics.F
   core_ocean/shared/mpas_ocn_diagnostics_variables.F
   core_ocean/shared/mpas_ocn_mesh.F
@@ -54,10 +56,14 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_vel_forcing_explicit_bottom_drag.F
   core_ocean/shared/mpas_ocn_vel_pressure_grad.F
   core_ocean/shared/mpas_ocn_vel_forcing_topographic_wave_drag.F
+  core_ocean/shared/mpas_ocn_vertical_advection.F
+  core_ocean/shared/mpas_ocn_vertical_regrid.F
+  core_ocean/shared/mpas_ocn_vertical_remap.F
   core_ocean/shared/mpas_ocn_vmix.F
   core_ocean/shared/mpas_ocn_vmix_coefs_redi.F
   core_ocean/shared/mpas_ocn_vmix_cvmix.F
   core_ocean/shared/mpas_ocn_vmix_gotm.F
+  core_ocean/shared/mpas_ocn_vel_self_attraction_loading.F
   core_ocean/shared/mpas_ocn_tendency.F
   core_ocean/shared/mpas_ocn_tracer_hmix.F
   core_ocean/shared/mpas_ocn_tracer_hmix_del2.F
@@ -98,6 +104,7 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_time_varying_forcing.F
   core_ocean/shared/mpas_ocn_wetting_drying.F
   core_ocean/shared/mpas_ocn_vel_tidal_potential.F
+  core_ocean/shared/mpas_ocn_stokes_drift.F
 )
 
 set(OCEAN_DRIVER
@@ -129,13 +136,56 @@ if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/core_ocean/BGC/.git)
   message(FATAL_ERROR "Missing core_ocean/BGC/.git, did you forget to 'git submodule update --init --recursive' ?")
 endif()
 set(BGC_FILES
-  core_ocean/BGC/BGC_mod.F90
-  core_ocean/BGC/BGC_parms.F90
   core_ocean/BGC/DMS_mod.F90
   core_ocean/BGC/DMS_parms.F90
   core_ocean/BGC/MACROS_mod.F90
   core_ocean/BGC/MACROS_parms.F90
-  core_ocean/BGC/co2calc.F90
+)
+
+# Add MARBL
+if (NOT EXISTS core_ocean/MARBL/.git)
+  message(FATAL "Missing core_ocean/MARBL/.git, did you forget to 'git submodule update --init --recursive' ?")
+endif()
+set(MARBL_FILES
+  core_ocean/MARBL/src/marbl_ciso_diagnostics_mod.F90
+  core_ocean/MARBL/src/marbl_ciso_init_mod.F90
+  core_ocean/MARBL/src/marbl_ciso_interior_tendency_mod.F90
+  core_ocean/MARBL/src/marbl_ciso_surface_flux_mod.F90
+  core_ocean/MARBL/src/marbl_co2calc_mod.F90
+  core_ocean/MARBL/src/marbl_constants_mod.F90
+  core_ocean/MARBL/src/marbl_debug_mod.F90
+  core_ocean/MARBL/src/marbl_diagnostics_mod.F90
+  core_ocean/MARBL/src/marbl_diagnostics_share_mod.F90
+  core_ocean/MARBL/src/marbl_glo_avg_mod.F90
+  core_ocean/MARBL/src/marbl_init_mod.F90
+  core_ocean/MARBL/src/marbl_interface.F90
+  core_ocean/MARBL/src/marbl_interface_constants.F90
+  core_ocean/MARBL/src/marbl_interface_private_types.F90
+  core_ocean/MARBL/src/marbl_interface_public_types.F90
+  core_ocean/MARBL/src/marbl_interior_tendency_mod.F90
+  core_ocean/MARBL/src/marbl_interior_tendency_share_mod.F90
+  core_ocean/MARBL/src/marbl_kinds_mod.F90
+  core_ocean/MARBL/src/marbl_logging.F90
+  core_ocean/MARBL/src/marbl_nhx_surface_emis_mod.F90
+  core_ocean/MARBL/src/marbl_oxygen.F90
+  core_ocean/MARBL/src/marbl_pft_mod.F90
+  core_ocean/MARBL/src/marbl_restore_mod.F90
+  core_ocean/MARBL/src/marbl_saved_state_mod.F90
+  core_ocean/MARBL/src/marbl_schmidt_number_mod.F90
+  core_ocean/MARBL/src/marbl_settings_mod.F90
+  core_ocean/MARBL/src/marbl_surface_flux_mod.F90
+  core_ocean/MARBL/src/marbl_surface_flux_share_mod.F90
+  core_ocean/MARBL/src/marbl_temperature.F90
+  core_ocean/MARBL/src/marbl_timing_mod.F90
+  core_ocean/MARBL/src/marbl_utils_mod.F90
+)
+
+# Add PPR
+if (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/core_ocean/ppr/.git)
+  message(FATAL_ERROR "Missing core_ocean/ppr/.git, did you forget to 'git submodule update --init --recursive' ?")
+endif()
+set(PPR_FILES
+  core_ocean/ppr/src/ppr_1d.F90
 )
 
 # Add GOTM
@@ -185,8 +235,8 @@ set(GOTM_FILES
   core_ocean/gotm/src/turbulence/variances.F90
 )
 
-list(APPEND RAW_SOURCES ${CVMIX_FILES} ${BGC_FILES} ${GOTM_FILES})
-list(APPEND NO_PREPROCESS ${CVMIX_FILES} ${BGC_FILES} ${GOTM_FILES})
+list(APPEND RAW_SOURCES ${CVMIX_FILES} ${BGC_FILES} ${MARBL_FILES} ${GOTM_FILES} ${PPR_FILES})
+list(APPEND NO_PREPROCESS ${CVMIX_FILES} ${BGC_FILES} ${MARBL_FILES} ${GOTM_FILES} ${PPR_FILES})
 
 # Add analysis members
 list(APPEND RAW_SOURCES

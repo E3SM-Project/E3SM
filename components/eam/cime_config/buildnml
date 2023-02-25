@@ -202,8 +202,9 @@ def buildnml(case, caseroot, compname):
         # call build-namelist
         # -----------------------------------------------------
 
-        if os.path.exists(os.path.join(casebuild, "eam.input_data_list")):
-            os.remove(os.path.join(casebuild, "eam.input_data_list"))
+        if inst_counter ==1:
+           if os.path.exists(os.path.join(casebuild, "eam.input_data_list")):
+              os.remove(os.path.join(casebuild, "eam.input_data_list"))
 
         cam_buildnml_cmd =  os.path.join(srcroot, "components/eam/bld/build-namelist")
         cam_buildnml_cmd += " -infile {}/cesm_namelist".format(eamconf_dir)

@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -245,14 +245,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_surface_land_ice_fluxes_thick(meshPool, forcingPool, surfaceThicknessFlux, err)!{{{
-
-      !-----------------------------------------------------------------
-      !
-      ! input variables
-      !
-      !-----------------------------------------------------------------
-      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+   subroutine ocn_surface_land_ice_fluxes_thick(forcingPool, surfaceThicknessFlux, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -277,7 +270,6 @@ contains
       !-----------------------------------------------------------------
 
       integer :: iCell
-      integer, pointer :: nCells
 
       real (kind=RKIND), dimension(:), pointer :: landIceFreshwaterFlux
 
@@ -287,19 +279,28 @@ contains
 
       call mpas_timer_start("land_ice_thick")
 
-      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-
       call mpas_pool_get_array(forcingPool, 'landIceFreshwaterFlux', landIceFreshwaterFlux)
 
       ! Build surface fluxes at cell centers
+#ifdef MPAS_OPENACC
+      !$acc enter data copyin(landIceFreshwaterFlux)
+
+      !$acc parallel loop present(surfaceThicknessFlux, landIceFreshwaterFlux)
+#else
       !$omp parallel
       !$omp do schedule(runtime)
-      do iCell = 1, nCells
+#endif
+      do iCell = 1, nCellsAll
         surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + landIceFreshwaterFlux(iCell) / rho_sw
       end do
+#ifndef MPAS_OPENACC
       !$omp end do
       !$omp end parallel
+#endif
 
+#ifdef MPAS_OPENACC
+      !$acc exit data delete(landIceFreshwaterFlux)
+#endif
       call mpas_timer_stop("land_ice_thick")
 
    end subroutine ocn_surface_land_ice_fluxes_thick!}}}
@@ -423,8 +424,6 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), pointer :: tracersPool
-
       integer :: iCell, nCells
       integer, dimension(:), pointer :: nCellsArray
 
@@ -444,7 +443,8 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: &
                                                     landIceInterfaceTracers
 
-      integer, pointer :: indexIT, indexIS
+      integer, pointer :: indexITPtr, indexISPtr
+      integer :: indexIT, indexIS
 
       ! Scratch Arrays
       !---
@@ -476,8 +476,14 @@ contains
       call mpas_pool_get_array(forcingPool, 'heatFluxToLandIce', heatFluxToLandIce)
 
       call mpas_pool_get_array(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracers)
-      call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceTemperature', indexIT)
-      call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceSalinity', indexIS)
+      call mpas_pool_get_dimension(forcingPool, &
+                                'index_landIceInterfaceTemperature', &
+                                 indexITPtr)
+      call mpas_pool_get_dimension(forcingPool, &
+                                'index_landIceInterfaceSalinity', &
+                                 indexISPtr)
+      indexIT = indexITPtr
+      indexIS = indexISPtr
       call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMassNew, 2)
       call mpas_pool_get_array(statePool, 'accumulatedLandIceMass', accumulatedLandIceMassOld, 1)
       call mpas_pool_get_array(statePool, 'accumulatedLandIceHeat', accumulatedLandIceHeatNew, 2)
@@ -811,11 +817,9 @@ contains
     !
     !-----------------------------------------------------------------
 
-    real (kind=RKIND) :: T0, transferVelocityRatio, Tlatent, a, b, c, eta, &
+    real (kind=RKIND) :: T0, transferVelocityRatio, Tlatent, a, b, c, &
                          dTf_dS
     integer :: iCell
-
-    logical :: coupled
 
     real (kind=RKIND), parameter :: minInterfaceSalinity = 0.001_RKIND
 

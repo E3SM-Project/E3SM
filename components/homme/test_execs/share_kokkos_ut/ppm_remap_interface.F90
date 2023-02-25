@@ -18,13 +18,10 @@ contains
     real (kind=real_kind), intent(inout) :: Qdp(nx,nx,nlev,qsize)
     real (kind=real_kind), intent(in)    :: dp1(nx,nx,nlev),dp2(nx,nx,nlev)
 
-    !aim for alg=1 or alg=2 only
-    if(alg == 1 .or. alg == 2 .or. alg == 3) then
-      ! Need to set alg in control_mod, b/c fortran reads it from there
-      vert_remap_q_alg = alg
-      call remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
+    if(alg == 1 .or. alg == 10 .or. alg == 11) then
+      call remap_Q_ppm(Qdp,nx,qsize,dp1,dp2,alg)
     else
-      call abortmp('compute_ppm_grids_c_callable: bad alg (not 1 or 2) .')
+      call abortmp('compute_ppm_grids_c_callable: bad alg (not 1,10 or 11) .')
     endif
 
   end subroutine remap_Q_ppm_c_callable
@@ -38,15 +35,8 @@ contains
     real(kind=real_kind), intent(in)  :: dx(-1:nlev+2)
     real(kind=real_kind), intent(out) :: rslt(10,0:nlev+1)  !grid spacings
 
-    !aim for alg=1 or alg=2 only
-    if(alg == 1 .or. alg == 2 .or. alg == 3) then
-      ! Need to set alg in control_mod, b/c fortran reads it from there
-      vert_remap_q_alg = alg
-      rslt = compute_ppm_grids(dx)
-      rslt(4:10, nlev + 1) = 0.0
-    else
-      call abortmp('compute_ppm_grids_c_callable: bad alg (not 1, 2, or 3) .')
-    endif
+    rslt = compute_ppm_grids(dx)
+    rslt(4:10, nlev + 1) = 0.0
   end subroutine compute_ppm_grids_c_callable
 
   subroutine compute_ppm_c_callable(a,dx,coefs,alg) bind(c)
@@ -59,14 +49,7 @@ contains
     real(kind=real_kind), intent(in) :: dx   (10,  0:nlev+1)  !grid spacings
     real(kind=real_kind), intent(out):: coefs(0:2,   nlev  )  !PPM coefficients (for parabola)
 
-    !aim for alg=1 or alg=2 only
-    if(alg == 1 .or. alg == 2 .or. alg == 3) then
-      ! Need to set alg in control_mod, b/c fortran reads it from there
-      vert_remap_q_alg = alg
-      coefs = compute_ppm(a,dx)
-    else
-      call abortmp('compute_ppm_c_callable: bad alg (not 1, 2, or 3) .')
-    endif
+    coefs = compute_ppm(a,dx)
   end subroutine compute_ppm_c_callable
 
 end module remap_interface

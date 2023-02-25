@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -74,6 +74,7 @@ module ocn_time_average_coupled
                                                     avgOceanSurfaceDMS, &
                                                     avgOceanSurfaceDMSP, &
                                                     avgOceanSurfaceDOCr, &
+                                                    avgOceanSurfaceDOCSemiLabile, &
                                                     avgOceanSurfaceFeParticulate, &
                                                     avgOceanSurfaceFeDissolved
 
@@ -129,6 +130,7 @@ module ocn_time_average_coupled
            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceSiO3', avgOceanSurfaceSiO3)
            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceNH4', avgOceanSurfaceNH4)
            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCr', avgOceanSurfaceDOCr)
+           call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCSemiLabile', avgOceanSurfaceDOCSemiLabile)
            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeParticulate', avgOceanSurfaceFeParticulate)
            call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceFeDissolved', avgOceanSurfaceFeDissolved)
 
@@ -140,6 +142,7 @@ module ocn_time_average_coupled
               avgOceanSurfacePhytoC(:,iCell) = 0.0_RKIND
 
               avgOceanSurfaceDIC(iCell) = 0.0_RKIND
+              avgOceanSurfaceDOCSemiLabile(iCell) = 0.0_RKIND
               avgOceanSurfaceNO3(iCell) = 0.0_RKIND
               avgOceanSurfaceSiO3(iCell) = 0.0_RKIND
               avgOceanSurfaceNH4(iCell) = 0.0_RKIND
@@ -206,7 +209,9 @@ module ocn_time_average_coupled
         real (kind=RKIND), dimension(:,:), pointer :: avgTracersSurfaceValue
         real (kind=RKIND), dimension(:,:), pointer :: avgSSHGradient
         integer :: iCell
-        integer, pointer :: index_temperature, index_SSHzonal, index_SSHmeridional, nAccumulatedCoupled, nCells
+        integer, pointer :: index_temperaturePtr, index_SSHzonalPtr, &
+                 index_SSHmeridionalPtr, nAccumulatedCoupled, nCells
+        integer :: index_temperature, index_SSHzonal, index_SSHmeridional
         real (kind=RKIND), dimension(:,:), pointer :: &
                                                       avgLandIceBoundaryLayerTracers, avgLandIceTracerTransferVelocities
         real (kind=RKIND), dimension(:), pointer :: effectiveDensityInLandIce, avgEffectiveDensityInLandIce, &
@@ -228,6 +233,7 @@ module ocn_time_average_coupled
 
         real (kind=RKIND), dimension(:), pointer :: avgOceanSurfaceDIC, &
                                                     avgOceanSurfaceDON, &
+                                                    avgOceanSurfaceDOCSemiLabile, &
                                                     avgOceanSurfaceNO3, &
                                                     avgOceanSurfaceSiO3, &
                                                     avgOceanSurfaceNH4, &
@@ -248,9 +254,18 @@ module ocn_time_average_coupled
         call mpas_pool_get_array(forcingPool, 'avgTotalFreshWaterTemperatureFlux', avgTotalFreshWaterTemperatureFlux)
 
         call mpas_pool_get_dimension(forcingPool, 'nCells', nCells)
-        call mpas_pool_get_dimension(forcingPool, 'index_avgTemperatureSurfaceValue', index_temperature)
-        call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientZonal', index_SSHzonal)
-        call mpas_pool_get_dimension(forcingPool, 'index_avgSSHGradientMeridional', index_SSHmeridional)
+        call mpas_pool_get_dimension(forcingPool, &
+                                     'index_avgTemperatureSurfaceValue', &
+                                      index_temperaturePtr)
+        call mpas_pool_get_dimension(forcingPool, &
+                                     'index_avgSSHGradientZonal', &
+                                      index_SSHzonalPtr)
+        call mpas_pool_get_dimension(forcingPool, &
+                                     'index_avgSSHGradientMeridional', &
+                                      index_SSHmeridionalPtr)
+        index_temperature   = index_temperaturePtr
+        index_SSHzonal      = index_SSHzonalPtr
+        index_SSHmeridional = index_SSHmeridionalPtr
 
         call mpas_pool_get_array(forcingPool, 'nAccumulatedCoupled', nAccumulatedCoupled)
 
@@ -307,6 +322,7 @@ module ocn_time_average_coupled
 
          call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfacePhytoC', avgOceanSurfacePhytoC)
          call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDIC', avgOceanSurfaceDIC)
+         call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceDOCSemiLabile', avgOceanSurfaceDOCSemiLabile)
          call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceNO3', avgOceanSurfaceNO3)
          call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceSiO3', avgOceanSurfaceSiO3)
          call mpas_pool_get_array(ecosysSeaIceCoupling, 'avgOceanSurfaceNH4', avgOceanSurfaceNH4)
@@ -325,25 +341,28 @@ module ocn_time_average_coupled
               + CO2_gas_flux(iCell) ) / ( nAccumulatedCoupled + 1)
 
            avgOceanSurfacePhytoC(1,iCell) = ( avgOceanSurfacePhytoC(1,iCell) * nAccumulatedCoupled &
-              + ecosysTracers(ecosysIndices%diatC_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+              + ecosysTracers(diatC_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
            avgOceanSurfacePhytoC(2,iCell) = ( avgOceanSurfacePhytoC(2,iCell) * nAccumulatedCoupled &
-              + ecosysTracers(ecosysIndices%spC_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
-           avgOceanSurfacePhytoC(3,iCell) = ( avgOceanSurfacePhytoC(3,iCell) * nAccumulatedCoupled &
-              + ecosysTracers(ecosysIndices%phaeoC_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+              + ecosysTracers(spC_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
+! Currently no Phaeo in MARBL
+!          avgOceanSurfacePhytoC(3,iCell) = ( avgOceanSurfacePhytoC(3,iCell) * nAccumulatedCoupled &
+!             + ecosysTracers(phaeoC_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
+           avgOceanSurfacePhytoC(3,iCell) = 0.0_RKIND
 
            avgOceanSurfaceDIC(iCell) = ( avgOceanSurfaceDIC(iCell) * nAccumulatedCoupled &
-              + ecosysTracers(ecosysIndices%dic_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+              + ecosysTracers(dic_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
+           avgOceanSurfaceDOCSemiLabile(iCell) = ( avgOceanSurfaceDOCSemiLabile(iCell) * nAccumulatedCoupled &
+              + ecosysTracers(doc_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
            avgOceanSurfaceSiO3(iCell) = ( avgOceanSurfaceSiO3(iCell) * nAccumulatedCoupled &
-              + ecosysTracers(ecosysIndices%sio3_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+              + ecosysTracers(sio3_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
            avgOceanSurfaceNO3(iCell) = ( avgOceanSurfaceNO3(iCell) * nAccumulatedCoupled &
-              + ecosysTracers(ecosysIndices%no3_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+              + ecosysTracers(no3_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
            avgOceanSurfaceNH4(iCell) = ( avgOceanSurfaceNH4(iCell) * nAccumulatedCoupled &
-              + ecosysTracers(ecosysIndices%nh4_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+              + ecosysTracers(nh4_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
            avgOceanSurfaceFeDissolved(iCell) = ( avgOceanSurfaceFeDissolved(iCell) * nAccumulatedCoupled &
-              + ecosysTracers(ecosysIndices%fe_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
-!maltrud need to renormalize
+              + ecosysTracers(fe_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
            avgOceanSurfaceDOCr(iCell) = ( avgOceanSurfaceDOCr(iCell) * nAccumulatedCoupled &
-              + ecosysTracers(ecosysIndices%donr_ind,1,iCell) ) / ( nAccumulatedCoupled + 1)
+              + ecosysTracers(docr_ind_MPAS,1,iCell) ) / ( nAccumulatedCoupled + 1)
 
            avgOceanSurfaceFeParticulate(iCell) = 0.0_RKIND
 

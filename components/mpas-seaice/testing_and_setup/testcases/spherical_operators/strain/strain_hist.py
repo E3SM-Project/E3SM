@@ -9,7 +9,7 @@ import matplotlib as mpl
 def strain_hist():
 
     # grid
-    fileGrid = Dataset("x1.40962.grid.nc","r")
+    fileGrid = Dataset("grid.40962.nc","r")
 
     nCells = len(fileGrid.dimensions["nCells"])
     nVertices = len(fileGrid.dimensions["nVertices"])

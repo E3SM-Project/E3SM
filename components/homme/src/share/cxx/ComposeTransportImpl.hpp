@@ -4,6 +4,9 @@
  * See the file 'COPYRIGHT' in the HOMMEXX/src/share/cxx directory
  *******************************************************************************/
 
+#include "Config.hpp"
+#ifdef HOMME_ENABLE_COMPOSE
+
 #ifndef HOMMEXX_COMPOSE_TRANSPORT_IMPL_HPP
 #define HOMMEXX_COMPOSE_TRANSPORT_IMPL_HPP
 
@@ -64,8 +67,8 @@ struct ComposeTransportImpl {
 
     Data ()
       : nelemd(-1), qsize(-1), limiter_option(9), cdr_check(0), hv_q(0),
-        hv_subcycle_q(0), independent_time_steps(false), nu_q(0), hv_scaling(0),
-        dp_tol(-1), geometry_type(0)
+        hv_subcycle_q(0), geometry_type(0), nu_q(0), hv_scaling(0), dp_tol(-1),
+        independent_time_steps(false)
     {}
   };
 
@@ -256,3 +259,4 @@ struct ComposeTransportImpl {
 } // namespace Homme
 
 #endif // HOMMEXX_COMPOSE_TRANSPORT_IMPL_HPP
+#endif // HOMME_ENABLE_COMPOSE

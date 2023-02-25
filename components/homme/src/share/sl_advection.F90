@@ -9,7 +9,8 @@ module sl_advection
   use element_mod, only        : element_t
   use hybvcoord_mod, only      : hvcoord_t
   use time_mod, only           : TimeLevel_t, TimeLevel_Qdp
-  use control_mod, only        : integration, test_case, hypervis_order, transport_alg, limiter_option
+  use control_mod, only        : integration, test_case, hypervis_order, transport_alg, limiter_option,&
+                                 vert_remap_q_alg
   use edge_mod, only           : edgevpack_nlyr, edgevunpack_nlyr, edge_g
   use edgetype_mod, only       : EdgeDescriptor_t, EdgeBuffer_t
   use hybrid_mod, only         : hybrid_t
@@ -17,7 +18,9 @@ module sl_advection
   use perf_mod, only           : t_startf, t_stopf, t_barrierf ! _EXTERNAL
   use parallel_mod, only       : abortmp, parallel_t
   use coordinate_systems_mod, only : cartesian3D_t
+#ifdef HOMME_ENABLE_COMPOSE
   use compose_mod
+#endif
 
   implicit none
 
@@ -137,7 +140,7 @@ contains
   subroutine sl_get_params(nu_q_out, hv_scaling, hv_q, hv_subcycle_q, limiter_option_out, &
        cdr_check, geometry_type) bind(c)
     use control_mod, only: semi_lagrange_hv_q, hypervis_subcycle_q, semi_lagrange_cdr_check, &
-         hypervis_power, nu_q, hypervis_scaling, limiter_option, geometry
+         nu_q, hypervis_scaling, limiter_option, geometry
     use iso_c_binding, only: c_int, c_double
 
     real(c_double), intent(out) :: nu_q_out, hv_scaling
@@ -153,9 +156,6 @@ contains
     geometry_type = 0 ! sphere
     if (trim(geometry) == "plane") geometry_type = 1
 
-    ! Assert some things.
-    if (nu_q > 0 .and. hv_q > 0 .and. hypervis_power /= 0) &
-         call abortmp('SL transport: hypervis_power /= 0')
   end subroutine sl_get_params
 
   subroutine prim_advec_tracers_remap_ALE(elem, deriv, hvcoord, hybrid, dt, tl, nets, nete)
@@ -167,7 +167,9 @@ contains
     ! For DCMIP16 supercell test case.
     use control_mod,            only : dcmip16_mu_q
     use prim_advection_base,    only : advance_physical_vis
+#ifdef HOMME_ENABLE_COMPOSE
     use compose_mod,            only : compose_h2d, compose_d2h
+#endif
     use iso_c_binding,          only : c_bool
 
     implicit none
@@ -195,9 +197,12 @@ contains
     ! Until I get the DSS onto GPU, always need to h<->d.
     !h2d = hybrid%par%nprocs > 1 .or. semi_lagrange_cdr_check .or. & (semi_lagrange_hv_q > 0 .and. nu_q > 0)
     h2d = .true.
+#ifdef HOMME_ENABLE_COMPOSE    
     d2h = compose_d2h .or. h2d
     h2d = compose_h2d .or. h2d
-
+#else
+    d2h = h2d
+#endif
     call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
 
     call calc_trajectory(elem, deriv, hvcoord, hybrid, dt, tl, &
@@ -328,7 +333,8 @@ contains
                deriv, dp_tol, elem(ie)%derived%divdp)
           wr(:,:,:,1) = elem(ie)%derived%vn0(:,:,1,:)*elem(ie)%state%dp3d(:,:,:,tl%np1)
           wr(:,:,:,2) = elem(ie)%derived%vn0(:,:,2,:)*elem(ie)%state%dp3d(:,:,:,tl%np1)
-          call remap1(wr, np, 2, elem(ie)%state%dp3d(:,:,:,tl%np1), elem(ie)%derived%divdp)
+          call remap1(wr, np, 2, elem(ie)%state%dp3d(:,:,:,tl%np1), elem(ie)%derived%divdp,&
+               vert_remap_q_alg)
           elem(ie)%derived%vn0(:,:,1,:) = wr(:,:,:,1)/elem(ie)%derived%divdp
           elem(ie)%derived%vn0(:,:,2,:) = wr(:,:,:,2)/elem(ie)%derived%divdp
        end do
@@ -1063,7 +1069,7 @@ contains
        end if
 #endif
        call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp), np, qsize, elem(ie)%derived%divdp, &
-            elem(ie)%state%dp3d(:,:,:,tl%np1))
+            elem(ie)%state%dp3d(:,:,:,tl%np1),vert_remap_q_alg)
        do q = 1,qsize
           elem(ie)%state%Q(:,:,:,q) = elem(ie)%state%Qdp(:,:,:,q,np1_qdp)/ &
                                       elem(ie)%state%dp3d(:,:,:,tl%np1)

@@ -244,6 +244,30 @@
     </values>
   </entry>
 
+  <entry id="lnd_rof_two_way">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If set to .true., adds fields needed to calculate land-river two-way coupling
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
+  <entry id="ocn_rof_two_way">
+    <type>logical</type>
+    <category>seq_flds</category>
+    <group>seq_cplflds_inparm</group>
+    <desc>
+      If set to .true., adds fields needed to calculate river-ocean two-way coupling
+    </desc>
+    <values>
+      <value>.false.</value>
+    </values>
+  </entry>
+
   <!-- =========================== -->
   <!-- -group seq_cplflds_custom   -->
   <!-- =========================== -->
@@ -1016,6 +1040,20 @@
     </desc>
     <values>
       <value>$BUDGETS</value>
+    </values>
+  </entry>
+
+  <entry id="do_bgc_budgets">
+    <type>logical</type>
+    <category>budget</category>
+    <group>seq_infodata_inparm</group>
+    <desc>
+      logical that turns on BGC diagnostic budgets, false means BGC budgets will never be written
+    </desc>
+    <values>
+      <value>.false.</value>
+      <value BGC_MODE="CO2.*">.true.</value>
+      <value BGC_MODE=".*_OI">.true.</value>
     </values>
   </entry>
 
@@ -2549,6 +2587,14 @@
     </values>
   </entry>
 
+  <entry id="atm_excl_stride" modify_via_xml="EXCL_STRIDE_ATM">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_ATM</value></values>
+  </entry>
+
   <entry id="lnd_ntasks" modify_via_xml="NTASKS_LND">
     <type>integer</type>
     <category>cime_pes</category>
@@ -2612,6 +2658,14 @@
     <values>
       <value>$NINST_LND_LAYOUT</value>
     </values>
+  </entry>
+
+  <entry id="lnd_excl_stride" modify_via_xml="EXCL_STRIDE_LND">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_LND</value></values>
   </entry>
 
   <entry id="ice_ntasks" modify_via_xml="NTASKS_ICE">
@@ -2679,6 +2733,14 @@
     </values>
   </entry>
 
+  <entry id="ice_excl_stride" modify_via_xml="EXCL_STRIDE_ICE">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_ICE</value></values>
+  </entry>
+
   <entry id="ocn_ntasks" modify_via_xml="NTASKS_OCN">
     <type>integer</type>
     <category>cime_pes</category>
@@ -2742,6 +2804,14 @@
     <values>
       <value>$NINST_OCN_LAYOUT</value>
     </values>
+  </entry>
+
+  <entry id="ocn_excl_stride" modify_via_xml="EXCL_STRIDE_OCN">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_OCN</value></values>
   </entry>
 
   <entry id="glc_ntasks" modify_via_xml="NTASKS_GLC">
@@ -2809,6 +2879,14 @@
     </values>
   </entry>
 
+  <entry id="glc_excl_stride" modify_via_xml="EXCL_STRIDE_GLC">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_GLC</value></values>
+  </entry>
+
   <entry id="wav_ntasks" modify_via_xml="NTASKS_WAV">
     <type>integer</type>
     <category>cime_pes</category>
@@ -2872,6 +2950,14 @@
     <values>
       <value>$NINST_WAV_LAYOUT</value>
     </values>
+  </entry>
+
+  <entry id="wav_excl_stride" modify_via_xml="EXCL_STRIDE_WAV">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_WAV</value></values>
   </entry>
 
   <entry id="iac_ntasks" modify_via_xml="NTASKS_IAC">
@@ -2939,6 +3025,14 @@
     </values>
   </entry>
 
+  <entry id="iac_excl_stride" modify_via_xml="EXCL_STRIDE_IAC">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_IAC</value></values>
+  </entry>
+
   <entry id="rof_ntasks" modify_via_xml="NTASKS_ROF">
     <type>integer</type>
     <category>cime_pes</category>
@@ -3002,6 +3096,14 @@
     <values>
       <value>$NINST_ROF_LAYOUT</value>
     </values>
+  </entry>
+
+  <entry id="rof_excl_stride" modify_via_xml="EXCL_STRIDE_ROF">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_ROF</value></values>
   </entry>
 
   <entry id="esp_ntasks" modify_via_xml="NTASKS_ESP">
@@ -3069,6 +3171,14 @@
     </values>
   </entry>
 
+  <entry id="esp_excl_stride" modify_via_xml="EXCL_STRIDE_ESP">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_ESP</value></values>
+  </entry>
+
   <entry  id="cpl_ntasks" modify_via_xml="NTASKS_CPL">
     <type>integer</type>
     <category>cime_pes</category>
@@ -3119,6 +3229,14 @@
     <values>
       <value>$PSTRID_CPL</value>
     </values>
+  </entry>
+
+  <entry id="cpl_excl_stride" modify_via_xml="EXCL_STRIDE_CPL">
+    <type>integer</type>
+    <category>cime_pes</category>
+    <group>cime_pes</group>
+    <desc>Stride of MPI tasks owned exclusively by a component.</desc>
+    <values><value>$EXCL_STRIDE_CPL</value></values>
   </entry>
 
   <entry id="info_taskmap_model">
@@ -4809,6 +4927,36 @@
     </desc>
     <values>
       <value>$IAC2LND_SMAPTYPE</value>
+      <value bfbflag="on">X</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2rof_smapname"    modify_via_xml="OCN2ROF_SMAPNAME">
+    <type>char</type>
+    <category>mapping</category>
+    <input_pathname>abs</input_pathname>
+    <group>seq_maps</group>
+    <desc>
+      ocn to rof mapping file for states
+    </desc>
+    <values>
+      <value>$OCN2ROF_SMAPNAME</value>
+    </values>
+  </entry>
+
+  <entry id="ocn2rof_smaptype"    modify_via_xml="OCN2ROF_SMAPTYPE">
+    <type>char</type>
+    <category>mapping</category>
+    <group>seq_maps</group>
+    <desc>
+      The type of mapping desired, either "source" or "destination" mapping.
+      X is associated with rearrangement of the source grid to the
+      destination grid and then local mapping.  Y is associated with mapping
+      on the source grid and then rearrangement and sum to the destination
+      grid.
+    </desc>
+    <values>
+      <value>$OCN2ROF_SMAPTYPE</value>
       <value bfbflag="on">X</value>
     </values>
   </entry>

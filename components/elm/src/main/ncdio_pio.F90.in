@@ -1419,7 +1419,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
           if ( count(1) > size(tmpString) )then
              write(iulog,*) subname//' ERROR: input string size is too large:'
           end if
-          status = pio_put_var(ncid, varid, start, count, ival=tmpString(1:count(1)))
+          status = pio_put_var(ncid, varid, start, count, tmpString(1:count(1)))
        else
           status = pio_put_var(ncid, varid, data )
        end if

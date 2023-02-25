@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 module compose_mod
 
   implicit none
@@ -106,11 +110,12 @@ module compose_mod
      end subroutine cedr_sl_set_dp3d
 
      subroutine cedr_sl_set_dp(ie, dp) bind(c)
+       use iso_c_binding , only : c_int, c_double
        use kinds         , only : real_kind
        use dimensions_mod, only : nlev, np
        use element_state,  only : timelevels
-       integer, value, intent(in) :: ie
-       real(kind=real_kind), intent(in) :: dp(np,np,nlev)
+       integer(kind=c_int), value, intent(in) :: ie
+       real(kind=c_double), intent(in) :: dp(np,np,nlev)
      end subroutine cedr_sl_set_dp
 
      subroutine cedr_sl_set_Q(ie, Q) bind(c)
@@ -128,25 +133,25 @@ module compose_mod
      subroutine cedr_sl_run_global(minq, maxq, nets, nete) bind(c)
        use iso_c_binding, only: c_int, c_double
        use dimensions_mod, only : nlev, np, qsize
+       integer(kind=c_int), value, intent(in) :: nets, nete
        real(kind=c_double), intent(in) :: minq(np,np,nlev,qsize,nets:nete)
        real(kind=c_double), intent(in) :: maxq(np,np,nlev,qsize,nets:nete)
-       integer(kind=c_int), value, intent(in) :: nets, nete
      end subroutine cedr_sl_run_global
 
      subroutine cedr_sl_run_local(minq, maxq, nets, nete, use_ir, limiter_option) bind(c)
        use iso_c_binding, only: c_int, c_double
        use dimensions_mod, only : nlev, np, qsize
+       integer(kind=c_int), value, intent(in) :: nets, nete, use_ir, limiter_option
        real(kind=c_double), intent(in) :: minq(np,np,nlev,qsize,nets:nete)
        real(kind=c_double), intent(in) :: maxq(np,np,nlev,qsize,nets:nete)
-       integer(kind=c_int), value, intent(in) :: nets, nete, use_ir, limiter_option
      end subroutine cedr_sl_run_local
 
      subroutine cedr_sl_check(minq, maxq, nets, nete) bind(c)
        use iso_c_binding, only: c_int, c_double
        use dimensions_mod, only : nlev, np, qsize
+       integer(kind=c_int), value, intent(in) :: nets, nete
        real(kind=c_double), intent(in) :: minq(np,np,nlev,qsize,nets:nete)
        real(kind=c_double), intent(in) :: maxq(np,np,nlev,qsize,nets:nete)
-       integer(kind=c_int), value, intent(in) :: nets, nete
      end subroutine cedr_sl_check
 
      subroutine slmm_init_local_mesh(ie, neigh_corners, num_neighbors, pinside, &
@@ -369,9 +374,9 @@ contains
   subroutine compose_finalize(finalize_kokkos)
     logical, optional, intent(in) :: finalize_kokkos
 
+#ifdef HOMME_ENABLE_COMPOSE
     logical :: call_finalize_kokkos
 
-#ifdef HOMME_ENABLE_COMPOSE
     call cedr_finalize()
     call slmm_finalize()
 
@@ -424,9 +429,9 @@ contains
     use repro_sum_mod, only: repro_sum
 #endif
 
+    integer(kind=c_int), value, intent(in) :: nlocal, nfld, comm
     real(kind=c_double), intent(in) :: send(nlocal,nfld)
     real(kind=c_double), intent(out) :: recv(nfld)
-    integer(kind=c_int), value, intent(in) :: nlocal, nfld, comm
 
     call repro_sum(send, recv, nlocal, nlocal, nfld, commid=comm)
   end subroutine compose_repro_sum

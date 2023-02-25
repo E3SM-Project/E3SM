@@ -1,9 +1,6 @@
-from __future__ import print_function
-
 import subprocess
 import argparse
-from six.moves.urllib.parse import urlparse
-import string
+from urllib.parse import urlparse
 import os.path
 
 #-------------------------------------------------------------------------------
@@ -50,9 +47,9 @@ manifestFile = open("manifest","r")
 
 filenames = manifestFile.readlines()
 for filename in filenames:
-    if (not os.path.exists(os.path.dirname(string.strip(filename)))):
-        os.makedirs(os.path.dirname(string.strip(filename)))
-    download_file(url + string.strip(filename), string.strip(filename), proxy)
+    if (not os.path.exists(os.path.dirname(filename.strip()))):
+        os.makedirs(os.path.dirname(filename.strip()))
+    download_file(url + filename.strip(), filename.strip(), proxy)
 
 manifestFile.close()
     

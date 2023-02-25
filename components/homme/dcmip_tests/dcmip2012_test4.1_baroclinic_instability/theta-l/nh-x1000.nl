@@ -33,7 +33,6 @@ hypervis_order = 2
 hypervis_subcycle = 1    ! NOTE: for tstep>.16, may need to subcycle viscosity
 /
 &vert_nl
-vform         = "ccm"
 vfile_mid = '../vcoord/camm-30.ascii'
 vfile_int = '../vcoord/cami-30.ascii'
 /

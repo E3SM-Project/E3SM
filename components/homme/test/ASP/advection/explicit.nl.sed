@@ -41,7 +41,6 @@ wght_fm       = 0.10D0
 kcut_fm       = 2
 /
 &vert_nl
-vform         = "ccm"
 vfile_mid     = "vcoord/aspL60_mid.ascii"
 vfile_int     = "vcoord/aspL60_int.ascii"
 /

@@ -33,7 +33,7 @@ if (CONVERT_TO_MAKE)
 
   foreach (VAR_AFTER IN LISTS VARS_AFTER)
     if (NOT VAR_AFTER IN_LIST VARS_BEFORE_BUILD_INTERNAL_IGNORE)
-      message("E3SM_SET_MAKEFILE_VAR ${VAR_AFTER} := ${${VAR_AFTER}}")
+      message("CIME_SET_MAKEFILE_VAR ${VAR_AFTER} := ${${VAR_AFTER}}")
     endif()
   endforeach()
 endif()

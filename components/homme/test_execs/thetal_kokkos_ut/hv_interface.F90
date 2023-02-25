@@ -136,6 +136,7 @@ contains
                                   dp_ref_ptr, theta_ref_ptr, phi_ref_ptr,      &
                                   v_ptr,w_ptr,vtheta_ptr,dp_ptr,phinh_ptr) bind(c)
     use control_mod,            only: hypervis_scaling, theta_hydrostatic_mode
+    use control_mod,            only: hypervis_subcycle_tom
     use prim_advance_mod,       only: advance_hypervis
     use geometry_interface_mod, only: elem, hybrid
     use dimensions_mod,         only: nelemd
@@ -164,6 +165,7 @@ contains
     real (kind=real_kind), pointer :: phi_ref   (:,:,:,:)
 
     hypervis_scaling = hv_scaling
+    hypervis_subcycle_tom = 0
     theta_hydrostatic_mode = hydrostatic
 
     call c_f_pointer(v_ptr,      v,      [np,np,2,nlev,  timelevels, nelemd])

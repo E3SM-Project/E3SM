@@ -457,6 +457,11 @@ module shr_reprosum_mod
          abort_inf_nan = .not. allow_infnan
       endif
 
+! with Fujitsu always abort on NaNs or INFs in input
+#ifdef CPRFJ
+      abort_inf_nan = .true.
+#endif
+
       call t_startf('shr_reprosum_INF_NaN_Chk')
 
 ! initialize flags to indicate that no NaNs or INFs are present in the input data
@@ -484,6 +489,7 @@ module shr_reprosum_mod
 
          endif
 
+#ifndef CPRFJ
       else
 
 ! determine whether any fields contain NaNs or INFs, and avoid processing them
@@ -505,6 +511,7 @@ module shr_reprosum_mod
          do ifld=1,nflds
             arr_gsum_infnan(ifld) = any(inf_nan_gchecks(:,ifld))
          enddo
+#endif
 
       endif
 

@@ -7,7 +7,7 @@
 			description="Timestamp determining how often analysis member computation should be performed."
 			possible_values="Any valid time stamp, 'dt', or 'output_interval'"
 		/>
-		<nml_option name="config_AM_ridgingDiagnostics_output_stream" type="character" default_value="output" units="unitless"
+		<nml_option name="config_AM_ridgingDiagnostics_output_stream" type="character" default_value="none" units="unitless"
 			description="Name of the stream that the ridgingDiagnostics analysis member should be tied to."
 			possible_values="Any existing stream name or 'none'"
 		/>

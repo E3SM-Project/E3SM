@@ -1,0 +1,2 @@
+./xmlchange --append -id CAM_CONFIG_OPTS -val " -crm samomp "
+./xmlchange NTHRDS=1

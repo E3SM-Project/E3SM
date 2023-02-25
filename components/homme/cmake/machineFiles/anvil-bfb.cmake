@@ -62,5 +62,5 @@ SET (USE_MPIEXEC "srun" CACHE STRING "")
 SET (USE_MPI_OPTIONS "-K --cpu_bind=cores" CACHE STRING "")
 SET (USE_QUEUING FALSE CACHE BOOL "")
 # for standalone HOMME builds:
-SET (CPRNC_DIR /lcrc/group/e3sm/tools/cprnc CACHE FILEPATH "")
+SET (CPRNC_DIR /lcrc/group/e3sm/soft/tools/cprnc CACHE FILEPATH "")
 

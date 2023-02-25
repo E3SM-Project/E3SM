@@ -116,7 +116,9 @@ module VegetationPropertiesType
      real(r8), pointer :: lamda_ptase              => null()! critical value that incur biochemical production
      real(r8), pointer :: i_vc(:)          => null()        ! intercept of photosynthesis vcmax ~ leaf n content regression model
      real(r8), pointer :: s_vc(:)          => null()        ! slope of photosynthesis vcmax ~ leaf n content regression model
-
+     real(r8), pointer :: nsc_rtime(:)     => null()        ! non-structural carbon residence time 
+     real(r8), pointer :: pinit_beta1(:)   => null()        ! shaping parameter for P initialization
+     real(r8), pointer :: pinit_beta2(:)   => null()        ! shaping parameter for P initialization
      real(r8), pointer :: alpha_nfix(:)    => null()        ! fraction of fixed N goes directly to plant
      real(r8), pointer :: alpha_ptase(:)   => null()        ! fraction of phosphatase produced P goes directly to plant
      real(r8), pointer :: ccost_nfix(:)    => null()        ! plant C cost per unit N produced by N2 fixation
@@ -174,7 +176,7 @@ contains
     use pftvarcon , only : vmax_nfix, km_nfix
     use pftvarcon , only : alpha_nfix, alpha_ptase,ccost_nfix,ccost_ptase
     use pftvarcon , only : vmax_ptase, km_ptase, lamda_ptase
-    use pftvarcon , only : i_vc, s_vc
+    use pftvarcon , only : i_vc, s_vc, nsc_rtime, pinit_beta1, pinit_beta2
     use pftvarcon , only : leafcn_obs, frootcn_obs, livewdcn_obs, deadwdcn_obs
     use pftvarcon , only : leafcp_obs, frootcp_obs, livewdcp_obs, deadwdcp_obs
     use pftvarcon , only : fnr, act25, kcha, koha, cpha, vcmaxha, jmaxha, tpuha
@@ -267,6 +269,9 @@ contains
     allocate( this%vmax_ptase(0:numpft))                         ; this%vmax_ptase(:)            =nan
     allocate( this%i_vc(0:numpft))                               ; this%i_vc(:)                  =nan
     allocate( this%s_vc(0:numpft))                               ; this%s_vc(:)                  =nan
+    allocate( this%nsc_rtime(0:numpft))                          ; this%nsc_rtime(:)             =nan
+    allocate( this%pinit_beta1(0:nsoilorder))                    ; this%pinit_beta1(:)           =nan
+    allocate( this%pinit_beta2(0:nsoilorder))                    ; this%pinit_beta2(:)           =nan
     allocate( this%vmax_nfix(0:numpft))                          ; this%vmax_nfix(:)             =nan
     allocate( this%km_nfix(0:numpft))                            ; this%km_nfix(:)               =nan
     allocate( this%fnr(0:numpft))                                ; this%fnr(:)                   =nan
@@ -404,6 +409,7 @@ contains
         this%km_plant_p(m)     = km_plant_p(m)
         this%i_vc(m)           = i_vc(m)
         this%s_vc(m)           = s_vc(m)
+        this%nsc_rtime(m)      = nsc_rtime(m)
         this%vmax_nfix(m)      = vmax_nfix(m)
         this%km_nfix(m)        = km_nfix(m)
         this%vmax_ptase(m)     = vmax_ptase(m)
@@ -425,6 +431,8 @@ contains
     end do
 
     do m = 0, nsoilorder
+       this%pinit_beta1(m) = pinit_beta1(m)
+       this%pinit_beta2(m) = pinit_beta2(m)
        do j = 1 , nlevdecomp
           this%vmax_minsurf_p_vr(m,j) = vmax_minsurf_p_vr(j,m)
           this%km_minsurf_p_vr(m,j) = km_minsurf_p_vr(j,m)

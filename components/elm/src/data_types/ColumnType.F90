@@ -72,6 +72,10 @@ module ColumnType
      ! other column characteristics
      logical , pointer :: hydrologically_active(:) => null()  ! true if this column is a hydrologically active type
 
+     ! Is this a FATES column?
+     logical, pointer :: is_fates(:) => null() ! True if this column is associated with a FATES active column
+                                               ! False if otherwise. If fates is turned off, this array is
+                                               ! all false
    contains
 
      procedure, public :: Init => col_pp_init
@@ -131,6 +135,9 @@ contains
 
     allocate(this%hydrologically_active(begc:endc))            ; this%hydrologically_active(:) = .false.
 
+    ! Assume that columns are not fates columns until fates initialization begins
+    allocate(this%is_fates(begc:endc)); this%is_fates(:) = .false.
+    
   end subroutine col_pp_init
 
   !------------------------------------------------------------------------
@@ -168,7 +175,8 @@ contains
     deallocate(this%nlevbed    )
     deallocate(this%zibed      )
     deallocate(this%hydrologically_active)
-
+    deallocate(this%is_fates)
+    
   end subroutine col_pp_clean
 
 end module ColumnType

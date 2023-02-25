@@ -1,6 +1,6 @@
 include_directories (
   ${CMAKE_CURRENT_BINARY_DIR}
-  ${HOMME_SOURCE_DIR}/utils/cime/src/share/timing)
+  ${HOMME_SOURCE_DIR}/utils/cime/CIME/non_py/src/timing)
 if (ENABLE_HORIZ_OPENMP)
   add_definitions(-DHORIZ_OPENMP)
 endif ()
@@ -9,6 +9,10 @@ if (ENABLE_COLUMN_OPENMP)
 endif ()
 if (COMPOSE_PORT)
   add_definitions(-DCOMPOSE_PORT)
+endif ()
+if (NOT HOMMEXX_MPI_ON_DEVICE)
+  message("compose> MPI on host")
+  add_definitions(-DCOMPOSE_MPI_ON_HOST)
 endif ()
 add_library (${COMPOSE_LIBRARY}
   compose_test.cpp

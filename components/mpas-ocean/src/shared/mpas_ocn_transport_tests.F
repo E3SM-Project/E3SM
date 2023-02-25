@@ -109,7 +109,6 @@ module ocn_transport_tests
                                       forcingPool, &
                                       tracersPool
     integer, pointer :: nVertLevels, &
-                        nVertLevelsP1,&
                         nCellsSolve, &
                         nEdgesSolve, &
                         nEdge, &
@@ -131,8 +130,7 @@ module ocn_transport_tests
                                                 fEdge, &
                                                 fVertex, &
                                                 xCell, &
-                                                yCell, &
-                                                interfaceLocations
+                                                yCell
     real (kind=RKIND), dimension(:,:), pointer :: layerThickness, &
                                                   restingThickness, &
                                                   normalVelocity
@@ -143,8 +141,7 @@ module ocn_transport_tests
     integer :: iCell, &
                iEdge, &
                iVertex, &
-               k, &
-               kML
+               k
 
     real (kind=RKIND) :: vs
 
@@ -614,7 +611,7 @@ subroutine ocn_transport_test_velocity(meshPool, days_since_start, dt, normalVel
 
   pure function great_circle_dist_ll(lon1, lat1, lon2, lat2, radius) result(dist)
     real(RKIND), intent(in) :: lon1, lat1, lon2, lat2, radius
-    real(RKIND) :: dist, xA, yA, zA, xB, yB, zB, cp1, cp2, cp3, cpnorm, dotprod
+    real(RKIND) :: dist, xA, yA, zA, xB, yB, zB
     call lonlat2xyz(lon1, lat1, xA, yA, zA)
     call lonlat2xyz(lon2, lat2, xB, yB, zB)
     dist = radius*great_circle_dist_xyz(xA, yA, zA, xB, yB, zB)

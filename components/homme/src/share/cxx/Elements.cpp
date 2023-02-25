@@ -13,13 +13,14 @@
 namespace Homme {
 
 void Elements::init(const int num_elems, const bool consthv, const bool alloc_gradphis,
+                    const Real rearth,
                     const bool alloc_sphere_coords) {
   // Sanity check
   assert (num_elems>0);
 
   m_num_elems = num_elems;
 
-  m_geometry.init(num_elems,consthv,alloc_gradphis,alloc_sphere_coords);
+  m_geometry.init(num_elems,consthv,alloc_gradphis,rearth,alloc_sphere_coords);
   m_state.init(num_elems);
   m_derived.init(num_elems);
   m_forcing.init(num_elems);

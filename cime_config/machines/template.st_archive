@@ -12,7 +12,7 @@ is called by case.submit on batch systems.
 import sys, os, time
 os.chdir( '{{ caseroot }}')
 
-_LIBDIR = os.path.join("{{ cimeroot }}", "scripts", "Tools")
+_LIBDIR = os.path.join("{{ cimeroot }}", "CIME", "Tools")
 sys.path.append(_LIBDIR)
 
 from standard_script_setup          import *

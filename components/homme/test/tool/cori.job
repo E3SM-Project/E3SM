@@ -15,7 +15,7 @@ set exe = $WDIR/src/tool/homme_tool
 # compile the tool
 cd $WDIR
 if (! -x $exe ) then
-  set output = `$TOOLDIR/../../../../cime/scripts/Tools/get_case_env`
+  set output = `$TOOLDIR/../../../../cime/CIME/Tools/get_case_env`
   eval $output
   cmake -C $TOOLDIR/../../cmake/machineFiles/cori-knl.cmake  -DPREQX_PLEV=128  $TOOLDIR/../..
   make -j4 homme_tool

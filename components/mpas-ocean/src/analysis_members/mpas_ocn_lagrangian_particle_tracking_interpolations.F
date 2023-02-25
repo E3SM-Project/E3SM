@@ -3,7 +3,7 @@
 !
 ! Unless noted otherwise source code is licensed under the BSD license.
 ! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.com/license.html
+! distributed with this code, or at http://mpas-dev.github.io/license.html
 !
 !***********************************************************************
 !
@@ -235,7 +235,7 @@ module ocn_lagrangian_particle_tracking_interpolations
     real (kind=RKIND), dimension(:), allocatable :: lambda
     real (kind=RKIND), dimension(:,:), allocatable :: pointVertex
     real (kind=RKIND), dimension(3) :: pointInterp
-    real (kind=RKIND) :: xp,yp,zp , sumArea, kiteArea
+    real (kind=RKIND) :: sumArea, kiteArea
     logical, pointer :: is_periodic
     real(kind=RKIND), pointer :: x_period, y_period
 
@@ -358,7 +358,6 @@ module ocn_lagrangian_particle_tracking_interpolations
     real (kind=RKIND), dimension(:), allocatable :: lambda
     real (kind=RKIND), dimension(3) :: pointInterp
     real (kind=RKIND), dimension(:,:), allocatable :: pointVertex
-    real (kind=RKIND) :: xp,yp,zp
 
     ucReconstructX = 0.0_RKIND
     ucReconstructY = 0.0_RKIND

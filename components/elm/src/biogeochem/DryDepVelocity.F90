@@ -49,11 +49,11 @@ Module DryDepVelocity
   use abortutils           , only : endrun
   use clm_time_manager     , only : get_nstep, get_curr_date, get_curr_time
   use spmdMod              , only : masterproc
-  use seq_drydep_mod_elm       , only : n_drydep, drydep_list
-  use seq_drydep_mod_elm       , only : drydep_method, DD_XLND
-  use seq_drydep_mod_elm       , only : index_o3=>o3_ndx, index_o3a=>o3a_ndx, index_so2=>so2_ndx, index_h2=>h2_ndx
-  use seq_drydep_mod_elm       , only : index_co=>co_ndx, index_ch4=>ch4_ndx, index_pan=>pan_ndx
-  use seq_drydep_mod_elm       , only : index_xpan=>xpan_ndx
+  use seq_drydep_mod       , only : n_drydep, drydep_list
+  use seq_drydep_mod       , only : drydep_method, DD_XLND
+  use seq_drydep_mod       , only : index_o3=>o3_ndx, index_o3a=>o3a_ndx, index_so2=>so2_ndx, index_h2=>h2_ndx
+  use seq_drydep_mod       , only : index_co=>co_ndx, index_ch4=>ch4_ndx, index_pan=>pan_ndx
+  use seq_drydep_mod       , only : index_xpan=>xpan_ndx
   use decompMod            , only : bounds_type
   use elm_varcon           , only : namep
   use atm2lndType          , only : atm2lnd_type
@@ -90,9 +90,17 @@ CONTAINS
   !------------------------------------------------------------------------
   subroutine Init(this, bounds)
 
+    use elm_varctl     , only : use_fates, use_fates_sp
+
     class(drydepvel_type) :: this
     type(bounds_type), intent(in) :: bounds
 
+    if ( (.not. use_fates_sp) .and. use_fates .and. &
+         (n_drydep > 0 .and. drydep_method == DD_XLND) )then
+       call endrun('ERROR: Dry-deposition currently does NOT work with FATES outside of FATES-SP mode'//&
+            errMsg(__FILE__, __LINE__))
+    end if
+    
     call this%InitAllocate(bounds)
 
   end subroutine Init
@@ -101,8 +109,8 @@ CONTAINS
   subroutine InitAllocate(this, bounds)
     !
     ! !USES:
-      use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-    use seq_drydep_mod_elm , only : n_drydep, drydep_method, DD_XLND
+    use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
+    use seq_drydep_mod , only : n_drydep, drydep_method, DD_XLND
     use elm_varcon , only : spval
     !
     ! !ARGUMENTS:
@@ -133,8 +141,8 @@ CONTAINS
     ! !USES:
       !$acc routine seq
     use shr_const_mod  , only : tmelt => shr_const_tkfrz
-    use seq_drydep_mod_elm , only : seq_drydep_setHCoeff, mapping, drat, foxd
-    use seq_drydep_mod_elm , only : rcls, h2_a, h2_b, h2_c, ri, rac, rclo, rlu, rgss, rgso
+    use seq_drydep_mod , only : seq_drydep_setHCoeff, mapping, drat, foxd
+    use seq_drydep_mod , only : rcls, h2_a, h2_b, h2_c, ri, rac, rclo, rlu, rgss, rgso
     use landunit_varcon, only : istsoil, istice, istice_mec, istdlak, istwet
     use elm_varctl     , only : iulog
     use pftvarcon      , only : noveg, ndllf_evr_tmp_tree, ndllf_evr_brl_tree
@@ -456,7 +464,9 @@ CONTAINS
                   rlux(ispec)=1.e36_r8
                else
 
-                  rs=(fsun(pi)*rssun(pi))+(rssha(pi)*(1._r8-fsun(pi)))
+                  !Following Emmons et al (2020, JAMES), the stomatal resistances for shaded and sunlit
+                  !leaves should be added in parallel
+                  rs = 1.0_r8 / ( fsun(pi)/rssun(pi) + (1.0_r8 - fsun(pi))/rssha(pi) )
                   if (rs==0._r8) then ! fvitt -- what to do when rs is zero ???
                      rsmx(ispec) = 1.e36_r8
                   else

@@ -10,7 +10,6 @@ topology      = "cube"
 test_case     = "swtc5"
 ndays         = 15
 statefreq     = 1440
-tasknum       = 0
 restartfreq   = -1
 restartfile   = "./restart/R000000050"
 runtype       = 0
@@ -28,8 +27,6 @@ hypervis_power = 4
 mesh_file = '/home/onguba/homme7/test/mesh_refine/grids/grid_10_x8_iter10halo2.g'
 which_vlaplace=2
 hypervis_scaling = 0
-fine_ne = 240
-!max_hypervis_courant = 1.9
 /
 &solver_nl
 precon_method = "block_jacobi"

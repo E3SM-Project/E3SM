@@ -10,11 +10,10 @@ LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
 
 SET(TRILINOS_ZOLTAN_DIR ${HOMME_SOURCE_DIR}/src/zoltan)
 SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/preqx_acc)
-SET(UTILS_SHARE_DIR   ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
 SET(SRC_SHARE_DIR     ${HOMME_SOURCE_DIR}/src/share)
 SET(TEST_SRC_DIR      ${HOMME_SOURCE_DIR}/src/test_src)
-SET(UTILS_TIMING_DIR  ${HOMME_BINARY_DIR}/utils/cime/src/share/timing)
+SET(UTILS_TIMING_DIR  ${HOMME_BINARY_DIR}/utils/cime/CIME/non_py/src/timing)
 
 # Make INCLUDE_DIRS global so the tests can access it
 SET (EXEC_INCLUDE_DIRS ${PIO_INCLUDE_DIRS}
@@ -53,13 +52,6 @@ SET(PREQX_SRCS_F90
   ${SRC_DIR}/netcdf_io_mod.F90 
   ${SRC_DIR}/prim_main.F90 
   ${SRC_DIR}/test_mod.F90
-  ${UTILS_SHARE_DIR}/shr_kind_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_mpi_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_sys_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_file_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_vmath_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_const_mod.F90 
-  ${UTILS_SHARE_DIR}/shr_spfn_mod.F90 
   )
 
 IF (${HOMME_USE_TRILINOS})
