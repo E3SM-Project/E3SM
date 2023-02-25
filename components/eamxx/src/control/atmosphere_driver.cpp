@@ -306,16 +306,21 @@ void AtmosphereDriver::setup_surface_coupling_processes () const
   }
 }
 
-void AtmosphereDriver::set_precipitation_fields_to_zero ()
+void AtmosphereDriver::reset_accummulated_fields ()
 {
-  auto phys_grid = m_grids_manager->get_grid("Physics");
+  constexpr Real zero = 0;
+  for (auto fm_it : m_field_mgrs) {
+    const auto& fm = fm_it.second;
+    if (not fm->has_group("ACCUMULATED")) {
+      continue;
+    }
 
-  const auto field_mgr = get_field_mgr(phys_grid->name());
-  if (field_mgr->has_field("precip_ice_surf_mass")) {
-    field_mgr->get_field("precip_ice_surf_mass").deep_copy(0.0);
-  }
-  if (field_mgr->has_field("precip_liq_surf_mass")) {
-    field_mgr->get_field("precip_liq_surf_mass").deep_copy(0.0);
+    auto accum_group = fm->get_field_group("ACCUMULATED");
+    for (auto f_it : accum_group.m_fields) {
+      auto& track = f_it.second->get_header().get_tracking();
+      f_it.second->deep_copy(zero);
+      track.set_accum_start_time(m_current_ts);
+    }
   }
 }
 
@@ -775,11 +780,6 @@ void AtmosphereDriver::restart_model ()
 
   // Close files and finalize all pio data structs
   model_restart.finalize();
-
-  // Zero out precipitation fluxes for model restart.
-  // TODO: This should be a generic functions which sets "one-step" fields to
-  //       an identity value. See Issue #1767.
-  set_precipitation_fields_to_zero();
 
   m_atm_logger->info("  [EAMxx] restart_model ... done!");
 }
@@ -1268,6 +1268,9 @@ initialize (const ekat::Comm& atm_comm,
 void AtmosphereDriver::run (const int dt) {
   start_timer("EAMxx::run");
 
+  // Zero out accumulated fields
+  reset_accummulated_fields();
+
   // Make sure the end of the time step is after the current start_time
   EKAT_REQUIRE_MSG (dt>0, "Error! Input time step must be positive.\n");
 
@@ -1287,11 +1290,6 @@ void AtmosphereDriver::run (const int dt) {
   for (auto& out_mgr : m_output_managers) {
     out_mgr.run(m_current_ts);
   }
-
-  // We must zero out the precipitation flux after the output managers have run.
-  // TODO: This should be a generic functions which sets "one-step" fields to
-  //       an identity value. See Issue #1767.
-  set_precipitation_fields_to_zero();
 
 #ifdef SCREAM_HAS_MEMORY_USAGE
   long long my_mem_usage = get_mem_usage(MB);
