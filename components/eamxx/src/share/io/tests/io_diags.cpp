@@ -32,6 +32,7 @@ void multiply (const Field& f, const double v) {
   for (int i=0; i<nscalars; ++i) {
     data[i] *= v;
   }
+  f.sync_to_dev();
 }
 
 class MyDiag : public AtmosphereDiagnostic
