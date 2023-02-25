@@ -1225,7 +1225,7 @@ contains
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)
       tagname= trim(mct_field)//C_NULL_CHAR
-      call compare_mct_av_moab_tag(atm(1), x2a_a, mct_field,  mbaxid, tagname, ent_type, difference)
+      call compare_mct_av_moab_tag(atm(1), x2a_a, mct_field,  mbaxid, tagname, ent_type, difference, first_time)
     enddo
     call mct_list_clean(temp_list)
 #endif

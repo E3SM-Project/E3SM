@@ -412,7 +412,7 @@ contains
 
 #ifdef MOABCOMP
   ! assumes everything is on coupler pes here, to make sense
-  subroutine compare_mct_av_moab_tag(comp, attrVect, mct_field, appId, tagname, ent_type, difference)
+  subroutine compare_mct_av_moab_tag(comp, attrVect, mct_field, appId, tagname, ent_type, difference, first_time)
     
     use shr_mpi_mod,       only: shr_mpi_sum
     use shr_kind_mod,     only:  CXX => shr_kind_CXX
@@ -430,6 +430,7 @@ contains
     character(*) , intent(in)       :: tagname
 
     real(r8)      , intent(out)     :: difference
+    logical , intent(in)            :: first_time
 
     real(r8)  :: differenceg ! global, reduced diff
     type(mct_ggrid), pointer    :: dom
@@ -465,10 +466,11 @@ contains
      
      tagtype = 1 ! dense, double
      numco = 1
-     ierr = iMOAB_DefineTagStorage(appId, tagname_mct, tagtype, numco,  tagindex )
-     if (ierr > 0 )  &
-        call shr_sys_abort(subname//'Error: fail to define new tag for mct')
-
+     if (first_time) then
+        ierr = iMOAB_DefineTagStorage(appId, tagname_mct, tagtype, numco,  tagindex )
+        if (ierr > 0 )  &
+            call shr_sys_abort(subname//'Error: fail to define new tag for mct')
+     endif 
      ierr = iMOAB_SetDoubleTagStorageWithGid ( appId, tagname_mct, nloc , ent_type, values, GlobalIds )
      if (ierr > 0 )  &
         call shr_sys_abort(subname//'Error: fail to set new tags')

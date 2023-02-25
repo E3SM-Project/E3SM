@@ -706,7 +706,6 @@ contains
        deallocate(mrgstr)
     endif
 
-    first_time = .false.
 #ifdef MOABCOMP
   ! land does not do any merge for moab, all fields are directly projected, from atm, river, glacier
   ! compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
@@ -720,10 +719,13 @@ contains
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)
       tagname= trim(mct_field)//C_NULL_CHAR
-      call compare_mct_av_moab_tag(lnd(1), x2l_l, mct_field,  mblxid, tagname, ent_type, difference)
+      call compare_mct_av_moab_tag(lnd(1), x2l_l, mct_field,  mblxid, tagname, ent_type, difference, first_time)
     enddo
     call mct_list_clean(temp_list)
 #endif
+
+    first_time = .false.
+    
 #ifdef MOABDEBUG
     if (mblxid .ge. 0 ) then !  we are on coupler pes, for sure
        write(lnum,"(I0.2)")num_moab_exports

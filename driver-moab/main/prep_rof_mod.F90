@@ -1412,7 +1412,7 @@ contains
        endif
        deallocate(mrgstr)
     endif
-    first_time = .false.
+
 
 #ifdef MOABCOMP
   !compare_mct_av_moab_tag(comp, attrVect, field, imoabApp, tag_name, ent_type, difference)
@@ -1426,11 +1426,11 @@ contains
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)
       tagname= trim(mct_field)//C_NULL_CHAR
-      call compare_mct_av_moab_tag(rof(1), x2r_r, mct_field,  mbrxid, tagname, ent_type, difference)
+      call compare_mct_av_moab_tag(rof(1), x2r_r, mct_field,  mbrxid, tagname, ent_type, difference, first_time)
     enddo
     call mct_list_clean(temp_list)
 #endif
-
+    first_time = .false.
 #ifdef MOABDEBUG
 
     if (mbrxid .ge. 0 ) then !  we are on coupler pes, for sure

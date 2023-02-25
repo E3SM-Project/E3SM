@@ -1718,7 +1718,7 @@ subroutine prep_ocn_mrg_moab(infodata, xao_ox)
       call mct_list_get(mctOStr,index_list,temp_list)
       mct_field = mct_string_toChar(mctOStr)
       tagname= trim(mct_field)//C_NULL_CHAR
-      call compare_mct_av_moab_tag(ocn(1), x2o_o, mct_field,  mboxid, tagname, ent_type, difference)
+      call compare_mct_av_moab_tag(ocn(1), x2o_o, mct_field,  mboxid, tagname, ent_type, difference, first_time)
     enddo
     call mct_list_clean(temp_list)
 #endif
