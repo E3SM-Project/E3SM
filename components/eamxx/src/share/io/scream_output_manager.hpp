@@ -115,7 +115,7 @@ protected:
 
   std::string compute_filename (const IOControl& control,
                                 const IOFileSpecs& file_specs,
-                                const std::string suffix,
+                                const bool is_checkpoint_step,
                                 const util::TimeStamp& timestamp) const;
 
   // Craft the restart parameter list

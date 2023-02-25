@@ -172,14 +172,12 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
         util::TimeStamp last_write_ts (vdate,vtime);
         m_output_control.timestamp_of_last_write = last_write_ts;
         eam_pio_closefile(fn.c_str());
-      }
-      // If the type/freq of output needs restart data, we need to read in an output.
-      if (has_restart_data && m_output_control.nsamples_since_last_write>0) {
-        auto output_restart_filename = find_filename_in_rpointer(hist_restart_casename,false,m_io_comm,m_run_t0);
 
-        // Also restart each stream
-        for (auto stream : m_output_streams) {
-          stream->restart(output_restart_filename);
+        // If the type/freq of output needs restart data, we need to restart the streams
+        if (m_output_control.nsamples_since_last_write>0) {
+          for (auto stream : m_output_streams) {
+            stream->restart(fn);
+          }
         }
       }
     }
@@ -350,9 +348,12 @@ long long OutputManager::res_dep_memory_footprint () const {
 std::string OutputManager::
 compute_filename (const IOControl& control,
                   const IOFileSpecs& file_specs,
-                  const std::string suffix,
+                  const bool is_checkpoint_step,
                   const util::TimeStamp& timestamp) const
 {
+  std::string suffix =
+    is_checkpoint_step ? ".rhist"
+                       : (m_is_model_restart_output ? ".r" : "");
   auto filename = m_casename + suffix;
   if (file_specs.filename_with_avg_type) {
     filename += "." + e2str(m_avg_type);
@@ -364,7 +365,7 @@ compute_filename (const IOControl& control,
     filename += ".np" + std::to_string(m_io_comm.size());
   }
   if (file_specs.filename_with_time_string) {
-    if (m_avg_type==OutputAvgType::Instant) {
+    if (m_avg_type==OutputAvgType::Instant || is_checkpoint_step) {
       filename += "." + timestamp.to_string();
     } else {
       filename += "." + control.timestamp_of_last_write.to_string();
@@ -440,10 +441,7 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
   auto& filename = filespecs.filename;
 
   // Compute new file name
-  std::string suffix =
-    is_checkpoint_step ? ".rhist"
-                       : (m_is_model_restart_output ? ".r" : "");
-  filename = compute_filename (control,filespecs,suffix,timestamp);
+  filename = compute_filename (control,filespecs,is_checkpoint_step,timestamp);
 
   // Register new netCDF file for output. First, check no other output managers
   // are trying to write on the same file
