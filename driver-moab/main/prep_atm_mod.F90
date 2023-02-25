@@ -316,7 +316,7 @@ contains
             fNoBubble = 1
             monotonicity = 0 !
             noConserve = 0
-            validate = 1
+            validate = 0 ! less verbose
             fInverseDistanceMap = 0
             if (iamroot_CPLID) then
                write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxoa=', mbintxoa, ' wgtIdef=', wgtIdef, &
@@ -518,7 +518,7 @@ contains
             fNoBubble = 1
             monotonicity = 0 !
             noConserve = 0
-            validate = 1
+            validate = 0 ! less verbose
             fInverseDistanceMap = 0
             if (iamroot_CPLID) then
                write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxia=', mbintxia, ' wgtIdef=', wgtIdef, &

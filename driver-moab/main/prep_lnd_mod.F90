@@ -444,7 +444,7 @@ contains
               fNoBubble = 1
               monotonicity = 0 !
               noConserve = 0
-              validate = 1
+              validate = 0 ! less verbose
               fInverseDistanceMap = 0
               if (iamroot_CPLID) then
                   write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxal=', mbintxal, ' wgtIdef=', wgtIdef, &
@@ -725,7 +725,7 @@ contains
 #endif
 
     first_time = .false.
-    
+
 #ifdef MOABDEBUG
     if (mblxid .ge. 0 ) then !  we are on coupler pes, for sure
        write(lnum,"(I0.2)")num_moab_exports
