@@ -159,7 +159,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     auto vert_remap_file   = params.get<std::string>("vertical_remap_file");
     auto f_lev = get_field("p_mid","sim");
     auto f_ilev = get_field("p_int","sim");
-    m_vert_remapper = std::make_shared<VerticalRemapper>(io_grid,vert_remap_file,f_lev,f_ilev); // We use the default mask value 
+    m_vert_remapper = std::make_shared<VerticalRemapper>(io_grid,vert_remap_file,f_lev,f_ilev,m_fill_value);
     io_grid = m_vert_remapper->get_tgt_grid();
     set_grid(io_grid);
 
