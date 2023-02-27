@@ -19,7 +19,7 @@
 !
 !-----------------------------------------------------------------------
 
-module ocn_time_integration_lts 
+module ocn_time_integration_lts
 
    use mpas_derived_types
    use mpas_pool_routines
@@ -38,7 +38,7 @@ module ocn_time_integration_lts
    use ocn_diagnostics_variables
    use ocn_equation_of_state
    use ocn_time_average_coupled
-   use ocn_time_varying_forcing 
+   use ocn_time_varying_forcing
 
    implicit none
    private
@@ -162,7 +162,7 @@ module ocn_time_integration_lts
     integer, dimension(:,:), pointer :: &
        nCellsInLTSRegion, & ! number of cells in a given LTS region
        nEdgesInLTSRegion ! number of edges in a given LTS region
-    integer, dimension(:,:,:), pointer :: & 
+    integer, dimension(:,:,:), pointer :: &
        cellsInLTSRegion, & ! list of cells in a given LTS region
        edgesInLTSRegion ! list of edges in a given LTS region
     real (kind=RKIND) :: &
@@ -189,7 +189,7 @@ module ocn_time_integration_lts
     !--- Retrieve model state, pools
     !--- No longer support sub-blocks so this retrieves the only block
 
-    call mpas_pool_get_subpool(block%structs, 'mesh', & 
+    call mpas_pool_get_subpool(block%structs, 'mesh', &
                                                meshPool)
     call mpas_pool_get_subpool(block%structs, 'state', &
                                                statePool)
@@ -236,7 +236,7 @@ module ocn_time_integration_lts
                                        cellsInLTSRegion)
     call mpas_pool_get_array(LTSPool, 'nCellsInLTSRegion', &
                                        nCellsInLTSRegion)
-    call mpas_pool_get_array(LTSPool, 'edgesInLTSRegion', & 
+    call mpas_pool_get_array(LTSPool, 'edgesInLTSRegion', &
                                        edgesInLTSRegion)
     call mpas_pool_get_array(LTSPool, 'nEdgesInLTSRegion', &
                                        nEdgesInLTSRegion)
@@ -297,9 +297,9 @@ module ocn_time_integration_lts
     ! TODO: do we still need this??
     if (associated(block % prev)) then
        call mpas_pool_get_subpool(block % prev % structs, 'tend_sum_1st', tendSum1stPool)
-       call mpas_pool_get_subpool(block % prev % structs, 'tend_sum_2nd', tendSum2ndPool)         
-       call mpas_pool_get_subpool(block % prev % structs, 'tend_sum_3rd', tendSum3rdPool)         
-       call mpas_pool_get_subpool(block % prev % structs, 'tend_slow', tendSlowPool)         
+       call mpas_pool_get_subpool(block % prev % structs, 'tend_sum_2nd', tendSum2ndPool)
+       call mpas_pool_get_subpool(block % prev % structs, 'tend_sum_3rd', tendSum3rdPool)
+       call mpas_pool_get_subpool(block % prev % structs, 'tend_slow', tendSlowPool)
     else
        nullify(prevTendSum1stPool)
        nullify(prevTendSum2ndPool)
@@ -416,7 +416,7 @@ module ocn_time_integration_lts
 
     call mpas_timer_start("lts advance soln")
 
-    ! --- advance solution for interface layer 1, interface layer 2 and coarse with first stage 
+    ! --- advance solution for interface layer 1, interface layer 2 and coarse with first stage
 
     normalVelocityTend(:,:) = normalVelocityTend(:,:) + normalVelocityTendSlow(:,:)
 
@@ -440,7 +440,7 @@ module ocn_time_integration_lts
        normalVelocityFirstStage(:,iEdge) =  normalVelocityCur(:,iEdge) + dt * normalVelocityTend(:,iEdge)
     end do
 
- 
+
     ! --- LAYER THICKNESS
 
     ! --- interface layers
@@ -473,7 +473,7 @@ module ocn_time_integration_lts
     call mpas_dmpar_field_halo_exch(domain, 'normalVelocity', timeLevel=3)
     call mpas_dmpar_field_halo_exch(domain, 'layerThickness', timeLevel=3)
     call mpas_timer_stop("lts prognostic halo update")
-      
+
     ! --------------------------------------  STEP  ------------------------------------------
     ! --- compute the second stage of LTS for interface layer 1, interface layer 2 and coarse
     ! --- update halos for diagnostic variables.
@@ -484,17 +484,17 @@ module ocn_time_integration_lts
        call mpas_dmpar_field_halo_exch(domain, 'relativeVorticity')
     end if
     call mpas_timer_stop("lts diagnostic halo update")
- 
+
     call mpas_timer_start("lts compute tendencies")
 
     ! TENDENCIES COMPUTATION ---
     call ocn_lts_tends(statePool, meshPool, LTSPool, tendPool, 3, 0, 0, 1, 1)
-           
+
     call mpas_timer_stop("lts compute tendencies")
 
 
     call mpas_timer_start("lts advance soln")
-    ! --- advance solution for interface layer 1, interface layer 2 and coarse with second stage 
+    ! --- advance solution for interface layer 1, interface layer 2 and coarse with second stage
 
     normalVelocityTend(:,:) = normalVelocityTend(:,:) + normalVelocityTendSlow(:,:)
 
@@ -524,7 +524,7 @@ module ocn_time_integration_lts
     do ic = 1, nCellsInLTSRegion(2,1)
        iCell = cellsInLTSRegion(2,1,ic)
        do k = 1, maxLevelCell(iCell)
-          layerThicknessSecondStage(k,iCell) = weightOld * layerThicknessCur(k,iCell) & 
+          layerThicknessSecondStage(k,iCell) = weightOld * layerThicknessCur(k,iCell) &
                                                + weightNew * layerThicknessFirstStage(k,iCell) &
                                                + weightTend * dt * layerThicknessTend(k,iCell)
        end do
@@ -544,14 +544,14 @@ module ocn_time_integration_lts
 
     call mpas_timer_stop("lts advance soln")
 
-      
+
     call mpas_timer_start("lts prognostic halo update")
 
     call mpas_dmpar_field_halo_exch(domain, 'normalVelocity', timeLevel=4)
     call mpas_dmpar_field_halo_exch(domain, 'layerThickness', timeLevel=4)
 
     call mpas_timer_stop("lts prognostic halo update")
-      
+
 
     ! --------------------------------------  STEP  ------------------------------------------
     ! --- substepping for fine soln advancement begins here. we also compute
@@ -575,7 +575,7 @@ module ocn_time_integration_lts
           do k = 1, maxLevelCell(iCell)
              layerThicknessNew(k,iCell) = layerThicknessCur(k,iCell)
              layerThicknessCur(k,iCell) = (1.0_RKIND - alpha - alphaHat) * layerThicknessCur(k,iCell) + (alpha - alphaHat) * layerThicknessFirstStage(k,iCell) &
-                                           + 2.0_RKIND * alphaHat * layerThicknessSecondStage(k,iCell) 
+                                           + 2.0_RKIND * alphaHat * layerThicknessSecondStage(k,iCell)
           end do
        end do
 
@@ -609,7 +609,7 @@ module ocn_time_integration_lts
 
        ! --- advance fine solution (first stage of LTS) AND sum up the tendecies above into tendSum2nd for interface layer 1 and interface
        ! layer 2 also restore soln cur by copying it back from soln new
- 
+
        normalVelocityTend(:,:) = normalVelocityTend(:,:) + normalVelocityTendSlow(:,:)
 
        ! --- NORMAL VELOCITY
@@ -625,8 +625,8 @@ module ocn_time_integration_lts
           iEdge = edgesInLTSRegion(2,2,ie)
           normalVelocityTendSum2nd(:,iEdge) = normalVelocityTendSum2nd(:,iEdge) + normalVelocityTend(:,iEdge)
        end do
-      
-       ! --- fine (soln advancement)  
+
+       ! --- fine (soln advancement)
        do ie = 1, nEdgesInLTSRegion(1,1)
           iEdge = edgesInLTSRegion(1,1,ie)
           normalVelocityFirstStage(:,iEdge) =  normalVelocityCur(:,iEdge) + dtFine * normalVelocityTend(:,iEdge) !soln update for the fine
@@ -635,7 +635,7 @@ module ocn_time_integration_lts
           iEdge = edgesInLTSRegion(1,3,ie)
           normalVelocityFirstStage(:,iEdge) =  normalVelocityCur(:,iEdge) + dtFine * normalVelocityTend(:,iEdge) !soln update for the fine
        end do
- 
+
        ! --- LAYER THICKNESS
 
        ! --- interface layer 1 (correction)
@@ -688,13 +688,13 @@ module ocn_time_integration_lts
           do k = 1, maxLevelCell(iCell)
              layerThicknessNew(k,iCell) = layerThicknessFirstStage(k,iCell)
              layerThicknessFirstStage(k,iCell) = (1.0_RKIND - beta - betaHat) * layerThicknessCur(k,iCell) + (beta - betaHat) * layerThicknessFirstStage(k,iCell) &
-                                                  + 2.0_RKIND * betaHat * layerThicknessSecondStage(k,iCell) 
+                                                  + 2.0_RKIND * betaHat * layerThicknessSecondStage(k,iCell)
           end do
        end do
 
        call mpas_timer_stop("lts interface prediction")
 
-         
+
        call mpas_timer_start("lts prognostic halo update")
        call mpas_dmpar_field_halo_exch(domain, 'normalVelocity', timeLevel=3)
        call mpas_dmpar_field_halo_exch(domain, 'layerThickness', timeLevel=3)
@@ -724,7 +724,7 @@ module ocn_time_integration_lts
        ! layer 2 also restore soln first stage by copying it back from soln new
 
        normalVelocityTend(:,:) = normalVelocityTend(:,:) + normalVelocityTendSlow(:,:)
-    
+
        ! --- NORMAL VELOCITY
 
        ! --- interface layer 1 (correction)
@@ -738,8 +738,8 @@ module ocn_time_integration_lts
           iEdge = edgesInLTSRegion(2,2,ie)
           normalVelocityTendSum1st(:,iEdge) = normalVelocityTendSum1st(:,iEdge) + normalVelocityTend(:,iEdge)
        end do
-      
-       ! --- fine (soln advancement)  
+
+       ! --- fine (soln advancement)
        do ie = 1, nEdgesInLTSRegion(1,1)
           iEdge = edgesInLTSRegion(1,1,ie)
           normalVelocitySecondStage(:,iEdge) =  weightOld * normalVelocityCur(:,iEdge) + weightNew * normalVelocityFirstStage(:,iEdge) &
@@ -805,10 +805,10 @@ module ocn_time_integration_lts
           do k = 1, maxLevelCell(iCell)
              layerThicknessNew(k,iCell) = layerThicknessSecondStage(k,iCell)
              layerThicknessSecondStage(k,iCell) = (1.0_RKIND - gam - gamHat) * layerThicknessCur(k,iCell) + (gam - gamHat) * layerThicknessFirstStage(k,iCell) &
-                                                   + 2.0_RKIND * gamHat * layerThicknessSecondStage(k,iCell) 
+                                                   + 2.0_RKIND * gamHat * layerThicknessSecondStage(k,iCell)
          end do
         end do
- 
+
        call mpas_timer_stop("lts interface prediction")
 
        call mpas_timer_start("lts prognostic halo update")
@@ -841,7 +841,7 @@ module ocn_time_integration_lts
        ! layer 2 also restore soln second stage by copying it back from soln new
 
        normalVelocityTend(:,:) = normalVelocityTend(:,:) + normalVelocityTendSlow(:,:)
-    
+
        ! --- NORMAL VELOCITY
 
        ! --- interface layer 1 (correction)
@@ -855,8 +855,8 @@ module ocn_time_integration_lts
           iEdge = edgesInLTSRegion(2,2,ie)
           normalVelocityTendSum3rd(:,iEdge) = normalVelocityTendSum3rd(:,iEdge) + normalVelocityTend(:,iEdge)
        end do
-      
-       ! --- fine (soln advancement)  
+
+       ! --- fine (soln advancement)
        do ie = 1, nEdgesInLTSRegion(1,1)
           iEdge = edgesInLTSRegion(1,1,ie)
           normalVelocityCur(:,iEdge) =  (1.0_RKIND / 3.0_RKIND) * normalVelocityCur(:,iEdge) + (2.0_RKIND / 3.0_RKIND) * normalVelocitySecondStage(:,iEdge) &
@@ -906,13 +906,13 @@ module ocn_time_integration_lts
        call mpas_timer_stop("lts advance soln")
 
     end do ! --- end substepping
- 
+
 
     call mpas_timer_start("lts copy soln into new soln")
     ! --- copy old soln into new soln for the fine cells and edges
 
     ! --- normal velocity
-    do ie = 1, nEdgesInLTSRegion(1,1) 
+    do ie = 1, nEdgesInLTSRegion(1,1)
        iEdge = edgesInLTSRegion(1,1,ie)
        normalVelocityNew(:,iEdge) = normalVelocityCur(:,iEdge)
     end do
@@ -922,13 +922,13 @@ module ocn_time_integration_lts
     end do
 
     ! --- layer thickness
-    do ic = 1, nCellsInLTSRegion(1,1) 
+    do ic = 1, nCellsInLTSRegion(1,1)
        iCell = cellsInLTSRegion(1,1,ic)
        do k = 1, maxLevelCell(iCell)
           layerThicknessNew(k,iCell) = layerThicknessCur(k,iCell)
        end do
     end do
-    do ic = 1, nCellsInLTSRegion(1,3) 
+    do ic = 1, nCellsInLTSRegion(1,3)
        iCell = cellsInLTSRegion(1,3,ic)
        do k = 1, maxLevelCell(iCell)
           layerThicknessNew(k,iCell) = layerThicknessCur(k,iCell)
@@ -1014,7 +1014,7 @@ module ocn_time_integration_lts
           end do
        end do
     end do
-   
+
     call mpas_timer_stop("lts interface correction")
 
     call mpas_timer_start("lts prognostic halo update")
@@ -1027,7 +1027,7 @@ module ocn_time_integration_lts
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     call mpas_timer_stop("lts main loop")
-      
+
     !
     !  A little clean up at the end
     !
@@ -1090,7 +1090,7 @@ module ocn_time_integration_lts
 
     subroutine ocn_time_integration_lts_init(domain)!{{{
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! Sets the LTS arrays 
+    ! Sets the LTS arrays
     !
     ! Output: LTS arrays are written
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1101,7 +1101,7 @@ module ocn_time_integration_lts
     type (block_type), pointer :: block
     type (mpas_pool_type), pointer :: LTSPool, meshPool
     integer, dimension(:), allocatable :: isLTSRegionEdgeAssigned
-    integer :: i, iCell, iEdge, iRegion, coarseRegions, fineRegions, fineRegionsM1 
+    integer :: i, iCell, iEdge, iRegion, coarseRegions, fineRegions, fineRegionsM1
     integer, dimension(:), pointer :: LTSRegion
     integer, dimension(:,:), pointer :: nCellsInLTSRegion, nEdgesInLTSRegion
     integer, dimension(:,:,:), pointer :: cellsInLTSRegion, edgesInLTSRegion
@@ -1126,7 +1126,7 @@ module ocn_time_integration_lts
     ! 3 = interface layer 1
     ! 4 = interface layer 2
     ! 5 = fine (to advance when doing 1st stage on interface)
-       
+
     nCellsInLTSRegion(:,:) = 0
     nEdgesInLTSRegion(:,:) = 0
 
@@ -1187,7 +1187,7 @@ module ocn_time_integration_lts
                 if (isLTSRegionEdgeAssigned(iEdge) == 0) then
                    nEdgesInLTSRegion(1, fineRegions - iRegion + 1) = nEdgesInLTSRegion(1, fineRegions - iRegion + 1) + 1
                    edgesInLTSRegion(1, fineRegions - iRegion + 1, nEdgesInLTSRegion(1, fineRegions - iRegion + 1)) = iEdge
-                   isLTSRegionEdgeAssigned(iEdge) = 1 
+                   isLTSRegionEdgeAssigned(iEdge) = 1
                 end if
             end if
           end do
@@ -1348,8 +1348,8 @@ module ocn_time_integration_lts
          kMin = minLevelEdgeBot(iEdge)
          kMax = maxLevelEdgeTop(iEdge)
          do k=kMin,kMax
-            normalVelocityTend(k,iEdge) = normalVelocityTend(k,iEdge) & 
-                                          - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1))  & 
+            normalVelocityTend(k,iEdge) = normalVelocityTend(k,iEdge) &
+                                          - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1))  &
                                           - (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * (ssh(cell2) - ssh(cell1)) ) )
          end do
       end do
@@ -1377,8 +1377,8 @@ module ocn_time_integration_lts
          kMin = minLevelEdgeBot(iEdge)
          kMax = maxLevelEdgeTop(iEdge)
          do k=kMin,kMax
-            normalVelocityTend(k,iEdge) = normalVelocityTend(k,iEdge) & 
-                                          - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1))  & 
+            normalVelocityTend(k,iEdge) = normalVelocityTend(k,iEdge) &
+                                          - edgeMask(k,iEdge) * invdcEdge * ( gravity * ( (ssh(cell2) - ssh(cell1))  &
                                           - (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * (ssh(cell2) - ssh(cell1)) ) )
          end do
       end do
@@ -1434,7 +1434,7 @@ module ocn_time_integration_lts
    implicit none
 
    ! pressure gradient tendency terms
-   config_split_ssh_terms = .false. !this has the ssh terms 
+   config_split_ssh_terms = .false. !this has the ssh terms
    config_split_non_ssh_terms = .true. !this has the non ssh terms
    config_use_tidal_potential_forcing = .true. !computes the tidal potential
    config_use_time_varying_atmospheric_forcing = .true.
@@ -1451,7 +1451,7 @@ module ocn_time_integration_lts
    config_disable_vel_topographic_wave_drag = .false.
    config_disable_vel_explicit_bottom_drag = .false.
 
-   end subroutine setConfigsForSlowTends!}}} 
+   end subroutine setConfigsForSlowTends!}}}
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1459,7 +1459,7 @@ module ocn_time_integration_lts
 
    implicit none
 
-   config_split_ssh_terms = .true. !this has the ssh terms 
+   config_split_ssh_terms = .true. !this has the ssh terms
    config_split_non_ssh_terms = .false. !this has the non ssh terms
    config_use_tidal_potential_forcing = .false. !computes the tidal potential
    config_use_time_varying_atmospheric_forcing = .false.
@@ -1476,7 +1476,7 @@ module ocn_time_integration_lts
    config_disable_vel_topographic_wave_drag = .true.
    config_disable_vel_explicit_bottom_drag = .true.
 
-   end subroutine setConfigsForFastTends!}}} 
+   end subroutine setConfigsForFastTends!}}}
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

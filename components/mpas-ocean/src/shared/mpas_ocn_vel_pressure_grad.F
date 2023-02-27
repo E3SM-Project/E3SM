@@ -75,8 +75,8 @@ module ocn_vel_pressure_grad
       gdensity0Inv,     &! g/density0
       inv12,            &! 1/12
       pGradLvlWgt,      &! weighting for levels in Jacobian formulations
-      sshTermSplit,     &! this isolates the ssh terms in the ssh gradient to enable splitting of fast and slow tendencies 
-      nonSshTermsSplit    ! this isolates the non ssh terms in the ssh gradient to enable splitting of fast and slow tendencies 
+      sshTermSplit,     &! this isolates the ssh terms in the ssh gradient to enable splitting of fast and slow tendencies
+      nonSshTermsSplit    ! this isolates the non ssh terms in the ssh gradient to enable splitting of fast and slow tendencies
 
 !***********************************************************************
 
