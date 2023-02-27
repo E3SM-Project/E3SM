@@ -236,7 +236,7 @@ contains
     character*100 outfile, wopts
     integer :: ierrmb, numco, tagtype, tagindex, ent_type
     character(CXX) :: tagname
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
     real(r8)                 :: difference
     type(mct_list) :: temp_list
     integer :: size_list, index_list
@@ -892,7 +892,7 @@ contains
 
 #ifdef HAVE_MOAB
 
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
     ! loop over all fields in seq_flds_x2o_fields
     call mct_list_init(temp_list ,seq_flds_x2o_fields)
     size_list=mct_list_nitem (temp_list)
@@ -1002,7 +1002,7 @@ contains
       real (kind=RKIND) :: timeFilterFactor
 
 #ifdef HAVE_MOAB
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
     real(r8)                 :: difference
     type(mct_list) :: temp_list
     integer :: size_list, index_list, ent_type
@@ -1040,7 +1040,7 @@ contains
 #ifdef HAVE_MOAB
 
 
-#ifdef MOABDEBUG
+#ifdef MOABCOMP
     ! loop over all fields in seq_flds_x2o_fields
     call mct_list_init(temp_list ,seq_flds_x2o_fields)
     size_list=mct_list_nitem (temp_list)
