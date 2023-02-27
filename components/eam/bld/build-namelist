@@ -631,6 +631,13 @@ if ($scam) {
     }
 }
 
+# Doubly periodic (DP) cloud resolving model (CRM)
+my $dpcrm_mode = $cfg->get('dpcrm_mode');
+if ($dpcrm_mode) {
+    add_default($nl, 'omega');
+    add_default($nl, 'dp_crm', 'val'=>'.true.');
+}
+
 ######################################
 # namelist group: seq_timemgr_inparm #
 ######################################
@@ -698,6 +705,8 @@ my $chem = $cfg->get('chem');
 my $waccm_chem = ($chem =~ "waccm_");
 my $waccm_phys = $cfg->get('waccm_phys');
 
+my $spa_chem = ($chem eq "spa");
+
 my $prog_species = $cfg->get('prog_species');
 my $prog_ghg1    = ($chem =~ "trop_mozart" or $chem =~ "trop_strat" or $chem =~ "ghg" or $prog_species =~ "GHG");
 my $prog_ghg2    = ($chem =~ "ghg" or $prog_species =~ "GHG");
@@ -738,7 +747,7 @@ if ($rad_volcaero){
 
 # Print conservation errors
 # Turn this off for PERGRO runs or for WACCM runs
-if ($cfg->get('pergro') or ($chem ne 'none')) {
+if ($cfg->get('pergro') or (($chem ne 'none') && ($chem ne 'spa'))) {
     add_default($nl, 'print_energy_errors', 'val'=>'.false.');
 }
 
@@ -747,8 +756,17 @@ if ($cfg->get('debug')) {
     add_default($nl, 'state_debug_checks', 'val'=> '.true.')
 }
 
+if ( $spa_chem) {
+    add_default($nl, 'spa_datapath', 'val' =>$nl->get_value('spa_datapath'));
+    add_default($nl, 'spa_file', 'val' => $nl->get_value('spa_input_file'));
+    add_default($nl, 'spa_type', 'val' => 'CYCLICAL');
+    add_default($nl, 'spa_cycle_yr', 'val' => 1);
+    add_default($nl, 'do_prescribed_ccn', 'val' => '.true.');
+    add_default($nl, 'do_spa_optics', 'val' => '.true.');
+}
+
 # Chemistry deposition lists
-if ( ($chem ne 'none') or ( $prog_species ) ){
+if ( (($chem ne 'none') && ($chem ne 'spa')) or ( $prog_species ) ){
     my $chem_proc_src = $cfg->get('chem_proc_src');
     my $chem_src_dir = $cfg->get('chem_src_dir');
 
@@ -902,6 +920,12 @@ if ($rad_pkg eq 'rrtmg' or $chem =~ /waccm_mozart/) {
 # COSP simulator
 if ($cfg->get('cosp')) {
     add_default($nl, 'docosp', 'val'=>'.true.');
+
+    # following serves to always set a default when no matching value found in  namelist_defaults_eam.xml
+    my $val = undef;
+    $val = get_default_value('cosp_ncolumns');
+    $val = 50 if (! defined($val) );
+    add_default($nl, 'cosp_ncolumns','val'=>"$val");
 }
 
 
@@ -1069,7 +1093,7 @@ if (defined $prescribed_aero_model) {
     $prescribed_aero_model =~ s/['"]//g;                 #"'
 } else {
     $prescribed_aero_model = 'none';
-    if ($chem eq 'none' or $chem eq 'waccm_ghg' or $chem eq 'super_fast_llnl' or $chem eq 'waccm_mozart' or $chem eq 'waccm_mozart_sulfur') {
+    if ($chem eq 'none' or $chem eq 'spa' or $chem eq 'waccm_ghg' or $chem eq 'super_fast_llnl' or $chem eq 'waccm_mozart' or $chem eq 'waccm_mozart_sulfur') {
         # If no chemistry then there must be prescribed aerosols unless physics
         # package is adiabatic or ideal.
         if ($phys eq 'default') {
@@ -3607,6 +3631,39 @@ else {
   add_default($nl, 'microp_uniform',   'val'=>'.false.');
 }
 
+# SHOC_SGS
+add_default($nl, 'do_shoc_sgs');
+my $shoc_sgs = $nl->get_value('do_shoc_sgs');
+if ($shoc_sgs  =~ /$TRUE/io) {
+   add_default($nl, 'shoc_timestep');
+   add_default($nl, 'shoc_thl2tune');
+   add_default($nl, 'shoc_qw2tune');
+   add_default($nl, 'shoc_qwthl2tune');
+   add_default($nl, 'shoc_w2tune');
+   add_default($nl, 'shoc_length_fac');
+   add_default($nl, 'shoc_c_diag_3rd_mom');
+   add_default($nl, 'shoc_lambda_low');
+   add_default($nl, 'shoc_lambda_high');
+   add_default($nl, 'shoc_lambda_slope');
+   add_default($nl, 'shoc_lambda_thresh');
+   add_default($nl, 'shoc_Ckh');
+   add_default($nl, 'shoc_Ckm');
+   add_default($nl, 'shoc_Ckh_s_min');
+   add_default($nl, 'shoc_Ckm_s_min');
+   add_default($nl, 'shoc_Ckh_s_max');
+   add_default($nl, 'shoc_Ckm_s_max');
+}
+
+# P3
+add_default($nl, 'micro_p3_lookup_dir');
+add_default($nl, 'micro_p3_tableversion');
+add_default($nl, 'micro_aerosolactivation');
+add_default($nl, 'micro_subgrid_cloud');
+add_default($nl, 'micro_tend_output');
+add_default($nl, 'p3_qc_autoCon_Expon');
+add_default($nl, 'p3_qc_accret_Expon');
+add_default($nl, 'do_prescribed_CCN');
+
 # CLUBB_SGS
 add_default($nl, 'do_clubb_sgs');
 my $clubb_sgs = $nl->get_value('do_clubb_sgs');
@@ -3670,6 +3727,9 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_ipdf_call_placement');
 
 }
+
+#RRTMGP
+add_default($nl, 'do_spa_optics');
 
 if ($cfg->get('use_MMF')) {
     # MMF Microphysics scheme
@@ -3755,6 +3815,7 @@ add_default($nl, 'cldfrc_dp2');
 add_default($nl, 'cldfrc_premit');
 add_default($nl, 'cldfrc_premib');
 add_default($nl, 'cldfrc_iceopt');
+add_default($nl, 'cldfrc_minice');
 add_default($nl, 'cldfrc_icecrit');
 add_default($nl, 'cldfrc2m_rhmini');
 add_default($nl, 'cldfrc2m_rhmaxi');
@@ -3943,7 +4004,8 @@ if ($cfg->get('dyn') =~ /se/) {
                   hypervis_scaling mesh_file vthreads
                   theta_hydrostatic_mode transport_alg theta_advect_form
                   se_tstep dt_tracer_factor dt_remap_factor 
-                  cubed_sphere_map
+                  cubed_sphere_map se_geometry se_ne_x se_ne_y
+                  se_lx se_ly
                   );
 
     foreach my $var (@vars) {

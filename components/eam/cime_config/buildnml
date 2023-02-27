@@ -11,7 +11,7 @@ sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
 from standard_script_setup import *
 from CIME.case import Case
-from CIME.utils import expect, run_cmd_no_fail, safe_copy
+from CIME.utils import expect, run_cmd_no_fail, safe_copy, SharedArea
 from CIME.buildnml import create_namelist_infile, parse_input
 
 logger = logging.getLogger(__name__)
@@ -227,6 +227,29 @@ def buildnml(case, caseroot, compname):
         if os.path.exists(rundir):
             safe_copy(os.path.join(eamconf_dir, "atm_in"), os.path.join(rundir, "atm_in{}".format(inst_string)))
             safe_copy(os.path.join(eamconf_dir, "drv_flds_in"), os.path.join(rundir, "drv_flds_in"))
+
+        # -----------------------------------------------------
+        # copy scream input data
+        # -----------------------------------------------------
+
+        with SharedArea():
+            scream_data_dir = os.path.join(case.get_value("SRCROOT"), "components/eamxx/data")
+            for item in os.listdir(scream_data_dir):
+                tgt_dir  = os.path.join(din_loc_root, "atm/cam/physprops")
+                tgt_path = os.path.join(tgt_dir, item)
+                if not os.path.isdir(tgt_dir):
+                    try:
+                        os.makedirs(tgt_dir)
+                    except OSError:
+                        pass # lost the race
+
+                try:
+                    fd = os.open(tgt_path, os.O_CREAT | os.O_EXCL)
+                    # If we get to this line, we won the race
+                    os.close(fd)
+                    safe_copy(os.path.join(scream_data_dir, item), tgt_path)
+                except OSError:
+                    pass # lost the race
 
 ###############################################################################
 def _main_func():

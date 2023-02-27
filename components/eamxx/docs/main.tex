@@ -1,0 +1,67 @@
+\documentclass[12pt]{article}
+\usepackage{authblk}
+\usepackage{graphicx} %used by PSL at least
+\usepackage{amsmath}  %used by SHOC at least
+\usepackage{natbib} %allows use of \citep{} and \citet{}
+\bibliographystyle{amermeteorsoc}
+
+\makeindex
+
+\title{Design Document for the Simple Cloud-Resolving E3SM Atmosphere Model}
+\author[1]{Peter Caldwell}
+\author[2]{Andy Salinger}
+\author[2]{Luca Bertagna}
+\author[1]{Hassan Beydoun}
+\author[1]{Peter Bogenschutz}
+\author[2]{Andrew Bradley}
+\author[5]{Conrad Clevenger}
+\author[1]{Aaron Donahue}
+\author[2]{Jim Foucar}
+\author[1]{Chris Golaz}
+\author[2]{Oksana Guba}
+\author[2]{Ben Hillman}
+\author[3]{Noel Keen}
+\author[4]{Wuyin Lin}
+\author[5]{Balwinder Singh}
+\author[2]{Andrew Steyer}
+\author[2]{Mark Taylor}
+\author[1]{Chris Terai}
+\author[6]{Paul Ullrich}
+\date{\today}
+
+\affil[1]{Lawrence Livermore National Lab, Livermore CA}
+\affil[2]{Sandia National Laboratories, Albuquerque, NM}
+\affil[3]{Lawrence Berkeley National Laboratory, Berkeley, CA}
+\affil[4]{Brookhaven National Laboratory, Upton, NY}
+\affil[5]{Pacific Northwest National Laboratory, Richland, WA}
+\affil[6]{University of California, Davis, Davis, CA}
+
+\begin{document}
+\maketitle{}
+
+\setcounter{tocdepth}{4}
+\setcounter{secnumdepth}{4}
+\tableofcontents
+
+\newpage
+
+\section{Overview}
+
+Put description of model here as well as summary of what will/won't be in this document. Mention that there will be a separate user guide. Also, this doc isn't done until the list of authors is updated. Folks who joined after day 1 aren't included.
+
+%INCLUDE SECTIONS FROM EACH PROCESS
+%graphicspath forces latex to look for figures in each of the listed directories
+\graphicspath{{control/}{physics/psl/}{dynamics/homme/}{physics/shoc/}{physics/p3/}{physics/rrtmgp/}}
+\input{control/driver_doc.tex}
+\input{dynamics/homme/NHxx_doc.tex}
+\input{physics/shoc/shoc_doc.tex}
+\input{physics/p3/p3_doc.tex}
+\input{physics/rrtmgp/rrtmgp_doc.tex}
+\input{physics/psl/psl_doc.tex}
+
+%================================
+\section{Bibliography}
+%================================
+\bibliography{biblio.bib}
+
+\end{document}

@@ -29,8 +29,8 @@
 <dtime dyn="sld"                   >3600</dtime>
 
 <!-- Initial conditions -->
-<ncdata           hgrid="64x128"    nlev="72"              ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_64x128_L72_c031210.nc</ncdata>
-
+<ncdata          hgrid="64x128"   nlev="72"             ic_ymd="101" >atm/cam/inic/gaus/cami_0000-01-01_64x128_L72_c031210.nc</ncdata>
+<ncdata dyn="se" hgrid="ne4np4"   nlev="128"            ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne4np4_L128_20200205.nc</ncdata>
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne4np4_L72_c160909.nc</ncdata>
 <ncdata dyn="se" hgrid="ne4np4"   nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_0000-01-01_ne4np4_L30_c161102.nc</ncdata>
 <ncdata dyn="se" hgrid="ne11np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne11np4_L72_c160622.nc</ncdata>
@@ -42,6 +42,7 @@
 <ncdata dyn="se" hgrid="ne30np4"  nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne30np4_L26_c040422.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-01_ne30np4_L30_c130424.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne30np4_L72_c160214.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="128"            ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne30np4_SCREAM_L128_c160214.nc</ncdata>
 <ncdata dyn="se" hgrid="ne45np4"  nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_ne45np4_L72_c20200611.nc</ncdata>
 <ncdata dyn="se" hgrid="ne60np4"  nlev="30"             ic_ymd="101" >atm/cam/inic/homme/cami-mam3_0000-01-ne60np4_L30_c090306.nc</ncdata>
 <ncdata dyn="se" hgrid="ne120np4" nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne120np4_L26_c061106.nc</ncdata>
@@ -50,12 +51,21 @@
 <ncdata dyn="se" hgrid="ne120np4" nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_0000-01-ne120np4_L72_c160318.nc</ncdata>
 <ncdata dyn="se" hgrid="ne240np4" nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_1850-01-01_ne240np4_L26_c110314.nc</ncdata>
 <ncdata dyn="se" hgrid="ne240np4" nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne240np4_L26_c061106.nc</ncdata>
-<ncdata dyn="se" hgrid="ne512np4" nlev="72"        ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne512np4_topoadj_L72.nc</ncdata>
-<ncdata dyn="se" hgrid="ne1024np4" nlev="72"       ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L72.nc</ncdata>
-<ncdata dyn="se" hgrid="ne1024np4" nlev="120"      ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L120.nc</ncdata>
-<ncdata dyn="se" hgrid="ne256np4"           >DUMMY-IC</ncdata>
-<ncdata dyn="se" hgrid="ne512np4"           >DUMMY-IC</ncdata>
-<ncdata dyn="se" hgrid="ne1024np4"          >DUMMY-IC</ncdata>
+
+<!-- Spun-up F-case initial conditions do not exist for these grids -->
+
+<!-- Initial conditions for DYAMOND1 (2016-08-01) and DYAMOND2 (2020-01-20) hindcast campaign -->
+<ncdata hgrid="ne1024np4" nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L128_v20191116.nc</ncdata>
+<ncdata hgrid="ne1024np4" nlev="72"  ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L72.nc           </ncdata>
+<ncdata hgrid="ne1024np4" nlev="128" ic_ymd="20200120">atm/cam/inic/homme/ifs_oper_T1279_2020012000_mod_subset_to_e3sm_ne1024np4_topoadj_L128.nc          </ncdata>
+<ncdata hgrid="ne512np4"  nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne512np4_topoadj_L128_c20200115.nc </ncdata>
+<ncdata hgrid="ne512np4"  nlev="72"  ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne512np4_topoadj_L72.nc            </ncdata>
+<ncdata hgrid="ne256np4"  nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne256np4_topoadj_L128.nc           </ncdata>
+<ncdata hgrid="ne256np4"  nlev="128" ic_ymd="20200120">atm/cam/inic/homme/ifs_oper_T1279_2020012000_mod_subset_to_e3sm_ne256np4_topoadj_L128.nc           </ncdata>
+<ncdata hgrid="ne30np4"   nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne30np4_topoadj_L128_c20200313.nc  </ncdata>
+<ncdata hgrid="ne30np4"   nlev="72"  ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne30np4_topoadj_L72_c20200313.nc   </ncdata>
+<ncdata hgrid="ne4np4"    nlev="128" ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne4np4_topoadj_L128_c20200313.nc   </ncdata>
+<ncdata hgrid="ne4np4"    nlev="72"  ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne4np4_topoadj_L72_c20200313.nc    </ncdata>
 
 <!-- L60 files - primarily added for new MMF default (2021) -->
 <!-- These were initially created from L72 files or regridded from similar grid. --> 
@@ -76,6 +86,10 @@
 <ncdata dyn="se" hgrid="ne16np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne16np4_L72_c190311.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne30np4_L72_c190215.nc</ncdata>
 <ncdata dyn="se" hgrid="ne45np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne45np4_L72_c20200611.nc</ncdata>
+
+<!-- SCREAM L128 Aquaplanet -->
+<ncdata dyn="se" hgrid="ne4np4"   nlev="128" aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne4np4_L128_20200204.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="128" aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne30np4_L128_20200207.nc</ncdata>
 
 <!-- E3SM L72 RCE -->
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/cami_rcemip_ne4np4_L72_c190919.nc</ncdata>
@@ -137,6 +151,7 @@
 <bnd_topo hgrid="ne240np4" npg="0">atm/cam/topo/USGS-gtopo30_ne240np4_16xconsistentSGH.c20130724.nc</bnd_topo>
 <bnd_topo hgrid="ne512np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne512np4_16xconsistentSGH_20190212.nc</bnd_topo>
 <bnd_topo hgrid="ne1024np4" npg="0">atm/cam/topo/USGS-gtopo30_ne1024np4_16xconsistentSGH_20190528.nc</bnd_topo>
+<bnd_topo hgrid="ne256np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne256np4_16xdel2_consistentSGH_20220429.nc</bnd_topo>
 <bnd_topo hgrid="ne256np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne256np4pg2_16xdel2_20200213.nc</bnd_topo>
 <bnd_topo hgrid="ne512np4"  npg="2">atm/cam/topo/USGS-gtopo30_ne512np4pg2_16xconsistentSGH_20190212_converted.nc</bnd_topo>
 <bnd_topo hgrid="ne1024np4" npg="2">atm/cam/topo/USGS-gtopo30_ne1024np4pg2_16xconsistentSGH_20190528_converted.nc</bnd_topo>
@@ -369,6 +384,14 @@
 <radiation_scheme rad="rrtmgp">rrtmgp</radiation_scheme>
 <radiation_scheme rad="none">none</radiation_scheme>
 
+<!-- Higher radiation frequency with higher resolution simulations-->
+<iradlw hgrid="ne256np4"  >3</iradlw>
+<iradsw hgrid="ne256np4"  >3</iradsw>
+<iradlw hgrid="ne512np4"  >3</iradlw>
+<iradsw hgrid="ne512np4"  >3</iradsw>
+<iradlw hgrid="ne1024np4" >3</iradlw>
+<iradsw hgrid="ne1024np4" >3</iradsw>
+
 <!-- CAM-Chem ozone (2000 climatology) -->
 <prescribed_ozone_datapath>atm/cam/ozone</prescribed_ozone_datapath>
 <prescribed_ozone_file>ozone_1.9x2.5_L26_2000clim_c091112.nc</prescribed_ozone_file>
@@ -378,6 +401,11 @@
 
 <prescribed_ozone_file chem="waccm_ghg">waccm_ozone_c121126.nc</prescribed_ozone_file>
 <prescribed_ozone_cycle_yr chem="waccm_ghg">0</prescribed_ozone_cycle_yr>
+
+<!-- SPA input files and defaults -->
+<spa_datapath>atm/cam/chem/spa </spa_datapath>
+<spa_file>spa_mixing_ratio_data.nc</spa_file>
+
 
 <!-- CAM-Chem aerosols (2000 climatology) -->
 <prescribed_aero_datapath  aer_model='bam'  >atm/cam/chem/trop_mozart_aero/aero</prescribed_aero_datapath>
@@ -783,9 +811,31 @@
 <do_clubb_sgs                > .false. </do_clubb_sgs>
 <do_clubb_sgs  clubb_sgs="1" > .true.  </do_clubb_sgs>
 
+<!-- SHOC_SGS -->
+<do_shoc_sgs                 > .false. </do_shoc_sgs>
+<do_shoc_sgs   shoc_sgs="1"  > .true. </do_shoc_sgs>
+<shoc_timestep               > -1 </shoc_timestep>
+<shoc_thl2tune               > 1.0D0 </shoc_thl2tune>
+<shoc_qw2tune                > 1.0D0 </shoc_qw2tune>
+<shoc_qwthl2tune             > 1.0D0 </shoc_qwthl2tune>
+<shoc_w2tune                 > 1.0D0 </shoc_w2tune>
+<shoc_length_fac             > 0.5D0 </shoc_length_fac>
+<shoc_c_diag_3rd_mom         > 7.0D0 </shoc_c_diag_3rd_mom>
+<shoc_lambda_low             > 0.001D0 </shoc_lambda_low>
+<shoc_lambda_high            > 0.04D0 </shoc_lambda_high>
+<shoc_lambda_slope           > 2.65D0 </shoc_lambda_slope>
+<shoc_lambda_thresh          > 0.02D0 </shoc_lambda_thresh>
+<shoc_Ckh                    > 0.1D0 </shoc_Ckh>
+<shoc_Ckm                    > 0.1D0 </shoc_Ckm>
+<shoc_Ckh_s_min              > 0.1D0 </shoc_Ckh_s_min>
+<shoc_Ckm_s_min              > 0.1D0 </shoc_Ckm_s_min>
+<shoc_Ckh_s_max              > 0.1D0 </shoc_Ckh_s_max>
+<shoc_Ckm_s_max              > 0.1D0 </shoc_Ckm_s_max>
+
 <!-- CLUBB options -->
 <clubb_rainevap_turb                              > .false. </clubb_rainevap_turb>
 <clubb_rainevap_turb microphys="mg2" clubb_sgs="1"> .false.  </clubb_rainevap_turb>
+<clubb_rainevap_turb microphys="p3"  clubb_sgs="1"> .false.  </clubb_rainevap_turb>
 <clubb_cloudtop_cooling                           > .false. </clubb_cloudtop_cooling>
 <clubb_expldiff                                   > .false. </clubb_expldiff>
 <clubb_expldiff     clubb_sgs="1"                 > .true.  </clubb_expldiff>
@@ -832,6 +882,7 @@
 <microp_scheme microphys="mg1">  MG</microp_scheme>
 <microp_scheme microphys="mg1.5">MG</microp_scheme>
 <microp_scheme microphys="mg2">  MG</microp_scheme>
+<microp_scheme microphys="p3">   P3</microp_scheme>
 <microp_scheme use_MMF="1">     off</microp_scheme>
 
 <micro_mg_version     microphys="mg1">    1          </micro_mg_version>
@@ -852,9 +903,11 @@
 <micro_mg_sub_version microphys="mg2">                                 0          </micro_mg_sub_version>
 <micro_mg_num_steps   microphys="mg2">                                 2          </micro_mg_num_steps>
 <micro_mg_num_steps   microphys="mg2" clubb_sgs="1">                   1          </micro_mg_num_steps>
+<micro_mg_num_steps   microphys="mg2" shoc_sgs="1">                   1          </micro_mg_num_steps>
 <micro_mg_dcs         microphys="mg2">                                 150.D-6    </micro_mg_dcs>
 <micro_mg_dcs         microphys="mg2" clubb_sgs="1">                   195.D-6    </micro_mg_dcs>
 <micro_mg_dcs         microphys="mg2" clubb_sgs="1" clubb_do_deep="1"> 195.D-6    </micro_mg_dcs>
+<micro_mg_dcs         microphys="mg2" shoc_sgs="1">                   195.D-6    </micro_mg_dcs>
 <ice_sed_ai           microphys="mg2">                                 700.0      </ice_sed_ai>
 <micro_mg_accre_enhan_fac  microphys="mg2"> 1.0D0                                 </micro_mg_accre_enhan_fac>
 <prc_coef1            microphys="mg2">  1350.0      </prc_coef1>
@@ -866,6 +919,16 @@
 <micro_nicons         microphys="mg2">  0.1D6       </micro_nicons>
 <micro_mincdnc        microphys="mg2">  -999.       </micro_mincdnc>
 
+<!-- P3 specific namelist variables -->
+<micro_p3_lookup_dir	    > atm/scream/tables </micro_p3_lookup_dir>
+<micro_p3_tableversion		      > 4.1.1  </micro_p3_tableversion>
+<micro_aerosolactivation              > .true.  </micro_aerosolactivation>
+<micro_subgrid_cloud     	      > .true.  </micro_subgrid_cloud>
+<micro_tend_output       	      > .true.  </micro_tend_output>
+<p3_qc_autoCon_Expon    		      >  2.47   </p3_qc_autoCon_Expon>
+<p3_qc_accret_Expon    		      >  1.15   </p3_qc_accret_Expon>
+<do_prescribed_CCN                    > .false. </do_prescribed_CCN>
+
 <!-- special defaults for MMF, which now sets all other physics scheme options to "off" -->
 <micro_mincdnc        use_MMF="1">  -999.       </micro_mincdnc>
 
@@ -873,14 +936,19 @@
 
 <micro_mg_precip_frac_method                  >  max_overlap </micro_mg_precip_frac_method>
 <micro_mg_precip_frac_method   clubb_sgs="1"  >  in_cloud    </micro_mg_precip_frac_method>
+<micro_mg_precip_frac_method   shoc_sgs="1"  >  in_cloud    </micro_mg_precip_frac_method>
 
 <micro_mg_berg_eff_factor                  >  1.0D0    </micro_mg_berg_eff_factor>
 <micro_mg_berg_eff_factor   clubb_sgs="1"  >  0.1D0    </micro_mg_berg_eff_factor>
+<micro_mg_berg_eff_factor   shoc_sgs="1"  >  0.1D0    </micro_mg_berg_eff_factor>
 
 <micro_do_icesupersat> .false. </micro_do_icesupersat>
 
 <cld_macmic_num_steps>                               1 </cld_macmic_num_steps>
 <cld_macmic_num_steps microphys="mg2" clubb_sgs="1"> 6 </cld_macmic_num_steps>
+<cld_macmic_num_steps microphys="mg2" shoc_sgs="1"> 6 </cld_macmic_num_steps>
+<cld_macmic_num_steps microphys="p3"  clubb_sgs="1"> 6 </cld_macmic_num_steps>
+<cld_macmic_num_steps microphys="p3"  shoc_sgs="1"> 6 </cld_macmic_num_steps>
 
 <microp_uniform>.false.</microp_uniform>
 <!-- Added flags for regenration and liq cld frac bug fixes    -->
@@ -893,13 +961,18 @@
 <nucleate_ice_subgrid microphys="mg1"  >1.2D0</nucleate_ice_subgrid>
 <nucleate_ice_subgrid microphys="mg1.5">1.2D0</nucleate_ice_subgrid>
 <nucleate_ice_subgrid clubb_sgs="1"     microphys="mg2" >1.2D0</nucleate_ice_subgrid>
+<nucleate_ice_subgrid shoc_sgs="1"     microphys="mg2" >1.2D0</nucleate_ice_subgrid>
 <nucleate_ice_subgrid clubb_do_deep="1" microphys="mg2" >1.0D0</nucleate_ice_subgrid>
+<nucleate_ice_subgrid clubb_sgs="1"     microphys="p3" >1.2D0</nucleate_ice_subgrid>
+<nucleate_ice_subgrid shoc_sgs="1"      microphys="p3" >1.2D0</nucleate_ice_subgrid>
+<nucleate_ice_subgrid clubb_do_deep="1" microphys="p3" >1.0D0</nucleate_ice_subgrid>
 
 <!-- Macrophysics scheme -->
 <macrop_scheme                       >none</macrop_scheme>
 <macrop_scheme macrophys="rk"        >rk</macrop_scheme>
 <macrop_scheme macrophys="park"      >park</macrop_scheme>
 <macrop_scheme macrophys="clubb_sgs" >CLUBB_SGS</macrop_scheme>
+<macrop_scheme macrophys="shoc_sgs"  >SHOC_SGS</macrop_scheme>
 <macrop_scheme use_MMF="1"           >off</macrop_scheme>
 
 <!-- Vertical limit on troposphere cloud physics -->
@@ -982,6 +1055,9 @@
 
 <sol_facti_cloud_borne clubb_sgs="1" microphys="mg2"                  >1.0D0</sol_facti_cloud_borne>
 <sol_facti_cloud_borne clubb_sgs="1" clubb_do_deep="1" microphys="mg2">3.0D0</sol_facti_cloud_borne>
+<!-- AaronDonahue, Do we need this for p3 too? -->
+<sol_facti_cloud_borne clubb_sgs="1" microphys="p3"                  >1.0D0</sol_facti_cloud_borne>
+<sol_facti_cloud_borne clubb_sgs="1" clubb_do_deep="1" microphys="p3">3.0D0</sol_facti_cloud_borne>
 
 <sol_factb_interstitial                >0.1D0</sol_factb_interstitial>
 
@@ -1016,12 +1092,14 @@
 <eddy_scheme pbl="hb"             >HB       </eddy_scheme>
 <eddy_scheme pbl="hbr"            >HBR      </eddy_scheme>
 <eddy_scheme pbl="clubb_sgs"      >CLUBB_SGS</eddy_scheme>
+<eddy_scheme pbl="shoc_sgs"       >SHOC_SGS</eddy_scheme>
 <eddy_scheme use_MMF="1"          >off      </eddy_scheme>
 
 <shallow_scheme pbl="uw"          >UW       </shallow_scheme>
 <shallow_scheme pbl="hb"          >Hack     </shallow_scheme>
 <shallow_scheme pbl="hbr"         >Hack     </shallow_scheme>
 <shallow_scheme pbl="clubb_sgs"   >CLUBB_SGS</shallow_scheme>
+<shallow_scheme pbl="shoc_sgs"    >SHOC_SGS</shallow_scheme>
 <shallow_scheme use_MMF="1"       >off      </shallow_scheme>
 
 <!-- Surface flux averaging -->
@@ -1052,7 +1130,8 @@
 <cldfrc_ice phys="default" >.true.</cldfrc_ice>
 
 <cldfrc_rhminl                                                        > 0.900D0 </cldfrc_rhminl>
-<cldfrc_rhminl                   phys="default" microphys="mg2"          > 0.950D0 </cldfrc_rhminl>
+<cldfrc_rhminl                   phys="default" microphys="p3"        > 0.950D0 </cldfrc_rhminl>
+<cldfrc_rhminl                   phys="default" microphys="mg2"       > 0.950D0 </cldfrc_rhminl>
 
 <cldfrc_rhminl_adj_land                                               > 0.100D0 </cldfrc_rhminl_adj_land>
 
@@ -1075,6 +1154,9 @@
 
 <cldfrc_iceopt                             > 1 </cldfrc_iceopt>
 <cldfrc_iceopt  phys="default"                > 5 </cldfrc_iceopt>
+
+<cldfrc_minice                             > 1.0e-12 </cldfrc_minice>
+<cldfrc_minice iceopt="7"  > 1.0e-5        </cldfrc_minice>
 
 <cldfrc_icecrit                            > 0.95D0 </cldfrc_icecrit>
 <cldfrc_icecrit phys="default"                > 0.93D0 </cldfrc_icecrit>
@@ -1108,7 +1190,10 @@
 
 <!-- zm conv -->
 <zmconv_c0_lnd                                                        > 0.0030D0 </zmconv_c0_lnd>
+<zmconv_c0_lnd  microphys="p3"  clubb_sgs="1"    phys="default"       > 0.0075D0 </zmconv_c0_lnd>
+<zmconv_c0_lnd                  hgrid="ne120np4" phys="default"       > 0.0035D0 </zmconv_c0_lnd>
 <zmconv_c0_ocn                                                        > 0.0030D0 </zmconv_c0_ocn>
+<zmconv_c0_ocn                  hgrid="ne120np4" phys="default"       > 0.0035D0 </zmconv_c0_ocn>
 
 <zmconv_tau			                                                      > 3600</zmconv_tau>
 <zmconv_alfa			                                                      > 0.1</zmconv_alfa>
@@ -1156,9 +1241,15 @@
 <!-- iop dataset for SCAM mode -->
 <iopfile dyn="eul">atm/cam/scam/iop/ARM95_4scam.nc</iopfile>
 
+<!-- Doubly periodic CRM mode -->
+<omega dpcrm_mode="1">0.D0</omega>
+
 <!-- physics loadbalance -->
 <phys_loadbalance dyn="se"> 2 </phys_loadbalance>
 <phys_loadbalance dyn="eul"> 3 </phys_loadbalance>
+
+<!-- Control output to create prescribed aerosol climatology -->
+<get_presc_aero_data>       .false. </get_presc_aero_data>
 
 <!-- physics chunk first dimension upper bound,
      encoding empirically-determined defaults -->
@@ -1196,7 +1287,7 @@
 <!-- Only for use with RRTMGP -->
 <do_aerosol_rad>              .true.   </do_aerosol_rad>
 <fixed_total_solar_irradiance>-1       </fixed_total_solar_irradiance>
-
+<do_spa_optics> .false.</do_spa_optics>
 
 <!-- ================================================================== -->
 <!-- Defaults for SE                                                    -->
@@ -1204,6 +1295,13 @@
 
 <se_partmethod> 4 </se_partmethod>
 <se_topology> "cube" </se_topology>
+<se_topology dpcrm_mode="1"> "plane" </se_topology>
+<se_geometry> "sphere" </se_geometry>
+<se_geometry dpcrm_mode="1"> "plane" </se_geometry>
+<se_ne_x> 0 </se_ne_x>
+<se_ne_y> 0 </se_ne_y>
+<se_lx> 0.0 </se_lx>
+<se_ly> 0.0 </se_ly>
 <statefreq> 480 </statefreq>
 <integration> "explicit" </integration>
 
@@ -1233,6 +1331,11 @@
 
 <cubed_sphere_map> 2 </cubed_sphere_map>
 <cubed_sphere_map npg="0"> 0 </cubed_sphere_map>
+
+<!-- scream -->
+<cubed_sphere_map hgrid="ne256np4"  npg="0"> 2 </cubed_sphere_map>
+<cubed_sphere_map hgrid="ne512np4"  npg="0"> 2 </cubed_sphere_map>
+<cubed_sphere_map hgrid="ne1024np4" npg="0"> 2 </cubed_sphere_map>
 
 
 <!-- RRM grids  -->
@@ -1282,9 +1385,6 @@
 <nu hgrid="ne30np4">  1.0e15 </nu>
 <hypervis_scaling hgrid="ne30np4" > 0 </hypervis_scaling>
 
-
-
-
 <!-- -1.0 indicates use the value for nu -->
 <nu_q> -1.0 </nu_q>
 <nu_p> -1.0 </nu_p>
@@ -1332,10 +1432,9 @@
 <dt_tracer_factor    dyn_target="theta-l" hgrid="ne512np4"> 8     </dt_tracer_factor>
 <hypervis_subcycle_q dyn_target="theta-l" hgrid="ne512np4"> 8     </hypervis_subcycle_q>
 
-<se_tstep            dyn_target="theta-l" hgrid="ne1024np4"> 9.375 </se_tstep>
-<dt_tracer_factor    dyn_target="theta-l" hgrid="ne1024np4"> 8     </dt_tracer_factor>
-<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne1024np4"> 8     </hypervis_subcycle_q>
-
+<se_tstep            dyn_target="theta-l" hgrid="ne1024np4"> 8.333333333333333d0 </se_tstep>
+<dt_tracer_factor    dyn_target="theta-l" hgrid="ne1024np4"> 6  </dt_tracer_factor>
+<hypervis_subcycle_q dyn_target="theta-l" hgrid="ne1024np4"> 6  </hypervis_subcycle_q>
 
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_northamericax4v1"> 3 </hypervis_subcycle_tom>
 <hypervis_subcycle_tom dyn_target="theta-l" hgrid="ne0np4_antarcticax4v1"  > 3 </hypervis_subcycle_tom>
@@ -1741,5 +1840,6 @@ with se_tstep, dt_remap_factor, dt_tracer_factor set to -1
 <so4_sz_thresh_icenuc phys="default"> 0.080e-6   </so4_sz_thresh_icenuc>
 <micro_mg_berg_eff_factor phys="default" clubb_sgs="1"> 0.7D0      </micro_mg_berg_eff_factor>
 <cldfrc_dp1  phys="default"> 0.018D0    </cldfrc_dp1>
+<cosp_ncolumns phys="default"> 10 </cosp_ncolumns>
 
 </namelist_defaults>

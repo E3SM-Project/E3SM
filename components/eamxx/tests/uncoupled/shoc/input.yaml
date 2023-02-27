@@ -1,0 +1,33 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+Time Stepping:
+  Time Step: ${ATM_TIME_STEP}
+  Start Time: [12, 30, 00]      # Hours, Minutes, Seconds
+  Start Date: [2021, 10, 12]    # Year, Month, Day
+  Number of Steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  atm_procs_list: (shoc)
+  shoc:
+    number_of_subcycles: ${NUM_SUBCYCLES}
+
+grids_manager:
+  Type: Mesh Free
+  number_of_global_columns:   218
+  number_of_vertical_levels:  72  # Will want to change to 128 when a valid unit test is available.
+  geo_data_source: IC_FILE
+
+initial_conditions:
+  # The name of the file containing the initial conditions for this test.
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4_16x.c20160612.nc
+  surf_sens_flux: 0.0
+  surf_evap: 0.0
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["shoc_standalone_output.yaml"]
+...

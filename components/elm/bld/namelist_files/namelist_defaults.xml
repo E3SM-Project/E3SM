@@ -262,6 +262,19 @@ ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".true." irrigate=".true." nu_co
 <finidat hgrid="ne0np4_enax4v1" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45SP.2000-01-01.enax4v1_oRRS18to6_simyr2000_c180430.nc</finidat>
 <finidat hgrid="ne0np4_twpx4v1" ic_ymd="101" sim_year="2000">lnd/clm2/initdata_map/clmi.ICRUCLM45SP.2000-01-01.twpx4v1_oRRS18to6v3_simyr2000_c180430.nc</finidat>
 
+<!-- Initial conditions for DYAMOND1, DYAMOND2 and for seasons of ENSO neutral year 2013 -->
+<finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="20160801">lnd/clm2/initdata/20220928.I2010CRUELM.ne1024pg2_ICOS10.elm.r.2016-08-01-00000.nc</finidat>
+<finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="20200120">lnd/clm2/initdata/20221218.F2010-CICE.ne30pg2_ne1024pg2.elm.r.2020-01-20-00000.nc</finidat>
+<finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="101">lnd/clm2/initdata/20220717.I2010CRUELM.ne1024pg2_ICOS10.elm.r.2013-01-01-00000.nc</finidat>
+<finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="401">lnd/clm2/initdata/20220717.I2010CRUELM.ne1024pg2_ICOS10.elm.r.2013-04-01-00000.nc</finidat>
+<finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="701">lnd/clm2/initdata/20220717.I2010CRUELM.ne1024pg2_ICOS10.elm.r.2013-07-01-00000.nc</finidat>
+<finidat hgrid="ne1024np4.pg2" mask="ICOS10" ic_ymd="1001">lnd/clm2/initdata/20220717.I2010CRUELM.ne1024pg2_ICOS10.elm.r.2013-10-01-00000.nc</finidat>
+<finidat hgrid="360x720cru" mask="oRRS15to5"   ic_ymd="20160801">lnd/clm2/initdata/ICRUCLM45-360x720cru.clm2.r.2016-08-01-00000.nc</finidat>
+<finidat hgrid="r0125"      mask="oRRS15to5"   sim_year="2000"    ic_ymd="20160801">lnd/clm2/initdata/ICRUCLM45.r0125_oRRS15to5.clm2.r.2016-08-01-00000.nc</finidat>
+<finidat hgrid="r0125"      mask="oRRS18to6v3" sim_year="2000"    ic_ymd="20160801">lnd/clm2/initdata/ICRUCLM45.r0125_oRRS18to6v3.clm2.r.2016-08-01-00000.nc</finidat>
+<finidat hgrid="r0125"      mask="oRRS18to6v3" sim_year="2010"    ic_ymd="20160801">lnd/clm2/initdata/20200917.ICRUCLM45.r0125_oRRS18to6v3.clm2.r.2016-08-01-00000.nc</finidat>
+<finidat hgrid="r0125"      mask="oRRS18to6v3" sim_year="2010"    ic_ymd="20200120">lnd/clm2/initdata/20200909.DYAMOND-2.spinup-nTQUV.ne30-r0125.clm2.r.2020-01-20-00000.nc</finidat>
+
 <!-- for present day simulations - year 2010 -->
 <fsurdat hgrid="ne4np4"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne4np4_simyr2010_c210908.nc</fsurdat>
@@ -275,11 +288,19 @@ lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr2010_c191025.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne30pg2_simyr2010_c210402.nc</fsurdat>
 <fsurdat hgrid="ne120np4"     sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne120np4_simyr2010_c20181023.nc</fsurdat>
+<fsurdat hgrid="ne120np4.pg2" sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne120pg2_simyr2010_c230119.nc</fsurdat>
+<fsurdat hgrid="ne256np4.pg2" sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne256pg2_simyr2010_c230207.nc</fsurdat>
 <fsurdat hgrid="ne1024np4.pg2"   sim_year="2010" use_crop=".false." >
-lnd/clm2/surfdata_map/surfdata_ne1024pg2_simyr2010_c210902.nc</fsurdat>
+lnd/clm2/surfdata_map/surfdata_ne1024pg2_simyr2010_c211021.nc</fsurdat>
+<fsurdat hgrid="ne1024np4"   sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne1024np4_simyr2010_c220523.nc</fsurdat>
 
 <!-- for present day simulations - year 2000 -->
 <fsurdat hgrid="360x720cru"   sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_360x720cru_simyr2000_c180216.nc</fsurdat>
+<fsurdat hgrid="360x720cru"   sim_year="2010" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_360x720cru_simyr2000_c180216.nc</fsurdat>
 <fsurdat hgrid="48x96"     sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_48x96_simyr2000_c130927.nc</fsurdat>
@@ -317,6 +338,10 @@ lnd/clm2/surfdata_map/surfdata_ne4pg2_simyr2000_c190620.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_ne4pg2_simyr2000_c190620.nc</fsurdat>
 <fsurdat hgrid="ne240np4"      sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_ne240np4_simyr2000_c170821.nc</fsurdat>
+<fsurdat hgrid="ne256np4"      sim_year="2000" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne256np4_simyr2010_c220518.nc</fsurdat>
+<fsurdat hgrid="ne256np4"      sim_year="2010" use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_ne256np4_simyr2010_c220518.nc</fsurdat>
 <fsurdat hgrid="r05"         sim_year="2000" >
 lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr2000_c200624.nc</fsurdat>
 <fsurdat hgrid="r0125"       sim_year="2000" use_crop=".false." >
