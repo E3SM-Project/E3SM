@@ -459,10 +459,12 @@ end subroutine check_energy_get_integrals
     integer :: ncol                      ! number of active columns
     integer :: lchnk                     ! chunk index
 
-    real(r8) :: te(pcols,begchunk:endchunk,5)   
+    real(r8) :: te(pcols,begchunk:endchunk,9)   
                                          ! total energy of input/output states (copy)
-    real(r8) :: te_glob(5)               ! global means of total energy
+    real(r8) :: te_glob(9)               ! global means of total energy
     real(r8), pointer :: teout(:)
+
+    real(r8) :: twbefore, twafter, dflux, dstep
     real(r8) :: delta_te_glob, rr_glob
 !-----------------------------------------------------------------------
 
@@ -481,22 +483,33 @@ end subroutine check_energy_get_integrals
        ! surface pressure for heating rate
        te(:ncol,lchnk,3) = state(lchnk)%pint(:ncol,pver+1)
 
+       te(:ncol,lchnk,4) = state(lchnk)%tw_before(:ncol)
+       te(:ncol,lchnk,5) = state(lchnk)%tw_after(:ncol)
+       te(:ncol,lchnk,6) = state(lchnk)%deltaw_flux(:ncol)
+       te(:ncol,lchnk,7) = state(lchnk)%deltaw_step(:ncol)
+
        !energy change versus restom-ressurf
-       te(:ncol,lchnk,4) = state(lchnk)%delta_te(:ncol)
-       te(:ncol,lchnk,5) = state(lchnk)%rr(:ncol)
+       te(:ncol,lchnk,8) = state(lchnk)%delta_te(:ncol)
+       te(:ncol,lchnk,9) = state(lchnk)%rr(:ncol)
+
     end do
 
     ! Compute global means of input and output energies and of
     ! surface pressure for heating rate (assume uniform ptop)
-    call gmean(te, te_glob, 5)
+    call gmean(te, te_glob, 9)
 
     if (begchunk .le. endchunk) then
        teinp_glob = te_glob(1)
        teout_glob = te_glob(2)
        psurf_glob = te_glob(3)
 
-       delta_te_glob = te_glob(4)
-       rr_glob       = te_glob(5)
+       twbefore = te_glob(4)
+       twafter = te_glob(5)
+       dflux = te_glob(6)
+       dstep = te_glob(7)
+
+       delta_te_glob = te_glob(8)
+       rr_glob       = te_glob(9)
 
        ptopb_glob = state(begchunk)%pint(1,1)
 
@@ -506,8 +519,16 @@ end subroutine check_energy_get_integrals
 
        if (masterproc) then
           write(iulog,'(1x,a9,1x,i8,4(1x,e25.17))') "nstep, te", nstep, teinp_glob, teout_glob, heat_glob, psurf_glob
-          write(iulog,'(1x,a19,1x,i8,2(1x,e25.17))') "nstep, d(te)/dt, rr", nstep, delta_te_glob/dtime, rr_glob
-          write(iulog,'(1x,a9,1x,i8,1(1x,e25.17))') "nstep, diff", nstep, delta_te_glob/dtime-rr_glob
+
+! tw is kg/m2
+!dflux, dstep are kg/m2
+          write(iulog,'(1x,a21,1x,i8,3(1x,e25.17))') "nstep, W tw b, a, a-b", nstep, twbefore, twafter, twbefore-twafter
+          write(iulog,'(1x,a21,1x,i8,3(1x,e25.17))') "nstep, W dflux, dstep", nstep, dflux, dstep, dflux-dstep
+
+!delta_te_glob is J/m2, rr_glob is W/m2
+          write(iulog,'(1x,a21,1x,i8,2(1x,e25.17))') "nstep, E d(te)/dt, rr", nstep, delta_te_glob/dtime, rr_glob
+          write(iulog,'(1x,a20,1x,i8,1(1x,e25.17))') "nstep, E d(te)/dt-rr", nstep, delta_te_glob/dtime-rr_glob
+
        end if
     else
        heat_glob = 0._r8

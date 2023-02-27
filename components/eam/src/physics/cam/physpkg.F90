@@ -2367,6 +2367,11 @@ if (l_dry_adj) then
     call t_stopf('dry_adjustment')
 
 end if
+
+
+!save water mass here
+state%tw_before(:ncol) = state%tw_cur(:ncol)
+
     !
     !===================================================
     ! Moist convection
@@ -2426,6 +2431,8 @@ end if
     call check_tracers_chng(state, tracerint, "convect_shallow", nstep, ztodt, zero_tracers)
 
     call t_stopf('moist_convection')
+
+
 
 if (l_tracer_aero) then
 
@@ -2769,6 +2776,10 @@ end if ! l_rad
     call t_startf('tropopause')
     call tropopause_output(state)
     call t_stopf('tropopause')
+
+!save water after
+state%tw_after(:ncol) = state%tw_cur(:ncol)
+
 
     ! Save atmospheric fields to force surface models
     call t_startf('cam_export')
