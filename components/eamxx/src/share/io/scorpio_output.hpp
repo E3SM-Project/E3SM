@@ -162,10 +162,7 @@ protected:
   void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::string& mode);
   void set_field_manager (const std::shared_ptr<const fm_type>& field_mgr, const std::vector<std::string>& modes);
 
-  std::shared_ptr<const fm_type> get_field_manager (const std::string& mode) const {
-    EKAT_REQUIRE_MSG (m_field_mgrs.count(mode),"ERROR! AtmosphereOutput::get_field_manager FM for mode = " + mode + " not found in list of available field managers!.");
-    return m_field_mgrs.at(mode);
-  }
+  std::shared_ptr<const fm_type> get_field_manager (const std::string& mode) const;
 
   void register_dimensions(const std::string& name);
   void register_variables(const std::string& filename, const std::string& fp_precision);
