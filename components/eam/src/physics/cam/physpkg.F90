@@ -2812,6 +2812,10 @@ state%deltaw_flux(:ncol) = state%deltaw_flux(:ncol) * ztodt
 state%deltaw_step(:ncol) = state%tw_after(:ncol) - state%tw_before(:ncol)
 
 
+!!!!!!!!!!!! NOTE THAT momentum fluxes from surf stresses most likely are not energetically 
+!!!!!!!!!!!! conserving and there is no contribution for them in cam_in%shf, 
+!!!!!!!!!!!! so a small leak/sink of energy is expected
+
     !!!! now after cam_export      cam_out%precc , cam_out%precl are ready -- liquid+ice
     !!!! and cam_out%precsc, cam_out%precsl -- only ice
 
