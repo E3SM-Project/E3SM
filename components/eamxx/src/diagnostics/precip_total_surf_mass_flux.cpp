@@ -36,17 +36,29 @@ void PrecipTotalSurfMassFluxDiagnostic::set_grids(const std::shared_ptr<const Gr
 }
 // =========================================================================================
 void PrecipTotalSurfMassFluxDiagnostic::compute_diagnostic_impl()
-{
-  const auto& precip_ice_surf_mass        = get_field_in("precip_ice_surf_mass").get_view<const Real*>();
-  const auto& precip_liq_surf_mass        = get_field_in("precip_liq_surf_mass").get_view<const Real*>();
-  const auto& precip_total_surf_mass_flux = m_diagnostic_output.get_view<Real*>();
-  const auto dt = m_dt;
+{  
+  const auto& ice_mass_field = get_field_in("precip_ice_surf_mass");
+  const auto& ice_mass_view  = ice_mass_field.get_view<const Real*>();
+  const auto& ice_mass_track = ice_mass_field.get_header().get_tracking();
+  const auto& ice_t_start    = ice_mass_track.get_accum_start_time();
+  const auto& ice_t_now      = ice_mass_track.get_time_stamp();
+  const auto ice_dt          = ice_t_now - ice_t_start;
+  auto ice_rhodt             = PC::RHO_H2O*ice_dt;
 
+  const auto& liq_mass_field = get_field_in("precip_liq_surf_mass");
+  const auto& liq_mass_view  = liq_mass_field.get_view<const Real*>();
+  const auto& liq_mass_track = liq_mass_field.get_header().get_tracking();  
+  const auto& liq_t_start    = liq_mass_track.get_accum_start_time();
+  const auto& liq_t_now      = liq_mass_track.get_time_stamp();
+  const auto liq_dt          = liq_t_now - liq_t_start;
+  auto liq_rhodt             = PC::RHO_H2O*liq_dt;
+
+  const auto& flux_view = m_diagnostic_output.get_view<Real*>();
+  
   Kokkos::parallel_for("PrecipTotalSurfMassFluxDiagnostic",
                        KT::RangePolicy(0,m_num_cols),
                        KOKKOS_LAMBDA(const Int& icol) {
-    precip_total_surf_mass_flux(icol) = precip_ice_surf_mass(icol)/PC::RHO_H2O/dt +
-                                        precip_liq_surf_mass(icol)/PC::RHO_H2O/dt;
+    flux_view(icol) = ice_mass_view(icol)/ice_rhodt + liq_mass_view(icol)/liq_rhodt;
   });
 }
 // =========================================================================================

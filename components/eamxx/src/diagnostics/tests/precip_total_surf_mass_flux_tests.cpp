@@ -52,7 +52,7 @@ void run(std::mt19937_64& engine)
   using RPDF = std::uniform_real_distribution<Real>;
   RPDF pdf_mass(0.0,1.0);
 
-  // A time stamp
+  // Initial time stamp
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
   // Construct the Diagnostics
@@ -74,6 +74,7 @@ void run(std::mt19937_64& engine)
     f.allocate_view();
     const auto name = f.name();
     f.get_header().get_tracking().update_time_stamp(t0);
+    f.get_header().get_tracking().set_accum_start_time(t0);
     diag_total->set_required_field(f.get_const());
     REQUIRE_THROWS(diag_total->set_computed_field(f));
     if (name=="precip_ice_surf_mass") {
@@ -94,37 +95,42 @@ void run(std::mt19937_64& engine)
 
   // Run tests
   {
+    util::TimeStamp t = t0 + dt;
+    
     // Construct random data to use for test
     // Get views of input data and set to random values
-    const auto& precip_ice_surf_mass_f = input_fields["precip_ice_surf_mass"];
+    auto precip_ice_surf_mass_f = input_fields["precip_ice_surf_mass"];
     const auto& precip_ice_surf_mass_v = precip_ice_surf_mass_f.get_view<Real*>();
-    const auto& precip_liq_surf_mass_f = input_fields["precip_liq_surf_mass"];
+    auto precip_liq_surf_mass_f = input_fields["precip_liq_surf_mass"];
     const auto& precip_liq_surf_mass_v = precip_liq_surf_mass_f.get_view<Real*>();
     for (int icol=0;icol<ncols;icol++) {
       ekat::genRandArray(precip_ice_surf_mass_v, engine, pdf_mass);
       ekat::genRandArray(precip_liq_surf_mass_v, engine, pdf_mass);
     }
 
+    precip_ice_surf_mass_f.get_header().get_tracking().update_time_stamp(t);
+    precip_liq_surf_mass_f.get_header().get_tracking().update_time_stamp(t);
+    
     // Run diagnostic and compare with manual calculation
-    diag_total->compute_diagnostic(dt);
+    diag_total->compute_diagnostic();
     const auto& diag_total_out = diag_total->get_diagnostic();
     Field theta_f = diag_total_out.clone();
     theta_f.deep_copy<double,Host>(0.0);
     theta_f.sync_to_dev();
     const auto& theta_v = theta_f.get_view<Real*>();
-    const auto rho_h2o = PC::RHO_H2O;
+    const auto rhodt = PC::RHO_H2O*dt;
     Kokkos::parallel_for("precip_total_surf_mass_flux_test",
                          typename KT::RangePolicy(0,ncols),
                          KOKKOS_LAMBDA(const int& icol) {
-      theta_v(icol) = precip_ice_surf_mass_v(icol)/rho_h2o/dt +
-                      precip_liq_surf_mass_v(icol)/rho_h2o/dt;
+      theta_v(icol) = precip_ice_surf_mass_v(icol)/rhodt +
+                      precip_liq_surf_mass_v(icol)/rhodt;
     });
     Kokkos::fence();
     REQUIRE(views_are_equal(diag_total_out,theta_f));
 
     // Test against sum of precip_ice/liq diagnostics
-    diag_ice->compute_diagnostic(dt);
-    diag_liq->compute_diagnostic(dt);
+    diag_ice->compute_diagnostic();
+    diag_liq->compute_diagnostic();
 
     const auto& diag_ice_out = diag_ice->get_diagnostic();
     const auto& diag_liq_out = diag_liq->get_diagnostic();
@@ -132,7 +138,6 @@ void run(std::mt19937_64& engine)
     Field sum_of_diags_f(diag_total_out.get_header().get_identifier());
     sum_of_diags_f.get_header().get_alloc_properties().request_allocation();
     sum_of_diags_f.allocate_view();
-    sum_of_diags_f.get_header().get_tracking().update_time_stamp(t0);
     const auto& sum_of_diags_v = sum_of_diags_f.get_view<Real*>();
 
     const auto& diag_ice_v     = diag_ice_out.get_view<const Real*>();
