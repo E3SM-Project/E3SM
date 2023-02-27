@@ -361,8 +361,8 @@ end subroutine moab_map_init_rcfile
        mbpresent = .false.
     endif
 
-    mbnorm = .false.   ! uncomment to turn off normalization for all maps
-    mbpresent = .false.
+!   mbnorm = .false.   ! uncomment both to turn off normalization for all maps
+!   mbpresent = .false.
 
     if (present(msgtag)) then
        ltag = msgtag
@@ -405,10 +405,10 @@ end subroutine moab_map_init_rcfile
          endif
 
          if (mbnorm) then
-           fldlist_moab = fldlist_moab//":norm8wt"//C_NULL_CHAR
+           fldlist_moab = trim(fldlist_moab)//":norm8wt"//C_NULL_CHAR
            nfields=nfields + 1
          else
-           fldlist_moab = fldlist_moab//C_NULL_CHAR
+           fldlist_moab = trim(fldlist_moab)//C_NULL_CHAR
          endif
 
 
@@ -516,7 +516,7 @@ end subroutine moab_map_init_rcfile
             ! set the normalization factor to 1
             ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, tagname, lsize , mapper%tag_entity_type, wghts)
             if (ierr .ne. 0) then
-               write(logunit,*) subname,' error setting init value for mapping norm factor ', tagname
+               write(logunit,*) subname,' error setting init value for mapping norm factor ',ierr,trim(tagname)
                call shr_sys_abort(subname//' ERROR setting norm init value') ! serious enough
             endif
 
@@ -525,7 +525,7 @@ end subroutine moab_map_init_rcfile
                tagname = avwtsfld_s//C_NULL_CHAR
                ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, tagname, lsize , mapper%tag_entity_type, wghts)
                if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error getting value for mapping norm factor ', tagname
+                  write(logunit,*) subname,' error getting value for mapping norm factor ', trim(tagname)
                   call shr_sys_abort(subname//' ERROR getting norm factor') ! serious enough
                endif
 
@@ -611,7 +611,7 @@ end subroutine moab_map_init_rcfile
             ! get values of weights after mapping
             ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, tagname, lsize , mapper%tag_entity_type, wghts)
             if (ierr .ne. 0) then
-               write(logunit,*) subname,' error getting value for mapping norm factor post-map ', tagname
+               write(logunit,*) subname,' error getting value for mapping norm factor post-map ', ierr, trim(tagname)
                call shr_sys_abort(subname//' ERROR getting norm factor') ! serious enough
             endif
 
