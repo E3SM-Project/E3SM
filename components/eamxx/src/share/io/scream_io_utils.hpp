@@ -2,10 +2,13 @@
 #define SCREAM_IO_UTILS_HPP
 
 #include "share/util/scream_time_stamp.hpp"
+#include "share/util/scream_time_stamp.hpp"
+
 #include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
+
 #include <string>
-#include "share/util/scream_time_stamp.hpp"
+#include <limits>
 
 namespace scream
 {
@@ -17,6 +20,8 @@ enum class OutputAvgType {
   Average,
   Invalid
 };
+
+constexpr float DEFAULT_FILL_VALUE = std::numeric_limits<float>::max() / 1e5;
 
 inline std::string e2str(const OutputAvgType avg) {
   using OAT = OutputAvgType;

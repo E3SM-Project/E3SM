@@ -155,6 +155,7 @@ public:
   std::shared_ptr<const AbstractGrid> get_io_grid () const {
     return m_io_grid;
   }
+
 protected:
   // Internal functions
   void set_grid (const std::shared_ptr<const AbstractGrid>& grid);
@@ -207,7 +208,7 @@ protected:
   //   NetCDF: Numeric conversion not representable
   // Also, by default, don't pick max float, to avoid any overflow if the value
   // is used inside other calculation and/or remap.
-  float m_fill_value = std::numeric_limits<float>::max() / 1e5;
+  float m_fill_value = DEFAULT_FILL_VALUE;
 
   // Local views of each field to be used for "averaging" output and writing to file.
   std::map<std::string,view_1d_host>    m_host_views_1d;
