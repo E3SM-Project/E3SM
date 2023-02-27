@@ -1,7 +1,7 @@
 %YAML 1.1
 ---
 Casename: ${CASE}.scream.hi
-# WARNING: ERS/ERP tets will oveerride this with AVERAGE
+# WARNING: ERS/ERP tets will override this with AVERAGE
 Averaging Type: Instant
 Max Snapshots Per File: 744 # One output every 31 days
 Fields:
@@ -59,7 +59,7 @@ Fields:
       # Diagnostics
       - PotentialTemperature
 output_control:
-# WARNING: ERS/ERP tets will oveerride this with STOP_N/STOP_OPTION
+# WARNING: ERS/ERP tets will override this with STOP_N/STOP_OPTION
   Frequency: ${HIST_N}
   frequency_units: ${HIST_OPTION}
   MPI Ranks in Filename: false
