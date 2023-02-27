@@ -1140,7 +1140,8 @@ contains
                call shr_sys_abort(subname//' ERROR in defining tags ')
             endif
 
-            tagname = trim(seq_flds_dom_fields)//C_NULL_CHAR
+            !add the normalization tag
+            tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
             ierr = iMOAB_DefineTagStorage(mbaxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on atm on coupler '
@@ -1219,7 +1220,8 @@ contains
                call shr_sys_abort(subname//' ERROR in defining tags x2o on coupler ')
             endif
 
-            tagname = trim(seq_flds_dom_fields)//C_NULL_CHAR
+            !add the normalization tag
+            tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
             ierr = iMOAB_DefineTagStorage(mboxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on ocn on coupler '
@@ -1327,7 +1329,8 @@ contains
                call shr_sys_abort(subname//' ERROR in defining tags x2l on coupler land')
             endif        
 
-            tagname = trim(seq_flds_dom_fields)//C_NULL_CHAR
+            !add the normalization tag
+            tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
             ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on lnd on coupler '
@@ -1391,7 +1394,8 @@ contains
             call shr_sys_abort( subname//' ERROR: cannot define tags for ice on coupler' )
          end if
 
-         tagname = trim(seq_flds_dom_fields)//C_NULL_CHAR
+         !add the normalization tag
+         tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
          ierr = iMOAB_DefineTagStorage(mbixid, tagname, tagtype, numco,  tagindex )
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on ice on coupler '
@@ -1481,7 +1485,8 @@ contains
                call shr_sys_abort( subname//' ERROR: cannot define tags for rof on coupler' )
             end if
 
-            tagname = trim(seq_flds_dom_fields)//C_NULL_CHAR
+            !add the normalization tag
+            tagname = trim(seq_flds_dom_fields)//":norm8wt"//C_NULL_CHAR
             ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error in defining tags seq_flds_dom_fields on rof on coupler '

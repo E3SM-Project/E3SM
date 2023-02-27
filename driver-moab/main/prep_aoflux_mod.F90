@@ -140,7 +140,8 @@ contains
 
 ! define flux tags on the moab ocean mesh, second copy of ocean mesh on coupler
     if (mbofxid .ge. 0 ) then ! //
-       tagname = trim(seq_flds_xao_fields)//C_NULL_CHAR
+      !add the normalization tag
+       tagname = trim(seq_flds_xao_fields)//":norm8wt"//C_NULL_CHAR
        tagtype = 1 ! dense, double
        numco = 1
        ierr = iMOAB_DefineTagStorage(mbofxid, tagname, tagtype, numco, tagindex )
@@ -148,10 +149,11 @@ contains
           write(logunit,*) subname,' error in defining tags on ocn phys mesh on cpl '
           call shr_sys_abort(subname//' ERROR in defining tags on ocn phys mesh on cpl')
        endif
+
        ! make it zero
        ! first form a list and get size.
        call mct_list_init(temp_list ,seq_flds_xao_fields)
-       size_list=mct_list_nitem (temp_list)
+       size_list=mct_list_nitem (temp_list) + 1 ! 1 more for the normalization tag
        call mct_list_clean(temp_list)
        ! find out the number of local elements in moab mesh
        ierr  = iMOAB_GetMeshInfo ( mbofxid, nvert, nvise, nbl, nsurf, nvisBC ); ! could be different of lsize_o
@@ -166,6 +168,7 @@ contains
          write(logunit,*) subname,' error in zeroing out xao_fields  '
          call shr_sys_abort(subname//' ERROR in zeroing out xao_fields in init ')
        endif
+
        allocate(xao_omct(lsize_o, size_list)) ! the transpose of xao_ox(size_list, lsize_o) 
        ! create for debugging the tags on mbox2id (mct grid on coupler)
        ierr = iMOAB_DefineTagStorage(mbox2id, tagname, tagtype, numco, tagindex )
