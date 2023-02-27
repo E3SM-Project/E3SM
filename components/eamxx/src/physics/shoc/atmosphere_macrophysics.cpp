@@ -282,32 +282,8 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
     Kokkos::deep_copy(tke_copy,0.0004);
     Kokkos::deep_copy(cldfrac_liq,0.0);
   }
-  // Find index of qv (water vapor, kg/kg(wet-air) and tke (J/kg(wet-air)) in the qtracer 3d view
-  // These indices are later used for converting tracers from wet mmr to dry mmr and vice-versa
-  auto qv_index  = tracer_info->m_subview_idx.at("qv");
-  auto tke_index = tracer_info->m_subview_idx.at("tke");
 
-  //Device view to store indices of tracers which will participate in wet<->dry conversion; we are excluding
-  //"tke" [as it is not "water based" tracer] and "qv"[as "qv" (before conversion) is needed for
-  //computing conversion for all other tracers] from qtracers view
-
-  view_1d_int convert_wet_dry_idx_d("convert_wet_dry_idx_d",m_num_tracers-2);  //2 tracers, qv and tke, are excluded
-
-  //mirror view on host
-  auto convert_wet_dry_idx_h = Kokkos::create_mirror_view(convert_wet_dry_idx_d);
-  //loop over all tracers to store of all tracer indices except for tke and qv
-  for (int it=0,iq=0; it<m_num_tracers; ++it) {
-    if (it!=qv_index && it!= tke_index) { //skip if "it" is a tke or qv index
-      convert_wet_dry_idx_h(iq) = it;
-      ++iq;
-    }
-  }
-
-  // copy to device
-  Kokkos::deep_copy(convert_wet_dry_idx_d,convert_wet_dry_idx_h);
-
-
-  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,convert_wet_dry_idx_d,z_surf,m_cell_area,m_cell_lat,
+  shoc_preprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,z_surf,m_cell_area,m_cell_lat,
                                 T_mid,p_mid,p_int,pseudo_density,omega,phis,surf_sens_flux,surf_evap,
                                 surf_mom_flux,qtracers,qv,qc,qc_copy,tke,tke_copy,z_mid,z_int,cell_length,
                                 dse,rrho,rrho_i,thv,dz,zt_grid,zi_grid,wpthlp_sfc,wprtp_sfc,upwp_sfc,vpwp_sfc,
@@ -385,7 +361,7 @@ void SHOCMacrophysics::initialize_impl (const RunType run_type)
   temporaries.tkh = m_buffer.tkh;
 #endif
 
-  shoc_postprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,convert_wet_dry_idx_d,
+  shoc_postprocess.set_variables(m_num_cols,m_num_levs,m_num_tracers,
                                  rrho,qv,qw,qc,qc_copy,tke,tke_copy,qtracers,shoc_ql2,
                                  cldfrac_liq,inv_qc_relvar,
                                  T_mid, dse, z_mid, phis);
