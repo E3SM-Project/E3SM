@@ -201,7 +201,7 @@ contains
               call mpas_log_write("")
               call mpas_log_write(" Topographic wave drag scheme is: Jayne and St. Laurent")
               call mpas_log_write("")
-              topographicWaveDrag = topographicWaveDragCoeff*topoDragTurnOff*pii*(bathy_stddev**2)*topo_buoyancy_N1B/10000.0_RKIND
+              topographicWaveDrag = topographicWaveDragCoeff*topoDragTurnOff*pii*(bathy_stddev**2)*topo_buoyancy_N1B/10000.0_RKIND/layerThicknessEdge
               ! C = pi std(H)^2 Nb / L, L=10,000
 
           else if (config_topographic_wave_drag_scheme.EQ."ZAE") then
@@ -209,7 +209,7 @@ contains
               call mpas_log_write("")
               call mpas_log_write(" Topographic wave drag scheme is: Zaron and Egbert")
               call mpas_log_write("")
-              topographicWaveDrag = topographicWaveDragCoeff*bottomDepthEdge*(bed_slope_edges**2)*topo_buoyancy_N1B*topo_buoyancy_N1V / (8.0_RKIND * 1.405189e-4_RKIND * pii**2)
+              topographicWaveDrag = topographicWaveDragCoeff*bottomDepthEdge*(bed_slope_edges**2)*topo_buoyancy_N1B*topo_buoyancy_N1V / (8.0_RKIND * 1.405189e-4_RKIND * pii**2) / layerThicknessEdge
 !              topographicWaveDrag = topographicWaveDragCoeff*topoDragTurnOff*50.0_RKIND*bottomDepthEdge*(bed_slope_edges**2)*((5.24e-3_RKIND)*1300.0_RKIND*(1 - exp(-bottomDepthEdge/1300.0_RKIND))/bottomDepthEdge)*((5.24e-3_RKIND)*exp(-bottomDepthEdge/1300.0_RKIND))/ (8 * 1.405189e-4_RKIND * pii**2)
               ! C = G*H*(grad H)^2 * Nb * Nv / (8 pi^2 omega), take M2 omega = 1.405189e-4_RKIND
 !              Nv = (5.24e-3_RKIND)*1300*(1 - exp(-bottomDepth/1300))/bottomDepth
