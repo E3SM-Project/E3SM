@@ -325,17 +325,21 @@ end subroutine moab_map_init_rcfile
     integer(IN)     ,intent(in),optional :: msgtag
 #ifdef HAVE_MOAB
     logical  :: valid_moab_context
-    integer  :: ierr, nfields, ntagdatalength
+    integer  :: ierr, nfields, lsize, arrsize, j
     character(len=CXX) :: fldlist_moab
+    character(len=CXX) :: tagname
     integer    :: nvert(3), nvise(3), nbl(3), nsurf(3), nvisBC(3) ! for moab info
     type(mct_list) :: temp_list
     integer, dimension(:), allocatable  :: globalIds
-    real(r8), dimension(:), allocatable  :: moab_tag_data
+    real(r8), dimension(:), allocatable  :: wghts
+    real(kind=r8) , allocatable  :: targtags(:,:)
 #endif
     !
     ! Local Variables
     !
-    logical :: lnorm
+    logical :: lnorm  ! true if normalization is to be done
+    logical :: mbnorm ! moab copy of lnorm
+    logical :: mbpresent ! moab logical for presence of norm weight string
     integer(IN),save :: ltag    ! message tag for rearrange
     character(len=*),parameter :: subname = "(seq_map_map) "
     !-----------------------------------------------------
@@ -348,6 +352,17 @@ end subroutine moab_map_init_rcfile
     if (present(norm)) then
        lnorm = norm
     endif
+
+    mbnorm = lnorm
+
+    if (present(avwtsfld_s)) then
+       mbpresent = .true.
+    else
+       mbpresent = .false.
+    endif
+
+    mbnorm = .false.   ! uncomment to turn off normalization for all maps
+    mbpresent = .false.
 
     if (present(msgtag)) then
        ltag = msgtag
@@ -382,12 +397,20 @@ end subroutine moab_map_init_rcfile
             call mct_list_init(temp_list, fldlist)
             nfields=mct_list_nitem (temp_list)
             call mct_list_clean(temp_list)
-            fldlist_moab= trim(fldlist)//C_NULL_CHAR
+            fldlist_moab= trim(fldlist)
          else
             ! Extract character strings from attribute vector
             nfields = mct_aVect_nRAttr(av_s)
-            fldlist_moab = trim(mct_aVect_exportRList2c(av_s))//C_NULL_CHAR
+            fldlist_moab = trim(mct_aVect_exportRList2c(av_s))
          endif
+
+         if (mbnorm) then
+           fldlist_moab = fldlist_moab//":norm8wt"//C_NULL_CHAR
+           nfields=nfields + 1
+         else
+           fldlist_moab = fldlist_moab//C_NULL_CHAR
+         endif
+
 
 #ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
@@ -449,7 +472,7 @@ end subroutine moab_map_init_rcfile
        if ( valid_moab_context ) then
          ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
          if (ierr .ne. 0) then
-            write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' error in sending tags ', trim(fldlist_moab)
+            write(logunit, *) subname,' iMOAB mapper ', mapper%mbname, ' error in sending tags ', trim(fldlist_moab), ierr
             call shr_sys_flush(logunit)
             call shr_sys_abort(subname//' ERROR in sending tags')
          endif
@@ -475,6 +498,64 @@ end subroutine moab_map_init_rcfile
 
 #ifdef HAVE_MOAB
        if ( valid_moab_context ) then
+       ! NORMALIZATION
+         if (mbnorm .or. mbpresent) then
+            !  initialize the weight tag and multiply it by the input tags.
+            ! get target mesh info
+            ierr  = iMOAB_GetMeshInfo ( mapper%src_mbid, nvert, nvise, nbl, nsurf, nvisBC );
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error getting mesh info for ', mapper%mbname
+               call shr_sys_abort(subname//' ERROR getting mesh info') ! serious enough
+            endif
+            lsize = nvise(1) ! number of active cells
+
+            ! init normalization weight
+            allocate(wghts(lsize))
+            wghts = 1.0_r8
+            tagname = "norm8wt"//C_NULL_CHAR
+            ! set the normalization factor to 1
+            ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, tagname, lsize , mapper%tag_entity_type, wghts)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error setting init value for mapping norm factor ', tagname
+               call shr_sys_abort(subname//' ERROR setting norm init value') ! serious enough
+            endif
+
+            ! if a normalization factor was specified, get it and multiply src tags by it
+            if(mbpresent) then
+               tagname = avwtsfld_s//C_NULL_CHAR
+               ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, tagname, lsize , mapper%tag_entity_type, wghts)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error getting value for mapping norm factor ', tagname
+                  call shr_sys_abort(subname//' ERROR getting norm factor') ! serious enough
+               endif
+
+               ! get the fieldlist including weight
+               allocate(targtags(lsize,nfields))
+               arrsize=lsize*(nfields)
+
+               ! get the current values of all source tags including the norm8wt currently set to 1
+               ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize , mapper%tag_entity_type, targtags)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error getting source tag values ', mapper%mbname
+                  call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
+               endif
+
+               ! multiply by the value of the avwtsfld_s field.
+               ! norm8wt is 1 so it will record the value of the weight.
+               do j = 1, lsize
+                 targtags(j,:)= targtags(j,:)*wghts(j)
+               enddo
+
+               ! put the new values on the mesh for later mapping
+               ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize , mapper%tag_entity_type, targtags)
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error setting normed source tag values ', mapper%mbname
+                  call shr_sys_abort(subname//' ERROR setting normed source tag values') ! serious enough
+               endif
+            endif ! end multiplication by norm factor
+            deallocate(wghts, targtags)
+         endif  ! end NORMALIZATION
+
          !
          ierr = iMOAB_SendElementTag( mapper%src_mbid, fldlist_moab, mapper%mpicom, mapper%intx_context );
          if (ierr .ne. 0) then
@@ -502,6 +583,7 @@ end subroutine moab_map_init_rcfile
          endif
        endif
        if ( valid_moab_context ) then
+
 #ifdef MOABDEBUG
          if (seq_comm_iamroot(CPLID)) then
             write(logunit, *) subname,' iMOAB projection mapper: between ', mapper%src_mbid, ' and ',  mapper%tgt_mbid, trim(fldlist_moab)
@@ -513,10 +595,55 @@ end subroutine moab_map_init_rcfile
             write(logunit,*) subname,' error in applying weights '
             call shr_sys_abort(subname//' ERROR in applying weights')
          endif
+
+         ! complete the normalization process
+         if (mbnorm) then
+            ierr  = iMOAB_GetMeshInfo ( mapper%tgt_mbid, nvert, nvise, nbl, nsurf, nvisBC );
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error getting mesh info for target ', mapper%mbname
+               call shr_sys_abort(subname//' ERROR getting mesh info') ! serious enough
+            endif
+
+            lsize = nvise(1) ! number of active cells
+            tagname = "norm8wt"//C_NULL_CHAR
+            allocate(wghts(lsize))
+
+            ! get values of weights after mapping
+            ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, tagname, lsize , mapper%tag_entity_type, wghts)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error getting value for mapping norm factor post-map ', tagname
+               call shr_sys_abort(subname//' ERROR getting norm factor') ! serious enough
+            endif
+
+            ! get values of target tags after mapping
+            allocate(targtags(lsize,nfields))
+            arrsize=lsize*(nfields)
+            ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, fldlist_moab, arrsize , mapper%tag_entity_type, targtags)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error getting destination tag values ', mapper%mbname
+               call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
+            endif
+
+            ! do the post mapping normalization
+            ! TODO:  add some check for wghts < puny
+            do j = 1, lsize
+               targtags(j,:)= targtags(j,:)*(1.0_r8/wghts(j))
+            enddo
+
+            ! put the values back on the mesh
+            ierr = iMOAB_SetDoubleTagStorage (mapper%tgt_mbid, fldlist_moab, arrsize , mapper%tag_entity_type, targtags)
+            if (ierr .ne. 0) then
+               write(logunit,*) subname,' error getting destination tag values ', mapper%mbname
+               call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
+            endif
+            
+            deallocate(wghts, targtags)
+         endif ! end normalization
+
        endif
 #endif
 
-    endif
+      endif ! end of mapping type if else
 
   end subroutine seq_map_map
 
