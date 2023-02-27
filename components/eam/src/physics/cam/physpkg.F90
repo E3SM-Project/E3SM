@@ -2794,6 +2794,24 @@ state%tw_after(:ncol) = state%tw_cur(:ncol)
     call check_tracers_fini(tracerint)
 
 
+!now fluxes: cflx(1) is kg/m2/sec
+!      cam_out%precc (i) = prec_dp(i)  + prec_sh(i)
+!      cam_out%precl (i) = prec_sed(i) + prec_pcw(i)
+!      cam_out%precsc(i) = snow_dp(i)  + snow_sh(i)
+!      cam_out%precsl(i) = snow_sed(i) + snow_pcw(i)
+! units [qflx] = [liquid water]
+! [1000.0  *( cam_out%precc(1:ncol)+cam_out%precl(1:ncol) - cam_out%precsc(1:ncol) - cam_out%precsl(1:ncol) ) )]
+
+
+!this is going to be after-before
+state%deltaw_flux(:ncol) = cam_in%cflx(:ncol,1) - &
+1000.0*(cam_out%precc(:ncol)+cam_out%precl(:ncol))
+
+state%deltaw_flux(:ncol) = state%deltaw_flux(:ncol) * ztodt
+
+state%deltaw_step(:ncol) = state%tw_after(:ncol) - state%tw_before(:ncol)
+
+
     !!!! now after cam_export      cam_out%precc , cam_out%precl are ready -- liquid+ice
     !!!! and cam_out%precsc, cam_out%precsl -- only ice
 
