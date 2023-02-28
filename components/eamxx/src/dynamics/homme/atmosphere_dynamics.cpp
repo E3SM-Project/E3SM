@@ -814,7 +814,8 @@ void HommeDynamics::init_homme_views () {
   msg << "   disable_diagnostics: " << (params.disable_diagnostics ? "yes" : "no") << "\n";
   msg << "   theta_hydrostatic_mode: " << (params.theta_hydrostatic_mode ? "yes" : "no") << "\n";
   msg << "   prescribed_wind: " << (params.prescribed_wind ? "yes" : "no") << "\n";
-  msg << "   rearth: " << params.rearth << "\n";
+  // TODO: Replace with scale_factor and laplacian_rigid_factor when available.
+  //msg << "   rearth: " << params.rearth << "\n";
   msg << "\n**********************************************************\n" << "\n";
   this->log(LogLevel::info,msg.str());
 
