@@ -25,8 +25,8 @@
   </compset>
 
   <compset>
-    <alias>DMPAS-JRA-WW3</alias>
-    <lname>2000_DATM%JRA-1p5_SLND_MPASSI_DOCN%SOM_DROF%JRA-1p5_SGLC_WW3%sp36x36</lname>
+    <alias>DTEST-JRA-WW3</alias>
+    <lname>2000_DATM%JRA-1p5_SLND_MPASSI_DOCN%SOM_DROF%JRA-1p5_SGLC_WW3%sp36x36_TEST</lname>
   </compset>
 
   <compset>
