@@ -1,0 +1,10 @@
+files: ^components/omega/
+repos:
+  - repo: https://github.com/Takishima/cmake-pre-commit-hooks
+    rev: v1.8.0
+    hooks:
+      - id: clang-format
+      - id: clang-tidy
+        args: [--checks=readability-magic-numbers,--warnings-as-errors=*]
+      - id: cppcheck
+      - id: include-what-you-use
