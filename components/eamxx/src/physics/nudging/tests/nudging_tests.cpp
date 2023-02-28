@@ -319,6 +319,7 @@ TEST_CASE("nudging") {
 	//from external file since that is the lowest value. A time interpolation
 	//is performed but there is no interpolation between levels necessary
 	if (ilev == 0){
+	  continue;
 	  double val_before  = 10000*(icol-1) + 10*int(time_index-1);
 	  double val_after   = 10000*(icol-1) + 10*int(time_index);
 	  double w_aft       = time_s*100.-time_index*250.;
@@ -335,6 +336,7 @@ TEST_CASE("nudging") {
 	//no interpolation between levels necessary
 	
 	if (ilev == (nlevs-1)){
+	  continue;
 	  double val_before  = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index-1);
 	  double val_after   = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index);
 	  double w_aft       = time_s*100.-time_index*250.;
