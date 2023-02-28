@@ -108,6 +108,8 @@ module physics_types
           tw_ini,  &! vertically integrated total water of initial state
           tw_before,  &! vertically integrated total water of initial state
           tw_after,   &! vertically integrated total water of initial state
+          cflx_raw,   &! vertically integrated total water of initial state
+          cflx_new,   &! vertically integrated total water of initial state
           deltaw_flux,  &! vertically integrated total water of initial state
           deltaw_step,  &! vertically integrated total water of initial state
           tw_cur,  &! vertically integrated total water of new state
@@ -545,6 +547,12 @@ contains
     call shr_assert_in_domain(state%deltaw_step(:ncol),      is_nan=.false., &
          varname="state%deltaw_step",    msg=msg)
 
+    call shr_assert_in_domain(state%cflx_raw(:ncol),      is_nan=.false., &
+         varname="state%deltaw_flux",    msg=msg)
+    call shr_assert_in_domain(state%cflx_new(:ncol),      is_nan=.false., &
+         varname="state%deltaw_step",    msg=msg)
+
+
     call shr_assert_in_domain(state%tc_curr(:ncol),      is_nan=.false., &
          varname="state%tc_curr",    msg=msg)
     call shr_assert_in_domain(state%tc_init(:ncol),      is_nan=.false., &
@@ -666,6 +674,12 @@ contains
          varname="state%deltaw_flux",    msg=msg)
     call shr_assert_in_domain(state%deltaw_step(:ncol),      lt=posinf_r8, gt=neginf_r8, &
          varname="state%deltaw_step",    msg=msg)
+
+    call shr_assert_in_domain(state%cflx_raw(:ncol),      lt=posinf_r8, gt=neginf_r8, &
+         varname="state%deltaw_flux",    msg=msg)
+    call shr_assert_in_domain(state%cflx_new(:ncol),      lt=posinf_r8, gt=neginf_r8, &
+         varname="state%deltaw_step",    msg=msg)
+
 
     call shr_assert_in_domain(state%tc_curr(:ncol),     lt=posinf_r8, gt=neginf_r8, &
          varname="state%tc_curr",     msg=msg)
@@ -1368,6 +1382,9 @@ end subroutine physics_ptend_copy
        state_out%deltaw_flux(i) = state_in%deltaw_flux(i) 
        state_out%deltaw_step(i) = state_in%deltaw_step(i) 
 
+       state_out%cflx_raw(i) = state_in%cflx_raw(i)
+       state_out%cflx_new(i) = state_in%cflx_new(i)
+
        state_out%tc_curr(i)    = state_in%tc_curr(i)
        state_out%tc_init(i)    = state_in%tc_init(i)
        state_out%tc_mnst(i)    = state_in%tc_mnst(i)
@@ -1735,6 +1752,10 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   allocate(state%deltaw_step(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%te_cur')
 
+  allocate(state%cflx_raw(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%te_cur')
+  allocate(state%cflx_new(psetcols), stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%te_cur')
 
   allocate(state%tc_curr(psetcols), stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_alloc error: allocation error for state%tc_curr')
@@ -1831,6 +1852,9 @@ subroutine physics_state_alloc(state,lchnk,psetcols)
   state%te_before_physstep(:) = 0.0
   state%delta_te(:) = 0.0
   state%rr(:) = 0.0
+
+  state%cflx_raw(:) = -10.0
+  state%cflx_new(:) = -20.0
 
   state%deltaw_step(:) = -1.0
   state%deltaw_flux(:) = -2.0
@@ -1977,6 +2001,11 @@ subroutine physics_state_dealloc(state)
   deallocate(state%deltaw_flux, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%te_cur')
   deallocate(state%deltaw_step, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%te_cur')
+
+  deallocate(state%cflx_raw, stat=ierr)
+  if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%te_cur')
+  deallocate(state%cflx_new, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_state_dealloc error: deallocation error for state%te_cur')
 
   deallocate(state%tc_curr, stat=ierr)

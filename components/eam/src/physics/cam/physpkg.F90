@@ -1632,8 +1632,29 @@ end if ! l_tracer_aero
     nstep = get_nstep()
     call check_tracers_init(state, tracerint)
 
+
+!notes on below
+!before clubb we have call
+!    if(use_qqflx_fixer) then
+!       call qqflx_fixer('TPHYSBC ', lchnk, ncol, cld_macmic_ztodt, &
+!            state%q(1,1,1), state%rpdel(1,1), cam_in%shf, &
+!            cam_in%lhf , cam_in%cflx/cld_macmic_num_steps )
+!
+!which is not called, qqflx_fixer=false
+!current version of qqflx call does not have a fix for shf, only for mass (potentially)
+
+
+
+
+
+!since QFLX is potentially modified below, save unmodified value is delta var temporarily
+!POTENTIALLY we also need to save SHF
+!introduce a new var as our old vars are all used in gmean
+state%cflx_raw(:ncol) = cam_in%cflx(:ncol,1)
+
 !!== KZ_WCON
 
+    !just output
     call check_qflx(state, tend, "PHYAC01", nstep, ztodt, cam_in%cflx(:,1))
 
     if(.not.use_qqflx_fixer) then 
@@ -1647,16 +1668,22 @@ end if ! l_tracer_aero
 
     end if 
 
+    !just output
     call check_qflx(state, tend, "PHYAC02", nstep, ztodt, cam_in%cflx(:,1))
 
 !!== KZ_WCON
+
+state%cflx_new(:ncol) = cam_in%cflx(:ncol,1)
 
     call t_stopf('tphysac_init')
 
 
     !save TE before physstep
     call check_energy_chng(state, tend, "assign_te_before_physstep", nstep, ztodt, zero, zero, zero, zero)
+
     state%te_before_physstep(:ncol)=state%te_cur(:ncol)
+!save water mass here
+state%tw_before(:ncol) = state%tw_cur(:ncol)
 
 
 if (l_tracer_aero) then
@@ -2368,10 +2395,6 @@ if (l_dry_adj) then
 
 end if
 
-
-!save water mass here
-state%tw_before(:ncol) = state%tw_cur(:ncol)
-
     !
     !===================================================
     ! Moist convection
@@ -2804,6 +2827,10 @@ state%tw_after(:ncol) = state%tw_cur(:ncol)
 
 
 !this is going to be after-before
+!cflx_raw contains unmodified by qneg4 or mass fixers value
+!state%deltaw_flux(:ncol) = state%cflx_raw(:ncol) - &
+
+!lets try the old one again
 state%deltaw_flux(:ncol) = cam_in%cflx(:ncol,1) - &
 1000.0*(cam_out%precc(:ncol)+cam_out%precl(:ncol))
 

@@ -459,13 +459,13 @@ end subroutine check_energy_get_integrals
     integer :: ncol                      ! number of active columns
     integer :: lchnk                     ! chunk index
 
-    real(r8) :: te(pcols,begchunk:endchunk,9)   
+    real(r8) :: te(pcols,begchunk:endchunk,11)   
                                          ! total energy of input/output states (copy)
-    real(r8) :: te_glob(9)               ! global means of total energy
+    real(r8) :: te_glob(11)               ! global means of total energy
     real(r8), pointer :: teout(:)
 
     real(r8) :: twbefore, twafter, dflux, dstep
-    real(r8) :: delta_te_glob, rr_glob
+    real(r8) :: delta_te_glob, rr_glob, cflxdiff, cflxraw
 !-----------------------------------------------------------------------
 
     ! Copy total energy out of input and output states
@@ -491,12 +491,14 @@ end subroutine check_energy_get_integrals
        !energy change versus restom-ressurf
        te(:ncol,lchnk,8) = state(lchnk)%delta_te(:ncol)
        te(:ncol,lchnk,9) = state(lchnk)%rr(:ncol)
+       te(:ncol,lchnk,10) = state(lchnk)%cflx_new(:ncol) - state(lchnk)%cflx_raw(:ncol)
+       te(:ncol,lchnk,11) = state(lchnk)%cflx_raw(:ncol)
 
     end do
 
     ! Compute global means of input and output energies and of
     ! surface pressure for heating rate (assume uniform ptop)
-    call gmean(te, te_glob, 9)
+    call gmean(te, te_glob, 11)
 
     if (begchunk .le. endchunk) then
        teinp_glob = te_glob(1)
@@ -510,6 +512,8 @@ end subroutine check_energy_get_integrals
 
        delta_te_glob = te_glob(8)
        rr_glob       = te_glob(9)
+       cflxdiff      = te_glob(10)
+       cflxraw       = te_glob(11)
 
        ptopb_glob = state(begchunk)%pint(1,1)
 
@@ -524,6 +528,7 @@ end subroutine check_energy_get_integrals
 !dflux, dstep are kg/m2
           write(iulog,'(1x,a21,1x,i8,3(1x,e25.17))') "nstep, W tw b, a, a-b", nstep, twbefore, twafter, twbefore-twafter
           write(iulog,'(1x,a21,1x,i8,3(1x,e25.17))') "nstep, W dflux, dstep", nstep, dflux, dstep, dflux-dstep
+          write(iulog,'(1x,a19,1x,i8,2(1x,e25.17))') "nstep, W cflx, diff", nstep, cflxraw, cflxdiff
 
 !delta_te_glob is J/m2, rr_glob is W/m2
           write(iulog,'(1x,a21,1x,i8,2(1x,e25.17))') "nstep, E d(te)/dt, rr", nstep, delta_te_glob/dtime, rr_glob
