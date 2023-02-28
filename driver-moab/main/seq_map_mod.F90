@@ -333,6 +333,7 @@ end subroutine moab_map_init_rcfile
     integer, dimension(:), allocatable  :: globalIds
     real(r8), dimension(:), allocatable  :: wghts
     real(kind=r8) , allocatable  :: targtags(:,:)
+    real(kind=r8)  :: factor 
 #endif
     !
     ! Local Variables
@@ -568,7 +569,7 @@ end subroutine moab_map_init_rcfile
          ! receive in the intx app, because it is redistributed according to coverage (trick)
          ! for true intx cases, tgt_mbid is set to be the same as intx_mbid
          ! just read map is special 
-         ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
+         ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
          if (ierr .ne. 0) then
             write(logunit,*) subname,' error in receiving tags ', mapper%mbname,   trim(fldlist_moab)
             call shr_sys_flush(logunit)
@@ -627,7 +628,9 @@ end subroutine moab_map_init_rcfile
             ! do the post mapping normalization
             ! TODO:  add some check for wghts < puny
             do j = 1, lsize
-               targtags(j,:)= targtags(j,:)*(1.0_r8/wghts(j))
+               factor = wghts(j)
+               if (wghts(j) .ne. 0) factor = 1.0_r8/wghts(j) ! should we compare to a small value instead ?
+               targtags(j,:)= targtags(j,:)*factor
             enddo
 
             ! put the values back on the mesh

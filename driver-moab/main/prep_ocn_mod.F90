@@ -386,7 +386,7 @@ contains
             endif
             ! now take care of the mapper 
             mapper_Fa2o%src_mbid = mbaxid
-            mapper_Fa2o%tgt_mbid = mbintxao
+            mapper_Fa2o%tgt_mbid = mboxid
             mapper_Fa2o%intx_mbid = mbintxao 
             mapper_Fa2o%src_context = atm(1)%cplcompid
             mapper_Fa2o%intx_context = idintx
@@ -488,7 +488,7 @@ contains
           if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
    ! now take care of the 2 new mappers 
             mapper_Sa2o%src_mbid = mbaxid
-            mapper_Sa2o%tgt_mbid = mbintxao
+            mapper_Sa2o%tgt_mbid = mboxid
             mapper_Sa2o%intx_mbid = mbintxao 
             mapper_Sa2o%src_context = atm(1)%cplcompid
             mapper_Sa2o%intx_context = idintx
@@ -497,7 +497,7 @@ contains
             mapper_Sa2o%mbname = 'mapper_Sa2o'
 
             mapper_Va2o%src_mbid = mbaxid
-            mapper_Va2o%tgt_mbid = mbintxao
+            mapper_Va2o%tgt_mbid = mboxid
             mapper_Va2o%intx_mbid = mbintxao 
             mapper_Va2o%src_context = atm(1)%cplcompid
             mapper_Va2o%intx_context = idintx

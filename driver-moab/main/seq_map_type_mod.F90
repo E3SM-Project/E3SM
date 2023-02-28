@@ -157,6 +157,7 @@ contains
     mapper%tgt_mbid  = -1
     mapper%intx_mbid = -1
     mapper%nentities =  0
+    mapper%tag_entity_type = 1 ! cells most of the time when we need it
     mapper%mbname    = "undefined"
 #endif
 
