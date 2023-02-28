@@ -181,7 +181,10 @@ def buildnml(case, caseroot, compname):
         if elm_nml_use_case != "UNSET": usecase = "-use_case {}".format(elm_nml_use_case)
 
         start_ymd = run_startdate.replace("-", "")
-        ignore = "-ignore_ic_year" if ("-01-01" in run_startdate or "-09-01" in run_startdate) else "-ignore_ic_date"
+
+        # change to always ignore_ic_year to allow more flexibility in specifying IC for different start date of year
+        # ignore = "-ignore_ic_year" if ("-01-01" in run_startdate or "-09-01" in run_startdate) else "-ignore_ic_date"
+        ignore = "-ignore_ic_year"
 
         sysmod =  "{}/components/elm/bld/build-namelist -infile {}/Buildconf/elmconf/namelist ".format(srcroot, caseroot)
         sysmod += " -csmdata {} -inputdata {}/Buildconf/elm.input_data_list {}".format(din_loc_root, caseroot, ignore)

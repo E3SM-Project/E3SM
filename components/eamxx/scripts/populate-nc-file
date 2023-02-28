@@ -1,0 +1,112 @@
+#!/usr/bin/env python3
+
+"""
+Populates a netcdf file adding requested variables, either importing them
+from another file, or by computing them as function of other existing ones.
+"""
+
+from utils import check_minimum_python_version
+check_minimum_python_version(3, 4)
+
+import argparse, sys, pathlib
+
+from populate_nc_file import PopulateNcFile
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <ARGS> [--verbose]
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+
+    \033[1;32m# Appends to existing netcdf file, adding 3d interface level var w, init-ed to 0
+
+        > ./{0} -f my_file.nc -avars 'w(COL,ILEV)'
+
+    \033[1;32m# Appends to existing netcdf file, adding 3d midpoints level vars v_0,v_1, init-ed to 1.0 and 2.0 respectively
+
+        > ./{0} -f my_file.nc -avars 'v(COL,2,LEV)=[1.0,2.0]'
+
+    \033[1;32m# Appends to existing netcdf file, importing v from file f2.nc, but added as 'horiz_v'
+
+        > ./{0} -f my_file.nc -ifile f2.nc -ivars horiz_v=v
+
+    \033[1;32m# Appends to existing netcdf file, computing p=rho*T^1.5 (rho and T already in my_file.nc).
+      Uses nco's ncap2.
+
+        > ./{0} -f my_file.nc -cvars p=rho*T^1.5
+
+    \033[1;32m# Appends to existing netcdf file, importing rho and T from file f2.nc, computing p=rho*T^1.5,
+      and deleting rho,T from the output file. Uses nco's ncap2.
+
+        > ./{0} -f my_file.nc -ifile f2.nc -ivars rho T -cvars p=rho*T^1.5 -rvars rho T
+
+    \033[1;32m# Appends to existing netcdf file, regridding T from file f2.nc, using map file map.nc 
+      and deleting rho,T from the output file. Uses nco's ncremap.
+
+        > ./{0} -f my_file.nc -ifile f2.nc -ivars T -mfile map.nc
+
+""".format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    # The name of the nc file to populate, plus auxiliary files
+    parser.add_argument("-f","--nc-file", type=str, required=True,
+            help="Name of the netcdf file to populate")
+    parser.add_argument("-ifile","--import-file",type=str, default="",
+            help="File from which variable can be imported.")
+    parser.add_argument("-mfile","--map-file",type=str, default="",
+            help="Map file to use for variable remapping.")
+
+    # Whether we're allowed to overwrite existing data
+    parser.add_argument("-o","--overwrite", action="store_true", default=False,
+                        help="Overwrite possibly existing variable values")
+
+    parser.add_argument("-p","--prune-history", action="store_true", default=False,
+                        help="Prune the history attribute")
+
+    # Dimensions addition
+    parser.add_argument("-adims","--add-dimensions",nargs='+', default=[],
+                        help="Add dimensions, if not already existing")
+
+    # Variables addition/manipulation
+    parser.add_argument("-avars","--add-variables",nargs='+', default=[],
+                        help="Add variables with given dimension, setting them to 0 everywhere")
+
+    parser.add_argument("-ivars","--import-variables",nargs='+', default=[],
+                        help="Import variables from another file (requires valid input for -ifile)")
+
+    parser.add_argument("-cvars","--compute-variables",nargs='+', default=[],
+                        help="Compute variables from given expressions (may involve other vars)")
+
+    parser.add_argument("-rvars","--remove-variables",nargs='+', default=[],
+                        help="Remove variables from output file (can be used to purge 'temporarily' imported"
+                             "vars from another file, used just to compute some quantity)")
+
+    parser.add_argument("-svars","--slice-variables",nargs='+', default=[],
+                        help="Extract a N-1 dim slice from a N-dim variable.")
+
+    parser.add_argument("-vvars","--vector-variables",nargs='+', default=[],
+                        help="Add vector variables, whose components are specified as other existing variables")
+
+    return parser.parse_args(args[1:])
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    pncf = PopulateNcFile(**vars(parse_command_line(sys.argv, description)))
+
+    success = pncf.run()
+
+    print("File generation: {}".format("SUCCESS" if success else "FAIL"))
+
+    sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

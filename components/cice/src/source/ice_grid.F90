@@ -943,7 +943,7 @@
 !
 !     use ice_boundary
       use ice_domain_size
-      use ice_scam, only : scmlat, scmlon, single_column
+      use ice_scam, only : scmlat, scmlon, single_column, scm_multcols
       use netcdf
 !
 ! !INPUT/OUTPUT PARAMETERS:
@@ -991,6 +991,10 @@
          minpoint,&
          testpoint
 
+      ! variables to be compatible with IOP or SCM modes
+      real (dbl_kind), allocatable, dimension(:,:) :: &
+        scm_var1, scm_var2, scm_var3, scm_var4, scm_var5
+
       logical :: se_grid      ! determine whether file format is for 
                               !   SE dynamical core grid or not
 
@@ -1016,9 +1020,25 @@
       ! If single_column, then assume that only master_task is used since there is only one task
 
       if (single_column) then
+
+        if (my_task == master_task) then
+          allocate(scm_var1(nx_global,ny_global))
+          allocate(scm_var2(nx_global,ny_global))
+          allocate(scm_var3(nx_global,ny_global))
+          allocate(scm_var4(nx_global,ny_global))
+          allocate(scm_var5(nx_global,ny_global))
+        else
+          allocate(scm_var1(1,1))
+          allocate(scm_var2(1,1))
+          allocate(scm_var3(1,1))
+          allocate(scm_var4(1,1))
+          allocate(scm_var5(1,1))      
+        endif
+
+        if (my_task == master_task) then
          ! Check for consistency
          if (my_task == master_task) then
-            if ((nx_global /= 1).or. (ny_global /= 1)) then
+            if (((nx_global /= 1).or. (ny_global /= 1)) .and. (.not. scm_multcols)) then
                write(nu_diag,*) 'Because you have selected the column model flag'
                write(nu_diag,*) 'Please set nx_global=ny_global=1 in file'
                write(nu_diag,*) 'ice_domain_size.F and recompile'
@@ -1096,19 +1116,21 @@
 
          call check_ret(nf90_inq_varid(ncid, 'xc' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         TLON = scamdata
+         scm_var1(:,:) = scamdata ! TLON
          call check_ret(nf90_inq_varid(ncid, 'yc' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         TLAT = scamdata
+         scm_var2(:,:) = scamdata ! TLAT
          call check_ret(nf90_inq_varid(ncid, 'area' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         tarea = scamdata
+         scm_var3(:,:) = scamdata ! tarea
          call check_ret(nf90_inq_varid(ncid, 'mask' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         hm = scamdata
+         scm_var4(:,:) = scamdata ! hm
          call check_ret(nf90_inq_varid(ncid, 'frac' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         ocn_gridcell_frac = scamdata
+         scm_var5(:,:) = scamdata ! ocn_gridcell_frac
+	 
+        endif	 
       else
          ! Check for consistency
          if (my_task == master_task) then
@@ -1129,6 +1151,26 @@
       if (my_task == master_task) then
          call ice_close_nc(ncid)
       end if
+      
+      if (single_column) then
+        call scatter_global(TLON,scm_var1,master_task,distrb_info, &
+          field_loc_center, field_type_scalar)
+        call scatter_global(TLAT,scm_var2,master_task,distrb_info, &
+          field_loc_center, field_type_scalar)
+        call scatter_global(tarea,scm_var3,master_task,distrb_info, &
+          field_loc_center,field_type_scalar)  
+        call scatter_global(hm,scm_var4,master_task,distrb_info, &
+          field_loc_center, field_type_scalar)
+        call scatter_global(ocn_gridcell_frac,scm_var5,master_task,distrb_info, &
+          field_loc_center, field_type_scalar)
+  
+        deallocate(scm_var1)
+        deallocate(scm_var2)
+        deallocate(scm_var3)
+        deallocate(scm_var4)
+        deallocate(scm_var5)  
+  
+      endif
 
      !$OMP PARALLEL DO PRIVATE(iblk,this_block,ilo,ihi,jlo,jhi,i,j)
       do iblk = 1,nblocks
@@ -1613,6 +1655,7 @@
       call ice_timer_start(timer_bound)
       call ice_HaloUpdate (hm,               halo_info, &
                            field_loc_center, field_type_scalar)
+
       call ice_HaloUpdate (bm,               halo_info, &
                            field_loc_center, field_type_scalar)
       call ice_timer_stop(timer_bound)

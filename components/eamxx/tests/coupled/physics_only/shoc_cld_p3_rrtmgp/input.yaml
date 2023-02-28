@@ -1,0 +1,54 @@
+%YAML 1.1
+---
+driver_options:
+  atmosphere_dag_verbosity_level: 5
+
+Time Stepping:
+  Time Step: ${ATM_TIME_STEP}
+  Start Time: [12, 30, 00]      # Hours, Minutes, Seconds
+  Start Date: [2021, 10, 12]    # Year, Month, Day
+  Number of Steps: ${NUM_STEPS}
+
+atmosphere_processes:
+  atm_procs_list: (mac_mic,rrtmgp)
+  schedule_type: Sequential
+  mac_mic:
+    atm_procs_list: (shoc,CldFraction,p3)
+    Type: Group
+    schedule_type: Sequential
+    number_of_subcycles: ${MAC_MIC_SUBCYCLES}
+    p3:
+      do_prescribed_ccn: false
+  rrtmgp:
+    column_chunk_size: 123
+    active_gases: ["h2o", "co2", "o3", "n2o", "co" , "ch4", "o2", "n2"]
+    orbital_year: 1990
+    do_aerosol_rad: false
+    rrtmgp_coefficients_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-sw-g112-210809.nc
+    rrtmgp_coefficients_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-data-lw-g128-210809.nc
+    rrtmgp_cloud_optics_file_sw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-sw.nc
+    rrtmgp_cloud_optics_file_lw: ${SCREAM_DATA_DIR}/init/rrtmgp-cloud-optics-coeffs-lw.nc
+
+grids_manager:
+  Type: Mesh Free
+  number_of_global_columns:   218
+  number_of_vertical_levels:  72  # Will want to change to 128 when a valid unit test is available.
+  geo_data_source: IC_FILE
+
+initial_conditions:
+  # The name of the file containing the initial conditions for this test.
+  Filename: ${SCREAM_DATA_DIR}/init/${EAMxx_tests_IC_FILE_72lev}
+  topography_filename: ${TOPO_DATA_DIR}/USGS-gtopo30_ne4np4_16x.c20160612.nc
+  surf_sens_flux: 0.0
+  surf_evap: 0.0
+  precip_ice_surf_mass: 0.0
+  precip_liq_surf_mass: 0.0
+  aero_g_sw: 0.0
+  aero_ssa_sw: 0.0
+  aero_tau_sw: 0.0
+  aero_tau_lw: 0.0
+
+# The parameters for I/O control
+Scorpio:
+  output_yaml_files: ["shoc_cld_p3_rrtmgp_output.yaml"]
+...

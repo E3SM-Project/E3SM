@@ -1,0 +1,7 @@
+# SCREAM-gpu-ci is just a long name for white
+
+export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-white/bin:$PATH
+
+source $JENKINS_SCRIPT_DIR/sandia_son_proxy
+
+SCREAM_MACHINE=white

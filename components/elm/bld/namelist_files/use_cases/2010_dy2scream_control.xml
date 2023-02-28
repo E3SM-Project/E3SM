@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<use_case_desc>Conditions to simulate 2010 land-use for scream dyamond2</use_case_desc>
+
+<sim_year>2010</sim_year>
+
+<finidat hgrid="r0125">lnd/clm2/initdata/20200909.DYAMOND-2.spinup-nTQUV.ne30-r0125.clm2.r.2020-01-20-00000.nc</finidat>
+
+<sim_year_range>constant</sim_year_range>
+
+<stream_year_first_ndep phys="clm4_5" use_cn=".true." ndepsrc="stream" >2010</stream_year_first_ndep>
+<stream_year_last_ndep  phys="clm4_5" use_cn=".true." ndepsrc="stream" >2010</stream_year_last_ndep>
+
+<stream_year_first_pdep phys="clm4_5" use_cn=".true." ndepsrc="stream" >2010</stream_year_first_pdep>
+<stream_year_last_pdep  phys="clm4_5" use_cn=".true." ndepsrc="stream" >2010</stream_year_last_pdep>
+
+<stream_year_first_popdens phys="clm4_5" use_cn=".true." ndepsrc="stream" >2010</stream_year_first_popdens>
+<stream_year_last_popdens  phys="clm4_5" use_cn=".true." ndepsrc="stream" >2010</stream_year_last_popdens>
+
+</namelist_defaults>

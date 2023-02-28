@@ -16,7 +16,8 @@ module scamMod
   use time_manager, only: get_nstep,timemgr_time_inc,&
                           get_start_date,get_curr_date,&
                           timemgr_init,get_curr_calday,&
-                          is_first_step
+                          is_first_step, is_first_restart_step,&
+                          is_last_step
   use shr_scam_mod, only: shr_scam_GetCloseLatLon
   use constituents, only: readtrace, cnst_get_ind, pcnst, cnst_name
   use string_utils, only: to_lower
@@ -346,7 +347,6 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
      endif
   endif
 
-
 end subroutine scam_setopts
 
 subroutine setiopupdate_init
@@ -545,7 +545,7 @@ subroutine setiopupdate
 
 end subroutine setiopupdate
 
-  subroutine readiopdata(iop_update_phase1,hyam,hybm)
+subroutine readiopdata(iop_update_phase1,hyam,hybm)
 
 !-----------------------------------------------------------------------
 !     

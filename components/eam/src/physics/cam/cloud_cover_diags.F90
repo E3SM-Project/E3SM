@@ -25,7 +25,6 @@ subroutine cloud_cover_diags_init(sampling_seq)
   character(len=*), intent(in) :: sampling_seq
   logical :: history_amwg         ! output the variables used by the AMWG diag package
 
-  call addfld ('CLOUD',(/ 'lev' /), 'A','1','Cloud fraction'                        , sampling_seq=sampling_seq)
   call addfld ('CLDTOT',horiz_only,    'A','1','Vertically-integrated total cloud'     , sampling_seq=sampling_seq)
   call addfld ('CLDLOW',horiz_only,    'A','1','Vertically-integrated low cloud'       , sampling_seq=sampling_seq)
   call addfld ('CLDMED',horiz_only,    'A','1','Vertically-integrated mid-level cloud' , sampling_seq=sampling_seq)
@@ -35,7 +34,6 @@ subroutine cloud_cover_diags_init(sampling_seq)
   call phys_getopts(history_amwg_out           = history_amwg  )
  
   if (history_amwg) then
-      call add_default ('CLOUD   ', 1, ' ')
       call add_default ('CLDTOT  ', 1, ' ')
       call add_default ('CLDLOW  ', 1, ' ')
       call add_default ('CLDMED  ', 1, ' ')
@@ -70,7 +68,6 @@ subroutine cloud_cover_diags_out(lchnk, ncol, cld, pmid, nmxrgn, pmxrgn )
   call outfld('CLDMED  ',clmed  ,pcols,lchnk)
   call outfld('CLDHGH  ',clhgh  ,pcols,lchnk)
 
-  call outfld('CLOUD   ',cld    ,pcols,lchnk) 
 
 end subroutine cloud_cover_diags_out
 
