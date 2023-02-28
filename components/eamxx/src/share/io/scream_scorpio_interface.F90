@@ -1393,7 +1393,7 @@ contains
     if (time_index .gt. 0) then
       strt(1) = time_index
     else
-      strt(1) = int(pio_atm_file%numRecs,kind=pio_offset_kind)
+      strt(1) = int(pio_atm_file%numRecs)
     end if
 
     cnt(1)  = 1

@@ -72,6 +72,9 @@ TimeStamp operator+ (const TimeStamp& ts, const int dt);
 // Difference (in seconds) between two timestamps
 std::int64_t operator- (const TimeStamp& ts1, const TimeStamp& ts2);
 
+// Rewind time by given number of seconds
+TimeStamp operator- (const TimeStamp& ts, const int dt);
+
 // Time-related free-functions
 int days_in_month (const int year, const int month);
 bool is_leap_year (const int year);

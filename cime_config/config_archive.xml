@@ -27,7 +27,7 @@
 
   <comp_archive_spec compname="scream" compclass="atm">
     <rest_file_extension>[ri]</rest_file_extension>
-    <rest_file_extension>rh\d*</rest_file_extension>
+    <rest_file_extension>rhist</rest_file_extension>
     <rest_file_extension>rs</rest_file_extension>
     <hist_file_extension>h\d*.*\.nc$</hist_file_extension>
     <hist_file_extension>e</hist_file_extension>
