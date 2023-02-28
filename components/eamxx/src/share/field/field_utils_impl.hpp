@@ -140,7 +140,7 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
     case 1:
       {
         auto v = f.template get_view<ST*,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
+        for (int i=0; i<fl.dim(0); ++i) {
           v(i) = pdf(engine);
         }
       }
@@ -148,8 +148,8 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
     case 2:
       {
         auto v = f.template get_view<ST**,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
             v(i,j) = pdf(engine);
         }}
       }
@@ -157,9 +157,9 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
     case 3:
       {
         auto v = f.template get_view<ST***,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
               v(i,j,k) = pdf(engine);
         }}}
       }
@@ -167,10 +167,10 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
     case 4:
       {
         auto v = f.template get_view<ST****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              for (int l=0; l<fl.dim(3); ++l) {
                 v(i,j,k,l) = pdf(engine);
         }}}}
       }
@@ -178,11 +178,11 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
     case 5:
       {
         auto v = f.template get_view<ST*****,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              for (int l=0; l<fl.dim(3); ++l) {
+                for (int m=0; m<fl.dim(4); ++m) {
                   v(i,j,k,l,m) = pdf(engine);
         }}}}}
       }
@@ -190,12 +190,12 @@ void randomize (const Field& f, Engine& engine, PDF&& pdf)
     case 6:
       {
         auto v = f.template get_view<ST******,Host>();
-        for (int i=0; i<v.extent_int(0); ++i) {
-          for (int j=0; j<v.extent_int(1); ++j) {
-            for (int k=0; k<v.extent_int(2); ++k) {
-              for (int l=0; l<v.extent_int(3); ++l) {
-                for (int m=0; m<v.extent_int(4); ++m) {
-                  for (int n=0; n<v.extent_int(5); ++n) {
+        for (int i=0; i<fl.dim(0); ++i) {
+          for (int j=0; j<fl.dim(1); ++j) {
+            for (int k=0; k<fl.dim(2); ++k) {
+              for (int l=0; l<fl.dim(3); ++l) {
+                for (int m=0; m<fl.dim(4); ++m) {
+                  for (int n=0; n<fl.dim(5); ++n) {
                     v(i,j,k,l,m,n) = pdf(engine);
         }}}}}}
       }

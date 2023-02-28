@@ -56,16 +56,15 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   set_params(params,field_mgrs);
 
   // Output control
-  EKAT_REQUIRE_MSG(m_params.isSublist("output_control"),"Error! The output control YAML file for " + m_casename + " is missing the sublist 'output_control'");
+  EKAT_REQUIRE_MSG(m_params.isSublist("output_control"),
+      "Error! The output control YAML file for " + m_casename + " is missing the sublist 'output_control'");
   auto& out_control_pl = m_params.sublist("output_control");
   m_output_control.frequency  = out_control_pl.get<int>("Frequency");
   m_output_control.frequency_units = out_control_pl.get<std::string>("frequency_units");
-  m_output_control.nsamples_since_last_write = 0;
   m_output_control.timestamp_of_last_write   = m_case_t0;
 
   // File specs
-  m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File");
-  m_output_file_specs.num_snapshots_in_file = 0;
+  m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File",-1);
   m_output_file_specs.filename_with_time_string = out_control_pl.get("Timestamp in Filename",true);
   m_output_file_specs.filename_with_mpiranks    = out_control_pl.get("MPI Ranks in Filename",false);
   m_output_file_specs.filename_with_avg_type    = out_control_pl.get("avg_type_in_filename",true);
@@ -125,23 +124,19 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
     auto& pl = m_params.sublist("Checkpoint Control");
     m_checkpoint_control.frequency                 = pl.get<int>("Frequency");
     m_checkpoint_control.frequency_units           = pl.get<std::string>("frequency_units");
-    m_checkpoint_control.nsamples_since_last_write = 0;
-    m_checkpoint_control.timestamp_of_last_write    = case_t0;
+    m_checkpoint_control.timestamp_of_last_write   = run_t0;
 
     // File specs
     m_checkpoint_file_specs.max_snapshots_in_file = 1;
-    m_checkpoint_file_specs.num_snapshots_in_file = 0;
     m_checkpoint_file_specs.filename_with_time_string = pl.get("Timestamp in Filename",true);
     m_checkpoint_file_specs.filename_with_mpiranks    = pl.get("MPI Ranks in Filename",false);
     m_checkpoint_file_specs.filename_with_avg_type    = pl.get("avg_type_in_filename",true);
     m_checkpoint_file_specs.filename_with_frequency   = pl.get("frequency_in_filename",true);
+    m_checkpoint_file_specs.save_grid_data = false;
   } else {
     // If there is no restart data or there is but no checkpoint control sublist then we initialize
     // the checkpoint control so that it never writes checkpoints.
-    m_checkpoint_control.frequency  = 0;
-    m_checkpoint_control.frequency_units = "none";
-    m_checkpoint_control.nsamples_since_last_write = 0;
-    m_checkpoint_control.timestamp_of_last_write = case_t0;
+    m_checkpoint_control.frequency_units = "never";
   }
 
   // If this is normal output (not the model restart output) and the output specs
@@ -165,19 +160,34 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       // NOTE: if you change the output frequency when you restart, this could lead to wonky behavior
       m_output_control.nsamples_since_last_write = m_run_t0.get_num_steps() % m_output_control.frequency;
 
-      // If the type/freq of output needs restart data, we need to read in an output.
-      if (has_restart_data && m_output_control.nsamples_since_last_write>0) {
-        auto output_restart_filename = find_filename_in_rpointer(hist_restart_casename,false,m_io_comm,m_run_t0);
+      if (has_restart_data) {
+        using namespace scorpio;
+        auto fn = find_filename_in_rpointer(hist_restart_casename,false,m_io_comm,m_run_t0);
+        register_file(fn.c_str(),FileMode::Read);
+        auto date = get_int_attribute_c2f (fn.c_str(), "last_write_date");
+        auto time = get_int_attribute_c2f (fn.c_str(), "last_write_time");
 
-        // Also restart each stream
-        for (auto stream : m_output_streams) {
-          stream->restart(output_restart_filename);
+        std::vector<int> vdate = {date/10000, (date/100)%100, date%100};
+        std::vector<int> vtime = {time/10000, (time/100)%100, time%100};
+        util::TimeStamp last_write_ts (vdate,vtime);
+        m_output_control.timestamp_of_last_write = last_write_ts;
+        eam_pio_closefile(fn.c_str());
+
+        // If the type/freq of output needs restart data, we need to restart the streams
+        if (m_output_control.nsamples_since_last_write>0) {
+          for (auto stream : m_output_streams) {
+            stream->restart(fn);
+          }
         }
       }
     }
   }
 
-  if (m_params.get("Save Initial State", false)) {
+  if (m_avg_type!=OutputAvgType::Instant) {
+    // Init the left hand point of time_bnds based on run/case t0.
+    m_time_bnds.resize(2);
+    m_time_bnds[0] = m_run_t0.days_from(m_case_t0);
+  } else if (m_output_control.output_enabled() && m_run_t0==m_case_t0 && !m_is_model_restart_output) {
     this->run(m_run_t0);
   }
 }
@@ -201,7 +211,8 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   ++m_checkpoint_control.nsamples_since_last_write;
 
   // Check if this is a write step (and what kind)
-  const bool is_output_step     = m_output_control.is_write_step(timestamp);
+  const bool is_t0_output       = timestamp==m_case_t0;
+  const bool is_output_step     = m_output_control.is_write_step(timestamp) || is_t0_output;
   const bool is_checkpoint_step = m_checkpoint_control.is_write_step(timestamp) && not is_output_step;
   const bool is_write_step      = is_output_step || is_checkpoint_step;
 
@@ -236,6 +247,13 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     if (m_is_model_restart_output) {
       // Only write nsteps on model restart
       set_int_attribute_c2f(filename.c_str(),"nsteps",timestamp.get_num_steps());
+    } else if (is_checkpoint_step) {
+      // Update the date of last write
+      const auto& last_write_ts = control.timestamp_of_last_write;
+      auto last_write_date = last_write_ts.get_date()[0]*10000 + last_write_ts.get_date()[1]*100 + last_write_ts.get_date()[2];
+      auto last_write_time = last_write_ts.get_time()[0]*10000 + last_write_ts.get_time()[1]*100 + last_write_ts.get_time()[2];
+      set_int_attribute_c2f(filename.c_str(),"last_write_date",last_write_date);
+      set_int_attribute_c2f(filename.c_str(),"last_write_time",last_write_time);
     }
   }
   stop_timer(timer_root+"::get_new_file"); 
@@ -246,7 +264,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     // Note: filename might reference an invalid string, but it's only used
     //       in case is_write_step=true, in which case it will *for sure* contain
     //       a valid file name.
-    it->run(filename,is_write_step,m_output_control.nsamples_since_last_write);
+    it->run(filename,is_write_step,m_output_control.nsamples_since_last_write,is_t0_output);
   }
   stop_timer(timer_root+"::run_output_streams"); 
 
@@ -266,12 +284,16 @@ void OutputManager::run(const util::TimeStamp& timestamp)
             " - global type: " + type + "'\n");
       }
     }
-  }
 
-  start_timer(timer_root+"::update_snapshot_tally"); 
-  if (is_write_step) {
+    start_timer(timer_root+"::update_snapshot_tally"); 
     // We're adding one snapshot to the file
     ++filespecs.num_snapshots_in_file;
+
+    if (m_time_bnds.size()>0) {
+      m_time_bnds[1] = timestamp.days_from(m_case_t0);
+      scorpio::grid_write_data_array(filename, "time_bnds", m_time_bnds.data(), 2);
+      m_time_bnds[0] = m_time_bnds[1];
+    }
 
     // Since we wrote to file we need to reset the nsamples_since_last_write, the timestamp ...
     control.nsamples_since_last_write = 0;
@@ -293,13 +315,22 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     // Whether we wrote an output or a checkpoint, the checkpoint counter needs to be reset
     m_checkpoint_control.nsamples_since_last_write = 0;
     m_checkpoint_control.timestamp_of_last_write = timestamp;
+
+    stop_timer(timer_root+"::update_snapshot_tally"); 
   }
-  stop_timer(timer_root+"::update_snapshot_tally"); 
   stop_timer(timer_root); 
 }
 /*===============================================================================================*/
 void OutputManager::finalize()
 {
+  // Close any output file still open
+  if (m_output_file_specs.is_open) {
+    scorpio::eam_pio_closefile (m_output_file_specs.filename);
+  }
+  if (m_checkpoint_file_specs.is_open) {
+    scorpio::eam_pio_closefile (m_checkpoint_file_specs.filename);
+  }
+
   // Swapping with an empty mgr is the easiest way to cleanup.
   OutputManager other;
   std::swap(*this,other);
@@ -317,9 +348,12 @@ long long OutputManager::res_dep_memory_footprint () const {
 std::string OutputManager::
 compute_filename (const IOControl& control,
                   const IOFileSpecs& file_specs,
-                  const std::string suffix,
+                  const bool is_checkpoint_step,
                   const util::TimeStamp& timestamp) const
 {
+  std::string suffix =
+    is_checkpoint_step ? ".rhist"
+                       : (m_is_model_restart_output ? ".r" : "");
   auto filename = m_casename + suffix;
   if (file_specs.filename_with_avg_type) {
     filename += "." + e2str(m_avg_type);
@@ -331,7 +365,11 @@ compute_filename (const IOControl& control,
     filename += ".np" + std::to_string(m_io_comm.size());
   }
   if (file_specs.filename_with_time_string) {
-    filename += "." + timestamp.to_string();
+    if (m_avg_type==OutputAvgType::Instant || is_checkpoint_step) {
+      filename += "." + timestamp.to_string();
+    } else {
+      filename += "." + control.timestamp_of_last_write.to_string();
+    }
   }
 
   return filename + ".nc";
@@ -351,6 +389,7 @@ set_params (const ekat::ParameterList& params,
     EKAT_REQUIRE_MSG (m_avg_type==OutputAvgType::Instant,
         "Error! For restart output, the averaging type must be 'Instant'.\n"
         "   Note: you don't have to specify this parameter for restart output.\n");
+
     m_output_file_specs.max_snapshots_in_file = m_params.get("Max Snapshots Per File",1);
     EKAT_REQUIRE_MSG (m_output_file_specs.max_snapshots_in_file==1,
         "Error! For restart output, max snapshots per file must be 1.\n"
@@ -381,7 +420,7 @@ set_params (const ekat::ParameterList& params,
         "Error! Unsupported averaging type '" + avg_type + "'.\n"
         "       Valid options: Instant, Max, Min, Average. Case insensitive.\n");
 
-    m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File");
+    m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File",-1);
     m_casename = m_params.get<std::string>("Casename");
 
     // Allow user to ask for higher precision for normal model output,
@@ -402,10 +441,7 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
   auto& filename = filespecs.filename;
 
   // Compute new file name
-  std::string suffix =
-    is_checkpoint_step ? ".rhist"
-                       : (m_is_model_restart_output ? ".r" : "");
-  filename = compute_filename (control,filespecs,suffix,timestamp);
+  filename = compute_filename (control,filespecs,is_checkpoint_step,timestamp);
 
   // Register new netCDF file for output. First, check no other output managers
   // are trying to write on the same file
@@ -426,6 +462,21 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
 #else
   set_variable_metadata (filename,"time","calendar","noleap");
 #endif
+  if (m_avg_type!=OutputAvgType::Instant) {
+    // First, ensure a 'dim2' dimension with len=2 is registered.
+    register_dimension(filename,"dim2","dim2",2,false);
+    
+    // Register time_bnds var, with its dofs
+    register_variable(filename,"time_bnds","time_bnds",time_units,{"dim2","time"},"double","double","time-dim2");
+    scorpio::offset_t time_bnds_dofs[2] = {0,1};
+    set_dof(filename,"time_bnds",2,time_bnds_dofs);
+
+    // Make it clear how the time_bnds should be interpreted
+    set_variable_metadata(filename,"time_bnds","note","right endpoint accummulation");
+
+    // I'm not sure what's the point of this, but CF conventions seem to require it
+    set_variable_metadata (filename,"time","bounds","time_bnds");
+  }
 
   std::string fp_precision = is_checkpoint_step
                            ? "real"
@@ -444,7 +495,7 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
   }
 
   // Set degree of freedom for "time"
-  std::int64_t time_dof[1] = {0};
+  scorpio::offset_t time_dof[1] = {0};
   set_dof(filename,"time",0,time_dof);
 
   // Finish the definition phase for this file.
@@ -453,6 +504,12 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
   auto t0_time = m_case_t0.get_time()[0]*10000 + m_case_t0.get_time()[1]*100 + m_case_t0.get_time()[2];
   set_int_attribute_c2f(filename.c_str(),"start_date",t0_date);
   set_int_attribute_c2f(filename.c_str(),"start_time",t0_time);
+
+  if (m_avg_type!=OutputAvgType::Instant) {
+    // Unfortunately, attributes cannot be set in define mode (why?), so this could
+    // not be done while we were setting the time_bnds
+    set_int_attribute_c2f(filename.c_str(),"sample_size",control.frequency);
+  }
 
   if (filespecs.save_grid_data) {
     // Immediately run the geo data streams
