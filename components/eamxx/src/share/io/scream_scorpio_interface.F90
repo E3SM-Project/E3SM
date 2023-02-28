@@ -76,6 +76,7 @@ module scream_scorpio_interface
             eam_update_time,             & ! Update the timestamp (i.e. time variable) for a given pio netCDF file
             get_int_attribute,           & ! Retrieves an integer global attribute from the nc file
             set_int_attribute,           & ! Writes an integer global attribute to the nc file
+            set_str_attribute,           & ! Writes an string global attribute to the nc file
             get_dimlen,                  & ! Returns the length of a specific dimension in a file
             read_time_at_index,          & ! Returns the time stamp for a specific time index
             has_variable                   ! Checks if given file contains a certain variable
@@ -1257,6 +1258,55 @@ contains
       endif
     endif
   end subroutine set_int_attribute
+!=====================================================================!
+  ! Writes a string  global attribute to the nc file
+  subroutine set_str_attribute (file_name, attr_name, val)
+    use pionfatt_mod, only: PIO_put_att => put_att
+    use pio_nf, only: pio_redef, PIO_inq_att
+
+    character(len=*), intent(in) :: file_name  ! Name of the filename
+    character(len=*), intent(in) :: attr_name  ! Name of the attribute
+    character(len=*), intent(in) :: val
+    type(pio_atm_file_t), pointer :: pio_atm_file
+    integer(pio_offset_kind) :: len
+    integer :: ierr,xtype
+    logical :: found, enddef_needed
+
+    call lookup_pio_atm_file(trim(file_name),pio_atm_file,found)
+    if (.not.found) then
+      call errorHandle("PIO Error: can't find pio_atm_file associated with file: "//trim(file_name),-999)
+    endif
+
+    ! If this attribute does not exist, we need to re-open the nc file for definition,
+    ! then re-close it to put it in data mode again.
+    ! NOTE: this check step is only for pre-NetCDF4 format, where attributes can
+    !       only be defined while in 'define' mode. For NetCDF4/HDF5, attributes
+    !       can be defined at any time.
+    ! TODO: add check on netcdf format, to see if this inq_att shenanigans is needed.
+    ierr = PIO_inq_att(pio_atm_file%pioFileDesc,PIO_GLOBAL,attr_name,xtype,len)
+    enddef_needed = .false.
+    if (ierr .ne. PIO_NOERR) then
+      ! In theory, there are several reason why this could fail. However, pio.F90
+      ! does *not* expose all the nc error codes like pio.h does (e.g., no PIO_ENOTATT).
+      ! So we just *assume* that the attribute was not found, and try to define it
+      ierr = PIO_redef(pio_atm_file%pioFileDesc)
+      if (ierr .ne. 0) then
+        call errorHandle("Error while re-opening pio file " // trim(file_name) // ".", -999)
+      endif
+      enddef_needed = .true.
+    endif
+    ierr = PIO_put_att(pio_atm_file%pioFileDesc, PIO_GLOBAL, attr_name, val)
+    if (ierr .ne. 0) then
+      call errorHandle("Error setting global attribute '" // trim(attr_name) &
+                       // "' in pio file " // trim(file_name) // ".", -999)
+    endif
+    if (enddef_needed) then
+      ierr = PIO_enddef(pio_atm_file%pioFileDesc)
+      if (ierr .ne. 0) then
+        call errorHandle("Error while re-closing pio file " // trim(file_name) // ".", -999)
+      endif
+    endif
+  end subroutine set_str_attribute
 !=====================================================================!
   ! Lookup pointer for pio file based on filename.
   subroutine lookup_pio_atm_file(filename,pio_file,found,pio_file_list_ptr_in)
