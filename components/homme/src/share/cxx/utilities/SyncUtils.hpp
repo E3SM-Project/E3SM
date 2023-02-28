@@ -326,13 +326,17 @@ typename std::enable_if
 sync_to_device(Source_T source, Dest_T dest) {
   typename Dest_T::HostMirror dest_mirror = Kokkos::create_mirror_view(dest);
   for (int ie = 0; ie < source.extent_int(0); ++ie) {
-    for (int tl=0; tl < source.extent_int(1); ++tl) {
+    // The second dim might be time level, in which case source and dest agree,
+    // or qsize in one case and qsize_d in the other, in which case they
+    // don't. In either case, taking the min of the two is correct.
+    for (int si=0, si_end=std::min(source.extent_int(1), dest.extent_int(1));
+         si < si_end; ++si) {
       for (int level = 0; level < NUM_PHYSICAL_LEV; ++level) {
         const int ilev = level / VECTOR_SIZE;
         const int ivec = level % VECTOR_SIZE;
         for (int igp = 0; igp < NP; ++igp) {
           for (int jgp = 0; jgp < NP; ++jgp) {
-            dest_mirror(ie, tl, igp, jgp, ilev)[ivec] = source(ie, tl, level, igp, jgp);
+            dest_mirror(ie, si, igp, jgp, ilev)[ivec] = source(ie, si, level, igp, jgp);
           }
         }
       }
