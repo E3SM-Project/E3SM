@@ -1,0 +1,25 @@
+# This file may be used to create an environment for linting Omega with
+# pre-commit using:
+# $ mamba create -n omega_dev --file <this file>
+# $ mamba activate omega_dev
+# $ pre-commit install
+
+# linting
+pre-commit
+clang-format
+clang-tools
+cppcheck
+cpplint
+lizard
+include-what-you-use
+
+# documentation
+sphinx
+sphinx_rtd_theme
+myst-parser
+sphinx-multiversion
+rst-to-myst
+
+# CF-compliance
+cfchecker
+udunits2
