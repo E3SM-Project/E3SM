@@ -434,7 +434,7 @@ contains
             mapper_Fa2r%src_mbid = mbaxid
             mapper_Fa2r%tgt_mbid = mbrxid
             mapper_Fa2r%intx_mbid = mbintxar 
-            mapper_Fa2r%src_context = rof(1)%cplcompid
+            mapper_Fa2r%src_context = atm(1)%cplcompid
             mapper_Fa2r%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fa2r%weight_identifier = wgtIdef
