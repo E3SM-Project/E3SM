@@ -671,7 +671,7 @@ contains
          deallocate (tmparray)
 
 
-         ! now we have to populate the map with the right moab attibutes, so that it does the right projection
+         ! now we have to populate the map with the right moab attributes, so that it does the right projection
 #ifdef MOABDEBUG
          if (mbrxoid.ge.0) then  ! we are on coupler PEs
             call mpi_comm_rank(mpicom_CPLID, rank_on_cpl  , ierr)
@@ -693,12 +693,14 @@ contains
             wgtIdef = 'map-from-file'//C_NULL_CHAR
             mapper_Rr2o_liq%weight_identifier = wgtIdef 
             mapper_Rr2o_liq%mbname = 'mapper_Rr2o_liq'
+            mapper_Rr2o_liq%read_map = .true.
 #endif
 
           if (iamroot_CPLID) then
              write(logunit,*) ' '
              write(logunit,F00) 'Initializing mapper_Rr2o_ice'
           end if
+          ! is this the same map as above ? 
           call seq_map_init_rcfile(mapper_Rr2o_ice, rof(1), ocn(1), &
                'seq_maps.rc', 'rof2ocn_ice_rmapname:', 'rof2ocn_ice_rmaptype:',samegrid_ro, &
                'mapper_Rr2o_ice  initialization',esmf_map_flag)
@@ -713,6 +715,7 @@ contains
             wgtIdef = 'map-from-file'//C_NULL_CHAR
             mapper_Rr2o_ice%weight_identifier = wgtIdef 
             mapper_Rr2o_ice%mbname = 'mapper_Rr2o_ice'
+            mapper_Rr2o_ice%read_map = .true. 
 #endif
           if (flood_present) then
              if (iamroot_CPLID) then

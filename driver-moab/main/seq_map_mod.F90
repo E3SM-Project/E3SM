@@ -558,8 +558,9 @@ end subroutine moab_map_init_rcfile
                   write(logunit,*) subname,' error setting normed source tag values ', mapper%mbname
                   call shr_sys_abort(subname//' ERROR setting normed source tag values') ! serious enough
                endif
+               deallocate(targtags)
             endif ! end multiplication by norm factor
-            deallocate(wghts, targtags)
+            deallocate(wghts)
          endif  ! end NORMALIZATION
 
          !
@@ -574,9 +575,13 @@ end subroutine moab_map_init_rcfile
          ! receive in the intx app, because it is redistributed according to coverage (trick)
          ! for true intx cases, tgt_mbid is set to be the same as intx_mbid
          ! just read map is special 
-         ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context );
+         if (mapper%read_map)  then ! receive indeed in target app
+            ierr = iMOAB_ReceiveElementTag( mapper%tgt_mbid, fldlist_moab, mapper%mpicom, mapper%src_context )
+         else ! receive in the intx app, trick 
+             ierr = iMOAB_ReceiveElementTag( mapper%intx_mbid, fldlist_moab, mapper%mpicom, mapper%src_context )
+         endif
          if (ierr .ne. 0) then
-            write(logunit,*) subname,' error in receiving tags ', mapper%mbname,   trim(fldlist_moab)
+            write(logunit,*) subname,' error in receiving tags ', mapper%mbname, 'recv:',  mapper%intx_mbid, trim(fldlist_moab)
             call shr_sys_flush(logunit)
             call shr_sys_abort(subname//' ERROR in receiving tags')
             !valid_moab_context = .false. ! do not attempt to project

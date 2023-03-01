@@ -47,6 +47,7 @@ module seq_map_type_mod
      character*16            :: mbname
      integer                 :: tag_entity_type
      integer                 :: nentities ! this should be used only if copy_only is true
+     logical                 :: read_map
      !
 #endif
 
@@ -159,6 +160,7 @@ contains
     mapper%nentities =  0
     mapper%tag_entity_type = 1 ! cells most of the time when we need it
     mapper%mbname    = "undefined"
+    mapper%read_map = .false.
 #endif
 
   end subroutine seq_map_mapinit
