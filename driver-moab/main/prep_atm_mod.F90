@@ -234,7 +234,7 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Sof2a'
          endif
-         no_match = .true. ! force to cerate a new object 
+         no_match = .true. ! force to create a new mapper object
          call seq_map_init_rcfile(mapper_Sof2a, ocn(1), atm(1), &
             'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
             'mapper_Sof2a initialization',esmf_map_flag, no_match)
@@ -401,9 +401,10 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Fof2a'
          endif
+         no_match = .true. ! force to create a new mapper object
          call seq_map_init_rcfile(mapper_Fof2a, ocn(1), atm(1), &
             'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
-            'mapper_Fof2a initialization',esmf_map_flag)
+            'mapper_Fof2a initialization',esmf_map_flag, no_match)
 
 ! copy mapper_So2a , maybe change the matrix ? still based on intersection ?
 #ifdef HAVE_MOAB
