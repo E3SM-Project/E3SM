@@ -118,12 +118,12 @@ subroutine cnd_diag_output_init(pver, cnd_diag_info)
      ! In terms of variable names in the output files, the values and 
      ! increments of a field are distinguished by different suffixes
 
-     val_inc_suff = (/"","_inc"/)
+     val_inc_suff = (/"    ","_inc"/)
 
      do ii = 1,2 ! field value (state) or increment
 
         if (.not.l_output(ii)) cycle
-        suff = val_inc_suff(ii)
+        suff = trim(val_inc_suff(ii))
 
         do iqoi  = 1,cnd_diag_info%nqoi
         do ichkpt = 1,cnd_diag_info%nchkpt
