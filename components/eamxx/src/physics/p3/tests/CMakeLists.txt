@@ -98,8 +98,17 @@ if (SCREAM_ENABLE_BASELINE_TESTS)
     EXE_ARGS "-g ${BASELINE_FILE_ARG}"
     PROPERTIES DISABLED True)
 
-  get_test_property(p3_baseline_f90_fake_omp${SCREAM_TEST_MAX_THREADS} FULL_TEST_COMMAND P3_F90_GEN)
-  get_test_property(p3_baseline_cxx_fake_omp${SCREAM_TEST_MAX_THREADS} FULL_TEST_COMMAND P3_CXX_GEN)
+  if (SCREAM_TEST_MAX_THREADS GREATER 1)
+    get_test_property(p3_baseline_f90_fake_omp${SCREAM_TEST_MAX_THREADS} FULL_TEST_COMMAND P3_F90_GEN)
+    get_test_property(p3_baseline_cxx_fake_omp${SCREAM_TEST_MAX_THREADS} FULL_TEST_COMMAND P3_CXX_GEN)
+  else()
+    get_test_property(p3_baseline_f90_fake FULL_TEST_COMMAND P3_F90_GEN)
+    get_test_property(p3_baseline_cxx_fake FULL_TEST_COMMAND P3_CXX_GEN)
+  endif()
+
+  if (P3_F90_GEN STREQUAL "NOTFOUND")
+    message(FATAL_ERROR "Could not get FULL_TEST_COMMAND for p3_baseline fake test")
+  endif()
 
   separate_arguments(P3_F90_GEN_ARGS UNIX_COMMAND "${P3_F90_GEN}")
   separate_arguments(P3_CXX_GEN_ARGS UNIX_COMMAND "${P3_CXX_GEN}")
