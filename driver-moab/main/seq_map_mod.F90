@@ -85,7 +85,7 @@ contains
     character(CX)               :: mapfile
     character(CL)               :: maptype
     integer(IN)                 :: mapid
-    logical                     :: skip_match = .false.;
+    logical                     :: skip_match
     character(len=*),parameter  :: subname = "(seq_map_init_rcfile) "
     !-----------------------------------------------------
 
@@ -93,6 +93,7 @@ contains
        write(logunit,'(A)') subname//' called for '//trim(string)
     endif
 
+    skip_match = .false.
     if (present(no_match)) then
        if (no_match) skip_match = .true.
     endif
@@ -107,6 +108,9 @@ contains
        if (mapid > 0 .and. .not. skip_match) then
           call seq_map_mappoint(mapid,mapper)
        else
+          if(skip_match) then
+             write(logunit,'(A)') subname, 'skip_match true, force new map'
+          endif
           call seq_map_mapinit(mapper,mpicom)
           mapper%copy_only = .true.
           mapper%strategy = "copy"
@@ -120,6 +124,9 @@ contains
        if (mapid > 0 .and. .not. skip_match) then
           call seq_map_mappoint(mapid,mapper)
        else
+          if(skip_match) then
+             write(logunit,'(A)') subname, 'skip_match true, force new map'
+          endif
           ! --- Initialize rearranger
           call seq_map_mapinit(mapper,mpicom)
           mapper%rearrange_only = .true.
@@ -140,6 +147,9 @@ contains
        if (mapid > 0 .and. .not. skip_match) then
           call seq_map_mappoint(mapid,mapper)
        else
+          if(skip_match) then
+             write(logunit,'(A)') subname, 'skip_match true, force new map'
+          endif
           call seq_map_mapinit(mapper,mpicom)
           mapper%mapfile = trim(mapfile)
           mapper%strategy= trim(maptype)
