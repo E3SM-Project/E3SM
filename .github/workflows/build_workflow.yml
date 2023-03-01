@@ -1,0 +1,80 @@
+name: CI/CD Build Workflow
+
+on:
+  push:
+    branches: [develop]
+
+  pull_request:
+    branches: [develop]
+
+  workflow_dispatch:
+
+env:
+  CANCEL_OTHERS: true
+  PATHS_IGNORE: '["**/README.md", "**/docs/**"]'
+
+jobs:
+  pre-commit-hooks:
+    name: lint with pre-commit - python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    strategy:
+      matrix:
+        python-version: ["3.10",]
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@master
+        with:
+          cancel_others: ${{ env.CANCEL_OTHERS }}
+          paths_ignore: ${{ env.PATHS_IGNORE }}
+
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        name: Checkout Code Repository
+        uses: actions/checkout@v3
+
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        name: Cache Conda
+        uses: actions/cache@v3
+        env:
+          # Increase this value to reset cache if conda-dev-spec.template has not changed in the workflow
+          CACHE_NUMBER: 0
+        with:
+          path: ~/conda_pkgs_dir
+          key:
+            ${{ runner.os }}-${{ matrix.python-version }}-conda-${{ env.CACHE_NUMBER }}-${{
+            hashFiles('components/omega/dev-conda.txt') }}
+
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        name: Set up Conda Environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: "omega_ci"
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          use-mamba: true
+          mamba-version: "*"
+          channels: conda-forge,e3sm/label/compass,defaults
+          channel-priority: strict
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        name: Install dependencies
+        run: |
+          mamba list
+          mamba install -y --file components/omega/dev-conda.txt
+
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        id: file_changes
+        uses: trilom/file-changes-action@v1.2.3
+        with:
+          output: ' '
+
+      - if: ${{ steps.skip_check.outputs.should_skip != 'true' }}
+        # Run all pre-commit hooks on all the files.
+        # Getting only staged files can be tricky in case a new PR is opened
+        # since the action is run on a branch in detached head state
+        name: Install and Run Pre-commit
+        uses: pre-commit/action@v3.0.0
+        with:
+          extra_args: --files ${{ steps.file_changes.outputs.files}}
