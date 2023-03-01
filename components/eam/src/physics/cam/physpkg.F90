@@ -1468,7 +1468,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     use ionosphere,         only: ionos_intr ! WACCM-X ionosphere
     use tracers,            only: tracers_timestep_tend
     use aoa_tracers,        only: aoa_tracers_timestep_tend
-    use physconst,          only: rhoh2o, latvap,latice, rga
+    use physconst,          only: rhoh2o, latvap,latice, rga, gravit
     use aero_model,         only: aero_model_drydep
     use check_energy,       only: check_energy_chng, check_water, & 
                                   check_prect, check_qflx , &
@@ -1564,6 +1564,8 @@ subroutine tphysac (ztodt,   cam_in,  &
     logical :: l_gw_drag
     logical :: l_ac_energy_chk
 
+    real(r8) :: cc,mm,qq,pp,adjust
+
     !
     !-----------------------------------------------------------------------
     !
@@ -1633,6 +1635,18 @@ end if ! l_tracer_aero
     call check_tracers_init(state, tracerint)
 
 
+!save TE before physstep
+call check_energy_chng(state, tend, "assign_te_before_physstep", nstep, ztodt, zero, zero, zero, zero)
+
+state%te_before_physstep(:ncol)=state%te_cur(:ncol)
+!save water mass here
+state%tw_before(:ncol) = state%tw_cur(:ncol)
+!since QFLX is potentially modified below, save unmodified value is delta var temporarily
+!POTENTIALLY we also need to save SHF
+!introduce a new var as our old vars are all used in gmean
+state%cflx_raw(:ncol) = cam_in%cflx(:ncol,1)
+
+
 !notes on below
 !before clubb we have call
 !    if(use_qqflx_fixer) then
@@ -1642,15 +1656,9 @@ end if ! l_tracer_aero
 !
 !which is not called, qqflx_fixer=false
 !current version of qqflx call does not have a fix for shf, only for mass (potentially)
+!
+!In contrast, qneg4 adjusts SHF
 
-
-
-
-
-!since QFLX is potentially modified below, save unmodified value is delta var temporarily
-!POTENTIALLY we also need to save SHF
-!introduce a new var as our old vars are all used in gmean
-state%cflx_raw(:ncol) = cam_in%cflx(:ncol,1)
 
 !!== KZ_WCON
 
@@ -1658,14 +1666,40 @@ state%cflx_raw(:ncol) = cam_in%cflx(:ncol,1)
     call check_qflx(state, tend, "PHYAC01", nstep, ztodt, cam_in%cflx(:,1))
 
     if(.not.use_qqflx_fixer) then 
+!ACTIVE
+!print *, 'OG qneg4 is called'
 
        ! Check if latent heat flux exceeds the total moisture content of the
        ! lowest model layer, thereby creating negative moisture.
-
+#if 0
        call qneg4('TPHYSAC '       ,lchnk               ,ncol  ,ztodt ,               &
             state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf ,         &
             cam_in%lhf , cam_in%cflx )
-
+#else
+do i=1,ncol
+  cc = cam_in%cflx(i,1)*ztodt*gravit
+  if (cc < 0.0_r8) then
+    cc=abs(cc)
+    mm=0.0_r8
+    do k=1,pver
+      mm = mm + state%q(i,k,1)*state%pdel(i,k)
+    enddo
+    cam_in%cflx(i,1) = 0.0_r8
+    if (mm < cc) then
+      state%q(i,1:pver,1) = 0.0_r8 !allow leak
+    else
+      do k=1,pver
+        qq = state%q(i,k,1)
+        pp = state%pdel(i,k)
+        adjust = cc *  qq*pp/mm
+        state%q(i,k,1) = (qq*pp - adjust)/pp
+      enddo
+    endif
+!print *, "OG cc, mm, new mm",cc,mm,sum(state%q(i,:,1)*state%pdel(i,:))
+!print *, 'OG before, after',mm-cc, sum(state%q(i,:,1)*state%pdel(i,:))
+  endif
+enddo
+#endif
     end if 
 
     !just output
@@ -1677,13 +1711,6 @@ state%cflx_new(:ncol) = cam_in%cflx(:ncol,1)
 
     call t_stopf('tphysac_init')
 
-
-    !save TE before physstep
-    call check_energy_chng(state, tend, "assign_te_before_physstep", nstep, ztodt, zero, zero, zero, zero)
-
-    state%te_before_physstep(:ncol)=state%te_cur(:ncol)
-!save water mass here
-state%tw_before(:ncol) = state%tw_cur(:ncol)
 
 
 if (l_tracer_aero) then
@@ -2828,10 +2855,13 @@ state%tw_after(:ncol) = state%tw_cur(:ncol)
 
 !this is going to be after-before
 !cflx_raw contains unmodified by qneg4 or mass fixers value
-!state%deltaw_flux(:ncol) = state%cflx_raw(:ncol) - &
+!this is the one to use with qneg?
+!NO mistake -- change in mass from qneg should be accounted separately!
+!state%deltaw_flux(:ncol) = state%cflx_raw(:ncol)
 
-!lets try the old one again
-state%deltaw_flux(:ncol) = cam_in%cflx(:ncol,1) - &
+state%deltaw_flux(:ncol) = state%cflx_raw(:ncol)
+
+state%deltaw_flux(:ncol) = state%deltaw_flux(:ncol) - &
 1000.0*(cam_out%precc(:ncol)+cam_out%precl(:ncol))
 
 state%deltaw_flux(:ncol) = state%deltaw_flux(:ncol) * ztodt
