@@ -132,8 +132,9 @@ public:
   // Note: dt is assumed to be in seconds
   void run (const int dt);
 
-  // Clean up the driver (includes cleaning up the parameterizations and the fm's);
-  void finalize ( /* inputs */ );
+  // Clean up the driver (finalizes and cleans up all internals)
+  // NOTE: if already finalized, this is a no-op
+  void finalize ();
 
   field_mgr_ptr get_ref_grid_field_mgr () const;
   field_mgr_ptr get_field_mgr (const std::string& grid_name) const;
