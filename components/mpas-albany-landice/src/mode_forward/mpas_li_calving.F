@@ -1632,7 +1632,8 @@ module li_calving
       real (kind=RKIND), pointer :: config_default_flowParamA
       real (kind=RKIND), pointer :: calvingCFLdt
       real (kind=RKIND), pointer :: dtCalvingCFLratio
-      integer, pointer :: nCells, nCellsSolve
+      integer, pointer :: nCells
+      integer, dimension(:), pointer :: nCellsArray  ! array giving index to owned cells, plus each halo level
       integer, dimension(:), pointer :: cellMask
       integer, dimension(:), pointer :: indexToCellID
       real (kind=RKIND), dimension(:), pointer :: vonMisesStress, damage
@@ -1679,7 +1680,7 @@ module li_calving
           call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
           call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+          call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
           call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
           call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
           call mpas_pool_get_array(velocityPool, 'eMax', eMax)
@@ -1771,7 +1772,7 @@ module li_calving
 
           ! the row of cells that are adjacent to invalid velocity will have garbage strain rates and vM stress
           ! so extrapolate into those cells from their valid neighbors
-          do iCell = 1,nCellsSolve
+          do iCell = 1, nCellsArray(2)  ! this is owned cells plus first halo
              if (surfaceSpeed(iCell) == 0.0_RKIND) then
                 vonMisesStress(iCell) = 0.0_RKIND  ! remove the vM calculation where there is no velocity - garbage can occur here
              else
@@ -1818,16 +1819,12 @@ module li_calving
              endif ! if velo>0
           enddo ! loop over nCells
 
-          ! halo update on vonMisesStress after extrap
-          ! This could be avoided if we include the first halo layer in the loop above
-          call mpas_timer_start("halo updates")
-          call mpas_dmpar_field_halo_exch(domain, 'vonMisesStress')
-          call mpas_timer_stop("halo updates")
+          ! no halo update needed yet because we included the first halo above
 
           ! Now extrapolate one additional row forward for good measure
           allocate(vonMisesStressOld(nCells+1)) ! temp var for extrap
           vonMisesStressOld(:) = vonMisesStress(:)
-          do iCell = 1, nCellsSolve
+          do iCell = 1, nCellsArray(1)  ! just owned cells (equivalent to nCellsSolve)
              ! Find cells needing extrap
              if (vonMisesStressOld(iCell) == 0.0) then
                 vMsum = 0.0_RKIND
