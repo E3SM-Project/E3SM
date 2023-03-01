@@ -1,0 +1,275 @@
+#!/usr/bin/env python3
+
+"""
+Change a runtime parameter for SCREAM/atm. Run from your case
+after case.setup.
+"""
+
+import argparse, sys, pathlib, os
+import xml.etree.ElementTree as ET
+
+# Add path to cime_config folder
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "cime_config"))
+sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+
+from eamxx_buildnml_impl import check_value
+from atm_manip import expect, get_xml_node, AmbiguousName
+
+###############################################################################
+def print_var(xml_root,var,full,dtype,value,valid_values,print_style="invalid",indent=""):
+###############################################################################
+    """
+    >>> xml = '''
+    ... <root>
+    ...     <prop1>one</prop1>
+    ...     <sub>
+    ...         <prop1>two</prop1>
+    ...         <prop2 type="integer" valid_values="1,2">2</prop2>
+    ...     </sub>
+    ... </root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> tree = ET.fromstring(xml)
+    >>> ################ Missing type data #######################
+    >>> print_var(tree,'::prop1',False,True,False,False,"short")
+    Traceback (most recent call last):
+    SystemExit: ERROR: Error! Missing type information for prop1
+    >>> print_var(tree,'prop2',True,False,False,False,"short")
+    prop2
+        value: 2
+        type: integer
+        valid values: ['1', '2']
+    >>> print_var(tree,'prop2',False,True,False,False,"short")
+    prop2: integer
+    >>> print_var(tree,'prop2',False,False,True,False,"short")
+    2
+    >>> print_var(tree,'prop2',False,False,False,True,"short","    ")
+        prop2: ['1', '2']
+    """
+
+    expect (print_style in ["short","full"],
+            f"Invalid print_style '{print_style}' for print_var. Use 'full' or 'short'.")
+
+    # Get node, along with all its parents (which might be used for 'full' print style)
+    node, parents = get_xml_node(xml_root,var)
+
+    # Get the shortest unique repr of the var name
+    tokens = var.split("::")
+    if tokens[0]=='':
+        tokens.pop(0)
+
+    while len(tokens)>1:
+        new_name = "::".join(tokens[1:])
+        try:
+            get_xml_node(xml_root,new_name)
+            tokens.pop(0)
+            name = new_name
+        except AmbiguousName:
+            # new_name was either "" or an ambiguous name, and get_xml_node failed
+            break
+
+    if print_style=="short":
+        # Just the inner most name
+        name = tokens[-1]
+    else:
+        name = "::".join(e.tag for e in parents) + "::" + node.tag
+
+    if full:
+        expect ("type" in node.attrib.keys(),
+                "Error! Missing type information for {}".format(name))
+        print (f"{indent}{name}")
+        print (f"{indent}    value: {node.text}")
+        print (f"{indent}    type: {node.attrib['type']}")
+        if "valid_values" not in node.attrib.keys():
+            valid = []
+        else:
+            valid = node.attrib["valid_values"].split(",")
+        print (f"{indent}    valid values: {valid}")
+    elif dtype:
+        expect ("type" in node.attrib.keys(),
+                "Error! Missing type information for {}".format(name))
+        print (f"{indent}{name}: {node.attrib['type']}")
+    elif value:
+        print (f"{indent}{node.text}")
+    elif valid_values:
+        if "valid_values" not in node.attrib.keys():
+            valid = '<valid values not provided>'
+        else:
+            valid = node.attrib["valid_values"].split(",")
+        print (f"{indent}{name}: {valid}")
+    else:
+        print (f"{indent}{name}: {node.text}")
+
+###############################################################################
+def print_all_vars(xml_root,xml_node,curr_namespace,full,dtype,value,valid_values,print_style,indent):
+###############################################################################
+
+    print (f"{indent}{xml_node.tag}")
+    for c in xml_node:
+        if len(c)>0:
+            print_all_vars(xml_root,c,curr_namespace+c.tag+"::",full,dtype,value,valid_values,print_style,indent+"    ")
+        else:
+            print_var(xml_root,curr_namespace+c.tag,full,dtype,value,valid_values,print_style,indent+"    ")
+
+###############################################################################
+def atm_query_impl(xml_root,variables,listall=False,full=False,value=False, \
+              dtype=False, valid_values=False):
+###############################################################################
+    """
+    >>> xml = '''
+    ... <root>
+    ...     <prop1>one</prop1>
+    ...     <sub>
+    ...         <prop1>two</prop1>
+    ...         <prop2 type="integer" valid_values="1,2">2</prop2>
+    ...     </sub>
+    ... </root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> tree = ET.fromstring(xml)
+    >>> vars = ['prop2','::prop1']
+    >>> success = atm_query_impl(tree, vars, False,False,False,False,False)
+        root::sub::prop2: 2
+        root::prop1: one
+    >>> success = atm_query_impl(tree, [], True,False,False,False,True)
+        root
+            prop1: <valid values not provided>
+            sub
+                prop1: <valid values not provided>
+                prop2: ['1', '2']
+    """
+
+    if listall:
+        print_all_vars(xml_root,xml_root,"::",full,dtype,value,valid_values,"short","    ")
+    else:
+        for var in variables:
+            print_var(xml_root,var,full,dtype,value,valid_values,"full","    ")
+
+    return True
+
+###############################################################################
+def atm_query(variables,listall=False,full=False,value=False, \
+              dtype=False, valid_values=False):
+###############################################################################
+    expect(os.path.exists("namelist_scream.xml"),
+           "No pwd/namelist_scream.xml file is present. Please rum from a case dir that has been setup")
+
+    with open("namelist_scream.xml", "r") as fd:
+        tree = ET.parse(fd)
+        xml_root = tree.getroot()
+
+    return atm_query_impl(xml_root,variables,listall,full,value,dtype,valid_values)
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} [--listall] [--value] [--type] [--valid-values] [--full] [var1 [,var2 ...]
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# List all settings as VAR=VALUE
+    > {0} --listall
+
+    \033[1;32m# print var1 and var2
+    > {0} var1 var2
+
+    \033[1;32m# print var1 and var2, with full details
+    > {0} var1 var2 --full
+
+    \033[1;32m# print var1 type and valid values
+    > {0} var1 --type --valid-values
+
+""".format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument(
+        "variables",
+        nargs="*",
+        help="Variable name(s) to query from namelist_scream.xml file\n"
+        "Multiple variables can be given, separated by commas or spaces.\n",
+    )
+
+    parser.add_argument(
+        "--listall",
+        default=False,
+        action="store_true",
+        help="List all variables and their values.",
+    )
+
+    # The following options are mutually exclusive
+    group = parser.add_mutually_exclusive_group()
+
+    group.add_argument(
+        "--full",
+        default=False,
+        action="store_true",
+        help="Print a full listing for each variable, including value, type,\n"
+        "valid values, description and file.",
+    )
+
+    group.add_argument(
+        "--value",
+        default=False,
+        action="store_true",
+        help="Only print one value without newline character.\n"
+        "If more than one has been found print first value in list.",
+    )
+
+    group.add_argument(
+        "--type",
+        default=False,
+        action="store_true",
+        help="Print the data type associated with each variable.",
+    )
+
+    group.add_argument(
+        "--valid-values",
+        default=False,
+        action="store_true",
+        help="Print the valid values associated with each variable, if defined.",
+    )
+
+    args = parser.parse_args(args[1:])
+
+    if len(args.variables) == 1:
+        variables = args.variables[0].split(",")
+    else:
+        variables = args.variables
+
+    return (
+        variables,
+        args.listall,
+        args.full,
+        args.value,
+        args.type,
+        args.valid_values,
+    )
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if "--test" in sys.argv:
+        from doctest import testmod
+        import atm_manip
+        testmod()
+        testmod(m=atm_manip)
+    else:
+        (
+            variables,
+            listall,
+            value,
+            full,
+            dtype,
+            valid_values,
+        ) = parse_command_line(sys.argv, description)
+        success = atm_query(variables,listall,value,full,dtype,valid_values)
+        sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

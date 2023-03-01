@@ -612,7 +612,6 @@ contains
         integer :: fromNcId, fromNsDimId, fromRowId, fromColId, fromSId
         integer:: nMpasDimId, nGridDimId, toNsLen, fromNsLen
         character (len = NF90_MAX_NAME) :: toNsName, fromNsName, nMpasName, nGridName
-        integer, pointer :: n_s
         character(len=StrKIND) :: mpasToGridFile, gridToMpasFile
 
         ! SHTns routine variables

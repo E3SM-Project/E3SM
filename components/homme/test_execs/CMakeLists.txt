@@ -226,6 +226,7 @@ IF (${BUILD_HOMME_THETA_KOKKOS})
   if (${HOMME_MACHINE} MATCHES "summit-gpu")
 
     ADD_SUBDIRECTORY(theta-nlev128-kokkos)
+    ADD_SUBDIRECTORY(theta-l-nlev72-kokkos)
 
   else()
 

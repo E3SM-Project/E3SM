@@ -1,0 +1,9 @@
+module purge
+source /projects/sems/modulefiles/utils/sems-archive-modules-init.sh
+module load sems-archive-env
+export PATH=/ascldap/users/jgfouca/packages/Python-3.8.5/bin:$PATH
+module load sems-archive-git/2.10.1
+
+source $JENKINS_SCRIPT_DIR/sandia_son_proxy
+
+SCREAM_MACHINE=mappy

@@ -1,0 +1,452 @@
+<?xml version="1.0"?>
+
+<!--
+
+The file that defines all parameter input files for SCREAM. This file
+will be processed by SCREAM's buildnml script and produces the
+$case/namelist_scream.xml which is the fully resolved/processed
+info from this file. We recommend users use atm-config-chg for
+tweaking their $case/namelist_scream.xml file.
+
+-->
+
+<namelist_defaults>
+
+  <!--
+    The following block defines convenience selectors. Case settings
+    can be used as selectors, but they are often not covenient due to
+    long names or having to process their values through regular expressions
+    to get the subpiece you are interested in. The convenience selectors
+    allow you to express this logic and capture it with a short name.
+
+    The following attributes are how one defines a selector
+      name     : The name of the selector
+      case_env : The case value (thing you can xmlquery)
+      regex    : OPTIONAL, how to pick out the piece of the value you are interested in
+                 By default, the entire value is grabbed. If the regex does not match
+                 the case value, then the selector will evaluate to False.
+
+    Example using the nlev selector
+      <partmethod nlev="128">42</partmethod>
+      <partmethod nlev="72">420</partmethod>
+
+    Selector info will not be duplicated in the processed $case/namelist_scream.xml file.
+  -->
+  <selectors>
+    <selector name="hgrid" case_env="ATM_GRID"/>
+    <selector name="dyn" case_env="ATM_DYN_TARGET"/>
+    <selector name="nlev" case_env="SCREAM_CMAKE_OPTIONS" regex=".*SCREAM_NUM_VERTICAL_LEV ([0-9]+).*"/>
+  </selectors>
+
+  <!-- List of scream grids for a given compset. I/O can only happen on these grids -->
+
+  <!-- Help buildnml by listing files to generate,
+    specifying which sections of the xml go in each file -->
+  <generated_files>
+    <file name="data/namelist.nl" format="nml">
+      <sections>ctl_nl</sections>
+    </file>
+    <file name="data/scream_input.yaml" format="yaml">
+      <sections>driver_options,atmosphere_processes,grids_manager,initial_conditions,Scorpio,e3sm_parameters</sections>
+    </file>
+  </generated_files>
+
+  <!--
+      The following blocks define the input files for the model.
+      There are some rules that must be followed.
+
+      Lingo:
+        Outer element: An XML element that is not intended to be an input paramter,
+                       it is only for grouping/namespacing the elements within it
+        Parameter element: An XML element representing an individual input parameter.
+                           This element should not have child elements. It should have element text
+                           representing the desired value. These elements can have
+                           one or more selectors. We call a parameter element "matched"
+                           if it either has no selectors or all its selectors are True.
+        Parameter: A named input value. It can have multiple parameter elements if
+                   it needs to have different values/types based on case settings.
+        Selector: An XML attribute that checks a property of the case. See the documentation
+                  above the <selectors> element above for more details.
+        Metadata: An XML attribute that represents metadata for an input parameter
+
+      Rules:
+        1) Parameters can have any number of parameter elements, each with their own
+           set of selectors. A parameter element with no selectors, which means it controls the default param value, must
+           come before parameter elements with selectors. If multiple parameter elements
+           are matched, then the match the occurs last takes precendence.
+
+        2) The first matched parameter element encountered for a parameter will define the default metadata
+           for that parameter. All subsequent parameter elements will assume the same
+           metadata as the first unless an explicit override occurs.
+           User changes to the case XML file must be compatible with the metadata.
+
+        3) For a parameter whose elements all have selectors, if none of the selectors
+           are matched, then the parameter will be omitted from the case XML
+           file ($case/namelist_scream.xml).
+
+        4) Parameter types will be inferred. You can override the inferred type
+           via the 'type' metadata attribute. Types are:
+             logical: will be inferred from any case of true/false
+             integer: will be inferred from any sequence of 0-9
+             real   : will be inferred from any numeric expression with a decimal point or scientific notation
+             file   : A string that denotes a file path that CIME should download
+             string : everything else
+
+             array(one of the above): An array of one of the above types. The array type will be inferred
+                                      if the value is of the form (v1, v2, ...) or [v1, v2, ...]
+
+        5) A parameter can be set to any value of the correct type unless
+           the 'valid_values' metadata attribute is set. If desired, valid_values
+           should be set up as a comma-separated list of values, e.g. 'valid_values="1,2,3"'
+           TODO support numeric checks (<, >, ...)??
+
+        6) You can inline case values into parameter values via this syntax, e.g.:
+           <init_file>scream_init_${ATM_GRID}.nc</init_file>. If ATM_GRID="ne4np4",
+           this would result in parameter init_file' having the value 'scream_init_ne4np4.nc'
+
+        7) Any parameter value with a comma will be assumed to be a list.
+           TODO allow this behavior to be overridden?
+
+        8) Every value in a list should be of the same type
+
+        9) All local changes made to $case/namelist_scream.xml must conform
+           to the structure and metadata derived from this file.
+
+       10) Outer elements can "inherit" from other outer elements. This allows to declare
+           basic/common defaults for a whole group of lists, wihtout the need of
+           repeating the common entries inside each list. This is particularly useful
+           for the atmosphere processes section(s).
+
+       11) The attribute 'locked="true"' is to be used for entries that cannot be changed
+           via atmchange (see scripts/atmchange). For instance, the overall list of atm procs cannot be changed,
+           since it would require to re-parse the defaults, to re-generate the correct
+           defaults for the (possibly) new atm procs.
+
+       12) The attribute 'constraints' allows to specify constraints on values. Valid constraints
+           are lt, le, ne, gt, ge, and mod. Except the latter (which has slightly different syntax,
+           see below), the syntax is "$op value", to enforce '$param $op value'.
+           Multiple constrained are separated by ';'. Examples:
+             - constraints="ge 0; ne 4" means the value V must satisfy V>=0 && V!=4.
+             - constraints="ge 0; lt 4" means the value V must satisfy V>=0 && V<4.
+             - constraints="mod 2 eq 0" means the value V must be a multiple of 2.
+  -->
+
+  <atmosphere_processes_defaults>
+
+    <!--
+      List of atm procs. You can form processes groups by using parentheses,
+      or by giving the group a name, and adding a subsection that inherit
+      from atm_proc_group. atm_procs_list itself *must* represent a group,
+      so it must be of the form (a,b,...).
+      NOTE: *CANNOT* be changed.
+    -->
+    <!-- <atm_procs_list>(sc_import,homme,((shoc,cldFraction,spa,p3),rrtmgp,sc_export))</atm_procs_list> -->
+    <atm_procs_list locked="true">(sc_import,homme,physics,sc_export)</atm_procs_list>
+
+    <!-- Basic options for each atm process -->
+    <atm_proc_base>
+      <number_of_subcycles constraints="gt 0">1</number_of_subcycles>
+      <enable_precondition_checks type="logical">true</enable_precondition_checks>
+      <enable_postcondition_checks type="logical">true</enable_postcondition_checks>
+      <repair_log_level type="string" valid_values="trace,debug,info,warn">trace</repair_log_level>
+    </atm_proc_base>
+
+    <!-- Basic options for each atm process group -->
+    <atm_proc_group inherit="atm_proc_base">
+      <atm_procs_list>ERROR_NO_ATM_PROCS</atm_procs_list>
+      <Type>Group</Type>
+      <schedule_type>Sequential</schedule_type>
+    </atm_proc_group>
+
+    <!-- Surface coupling (import and export) -->
+    <sc_import inherit="atm_proc_base"/>
+    <sc_export inherit="atm_proc_base"/>
+
+    <!-- Homme dynamics -->
+    <homme inherit="atm_proc_base">
+      <Grid>Dynamics</Grid>
+      <Moisture>moist</Moisture>
+    </homme>
+
+    <!-- P3 microphysics -->
+    <p3 inherit="atm_proc_base">
+      <do_prescribed_ccn>true</do_prescribed_ccn>
+      <do_prescribed_ccn COMPSET=".*SCREAM.*noAero">false</do_prescribed_ccn>
+      <do_predict_nc>true</do_predict_nc>
+      <do_predict_nc COMPSET=".*SCREAM.*noAero">false</do_predict_nc>
+      <enable_column_conservation_checks>false</enable_column_conservation_checks>
+      <tables type="array(file)">
+        ${DIN_LOC_ROOT}/atm/scream/tables/p3_lookup_table_1.dat-v4.1.1,
+        ${DIN_LOC_ROOT}/atm/scream/tables/mu_r_table_vals.dat8,
+        ${DIN_LOC_ROOT}/atm/scream/tables/revap_table_vals.dat8,
+        ${DIN_LOC_ROOT}/atm/scream/tables/vn_table_vals.dat8,
+        ${DIN_LOC_ROOT}/atm/scream/tables/vm_table_vals.dat8
+      </tables>
+    </p3>
+
+    <!-- SHOC macrophysics -->
+    <shoc inherit="atm_proc_base">
+      <enable_column_conservation_checks>false</enable_column_conservation_checks>
+    </shoc>
+
+    <!-- CLD fraction -->
+    <cldFraction inherit="atm_proc_base"/>
+
+    <!-- Simple Prescribed Aerosols (SPA) -->
+    <spa inherit="atm_proc_base">
+      <spa_remap_file type="file">UNSET</spa_remap_file>
+      <spa_remap_file hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30_to_ne4_mono_20220502.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_ne4pg2_mono.20220714.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne30np4">none</spa_remap_file>
+      <spa_remap_file hgrid="ne30np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_ne30pg2_mono.20220714.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne120np4">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_ne120np4_mono_20220502.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_ne512np4_mono_20220506.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_ne120pg2_intbilin_20221012.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_ne256pg2_intbilin_20221011.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_ne512pg2_intbilin_20221012.nc</spa_remap_file>
+      <spa_remap_file hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/scream/maps/map_ne30np4_to_ne1024pg2_intbilin_20221012.nc</spa_remap_file>
+
+      <spa_data_file type="file">${DIN_LOC_ROOT}/atm/scream/init/spa_file_unified_and_complete_ne30_20220428.nc</spa_data_file>
+    </spa>
+
+    <!-- Radiation -->
+    <rrtmgp inherit="atm_proc_base">
+      <rrtmgp_coefficients_file_sw type="file">${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-sw-g112-210809.nc</rrtmgp_coefficients_file_sw>
+      <rrtmgp_coefficients_file_lw type="file">${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-data-lw-g128-210809.nc</rrtmgp_coefficients_file_lw>
+      <rrtmgp_cloud_optics_file_sw type="file">${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-sw.nc</rrtmgp_cloud_optics_file_sw>
+      <rrtmgp_cloud_optics_file_lw type="file">${DIN_LOC_ROOT}/atm/scream/init/rrtmgp-cloud-optics-coeffs-lw.nc</rrtmgp_cloud_optics_file_lw>
+      <column_chunk_size>1280</column_chunk_size>
+      <!-- Radiatively active gases; surface values set to F2010 settings taken from EAM  -->
+      <!-- Note that h2o concentrations are just taken from qv, o3 is prescribed for now, -->
+      <!-- o2 is hard-coded as a constant, CFCs are ignored                               -->
+      <active_gases>h2o, co2, o3, n2o, co, ch4, o2, n2</active_gases>
+      <ch4vmr      > 1807.851e-9  </ch4vmr>
+      <co2vmr      > 388.717e-6   </co2vmr>
+      <n2ovmr      > 323.141e-9   </n2ovmr>
+      <f11vmr      > 768.7644e-12 </f11vmr>
+      <f12vmr      > 531.2820e-12 </f12vmr>
+      <n2vmr       > 0.7906       </n2vmr>
+      <covmr       > 1.0e-7       </covmr>
+      <!-- Orbital parameters for solar zenith angle and TSI scaling. For F2010 compsets, -->
+      <!-- we set a fixed year for these parameters, but for other compsets we set to a   -->
+      <!-- negative value to force the code to get simulated year from the timestamp.     -->
+      <!-- TODO: these should probably be set (or overridden) by CIME or cpl settings.    -->
+      <!-- In E3SM/EAM, these appear to be controlled by the orb_iyear namelist variable  -->
+      <!-- in drv_in, and we should probably switch to allowing for that in the future.   -->
+      <orbital_year>-9999</orbital_year>
+      <orbital_year COMPSET="2010_.*">2010</orbital_year>
+      <orbital_eccentricity>-9999</orbital_eccentricity>
+      <orbital_eccentricity COMPSET=".*SCREAM%AQUA.*">0</orbital_eccentricity>
+      <orbital_obliquity>-9999</orbital_obliquity>
+      <orbital_obliquity COMPSET=".*SCREAM%AQUA.*">0</orbital_obliquity>
+      <orbital_mvelp>-9999</orbital_mvelp>
+      <orbital_mvelp COMPSET=".*SCREAM%AQUA.*">0</orbital_mvelp>
+      <rad_frequency hgrid="ne4np4">1</rad_frequency>
+      <rad_frequency hgrid="ne30np4">2</rad_frequency>
+      <rad_frequency hgrid="ne120np4">4</rad_frequency>
+      <rad_frequency hgrid="ne256np4">3</rad_frequency>
+      <rad_frequency hgrid="ne512np4">3</rad_frequency>
+      <rad_frequency hgrid="ne1024np4">3</rad_frequency>
+      <rad_frequency hgrid="ne0np4_conus_x4v1_lowcon">4</rad_frequency>
+      <do_aerosol_rad>true</do_aerosol_rad>
+      <do_aerosol_rad COMPSET=".*SCREAM.*noAero">false</do_aerosol_rad>
+      <enable_column_conservation_checks>false</enable_column_conservation_checks>
+    </rrtmgp>
+
+    <mac_aero_mic inherit="atm_proc_group">
+      <atm_procs_list>(shoc,cldFraction,spa,p3)</atm_procs_list>
+      <atm_procs_list COMPSET=".*SCREAM.*noAero">(shoc,cldFraction,p3)</atm_procs_list>
+      <number_of_subcycles hgrid="ne4np4">24</number_of_subcycles>
+      <number_of_subcycles hgrid="ne30np4">6</number_of_subcycles>
+      <number_of_subcycles hgrid="ne120np4">3</number_of_subcycles>
+      <number_of_subcycles hgrid="ne256np4">3</number_of_subcycles>
+      <number_of_subcycles hgrid="ne512np4">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne1024np4">1</number_of_subcycles>
+      <number_of_subcycles hgrid="ne0np4_conus_x4v1_lowcon">5</number_of_subcycles>
+    </mac_aero_mic>
+
+    <physics inherit="atm_proc_group">
+      <atm_procs_list>(mac_aero_mic,rrtmgp)</atm_procs_list>
+    </physics>
+  </atmosphere_processes_defaults>
+
+  <!-- Grids manager specs -->
+  <grids_manager>
+    <Type>Homme</Type>
+    <physics_grid_type>GLL</physics_grid_type>
+    <physics_grid_type hgrid=".*pg2">PG2</physics_grid_type>
+    <physics_grid_rebalance>None</physics_grid_rebalance>
+    <dynamics_namelist_file_name>./data/namelist.nl</dynamics_namelist_file_name>
+    <vertical_coordinate_filename type="file">UNSET</vertical_coordinate_filename>
+    <vertical_coordinate_filename nlev="72">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L72_20220927.nc</vertical_coordinate_filename>
+    <vertical_coordinate_filename nlev="128">${DIN_LOC_ROOT}/atm/scream/init/vertical_coordinates_L128_20220927.nc</vertical_coordinate_filename>
+  </grids_manager>
+
+  <!-- List of nc files for loading inputs on specified grids -->
+  <initial_conditions>
+    <Filename type="file">UNSET</Filename>
+    <Filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne4np4L72_20220823.nc</Filename>
+    <Filename hgrid="ne30np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L72_20220823.nc</Filename>
+    <Filename hgrid="ne30np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne30np4L128_20221004.nc</Filename>
+    <Filename hgrid="ne120np4" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L72_20220823.nc</Filename>
+    <Filename hgrid="ne120np4" nlev="128">${DIN_LOC_ROOT}/atm/scream/init/screami_ne120np4L128_20230215.nc</Filename>
+    <Filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne256np4L128_ifs-20200120_20220914.nc</Filename>
+    <Filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne512np4L128_20220823.nc</Filename>
+    <Filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_era5-20131001-topoadj-16x_20220914.nc</Filename>
+    <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-1_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20160801-topoadj16x_20221011.nc</Filename>
+    <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-1-X6T_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20160801-topoadjx6t_20221011.nc</Filename>
+    <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-2_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadj16x_20221012.nc</Filename>
+    <Filename hgrid="ne1024np4" COMPSET=".*SCREAM%DYAMOND-2-X6T_ELM">${DIN_LOC_ROOT}/atm/scream/init/screami_ne1024np4L128_ifs-20200120-topoadjx6t_20221011.nc</Filename>
+    <Filename hgrid="ne4np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne4np4L72_20220823.nc</Filename>
+    <Filename hgrid="ne30np4" COMPSET=".*SCREAM%AQUA.*">${DIN_LOC_ROOT}/atm/scream/init/screami_aquaplanet_ne30np4L128_20220823.nc</Filename> <!-- This will need to be updated to the new nccn name -->
+    <Filename hgrid="ne0np4_conus_x4v1_lowcon" nlev="72">${DIN_LOC_ROOT}/atm/scream/init/screami_conusx4v1np4L72-topo12x_013023.nc</Filename>
+
+    <topography_filename type="file">UNSET</topography_filename>
+    <topography_filename hgrid="ne4np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4_16x.c20160612.nc</topography_filename>
+    <topography_filename hgrid="ne4np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne4np4pg2_16x_converted.c20200527.nc</topography_filename>
+    <topography_filename hgrid="ne30np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4_16xdel2-PFC-consistentSGH.nc</topography_filename>
+    <topography_filename hgrid="ne30np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_16xdel2.c20200108.nc</topography_filename>
+    <topography_filename hgrid="ne30np4.pg2" COMPSET=".*X6T*">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne30np4pg2_x6t-SGH.nc</topography_filename>
+    <topography_filename hgrid="ne120np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4_16xdel2-PFC-consistentSGH.nc</topography_filename>
+    <topography_filename hgrid="ne120np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne120np4pg2_16xdel2.nc</topography_filename>
+    <topography_filename hgrid="ne256np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4_16xdel2_consistentSGH_20220429.nc</topography_filename>
+    <topography_filename hgrid="ne256np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne256np4pg2_16xdel2_20200213.nc</topography_filename>
+    <topography_filename hgrid="ne512np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4_16xconsistentSGH_20190212.nc</topography_filename>
+    <topography_filename hgrid="ne512np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne512np4pg2_16xconsistentSGH_20190212_converted.nc</topography_filename>
+    <topography_filename hgrid="ne1024np4">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4_16xconsistentSGH_20190528.nc</topography_filename>
+    <topography_filename hgrid="ne1024np4.pg2">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_16xconsistentSGH_20190528_converted.nc</topography_filename>
+    <topography_filename hgrid="ne1024np4.pg2" COMPSET=".*X6T*">${DIN_LOC_ROOT}/atm/cam/topo/USGS-gtopo30_ne1024np4pg2_x6t-SGH.nc</topography_filename>
+    <topography_filename COMPSET=".*SCREAM%AQUA.*">UNSET</topography_filename>
+    <topography_filename hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/topo/USGS_conusx4v1pg2_12x_consistentSGH_20200609.nc</topography_filename>
+    <phis COMPSET=".*SCREAM%AQUA.*">0.0</phis>
+
+    <restart_casename>${CASE}.scream</restart_casename>
+    <!-- Fields that we need to initialize, but are not in an initial condition file need to be inited here -->
+    <surf_evap>0.0</surf_evap> <!-- TODO, Delete this when the IC fixes come in -->
+    <precip_liq_surf_mass>0.0</precip_liq_surf_mass>
+    <precip_ice_surf_mass>0.0</precip_ice_surf_mass>
+    <cldfrac_liq       >0.0</cldfrac_liq>
+    <sgs_buoy_flux     >0.0</sgs_buoy_flux>
+    <eddy_diff_mom     >0.0</eddy_diff_mom>
+    <T_prev_micro_step >0.0</T_prev_micro_step>
+    <qv_prev_micro_step>0.0</qv_prev_micro_step>
+    <!-- Initialize microphysics fields not on IC to zero; note that this is consistent with EAM init -->
+    <qr                >0.0</qr>
+    <nr                >0.0</nr>
+    <qm                >0.0</qm>
+    <bm                >0.0</bm>
+    <ni_activated      >0.0</ni_activated>
+    <nc_nuceat_tend    >0.0</nc_nuceat_tend>
+    <!-- SHOC internally inits TKE; just set to 0 here to signal it's not in the IC file -->
+    <tke               >0.0</tke>
+    <!-- Note: these should be provided by surface models, but we init here to keep AD from reading from file -->
+    <sfc_alb_dir_vis   >0.0</sfc_alb_dir_vis>
+    <sfc_alb_dir_nir   >0.0</sfc_alb_dir_nir>
+    <sfc_alb_dif_vis   >0.0</sfc_alb_dif_vis>
+    <sfc_alb_dif_nir   >0.0</sfc_alb_dif_nir>
+    <surf_sens_flux    >0.0</surf_sens_flux>
+    <surf_lw_flux_up   >0.0</surf_lw_flux_up>
+    <surf_mom_flux     >0.0,0.0</surf_mom_flux>
+    <!-- default ne1024 initial condition files do not have these, so init to zero here -->
+    <!-- TODO: delete this once we can tell the AD that some fields can be inited by procs -->
+    <qc hgrid="ne256np4|ne1024np4">0.0</qc>
+    <qi hgrid="ne256np4|ne1024np4">0.0</qi>
+    <nc hgrid="ne256np4|ne1024np4">0.0</nc>
+    <ni hgrid="ne256np4|ne1024np4">0.0</ni>
+    <o3_volume_mix_ratio hgrid="ne0np4_conus_x4v1_lowcon">0.0</o3_volume_mix_ratio>
+  </initial_conditions>
+
+  <!-- List of yaml files containing I/O output specs -->
+  <Scorpio>
+    <output_yaml_files type="array(string)">${SRCROOT}/components/eamxx/data/scream_default_output.yaml</output_yaml_files>
+    <model_restart>
+      <Casename>./${CASE}.scream</Casename>
+      <output_control>
+        <Frequency>${REST_N}</Frequency>
+        <frequency_units>${REST_OPTION}</frequency_units>
+        <avg_type_in_filename>false</avg_type_in_filename>
+        <frequency_in_filename>false</frequency_in_filename>
+      </output_control>
+    </model_restart>
+  </Scorpio>
+
+  <!-- driver_options options for scream -->
+  <driver_options>
+    <atmosphere_dag_verbosity_level>0</atmosphere_dag_verbosity_level>
+    <atm_log_level valid_values="trace,debug,info,warn,error">info</atm_log_level>
+    <output_to_screen type="logical">false</output_to_screen>
+    <mass_column_conservation_error_tolerance>1e-10</mass_column_conservation_error_tolerance>
+    <energy_column_conservation_error_tolerance>1e-14</energy_column_conservation_error_tolerance>
+    <column_conservation_checks_fail_handling_type>Warning</column_conservation_checks_fail_handling_type>
+    <check_all_computed_fields_for_nans type="logical">true</check_all_computed_fields_for_nans >
+  </driver_options>
+
+  <!-- E3SM Simulation Settings -->
+  <e3sm_parameters>
+    <e3sm_casename>${CASE}</e3sm_casename>
+  </e3sm_parameters>
+
+  <!-- Homme control namelist -->
+  <ctl_nl>
+    <cubed_sphere_map>0</cubed_sphere_map>
+    <disable_diagnostics>False</disable_diagnostics>
+    <dt_remap_factor constraints="ge 1">2</dt_remap_factor>
+    <dt_tracer_factor constraints="ge 1">1</dt_tracer_factor>
+    <hypervis_order>2</hypervis_order>
+    <hypervis_scaling>3.0</hypervis_scaling>
+    <hypervis_subcycle>1</hypervis_subcycle>
+    <hypervis_subcycle_tom>1</hypervis_subcycle_tom>
+    <hypervis_subcycle_q>1</hypervis_subcycle_q>
+    <nu>3.4e-08</nu>
+    <nu_top>UNSET</nu_top>
+    <nu_top hgrid="ne4np4">250000.0</nu_top>
+    <nu_top hgrid="ne30np4">250000.0</nu_top>
+    <nu_top hgrid="ne120np4">100000.0</nu_top>
+    <nu_top hgrid="ne256np4">4.0e4</nu_top>
+    <nu_top hgrid="ne512np4">2.0e4</nu_top>
+    <nu_top hgrid="ne1024np4">1.0e4</nu_top>
+    <nu_top hgrid="ne0np4_conus_x4v1_lowcon">100000.0</nu_top>
+    <pgrad_correction COMPSET=".*X6T*">1</pgrad_correction>
+    <se_ftype valid_values="0,2">0</se_ftype>
+    <se_geometry>sphere</se_geometry>
+    <se_limiter_option>9</se_limiter_option>
+    <se_ne>UNSET</se_ne>
+    <se_ne hgrid="ne4np4" constraints="ge 2">4</se_ne>
+    <se_ne hgrid="ne30np4" constraints="ge 2">30</se_ne>
+    <se_ne hgrid="ne120np4" constraints="ge 2">120</se_ne>
+    <se_ne hgrid="ne256np4" constraints="ge 2">256</se_ne>
+    <se_ne hgrid="ne512np4" constraints="ge 2">512</se_ne>
+    <se_ne hgrid="ne1024np4" constraints="ge 2">1024</se_ne>
+    <se_ne hgrid="ne0np4_conus_x4v1_lowcon">0</se_ne>
+    <se_ne_x>0</se_ne_x>
+    <se_ne_y>0</se_ne_y>
+    <se_nsplit>-1</se_nsplit>
+    <se_partmethod>4</se_partmethod>
+    <se_topology>cube</se_topology>
+    <se_tstep>UNSET</se_tstep>
+    <se_tstep hgrid="ne4np4" constraints="gt 0">600</se_tstep>
+    <se_tstep hgrid="ne30np4" constraints="gt 0">300</se_tstep>
+    <se_tstep hgrid="ne120np4" constraints="gt 0">75</se_tstep>
+    <se_tstep hgrid="ne256np4" constraints="gt 0">33.33333333333</se_tstep>
+    <se_tstep hgrid="ne512np4" constraints="gt 0">16.6666666666666</se_tstep>
+    <se_tstep hgrid="ne1024np4" constraints="gt 0">8.3333333333333</se_tstep>
+    <se_tstep hgrid="ne0np4_conus_x4v1_lowcon" constraints="gt 0">75</se_tstep>
+    <statefreq>9999</statefreq>
+    <theta_advect_form>1</theta_advect_form>
+    <theta_hydrostatic_mode>False</theta_hydrostatic_mode>
+    <tstep_type>9</tstep_type>
+    <vert_remap_q_alg>10</vert_remap_q_alg>
+    <transport_alg>0</transport_alg>
+    <!-- pg2 settings -->
+    <cubed_sphere_map hgrid=".*pg2">2</cubed_sphere_map>
+    <!-- SL transport settings. SL defaults to on for pg2 configs. -->
+    <dt_tracer_factor constraints="ge 1" hgrid=".*pg2">6</dt_tracer_factor>
+    <hypervis_subcycle_q hgrid=".*pg2">6</hypervis_subcycle_q>
+    <transport_alg hgrid=".*pg2">12</transport_alg>
+    <!-- Other settings that we'll trigger based on pg2 for convenience -->
+    <se_ftype valid_values="0,2" hgrid=".*pg2">2</se_ftype>
+    <mesh_file type="file">none</mesh_file>
+    <mesh_file hgrid="ne0np4_conus_x4v1_lowcon">${DIN_LOC_ROOT}/atm/cam/inic/homme/conusx4v1.g</mesh_file>
+  </ctl_nl>
+
+</namelist_defaults>

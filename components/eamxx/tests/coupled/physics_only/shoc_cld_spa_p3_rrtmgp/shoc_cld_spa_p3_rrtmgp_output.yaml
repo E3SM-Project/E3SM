@@ -1,0 +1,66 @@
+%YAML 1.1
+---
+Casename: shoc_cld_spa_p3_rrtmgp_output
+Averaging Type: Instant
+Max Snapshots Per File: 1
+Field Names:
+  # SHOC
+  - cldfrac_liq
+  - eddy_diff_mom
+  - horiz_winds
+  - sgs_buoy_flux
+  - tke
+  - inv_qc_relvar
+  - pbl_height
+  # CLD
+  - cldfrac_ice
+  - cldfrac_tot
+  # P3
+  - bm
+  - nc
+  - ni
+  - nr
+  - qi
+  - qm
+  - qr
+  - T_prev_micro_step
+  - qv_prev_micro_step
+  - eff_radius_qc
+  - eff_radius_qi
+  - micro_liq_ice_exchange
+  - micro_vap_ice_exchange
+  - micro_vap_liq_exchange
+  - precip_ice_surf_mass
+  - precip_liq_surf_mass
+  # SHOC + P3
+  - qc
+  - qv
+  # SPA
+  - aero_g_sw
+  - aero_ssa_sw
+  - aero_tau_lw
+  - aero_tau_sw
+  - nccn
+  # SHOC + P3 + RRTMGP
+  - T_mid
+  # RRTMGP
+  - sfc_alb_dif_nir
+  - sfc_alb_dif_vis
+  - sfc_alb_dir_nir
+  - sfc_alb_dir_vis
+  - LW_flux_dn
+  - LW_flux_up
+  - SW_flux_dn
+  - SW_flux_dn_dir
+  - SW_flux_up
+  - rad_heating_pdel
+  - sfc_flux_lw_dn
+  - sfc_flux_sw_net
+  - VerticalLayerThickness@bot
+ 
+output_control:
+  Frequency: ${NUM_STEPS}
+  frequency_units: nsteps
+  Timestamp in Filename: false
+  MPI Ranks in Filename: true
+...

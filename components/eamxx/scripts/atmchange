@@ -1,0 +1,192 @@
+#!/usr/bin/env python3
+
+"""
+Change a runtime parameter for SCREAM/atm. Run from your case
+after case.setup.
+"""
+
+import argparse, sys, pathlib, os
+import xml.etree.ElementTree as ET
+
+# Add path to cime_config folder
+sys.path.append(os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "cime_config"))
+sys.path.append(os.path.dirname(os.path.realpath(__file__)))
+
+from eamxx_buildnml_impl import check_value, is_array_type
+from atm_manip import expect, get_xml_node
+
+###############################################################################
+def atm_config_chg_impl(xml_root,changes,append=False):
+###############################################################################
+    """
+
+    >>> xml = '''
+    ... <root>
+    ...     <a type="array(int)">1,2,3</a>
+    ...     <b type="array(int)">1</b>
+    ...     <c type="int">1</c>
+    ...     <d type="string">one</d>
+    ...     <e type="array(string)">one</e>
+    ...     <prop1>one</prop1>
+    ...     <sub>
+    ...         <prop1>two</prop1>
+    ...         <prop2 type="integer" valid_values="1,2">2</prop2>
+    ...     </sub>
+    ... </root>
+    ... '''
+    >>> import xml.etree.ElementTree as ET
+    >>> tree = ET.fromstring(xml)
+    >>> ################ INVALID SYNTAX #######################
+    >>> atm_config_chg_impl(tree,['prop1->2'])
+    Traceback (most recent call last):
+    SystemExit: ERROR: Invalid change request 'prop1->2'. Valid formats are:
+      - A[::B[...]=value
+      - A[::B[...]+=value  (implies append for this change)
+    >>> ################ INVALID TYPE #######################
+    >>> atm_config_chg_impl(tree,['prop2=two'])
+    Traceback (most recent call last):
+    ValueError: Could not use 'two' as type 'integer'
+    >>> ################ INVALID VALUE #######################
+    >>> atm_config_chg_impl(tree,['prop2=3'])
+    Traceback (most recent call last):
+    CIME.utils.CIMEError: ERROR: Invalid value '3' for element 'prop2'. Value not in the valid list ('[1, 2]')
+    >>> ################ VALID USAGE #######################
+    >>> atm_config_chg_impl(tree,['::prop1=two'])
+    True
+    >>> atm_config_chg_impl(tree,['::prop1=two'])
+    False
+    >>> atm_config_chg_impl(tree,['sub::prop1=one'])
+    True
+    >>> ################ TEST APPEND += #################
+    >>> atm_config_chg_impl(tree,['a+=4'])
+    True
+    >>> get_xml_node(tree,'a')[0].text
+    '1,2,3, 4'
+    >>> ################ TEST APPEND = and --append #################
+    >>> atm_config_chg_impl(tree,['b=5'],append=True)
+    True
+    >>> get_xml_node(tree,'b')[0].text
+    '1, 5'
+    >>> ################ ERROR, append to non-array and non-string
+    >>> atm_config_chg_impl(tree,['c+=2'])
+    Traceback (most recent call last):
+    SystemExit: ERROR: Error! Can only append with array and string types.
+        - name: c
+        - type: int
+    >>> ################ Append to string ##################
+    >>> atm_config_chg_impl(tree,['d+=two'])
+    True
+    >>> get_xml_node(tree,'d')[0].text
+    'onetwo'
+    >>> ################ Append to array(string) ##################
+    >>> atm_config_chg_impl(tree,['e+=two'])
+    True
+    >>> get_xml_node(tree,'e')[0].text
+    'one, two'
+    """
+
+    any_change = False
+    for change in changes:
+
+        tokens = change.split('+=')
+        if len(tokens)==2:
+            append_this = True
+        else:
+            append_this = append
+            tokens = change.split('=')
+
+        expect (len(tokens)==2,
+            f"Invalid change request '{change}'. Valid formats are:\n"
+            f"  - A[::B[...]=value\n"
+            f"  - A[::B[...]+=value  (implies append for this change)")
+        node, __ = get_xml_node(xml_root,tokens[0])
+        new_value = tokens[1]
+
+        if append_this:
+            expect ("type" in node.attrib.keys(),
+                    "Error! Missing type information for {}".format(tokens[0]))
+            type = node.attrib["type"];
+            expect (is_array_type(type) or type=="string",
+                    "Error! Can only append with array and string types.\n"
+                    f"    - name: {tokens[0]}\n"
+                    f"    - type: {type}")
+            if is_array_type(type):
+                node.text += ", " + new_value
+            else:
+                node.text += new_value
+
+            any_change = True
+
+        elif node.text != new_value:
+            check_value(node,new_value)
+            node.text = new_value
+            any_change = True
+
+    return any_change
+
+###############################################################################
+def atm_config_chg(changes,append):
+###############################################################################
+    expect(os.path.exists("namelist_scream.xml"),
+           "No pwd/namelist_scream.xml file is present. Please rum from a case dir that has been setup")
+
+    with open("namelist_scream.xml", "r") as fd:
+        tree = ET.parse(fd)
+        root = tree.getroot()
+
+    any_change = atm_config_chg_impl(root,changes,append)
+
+    if any_change:
+        tree.write("namelist_scream.xml")
+
+    return True
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <param>=<val> [<param>=<val>] ...
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Change param foo of group bar to 'hi'\033[0m
+    > {0} bar::foo=hi
+
+    \033[1;32m# Change param foo to 'hi' (only works if foo is unambiguous)\033[0m
+    > {0} foo=hi
+
+    \033[1;32m# Change params foo to 'hi' and bar to 'there' (only works if both are unambiguous)\033[0m
+    > {0} foo=hi bar=there
+""".format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument(
+        "--append",
+        default=False,
+        action="store_true",
+        help="Append to atm var, rather than replace its value.",
+    )
+
+    parser.add_argument("changes", nargs="+", help="Values to change")
+
+    return parser.parse_args(args[1:])
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    if "--test" in sys.argv:
+        from doctest import testmod
+        import atm_manip
+        testmod()
+        testmod(m=atm_manip)
+    else:
+        success = atm_config_chg(**vars(parse_command_line(sys.argv, description)))
+        sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

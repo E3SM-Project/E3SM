@@ -185,6 +185,9 @@
       <value compset="1850_" grid="a%0.23x0.31.*_oi%0.23x0.31"					>$DIN_LOC_ROOT/atm/cam/sst/sst_HadOIBl_bc_0.23x0.31_clim_pi_c101028.nc</value>
       <value compset="1950_" grid=".+"								>$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_1950_clim_c20180910.nc</value>
       <value compset="2010.*_" grid=".+"					        >$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_2010_clim_c20190821.nc</value>
+      <value compset="2010_SCREAM_" grid="ne120.*|ne256.*|ne512.*|ne1024.*"	        >$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_HighResMIP_E3SM_0.25x0.25_2010_clim_c20190125_intoisst.nc</value>
+      <value compset="2010_SCREAM%DYAMOND-1"       	                                >$DIN_LOC_ROOT/atm/cam/sst/sst_ifs_2560x5136_20160725_20160916_c201013.nc</value>
+      <value compset="2010_SCREAM%DYAMOND-2"       	                                >$DIN_LOC_ROOT/atm/cam/sst/sst_ifs_360x720_20200110_20200305_c201013.nc</value>
       <value compset="20TR_CAM5%CMIP6" grid=".+"					>$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc</value>
       <value compset="20TR_EAM%CMIP6" grid=".+"					>$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc</value>
       <value compset="20TR_EAM%MMF.*CMIP6" grid=".+" >$DIN_LOC_ROOT/ocn/docn7/SSTDATA/sst_ice_CMIP6_DECK_E3SM_1x1_c20180213.nc</value>
@@ -218,6 +221,9 @@
       <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid="a%0.9x1.25.*_oi%0.9x1.25.*_m%gx1v7"	>$DIN_LOC_ROOT/share/domains/domain.ocn.fv0.9x1.25_gx1v7.151020.nc</value>
       <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid="a%0.47x0.63.*_oi%0.47x0.63"	>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.47x0.63_gx1v6_090408.nc</value>
       <value compset="(AMIP_|HIST_|20TR_|5505_|PIPD_|%TSCH)" grid="a%0.23x0.31.*_oi%0.23x0.31"	>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.0.23x0.31_gx1v6_101108.nc</value>
+      <value compset="2010_SCREAM_" grid="ne120.*|ne256.*|ne512.*|ne1024.*"			>$DIN_LOC_ROOT/ocn/docn7/domain.ocn.0.25x0.25.c20190221.nc</value>
+      <value compset="2010_SCREAM%DYAMOND-1"     			                        >$DIN_LOC_ROOT/ocn/docn7/domain.ocn.2560x5136.201027.nc</value>
+      <value compset="2010_SCREAM%DYAMOND-2"     			                        >$DIN_LOC_ROOT/ocn/docn7/domain.ocn.360x720.201027.nc</value>
       <value compset="1850" grid=".+"								>$DIN_LOC_ROOT/ocn/docn7/domain.ocn.1x1.111007.nc</value>
       <value compset="1850" grid="a%T31.*_oi%T31"						>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.48x96_gx3v7_100114.nc</value>
       <value compset="1850" grid="a%1.9x2.5.*_oi%1.9x2.5"					>$DIN_LOC_ROOT/atm/cam/ocnfrac/domain.camocn.1.9x2.5_gx1v6_090403.nc</value>
@@ -247,6 +253,8 @@
       <value compset="20TR_CAM5%CMIP6">1869</value>
       <value compset="20TR_EAM%CMIP6">1869</value>
       <value compset="20TR_EAM%MMF.*CMIP6">1869</value>
+      <value compset="2010_SCREAM%DYAMOND-1">2016</value>
+      <value compset="2010_SCREAM%DYAMOND-2">2020</value>
     </values>
     <group>run_component_cam_sstice</group>
     <file>env_run.xml</file>
@@ -273,6 +281,8 @@
       <value compset="20TR_CAM5%CMIP6">1869</value>
       <value compset="20TR_EAM%CMIP6">1869</value>
       <value compset="20TR_EAM%MMF.*CMIP6">1869</value>
+      <value compset="2010_SCREAM%DYAMOND-1">2016</value>
+      <value compset="2010_SCREAM%DYAMOND-2">2020</value>
     </values>
     <group>run_component_cam_sstice</group>
     <file>env_run.xml</file>
@@ -293,6 +303,8 @@
       <value compset="20TR_CAM5%CMIP6">2016</value>
       <value compset="20TR_EAM%CMIP6">2016</value>
       <value compset="20TR_EAM%MMF.*CMIP6">2016</value>
+      <value compset="2010_SCREAM%DYAMOND-1">2016</value>
+      <value compset="2010_SCREAM%DYAMOND-2">2020</value>
     </values>
     <group>run_component_cam_sstice</group>
     <file>env_run.xml</file>

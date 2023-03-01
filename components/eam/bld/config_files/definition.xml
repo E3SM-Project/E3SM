@@ -44,16 +44,19 @@ Option to turn on waccmx thermosphere/ionosphere extension: 0 => no, 1 => yes
 <entry id="phys" valid_values="cam3,cam3_5_1,cam4,cam5,ideal,adiabatic,default" value="">
 Physics package: cam3, cam4, cam5, ideal (Held-Suarez forcings), adiabatic, default (eam).
 </entry>
-<entry id="microphys" valid_values="rk,mg1,mg1.5,mg2,none" value="">
-Microphysics package: rk (Rasch and Kristjansson), mg1 (Morrison and Gettelman two moment scheme CAM5.1), mg1.5 (Morrison and Gettelman second version development), mg2 ((Morrison and Gettelman second version).
+<entry id="microphys" valid_values="rk,mg1,mg1.5,mg2,p3,none" value="">
+Microphysics package: rk (Rasch and Kristjansson), mg1 (Morrison and Gettelman two moment scheme CAM5.1), mg1.5 (Morrison and Gettelman second version development), mg2 ((Morrison and Gettelman second version), p3 (Morrison and Milbrandt (2015) two moment scheme).
 A value of "none" indicates no microphysics parameterization is used.
 </entry>
-<entry id="macrophys" valid_values="rk,park,clubb_sgs,none" value="">
-Macrophysics package: RK, Park, CLUBB_SGS.
+<entry id="macrophys" valid_values="rk,park,clubb_sgs,shoc_sgs,none" value="">
+Macrophysics package: RK, Park, CLUBB_SGS, SHOC_SGS.
 A value of "none" indicates no microphysics parameterization is used.
 </entry>
 <entry id="clubb_sgs" valid_values="0,1" value="0">
 Switch to turn on/off CLUBB_SGS package: 0 => no, 1 => yes
+</entry>
+<entry id="shoc_sgs" valid_values="0,1" value="0">
+Switch to turn on/off SHOC_SGS package: 0 => no, 1 => yes
 </entry>
 <entry id="clubb_do_deep" valid_values="0,1" value="0">
 Switch to turn on/off CLUBB_SGS using clubb to calculate deep: 0 => no, 1 => yes
@@ -64,9 +67,9 @@ Switch to turn on/off advecting CLUBB moments: 0 => no, 1 => yes
 <entry id="clubb_single_prec" valid_values="0,1" value="0">
 Switch to turn on/off CLUBB single : 0 => double precision, 1 => single precision
 </entry>
-<entry id="pbl" valid_values="uw,hb,hbr,clubb_sgs,none" value="">
+<entry id="pbl" valid_values="uw,hb,hbr,clubb_sgs,shoc_sgs,none" value="">
 PBL package: uw (University of Washington), hb (Holtslag and Boville), hbr
- (Holtslag, Boville, and Rasch), clubb_sgs.
+ (Holtslag, Boville, and Rasch), clubb_sgs, shoc_sgs.
  A value of "none" indicates no PBL parameterization is used.
  For the MMF a "none" is set by default, but a separate version of 
  the HB scheme is used for stability.
@@ -75,7 +78,7 @@ PBL package: uw (University of Washington), hb (Holtslag and Boville), hbr
 Radiative transfer calculation: 
 rrtmg (RRTMG; http://rtweb.aer.com/rrtm_frame.html), rrtmgp (RRTMGP; https://github.com/earth-system-radiation/rte-rrtmgp).
 </entry>
-<entry id="chem" valid_values="waccm_mozart,waccm_mozart_mam3,waccm_mozart_sulfur,waccm_ghg,trop_mozart,trop_mozart_mam3,trop_mozart_soa,trop_strat_soa,trop_strat_mam3,trop_strat_mam7,super_fast_llnl,super_fast_llnl_mam3,trop_ghg,trop_bam,trop_mam3,trop_mam4,trop_mam4_resus,trop_mam4_resus_soag,trop_mam4_resus_mom,trop_mam4_mom,trop_mam7,linoz_mam3,linoz_mam4_resus,linoz_mam4_resus_soag,linoz_mam4_resus_mom,linoz_mam4_resus_mom_soag,superfast_mam4_resus_mom_soag,none"
+<entry id="chem" valid_values="waccm_mozart,waccm_mozart_mam3,waccm_mozart_sulfur,waccm_ghg,trop_mozart,trop_mozart_mam3,trop_mozart_soa,trop_strat_soa,trop_strat_mam3,trop_strat_mam7,super_fast_llnl,super_fast_llnl_mam3,trop_ghg,trop_bam,trop_mam3,trop_mam4,trop_mam4_resus,trop_mam4_resus_soag,trop_mam4_resus_mom,trop_mam4_mom,trop_mam7,linoz_mam3,linoz_mam4_resus,linoz_mam4_resus_soag,linoz_mam4_resus_mom,linoz_mam4_resus_mom_soag,superfast_mam4_resus_mom_soag,spa,none"
  value="">
 Chemistry package: waccm_mozart, waccm_mozart_mam3, waccm_mozart_sulfur, waccm_ghg, trop_mozart, trop_mozart_mam3, trop_mozart_soa, trop_strat_soa, trop_strat_mam3, trop_strat_mam7, super_fast_llnl, super_fast_llnl_mam3, trop_ghg, trop_bam, trop_mam3, trop_mam4, trop_mam4_resus, trop_mam4_resus_soag, trop_mam4_resus_mom, trop_mam4_mom, trop_mam7, linoz_mam3, linoz_mam4_resus, linoz_mam4_resus_soag, linoz_mam4_resus_mom, linoz_mam4_resus_mom_soag, superfast_mam4_resus_mom_soag, or none.
 </entry>
@@ -149,6 +152,10 @@ Modifications that allow perturbation growth testing: 0=off, 1=on.
 <entry id="scam" valid_values="0,1" value="0">
 Configure CAM for single column mode: 0=off, 1=on.  This option only
 supported for the Eulerian dycore.
+</entry>
+<entry id="dpcrm_mode" valid_values="0,1" value="0">
+Use atmosphere model as a doubly periodic cloud resolving model.  Currently only
+supported for the SE dycore (preqx, theta-l). 0=off, 1=on.
 </entry>
 <entry id="e3smreplay" valid_values="0,1" value="0">
 Configure E3SM to generate an IOP file that can be used to drive the SCM: 0=no, 1=yes.

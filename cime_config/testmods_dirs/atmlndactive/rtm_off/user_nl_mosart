@@ -1,0 +1,6 @@
+! disable rtm to allow short ERS and ERP run to complete. 
+! If rtm active, due to large rtm time step, restart pointer for ROF
+! is always ahead of that for atm at the end of the first run. And in 
+! restart run, the restart point for ROF becomes later than the run stop time
+
+ do_rtm =.false.

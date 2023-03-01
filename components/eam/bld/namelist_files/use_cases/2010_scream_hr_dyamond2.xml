@@ -1,0 +1,133 @@
+<?xml version="1.0"?>
+<namelist_defaults>
+
+<start_ymd>20200120</start_ymd>
+
+<!-- Atmosphere initial condition -->
+<ncdata hgrid="ne1024np4">atm/cam/inic/homme/ifs_oper_T1279_2020012000_mod_subset_to_e3sm_ne1024np4_topoadj_L128.nc</ncdata>
+<ncdata hgrid="ne256np4">atm/cam/inic/homme/ifs_oper_T1279_2020012000_mod_subset_to_e3sm_ne256np4_topoadj_L128.nc</ncdata>
+
+<!-- TODO: enable COSP once we do an E3SM->SCREAM merge -->
+
+<!-- Solar constant from CMIP6 input4MIPS -->
+<solar_data_file>atm/cam/solar/Solar_2010control_input4MIPS_c20181017.nc</solar_data_file>
+<solar_data_ymd>20100101</solar_data_ymd>
+<solar_data_type>FIXED</solar_data_type>
+
+<!-- 2010 GHG values from CMIP6 input4MIPS -->
+<!-- <co2vmr>312.821e-6</co2vmr> The CMIP6 concentration set by CCSM_CO2_PPMV in
+     cime/src/drivers/mct/cime_config/config_component_acme.xml -->
+<ch4vmr>1807.851e-9</ch4vmr>
+<n2ovmr>323.141e-9</n2ovmr>
+<f11vmr>768.7644e-12</f11vmr>
+<f12vmr>531.2820e-12</f12vmr>
+
+<!-- Stratospheric aerosols from CMIP6 input4MIPS -->
+<prescribed_volcaero_datapath>atm/cam/volc</prescribed_volcaero_datapath>
+<prescribed_volcaero_file>    CMIP_DOE-ACME_radiation_average_1850-2014_v3_c20171204.nc</prescribed_volcaero_file>
+<prescribed_volcaero_filetype>VOLC_CMIP6  </prescribed_volcaero_filetype>
+<prescribed_volcaero_type>    CYCLICAL    </prescribed_volcaero_type>
+<prescribed_volcaero_cycle_yr>1           </prescribed_volcaero_cycle_yr>
+
+<!-- Ice nucleation mods-->
+<use_hetfrz_classnuc    >.false.</use_hetfrz_classnuc>
+<use_preexisting_ice    >.false.</use_preexisting_ice>
+<hist_hetfrz_classnuc   >.false.</hist_hetfrz_classnuc>
+
+<!-- For Polar mods-->
+<sscav_tuning            >.true.</sscav_tuning>
+<demott_ice_nuc          >.true.</demott_ice_nuc>
+<liqcf_fix               >.true.</liqcf_fix>
+<regen_fix               >.true.</regen_fix>
+<resus_fix               >.true.</resus_fix>
+<mam_amicphys_optaa      >1</mam_amicphys_optaa>
+
+<fix_g1_err_ndrop>.true.</fix_g1_err_ndrop>
+<ssalt_tuning    >.true.</ssalt_tuning>
+
+<!-- For comprehensive history -->
+<history_amwg>.true.</history_amwg>
+<history_aerosol>.false.</history_aerosol>
+<history_aero_optics>.true.</history_aero_optics>
+
+<!-- File for BC dep in snow feature -->
+<fsnowoptics>lnd/clm2/snicardata/snicar_optics_5bnd_mam_c160322.nc</fsnowoptics>
+
+<!-- Radiation bugfix -->
+<use_rad_dt_cosz>.true.</use_rad_dt_cosz>
+
+<!-- Tunable parameters for 72 layer model -->
+<cldfrc_dp1>         0.045D0</cldfrc_dp1>
+<seasalt_emis_scale> 0.85   </seasalt_emis_scale>
+<dust_emis_fact      > 2.05D0    </dust_emis_fact>
+<seasalt_emis_scale  > 0.85      </seasalt_emis_scale>
+<cldfrc2m_rhmaxi>    1.05D0 </cldfrc2m_rhmaxi>
+<effgw_oro>          0.25    </effgw_oro>
+<effgw_beres>        0.4    </effgw_beres>
+<do_tms>             .false.</do_tms>
+<so4_sz_thresh_icenuc  > 0.05e-6   </so4_sz_thresh_icenuc>
+<n_so4_monolayers_pcage>8.0D0 </n_so4_monolayers_pcage>
+<taubgnd                 >2.5D-3 </taubgnd>
+<raytau0                 >5.0D0</raytau0>
+<nucleate_ice_subgrid    >1.2D0</nucleate_ice_subgrid>
+<n_so4_monolayers_pcage  > 8.0D0     </n_so4_monolayers_pcage>
+
+<!-- Parameters specific to deep convection (default off for HR compset) -->
+<deep_scheme             > 'off'  </deep_scheme>
+
+<!-- Use all or nothing ice cloud fraction scheme -->
+<cldfrc_iceopt> 7 </cldfrc_iceopt>
+
+<!-- Macrophysics/microphysics coupling -->
+<cld_macmic_num_steps hgrid="ne4np4"   > 6 </cld_macmic_num_steps>
+<cld_macmic_num_steps hgrid="ne30np4"  > 6 </cld_macmic_num_steps>
+<cld_macmic_num_steps hgrid="ne120np4" > 3 </cld_macmic_num_steps>
+<cld_macmic_num_steps hgrid="ne256np4" > 3 </cld_macmic_num_steps>
+<cld_macmic_num_steps hgrid="ne512np4" > 1 </cld_macmic_num_steps>
+<cld_macmic_num_steps hgrid="ne1024np4"> 1 </cld_macmic_num_steps>
+
+<!-- Energy fixer options -->
+<ieflx_opt  > 0     </ieflx_opt>
+
+
+<!-- Stratospheric ozone (Linoz) updated using CMIP6 input4MIPS GHG concentrations -->
+<!-- COPIED FROM "CAM" USE CASE; TODO: IS THIS NECESSARY FOR SCREAM? -->
+<chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/Linoz_Chlorine_Loading_CMIP6_0003-2017_c20171114.nc</chlorine_loading_file>
+<chlorine_loading_fixed_ymd >20100101</chlorine_loading_fixed_ymd>
+<chlorine_loading_type      >FIXED</chlorine_loading_type>
+<linoz_data_cycle_yr        >2010</linoz_data_cycle_yr>
+<linoz_data_file            >linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc</linoz_data_file>
+<linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
+<linoz_data_type            >CYCLICAL</linoz_data_type>
+
+<!-- sim_year used for CLM datasets and SST forcings -->
+<sim_year>2010</sim_year>
+
+<!-- Land datasets set in components/clm/bld/namelist_files/use_cases/1850_CMIP6_control.xml -->
+
+<!-- Prescribed aerosol options -->
+<use_hetfrz_classnuc>.false.</use_hetfrz_classnuc>
+<aerodep_flx_type>'CYCLICAL'</aerodep_flx_type>
+<aerodep_flx_datapath>atm/cam/chem/trop_mam/aero</aerodep_flx_datapath>
+<aerodep_flx_file nlev="72">mam4_0.9x1.2_L72_2000clim_c170323.nc</aerodep_flx_file>
+<aerodep_flx_file nlev="128">mam4_0.9x1.2_L128_2000clim_c191106.nc</aerodep_flx_file>
+<aerodep_flx_cycle_yr>01</aerodep_flx_cycle_yr>
+<prescribed_aero_type>'CYCLICAL'</prescribed_aero_type>
+<prescribed_aero_datapath>atm/cam/chem/trop_mam/aero</prescribed_aero_datapath>
+<prescribed_aero_file nlev="72">mam4_0.9x1.2_L72_2000clim_c170323.nc</prescribed_aero_file>
+<prescribed_aero_file nlev="128">mam4_0.9x1.2_L128_2000clim_c191106.nc</prescribed_aero_file>
+<prescribed_aero_cycle_yr>01</prescribed_aero_cycle_yr>
+
+<!-- Settings related to the SCREAM NH dycore -->
+<theta_hydrostatic_mode>.false.</theta_hydrostatic_mode>
+<tstep_type> 9 </tstep_type>
+
+<!-- Use the less sensitive advection scheme -->
+<semi_lagrange_cdr_alg>3</semi_lagrange_cdr_alg>
+
+<!-- Turn off Gravity Waves -->
+<use_gw_front>.false.</use_gw_front>
+<use_gw_oro>.false.</use_gw_oro>
+<use_gw_convect>.false.</use_gw_convect>
+
+</namelist_defaults>
