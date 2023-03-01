@@ -59,7 +59,7 @@ contains
   !=======================================================================
 
   subroutine seq_map_init_rcfile( mapper, comp_s, comp_d, &
-       maprcfile, maprcname, maprctype, samegrid, string, esmf_map)
+       maprcfile, maprcname, maprctype, samegrid, string, esmf_map, no_match)
 
     implicit none
     !-----------------------------------------------------
@@ -75,6 +75,7 @@ contains
     logical              ,intent(in)            :: samegrid
     character(len=*)     ,intent(in),optional   :: string
     logical              ,intent(in),optional   :: esmf_map
+    logical              ,intent(in),optional   :: no_match
     !
     ! Local Variables
     !
@@ -84,6 +85,7 @@ contains
     character(CX)               :: mapfile
     character(CL)               :: maptype
     integer(IN)                 :: mapid
+    logical                     :: skip_match = .false.;
     character(len=*),parameter  :: subname = "(seq_map_init_rcfile) "
     !-----------------------------------------------------
 
@@ -91,6 +93,9 @@ contains
        write(logunit,'(A)') subname//' called for '//trim(string)
     endif
 
+    if (present(no_match)) then
+       if (no_match) skip_match = .true.
+    endif
     call seq_comm_setptrs(CPLID, mpicom=mpicom)
 
     gsmap_s => component_get_gsmap_cx(comp_s)
@@ -99,7 +104,7 @@ contains
     if (mct_gsmap_Identical(gsmap_s,gsmap_d)) then
        call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="copy")
 
-       if (mapid > 0) then
+       if (mapid > 0 .and. .not. skip_match) then
           call seq_map_mappoint(mapid,mapper)
        else
           call seq_map_mapinit(mapper,mpicom)
@@ -112,7 +117,7 @@ contains
     elseif (samegrid) then
        call seq_map_mapmatch(mapid,gsmap_s=gsmap_s,gsmap_d=gsmap_d,strategy="rearrange")
 
-       if (mapid > 0) then
+       if (mapid > 0 .and. .not. skip_match) then
           call seq_map_mappoint(mapid,mapper)
        else
           ! --- Initialize rearranger
@@ -132,7 +137,7 @@ contains
 
        call seq_map_mapmatch(mapid,gsMap_s=gsMap_s,gsMap_d=gsMap_d,mapfile=mapfile,strategy=maptype)
 
-       if (mapid > 0) then
+       if (mapid > 0 .and. .not. skip_match) then
           call seq_map_mappoint(mapid,mapper)
        else
           call seq_map_mapinit(mapper,mpicom)
@@ -535,9 +540,9 @@ end subroutine moab_map_init_rcfile
                arrsize=lsize*(nfields)
 
                ! get the current values of all source tags including the norm8wt currently set to 1
-               ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize , mapper%tag_entity_type, targtags)
+               ierr = iMOAB_GetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize , mapper%tag_entity_type, targtags(1,1))
                if (ierr .ne. 0) then
-                  write(logunit,*) subname,' error getting source tag values ', mapper%mbname
+                  write(logunit,*) subname,' error getting source tag values ', mapper%mbname, mapper%src_mbid, trim(fldlist_moab), arrsize, mapper%tag_entity_type
                   call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
                endif
 
@@ -548,7 +553,7 @@ end subroutine moab_map_init_rcfile
                enddo
 
                ! put the new values on the mesh for later mapping
-               ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize , mapper%tag_entity_type, targtags)
+               ierr = iMOAB_SetDoubleTagStorage (mapper%src_mbid, fldlist_moab, arrsize , mapper%tag_entity_type, targtags(1,1))
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error setting normed source tag values ', mapper%mbname
                   call shr_sys_abort(subname//' ERROR setting normed source tag values') ! serious enough
@@ -619,7 +624,7 @@ end subroutine moab_map_init_rcfile
             ! get values of target tags after mapping
             allocate(targtags(lsize,nfields))
             arrsize=lsize*(nfields)
-            ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, fldlist_moab, arrsize , mapper%tag_entity_type, targtags)
+            ierr = iMOAB_GetDoubleTagStorage (mapper%tgt_mbid, fldlist_moab, arrsize , mapper%tag_entity_type, targtags(1,1))
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error getting destination tag values ', mapper%mbname
                call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough
@@ -634,7 +639,7 @@ end subroutine moab_map_init_rcfile
             enddo
 
             ! put the values back on the mesh
-            ierr = iMOAB_SetDoubleTagStorage (mapper%tgt_mbid, fldlist_moab, arrsize , mapper%tag_entity_type, targtags)
+            ierr = iMOAB_SetDoubleTagStorage (mapper%tgt_mbid, fldlist_moab, arrsize , mapper%tag_entity_type, targtags(1,1))
             if (ierr .ne. 0) then
                write(logunit,*) subname,' error getting destination tag values ', mapper%mbname
                call shr_sys_abort(subname//' ERROR getting source tag values') ! serious enough

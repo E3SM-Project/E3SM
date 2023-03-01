@@ -168,6 +168,7 @@ contains
    integer                  :: tagtype, numco, tagindex
    character(CXX)           :: tagName
    integer                  :: context_id ! we will use a special context for the extra flux ocean instance
+   logical                  :: no_match ! used to force a new mapper
 
    !---------------------------------------------------------------
 
@@ -233,9 +234,10 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Sof2a'
          endif
+         no_match = .true. ! force to cerate a new object 
          call seq_map_init_rcfile(mapper_Sof2a, ocn(1), atm(1), &
             'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
-            'mapper_Sof2a initialization',esmf_map_flag)
+            'mapper_Sof2a initialization',esmf_map_flag, no_match)
 
 #ifdef HAVE_MOAB
          ! Call moab intx only if atm and ocn are init in moab

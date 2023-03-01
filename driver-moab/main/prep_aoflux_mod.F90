@@ -163,7 +163,7 @@ contains
        allocate(tagValues(arrSize) )
        ent_type = 1 ! cell type
        tagValues = 0._r8
-       ierr = iMOAB_SetDoubleTagStorage ( mbofxid, tagname, arrSize , ent_type, tagValues)
+       ierr = iMOAB_SetDoubleTagStorage ( mbofxid, tagname, arrSize , ent_type, tagValues(1))
        if (ierr .ne. 0) then
          write(logunit,*) subname,' error in zeroing out xao_fields  '
          call shr_sys_abort(subname//' ERROR in zeroing out xao_fields in init ')
@@ -179,7 +179,7 @@ contains
        xao_omct = 0._r8
        ent_type = 0 ! cell type, this is point cloud mct
        arrSize = lsize_o * size_list
-       ierr = iMOAB_SetDoubleTagStorage ( mbox2id, tagname, arrSize , ent_type, xao_omct)
+       ierr = iMOAB_SetDoubleTagStorage ( mbox2id, tagname, arrSize , ent_type, xao_omct )
        if (ierr .ne. 0) then
          write(logunit,*) subname,' error in zeroing out xao_fields on mct instance ocn '
          call shr_sys_abort(subname//' ERROR in zeroing out xao_fields on mct instance ocn ')
