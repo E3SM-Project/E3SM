@@ -1632,7 +1632,7 @@ module li_calving
       real (kind=RKIND), pointer :: config_default_flowParamA
       real (kind=RKIND), pointer :: calvingCFLdt
       real (kind=RKIND), pointer :: dtCalvingCFLratio
-      integer, pointer :: nCells
+      integer, pointer :: nCells, nCellsSolve
       integer, dimension(:), pointer :: cellMask
       integer, dimension(:), pointer :: indexToCellID
       real (kind=RKIND), dimension(:), pointer :: vonMisesStress, damage
@@ -1678,6 +1678,7 @@ module li_calving
           call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
           call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
           call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
           call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
           call mpas_pool_get_array(velocityPool, 'eMax', eMax)
@@ -1769,7 +1770,7 @@ module li_calving
 
           ! the row of cells that are adjacent to invalid velocity will have garbage strain rates and vM stress
           ! so extrapolate into those cells from their valid neighbors
-          do iCell = 1,nCells
+          do iCell = 1,nCellsSolve
              if (surfaceSpeed(iCell) == 0.0_RKIND) then
                 vonMisesStress(iCell) = 0.0_RKIND  ! remove the vM calculation where there is no velocity - garbage can occur here
              else
@@ -1815,6 +1816,10 @@ module li_calving
                 endif ! if badCell
              endif ! if velo>0
           enddo ! loop over nCells
+          ! halo update on vonMisesStress after extrap
+          call mpas_timer_start("halo updates")
+          call mpas_dmpar_field_halo_exch(domain, 'vonMisesStress')
+          call mpas_timer_stop("halo updates")
 
           do iCell = 1,nCells
              ! Calculate calving velocity for grounded cells at marine margin
