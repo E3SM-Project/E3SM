@@ -1818,6 +1818,12 @@ module li_calving
              endif ! if velo>0
           enddo ! loop over nCells
 
+          ! halo update on vonMisesStress after extrap
+          ! This could be avoided if we include the first halo layer in the loop above
+          call mpas_timer_start("halo updates")
+          call mpas_dmpar_field_halo_exch(domain, 'vonMisesStress')
+          call mpas_timer_stop("halo updates")
+
           ! Now extrapolate one additional row forward for good measure
           allocate(vonMisesStressOld(nCells+1)) ! temp var for extrap
           vonMisesStressOld(:) = vonMisesStress(:)
@@ -1841,7 +1847,7 @@ module li_calving
           enddo ! loop over nCells
           deallocate(vonMisesStressOld)
 
-          ! halo update on vonMisesStress after extrap
+          ! another halo update on vonMisesStress after extrap
           call mpas_timer_start("halo updates")
           call mpas_dmpar_field_halo_exch(domain, 'vonMisesStress')
           call mpas_timer_stop("halo updates")
