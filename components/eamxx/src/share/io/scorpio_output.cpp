@@ -712,6 +712,29 @@ register_variables(const std::string& filename,
 
     register_variable(filename, name, name, units, vec_of_dims,
                       "real",fp_precision, io_decomp_tag);
+
+    // Add any extra attributes for this variable, examples include:
+    //   1. A list of subfields associated with a field group output
+    //   2. A CF longname (TODO)
+    // First check if this is a field group w/ subfields.
+    const auto& children = field.get_header().get_children();
+    if (children.size()>0) {
+      // This field is a parent to a set of subfields
+      std::stringstream children_list;
+      children_list << "[ ";
+      int it = 0;
+      for (const auto& child_weak : children) {
+        auto child = child_weak.lock();
+        it ++;
+        children_list << child->get_identifier().name().c_str();
+        if (it < children.size()) {
+          children_list << ", ";
+        }
+      }
+      children_list << " ]";
+      set_variable_attribute_c2f(filename.c_str(),name.c_str(),"sub_fields",children_list.str().c_str());
+      
+    }
   }
 } // register_variables
 /* ---------------------------------------------------------- */

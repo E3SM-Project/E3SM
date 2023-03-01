@@ -504,6 +504,10 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
   auto t0_time = m_case_t0.get_time()[0]*10000 + m_case_t0.get_time()[1]*100 + m_case_t0.get_time()[2];
   set_int_attribute_c2f(filename.c_str(),"start_date",t0_date);
   set_int_attribute_c2f(filename.c_str(),"start_time",t0_time);
+  set_str_attribute_c2f(filename.c_str(),"averaging_type",e2str(m_avg_type).c_str());
+  set_str_attribute_c2f(filename.c_str(),"averaging_frequency_units",m_output_control.frequency_units.c_str());
+  set_int_attribute_c2f(filename.c_str(),"averaging_frequency",m_output_control.frequency);
+  set_int_attribute_c2f(filename.c_str(),"max_snapshots_per_file",m_output_file_specs.max_snapshots_in_file);
 
   if (m_avg_type!=OutputAvgType::Instant) {
     // Unfortunately, attributes cannot be set in define mode (why?), so this could
