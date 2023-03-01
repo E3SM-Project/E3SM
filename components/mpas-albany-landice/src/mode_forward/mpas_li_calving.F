@@ -1634,6 +1634,7 @@ module li_calving
       real (kind=RKIND), pointer :: dtCalvingCFLratio
       integer, pointer :: nCells
       integer, dimension(:), pointer :: cellMask
+      integer, dimension(:), pointer :: indexToCellID
       real (kind=RKIND), dimension(:), pointer :: vonMisesStress, damage
       real (kind=RKIND), pointer :: totalRatebasedCalvedVolume, totalRatebasedUncalvedVolume
       logical :: applyToGrounded, applyToFloating, applyToGroundingLine
@@ -1675,6 +1676,7 @@ module li_calving
          ! get fields
           call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
           call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+          call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
           call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
           call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
@@ -1764,6 +1766,7 @@ module li_calving
                               (max(0.0_RKIND, eMin(iCell)))**2.0_RKIND) )**(1.0_RKIND / (2.0_RKIND * config_flowLawExponent))
              endif
           enddo
+
           ! the row of cells that are adjacent to invalid velocity will have garbage strain rates and vM stress
           ! so extrapolate into those cells from their valid neighbors
           do iCell = 1,nCells
@@ -1774,8 +1777,9 @@ module li_calving
                 badCell = .false.
                 do iNeighbor = 1, nEdgesOnCell(iCell)
                    jCell = cellsOnCell(iNeighbor, iCell)
-                   if (surfaceSpeed(jCell) == 0.0_RKIND) then
+                   if ((jCell < nCells + 1) .and. surfaceSpeed(jCell) == 0.0_RKIND) then
                       ! if one neighbor has a 0 velo, the stress here is bad
+                      ! Ignore nonexistent neighbors (nCells+1)
                       badCell = .true.
                       exit ! no need to keep looping over neighbors
                    endif
@@ -1785,29 +1789,32 @@ module li_calving
                    nGoodNeighbors = 0
                    do iNeighbor = 1, nEdgesOnCell(iCell)
                       jCell = cellsOnCell(iNeighbor, iCell)
-                      badNeighbor = .false.
-                      do jNeighbor = 1, nEdgesOnCell(jCell)
-                         kCell = cellsOnCell(jNeighbor, jCell)
-                         if (surfaceSpeed(kCell) == 0.0_RKIND) then
-                            ! if one neighbor of this neighbor has a 0 velo, this neighbor is not to be used
-                            badNeighbor = .true.
-                            exit
+                      if (jCell < nCells + 1) then  ! don't check nonexistent neighbors
+                         badNeighbor = .false.
+                         do jNeighbor = 1, nEdgesOnCell(jCell)
+                            kCell = cellsOnCell(jNeighbor, jCell)
+                            if ((kCell < nCells + 1) .and. (surfaceSpeed(kCell) == 0.0_RKIND)) then
+                               ! if one neighbor of this neighbor has a 0 velo, this neighbor is not to be used
+                               ! Ignore nonexistent neighbors
+                               badNeighbor = .true.
+                               exit
+                            endif
+                         enddo
+                         if (.not. badNeighbor) then
+                            ! if this neighbor has a usable stress, accumulate its value for averaging
+                            vMsum = vMsum + vonMisesStress(jCell)
+                            nGoodNeighbors = nGoodNeighbors + 1
                          endif
-                      enddo
-                      if (.not. badNeighbor) then
-                         ! if this neighbor has a usable stress, accumulate its value for averaging
-                         vMsum = vMsum + vonMisesStress(jCell)
-                         nGoodNeighbors = nGoodNeighbors + 1
                       endif
                    enddo
                    if (nGoodNeighbors > 0) then
                       vonMisesStress(iCell) = vMsum / real(nGoodNeighbors, kind=RKIND)
                    else
-                      call mpas_log_write('oops, extrapolation failed for von mises stress', MPAS_LOG_WARN)
+                      call mpas_log_write('Extrapolation failed for von mises stress at cell $i', MPAS_LOG_WARN, intArgs=(/indexToCellID(iCell)/))
                    endif
                 endif ! if badCell
              endif ! if velo>0
-          enddo
+          enddo ! loop over nCells
 
           do iCell = 1,nCells
              ! Calculate calving velocity for grounded cells at marine margin
