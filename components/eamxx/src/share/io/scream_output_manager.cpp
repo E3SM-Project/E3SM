@@ -166,8 +166,8 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
         using namespace scorpio;
         auto fn = find_filename_in_rpointer(hist_restart_casename,false,m_io_comm,m_run_t0);
         register_file(fn.c_str(),FileMode::Read);
-        auto date = get_int_attribute_c2f (fn.c_str(), "last_write_date");
-        auto time = get_int_attribute_c2f (fn.c_str(), "last_write_time");
+        auto date = get_attribute<int> (fn.c_str(), "last_write_date");
+        auto time = get_attribute<int> (fn.c_str(), "last_write_time");
 
         std::vector<int> vdate = {date/10000, (date/100)%100, date%100};
         std::vector<int> vtime = {time/10000, (time/100)%100, time%100};
@@ -251,14 +251,14 @@ void OutputManager::run(const util::TimeStamp& timestamp)
     pio_update_time(filename,timestamp.days_from(m_case_t0));
     if (m_is_model_restart_output) {
       // Only write nsteps on model restart
-      set_int_attribute_c2f(filename.c_str(),"nsteps",timestamp.get_num_steps());
+      set_attribute(filename,"nsteps",timestamp.get_num_steps());
     } else if (is_checkpoint_step) {
       // Update the date of last write
       const auto& last_write_ts = control.timestamp_of_last_write;
       auto last_write_date = last_write_ts.get_date()[0]*10000 + last_write_ts.get_date()[1]*100 + last_write_ts.get_date()[2];
       auto last_write_time = last_write_ts.get_time()[0]*10000 + last_write_ts.get_time()[1]*100 + last_write_ts.get_time()[2];
-      set_int_attribute_c2f(filename.c_str(),"last_write_date",last_write_date);
-      set_int_attribute_c2f(filename.c_str(),"last_write_time",last_write_time);
+      set_attribute(filename,"last_write_date",last_write_date);
+      set_attribute(filename,"last_write_time",last_write_time);
     }
   }
   stop_timer(timer_root+"::get_new_file"); 
@@ -288,7 +288,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       const auto& any = type_any.second;
       if (type=="int") {
         const int& value = ekat::any_cast<int>(any);
-        set_int_attribute_c2f(filename.c_str(),name.c_str(),value);
+        set_attribute(filename,name.c_str(),value);
       } else {
         EKAT_ERROR_MSG ("Error! Unsupported global attribute type.\n"
             " - file name  : " + filename + "\n"
@@ -515,19 +515,20 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
   // Finish the definition phase for this file.
   auto t0_date = m_case_t0.get_date()[0]*10000 + m_case_t0.get_date()[1]*100 + m_case_t0.get_date()[2];
   auto t0_time = m_case_t0.get_time()[0]*10000 + m_case_t0.get_time()[1]*100 + m_case_t0.get_time()[2];
-  set_int_attribute_c2f(filename.c_str(),"start_date",t0_date);
-  set_int_attribute_c2f(filename.c_str(),"start_time",t0_time);
-  set_str_attribute_c2f(filename.c_str(),"averaging_type",e2str(m_avg_type).c_str());
-  set_str_attribute_c2f(filename.c_str(),"averaging_frequency_units",m_output_control.frequency_units.c_str());
-  set_int_attribute_c2f(filename.c_str(),"averaging_frequency",m_output_control.frequency);
-  set_int_attribute_c2f(filename.c_str(),"max_snapshots_per_file",m_output_file_specs.max_snapshots_in_file);
+
+  set_attribute(filename,"start_date",t0_date);
+  set_attribute(filename,"start_time",t0_time);
+  set_attribute(filename,"averaging_type",e2str(m_avg_type));
+  set_attribute(filename,"averaging_frequency_units",m_output_control.frequency_units);
+  set_attribute(filename,"averaging_frequency",m_output_control.frequency);
+  set_attribute(filename,"max_snapshots_per_file",m_output_file_specs.max_snapshots_in_file);
   set_file_header(filename);
   eam_pio_enddef (filename); 
 
   if (m_avg_type!=OutputAvgType::Instant) {
     // Unfortunately, attributes cannot be set in define mode (why?), so this could
     // not be done while we were setting the time_bnds
-    set_int_attribute_c2f(filename.c_str(),"sample_size",control.frequency);
+    set_attribute(filename,"sample_size",control.frequency);
   }
 
   if (filespecs.save_grid_data) {
@@ -547,21 +548,20 @@ void set_file_header(const std::string& filename)
   // TODO: All attributes marked TODO below need to be set.  Hopefully by a universal value that reflects
   // what the attribute is.  For example, git-hash should be the git-hash associated with this version of
   // the code at build time for this executable.
-  set_str_attribute_c2f(filename.c_str(),"source","E3SM Atmosphere Model Version 4 (EAMxx)");  // TODO: probably want to make sure that new versions are reflected here.
-  set_str_attribute_c2f(filename.c_str(),"case","");  // TODO
-  set_str_attribute_c2f(filename.c_str(),"title","EAMxx History File");
-  set_str_attribute_c2f(filename.c_str(),"compset","");  // TODO
-  set_str_attribute_c2f(filename.c_str(),"git_hash","");  // TODO
-  set_str_attribute_c2f(filename.c_str(),"host","");  // TODO
-  set_str_attribute_c2f(filename.c_str(),"version","");  // TODO
-  set_str_attribute_c2f(filename.c_str(),"initial_file","");  // TODO
-  set_str_attribute_c2f(filename.c_str(),"topography_file","");  // TODO
-  set_str_attribute_c2f(filename.c_str(),"contact","");  // TODO
-  set_str_attribute_c2f(filename.c_str(),"institution_id","");  // TODO
-  set_str_attribute_c2f(filename.c_str(),"product","");  // TODO
-  set_str_attribute_c2f(filename.c_str(),"component","ATM");
-  set_str_attribute_c2f(filename.c_str(),"Conventions","CF-1.8");  // TODO: In the future we may be able to have this be set at runtime.  We hard-code for now, because post-processing needs something in this global attribute. 2023-04-12
-
+  set_attribute<std::string>(filename,"source","E3SM Atmosphere Model Version 4 (EAMxx)");  // TODO: probably want to make sure that new versions are reflected here.
+  set_attribute<std::string>(filename,"case","");  // TODO
+  set_attribute<std::string>(filename,"title","EAMxx History File");
+  set_attribute<std::string>(filename,"compset","");  // TODO
+  set_attribute<std::string>(filename,"git_hash","");  // TODO
+  set_attribute<std::string>(filename,"host","");  // TODO
+  set_attribute<std::string>(filename,"version","");  // TODO
+  set_attribute<std::string>(filename,"initial_file","");  // TODO
+  set_attribute<std::string>(filename,"topography_file","");  // TODO
+  set_attribute<std::string>(filename,"contact","");  // TODO
+  set_attribute<std::string>(filename,"institution_id","");  // TODO
+  set_attribute<std::string>(filename,"product","");  // TODO
+  set_attribute<std::string>(filename,"component","ATM");
+  set_attribute<std::string>(filename,"Conventions","CF-1.8");  // TODO: In the future we may be able to have this be set at runtime.  We hard-code for now, because post-processing needs something in this global attribute. 2023-04-12
 }
 /*===============================================================================================*/
 void OutputManager::

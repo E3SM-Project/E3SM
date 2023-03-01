@@ -768,7 +768,7 @@ void AtmosphereDriver::restart_model ()
   }
 
   // Read number of steps from restart file
-  int nsteps = model_restart.read_int_scalar("nsteps");
+  int nsteps = scorpio::get_attribute<int>(filename,"nsteps");
   m_current_ts.set_num_steps(nsteps);
   m_run_t0.set_num_steps(nsteps);
 
@@ -778,7 +778,7 @@ void AtmosphereDriver::restart_model ()
           auto  any  = it.second.second;
 
     if (type=="int") {
-      ekat::any_cast<int>(any) = model_restart.read_int_scalar(name);
+      ekat::any_cast<int>(any) = scorpio::get_attribute<int>(filename,name);
     } else {
       EKAT_ERROR_MSG ("Error! Unsupported type for restart extra data.\n"
           " - data name: " + name + "'\n"

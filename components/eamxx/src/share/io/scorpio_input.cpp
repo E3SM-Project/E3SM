@@ -355,12 +355,6 @@ void AtmosphereInput::read_variables (const int time_index)
   }
 } 
 
-int AtmosphereInput::
-read_int_scalar (const std::string& name)
-{
-  return scorpio::get_int_attribute_c2f(m_filename.c_str(),name.c_str());
-}
-
 void AtmosphereInput::
 set_views (const std::map<std::string,view_1d_host>& host_views_1d,
            const std::map<std::string,FieldLayout>&  layouts)

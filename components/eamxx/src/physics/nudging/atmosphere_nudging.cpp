@@ -102,8 +102,8 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   ts0=timestamp();
 
   //Check that internal timestamp starts at same point as time in external file
-  int start_date=scorpio::get_int_attribute_c2f(datafile.c_str(),"start_date");
-  int start_time=scorpio::get_int_attribute_c2f(datafile.c_str(),"start_time");
+  int start_date=scorpio::get_attribute<int>(datafile,"start_date");
+  int start_time=scorpio::get_attribute<int>(datafile,"start_time");
   int start_year=int(start_date/10000);
   int start_month=int((start_date-start_year*10000)/100);
   int start_day=int(start_date-start_year*10000-start_month*100);
