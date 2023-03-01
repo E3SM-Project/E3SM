@@ -1641,6 +1641,7 @@ module li_calving
       logical :: badCell, badNeighbor
       integer :: kCell, jNeighbor, nGoodNeighbors
       real (kind=RKIND) :: vMsum
+      real(kind=RKIND), dimension(:), allocatable :: vonMisesStressOld
 
       err = 0
 
@@ -1816,6 +1817,30 @@ module li_calving
                 endif ! if badCell
              endif ! if velo>0
           enddo ! loop over nCells
+
+          ! Now extrapolate one additional row forward for good measure
+          allocate(vonMisesStressOld(nCells+1)) ! temp var for extrap
+          vonMisesStressOld(:) = vonMisesStress(:)
+          do iCell = 1, nCellsSolve
+             ! Find cells needing extrap
+             if (vonMisesStressOld(iCell) == 0.0) then
+                vMsum = 0.0_RKIND
+                nGoodNeighbors = 0
+                do iNeighbor = 1, nEdgesOnCell(iCell)
+                   jCell = cellsOnCell(iNeighbor, iCell)
+                   ! Use this neighbor if it has a nonzero vM value
+                   if ((jCell < nCells + 1) .and. vonMisesStressOld(jCell) > 0.0_RKIND) then
+                      vMsum = vMsum + vonMisesStressOld(jCell)
+                      nGoodNeighbors = nGoodNeighbors + 1
+                   endif
+                enddo
+                if (nGoodNeighbors > 0) then
+                   vonMisesStress(iCell) = vMsum / real(nGoodNeighbors, kind=RKIND)
+                endif
+             endif ! if vMOld=0
+          enddo ! loop over nCells
+          deallocate(vonMisesStressOld)
+
           ! halo update on vonMisesStress after extrap
           call mpas_timer_start("halo updates")
           call mpas_dmpar_field_halo_exch(domain, 'vonMisesStress')
