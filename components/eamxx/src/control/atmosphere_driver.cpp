@@ -94,6 +94,11 @@ AtmosphereDriver(const ekat::Comm& atm_comm,
   set_params(params);
 }
 
+AtmosphereDriver::~AtmosphereDriver ()
+{
+  finalize();
+}
+
 void AtmosphereDriver::
 set_comm(const ekat::Comm& atm_comm)
 {

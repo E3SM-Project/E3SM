@@ -48,8 +48,10 @@ public:
   AtmosphereDriver (const ekat::Comm& atm_comm,
                     const ekat::ParameterList& params);
 
-  // The default dtor is fine.
-  ~AtmosphereDriver () = default;
+  // Must call finalize, so that, if AD is destroyed as part of uncaught
+  // exception stack unwinding, we will still perform some cleanup ops,
+  // among which, for instance, closing any open output file.
+  ~AtmosphereDriver ();
 
   // ---- Begin initialization methods ---- //
 
