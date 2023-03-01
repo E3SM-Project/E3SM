@@ -73,10 +73,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
   // File specs
   m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File",-1);
-  m_output_file_specs.filename_with_time_string = out_control_pl.get("Timestamp in Filename",true);
   m_output_file_specs.filename_with_mpiranks    = out_control_pl.get("MPI Ranks in Filename",false);
-  m_output_file_specs.filename_with_avg_type    = out_control_pl.get("avg_type_in_filename",true);
-  m_output_file_specs.filename_with_frequency   = out_control_pl.get("frequency_in_filename",true);
   m_output_file_specs.save_grid_data            = out_control_pl.get("save_grid_data",!m_is_model_restart_output);
 
   // For each grid, create a separate output stream.
@@ -136,10 +133,7 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
 
     // File specs
     m_checkpoint_file_specs.max_snapshots_in_file = 1;
-    m_checkpoint_file_specs.filename_with_time_string = pl.get("Timestamp in Filename",true);
     m_checkpoint_file_specs.filename_with_mpiranks    = pl.get("MPI Ranks in Filename",false);
-    m_checkpoint_file_specs.filename_with_avg_type    = pl.get("avg_type_in_filename",true);
-    m_checkpoint_file_specs.filename_with_frequency   = pl.get("frequency_in_filename",true);
     m_checkpoint_file_specs.save_grid_data = false;
   } else {
     // If there is no restart data or there is but no checkpoint control sublist then we initialize
@@ -363,21 +357,23 @@ compute_filename (const IOControl& control,
     is_checkpoint_step ? ".rhist"
                        : (m_is_model_restart_output ? ".r" : "");
   auto filename = m_casename + suffix;
-  if (file_specs.filename_with_avg_type) {
-    filename += "." + e2str(m_avg_type);
-  }
-  if (file_specs.filename_with_frequency) {
-    filename += "." + control.frequency_units+ "_x" + std::to_string(control.frequency);
-  }
-  if (file_specs.filename_with_mpiranks) {
+
+  // Always add avg type and frequency info
+  filename += "." + e2str(m_avg_type);
+  filename += "." + control.frequency_units+ "_x" + std::to_string(control.frequency);
+
+  // Optionally, add number of mpi ranks (useful mostly in unit tests, to run multiple MPI configs in parallel)
+  // NOTE: we do *not* allow this for checkpoints, since it would be risky if it gets somehow enabled
+  //       inside an ERP cime test.
+  if (not is_checkpoint_step && file_specs.filename_with_mpiranks) {
     filename += ".np" + std::to_string(m_io_comm.size());
   }
-  if (file_specs.filename_with_time_string) {
-    if (m_avg_type==OutputAvgType::Instant || is_checkpoint_step) {
-      filename += "." + timestamp.to_string();
-    } else {
-      filename += "." + control.timestamp_of_last_write.to_string();
-    }
+
+  // Always add a time stamp
+  if (m_avg_type==OutputAvgType::Instant || is_checkpoint_step) {
+    filename += "." + timestamp.to_string();
+  } else {
+    filename += "." + control.timestamp_of_last_write.to_string();
   }
 
   return filename + ".nc";

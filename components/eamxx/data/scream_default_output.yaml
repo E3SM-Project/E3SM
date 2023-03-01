@@ -63,15 +63,7 @@ output_control:
 # WARNING: ERS/ERP tets will override this with STOP_N/STOP_OPTION
   Frequency: ${HIST_N}
   frequency_units: ${HIST_OPTION}
-  MPI Ranks in Filename: false
-  Timestamp in Filename: true
-  avg_type_in_filename: false
-  frequency_in_filename: false
 Checkpoint Control:
   Frequency: ${REST_N}
   frequency_units: ${REST_OPTION}
-  MPI Ranks in Filename: false
-  Timestamp in Filename: true
-  avg_type_in_filename: false
-  frequency_in_filename: false
 ...
