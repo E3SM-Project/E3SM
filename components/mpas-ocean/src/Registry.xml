@@ -2948,7 +2948,7 @@
 			description="count of times redi limiter is invoked on a timestep"
 			packages="gm"
 		/>
-		<var name="gradDensityEddy" type="real" dimensions="nVertLevelsP1 nEdges Time" units="kg m^-4"
+		<var name="gradDensityEddy" type="real" dimensions="nVertLevels nEdges Time" units="kg m^-4"
 			description="horizontal gradient of density at cell edge and interfaces in vertical.  this is used for the GM parameterization and the submesoscale eddy parameterization"
 			 packages="gm;submeso"
 		/>
