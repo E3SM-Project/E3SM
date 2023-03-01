@@ -231,6 +231,11 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
    nucleate_ice_use_troplev = modal_strat_sulfate_ice_nucleation
    aero_nucleation_removal = modal_strat_sulfate_wet_removal
    prog_modal_aero = aero_nucleation_removal
+   if (nucleate_ice_use_troplev) then
+        nucleate_ice_strat = 1.0_r8 ! turn on strat_ice_nucleation
+   else
+        nucleate_ice_strat = -1.0_r8
+   end if
 !kzm --   
    if( masterproc ) then
       write(iulog,*) 'nucleate_ice parameters:'
@@ -1221,6 +1226,7 @@ subroutine nucleate_ice_cam_calc( &
                     !so4_num_ac = num_accum(i,k)*rho(i,k)*1.0e-6_r8
                     if (mode_strat_coarse_idx > 0._r8) then
                         so4_num_st_cr = num_strcrs(i,k)*rho(i,k)*1.0e-6_r8 !kzm add in stratosphere coarse
+                        so4_num_ac = num_accum(i,k)*rho(i,k)*1.0e-6_r8 ! over write weighted so4_num_ac
                         dso4_num = max(0._r8, (nucleate_ice_strat * (so4_num_cr + so4_num_st_cr + so4_num_accum)) &  !kzm change only include coarse
                                    ) * 1e6_r8 / rho(i,k) !kzm
                     else
