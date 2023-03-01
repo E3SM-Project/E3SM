@@ -1374,7 +1374,7 @@ module li_iceshelf_melt
       !-----------------------------------------------------------------
       integer :: iCell, iNeighbor, iEdge, nEmptyNeighbors
       real (kind=RKIND), pointer :: rhoi
-      integer, pointer :: nCells, nCellsSolve, nISMIP6OceanLayers
+      integer, pointer :: nCells, nISMIP6OceanLayers
       integer, dimension(:,:), pointer :: cellsOnCell, edgesOnCell
       real (kind=RKIND) :: waterDepth
       type (block_type), pointer :: block
@@ -1429,7 +1429,6 @@ module li_iceshelf_melt
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
-         call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_array(geometryPool, 'ismip6_2dThermalForcing', TFocean)
          call mpas_pool_get_array(geometryPool, 'ismip6Runoff', ismip6Runoff)
@@ -1457,7 +1456,7 @@ module li_iceshelf_melt
 
             ! Calculate thermal forcing based on bedTopography
             TFocean(:) = 0.0_RKIND
-            do iCell = 1, nCellsSolve
+            do iCell = 1, nCells
                if (bedTopography(iCell) < 0.0_RKIND) then
                      kk = 1
                      ! Find deepest zOcean above ocean floor
@@ -1483,7 +1482,7 @@ module li_iceshelf_melt
          faceMeltSpeedVertAvg(:) = 0.0_RKIND
 
        ! Calculate face melting for each cell
-         do iCell = 1, nCellsSolve
+         do iCell = 1, nCells
 
             if ( bedTopography(iCell) < 0.0_RKIND ) then
                 waterDepth = seaLevel - bedTopography(iCell)
