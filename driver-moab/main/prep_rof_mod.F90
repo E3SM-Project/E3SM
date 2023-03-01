@@ -442,7 +442,7 @@ contains
             ! because we will project fields from atm to rof grid, we need to define 
             ! rof a2x fields to rof grid on coupler side
             
-            tagname = trim(seq_flds_a2x_fields_to_rof)//C_NULL_CHAR
+            tagname = trim(seq_flds_a2x_fields_to_rof)//'norm8wt'//C_NULL_CHAR
             tagtype = 1 ! dense
             numco = 1 ! 
             ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
@@ -467,7 +467,7 @@ contains
             fNoBubble = 1
             monotonicity = 0 !
             noConserve = 0
-            validate = 1
+            validate = 0
             fInverseDistanceMap = 0
             if (iamroot_CPLID) then
                write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxar=', mbintxar, ' wgtIdef=', wgtIdef, &
