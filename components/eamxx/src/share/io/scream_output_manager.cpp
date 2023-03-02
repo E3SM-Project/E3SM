@@ -190,11 +190,13 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   push_to_logger();
 }
 
-void OutputManager::setup_globals_map (const globals_map_t& globals) {
-  EKAT_REQUIRE_MSG (m_globals.size()==0,
-      "Error! Globals already set in this output manager.\n");
+void OutputManager::
+add_global (const std::string& name, const ekat::any& global) {
+  EKAT_REQUIRE_MSG (m_globals.find(name)==m_globals.end(),
+      "Error! Global attribute was already set in this output manager.\n"
+      "  - global att name: " + name + "\n");
 
-  m_globals = globals;
+  m_globals[name] = global;
 }
 
 /*===============================================================================================*/
@@ -272,18 +274,8 @@ void OutputManager::run(const util::TimeStamp& timestamp)
   if (is_write_step) {
     for (const auto& it : m_globals) {
       const auto& name = it.first;
-      const auto& type_any = it.second;
-      const auto& type = type_any.first;
-      const auto& any = type_any.second;
-      if (type=="int") {
-        const int& value = ekat::any_cast<int>(any);
-        set_attribute(filename,name.c_str(),value);
-      } else {
-        EKAT_ERROR_MSG ("Error! Unsupported global attribute type.\n"
-            " - file name  : " + filename + "\n"
-            " - global name: " + name + "'\n"
-            " - global type: " + type + "'\n");
-      }
+      const auto& any = it.second;
+      set_any_attribute(filename,name,any);
     }
 
     start_timer(timer_root+"::update_snapshot_tally"); 

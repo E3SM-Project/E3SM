@@ -249,10 +249,11 @@ public:
   // For restarts, it is possible that some atm proc need to write/read some ad-hoc data.
   // E.g., some atm proc might need to read/write certain scalar values.
   // Assumptions:
-  //  - these maps are: data_name -> (data_type, data_value)
+  //  - these maps are: data_name -> ekat::any
   //  - the data_name is unique across the whole atm
   // The AD will take care of ensuring these are written/read to/from restart files.
-  const strmap_t<str_any_pair_t>& get_restart_extra_data () const { return m_restart_extra_data; }
+  const strmap_t<ekat::any>& get_restart_extra_data () const { return m_restart_extra_data; }
+        strmap_t<ekat::any>& get_restart_extra_data ()       { return m_restart_extra_data; }
 
   // Boolean that dictates whether or not the conservation checks are run for this process
   bool has_column_conservation_check () { return m_column_conservation_check_data.has_check; }
@@ -439,7 +440,7 @@ protected:
   std::shared_ptr<logger_t>  m_atm_logger;
 
   // Extra data needed for restart
-  strmap_t<str_any_pair_t>  m_restart_extra_data;
+  strmap_t<ekat::any>  m_restart_extra_data;
 
   // Use at your own risk. Motivation: Free up device memory for a field that is
   // no longer used, such as a field read in the ICs used only to initialize

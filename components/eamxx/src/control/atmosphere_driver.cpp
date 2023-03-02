@@ -613,7 +613,9 @@ void AtmosphereDriver::initialize_output_managers () {
       om.setup(m_atm_comm,restart_pl,m_field_mgrs,m_grids_manager,m_run_t0,m_case_t0,true);
     }
     om.set_logger(m_atm_logger);
-    om.setup_globals_map(m_atm_process_group->get_restart_extra_data());
+    for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
+      om.add_global(it.first,it.second);
+    }
   }
 
   // Build one manager per output yaml file
@@ -747,10 +749,6 @@ void AtmosphereDriver::restart_model ()
   const auto& casename = m_atm_params.sublist("initial_conditions").get<std::string>("restart_casename");
   auto filename = find_filename_in_rpointer (casename,true,m_atm_comm,m_run_t0);
 
-  // Restart the num steps counter in the atm time stamp
-  ekat::ParameterList rest_pl;
-  rest_pl.set<std::string>("Filename",filename);
-  AtmosphereInput model_restart(m_atm_comm,rest_pl);
   m_atm_logger->info("    [EAMxx] Restart filename: " + filename);
 
   for (auto& it : m_field_mgrs) {
@@ -767,27 +765,26 @@ void AtmosphereDriver::restart_model ()
     read_fields_from_file (fnames,it.first,filename,m_current_ts);
   }
 
-  // Read number of steps from restart file
+  // Restart the num steps counter in the atm time stamp
   int nsteps = scorpio::get_attribute<int>(filename,"nsteps");
   m_current_ts.set_num_steps(nsteps);
   m_run_t0.set_num_steps(nsteps);
 
-  for (const auto& it : m_atm_process_group->get_restart_extra_data()) {
+  for (auto& it : m_atm_process_group->get_restart_extra_data()) {
     const auto& name = it.first;
-    const auto& type = it.second.first;
-          auto  any  = it.second.second;
+          auto& any  = it.second;
 
-    if (type=="int") {
-      ekat::any_cast<int>(any) = scorpio::get_attribute<int>(filename,name);
-    } else {
-      EKAT_ERROR_MSG ("Error! Unsupported type for restart extra data.\n"
-          " - data name: " + name + "'\n"
-          " - data type: " + type + "'\n");
-    }
+    auto data = scorpio::get_any_attribute(filename,name);
+    EKAT_REQUIRE_MSG (any.content().type()==data.content().type(),
+        "Error! Type mismatch for restart global attribute.\n"
+        " - file name: " + filename + "\n"
+        " - att  name: " + name + "\n"
+        " - expected type: " + any.content().type().name() + "\n"
+        " - actual type: " + data.content().type().name() + "\n"
+        "NOTE: the above names use type_info::name(), which returns an implementation defined string,\n"
+        "      with no guarantees. In particular, the string can be identical for several types,\n"
+        "      and/or change between invocations of the same program.\n");
   }
-
-  // Close files and finalize all pio data structs
-  model_restart.finalize();
 
   m_atm_logger->info("  [EAMxx] restart_model ... done!");
 }
