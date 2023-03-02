@@ -36,6 +36,9 @@ public:
   template <typename S>
   using view_2d = typename KT::template view_2d<S>;
 
+  //template <typename S>
+  //using view_2d_1 = typename KT::template view_2d<S>::HostMirror;
+
   template <typename S>
   using view_3d = typename KT::template view_3d<S>;
   
@@ -44,6 +47,12 @@ public:
 
   template <typename S>
   using view_1d_host = view_Nd_host<S,1>;
+
+  template <typename S>
+  using view_2d_host = view_Nd_host<S,2>;
+
+  template <typename S>
+  using view_3d_host = view_Nd_host<S,3>;
   
   // Constructors
   Nudging (const ekat::Comm& comm, const ekat::ParameterList& params);
@@ -87,11 +96,15 @@ protected:
   std::map<std::string,FieldLayout>  layouts;
   std::vector<std::string> m_fnames;
   std::map<std::string,view_2d<Real>> fields_ext;
+  std::map<std::string,view_2d_host<Real>> fields_ext_h;
   std::map<std::string,view_3d<Real>> fields_ext_3d;
+  std::map<std::string,view_3d_host<Real>> fields_ext_3d_h;
   view_2d<Real> T_mid_ext;
   view_2d<Real> p_mid_ext;
-  view_3d<Real> horiz_winds_ext;
+  //view_3d<Real> horiz_winds_ext;
   view_2d<Real> qv_ext;
+  view_2d<Real> u_ext;
+  view_2d<Real> v_ext;
   TimeStamp ts0;
   NudgingFunc::NudgingData NudgingData_bef;
   NudgingFunc::NudgingData NudgingData_aft;

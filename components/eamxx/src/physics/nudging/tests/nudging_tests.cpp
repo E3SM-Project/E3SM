@@ -53,8 +53,6 @@ TEST_CASE("nudging") {
   using namespace ShortFieldTagsNames;
   using FL = FieldLayout;
 
-  constexpr int packsize = SCREAM_PACK_SIZE;
-
   // A time stamp
   util::TimeStamp t0 ({2000,1,1},{0,0,0});
 
@@ -99,19 +97,18 @@ TEST_CASE("nudging") {
     std::vector<FieldTag> tag_h  = {COL};
     std::vector<FieldTag> tag_v  = {LEV};
     std::vector<FieldTag> tag_2d = {COL,LEV};
-    std::vector<FieldTag> tag_3d = {COL,CMP,LEV};
 
     std::vector<Int>     dims_h  = {num_lcols};
     std::vector<Int>     dims_v  = {num_levs};
     std::vector<Int>     dims_2d = {num_lcols,num_levs};
-    std::vector<Int>     dims_3d = {num_lcols,2,num_levs};
 
     const std::string& gn = grid2->name();
 
     FieldIdentifier fid2("p_mid",FL{tag_2d,dims_2d},Pa,gn);
     FieldIdentifier fid3("T_mid",FL{tag_2d,dims_2d},K,gn);
     FieldIdentifier fid4("qv",FL{tag_2d,dims_2d},kg/kg,gn);
-    FieldIdentifier fid5("horiz_winds",FL{tag_3d,dims_3d},m/s,gn);
+    FieldIdentifier fid5("u",FL{tag_2d,dims_2d},m/s,gn);
+    FieldIdentifier fid6("v",FL{tag_2d,dims_2d},m/s,gn);
 
     // Register fields with fm
     fm->registration_begins();
@@ -119,6 +116,7 @@ TEST_CASE("nudging") {
     fm->register_field(FR{fid3,"output"});
     fm->register_field(FR{fid4,"output"});
     fm->register_field(FR{fid5,"output"});
+    fm->register_field(FR{fid6,"output"});
     fm->registration_ends();
 
 
@@ -133,15 +131,20 @@ TEST_CASE("nudging") {
     auto f4_host = f4.get_view<Real**,Host>();
 
     auto f5 = fm->get_field(fid5);
-    auto f5_host = f5.get_view<Real***,Host>();
+    //auto f5_host = f5.get_view<Real***,Host>();
+    auto f5_host = f5.get_view<Real**,Host>();
+
+    auto f6 = fm->get_field(fid6);
+    auto f6_host = f6.get_view<Real**,Host>();
+
     
     for (int ii=0;ii<num_lcols;++ii) {
       for (int jj=0;jj<num_levs;++jj) {
-        f4_host(ii,jj) = 1;
-	f3_host(ii,jj) = 1;
         f2_host(ii,jj) = 1;
-	f5_host(ii,0,jj) = 1;
-	f5_host(ii,1,jj) = 1;
+	f3_host(ii,jj) = 1;
+        f4_host(ii,jj) = 1;
+	f5_host(ii,jj) = 1;
+	f6_host(ii,jj) = 1;
       }
     }
     fm->init_fields_time_stamp(time);
@@ -150,6 +153,7 @@ TEST_CASE("nudging") {
     f3.sync_to_dev();
     f4.sync_to_dev();
     f5.sync_to_dev();
+    f6.sync_to_dev();
 
     fm->init_fields_time_stamp(t0);
 
@@ -159,7 +163,7 @@ TEST_CASE("nudging") {
     params.set<std::string>("Casename","io_output_test");
     params.set<std::string>("Averaging Type","Instant");
     params.set<int>("Max Snapshots Per File",10);
-    std::vector<std::string> fnames = {"T_mid","p_mid","qv","horiz_winds"};
+    std::vector<std::string> fnames = {"T_mid","p_mid","qv","u","v"};
     params.set<std::vector<std::string>>("Field Names",fnames);
     auto& params_sub = params.sublist("output_control");
     params_sub.set<std::string>("frequency_units","nsteps");
@@ -238,8 +242,6 @@ TEST_CASE("nudging") {
   auto gm = create_gm(io_comm,ncols,nlevs);
   auto grid = gm->get_grid("Physics");
 
-  const auto units = ekat::units::Units::invalid();
-
   ekat::ParameterList params_mid;
   std::string nudging_f = "io_output_test.INSTANT.nsteps_x1."\
                           "np1.2000-01-01-00250.nc";
@@ -264,21 +266,22 @@ TEST_CASE("nudging") {
     }
 
   }
+
   //initialize
   nudging_mid->initialize(t0,RunType::Initial);
-  
+
   Field p_mid       = input_fields["p_mid"];
   Field f_mid       = input_fields["T_mid"];
   Field qv          = input_fields["qv"];
-  Field horiz_winds = input_fields["horiz_winds"];
-  //Field p_mid_o = output_fields["p_mid"];
+  Field u          = input_fields["u"];
+  Field v          = input_fields["v"];
   Field f_mid_o = output_fields["T_mid"];
   Field qv_mid_o = output_fields["qv"];
-  Field hw_mid_o = output_fields["horiz_winds"];
+  Field u_o = output_fields["u"];
+  Field v_o = output_fields["v"];
 
   //fill data
-  
-  auto f_mid_v_h   = f_mid.get_view<Real**, Host>();
+  //auto f_mid_v_h   = f_mid.get_view<Real**, Host>();
   auto p_mid_v_h   = p_mid.get_view<Real**, Host>();
   //Don't fill Temperature because it is going to be nudged anyways  
   for (int icol=0; icol<ncols; icol++){
@@ -287,24 +290,26 @@ TEST_CASE("nudging") {
     }
   }
   f_mid.sync_to_dev();
-  horiz_winds.sync_to_dev();
   qv.sync_to_dev();
+  u.sync_to_dev();
+  v.sync_to_dev();
   p_mid.sync_to_dev();
 
   //10 timesteps of 100 s
   for (int time_s = 1; time_s < 10; time_s++){
     f_mid_o.sync_to_dev();
     qv_mid_o.sync_to_dev();
-    hw_mid_o.sync_to_dev();
-    p_mid.sync_to_dev();
+    u_o.sync_to_dev();
+    v_o.sync_to_dev();
     auto f_mid_v_h_o   = f_mid_o.get_view<Real**, Host>();
     auto qv_h_o   = qv_mid_o.get_view<Real**, Host>();
-    auto hw_h_o   = hw_mid_o.get_view<Real***, Host>();
+    auto u_h_o   = u_o.get_view<Real**, Host>();
+    auto v_h_o   = v_o.get_view<Real**, Host>();
     nudging_mid->run(100);
     f_mid_o.sync_to_host();
     qv_mid_o.sync_to_host();
-    hw_mid_o.sync_to_host();
-    p_mid.sync_to_host();
+    u_o.sync_to_host();
+    v_o.sync_to_host();
 
     //Only check in cases for time is larger than first
     //time step in file (250s), so the checks start at 300s
@@ -319,7 +324,6 @@ TEST_CASE("nudging") {
 	//from external file since that is the lowest value. A time interpolation
 	//is performed but there is no interpolation between levels necessary
 	if (ilev == 0){
-	  continue;
 	  double val_before  = 10000*(icol-1) + 10*int(time_index-1);
 	  double val_after   = 10000*(icol-1) + 10*int(time_index);
 	  double w_aft       = time_s*100.-time_index*250.;
@@ -327,16 +331,15 @@ TEST_CASE("nudging") {
 	  double val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
           REQUIRE(abs(f_mid_v_h_o(icol,ilev) - val_tim_avg)<0.001);
           REQUIRE(abs(qv_h_o(icol,ilev) - val_tim_avg)<0.001);
-          REQUIRE(abs(hw_h_o(icol,0,ilev) - val_tim_avg)<0.001);
-          REQUIRE(abs(hw_h_o(icol,1,ilev) - val_tim_avg)<0.001);
+          REQUIRE(abs(u_h_o(icol,ilev) - val_tim_avg)<0.001);
+          REQUIRE(abs(v_h_o(icol,ilev) - val_tim_avg)<0.001);
 	  continue;
 	}
+
         //If destination pressure is 68 than it will use highest pressure value
 	//from external file. A time interpolation is performed but there is
 	//no interpolation between levels necessary
-	
 	if (ilev == (nlevs-1)){
-	  continue;
 	  double val_before  = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index-1);
 	  double val_after   = 10000*(icol-1) + 200*(ilev-1) + 10*int(time_index);
 	  double w_aft       = time_s*100.-time_index*250.;
@@ -344,8 +347,8 @@ TEST_CASE("nudging") {
 	  double val_tim_avg = (val_before*w_bef + val_after*w_aft) / 250.;
           REQUIRE(abs(f_mid_v_h_o(icol,ilev) - val_tim_avg)<0.001);
           REQUIRE(abs(qv_h_o(icol,ilev) - val_tim_avg)<0.001);
-          REQUIRE(abs(hw_h_o(icol,0,ilev) - val_tim_avg)<0.001);
-          REQUIRE(abs(hw_h_o(icol,1,ilev) - val_tim_avg)<0.001);
+          REQUIRE(abs(u_h_o(icol,ilev) - val_tim_avg)<0.001);
+          REQUIRE(abs(v_h_o(icol,ilev) - val_tim_avg)<0.001);
 	  continue;
 	}
 	
@@ -364,8 +367,8 @@ TEST_CASE("nudging") {
 
 	REQUIRE(abs(f_mid_v_h_o(icol,ilev) - val_avg)<0.001);
 	REQUIRE(abs(qv_h_o(icol,ilev) - val_avg)<0.001);
-	REQUIRE(abs(hw_h_o(icol,0,ilev) - val_avg)<0.001);
-	REQUIRE(abs(hw_h_o(icol,1,ilev) - val_avg)<0.001);
+	REQUIRE(abs(u_h_o(icol,ilev) - val_avg)<0.001);
+	REQUIRE(abs(v_h_o(icol,ilev) - val_avg)<0.001);
       }
     }
 
