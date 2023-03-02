@@ -1625,17 +1625,24 @@ module li_calving
                                         calvingVelocity, thickness, &
                                         xvelmean, yvelmean, calvingThickness, &
                                         floatingVonMisesThresholdStress, &
-                                        groundedVonMisesThresholdStress
+                                        groundedVonMisesThresholdStress, &
+                                        surfaceSpeed
       real (kind=RKIND), dimension(:,:), pointer :: flowParamA, &
                                         temperature, layerThickness
       real (kind=RKIND), pointer :: config_default_flowParamA
       real (kind=RKIND), pointer :: calvingCFLdt
       real (kind=RKIND), pointer :: dtCalvingCFLratio
       integer, pointer :: nCells
+      integer, dimension(:), pointer :: nCellsArray  ! array giving index to owned cells, plus each halo level
       integer, dimension(:), pointer :: cellMask
+      integer, dimension(:), pointer :: indexToCellID
       real (kind=RKIND), dimension(:), pointer :: vonMisesStress, damage
       real (kind=RKIND), pointer :: totalRatebasedCalvedVolume, totalRatebasedUncalvedVolume
       logical :: applyToGrounded, applyToFloating, applyToGroundingLine
+      logical :: badCell, badNeighbor
+      integer :: kCell, jNeighbor, nGoodNeighbors
+      real (kind=RKIND) :: vMsum
+      real(kind=RKIND), dimension(:), allocatable :: vonMisesStressOld
 
       err = 0
 
@@ -1671,7 +1678,9 @@ module li_calving
          ! get fields
           call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
           call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+          call mpas_pool_get_array(meshPool, 'indexToCellID', indexToCellID)
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+          call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
           call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
           call mpas_pool_get_array(geometryPool, 'layerThickness', layerThickness)
           call mpas_pool_get_array(velocityPool, 'eMax', eMax)
@@ -1680,6 +1689,7 @@ module li_calving
           call mpas_pool_get_array(velocityPool, 'flowParamA', flowParamA)
           call mpas_pool_get_array(velocityPool, 'xvelmean', xvelmean)
           call mpas_pool_get_array(velocityPool, 'yvelmean', yvelmean)
+          call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
           call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
           call mpas_pool_get_array(geometryPool, 'calvingVelocity', calvingVelocity)
           call mpas_pool_get_array(geometryPool, 'calvingCFLdt', calvingCFLdt)
@@ -1758,7 +1768,88 @@ module li_calving
                               thickness(iCell) * ( 0.5_RKIND * ( (max(0.0_RKIND, eMax(iCell)))**2.0_RKIND + &
                               (max(0.0_RKIND, eMin(iCell)))**2.0_RKIND) )**(1.0_RKIND / (2.0_RKIND * config_flowLawExponent))
              endif
+          enddo
 
+          ! the row of cells that are adjacent to invalid velocity will have garbage strain rates and vM stress
+          ! so extrapolate into those cells from their valid neighbors
+          do iCell = 1, nCellsArray(2)  ! this is owned cells plus first halo
+             if (surfaceSpeed(iCell) == 0.0_RKIND) then
+                vonMisesStress(iCell) = 0.0_RKIND  ! remove the vM calculation where there is no velocity - garbage can occur here
+             else
+                ! only clean up cells that have a valid velocity - cells outside the solution can be left alone
+                badCell = .false.
+                do iNeighbor = 1, nEdgesOnCell(iCell)
+                   jCell = cellsOnCell(iNeighbor, iCell)
+                   if ((jCell < nCells + 1) .and. surfaceSpeed(jCell) == 0.0_RKIND) then
+                      ! if one neighbor has a 0 velo, the stress here is bad
+                      ! Ignore nonexistent neighbors (nCells+1)
+                      badCell = .true.
+                      exit ! no need to keep looping over neighbors
+                   endif
+                enddo
+                if (badCell) then
+                   vMsum = 0.0_RKIND
+                   nGoodNeighbors = 0
+                   do iNeighbor = 1, nEdgesOnCell(iCell)
+                      jCell = cellsOnCell(iNeighbor, iCell)
+                      if (jCell < nCells + 1) then  ! don't check nonexistent neighbors
+                         badNeighbor = .false.
+                         do jNeighbor = 1, nEdgesOnCell(jCell)
+                            kCell = cellsOnCell(jNeighbor, jCell)
+                            if ((kCell < nCells + 1) .and. (surfaceSpeed(kCell) == 0.0_RKIND)) then
+                               ! if one neighbor of this neighbor has a 0 velo, this neighbor is not to be used
+                               ! Ignore nonexistent neighbors
+                               badNeighbor = .true.
+                               exit
+                            endif
+                         enddo
+                         if (.not. badNeighbor) then
+                            ! if this neighbor has a usable stress, accumulate its value for averaging
+                            vMsum = vMsum + vonMisesStress(jCell)
+                            nGoodNeighbors = nGoodNeighbors + 1
+                         endif
+                      endif
+                   enddo
+                   if (nGoodNeighbors > 0) then
+                      vonMisesStress(iCell) = vMsum / real(nGoodNeighbors, kind=RKIND)
+                   else
+                      call mpas_log_write('Extrapolation failed for von mises stress at cell $i', MPAS_LOG_WARN, intArgs=(/indexToCellID(iCell)/))
+                   endif
+                endif ! if badCell
+             endif ! if velo>0
+          enddo ! loop over nCells
+
+          ! no halo update needed yet because we included the first halo above
+
+          ! Now extrapolate one additional row forward for good measure
+          allocate(vonMisesStressOld(nCells+1)) ! temp var for extrap
+          vonMisesStressOld(:) = vonMisesStress(:)
+          do iCell = 1, nCellsArray(1)  ! just owned cells (equivalent to nCellsSolve)
+             ! Find cells needing extrap
+             if (vonMisesStressOld(iCell) == 0.0) then
+                vMsum = 0.0_RKIND
+                nGoodNeighbors = 0
+                do iNeighbor = 1, nEdgesOnCell(iCell)
+                   jCell = cellsOnCell(iNeighbor, iCell)
+                   ! Use this neighbor if it has a nonzero vM value
+                   if ((jCell < nCells + 1) .and. vonMisesStressOld(jCell) > 0.0_RKIND) then
+                      vMsum = vMsum + vonMisesStressOld(jCell)
+                      nGoodNeighbors = nGoodNeighbors + 1
+                   endif
+                enddo
+                if (nGoodNeighbors > 0) then
+                   vonMisesStress(iCell) = vMsum / real(nGoodNeighbors, kind=RKIND)
+                endif
+             endif ! if vMOld=0
+          enddo ! loop over nCells
+          deallocate(vonMisesStressOld)
+
+          ! another halo update on vonMisesStress after extrap
+          call mpas_timer_start("halo updates")
+          call mpas_dmpar_field_halo_exch(domain, 'vonMisesStress')
+          call mpas_timer_stop("halo updates")
+
+          do iCell = 1,nCells
              ! Calculate calving velocity for grounded cells at marine margin
              if ( .not. li_mask_is_floating_ice(cellMask(iCell)) ) then
                 calvingVelocity(iCell) = min(sqrt(xvelmean(iCell)**2.0_RKIND + yvelmean(iCell)**2.0_RKIND) * &
