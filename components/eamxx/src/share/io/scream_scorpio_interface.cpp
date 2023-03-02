@@ -117,7 +117,7 @@ void get_variable(const std::string &filename, const std::string& shortname, con
   /* Convert the vector of strings that contains the variable dimensions to a char array */
   const int numdims = var_dimensions.size();
   std::vector<const char*> var_dimensions_c(numdims);
-  for (int ii = 0;ii<numdims;++ii) 
+  for (int ii = 0;ii<numdims;++ii)
   {
     var_dimensions_c[ii] = var_dimensions[ii].c_str();
   }
@@ -132,7 +132,7 @@ void register_variable(const std::string &filename, const std::string& shortname
   /* Convert the vector of strings that contains the variable dimensions to a char array */
   const int numdims = var_dimensions.size();
   std::vector<const char*> var_dimensions_c(numdims);
-  for (int ii = 0;ii<numdims;++ii) 
+  for (int ii = 0;ii<numdims;++ii)
   {
     var_dimensions_c[ii] = var_dimensions[ii].c_str();
   }
@@ -289,6 +289,16 @@ void grid_write_data_array<float>(const std::string &filename, const std::string
 template<>
 void grid_write_data_array<double>(const std::string &filename, const std::string &varname, const double* hbuf, const int buf_size) {
   grid_write_data_array_c2f_double(filename.c_str(),varname.c_str(),hbuf,buf_size);
+}
+/* ----------------------------------------------------------------- */
+void write_timestamp (const std::string& filename, const std::string& ts_name, const util::TimeStamp& ts)
+{
+  set_attribute(filename,ts_name,ts.to_string());
+}
+/* ----------------------------------------------------------------- */
+util::TimeStamp read_timestamp (const std::string& filename, const std::string& ts_name)
+{
+  return util::str_to_time_stamp(get_attribute<std::string>(filename,ts_name));
 }
 /* ----------------------------------------------------------------- */
 } // namespace scorpio

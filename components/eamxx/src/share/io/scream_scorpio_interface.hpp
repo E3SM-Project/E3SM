@@ -1,11 +1,12 @@
 #ifndef SCREAM_SCORPIO_INTERFACE_HPP
 #define SCREAM_SCORPIO_INTERFACE_HPP
 
-#include "ekat/util/ekat_string_utils.hpp"
 #include "share/field/field_tag.hpp"
 #include "share/scream_types.hpp"
+#include "share/util/scream_time_stamp.hpp"
 
 #include "ekat/mpi/ekat_comm.hpp"
+#include "ekat/util/ekat_string_utils.hpp"
 
 #include <vector>
 
@@ -79,6 +80,10 @@ namespace scorpio {
     set_any_attribute(filename,att_name,a);
 
   }
+
+  // Shortcut to write/read to/from YYYYMMDD/HHMMSS attributes in the NC file
+  void write_timestamp (const std::string& filename, const std::string& ts_name, const util::TimeStamp& ts);
+  util::TimeStamp read_timestamp (const std::string& filename, const std::string& ts_name);
 
 extern "C" {
   /* Query whether the pio subsystem is inited or not */

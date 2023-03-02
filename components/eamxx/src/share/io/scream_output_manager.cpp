@@ -165,15 +165,8 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
       if (has_restart_data) {
         using namespace scorpio;
         auto fn = find_filename_in_rpointer(hist_restart_casename,false,m_io_comm,m_run_t0);
-        register_file(fn.c_str(),FileMode::Read);
-        auto date = get_attribute<int> (fn.c_str(), "last_write_date");
-        auto time = get_attribute<int> (fn.c_str(), "last_write_time");
 
-        std::vector<int> vdate = {date/10000, (date/100)%100, date%100};
-        std::vector<int> vtime = {time/10000, (time/100)%100, time%100};
-        util::TimeStamp last_write_ts (vdate,vtime);
-        m_output_control.timestamp_of_last_write = last_write_ts;
-        eam_pio_closefile(fn.c_str());
+        m_output_control.timestamp_of_last_write = read_timestamp(fn,"last_write");
 
         // If the type/freq of output needs restart data, we need to restart the streams
         if (m_output_control.nsamples_since_last_write>0) {
@@ -254,11 +247,7 @@ void OutputManager::run(const util::TimeStamp& timestamp)
       set_attribute(filename,"nsteps",timestamp.get_num_steps());
     } else if (is_checkpoint_step) {
       // Update the date of last write
-      const auto& last_write_ts = control.timestamp_of_last_write;
-      auto last_write_date = last_write_ts.get_date()[0]*10000 + last_write_ts.get_date()[1]*100 + last_write_ts.get_date()[2];
-      auto last_write_time = last_write_ts.get_time()[0]*10000 + last_write_ts.get_time()[1]*100 + last_write_ts.get_time()[2];
-      set_attribute(filename,"last_write_date",last_write_date);
-      set_attribute(filename,"last_write_time",last_write_time);
+      scorpio::write_timestamp (filename,"last_write",control.timestamp_of_last_write);
     }
   }
   stop_timer(timer_root+"::get_new_file"); 
