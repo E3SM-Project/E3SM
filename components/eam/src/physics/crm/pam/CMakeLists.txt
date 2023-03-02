@@ -36,6 +36,19 @@ endif()
 set(PAM_MICRO   p3)
 set(PAM_SGS     shoc)
 set(PAM_RAD     forced)
+set(PAM_SCREAM_USE_CXX True)
+set(SCREAM_HOME ${CMAKE_CURRENT_SOURCE_DIR}/../../../../../..)
+
+# removing this once the cime cmake_macros aren't using obsolete
+# Kokkos settings like KOKKOS_OPTIONS.
+if (KOKKOS_OPTIONS)
+   unset(KOKKOS_OPTIONS)
+endif()
+
+if (PAM_SCREAM_USE_CXX)
+  message(STATUS "*** building WITH C++ scream interface ***")
+  target_compile_definitions(pam_driver PUBLIC "-DP3_CXX -DSHOC_CXX")
+endif()
 
 if ("${PAM_DYCORE}" STREQUAL "spam++")
   set(PAMC_MODEL  extrudedmodel)
@@ -44,18 +57,24 @@ if ("${PAM_DYCORE}" STREQUAL "spam++")
   set(PAMC_IO     serial)
 endif()
 
-add_subdirectory(external/pam_core)
-add_subdirectory(external/physics)
-add_subdirectory(external/dynamics)
-add_subdirectory(external/externals/eigen)
-
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
    set(PAM_Fortran_FLAGS -g -real-size 64)
 else()
    set(PAM_Fortran_FLAGS -g -fdefault-real-8 -fdefault-double-8 -ffree-line-length-none -ffixed-line-length-none )
 endif()
 
-target_include_directories(pam_driver PUBLIC 
+
+if (PAM_SCREAM_USE_CXX)
+add_subdirectory(external/physics/scream_cxx_p3_shoc)
+add_subdirectory(external/physics/scream_cxx_interfaces)
+endif()
+
+add_subdirectory(external/pam_core)
+add_subdirectory(external/physics)
+add_subdirectory(external/dynamics)
+add_subdirectory(external/externals/eigen)
+
+target_include_directories(pam_driver PUBLIC
       ${CMAKE_CURRENT_SOURCE_DIR}
       ${CMAKE_CURRENT_BINARY_DIR}
       ${CMAKE_CURRENT_SOURCE_DIR}/external/pam_core
@@ -73,6 +92,15 @@ target_include_directories(pam_driver PUBLIC
       ${CMAKE_CURRENT_BINARY_DIR}/external/dynamics/${PAM_DYCORE}
       )
 
+if (PAM_SCREAM_USE_CXX)
+target_include_directories(pam_driver PUBLIC
+      ${CMAKE_CURRENT_SOURCE_DIR}/external/physics/scream_cxx_p3_shoc
+      ${CMAKE_CURRENT_BINARY_DIR}/external/physics/scream_cxx_p3_shoc
+      ${CMAKE_CURRENT_SOURCE_DIR}/external/physics/scream_cxx_interfaces
+      ${CMAKE_CURRENT_BINARY_DIR}/external/physics/scream_cxx_interfaces
+      )
+endif()
+
 include(${YAKL_HOME}/yakl_utils.cmake)
 yakl_process_target(pam_driver)
 
@@ -86,7 +114,11 @@ target_compile_options(pam_driver PUBLIC
   $<$<COMPILE_LANGUAGE:Fortran>:${PAM_Fortran_FLAGS}>
 )
 
-target_link_libraries(pam_driver pam_core physics dynamics eigen)
+if (PAM_SCREAM_USE_CXX)
+  target_link_libraries(pam_driver pam_core physics dynamics eigen pam_scream_cxx_interfaces ekat p3 shoc physics_share scream_share kokkoscontainers kokkoscore)
+else()
+  target_link_libraries(pam_driver pam_core physics dynamics eigen)
+endif()
 
 # set path for P3 lookup table data
 #set (SCREAM_DATA_DIR ${SCREAM_INPUT_ROOT}/atm/scream CACHE PATH "" FORCE)

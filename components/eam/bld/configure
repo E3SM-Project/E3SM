@@ -2543,6 +2543,7 @@ sub write_filepath
     my $ice           = $cfg_ref->get('ice');
     my $rof           = $cfg_ref->get('rof');
     my $caseroot      = $cfg_ref->get('caseroot');
+    my $crm           = $cfg_ref->get('crm');
 
     # Root directory
     my $camsrcdir = "$cam_root/components";
@@ -2591,7 +2592,7 @@ sub write_filepath
             print $fh "$camsrcdir/eam/src/physics/crm/ecpp\n";
         }
 
-        my $crm = $cfg_ref->get('crm');
+        #my $crm = $cfg_ref->get('crm');
         if ($crm eq 'sam') {
           #####################################################
           ## -crm sam will GLOB directories for CMake
@@ -2727,7 +2728,9 @@ sub write_filepath
       elsif($opts{'dyn_target'} eq 'theta-l') {
         print $fh "$camsrcdir/homme/src/theta-l\n";
         print $fh "$camsrcdir/homme/src/theta-l/share\n";
-        print $fh "$camsrcdir/homme/src/share/compose\n";
+        if ($crm ne 'pam') {
+           print $fh "$camsrcdir/homme/src/share/compose\n";
+        }
       }
       elsif ($opts{'dyn_target'} eq 'preqx_kokkos') {
         print $fh "$camsrcdir/homme/src/share/cxx\n";
@@ -2846,6 +2849,7 @@ sub write_cppdefs
     my  $fh = new IO::File;
 
     my $dyn           = $cfg_ref->get('dyn');
+    my $crm           = $cfg_ref->get('crm');
 
     print "Writing CPPDEFS for EAM in $file, with $dyn and $opts{'dyn_target'}\n";
 
@@ -2854,7 +2858,11 @@ sub write_cppdefs
     print $fh "$make_cppdefs";
 
     if ($dyn eq "se" and $opts{"dyn_target"} eq "theta-l") {
-        print $fh " -DMODEL_THETA_L -DHOMME_ENABLE_COMPOSE "
+       if ($crm ne 'pam') {
+          print $fh " -DMODEL_THETA_L -DHOMME_ENABLE_COMPOSE "
+       } else {
+          print $fh " -DMODEL_THETA_L "
+       }
     }
 
     if ($dyn eq "se" and $opts{"dyn_target"} eq "theta-l_kokkos") {
