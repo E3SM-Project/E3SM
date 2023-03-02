@@ -83,7 +83,8 @@ if [ $skip_testing -eq 0 ]; then
       TAS_ARGS="${TAS_ARGS} --test-level nightly"
       # We never want to submit a fake run to the dashboard
       if [ -z "$SCREAM_FAKE_ONLY" ]; then
-          TAS_ARGS="${TAS_ARGS} --submit"
+          # Run EKAT tests for real nightly runs
+          TAS_ARGS="${TAS_ARGS} --submit -c EKAT_ENABLE_TESTS=ON"
       fi
   fi
 
