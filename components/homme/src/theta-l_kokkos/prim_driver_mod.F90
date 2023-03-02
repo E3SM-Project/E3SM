@@ -10,7 +10,7 @@ module prim_driver_mod
   use element_mod,          only : element_t
   use prim_driver_base,     only : deriv1, smooth_topo_datasets
   use prim_cxx_driver_base, only : prim_init1, prim_finalize
-  use physical_constants,   only : rearth
+  use physical_constants,   only : scale_factor, laplacian_rigid_factor
 
   implicit none
 
@@ -112,7 +112,9 @@ contains
                                    transport_alg,                                                 &
                                    LOGICAL(theta_hydrostatic_mode,c_bool),                        &
                                    c_loc(test_name),                                              &
-                                   dt_remap_factor, dt_tracer_factor, rearth, nsplit,             &
+                                   dt_remap_factor, dt_tracer_factor,                             &
+                                   scale_factor, laplacian_rigid_factor,                          &
+                                   nsplit,                                                        &
                                    LOGICAL(pgrad_correction==1,c_bool),                           &
                                    dp3d_thresh, vtheta_thresh)
 

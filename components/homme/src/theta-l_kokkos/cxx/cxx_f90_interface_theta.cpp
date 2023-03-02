@@ -46,7 +46,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
                                const int& ftype, const int& theta_adv_form, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
                                const bool& use_cpstar, const int& transport_alg, const bool& theta_hydrostatic_mode, const char** test_case,
                                const int& dt_remap_factor, const int& dt_tracer_factor,
-                               const double& rearth, const int& nsplit, const bool& pgrad_correction,
+                               const double& scale_factor, const double& laplacian_rigid_factor, const int& nsplit, const bool& pgrad_correction,
                                const double& dp3d_thresh, const double& vtheta_thresh)
 {
   // Check that the simulation options are supported. This helps us in the future, since we
@@ -58,7 +58,10 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   Errors::check_option("init_simulation_params_c","time_step_type",time_step_type,{1,4,5,6,7,9,10});
   Errors::check_option("init_simulation_params_c","qsize",qsize,0,Errors::ComparisonOp::GE);
   Errors::check_option("init_simulation_params_c","qsize",qsize,QSIZE_D,Errors::ComparisonOp::LE);
-  Errors::check_option("init_simulation_params_c","limiter_option",limiter_option,{8,9});
+  if (qsize > 0) {
+    // limiter_option is irrelevant if qsize = 0.
+    Errors::check_option("init_simulation_params_c","limiter_option",limiter_option,{8,9});
+  }
   Errors::check_option("init_simulation_params_c","ftype",ftype, {-1, 0, 2});
   Errors::check_option("init_simulation_params_c","nu_p",nu_p,0.0,Errors::ComparisonOp::GT);
   Errors::check_option("init_simulation_params_c","nu",nu,0.0,Errors::ComparisonOp::GT);
@@ -115,7 +118,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   params.theta_hydrostatic_mode        = theta_hydrostatic_mode;
   params.dcmip16_mu                    = dcmip16_mu;
   params.nsplit                        = nsplit;
-  params.rearth                        = rearth;
+  params.scale_factor                  = scale_factor;
+  params.laplacian_rigid_factor        = laplacian_rigid_factor;
   params.pgrad_correction              = pgrad_correction;
   params.dp3d_thresh                   = dp3d_thresh;
   params.vtheta_thresh                 = vtheta_thresh;
@@ -275,7 +279,7 @@ void init_elements_c (const int& num_elems)
 
   const bool consthv = (params.hypervis_scaling==0.0);
   e.init (num_elems, consthv, /* alloc_gradphis = */ true,
-          params.rearth,
+          params.scale_factor, params.laplacian_rigid_factor,
           /* alloc_sphere_coords = */ params.transport_alg > 0);
 
   // Init also the tracers structure
