@@ -611,7 +611,6 @@ add_default($nl, 'config_eddyMLD_use_old');
 # Namelist group: Rayleigh_damping #
 ####################################
 
-add_default($nl, 'config_Rayleigh_friction');
 add_default($nl, 'config_Rayleigh_damping_coeff');
 add_default($nl, 'config_Rayleigh_damping_depth_variable');
 add_default($nl, 'config_Rayleigh_bottom_friction');
@@ -814,14 +813,11 @@ add_default($nl, 'config_remap_limiter');
 # Namelist group: bottom_drag #
 ###############################
 
-add_default($nl, 'config_use_implicit_bottom_drag');
+add_default($nl, 'config_bottom_drag_mode');
+add_default($nl, 'config_implicit_bottom_drag_type');
 add_default($nl, 'config_implicit_bottom_drag_coeff');
 add_default($nl, 'config_use_implicit_top_drag');
 add_default($nl, 'config_implicit_top_drag_coeff');
-add_default($nl, 'config_use_implicit_bottom_roughness');
-add_default($nl, 'config_use_implicit_bottom_drag_variable');
-add_default($nl, 'config_use_implicit_bottom_drag_variable_mannings');
-add_default($nl, 'config_use_explicit_bottom_drag');
 add_default($nl, 'config_explicit_bottom_drag_coeff');
 add_default($nl, 'config_use_topographic_wave_drag');
 add_default($nl, 'config_topographic_wave_drag_coeff');

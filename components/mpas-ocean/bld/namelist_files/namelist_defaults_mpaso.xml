@@ -210,7 +210,6 @@
 <config_eddyMLD_use_old>.true.</config_eddyMLD_use_old>
 
 <!-- Rayleigh_damping -->
-<config_Rayleigh_friction>.false.</config_Rayleigh_friction>
 <config_Rayleigh_damping_coeff>0.0</config_Rayleigh_damping_coeff>
 <config_Rayleigh_damping_depth_variable>.false.</config_Rayleigh_damping_depth_variable>
 <config_Rayleigh_bottom_friction>.false.</config_Rayleigh_bottom_friction>
@@ -375,7 +374,8 @@
 <config_remap_limiter>'monotonic'</config_remap_limiter>
 
 <!-- bottom_drag -->
-<config_use_implicit_bottom_drag>.true.</config_use_implicit_bottom_drag>
+<config_bottom_drag_mode>'implicit'</config_bottom_drag_mode>
+<config_implicit_bottom_drag_type>'constant'</config_implicit_bottom_drag_type>
 <config_implicit_bottom_drag_coeff>1.0e-3</config_implicit_bottom_drag_coeff>
 <config_use_implicit_top_drag>.false.</config_use_implicit_top_drag>
 <config_implicit_top_drag_coeff>2.5e-3</config_implicit_top_drag_coeff>
@@ -383,10 +383,6 @@
 <config_implicit_top_drag_coeff ocn_grid="ECwISC30to60E1r2">4.48e-3</config_implicit_top_drag_coeff>
 <config_implicit_top_drag_coeff ocn_grid="SOwISC12to60E2r4">4.48e-3</config_implicit_top_drag_coeff>
 <config_implicit_top_drag_coeff ocn_grid="ECwISC30to60E2r1">4.48e-3</config_implicit_top_drag_coeff>
-<config_use_implicit_bottom_roughness>.false.</config_use_implicit_bottom_roughness>
-<config_use_implicit_bottom_drag_variable>.false.</config_use_implicit_bottom_drag_variable>
-<config_use_implicit_bottom_drag_variable_mannings>.false.</config_use_implicit_bottom_drag_variable_mannings>
-<config_use_explicit_bottom_drag>.false.</config_use_explicit_bottom_drag>
 <config_explicit_bottom_drag_coeff>1.0e-3</config_explicit_bottom_drag_coeff>
 <config_use_topographic_wave_drag>.false.</config_use_topographic_wave_drag>
 <config_topographic_wave_drag_coeff>5.0e-4</config_topographic_wave_drag_coeff>
