@@ -2857,7 +2857,7 @@ subroutine shoc_assumed_pdf_compute_s(&
   C=0._rtype
 
   if (std_s .gt. bfb_sqrt(tiny(1._rtype)) * 100) then
-    C=0.5_rtype*(1._rtype+bfb_erf(s/(sqrt2*std_s)))
+    C=0.5_rtype*(1._rtype+ bfb_erf(s/(sqrt2*std_s)))
     if (C .ne. 0._rtype) qn=s*C+(std_s/sqrt2pi)*bfb_exp(-0.5_rtype*bfb_square(s/std_s))
   else
     if (s .gt. 0._rtype) then
