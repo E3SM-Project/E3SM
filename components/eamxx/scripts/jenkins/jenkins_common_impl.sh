@@ -185,25 +185,31 @@ if [ $skip_testing -eq 0 ]; then
     fi
   fi
 
+  # Disable bash tracing to make the FAILS message stand out more
+  set +x
+
   if [[ $fails > 0 ]]; then
+    echo "######################################################"
+    echo "FAILS DETECTED:"
     if [[ $sa_fail == 1 ]]; then
-      echo "SCREAM STANDALONE TESTING FAILED!"
+      echo "  SCREAM STANDALONE TESTING FAILED!"
     fi
     if [[ $v1_fail == 1 ]]; then
-      echo "SCREAM V1 TESTING FAILED!"
+      echo "  SCREAM V1 TESTING FAILED!"
     fi
     if [[ $v0_fail == 1 ]]; then
-      echo "SCREAM V0 TESTING FAILED!"
+      echo "  SCREAM V0 TESTING FAILED!"
     fi
     if [[ $memcheck_fail == 1 ]]; then
-      echo "SCREAM MEM CHECK TESTING FAILED!"
+      echo "  SCREAM MEM CHECK TESTING FAILED!"
     fi
     if [[ $cov_fail == 1 ]]; then
-      echo "SCREAM COVERAGE BUILD FAILED!"
+      echo "  SCREAM COVERAGE BUILD FAILED!"
     fi
     if [[ $scripts_fail == 1 ]]; then
-      echo "SCREAM SCRIPTS TESTING FAILED!"
+      echo "  SCREAM SCRIPTS TESTING FAILED!"
     fi
+    echo "######################################################"
     exit 1
   fi
 
