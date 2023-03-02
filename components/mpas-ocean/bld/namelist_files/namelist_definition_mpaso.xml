@@ -1444,6 +1444,25 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
+<!-- vegetation_drag -->
+
+<entry id="config_use_vegetation_drag" type="logical"
+	category="vegetation_drag" group="vegetation_drag">
+Controls if vegetation_drag is used to compute Manning's roughness coefficient.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_vegetation_drag_coefficient" type="real"
+	category="vegetation_drag" group="vegetation_drag">
+Vegetation drag coefficient
+
+Valid values: O(1)
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
 <!-- frazil_ice -->
 
 <entry id="config_use_frazil_ice_formation" type="logical"

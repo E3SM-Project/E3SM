@@ -815,7 +815,7 @@ contains
 #endif
 
       ! Compute bottomDrag (Manning roughness) induced by vegetation
-      if (config_use_vegetation_drag .AND. config_use_vegetation_manning_equation) then
+      if (dragType == dragTypeMannings .AND. config_use_vegetation_drag) then
         do iCell = 1, nCellsOwned
           if (vegetationDensity(iCell) * vegetationHeight(iCell) * vegetationDiameter(iCell) .eq. 0.0_RKIND) then
             vegetationMask(iCell) = 0
@@ -873,7 +873,7 @@ contains
            implicitCd = max(0.0025_RKIND, &
                         min(0.1_RKIND, &
                           0.16_RKIND/(log(250.0_RKIND*(bottomDepth(cell1)+bottomDepth(cell2))))**2 ))
-         elseif (dragType == dragTypeMannings .AND. config_use_vegetation_drag .AND. config_use_vegetation_manning_equation) then
+         elseif (dragType == dragTypeMannings .AND. config_use_vegetation_drag) then
            implicitCd = gravity*(0.5_RKIND*(vegetationManning(cell1) + vegetationManning(cell2)))**2 * &
             (0.5_RKIND * (ssh(cell1) + ssh(cell2) + bottomDepth(cell1) + bottomDepth(cell2)))**(-1.0_RKIND/3.0_RKIND)
          else

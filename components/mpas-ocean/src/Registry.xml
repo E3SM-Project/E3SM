@@ -925,11 +925,7 @@
 	</nml_record>
 	<nml_record name="vegetation_drag" mode="init;forward">
 		<nml_option name="config_use_vegetation_drag" type="logical" default_value=".false."
-					description="Controls if vegetation_drag is used."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_use_vegetation_manning_equation" type="logical" default_value=".false."
-					description="Compute vegetation drag force using vegetation-induced Manning roughness coefficient."
+					description="Controls if vegetation_drag is used to compute Manning's roughness coefficient."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_vegetation_drag_coefficient" type="real" default_value="1.09"

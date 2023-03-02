@@ -316,6 +316,10 @@
 <config_tidal_potential_ramp>10.0</config_tidal_potential_ramp>
 <config_self_attraction_and_loading_beta>0.09</config_self_attraction_and_loading_beta>
 
+<!-- vegetation_drag -->
+<config_use_vegetation_drag>.false.</config_use_vegetation_drag>
+<config_vegetation_drag_coefficient>1.09</config_vegetation_drag_coefficient>
+
 <!-- frazil_ice -->
 <config_use_frazil_ice_formation>.true.</config_use_frazil_ice_formation>
 <config_frazil_in_open_ocean>.true.</config_frazil_in_open_ocean>

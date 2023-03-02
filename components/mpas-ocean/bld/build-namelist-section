@@ -280,6 +280,13 @@ add_default($nl, 'config_use_tidal_potential_forcing_P1');
 add_default($nl, 'config_tidal_potential_ramp');
 add_default($nl, 'config_self_attraction_and_loading_beta');
 
+###################################
+# Namelist group: vegetation_drag #
+###################################
+
+add_default($nl, 'config_use_vegetation_drag');
+add_default($nl, 'config_vegetation_drag_coefficient');
+
 ##############################
 # Namelist group: frazil_ice #
 ##############################
