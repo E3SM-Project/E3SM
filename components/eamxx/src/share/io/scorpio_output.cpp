@@ -724,7 +724,7 @@ register_variables(const std::string& filename,
       children_list << "[ ";
       for (const auto& ch_w : children) {
         auto child = ch_w.lock();
-        children_list += child->get_identifier().name()i + ", ";
+        children_list += child->get_identifier().name() + ", ";
       }
       // Replace last "," with "]"
       children_list.pop_back();

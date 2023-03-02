@@ -25,7 +25,7 @@
  *
  *  The EKAT parameter list contains the following options to control output behavior
  *  ------
- *  Casename:                     STRING
+ *  filename_prefix:              STRING
  *  Averaging Type:               STRING
  *  Max Snapshots Per File:       INT                   (default: 1)
  *  Fields:
@@ -46,11 +46,11 @@
  *    Frequency:                  INT                   (default: 0)
  *    frequency_units:            STRING                (default: ${Output->frequency_units})
  *  Restart:
- *    Casename:                   STRING                (default: ${Casename})
+ *    filename_prefix:            STRING                (default: ${filename_prefix})
  *    Perform Restart:            BOOL                  (default: true)
  *  -----
  *  The meaning of these parameters is the following:
- *  - Casename: the output filename root.
+ *  - filename_prefix: the output filename root.
  *  - Averaging Type: a string that describes which type of output, current options are:
  *      instant - no averaging, output each snap as is.
  *      average - average of the field over some interval.
@@ -73,7 +73,7 @@
  *      if Averaging Type is *not* Instant. A value of 0 is interpreted as 'no checkpointing'.
  *    - frequency_units: the units of restart history output.
  *  - Restart: parameters for history restart
- *    - Casename: the history restart filename root.
+ *    - filename_prefix: the history restart filename root.
  *    - Perform Restart: if this is a restarted run, and Averaging Type is not Instant, this flag
  *      determines whether we want to restart the output history or start from scrach. That is,
  *      you can set this to false to force a fresh new history, even in a restarted run.

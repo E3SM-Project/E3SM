@@ -625,7 +625,7 @@ ekat::ParameterList set_output_params(const std::string& name, const std::string
   using vos_type = std::vector<std::string>;
   ekat::ParameterList output_yaml;
 
-  output_yaml.set<std::string>("Casename",name);
+  output_yaml.set<std::string>("filename_prefix",name);
   output_yaml.set<std::string>("Averaging Type","Instant");
   output_yaml.set<int>("Max Snapshots Per File",1);
   output_yaml.set<std::string>("Floating Point Precision","real");

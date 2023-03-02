@@ -146,13 +146,13 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   // our averaging in a "restart" file (e.g., the current avg).
   // Note: the user might decide *not* to restart the output, so give the option
   //       of disabling the restart. Also, the user might want to change the
-  //       casename, so allow to specify a different casename for the restart file.
+  //       filename_prefix, so allow to specify a different filename_prefix for the restart file.
   if (m_is_restarted_run) {
-    // Allow to skip history restart, or to specify a casename for the restart file
-    // that is different from the casename of the current output.
+    // Allow to skip history restart, or to specify a filename_prefix for the restart file
+    // that is different from the filename_prefix of the current output.
     auto& restart_pl = m_params.sublist("Restart");
     bool perform_history_restart = restart_pl.get("Perform Restart",true);
-    auto hist_restart_casename = restart_pl.get("Casename",m_casename);
+    auto hist_restart_casename = restart_pl.get("filename_prefix",m_casename);
 
     if (perform_history_restart) {
       // We can use the step counter in run_t0 to check at what point within an output interval
@@ -410,7 +410,7 @@ set_params (const ekat::ParameterList& params,
       }
       fields_pl.sublist(it.first).set("Field Names",fnames);
     }
-    m_casename = m_params.get<std::string>("Casename");
+    m_casename = m_params.get<std::string>("filename_prefix");
     // Match precision of Fields
     m_params.set<std::string>("Floating Point Precision","real");
   } else {
@@ -421,7 +421,7 @@ set_params (const ekat::ParameterList& params,
         "       Valid options: Instant, Max, Min, Average. Case insensitive.\n");
 
     m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File",-1);
-    m_casename = m_params.get<std::string>("Casename");
+    m_casename = m_params.get<std::string>("filename_prefix");
 
     // Allow user to ask for higher precision for normal model output,
     // but default to single to save on storage
