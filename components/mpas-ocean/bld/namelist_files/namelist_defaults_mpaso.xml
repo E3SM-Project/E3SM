@@ -378,6 +378,10 @@
 <config_implicit_top_drag_coeff ocn_grid="ECwISC30to60E1r2">4.48e-3</config_implicit_top_drag_coeff>
 <config_implicit_top_drag_coeff ocn_grid="SOwISC12to60E2r4">4.48e-3</config_implicit_top_drag_coeff>
 <config_implicit_top_drag_coeff ocn_grid="ECwISC30to60E2r1">4.48e-3</config_implicit_top_drag_coeff>
+<config_loglaw_bottom_roughness>1.0e-3</config_loglaw_bottom_roughness>
+<config_loglaw_layer_depth_max>10.0</config_loglaw_layer_depth_max>
+<config_loglaw_bottom_drag_min>2.5e-3</config_loglaw_bottom_drag_min>
+<config_loglaw_bottom_drag_max>1.0e-1</config_loglaw_bottom_drag_max>
 <config_explicit_bottom_drag_coeff>1.0e-3</config_explicit_bottom_drag_coeff>
 <config_use_topographic_wave_drag>.false.</config_use_topographic_wave_drag>
 <config_topographic_wave_drag_coeff>5.0e-4</config_topographic_wave_drag_coeff>
