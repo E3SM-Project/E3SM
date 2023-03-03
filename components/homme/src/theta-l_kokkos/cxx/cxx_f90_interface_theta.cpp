@@ -41,7 +41,7 @@ extern "C"
 void init_simulation_params_c (const int& remap_alg, const int& limiter_option, const int& rsplit, const int& qsplit,
                                const int& time_step_type, const int& qsize, const int& state_frequency,
                                const Real& nu, const Real& nu_p, const Real& nu_q, const Real& nu_s, const Real& nu_div, const Real& nu_top,
-                               const int& hypervis_order, const int& hypervis_subcycle, const int& hypervis_subcycle_tom, 
+                               const int& hypervis_order, const int& hypervis_subcycle, const int& hypervis_subcycle_tom,
                                const double& hypervis_scaling, const double& dcmip16_mu,
                                const int& ftype, const int& theta_adv_form, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
                                const bool& use_cpstar, const int& transport_alg, const bool& theta_hydrostatic_mode, const char** test_case,
@@ -140,7 +140,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
     //2nd order implicit table
     params.time_step_type = TimeStepType::ttype10_imex;
   } else if ( ! params.prescribed_wind) {
-    Errors::runtime_abort("Invalid time_step_type" 
+    Errors::runtime_abort("Invalid time_step_type"
                           + std::to_string(time_step_type), Errors::err_not_implemented);
   }
 
@@ -357,7 +357,8 @@ void init_functors_c (const bool& allocate_buffer)
 #endif
   auto& hvf     = c.create_if_not_there<HyperviscosityFunctor>();
   auto& ff      = c.create_if_not_there<ForcingFunctor>();
-  auto& diag    = c.create_if_not_there<Diagnostics> (elems.num_elems(),params.theta_hydrostatic_mode);
+  auto& diag    = c.create_if_not_there<Diagnostics> (elems.num_elems(),tracers.num_tracers(),
+                                                      params.theta_hydrostatic_mode);
   auto& vrm     = c.create_if_not_there<VerticalRemapManager>(elems.num_elems());
 
   auto& fbm     = c.create_if_not_there<FunctorsBuffersManager>();
@@ -374,10 +375,10 @@ void init_functors_c (const bool& allocate_buffer)
     auto& esf = c.get<EulerStepFunctor>();
     if (esf.setup_needed()) esf.setup();
   } else {
-#ifdef HOMME_ENABLE_COMPOSE	  
+#ifdef HOMME_ENABLE_COMPOSE
     auto& ct = c.get<ComposeTransport>();
     if (ct.setup_needed()) ct.setup();
-#endif    
+#endif
   }
   if (hvf.setup_needed()) {
     hvf.setup(geometry, state, derived);
@@ -389,7 +390,7 @@ void init_functors_c (const bool& allocate_buffer)
     vrm.setup();
   }
 
-  const bool need_dirk = (params.time_step_type==TimeStepType::ttype7_imex ||   
+  const bool need_dirk = (params.time_step_type==TimeStepType::ttype7_imex ||
                           params.time_step_type==TimeStepType::ttype9_imex ||
                           params.time_step_type==TimeStepType::ttype10_imex  );
 
@@ -406,7 +407,7 @@ void init_functors_c (const bool& allocate_buffer)
     if (params.transport_alg == 0)
       fbm.request_size(c.get<EulerStepFunctor>().requested_buffer_size());
 #ifdef HOMME_ENABLE_COMPOSE
-    else	    
+    else
       fbm.request_size(c.get<ComposeTransport>().requested_buffer_size());
 #endif
     fbm.request_size(hvf.requested_buffer_size());
@@ -527,7 +528,7 @@ void init_elements_states_c (CF90Ptr& elem_state_v_ptr,       CF90Ptr& elem_stat
   });
 }
 
-void init_reference_states_c (CF90Ptr& elem_theta_ref_ptr, 
+void init_reference_states_c (CF90Ptr& elem_theta_ref_ptr,
                               CF90Ptr& elem_dp_ref_ptr,
                               CF90Ptr& elem_phi_ref_ptr)
 {
@@ -555,8 +556,9 @@ void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr, 
   Diagnostics&      diags    = Context::singleton().get<Diagnostics> ();
 
   auto& hvcoord = Context::singleton().get<HybridVCoord>();
-  
-  diags.init(state, geometry, hvcoord,
+  const auto& tracers = Context::singleton().get<Tracers>();
+
+  diags.init(state, geometry, hvcoord, tracers,
              elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr,
              elem_accum_iener_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr);
 }
@@ -584,11 +586,11 @@ void init_boundary_exchanges_c ()
     esf.reset(params);
     esf.init_boundary_exchanges();
   } else {
-#ifdef HOMME_ENABLE_COMPOSE	  
+#ifdef HOMME_ENABLE_COMPOSE
     auto& ct = c.get<ComposeTransport>();
     ct.reset(params);
     ct.init_boundary_exchanges();
-#endif    
+#endif
   }
 
   // RK stages BE's
@@ -620,6 +622,11 @@ void push_test_state_to_c (
     vn0_h(vn0_ptr, derived.num_elems());
   sync_to_device(eta_dot_dpdn_h, derived.m_eta_dot_dpdn);
   sync_to_device(vn0_h, derived.m_vn0);
+}
+
+void sync_diagnostics_to_host_c ()
+{
+  Context::singleton().get<Diagnostics>().sync_diagnostics_to_host();
 }
 
 } // extern "C"

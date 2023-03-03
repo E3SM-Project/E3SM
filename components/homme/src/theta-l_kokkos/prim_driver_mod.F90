@@ -374,7 +374,7 @@ contains
     use perf_mod,       only : t_startf, t_stopf
     use prim_state_mod, only : prim_printstate
     use theta_f2c_mod,  only : prim_run_subcycle_c, cxx_push_results_to_f90
-    use theta_f2c_mod,  only : push_forcing_to_c
+    use theta_f2c_mod,  only : push_forcing_to_c, sync_diagnostics_to_host_c
     !
     ! Inputs
     !
@@ -443,7 +443,7 @@ contains
     if (prescribed_wind == 1) then ! standalone Homme
       call set_prescribed_wind_f(elem,deriv1,hybrid,hvcoord,dt,tl,nets,nete)
     end if
-   
+
     call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nextOutputStep,nsplit_iteration)
 
     ! Set final timelevels from C into Fortran structure
@@ -477,6 +477,9 @@ contains
     ! Print some diagnostic information
 
     if (compute_diagnostics) then
+       call t_startf('sync_diag_to_host')
+       call sync_diagnostics_to_host_c()
+       call t_stopf('sync_diag_to_host')
        call prim_printstate(elem, tl, hybrid,hvcoord,nets,nete)
     end if
 
@@ -497,9 +500,9 @@ contains
 ! (always forcing and push to c) -> (subcycle) -> (always push to f)
 
   function is_push_to_c_required(nsplit_iter) result(compute_forcing_and_push_to_c)
-    
+
     use control_mod, only: test_with_forcing
-    
+
     integer,              intent(in) :: nsplit_iter
 
     logical :: compute_forcing_and_push_to_c
@@ -508,7 +511,7 @@ contains
 
     ! Scream already computes all forcing using the same pointers
     ! stored in Hommexx, so the forcing is already up to date
-#if defined(HOMMEXX_BENCHMARK_NOFORCING) 
+#if defined(HOMMEXX_BENCHMARK_NOFORCING)
 
 #elif defined(SCREAM)
 
@@ -533,7 +536,7 @@ contains
     type (TimeLevel_t),   intent(in) :: tl
     integer,              intent(in) :: statefreq, nextOutputStep, nsplit_iter
     logical,              intent(in) :: compute_diagnostics
- 
+
     logical                          :: push_to_f, time_for_homme_output
 
     push_to_f = .false.
@@ -547,7 +550,7 @@ contains
 #elif defined(SCREAM)
 !SCREAM run, only compute_diagnostics
     push_to_f = compute_diagnostics
-    
+
 #elif defined(CAM)
 !CAM run, push at the end of nsplit loop
     if (nsplit_iter == nsplit) then
@@ -560,11 +563,11 @@ contains
        push_to_f = .true.
     endif
 
-#else     
+#else
 !standalone homme, not benchmarks
 !output
-    !if (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. compute_diagnostics) then 
-    if ( time_for_homme_output ) then 
+    !if (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. compute_diagnostics) then
+    if ( time_for_homme_output ) then
        push_to_f = .true.
     endif
 
@@ -609,7 +612,7 @@ contains
     dt = 0        ! value unused in initialization
     eta_ave_w = 0 ! same
     call set_prescribed_wind(elem,deriv,hybrid,hvcoord,dt,tl,nets,nete,eta_ave_w)
-#endif        
+#endif
   end subroutine init_standalone_test
 
   subroutine compute_test_forcing_f(elem,hybrid,hvcoord,nt,ntQ,dt,nets,nete,tl)
@@ -649,7 +652,7 @@ contains
                                  elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v,   &
                                  elem_derived_eta_dot_dpdn, elem_derived_vn0
 #endif
-    
+
     type (element_t),      intent(inout), target  :: elem(:)
     type (derivative_t),   intent(in)             :: deriv
     type (hvcoord_t),      intent(in)             :: hvcoord
@@ -664,7 +667,7 @@ contains
     type (c_ptr) :: elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr, elem_state_phinh_i_ptr
     type (c_ptr) :: elem_state_dp3d_ptr, elem_state_Qdp_ptr, elem_state_Q_ptr, elem_state_ps_v_ptr
     type (c_ptr) :: elem_derived_eta_dot_dpdn_ptr, elem_derived_vn0_ptr
-    
+
     real(kind=real_kind) :: eta_ave_w
 
     ! We need to set up an hvcoord_t that can be passed as intent(inout), even
@@ -680,7 +683,7 @@ contains
 
     eta_ave_w = 1d0/qsplit
     call set_prescribed_wind(elem,deriv,hybrid,hv,dt,tl,nets,nete,eta_ave_w)
-    
+
     call t_startf('push_to_cxx')
     elem_state_v_ptr         = c_loc(elem_state_v)
     elem_state_w_i_ptr       = c_loc(elem_state_w_i)
@@ -694,7 +697,7 @@ contains
          elem_state_vtheta_dp_ptr, elem_state_phinh_i_ptr, elem_state_v_ptr, &
          elem_state_w_i_ptr, elem_derived_eta_dot_dpdn_ptr, elem_derived_vn0_ptr)
     call t_stopf('push_to_cxx')
-#endif    
+#endif
   end subroutine set_prescribed_wind_f
 
 end module
