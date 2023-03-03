@@ -108,7 +108,7 @@ contains
        if (mapid > 0 .and. .not. skip_match) then
           call seq_map_mappoint(mapid,mapper)
        else
-          if(skip_match) then
+          if(skip_match .and. seq_comm_iamroot(CPLID)) then
              write(logunit,'(A)') subname, 'skip_match true, force new map'
           endif
           call seq_map_mapinit(mapper,mpicom)
@@ -124,7 +124,7 @@ contains
        if (mapid > 0 .and. .not. skip_match) then
           call seq_map_mappoint(mapid,mapper)
        else
-          if(skip_match) then
+          if(skip_match .and. seq_comm_iamroot(CPLID)) then
              write(logunit,'(A)') subname, 'skip_match true, force new map'
           endif
           ! --- Initialize rearranger
@@ -147,7 +147,7 @@ contains
        if (mapid > 0 .and. .not. skip_match) then
           call seq_map_mappoint(mapid,mapper)
        else
-          if(skip_match) then
+          if(skip_match .and. seq_comm_iamroot(CPLID)) then
              write(logunit,'(A)') subname, 'skip_match true, force new map'
           endif
           call seq_map_mapinit(mapper,mpicom)
@@ -377,8 +377,8 @@ end subroutine moab_map_init_rcfile
        mbpresent = .false.
     endif
 
-!   mbnorm = .false.   ! uncomment both to turn off normalization for all maps
-!   mbpresent = .false.
+    !mbnorm = .false.   ! uncomment both to turn off normalization for all maps
+    !mbpresent = .false.
 
     if (present(msgtag)) then
        ltag = msgtag
