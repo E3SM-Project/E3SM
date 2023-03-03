@@ -31,10 +31,12 @@ class TestBuildnml(unittest.TestCase):
 
     def test_doctests(self):
         run_cmd_assert_result(self, "python3 -m doctest *.py", from_dir=EAMXX_CIME_DIR)
+        run_cmd_assert_result(self, "python3 -m doctest atm_manip.py", from_dir=EAMXX_SCRIPTS_DIR)
 
     def test_pylint(self):
         ensure_pylint()
         run_cmd_assert_result(self, "python3 -m pylint --disable C,R,E0401,W1514 *.py", from_dir=EAMXX_CIME_DIR)
+        run_cmd_assert_result(self, "python3 -m pylint --disable C,R,E0401,W1514 atm_manip.py", from_dir=EAMXX_SCRIPTS_DIR)
 
 ###############################################################################
 def parse_command_line(args, desc):
