@@ -195,7 +195,7 @@ contains
           topographicWaveDragCoeff = config_topographic_wave_drag_coeff
           topoDragCutoffDepth = config_topographic_wave_drag_cutoff_depth
           topoDragCutoffWidth = config_topographic_wave_drag_cutoff_width
-          topoDragTurnOff = (TANH((-bottomDepthEdge-topoDragCutoffDepth)/topoDragCutoffWidth)+1)/2
+          topoDragTurnOff = (TANH((bottomDepthEdge-topoDragCutoffDepth)/topoDragCutoffWidth)+1)/2
           if (config_topographic_wave_drag_scheme.EQ."JSL") then
               tensorScheme = .false.
               call mpas_log_write("")
