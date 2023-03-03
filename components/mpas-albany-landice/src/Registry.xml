@@ -457,7 +457,10 @@
                             description="If true, extrapolate ocean data (temperature, salinity, thermal forcing) from external source into underneath the ice draft."
                             possible_values=".true. or .false."
                 />
-        </nml_record>
+			    <nml_option name="config_ocean_data_extrap_ncells_extra" type="integer" default_value="10" units="unitless"
+							description="number of extra cells for over-extrapolation into grounded ice" possible_values="any non-negative value"
+				/>
+		</nml_record>
 
 	<nml_record name="physical_parameters" in_defaults="true">
 		<nml_option name="config_ice_density" type="real" default_value="910.0" units="kg m^{-3}"
@@ -685,7 +688,7 @@
 
                 <package name="thermal" description="This package includes variables required for the thermal solver."/>
 
-		<package name="extrapOceanData" description="This package includes variables required for extrapolating ocean data into MALI ice shelf cavities." />
+                <package name="extrapOceanData" description="This package includes variables required for extrapolating ocean data into MALI ice shelf cavities." />
 	</packages>
 
 
@@ -798,6 +801,7 @@
 			<!-- these variables just for ISMIP6 grounded glacier forcing -->
 			<var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
 			<var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
+            <var name="origOceanMaskHoriz" />
 		</stream>
 
 <!-- An alternate way to allow the HO variables to exist in a separate file.
@@ -901,6 +905,7 @@
                         <var name="ismip6RunoffCurrent" packages="ismip6GroundedFaceMelt" />
 			<var name="ismip6_2dThermalForcingCurrent" packages="ismip6GroundedFaceMelt" />
 			<var name="forcingTimeStamp" packages="ismip6GroundedFaceMelt" />
+            <var name="origOceanMaskHoriz" />
 		</stream>
 
 
@@ -1176,6 +1181,9 @@ is the value of that variable from the *previous* time level!
 
 	<!--  Variables related to ice sheet geometry -->
         <var_struct name="geometry" time_levs="1">
+                <var name="origOceanMaskHoriz" type="integer" dimensions="nCells" units="none"
+                     description="2D mask for original valid ocean data (e.g., ISMIP6 original TF data)"
+                />
                 <var name="bedTopography" type="real" dimensions="nCells Time" units="m above datum"
                      description="Elevation of ice sheet bed.  Once isostasy is added to the model, this should become a state variable."
                 />
@@ -1650,21 +1658,27 @@ is the value of that variable from the *previous* time level!
 
 <!-- ================ -->
 
-	<!-- Variables related to the ocean-forcing re-extrapolation -->
-	    <var_struct name="extrapOceanData" time_levs="1">
-		   		<var name="origOceanMask" type="integer" dimensions="nCells" units="none"
-					 description="mask for original valid ocean data (e.g., ISMIP6 original TF data)"
-	            />
-	   			<var name="validOceanMask" type="real" dimensions="nCells" units="none"
-					 description="Mask for indicating where ocean data is present (i.e., seed mask)"
-				/>
-	 			<var name="availMaskOcean" type="real" dimensions="nCells" units="none"
-					 description="Mask for indicating where ocean data can be flood-filled (i.e., grow mask)"
-	       		/>
-			    <var name="ismip6shelfMelt_zBndsOcean" type="real" dimensions="TWO nISMIP6OceanLayers" units="m"
+    <!-- Variables related to the ocean-forcing re-extrapolation -->
+        <var_struct name="extrapOceanData" time_levs="1">
+<!--                 <var name="origOceanMaskHoriz" type="integer" dimensions="nCells" units="none"
+                     description="2D mask for original valid ocean data (e.g., ISMIP6 original TF data)"
+                /> -->
+                <var name="validOceanMask" type="integer" dimensions="nISMIP6OceanLayers nCells" units="none"
+                     description="3D mask for indicating where ocean data is present (i.e., seed mask)"
+                />
+                <var name="availOceanMask" type="integer" dimensions="nISMIP6OceanLayers nCells" units="none"
+                     description="3D mask for indicating where ocean data can be flood-filled (i.e., grow mask)"
+                />
+                <var name="seedOceanMaskHoriz" type="integer" dimensions="nCells" units="none"
+                     description="seedmask for horizontal floodfill"
+                />
+                <var name="growOceanMaskHoriz" type="integer" dimensions="nCells" units="none"
+                     description="growmask for horizontal floodfill"
+                />
+                <var name="ismip6shelfMelt_zBndsOcean" type="real" dimensions="TWO nISMIP6OceanLayers" units="m"
                      description="bounds for ismip6 ocean layers"
-				/>
-		</var_struct>
+                />
+        </var_struct>
 <!-- ================ -->
 
 	<!-- Scratch Variables -->
