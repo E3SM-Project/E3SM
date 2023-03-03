@@ -1499,7 +1499,10 @@ contains
         case ('spatially-variable')
           dragType = dragTypeVariable
           call mpas_log_write(' Implicit bottom drag type is: spatially-variable')
-
+          if (.not. config_use_variable_drag) &
+            call mpas_log_write('bottomDrag may not be available for spatially-variable '// &
+              'implicit bottom drag because config_use_variable_drag is False', &
+              MPAS_LOG_WARN)
         case ('mannings')
           dragType = dragTypeMannings
           call mpas_log_write(' Implicit bottom drag type is: Mannings')
