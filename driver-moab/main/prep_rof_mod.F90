@@ -281,7 +281,7 @@ contains
             endif
             ! now take care of the mapper 
             mapper_Fl2r%src_mbid = mblxid
-            mapper_Fl2r%tgt_mbid = mbintxlr
+            mapper_Fl2r%tgt_mbid = mbrxid
             mapper_Fl2r%intx_mbid = mbintxlr 
             mapper_Fl2r%src_context = lnd(1)%cplcompid
             mapper_Fl2r%intx_context = idintx
@@ -432,9 +432,9 @@ contains
             endif
             ! now take care of the mapper 
             mapper_Fa2r%src_mbid = mbaxid
-            mapper_Fa2r%tgt_mbid = mbintxar
+            mapper_Fa2r%tgt_mbid = mbrxid
             mapper_Fa2r%intx_mbid = mbintxar 
-            mapper_Fa2r%src_context = rof(1)%cplcompid
+            mapper_Fa2r%src_context = atm(1)%cplcompid
             mapper_Fa2r%intx_context = idintx
             wgtIdef = 'scalar'//C_NULL_CHAR
             mapper_Fa2r%weight_identifier = wgtIdef
@@ -442,7 +442,7 @@ contains
             ! because we will project fields from atm to rof grid, we need to define 
             ! rof a2x fields to rof grid on coupler side
             
-            tagname = trim(seq_flds_a2x_fields_to_rof)//C_NULL_CHAR
+            tagname = trim(seq_flds_a2x_fields_to_rof)//'norm8wt'//C_NULL_CHAR
             tagtype = 1 ! dense
             numco = 1 ! 
             ierr = iMOAB_DefineTagStorage(mbrxid, tagname, tagtype, numco,  tagindex )
@@ -513,7 +513,7 @@ contains
 #ifdef HAVE_MOAB
             ! now take care of the mapper, use the same one as before
             mapper_Sa2r%src_mbid = mbaxid
-            mapper_Sa2r%tgt_mbid = mbintxar
+            mapper_Sa2r%tgt_mbid = mbrxid
             mapper_Sa2r%intx_mbid = mbintxar 
             mapper_Sa2r%src_context = atm(1)%cplcompid
             mapper_Sa2r%intx_context = idintx

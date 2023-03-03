@@ -168,6 +168,7 @@ contains
    integer                  :: tagtype, numco, tagindex
    character(CXX)           :: tagName
    integer                  :: context_id ! we will use a special context for the extra flux ocean instance
+   logical                  :: no_match ! used to force a new mapper
 
    !---------------------------------------------------------------
 
@@ -233,9 +234,10 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Sof2a'
          endif
+         no_match = .true. ! force to create a new mapper object
          call seq_map_init_rcfile(mapper_Sof2a, ocn(1), atm(1), &
             'seq_maps.rc','ocn2atm_smapname:','ocn2atm_smaptype:',samegrid_ao, &
-            'mapper_Sof2a initialization',esmf_map_flag)
+            'mapper_Sof2a initialization',esmf_map_flag, no_match)
 
 #ifdef HAVE_MOAB
          ! Call moab intx only if atm and ocn are init in moab
@@ -275,7 +277,7 @@ contains
 
             ! now take care of the mapper 
             mapper_So2a%src_mbid = mboxid
-            mapper_So2a%tgt_mbid = mbintxoa ! 
+            mapper_So2a%tgt_mbid = mbaxid ! 
             mapper_So2a%intx_mbid = mbintxoa 
             mapper_So2a%src_context = ocn(1)%cplcompid
             mapper_So2a%intx_context = idintx
@@ -371,7 +373,7 @@ contains
             endif
 
             mapper_Sof2a%src_mbid = mbofxid
-            mapper_Sof2a%tgt_mbid = mbintxoa
+            mapper_Sof2a%tgt_mbid = mbaxid
             mapper_Sof2a%intx_mbid = mbintxoa
             mapper_Sof2a%src_context = context_id
             mapper_Sof2a%intx_context = idintx
@@ -399,16 +401,17 @@ contains
             write(logunit,*) ' '
             write(logunit,F00) 'Initializing mapper_Fof2a'
          endif
+         no_match = .true. ! force to create a new mapper object
          call seq_map_init_rcfile(mapper_Fof2a, ocn(1), atm(1), &
             'seq_maps.rc','ocn2atm_fmapname:','ocn2atm_fmaptype:',samegrid_ao, &
-            'mapper_Fof2a initialization',esmf_map_flag)
+            'mapper_Fof2a initialization',esmf_map_flag, no_match)
 
 ! copy mapper_So2a , maybe change the matrix ? still based on intersection ?
 #ifdef HAVE_MOAB
          if ((mbaxid .ge. 0) .and.  (mboxid .ge. 0)) then
             ! now take care of the mapper 
             mapper_Fo2a%src_mbid = mboxid
-            mapper_Fo2a%tgt_mbid = mbintxoa
+            mapper_Fo2a%tgt_mbid = mbaxid
             mapper_Fo2a%intx_mbid = mbintxoa 
             mapper_Fo2a%src_context = ocn(1)%cplcompid
             mapper_Fo2a%intx_context = idintx
@@ -418,7 +421,7 @@ contains
          endif 
          if ((mbaxid .ge. 0) .and.  (mbofxid .ge. 0)) then
             mapper_Fof2a%src_mbid = mbofxid
-            mapper_Fof2a%tgt_mbid = mbintxoa
+            mapper_Fof2a%tgt_mbid = mbaxid
             mapper_Fof2a%intx_mbid = mbintxoa
             mapper_Fof2a%src_context = ocn(1)%cplcompid
             mapper_Fof2a%intx_context = idintx
@@ -479,7 +482,7 @@ contains
             endif
             ! now take care of the mapper 
             mapper_Si2a%src_mbid = mbixid
-            mapper_Si2a%tgt_mbid = mbintxia
+            mapper_Si2a%tgt_mbid = mbaxid
             mapper_Si2a%intx_mbid = mbintxia 
             mapper_Si2a%src_context = ice(1)%cplcompid
             mapper_Si2a%intx_context = idintx
@@ -571,7 +574,7 @@ contains
 #ifdef HAVE_MOAB
            ! now take care of the mapper for MOAB
             mapper_Fi2a%src_mbid = mbixid
-            mapper_Fi2a%tgt_mbid = mbintxia
+            mapper_Fi2a%tgt_mbid = mbaxid
             mapper_Fi2a%intx_mbid = mbintxia 
             mapper_Fi2a%src_context = ice(1)%cplcompid
             mapper_Fi2a%intx_context = idintx
@@ -606,7 +609,7 @@ contains
               call shr_sys_abort(subname//' ERROR in registering lnd atm intx ')
             endif
             mapper_Fl2a%src_mbid = mblxid
-            mapper_Fl2a%tgt_mbid = mbintxla ! 
+            mapper_Fl2a%tgt_mbid = mbaxid ! 
             mapper_Fl2a%intx_mbid = mbintxla
             mapper_Fl2a%src_context = lnd(1)%cplcompid
             mapper_Fl2a%intx_context = idintx
@@ -698,7 +701,7 @@ contains
 #ifdef HAVE_MOAB
          if ((mbaxid .ge. 0) .and.  (mblxid .ge. 0) ) then
             mapper_Sl2a%src_mbid = mblxid
-            mapper_Sl2a%tgt_mbid = mapper_Fl2a%tgt_mbid
+            mapper_Sl2a%tgt_mbid = mapper_Fl2a%tgt_mbid ! 
             mapper_Sl2a%intx_mbid = mbintxla
             mapper_Sl2a%src_context = lnd(1)%cplcompid
             mapper_Sl2a%intx_context = mapper_Fl2a%intx_context

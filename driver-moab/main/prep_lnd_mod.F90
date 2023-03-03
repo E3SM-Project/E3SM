@@ -258,7 +258,7 @@ contains
             endif
             ! now take care of the mapper 
             mapper_Fr2l%src_mbid = mbrxid
-            mapper_Fr2l%tgt_mbid = mbintxrl
+            mapper_Fr2l%tgt_mbid = mblxid
             mapper_Fr2l%intx_mbid = mbintxrl 
             mapper_Fr2l%src_context = rof(1)%cplcompid
             mapper_Fr2l%intx_context = idintx
@@ -379,7 +379,7 @@ contains
               call shr_sys_abort(subname//' ERROR in registering atm lnd intx ')
             endif
             mapper_Sa2l%src_mbid = mbaxid
-            mapper_Sa2l%tgt_mbid = mbintxal
+            mapper_Sa2l%tgt_mbid = mblxid
             mapper_Sa2l%intx_mbid = mbintxal
             mapper_Sa2l%src_context = atm(1)%cplcompid
             mapper_Sa2l%intx_context = idintx
@@ -487,7 +487,7 @@ contains
 
              ! use the same map for fluxes too
             mapper_Fa2l%src_mbid = mbaxid
-            mapper_Fa2l%tgt_mbid = mapper_Sa2l%tgt_mbid
+            mapper_Fa2l%tgt_mbid = mapper_Sa2l%tgt_mbid ! mblxid
             mapper_Fa2l%intx_mbid = mbintxal
             mapper_Fa2l%src_context = atm(1)%cplcompid
             mapper_Fa2l%intx_context = mapper_Sa2l%intx_context
