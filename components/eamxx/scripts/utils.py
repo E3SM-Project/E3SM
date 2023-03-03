@@ -107,6 +107,33 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None, dry_run=Fa
     return output
 
 ###############################################################################
+def run_cmd_assert_result(test_obj, cmd, from_dir=None, expect_works=True, env=None, verbose=False):
+###############################################################################
+    """
+    Run a shell command from a unittest.
+    """
+    from_dir = Path() if from_dir is None else from_dir
+    stat, output, errput = run_cmd(cmd, from_dir=from_dir, env=env, verbose=verbose)
+    problem = None
+    if expect_works and stat != 0:
+        problem = "SHOULD HAVE WORKED"
+    elif not expect_works and stat == 0:
+        problem = "SHOULD NOT HAVE WORKED"
+
+    if problem is not None:
+        msg = \
+"""
+COMMAND: %s
+FROM_DIR: %s
+%s
+OUTPUT: %s
+ERRPUT: %s
+""" % (cmd, from_dir, problem, output, errput)
+        test_obj.assertTrue(False, msg=msg)
+
+    return output
+
+###############################################################################
 def check_minimum_python_version(major, minor):
 ###############################################################################
     """

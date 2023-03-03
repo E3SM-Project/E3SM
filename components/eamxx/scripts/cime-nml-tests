@@ -1,0 +1,87 @@
+#!/usr/bin/env python3
+
+"""
+Script containing python test suite for SCREAM's CIME
+namelist-related infrastructure.
+"""
+
+from utils import run_cmd, check_minimum_python_version, expect, ensure_pylint, run_cmd_no_fail, run_cmd_assert_result
+
+check_minimum_python_version(3, 6)
+
+from machines_specs import is_machine_supported, is_cuda_machine
+
+from git_utils import get_current_branch, get_current_commit, get_current_head, git_refs_difference, \
+    is_repo_clean, get_common_ancestor, checkout_git_ref, get_git_toplevel_dir
+
+import unittest, argparse, sys, difflib, shutil, os
+from pathlib import Path
+
+EAMXX_DIR         = Path(__file__).resolve().parent.parent
+EAMXX_CIME_DIR    = EAMXX_DIR / "cime_config"
+EAMXX_SCRIPTS_DIR = EAMXX_DIR / "scripts"
+
+CONFIG = {
+    "machine"  : None,
+}
+
+###############################################################################
+class TestBuildnml(unittest.TestCase):
+###############################################################################
+
+    def test_doctests(self):
+        run_cmd_assert_result(self, "python3 -m doctest *.py", from_dir=EAMXX_CIME_DIR)
+
+    def test_pylint(self):
+        ensure_pylint()
+        run_cmd_assert_result(self, "python3 -m pylint --disable C,R,E0401,W1514 *.py", from_dir=EAMXX_CIME_DIR)
+
+###############################################################################
+def parse_command_line(args, desc):
+###############################################################################
+    """
+    Parse custom args for this test suite. Will delete our custom args from
+    sys.argv so that only args meant for unittest remain.
+    """
+    help_str = \
+"""
+{0} [TEST] [TEST]
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Run basic pylint and doctests for everything \033[0m
+    > {0}
+
+""".format(Path(args[0]).name)
+
+    parser = argparse.ArgumentParser(
+        usage=help_str,
+        description=desc,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument("-m", "--machine",
+                        help="Provide machine name. This is required for full (not dry) runs")
+
+    args, py_ut_args = parser.parse_known_args()
+    sys.argv[1:] = py_ut_args
+
+    return args
+
+###############################################################################
+def scripts_tests(machine=None):
+###############################################################################
+    # Store test params in environment
+    if machine:
+        expect(is_machine_supported(machine), "Machine {} is not supported".format(machine))
+        CONFIG["machine"] = machine
+
+    unittest.main(verbosity=2)
+
+###############################################################################
+def _main_func(desc):
+###############################################################################
+    scripts_tests(**vars(parse_command_line(sys.argv, desc)))
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)
