@@ -64,6 +64,7 @@
  *        - IO Grid Name: if provided, remap fields to this grid before output (useful to remap
  *                        SEGrid fields to PointGrid fields on the fly, to save on output size)
  *  - Max Snapshots Per File: the maximum number of snapshots saved per file. After this many
+ *    snapshots, the current files is closed and a new file created.
  *  - Output: parameters for output control
  *    - Frequency: the frequency of output writes (in the units specified by ${Output frequency_units})
  *    - frequency_units: the units of output frequency (nsteps, nmonths, nyears, nhours, ndays,...)
