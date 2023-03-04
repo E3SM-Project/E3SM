@@ -16,7 +16,7 @@ from eamxx_buildnml_impl import check_value, is_array_type
 from atm_manip import expect, get_xml_node, atm_config_chg_impl
 
 ###############################################################################
-def atm_config_chg(changes,append):
+def atm_config_chg(changes, append=False, no_buffer=False):
 ###############################################################################
     expect(os.path.exists("namelist_scream.xml"),
            "No pwd/namelist_scream.xml file is present. Please rum from a case dir that has been setup")
@@ -29,6 +29,9 @@ def atm_config_chg(changes,append):
 
     if any_change:
         tree.write("namelist_scream.xml")
+
+    if not no_buffer:
+        run_cmd_no_fail(f"./xmlchange)
 
     return True
 
@@ -59,6 +62,13 @@ OR
         default=False,
         action="store_true",
         help="Append to atm var, rather than replace its value.",
+    )
+
+    parser.add_argument(
+        "--no-buffer",
+        default=False,
+        action="store_true",
+        help="Used by buildnml to replay buffered commands",
     )
 
     parser.add_argument("changes", nargs="+", help="Values to change")

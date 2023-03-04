@@ -489,21 +489,17 @@ def create_raw_xml_file(case, caseroot):
         defaults = ET.parse(fd)
         raw_xml = _create_raw_xml_file_impl(case, defaults.getroot())
 
-    if os.path.exists(raw_xml_file):
-        print("{} already exists, will not overwrite. Remove to regenerate".format(raw_xml_file))
-    else:
-        # First time we write the raw intermediate file. Check its values
+    if not case.get_value("SCREAM_HACK_XML"):
         check_all_values(raw_xml)
 
         with open(raw_xml_file, "w") as fd:
             ET.ElementTree(raw_xml).write(fd, method='xml', encoding="unicode")
 
-    # Now that we have our namelist_scream.xml file, we can apply buffered
-    # atmchange requests.
-    atmchg_buffer = case.get_value("SCREAM_ATMCHANGE_BUFFER")
-    if atmchg_buffer:
-        run_cmd_no_fail("{}/atmchange {}".format(caseroot, atmchg_buffer))
-        case.set_value("SCREAM_ATMCHANGE_BUFFER", "")
+        # Now that we have our namelist_scream.xml file, we can apply buffered
+        # atmchange requests.
+        atmchg_buffer = case.get_value("SCREAM_ATMCHANGE_BUFFER")
+        if atmchg_buffer:
+            run_cmd_no_fail("{}/atmchange {}".format(caseroot, atmchg_buffer))
 
 ###############################################################################
 def convert_to_dict(element):
