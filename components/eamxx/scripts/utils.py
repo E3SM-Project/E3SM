@@ -324,14 +324,18 @@ def ensure_pip():
     function below, since it would cause circular dependencies. This one has to
     be done by hand.
     """
-    # Use ensurepip for installing pip
-    import ensurepip
-    ensurepip.bootstrap(user=True)
+    try:
+        import pip
 
-    # needed to "rehash" available libs
-    site.main() # pylint: disable=no-member
+    except ModuleNotFoundError:
+        # Use ensurepip for installing pip
+        import ensurepip
+        ensurepip.bootstrap(user=True)
 
-    _ = import_module("pip")
+        # needed to "rehash" available libs
+        site.main() # pylint: disable=no-member
+
+        import pip
 
 ###############################################################################
 def pip_install_lib(pip_libname):
