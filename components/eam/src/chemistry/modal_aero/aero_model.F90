@@ -841,6 +841,46 @@ contains
     index_tot_mass(4,2) = get_spc_ndx('bc_a4')
     index_chm_mass(4,1) = get_spc_ndx('bc_a1' )
     !
+#elif ( defined MODAL_AERO_5MODE )
+    ! accumulation mode #1
+    !
+    index_tot_mass(1,1) = get_spc_ndx('so4_a1')
+    index_tot_mass(1,2) = get_spc_ndx('pom_a1')
+    index_tot_mass(1,3) = get_spc_ndx('soa_a1')
+    index_tot_mass(1,4) = get_spc_ndx('bc_a1' )
+    index_tot_mass(1,5) = get_spc_ndx('dst_a1')
+    index_tot_mass(1,6) = get_spc_ndx('ncl_a1')
+    index_tot_mass(1,7) = get_spc_ndx('mom_a1')
+    index_chm_mass(1,1) = get_spc_ndx('so4_a1')
+    index_chm_mass(1,2) = get_spc_ndx('soa_a1')
+    index_chm_mass(1,3) = get_spc_ndx('bc_a1' )
+     !
+    ! aitken mode
+    !
+    index_tot_mass(2,1) = get_spc_ndx('so4_a2')
+    index_tot_mass(2,2) = get_spc_ndx('soa_a2')
+    index_tot_mass(2,3) = get_spc_ndx('ncl_a2')
+    index_tot_mass(2,4) = get_spc_ndx('mom_a2')
+    index_chm_mass(2,1) = get_spc_ndx('so4_a2')
+    index_chm_mass(2,2) = get_spc_ndx('soa_a2')
+    ! coarse mode
+    !
+    index_tot_mass(3,1) = get_spc_ndx('dst_a3')
+    index_tot_mass(3,2) = get_spc_ndx('ncl_a3')
+    index_tot_mass(3,3) = get_spc_ndx('so4_a3')
+    index_chm_mass(3,1) = get_spc_ndx('so4_a3')
+    !
+    ! POM mode
+    !
+    index_tot_mass(4,1) = get_spc_ndx('pom_a4')
+    index_tot_mass(4,2) = get_spc_ndx('bc_a4')
+    index_tot_mass(4,3) = get_spc_ndx('mom_a4')
+    index_chm_mass(4,1) = get_spc_ndx('bc_a4' ) ! previous model use bc_a1, should be a typo
+    !
+    ! strat_coarse
+    index_tot_mass(5,1) = get_spc_ndx('so4_a5')
+    index_chm_mass(5,1) = get_spc_ndx('so4_a5')
+
 #elif ( defined MODAL_AERO_7MODE )
     !
     ! accumulation mode #1
