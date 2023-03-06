@@ -91,6 +91,9 @@ module seaice_core_interface
       type (mpas_pool_type), intent(inout) :: packagePool
       type (mpas_io_context_type), intent(inout) :: iocontext
 
+      type (mpas_pool_iterator_type) :: pkgItr
+      logical, pointer :: packageActive
+
       integer :: ierr
 
       ierr = 0
@@ -109,6 +112,23 @@ module seaice_core_interface
 
       ! testing system test
       call setup_packages_other(configPool, packagePool, ierr)
+
+      call mpas_log_write( '')
+      call mpas_log_write( '  **** Summary of sea ice packages ****')
+      call mpas_pool_begin_iteration(packagePool)
+      do while ( mpas_pool_get_next_member(packagePool, pkgItr) )
+
+         if ( pkgItr % memberType == MPAS_POOL_PACKAGE ) then
+            call mpas_pool_get_package(packagePool, pkgItr % memberName, packageActive)
+            if ( packageActive ) then
+               call mpas_log_write( '      ' // trim(pkgItr % memberName) // ' = ON')
+            else
+               call mpas_log_write( '      ' // trim(pkgItr % memberName) // ' = OFF')
+            end if
+         end if
+      end do
+      call mpas_log_write( '  ***********************************')
+      call mpas_log_write( '')
 
    end function seaice_setup_packages!}}}
 
