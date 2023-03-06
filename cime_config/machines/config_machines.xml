@@ -2076,7 +2076,7 @@
 
   <machine MACH="anvil">
     <DESC>ANL/LCRC Linux Cluster</DESC>
-    <NODENAME_REGEX>b.*.lcrc.anl.gov</NODENAME_REGEX>
+    <NODENAME_REGEX>(b\d+|blues.*).lcrc.anl.gov</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>impi,openmpi,mvapich</MPILIBS>
