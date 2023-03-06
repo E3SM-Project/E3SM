@@ -103,6 +103,7 @@ contains
     par2%nprocs     = par1%nprocs
     par2%comm       = par1%comm
     par2%masterproc = par1%masterproc
+    par2%dynproc    = par1%dynproc
 
   end subroutine copy_par
 
@@ -124,12 +125,15 @@ contains
     integer(kind=int_kind)                              :: ierr
     logical :: running   ! state of MPI at beginning of initmp call
 #ifdef CAM
-    integer :: color = 1
+    integer :: color
     integer :: iam_cam, npes_cam
     integer :: npes_homme
     integer :: max_stride
 #endif
-    integer :: npes_cam_stride = 1
+    integer :: npes_cam_stride
+
+    color = 1
+    npes_cam_stride = 1
     !================================================
     !     Basic MPI initialization
     ! ================================================
