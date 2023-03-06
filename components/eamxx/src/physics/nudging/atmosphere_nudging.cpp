@@ -43,6 +43,7 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   //Internally we want this in seconds so need to convert
   //Only consider integer time steps in seconds to resolve any roundoff error
   time_step_file=int((time_value_2-time_value_1)*86400);
+  std::cout<<"time_step_file: "<<time_step_file<<std::endl;
   scorpio::eam_pio_closefile(datafile);
 }
 
@@ -53,36 +54,30 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   FieldLayout scalar3d_layout_mid { {COL,LEV}, {m_num_cols, m_num_src_levs} };
   FieldLayout horiz_wind_layout { {COL,CMP,LEV}, {m_num_cols,2,m_num_src_levs} };
   fields_ext["T_mid"] = view_2d<Real>("T_mid",m_num_cols,m_num_src_levs);
-  //auto T_mid_h       = Kokkos::create_mirror_view(fields_ext["T_mid"]);
   fields_ext_h["T_mid"]       = Kokkos::create_mirror_view(fields_ext["T_mid"]);
-  //host_views["T_mid"] = view_1d_host<Real>(T_mid_h.data(),T_mid_h.size());
   auto T_mid_h=fields_ext_h["T_mid"];
   host_views["T_mid"] = view_1d_host<Real>(T_mid_h.data(),T_mid_h.size());
   layouts.emplace("T_mid", scalar3d_layout_mid);
 
   fields_ext["p_mid"] = view_2d<Real>("p_mid",m_num_cols,m_num_src_levs);
-  //auto p_mid_h       = Kokkos::create_mirror_view(fields_ext["p_mid"]);
   fields_ext_h["p_mid"]       = Kokkos::create_mirror_view(fields_ext["p_mid"]);
   auto p_mid_h=fields_ext_h["p_mid"];
   host_views["p_mid"] = view_1d_host<Real>(p_mid_h.data(),p_mid_h.size());
   layouts.emplace("p_mid", scalar3d_layout_mid);
   
   fields_ext["qv"] = view_2d<Real>("qv",m_num_cols,m_num_src_levs);
-  //auto qv_h       = Kokkos::create_mirror_view(fields_ext["qv"]);
   fields_ext_h["qv"]       = Kokkos::create_mirror_view(fields_ext["qv"]);
   auto qv_h=fields_ext_h["qv"];
   host_views["qv"] = view_1d_host<Real>(qv_h.data(),qv_h.size());
   layouts.emplace("qv", scalar3d_layout_mid);
 
   fields_ext["u"] = view_2d<Real>("u",m_num_cols,m_num_src_levs);
-  //auto qv_h       = Kokkos::create_mirror_view(fields_ext["qv"]);
   fields_ext_h["u"]       = Kokkos::create_mirror_view(fields_ext["u"]);
   auto u_h=fields_ext_h["u"];
   host_views["u"] = view_1d_host<Real>(u_h.data(),u_h.size());
   layouts.emplace("u", scalar3d_layout_mid);
 
   fields_ext["v"] = view_2d<Real>("v",m_num_cols,m_num_src_levs);
-  //auto qv_h       = Kokkos::create_mirror_view(fields_ext["qv"]);
   fields_ext_h["v"]       = Kokkos::create_mirror_view(fields_ext["v"]);
   auto v_h=fields_ext_h["v"];
   host_views["v"] = view_1d_host<Real>(v_h.data(),v_h.size());
@@ -142,7 +137,7 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   NudgingData_aft.time = -999;
 
   //Read in the first time step
-  data_input->read_variables(0);
+  data_input->read_variables(1);
   Kokkos::deep_copy(NudgingData_aft.T_mid,fields_ext_h["T_mid"]);
   Kokkos::deep_copy(NudgingData_aft.p_mid,fields_ext_h["p_mid"]);
   Kokkos::deep_copy(NudgingData_aft.u,fields_ext_h["u"]);
@@ -163,7 +158,10 @@ void Nudging::time_interpolation (const int time_s) {
   double time_step_file_d = time_step_file;
   double w_bef = ((time_index+1)*time_step_file-time_s) / time_step_file_d;
   double w_aft = (time_s-(time_index)*time_step_file) / time_step_file_d;
-  
+  std::cout<<"w_bef: "<<w_bef<<std::endl;
+  std::cout<<"w_aft: "<<w_aft<<std::endl;
+  std::cout<<"time_index: "<<time_index<<std::endl;
+  std::cout<<"time_step_file_d: "<<time_step_file_d<<std::endl;
   const int num_cols = NudgingData_aft.T_mid.extent(0);
   const int num_vert_packs = NudgingData_aft.T_mid.extent(1);
   const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);
@@ -202,7 +200,6 @@ void Nudging::time_interpolation (const int time_s) {
   auto v_aft = view_2d<Real>("",NudgingData_aft.v.extent_int(0),
 				 NudgingData_aft.v.extent_int(1));
   Kokkos::deep_copy(v_aft,NudgingData_aft.v);
-
   
   Kokkos::parallel_for("nudging_time_interpolation", policy,
      	       KOKKOS_LAMBDA(MemberType const& team) {
@@ -235,7 +232,6 @@ void Nudging::time_interpolation (const int time_s) {
       team.team_barrier();
   });
   Kokkos::fence();   
-
 }
 
 // =========================================================================================
@@ -252,8 +248,7 @@ void Nudging::update_time_step (const int time_s)
       Kokkos::deep_copy(NudgingData_bef.qv,NudgingData_aft.qv);
       NudgingData_bef.time = NudgingData_aft.time;
 
-
-      data_input->read_variables(time_index);
+      data_input->read_variables(time_index+1);
       Kokkos::deep_copy(NudgingData_aft.T_mid,fields_ext_h["T_mid"]);
       Kokkos::deep_copy(NudgingData_aft.p_mid,fields_ext_h["p_mid"]);
       Kokkos::deep_copy(NudgingData_aft.u,fields_ext_h["u"]);
