@@ -2,8 +2,9 @@
 Utilities
 """
 
-import os, sys, re, signal, subprocess, site
+import os, sys, re, signal, subprocess, site, time
 from importlib import import_module
+from pathlib import Path
 
 ###############################################################################
 def expect(condition, error_msg, exc_type=SystemExit, error_prefix="ERROR:"):
@@ -254,6 +255,20 @@ def format_time(time_format, input_format, input_time):
             output_time += "0" * min_len_spec[spec]
         output_time += field[1:]
     return output_time
+
+###############################################################################
+def get_timestamp(timestamp_format="%Y%m%d_%H%M%S", utc_time=False):
+###############################################################################
+    """
+    Get a string representing the current UTC time in format: YYYYMMDD_HHMMSS
+
+    The format can be changed if needed.
+    """
+    if utc_time:
+        time_tuple = time.gmtime()
+    else:
+        time_tuple = time.localtime()
+    return time.strftime(timestamp_format, time_tuple)
 
 ###############################################################################
 class SharedArea(object):

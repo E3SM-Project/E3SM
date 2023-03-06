@@ -5,21 +5,19 @@ Script containing python test suite for SCREAM's CIME
 namelist-related infrastructure.
 """
 
-from utils import run_cmd, check_minimum_python_version, expect, ensure_pylint, run_cmd_no_fail, run_cmd_assert_result
+from utils import check_minimum_python_version, expect, ensure_pylint, run_cmd_assert_result, get_timestamp
 
 check_minimum_python_version(3, 6)
 
-from machines_specs import is_machine_supported, is_cuda_machine
+from machines_specs import is_machine_supported
 
-from git_utils import get_current_branch, get_current_commit, get_current_head, git_refs_difference, \
-    is_repo_clean, get_common_ancestor, checkout_git_ref, get_git_toplevel_dir
-
-import unittest, argparse, sys, difflib, shutil, os
+import unittest, argparse, sys, os, shutil
 from pathlib import Path
 
 EAMXX_DIR         = Path(__file__).resolve().parent.parent
 EAMXX_CIME_DIR    = EAMXX_DIR / "cime_config"
 EAMXX_SCRIPTS_DIR = EAMXX_DIR / "scripts"
+CIME_SCRIPTS_DIR  = EAMXX_DIR.parent.parent / "cime" / "scripts"
 
 CONFIG = {
     "machine"  : None,
@@ -29,14 +27,90 @@ CONFIG = {
 class TestBuildnml(unittest.TestCase):
 ###############################################################################
 
+    ###########################################################################
+    def _create_test(self, extra_args, env_changes=""):
+    ###########################################################################
+        """
+        Convenience wrapper around create_test. Returns list of full paths to created cases. If multiple cases,
+        the order of the returned list is not guaranteed to match the order of the arguments.
+        """
+        test_id = f"cmd_nml_tests-{get_timestamp()}"
+        extra_args.append("-t {}".format(test_id))
+
+        full_run = (
+            set(extra_args)
+            & set(["-n", "--namelist-only", "--no-setup", "--no-build", "--no-run"])
+        ) == set()
+        if full_run:
+            extra_args.append("--wait")
+
+        output = run_cmd_assert_result(
+            self, f"{env_changes} {CIME_SCRIPTS_DIR}/create_test {' '.join(extra_args)}")
+        cases = []
+        for line in output.splitlines():
+            if "Case dir:" in line:
+                casedir = line.split()[-1]
+                self.assertTrue(os.path.isdir(casedir), msg="Missing casedir {}".format(casedir))
+                cases.append(casedir)
+
+        self.assertTrue(len(cases) > 0, "create_test made no cases")
+
+        self._dirs_to_cleanup.extend(cases)
+
+        return cases[0] if len(cases) == 1 else cases
+
+    ###########################################################################
+    def setUp(self):
+    ###########################################################################
+        self._dirs_to_cleanup = []
+
+    ###########################################################################
+    def tearDown(self):
+    ###########################################################################
+        for item in self._dirs_to_cleanup:
+            shutil.rmtree(item)
+
+    ###########################################################################
     def test_doctests(self):
+    ###########################################################################
+        """
+        Run doctests for all eamxx/cime_config python files and nml-related files in scripts
+        """
         run_cmd_assert_result(self, "python3 -m doctest *.py", from_dir=EAMXX_CIME_DIR)
         run_cmd_assert_result(self, "python3 -m doctest atm_manip.py", from_dir=EAMXX_SCRIPTS_DIR)
 
+    ###########################################################################
     def test_pylint(self):
+    ###########################################################################
+        """
+        Run pylint on all eamxx/cime_config python files and nml-related files in scripts
+        """
         ensure_pylint()
         run_cmd_assert_result(self, "python3 -m pylint --disable C,R,E0401,W1514 *.py", from_dir=EAMXX_CIME_DIR)
         run_cmd_assert_result(self, "python3 -m pylint --disable C,R,E0401,W1514 atm_manip.py", from_dir=EAMXX_SCRIPTS_DIR)
+
+    ###########################################################################
+    def test_xmlchange_propagates_to_scream(self):
+    ###########################################################################
+        """
+        Test that xmlchanges impact atm config files
+        """
+        case = self._create_test("ERS_Ln22.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+
+        # atm config should match case test opts
+        case_rest_n = run_cmd_assert_result(self, "./xmlquery REST_N --value", from_dir=case)
+        atm_freq    = run_cmd_assert_result(self, "./atmquery Frequency --value", from_dir=case)
+        self.assertEqual(case_rest_n, atm_freq)
+
+        # Change XML and check that atmquery reflects this change
+        new_rest_n = "6"
+        self.assertNotEqual(new_rest_n, case_rest_n)
+        run_cmd_assert_result(self, f"./xmlchange REST_N={new_rest_n}", from_dir=case)
+        new_case_rest_n = run_cmd_assert_result(self, "./xmlquery REST_N --value", from_dir=case)
+        run_cmd_assert_result(self, "./case.setup", from_dir=case)
+        new_atm_freq    = run_cmd_assert_result(self, "./atmquery Frequency --value", from_dir=case)
+        self.assertEqual(new_case_rest_n, new_rest_n)
+        self.assertEqual(new_atm_freq, new_rest_n)
 
 ###############################################################################
 def parse_command_line(args, desc):
