@@ -4,12 +4,13 @@
 Namelist creator for E3SM's SCREAM component
 
 This script takes the namelist_defaults_scream.xml file from the repo
-and produces the processed $case/namelist_scream.xml. From the processed
-file, raw input files are produced which should not be modified by users.
-The user is allowed to modify $case/namelist_scream.xml either directly
-via text editor (discouraged) or via atmchange (preferred). The user
-can also use atmquery to query current configurations stored in the
-XML file.
+and produces the processed $case/namelist_scream.xml. From the
+processed file, raw input files are produced which should not be
+modified by users.  The user is allowed to modify
+$case/namelist_scream.xml either directly via text editor (highly
+discouraged, requires SCREAM_HACK_XML to be on) or via atmchange
+(preferred). The user can also use atmquery to query current
+configurations stored in the XML file.
 
 This script can be internally tested standalone via: buildnml --test
 
@@ -19,6 +20,7 @@ Some import errors are expected and can be ignored
 
 It is encouraged that any changes to this system be tested with
 eamxx/cime-nml-tests
+
 """
 
 import os

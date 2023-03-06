@@ -479,7 +479,7 @@ def create_raw_xml_file(case, caseroot):
 ###############################################################################
     """
     Create the raw $case/namelist_scream.xml file. This file is intended to be
-    modified by users via editor or the atmchange script if they want
+    modified by users via the atmchange script if they want
     to make tweaks to input files (yaml and/or nml).
     """
     src = os.path.join(case.get_value("SRCROOT"), "components/eamxx/cime_config/namelist_defaults_scream.xml")
