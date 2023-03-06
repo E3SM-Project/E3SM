@@ -721,7 +721,7 @@ register_variables(const std::string& filename,
     if (children.size()>0) {
       // This field is a parent to a set of subfields
       std::string children_list;
-      children_list << "[ ";
+      children_list += "[ ";
       for (const auto& ch_w : children) {
         auto child = ch_w.lock();
         children_list += child->get_identifier().name() + ", ";
@@ -729,7 +729,7 @@ register_variables(const std::string& filename,
       // Replace last "," with "]"
       children_list.pop_back();
       children_list.pop_back();
-      children_list << " ]";
+      children_list += " ]";
       set_variable_attribute_c2f(filename.c_str(),name.c_str(),"sub_fields",children_list.c_str());
     }
   }
