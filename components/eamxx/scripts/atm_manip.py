@@ -170,7 +170,7 @@ def get_xml_node(xml_root,name):
     return node, parents
 
 ###############################################################################
-def atm_config_chg_impl(xml_root,changes,append=False):
+def atm_config_chg_impl(xml_root,changes):
 ###############################################################################
     """
 
@@ -216,11 +216,6 @@ def atm_config_chg_impl(xml_root,changes,append=False):
     True
     >>> get_xml_node(tree,'a')[0].text
     '1,2,3, 4'
-    >>> ################ TEST APPEND = and --append #################
-    >>> atm_config_chg_impl(tree,['b=5'],append=True)
-    True
-    >>> get_xml_node(tree,'b')[0].text
-    '1, 5'
     >>> ################ ERROR, append to non-array and non-string
     >>> atm_config_chg_impl(tree,['c+=2'])
     Traceback (most recent call last):
@@ -246,7 +241,7 @@ def atm_config_chg_impl(xml_root,changes,append=False):
         if len(tokens)==2:
             append_this = True
         else:
-            append_this = append
+            append_this = False
             tokens = change.split('=')
 
         expect (len(tokens)==2,

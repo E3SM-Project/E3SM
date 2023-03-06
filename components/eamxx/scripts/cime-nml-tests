@@ -90,7 +90,7 @@ class TestBuildnml(unittest.TestCase):
         run_cmd_assert_result(self, "python3 -m pylint --disable C,R,E0401,W1514 atm_manip.py", from_dir=EAMXX_SCRIPTS_DIR)
 
     ###########################################################################
-    def test_xmlchange_propagates_to_scream(self):
+    def test_xmlchange_propagates_to_atmconfig(self):
     ###########################################################################
         """
         Test that xmlchanges impact atm config files
@@ -106,11 +106,124 @@ class TestBuildnml(unittest.TestCase):
         new_rest_n = "6"
         self.assertNotEqual(new_rest_n, case_rest_n)
         run_cmd_assert_result(self, f"./xmlchange REST_N={new_rest_n}", from_dir=case)
-        new_case_rest_n = run_cmd_assert_result(self, "./xmlquery REST_N --value", from_dir=case)
         run_cmd_assert_result(self, "./case.setup", from_dir=case)
+        new_case_rest_n = run_cmd_assert_result(self, "./xmlquery REST_N --value", from_dir=case)
         new_atm_freq    = run_cmd_assert_result(self, "./atmquery Frequency --value", from_dir=case)
         self.assertEqual(new_case_rest_n, new_rest_n)
         self.assertEqual(new_atm_freq, new_rest_n)
+
+    ###########################################################################
+    def test_atmchanges_are_preserved(self):
+    ###########################################################################
+        """
+        Test that atmchanges are not lost when eamxx setup is called
+        """
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+
+        bm = run_cmd_assert_result(self, "./atmquery bm --value", from_dir=case)
+        new_bm = "42.42"
+        self.assertNotEqual(bm, new_bm)
+
+        run_cmd_assert_result(self, f"./atmchange bm={new_bm}", from_dir=case)
+        bm = run_cmd_assert_result(self, "./atmquery bm --value", from_dir=case)
+        self.assertEqual(bm, new_bm)
+
+        run_cmd_assert_result(self, "./case.setup", from_dir=case)
+
+        bm = run_cmd_assert_result(self, "./atmquery bm --value", from_dir=case)
+        self.assertEqual(bm, new_bm)
+
+    ###########################################################################
+    def test_manual_atmchanges_are_lost(self):
+    ###########################################################################
+        """
+        Test that manual atmchanges are lost when eamxx setup is called
+        """
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+
+        orig_bm = run_cmd_assert_result(self, "./atmquery bm --value", from_dir=case)
+        new_bm = "42.42"
+        self.assertNotEqual(orig_bm, new_bm)
+
+        run_cmd_assert_result(self, f"./atmchange bm={new_bm} --no-buffer", from_dir=case)
+        bm = run_cmd_assert_result(self, "./atmquery bm --value", from_dir=case)
+        self.assertEqual(bm, new_bm)
+
+        run_cmd_assert_result(self, "./case.setup", from_dir=case)
+
+        bm = run_cmd_assert_result(self, "./atmquery bm --value", from_dir=case)
+        self.assertEqual(bm, orig_bm)
+
+    ###########################################################################
+    def test_manual_atmchanges_are_not_lost_hack_xml(self):
+    ###########################################################################
+        """
+        Test that manual atmchanges are not lost when eamxx setup is called if
+        xml hacking is enabled.
+        """
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+
+        run_cmd_assert_result(self, f"./xmlchange SCREAM_HACK_XML=TRUE", from_dir=case)
+
+        bm = run_cmd_assert_result(self, "./atmquery bm --value", from_dir=case)
+        new_bm = "42.42"
+        self.assertNotEqual(bm, new_bm)
+
+        run_cmd_assert_result(self, f"./atmchange bm={new_bm} --no-buffer", from_dir=case)
+        bm = run_cmd_assert_result(self, "./atmquery bm --value", from_dir=case)
+        self.assertEqual(bm, new_bm)
+
+        run_cmd_assert_result(self, "./case.setup", from_dir=case)
+
+        bm = run_cmd_assert_result(self, "./atmquery bm --value", from_dir=case)
+        self.assertEqual(bm, new_bm)
+
+    ###########################################################################
+    def test_multiple_atmchanges_are_preserved(self):
+    ###########################################################################
+        """
+        Test that multiple atmchanges are not lost when eamxx setup is called
+        """
+        case = self._create_test("SMS.ne30_ne30.F2010-SCREAMv1 --no-build".split())
+
+        change_list = [('bm', '42.42'), ('qr', '43.43')]
+        for name, value in change_list:
+            orig = run_cmd_assert_result(self, "./atmquery bm --value", from_dir=case)
+            self.assertNotEqual(orig, value)
+
+            run_cmd_assert_result(self, f"./atmchange {name}={value}", from_dir=case)
+            curr_value = run_cmd_assert_result(self, f"./atmquery {name} --value", from_dir=case)
+            self.assertEqual(curr_value, value)
+
+        run_cmd_assert_result(self, "./case.setup", from_dir=case)
+
+        for name, value in change_list:
+            curr_value = run_cmd_assert_result(self, f"./atmquery {name} --value", from_dir=case)
+            self.assertEqual(curr_value, value)
+
+    ###########################################################################
+    def test_atmchanges_are_preserved_testmod(self):
+    ###########################################################################
+        """
+        Test that atmchanges are not lost when eamxx setup is called when that
+        parameter is impacted by an active testmod
+        """
+        def_mach_comp = \
+            run_cmd_assert_result(self, "../CIME/Tools/list_e3sm_tests cime_tiny", from_dir=CIME_SCRIPTS_DIR).splitlines()[-1].split(".")[-1]
+        case = self._create_test(f"SMS.ne30_ne30.F2010-SCREAMv1.{def_mach_comp}.scream-scream_example_testmod_atmchange --no-build".split())
+
+        csm = run_cmd_assert_result(self, "./atmquery cubed_sphere_map --value", from_dir=case)
+        new_csm = "84"
+        self.assertNotEqual(csm, new_csm)
+
+        run_cmd_assert_result(self, f"./atmchange cubed_sphere_map={new_csm}", from_dir=case)
+        csm = run_cmd_assert_result(self, "./atmquery cubed_sphere_map --value", from_dir=case)
+        self.assertEqual(csm, new_csm)
+
+        run_cmd_assert_result(self, "./case.setup", from_dir=case)
+
+        csm = run_cmd_assert_result(self, "./atmquery cubed_sphere_map --value", from_dir=case)
+        self.assertEqual(csm, new_csm)
 
 ###############################################################################
 def parse_command_line(args, desc):

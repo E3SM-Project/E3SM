@@ -489,7 +489,13 @@ def create_raw_xml_file(case, caseroot):
         defaults = ET.parse(fd)
         raw_xml = _create_raw_xml_file_impl(case, defaults.getroot())
 
-    if not case.get_value("SCREAM_HACK_XML"):
+    if os.path.exists(raw_xml_file) and case.get_value("SCREAM_HACK_XML"):
+        print("{} already exists and SCREAM_HACK_XML is on, will not overwrite. Remove to regenerate".format(raw_xml_file))
+
+    else:
+        if os.path.exists(raw_xml_file):
+            print("Regenerating {}. Manual edits will be lost.".format(raw_xml_file))
+
         check_all_values(raw_xml)
 
         with open(raw_xml_file, "w") as fd:
@@ -499,7 +505,7 @@ def create_raw_xml_file(case, caseroot):
         # atmchange requests.
         atmchg_buffer = case.get_value("SCREAM_ATMCHANGE_BUFFER")
         if atmchg_buffer:
-            run_cmd_no_fail("{}/atmchange {}".format(caseroot, atmchg_buffer))
+            run_cmd_no_fail("{}/atmchange {} --no-buffer".format(caseroot, atmchg_buffer))
 
 ###############################################################################
 def convert_to_dict(element):

@@ -14,9 +14,10 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 from eamxx_buildnml_impl import check_value, is_array_type
 from atm_manip import expect, get_xml_node, atm_config_chg_impl
+from utils import run_cmd_no_fail
 
 ###############################################################################
-def atm_config_chg(changes, append=False, no_buffer=False):
+def atm_config_chg(changes, no_buffer=False):
 ###############################################################################
     expect(os.path.exists("namelist_scream.xml"),
            "No pwd/namelist_scream.xml file is present. Please rum from a case dir that has been setup")
@@ -25,13 +26,14 @@ def atm_config_chg(changes, append=False, no_buffer=False):
         tree = ET.parse(fd)
         root = tree.getroot()
 
-    any_change = atm_config_chg_impl(root,changes,append)
+    any_change = atm_config_chg_impl(root,changes)
 
     if any_change:
         tree.write("namelist_scream.xml")
 
     if not no_buffer:
-        run_cmd_no_fail(f"./xmlchange)
+        changes_str = " ".join(changes)
+        run_cmd_no_fail(f"./xmlchange --append SCREAM_ATMCHANGE_BUFFER='{changes_str}'")
 
     return True
 
@@ -50,18 +52,11 @@ OR
     \033[1;32m# Change param foo to 'hi' (only works if foo is unambiguous)\033[0m
     > {0} foo=hi
 
-    \033[1;32m# Change params foo to 'hi' and bar to 'there' (only works if both are unambiguous)\033[0m
-    > {0} foo=hi bar=there
+    \033[1;32m# Change params foo to 'hi' and append 'there' to bar (only works if both are unambiguous)\033[0m
+    > {0} foo=hi bar+=there
 """.format(pathlib.Path(args[0]).name),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
-    )
-
-    parser.add_argument(
-        "--append",
-        default=False,
-        action="store_true",
-        help="Append to atm var, rather than replace its value.",
     )
 
     parser.add_argument(
