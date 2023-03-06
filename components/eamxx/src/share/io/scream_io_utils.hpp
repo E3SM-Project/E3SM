@@ -2,10 +2,13 @@
 #define SCREAM_IO_UTILS_HPP
 
 #include "share/util/scream_time_stamp.hpp"
+#include "share/util/scream_time_stamp.hpp"
+
 #include "ekat/util/ekat_string_utils.hpp"
 #include "ekat/mpi/ekat_comm.hpp"
+
 #include <string>
-#include "share/util/scream_time_stamp.hpp"
+#include <limits>
 
 namespace scream
 {
@@ -17,6 +20,8 @@ enum class OutputAvgType {
   Average,
   Invalid
 };
+
+constexpr float DEFAULT_FILL_VALUE = std::numeric_limits<float>::max() / 1e5;
 
 inline std::string e2str(const OutputAvgType avg) {
   using OAT = OutputAvgType;
@@ -45,9 +50,13 @@ inline OutputAvgType str2avg (const std::string& s) {
 struct IOControl {
   // A non-positive frequency can be used to signal IO disabled
   int frequency = -1;
-  int nsamples_since_last_write;  // Needed when updating output data, such as with the OAT::Average flag
+  int nsamples_since_last_write = 0;  // Needed when updating output data, such as with the OAT::Average flag
   util::TimeStamp timestamp_of_last_write;
   std::string frequency_units = "none";
+
+  bool output_enabled () const {
+    return frequency>0 && frequency_units!="none" && frequency_units!="never";
+  }
 
   bool is_write_step (const util::TimeStamp& ts) {
     // Mini-routine to determine if it is time to write output to file.
@@ -102,7 +111,7 @@ struct IOControl {
 struct IOFileSpecs {
   bool is_open = false;
   std::string filename;
-  int num_snapshots_in_file;
+  int num_snapshots_in_file = 0;
   int max_snapshots_in_file;
   bool file_is_full () const { return num_snapshots_in_file==max_snapshots_in_file; }
   // Whether a time string or the number of mpiranks should be attached to the filename.

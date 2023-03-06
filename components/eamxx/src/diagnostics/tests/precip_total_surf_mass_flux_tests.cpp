@@ -1,7 +1,7 @@
 #include "catch2/catch.hpp"
 
 #include "share/grid/mesh_free_grids_manager.hpp"
-#include "diagnostics/precip_ice_surf_mass_flux.hpp"
+#include "diagnostics/precip_total_surf_mass_flux.hpp"
 #include "diagnostics/register_diagnostics.hpp"
 
 #include "physics/share/physics_constants.hpp"
@@ -55,67 +55,109 @@ void run(std::mt19937_64& engine)
   // Initial time stamp
   util::TimeStamp t0 ({2022,1,1},{0,0,0});
 
-  // Construct the Diagnostic
+  // Construct the Diagnostics
   ekat::ParameterList params;
   register_diagnostics();
   auto& diag_factory = AtmosphereDiagnosticFactory::instance();
-  auto diag = diag_factory.create("PrecipIceSurfMassFlux",comm,params);
-  diag->set_grids(gm);
+  auto diag_total = diag_factory.create("PrecipTotalSurfMassFlux", comm, params);
+  auto diag_ice   = diag_factory.create("PrecipIceSurfMassFlux",   comm, params);
+  auto diag_liq   = diag_factory.create("PrecipLiqSurfMassFlux",   comm, params);
+  diag_total->set_grids(gm);
+  diag_ice->set_grids(gm);
+  diag_liq->set_grids(gm);
 
   // Set the required fields for the diagnostic.
   std::map<std::string,Field> input_fields;
-  for (const auto& req : diag->get_required_field_requests()) {
+  for (const auto& req : diag_total->get_required_field_requests()) {
     Field f(req.fid);
-    auto & f_ap = f.get_header().get_alloc_properties();
-    f_ap.request_allocation();
+    f.get_header().get_alloc_properties().request_allocation();
     f.allocate_view();
     const auto name = f.name();
     f.get_header().get_tracking().update_time_stamp(t0);
     f.get_header().get_tracking().set_accum_start_time(t0);
-    diag->set_required_field(f.get_const());
-    REQUIRE_THROWS(diag->set_computed_field(f));
+    diag_total->set_required_field(f.get_const());
+    REQUIRE_THROWS(diag_total->set_computed_field(f));
+    if (name=="precip_ice_surf_mass") {
+      diag_ice->set_required_field(f.get_const());
+      REQUIRE_THROWS(diag_ice->set_computed_field(f));
+    }
+    if (name=="precip_liq_surf_mass") {
+      diag_liq->set_required_field(f.get_const());
+      REQUIRE_THROWS(diag_liq->set_computed_field(f));
+    }
     input_fields.emplace(name,f);
   }
 
   // Initialize the diagnostic
-  diag->initialize(t0,RunType::Initial);
+  diag_total->initialize(t0,RunType::Initial);
+  diag_ice->initialize(t0,RunType::Initial);
+  diag_liq->initialize(t0,RunType::Initial);
 
   // Run tests
   {
     util::TimeStamp t = t0 + dt;
-
+    
     // Construct random data to use for test
     // Get views of input data and set to random values
     auto precip_ice_surf_mass_f = input_fields["precip_ice_surf_mass"];
     const auto& precip_ice_surf_mass_v = precip_ice_surf_mass_f.get_view<Real*>();
+    auto precip_liq_surf_mass_f = input_fields["precip_liq_surf_mass"];
+    const auto& precip_liq_surf_mass_v = precip_liq_surf_mass_f.get_view<Real*>();
     for (int icol=0;icol<ncols;icol++) {
       ekat::genRandArray(precip_ice_surf_mass_v, engine, pdf_mass);
+      ekat::genRandArray(precip_liq_surf_mass_v, engine, pdf_mass);
     }
-    precip_ice_surf_mass_f.get_header().get_tracking().update_time_stamp(t);
 
+    precip_ice_surf_mass_f.get_header().get_tracking().update_time_stamp(t);
+    precip_liq_surf_mass_f.get_header().get_tracking().update_time_stamp(t);
+    
     // Run diagnostic and compare with manual calculation
-    diag->compute_diagnostic();
-    const auto& diag_out = diag->get_diagnostic();
-    Field theta_f = diag_out.clone();
+    diag_total->compute_diagnostic();
+    const auto& diag_total_out = diag_total->get_diagnostic();
+    Field theta_f = diag_total_out.clone();
     theta_f.deep_copy<double,Host>(0.0);
     theta_f.sync_to_dev();
     const auto& theta_v = theta_f.get_view<Real*>();
     const auto rhodt = PC::RHO_H2O*dt;
-    Kokkos::parallel_for("precip_ice_surf_mass_flux_test",
+    Kokkos::parallel_for("precip_total_surf_mass_flux_test",
                          typename KT::RangePolicy(0,ncols),
                          KOKKOS_LAMBDA(const int& icol) {
-      theta_v(icol) = precip_ice_surf_mass_v(icol) / rhodt;
+      theta_v(icol) = precip_ice_surf_mass_v(icol)/rhodt +
+                      precip_liq_surf_mass_v(icol)/rhodt;
     });
     Kokkos::fence();
-    REQUIRE(views_are_equal(diag_out,theta_f));
-  }
- 
-  // Finalize the diagnostic
-  diag->finalize(); 
+    REQUIRE(views_are_equal(diag_total_out,theta_f));
 
+    // Test against sum of precip_ice/liq diagnostics
+    diag_ice->compute_diagnostic();
+    diag_liq->compute_diagnostic();
+
+    const auto& diag_ice_out = diag_ice->get_diagnostic();
+    const auto& diag_liq_out = diag_liq->get_diagnostic();
+
+    Field sum_of_diags_f(diag_total_out.get_header().get_identifier());
+    sum_of_diags_f.get_header().get_alloc_properties().request_allocation();
+    sum_of_diags_f.allocate_view();
+    const auto& sum_of_diags_v = sum_of_diags_f.get_view<Real*>();
+
+    const auto& diag_ice_v     = diag_ice_out.get_view<const Real*>();
+    const auto& diag_liq_v     = diag_liq_out.get_view<const Real*>();
+    Kokkos::parallel_for("calculate_sum_of_diags",
+                        typename KT::RangePolicy(0,ncols),
+                        KOKKOS_LAMBDA(const int& icol) {
+      sum_of_diags_v(icol) = diag_ice_v(icol) + diag_liq_v(icol);
+    });
+    Kokkos::fence();
+    REQUIRE(views_are_equal(diag_total_out,sum_of_diags_f));
+}
+
+  // Finalize the diagnostic
+  diag_total->finalize();
+  diag_ice->finalize();
+  diag_liq->finalize();
 } // run()
 
-TEST_CASE("precip_ice_surf_mass_flux_test", "precip_ice_surf_mass_flux_test]"){
+TEST_CASE("precip_total_surf_mass_flux_test", "precip_total_surf_mass_flux_test]"){
   using scream::Real;
   using Device = scream::DefaultDevice;
 

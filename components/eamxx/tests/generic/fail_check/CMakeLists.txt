@@ -18,9 +18,9 @@ if (EKAT_ENABLE_VALGRIND)
 endif()
 
 # Ensure that FPE *do* throw when we expect them to
-CreateUnitTestExec (fpe_check "fpe_check.cpp" "scream_share")
+CreateUnitTestExec (scream_fpe_check "fpe_check.cpp" "scream_share")
 if (SCREAM_FPE)
-  CreateUnitTestFromExec (fpe_check fpe_check PROPERTIES WILL_FAIL TRUE LABELS "check")
+  CreateUnitTestFromExec (scream_fpe_check scream_fpe_check PROPERTIES WILL_FAIL TRUE LABELS "check")
 else()
-  CreateUnitTestFromExec (fpe_check fpe_check LABELS "check")
+  CreateUnitTestFromExec (scream_fpe_check scream_fpe_check LABELS "check")
 endif()
