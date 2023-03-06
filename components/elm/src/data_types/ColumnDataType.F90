@@ -1616,8 +1616,8 @@ contains
                 if (j > nlevbed) then
                    this%h2osoi_vol(c,j) = 0.0_r8
                 else
-		               if (use_fates_planthydro .or. use_hydrstress) then
-                      this%h2osoi_vol(c,j) = 0.70_r8*watsat_input(c,j) !0.15_r8 to avoid very dry conditions that cause errors in FATES HYDRO
+		               if (use_fates .or. use_hydrstress) then
+                      this%h2osoi_vol(c,j) = 0.70_r8*watsat_input(c,j) !0.15_r8 to avoid very dry conditions that cause errors in FATES
                    else
                       this%h2osoi_vol(c,j) = 0.15_r8
                    endif
