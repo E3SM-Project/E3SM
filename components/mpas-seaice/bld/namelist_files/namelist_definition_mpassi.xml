@@ -505,6 +505,14 @@ Valid values: 'ncar' or 'ISPOL'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_forcing_bgc_type" type="char*1024"
+	category="forcing" group="forcing">
+Ocean biogeochemistry forcing type.
+
+Valid values: 'ISPOL'
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_update_ocean_fluxes" type="logical"
 	category="forcing" group="forcing">
 

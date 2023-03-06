@@ -544,6 +544,10 @@
 			description="Sea surface temperature ocean forcing type."
 			possible_values="'ncar'"
 		/>
+		<nml_option name="config_forcing_bgc_type" type="character" default_value="ISPOL" units="unitless"
+			description="Ocean biogeochemistry forcing type."
+			possible_values="'ISPOL'"
+		/>
 		<nml_option name="config_update_ocean_fluxes" type="logical" default_value="false" units="unitless"
 			description=""
 			possible_values="true or false"
@@ -2117,8 +2121,8 @@
 				input_interval="none"
 				reference_time="2004-01-01_00:00:00"
 				immutable="true">
-			<var name="shortwaveDown1D"/>
-			<var name="longwaveDown1D"/>
+			<var name="shortwaveDown"/>
+			<var name="longwaveDown"/>
 		</stream>
 		<stream name="ISPOLDailyForcing"
 				type="input"
@@ -2127,11 +2131,11 @@
 				input_interval="none"
 				reference_time="2004-01-01_00:00:00"
 				immutable="true">
-			<var name="airTemperature1D"/>
-			<var name="airSpecificHumidity1D"/>
-			<var name="uAirVelocity1D"/>
-			<var name="vAirVelocity1D"/>
-			<var name="rainfallRate1D"/>
+			<var name="airTemperature"/>
+			<var name="airSpecificHumidity"/>
+			<var name="uAirVelocity"/>
+			<var name="vAirVelocity"/>
+			<var name="rainfallRate"/>
 		</stream>
 		<stream name="ISPOLMonthlyForcing"
 				type="input"
@@ -2139,14 +2143,14 @@
 				filename_interval="none"
 				input_interval="none"
 				immutable="true">
-			<var name="seaSurfaceTemperature1D"/>
-			<var name="seaSurfaceSalinity1D"/>
-			<var name="oceanMixedLayerDepth1D"/>
-			<var name="uOceanVelocity1D"/>
-			<var name="vOceanVelocity1D"/>
-			<var name="seaSurfaceTiltU1D"/>
-			<var name="seaSurfaceTiltV1D"/>
-			<var name="oceanHeatFluxConvergence1D"/>
+			<var name="seaSurfaceTemperature"/>
+			<var name="seaSurfaceSalinity"/>
+			<var name="oceanMixedLayerDepth"/>
+			<var name="uOceanVelocity"/>
+			<var name="vOceanVelocity"/>
+			<var name="seaSurfaceTiltU"/>
+			<var name="seaSurfaceTiltV"/>
+			<var name="oceanHeatFluxConvergence"/>
 		</stream>
 		<stream name="ISPOLDailyWOAForcing"
 				type="input"
@@ -3785,52 +3789,6 @@
 		/>
 	</var_struct>
 
-	<!--1D atmos forcing -->
-	<var_struct name="1D_atmos_forcing" time_levs="1">
-		<var name="shortwaveDown1D"
-		     type="real"
-		     dimensions="Time"
-		     units="W m-2"
-		     description="Incoming shortwave flux (positive down)"
-		/>
-		<var name="longwaveDown1D"
-		     type="real"
-		     dimensions="Time"
-		     units="W m-2"
-		     description="Incoming longwave flux (positive down)"
-		/>
-		<var name="airTemperature1D"
-		     type="real"
-		     dimensions="Time"
-		     units="K"
-		     description="2-m air temperature"
-		/>
-		<var name="airSpecificHumidity1D"
-		     type="real"
-		     dimensions="Time"
-		     units="1"
-		     description="2-m specific humidity"
-		/>
-		<var name="uAirVelocity1D"
-		     type="real"
-		     dimensions="Time"
-		     units="m s-1"
-		     description="10-m wind velocity in the x direction"
-		/>
-		<var name="vAirVelocity1D"
-		     type="real"
-		     dimensions="Time"
-		     units="m s-1"
-		     description="10-m wind velocity in the y direction"
-		/>
-		<var name="rainfallRate1D"
-		     type="real"
-		     dimensions="Time"
-		     units="kg m-2 s-1"
-		     description="precipitation rate"
-		/>
-	</var_struct>
-
 	<!--ocean coupling -->
 	<var_struct name="ocean_coupling" time_levs="1">
 		<var name="seaSurfaceTemperature"
@@ -3899,60 +3857,7 @@
 		     dimensions="nVertices Time"
 		/>
 	</var_struct>
-
-	<!--1D ocean forcing -->
-	<var_struct name="1D_ocean_forcing" time_levs="1">
-		<var name="seaSurfaceTemperature1D"
-		     type="real"
-		     dimensions="Time"
-		     units="K"
-		     description="sea surface temperature"
-		/>
-		<var name="seaSurfaceSalinity1D"
-		     type="real"
-		     dimensions="Time"
-		     units="1e-3"
-		     description="sea surface salinity"
-		/>
-		<var name="uOceanVelocity1D"
-		     type="real"
-		     dimensions="Time"
-		     units="m s-1"
-		     description="ocean surface velocity in the x-direction"
-		/>
-		<var name="vOceanVelocity1D"
-		     type="real"
-		     dimensions="Time"
-		     units="m s-1"
-		     description="ocean surface velocity in the y-direction"
-		/>
-		<var name="seaSurfaceTiltU1D"
-		     type="real"
-		     dimensions="Time"
-		     units="1"
-		     description="sea surface tilt in the  x-direction"
-		/>
-		<var name="seaSurfaceTiltV1D"
-		     type="real"
-		     dimensions="Time"
-		     units="1"
-		     description="sea surface tilt in the y-direction"
-		/>
-		<var name="oceanMixedLayerDepth1D"
-		     type="real"
-		     dimensions="Time"
-		     units="m"
-		     description="ocean mixed layer depth"
-		/>
-		<var name="oceanHeatFluxConvergence1D"
-		     type="real"
-		     dimensions="Time"
-		     units="W m-2"
-		     description="deep ocean heat flux positive up"
-		/>
-	</var_struct>
-
-	<var_struct name="1D_ocean_biogeochemistry_forcing" time_levs="1">
+▶       <var_struct name="1D_ocean_biogeochemistry_forcing" time_levs="1">
 		<var name="oceanNitrateConc1D"
 		     type="real"
 		     dimensions="Time"
