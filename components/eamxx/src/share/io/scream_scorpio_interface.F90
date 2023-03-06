@@ -666,38 +666,28 @@ contains
     if (time>=0) ierr = pio_put_var(pio_atm_file%pioFileDesc,var%piovar,(/ pio_atm_file%numRecs /), (/ 1 /), (/ time /))
   end subroutine eam_update_time
 !=====================================================================!
-  ! Assign header metadata to a specific pio output file.  TODO: Fix this to be
-  ! more general.  Right now it is all dummy boiler plate.  Would make the most
-  ! sense to pass a structure with all of the relevant header info contained
-  ! within it.
+  ! Assign institutions to header metadata for a specific pio output file. 
   subroutine eam_pio_createHeader(File)
 
     type(file_desc_t), intent(in) :: File             ! Pio file Handle
     integer                       :: retval
 
-    ! TODO change options below to match specific simulation case
-    retval=pio_put_att (File, PIO_GLOBAL, 'source', 'E3SM Atmosphere Model Version 4')
-    retval=pio_put_att (File, PIO_GLOBAL, 'case', 'TEST 1') ! NEED TO FIX THIS!!!
-    retval=pio_put_att (File, PIO_GLOBAL, 'title', 'EAMv4 History File')
-    retval=pio_put_att (File, PIO_GLOBAL, 'git_hash','THE GIT LOG HASH')  ! NEED TO FIX THIS!!!
-    retval=pio_put_att (File, PIO_GLOBAL, 'host', 'THE HOST')  ! NEED TO FIX THIS!!!
-    retval=pio_put_att (File, PIO_GLOBAL, 'Version', '1.0')
-    retval=pio_put_att (File, PIO_GLOBAL, 'revision_Id', 'None')  !WHAT IS THIS? NOT IN EAM.
-    retval=pio_put_att (File, PIO_GLOBAL, 'initial_file', 'NONE FOR NOW')  !NEED TO FIX THIS
-    retval=pio_put_att (File, PIO_GLOBAL, 'topography_file', 'NONE FOR NOW')  !NEED TO FIX THIS
-    retval=pio_put_att (File, PIO_GLOBAL, 'contact', 'e3sm-data-support@llnl.gov')
-    retval=pio_put_att (File, PIO_GLOBAL, 'institution_id', 'E3SM-Project')
-    retval=pio_put_att (File, PIO_GLOBAL, 'product', 'model-output')
-    retval=pio_put_att (File, PIO_GLOBAL, 'realm','atmos')
-    retval=pio_put_att (File, PIO_GLOBAL, 'Conventions','None yet')
-    retval=pio_put_att (File, PIO_GLOBAL, 'institution', 'LLNL (Lawrence Livermore National Laboratory, &
-    &Livermore, CA 94550, USA); ANL (Argonne National Laboratory, Argonne, IL 60439, USA); BNL (Brookhaven &
-    &National Laboratory, Upton, NY 11973, USA); LANL (Los Alamos National Laboratory, Los Alamos, &
-    &NM 87545, USA); LBNL (Lawrence Berkeley National Laboratory, Berkeley, CA 94720, USA); ORNL (Oak &
-    &Ridge National Laboratory, Oak Ridge, TN 37831, USA); PNNL (Pacific Northwest National Laboratory, &
-    &Richland, WA 99352, USA); SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA). Mailing &
-    &address: LLNL Climate Program, c/o David C. Bader, Principal Investigator, L-103, 7000 East Avenue, &
-    &Livermore, CA 94550, USA')
+    ! We are able to have EAMxx directly set most attributes in the HEADER
+    ! except the list of institutions which appears to have a string that is too
+    ! long to accomodate using `set_str_attribute` as it is currently defined.
+    ! So we keep the setting of institutions here.  
+    ! TODO: revise the set_str_attribute code to allow the
+    ! scream_output_manager.cpp to handle institutions too.
+    ! NOTE: The use of //char(10)// causes each institution to be written on it's own line, makes it easier to read.
+    retval=pio_put_att (File, PIO_GLOBAL, 'institutions', 'LLNL (Lawrence Livermore National Laboratory, Livermore, CA 94550, USA); &
+      '//char(10)//'ANL (Argonne National Laboratory, Argonne, IL 60439, USA);  &
+      '//char(10)//'BNL (Brookhaven National Laboratory, Upton, NY 11973, USA); &
+      '//char(10)//'LANL (Los Alamos National Laboratory, Los Alamos, NM 87545, USA); &
+      '//char(10)//'LBNL (Lawrence Berkeley National Laboratory, Berkeley, CA 94720, USA); &
+      '//char(10)//'ORNL (Oak Ridge National Laboratory, Oak Ridge, TN 37831, USA); &
+      '//char(10)//'PNNL (Pacific Northwest National Laboratory, Richland, WA 99352, USA); &
+      '//char(10)//'SNL (Sandia National Laboratories, Albuquerque, NM 87185, USA). &
+      '//char(10)//'Mailing address: LLNL Climate Program, c/o David C. Bader, Principal Investigator, L-103, 7000 East Avenue, Livermore, CA 94550, USA')
 
   end subroutine eam_pio_createHeader
 !=====================================================================!
@@ -1336,29 +1326,13 @@ contains
     endif
     call get_var(pio_atm_file,var_name,var)
 
-    ! If this attribute does not exist, we need to re-open the nc file for definition,
+    ! If the definition phase has finished, we need to re-open the nc file for definition,
     ! then re-close it to put it in data mode again.
     ! NOTE: this check step is only for pre-NetCDF4 format, where attributes can
     !       only be defined while in 'define' mode. For NetCDF4/HDF5, attributes
     !       can be defined at any time.
-    ! TODO: add check on netcdf format, to see if this inq_att shenanigans is needed.
-    ierr = PIO_inq_att(pio_atm_file%pioFileDesc,var%piovar,attr_name,xtype,len)
     enddef_needed = .false.
-    if (ierr .ne. PIO_NOERR .and. pio_atm_file%is_enddef) then
-      ! In theory, there are several reason why this could fail. However, pio.F90
-      ! does *not* expose all the nc error codes like pio.h does (e.g., no PIO_ENOTATT).
-      ! So we just *assume* that the attribute was not found, and try to define it
-      ! NOTE: We also check if we have ended the definition phase for this file,
-      ! if not we don't need to open it again, and we don't need to flag it to
-      ! be ended when we are done.
-
-      ! TODO - LUCA QUESTION - Is the above statement true?
-      ! It looks like here we are simply calling redef which should just be
-      ! repopening the define phase right?  That isn't related to whether or not
-      ! the attribute is actually found.  It could be found and the define phase
-      ! closed and we would still want to re-open the define phase right?  It
-      ! could not be found but the define phase is open so we don't need to
-      ! redef, which is the extra piece I have added - AARON
+    if (pio_atm_file%is_enddef) then
       ierr = PIO_redef(pio_atm_file%pioFileDesc)
       if (ierr .ne. 0) then
         call errorHandle("Error while re-opening pio file " // trim(file_name) // ".", -999)

@@ -63,6 +63,7 @@ namespace scorpio {
   void grid_write_data_array(const std::string &filename, const std::string &varname,
                              const T* hbuf, const int buf_size);
 
+
 extern "C" {
   /* Query whether the pio subsystem is inited or not */
   bool is_eam_pio_subsystem_inited();

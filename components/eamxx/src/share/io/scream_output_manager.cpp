@@ -14,6 +14,9 @@
 namespace scream
 {
 
+// Local helper functions:
+void set_file_header(const std::string& filename);
+
 void OutputManager::
 setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
        const std::shared_ptr<fm_type>& field_mgr,
@@ -499,7 +502,6 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
   set_dof(filename,"time",0,time_dof);
 
   // Finish the definition phase for this file.
-  eam_pio_enddef (filename); 
   auto t0_date = m_case_t0.get_date()[0]*10000 + m_case_t0.get_date()[1]*100 + m_case_t0.get_date()[2];
   auto t0_time = m_case_t0.get_time()[0]*10000 + m_case_t0.get_time()[1]*100 + m_case_t0.get_time()[2];
   set_int_attribute_c2f(filename.c_str(),"start_date",t0_date);
@@ -508,6 +510,8 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
   set_str_attribute_c2f(filename.c_str(),"averaging_frequency_units",m_output_control.frequency_units.c_str());
   set_int_attribute_c2f(filename.c_str(),"averaging_frequency",m_output_control.frequency);
   set_int_attribute_c2f(filename.c_str(),"max_snapshots_per_file",m_output_file_specs.max_snapshots_in_file);
+  set_file_header(filename);
+  eam_pio_enddef (filename); 
 
   if (m_avg_type!=OutputAvgType::Instant) {
     // Unfortunately, attributes cannot be set in define mode (why?), so this could
@@ -523,6 +527,30 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
   }
 
   filespecs.is_open = true;
+}
+/*===============================================================================================*/
+void set_file_header(const std::string& filename)
+{
+  using namespace scorpio;
+
+  // TODO: All attributes marked TODO below need to be set.  Hopefully by a universal value that reflects
+  // what the attribute is.  For example, git-hash should be the git-hash associated with this version of
+  // the code at build time for this executable.
+  set_str_attribute_c2f(filename.c_str(),"source","E3SM Atmosphere Model Version 4 (EAMxx)");  // TODO: probably want to make sure that new versions are reflected here.
+  set_str_attribute_c2f(filename.c_str(),"case","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"title","EAMxx History File");
+  set_str_attribute_c2f(filename.c_str(),"compset","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"git_hash","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"host","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"version","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"initial_file","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"topography_file","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"contact","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"institution_id","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"product","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"component","ATM");
+  set_str_attribute_c2f(filename.c_str(),"conventions","");  // TODO
+
 }
 
 } // namespace scream
