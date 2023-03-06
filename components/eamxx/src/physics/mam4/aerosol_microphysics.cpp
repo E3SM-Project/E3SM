@@ -1,10 +1,10 @@
-#include "ekat/ekat_assert.hpp"
-#include "physics/mam4/aerosol_microphysics.hpp"
-
-#include "share/property_checks/field_lower_bound_check.hpp"
-#include "share/property_checks/field_within_interval_check.hpp"
+#include <physics/mam4/aerosol_microphysics.hpp>
+#include <share/property_checks/field_lower_bound_check.hpp>
+#include <share/property_checks/field_within_interval_check.hpp>
 
 #include "scream_config.h" // for SCREAM_CIME_BUILD
+
+#include <ekat/ekat_assert.hpp>
 
 namespace scream
 {
@@ -16,7 +16,7 @@ MAM4AerosolMicrophysics::MAM4AerosolMicrophysics(
     nucleation_(nullptr) {
 }
 
-AtmosphereProcessType type() const {
+AtmosphereProcessType MAM4AerosolMicrophysics::type() const {
   return AtmosphereProcessType::Physics;
 }
 
@@ -45,6 +45,9 @@ void MAM4AerosolMicrophysics::set_grids(const std::shared_ptr<const GridsManager
   // Layout for 2D (1d horiz X 1d vertical) variable
   FieldLayout scalar2d_layout_col{ {COL}, {ncol_} };
 
+  // Layout for 3D (2d horiz X 1d vertical) variables
+  FieldLayout scalar3d_layout_mid{ {COL, LEV}, {ncol_, nlev_} };
+
   // Define fields needed in mam4xx.
   const auto m2 = m*m;
   const auto s2 = s*s;
@@ -52,9 +55,9 @@ void MAM4AerosolMicrophysics::set_grids(const std::shared_ptr<const GridsManager
   // atmospheric quantities
   add_field<Required>("T_mid", scalar3d_layout_mid, K, grid_name);
   add_field<Required>("p_mid", scalar3d_layout_mid, Pa, grid_name); // total pressure
-  add_field<Required>("qv", scalar3d_layout_mid, Qunit, grid_name, "tracers");
+  add_field<Required>("qv", scalar3d_layout_mid, q_unit, grid_name, "tracers");
   add_field<Required>("pbl_height", scalar2d_layout_col, m, grid_name);
-  add_field<Required>("pseudo_density", scalar3d_layout_mid, Qunit, grid_name); // pdel
+  add_field<Required>("pseudo_density", scalar3d_layout_mid, q_unit, grid_name); // pdel
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name);
 
   // tracer group (stores all aerosol prognostics)
@@ -76,8 +79,10 @@ set_computed_group_impl(const FieldGroup& group) {
     aero_config_.num_gas_ids() +  // gas tracers
     2 * aero_config_.num_modes(); // modal number mixing ratio tracers
   for (int m = 0; m < aero_config_.num_modes(); ++m) {
+    auto m_index = static_cast<mam4::ModeIndex>(m);
     for (int a = 0; a < aero_config_.num_aerosol_ids(); ++a) {
-      if (aerosol_index_for_mode(m, a) != -1) {
+      auto a_id = static_cast<mam4::AeroId>(a);
+      if (mam4::aerosol_index_for_mode(m_index, a_id) != -1) {
         num_aero_tracers += 2; // aerosol mass mixing ratios (interstitial, cloudborne)
       }
     }
@@ -112,16 +117,16 @@ void MAM4AerosolMicrophysics::initialize_impl(const RunType run_type) {
   }
 
   // Find indices of qv and aerosol-related quantities
-  auto qv_index  = tracer_info->m_subview_idx.at("qv");
+  auto qv_index  = tracers_info->m_subview_idx.at("qv");
   // FIXME
 
-  preprocess_.set_variables(ncol_, nlev_, T_mid, p_mid, qv, height,
-                            p_del, pblh, q_soag, q_h2so4, q_nh3, q_aitken_so4);
+  //preprocess_.set_variables(ncol_, nlev_, T_mid, p_mid, qv, height,
+  //                          p_del, pblh, q_soag, q_h2so4, q_nh3, q_aitken_so4);
 
-  // FIXME: stuff goes here!
+  // FIXME: here we run the aerosol microphysics parameterizations
 
-  postprocess_.set_variables(ncol_, nlev_, qv, q_soag, q_h2so4,
-                             q_nh3, q_aitken_so4);
+  //postprocess_.set_variables(ncol_, nlev_, qv, q_soag, q_h2so4,
+  //                           q_nh3, q_aitken_so4);
 
   // Set field property checks for the fields in this process
   /* e.g.
@@ -141,7 +146,7 @@ void MAM4AerosolMicrophysics::initialize_impl(const RunType run_type) {
   // FIXME: aerosol process initialization goes here!
 }
 
-void MAM4AerosolMicrophysics::run_impl(const int dt) {
+void MAM4AerosolMicrophysics::run_impl(const double dt) {
 
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
 
@@ -150,7 +155,7 @@ void MAM4AerosolMicrophysics::run_impl(const int dt) {
   Kokkos::fence();
 
   // Reset internal WSM variables.
-  workspace_mgr_.reset_internals();
+  //workspace_mgr_.reset_internals();
 
   // FIXME: Aerosol stuff goes here!
 

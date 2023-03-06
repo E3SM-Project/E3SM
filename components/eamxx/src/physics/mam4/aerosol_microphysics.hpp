@@ -66,13 +66,16 @@ protected:
 
   // process behavior
   void initialize_impl(const RunType run_type) override;
-  void run_impl(const int dt) override;
+  void run_impl(const double dt) override;
   void finalize_impl() override;
 
   // MAM4xx updates the 'tracers' group.
   void set_computed_group_impl(const FieldGroup& group) override;
 
 private:
+
+  // number of horizontal columns and vertical levels
+  int ncol_, nlev_;
 
   // Atmosphere processes often have a pre-processing step that constructs
   // required variables from the set of fields stored in the field manager.
