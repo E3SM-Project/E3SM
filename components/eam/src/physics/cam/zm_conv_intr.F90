@@ -223,7 +223,7 @@ subroutine zm_conv_init(pref_edge)
 
     call addfld ('MAXI',horiz_only , 'A','level'    ,'model level of launching parcel')
 
-    call addfld ('CAPE',       horiz_only, 'A',   'J/kg', 'Convectively available potential energy')
+    call addfld ('CAPE_ZM',horiz_only, 'A',   'J/kg', 'Convectively available potential energy')
     call addfld ('DCAPE',      horiz_only, 'A',   'J/kg', 'change rate of Convectively available potential energy')
     call addfld ('FREQZM',horiz_only  ,'A','fraction', 'Fractional occurance of ZM convection') 
 
@@ -1030,7 +1030,6 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
    
    call t_stopf ('zm_convr')
 
-   call outfld('CAPE', cape, pcols, lchnk)        ! RBN - CAPE output
    call outfld('DCAPE', dcape, pcols, lchnk)
 
 
@@ -1171,6 +1170,9 @@ subroutine zm_conv_tend(pblh    ,mcon    ,cme     , &
       call outfld('MCSP_shear ',MCSP_shear                      ,pcols   ,lchnk   )
 
    end if
+
+   call outfld('DCAPE', dcape, pcols, lchnk)
+   call outfld('CAPE_ZM', cape, pcols, lchnk)        ! RBN - CAPE output
 !
 ! Output fractional occurance of ZM convection
 !
