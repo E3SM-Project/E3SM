@@ -83,11 +83,9 @@ module ocn_diagnostics
       thickEdgeFluxChoice, &! choice of thickness flux type
       thickEdgeDragChoice   ! choice of thickness drag type
    integer, parameter :: &
-      thickEdgeFluxUnknown = 0, &! type unknown or unset
       thickEdgeFluxCenter  = 1, &! use mean thickness of cell neighbors
       thickEdgeFluxUpwind  = 2   ! use upwind cell thickness at edge
    integer, parameter :: &
-      thickEdgeDragUnknown = 0, &! type unknown or unset
       thickEdgeDragCenter  = 1, &! use mean thickness of cell neighbors
       thickEdgeDragHarMean = 2   ! use harmonic mean cell thickness at edge
 
@@ -4300,10 +4298,9 @@ contains
                thickEdgeFluxChoice = thickEdgeFluxUpwind
             end if
          else
-            thickEdgeFluxChoice = thickEdgeFluxUnknown
             call mpas_log_write('Thickness flux option of ' //&
                  & trim(config_thickness_flux_type) // &
-                 & 'is not known', MPAS_LOG_CRIT)
+                 & ' is not known', MPAS_LOG_CRIT)
          end if
       end if
 
@@ -4316,19 +4313,12 @@ contains
 
       if (trim(config_thickness_drag_type) == 'centered') then
          thickEdgeDragChoice = thickEdgeDragCenter
-         call mpas_log_write('Thickness drag option of ' //&
-              & trim(config_thickness_drag_type) // &
-              & 'is assigned')
       elseif (trim(config_thickness_drag_type) == 'harmonic-mean') then
          thickEdgeDragChoice = thickEdgeDragHarMean
-         call mpas_log_write('Thickness drag option of ' //&
-              & trim(config_thickness_drag_type) // &
-              & 'is assigned')
       else
-         thickEdgeFluxChoice = thickEdgeFluxUnknown
          call mpas_log_write('Thickness drag option of ' //&
               & trim(config_thickness_drag_type) // &
-              & 'is not known', MPAS_LOG_CRIT)
+              & ' is not known', MPAS_LOG_CRIT)
       end if
 
       call ocn_diagnostics_variables_init(domain, jenkinsOn, &

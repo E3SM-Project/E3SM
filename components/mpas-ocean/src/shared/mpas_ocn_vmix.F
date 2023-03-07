@@ -64,6 +64,12 @@ module ocn_vmix
    !
    !--------------------------------------------------------------------
 
+   integer :: &
+      thickEdgeDragChoice   ! choice of thickness drag type
+   integer, parameter :: &
+      thickEdgeDragCenter  = 1, &! use mean thickness of cell neighbors
+      thickEdgeDragHarMean = 2   ! use harmonic mean cell thickness at edge
+
    logical :: velVmixOn, tracerVmixOn
    real (kind=RKIND) :: implicitBottomDragCoef, implicitTopDragCoef
 
@@ -868,7 +874,8 @@ contains
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
 
-         if (trim(config_thickness_drag_type) == 'harmonic-mean') then
+         ! average cell-based implicit bottom drag to edges and convert Mannings n to Cd
+         if (thickEdgeDragChoice == thickEdgeDragHarMean) then
            bottomDepthDrag = 2.0_RKIND * bottomDepth(cell1) * bottomDepth(cell2) / &
                                  (bottomDepth(cell1) + bottomDepth(cell2))
            columnThicknessDrag = 2.0_RKIND * (ssh(cell1) + bottomDepth(cell1)) * &
@@ -1464,6 +1471,12 @@ contains
       err = 0
 
       dragType = dragTypeNone
+
+      if (trim(config_thickness_drag_type) == 'harmonic-mean') then
+         thickEdgeDragChoice = thickEdgeDragHarMean
+      else
+         thickEdgeDragChoice = thickEdgeDragCenter
+      endif
 
       implicitBottomDragCoef = 0.0_RKIND
       implicitTopDragCoef = 0.0_RKIND
