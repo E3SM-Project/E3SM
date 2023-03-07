@@ -36,11 +36,11 @@ if (SCREAM_ENABLE_MAM4)
     -DHAERO_ENABLE_GPU=${Kokkos_ENABLE_CUDA}
     -DHAERO_ENABLE_MPI=ON
     -DHAERO_PRECISION=${HAERO_PRECISION}
-    -DEKAT_INCLUDE_DIR=${PROJECT_BINARY_DIR}/../../../externals/ekat/src
-    -DEKAT_LIBRARY=${PROJECT_BINARY_DIR}/externals/ekat/src/ekat/libekat.a)
+    -DEKAT_SOURCE_DIR=${PROJECT_SOURCE_DIR}/../../externals/ekat
+    -DEKAT_BINARY_DIR=${PROJECT_BINARY_DIR}/externals/ekat)
   ExternalProject_Add(haero_proj
                       PREFIX ${PROJECT_BINARY_DIR}/externals/haero
-                      SOURCE_DIR ../../../../externals/haero
+                      SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../externals/haero
                       BINARY_DIR ${PROJECT_BINARY_DIR}/externals/haero
                       CMAKE_ARGS ${HAERO_CMAKE_OPTS}
                       DEPENDS ekat

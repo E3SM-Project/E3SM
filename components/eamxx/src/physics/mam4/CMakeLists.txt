@@ -1,4 +1,4 @@
-add_library(mam4 aerosol_microphysics.cpp)
+add_library(mam4 t.cpp) #aerosol_microphysics.cpp)
 add_dependencies(mam4 mam4xx_proj)
 target_include_directories(mam4 PRIVATE
   ${PROJECT_BINARY_DIR}/externals/haero/include
