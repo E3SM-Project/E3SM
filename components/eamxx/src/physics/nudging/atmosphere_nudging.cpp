@@ -171,25 +171,36 @@ void Nudging::time_interpolation (const int time_s) {
   const int num_vert_packs = NudgingData_aft.T_mid.extent(1);
   const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);
 
+  auto T_mid_bef = NudgingData_bef.T_mid;
+  auto T_mid_aft = NudgingData_aft.T_mid;
+  auto u_bef = NudgingData_bef.u;
+  auto u_aft = NudgingData_aft.u;
+  auto v_bef = NudgingData_bef.v;
+  auto v_aft = NudgingData_aft.v;
+  auto p_mid_bef = NudgingData_bef.p_mid;
+  auto p_mid_aft = NudgingData_aft.p_mid;
+  auto qv_bef = NudgingData_bef.qv;
+  auto qv_aft = NudgingData_aft.qv;
+
   Kokkos::parallel_for("nudging_time_interpolation", policy,
      	       KOKKOS_LAMBDA(MemberType const& team) {
 
       const int icol = team.league_rank();
       auto T_mid_1d = ekat::subview(T_mid_ext,icol);
-      auto T_mid_bef_1d = ekat::subview(NudgingData_bef.T_mid,icol);
-      auto T_mid_aft_1d = ekat::subview(NudgingData_aft.T_mid,icol);
+      auto T_mid_bef_1d = ekat::subview(T_mid_bef,icol);
+      auto T_mid_aft_1d = ekat::subview(T_mid_aft,icol);
       auto u_1d = ekat::subview(u_ext,icol);
-      auto u_bef_1d = ekat::subview(NudgingData_bef.u,icol);
-      auto u_aft_1d = ekat::subview(NudgingData_aft.u,icol);
+      auto u_bef_1d = ekat::subview(u_bef,icol);
+      auto u_aft_1d = ekat::subview(u_aft,icol);
       auto v_1d = ekat::subview(v_ext,icol);
-      auto v_bef_1d = ekat::subview(NudgingData_bef.v,icol);
-      auto v_aft_1d = ekat::subview(NudgingData_aft.v,icol);
+      auto v_bef_1d = ekat::subview(v_bef,icol);
+      auto v_aft_1d = ekat::subview(v_aft,icol);
       auto p_mid_1d = ekat::subview(p_mid_ext,icol);
-      auto p_mid_bef_1d = ekat::subview(NudgingData_bef.p_mid,icol);
-      auto p_mid_aft_1d = ekat::subview(NudgingData_aft.p_mid,icol);
+      auto p_mid_bef_1d = ekat::subview(p_mid_bef,icol);
+      auto p_mid_aft_1d = ekat::subview(p_mid_aft,icol);
       auto qv_1d = ekat::subview(qv_ext,icol);
-      auto qv_bef_1d = ekat::subview(NudgingData_bef.qv,icol);
-      auto qv_aft_1d = ekat::subview(NudgingData_aft.qv,icol);
+      auto qv_bef_1d = ekat::subview(qv_bef,icol);
+      auto qv_aft_1d = ekat::subview(qv_aft,icol);
 
       const auto range = Kokkos::TeamThreadRange(team, num_vert_packs);
       Kokkos::parallel_for(range, [&] (const Int & k) {
