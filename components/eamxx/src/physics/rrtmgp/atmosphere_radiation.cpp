@@ -129,7 +129,7 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   add_field<Computed>("SW_clrsky_flux_dn_dir", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("LW_clrsky_flux_up", scalar3d_layout_int, Wm2, grid_name, ps);
   add_field<Computed>("LW_clrsky_flux_dn", scalar3d_layout_int, Wm2, grid_name, ps);
-  add_field<Computed>("rad_heating_pdel", scalar3d_layout_mid, Pa*K/s, grid_name, ps);
+  add_field<Updated>("rad_heating_pdel", scalar3d_layout_mid, Pa*K/s, grid_name, ps);
   // Cloud properties added as computed fields for diagnostic purposes
   add_field<Computed>("cldlow"        , scalar2d_layout, nondim, grid_name);
   add_field<Computed>("cldmed"        , scalar2d_layout, nondim, grid_name);
@@ -147,12 +147,13 @@ void RRTMGPRadiation::set_grids(const std::shared_ptr<const GridsManager> grids_
   // netsw      sfc_flux_sw_net    net (down - up) SW flux at surface
   // flwds      sfc_flux_lw_dn     downwelling LW flux at surface
   // --------------------------------------------------------------
-  add_field<Computed>("sfc_flux_dir_nir", scalar2d_layout, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_dir_vis", scalar2d_layout, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_dif_nir", scalar2d_layout, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_dif_vis", scalar2d_layout, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_sw_net" , scalar2d_layout, Wm2, grid_name);
-  add_field<Computed>("sfc_flux_lw_dn"  , scalar2d_layout, Wm2, grid_name);
+  // These need to be added to restarts in the case of super-stepping
+  add_field<Updated>("sfc_flux_dir_nir", scalar2d_layout, Wm2, grid_name);
+  add_field<Updated>("sfc_flux_dir_vis", scalar2d_layout, Wm2, grid_name);
+  add_field<Updated>("sfc_flux_dif_nir", scalar2d_layout, Wm2, grid_name);
+  add_field<Updated>("sfc_flux_dif_vis", scalar2d_layout, Wm2, grid_name);
+  add_field<Updated>("sfc_flux_sw_net" , scalar2d_layout, Wm2, grid_name);
+  add_field<Updated>("sfc_flux_lw_dn"  , scalar2d_layout, Wm2, grid_name);
 
   // Boundary flux fields for energy and mass conservation checks
   if (has_column_conservation_check()) {
