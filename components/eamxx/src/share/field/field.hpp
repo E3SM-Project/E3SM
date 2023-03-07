@@ -2,6 +2,7 @@
 #define SCREAM_FIELD_HPP
 
 #include "share/field/field_header.hpp"
+#include "share/util/scream_combine_ops.hpp"
 #include "share/scream_types.hpp"
 
 #include "ekat/std_meta/ekat_std_type_traits.hpp"
@@ -206,6 +207,10 @@ public:
   template<HostOrDevice HD = Device, typename ST = void>
   void update (const Field& x, const ST alpha, const ST beta);
 
+  // Special case of update with alpha=0
+  template<HostOrDevice HD = Device, typename ST = void>
+  void scale (const ST beta);
+
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
   //   - the output field stores *the same* 1d view as this field. In order
@@ -262,7 +267,7 @@ protected:
   template<HostOrDevice HD, typename ST>
   void deep_copy_impl (const Field& src);
 
-  template<HostOrDevice HD, typename ST>
+  template<CombineMode CM, HostOrDevice HD, typename ST>
   void update_impl (const Field& x, const ST alpha, const ST beta);
 
   template<HostOrDevice HD>

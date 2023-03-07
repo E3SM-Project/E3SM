@@ -348,6 +348,36 @@ template<HostOrDevice HD, typename ST>
 void Field::
 update (const Field& x, const ST alpha, const ST beta)
 {
+  const auto& dt = data_type();
+
+  if (dt==DataType::IntType) {
+    return update_impl<CombineMode::ScaleUpdate,HD,int>(x,alpha,beta);
+  } else if (dt==DataType::FloatType) {
+    return update_impl<CombineMode::ScaleUpdate,HD,float>(x,alpha,beta);
+  } else if (dt==DataType::DoubleType) {
+    return update_impl<CombineMode::ScaleUpdate,HD,double>(x,alpha,beta);
+  }
+}
+
+template<HostOrDevice HD, typename ST>
+void Field::
+scale (const ST beta)
+{
+  const auto& dt = data_type();
+
+  if (dt==DataType::IntType) {
+    return update_impl<CombineMode::Rescale,HD,int>(*this,ST(0),beta);
+  } else if (dt==DataType::FloatType) {
+    return update_impl<CombineMode::Rescale,HD,float>(*this,ST(0),beta);
+  } else if (dt==DataType::DoubleType) {
+    return update_impl<CombineMode::Rescale,HD,double>(*this,ST(0),beta);
+  }
+}
+
+template<CombineMode CM, HostOrDevice HD,typename ST>
+void Field::
+update_impl (const Field& x, const ST alpha, const ST beta)
+{
   // Check x/y are allocated
   EKAT_REQUIRE_MSG (is_allocated(),
       "Error! Cannot update field, since it is not allocated.\n"
@@ -383,19 +413,6 @@ update (const Field& x, const ST alpha, const ST beta)
       " - x/y data type  : " + e2str(dt_x) + "\n"
       " - coeff data type: " + e2str(dt_st) + "\n");
 
-  if (dt_x==DataType::IntType) {
-    return update_impl<HD,int>(x,alpha,beta);
-  } else if (dt_x==DataType::FloatType) {
-    return update_impl<HD,float>(x,alpha,beta);
-  } else if (dt_x==DataType::DoubleType) {
-    return update_impl<HD,double>(x,alpha,beta);
-  }
-}
-
-template<HostOrDevice HD,typename ST>
-void Field::
-update_impl (const Field& x, const ST alpha, const ST beta)
-{
   const auto& y_l = get_header().get_identifier().get_layout();
   const auto& x_l = x.get_header().get_identifier().get_layout();
   EKAT_REQUIRE_MSG (y_l==x_l,
@@ -422,8 +439,7 @@ update_impl (const Field& x, const ST alpha, const ST beta)
         auto xv = x.get_view<const ST*,HD>();
         auto yv =   get_view<      ST*,HD>();
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
-          yv(idx) *= beta;
-          yv(idx) += alpha*xv(idx);
+          combine<CM>(xv(idx),yv(idx),alpha,beta);
         });
       }
       break;
@@ -434,8 +450,7 @@ update_impl (const Field& x, const ST alpha, const ST beta)
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j;
           unflatten_idx(idx,ext,i,j);
-          yv(i,j) *= beta;
-          yv(i,j) += alpha*xv(i,j);
+          combine<CM>(xv(i,j),yv(i,j),alpha,beta);
         });
       }
       break;
@@ -446,8 +461,7 @@ update_impl (const Field& x, const ST alpha, const ST beta)
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j,k;
           unflatten_idx(idx,ext,i,j,k);
-          yv(i,j,k) *= beta;
-          yv(i,j,k) += alpha*xv(i,j,k);
+          combine<CM>(xv(i,j,k),yv(i,j,k),alpha,beta);
         });
       }
       break;
@@ -458,8 +472,7 @@ update_impl (const Field& x, const ST alpha, const ST beta)
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j,k,l;
           unflatten_idx(idx,ext,i,j,k,l);
-          yv(i,j,k,l) *= beta;
-          yv(i,j,k,l) += alpha*xv(i,j,k,l);
+          combine<CM>(xv(i,j,k,l),yv(i,j,k,l),alpha,beta);
         });
       }
       break;
@@ -470,8 +483,7 @@ update_impl (const Field& x, const ST alpha, const ST beta)
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j,k,l,m;
           unflatten_idx(idx,ext,i,j,k,l,m);
-          yv(i,j,k,l,m) *= beta;
-          yv(i,j,k,l,m) += alpha*xv(i,j,k,l,m);
+          combine<CM>(xv(i,j,k,l,m),yv(i,j,k,l,m),alpha,beta);
         });
       }
       break;
@@ -482,8 +494,7 @@ update_impl (const Field& x, const ST alpha, const ST beta)
         Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
           int i,j,k,l,m,n;
           unflatten_idx(idx,ext,i,j,k,l,m,n);
-          yv(i,j,k,l,m,n) *= beta;
-          yv(i,j,k,l,m,n) += alpha*xv(i,j,k,l,m,n);
+          combine<CM>(xv(i,j,k,l,m,n),yv(i,j,k,l,m,n),alpha,beta);
         });
       }
       break;

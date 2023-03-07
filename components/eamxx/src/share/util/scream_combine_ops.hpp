@@ -25,12 +25,13 @@ namespace scream {
  */
 
 enum class CombineMode {
-  Replace,      // out = in
-  Scale,        // out = alpha*in
-  Update,       // out = beta*out + in
-  ScaleUpdate,  // out = beta*out + alpha*in
+  ScaleUpdate,  // out = beta*out + alpha*in (most generic case)
+  Update,       // out = beta*out + in (special case of ScaleUpdate wiht alpha=1)
   ScaleAdd,     // out = out + alpha*in (special case of ScaleUpdate with beta=1)
-  Add,          // out = out + in (special case of ScaleAdd/Update with alpha=1, beta=1.0)
+  ScaleReplace, // out = alpha*in (special case of ScaleUpdate with beta=0)
+  Add,          // out = out + in (special case of ScaleUpdate with alpha=beta=1)
+  Rescale,      // out = beta*out
+  Replace,      // out = in
   Multiply,     // out = out*in
   Divide        // out = out/in
 };
@@ -40,13 +41,13 @@ enum class CombineMode {
 template<CombineMode CM>
 KOKKOS_INLINE_FUNCTION
 static constexpr bool needsAlpha () {
-  return CM==CombineMode::Scale || CM==CombineMode::ScaleAdd || CM==CombineMode::ScaleUpdate;
+  return CM==CombineMode::ScaleReplace || CM==CombineMode::ScaleAdd || CM==CombineMode::ScaleUpdate;
 }
 
 template<CombineMode CM>
 KOKKOS_INLINE_FUNCTION
 static constexpr bool needsBeta () {
-  return CM==CombineMode::Update || CM==CombineMode::ScaleUpdate;
+  return CM==CombineMode::Update || CM==CombineMode::ScaleUpdate || CM==CombineMode::Rescale;
 }
 
 
@@ -72,7 +73,10 @@ void combine (const ScalarIn& newVal, ScalarOut& result,
     case CombineMode::Replace:
       result = newVal;
       break;
-    case CombineMode::Scale:
+    case CombineMode::Rescale:
+      result *= beta;
+      break;
+    case CombineMode::ScaleReplace:
       result = alpha*newVal;
       break;
     case CombineMode::Update:

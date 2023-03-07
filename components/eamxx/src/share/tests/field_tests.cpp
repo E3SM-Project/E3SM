@@ -778,17 +778,14 @@ TEST_CASE ("update") {
 
   SECTION ("update") {
     Field f2 = f_real.clone();
+    Field f3 = f_real.clone();
 
-    // This should yield 2*f_real
+    // x+x == 2*x
     f2.update(f_real,1,1);
-    f2.sync_to_host();
-    for (int i=0; i<size; ++i) {
-      auto src = f_real.get_internal_view_data<Real>()[i];
-      auto tgt = f2.get_internal_view_data<Real>()[i];
-      REQUIRE (2*src==tgt);
-    }
+    f3.scale(2);
+    REQUIRE (views_are_equal(f2,f3));
 
-    Field f3 (fid_r);
+    Field f4 (fid_r);
     f3.allocate_view();
     f3.deep_copy(0.0);
 
