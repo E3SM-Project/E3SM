@@ -333,8 +333,8 @@ contains
                                                noConserve, validate, &
                                                trim(dofnameS), trim(dofnameT) )
             if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in computing  '
-               call shr_sys_abort(subname//' ERROR in writing intx file ')
+               write(logunit,*) subname,' error in iMOAB_ComputeScalarProjectionWeights ocn atm   '
+               call shr_sys_abort(subname//' ERROR in iMOAB_ComputeScalarProjectionWeights ocn atm ')
             endif
 
 
@@ -536,8 +536,8 @@ contains
                                                noConserve, validate, &
                                                trim(dofnameS), trim(dofnameT) )
             if (ierr .ne. 0) then
-               write(logunit,*) subname,' error in computing  '
-               call shr_sys_abort(subname//' ERROR in writing intx file ')
+               write(logunit,*) subname,' error in iMOAB_ComputeScalarProjectionWeights ice atm '
+               call shr_sys_abort(subname//' error in iMOAB_ComputeScalarProjectionWeights ice atm ')
             endif
 
 
@@ -647,14 +647,50 @@ contains
                call seq_comm_getinfo(CPLID ,mpigrp=mpigrp_CPLID) 
                type1 = 3; !  fv for lnd and atm; fv-cgll does not work anyway
                type2 = 3;
-               ! ierr      = iMOAB_ComputeCommGraph( mboxid, mbintxoa, &mpicom_CPLID, &mpigrp_CPLID, &mpigrp_CPLID, &type1, &type2,
-               !                              &ocn_id, &idintx)
+             
                ierr = iMOAB_ComputeCommGraph( mblxid, mbintxla, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                           lnd(1)%cplcompid, idintx)
                if (ierr .ne. 0) then
                   write(logunit,*) subname,' error in computing comm graph for second hop, ice-atm'
                   call shr_sys_abort(subname//' ERROR in computing comm graph for second hop, ice-atm')
                endif
+               ! need to compute weigths 
+               volumetric = 0 ! can be 1 only for FV->DGLL or FV->CGLL; 
+               
+               if (atm_pg_active) then
+                  dm2 = "fv"//C_NULL_CHAR
+                  dofnameT="GLOBAL_ID"//C_NULL_CHAR
+                  orderT = 1 !  fv-fv
+               else
+                  dm2 = "cgll"//C_NULL_CHAR
+                  dofnameT="GLOBAL_DOFS"//C_NULL_CHAR
+                  orderT = np !  it should be 4
+               endif
+               dm1 = "fv"//C_NULL_CHAR
+               dofnameS="GLOBAL_ID"//C_NULL_CHAR
+               orderS = 1  !  not much arguing
+               fNoBubble = 1
+               monotonicity = 0 !
+               noConserve = 0
+               validate = 0 ! less verbose
+               fInverseDistanceMap = 0
+               if (iamroot_CPLID) then
+                  write(logunit,*) subname, 'launch iMOAB weights with args ', 'mbintxla=', mbintxla, ' wgtIdef=', wgtIdef, &
+                     'dm1=', trim(dm1), ' orderS=',  orderS, 'dm2=', trim(dm2), ' orderT=', orderT, &
+                                                fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                                noConserve, validate, &
+                                                trim(dofnameS), trim(dofnameT)
+               endif
+               ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxla, wgtIdef, &
+                                                trim(dm1), orderS, trim(dm2), orderT, &
+                                                fNoBubble, monotonicity, volumetric, fInverseDistanceMap, &
+                                                noConserve, validate, &
+                                                trim(dofnameS), trim(dofnameT) )
+               if (ierr .ne. 0) then
+                  write(logunit,*) subname,' error in iMOAB_ComputeScalarProjectionWeights lnd atm '
+                  call shr_sys_abort(subname//' error in iMOAB_ComputeScalarProjectionWeights lnd atm ')
+               endif
+
             else  ! the same mesh , atm and lnd use the same dofs, but restricted 
                ! we do not compute intersection, so we will have to just send data from atm to land and viceversa, by GLOBAL_ID matching
                ! so we compute just a comm graph, between lnd and atm dofs, on the coupler; target is atm 
@@ -672,7 +708,7 @@ contains
                mapper_Fl2a%intx_context = atm(1)%cplcompid
 
             endif ! if tri-grid
-            ! we still need to defne seq_flds_l2x_fields on atm cpl mesh
+            ! we still need to define seq_flds_l2x_fields on atm cpl mesh
             if (atm_pg_active) then
                tagname = trim(seq_flds_l2x_fields)//C_NULL_CHAR
                tagtype = 1 ! dense
