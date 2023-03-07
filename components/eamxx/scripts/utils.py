@@ -340,7 +340,7 @@ def ensure_pip():
     be done by hand.
     """
     try:
-        import pip
+        import pip # pylint: disable=unused-import
 
     except ModuleNotFoundError:
         # Use ensurepip for installing pip
@@ -350,7 +350,7 @@ def ensure_pip():
         # needed to "rehash" available libs
         site.main() # pylint: disable=no-member
 
-        import pip
+        import pip # pylint: disable=unused-import
 
 ###############################################################################
 def pip_install_lib(pip_libname):
