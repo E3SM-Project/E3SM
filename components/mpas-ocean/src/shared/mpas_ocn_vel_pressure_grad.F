@@ -55,7 +55,8 @@ module ocn_vel_pressure_grad
    !--------------------------------------------------------------------
 
    logical :: &
-      pGradOff    ! flag for turning pressure gradient on/off
+      pGradOff,         &! flag for turning pressure gradient on/off
+      timeIntegratorLTS  ! flag for Local Time Stepping
 
    integer :: &
       pGradType   ! id for pressure gradient method selected
@@ -192,7 +193,7 @@ contains
 
          ! pressure for sea surface height = - g grad ssh
 
-         if (config_time_integrator == 'LTS') then
+         if (timeIntegratorLTS) then
 #ifdef MPAS_OPENACC
             !$acc parallel loop &
             !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, dcEdge, &
@@ -717,6 +718,11 @@ contains
 
       end select
 
+      if (config_time_integrator == 'LTS') then
+         timeIntegratorLTS = .true.
+      else
+         timeIntegratorLTS = .false.
+      endif
    !--------------------------------------------------------------------
 
    end subroutine ocn_vel_pressure_grad_init!}}}

@@ -60,7 +60,8 @@ module ocn_vel_tidal_potential
    !--------------------------------------------------------------------
 
    logical :: &
-      tidalPotentialOff   ! on/off switch for tidal potential
+      tidalPotentialOff, &! on/off switch for tidal potential
+      timeIntegratorLTS   ! flag for Local Time Stepping
 
    !*** physical constants
    real (kind=RKIND) ::  &
@@ -159,7 +160,7 @@ contains
       err = 0
       if (tidalPotentialOff) return
 
-      if (config_time_integrator == 'LTS') then
+      if (timeIntegratorLTS) then
 #ifdef MPAS_OPENACC
          !$acc parallel loop &
          !$acc    present(cellsOnEdge, maxLevelEdgeTop, dcEdge, edgeMask, &
@@ -509,6 +510,12 @@ contains
                  intArgs=(/ tidalConstituentType(iCon) /))
             call mpas_log_write(' ')
          end do
+
+         if (config_time_integrator == 'LTS') then
+            timeIntegratorLTS = .true.
+         else
+            timeIntegratorLTS = .false.
+         endif
 
       end if ! tidal potential on
 
