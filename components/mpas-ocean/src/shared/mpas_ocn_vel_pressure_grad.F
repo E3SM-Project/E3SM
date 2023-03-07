@@ -192,35 +192,68 @@ contains
 
          ! pressure for sea surface height = - g grad ssh
 
+         if (config_time_integrator == 'LTS') then
 #ifdef MPAS_OPENACC
-         !$acc parallel loop &
-         !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, dcEdge, &
-         !$acc            tend, edgeMask, ssh,surfacePressure) &
-         !$acc    private(cell1, cell2, invdcEdge, k, kMin, kMax)
+            !$acc parallel loop &
+            !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, dcEdge, &
+            !$acc            tend, edgeMask, ssh,surfacePressure) &
+            !$acc    private(cell1, cell2, invdcEdge, k, kMin, kMax)
 #else
-         !$omp parallel
-         !$omp do schedule(runtime) &
-         !$omp    private(cell1, cell2, invdcEdge, k, kMin, kMax)
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp    private(cell1, cell2, invdcEdge, k, kMin, kMax)
 #endif
-         do iEdge=1,nEdgesOwned
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-            invdcEdge = 1.0_RKIND / dcEdge(iEdge)
-            kMin = minLevelEdgeBot(iEdge)
-            kMax = maxLevelEdgeTop(iEdge)
+            do iEdge=1,nEdgesOwned
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               invdcEdge = 1.0_RKIND / dcEdge(iEdge)
+               kMin = minLevelEdgeBot(iEdge)
+               kMax = maxLevelEdgeTop(iEdge)
 
-            do k=kMin,kMax
-               tend(k,iEdge) = tend(k,iEdge) - &
-                               edgeMask(k,iEdge)*invdcEdge* &
-                               (  sshTermSplit * gravity*(ssh(cell2) - ssh(cell1)) &
-                                + nonSshTermsSplit * density0Inv*(  surfacePressure(cell2) &
-                                               - surfacePressure(cell1)) )
+               do k=kMin,kMax
+                  tend(k,iEdge) = tend(k,iEdge) - &
+                                  edgeMask(k,iEdge)*invdcEdge* &
+                                  (  sshTermSplit * gravity*(ssh(cell2) - ssh(cell1)) &
+                                   + nonSshTermsSplit * density0Inv*(  surfacePressure(cell2) &
+                                                  - surfacePressure(cell1)) )
+               end do
             end do
-         end do
 #ifndef MPAS_OPENACC
-         !$omp end do
-         !$omp end parallel
+            !$omp end do
+            !$omp end parallel
 #endif
+         else ! not LTS
+
+#ifdef MPAS_OPENACC
+            !$acc parallel loop &
+            !$acc    present(cellsOnEdge, minLevelEdgeBot, maxLevelEdgeTop, dcEdge, &
+            !$acc            tend, edgeMask, ssh,surfacePressure) &
+            !$acc    private(cell1, cell2, invdcEdge, k, kMin, kMax)
+#else
+            !$omp parallel
+            !$omp do schedule(runtime) &
+            !$omp    private(cell1, cell2, invdcEdge, k, kMin, kMax)
+#endif
+            do iEdge=1,nEdgesOwned
+               cell1 = cellsOnEdge(1,iEdge)
+               cell2 = cellsOnEdge(2,iEdge)
+               invdcEdge = 1.0_RKIND / dcEdge(iEdge)
+               kMin = minLevelEdgeBot(iEdge)
+               kMax = maxLevelEdgeTop(iEdge)
+
+               do k=kMin,kMax
+                  tend(k,iEdge) = tend(k,iEdge) - &
+                                  edgeMask(k,iEdge)*invdcEdge* &
+                                  (  gravity*(ssh(cell2) - ssh(cell1)) &
+                                   + density0Inv*(  surfacePressure(cell2) &
+                                                  - surfacePressure(cell1)) )
+               end do
+            end do
+#ifndef MPAS_OPENACC
+            !$omp end do
+            !$omp end parallel
+#endif
+         endif ! LTS
 
       case (pGradTypePZmid)
 
