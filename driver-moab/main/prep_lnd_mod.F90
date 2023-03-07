@@ -411,15 +411,16 @@ contains
                 endif
               endif
 #endif
-              
               ! we also need to compute the comm graph for the second hop, from the atm on coupler to the 
               ! lnd for the intx atm-lnd context (coverage)
               !    
-         
-              type1 = 1 ! this projection works (cgll to fv), but reverse does not ( fv - cgll)
+              if (atm_pg_active) then
+                type1 = 3; !  fv for atm; cgll does not work anyway
+              else
+                type1 = 1 ! this projection works (cgll to fv), but reverse does not ( fv - cgll)
+              endif 
               type2 = 3; ! land is fv in this case (separate grid)
-              ! ierr      = iMOAB_ComputeCommGraph( mboxid, mbintxoa, &mpicom_CPLID, &mpigrp_CPLID, &mpigrp_CPLID, &type1, &type2,
-              !                              &ocn_id, &idintx)
+
               ierr = iMOAB_ComputeCommGraph( mbaxid, mbintxal, mpicom_CPLID, mpigrp_CPLID, mpigrp_CPLID, type1, type2, &
                                         atm(1)%cplcompid, idintx)
               if (ierr .ne. 0) then
