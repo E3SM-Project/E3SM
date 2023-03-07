@@ -181,7 +181,6 @@ void AtmosphereProcess::setup_tendencies_requests () {
   auto check_multiple_matches = [&] (const std::string& tn, const bool already_found) {
     auto tokens = field_grid(tn);
     auto fn = tokens.first;
-    auto gn = tokens.second;
     EKAT_REQUIRE_MSG (not already_found,
         "Error! Could not uniquely determine field for tendency calculation.\n"
         " - atm proc name: " + this->name() + "\n"

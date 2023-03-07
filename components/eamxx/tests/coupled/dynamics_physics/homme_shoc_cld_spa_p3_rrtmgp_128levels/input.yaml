@@ -20,6 +20,7 @@ initial_conditions:
 atmosphere_processes:
   atm_procs_list: (homme,physics)
   schedule_type: Sequential
+  compute_tendencies: [T_mid, qv]
   homme:
     Moisture: moist
   physics:
