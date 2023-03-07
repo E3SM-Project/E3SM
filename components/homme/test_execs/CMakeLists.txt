@@ -235,6 +235,10 @@ IF (${BUILD_HOMME_THETA_KOKKOS})
 
     ADD_SUBDIRECTORY(theta-nlev128-kokkos)
 
+    # For doubly periodic tests.
+    ADD_SUBDIRECTORY(theta-l-nlev20-native-kokkos)
+    ADD_SUBDIRECTORY(theta-l-nlev10-native-kokkos)
+
     # This one we build it only if both theta and theta_kokkos are requested,
     # since it's just needed for perf/correctness comparisons
     IF (BUILD_HOMME_THETA)
@@ -267,6 +271,8 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
     ADD_SUBDIRECTORY(preqx-nlev72)
     ADD_SUBDIRECTORY(preqx_kokkos_ut)
   ENDIF ()
+    # For doubly periodic tests.
+    ADD_SUBDIRECTORY(preqx-nlev10-native-kokkos)
 ENDIF ()
 
 # Read the test-list.cmake file to get the HOMME_TESTS list

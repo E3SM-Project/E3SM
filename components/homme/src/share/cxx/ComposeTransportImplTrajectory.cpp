@@ -448,8 +448,7 @@ void ComposeTransportImpl::calc_trajectory (const int np1, const Real dt) {
     const int packn = this->packn;
     const int num_phys_lev = this->num_phys_lev;
     const auto m_sphere_cart = geo.m_sphere_cart;
-    //todo get scale_factor into PhysicalConstants
-    const auto scale_factor = m_data.geometry_type == 1 ? 1 : geo.m_rearth;
+    const auto scale_factor = geo.m_scale_factor;
     const auto m_dep_pts = m_data.dep_pts;
     const auto calc_departure_point = KOKKOS_LAMBDA (const MT& team) {
       KernelVariables kv(team, tu_ne);
