@@ -59,6 +59,20 @@ class CheckTendencies(object):
 
             var  = ds.variables[vname]
             tend = ds.variables[tname]
+            expect (var.dtype==tend.dtype,
+                    "Error! Cannot compare variables with different data types"
+                    f" - file name : {self._file}\n"
+                    f" - var name  : {vname}\n"
+                    f" - tend name : {tname}\n"
+                    f" - var dtype : {var.dtype}\n"
+                    f" - tend dtype: {tend.dtype}\n")
+            expect (var.dtype in [np.float32, np.float64],
+                    "Error! Only single and double precision supported.\n"
+                    f" - file name : {self._file}\n"
+                    f" - var name  : {vname}\n"
+                    f" - var dtype : {var.dtype}\n")
+
+            tol = np.finfo(var.dtype).eps * 10
 
             # Sanity checks on var/tend
             expect (var.dimensions==tend.dimensions,
@@ -90,7 +104,7 @@ class CheckTendencies(object):
                 tend_k  = tend[:].take(k,axis=0)
 
                 computed = (var_k - var_km1) / dt
-                if not np.isclose(computed,tend_k).all():
+                if not np.isclose(computed,tend_k,tol,tol).all():
                     diff = np.abs(computed - tend_k);
                     max_diff = diff.max()
                     ind_max_1d = np.argmax(diff)
@@ -100,6 +114,7 @@ class CheckTendencies(object):
                     print (f" Check failed for var {vname}.\n"
                            f"  - (t_n,t_n+1) = ({t_km1}, {t_k})\n"
                            f"  - dt = {dt}\n"
+                           f"  - rel tol = abs_tol = {tol}\n"
                            f"  - max(|d({vname})/dt - {tname}|) = {max_diff}|)\n"
                            f"  - argmax(|d{vname}/dt - {tname}| = {inds_max}|)\n"
                            f"  - {vname}{(k-1,)+inds_max} = {var_km1[inds_max]}\n"
