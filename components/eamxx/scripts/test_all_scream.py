@@ -690,8 +690,6 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
     def generate_ctest_config(self, cmake_config, extra_configs, test):
     ###############################################################################
         result = ""
-        if self._submit:
-            result += f"SCREAM_MACHINE={self._machine} "
 
         test_dir = self.get_test_dir(self._work_dir,test)
         num_test_res = self.create_ctest_resource_file(test,test_dir)
