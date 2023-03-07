@@ -3,7 +3,8 @@
 filename_prefix: ${CASE}.scream.hi
 # WARNING: ERS/ERP tets will override this with AVERAGE
 Averaging Type: Instant
-Max Snapshots Per File: 744 # One output every 31 days
+# One output every 31 days if output frequency is set to once per hour
+Max Snapshots Per File: 744
 Fields:
   Physics ${PHYSICS_GRID_TYPE}:
     Field Names:
