@@ -94,28 +94,36 @@ void AtmosphereProcess::run (const double dt) {
     }
 
     // Init single step tendencies (if any) with current value of output field
-    for (auto& it : m_proc_tendencies_single_step) {
-      const auto& tname = it.first;
-      const auto& fname = m_tend_to_field.at(tname);
-      const auto& f     = get_field_out(fname);
+    if (m_compute_proc_tendencies) {
+      start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
+      for (auto& it : m_proc_tendencies_single_step) {
+        const auto& tname = it.first;
+        const auto& fname = m_tend_to_field.at(tname);
+        const auto& f     = get_field_out(fname);
 
-      auto& step_tend = it.second;
-      step_tend.deep_copy(f);
+        auto& step_tend = it.second;
+        step_tend.deep_copy(f);
+      }
+      stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
     }
 
     run_impl(dt_sub);
 
     // Complete tendency calculations (if any)
-    for (auto it : m_proc_tendencies_accum) {
-      const auto& tname = it.first;
-      const auto& fname = m_tend_to_field.at(tname);
-      const auto& f     = get_field_out(fname);
+    if (m_compute_proc_tendencies) {
+      start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
+      for (auto it : m_proc_tendencies_accum) {
+        const auto& tname = it.first;
+        const auto& fname = m_tend_to_field.at(tname);
+        const auto& f     = get_field_out(fname);
 
-      auto& step_tend = m_proc_tendencies_single_step.at(tname);
-      auto& tend      = it.second;
+        auto& step_tend = m_proc_tendencies_single_step.at(tname);
+        auto& tend      = it.second;
 
-      step_tend.update(f,1/dt_sub,-1/dt_sub);
-      tend.update(step_tend,1.0,1.0);
+        step_tend.update(f,1/dt_sub,-1/dt_sub);
+        tend.update(step_tend,1.0,1.0);
+      }
+      stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
     }
 
     if (has_column_conservation_check()) {
