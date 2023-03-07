@@ -344,6 +344,157 @@ void Field::deep_copy_impl (const ST value) {
   }
 }
 
+template<HostOrDevice HD, typename ST>
+void Field::
+update (const Field& x, const ST alpha, const ST beta)
+{
+  // Check x/y are allocated
+  EKAT_REQUIRE_MSG (is_allocated(),
+      "Error! Cannot update field, since it is not allocated.\n"
+      " - field name: " + name() + "\n");
+  EKAT_REQUIRE_MSG (x.is_allocated(),
+      "Error! Cannot update field, since source field is not allocated.\n"
+      " - field name: " + x.name() + "\n");
+
+  // Check y is writable
+  EKAT_REQUIRE_MSG (not is_read_only(),
+      "Error! Cannot update field, as it is read-only.\n"
+      " - field name: " + name() + "\n");
+
+  // Check compatibility between fields data type
+  const auto dt_x = x.data_type();
+  const auto dt_y = data_type();
+
+  // We could be more general, and do
+  //   EKAT_REQUIRE_MSG (not is_narrowing_conversion(dt_x,dt_y),"");
+  // but then we'd need N*N template instantiations of the impl function
+  EKAT_REQUIRE_MSG (dt_x==dt_y,
+      "Error! X and Y field must have the same data type.\n"
+      " - x name: " + x.name() + "\n"
+      " - y name: " + name() + "\n"
+      " - x data type: " + e2str(dt_x) + "\n"
+      " - y data type: " + e2str(dt_y) + "\n");
+
+  // If user used default for both alpha and beta, then the ST=char was used,
+  // even though that's not correct; hence, set data type of coeffs to that of x/y.
+  const auto dt_st = get_data_type<ST>();
+  EKAT_REQUIRE_MSG (not is_narrowing_conversion(dt_st,dt_x),
+      "Error! Coefficients alpha/beta may be narrowed when converted to x/y data type.\n"
+      " - x/y data type  : " + e2str(dt_x) + "\n"
+      " - coeff data type: " + e2str(dt_st) + "\n");
+
+  if (dt_x==DataType::IntType) {
+    return update_impl<HD,int>(x,alpha,beta);
+  } else if (dt_x==DataType::FloatType) {
+    return update_impl<HD,float>(x,alpha,beta);
+  } else if (dt_x==DataType::DoubleType) {
+    return update_impl<HD,double>(x,alpha,beta);
+  }
+}
+
+template<HostOrDevice HD,typename ST>
+void Field::
+update_impl (const Field& x, const ST alpha, const ST beta)
+{
+  const auto& y_l = get_header().get_identifier().get_layout();
+  const auto& x_l = x.get_header().get_identifier().get_layout();
+  EKAT_REQUIRE_MSG (y_l==x_l,
+      "Error! Incompatible layouts for update_field.\n"
+      " - x name: " + x.name() + "\n"
+      " - y name: " + name() + "\n"
+      " - x layout: " + to_string(x_l) + "\n"
+      " - y layout: " + to_string(y_l) + "\n");
+
+  using device_t = typename Field::get_device<HD>;
+  using exec_space = typename device_t::execution_space;
+  using RangePolicy = Kokkos::RangePolicy<exec_space>;
+
+  // Need to create extents (rather than just using the one in x_l),
+  // since we don't know if we're running on host or device
+  using extents_type = typename ekat::KokkosTypes<device_t>::template view_1d<int>;
+  extents_type ext ("",x_l.rank());
+  Kokkos::deep_copy(ext,x_l.extents());
+
+  auto policy = RangePolicy(0,x_l.size());
+  switch (x_l.rank()) {
+    case 1:
+      {
+        auto xv = x.get_view<const ST*,HD>();
+        auto yv =   get_view<      ST*,HD>();
+        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+          yv(idx) *= beta;
+          yv(idx) += alpha*xv(idx);
+        });
+      }
+      break;
+    case 2:
+      {
+        auto xv = x.get_view<const ST**,HD>();
+        auto yv =   get_view<      ST**,HD>();
+        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+          int i,j;
+          unflatten_idx(idx,ext,i,j);
+          yv(i,j) *= beta;
+          yv(i,j) += alpha*xv(i,j);
+        });
+      }
+      break;
+    case 3:
+      {
+        auto xv = x.get_view<const ST***,HD>();
+        auto yv =   get_view<      ST***,HD>();
+        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+          int i,j,k;
+          unflatten_idx(idx,ext,i,j,k);
+          yv(i,j,k) *= beta;
+          yv(i,j,k) += alpha*xv(i,j,k);
+        });
+      }
+      break;
+    case 4:
+      {
+        auto xv = x.get_view<const ST****,HD>();
+        auto yv =   get_view<      ST****,HD>();
+        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+          int i,j,k,l;
+          unflatten_idx(idx,ext,i,j,k,l);
+          yv(i,j,k,l) *= beta;
+          yv(i,j,k,l) += alpha*xv(i,j,k,l);
+        });
+      }
+      break;
+    case 5:
+      {
+        auto xv = x.get_view<const ST*****,HD>();
+        auto yv =   get_view<      ST*****,HD>();
+        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+          int i,j,k,l,m;
+          unflatten_idx(idx,ext,i,j,k,l,m);
+          yv(i,j,k,l,m) *= beta;
+          yv(i,j,k,l,m) += alpha*xv(i,j,k,l,m);
+        });
+      }
+      break;
+    case 6:
+      {
+        auto xv = x.get_view<const ST******,HD>();
+        auto yv =   get_view<      ST******,HD>();
+        Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+          int i,j,k,l,m,n;
+          unflatten_idx(idx,ext,i,j,k,l,m,n);
+          yv(i,j,k,l,m,n) *= beta;
+          yv(i,j,k,l,m,n) += alpha*xv(i,j,k,l,m,n);
+        });
+      }
+      break;
+    default:
+      EKAT_ERROR_MSG ("Error! Rank not supported in update_field.\n"
+          " - x name: " + x.name() + "\n"
+          " - y name: " + name() + "\n");
+  }
+  Kokkos::fence();
+}
+
 template<HostOrDevice HD,typename T,int N>
 auto Field::get_ND_view () const ->
   if_t<(N<MaxRank),get_view_type<data_nd_t<T,N>,HD>>

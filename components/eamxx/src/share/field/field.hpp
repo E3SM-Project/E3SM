@@ -197,6 +197,15 @@ public:
   template<HostOrDevice HD = Device>
   void deep_copy (const Field& src);
 
+  // Updates this field y as y=alpha*x+beta*y
+  // NOTE: ST=void is just so we can give a default to HD,
+  //       but ST will *always* be deduced from input arguments.
+  // NOTE: the type ST  must be such that no narrowing happens when
+  //       casting the values to whatever the data type of this field is.
+  //       E.g., if data_type()=IntType, you can't pass double's.
+  template<HostOrDevice HD = Device, typename ST = void>
+  void update (const Field& x, const ST alpha, const ST beta);
+
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
   //   - the output field stores *the same* 1d view as this field. In order
@@ -252,6 +261,9 @@ protected:
 
   template<HostOrDevice HD, typename ST>
   void deep_copy_impl (const Field& src);
+
+  template<HostOrDevice HD, typename ST>
+  void update_impl (const Field& x, const ST alpha, const ST beta);
 
   template<HostOrDevice HD>
   const get_view_type<char*,HD>&
