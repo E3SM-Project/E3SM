@@ -2251,7 +2251,7 @@ Default: TRUE
 <entry id="micro_tend_output" type="logical" category="microphys"
        group="micro_nl" valid_values="" >
 Output microphysics tendencies in standard atm output file.
-Default: TRUE
+Default: FALSE
 </entry>
 
 <!-- micro_p3 -->
