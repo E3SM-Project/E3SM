@@ -178,22 +178,28 @@ void AtmosphereProcess::setup_tendencies_requests () {
     return std::make_pair(tokens[0],tokens.size()==2 ? tokens[1] : "");
   };
 
-  auto check_multiple_matches = [&] (const std::string& tn, const bool already_found) {
+  auto multiple_matches_error = [&] (const std::string& tn) {
     auto tokens = field_grid(tn);
     auto fn = tokens.first;
-    EKAT_REQUIRE_MSG (not already_found,
+    auto gn = tokens.second;
+
+    std::set<std::pair<std::string,std::string>> matches_set;
+    std::vector<std::string> matches_vec;
+    for (auto it : get_computed_field_requests()) {
+      if (it.fid.name()==fn && (gn=="" || gn==it.fid.get_grid_name())) {
+        auto it_bool = matches_set.insert(std::make_pair(fn,it.fid.get_grid_name()));
+        if (it_bool.second) {
+          auto gname = it_bool.first->second;
+          matches_vec.push_back(fn + "(grid=" + gname + ")");
+        }
+      }
+    }
+    EKAT_ERROR_MSG(
         "Error! Could not uniquely determine field for tendency calculation.\n"
         " - atm proc name: " + this->name() + "\n"
         " - tend requested: " + tn + "\n"
+        " - all matches: " + ekat::join(matches_vec,", ") + "\n"
         "If atm process computes " + fn + " on multiple grids, use " + fn + "#grid_name\n");
-  };
-
-  auto check_updated = [&] (const std::string& fn, const std::string& gn) {
-    EKAT_REQUIRE_MSG (has_required_field(fn,gn),
-        "Error! Tendency calculation available only for updated fields.\n"
-        " - atm proc name: " + this->name() + "\n"
-        " - field name   : " + fn + "\n"
-        " - grid name    : " + gn + "\n");
   };
 
   // Parse all the tendencies requested, looking for a corresponding
@@ -201,7 +207,7 @@ void AtmosphereProcess::setup_tendencies_requests () {
   // that we have same field on multiple grids), error out.
   using namespace ekat::units;
   for (const auto& tn : tend_list) {
-    bool found = false;
+    std::string grid_found = "";
     auto tokens = field_grid(tn);
     auto fn = tokens.first;
     auto gn = tokens.second;
@@ -215,20 +221,29 @@ void AtmosphereProcess::setup_tendencies_requests () {
         const auto& gname  = fid.get_grid_name();
         const auto& dtype  = fid.data_type();
 
-        // Check we did not process another field with same name
-        check_multiple_matches(tn,found);
+        std::cout << "found match for " << tn << ": " << it.fid.get_id_string() << ", g=("
+                 << ekat::join(it.groups,",") << "), ps=" << it.pack_size << ", pn=" << it.parent_name << "\n";
 
-        // Check this computed field is also updated
-        check_updated (fn,gname);
+        // Check we did not process another field with same name
+        if (grid_found!="" && gname!=grid_found) {
+          multiple_matches_error(tn);
+        }
+
+        // Check this computed field is also required (hence, updated)
+        EKAT_REQUIRE_MSG (has_required_field(fn,gname),
+            "Error! Tendency calculation available only for updated fields.\n"
+            " - atm proc name: " + this->name() + "\n"
+            " - field name   : " + fn + "\n"
+            " - grid name    : " + gn + "\n");
 
         // Create tend FID and request field
         FieldIdentifier t_fid(tname,layout,units,gname,dtype);
         add_field<Computed>(t_fid,"ACCUMULATED");
-        found = true;
+        grid_found = gname;
       }
     }
 
-    EKAT_REQUIRE_MSG (found,
+    EKAT_REQUIRE_MSG (grid_found!="",
         "Error! Could not locate field for tendency request.\n"
         " - atm proc name: " + this->name() + "\n"
         " - tendency request: " + tn + "\n");
