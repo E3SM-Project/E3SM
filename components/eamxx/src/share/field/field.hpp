@@ -195,7 +195,7 @@ public:
 
   // Copy the data from one field to this field
   template<HostOrDevice HD = Device>
-  void deep_copy (const Field& field_src);
+  void deep_copy (const Field& src);
 
   // Returns a subview of this field, slicing at entry k along dimension idim
   // NOTES:
@@ -251,7 +251,7 @@ protected:
   void deep_copy_impl (const ST value);
 
   template<HostOrDevice HD, typename ST>
-  void deep_copy_impl (const Field& field_src);
+  void deep_copy_impl (const Field& src);
 
   template<HostOrDevice HD>
   const get_view_type<char*,HD>&

@@ -2,6 +2,7 @@
 #define SCREAM_FIELD_IMPL_HPP
 
 #include "share/field/field.hpp"
+#include "share/util/scream_array_utils.hpp"
 
 namespace scream
 {
@@ -129,22 +130,22 @@ auto Field::get_strided_view () const
 
 template<HostOrDevice HD>
 void Field::
-deep_copy (const Field& field_src) {
+deep_copy (const Field& src) {
   EKAT_REQUIRE_MSG (not m_is_read_only,
       "Error! Cannot call deep_copy on read-only fields.\n");
 
-  EKAT_REQUIRE_MSG (data_type()==field_src.data_type(),
+  EKAT_REQUIRE_MSG (data_type()==src.data_type(),
       "Error! Cannot copy fields with different data type.\n");
 
   switch (data_type()) {
     case DataType::IntType:
-      deep_copy_impl<HD,int>(field_src);
+      deep_copy_impl<HD,int>(src);
       break;
     case DataType::FloatType:
-      deep_copy_impl<HD,float>(field_src);
+      deep_copy_impl<HD,float>(src);
       break;
     case DataType::DoubleType:
-      deep_copy_impl<HD,double>(field_src);
+      deep_copy_impl<HD,double>(src);
       break;
     default:
       EKAT_ERROR_MSG ("Error! Unrecognized field data type in Field::deep_copy.\n");
@@ -187,51 +188,104 @@ deep_copy (const ST value) {
 
 template<HostOrDevice HD, typename ST>
 void Field::
-deep_copy_impl (const Field& field_src) {
+deep_copy_impl (const Field& src) {
 
-  const auto& layout     = get_header().get_identifier().get_layout();
-  const auto& layout_src = field_src.get_header().get_identifier().get_layout();
+  const auto& layout     =     get_header().get_identifier().get_layout();
+  const auto& layout_src = src.get_header().get_identifier().get_layout();
   EKAT_REQUIRE_MSG(layout==layout_src,
-       "ERROR: Unable to copy field " + field_src.get_header().get_identifier().name() + 
+       "ERROR: Unable to copy field " + src.get_header().get_identifier().name() + 
           " to field " + get_header().get_identifier().name() + ".  Layouts don't match.");
   const auto  rank = layout.rank();
   // Note: we can't just do a deep copy on get_view_impl<HD>(), since this
   //       field might be a subfield of another. We need the reshaped view.
+  //       Also, don't call Kokkos::deep_copy if this field and src have
+  //       different pack sizes.
+  auto src_alloc = src.get_header().get_alloc_properties().get_alloc_size();
+  auto tgt_alloc =     get_header().get_alloc_properties().get_alloc_size();
+
+  // If a manual parallel_for is required (b/c of alloc sizes difference),
+  // we need to create extents (rather than just using the one in layout),
+  // since we don't know if we're running on host or device
+  using device_t = typename Field::get_device<HD>;
+  using exec_space = typename device_t::execution_space;
+  using RangePolicy = Kokkos::RangePolicy<exec_space>;
+  using extents_type = typename ekat::KokkosTypes<device_t>::template view_1d<int>;
+  extents_type ext ("",rank);
+  Kokkos::deep_copy(ext,layout.extents());
+  auto policy = RangePolicy(0,layout.size());
 
   switch (rank) {
     case 1:
       {
-        auto v     = get_view<ST*,HD>();
-        auto v_src = field_src.get_view<const ST*,HD>();
-        Kokkos::deep_copy(v,v_src);
+        auto v     =     get_view<      ST*,HD>();
+        auto v_src = src.get_view<const ST*,HD>();
+        if (src_alloc==tgt_alloc) {
+          Kokkos::deep_copy(v,v_src);
+        } else {
+          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+            v(idx) = v_src(idx);
+          });
+        }
       }
       break;
     case 2:
       {
-        auto v     = get_view<ST**,HD>();
-        auto v_src = field_src.get_view<const ST**,HD>();
-        Kokkos::deep_copy(v,v_src);
+        auto v     =     get_view<      ST**,HD>();
+        auto v_src = src.get_view<const ST**,HD>();
+        if (src_alloc==tgt_alloc) {
+          Kokkos::deep_copy(v,v_src);
+        } else {
+          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+            int i,j;
+            unflatten_idx(idx,ext,i,j);
+            v(i,j) = v_src(i,j);
+          });
+        }
       }
       break;
     case 3:
       {
-        auto v     = get_view<ST***,HD>();
-        auto v_src = field_src.get_view<const ST***,HD>();
-        Kokkos::deep_copy(v,v_src);
+        auto v     =     get_view<      ST***,HD>();
+        auto v_src = src.get_view<const ST***,HD>();
+        if (src_alloc==tgt_alloc) {
+          Kokkos::deep_copy(v,v_src);
+        } else {
+          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+            int i,j,k;
+            unflatten_idx(idx,ext,i,j,k);
+            v(i,j,k) = v_src(i,j,k);
+          });
+        }
       }
       break;
     case 4:
       {
-        auto v     = get_view<ST****,HD>();
-        auto v_src = field_src.get_view<const ST****,HD>();
-        Kokkos::deep_copy(v,v_src);
+        auto v     =     get_view<      ST****,HD>();
+        auto v_src = src.get_view<const ST****,HD>();
+        if (src_alloc==tgt_alloc) {
+          Kokkos::deep_copy(v,v_src);
+        } else {
+          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+            int i,j,k,l;
+            unflatten_idx(idx,ext,i,j,k,l);
+            v(i,j,k,l) = v_src(i,j,k,l);
+          });
+        }
       }
       break;
     case 5:
       {
-        auto v     = get_view<ST*****,HD>();
-        auto v_src = field_src.get_view<const ST*****,HD>();
-        Kokkos::deep_copy(v,v_src);
+        auto v     =     get_view<      ST*****,HD>();
+        auto v_src = src.get_view<const ST*****,HD>();
+        if (src_alloc==tgt_alloc) {
+          Kokkos::deep_copy(v,v_src);
+        } else {
+          Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const int idx) {
+            int i,j,k,l,m;
+            unflatten_idx(idx,ext,i,j,k,l,m);
+            v(i,j,k,l,m) = v_src(i,j,k,l,m);
+          });
+        }
       }
       break;
     default:
