@@ -133,6 +133,9 @@ print_field_hyperslab (const Field& f,
     case DataType::DoubleType:
       impl::print_field_hyperslab<double>(f,tags,indices,out,rank,0);
       break;
+    default:
+      EKAT_ERROR_MSG ("[print_field_hyperslab] Error! Invalid/unsupported data type.\n"
+          " - field name: " + f.name() + "\n");
   }
 }
 
