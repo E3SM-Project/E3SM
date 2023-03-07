@@ -265,7 +265,7 @@ contains
        call shr_sys_flush(logunit)
 
     end if
-    
+
     if (rof_present .and. ocn_present) then
 
        call seq_comm_getData(CPLID, &

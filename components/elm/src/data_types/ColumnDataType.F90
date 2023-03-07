@@ -9886,7 +9886,6 @@ contains
            ptr_col=this%secondp_to_labilep)
 
     if ( nlevdecomp_full > 1 ) then
-       print *, ""
        this%secondp_to_labilep_vr(begc:endc,:) = spval
         call hist_addfld_decomp (fname='SECONDP_TO_LABILEP'//trim(vr_suffix), units='gP/m^3/s',  type2d='levdcmp', &
              avgflag='A', long_name='SECONDARY MINERAL P TO LABILE P', &
