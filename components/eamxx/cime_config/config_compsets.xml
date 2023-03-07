@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+
+<compsets>
+
+  <help>
+  Compset format is explained in cime/config/e3sm/allactive/config_compsets.xml
+  or in the CIME documenation
+  </help>
+
+  <!-- E3SM C/G compsets -->
+
+  <compset>
+    <alias>F2000-SCREAM-SA</alias> <!-- SCREAM standalone -->
+    <lname>2000_SCREAM_SLND_SICE_SOCN_SROF_SGLC_SWAV</lname>
+    <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+    <alias>F2010-SCREAM-SA</alias> <!-- SCREAM standalone -->
+    <lname>2010_SCREAM_SLND_SICE_SOCN_SROF_SGLC_SWAV</lname>
+    <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+      <alias>F2010-SCREAMv1</alias> <!-- Coupled land-atm compset (using SCREAMv1), 2010 initial conditions -->
+      <lname>2010_SCREAM_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+      <alias>F2010-SCREAMv1-DYAMOND1</alias> <!-- Coupled land-atm compset (using SCREAMv1), DYAMOND-1 initial conditions with 16x smoothed topography-->
+      <lname>2010_SCREAM%DYAMOND-1_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+      <alias>F2010-SCREAMv1-DYAMOND1-X6T</alias> <!-- Coupled land-atm compset (using SCREAMv1), DYAMOND-1 initial conditions with X6T topography-->
+      <lname>2010_SCREAM%DYAMOND-1-X6T_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+      <alias>F2010-SCREAMv1-DYAMOND2</alias> <!-- Coupled land-atm compset (using SCREAMv1), DYAMOND-2 initial conditions with 16x smoothed topography-->
+      <lname>2010_SCREAM%DYAMOND-2_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+      <alias>F2010-SCREAMv1-DYAMOND2-X6T</alias> <!-- Coupled land-atm compset (using SCREAMv1), DYAMOND-2 initial conditions with X6T topography-->
+      <lname>2010_SCREAM%DYAMOND-2-X6T_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+      <alias>F2010-SCREAMv1-MPASSI</alias> <!-- Coupled land-atm compset (using SCREAMv1), 2010 initial conditions -->
+      <lname>2010_SCREAM_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+      <alias>F2000-SCREAMv1-AQP1</alias> <!-- atm aquaplanet compset (using SCREAMv1), 2000 initial conditions -->
+      <lname>2000_SCREAM%AQUA_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+      <alias>F2010-SCREAMv1-noAero</alias> <!-- Coupled land-atm compset (using SCREAMv1), 2010 initial conditions, turn off Aerosol forcing -->
+      <lname>2010_SCREAM%noAero_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+      <alias>F2010-SCREAMv1-MPASSI-noAero</alias> <!-- Coupled land-atm compset (using SCREAMv1), 2010 initial conditions, turn off Aerosol forcing -->
+      <lname>2010_SCREAM%noAero_ELM%SPBC_MPASSI%PRES_DOCN%DOM_MOSART_SGLC_SWAV_SIAC_SESP</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+      <alias>F2000-SCREAMv1-AQP1-noAero</alias> <!-- atm aquaplanet compset (using SCREAMv1), 2000 initial conditions, turn of Aerosol forcing -->
+      <lname>2000_SCREAM%AQUA-noAero_SLND_SICE_DOCN%AQP1_SROF_SGLC_SWAV</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
+  <compset>
+      <alias>F2010-SCREAMv1-X6T</alias> <!-- Coupled land-atm compset (using SCREAMv1), with X6T topography-->
+      <lname>2010_SCREAM%X6T_ELM%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV_SIAC_SESP</lname>
+      <support_level>Experimental, under development</support_level>
+  </compset>
+
+
+  <entries>
+
+    <entry id="RUN_STARTDATE">
+      <values>
+        <value  compset=".*DYAMOND-1">2016-08-01</value>
+        <value  compset=".*DYAMOND-2">2020-01-20</value>
+      </values>
+    </entry>
+
+  </entries>
+
+</compsets>

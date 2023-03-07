@@ -2090,22 +2090,22 @@ contains
             avgflag='A', long_name='total column carbon, incl veg and cpool but excl product pools', &
             ptr_col=this%totcolc)
 
+       this%prod10c(begc:endc) = spval
+       call hist_addfld1d (fname='PROD10C', units='gC/m^2', &
+            avgflag='A', long_name='10-yr wood product C', &
+            ptr_col=this%prod10c, default='inactive')
+
+       this%prod100c(begc:endc) = spval
+       call hist_addfld1d (fname='PROD100C', units='gC/m^2', &
+            avgflag='A', long_name='100-yr wood product C', &
+            ptr_col=this%prod100c, default='inactive')
+
        if(.not.use_fates)then
 
           this%seedc(begc:endc) = spval
           call hist_addfld1d (fname='SEEDC', units='gC/m^2', &
                avgflag='A', long_name='pool for seeding new Patches', &
                ptr_col=this%seedc, default='inactive')
-
-          this%prod10c(begc:endc) = spval
-          call hist_addfld1d (fname='PROD10C', units='gC/m^2', &
-               avgflag='A', long_name='10-yr wood product C', &
-               ptr_col=this%prod10c, default='inactive')
-
-          this%prod100c(begc:endc) = spval
-          call hist_addfld1d (fname='PROD100C', units='gC/m^2', &
-               avgflag='A', long_name='100-yr wood product C', &
-               ptr_col=this%prod100c, default='inactive')
 
           this%prod1c(begc:endc) = spval
           call hist_addfld1d (fname='PROD1C', units='gC/m^2', &
@@ -5763,6 +5763,33 @@ contains
            call hist_addfld1d (fname='HR', units='gC/m^2/s', &
                 avgflag='A', long_name='total heterotrophic respiration', &
                  ptr_col=this%hr)
+
+          this%hrv_deadstemc_to_prod10c(begc:endc) = spval
+          call hist_addfld1d (fname='HRV_DEADSTEMC_TO_PROD10C', units='gC/m^2/s', &
+               avgflag='A', long_name='flux into 10-yr wood product C', &
+               ptr_col=this%hrv_deadstemc_to_prod10c, default='inactive')
+
+          this%hrv_deadstemc_to_prod100c(begc:endc) = spval
+          call hist_addfld1d (fname='HRV_DEADSTEMC_TO_PROD100C', units='gC/m^2/s', &
+               avgflag='A', long_name='flux into 100-yr wood product C', &
+               ptr_col=this%hrv_deadstemc_to_prod100c, default='inactive')
+
+          this%nep(begc:endc) = spval
+          call hist_addfld1d (fname='NEP', units='gC/m^2/s', &
+               avgflag='A', long_name='net ecosystem production, excludes fire, landuse, and harvest flux, positive for sink', &
+                ptr_col=this%nep)
+ 
+          this%nbp(begc:endc) = spval
+          call hist_addfld1d (fname='NBP', units='gC/m^2/s', &
+               avgflag='A', long_name='net biome production, includes fire, landuse, and harvest flux, positive for sink', &
+                ptr_col=this%nbp)
+ 
+          this%nee(begc:endc) = spval
+          call hist_addfld1d (fname='NEE', units='gC/m^2/s', &
+               avgflag='A', long_name='net ecosystem exchange of carbon, includes fire, landuse,'&
+               //' harvest, and hrv_xsmrpool flux, positive for source', &
+                ptr_col=this%nee)
+
        end if
        ! end of use_fates (C12) block
 

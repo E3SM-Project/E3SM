@@ -1,0 +1,6 @@
+# NOTE: blake must use a different minor version of python than weaver
+# this is so pip installs do not go into the same location for both machines.
+# We have found some python modules are not shareable between these two machinse.
+module load python/3.8.8/gcc/10.2.0
+
+SCREAM_MACHINE=blake

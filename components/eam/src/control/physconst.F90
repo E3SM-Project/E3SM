@@ -65,7 +65,7 @@ module physconst
    real(r8), public, parameter :: mwnh4       =  18._r8
 
 
-   ! modifiable physical constants for aquaplanet
+   ! modifiable physical constants for aquaplanet or doubly periodic mode
 
    real(r8), public           :: gravit       = shr_const_g     ! gravitational acceleration (m/s**2)
    real(r8), public           :: sday         = shr_const_sday  ! sec in siderial day ~ sec
@@ -74,12 +74,12 @@ module physconst
    real(r8), public           :: mwdry        = shr_const_mwdair! molecular weight dry air
    real(r8), public           :: rearth       = shr_const_rearth! radius of earth (m)
    real(r8), public           :: tmelt        = shr_const_tkfrz ! Freezing point of water (K)
+   real(r8), public           :: omega        = shr_const_omega ! earth rot ~ rad/sec   
 
 !---------------  Variables below here are derived from those above -----------------------
 
    real(r8), public           :: rga          = 1._r8/shr_const_g                 ! reciprocal of gravit
    real(r8), public           :: ra           = 1._r8/shr_const_rearth            ! reciprocal of earth radius
-   real(r8), public           :: omega        = shr_const_omega                   ! earth rot ~ rad/sec
    real(r8), public           :: rh2o         = shr_const_rwv                     ! Water vapor gas constant ~ J/K/kg
    real(r8), public           :: rair         = shr_const_rdair   ! Dry air gas constant     ~ J/K/kg
    real(r8), public           :: epsilo       = shr_const_mwwv/shr_const_mwdair   ! ratio of h2o to dry air molecular weights 
@@ -200,10 +200,9 @@ contains
       newmwdry =  mwdry  .ne. shr_const_mwdair
       newrearth=  rearth .ne. shr_const_rearth
       newtmelt =  tmelt  .ne. shr_const_tkfrz
-      newomega = omega   .ne. shr_const_omega
+      newomega =  omega  .ne. shr_const_omega
       
-      
-      if (newg .or. newsday .or. newmwh2o .or. newcpwv .or. newmwdry .or. newrearth .or. newtmelt) then
+      if (newg .or. newsday .or. newmwh2o .or. newcpwv .or. newmwdry .or. newrearth .or. newtmelt .or. newomega) then
          if (masterproc) then
             write(iulog,*)'****************************************************************************'
             write(iulog,*)'***    New Physical Constant Values set via namelist                     ***'

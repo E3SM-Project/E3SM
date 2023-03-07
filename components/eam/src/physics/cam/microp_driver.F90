@@ -16,6 +16,9 @@ use phys_control,   only: phys_getopts
 use micro_mg_cam,   only: micro_mg_cam_readnl, micro_mg_cam_register, &
                           micro_mg_cam_implements_cnst, micro_mg_cam_init_cnst, &
                           micro_mg_cam_init, micro_mg_cam_tend
+use micro_p3_interface, only: micro_p3_init, micro_p3_register, micro_p3_tend, &
+                              micro_p3_implements_cnst, micro_p3_init_cnst, &
+                              micro_p3_readnl
 use cam_logfile,    only: iulog
 use cam_abortutils, only: endrun
 use perf_mod,       only: t_startf, t_stopf
@@ -33,7 +36,6 @@ public :: &
    microp_driver_tend
 
 character(len=16)  :: microp_scheme   ! Microphysics scheme
-
 !===============================================================================
 contains
 !===============================================================================
@@ -50,6 +52,8 @@ subroutine microp_driver_readnl(nlfile)
    select case (microp_scheme)
    case ('MG')
       call micro_mg_cam_readnl(nlfile)
+   case ('P3')
+      call micro_p3_readnl(nlfile)
    ! microp_driver doesn't handle these other options
    case ('RK')
       continue
@@ -70,6 +74,8 @@ subroutine microp_driver_register
    select case (microp_scheme)
    case ('MG')
       call micro_mg_cam_register()
+   case ('P3')
+      call micro_p3_register()
    ! microp_driver doesn't handle these other options
    case ('RK')
       continue
@@ -100,6 +106,8 @@ function microp_driver_implements_cnst(name)
    select case (microp_scheme)
    case ('MG')
       microp_driver_implements_cnst = micro_mg_cam_implements_cnst(name)
+   case ('P3')
+      microp_driver_implements_cnst = micro_p3_implements_cnst(name)
    ! microp_driver doesn't handle these other options
    case ('RK')
       continue
@@ -126,6 +134,8 @@ subroutine microp_driver_init_cnst(name, q, gcid)
    select case (microp_scheme)
    case ('MG')
       call micro_mg_cam_init_cnst(name, q, gcid)
+   case ('P3')
+      call micro_p3_init_cnst(name, q)
    ! microp_driver doesn't handle these other options
    case ('RK')
       continue
@@ -149,6 +159,8 @@ subroutine microp_driver_init(pbuf2d)
    select case (microp_scheme)
    case ('MG')
       call micro_mg_cam_init(pbuf2d)
+   case ('P3')
+      call micro_p3_init(pbuf2d)
    ! microp_driver doesn't handle these other options
    case ('RK')
       continue
@@ -192,6 +204,10 @@ subroutine microp_driver_tend(state, ptend, dtime, pbuf)
       call t_startf('microp_mg_cam_tend')
       call micro_mg_cam_tend(state, ptend, dtime, pbuf)
       call t_stopf('microp_mg_cam_tend')
+   case ('P3')
+      call t_startf('microp_p3_tend')
+      call micro_p3_tend(state, ptend, dtime, pbuf)
+      call t_stopf('microp_p3_tend')
    ! microp_driver doesn't handle these other options
    case ('RK')
       continue

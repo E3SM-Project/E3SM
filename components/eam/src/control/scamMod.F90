@@ -16,13 +16,16 @@ module scamMod
   use time_manager, only: get_nstep,timemgr_time_inc,&
                           get_start_date,get_curr_date,&
                           timemgr_init,get_curr_calday,&
-                          is_first_step
+                          is_first_step, is_first_restart_step,&
+                          is_last_step
   use shr_scam_mod, only: shr_scam_GetCloseLatLon
   use constituents, only: readtrace, cnst_get_ind, pcnst, cnst_name
   use string_utils, only: to_lower
   use cam_abortutils,   only: endrun
   use phys_control, only: phys_getopts
   use dycore, only: dycore_is
+  use spmd_utils,   only: masterproc
+  use mpishorthand
 !
   implicit none
 
@@ -65,6 +68,8 @@ module scamMod
   logical, public ::  l_conv                ! use flux divergence terms for T and q?     
   logical, public ::  l_divtr               ! use flux divergence terms for constituents?
   logical, public ::  l_diag                ! do we want available diagnostics?
+  logical, public ::  scm_multcols          ! use SCM infrastructure across multiple columns
+  logical, public ::  dp_crm                ! do doubly periodic cloud resolving model
 
   integer, public ::  error_code            ! Error code from netCDF reads
   integer, public ::  initTimeIdx
@@ -134,10 +139,15 @@ module scamMod
   real(r8), public ::      divu(plev)          ! Horiz Divergence of E/W
   real(r8), public ::      divv(plev)          ! Horiz Divergence of N/S
                                                ! mo_drydep algorithm
-					       
-  real(r8), public ::  scm_relaxation_low      ! lowest level to apply relaxation
-  real(r8), public ::  scm_relaxation_high     ! highest level to apply relaxation
-					       
+  real(r8), public ::      dyn_dx_size         ! for use in doubly periodic CRM mode
+       
+  real(r8), public ::  iop_nudge_tq_low      ! lowest level to apply relaxation (hPa)
+  real(r8), public ::  iop_nudge_tq_high     ! highest level to apply relaxation (hPa)
+  real(r8), public ::  iop_nudge_tscale      ! timescale for relaxation
+
+  real(r8), public :: iop_perturb_high         ! higest level to apply perturbations
+                                               ! to temperature profile (doubly periodic mode)
+       
   real(r8), public, pointer :: loniop(:)
   real(r8), public, pointer :: latiop(:)
 !
@@ -181,7 +191,9 @@ module scamMod
   logical*4, public ::  have_asdir    ! dataset contains asdir
   logical*4, public ::  have_asdif    ! dataset contains asdif
   logical*4, public ::  scm_iop_srf_prop   ! use the specified surface properties
-  logical*4, public ::  scm_relaxation! use relaxation
+  logical*4, public ::  iop_dosubsidence ! compute Eulerian LS vertical advection
+  logical*4, public ::  iop_nudge_tq! use relaxation for t and q
+  logical*4, public ::  iop_nudge_uv! use relaxation for u and v
   logical*4, public ::  scm_observed_aero ! use observed aerosols in SCM file
   logical*4, public ::  precip_off    ! turn off precipitation processes
   logical*4, public ::  scm_zero_non_iop_tracers ! initialize non-IOP-specified tracers to zero
@@ -201,22 +213,32 @@ module scamMod
 
 
 subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
-        single_column_out,scm_iop_srf_prop_out, scm_relaxation_out, &
-        scm_relaxation_low_out, scm_relaxation_high_out, &
+        single_column_out,scm_iop_srf_prop_out, &
+        iop_dosubsidence_out,  &
+        iop_nudge_tq_out, iop_nudge_uv_out, iop_nudge_tq_low_out, &
+        iop_nudge_tq_high_out, iop_nudge_tscale_out, &
         scm_diurnal_avg_out, scm_crm_mode_out, scm_observed_aero_out, &
-        precip_off_out, scm_clubb_iop_name_out, scm_zero_non_iop_tracers_out)
+        precip_off_out, scm_clubb_iop_name_out, &
+        scm_multcols_out, dp_crm_out, iop_perturb_high_out, &
+        scm_zero_non_iop_tracers_out)
 !-----------------------------------------------------------------------
    real(r8), intent(out), optional :: scmlat_out,scmlon_out
    character*(max_path_len), intent(out), optional ::  iopfile_out
    logical, intent(out), optional ::  single_column_out
    logical, intent(out), optional ::  scm_iop_srf_prop_out
-   logical, intent(out), optional ::  scm_relaxation_out
+   logical, intent(out), optional ::  iop_dosubsidence_out
+   logical, intent(out), optional ::  iop_nudge_tq_out
+   logical, intent(out), optional ::  iop_nudge_uv_out
    logical, intent(out), optional ::  scm_diurnal_avg_out
    logical, intent(out), optional ::  scm_crm_mode_out
    logical, intent(out), optional ::  scm_observed_aero_out
    logical, intent(out), optional ::  precip_off_out
-   real(r8), intent(out), optional ::  scm_relaxation_low_out
-   real(r8), intent(out), optional ::  scm_relaxation_high_out   
+   logical, intent(out), optional ::  scm_multcols_out
+   logical, intent(out), optional ::  dp_crm_out
+   real(r8), intent(out), optional ::  iop_nudge_tq_low_out
+   real(r8), intent(out), optional ::  iop_nudge_tq_high_out
+   real(r8), intent(out), optional ::  iop_nudge_tscale_out
+   real(r8), intent(out), optional ::  iop_perturb_high_out
    character(len=*), intent(out), optional ::  scm_clubb_iop_name_out
    logical, intent(out), optional ::  scm_zero_non_iop_tracers_out
 
@@ -225,37 +247,52 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    if ( present(iopfile_out) )          iopfile_out    = ''
    if ( present(single_column_out) )    single_column_out  = .false.
    if ( present(scm_iop_srf_prop_out) )scm_iop_srf_prop_out  = .false.
-   if ( present(scm_relaxation_out) )   scm_relaxation_out  = .false.
-   if ( present(scm_relaxation_low_out) ) scm_relaxation_low_out = 1050.0_r8
-   if ( present(scm_relaxation_high_out) ) scm_relaxation_high_out = 0.e3_r8   
+   if ( present(iop_dosubsidence_out) )iop_dosubsidence_out = .false.
+   if ( present(iop_nudge_tq_out) )   iop_nudge_tq_out  = .false.
+   if ( present(iop_nudge_uv_out) )   iop_nudge_uv_out  = .false.
+   if ( present(iop_nudge_tq_low_out) ) iop_nudge_tq_low_out = 1050.0_r8
+   if ( present(iop_nudge_tq_high_out) ) iop_nudge_tq_high_out = 0.e3_r8
+   if ( present(iop_nudge_tscale_out) ) iop_nudge_tscale_out = 10800._r8
+   if ( present(iop_perturb_high_out) ) iop_perturb_high_out = 1050.0_r8
    if ( present(scm_diurnal_avg_out) )  scm_diurnal_avg_out = .false.
    if ( present(scm_crm_mode_out) )     scm_crm_mode_out  = .false.
    if ( present(scm_observed_aero_out)) scm_observed_aero_out = .false.
    if ( present(precip_off_out))        precip_off_out = .false.
+   if ( present(scm_multcols_out))      scm_multcols_out = .false.
+   if ( present(dp_crm_out))            dp_crm_out = .false.
    if ( present(scm_clubb_iop_name_out) ) scm_clubb_iop_name_out  = ' '
    if ( present(scm_zero_non_iop_tracers_out) ) scm_zero_non_iop_tracers_out = .false.
 
 end subroutine scam_default_opts
 
 subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
-                         scm_iop_srf_prop_in, scm_relaxation_in, &
-                         scm_relaxation_low_in, scm_relaxation_high_in, &
+                         scm_iop_srf_prop_in, &
+                         iop_dosubsidence_in, &
+                         iop_nudge_tq_in, iop_nudge_uv_in, iop_nudge_tq_low_in, &
+                         iop_nudge_tq_high_in, iop_nudge_tscale_in, &
                          scm_diurnal_avg_in, scm_crm_mode_in, scm_observed_aero_in, &
                          precip_off_in, scm_clubb_iop_name_in, &
+                         scm_multcols_in, dp_crm_in, iop_perturb_high_in, &
                          scm_zero_non_iop_tracers_in)
 !-----------------------------------------------------------------------
   real(r8), intent(in), optional       :: scmlon_in, scmlat_in
   character*(max_path_len), intent(in), optional :: iopfile_in
   logical, intent(in), optional        :: single_column_in
   logical, intent(in), optional        :: scm_iop_srf_prop_in
-  logical, intent(in), optional        :: scm_relaxation_in
+  logical, intent(in), optional        :: iop_dosubsidence_in
+  logical, intent(in), optional        :: iop_nudge_tq_in
+  logical, intent(in), optional        :: iop_nudge_uv_in
   logical, intent(in), optional        :: scm_diurnal_avg_in
   logical, intent(in), optional        :: scm_crm_mode_in
   logical, intent(in), optional        :: scm_observed_aero_in
   logical, intent(in), optional        :: precip_off_in
+  logical, intent(in), optional        :: scm_multcols_in
+  logical, intent(in), optional        :: dp_crm_in
   character(len=*), intent(in), optional :: scm_clubb_iop_name_in
-  real(r8), intent(in), optional       :: scm_relaxation_low_in
-  real(r8), intent(in), optional       :: scm_relaxation_high_in  
+  real(r8), intent(in), optional       :: iop_nudge_tq_low_in
+  real(r8), intent(in), optional       :: iop_nudge_tq_high_in
+  real(r8), intent(in), optional       :: iop_nudge_tscale_in
+  real(r8), intent(in), optional       :: iop_perturb_high_in
   logical, intent(in), optional        :: scm_zero_non_iop_tracers_in
   integer ncid,latdimid,londimid,latsiz,lonsiz,latid,lonid,ret,i
   integer latidx,lonidx
@@ -264,23 +301,47 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   if (present (single_column_in ) ) then 
      single_column=single_column_in
   endif
+  
+  if (present (scm_multcols_in ) ) then
+     scm_multcols=scm_multcols_in
+  endif
+
+  if (present (dp_crm_in ) ) then
+    dp_crm=dp_crm_in
+  endif
 
   if (present (scm_iop_srf_prop_in)) then
      scm_iop_srf_prop=scm_iop_srf_prop_in
   endif
-  
-  if (present (scm_relaxation_in)) then
-     scm_relaxation=scm_relaxation_in
+
+  if (present (iop_dosubsidence_in)) then
+     iop_dosubsidence=iop_dosubsidence_in
   endif
-  
-  if (present (scm_relaxation_low_in)) then
-     scm_relaxation_low=scm_relaxation_low_in
+
+  if (present (iop_nudge_tq_in)) then
+     iop_nudge_tq=iop_nudge_tq_in
+  endif
+
+  if (present (iop_nudge_tq_in)) then
+     iop_nudge_uv=iop_nudge_uv_in
+  endif
+
+  if (present (iop_nudge_tq_low_in)) then
+     iop_nudge_tq_low=iop_nudge_tq_low_in
   endif  
   
-  if (present (scm_relaxation_high_in)) then
-     scm_relaxation_high=scm_relaxation_high_in
-  endif   
-  
+  if (present (iop_nudge_tq_high_in)) then
+     iop_nudge_tq_high=iop_nudge_tq_high_in
+  endif
+
+  if (present (iop_nudge_tscale_in)) then
+     iop_nudge_tscale=iop_nudge_tscale_in
+  endif
+
+  if (present (iop_perturb_high_in)) then
+     iop_perturb_high=iop_perturb_high_in
+  endif
+
   if (present (scm_diurnal_avg_in)) then
      scm_diurnal_avg=scm_diurnal_avg_in
   endif
@@ -308,10 +369,27 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   if (present (iopfile_in)) then
      iopfile=trim(iopfile_in)
   endif
+  
+#ifdef SPMD
+  call mpibcast(scm_iop_srf_prop,1,mpilog,0,mpicom)
+  call mpibcast(dp_crm,1,mpilog,0,mpicom)
+  call mpibcast(iop_dosubsidence,1,mpilog,0,mpicom)
+  call mpibcast(iop_nudge_tq,1,mpilog,0,mpicom)
+  call mpibcast(iop_nudge_uv,1,mpilog,0,mpicom)
+  call mpibcast(iop_nudge_tq_high,1,mpir8,0,mpicom)
+  call mpibcast(iop_nudge_tq_low,1,mpir8,0,mpicom)
+  call mpibcast(iop_nudge_tscale,1,mpir8,0,mpicom)
+  call mpibcast(iop_perturb_high,1,mpir8,0,mpicom)
+  call mpibcast(scm_diurnal_avg,1,mpilog,0,mpicom)
+  call mpibcast(scm_crm_mode,1,mpilog,0,mpicom)
+  call mpibcast(scm_observed_aero,1,mpilog,0,mpicom)
+  call mpibcast(precip_off,1,mpilog,0,mpicom)
+#endif
 
   if( single_column) then
-     
-     if (plon /= 1 .or. plat /=1 ) then 
+
+  if (masterproc) then     
+     if (plon /= 1 .and. plat /= 1 .and. .not. scm_multcols) then
         call endrun('SCAM_SETOPTS: must compile model for SCAM mode when namelist parameter single_column is .true.')
      endif
      
@@ -323,23 +401,23 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
            call endrun('SCAM_SETOPTS: must specify IOP file for single column mode')
         endif
         call wrap_open (iopfile, NF90_NOWRITE, ncid)
-	
-	if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_GENERATED_FORCING', attnum=i ).EQ. NF90_NOERR ) then
+
+        if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'E3SM_GENERATED_FORCING', attnum=i ).EQ. NF90_NOERR ) then
            use_replay = .true.
         else
            use_replay = .false.
         endif
-	
-	if (dycore_is('SE') .and. use_replay) then
-	  call wrap_inq_dimid( ncid, 'ncol', londimid   )
-	  call wrap_inq_dimlen( ncid, londimid, lonsiz   )
-	  latsiz=lonsiz
-	else 
-	  call wrap_inq_dimid( ncid, 'lon', londimid   )
+
+        if (dycore_is('SE') .and. use_replay) then
+          call wrap_inq_dimid( ncid, 'ncol', londimid   )
+          call wrap_inq_dimlen( ncid, londimid, lonsiz   )
+          latsiz=lonsiz
+        else 
+          call wrap_inq_dimid( ncid, 'lon', londimid   )
           call wrap_inq_dimid( ncid, 'lat', latdimid   )
           call wrap_inq_dimlen( ncid, londimid, lonsiz   )
           call wrap_inq_dimlen( ncid, latdimid, latsiz   )
-	endif
+        endif
 
         call wrap_inq_varid( ncid, 'lon', lonid   )
         call wrap_inq_varid( ncid, 'lat', latid   )
@@ -391,11 +469,17 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
 !!jt      iyear_AD_out     = 1950
 !!jt   end if
 
+  endif
+
   else
      if (plon ==1 .and. plat ==1) then 
         call endrun('SCAM_SETOPTS: single_column namelist option must be set to true when running in single column mode')
      endif
   endif
+  
+#ifdef SPMD
+  call mpibcast(use_iop,1,mpilog,0,mpicom)
+#endif
 
 
 end subroutine scam_setopts
@@ -414,7 +498,7 @@ subroutine scam_clm_default_opts( pftfile_out, srffile_out, inifile_out )
    srffile_out = lsmsurffile
 end subroutine scam_clm_default_opts
 
-subroutine setiopupdate
+subroutine setiopupdate(override_init)
 
 !-----------------------------------------------------------------------
 !   
@@ -432,6 +516,8 @@ subroutine setiopupdate
 
 !------------------------------Locals-----------------------------------
 
+   logical, optional, intent(in) :: override_init
+
    integer NCID,i
    integer tsec_varID, time_dimID
    integer, allocatable :: tsec(:)
@@ -443,12 +529,23 @@ subroutine setiopupdate
    integer :: ncsec,ncdate                      ! current time of day,date
    integer :: yr, mon, day                      ! year, month, and day component
    integer :: start_ymd,start_tod
-   logical :: doiter
+   logical :: doiter, override
    save tsec, ntime, bdate
    save last_date, last_sec
 !------------------------------------------------------------------------------
 
-   if ( get_nstep() .eq. 0 ) then
+   ! If this is a restart then the initialization and main section of this
+   !   subroutine both need to be called, thus develop a flag to instruct
+   !   to skip the initialization part when this subroutine is called for
+   !   a second.
+   ! NOTE: this subroutine will be refactored into two separate subroutines
+   !   ahead of the DP-SCREAM cpp conversion to avoid this goofy behavior.
+   override = .false.
+   if (present(override_init)) then
+     override = override_init
+   endif
+
+   if ( (get_nstep() .eq. 0 .or. is_first_restart_step()) .and. .not. override ) then
 !     
 !     Open  IOP dataset
 !     
@@ -548,6 +645,7 @@ subroutine setiopupdate
       doiopupdate = .false.
       iopTimeIdx = iopTimeIdx
       doiter=.true.
+
       do while(doiter)
         call timemgr_time_inc(bdate, 0, next_date, next_sec,inc_s=tsec(iopTimeIdx+1))
         if (ncdate .gt. next_date .or. (ncdate .eq. next_date &
@@ -581,11 +679,12 @@ subroutine setiopupdate
    endif                     ! if (endstep .eq. 0 )
 !
 !     make sure we're
-!     not going past end of iop data
+!     not going past end of iop data.  If we are on the last time
+!     step then this is irrelevant, do not abort
 !
    if ( ncdate .gt. last_date .or. (ncdate .eq. last_date &
       .and. ncsec .gt. last_sec))  then
-      if ( .not. use_userdata ) then
+      if ( .not. use_userdata .and. .not. is_last_step() ) then
          write(iulog,*)'ERROR - setiopupdate.c:Reached the end of the time varient dataset'
          stop
       else

@@ -853,6 +853,8 @@ module ocn_forward_mode
 
       if ( config_time_integrator == 'split_explicit') then
          call mpas_dmpar_exch_group_destroy_reusable_buffers(domain, 'subcycleFields')
+      else if ( config_time_integrator == 'split_implicit') then
+         call ocn_time_integrator_si_variable_destroy()
       end if
 
       call ocn_analysis_finalize(domain, ierr)

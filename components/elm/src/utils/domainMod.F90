@@ -25,7 +25,7 @@ module domainMod
      integer          :: ni,nj      ! global axis if 2d (nj=1 if unstructured)
      logical          :: isgrid2d   ! true => global grid is lat/lon
      integer          :: nbeg,nend  ! local beg/end indices
-     character(len=8) :: elmlevel   ! grid type
+     character(len=32):: elmlevel   ! grid type
      integer ,pointer :: mask(:)    ! land mask: 1 = land, 0 = ocean
      real(r8),pointer :: frac(:)    ! fractional land
      real(r8),pointer :: topo(:)    ! topography 
@@ -153,6 +153,8 @@ contains
 
     if (present(elmlevel)) then
        domain%elmlevel = elmlevel
+    else
+       domain%elmlevel = 'NOdomain_unsetNO'
     endif
 
     domain%isgrid2d = isgrid2d
