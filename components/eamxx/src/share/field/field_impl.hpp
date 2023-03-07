@@ -356,6 +356,8 @@ update (const Field& x, const ST alpha, const ST beta)
     return update_impl<CombineMode::ScaleUpdate,HD,float>(x,alpha,beta);
   } else if (dt==DataType::DoubleType) {
     return update_impl<CombineMode::ScaleUpdate,HD,double>(x,alpha,beta);
+  } else {
+    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::update.\n");
   }
 }
 
@@ -371,6 +373,8 @@ scale (const ST beta)
     return update_impl<CombineMode::Rescale,HD,float>(*this,ST(0),beta);
   } else if (dt==DataType::DoubleType) {
     return update_impl<CombineMode::Rescale,HD,double>(*this,ST(0),beta);
+  } else {
+    EKAT_ERROR_MSG ("Error! Unrecognized/unsupported field data type in Field::scale.\n");
   }
 }
 
