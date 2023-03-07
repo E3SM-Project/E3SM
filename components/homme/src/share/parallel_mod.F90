@@ -52,11 +52,10 @@ module parallel_mod
     integer :: root                       ! local root
     integer :: nprocs                     ! number of processes in group
     integer :: comm                       ! local communicator
-!    integer :: node_comm                  ! local communicator of all procs per node
-!    integer :: node_rank                  ! local rank in node_comm
-!    integer :: node_nprocs                ! local rank in node_comm
     logical :: masterproc                
     logical :: dynproc                    ! Designation of a dynamics processor - AaronDonahue
+    ! note: HOMME redefines the parallel_t assignment operator to be a deep copy,
+    ! so with any change to this struct, check the user defined assignment operator below (copy_par)
   end type
 
 #ifdef CAM
