@@ -93,7 +93,30 @@ void AtmosphereProcess::run (const double dt) {
       compute_column_conservation_checks_data(dt_sub);
     }
 
+    // Init single step tendencies (if any) with current value of output field
+    for (auto& it : m_proc_tendencies_single_step) {
+      const auto& tname = it.first;
+      const auto& fname = m_tend_to_field.at(tname);
+      const auto& f     = get_field_out(fname);
+
+      auto& step_tend = it.second;
+      step_tend.deep_copy(f);
+    }
+
     run_impl(dt_sub);
+
+    // Complete tendency calculations (if any)
+    for (auto it : m_proc_tendencies_accum) {
+      const auto& tname = it.first;
+      const auto& fname = m_tend_to_field.at(tname);
+      const auto& f     = get_field_out(fname);
+
+      auto& step_tend = m_proc_tendencies_single_step.at(tname);
+      auto& tend      = it.second;
+
+      step_tend.update(f,1/dt_sub,-1/dt_sub);
+      tend.update(step_tend,1.0,1.0);
+    }
 
     if (has_column_conservation_check()) {
       // Run the column local mass and energy conservation checks
@@ -116,6 +139,108 @@ void AtmosphereProcess::run (const double dt) {
 
 void AtmosphereProcess::finalize (/* what inputs? */) {
   finalize_impl(/* what inputs? */);
+}
+
+void AtmosphereProcess::setup_tendencies_requests () {
+  auto tend_vec = m_params.get<std::vector<std::string>>("compute_tendencies",{});
+  if (tend_vec.size()==0) {
+    return;
+  }
+
+  // Will convert to list, since lists insert/erase are safe inside loops
+  std::list<std::string> tend_list;
+
+  // Allow user to specify [all] as a shortcut for all updated fields
+  if (tend_vec.size()==1 && tend_vec[0]==ci_string("all")) {
+    for (const auto& r_out : get_computed_field_requests()) {
+      for (const auto& r_in : get_required_field_requests()) {
+        if (r_in.fid==r_out.fid) {
+          tend_list.push_back(r_out.fid.name());
+          break;
+        }
+      }
+    }
+  } else {
+    for (const auto& n : tend_vec) {
+      // We don't have grid name info here, so we'll check that n
+      // is indeed an updated field a few lines below
+      tend_list.push_back(n);
+    }
+  }
+
+  // Allow to request tendency of a field on a particular grid
+  // by using the syntax 'field_name#grid_name'
+  auto field_grid = [&] (const std::string& tn) -> std::pair<std::string,std::string>{
+    auto tokens = ekat::split(tn,'#');
+    EKAT_REQUIRE_MSG (tokens.size()==1 || tokens.size()==2,
+        "Error! Invalid format for tendency calculation request: " + tn + "\n"
+        "  To request tendencies for F, use 'F' or 'F#grid_name' format.\n");
+    return std::make_pair(tokens[0],tokens.size()==2 ? tokens[1] : "");
+  };
+
+  auto check_multiple_matches = [&] (const std::string& tn, const bool already_found) {
+    auto tokens = field_grid(tn);
+    auto fn = tokens.first;
+    auto gn = tokens.second;
+    EKAT_REQUIRE_MSG (not already_found,
+        "Error! Could not uniquely determine field for tendency calculation.\n"
+        " - atm proc name: " + this->name() + "\n"
+        " - tend requested: " + tn + "\n"
+        "If atm process computes " + fn + " on multiple grids, use " + fn + "#grid_name\n");
+  };
+
+  auto check_updated = [&] (const std::string& fn, const std::string& gn) {
+    EKAT_REQUIRE_MSG (has_required_field(fn,gn),
+        "Error! Tendency calculation available only for updated fields.\n"
+        " - atm proc name: " + this->name() + "\n"
+        " - field name   : " + fn + "\n"
+        " - grid name    : " + gn + "\n");
+  };
+
+  // Parse all the tendencies requested, looking for a corresponding
+  // field with the requested name. If more than one is found (must be
+  // that we have same field on multiple grids), error out.
+  using namespace ekat::units;
+  for (const auto& tn : tend_list) {
+    bool found = false;
+    auto tokens = field_grid(tn);
+    auto fn = tokens.first;
+    auto gn = tokens.second;
+    const auto& tname = this->name() + "_" + tn + "_tend";
+    for (auto it : get_computed_field_requests()) {
+      const auto& fid = it.fid;
+      if (fid.name()==fn && (gn=="" || gn==fid.get_grid_name())) {
+        // Get fid specs
+        const auto& layout = fid.get_layout();
+        const auto  units  = fid.get_units() / s;
+        const auto& gname  = fid.get_grid_name();
+        const auto& dtype  = fid.data_type();
+
+        // Check we did not process another field with same name
+        check_multiple_matches(tn,found);
+
+        // Check this computed field is also updated
+        check_updated (fn,gname);
+
+        // Create tend FID and request field
+        FieldIdentifier t_fid(tname,layout,units,gname,dtype);
+        add_field<Computed>(t_fid,"ACCUMULATED");
+        found = true;
+      }
+    }
+
+    EKAT_REQUIRE_MSG (found,
+        "Error! Could not locate field for tendency request.\n"
+        " - atm proc name: " + this->name() + "\n"
+        " - tendency request: " + tn + "\n");
+
+    // Add an empty field, to be reset when we set the computed field
+    m_proc_tendencies_single_step[tname] = {};
+    m_proc_tendencies_accum[tname] = {};
+    m_tend_to_field[tname] = fn;
+  }
+
+  m_compute_proc_tendencies = m_proc_tendencies_accum.size()>0;
 }
 
 void AtmosphereProcess::set_required_field (const Field& f) {
@@ -160,6 +285,12 @@ void AtmosphereProcess::set_computed_field (const Field& f) {
   }
 
   set_computed_field_impl (f);
+
+  if (m_compute_proc_tendencies &&
+      m_proc_tendencies_single_step.count(f.name())==1) {
+    m_proc_tendencies_accum[f.name()] = f;
+    m_proc_tendencies_single_step[f.name()] = f.clone(f.name()+"_single_step");
+  }
 }
 
 void AtmosphereProcess::set_required_group (const FieldGroup& group) {
