@@ -282,6 +282,7 @@ _TESTS = {
             "SMS_D_Ld3.T62_oQU120.CMPASO-IAF",
             "SMS_D_Ld1.ne30pg2_r05_EC30to60E2r2.WCYCL1850",
             "SMS_Ln5.ne30pg2_ne30pg2.F2010-SCREAM-LR-DYAMOND2",
+            "ERS_Ld3.ne30pg2_r05_EC30to60E2r2.WCYCL1850.eam-nlmaps",
             )
         },
 
