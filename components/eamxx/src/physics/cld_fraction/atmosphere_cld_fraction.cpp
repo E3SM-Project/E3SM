@@ -44,8 +44,16 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
   add_field<Required>("cldfrac_liq", scalar3d_layout_mid, nondim, grid_name,ps);
 
   // Set of fields used strictly as output
-  add_field<Computed>("cldfrac_tot",  scalar3d_layout_mid, nondim, grid_name,ps);
-  add_field<Computed>("cldfrac_ice",  scalar3d_layout_mid, nondim, grid_name,ps);
+  add_field<Computed>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name,ps);
+  add_field<Computed>("cldfrac_ice", scalar3d_layout_mid, nondim, grid_name,ps);
+  // Note, we track two versions of the cloud fraction.  The two that follow, which have
+  // "_for_output" attached to the name are meant for use with fields that are exclusively
+  // related to output.  This is an important distinction here because the internal ice
+  // cloud fraction has a low tolerance for setting the cloud fraction = 1.0, essentially
+  // if there is any cloud ice in a layer.  When we consider ice cloud fraction for output
+  // purposes we need to use a stricter limit.
+  add_field<Computed>("cldfrac_tot_for_output", scalar3d_layout_mid, nondim, grid_name,ps);
+  add_field<Computed>("cldfrac_ice_for_output", scalar3d_layout_mid, nondim, grid_name,ps);
 
   // Set of fields used as input and output
   // - There are no fields used as both input and output.
@@ -58,6 +66,8 @@ void CldFraction::initialize_impl (const RunType /* run_type */)
   using Interval = FieldWithinIntervalCheck;
   add_postcondition_check<Interval>(get_field_out("cldfrac_ice"),m_grid,0.0,1.0,false);
   add_postcondition_check<Interval>(get_field_out("cldfrac_tot"),m_grid,0.0,1.0,false);
+  add_postcondition_check<Interval>(get_field_out("cldfrac_ice_for_output"),m_grid,0.0,1.0,false);
+  add_postcondition_check<Interval>(get_field_out("cldfrac_tot_for_output"),m_grid,0.0,1.0,false);
 }
 
 // =========================================================================================
@@ -69,8 +79,10 @@ void CldFraction::run_impl (const double /* dt */)
   auto liq_cld_frac = get_field_in("cldfrac_liq").get_view<const Pack**>();
   auto ice_cld_frac = get_field_out("cldfrac_ice").get_view<Pack**>();
   auto tot_cld_frac = get_field_out("cldfrac_tot").get_view<Pack**>();
+  auto ice_cld_frac_4out = get_field_out("cldfrac_ice_for_output").get_view<Pack**>();
+  auto tot_cld_frac_4out = get_field_out("cldfrac_tot_for_output").get_view<Pack**>();
 
-  CldFractionFunc::main(m_num_cols,m_num_levs,qi,liq_cld_frac,ice_cld_frac,tot_cld_frac);
+  CldFractionFunc::main(m_num_cols,m_num_levs,qi,liq_cld_frac,ice_cld_frac,tot_cld_frac,ice_cld_frac_4out,tot_cld_frac_4out);
 }
 
 // =========================================================================================

@@ -47,12 +47,15 @@ struct CldFractionFunctions
     const view_2d<const Pack>& qi, 
     const view_2d<const Pack>& liq_cld_frac, 
     const view_2d<Pack>& ice_cld_frac, 
-    const view_2d<Pack>& tot_cld_frac);
+    const view_2d<Pack>& tot_cld_frac,
+    const view_2d<Pack>& ice_cld_frac_4out, 
+    const view_2d<Pack>& tot_cld_frac_4out);
 
   KOKKOS_FUNCTION
   static void calc_icefrac( 
     const MemberType& team,
     const Int& nk,
+    const Real& threshold,
     const uview_1d<const Spack>& qi,
     const uview_1d<Spack>&       ice_cld_frac);
 
