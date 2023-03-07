@@ -46,12 +46,13 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
   // Set of fields used strictly as output
   add_field<Computed>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name,ps);
   add_field<Computed>("cldfrac_ice", scalar3d_layout_mid, nondim, grid_name,ps);
-  // Note, we track two versions of the cloud fraction.  The two that follow, which have
-  // "_for_output" attached to the name are meant for use with fields that are exclusively
-  // related to output.  This is an important distinction here because the internal ice
-  // cloud fraction has a low tolerance for setting the cloud fraction = 1.0, essentially
-  // if there is any cloud ice in a layer.  When we consider ice cloud fraction for output
-  // purposes we need to use a stricter limit.
+  // Note, we track two versions of the cloud fraction.  The versions below have "_for_output"   
+  // attached to the name because they're meant for use with fields that are exclusively
+  // related to writing output.  This is an important distinction here because the internal ice
+  // cloud fraction needs to be 100% whenever any ice at all is present in the cell (in order 
+  // for the model's ice processes to act on that cell). Folks evaluating cloud, on the other hand, 
+  // expect cloud fraction to represent cloud visible to the human eye (which corresponds to 
+  // ~1e-5 kg/kg). 
   add_field<Computed>("cldfrac_tot_for_output", scalar3d_layout_mid, nondim, grid_name,ps);
   add_field<Computed>("cldfrac_ice_for_output", scalar3d_layout_mid, nondim, grid_name,ps);
 
