@@ -6,7 +6,6 @@ namespace nudging{
 
 struct NudgingFunctions
 {
-
   using mPack = ekat::Pack<Real,1>;
   using KT = KokkosTypes<DefaultDevice>;
 
@@ -18,8 +17,8 @@ struct NudgingFunctions
 
   struct NudgingData
   {
-    
     NudgingData() = default;
+    NudgingData& operator=(const NudgingData&) = default;
     NudgingData(const int ncol_, const int nlev_)
     {
       init(ncol_,nlev_,true);
@@ -31,7 +30,6 @@ struct NudgingFunctions
       if (allocate){
         T_mid = view_2d<Real>("",ncols,nlevs);
         p_mid = view_2d<Real>("",ncols,nlevs);
-        //hw = view_3d<Real>("",ncols,2,nlevs);
         qv = view_2d<Real>("",ncols,nlevs);
         u = view_2d<Real>("",ncols,nlevs);
         v = view_2d<Real>("",ncols,nlevs);
@@ -43,12 +41,10 @@ struct NudgingFunctions
     int time;
     view_2d<Real> T_mid;
     view_2d<Real> p_mid;
-    //view_3d<Real> hw;
     view_2d<Real> qv;
     view_2d<Real> u;
     view_2d<Real> v;
   };
-
 
 };
 }//end of nudging namespace

@@ -60,10 +60,14 @@ TEST_CASE("nudging") {
   Int num_levs = 34;
 
   // Initialize the pio_subsystem for this test:
-  MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  // MPI communicator group used for I/O.  In our simple test we use MPI_COMM_WORLD, however a subset could be used.
-  scorpio::eam_init_pio_subsystem(fcomm);   // Gather the initial PIO subsystem data creater by component coupler
+  // MPI communicator group used for I/O.  
+  // In our simple test we use MPI_COMM_WORLD, however a subset could be used.
+  MPI_Fint fcomm = MPI_Comm_c2f(io_comm.mpi_comm());  
+  // Gather the initial PIO subsystem data creater by component coupler
+  scorpio::eam_init_pio_subsystem(fcomm);   
   
-  // First set up a field manager and grids manager to interact with the output functions
+  // First set up a field manager and grids manager to interact 
+  // with the output functions
   auto gm2 = create_gm(io_comm,3,num_levs);
   auto grid2 = gm2->get_grid("Point Grid");
   int num_lcols = grid2->get_num_local_dofs();
@@ -137,22 +141,19 @@ TEST_CASE("nudging") {
     
     for (int ii=0;ii<num_lcols;++ii) {
       for (int jj=0;jj<num_levs;++jj) {
-        f1_host(ii,jj) = 1;
-	f2_host(ii,jj) = 1;
-        f3_host(ii,jj) = 1;
-	f4_host(ii,jj) = 1;
-	f5_host(ii,jj) = 1;
+	f1_host(ii,jj) = 2*jj+1;
+	f2_host(ii,jj) = (ii-1)*10000+200*jj+10*(-1);
+	f3_host(ii,jj) = (ii-1)*10000+200*jj+10*(-1);
+	f4_host(ii,jj) = (ii-1)*10000+200*jj+10*(-1);
+	f5_host(ii,jj) = (ii-1)*10000+200*jj+10*(-1);
       }
     }
     fm->init_fields_time_stamp(time);
-    // Sync back to device
     f1.sync_to_dev();
     f2.sync_to_dev();
     f3.sync_to_dev();
     f4.sync_to_dev();
     f5.sync_to_dev();
-
-    //fm->init_fields_time_stamp(t0);
 
     // Set up parameter list control for output
     ekat::ParameterList params;
@@ -191,7 +192,6 @@ TEST_CASE("nudging") {
                 for (int j=0; j<fl.dim(1); ++j) {
                   if (fname != "p_mid"){
 		      v(i,j) = (i-1)*10000+200*j+10*(dt/250.)*ii;
-		      //std::cout<<"v("<<i<<","<<j<<"): "<<v(i,j)<<std::endl;
                   }
                   if (fname == "p_mid"){
                     v(i,j) = 2*j+1;
@@ -248,7 +248,6 @@ TEST_CASE("nudging") {
       nudging_mid->set_computed_field(f);
       output_fields.emplace(name,f);
     }
-
   }
 
   //initialize
@@ -293,9 +292,6 @@ TEST_CASE("nudging") {
     u_o.sync_to_host();
     v_o.sync_to_host();
 
-    //Only check in cases for time is larger than first
-    //time step in file (250s), so the checks start at 300s
-    if(time_s<3){continue;}
     for (int icol=0; icol<ncols; icol++){
       for (int ilev=0; ilev<nlevs; ilev++){ 
         const int time_index = time_s*100./250.;

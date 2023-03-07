@@ -43,7 +43,6 @@ void Nudging::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
   //Internally we want this in seconds so need to convert
   //Only consider integer time steps in seconds to resolve any roundoff error
   time_step_file=int((time_value_2-time_value_1)*86400);
-  std::cout<<"time_step_file: "<<time_step_file<<std::endl;
   scorpio::eam_pio_closefile(datafile);
 }
 
@@ -86,11 +85,12 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   auto grid_l = m_grid->clone("Point Grid", false);
   grid_l->reset_num_vertical_lev(m_num_src_levs);
   ekat::ParameterList data_in_params;
-  //m_fnames = {"T_mid","p_mid","qv","horiz_winds"};
   m_fnames = {"T_mid","p_mid","qv","u","v"};
   data_in_params.set("Field Names",m_fnames);
   data_in_params.set("Filename",datafile);
-  data_in_params.set("Skip_Grid_Checks",true);  // We need to skip grid checks because multiple ranks may want the same column of source data.
+  // We need to skip grid checks because multiple ranks 
+  // may want the same column of source data.
+  data_in_params.set("Skip_Grid_Checks",true);  
   data_input = std::make_shared<AtmosphereInput>(m_comm,data_in_params);
   data_input->init(grid_l,host_views,layouts);
 
@@ -111,22 +111,22 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   int start_min=int((start_time-start_hour*10000)/100);
   int start_sec=int(start_time-start_hour*10000-start_min*100);
 
-  EKAT_REQUIRE_MSG(start_year==ts0.get_date()[0],
+  EKAT_REQUIRE_MSG(start_year==ts0.get_year(),
 		   "ERROR: The start year from the nudging file is "\
 		   "different than the internal simulation start year\n");
-  EKAT_REQUIRE_MSG(start_month==ts0.get_date()[1],
+  EKAT_REQUIRE_MSG(start_month==ts0.get_month(),
 		   "ERROR: The start month from the nudging file is "\
 		   "different than the internal simulation start month\n");
-  EKAT_REQUIRE_MSG(start_day==ts0.get_date()[2],
+  EKAT_REQUIRE_MSG(start_day==ts0.get_day(),
 		   "ERROR: The start day from the nudging file is "\
 		   "different than the internal simulation start day\n");
-  EKAT_REQUIRE_MSG(start_hour==ts0.get_time()[0],
+  EKAT_REQUIRE_MSG(start_hour==ts0.get_hours(),
 		   "ERROR: The start hour from the nudging file is "\
 		   "different than the internal simulation start hour\n");
-  EKAT_REQUIRE_MSG(start_min==ts0.get_time()[1],
+  EKAT_REQUIRE_MSG(start_min==ts0.get_minutes(),
 		   "ERROR: The start minute from the nudging file is "\
 		   "different than the internal simulation start minute\n");
-  EKAT_REQUIRE_MSG(start_sec==ts0.get_time()[2],
+  EKAT_REQUIRE_MSG(start_sec==ts0.get_seconds(),
 		   "ERROR: The start second from the nudging file is "\
 		   "different than the internal simulation start second\n");
 		   
@@ -135,6 +135,15 @@ void Nudging::initialize_impl (const RunType /* run_type */)
   NudgingData_bef.time = -999;
   NudgingData_aft.init(m_num_cols,m_num_src_levs,true);
   NudgingData_aft.time = -999;
+
+  //Read in the first time step
+  data_input->read_variables(0);
+  Kokkos::deep_copy(NudgingData_bef.T_mid,fields_ext_h["T_mid"]);
+  Kokkos::deep_copy(NudgingData_bef.p_mid,fields_ext_h["p_mid"]);
+  Kokkos::deep_copy(NudgingData_bef.u,fields_ext_h["u"]);
+  Kokkos::deep_copy(NudgingData_bef.v,fields_ext_h["v"]);
+  Kokkos::deep_copy(NudgingData_bef.qv,fields_ext_h["qv"]);
+  NudgingData_bef.time = 0.;
 
   //Read in the first time step
   data_input->read_variables(1);
@@ -158,69 +167,30 @@ void Nudging::time_interpolation (const int time_s) {
   double time_step_file_d = time_step_file;
   double w_bef = ((time_index+1)*time_step_file-time_s) / time_step_file_d;
   double w_aft = (time_s-(time_index)*time_step_file) / time_step_file_d;
-  std::cout<<"w_bef: "<<w_bef<<std::endl;
-  std::cout<<"w_aft: "<<w_aft<<std::endl;
-  std::cout<<"time_index: "<<time_index<<std::endl;
-  std::cout<<"time_step_file_d: "<<time_step_file_d<<std::endl;
   const int num_cols = NudgingData_aft.T_mid.extent(0);
   const int num_vert_packs = NudgingData_aft.T_mid.extent(1);
   const auto policy = ESU::get_default_team_policy(num_cols, num_vert_packs);
 
-  auto T_mid_bef = view_2d<Real>("",NudgingData_bef.T_mid.extent_int(0),
-				 NudgingData_bef.T_mid.extent_int(1));
-  Kokkos::deep_copy(T_mid_bef,NudgingData_bef.T_mid);
-  auto T_mid_aft = view_2d<Real>("",NudgingData_aft.T_mid.extent_int(0),
-				 NudgingData_aft.T_mid.extent_int(1));
-  Kokkos::deep_copy(T_mid_aft,NudgingData_aft.T_mid);
-
-  auto p_mid_bef = view_2d<Real>("",NudgingData_bef.p_mid.extent_int(0),
-				 NudgingData_bef.p_mid.extent_int(1));
-  Kokkos::deep_copy(p_mid_bef,NudgingData_bef.p_mid);
-  auto p_mid_aft = view_2d<Real>("",NudgingData_aft.p_mid.extent_int(0),
-				 NudgingData_aft.p_mid.extent_int(1));
-  Kokkos::deep_copy(p_mid_aft,NudgingData_aft.p_mid);
-
-  auto qv_bef = view_2d<Real>("",NudgingData_bef.qv.extent_int(0),
-				 NudgingData_bef.qv.extent_int(1));
-  Kokkos::deep_copy(qv_bef,NudgingData_bef.qv);
-  auto qv_aft = view_2d<Real>("",NudgingData_aft.qv.extent_int(0),
-				 NudgingData_aft.qv.extent_int(1));
-  Kokkos::deep_copy(qv_aft,NudgingData_aft.qv);
-
-  auto u_bef = view_2d<Real>("",NudgingData_bef.u.extent_int(0),
-				 NudgingData_bef.u.extent_int(1));
-  Kokkos::deep_copy(u_bef,NudgingData_bef.u);
-  auto u_aft = view_2d<Real>("",NudgingData_aft.u.extent_int(0),
-				 NudgingData_aft.u.extent_int(1));
-  Kokkos::deep_copy(u_aft,NudgingData_aft.u);
-
-  auto v_bef = view_2d<Real>("",NudgingData_bef.v.extent_int(0),
-				 NudgingData_bef.v.extent_int(1));
-  Kokkos::deep_copy(v_bef,NudgingData_bef.v);
-  auto v_aft = view_2d<Real>("",NudgingData_aft.v.extent_int(0),
-				 NudgingData_aft.v.extent_int(1));
-  Kokkos::deep_copy(v_aft,NudgingData_aft.v);
-  
   Kokkos::parallel_for("nudging_time_interpolation", policy,
      	       KOKKOS_LAMBDA(MemberType const& team) {
+
       const int icol = team.league_rank();
       auto T_mid_1d = ekat::subview(T_mid_ext,icol);
-      auto T_mid_bef_1d = ekat::subview(T_mid_bef,icol);
-      auto T_mid_aft_1d = ekat::subview(T_mid_aft,icol);
+      auto T_mid_bef_1d = ekat::subview(NudgingData_bef.T_mid,icol);
+      auto T_mid_aft_1d = ekat::subview(NudgingData_aft.T_mid,icol);
       auto u_1d = ekat::subview(u_ext,icol);
-      auto u_bef_1d = ekat::subview(u_bef,icol);
-      auto u_aft_1d = ekat::subview(u_aft,icol);
-
+      auto u_bef_1d = ekat::subview(NudgingData_bef.u,icol);
+      auto u_aft_1d = ekat::subview(NudgingData_aft.u,icol);
       auto v_1d = ekat::subview(v_ext,icol);
-      auto v_bef_1d = ekat::subview(v_bef,icol);
-      auto v_aft_1d = ekat::subview(v_aft,icol);
-
+      auto v_bef_1d = ekat::subview(NudgingData_bef.v,icol);
+      auto v_aft_1d = ekat::subview(NudgingData_aft.v,icol);
       auto p_mid_1d = ekat::subview(p_mid_ext,icol);
-      auto p_mid_bef_1d = ekat::subview(p_mid_bef,icol);
-      auto p_mid_aft_1d = ekat::subview(p_mid_aft,icol);
+      auto p_mid_bef_1d = ekat::subview(NudgingData_bef.p_mid,icol);
+      auto p_mid_aft_1d = ekat::subview(NudgingData_aft.p_mid,icol);
       auto qv_1d = ekat::subview(qv_ext,icol);
-      auto qv_bef_1d = ekat::subview(qv_bef,icol);
-      auto qv_aft_1d = ekat::subview(qv_aft,icol);
+      auto qv_bef_1d = ekat::subview(NudgingData_bef.qv,icol);
+      auto qv_aft_1d = ekat::subview(NudgingData_aft.qv,icol);
+
       const auto range = Kokkos::TeamThreadRange(team, num_vert_packs);
       Kokkos::parallel_for(range, [&] (const Int & k) {
 	  T_mid_1d(k)=w_bef*T_mid_bef_1d(k) + w_aft*T_mid_aft_1d(k);
@@ -241,11 +211,7 @@ void Nudging::update_time_step (const int time_s)
   if (time_s >= NudgingData_aft.time)
     {
       const int time_index = time_s/time_step_file;
-      Kokkos::deep_copy(NudgingData_bef.T_mid,NudgingData_aft.T_mid);
-      Kokkos::deep_copy(NudgingData_bef.p_mid,NudgingData_aft.p_mid);
-      Kokkos::deep_copy(NudgingData_bef.u,NudgingData_aft.u);
-      Kokkos::deep_copy(NudgingData_bef.v,NudgingData_aft.v);
-      Kokkos::deep_copy(NudgingData_bef.qv,NudgingData_aft.qv);
+      std::swap (NudgingData_bef,NudgingData_aft);
       NudgingData_bef.time = NudgingData_aft.time;
 
       data_input->read_variables(time_index+1);
@@ -265,15 +231,11 @@ void Nudging::run_impl (const double dt)
 {
   using namespace scream::vinterp;
 
-  //Have to add dt because first time iteration is at 0 seconds where you will not have
-  //any data from the field. The timestamp is only iterated at the end of the
-  //full step in scream.
+  //Have to add dt because first time iteration is at 0 seconds where you will 
+  //not have any data from the field. The timestamp is only iterated at the 
+  //end of the full step in scream.
   auto ts = timestamp()+dt;
   auto time_since_zero = ts.seconds_from(ts0);
-
-  //Don't nudge for times less than first time step in nudged file to avoid
-  //extrapolation
-  if (time_since_zero < time_step_file){ return;}
 
   //update time state information and check whether need to update data
   update_time_step(time_since_zero);
@@ -287,8 +249,6 @@ void Nudging::run_impl (const double dt)
   auto v          = get_field_out("v").get_view<mPack**>();
 
   const auto& p_mid    = get_field_in("p_mid").get_view<const mPack**>();
-  auto p_mid_v = view_Nd<mPack,2>("",p_mid.extent_int(0),p_mid.extent_int(1));
-  Kokkos::deep_copy(p_mid_v,p_mid);
 
   const view_Nd<mPack,2> T_mid_ext_p(reinterpret_cast<mPack*>(fields_ext["T_mid"].data()),
 				     m_num_cols,m_num_src_levs); 
@@ -304,28 +264,28 @@ void Nudging::run_impl (const double dt)
   //Now perform the vertical interpolation from the external file to the internal
   //field levels
   perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
-                                           p_mid_v,
+                                           p_mid,
                                            T_mid_ext_p,
                                            T_mid,
                                            m_num_src_levs,
                                            m_num_levs);
 
   perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
-                                           p_mid_v,
+                                           p_mid,
                                            qv_ext_p,
                                            qv,
                                            m_num_src_levs,
                                            m_num_levs);
 
   perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
-                                           p_mid_v,
+                                           p_mid,
                                            u_ext_p,
                                            u,
                                            m_num_src_levs,
                                            m_num_levs);
 
   perform_vertical_interpolation<Real,1,2>(p_mid_ext_p,
-                                           p_mid_v,
+                                           p_mid,
                                            v_ext_p,
                                            v,
                                            m_num_src_levs,
@@ -355,14 +315,18 @@ void Nudging::run_impl (const double dt)
       Kokkos::parallel_for(range, [&] (const Int & k) {
         const auto above_max = p_mid_1d(k) > p_mid_ext_1d(num_vert_packs_ext-1);
         const auto below_min = p_mid_1d(k) < p_mid_ext_1d(0);
-        T_mid_1d(k).set(above_max,T_mid_ext_1d(num_vert_packs_ext-1));
-        T_mid_1d(k).set(below_min,T_mid_ext_1d(0));
-        qv_1d(k).set(above_max,qv_ext_1d(num_vert_packs_ext-1));
-        qv_1d(k).set(below_min,qv_ext_1d(0));
-        u_1d(k).set(above_max,u_ext_1d(num_vert_packs_ext-1));
-        u_1d(k).set(below_min,u_ext_1d(0));
-        v_1d(k).set(above_max,v_ext_1d(num_vert_packs_ext-1));
-        v_1d(k).set(below_min,v_ext_1d(0));
+	if (above_max.any()){
+	  T_mid_1d(k).set(above_max,T_mid_ext_1d(num_vert_packs_ext-1));
+	  qv_1d(k).set(above_max,qv_ext_1d(num_vert_packs_ext-1));
+	  u_1d(k).set(above_max,u_ext_1d(num_vert_packs_ext-1));
+	  v_1d(k).set(above_max,v_ext_1d(num_vert_packs_ext-1));
+	}
+	if (below_min.any()){
+	  T_mid_1d(k).set(below_min,T_mid_ext_1d(0));
+	  qv_1d(k).set(below_min,qv_ext_1d(0));
+	  u_1d(k).set(below_min,u_ext_1d(0));
+	  v_1d(k).set(below_min,v_ext_1d(0));
+	}
       });
       team.team_barrier();
   });
