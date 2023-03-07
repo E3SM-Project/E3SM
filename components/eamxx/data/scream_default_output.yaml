@@ -23,8 +23,8 @@ Fields:
       - tke
       - pbl_height
       # CLD
-      - cldfrac_ice
-      - cldfrac_tot
+      - cldfrac_ice_for_output
+      - cldfrac_tot_for_output
       # P3
       - bm
       - nc
