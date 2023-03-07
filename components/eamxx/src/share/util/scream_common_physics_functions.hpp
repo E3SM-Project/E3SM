@@ -180,6 +180,19 @@ struct PhysicsFunctions
   KOKKOS_INLINE_FUNCTION
   static ScalarT calculate_wetmmr_from_drymmr(const ScalarT& drymmr, const ScalarT& qv_dry);
 
+
+ 
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_drymmr_from_wetmmr_dp_based(const ScalarT& wetmmr, 
+                                                       const ScalarT& pseudo_density, const ScalarT& pseudo_density_dry);
+
+  template<typename ScalarT>
+  KOKKOS_INLINE_FUNCTION
+  static ScalarT calculate_wetmmr_from_drymmr_dp_based(const ScalarT& drymmr,
+                                                       const ScalarT& pseudo_density, const ScalarT& pseudo_density_dry);
+
+
   //-----------------------------------------------------------------------------------------------//
   // Determines the vertical layer thickness using the equation of state:
   //   dz = - (-pseudo_density)*Rd*T_virtual / (p_mid*g)
@@ -393,6 +406,34 @@ struct PhysicsFunctions
                              const InputProviderX& wetmmr,
                              const InputProviderQ& qv_wet,
                              const view_1d<ScalarT>& drymmr);
+
+
+
+
+
+
+
+  template<typename ScalarT, typename InputProviderX, typename InputProviderPD>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_wetmmr_from_drymmr_dp_based (const MemberType& team,
+                             const InputProviderX& drymmr,
+                             const InputProviderPD& pseudo_density,
+                             const InputProviderPD& pseudo_density_dry,
+                             const view_1d<ScalarT>& wetmmr);
+
+  template<typename ScalarT, typename InputProviderX, typename InputProviderPD>
+  KOKKOS_INLINE_FUNCTION
+  static void calculate_drymmr_from_wetmmr_dp_based (const MemberType& team,
+                             const InputProviderX& wetmmr,
+                             const InputProviderPD& pseudo_density,
+                             const InputProviderPD& pseudo_density_dry,
+                             const view_1d<ScalarT>& drymmr);
+
+
+
+
+
+
 
   template<typename ScalarT,
            typename InputProviderPD, typename InputProviderP,

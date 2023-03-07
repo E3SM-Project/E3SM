@@ -70,44 +70,37 @@ public:
         const Spack& pmid_pack(pmid(icol,ipack));
         const Spack& T_atm_pack(T_atm(icol,ipack));
         const Spack& cld_frac_t_pack(cld_frac_t(icol,ipack));
+        const Spack& pseudo_density_pack(pseudo_density(icol,ipack));
+        const Spack& pseudo_density_dry_pack(pseudo_density_dry(icol,ipack));
+
+        dz(icol,ipack) = PF::calculate_dz(pseudo_density(icol,ipack), pmid_pack, T_atm_pack, qv(icol,ipack));
+
         /*----------------------------------------------------------------------------------------------------------------------
          *Wet to dry mixing ratios:
          *-------------------------
          *Since state constituents from the host model (or AD) are  wet mixing ratios and P3 needs
          *these constituents in dry mixing ratios, we convert the wet mixing ratios to dry mixing ratios.
-
-         *NOTE:Function calculate_drymmr_from_wetmmr takes 2 arguments: ( wet mmr and "wet" water vapor mixing ratio)
-
-         *IMPORTANT:Convert "qv wet mmr" to "qv dry mmr" after converting all other constituents to dry mmr as "qv" (as wet mmr)
-         * is an input for converting all other constituent5Bs to have dry mmr.
-
          *----------------------------------------------------------------------------------------------------------------------
          */
 
-        //Since "qv" has a wet mixing ratio, we can use "qv" to compute dry mixing ratios of the following constituents:
         //Units of all constituents below are [kg/kg(dry-air)] for mass and [#/kg(dry-air)] for number
-        qc(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qc(icol,ipack),qv(icol,ipack)); //Cloud liquid mass
-        nc(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(nc(icol,ipack),qv(icol,ipack)); //Cloud liquid numbe
-        qr(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qr(icol,ipack),qv(icol,ipack)); //Rain mass
-        nr(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(nr(icol,ipack),qv(icol,ipack)); //Rain number
-        qi(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qi(icol,ipack),qv(icol,ipack)); //Cloud ice mass
-        ni(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(ni(icol,ipack),qv(icol,ipack)); //Cloud ice number
-        qm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qm(icol,ipack),qv(icol,ipack)); //Rimmed ice mass
-        bm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(bm(icol,ipack),qv(icol,ipack)); //Rimmed ice number
+        qc(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(qc(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack); //Cloud liquid mass
+        nc(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(nc(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack); //Cloud liquid numbe
+        qr(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(qr(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack); //Rain mass
+        nr(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(nr(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack); //Rain number
+        qi(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(qi(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack); //Cloud ice mass
+        ni(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(ni(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack); //Cloud ice number
+        qm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(qm(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack); //Rimmed ice mass
+        bm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(bm(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack); //Rimmed ice number
+        qv(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(qv(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);
         //Water vapor from previous time step
-        qv_prev(icol, ipack) = PF::calculate_drymmr_from_wetmmr(qv_prev(icol,ipack),qv(icol,ipack));
-
-        // ^^ Ensure that qv is "wet mmr" till this point ^^
-        //NOTE: Convert "qv" to dry mmr in the end after converting all other constituents to dry mmr
-        qv(icol, ipack)      = PF::calculate_drymmr_from_wetmmr(qv(icol,ipack),qv(icol,ipack));
+        qv_prev(icol, ipack) = PF::calculate_drymmr_from_wetmmr_dp_based(qv_prev(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);
 
         // Exner
         const auto& exner = PF::exner_function(pmid_pack);
         inv_exner(icol,ipack) = 1.0/exner;
         // Potential temperature
         th_atm(icol,ipack) = PF::calculate_theta_from_T(T_atm_pack,pmid_pack);
-        // DZ
-        dz(icol,ipack) = PF::calculate_dz(pseudo_density(icol,ipack), pmid_pack, T_atm_pack, qv(icol,ipack));
         // Cloud fraction
         // Set minimum cloud fraction - avoids division by zero
         cld_frac_l(icol,ipack) = ekat::max(cld_frac_t_pack,mincld);
@@ -137,6 +130,7 @@ public:
     Real mincld = 0.0001;  // TODO: These should be stored somewhere as more universal constants.  Or maybe in the P3 class hpp
     view_2d_const pmid;
     view_2d_const pseudo_density;
+    view_2d_const pseudo_density_dry;
     view_2d       T_atm;
     view_2d_const cld_frac_t;
     view_2d       qv;
@@ -157,7 +151,8 @@ public:
     view_2d       dz;
     // Assigning local variables
     void set_variables(const int ncol, const int npack,
-           const view_2d_const& pmid_, const view_2d_const& pseudo_density_, const view_2d& T_atm_,
+           const view_2d_const& pmid_, const view_2d_const& pseudo_density_, 
+           const view_2d_const& pseudo_density_dry_, const view_2d& T_atm_,
            const view_2d_const& cld_frac_t_, const view_2d& qv_, const view_2d& qc_,
            const view_2d& nc_, const view_2d& qr_, const view_2d& nr_, const view_2d& qi_,
            const view_2d& qm_, const view_2d& ni_, const view_2d& bm_, const view_2d& qv_prev_,
@@ -170,6 +165,7 @@ public:
       // IN
       pmid           = pmid_;
       pseudo_density = pseudo_density_;
+      pseudo_density_dry = pseudo_density_dry_;
       T_atm          = T_atm_;
       cld_frac_t     = cld_frac_t_;
       // OUT
@@ -205,34 +201,26 @@ public:
         // Update the atmospheric temperature and the previous temperature.
         T_atm(icol,ipack)  = PF::calculate_T_from_theta(th_atm(icol,ipack),pmid(icol,ipack));
         T_prev(icol,ipack) = T_atm(icol,ipack);
+        const Spack& pseudo_density_pack(pseudo_density(icol,ipack));
+        const Spack& pseudo_density_dry_pack(pseudo_density_dry(icol,ipack));
 
         /*----------------------------------------------------------------------------------------------------------------------
          *DRY-TO-WET MMRs:
          *-----------------
          *Since the host model (or AD) needs wet mixing ratios, we need to convert dry mixing ratios from P3 to
          *wet mixing ratios.
-
-         *NOTE: Function calculate_wetmmr_from_drymmr takes 2 arguments: ( dry mmr and "dry" water vapor mixing ratio)
-
-         *IMPORTANT:Convert "qv dry mmr" to "qv wet mmr" after converting all other constituents to wet mmr as "qv" (as dry mmr)
-         * is an input for converting all other constituents to have wet mmr.
          *----------------------------------------------------------------------------------------------------------------------
          */
         //Units of all constituents below are [kg/kg(wet-air)] for mass and [#/kg(wet-air)] for number
-        qc(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qc(icol,ipack), qv(icol,ipack));//Cloud liquid mass
-        nc(icol,ipack) = PF::calculate_wetmmr_from_drymmr(nc(icol,ipack), qv(icol,ipack));//Cloud liquid number
-        qr(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qr(icol,ipack), qv(icol,ipack));//Rain mass
-        nr(icol,ipack) = PF::calculate_wetmmr_from_drymmr(nr(icol,ipack), qv(icol,ipack));//Rain number
-        qi(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qi(icol,ipack), qv(icol,ipack));//Cloud ice mass
-        ni(icol,ipack) = PF::calculate_wetmmr_from_drymmr(ni(icol,ipack), qv(icol,ipack));//Cloud ice number
-        qm(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qm(icol,ipack), qv(icol,ipack));//Rimmed ice mass
-        bm(icol,ipack) = PF::calculate_wetmmr_from_drymmr(bm(icol,ipack), qv(icol,ipack));//Rimmed ice number
-
-        // ^^ Ensure that qv is "dry mmr" till this point ^^
-        //NOTE:Convert "qv" to wet mmr in the end after converting all other constituents to wet mmr
-        qv(icol,ipack) = PF::calculate_wetmmr_from_drymmr(qv(icol,ipack), qv(icol,ipack));
-
-        // Update qv_prev with qv(which should now be a wet mmr) so that qv_prev is in wet mmr
+        qc(icol,ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(qc(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);//Cloud liquid mass
+        nc(icol,ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(nc(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);//Cloud liquid number
+        qr(icol,ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(qr(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);//Rain mass
+        nr(icol,ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(nr(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);//Rain number
+        qi(icol,ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(qi(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);//Cloud ice mass
+        ni(icol,ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(ni(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);//Cloud ice number
+        qm(icol,ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(qm(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);//Rimmed ice mass
+        bm(icol,ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(bm(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);//Rimmed ice number
+        qv(icol,ipack) = PF::calculate_wetmmr_from_drymmr_dp_based(qv(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);
         qv_prev(icol,ipack) = qv(icol,ipack);
 
         // Rescale effective radius' into microns
@@ -263,6 +251,8 @@ public:
     double m_dt;
     view_2d       T_atm;
     view_2d_const pmid;
+    view_2d_const pseudo_density;
+    view_2d_const pseudo_density_dry;
     view_2d       th_atm;
     view_2d       T_prev;
     view_2d       qv;
@@ -289,6 +279,7 @@ public:
 
     void set_variables(const int ncol, const int npack,
                     const view_2d& th_atm_, const view_2d_const& pmid_, const view_2d& T_atm_, const view_2d& T_prev_,
+                    const view_2d_const& pseudo_density_, const view_2d_const& pseudo_density_dry_,
                     const view_2d& qv_, const view_2d& qc_, const view_2d& nc_, const view_2d& qr_, const view_2d& nr_,
                     const view_2d& qi_, const view_2d& qm_, const view_2d& ni_, const view_2d& bm_,
                     const view_2d& qv_prev_, const view_2d& diag_eff_radius_qc_,
@@ -301,6 +292,8 @@ public:
       // IN
       th_atm               = th_atm_;
       pmid                 = pmid_;
+      pseudo_density       = pseudo_density_;
+      pseudo_density_dry   = pseudo_density_dry_;
       qv                   = qv_;
       qc                   = qc_;
       nc                   = nc_;

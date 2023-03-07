@@ -269,6 +269,40 @@ void PhysicsFunctions<DeviceT>::calculate_wetmmr_from_drymmr(const MemberType& t
                        });
 }
 
+
+
+///////////////////////////////////////////////////////////////new code begin
+
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_INLINE_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::
+calculate_wetmmr_from_drymmr_dp_based(const ScalarT& drymmr,
+                                      const ScalarT& pseudo_density, const ScalarT& pseudo_density_dry)
+{
+  return drymmr*pseudo_density_dry/pseudo_density;
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderX, typename InputProviderPD>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::calculate_wetmmr_from_drymmr_dp_based(const MemberType& team,
+                                                             const InputProviderX& drymmr,
+                                                             const InputProviderPD& pseudo_density,
+                                                             const InputProviderPD& pseudo_density_dry,
+                                                             const view_1d<ScalarT>& wetmmr)
+{
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team,wetmmr.extent(0)),
+                       [&] (const int k) {
+                         wetmmr(k) = calculate_wetmmr_from_drymmr_dp_based(drymmr(k),pseudo_density(k),pseudo_density_dry(k));
+                       });
+}
+
+/////////////////////////////////////////////////////////////////new code end
+
+
+
+
 template<typename DeviceT>
 template<typename ScalarT>
 KOKKOS_INLINE_FUNCTION
@@ -291,6 +325,52 @@ void PhysicsFunctions<DeviceT>::calculate_drymmr_from_wetmmr(const MemberType& t
                          drymmr(k) = calculate_drymmr_from_wetmmr(wetmmr(k),qv_wet(k));
                        });
 }
+
+
+
+
+
+//////////////////////////////////////////////////////////////////new code begin
+
+template<typename DeviceT>
+template<typename ScalarT>
+KOKKOS_INLINE_FUNCTION
+ScalarT PhysicsFunctions<DeviceT>::
+calculate_drymmr_from_wetmmr_dp_based(const ScalarT& wetmmr,
+                             const ScalarT& pseudo_density, const ScalarT& pseudo_density_dry)
+{
+  return wetmmr*pseudo_density/pseudo_density_dry;
+}
+
+template<typename DeviceT>
+template<typename ScalarT, typename InputProviderX, typename InputProviderPD>
+KOKKOS_INLINE_FUNCTION
+void PhysicsFunctions<DeviceT>::calculate_drymmr_from_wetmmr_dp_based(const MemberType& team,
+                                                             const InputProviderX& wetmmr,
+                                                             const InputProviderPD& pseudo_density,
+                                                             const InputProviderPD& pseudo_density_dry,
+                                                             const view_1d<ScalarT>& drymmr)
+{
+  Kokkos::parallel_for(Kokkos::TeamVectorRange(team,drymmr.extent(0)),
+                       [&] (const int k) {
+                         drymmr(k) = calculate_drymmr_from_wetmmr_dp_based(wetmmr(k),pseudo_density(k),pseudo_density_dry(k));
+                       });
+}
+
+////////////////////////////////////////////////////////////////////new code end
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 template<typename DeviceT>
 template<typename ScalarT>
