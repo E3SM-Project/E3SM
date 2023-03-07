@@ -1,0 +1,64 @@
+#!/usr/bin/env python3
+
+"""
+ Given two lists of fields and a netcdf file, check that one list contains
+ the tendencies of the vars listed in the other list (ordered in the same way)
+ This means that, given a field F and a (presumed) tendency T, the script
+ will check that T(time(k)) is approximately equal to
+   (F(k) - F(k-1)) / (time(k)-time(k-1))
+ where time is the time variable and k is the time slice index
+ (other dims omitted for brevity).
+"""
+
+from utils import check_minimum_python_version
+check_minimum_python_version(3, 4)
+
+import argparse, sys, pathlib
+
+from check_tendencies import CheckTendencies
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage=" {0} -f <file> -v <variables_names> -t <tendencies_names>"
+              .format(pathlib.Path(args[0]).name),
+        description=description,
+        formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+
+    # The name of the nc files where to grab data from
+    parser.add_argument("-f",dest="file", type=str, required=True,
+            help="Name of the netcdf file")
+
+    # Variables comparison
+    parser.add_argument("-v",dest="variables",nargs='+', default=[],
+                        help="Name of variables from which to compute tendencies",
+                        metavar=("v1","v2"))
+    parser.add_argument("-t",dest="tendencies",nargs='+', default=[],
+                        help="Name of tendencies variables",
+                        metavar=("t1","t2"))
+
+    return parser.parse_args(args[1:])
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    ct = CheckTendencies(**vars(parse_command_line(sys.argv, description)))
+
+    vars_str  = ','.join(ct._vars)
+    tends_str = ','.join(ct._tends)
+    print (f" **** Checking tendencies correctness **** \n"
+           f"    - nc file: {ct._file}\n"
+           f"    - variables  list: {','.join(ct._vars)}\n"
+           f"    - tendencies list: {','.join(ct._tends)}\n")
+    success = ct.run()
+
+    print(f" ==> Check result: {'SUCCESS' if success else 'FAIL'}!\n")
+
+    sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)
