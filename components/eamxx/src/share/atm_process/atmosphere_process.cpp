@@ -84,6 +84,10 @@ void AtmosphereProcess::run (const double dt) {
 
   // Let the derived class do the actual run
   auto dt_sub = dt / m_num_subcycles;
+
+  // Init single step tendencies (if any) with current value of output field
+  init_step_tendencies ();
+
   for (m_subcycle_iter=0; m_subcycle_iter<m_num_subcycles; ++m_subcycle_iter) {
 
     if (has_column_conservation_check()) {
@@ -93,20 +97,17 @@ void AtmosphereProcess::run (const double dt) {
       compute_column_conservation_checks_data(dt_sub);
     }
 
-    // Init single step tendencies (if any) with current value of output field
-    init_step_tendencies ();
-
     // Run derived class implementation
     run_impl(dt_sub);
-
-    // Complete tendency calculations (if any)
-    compute_step_tendencies(dt_sub);
 
     if (has_column_conservation_check()) {
       // Run the column local mass and energy conservation checks
       run_column_conservation_check();
     }
   }
+
+  // Complete tendency calculations (if any)
+  compute_step_tendencies(dt);
 
   if (m_params.get("enable_postcondition_checks", true)) {
     // Run 'post-condition' property checks stored in this AP
@@ -233,12 +234,11 @@ void AtmosphereProcess::setup_tendencies_requests () {
         " - tendency request: " + tn + "\n");
 
     // Add an empty field, to be reset when we set the computed field
-    m_proc_tendencies_single_step[tname] = {};
-    m_proc_tendencies_accum[tname] = {};
+    m_proc_tendencies[tname] = {};
     m_tend_to_field[tname] = fn;
   }
 
-  m_compute_proc_tendencies = m_proc_tendencies_accum.size()>0;
+  m_compute_proc_tendencies = m_proc_tendencies.size()>0;
 }
 
 void AtmosphereProcess::set_required_field (const Field& f) {
@@ -284,10 +284,8 @@ void AtmosphereProcess::set_computed_field (const Field& f) {
 
   set_computed_field_impl (f);
 
-  if (m_compute_proc_tendencies &&
-      m_proc_tendencies_single_step.count(f.name())==1) {
-    m_proc_tendencies_accum[f.name()] = f;
-    m_proc_tendencies_single_step[f.name()] = f.clone(f.name()+"_single_step");
+  if (m_compute_proc_tendencies && m_proc_tendencies.count(f.name())==1) {
+    m_proc_tendencies[f.name()] = f;
   }
 }
 
@@ -464,13 +462,13 @@ void AtmosphereProcess::run_column_conservation_check () const {
 void AtmosphereProcess::init_step_tendencies () {
   if (m_compute_proc_tendencies) {
     start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
-    for (auto& it : m_proc_tendencies_single_step) {
+    for (auto& it : m_proc_tendencies) {
       const auto& tname = it.first;
       const auto& fname = m_tend_to_field.at(tname);
       const auto& f     = get_field_out(fname);
 
-      auto& step_tend = it.second;
-      step_tend.deep_copy(f);
+      auto& tend = it.second;
+      tend.deep_copy(f);
     }
     stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
   }
@@ -479,16 +477,14 @@ void AtmosphereProcess::init_step_tendencies () {
 void AtmosphereProcess::compute_step_tendencies (const double dt) {
   if (m_compute_proc_tendencies) {
     start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
-    for (auto it : m_proc_tendencies_accum) {
+    for (auto it : m_proc_tendencies) {
       const auto& tname = it.first;
       const auto& fname = m_tend_to_field.at(tname);
       const auto& f     = get_field_out(fname);
 
-      auto& step_tend = m_proc_tendencies_single_step.at(tname);
       auto& tend      = it.second;
 
-      step_tend.update(f,1/dt,-1/dt);
-      tend.update(step_tend,1.0,1.0);
+      tend.update(f,1/dt,-1/dt);
     }
     stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
   }

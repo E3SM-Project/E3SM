@@ -489,8 +489,7 @@ private:
 
   // Data structures necessary to compute tendencies of updated fields
   str_map<std::string>    m_tend_to_field;
-  str_map<Field>          m_proc_tendencies_single_step;
-  str_map<Field>          m_proc_tendencies_accum;
+  str_map<Field>          m_proc_tendencies;
 
   // These maps help to retrieve a field/group stored in the lists above. E.g.,
   //   auto ptr = m_field_in_pointers[field_name][grid_name];
