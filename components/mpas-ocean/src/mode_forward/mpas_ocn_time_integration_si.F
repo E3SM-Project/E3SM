@@ -110,7 +110,7 @@ module ocn_time_integration_si
       self_attraction_and_loading_beta
 
    ! Global variables for the split-implicit time stepper ---------------
-   real (kind=RKIND), allocatable,dimension(:)   :: &
+   real (kind=RKIND), allocatable,dimension(:,:) :: &
       prec_ivmat    ! an inversed preconditioning matrix
    real (kind=RKIND), dimension(2) :: &
       SIcst_allreduce_local2, &! array for local  summations
@@ -138,7 +138,7 @@ module ocn_time_integration_si
       tolerance_inner,  &! tolerance for the main solver iterations
       total_num_cells,  &! total number of surface cells
       mean_num_cells,   &! mean #cells for each core
-      dt_si              ! dt for the SI btr mode solver
+      dt_si,            &! dt for the SI btr mode solver
       ! SI constants
       SIcst_alpha0,SIcst_alpha1,SIcst_beta0,SIcst_beta1,           &
       SIcst_omega0,SIcst_gamma0,SIcst_gamma1,SIcst_rho0,SIcst_rho1,&
@@ -1287,14 +1287,12 @@ module ocn_time_integration_si
    
                ! Reduction --------------------------------------------------!
    
-               call mpas_timer_start("si reduction r0")
                call si_global_reduction(SIcst_allreduce_local2, &
                                    SIcst_allreduce_global2,     &
                                    globalReprodSum2fld1,        &
                                    globalReprodSum2fld2,        &
                                    si_algorithm,2,domain,       &
                                    SIvec_r00,SIvec_r0,SIvec_w0)
-               call mpas_timer_stop ("si reduction r0")
    
                !$acc serial present(SIcst_r00r0,SIcst_r00w0,SIcst_rho0, &
                !$acc           SIcst_alpha0,SIcst_beta0,SIcst_omega0,   &
@@ -1316,14 +1314,12 @@ module ocn_time_integration_si
             else if ( si_algorithm == 'scg' ) then !!!
            
                ! Reduction --------------------------------------------------!
-               call mpas_timer_start("si reduction r0")
                call si_global_reduction(SIcst_allreduce_local2, &
                                    SIcst_allreduce_global2,     &
                                    globalReprodSum2fld1,        &
                                    globalReprodSum2fld2,        &
                                    si_algorithm,2,domain,       &
                                    SIvec_r0,SIvec_w0,SIvec_rh0)
-               call mpas_timer_stop ("si reduction r0")
    
                !$acc serial present(SIcst_r0rh0,SIcst_w0rh0,SIcst_alpha0, &
                !$acc           SIcst_beta0,SIcst_gamma0,                  &
@@ -1658,14 +1654,12 @@ module ocn_time_integration_si
    
                ! Reduction --------------------------------------------------!
    
-               call mpas_timer_start("si reduction r0")
                call si_global_reduction(SIcst_allreduce_local2, &
                                    SIcst_allreduce_global2,     &
                                    globalReprodSum2fld1,        &
                                    globalReprodSum2fld2,        &
                                    si_algorithm,2,domain,       &
                                    SIvec_r00,SIvec_r0,SIvec_w0)
-               call mpas_timer_stop ("si reduction r0")
    
                !$acc serial present(SIcst_r00r0,SIcst_r00w0,SIcst_rho0, &
                !$acc           SIcst_alpha0,SIcst_beta0,SIcst_omega0,   &
@@ -1687,14 +1681,12 @@ module ocn_time_integration_si
             else if ( si_algorithm == 'scg' ) then !!!
            
                ! Reduction --------------------------------------------------!
-               call mpas_timer_start("si reduction r0")
                call si_global_reduction(SIcst_allreduce_local2, &
                                    SIcst_allreduce_global2,     &
                                    globalReprodSum2fld1,        &
                                    globalReprodSum2fld2,        &
                                    si_algorithm,2,domain,       &
                                    SIvec_r0,SIvec_w0,SIvec_rh0)
-               call mpas_timer_stop ("si reduction r0")
    
                !$acc serial present(SIcst_r0rh0,SIcst_w0rh0,SIcst_alpha0, &
                !$acc           SIcst_beta0,SIcst_gamma0,                  &
@@ -4508,9 +4500,6 @@ module ocn_time_integration_si
 
       real(kind=RKIND), intent(in) :: tolerance ! Tolerance of solver
 
-      real(kind=RKIND), intent(inout) :: &
-         SIcst_alpha0,SIcst_beta0,SIcst_gamma0  ! Initial reductions
-
       integer :: iter, iCell
 
       iter = 0
@@ -4693,29 +4682,29 @@ module ocn_time_integration_si
          !$omp do schedule(runtime)
 #endif
          do iCell = 1, nPrecVec
-            SIvec_ph1(iCell) =  SIvec_rh0(iCell) + SIcst_beta0      &
+            SIvec_ph1(iCell) =  SIvec_rh0(iCell) + SIcst_beta1      &
                              * (SIvec_ph0(iCell) - SIcst_omega0     &
                                                  * SIvec_sh0(iCell))
- 
-            SIvec_s1(iCell)  =  SIvec_w0(iCell)  + SIcst_beta0      &
+
+            SIvec_s1(iCell)  =  SIvec_w0(iCell)  + SIcst_beta1      &
                              * (SIvec_s0(iCell)  - SIcst_omega0     &
                                                  * SIvec_z0(iCell))
- 
-            SIvec_sh1(iCell) =  SIvec_wh0(iCell) + SIcst_beta0      &
+
+            SIvec_sh1(iCell) =  SIvec_wh0(iCell) + SIcst_beta1      &
                              * (SIvec_sh0(iCell) - SIcst_omega0     &
                                                  * SIvec_zh0(iCell))
- 
-            SIvec_z1(iCell)  =  SIvec_t0(iCell)  + SIcst_beta0      &
+
+            SIvec_z1(iCell)  =  SIvec_t0(iCell)  + SIcst_beta1      &
                              * (SIvec_z0(iCell)  - SIcst_omega0     &
                                                  * SIvec_v0(iCell))
- 
-            SIvec_q0(iCell)  =  SIvec_r0(iCell)  - SIcst_alpha0     &
+
+            SIvec_q0(iCell)  =  SIvec_r0(iCell)  - SIcst_alpha1     &
                                                  * SIvec_s1(iCell)
- 
-            SIvec_qh0(iCell) =  SIvec_rh0(iCell) - SIcst_alpha0     &
+
+            SIvec_qh0(iCell) =  SIvec_rh0(iCell) - SIcst_alpha1     &
                                                  * SIvec_sh1(iCell)
- 
-            SIvec_y0(iCell)  =  SIvec_w0(iCell)  - SIcst_alpha0     &
+
+            SIvec_y0(iCell)  =  SIvec_w0(iCell)  - SIcst_alpha1     &
                                                  * SIvec_z1(iCell)
          end do ! iCell
 #ifndef MPAS_OPENACC
@@ -4844,17 +4833,17 @@ module ocn_time_integration_si
 #endif
  
          ! Preconditioning -----------------------------------------!
- 
-         call si_precond(SIvec_w1,SIvec_wh1)
+         call si_precond(SIvec_w1,SIvec_wh0) !wh1 -> wh0
  
          call mpas_timer_start("si halo iter")
-         call mpas_dmpar_field_halo_exch(domain, 'SIvec_wh1')
+         call mpas_dmpar_field_halo_exch(domain, 'SIvec_wh0')
          !$acc update device(SIvec_wh0)
          call mpas_timer_stop("si halo iter")
  
          ! SpMV ----------------------------------------------------!
- 
-         call si_matvec_mul(SIvec_wh1,bottomDepthEdge,SIvec_t1,ssh)
+         call si_matvec_mul(SIvec_wh0,bottomDepthEdge,SIvec_t0,ssh) !wh1 -> wh0
+                                                                    ! t1 -> t0
+
  
          if ( iter > int(mean_num_cells*5) ) then
             call mpas_log_write(&
