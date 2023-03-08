@@ -43,7 +43,7 @@ if (SCREAM_ENABLE_MAM4)
                       SOURCE_DIR ${PROJECT_SOURCE_DIR}/../../externals/haero
                       BINARY_DIR ${PROJECT_BINARY_DIR}/externals/haero
                       CMAKE_ARGS ${HAERO_CMAKE_OPTS}
-                      DEPENDS ekat
+                      DEPENDS ekat ekat_test_session ekat_test_main
                       LOG_CONFIGURE TRUE
                       BUILD_COMMAND make -j
                       LOG_BUILD TRUE
