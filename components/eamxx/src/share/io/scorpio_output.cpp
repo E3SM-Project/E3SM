@@ -39,6 +39,15 @@ void combine (const Real& new_val, Real& curr_val, const OutputAvgType avg_type)
   }
 }
 
+// This helper function is used to make sure that the list of fields in
+// m_fields_names is a list of unique strings, otherwise throw an error.
+void sort_and_check(std::vector<std::string>& fields)
+{
+  std::sort(fields.begin(),fields.end());
+  const bool hasDuplicates = std::adjacent_find(fields.begin(),fields.end()) != fields.end();
+  EKAT_REQUIRE_MSG(!hasDuplicates,"ERROR!!! scorpio_output::check_for_duplicates - One of the output yaml files has duplicate field entries.  Please check");
+}
+
 AtmosphereOutput::
 AtmosphereOutput (const ekat::Comm& comm,
                   const std::vector<Field>& fields,
@@ -62,6 +71,7 @@ AtmosphereOutput (const ekat::Comm& comm,
   for (auto f : fields) {
     m_fields_names.push_back(f.name());
   }
+  sort_and_check(m_fields_names);
 
   set_grid (grid);
   set_field_manager (fm,"io");
@@ -132,6 +142,7 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     EKAT_REQUIRE_MSG (grid_found,
         "Error! Bad formatting of output yaml file. Missing 'Fields->$grid_name` sublist.\n");
   }
+  sort_and_check(m_fields_names);
 
   // Check if remapping and if so create the appropriate remapper 
   // Note: We currently support three remappers
