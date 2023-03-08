@@ -66,7 +66,7 @@ endforeach()
 # components in all output NC files matches the content of corresponding components
 # of the vector quantities
 foreach (RANK RANGE ${TEST_RANK_START} ${TEST_RANK_END})
-  set (nc_file shoc_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${RANK}.nc)
+  set (nc_file shoc_standalone_output.INSTANT.nsteps_x1.np${RANK}.nc)
   add_test (NAME check_U_V_slices_np${RANK}
             COMMAND ${SCREAM_BASE_DIR}/scripts/compare-nc-files
             -s ${nc_file} -c "horiz_winds(:,:,1,:)=U(:,:,:)" "horiz_winds(:,:,2,:)=V(:,:,:)"
@@ -87,7 +87,7 @@ endforeach()
 ################################
 
 # These tests ensure that the compare-nc-files script doesn't always pass
-set (nc_file shoc_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc)
+set (nc_file shoc_standalone_output.INSTANT.nsteps_x1.np${TEST_RANK_START}.nc)
 
 # Legitimate diff
 add_test (NAME check_U_V_slices_fail_diff
