@@ -34,8 +34,8 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
   math (EXPR CMP_RANK_START ${TEST_RANK_START}+1)
   foreach (MPI_RANKS RANGE ${CMP_RANK_START} ${TEST_RANK_END})
 
-    set (SRC_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${MPI_RANKS}.nc")
-    set (TGT_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x${NUM_STEPS}.np${TEST_RANK_START}.nc")
+    set (SRC_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x1.np${MPI_RANKS}.nc")
+    set (TGT_FILE "${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x1.np${TEST_RANK_START}.nc")
 
     set (TEST_NAME "${BASE_TEST_NAME}_np${TEST_RANK_START}_vs_np${MPI_RANKS}_bfb")
     add_test (NAME ${TEST_NAME}
@@ -47,7 +47,22 @@ if (TEST_RANK_END GREATER TEST_RANK_START)
   endforeach()
 endif()
 
-# Finally, check that the content of sliced vars U/V and corresponding surf_mom_flux
+# Check tendency calculation
+foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
+  set (script ${SCREAM_BASE_DIR}/scripts/check-tendencies)
+  set (fname ${BASE_TEST_NAME}_standalone_output.INSTANT.nsteps_x1.np${NRANKS}.nc)
+  set (tname ${BASE_TEST_NAME}_tend_check_np${NRANKS})
+  add_test (NAME ${tname}
+    COMMAND ${script} -f ${fname}
+    -v T_mid qv tke horiz_winds sgs_buoy_flux eddy_diff_mom qc cldfrac_liq
+    -t shoc_T_mid_tend shoc_qv_tend shoc_tke_tend shoc_horiz_winds_tend shoc_sgs_buoy_flux_tend shoc_eddy_diff_mom_tend shoc_qc_tend shoc_cldfrac_liq_tend
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  set_tests_properties (${tname} PROPERTIES
+    FIXTURES_REQUIRED shoc_generate_output_nc_files
+    LABELS "${TEST_LABELS}")
+endforeach()
+
+# Check that the content of sliced vars U/V and corresponding surf_mom_flux
 # components in all output NC files matches the content of corresponding components
 # of the vector quantities
 foreach (RANK RANGE ${TEST_RANK_START} ${TEST_RANK_END})
