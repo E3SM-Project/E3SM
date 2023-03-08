@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  ocn_tracer_advection_mono
+!  tracer_advection_mono
 !
 !> \brief MPAS monotonic tracer advection with FCT
 !> \author Mark Petersen, David Lee, Doug Jacobsen, Phil Jones
@@ -18,7 +18,7 @@
 !
 !-----------------------------------------------------------------------
 
-module ocn_tracer_advection_mono
+module li_tracer_advection_fct
 
    ! module includes
 #ifdef _ADV_TIMERS
@@ -26,11 +26,11 @@ module ocn_tracer_advection_mono
 #endif
    use mpas_kind_types
 
-   use ocn_config
-   use ocn_mesh
-   use ocn_diagnostics_variables
-   use ocn_tracer_advection_shared
-   use ocn_tracer_advection_vert
+!   use ocn_config
+!   use ocn_mesh
+!   use ocn_diagnostics_variables
+   use li_tracer_advection_fct_shared
+!   use tracer_advection_vert
 
    implicit none
    private
@@ -43,8 +43,8 @@ module ocn_tracer_advection_mono
       monotonicityCheck   !< flag to check monotonicity
 
    ! public method interfaces
-   public :: ocn_tracer_advection_mono_tend, &
-             ocn_tracer_advection_mono_init
+   public :: li_tracer_advection_fct_tend, &
+             li_tracer_advection_fct_init
 
 !**********************************************************************
 
@@ -52,7 +52,7 @@ module ocn_tracer_advection_mono
 
 !**********************************************************************
 !
-!  routine ocn_tracer_advection_mono_tend
+!  routine li_tracer_advection_fct_tend
 !
 !> \brief MPAS monotonic tracer horizontal advection tendency with FCT
 !> \author Mark Petersen, David Lee, Doug Jacobsen, Phil Jones
@@ -63,7 +63,7 @@ module ocn_tracer_advection_mono
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_advection_mono_tend( &
+   subroutine li_tracer_advection_fct_tend( &
                                         tend, tracers, layerThickness, &
                                         normalThicknessFlux, w, dt,    &
                                         computeBudgets)!{{{
@@ -726,7 +726,7 @@ module ocn_tracer_advection_mono
 
         ! Compute the high order vertical fluxes based on order selected.
 
-        call ocn_tracer_advection_vert_flx(tracerCur, w, hProv, &
+        call tracer_advection_vert_flx(tracerCur, w, hProv, &
                                            highOrderFlx)
 
 #ifdef _ADV_TIMERS
@@ -999,11 +999,11 @@ module ocn_tracer_advection_mono
       call mpas_timer_stop('deallocates')
 #endif
 
-   end subroutine ocn_tracer_advection_mono_tend!}}}
+   end subroutine li_tracer_advection_fct_tend!}}}
 
 !**********************************************************************
 !
-!  routine ocn_tracer_advection_mono_init
+!  routine li_tracer_advection_fct_init
 !
 !> \brief MPAS initialize monotonic tracer advection tendency with FCT
 !> \author Mark Petersen, David Lee, Doug Jacobsen, Phil Jones
@@ -1014,7 +1014,7 @@ module ocn_tracer_advection_mono
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_advection_mono_init(err)!{{{
+   subroutine li_tracer_advection_fct_init(err)!{{{
 
       !*** output parameters
 
@@ -1053,10 +1053,10 @@ module ocn_tracer_advection_mono
       ! Set flag for checking monotonicity
       monotonicityCheck = config_check_tracer_monotonicity
 
-   end subroutine ocn_tracer_advection_mono_init!}}}
+   end subroutine li_tracer_advection_fct_init!}}}
 
 !***********************************************************************
 
-end module ocn_tracer_advection_mono
+end module li_tracer_advection_fct
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||

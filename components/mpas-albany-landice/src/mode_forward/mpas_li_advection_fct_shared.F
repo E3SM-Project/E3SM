@@ -7,7 +7,7 @@
 !
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  mpas_ocn_tracer_advection_shared
+!  mpas_tracer_advection_shared
 !
 !> \brief MPAS ocean tracer advection common coefficients and variables
 !> \author Doug Jacobsen
@@ -18,7 +18,7 @@
 !
 !-----------------------------------------------------------------------
 
-module ocn_tracer_advection_shared
+module li_tracer_advection_fct_shared
 
    use mpas_kind_types
    use mpas_derived_types
@@ -27,8 +27,8 @@ module ocn_tracer_advection_shared
    use mpas_geometry_utils
    use mpas_log
 
-   use ocn_config
-   use ocn_mesh
+!   use ocn_config
+!   use ocn_mesh
 
    implicit none
    private
@@ -56,7 +56,7 @@ module ocn_tracer_advection_shared
    ! Public member functions 
    !-------------------------------------------------------------------- 
 
-   public :: ocn_tracer_advection_shared_init
+   public :: li_tracer_advection_fct_shared_init
 
 !***********************************************************************
 
@@ -64,18 +64,19 @@ module ocn_tracer_advection_shared
 
 !***********************************************************************
 !
-!  routine ocn_tracer_advection_shared_init
+!  routine li_tracer_advection_fct_shared_init
 !
 !> \brief MPAS tracer advection coefficients
-!> \author Doug Jacobsen, Bill Skamarock
-!> \date   03/09/12
+!> \author Doug Jacobsen, Bill Skamarock,
+!>         adapted for MALI by Trevor Hillebrand and Matt Hoffman
+!> \date   03/09/12, adapted for MALI 03/2023
 !> \details
 !>  This routine precomputes advection coefficients for horizontal
 !>  advection of tracers.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_tracer_advection_shared_init(err)!{{{
+   subroutine li_tracer_advection_fct_shared_init(err)!{{{
 
       !-----------------------------------------------------------------
       ! Output variables
@@ -316,7 +317,7 @@ module ocn_tracer_advection_shared
 
    !--------------------------------------------------------------------
 
-   end subroutine ocn_tracer_advection_shared_init !}}}
+   end subroutine li_tracer_advection_fct_shared_init !}}}
 
 !***********************************************************************
 !
@@ -338,7 +339,7 @@ module ocn_tracer_advection_shared
 !
 !-----------------------------------------------------------------------
 
-   subroutine computeDerivTwo(derivTwo, err)!{{{
+   subroutine computeDerivTwo(domain, derivTwo, err)!{{{
                                       
       !-----------------------------------------------------------------
       ! Output variables
@@ -390,6 +391,8 @@ module ocn_tracer_advection_shared
 
       real (kind=RKIND) :: &
          amatrix(25,25), bmatrix(25,25), wmatrix(25,25)
+
+      logical, parameter :: onSphere=.false.
 
       ! End preamble
       !-------------
@@ -724,6 +727,6 @@ module ocn_tracer_advection_shared
 
 !***********************************************************************
 
-end module ocn_tracer_advection_shared
+end module li_tracer_advection_fct_shared
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||

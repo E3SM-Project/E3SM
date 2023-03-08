@@ -1,11 +1,3 @@
-! Copyright (c) 2013-2018,  Los Alamos National Security, LLC (LANS)
-! and the University Corporation for Atmospheric Research (UCAR).
-!
-! Unless noted otherwise source code is licensed under the BSD license.
-! Additional copyright and license information can be found in the LICENSE file
-! distributed with this code, or at http://mpas-dev.github.io/license.html
-!
-
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
 !  li_advection
@@ -82,8 +74,7 @@ module li_advection
         advectTracersIn)
 
      use li_setup, only: li_calculate_layerThickness
-     use mpas_tracer_advection_helpers
-     use mpas_tracer_advection_mono
+     use li_tracer_advection_fct, only: li_tracer_advection_ftc_tend
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -472,25 +463,7 @@ module li_advection
                   advectedTracers,         &
                   err)
          elseif (trim(config_thickness_advection) .eq. 'fct') then
-             call mpas_initialize_deriv_two(meshPool, derivTwo, err)
-             call mpas_tracer_advection_coefficients(&
-                       meshPool,         &
-                       horizAdvOrder,    &
-                       derivTwo,         &
-                       advCoefs,         &
-                       advCoefs3rd,      &
-                       nAdvCellsForEdge, &
-                       advCellsForEdge,  &
-                       err)
-             call mpas_tracer_advection_mono_init(&
-                       config_num_halos,            &
-                       horizAdvOrder,               &
-                       vertAdvOrder,                &
-                       config_advection_coef_3rd_order, &
-                       dzdk_positive = .false.,     &
-                       check_monotonicity = .true., &
-                       err = err)
-             call mpas_tracer_advection_mono_tend(&
+             call li_tracer_advection_fct_tend(&
                        advectedTracers,             &
                        advcoefs,           &
                        advCoefs3rd,       &
@@ -1071,7 +1044,8 @@ module li_advection
          basalTracers)
 
       use li_thermal, only: li_temperature_to_enthalpy_kelvin
-
+      use li_tracer_advection_fct_shared, only: li_tracer_advection_fct_shared_init
+      use li_tracer_advection_fct, only: li_tracer_advection_fct_init
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -1141,7 +1115,10 @@ module li_advection
       real (kind=RKIND), pointer ::  &
            config_ice_density         ! ice density
 
-      integer :: iCell, iTracer, k
+      integer :: iCell, iTracer, k, err1, err2
+
+      err1 = 0
+      err2 = 0
 
       ! get dimensions
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -1244,6 +1221,17 @@ module li_advection
 
       ! Note: Other tracers (e.g., ice age) can be added here as needed.
       !       May need to increase maxTracers in the Registry.
+      if (trim(config_config_tracer_advection) == 'fct') then
+         call li_tracer_advection_fct_shared_init(err1)
+         call li_tracer_advection_fct_init(err2)
+
+         if (err1 /= 0 .or. err2 /= 0 .or. err3 /=0 .or. err4 /= 0) then
+            err = 1
+            call mpas_log_write(                                 &
+               'Error encountered during fct tracer advection init', &
+               MPAS_LOG_ERR, masterOnly=.true.)
+         endif
+      endif
 
     end subroutine tracer_setup
 
