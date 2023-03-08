@@ -534,7 +534,7 @@ private:
   // Whether we need to update time stamps at the end of the run method
   bool m_update_time_stamps = true;
 
-  // Whether this atm proc should compute tendencies for each of its outputs
+  // Whether this atm proc should compute tendencies for any of its updated fields
   bool m_compute_proc_tendencies = false;
 
   // Log level for when property checks perform a repair
