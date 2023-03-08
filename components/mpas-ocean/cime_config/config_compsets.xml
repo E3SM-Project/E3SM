@@ -58,6 +58,11 @@
   </compset>
 
   <compset>
+    <alias>GPMPAS-OIECO-JRA</alias>
+    <lname>2000_DATM%JRA_ELM%SPBC_MPASSI%BGC_MPASO%OIECODATMFORCED_MOSART_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>GMPAS-JRA1p5</alias>
     <lname>2000_DATM%JRA-1p5_SLND_MPASSI_MPASO%DATMFORCED_DROF%JRA-1p5_SGLC_SWAV</lname>
   </compset>
