@@ -77,7 +77,6 @@ module scream_scorpio_interface
             get_int_attribute,           & ! Retrieves an integer global attribute from the nc file
             set_int_attribute,           & ! Writes an integer global attribute to the nc file
             set_str_attribute,           & ! Writes an string global attribute to the nc file
-            set_variable_attribute,      & ! Writes an string attribute for a variable in the nc file
             get_dimlen,                  & ! Returns the length of a specific dimension in a file
             read_time_at_index,          & ! Returns the time stamp for a specific time index
             has_variable                   ! Checks if given file contains a certain variable
@@ -1304,53 +1303,6 @@ contains
       endif
     endif
   end subroutine set_str_attribute
-!=====================================================================!
-  ! Writes a string attribute to a specific variable in an nc file
-  subroutine set_variable_attribute (file_name, var_name, attr_name, val)
-    use pionfatt_mod, only: PIO_put_att => put_att
-    use pio_nf, only: pio_redef, PIO_inq_att
-
-    character(len=*), intent(in) :: file_name  ! Name of the filename
-    character(len=*), intent(in) :: var_name  ! Name of the filename
-    character(len=*), intent(in) :: attr_name  ! Name of the attribute
-    character(len=*), intent(in) :: val
-    type(pio_atm_file_t), pointer :: pio_atm_file
-    type(hist_var_t), pointer     :: var
-    integer(pio_offset_kind) :: len
-    integer :: ierr,xtype
-    logical :: found, enddef_needed
-
-    call lookup_pio_atm_file(trim(file_name),pio_atm_file,found)
-    if (.not.found) then
-      call errorHandle("PIO Error: can't find pio_atm_file associated with file: "//trim(file_name),-999)
-    endif
-    call get_var(pio_atm_file,var_name,var)
-
-    ! If the definition phase has finished, we need to re-open the nc file for definition,
-    ! then re-close it to put it in data mode again.
-    ! NOTE: this check step is only for pre-NetCDF4 format, where attributes can
-    !       only be defined while in 'define' mode. For NetCDF4/HDF5, attributes
-    !       can be defined at any time.
-    enddef_needed = .false.
-    if (pio_atm_file%is_enddef) then
-      ierr = PIO_redef(pio_atm_file%pioFileDesc)
-      if (ierr .ne. 0) then
-        call errorHandle("Error while re-opening pio file " // trim(file_name) // ".", -999)
-      endif
-      enddef_needed = .true.
-    endif
-    ierr = PIO_put_att(pio_atm_file%pioFileDesc, var%piovar, attr_name, val)
-    if (ierr .ne. 0) then
-      call errorHandle("Error setting attribute '" // trim(attr_name) &
-                       // "' in pio file " // trim(file_name) // " for variable '" // trim(var_name) //"'.", -999)
-    endif
-    if (enddef_needed) then
-      ierr = PIO_enddef(pio_atm_file%pioFileDesc)
-      if (ierr .ne. 0) then
-        call errorHandle("Error while re-closing pio file " // trim(file_name) // ".", -999)
-      endif
-    endif
-  end subroutine set_variable_attribute
 !=====================================================================!
   ! Lookup pointer for pio file based on filename.
   subroutine lookup_pio_atm_file(filename,pio_file,found,pio_file_list_ptr_in)

@@ -730,7 +730,7 @@ register_variables(const std::string& filename,
       children_list.pop_back();
       children_list.pop_back();
       children_list += " ]";
-      set_variable_attribute_c2f(filename.c_str(),name.c_str(),"sub_fields",children_list.c_str());
+      set_variable_metadata(filename,name,"sub_fields",children_list);
     }
   }
 } // register_variables
