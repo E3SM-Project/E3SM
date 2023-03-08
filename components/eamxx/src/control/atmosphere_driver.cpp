@@ -1263,9 +1263,9 @@ initialize (const ekat::Comm& atm_comm,
 
   initialize_fields ();
 
-  initialize_output_managers ();
-
   initialize_atm_procs ();
+
+  initialize_output_managers ();
 }
 
 void AtmosphereDriver::run (const int dt) {
