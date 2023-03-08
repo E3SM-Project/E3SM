@@ -1614,6 +1614,30 @@ Valid values: Any positive real number
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_land_ice_flux_tidal_Jourdain_alpha" type="real"
+	category="land_ice_fluxes" group="land_ice_fluxes">
+Constant in parameterization of tidal velocity used in computing the sub-ice-shelf friction velocity
+
+Valid values: Any positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_land_ice_flux_tidal_Jourdain_A0" type="real"
+	category="land_ice_fluxes" group="land_ice_fluxes">
+Constant in parameterization of tidal velocity used in computing the sub-ice-shelf friction velocity
+
+Valid values: Any positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_land_ice_flux_tidal_Jourdain_U0" type="real"
+	category="land_ice_fluxes" group="land_ice_fluxes">
+Constant in parameterization of tidal velocity used in computing the sub-ice-shelf friction velocity
+
+Valid values: Any positive real number
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- advection -->
 
