@@ -94,37 +94,13 @@ void AtmosphereProcess::run (const double dt) {
     }
 
     // Init single step tendencies (if any) with current value of output field
-    if (m_compute_proc_tendencies) {
-      start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
-      for (auto& it : m_proc_tendencies_single_step) {
-        const auto& tname = it.first;
-        const auto& fname = m_tend_to_field.at(tname);
-        const auto& f     = get_field_out(fname);
+    init_step_tendencies ();
 
-        auto& step_tend = it.second;
-        step_tend.deep_copy(f);
-      }
-      stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
-    }
-
+    // Run derived class implementation
     run_impl(dt_sub);
 
     // Complete tendency calculations (if any)
-    if (m_compute_proc_tendencies) {
-      start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
-      for (auto it : m_proc_tendencies_accum) {
-        const auto& tname = it.first;
-        const auto& fname = m_tend_to_field.at(tname);
-        const auto& f     = get_field_out(fname);
-
-        auto& step_tend = m_proc_tendencies_single_step.at(tname);
-        auto& tend      = it.second;
-
-        step_tend.update(f,1/dt_sub,-1/dt_sub);
-        tend.update(step_tend,1.0,1.0);
-      }
-      stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
-    }
+    compute_step_tendencies(dt_sub);
 
     if (has_column_conservation_check()) {
       // Run the column local mass and energy conservation checks
@@ -483,6 +459,39 @@ void AtmosphereProcess::run_column_conservation_check () const {
   run_property_check(m_column_conservation_check.second,
                      m_column_conservation_check.first,
                      PropertyCheckCategory::Postcondition);
+}
+
+void AtmosphereProcess::init_step_tendencies () {
+  if (m_compute_proc_tendencies) {
+    start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
+    for (auto& it : m_proc_tendencies_single_step) {
+      const auto& tname = it.first;
+      const auto& fname = m_tend_to_field.at(tname);
+      const auto& f     = get_field_out(fname);
+
+      auto& step_tend = it.second;
+      step_tend.deep_copy(f);
+    }
+    stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
+  }
+}
+
+void AtmosphereProcess::compute_step_tendencies (const double dt) {
+  if (m_compute_proc_tendencies) {
+    start_timer(m_timer_prefix + this->name() + "::compute_tendencies");
+    for (auto it : m_proc_tendencies_accum) {
+      const auto& tname = it.first;
+      const auto& fname = m_tend_to_field.at(tname);
+      const auto& f     = get_field_out(fname);
+
+      auto& step_tend = m_proc_tendencies_single_step.at(tname);
+      auto& tend      = it.second;
+
+      step_tend.update(f,1/dt,-1/dt);
+      tend.update(step_tend,1.0,1.0);
+    }
+    stop_timer(m_timer_prefix + this->name() + "::compute_tendencies");
+  }
 }
 
 bool AtmosphereProcess::has_required_field (const FieldIdentifier& id) const {

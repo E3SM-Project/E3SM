@@ -155,6 +155,10 @@ public:
   void run_postcondition_checks () const;
   void run_column_conservation_check () const;
 
+
+  void init_step_tendencies ();
+  void compute_step_tendencies (const double dt);
+
   // These methods allow the AD to figure out what each process needs, with very fine
   // grain detail. See field_request.hpp for more info on what FieldRequest and GroupRequest
   // are, and field_group.hpp for what groups of fields are.
