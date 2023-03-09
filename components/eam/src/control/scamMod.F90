@@ -56,6 +56,8 @@ module scamMod
   logical, public ::  use_iop               ! Using IOP file or not
   logical, public ::  scm_crm_mode          ! column radiation mode
   logical, public ::  isrestart             ! If this is a restart step or not
+  logical, public ::  scm_multcols          ! use SCM infrastructure across multiple columns
+  logical, public ::  dp_crm                ! do doubly periodic cloud resolving model
 
   integer, public ::  error_code            ! Error code from netCDF reads
   integer, public ::  initTimeIdx
@@ -113,6 +115,9 @@ module scamMod
   real(r8), public ::      iop_nudge_tq_low    ! lowest level to apply relaxation (hPa)
   real(r8), public ::      iop_nudge_tq_high   ! highest level to apply relaxation (hPa)
   real(r8), public ::      iop_nudge_tscale    ! timescale for relaxation
+
+  real(r8), public ::      iop_perturb_high    ! higest level to apply perturbations
+                                               ! to temperature profile (doubly periodic mode)
 					       
   real(r8), public, pointer :: loniop(:)
   real(r8), public, pointer :: latiop(:)
@@ -174,6 +179,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
         single_column_out,scm_iop_srf_prop_out, scm_nudge_out, &
         iop_nudge_tq_low_out, iop_nudge_tq_high_out, iop_nudge_tscale_out, &
         scm_crm_mode_out, scm_observed_aero_out, &
+        scm_multcols_out, dp_crm_out, iop_perturb_high_out, &
         precip_off_out, scm_zero_non_iop_tracers_out)
    !-----------------------------------------------------------------------
    real(r8), intent(out), optional :: scmlat_out,scmlon_out
@@ -184,9 +190,12 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    logical, intent(out), optional ::  scm_crm_mode_out
    logical, intent(out), optional ::  scm_observed_aero_out
    logical, intent(out), optional ::  precip_off_out
+   logical, intent(out), optional ::  scm_multcols_out
+   logical, intent(out), optional ::  dp_crm_out
    real(r8), intent(out), optional ::  iop_nudge_tq_low_out
    real(r8), intent(out), optional ::  iop_nudge_tq_high_out
    real(r8), intent(out), optional ::  iop_nudge_tscale_out
+   real(r8), intent(out), optional ::  iop_perturb_high_out
    logical, intent(out), optional ::  scm_zero_non_iop_tracers_out
 
    if ( present(scmlat_out) )           scmlat_out     = -999._r8
@@ -198,9 +207,12 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    if ( present(iop_nudge_tq_low_out) ) iop_nudge_tq_low_out = 1050.0_r8
    if ( present(iop_nudge_tq_high_out) ) iop_nudge_tq_high_out = 0.e3_r8
    if ( present(iop_nudge_tscale_out) ) iop_nudge_tscale_out = 10800.0_r8
+   if ( present(iop_perturb_high_out) ) iop_perturb_high_out = 1050.0_r8
    if ( present(scm_crm_mode_out) )     scm_crm_mode_out  = .false.
    if ( present(scm_observed_aero_out)) scm_observed_aero_out = .false.
    if ( present(precip_off_out))        precip_off_out = .false.
+   if ( present(scm_multcols_out))      scm_multcols_out = .false.
+   if ( present(dp_crm_out))            dp_crm_out = .false.
    if ( present(scm_zero_non_iop_tracers_out) ) scm_zero_non_iop_tracers_out = .false.
 
 end subroutine scam_default_opts
@@ -209,6 +221,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
                          scm_iop_srf_prop_in, scm_nudge_in, &
                          iop_nudge_tq_low_in, iop_nudge_tq_high_in, iop_nudge_tscale_in, &
                          scm_crm_mode_in, scm_observed_aero_in, &
+                         scm_multcols_in, dp_crm_in, iop_perturb_high_in, &
                          precip_off_in, scm_zero_non_iop_tracers_in)
   !-----------------------------------------------------------------------
   real(r8), intent(in), optional       :: scmlon_in, scmlat_in
@@ -219,9 +232,12 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   logical, intent(in), optional        :: scm_crm_mode_in
   logical, intent(in), optional        :: scm_observed_aero_in
   logical, intent(in), optional        :: precip_off_in
+  logical, intent(in), optional        :: scm_multcols_in
+  logical, intent(in), optional        :: dp_crm_in
   real(r8), intent(in), optional       :: iop_nudge_tq_low_in
   real(r8), intent(in), optional       :: iop_nudge_tq_high_in
   real(r8), intent(in), optional       :: iop_nudge_tscale_in
+  real(r8), intent(in), optional       :: iop_perturb_high_in
   logical, intent(in), optional        :: scm_zero_non_iop_tracers_in
   integer ncid,latdimid,londimid,latsiz,lonsiz,latid,lonid,ret,i
   integer latidx,lonidx
@@ -229,6 +245,14 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   
   if (present (single_column_in ) ) then 
      single_column=single_column_in
+  endif
+
+  if (present (scm_multcols_in ) ) then
+     scm_multcols=scm_multcols_in
+  endif
+
+  if (present (dp_crm_in ) ) then
+    dp_crm=dp_crm_in
   endif
 
   if (present (scm_iop_srf_prop_in)) then
@@ -251,6 +275,10 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
      iop_nudge_tscale=iop_nudge_tscale_in
   endif
   
+  if (present (iop_perturb_high_in)) then
+     iop_perturb_high=iop_perturb_high_in
+  endif
+
   if (present (scm_crm_mode_in)) then
      scm_crm_mode=scm_crm_mode_in
   endif
@@ -270,6 +298,22 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   if (present (iopfile_in)) then
      iopfile=trim(iopfile_in)
   endif
+
+#ifdef SPMD
+  call mpibcast(scm_iop_srf_prop,1,mpilog,0,mpicom)
+  call mpibcast(dp_crm,1,mpilog,0,mpicom)
+  call mpibcast(iop_dosubsidence,1,mpilog,0,mpicom)
+  call mpibcast(iop_nudge_tq,1,mpilog,0,mpicom)
+  call mpibcast(iop_nudge_uv,1,mpilog,0,mpicom)
+  call mpibcast(iop_nudge_tq_high,1,mpir8,0,mpicom)
+  call mpibcast(iop_nudge_tq_low,1,mpir8,0,mpicom)
+  call mpibcast(iop_nudge_tscale,1,mpir8,0,mpicom)
+  call mpibcast(iop_perturb_high,1,mpir8,0,mpicom)
+  call mpibcast(scm_diurnal_avg,1,mpilog,0,mpicom)
+  call mpibcast(scm_crm_mode,1,mpilog,0,mpicom)
+  call mpibcast(scm_observed_aero,1,mpilog,0,mpicom)
+  call mpibcast(precip_off,1,mpilog,0,mpicom)
+#endif
 
   if( single_column) then
      

@@ -626,6 +626,5 @@ subroutine crm_resolved_turb(elem,hvcoord,hybrid,t1,&
 
 end subroutine crm_resolved_turb
 #endif  // MODEL_THETA_L
->>>>>>> origin
 
 end module se_single_column_mod
