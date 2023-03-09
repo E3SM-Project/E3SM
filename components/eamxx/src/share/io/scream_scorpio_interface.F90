@@ -966,6 +966,7 @@ contains
       prev_file_ptr => curr_file_ptr
       curr_file_ptr => curr_file_ptr%next
       deallocate(prev_file_ptr)
+      pio_file_list_front => curr_file_ptr ! be sure not to iterate over deallocated item
     end do
     ! Free all decompositions from PIO
     iodesc_ptr => iodesc_list_top
