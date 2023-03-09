@@ -99,7 +99,7 @@ foreach (NRANKS RANGE ${TEST_RANK_START} ${TEST_RANK_END})
   set (fname ${BASE_TEST_NAME}_output.INSTANT.nsteps_x1.np${NRANKS}.nc)
   set (tname ${BASE_TEST_NAME}_tend_check_np${NRANKS})
   add_test (NAME ${tname}
-    COMMAND ${script} -f ${fname} -v qc T_mid -t EAMxx_qc_tend EAMxx_T_mid_tend
+    COMMAND ${script} -f ${fname} -v qv T_mid -t EAMxx_qv_tend EAMxx_T_mid_tend
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   set_tests_properties (${tname} PROPERTIES
     FIXTURES_REQUIRED homme_shoc_cld_spa_p3_rrtmgp_128levels_generate_output_nc_files
