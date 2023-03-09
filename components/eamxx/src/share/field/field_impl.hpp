@@ -350,6 +350,18 @@ update (const Field& x, const ST alpha, const ST beta)
 {
   const auto& dt = data_type();
 
+  // If user passes, say, double alpha/beta for an int field, we should error out, warning about
+  // a potential narrowing rounding. The other way around, otoh, is allowed (even though
+  // there's an upper limit to the int values that a double can store, it is unlikely the user
+  // will use such large factors).
+  const auto dt_st = get_data_type<ST>();
+  EKAT_REQUIRE_MSG (not is_narrowing_conversion(dt_st,dt),
+      "Error! Coefficients alpha/beta may be narrowed when converted to x/y data type.\n"
+      " - x/y data type  : " + e2str(dt) + "\n"
+      " - coeff data type: " + e2str(dt_st) + "\n");
+
+  std::cout << "going from " + e2str(dt_st) + " to " + e2str(dt) + " does not cause narrowing.\n";
+  std::cout << " alpha=" << alpha << ", beta=" << beta << std::endl;
   if (dt==DataType::IntType) {
     return update_impl<CombineMode::ScaleUpdate,HD,int>(x,alpha,beta);
   } else if (dt==DataType::FloatType) {
@@ -366,6 +378,18 @@ void Field::
 scale (const ST beta)
 {
   const auto& dt = data_type();
+
+  // If user passes, say, double beta for an int field, we should error out, warning about
+  // a potential narrowing rounding. The other way around, otoh, is allowed (even though
+  // there's an upper limit to the int values that a double can store, it is unlikely the user
+  // will use such large factors).
+  const auto dt_st = get_data_type<ST>();
+  EKAT_REQUIRE_MSG (not is_narrowing_conversion(dt_st,dt),
+      "Error! Coefficients alpha/beta may be narrowed when converted to x/y data type.\n"
+      " - x/y data type  : " + e2str(dt) + "\n"
+      " - coeff data type: " + e2str(dt_st) + "\n");
+  std::cout << "going from " + e2str(dt_st) + " to " + e2str(dt) + " does not cause narrowing.\n";
+  std::cout << " beta=" << beta << std::endl;
 
   if (dt==DataType::IntType) {
     return update_impl<CombineMode::Rescale,HD,int>(*this,ST(0),beta);
@@ -408,14 +432,6 @@ update_impl (const Field& x, const ST alpha, const ST beta)
       " - y name: " + name() + "\n"
       " - x data type: " + e2str(dt_x) + "\n"
       " - y data type: " + e2str(dt_y) + "\n");
-
-  // If user used default for both alpha and beta, then the ST=char was used,
-  // even though that's not correct; hence, set data type of coeffs to that of x/y.
-  const auto dt_st = get_data_type<ST>();
-  EKAT_REQUIRE_MSG (not is_narrowing_conversion(dt_st,dt_x),
-      "Error! Coefficients alpha/beta may be narrowed when converted to x/y data type.\n"
-      " - x/y data type  : " + e2str(dt_x) + "\n"
-      " - coeff data type: " + e2str(dt_st) + "\n");
 
   const auto& y_l = get_header().get_identifier().get_layout();
   const auto& x_l = x.get_header().get_identifier().get_layout();
