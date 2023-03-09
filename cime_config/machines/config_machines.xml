@@ -3649,14 +3649,14 @@
     <DESC>Chicoma CPU-only nodes at LANL IC. Each node has 2 AMD EPYC 7H12 64-Core (Milan) 512GB</DESC>
     <NODENAME_REGEX>ch-fe*</NODENAME_REGEX>
     <OS>Linux</OS>
-    <COMPILERS>gnu,nvidia,aocc,amdclang</COMPILERS>
+    <COMPILERS>gnu,nvidia,intel,aocc,amdclang</COMPILERS>
     <MPILIBS>mpich</MPILIBS>
     <CIME_OUTPUT_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/scratch/chicoma-cpu</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/usr/projects/e3sm/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/usr/projects/e3sm/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/lustre/scratch4/turquoise/$ENV{USER}/E3SM/input_data/ccsm_baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/turquoise/usr/projects/climate/SHARED_CLIMATE/software/wolf/cprnc/v0.40/cprnc</CCSM_CPRNC>
+    <CCSM_CPRNC>/usr/projects/climate/SHARED_CLIMATE/software/badger/cprnc</CCSM_CPRNC>
     <GMAKE_J>10</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -3699,13 +3699,18 @@
       </modules>
 
       <modules compiler="gnu">
-        <command name="load">PrgEnv-gnu/8.3.2</command>
-        <command name="load">gcc/11.2.0</command>
+        <command name="load">PrgEnv-gnu/8.3.3</command>
+        <command name="load">gcc/12.1.0</command>
       </modules>
 
       <modules compiler="nvidia">
-        <command name="load">PrgEnv-nvidia</command>
+        <command name="load">PrgEnv-nvidia/8.3.3</command>
         <command name="load">nvidia/22.3</command>
+      </modules>
+
+      <modules compiler="intel">
+        <command name="load">PrgEnv-intel/8.3.3</command>
+        <command name="load">intel-classic/2022.2.1</command>
       </modules>
 
       <modules compiler="aocc">
@@ -3722,10 +3727,11 @@
         <command name="load">craype-accel-host</command>
         <command name="load">cray-libsci</command>
         <command name="load">craype</command>
-        <command name="load">cray-mpich/8.1.14</command>
-        <command name="load">cray-hdf5-parallel/1.12.1.1</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.8.1.1</command>
-        <command name="load">cray-parallel-netcdf/1.12.2.1</command>
+        <command name="load">cray-mpich/8.1.21</command>
+        <command name="load">libfabric/1.15.0.0</command>
+        <command name="load">cray-hdf5-parallel/1.12.2.1</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.9.0.1</command>
+        <command name="load">cray-parallel-netcdf/1.12.3.1</command>
         <command name="load">cmake/3.20.3</command>
       </modules>
     </module_system>
@@ -3735,17 +3741,16 @@
     <TEST_TPUT_TOLERANCE>0.1</TEST_TPUT_TOLERANCE>
 
     <environment_variables>
-      <env name="NETCDF_C_PATH">$SHELL{dirname $(dirname $(which nc-config))}</env>
-      <env name="NETCDF_FORTRAN_PATH">$SHELL{dirname $(dirname $(which nf-config))}</env>
-      <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
       <env name="MPICH_ENV_DISPLAY">1</env>
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <env name="OMP_STACKSIZE">128M</env>
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-      <env name="PERL5LIB">/usr/projects/climate/SHARED_CLIMATE/software/chicoma-cpu/perl5/lib/perl5</env>
+      <env name="PERL5LIB">/usr/projects/climate/SHARED_CLIMATE/software/chicoma-cpu/perl5-only-switch/lib/perl5</env>
       <env name="PNETCDF_HINTS">romio_ds_write=disable;romio_ds_read=disable;romio_cb_write=enable;romio_cb_read=enable</env>
+      <env name="FI_CXI_RX_MATCH_MODE">software</env>
+      <env name="MPICH_COLL_SYNC">MPI_Bcast</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
