@@ -28,7 +28,7 @@ module li_tracer_advection_fct_shared
    use mpas_log
 
 !   use ocn_config
-!   use ocn_mesh
+   use li_mesh
 
    implicit none
    private
@@ -99,6 +99,8 @@ module li_tracer_advection_fct_shared
       integer, dimension(:,:), allocatable :: &
          cellIndxSorted ! nbr cell indices sorted
 
+      integer, pointer :: config_horiz_tracer_adv_order
+
       real (kind=RKIND), dimension(:,:,:), allocatable :: &
          derivTwo !< 2nd derivative values for polynomial fit to tracers
 
@@ -114,12 +116,12 @@ module li_tracer_advection_fct_shared
       nAdvCellsMax = maxEdges2
 
       ! Allocate common variables
-      allocate(nAdvCellsForEdge (             nEdgesAll),   &
-                advCellsForEdge (nAdvCellsMax,nEdgesAll), &
-                advCoefs        (nAdvCellsMax,nEdgesAll), &
-                advCoefs3rd     (nAdvCellsMax,nEdgesAll), &
-                advMaskHighOrder(nVertLevels ,nEdgesAll), &
-                derivTwo      (nAdvCellsMax,2,nEdgesAll))
+      allocate(nAdvCellsForEdge (             nEdges),   &
+                advCellsForEdge (nAdvCellsMax,nEdges), &
+                advCoefs        (nAdvCellsMax,nEdges), &
+                advCoefs3rd     (nAdvCellsMax,nEdges), &
+                advMaskHighOrder(nVertLevels ,nEdges), &
+                derivTwo      (nAdvCellsMax,2,nEdges))
 
       ! Compute derivTwo array
       call computeDerivTwo(derivTwo, err)
@@ -135,7 +137,7 @@ module li_tracer_advection_fct_shared
                cellIndxSorted(2, maxEdges2 + 2))
 
       ! Compute masks and coefficients
-      do iEdge = 1, nEdgesAll
+      do iEdge = 1, nEdges
          nAdvCellsForEdge(iEdge) = 0
          cell1 = cellsOnEdge(1,iEdge)
          cell2 = cellsOnEdge(2,iEdge)
@@ -151,7 +153,7 @@ module li_tracer_advection_fct_shared
          end do
 
          ! do only if this edge flux is needed to update owned cells
-         if (cell1 <= nCellsAll .and. cell2 <= nCellsAll) then
+         if (cell1 <= nCells .and. cell2 <= nCells) then
             ! Insert cellsOnEdge to list of advection cells
             call mpas_hash_init(cell_hash)
             call mpas_hash_insert(cell_hash, cell1)
@@ -339,7 +341,7 @@ module li_tracer_advection_fct_shared
 !
 !-----------------------------------------------------------------------
 
-   subroutine computeDerivTwo(domain, derivTwo, err)!{{{
+   subroutine computeDerivTwo(derivTwo, err)!{{{
                                       
       !-----------------------------------------------------------------
       ! Output variables
@@ -410,8 +412,8 @@ module li_tracer_advection_fct_shared
       end if
 
       ! allocate local arrays
-      allocate(thetae(2, nEdgesAll))
-      allocate(theta_abs(nCellsAll))
+      allocate(thetae(2, nEdges))
+      allocate(theta_abs(nCells))
       allocate(angle_2d(maxEdges))
 
       ! Initialize derivTwo and pi
@@ -419,7 +421,7 @@ module li_tracer_advection_fct_shared
       pii = 2.*asin(1.0)
       derivTwo(:,:,:) = 0.0_RKIND
 
-      do iCell = 1, nCellsAll
+      do iCell = 1, nCells
 
          cell_list(1) = iCell
          do i=2, nEdgesOnCell(iCell)+1
@@ -447,7 +449,7 @@ module li_tracer_advection_fct_shared
 
          doCell = .true.
          do i=1,n
-            if (cell_list(i) > nCellsAll) doCell = .false.
+            if (cell_list(i) > nCells) doCell = .false.
          end do
 
          if ( .not. doCell ) cycle

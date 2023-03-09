@@ -26,8 +26,8 @@ module li_tracer_advection_fct
 #endif
    use mpas_kind_types
 
-!   use ocn_config
-!   use ocn_mesh
+   use li_config
+   use li_mesh
 !   use ocn_diagnostics_variables
    use li_tracer_advection_fct_shared
 !   use tracer_advection_vert
@@ -151,17 +151,17 @@ module li_tracer_advection_fct
       allocate(wgtTmp      (nVertLevels), &
                flxTmp      (nVertLevels), &
                sgnTmp      (nVertLevels), &
-               tracerCur   (nVertLevels  ,nCellsAll+1), &
-               tracerMin   (nVertLevels  ,nCellsAll), &
-               tracerMax   (nVertLevels  ,nCellsAll), &
-               hNewInv     (nVertLevels  ,nCellsAll), &
-               hProv       (nVertLevels  ,nCellsAll), &
-               hProvInv    (nVertLevels  ,nCellsAll), &
-               flxIn       (nVertLevels  ,nCellsAll+1), &
-               flxOut      (nVertLevels  ,nCellsAll+1), &
-               workTend    (nVertLevels  ,nCellsAll+1), &
-               lowOrderFlx (nVertLevels+1,max(nCellsAll,nEdgesAll)+1), &
-               highOrderFlx(nVertLevels+1,max(nCellsAll,nEdgesAll)+1))
+               tracerCur   (nVertLevels  ,nCells+1), &
+               tracerMin   (nVertLevels  ,nCells), &
+               tracerMax   (nVertLevels  ,nCells), &
+               hNewInv     (nVertLevels  ,nCells), &
+               hProv       (nVertLevels  ,nCells), &
+               hProvInv    (nVertLevels  ,nCells), &
+               flxIn       (nVertLevels  ,nCells+1), &
+               flxOut      (nVertLevels  ,nCells+1), &
+               workTend    (nVertLevels  ,nCells+1), &
+               lowOrderFlx (nVertLevels+1,max(nCells,nEdges)+1), &
+               highOrderFlx(nVertLevels+1,max(nCells,nEdges)+1))
 
       !$acc enter data create(wgtTmp, flxTmp, sgnTmp, &
       !$acc                   tracerCur, tracerMin, tracerMax, &
@@ -191,10 +191,10 @@ module li_tracer_advection_fct
       !$omp do schedule(runtime) &
       !$omp    private(k,kmin,kmax,i,iEdge, invAreaCell1, signedFactor) 
 #endif
-      do iCell = 1, nCellsAll
+      do iCell = 1, nCells
          invAreaCell1 = dt/areaCell(iCell)
-         kmin = minLevelCell(iCell)
-         kmax = maxLevelCell(iCell)
+         kmin = 1 !minLevelCell(iCell)
+         kmax = nVertLevels !maxLevelCell(iCell)
          do k = kmin, kmax
             hProv(k, iCell) = layerThickness(k, iCell)
          end do
@@ -241,7 +241,7 @@ module li_tracer_advection_fct
         !$omp parallel
         !$omp do schedule(runtime) private(k)
 #endif
-        do iCell = 1, nCellsAll+1
+        do iCell = 1, nCells+1
         do k=1, nVertLevels
            tracerCur(k,iCell) = tracers(iTracer,k,iCell)
         end do ! k loop
@@ -274,23 +274,24 @@ module li_tracer_advection_fct
         !$omp    private(k, kmin, kmax, kmin1, kmax1, i, cell2)
 #endif
         do iCell = 1, nCells
-           kmin = minLevelCell(iCell)
-           kmax = maxLevelCell(iCell)
+           kmin = 1 !minLevelCell(iCell)
+           kmax = nVertLevels !maxLevelCell(iCell)
            do k=kmin,kmax
               tracerMin(k,iCell) = tracerCur(k,iCell)
               tracerMax(k,iCell) = tracerCur(k,iCell)
            end do
-           do i = 1, nEdgesOnCell(iCell)
-              cell2 = cellsOnCell(i,iCell)
-              kmin1 = max(kmin, minLevelCell(cell2))
-              kmax1 = min(kmax, maxLevelCell(cell2))
-              do k=kmin1,kmax1
-                 tracerMax(k,iCell) = max(tracerMax(k,iCell), &
-                                          tracerCur(k,cell2))
-                 tracerMin(k,iCell) = min(tracerMin(k,iCell), &
-                                          tracerCur(k,cell2))
-              end do ! k loop
-           end do ! i loop over nEdgesOnCell
+           ! TODO: Determine how/if this translates to MALI
+           !do i = 1, nEdgesOnCell(iCell)
+           !   cell2 = cellsOnCell(i,iCell)
+           !   kmin1 = max(kmin, minLevelCell(cell2))
+           !   kmax1 = min(kmax, maxLevelCell(cell2))
+           !   do k=kmin1,kmax1
+           !      tracerMax(k,iCell) = max(tracerMax(k,iCell), &
+           !                               tracerCur(k,cell2))
+           !      tracerMin(k,iCell) = min(tracerMin(k,iCell), &
+           !                               tracerCur(k,cell2))
+           !   end do ! k loop
+           !end do ! i loop over nEdgesOnCell
         end do ! cell loop
 #ifndef MPAS_OPENACC
         !$omp end do
@@ -340,7 +341,7 @@ module li_tracer_advection_fct
               iCell = advCellsForEdge(i,iEdge)
               coef1 = advCoefs       (i,iEdge)
               coef3 = advCoefs3rd    (i,iEdge)*coef3rdOrder
-              do k = minLevelCell(iCell), maxLevelCell(iCell)
+              do k = 1, nVertLevels !minLevelCell(iCell), maxLevelCell(iCell)
                  flxTmp(k) = flxTmp(k) + tracerCur(k,iCell)* &
                              wgtTmp(k)*(coef1 + coef3*sgnTmp(k))
               end do ! k loop
@@ -354,7 +355,7 @@ module li_tracer_advection_fct
            ! Also compute low order upwind horizontal flux (monotonic)
            ! Remove low order flux from the high order flux
            ! Store left over high order flux in highOrderFlx array
-           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+           do k = 1, nVertLevels !minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
               tracerWeight = (1.0_RKIND - advMaskHighOrder(k,iEdge)) &
                            * (dvEdge(iEdge) * 0.5_RKIND)             &
                            * normalThicknessFlux(k, iEdge)
@@ -390,7 +391,7 @@ module li_tracer_advection_fct
         !$omp parallel
         !$omp do schedule(runtime)
 #endif
-        do iCell = 1, nCellsAll+1
+        do iCell = 1, nCells+1
         do k=1, nVertLevels
            workTend(k, iCell) = 0.0_RKIND
            flxIn   (k, iCell) = 0.0_RKIND
@@ -434,7 +435,7 @@ module li_tracer_advection_fct
               cell2 = cellsOnEdge(2,iEdge)
               signedFactor = edgeSignOnCell(i, iCell) * invAreaCell1
 
-              do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+              do k = 1, nVertLevels !minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
 
                  ! Here workTend is the advection tendency due to the
                  ! upwind (low order) fluxes.
@@ -454,7 +455,7 @@ module li_tracer_advection_fct
            ! Computed using the bounds that were computed previously,
            ! and the bounds on the newly updated value
            ! Factors are placed in the flxIn and flxOut arrays
-           do k = minLevelCell(iCell), maxLevelCell(iCell)
+           do k = 1, nVertLevels !minLevelCell(iCell), maxLevelCell(iCell)
               ! Here workTend is the upwind tendency
               tracerUpwindNew = (tracerCur(k,iCell)*layerThickness(k,iCell) &
                               + dt*workTend(k,iCell))*hProvInv(k,iCell)
@@ -498,7 +499,7 @@ module li_tracer_advection_fct
         do iEdge = 1, nEdges
            cell1 = cellsOnEdge(1,iEdge)
            cell2 = cellsOnEdge(2,iEdge)
-           do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+           do k = 1, nVertLevels !minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
               highOrderFlx(k,iEdge) = max(0.0_RKIND,highOrderFlx(k,iEdge))* &
                                       min(flxOut(k,cell1), flxIn (k,cell2)) &
                                     + min(0.0_RKIND,highOrderFlx(k,iEdge))* &
@@ -530,14 +531,14 @@ module li_tracer_advection_fct
         !$omp do schedule(runtime) &
         !$omp    private(i, k, iEdge, invAreaCell1, signedFactor) 
 #endif
-        do iCell = 1, nCellsOwned
+        do iCell = 1, nCellsSolve
            invAreaCell1 = 1.0_RKIND / areaCell(iCell)
 
            ! Accumulate the scaled high order horizontal tendencies
            do i = 1, nEdgesOnCell(iCell)
               iEdge = edgesOnCell(i, iCell)
               signedFactor = invAreaCell1*edgeSignOnCell(i,iCell)
-              do k = minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
+              do k = 1, nVertLevels !minLevelEdgeBot(iEdge), maxLevelEdgeTop(iEdge)
                  ! workTend on RHS is upwind tendency
                  ! workTend on LHS is total horiz advect tendency
                  workTend(k,iCell) = workTend(k,iCell) &
@@ -545,7 +546,7 @@ module li_tracer_advection_fct
               end do
            end do
 
-           do k = minLevelCell(iCell), maxLevelCell(iCell)
+           do k = 1, nVertLevels !minLevelCell(iCell), maxLevelCell(iCell)
               ! workTend  on RHS is total horiz advection tendency
               ! tracerCur on LHS is provisional tracer after
               !                     horizontal fluxes only.
@@ -576,39 +577,49 @@ module li_tracer_advection_fct
            !$acc    present(activeTracerHorizontalAdvectionEdgeFlux, &
            !$acc            minLevelEdgeBot, maxLevelEdgeTop, &
            !$acc            lowOrderFlx, highOrderFlx, dvEdge)
-#else
-           !$omp parallel
-           !$omp do schedule(runtime) private(k)
 #endif
-           do iEdge = 1,nEdges
-           do k = minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
-              ! Save u*h*T flux on edge for analysis. This variable will be
-              ! divided by h at the end of the time step.
-              activeTracerHorizontalAdvectionEdgeFlux(iTracer,k,iEdge) = &
-                 (lowOrderFlx(k,iEdge) + highOrderFlx(k,iEdge))/dvEdge(iEdge)
-           enddo
-           enddo
-#ifndef MPAS_OPENACC
-           !$omp end do
-#endif
+
+!#else
+!           !$omp parallel
+!           !$omp do schedule(runtime) private(k)
+!#endif
+!
+!           ! TODO: Determine if it is necessary to define activeTracerHorizontalAdvectionEdgeFlux
+!           !do iEdge = 1,nEdges
+!           !do k = minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
+!           !   ! Save u*h*T flux on edge for analysis. This variable will be
+!           !   ! divided by h at the end of the time step.
+!           !   activeTracerHorizontalAdvectionEdgeFlux(iTracer,k,iEdge) = &
+!           !      (lowOrderFlx(k,iEdge) + highOrderFlx(k,iEdge))/dvEdge(iEdge)
+!           !enddo
+!           !enddo
+!
+!#ifndef MPAS_OPENACC
+!          !$omp end do
+!#endif
 
 #ifdef MPAS_OPENACC
            !$acc parallel loop private(k) &
            !$acc    present(activeTracerHorizontalAdvectionTendency, &
            !$acc            minLevelCell, maxLevelCell, workTend)
-#else
-           !$omp do schedule(runtime) private(k)
+
 #endif
-           do iCell = 1, nCellsOwned
-           do k = minLevelCell(iCell), maxLevelCell(iCell)
-              activeTracerHorizontalAdvectionTendency(iTracer,k,iCell) = &
-                                                     workTend(k,iCell)
-           end do
-           end do ! iCell loop
-#ifndef MPAS_OPENACC
-           !$omp end do
-           !$omp end parallel
-#endif
+
+!#else
+!           !$omp do schedule(runtime) private(k)
+!#endif
+!           ! TODO: Determine if it is necessary to define activeTracerHorizontalAdvectionTendency
+!           ! for MALI
+!           !do iCell = 1, nCellsSolve
+!           !do k = 1, nVertLevels !minLevelCell(iCell), maxLevelCell(iCell)
+!           !   activeTracerHorizontalAdvectionTendency(iTracer,k,iCell) = &
+!           !                                          workTend(k,iCell)
+!           !end do
+!           !end do ! iCell loop
+!#ifndef MPAS_OPENACC
+!           !$omp end do
+!           !$omp end parallel
+!#endif
 
         end if ! computeBudgets
 
@@ -621,8 +632,8 @@ module li_tracer_advection_fct
 
            !$omp parallel
            !$omp do schedule(runtime) private(k)
-           do iCell = 1, nCellsOwned
-           do k = minLevelCell(iCell), maxLevelCell(iCell)
+           do iCell = 1, nCellsSolve
+           do k = 1, nVertLevels !minLevelCell(iCell), maxLevelCell(iCell)
               if(tracerCur(k,iCell) < tracerMin(k, iCell)-eps) then
                  call mpas_log_write( &
                     'Horizontal minimum out of bounds on tracer: $i $r $r ', &
@@ -663,7 +674,7 @@ module li_tracer_advection_fct
         !$omp parallel
         !$omp do schedule(runtime) private(k)
 #endif
-        do iCell = 1, nCellsAll
+        do iCell = 1, nCells
         do k=1, nVertLevels
            workTend(k, iCell) = 0.0_RKIND
         end do ! k loop
@@ -692,8 +703,8 @@ module li_tracer_advection_fct
         !$omp do schedule(runtime) private(k, kmin, kmax)
 #endif
         do iCell = 1, nCells
-           kmin = minLevelCell(iCell)
-           kmax = maxLevelCell(iCell)
+           kmin = 1 !minLevelCell(iCell)
+           kmax = nVertLevels !maxLevelCell(iCell)
 
            ! take care of top cell
            tracerMax(kmin,iCell) = max(tracerCur(1,iCell), &
@@ -749,8 +760,8 @@ module li_tracer_advection_fct
         !$omp do schedule(runtime) private(k, kmin, kmax)
 #endif
         do iCell = 1, nCells
-           kmin = minLevelCell(iCell)
-           kmax = maxLevelCell(iCell)
+           kmin = 1 !minLevelCell(iCell)
+           kmax = nVertLevels !maxLevelCell(iCell)
 
            lowOrderFlx(kmin,iCell) = 0.0_RKIND
            do k = kmin+1, kmax
@@ -808,7 +819,7 @@ module li_tracer_advection_fct
 #endif
         do iCell = 1, nCells
 
-           do k = minLevelCell(iCell), maxLevelCell(iCell)
+           do k = 1, nVertLevels !minLevelCell(iCell), maxLevelCell(iCell)
               ! workTend on the RHS is the upwind tendency
               tracerMinNew = (tracerCur(k,iCell)*hProv(k,iCell) &
                            + dt*(workTend(k,iCell)+flxOut(k,iCell))) &
@@ -852,9 +863,9 @@ module li_tracer_advection_fct
         !$omp parallel
         !$omp do schedule(runtime) private(k, kmin, kmax, flux)
 #endif
-        do iCell = 1, nCellsOwned
-           kmin = minLevelCell(iCell)
-           kmax = maxLevelCell(iCell)
+        do iCell = 1, nCellsSolve
+           kmin = 1 !minLevelCell(iCell)
+           kmax = nVertLevels !maxLevelCell(iCell)
            ! rescale the high order vertical flux
            do k = kmin+1, kmax
               flux =  highOrderFlx(k,iCell)
@@ -896,26 +907,28 @@ module li_tracer_advection_fct
            !$acc            activeTracerVerticalAdvectionTendency, &
            !$acc            minLevelCell, maxLevelCell) &
            !$acc    private(k, kmin, kmax)
-#else
-           !$omp parallel
-           !$omp do schedule(runtime) private(k,kmin,kmax)
 #endif
-           do iCell = 1, nCellsOwned
-              kmin = minLevelCell(iCell)
-              kmax = maxLevelCell(iCell)
-              do k = kmin+1,kmax
-                 activeTracerVerticalAdvectionTopFlux(iTracer,k,iCell) = &
-                    lowOrderFlx(k,iCell) + highOrderFlx(k,iCell)
-              end do
-              do k = kmin,kmax
-                 activeTracerVerticalAdvectionTendency(iTracer,k,iCell) = &
-                    workTend(k,iCell)
-              end do
-           end do ! iCell loop
-#ifndef MPAS_OPENACC
-           !$omp end do
-           !$omp end parallel
-#endif
+
+!#else
+!           !$omp parallel
+!           !$omp do schedule(runtime) private(k,kmin,kmax)
+!#endif
+!           do iCell = 1, nCellsSolve
+!              kmin = minLevelCell(iCell)
+!              kmax = maxLevelCell(iCell)
+!              do k = kmin+1,kmax
+!                 activeTracerVerticalAdvectionTopFlux(iTracer,k,iCell) = &
+!                    lowOrderFlx(k,iCell) + highOrderFlx(k,iCell)
+!              end do
+!              do k = kmin,kmax
+!                 activeTracerVerticalAdvectionTendency(iTracer,k,iCell) = &
+!                    workTend(k,iCell)
+!              end do
+!           end do ! iCell loop
+!#ifndef MPAS_OPENACC
+!           !$omp end do
+!           !$omp end parallel
+!#endif
         end if ! computeBudgets
 
         if (monotonicityCheck) then
@@ -931,7 +944,7 @@ module li_tracer_advection_fct
            !$omp parallel
            !$omp do schedule(runtime) private(k)
 #endif
-           do iCell = 1,nCellsOwned
+           do iCell = 1,nCellsSolve
            do k = 1,nVertLevels
               ! workTend on the RHS is total vertical advection tendency
               flxIn(k,iCell) = (tracerCur(k, iCell)*hProv(k, iCell) &
@@ -949,8 +962,8 @@ module li_tracer_advection_fct
 
            ! Print out info for cells that are out of bounds
            ! flxIn holds new tracer values
-           do iCell = 1, nCellsOwned
-           do k = minLevelCell(iCell), maxLevelCell(iCell)
+           do iCell = 1, nCellsSolve
+           do k = 1, nVertLevels !minLevelCell(iCell), maxLevelCell(iCell)
               if (flxIn(k,iCell) < tracerMin(k, iCell)-eps) then
                  call mpas_log_write( &
                    'Vertical minimum out of bounds on tracer: $i $i $i $r $r ',&
@@ -1040,7 +1053,7 @@ module li_tracer_advection_fct
       case (2)
          coef3rdOrder = 0.0_RKIND
       case (3)
-         coef3rdOrder = config_coef_3rd_order
+         coef3rdOrder = config_advection_coef_3rd_order
       case (4)
          coef3rdOrder = 0.0_RKIND
       case default
