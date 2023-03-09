@@ -116,6 +116,10 @@
 		            description="Selection of the method for advecting tracers."
 		            possible_values="'fo', 'fct', 'none'"
 		/>
+		<nml_option name="config_horiz_tracer_adv_order" type="integer" default_value="3"
+					description="Order of polynomial used for tracer reconstruction at cell edges"
+					possible_values="2, 3 and 4"
+		/>
 		<nml_option name="config_advection_coef_3rd_order" type="real" default_value="0.25" units="unitless"
 					description="Reconstruction of 3rd-order reconstruction to blend with 4th-order reconstuction"
 					possible_values="any real between 0 and 1"
@@ -641,6 +645,10 @@
 		<nml_option name="config_print_velocity_cleanup_details" type="logical" default_value=".false." units="unitless"
 		            description="After velocity is calculated there are a few checks for appropriate values in certain geometric configurations.  Setting this option to .true. will cause detailed information about those adjustments to be printed."
 		            possible_values=".true. or .false."
+		/>
+		<nml_option name="config_check_tracer_monotonicity" type="logical" default_value=".false."
+                            description="Enables a change on tracer monotonicity at the end of the monotonic advection routine. Only used if config_flux_limiter is set to monotonic"
+                            possible_values=".true. or .false."
 		/>
 	</nml_record>
 
