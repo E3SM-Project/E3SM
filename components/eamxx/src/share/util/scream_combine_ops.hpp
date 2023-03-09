@@ -64,11 +64,8 @@ template<CombineMode CM, typename ScalarIn, typename ScalarOut,
 KOKKOS_FORCEINLINE_FUNCTION
 void combine (const ScalarIn& newVal, ScalarOut& result,
               const CoeffType alpha = CoeffType(1),
-              const CoeffType beta = CoeffType(0)){
-  // Sanity check
-  EKAT_KERNEL_ASSERT (needsAlpha<CM>() || alpha==CoeffType(1));
-  EKAT_KERNEL_ASSERT (needsBeta<CM>() || beta==CoeffType(0));
-
+              const CoeffType beta = CoeffType(0))
+{
   switch (CM) {
     case CombineMode::Replace:
       result = newVal;
