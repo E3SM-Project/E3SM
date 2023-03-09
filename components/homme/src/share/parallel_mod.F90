@@ -52,9 +52,6 @@ module parallel_mod
     integer :: root                       ! local root
     integer :: nprocs                     ! number of processes in group
     integer :: comm                       ! local communicator
-!    integer :: node_comm                  ! local communicator of all procs per node
-!    integer :: node_rank                  ! local rank in node_comm
-!    integer :: node_nprocs                ! local rank in node_comm
     logical :: masterproc                
     logical :: dynproc                    ! Designation of a dynamics processor - AaronDonahue
   end type
@@ -69,13 +66,6 @@ module parallel_mod
   ! ===================================================
   ! Module Interfaces
   ! ===================================================
-
-  interface assignment ( = )
-    module procedure copy_par
-  end interface
-
-
-
   public :: initmp
   public :: initmp_from_par
   public :: init_par
@@ -86,25 +76,6 @@ module parallel_mod
   public :: pmax_1d,pmin_1d
 
 contains
-
-! ================================================
-!   copy_par: copy constructor for parallel_t type
-!
-!
-!   Overload assignment operator for parallel_t
-! ================================================
-
-  subroutine copy_par(par2,par1)
-    type(parallel_t), intent(out) :: par2
-    type(parallel_t), intent(in)  :: par1
-
-    par2%rank       = par1%rank
-    par2%root       = par1%root
-    par2%nprocs     = par1%nprocs
-    par2%comm       = par1%comm
-    par2%masterproc = par1%masterproc
-
-  end subroutine copy_par
 
 ! ================================================
 !  initmp:
@@ -124,12 +95,14 @@ contains
     integer(kind=int_kind)                              :: ierr
     logical :: running   ! state of MPI at beginning of initmp call
 #ifdef CAM
-    integer :: color = 1
+    integer :: color
     integer :: iam_cam, npes_cam
     integer :: npes_homme
     integer :: max_stride
 #endif
-    integer :: npes_cam_stride = 1
+    integer :: npes_cam_stride
+    color=1
+    npes_cam_stride=1
     !================================================
     !     Basic MPI initialization
     ! ================================================
