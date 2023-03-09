@@ -730,20 +730,20 @@ module li_tracer_advection_fct
         !$omp end parallel
 #endif
 
-#ifdef _ADV_TIMERS
-        call mpas_timer_stop('vertical bounds')
-        call mpas_timer_start('vertical flux high')
-#endif
-
-        ! Compute the high order vertical fluxes based on order selected.
-
-        call tracer_advection_vert_flx(tracerCur, w, hProv, &
-                                           highOrderFlx)
-
-#ifdef _ADV_TIMERS
-        call mpas_timer_stop('vertical flux high')
-        call mpas_timer_start('vertical flux')
-#endif
+!#ifdef _ADV_TIMERS
+!        call mpas_timer_stop('vertical bounds')
+!        call mpas_timer_start('vertical flux high')
+!#endif
+!
+!        ! Compute the high order vertical fluxes based on order selected.
+!
+!        call tracer_advection_vert_flx(tracerCur, w, hProv, &
+!                                           highOrderFlx)
+!
+!#ifdef _ADV_TIMERS
+!        call mpas_timer_stop('vertical flux high')
+!        call mpas_timer_start('vertical flux')
+!#endif
 
         ! Compute low order upwind vertical flux (monotonic)
         ! Remove low order flux from the high order flux.
