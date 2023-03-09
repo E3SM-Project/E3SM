@@ -725,7 +725,7 @@ remove existing baselines first. Otherwise, please run 'git fetch $remote'.
 
         if self._limit_test_regex:
             result += f"-DINCLUDE_REGEX={self._limit_test_regex} "
-        result += f'-S {self._root_dir}/cmake/ctest_script.cmake -DCMAKE_COMMAND="{cmake_config}" '
+        result += f'-S {self._root_dir}/cmake/ctest_script.cmake -DCTEST_SITE={self._machine} -DCMAKE_COMMAND="{cmake_config}" '
 
         # Ctest can only competently manage test pinning across a single instance of ctest. For
         # multiple concurrent instances of ctest, we have to help it. It's OK to use the compile_res_count
