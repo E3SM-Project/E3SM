@@ -1071,6 +1071,9 @@ read_fields_from_file (const std::vector<std::string>& field_names_nc,
     return;
   }
 
+  m_atm_logger->info("    [EAMxx] reading fields for grid " + grid_name);
+  m_atm_logger->info("        filename: " + file_name);
+
   ekat::ParameterList ic_reader_params;
   ic_reader_params.set("Field Names",field_names_nc);
   ic_reader_params.set("Filename",file_name);
@@ -1114,6 +1117,8 @@ read_fields_from_file (const std::vector<std::string>& field_names,
   if (field_names.size()==0) {
     return;
   }
+  m_atm_logger->info("    [EAMxx] reading fields for grid " + grid_name);
+  m_atm_logger->info("        filename: " + file_name);
 
   // Loop over all grids, setup and run an AtmosphereInput object,
   // loading all fields in the RESTART group on that grid from
