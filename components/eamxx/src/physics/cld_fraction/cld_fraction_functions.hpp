@@ -44,6 +44,8 @@ struct CldFractionFunctions
   static void main(
     const Int nj, 
     const Int nk,
+    const Real ice_threshold,
+    const Real ice_4out_threshold,
     const view_2d<const Pack>& qi, 
     const view_2d<const Pack>& liq_cld_frac, 
     const view_2d<Pack>& ice_cld_frac, 

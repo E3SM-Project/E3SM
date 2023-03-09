@@ -13,6 +13,8 @@ void CldFractionFunctions<S,D>
 ::main(
   const Int nj,
   const Int nk,
+  const Real ice_threshold,
+  const Real ice_4out_threshold,
   const view_2d<const Spack>& qi,
   const view_2d<const Spack>& liq_cld_frac,
   const view_2d<Spack>& ice_cld_frac,
@@ -37,8 +39,8 @@ void CldFractionFunctions<S,D>
     const auto oice_cld_frac_4out = ekat::subview(ice_cld_frac_4out, i);
     const auto otot_cld_frac_4out = ekat::subview(tot_cld_frac_4out, i);
 
-    calc_icefrac(team,nk,1e-14,oqi,oice_cld_frac);
-    calc_icefrac(team,nk,1e-5, oqi,oice_cld_frac_4out);
+    calc_icefrac(team,nk,ice_threshold,oqi,oice_cld_frac);
+    calc_icefrac(team,nk,ice_4out_threshold, oqi,oice_cld_frac_4out);
 
     calc_totalfrac(team,nk,oliq_cld_frac,oice_cld_frac,otot_cld_frac);
     calc_totalfrac(team,nk,oliq_cld_frac,oice_cld_frac_4out,otot_cld_frac_4out);

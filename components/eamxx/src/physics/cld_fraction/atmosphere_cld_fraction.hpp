@@ -48,6 +48,10 @@ protected:
   Int m_num_cols; 
   Int m_num_levs;
 
+  // Parameters for cloud fraction cutoff
+  Real m_icecloud_threshold;
+  Real m_icecloud_for_output_threshold;
+
   std::shared_ptr<const AbstractGrid> m_grid;
 }; // class CldFraction
 
