@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-Casename: spa_standalone_output
+filename_prefix: spa_standalone_output
 Averaging Type: Instant
 Max Snapshots Per File: ${NUM_STEPS}
 Field Names:

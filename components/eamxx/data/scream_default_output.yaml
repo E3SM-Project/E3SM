@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-Casename: ${CASE}.scream.hi
+filename_prefix: ${CASE}.scream.hi
 # WARNING: ERS/ERP tets will override this with AVERAGE
 Averaging Type: Instant
 # One output every 31 days if output frequency is set to once per hour
