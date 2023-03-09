@@ -15,6 +15,7 @@ module li_core
    use li_velocity
    use li_setup
    use li_mask
+   use li_mesh
 
    implicit none
    private
@@ -207,6 +208,11 @@ module li_core
       call mpas_log_write("Finished processing recurring input streams at initial time.")
 
       ! ===
+      ! Initialize land ice mesh public paramters
+      call li_meshCreate(domain)
+      ! ===
+
+      ! ===
       ! Initialize some time stuff on each block
       ! ===
       ! Set startTimeStamp based on the start time of the simulation clock
@@ -253,6 +259,11 @@ module li_core
 
          block => block % next
       end do
+
+      ! ===
+      ! This is where li_updateMeshFIelds would be called if we wanted to be consistent with mpas-ocean.
+      ! We don't currently think this needs to be called, so leaving it out for now.
+      ! ===
 
       ! ===
       ! === Initialize modules ===
@@ -309,8 +320,6 @@ module li_core
       ! which occurs in landice_init_block and 2. have li_velocity_init.
       ! ===
       call li_velocity_external_write_albany_mesh(domain)
-
-      ! check for errors and exit
 
       call mpas_dmpar_max_int(domain % dminfo, err, globalErr)  ! Find out if any blocks got an error
       if (globalErr > 0) then
@@ -647,6 +656,9 @@ module li_core
 
       call mpas_decomp_destroy_decomp_list(domain % decompositions)
 
+      err = ior(err, err_tmp)
+
+      call li_meshDestroy(err_tmp)
       err = ior(err, err_tmp)
 
       ! === error check and exit
