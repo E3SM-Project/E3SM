@@ -30,8 +30,6 @@ Field Names:
   - nccn
   - ni_activated
   - nc_nuceat_tend
-  - eff_radius_qc
-  - eff_radius_qi
  
 output_control:
   Frequency: ${NUM_STEPS}
