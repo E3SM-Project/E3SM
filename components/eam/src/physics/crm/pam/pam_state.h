@@ -11,20 +11,24 @@ inline void pam_state_set_grid( pam::PamCoupler &coupler ) {
   auto nens       = coupler.get_option<int>("ncrms");
   auto crm_nz     = coupler.get_option<int>("crm_nz");
   auto gcm_nlev   = coupler.get_option<int>("gcm_nlev");
-  auto crm_dx     = coupler.get_option<double>("crm_dx");
-  auto crm_dy     = coupler.get_option<double>("crm_dy");
+  auto crm_nx     = coupler.get_option<int>("crm_nx");
+  auto crm_ny     = coupler.get_option<int>("crm_ny");
+  auto crm_dx     = coupler.get_option<real>("crm_dx");
+  auto crm_dy     = coupler.get_option<real>("crm_dy");
   //------------------------------------------------------------------------------------------------
   // Set the vertical grid in the coupler (need to flip the vertical dimension of input data)
   auto input_zint = dm_host.get<real const,2>("input_zint").createDeviceCopy();
   auto input_phis = dm_host.get<real const,1>("input_phis").createDeviceCopy();
   real2d zint_tmp("zint_tmp",crm_nz+1,nens);
   // auto grav = coupler.get_option<double>("grav");
-  real grav = 9.80616; // note - we can't use the coupler grav because it hasn't been set yet
+  real grav = 9.80616; // note - we can't use the coupler grav because it is set by micro init
   parallel_for( Bounds<2>(crm_nz+1,nens) , YAKL_LAMBDA (int k_crm, int iens) {
     int k_gcm = (gcm_nlev+1)-1-k_crm;
     zint_tmp(k_crm,iens) = input_zint(k_gcm,iens) + input_phis(iens)/grav;
   });
-  coupler.set_grid( crm_dx , crm_dy , zint_tmp );
+  real xlen = crm_dx * crm_nx;
+  real ylen = crm_dy * crm_ny;
+  coupler.set_grid( xlen, ylen, zint_tmp );
   //------------------------------------------------------------------------------------------------
 }
 
@@ -121,16 +125,14 @@ inline void pam_state_update_dry_density( pam::PamCoupler &coupler ) {
   auto ny         = coupler.get_option<int>("crm_ny");
   auto crm_rho_d  = dm_device.get<real,4>("density_dry");
   //------------------------------------------------------------------------------------------------
-  #ifdef MMF_PAM_DYCOR_AWFL
+  #if defined(MMF_PAM_DYCOR_AWFL)
     // When forcing dry density we need to restore the previous CRM field, similar to other state variables
     auto state_rho_dry       = dm_host.get<real const,4>("state_rho_dry").createDeviceCopy();
     parallel_for("Copy in CRM state dry density", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
       crm_rho_d(k,j,i,iens) = state_rho_dry(k,j,i,iens);
     });
-    // std::cout<<"WHDEBUG - ERROR - still using AWFL?!"<<std::endl;
-  #endif
-  #ifdef MMF_PAM_DYCOR_SPAM
-    // make sure CRM density matches GCM so that dryd ensity forcing is zero
+  #elif defined(MMF_PAM_DYCOR_SPAM)
+    // make sure CRM density matches GCM so that dry density forcing is zero
     auto gcm_rho_d = dm_device.get<real,2>("gcm_density_dry");
     parallel_for("Broadcast GCM dry density", SimpleBounds<4>(nz,ny,nx,nens), YAKL_LAMBDA (int k, int j, int i, int iens) {
       crm_rho_d(k,j,i,iens) = gcm_rho_d(k,iens);

@@ -18,7 +18,7 @@ extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
   using yakl::intrinsics::abs;
   using yakl::intrinsics::maxval;
-  using yakl::atomicAdd; // temporary - only for debugging
+  // using yakl::atomicAdd; // temporary - only for debugging
   auto &coupler = pam_interface::get_coupler();
   //------------------------------------------------------------------------------------------------
   // retreive coupler options
@@ -27,8 +27,8 @@ extern "C" void pam_driver() {
   auto crm_nz        = coupler.get_option<int>("crm_nz");
   auto crm_nx        = coupler.get_option<int>("crm_nx");
   auto crm_ny        = coupler.get_option<int>("crm_ny");
-  auto gcm_dt        = coupler.get_option<double>("gcm_dt");
-  auto crm_dt        = coupler.get_option<double>("crm_dt");
+  auto gcm_dt        = coupler.get_option<real>("gcm_dt");
+  auto crm_dt        = coupler.get_option<real>("crm_dt");
   auto is_first_step = coupler.get_option<bool>("is_first_step");
   //------------------------------------------------------------------------------------------------
   // set various coupler options
@@ -39,11 +39,12 @@ extern "C" void pam_driver() {
   //------------------------------------------------------------------------------------------------
   // Allocate the coupler state and retrieve host/device data managers
   coupler.allocate_coupler_state( crm_nz , crm_ny , crm_nx , nens );
-  auto &dm_device = coupler.get_data_manager_device_readwrite();
-  auto &dm_host   = coupler.get_data_manager_host_readwrite();
-  //------------------------------------------------------------------------------------------------
   // set up the grid - this needs to happen before initializing coupler objects
   pam_state_set_grid(coupler);
+  //------------------------------------------------------------------------------------------------
+  // get seperate data manager objects for host and device
+  auto &dm_device = coupler.get_data_manager_device_readwrite();
+  auto &dm_host   = coupler.get_data_manager_host_readwrite();
   //------------------------------------------------------------------------------------------------
   // Create objects for dycor, microphysics, and turbulence and initialize them
   Microphysics micro;
@@ -64,20 +65,18 @@ extern "C" void pam_driver() {
   // Copy input CRM state (saved by the GCM) to coupler
   pam_state_copy_input_to_coupler(coupler);
 
-  // Copy input rad tendencies to coupler (also sets up vertical grid)
-  pam_radiation_copy_input_to_coupler(coupler);
-
-  // Define hydrostasis (only for PAM-A/AWFL)
-  #ifdef MMF_PAM_DYCOR_AWFL
+  // now that initial state is set, more dycor initialization
+  #if defined(MMF_PAM_DYCOR_AWFL)
     coupler.update_hydrostasis();
-  #endif
-
-  #ifdef MMF_PAM_DYCOR_SPAM
+  #elif defined(MMF_PAM_DYCOR_SPAM)
     dycore.pre_time_loop(coupler);
   #endif
 
   // Compute CRM forcing tendencies
   modules::compute_gcm_forcing_tendencies(coupler);
+
+  // Copy input rad tendencies to coupler
+  pam_radiation_copy_input_to_coupler(coupler);
 
   // initialize rad output variables
   pam_radiation_init(coupler);
@@ -95,6 +94,7 @@ extern "C" void pam_driver() {
     auto gcolp = dm_host.get<int const,1>("gcolp").createDeviceCopy();
     modules::perturb_temperature( coupler , gcolp );
   }
+  
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
   //------------------------------------------------------------------------------------------------
@@ -103,6 +103,8 @@ extern "C" void pam_driver() {
   while (etime_crm < gcm_dt) {
     if (crm_dt == 0.) { crm_dt = dycore.compute_time_step(coupler); }
     if (etime_crm + crm_dt > gcm_dt) { crm_dt = gcm_dt - etime_crm; }
+
+    std::cout << "WHDEBUG - pam_driver - etime_crm: "<<etime_crm<< std::endl;
 
     // run a PAM time step
     coupler.run_module( "apply_gcm_forcing_tendencies" , modules::apply_gcm_forcing_tendencies );
@@ -117,6 +119,7 @@ extern "C" void pam_driver() {
     pam_statistics_aggregate_tendency(coupler,"sponge");
 
     // coupler.run_module( "compute_surface_friction"     , modules::compute_surface_friction );
+
     pam_statistics_save_state(coupler);
     coupler.run_module( "sgs"                          , [&] (pam::PamCoupler &coupler) {sgs   .timeStep(coupler);} );
     pam_statistics_aggregate_tendency(coupler,"sgs");
@@ -147,7 +150,7 @@ extern "C" void pam_driver() {
 
   // convert aggregated radiation quantities to means and copy to host
   pam_radiation_compute_means(coupler);
-  pam_radiation_copy_output_to_gcm(coupler);
+  pam_radiation_copy_to_host(coupler);
 
   // convert aggregated diagnostic quantities to means and copy to host
   pam_statistics_compute_means(coupler);

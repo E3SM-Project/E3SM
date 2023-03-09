@@ -185,7 +185,7 @@ inline void pam_radiation_compute_means( pam::PamCoupler &coupler ) {
 }
 
 // Copy the CRM radiation state into the PAM coupler
-inline void pam_radiation_copy_output_to_gcm( pam::PamCoupler &coupler ) {
+inline void pam_radiation_copy_to_host( pam::PamCoupler &coupler ) {
   using yakl::c::parallel_for;
   using yakl::c::SimpleBounds;
   auto &dm_device = coupler.get_data_manager_device_readwrite();
