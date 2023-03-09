@@ -61,7 +61,7 @@ module li_mesh
       maxEdges, &! largest number of edges any polygon has
       maxEdges2, &! 2x the largest number of edges any polygon has
       vertexDegree, &! number of cells or edges touching each vertex
-      nVertLevels, &! number of vertical levels
+      nVertLevels ! number of vertical levels
 !      nVertLevelsP1 ! number of vertical interfaces (levels plus one)
 
    integer, public, dimension(:), allocatable :: &
@@ -71,7 +71,7 @@ module li_mesh
 
    integer, public, dimension(:), pointer :: &
       nEdgesOnEdge, &! number of edges connected to each edge point
-      nEdgesOnCell, &! number of edges associated with each cell center
+      nEdgesOnCell, & ! number of edges associated with each cell center
 !      minLevelCell, &! max ocean level at bottom of cell
 !      minLevelEdgeTop, &! max ocean level at top    of edge column
 !      minLevelEdgeBot, &! max ocean level at bottom of edge column
@@ -127,7 +127,7 @@ module li_mesh
 !      meshScalingDel2, &! mesh scaling factor for use in del2 diffusion
 !      meshScalingDel4, &! mesh scaling factor for use in del4 diffusion
       meshDensity, &! density of mesh
-      angleEdge, &! angle the edge normal makes with local east
+      angleEdge ! angle the edge normal makes with local east
 !      distanceToCoast ! distance to nearest coast cell 
 
    real(kind=RKIND), public, dimension(:), allocatable :: &
@@ -157,7 +157,7 @@ module li_mesh
 
    ! Derived mesh values needed
    real(kind=RKIND), public, dimension(:, :), allocatable :: &
-!      edgeAreaFractionOfCell
+      edgeAreaFractionOfCell
 
    !}}}
 
@@ -227,8 +227,8 @@ contains
          maxEdgesTmp, &!
          maxEdges2Tmp, &!
          vertexDegreeTmp, &!
-         nVertLevelsTmp, &!
-         nVertLevelsP1Tmp !
+         nVertLevelsTmp !
+         !nVertLevelsP1Tmp !
 
       ! temporary pointers for converting index arrays
       integer, dimension(:), pointer :: &
@@ -297,8 +297,8 @@ contains
                                    vertexDegreeTmp)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', &
                                    nVertLevelsTmp)
-      call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', &
-                                   nVertLevelsP1Tmp)
+!      call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', &
+!                                   nVertLevelsP1Tmp)
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', &
                                    nCellsArrayTmp)
       call mpas_pool_get_dimension(meshPool, 'nEdgesArray', &
@@ -313,12 +313,12 @@ contains
       maxEdges2 = maxEdges2Tmp
       vertexDegree = vertexDegreeTmp
       nVertLevels = nVertLevelsTmp
-      nVertLevelsP1 = nVertLevelsP1Tmp
+!      nVertLevelsP1 = nVertLevelsP1Tmp
 
       ! convert previous index limits into new halo definitions
-      nCellsArray = nCellsTmp
-      nEdgesArray = nEdgesTmp
-      nVerticesArray = nVerticesTmp
+      nCells = nCellsTmp
+      nEdges = nEdgesTmp
+      nVertices = nVerticesTmp
 
       n = size(nCellsArrayTmp)
       allocate (nCellsHalo(n - 1))
@@ -346,26 +346,26 @@ contains
                                nEdgesOnEdge)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', &
                                nEdgesOnCell)
-      call mpas_pool_get_array(meshPool, 'minLevelCell', &
-                               minLevelCell)
-      call mpas_pool_get_array(meshPool, 'minLevelEdgeTop', &
-                               minLevelEdgeTop)
-      call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', &
-                               minLevelEdgeBot)
-      call mpas_pool_get_array(meshPool, 'minLevelVertexTop', &
-                               minLevelVertexTop)
-      call mpas_pool_get_array(meshPool, 'minLevelVertexBot', &
-                               minLevelVertexBot)
-      call mpas_pool_get_array(meshPool, 'maxLevelCell', &
-                               maxLevelCell)
-      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', &
-                               maxLevelEdgeTop)
-      call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', &
-                            maxLevelEdgeBot)
-      call mpas_pool_get_array(meshPool, 'maxLevelVertexTop', &
-                               maxLevelVertexTop)
-      call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', &
-                               maxLevelVertexBot)
+!      call mpas_pool_get_array(meshPool, 'minLevelCell', &
+!                               minLevelCell)
+!      call mpas_pool_get_array(meshPool, 'minLevelEdgeTop', &
+!                               minLevelEdgeTop)
+!      call mpas_pool_get_array(meshPool, 'minLevelEdgeBot', &
+!                               minLevelEdgeBot)
+!      call mpas_pool_get_array(meshPool, 'minLevelVertexTop', &
+!                               minLevelVertexTop)
+!      call mpas_pool_get_array(meshPool, 'minLevelVertexBot', &
+!                               minLevelVertexBot)
+!      call mpas_pool_get_array(meshPool, 'maxLevelCell', &
+!                               maxLevelCell)
+!      call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', &
+!                               maxLevelEdgeTop)
+!      call mpas_pool_get_array(meshPool, 'maxLevelEdgeBot', &
+!                            maxLevelEdgeBot)
+!      call mpas_pool_get_array(meshPool, 'maxLevelVertexTop', &
+!                               maxLevelVertexTop)
+!      call mpas_pool_get_array(meshPool, 'maxLevelVertexBot', &
+!                               maxLevelVertexBot)
       call mpas_pool_get_array(meshPool, 'indexToCellID', &
                                indexToCellID)
       call mpas_pool_get_array(meshPool, 'indexToEdgeID', &
@@ -422,12 +422,12 @@ contains
                                yVertex)
       call mpas_pool_get_array(meshPool, 'zVertex', &
                                zVertex)
-      call mpas_pool_get_array(meshPool, 'fEdge', &
-                               fEdge)
-      call mpas_pool_get_array(meshPool, 'fVertex', &
-                               fVertex)
-      call mpas_pool_get_array(meshPool, 'fCell', &
-                               fCell)
+!      call mpas_pool_get_array(meshPool, 'fEdge', &
+!                               fEdge)
+!      call mpas_pool_get_array(meshPool, 'fVertex', &
+!                               fVertex)
+!      call mpas_pool_get_array(meshPool, 'fCell', &
+!                               fCell)
       call mpas_pool_get_array(meshPool, 'dcEdge', &
                                dcEdge)
       call mpas_pool_get_array(meshPool, 'dvEdge', &
@@ -438,24 +438,24 @@ contains
                                areaTriangle)
       call mpas_pool_get_array(meshPool, 'weightsOnEdge', &
                                weightsOnEdge)
-      call mpas_pool_get_array(meshPool, 'bottomDepth', &
-                               bottomDepth)
-      call mpas_pool_get_array(meshPool, 'refBottomDepth', &
-                               refBottomDepth)
-      call mpas_pool_get_array(meshPool, 'refBottomDepthTopOfCell', &
-                               refBottomDepthTopOfCell)
-      call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', &
-                               vertCoordMovementWeights)
-      call mpas_pool_get_array(meshPool, 'meshScalingDel2', &
-                               meshScalingDel2)
-      call mpas_pool_get_array(meshPool, 'meshScalingDel4', &
-                               meshScalingDel4)
+!      call mpas_pool_get_array(meshPool, 'bottomDepth', &
+!                               bottomDepth)
+!      call mpas_pool_get_array(meshPool, 'refBottomDepth', &
+!                               refBottomDepth)
+!      call mpas_pool_get_array(meshPool, 'refBottomDepthTopOfCell', &
+!                               refBottomDepthTopOfCell)
+!      call mpas_pool_get_array(meshPool, 'vertCoordMovementWeights', &
+!                               vertCoordMovementWeights)
+!      call mpas_pool_get_array(meshPool, 'meshScalingDel2', &
+!                               meshScalingDel2)
+!      call mpas_pool_get_array(meshPool, 'meshScalingDel4', &
+!                               meshScalingDel4)
       call mpas_pool_get_array(meshPool, 'meshDensity', &
                                meshDensity)
       call mpas_pool_get_array(meshPool, 'angleEdge', &
                                angleEdge)
-      call mpas_pool_get_array(meshPool, 'distanceToCoast', &
-                               distanceToCoast)
+!      call mpas_pool_get_array(meshPool, 'distanceToCoast', &
+!                               distanceToCoast)
 
       call mpas_pool_get_array(meshPool, 'weightsOnEdge', &
                                weightsOnEdge)
@@ -493,15 +493,15 @@ contains
                                boundaryCellTmp)
 
       allocate ( &
-            edgeMask(nVertLevels, nEdgesArray+1), &
-            cellMask(nVertLevels, nCellsArray+1), &
-            vertexMask(nVertLevels, nVerticesArray+1), &
-            boundaryEdge(nVertLevels, nEdgesArray+1), &
-            boundaryCell(nVertLevels, nCellsArray+1), &
-            boundaryVertex(nVertLevels, nVerticesArray+1), &
-            edgeSignOnCell(maxEdges, nCellsArray+1), &
-            edgeSignOnVertex(maxEdges, nVerticesArray+1), &
-            invAreaCell(nCellsArray+1))
+            edgeMask(nVertLevels, nEdges+1), &
+            cellMask(nVertLevels, nCells+1), &
+            vertexMask(nVertLevels, nVertices+1), &
+            boundaryEdge(nVertLevels, nEdges+1), &
+            boundaryCell(nVertLevels, nCells+1), &
+            boundaryVertex(nVertLevels, nVertices+1), &
+            edgeSignOnCell(maxEdges, nCells+1), &
+            edgeSignOnVertex(maxEdges, nVertices+1), &
+            invAreaCell(nCells+1))
 
       !-----------------------------------------------------------------
       ! Now that all pointers are set and mesh variables allocated
@@ -510,63 +510,63 @@ contains
 
       ! Start by initializing vertical mesh, min/max cells and
       ! sign/index fields
-      call li_meshVertCoordInit(domain)
-      call li_meshMinMaxLevel()
-      call li_meshSignIndexFields()
+      !call meshVertCoordInit(domain)
+      call meshMinMaxLevel()
+      call meshSignIndexFields()
 
       ! Compute max mesh density and mesh scaling
-      if (config_maxMeshDensity < 0.0_RKIND) then
-         maxDensityLocal = maxval(meshDensity)
-         call mpas_dmpar_max_real(domain%dminfo, maxDensityLocal, &
-                                                 maxDensityGlobal)
-         config_maxMeshDensity = maxDensityGlobal 
-      endif
-      call li_meshScaling()
+!      if (config_maxMeshDensity < 0.0_RKIND) then
+!         maxDensityLocal = maxval(meshDensity)
+!         call mpas_dmpar_max_real(domain%dminfo, maxDensityLocal, &
+!                                                 maxDensityGlobal)
+!         config_maxMeshDensity = maxDensityGlobal 
+!      endif
+!      call meshScaling()
    
       ! Routine calls above initialized the real mask arrays
       ! so convert the meshPool integer pointers here
-      do n = 1, nCellsArray+1
+      do n = 1, nCells+1
       do k = 1, nVertLevels
          cellMaskTmp(k,n)     = nint(cellMask(k,n))
          boundaryCellTmp(k,n) = nint(boundaryCell(k,n))
       end do
       end do
 
-      do n = 1, nCellsArray+1
+      do n = 1, nCells+1
       do k = 1, maxEdges
          edgeSignOnCellTmp(k, n) = nint(edgeSignOnCell(k,n))
       end do
       end do
 
-      do n = 1, nEdgesArray+1
+      do n = 1, nEdges+1
       do k = 1, nVertLevels
          edgeMaskTmp(k, n) = nint(edgeMask(k,n))
          boundaryEdgeTmp(k, n) = nint(boundaryEdge(k,n))
       end do
       end do
 
-      do n = 1, nVerticesArray+1
+      do n = 1, nVertices+1
       do k = 1, nVertLevels
          vertexMaskTmp(k, n) = nint(vertexMask(k,n))
          boundaryVertexTmp(k, n) = nint(boundaryVertex(k,n))
       end do
       end do
 
-      do n = 1, nVerticesArray+1
+      do n = 1, nVertices+1
       do k = 1, vertexDegree
          edgeSignOnVertexTmp(k,n) = nint(edgeSignOnVertex(k,n))
       end do
       end do
 
       ! Compute area weighting for some interpolation
-      call li_meshAreaWeights()
-      areaCell(nCellsArray+1) = -1.0e34_RKIND
+      call meshAreaWeights()
+      areaCell(nCells+1) = -1.0e34_RKIND
 
       ! Compute the inverse of areaCell
-      do n = 1, nCellsArray
+      do n = 1, nCells
          invAreaCell(n) = 1.0_RKIND / areaCell(n)
       end do
-      invAreaCell(nCellsArray+1) = 0.0_RKIND
+      invAreaCell(nCells+1) = 0.0_RKIND
 
       !-----------------------------------------------------------------
       ! Copy mesh data to accelerator if needed.
@@ -575,9 +575,9 @@ contains
          !$acc enter data copyin( &
          !$acc                   onSphere,                 &
          !$acc                   sphereRadius,             &
-         !$acc                   nCellsArray,                &
-         !$acc                   nEdgesArray,                &
-         !$acc                   nVerticesArray,             &
+         !$acc                   nCells,                &
+         !$acc                   nEdges,                &
+         !$acc                   nVertices,             &
          !$acc                   nCellsSolve,              &
          !$acc                   nEdgesSolve,              &
          !$acc                   nVerticesSolve,           &
@@ -705,9 +705,9 @@ contains
 
       !$acc exit data delete(onSphere,          &
       !$acc                  sphereRadius,      &
-      !$acc                  nCellsArray,         &
-      !$acc                  nEdgesArray,         &
-      !$acc                  nVerticesArray,      &
+      !$acc                  nCells,         &
+      !$acc                  nEdges,         &
+      !$acc                  nVertices,      &
       !$acc                  nCellsSolve,       &
       !$acc                  nEdgesSolve,       &
       !$acc                  nVerticesSolve,    &
@@ -794,9 +794,9 @@ contains
       ! Reset all scalars to zero
       onSphere  = .false.
       sphereRadius = 0.0_RKIND
-      nCellsArray = 0
-      nEdgesArray = 0
-      nVerticesArray = 0
+      nCells = 0
+      nEdges = 0
+      nVertices = 0
       nCellsSolve = 0
       nEdgesSolve = 0
       nVerticesSolve = 0
@@ -804,7 +804,7 @@ contains
       maxEdges2 = 0
       vertexDegree = 0
       nVertLevels = 0
-      nVertLevelsP1 = 0
+!      nVertLevelsP1 = 0
 
       ! Now nullify all pointers to invalidate fields
       ! If this becomes the only mesh structure and mesh pool is eliminated,
@@ -812,16 +812,16 @@ contains
 
       nullify (nEdgesOnEdge, &
                nEdgesOnCell, &
-               minLevelCell, &
-               minLevelEdgeTop, &
-               minLevelEdgeBot, &
-               minLevelVertexTop, &
-               minLevelVertexBot, &
-               maxLevelCell, &
-               maxLevelEdgeTop, &
-               maxLevelEdgeBot, &
-               maxLevelVertexTop, &
-               maxLevelVertexBot, &
+               !minLevelCell, &
+               !minLevelEdgeTop, &
+               !minLevelEdgeBot, &
+               !minLevelVertexTop, &
+               !minLevelVertexBot, &
+               !maxLevelCell, &
+               !maxLevelEdgeTop, &
+               !maxLevelEdgeBot, &
+               !maxLevelVertexTop, &
+               !maxLevelVertexBot, &
                indexToCellID, &
                indexToEdgeID, &
                indexToVertexID, &
@@ -849,22 +849,22 @@ contains
                xVertex, &
                yVertex, &
                zVertex, &
-               fEdge, &
-               fVertex, &
-               fCell, &
+               !fEdge, &
+               !fVertex, &
+               !fCell, &
                dcEdge, &
                dvEdge, &
                areaCell, &
                areaTriangle, &
-               bottomDepth, &
-               refBottomDepth, &
-               refBottomDepthTopOfCell, &
-               vertCoordMovementWeights, &
-               meshScalingDel2, &
-               meshScalingDel4, &
+               !bottomDepth, &
+               !refBottomDepth, &
+               !refBottomDepthTopOfCell, &
+               !vertCoordMovementWeights, &
+               !meshScalingDel2, &
+               !meshScalingDel4, &
                meshDensity, &
                angleEdge, &
-               distanceToCoast, &
+               !distanceToCoast, &
                weightsOnEdge, &
                kiteAreasOnVertex, &
                edgeTangentVectors, &
@@ -1092,7 +1092,7 @@ contains
       call mpas_pool_get_array(meshPool, 'boundaryCell', &
                                boundaryCellTmp)
 
-      do n = 1, nCellsArray+1
+      do n = 1, nCells+1
       do k = 1, nVertLevels
          cellMask(k, n) = real(cellMaskTmp(k, n), RKIND)
          boundaryCell(k, n) = real(boundaryCellTmp(k, n), RKIND)
@@ -1101,20 +1101,20 @@ contains
 
       ! Allocatable array was updated in ocn_init_routines_setup_sign_and_index_fields.  Now the
       ! pointer needs to be udpated
-      do n = 1, nCellsArray+1
+      do n = 1, nCells+1
       do k = 1, maxEdges
          edgeSignOnCellTmp(k, n) = int(edgeSignOnCell(k, n))
       end do
       end do
 
-      do n = 1, nEdgesArray+1
+      do n = 1, nEdges+1
       do k = 1, nVertLevels
          edgeMask(k, n) = real(edgeMaskTmp(k, n), RKIND)
          boundaryEdge(k, n) = real(boundaryEdgeTmp(k, n), RKIND)
       end do
       end do
 
-      do n = 1, nVerticesArray+1
+      do n = 1, nVertices+1
       do k = 1, nVertLevels
          vertexMask(k, n) = real(vertexMaskTmp(k, n), RKIND)
          boundaryVertex(k, n) = real(boundaryVertexTmp(k, n), RKIND)
@@ -1123,7 +1123,7 @@ contains
 
       ! Allocatable array was updated in ocn_init_routines_setup_sign_and_index_fields.  Now the
       ! pointer needs to be udpated
-      do n = 1, nVerticesArray+1
+      do n = 1, nVertices+1
       do k = 1, vertexDegree
          edgeSignOnVertexTmp(k, n) = &
             int(edgeSignOnVertex(k, n))
@@ -1136,9 +1136,9 @@ contains
 
       !$acc update device(onSphere,                 &
       !$acc               sphereRadius,             &
-      !$acc               nCellsArray,                &
-      !$acc               nEdgesArray,                &
-      !$acc               nVerticesArray,             &
+      !$acc               nCells,                &
+      !$acc               nEdges,                &
+      !$acc               nVertices,             &
       !$acc               nCellsSolve,              &
       !$acc               nEdgesSolve,              &
       !$acc               nVerticesSolve,           &
@@ -1255,117 +1255,118 @@ contains
       ! minLevelEdgeTop is the minimum (shallowest) of surrounding cells
       ! if the water column is dry, set minLevelCell outside of bounds
       ! to prevent dry cells from determining minimum
-      do iCell = 1, nCellsArray+1
-         if (maxLevelCell(iCell) == 0) minLevelCell(iCell)=nVertLevels+1 
-      end do
-      do iEdge = 1, nEdgesArray
-         minLevelEdgeTop(iEdge) = &
-            min( minLevelCell(cellsOnEdge(1,iEdge)), &
-                 minLevelCell(cellsOnEdge(2,iEdge)) )
-      end do
-      minLevelEdgeTop(nEdgesArray+1) = 0
+      !do iCell = 1, nCells+1
+      !   if (maxLevelCell(iCell) == 0) minLevelCell(iCell)=nVertLevels+1 
+      !end do
+      !do iEdge = 1, nEdges
+      !   minLevelEdgeTop(iEdge) = &
+      !      min( minLevelCell(cellsOnEdge(1,iEdge)), &
+      !           minLevelCell(cellsOnEdge(2,iEdge)) )
+      !end do
+      !minLevelEdgeTop(nEdges+1) = 0
 
-      ! minLevelEdgeBot is the maximum (deepest) of surrounding cells
-      ! prevent dry cells from determining maximum
-      do iCell = 1, nCellsArray+1
-         if (maxLevelCell(iCell) == 0) minLevelCell(iCell) = 1 
-      end do
-      do iEdge = 1, nEdgesArray
-         minLevelEdgeBot(iEdge) = &
-            max( minLevelCell(cellsOnEdge(1,iEdge)), &
-                 minLevelCell(cellsOnEdge(2,iEdge)) )
-      end do
-      minLevelEdgeBot(nEdgesArray+1) = 0
+      !! minLevelEdgeBot is the maximum (deepest) of surrounding cells
+      !! prevent dry cells from determining maximum
+      !do iCell = 1, nCells+1
+      !   if (maxLevelCell(iCell) == 0) minLevelCell(iCell) = 1 
+      !end do
+      !do iEdge = 1, nEdges
+      !   minLevelEdgeBot(iEdge) = &
+      !      max( minLevelCell(cellsOnEdge(1,iEdge)), &
+      !           minLevelCell(cellsOnEdge(2,iEdge)) )
+      !end do
+      !minLevelEdgeBot(nEdges+1) = 0
 
-      ! minLevelVertexBot is the maximum (deepest) of surrounding cells
-      do iVertex = 1,nVerticesArray
-         minLevelVertexBot(iVertex) = &
-              minLevelCell(cellsOnVertex(1,iVertex))
-         do i = 2, vertexDegree
-            minLevelVertexBot(iVertex) = &
-               max( minLevelVertexBot(iVertex), &
-                    minLevelCell(cellsOnVertex(i,iVertex)))
-         end do
-      end do
-      minLevelVertexBot(nVerticesArray+1) = 0
+      !! minLevelVertexBot is the maximum (deepest) of surrounding cells
+      !do iVertex = 1,nVertices
+      !   minLevelVertexBot(iVertex) = &
+      !        minLevelCell(cellsOnVertex(1,iVertex))
+      !   do i = 2, vertexDegree
+      !      minLevelVertexBot(iVertex) = &
+      !         max( minLevelVertexBot(iVertex), &
+      !              minLevelCell(cellsOnVertex(i,iVertex)))
+      !   end do
+      !end do
+      !minLevelVertexBot(nVertices+1) = 0
 
-      ! minLevelVertexTop is the minimum (shallowest) of surrounding cells
-      ! if the water column is dry, set minLevelCell outside of bounds
-      ! to prevent dry cells from determining minimum
-      do iCell = 1, nCellsArray+1
-         if (maxLevelCell(iCell) == 0) minLevelCell(iCell) = nVertLevels+1 
-      end do
-      do iVertex = 1,nVerticesArray
-         minLevelVertexTop(iVertex) = minLevelCell(cellsOnVertex(1,iVertex))
-         do i = 2, vertexDegree
-            minLevelVertexTop(iVertex) = &
-               min( minLevelVertexTop(iVertex), &
-                    minLevelCell(cellsOnVertex(i,iVertex)))
-         end do
-      end do
-      minLevelVertexTop(nVerticesArray+1) = 0
+      !! minLevelVertexTop is the minimum (shallowest) of surrounding cells
+      !! if the water column is dry, set minLevelCell outside of bounds
+      !! to prevent dry cells from determining minimum
+      !do iCell = 1, nCells+1
+      !   if (maxLevelCell(iCell) == 0) minLevelCell(iCell) = nVertLevels+1 
+      !end do
+      !do iVertex = 1,nVertices
+      !   minLevelVertexTop(iVertex) = minLevelCell(cellsOnVertex(1,iVertex))
+      !   do i = 2, vertexDegree
+      !      minLevelVertexTop(iVertex) = &
+      !         min( minLevelVertexTop(iVertex), &
+      !              minLevelCell(cellsOnVertex(i,iVertex)))
+      !   end do
+      !end do
+      !minLevelVertexTop(nVertices+1) = 0
 
-      ! if the water column is dry, set minLevelCell = 1
-      do iCell = 1, nCellsArray+1
-         if (maxLevelCell(iCell) == 0) minLevelCell(iCell) = 1
-      end do
-      
-      ! maxLevelEdgeTop is the minimum (shallowest) of surrounding cells
-      do iEdge = 1, nEdgesArray
-         maxLevelEdgeTop(iEdge) = &
-            min( maxLevelCell(cellsOnEdge(1,iEdge)), &
-                 maxLevelCell(cellsOnEdge(2,iEdge)) )
-      end do
-      maxLevelEdgeTop(nEdgesArray+1) = 0
+      !! if the water column is dry, set minLevelCell = 1
+      !do iCell = 1, nCells+1
+      !   if (maxLevelCell(iCell) == 0) minLevelCell(iCell) = 1
+      !end do
+      !
+      !! maxLevelEdgeTop is the minimum (shallowest) of surrounding cells
+      !do iEdge = 1, nEdges
+      !   maxLevelEdgeTop(iEdge) = &
+      !      min( maxLevelCell(cellsOnEdge(1,iEdge)), &
+      !           maxLevelCell(cellsOnEdge(2,iEdge)) )
+      !end do
+      !maxLevelEdgeTop(nEdges+1) = 0
 
-      ! maxLevelEdgeBot is the maximum (deepest) of surrounding cells
-      do iEdge = 1, nEdgesArray
-         maxLevelEdgeBot(iEdge) = &
-            max( maxLevelCell(cellsOnEdge(1,iEdge)), &
-                 maxLevelCell(cellsOnEdge(2,iEdge)) )
-      end do
-      maxLevelEdgeBot(nEdgesArray+1) = 0
+      !! maxLevelEdgeBot is the maximum (deepest) of surrounding cells
+      !do iEdge = 1, nEdges
+      !   maxLevelEdgeBot(iEdge) = &
+      !      max( maxLevelCell(cellsOnEdge(1,iEdge)), &
+      !           maxLevelCell(cellsOnEdge(2,iEdge)) )
+      !end do
+      !maxLevelEdgeBot(nEdges+1) = 0
 
-      ! maxLevelVertexBot is the maximum (deepest) of surrounding cells
-      do iVertex = 1,nVerticesArray
-         maxLevelVertexBot(iVertex) = maxLevelCell(cellsOnVertex(1,iVertex))
-         do i = 2, vertexDegree
-            maxLevelVertexBot(iVertex) = &
-               max( maxLevelVertexBot(iVertex), &
-                    maxLevelCell(cellsOnVertex(i,iVertex)))
-         end do
-      end do
-      maxLevelVertexBot(nVerticesArray+1) = 0
+      !! maxLevelVertexBot is the maximum (deepest) of surrounding cells
+      !do iVertex = 1,nVertices
+      !   maxLevelVertexBot(iVertex) = maxLevelCell(cellsOnVertex(1,iVertex))
+      !   do i = 2, vertexDegree
+      !      maxLevelVertexBot(iVertex) = &
+      !         max( maxLevelVertexBot(iVertex), &
+      !              maxLevelCell(cellsOnVertex(i,iVertex)))
+      !   end do
+      !end do
+      !maxLevelVertexBot(nVertices+1) = 0
 
-      ! maxLevelVertexTop is the minimum (shallowest) of surrounding cells
-      do iVertex = 1,nVerticesArray
-         maxLevelVertexTop(iVertex) = maxLevelCell(cellsOnVertex(1,iVertex))
-         do i = 2, vertexDegree
-            maxLevelVertexTop(iVertex) = &
-               min( maxLevelVertexTop(iVertex), &
-                    maxLevelCell(cellsOnVertex(i,iVertex)))
-         end do
-      end do
-      maxLevelVertexTop(nVerticesArray+1) = 0
+      !! maxLevelVertexTop is the minimum (shallowest) of surrounding cells
+      !do iVertex = 1,nVertices
+      !   maxLevelVertexTop(iVertex) = maxLevelCell(cellsOnVertex(1,iVertex))
+      !   do i = 2, vertexDegree
+      !      maxLevelVertexTop(iVertex) = &
+      !         min( maxLevelVertexTop(iVertex), &
+      !              maxLevelCell(cellsOnVertex(i,iVertex)))
+      !   end do
+      !end do
+      !maxLevelVertexTop(nVertices+1) = 0
 
       ! set boundary edge
-      boundaryEdge(:,1:nEdgesArray+1)=1.0_RKIND
-      edgeMask(:,1:nEdgesArray+1)=0.0_RKIND
+      boundaryEdge(:,1:nEdges+1)=1.0_RKIND
+      edgeMask(:,1:nEdges+1)=0.0_RKIND
 
-      do iEdge = 1, nEdgesArray
-      do k= minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
-         boundaryEdge(k,iEdge)=0.0_RKIND
-         edgeMask(k,iEdge)=1.0_RKIND
-      end do
-      end do
+      ! TODO: Replace this loop over levels with MALI levels
+      !do iEdge = 1, nEdges
+      !do k= minLevelEdgeBot(iEdge),maxLevelEdgeTop(iEdge)
+      !   boundaryEdge(k,iEdge)=0.0_RKIND
+      !   edgeMask(k,iEdge)=1.0_RKIND
+      !end do
+      !end do
 
       ! Find cells and vertices that have an edge on the boundary
-      boundaryCell(:,1:nCellsArray+1) = 0.0_RKIND
-      cellMask(:,1:nCellsArray+1) = 0.0_RKIND
-      boundaryVertex(:,1:nVerticesArray+1) = 0.0_RKIND
-      vertexMask(:,1:nVerticesArray+1) = 0.0_RKIND
+      boundaryCell(:,1:nCells+1) = 0.0_RKIND
+      cellMask(:,1:nCells+1) = 0.0_RKIND
+      boundaryVertex(:,1:nVertices+1) = 0.0_RKIND
+      vertexMask(:,1:nVertices+1) = 0.0_RKIND
 
-      do iEdge = 1, nEdgesArray
+      do iEdge = 1, nEdges
       do k = 1, nVertLevels
          if (boundaryEdge(k,iEdge) == 1) then
             boundaryCell(k,cellsOnEdge(1,iEdge)) = 1.0_RKIND
@@ -1376,23 +1377,23 @@ contains
       end do
       end do
 
-      do iCell = 1, nCellsArray
-      do k = 1, nVertLevels
-         if ( minLevelCell(iCell) <= k .and. &
-              maxLevelCell(iCell) >= k ) then
-            cellMask(k, iCell) = 1.0_RKIND
-         end if
-      end do
-      end do
+      !do iCell = 1, nCells
+      !do k = 1, nVertLevels
+      !   if ( minLevelCell(iCell) <= k .and. &
+      !        maxLevelCell(iCell) >= k ) then
+      !      cellMask(k, iCell) = 1.0_RKIND
+      !   end if
+      !end do
+      !end do
 
-      do iVertex = 1, nVerticesArray
-      do k = 1, nVertLevels
-         if ( minLevelVertexTop(iVertex) <= k .and. &
-              maxLevelVertexBot(iVertex) >= k ) then
-            vertexMask(k, iVertex) = 1.0_RKIND
-         end if
-      end do
-      end do
+      !do iVertex = 1, nVertices
+      !do k = 1, nVertLevels
+      !   if ( minLevelVertexTop(iVertex) <= k .and. &
+      !        maxLevelVertexBot(iVertex) >= k ) then
+      !      vertexMask(k, iVertex) = 1.0_RKIND
+      !   end if
+      !end do
+      !end do
 
       ! Note: We do not update halos on maxLevel* variables.  We want
       ! the outside edge of a halo to be zero on each processor.
@@ -1430,7 +1431,7 @@ contains
       edgeSignOnVertex = 0.0_RKIND
       kiteIndexOnCell  = 0
 
-      do iCell = 1, nCellsArray
+      do iCell = 1, nCells
          do i = 1, nEdgesOnCell(iCell)
             iEdge = edgesOnCell(i, iCell)
             iVertex = verticesOnCell(i, iCell)
@@ -1450,7 +1451,7 @@ contains
          end do
       end do
 
-      do iVertex = 1, nVerticesArray
+      do iVertex = 1, nVertices
          do i = 1, vertexDegree
             iEdge = edgesOnVertex(i, iVertex)
 
@@ -1481,216 +1482,216 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine meshVertCoordInit(domain)!{{{
-
-      !-----------------------------------------------------------------
-      ! Input/output variables
-      !-----------------------------------------------------------------
-
-      type (domain_type), intent(inout) :: domain !< [inout] ocean state
-
-      !-----------------------------------------------------------------
-      ! Local variables
-      !-----------------------------------------------------------------
-
-      type (block_type), pointer :: block ! all ocn data in a block
-
-      type (mpas_pool_type), pointer :: &
-         verticalMeshPool, &! vertical mesh data
-         statePool,        &! ocean state (layer thickness)
-         forcingPool        ! forcing data (land ice mask)
-
-      integer :: &
-         iCell, k,         &! loop indices for cell, vertical loops
-         kmin, kmax         ! min, max active levels in column
-
-      logical :: &
-         consistentSSH,    &! flag if SSH consistent with depth
-         landIceFlag,      &! flag if land ice mask exists
-         checkSSH           ! flag for checking SSH in cell column
-
-      real (kind=RKIND) &
-         thickDepth         ! depth based on sum of layer thicknesses
-
-      integer, dimension(:), pointer :: &
-         landIceMask        ! land ice mask
-
-      real (kind=RKIND), dimension(:), pointer :: &
-         refZMid,                  &! reference depth at mid-layer
-         refLayerThickness          ! reference profile layer thickness
-
-      real (kind=RKIND), dimension(:,:), pointer :: &
-         layerThickness     ! current layer thickness
-
-      ! End preamble
-      !-------------
-      ! Begin code
-
-      ! Extract pools from domain
-      block => domain % blocklist
-      call mpas_pool_get_subpool(block%structs, 'state', statePool)
-      call mpas_pool_get_subpool(block%structs, 'verticalMesh', &
-                                                 verticalMeshPool)
-      call mpas_pool_get_subpool(block%structs, 'forcing', forcingPool)
-
-      ! Extract needed variables from pools
-      call mpas_pool_get_array(statePool, 'layerThickness', &
-                                           layerThickness, 1)
-
-      call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
-      call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', &
-                                                  refLayerThickness)
-
-      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
-      if (associated(landIceMask)) then
-         landIceFlag = .true.  ! ice shelves
-      else
-         landIceFlag = .false. ! ice shelves
-      endif
-
-      ! Initialize reference z coordinates based on refBottomDepth
-      refBottomDepthTopOfCell(1) = 0.0_RKIND
-      do k = 1, nVertLevels
-         refBottomDepthTopOfCell(k+1) = refBottomDepth(k)
-         refLayerThickness(k) = refBottomDepth(k) - &
-                                refBottomDepthTopOfCell(k)
-         refZMid(k) = - refBottomDepthTopOfCell(k) - &
-                        refLayerThickness(k)/2.0_RKIND
-      end do
-
-      ! Initialization of vertCoordMovementWeights. 
-      ! This determines how SSH perturbations are distributed throughout
-      ! the column. Check for invalid choice of vert coord movement.
-
-      call mpas_log_write(' Vertical coordinate movement is: ' // &
-                          trim(config_vert_coord_movement))
-
-
-      select case (trim(config_vert_coord_movement))
-      case ('fixed')
-
-         vertCoordMovementWeights = 0.0_RKIND
-         vertCoordMovementWeights(1) = 1.0_RKIND
-
-      case ('uniform_stretching')
-
-         vertCoordMovementWeights = 1.0_RKIND
-
-      case ('tapered')
-
-         ! Set weight tapering:
-         !  1.0 shallower than config_vert_taper_weight_depth_1
-         !  linear in between
-         !  0.0 deeper than config_vert_taper_weight_depth_2
-         do k = 1, nVertLevels
-            vertCoordMovementWeights(k) = 1.0_RKIND + &
-                 (refZMid(k) + config_vert_taper_weight_depth_1) / &
-                 (config_vert_taper_weight_depth_2 - &
-                  config_vert_taper_weight_depth_1)
-            ! limit range to (0,1)
-            vertCoordMovementWeights(k) = max( 0.0_RKIND, &
-                      min( 1.0_RKIND, vertCoordMovementWeights(k) ) )
-         end do
-
-      case ('impermeable_interfaces')
-
-         ! weights are never used, no init needed
-
-      case ('user_specified')
-
-         ! weights should be input? probably should check
-
-      case default
-
-         call mpas_log_write( &
-            'Incorrect choice of config_vert_coord_movement.', &
-             MPAS_LOG_CRIT)
-
-      end select
-
-      !-----------------------------------------------------------------
-      ! Check consistency and validity of options
-      !-----------------------------------------------------------------
-
-      ! SSH consistency
-      if (config_check_ssh_consistency) then
-
-         ! Check if abs(ssh)>20m.  If so, print warning.
-         consistentSSH = .true.
-         do iCell = 1,nCellsArray
-
-            ! Only check for open ocean when land ice is being used
-            checkSSH = .true.
-            if (landIceFlag) then
-               if (landIceMask(iCell) /= 0) checkSSH = .false.
-            endif
-
-            ! Check whether thickness is consistent with bottom depth
-            if (checkSSH) then
-               kmin = minLevelCell(iCell)
-               kmax = maxLevelCell(iCell)
-
-               thickDepth = sum(layerThickness(kmin:kmax,iCell))
-
-               if (abs(thickDepth - bottomDepth(iCell)) > 20.0_RKIND) then
-                  consistentSSH = .false.
-
-                  call mpas_log_write( &
-                     ' Warning: Sea surface height outside of acceptable range (20m)', &
-                     MPAS_LOG_ERR)
-                  call mpas_log_write( &
-                     ' iCell: $i, minLevelCell(iCell), maxLevelCell(iCell): $i, $i, bottomDepth(iCell): $r, sum(h): $r', &
-                     intArgs=(/iCell, minLevelCell(iCell), maxLevelCell(iCell) /), &
-                     realArgs=(/ bottomDepth(iCell), thickDepth /) )
-               endif ! depth diff check
-            endif ! checkSSH
-         end do ! cell loop
-
-         if (.not. consistentSSH) call mpas_log_write( &
-            'Warning: SSH not consistent - ' // &
-            'initial layerThickness does not match bottomDepth.')
-
-      endif ! config_check_ssh_consistency
-
-      ! Z-level consistency
-      if (config_check_zlevel_consistency) then
-         do iCell = 1,nCellsArray
-            ! Check that bottomDepth and maxLevelCell match.  Some
-            ! older meshs do not have the bottomDepth variable.
-            kmax = maxLevelCell(iCell)
-            if (bottomDepth(iCell) > refBottomDepth(kmax) .or. &
-                bottomDepth(iCell) < refBottomDepthTopOfCell(kmax)) then
-               call mpas_log_write( &
-                 ' fatal error: bottomDepth and maxLevelCell do not match:',  &
-                 MPAS_LOG_ERR)
-               call mpas_log_write( &
-                 ' iCell: $i, maxLevelCell(iCell): $i, bottomDepth(iCell): $r', &
-                 intArgs=(/iCell, kmax /), &
-                 realArgs=(/ bottomDepth(iCell) /) )
-            endif
-         enddo ! cell loop
-      endif ! check_zlevel_consistency
-
-      ! pressure gradient compatibility
-      if (config_vert_coord_movement /= 'impermeable_interfaces' .and. &
-          config_pressure_gradient_type == 'MontgomeryPotential') then
-         call mpas_log_write( 'Incompatible choice of ' // &
-            'impermeable vertical interfaces and Montgomery Potential',&
-            MPAS_LOG_CRIT)
-      end if
-
-      ! barotropic filter mode compatibility
-      if (config_filter_btr_mode .and. &
-          config_vert_coord_movement /= 'fixed')then
-         call mpas_log_write( &
-          'filter_btr_mode has only been tested with ' // &
-          'config_vert_coord_movement=fixed.', &
-          MPAS_LOG_CRIT)
-      endif
-
-   !--------------------------------------------------------------------
-
-   end subroutine meshVertCoordInit !}}}
+!   subroutine meshVertCoordInit(domain)!{{{
+!
+!      !-----------------------------------------------------------------
+!      ! Input/output variables
+!      !-----------------------------------------------------------------
+!
+!      type (domain_type), intent(inout) :: domain !< [inout] ocean state
+!
+!      !-----------------------------------------------------------------
+!      ! Local variables
+!      !-----------------------------------------------------------------
+!
+!      type (block_type), pointer :: block ! all ocn data in a block
+!
+!      type (mpas_pool_type), pointer :: &
+!         verticalMeshPool, &! vertical mesh data
+!         statePool,        &! ocean state (layer thickness)
+!         forcingPool        ! forcing data (land ice mask)
+!
+!      integer :: &
+!         iCell, k,         &! loop indices for cell, vertical loops
+!         kmin, kmax         ! min, max active levels in column
+!
+!      logical :: &
+!         consistentSSH,    &! flag if SSH consistent with depth
+!         landIceFlag,      &! flag if land ice mask exists
+!         checkSSH           ! flag for checking SSH in cell column
+!
+!      real (kind=RKIND) &
+!         thickDepth         ! depth based on sum of layer thicknesses
+!
+!      integer, dimension(:), pointer :: &
+!         landIceMask        ! land ice mask
+!
+!      real (kind=RKIND), dimension(:), pointer :: &
+!         refZMid,                  &! reference depth at mid-layer
+!         refLayerThickness          ! reference profile layer thickness
+!
+!      real (kind=RKIND), dimension(:,:), pointer :: &
+!         layerThickness     ! current layer thickness
+!
+!      ! End preamble
+!      !-------------
+!      ! Begin code
+!
+!      ! Extract pools from domain
+!      block => domain % blocklist
+!      call mpas_pool_get_subpool(block%structs, 'state', statePool)
+!      call mpas_pool_get_subpool(block%structs, 'verticalMesh', &
+!                                                 verticalMeshPool)
+!      call mpas_pool_get_subpool(block%structs, 'forcing', forcingPool)
+!
+!      ! Extract needed variables from pools
+!      call mpas_pool_get_array(statePool, 'layerThickness', &
+!                                           layerThickness, 1)
+!
+!      call mpas_pool_get_array(verticalMeshPool, 'refZMid', refZMid)
+!      call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', &
+!                                                  refLayerThickness)
+!
+!      call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+!      if (associated(landIceMask)) then
+!         landIceFlag = .true.  ! ice shelves
+!      else
+!         landIceFlag = .false. ! ice shelves
+!      endif
+!
+!      ! Initialize reference z coordinates based on refBottomDepth
+!      refBottomDepthTopOfCell(1) = 0.0_RKIND
+!      do k = 1, nVertLevels
+!         refBottomDepthTopOfCell(k+1) = refBottomDepth(k)
+!         refLayerThickness(k) = refBottomDepth(k) - &
+!                                refBottomDepthTopOfCell(k)
+!         refZMid(k) = - refBottomDepthTopOfCell(k) - &
+!                        refLayerThickness(k)/2.0_RKIND
+!      end do
+!
+!      ! Initialization of vertCoordMovementWeights. 
+!      ! This determines how SSH perturbations are distributed throughout
+!      ! the column. Check for invalid choice of vert coord movement.
+!
+!      call mpas_log_write(' Vertical coordinate movement is: ' // &
+!                          trim(config_vert_coord_movement))
+!
+!
+!      select case (trim(config_vert_coord_movement))
+!      case ('fixed')
+!
+!         vertCoordMovementWeights = 0.0_RKIND
+!         vertCoordMovementWeights(1) = 1.0_RKIND
+!
+!      case ('uniform_stretching')
+!
+!         vertCoordMovementWeights = 1.0_RKIND
+!
+!      case ('tapered')
+!
+!         ! Set weight tapering:
+!         !  1.0 shallower than config_vert_taper_weight_depth_1
+!         !  linear in between
+!         !  0.0 deeper than config_vert_taper_weight_depth_2
+!         do k = 1, nVertLevels
+!            vertCoordMovementWeights(k) = 1.0_RKIND + &
+!                 (refZMid(k) + config_vert_taper_weight_depth_1) / &
+!                 (config_vert_taper_weight_depth_2 - &
+!                  config_vert_taper_weight_depth_1)
+!            ! limit range to (0,1)
+!            vertCoordMovementWeights(k) = max( 0.0_RKIND, &
+!                      min( 1.0_RKIND, vertCoordMovementWeights(k) ) )
+!         end do
+!
+!      case ('impermeable_interfaces')
+!
+!         ! weights are never used, no init needed
+!
+!      case ('user_specified')
+!
+!         ! weights should be input? probably should check
+!
+!      case default
+!
+!         call mpas_log_write( &
+!            'Incorrect choice of config_vert_coord_movement.', &
+!             MPAS_LOG_CRIT)
+!
+!      end select
+!
+!      !-----------------------------------------------------------------
+!      ! Check consistency and validity of options
+!      !-----------------------------------------------------------------
+!
+!      ! SSH consistency
+!      if (config_check_ssh_consistency) then
+!
+!         ! Check if abs(ssh)>20m.  If so, print warning.
+!         consistentSSH = .true.
+!         do iCell = 1,nCells
+!
+!            ! Only check for open ocean when land ice is being used
+!            checkSSH = .true.
+!            if (landIceFlag) then
+!               if (landIceMask(iCell) /= 0) checkSSH = .false.
+!            endif
+!
+!            ! Check whether thickness is consistent with bottom depth
+!            if (checkSSH) then
+!               kmin = minLevelCell(iCell)
+!               kmax = maxLevelCell(iCell)
+!
+!               thickDepth = sum(layerThickness(kmin:kmax,iCell))
+!
+!               if (abs(thickDepth - bottomDepth(iCell)) > 20.0_RKIND) then
+!                  consistentSSH = .false.
+!
+!                  call mpas_log_write( &
+!                     ' Warning: Sea surface height outside of acceptable range (20m)', &
+!                     MPAS_LOG_ERR)
+!                  call mpas_log_write( &
+!                     ' iCell: $i, minLevelCell(iCell), maxLevelCell(iCell): $i, $i, bottomDepth(iCell): $r, sum(h): $r', &
+!                     intArgs=(/iCell, minLevelCell(iCell), maxLevelCell(iCell) /), &
+!                     realArgs=(/ bottomDepth(iCell), thickDepth /) )
+!               endif ! depth diff check
+!            endif ! checkSSH
+!         end do ! cell loop
+!
+!         if (.not. consistentSSH) call mpas_log_write( &
+!            'Warning: SSH not consistent - ' // &
+!            'initial layerThickness does not match bottomDepth.')
+!
+!      endif ! config_check_ssh_consistency
+!
+!      ! Z-level consistency
+!      if (config_check_zlevel_consistency) then
+!         do iCell = 1,nCells
+!            ! Check that bottomDepth and maxLevelCell match.  Some
+!            ! older meshs do not have the bottomDepth variable.
+!            kmax = maxLevelCell(iCell)
+!            if (bottomDepth(iCell) > refBottomDepth(kmax) .or. &
+!                bottomDepth(iCell) < refBottomDepthTopOfCell(kmax)) then
+!               call mpas_log_write( &
+!                 ' fatal error: bottomDepth and maxLevelCell do not match:',  &
+!                 MPAS_LOG_ERR)
+!               call mpas_log_write( &
+!                 ' iCell: $i, maxLevelCell(iCell): $i, bottomDepth(iCell): $r', &
+!                 intArgs=(/iCell, kmax /), &
+!                 realArgs=(/ bottomDepth(iCell) /) )
+!            endif
+!         enddo ! cell loop
+!      endif ! check_zlevel_consistency
+!
+!      ! pressure gradient compatibility
+!      if (config_vert_coord_movement /= 'impermeable_interfaces' .and. &
+!          config_pressure_gradient_type == 'MontgomeryPotential') then
+!         call mpas_log_write( 'Incompatible choice of ' // &
+!            'impermeable vertical interfaces and Montgomery Potential',&
+!            MPAS_LOG_CRIT)
+!      end if
+!
+!      ! barotropic filter mode compatibility
+!      if (config_filter_btr_mode .and. &
+!          config_vert_coord_movement /= 'fixed')then
+!         call mpas_log_write( &
+!          'filter_btr_mode has only been tested with ' // &
+!          'config_vert_coord_movement=fixed.', &
+!          MPAS_LOG_CRIT)
+!      endif
+!
+!   !--------------------------------------------------------------------
+!
+!   end subroutine meshVertCoordInit !}}}
 
 !***********************************************************************
 !
@@ -1726,7 +1727,7 @@ contains
       ! Begin code
 
       ! Allocate space
-      allocate (edgeAreaFractionOfCell(maxEdges,nCellsArray), STAT=ierr)
+      allocate (edgeAreaFractionOfCell(maxEdges,nCells), STAT=ierr)
 #ifdef MPAS_OPENACC
       !$acc enter data create(edgeAreaFractionOfCell)
 #endif
@@ -1734,7 +1735,7 @@ contains
          'Error allocating edgeAreaFractionOfCell in li_mesh', &
           MPAS_LOG_CRIT)
 
-      do iCell = 1, nCellsArray
+      do iCell = 1, nCells
       do i = 1, nEdgesOnCell(iCell)
          iEdge = edgesOnCell(i, iCell)
          edgeAreaFractionOfCell(i, iCell) = 0.25_RKIND* &
@@ -1762,75 +1763,75 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine meshScaling() !{{{
-
-      !-----------------------------------------------------------------
-      ! local variables
-      !-----------------------------------------------------------------
-
-      integer :: &
-         iEdge,       &! loop index/address for edges
-         cell1, cell2  ! cell addresses for neighbors across edge
-
-      real (kind=RKIND) :: &
-         cellWidth,   &! reference cell width for scaling
-         avgDensity    ! avg mesh density across edge
-
-      ! End preamble
-      !-------------
-      ! Begin code
-
-      if (config_hmix_scaleWithMesh) then
-         if (config_hmix_use_ref_cell_width) then
-            ! Mesh scaling is set by areaCell and and an input
-            ! reference widht config_hmix_ref_cell_width
-            ! See description of config_hmix_ref_cell_width in
-            ! Registry.xml for more detail.
-            do iEdge = 1, nEdgesArray
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-               ! Effective cell width at edge iEdge, assuming
-               ! neighboring cells are circles for this calculation.
-               cellWidth = 2.0_RKIND* &
-                           sqrt((areaCell(cell1) + areaCell(cell2))/ &
-                                2.0_RKIND/pii)
-               meshScalingDel2(iEdge) =  cellWidth/ &
-                                         config_hmix_ref_cell_width
-               meshScalingDel4(iEdge) = (cellWidth/ &
-                                         config_hmix_ref_cell_width)**3
-            end do
-
-         else ! not using ref cell width
-            ! Mesh scaling is set by meshDensity. This is both confusing
-            ! and inconvenient, as the flags like config_mom_del2 need
-            ! to be reset for every resolution. It is kept for backwards
-            ! compatibility, but should become defunct.
-            ! del2 scales as dc**1, del4 scales as dc**3
-            do iEdge = 1, nEdgesArray
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-               avgDensity = (meshDensity(cell1) + meshDensity(cell2))/ &
-                            2.0_RKIND
-               meshScalingDel2(iEdge) = 1.0_RKIND/ &
-                  (avgDensity/config_maxMeshDensity)**(1.0_RKIND/4.0_RKIND)
-               meshScalingDel4(iEdge) = 1.0_RKIND/ &
-                  (avgDensity/config_maxMeshDensity)**(3.0_RKIND/4.0_RKIND)
-            end do
-         end if
-
-      else ! no scaling with mesh
-
-         ! If config_hmix_scaleWithMesh is false, hmix coefficients
-         ! do not vary with cell size but remain constant across domain.
-         do iEdge = 1, nEdgesArray
-            meshScalingDel2(iEdge) = 1.0_RKIND
-            meshScalingDel4(iEdge) = 1.0_RKIND
-         end do
-      end if
-
-   !--------------------------------------------------------------------
-
-   end subroutine meshScaling !}}}
+!   subroutine meshScaling() !{{{
+!
+!      !-----------------------------------------------------------------
+!      ! local variables
+!      !-----------------------------------------------------------------
+!
+!      integer :: &
+!         iEdge,       &! loop index/address for edges
+!         cell1, cell2  ! cell addresses for neighbors across edge
+!
+!      real (kind=RKIND) :: &
+!         cellWidth,   &! reference cell width for scaling
+!         avgDensity    ! avg mesh density across edge
+!
+!      ! End preamble
+!      !-------------
+!      ! Begin code
+!
+!      if (config_hmix_scaleWithMesh) then
+!         if (config_hmix_use_ref_cell_width) then
+!            ! Mesh scaling is set by areaCell and and an input
+!            ! reference widht config_hmix_ref_cell_width
+!            ! See description of config_hmix_ref_cell_width in
+!            ! Registry.xml for more detail.
+!            do iEdge = 1, nEdges
+!               cell1 = cellsOnEdge(1,iEdge)
+!               cell2 = cellsOnEdge(2,iEdge)
+!               ! Effective cell width at edge iEdge, assuming
+!               ! neighboring cells are circles for this calculation.
+!               cellWidth = 2.0_RKIND* &
+!                           sqrt((areaCell(cell1) + areaCell(cell2))/ &
+!                                2.0_RKIND/pii)
+!               meshScalingDel2(iEdge) =  cellWidth/ &
+!                                         config_hmix_ref_cell_width
+!               meshScalingDel4(iEdge) = (cellWidth/ &
+!                                         config_hmix_ref_cell_width)**3
+!            end do
+!
+!         else ! not using ref cell width
+!            ! Mesh scaling is set by meshDensity. This is both confusing
+!            ! and inconvenient, as the flags like config_mom_del2 need
+!            ! to be reset for every resolution. It is kept for backwards
+!            ! compatibility, but should become defunct.
+!            ! del2 scales as dc**1, del4 scales as dc**3
+!            do iEdge = 1, nEdges
+!               cell1 = cellsOnEdge(1,iEdge)
+!               cell2 = cellsOnEdge(2,iEdge)
+!               avgDensity = (meshDensity(cell1) + meshDensity(cell2))/ &
+!                            2.0_RKIND
+!               meshScalingDel2(iEdge) = 1.0_RKIND/ &
+!                  (avgDensity/config_maxMeshDensity)**(1.0_RKIND/4.0_RKIND)
+!               meshScalingDel4(iEdge) = 1.0_RKIND/ &
+!                  (avgDensity/config_maxMeshDensity)**(3.0_RKIND/4.0_RKIND)
+!            end do
+!         end if
+!
+!      else ! no scaling with mesh
+!
+!         ! If config_hmix_scaleWithMesh is false, hmix coefficients
+!         ! do not vary with cell size but remain constant across domain.
+!         do iEdge = 1, nEdges
+!            meshScalingDel2(iEdge) = 1.0_RKIND
+!            meshScalingDel4(iEdge) = 1.0_RKIND
+!         end do
+!      end if
+!
+!   !--------------------------------------------------------------------
+!
+!   end subroutine meshScaling !}}}
 
 !***********************************************************************
 
