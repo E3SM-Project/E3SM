@@ -742,7 +742,6 @@ TEST_CASE ("update") {
   const int ncol = 2;
   const int ncmp = 3;
   const int nlev = 4;
-  const int size = ncol*ncmp*nlev;
 
   // Create field (if available, use packs, to ensure we don't print garbage)
   std::vector<FieldTag> tags = {COL, CMP, LEV};
@@ -785,11 +784,8 @@ TEST_CASE ("update") {
     f3.scale(2);
     REQUIRE (views_are_equal(f2,f3));
 
-    Field f4 (fid_r);
-    f3.allocate_view();
-    f3.deep_copy(0.0);
-
     // Adding 2*f_real to N*f3 should give 2*f_real (f3==0)
+    f3.deep_copy(0.0);
     f3.update(f_real,2,10);
     REQUIRE (views_are_equal(f3,f2));
 
