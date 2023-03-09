@@ -1,4 +1,4 @@
-#include <physics/mam4/aerosol_microphysics.hpp>
+#include <physics/mam/eamxx_mam_microphysics.hpp>
 #include <share/property_checks/field_lower_bound_check.hpp>
 #include <share/property_checks/field_within_interval_check.hpp>
 
@@ -9,22 +9,22 @@
 namespace scream
 {
 
-MAM4AerosolMicrophysics::MAM4AerosolMicrophysics(
+MAMMicrophysics::MAMMicrophysics(
     const ekat::Comm& comm,
     const ekat::ParameterList& params)
   : AtmosphereProcess(comm, params),
     nucleation_(nullptr) {
 }
 
-AtmosphereProcessType MAM4AerosolMicrophysics::type() const {
+AtmosphereProcessType MAMMicrophysics::type() const {
   return AtmosphereProcessType::Physics;
 }
 
-std::string MAM4AerosolMicrophysics::name() const {
-  return "MAM4AerosolMicrophysics";
+std::string MAMMicrophysics::name() const {
+  return "MAMMicrophysics";
 }
 
-void MAM4AerosolMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
+void MAMMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager) {
   using namespace ekat::units;
 
   // The units of mixing ratio q are technically non-dimensional.
@@ -64,7 +64,7 @@ void MAM4AerosolMicrophysics::set_grids(const std::shared_ptr<const GridsManager
   add_group<Updated>("tracers", grid_name, Bundling::Required);
 }
 
-void MAM4AerosolMicrophysics::
+void MAMMicrophysics::
 set_computed_group_impl(const FieldGroup& group) {
   const auto& name = group.m_info->m_group_name;
   EKAT_REQUIRE_MSG(name=="tracers",
@@ -92,7 +92,7 @@ set_computed_group_impl(const FieldGroup& group) {
     "Error! MAM4 requires at least " << num_aero_tracers << " aerosol tracers.");
 }
 
-void MAM4AerosolMicrophysics::initialize_impl(const RunType run_type) {
+void MAMMicrophysics::initialize_impl(const RunType run_type) {
   const auto& T_mid = get_field_in("T_mid").get_view<Real**>();
   const auto& p_mid = get_field_in("p_mid").get_view<const Real**>();
   const auto& qv = get_field_in("qv").get_view<Real**>();
@@ -146,7 +146,7 @@ void MAM4AerosolMicrophysics::initialize_impl(const RunType run_type) {
   // FIXME: aerosol process initialization goes here!
 }
 
-void MAM4AerosolMicrophysics::run_impl(const double dt) {
+void MAMMicrophysics::run_impl(const double dt) {
 
   const auto default_policy = ekat::ExeSpaceUtils<KT::ExeSpace>::get_default_team_policy(ncol_, nlev_);
 
@@ -164,7 +164,7 @@ void MAM4AerosolMicrophysics::run_impl(const double dt) {
   Kokkos::fence();
 }
 
-void MAM4AerosolMicrophysics::finalize_impl()
+void MAMMicrophysics::finalize_impl()
 {
 }
 

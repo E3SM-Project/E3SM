@@ -17,8 +17,8 @@ if (SCREAM_CIME_BUILD)
   CreateMctTarget()
 endif()
 
-# MAM4 aerosol support
-if (SCREAM_ENABLE_MAM4)
+# MAM aerosol support
+if (SCREAM_ENABLE_MAM)
   # We use CMake's ExternalProject capability to build and install Haero.
   include(ExternalProject)
 
