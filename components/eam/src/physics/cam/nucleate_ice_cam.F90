@@ -352,6 +352,44 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
             coarse_dust_idx, coarse_nacl_idx
          call endrun(routine//': ERROR required mode-species type not found')
       end if
+!kzm ++
+      if (mode_strat_coarse_idx>0) then
+         call rad_cnst_get_info(0, mode_strat_coarse_idx, nspec=nspec)
+         do n = 1, nspec
+            call rad_cnst_get_info(0, mode_strat_coarse_idx, n, spec_type=str32)
+            select case (trim(str32))
+            case ('sulfate')
+               strat_coarse_so4_idx = n    ! find sulfate
+            end select
+         end do
+      endif
+      !for accumulation mode
+!      write(iulog,*)'kzm_mode_accum_idx', mode_accum_idx
+      if (mode_accum_idx>0) then
+         call rad_cnst_get_info(0, mode_accum_idx, nspec=nspec)
+         do n = 1, nspec
+            call rad_cnst_get_info(0, mode_accum_idx, n, spec_type=str32)
+            write(iulog,*) trim(str32)
+            select case (trim(str32))
+            case ('sulfate')
+               accum_so4_idx = n    ! find sulfate
+            case ('p-organic')
+               accum_pom_idx = n    ! find pom
+            case ('s-organic')
+               accum_soa_idx = n    ! find soa
+            case ('black-c')
+               accum_bc_idx = n    ! find bc
+            case ('dust')
+               accum_dst_idx = n    ! find dust
+            case ('seasalt')
+               accum_ncl_idx = n    ! find dust 
+            case ('m-organic')
+               accum_mom_idx = n    ! find dust   
+            end select
+         end do
+      endif
+      !write(iulog,*)'kzm_nuc_ini_point1'
+!kzm --       
 
       if (mode_coarse_idx > 0) then
          call rad_cnst_get_info(0, mode_coarse_idx, nspec=nspec)

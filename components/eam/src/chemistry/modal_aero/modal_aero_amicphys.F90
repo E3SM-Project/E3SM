@@ -2294,6 +2294,9 @@ do_rename_if_block30: &
           mtoo_renamexf(nacc) = ncrsf !kzm reanme acc --> strat coarse
           !mtoo_renamexf(ncrsf) = nacc !kzm reanme shrink ncrsf --> acc
           strat_sulfate_xfer = .true.
+          !write(iulog,*)'kzm_troplev_i ', troplev_i
+          !write(iulog,*)'kzm_k ', k
+
       endif
       !kzm --
 
@@ -4153,20 +4156,22 @@ mainloop1_ipair:  do n = 1, ntot_amode
          shrinkbb = .false. !kzm set initial value shrink switch: if calculate shrink fraction
          if ( mtoo == ncrsf ) then ! stratosphere renaming
            !   write(iulog,*) 'kzm_rename_dpcut_', dp_cut(mfrm), dgnum_aer(mfrm), dgnum_aer(mtoo)
-              dp_cut(mfrm) = 4.4e-7_r8
+              dp_cut(mfrm) = 4.0e-7_r8
               lndp_cut(mfrm) = log( dp_cut(mfrm) )
               dp_belowcut(mfrm) = 0.99*dp_cut(mfrm)
-              dp_xfernone_thresh(mfrm) = 1.6e-7_r8
-              dp_xferall_thresh(mfrm)    = 3.7e-7_r8
+              dp_xfernone_thresh(mfrm) = 1.0e-7_r8
+              dp_xferall_thresh(mfrm)    = 4.0e-7_r8
               !write(iulog,*)'kzm_renaming_growth'
               !strat_sulfate_xfer = .true.
               !dryvol_smallest(mfrm) = 1.0e-35 !kzm turn it to smaller value
          end if
-         if ( (mfrm == ncrsf .and. ncrsf > 0)) then
+         if (1>2) then ! turn off the shrink path for now, kzm
+         if ((mfrm == nslt3 .and. nslt3 > 0).or. (mfrm == ncrsf .and. ncrsf > 0)) then
               shrinkaa(n) = .true. !find shrink may occur
               dp_xfernone_thresh(mfrm) = dgnum_aer(mfrm)
               dp_xferall_thresh(mfrm) = dgnum_aer(mtoo)
               !write(iulog,*)'kzm_shrink'
+         end if
          end if
          !kzm
 !kzm --
