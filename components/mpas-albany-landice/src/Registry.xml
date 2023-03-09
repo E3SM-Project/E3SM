@@ -897,6 +897,7 @@
                         <var name="ismip6shelfMelt_deltaT" packages="ismip6ShelfMelt"/>
                         <var name="ismip6shelfMelt_zOcean" packages="ismip6ShelfMelt"/>
                         <var name="ismip6shelfMelt_offset" packages="ismip6ShelfMelt"/>
+                        <var name="ismip6shelfMelt_zBndsOcean" packages="ismip6ShelfMelt"/>
                         <!-- these variables just for ISMIP6 grounded glacier forcing -->
                         <var name="ismip6Runoff" packages="ismip6GroundedFaceMelt" />
 			<var name="ismip6_2dThermalForcing" packages="ismip6GroundedFaceMelt" />
@@ -1379,7 +1380,7 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="ismip6shelfMelt_gamma0" type="real" dimensions="" units="m yr^{-1}" default_value="0.0"
                      packages="ismip6ShelfMelt"
-                     description="gamma0 value prescribed for ISMIP6 ice-shelf melting method, input to model.  Defaults to 0 so that missing input value will zero melt field."
+                     description="gamma0 value prescribed for ISMIP6 ice-shelf melting method, ismip6shelfMelt_zBndsOcean to model.  Defaults to 0 so that missing input value will zero melt field."
                 />
                 <var name="ismip6shelfMelt_deltaT" type="real" dimensions="nCells" units="K" default_value="0.0"
                      packages="ismip6ShelfMelt"
@@ -1394,6 +1395,9 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="ismip6shelfMelt_zOcean" type="real" dimensions="nISMIP6OceanLayers" units="m" packages="ismip6ShelfMelt"
                      description="depth coordinate associated with ismip6shelfMelt_3dThermalForcing field, input to model"
+                />
+                <var name="ismip6shelfMelt_zBndsOcean" type="real" dimensions="TWO nISMIP6OceanLayers" units="m" packages="ismip6ShelfMelt"
+                     description="bounds for ismip6 ocean layers"
                 />
                 <var name="ismip6shelfMelt_offset" type="real" dimensions="nCells" units="kg m^{-2} s^{-1}" packages="ismip6ShelfMelt" default_value="0.0"
                      description="Optional field of offset that should be applied to the melt field calculated by the ISMIP6 melt method.  Can be used to run in anomaly mode, but this is not the anomaly.  See Registry.xml for details."
@@ -1674,9 +1678,6 @@ is the value of that variable from the *previous* time level!
                 />
                 <var name="growOceanMaskHoriz" type="integer" dimensions="nCells" units="none"
                      description="growmask for horizontal floodfill"
-                />
-                <var name="ismip6shelfMelt_zBndsOcean" type="real" dimensions="TWO nISMIP6OceanLayers" units="m"
-                     description="bounds for ismip6 ocean layers"
                 />
         </var_struct>
 <!-- ================ -->
