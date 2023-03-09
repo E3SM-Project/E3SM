@@ -19,6 +19,7 @@ module li_advection
    use li_setup
    use li_mask
    use li_constants
+   use li_config
 
    implicit none
    private
@@ -74,7 +75,7 @@ module li_advection
         advectTracersIn)
 
      use li_setup, only: li_calculate_layerThickness
-     use li_tracer_advection_fct, only: li_tracer_advection_ftc_tend
+     use li_tracer_advection_fct, only: li_tracer_advection_fct_tend
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -463,28 +464,12 @@ module li_advection
                   advectedTracers,         &
                   err)
          elseif (trim(config_thickness_advection) .eq. 'fct') then
+             ! TODO: Decide what to do about w (vertical vel).
+             ! For now, just setting it to 0 to try to get this to compile
              call li_tracer_advection_fct_tend(&
-                       advectedTracers,             &
-                       advcoefs,           &
-                       advCoefs3rd,       &
-                       nAdvCellsForEdge,    &
-                       advCellsForEdge,     &
-                       layerNormalVelocity * layerThicknessEdge, &
-                       layerNormalVelocity * 0.0_RKIND,          &
-                       layerThickness,      &
-                       layerThickness,    & ! TODO: decipher difference
-                                            ! between verticalCellSize 
-                                            ! and layerThickness
-                       dt,                  &
-                       meshPool,            &
-                       tendLayerThickness, &
-                       tend)
-                       ! optional: maxLevelCell_in, axLevelEdgeTop_in,
-                       !           highOrderAdvectionMask_in,
-                       !           verticalDivergenceFactor_in,
-                       !           edgeSignOnCell_in
-              ! Then apply tend and tend_layerThickness to tracer
-              ! fields?
+                  tend, advectedTracers, layerThickness, &
+                  layerThicknessEdge * layerNormalVelocity, 0 * layerThickness, dt,    &
+                  computeBudgets=.false.)!{{{
          endif
 
          if (config_print_thickness_advection_info) then
@@ -1115,8 +1100,9 @@ module li_advection
       real (kind=RKIND), pointer ::  &
            config_ice_density         ! ice density
 
-      integer :: iCell, iTracer, k, err1, err2
+      integer :: iCell, iTracer, k, err, err1, err2
 
+      err  = 0
       err1 = 0
       err2 = 0
 
@@ -1221,11 +1207,11 @@ module li_advection
 
       ! Note: Other tracers (e.g., ice age) can be added here as needed.
       !       May need to increase maxTracers in the Registry.
-      if (trim(config_config_tracer_advection) == 'fct') then
+      if (trim(config_tracer_advection) == 'fct') then
          call li_tracer_advection_fct_shared_init(err1)
          call li_tracer_advection_fct_init(err2)
 
-         if (err1 /= 0 .or. err2 /= 0 .or. err3 /=0 .or. err4 /= 0) then
+         if (err1 /= 0 .or. err2 /= 0) then
             err = 1
             call mpas_log_write(                                 &
                'Error encountered during fct tracer advection init', &
