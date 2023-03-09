@@ -17,10 +17,17 @@ from atm_manip import get_xml_node, atm_config_chg_impl
 from utils import run_cmd_no_fail, expect
 
 ###############################################################################
-def atm_config_chg(changes, no_buffer=False):
+def atm_config_chg(changes, no_buffer=False, reset=False):
 ###############################################################################
     expect(os.path.exists("namelist_scream.xml"),
-           "No pwd/namelist_scream.xml file is present. Please rum from a case dir that has been setup")
+           "No pwd/namelist_scream.xml file is present. Please run from a case dir that has been set up")
+
+    if reset:
+        run_cmd_no_fail(f"./xmlchange SCREAM_ATMCHANGE_BUFFER=''")
+        print("All buffered atmchanges have been removed. A fresh namelist_scream.xml will be generated the next time buildnml (case.setup) is run.")
+        return True
+    else:
+        expect(changes, "Missing <param>=<val> args")
 
     with open("namelist_scream.xml", "r") as fd:
         tree = ET.parse(fd)
@@ -66,7 +73,14 @@ OR
         help="Used by buildnml to replay buffered commands",
     )
 
-    parser.add_argument("changes", nargs="+", help="Values to change")
+    parser.add_argument(
+        "--reset",
+        default=False,
+        action="store_true",
+        help="Forget all previous atmchanges",
+    )
+
+    parser.add_argument("changes", nargs="*", help="Values to change")
 
     return parser.parse_args(args[1:])
 

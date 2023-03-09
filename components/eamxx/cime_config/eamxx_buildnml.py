@@ -742,7 +742,7 @@ def do_cime_vars_on_yaml_output_files(case,caseroot):
 
     scorpio = get_child(eamxx_xml,'Scorpio')
     out_files_xml = get_child(scorpio,"output_yaml_files",must_exist=False)
-    out_files = out_files_xml.text.split(",") if out_files_xml is not None else []
+    out_files = out_files_xml.text.split(",") if (out_files_xml is not None and out_files_xml.text is not None) else []
 
     # We will also change the 'output_yaml_files' entry in scream_input.yaml,
     # to point to the copied files in $rundir/data

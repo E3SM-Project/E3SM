@@ -192,6 +192,7 @@ def refine_type(entry, force_type=None):
 ###############################################################################
     """
     Try to convert the text entry to the appropriate type based on its contents.
+
     >>> e = '(a,b)'
     >>> refine_type(e)==e
     True
@@ -221,27 +222,40 @@ def refine_type(entry, force_type=None):
     CIME.utils.CIMEError: ERROR: Error! Invalid type 'logical' for an array.
     >>> refine_type(e,'array(logical)')
     [True, False]
+    >>> refine_type('', 'array(string)')
+    []
+    >>> refine_type('', 'array(float)')
+    []
+    >>> refine_type(None, 'array(float)')
+    []
     """
     # We want to preserve strings representing lists
-    if (entry[0]=="(" and entry[-1]==")") or \
-       (entry[0]=="[" and entry[-1]=="]") :
-        expect (force_type is None or force_type == "string",
-                "Error! Invalid force type '{}' for a string representing a list"
-                .format(force_type))
-        return entry
 
-    if "," in entry:
-        expect (force_type is None or is_array_type(force_type),
-                "Error! Invalid type '{}' for an array.".format(force_type))
+    if entry:
 
-        elem_type = force_type if force_type is None else array_elem_type(force_type)
-        result = [refine_type(item.strip(), force_type=elem_type) for item in entry.split(",") if item.strip() != ""]
-        expected_type = type(result[0])
-        for item in result[1:]:
-            expect(isinstance(item, expected_type),
-                  "List '{}' has inconsistent types inside".format(entry))
+        if (entry[0]=="(" and entry[-1]==")") or \
+           (entry[0]=="[" and entry[-1]=="]") :
+            expect (force_type is None or force_type == "string",
+                    "Error! Invalid force type '{}' for a string representing a list"
+                    .format(force_type))
+            return entry
 
-        return result
+        if "," in entry:
+            expect (force_type is None or is_array_type(force_type),
+                    "Error! Invalid type '{}' for an array.".format(force_type))
+
+            elem_type = force_type if force_type is None else array_elem_type(force_type)
+            result = [refine_type(item.strip(), force_type=elem_type) for item in entry.split(",") if item.strip() != ""]
+            expected_type = type(result[0])
+            for item in result[1:]:
+                expect(isinstance(item, expected_type),
+                      "List '{}' has inconsistent types inside".format(entry))
+
+            return result
+
+    elif force_type is not None and is_array_type(force_type):
+
+        return []
 
     if force_type:
         try:
