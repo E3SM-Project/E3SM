@@ -2580,7 +2580,6 @@ end subroutine wrap_update_hifrq_hist
 
  ! ======================================================================================
  
-!  subroutine Init2(this, bounds, cnstate_vars)
  subroutine Init2(this, bounds, NLFilename)
    !
    ! !DESCRIPTION:
@@ -2606,7 +2605,6 @@ end subroutine wrap_update_hifrq_hist
    call t_startf('fates_init2')
 
    write(iulog,*) 'Init2: calling FireInit'
-   ! call this%fates_fire_data_method%FireInit(bounds, cnstate_vars)
    call this%fates_fire_data_method%FireInit(bounds, NLFilename)
 
    call t_stopf('fates_init2')

@@ -87,8 +87,7 @@ module FireDataBaseType
        ! !DESCRIPTION:
        ! Initialize CN Fire module
        ! !USES:
-       use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=)
-      !  use CNStateType     , only : cnstate_type
+       use elm_varcon      , only : spval
        !
        ! !ARGUMENTS:
        class(fire_base_type) :: this
@@ -101,10 +100,10 @@ module FireDataBaseType
        if ( this%need_lightning_and_popdens() ) then
           ! Allocate lightning forcing data
           allocate( this%forc_lnfm(bounds%begg:bounds%endg) )
-          this%forc_lnfm(bounds%begg:) = nan
+          this%forc_lnfm(bounds%begg:) = spval
           ! Allocate pop dens forcing data
           allocate( this%forc_hdm(bounds%begg:bounds%endg) )
-          this%forc_hdm(bounds%begg:) = nan
+          this%forc_hdm(bounds%begg:) = spval
           
           ! Allocate real gdp data
           allocate(this%gdp_lf_col(bounds%begc:bounds%endc))
