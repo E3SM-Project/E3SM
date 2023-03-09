@@ -452,7 +452,7 @@ subroutine nucleate_ice_cam_init(mincld_in, bulk_scale_in)
             end select
          end do
       endif
-      write(iulog,*)'kzm_nuc_ini_point1'
+      !write(iulog,*)'kzm_nuc_ini_point1'
 !kzm --       
 
       if (mode_coarse_idx > 0) then
