@@ -123,7 +123,7 @@ module li_core
       err_tmp = 0
       globalErr = 0
 
-      call li_config_init((domain % configs)
+      call li_config_init(domain % configs)
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
 
       !
