@@ -949,7 +949,7 @@ module li_tracer_advection_fct
               ! workTend on the RHS is total vertical advection tendency
               flxIn(k,iCell) = (tracerCur(k, iCell)*hProv(k, iCell) &
                              + dt*workTend(k, iCell)) &
-                             * hNewInv(k,iCell)*cellMask(k,iCell)
+                             * hNewInv(k,iCell)*cellMask(iCell)
            end do ! vert
            end do ! cell loop
 #ifndef MPAS_OPENACC

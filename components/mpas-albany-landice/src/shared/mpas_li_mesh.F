@@ -72,6 +72,9 @@ module li_mesh
    integer, public, dimension(:), pointer :: &
       nEdgesOnEdge, &! number of edges connected to each edge point
       nEdgesOnCell, & ! number of edges associated with each cell center
+      cellMask, &
+      edgeMask, &
+      vertexMask, &
 !      minLevelCell, &! max ocean level at bottom of cell
 !      minLevelEdgeTop, &! max ocean level at top    of edge column
 !      minLevelEdgeBot, &! max ocean level at bottom of edge column
@@ -94,8 +97,10 @@ module li_mesh
       edgesOnCell, &! index of edges connected to each cell
       verticesOnCell, &! index of vertices connected to each cell
       cellsOnVertex, &! index of cells connected to each vertex
-      edgesOnVertex, &! index of edges connected to each vertex
-      kiteIndexOnCell ! index of kite associated with each cell
+      edgesOnVertex, & ! index of edges connected to each vertex
+      edgeSignOnCell, &! sign of edge contributions to a cell
+      edgeSignOnVertex ! sign of edge contributions to a vertex
+!      kiteIndexOnCell ! index of kite associated with each cell
 
    real(kind=RKIND), public, dimension(:), pointer :: &
       latCell, &! latitude  of cell centers
@@ -134,15 +139,10 @@ module li_mesh
       invAreaCell   ! inverse of area of each cell
 
    ! Multiplicative masks and vectors for various conditions
-   real(kind=RKIND), public, dimension(:, :), allocatable :: &
-      edgeMask, &! mask to denote active edges    with depth
-      cellMask, &! mask to denote active cells    with depth
-      vertexMask, &! mask to denote active vertices with depth
+   integer, public, dimension(:, :), allocatable :: &
       boundaryEdge, &! mask for boundary edges    at each level
       boundaryCell, &! mask for boundary cells    at each level
-      boundaryVertex, &! mask for boundary vertices at each level
-      edgeSignOnCell, &! sign of edge contributions to a cell
-      edgeSignOnVertex ! sign of edge contributions to a vertex
+      boundaryVertex ! mask for boundary vertices at each level
 
    real(kind=RKIND), public, dimension(:, :), pointer :: &
       weightsOnEdge, &! weights on each edge
@@ -239,14 +239,8 @@ contains
       ! temporary pointers for converting masks
       integer i, k, n          ! loop indices
       integer, dimension(:, :), pointer :: &
-         edgeMaskTmp, &
-         vertexMaskTmp, &
-         cellMaskTmp, &
          edgeSignOnCellTmp, &
-         edgeSignOnVertexTmp, &
-         boundaryEdgeTmp, &
-         boundaryVertexTmp, &
-         boundaryCellTmp
+         edgeSignOnVertexTmp
 
       !***
       !*** end of preamble, begin code
@@ -388,8 +382,8 @@ contains
                                cellsOnVertex)
       call mpas_pool_get_array(meshPool, 'edgesOnVertex', &
                                edgesOnVertex)
-      call mpas_pool_get_array(meshPool, 'kiteIndexOnCell', &
-                               kiteIndexOnCell)
+!      call mpas_pool_get_array(meshPool, 'kiteIndexOnCell', &
+!                               kiteIndexOnCell)
 
       ! now set a number of physics and numerical properties of mesh
       call mpas_pool_get_array(meshPool, 'latCell', &
@@ -476,31 +470,20 @@ contains
       ! so retrieve integer version pointers and allocate real masks
       ! Once these are converted in Registry, we can eliminate this.
       call mpas_pool_get_array(meshPool, 'edgeMask', &
-                               edgeMaskTmp)
+                               edgeMask)
       call mpas_pool_get_array(meshPool, 'vertexMask', &
-                               vertexMaskTmp)
+                               vertexMask)
       call mpas_pool_get_array(meshPool, 'cellMask', &
-                               cellMaskTmp)
+                               cellMask)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', &
-                               edgeSignOnCellTmp)
+                               edgeSignOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnVertex', &
-                               edgeSignOnVertexTmp)
-      call mpas_pool_get_array(meshPool, 'boundaryEdge', &
-                               boundaryEdgeTmp)
-      call mpas_pool_get_array(meshPool, 'boundaryVertex', &
-                               boundaryVertexTmp)
-      call mpas_pool_get_array(meshPool, 'boundaryCell', &
-                               boundaryCellTmp)
+                               edgeSignOnVertex)
 
       allocate ( &
-            edgeMask(nVertLevels, nEdges+1), &
-            cellMask(nVertLevels, nCells+1), &
-            vertexMask(nVertLevels, nVertices+1), &
             boundaryEdge(nVertLevels, nEdges+1), &
             boundaryCell(nVertLevels, nCells+1), &
             boundaryVertex(nVertLevels, nVertices+1), &
-            edgeSignOnCell(maxEdges, nCells+1), &
-            edgeSignOnVertex(maxEdges, nVertices+1), &
             invAreaCell(nCells+1))
 
       !-----------------------------------------------------------------
@@ -525,38 +508,35 @@ contains
    
       ! Routine calls above initialized the real mask arrays
       ! so convert the meshPool integer pointers here
-      do n = 1, nCells+1
-      do k = 1, nVertLevels
-         cellMaskTmp(k,n)     = nint(cellMask(k,n))
-         boundaryCellTmp(k,n) = nint(boundaryCell(k,n))
-      end do
-      end do
-
-      do n = 1, nCells+1
-      do k = 1, maxEdges
-         edgeSignOnCellTmp(k, n) = nint(edgeSignOnCell(k,n))
-      end do
-      end do
-
-      do n = 1, nEdges+1
-      do k = 1, nVertLevels
-         edgeMaskTmp(k, n) = nint(edgeMask(k,n))
-         boundaryEdgeTmp(k, n) = nint(boundaryEdge(k,n))
-      end do
-      end do
-
-      do n = 1, nVertices+1
-      do k = 1, nVertLevels
-         vertexMaskTmp(k, n) = nint(vertexMask(k,n))
-         boundaryVertexTmp(k, n) = nint(boundaryVertex(k,n))
-      end do
-      end do
-
-      do n = 1, nVertices+1
-      do k = 1, vertexDegree
-         edgeSignOnVertexTmp(k,n) = nint(edgeSignOnVertex(k,n))
-      end do
-      end do
+!      do n = 1, nCells+1
+!      do k = 1, nVertLevels
+!         boundaryCellTmp(k,n) = nint(boundaryCell(k,n))
+!      end do
+!      end do
+!
+!      do n = 1, nCells+1
+!      do k = 1, maxEdges
+!         edgeSignOnCellTmp(k, n) = nint(edgeSignOnCell(k,n))
+!      end do
+!      end do
+!
+!      do n = 1, nEdges+1
+!      do k = 1, nVertLevels
+!         boundaryEdgeTmp(k, n) = nint(boundaryEdge(k,n))
+!      end do
+!      end do
+!
+!      do n = 1, nVertices+1
+!      do k = 1, nVertLevels
+!         boundaryVertexTmp(k, n) = nint(boundaryVertex(k,n))
+!      end do
+!      end do
+!
+!      do n = 1, nVertices+1
+!      do k = 1, vertexDegree
+!         edgeSignOnVertexTmp(k,n) = nint(edgeSignOnVertex(k,n))
+!      end do
+!      end do
 
       ! Compute area weighting for some interpolation
       call meshAreaWeights()
@@ -810,7 +790,10 @@ contains
       ! If this becomes the only mesh structure and mesh pool is eliminated,
       !  then we will want to deallocate here instead of nullify.
 
-      nullify (nEdgesOnEdge, &
+      nullify (edgeMask, &
+               cellMask, &
+               vertexMask, & 
+               nEdgesOnEdge, &
                nEdgesOnCell, &
                !minLevelCell, &
                !minLevelEdgeTop, &
@@ -833,7 +816,7 @@ contains
                verticesOnCell, &
                cellsOnVertex, &
                edgesOnVertex, &
-               kiteIndexOnCell, &
+               !kiteIndexOnCell, &
                latCell, &
                lonCell, &
                xCell, &
@@ -871,6 +854,8 @@ contains
                edgeNormalVectors, &
                localVerticalUnitVectors, &
                cellTangentPlane, &
+               edgeSignOnCell, &
+               edgeSignOnVertex, &
                coeffs_reconstruct)
 
 #ifdef MPAS_OPENACC
@@ -879,14 +864,9 @@ contains
       deallocate (nEdgesHalo, &
                   nCellsHalo, &
                   nVerticesHalo, &
-                  edgeMask, &
-                  cellMask, &
-                  vertexMask, &
                   boundaryEdge, &
                   boundaryCell, &
                   boundaryVertex, &
-                  edgeSignOnCell, &
-                  edgeSignOnVertex, &
                   edgeAreaFractionOfCell, &
                   invAreaCell)
 
@@ -928,14 +908,8 @@ contains
       ! temporary pointers for converting masks
       integer k, n          ! loop indices
       integer, dimension(:, :), pointer :: &
-         edgeMaskTmp, &
-         vertexMaskTmp, &
-         cellMaskTmp, &
          edgeSignOnCellTmp, &
-         edgeSignOnVertexTmp, &
-         boundaryEdgeTmp, &
-         boundaryVertexTmp, &
-         boundaryCellTmp
+         edgeSignOnVertexTmp
 
       !***
       !*** end of preamble, begin code
@@ -1076,59 +1050,50 @@ contains
       ! updated values. Probably only the edgeSign masks need updating, but
       ! do them all to be sure.
       call mpas_pool_get_array(meshPool, 'edgeMask', &
-                               edgeMaskTmp)
+                               edgeMask)
       call mpas_pool_get_array(meshPool, 'vertexMask', &
-                               vertexMaskTmp)
+                               vertexMask)
       call mpas_pool_get_array(meshPool, 'cellMask', &
-                               cellMaskTmp)
+                               cellMask)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', &
-                               edgeSignOnCellTmp)
+                               edgeSignOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnVertex', &
-                               edgeSignOnVertexTmp)
-      call mpas_pool_get_array(meshPool, 'boundaryEdge', &
-                               boundaryEdgeTmp)
-      call mpas_pool_get_array(meshPool, 'boundaryVertex', &
-                               boundaryVertexTmp)
-      call mpas_pool_get_array(meshPool, 'boundaryCell', &
-                               boundaryCellTmp)
+                               edgeSignOnVertex)
 
-      do n = 1, nCells+1
-      do k = 1, nVertLevels
-         cellMask(k, n) = real(cellMaskTmp(k, n), RKIND)
-         boundaryCell(k, n) = real(boundaryCellTmp(k, n), RKIND)
-      end do
-      end do
-
-      ! Allocatable array was updated in ocn_init_routines_setup_sign_and_index_fields.  Now the
-      ! pointer needs to be udpated
-      do n = 1, nCells+1
-      do k = 1, maxEdges
-         edgeSignOnCellTmp(k, n) = int(edgeSignOnCell(k, n))
-      end do
-      end do
-
-      do n = 1, nEdges+1
-      do k = 1, nVertLevels
-         edgeMask(k, n) = real(edgeMaskTmp(k, n), RKIND)
-         boundaryEdge(k, n) = real(boundaryEdgeTmp(k, n), RKIND)
-      end do
-      end do
-
-      do n = 1, nVertices+1
-      do k = 1, nVertLevels
-         vertexMask(k, n) = real(vertexMaskTmp(k, n), RKIND)
-         boundaryVertex(k, n) = real(boundaryVertexTmp(k, n), RKIND)
-      end do
-      end do
-
-      ! Allocatable array was updated in ocn_init_routines_setup_sign_and_index_fields.  Now the
-      ! pointer needs to be udpated
-      do n = 1, nVertices+1
-      do k = 1, vertexDegree
-         edgeSignOnVertexTmp(k, n) = &
-            int(edgeSignOnVertex(k, n))
-      end do
-      end do
+!      do n = 1, nCells+1
+!      do k = 1, nVertLevels
+!         boundaryCell(k, n) = real(boundaryCellTmp(k, n), RKIND)
+!      end do
+!      end do
+!
+!      ! Allocatable array was updated in ocn_init_routines_setup_sign_and_index_fields.  Now the
+!      ! pointer needs to be udpated
+!      do n = 1, nCells+1
+!      do k = 1, maxEdges
+!         edgeSignOnCellTmp(k, n) = int(edgeSignOnCell(k, n))
+!      end do
+!      end do
+!
+!      do n = 1, nEdges+1
+!      do k = 1, nVertLevels
+!         boundaryEdge(k, n) = real(boundaryEdgeTmp(k, n), RKIND)
+!      end do
+!      end do
+!
+!      do n = 1, nVertices+1
+!      do k = 1, nVertLevels
+!         boundaryVertex(k, n) = real(boundaryVertexTmp(k, n), RKIND)
+!      end do
+!      end do
+!
+!      ! Allocatable array was updated in ocn_init_routines_setup_sign_and_index_fields.  Now the
+!      ! pointer needs to be udpated
+!      do n = 1, nVertices+1
+!      do k = 1, vertexDegree
+!         edgeSignOnVertexTmp(k, n) = &
+!            int(edgeSignOnVertex(k, n))
+!      end do
+!      end do
 
       ! Go ahead and update all fields on device to be safe.
       ! NOTE: if we end up computing some fields on the device during
@@ -1350,7 +1315,7 @@ contains
 
       ! set boundary edge
       boundaryEdge(:,1:nEdges+1)=1.0_RKIND
-      edgeMask(:,1:nEdges+1)=0.0_RKIND
+      !edgeMask(1:nEdges+1)=0
 
       ! TODO: Replace this loop over levels with MALI levels
       !do iEdge = 1, nEdges
@@ -1362,9 +1327,9 @@ contains
 
       ! Find cells and vertices that have an edge on the boundary
       boundaryCell(:,1:nCells+1) = 0.0_RKIND
-      cellMask(:,1:nCells+1) = 0.0_RKIND
+      !cellMask(1:nCells+1) = 0
       boundaryVertex(:,1:nVertices+1) = 0.0_RKIND
-      vertexMask(:,1:nVertices+1) = 0.0_RKIND
+      !vertexMask(1:nVertices+1) = 0
 
       do iEdge = 1, nEdges
       do k = 1, nVertLevels
@@ -1429,7 +1394,6 @@ contains
       ! Initialize to zero
       edgeSignOnCell   = 0.0_RKIND
       edgeSignOnVertex = 0.0_RKIND
-      kiteIndexOnCell  = 0
 
       do iCell = 1, nCells
          do i = 1, nEdgesOnCell(iCell)
@@ -1443,11 +1407,6 @@ contains
                edgeSignOnCell(i, iCell) =  1.0_RKIND
             end if
 
-            do j = 1, vertexDegree
-               if (cellsOnVertex(j,iVertex) == iCell) then
-                  kiteIndexOnCell(i,iCell) = j
-               end if
-            end do
          end do
       end do
 
