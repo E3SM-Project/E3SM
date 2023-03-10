@@ -34,7 +34,7 @@ TEST_CASE("cld_fraction-stand-alone", "") {
   const auto procs_params   = ad_params.sublist("atmosphere_processes");
   const auto cld_params     = procs_params.sublist("CldFraction");
   const auto ice_thresh     = cld_params.get<double>("ice_cloud_threshold");
-  const auto ice_thresh_out = cld_params.get<double>("ice_cloud_for_output_threshold");
+  const auto ice_thresh_out = cld_params.get<double>("ice_cloud_for_analysis_threshold");
 
   EKAT_ASSERT_MSG (dt>0, "Error! Time step must be positive.\n");
 
@@ -65,7 +65,7 @@ TEST_CASE("cld_fraction-stand-alone", "") {
   int num_levs = grid->get_num_vertical_levels();  // Number of levels per column
 
   const auto& qi_field           = field_mgr.get_field("qi");
-  const auto& liq_cld_frac_field = field_mgr.get_field("cldfrac_liq");  //TODO: This FM name will probably change soon.
+  const auto& liq_cld_frac_field = field_mgr.get_field("cldfrac_liq");
   const auto& qi                 = qi_field.get_view<Real**,Host>();
   const auto& liq_cld_frac       = liq_cld_frac_field.get_view<Real**,Host>();
 
@@ -113,8 +113,8 @@ TEST_CASE("cld_fraction-stand-alone", "") {
   const auto& ice_cld_frac = ice_cld_frac_field.get_view<Real**,Host>();
   const auto& tot_cld_frac = tot_cld_frac_field.get_view<Real**,Host>();
 
-  const auto& ice_cld_frac_field_4out = field_mgr.get_field("cldfrac_ice_for_output");  //TODO: This FM name will probably change soon.
-  const auto& tot_cld_frac_field_4out = field_mgr.get_field("cldfrac_tot_for_output");  //TODO: This FM name will probably change soon.
+  const auto& ice_cld_frac_field_4out = field_mgr.get_field("cldfrac_ice_for_analysis"); 
+  const auto& tot_cld_frac_field_4out = field_mgr.get_field("cldfrac_tot_for_analysis"); 
   ice_cld_frac_field_4out.sync_to_host();
   tot_cld_frac_field_4out.sync_to_host();
   const auto& ice_cld_frac_4out = ice_cld_frac_field_4out.get_view<Real**,Host>();

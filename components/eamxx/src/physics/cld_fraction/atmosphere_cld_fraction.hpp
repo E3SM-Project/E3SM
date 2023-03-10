@@ -50,7 +50,7 @@ protected:
 
   // Parameters for cloud fraction cutoff
   Real m_icecloud_threshold;
-  Real m_icecloud_for_output_threshold;
+  Real m_icecloud_for_analysis_threshold;
 
   std::shared_ptr<const AbstractGrid> m_grid;
 }; // class CldFraction
