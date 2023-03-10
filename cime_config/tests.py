@@ -127,6 +127,7 @@ _TESTS = {
 
     #atmopheric tests for extra coverage
     "e3sm_atm_extra_coverage" : {
+        "inherit" : ("eam_condidiag"),
         "tests" : (
             "SMS_Lm1.ne4_oQU240.F2010",
             "ERS_Ld31.ne4_oQU240.F2010",
