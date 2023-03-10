@@ -51,7 +51,12 @@ endif()
 # to be on. For now, simply ensure Kokkos Serial is enabled
 option (Kokkos_ENABLE_SERIAL "" ON)
 
-set (CMAKE_CXX_STANDARD 14)
+# MAM support requires C++17 -- hopefully SCREAM itself will get there soon
+if (SCREAM_ENABLE_MAM)
+  set(CMAKE_CXX_STANDARD 17)
+else()
+  set(CMAKE_CXX_STANDARD 14)
+endif()
 
 if (NOT SCREAM_CIME_BUILD)
   project(SCREAM CXX C Fortran)
@@ -205,6 +210,7 @@ set(NetCDF_Fortran_PATH ${DEFAULT_NetCDF_Fortran_PATH} CACHE FILEPATH "Path to n
 set(NetCDF_C_PATH ${DEFAULT_NetCDF_C_PATH} CACHE FILEPATH "Path to netcdf C installation")
 set(SCREAM_MACHINE ${DEFAULT_SCREAM_MACHINE} CACHE STRING "The CIME/SCREAM name for the current machine")
 option(SCREAM_MPI_ON_DEVICE "Whether to use device pointers for MPI calls" ON)
+option(SCREAM_ENABLE_MAM "Whether to enable MAM aerosol support" OFF)
 set(SCREAM_SMALL_KERNELS ${DEFAULT_SMALL_KERNELS} CACHE STRING "Use small, non-monolothic kokkos kernels")
 if (NOT SCREAM_SMALL_KERNELS)
   set(EKAT_DISABLE_WORKSPACE_SHARING TRUE CACHE STRING "")
