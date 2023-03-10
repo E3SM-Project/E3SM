@@ -2497,6 +2497,9 @@ module ocn_time_integration_split
                                       timeLevel=2)
       call mpas_timer_stop('se vmix halos normalVelFld')
 
+      call mpas_dmpar_field_halo_exch(domain, 'vertVelocityNonhydro', &
+                                      timeLevel=2)
+
       call mpas_pool_begin_iteration(tracersPool)
       do while ( mpas_pool_get_next_member(tracersPool, groupItr) )
          if (groupItr%memberType == MPAS_POOL_FIELD) then

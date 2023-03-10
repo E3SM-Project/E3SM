@@ -193,7 +193,7 @@ module ocn_compute_nonhydrostatic_pressure
        end do
 
        vertVelocityNonhydroNew(maxLevelCell(iCell) + 1, iCell) = 0.0_RKIND
-       do k=maxLevelCell(iCell),1,-1
+       do k=maxLevelCell(iCell),minLevelCell(iCell),-1
           vertVelocityNonhydroNew(k,iCell) = vertVelocityNonhydroNew(k+1,iCell) - div_hu(k)
        end do
     end do
@@ -206,7 +206,7 @@ module ocn_compute_nonhydrostatic_pressure
     !$omp do schedule(runtime) &
     !$omp private(k)
     do iCell=1,nCells
-       do k = 1,maxLevelCell(iCell)
+       do k = minLevelCell(iCell),maxLevelCell(iCell)
           nonhydrostaticPressure(k,iCell) = nonhydrostaticPressureOld(k,iCell) + &
                   nhPressureCorrection(k,iCell)
        end do 
@@ -257,7 +257,7 @@ module ocn_compute_nonhydrostatic_pressure
      real(kind=RKIND), dimension(nVertLevels) :: div   
 
 #ifdef USE_PETSC
-     PetscScalar :: insertVal
+     PetscScalar :: insertVal, rhsSum
      PetscInt :: itNum
 
      call mpas_timer_start('NH solve - matrix',.false.)
@@ -280,7 +280,7 @@ module ocn_compute_nonhydrostatic_pressure
 
            xEdge = dvEdge(iEdge) / dcEdge(iEdge)
 
-           do k = 1, maxLevelCell(iCell)
+           do k = minLevelCell(iCell), maxLevelCell(iCell)
               if (boundaryEdge(k,iEdge) .ge. 1) cycle
 
               ! this map could actually create unreferenced rows, etc
@@ -307,7 +307,7 @@ module ocn_compute_nonhydrostatic_pressure
 
         ! first layer upper q = 0
         ! first layer lower
-        k = 1 !minLevelCell(iCell)
+        k = minLevelCell(iCell) !1
 
         thicknessUpper = 1.0E-15_RKIND + 0.5_RKIND * ( &
            layerThickness(k,iCell) )
@@ -407,7 +407,7 @@ module ocn_compute_nonhydrostatic_pressure
 
            iEdge = edgesOnCell(jEdge,iCell)
 
-           do k = 1, maxLevelCell(iCell)
+           do k = minLevelCell(iCell), maxLevelCell(iCell)
 
               div(k) = div(k) - &
                  edgeSignOnCell(jEdge,iCell) * dvEdge(iEdge) * &
@@ -419,7 +419,7 @@ module ocn_compute_nonhydrostatic_pressure
 
         ! z-part of 1/dt * div(u*)
 
-        do k = 1, maxLevelCell(iCell)
+        do k = minLevelCell(iCell), maxLevelCell(iCell)
 
            div(k) = div(k) + areaCell(iCell) * ( &
               vertVelocityNonhydroNew(k,iCell) - vertVelocityNonhydroNew(k+1,iCell))
@@ -428,7 +428,7 @@ module ocn_compute_nonhydrostatic_pressure
 
        ! copy into full rhs vector
 
-        do k = 1, maxLevelCell(iCell)
+        do k = minLevelCell(iCell), maxLevelCell(iCell)
            iCell3d = (indexToCellId(iCell) - 1) * nVertLevels + k - 1
            insertVal = div(k) / dt
            call VecSetValues(b, 1, iCell3d, insertVal, INSERT_VALUES, petsc_err)
@@ -438,6 +438,12 @@ module ocn_compute_nonhydrostatic_pressure
 
      call VecAssemblyBegin(b,petsc_err)
      call VecAssemblyEnd(b,petsc_err)
+
+     if (config_nonhydrostatic_remove_rhs_mean) then
+        call VecSum(b, rhsSum, petsc_err)
+        rhsSum = rhsSum / globalM
+        call VecAXPY(b, rhsSum, negOneVec, petsc_err)
+     end if
 
      call mpas_timer_stop('NH solve - rhs')
 
@@ -466,7 +472,7 @@ module ocn_compute_nonhydrostatic_pressure
      !$omp parallel
      !$omp do schedule(runtime) private(k,vecSpot)
      do iCell=1,nCellsOwned
-        do k=1,maxLevelCell(iCell)
+        do k=minLevelCell(iCell),maxLevelCell(iCell)
           !vecSpot = (indexToCellId(iCell) - 1) * nVertLevels + k - 1
           !nhPressureCorrection(k,iCell) = values(vecSpot+1)
           vecSpot = (iCell - 1) * nVertLevels + k - 1
@@ -587,7 +593,7 @@ module ocn_compute_nonhydrostatic_pressure
     else
       call MatSetType( Amat, MATMPIAIJ, petsc_err )
       call MatSetFromOptions(Amat,petsc_err)
-      call MatMPIAIJSetPreallocation(Amat, 2*nnzRowMax, PETSC_NULL_INTEGER, 2*nnzRowMax, PETSC_NULL_INTEGER, petsc_err)
+      call MatMPIAIJSetPreallocation(Amat, nnzRowMax, PETSC_NULL_INTEGER, nnzRowMax, PETSC_NULL_INTEGER, petsc_err)
     end if
 
     !call MatSetFromOptions(Amat,petsc_err)

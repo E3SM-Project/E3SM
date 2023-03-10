@@ -200,7 +200,7 @@ contains
 
       err = 0
 
-      del2on = .false.
+      del2On = .false.
 
       !if ( config_use_vertMom_del2 .or. config_use_two_equation_turbulence_model ) then
       if ( config_use_vertMom_del2 ) then

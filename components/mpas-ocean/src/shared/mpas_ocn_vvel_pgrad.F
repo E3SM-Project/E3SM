@@ -26,6 +26,7 @@ module ocn_vvel_pgrad
    use mpas_pool_routines
    use ocn_constants
    use ocn_config
+   use ocn_mesh
    use ocn_diagnostics_variables
 
    implicit none
@@ -113,7 +114,7 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: j, k, i, iCell, nCells
+      integer :: j, k, i, iCell, nCells, kmin
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: maxLevelCell, nCellsArray
 
@@ -133,12 +134,17 @@ contains
       !$omp do schedule(runtime) &
       !$omp private(k)
       do iCell= 1, nCells
-         tend(1,iCell) = tend(1,iCell) - & ! nhPressure = 0.0 at surface
-            2.0_RKIND * (-nhPressure(1,iCell)) / layerThickness(1,iCell)
-         do k = 2, maxLevelCell(iCell)
+         kmin = minLevelCell(iCell)
+         tend(kmin,iCell) = tend(kmin,iCell) - & ! nhPressure = 0.0 at surface
+            2.0_RKIND * (-nhPressure(kmin,iCell)) / layerThickness(kmin,iCell)
+         do k = kmin+1, maxLevelCell(iCell)
             tend(k,iCell) = tend(k,iCell) - &
                2.0_RKIND * (nhPressure(k-1,iCell) - nhPressure(k,iCell)) &
-                  / (layerThickness(k-1,iCell) + layerThickness(k,iCell)) 
+                  / (layerThickness(k-1,iCell) + layerThickness(k,iCell))
+            if (abs(nhPressure(k-1,iCell) - nhPressure(k,iCell))>5.0) then
+               !print*, 'PRESSURE ', iCell, k, kmin, maxLevelCell(iCell), nEdgesOnCell(iCell), boundaryCell(k,iCell), boundaryCell(k-1,iCell)  !lonCell(iCell), latCell(iCell)
+               print*, 'PRESSURE ', iCell, k, maxLevelCell(iCell), nhPressure(k-1,iCell), nhPressure(k,iCell)!, nhPressure(k+1,iCell)
+            end if
          end do
 
       end do

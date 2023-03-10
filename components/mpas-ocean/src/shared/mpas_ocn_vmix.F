@@ -508,7 +508,7 @@ contains
 
 !***********************************************************************
 !
-   !  routine ocn_verVel_vmix_tend_implicit
+   !  routine ocn_vertVel_vmix_tend_implicit
    !
    !> \brief   Computes tendencies for implicit vertical momentum vertical
    !mixing
@@ -566,15 +566,15 @@ contains
       !
       !-----------------------------------------------------------------
 
-      integer :: iCell, i, k, N, nCells
+      integer :: iCell, i, k, N, Nsurf, nCells
       integer, pointer :: nVertLevels
       integer, dimension(:), pointer :: nCellsArray
 
       integer, dimension(:), pointer :: maxLevelCell
-      real(kind=RKIND) :: viscAv, m
+      real(kind=RKIND) :: viscAv, m, A, thickAv
       integer, dimension(:,:), pointer :: cellsOnEdge
 
-      real (kind=RKIND), dimension(:), allocatable :: A, B, C, velTemp
+      real (kind=RKIND), dimension(:), allocatable :: C, velTemp
       real (kind=RKIND), dimension(:), allocatable :: bTemp, rTemp
 
       err = 0
@@ -590,61 +590,49 @@ contains
       nCells = nCellsArray( 1 )
 
       allocate(bTemp(nVertLevels+1), rTemp(nVertLevels+1))
-      allocate(A(nVertLevels+1),B(nVertLevels+1),C(nVertLevels+1),velTemp(nVertLevels+1))
-      A(1) = 0.0_RKIND
-      B(1) = 0.0_RKIND
-      C(1) = 0.0_RKIND
+      allocate(C(nVertLevels+1),velTemp(nVertLevels+1))
 
       !$omp parallel
       !$omp do schedule(runtime) private(viscAv, N, A, B, C, velTemp, k) 
       do iCell = 1, nCells
-        N = maxLevelCell(iCell)+1
-        if (N .gt. 0) then
-        A(N) = 0.0_RKIND
-        C(N) = 0.0_RKIND
+         Nsurf = minLevelCell(iCell)
+         N = maxLevelCell(iCell)+1
 
-        ! A is lower diagonal term
-        do k = 2, N-1
-            viscAv = 0.5_RKIND*(vertViscTopOfCell(k-1,iCell) + vertViscTopOfCell(k,iCell))
-            A(k) = dt*viscAv / layerThickness(k-1,iCell) / (0.5_RKIND* &
-                    (layerThickness(k-1,iCell) + layerThickness(k,iCell)))
-         enddo
-         ! C is upper diagonal term
-         do k = 2, N-1
-           viscAv = 0.5_RKIND*(vertViscTopOfCell(k,iCell) + vertViscTopOfCell(k+1,iCell))
-           C(k) = dt*viscAv / layerThickness(k,iCell) / (0.5_RKIND* &
-                   (layerThickness(k,iCell) + layerThickness(k-1,iCell)))
-         enddo
+         ! tridiagonal matrix algorithm
+         C(Nsurf)     = 0.0_RKIND  ! wnew(Nsurf) = w(Nsurf)
+         bTemp(Nsurf) = 1.0_RKIND
+         rTemp(Nsurf) = vertVelocityNonhydro(Nsurf,iCell)
 
-         ! B is diagonal term
-         do k = 1, N
-            B(k) = 1.0_RKIND - A(k) - C(k)
-         enddo
-
-         ! Use work variables for b and r
-         bTemp(1) = B(1)
-         rTemp(1) = vertVelocityNonhydro(1,iCell)
-
-         ! First pass: set the coefficients
-         do i = 2,N
-            m = A(i-1)/bTemp(i-1)
-            bTemp(i) = B(i) - m*C(i-1)
-            rTemp(i) = vertVelocityNonhydro(i,iCell) - m*rTemp(i-1)
+         ! first pass: set the coefficients
+         do k = Nsurf+1, N-1
+            thickAv  = 0.5_RKIND * (layerThickness(k-1,iCell) + layerThickness(k,iCell))
+            viscAv   = 0.5_RKIND * (vertViscTopOfCell(k-1,iCell) + vertViscTopOfCell(k,iCell))
+            A        = -dt * viscAv / layerThickness(k-1,iCell) / thickAv
+            m        =  A / bTemp(k-1)
+            viscAv   = 0.5_RKIND * (vertViscTopOfCell(k+1,iCell) + vertViscTopOfCell(k,iCell))
+            C(k)     = -dt * viscAv / layerThickness(k,iCell) / thickAv
+            bTemp(k) = 1.0_RKIND - A - C(k) - m * C(k-1)
+            rTemp(k) = vertVelocityNonhydro(k,iCell) - m * rTemp(k-1)
          end do
 
-         velTemp(N) = rTemp(N)/bTemp(N)
-         ! Second pass: back-substition
-         do i = N-1, 1, -1
-            velTemp(i) = (rTemp(i) - C(i)*velTemp(i+1))/bTemp(i)
+         A = 0.0_RKIND  ! wnew(N) = w(N)
+         m = A / bTemp(N-1)
+         velTemp(N) = (vertVelocityNonhydro(N,iCell) - m * rTemp(N-1)) / (1.0_RKIND - A - m * C(N-1))
+
+         ! second pass: back substitution
+         do k = N-1, Nsurf, -1
+             velTemp(k) = (rTemp(k) - C(k) * velTemp(k+1)) / bTemp(k)
          end do
 
-         vertVelocityNonhydro(1:N,iCell) = velTemp(1:N)
-        end if
+         vertVelocityNonhydro(Nsurf:N,iCell) = velTemp(Nsurf:N)
+         vertVelocityNonhydro(1:Nsurf-1,iCell) = 0.0_RKIND
+         vertVelocityNonhydro(N+1:nVertLevels,iCell) = 0.0_RKIND
+
       end do
       !$omp end do
       !$omp end parallel
 
-      deallocate(A,B,C,velTemp)
+      deallocate(C,velTemp)
       deallocate(bTemp, rTemp)
 
    !--------------------------------------------------------------------
