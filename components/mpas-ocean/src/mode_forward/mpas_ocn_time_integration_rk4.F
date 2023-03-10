@@ -1004,6 +1004,8 @@ module ocn_time_integration_rk4
       integer, pointer :: nEdges, nVertLevels
       err = 0
 
+      if (config_disable_tr_all_tend) return
+
       call mpas_pool_get_config(block % configs, 'config_filter_btr_mode', config_filter_btr_mode)
 
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
