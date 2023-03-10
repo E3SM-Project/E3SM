@@ -23,8 +23,13 @@ def atm_config_chg(changes, no_buffer=False, reset=False):
            "No pwd/namelist_scream.xml file is present. Please run from a case dir that has been set up")
 
     if reset:
-        run_cmd_no_fail(f"./xmlchange SCREAM_ATMCHANGE_BUFFER=''")
+        run_cmd_no_fail("./xmlchange SCREAM_ATMCHANGE_BUFFER=''")
         print("All buffered atmchanges have been removed. A fresh namelist_scream.xml will be generated the next time buildnml (case.setup) is run.")
+        hack_xml = run_cmd_no_fail("./xmlquery SCREAM_HACK_XML --value")
+        if hack_xml == "TRUE":
+            print("SCREAM_HACK_XML is on. Removing namelist_scream.xml to force regen")
+            os.remove("namelist_scream.xml")
+
         return True
     else:
         expect(changes, "Missing <param>=<val> args")
