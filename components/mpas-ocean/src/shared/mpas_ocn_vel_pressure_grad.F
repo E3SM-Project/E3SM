@@ -597,7 +597,7 @@ contains
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
             invdcEdge = 1.0_RKIND / dcEdge(iEdge)
-            
+
             do k=1,maxLevelEdgeTop(iEdge)
                tend(k,iEdge) = tend(k,iEdge) + edgeMask(k,iEdge) * invdcEdge * ( &
                  - ( nonhydrostaticPressure(k,cell2) - nonhydrostaticPressure(k,cell1) ) )

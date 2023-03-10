@@ -141,12 +141,7 @@ contains
             tend(k,iCell) = tend(k,iCell) - &
                2.0_RKIND * (nhPressure(k-1,iCell) - nhPressure(k,iCell)) &
                   / (layerThickness(k-1,iCell) + layerThickness(k,iCell))
-            if (abs(nhPressure(k-1,iCell) - nhPressure(k,iCell))>5.0) then
-               !print*, 'PRESSURE ', iCell, k, kmin, maxLevelCell(iCell), nEdgesOnCell(iCell), boundaryCell(k,iCell), boundaryCell(k-1,iCell)  !lonCell(iCell), latCell(iCell)
-               print*, 'PRESSURE ', iCell, k, maxLevelCell(iCell), nhPressure(k-1,iCell), nhPressure(k,iCell)!, nhPressure(k+1,iCell)
-            end if
          end do
-
       end do
       !$omp end do
       !$omp end parallel

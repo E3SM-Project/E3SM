@@ -56,7 +56,7 @@ module ocn_compute_nonhydrostatic_pressure
   public :: ocn_nonhydrostatic_pressure_tend, &
             ocn_nonhydrostatic_solver_init,   &
             ocn_nonhydrostatic_solver_finalize, &
-            ocn_nonhydrostatic_solver_everything, &
+            ocn_nonhydrostatic_solver, &
             ocn_nonhydrostatic_pressure_update_velocity
 
   !--------------------------------------------------------------------
@@ -113,7 +113,7 @@ module ocn_compute_nonhydrostatic_pressure
 
     reuse_preconditioner = .false.
 
-    call ocn_nonhydrostatic_solver_everything(normalVelocityNew, &
+    call ocn_nonhydrostatic_solver(normalVelocityNew, &
        vertVelocityNonhydroNew, layerThickness, layerThicknessEdge, mpi_comm, &
        dt, nhPressureCorrection)
 
@@ -220,7 +220,7 @@ module ocn_compute_nonhydrostatic_pressure
 
   !--------------------------------------------------------------------
   ! 
-  ! routine ocn_nonhydrostatic_solver_everything
+  ! routine ocn_nonhydrostatic_solver
   !
   !> \brief   Create the matrix and right-hand-side and then solve the
   !>          linear system
@@ -231,7 +231,7 @@ module ocn_compute_nonhydrostatic_pressure
   !
   !--------------------------------------------------------------------
 
-  subroutine ocn_nonhydrostatic_solver_everything(normalVelocityNew, &
+  subroutine ocn_nonhydrostatic_solver(normalVelocityNew, &
       vertVelocityNonhydroNew, layerThickness, layerThicknessEdge, mpi_comm, &
       dt, nhPressureCorrection)
 
@@ -283,8 +283,6 @@ module ocn_compute_nonhydrostatic_pressure
            do k = minLevelCell(iCell), maxLevelCell(iCell)
               if (boundaryEdge(k,iEdge) .ge. 1) cycle
 
-              ! this map could actually create unreferenced rows, etc
-              ! when cells are masked out under bathymetry?
               iCell3d = (indexToCellId(iCell) - 1) * nVertLevels + k - 1
               jCell3d = (indexToCellId(jCell) - 1) * nVertLevels + k - 1   
      
@@ -294,13 +292,6 @@ module ocn_compute_nonhydrostatic_pressure
               call MatSetValues(Amat, 1, iCell3d, 1, iCell3d, insertVal, ADD_VALUES, petsc_err)
            end do
 
-        end do
-
-        ! for non-flat bathymetry
-        do k = maxLevelCell(iCell)+1, nVertLevels
-           iCell3D = (indexToCellId(iCell) - 1) * nVertLevels + k - 1
-           insertVal = 1.0_RKIND
-           call MatSetValues(Amat, 1, iCell3d, 1, iCell3d, insertVal, ADD_VALUES, petsc_err)
         end do
 
         ! z-part of del^2 operator
@@ -473,8 +464,6 @@ module ocn_compute_nonhydrostatic_pressure
      !$omp do schedule(runtime) private(k,vecSpot)
      do iCell=1,nCellsOwned
         do k=minLevelCell(iCell),maxLevelCell(iCell)
-          !vecSpot = (indexToCellId(iCell) - 1) * nVertLevels + k - 1
-          !nhPressureCorrection(k,iCell) = values(vecSpot+1)
           vecSpot = (iCell - 1) * nVertLevels + k - 1
           nhPressureCorrection(k,iCell) = values(vecSpot+1)
         end do 
@@ -486,7 +475,7 @@ module ocn_compute_nonhydrostatic_pressure
      call mpas_timer_stop('NH solve - solver') 
 #endif
 
-  end subroutine ocn_nonhydrostatic_solver_everything
+  end subroutine ocn_nonhydrostatic_solver
 
 
   !--------------------------------------------------------------------
@@ -515,7 +504,6 @@ module ocn_compute_nonhydrostatic_pressure
 #endif
     integer :: k, iCell, iter, nnzRowMax
 
-    !nnzRowMax = 9 * 2 + 4
     nnzRowMax = 1 + 2 + maxval(nEdgesOnCell)
 
 #ifndef USE_PETSC
@@ -595,20 +583,6 @@ module ocn_compute_nonhydrostatic_pressure
       call MatSetFromOptions(Amat,petsc_err)
       call MatMPIAIJSetPreallocation(Amat, nnzRowMax, PETSC_NULL_INTEGER, nnzRowMax, PETSC_NULL_INTEGER, petsc_err)
     end if
-
-    !call MatSetFromOptions(Amat,petsc_err)
-    !if(petsc_err .ne. 0) then
-    !  call mpas_log_write("ERROR: Petsc MatSetFromOptions failed, error_code = $i", MPAS_LOG_CRIT, &
-    !    intArgs=(/petsc_err/))
-    !  ierr = petsc_err
-    !endif
-
-    !call MatSetUp(Amat,petsc_err)
-    !if(petsc_err .ne. 0) then
-    !  call mpas_log_write("ERROR: Petsc MatSetUp failed, error_code = $i", MPAS_LOG_CRIT, &
-    !    intArgs=(/petsc_err/))
-    !  ierr = petsc_err
-    !endif
 
     call MatGetOwnershipRange(Amat,Istart,Iend,petsc_err)
     if(petsc_err .ne. 0) then
@@ -739,15 +713,12 @@ module ocn_compute_nonhydrostatic_pressure
 
 #ifdef USE_PETSC
     !stuff for PETSC_finalize from the scatter routine
-    !call ISDestroy(origIS, petsc_err)
-    !call ISDestroy(destIS, petsc_err)
     call VecScatterDestroy(scatter, petsc_err)
 
     call MatDestroy(Amat,petsc_err)
     call VecDestroy(b,petsc_err)
     call VecDestroy(x,petsc_err)
     call VecDestroy(negOneVec,petsc_err)
-    !call KSPDestroy(ksp,ierr2)
     call VecDestroy(local_x,petsc_err)
  
     !LPV FIXME : for some reason this causes error "Corrupt argument"
