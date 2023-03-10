@@ -60,8 +60,8 @@ void CldFraction::set_grids(const std::shared_ptr<const GridsManager> grids_mana
   // - There are no fields used as both input and output.
   
   // Gather parameters for ice cloud thresholds from parameter list:
-  m_icecloud_threshold = m_params.get<Real>("ice_cloud_threshold",1e-12);  // Default = 1e-12
-  m_icecloud_for_output_threshold = m_params.get<Real>("ice_cloud_for_output_threshold",1e-5); // Default = 1e-5
+  m_icecloud_threshold = m_params.get<double>("ice_cloud_threshold",1e-12);  // Default = 1e-12
+  m_icecloud_for_output_threshold = m_params.get<double>("ice_cloud_for_output_threshold",1e-5); // Default = 1e-5
 }
 
 // =========================================================================================

@@ -33,8 +33,8 @@ TEST_CASE("cld_fraction-stand-alone", "") {
   // Cloud fraction specific parameters
   const auto procs_params   = ad_params.sublist("atmosphere_processes");
   const auto cld_params     = procs_params.sublist("CldFraction");
-  const auto ice_thresh     = cld_params.get<Real>("ice_cloud_threshold");
-  const auto ice_thresh_out = cld_params.get<Real>("ice_cloud_for_output_threshold");
+  const auto ice_thresh     = cld_params.get<double>("ice_cloud_threshold");
+  const auto ice_thresh_out = cld_params.get<double>("ice_cloud_for_output_threshold");
 
   EKAT_ASSERT_MSG (dt>0, "Error! Time step must be positive.\n");
 
@@ -126,7 +126,6 @@ TEST_CASE("cld_fraction-stand-alone", "") {
     for (int jlev=0;jlev<num_levs;++jlev)
     {
       cf_amp = jlev == num_levs-1 ? 0.0 : 0.6;
-      printf("(%2d, %2d): [ %e, %e ], [ %e, %e ]\n",icol,jlev,qi(icol,jlev),liq_cld_frac(icol,jlev),ice_cld_frac(icol,jlev),tot_cld_frac(icol,jlev));
       // Make sure there are no cloud fractions greater than 1.0 or less than 0.0
       REQUIRE((!(liq_cld_frac(icol,jlev)>1.0) or !(ice_cld_frac(icol,jlev)>1.0) or !(tot_cld_frac(icol,jlev)>1.0)));
       REQUIRE((!(liq_cld_frac(icol,jlev)<0.0) or !(ice_cld_frac(icol,jlev)<0.0) or !(tot_cld_frac(icol,jlev)<0.0)));
