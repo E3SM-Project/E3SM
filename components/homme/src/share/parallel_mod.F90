@@ -101,7 +101,9 @@ contains
     integer :: max_stride
 #endif
     integer :: npes_cam_stride
+#ifdef CAM
     color=1
+#endif
     npes_cam_stride=1
     !================================================
     !     Basic MPI initialization
