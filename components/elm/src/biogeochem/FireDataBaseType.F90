@@ -81,7 +81,6 @@ module FireDataBaseType
    contains
    
      !-----------------------------------------------------------------------
-   !   subroutine BaseFireInit( this, bounds, cnstate_vars )
      subroutine BaseFireInit( this, bounds, NLFilename )
        !
        ! !DESCRIPTION:
@@ -97,6 +96,10 @@ module FireDataBaseType
 
        !-----------------------------------------------------------------------
    
+       ! Allocate real gdp data
+       allocate(this%gdp_lf_col(bounds%begc:bounds%endc))
+       this%gdp_lf_col(bounds%begc:) = spval
+
        if ( this%need_lightning_and_popdens() ) then
           ! Allocate lightning forcing data
           allocate( this%forc_lnfm(bounds%begg:bounds%endg) )
@@ -104,15 +107,15 @@ module FireDataBaseType
           ! Allocate pop dens forcing data
           allocate( this%forc_hdm(bounds%begg:bounds%endg) )
           this%forc_hdm(bounds%begg:) = spval
-          
-          ! Allocate real gdp data
-          allocate(this%gdp_lf_col(bounds%begc:bounds%endc))
-         !  this%gdp_lf_col => cnstate_vars%gdp_lf_col
    
           call this%hdm_init(bounds, NLFilename)
           call this%hdm_interp(bounds)
           call this%lnfm_init(bounds, NLFilename)
           call this%lnfm_interp(bounds)
+
+          ! Placeholder call for importing gdp data
+          ! if refactoring gdp read out of cnstatetype
+          ! call this%surfdataread(bounds)
        end if
    
      end subroutine BaseFireInit
@@ -447,6 +450,6 @@ module FireDataBaseType
      end subroutine lnfm_interp
    
      !-----------------------------------------------------------------------
-     
+
    end module FireDataBaseType
    
