@@ -487,7 +487,7 @@ module ocn_time_integration_si
 
 #ifdef MPAS_OPENACC
       !$acc enter data copyin(normalVelocityCur, normalBarotropicVelocityCur, &
-      !$acc   sshCur, layerThicknessCur)
+      !$acc   sshCur, layerThicknessCur,sshSubcycleCur,sshSubcycleNew)
       !$acc enter data create(normalBaroClinicVelocityCur, normalVelocityNew, &
       !$acc   normalBaroclinicVelocityNew, sshNew, layerThicknessNew)
 
@@ -1180,10 +1180,10 @@ module ocn_time_integration_si
             call mpas_timer_start("si btr outer residual")
    
 #ifdef MPAS_OPENACC
-            !$acc parallel loop gang &
+            !$acc parallel loop gang                                    &
             !$acc    present(nEdgesOnCell,edgesOnCell,cellsOnEdge,      &
             !$acc       sshSubcycleCur,bottomDepthEdge,dcEdge,          &
-            !$acc       normalBarotropicVelocityCur,maxLevelEdgeTop     &
+            !$acc       normalBarotropicVelocityCur,maxLevelEdgeTop,    &
             !$acc       barotropicCoriolisTerm,barotropicForcing,       &
             !$acc       edgeSignOnCell,dvEdge,areaCell,SIvec_r0,        &
             !$acc       SIvec_r00,SIvec_s0,SIvec_z0)                    &
@@ -1539,7 +1539,7 @@ module ocn_time_integration_si
             !$acc parallel loop gang &
             !$acc    present(nEdgesOnCell,edgesOnCell,cellsOnEdge,        &
             !$acc       sshSubcycleCur,sshNew,bottomDepthEdge,dcEdge,     &
-            !$acc       normalBarotropicVelocityCur,maxLevelEdgeTop       &
+            !$acc       normalBarotropicVelocityCur,maxLevelEdgeTop,      &
             !$acc       barotropicCoriolisTerm,barotropicForcing,         &
             !$acc       edgeSignOnCell,dvEdge,areaCell,SIvec_r0,          &
             !$acc       SIvec_r00,SIvec_s0,SIvec_z0)                      &
@@ -1805,11 +1805,11 @@ module ocn_time_integration_si
 
 #ifdef MPAS_OPENACC
             !$acc parallel loop gang &
-            !$acc    present(edgeMask,cellsOnEdge,dcEdge,    &
-            !$acc       normalBarotropicVelocityNew, &
+            !$acc    present(edgeMask,cellsOnEdge,dcEdge,           &
+            !$acc       normalBarotropicVelocityNew,                &
             !$acc       normalBarotropicVelocitySubcycleNew,        &
             !$acc       normalBarotropicVelocityCur,                &
-            !$acc       barotropicCoriolisTerm,barotropicForcing)
+            !$acc       barotropicCoriolisTerm,barotropicForcing)   &
             !$acc    private(temp_mask,cell1,cell2)
 #else
             !$omp parallel
@@ -1843,7 +1843,7 @@ module ocn_time_integration_si
             !$acc       normalBarotropicVelocityNew,edgeMask,           &
             !$acc       bottomDepthEdge,barotropicThicknessFlux,        &
             !$acc       barotropicCoriolisTerm,barotropicForcing,       &
-            !$acc       maxLevelEdgeTop)
+            !$acc       maxLevelEdgeTop)                                &
             !$acc    private(cell1,cell2,sshEdge,thicknessSum)
 #else
             !$omp parallel
@@ -3544,6 +3544,10 @@ module ocn_time_integration_si
             if ( int(mean_num_cells) > 4800 ) then
                call mpas_log_write( &
                '      nCells per core is larger than 4800 (CUBLAS enabled).')
+#elif defined MPAS_OPENACC
+            if ( int(mean_num_cells) > 2400 ) then
+               call mpas_log_write( &
+               '      nCells per core is larger than 2400 (no MAGMA or CUBLAS).')
 #else
             if ( int(mean_num_cells) > 1200 ) then
                call mpas_log_write( &
@@ -3568,9 +3572,8 @@ module ocn_time_integration_si
       if ( trim(config_btr_si_preconditioner) == 'ras' .or. &
            trim(config_btr_si_preconditioner) == 'block_jacobi' ) then
 
-!!! MAGMA-Fortran currently does not support packed storage routines.
 ! MAGMA IF ----!
-#ifdef USE_MAGMA
+#if defined(USE_MAGMA) || defined(USE_CUBLAS)
 ! MAGMA IF ----!
 
          if ( trim(config_btr_si_preconditioner) == 'ras' ) then
@@ -3821,26 +3824,15 @@ module ocn_time_integration_si
       !$acc    SIcst_r00y0,SIcst_r00t0,SIcst_r00v0,SIcst_q0q0 ,      &
       !$acc    SIcst_r00w0,SIcst_r00q0,SIcst_rho0,SIcst_rho1)
 
-
       if ( config_btr_si_partition_match_mode ) then
       !$acc enter data copyin(prec_ivmat,                            &
       !$acc               globalReprodSum2fld1,globalReprodSum2fld2, &
       !$acc               globalReprodSum3fld1,globalReprodSum3fld2 )
-      else
-         if ( si_algorithm == 'scg' ) then
-      !$acc enter data copyin(prec_ivmat,                            &
-      !$acc               globalReprodSum2fld1,globalReprodSum2fld2, &
-      !$acc               globalReprodSum3fld1,globalReprodSum3fld2 )
-         elseif ( si_algorithm == 'sbicg' ) then
-      !$acc enter data copyin(                                       &
-      !$acc               globalReprodSum2fld1,globalReprodSum2fld2, &
-      !$acc               globalReprodSum9fld1,globalReprodSum9fld2 )
+      endif
 
 #ifndef USE_MAGMA
       !$acc enter data copyin(prec_ivmat)
 #endif
-         endif
-      endif
 
 #ifdef USE_CUBLAS
 ! Dummy preconditioning for device copy CUBLAS-related arrays before
@@ -4000,47 +3992,41 @@ module ocn_time_integration_si
          !    : Use BLAS for the symmetric
          !      matrix-vector multiplication
 
-! MAGMA IF -----!
-#ifndef USE_MAGMA
-! --------------!
+#if defined(USE_MAGMA)
 
-         ! CUBLAS
-#ifdef USE_CUBLAS
-         !$acc host_data use_device(prec_ivmat,SIvec_in,SIvec_out)
-         call cublasDspmv('U',nPrecVec,1.0_RKIND,prec_ivmat(:,1), &
-                          SIvec_in(1:nPrecVec) , 1, 0.0_RKIND,    &
-                          SIvec_out(1:nPrecVec), 1)
-         !$acc end host_data
-         !$acc update host(SIvec_out)
-#else
-
-         ! LAPACK on CPU (if no CUBLAS & MAGMA ; Data staging)
-#ifdef MPAS_OPENACC
-         !$acc update host(SIvec_in,SIvec_in)
-#endif
-         call DSPMV('U', nPrecVec, 1.0_RKIND, prec_ivmat(:,1), &
-                    SIvec_in(1:nPrecVec) , 1, 0.0_RKIND,       &
-                    SIvec_out(1:nPrecVec), 1)
-#endif
-
-! MAGMA IF -----!
-#else
-! --------------!
- 
          ! MAGMA
-
          !$acc host_data use_device(SIvec_in)
          dxvec = loc(SIvec_in(1:nPrecVec))
          !$acc end host_data
-         call magmaf_dsymv('U', nPrecVec, 1.0d0, dprec_ivmat, &
-                                nPrecVec, dxvec, 1, 0.0d0,    &
+         call magmaf_dsymv('U', nPrecVec, 1.0_RKIND, dprec_ivmat, &
+                                nPrecVec, dxvec, 1, 0.0_RKIND,    &
                                           dyvec, 1, queue)
+
+         ! GPU -> CPU copy the out vector for halo exch
          call magmaf_dgetvector( nPrecVec,dyvec, 1, &
                                  SIvec_out(1:nPrecVec), 1, queue)
-! MAGMA IF -----!
-#endif
-! --------------!
 
+#elif defined(USE_CUBLAS)
+
+         ! CUBLAS
+         !$acc host_data use_device(prec_ivmat,SIvec_in,SIvec_out)
+         call cublasDsymv('U', nPrecVec, 1.0_RKIND,prec_ivmat(:,:), &
+                               nPrecVec, SIvec_in(1:nPrecVec),      &
+                                      1, 0.0_RKIND,                 &
+                                         SIvec_out(1:nPrecVec), 1)
+         !$acc end host_data
+         !$acc update host(SIvec_out)
+
+#else
+
+         ! LAPACK on CPU 
+         !    (also if no MAGMA & CUBLAS for GPU ; Data staging)
+         !$acc update host(SIvec_in)
+         call DSPMV('U', nPrecVec, 1.0_RKIND, prec_ivmat(:,1), &
+                         SIvec_in(1:nPrecVec) , 1, 0.0_RKIND,  &
+                         SIvec_out(1:nPrecVec), 1)
+
+#endif
 
       elseif ( trim(config_btr_si_preconditioner) == 'jacobi' ) then
          ! Jacobi preconditioning
@@ -4164,8 +4150,9 @@ module ocn_time_integration_si
 
          else
     
-            !$acc parallel loop present(SIcst_r0rh0,SIcst_w0rh0, &
-            !$acc    SIvec_1,SIvec_2,SIvec_3)                    &
+            !$acc parallel loop gang                     &
+            !$acc    present(SIcst_r0rh0,SIcst_w0rh0,    &
+            !$acc            SIvec_1,SIvec_2,SIvec_3)    &
             !$acc    reduction(+:SIcst_r0rh0,SIcst_w0rh0)
             do iCell = 1, nCellsOwned
                SIcst_r0rh0 = SIcst_r0rh0 + SIvec_1(iCell) &
@@ -4906,13 +4893,15 @@ module ocn_time_integration_si
       !$acc exit data delete(prec_ivmat,                             &
       !$acc               globalReprodSum2fld1,globalReprodSum2fld2, &
       !$acc               globalReprodSum3fld1,globalReprodSum3fld2 )
-      else
+      endif
+
 #ifndef USE_MAGMA
       !$acc exit data delete(prec_ivmat)
 #endif
-      endif
 
 #endif
+
+      deallocate(prec_ivmat)
 
       if ( config_btr_si_partition_match_mode ) then
          deallocate( globalReprodSum2fld1,  &
