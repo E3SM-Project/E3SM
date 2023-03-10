@@ -73,7 +73,8 @@ public:
         const Spack& pseudo_density_pack(pseudo_density(icol,ipack));
         const Spack& pseudo_density_dry_pack(pseudo_density_dry(icol,ipack));
 
-        dz(icol,ipack) = PF::calculate_dz(pseudo_density(icol,ipack), pmid_pack, T_atm_pack, qv(icol,ipack));
+        //use pack
+        dz(icol,ipack) = PF::calculate_dz(pseudo_density_dry(icol,ipack), pmid_pack, T_atm_pack, qv(icol,ipack));
 
         /*----------------------------------------------------------------------------------------------------------------------
          *Wet to dry mixing ratios:
@@ -93,8 +94,13 @@ public:
         qm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(qm(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack); //Rimmed ice mass
         bm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(bm(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack); //Rimmed ice number
         qv(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(qv(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);
+
+//IS THIS even USED?
         //Water vapor from previous time step
-        qv_prev(icol, ipack) = PF::calculate_drymmr_from_wetmmr_dp_based(qv_prev(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);
+        //qv_prev(icol, ipack) = PF::calculate_drymmr_from_wetmmr_dp_based(qv_prev(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);
+
+        //use pack
+        //dz(icol,ipack) = PF::calculate_dz(pseudo_density_dry(icol,ipack), pmid_pack, T_atm_pack, qv(icol,ipack));
 
         // Exner
         const auto& exner = PF::exner_function(pmid_pack);
