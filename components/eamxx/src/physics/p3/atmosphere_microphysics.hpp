@@ -68,13 +68,14 @@ public:
       for (int ipack=0;ipack<m_npack;ipack++) {
         // The ipack slice of input variables used more than once
         const Spack& pmid_pack(pmid(icol,ipack));
+        const Spack& pmid_dry_pack(pmid_dry(icol,ipack));
         const Spack& T_atm_pack(T_atm(icol,ipack));
         const Spack& cld_frac_t_pack(cld_frac_t(icol,ipack));
         const Spack& pseudo_density_pack(pseudo_density(icol,ipack));
         const Spack& pseudo_density_dry_pack(pseudo_density_dry(icol,ipack));
 
-        //use pack
-        dz(icol,ipack) = PF::calculate_dz(pseudo_density_dry(icol,ipack), pmid_pack, T_atm_pack, qv(icol,ipack));
+        //there is only one dz, computed from full pressure
+        dz(icol,ipack) = PF::calculate_dz(pseudo_density_pack, pmid_pack, T_atm_pack, qv(icol,ipack));
 
         /*----------------------------------------------------------------------------------------------------------------------
          *Wet to dry mixing ratios:
@@ -95,17 +96,16 @@ public:
         bm(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(bm(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack); //Rimmed ice number
         qv(icol, ipack)      = PF::calculate_drymmr_from_wetmmr_dp_based(qv(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);
 
-//IS THIS even USED?
         //Water vapor from previous time step
-        //qv_prev(icol, ipack) = PF::calculate_drymmr_from_wetmmr_dp_based(qv_prev(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);
+        qv_prev(icol, ipack) = PF::calculate_drymmr_from_wetmmr_dp_based(qv_prev(icol,ipack),pseudo_density_pack,pseudo_density_dry_pack);
 
         //use pack
         //dz(icol,ipack) = PF::calculate_dz(pseudo_density_dry(icol,ipack), pmid_pack, T_atm_pack, qv(icol,ipack));
 
-        // Exner
+        // Exner from full pressure?
         const auto& exner = PF::exner_function(pmid_pack);
         inv_exner(icol,ipack) = 1.0/exner;
-        // Potential temperature
+        // Potential temperature, from full pressure?
         th_atm(icol,ipack) = PF::calculate_theta_from_T(T_atm_pack,pmid_pack);
         // Cloud fraction
         // Set minimum cloud fraction - avoids division by zero
@@ -135,6 +135,7 @@ public:
     int m_ncol, m_npack;
     Real mincld = 0.0001;  // TODO: These should be stored somewhere as more universal constants.  Or maybe in the P3 class hpp
     view_2d_const pmid;
+    view_2d_const pmid_dry;
     view_2d_const pseudo_density;
     view_2d_const pseudo_density_dry;
     view_2d       T_atm;
@@ -157,7 +158,8 @@ public:
     view_2d       dz;
     // Assigning local variables
     void set_variables(const int ncol, const int npack,
-           const view_2d_const& pmid_, const view_2d_const& pseudo_density_, 
+           const view_2d_const& pmid_, const view_2d_const& pmid_dry_,
+           const view_2d_const& pseudo_density_, 
            const view_2d_const& pseudo_density_dry_, const view_2d& T_atm_,
            const view_2d_const& cld_frac_t_, const view_2d& qv_, const view_2d& qc_,
            const view_2d& nc_, const view_2d& qr_, const view_2d& nr_, const view_2d& qi_,
@@ -170,6 +172,7 @@ public:
       m_npack = npack;
       // IN
       pmid           = pmid_;
+      pmid_dry       = pmid_dry_;
       pseudo_density = pseudo_density_;
       pseudo_density_dry = pseudo_density_dry_;
       T_atm          = T_atm_;
@@ -257,6 +260,7 @@ public:
     double m_dt;
     view_2d       T_atm;
     view_2d_const pmid;
+    view_2d_const pmid_dry;
     view_2d_const pseudo_density;
     view_2d_const pseudo_density_dry;
     view_2d       th_atm;
@@ -284,7 +288,8 @@ public:
     view_1d       heat_flux;
 
     void set_variables(const int ncol, const int npack,
-                    const view_2d& th_atm_, const view_2d_const& pmid_, const view_2d& T_atm_, const view_2d& T_prev_,
+                    const view_2d& th_atm_, const view_2d_const& pmid_, const view_2d_const& pmid_dry_,
+                    const view_2d& T_atm_, const view_2d& T_prev_,
                     const view_2d_const& pseudo_density_, const view_2d_const& pseudo_density_dry_,
                     const view_2d& qv_, const view_2d& qc_, const view_2d& nc_, const view_2d& qr_, const view_2d& nr_,
                     const view_2d& qi_, const view_2d& qm_, const view_2d& ni_, const view_2d& bm_,
@@ -298,6 +303,7 @@ public:
       // IN
       th_atm               = th_atm_;
       pmid                 = pmid_;
+      pmid_dry             = pmid_dry_;
       pseudo_density       = pseudo_density_;
       pseudo_density_dry   = pseudo_density_dry_;
       qv                   = qv_;

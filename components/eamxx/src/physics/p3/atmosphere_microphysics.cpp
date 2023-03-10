@@ -67,6 +67,7 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   add_field<Required>("cldfrac_tot", scalar3d_layout_mid, nondim, grid_name, ps);
 
 //should we use one pressure only, wet/full?
+  add_field<Required>("p_mid",       scalar3d_layout_mid, Pa,     grid_name, ps);
   add_field<Required>("p_dry_mid",   scalar3d_layout_mid, Pa,     grid_name, ps);
   add_field<Updated> ("T_mid",       scalar3d_layout_mid, K,      grid_name, ps);  // T_mid is the only one of these variables that is also updated.
 
@@ -229,7 +230,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   //       variables a local view is constructed.
   const Int nk_pack = ekat::npack<Spack>(m_num_levs);
   const Int nk_pack_p1 = ekat::npack<Spack>(m_num_levs+1);
-  const  auto& pmid           = get_field_in("p_dry_mid").get_view<const Pack**>();
+  const  auto& pmid           = get_field_in("p_mid").get_view<const Pack**>();
+  const  auto& pmid_dry       = get_field_in("p_dry_mid").get_view<const Pack**>();
   const  auto& pseudo_density = get_field_in("pseudo_density").get_view<const Pack**>();
   const  auto& pseudo_density_dry = get_field_in("pseudo_density_dry").get_view<const Pack**>();
   const  auto& T_atm          = get_field_out("T_mid").get_view<Pack**>();
@@ -256,7 +258,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   auto dz         = m_buffer.dz;
 
   // -- Set values for the pre-amble structure
-  p3_preproc.set_variables(m_num_cols,nk_pack,pmid,pseudo_density,pseudo_density_dry,
+  p3_preproc.set_variables(m_num_cols,nk_pack,pmid,pmid_dry,pseudo_density,pseudo_density_dry,
                         T_atm,cld_frac_t,
                         qv, qc, nc, qr, nr, qi, qm, ni, bm, qv_prev,
                         inv_exner, th_atm, cld_frac_l, cld_frac_i, cld_frac_r, dz);
@@ -280,6 +282,8 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   }
   diag_inputs.ni_activated    = get_field_in("ni_activated").get_view<const Pack**>();
   diag_inputs.inv_qc_relvar   = get_field_in("inv_qc_relvar").get_view<const Pack**>();
+
+//OG why is this not using p3_preproc?
   diag_inputs.pres            = get_field_in("p_dry_mid").get_view<const Pack**>();
   diag_inputs.dpres           = p3_preproc.pseudo_density_dry; //give dry density as input
   diag_inputs.qv_prev         = p3_preproc.qv_prev;
@@ -308,7 +312,7 @@ void P3Microphysics::initialize_impl (const RunType /* run_type */)
   history_only.vap_ice_exchange = get_field_out("micro_vap_ice_exchange").get_view<Pack**>();
   // -- Set values for the post-amble structure
   p3_postproc.set_variables(m_num_cols,nk_pack,
-                            prog_state.th,pmid,T_atm,t_prev,
+                            prog_state.th,pmid,pmid_dry,T_atm,t_prev,
                             pseudo_density,pseudo_density_dry,
                             prog_state.qv, prog_state.qc, prog_state.nc, prog_state.qr,prog_state.nr,
                             prog_state.qi, prog_state.qm, prog_state.ni,prog_state.bm,qv_prev,
