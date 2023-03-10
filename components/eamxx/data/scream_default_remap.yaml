@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-Casename: ${CASE}.scream.arm_sites.hi
+filename_prefix: ${CASE}.scream.arm_sites.hi
 Averaging Type: Instant
 Max Snapshots Per File: 744 # One output every 31 days
 #remap_file: /g/g17/donahue5/Code/e3sm/scream-docs/regional_output_sites/20221123_ARM_sites_map.nc

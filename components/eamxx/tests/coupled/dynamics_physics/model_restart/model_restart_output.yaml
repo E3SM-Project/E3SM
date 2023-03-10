@@ -1,6 +1,6 @@
 %YAML 1.1
 ---
-Casename: model_output
+filename_prefix: model_output
 Averaging Type: Instant
 Max Snapshots Per File: 1
 Fields:
