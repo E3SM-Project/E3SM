@@ -744,6 +744,7 @@ void AtmosphereDriver::restart_model ()
   ekat::ParameterList rest_pl;
   rest_pl.set<std::string>("Filename",filename);
   AtmosphereInput model_restart(m_atm_comm,rest_pl);
+  m_atm_logger->info("    restart filename: " + filename);
 
   for (auto& it : m_field_mgrs) {
     if (fvphyshack and it.second->get_grid()->name() == "Physics GLL") continue;
@@ -966,13 +967,14 @@ void AtmosphereDriver::set_initial_conditions ()
   // If a filename is specified, use it to load inputs on all grids
   if (ic_pl.isParameter("Filename")) {
     // Now loop over all grids, and load from file the needed fields on each grid (if any).
-    m_atm_logger->debug("    [EAMxx] Reading fields from file ...");
     const auto& file_name = ic_pl.get<std::string>("Filename");
+    m_atm_logger->info("    [EAMxx] Reading fields from IC file");
+    m_atm_logger->info("      filename: " + file_name);
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
       read_fields_from_file (ic_fields_names[grid_name],it.first,file_name,m_current_ts);
     }
-    m_atm_logger->debug("    [EAMxx] Reading fields from file ... done!");
+    m_atm_logger->info("    [EAMxx] Reading fields from file ... done!");
   }
 
   // If there were any fields that needed to be copied per the input yaml file, now we copy them.
@@ -1032,8 +1034,9 @@ void AtmosphereDriver::set_initial_conditions ()
 
   // Load topography from file if topography file is given.
   if (ic_pl.isParameter("topography_filename")) {
-    m_atm_logger->debug("    [EAMxx] Reading topography from file ...");
+    m_atm_logger->info("    [EAMxx] Reading topography from file ...");
     const auto& file_name = ic_pl.get<std::string>("topography_filename");
+    m_atm_logger->info("        filename: " + file_name);
     for (const auto& it : m_field_mgrs) {
       const auto& grid_name = it.first;
       read_fields_from_file (topography_fields_names_nc[grid_name],
@@ -1070,9 +1073,6 @@ read_fields_from_file (const std::vector<std::string>& field_names_nc,
   if (field_names_nc.size()==0) {
     return;
   }
-
-  m_atm_logger->info("    [EAMxx] reading fields for grid " + grid_name);
-  m_atm_logger->info("        filename: " + file_name);
 
   ekat::ParameterList ic_reader_params;
   ic_reader_params.set("Field Names",field_names_nc);
