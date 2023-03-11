@@ -157,7 +157,7 @@ TEST_CASE("nudging") {
 
     // Set up parameter list control for output
     ekat::ParameterList params;
-    params.set<std::string>("Casename","io_output_test");
+    params.set<std::string>("filename_prefix","io_output_test");
     params.set<std::string>("Averaging Type","Instant");
     params.set<int>("Max Snapshots Per File",15);
     std::vector<std::string> fnames = {"T_mid","p_mid","qv","u","v"};
