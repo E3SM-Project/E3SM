@@ -72,12 +72,6 @@ module zm_conv
    logical :: trig_dcape_only  = .false. !true to use DCAPE trigger, ULL not used
    logical :: trig_ull_only    = .false. !true to use ULL along with default CAPE-based trigger
 
-!!!---
-!!!   integer, allocatable :: dcapemx(:) ! save maxi from 1st call for CAPE calculation and used in 2nd call when DCAPE-ULL active
-!!!!  May need to change to use local variable !  as passed via dummy argument. For now, making it threadprivate as follows,
-!!!!$omp threadprivate (dcapemx)
-!!!---
-
    real(r8) :: ke           ! Tunable evaporation efficiency set from namelist input zmconv_ke
    real(r8) :: c0_lnd       ! set from namelist input zmconv_c0_lnd
    real(r8) :: c0_ocn       ! set from namelist input zmconv_c0_ocn
@@ -104,7 +98,7 @@ module zm_conv
    real(r8) :: grav        ! = gravit
    real(r8) :: cp          ! = cpres = cpair
    
-   integer  limcnv       ! top interface level limit for convection
+   integer,protected ::  limcnv   ! top interface level limit for convection
 
    real(r8) :: tp_fac = unset_r8  ! PMA tunes tpert 
 
@@ -655,10 +649,6 @@ subroutine zm_convr(lchnk   ,ncol    , &
                   tpert   ,iclosure                            )  ! in
          
       if (trigdcape_ull .or. trig_dcape_only) then
-!!!         if (.not. allocated(dcapemx)) then
-!!!            allocate (dcapemx(pcols), stat=ierror)
-!!!            if ( ierror /= 0 ) call endrun('ZM_CONVR error: allocation error dcapemx')
-!!!         endif
          dcapemx(:ncol) = maxi(:ncol)
       endif
 
