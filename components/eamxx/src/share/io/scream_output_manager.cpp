@@ -14,6 +14,9 @@
 namespace scream
 {
 
+// Local helper functions:
+void set_file_header(const std::string& filename);
+
 void OutputManager::
 setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
        const std::shared_ptr<fm_type>& field_mgr,
@@ -146,13 +149,13 @@ setup (const ekat::Comm& io_comm, const ekat::ParameterList& params,
   // our averaging in a "restart" file (e.g., the current avg).
   // Note: the user might decide *not* to restart the output, so give the option
   //       of disabling the restart. Also, the user might want to change the
-  //       casename, so allow to specify a different casename for the restart file.
+  //       filename_prefix, so allow to specify a different filename_prefix for the restart file.
   if (m_is_restarted_run) {
-    // Allow to skip history restart, or to specify a casename for the restart file
-    // that is different from the casename of the current output.
+    // Allow to skip history restart, or to specify a filename_prefix for the restart file
+    // that is different from the filename_prefix of the current output.
     auto& restart_pl = m_params.sublist("Restart");
     bool perform_history_restart = restart_pl.get("Perform Restart",true);
-    auto hist_restart_casename = restart_pl.get("Casename",m_casename);
+    auto hist_restart_casename = restart_pl.get("filename_prefix",m_casename);
 
     if (perform_history_restart) {
       // We can use the step counter in run_t0 to check at what point within an output interval
@@ -410,7 +413,7 @@ set_params (const ekat::ParameterList& params,
       }
       fields_pl.sublist(it.first).set("Field Names",fnames);
     }
-    m_casename = m_params.get<std::string>("Casename");
+    m_casename = m_params.get<std::string>("filename_prefix");
     // Match precision of Fields
     m_params.set<std::string>("Floating Point Precision","real");
   } else {
@@ -421,7 +424,7 @@ set_params (const ekat::ParameterList& params,
         "       Valid options: Instant, Max, Min, Average. Case insensitive.\n");
 
     m_output_file_specs.max_snapshots_in_file = m_params.get<int>("Max Snapshots Per File",-1);
-    m_casename = m_params.get<std::string>("Casename");
+    m_casename = m_params.get<std::string>("filename_prefix");
 
     // Allow user to ask for higher precision for normal model output,
     // but default to single to save on storage
@@ -499,11 +502,16 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
   set_dof(filename,"time",0,time_dof);
 
   // Finish the definition phase for this file.
-  eam_pio_enddef (filename); 
   auto t0_date = m_case_t0.get_date()[0]*10000 + m_case_t0.get_date()[1]*100 + m_case_t0.get_date()[2];
   auto t0_time = m_case_t0.get_time()[0]*10000 + m_case_t0.get_time()[1]*100 + m_case_t0.get_time()[2];
   set_int_attribute_c2f(filename.c_str(),"start_date",t0_date);
   set_int_attribute_c2f(filename.c_str(),"start_time",t0_time);
+  set_str_attribute_c2f(filename.c_str(),"averaging_type",e2str(m_avg_type).c_str());
+  set_str_attribute_c2f(filename.c_str(),"averaging_frequency_units",m_output_control.frequency_units.c_str());
+  set_int_attribute_c2f(filename.c_str(),"averaging_frequency",m_output_control.frequency);
+  set_int_attribute_c2f(filename.c_str(),"max_snapshots_per_file",m_output_file_specs.max_snapshots_in_file);
+  set_file_header(filename);
+  eam_pio_enddef (filename); 
 
   if (m_avg_type!=OutputAvgType::Instant) {
     // Unfortunately, attributes cannot be set in define mode (why?), so this could
@@ -519,6 +527,30 @@ setup_file (      IOFileSpecs& filespecs, const IOControl& control,
   }
 
   filespecs.is_open = true;
+}
+/*===============================================================================================*/
+void set_file_header(const std::string& filename)
+{
+  using namespace scorpio;
+
+  // TODO: All attributes marked TODO below need to be set.  Hopefully by a universal value that reflects
+  // what the attribute is.  For example, git-hash should be the git-hash associated with this version of
+  // the code at build time for this executable.
+  set_str_attribute_c2f(filename.c_str(),"source","E3SM Atmosphere Model Version 4 (EAMxx)");  // TODO: probably want to make sure that new versions are reflected here.
+  set_str_attribute_c2f(filename.c_str(),"case","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"title","EAMxx History File");
+  set_str_attribute_c2f(filename.c_str(),"compset","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"git_hash","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"host","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"version","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"initial_file","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"topography_file","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"contact","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"institution_id","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"product","");  // TODO
+  set_str_attribute_c2f(filename.c_str(),"component","ATM");
+  set_str_attribute_c2f(filename.c_str(),"conventions","");  // TODO
+
 }
 
 } // namespace scream

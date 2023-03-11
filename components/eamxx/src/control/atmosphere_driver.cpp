@@ -618,8 +618,8 @@ void AtmosphereDriver::initialize_output_managers () {
     ekat::ParameterList params;
     ekat::parse_yaml_file(fname,params);
     // Check if the filename prefix for this file has already been set.  If not, use the simulation casename.
-    if (not params.isParameter("Casename")) {
-      params.set<std::string>("Casename",m_casename+".scream.h"+std::to_string(om_tally));
+    if (not params.isParameter("filename_prefix")) {
+      params.set<std::string>("filename_prefix",m_casename+".scream.h"+std::to_string(om_tally));
       om_tally++;
     }
     // Add a new output manager

@@ -5,8 +5,9 @@
 The file that defines all parameter input files for SCREAM. This file
 will be processed by SCREAM's buildnml script and produces the
 $case/namelist_scream.xml which is the fully resolved/processed
-info from this file. We recommend users use atm-config-chg for
-tweaking their $case/namelist_scream.xml file.
+info from this file. We highly recommend users use atmchange for
+tweaking their $case/namelist_scream.xml file. Direct edits will
+be lost if SCREAM_HACK_XML is not enabled.
 
 -->
 
@@ -360,7 +361,7 @@ tweaking their $case/namelist_scream.xml file.
   <Scorpio>
     <output_yaml_files type="array(string)">${SRCROOT}/components/eamxx/data/scream_default_output.yaml</output_yaml_files>
     <model_restart>
-      <Casename>./${CASE}.scream</Casename>
+      <filename_prefix>./${CASE}.scream</filename_prefix>
       <output_control>
         <Frequency>${REST_N}</Frequency>
         <frequency_units>${REST_OPTION}</frequency_units>
