@@ -1349,8 +1349,12 @@ Default: none
 
 <entry id="metric_cmpr_type" type="integer(10)"  category="history"
        group="conditional_diag_nl" valid_values="-2,-1,0,1,2" >
-Types of comparison (.le., .lt., .eq. within tolerance, .gt., .ge.)
-to be used in conditional sampling.
+Types of comparison to be used in conditional sampling:
+-2 means .le.,
+-1 means .lt.,
+ 0 means .eq. within tolerance,
+ 1 means .gt.,
+ 2 means .ge..
 Different metrics can have different comparison types.
 Default: none
 </entry>
