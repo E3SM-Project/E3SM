@@ -377,15 +377,13 @@ subroutine compute_cape_diags( state, pbuf, pcols, pver, cape_out, dcape_out )
 
  end subroutine dcape_diags_register
 
- subroutine dcape_diags_init( pbuf, state, pver )
+ subroutine dcape_diags_init( pbuf, pver )
 
    use physics_buffer, only: physics_buffer_desc, pbuf_get_index, pbuf_get_field
-   use physics_types,  only: physics_state
 
    implicit none
 
    type(physics_buffer_desc), pointer :: pbuf(:)
-   type(physics_state), intent(in) :: state
    integer, intent(in) :: pver
 
    real(r8), pointer ::  ptr2d(:,:)
@@ -393,8 +391,8 @@ subroutine compute_cape_diags( state, pbuf, pcols, pver, cape_out, dcape_out )
    integer,  pointer :: iptr1d(:)
 
    call pbuf_get_field( pbuf, pbuf_get_index('CAPE_old_dCAPEd'), ptr1d ); ptr1d = 0._r8 
-   call pbuf_get_field( pbuf, pbuf_get_index('Q_mx_old_dCAPEd'), ptr1d ); ptr1d = state%q(:,pver,1)
-   call pbuf_get_field( pbuf, pbuf_get_index('T_mx_old_dCAPEd'), ptr1d ); ptr1d = state%T(:,pver)
+   call pbuf_get_field( pbuf, pbuf_get_index('Q_mx_old_dCAPEd'), ptr1d ); ptr1d = 5.e-3
+   call pbuf_get_field( pbuf, pbuf_get_index('T_mx_old_dCAPEd'), ptr1d ); ptr1d = 273._r8
    call pbuf_get_field( pbuf, pbuf_get_index(  'mx_old_dCAPEd'), iptr1d); iptr1d= pver
 
  end subroutine dcape_diags_init

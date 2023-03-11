@@ -674,6 +674,8 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     !-----------------------------------------------------------------------
 
     use physics_buffer,     only: physics_buffer_desc, pbuf_initialize, pbuf_get_index
+    use physics_buffer,     only: pbuf_get_chunk
+    use time_manager,       only: is_first_step
     use physconst,          only: rair, cpair, gravit, stebol, tmelt, &
                                   latvap, latice, rh2o, rhoh2o, pstd, zvir, &
                                   karman, rhodair, physconst_init 
@@ -732,12 +734,14 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     use rad_solar_var,      only: rad_solar_var_init
     use nudging,            only: Nudge_Model,nudging_init
     use output_aerocom_aie, only: output_aerocom_aie_init, do_aerocom_ind3
+    use misc_diagnostics,   only: dcape_diags_init
     use conditional_diag_output_utils, only: cnd_diag_output_init
 
     ! Input/output arguments
     type(physics_state), pointer       :: phys_state(:)
     type(physics_tend ), pointer       :: phys_tend(:)
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
+    type(physics_buffer_desc), pointer :: pbuf1d(:)
 
     type(cam_out_t),intent(inout)      :: cam_out(begchunk:endchunk)
 
@@ -884,6 +888,19 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     call cldfrc2m_init()
 
     call convect_deep_init(pref_edge)
+
+    ! If this is the first timestep of an initial run,
+    ! set some old-timestep values for dCAPE diagnostics.
+    ! In restart/branch/hybrid runs, these values are read from
+    ! the restart file.
+
+    if (is_first_step()) then
+       do lchnk = begchunk, endchunk
+          pbuf1d => pbuf_get_chunk(pbuf2d, lchnk)
+          call dcape_diags_init( pbuf1d, pver )
+       end do
+    end if
+    !----
 
     if( microp_scheme == 'RK' ) then
        call stratiform_init()
@@ -1975,7 +1992,7 @@ subroutine tphysbc (ztodt,               &
     use physconst,       only: cpair, latvap, gravit, rga
     use constituents,    only: pcnst, qmin, cnst_get_ind
     use convect_deep,    only: convect_deep_tend, convect_deep_tend_2, deep_scheme_does_scav_trans
-    use time_manager,    only: is_first_step, get_nstep
+    use time_manager,    only: get_nstep
     use convect_shallow, only: convect_shallow_tend
     use check_energy,    only: check_energy_chng, check_energy_fix, &
                                check_qflx, check_water, check_prect, & 
@@ -2000,7 +2017,6 @@ subroutine tphysbc (ztodt,               &
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
     use nudging,         only: Nudge_Model,Nudge_Loc_PhysOut,nudging_calc_tend
     use lnd_infodata,    only: precip_downscaling_method
-    use misc_diagnostics,only: dcape_diags_init
 
     implicit none
 
@@ -2157,8 +2173,6 @@ subroutine tphysbc (ztodt,               &
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
     !-----------------------------------------------------------------------
-    if (is_first_step()) call dcape_diags_init( pbuf, state, pver )
-
     call cnd_diag_checkpoint( diag, 'DYNEND', state, pbuf, cam_in, cam_out )
     !-----------------------------------------------------------------------
 
