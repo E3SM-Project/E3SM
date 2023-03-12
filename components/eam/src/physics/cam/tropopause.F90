@@ -1592,28 +1592,6 @@ contains
     call outfld('TROPP_PD',  tropPdf(:ncol, :), ncol, lchnk)
     call outfld('TROPP_FD',  tropFound(:ncol),  ncol, lchnk)
     
-    ! Find the tropopause using just the primary algorithm.
-    call tropopause_find(pstate, tropLev, tropP=tropP, tropT=tropT, tropZ=tropZ, backup=TROP_ALG_NONE)
-
-    tropPdf(:,:) = 0._r8
-    tropFound(:) = 0._r8
-    tropDZ(:,:) = fillvalue
-
-    do i = 1, ncol
-      if (tropLev(i) /= NOTFOUND) then
-        tropPdf(i, tropLev(i)) = 1._r8
-        tropFound(i) = 1._r8
-        tropDZ(i,:) = pstate%zm(i,:) - tropZ(i)
-      end if
-    end do
-
-    call outfld('TROPF_P',   tropP(:ncol),      ncol, lchnk)
-    call outfld('TROPF_T',   tropT(:ncol),      ncol, lchnk)
-    call outfld('TROPF_Z',   tropZ(:ncol),      ncol, lchnk)
-    call outfld('TROPF_DZ',  tropDZ(:ncol, :), ncol, lchnk)
-    call outfld('TROPF_PD',  tropPdf(:ncol, :), ncol, lchnk)
-    call outfld('TROPF_FD',  tropFound(:ncol),  ncol, lchnk)
-    
     ! If requested, do all of the algorithms.
     if (output_all) then
     
