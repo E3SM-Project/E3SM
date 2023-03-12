@@ -154,6 +154,10 @@ module ocn_time_integration_si
 
    integer :: ssh_sal_on
 
+   type (field1DReal), pointer :: &
+      SIvec_zh1_field,SIvec_wh0_field,SIvec_rh1_field   
+                         ! field pointer for halo update
+
 #ifdef USE_MAGMA
    magma_devptr_t :: dprec_ivmat,queue,dxvec,dyvec
 #endif   
@@ -3128,7 +3132,8 @@ module ocn_time_integration_si
 
       type (mpas_pool_type), pointer :: &
          statePool,         &! structure holding state variables
-         meshPool            ! structure holding mesh variables
+         meshPool,          &! structure holding mesh variables
+         diagnosticsPool     ! structure holding diagnostic variables
 
       integer, pointer :: nVertLevels
 
@@ -3216,6 +3221,7 @@ module ocn_time_integration_si
 
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block % structs, 'state', statePool)
+      call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
 
       call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', &
                                                         nVertLevels)
@@ -3248,6 +3254,10 @@ module ocn_time_integration_si
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
       call mpas_pool_get_array(statePool, 'ssh', ssh, 2)
+
+      call mpas_pool_get_field(diagnosticsPool, 'SIvec_zh1', SIvec_zh1_field,1)
+      call mpas_pool_get_field(diagnosticsPool, 'SIvec_wh0', SIvec_wh0_field,1)
+      call mpas_pool_get_field(diagnosticsPool, 'SIvec_rh1', SIvec_rh1_field,1)
 
       nCells = nCellsArray(config_num_halos)
       nEdges = nEdgesArray(config_num_halos+1)
@@ -4530,7 +4540,7 @@ module ocn_time_integration_si
          call si_precond(SIvec_r1,SIvec_rh1)
   
          call mpas_timer_start("si halo iter")
-         call mpas_dmpar_field_halo_exch(domain, 'SIvec_rh1')
+         call mpas_dmpar_exch_halo_field(SIvec_rh1_field)
          !$acc update device(SIvec_rh1)
          call mpas_timer_stop("si halo iter")
   
@@ -4704,7 +4714,7 @@ module ocn_time_integration_si
          call si_precond(SIvec_z1,SIvec_zh1)
  
          call mpas_timer_start("si halo iter")
-         call mpas_dmpar_field_halo_exch(domain, 'SIvec_zh1')
+         call mpas_dmpar_exch_halo_field(SIvec_zh1_field)
          !$acc update device(SIvec_zh1)
          call mpas_timer_stop("si halo iter")
  
@@ -4823,7 +4833,7 @@ module ocn_time_integration_si
          call si_precond(SIvec_w1,SIvec_wh0) !wh1 -> wh0
  
          call mpas_timer_start("si halo iter")
-         call mpas_dmpar_field_halo_exch(domain, 'SIvec_wh0')
+         call mpas_dmpar_exch_halo_field(SIvec_wh0_field)
          !$acc update device(SIvec_wh0)
          call mpas_timer_stop("si halo iter")
  
