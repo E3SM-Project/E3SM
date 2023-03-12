@@ -1592,8 +1592,8 @@ contains
     call outfld('TROPP_PD',  tropPdf(:ncol, :), ncol, lchnk)
     call outfld('TROPP_FD',  tropFound(:ncol),  ncol, lchnk)
     
-    ! Find the tropopause using just the cold point algorithm.
-    call tropopause_find(pstate, tropLev, tropP=tropP, tropT=tropT, tropZ=tropZ, primary=TROP_ALG_CPP, backup=TROP_ALG_NONE)
+    ! Find the tropopause using just the primary algorithm.
+    call tropopause_find(pstate, tropLev, tropP=tropP, tropT=tropT, tropZ=tropZ, backup=TROP_ALG_NONE)
 
     tropPdf(:,:) = 0._r8
     tropFound(:) = 0._r8
