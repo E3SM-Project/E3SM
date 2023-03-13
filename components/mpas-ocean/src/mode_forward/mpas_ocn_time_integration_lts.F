@@ -1274,21 +1274,18 @@ module ocn_time_integration_lts
       kmax = maxLevelEdgeTop(iEdge)
       cell1 = cellsOnEdge(1,iEdge)
       cell2 = cellsOnEdge(2,iEdge)
-      do k=1,nVertLevels
-      ! initialize layerThickEdgeFlux to avoid divide by zero and NaN problems.
+      do k = 1,nVertLevels
+         ! initialize layerThicknessEdgeMean to avoid divide by
+         ! zero and NaN problems.
          layerThickEdgeFlux(k,iEdge) = -1.0e34_RKIND
       end do
       do k = kmin,kmax
-         if (normalVelocity(k,iEdge) > 0.0_RKIND) then
-            layerThickEdgeFlux(k,iEdge) = layerThickness(k,cell1)
-         elseif (normalVelocity(k,iEdge) < 0.0_RKIND) then
-            layerThickEdgeFlux(k,iEdge) = layerThickness(k,cell2)
-         else
-            layerThickEdgeFlux(k,iEdge) = max(layerThickness(k,cell1), layerThickness(k,cell2))
-         end if
+         ! central differenced
+         layerThickEdgeFlux(k,iEdge) = 0.5_RKIND * &
+                                      (layerThickness(k,cell1) + &
+                                       layerThickness(k,cell2))
       end do
    end do
-
 
    ! ssh
    do iCell = 1, nCellsAll
@@ -1436,7 +1433,6 @@ module ocn_time_integration_lts
    ! pressure gradient tendency terms
    config_split_ssh_terms = .false. !this has the ssh terms
    config_split_non_ssh_terms = .true. !this has the non ssh terms
-   config_use_tidal_potential_forcing = .true. !computes the tidal potential
    config_use_time_varying_atmospheric_forcing = .true.
 
    ! Coriolis and kinetic energy grad tendency term
@@ -1461,7 +1457,6 @@ module ocn_time_integration_lts
 
    config_split_ssh_terms = .true. !this has the ssh terms
    config_split_non_ssh_terms = .false. !this has the non ssh terms
-   config_use_tidal_potential_forcing = .false. !computes the tidal potential
    config_use_time_varying_atmospheric_forcing = .false.
 
    ! Coriolis and kinetic energy grad tendency term
@@ -1491,7 +1486,6 @@ module ocn_time_integration_lts
    config_disable_vel_surface_stress = .false.
    config_disable_vel_topographic_wave_drag = .false.
    config_disable_vel_explicit_bottom_drag = .false.
-   config_use_tidal_potential_forcing = .true.
    config_use_bulk_wind_stress = .true.
 
    end subroutine resetConfigs!}}}
