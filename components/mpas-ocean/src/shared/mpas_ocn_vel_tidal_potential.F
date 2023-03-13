@@ -67,9 +67,7 @@ module ocn_vel_tidal_potential
    real (kind=RKIND) ::  &
       betaSelfAttrLoad,  &! self-attraction and loading beta
       tidalPotRamp,      &! scale for ramping tidal potential
-      rho0gInv,          &! 1 / rho0 / gravity
-      sshTermSplit,      &! this isolates the ssh terms in the tidal potential to enable splitting of fast and slow tendencies
-      nonSshTermsSplit     ! this isolates the non ssh terms in the tidal potential to enable splitting of fast and slow tendencies
+      rho0gInv            ! 1 / rho0 / gravity
 
    !*** eventually these will be private module arrays and 
    !*** not in the forcing pool so retain pointers here as placeholders
@@ -177,10 +175,9 @@ contains
             kMax = maxLevelEdgeTop(iEdge)
 
             potentialGrad = - gravity*invdcEdge* &
-               (  nonSshTermsSplit * tidalPotEta(cell2) - tidalPotEta(cell1) &
-                + sshTermSplit * (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * ((ssh(cell2) - ssh(cell1)) &
-                + nonSshTermsSplit * rho0gInv*(surfacePressure(cell2) - surfacePressure(cell1))) &
-                + nonSshTermsSplit * ssh_sal_on * (ssh_sal(cell2) - ssh_sal(cell1)) )
+               ( tidalPotEta(cell2) - tidalPotEta(cell1) &
+                + (1.0_RKIND - ssh_sal_on) * betaSelfAttrLoad * ( rho0gInv*(surfacePressure(cell2) - surfacePressure(cell1))) &
+                + ssh_sal_on * (ssh_sal(cell2) - ssh_sal(cell1)) )
 
             do k=1,kMax
                tend(k,iEdge) = tend(k,iEdge) - &
@@ -363,8 +360,6 @@ contains
       betaSelfAttrLoad  = 0.0_RKIND
       tidalPotRamp      = 1.0e20_RKIND
       rho0gInv = 1.0_RKIND / rho_sw / gravity
-      sshTermSplit = 1.0_RKIND
-      nonSshTermsSplit = 1.0_RKIND
       !*** If tidal potential turned on, set all relevant variables
 
       if (config_use_tidal_potential_forcing) then
@@ -378,9 +373,6 @@ contains
 
          betaSelfAttrLoad = config_self_attraction_and_loading_beta
          tidalPotRamp     = config_tidal_potential_ramp
-
-         if (.not. config_split_ssh_terms) sshTermSplit = 0.0_RKIND
-         if (.not. config_split_non_ssh_terms) nonSshTermsSplit = 0.0_RKIND
 
          !*** retrieve variables from pool
          !*** eventually replace with allocated module private vars

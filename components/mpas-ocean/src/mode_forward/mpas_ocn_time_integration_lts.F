@@ -380,7 +380,7 @@ module ocn_time_integration_lts
     ! -------------------------------- COMPUTE SLOW TEND FOR ALL LTS REGIONS  -------------------------------
 
     ! set configs to compute only the slow terms on the momentum equation
-    call setConfigsForSlowTends()
+    !call setConfigsForSlowTends()
 
     call mpas_timer_start("lts slow tend computation")
 
@@ -391,7 +391,7 @@ module ocn_time_integration_lts
     call ocn_tend_vel(domain,tendSlowPool, statePool, forcingPool, 1, domain % dminfo, dt)
 
     ! set configs to compute only the fast terms on the momentum equation
-    call setConfigsForFastTends()
+    !call setConfigsForFastTends()
 
     call mpas_timer_stop("lts slow tend computation")
 
@@ -1033,7 +1033,7 @@ module ocn_time_integration_lts
     !
 
     ! reset configs
-    call resetConfigs()
+    !call resetConfigs()
 
     call mpas_timer_start("lts cleanup phase")
 
@@ -1431,8 +1431,6 @@ module ocn_time_integration_lts
    implicit none
 
    ! pressure gradient tendency terms
-   config_split_ssh_terms = .false. !this has the ssh terms
-   config_split_non_ssh_terms = .true. !this has the non ssh terms
    config_use_time_varying_atmospheric_forcing = .true.
 
    ! Coriolis and kinetic energy grad tendency term
@@ -1455,8 +1453,6 @@ module ocn_time_integration_lts
 
    implicit none
 
-   config_split_ssh_terms = .true. !this has the ssh terms
-   config_split_non_ssh_terms = .false. !this has the non ssh terms
    config_use_time_varying_atmospheric_forcing = .false.
 
    ! Coriolis and kinetic energy grad tendency term
@@ -1479,8 +1475,6 @@ module ocn_time_integration_lts
 
    implicit none
 
-   config_split_ssh_terms= .true.
-   config_split_non_ssh_terms = .true.
    config_use_time_varying_atmospheric_forcing = .true.
    config_disable_vel_coriolis = .false.
    config_disable_vel_surface_stress = .false.
