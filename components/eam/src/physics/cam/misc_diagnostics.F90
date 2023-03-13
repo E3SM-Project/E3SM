@@ -391,7 +391,7 @@ subroutine compute_cape_diags( state, pbuf, pcols, pver, cape_out, dcape_out )
    integer,  pointer :: iptr1d(:)
 
    call pbuf_get_field( pbuf, pbuf_get_index('CAPE_old_dCAPEd'), ptr1d ); ptr1d = 0._r8 
-   call pbuf_get_field( pbuf, pbuf_get_index('Q_mx_old_dCAPEd'), ptr1d ); ptr1d = 5.e-3
+   call pbuf_get_field( pbuf, pbuf_get_index('Q_mx_old_dCAPEd'), ptr1d ); ptr1d = 5.e-3_r8
    call pbuf_get_field( pbuf, pbuf_get_index('T_mx_old_dCAPEd'), ptr1d ); ptr1d = 273._r8
    call pbuf_get_field( pbuf, pbuf_get_index(  'mx_old_dCAPEd'), iptr1d); iptr1d= pver
 
