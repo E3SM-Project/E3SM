@@ -116,9 +116,9 @@
 		            description="Selection of the method for advecting tracers."
 		            possible_values="'fo', 'fct', 'none'"
 		/>
-		<nml_option name="config_horiz_tracer_adv_order" type="integer" default_value="3"
-					description="Order of polynomial used for tracer reconstruction at cell edges"
-					possible_values="2, 3 and 4"
+		<nml_option name="config_horiz_tracer_adv_order" type="integer" default_value="3" units="unitless"
+			    description="Order of polynomial used for tracer reconstruction at cell edges"
+			    possible_values="2, 3 and 4"
 		/>
 		<nml_option name="config_advection_coef_3rd_order" type="real" default_value="0.25" units="unitless"
 					description="Reconstruction of 3rd-order reconstruction to blend with 4th-order reconstuction"

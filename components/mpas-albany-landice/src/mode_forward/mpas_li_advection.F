@@ -20,6 +20,7 @@ module li_advection
    use li_mask
    use li_constants
    use li_config
+   use li_mesh
 
    implicit none
    private
@@ -76,6 +77,7 @@ module li_advection
 
      use li_setup, only: li_calculate_layerThickness
      use li_tracer_advection_fct, only: li_tracer_advection_fct_tend
+     use li_tracer_advection_fct_shared
       !-----------------------------------------------------------------
       !
       ! input variables
@@ -181,12 +183,6 @@ module li_advection
            thermalCellMaskField
 
       ! Allocatable arrays need for flux-corrected transport advection
-      real(kind=RKIND), dimension(:,:,:), allocatable :: derivTwo
-      real (kind=RKIND), dimension(:,:), allocatable :: advCoefs
-      real (kind=RKIND), dimension(:,:), allocatable :: advCoefs3rd
-      integer, dimension(:), allocatable :: nAdvCellsForEdge
-      integer, dimension(:,:), allocatable :: advCellsForEdge
-      real (kind=RKIND), dimension(:,:), allocatable :: advMaskHighOrder
       real (kind=RKIND), dimension(:,:), allocatable :: tendLayerThickness
       real (kind=RKIND), dimension(:,:,:), allocatable :: tend
 
@@ -227,7 +223,6 @@ module li_advection
       integer :: err_tmp
       integer :: nTracers
       integer, pointer :: maxEdges2
-      integer :: nAdvCellsMax
 
       !WHL - debug
       integer, dimension(:), pointer :: indexToCellID, indexToEdgeID
@@ -356,22 +351,10 @@ module li_advection
       nAdvCellsMax = maxEdges2
 
       if (trim(config_thickness_advection) .eq. 'fct') then
-         allocate(nAdvCellsForEdge(nEdges))
-         nAdvCellsForEdge(:) = 0
-         allocate(advCellsForEdge (nAdvCellsMax,nEdges))
-         advCellsForEdge(:,:) = 0
-         allocate(advCoefs(nAdvCellsMax,nEdges))
-         advCoefs(:,:) = 0.0_RKIND
-         allocate(advCoefs3rd(nAdvCellsMax,nEdges))
-         advCoefs3rd(:,:) = 0.0_RKIND
-         allocate(advMaskHighOrder(nVertLevels,nEdges))
-         advMaskHighOrder(:,:) = 0.0_RKIND
          allocate(tendLayerThickness(nVertLevels,nEdges))
          tendLayerThickness(:,:) = 0.0_RKIND
          allocate(tend(nAdvCellsMax,2,nEdges))
          tend(:,:,:) = 0.0_RKIND
-         allocate(derivTwo(nAdvCellsMax,2,nEdges))
-         derivTwo(:,:,:) = 0.0_RKIND
       endif
 
       ! given the old thickness, compute the thickness in each layer
@@ -466,6 +449,7 @@ module li_advection
          elseif (trim(config_thickness_advection) .eq. 'fct') then
              ! TODO: Decide what to do about w (vertical vel).
              ! For now, just setting it to 0 to try to get this to compile
+
              call li_tracer_advection_fct_tend(&
                   tend, advectedTracers, layerThickness, &
                   layerThicknessEdge * layerNormalVelocity, 0 * layerThickness, dt,    &
@@ -662,6 +646,15 @@ module li_advection
       end if ! config_thickness_advection
 
       err = ior(err,err_tmp)
+
+      ! Deallocate arrays for fct
+      if (trim(config_tracer_advection) .eq. 'fct') then
+         deallocate( nAdvCellsForEdge, &
+                     advCellsForEdge, &
+                     advCoefs, &
+                     advCoefs3rd, &
+                     advMaskHighOrder)
+      endif
 
       ! clean up
       call mpas_deallocate_scratch_field(advectedTracersField, .true.)
@@ -1029,8 +1022,8 @@ module li_advection
          basalTracers)
 
       use li_thermal, only: li_temperature_to_enthalpy_kelvin
-      use li_tracer_advection_fct_shared, only: li_tracer_advection_fct_shared_init
-      use li_tracer_advection_fct, only: li_tracer_advection_fct_init
+      use li_tracer_advection_fct_shared!, only: li_tracer_advection_fct_shared_init
+      use li_tracer_advection_fct!, only: li_tracer_advection_fct_init
       !-----------------------------------------------------------------
       !
       ! input variables

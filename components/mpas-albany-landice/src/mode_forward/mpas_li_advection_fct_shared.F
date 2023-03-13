@@ -27,7 +27,7 @@ module li_tracer_advection_fct_shared
    use mpas_geometry_utils
    use mpas_log
 
-!   use ocn_config
+   use li_config
    use li_mesh
 
    implicit none
@@ -77,7 +77,8 @@ module li_tracer_advection_fct_shared
 !-----------------------------------------------------------------------
 
    subroutine li_tracer_advection_fct_shared_init(err)!{{{
-
+      use li_config
+      use li_mesh
       !-----------------------------------------------------------------
       ! Output variables
       !-----------------------------------------------------------------
@@ -99,8 +100,6 @@ module li_tracer_advection_fct_shared
       integer, dimension(:,:), allocatable :: &
          cellIndxSorted ! nbr cell indices sorted
 
-      integer, pointer :: config_horiz_tracer_adv_order
-
       real (kind=RKIND), dimension(:,:,:), allocatable :: &
          derivTwo !< 2nd derivative values for polynomial fit to tracers
 
@@ -116,13 +115,12 @@ module li_tracer_advection_fct_shared
       nAdvCellsMax = maxEdges2
 
       ! Allocate common variables
-      allocate(nAdvCellsForEdge (             nEdges),   &
+      allocate( nAdvCellsForEdge (            nEdges), &
                 advCellsForEdge (nAdvCellsMax,nEdges), &
                 advCoefs        (nAdvCellsMax,nEdges), &
                 advCoefs3rd     (nAdvCellsMax,nEdges), &
                 advMaskHighOrder(nVertLevels ,nEdges), &
                 derivTwo      (nAdvCellsMax,2,nEdges))
-
       ! Compute derivTwo array
       call computeDerivTwo(derivTwo, err)
       if (err /= 0) then
@@ -310,8 +308,9 @@ module li_tracer_advection_fct_shared
 
       ! If 2nd order advection, disable high-order terms by
       ! setting mask to zero.
-      if (config_horiz_tracer_adv_order == 2) &
+      if (config_horiz_tracer_adv_order == 2) then
          advMaskHighOrder(:,:) = 0.0_RKIND
+      endif
 
       ! Copy module variables to device
       !$acc enter data copyin(nAdvCellsForEdge, advCellsForEdge, &
