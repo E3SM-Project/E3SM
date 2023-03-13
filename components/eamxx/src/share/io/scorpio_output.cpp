@@ -142,6 +142,16 @@ AtmosphereOutput (const ekat::Comm& comm, const ekat::ParameterList& params,
     EKAT_REQUIRE_MSG (grid_found,
         "Error! Bad formatting of output yaml file. Missing 'Fields->$grid_name` sublist.\n");
   }
+  if (std::find(m_fields_names.begin(),m_fields_names.end(),"All")!=m_fields_names.end()) {
+    EKAT_REQUIRE_MSG(m_fields_names.size()==1,"Error!! scorpio_output - `All` is listed as output among other fields.  Please either use `All` for all fields or remove this entry.");
+    m_fields_names.clear();
+    const auto fm_sim = get_field_manager("sim");
+    for (auto it = fm_sim->begin();it!=fm_sim->end();it++) {
+      auto it_pair = *it;
+      m_fields_names.push_back(it_pair.second->name());
+    }
+    
+  }
   sort_and_check(m_fields_names);
 
   // Check if remapping and if so create the appropriate remapper 
