@@ -3056,7 +3056,7 @@
           <command name="use">/soft/restricted/CNDA/updates/modulefiles</command>
         </modules>
 	<modules compiler="!gnu">
-	  <command name="load">oneapi/eng-compiler/2022.12.30.002</command>
+	  <command name="load">oneapi/eng-compiler/2022.12.30.003</command>
           <!--command name="load">oneapi/eng-compiler/2022.10.15.006</command-->
           <!--command name="load">mpich/50.2/icc-all-pmix-gpu</command-->
           <command name="load">intel_compute_runtime/release/22.43.24595.30</command>
