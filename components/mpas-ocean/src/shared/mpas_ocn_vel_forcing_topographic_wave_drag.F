@@ -28,7 +28,7 @@ module ocn_vel_forcing_topographic_wave_drag
    use ocn_mesh
    use ocn_diagnostics_variables
    use ocn_forcing
-   use ocn_configs
+   use ocn_config
 
    implicit none
    private
